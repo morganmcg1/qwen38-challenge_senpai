@@ -226,6 +226,11 @@ def analyse(tag: str, skip_rounds: int) -> dict:
         "buffer_stats": stats.get(pid, {}),
         "union_intervals": len(starts),
         "union_busy_us": prefix[-1] / 1000.0 if prefix else 0.0,
+        # A round with no device time at all means the ledger lost that part of
+        # the timeline, not that the GPU slept for a whole round.
+        "rounds_without_gpu_busy": sum(
+            1 for r in per_round if r["gpu_busy_us_total"] == 0.0
+        ),
         "meta": {
             k: meta.get(k)
             for k in (
@@ -276,8 +281,9 @@ def print_table(result: dict) -> None:
         print("host_thread_cpu_ns median %.0f (%.1f us)"
               % (agg["host_thread_cpu_ns"]["median"],
                  agg["host_thread_cpu_ns"]["median"] / 1000.0))
-    print("buffers: %s, union intervals %d"
-          % (result["buffer_stats"], result["union_intervals"]))
+    print("buffers: %s, union intervals %d, rounds with no device time %d"
+          % (result["buffer_stats"], result["union_intervals"],
+             result["rounds_without_gpu_busy"]))
 
 
 def main() -> None:
