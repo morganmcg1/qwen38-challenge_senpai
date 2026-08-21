@@ -166,24 +166,43 @@ def collect_all(path, width, phase):
 
 
 def block_gap(per_round, block_kernel):
-    """Dispatch count and GPU time between a block kernel and the next N=5120."""
-    counts, spans = [], []
+    """(intervening dispatches, intervening us, block us, victim us) per layer.
+
+    The victim is the N=5120 projection that follows the block. Within one
+    width the dispatch count is fixed, but the intervening GPU time and the
+    block kernel's own GPU time both vary from layer to layer. That gives two
+    dose-response tests with no confound from width: elapsed distance, and how
+    much work the block itself did.
+    """
+    rows_out = []
     for _rnd, rows in sorted(per_round.items()):
         pending = None
         for _ordinal, kernel, gy, us in sorted(rows):
             if block_kernel in kernel:
-                pending = [0, 0.0]
+                pending = [0, 0.0, us]
                 continue
             if pending is None:
                 continue
             if gy == NARROW_GY:
-                counts.append(pending[0])
-                spans.append(pending[1])
+                rows_out.append((pending[0], pending[1], pending[2], us))
                 pending = None
             else:
                 pending[0] += 1
                 pending[1] += us
-    return counts, spans
+    return rows_out
+
+
+def pearson(xs, ys):
+    n = len(xs)
+    mx, my = statistics.fmean(xs), statistics.fmean(ys)
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    sxx = sum((x - mx) ** 2 for x in xs)
+    syy = sum((y - my) ** 2 for y in ys)
+    if sxx <= 0 or syy <= 0:
+        return float("nan"), float("nan")
+    r = sxy / math.sqrt(sxx * syy)
+    slope = sxy / sxx
+    return r, slope
 
 
 def main() -> None:
@@ -277,19 +296,49 @@ def main() -> None:
         # encode distance to that dispatch changes with width, then what looks
         # like width gating may be distance gating instead.
         all_rounds = collect_all(path, args.width, args.phase)
-        print("\n  encode distance from block kernel to the next N=5120 dispatch")
-        print(f"  {'block':<18} {'n':>5} {'dispatches':>11} {'GPU us':>9}")
-        for kernel, name in (("gated_delta_step", "gated_delta_step"),
-                             ("sdpa_vector", "sdpa_vector")):
-            counts, spans = block_gap(all_rounds, kernel)
-            if not counts:
+        print("\n  within-width dose-response on the dispatch that follows a block")
+        print(f"  {'block':<18} {'dose':<10} {'n':>5} {'disp':>6} {'dose us':>8} "
+              f"{'sd':>6} {'victim us':>10} {'r':>7} {'slope':>7}")
+        dose_out = {}
+        for kernel in ("gated_delta_step", "sdpa_vector"):
+            rows_out = block_gap(all_rounds, kernel)
+            if not rows_out:
                 continue
-            print(f"  {name:<18} {len(counts):5d} {statistics.fmean(counts):11.2f} "
-                  f"{statistics.fmean(spans):9.2f}")
+            victims = [r[3] for r in rows_out]
+            counts = [r[0] for r in rows_out]
+            for col, dose_name in ((1, "gap"), (2, "block")):
+                dose = [r[col] for r in rows_out]
+                r, slope = pearson(dose, victims)
+                dose_out[f"{kernel}/{dose_name}"] = {
+                    "n": len(rows_out),
+                    "intervening_dispatches": statistics.fmean(counts),
+                    "dose_mean_us": statistics.fmean(dose),
+                    "dose_sd_us": statistics.pstdev(dose),
+                    "victim_mean_us": statistics.fmean(victims),
+                    "pearson_r": r, "slope_us_per_us": slope,
+                }
+                print(f"  {kernel:<18} {dose_name:<10} {len(rows_out):5d} "
+                      f"{statistics.fmean(counts):6.2f} "
+                      f"{statistics.fmean(dose):8.2f} "
+                      f"{statistics.pstdev(dose):6.2f} "
+                      f"{statistics.fmean(victims):10.2f} {r:7.3f} {slope:7.3f}")
+                # Quintiles isolate the dose-response from a single outlier.
+                ordered = sorted(rows_out, key=lambda t: t[col])
+                step = len(ordered) // 5
+                if step < 4:
+                    continue
+                cells = [(statistics.fmean(c[col] for c in chunk),
+                          statistics.fmean(c[3] for c in chunk))
+                         for chunk in (ordered[q * step:(q + 1) * step]
+                                       for q in range(5))]
+                print("        dose quintile: " + "  ".join(
+                    f"{g:7.2f}" for g, _v in cells))
+                print("        victim mean  : " + "  ".join(
+                    f"{v:7.2f}" for _g, v in cells))
 
         payload[tag] = {
             "width": args.width, "rounds": len(per_round),
-            "f_us": f_us, "s_us_per_gb": s_us,
+            "f_us": f_us, "s_us_per_gb": s_us, "dose_response": dose_out,
             "groups": {f"{t}@{h}": {
                 "count": n, "mean_us": m, "sem_us": e,
                 "law_us": f_us + affine4(*GEOMETRY[t]) / 1e9 * s_us,
