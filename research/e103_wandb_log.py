@@ -54,6 +54,22 @@ METALLIB_FINGERPRINT = (
     "7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c"
 )
 
+# Rungs 0 to 2c ran on `BASE_SHA`. Rung 2b onwards ran on the post-E100 base,
+# which the advisor asked for once PR #102 merged.
+REBASED_BASE_SHA = "5c2c3b8b613841d0d9677d4540e6a08e8bd40759"
+# Rebuilt from an unmodified tree with `tools/build-mlx-metallib.sh
+# --all-build-roots`, then rebuilt a second time after touching
+# `kernels/sdpa_vector.h` to force a real recompile: byte-identical both
+# times, so this fingerprint is content-determined and not a build nonce.
+# It differs from `METALLIB_FINGERPRINT` because E100 edited
+# `kernels/quantized.h` (the `NA <= 4` static_assert and the `case 5:`
+# instantiation), which is compiled into the same library. No SDPA kernel
+# changed across the base move.
+REBASED_FINGERPRINT = (
+    "mlxfast-metallib-fingerprint-v1 "
+    "a2dd6b8e470800a158aa85492589b44e9589743a4a6b1426f3f83e6d3b38b3f4"
+)
+
 # Assignment thresholds, PR #105.
 LOCAL_ROUND_US = 127176.0  # measured round GPU busy at width 5, census leg
 MIN_USEFUL_US_PER_ROUND = 383.0  # 0.30 % of the local round
@@ -517,9 +533,233 @@ def log_isolated() -> None:
     run.finish()
 
 
+# --- rung 2b, the qL <= 5 partition forced at M >= 6 -----------------------
+
+WIDTH_SHARE = {3: 0.0325, 4: 0.142, 5: 0.241, 6: 0.334, 7: 0.122, 8: 0.0735,
+               9: 0.0575}
+PACK_ARMS = ("d_pack2_c", "d_pack3_c")
+MAX_QL = 5
+
+
+def _arm_medians(paths: list[str]) -> dict[tuple[int, int], dict[str, float]]:
+    med: dict[tuple[int, int], dict[str, float]] = {}
+    for p in paths:
+        payload = json.loads((OUT / p).read_text())
+        cells: dict[tuple[int, int], list[dict]] = {}
+        for r in payload["measurements"]:
+            if r["kind"] == "timing":
+                cells.setdefault((r["n"], r["m"]), []).append(r)
+        for key, rows in cells.items():
+            med[key] = {a: st.median(x["seconds"][a] for x in rows) * 1e6
+                        for a in payload["arms"]}
+    return med
+
+
+def _split_medians(paths: list[str]) -> tuple[
+        dict[tuple[int, int], dict[str, float]], list[dict]]:
+    med: dict[tuple[int, int], dict[str, float]] = {}
+    checks: list[dict] = []
+    for p in paths:
+        payload = json.loads((OUT / p).read_text())
+        cells: dict[tuple[int, int], list[dict]] = {}
+        for r in payload["measurements"]:
+            if r["kind"] == "timing":
+                cells.setdefault((r["n"], r["m"]), []).append(r)
+            else:
+                checks.append(r)
+        for key, rows in cells.items():
+            med[key] = {v: st.median(x["seconds"][v] for x in rows) * 1e6
+                        for v in payload["variants"]}
+    return med, checks
+
+
+def log_split() -> None:
+    """Publish the split-versus-merged measurement and the stacked ceiling."""
+    arms = _arm_medians(["rung2.json", "rung2c_widths678.json",
+                         "rung2c_width9.json"])
+    splits, checks = _split_medians(["rung2b_split.json",
+                                     "rung2b_split_m9.json"])
+    lens = sorted({n for n, _ in arms})
+    widths = sorted({m for _, m in arms})
+
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        group=GROUP,
+        job_type="isolated-kernel-ab",
+        name="e103-rung2b-split",
+        config={
+            "rung": "2b",
+            "question": (
+                "the trusted supports_sdpa_vector cap qL * gqa <= 32 forces a "
+                "qL=5 plus qL=(M-5) partition at every verify width M >= 6; "
+                "what does merging it back into one dispatch save, and what "
+                "is the stacked pack-plus-merge ceiling"
+            ),
+            "harness_source": "research/e103_split_ab.m",
+            "arm_source": "research/e103_sdpa_arms.metal",
+            "order": "palindrome over single, split, only5, onlyr",
+            "max_ql": MAX_QL,
+            "width_shares": WIDTH_SHARE,
+            "advisor_predicted_merge_saving_us": 20.9,
+            "min_useful_us_per_round": MIN_USEFUL_US_PER_ROUND,
+            "local_round_us": LOCAL_ROUND_US,
+            "latency_class_factor": LATENCY_CLASS_FACTOR,
+            **identity(),
+            **gate_flags(
+                "standalone Metal microbenchmark, one process, one queue", 60.0
+            ),
+        },
+        reinit=True,
+    )
+
+    split_table = wandb.Table(
+        columns=["n", "m", "r", "single_us", "split_us", "only5_us",
+                 "onlyr_us", "merge_saving_us", "sum_of_legs_us"])
+    merge: dict[tuple[int, int], float] = {}
+    for (n, m), v in sorted(splits.items()):
+        merge[(n, m)] = v["split"] - v["single"]
+        split_table.add_data(n, m, m - MAX_QL, v["single"], v["split"],
+                             v["only5"], v["onlyr"], merge[(n, m)],
+                             v["only5"] + v["onlyr"])
+    run.log({"split/variants": split_table})
+
+    pack: dict[tuple[int, int], float] = {}
+    pack_arm: dict[tuple[int, int], str] = {}
+    arm_table = wandb.Table(
+        columns=["n", "m", "a_us", "pack2_us", "pack3_us", "best_pack_arm",
+                 "pack_saving_us"])
+    for (n, m), cell in sorted(arms.items()):
+        best = min(PACK_ARMS, key=lambda a: cell[a])
+        pack[(n, m)] = cell["a_shipped_c"] - cell[best]
+        pack_arm[(n, m)] = best
+        arm_table.add_data(n, m, cell["a_shipped_c"], cell["d_pack2_c"],
+                           cell["d_pack3_c"], best, pack[(n, m)])
+    run.log({"split/pack_by_width": arm_table})
+
+    draft = _window_mean({n: pack[(n, 1)] for n in lens if (n, 1) in pack})
+    pricing = wandb.Table(
+        columns=["m", "width_share", "merge_us_per_round", "pack_us_per_round",
+                 "stacked_us_per_round", "fraction_of_min_useful_effect",
+                 "best_pack_arm"])
+    per_round: dict[int, dict[str, float]] = {}
+    for m in widths:
+        merge_w = (_window_mean({n: merge[(n, m)] for n in lens
+                                 if (n, m) in merge}) if m > MAX_QL else 0.0)
+        pack_w = _window_mean({n: pack[(n, m)] for n in lens if (n, m) in pack})
+        merge_r = VERIFY_DISPATCHES * merge_w
+        pack_r = VERIFY_DISPATCHES * pack_w + DRAFT_HEAD_DISPATCHES * draft
+        per_round[m] = {"merge": merge_r, "pack": pack_r,
+                        "stack": merge_r + pack_r}
+        pricing.add_data(m, WIDTH_SHARE.get(m, 0.0), merge_r, pack_r,
+                         merge_r + pack_r,
+                         (merge_r + pack_r) / MIN_USEFUL_US_PER_ROUND,
+                         pack_arm[(lens[0], m)])
+    run.log({"split/round_pricing": pricing})
+
+    fid = wandb.Table(columns=["n", "m", "kind", "differing", "total",
+                               "bit_identical_or_detected"])
+    violations, detected = 0, []
+    for r in checks:
+        if r["kind"] == "fidelity":
+            fid.add_data(r["n"], r["m"], "split_vs_single", r["differing"],
+                         r["total"], r["bit_identical"])
+            if not r["bit_identical"]:
+                violations += 1
+        elif r["kind"] == "positive_control":
+            fid.add_data(r["n"], r["m"], "perturbed_key", r["differing"],
+                         r["total"], r["detected"])
+            detected.append(bool(r["detected"]))
+    run.log({"split/fidelity": fid})
+
+    covered = sum(WIDTH_SHARE.get(m, 0.0) for m in widths)
+    summary: dict[str, object] = {}
+    for label, key in (("merge", "merge"), ("pack", "pack"),
+                       ("stacked", "stack")):
+        weighted = sum(WIDTH_SHARE.get(m, 0.0) * per_round[m][key]
+                       for m in widths) / covered
+        summary[f"verdict/{label}_us_per_round_session_mean"] = weighted
+        summary[f"verdict/{label}_local_pct"] = 100.0 * weighted / LOCAL_ROUND_US
+        summary[f"verdict/{label}_fraction_of_bar"] = (
+            weighted / MIN_USEFUL_US_PER_ROUND)
+    stacked = summary["verdict/stacked_us_per_round_session_mean"]
+    ranked = LATENCY_CLASS_FACTOR * 100.0 * stacked / LOCAL_ROUND_US
+    merge_mean = st.mean([merge[(n, m)] for (n, m) in merge])
+    summary.update(
+        {
+            "verdict/stacked_ranked_pct_undiscounted": ranked,
+            "verdict/stacked_ranked_pct_discount_low": ranked / INSITU_DISCOUNT[1],
+            "verdict/stacked_ranked_pct_discount_high": ranked / INSITU_DISCOUNT[0],
+            "verdict/published_detection_floor_pct": PUBLISHED_FLOOR_PCT,
+            "split/mean_merge_saving_us_per_dispatch": merge_mean,
+            "split/advisor_predicted_merge_saving_us": 20.9,
+            "split/merge_saving_fraction_of_prediction": merge_mean / 20.9,
+            "split/m_ge_6_share_of_width_mass": sum(
+                v for k, v in WIDTH_SHARE.items() if k >= 6),
+            "fidelity/split_bit_exact_violations": violations,
+            "fidelity/positive_control_detected_all": all(detected),
+        }
+    )
+    run.summary.update(summary)
+    run.finish()
+
+
+def log_rebased_census() -> None:
+    """Publish the post-E100 round anchor and the in-situ split at M >= 6."""
+    payload = json.loads((OUT / "census_rebased.json").read_text())
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        group=GROUP,
+        job_type="dispatch-census",
+        name="e103-rung2d-rebased-anchor",
+        config={
+            "rung": "2d",
+            "question": (
+                "on the post-E100 base, what is the round anchor and what "
+                "does the scored path really dispatch at verify width 6"
+            ),
+            "legs": sorted(payload),
+            "buffer_limit_ops": 0,
+            "buffer_limit_mb": 1,
+            "base_sha_rebased": REBASED_BASE_SHA,
+            "metallib_fingerprint_unmodified_rebased": REBASED_FINGERPRINT,
+            **identity(),
+            **gate_flags("E58 one-dispatch-per-buffer census, GPU", 320.0),
+        },
+        reinit=True,
+    )
+    table = wandb.Table(
+        columns=["leg", "width_phase_shape", "dispatches",
+                 "dispatches_per_round", "us_per_dispatch", "us_per_round",
+                 "min_us", "max_us"])
+    anchors = wandb.Table(columns=["leg", "width", "rounds",
+                                   "round_gpu_busy_us"])
+    summary: dict[str, object] = {}
+    for tag, leg in sorted(payload.items()):
+        for width, busy in sorted(leg["round_busy_us"].items()):
+            if width == "w0":
+                continue
+            anchors.add_data(tag, width, leg["rounds_by_width"][width], busy)
+            summary[f"anchor/{tag}/{width}_round_gpu_busy_us"] = busy
+        for key, v in sorted(leg["kernels"].items()):
+            if "sdpa" not in key or key.startswith("w0|"):
+                continue
+            table.add_data(tag, key, v["dispatches"],
+                           v["dispatches_per_round"], v["us_per_dispatch"],
+                           v["us_per_round"], v["min_us"], v["max_us"])
+            summary[f"census/{tag}/{key}/us_per_dispatch"] = v["us_per_dispatch"]
+            summary[f"census/{tag}/{key}/us_per_round"] = v["us_per_round"]
+    run.log({"census/sdpa_dispatches": table})
+    run.log({"census/round_anchor": anchors})
+    run.summary.update(summary)
+    run.finish()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", choices=["census", "registers", "isolated"])
+    ap.add_argument("--only", choices=["census", "registers", "isolated",
+                                       "split", "rebased"])
     args = ap.parse_args()
     if args.only in (None, "census"):
         log_census()
@@ -527,6 +767,10 @@ def main() -> None:
         log_registers()
     if args.only in (None, "isolated"):
         log_isolated()
+    if args.only in (None, "split"):
+        log_split()
+    if args.only == "rebased":
+        log_rebased_census()
 
 
 if __name__ == "__main__":
