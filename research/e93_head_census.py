@@ -60,6 +60,9 @@ DOWN_BYTES = AFFINE4(17408, 5120)
 CACHE_CAPACITY = 768        # bf16 [1, 4, capacity, 256]; grows by 256 steps
 CACHE_ARRAY_BYTES = 2 * 4 * CACHE_CAPACITY * 256
 
+VN_COPY_PREFIX = "vn_copybfloat16bfloat16 grid="
+VN_COPY_CANONICAL = "vn_copybfloat16bfloat16 grid=196608x1x1 tg=1024x1x1"
+
 MAP = {
     "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x640x1 tg=32x2x1":
         (1, "fc + o_proj + down_proj (3 dispatches, O=5120)",
@@ -128,6 +131,47 @@ MAP = {
          4 * 1024, 2 * BF16(1024)),
 }
 
+# Dispatches of each shape in ONE marginal draft step. `fit_counts` measures
+# these; the table repeats them so the GPU-time reduction can weight an
+# isolated per-dispatch cost without re-reading a count leg.
+COUNTS = {
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x640x1 tg=32x2x1": 3,
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x1536x1 tg=32x2x1": 1,
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x4352x1 tg=32x2x1": 1,
+    "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=64x1x1 tg=32x1x4": 1,
+    "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=128x1x1 tg=32x1x4": 1,
+    "custom_kernel_qwen35_attention_qk_rms_rope_bf16_v1_bfloat16_t_bfloat16_t_"
+    "bfloat16_t_bfloat16_t_floats_int32_ts_floats_bfloat16_t_bfloat16_t "
+    "grid=1792x1x1 tg=64x1x1": 1,
+    "gg2_copybfloat16bfloat16 grid=256x4x1 tg=256x4x1": 2,
+    "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=24x1x1 tg=1024x1x1": 1,
+    VN_COPY_CANONICAL: 2,
+    "custom_kernel_qwen35_embed_dual_rms_norm_concat_bf16_v1_int32_tc_uint32_t_"
+    "bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t "
+    "grid=2048x1x1 tg=1024x1x1": 1,
+    "custom_kernel_qwen35_fused_residual_rms_norm_bfloat16_t_bfloat16_t_"
+    "bfloat16_t_floats_bfloat16_t_bfloat16_t grid=1024x1x1 tg=1024x1x1": 1,
+    "rms_loopedbfloat16 grid=1024x1x1 tg=1024x1x1": 2,
+    "vv_Addbfloat16 grid=5120x1x1 tg=1024x1x1": 1,
+    "CV2ISigmoidADV2IMultiplyACEV2OMultiplyDB_VV_V2V2_"
+    "11160318154034397263_contiguous grid=17408x1x1 tg=1024x1x1": 1,
+    "CV2ISigmoidBDV2IBroadcastACEV2IBroadcastCAFV2OMultiplyDE_VV_V2V2_"
+    "11160318154034397263_strided_2 grid=256x24x1 tg=64x16x1": 1,
+    "g1_copybfloat16bfloat16 grid=17408x1x1 tg=1024x1x1": 1,
+    "affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0 grid=1x12292x1 tg=32x2x1": 1,
+    "custom_kernel_qwen_mtp_draft_top32_partial_bfloat16_t_uint32_t_uint32_t "
+    "grid=16384x1x1 tg=256x1x1": 1,
+    "custom_kernel_qwen_mtp_draft_top32_finalize_uint32_t_uint32_t_uint32_t "
+    "grid=256x1x1 tg=256x1x1": 1,
+    "affine_gather_qmv_bfloat16_t_gs_64_b_4 grid=1x1x32 tg=32x2x1": 1,
+    "custom_kernel_qwen_mtp_draft_rerank__98304_149740_bfloat16_t_uint32_t_int32_t "
+    "grid=32x1x1 tg=32x1x1": 1,
+    "scatter_axisbfloat16int32_none_intcc grid=1x1024x1 tg=1x1024x1": 1,
+}
+MARGINAL_DISPATCHES = 27
+assert set(COUNTS) == set(MAP)
+assert sum(COUNTS.values()) == MARGINAL_DISPATCHES
+
 # Weights owned by the TARGET, not by the declared head artifact. They are read
 # on the head path but must not be charged to the 427,738,112 byte head model.
 TARGET_OWNED_BYTES = AFFINE4(5120, 1) + AFFINE4(5120, 32)
@@ -137,10 +181,6 @@ HEAD_ARTIFACT_BYTES = 427_738_112
 def load(path):
     with open(path) as handle:
         return [json.loads(line) for line in handle if line.strip()]
-
-
-VN_COPY_PREFIX = "vn_copybfloat16bfloat16 grid="
-VN_COPY_CANONICAL = "vn_copybfloat16bfloat16 grid=196608x1x1 tg=1024x1x1"
 
 
 def canonical(shape):
@@ -303,38 +343,135 @@ def report_counts(paths):
           f"({100.0 * activation_total / head_only:.2f} % of head weight bytes)")
 
 
-def report_gputime(paths):
+def split_legs(snapshots):
+    """The wrapper runs a serial leg and an MTP leg in separate processes, and
+    each process restarts its snapshot index at 0."""
+    legs, current = [], []
+    for snapshot in snapshots:
+        if snapshot["snapshot"] == 0 and current:
+            legs.append(current)
+            current = []
+        current.append(snapshot)
+    if current:
+        legs.append(current)
+    return legs
+
+
+def accumulate(snapshots):
+    totals = {
+        "rounds": 0, "busy_ns": 0, "idle_ns": 0, "buffers": 0,
+        "mixed": 0, "zero": 0, "untracked": 0, "unmapped": 0,
+    }
+    phase_ns = defaultdict(int)
+    phase_dispatch = defaultdict(int)
+    exclusive = defaultdict(lambda: [0, 0, 0])
+    for snapshot in snapshots:
+        totals["rounds"] += snapshot.get("rounds", 0)
+        totals["busy_ns"] += snapshot.get("gpu_busy_ns", 0)
+        totals["idle_ns"] += snapshot.get("gpu_idle_ns", 0)
+        totals["buffers"] += snapshot.get("completed_buffers", 0)
+        totals["mixed"] += snapshot.get("mixed_phase_buffers", 0)
+        totals["zero"] += snapshot.get("zero_time_buffers", 0)
+        totals["untracked"] += snapshot.get("untracked_buffers", 0)
+        totals["unmapped"] += snapshot.get("unmapped_encoder_dispatches", 0)
+        for key, bucket in snapshot.get("by_width_phase", {}).items():
+            phase_ns[key] += bucket["gpu_ns"]
+            phase_dispatch[key] += bucket["dispatches"]
+        for key, bucket in snapshot.get("exclusive_kernels", {}).items():
+            exclusive[key][0] += bucket["buffers"]
+            exclusive[key][1] += bucket["gpu_ns"]
+            exclusive[key][2] = max(exclusive[key][2], bucket["max_ns"])
+    return totals, phase_ns, phase_dispatch, exclusive
+
+
+# E85's published in-situ head pass and the assignment's validation band.
+E85_HEAD_PASS_US = 2285.283
+E85_BAND_US = (2261.0, 2381.0)
+
+
+def report_gputime(paths, drafts=8, marginal=27, first_call=37):
     for path in paths:
         snapshots = [r for r in load(path) if r.get("event") == "gputime"]
-        print(f"=== {path}  snapshots={len(snapshots)}")
-        phase_ns = defaultdict(int)
-        phase_dispatch = defaultdict(int)
-        exclusive = defaultdict(lambda: [0, 0, 0])
-        rounds = 0
-        # Drop the first snapshot: it carries weight loading and warmup.
-        for snapshot in snapshots[1:]:
-            rounds += snapshot.get("rounds", 0)
-            for key, bucket in snapshot.get("by_width_phase", {}).items():
-                phase_ns[key] += bucket["gpu_ns"]
-                phase_dispatch[key] += bucket["dispatches"]
-            for key, bucket in snapshot.get("exclusive_kernels", {}).items():
-                exclusive[key][0] += bucket["buffers"]
-                exclusive[key][1] += bucket["gpu_ns"]
-                exclusive[key][2] = max(exclusive[key][2], bucket["max_ns"])
-        print(f"  rounds after dropping snapshot 0: {rounds}")
-        for key in sorted(phase_ns, key=lambda k: -phase_ns[k]):
-            print(f"  {key:<34} gpu_us={phase_ns[key] / 1e3:12.1f} "
-                  f"dispatches={phase_dispatch[key]:8d}")
-        head = [(k, v) for k, v in exclusive.items() if "|draft_head|" in k]
-        if head:
-            print("  exclusive draft_head kernels (isolated GPU us per dispatch):")
+        legs = split_legs(snapshots)
+        print(f"=== {path}  snapshots={len(snapshots)}  "
+              f"legs={[len(leg) for leg in legs]}")
+        for index, leg in enumerate(legs):
+            # Snapshot 0 carries weight loading, warmup and the seed prefill.
+            totals, phase_ns, phase_dispatch, exclusive = accumulate(leg[1:])
+            head_key = f"w{drafts + 1}|draft_head"
+            name = "MTP" if head_key in phase_ns else "serial"
+            print(f"\n--- leg {index} ({name})  steady snapshots="
+                  f"{len(leg) - 1}  round counter={totals['rounds']}")
+            print(f"    gpu_busy={totals['busy_ns'] / 1e6:9.2f} ms   "
+                  f"gpu_idle={totals['idle_ns'] / 1e6:9.2f} ms   "
+                  f"duty={100.0 * totals['busy_ns'] / max(totals['busy_ns'] + totals['idle_ns'], 1):5.1f} %")
+            print(f"    buffers={totals['buffers']}  "
+                  f"mixed_phase={totals['mixed']}  zero_time={totals['zero']}  "
+                  f"untracked={totals['untracked']}  "
+                  f"unmapped_dispatches={totals['unmapped']}")
+            if totals["mixed"] == 0:
+                print("    every buffer is single-phase: phase attribution is "
+                      "exact, no dispatch-count split was used")
+            total_ns = sum(phase_ns.values())
+            print(f"    {'width|phase':<24}{'gpu_ms':>10}{'share':>9}"
+                  f"{'dispatches':>12}{'us/dispatch':>13}")
+            for key in sorted(phase_ns, key=lambda k: -phase_ns[k]):
+                print(f"    {key:<24}{phase_ns[key] / 1e6:10.2f}"
+                      f"{100.0 * phase_ns[key] / max(total_ns, 1):8.1f} %"
+                      f"{phase_dispatch[key]:12d}"
+                      f"{phase_ns[key] / 1e3 / max(phase_dispatch[key], 1):13.3f}")
+            print(f"    {'TOTAL':<24}{total_ns / 1e6:10.2f}")
+
+            if head_key in phase_ns:
+                per_round = first_call + marginal * (drafts - 1)
+                head_rounds = phase_dispatch[head_key] / per_round
+                pass_us = phase_ns[head_key] / 1e3 / head_rounds / drafts
+                print(f"\n    head rounds (dispatches / {per_round}) = "
+                      f"{head_rounds:.2f}")
+                print(f"    IN-SITU head pass = {pass_us:.1f} us per draft")
+                low, high = E85_BAND_US
+                verdict = "INSIDE" if low <= pass_us <= high else "OUTSIDE"
+                print(f"    E85 published {E85_HEAD_PASS_US:.3f} us, band "
+                      f"{low:.0f}-{high:.0f} us: {verdict} "
+                      f"({100.0 * (pass_us - E85_HEAD_PASS_US) / E85_HEAD_PASS_US:+.2f} %, "
+                      f"closure {100.0 - abs(100.0 * (pass_us - E85_HEAD_PASS_US) / E85_HEAD_PASS_US):.1f} %)")
+
+            head = [(k, v) for k, v in exclusive.items() if "|draft_head|" in k]
+            if not head:
+                continue
+            print("\n    ISOLATED draft_head kernels "
+                  "(one dispatch per command buffer):")
+            by_class = defaultdict(lambda: [0, 0.0])
+            print(f"    {'cls':>4}{'n':>7}{'mean_us':>10}{'max_us':>9}"
+                  f"{'x/draft':>9}{'us/draft':>10}  tensor / shape")
             for key, (buffers, gpu_ns, max_ns) in sorted(
-                    head, key=lambda kv: -kv[1][1]):
+                    head, key=lambda kv: -kv[1][1] / max(kv[1][0], 1)):
                 shape = key.split("|", 2)[2]
-                cls = MAP.get(shape, ("?", "", 0, 0))[0]
-                print(f"    class {cls}  n={buffers:6d} "
-                      f"mean_us={gpu_ns / max(buffers, 1) / 1e3:8.2f} "
-                      f"max_us={max_ns / 1e3:8.2f}  {shape[:80]}")
+                entry = MAP.get(canonical(shape))
+                mean_us = gpu_ns / max(buffers, 1) / 1e3
+                if entry is None:
+                    print(f"    {'?':>4}{buffers:7d}{mean_us:10.3f}"
+                          f"{max_ns / 1e3:9.3f}{'':>9}{'':>10}  "
+                          f"UNMAPPED  {shape[:70]}")
+                    continue
+                cls, tensor, _, _ = entry
+                per_draft = COUNTS.get(canonical(shape), 0)
+                cost = mean_us * per_draft
+                by_class[cls][0] += per_draft
+                by_class[cls][1] += cost
+                print(f"    {cls:>4}{buffers:7d}{mean_us:10.3f}"
+                      f"{max_ns / 1e3:9.3f}{per_draft:9d}{cost:10.2f}  "
+                      f"{tensor}")
+            isolated = sum(value[1] for value in by_class.values())
+            print(f"\n    {'class':>6}{'dispatches':>12}{'us/draft':>11}"
+                  f"{'share':>9}  name")
+            for cls in sorted(by_class):
+                count, cost = by_class[cls]
+                print(f"    {cls:>6}{count:12d}{cost:11.2f}"
+                      f"{100.0 * cost / max(isolated, 1e-9):8.1f} %  "
+                      f"{CLASS_NAMES.get(cls, '')}")
+            print(f"    {'TOTAL':>6}{sum(v[0] for v in by_class.values()):12d}"
+                  f"{isolated:11.2f}")
 
 
 def main():
