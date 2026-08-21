@@ -4,6 +4,7 @@
     usage:
       research/e93_head_census.py counts LEG [LEG ...]
       research/e93_head_census.py gputime LEG [LEG ...]
+      research/e93_head_census.py nnls LEG [LEG ...]
 
 `counts` fits every `draft_head` dispatch count to
 
@@ -28,6 +29,8 @@ from __future__ import annotations
 import json
 import sys
 from collections import defaultdict
+
+import numpy as np
 
 # --- the per-draft class map -------------------------------------------------
 #
@@ -171,6 +174,11 @@ COUNTS = {
 MARGINAL_DISPATCHES = 27
 assert set(COUNTS) == set(MAP)
 assert sum(COUNTS.values()) == MARGINAL_DISPATCHES
+
+# Measured on the in-situ leg: the default buffer geometry runs one marginal
+# draft step as a 25-dispatch body buffer plus a standalone embed buffer and a
+# standalone rerank buffer, both forced by a host synchronisation.
+BUFFERS_PER_MARGINAL_DRAFT = 3
 
 # Weights owned by the TARGET, not by the declared head artifact. They are read
 # on the head path but must not be charged to the 427,738,112 byte head model.
@@ -474,6 +482,193 @@ def report_gputime(paths, drafts=8, marginal=27, first_call=37):
                   f"{isolated:11.2f}")
 
 
+def nnls(matrix, target, iterations=500):
+    """Lawson-Hanson non-negative least squares. No scipy on this host."""
+    columns = matrix.shape[1]
+    passive = np.zeros(columns, dtype=bool)
+    solution = np.zeros(columns)
+    residual = target - matrix @ solution
+    for _ in range(iterations):
+        gradient = matrix.T @ residual
+        gradient[passive] = -np.inf
+        best = int(np.argmax(gradient))
+        if gradient[best] <= 1e-9:
+            break
+        passive[best] = True
+        for _ in range(iterations):
+            trial = np.zeros(columns)
+            active = np.where(passive)[0]
+            trial[active] = np.linalg.lstsq(
+                matrix[:, active], target, rcond=None)[0]
+            if trial[active].min() > 0:
+                solution = trial
+                break
+            blocked = active[trial[active] <= 0]
+            step = (solution[blocked]
+                    / (solution[blocked] - trial[blocked] + 1e-300)).min()
+            solution = solution + step * (trial - solution)
+            passive[np.where(passive)[0][solution[passive] <= 1e-12]] = False
+        residual = target - matrix @ solution
+    return solution
+
+
+def collect_signatures(snapshots, phase="draft_head", width=9):
+    """Sum every single-phase buffer bucket for one phase and verify width."""
+    buckets = defaultdict(lambda: [0, 0])
+    prefix = f"w{width}|{phase}|"
+    for snapshot in snapshots:
+        for key, bucket in snapshot.get("signatures", {}).items():
+            if not key.startswith(prefix):
+                continue
+            body = key[len(prefix):]
+            buckets[body][0] += bucket["buffers"]
+            buckets[body][1] += bucket["gpu_ns"]
+    return buckets
+
+
+def parse_signature(body):
+    counts = defaultdict(int)
+    for part in body.split(","):
+        shape, _, multiplicity = part.rpartition("*")
+        counts[canonical(shape)] += int(multiplicity)
+    return counts
+
+
+def report_nnls(paths, min_buffers=4, width=9):
+    """Price each kernel inside the head pass from the per-buffer signatures.
+
+    One command buffer reports one GPU interval, so a kernel can only be
+    priced when the buffer boundaries move across it. `MLX_E58_BUFFER_LIMIT_OPS`
+    supplies that variation, and every buffer then becomes one equation
+
+        gpu_ns(buffer) = overhead + sum over shapes of count * cost(shape)
+
+    solved under a non-negativity constraint.
+    """
+    for path in paths:
+        snapshots = [r for r in load(path) if r.get("event") == "gputime"]
+        legs = split_legs(snapshots)
+        leg = max(legs, key=lambda candidate: sum(
+            1 for snapshot in candidate
+            if f"w{width}|draft_head" in snapshot.get("by_width_phase", {})))
+        buckets = collect_signatures(leg[1:], width=width)
+        kept = {body: value for body, value in buckets.items()
+                if value[0] >= min_buffers}
+        dropped = len(buckets) - len(kept)
+        print(f"=== {path}")
+        print(f"    steady snapshots={len(leg) - 1}  signatures={len(buckets)}"
+              f"  kept(n>={min_buffers})={len(kept)}  dropped={dropped}")
+        if not kept:
+            print("    no signature reached the buffer threshold")
+            continue
+        shapes = sorted({shape for body in kept for shape in parse_signature(body)})
+        index = {shape: position for position, shape in enumerate(shapes)}
+        rows, target, weights = [], [], []
+        for body, (buffers, gpu_ns) in kept.items():
+            row = np.zeros(len(shapes) + 1)
+            row[-1] = 1.0                      # per-buffer overhead
+            for shape, count in parse_signature(body).items():
+                row[index[shape]] = count
+            weight = np.sqrt(buffers)
+            rows.append(row * weight)
+            target.append(gpu_ns / buffers * weight)
+            weights.append(buffers)
+        matrix = np.array(rows)
+        vector = np.array(target)
+        rank = np.linalg.matrix_rank(matrix)
+        solution = nnls(matrix, vector)
+        predicted = matrix @ solution
+        residual = float(np.linalg.norm(vector - predicted))
+        denominator = float(np.linalg.norm(vector - vector.mean()))
+        print(f"    equations={matrix.shape[0]}  unknowns={matrix.shape[1]}"
+              f"  rank={rank}"
+              f"{'  RANK DEFICIENT' if rank < matrix.shape[1] else ''}")
+        print(f"    weighted residual={residual / max(np.linalg.norm(vector), 1e-9):.4f}"
+              f"  R2={1.0 - (residual / max(denominator, 1e-9)) ** 2:.4f}")
+        overhead = solution[-1]
+
+        # A coefficient is identifiable only when no null-space direction of the
+        # design matrix moves it. Without this test a rank-deficient fit reports
+        # an arbitrary split of two kernels that always share a buffer.
+        _, singular, right = np.linalg.svd(matrix)
+        tolerance = max(matrix.shape) * singular.max() * np.finfo(float).eps
+        null_space = right[len(singular):] if len(singular) < right.shape[0] \
+            else np.zeros((0, matrix.shape[1]))
+        small = right[np.where(singular <= tolerance)[0]] if len(
+            np.where(singular <= tolerance)[0]) else np.zeros(
+                (0, matrix.shape[1]))
+        null_space = np.vstack([null_space, small])
+        if null_space.shape[0]:
+            leverage = np.linalg.norm(null_space, axis=0)
+        else:
+            leverage = np.zeros(matrix.shape[1])
+        identifiable = leverage <= 1e-8
+        print(f"    identifiable coefficients: "
+              f"{int(identifiable.sum())} of {matrix.shape[1]}")
+        print(f"    fitted per-command-buffer overhead = {overhead / 1e3:.3f} us"
+              f"{'' if identifiable[-1] else '   NOT IDENTIFIED'}")
+
+        appearances = defaultdict(int)
+        for body in kept:
+            for shape in parse_signature(body):
+                appearances[shape] += 1
+
+        by_class = defaultdict(lambda: [0, 0.0, 0, 0])
+        print(f"\n    {'cls':>4}{'x/draft':>8}{'sigs':>6}{'us/kernel':>11}"
+              f"{'us/draft':>10}{'MB/draft':>10}{'GB/s':>9}  tensor")
+        unmapped, unidentified = [], []
+        for shape in sorted(shapes, key=lambda s: -solution[index[s]]
+                            * COUNTS.get(s, 1)):
+            position = index[shape]
+            cost = solution[position] / 1e3
+            entry = MAP.get(shape)
+            if entry is None:
+                unmapped.append((shape, cost, appearances[shape],
+                                 identifiable[position]))
+                continue
+            cls, tensor, weight_bytes, activation_bytes = entry
+            count = COUNTS[shape]
+            total_us = cost * count
+            # MAP byte fields already cover every dispatch of the shape in one
+            # marginal step, so divide by the count to get one kernel's traffic.
+            bytes_each = (weight_bytes + activation_bytes) / count
+            by_class[cls][0] += count
+            by_class[cls][1] += total_us
+            by_class[cls][2] += weight_bytes
+            by_class[cls][3] += activation_bytes
+            if not identifiable[position]:
+                unidentified.append(tensor)
+            rate = (f"{bytes_each / cost / 1e3:9.1f}" if cost > 1e-3
+                    else f"{'-':>9}")
+            flag = "" if identifiable[position] else "   [NOT IDENTIFIED]"
+            print(f"    {cls:>4}{count:8d}{appearances[shape]:6d}{cost:11.2f}"
+                  f"{total_us:10.2f}{bytes_each * count / 1e6:10.2f}"
+                  f"{rate}  {tensor}{flag}")
+        modelled = sum(value[1] for value in by_class.values())
+        overhead_total = overhead / 1e3 * BUFFERS_PER_MARGINAL_DRAFT
+        print(f"\n    {'class':>6}{'disp':>6}{'us/draft':>10}{'share':>8}"
+              f"{'MB/draft':>10}{'GB/s':>9}  name")
+        for cls in sorted(by_class):
+            count, total_us, weight_bytes, activation_bytes = by_class[cls]
+            traffic = weight_bytes + activation_bytes
+            rate = (f"{traffic / total_us / 1e3:9.1f}" if total_us > 1e-3
+                    else f"{'-':>9}")
+            print(f"    {cls:>6}{count:6d}{total_us:10.2f}"
+                  f"{100.0 * total_us / max(modelled, 1e-9):7.1f} %"
+                  f"{traffic / 1e6:10.2f}{rate}  {CLASS_NAMES.get(cls, '')}")
+        print(f"    {'kernels':>6}{sum(v[0] for v in by_class.values()):6d}"
+              f"{modelled:10.2f}")
+        print(f"    {'buffer':>6}{BUFFERS_PER_MARGINAL_DRAFT:6d}"
+              f"{overhead_total:10.2f}    per-command-buffer overhead")
+        print(f"    {'TOTAL':>6}{'':6}{modelled + overhead_total:10.2f}")
+        if unidentified:
+            print(f"    NOT IDENTIFIED: {len(unidentified)} mapped kernels; "
+                  "their split is arbitrary and only their group sum is real")
+        for shape, cost, seen, ok in unmapped:
+            print(f"    UNMAPPED us={cost:8.2f} sigs={seen:3d} "
+                  f"{'id' if ok else '  '}  {shape[:88]}")
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -483,6 +678,8 @@ def main():
         report_counts(paths)
     elif mode == "gputime":
         report_gputime(paths)
+    elif mode == "nnls":
+        report_nnls(paths)
     else:
         print(__doc__)
         return 2
