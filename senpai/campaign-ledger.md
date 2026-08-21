@@ -18690,6 +18690,20 @@ One variable: our cross-row QMV dispatch table reverted to the promoted frontier
 table. Exactly 8 lines in 2 files. `NA<=6` to `NA<=4`; `<T,5,5>` to `<T,5,3>`;
 `<T,6,6>` to `<T,6,3>`; `<T,9,5>` to `<T,9,3>`.
 
+> 🔴 **CORRECTION, ledger 258. "One variable" is wrong: this arm changes FOUR
+> instantiations at once, and the per-prompt table below cannot attribute the
+> −0.383 % to any one of them.** Two later experiments split the effect and give
+> it opposite signs at different widths. E100 measured the M=5 cell alone,
+> `<T,5,3,true>` against `<T,5,5,true>`, at **−0.775 % in favour of `<T,5,5>`**,
+> the direction OPPOSITE to this arm. E104 measured the M=6, M=7 and M=8 cells
+> and priced collapse there at **−16.5 %, −31.2 % and −50.9 % ranked**, the
+> direction this arm reverted, and FACT 2b records the crown's NA≤6 table as a
+> ranked negative at mean7 +2.164 % over 0 of 7. **Read the −0.383 % below as the
+> M=6 and M=9 reversions winning by more than the M=5 reversion lost.** The
+> wide-five average of −0.548 % is consistent with that reading, because those
+> five prompts are exactly the ones that reach M ≥ 6. The narrow-three average of
+> −0.107 % remains the run-level offset control and is unaffected.
+
 Per-prompt candidate MTP seconds per token, arm 2 against our own `ca9251b8`:
 
 | prompt | M | mtp `ca9251b8` | mtp arm 2 | delta |
@@ -26411,6 +26425,19 @@ Do not try to widen `NA` at M5 to collapse the group. Ranked stop list: an NA=5
 accumulator arm scored 3.2325, M8 IPG 4 to 3 scored 3.2054, and M6 IPG 3 to 2
 measured 21 % slower locally.
 
+> 🔴 **CORRECTION, ledger 258.** The first sentence above is now FALSE and is
+> withdrawn. E100 did exactly that: it widened the M=5 instantiation from
+> `<T,5,3,true>` to `<T,5,5,true>`, measured **−0.775 %** on 512-token depth-8
+> local MTP seconds per token, and the change is shipped in the current tree at
+> `quantized.h:1918-1979`. The corrected stop-list scope is:
+> **do not widen `NA` beyond 5, and do not collapse M=6, M=7 or M=8** (E104
+> prices those at −16.5 %, −31.2 % and −50.9 % ranked). The M=5 collapse itself
+> is a merged win. The three ranked kill scores quoted in the sentence above all
+> belong to arms that widened at M=6 or beyond, not to the M=5 collapse.
+> Consequence recorded as FINDING 45: the collapse moved the QMV group boundary
+> from verify width 5 to verify width 6, and no part of the depth schedule was
+> refit for the new boundary.
+
 ### 238.3 The shipped `pbfit` shape has the cliff in the wrong cell
 
 `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:946-955` carries
@@ -30919,6 +30946,20 @@ scope and 1.8x at entry-point scope. It preserves arm order - A 163 < C 182 <
 B 183 < D 201 matches g17s 91 < 98 = 98 < 111 - so it is a valid **relative
 screen and never a level**. The campaign has been quoting 163 and 125 as though
 they were registers.
+
+> 🔴 **SITE INDEX, ledger 258.** Every earlier `peak_live_regs` figure in this
+> file is an SSA-liveness screen, never a machine register count, and must be
+> read through 27b. The affected sites are lines **3269, 5035, 5250, 8332,
+> 10896, 11259, 18595, 29691 and 30354**. Line 18837 already withdraws E38's
+> `peak_live_regs = 144`. The `20 + 21*max(NA) + 4*[two distinct NA group
+> sizes]` law at lines 10896 and 11259 remains a valid ORDERING law in AIR and
+> is not a register budget: the real budgets are **96 on g16s and 124 on g17s**
+> (FINDING 34), read from the compiled pipeline, and only those two numbers may
+> be used to reason about occupancy through `S_ranked(R) = floor(496 KiB /
+> (128 R))`. E110 session A adds the harder lesson: even a true machine register
+> count is a screen and never a ranking, because an arm that changes the unroll
+> decision can cut registers and machine text while running 2.8x slower
+> (ADVISOR ERROR 66, RULE 36b).
 
 **27c. The runtime `MTLComputePipelineState` arbiter is saturated.** Every arm
 and every body cell reports `maxTotalThreadsPerThreadgroup = 1024`,
