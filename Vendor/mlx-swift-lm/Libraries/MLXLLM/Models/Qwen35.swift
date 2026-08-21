@@ -2225,6 +2225,18 @@ final class Qwen35Attention: Module {
     private var _qOnlyW: MLXArray?
     private var _qOnlyS: MLXArray?
     private var _qOnlyZ: MLXArray?
+    // The q pack computes every output row and the exact island then overwrites
+    // its own rows before any consumer reads them, so those rows are dead work.
+    // Dropping them from the pack is bit-exact: affine-4 group-64 groups run
+    // along K, so selecting output rows leaves every surviving row's nibbles,
+    // scale and bias untouched. `_qRestoreOrder` inverts `live ++ island`, so
+    // the two halves come back in output order. Nil keeps the full pack and the
+    // scatter, which is the only correct form when the island rows are not a
+    // distinct proper subset of the output range.
+    private var _qLiveW: MLXArray?
+    private var _qLiveS: MLXArray?
+    private var _qLiveZ: MLXArray?
+    private var _qRestoreOrder: MLXArray?
 
     init(_ args: Qwen35TextConfiguration) {
         let headDim = args.headDim ?? (args.hiddenSize / args.attentionHeads)
@@ -2285,13 +2297,25 @@ final class Qwen35Attention: Module {
         // consumer saw it, and 2048 of the 3072 scattered rows were a plain
         // permutation of the output range.
         if let kvExact = _exactKVDenseW, islandFastPathReady() {
+            let kEnd = _exactKVDenseKOut
+            if let w = _qLiveW, let s = _qLiveS, let z = _qLiveZ,
+               let restore = _qRestoreOrder, let exactWeight = _exactQKVWeight
+            {
+                let live = quantizedMM(
+                    x, w, scales: s, biases: z, transpose: true,
+                    groupSize: _qkvGS, bits: _qkvBits, mode: _qkvMode)
+                let exact = matmul(x, exactWeight.transposed(1, 0))
+                let q = take(
+                    concatenated([live, exact], axis: -1), restore, axis: -1)
+                let kvRows = matmul(x, kvExact.transposed(1, 0))
+                return (q, kvRows[.ellipsis, ..<kEnd], kvRows[.ellipsis, kEnd...])
+            }
             if let w = _qOnlyW, let s = _qOnlyS, let z = _qOnlyZ {
                 var q = quantizedMM(
                     x, w, scales: s, biases: z, transpose: true,
                     groupSize: _qkvGS, bits: _qkvBits, mode: _qkvMode)
                 q = replaceExactRows(q, input: x, kvOnly: false)
                 let kvRows = matmul(x, kvExact.transposed(1, 0))
-                let kEnd = _exactKVDenseKOut
                 return (q, kvRows[.ellipsis, ..<kEnd], kvRows[.ellipsis, kEnd...])
             }
             if let q = qProj as? QuantizedLinear, let qz = q.biases {
@@ -2302,6 +2326,7 @@ final class Qwen35Attention: Module {
                 _qkvBits = q.bits
                 _qkvMode = q.mode
                 _qOut = q.shape.0
+                installQLiveRows(q, biases: qz)
                 return qkv(x)
             }
         }
@@ -2419,6 +2444,34 @@ final class Qwen35Attention: Module {
         let indexShape = Array(repeating: 1, count: max(0, base.ndim - 1)) + [-1]
         return putAlong(
             base, indices.reshaped(indexShape), values: exact, axis: -1)
+    }
+
+    /// Narrow the affine-4 q pack to the rows the exact island does not
+    /// overwrite. Leaves the full pack in place when the island rows are not a
+    /// distinct proper subset of the output range, because the generic scatter
+    /// is then the only correct form. Runs once, on first use.
+    private func installQLiveRows(_ quantized: QuantizedLinear, biases: MLXArray) {
+        guard let indices = _exactQKVIndices else { return }
+        let count = quantized.shape.0
+        let island = indices.asType(.int32).asArray(Int32.self)
+        var overwritten = [Bool](repeating: false, count: count)
+        for value in island {
+            let row = Int(value)
+            guard row >= 0, row < count, !overwritten[row] else { return }
+            overwritten[row] = true
+        }
+        let live = (0 ..< count).filter { !overwritten[$0] }.map(Int32.init)
+        guard !live.isEmpty, live.count < count else { return }
+        let rows = MLXArray(live)
+        let liveW = take(quantized.weight, rows, axis: 0).contiguous()
+        let liveS = take(quantized.scales, rows, axis: 0).contiguous()
+        let liveZ = take(biases, rows, axis: 0).contiguous()
+        let restore = argSort(MLXArray(live + island))
+        eval(liveW, liveS, liveZ, restore)
+        _qLiveW = liveW
+        _qLiveS = liveS
+        _qLiveZ = liveZ
+        _qRestoreOrder = restore
     }
 
     /// Is `indices` a complete permutation of `0 ..< count`? A true answer

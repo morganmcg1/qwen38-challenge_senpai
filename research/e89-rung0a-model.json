@@ -1,0 +1,259 @@
+{
+ "experiment": "e89-drafting-round-host-state",
+ "rung": "0a-model",
+ "harness": "local",
+ "gpu_used": false,
+ "pairs": [
+  {
+   "stuck": "e86r2-default-4",
+   "clean": [
+    "e86r2-default-1",
+    "e86r2-default-2",
+    "e86r2-default-3"
+   ],
+   "n_rounds": 72,
+   "identical_round_sequence": true,
+   "host": {
+    "d_pre_us": {
+     "clean_med_us": 26.0,
+     "stuck_med_us": 75.0,
+     "ratio": 2.8846153846153846,
+     "add_us": 49.0,
+     "resid_mult": 21.024438633884344,
+     "resid_add": 20.674015830398204,
+     "better": "add"
+    },
+    "d_flush_us": {
+     "clean_med_us": 3.0,
+     "stuck_med_us": 22.0,
+     "ratio": 7.333333333333333,
+     "add_us": 19.0,
+     "resid_mult": 6.930702452734513,
+     "resid_add": 6.211299937499416,
+     "better": "add"
+    },
+    "d_head1_us": {
+     "clean_med_us": 63.0,
+     "stuck_med_us": 296.0,
+     "ratio": 4.698412698412699,
+     "add_us": 233.0,
+     "resid_mult": 84.13282873055633,
+     "resid_add": 80.3210571532909,
+     "better": "add"
+    },
+    "d_submit1_us": {
+     "clean_med_us": 141.0,
+     "stuck_med_us": 1041.0,
+     "ratio": 7.382978723404255,
+     "add_us": 900.0,
+     "resid_mult": 258.40163859506845,
+     "resid_add": 229.49130372991112,
+     "better": "add"
+    },
+    "d_chain_us": {
+     "clean_med_us": 261.0,
+     "stuck_med_us": 846.5,
+     "ratio": 3.243295019157088,
+     "add_us": 585.5,
+     "resid_mult": 119.45317537763766,
+     "resid_add": 168.78311689218063,
+     "better": "mult"
+    },
+    "readout_us": {
+     "clean_med_us": 7.0,
+     "stuck_med_us": 42.0,
+     "ratio": 6.0,
+     "add_us": 35.0,
+     "resid_mult": 14.366778378873056,
+     "resid_add": 9.780776055452531,
+     "better": "add"
+    },
+    "commit_us": {
+     "clean_med_us": 86.0,
+     "stuck_med_us": 478.5,
+     "ratio": 5.563953488372093,
+     "add_us": 392.5,
+     "resid_mult": 645.4760464842716,
+     "resid_add": 465.9173738211477,
+     "better": "add"
+    },
+    "upkeep_us": {
+     "clean_med_us": 43.0,
+     "stuck_med_us": 305.5,
+     "ratio": 7.104651162790698,
+     "add_us": 262.5,
+     "resid_mult": 111.81791934821314,
+     "resid_add": 88.3824112438892,
+     "better": "add"
+    },
+    "HOSTSUM": {
+     "clean_med_us": 634.5,
+     "stuck_med_us": 3103.5,
+     "ratio": 4.891252955082742,
+     "add_us": 2469.0,
+     "resid_mult": 476.5510246140546,
+     "resid_add": 698.5577663530045,
+     "better": "mult"
+    }
+   },
+   "pipe": {
+    "draft_build_us": {
+     "clean_med_us": 5278.5,
+     "stuck_med_us": 6618.0,
+     "ratio": 1.2537652742256322
+    },
+    "d_submit2_us": {
+     "clean_med_us": 4780.5,
+     "stuck_med_us": 4365.0,
+     "ratio": 0.913084405396925
+    },
+    "verify_build_us": {
+     "clean_med_us": 83188.0,
+     "stuck_med_us": 83471.5,
+     "ratio": 1.0034079434533827
+    },
+    "eval_wall_us": {
+     "clean_med_us": 77139.5,
+     "stuck_med_us": 75823.0,
+     "ratio": 0.9829335165511832
+    },
+    "round_us": {
+     "clean_med_us": 165803.5,
+     "stuck_med_us": 167089.5,
+     "ratio": 1.0077561692002883
+    }
+   },
+   "hostsum_pearson_r": 0.9176777815339531,
+   "hostsum_ols_slope": 3.5582495359779145,
+   "hostsum_ols_intercept_us": 842.4484511877417
+  },
+  {
+   "stuck": "e86r1-default-2",
+   "clean": [
+    "e86r1-default-1"
+   ],
+   "n_rounds": 39,
+   "identical_round_sequence": true,
+   "host": {
+    "d_pre_us": {
+     "clean_med_us": 26.0,
+     "stuck_med_us": 75.0,
+     "ratio": 2.8846153846153846,
+     "add_us": 49.0,
+     "resid_mult": 14.31669613572589,
+     "resid_add": 10.81692734374061,
+     "better": "add"
+    },
+    "d_flush_us": {
+     "clean_med_us": 3.0,
+     "stuck_med_us": 22.0,
+     "ratio": 7.333333333333333,
+     "add_us": 19.0,
+     "resid_mult": 9.092370199825952,
+     "resid_add": 7.426519285078995,
+     "better": "add"
+    },
+    "d_head1_us": {
+     "clean_med_us": 62.0,
+     "stuck_med_us": 303.0,
+     "ratio": 4.887096774193548,
+     "add_us": 241.0,
+     "resid_mult": 84.77344625765355,
+     "resid_add": 77.28223844259576,
+     "better": "add"
+    },
+    "d_submit1_us": {
+     "clean_med_us": 140.0,
+     "stuck_med_us": 1061.0,
+     "ratio": 7.578571428571428,
+     "add_us": 921.0,
+     "resid_mult": 173.4536411169849,
+     "resid_add": 151.1787783095791,
+     "better": "add"
+    },
+    "d_chain_us": {
+     "clean_med_us": 257.0,
+     "stuck_med_us": 847.0,
+     "ratio": 3.2957198443579765,
+     "add_us": 590.0,
+     "resid_mult": 93.70588997149595,
+     "resid_add": 188.5790842217587,
+     "better": "mult"
+    },
+    "readout_us": {
+     "clean_med_us": 7.0,
+     "stuck_med_us": 41.0,
+     "ratio": 5.857142857142857,
+     "add_us": 34.0,
+     "resid_mult": 18.83648409716642,
+     "resid_add": 5.358667639363821,
+     "better": "add"
+    },
+    "commit_us": {
+     "clean_med_us": 83.0,
+     "stuck_med_us": 496.0,
+     "ratio": 5.975903614457831,
+     "add_us": 413.0,
+     "resid_mult": 854.337528517824,
+     "resid_add": 499.5838504882229,
+     "better": "add"
+    },
+    "upkeep_us": {
+     "clean_med_us": 39.0,
+     "stuck_med_us": 308.0,
+     "ratio": 7.897435897435898,
+     "add_us": 269.0,
+     "resid_mult": 125.15619452168053,
+     "resid_add": 111.54566437102655,
+     "better": "add"
+    },
+    "HOSTSUM": {
+     "clean_med_us": 622.0,
+     "stuck_med_us": 3220.0,
+     "ratio": 5.176848874598071,
+     "add_us": 2598.0,
+     "resid_mult": 671.5156384584353,
+     "resid_add": 674.5638472064171,
+     "better": "mult"
+    }
+   },
+   "pipe": {
+    "draft_build_us": {
+     "clean_med_us": 16557.0,
+     "stuck_med_us": 17630.0,
+     "ratio": 1.064806426284955
+    },
+    "d_submit2_us": {
+     "clean_med_us": 16059.0,
+     "stuck_med_us": 15322.0,
+     "ratio": 0.9541067314278597
+    },
+    "verify_build_us": {
+     "clean_med_us": 72347.0,
+     "stuck_med_us": 73438.0,
+     "ratio": 1.015080100073258
+    },
+    "eval_wall_us": {
+     "clean_med_us": 77278.0,
+     "stuck_med_us": 75883.0,
+     "ratio": 0.9819482905872305
+    },
+    "round_us": {
+     "clean_med_us": 166515.0,
+     "stuck_med_us": 168065.0,
+     "ratio": 1.0093084707083446
+    }
+   },
+   "hostsum_pearson_r": 0.9403578892834351,
+   "hostsum_ols_slope": 3.094512603978635,
+   "hostsum_ols_intercept_us": 1243.082314330432
+  }
+ ],
+ "mid_leg_transition": {
+  "leg": "e86r1-default-1",
+  "transition_round": 34,
+  "before_med_us": 3042.0,
+  "after_med_us": 625.0,
+  "step_ratio": 4.8672
+ }
+}
