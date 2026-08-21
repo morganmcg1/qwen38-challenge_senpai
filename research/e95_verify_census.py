@@ -283,23 +283,27 @@ def report_buffers(paths, phase="target_verify", width=9, min_buffers=4):
                 continue
             shapes = parse_signature(body)
             weight = activation = 0.0
-            names = []
+            named, unnamed = [], 0
             for shape, multiplicity in shapes.items():
                 entry = qmv_bytes(shape, width)
                 if entry:
                     name, out, grid_m, passes, wbytes, abytes = entry
                     weight += multiplicity * wbytes
                     activation += multiplicity * abytes
-                    names.append(f"{name} [O={out}, G={passes}]x{multiplicity}")
+                    named.append((multiplicity * wbytes,
+                                  f"{name}[O={out},G={passes}]x{multiplicity}"))
                     continue
                 entry = other_bytes(shape, width)
                 if entry:
                     name, wbytes, abytes, _per_round = entry
                     weight += multiplicity * wbytes
                     activation += multiplicity * abytes
-                    names.append(f"{name}x{multiplicity}")
+                    named.append((multiplicity * wbytes, f"{name}x{multiplicity}"))
                     continue
-                names.append(f"UNMAPPED[{shape[:44]}]x{multiplicity}")
+                unnamed += multiplicity
+            names = [text for _bytes, text in sorted(named, reverse=True)]
+            if unnamed:
+                names.append(f"+{unnamed} unmapped elementwise")
             us = gpu_ns / 1e3 / rounds
             per_round = count / rounds
             total_us += us
@@ -368,6 +372,98 @@ def report_kernels(paths, phase="target_verify", width=9, min_buffers=4):
         print(f"    TOTAL {sum(r[0] for r in rows):.2f} us/round isolated")
 
 
+def isolated_costs(path, phase, width, min_buffers=4):
+    """{shape: (us per dispatch, n)} from a MLX_E58_BUFFER_LIMIT_OPS=1 leg."""
+    costs = {}
+    for _path, steady in pick_leg([path], phase, width):
+        prefix = f"w{width}|{phase}|"
+        buckets = defaultdict(lambda: [0, 0])
+        for snapshot in steady:
+            for key, bucket in snapshot.get("exclusive_kernels", {}).items():
+                if key.startswith(prefix):
+                    shape = key[len(prefix):]
+                    buckets[shape][0] += bucket["buffers"]
+                    buckets[shape][1] += bucket["gpu_ns"]
+        for shape, (count, gpu_ns) in buckets.items():
+            if count >= min_buffers:
+                costs[shape] = (gpu_ns / 1e3 / count, count)
+    return costs
+
+
+def modal_counts(path, phase, width):
+    """{shape: modal dispatches per round} over the steady rounds at one width."""
+    per_shape = defaultdict(list)
+    rounds = 0
+    for record in load(path):
+        if record.get("event") != "round" or record.get("width") != width:
+            continue
+        bucket = record.get("phases", {}).get(phase)
+        if bucket is None:
+            continue
+        rounds += 1
+        for shape, count in bucket.get("shapes", {}).items():
+            per_shape[shape].append(count)
+    modal = {}
+    for shape, values in per_shape.items():
+        if len(values) < 0.5 * rounds:
+            continue                       # growth-round or rollback-only shape
+        modal[shape] = max(set(values), key=values.count)
+    return modal, rounds
+
+
+def report_closure(insitu, iso, phase="target_verify", width=9):
+    """Exact per-round counts x isolated per-dispatch cost, per dispatch class.
+
+    Counts come from the in-situ leg and are exact integers. Costs come from the
+    one-op-per-command-buffer leg and OVER-state each kernel, because isolation
+    removes intra-buffer concurrency. The ratio of the modelled total to the
+    measured in-situ phase total is the concurrency discount, and it is reported
+    rather than hidden.
+    """
+    counts, rounds = modal_counts(insitu, phase, width)
+    costs = isolated_costs(iso, phase, width)
+    measured = 0.0
+    for _path, steady in pick_leg([insitu], phase, width):
+        key = f"w{width}|{phase}"
+        span = phase_rounds(steady, phase, width)
+        measured = sum(s["by_width_phase"][key]["gpu_ns"] for s in steady
+                       if key in s["by_width_phase"]) / 1e3 / max(span, 1)
+    print(f"=== in-situ {insitu}   isolated {iso}   M={width}   "
+          f"modal rounds={rounds}")
+    print(f"    {'us/round':>10} {'n':>5} {'us/disp':>9} {'MB/disp':>9} "
+          f"{'GB/s':>7}  class")
+    rows, modelled, priced = [], 0.0, 0
+    for shape, count in counts.items():
+        cost = costs.get(shape)
+        if cost is None:
+            rows.append((0.0, count, 0.0, 0.0, 0.0,
+                         f"NO ISOLATED COST {shape[:70]}"))
+            continue
+        us_disp = cost[0]
+        entry = qmv_bytes(shape, width)
+        if entry:
+            name, out, _m, passes, weight, activation = entry
+            label = f"{name} [O={out}, G={passes}]"
+        else:
+            entry2 = other_bytes(shape, width)
+            if entry2:
+                label, weight, activation, _ = entry2
+            else:
+                label, weight, activation = f"unmapped {shape[:56]}", 0, 0
+        moved = weight + activation
+        rate = moved / (us_disp * 1e-6) / 1e9 if us_disp > 0 and moved else 0.0
+        us_round = us_disp * count
+        modelled += us_round
+        priced += 1
+        rows.append((us_round, count, us_disp, moved, rate, label))
+    for us_round, count, us_disp, moved, rate, label in sorted(rows, reverse=True):
+        print(f"    {us_round:10.2f} {count:5d} {us_disp:9.3f} {moved / 1e6:9.3f} "
+              f"{rate:7.1f}  {label[:84]}")
+    print(f"    modelled isolated total {modelled:.1f} us/round over {priced} "
+          f"classes;  measured in-situ phase {measured:.1f} us/round;  "
+          f"concurrency discount {100.0 * (1 - measured / max(modelled, 1e-9)):.1f} %")
+
+
 def report_gdn(paths, phase="target_verify"):
     """Audit every Gated DeltaNet recurrent-state dispatch, per round and width."""
     print(f"GDN recurrent state: {GDN_V_HEADS} heads x {GDN_HEAD_DIM} x "
@@ -426,6 +522,8 @@ def main():
         report_buffers(kept, width=width)
     elif mode == "kernels":
         report_kernels(kept, width=width)
+    elif mode == "closure":
+        report_closure(kept[0], kept[1], width=width)
     elif mode == "gdn":
         report_gdn(kept)
     else:
