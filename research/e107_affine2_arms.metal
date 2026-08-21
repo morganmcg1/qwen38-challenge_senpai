@@ -567,6 +567,110 @@ template <typename T>
 }
 
 // ---------------------------------------------------------------------------
+// Unroll controls. `f_mask` is the only full arm whose activation-fill loop
+// carries `#pragma unroll`, so the measured f_mask-versus-h_split difference
+// confounds two changes: the extraction scheme and the fill unroll. These two
+// arms cross the factors. `i_h_unroll` is h_split with the fill unrolled;
+// `j_f_nounroll` is f_mask with the fill left rolled. Both must stay bit-exact
+// against a_shipped, because neither touches an elementary product or the
+// summation order.
+// ---------------------------------------------------------------------------
+
+#define E107_HEAD_PROLOGUE()                                                  \
+  constexpr int rows_per_simd = 4;                                            \
+  constexpr int values_per_thread = 32;                                       \
+  constexpr int block_size = values_per_thread * SIMD_SIZE;                   \
+  constexpr int bytes_per_lane = 8;                                           \
+  const int in_vec_size_w = in_vec_size / 4;                                  \
+  const int in_vec_size_g = in_vec_size / 64;                                 \
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;         \
+  thread float result[rows_per_simd];                                         \
+  for (int r = 0; r < rows_per_simd; r++) {                                   \
+    result[r] = 0.0f;                                                         \
+  }
+
+#define E107_HEAD_EPILOGUE()                                                  \
+  for (int r = 0; r < rows_per_simd; r++) {                                   \
+    const float reduced = simd_sum(result[r]);                                \
+    if (simd_lid == 0) {                                                      \
+      y[out_row + r] = static_cast<T>(reduced);                               \
+    }                                                                         \
+  }
+
+#define E107_XFILL(PRAGMA, SCALE)                                             \
+  thread float x0[values_per_thread];                                         \
+  const device T* xm = x + k + simd_lid * values_per_thread;                  \
+  float sum = 0.0f;                                                           \
+  PRAGMA                                                                      \
+  for (int i = 0; i < values_per_thread; i += 4) {                            \
+    const int jj = i & 15;                                                    \
+    (void)jj;                                                                 \
+    x0[i] = static_cast<float>(xm[i]) * SCALE(jj);                            \
+    x0[i + 1] = static_cast<float>(xm[i + 1]) * SCALE(jj + 1);                \
+    x0[i + 2] = static_cast<float>(xm[i + 2]) * SCALE(jj + 2);                \
+    x0[i + 3] = static_cast<float>(xm[i + 3]) * SCALE(jj + 3);                \
+    sum += xm[i] + xm[i + 1] + xm[i + 2] + xm[i + 3];                         \
+  }
+
+#define E107_SCALE_ONE(j) 1.0f
+#define E107_SCALE_INV_POW4(j) e107_inv_pow4(j)
+
+#define E107_VALUES_SHIFT()                                                   \
+  for (int r = 0; r < rows_per_simd; r++) {                                   \
+    float accum = 0.0f;                                                       \
+    _Pragma("unroll")                                                         \
+    for (int j = 0; j < 16; j++) {                                            \
+      accum += x0[j] * float((packed[r].x >> (2 * j)) & 0x03u);               \
+    }                                                                         \
+    _Pragma("unroll")                                                         \
+    for (int j = 0; j < 16; j++) {                                            \
+      accum += x0[16 + j] * float((packed[r].y >> (2 * j)) & 0x03u);          \
+    }                                                                         \
+    result[r] += scale_local[r] * accum + sum * bias_local[r];                \
+  }
+
+#define E107_VALUES_MASK()                                                    \
+  for (int r = 0; r < rows_per_simd; r++) {                                   \
+    float accum = 0.0f;                                                       \
+    _Pragma("unroll")                                                         \
+    for (int j = 0; j < 16; j++) {                                            \
+      accum += x0[j] * float(packed[r].x & (0x03u << (2 * j)));               \
+    }                                                                         \
+    _Pragma("unroll")                                                         \
+    for (int j = 0; j < 16; j++) {                                            \
+      accum += x0[16 + j] * float(packed[r].y & (0x03u << (2 * j)));          \
+    }                                                                         \
+    result[r] += scale_local[r] * accum + sum * bias_local[r];                \
+  }
+
+#define E107_CROSSED_ARM(NAME, PRAGMA, SCALE, VALUES)                         \
+  template <typename T>                                                       \
+  [[kernel]] void NAME(                                                       \
+      const device uint32_t* w [[buffer(0)]],                                 \
+      const device T* scales [[buffer(1)]],                                   \
+      const device T* biases [[buffer(2)]],                                   \
+      const device T* x [[buffer(3)]],                                        \
+      device T* y [[buffer(4)]],                                              \
+      const constant int& in_vec_size [[buffer(5)]],                          \
+      const constant int& out_vec_size [[buffer(6)]],                         \
+      const constant ulong& wseed [[buffer(7)]],                              \
+      uint3 tid [[threadgroup_position_in_grid]],                             \
+      uint simd_gid [[simdgroup_index_in_threadgroup]],                       \
+      uint simd_lid [[thread_index_in_simdgroup]]) {                          \
+    E107_HEAD_PROLOGUE()                                                      \
+    for (int k = 0; k < in_vec_size; k += block_size) {                       \
+      E107_LOAD_BLOCK()                                                       \
+      E107_XFILL(PRAGMA, SCALE)                                               \
+      VALUES()                                                                \
+    }                                                                         \
+    E107_HEAD_EPILOGUE()                                                      \
+  }
+
+E107_CROSSED_ARM(e107_i_h_unroll, _Pragma("unroll"), E107_SCALE_ONE,
+                 E107_VALUES_SHIFT)
+E107_CROSSED_ARM(e107_j_f_nounroll, , E107_SCALE_INV_POW4, E107_VALUES_MASK)
+
+// ---------------------------------------------------------------------------
 // b2: the mask-and-pre-scale extraction with the weight load removed, so the
 // pure issue-rate difference against b_constw is visible with no memory time
 // to hide behind.
@@ -683,3 +787,5 @@ instantiate_kernel("h_split", e107_h_split, bfloat)
 instantiate_kernel("f_mask", e107_f_mask, bfloat)
 instantiate_kernel("g_bfe", e107_g_bfe, bfloat)
 instantiate_kernel("b2_maskalu", e107_b2_maskalu, bfloat)
+instantiate_kernel("i_h_unroll", e107_i_h_unroll, bfloat)
+instantiate_kernel("j_f_nounroll", e107_j_f_nounroll, bfloat)

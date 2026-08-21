@@ -35,13 +35,16 @@ static const int kN = 98336;         // out_vec_size
 static const int kGroup = 64;
 static const int kRowsPerTG = 8;     // 2 simdgroups x 4 rows
 
-enum { kArmA = 0, kArmB, kArmB2, kArmC, kArmE, kArmH, kArmF, kArmG, kArmCount };
+enum { kArmA = 0, kArmB, kArmB2, kArmC, kArmE, kArmH, kArmF, kArmG,
+       kArmI, kArmJ, kArmCount };
 static const char *kArmNames[kArmCount] = {
-    "a_shipped", "b_constw", "b2_maskalu", "c_loadonly",
-    "e_floor",   "h_split",  "f_mask",     "g_bfe"};
+    "a_shipped",  "b_constw",     "b2_maskalu", "c_loadonly",
+    "e_floor",    "h_split",      "f_mask",     "g_bfe",
+    "i_h_unroll", "j_f_nounroll"};
 // Arms that keep every elementary product and the shipped summation order, so
 // their whole output must be bit-identical to a_shipped.
-static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 0, 1, 1, 1};
+static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 0, 1, 1, 1,
+                                               1, 1};
 
 static inline uint16_t f32_to_bf16(float f) {
   uint32_t u;
