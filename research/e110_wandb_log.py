@@ -21,10 +21,15 @@ therefore attacks the extraction schedule inside the k-block. Three runs:
       ABBA absolute candidate MTP seconds per token against a fresh unchanged
       base in the same session, and the driver-read threadgroup memory that
       killed the staging arm.
+  `e110-rung3-presubmit`
+      The pre-submit chain on the exact tree that would be submitted: every
+      gate with its command and observation, the `swift test` floor against the
+      same tree with the arm reverse-applied, and the `--local-submit` leg.
 
-Every timed leg here ran with no thermal gate, so `timing_valid`,
-`cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
-verbatim. No number here is an official or ranked score.
+Every timed leg here ran with no thermal gate except the `--local-submit` leg,
+so `timing_valid`, `cool_gate_passed_real_gate` and `gate_qualified_for_timing`
+are logged false verbatim outside that run. No number here is an official or
+ranked score.
 """
 
 from __future__ import annotations
@@ -617,7 +622,77 @@ def log_rung2() -> None:
     run.finish()
 
 
-RUNS = {"census": log_census, "timing": log_timing, "rung2": log_rung2}
+def log_rung3() -> None:
+    """The pre-submit chain receipt for the advanced arm."""
+    path = OUT / "e110/rung3-presubmit.json"
+    if not path.exists():
+        print(f"[wandb] no {path}; run the receipt collector first")
+        return
+    doc = json.loads(path.read_text())
+    submit = doc["local_submit"]
+    metrics = submit["metrics"]
+
+    run = start(
+        "e110-rung3-presubmit", "validation",
+        "Does the advanced arm pass every pre-submit gate on the exact tree "
+        "that would be submitted?",
+        4, {"rung": 3, "arm": doc["arm"],
+            "candidate_commit": doc["candidate_commit"],
+            "base_sha": doc["base_sha"],
+            "submitted_paths": doc["submitted_paths"],
+            "worker_sha256": doc["worker_sha256"],
+            "worker_mtime": doc["worker_mtime"],
+            "local_mode": "--local-submit",
+            "token_window": metrics["decode_tokens"]},
+        meta_dir="e110-rung2")
+
+    # This is the only leg in the experiment that ran the real thermal gate.
+    # It is still one unreplicated pair, which `timing_valid` records.
+    run.config.update({"cool_gate_passed_real_gate": True,
+                       "gate_qualified_for_timing": True,
+                       "timing_valid": False}, allow_val_change=True)
+
+    gates = wandb.Table(columns=["step", "command", "exit", "passed",
+                                 "observation"])
+    for step in doc["steps"]:
+        gates.add_data(step["step"], step["command"], step["exit"],
+                       step["passed"], step["observation"])
+    run.log({"gates": gates})
+
+    tests = wandb.Table(columns=["tree", "tests", "suites", "issues",
+                                 "failing_names"])
+    for tree in ("candidate", "base"):
+        rec = doc["swift_test"][tree]
+        tests.add_data(tree, rec["tests"], rec["suites"], rec["issues"],
+                       ", ".join(rec["names"]))
+    run.log({"swift_test_floor": tests})
+
+    gate_temps = wandb.Table(columns=["phase", "passed_at_c", "waited_s"])
+    for rec in submit["cool_gates"]:
+        gate_temps.add_data(rec["phase"], rec.get("passed_at_c"),
+                            rec.get("waited_s"))
+    run.log({"cool_gates": gate_temps})
+
+    run.summary.update({
+        "chain_passed": doc["passed"],
+        "swift_test_names_added": len(doc["swift_test"]["added_by_candidate"]),
+        "worker_unchanged_across_local_submit":
+            doc["worker_unchanged_across_local_submit"],
+        "local_submit_passed": submit["passed"],
+        # The real gate ran here, unlike every rung-0 to rung-2 timed arm.
+        "cool_gate_passed_real_gate": True,
+        "gate_qualified_for_timing": True,
+        "timing_valid": False,
+        "official_or_ranked_score": False,
+        "rankable": metrics["rankable"],
+        **{f"local_submit/{k}": v for k, v in metrics.items()},
+    })
+    attach(run, path)
+    run.finish()
+
+
+RUNS = {"census": log_census, "timing": log_timing, "rung2": log_rung2,
+        "rung3": log_rung3}
 
 
 def main() -> int:
