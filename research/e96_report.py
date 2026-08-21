@@ -26,7 +26,13 @@ FIELDS = (
     "readout_us",
     "commit_us",
     "upkeep_us",
+    "residual_us",
+    "closure_err_us",
 )
+PHASE_GPU = frozenset({"round_us", "verify_build_us", "eval_wall_us"})
+PHASE_ALL = PHASE_GPU | {
+    "draft_build_us", "readout_us", "commit_us", "upkeep_us"
+}
 
 
 def parse_meta(tag):
@@ -55,6 +61,15 @@ def parse_rounds(tag):
                 record[key] = int(value)
             except ValueError:
                 continue
+        # Time the round spends outside the two GPU phase counters, and what
+        # is left after the four host-side counters are also subtracted. The
+        # first moves with the arm; the second is the real accounting error.
+        if PHASE_GPU <= record.keys():
+            record["residual_us"] = record["round_us"] - sum(
+                record[field] for field in PHASE_GPU if field != "round_us")
+        if PHASE_ALL <= record.keys():
+            record["closure_err_us"] = record["round_us"] - sum(
+                record[field] for field in PHASE_ALL if field != "round_us")
         rounds.append(record)
     return rounds
 
@@ -165,6 +180,7 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
     ladder = []
     points = []
     control = None
+    closure = []
     for leg in legs:
         records = leg["buckets"].get(bucket, [])
         values = [r["round_us"] for r in records if "round_us" in r]
@@ -183,6 +199,32 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
             control = mean if control is None else (control + mean) / 2
 
     fit = least_squares(points) if len(points) > 2 else None
+
+    # Phase closure. Every arm's rounds are pooled over every acceptance count
+    # at the control's draft width, because the removal arms never reach the
+    # control's bucket.
+    closure_fields = ("round_us", "verify_build_us", "eval_wall_us",
+                      "commit_us", "residual_us", "closure_err_us")
+    for arm in sorted({leg["step_mode"] for leg in legs}):
+        pooled = {field: [] for field in closure_fields}
+        for leg in legs:
+            if leg["step_mode"] != arm:
+                continue
+            for (d, _acc), records in leg["buckets"].items():
+                if d != bucket[0]:
+                    continue
+                for record in records:
+                    for field in pooled:
+                        if field in record:
+                            pooled[field].append(record[field])
+        if not pooled["round_us"]:
+            continue
+        row = [arm, len(pooled["round_us"])]
+        for field in closure_fields:
+            values = pooled[field]
+            row.append(statistics.mean(values) if values else None)
+            row.append(statistics.stdev(values) if len(values) > 1 else 0.0)
+        closure.append(row)
 
     # The removal arm never shares a bucket with the control, so its rounds are
     # pooled over every acceptance count at the control's draft width. The
@@ -232,7 +274,14 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
                     "tokens_matched_own_reference",
                 ],
                 "rows": ladder,
-            }
+            },
+            "phase_closure": {
+                "columns": ["step_mode", "rounds"] + [
+                    f"{field[:-3]}_{stat}"
+                    for field in closure_fields for stat in ("mean", "sd")
+                ],
+                "rows": closure,
+            },
         },
     }
 
@@ -243,7 +292,11 @@ def main():
     parser.add_argument("--fit-json")
     parser.add_argument("--bucket", default="4,4")
     args = parser.parse_args()
-    tags = args.tags
+    tags = []
+    for pattern in args.tags:
+        matches = sorted(path.name for path in OUT.glob(pattern)
+                         if path.is_dir())
+        tags.extend(matches or [pattern])
     bucket = tuple(int(part) for part in args.bucket.split(","))
     legs = [summarise(tag) for tag in tags]
     for leg in legs:
@@ -305,6 +358,15 @@ def main():
     print(f"== repeat dose-response in bucket d={bucket[0]} acc={bucket[1]} ==")
     for key, value in payload["metrics"].items():
         print(f"   {key:<38} {value}")
+    print()
+    print(f"== phase closure, all rounds at d={bucket[0]} ==")
+    print(f"   {'arm':<8} {'n':>4} {'round':>10} {'sd':>7}"
+          f" {'vfy_build':>10} {'eval_wall':>10} {'commit':>8}"
+          f" {'residual':>9} {'closure_err':>12}")
+    for row in payload["tables"]["phase_closure"]["rows"]:
+        print(f"   {row[0]:<8} {row[1]:>4} {row[2]:>10.1f} {row[3]:>7.1f}"
+              f" {row[4]:>10.1f} {row[6]:>10.1f} {row[8]:>8.1f}"
+              f" {row[10]:>9.1f} {row[12]:>12.1f}")
     if args.fit_json:
         Path(args.fit_json).write_text(json.dumps(payload, indent=2) + "\n")
         print(f"   wrote {args.fit_json}")
