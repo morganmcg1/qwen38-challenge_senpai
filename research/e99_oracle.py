@@ -102,10 +102,10 @@ class Round:
     """One recorded round, with only pre-round state as features."""
 
     __slots__ = ('leg', 'index', 'depth', 'accepted', 'cap', 'round_us',
-                 'ema', 'margin', 'streak', 'features')
+                 'ema', 'margin', 'streak', 'fired', 'features')
 
     def __init__(self, leg, index, depth, accepted, cap, round_us, ema,
-                 margin, streak):
+                 margin, streak, fired=False):
         self.leg = leg
         self.index = index
         self.depth = depth
@@ -115,6 +115,7 @@ class Round:
         self.ema = ema
         self.margin = margin
         self.streak = streak
+        self.fired = fired
         self.features = {}
 
     @property
@@ -137,7 +138,8 @@ def parse_trace(path: Path, leg: str, offered_cap: int) -> list[Round]:
         round_us = float(re.search(r' round_us=(\d+) ', line).group(1))
         cap = min(offered_cap, SEGMENTED_VERIFY_DEPTH_CAP, MAX_DEPTH)
         rounds.append(Round(leg, index, depth, accepted, cap, round_us,
-                            ema, margin, streak))
+                            ema, margin, streak,
+                            fired=fields.get('fire') == '1'))
     return rounds
 
 
