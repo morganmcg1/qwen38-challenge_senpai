@@ -2818,11 +2818,17 @@ let qwen35DecodeLadderRungs: Set<Int> = {
 // kernel multiplies by a zero buffer that the compiler cannot fold away, so
 // the bf16 add-back is exact and `all_tokens_matched` still has to hold.
 //
-// MLX_E105_DOSE_SHAPE selects the dispatch width:
-//   tiny     grid 1x1x1,    tg 1x1x1   -> 1 threadgroup,   lower bound on F
-//   prework  grid 32x5x80,  tg 32x1x1  -> 400 threadgroups, the live
-//            `qwen35_packed_gdn_prework` width, so the drain-and-fill bubble
-//            is the one a real removed dispatch would have paid
+// MLX_E105_DOSE_SHAPE selects what one unit of dose is:
+//   op       a plain MLX elementwise multiply on a [1,1,1] array. This is the
+//            analogue of removing an ordinary graph op such as the KV write's
+//            `slice_update`, and it carries MLX's ordinary per-op CPU cost.
+//   tiny     a custom Metal kernel, grid 1x1x1, tg 1x1x1 -> 1 threadgroup.
+//            Against `op` this isolates whatever MLX's custom-kernel call
+//            path costs above a plain op.
+//   prework  the same custom kernel at grid 32x5x80, tg 32x1x1 -> 400
+//            threadgroups, the live `qwen35_packed_gdn_prework` width, so the
+//            drain-and-fill bubble is the one a real removed prework dispatch
+//            would have paid. Against `tiny` this isolates dispatch width.
 let e105DoseCount = Int(ProcessInfo.processInfo.environment["MLX_E105_DOSE"] ?? "") ?? 0
 let e105DoseShape = ProcessInfo.processInfo.environment["MLX_E105_DOSE_SHAPE"] ?? "prework"
 
@@ -2848,6 +2854,13 @@ private func e105DoseGrid() -> ((Int, Int, Int), (Int, Int, Int)) {
 }
 
 func e105ApplyDispatchDose(to base: MLXArray) -> MLXArray {
+    if e105DoseShape == "op" {
+        var chained = base[0 ..< 1, 0 ..< 1, 0 ..< 1] * e105DoseZero
+        for _ in 1 ..< e105DoseCount {
+            chained = chained * e105DoseZero
+        }
+        return base + chained
+    }
     let (grid, threadGroup) = e105DoseGrid()
     var chained = base
     for _ in 0 ..< e105DoseCount {

@@ -5,9 +5,13 @@
 #
 #   TAG    output directory under research/out/
 #   DOSE   extra dependent dispatches injected per decoder layer, 0 disables
-#   SHAPE  `tiny` (grid 1x1x1, 1 threadgroup) or `prework`
-#          (grid 32x5x80 tg 32x1x1, 400 threadgroups, the live
-#          `qwen35_packed_gdn_prework` width)
+#   SHAPE  `op`      one plain MLX elementwise multiply on a [1,1,1] array,
+#                    the analogue of an ordinary graph op such as the KV
+#                    write's `slice_update`
+#          `tiny`    one custom Metal kernel dispatch, grid 1x1x1, 1
+#                    threadgroup
+#          `prework` the same custom kernel at grid 32x5x80 tg 32x1x1, 400
+#                    threadgroups, the live `qwen35_packed_gdn_prework` width
 #
 # WHY A DOSE LADDER AND NOT A METAL HARNESS. E105 rung 0 showed the three
 # target families are already one dispatch per layer, so the whole fusion
@@ -43,7 +47,7 @@ dose="${2:?usage: e105_dose_leg.sh TAG DOSE SHAPE}"
 shape="${3:?usage: e105_dose_leg.sh TAG DOSE SHAPE}"
 
 case "${shape}" in
-  tiny|prework) ;;
+  op|tiny|prework) ;;
   *) echo "e105_dose_leg: unknown shape '${shape}'" >&2; exit 2 ;;
 esac
 

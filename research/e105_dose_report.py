@@ -22,10 +22,21 @@ MTP pass with the same build. The serial pass runs exactly one target forward
 per token, so its slope is the cleanest estimate of F. The MTP pass runs one
 target forward per round and needs the round's token yield to convert.
 
-FRAME. `ranked % = 100 * dT_insitu / RANKED_ROUND_M5`, Finding 22, with
-RANKED_ROUND_M5 = 53108 us. The local round cancels out of the ranked
-percentage, so this needs no local round anchor and no isolation discount.
-Everything here is `harness=local` directional evidence and no leg is a score.
+FRAME. Advisor feedback e105-f1 retired the Finding 22 LATENCY multiplier of
+2.40x. Launch-overhead-bound dispatch work transfers at about 0.95x, so a
+local percent of the local round is also the ranked percent. This reducer
+reports local percent only. It applies no multiplier and no isolation
+discount. Two denominators are reported because the campaign uses both:
+
+  census GPU-busy round   GPU-busy time in one w5 round from the E58/E80
+                          census. This is the frame of the advisor's family
+                          table, where the three families total 782.34 us.
+  leg wall round          `mtp_spt x (1 + mean_draft)` from the leg itself.
+                          This is the frame of the matched-ABBA promotion bar.
+
+Promotion bar, e105-f1: a bit-exact arm that moves the matched-ABBA local
+round by at least 0.20 %. Everything here is `harness=local` directional
+evidence and no leg is a score.
 """
 
 from __future__ import annotations
@@ -36,9 +47,11 @@ import pathlib
 import sys
 
 DECODER_LAYERS = 64
-RANKED_ROUND_M5_US = 53108.0  # Finding 12
-BAR_RANKED_PCT = 0.60  # E105 minimum useful effect
-PUB_FLOOR_PCT = 0.277
+# Measured on this base, tag e105r0-d4-ops0: GPU-busy time in one w5 round.
+CENSUS_ROUND_US = 102013.3
+# The advisor's family table is anchored on the older E96 census round.
+ADVISOR_ROUND_US = 127533.0
+BAR_LOCAL_PCT = 0.20  # e105-f1 promotion bar, matched-ABBA local round
 SF_FLOOR_PCT = 0.160
 
 # Rung 0 census, tag e105r0-d4-ops0, w5. Dispatches per round that a fusion
@@ -108,22 +121,29 @@ def slope(legs: list[dict], key: str) -> dict | None:
     }
 
 
-def price(f_us: float) -> dict:
-    out = {"F_us_per_dispatch": f_us}
+DENOM_LABELS = ("census_gpu_busy_round", "advisor_e96_round", "leg_wall_round")
+
+
+def price(f_us: float, wall_round_us: float) -> dict:
+    denominators = dict(
+        zip(DENOM_LABELS, (CENSUS_ROUND_US, ADVISOR_ROUND_US, wall_round_us))
+    )
+    out: dict = {"F_us_per_dispatch": f_us, "denominators_us": denominators}
     for name, n in (("N80_real_max", N_REAL), ("N96_absolute", N_ABSOLUTE)):
         dt = n * f_us
-        pct = 100.0 * dt / RANKED_ROUND_M5_US
-        out[name] = {
-            "dispatches_removed": n,
-            "ceiling_us_per_round": dt,
-            "ranked_pct": pct,
-            "clears_0p60_bar": pct >= BAR_RANKED_PCT,
-            "multiple_of_bar": pct / BAR_RANKED_PCT,
-            "above_published_floor": pct >= PUB_FLOOR_PCT,
-        }
+        entry: dict = {"dispatches_removed": n, "ceiling_us_per_round": dt}
+        for dname, dval in denominators.items():
+            pct = 100.0 * dt / dval
+            entry[dname] = {
+                "local_pct": pct,
+                "clears_0p20_bar": pct >= BAR_LOCAL_PCT,
+                "multiple_of_bar": pct / BAR_LOCAL_PCT,
+            }
+        out[name] = entry
     out["required_F_us"] = {
-        "at_N80": BAR_RANKED_PCT * RANKED_ROUND_M5_US / 100.0 / N_REAL,
-        "at_N96": BAR_RANKED_PCT * RANKED_ROUND_M5_US / 100.0 / N_ABSOLUTE,
+        f"{dname}_at_N{n}": BAR_LOCAL_PCT * dval / 100.0 / n
+        for dname, dval in denominators.items()
+        for n in (N_REAL, N_ABSOLUTE)
     }
     return out
 
@@ -170,7 +190,8 @@ def main() -> None:
             s = slope(sel, key)
             if s is None:
                 continue
-            block[label] = {**s, **price(s["F_us_per_dispatch"])}
+            wall = mean([leg["mtp_round_us"] for leg in sel if leg["dose"] == 0])
+            block[label] = {**s, **price(s["F_us_per_dispatch"], wall)}
             print(f"\n--- shape={shape}  pass={label} ---")
             print(f'  round us by added dispatches : {s["points"]}')
             print(f'  replicates                   : {s["replicates"]}')
@@ -182,13 +203,17 @@ def main() -> None:
             for name in ("N80_real_max", "N96_absolute"):
                 c = p[name]
                 print(f'  ceiling at N={c["dispatches_removed"]:<3}          : '
-                      f'{c["ceiling_us_per_round"]:8.1f} us/round   '
-                      f'ranked {c["ranked_pct"]:.3f} %   '
-                      f'{c["multiple_of_bar"]:.2f}x the 0.60 % bar   '
-                      f'{"CLEARS" if c["clears_0p60_bar"] else "FAILS"}')
-            print(f'  F required to clear the bar  : '
-                  f'{p["required_F_us"]["at_N80"]:.2f} us at N=80, '
-                  f'{p["required_F_us"]["at_N96"]:.2f} us at N=96')
+                      f'{c["ceiling_us_per_round"]:8.1f} us/round')
+                for dname in DENOM_LABELS:
+                    q = c[dname]
+                    denom = p["denominators_us"][dname]
+                    print(f'    vs {dname:<22}{denom:>10.0f} us : '
+                          f'{q["local_pct"]:7.3f} % local   '
+                          f'{q["multiple_of_bar"]:5.2f}x the 0.20 % bar   '
+                          f'{"CLEARS" if q["clears_0p20_bar"] else "FAILS"}')
+            print('  F required to clear the 0.20 % bar:')
+            for k, v in p["required_F_us"].items():
+                print(f'    {k:<40}: {v:6.2f} us')
         report[shape] = block
 
     if args.json:
