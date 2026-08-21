@@ -592,6 +592,18 @@ def prework_spec(units: list[int]) -> dict:
     # claim is only worth something if the comparison can fail. This arm is
     # arm 0's own kernel reading one bf16 input element flipped by 1 ULP, so it
     # MUST mismatch. The probe voids the run if it does not.
+    #
+    # The element is chosen, not arbitrary. `g1nored` replaces the RMS
+    # reduction, which writes `q_out` and `k_out`, so the control has to move
+    # those buffers or it does not cover the claim. Row 2 of a query channel
+    # also reaches `conv_out`, which copies `qkv` verbatim, so at least one
+    # mismatch is guaranteed and a null result means the arithmetic absorbed
+    # the flip rather than that the comparator is broken.
+    #
+    # A first attempt used qkv[4096], a VALUE channel of row 0. It reaches only
+    # `v_out` through `static_cast<InT>(acc)`, and the bf16 rounding of that
+    # cast absorbed the flip in all four contributing taps: the probe voided.
+    # That is a real sensitivity limit of the kernel, so it is recorded here.
     arms.append(
         {
             "name": "g1ctl",
@@ -604,7 +616,7 @@ def prework_spec(units: list[int]) -> dict:
             "shipped": False,
             "exact_vs_arm0": False,
             "reduction": "positive_control",
-            "perturb": {"buffer": "qkv", "element": 4096},
+            "perturb": {"buffer": "qkv", "element": 2 * QKV_ROW_STRIDE + 0},
         }
     )
     return {

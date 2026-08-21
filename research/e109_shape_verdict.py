@@ -179,6 +179,10 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
                 "mismatched": not a["exact_vs_arm0"],
                 "mismatch_bytes": a.get("mismatch_bytes"),
                 "output_bytes": a.get("output_bytes"),
+                "mismatch_by_buffer": {
+                    k: v for k, v in a.get("mismatch_by_buffer", {}).items()
+                    if v
+                },
             }
             for a in controls
         ],
@@ -245,10 +249,12 @@ def render(out: dict) -> str:
         lines.append("  positive control ABSENT -- no exactness claim is proven")
     for c in out["positive_controls"]:
         p = c["perturbation"]
+        moved = ", ".join(f"{k} {v}" for k, v in c["mismatch_by_buffer"].items())
         lines.append(
             f"  control {c['name']} flips {p['buffer']}[{p['element']}] by"
             f" 1 ULP -> mismatched {c['mismatched']}"
-            f" ({c['mismatch_bytes']} of {c['output_bytes']} output bytes)")
+            f" ({c['mismatch_bytes']} of {c['output_bytes']} output bytes)"
+            f"   moved [{moved}]")
     return "\n".join(lines)
 
 

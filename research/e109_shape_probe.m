@@ -444,8 +444,13 @@ int main(int argc, const char *argv[]) {
 
       // The positive control is compared on the same path as every other arm,
       // so a comparison that cannot fail is caught here rather than assumed.
+      // Counts are kept per output buffer: a control that only moves a buffer
+      // the tested change never writes proves the comparator works but does
+      // not cover that change's surface, and the two cases must be separable.
       int exact = 1, mismatch_bytes = 0, compared = 0;
       size_t out_bytes = 0;
+      char per_buf[1024] = "";
+      int per_buf_len = 0;
       if (a > 0 && (arms[a].exact_vs_arm0 || arms[a].perturb_buf >= 0)) {
         compared = 1;
         for (int i = 0; i < nbuf; i++) {
@@ -453,8 +458,15 @@ int main(int argc, const char *argv[]) {
           out_bytes += bufs[i].length;
           const uint8_t *p = bufs[i].per_arm[a].contents;
           const uint8_t *q0 = bufs[i].per_arm[0].contents;
+          int here = 0;
           for (size_t b = 0; b < bufs[i].length; b++)
-            if (p[b] != q0[b]) { exact = 0; mismatch_bytes++; }
+            if (p[b] != q0[b]) here++;
+          mismatch_bytes += here;
+          if (here) exact = 0;
+          per_buf_len += snprintf(per_buf + per_buf_len,
+                                  sizeof per_buf - (size_t)per_buf_len,
+                                  "%s\"%s\": %d", per_buf_len ? ", " : "",
+                                  bufs[i].name, here);
         }
         if (arms[a].perturb_buf >= 0) {
           if (exact) {
@@ -464,8 +476,8 @@ int main(int argc, const char *argv[]) {
             return 3;
           }
           fprintf(stderr, "e109_shape_probe: positive control %s changed"
-                  " %d of %zu output bytes\n",
-                  arms[a].name, mismatch_bytes, out_bytes);
+                  " %d of %zu output bytes {%s}\n",
+                  arms[a].name, mismatch_bytes, out_bytes, per_buf);
         } else if (!exact) {
           all_exact = 0;
         }
@@ -480,6 +492,7 @@ int main(int argc, const char *argv[]) {
               "\"us_per_dispatch_mean\": %.4f, \"us_per_dispatch_sd\": %.4f, "
               "\"exact_vs_arm0\": %s, \"checked_exact\": %s, "
               "\"positive_control\": %s, \"output_bytes\": %zu, "
+              "\"mismatch_by_buffer\": {%s}, "
               "\"mismatch_bytes\": %d}%s\n",
               arms[a].name, arms[a].function, arms[a].threadgroups,
               arms[a].simdgroups_per_tg,
@@ -489,7 +502,7 @@ int main(int argc, const char *argv[]) {
               (unsigned long)arms[a].exec_width, (unsigned long)arms[a].tg_mem,
               median * 1e6, sorted[0] * 1e6, mean * 1e6, sqrt(var) * 1e6,
               exact ? "true" : "false", compared ? "true" : "false",
-              arms[a].perturb_buf >= 0 ? "true" : "false", out_bytes,
+              arms[a].perturb_buf >= 0 ? "true" : "false", out_bytes, per_buf,
               mismatch_bytes, a + 1 == narm ? "" : ",");
       free(sorted);
     }
