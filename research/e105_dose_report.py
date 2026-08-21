@@ -344,6 +344,44 @@ def main() -> None:
                 print(f'    {k:<40}: {v:6.2f} us')
         report[shape] = block
 
+    # The three dose shapes differ in exactly one thing each, so their F values
+    # subtract into separate cost components rather than three estimates of the
+    # same one.
+    #
+    #   tiny     raw custom kernel, grid 1x1x1, one threadgroup
+    #            -> the irreducible dispatch boundary
+    #   prework  same kernel at the live prework width, 400 threadgroups
+    #            -> boundary plus the ramp for 400 threadgroups
+    #   op       plain MLX multiply on [1,1,1]
+    #            -> boundary plus MLX's own per-op graph and eval cost
+    #
+    # The serial pass is used throughout: it decodes one token per forward, so
+    # its round carries no tokens-per-round factor to contaminate the slope.
+    # `report` also holds a `decode_only` entry with its own `serial` sub-dict,
+    # so select the shape blocks by name rather than by shape of the value.
+    fs = {
+        shape: report[shape]["serial"]["F_us_per_dispatch"]
+        for shape in ("tiny", "prework", "op")
+        if shape in report and "serial" in report[shape]
+    }
+    if "tiny" in fs:
+        contrast: dict[str, object] = {"F_us_by_shape": fs}
+        print("\n--- shape contrast, serial pass ---")
+        print(f'  dispatch boundary, 1 threadgroup   : {fs["tiny"]:.3f} us')
+        if "prework" in fs:
+            d = fs["prework"] - fs["tiny"]
+            contrast["threadgroup_ramp_us_for_400_tg"] = d
+            contrast["ramp_ns_per_threadgroup"] = d * 1e3 / 400
+            contrast["ramp_ns_per_wave_of_20_cores"] = d * 1e3 / 20
+            print(f'  ramp for 400 threadgroups          : {d:+.3f} us'
+                  f'  ({d * 1e3 / 400:.2f} ns/threadgroup,'
+                  f' {d * 1e3 / 20:.1f} ns/wave)')
+        if "op" in fs:
+            d = fs["op"] - fs["tiny"]
+            contrast["mlx_per_op_overhead_us"] = d
+            print(f'  MLX per-op graph and eval cost     : {d:+.3f} us')
+        report["shape_contrast"] = contrast
+
     if args.json:
         pathlib.Path(args.json).parent.mkdir(parents=True, exist_ok=True)
         pathlib.Path(args.json).write_text(json.dumps(report, indent=2))
