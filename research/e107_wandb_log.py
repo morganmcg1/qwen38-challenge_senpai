@@ -352,12 +352,12 @@ def log_census() -> None:
     cells = wandb.Table(columns=[
         "signature", "bits", "n", "k", "bytes", "us_per_dispatch",
         "achieved_gbps", "pct_of_achievable", "finding36_law_us",
-        "pct_over_finding36_law", "within_15pct_of_law", "roofline_floor_us",
+        "pct_over_finding36_law", "roofline_floor_us",
         "headroom_us", "dispatches_per_round", "us_per_round",
         "pct_of_local_round", "headroom_pct_of_local_round"])
     affine2 = affine2_floor = 0.0
     headroom_pct: dict[str, float] = {}
-    law_pct: dict[str, float] = {}
+    measured: dict[str, dict[str, float]] = {}
     for signature, bits, n, k in CENSUS_CELLS:
         # Only the draft-head phase of a real MTP round is scored work. The
         # `w0|outside|` copies of the same shape are warmup.
@@ -374,20 +374,44 @@ def log_census() -> None:
         gbps = nbytes / (us * 1e-6) / 1e9
         floor = nbytes / ACHIEVABLE_GBPS / 1e9 * 1e6
         law = FINDING36_FIXED_US + nbytes / 1e9 * FINDING36_SLOPE_US_PER_GB
-        over_law = 100.0 * (us - law) / law
         cells.add_data(
             signature, bits, n, k, nbytes, us, gbps,
-            100.0 * gbps / ACHIEVABLE_GBPS, law, over_law, over_law <= 15.0,
+            100.0 * gbps / ACHIEVABLE_GBPS, law, 100.0 * (us - law) / law,
             floor, us - floor, per_round,
             us * per_round, 100.0 * us * per_round / LOCAL_ROUND_US,
             100.0 * (us - floor) * per_round / LOCAL_ROUND_US)
         headroom_pct[signature] = (
             100.0 * (us - floor) * per_round / LOCAL_ROUND_US)
+        measured[signature] = {"bits": bits, "bytes": nbytes, "gbps": gbps}
         if bits == 2:
             affine2 += us * per_round
             affine2_floor += floor * per_round
-            law_pct[signature] = over_law
     run.log({"scored_matvec_cells": cells})
+
+    # f2 item 3 replaces the Finding 36 law with a measured affine-4 reference
+    # arm at the same M = 1 in the same session. Every census cell is a
+    # single-row matvec with 8 output rows per threadgroup, so the affine-4
+    # cells are that reference and need no synthetic stand-in.
+    ref = {s: v for s, v in measured.items() if v["bits"] == 4}
+    a2 = {s: v for s, v in measured.items() if v["bits"] == 2}
+    pairs = wandb.Table(columns=[
+        "affine2_signature", "affine2_bytes", "affine2_gbps",
+        "affine4_signature", "affine4_reference", "affine4_bytes",
+        "affine4_gbps", "affine2_pct_of_affine4", "gap_pct",
+        "within_15pct_of_affine4"])
+    worst_gap = -1e9
+    for s2, v2 in a2.items():
+        nearest = min(ref, key=lambda s: abs(ref[s]["bytes"] - v2["bytes"]))
+        for s4, kind in ((nearest, "nearest byte volume"),
+                         (max(ref, key=lambda s: ref[s]["gbps"]),
+                          "fastest affine-4")):
+            gap = 100.0 * (ref[s4]["gbps"] - v2["gbps"]) / ref[s4]["gbps"]
+            worst_gap = max(worst_gap, gap)
+            pairs.add_data(
+                s2, v2["bytes"], v2["gbps"], s4, kind, ref[s4]["bytes"],
+                ref[s4]["gbps"], 100.0 * v2["gbps"] / ref[s4]["gbps"], gap,
+                gap <= 15.0)
+    run.log({"affine2_vs_affine4_reference": pairs})
 
     worst = max(headroom_pct, key=headroom_pct.get)
     draft_head_us = sum(
@@ -418,12 +442,22 @@ def log_census() -> None:
             "of 8 so the dense affine-2 readout takes the general qmv path",
         "largest_headroom_signature": worst,
         "largest_headroom_pct_of_local_round": headroom_pct[worst],
-        "worst_affine2_pct_over_finding36_law": max(law_pct.values()),
-        "rung0_stop_rule_fires": max(law_pct.values()) <= 15.0,
+        "reference_model": "measured affine-4 M=1 cells, same census session",
+        "finding36_law_used_as_stop_rule": False,
+        "finding36_law_status": (
+            "withdrawn as a stop rule by advisor f2 item 3. Its intercept is "
+            "unidentifiable because every fitted family has K=5120, which "
+            "makes threadgroups and bytes perfectly collinear, and its slope "
+            "was fitted before E100 merged. Logged only as history."
+        ),
+        "worst_affine2_gap_vs_affine4_pct": worst_gap,
+        "rung0_stop_rule_fires": worst_gap <= 15.0,
         "rung0_stop_rule": (
-            "every live affine-2 dispatch is within 15 percent of the "
-            "Finding 36 law, so the premise that the coarse draft readout "
-            "is ALU bound does not hold on this base"
+            "every live affine-2 dispatch achieves within 15 percent of the "
+            "GB/s of an affine-4 g64 single-row cell measured at the same "
+            "M=1 in the same session, so the coarse draft readout is not "
+            "anomalously slow per byte and the ALU-bound premise gives no "
+            "recoverable time on this base"
         ),
         "target_function": "qmv_fast_singlerow_affine2_g64",
         "target_function_dispatches_per_round": 0,
@@ -498,7 +532,66 @@ def log_static() -> None:
 
     g16 = regs[LOCAL_ARCH]
     g17 = regs[RANKED_ARCH]
+
+    # f2 item 1 makes compiled ISA text bytes and spill bytes the campaign cost
+    # model and demotes AIR counts. Join the static budget to the measured s3
+    # times so the rule is tested on this arm family rather than assumed.
+    _, s3 = session_arms("e107-iso-s3")
+    us = {arm: st.mean(v) for arm, v in s3.items()}
+    base_text = g16["a_shipped"]["text_bytes"]
+    base_us = us["a_shipped"]
+    d_text = {a: 100.0 * (g16[a]["text_bytes"] - base_text) / base_text
+              for a in us if a in g16}
+    d_us = {a: 100.0 * (v - base_us) / base_us for a, v in us.items()}
+    # An arm whose ISA text is effectively unchanged but whose time moves far
+    # is the precise failure mode: text bytes cannot price a change of
+    # extraction scheme. A naive sign test would instead flag the near-zero
+    # arms, where both axes are inside their own noise.
+    flat_text_pct, big_time_pct = 6.0, 10.0
+    cost = wandb.Table(columns=[
+        "arm", "role", "text_bytes_g16s", "text_bytes_pct_vs_shipped",
+        "spill_bytes_g16s", "spill_bytes_g17s", "peak_live_regs_g16s_screen",
+        "peak_live_regs_g17s_screen", "gpu_us_mean", "us_pct_vs_shipped",
+        "time_over_text_ratio", "mispriced_by_text"])
+    mispriced = []
+    for arm in sorted(d_text):
+        flat = abs(d_text[arm]) < flat_text_pct
+        bad = flat and abs(d_us[arm]) > big_time_pct
+        if bad:
+            mispriced.append(arm)
+        cost.add_data(
+            arm, ARM_ROLE.get(arm, "bandwidth reference"),
+            g16[arm]["text_bytes"], d_text[arm], g16[arm]["spill_bytes"],
+            g17[arm]["spill_bytes"], g16[arm]["registers"],
+            g17[arm]["registers"], us[arm], d_us[arm],
+            d_us[arm] / d_text[arm] if d_text[arm] else float("nan"), bad)
+    run.log({"isa_text_cost_model": cost})
+
     run.summary.update({
+        "cost_model": "compiled ISA text bytes and spill bytes (advisor f2)",
+        "peak_live_regs_is_a_screen_only": True,
+        "machine_register_budget_g16s": 96,
+        "machine_register_budget_g17s": 124,
+        "max_registers_any_arm_g16s": max(
+            v["registers"] for v in g16.values()),
+        "max_registers_any_arm_g17s": max(
+            v["registers"] for v in g17.values()),
+        "isa_text_predicts_time_on_this_family": not mispriced,
+        "isa_text_mispriced_arms": ", ".join(mispriced),
+        "isa_text_counterexample": (
+            "f_mask holds ISA text within 3.72 percent of a_shipped yet runs "
+            "36.26 percent faster, and b2_maskalu is 2.97 percent larger in "
+            "text yet 41.22 percent faster. Text bytes do rank the arms that "
+            "delete work: c_loadonly is 58.70 percent smaller and 36.55 "
+            "percent faster, e_floor is 61.90 percent smaller and 79.68 "
+            "percent faster, and the three byte-identical arms h_split, g_bfe "
+            "and i_h_unroll are flat on both axes. So the E104 rule holds "
+            "when a change adds or removes work at a fixed extraction scheme, "
+            "and it fails when the extraction scheme itself changes at "
+            "constant text size. Neither AIR counts nor text bytes predicted "
+            "the 36 percent effect; only the constant-weight and load-only "
+            "roofline arms did."
+        ),
         "max_spill_bytes_any_arm": max(
             v["spill_bytes"] for k in regs.values() for v in k.values()),
         "h_split_equals_g_bfe_text_g16s":
