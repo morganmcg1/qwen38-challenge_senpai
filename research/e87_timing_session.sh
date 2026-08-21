@@ -40,9 +40,24 @@ else
   exit 2
 fi
 
+model_source=Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+
+# The probe fraction is a compile-time constant, so an arm label can no longer
+# select it and could silently disagree with the binary. Read it back from the
+# source that was built, record that value, and reject a label that claims a
+# different one.
+probe_fraction="$(sed -n \
+  's/^private let qwen35DerivedClusterProbeFraction: Double = \([0-9.]*\)$/\1/p' \
+  "${model_source}")"
+if [[ -z "${probe_fraction}" ]]; then
+  echo "e87_timing_session.sh: cannot read qwen35DerivedClusterProbeFraction" \
+       "from ${model_source}" >&2
+  exit 2
+fi
+
 dir_for() {
   case "$1" in
-    declared|dense|derived|derived25) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived|derived15|derived25) echo "${cache}/mtp-head-declared-run" ;;
     g128) echo "${cache}/e87/built/e87-coarse-g128-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     armc-damaged) echo "${cache}/e87/built/e87-armC-damaged-run" ;;
@@ -56,8 +71,11 @@ dir_for() {
 # Reject the arms that used to mean "gate off" instead of timing arm C twice
 # and reporting the pair as a base-versus-arm contrast.
 require_derived_arm() {
+  local want
   case "$1" in
-    derived|derived25) return 0 ;;
+    derived) return 0 ;;
+    derived15) want=0.15 ;;
+    derived25) want=0.25 ;;
     *)
       echo "e87_timing_session.sh: arm '$1' needs the removed" \
            "MLX_E87_DERIVED_INDEX gate; the shipped path always derives the" \
@@ -65,11 +83,12 @@ require_derived_arm() {
       exit 2
       ;;
   esac
+  if [[ "${want}" != "${probe_fraction}" ]]; then
+    echo "e87_timing_session.sh: arm '$1' claims probe fraction ${want} but" \
+         "${model_source} builds ${probe_fraction}" >&2
+    exit 2
+  fi
 }
-
-# The probe fraction is a compile-time constant in the model code. Record it in
-# the leg meta so the byte model in research/e87_paired.py stays checkable.
-probe_fraction=0.25
 
 dirty="$(git status --porcelain -- Sources Vendor Package.swift | wc -l | tr -d ' ')"
 if [[ "${dirty}" != "0" ]]; then
