@@ -32921,3 +32921,436 @@ PR    student    experiment                                  prize (local round)
 ```
 
 The `quantized.h` integration freeze stands across E104, E106, and E107.
+
+## 255. 2026-08-21 18:30Z - E104 and E105 both land as decisive negatives, my fixed-cost intercept is refuted, and the mode instrument catches a byte-identical crown resample in the act
+
+Two terminal results merged this cycle. Both are negatives. Both refuted an
+advisor number. Both produced a campaign rule. Alphonse and askeladd are
+reassigned; all four Macs are productive.
+
+### 255.1 E104 merged at `e5763976` - the whole `rate(NA)` axis is closed
+
+Alphonse, PR #106, head `da95104776acece7b21d3f09d80f4f4335c856ce`, base
+`5c2c3b8b`, status `failed`. Primary metric
+`isolated_na5_one_group_rate_lift_pct_bit_exact` 0.0 -> 0.773 against a bar of
+10. W&B `jm7ket3y`, `5siys7yz`, `ono4qb9m`, `yi4i07jx`, `9dhtwtl1`, `s7m27jme`.
+
+Research-only. `git diff --stat 5c2c3b8b..HEAD -- Vendor/ Sources/
+mtp-head.manifest.json` is empty; every arm is a regex patch of the emitted JIT
+source string inside Python under `research/`.
+
+Three closures, each with a pre-registered rule, null controls at M=2 and M=3
+that bound the instrument at plus or minus 0.2 percent, and a positive control
+that fires everywhere.
+
+**HIS FINDING 33 - M=5 is the last width where collapse pays.** Isolated
+one-group against the shipped split, NA=2..8, five scored shapes, palindrome
+order, six blocks per cell, block 0 dropped.
+
+| M | split | A_local | [min,max] | A_ranked | ranked gain | verdict |
+|---:|---|---:|---|---:|---:|---|
+| 2 | [2] | 1.000 | [0.998,1.002] | - | - | null control |
+| 3 | [3] | 0.999 | [0.998,1.001] | - | - | null control |
+| 4 | [2+2] | 1.426 | [1.393,1.518] | 1.774 | +11.3 % | wins |
+| 5 | [3+2] | 1.577 | [1.552,1.641] | 1.961 | +1.9 % | wins, marginal |
+| 6 | [3+3] | 1.872 | [1.856,2.185] | 2.329 | -16.5 % | loses |
+| 7 | [4+3] | 2.108 | [2.090,2.723] | 2.623 | -31.2 % | loses |
+| 8 | [4+4] | 2.426 | [2.421,3.172] | 3.018 | -50.9 % | loses |
+
+The `r1` values nobody had ever measured:
+
+| M | r2 GB/s | r1 needed | r1 measured | shortfall |
+|---:|---:|---:|---:|---:|
+| 5 | 262.3 | 163.1 | 169.0 | +3.6 % over the bar |
+| 6 | 242.7 | 150.9 | 130.8 | -13.3 % |
+| 7 | 222.9 | 138.7 | 106.7 | -23.1 % |
+| 8 | 205.8 | 128.0 | 85.0 | -33.6 % |
+
+The bar falls about 7 percent per width; the measured one-group rate falls
+about 20 percent per width. Spill-corrected through the spill-free `fa_qkv`
+NA=4 to NA=5 slope, M=6 softens to about -5 percent but stays negative.
+**M=6, M=7 and M=8 collapse are closed.**
+
+**HIS FINDING 34 - host register budgets differ.** `agx_crossarch.py wall`
+gives g16s 96 and g17s 124. The g17s column reproduces E76 exactly at NA=4, 5
+and 6, which validates the instrument. On g16s the kernel spills 16 B at NA=6,
+48 B at NA=7 and 96 B at NA=8; on g17s it spills only at NA=8.
+
+**HIS FINDING 36 - AIR op counts do not predict time; ISA text size and spill
+do.**
+
+| arm | AIR FP ops/NA | g16s reg/spill @NA=5 | ISA text delta | NA=5 time delta | bit-exact cells |
+|---|---:|---:|---:|---:|---:|
+| `a_base` | 160 | 95 / 0 | 0 | 0 | reference |
+| `n_nosums` | 148 | 95 / 0 | -5.8 % | -4.47 % | 0/35 |
+| `xf_exactfma` | 112 | 92 / 0 | +0.2 % | -0.77 % | 35/35 |
+| `f_fmamax` | 88 | 96 / 176 B | +3.4 % | +41.99 % | 1/35 |
+| `s_splitacc` | 160 | 89 / 288 B | +10.0 % | +6.78 % | 1/35 |
+
+A 45 percent cut in AIR floating-point operations produced a 42 percent
+slowdown. The cause is that the Metal backend already contracts `a*b+c`: base
+ISA 8,228 B against 8,244 B for the explicit-FMA rewrite, so the 30 percent AIR
+reduction never existed in the machine code. This retro-explains the withdrawn
+`-ffast-math` control and refutes his own earlier working hypothesis of
+floating-point issue saturation.
+
+**Campaign rule 36, credited to alphonse.** Stop using AIR instruction counts
+as a cost model for these kernels. Use compiled ISA text bytes and spill bytes
+from `research/agx_crossarch.py`. On the three spill-free NA=5 points the
+correlation between ISA text and time is near exact.
+
+`n_nosums` at -4.47 percent is the only mover and it is unreachable: it drops
+the affine bias-sum term, and `quantized.cpp:1042` already places the `sums`
+accumulation in the `m` loop rather than the `r` row loop, so there is no
+redundancy to remove. `quantized.cpp:1040` pins the expression tree and any
+reassociation changes bits. **Treat -4.5 percent as an unreachable ceiling on
+the whole arithmetic axis.**
+
+The pure-load arm is flat in NA, 1.127x over NA=2..6 against 1.804x for the
+full kernel. The loads were never the constraint.
+
+**My ruling on the ambiguity he flagged.** He asked whether "no fix arm moves
+NA=5 by more than 3 percent" should count `n_nosums` at -4.47 percent and
+`s_splitacc` at +6.78 percent, which move it but are not bit exact. His reading
+is correct and I confirmed it in the E108 brief: a fix arm is one that could
+legally ship, and an arm that changes the emitted bits is a diagnostic rather
+than a candidate. He reported both numbers in full and used `n_nosums` as a
+ceiling. The decision does not change.
+
+Arm P, software pipelining, was gated out by his own pre-registered decision
+tree. His Finding 36 predicts it fails because it changes neither ISA text nor
+spill. Recorded, not run.
+
+Gates: ungated, counterbalanced in-session, `cool_gate_passed_real_gate=false`
+and `gate_qualified_for_timing=false` preserved verbatim. Entry temperatures
+34.8 to 37.9 C on the ladder and 36.2 to 41.8 C on the arithmetic set. Scope
+and budget unchanged from base: source 2,539,338 of 3,000,000, growth 84,503 of
+262,144.
+
+### 255.2 E105 merged at `05d88b8f` - dispatch-boundary fusion cannot reach the bar, and my intercept is refuted
+
+Askeladd, PR #107, head `9ea00d9a2527648bd19bca6bb9165c587ccd1e00`, base
+`f556bd5f`, status `failed`. Primary metric
+`fusion_ceiling_pct_of_local_decode_only_round_at_N80` 0.2 -> 0.062. W&B
+`lzhvble3` and `19uagt1l`. Six `research/` files, zero of the 89
+`editablePaths`, both temporary instruments reverted.
+
+He measured the quantity my brief only assumed, and the pre-registered stop
+rule fired on all 12 priced cells.
+
+| shape | pass | F us/disp | N=80 % of round | vs bar | N=96 % of round | vs bar |
+|---|---|---:|---:|---:|---:|---:|
+| tiny | mtp | 0.594 | 0.035 % | 0.18x | 0.042 % | 0.21x |
+| tiny | serial | 1.933 | 0.114 % | 0.57x | 0.137 % | 0.69x |
+| op | mtp | 1.053 | 0.062 % | 0.31x | 0.075 % | 0.37x |
+| op | serial | 2.057 | 0.122 % | 0.61x | 0.146 % | 0.73x |
+| prework | mtp | 1.049 | 0.062 % | 0.31x | 0.074 % | 0.37x |
+| prework | serial | 2.613 | 0.154 % | 0.77x | 0.185 % | 0.93x |
+
+Decode-only round 135,309.1 us; bar 0.20 percent equals 270.6 us. The realistic
+cell is the MTP pass at the live prework width, N=80: 0.062 percent, 0.31x the
+bar. The most favourable cell in the whole grid is 0.185 percent and is not
+achievable.
+
+**FACT 8 IS SUPERSEDED FOR THE MTP PASS.** Measured on a student M4 Pro, three
+shapes that subtract into components, ABBA-averaged:
+
+| component | value |
+|---|---:|
+| dispatch boundary, 1 threadgroup | 1.933 us |
+| ramp | 1.70 ns/threadgroup, 34.0 ns/wave |
+| MLX per-op graph and eval cost | 0.124 us |
+| empty-dispatch floor | 2.79 us |
+| marginal F, serial pass | 2.057 to 2.613 us |
+| **marginal F, MTP pass, the scored leg** | **1.049 to 1.053 us** |
+
+Serial and MTP F differ 2.5x and the gap is causal: for the same 1,536 added
+dispatches per forward the serial round grows 4,065 us and the MTP round grows
+1,420 us. The MTP forward carries five rows, so CPU encode hides behind GPU
+work. Serial F is an upper bound; MTP F prices the scored leg.
+
+**ADVISOR ERROR 62.** My Finding 36 per-dispatch fixed cost of 9.90 us is a
+fitted intercept and it is refuted. All four families in that fit have
+`K = 5120`, so `threadgroups = N/8` and `bytes = 2880 N`, which makes
+`threadgroups = bytes / 23040` exactly at every design point. The two
+regressors are perfectly collinear; a two-parameter fit to four collinear
+points cannot identify an intercept, and `R^2 = 1.0` measures nothing there. I
+flagged `F` as fitted rather than observed in E106 f1 and then priced a rung
+from it anyway.
+
+**Consequence: the E106 rung-3 standing prize deflates about 9x**, from
+`257 x 9.90 = 2,544 us` and 2.0 percent to `257 x 1.05 = 270 us` and 0.21
+percent, which is at the bar and below the harness noise floor. Sent to edward
+as E106 f3 with an instruction not to run rung 3 on my word and to measure his
+own marginal boundary first. The N=5120 anomaly itself is a within-fit
+DIFFERENTIAL, so any intercept error cancels out of it and edward's core
+question is unaffected.
+
+**Rung 1 decomposition - launch is the smallest of three pools.**
+
+| pool | us/round | % of Frame A round |
+|---|---:|---:|
+| launch | 268.0 | 0.263 % |
+| memory | 91.1 | 0.089 % |
+| residual, intra-kernel latency | 425.0 | 0.417 % |
+| addressable total | 784.1 | 0.769 % |
+
+| family | grid | tg | tg count | us/disp | launch | memory | residual | residual us/round |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| GDN prework | 32x5x80 | 32x1x1 | 400 | 11.36 | 2.79 | 1.65 | 6.92 | 332.2 |
+| q/k norm + RoPE | 8960x1x1 | 64x1x1 | 140 | 9.17 | 2.79 | 0.58 | 5.80 | 92.8 |
+| KV write | 1280x4x1 | 256x4x1 | 5 | 2.87 | 2.79 | 0.08 | 0.00 | 0.0 |
+
+**Root cause of the negative: the round is bandwidth-bound.**
+`affine_qmv_fast` holds **94.43 percent** of the 95,504 us verify round across
+five shapes and 257 dispatches. The mean verify dispatch costs 127.7 us against
+a 2.79 us empty dispatch, so launch is about 2.2 percent of the average
+dispatch.
+
+### 255.3 The lm_head regime disagreement, and a free cross-check on E104
+
+My census and his disagree on the same tensor by 52 percent, and both are
+correct.
+
+| frame | disp/round | us/disp | GB/s | % of 273 GB/s peak |
+|---|---:|---:|---:|---:|
+| my E96 census, pre-E100, M=5 as `[3+2]`, G=2 | 2 | 2,634.66 | 271.4 | 99.6 % |
+| askeladd E105, current tree, M=5 one group, grid 5x31040 | 1 | 4,002.18 | 178.7 | 65.5 % |
+
+E100 shipped `qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>`, so M=5 is now a
+single group. The two censuses therefore measure two different regimes, and
+their ratio is an in-situ estimate of the group-scaling factor on the largest
+tensor in the model:
+
+```
+A_local(M=5) = 271.4 / 178.7 = 1.519      two censuses, in situ
+A_local(M=5) = 1.577                       E104, isolated harness
+```
+
+3.7 percent apart from two completely independent instruments. This is good
+independent corroboration of E104's central measurement.
+
+**Consequence for E106.** Its premise, "every streaming projection is at 99.8
+percent of DRAM peak except the two whose output width is 5120", was measured
+in the two-group regime that no longer exists at M=5. E106 f3 adds a rung-0
+requirement to re-establish the anomaly on the current tree before rung 1, with
+three publishable outcomes named in advance.
+
+### 255.4 Two campaign rules adopted from E105, credited to askeladd
+
+**Campaign rule 34 - name the round frame.** Naive `wall / rounds` from a
+`--local-iterate` leg still contains the 512-token seed, so it is not a round
+time and it changes with token count. Solving `spt(n) = P/n + D` on the serial
+pass gives `P = 4.130 s` and collapses a +74.57 percent cross-`n` spread to
+-4.24 percent out of sample. The naive denominator understates any change 4.1x.
+His reducer now labels it `leg_wall_round_ARTEFACT`.
+
+| frame | us/round |
+|---|---:|
+| naive wall/rounds, n=64 | 553,463 |
+| naive wall/rounds, n=32 | 817,600 |
+| decode-only, seed removed | 135,309 |
+| thorfinn chain-C implied | 152,392 |
+| advisor E96 anchor | 127,533 |
+| census GPU-busy union, Frame A | 102,013 |
+
+**Campaign rule 35 - replicates below 0.5 percent.** Median identical-mirror-leg
+repeatability is 246 us serial and 445 us MTP against a 135,309 us decode-only
+round, which is 0.18 percent and 0.33 percent. No arm below 0.5 percent may be
+decided from a single ABBA pair. The two worst pairs are the palindrome
+endpoints, which are maximally separated in time and thermal state.
+
+This rule threatens three live assignments at once, all of which carry a 0.20
+percent promotion bar. That is why E109 exists.
+
+### 255.5 FINDING 39 - the mode instrument catches a byte-identical crown resample in the act
+
+`097991a0` (ivanfioravanti, GLM-5.3) is described in its own note as a pure
+resample of the promoted crown. Read through `research/board_prompt_instrument.py`:
+
+```
+A 51b9bf85  vibecodooor    published 3.35025879204714
+B 097991a0  ivanfioravanti published 3.29281627278690
+schedule bit-identical on all eight prompts: YES
+
+   prompt      A s/tok      B s/tok  B faster %
+ plutarch   0.03030393   0.03030323     +0.0023
+    drama   0.01960348   0.01992123     -1.6079
+   travel   0.01723314   0.01756503     -1.9076
+   beagle   0.01186783   0.01203100     -1.3655
+ medicine   0.01081748   0.01091309     -0.8800
+ republic   0.01081985   0.01091888     -0.9111
+   essays   0.01092358   0.01107893     -1.4121
+   botany   0.01073829   0.01083128     -0.8623
+
+   probe   effect %  resolution    sigma
+  TARGET    +0.0023      0.0709    +0.03
+   DRAFT    -1.0862      0.7205    -1.51
+```
+
+A bit-identical tree, resampled. The TARGET probe is null to 0.03 sigma. The
+DRAFT probe moves -1.09 percent. The published score moves -1.71 percent.
+
+**This is the cleanest confirmation of FACT 2 the campaign has.** The run-level
+measurement mode lives only in the drafting path, exactly as FACT 2 asserts,
+and the Finding 37 instrument separates it from a single receipt pair with no
+prior knowledge of which mode either run drew.
+
+The crown tree has now been drawn three times in public:
+
+| id | published | mode vs `51b9bf85` | gap |
+|---|---:|---|---:|
+| `51b9bf85` | 3.35025879 | reference | - |
+| `d4973a86` | 3.33810141 | same | -0.363 % |
+| `097991a0` | 3.29281627 | flipped | -1.713 % |
+
+Same-mode redraw costs 0.363 percent of published score; a cross-mode redraw
+costs 1.713 percent. The mode is worth roughly 1.35 percentage points of
+published score on its own. **Never read a published delta as a mechanism.**
+
+Order-of-magnitude check against FACT 2: at about 0.601 ms per drafting round
+and roughly 108 drafting rounds on beagle against a 6.117 s leg, the predicted
+beagle mode shift is 1.06 percent. Measured 1.366 percent. Same order, right
+sign.
+
+### 255.6 Board at 18:30Z
+
+No promotion has moved. `51b9bf85` remains the frontier at 3.35025879 and our
+serial-free 3.34776191 on `b8b8b860` remains the highest on the board.
+
+Newly resolved:
+
+```
+a543934d 3.33506094 rejected  DeepSeek-V4-Flash  crown + qL={1..5} SDPA warm
+097991a0 3.29281627 rejected  GLM-5.3            PURE crown resample, mode flip
+```
+
+`a543934d` is the fourth rival submission spent on the qL SDPA compile-warm
+ladder that our own schedule-matched decomposition measured at +0.0057 percent,
+sd 0.0875, on the candidate leg. `81e44940` at 18:25Z is a fifth, same
+mechanism, same solver. Rivals are burning submission slots on a mechanism we
+proved null hours ago.
+
+Validating at 18:30Z: `156b6a7a`, `c8c04d43`, `bde54713`, `e72058d7`,
+`029da3b0`, `5edf8353`, `81e44940`, and one Cursor Gemini 3.7 Flash row.
+
+Thorfinn's E101 resubmission has not appeared yet. He holds the priority
+interrupt.
+
+### 255.7 Assignments this cycle
+
+Base for both: `05d88b8fc0976ea3ff17c42f13890c1b8c7f0297`.
+
+**E108, alphonse, PR #110** - *your own E104 says ISA text bytes predict time;
+E102 built a 42 percent smaller entry point for the kernel that owns 94 percent
+of the round and nobody ever timed it.*
+
+E102 rung 2 produced `H_prune_narrow` and `I_prune_all_dead`, proved the narrow
+`1024 <= out_vec_size < 4096` branch is entirely dead against the scored set
+`{5120, 14336, 16480, 34816, 98336, 248320}`, and measured the text:
+
+| arm | g16s reg/spill | g16s text | g17s reg/spill | g17s text | g17s sha |
+|---|---|---:|---|---:|---|
+| `A_shipped` | 94/0 | 121,072 | 91/0 | 126,984 | `846d5999` |
+| `H_prune_narrow` | 94/0 | 75,948 | 91/0 | 79,190 | `53e07912` |
+| `I_prune_all_dead` | 94/0 | 70,352 | 91/0 | 73,380 | `f178d05e` |
+
+`I` removes 42.21 percent of the g17s entry-point text and changes registers by
+exactly zero. E102 concluded correctly that text is not a register lever and
+stopped. **I refused GPU time for the timed dispatcher cell at the time. That
+refusal predates Finding 36, which is the named reason to reopen.**
+
+The distinction that makes this a real experiment: E104's text-versus-time
+correlation was measured on arms that change the EXECUTED body, while pruning
+removes NON-EXECUTED text. Three hypotheses, separated at rung 1 by an
+`I` / `reorder` / `repad` triple. A null is itself a campaign result, because
+it would prove Finding 36's correlate is executed instruction scheduling rather
+than instruction-fetch footprint, which three live assignments now depend on.
+
+Rung-0 stop rule: stop if arm `I` moves no scored cell by more than 1.0 percent
+and the pooled effect is inside the plus or minus 0.2 percent E104 instrument
+floor. Rung 2 requires fail-closed pruning: route any pruned branch to the
+generic `qmv_impl` at `quantized.h:1188` rather than let control fall through,
+because `segmentedVerifyDepthCap` is an editable constant and raising it brings
+`M = 9` back.
+
+**E109, askeladd, PR #111** - *no harness in this campaign can resolve the 0.20
+percent bar we set; build one that can, then use it on the 425 us intra-kernel
+latency residual.*
+
+Rung 0 is the deliverable, not a warm-up: a committed protocol under `research/`
+with a null control, a recovered known dose near 0.20 percent, an explicit
+design statement and a wall-clock cost per decision. Pre-registered stop rule:
+if the achievable half-width stays above 0.20 percent, report the floor, because
+that tells me the bar is unenforceable end to end and promotion must move to
+isolated harnesses plus a modelled transfer.
+
+Rung 1a tests the premise before building anything. His report reads 400
+threadgroups of one SIMD group each as an occupancy failure; on Apple GPUs
+several threadgroups co-reside per core, so that is plausible but unproven. A
+sweep of SIMD groups per threadgroup over `{1,2,4,8}` at fixed total work
+separates H1 occupancy from H2 dependent chain from H3 threadgroup granularity.
+Stop if the best point is within 15 percent of the shipped point.
+
+Bit exactness at rung 2 is achievable by construction: refolding grid dimensions
+into the threadgroup changes which thread runs where, not what each thread
+computes, provided no cross-SIMD-group reduction is introduced or reordered.
+
+### 255.8 File ownership, restated for four concurrent students
+
+| student | files |
+|---|---|
+| alphonse E108 | `quantized.h` from line 1917 through the wide and narrow switches, plus the matching region of `mlx-generated/quantized.cpp` |
+| thorfinn E107 | `quantized.h:1068-1186`, the affine-2 single-row kernel and its `_m` wrapper, and the dispatch gate at `:1908-1915` |
+| askeladd E109 | `Qwen35.swift:662-1250`, the GDN path, and the q/k norm and RoPE kernel |
+| edward E106 | the linear-projection dispatch sites for `gdn.out_proj`, `fa.o_proj` and `mlp.down` |
+
+Alphonse and thorfinn will both eventually write to the generated twin
+`mlx-generated/quantized.cpp`. Both were told to report a shippable arm and wait
+for me to adjudicate the integration order. Rungs 0 and 1 are research-only JIT
+string patches for both, so there is no conflict until rung 2.
+
+`GatedDelta.swift` remains not editable.
+
+### 255.9 Feedback sent this cycle
+
+| PR | feedback id | comment |
+|---|---|---|
+| #108 edward | `e106-f3-my-fixed-cost-intercept-is-refuted-your-differential-survives` | `5373689923` |
+| #109 thorfinn | `e107-f2-use-isa-text-not-air-and-a-measured-reference-arm-not-my-law` | `5373702173` |
+
+E107 f2 also replaces thorfinn's rung-0 stop rule. My law is no longer a valid
+reference: the intercept is refuted and the slope `S = 3670.2 us/GB` was fitted
+in the pre-E100 two-group regime, so his kernel's excess is somewhere between
++26 percent and +69 percent rather than a clean +69 percent. He must instead
+measure an affine-4 reference arm of comparable byte volume at `M = 1` in his
+own isolated harness, in the same session, and compare achieved GB/s directly.
+His ALU ceiling of about 418 us per draft and 2.08 percent of the round is
+unaffected by the intercept correction, which moves the predicted cost only
+from 587.3 us to 578.5 us.
+
+### 255.10 Stop-list additions this cycle
+
+- the whole `rate(NA)` axis of the wide affine-4 crossrow kernel; the best
+  bit-exact arm is +0.77 percent against a 10 percent bar
+- the arithmetic axis of that kernel; ceiling -4.5 percent and unreachable
+- split accumulators, `s_splitacc`, +6.8 percent with 288 B spill on both archs
+- explicit FMA contraction, `xf_exactfma`, -0.77 percent; the backend already
+  contracts
+- collapsing M=6, M=7 or M=8 row groups, now measured at -16.5, -31.2 and -50.9
+  percent ranked
+- dispatch-boundary fusion of the GDN prework, q/k norm and RoPE, and KV write
+  families; ceiling 0.062 percent against a 0.20 percent bar
+- AIR instruction counts as a cost model for these kernels
+- software pipelining of the wide QMV, arm P, predicted to fail because it
+  changes neither ISA text nor spill
+
+### 255.11 Student board
+
+```
+PR    student    experiment                                   prize
+#108  edward     E106 the N=5120 per-dispatch anomaly         1.693 % local, premise under re-test
+#109  thorfinn   E107 affine-2 draft readout is ALU bound     2.08 %  (resubmission interrupt first)
+#110  alphonse   E108 instruction-fetch footprint of the wide QMV   94.43 % of the round is the pool
+#111  askeladd   E109 resolve the 0.20 % bar, then the 425 us residual   0.417 % plus a campaign asset
+```
