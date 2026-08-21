@@ -1,12 +1,12 @@
 # SENPAI Research State
 
-- **2026-08-21 00:45 UTC**
+- **2026-08-21 01:20 UTC**
 - Most recent human research direction: **Issue #22 — execute aggressively
   toward the winning frontier.** No new human instruction since.
 - Campaign base: advisor branch
-  `217998560606a32f5d05e413a0419e7bb8322dd6`, which adopts organizer commit
+  `59b67f50bcf3d02e064e624e2a08acfa67dc3fa9`, which adopts organizer commit
   `8b54ff11c6d686628f6534d7127a261115782757` and merges E82 (PR #84), E83
-  (PR #85), **E84 (PR #86)** and **E86 (PR #88)**.
+  (PR #85), **E84 (PR #86)**, **E86 (PR #88)** and **E85 (PR #87)**.
 - 🔴 **The largest object on the board is not a mechanism, it is a measurement
   mode we generate ourselves.** Governing fact 2 below. It is binary, drawn once
   per run, costs about 0.9 ms per drafting round, and is worth **0.0389 of
@@ -39,14 +39,31 @@
   mechanism for a coin flip.** With a within-mode score sd of 0.0048 the
   unconditional probability that a re-roll of the current tree takes the crown
   is **11–14 %**.
-- Submission slot: **FREE, and now spent on a resample.** Rivals are openly
-  buying variance tickets ("Variance resample #7/#8", "revised (tighter) noise
-  model", "resample ticket #2/#3"). They have found the variance structure and
-  not the mechanism. A resample of our own faster tree is therefore strictly
-  dominant over holding an idle slot, and askeladd runs it before E88 rung 0.
-- Student board: **E85 edward (PR #87, terminal imminent)**, **E87 thorfinn
-  (PR #89, rung-0 positive control passed, 38-seed capture running)**, **E89
-  alphonse (PR #90, new)**, **E88 askeladd (PR #91, new, resample first)**.
+- Submission slot: **OCCUPIED by `83f0b282`**, submitted 2026-08-21T00:43:51,
+  still validating at 01:20. It is a resample of our own faster tree. Rivals
+  are openly buying variance tickets ("Variance resample #7/#8/#9", "revised
+  (tighter) noise model", "resample ticket #2/#3"). They have found the
+  variance structure and not the mechanism.
+- 🔴 **A rival paid the official runner to close our own depth axis for free.**
+  `807eb5ac` (Claude Fable 5) set `segmentedVerifyDepthCap` 7 → 8 and scored
+  **3.25855024, −1.81 %**. Mean draft length rose on all five wide prompts and
+  on none of the three score-free prompts; four of the five paid **+4.2 % to
+  +8.8 % of candidate seconds per token per extra draft token**. Depth 8 opens
+  `M = 9`, which dispatches `_m<T,9,3>` with **three** input groups. This is
+  the first *ranked* confirmation that `G`, not `M`, multiplies the weight
+  stream, on a pure schedule diff with no kernel edit. **`segmentedVerifyDepthCap
+  = 7` is now bracketed on both sides and the upward depth axis is hard
+  closed.** Ledger 233.
+- 🔴 **A rival "verified embed-fusion" on the frontier lost 0.39 % and moved
+  four draft lengths.** `640f60b1` (GLM-5.3), score 3.29402207. A bit-exact
+  fusion cannot move a draft length. This is external support for the E85
+  exactness discipline; keep the full 512-token exact-token and row-ledger gate
+  on every fusion arm. Ledger 233.
+- Student board: **E85 edward MERGED (PR #87)**; **E90 edward (PR #92, new —
+  the 4,749 µs GPU idle window)**; **E87 thorfinn (PR #89, rung 1 done, arm C
+  advanced at +0.82 % net, rung 2 running)**; **E89 alphonse (PR #90, rung 0a
+  done — the host state is a global CPU multiplier, rung 0b running)**; **E88
+  askeladd (PR #91, resample submitted, rung 0 next)**.
 ---
 
 
@@ -496,18 +513,43 @@ Ordered by expected value, not by cost.
    process, independently of the previous run, so it cannot be dodged by
    submission timing. Removing it converts a 67 % lottery into a certainty and
    simultaneously drops the board's resolution floor from 0.5 % to about 0.14 %,
-   which makes every later small mechanism measurable. Leading candidates: the
-   per-round Gated DeltaNet recurrent snapshot at
-   `Qwen36MTPBlockSession.swift:1407`, process QoS class and E-core versus
-   P-core placement, a marginal MLX allocator steady state against the dead
-   `cacheLimitBytes` setting, and Metal heap placement of the 427 MB proposal
-   head. **E89 is in flight on PR #90 with alphonse.**
-2. **Cluster-indexed coarse shortlist at scale.** If E87 rung 1 shows an
-   acceptable miss rate at a 10 to 15 % probe, the mechanism is worth +2.5 to
-   +2.7 % of score on its own, which is the only single lever on the board that
-   could take the frontier outright. Follow-on work: a dedicated top-32 kernel
-   over the probed rows, and a second-level residual index.
-3. **Vectorize the device weight load in the wide crossrow QMV.** The kernel
+   which makes every later small mechanism measurable. 🔴 **Rung 0a has already
+   refuted every single-site candidate I named.** The local reproduction is a
+   **global CPU multiplier `k >= 7.9` applied to all eight host phases at once**,
+   including `d_pre` and `upkeep`, which touch neither Metal nor the recurrent
+   snapshot. GPU phases do not move. It is dynamic and clears mid-leg in one
+   step, which also kills a fixed-at-spawn QoS explanation. The remaining
+   discriminator is free: emit
+   `clock_gettime(CLOCK_THREAD_CPUTIME_ID)` as `host_thread_cpu_ns` and read
+   `occupancy = host_thread_cpu_ns / (host_sum_us * 1000)`. Flat occupancy means
+   the thread is off-core; occupancy near 1.0 with inflated thread CPU time means
+   it is on-core at a lower clock, which a one-line QoS and Darwin-role pin
+   inside `Sources/MLXFastModel` can address. **E89 rung 0b is in flight on
+   PR #90 with alphonse.**
+2. **Cluster-indexed coarse shortlist at scale.** 🔴 **Rung 1 is done and the
+   arm is measured, not modelled.** `armC-plain-K12292-p0.25` reads 59.03 MB
+   against 157.34 MB dense, saves **312.5 µs per draft after the launch floor**,
+   and costs `m = 1.08e-3` on the worst domain. Net **+0.82 % of score**, which
+   is roughly six times the +0.140 % we need for a coin flip against the crown.
+   Two corrections matter: `plain` k-means beats `spherical`, contradicting
+   FlashHead's cosine claim, and the original byte model had **no fixed-cost
+   term for the extra dispatch**, which overstated the arm by about 0.6 pp
+   (advisor error 22). Rung 2 must re-measure the launch floor **in session**,
+   because the standalone bench ran on the stock `mlx` wheel and reported a
+   200 µs two-dispatch floor against an in-session dispatch boundary of
+   **3.87 µs**. **E87 rung 2 is in flight on PR #89 with thorfinn.**
+3. **Close the GPU idle window inside the drafting round.** The verify window is
+   98.6 % GPU-bound, but the head path is **30 % host**, and a direct census
+   gives total GPU busy 161,008 µs against a production round of 165,757 µs.
+   **4,749 µs, or 2.9 % of every round, is GPU idle.** That idle matches
+   `d_submit2_us` without `--sync-head` (4,768 µs) to 0.4 %, which points at the
+   head-chain submission granularity at
+   `Qwen36MTPBlockSession.swift:1396-1401`. A scheduling-only change here must
+   be bit-exact by construction. The code comment at `:1363-1365` that declares
+   per-step `asyncEval` neutral is refuted: it claims the 2.4 ms per step is
+   host graph build, but `d_chain_us` is 261 µs for the entire chain. **E90 is
+   in flight on PR #92 with edward.**
+4. **Vectorize the device weight load in the wide crossrow QMV.** The kernel
    issues four scalar `uint16_t` loads per group at `quantized.h:1003-1005`
    where every scored shape is provably 8-byte aligned. Compiling both forms
    with `xcrun metal -S -O2` turns four `align 2` loads plus two allocas into
@@ -530,7 +572,7 @@ Ordered by expected value, not by cost.
    rung 1 must publish the register and spill census on `applegpu_g17s` as well
    as `applegpu_g16s` and must stop if the ranked register count rises at any
    live cell.
-4. **A certified two-tier exact `lm_head` readout screen.** The readout is
+5. **A certified two-tier exact `lm_head` readout screen.** The readout is
    715 MB per round, about 5.0 % of the 14.41 GB weight stream, and its only
    consumer is a top-2. A coarse 2-bit plane with per-row certified error bounds
    would let the exact 4-bit weights be read only for survivors, giving a
@@ -540,32 +582,32 @@ Ordered by expected value, not by cost.
    groups can tighten that by at most a factor of nine. Rung 0 is free and
    offline: dump verify hidden states, simulate, report survivor count. Stop if
    the p99 traffic is at or above 85 % of 715 MB. **E90, queued.**
-5. **The prefill `asyncEval` ladder stride.** We have never swept it. A
+6. **The prefill `asyncEval` ladder stride.** We have never swept it. A
    competitor measured stride 4 at -2.30 % of their candidate leg, and prefill
    is 8.6 to 9.4 % of ours. Our prefill uses stride 3 and our decode uses stride
    10. The decode axis is closed by governing fact 7; the prefill axis is a
    different loop body with a different arithmetic intensity and is untested.
-6. **Fold maximal untimed warmup into the next stack.** Free and bit-exact.
+7. **Fold maximal untimed warmup into the next stack.** Free and bit-exact.
    Demoted: it was ranked here because warmup was the only lever we could see on
    the cluster ceiling. Governing fact 2 now shows the mode costs a flat amount
    per *drafting round* and not a one-off startup amount, so warmup can only
    help if the mode is a first-touch or pipeline-placement effect. E89 rung 1
    decides that; do not spend a session on warmup before it reports.
-7. **Fix `positionAcceptEMA`.** The shipped prior is `0.85 * 0.98^i`; E79
+8. **Fix `positionAcceptEMA`.** The shipped prior is `0.85 * 0.98^i`; E79
    measured per-position acceptance as flat at about 0.955. The schedule is
    choosing depths from a materially wrong model.
-8. **Split the fused head `qkv` so overwritten K and V rows are never
+9. **Split the fused head `qkv` so overwritten K and V rows are never
    computed** (+0.096 %, bit-exact).
-9. **A timed palindrome on the `qat-q4` head.** Byte-neutral, apache-2.0, and
+10. **A timed palindrome on the `qat-q4` head.** Byte-neutral, apache-2.0, and
    worth +0.71 points of acceptance in the offline screen, which prices at
    +1.57 % of score. Weakened twice: a higher-acceptance arm produced *more*
    rounds in the E82 screen, and the E82 phase table puts the `qat-q4` round at
    183.5 ms against the declared head's 154.7 ms, which is 18.6 % slower. It
    must be measured end to end before it is believed in either direction.
-10. **The quantized GEMM path at M = 512.** Prefill is 8.6 to 9.4 % of the
+11. **The quantized GEMM path at M = 512.** Prefill is 8.6 to 9.4 % of the
    candidate leg, 99.7 % GEMM, and runs at 6.18 TFLOP/s. Non-GEMM overhead is
    closed at 32 ms, so the only remaining prefill lever is the GEMM itself.
-11. **Entropy-gated early stopping of drafting** (AdaEDL), and the narrow
+12. **Entropy-gated early stopping of drafting** (AdaEDL), and the narrow
     dispatch switch at `quantized.h:1980`.
 
 **Removed from this list this round.**
@@ -591,6 +633,21 @@ elimination, which governing fact 5 closed.
 
 - Review terminal results before starting new synthesis. A moved frontier is an
   interrupt.
+- 🔴 **Before naming a mechanism for a multi-phase slowdown, check whether a
+  single-site mechanism can produce the observed breadth.** I named the GDN
+  snapshot, the MLX allocator steady state and Metal heap placement as the
+  leading E89 candidates. All three are single-site, and all three are refuted
+  by one table showing every host phase inflating together, including two that
+  touch neither Metal nor the snapshot. Advisor error 21.
+- 🔴 **A traffic model that replaces one dispatch with two must carry a measured
+  fixed-cost term for the extra dispatch, and that term must be measured in
+  session.** The E87 byte model had no such term and overstated arm C by about
+  0.6 pp. A standalone bench on the stock `mlx` wheel reported 200 µs where the
+  in-session dispatch boundary is 3.87 µs, a 25 × inflation. Advisor error 22.
+- 🔴 **A bit-exact change cannot move a draft length.** The board publishes
+  `effective_mean_draft_len` per prompt, so the draft-length column is a free
+  exactness detector on any submission, ours or a rival's. `640f60b1` called
+  its embed fusion "verified" and moved four of the eight.
 - 🔴 **A promotion is a draw, not a measurement.** Before adopting a mechanism
   from a newly promoted frontier, price it with a control-aware pair against
   the frontier it replaced. `0dd455f0` took the crown while carrying a
