@@ -29,6 +29,7 @@ FIELDS = (
     "residual_us",
     "closure_err_us",
 )
+REPEAT_ARMS = ("rep", "repchain")
 PHASE_GPU = frozenset({"round_us", "verify_build_us", "eval_wall_us"})
 PHASE_ALL = PHASE_GPU | {
     "draft_build_us", "readout_us", "commit_us", "upkeep_us"
@@ -178,7 +179,7 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
     different acceptance counts.
     """
     ladder = []
-    points = []
+    points = {}
     control = None
     closure = []
     for leg in legs:
@@ -193,12 +194,17 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
             leg["gpu_temp_entry_c"], leg["gpu_temp_exit_c"],
             bool(leg["score"].get("all_tokens_matched")),
         ])
-        if leg["step_mode"] == "rep":
-            points.append((int(leg["repeat"]), mean))
+        if leg["step_mode"] in REPEAT_ARMS:
+            points.setdefault(leg["step_mode"], []).append(
+                (int(leg["repeat"]), mean))
         if leg["step_mode"] == "clone":
             control = mean if control is None else (control + mean) / 2
 
-    fit = least_squares(points) if len(points) > 2 else None
+    fits = {
+        arm: least_squares(values)
+        for arm, values in points.items() if len(values) > 2
+    }
+    fit = fits.get("rep")
 
     # Phase closure. Every arm's rounds are pooled over every acceptance count
     # at the control's draft width, because the removal arms never reach the
@@ -257,6 +263,21 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
                 100.0 * fit["slope"] / control
             )
         metrics["model_overstatement_factor"] = modelled_step_us / fit["slope"]
+    for arm, arm_fit in sorted(fits.items()):
+        metrics.update({
+            f"{arm}_slope_us": arm_fit["slope"],
+            f"{arm}_intercept_us": arm_fit["intercept"],
+            f"{arm}_r_squared": arm_fit["r_squared"],
+            f"{arm}_points": arm_fit["n"],
+        })
+    if "rep" in fits and "repchain" in fits:
+        # A chained repetition cannot start before its predecessor finishes, so
+        # its slope is the step's serial latency. The independent slope is a
+        # throughput bound. The ratio says how much of the latency the GPU
+        # already hides behind the rest of the round.
+        metrics["chain_over_independent_slope"] = (
+            fits["repchain"]["slope"] / fits["rep"]["slope"]
+        )
     if removal and control:
         metrics.update({
             "removal_round_us_unmatched": statistics.mean(removal),
