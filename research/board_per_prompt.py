@@ -16,6 +16,7 @@ at full weight, so a run can be uniformly faster and still score lower. Use
 Usage:
 
     YUKON_API_TOKEN=... python3 research/board_per_prompt.py fetch
+    python3 research/board_per_prompt.py frontier [<iso-cutoff>]
     python3 research/board_per_prompt.py floors
     python3 research/board_per_prompt.py order
     python3 research/board_per_prompt.py heads
@@ -66,7 +67,7 @@ def fetch():
     print("wrote %s with %d rows" % (CACHE, len(rows)))
 
 
-def load():
+def load_all():
     rows = json.load(open(CACHE))
     if isinstance(rows, dict):
         # Tolerate a cache holding the whole endpoint payload rather than the
@@ -77,9 +78,12 @@ def load():
                 break
         else:
             raise SystemExit("%s holds no submission list; rerun fetch" % CACHE)
-    return [r for r in rows
-            if isinstance(r, dict)
-            and (r.get("officialMetrics") or {}).get("per_prompt")
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def load():
+    return [r for r in load_all()
+            if (r.get("officialMetrics") or {}).get("per_prompt")
             and r.get("officialScore") is not None]
 
 
@@ -305,10 +309,73 @@ def cmd_pair(scored, argv):
           "board move.")
 
 
+def cmd_frontier(argv):
+    """Live promoted frontier, in-flight validations, and the recorded state.
+
+    ``senpai/program.md`` requires this comparison immediately before an
+    official submission: if the live promoted row disagrees with
+    ``senpai/frontier-state.json`` on id, source reference or score, the
+    campaign base is stale and the candidate must be replayed on the new base
+    before it is submitted.
+    """
+    rows = load_all()
+    promoted = sorted((r for r in rows if r.get("promotionStatus") == "promoted"),
+                      key=lambda r: -(r.get("officialScore") or 0.0))
+    print("PROMOTED, top 6")
+    for row in promoted[:6]:
+        print("  %s %-16s %.8f  %s  src=%s"
+              % (row["id"][:8], row.get("solverUsername"),
+                 row.get("officialScore") or 0.0,
+                 row.get("promotionFinishedAt"),
+                 (row.get("promotedSourceRef") or "")[:8]))
+
+    validating = sorted((r for r in rows if r.get("status") == "validating"),
+                        key=lambda r: r.get("createdAt") or "")
+    print("\nVALIDATING %d" % len(validating))
+    for row in validating:
+        print("  %s %-16s %s"
+              % (row["id"][:8], row.get("solverUsername"), row.get("createdAt")))
+
+    if argv:
+        cutoff = argv[0]
+        recent = sorted((r for r in rows if (r.get("createdAt") or "") >= cutoff),
+                        key=lambda r: r.get("createdAt") or "")
+        print("\nCREATED SINCE %s: %d" % (cutoff, len(recent)))
+        for row in recent:
+            score = row.get("officialScore")
+            print("  %s %-16s %-11s %-12s %s"
+                  % (row["id"][:8], row.get("solverUsername"), row.get("status"),
+                     ("%.8f" % score) if score else "-", row.get("createdAt")))
+
+    state_path = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "senpai", "frontier-state.json")
+    recorded = json.load(open(state_path))["promotedSubmission"]
+    live = promoted[0]
+    drift = [name for name, want, got in (
+        ("id", recorded["id"], live["id"]),
+        ("sourceRef", recorded["sourceRef"], live.get("promotedSourceRef")),
+        ("score", recorded["score"], live.get("officialScore")))
+        if want != got]
+    print("\nrecorded  %s src=%s %.8f"
+          % (recorded["id"][:8], recorded["sourceRef"][:8], recorded["score"]))
+    print("live      %s src=%s %.8f"
+          % (live["id"][:8], (live.get("promotedSourceRef") or "")[:8],
+             live.get("officialScore") or 0.0))
+    if drift:
+        print("DRIFT on %s: sync the organizer and promoted frontier, replay the "
+              "candidate on the new base, and measure it again before submitting."
+              % ", ".join(drift))
+    else:
+        print("MATCH: frontier-state.json is current.")
+
+
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "floors"
     if command == "fetch":
         fetch()
+        return
+    if command == "frontier":
+        cmd_frontier(sys.argv[2:])
         return
     scored = load()
     print("scored submissions with per-prompt rows: %d" % len(scored))
