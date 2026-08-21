@@ -125,6 +125,64 @@ def fit(rows, legs, label_slow, name):
     return out
 
 
+def median_delta_fit(rows, leg_ids, label_slow):
+    """Fit the per-depth median delta on depth, so the d=7 mass cannot dominate.
+
+    The confidence interval resamples whole legs, because the host state is a
+    per-leg draw and rounds inside a leg are not independent.
+    """
+    depth = np.array([r["d"] for r in rows], dtype=float)
+    host = np.array([r["host_sum_us"] for r in rows], dtype=float)
+    slow = np.array([label_slow(r) for r in rows])
+    groups = np.array(leg_ids)
+    depths = np.array(sorted(set(depth)))
+
+    def fit_from(index):
+        d_sub, h_sub, s_sub = depth[index], host[index], slow[index]
+        xs, ys = [], []
+        for d in depths:
+            sel = d_sub == d
+            fast, slw = h_sub[sel & ~s_sub], h_sub[sel & s_sub]
+            if fast.size and slw.size:
+                xs.append(d)
+                ys.append(np.median(slw) - np.median(fast))
+        if len(xs) < 3:
+            return None
+        return np.polyfit(np.array(xs), np.array(ys), 1)
+
+    point = fit_from(np.arange(len(depth)))
+    unique = np.unique(groups)
+    index_by_leg = {leg: np.flatnonzero(groups == leg) for leg in unique}
+    rng = np.random.default_rng(20260821)
+    draws = []
+    for _ in range(2000):
+        picked = rng.choice(unique, size=len(unique), replace=True)
+        index = np.concatenate([index_by_leg[leg] for leg in picked])
+        fitted = fit_from(index)
+        if fitted is not None:
+            draws.append(fitted)
+    draws = np.array(draws)
+    return {
+        "slope_us_per_draft_step": float(point[0]),
+        "intercept_us": float(point[1]),
+        "slope_ci95": [
+            float(np.percentile(draws[:, 0], 2.5)),
+            float(np.percentile(draws[:, 0], 97.5)),
+        ],
+        "intercept_ci95": [
+            float(np.percentile(draws[:, 1], 2.5)),
+            float(np.percentile(draws[:, 1], 97.5)),
+        ],
+        "intercept_share_at_depth_4.38": float(
+            point[1] / (point[1] + point[0] * 4.382)
+        ),
+        "beagle_over_plutarch_predicted": float(
+            (point[1] + point[0] * 4.382) / (point[1] + point[0] * 1.15)
+        ),
+        "bootstrap_draws": int(draws.shape[0]),
+    }
+
+
 def main():
     legs = load(PREFIX)
     rows, leg_ids = [], []
@@ -141,6 +199,9 @@ def main():
         "crosscheck_hostsum_label": fit(
             rows, leg_ids, lambda r: r["host_sum_us"] > SLOW_CUT_US,
             f"host_sum>{SLOW_CUT_US} is slow",
+        ),
+        "median_fit_core_label": median_delta_fit(
+            rows, leg_ids, lambda r: r["e89_core_a"] <= ECORE_MAX
         ),
     }
     print(json.dumps(report, indent=2, sort_keys=True))

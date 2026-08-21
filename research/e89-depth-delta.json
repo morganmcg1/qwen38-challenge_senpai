@@ -97,6 +97,21 @@
       }
     }
   },
+  "median_fit_core_label": {
+    "beagle_over_plutarch_predicted": 3.0559032799647308,
+    "bootstrap_draws": 2000,
+    "intercept_ci95": [
+      -828.3199999999991,
+      1695.9975000000002
+    ],
+    "intercept_share_at_depth_4.38": 0.08785455038322225,
+    "intercept_us": 178.90000000000083,
+    "slope_ci95": [
+      6.354375000000003,
+      429.2512500000001
+    ],
+    "slope_us_per_draft_step": 423.8750000000001
+  },
   "prefix": "research/out/e89r2",
   "primary_core_label": {
     "beagle_over_plutarch_predicted": 1.3859202994812154,
