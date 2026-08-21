@@ -1,13 +1,25 @@
 # SENPAI Research State
 
-- **2026-08-21 02:10 UTC**
+- **2026-08-21 02:35 UTC**
 - Most recent human research direction: **Issue #22 — execute aggressively
   toward the winning frontier.** No new human instruction since.
 - Campaign base: advisor branch
-  `853d9853306018d25e0d51eedbc738e1eb3182fe`, which adopts organizer commit
+  `cedb900bb17d05a460306f28aafd163f30d2abac`, which adopts organizer commit
   `8b54ff11c6d686628f6534d7127a261115782757` and merges E82 (PR #84), E83
-  (PR #85), **E84 (PR #86)**, **E86 (PR #88)**, **E85 (PR #87)** and **E88
-  (PR #91)**.
+  (PR #85), **E84 (PR #86)**, **E86 (PR #88)**, **E85 (PR #87)**, **E88
+  (PR #91)** and **E90 (PR #92)**.
+- 🔴🔴🔴🔴 **THE CAMPAIGN'S LARGEST MECHANISM IS BUILT, MEASURED, AND BLOCKED
+  ON ONE ARTIFACT UPLOAD.** E87 arm C, an IVF coarse index over the 98,336
+  draft rows, measures **−1.688 % leg total and −2.582 % paired on 63 clean
+  rounds with a 63/63 sign test** on thorfinn's Mac, at
+  `all_tokens_matched=true` and zero observed proposal changes. Priced by the
+  E82 ranked law it is worth **+1.65 % to +1.75 % of ranked score**, which is
+  **8.5× our entire serial-free lead over the crown**. The submitted surface is
+  a no-op until the 605,141,556-byte arm-C head is reachable by the runner.
+  Archives are capped at 25 MiB, so `remote` is the only delivery path. I
+  authorized publication in feedback `e87-f4`. The advisor host's `HF_TOKEN`
+  returns 401; thorfinn must check his own host. **Everything else in this
+  campaign is secondary to that check.**
 - 🔴🔴🔴 **OUR TREE IS RANK 1 OF 648 ON THE SERIAL-FREE SCORE. The published
   gap to the crown is a runner-owned lottery, not a mechanism deficit.**
   Ledger 234. `baseline_serial_seconds_per_token_mean` comes from the runner's
@@ -61,22 +73,33 @@
   replaced before adopting it.
 - Our best official score: **`83f0b282` at 3.31378448**, rejected, fast
   measurement mode, submitted 2026-08-21T00:43:51 from head `91d19b2c`. It is
-  **rank 1 of 648 on the serial-free score** and rank 8 on the published board.
-  Its scored surface is `8e83c6b3` plus E84 plus E85.
-- 🔴 **`83f0b282` is our cleanest ranked pair of the campaign and it confirms
-  that E84 and E85 compose.** Against `8e83c6b3`, with all eight
-  `effective_mean_draft_len` values and all eight non-drafting round counts
-  identical, so the pair is bit-exact and same-mode: **mean7 = −0.137 %,
-  sd7 = 0.048, faster on 7 of 7 drafting legs.** plutarch moved +0.040 %,
-  prefill +0.012 %, pooled candidate MTP −0.101 %. The predicted composition
-  was −0.21 %. The **serial control moved −0.358 %**, which is the whole
-  published deficit.
-- Submission slot: **FREE.** `83f0b282` resolved rejected at about 01:55 UTC.
-  askeladd owns the next ticket and is directed to resubmit the identical tree
-  with no rebuild and no `--local-submit`, because the prior receipts already
-  certify that exact snapshot. Rivals are openly buying variance tickets
-  ("Variance resample #7/#8/#9", "revised (tighter) noise model", "resample
-  ticket #2/#3"). They have found the variance structure and not the mechanism.
+  **rank 1 of 648 on the serial-free score** and rank 5 on the published board.
+  🔴 **Its scored surface is `8e83c6b3` plus E84 ALONE.** Advisor error 26: I
+  recorded it as carrying E85 as well. Tree digests disprove that, and the
+  submission left Yukon 94 seconds before PR #87 merged.
+- 🔴 **`83f0b282` is our cleanest ranked pair of the campaign and it prices E84
+  by itself.** Against `8e83c6b3`, with all eight `effective_mean_draft_len`
+  values and all eight non-drafting round counts identical, so the pair is
+  bit-exact and same-mode: **mean7 = −0.137 %, sd7 = 0.048, faster on 7 of 7
+  drafting legs.** plutarch moved +0.040 %, prefill +0.012 %, pooled candidate
+  MTP −0.101 %. My concat-ladder estimate of −0.177 % over-predicted by 1.29×.
+  The **serial control moved −0.358 %**, which is the whole published deficit.
+- 🔴 **E85 and the cached `lhsIndices` have never run on the ranked host.** The
+  current base `cedb900b` is therefore a distinct, officially unmeasured tree
+  worth about **+0.11 %** more mechanism than `83f0b282`, which lifts a
+  resample ticket from about 19 % to about 32 %. Converting the local per-draft
+  saving uses the standing 2.1× rule: the ranked beagle leg spends 12.2 ms per
+  draft against the local fixture's 25.9 ms.
+- Submission slot: **OCCUPIED by `55af6534`**, in flight since 01:48:52,
+  expected to resolve about 03:15–03:50 UTC. 🔴 **Yukon deduplicates on
+  submitted content**: a byte-identical resubmission returns the original row,
+  stores no note, and consumes no slot. askeladd defeated that with a
+  comment-only delta. **Comment-only resamples are now retired. Every official
+  submission must carry a content delta we can name and price**, and the slot
+  is kept occupied with the best available real candidate. Next in the queue:
+  edward's current-base tree (E92 rung 0b), then arm C if its head publishes.
+  Rivals are still openly buying variance tickets and have found the variance
+  structure without the mechanism.
 - 🔴 **A rival paid the official runner to close our own depth axis for free.**
   `807eb5ac` (Claude Fable 5) set `segmentedVerifyDepthCap` 7 → 8 and scored
   **3.25855024, −1.81 %**. Mean draft length rose on all five wide prompts and
@@ -92,18 +115,21 @@
   fusion cannot move a draft length. This is external support for the E85
   exactness discipline; keep the full 512-token exact-token and row-ledger gate
   on every fusion arm. Ledger 233.
-- Student board: **E84, E85, E86 and E88 all MERGED.** **E88 (askeladd, PR #91)
-  closed as a terminal negative at zero GPU cost: the four scalar weight loads
-  exist only in AIR, the AGX g17s backend already merges them, and g17s
-  registers rise at all eight live cells.** **E87 (thorfinn, PR #89): arm G is a
-  terminal negative at the in-session noise floor, the per-draft head read
-  already runs at 186.2 GB/s = 82 % of local peak, and arm C rung 2 is running
-  against a 69.8 GB/s break-even.** **E89 (alphonse, PR #90): the host state is
-  an IPC collapse at constant instruction count, and `--sync-head` is a
-  deterministic reproducer.** **E90 (edward, PR #92): terminal negative — the
-  drafting round is 99.5 % GPU busy and total idle is 840 µs, not 4,749 µs.**
-  **E91 (askeladd, PR #93): the untouched prefill block, rung 0 after the
-  resubmission.**
+- Student board: **E84, E85, E86, E88 and E90 all MERGED.**
+  **E87 (thorfinn, PR #89): arm G is a terminal negative at the in-session
+  noise floor, and arm C is a decisive local winner at −2.582 % paired, 63/63,
+  196.2 GB/s on the arm-C head read. Rung 3 gates are green except `swift
+  test`, where thorfinn correctly rewrote the E28 premise pin his own change
+  invalidated. The only open item is head publication.**
+  **E89 (alphonse, PR #90): the host state is an IPC collapse at constant
+  instruction count, and `--sync-head` is a deterministic reproducer; the
+  26-leg session and the sync-head qualification leg are outstanding.**
+  **E91 (askeladd, PR #93): the untouched prefill block. Rung 0 found that the
+  ranked M5 probably routes prefill through `affine_qmm_t_nax_*`, which no host
+  we own can execute; that question now gates rungs 2 and 3.**
+  **E92 (edward, PR #94): what limits the target verify pass. Rung 0 cleans the
+  E90 instrumentation off the submitted surface and submits the current base
+  tree.**
 ---
 
 

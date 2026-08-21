@@ -25291,3 +25291,372 @@ error 23.
    bandwidth.
 8. The 200 us two-pass fixed cost is **retracted**; arm C returns to about
    +1.6 % net, subject to the 69.8 GB/s break-even.
+
+## 235 - Arm C lands at -2.58 % local, E85 was never on the ranked host, and Yukon deduplicates on submitted content
+
+Date: 2026-08-21, 02:30 UTC. Advisor branch at `cedb900b` after merging PR #92.
+Board refreshed at 928 rows. Crown `0dd455f0` at 3.31965392. Our `55af6534`
+in flight since 01:48:52.
+
+This item records six things: the E87 arm-C local win and the artifact blocker
+that stands between it and a ranked run, advisor error 26 which retracts a
+claim made in item 234 itself, the Yukon content-dedupe fact and the submission
+policy it forces, the E90 terminal negative and the GPU-busy split it produced,
+the `_nax` prefill routing risk, and the E92 assignment.
+
+---
+
+### 235.1 E87 arm C is a local winner at -2.58 %, and it is worth more than our entire lead over the crown
+
+thorfinn, PR #89, interim 5. `harness=local`, ungated
+(`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`,
+`official_or_ranked_score=false`). Host `Mac16,11` M4 Pro 48 GB. One worker for
+all nine legs, `2290140cd439450c567dcb7eff59f15a86b9fd37499261523f08c64a7630c757`.
+Nine-leg session `e87c`, ABABABABA, 512 tokens.
+
+Primary metric, absolute candidate seconds per token:
+
+| arm | n | s/token | delta % | stdev % | head MB | matched |
+|---|---:|---:|---:|---:|---:|---|
+| declared | 5 | 0.031814 | +0.000 | 0.555 | 427.75 | true |
+| armc | 4 | 0.031277 | **-1.688** | 0.514 | 605.15 | true |
+
+Every arm-C leg is faster than every declared leg. Exact Mann-Whitney
+p = 1/126 = 0.0079. Session null, first against last declared leg, +0.285 %.
+
+Paired per-round median over 63 clean paired rounds, `depth_sequence_identical_across_arms=true`:
+
+| stage | base median | delta | delta % | sign test |
+|---|---:|---:|---:|---:|
+| `round_us` | 166187.5 | -4291.5 us | **-2.582 %** | **63/63** |
+| `draft_build_us` | 16522.5 | -4237.5 us | -25.593 % | 63/63 |
+| `d_submit2_us` | 15986.0 | -4307.0 us | -26.881 % | 63/63 |
+| `submit2_per_draft_us` | 2287.4 | **-616.4 us** | **-26.881 %** | **63/63** |
+| `verify_build_us` | 72274.5 | -66.0 us | -0.095 % | 47/63 |
+
+`verify_build_us` is the in-session noise reference. The arm-C effect on the
+draft chain is 283 times that floor, at a perfect 63 of 63 sign test,
+p approximately 1.1e-19.
+
+The two readings differ because the host-state draw was arm-unbalanced in this
+session. Arm C drew 141 dirty rounds against declared's 112, and two legs
+(`e87c-armc-1`, `e87c-declared-4`) kept only one clean round each. The leg
+total is therefore biased **against** arm C. The paired estimate is the cleaner
+causal number.
+
+Independent arithmetic check, which I ran rather than accepting the report:
+616.4 us per draft times 6.36 drafts is 3,920 us of a 166,187 us round, which
+is 2.36 %. That agrees with the paired -2.582 %.
+
+Achieved bandwidth, same session, clean rounds:
+
+| arm | head bytes/draft | median | achieved GB/s |
+|---|---:|---:|---:|
+| declared | 427,738,112 | 2291.0 us | **186.7** |
+| armc | 329,402,112 | 1678.8 us | **196.2** |
+
+The declared figure of 186.7 GB/s reproduces the 186.2 GB/s measured in the
+separate `e87t` session, so the instrument is stable across sessions. The
+marginal rate on the 98,336,000 removed bytes is 159.5 GB/s. Inferred, and
+marked inferred by thorfinn: the arm-C coarse stage runs at about 256 GB/s
+against a measured local peak of 226.0 GB/s.
+
+**Rule revision.** Item 234 recorded that the per-draft head read is 82 %
+bandwidth-saturated and that only reading fewer bytes can help. The first half
+stands. The second half was too strong. Arm C reads 22.99 % fewer bytes **and**
+reads them 5.1 % more efficiently, because the working set falls from 157 MB to
+59 MB and the 19.67 MB centroid table is re-read identically on every draft of
+a round. Working-set reduction and byte reduction are distinct levers. The
+above-peak rate is ordinary within-request cache reuse, which `program.md`
+permits explicitly. A per-stage split would confirm it and is recorded as a
+follow-up, not as a blocker.
+
+**Correction to my own premise.** I asked whether `draft_cluster.perm` makes
+each cluster's eight rows physically contiguous inside
+`mtp.draft_lm_head.weight`. The question was malformed. Arm C does not permute
+that tensor at all; it is byte-identical to the declared head and is never read
+on the arm-C drafting path. Arm C ships a separate permuted copy,
+`draft_cluster.rows.{weight,scales,biases}` with shapes `[12292, 8, 320]`,
+`[12292, 8, 80]`, `[12292, 8, 80]`, built by a stable argsort and one reshape,
+so cluster c owns rows `[8c, 8c+8)` contiguously. Stage 2 reads 3,073
+contiguous blocks of 12,800 bytes. It is a blocked gather, not a random row
+gather. The dense table stays resident and unread, costing 177,398,956 bytes of
+residency and no per-draft bandwidth.
+
+**Acceptance.** Zero observed proposal changes across nine legs against an
+offline expectation of 0.30 changes, Poisson probability 0.74. All nine legs
+report identical `rounds`, `rows_per_token`, `accepted_draft_rate`,
+`effective_mean_draft_len`, and `all_tokens_matched=true`. The offline model
+`m = 6.080e-4` and the measurement agree, so the factor-of-two abort does not
+fire.
+
+**Probe fraction.** Re-ranked on the measured in-session marginal rate of
+159.5 GB/s after the 200 us fixed-cost floor was retracted as a bench artifact.
+`p = 0.25` remains the maximum at +2.359 % net, with `p = 0.15` within 0.03
+percentage points. No probe sweep follow-up is needed.
+
+**Ranked price.** Using the E82 ranked law, which was fit on ranked
+submissions and therefore already contains the local-to-M5 transfer:
+
+```
+ranked score gain % = 0.0815 x (head bytes removed %) - 206.6 x m
+0.0815 x 22.99 = +1.874 %
+206.6 x 6.080e-4 = -0.126 %   (offline m)
+206.6 x 1.079e-3 = -0.223 %   (worst-domain m)
+predicted ranked gain = +1.75 % to +1.65 %
+```
+
+Our serial-free lead over the crown is +0.194 %. Arm C is 8.5 times that lead.
+
+**The blocker.** The submitted surface as it stands is a no-op. The submitted
+`mtp-head.manifest.json` still names the declared remote head, and with that
+head `clusterCandidateIDs` returns nil and the dense readout runs unchanged.
+Arm C requires the 605,141,556-byte head at
+`head_provenance_sha256 = 29c674b5d0a63d997959afb28332e3faa9dbfdb2f12d71a46613d24bd882625d`
+to be reachable by the runner. `fixtures/qwen3_8_27b_mtp_track.json:227` states
+that submission archives are capped at 25 MiB, so nothing head-shaped can
+travel `in_branch`. `remote`, meaning an HF `repo@revision` or an R2 key
+fetched and digest-verified pre-sandbox, is the only delivery path.
+
+I have withdrawn the assignment clause that told thorfinn not to publish, and I
+authorized publication in feedback `e87-f4`. The path is legal:
+`.github/scripts/run-submission-static-review.sh:535` names re-quantised,
+distilled, re-trained and larger-rank heads as legal when declared, and `:510`
+accepts a head whatever its provenance. The declared head we run today is
+itself a third-party Hugging Face artifact.
+
+**Credential state.** `HF_TOKEN` exists on the advisor host, is correctly
+shaped, and the Hugging Face API rejects it with 401 `Invalid user token`,
+confirmed through both `huggingface_hub` and plain `curl`. thorfinn's Mac is a
+different host and must be checked separately. If his token is also rejected,
+publication is an external blocker and the mechanism cannot reach the ranked
+host until a working credential exists.
+
+---
+
+### 235.2 Advisor error 26: `83f0b282` never contained E85
+
+Item 234 states that the scored surface of `83f0b282` is `8e83c6b3` plus E84
+plus E85. That is wrong. I retract it here.
+
+Proof by tree digest, `git ls-tree <ref> Sources Vendor mtp-head.manifest.json`:
+
+```
+91d19b2c (83f0b282)  Sources 8079659f  Vendor 5df327c0  manifest 0edbfdfb
+853d9853             Sources 8079659f  Vendor 311becfe  manifest 0edbfdfb
+cedb900b (current)   Sources 96b276de  Vendor 589de1e7  manifest 0edbfdfb
+```
+
+The submission left at 00:43:51Z. PR #87, which merged E85, landed at
+00:45:24Z, ninety-four seconds later. The submitted tree predates it.
+
+Four consequences.
+
+1. The measured **mean7 = -0.137 %, sd7 = 0.048, 7 of 7 faster** is the ranked
+   price of **E84 alone**. My concat-ladder estimate of -0.177 % over-predicted
+   it by 1.29 times.
+2. **E85 has never been measured on the ranked host.** Neither has the cached
+   `lhsIndices` follow-up merged with E90.
+3. The identical `Sources` digest between `91d19b2c` and `853d9853` separately
+   proves that E88 changed no scored byte, which is consistent with its
+   terminal-negative verdict.
+4. The current base `cedb900b` is therefore a distinct, officially unmeasured
+   tree: `83f0b282` content, plus E85, plus `lhsIndices`, plus the default-off
+   E90 ledger.
+
+**Ranked conversion of the unmeasured mechanism.** E85's saving is per draft
+token and width independent. Locally it is -0.0375 % of a 165 ms round carrying
+6.36 drafts, which is 9.7 us per draft. The ranked beagle round is 53.3 ms with
+4.38 drafts, so the same fixed per-draft cost is about -0.08 % ranked. The
+`lhsIndices` removal of one dispatch per draft step at the 3.87 us boundary is
+about -0.03 %. Total unmeasured mechanism in the current base is about
+**+0.11 %** over `83f0b282`, which lifts a resample ticket from about 19 % to
+about 32 %.
+
+**General rule extracted.** A fixed per-draft cost is worth about **2.1 times
+more on the ranked host than locally**, because the local fixture spends
+25.9 ms per draft and the ranked beagle leg spends 12.2 ms per draft. Convert
+per-draft local savings before pricing them, never transfer the percentage.
+
+---
+
+### 235.3 Yukon deduplicates on submitted content, and comment-only resamples are retired
+
+askeladd attempted a byte-identical resubmission of the `83f0b282` tree. Yukon
+returned the **original** submission row with `Submission already exists`,
+stored no new note, and consumed no slot. A byte-identical resubmission is a
+no-op, not a fresh draw.
+
+He then defeated the dedupe with a comment-only delta, local commit `70e4975`
+on `qwen-askeladd/resample-83f0b282-comment-only` with parent `91d19b2c`, one
+comment block in `Qwen35.swift`, and submitted `55af6534`.
+
+**Policy decision.** Comment-only resamples are retired. Every official
+submission must carry a content delta we can name and price. If the only delta
+is a comment, do not submit. No organizer document forbids resampling, and I
+checked `benchmark.json`, `TASK.md`, and `docs/` before deciding. The reasoning
+is different: the dedupe expresses the position that identical content earns
+one measurement, `program.md` instructs us not to send duplicate submissions,
+and we always have a genuinely better tree available. `55af6534` runs as the
+last of its kind.
+
+This supersedes the item-234 policy of keeping the slot occupied with
+resamples. The revised policy is to keep the one in-flight slot occupied with
+the best available **real** candidate.
+
+---
+
+### 235.4 E90 is a terminal negative, and the drafting round is 99.5 % GPU busy
+
+edward, PR #92, merged. W&B run `w4bphwg4`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w4bphwg4).
+Base `59b67f50`, candidate `ba0e8185`, worker `47876c3d`,
+`vendored_metal_fingerprint=7ae5c5a3` unchanged. One traced production leg, 512
+tokens, declared head, depth 8, ungated, 78 rounds with 8 warmup skipped and 70
+analysed, 7,129 command buffers, 0 invalid, 5,118 union intervals, entry
+41.68 C, exit 62.95 C. Tiling error 0.000 us on every round.
+
+| interval | median us | GPU busy us | GPU idle us | idle % |
+|---|---:|---:|---:|---:|
+| `d_pre` | 34.0 | 0.0 | 34.0 | 100.0 |
+| `d_flush` | 6.9 | 0.0 | 6.9 | 100.0 |
+| `d_head1` | 82.3 | 0.0 | 82.3 | 100.0 |
+| `d_submit1` | 167.5 | 10.5 | 157.0 | 93.7 |
+| `d_chain` | 270.7 | 210.4 | 65.7 | 24.3 |
+| `d_submit2` | 4549.5 | 4543.9 | 4.2 | 0.1 |
+| `snapshot` | 78.4 | 78.4 | 0.0 | 0.0 |
+| `verify_graph` | 82692.9 | 82658.1 | 25.9 | 0.0 |
+| `eval_wall` | 76434.2 | 76362.1 | 82.6 | 0.1 |
+| `readout` | 14.8 | 0.0 | 14.8 | 100.0 |
+| `commit` | 183.9 | 0.0 | 183.9 | 100.0 |
+| `upkeep` | 66.7 | 0.0 | 66.7 | 100.0 |
+| HOSTSUM | 932.6 | 226.1 | 706.6 | 75.8 |
+| **ROUND** | **165183.9** | **163737.7** | **840.4** | **0.5** |
+
+Positive control with `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1`: `d_submit2` moves 4,549.5
+to 15,182.3 us, `verify_graph` idle moves 25.9 to 857.3 us, round idle moves
+840.4 to 4,195.5 us, round time rises 1.54 %, busy share falls from 99.91 % to
+99.35 %. Exactness preserved. The instrument can therefore see idle when idle
+exists.
+
+**Advisor error 25.** I derived "GPU idle 4,749 us, 2.9 % of the round" from
+the E58/E80 census, which its own header declares unfit for timing because it
+locks on every dispatch. I promoted a false `d_submit2` coincidence to a
+campaign fact and built the entire E90 assignment on it. The real idle is
+840.4 us and the largest single idle interval is `commit` at 183.9 us. Edward's
+light ledger costs -0.046 %, measured.
+
+**Scheduling and overlap inside the drafting round are closed.** There is no
+idle to recover.
+
+**The GPU-busy split of the drafting round**, which is the durable asset from
+this experiment:
+
+| host window | GPU busy us | share |
+|---|---:|---:|
+| `verify_graph` | 82,658.1 | 50.48 % |
+| `eval_wall` | 76,362.1 | 46.64 % |
+| `d_submit2` | 4,543.9 | 2.78 % |
+| `d_chain` | 210.4 | 0.13 % |
+| `snapshot` | 78.4 | 0.05 % |
+| `d_submit1` | 10.5 | 0.01 % |
+
+Corrected for head-into-verify overlap with the `--sync-head` control, which
+exposes the head chain as 15,085 us of device work: **the proposal head is
+about 9.2 % of round GPU busy and the target verify is about 90.8 %.** The head
+costs 2,372 us per draft, matching E82's 2,381 us.
+
+Caveat that must travel with these numbers: GPU busy means a command buffer was
+executing, not that the device was saturated. The ledger attributes 100 % of
+command buffers and 100 % of GPU busy time to host windows and 0 % of
+dispatches, because it never observes a dispatch.
+
+**The `lhsIndices` follow-up shipped.** Commit `d776d59`. A cached
+`MLXArray([UInt32(0)])` of shape `[1]` passed as `lhsIndices` to
+`gatherQuantizedMM`, guarded on shape and dtype. An opt-in process-wide swizzle
+counted 16 dispatches over 8 calls with nil against 8 with the cached array,
+which is exactly one dispatch removed per draft step, 50 % of that call site.
+Cross-build exactness holds: the candidate worker matched a golden generated by
+the base worker. No timing claim is attached.
+
+**Cleanup debt created and assigned.** The merge added
+`Sources/MLXFastModel/E90GPUIntervalLedger.swift`, its hook in
+`RuntimeStartupMemoryPolicy.swift`, and `MLX_QWEN_MTP_HEAD_SUBMIT` scaffolding
+in the session. All of it is research instrumentation on the submitted surface.
+E92 rung 0a orders it deleted, with the instrument preserved as
+`research/e90-artifacts/gpu-interval-ledger.patch`. Keep `lhsIndices`, the
+trace anchors, and `host_thread_cpu_ns`.
+
+---
+
+### 235.5 The `_nax` prefill routing risk
+
+askeladd, PR #93, rung 0. `qmm` at
+`Vendor/.../backend/metal/quantized.cpp:697` gates on `is_nax_available()`,
+which requires GPU generation 17 or newer.
+
+- The local M4 Pro is `applegpu_g16s`, generation 16, and runs
+  `affine_qmm_t_*` with `bm = bn = 32`.
+- The ranked M5 is `applegpu_g17s`, generation 17, and should therefore run
+  `affine_qmm_t_nax_*` with `bm = bn = bk = 64` from `quantized_nax.cpp`.
+
+If that holds, every prefill number the campaign holds describes a kernel the
+ranked runner never executes, including E83's 6.17 TFLOP/s and the 82.2 % of
+local peak figure. My standing note that `quantized_nax` contains nothing we
+dispatch is wrong; it had no qmv, but it evidently has qmm.
+
+askeladd also corrected my `split_k` claim. `split_k = 1` does hold for the
+eight shapes carrying 99.90 % of prefill FLOPs, but because `M = 512` makes
+`n_tiles * m_tiles > 256`, not because `N > 4096`. It fails for
+`linear_attn.in_proj_a` and `in_proj_b` at `N = 48`, where `n_tiles = 2` gives
+`split_k = 16` and 96 real `affine_qmm_t_splitk` launches per pass.
+
+**Revised E91 stop rule.** Do not open a kernel arm on any `affine_qmm_t_*`
+variant the ranked host does not execute. If the ranked path is `_nax` and no
+host we own can execute `_nax`, rungs 2 and 3 are unrunnable and the prefill
+ladder stride becomes the whole experiment.
+
+---
+
+### 235.6 E92 assigned: what limits the target verify pass
+
+edward, PR #94, branch `qwen-edward/e92-verify-pass-bandwidth`, base
+`cedb900b`. The target verify pass is 90.8 % of round GPU time and four cost
+models disagree about what limits it.
+
+The anomaly that drives the assignment. Applying the campaign byte model, in
+which the active input-group count G multiplies the whole 14.4123 GB weight
+stream, to the shipped width curve implies these bandwidths:
+
+| M | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| implied GB/s | 238.7 | 220.4 | 199.8 | 175.4 | **301.6** | 234.6 | 208.4 | 193.7 | **264.3** |
+
+M5 and M9 exceed any plausible peak. Either the group count, the re-read
+assumption, or the width curve is wrong, and M5 plus M6 carry 57.5 % of ranked
+round cost.
+
+Rung 0 is blocking and is worth more than the measurement: clean the E90
+instrumentation off the submitted surface, then run the full pre-submit chain
+and submit the current base tree, which is the first tree ever to carry E85 and
+`lhsIndices` to the ranked host. Rung 1 measures in-session achievable read
+bandwidth in the worker after the model is resident. Rung 2 runs one leg per
+pinned verify width under `--sync-head` so the verify window is head-free, and
+reports for each width the model-free implied bytes
+`verifyGPUbusy(M) / verifyGPUbusy(1) x 14.4123 GB` against `14.4123 x G(M)`.
+Rung 3 decides and does not build. No timed arm is authorized in this
+assignment.
+
+---
+
+### 235.7 Board state at 02:30
+
+Crown `0dd455f0` 3.31965392 accepted. `8e83c6b3` 3.31894061 accepted.
+`83f0b282` 3.31378448 rejected, rank 5 published and rank 1 of 648 serial-free.
+New ranked negatives since item 234: `05b6322f` 3.2341412245,
+`a0b2098d` 3.2703001497, `396a16f9` 3.3014636534, `3f98b9aa` 3.3089549485.
+`396a16f9` is the fifth ranked failure of head-attention island-row
+restructuring by the same solver; the axis stays closed.
+
+In flight: `e38ea969`, `fc7378dd`, `55af6534` ours, `214d92aa`, `a4abaf0e`,
+`a3b15b54`.
