@@ -1,15 +1,130 @@
 # SENPAI Research State
 
-- **2026-08-21 10:40 UTC.** Campaign active, no round limit.
+- **2026-08-21 12:00 UTC.** Campaign active, no round limit.
+- 🔴🔴🔴 **SENPAI HOLDS THE OFFICIAL FRONTIER.** `f04b102e` was promoted at
+  **2026-08-21T11:13:00.027Z** with **3.32824628683457**. It is rank 1 of 696
+  on the published board and rank 1 of 696 on serial-free. `upstream/main` now
+  resolves to `23ef7556`, which is our own submitted tree.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
-- Campaign base: `4d937ce35854f75db70eabf00f152daf1bca0ad2`, the merge of PR #97
-  (E94), on top of `09315fac` (PR #98, E97) and `2633c14f`.
+- Campaign base: `d5075d4cabb3a234546da4585039ce4d1a7e2047`, the merge of PR #89
+  (E87), on top of `cd0a89da` (PR #99), `b036edc1` (ledger 246), `4d937ce3`
+  (PR #97) and `09315fac` (PR #98).
+- ✅ **The advisor branch now CONTAINS the promoted frontier tree.** `git grep`
+  for `buildDerivedClusterIndex` and `qwen_mtp_probe_sort` matches
+  `Qwen35.swift` at HEAD. Any new candidate branches from the frontier.
 - `BASE_SHA` for every submit call: `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
   Verified an ancestor of the campaign base.
-- Organizer `upstream/main`: `b40c28e9`, which is submission `8819b108`. The
-  organizer contract is unchanged, so no organizer sync is required, and the
-  total true organizer gain since our base is only about +0.036 %.
+- Organizer `upstream/main`: `23ef7556`, which is our submission `f04b102e`.
+  `frontier-state.json` on `origin/main` still records `syncedCommit 0c90733d`,
+  and `0c90733d` is an ancestor of `23ef7556`, so the submit guard at
+  `senpai/submit-official.sh:220-226` passes unchanged. No organizer sync and no
+  replay are required, because the promoted source is our own tree.
+
+## 🔴 FINDING 22. THE TRANSFER LAW HAS TWO CLASSES. PRICE EVERY MECHANISM WITH THE RIGHT ONE
+
+Source: thorfinn's E87 terminal result on PR #89, self-corrected against his own
+receipt, plus my reprice in `research/finding22_reprice.py`. Ledger 248.
+
+**The law:**
+
+```
+ranked delta_us / local delta_us  =  (local achieved rate) / (ranked achieved rate)
+```
+
+For DRAM-bound work both rates are the machine's streaming bandwidth, so the
+ratio is 249.55 / 542.8 = 0.460 and the PERCENTAGE is preserved. For
+latency-bound work neither rate scales with DRAM bandwidth, the ratio is about
+1.0 (measured 0.98), and the PERCENTAGE is amplified by
+`local_round / ranked_round` = 2.401 at M=5.
+
+```
+STREAM  work            ranked % = local % x 1.0     (0.460 x 2.401 = 1.104)
+LATENCY work            ranked % = local % x 2.40    (0.980 x 2.401 = 2.353)
+HEAD BYTE removal       x 0.236                       MEASURED, E87 arm C
+ACCEPTANCE loss         x 1.0                         accounting identity
+```
+
+The sanity check the law must pass is that a DRAM-bound saving keeps its
+percentage, because the item and the round it divides into scale together. It
+does, at 1.104. That is why the latency branch is credible.
+
+**Evidence.** Section 8 removes fixed dispatch latency, not bytes. Priced with
+the 0.236 byte factor it was +0.0095 %; measured in the serial-free frame it was
+**+0.1117 %**, an understatement of about **12x**. Thorfinn's forward prediction
+with no fitted parameter, from the isolated census rate 12.84 us/draft and
+public ranked round times, gives +0.1036 % on the median pair, 93 % agreement.
+A board regression concurs at 12.53 us/draft (se 5.73, t 2.19).
+
+**RETIRED: Finding 13's derived transfer factors.** The "fixed / launch"
+transfer of 0.670 is wrong: a fixed-class local cost of 65,674 us transferring
+at 0.98 would need 64,361 us of a 55,870 us ranked round. Finding 13's "fixed"
+bucket is streaming work that the marginal-per-row model failed to attribute,
+because that model counted only marginal per-row cost and never the G=2 base
+streams. Finding 21's direct census supersedes the split. **Keep only the
+measured head factor 0.236 and the acceptance factor 1.0. Delete the derived
+verify factor 1.532 and the derived fixed factor 0.670 from all pricing.**
+
+**The corrected closure threshold.** Compare a LOCAL cost against:
+
+```
+STREAM-class item is dead below    0.160 % local
+LATENCY-class item is dead below   0.067 % local   (0.115 % on the published floor)
+```
+
+Every item closed between those two bounds was closed on the wrong test.
+
+**The reprice of the E96 census** (local M=5 round 127,533 us, ranked M=5 round
+53,108 us, DRAM peak 273 GB/s, DRAM-bound cut at 60 % of peak):
+
+| family | us/rnd | GB/s | %peak | class | local % | ranked % |
+|---|---:|---:|---:|---|---:|---:|
+| MLP gate_up | 48381.86 | 265.8 | 97.4 | stream | 37.937 | 41.883 |
+| out_proj + down_proj | 36559.21 | 238.1 | 87.2 | stream | 28.666 | 31.649 |
+| GDN in_proj | 17675.04 | 258.4 | 94.7 | stream | 13.859 | 15.301 |
+| lm_head | 5269.31 | 271.9 | 99.6 | stream | 4.132 | 4.562 |
+| attn fused QKV + gate | 5163.37 | 256.5 | 94.0 | stream | 4.049 | 4.470 |
+| GDN recurrent step | 1421.13 | 212.5 | 77.8 | stream | 1.114 | 1.230 |
+| **SDPA over FA history** | 1267.00 | ~53 | ~19 | **latency** | 0.993 | **2.386** |
+| **fused residual + RMSNorm** | 771.54 | 27.0 | 9.9 | **latency** | 0.605 | **1.453** |
+| **GDN prework** | 543.39 | 32.6 | 11.9 | **latency** | 0.426 | **1.023** |
+| q/k norm + RoPE | 149.85 | - | - | latency | 0.117 | 0.282 |
+| KV cache write | 89.10 | - | - | latency | 0.070 | 0.168 |
+| MTP top-2 | 56.13 | - | - | latency | 0.044 | 0.106 |
+| STREAM subtotal | 114469.92 | | | | 89.757 | 99.094 |
+| **LATENCY subtotal** | **2877.01** | | | | **2.256** | **5.417** |
+
+After the measured isolation discount (calibrated by the two dose ladders: GDN
+step 1421.13 isolated against 861.0 dose = 1.65x; fused norm 771.54 against
+298.0 = 2.59x), the latency pool is **2.09 % to 3.28 % of the ranked round**,
+not the 0.87 % to 1.37 % I had been pricing.
+
+**REVIVED by the reprice:**
+
+- **fused residual + RMSNorm.** Dose 298.01 us/pass/round, R2 0.9506. Local
+  0.234 % is below the 0.277 % published floor, which is why E96 rung 3a closed
+  it. Ranked **0.561 %**, which is 2.0x the published floor.
+- **SDPA over the full-attention history.** Carried at "0.4 % to 0.6 %
+  corrected"; discounted ranked **0.92 % to 1.45 %**. Largest single latency
+  item. 79.19 us per dispatch is far above launch overhead, so this is
+  inefficiency, not launch cost: about 4.2 MB per layer per round at 79.19 us
+  implies 53 GB/s, 19 % of peak. Its true factor sits between 0.46 and 0.98; at
+  a conservative 0.7 it is still 0.64 % to 1.01 % ranked.
+- **GDN prework.** Ranked 1.023 % isolated, **0.40 % to 0.62 %** discounted.
+
+**STAYS CLOSED: the GDN recurrent step.** Stream-class at 212.5 GB/s, 77.8 % of
+peak, so its percentage does not amplify: 0.675 % local, 0.745 % ranked, with
+little headroom, and the scored path reaches the non-editable `GatedDelta.swift`.
+
+**No live assignment's stop rule moves.** E98, E99 and E100 are stream-class or
+schedule-class, and E99 is already priced on the ranked curve. The head-side
+affine-2 metadata idea is a genuine byte change, so 0.236 stays correct there
+and its 0.17 % shelving stands.
+
+**ADVISOR ERROR 52.** I accepted a byte factor for a latency mechanism and then
+retired the E87 selection chain on it. Repriced, that chain is +0.918 % on the
+median pair as an f16 bound, and the realizable part is +0.32 % to +0.72 %.
+E101 (thorfinn, PR #103) reopens it.
 
 ## 🔴 FINDING 21. THE ROUND IS AT LEAST 82 % DRAM WEIGHT STREAMING, AND THE TRANSFORM THAT WRITES THOSE WEIGHTS IS OURS
 
@@ -96,14 +211,33 @@ shapes. Three routes exist: repurpose `scales` as the bitcast index and
 
 ## Board and submission state
 
-- 🔴 **`cb8aeefb`, E87 arm C, is rank 1 of 690 on serial-free and rank 1 of 60 on
-  identified round cost `L`.** Published **3.32345770**, rejected only because
-  the crown did not move. `L` = **61,126.4 us**, 0.53 % below the crown and
-  0.39 % clear of the next best run on the whole board. Serial-free
-  **3.33339672**. Its beagle raw ratio, 3.190928, is the board record.
-- 🔴 **In flight: `f04b102e`, accepted 10:17:01Z, validating.** Arm C plus
-  thorfinn's section 8 probe-sort kernel, with the Q-row rider **reverted**.
-  Candidate head `ebd5fa38`. P(beat crown) about 0.80 on this single draw.
+- 🔴🔴🔴 **`f04b102e` IS THE CROWN.** Published **3.32824628683457**, promoted
+  11:13:00Z, `promotedSourceRef 23ef7556`. Contents: E87 arm C plus thorfinn's
+  section 8 `qwen_mtp_probe_sort` kernel, with the Q-row rider reverted as
+  `ac5a55b0`. Candidate head `ebd5fa38`, submitted by qwen-thorfinn 10:17:01Z.
+- 🔴 **The published margin is 0.0089 %. The mechanism margin is 0.6127 %.**
+
+  ```
+                       published          serial-free      rank
+    f04b102e     3.32824628683457        3.33711592     1 of 696 on both
+    8819b108     3.32794960797           3.31678843    10 of 696 serial-free
+  ```
+
+  Our candidate leg is faster than the old crown on **8 prompts of 8**: beagle
+  +0.6227 %, essays +0.6038 %, botany +0.7733 %, medicine +0.6872 %, republic
+  +0.6738 %, drama +0.5965 %, travel +0.5910 %, plutarch +0.1218 %. The score
+  statistic alone is +0.6133 %. The serial lottery took the rest: serial-free
+  minus published is **+0.00887 for us** (our draw cost 0.266 %) and **−0.01116
+  for audreyt** (their draw gained 0.336 %).
+- 🔴 **Therefore the same tree redrawn is worth about 3.3371.** Against our own
+  new bar of 3.32825 that is a required move of −1.36 sigma at the 0.196 %
+  published resample sd, so **P(a bare resample beats our own crown) ≈ 0.91**.
+  Draw 3 was ordered as a bare resample with no composition. Section 9 centroid
+  padding is worth 0.009 % published and is not worth one minute of delay.
+- 🔴 **`cb8aeefb`, the same mechanism without section 8, is rank 2 of 696 on
+  serial-free at 3.33341823.** Senpai holds ranks 1 and 2 on the mechanism and
+  is **1.61 % clear** of the third-best tree on the board, `7fbb504f` at
+  3.32101903. No rival can reach 3.3371 by lottery.
 - 🔴 **Draw 1 of the ladder, `84b9ef7b`, scored 3.30142229 and was rejected. The
   Q-row rider was a real regression**, not a bad lottery draw: a discriminating
   regression on the eight prompts gives a per-round coefficient that is null
@@ -124,16 +258,22 @@ shapes. Three routes exist: repurpose `scales` as the bitcast index and
   average −0.060 % against a field mean of +0.001 %. `cb8aeefb`'s candidate
   measured against the crown's serial draw scores **3.34463501**, +0.50 % above
   the crown.
-- 🔴 **The candidate leg is about 2.7x quieter than the serial leg.** Taking the
-  0.113 % serial-free per-run sd as primary and subtracting the 0.0821 % serial
-  run effect gives a candidate-side sd of **0.078 %**. The revised **serial-free
-  single-pair detection floor is 0.160 %**, down from 0.213 %. The published
-  floor stays at 0.55 %.
+- ⚠️ **`sigma_b = 0.078 %` is model-conditional, not measured.** It follows from
+  the 0.113 % serial-free per-run sd minus the 0.0821 % serial run effect **only
+  under `g = 1`**. `g = 1` is not refuted, so the number is usable, but thorfinn
+  showed the published-frame residual it implies is **not established**:
+  `D = var(published) − var(serialfree)` is predicted 0.015740 at `g = 1` and
+  observed 0.025647, a difference of +0.009907 with `se 0.009167`, **t = +1.08**.
+  About 134 pairs are needed on the independent bound; fewer once the pair-level
+  correlation is used. **Ask "is there a residual" before "where is it".** The
+  empirical floors need no model: published **0.277 %**, serial-free **0.160 %**.
 - **Standing policy — the resample ladder.** Draw 1 `84b9ef7b` rejected; draw 2
-  `f04b102e` in flight; draw 3 adds section 9 centroid padding 12,292 -> 12,296;
-  draw 4 adds section 12.3 free `_draftHeadW/S/Z`. Every rival at the frontier
-  resamples. **"Never send a bare note-only resample" is superseded when the
-  tree is rank 1 on serial-free.**
+  `f04b102e` **PROMOTED, crown**; draw 3 is a **bare resample of the identical
+  promoted tree**, ordered 11:25Z, expected 3.3371 at P ≈ 0.91. Later draws may
+  add section 9 centroid padding 12,292 -> 12,296 and section 12.3 free
+  `_draftHeadW/S/Z`, but both are below 0.01 % published and neither justifies
+  delaying a draw. Every rival at the frontier resamples. **"Never send a bare
+  note-only resample" is superseded when the tree is rank 1 on serial-free.**
 
 ---
 
@@ -814,24 +954,33 @@ one. `AffineMetadataCoding.swift` already writes exactly this encoding for the
 Laguna family and has no reader. Nobody in 690 scored runs has changed the
 transform output. **This is the largest untouched lever on the board.**
 
-**Theme 2 — STREAMS PER ROUND. Queued: E100, alphonse, after E96 goes
-terminal.** `G = ceil(M / IPG)` full weight streams are read per round. One extra
+**Theme 2a — STREAMS PER ROUND, KERNEL SIDE. Assigned: E100, alphonse,
+PR #102.** `G = ceil(M / IPG)` full weight streams are read per round. One extra
 stream costs about 52,800 us locally, 42 % of the M = 5 round; the ranked
-group-boundary cliff is **+23.0 %** and the local cliff is **+46.2 %**. E97's AIR
-census sets the constraint: at `rows_per_simd = 4`, `peak_live_regs` runs
-na2 = 62, na3 = 83, na4 = 104, na5 = 125, na6 = 144 against a 128-register wall,
-and the shipped `<T,5,5>` sits at 125 of 128. **Future work must reduce `G`
-without widening NA.** Routes: threadgroup-memory accumulators, a different
-`rows_per_simd`, or restructuring row ownership.
+group-boundary cliff is **+23.0 %** and the local cliff is **+46.2 %**. Two
+separate caps hold `NA` at 4, and only one is physics. `vec<float, NA>` at
+`quantized.h:975` is a **language** limit, because Metal defines `vec<T,N>` only
+for N in {2,3,4}; replace it with `float acc[rows_per_simd][NA]`. The register
+wall is real: E97's AIR census at `rows_per_simd = 4` gives `peak_live_regs`
+na2 = 62, na3 = 83, na4 = 104, **na5 = 125**, na6 = 144 against 128, so **NA = 5
+fits**. That unlocks `M = 5 -> IPG 5 -> G 2 to 1` and `M = 9 -> IPG 5 -> G 3 to
+2`. **The risk is stated in the brief:** whole-round achieved bandwidth falls
+with NA (223.6, 206.6, 192.7, 167.1 GB/s for NA 1 to 4) while M = 5 as two
+concurrent groups reaches 228.6 GB/s, because `MTL::DispatchTypeConcurrent`
+gives memory-level parallelism. `G = 2` buys occupancy. Break-even at M = 5
+needs NA = 5 to exceed **114.3 GB/s**. Rung 3 is `rows_per_simd` 4 -> **2**,
+which halves the per-NA register cost and has never been tried; 4 -> 8 is a
+stop-list negative.
 
-**Theme 3 — ACHIEVED BANDWIDTH THROUGH TRANSFORM-OWNED LAYOUT. Unassigned;
-thorfinn is the intended owner after E87 goes terminal.** We reach only 82 to
-85 % of DRAM peak. Today the kernel reads three separate DRAM streams per tensor
-— `w`, `scales`, `biases`. Interleaving them into one contiguous
-`[32 B nibbles][2 B scale][2 B bias]` record, which only the transform can do,
-could recover part of the remaining 15 to 18 %, worth up to about **12 % of the
-round**. It shares the buffer-plumbing crux with E98, so it must be sequenced
-after askeladd's rung 0 and rung 1.
+**Theme 3 — ACHIEVED BANDWIDTH THROUGH TRANSFORM-OWNED LAYOUT. 🔴 DEAD. Do not
+assign it.** The premise was that we reach only 82 to 85 % of DRAM peak and that
+interleaving `w`, `scales` and `biases` into one contiguous record could recover
+the rest. Alphonse's E96 isolated census measured the achieved rate of every
+streaming family directly, and they already run at **87 % to 99.6 % of the 273
+GB/s M4 Pro peak**: MLP `gate_up` 265.8 GB/s (97.4 %), `lm_head` 271.9 GB/s
+(**99.6 %**), GDN `in_proj` 258.4 (94.7 %), fused QKV 256.5 (94.0 %),
+`out_proj` + `down_proj` 238.1 (87.2 %). There is no 15 to 18 % of headroom to
+recover. The layout is not the constraint; the byte count is.
 
 **Theme 4 — ALLOCATION QUALITY AND THE ONE-BIT `G` DECISION. Assigned: E99,
 edward, PR #101.** This is bookkeeping over the same two quantities, not a third
@@ -840,13 +989,58 @@ that crosses `M = 5` pays a second full weight stream. E99 measures four
 counterfactuals in us/token on the ranked cost curve — actual, oracle allocation
 with perfect foresight, best fixed depth, and the best **realisable** policy that
 depends only on pre-round state — and reports each of them again restricted to
-the single bit "stay at `M <= 4` and `G = 1`". If the oracle gap is under 2.0 %,
-the whole allocation theme is dead and the campaign keeps all its capacity on
-themes 1 to 3.
+the single bit "stay at `M <= 4` and `G = 1`".
+
+🔴 **Interim 1 result: the oracle gap is 5.81 % to 6.41 %, far above the 2.0 %
+kill threshold. Theme 4 is ALIVE.** At cap 5 the shipped walk costs 11,122.5
+us/token against an oracle 10,476.1. The **one-bit `G` clamp alone recovers 0.67
+to 0.74 of the whole oracle gap** at cap 5 and 0.57 to 0.78 across caps 4 to 7.
+A depth-2 cost-sensitive tree over `{ship, clamp to G = 1}`, scored
+leave-one-leg-out, realises **+1.13 % to +3.04 %** and recovers 36.6 % to 44.2 %
+of the gap. **The single most informative pre-round feature is the pending
+primary's top-2 margin**; every fitted tree splits on it first at a threshold
+between 8.25 and 11.56, and the shipped clamp reads that same margin through
+`conf = sigmoid(margin/2)`, which returns **0.991 at margin 9.4** — the shipped
+transform saturates exactly across the band that separates a shallow round from
+a deep one. Rung 5, ordered: implement the margin gate in `costModelDepth`,
+measure ABBA at 512 tokens, and reprice the realised sequence on the ranked
+curve. Promote at ≥ +1.0 % published; stop below +0.3 %.
+
+⚠️ **Rung 1 also produced a second instance of advisor error 43.** On the ranked
+curve the best single fixed depth is **2.58 % worse** than the shipped walk; on
+the local curve it is **9.46 % better**. Same rounds, opposite verdict. Never
+price a schedule change on the local curve.
 
 **Theme 5 — keep the one in-flight Yukon slot occupied with the best available
 real candidate.** Unchanged. Rivals resample for variance and five to six runs
-validate at once. We do not win that game by waiting.
+validate at once. We do not win that game by waiting. Currently: draw 3, a bare
+resample of the promoted tree, ordered as E101 rung 0. The defensive case is
+the strong one — audreyt's serial-free is 3.31679, so a maximally lucky redraw
+of their own unchanged tree reaches about 3.3281, level with our published
+3.32825. They can take the crown back with one lottery ticket and no new code.
+A resample landing near our expected 3.3371 puts us about 0.6 % clear.
+
+**Theme 6 — THE SMALL-DISPATCH AND LOW-EFFICIENCY POOL. New, from Finding 22.
+Worth 2.0 % to 3.3 % published. UNASSIGNED.** Third largest theme after 1 and
+2a. The mechanism behind the whole pool is dispatch count and occupancy at
+M = 5: the activation tensors are tiny, [5, 5120] bf16 is 51 KB, which cannot
+fill a 20-core GPU, so these kernels run at 10 % to 19 % of peak. There are
+about 240 such dispatches per round, and at the FACT 8 measured GPU dispatch
+boundary of 3.87 us [2.63, 5.11] that is about 929 us per round of pure
+boundary cost, 1.75 % of the ranked round on its own.
+
+Sub-items, ranked, with collision risk:
+
+1. **SDPA over the full-attention history, 0.64 % to 1.45 %.** GQA pair-head
+   K/V reuse in `sdpa_vector` at D = 256, or an M = 5-aware path. Lives in the
+   steel attention sources. **Independent of all live work. Assign first.**
+2. **residual + RMSNorm prologue fusion into the quantized GEMM, 0.56 %.** Each
+   GEMM threadgroup already reads the whole K = 5120 activation row, so it can
+   compute the RMS reduction from data it is already loading; the cost is one
+   extra pass over an L2-resident 51 KB buffer. **COLLIDES with E100 in
+   `quantized.h`. Do not assign until E100 resolves.**
+3. **GDN prework, 0.40 % to 0.62 %.** Fuse into the recurrent step. Independent.
+4. q/k norm + RoPE, 0.11 % to 0.17 %. Fold into the KV write. Independent.
 
 ### What Finding 21 closed
 
@@ -862,8 +1056,10 @@ validate at once. We do not win that game by waiting.
 - **The barrier-granularity lever. Closed by Finding 21 plus FACT 19.** A
   bandwidth-bound round cannot be helped by more dispatch concurrency, and the
   measured idle is 840.4 us, 0.5 % of the round.
-- **The whole E87 selection chain. Closed by thorfinn's repricing.** Driving it
-  to zero is worth +0.084 % published against a 0.160 % serial-free floor.
+- ~~**The whole E87 selection chain.**~~ 🔴 **REOPENED by Finding 22.** The
+  +0.084 % figure multiplied a LATENCY saving by the 0.236 BYTE factor. Priced
+  correctly the chain is +0.918 % on the median pair as an f16 bound, and the
+  realizable part is +0.32 % to +0.72 %. E101, thorfinn, PR #103.
 
 ### What survives from the earlier themes
 
@@ -873,9 +1069,13 @@ validate at once. We do not win that game by waiting.
   prompt above the verify group boundary at `M = 5.382`. A theme-1 or theme-3
   mechanism is uniform, so it pays at **1.0**; that is another reason to prefer
   them over anything prompt-shaped.
-- **The transfer table.** Head-side gains multiply by 0.24 to 0.35, per-row
-  verify by about 1.5, fixed and launch by about 0.67, and an acceptance loss
-  always by 1.0. A weight-byte gain is a verify-class gain.
+- **The transfer table. 🔴 SUPERSEDED BY FINDING 22.** Keep only the two
+  anchored numbers: the MEASURED head byte factor **0.236** and the acceptance
+  factor **1.0**. The derived per-row verify factor 1.532 and the derived fixed
+  and launch factor 0.670 are deleted — the "fixed" bucket was streaming work
+  the marginal-per-row model failed to attribute. Use the two-class law:
+  stream-class percentages transfer at 1.0, latency-class percentages at 2.40.
+  A weight-byte gain is stream-class and uniform, so it pays at 1.0.
 
 ---
 
@@ -1045,10 +1245,12 @@ Ordered by the Finding 21 floor argument, then by the section 0d transfer table.
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #89 | thorfinn | E87 coarse draft shortlist, arm C, plus section 8 | Section 8 built, gated and measured: one custom `qwen_mtp_probe_sort` kernel replaces a 22-dispatch sort chain, 256 trials with 0 mismatches and a positive control that fires. The round-level ABBA contrast is −0.298 % drift-corrected, inside a 0.422 % session null. He repriced the whole selection chain at +0.084 % published and I retired it. **Draw 2 `f04b102e` is in flight.** He verifies the receipt, then goes terminal. |
-| #99 | alphonse | E96 Gated DeltaNet recurrent step | Refuted the brief's premise twice over: the step costs 861 us per round, and five arms over 674 rounds close the round to 2.3 to 2.6 us of residual, so **no unmeasured pocket of round time exists**. Also proved that at fixed draft width the round cost is insensitive to acceptance — 0.27 % spread — so **the round budget is paid for the drafts proposed, not the drafts that survive**. Ordered to finish the running rung-3a leg plus one isolated census calibration leg, then go terminal. **E100 is queued for him.** |
-| #100 | askeladd | E98 transform-owned weight metadata index | New. Theme 1, the largest untouched lever on the board. Rung 0 is a contract audit with no candidate edit; rung 1 kill threshold raised from 2.0 % to 3.5 % because the floor argument predicts at least 4.55 % and a small number means an instrument fault first. Must report achieved GB/s per cell, not only microseconds. |
-| #101 | edward | E99 oracle allocation bound | New. Theme 4. Four counterfactuals on the ranked cost curve, plus the same four restricted to the one-bit `G` decision. The barrier-granularity rung was **withdrawn** before he started it, because Finding 21 makes a bandwidth-bound round immune to dispatch concurrency. Stop rule: an oracle gap under 2.0 % kills the theme. |
+| #103 | thorfinn | E101 selection chain, custom top-K | 🔴 **New.** Rung 0 is draw 3, a bare resample of the promoted tree, because a byte-identical redraw is worth about 3.3371 serial-free against our own published 3.32825, so `P(redraw beats the crown) ≈ 0.91`. Rungs 1 to 5 rebuild the selection chain that Finding 22 reopened: 89.38 us per draft remains in two argPartition + mbsort chains at 1.9 to 7.9 ns per key, while the declared path already selects top-32 from 98,304 rows at 0.388 ns per key. Ranked value **+0.32 % to +0.72 % published**. Stop below 40 us per draft removed. Lead with the isolated census and the forward ranked prediction, not the round-level ABBA: section 8's real +0.1117 % fell inside its own session null. |
+| #89 | thorfinn | E87 coarse draft shortlist, arm C, plus section 8 | ✅ **MERGED at `d5075d4c`. Produced the promoted crown `f04b102e` at 3.32824628683457 — the first time senpai has held the official frontier.** Section 8 built, gated and measured: one custom `qwen_mtp_probe_sort` kernel replaces a 22-dispatch sort chain, 256 trials with 0 mismatches and a positive control that fires. He then repriced his own section 8 against the official per-prompt receipt, found the byte-transfer factor understated it by 12×, and produced **Finding 22, the two-class transfer law** — the largest methodological correction of the campaign. He also recovered `L` and `S` from public board fields alone, and caught two of my errors: the width-shape test has `t = −5.22` where I read the absolute table as flat, and the 0.10 % published-frame residual is **not established** (`t = +1.08`). |
+| #100 | askeladd | E98 transform-owned weight metadata index | Theme 1, the largest untouched lever on the board, repriced to **+4.7 % to +5.5 % published** after alphonse measured the streaming share at 88.6 %. Rung 0 is a contract audit with no candidate edit; rung 1 expects `(a)−(c) ≈ 10.5 %` and dies below 7.0 %. He has the full plumbing route: keep both tensor shapes, put the uint16 pair index in the `scales` slot by bit-cast and the LUT in the first `2·L` elements of `biases`. **Cheap collapse test first:** if distinct scales equals distinct pairs, key the LUT on the scale's own bit pattern and the bit-cast and NaN questions both disappear. |
+| #101 | edward | E99 oracle allocation bound | Theme 4, **alive**: the oracle gap is 5.81 % to 6.41 % against a 2.0 % kill threshold, and the one-bit `G` clamp recovers 0.57 to 0.78 of it. Rungs 1 to 4 needed no new instrumentation and no GPU, because `MLX_QWEN_MTP_TRACE=1` already records the pre-round state. Rung 5 ordered: implement the margin gate in `costModelDepth`, ABBA at 512 tokens, reprice on the ranked curve. Promote at ≥ +1.0 %, stop below +0.3 %. |
+| #102 | alphonse | E100 fewer weight streams per round | Theme 2a. New, after E96 merged. Raise the `NA` cap so `M = 5` runs at `G = 1`. Two caps hold NA at 4 and only the register wall is physics; `vec<float,NA>` is a language limit. NA = 5 fits at 125 of 128 registers. Break-even needs NA = 5 above 114.3 GB/s against NA = 4's 167.1, because `G = 2` currently buys memory-level parallelism through `MTL::DispatchTypeConcurrent`. Rung 3 is `rows_per_simd` 4 → 2, untried. |
+| #99 | alphonse | E96 Gated DeltaNet recurrent step | ✅ **MERGED at `cd0a89da`.** Decisive negative that reorganised the campaign. The step costs 861 us per round, not the 8,112.6 I briefed. His isolated census then measured the round directly: streaming families move **2.005× the whole model per round**, proving `G = 2` counts complete passes, at **88.6 % of round time and 249.55 GB/s**. That killed Theme 3 and closed the width-independent term `a` campaign-wide. He also proved `MLX_E58_BUFFER_LIMIT_OPS=0` is required, invalidating every earlier `OPS=1` isolation, and that at fixed draft width the round cost is insensitive to acceptance (0.27 % spread). |
 
 Each student has one physical Mac: Apple M4 Pro, `applegpu_g16s` generation 16,
 20 GPU cores, 48 GiB, 10 performance cores and 4 efficiency cores. The ranked

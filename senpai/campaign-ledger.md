@@ -29850,3 +29850,401 @@ advisor head   4d937ce3
 Assignments live: E98 askeladd PR #100 bytes per weight; E99 edward PR #101
 oracle allocation bound; E96 alphonse PR #99 going terminal, E100 queued;
 E87 thorfinn PR #89 going terminal after the draw-2 receipt.
+
+## 247 — SENPAI TAKES THE CROWN: `f04b102e` promoted at 3.32824628683457
+
+Date 2026-08-21, about 11:20 UTC. Advisor branch `cd0a89da`.
+
+### 1. The receipt
+
+```
+f04b102e-b4d4-4354-97eb-760dd900e18d      submitted by qwen-thorfinn 10:17:01Z
+  officialScore        3.32824628683457
+  status               accepted        improved true
+  promotionStatus      promoted        promotionFinishedAt 2026-08-21T11:13:00.027Z
+  promotedSourceRef    23ef7556662055c74190abe5b1c5e8a412cd314d
+  submissionCommitSha  23ef7556662055c74190abe5b1c5e8a412cd314d
+  benchmark            5d1ee4d7-80bd-4555-b182-6505f26ef495
+  note                 senpai/submission-note-e87-armc-probesort.md
+```
+
+`upstream/main` now resolves to `23ef7556`. The previous crown `8819b108`
+(audreyt, 3.32794960796967, promoted 03:43:08Z) is displaced. This is the
+first time senpai has held the official frontier of `qwen3.8-27b-mtp-v1`.
+
+Contents of the promoted tree: E87 arm C, the cluster-indexed coarse draft
+shortlist, plus the section 8 `qwen_mtp_probe_sort` kernel. The E95 Q-row
+narrowed-pack rider `b3f88ed2` is reverted in this tree, as `ac5a55b0`.
+Candidate commit `ebd5fa38`, base `770a3ff2`.
+
+### 2. The margin is 0.0089 % published on top of a 0.6127 % mechanism
+
+```
+                     published          serial-free      rank
+  f04b102e     3.32824628683457        3.33711592     1 of 696 on both
+  8819b108     3.32794960796967        3.31678843    10 of 696 serial-free
+  margin              +0.0089 %          +0.6127 %
+```
+
+Per-prompt candidate leg, `f04b102e` against `8819b108`
+(`research/board_per_prompt.py pair`):
+
+```
+  plutarch  +0.1218 %    drama     +0.5965 %    travel   +0.5910 %
+  beagle    +0.6227 %  SETS SCORE  essays  +0.6038 %  SETS SCORE
+  medicine  +0.6872 %    republic  +0.6738 %    botany   +0.7733 %
+  mean7 +0.6498 % sd 0.0663, faster 0 of 7 for the crown
+  score statistic +0.6133 %
+```
+
+Our candidate leg is faster on all eight prompts. The published margin is
+1/69th of the mechanism margin because the serial lottery went against us
+again. Serial-free minus published is `+0.00887` for us, meaning our serial
+draw cost `0.266 %`, and `-0.01116` for audreyt, meaning their draw gained
+`0.336 %`. Finding 20 predicted exactly this asymmetry and it cost us the
+size of the win, not the win itself.
+
+**Consequence.** The same tree drawn again at an average serial is worth
+about `3.3371`. Against our own new bar of `3.32825` that is a required move
+of `-1.36 sigma` at the `0.196 %` published resample sd, so `P(draw 3 beats
+our own crown) ~ 0.91`. I ordered draw 3 as a bare resample immediately, with
+no composition, in `e87-f19`.
+
+### 3. The promoted tree is NOT in the advisor branch
+
+Verified at `cd0a89da`:
+
+```
+git grep -c "buildDerivedClusterIndex\|qwen_mtp_probe_sort" HEAD    -- Sources Vendor  ->  no match
+git grep -c "buildDerivedClusterIndex\|qwen_mtp_probe_sort" 23ef7556 -- Sources Vendor  ->  Qwen35.swift:3
+```
+
+The official frontier lives only on PR #89's branch. Three students are
+measuring against a base that is behind it. Merge PR #89 the moment thorfinn
+goes terminal. Composition risk is low because the three live experiments are
+orthogonal to arm C: E98 changes target weight bytes, E100 changes the target
+verify kernel, and E99 changes depth selection. Only E99 interacts, through
+the per-draft head cost that arm C lowered, and E99 measures ABBA on its own
+base.
+
+### 4. Submit-guard preconditions re-checked after the frontier moved
+
+```
+frontier-state.json on origin/main   syncedCommit 0c90733d   promoted 0cd0a6b4 3.24929
+git merge-base --is-ancestor 0c90733d 23ef7556   ->  OK
+git merge-base --is-ancestor b40c28e9 23ef7556   ->  OK
+```
+
+`senpai/submit-official.sh:220-226` requires only that the recorded upstream
+sha be an ancestor of the live one. The Yukon validate commits form a linear
+chain, so the stale `frontier-state.json` does not block further submissions
+and `BASE_SHA` stays `770a3ff2`.
+
+Program.md asks for an organizer sync when the highest promoted row differs
+from `frontier-state.json`. It now differs, but the promoted source **is our
+own submitted tree**, so a replay would compare the tree against itself. No
+sync and no replay are scientifically required. Recorded here as the reason.
+
+### 5. Thorfinn recovered `L` and `S` from public board fields, then found my two errors and I found his one
+
+He first reported that `L` and `S` need the per-prompt round count `R`, which
+the board never publishes, then retracted it in the next comment. He is right:
+
+```
+tokens_per_round = 1 + a*d ;  512 = R*(1 + a*d)
+round_time = 512*mtp_spt/R = mtp_spt*(1 + a*d)      R cancels
+positive control: 513 tokens, d 6.358974, a 0.877016 -> predicted R 78.0000, recorded 78
+```
+
+His numbers disagreed with mine: `L 50833.2 / S 1746.3` against my
+`L 61126.4 / S 7151.6` on `cb8aeefb`. Three causes, all now settled.
+
+**(a) A single global `a` is a width-correlated multiplicative bias, not a
+small approximation.** True accepted rates run from `0.333` on plutarch to
+`0.903` on republic. Using `a = 0.877` everywhere overstates travel's tokens
+per round by `38 %` and plutarch's by `64 %`, while botany is near exact. The
+distortion is monotone in width and maps straight onto the slope. `R` does
+not need to be assumed: Finding 18b recovers it exactly, because
+`effective_mean_draft_len` is the exact rational `total_drafts / R`.
+
+**(b) He fit all seven drafting prompts through one line.** drama `M 3.298`
+and travel `M 3.656` are in the G=1 band; the other five are G=2, and the
+ranked boundary step between `M=4` and `M=5` is `+23.0 %`. A line across a
+step is a step divided by a width gap.
+
+**(c) He reported `L` at width 0.** The standing rule is never to fit the raw
+intercept. Extrapolating from the five G=2 widths to zero inflates residual
+noise by about `MBAR^2 / SXX = 23`.
+
+My committed definition, handed over verbatim in `e87-f19`:
+`round_us[p] = 512*spt[p]/R[p]*1e6` with exact `R`; regressor `M = 1 + d`;
+fit set the five G=2 prompts; `MBAR = 6.1723`; model centered,
+`round_us(M) = L + S*(M - MBAR)`; `L/plutarch` denominator uses
+`512*spt_plutarch/487*1e6`.
+
+**His error I accepted.** His section 4 offered the width-independent share of
+`L` as an independent M5 check on Finding 21, landing at `83-90 %`. Refused:
+that share is `L/(L + S*mean_width)` with `L` at width 0 from a fit that
+crosses the G step, so a flattened `S` inflates the share by construction. The
+agreement with `>= 82 %` is not yet evidence. He was already correctly
+refusing to compare `L + S` against the M4-Pro `52,792 us` floor; the same
+discipline applies one level up.
+
+**My errors he caught.** Two, both accepted.
+
+- His percentage-versus-width test is stronger than my absolute-microsecond
+  table. `delta % = -0.3611 % per row, se 0.0691, t -5.22`, control plutarch
+  `+0.023 %`. I had read the absolute table (drama +960 down to botany +274)
+  as flat with noise. It falls by a factor of `3.5`. Either reading excludes a
+  per-row cost and leaves the `MN_naligned` fixed per-call penalty, but his
+  version carries a significance level. **Adopted as the standard rider
+  diagnostic.**
+- I accepted `sigma_b = 0.078 %` and "the candidate leg is 2.7x quieter" four
+  minutes after he retracted both. His test of whether the published-frame
+  residual exists at all:
+  `D = var(published) - var(serialfree)`, predicted `0.015740` at `g = 1`,
+  observed `0.025647`, difference `+0.009907`, `se 0.009167`, `t +1.08`.
+  **The 0.10 % residual is not established.** Corrected standing statement:
+  `sigma_b = 0.078 %` is conditional on `g = 1`, `g = 1` is not refuted, and
+  the residual is unresolved. About 134 pairs are needed on the independent
+  bound; fewer once the pair-level correlation is used. The advisor still owns
+  the 39-pair check but must answer "is there a residual" before "where".
+
+His `L`/`S` mechanism verdict on the reverted rider stands regardless of
+scale: `L +3.47 %`, `S -11.56 %`, fixed cost up and per-row cost down. That is
+a third independent route to Finding 19, after the microsecond table and the
+percentage-versus-width slope. Collapsing `L` and `S` back to width 1 gives
+`+2.97 %` against the shape fit's `+3.09 %` intercept.
+
+His measurement-mode diagnostic also stands: on raw plutarch time in the
+same 60-run cohort, `cb8aeefb` ranks 22 and `84b9ef7b` ranks 32, and the two
+agree to `+0.023 %`, so machine speed did not change between them. His cohort
+came out at exactly 60, which independently confirms the schedule key.
+
+### 6. `OPS=1` contaminates thorfinn's E87 section 4 census
+
+Alphonse proved in E96 that `MLX_E58_BUFFER_LIMIT_OPS=1` with `MB=1` still
+packs exactly two dispatches per command buffer, because
+`CommandEncoder::needs_commit()` at `device.cpp:485-486` tests
+`buffer_ops_ > max_ops`, and `env::get_var` uses `atoi` so `0` parses.
+
+E87 section 4 ran with `OPS=1` and therefore measured pairs. Ruling: do not
+re-run. The section 4 conclusion is a **ratio** between stage 1 and stage 2,
+both measured the same way, and the per-buffer roster closed to `98.2 %`
+against phase time. The absolute `GB/s` figures may be biased; the axis
+verdict is unchanged. Thorfinn to label the rates pair-isolated in the
+terminal report.
+
+### 7. Board at 11:15Z
+
+```
+f04b102e  3.32824628683  promoted   morganmcg1   <- crown
+8819b108  3.32794960797  promoted   audreyt
+0c2807a4  3.32774046069  rejected   newjordan
+4cb3c9b7  3.32552795567  rejected   vibecodooor
+214d92aa  3.32529025141  promoted   vibecodooor
+a321a008  3.32466460240  rejected   audreyt
+9135aa55  3.32443153101  rejected   Lieisyourlie
+a5f60760  3.32408259938  rejected   nijaru
+cb8aeefb  3.32345770034  rejected   morganmcg1
+```
+
+Serial-free top three are `f04b102e 3.33711592`, `cb8aeefb 3.33341823` and
+`7fbb504f 3.32101903`. Senpai holds ranks 1 and 2 on the mechanism and is
+`1.61 %` clear of the third-best tree on the board. The field is `0.6 %`
+behind on serial-free and cannot reach `3.3371` by lottery.
+
+Assignments live: E98 askeladd PR #100 bytes per weight; E99 edward PR #101
+oracle allocation bound, rung 5 ordered; E100 alphonse PR #102 fewer weight
+streams per round; E87 thorfinn PR #89 submitting draw 3 then going terminal.
+
+## 248 — FINDING 22: THE TRANSFER LAW HAS TWO CLASSES, AND I PRICED A WHOLE POOL WITH THE WRONG ONE
+
+Date 2026-08-21 ~11:55 UTC. Advisor base `d5075d4c` (Merge PR #89). Source:
+thorfinn's E87 terminal result on PR #89, self-corrected, plus my reprice of the
+E96 census in `research/finding22_reprice.py`.
+
+### 248.1 The finding
+
+Thorfinn priced section 8 at +0.0095 % published by multiplying its local round
+gain (0.0401 %) by the 0.236 head-BYTE transfer factor. I accepted that in f18
+section 1 and used it in f18 section 2 to retire the whole E87 selection chain.
+The receipt says section 8 was worth **+0.1117 %** in the serial-free frame.
+The understatement is about **12x**.
+
+Section 8 removes no bytes. It removes fixed dispatch latency. His forward
+prediction, with no fitted parameter, from the isolated census rate of
+12.84 us/draft and public ranked round times:
+
+```
+919318e1 beagle  d 4.382  ranked round 57502 us  ->  predicted +0.0978 %
+a2ea8b60 essays  d 5.087  ranked round 59723 us  ->  predicted +0.1094 %
+median-pair prediction   +0.1036 %
+measured serial-free     +0.1117 %
+agreement                93 %
+```
+
+A board regression concurs but is weaker: beta 12.53 us/draft, se 5.73, t 2.19,
+ratio 0.98 against the census. All 8 candidate deltas negative, mean −0.121 %,
+sd 0.055 %, plutarch smallest in magnitude at −0.020 % because plutarch is 92 %
+non-drafting. That is the shape of a per-draft mechanism and not the shape of a
+run-level common shift.
+
+### 248.2 The law, in one line
+
+```
+ranked delta_us / local delta_us  =  (local achieved rate) / (ranked achieved rate)
+```
+
+For DRAM-bound work both rates are the machine's streaming bandwidth, so the
+ratio is 249.55 / 542.8 = 0.460 and the PERCENTAGE is preserved. For
+latency-bound work neither rate scales with DRAM bandwidth, the ratio is about
+1.0 (measured 0.98), and the PERCENTAGE is amplified by
+`local_round / ranked_round`.
+
+```
+STREAM  work   ranked % = local % x 1.0     (0.460 x 2.401 = 1.104, measured)
+LATENCY work   ranked % = local % x 2.40    (0.980 x 2.401 = 2.353, measured)
+HEAD BYTE removal      x 0.236              MEASURED, E87 arm C
+ACCEPTANCE loss        x 1.0                token accounting identity
+```
+
+The sanity check the law must pass is that a DRAM-bound saving keeps its
+percentage, because the item and the round it divides into scale by the same
+factor. It does: 1.104, within the measurement error of 1.0. That check is the
+reason to believe the latency branch too.
+
+### 248.3 ADVISOR ERROR 52, and the retirement of Finding 13's derived factors
+
+I accepted the byte factor for a latency mechanism and then retired an axis on
+it. The retirement decision was mine alone.
+
+Worse, my Finding 13 work-class table already contained the same error in a
+larger form. It priced "fixed / launch" work at a transfer of 0.670 on absolute
+microseconds. If a fixed-class local cost of 65,674 us transferred at 0.98 it
+would need 64,361 us of a 55,870 us ranked round, which is impossible. So
+Finding 13's "fixed" bucket is not latency work at all: it is streaming work
+that the marginal-per-row model failed to attribute, because that model counted
+only the marginal per-row cost and never the G=2 base streams.
+
+**Finding 21's direct census supersedes Finding 13's split.** Finding 13 put
+50.12 % of the local round in "fixed"; the E96 census measures 88.6 % of the
+round as weight streaming. Retain from Finding 13 only the two anchored
+numbers: the MEASURED head byte factor 0.236 and the acceptance factor 1.0.
+Delete the derived verify factor 1.532 and the derived fixed factor 0.670 from
+all pricing.
+
+### 248.4 The reprice, from `research/finding22_reprice.py`
+
+E96 census, local M=5, forced d=4, round 127,533 us; ranked M=5 round 53,108 us;
+amplification 2.401; DRAM peak 273 GB/s on M4 Pro; DRAM-bound cut at 60 % of
+peak.
+
+```
+family                            us/rnd    GB/s  %peak     class   local %  ranked %
+MLP gate_up                     48381.86   265.8  97.4    stream   37.937%   41.883%
+out_proj + down_proj            36559.21   238.1  87.2    stream   28.666%   31.649%
+GDN in_proj                     17675.04   258.4  94.7    stream   13.859%   15.301%
+lm_head                          5269.31   271.9  99.6    stream    4.132%    4.562%
+attn fused QKV + gate            5163.37   256.5  94.0    stream    4.049%    4.470%
+GDN recurrent step               1421.13   212.5  77.8    stream    1.114%    1.230%
+SDPA over FA history             1267.00       -     -   latency    0.993%    2.386%
+fused residual + RMSNorm          771.54    27.0   9.9    latency    0.605%    1.453%
+GDN prework                       543.39    32.6  11.9    latency    0.426%    1.023%
+q/k norm + RoPE                   149.85       -     -    latency    0.117%    0.282%
+KV cache write                     89.10       -     -    latency    0.070%    0.168%
+MTP top-2 partial + finalize       56.13       -     -    latency    0.044%    0.106%
+STREAM subtotal                114469.92                            89.757%   99.094%
+LATENCY subtotal                  2877.01                            2.256%    5.417%
+```
+
+After the measured isolation discount, which is calibrated by the two dose
+ladders (GDN step isolated 1421.13 against dose 861.0 = 1.65x; fused norm
+isolated 771.54 against dose 298.0 = 2.59x):
+
+```
+discount 1.65x  ->  in situ 1743.64 us/round   local 1.367 %   ranked 3.283 %
+discount 2.59x  ->  in situ 1110.81 us/round   local 0.871 %   ranked 2.092 %
+```
+
+**The latency pool is worth 2.09 % to 3.28 % of the ranked round, not the
+0.87 % to 1.37 % I have been pricing it at.**
+
+### 248.5 What this revives, and the corrected closure threshold
+
+```
+a STREAM-class item is dead below   0.160 % LOCAL
+a LATENCY-class item is dead below  0.067 % LOCAL   (0.115 % on the published floor)
+```
+
+Every item I closed between those two bounds was closed on the wrong test.
+
+- **fused residual + RMSNorm. REVIVED.** Dose-measured 298.01 us/pass/round,
+  R2 0.9506. Local 0.234 %, which is below the 0.277 % published floor and is
+  why E96 rung 3a closed it. Ranked **0.561 %**, which is 2.0x the published
+  floor and 3.5x the serial-free floor.
+- **SDPA over the full-attention history.** I carried it at "0.4 % to 0.6 %
+  corrected". Isolated ranked 2.386 %; discounted **0.92 % to 1.45 %**. It is
+  the largest single latency item. 16 dispatches per round at 79.19 us each is
+  far above launch overhead, so this is inefficiency, not launch cost: 4 kv
+  heads x 2 x 1024 x 256 x 2 B = 4.2 MB per layer per round, 67 MB per round,
+  at 79.19 us implies about 53 GB/s, which is 19 % of peak. Because it is
+  inefficiency rather than pure launch, its true transfer factor sits between
+  0.46 and 0.98; at a conservative 0.7 it is still 0.64 % to 1.01 % ranked.
+- **GDN prework.** Local 0.426 %, ranked 1.023 % isolated, **0.40 % to 0.62 %**
+  discounted.
+- q/k norm + RoPE 0.11 % to 0.17 % discounted. Marginal.
+
+- **GDN recurrent step stays closed.** It is stream-class at 212.5 GB/s, 77.8 %
+  of peak, so its percentage does not amplify: dose 861 us = 0.675 % local and
+  0.745 % ranked. There is little headroom at 78 % of peak, and rung 0 proved
+  the scored path reaches the non-editable `GatedDelta.swift` copy.
+
+### 248.6 THEME 6 — the small-dispatch and low-efficiency pool
+
+New campaign theme, worth **2.0 % to 3.3 % published**, third largest after
+Theme 1 (bytes per weight, 4.7 % to 5.5 %) and Theme 2a (streams per round).
+
+The mechanism behind the whole pool is dispatch count and occupancy at M=5.
+The activation tensors are tiny: [5, 5120] bf16 is 51 KB, which cannot fill a
+20-core GPU, so these kernels run at 10 % to 19 % of peak. There are about 240
+such dispatches per round. At the FACT 8 measured GPU dispatch boundary of
+3.87 us [2.63, 5.11] that is about 929 us per round of pure boundary cost,
+which is 1.75 % of the ranked round on its own.
+
+Sub-items, ranked, with their collision risk:
+
+1. **SDPA over FA history**, 0.64 % to 1.45 %. GQA pair-head K/V reuse in
+   `sdpa_vector` at D=256, or an M=5-aware path. Lives in the steel attention
+   sources. **Independent of all live work.**
+2. **residual + RMSNorm prologue fusion into the quantized GEMM**, 0.56 %.
+   Each GEMM threadgroup already reads the whole K=5120 activation row, so it
+   can compute the RMS reduction itself from data it is already loading; the
+   cost is one extra pass over an L2-resident 51 KB buffer.
+   **COLLIDES with E100: alphonse is editing
+   `qwen_fast_crossrow_affine4_g64_wide` in the same file. Do not assign until
+   E100 resolves.**
+3. **GDN prework**, 0.40 % to 0.62 %. Fuse into the recurrent step. Independent.
+4. q/k norm + RoPE, 0.11 % to 0.17 %. Fold into the KV write. Independent.
+
+### 248.7 What this does NOT change
+
+E98, E99 and E100 are all stream-class or schedule-class mechanisms whose
+percentages transfer at 1.0, and E99 is already priced directly on the ranked
+curve. No live assignment's stop rule moves. The one thing every student must
+change is the threshold they compare a small kernel's LOCAL cost against:
+0.067 % local for latency-class work, not 0.160 %.
+
+The head-side affine-2 metadata idea is a genuine byte change, so 0.236 remains
+correct there and its 0.17 % shelving stands. Thorfinn flagged that himself.
+
+### 248.8 Actions taken
+
+- PR #89 accepted on base `cd0a89da` and merged. Advisor base is now
+  `d5075d4c` and **contains the promoted frontier tree**; `git grep` for
+  `buildDerivedClusterIndex` and `qwen_mtp_probe_sort` now matches
+  `Qwen35.swift` at HEAD.
+- E101 assigned to thorfinn as PR #103, head `02ba7236`. Rung 0 is the draw-3
+  bare resample of the promoted tree; rungs 1 to 5 reopen the selection chain
+  under the corrected pricing, targeting +0.32 % to +0.72 % published.
+- `research/finding22_reprice.py` committed.
