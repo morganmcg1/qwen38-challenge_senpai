@@ -51,9 +51,11 @@ def table(columns, rows):
 
 def log_build(run, path: Path) -> None:
     report = json.loads(path.read_text())
-    run.log({"build/raw": table(["json"], [{"json": json.dumps(report, indent=2)}])})
-    flat = {f"build/{k}": v for k, v in report.items() if isinstance(v, (int, float))}
-    run.log(flat)
+    tag = report["tag"]
+    run.log({f"build/{tag}/raw":
+             table(["json"], [{"json": json.dumps(report, indent=2)}])})
+    run.log({f"build/{tag}/{k}": v for k, v in report.items()
+             if isinstance(v, (int, float))})
 
 
 def log_validate(run, path: Path) -> None:
@@ -116,6 +118,7 @@ def log_screen(run, path: Path) -> None:
 
 def log_timed(run, path: Path) -> None:
     doc = json.loads(path.read_text())
+    prefix = doc["prefix"]
     leg_cols = ["tag", "arm", "rep", "started", "candidate_mtp_seconds_per_token",
                 "serial_seconds_per_token", "local_ratio", "rounds",
                 "rows_per_token", "mean_d", "mean_acc", "accepted_draft_rate",
@@ -125,33 +128,95 @@ def log_timed(run, path: Path) -> None:
                 "head_loaded_bytes", "gpu_temp_entry_c", "gpu_temp_exit_c",
                 "cool_gate_passed_real_gate", "gate_qualified_for_timing",
                 "base_sha", "worker_sha256"]
-    run.log({"timed/legs": table(leg_cols, doc["legs"])})
+    run.log({f"timed/{prefix}/legs": table(leg_cols, doc["legs"])})
     run.log({
-        "timed/session_null_pct": doc["session_null_pct"],
-        "timed/gpu_temp_entry_spread_c": doc["gpu_temp_entry_spread_c"],
+        f"timed/{prefix}/session_null_pct": doc["session_null_pct"],
+        f"timed/{prefix}/gpu_temp_entry_spread_c": doc["gpu_temp_entry_spread_c"],
     })
     arm_rows = []
     for arm, s in doc["summary"].items():
         arm_rows.append({"arm": arm, **{k: cell(v) for k, v in s.items()}})
         run.log({
-            f"timed/{arm}/candidate_seconds_per_token": s["spt_mean"],
-            f"timed/{arm}/spt_delta_pct_vs_base": s["spt_delta_pct_vs_base"],
-            f"timed/{arm}/local_ratio": s["ratio_mean"],
-            f"timed/{arm}/draft_build_us_per_round": s["draft_build_us_per_round"],
-            f"timed/{arm}/head_loaded_bytes": s["head_loaded_bytes"],
+            f"timed/{prefix}/{arm}/candidate_seconds_per_token": s["spt_mean"],
+            f"timed/{prefix}/{arm}/spt_delta_pct_vs_base": s["spt_delta_pct_vs_base"],
+            f"timed/{prefix}/{arm}/local_ratio": s["ratio_mean"],
+            f"timed/{prefix}/{arm}/draft_build_us_per_round": s["draft_build_us_per_round"],
+            f"timed/{prefix}/{arm}/head_loaded_bytes": s["head_loaded_bytes"],
         })
         if s.get("predicted_pct") is not None:
-            run.log({f"timed/{arm}/predicted_pct": s["predicted_pct"]})
-    run.log({"timed/by_arm": table(sorted({k for r in arm_rows for k in r}), arm_rows)})
+            run.log({f"timed/{prefix}/{arm}/predicted_pct": s["predicted_pct"]})
+    run.log({f"timed/{prefix}/by_arm": table(sorted({k for r in arm_rows for k in r}), arm_rows)})
+
+
+def log_decision(run, path: Path) -> None:
+    doc = json.loads(path.read_text())
+    ranked = doc["ranked"]
+    columns = ["arm", "m", "net", "worst_domain_net", "worst_work_net",
+               "byte_model_gain_pct", "measured_gain_pct",
+               "byte_model_worst_pct", "measured_worst_pct", "by_domain"]
+    run.log({"decision/ranked": table(columns, ranked)})
+    best = ranked[0]
+    run.log({
+        "decision/samples": doc["samples"],
+        "decision/best_arm": best["arm"],
+        "decision/best_m": best["m"],
+        "decision/best_worst_domain_net": best["worst_domain_net"],
+        "decision/best_byte_model_worst_pct": best["byte_model_worst_pct"],
+        "decision/best_measured_worst_pct": best["measured_worst_pct"],
+    })
+
+
+def log_paired(run, path: Path) -> None:
+    """One rung-2 session priced round-for-round instead of leg-for-leg."""
+    doc = json.loads(path.read_text())
+    prefix = doc["prefix"]
+    run.log({
+        f"paired/{prefix}/stratum": table(
+            ["tag", "arm", "rounds", "clean_rounds", "dirty_rounds",
+             "clean_median_host_us", "dirty_median_host_us", "max_host_us",
+             "drafts", "accepted"],
+            doc["per_leg_host_stratum"]),
+        f"paired/{prefix}/host_gate_us": doc["host_gate_us"],
+        f"paired/{prefix}/depth_sequence_identical_across_arms":
+            doc["depth_sequence_identical_across_arms"],
+    })
+    bw_rows = [{"arm": a, **b} for a, b in doc.get("achieved_bandwidth", {}).items()]
+    if bw_rows:
+        run.log({f"paired/{prefix}/achieved_bandwidth":
+                 table(sorted({k for r in bw_rows for k in r}), bw_rows)})
+        for r in bw_rows:
+            run.log({f"paired/{prefix}/{r['arm']}/achieved_bandwidth_gbs":
+                     r["achieved_bandwidth_gbs"]})
+    rows = []
+    for arm, stages in doc["paired"].items():
+        for stage, r in stages.items():
+            rows.append({"arm": arm, "stage": stage, **r})
+            run.log({f"paired/{prefix}/{arm}/{stage}_delta_pct": r["median_pct"],
+                     f"paired/{prefix}/{arm}/{stage}_delta_us": r["median_delta_us"]})
+    run.log({f"paired/{prefix}/stages": table(sorted({k for r in rows for k in r}),
+                                              rows)})
+
+
+def log_liveness(run, path: Path) -> None:
+    """The damaged-index control that proves the cluster path is on the clock."""
+    doc = json.loads(path.read_text())
+    run.log({"liveness/arms": table(
+        ["arm", "head_dir", "effective_mean_draft_len", "accepted_draft_rate",
+         "all_tokens_matched", "mtp_seconds_per_token",
+         "serial_seconds_per_token"], doc["arms"])})
+    run.log({"liveness/passed": doc["passed"]})
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
-    ap.add_argument("--build")
+    ap.add_argument("--build", action="append", default=[])
     ap.add_argument("--validate")
     ap.add_argument("--screen")
-    ap.add_argument("--timed")
+    ap.add_argument("--decision")
+    ap.add_argument("--liveness")
+    ap.add_argument("--timed", action="append", default=[])
+    ap.add_argument("--paired", action="append", default=[])
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
 
@@ -173,10 +238,15 @@ def main() -> None:
             "gate_qualified_for_timing": False,
         },
     )
-    for flag, fn in (("build", log_build), ("validate", log_validate),
-                     ("screen", log_screen), ("timed", log_timed)):
+    for flag, fn in (("validate", log_validate), ("screen", log_screen),
+                     ("decision", log_decision), ("liveness", log_liveness)):
         path = getattr(args, flag)
         if path:
+            fn(run, Path(path))
+            print(f"logged {flag} from {path}")
+    for flag, fn in (("build", log_build), ("timed", log_timed),
+                     ("paired", log_paired)):
+        for path in getattr(args, flag):
             fn(run, Path(path))
             print(f"logged {flag} from {path}")
     print(run.url)
