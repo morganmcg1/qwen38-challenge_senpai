@@ -390,6 +390,10 @@ def log_census() -> None:
     run.log({"scored_matvec_cells": cells})
 
     worst = max(headroom_pct, key=headroom_pct.get)
+    draft_head_us = sum(
+        slot[1] for key, slot in agg.items()
+        if key.split("|", 2)[1] == "draft_head"
+        and int(key.split("|", 1)[0][1:]) in widths) / rounds / 1e3
     run.summary.update({
         "mtp_rounds": rounds,
         "mean_drafts_per_round": drafts_per_round,
@@ -421,6 +425,25 @@ def log_census() -> None:
             "Finding 36 law, so the premise that the coarse draft readout "
             "is ALU bound does not hold on this base"
         ),
+        "target_function": "qmv_fast_singlerow_affine2_g64",
+        "target_function_dispatches_per_round": 0,
+        "target_function_is_dead_code": True,
+        "target_function_unreachable_because": (
+            "the gate at quantized.h:1908 needs !batched, bits 2, "
+            "out_vec_size 98336 and ntg.x 1. The dense affine-2 readout is "
+            "N=12292, which is not a multiple of 8, so it takes the general "
+            "affine_qmv kernel and never reaches the gate. The other "
+            "affine-2 readout is affine_gather_qmv_fast, which calls "
+            "qmv_fast_impl directly and also never reaches the gate. No "
+            "affine_qmv_fast bits-2 dispatch appears anywhere in the census."
+        ),
+        "affine2_rows_read_per_draft": 12292 + 24584,
+        "affine2_rows_in_full_head": 98336,
+        "affine2_fraction_of_head_read": (12292 + 24584) / 98336,
+        "draft_head_us_per_round": draft_head_us,
+        "draft_head_pct_of_local_round":
+            100.0 * draft_head_us / LOCAL_ROUND_US,
+        "affine2_pct_of_draft_head": 100.0 * affine2 / draft_head_us,
     })
     run.finish()
 
