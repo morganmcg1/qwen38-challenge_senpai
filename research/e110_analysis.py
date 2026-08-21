@@ -170,7 +170,7 @@ def threadgroup_memory(probe_log: pathlib.Path) -> dict[tuple[str, int], int]:
     declares.
     """
     line_re = re.compile(
-        r"e110_rate_probe:\s+(\S+) e110_iso_na(\d+)\s+max_threads=(\d+)\s+"
+        r"rate_probe:\s+(\S+) e110_iso_na(\d+)\s+max_threads=(\d+)\s+"
         r"tg_mem=(\d+)")
     found = {}
     for line in probe_log.read_text(errors="replace").splitlines():
