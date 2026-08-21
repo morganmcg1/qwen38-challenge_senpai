@@ -80,8 +80,8 @@ def check(leg, arm, depth, tokens):
     if s["residual_divergence_count"]:
         problems.append("residual_divergence_count=%d"
                         % s["residual_divergence_count"])
-    if m.get("git_dirty_build", "0") != "0":
-        problems.append("git_dirty_build=%s" % m.get("git_dirty_build"))
+    if m.get("git_dirty") != "0":
+        problems.append("git_dirty=%s" % m.get("git_dirty"))
     return problems
 
 
@@ -124,12 +124,6 @@ def main():
                   % (leg["tag"], m["arm"], m["git_head"][:8], m["git_dirty"],
                      float(m["gpu_temp_entry_c"]), float(m["gpu_temp_exit_c"]),
                      s["all_tokens_matched"], s["residual_divergence_count"]))
-    for tag, leg in sorted(legs.items()):
-        if leg["meta"].get("git_dirty") != "0":
-            print("  ADVISORY %s ran with %s uncommitted path(s); no build "
-                  "input was dirty (git_dirty_build=%s)"
-                  % (tag, leg["meta"]["git_dirty"],
-                     leg["meta"].get("git_dirty_build", "not recorded")))
     temps = [float(l["meta"]["gpu_temp_entry_c"]) for l in legs.values()]
     print("  entry temperature spread: %.1f C (min %.1f, max %.1f)"
           % (max(temps) - min(temps), min(temps), max(temps)))
