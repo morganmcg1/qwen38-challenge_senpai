@@ -1,0 +1,61 @@
+diff --git b/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift a/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+index 9a10fdb..2acf52b 100644
+--- b/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
++++ a/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+@@ -12,6 +12,48 @@ import MLX
+ import MLXLMCommon
+ import MLXNN
+ 
++// E87 RESEARCH INSTRUMENT -- streams every hidden row that reaches the draft
++// readout, together with the proposal token the runtime returned for it, so an
++// offline harness can screen candidate coarse shortlist scorers without a
++// timed decode. Reverted out of the submitted surface before the experiment
++// closes; the shipped default is a no-op.
++//
++// The `MLX_` prefix is load-bearing: `sanitizedRuntimeWorkerEnvironment` admits
++// `MLX_` and drops `MLXFAST_`, so a `MLXFAST_`-spelled gate would never reach
++// the worker process that owns the draft path.
++//
++// `asArray` forces a host readback per draft call. That is why this instrument
++// may only run on the untimed `mtp-verify` path.
++private enum E87HiddenDump {
++    private static let prefix =
++        ProcessInfo.processInfo.environment["MLX_E87_HIDDEN_DUMP"]
++    private static let lock = NSLock()
++    // `lock` is the external synchronization the concurrency checker asks for.
++    nonisolated(unsafe) private static var hiddenFile: FileHandle?
++    nonisolated(unsafe) private static var tokenFile: FileHandle?
++
++    static func record(_ hidden: MLXArray, _ proposal: MLXArray) {
++        guard let prefix else { return }
++        lock.lock()
++        defer { lock.unlock() }
++        if hiddenFile == nil {
++            // The CLI and the worker it spawns both inherit the gate, and both
++            // reach this readout. One shared path means whichever opens second
++            // truncates the other's samples, so shard by process.
++            let shard = "\(prefix).pid\(ProcessInfo.processInfo.processIdentifier)"
++            let manager = FileManager.default
++            manager.createFile(atPath: shard + ".x.f32", contents: nil)
++            manager.createFile(atPath: shard + ".tok.i32", contents: nil)
++            hiddenFile = FileHandle(forWritingAtPath: shard + ".x.f32")
++            tokenFile = FileHandle(forWritingAtPath: shard + ".tok.i32")
++        }
++        let row = hidden.reshaped([hidden.size]).asType(.float32).asArray(Float.self)
++        let ids = proposal.reshaped([proposal.size]).asType(.int32).asArray(Int32.self)
++        row.withUnsafeBufferPointer { try? hiddenFile?.write(contentsOf: Data(buffer: $0)) }
++        ids.withUnsafeBufferPointer { try? tokenFile?.write(contentsOf: Data(buffer: $0)) }
++    }
++}
++
+ // MARK: - Configuration
+ 
+ private enum RopeParametersCodingKey: String, CodingKey {
+@@ -3375,6 +3417,7 @@ extension Qwen35TextModel: MTPCapable {
+     public func draftTokenID(_ x: MLXArray) -> MLXArray {
+         if _draftHeadW != nil {
+             if let reranked = draftTokenIDWithDeclaredRerank(x) {
++                E87HiddenDump.record(x, reranked)
+                 return reranked
+             }
+             return mapDraftTokenIds(
