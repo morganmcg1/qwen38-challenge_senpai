@@ -146,6 +146,46 @@ def label(per_round, width):
     return groups, by_layer, pooled, unlabelled
 
 
+def collect_all(path, width, phase):
+    """round -> [(ordinal, kernel, gy, us)] including non-qmv kernels."""
+    per_round = collections.defaultdict(list)
+    for line in path.open():
+        rec = json.loads(line)
+        if rec.get("event") != "gputime" or not rec.get("trace"):
+            continue
+        parsed = [SHAPE_RE.match(s) for s in rec.get("trace_shapes", [])]
+        for rnd, ordinal, w, shape_id, gpu_ns in rec["trace"]:
+            if w != width:
+                continue
+            match = parsed[shape_id]
+            if match is None or match.group("phase") != phase:
+                continue
+            per_round[rnd].append((ordinal, match.group("kernel"),
+                                   int(match.group("gy")), gpu_ns / 1e3))
+    return per_round
+
+
+def block_gap(per_round, block_kernel):
+    """Dispatch count and GPU time between a block kernel and the next N=5120."""
+    counts, spans = [], []
+    for _rnd, rows in sorted(per_round.items()):
+        pending = None
+        for _ordinal, kernel, gy, us in sorted(rows):
+            if block_kernel in kernel:
+                pending = [0, 0.0]
+                continue
+            if pending is None:
+                continue
+            if gy == NARROW_GY:
+                counts.append(pending[0])
+                spans.append(pending[1])
+                pending = None
+            else:
+                pending[0] += 1
+                pending[1] += us
+    return counts, spans
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("tags", nargs="+")
@@ -232,6 +272,20 @@ def main() -> None:
                 print(f"  {tensor:<14} {host:<5} {quarts[0]:8.2f} "
                       f"{quarts[1]:8.2f} {quarts[2]:8.2f} {quarts[3]:8.2f} "
                       f"{quarts[3] - quarts[0]:8.2f}")
+
+        # Effect B is the excess on the dispatch that follows the block. If the
+        # encode distance to that dispatch changes with width, then what looks
+        # like width gating may be distance gating instead.
+        all_rounds = collect_all(path, args.width, args.phase)
+        print("\n  encode distance from block kernel to the next N=5120 dispatch")
+        print(f"  {'block':<18} {'n':>5} {'dispatches':>11} {'GPU us':>9}")
+        for kernel, name in (("gated_delta_step", "gated_delta_step"),
+                             ("sdpa_vector", "sdpa_vector")):
+            counts, spans = block_gap(all_rounds, kernel)
+            if not counts:
+                continue
+            print(f"  {name:<18} {len(counts):5d} {statistics.fmean(counts):11.2f} "
+                  f"{statistics.fmean(spans):9.2f}")
 
         payload[tag] = {
             "width": args.width, "rounds": len(per_round),
