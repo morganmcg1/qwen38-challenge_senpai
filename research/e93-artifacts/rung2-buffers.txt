@@ -1,0 +1,42 @@
+=== research/out/e93-gpu-iso2-d8/census.jsonl
+    steady snapshots=7  head dispatches=1484  implied rounds=6.48  head calls=51.85  (every figure below is per head call, not per marginal draft)
+      1074.40 us/call   n=  56   1.08 buf/call   157.338 MB    158.2 GB/s  draft_lm_head coarse readout, affine-2 [98336,5120]x1, top-32 partial reduction over 98336 logitsx1
+       393.40 us/call   n=  49   0.94 buf/call   100.280 MB    240.9 GB/s  mlp gate_up fused (O=34816)x1, post_attention_layernorm, fused residualx1
+       200.18 us/call   n=  49   0.94 buf/call    97.321 MB    459.4 GB/s  SwiGLU silu(gate) * upx1, fc + o_proj + down_proj (3 dispatches, O=5120)x1, gate/up split copyx1
+       166.40 us/call   n=  56   1.08 buf/call    35.394 MB    229.7 GB/s  q_proj (O=12288)x1, replaceExactRows putAlong scatter, 1024 Q island rowsx1
+       138.00 us/call   n=  56   1.08 buf/call    31.457 MB    246.2 GB/s  K/V exact dense bf16 [2048,5120]x1, Q precision island, dense bf16 [1024,5120]x1
+       121.65 us/call   n=  49   0.94 buf/call    97.341 MB    756.2 GB/s  fc + o_proj + down_proj (3 dispatches, O=5120)x1, input_layernorm and mtp.norm (2 dispatches)x1
+        73.01 us/call   n=  49   0.94 buf/call    97.321 MB   1259.6 GB/s  attention output sigmoid gatex1, fc + o_proj + down_proj (3 dispatches, O=5120)x1
+        67.75 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[affine_qmv_fast_bfloat16_t_gs_64_b_4_bat]x1, UNMAPPED[rms_loopedbfloat16 grid=8192x1x1 tg=1
+        56.13 us/call   n=   7   0.13 buf/call   100.270 MB    241.2 GB/s  SwiGLU silu(gate) * upx1, mlp gate_up fused (O=34816)x1
+        32.01 us/call   n=  56   1.08 buf/call     0.092 MB      3.1 GB/s  gatherQuantizedMM, 32 rows of the target compact headx1, top-32 finalizex1
+        31.74 us/call   n=  49   0.94 buf/call     0.000 MB      0.0 GB/s  K and V cache append, 1 position (2 dispatches)x1, SDPA over head historyx1
+        28.61 us/call   n=   7   0.13 buf/call    97.321 MB    459.2 GB/s  fc + o_proj + down_proj (3 dispatches, O=5120)x1, gate/up split copyx1
+        15.26 us/call   n=   7   0.13 buf/call     0.020 MB      0.2 GB/s  input_layernorm and mtp.norm (2 dispatches)x1, UNMAPPED[steel_gemm_splitk_accum_bfloat16_float32]x1,
+        10.86 us/call   n=   7   0.13 buf/call    97.331 MB   1210.1 GB/s  fc + o_proj + down_proj (3 dispatches, O=5120)x1, post_attention_layernorm, fused residualx1
+         8.87 us/call   n=  42   0.81 buf/call     0.023 MB      2.1 GB/s  fused quantized-embed dual RMSNorm concatx1, exact rerank over the 32 candidatesx1
+         7.81 us/call   n=  49   0.94 buf/call     0.001 MB      0.1 GB/s  q_norm + k_norm + RoPE (28 heads)x1, K and V cache append, 1 position (2 dispatches)x1
+         6.65 us/call   n=  56   1.08 buf/call     0.020 MB      3.3 GB/s  input_layernorm and mtp.norm (2 dispatches)x1, attention residual addx1
+         4.63 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  attention output sigmoid gatex1, SDPA over head historyx1
+         2.04 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[custom_kernel_qwen35_embed_dual_rms_norm]x1
+         1.15 us/call   n=   7   0.13 buf/call     0.023 MB      2.7 GB/s  fused quantized-embed dual RMSNorm concatx1
+         1.14 us/call   n=   7   0.13 buf/call     0.001 MB      0.1 GB/s  q_norm + k_norm + RoPE (28 heads)x1, UNMAPPED[g3_copybfloat16bfloat16 grid=256x8x4 tg=]x1
+         0.86 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[g3_copybfloat16bfloat16 grid=256x8x4 tg=]x1, UNMAPPED[rope_bfloat16_ grid=32x8x1 tg=32x8x1]
+         0.81 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[g2_copybfloat16bfloat16 grid=1024x8x1 tg]x1, UNMAPPED[rmsbfloat16 grid=2048x1x1 tg=64x1x1]x
+         0.77 us/call   n=  14   0.27 buf/call     0.000 MB      0.0 GB/s  exact rerank over the 32 candidatesx1
+         0.77 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[gg1_copybfloat16bfloat16 grid=40960x1x1 ]x1, UNMAPPED[gg1_copybfloat16bfloat16 grid=5120x1x
+         0.37 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[gg2_copybfloat16bfloat16 grid=2048x4x1 t]x2
+         0.35 us/call   n=   7   0.13 buf/call     0.000 MB      0.0 GB/s  K and V cache append, 1 position (2 dispatches)x2
+    TOTAL 2445.58 us/call over 27 buffer signatures, 652.775 MB/call
+=== research/out/e93-gpu-insitu-long/census.jsonl
+    steady snapshots=52  head dispatches=11266  implied rounds=49.43  head calls=395.43  (every figure below is per head call, not per marginal draft)
+      1136.09 us/call   n= 203   0.51 buf/call   616.566 MB    278.6 GB/s  SwiGLU silu(gate) * upx1, attention output sigmoid gatex1, gatherQuantizedMM, 32 rows of the target 
+       830.03 us/call   n= 147   0.37 buf/call   616.566 MB    276.1 GB/s  SwiGLU silu(gate) * upx1, attention output sigmoid gatex1, gatherQuantizedMM, 32 rows of the target 
+       187.83 us/call   n=  29   0.07 buf/call   519.245 MB    202.7 GB/s  SwiGLU silu(gate) * upx1, attention output sigmoid gatex1, gatherQuantizedMM, 32 rows of the target 
+        37.67 us/call   n=   6   0.02 buf/call   519.245 MB    209.1 GB/s  SwiGLU silu(gate) * upx1, attention output sigmoid gatex1, gatherQuantizedMM, 32 rows of the target 
+        10.33 us/call   n= 300   0.76 buf/call     0.023 MB      1.7 GB/s  fused quantized-embed dual RMSNorm concatx1, exact rerank over the 32 candidatesx1
+         1.21 us/call   n= 100   0.25 buf/call     0.000 MB      0.0 GB/s  exact rerank over the 32 candidatesx1
+         1.21 us/call   n=  53   0.13 buf/call     0.023 MB      2.6 GB/s  fused quantized-embed dual RMSNorm concatx1
+         0.83 us/call   n=  30   0.08 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[custom_kernel_qwen35_embed_dual_rms_norm]x1, UNMAPPED[gg1_copybfloat16bfloat16 grid=40960x1
+         0.16 us/call   n=   6   0.02 buf/call     0.000 MB      0.0 GB/s  UNMAPPED[custom_kernel_qwen35_embed_dual_rms_norm]x1, UNMAPPED[gg1_copybfloat16bfloat16 grid=35840x1
+    TOTAL 2205.37 us/call over 9 buffer signatures, 591.712 MB/call
