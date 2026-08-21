@@ -238,14 +238,116 @@ def log_bytes(directory: pathlib.Path) -> None:
     run.finish()
 
 
+def log_lut(directory: pathlib.Path) -> None:
+    payload = json.loads((directory / "lut.json").read_text())
+    meta = read_meta(directory / "meta.txt")
+    regs = json.loads((directory / "regs.json").read_text())
+    summary_json = json.loads((directory / "analysis.json").read_text())
+
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        group=GROUP,
+        job_type="lut-emulation",
+        name="e98-lut",
+        config={
+            "experiment": GROUP,
+            "rung": "1b",
+            "question": "what does the indexed metadata read pay inside the "
+                        "scored cross-row kernel",
+            "instrument": "three JIT variants of affine_qmv_fast alternated "
+                          "ABCCBA in one session",
+            "arms": payload["arms"],
+            "arm_a": "shipped, 36 B per 64 elements",
+            "arm_b": "uint16 pair index plus LUT, 34 B per 64 elements",
+            "arm_c": "literal scale and bias, 32 B per 64 elements",
+            "lut_entries": payload["lut_entries"],
+            "counterbalance_order": payload["order"],
+            "blocks_per_cell": payload["pairs"],
+            "device": payload["device"],
+            "architecture": payload["architecture"],
+            "dram_peak_gb_per_s": DRAM_PEAK_GB_S,
+            "metal_toolchain": meta.get("metal_toolchain"),
+            "arm_a_sha256": meta.get("arm_a_sha256"),
+            "arm_b_sha256": meta.get("arm_b_sha256"),
+            "arm_c_sha256": meta.get("arm_c_sha256"),
+            **E96,
+            **identity(meta),
+            **gate_flags(),
+        },
+        reinit=True,
+    )
+
+    fidelity = wandb.Table(
+        columns=["shape", "m", "a_vs_double_max_rel",
+                 "a_vs_double_rms_over_signal", "b_vs_a_differing",
+                 "b_vs_a_total", "bit_identical"])
+    control = wandb.Table(columns=["shape", "m", "differing", "total",
+                                   "detected"])
+    for row in payload["measurements"]:
+        if row["kind"] == "fidelity":
+            fidelity.add_data(
+                row["shape"], row["m"], row["a_vs_double_max_rel"],
+                row["a_vs_double_rms_over_signal"], row["b_vs_a_differing"],
+                row["b_vs_a_total"], row["bit_identical"])
+        elif row["kind"] == "positive_control":
+            control.add_data(row["shape"], row["m"], row["differing"],
+                             row["total"], row["detected"])
+
+    cells = wandb.Table(
+        columns=["shape", "m", "kernel_family", "weight_streams", "blocks",
+                 "a_us", "b_us", "c_us", "indexed_saving_pct",
+                 "no_metadata_bound_pct", "capture_ratio", "byte_share_ab_pct",
+                 "byte_share_ac_pct", "a_gb_per_s", "pct_dram_peak",
+                 "session_null_pct", "block_spread_pct"])
+    flat: dict[str, object] = {}
+    for cell in summary_json["cells"]:
+        cells.add_data(
+            cell["shape"], cell["m"], cell["kernel_family"],
+            cell["weight_streams"], cell["blocks"],
+            cell["a_s"] * 1e6, cell["b_s"] * 1e6, cell["c_s"] * 1e6,
+            100 * cell["indexed_saving"], 100 * cell["no_metadata_bound"],
+            cell["capture_ratio"], 100 * cell["byte_share_ab"],
+            100 * cell["byte_share_ac"], cell["a_gb_s"], 100 * cell["a_util"],
+            100 * cell["session_null"], 100 * cell["block_spread_a"])
+        key = f"cell/{cell['shape']}/m{cell['m']}"
+        flat[f"{key}/indexed_saving_pct"] = 100 * cell["indexed_saving"]
+        flat[f"{key}/no_metadata_bound_pct"] = 100 * cell["no_metadata_bound"]
+        flat[f"{key}/capture_ratio"] = cell["capture_ratio"]
+        flat[f"{key}/a_gb_per_s"] = cell["a_gb_s"]
+
+    reg_table = wandb.Table(
+        columns=["arm", "peak_live_regs", "reg_delta_vs_shipped", "air_lines",
+                 "device_loads", "device_load_delta_vs_shipped"])
+    for name, res in regs["arms"].items():
+        reg_table.add_data(
+            name, res.get("peak_live_regs"), res.get("reg_delta_vs_shipped"),
+            res.get("air_lines"), res.get("device_loads"),
+            res.get("device_load_delta_vs_shipped"))
+
+    run.log({"lut/fidelity": fidelity, "lut/positive_control": control,
+             "lut/cells": cells, "lut/registers": reg_table})
+    flat.update({
+        "bit_identical_all": summary_json["bit_identical_all"],
+        "positive_control_all_detected":
+            summary_json["positive_control_all_detected"],
+        "reg_delta_indexed_vs_shipped":
+            regs["arms"]["b_indexed"].get("reg_delta_vs_shipped"),
+    })
+    run.summary.update(flat)
+    run.finish()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", choices=["census", "bytes"])
+    ap.add_argument("--only", choices=["census", "bytes", "lut"])
     args = ap.parse_args()
     if args.only in (None, "census"):
         log_census(OUT / "e98-census")
     if args.only in (None, "bytes"):
         log_bytes(OUT / "e98-bytes-r1a")
+    if args.only in (None, "lut"):
+        log_lut(OUT / "e98-lut-r1b")
 
 
 if __name__ == "__main__":
