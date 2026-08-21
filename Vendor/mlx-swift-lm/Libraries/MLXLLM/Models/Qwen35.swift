@@ -2826,7 +2826,7 @@ let qwen35DecodeLadderRungs: Set<Int> = {
 let e105DoseCount = Int(ProcessInfo.processInfo.environment["MLX_E105_DOSE"] ?? "") ?? 0
 let e105DoseShape = ProcessInfo.processInfo.environment["MLX_E105_DOSE_SHAPE"] ?? "prework"
 
-private let e105DoseZero = MLXArray.zeros([1], dtype: .bfloat16)
+nonisolated(unsafe) private let e105DoseZero = MLXArray.zeros([1], dtype: .bfloat16)
 
 private let e105DoseKernel = MLXFast.metalKernel(
     name: "e105_dispatch_dose_probe",
