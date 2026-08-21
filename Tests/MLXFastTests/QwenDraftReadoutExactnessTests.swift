@@ -6,15 +6,24 @@ import Testing
 // E28 / PR #33 -- exactness audit of the 2-bit coarse draft readout we
 // inherited at the frontier.
 //
-// `qmv_fast_singlerow_affine2_g64` is a hand-written arm that fires for exactly
-// one shape in the scored path: affine, group_size 64, bits 2, out_vec_size
-// 98336, M == 1. That is the coarse readout of the declared proposal head. It
+// `qmv_fast_singlerow_affine2` is a hand-written arm that fires for exactly
+// one output width in the scored path: affine, bits 2, out_vec_size 98336,
+// M == 1. That is the coarse readout of the declared proposal head. It
 // partitions K across 32 lanes (values_per_thread 32, rows_per_simd 4) where
-// the generic `qmv_fast_impl<T, 64, 2>` partitions across 16 (values_per_thread
-// 16). Source inspection says the elementary products and the bf16 quad `sum`
-// used for the bias term are identical in both arms, so the ONLY difference is
-// FP32 reassociation of a 5120-term dot product, landing in a bf16 output that
-// carries 8 mantissa bits.
+// the generic `qmv_fast_impl<T, group_size, 2>` partitions across 16
+// (values_per_thread 16). Source inspection says the elementary products and
+// the bf16 quad `sum` used for the bias term are identical in both arms, so
+// the ONLY difference is FP32 reassociation of a 5120-term dot product,
+// landing in a bf16 output that carries 8 mantissa bits.
+//
+// E87 / PR #89 made the arm a `group_size` template and widened its gate from
+// group_size 64 only to group_size 64 or 128, so a 2-bit g128 head could reach
+// the same arm. The reassociation argument above is independent of the group
+// size: a wider group changes which scale and bias apply to each 2-bit value,
+// not the order in which the 5120 products accumulate. The E28 numeric
+// evidence was measured at group_size 64 and still applies to group_size 64.
+// It does NOT transfer to group_size 128; re-run the audit against a g128 head
+// before relying on it there.
 //
 // Reassociation is not free of consequence, it is just bounded, so the audit
 // measures it instead of asserting it. The measurement exploits the gate
@@ -70,8 +79,13 @@ enum QwenDraftReadoutSource {
 struct QwenDraftReadoutGatePremiseTests {
     private typealias Src = QwenDraftReadoutSource
 
+    /// E87 / PR #89 widened the group-size clause from `group_size == 64` to
+    /// `(group_size == 64 || group_size == 128)`. Everything else the E28
+    /// evidence depends on -- 2 bits, the single declared output width, M == 1
+    /// and the unbatched path -- is still pinned literally.
     private static let gate =
-        "!batched && group_size == 64 && bits == 2 && out_vec_size == 98336 && ntg.x == 1"
+        "!batched && (group_size == 64 || group_size == 128) && bits == 2 "
+        + "&& out_vec_size == 98336 && ntg.x == 1"
 
     @Test
     func theTwoBitSinglerowArmIsStillGatedOnExactlyTheDeclaredHeadWidth() throws {
@@ -82,11 +96,11 @@ struct QwenDraftReadoutGatePremiseTests {
             #expect(
                 flat.contains(Self.gate),
                 """
-                E28 / PR #33: the 2-bit singlerow dispatch gate changed in \
-                \(path). The recorded exactness evidence for the coarse draft \
-                readout was measured against '\(Self.gate)' and does not \
-                transfer to a different gate. Re-run the E28 audit before \
-                relying on it.
+                E28 / PR #33, E87 / PR #89: the 2-bit singlerow dispatch gate \
+                changed in \(path). The recorded exactness evidence for the \
+                coarse draft readout was measured against '\(Self.gate)' and \
+                does not transfer to a different gate. Re-run the E28 audit \
+                before relying on it.
                 """
             )
             #expect(
@@ -98,10 +112,20 @@ struct QwenDraftReadoutGatePremiseTests {
                 """
             )
             #expect(
-                Src.occurrences(of: "qmv_fast_singlerow_affine2_g64", in: text) == 2,
+                Src.occurrences(of: "qmv_fast_singlerow_affine2", in: text) == 2,
                 """
-                E28 / PR #33: expected exactly one definition and one call of \
-                qmv_fast_singlerow_affine2_g64 in \(path).
+                E28 / PR #33, E87 / PR #89: expected exactly one definition \
+                and one call of qmv_fast_singlerow_affine2 in \(path). A third \
+                occurrence means a second bespoke 2-bit arm exists and is \
+                unaudited.
+                """
+            )
+            #expect(
+                Src.occurrences(of: "qmv_fast_singlerow_affine2_g64", in: text) == 0,
+                """
+                E87 / PR #89: the group-size-64-only copy of the arm is back in \
+                \(path). The arm is now one `group_size` template; two copies \
+                can drift apart and only one of them is audited.
                 """
             )
         }
@@ -608,7 +632,7 @@ struct QwenDraftReadoutExactnessTests {
 
         let payload: [String: Any] = [
             "schema": "e28.draft_readout_exactness.v2",
-            "mechanism": "qmv_fast_singlerow_affine2_g64",
+            "mechanism": "qmv_fast_singlerow_affine2<T, 64>",
             "reference_arm": "qmv_fast_impl<T,64,2> via 2x49168 row slices",
             "self_consistency_arm": "qmv_fast_impl<T,64,2> via 4x24584 row slices",
             "head": headURL.path,
