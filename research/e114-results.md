@@ -39,7 +39,11 @@ Artifacts: `research/scoring_weights.py` (the rung-2 instrument),
 `research/e114-artifacts/rung1.{json,txt}`,
 `research/e114-artifacts/selftest.txt`.
 
-W&B run `E114_WANDB_RUN_ID`, `E114_WANDB_RUN_URL`.
+W&B run `cua0ege5`,
+<https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cua0ege5>.
+Two earlier runs in the same project, `mwr9kshr` and `x02hdj4v`, are failed
+logging attempts. They crashed on W&B table typing before any deliverable table
+was written and carry no evidence.
 
 Reproduce:
 
