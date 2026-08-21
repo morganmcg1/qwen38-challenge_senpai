@@ -50,7 +50,7 @@ def median(values: list[float]) -> float:
     return statistics.median(values) if values else float("nan")
 
 
-def analyse_leg(tag: str, skip_rounds: int) -> dict:
+def analyse_leg(tag: str, skip_rounds: int, drop_last: int) -> dict:
     rounds = read_rounds(tag)
     by_pid, buffer_stats = read_intervals(tag)
     meta = read_meta(tag)
@@ -66,6 +66,10 @@ def analyse_leg(tag: str, skip_rounds: int) -> dict:
 
     starts, ends, prefix = union(by_pid.get(pid, []))
     selected = [r for r in rounds if r["pid"] == pid and r["round"] > skip_rounds]
+    # The final rounds of a leg are clamped by the remaining decode budget, not
+    # by the pin, so they carry a width the experiment did not ask for.
+    boundary = selected[len(selected) - drop_last:] if drop_last else []
+    selected = selected[:len(selected) - drop_last] if drop_last else selected
     if not selected:
         raise SystemExit("e92_widths: %s has no post-warmup rounds" % tag)
 
@@ -117,6 +121,9 @@ def analyse_leg(tag: str, skip_rounds: int) -> dict:
         "meta": meta,
         "buffer_stats": buffer_stats.get(pid, {}),
         "skip_rounds": skip_rounds,
+        "drop_last": drop_last,
+        "boundary_rounds_dropped": [
+            {"round": r["round"], "M": r["d"] + 1} for r in boundary],
         "rounds_analysed": len(per_round),
         "width_histogram": {str(k + 1): v for k, v in sorted(histogram.items())},
         "width_is_delta": len(histogram) == 1,
@@ -196,11 +203,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("tags", nargs="+")
     parser.add_argument("--skip-rounds", type=int, default=8)
+    parser.add_argument("--drop-last", type=int, default=1)
     parser.add_argument("--peak-gbs", type=float)
     parser.add_argument("--output", type=Path)
     arguments = parser.parse_args()
 
-    legs = [analyse_leg(tag, arguments.skip_rounds) for tag in arguments.tags]
+    legs = [analyse_leg(tag, arguments.skip_rounds, arguments.drop_last)
+            for tag in arguments.tags]
     combined = combine(legs, arguments.peak_gbs)
 
     print("%-10s %3s %6s %8s %11s %9s %10s %8s %9s %9s"
