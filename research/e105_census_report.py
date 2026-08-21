@@ -138,6 +138,20 @@ def main() -> int:
         sig = key.split("|", 1)[1]
         grid = parse_shape(sig, "grid=")
         tg = parse_shape(sig, "tg=")
+        # The census records the first dispatch argument as `grid` for BOTH
+        # `dispatchThreads:` and `dispatchThreadgroups:` without recording which
+        # selector ran, so the unit must come from the MLX backend that encodes
+        # each family:
+        #
+        #   custom_kernel.cpp:117  dispatch_threads       -> grid is THREADS
+        #   copy.cpp:163,178,213   dispatch_threads       -> grid is THREADS
+        #   quantized.cpp:232,295  dispatch_threadgroups  -> grid is THREADGROUPS
+        #
+        # All three families here are custom kernels or copies, so dividing the
+        # grid by the threadgroup is correct for them. Do NOT reuse this
+        # division for an `affine_qmv*` or other quantized-path signature: its
+        # grid is already a threadgroup count and the division would understate
+        # it by the threadgroup size.
         tg_count = None
         waves = None
         if grid and tg:
