@@ -120,8 +120,7 @@ struct E100StreamCollapseProbeTests {
     }
 
     @Test(
-        "collapsing an x-group is bit-exact, and the widths it does not touch "
-            + "must not move",
+        "collapsing an x-group is bit-exact and does not move other widths",
         .enabled(if: E100StreamCollapseProbeTests.enabled))
     func streamCollapse() throws {
         let overhead = Self.evalOverheadMicroseconds()
