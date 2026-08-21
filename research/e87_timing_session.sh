@@ -42,6 +42,7 @@ dir_for() {
     declared) echo "${cache}/mtp-head-declared-run" ;;
     g128) echo "${cache}/e87/built/e87-coarse-g128-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
+    armc-damaged) echo "${cache}/e87/built/e87-armC-damaged-run" ;;
     pinned) echo "${cache}/mtp-head" ;;
     *) echo "e87_timing_session.sh: unknown arm $1" >&2; exit 2 ;;
   esac
