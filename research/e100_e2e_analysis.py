@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
-"""E100: reduce the end-to-end ABBA session to a decode-time effect per depth.
+"""E100: reduce the end-to-end ABBA sessions to a decode-time effect.
 
-Two depth sessions run on the same four builds:
+Three sessions run on the same two builds, each counterbalanced across its own
+four slots:
 
-  depth 8   the shipped schedule. `segmentedVerifyDepthCap` is 7, so the verify
-            width is 1..8 and M = 5 is one width among several. This measures
-            reach and conversion together, which is what a ranked run sees.
-  depth 4   the reach control. The offered ceiling caps draftCount at 4, so the
-            verify width is at most 5 and M = 5 dominates. This measures
-            conversion alone.
+  d8    64 decode tokens, offered depth 8. The shipped schedule. Measures reach
+        and conversion together.
+  d4    64 decode tokens, offered depth 4. The reach control: the offered
+        ceiling caps draftCount at 4, so M = 5 dominates and this isolates
+        conversion alone.
+  w512  512 decode tokens, offered depth 8. The ranked decode window. The timed
+        leg always carries the same 512-token seed prefill, so at 64 decode
+        tokens the prefill is most of the leg and divides any decode-side
+        effect by about six before it reaches seconds_per_token. This session
+        removes most of that dilution and multiplies the round count by eight.
 
 Arm means are (A1 + A2) / 2 and (B1 + B2) / 2, which cancels linear thermal
-drift to first order across the A B B A order.
+drift to first order across the counterbalanced order.
 
 The headline is ABSOLUTE candidate seconds per token, not the local ratio. Both
 local legs run the same build, so a change that speeds the target generally
@@ -28,12 +33,20 @@ import os
 import sys
 
 SLOTS = (("a1", "base"), ("b1", "collapse"), ("b2", "collapse"), ("a2", "base"))
-DEPTHS = (8, 4)
+
+# name, tag infix, offered depth, decode tokens
+SESSIONS = (
+    ("d8", "d8", 8, 64),
+    ("d4", "d4", 4, 64),
+    ("w512", "w512", 8, 512),
+)
 
 
-def load(depth, slot):
-    tag = "e100-e2e-d%d-%s" % (depth, slot)
+def load(infix, slot):
+    tag = "e100-e2e-%s-%s" % (infix, slot)
     root = os.path.join("research/out", tag)
+    if not os.path.isdir(root):
+        return None
     with open(os.path.join(root, "score.json")) as f:
         score = json.load(f)["metrics"]
     meta = {}
@@ -45,108 +58,149 @@ def load(depth, slot):
     return dict(tag=tag, score=score, meta=meta)
 
 
+def check(leg, arm, depth, tokens):
+    m, s = leg["meta"], leg["score"]
+    want5 = "1" if arm == "collapse" else "0"
+    problems = []
+    if m.get("twin_m5") != want5:
+        problems.append("twin_m5=%s expected %s" % (m.get("twin_m5"), want5))
+    if m.get("arm") != arm:
+        problems.append("arm=%s expected %s" % (m.get("arm"), arm))
+    if m.get("offered_depth") != str(depth):
+        problems.append("offered_depth=%s expected %d"
+                        % (m.get("offered_depth"), depth))
+    if int(m.get("decode_tokens", "64")) != tokens:
+        problems.append("decode_tokens=%s expected %d"
+                        % (m.get("decode_tokens"), tokens))
+    if s.get("decode_tokens") != tokens:
+        problems.append("score decode_tokens=%s expected %d"
+                        % (s.get("decode_tokens"), tokens))
+    if not s["all_tokens_matched"]:
+        problems.append("all_tokens_matched=false")
+    if s["residual_divergence_count"]:
+        problems.append("residual_divergence_count=%d"
+                        % s["residual_divergence_count"])
+    if m.get("git_dirty") != "0":
+        problems.append("git_dirty=%s" % m.get("git_dirty"))
+    return problems
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", dest="out")
     args = ap.parse_args()
 
-    legs = {}
-    for depth in DEPTHS:
+    legs, sessions = {}, []
+    for name, infix, depth, tokens in SESSIONS:
+        present = {}
         for slot, arm in SLOTS:
-            leg = load(depth, slot)
-            want5 = "1" if arm == "collapse" else "0"
-            if leg["meta"].get("twin_m5") != want5:
-                print("leg %s witness says twin_m5=%s, expected %s for arm %s"
-                      % (leg["tag"], leg["meta"].get("twin_m5"), want5, arm))
+            leg = load(infix, slot)
+            if leg is None:
+                continue
+            problems = check(leg, arm, depth, tokens)
+            if problems:
+                print("leg %s: %s" % (leg["tag"], "; ".join(problems)))
                 return 2
-            if leg["meta"].get("arm") != arm:
-                print("leg %s declares arm=%s" % (leg["tag"], leg["meta"]["arm"]))
-                return 2
-            if leg["meta"].get("offered_depth") != str(depth):
-                print("leg %s declares offered_depth=%s"
-                      % (leg["tag"], leg["meta"].get("offered_depth")))
-                return 2
-            if not leg["score"]["all_tokens_matched"]:
-                print("leg %s did not match all tokens" % leg["tag"])
-                return 2
-            legs[(depth, slot)] = leg
+            present[slot] = leg
+            legs[leg["tag"]] = leg
+        if present:
+            sessions.append((name, depth, tokens, present))
 
-    print("=" * 96)
+    if not sessions:
+        print("no legs found under research/out")
+        return 2
+
+    print("=" * 100)
     print("IDENTITY")
-    print("=" * 96)
-    for depth in DEPTHS:
+    print("=" * 100)
+    for name, _, _, present in sessions:
         for slot, _ in SLOTS:
-            leg = legs[(depth, slot)]
+            leg = present.get(slot)
+            if leg is None:
+                continue
             m, s = leg["meta"], leg["score"]
-            print("  %-18s arm=%-9s head=%s dirty=%s entry_c=%5.1f exit_c=%5.1f "
-                  "matched=%s divergences=%d"
+            print("  %-20s arm=%-9s head=%s dirty=%s entry_c=%5.1f "
+                  "exit_c=%5.1f matched=%s divergences=%d"
                   % (leg["tag"], m["arm"], m["git_head"][:8], m["git_dirty"],
                      float(m["gpu_temp_entry_c"]), float(m["gpu_temp_exit_c"]),
                      s["all_tokens_matched"], s["residual_divergence_count"]))
     temps = [float(l["meta"]["gpu_temp_entry_c"]) for l in legs.values()]
     print("  entry temperature spread: %.1f C (min %.1f, max %.1f)"
           % (max(temps) - min(temps), min(temps), max(temps)))
-    print("  cool_gate_passed_real_gate=false  gate_qualified_for_timing=false")
+    print("  cool_gate_passed_real_gate=false  gate_qualified_for_timing=false"
+          "  timing_valid=false")
 
     summary = {}
-    for depth in DEPTHS:
+    for name, depth, tokens, present in sessions:
         print()
-        print("=" * 96)
-        print("OFFERED DEPTH %d" % depth)
-        print("=" * 96)
-        rows = []
-        print("  %-18s %11s %11s %9s %11s %8s"
+        print("=" * 100)
+        print("SESSION %s -- %d decode tokens, offered depth %d, %d/4 slots"
+              % (name, tokens, depth, len(present)))
+        print("=" * 100)
+        print("  %-20s %11s %12s %9s %11s %8s"
               % ("leg", "mtp_s/tok", "serial_s/tok", "ratio", "mean_draft",
                  "accept"))
-        for slot, arm in SLOTS:
-            s = legs[(depth, slot)]["score"]
-            rows.append(s)
-            print("  %-18s %11.6f %11.6f %9.4f %11.4f %8.3f"
-                  % (legs[(depth, slot)]["tag"], s["mtp_seconds_per_token"],
+        for slot, _ in SLOTS:
+            leg = present.get(slot)
+            if leg is None:
+                continue
+            s = leg["score"]
+            print("  %-20s %11.6f %12.6f %9.4f %11.4f %8.3f"
+                  % (leg["tag"], s["mtp_seconds_per_token"],
                      s["serial_seconds_per_token"], s["mtp_decode_speedup"],
                      s["effective_mean_draft_len"], s["accepted_draft_rate"]))
 
-        def arm_mean(key, slots):
-            v = [legs[(depth, s)]["score"][key] for s in slots]
-            return sum(v) / len(v)
-
-        base_slots, coll_slots = ("a1", "a2"), ("b1", "b2")
-        out = {}
+        base_slots = [s for s in ("a1", "a2") if s in present]
+        coll_slots = [s for s in ("b1", "b2") if s in present]
+        out = {"decode_tokens": tokens, "offered_depth": depth,
+               "base_slots": base_slots, "collapse_slots": coll_slots}
         for key, label, better in (
             ("mtp_seconds_per_token", "candidate s/tok", "lower"),
             ("serial_seconds_per_token", "serial s/tok", "lower"),
             ("mtp_decode_speedup", "local ratio", "higher"),
             ("effective_mean_draft_len", "mean draft len", "-"),
         ):
-            b, c = arm_mean(key, base_slots), arm_mean(key, coll_slots)
+            def mean(slots):
+                v = [present[s]["score"][key] for s in slots]
+                return sum(v) / len(v)
+
+            def spread(slots):
+                v = [present[s]["score"][key] for s in slots]
+                return (max(v) - min(v)) if len(v) > 1 else float("nan")
+
+            b, c = mean(base_slots), mean(coll_slots)
             delta = 100.0 * (c / b - 1.0)
-            spread = 100.0 * abs(
-                legs[(depth, "a1")]["score"][key]
-                - legs[(depth, "a2")]["score"][key]) / b
             out[key] = dict(base=b, collapse=c, delta_pct=delta,
-                            base_a1_a2_spread_pct=spread)
-            print("  %-18s base %11.6f  collapse %11.6f  delta %+7.3f %% "
-                  "(%s is better; A1-A2 spread %.3f %%)"
-                  % (label, b, c, delta, better, spread))
-        summary["depth_%d" % depth] = out
+                            base_spread_pct=100.0 * spread(base_slots) / b,
+                            collapse_spread_pct=100.0 * spread(coll_slots) / b)
+            print("  %-20s base %11.6f  collapse %11.6f  delta %+7.3f %% "
+                  "(%s is better; within-arm spread base %.3f %% "
+                  "collapse %.3f %%)"
+                  % (label, b, c, delta, better,
+                     out[key]["base_spread_pct"],
+                     out[key]["collapse_spread_pct"]))
+        summary[name] = out
 
     print()
-    print("=" * 96)
+    print("=" * 100)
     print("READING")
-    print("=" * 96)
-    d4 = summary["depth_4"]["mtp_seconds_per_token"]
-    d8 = summary["depth_8"]["mtp_seconds_per_token"]
-    print("  conversion (depth 4, M = 5 dominant): %+7.3f %%" % d4["delta_pct"])
-    print("  shipped schedule (depth 8):           %+7.3f %%" % d8["delta_pct"])
-    print("  A1-to-A2 repeatability, worst of the two sessions: %.3f %%"
-          % max(d4["base_a1_a2_spread_pct"], d8["base_a1_a2_spread_pct"]))
+    print("=" * 100)
+    for name, _, tokens, _ in sessions:
+        s = summary[name]["mtp_seconds_per_token"]
+        spreads = [x for x in (s["base_spread_pct"], s["collapse_spread_pct"])
+                   if x == x]
+        worst = max(spreads) if spreads else float("nan")
+        print("  %-6s (%3d tok, depth %d): candidate s/tok %+7.3f %%   "
+              "worst within-arm spread %.3f %%"
+              % (name, tokens, summary[name]["offered_depth"],
+                 s["delta_pct"], worst))
 
     if args.out:
         with open(args.out, "w") as f:
             json.dump(dict(
                 summary=summary,
-                legs={l["tag"]: dict(meta=l["meta"], score=l["score"])
-                      for l in legs.values()},
+                legs={t: dict(meta=l["meta"], score=l["score"])
+                      for t, l in legs.items()},
             ), f, indent=2, sort_keys=True)
         print("\nwrote %s" % args.out)
     return 0
