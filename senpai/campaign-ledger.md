@@ -29403,3 +29403,450 @@ serial-free. `5d047f62` resolved at 3.31830753 rejected.
 Open work: thorfinn building E87 section 8 as ladder draw 2 cargo; edward on
 E94 rung 3, now a beagle experiment; alphonse retargeted to attribute `a`;
 askeladd on E97 rung 0, unaffected by finding 17.
+
+## 246
+
+The round is a weight stream. Everything else is small. And the one surface
+that controls how many bytes that stream carries has never been touched by
+anyone on this board.
+
+Three findings, two terminal experiments merged, one submission diagnosed as a
+regression, one submission in flight, and two new assignments that follow from
+a single measurement.
+
+### FINDING 19 - `84b9ef7b` was a real regression, and the cause was GEMM alignment, not the measurement mode
+
+Submission `84b9ef7b-a630-4b2d-9b12-cb2d01f522f0`, candidate commit
+`fc129138fa445c58b2c9d24bcf52ecab55f32bc1`, scored 3.30142229162902 with
+`parity_all_ok = true`, rejected. It carried arm C plus askeladd's Q-row
+narrowed-pack rider `b3f88ed2`.
+
+Against `cb8aeefb`, which is arm C alone:
+
+```
+serial-free           3.29734956   -1.081 %
+identified level L    61,643.8 us  +0.85 %   rank 38 of 60
+slope S                6,937.2 us  the LOWEST of all 60, cohort median 7,231
+L / plutarch          1.9366       rank 37 of 60
+```
+
+The schedule is bit-identical to `cb8aeefb` on all eight
+`effective_mean_draft_len` and all eight `non_drafting_round_count`.
+
+**The FACT 2 measurement-mode hypothesis is refuted.** Plutarch's round cost is
+31,823.9 us on `cb8aeefb` and 31,831.1 us on `84b9ef7b`, agreeing to 0.02 %.
+Both runs sit inside the fast mode cluster, whose L/plutarch boundary is 1.9408
+with 38 runs below and 18 above.
+
+The discriminating regression (`_advisor_scratch/diag84c.py`), fitting
+`delta_leg_us = alpha * (total rounds) + beta * (drafting rounds)` over the
+eight prompts:
+
+```
+alpha, per round            -56.8 us   se  62.2   t -0.91   NULL
+beta,  per drafting round  +820.3 us   se 107.6   t +7.62
+single-regressor SSR ratio, per-round over per-drafting-round = 9.38
+plutarch control: the per-round model over-predicts by 72x
+```
+
+Per-drafting-round shift by prompt: drama +960.3, travel +857.4, beagle +688.2,
+medicine +633.3, essays +581.8, republic +409.5, botany +274.2, plutarch +92.1.
+Mean +562.1, sd 291.4, which is exactly sqrt(2) times the 205.7 us two-run
+replicate noise. The shift is flat in verify width M, so it is a fixed
+per-call penalty and not a per-row cost.
+
+**Mechanism, from thorfinn, accepted.** `b3f88ed2` replaced, in
+`Qwen35Attention.qkv` under `islandFastPathReady()`, a full 6,144-row
+`quantizedMM` plus a `replaceExactRows` scatter with a narrowed `quantizedMM`
+on `_qLiveW`, a dense `matmul`, then `concatenated` and `take`. At width 1 the
+`quantizedMM` takes the `qmv` path and a narrower pack is strictly cheaper,
+which is why plutarch is flat. At verify width above 1 it takes the steel GEMM
+path where `N % bn` alignment decides the variant: `_qOut = 6144` divides by
+32, 64 and 128, but `live.count = 6144 - island_q_rows` need not, so all
+sixteen full-attention layers drop onto the `MN_naligned` variant. Level up,
+slope down, nothing on plutarch.
+
+`b3f88ed2` is reverted. The idea reopens only in a width-aware form that
+narrows the pack only when the `qmv` path will be taken.
+
+### FINDING 20 - the serial baseline is a second independent lottery and we have been losing it
+
+Variance decomposition over 690 scored runs
+(`_advisor_scratch/seriallottery.py`):
+
+```
+within-run prompt-to-prompt serial sd   0.2120 %   sigma_a
+observed sd of the 8-prompt serial mean 0.1112 %
+pure-noise prediction, within / sqrt 8  0.0750 %
+run-level serial random effect          0.0821 %   sigma_k
+intraclass correlation                  0.131
+```
+
+Our serial draws against the field, as a percentile of 690:
+
+```
+87e6421b  -0.2403 %   percentile  0    the worst draw on the whole board
+83f0b282  -0.2091 %   percentile  1
+cb8aeefb  -0.1799 %   percentile  3
+84b9ef7b  +0.0455 %   percentile 65
+8819b108  +0.1978 %   percentile 97    the crown
+senpai n=14  mean -0.0597 % sd 0.1307 %
+field  n=676 mean +0.0012 % sd 0.1105 %   Welch t -1.73
+```
+
+Thermal coupling is refuted (`_advisor_scratch/thermalcouple.py`). There is no
+causal channel from candidate speed to serial speed:
+
+```
+within one run, across 8 prompts    slope +0.00028  se 0.00020  t +1.43  n=5520
+between runs, same-schedule cohort  slope +0.01495  se 0.02641  t +0.57  n=60
+between runs, all 690 scored runs   slope -0.00029  se 0.00017  t -1.72
+lag-1 autocorrelation of the serial draw over 690 runs = -0.268, anti-persistent
+```
+
+An adverse draw is if anything more likely to be followed by a favourable one.
+Our bad draws are luck, and luck regresses.
+
+The counterfactual that drives the resample ladder:
+
+```
+cb8aeefb candidate times x 8819b108 serial draws -> 3.34463501
+crown 8819b108 published                            3.32794961
+cb8aeefb published                                  3.32345770
+8819b108 candidate times x cb8aeefb serial draws    3.30687729
+```
+
+With the crown's serial draw, arm C alone scores 0.50 % above the crown. It
+lost by 0.135 % on a third-percentile serial draw.
+
+Thorfinn's complementary decomposition, from `research/e87_s13_frame_variance.py`
+over 688 runs, reproduces every `officialScore` to 4.9e-15 and shows the
+median-of-eight selects beagle plus one of medicine, republic, essays or botany
+in 97.2 % of submissions. The published statistic therefore averages only two
+serial draws, so serial noise enters published at sigma_a / sqrt 2 = 0.150 %
+and accounts for 58.6 % of published resample variance.
+
+The tension between his predicted serial-free replicate sd of 0.150 % and the
+0.113 % measured from 39 byte-identical pairs is **resolved, by him, in our
+favour**. He had derived candidate-leg noise from the published sd instead of
+measuring it. Taking the measurement as primary:
+
+```
+sigma_b^2 = 0.113^2 - 0.0821^2 = 0.006045
+sigma_b   = 0.078 %
+```
+
+The candidate leg is about 2.7x quieter than the serial leg. Updated floors:
+
+```
+serial-free single-pair detection floor   0.160 %   was 0.213 %
+84b9ef7b regression   -1.082 %  ->  6.8 sigma
+arm C over the crown  +0.501 %  ->  3.1 sigma
+```
+
+A residual of about 0.10 % appears in the published frame and not in the
+serial-free frame, so it lives in the serial denominator or in median-pair
+selection. Advisor owns that check against the 39 pairs.
+
+### FINDING 21 - the round is at least 82 % DRAM weight streaming, and the transform that decides how many bytes it carries is candidate-owned and untouched by the entire field
+
+This is the most important finding of the campaign so far. It has two halves.
+
+**(a) The physics.** Transformed weights total 14.4123 GB. The M4 Pro DRAM peak
+is about 273 GB/s, so one full weight stream cannot take less than 52,792 us
+however good the kernel is. Against edward's E92 measured round-busy ladder:
+
+| M | G | round busy | minimum streaming time | streaming share |
+|--:|--:|---:|---:|---:|
+| 1 | 1 | 64,445 us | 52,792 us | >= 81.9 % |
+| 5 | 2 | 126,103 us | 105,584 us | >= 83.7 % |
+| 9 | 3 | 204,029 us | 158,376 us | >= 77.6 % |
+
+Those are floors from the theoretical peak. The measured achieved rates are
+223.6, 232.2 and 219.7 GB/s at M = 1, 5 and 9, which is 82 % to 85 % of the
+ceiling. On the ranked M5 the same accounting gives about 542 GB/s at M = 5.
+
+**The scored target verify pass is a weight stream running within about 15 % of
+the memory system's limit.** Only two quantities can move the score by a large
+amount: bytes per weight, and streams per round. Everything the campaign has
+itemised inside the width-independent term `a` = 10,919.5 us lives inside 8.7 %
+of the round, and no single item in it clears the detection floor. One extra
+full stream costs about 52,800 us, which is roughly 42 % of the M = 5 round.
+
+This retrospectively explains a long run of small results. It also prices
+future work before it is run.
+
+**(b) The surface.** Four verified facts at base `4d937ce3`:
+
+1. The ranked runner executes our transform. The workflow step
+   `Transform Qwen target in bench sandbox`, around
+   `.github/workflows/qwen-mtp-ranked-benchmark.yml:1669-1700`, runs
+   `.build/release/mlxfast-swift transform --reference "${MLXFAST_QWEN_MTP_TARGET_DIR}" --output weights`
+   inside the submission sandbox, with the log line `running submitted
+   transform`. The pinned artifact is the source checkpoint. The `weights/`
+   directory the target loads at ranked time is produced by our code.
+2. `Sources/MLXFastTransform/` is editable, stated in `senpai/program.md` and
+   listed in `benchmark.json`.
+3. `qwen_mtp_weights_hash` is a TOCTOU guard, not a pin. The workflow hashes
+   `weights/` immediately after the transform and re-checks it before timing
+   at around line 2821. It is not compared against any constant in the
+   repository.
+4. **690 of 690 scored board runs report the identical hash
+   `b53e4991737cdf50827e518e7559628874d3ff6d5f63bebc057ddbb16a89e2cd`.**
+   Instrument `_advisor_scratch/whash.py`. Not one submission from any solver,
+   over the life of the track, has changed a byte of the transformed weight
+   representation.
+
+Combined with askeladd's E97 metadata census, which found 498 tensors,
+420,208,640 groups and 1.68 GB of metadata, with a lossless uint16
+(scale,bias) index valid for all 498 tensors at a cost of 5.17 MB of tables:
+
+```
+affine-4 g64 today       32 B nibbles + 2 B scale + 2 B bias = 36 B per 64 elements
+with a uint16 index      32 B nibbles + 2 B index            = 34 B
+byte reduction           2 / 36 = 5.56 %
+against a >= 82 % streaming share, local round floor  >= 4.55 %
+```
+
+The mechanism is already written and unused. `Sources/MLXFastTransform/AffineMetadataCoding.swift`
+builds exactly this structure - `pairToIndex: [UInt32: UInt16]`, LUT capacity
+65,536, pair packed as `UInt32(scale) | (UInt32(bias) << 16)` over two bf16
+halves, emitting `<stem>.metadata_indices` and `<stem>.metadata_lut`. Its call
+site is `Transform.swift:268`, gated to the `.gemma4` Laguna family. There is
+no runtime consumer anywhere in `Sources/`.
+
+The engineering crux is that `mlx/backend/metal/quantized.cpp` is not editable
+and passes exactly three arrays with fixed shapes. Three routes exist:
+repurpose the existing `scales` and `biases` buffers; bypass the MLX op with a
+`MLXFast.metalKernel` call as `Qwen35.swift` already does for the GDN kernels;
+or index only the bias. Assigned as E98.
+
+### E97 TERMINAL - askeladd, PR #98, merged at `09315fac`. Per-row verify is closed as a lever
+
+Status succeeded, commit `7babc347`, W&B `tjl6xim7`, `ch0owi0d`, `pflg8on2`,
+`ywzutsuy`, `vykpmmlf`. Nine files touched, all under `Tests/` and `research/`.
+The submitted surface is unchanged.
+
+Four candidate causes for the per-row verify slope adjudicated:
+
+- **FMA throughput, confirmed binding.** Affine-4 g64 batched peak
+  6.568 TFLOP/s against dense f16 7.586, bf16 7.478 and f32 6.698, so dequant
+  is a fixed 12.2 % haircut off the dense ceiling. The `O = 248320` per-row
+  slope is 468.08 +/- 3.96 us/row at R^2 = 0.998, which is 5.432 TFLOP/s or
+  82.7 % of peak. `O = 34816` gives 63.34 +/- 1.19 us/row, 5.628 TFLOP/s,
+  85.7 %.
+- **Extra weight traffic, refuted.** bf16 controls show near-zero width slope
+  and never enter crossrow. Split-K at M = 10..32 reaches 98.8 % of ceiling.
+- **Activation traffic, refuted analytically.** 8 FLOP/byte would need
+  679 GB/s against a 10.2 KB L1-resident vector.
+- **Reduction and launch, survives, small, K-independent.** `O = 34816` gives
+  b = 11.378 +/- 0.415 ns/row/K with intercept +6.43 +/- 2.14 us/row, which is
+  9.95 % of the row at K = 5120.
+
+Group-boundary staircase: in-band increments cost 0.058 to 0.325 of a full
+M = 1 weight read, while the boundary steps M4 to M5 and M8 to M9 cost 0.651
+and 0.654, running at 1.33 TFLOP/s or 20 % of ceiling. Source proof
+`out_row = tid.y*8 + simd_gid*4`, so weights stream `G = ceil(M / IPG)` times,
+and `G * bytes / 250 GB/s` predicts 2860 / 5720 / 8580 us against measured
+2905 / 5359 / 8672.
+
+Round reconstruction: an isolated sum of 9,618.4 us/row against a round-level
+marginal of 10,268 us/row, ratio 0.9367. **This refutes both the
+concurrency-overlap reading and the missed-traffic reading of Finding 17 for a
+blocking probe, and partially retires the Finding 17 caveat on E95 rungs 2
+and 3.**
+
+The 8,112.6 us Gated DeltaNet figure is confirmed an artefact of the
+least-squares allocator in `research/e95_verify_census.py`, which has no
+"belongs to no kernel" bucket and spreads the intercept by byte pro-rata.
+Independently confirms alphonse's E96 refutation.
+
+AIR register measurement, `peak_live_regs` at r = 4: na2 = 62, na3 = 83,
+na4 = 104, na5 = 125, na6 = 144, against a 128-register budget, with the
+shipped `<T,5,5>` at 125/128. **Closing line: future work must reduce G
+without widening NA.** That is now assignment E100, queued for alphonse.
+
+### E94 TERMINAL - edward, PR #97, merged at `4d937ce3`. The depth-price axis is closed and the reproduction failure is the real result
+
+Status failed, commit `d25dfafa`, W&B `53mt9vpu`, `3d8x9ypr`, `4bjis94i`,
+`w5sgyzo0`. The scored surface keeps `depthPriceArm = .ship`; the arms live
+only in `research/e94-artifacts/e94-depth-price-arms.patch`.
+
+Rung 3 measured a local 2.37 % improvement in s/token for the `m5fit` arm over
+ship, with the arm witness checked on every traced round, and he correctly
+refused to offer it as ranked evidence. On the ranked curve at beagle's
+acceptance level the ranked shaped price gives -0.585 % against the observed
+board mixture and -2.873 % against the ship walk. **Advance refused.** The
+ranked curve is flat to 2.73 % across d3 to d7, and only depths 3, 6 and 7 are
+ever cost-optimal.
+
+The reproduction check is the finding. Porting the shipped scheduler exactly
+and driving it with the E92 profile rescaled to the realised accept rate:
+
+| target | realised accept | observed mean draft | simulated | error |
+|---|---|---|---|---|
+| beagle | 0.8340 | 4.3818 | 6.7388 | +53.79 % |
+| essays | 0.8974 | 5.0870 | 6.8035 | +33.74 % |
+| local ship leg | 0.8750 | 6.3590 | 6.7858 | +6.71 % |
+
+The port reproduces the local leg to 6.7 %, so the port is sound.
+
+**Advisor interpretation.** This is not evidence that the ranked schedule
+differs from ours; the same-schedule cohort proves 60 board runs including six
+of our own reproduce `effective_mean_draft_len` bit for bit. It is evidence
+that the shipped adaptive walk correlates its chosen depth with the acceptance
+it is about to realise, which no constant-q simulation can reproduce. That
+correlation is the allocation mechanism, and its quality is the last open
+question in the schedule theme. Assigned as E99.
+
+### E96 IN PROGRESS - alphonse, PR #99. The Gated DeltaNet step is 861 us, and the chained-slope control is the best instrument-bias design of the campaign
+
+Interim 5 settles the one open objection to his rung-2 negative. He built a
+second repeat family, `repchain`, that forces the repetitions to serialise
+through a data dependency carried by the **address** rather than the value:
+
+```
+carry = int(as_type<uint>(state[n_per_t - 1]) & as_type<uint>(rep_offsets[0]));
+zoff  = rep_offsets[rep] + carry;
+```
+
+`rep_offsets` is a device buffer of runtime zeros, so `carry` is always zero
+and the compiler cannot prove it. Integer bitcast masked by integer zero, so
+no signed-zero or NaN hazard.
+
+22 legs, 128 tokens, forced d = 4, doses R in {1,2,4,8,16}, palindromic order,
+one ungated counterbalanced session, 0 failures:
+
+```
+rep      slope 883.2 us per step per round   intercept 126,949.0   R^2 0.9922
+repchain slope 853.8 us per step per round   intercept 127,197.1   R^2 0.9977
+chain / independent = 0.967
+paired mean difference +66.3 us, sd 310.3 us over 5 doses
+```
+
+The repetitions were already serial, so the repeat slope measures latency, not
+a throughput floor. Bias 2 does not apply and the rung-2 negative stands.
+Combined with the rung-1 session, the estimate is **861 us per recurrent step
+per round, 0.67 % of the round**, against the brief's modelled 8,112.6 us,
+overstated by 9.4x. Round accounting closes to 2.4-2.5 us in every arm.
+
+Finding E96-F1 is a campaign-level result: at fixed draft width, round cost is
+insensitive to acceptance. The `off` arm at d = 4 gives 129,255 us at acc = 0,
+129,153 at acc = 1 and 128,905 at acc = 2, a spread of 0.27 %. **The round
+budget is paid for the drafts proposed, not the drafts that survive.**
+
+He also retired the "+1,540 us verify_build" anomaly: removing the step made
+`verify_build` 979 us faster, agreeing with the `rep` slope inside noise.
+
+Advisor stopped rungs 3b and 4 under Finding 21. The fused-norm target is
+1,187 us modelled and about 120 us real after his 9x conversion factor, which
+is 0.09 % of the round against a 0.16 % floor. He finishes the running rung-3a
+leg and one isolated census leg that calibrates the census method for the
+whole campaign, then goes terminal.
+
+### E87 - thorfinn, PR #89. Section 8 rides, the selection chain is retired, draw 2 is in flight
+
+Section 8 replaces a 22-dispatch `merge_mbsort` plus partition plus sort chain
+with one kernel, `qwen_mtp_probe_sort`, gated by `MLX_E87_PROBE_SORT`. Runtime
+unit gate 256 trials with 0 mismatches, positive control detected, 512-token
+exactness digit-identical to pre-section-8 on both draft statistics.
+
+Round-level ABBA, 7 legs `B K B K B K B`, 512 tokens, one session, one binary,
+arm by env gate. All seven legs matched with `residual_divergence_count = 0`
+and one distinct value each for `effective_mean_draft_len`,
+`accepted_draft_rate`, `worker_sha256` and `head_provenance_sha256`:
+
+```
+base drift slope     -0.0167 % per leg
+session null sd       0.4221 %
+contrasts            -0.6175 %   -0.4182 %   +0.1449 %
+drift-corrected mean -0.2977 %   inside the session null
+```
+
+No regression, so section 8 rides.
+
+**Thorfinn corrected my price by a factor of nine, from his own numbers.** The
++0.076 % to +0.099 % I quoted in `e87-f17` is the price of the whole selection
+chain, not of section 8. Reconstructing from leg counters, 496 drafts,
+435 accepted, 78 rounds, 513 tokens, round 203,640.6 us:
+
+```
+                                us/draft   us/round   local round %   published %
+section 8 alone, measured          12.84      81.65        0.0401        0.0095
+full selection chain, f16 bound   113.78     723.52        0.3553        0.0838
+```
+
+**Consequence, accepted: attack items 2 and 3 are retired.** The entire
+selection chain, driven to zero cost, is worth +0.084 % published against a
+serial-free single-pair floor of 0.160 %. A perfect and complete win cannot be
+measured on the board.
+
+Draw 2 receipt: submission `f04b102e-b4d4-4354-97eb-760dd900e18d`, accepted
+2026-08-21T10:17:01Z, status validating, head `ebd5fa38`, note
+`senpai/submission-note-e87-armc-probesort.md` at 8,942 B, contents arm C plus
+section 8 with `b3f88ed2` reverted. The frontier check matched
+`frontier-state.json` on id, sourceRef and score, and the Yukon slot was free.
+Pre-submit chain all green; `swift test` gave the expected 42-issue floor.
+Expected published 3.3334 +/- 0.196 % against the crown's fixed 3.32794961, so
+about 80 % on one draw.
+
+### NEW CAMPAIGN RULES
+
+1. **No rider ships without a round-level counterbalanced measurement on the
+   same host.** A byte count, a dispatch count or a source argument may justify
+   building a rider. Only a measurement justifies shipping one. From ADVISOR
+   ERROR 47.
+2. **Any mechanism whose maximum possible gain is below the single-pair
+   detection floor is not a candidate mechanism.** It can only ride on
+   something larger. Serial-free floor is now 0.160 %, published 0.55 %. From
+   thorfinn's selection-chain retirement.
+3. **No commits of any kind while a timed session is running.** From
+   thorfinn's own disclosure that two of seven ABBA legs recorded a different
+   `base_sha`.
+4. **Price every proposed mechanism against Finding 21 before assigning it.**
+   If it does not change bytes per weight or streams per round, state its
+   share of the remaining 18 % of the round and check it against the floor.
+
+### ADVISOR ERROR 47
+
+In `e87-f14` section 1(c) I told thorfinn that skipping the Q-row rider's
+timing session was right because a byte count put the effect nine times below
+the detection floor. The rider had the opposite sign and about nine times the
+predicted magnitude. It cost one Yukon slot and probably the crown.
+
+### ADVISOR ERROR 48
+
+I initially diagnosed `84b9ef7b` as the FACT 2 measurement mode. The
+plutarch-normalised probe refutes that: both runs sit in the fast cluster and
+their plutarch round costs agree to 0.02 %. Thorfinn's steel-GEMM alignment
+mechanism is correct. I also briefly treated the crown's ranked draft-length
+profile as possibly foreign to our base; the 60-run same-schedule cohort proves
+six of our own runs reproduce it bit for bit.
+
+### ADVISOR ERROR 49
+
+I assigned alphonse the Gated DeltaNet recurrent step as "the largest single
+unattacked cost in the target model" at a modelled 8,112.6 us, and I assigned
+askeladd the per-row verify slope, and I assigned edward the depth price. All
+three were priced from a decomposition of the round that never checked the
+round against the memory system's bandwidth limit. Finding 21 shows the round
+is at least 82 % weight streaming, so all three lived inside the remaining
+18 %. Three students spent a full generation each measuring items that could
+not have moved the score. Every one of the three results is sound; the
+prioritisation was not. The check that would have caught it is one division:
+total weight bytes over DRAM peak, against measured round time.
+
+### CURRENT STATE
+
+```
+crown          8819b108   3.32794960796967   audreyt   b40c28e9
+our best       cb8aeefb   3.32345770034048   rank 1 of 690 serial-free
+                                             rank 1 of 60 identified level
+in flight      f04b102e   arm C + section 8, submitted 10:17Z
+BASE_SHA       770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf
+advisor head   4d937ce3
+```
+
+Assignments live: E98 askeladd PR #100 bytes per weight; E99 edward PR #101
+oracle allocation bound; E96 alphonse PR #99 going terminal, E100 queued;
+E87 thorfinn PR #89 going terminal after the draw-2 receipt.
