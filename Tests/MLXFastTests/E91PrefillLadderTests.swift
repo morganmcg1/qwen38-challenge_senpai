@@ -113,18 +113,23 @@ struct E91PrefillLadderTests {
         func measure(_ label: String, pairArm: String, position: Int) -> [String: Any] {
             let rungs = e91LadderRungs(label) ?? shipped
             model.model.prefillLadderRungs = rungs
+            // Host CPU actually burned over the same interval. A stuck or
+            // spinning host shows up here and nowhere else in the wall clock.
+            let cpuStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
             var block = harness.begin(arm: .baseline, phased: false)
+            block["host_thread_cpu_ns"] =
+                Int(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - cpuStart)
             let armed = rungs.filter { $0 < layerCount }.count
             block["arm"] = label
             block["ladder_label"] = label
-            block["ladder_stride"] = e91LadderStride(label) as Any
+            block["ladder_stride"] = e91LadderStride(label) ?? -1
             block["forced_eval_points"] = armed
             block["pair_arm"] = pairArm
             block["pair_position"] = position
             block["order"] = blocks.count
-            let print = e91Fingerprint(block)
-            block["token_fingerprint"] = print
-            fingerprints[label, default: []].insert(print)
+            let fingerprint = e91Fingerprint(block)
+            block["token_fingerprint"] = fingerprint
+            fingerprints[label, default: []].insert(fingerprint)
             return block
         }
 
