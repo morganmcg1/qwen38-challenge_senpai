@@ -1,8 +1,8 @@
 diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-index 49aa9ee..2707b20 100644
+index 0b13d32..637205c 100644
 --- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
 +++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-@@ -916,17 +916,52 @@ public final class Qwen36MTPBlockSession {
+@@ -920,17 +920,52 @@ public final class Qwen36MTPBlockSession {
          0.42510483416251998,
      ]
  
@@ -60,15 +60,32 @@ index 49aa9ee..2707b20 100644
      internal static func prefixCosts(_ marginal: [Double]) -> [Double] {
          var out = [1.0]
          var running = 1.0
-@@ -939,6 +974,24 @@ public final class Qwen36MTPBlockSession {
+@@ -943,6 +978,41 @@ public final class Qwen36MTPBlockSession {
  
      internal enum DepthPriceArm: String {
          case ship, pb5, pb7, pbfit
 +        /// E94. The shipped greedy walk with one guard: a walk that returns 4
-+        /// returns 3 instead. Depth 4 pays the width-5 group-transition step
-+        /// and buys one draft position for it, so it is a strict local MAXIMUM
-+        /// of modelled cost per token for every acceptance profile, because
-+        /// the only free parameter is bounded by 1. One inequality, one guard.
++        /// returns 3 instead.
++        ///
++        /// A depth-4 round beats a depth-3 round only when
++        /// `C(w5) / C(w4) < Y(4) / Y(3)`. Write `a_i` for the probability that
++        /// the chain reaches position `i`. Then `Y(3) = 1 + a1 + a2 + a3` and
++        /// `Y(4) - Y(3) = a4`. Reach is non-increasing, so `a1 >= a2 >= a3 >=
++        /// a4` and
++        ///
++        ///     Y(4) / Y(3) = 1 + a4 / (1 + a1 + a2 + a3)
++        ///                <= 1 + a4 / (1 + 3 * a4)  <=  1.25
++        ///
++        /// The bound is attained only in the limit `q -> 1`, and it holds for
++        /// EVERY acceptance profile that can exist. E92 measured
++        /// `C(w5) / C(w4) = 126103.1 / 86237.4 = 1.4623` on M4 Pro, which is
++        /// 17.0 % above the ceiling, so depth 4 is dominated unconditionally.
++        ///
++        /// The claim needs two measured round-busy numbers and one
++        /// combinatorial inequality. It does NOT use `makeMeasuredDepthPrice`,
++        /// the rescaling to `8 * h`, the `pure` versus `hadd` choice, or any
++        /// acceptance estimate, so it survives every objection to the price
++        /// array.
 +        case snap4
 +        /// E94 implementation check. Global minimum of cost per token over the
 +        /// SHIPPED uniform price. The greedy walk stops at the first local
@@ -85,7 +102,7 @@ index 49aa9ee..2707b20 100644
      }
  
      /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
-@@ -960,6 +1013,8 @@ public final class Qwen36MTPBlockSession {
+@@ -964,6 +1034,8 @@ public final class Qwen36MTPBlockSession {
          case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
          case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
          case .pbfit: return makeMeasuredDepthPrice()
@@ -94,7 +111,7 @@ index 49aa9ee..2707b20 100644
          }
      }()
  
-@@ -1077,20 +1132,14 @@ public final class Qwen36MTPBlockSession {
+@@ -1081,20 +1153,14 @@ public final class Qwen36MTPBlockSession {
          if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
          guard cap > 0 else { return 0 }
          let price = Self.depthPrice
@@ -119,7 +136,7 @@ index 49aa9ee..2707b20 100644
              reach *= p
              let threshold = price.marginal[depth] * (1.0 + expected) /
                  price.cumulative[depth]
-@@ -1102,9 +1151,58 @@ public final class Qwen36MTPBlockSession {
+@@ -1106,9 +1172,58 @@ public final class Qwen36MTPBlockSession {
              expected += reach
              depth += 1
          }
@@ -179,10 +196,10 @@ index 49aa9ee..2707b20 100644
      /// Written only when the phase trace is on, so the scored schedule runs
      /// byte-identical arithmetic without it.
 diff --git a/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift b/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
-index 422003b..ec06540 100644
+index 422003b..9276959 100644
 --- a/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
 +++ b/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
-@@ -262,4 +262,49 @@ struct QwenMTPDepthPriceTests {
+@@ -262,4 +262,90 @@ struct QwenMTPDepthPriceTests {
              #expect(walkDepth(pbfit, cap: cap, p: p) == 4)
          }
      }
@@ -201,18 +218,59 @@ index 422003b..ec06540 100644
 +        }
 +    }
 +
-+    // E94, the theorem `snap4` implements. Depth 4 pays the width-5 step and
-+    // buys exactly one draft position for it. Extending from 3 to 4 lowers
-+    // cost per token only when `r4 > m3 * Y3 / C3`, and `Y3 >= 1 + 3 * r4`
-+    // because reach is non-increasing, so the condition needs
-+    // `r4 > (m3 + 3 * m3 * r4) / C3`. With the E92 price `3 * m3 > C3`, so no
-+    // acceptance profile can satisfy it: depth 4 is dominated by depth 3 for
-+    // every round, not on average.
-+    @Test("depth 4 is dominated by depth 3 for every acceptance profile")
++    // E94, the theorem `snap4` implements, in the form that needs no price
++    // array at all. A depth-4 round beats a depth-3 round only when
++    // `C(w5)/C(w4) < Y(4)/Y(3)`. With `a_i` the probability of reaching
++    // position `i`, `Y(3) = 1 + a1 + a2 + a3` and `Y(4) - Y(3) = a4`. Reach is
++    // non-increasing, so `a1 >= a2 >= a3 >= a4` and
++    //
++    //     Y(4)/Y(3) = 1 + a4 / (1 + a1 + a2 + a3)
++    //              <= 1 + a4 / (1 + 3 * a4)  <=  1.25
++    //
++    // attained only as `q -> 1`. E92 measured `C(w5)/C(w4) = 1.4623`, which is
++    // 17.0 % above that ceiling, so depth 4 is dominated unconditionally.
++    //
++    // Two measured numbers and one combinatorial inequality. No rescaling, no
++    // `pure`-versus-`hadd` choice, no acceptance estimate.
++    @Test("depth 4 is dominated for every acceptance profile that can exist")
 +    func depthFourIsAlwaysDominated() {
++        // E92 rung 2 production sweep, median round GPU-busy microseconds.
++        let cW4 = 86_237.4
++        let cW5 = 126_103.1
++        let yieldCeiling = 1.25
++        #expect(cW5 / cW4 > yieldCeiling)
++
++        // The ceiling is tight: no non-increasing reach sequence beats it.
++        for step in 1 ... 100 {
++            let q = Double(step) / 100.0
++            var a = 1.0
++            var y3 = 1.0
++            for _ in 0 ..< 3 {
++                a *= q
++                y3 += a
++            }
++            let a4 = a * q
++            #expect((y3 + a4) / y3 <= yieldCeiling)
++            #expect(cW5 / cW4 > (y3 + a4) / y3)
++        }
++    }
++
++    // The same theorem expressed through the rescaled price array, which is
++    // what the `amine92` arm actually reads. `m4 / C3 > 1/4` is the condition,
++    // because `1 + m4/C3` is the modelled cost ratio and 1.25 is the yield
++    // ceiling. NOTE: the near-zero coefficient `C3 - 3 * m4 = -0.009` is NOT
++    // the decision margin. It sits near zero for a reason unrelated to the
++    // decision; the margin is `m4 / C3` against `1/4`, which is 34.3 %
++    // against 25 %.
++    @Test("the rescaled E92 price also dominates depth 4, with a real margin")
++    func rescaledPriceAlsoDominatesDepthFour() {
 +        let price = Qwen36MTPBlockSession.makeDepthPrice(
 +            rescaling: Qwen36MTPBlockSession.measuredRawDepthPriceE92)
-+        #expect(3.0 * price.marginal[3] > price.cumulative[3])
++        let m4 = price.marginal[3]
++        let c3 = price.cumulative[3]
++        #expect(m4 / c3 > 0.25)
++        #expect(abs(m4 / c3 - 0.335783) < 1e-5)
++
 +        for step in 1 ... 100 {
 +            let p = Double(step) / 100.0
 +            var reach = 1.0
