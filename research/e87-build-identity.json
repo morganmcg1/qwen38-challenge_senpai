@@ -1,0 +1,52 @@
+{
+  "question": "Is the local runtime-worker sha256 a function of the source tree alone?",
+  "answer": "No. Two clean full builds from byte-identical source produce different worker digests.",
+  "consequence": "worker_sha256 proves that two legs ran the SAME binary. It does not prove which source produced it, and a digest mismatch across a research edit does not prove a source change. Source identity must come from git.",
+  "host": "ip-10-231-2-95.ec2.internal, Apple M4 Pro Mac16,11, macOS 26.5.2, Swift 6.3.3",
+  "source_tree": {
+    "commit": "28793f50876f6002d64905a9c8248a6d6361b1ba",
+    "scored_paths_identical_to": "d1bb10b441166f7f8da66bb7a8d8108edc38da14",
+    "proof": "git diff --stat d1bb10b HEAD -- Sources Vendor mtp-head.manifest.json Package.swift is empty"
+  },
+  "builds": [
+    {
+      "label": "submitted cb8aeef leg, incremental",
+      "tag": "e87r2sub-derived25",
+      "worker_sha256": "ca59b119b3161a6ece334df869df4530e829a23d894f0a6a87ae9adafb20ce0b",
+      "strings": null,
+      "symbols": null
+    },
+    {
+      "label": "restored tip, incremental after adding and removing Sources/MLXFastModel/E58DispatchCensus.swift",
+      "worker_sha256": "d36df3025dff189d654b7ca27ec17d0fa76390ea238d5c25bad8ad54ef90bb3a",
+      "strings": 80722,
+      "symbols": 575184
+    },
+    {
+      "label": "clean full build, .build-worker removed",
+      "worker_sha256": "850b122316f455bb2142e895f9080db40553ac701ad1d20a94c64f01f23433b5",
+      "strings": 80731,
+      "symbols": 575184
+    },
+    {
+      "label": "clean full build replay, .build-worker removed again",
+      "worker_sha256": "ec22202bea6336491fc836be214ec01e7872240c62d6ed4abf41b6d0a2c775e0",
+      "strings": 80722,
+      "symbols": 575184
+    }
+  ],
+  "witnesses_identical_in_every_build": {
+    "qwen35_dual_rms_norm_concat_bf16_v1": 1,
+    "qwen35_dual_rms_norm_bf16_v1": 0,
+    "snapshotScheduleSignal": 2,
+    "buildDerivedClusterIndex": 18,
+    "MLX_E58_BUFFER_LIMIT_OPS": 0,
+    "MLX_E58_BUFFER_LIMIT_MB": 0,
+    "MLX_E80_GPU_TIME": 0
+  },
+  "ruled_out": "No /var/folders, TemporaryDirectory or /private/var/tmp path appears in the binary, so embedded build-temp paths are not the source of the variation.",
+  "reproduce": [
+    "rm -rf .build-worker",
+    "senpai/rebuild-and-assert-worker.sh --require qwen35_dual_rms_norm_concat_bf16_v1 --require-symbol snapshotScheduleSignal --require-symbol buildDerivedClusterIndex --forbid qwen35_dual_rms_norm_bf16_v1"
+  ]
+}
