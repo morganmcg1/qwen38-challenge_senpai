@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# E108 -- does non-executed text inside `affine_qmv_fast` cost time?
+#
+#   usage: research/e108_probe.sh SET TAG [probe args...]
+#
+# The arms differ only in code that the measured width never executes, so any
+# time difference is instruction fetch or code layout, not work. The comparison
+# is within-session and counterbalanced, so it runs under no thermal gate and
+# reports no score. Entry and exit GPU temperature are recorded per timed cell.
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+set_name="${1:?usage: e108_probe.sh SET TAG [args...]}"
+tag="${2:?usage: e108_probe.sh SET TAG [args...]}"
+shift 2
+out_dir="research/out/${tag}"
+arms_dir="/tmp/e108-arms-${set_name}"
+bin="/tmp/e108_probe"
+mkdir -p "${out_dir}"
+
+macmon_bin=""
+for candidate in "${MLXFAST_MACMON_BIN:-}" "${HOME}/bin/macmon" \
+                 /opt/homebrew/bin/macmon /usr/local/bin/macmon; do
+  if [[ -n "${candidate}" && -x "${candidate}" ]]; then
+    macmon_bin="${candidate}"
+    break
+  fi
+done
+
+gpu_temp() {
+  [[ -n "${macmon_bin}" ]] || { echo ""; return 0; }
+  "${macmon_bin}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty'
+}
+
+rm -rf "${arms_dir}"
+python3 research/e108_arms.py --set "${set_name}" --emit "${arms_dir}" 2>&1 \
+  | tee "${out_dir}/arms.log" || exit 1
+
+arm_names=()
+for f in "${arms_dir}"/arm_*.metal; do
+  base="$(basename "${f}")"
+  base="${base#arm_}"
+  arm_names+=("${base%.metal}")
+done
+
+# The E104 harness is the instrument: same palindrome ordering, same per-cell
+# bit-for-bit check against arm 0, same thermal record.
+clang -fobjc-arc -O2 -Wno-format-nonliteral -framework Metal \
+  -framework Foundation -o "${bin}" research/e104_rate_probe.m 2>&1 \
+  | grep -v 'setFastMathEnabled\|deprecated' | tee "${out_dir}/build.log"
+
+entry_c="$(gpu_temp)"
+start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+macmon_arg=()
+[[ -n "${macmon_bin}" ]] && macmon_arg=(--macmon "${macmon_bin}")
+
+# Without this the harness silently falls back to E104's own arm list, which
+# names files this set never emits.
+arms_arg=()
+if [[ " $* " != *" --arms "* ]]; then
+  arms_arg=(--arms "$(python3 research/e108_arms.py --set "${set_name}" --list)")
+fi
+
+"${bin}" --dir "${arms_dir}" --out "${PWD}/${out_dir}/probe.json" \
+  "${macmon_arg[@]}" "${arms_arg[@]}" "$@" 2>&1 | tee "${out_dir}/probe.log"
+status="${PIPESTATUS[0]}"
+
+exit_c="$(gpu_temp)"
+
+{
+  echo "experiment=e108-wide-qmv-instruction-fetch"
+  echo "harness=local"
+  echo "arm_set=${set_name}"
+  echo "args=$*"
+  echo "started_utc=${start_iso}"
+  echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "git_head=$(git rev-parse HEAD)"
+  echo "git_dirty=$(git status --porcelain | wc -l | tr -d ' ')"
+  echo "host=$(hostname)"
+  echo "chip=$(sysctl -n machdep.cpu.brand_string)"
+  echo "memory_gib=$(( $(sysctl -n hw.memsize) / 1073741824 ))"
+  echo "toolchain=$(swift --version 2>&1 | head -1)"
+  echo "metal_toolchain=$(xcrun -sdk macosx metal --version 2>&1 | head -1)"
+  for a in "${arm_names[@]}"; do
+    echo "arm_${a}_sha256=$(shasum -a 256 "${arms_dir}/arm_${a}.metal" | cut -d' ' -f1)"
+  done
+  echo "gpu_temp_entry_c=${entry_c}"
+  echo "gpu_temp_exit_c=${exit_c}"
+  echo "cool_gate_passed_real_gate=false"
+  echo "gate_qualified_for_timing=false"
+  echo "timing_valid=false"
+  echo "status=${status}"
+} > "${out_dir}/meta.txt"
+
+cat "${out_dir}/meta.txt"
+exit "${status}"
