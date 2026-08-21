@@ -1,0 +1,40 @@
+# host ip-10-231-2-22.ec2.internal 2026-08-21T05:03:09Z
+# placement sweep: 600us burst every 150ms, 0.4% duty, 60 rounds/arm
+warmup, discard        ecore=45 pcore= 1 migrated=14  mean 2.609GHz  | cpu0:6 cpu1:15 cpu2:11 cpu3:13 cpu9:1
+A default              ecore=46 pcore= 5 migrated= 9  mean 2.365GHz  | cpu0:12 cpu1:13 cpu2:8 cpu3:13 cpu9:4 cpu10:1
+B userinteractive      ecore=47 pcore= 4 migrated= 9  mean 2.546GHz  | cpu0:13 cpu1:13 cpu2:11 cpu3:10 cpu9:4
+C uix + UI_FOCAL role  ecore=47 pcore= 1 migrated=12  mean 2.616GHz  | cpu0:12 cpu1:15 cpu2:11 cpu3:9 cpu9:1
+D time-constraint RT   ecore=58 pcore= 2 migrated= 0  mean 2.600GHz  | cpu0:54 cpu2:1 cpu3:3 cpu9:2
+
+# keepalive duty-cycle sweep
+warmup, discard        keepalive=  0%  ecore=45 pcore= 5 migrated=10  burst 2.452GHz
+sweep                  keepalive=  0%  ecore=47 pcore= 1 migrated=12  burst 2.513GHz
+sweep                  keepalive=  5%  ecore=51 pcore= 2 migrated= 7  burst 2.504GHz
+sweep                  keepalive= 10%  ecore=49 pcore= 4 migrated= 7  burst 2.559GHz
+sweep                  keepalive= 20%  ecore=47 pcore= 3 migrated=10  burst 2.441GHz
+sweep                  keepalive= 40%  ecore=47 pcore= 2 migrated=11  burst 2.596GHz
+sweep                  keepalive= 80%  ecore=44 pcore= 3 migrated=13  burst 2.446GHz
+# host ip-10-231-2-22.ec2.internal 2026-08-21T05:14:13Z
+# duty sweep, wall-clock bounded spin, 60 rounds/arm, 4 E-cores (cpu0-3), 10 P-cores
+warmup         target=  0% actual=  0.0%  ecore=49 pcore= 2 migrated= 9  burst 2.531GHz
+sweep          target=  0% actual=  0.0%  ecore=51 pcore= 3 migrated= 6  burst 2.461GHz
+sweep          target= 10% actual=  7.3%  ecore=42 pcore= 4 migrated=14  burst 2.448GHz
+sweep          target= 25% actual= 18.8%  ecore=43 pcore= 3 migrated=14  burst 2.571GHz
+sweep          target= 40% actual= 31.0%  ecore=45 pcore= 4 migrated=11  burst 2.435GHz
+sweep          target= 55% actual= 45.3%  ecore=42 pcore= 5 migrated=13  burst 2.469GHz
+sweep          target= 70% actual= 60.9%  ecore=42 pcore= 8 migrated=10  burst 2.491GHz
+sweep          target= 85% actual= 78.9%  ecore= 4 pcore=55 migrated= 1  burst 2.018GHz
+sweep          target= 95% actual= 92.6%  ecore= 0 pcore=60 migrated= 0  burst 4.441GHz
+sweep          target=100% actual=100.0%  ecore= 0 pcore=60 migrated= 0  burst 4.470GHz
+# host ip-10-231-2-22.ec2.internal 2026-08-21T05:18:50Z
+# placement sweep incl. affinity tag and pre-warm spin; 600us burst per 150ms round, 60 rounds/arm
+warmup, discard        ecore=50 pcore= 3 migrated= 7  mean 2.454GHz  | cpu0:13 cpu1:9 cpu2:14 cpu3:14 cpu9:3
+A default              ecore=47 pcore= 3 migrated=10  mean 2.407GHz  | cpu0:12 cpu1:13 cpu2:15 cpu3:7 cpu9:3
+B userinteractive      ecore=52 pcore= 3 migrated= 5  mean 2.414GHz  | cpu0:14 cpu1:12 cpu2:18 cpu3:8 cpu9:2 cpu10:1
+C uix + UI_FOCAL role  ecore=51 pcore= 1 migrated= 8  mean 2.445GHz  | cpu0:16 cpu1:14 cpu2:15 cpu3:6 cpu9:1
+D time-constraint RT   ecore=57 pcore= 3 migrated= 0  mean 2.408GHz  | cpu0:46 cpu1:2 cpu3:9 cpu9:3
+E affinity tag         thread_policy_set rc=46 (KERN_NOT_SUPPORTED)
+E affinity tag         ecore=58 pcore= 2 migrated= 0  mean 2.464GHz  | cpu0:57 cpu3:1 cpu9:2
+F prewarm 2ms          ecore=56 pcore= 4 migrated= 0  mean 2.395GHz  | cpu0:47 cpu1:3 cpu2:6 cpu9:4
+G prewarm 10ms         ecore=55 pcore= 5 migrated= 0  mean 2.414GHz  | cpu0:48 cpu1:2 cpu2:3 cpu3:2 cpu9:5
+H prewarm 40ms         ecore= 0 pcore=60 migrated= 0  mean 2.104GHz  | cpu9:59 cpu10:1
