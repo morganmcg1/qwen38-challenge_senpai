@@ -15,10 +15,15 @@
 # temperature are recorded for every leg, and the honesty flags below stay
 # false. This leg is directional causal evidence, never a ranked score.
 #
-# Set MLXFAST_E100_TRACE=1 for a DIAGNOSTIC leg. It emits one `mtp-trace:` line
-# per round to a file, which gives the verify width histogram that decides
-# whether the M = 5 dispatch entry is reached at all. The round trace adds host
-# work, so a traced leg is never a timed leg of the ABBA session.
+# MLXFAST_QWEN_MTP_DEPTH is the per-round draft ceiling the parent offers, and
+# it is recorded per leg. Two sessions answer two different questions:
+#
+#   depth 8   the shipped schedule. Does the change pay where the solver
+#             actually runs? `segmentedVerifyDepthCap` is 7, so the verify
+#             width is 1..8 and M = 5 is one width among several.
+#   depth 4   the reach-free control. The offer caps draftCount at 4, so the
+#             verify width is at most 5 and M = 5 dominates. This isolates how
+#             well the kernel gain CONVERTS from how often it is REACHED.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -43,26 +48,15 @@ gpu_temp() {
 entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-trace_path=""
-if [[ "${MLXFAST_E100_TRACE:-0}" == "1" ]]; then
-  trace_path="${PWD}/${out_dir}/rounds.trace"
-  : > "${trace_path}"
-fi
+depth="${MLXFAST_QWEN_MTP_DEPTH:-8}"
 
 MLXFAST_LOCAL_COOL_GATE=0 \
-MLX_QWEN_MTP_TRACE="${MLXFAST_E100_TRACE:-0}" \
-MLX_QWEN_MTP_TRACE_PATH="${trace_path}" \
+MLXFAST_QWEN_MTP_DEPTH="${depth}" \
 MLXFAST_SCORE_PATH="${PWD}/${out_dir}/score.json" \
 ./benchmark-qwen-mtp.sh --local-iterate 2>&1 | tee "${out_dir}/run.log"
 status="${PIPESTATUS[0]}"
 
 exit_c="$(gpu_temp)"
-
-# Verify width histogram. `d` is the draft count, so the verify width is d + 1.
-if [[ -s "${trace_path:-/dev/null}" ]]; then
-  grep -o ' d=[0-9]*' "${trace_path}" | tr -d ' d=' | sort -n | uniq -c \
-    > "${out_dir}/draft_hist.txt"
-fi
 
 {
   echo "experiment=e100-fewer-weight-streams-per-round"
@@ -85,13 +79,11 @@ fi
   echo "cool_gate_passed_real_gate=false"
   echo "gate_qualified_for_timing=false"
   echo "timing_valid=false"
-  echo "traced=${MLXFAST_E100_TRACE:-0}"
+  echo "offered_depth=${depth}"
   echo "status=${status}"
 } > "${out_dir}/meta.txt"
 
 cat "${out_dir}/meta.txt"
-if [[ -s "${out_dir}/draft_hist.txt" ]]; then
-  echo "--- draft-count histogram (count, d); verify width is d + 1 ---"
-  cat "${out_dir}/draft_hist.txt"
-fi
+jq -r '.metrics | "score=\(.mtp_decode_speedup) mtp_spt=\(.mtp_seconds_per_token) serial_spt=\(.serial_seconds_per_token) mean_draft=\(.effective_mean_draft_len) accept=\(.accepted_draft_rate) matched=\(.all_tokens_matched)"' \
+  "${out_dir}/score.json" 2>/dev/null || true
 exit "${status}"
