@@ -1,0 +1,74 @@
+{
+  "drafts_per_token": 0.9668615984405458,
+  "baseline_mtp_s_per_tok": 0.03176435496425256,
+  "tax_unit_traffic_us": 0.09060543721105138,
+  "arm_traffic_us_per_draft": 0.931537151326122,
+  "arm_buffers": 6,
+  "segment_slopes": {
+    "0-48": {
+      "us_per_token_per_unit": 2.0144846833621464,
+      "us_per_buffer": 2.083529521299962,
+      "us_per_buffer_sem": 2.6567121980059296,
+      "us_per_buffer_ci95_lo": -3.1236263867916603,
+      "us_per_buffer_ci95_hi": 7.290685429391584
+    },
+    "48-192": {
+      "us_per_token_per_unit": 4.260098244736178,
+      "us_per_buffer": 4.40610967651141,
+      "us_per_buffer_sem": 0.7126923082813718,
+      "us_per_buffer_ci95_lo": 3.009232752279922,
+      "us_per_buffer_ci95_hi": 5.8029866007429
+    }
+  },
+  "linearity_residual_us": {
+    "48": -80.84208820946515
+  },
+  "linearity_residual_in_sem": {
+    "48": -0.8512283220692692
+  },
+  "convexity_significant": false,
+  "prediction": {
+    "full_range_ols": {
+      "us_per_buffer_used": 3.9594596466631016,
+      "dispatch_boundary_us": 3.86885420945205,
+      "arm_us_per_draft": 24.144662408038425,
+      "arm_us_per_token": 23.34454688964339,
+      "arm_us_per_round": 153.2360000961207,
+      "arm_pct_of_candidate": 0.07349290396708896
+    },
+    "full_range_ols_ci_lo": {
+      "us_per_buffer_used": 2.7173071632050845,
+      "dispatch_boundary_us": 2.626701725994033,
+      "arm_us_per_draft": 16.69174750729032,
+      "arm_us_per_token": 16.138609675664714,
+      "arm_us_per_round": 105.93548915308119,
+      "arm_pct_of_candidate": 0.05080729545374688
+    },
+    "full_range_ols_ci_hi": {
+      "us_per_buffer_used": 5.201612130121119,
+      "dispatch_boundary_us": 5.111006692910068,
+      "arm_us_per_draft": 31.59757730878653,
+      "arm_us_per_token": 30.55048410362206,
+      "arm_us_per_round": 200.5365110391602,
+      "arm_pct_of_candidate": 0.09617851248043102
+    },
+    "low_segment": {
+      "us_per_buffer_used": 2.083529521299962,
+      "dispatch_boundary_us": 1.9929240840889104,
+      "arm_us_per_draft": 12.889081655859584,
+      "arm_us_per_token": 12.461958092215115,
+      "arm_us_per_round": 81.80157106684793,
+      "arm_pct_of_candidate": 0.039232523708539774
+    }
+  },
+  "arm_pct_range": [
+    0.039232523708539774,
+    0.07349290396708896
+  ],
+  "advisor_prior_pct": [
+    0.03,
+    0.12
+  ],
+  "actionable_threshold_pct": 0.05,
+  "straddles_threshold": true
+}

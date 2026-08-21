@@ -93,6 +93,7 @@ gpu_temp() {
   echo "memory_bytes=$(sysctl -n hw.memsize)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR:-<setup-default>}"
+  echo "ladder=${MLX_QWEN_MTP_LADDER:-<unset>}"
   echo "worker_sha256=$(
     shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
   echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"

@@ -4,9 +4,14 @@
 The Yukon list endpoint returns ``officialMetrics.per_prompt`` for every scored
 submission: eight rows per run carrying candidate and serial seconds per token,
 the raw ratio, the effective mean draft length, the non-drafting round count and
-the declared head provenance digest. The serial denominator varies by only
-0.21-0.24 % across the whole board, so candidate seconds per token are directly
-comparable between seats.
+the declared head provenance digest.
+
+Candidate seconds per token are directly comparable between seats. The serial
+numerator is not a constant: it is drawn fresh on every run with a per-prompt cv
+of 0.21-0.24 %, it comes from the runner's own prebuilt baseline workspace, and
+candidate-editable code cannot change it. That draw enters the published score
+at full weight, so a run can be uniformly faster and still score lower. Use
+``serialfree`` to remove it before attributing a score change to a mechanism.
 
 Usage:
 
@@ -15,6 +20,7 @@ Usage:
     python3 research/board_per_prompt.py order
     python3 research/board_per_prompt.py heads
     python3 research/board_per_prompt.py tree <uuid-prefix> [...]
+    python3 research/board_per_prompt.py serialfree [<uuid-prefix> ...]
 
 ``fetch`` writes the raw payload to ``/tmp/yukon-board/full.json``; it is about
 11 MB and is deliberately not committed.
@@ -62,8 +68,18 @@ def fetch():
 
 def load():
     rows = json.load(open(CACHE))
+    if isinstance(rows, dict):
+        # Tolerate a cache holding the whole endpoint payload rather than the
+        # submission list that ``fetch`` writes.
+        for key in ("submissions", "rows", "data", "items"):
+            if isinstance(rows.get(key), list):
+                rows = rows[key]
+                break
+        else:
+            raise SystemExit("%s holds no submission list; rerun fetch" % CACHE)
     return [r for r in rows
-            if (r.get("officialMetrics") or {}).get("per_prompt")
+            if isinstance(r, dict)
+            and (r.get("officialMetrics") or {}).get("per_prompt")
             and r.get("officialScore") is not None]
 
 
@@ -172,6 +188,48 @@ def cmd_tree(scored, prefixes):
                      entry.get("non_drafting_round_count")))
 
 
+def serial_free_score(row, means):
+    """Published statistic recomputed with each prompt's board-mean serial draw.
+
+    The runner's prebuilt baseline workspace produces the serial numerator, so
+    candidate-editable code cannot change it, yet it enters every raw ratio and
+    is redrawn on every run. Substituting the board mean per prompt leaves only
+    candidate-side effects in the score.
+    """
+    entries = vec(row)
+    return published_median([means[name] / entry["mtp_seconds_per_token_mean"]
+                             for name, entry in entries.items()])
+
+
+def cmd_serialfree(scored, argv):
+    means = serial_means(scored)
+
+    worst = max(abs(published_median([e["raw_ratio_of_means"]
+                                      for e in vec(r).values()])
+                    / r["officialScore"] - 1) for r in scored)
+    print("median-of-8 reproduces every published score to %.2e" % worst)
+
+    print("\nboard-mean serial per prompt")
+    for name in sorted(means):
+        draws = [vec(r)[name]["serial_seconds_per_token_mean"] for r in scored]
+        print("  %-9s %.9f   cv %.4f %%"
+              % (name, means[name], 100 * st.pstdev(draws) / means[name]))
+
+    ranked = sorted(((serial_free_score(r, means), r) for r in scored),
+                    key=lambda pair: -pair[0])
+    wanted = [p.lower() for p in argv]
+    print("\n%-9s %14s %13s %10s  %-10s %s"
+          % ("id", "serial-free", "published", "delta", "status", "created"))
+    for index, (free, row) in enumerate(ranked, 1):
+        ident = row["id"]
+        if index > 20 and not any(ident.startswith(p) for p in wanted):
+            continue
+        print("%-9s %14.8f %13.8f %+10.5f  %-10s %s   rank %d/%d"
+              % (ident[:8], free, row["officialScore"],
+                 free - row["officialScore"], row.get("status"),
+                 (row.get("createdAt") or "")[:19], index, len(ranked)))
+
+
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "floors"
     if command == "fetch":
@@ -187,6 +245,8 @@ def main():
         cmd_heads(scored)
     elif command == "tree":
         cmd_tree(scored, sys.argv[2:])
+    elif command == "serialfree":
+        cmd_serialfree(scored, sys.argv[2:])
     else:
         print(__doc__)
 

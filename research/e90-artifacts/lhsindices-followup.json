@@ -1,0 +1,95 @@
+{
+  "mechanism": "cache a uint32 lhsIndices array for gatherQuantizedMM in Qwen35TextModel.draftTokenIDWithDeclaredRerank instead of passing nil, which stops gather_qmm synthesising reshape(arange(1, uint32), [1]) on every draft step",
+  "call_site": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift draftTokenIDWithDeclaredRerank",
+  "calls_per_round": "one per draft step",
+  "dtype_choice": "uint32, because gather_qmm applies astype(lhs_indices, uint32) and astype is a no-op only when the dtype already matches; an Int32 cache would trade the arange for a copy",
+  "sorted_indices_unchanged": true,
+
+  "dispatch_delta": {
+    "source": "Tests/MLXFastTests/E85FusedIntermediateTests.swift::E90GatherLhsDispatchCountTests.cachedGatherLhsRemovesOneDispatchPerCall",
+    "run_with": "MLXFAST_E90_DISPATCH_COUNT=1 swift test --force-resolved-versions --filter cachedGatherLhsRemovesOneDispatchPerCall",
+    "opt_in_reason": "the probe swizzles Metal dispatch entry points for the whole process, so a plain swift test would count the dispatches of every other GPU suite beside it. Same convention as E57SdpaChunkDispatchCountTests.",
+    "method": "swizzle dispatchThreadgroups:threadsPerThreadgroup: and dispatchThreads:threadsPerThreadgroup: on the MTLComputeCommandEncoder class, warm both forms, then count over 8 matched calls each",
+    "repeats": 8,
+    "dispatches_synthesised_total": 16,
+    "dispatches_cached_total": 8,
+    "dispatches_per_call_synthesised": 2,
+    "dispatches_per_call_cached": 1,
+    "dispatches_removed_per_call": 1,
+    "dispatch_reduction_at_call_site_pct": 50.0,
+    "verdict": "exact and deterministic; the counting hook cannot bias a count"
+  },
+
+  "exactness": {
+    "gate": "research/e90_exact_session.sh --label rung1-lhsindices",
+    "golden_sha256": "66858d9561663b62e58a97191428da0a3816cdb00f67a93f724c7b2d0cf2301e",
+    "golden_generated_by": "base worker 243b77fc0d84c9d1e96f4d1de08215c763b80665a02d2639225020b5c8960c8a",
+    "checked_by": "candidate worker 47876c3d9ceec0cfb103d643db53914545bc219f6406168f486eda9f076cc0cf",
+    "cross_build": true,
+    "all_tokens_matched": true,
+    "parity_all_ok": true,
+    "positive_control_rejects": true,
+    "residual_divergence_count": 0,
+    "emitted_token_total": 512,
+    "declared_rows_total": 574,
+    "reference_checked_row_total": 574,
+    "row_ledger_rows": 574,
+    "round_count": 78,
+    "effective_mean_draft_len": 6.358974358974359,
+    "accepted_draft_rate": 0.8770161290322581,
+    "max_rejected_tail_logit_delta": 0,
+    "unit_test_bit_exact": "gatherQuantizedMMRerankMatchesTakeThenQuantizedMM asserts all(equal(cachedLhs, synthesised))"
+  },
+
+  "buffer_delta": {
+    "base_leg": "e90-rung0b-prod",
+    "candidate_leg": "e90-lhsindices",
+    "base_committed_buffers": 7129,
+    "candidate_committed_buffers": 7187,
+    "delta": 58,
+    "delta_pct": 0.8135,
+    "interpretation": "not a measurement of the mechanism. MLX groups operations into command buffers on the eval thread, so the grouping depends on how many arrays are ready when the queue drains. The two legs differ in host state (frac_rounds_host_stuck 0.200 against 0.043), so the grouping differs. Command buffer count is not a deterministic property of the graph; dispatch count is."
+  },
+
+  "timing": {
+    "resolvable": false,
+    "base_leg_mtp_seconds_per_token": 0.031624753959476948,
+    "candidate_leg_mtp_seconds_per_token": 0.03159106057137251,
+    "leg_delta_pct": -0.1066,
+    "base_leg_serial_seconds_per_token": 0.074587527196854353,
+    "candidate_leg_serial_seconds_per_token": 0.07454555458389223,
+    "serial_delta_pct": -0.0563,
+    "base_clean_round_us": 164875.6,
+    "candidate_clean_round_us": 165159.9,
+    "clean_round_delta_pct": 0.1724,
+    "base_eval_wall_gpu_busy_us": 76362.1,
+    "candidate_eval_wall_gpu_busy_us": 76788.8,
+    "eval_wall_delta_pct": 0.5588,
+    "null_control": "eval_wall is the 64-layer target verify window and this change cannot touch it. It moved 0.56 percent between the two legs, and the serial leg, which never drafts, moved 0.06 percent. Between-leg drift therefore exceeds the size of the mechanism, and the two timing views disagree in sign. No timing claim is made.",
+    "verdict": "not resolvable from unpaired legs; the change is justified by the dispatch removal and by bit-exactness, not by a timing win"
+  },
+
+  "gpu_busy_split_per_round": {
+    "leg": "e90-rung0b-prod",
+    "round_gpu_busy_us": 163737.7,
+    "by_host_window": {
+      "verify_graph": {"us": 82658.1, "pct": 50.48},
+      "eval_wall": {"us": 76362.1, "pct": 46.64},
+      "d_submit2": {"us": 4543.9, "pct": 2.78},
+      "d_chain": {"us": 210.4, "pct": 0.13},
+      "snapshot": {"us": 78.4, "pct": 0.05},
+      "d_submit1": {"us": 10.5, "pct": 0.01}
+    },
+    "head_vs_target_corrected_for_overlap": {
+      "method": "the --sync-head control blocks on the head chain, so its d_submit2 of 15182.3 us with 99.35 percent busy measures the whole head chain as device work. In production only 4549.5 us of that lands inside d_submit2 and the rest overlaps the verify graph build.",
+      "head_chain_gpu_us": 15085,
+      "head_chain_pct_of_round_gpu_busy": 9.21,
+      "target_verify_pct_of_round_gpu_busy": 90.79
+    },
+    "kernel_family_split_available": false,
+    "dispatches_attributed_pct": 0.0,
+    "command_buffers_attributed_pct": 100.0,
+    "buffers_per_round": 91.4,
+    "limit": "the ledger hooks command buffer commit and records no pipeline binding, so it observes zero dispatches and cannot split GPU busy by kernel family. It attributes 100 percent of command buffers (7129 committed, 7129 completed, 0 invalid) and 100 percent of GPU busy time to host windows, with a tiling error of 0.000 us."
+  }
+}

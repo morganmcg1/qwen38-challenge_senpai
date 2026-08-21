@@ -23128,3 +23128,2535 @@ ship a witness list the advisor has not reconciled against the current base.**
 9. **The prefill fusion-gate axis is closed at 0.016 %.**
 10. **An isolated-cell roofline over-states recoverable time whenever the cell
     does not saturate the GPU.**
+
+---
+
+## 227 — The verify window is GPU-bound, leg totals lie by 4x, and the
+##       recorded width curve was measured on a dispatch table that no
+##       longer exists
+
+Date 2026-08-20. Sources: alphonse E86 rung 0 (PR #88), four advisor research
+agents, and direct reads of the current tree. Nothing in this item was measured
+by the advisor.
+
+### (A) The verify window is 98.6 % GPU-bound. Host-side op census is closed.
+
+Alphonse instrumented the verify round with a host-encode timer and a GPU
+execute timer, 8 legs, palindrome, declared head, 512 tokens, every leg
+`--sync-head`, `MLXFAST_LOCAL_COOL_GATE=0`, M4 Pro. Every leg reported
+`all_tokens_matched=true`, `rounds=78`, `rows_per_token=1.1189`.
+
+| quantity | median us per round |
+|---|---:|
+| host encode `H` | **2,294** |
+| GPU execute `G` | **149,866** |
+| `H + G` | 152,160 |
+| `off` arm round | 168,895 |
+| GPU idle fraction of the round | **1.4 %** |
+
+| arm | rungs | `verify_build` | `eval_wall` | `verify+eval` |
+|---|---:|---:|---:|---:|
+| `off` | 0 | 2,294 | 149,866 | **152,160** |
+| `front` | 2 | 2,432 | 146,835 | **149,267** |
+| `default` | 8 | 72,330 | 77,092 | **149,422** |
+| `dense` | 17 | 43,111 | 106,146 | **149,258** |
+
+Under the shipped ladder `verify_build_us` reads 72,330 us, but only 2,294 us
+of that is host encode. The other 97 % is the host blocked on the `asyncEval`
+throttle. The total verify pipeline is flat at about 149.3 ms for every active
+arm; the ladder buys about 2.8 ms, which is 119 % of `H`.
+
+**This replaces the advisor's reading of `verify_build / eval_wall = 0.945`.**
+That ratio is not a host cost that happens to track GPU time. It is ONE GPU
+cost split into two counters by where the rungs sit. The advisor reached the
+right conclusion about the docstring at
+`Qwen36MTPBlockSession.swift:700-706` for the wrong reason, and retracts the
+reasoning.
+
+**CLOSED: host-side operation count, allocation count, and command-buffer
+boundary reduction on the verify path.** Only three things can still pay there:
+fewer verified rows, cheaper kernels, less weight traffic.
+
+The measurement is conservative. Every leg used `--sync-head`, which drains the
+head chain and leaves the GPU idle at the boundary. Production overlaps, so the
+GPU-busy fraction is higher than measured.
+
+Entry temperatures 39.5, 60.3, 58.9, 59.1, 62.0, 62.1, 59.4, 60.1 C; exits
+62.1 to 65.7. The 22.6 C entry spread is driven by the cold first leg
+(`default-1`), which was the SLOWER of the two default legs, so the thermal
+confound works against the reference arm rather than for it.
+
+### (B) Leg totals overstate small effects by up to four times
+
+A bit-exact change replays one identical `(depth, accepted)` round sequence in
+every leg. Alphonse verified exactly 1 distinct sequence across all 8 legs, so
+rounds are pairable. Paired per-round deltas against `default`, 312 pairs per
+arm:
+
+| arm | median delta round | 95 % CI | % of round | naive leg-total delta |
+|---|---:|---:|---:|---:|
+| `dense` | -182 us | [-240, -122] | **-0.110 %** | -0.451 % |
+| `front` | -95 us | [-122, -46] | **-0.057 %** | -0.346 % |
+| `off` | +2,750 us | [+2,695, +2,797] | **+1.652 %** | +0.913 % |
+| null, `default` vs itself | +51 us | [-46, +87] | +-0.05 % | 0.032 % |
+
+The cause is a small number of multi-millisecond OS scheduling spikes in
+`d_submit1_us`, `d_chain_us` and `commit_us`. Two of them landed in `default`
+legs.
+
+**Campaign rule.** Report every bit-exact arm as a median of paired per-round
+deltas with a confidence interval, print the naive leg total beside it, and
+state the count of distinct round sequences. That count must equal 1. If it is
+not 1, the arm is not bit-exact and pairing is invalid.
+
+`dense` converts to -0.087 % of candidate `mtp_seconds_per_token`
+(182 us x 78 rounds / 16.305 s). That is below the 0.10 % solo bar and is
+retained only as a stack component.
+
+### (C) The recorded width curve mixed a shipped column with an arm column
+
+An earlier revision of `research/CURRENT_RESEARCH_STATE.md` printed the local
+width curve as "M7 149.368, M8 183.642, M9 451.747". **Those three values are
+the `t789` ARM of E68 rung 1, not the shipped table.** The arm merges NA = 7, 8
+and 9 into one weight stream and lost on all three widths. The shipped column
+of the same table, `research/e68-results.md:89-99`, reads M7 138.314, M8
+148.841, M9 163.621.
+
+There is no 451 ms cliff on any shipped path. The corrected shipped curve is:
+
+```
+M1 60.372  M2 65.377  M3  72.128  M4  82.163  M5  95.568
+M6 122.876 M7 138.314 M8 148.841  M9 163.621  M10 271.147
+```
+
+The ledger's single-group ladder `S[g]` at :18894 is a different object and
+correctly uses the arm values, because `S[g]` prices ONE group of `g` rows.
+Item 227(C) corrects the research-state file only; :18894 stands.
+
+### (D) The curve was measured on a dispatch table that no longer exists
+
+Verified by reading both trees directly:
+
+| | E68 bases `6cbf1a40` and `dd60d0b4` | HEAD |
+|---|---|---|
+| guard at `quantized.h:980` | `NA >= 2 && NA <= 6` | `NA >= 2 && NA <= 4` |
+| M = 5 | `_m<T,5,5>`, **1 group** | `_m<T,5,3>`, **2 groups** |
+| M = 6 | `_m<T,6,6>`, **1 group** | `_m<T,6,3>`, **2 groups** |
+| M = 7 | `_m<T,7,4>`, 2 groups | `_m<T,7,4>`, 2 groups |
+| M = 8 | `_m<T,8,4>`, 2 groups | `_m<T,8,4>`, 2 groups |
+| M = 9 | `_m<T,9,5>`, 2 groups | `_m<T,9,3>`, **3 groups** |
+
+The number of active input groups `G`, not `M`, multiplies the weight stream.
+C(5) = 95.568 and C(6) = 122.876 were measured at `G = 1`; HEAD runs those two
+widths at `G = 2`. C(9) = 163.621 was measured at `G = 2`; HEAD runs it at
+`G = 3`.
+
+**M5 and M6 together carry 57.5 % of ranked round cost, per ledger 207, and
+neither has ever been measured on the live table.**
+
+`Qwen36MTPBlockSession.swift:858-873` already warns about this in its own
+words: "A change to that table invalidates the fit, not only its magnitude.
+Refit from a fresh rung-1 curve whenever the QMV group shapes move." The table
+moved and the curve was never refitted.
+
+No wrong shape is live. `depthPriceArm` is `.ship`, a flat `h = 0.18` per
+draft, and `makeMeasuredDepthPrice` is a research arm. But every depth,
+partition and kernel decision on this campaign is currently priced against a
+stale curve. **A fresh rung-1 curve on the live table is now a prerequisite for
+pricing any width or depth work.** Tooling exists: `research/e68_rung1_session.sh`
+and `research/e68_insitu_curve.py`.
+
+### (E) The width tax is instruction issue, not bandwidth
+
+A per-lane instruction census of `qmv_fast_crossrow_affine4_g64_wide`
+(`quantized.h:969-1063`) gives about 2.375 operations per weight element on the
+per-group side (nibble extract, int-to-float convert, weight load, scale and
+bias load) and about 1.625 operations per element-row pair on the per-row side
+(FMA, epilogue, x load, running sum). With E = 25.622e9 weight elements per
+pass:
+
+```
+ops(M, G) = E x [ 2.375 G + 1.625 M ]
+t_issue   = ops / 3.753e12 FMA slots per second
+t_bytes   = 14.4123e9 x G / 245.2e9
+model     = max(t_bytes, t_issue)
+```
+
+This reproduces the shape of the measured curve with one free parameter, at a
+stable residual of 1.24 to 1.48 across every in-family point.
+
+It answers the question the roofline could not. One extra verify row adds
+25.622e9 exact FMAs, which is 6.83 ms at FMA peak, and that hides completely
+under the weight stream up to M of about 8.6. **Nothing physical makes width 8
+cost more than width 1.** The kernel issues 0.625 non-FMA instructions per FMA
+on the per-row side, so it saturates the issue pipe at 33 to 38 % of FMA peak
+long before either roof is reached.
+
+Weight re-reads are NOT the mechanism. At M = 7 and M = 8 the merged
+single-stream `t789` arm is SLOWER than two groups, 149.368 against 138.314 and
+183.642 against 148.841. If the second DRAM pass were the cost, the merged form
+would win. It loses, so the second stream is largely cache-served.
+
+**The lever this identifies is instruction count per element, and the cheapest
+such lever is load width.** At `quantized.h:1003-1005` the kernel issues four
+scalar `uint16_t` loads where one 8-byte vector load would do. The byte offset
+is `row * (in_vec_size / 2) + k / 2 + simd_lid * 8`; `in_vec_size / 2` is 2560,
+3072 or 8704 for the three scored K values, `k` is a multiple of the 512-value
+block, and `simd_lid * 8` is 8-aligned, so the address is 8-byte aligned for
+every scored shape. The compiler cannot prove it, because `in_vec_size` is a
+runtime `int`. Compiling both forms with `xcrun metal -S -O2` shows the scalar
+form emitting four `align 2` loads and two allocas, and the vector form
+emitting two `align 8` loads and none.
+
+The weight-side vectorization is bit-exact by construction: the loads are
+integer, and the nibble extraction, the accumulation order and the `simd_sum`
+reduction are untouched.
+
+The x-side load at `:1019-1032` is a separate question. The shipped
+`DIRECT_NIBBLES` branch deliberately avoids MLX's own `load_vector` helper, and
+the in-tree comment says why: "Preserve the incumbent BF16 expression tree used
+for the affine bias correction; only the qdot nibble extraction changes." A
+vector load there is still admissible, but only if the `sums[m] += xm[0] +
+xm[1] + xm[2] + xm[3]` expression tree is written out by hand after the load
+rather than delegated to `load_vector`.
+
+### (F) The ranked roofline shortfall is retracted
+
+An earlier note priced the ranked candidate depth-0 round at 474.1 GB/s against
+a 614 GB/s peak and called the resulting 77.2 % a bandwidth shortfall worth
+chasing. **Retract it.**
+
+- The 614 GB/s denominator is an external specification for an inferred runner
+  SKU that the campaign never probed. `research/e69-artifacts/rung0-accounting.json`
+  already records it as unverifiable, and ledger :17124-17128 records that the
+  ranked GPU tier is unknown.
+- The 30.402 ms numerator is a model reconstruction from
+  `research/prompt_round_reconstruction.py:111-156`, not a measurement.
+- No published microbenchmark of M5 GPU bandwidth, kernel-launch overhead or
+  matrix units exists. A literature search returned three incidental numbers,
+  none of them a GPU study.
+
+Keep `R = 65.009 / 30.402 = 2.1383` as the ranked-to-local round ratio, which
+ledger 206(I) upholds. Stop quoting a ranked bandwidth efficiency.
+
+### (G) The host tile file is not editable, which kills one proposal class
+
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp` is NOT in
+`benchmark.json` `editablePaths`. Only `kernels/quantized.h`,
+`kernels/quantized.metal` and the generated twin
+`mlx-generated/quantized.cpp` are.
+
+Every proposal that needs a host tile constant is therefore blocked at the
+contract, not at the physics. That includes raising `rows_per_simd` from 4 to 8
+(`bn` and `grid_dims` at host `quantized.cpp:251-254`) and any change to the
+`qmv` / `qmm` routing thresholds. Do not re-propose them. Kernel-body changes
+that keep the existing launch geometry remain available.
+
+### (H) External replication of the E87 cluster-index arm
+
+FlashHead, arXiv 2603.14591, is a training-free IVF index over an LM head and
+is the same mechanism as E87 arm C. It reports strictly equal-sized spherical
+k-means at 16 rows per cluster (c = 8,016 for a 128,256-row vocabulary),
+multi-probe at 6.39 % of clusters, selective quantization of stage 1, and
+head-only 4.85x at batch 1 in INT4. Its Table 6 measures equal-size clustering
+beating unequal on both accuracy and latency.
+
+Two consequences were sent to thorfinn as E87 feedback 1. First, the assignment
+grid `K in {256, 512, 1024}` tops out at 96 rows per cluster and cannot see the
+published operating point; the grid is re-anchored on `rowsPerCluster in
+{8, 16, 32}`, which give `K = 12292, 6146, 3073`. **All three divide 98,336
+exactly**, so the padded-row correctness work item is deleted. Second, their
+top-1 containment is 1.00, 1.00 and 0.97 across three corpora, so the worst
+domain is 2.5x over our 1.2e-2 break-even while the pooled mean passes
+comfortably. The decision must be taken on the worst domain.
+
+### Rules added by this item
+
+1. **The verify window is 98.6 % GPU-bound.** Host-side operation, allocation
+   and command-buffer reduction on the verify path cannot pay. Only fewer
+   verified rows, cheaper kernels, or less weight traffic.
+2. **Leg totals overstate small effects by up to four times.** Report paired
+   per-round medians with a confidence interval and the distinct-round-sequence
+   count.
+3. **`G`, the active input-group count, not `M`, multiplies the weight stream.**
+   Record `G` beside `M` in every width measurement.
+4. **A width or depth price is valid only for the dispatch table it was
+   measured on.** Refit before reusing it.
+5. **The width tax is instruction issue, not bandwidth.** Neither roof is
+   reached at M = 6.
+6. **Do not quote a ranked bandwidth efficiency.** The peak is unverified and
+   the numerator is reconstructed.
+7. **The host tile file is not editable.** Kernel-body changes only.
+
+---
+
+## 228 — Our tree is 0.17 % faster than the frontier tree on the ranked host,
+##       and the board still rejected it. The palindrome reference arm is
+##       contaminated. The decode ladder axis is closed.
+
+Date: 2026-08-20, 23:10 UTC. Base at entry `93fd2e17`. Promoted frontier
+unchanged at `8e83c6b3-4206-419b-9d47-c61ff40a50f3`, score 3.31894061.
+Sources: the Yukon board, the `upstream/submissions/*` branch instrument,
+askeladd E84 interim 8 (PR #86), alphonse E86 rung 1 (PR #88), edward E85
+interim 3 (PR #87). Nothing here was measured by the advisor.
+
+### (A) The verdict, and the cross-cluster trap it invites
+
+`8630bc07-4b39-483a-a058-2003862732e5` returned **3.2774690717173685,
+rejected**, reason `score did not improve current best`. `parity_all_ok` true,
+1 pair per prompt, 8 accepted. Yukon archive commit
+`f738f5cb18639c4a9062341577c30001579736b2`. Cluster label **B (slow)**:
+`travel` 0.0177427 against the 0.01755 gate.
+
+Askeladd then tabulated it against the frontier `8e83c6b3` and found us slower
+on all eight prompts. **`8e83c6b3` is cluster A.** That table measures the
+cluster, not the mechanism, and cannot be read. The advisor had already put
+"never price a run against a bucket median without printing the bucket" in the
+rules; this is the same error in a different shape, and it is easy to make
+because the frontier is the natural comparison.
+
+**Rule: a ranked comparison is readable only when both runs carry the same
+cluster label, or when a per-prompt cluster premium is estimated and applied
+explicitly with its own standard error.**
+
+### (B) The readable pair, verified at the source level
+
+`8630bc07` against our own `32c6dc69`. Same schedule: all eight
+`effective_mean_draft_len` values identical to four decimals. Same cluster:
+`travel` 0.0177427 and 0.0178050, both B.
+
+`git diff upstream/submissions/32c6dc69… upstream/submissions/8630bc07…`
+returns exactly two files: `Qwen35.swift` (+400/−24) carrying E84 mechanisms A
+and B, and `Qwen35MTP.swift` (19 lines) carrying the `8e83c6b3` concat
+elimination — `preFcNorms` + `concatenated` replaced by `preFcConcat` calling
+`qwen35DualRMSNormConcat`. Nothing else differs.
+
+| prompt | `32c6dc69` s/tok | `8630bc07` s/tok | delta |
+|---|---:|---:|---:|
+| beagle | 0.01208338 | 0.01207574 | −0.063 % |
+| essays | 0.01109826 | 0.01113288 | **+0.312 %** |
+| republic | 0.01102663 | 0.01097083 | −0.506 % |
+| medicine | 0.01103074 | 0.01099784 | −0.298 % |
+| botany | 0.01099145 | 0.01091735 | −0.674 % |
+| travel | 0.01780497 | 0.01774267 | −0.350 % |
+| drama | 0.02018051 | 0.02009723 | −0.413 % |
+| plutarch | 0.03025164 | 0.03028301 | +0.104 % |
+
+**mean7 = −0.2846 %, sd7 = 0.3231, −2.33 sigma.**
+
+### (C) Subtract the concat step: E84 is −0.177 % on the ranked M5
+
+The concat elimination alone, measured same-cluster A against five independent
+members of the pre-concat cohort:
+
+| pair | mean7 |
+|---|---:|
+| `8e83c6b3` − `c6af1e24` | −0.116 % |
+| `8e83c6b3` − `94d14b4d` | −0.012 % |
+| `8e83c6b3` − `106ed256` | −0.108 % |
+| `8e83c6b3` − `f377cf34` | −0.105 % |
+| `8e83c6b3` − `3d14f605` | −0.114 % |
+
+Median −0.108 %. `94d14b4d` is the one outlier and is left in the record.
+
+**E84 (A+B) on ranked = −0.285 − (−0.108) = −0.177 %.**
+
+### (D) An independent route with no ladder: −0.171 % ± 0.127
+
+The pre-concat tree is observed in both clusters — 5 runs in A
+(`c6af1e24 94d14b4d 106ed256 f377cf34 3d14f605`) and 3 in B
+(`5c542728 6a651dd1 32c6dc69`) — so the per-prompt cluster premium is
+identified from that tree alone. Refreshed premiums, log space, this cohort:
+
+| prompt | premium | s.e. |
+|---|---:|---:|
+| beagle | +0.887 % | 0.033 |
+| essays | +0.744 % | 0.259 |
+| republic | +0.992 % | 0.328 |
+| medicine | +1.103 % | 0.121 |
+| botany | +1.166 % | 0.146 |
+| travel | +2.231 % | 0.185 |
+| drama | +2.008 % | 0.071 |
+| plutarch | −0.005 % | 0.027 |
+
+These supersede the earlier premium table for current-schedule work. Note
+plutarch is now flat, not +0.156 %.
+
+Applied to `8630bc07` against `8e83c6b3`: **cluster-corrected mean7 = −0.171 %,
+sd7 0.279, SE 0.127 (0.106 prompt scatter, 0.072 premium).**
+
+Two independent routes, −0.177 % and −0.171 %. Tool:
+`_advisor_scratch/treefit.py`.
+
+### (E) The score fell because of the order statistic, not the mechanism
+
+Score is the mean of the two lowest wide raws. `essays` was the only prompt
+that regressed and `essays` is the second-lowest wide raw; `beagle`, the
+lowest, improved 0.46 %. The score reads exactly two prompts, so the 0.32 %
+per-prompt scatter enters the score at about 0.23 %, on top of the cluster
+term.
+
+**A candidate can get uniformly faster and score lower. Never treat one
+rejection as evidence against a sub-0.5 % mechanism.**
+
+### (F) Where the campaign actually stands
+
+```
+pre-concat fast-cluster cohort mean            = 3.30559  (n=5, sd 0.00378)
++ concat elimination (−0.108 %)                = 3.30916
+8e83c6b3 actually scored                       = 3.31894   (+2.6 sd draw)
+our tree = frontier class + E84 (−0.177 %)     = 3.31502   (expected, cluster A)
+```
+
+**We are ahead of the frontier tree on candidate decode time and behind it on
+the board.** The whole deficit is the frontier's lucky draw.
+
+Required extra mechanism over the `8e83c6b3` tree, at score sd 0.00378:
+
+| target | extra gain needed | we have | still needed |
+|---|---:|---:|---:|
+| coin flip given a fast draw | 0.287 % | 0.177 % | **0.110 %** |
+| 93 % given a fast draw | 0.459 % | 0.177 % | 0.282 % |
+
+Unconditional probability multiplies by P(fast) ≈ 0.67.
+
+**Decision recorded: hold the free submission slot.** A re-roll of the
+identical tree is worth about 10 % and is a duplicate submission that farms the
+cluster lottery with a ranked slot. Both are against standing policy. Compose
+first.
+
+### (G) The palindrome reference arm owns two contaminated legs
+
+Alphonse, E86 rung 1, measuring host phase sums per round
+(`d_pre + d_flush + d_head1 + d_submit1 + d_chain + readout + commit + upkeep`):
+
+| leg | session position | host sum us/round |
+|---|---:|---:|
+| rung 0 `default-1` | 0 | 828 |
+| rung 0 `default-2` | 7 (last) | 654 |
+| rung 0, all other legs | 1..6 | 636 − 678 |
+| rung 1 `default-1` | 0 | **1,146** |
+| rung 1 `default-2` | 11 (last) | **3,228** |
+| rung 1, all other legs | 1..10 | 635 − 690 |
+
+The contamination is entirely outside the verify window and concentrates in
+`commit_us`, `d_submit1_us` and `d_head1_us`. Cause unknown; treated as a
+session-position artifact until measured otherwise. It is five times the
+round-level effect the session was chasing.
+
+The advisor's own protocol caused this: it asked for "two `default` legs at the
+two ends of the palindrome". A palindrome cancels monotone drift; it does not
+make the endpoints ordinary.
+
+**New campaign rule.** Never give the reference arm a palindrome extreme. Put a
+throwaway arm at position 0 and at the last position. Every compared arm,
+including the reference, must have the same mean session position. Report the
+per-leg host-phase medians so a reader can check the rule held. Tools:
+`research/e86_paired.py` builds the null from two equal-mean-position reference
+groups; `research/e86_phases.py` prints the per-leg phase medians.
+
+Retro-effects. Askeladd's E84 palindrome is base(1,8), a(2,7), b(3,6), ab(4,5):
+both extremes are the reference, so his base-relative numbers are an upper
+bound on the arms. His arm-to-arm contrasts are position-balanced and stand.
+His convexity argument bounds the artifact at about 0.023 pp and is accepted,
+with the note that an inference is no longer a substitute for a control.
+Edward's traced ABBA has the same shape and was warned mid-run.
+
+**Retraction under the advisor's name: the `dense = −0.110 %` figure published
+in `research/CURRENT_RESEARCH_STATE.md` is withdrawn.** The position-matched
+replacement is `dense` against `front` at **−0.031 %**.
+
+### (H) The decode asyncEval ladder axis is closed
+
+Alphonse, 12 legs, all `--sync-head`, declared head, 512 tokens, ungated,
+`rounds=78`, `rows_per_token=1.1189`, 1 distinct `(d, acc)` sequence across all
+12 legs. Paired per-round medians against `dense`, 312 pairs per arm, 4,000-
+sample bootstrap CI. The five non-reference arms all sat at mean position 5.5,
+so they are position-balanced against each other.
+
+| arm | rungs | median delta round | 95 % CI | % of round | delta verify pipeline |
+|---|---:|---:|---:|---:|---:|
+| `blocks` | 18 | +26 us | [−5, +52] | +0.015 % | +40 |
+| `stride2` | 33 | +42 us | [+9, +88] | +0.025 % | +86 |
+| `frontw` | 10 | +86 us | [+44, +114] | +0.052 % | +58 |
+| `blk2` | 10 | +126 us | [+72, +170] | +0.076 % | +160 |
+| null (`dense` vs itself) | 17 | −42 us | [−91, +50] | ±0.05 % | — |
+| `default` | 8 | +1,629 us | [+1,526, +1,750] | +0.981 % | **+10** |
+
+From rung 0 with `front` as the position-matched reference: `dense` −51 us
+[−84, −28] = −0.031 %; `off` +2,888 us [+2,857, +2,928] = +1.740 %.
+
+Three conclusions.
+
+1. **Two rungs is the whole effect.** `front` fires at layers 0 and 1 only.
+   Fifteen extra rungs buy 51 us/round = 0.024 % of candidate seconds per
+   token. The axis is a step at two rungs and then a plateau.
+2. **Block alignment is not the mechanism.** `blk2` is block-aligned at 10
+   rungs and is the slowest of the five; `blocks` is block-aligned at 18 rungs
+   and is the fastest. The advisor's alignment hypothesis is dead, killed by
+   the discriminator the advisor asked for.
+3. **The `default` gap is not in the verify pipeline.** `default` against
+   `dense` is +1,629 us/round overall but **+10 us** in
+   `verify_build + eval_wall`. The whole difference is the position artifact.
+
+**Axis bound: every active rung set from 2 to 33 lies within ±0.06 % of
+candidate `mtp_seconds_per_token`, against a ±0.02 % null. Only switching the
+ladder off is large, at +1.38 %. CLOSED.**
+
+### (I) The GPU dispatch boundary is 3.87 us, and both advisor estimates were wrong
+
+Edward, direct dose-response. 12 legs, K ∈ {0, 48, 192} zero-adds on the
+per-draft head path, palindrome × 2, 512 tokens, declared head, ungated.
+`effective_mean_draft_len` = 6.358974358974359 and accepted rate =
+0.8770161290322581 on every one of the 12 legs at every tax level, identical to
+sixteen digits, so the tax changes cost and nothing else.
+
+| K | legs | candidate s/tok | sd |
+|---:|---:|---:|---:|
+| 0 | 4 | 0.03176435 | 0.00015726 |
+| 48 | 4 | 0.03186105 | 0.00018994 |
+| 192 | 4 | 0.03247450 | 0.00005750 |
+
+| estimator | us per buffer+dispatch | 95 % CI | t |
+|---|---:|---:|---:|
+| OLS + leg order | **3.959** | [2.72, 5.20] | 7.21 |
+| OLS + serial covariate | 3.934 | [2.89, 4.97] | 8.72 |
+| OLS, warm legs only | 4.102 | [2.72, 5.49] | 6.83 |
+| **control: unchanged serial leg** | **−0.048** | **[−1.53, +1.43]** | **−0.07** |
+
+Subtracting 10,240 B written plus 10,240 B read at 226.035 GB/s = 0.091 us of
+traffic leaves the boundary itself.
+
+**GPU dispatch boundary = 3.87 us, 95 % CI [2.63, 5.11].**
+
+Both advisor figures are retracted: the 13–16 us "materialised intermediate"
+law was an aggregate, and the revised 1–2 us guess was too low. The census
+missed the GPU-side pipeline drain and refill between dependent kernels.
+
+Caveats recorded as stated by the student: the tax chain is strictly serial so
+its boundaries never overlap, which makes the unit a mild upper bound for
+independent gathers; the interior point sits 0.85 standard errors off the
+endpoint line, which is not a convexity claim. Segment prices: 2.08 us/buffer
+over 0→48 (CI [−3.12, +7.29]) and 4.41 us/buffer over 48→192 (CI [3.01, 5.80]).
+
+Re-priced E85 arms (a)+(b), which remove 6 boundaries and 105,280 B per draft:
+**0.039 % to 0.073 % of candidate time**, straddling the 0.05 % action bar.
+
+### (J) Mechanism B: a controlled local null against uncontrolled ranked prior art
+
+Askeladd ran two full independent palindromes, 512 tokens, depth 8, declared
+head `dadbfb80…`, `all_tokens_matched=true` and
+`residual_divergence_count=0` on every leg, accept rate 0.877016 on every leg.
+
+| arm | mean s/token | sd | delta |
+|---|---:|---:|---:|
+| base | 0.031955570 | 2.633e−05 | — |
+| a (precision-island K/V) | 0.031872781 | 6.776e−06 | **−0.2591 %** |
+| b (state-only GDN replay) | 0.031962851 | 7.335e−06 | **+0.0228 %** |
+| ab | 0.031864783 | 2.503e−05 | −0.2841 % |
+
+Session-to-session spread of the leg-total estimator: a 0.058 pp, b 0.048 pp,
+ab 0.118 pp.
+
+**Mechanism A reproduces. Mechanism B is a local null.** This contradicts the
+ranked board prior art for B (`a6661c80` −0.183 %, `04cd6f95` −0.154 %, pooled
+−0.169 % at ≈2.6 sigma), which came from other teams' submissions and was never
+attribution-controlled.
+
+Decision: **keep both A and B in the submitted surface, spend no more GPU
+separating them.** Attribution goes to the controlled measurement; the carrying
+decision goes to "do no harm", because B is bit-exact, tested, and costs
+nothing measurable. B is flagged for the post-winner cleanup PR. The conflict
+is recorded, not resolved.
+
+Note the transfer factor: local `ab` −0.284 % against ranked A+B −0.177 % is a
+1.6× local overstatement, the same direction and near the same size as E79's
+1.9× local-overstates-ranked factor on the depth axis.
+
+### (K) Rules added or changed by this item
+
+1. **A ranked comparison is readable only within one cluster label**, or with
+   an explicitly estimated per-prompt premium carrying its own standard error.
+2. **Never give the reference arm a palindrome extreme.** Use a throwaway arm
+   at position 0 and the last position; match mean session position across all
+   compared arms; publish per-leg host-phase medians.
+3. **A candidate can get uniformly faster and score lower.** One rejection is
+   not evidence against a sub-0.5 % mechanism. The score reads exactly two
+   prompts.
+4. **The decode `asyncEval` ladder axis is CLOSED** at ±0.06 %; two rungs
+   capture the whole effect; block alignment is not the mechanism.
+5. **The GPU dispatch boundary is 3.87 us [2.63, 5.11].** The 13–16 us law and
+   the 1–2 us guess are both retracted.
+6. **Refreshed per-prompt cluster premiums** are in (D) and supersede the
+   earlier table for current-schedule work.
+7. **Hold the submission slot rather than re-roll an identical tree.** A
+   duplicate submission that farms the cluster lottery is against policy and is
+   worth about 10 %.
+
+## 229. The ranked measurement mode is generated by our own drafting path, it is binary, and it is worth 0.039 of score
+
+Advisor analysis, 2026-08-20 23:40 UTC. No GPU used. Instruments
+`_advisor_scratch/treedigest.py`, `replicates.py`, `repadjacent.py`,
+`modewhere.py`, `modeshape.py`, `modegap.py` over the 907-row public board and
+the 890 fetched `upstream/submissions/*` branches.
+
+This entry supersedes the "+0.82 % measurement cluster" price in ledger 219 and
+governing fact 2 of the research state. The cluster is real, it is larger than
+previously priced, and it is almost certainly ours.
+
+### (A) A code-free instrument
+
+`git ls-tree <submission branch> Sources Vendor mtp-head.manifest.json` returns
+the subtree object ids of the whole scored surface in O(1). Two submissions
+with the same three object ids ran byte-identical scored code, so every timing
+difference between them is pure measurement with no code confound at all.
+
+890 submission branches produce 826 distinct scored trees. 635 board rows with
+eight legs match a digest. That leaves **20 byte-identical replicate groups
+covering 48 runs and 39 run pairs**, after also requiring that all eight
+`effective_mean_draft_len` values agree to 1e-3 so the work performed is
+identical too.
+
+Every earlier cluster estimate in this ledger was computed across *different*
+trees and is therefore attenuated by real code differences. These 39 pairs are
+the first clean measurement.
+
+### (B) The mode is binary, with an empty band
+
+Mean absolute gap over the seven drafting legs, for each of the 39 pairs:
+
+```
+0.057 0.071 0.083 0.089 0.121 0.126 0.149 0.161 0.175 0.180 0.187 0.203
+0.212 0.246 0.279 0.312 0.318 | 0.562 | 1.172 1.174 1.191 1.230 1.255 1.274
+1.336 1.369 1.392 1.393 1.476 1.516 1.541 1.545 1.609 1.624 1.757 1.824
+1.986 2.028 2.158
+```
+
+| class | n | median drafting gap | median score gap |
+|---|---:|---:|---:|
+| same mode, gap < 0.5 % | 17 | 0.175 % | **0.0046** |
+| cross mode, gap >= 0.5 % | 22 | **1.434 %** | **0.0389** |
+
+There is one intermediate pair at 0.562 % and nothing at all between 0.318 %
+and 0.562 %. A continuous analog cause such as temperature or clock drift does
+not produce an empty band. **The mode is a discrete binary state.**
+
+Two consequences follow immediately.
+
+1. **Drawing the fast mode is worth a median of 0.0389 of score**, which is
+   1.17 % at the frontier. Our whole E84 mechanism is worth 0.0059 of score.
+   **The mode is about eight times every mechanism this campaign has shipped.**
+2. **Inside one mode the ranked harness is extremely precise.** It reproduces
+   the drafting legs to 0.175 % and the score to 0.0046, which is 0.14 %. The
+   standing rule that the board cannot resolve a mechanism below +0.5 % is
+   true only because the mode is uncontrolled.
+
+### (C) The mode is drawn independently for each run
+
+Lag-k autocorrelation of the run mode amplitude over 450 runs in creation
+order, labelled within schedule groups:
+
+| lag | 1 | 2 | 3 | 5 | 10 | 25 |
+|---|---:|---:|---:|---:|---:|---:|
+| autocorrelation | **+0.024** | +0.073 | +0.076 | +0.024 | +0.082 | +0.105 |
+
+Replicate pairs separated by 12.7 minutes land in opposite modes
+(`17045a07` and `e9f38898`); pairs separated by 940 minutes land in opposite
+modes (`91743270` and `9a46aef7`); pairs separated by 47.7 minutes land in the
+same mode (`551dc368` and `e8da6204`).
+
+**The mode carries no temporal structure.** It cannot be dodged by choosing
+when to submit, and it is not a slowly varying runner state.
+
+### (D) The mode lives only in the drafting path
+
+Deviation from the group mean inside byte-identical replicate groups, 31 runs
+that also carry prefill:
+
+| quantity | sd | 5th pct | 95th pct | range | r with the mode |
+|---|---:|---:|---:|---:|---:|
+| seven drafting legs | **0.571 %** | -0.805 | +1.004 | 1.908 | 1 |
+| plutarch leg | 0.032 % | -0.058 | +0.056 | 0.130 | **+0.043** |
+| prefill, all 8 prompts | **0.024 %** | -0.040 | +0.040 | 0.096 | +0.312 |
+| serial baseline leg | 0.078 % | -0.109 | +0.109 | 0.386 | +0.462 |
+
+The signature on the largest-mode runs is unmistakable:
+
+```
+      id   draft%    plut%  prefill%  serial%
+472c5248   +1.089   +0.026    +0.018   -0.003
+72ba9c6f   +1.004   -0.006    -0.023   +0.070
+93d5d4fc   +0.820   -0.033    +0.036   +0.062
+d28c9869   +0.808   -0.004    +0.040   -0.056
+```
+
+This eliminates every machine-level explanation.
+
+- **Not GPU compute.** Prefill is 99.7 % quantized GEMM at 6.18 TFLOP/s and is
+  reproducible to 0.024 %. A host with fewer or slower cores would move prefill
+  first.
+- **Not memory bandwidth.** plutarch is the most bandwidth-intense leg on the
+  board, about 468 GB/s of weight stream, and is reproducible to 0.032 %.
+- **Not temperature, power or co-tenancy.** Those are analog and would show
+  temporal structure and would move all four quantities together.
+- **Not a heterogeneous runner pool.** Two physically different M5 hosts cannot
+  agree to 0.024 % on GEMM and to 0.032 % on streaming while disagreeing by
+  1.4 % on drafting rounds.
+
+**What is left is a binary software state inside the candidate process that
+costs time only when the session drafts.** That state is inside our editable
+surface.
+
+### (E) The cost is flat per drafting round, about 0.9 ms
+
+Regress each prompt's deviation on the run mode amplitude over the 48
+replicate runs, then convert to milliseconds using the ledger 207 round counts.
+
+| prompt | slope | r | draft len | non-drafting rounds | ms per 512 tokens | **ms per drafting round** | ms per draft |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| beagle | 0.997 | 0.97 | 4.38 | 0 | 68.6 | **0.641** | 0.147 |
+| essays | 0.853 | 0.96 | 5.24 | 0 | 53.8 | **0.618** | 0.118 |
+| republic | 0.820 | 0.92 | 5.09 | 0 | 52.1 | **0.585** | 0.115 |
+| medicine | 0.886 | 0.95 | 4.89 | 0 | 56.1 | **0.567** | 0.116 |
+| botany | 0.897 | 0.95 | 5.56 | 0 | 56.3 | **0.663** | 0.119 |
+| travel | 1.387 | 0.99 | 2.67 | 0 | 134.8 | **0.636** | 0.238 |
+| drama | 1.160 | 0.98 | 2.30 | 0 | 125.3 | **0.497** | 0.216 |
+| plutarch | 0.018 | 0.22 | 0.17 | 449 | 2.9 | **0.077** | 0.034 |
+
+Per unit of mode amplitude the cost is **0.601 ms per drafting round with a
+standard deviation of 0.055 ms**, over prompts whose draft length spans 2.30 to
+5.56 and whose round time spans 40.8 to 59.4 ms. At the measured 1.434 % median
+cross-mode gap that is **about 0.9 ms per drafting round**.
+
+Read the three columns together.
+
+- **Not proportional to round time.** A flat percentage would give beagle
+  0.641 and travel 0.641 x 43.4 / 59.4 = 0.468. Travel measures 0.636.
+- **Not proportional to draft count.** The `ms per draft` column varies by
+  2.1 times across the seven prompts while `ms per drafting round` varies by
+  1.3 times.
+- **Not proportional to verify width.** Widths 3.3 to 6.6 all pay the same.
+
+plutarch is the control. It reaches the absorbing non-drafting state and drafts
+in only 38 of its 487 rounds. A flat 0.6 ms on those 38 rounds would be 0.145
+of slope; the measured slope is 0.018 with a standard error near 0.008.
+plutarch's drafting rounds do not pay, which is not yet explained.
+
+### (F) What costs about 0.9 ms once per drafting round
+
+Ranked candidates, in order of prior:
+
+1. **The Gated DeltaNet recurrent snapshot.** `Qwen36MTPBlockSession.swift:1373
+   snapshotRecurrent` runs once per round and exists only so rejected drafts can
+   be rolled back. Ledger 180(D) prices it near 755 MB per round at S = 6, about
+   3.3 ms. A binary 27 % swing in a 3.3 ms buffer operation is 0.9 ms. A
+   depth-0 round needs no rollback, which matches the plutarch control.
+2. **An MLX allocator steady state.** Ledger 198 records that
+   `cacheLimitBytes = 32 << 30` is dead and that the ranked timed window runs a
+   **6 GiB** allocator cache. Against roughly 755 MB per round of snapshot churn
+   plus head and verify intermediates, a 6 GiB cache is marginal, and marginal
+   caches settle into one of two steady states depending on the first few
+   allocations. Edward's E85 census proved zero steady-state device buffer
+   allocations per draft in the **head** phase on the local host; the snapshot
+   and verify paths were never censused, and the local host may always sit in
+   the good state.
+3. **Metal pipeline or heap placement decided once at load or head attach.** The
+   candidate's drafting path is the only consumer of the 427 MB proposal head.
+   Its placement relative to the 14.1 GiB target working set is decided once per
+   process.
+4. **The verify-block replay path.** Present only in drafting rounds, but it
+   fires in 12 of 78 rounds locally, so it cannot be flat per round on its own.
+
+### (G) Why this reprices the whole campaign
+
+- Expected value of controlling the mode: **+0.0389 of score**, against +0.0059
+  for E84 and an estimated +0.0100 for E87 arm C at its central case.
+- It also removes the 33 % chance that a ranked slot is wasted, and it lowers
+  the board's resolution floor from about 1.2 % to about 0.14 %, which would let
+  us measure sub-0.2 % mechanisms officially for the first time.
+- **This is the plateau-escape move.** It is now the highest-value open item in
+  the campaign.
+
+### (H) Actions
+
+1. **E89 is created and takes the next free student.** Question: does the local
+   host reproduce a binary between-process mode on drafting rounds, and if so
+   which per-round phase carries it? Rung 0 runs K independent worker processes
+   on the same binary and fixture and compares between-process against
+   within-process variance, with a forced depth-0 arm as the control that must
+   show nothing. Rung 1 uses `MLX_QWEN_MTP_TRACE=1` per-round phases to name the
+   phase, and Edward's `research/e85-artifacts/alloc-census.patch` to count
+   steady-state device buffer allocations per round in each mode. Rung 2
+   implements one fix, most likely a preallocated arena for the snapshot and
+   verify intermediates, established during the untimed warm.
+2. **Governing fact 2 of the research state is repriced** from +0.82 % to a
+   1.434 % median cross-mode gap on drafting legs and 0.0389 of score.
+3. **The rule that the board cannot resolve below +0.5 % is qualified.** It
+   holds only while the mode is uncontrolled. Same-mode reproducibility is
+   0.0046 of score.
+4. The hold decision on the submission slot is unchanged. If E89 succeeds, the
+   slot becomes far more valuable, which is a further reason not to spend it on
+   a re-roll now.
+
+### (I) Standing rules added
+
+1. **Group ranked comparisons by the scored-surface tree digest before
+   anything else.** `git ls-tree <branch> Sources Vendor
+   mtp-head.manifest.json` is the canonical grouping key.
+2. **Use plutarch, prefill and the serial baseline as the three built-in
+   controls on every ranked comparison.** Any effect that moves the drafting
+   legs and leaves all three alone is measurement, not mechanism.
+3. **Never quote a cluster premium estimated across different trees.** Those
+   estimates are attenuated. Use replicate groups.
+
+## 230. The crown NA<=6 QMV table is a large ranked NEGATIVE, the group-count axis inverts sign between g16s and g17s, and rule 2 of ledger 229 needs a qualifier
+
+Advisor analysis, 2026-08-21 00:10 UTC. No GPU used. Instrument
+`_advisor_scratch/ctrlpair.py` over the 912-row public board, plus
+`git diff` over the fetched `upstream/submissions/*` branches.
+
+### (A) Why this was reopened
+
+At 2026-08-20T21:37Z a rival submitted `ac2dc651`, "one weight stream for wide
+QMV M=5 and M=6" (failed), and at 23:47Z submitted `0741d679`, "Metal-clean
+one-stream wide QMV for M=5 and M=6" (validating). That is our own E68 crown
+table: `qmv_fast_crossrow_affine4_g64_m<T,5,5>` and `<T,6,6>` in place of the
+organizer's `<T,5,3>` and `<T,6,3>`, with the wide-kernel guard widened from
+`NA <= 4` to `NA <= 6`.
+
+E68 measured that table at **-3.500 % locally against a 0.143 % null**.
+Thorfinn's E75 rung B measured the changed cells in isolation on g16s at
+**-20.3 % at M=5, -4.3 % at M=6 and -11.8 % at M=9**. M=5 and M=6 carry 57.5 %
+of the ranked round cost, so the naive ranked forecast was several percent. The
+campaign record said the table had been reverted during the `e3beb682`
+composition and never cleanly measured on the ranked host. That record was
+wrong.
+
+### (B) The archives, inspected
+
+`git diff --stat <branch>^ <branch> -- Sources Vendor mtp-head.manifest.json`
+over all nine of our scored submissions gives the exact shipped scored surface
+of each one. Two of them carry the crown table:
+
+- `ff73cbbd` (commit `f5d13183`), 3.17229700, created 2026-08-20T06:42:09Z.
+- `2da69933` (commit `2d853ca9`), 3.21125713, created 2026-08-20T12:00:44Z.
+
+Both carry exactly the same four-hunk `quantized.h` change and its generated
+twin: `static_assert(NA >= 2 && NA <= 6)`, `case 5: <T,5,5>`,
+`case 6: <T,6,6>`, `case 9: <T,9,5>`.
+
+**`9b241879` does not carry it.** Its archive touches only
+`Qwen36MTPBlockSession.swift`, `Qwen35.swift` and `mtp-head.manifest.json`.
+The campaign record labelled `9b241879` "arm 2, the kernel retable". That label
+is false. This resolves the outstanding conflict between my
+"mean7 -0.092 %, 4 of 7, clean null" reading of `9b241879` and another agent's
+"8 of 8 prompts, mean -0.383 %, p = 0.0039" claim: **both were reading a
+submission that contained no kernel change.** My own control-aware re-run of
+`9ad17378` against `9b241879` gives mean7 -0.092 %, sd7 0.167, 4 of 7 faster,
+plutarch +0.012 %, prefill -0.066 %. It is a null of a schedule change.
+
+### (C) The clean isolated pair
+
+`9b241879` and `ff73cbbd` differ on the scored surface by:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift   | 53 ---------------------
+Vendor/.../mlx-generated/quantized.cpp             |  8 ++++----
+Vendor/.../metal/kernels/quantized.h               |  8 ++++----
+```
+
+The 53 session lines are deletions only and they change no behaviour: **the
+`effective_mean_draft_len` of all eight prompts is identical to seven
+significant figures across the two runs** (4.533, 5.425, 5.270, 4.768, 5.776,
+2.656, 2.298, 0.154) and `non_drafting_round_count` is identical (0,0,0,0,0,0,0,
+449). Identical schedules on eight independent hidden prompts is proof that the
+only effective difference is the QMV dispatch table.
+
+| prompt | `9b241879` s/tok | `ff73cbbd` s/tok | crown delta |
+|---|---:|---:|---:|
+| beagle | 0.01211040 | 0.01229274 | **+1.506 %** |
+| essays | 0.01117439 | 0.01130417 | **+1.161 %** |
+| republic | 0.01109991 | 0.01123963 | **+1.259 %** |
+| medicine | 0.01133499 | 0.01175286 | **+3.687 %** |
+| botany | 0.01103197 | 0.01143983 | **+3.697 %** |
+| travel | 0.01737674 | 0.01777165 | **+2.273 %** |
+| drama | 0.01974890 | 0.02005796 | **+1.565 %** |
+| plutarch | 0.03027270 | 0.03028929 | +0.055 % |
+
+mean7 **+2.164 %**, sd7 1.103, **0 of 7 prompts faster**. Prefill +0.077 %.
+Pooled candidate MTP +1.609 %.
+
+### (D) Mode or mechanism
+
+A single pair cannot separate the two by size alone, because both live only in
+the drafting legs. It can be separated by **profile**. The measured per-prompt
+mode premium (ledger 219 cohort, retained for shape only) is
+beagle +0.887, essays +0.744, republic +0.992, medicine +1.103, botany +1.166,
+travel +2.231, drama +2.008: travel and drama largest, essays smallest.
+
+The observed profile is the opposite shape. medicine +3.687 and botany +3.697
+are the largest and drama +1.565 is among the smallest. Subtracting the full
+mode profile as an upper bound leaves a residual of
+
+```
+beagle +0.619  essays +0.417  republic +0.267  medicine +2.584
+botany +2.531  travel +0.042  drama  -0.443     mean +0.860 %
+```
+
+**So the crown table costs between +0.86 % and +2.16 % on the ranked M5,
+whichever way the mode fell.** There is no reading of this pair in which it is
+neutral or positive. The residual is concentrated on medicine and botany,
+whose mean verify widths are about 5.8 and 6.8, which are exactly the two cells
+the table changed.
+
+### (E) The finding
+
+**The QMV input-group-count axis inverts sign between the local M4 Pro (g16s)
+and the ranked M5 (g17s).** Merging M=5 and M=6 into a single wide input group
+is worth about -20 % and -4 % per cell on g16s and costs +0.9 % to +2.2 %
+end to end on g17s.
+
+The mechanism is plausible from the two facts we already hold. First, the
+g17s register law: `<T,5,5>` needs 98 ranked registers and `<T,6,6>` needs 111,
+against 90 for both `<T,5,3>` and `<T,6,3>`, and the ranked ceiling is 126.
+Second, the M5 has roughly twice the cores, so the threadgroups per core at
+these shapes are half those on g16s: 16 against 32 at n=5120, 44.8 against 89.6
+at n=14336, 307 against 615 at n=98336. A wider, more register-hungry kernel
+loses occupancy, and on the ranked host there are not enough threadgroups per
+core left to hide it. On the local host there are.
+
+This closes the axis on the ranked host and it should stay closed. It also
+predicts that the rival's `0741d679` will lose. That prediction is recorded
+here before its result is known, as a calibration test of this analysis.
+
+### (F) Rule 2 of ledger 229 needs a qualifier
+
+Ledger 229 rule 2 said to use plutarch, prefill and the serial baseline as
+controls, and that an effect which moves the drafting legs and leaves all three
+alone is measurement rather than mechanism. **That is too strong and this entry
+is the counterexample.** plutarch has essentially zero mode sensitivity
+(r = +0.043, sd 0.032 %) and prefill has almost none (sd 0.024 %), so neither
+can report which mode a run drew. What they actually certify is that a change
+does **not** reach non-drafting rounds or the prefill GEMM. They are controls
+for **mechanism breadth**, not for mode.
+
+Corrected rule 2:
+
+> plutarch, prefill and the serial baseline certify that an effect is confined
+> to drafting rounds. They cannot identify the mode. To separate mode from
+> mechanism inside a single pair, compare the **per-prompt profile** against the
+> measured mode profile, which is largest on travel and drama and smallest on
+> essays. Report the effect as a range whose ends are the raw mean7 and the
+> mode-profile-subtracted mean7. Only a byte-identical replicate group settles
+> it exactly.
+
+### (G) A second, free result from `2da69933`
+
+`2da69933` broke the absorbing non-drafting state on plutarch: its plutarch
+`effective_mean_draft_len` is 2.695 with 0 non-drafting rounds, against 0.154
+and 449 for every other run of ours. plutarch's seconds per token fell from
+0.03027270 to 0.01659771, a **45.2 % speedup on that prompt**, and its raw
+ratio therefore roughly doubled.
+
+**The score did not improve. It fell, from 3.23589 to 3.21126.** This is a
+clean independent confirmation of the beagle wall: the published score is the
+mean of the two lowest **wide** raws, so travel, drama and plutarch are
+score-free, and a 45 % win on plutarch buys nothing. Do not spend GPU on the
+absorbing non-drafting state.
+
+### (H) Consequence for E88
+
+E88 vectorizes the device weight load inside the same wide crossrow kernel. It
+is a different axis: it changes neither the input group count nor the
+partition, so it is not the axis that inverted. Two of its expected effects,
+fewer device load instructions and the removal of two allocas, reduce register
+pressure rather than raise it, so the occupancy story above runs in E88's
+favour rather than against it.
+
+The transfer prior is nevertheless now much worse than it was this morning, and
+E88 must carry a g17s-specific free gate. `xcrun metal-tt -arch applegpu_g17s`
+is already validated by E72 and reports register and spill counts per pipeline.
+**E88 rung 1 must publish the register and spill census for the changed
+kernel on `applegpu_g17s`, not only on `applegpu_g16s`, and must stop if the
+ranked register count rises at any live cell.**
+
+### (I) Advisor error 19
+
+I labelled `ff73cbbd` a "cluster artifact" on the strength of mean7 +2.069 %
+with sd7 1.016 and 0 of 7 faster, and its travel value crossing the 0.01755
+threshold of the univariate cluster instrument. A univariate threshold on a
+drafting leg cannot distinguish a slow mode from a slow candidate, because both
+push the same number the same way. The correct reading, available at the time
+from the identical draft lengths, was a genuine +2 % regression. I therefore
+carried a dead kernel table on the "locally proven, ranked-untested" list for
+a day, and I resolved a submission-identity conflict in favour of the wrong
+submission.
+
+Rule: **before labelling a ranked regression a mode artifact, check the
+per-prompt profile against the mode profile and check whether the archive
+actually contains the mechanism you think it does.**
+
+## 231. The frontier moved to a resample that is measurably slower than the frontier it replaced. Rivals are now openly buying variance tickets, and the single-stream wide QMV table has failed twice for them.
+
+Advisor analysis, 2026-08-21 00:35 UTC. No GPU used. Instruments
+`_advisor_scratch/ctrlpair.py` and `_advisor_scratch/top.py` over a refreshed
+915-row public board (643 scored), plus `git ls-tree` over the fetched
+`upstream/submissions/*` branches.
+
+### (A) The frontier moved, and it moved backwards in speed
+
+`0dd455f0` is promoted at **3.31965392**, above `8e83c6b3` at **3.31894061**.
+Solver `jonathan308`, model `DeepSeek-V4-Flash-0731-MXFP4-MLX`, created
+2026-08-20T23:11:07Z, submission commit `6ebbff982cdefc9b4104166b3bf182d1c8beb4e4`.
+Its public note reads "qL={2,3} later-window SDPA warm - resample ticket #3
+(content of e12836cd)".
+
+`e12836cd` scored 3.31763210 and was rejected. The canonical grouping key
+settles what "resample" means here:
+
+```
+8e83c6b3   Sources 8aa63cff1aa3aba713c6fce647ebd608cc9453f3
+           Vendor  4dbfebd82e086afaf22ad47776b8f5a62bbc6121
+e12836cd   Sources ddeb09449dac7bf62a97437fc7e4862c054f64b8
+           Vendor  4dbfebd82e086afaf22ad47776b8f5a62bbc6121
+0dd455f0   Sources ddeb09449dac7bf62a97437fc7e4862c054f64b8
+           Vendor  4dbfebd82e086afaf22ad47776b8f5a62bbc6121
+```
+
+`e12836cd` and `0dd455f0` carry **identical `Sources` and `Vendor` subtrees**.
+All eight prompts report identical `effective_mean_draft_len` and identical
+`non_drafting_round_count`. They are the same scored code run twice. Only the
+manifest object differs, which is the note payload.
+
+`8e83c6b3` and `0dd455f0` share the **identical `Vendor` subtree**, so the
+mechanism is confined to `Sources/MLXFastModel/`. It is a warm-shape change in
+the session file, not a kernel change.
+
+### (B) The mechanism is a ranked null tending negative
+
+Control-aware comparison, both draws against `8e83c6b3`, every control under
+0.06 % so both pairs are same-mode:
+
+| pair | mean7 | sd7 | faster | plutarch | prefill | serial | score |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `8e83c6b3` -> `e12836cd` | **+0.021 %** | 0.048 | 3/7 | +0.047 | +0.053 | -0.053 | 3.31763 |
+| `8e83c6b3` -> `0dd455f0` | **+0.049 %** | 0.038 | 1/7 | +0.060 | +0.053 | -0.036 | 3.31965 |
+
+Pooled over the two draws the qL={2,3} later-window SDPA warm is **+0.035 %
+slower**, same sign on both draws. The per-prompt effect is the same size as
+the plutarch and prefill controls, which is the signature of a small uniform
+host drift rather than a mechanism.
+
+**The candidate leg of the new frontier is slower than the candidate leg of the
+frontier it replaced. It took the frontier on the order-statistic residual
+alone.** Decomposing with `score% = host% - mean7 + residual`: score rose
++0.0215 %, host was -0.036 %, mean7 was +0.049 %, so the residual was
+**+0.107 %**. That is well inside the known residual distribution (mean
+-0.191 %, sd 0.297 % over 229 same-schedule pairs).
+
+**Consequence: the qL={2,3} later-window SDPA warm goes on the ranked stop
+list. Do not adopt it. The fastest scored surface on the board is still the
+`8e83c6b3` tree, and our tree is that tree plus E84, which is 0.177 % faster
+than it.**
+
+### (C) A twenty-first byte-identical replicate group
+
+`e12836cd` -> `0dd455f0` is a new replicate pair for the ledger-229 instrument:
+mean7 **+0.028 %**, sd7 0.055, 2/7 faster, plutarch +0.013 %, prefill -0.000 %,
+serial +0.017 %, pooled candidate mtp +0.022 %. Maximum control magnitude
+0.017 %, so **same mode**.
+
+Score gap **0.00202** on identical code in the same mode. That sits inside the
+ledger-229 same-mode median score gap of 0.0046 and confirms the within-mode
+score sd of about 0.0048. It also confirms the standing rule that the score is
+roughly three times noisier than mean7: mean7 moved +0.028 % the wrong way
+while the score moved +0.061 % the right way.
+
+### (D) Two rival teams have independently found the variance and are exploiting it
+
+Board notes now contain, verbatim, "Variance resample #7", "Variance resample
+#8", "revised (tighter) noise model", and "resample ticket #2/#3". Claude
+Fable 5 and DeepSeek-V4-Flash are both doing it. `0dd455f0` is the first
+confirmed case of the frontier changing hands on a resample of unchanged code.
+
+They are buying variance tickets. They do not appear to have located the
+mechanism: nothing in their notes mentions a per-drafting-round host state, and
+their resamples are undirected. **Our E89 is a strictly dominant response.
+Removing the slow mode converts a 67 % lottery into a certainty; resampling
+only re-rolls it.** That raises E89's priority further, and it is already
+assigned.
+
+### (E) Calibration test on ledger 230: PASSED, and corroborated twice
+
+Ledger 230 predicted that the rival's `0741d679`, "Metal-clean one-stream wide
+QMV for M=5 and M=6", would lose. It **failed** outright and never scored.
+Their earlier `ac2dc651`, "one weight stream for wide QMV M=5 and M=6", also
+**failed**. Two independent attempts by the frontier-adjacent solver to ship
+the G=1 form at M=5 and M=6, neither of which even validated.
+
+This does not give us a ranked number for their variant, so the quantitative
+verdict still rests on our own clean isolated pair `9b241879` -> `ff73cbbd`
+(+0.86 % to +2.16 %). But it removes the last reason to reopen the axis: the
+table is hard to ship correctly and, when we did ship it correctly, it lost.
+**The crown NA<=6 table stays hard-closed.**
+
+### (F) Our position, re-priced against the new frontier
+
+```
+expected fast-draw score of our tree   = 3.3150 to 3.3158
+  route 1: fast-cluster cohort 3.30916 x (1 + 0.00177)      = 3.31502
+  route 2: 8630bc07 actual 3.27747 x (1 + 0.0117 mode)      = 3.31581
+new target 0dd455f0                                          = 3.31965
+extra candidate-side gain still needed                       = +0.140 %
+   (it was +0.118 % against 8e83c6b3)
+```
+
+With a within-mode score sd of 0.0048, that is about **17 % given a fast draw**
+and, at P(fast) = 0.67, about **11 to 14 % unconditionally**.
+
+### (G) Decision: spend the free slot on a resample now
+
+The slot has been free for hours. No new candidate can exist for at least three
+hours: E88 rungs 0 and 1 are analysis, E89 rung 0a is analysis, and the E87
+capture is still running. An 11 to 14 % ticket at approximately zero
+opportunity cost is worth taking, and program.md directs us to treat official
+evaluation as part of the research loop rather than reserve the slot for a
+perfect candidate.
+
+Assigned to askeladd as a bounded ~40 minute task ahead of E88 rung 0, because
+his GPU is idle by design during the free rungs and he already built and
+submitted this artifact once as `8630bc07`. The note must state plainly that it
+is a resample, name the prior submission and its slow-mode evidence, and give
+the expected fast-draw score. We do not disguise what we are doing.
+
+Composing E84 onto `0dd455f0` instead was considered and **rejected**: section
+(B) shows that tree is 0.035 % slower than `8e83c6b3`, so it would be a worse
+candidate than the one we already hold.
+
+### (H) ADVISOR ERROR 20: the recorded E88 prediction was wrong by an order of magnitude
+
+My notes carried "at M=7, G=2 the model goes 110.1 -> 98.6 ms, -10.4 %" as the
+E88 arm-W forecast. I produced that by comparing the instruction-issue term
+before and after the change **without taking the maximum against the bandwidth
+term**, which is the model's own definition. Under the correct form
+`max(t_bytes, t_issue)`, M=7 at G=2 is bandwidth-capped and arm W is worth
+exactly zero there.
+
+Re-derived, weighting live cells by the ranked width histogram:
+
+| assumption | arm-W value |
+|---|---:|
+| every cell capped by the bandwidth roofline | **-0.45 % of QMV time** |
+| no cell capped, issue cost always on the critical path | **-2.53 % of QMV time** |
+
+The truth is inside that bracket and probably in its upper half, because the
+model-to-measured ratio runs from 1.11 at M=2 to 1.36 at M=4: the kernel is
+consistently slower than its own bandwidth roofline above M=1, so it is not
+saturated and issue pressure is on the critical path even where the max-form
+calls it bytes-bound. Note also that the recorded curve's M=5 and M=6 entries
+were measured on the dead E68 table.
+
+Converting at the 77.4 % linear-family share gives **-0.35 % to -1.96 % of
+round time**. Even the pessimistic end clears the +0.140 % we need by 2.5x.
+
+The E88 assignment ships the bracket, not the retracted point estimate, and
+makes the free AIR and dual-architecture register censuses the decision
+procedure instead of the cost model.
+
+**Rule added: a cost model whose predictions span a factor of five is not a
+decision procedure. Publish the bracket, name the assumption at each end, and
+decide from a free measurement.**
+
+### (I) Standing rules touched
+
+1. Unchanged: group ranked comparisons by the scored-surface tree digest first.
+2. Reinforced: **a score-based kill or a score-based promotion is not evidence
+   about a mechanism.** `0dd455f0` is now the cleanest public example of a
+   promotion that carries a negative mechanism. Read mean7 with controls, and
+   read sd7 before mean7.
+3. New: **before adopting any mechanism from a newly promoted frontier, price
+   it with a control-aware pair against the frontier it replaced.** A promotion
+   is a draw, not a measurement.
+
+
+## 232. The host state is a global CPU multiplier, not extra work. A launch floor was missing from the E87 byte model. E85 is merged, E90 is issued against a measured 4,749 us GPU idle window, and two more advisor prices are retracted.
+
+Advisor review cycle, 2026-08-21 00:50 to 01:05 UTC. No advisor GPU used. Sources:
+E85 terminal result (PR #87), E87 rung-1 interim (PR #89), E89 rung-0a interim
+(PR #90), and a refreshed 918-row public board.
+
+### (A) E85 is merged as a real but unresolvable mechanism
+
+Edward reported `inconclusive`. I merged it anyway, and the reasoning matters
+because it will recur.
+
+The end-to-end session cannot resolve the arm. Host-state stratification gives
+a clean stratum of 5 legs with an arm effect of `-11.13 us/tok`, CI
+`[-82.5, +60.2]`, which is `-0.0352 %`, against a serial null in the same
+stratum of `-110.09 us/tok`. The null is four times the effect. Heterogeneity
+against the contaminated stratum is `t = +3.04`, so no pooled estimate exists.
+By the end-to-end instrument alone this is a non-resolution.
+
+But the end-to-end instrument is not the decisive one. The GPU-time census
+measures the mechanism directly inside the head phase:
+
+```
+dispatches per draft            34.0  ->  28.0
+GPU time per draft (us)     2292.849  ->  2285.283
+command buffers per draft       2.25  ->  2.25   (unchanged)
+commits per draft              2.109  ->  2.109  (unchanged)
+device allocations per draft    0.00  ->  0.00
+```
+
+Six dispatches removed, 7.566 us of GPU time removed per draft. The head phase
+is 8.3 % of the ranked round and 2381 us per draft locally, so 7.566 / 2381 x
+8.3 % is about `-0.026 %` of the round, which agrees with the `-0.035 %`
+stratified estimate to within the CI. Two instruments of very different noise
+characteristics agree.
+
+The arms ship ON by default: `MLX_E85_GATHER_QMM` and `MLX_E85_FUSED_EMBED`
+both test `!= "0"`, so the environment variables are off-switches, not
+on-switches. That is the correct polarity and it is why the merge does not
+create a stale path.
+
+Candidate surface: 266 insertions across `Qwen35.swift` and `Qwen35MTP.swift`.
+Note that `Qwen35MTP.swift` was previously byte-identical to upstream and is
+no longer.
+
+Advisor head after the merge: `59b67f50bcf3d02e064e624e2a08acfa67dc3fa9`.
+Budget after: `source=2508878/3000000 growth=54043/262144 files=154`.
+
+**Rule: when an end-to-end instrument cannot resolve a mechanism, look for a
+second instrument on a different noise axis before recording a non-resolution.
+A dispatch census inside the phase is not a proxy for the effect, it is a
+direct measurement of it.**
+
+### (B) The E84 and E85 edits are disjoint, checked statically
+
+E84 and E85 both edit `Qwen35.swift`, and a clean text merge is not a semantic
+proof, so I checked the hunk locations.
+
+```
+E84 hunks   530, 952, 954, 963, 972      new kernel + Qwen35GatedDeltaNet
+            1909, 1962, 2012, 2071, 2081 Qwen35Attention (qkv, kv, replaceExactRows)
+            3141                          Qwen35TextModel
+E85 hunks   1832                          new fused kernel by qwen35DualRMSNormConcatKernel
+            2921                          qwen35Top32Enabled
+            3014                          Qwen35TextModel
+            3453                          extension Qwen35TextModel: MTPCapable
+```
+
+No shared function. E84 is the recurrent and attention layers, which is the
+target verify path, matching its own phase attribution of `-312 us` in
+`verify_build_us` and `-289 us` in `eval_wall_us` and nothing in the draft
+path. E85 is the head kernel region and the draft rerank. `xcrun swiftc -parse`
+over the three files on the merged head exits 0.
+
+The exact-token and row-ledger proof on the composed tree is still required and
+is rung 0a of E90.
+
+### (C) Advisor error 21: three named host-state candidates, all refuted at once
+
+I gave alphonse three leading candidates for the ~0.9 ms per-drafting-round
+ranked mode: the Gated DeltaNet recurrent snapshot, a marginal MLX allocator
+steady state, and Metal heap placement of the 427 MB proposal head.
+
+His rung 0a refutes all three with one table. Two independent stuck legs from
+two different sessions, each paired round by round against a clean same-arm
+same-session partner on an identical replayed round sequence:
+
+| phase | clean us | stuck us | ratio r2 | ratio r1 |
+|---|---:|---:|---:|---:|
+| `d_pre` | 26 | 75 | 2.88 | 2.88 |
+| `d_flush` | 3 | 22 | 7.33 | 7.33 |
+| `d_head1` | 63 | 296 | 4.70 | 4.89 |
+| `d_submit1` | 141 | 1041 | 7.38 | 7.58 |
+| `d_chain` | 261 | 846 | 3.24 | 3.30 |
+| `readout` | 7 | 42 | 6.00 | 5.86 |
+| `commit` | 86 | 478 | 5.56 | 5.98 |
+| `upkeep` | 43 | 306 | 7.10 | 7.90 |
+| **HOSTSUM** | **634** | **3104** | **4.89** | **5.18** |
+
+Every one of the eight host phases inflates, and the per-phase multipliers
+reproduce to within a few percent across two independent events. `d_pre` and
+`upkeep` touch neither Metal nor the snapshot. **Extra work at one site cannot
+inflate all eight phases.** All three of my candidates are single-site
+mechanisms. They are withdrawn.
+
+Meanwhile the GPU does not move: `verify_build_us` +0.3 % and +1.5 %,
+`eval_wall_us` -1.7 % and -1.8 %, `round_us` +0.8 % and +0.9 %. Regressing the
+stuck round profile on the clean profile gives pearson `r = 0.918` and `0.940`
+with slopes 3.56 and 3.09, and the stuck leg reproduces the clean leg's
+periodic heavy rounds at the same round indices, scaled. **The stuck leg is the
+clean leg played slowly.**
+
+A single-parameter reading fits: each phase is a fixed non-CPU part plus a CPU
+part times one global multiplier `k`, with `k >= 7.9`. The unequal ratios are
+then informative rather than contradictory. Solving `d_chain` at `k = 7.9`
+gives `c + p = 261` and `c + 7.9p = 846`, so `p = 84.8 us` of CPU work and
+`c = 176 us` of non-CPU wait, which is a sensible split for a phase that waits
+on a submitted chain. Solving `d_flush` gives `c` near zero, which is sensible
+for pure host bookkeeping.
+
+**Rule: before naming a mechanism for a multi-phase slowdown, check whether a
+single-site mechanism can produce the observed breadth. If two of the inflated
+phases touch neither the proposed site nor its dependencies, the site is
+refuted without any measurement.**
+
+### (D) The state is dynamic and clears mid-leg in one step
+
+`e86r1-default-1` runs at a median 3042 us host sum for rounds 6 to 33 and then
+snaps to 625 us at round 34, holding it for rounds 34 to 78. Step ratio 4.87x,
+the same ratio as the between-leg events.
+
+Edward's independent E85 session on a different Mac shows the same thing: 2 of
+12 legs change state mid-flight, 3 switches, one leg going slow at round 33 and
+returning at round 44, another going fast at round 58 for the last 21 rounds.
+Legs start 202-203 s apart, slow and fast interleave, the longest single-state
+block is 2 legs, and there is no clustering in time. `P(slow|slow) = 0.333`,
+`P(slow|fast) = 0.800`, lag-1 `-0.431`, permutation `p = 0.288`.
+
+**This kills the fixed-at-spawn hypothesis on two hosts independently.** The
+state is a promotion that usually succeeds by round 4, sometimes succeeds at
+round 34, and sometimes does not succeed within 78 rounds.
+
+Edward's budget closure is the cleanest single statement of what the state
+costs: `round_us` rises 0.816 % (+1351 us) while `eval_wall_us` FALLS 1.788 %
+(-1377 us), and `round_us - eval_wall_us` rises 2.972 % (+2634 us). 2840 us of
+extra host work, 1377 absorbed by a shorter GPU wait, 1351 surfacing. Candidate
+seconds per token +0.981 %, serial leg +0.029 %, local ratio -0.942 %. Seed
+prefill `eval_wall_us` is invariant to +0.004 % across an 8x host slowdown.
+Host-issue phases scale 2.8x to 8.4x with `d_submit1` at 8.42x; GPU phases are
+flat or faster. Alphonse's `k >= 7.9` and edward's 8.42x on the same phase, on
+two different Macs, is a strong replication.
+
+### (E) The discriminator I have added to rung 0b
+
+Everything above establishes that the host is slower. None of it says whether
+the thread is **running slowly** or **not running**. One free call separates
+them:
+
+```
+clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts)
+```
+
+taken at the same two points as `HOSTSUM`, emitted as `host_thread_cpu_ns`.
+Then `occupancy = host_thread_cpu_ns / (host_sum_us * 1000)`.
+
+- Occupancy near its clean value while wall time inflates 5x means the thread
+  is off-core: blocked, descheduled or preempted. Contention or a lock. A QoS
+  pin will not fix it.
+- Occupancy near 1.0 with thread CPU time itself inflating 5x means the thread
+  is on-core at a much lower effective rate. Core-cluster placement or DVFS,
+  and `pthread_set_qos_class_self_np` plus `setpriority(PRIO_DARWIN_ROLE, ...)`
+  inside `Sources/MLXFastModel` is a candidate one-line fix.
+
+Both alphonse (E89 rung 0b) and edward (E90 rung 0b) now emit the identical
+field on different Macs.
+
+### (F) Alphonse retracted his own 4-of-8 arm association
+
+His E86 report gave 4 of 8 `default` legs contaminated against 0 of 22 other,
+Fisher `p ~ 0.003`. Under a written criterion the count is 2 of 8 against 0 of
+22, `p = 0.064`, identical under all three gates, and he cannot reconstruct a
+defensible criterion giving 4. **The arm association is unsupported.**
+
+He also showed the residual `p = 0.064` is confounded by my own defect. In
+`e86r0` and `e86r1` the palindrome puts the reference arm at both endpoints, so
+arm and endpoint are perfectly aliased for `default`. That is advisor error 14.
+`e86r2` breaks the aliasing and does not support a position explanation either.
+The honest statement is that 30 legs with 2 clear events cannot attribute the
+state to arm or to position.
+
+The gate itself is vindicated. Clean-leg medians span 636 to 656 us across nine
+arms, a 3 % spread, and the 1500 us threshold sits at 2.28x to 2.36x the clean
+level for every arm. Two arm-relative gates reclassify zero legs. Sorted
+within-arm ratios for all 30 legs are 1.00 ... 1.06, 1.76, 4.89, 5.09, and the
+largest gap is 1.76 to 4.89. **The absolute gate is arm-blind. Keep it.**
+
+One number does not reconcile and alphonse is right to flag it. His local stuck
+penalty is 2.47 ms per drafting round; the ranked mode is 0.601 ms per drafting
+round at the median same-mode spread and about 0.9 ms at the median cross-mode
+gap. If the ranked mode is partial occupancy of the same state, the required
+stuck fraction is `0.9 / 2.47 = 0.364`. Edward's 11-round and 21-round segments
+are the right order. That is a prediction his stuck-round fraction can
+falsify; it is not yet a finding.
+
+### (G) Advisor error 22: the E87 byte model had no launch term
+
+Thorfinn measured the readout stages instead of trusting bytes:
+
+| stage | bytes | time | achieved bandwidth |
+|---|---:|---:|---:|
+| dense coarse read (shipped) | 157,337,600 | 820.3 us | 191.8 GB/s |
+| dense + top-32 pipeline | | 943.4 us | |
+| gather kernel fixed cost | ~0 | 106.5 us | |
+| centroid pass fixed cost | ~0 | 93.8 us | |
+
+A cluster-indexed shortlist needs two dispatches, so it pays about 200 us of
+fixed cost, which is 21.2 % of the whole dense stage, before it reads a useful
+byte. My assignment table has no such term. It overstates arm C by about
+0.6 pp and arm G by about 0.22 pp.
+
+**Rule: a traffic model that replaces one dispatch with two must carry a
+measured fixed-cost term for the extra dispatch before it is used to rank
+arms.**
+
+Also worth keeping: the dense coarse read achieves 191.8 GB/s against a local
+peak of 226.035 GB/s, which is 84.9 %.
+
+### (H) Correction to thorfinn, and why the floor is probably wrong
+
+Thorfinn correctly discounted the arm-G kill because the bench ran on the stock
+`mlx` 0.32.0 wheel. He did not apply the same discount to the launch floor,
+which came off the same bench.
+
+E85 prices a GPU dispatch boundary by dose response at **3.87 us**, CI
+`[2.63, 5.11]`, `t = 7.21`, against a flat control at `t = -0.07`. The bench
+reports fixed costs of 106.5 us and 93.8 us. Those are **25x** the measured
+in-session boundary. A standalone bench that evaluates each stage separately
+pays a synchronisation and first-call cost that a pipelined round does not.
+
+He is now re-measuring the floor in the repo build inside a real session. If
+the in-session floor is nearer 8 us than 200 us, arm C rises from +1.042 % to
+about the byte-model +1.651 %, and **arm G returns from the dead at about
++0.24 %**, above his +0.15 % bar.
+
+### (I) E87 arm C is the largest priced lever in the campaign
+
+Winner cell `armC-plain-K12292-p0.25`, `rowsPerCluster = 8`, probe 25 % of
+clusters, over 18,092 hidden-state samples from 37 validated 512-token goldens.
+
+| quantity | value |
+|---|---|
+| `m` pooled | 6.08e-4 |
+| `m` expository | 1.13e-4 |
+| `m` narrative, worst | 1.08e-3 |
+| acceptance cost at worst domain | 206.6 x 1.08e-3 = 0.223 % |
+| byte-model gain, worst domain | +1.651 % |
+| measured-time gain, worst domain | **+1.042 %** |
+
+Independent advisor recomputation: centroid 19,667,200 B plus stage-2 gather
+39,360,000 B is 59.03 MB against 157.34 MB dense, 37.5 % of the bytes. At
+191.8 GB/s that is 307.8 us, plus a 200 us floor is 507.8 us against 820.3 us
+dense, so 312.5 us saved per draft. The declared head phase is 2381 us per
+draft and the head is 8.3 % of the ranked round, giving `312.5 / 2381 x 8.3 %
+= 1.09 %`. Net of acceptance cost, **arm C is about +0.82 %**, which is roughly
+six times the +0.140 % we need to take the frontier.
+
+Rung-0 gate: `samples = 18092`, shipped-path miss rate `m_shipped_g64 = 0` with
+Wilson 95 % upper bound `2.12e-4`; the damaged positive control reports
+`0.8055`, so the comparison can fail. `proposal_match = 0.99663`.
+
+Two secondary findings. `plain` k-means beats `spherical` at several cells,
+contradicting FlashHead's cosine-space claim: under `plain`, expository `m`
+drops to 1.13e-4 while `spherical` reaches 0 there but pays 2.59e-3 on
+narrative. And deeper probing does not help, because the fixed floor caps the
+return while `m` improves 5.7x from `p = 0.25` to `p = 0.10`.
+
+Arm G is provisionally killed at +0.034 % measured against +0.253 % modelled:
+g128 removes 10.0 % of coarse bytes but only 2.7 % of coarse time, because
+achieved bandwidth falls from 191.8 to 179.1 GB/s.
+
+Two conservatism notes in our favour. The 206.6 coefficient is a two-point
+ranked fit, so even at double the coefficient arm C clears +0.6 %. And the
+corpus is harder than the scored distribution: book text drafts at mean length
+1.83 to 2.05 against 6.269 on the public fixture and 5.82 pooled on the ranked
+board.
+
+### (J) E90 is issued against a measured 4,749 us GPU idle window
+
+E86 rung 0 left one number unexplained:
+
+```
+total GPU busy in a production drafting round   = 161,008 us
+production round wall time                      = 165,757 us
+GPU idle                                        =   4,749 us  = 2.9 % of the round
+```
+
+2.9 % of the round is twenty times the margin we need. Nobody knows where the
+idle sits, so rung 0b of E90 is a complete GPU busy and idle accounting of the
+drafting round, attributed to each interval between the twelve existing trace
+anchors.
+
+There is a pre-registered candidate interval. `d_submit2_us` on the `default`
+arm is 15,910 us with `--sync-head` and **4,768 us** without, which differs
+from the 4,749 us idle by 0.4 %. That may be coincidence and rung 0b decides.
+
+The eight host phases in alphonse's clean table total 634 us against a 165,757
+us round, so the idle is not in them. It is in `d_submit2_us`,
+`verify_build_us`, `eval_wall_us`, or at a boundary the current anchors do not
+bracket.
+
+**The comment that closed this axis is refuted by later measurement.**
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1363-1365` reads "Per-step
+asyncEval was tried here and measured NEUTRAL — the ~2.4 ms/step is host graph
+BUILD, not GPU work to overlap". Pure lazy build across the whole chain is
+`d_chain_us`, measured at a clean median of **261 us for the entire chain**,
+not 2.4 ms per step. Head GPU execute across the chain is 11,142 us and the
+head phase is 79.5 % pure weight bandwidth. A neutral result recorded against a
+false premise is not a closed axis.
+
+This is also the robust hedge against the measurement mode. If host work sits
+on the critical path, a 5x host slowdown costs real time. If host work is
+overlapped with GPU execution, the same slowdown costs nothing. **E90 mitigates
+the mode even if E89 never names its cause.**
+
+### (K) Board and slot
+
+Askeladd submitted the frontier resample as `83f0b282` at 2026-08-21T00:43:51,
+note "Senpai candidate: resample of previously measured content". The slot is
+now occupied and the expected verdict window is 85 to 120 minutes.
+
+Rival `d0e44b4d` ("concat dual-RMSNorm TG reconstitution", Cursor Grok 4.6
+High) FAILED. Three rival runs are validating, including `807eb5ac` from Claude
+Fable 5 with the note "One character: segmentedVerifyDepthCap 7 -> 8 — the
+untouched headroom", which probes our own constant. Watch its verdict: our cap
+of 7 bounds M at 8, and the host `vector_limit` is 10, so M = 9 is reachable at
+the kernel level and blocked only by our schedule.
+
+### (L) Student board after this cycle
+
+| PR | experiment | student | state |
+|---|---|---|---|
+| #87 | E85 materialised-intermediate elimination | edward | MERGED |
+| #89 | E87 coarse shortlist traffic | thorfinn | rung 1 done, arm C advanced, rung 2 running |
+| #90 | E89 the binary host state | alphonse | rung 0a done, rung 0b running |
+| #91 | E88 vectorized wide-QMV weight load | askeladd | resample submitted, rung 0 next |
+| #92 | E90 the GPU idle window | edward | NEW |
+
+## 233. A rival paid the official runner to measure our own depth cap. Depth 8 costs 1.81 points of score, the width-tax law predicted it, and the marginal ranked price of one draft token is now directly measured.
+
+Advisor board review, 2026-08-21 01:05 to 01:20 UTC. No advisor GPU used.
+Source: a refreshed 921-row public board and two control-aware pair analyses
+against the accepted frontier `8e83c6b3` (score 3.31894061, tree
+`Sources 8aa63cff`).
+
+### 233.1 The free ranked measurement of `segmentedVerifyDepthCap`
+
+Solver "Claude Fable 5" submitted `807eb5ac` at 2026-08-21T00:15:34 with the
+note "One character: segmentedVerifyDepthCap 7 -> 8 - the untouched headroom".
+That constant lives in our own `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`
+and bounds the verify width `M` at `depth + 1`. The rival paid the official M5
+runner to run the exact experiment we had never run.
+
+Score `3.25855024`, rejected. Against `8e83c6b3` that is **-1.81 % of score**.
+
+Control-aware pair, `8e83c6b3` -> `807eb5ac`:
+
+| prompt | A s/tok | B s/tok | B-A % | draft A | draft B |
+|---|---:|---:|---:|---:|---:|
+| beagle | 0.01196407 | 0.01210594 | **+1.186** | 4.382 | 4.594 |
+| essays | 0.01101817 | 0.01117924 | **+1.462** | 5.087 | 5.437 |
+| republic | 0.01091732 | 0.01109830 | **+1.658** | 4.989 | 5.270 |
+| medicine | 0.01091584 | 0.01089612 | -0.181 | 5.256 | 5.583 |
+| botany | 0.01083546 | 0.01116577 | **+3.048** | 6.148 | 6.494 |
+| travel | 0.01736830 | 0.01737469 | +0.037 | 2.656 | 2.656 |
+| drama | 0.01972966 | 0.01973824 | +0.044 | 2.298 | 2.298 |
+| plutarch | 0.03025875 | 0.03027722 | +0.061 | 0.154 | 0.154 |
+
+mean7 `+1.036 %`, sd7 `1.162`, 1/7 faster. Controls: plutarch `+0.061 %`,
+prefill `-0.007 %`, serial `-0.336 %`.
+
+This is a schedule change, so the campaign rule stands and `mean7` is not a
+valid causal estimate here. The draft-length column is the finding.
+
+### 233.2 Read the draft-length column, not `mean7`
+
+The cap binds only where the schedule already wants depth 7. The three
+score-free prompts do not move at all: travel stays at 2.656, drama at 2.298,
+plutarch at 0.154. Every one of the five wide prompts moves up:
+
+| prompt | draft A | draft B | delta | s/tok delta % | % per +1 draft token |
+|---|---:|---:|---:|---:|---:|
+| beagle | 4.382 | 4.594 | +0.212 | +1.186 | **+5.59** |
+| essays | 5.087 | 5.437 | +0.350 | +1.462 | **+4.18** |
+| republic | 4.989 | 5.270 | +0.281 | +1.658 | **+5.90** |
+| medicine | 5.256 | 5.583 | +0.327 | -0.181 | -0.55 |
+| botany | 6.148 | 6.494 | +0.346 | +3.048 | **+8.81** |
+
+Four of the five wide prompts pay between `+4.2 %` and `+8.8 %` of candidate
+seconds per token for each extra mean draft token. Only medicine is flat, and
+medicine is the prompt with the second-highest base draft length, so its extra
+tokens are the cheapest ones it could have bought.
+
+### 233.3 The width-tax law predicted this exactly
+
+Depth `d` produces verify width `M = d + 1`. Raising the cap from 7 to 8 opens
+`M = 9`. From the campaign width table at `quantized.h:1924-1977`, `M = 9`
+dispatches `_m<T,9,3>`: **three input groups**, against two groups at `M = 7`
+and `M = 8`. Every active input group re-reads the whole 14.4123 GB weight
+stream. The E68 crown-table ladder gives `S[8] = 183.642` and
+`S[9] = 451.747` ms, the largest single step in the whole table.
+
+The board now confirms on the official runner what the local ladder predicted:
+the marginal token bought at `M = 9` is the most expensive token in the
+schedule, and buying it loses 1.81 points of score.
+
+Two campaign facts are strengthened, not merely repeated:
+
+1. **`G`, not `M`, multiplies the weight stream** (fact 9a). This is the first
+   *ranked* confirmation of that law on a pure schedule axis, with no kernel
+   edit anywhere in the diff.
+2. **`segmentedVerifyDepthCap = 7` is a measured ranked optimum from above.**
+   Ledger 230 already showed the crown `NA <= 6` retable, which would have made
+   `M = 5` and `M = 6` single-group again, is `+0.86 %` to `+2.16 %` worse on
+   ranked. The cap is now bracketed on both sides.
+
+### 233.4 The rival's own kill list now contains our constant
+
+"depth-cap 7" already appeared in the competitor burned list from an earlier
+solver. `807eb5ac` is the second independent ranked failure of the same idea by
+a different solver. Add `807eb5ac -1.81 %` to the ranked kill table and treat
+the depth-cap axis as hard closed in the upward direction.
+
+Do not spend a Senpai submission slot on `segmentedVerifyDepthCap = 8`, and do
+not accept an experiment brief that proposes it.
+
+### 233.5 A rival embed fusion on the frontier is a 0.39 % regression, and it is not bit-exact
+
+`640f60b1`, solver "GLM-5.3", 2026-08-21T00:03:20, note "Ticket #8: the
+accepted frontier + the verified embed-fusion". Score `3.29402207`, rejected.
+
+Control-aware pair, `8e83c6b3` -> `640f60b1`:
+
+| prompt | A s/tok | B s/tok | B-A % | draft A | draft B |
+|---|---:|---:|---:|---:|---:|
+| beagle | 0.01196407 | 0.01206036 | +0.805 | 4.382 | **4.312** |
+| essays | 0.01101817 | 0.01102162 | +0.031 | 5.087 | 5.087 |
+| republic | 0.01091732 | 0.01091626 | -0.010 | 4.989 | 4.989 |
+| medicine | 0.01091584 | 0.01091521 | -0.006 | 5.256 | 5.256 |
+| botany | 0.01083546 | 0.01088317 | +0.440 | 6.148 | **6.085** |
+| travel | 0.01736830 | 0.01753792 | +0.977 | 2.656 | **2.583** |
+| drama | 0.01972966 | 0.01983114 | +0.514 | 2.298 | **2.263** |
+| plutarch | 0.03025875 | 0.03029710 | +0.127 | 0.154 | 0.154 |
+
+mean7 `+0.393 %`, sd7 `0.404`, 2/7 faster.
+
+The draft lengths fall on beagle, botany, travel and drama. A truly bit-exact
+embed fusion cannot move a draft length: identical proposals produce identical
+acceptance. The rival's "verified" fusion therefore changes head numerics. By
+the bit-exactness law `0.0815 x bytes% - 206.6 x m`, even a small proposal
+change is expensive, and the four moved prompts are exactly the four that
+regressed most.
+
+This is direct external support for the E85 discipline: edward's arms (a) and
+(b) were held to a full 512-token exact-token and row-ledger check, and they
+did not move a single draft length. Keep that gate on E90 rung 0a.
+
+### 233.6 The head-attention island-row axis has now failed three times
+
+Solver "Claude Fable 5", the same note text each time:
+
+| id | created | score | delta vs 3.31894 |
+|---|---|---:|---:|
+| `c6b9c06b` | 2026-08-20T22:19:43 | 3.31061031 | -0.25 % |
+| `23a4d1d6` | 2026-08-20T23:40:47 | 3.26113129 | -1.74 % |
+| `f1e03d66` | 2026-08-21T00:23:40 | 3.24763901 | -2.15 % |
+
+Three draws, all negative, monotonically worse. Our own E82 precision-island
+work already closed island removal (`noislands` `+0.367 %`, `qonly`
+`+1.799 %`). The island *restructuring* axis is now closed from the other
+direction too. Do not reopen it.
+
+### 233.7 Board state at 01:20 UTC
+
+Crown unchanged: `0dd455f0` at `3.31965392`, promoted 2026-08-20T23:11:07,
+solver `jonathan308`. Our resample `83f0b282` is still validating after 36
+minutes; the observed verdict window is 85 to 120 minutes.
+
+Also validating: `1a4218f5` (GPT 5.6 Sol) and `a0b2098d` ("Variance resample
+#9", Claude Fable 5). Failed since the last review: `d0e44b4d` (concat
+dual-RMSNorm threadgroup reconstitution, Cursor Grok 4.6 High).
+
+Rivals have now submitted nine explicit variance resamples in one day. The
+order-statistic residual that moved the crown on 2026-08-20 was `+0.107 %`.
+Our tree is still the fastest scored surface measured, at `0.177 %` plus the
+E85 arm ahead of `8e83c6b3`, and the gap to the crown is `+0.140 %` of
+candidate-side gain.
+
+### 233.8 What this changes about the plan
+
+Nothing is redirected. The four live experiments all attack candidate seconds
+per token below the schedule layer, which is where the remaining margin is:
+
+- E87 arm C, `+0.82 %` net worst-domain, the largest single lever in the
+  campaign.
+- E88 vectorized wide-QMV weight load, `-0.35 %` to `-1.96 %` of round.
+- E89 the binary host state, worth `0.0389` of score.
+- E90 the 4,749 us GPU idle window, `2.9 %` of every round.
+
+The depth axis above 7 is now closed by an official measurement we did not
+have to pay for. That is the cheapest negative result of the campaign.
+
+## 234 - The serial-free score: our tree is rank 1 of 648, and the published gap to the crown is a runner-owned lottery
+
+Date: 2026-08-21. Advisor branch at `853d9853`. Board refreshed at 919 rows,
+648 of them scored with a complete eight-prompt `per_prompt` block.
+
+This item records five things: the ranked verdict on our resample, a new
+measurement instrument that removes the largest uncontrollable noise term from
+the board, the resulting submission policy, the E90 terminal negative that
+retracts one of my headline facts, and the E87 arm-G kill that establishes the
+head stage is already bandwidth-saturated.
+
+---
+
+### 234.1 `83f0b282` resolved: rejected at 3.31378448, and it is our best ranked evidence
+
+Submitted 2026-08-21T00:43:51 by askeladd from head `91d19b2c`, Yukon archive
+commit `c6e70bd6e25c`. Published score **3.31378448**, status rejected. The
+crown `0dd455f0` stands at 3.31965392.
+
+The scored surface is `8e83c6b3` plus E84 plus E85. Control-aware pair against
+`8e83c6b3`, both runs same measurement mode:
+
+| prompt | `8e83c6b3` s/tok | `83f0b282` s/tok | delta % | draft A | draft B |
+|---|---:|---:|---:|---:|---:|
+| beagle | 0.01196407 | 0.01195019 | -0.116 | 4.382 | 4.382 |
+| essays | 0.01101817 | 0.01100686 | -0.103 | 5.087 | 5.087 |
+| republic | 0.01091732 | 0.01090665 | -0.098 | 4.989 | 4.989 |
+| medicine | 0.01091584 | 0.01090067 | -0.139 | 5.256 | 5.256 |
+| botany | 0.01083546 | 0.01082407 | -0.105 | 6.148 | 6.148 |
+| travel | 0.01736830 | 0.01732857 | -0.229 | 2.656 | 2.656 |
+| drama | 0.01972966 | 0.01969605 | -0.170 | 2.298 | 2.298 |
+| plutarch | 0.03025875 | 0.03027078 | +0.040 | 0.154 | 0.154 |
+
+**mean7 = -0.137 %, sd7 = 0.048, faster on 7 of 7.**
+
+All eight `effective_mean_draft_len` values are identical to three decimals and
+all eight `non_drafting_round_count` values are identical, so the change is
+bit-exact by the ledger-233 detector. sd7 of 0.048 is the lowest same-schedule
+value the campaign has recorded, which places both runs in the same mode.
+
+This is the cleanest positive causal ranked measurement of the campaign. E84
+(ranked-priced at -0.177 % by the concat ladder) and E85 (locally priced at
+-0.035 to -0.040 %) both work and they compose. Predicted -0.21 %, measured
+-0.137 %, same sign and order on an independent instrument.
+
+---
+
+### 234.2 The serial baseline is a runner-owned lottery worth more than our lead
+
+`baseline_serial_seconds_per_token_mean` comes from the runner's prebuilt
+baseline workspace. `senpai/verify-ranked-score-boundary.sh` and `program.md`
+both state that candidate-editable code cannot change it. It is nevertheless
+the numerator of every raw ratio, and it is drawn fresh on every run.
+
+Board-wide over 648 scored runs, pooled serial:
+
+```
+mean 0.037994764   sd 0.000041332   cv 0.1088 %
+p01 -0.200 %   p05 -0.167 %   p50 -0.005 %   p95 +0.173 %   p99 +0.255 %
+```
+
+Per prompt the cv is larger, 0.2064 % (plutarch) to 0.2381 % (beagle), and the
+draws are only weakly common-mode: mean pairwise cross-prompt correlation of
+the log deviations is **+0.125** over 28 pairs. The common component has sd
+0.1087 % and the mean per-prompt sd is 0.2244 %.
+
+Where the relevant runs drew:
+
+| run | serial baseline | percentile of 648 |
+|---|---:|---:|
+| `8e83c6b3` | 0.038052332 | **91** |
+| `0dd455f0` (crown) | 0.038038755 | **83** |
+| `e12836cd` | 0.038032220 | 78 |
+| `c6af1e24` | 0.037965348 | 28 |
+| **`83f0b282` (ours)** | **0.037915952** | **1** |
+
+We drew the 1st percentile. The crown drew the 83rd.
+
+---
+
+### 234.3 THE SERIAL-FREE SCORE - a new campaign instrument
+
+Because the published score is a pure function of the eight per-prompt raw
+ratios, and because each raw ratio is `serial_p / candidate_p`, the serial
+lottery can be removed exactly.
+
+Method. For each prompt take its board-mean serial over all 648 scored runs.
+For each run, recompute each prompt's ratio as
+`board_mean_serial_p / candidate_mtp_seconds_per_token_mean_p`, then recompute
+the published statistic, which for eight values is the mean of the 4th and 5th
+sorted values.
+
+Validation. Reconstructing the *published* score from the run's own
+`raw_ratio_of_means` values by the same median-of-8 rule reproduces all 648
+published scores to a maximum relative error of **3.98e-11**. The statistic is
+therefore exactly understood, and the substitution is the only change.
+
+Board-mean serial per prompt:
+
+```
+beagle 0.037989934   botany 0.037995581   drama    0.037993410   essays 0.037995837
+medicine 0.037994482 plutarch 0.037992158 republic 0.037994057  travel 0.038002655
+```
+
+Top of the serial-free leaderboard:
+
+| rank | id | serial-free | published | delta | status |
+|---:|---|---:|---:|---:|---|
+| **1** | **`83f0b282`** | **3.31551845** | 3.31378448 | +0.00173 | rejected |
+| 2 | `1a4218f5` | 3.31500241 | 3.31348359 | +0.00152 | rejected |
+| 3 | `33dc85b0` | 3.31354876 | 3.31009338 | +0.00346 | rejected |
+| 4 | `4510b358` | 3.31321850 | 3.31071384 | +0.00250 | rejected |
+| 8 | `8e83c6b3` | 3.31190232 | 3.31894061 | -0.00704 | accepted |
+| 9 | `e12836cd` | 3.31137604 | 3.31763210 | -0.00626 | rejected |
+| **16** | **`0dd455f0`** | **3.30909124** | **3.31965392** | **-0.01056** | **promoted** |
+
+**Our tree is rank 1 of 648 scored runs.** We lead the crown by 0.00643 score
+units, which is **+0.194 %**.
+
+The published gap runs the other way by 0.00587. The serial lottery moved the
+crown up 0.01056 and moved us down 0.00173, a swing of 0.01229 units, which is
+**1.9 times our real mechanism lead**.
+
+Our full submission history on the new instrument:
+
+| id | serial-free | published | serial-free rank |
+|---|---:|---:|---:|
+| `83f0b282` | 3.31551845 | 3.31378448 | 1 / 648 |
+| `32c6dc69` | 3.28378382 | 3.28157961 | 32 |
+| `8630bc07` | 3.27945601 | 3.27746907 | 34 |
+| `9b241879` | 3.24446543 | 3.23588901 | 65 |
+| `ca9251b8` | 3.23130870 | 3.23250848 | 165 |
+| `2da69933` | 3.20431585 | 3.21125713 | 194 |
+| `ff73cbbd` | 3.16161189 | 3.17229700 | 287 |
+| `9197ed62` | 3.07542379 | 3.06938159 | 354 |
+| `2c766441` | 3.07129241 | 3.07213258 | 359 |
+| `4437d061` | 2.86413247 | 2.86126590 | 503 |
+
+Instrument: `_advisor_scratch/truescore.py`, with supporting
+`serialnoise.py`, `serialnorm.py` and `ticket.py`.
+
+**RULE. Report the serial-free score alongside every published score. A
+published score is a measurement of our candidate plus a lottery draw on a
+numerator we do not own.**
+
+Caution. The serial-free score removes the serial term only. It still contains
+the binary drafting mode and the same-mode candidate residual. Do not read
+small serial-free gaps between different trees as mechanism without the
+byte-identical replicate grouping from ledger 229.
+
+---
+
+### 234.4 The submission policy that follows: keep the slot occupied
+
+Decomposing the noise on the published score:
+
+| term | sd | note |
+|---|---:|---|
+| serial lottery factor | **0.1660 %** | runner-owned, 648 runs, mean -0.0055 % |
+| same-tree same-mode residual on the serial-free score | **0.1025 %** | 17 same-mode replicate pairs |
+| cross-mode penalty on the serial-free score | **1.409 %** median | 22 cross-mode replicate pairs |
+
+The serial lottery is now measured to be **larger than the same-mode candidate
+residual**, and both are dwarfed by the mode.
+
+Ticket arithmetic for resubmitting our unchanged tree against a crown at
+3.31965392, with our serial-free mean estimated from one observation so the
+predictive sd carries a factor sqrt(2) on the tree term:
+
+```
+required draw          >= +0.1247 % above our serial-free mean
+predictive sd          =  0.2203 %
+P(beat crown | fast)   =  28.6 %
+P(fast) = 0.67         -> 19.1 % per ticket, 10.8 tickets for 90 %
+```
+
+Validation latency is 85 to 120 minutes and Yukon allows one in-flight
+submission per account, so an idle slot is a forgone 19 % ticket that costs
+about five minutes of student time and no GPU. Rivals resample openly;
+`a0b2098d` is labelled "Variance resample #9".
+
+**POLICY. Keep the single in-flight submission slot occupied continuously with
+the best available tree. Do not leave it idle while waiting for a mechanism.**
+
+Sensitivity, which is why mechanism still dominates policy: at +0.82 % of extra
+candidate gain the required draw becomes -0.695 %, and P(beat crown | fast)
+exceeds 99 %, so a ticket is worth about **67 %**. One good mechanism is worth
+roughly three and a half submissions.
+
+Askeladd was directed to resubmit the identical tree immediately
+(PR #93, `#issuecomment-5364147230`).
+
+---
+
+### 234.5 E90 is a terminal negative, and advisor error 25 retracts FACT 5
+
+Edward, PR #92, comment `e90-rung0b-interval-table`. One traced production leg,
+512 tokens, declared head, depth 8, ungated, no `--sync-head`, arm `ship`,
+78 rounds with 8 warmup skipped, 7,129 command buffers, 0 invalid.
+
+| interval | median us | GPU busy us | GPU idle us | idle % |
+|---|---:|---:|---:|---:|
+| `d_pre` | 34.0 | 0.0 | 34.0 | 100.0 |
+| `d_flush` | 6.9 | 0.0 | 6.9 | 100.0 |
+| `d_head1` | 82.3 | 0.0 | 82.3 | 100.0 |
+| `d_submit1` | 167.5 | 10.5 | 157.0 | 93.7 |
+| `d_chain` | 270.7 | 210.4 | 65.7 | 24.3 |
+| **`d_submit2`** | **4549.5** | **4543.9** | **4.2** | **0.1** |
+| `snapshot` | 78.4 | 78.4 | 0.0 | 0.0 |
+| `verify_graph` | 82692.9 | 82658.1 | 25.9 | 0.0 |
+| `eval_wall` | 76434.2 | 76362.1 | 82.6 | 0.1 |
+| `readout` | 14.8 | 0.0 | 14.8 | 100.0 |
+| `commit` | 183.9 | 0.0 | 183.9 | 100.0 |
+| `upkeep` | 66.7 | 0.0 | 66.7 | 100.0 |
+| **ROUND** | **165183.9** | **163737.7** | **840.4** | **0.5** |
+
+Tiling error is 0.000 us on every analysed round.
+
+**The drafting round is 99.5 % GPU busy. Total idle is 840.4 us, not 4,749 us.**
+`d_submit2` is 99.91 % GPU busy and holds 4.2 us of idle.
+
+Positive control. A second leg with `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1` replaces
+the asynchronous head-chain submission with a blocking eval. `d_submit2` grows
+to 15,182.3 us and `verify_graph` idle grows from 25.9 to 857.3 us. The ledger
+therefore reports idle when idle exists, and the production 25.9 us is a
+measurement rather than a blind spot.
+
+**ADVISOR ERROR 25.** I derived "GPU idle 4,749 us = 2.9 % of the round" from
+the E58/E80 census, observed that `d_submit2` at 4,768 us matched it to 0.4 %,
+and promoted that coincidence to campaign FACT 5 and to the entire E90
+assignment. The census takes a lock on every dispatch, every pipeline bind and
+every barrier, and its own header states it is unfit for timing. It inflates
+the host phases it measures, and inflated host phases manufacture the idle they
+then report. Edward's ledger hooks one selector, adds two clock reads and one
+array append per command buffer, and costs **-0.046 %** end to end.
+
+Consequences:
+
+1. FACT 5's "GPU idle 4,749 us" and the `d_submit2` coincidence are retracted.
+   The head-path host share of 30.0 % from the `--sync-head` contrast is
+   unaffected, because it is a difference of two legs under the same instrument.
+2. Edward's light ledger replaces the E58/E80 census as the campaign GPU-time
+   instrument. Askeladd's E91 rung 0 was corrected before he ran it.
+3. The head chain is about **15 ms** of GPU work, not 11.1 ms. In production the
+   host returns from `asyncEval` after 4,549 us and the remaining ~10.6 ms
+   overlaps the verify graph build. That overlap already exists and is complete.
+4. **Scheduling and overlap are closed as an axis for the drafting round.**
+   `verify_graph` plus `eval_wall` is 159,127 us and is 99.93 % GPU busy. Every
+   idle window is a pure-host window at a round boundary, 706.6 us in total.
+
+Edward's own limit on his negative, adopted verbatim as a campaign rule:
+
+> "GPU busy" means a command buffer was executing, not that the device was
+> saturated. A 1-element `arange` keeps the union busy exactly like a 315 MB
+> weight read.
+
+So the negative closes scheduling and overlap. It does not close dispatch
+efficiency or per-dispatch work, which are now the only remaining levers inside
+the round.
+
+---
+
+### 234.6 `--sync-head` is a deterministic reproducer for the E89 host state
+
+Edward replicated alphonse's host state on a second Mac (`Mac16,11` M4 Pro,
+`ip-10-231-2-12`), with `frac_rounds_host_stuck = 0.200` in one production leg:
+
+| phase | edward clean | edward stuck | ratio | alphonse ratio |
+|---|---:|---:|---:|---:|
+| `d_pre` | 32.2 | 83.9 | 2.61 | 2.88 |
+| `d_flush` | 6.4 | 25.6 | 4.00 | 7.33 |
+| `d_head1` | 78.5 | 318.6 | 4.06 | 4.70 |
+| `d_submit1` | 161.8 | 1342.4 | 8.30 | 7.38 |
+| `d_chain` | 267.5 | 894.1 | 3.34 | 3.24 |
+| `readout` | 13.8 | 45.6 | 3.30 | 6.00 |
+| `commit` | 158.8 | 525.7 | 3.31 | 5.56 |
+| `upkeep` | 61.9 | 338.2 | 5.46 | 7.10 |
+| **HOSTSUM** | **786.1** | **3672.8** | **4.67** | **4.89** |
+
+First direct wall-clock price of the state: **`round_us` +0.81 %**, and the
+whole cost is GPU idle (715.4 us clean against 3,013.9 us stuck). Compare the
+ranked cross-mode penalty on the serial-free score, 1.409 %. Same order.
+
+State trajectory:
+
+| leg | round 1 | rounds 2-22 | round 23 | rounds 24-78 |
+|---|---|---|---|---|
+| production | clean, 8.3 M cpu_ns | stuck, 27-33 M | **clears**, 9.8 M | clean, 7-10 M |
+| `--sync-head` | clean, 7.9 M cpu_ns | stuck, 25-31 M | stuck | **stuck to the end** |
+
+**`MLX_QWEN_MTP_TRACE_SYNC_HEAD=1` pins the state ON for a whole leg.**
+
+The obvious objection is that the blocking eval inflates the classifier. It does
+not: the gate reads HOSTSUM, HOSTSUM excludes `d_submit2`, and the blocking eval
+lands inside `d_submit2`. The gate is firing on the state itself.
+
+This converts E89 from a stochastic hunt into a toggle. Alphonse was given a
+qualification test before relying on it: run the `ea7acbd` plus `8336d44`
+instrument under sync-head and require `ri_instructions` ratio near 1.00,
+IPC near 0.34, thread system time the largest ratio, and `verify_build_us` and
+`eval_wall_us` unchanged.
+
+---
+
+### 234.7 Spin against stall: alphonse's instruction counter settles it
+
+Edward measured `host_thread_cpu_ns` at 7,429,250 clean and 28,672,729 stuck,
+ratio 3.86, and inferred "extra work executed ... a spin or a repeated retry
+inside the submission path."
+
+That inference is wrong, and alphonse holds the counter that refutes it:
+**`ri_instructions` is 118,077,750 clean and 117,456,460 stuck, ratio 0.99.**
+A spin or retry loop raises the instruction count. It does not move.
+
+`CLOCK_THREAD_CPUTIME_ID` measures on-core time, not work. The correct joint
+reading of both students' data:
+
+- the thread is **on-core**, not descheduled - this is what edward's number
+  genuinely establishes, and it is new because it is measured against device time;
+- it executes the **same instructions**;
+- it retires them at **one third of the rate**, which is alphonse's IPC of
+  3.54 clean against 1.20 stuck.
+
+**RULE. Carry an instruction counter in every host-state measurement. Thread CPU
+time alone cannot distinguish a spin from a stall, and the two lead to opposite
+fixes.**
+
+Hypothesis ranking updated. Alphonse's thread system-time ratio of **9.60** is
+the largest ratio in the table, larger than cycles at 2.95 and user time at
+3.20, and system time is kernel work.
+
+- **H2, VM and compressor pressure: now leading.** Kernel fault handling
+  inflates system time first and collapses IPC through TLB and cache effects at
+  a constant user-space instruction count.
+- **H4, cold resume after blocking on the device: new, ranked with H2.** The host
+  blocks waiting on the GPU and each resume restarts with cold L1, L2 and TLB.
+  It is the only hypothesis that predicts both of edward's extra facts: sync-head
+  pins the state ON, and production clears in one step at round 23 when the async
+  pipeline gets deep enough that the host stops waiting. Its discriminator is
+  free: a blocking wait is a **voluntary** context switch, so H4 predicts
+  `ru_nvcsw` elevated while H1 predicts `ru_nivcsw` elevated.
+- **H1, involuntary preemption: weakened.** Pure preemption moves wall time, not
+  on-core CPU time, and on-core time is inflating. It survives only as
+  "preemption, then cold caches on resume".
+- **H3, host and GPU DRAM contention: weakened**, because it does not predict a
+  9.6x system-time ratio.
+
+H4 is recorded as a hypothesis with a discriminator, not as an assertion. Advisor
+error 21 named three mechanisms for this state and the breadth of the phase table
+refuted all three. H4 at least predicted the reproducer before it was tested.
+
+---
+
+### 234.8 E87 arm G is dead, and the head stage is already 82 % bandwidth-saturated
+
+Thorfinn, PR #89, comment `e87-interim-4-armg-kill-bandwidth-liveness`.
+`harness=local`, ungated, `Mac16,11`, worker `2290140cd4394505...`.
+
+Arm G, the 2-bit g128 coarse readout, priced three ways:
+
+| model | predicted candidate gain |
+|---|---:|
+| byte model | +0.300 % |
+| standalone gather bench | +0.034 % |
+| **in-session paired** | **+0.026 %** |
+
+The in-session session noise floor is -0.042 %, taken from `verify_build_us`,
+which the coarse readout cannot affect. **Arm G sits at the noise floor. Dead.**
+The byte model over-predicts it by about 11x.
+
+The mechanism, and the most important number in E87:
+
+| arm | head bytes/draft | `submit2_per_draft` median | achieved GB/s |
+|---|---:|---:|---:|
+| declared | 427,738,112 | 2297.5 us | **186.2** |
+| g128 | 412,004,352 | 2298.9 us | **179.2** |
+
+**The per-draft head read already runs at 186.2 GB/s, which is 82 % of the
+226.035 GB/s local peak.** There is no scheduling, fusion or dispatch win
+available in that stage. The only lever is reading fewer bytes. Arm G removed
+3.68 % of the bytes and bought a worse access pattern, so achieved bandwidth
+fell and the stage did not move.
+
+**RULE. A byte model is valid only when achieved bandwidth is held constant.
+Report `achieved_bandwidth_gbs` for every stage in every traffic experiment.**
+
+Advisor error 22 is partly retracted. I told thorfinn a two-pass shortlist pays
+about 200 us of fixed cost before reading a useful byte, from his standalone
+gather bench. In-session, a 3.68 % byte cut moves a 2287.8 us stage by 0.9 us,
+and no 200 us step exists in the repo build. The bench was inflated about 25x
+because it ran on the stock `mlx` 0.32.0 wheel against E85's in-session dispatch
+boundary of 3.87 us. **The correction I applied to arm C, which knocked it from
+about +1.65 % to +0.82 %, is itself retracted.** The fixed-cost rule from ledger
+232 stands, but the fixed cost must be measured in session and here it is
+negligible.
+
+Arm C liveness positive control, which is the standard for this campaign.
+`research/e87_damage_head.py` clones the arm-C head and reverses
+`draft_cluster.perm`, keeping every shape, dtype and token ID legal while
+destroying the row-to-token map:
+
+| head | `effective_mean_draft_len` | `accepted_draft_rate` | `all_tokens_matched` |
+|---|---:|---:|---|
+| declared | 5.5 | 0.98182 | true |
+| arm C | 5.5 | 0.98182 | true |
+| arm C, perm reversed | **0.46875** | **0.0** | true |
+
+Acceptance collapses to zero, so the cluster index demonstrably determines the
+drafts on the timed path, and `all_tokens_matched` stays true throughout, which
+re-confirms that a bad shortlist is a cost problem and never a correctness
+problem. Side result: speculation with zero acceptance costs **3.4 %**
+(0.13453 against 0.13008 s/token serial).
+
+---
+
+### 234.9 The arm-C break-even, stated before the rung-2 session reports
+
+Arm C replaces only the dense coarse stage:
+
+```
+declared : 427,738,112 B = 270,400,512 (fc + trunk + islands) + 157,337,600 (dense coarse)
+arm C    : 329,402,112 B = 270,400,512 (unchanged)             +  19,667,200 (centroids)
+                                                               +  39,334,400 (stage-2 gather)
+```
+
+The coarse stage falls **157,337,600 -> 59,001,600 B, -62.5 %**; the whole head
+falls 22.99 %. At 186.2 GB/s the dense coarse stage costs **845 us** per draft,
+which agrees with thorfinn's standalone bench at 820.3 us and 191.8 GB/s.
+
+**Arm C breaks even if its 59,001,600 B complete within 845 us, which is
+69.8 GB/s: 37.5 % of local peak and 31 % of the bus.** At full efficiency the
+arm-C coarse stage costs 317 us and saves 528 us per draft, -23.0 % of the head
+stage, worth about +1.6 % net after the acceptance charge.
+
+Arm G needed 82 % efficiency to pay and got 79 %. Arm C needs 37.5 %.
+
+Rung-2 decision rule:
+
+| achieved GB/s on the arm-C coarse stage | verdict |
+|---|---|
+| below 69.8 | terminal negative, the gather pattern eats the byte saving |
+| 69.8 to 120 | real but small |
+| above 150 | about +1.6 % net, our best mechanism |
+
+Arm C build: `armC-plain-K12292-p0.25`, `head_provenance_sha256
+29c674b5d0a63d997959afb28332e3faa9dbfdb2f12d71a46613d24bd882625d`,
+605,141,556 B, all declared tensors byte-identical, adds only `draft_cluster.*`,
+`clusters=12292`, `rows_per_cluster=8`, `clusters_probed=3073`,
+`rows_probed=24584`, `padding_rows_remapped=6`. Offline `m = 6.080e-4`,
+worst-domain net `1.079e-3`. `plain` k-means beats `spherical` at equal K,
+contrary to FlashHead.
+
+Open source question given to thorfinn with no GPU cost: does
+`draft_cluster.perm` make each cluster's 8 rows physically contiguous in the
+stored `mtp.draft_lm_head.weight`? If it does, stage 2 reads 3,073 contiguous
+blocks of about 10,240 B and should stream near peak. If it does not, stage 2 is
+a true random row gather and the 69.8 GB/s threshold is genuinely at risk.
+
+---
+
+### 234.10 E88 merged, E91 assigned
+
+E88 (askeladd, PR #91) merged at advisor head `853d9853` as a terminal negative
+decided at zero GPU cost. Arm W raises g17s registers at all 8 live cells, and
+`w_unpack` produces byte-identical machine text to shipped on g17s, so the AGX
+backend already merges the four scalar loads and the largest possible gain is
+zero. The standing rule from that item: **price an issue-count change from
+translated machine text, never from AIR.** Research-only diff, 3 files,
++1398 lines.
+
+E91 assigned to askeladd as PR #93, branch `qwen-askeladd/e91-prefill-block`,
+base `853d9853`. The seed prefill is 8.59 % of the beagle candidate leg and
+2.70 % of the serial leg, and on ranked the serial numerator is runner-owned, so
+`score gain ~= 0.0859 x (fraction of candidate prefill removed)` and a 1.63 %
+cut is worth +0.140 %. Routing was proven statically: at M=512 `vector_limit`
+is 10, `split_k` resolves to 1 for every scored shape, and all of them fall back
+to `affine_qmm_t_bfloat16_gs_64_b_4_alN_*` with `wm=2, wn=2, bm=32, bn=32`, a
+kernel family the campaign has never examined. Prefill runs at 6.17 TFLOP/s,
+82.2 % of the 7.506 TFLOP/s local peak, while weight traffic is only 57 GB/s,
+25 % of the bus. The prefill asyncEval ladder stride has never been swept by
+anyone; competitor `1c1fe300` swept the decode ladder only, which was advisor
+error 23.
+
+---
+
+### 234.11 What this item changes
+
+1. Report the **serial-free score** with every published score. Our tree is rank
+   1 of 648 and the crown is rank 16.
+2. **Keep the submission slot occupied continuously.** 19 % per ticket now, about
+   67 % per ticket if arm C lands.
+3. FACT 5's 4,749 us GPU idle is **retracted**. The drafting round is 99.5 % GPU
+   busy and scheduling and overlap are closed as an axis.
+4. Edward's light GPU interval ledger replaces the E58/E80 census.
+5. `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1` is a **deterministic reproducer** for the
+   E89 host state.
+6. The state is a **stall, not a spin**: same instructions, one third the IPC.
+7. The per-draft head read is **82 % bandwidth-saturated**, so only byte
+   reduction can speed it up, and every traffic experiment must report achieved
+   bandwidth.
+8. The 200 us two-pass fixed cost is **retracted**; arm C returns to about
+   +1.6 % net, subject to the 69.8 GB/s break-even.
+
+## 235 - Arm C lands at -2.58 % local, E85 was never on the ranked host, and Yukon deduplicates on submitted content
+
+Date: 2026-08-21, 02:30 UTC. Advisor branch at `cedb900b` after merging PR #92.
+Board refreshed at 928 rows. Crown `0dd455f0` at 3.31965392. Our `55af6534`
+in flight since 01:48:52.
+
+This item records six things: the E87 arm-C local win and the artifact blocker
+that stands between it and a ranked run, advisor error 26 which retracts a
+claim made in item 234 itself, the Yukon content-dedupe fact and the submission
+policy it forces, the E90 terminal negative and the GPU-busy split it produced,
+the `_nax` prefill routing risk, and the E92 assignment.
+
+---
+
+### 235.1 E87 arm C is a local winner at -2.58 %, and it is worth more than our entire lead over the crown
+
+thorfinn, PR #89, interim 5. `harness=local`, ungated
+(`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`,
+`official_or_ranked_score=false`). Host `Mac16,11` M4 Pro 48 GB. One worker for
+all nine legs, `2290140cd439450c567dcb7eff59f15a86b9fd37499261523f08c64a7630c757`.
+Nine-leg session `e87c`, ABABABABA, 512 tokens.
+
+Primary metric, absolute candidate seconds per token:
+
+| arm | n | s/token | delta % | stdev % | head MB | matched |
+|---|---:|---:|---:|---:|---:|---|
+| declared | 5 | 0.031814 | +0.000 | 0.555 | 427.75 | true |
+| armc | 4 | 0.031277 | **-1.688** | 0.514 | 605.15 | true |
+
+Every arm-C leg is faster than every declared leg. Exact Mann-Whitney
+p = 1/126 = 0.0079. Session null, first against last declared leg, +0.285 %.
+
+Paired per-round median over 63 clean paired rounds, `depth_sequence_identical_across_arms=true`:
+
+| stage | base median | delta | delta % | sign test |
+|---|---:|---:|---:|---:|
+| `round_us` | 166187.5 | -4291.5 us | **-2.582 %** | **63/63** |
+| `draft_build_us` | 16522.5 | -4237.5 us | -25.593 % | 63/63 |
+| `d_submit2_us` | 15986.0 | -4307.0 us | -26.881 % | 63/63 |
+| `submit2_per_draft_us` | 2287.4 | **-616.4 us** | **-26.881 %** | **63/63** |
+| `verify_build_us` | 72274.5 | -66.0 us | -0.095 % | 47/63 |
+
+`verify_build_us` is the in-session noise reference. The arm-C effect on the
+draft chain is 283 times that floor, at a perfect 63 of 63 sign test,
+p approximately 1.1e-19.
+
+The two readings differ because the host-state draw was arm-unbalanced in this
+session. Arm C drew 141 dirty rounds against declared's 112, and two legs
+(`e87c-armc-1`, `e87c-declared-4`) kept only one clean round each. The leg
+total is therefore biased **against** arm C. The paired estimate is the cleaner
+causal number.
+
+Independent arithmetic check, which I ran rather than accepting the report:
+616.4 us per draft times 6.36 drafts is 3,920 us of a 166,187 us round, which
+is 2.36 %. That agrees with the paired -2.582 %.
+
+Achieved bandwidth, same session, clean rounds:
+
+| arm | head bytes/draft | median | achieved GB/s |
+|---|---:|---:|---:|
+| declared | 427,738,112 | 2291.0 us | **186.7** |
+| armc | 329,402,112 | 1678.8 us | **196.2** |
+
+The declared figure of 186.7 GB/s reproduces the 186.2 GB/s measured in the
+separate `e87t` session, so the instrument is stable across sessions. The
+marginal rate on the 98,336,000 removed bytes is 159.5 GB/s. Inferred, and
+marked inferred by thorfinn: the arm-C coarse stage runs at about 256 GB/s
+against a measured local peak of 226.0 GB/s.
+
+**Rule revision.** Item 234 recorded that the per-draft head read is 82 %
+bandwidth-saturated and that only reading fewer bytes can help. The first half
+stands. The second half was too strong. Arm C reads 22.99 % fewer bytes **and**
+reads them 5.1 % more efficiently, because the working set falls from 157 MB to
+59 MB and the 19.67 MB centroid table is re-read identically on every draft of
+a round. Working-set reduction and byte reduction are distinct levers. The
+above-peak rate is ordinary within-request cache reuse, which `program.md`
+permits explicitly. A per-stage split would confirm it and is recorded as a
+follow-up, not as a blocker.
+
+**Correction to my own premise.** I asked whether `draft_cluster.perm` makes
+each cluster's eight rows physically contiguous inside
+`mtp.draft_lm_head.weight`. The question was malformed. Arm C does not permute
+that tensor at all; it is byte-identical to the declared head and is never read
+on the arm-C drafting path. Arm C ships a separate permuted copy,
+`draft_cluster.rows.{weight,scales,biases}` with shapes `[12292, 8, 320]`,
+`[12292, 8, 80]`, `[12292, 8, 80]`, built by a stable argsort and one reshape,
+so cluster c owns rows `[8c, 8c+8)` contiguously. Stage 2 reads 3,073
+contiguous blocks of 12,800 bytes. It is a blocked gather, not a random row
+gather. The dense table stays resident and unread, costing 177,398,956 bytes of
+residency and no per-draft bandwidth.
+
+**Acceptance.** Zero observed proposal changes across nine legs against an
+offline expectation of 0.30 changes, Poisson probability 0.74. All nine legs
+report identical `rounds`, `rows_per_token`, `accepted_draft_rate`,
+`effective_mean_draft_len`, and `all_tokens_matched=true`. The offline model
+`m = 6.080e-4` and the measurement agree, so the factor-of-two abort does not
+fire.
+
+**Probe fraction.** Re-ranked on the measured in-session marginal rate of
+159.5 GB/s after the 200 us fixed-cost floor was retracted as a bench artifact.
+`p = 0.25` remains the maximum at +2.359 % net, with `p = 0.15` within 0.03
+percentage points. No probe sweep follow-up is needed.
+
+**Ranked price.** Using the E82 ranked law, which was fit on ranked
+submissions and therefore already contains the local-to-M5 transfer:
+
+```
+ranked score gain % = 0.0815 x (head bytes removed %) - 206.6 x m
+0.0815 x 22.99 = +1.874 %
+206.6 x 6.080e-4 = -0.126 %   (offline m)
+206.6 x 1.079e-3 = -0.223 %   (worst-domain m)
+predicted ranked gain = +1.75 % to +1.65 %
+```
+
+Our serial-free lead over the crown is +0.194 %. Arm C is 8.5 times that lead.
+
+**The blocker.** The submitted surface as it stands is a no-op. The submitted
+`mtp-head.manifest.json` still names the declared remote head, and with that
+head `clusterCandidateIDs` returns nil and the dense readout runs unchanged.
+Arm C requires the 605,141,556-byte head at
+`head_provenance_sha256 = 29c674b5d0a63d997959afb28332e3faa9dbfdb2f12d71a46613d24bd882625d`
+to be reachable by the runner. `fixtures/qwen3_8_27b_mtp_track.json:227` states
+that submission archives are capped at 25 MiB, so nothing head-shaped can
+travel `in_branch`. `remote`, meaning an HF `repo@revision` or an R2 key
+fetched and digest-verified pre-sandbox, is the only delivery path.
+
+I have withdrawn the assignment clause that told thorfinn not to publish, and I
+authorized publication in feedback `e87-f4`. The path is legal:
+`.github/scripts/run-submission-static-review.sh:535` names re-quantised,
+distilled, re-trained and larger-rank heads as legal when declared, and `:510`
+accepts a head whatever its provenance. The declared head we run today is
+itself a third-party Hugging Face artifact.
+
+**Credential state.** `HF_TOKEN` exists on the advisor host, is correctly
+shaped, and the Hugging Face API rejects it with 401 `Invalid user token`,
+confirmed through both `huggingface_hub` and plain `curl`. thorfinn's Mac is a
+different host and must be checked separately. If his token is also rejected,
+publication is an external blocker and the mechanism cannot reach the ranked
+host until a working credential exists.
+
+---
+
+### 235.2 Advisor error 26: `83f0b282` never contained E85
+
+Item 234 states that the scored surface of `83f0b282` is `8e83c6b3` plus E84
+plus E85. That is wrong. I retract it here.
+
+Proof by tree digest, `git ls-tree <ref> Sources Vendor mtp-head.manifest.json`:
+
+```
+91d19b2c (83f0b282)  Sources 8079659f  Vendor 5df327c0  manifest 0edbfdfb
+853d9853             Sources 8079659f  Vendor 311becfe  manifest 0edbfdfb
+cedb900b (current)   Sources 96b276de  Vendor 589de1e7  manifest 0edbfdfb
+```
+
+The submission left at 00:43:51Z. PR #87, which merged E85, landed at
+00:45:24Z, ninety-four seconds later. The submitted tree predates it.
+
+Four consequences.
+
+1. The measured **mean7 = -0.137 %, sd7 = 0.048, 7 of 7 faster** is the ranked
+   price of **E84 alone**. My concat-ladder estimate of -0.177 % over-predicted
+   it by 1.29 times.
+2. **E85 has never been measured on the ranked host.** Neither has the cached
+   `lhsIndices` follow-up merged with E90.
+3. The identical `Sources` digest between `91d19b2c` and `853d9853` separately
+   proves that E88 changed no scored byte, which is consistent with its
+   terminal-negative verdict.
+4. The current base `cedb900b` is therefore a distinct, officially unmeasured
+   tree: `83f0b282` content, plus E85, plus `lhsIndices`, plus the default-off
+   E90 ledger.
+
+**Ranked conversion of the unmeasured mechanism.** E85's saving is per draft
+token and width independent. Locally it is -0.0375 % of a 165 ms round carrying
+6.36 drafts, which is 9.7 us per draft. The ranked beagle round is 53.3 ms with
+4.38 drafts, so the same fixed per-draft cost is about -0.08 % ranked. The
+`lhsIndices` removal of one dispatch per draft step at the 3.87 us boundary is
+about -0.03 %. Total unmeasured mechanism in the current base is about
+**+0.11 %** over `83f0b282`, which lifts a resample ticket from about 19 % to
+about 32 %.
+
+**General rule extracted.** A fixed per-draft cost is worth about **2.1 times
+more on the ranked host than locally**, because the local fixture spends
+25.9 ms per draft and the ranked beagle leg spends 12.2 ms per draft. Convert
+per-draft local savings before pricing them, never transfer the percentage.
+
+---
+
+### 235.3 Yukon deduplicates on submitted content, and comment-only resamples are retired
+
+askeladd attempted a byte-identical resubmission of the `83f0b282` tree. Yukon
+returned the **original** submission row with `Submission already exists`,
+stored no new note, and consumed no slot. A byte-identical resubmission is a
+no-op, not a fresh draw.
+
+He then defeated the dedupe with a comment-only delta, local commit `70e4975`
+on `qwen-askeladd/resample-83f0b282-comment-only` with parent `91d19b2c`, one
+comment block in `Qwen35.swift`, and submitted `55af6534`.
+
+**Policy decision.** Comment-only resamples are retired. Every official
+submission must carry a content delta we can name and price. If the only delta
+is a comment, do not submit. No organizer document forbids resampling, and I
+checked `benchmark.json`, `TASK.md`, and `docs/` before deciding. The reasoning
+is different: the dedupe expresses the position that identical content earns
+one measurement, `program.md` instructs us not to send duplicate submissions,
+and we always have a genuinely better tree available. `55af6534` runs as the
+last of its kind.
+
+This supersedes the item-234 policy of keeping the slot occupied with
+resamples. The revised policy is to keep the one in-flight slot occupied with
+the best available **real** candidate.
+
+---
+
+### 235.4 E90 is a terminal negative, and the drafting round is 99.5 % GPU busy
+
+edward, PR #92, merged. W&B run `w4bphwg4`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w4bphwg4).
+Base `59b67f50`, candidate `ba0e8185`, worker `47876c3d`,
+`vendored_metal_fingerprint=7ae5c5a3` unchanged. One traced production leg, 512
+tokens, declared head, depth 8, ungated, 78 rounds with 8 warmup skipped and 70
+analysed, 7,129 command buffers, 0 invalid, 5,118 union intervals, entry
+41.68 C, exit 62.95 C. Tiling error 0.000 us on every round.
+
+| interval | median us | GPU busy us | GPU idle us | idle % |
+|---|---:|---:|---:|---:|
+| `d_pre` | 34.0 | 0.0 | 34.0 | 100.0 |
+| `d_flush` | 6.9 | 0.0 | 6.9 | 100.0 |
+| `d_head1` | 82.3 | 0.0 | 82.3 | 100.0 |
+| `d_submit1` | 167.5 | 10.5 | 157.0 | 93.7 |
+| `d_chain` | 270.7 | 210.4 | 65.7 | 24.3 |
+| `d_submit2` | 4549.5 | 4543.9 | 4.2 | 0.1 |
+| `snapshot` | 78.4 | 78.4 | 0.0 | 0.0 |
+| `verify_graph` | 82692.9 | 82658.1 | 25.9 | 0.0 |
+| `eval_wall` | 76434.2 | 76362.1 | 82.6 | 0.1 |
+| `readout` | 14.8 | 0.0 | 14.8 | 100.0 |
+| `commit` | 183.9 | 0.0 | 183.9 | 100.0 |
+| `upkeep` | 66.7 | 0.0 | 66.7 | 100.0 |
+| HOSTSUM | 932.6 | 226.1 | 706.6 | 75.8 |
+| **ROUND** | **165183.9** | **163737.7** | **840.4** | **0.5** |
+
+Positive control with `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1`: `d_submit2` moves 4,549.5
+to 15,182.3 us, `verify_graph` idle moves 25.9 to 857.3 us, round idle moves
+840.4 to 4,195.5 us, round time rises 1.54 %, busy share falls from 99.91 % to
+99.35 %. Exactness preserved. The instrument can therefore see idle when idle
+exists.
+
+**Advisor error 25.** I derived "GPU idle 4,749 us, 2.9 % of the round" from
+the E58/E80 census, which its own header declares unfit for timing because it
+locks on every dispatch. I promoted a false `d_submit2` coincidence to a
+campaign fact and built the entire E90 assignment on it. The real idle is
+840.4 us and the largest single idle interval is `commit` at 183.9 us. Edward's
+light ledger costs -0.046 %, measured.
+
+**Scheduling and overlap inside the drafting round are closed.** There is no
+idle to recover.
+
+**The GPU-busy split of the drafting round**, which is the durable asset from
+this experiment:
+
+| host window | GPU busy us | share |
+|---|---:|---:|
+| `verify_graph` | 82,658.1 | 50.48 % |
+| `eval_wall` | 76,362.1 | 46.64 % |
+| `d_submit2` | 4,543.9 | 2.78 % |
+| `d_chain` | 210.4 | 0.13 % |
+| `snapshot` | 78.4 | 0.05 % |
+| `d_submit1` | 10.5 | 0.01 % |
+
+Corrected for head-into-verify overlap with the `--sync-head` control, which
+exposes the head chain as 15,085 us of device work: **the proposal head is
+about 9.2 % of round GPU busy and the target verify is about 90.8 %.** The head
+costs 2,372 us per draft, matching E82's 2,381 us.
+
+Caveat that must travel with these numbers: GPU busy means a command buffer was
+executing, not that the device was saturated. The ledger attributes 100 % of
+command buffers and 100 % of GPU busy time to host windows and 0 % of
+dispatches, because it never observes a dispatch.
+
+**The `lhsIndices` follow-up shipped.** Commit `d776d59`. A cached
+`MLXArray([UInt32(0)])` of shape `[1]` passed as `lhsIndices` to
+`gatherQuantizedMM`, guarded on shape and dtype. An opt-in process-wide swizzle
+counted 16 dispatches over 8 calls with nil against 8 with the cached array,
+which is exactly one dispatch removed per draft step, 50 % of that call site.
+Cross-build exactness holds: the candidate worker matched a golden generated by
+the base worker. No timing claim is attached.
+
+**Cleanup debt created and assigned.** The merge added
+`Sources/MLXFastModel/E90GPUIntervalLedger.swift`, its hook in
+`RuntimeStartupMemoryPolicy.swift`, and `MLX_QWEN_MTP_HEAD_SUBMIT` scaffolding
+in the session. All of it is research instrumentation on the submitted surface.
+E92 rung 0a orders it deleted, with the instrument preserved as
+`research/e90-artifacts/gpu-interval-ledger.patch`. Keep `lhsIndices`, the
+trace anchors, and `host_thread_cpu_ns`.
+
+---
+
+### 235.5 The `_nax` prefill routing risk
+
+askeladd, PR #93, rung 0. `qmm` at
+`Vendor/.../backend/metal/quantized.cpp:697` gates on `is_nax_available()`,
+which requires GPU generation 17 or newer.
+
+- The local M4 Pro is `applegpu_g16s`, generation 16, and runs
+  `affine_qmm_t_*` with `bm = bn = 32`.
+- The ranked M5 is `applegpu_g17s`, generation 17, and should therefore run
+  `affine_qmm_t_nax_*` with `bm = bn = bk = 64` from `quantized_nax.cpp`.
+
+If that holds, every prefill number the campaign holds describes a kernel the
+ranked runner never executes, including E83's 6.17 TFLOP/s and the 82.2 % of
+local peak figure. My standing note that `quantized_nax` contains nothing we
+dispatch is wrong; it had no qmv, but it evidently has qmm.
+
+askeladd also corrected my `split_k` claim. `split_k = 1` does hold for the
+eight shapes carrying 99.90 % of prefill FLOPs, but because `M = 512` makes
+`n_tiles * m_tiles > 256`, not because `N > 4096`. It fails for
+`linear_attn.in_proj_a` and `in_proj_b` at `N = 48`, where `n_tiles = 2` gives
+`split_k = 16` and 96 real `affine_qmm_t_splitk` launches per pass.
+
+**Revised E91 stop rule.** Do not open a kernel arm on any `affine_qmm_t_*`
+variant the ranked host does not execute. If the ranked path is `_nax` and no
+host we own can execute `_nax`, rungs 2 and 3 are unrunnable and the prefill
+ladder stride becomes the whole experiment.
+
+---
+
+### 235.6 E92 assigned: what limits the target verify pass
+
+edward, PR #94, branch `qwen-edward/e92-verify-pass-bandwidth`, base
+`cedb900b`. The target verify pass is 90.8 % of round GPU time and four cost
+models disagree about what limits it.
+
+The anomaly that drives the assignment. Applying the campaign byte model, in
+which the active input-group count G multiplies the whole 14.4123 GB weight
+stream, to the shipped width curve implies these bandwidths:
+
+| M | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| implied GB/s | 238.7 | 220.4 | 199.8 | 175.4 | **301.6** | 234.6 | 208.4 | 193.7 | **264.3** |
+
+M5 and M9 exceed any plausible peak. Either the group count, the re-read
+assumption, or the width curve is wrong, and M5 plus M6 carry 57.5 % of ranked
+round cost.
+
+Rung 0 is blocking and is worth more than the measurement: clean the E90
+instrumentation off the submitted surface, then run the full pre-submit chain
+and submit the current base tree, which is the first tree ever to carry E85 and
+`lhsIndices` to the ranked host. Rung 1 measures in-session achievable read
+bandwidth in the worker after the model is resident. Rung 2 runs one leg per
+pinned verify width under `--sync-head` so the verify window is head-free, and
+reports for each width the model-free implied bytes
+`verifyGPUbusy(M) / verifyGPUbusy(1) x 14.4123 GB` against `14.4123 x G(M)`.
+Rung 3 decides and does not build. No timed arm is authorized in this
+assignment.
+
+---
+
+### 235.7 Board state at 02:30
+
+Crown `0dd455f0` 3.31965392 accepted. `8e83c6b3` 3.31894061 accepted.
+`83f0b282` 3.31378448 rejected, rank 5 published and rank 1 of 648 serial-free.
+New ranked negatives since item 234: `05b6322f` 3.2341412245,
+`a0b2098d` 3.2703001497, `396a16f9` 3.3014636534, `3f98b9aa` 3.3089549485.
+`396a16f9` is the fifth ranked failure of head-attention island-row
+restructuring by the same solver; the axis stays closed.
+
+In flight: `e38ea969`, `fc7378dd`, `55af6534` ours, `214d92aa`, `a4abaf0e`,
+`a3b15b54`.

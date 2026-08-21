@@ -1,0 +1,204 @@
+{
+  "session": "research/out/e85-abba-512-traced",
+  "arm_a": "base",
+  "arm_b": "ab",
+  "legs": 12,
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "buffers_removed_per_draft": 6,
+  "arm_base": {
+    "legs": 6,
+    "mtp_s_per_tok_mean": 0.031878776693095766,
+    "mtp_s_per_tok_sd": 0.0001772796529972475,
+    "serial_s_per_tok_mean": 0.0745487620588392,
+    "ratio_mean": 2.3385708852497182,
+    "mean_draft_len_mean": 6.358974358974359,
+    "accepted_rate_mean": 0.8770161290322581,
+    "drafts_per_token_mean": 0.9668615984405458,
+    "temp_in_min": 40.440765380859375,
+    "temp_in_max": 61.5138053894043,
+    "temp_out_max": 64.18360137939453,
+    "all_matched": true
+  },
+  "arm_ab": {
+    "legs": 6,
+    "mtp_s_per_tok_mean": 0.03177112923003733,
+    "mtp_s_per_tok_sd": 0.00014577630832795016,
+    "serial_s_per_tok_mean": 0.0744972984927396,
+    "ratio_mean": 2.3448496781754984,
+    "mean_draft_len_mean": 6.358974358974359,
+    "accepted_rate_mean": 0.8770161290322581,
+    "drafts_per_token_mean": 0.9668615984405458,
+    "temp_in_min": 60.1773796081543,
+    "temp_in_max": 61.69820785522461,
+    "temp_out_max": 63.572731018066406,
+    "all_matched": true
+  },
+  "temp_in_spread_c": 21.257442474365234,
+  "block_mtp_s_per_tok": {
+    "n": 3,
+    "mean": -0.00010764746305843194,
+    "sd": 9.684300725654936e-05,
+    "sem": 5.5912336308701654e-05,
+    "t": -1.9252900194349192,
+    "values": [
+      -0.0002163554308936,
+      -7.599813397973776e-05,
+      -3.0588824301958084e-05
+    ]
+  },
+  "ols_mtp_s_per_tok": {
+    "effect": -0.00010764746305843194,
+    "stderr": 9.875620111793428e-05,
+    "t": -1.0900324419109617,
+    "dof": 9,
+    "ci95_lo": -0.00033103398998719926,
+    "ci95_hi": 0.0001157390638703354,
+    "drift_per_leg": -6.935324754337319e-07,
+    "resid_sd": 0.00017105075789875253,
+    "covariate": null
+  },
+  "block_serial_s_per_tok": {
+    "n": 3,
+    "mean": -5.146356609960397e-05,
+    "sd": 2.584536268391375e-05,
+    "sem": 1.4921827102861112e-05,
+    "t": -3.448878327355525,
+    "values": [
+      -7.520022336393595e-05,
+      -5.5260839872062206e-05,
+      -2.392963506281376e-05
+    ]
+  },
+  "ols_serial_s_per_tok": {
+    "effect": -5.146356609960397e-05,
+    "stderr": 8.514587871724195e-05,
+    "t": -0.6044164071699533,
+    "dof": 9,
+    "ci95_lo": -0.00024406354375800527,
+    "ci95_hi": 0.0001411364115587973,
+    "drift_per_leg": 9.9686521489728e-06,
+    "resid_sd": 0.0001474769879933606,
+    "covariate": null
+  },
+  "block_ratio": {
+    "n": 3,
+    "mean": 0.006278792925780004,
+    "sd": 0.006362374712576225,
+    "sem": 0.0036733187529911517,
+    "t": 1.709297054786557,
+    "values": [
+      0.01350217237044582,
+      0.003827665150097914,
+      0.0015065412567962788
+    ]
+  },
+  "ols_ratio": {
+    "effect": 0.00627879292577956,
+    "stderr": 0.007755682840958968,
+    "t": 0.8095731935581838,
+    "dof": 9,
+    "ci95_lo": -0.011264561660469626,
+    "ci95_hi": 0.023822147512028744,
+    "drift_per_leg": 0.00036803160064189034,
+    "resid_sd": 0.013433236727931066,
+    "covariate": null
+  },
+  "block_mean_draft_len": {
+    "n": 3,
+    "mean": 0.0,
+    "sd": 0.0,
+    "sem": 0.0,
+    "t": NaN,
+    "values": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "ols_mean_draft_len": {
+    "effect": 0.0,
+    "stderr": 0.0,
+    "t": NaN,
+    "dof": 9,
+    "ci95_lo": 0.0,
+    "ci95_hi": 0.0,
+    "drift_per_leg": 0.0,
+    "resid_sd": 0.0,
+    "covariate": null
+  },
+  "block_accepted_rate": {
+    "n": 3,
+    "mean": 0.0,
+    "sd": 0.0,
+    "sem": 0.0,
+    "t": NaN,
+    "values": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "ols_accepted_rate": {
+    "effect": 0.0,
+    "stderr": 0.0,
+    "t": NaN,
+    "dof": 9,
+    "ci95_lo": 0.0,
+    "ci95_hi": 0.0,
+    "drift_per_leg": 0.0,
+    "resid_sd": 0.0,
+    "covariate": null
+  },
+  "cov_mtp_s_per_tok": {
+    "effect": -0.00010766922059373881,
+    "stderr": 0.000106851505353724,
+    "t": -1.0076528190904548,
+    "dof": 8,
+    "ci95_lo": -0.00035406879193942633,
+    "ci95_hi": 0.0001387303507519487,
+    "drift_per_leg": -6.893179734562875e-07,
+    "resid_sd": 0.0001814267142031182,
+    "covariate": "serial_s_per_tok"
+  },
+  "drafts_per_token": 0.9668615984405458,
+  "block_effect_us_per_token": -107.64746305843194,
+  "block_effect_us_per_draft": -111.33699304228949,
+  "block_effect_us_per_buffer": -18.55616550704825,
+  "block_effect_us_per_token_ci95_lo": -348.2382461947751,
+  "block_effect_us_per_draft_ci95_lo": -360.17383124580573,
+  "block_effect_us_per_buffer_ci95_lo": -60.02897187430096,
+  "block_effect_us_per_token_ci95_hi": 132.9433200779113,
+  "block_effect_us_per_draft_ci95_hi": 137.4998451612268,
+  "block_effect_us_per_buffer_ci95_hi": 22.916640860204467,
+  "block_effect_pct_of_mtp": -0.3376775216150185,
+  "ols_effect_us_per_token": -107.64746305843194,
+  "ols_effect_us_per_draft": -111.33699304228949,
+  "ols_effect_us_per_buffer": -18.55616550704825,
+  "ols_effect_us_per_token_ci95_lo": -331.0339899871993,
+  "ols_effect_us_per_draft_ci95_lo": -342.3799130311154,
+  "ols_effect_us_per_buffer_ci95_lo": -57.06331883851923,
+  "ols_effect_us_per_token_ci95_hi": 115.7390638703354,
+  "ols_effect_us_per_draft_ci95_hi": 119.70592694653642,
+  "ols_effect_us_per_buffer_ci95_hi": 19.950987824422736,
+  "ols_effect_pct_of_mtp": -0.3376775216150185,
+  "cov_effect_us_per_token": -107.66922059373881,
+  "cov_effect_us_per_draft": -111.35949629957261,
+  "cov_effect_us_per_buffer": -18.55991604992877,
+  "cov_effect_us_per_token_ci95_lo": -354.0687919394263,
+  "cov_effect_us_per_draft_ci95_lo": -366.20421424380186,
+  "cov_effect_us_per_buffer_ci95_lo": -61.03403570730031,
+  "cov_effect_us_per_token_ci95_hi": 138.7303507519487,
+  "cov_effect_us_per_draft_ci95_hi": 143.4852216446566,
+  "cov_effect_us_per_buffer_ci95_hi": 23.91420360744277,
+  "cov_effect_pct_of_mtp": -0.33774577246264775,
+  "control_serial_effect_pct": -0.06903342815939084,
+  "control_serial_effect_t": -0.6044164071699533,
+  "saving_us_per_buffer": 18.55991604992877,
+  "saving_us_per_buffer_ci95": [
+    -23.91420360744277,
+    61.03403570730031
+  ],
+  "verdict": "law-holds (>= 10 us/buffer): harvest and take to pre-submit"
+}
