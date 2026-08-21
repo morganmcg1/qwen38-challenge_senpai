@@ -2797,138 +2797,6 @@ let qwen35DecodeLadderRungs: Set<Int> = {
     }
 }()
 
-// MARK: - E105 TEMPORARY research instrument: dispatch-boundary dose ladder
-//
-// NOT a candidate. Reverted before the branch tip is reported. Inert unless
-// MLX_E105_DOSE is set to a positive integer.
-//
-// E105 rung 0 proved that the GDN prework, q/k norm + RoPE and KV write
-// families are already one dispatch per layer, so the whole fusion prize is
-// bounded by (dispatches removed) x (marginal cost of one dispatch). This
-// instrument measures that marginal cost IN SITU, which is the only frame the
-// campaign's isolation discount cannot distort: it inserts `MLX_E105_DOSE`
-// extra dependent dispatches per decoder layer into the decode residual chain
-// and nothing else, so the round-time slope across two doses IS the per-
-// dispatch cost.
-//
-// The chain is strictly serial and strictly inside the critical path. The
-// first dose kernel reads the layer's own output, so it cannot start early,
-// and the final value is added back into `base`, so the next layer cannot
-// start until the chain drains. The chained value is identically zero: the
-// kernel multiplies by a zero buffer that the compiler cannot fold away, so
-// the bf16 add-back is exact and `all_tokens_matched` still has to hold.
-//
-// MLX_E105_DOSE_SHAPE selects the dispatch width:
-//   tiny     grid 1x1x1,    tg 1x1x1   -> 1 threadgroup,   lower bound on F
-//   prework  grid 32x5x80,  tg 32x1x1  -> 400 threadgroups, the live
-//            `qwen35_packed_gdn_prework` width, so the drain-and-fill bubble
-//            is the one a real removed dispatch would have paid
-// MLX_E105_DOSE_ALTERNATE=1 applies the dose on every second qualifying decode
-// forward instead of on all of them. Rung 0 measured a per-leg offset of 697 us
-// that carries 97.9 percent of the pair variance and is not thermal, so a
-// protocol that contrasts whole legs pays that offset in full. Alternating
-// inside one leg makes the contrast a difference between neighbouring rounds,
-// which cancels the offset by construction.
-//
-// The dose is numerically inert, so the token stream and the per-round verify
-// widths are identical to a dose-free leg. That is what lets the analysis pair
-// neighbouring rounds at equal width.
-//
-// Round `i` reported by the parent carries the dose when `i` is odd, but only
-// if exactly one qualifying forward runs per round. Set `MLX_E105_DOSE_WITNESS`
-// on a separate leg to record the per-forward schedule, so that assumption is
-// checked against `round_count` instead of assumed.
-let e105DoseCount = Int(ProcessInfo.processInfo.environment["MLX_E105_DOSE"] ?? "") ?? 0
-let e105DoseShape = ProcessInfo.processInfo.environment["MLX_E105_DOSE_SHAPE"] ?? "prework"
-let e105DoseAlternate =
-    ProcessInfo.processInfo.environment["MLX_E105_DOSE_ALTERNATE"] == "1"
-
-/// Optional witness file for the dose schedule, named by the environment.
-///
-/// An earlier version reported the accounting from an `atexit` handler on the
-/// worker's stderr. Neither half of that worked: `mtp-timed` does not forward
-/// worker stderr by default, and the worker is terminated rather than exited,
-/// so the handler never ran. The witness is therefore appended to a file, and
-/// only when this variable is set -- the timing legs run with it unset and
-/// write nothing.
-let e105DoseWitnessPath =
-    ProcessInfo.processInfo.environment["MLX_E105_DOSE_WITNESS"] ?? ""
-
-nonisolated(unsafe) private var e105DoseForwards = 0
-nonisolated(unsafe) private var e105DoseApplications = 0
-nonisolated(unsafe) private var e105DoseWitness: FileHandle? = nil
-
-/// Count one qualifying decode forward and report whether it takes the dose.
-///
-/// When a witness file is configured, append one line per qualifying forward.
-/// The per-forward sequence is stronger evidence than a total: it shows that
-/// the dose alternates AND lets the reader check the forward count against
-/// `round_count`, which is what makes "round i is dosed iff i is odd" a
-/// verified statement rather than an assumption.
-func e105DoseTakeTurn(width: Int) -> Bool {
-    e105DoseForwards += 1
-    let take = e105DoseAlternate ? e105DoseForwards % 2 == 0 : true
-    if take { e105DoseApplications += 1 }
-
-    if !e105DoseWitnessPath.isEmpty {
-        if e105DoseWitness == nil {
-            FileManager.default.createFile(
-                atPath: e105DoseWitnessPath, contents: nil)
-            e105DoseWitness = FileHandle(forWritingAtPath: e105DoseWitnessPath)
-        }
-        // `width` is the row count of this forward. A target verify carries
-        // one row per proposed draft plus the primary token, so the verify
-        // sequence can be matched against the parent's own
-        // `effective_draft_lengths`. Without it there is no way to tell which
-        // forwards are the timed rounds: warm-up is not a constant, it grew
-        // 20 -> 324 between a 32-token and a 512-token leg.
-        e105DoseWitness?.write(Data(
-            ("e105_dose_forward forward=\(e105DoseForwards)"
-             + " dosed=\(take ? 1 : 0)"
-             + " width=\(width)"
-             + " applications=\(e105DoseApplications)"
-             + " alternate=\(e105DoseAlternate)"
-             + " dose=\(e105DoseCount) shape=\(e105DoseShape)\n").utf8))
-    }
-    return take
-}
-
-nonisolated(unsafe) private let e105DoseZero = MLXArray.zeros([1], dtype: .bfloat16)
-
-private let e105DoseKernel = MLXFast.metalKernel(
-    name: "e105_dispatch_dose_probe",
-    inputNames: ["x", "z"],
-    outputNames: ["o"],
-    source: """
-        uint lane = thread_position_in_grid.x
-            + thread_position_in_grid.y * 4099u
-            + thread_position_in_grid.z * 65537u;
-        if (lane == 0) {
-            o[0] = x[0] * z[0];
-        }
-        """
-)
-
-@inline(__always)
-private func e105DoseGrid() -> ((Int, Int, Int), (Int, Int, Int)) {
-    e105DoseShape == "tiny" ? ((1, 1, 1), (1, 1, 1)) : ((32, 5, 80), (32, 1, 1))
-}
-
-func e105ApplyDispatchDose(to base: MLXArray) -> MLXArray {
-    let (grid, threadGroup) = e105DoseGrid()
-    var chained = base
-    for _ in 0 ..< e105DoseCount {
-        chained = e105DoseKernel(
-            [chained, e105DoseZero],
-            grid: grid,
-            threadGroup: threadGroup,
-            outputShapes: [[1]],
-            outputDTypes: [.bfloat16]
-        )[0]
-    }
-    return base + chained
-}
-
 public class Qwen35TextModelInner: Module {
     @ModuleInfo(key: "embed_tokens") var embedTokens: Embedding
 
@@ -3003,10 +2871,6 @@ public class Qwen35TextModelInner: Module {
             // a standalone entry RMSNorm — 63 launches removed per forward.
             // Ladder rungs force both halves of the pair: same graph
             // frontier, same overlap, no arithmetic change.
-            let e105DoseQualifies =
-                e105DoseCount > 0 && !prefillLadder && hiddenStates.dim(1) <= 9
-            let e105DoseActive =
-                e105DoseQualifies && e105DoseTakeTurn(width: hiddenStates.dim(1))
             var base = hiddenStates
             var delta: MLXArray? = nil
             for (i, layer) in layers.enumerated() {
@@ -3020,9 +2884,6 @@ public class Qwen35TextModelInner: Module {
                     cache: cacheArray?[i], nConfirmed: nConfirmed)
                 base = out.base
                 delta = out.delta
-                if e105DoseActive {
-                    base = e105ApplyDispatchDose(to: base)
-                }
                 if ladderActive {
                     if prefillLadder {
                         if i == 0 || i % 3 == 2 {
