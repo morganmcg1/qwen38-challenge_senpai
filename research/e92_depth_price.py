@@ -125,6 +125,20 @@ def main() -> None:
               % (tag, total, histograms[tag]["mean_depth"],
                  dict(sorted(histogram.items()))))
 
+    # Price the one-cell guard on the local fixture. Tokens produced at the
+    # dominated depth are re-priced at the depth-3 rate; nothing else moves.
+    per_token = {row["depth"]: row["us_per_token_pooled"] for row in rows}
+    print()
+    print("local prize of a depth-4 guard, unpinned legs")
+    for tag, histogram in histograms.items():
+        counts = {int(k): v for k, v in histogram["histogram"].items()}
+        leg_us = sum(costs[d + 1] * n for d, n in counts.items())
+        moved_tokens = counts.get(4, 0) * pooled[4]
+        saved = moved_tokens * (per_token[4] - per_token[3])
+        histogram["guard_saving_frac_of_leg"] = saved / leg_us
+        print("%-22s rounds_at_depth_4=%d  leg_us=%.0f  saving=%.0f us  %.3f %%"
+              % (tag, counts.get(4, 0), leg_us, saved, saved / leg_us * 100.0))
+
     result = {
         "raw": forms,
         "rescaled": {k: rescale(v) for k, v in forms.items()},

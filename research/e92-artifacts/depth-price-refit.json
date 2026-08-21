@@ -1,6 +1,7 @@
 {
   "chosen_depth_histograms": {
     "e90-lhsindices": {
+      "guard_saving_frac_of_leg": 0.008588100722421957,
       "histogram": {
         "1": 1,
         "3": 4,
@@ -15,6 +16,7 @@
       "rounds": 78
     },
     "e90-rung0b-prod": {
+      "guard_saving_frac_of_leg": 0.008588100722421957,
       "histogram": {
         "1": 1,
         "3": 4,
@@ -29,6 +31,7 @@
       "rounds": 78
     },
     "e90-rung0b-synchead": {
+      "guard_saving_frac_of_leg": 0.008588100722421957,
       "histogram": {
         "1": 1,
         "3": 4,
