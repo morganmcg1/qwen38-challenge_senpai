@@ -894,3 +894,131 @@ struct QwenDraftProbeSortTests {
     }
 }
 
+/// E101 / PR #103 chain C. Arm C selected its 32 rerank candidates with
+/// `MLX.argPartition` over 24,584 bf16 row scores and then converted the
+/// winning row offsets into compact-vocabulary ids with five more elementary
+/// MLX ops. The census priced that chain at 45.98 us per draft plus 14.5 us
+/// per draft of index arithmetic. `Qwen35RowTop32` replaces both with the
+/// two-dispatch selection the declared top-32 path already ships, at a
+/// quarter of the width and with the address arithmetic fused into the
+/// finalize kernel.
+///
+/// The exactness argument is the dense one: the tail-32 of MLX's stable
+/// ascending argsort is the unique 32-element set maximal under (value asc,
+/// index asc), and `qwen_top32_ordinal` induces exactly that order. The fused
+/// address arithmetic is injective and element-wise, so identical selections
+/// give identical ids.
+@Suite
+struct QwenRowTop32SelectionTests {
+    private static var env: [String: String] { ProcessInfo.processInfo.environment }
+
+    private static var enabled: Bool {
+        env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
+    }
+
+    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
+    /// compact rows at `qwen35DerivedClusterProbeFraction` 0.25, so the
+    /// selection runs over 3,073 * 8 = 24,584 rows.
+    private static let liveClusters = 12_292
+    private static let liveRowsPerCluster = 8
+    private static let liveProbes = 3_073
+
+    private static func emit(_ name: String, _ payload: [String: Any]) throws {
+        print("E101_ROW_TOP32 \(name) \(payload)")
+        guard let dir = env["MLXFAST_ROW_TOP32_OUT_DIR"] else { return }
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).json"))
+    }
+
+    @Test(.enabled(if: QwenRowTop32SelectionTests.enabled))
+    func theFusedRowTop32MatchesArgPartitionAndItsIndexArithmetic() throws {
+        let requested = Int(Self.env["MLXFAST_ROW_TOP32_TRIALS"] ?? "") ?? 256
+        let seed = UInt64(Self.env["MLXFAST_ROW_TOP32_SEED"] ?? "") ?? 1
+        let (trials, bad, firstBad) = qwen35VerifyRowTop32(
+            clusters: Self.liveClusters, rowsPerCluster: Self.liveRowsPerCluster,
+            probes: Self.liveProbes, trials: requested, seed: seed)
+        try Self.emit(
+            "verify",
+            [
+                "schema": "e101.row_top32_verify.v1",
+                "entry_point": "qwen35VerifyRowTop32",
+                "clusters": Self.liveClusters,
+                "rows_per_cluster": Self.liveRowsPerCluster,
+                "probes": Self.liveProbes,
+                "rows": Self.liveProbes * Self.liveRowsPerCluster,
+                "trials": trials,
+                "seed": Int(seed),
+                "tied_trials": trials / 4,
+                "all_equal_trials": trials / 4,
+                "mismatches": bad,
+                "first_bad_trial": firstBad,
+            ])
+        #expect(trials == requested)
+        #expect(
+            bad == 0 && firstBad == -1,
+            """
+            E101 / PR #103: qwen_mtp_row_top32 disagreed with argPartition on \
+            \(bad) of \(trials) rows (first at \(firstBad)). Every fourth \
+            trial is heavily tied and every fourth is all-equal, so a failure \
+            here most likely means the candidate-set tie-break drifted or the \
+            fused cluster address arithmetic is wrong.
+            """
+        )
+    }
+
+    /// The verify gate compares two arrays that agree by construction, so it
+    /// would also pass against a broken comparison. This proves it can fail,
+    /// using the smallest damage that must change the answer: one rejected row
+    /// promoted above every selected row.
+    @Test(.enabled(if: QwenRowTop32SelectionTests.enabled))
+    func theRowTop32GateRejectsASinglePromotedRow() throws {
+        let caught = qwen35RowTop32PositiveControl(
+            clusters: Self.liveClusters, rowsPerCluster: Self.liveRowsPerCluster,
+            probes: Self.liveProbes)
+        try Self.emit(
+            "positive_control",
+            [
+                "schema": "e101.row_top32_positive_control.v1",
+                "entry_point": "qwen35RowTop32PositiveControl",
+                "clusters": Self.liveClusters,
+                "rows_per_cluster": Self.liveRowsPerCluster,
+                "probes": Self.liveProbes,
+                "damage": "raise the lowest row score above every other row",
+                "detected": caught,
+            ])
+        #expect(
+            caught,
+            """
+            E101 / PR #103: the row top-32 gate accepted a selection built \
+            from a damaged score row. The gate cannot fail, so its passes \
+            prove nothing. Fix the comparison before trusting the verify test.
+            """
+        )
+    }
+
+    @Test(.enabled(if: QwenRowTop32SelectionTests.enabled))
+    func theTwoDispatchRowTop32IsCheaperThanTheChainItReplaces() throws {
+        let iters = Int(Self.env["MLXFAST_ROW_TOP32_BENCH_ITERS"] ?? "") ?? 200
+        let (chainUs, kernelUs) = qwen35BenchRowTop32(
+            clusters: Self.liveClusters, rowsPerCluster: Self.liveRowsPerCluster,
+            probes: Self.liveProbes, iters: iters)
+        try Self.emit(
+            "bench",
+            [
+                "schema": "e101.row_top32_bench.v1",
+                "entry_point": "qwen35BenchRowTop32",
+                "clusters": Self.liveClusters,
+                "rows_per_cluster": Self.liveRowsPerCluster,
+                "probes": Self.liveProbes,
+                "iters": iters,
+                "arg_partition_chain_us": chainUs,
+                "fused_kernel_us": kernelUs,
+                "saved_us": chainUs - kernelUs,
+                "speedup": chainUs / kernelUs,
+            ])
+        #expect(
+            chainUs > 0 && kernelUs > 0,
+            "E101 / PR #103: qwen35BenchRowTop32 returned a non-positive timing")
+    }
+}
