@@ -49,7 +49,10 @@ private final class E90IntervalLedger: @unchecked Sendable {
     /// would swallow the whole timeline.
     private var invalidBuffers = 0
 
-    private static let flushEvery = 4096
+    private static let flushEvery = 2048
+
+    /// Held for the lifetime of the process: a cancelled source stops firing.
+    private var terminationSource: DispatchSourceSignal?
 
     private let sink: FileHandle = {
         guard let path = ProcessInfo.processInfo
@@ -76,11 +79,30 @@ private final class E90IntervalLedger: @unchecked Sendable {
         let bufferClass: AnyClass = type(of: probe as AnyObject)
         let ok = swizzleCommit(bufferClass)
         atexit_b { E90IntervalLedger.shared.flush(reason: "exit") }
+        installTerminationFlush()
         write([
             "event": "e90_installed",
             "buffer_class": String(describing: bufferClass),
             "commit_hook": ok ? 1 : 0,
         ])
+    }
+
+    /// The harness stops the worker with SIGTERM, whose default action skips
+    /// `atexit`, so without this the last partial batch never reaches the sink.
+    /// A dispatch source runs the flush on an ordinary queue thread instead of
+    /// in signal context, then re-raises SIGTERM so the parent still observes
+    /// the same termination reason.
+    private func installTerminationFlush() {
+        signal(SIGTERM, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(
+            signal: SIGTERM, queue: .global(qos: .userInitiated))
+        source.setEventHandler {
+            E90IntervalLedger.shared.flush(reason: "sigterm")
+            signal(SIGTERM, SIG_DFL)
+            raise(SIGTERM)
+        }
+        source.resume()
+        terminationSource = source
     }
 
     func record(commit: UInt64, start: UInt64, end: UInt64, done: UInt64) {
