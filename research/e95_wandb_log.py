@@ -28,7 +28,6 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
-import subprocess
 import sys
 
 import wandb
@@ -86,6 +85,36 @@ RANKED_WEIGHTING = {
     "class_share_pct_gdn_in_proj_essays": 14.5,
     "class_share_pct_lm_head": 4.5,
     "class_share_pct_attn": 4.2,
+}
+
+# Itemisation of the fixed term `a` at M=5, the width nearest the ranked mean.
+# Reproduce with `research/e95_verify_census.py fixed LEG@M ...`.
+FIXED_TERM_M5 = [
+    ("GDN recurrent step, full [48,128,128] fp32 state",
+     48.0, 301.99, 8112.6, 37.2, 74.6, "latency"),
+    ("fused residual + RMSNorm", 127.0, 20.81, 1187.1, 17.5, 10.9, "latency"),
+    ("GDN recurrent state REPLAY", 6.52, 41.01, 658.4, 62.3, 6.1, "latency"),
+    ("GDN prework: causal conv1d, q/k norm, gates",
+     48.0, 17.69, 475.3, 37.2, 4.4, "latency"),
+    ("q_norm + k_norm + RoPE", 16.0, 1.16, 210.5, 5.5, 1.9, "latency"),
+    ("full-attention KV cache write", 32.79, 2.31, 166.5, 13.8, 1.5, "latency"),
+    ("MTP top-2 partial + finalize", 2.0, 0.0, 55.4, 0.0, 0.5, "no bytes"),
+    ("everything else", 14.94, 0.0, 4.5, 0.0, 0.0, "no bytes"),
+]
+
+FIXED_TERM = {
+    "a_us_per_round": 10_919.5,
+    "gdn_step_us_per_round_low": 6_492.8,
+    "gdn_step_us_per_round_high": 9_493.8,
+    "gdn_step_us_per_round_mean": 7_759.5,
+    "gdn_step_mb_per_round": 301.99,
+    "gdn_step_dram_rate_expectation_us": 1_139.6,
+    "gdn_step_measured_over_dram_expectation": 6.81,
+    "gdn_step_achieved_gb_per_s_low": 31.8,
+    "gdn_step_achieved_gb_per_s_high": 46.5,
+    "gdn_family_share_of_a_pct_m5": 85.1,
+    "a_share_of_verify_phase_pct_beagle": 9.0,
+    "a_share_of_round_pct": 8.1,
 }
 
 # Draft-head q projection, per marginal draft. The island overwrites 1024 of
@@ -210,8 +239,10 @@ def log_census(specs: list[str]) -> None:
         for phase, values in phases.items():
             summary[f"phase/{phase}/dispatches_per_round"] = values[
                 "dispatches_per_round"]
-            summary[f"phase/{phase}/us_per_round"] = values["us_per_round"]
+            summary[f"phase/{phase}/commits_per_round"] = values[
+                "commits_per_round"]
         run.summary.update(summary)
+        print(f"{leg}\t{run.id}\t{run.url}")
         run.finish()
 
 
@@ -244,6 +275,14 @@ def log_model() -> None:
         "dead_work/joint_fit_ns_per_threadgroup_high": -0.17,
         "dead_work/quantized_cpp_in_editable_paths": False,
     })
+
+    fixed = wandb.Table(
+        columns=["class", "dispatches_per_round", "mb_per_round",
+                 "us_per_round_m5", "gb_per_s_m5", "share_of_a_pct", "bound"],
+        data=FIXED_TERM_M5)
+    run.log({"fixed_term_itemisation_m5": fixed})
+    run.summary.update({f"fixed/{k}": v for k, v in FIXED_TERM.items()})
+    print(f"model\t{run.id}\t{run.url}")
     run.finish()
 
 
@@ -261,8 +300,8 @@ def log_rider(exact_dir: pathlib.Path, base_leg: str, cand_leg: str) -> None:
     base_score = read_json(OUT / base_leg / "score.json")["metrics"]
     cand_score = read_json(OUT / cand_leg / "score.json")["metrics"]
 
-    base_shapes = census.draft_head_shapes(OUT / base_leg / "census.jsonl")
-    cand_shapes = census.draft_head_shapes(OUT / cand_leg / "census.jsonl")
+    base_shapes = phase_shapes(base_leg, 6, "draft_head")
+    cand_shapes = phase_shapes(cand_leg, 6, "draft_head")
 
     saved_bytes = int((Q_ROWS_TOTAL - Q_ROWS_LIVE) * Q_BYTES_PER_ROW)
     config = {
@@ -332,6 +371,7 @@ def log_rider(exact_dir: pathlib.Path, base_leg: str, cand_leg: str) -> None:
     run.log({"draft_head_shapes": wandb.Table(
         columns=["shape", "base_per_round", "candidate_per_round", "delta"],
         data=shape_rows)})
+    print(f"rider\t{run.id}\t{run.url}")
     run.finish()
 
 
