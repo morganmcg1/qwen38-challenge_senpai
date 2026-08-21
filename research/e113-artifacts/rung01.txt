@@ -1,0 +1,178 @@
+==============================================================================
+E113 RUNG 0 - the depth-price boundary on the current tree
+==============================================================================
+
+=== harness=local (E106 census 19kgn6xi): current-tree round cost and marginal cost ===
+  M   part        round_us    marginal  vs prev provenance
+  1   [1]          66374.3    G=1 INFERRED
+  2   [2]          78208.2     11833.9   G=1 measured
+  3   [3]          90042.1     11833.9     1.00  G=1 INFERRED
+  4   [4]         101876.0     11833.9     1.00  G=1 INFERRED
+  5   [5]         113709.8     11833.9     1.00  G=1 measured
+  6   [3+3]       133563.9     19854.1     1.68  G=2 measured
+  7   [4+3]       144138.8     10574.9     0.89  G=2 measured
+  8   [4+4]       156950.0     12811.1     1.08  G=2 measured
+  n per measured width: {2: 1, 5: 1, 6: 4, 7: 3, 8: 10}
+  local tier ratio at the step into width 6: 1.678
+
+=== harness=ranked route A (Finding 31 identity): current-tree round cost and marginal cost ===
+  M   part        round_us    marginal  vs prev provenance
+  1   [1]          31175.3    G=1 INFERRED
+  2   [2]          35169.2      3993.9   G=1 INFERRED
+  3   [3]          39164.0      3994.8     1.00  G=1 INFERRED
+  4   [4]          43163.7      3999.7     1.00  G=1 INFERRED
+  5   [5]          52947.6      9784.0     2.45  G=1 INFERRED
+  6   [3+3]        60340.6      7392.9     1.85  G=2 INFERRED
+  7   [4+3]        67568.4      7227.9     1.81  G=2 INFERRED
+  8   [4+4]        74811.1      7242.6     1.81  G=2 INFERRED
+  ranked tier ratio at the step into width 6: 0.756
+  ranked tier ratio at the step into width 5: 2.446
+
+=== harness=ranked route B: round cost from our post-E100 receipts ===
+
+  receipt b8b8b860  official 3.33412148
+    prompt         R       M    round_us  us/token    accept
+    plutarch     487   1.154     31803.5   30250.6    0.3333
+    drama        252   3.298     39741.0   19560.0    0.4491
+    travel       212   3.656     41523.7   17193.4    0.5329
+    beagle       110   5.382     55096.9   11837.2    0.8340
+    republic      93   5.989     59431.0   10795.1    0.9030
+    essays        92   6.087     60658.6   10899.6    0.8974
+    medicine      90   6.256     61381.0   10789.6    0.8922
+    botany        81   7.148     67719.3   10713.4    0.8655
+
+  receipt 44559d02  official 3.34351272
+    prompt         R       M    round_us  us/token    accept
+    plutarch     487   1.154     31909.3   30351.2    0.3333
+    drama        252   3.298     39743.9   19561.5    0.4491
+    travel       212   3.656     41519.7   17191.7    0.5329
+    beagle       110   5.382     55118.7   11841.9    0.8340
+    republic      93   5.989     59409.8   10791.2    0.9030
+    essays        92   6.087     60659.8   10899.8    0.8974
+    medicine      90   6.256     61392.5   10791.7    0.8922
+    botany        81   7.148     67687.6   10708.4    0.8655
+
+  where is the ranked cost boundary? two-line fits, break at M=b
+    break         a1         c1         a2         c2     step_us  max|res|
+    M>=4     27439.9     3799.2    16982.0     7108.1      2777.7     0.68%
+    M>=5     27439.9     3799.2    16982.0     7108.1      6086.6     0.68%
+    M>=6     22669.7     5868.1    19179.4     6783.3      2001.1     7.73%
+    M>=7     21844.0     6184.2    67703.4        0.0      2570.0     9.18%
+    single line 21392.3 + 6319.4 * M   max|res| 10.10%
+
+=== per-prompt cost-per-emitted-token optimum, harness=ranked route A (F31) ===
+  cpt(d) = round_us(M=d+1) / expected emitted tokens(d)
+  prompt     accept   realM     d*  cpt(d*) cpt(dreal) | cpt(d) for d = 0 .. 7
+  plutarch   0.3333   1.154      1    26377    31175 |  31175  26377  27115  29146  35466  40313  45101  49921
+  drama      0.4491   3.298      2    20633    20633 |  31175  22378  20633  20727  24221  26888  29661  32569
+  travel     0.5329   3.656      3    16610    16610 |  31175  20471  17538  16610  18537  19862  21307  22915
+  beagle     0.8340   5.382      6    11964    12211 |  31175  18198  13978  11981  12211  12049  11964  12006
+  republic   0.9030   5.989      7    10515    10941 |  31175  17834  13430  11291  11293  10941  10666  10515
+  essays     0.8974   6.087      7    10589    10997 |  31175  17853  13458  11326  11339  10997  10731  10589
+  medicine   0.8922   6.256      7    10659    11050 |  31175  17870  13484  11359  11383  11050  10792  10659
+  botany     0.8655   7.148      7    10795    10911 |  31175  17904  13535  11423  11468  11151  10911  10795
+  prompts within 0.20% of the optimum: 2 of 8  -> KILL RULE 0 does not fire
+  CAVEAT: cpt(dreal) prices the realised MEAN depth as if it were a fixed depth.
+  The shipped walk is adaptive; E99 measured the adaptive walk 2.58 %% BETTER than
+  the best fixed depth on the ranked curve, so these gaps overstate the prize.
+
+=== per-prompt cost-per-emitted-token optimum, harness=local  (E106 census) ===
+  cpt(d) = round_us(M=d+1) / expected emitted tokens(d)
+  prompt     accept   realM     d*  cpt(d*) cpt(dreal) | cpt(d) for d = 0 .. 7
+  plutarch   0.3333   1.154      1    58656    66374 |  66374  58656  62340  68792  76167  89232  96211 104732
+  drama      0.4491   3.298      2    47438    47438 |  66374  49763  47438  48920  52017  59518  63274  68329
+  travel     0.5329   3.656      3    39204    39204 |  66374  45523  40321  39204  39811  43965  45453  48075
+  beagle     0.8340   5.382      7    25188    26224 |  66374  40468  32138  28278  26224  26670  25522  25188
+  republic   0.9030   5.989      7    22059    24218 |  66374  39658  30876  26648  24252  24218  22753  22059
+  essays     0.8974   6.087      7    22215    24341 |  66374  39700  30941  26731  24352  24341  22891  22215
+  medicine   0.8922   6.256      7    22363    24458 |  66374  39739  31002  26810  24446  24458  23023  22363
+  botany     0.8655   7.148      7    22647    23275 |  66374  39815  31119  26960  24628  24683  23275  22647
+  prompts within 0.20% of the optimum: 2 of 8  -> KILL RULE 0 does not fire
+  CAVEAT: cpt(dreal) prices the realised MEAN depth as if it were a fixed depth.
+  The shipped walk is adaptive; E99 measured the adaptive walk 2.58 %% BETTER than
+  the best fixed depth on the ranked curve, so these gaps overstate the prize.
+
+=== what each price arm chooses, per prompt (greedy walk, cap 7) ===
+  arm marginal vectors
+    ship    0.1800 0.1800 0.1800 0.1800 0.1800 0.1800 0.1800 0.1800
+    pb6     0.1595 0.1595 0.1595 0.1595 0.3237 0.1595 0.1595 0.1595
+    pb6fit  0.1659 0.1659 0.1659 0.1659 0.2784 0.1659 0.1659 0.1659
+    pb5     0.1595 0.1595 0.1595 0.3237 0.1595 0.1595 0.1595 0.1595
+
+  prompt      realM   ship    pb6   pb6fit      pb5    opt
+  plutarch    1.154      1      1        1        1      1
+  drama       3.298      2      2        2        2      2
+  travel      3.656      3      3        3        3      3
+  beagle      5.382      7      4        4        3      6
+  republic    5.989      7      4        7        7      7
+  essays      6.087      7      4        7        7      7
+  medicine    6.256      7      4        7        7      7
+  botany      7.148      7      4        7        7      7
+
+==============================================================================
+E113 RUNG 1 - replay on recorded current-tree rounds
+==============================================================================
+
+--- e101ctl512  base 9d837fc2  tokens 512  rounds 78  offered cap 8 ---
+    positive control, ship walk reproduces the recorded depth on 78 of 78 rounds
+    mean recorded width 7.359  accept 0.8770
+    treatment=observed
+      arm        us/token mean depth  vs ship    curve
+      ship        10655.4      6.359   +0.00%   ranked
+      pb6         11159.0      4.449   +4.73%   ranked
+      pb6fit      10717.9      5.551   +0.59%   ranked
+      pb5         10557.9      5.179   -0.91%   ranked
+      pb5fit      11541.7      2.974   +8.32%   ranked
+      look6       10596.1      6.051   -0.56%   ranked
+      look5       10514.5      6.000   -1.32%   ranked
+      ship        22556.5      6.359   +0.00% local_current
+      pb6         23817.6      4.449   +5.59% local_current
+      pb6fit      22705.7      5.551   +0.66% local_current
+      pb5         23022.0      5.179   +2.06% local_current
+      pb5fit      27225.6      2.974  +20.70% local_current
+      look6       22376.8      6.051   -0.80% local_current
+      look5       22478.9      6.000   -0.34% local_current
+    treatment=impute
+      arm        us/token mean depth  vs ship    curve
+      ship        10655.4      6.359   +0.00%   ranked
+      pb6         11132.2      4.449   +4.47%   ranked
+      pb6fit      10696.2      5.551   +0.38%   ranked
+      pb5         10557.9      5.179   -0.91%   ranked
+      pb5fit      11541.7      2.974   +8.32%   ranked
+      look6       10556.1      6.051   -0.93%   ranked
+      look5       10454.9      6.000   -1.88%   ranked
+      ship        22556.5      6.359   +0.00% local_current
+      pb6         23760.4      4.449   +5.34% local_current
+      pb6fit      22659.8      5.551   +0.46% local_current
+      pb5         23022.0      5.179   +2.06% local_current
+      pb5fit      27225.6      2.974  +20.70% local_current
+      look6       22292.4      6.051   -1.17% local_current
+      look5       22351.4      6.000   -0.91% local_current
+
+==============================================================================
+E113 RUNG 1b - per-prompt replay at the realised ranked widths
+==============================================================================
+  trace e101ctl512, 78 rounds, EMA dispersion preserved, level recalibrated
+
+  prompt     realdl   lambda   shipdl | arm mean depth / ranked us per token / delta%
+  plutarch    0.154   0.1802    0.167 | ship 0.17/30165/+0.00%/clamp 0.00  pb6 0.85/26953/-10.65%/clamp 0.00  pb6fit 0.77/27258/-9.64%/clamp 0.00  pb5 0.85/26953/-10.65%/clamp 0.00  look6 0.77/27258/-9.64%/clamp 0.00  look5 0.92/26659/-11.62%/clamp 0.00  e99gate 0.17/30165/+0.00%/clamp 0.00
+  drama       2.298   0.6567    2.295 | ship 2.29/20663/+0.00%/clamp 0.00  pb6 2.53/20685/+0.11%/clamp 0.00  pb6fit 2.47/20680/+0.08%/clamp 0.00  pb5 2.53/20685/+0.11%/clamp 0.00  look6 2.47/20680/+0.08%/clamp 0.00  look5 2.55/20687/+0.12%/clamp 0.00  e99gate 2.29/20663/+0.00%/clamp 0.00
+  travel      2.656   0.7157    2.654 | ship 2.65/16900/+0.00%/clamp 0.00  pb6 2.76/16811/-0.53%/clamp 0.00  pb6fit 2.72/16844/-0.33%/clamp 0.00  pb5 2.76/16811/-0.53%/clamp 0.00  look6 2.72/16844/-0.33%/clamp 0.00  look5 2.78/16790/-0.66%/clamp 0.00  e99gate 2.65/16900/+0.00%/clamp 0.00
+  beagle      4.382   0.8675    4.385 | ship 4.38/12168/+0.00%/clamp 0.00  pb6 3.82/12196/+0.22%/clamp 0.56  pb6fit 3.81/12193/+0.20%/clamp 0.56  pb5 2.99/12001/-1.37%/clamp 0.78  look6 3.81/12193/+0.20%/clamp 0.56  look5 3.00/11981/-1.54%/clamp 0.78  e99gate 4.28/12162/-0.05%/clamp 0.06
+  republic    4.989   0.8947    4.987 | ship 4.99/10914/+0.00%/clamp 0.00  pb6 3.90/11293/+3.47%/clamp 0.65  pb6fit 3.86/11310/+3.63%/clamp 0.65  pb5 3.00/11291/+3.45%/clamp 0.85  look6 4.17/11191/+2.54%/clamp 0.55  look5 4.64/10853/-0.56%/clamp 0.44  e99gate 4.83/10927/+0.12%/clamp 0.09
+  essays      5.087   0.8977    5.077 | ship 5.08/10950/+0.00%/clamp 0.00  pb6 3.90/11338/+3.55%/clamp 0.67  pb6fit 3.87/11355/+3.70%/clamp 0.67  pb5 3.00/11326/+3.43%/clamp 0.85  look6 4.29/11202/+2.30%/clamp 0.53  look5 4.74/10892/-0.53%/clamp 0.41  e99gate 4.92/10961/+0.10%/clamp 0.09
+  medicine    5.256   0.9055    5.256 | ship 5.26/10945/+0.00%/clamp 0.00  pb6 3.90/11381/+3.98%/clamp 0.67  pb6fit 3.88/11399/+4.14%/clamp 0.67  pb5 3.00/11359/+3.78%/clamp 0.85  look6 4.69/11133/+1.72%/clamp 0.40  look5 4.95/10913/-0.29%/clamp 0.36  e99gate 5.09/10957/+0.11%/clamp 0.09
+  botany      6.148   0.9645    6.154 | ship 6.15/10919/+0.00%/clamp 0.00  pb6 3.95/11466/+5.01%/clamp 0.82  pb6fit 5.03/11156/+2.17%/clamp 0.46  pb5 4.38/11113/+1.78%/clamp 0.59  look6 5.87/10973/+0.49%/clamp 0.18  look5 5.82/10911/-0.07%/clamp 0.23  e99gate 5.71/10953/+0.32%/clamp 0.18
+
+  predicted published median (Finding 16 weighting is implicit in the median)
+    arm              median    vs ship
+    ship         3.33412148   +0.0000%
+    pb6          3.27111497   -1.8897%
+    pb6fit       3.26889283   -1.9564%
+    pb5          3.29880418   -1.0593%
+    look6        3.29186287   -1.2675%
+    look5        3.36833193   +1.0261%
+    e99gate      3.33313779   -0.0295%
+    KILL RULE 1 threshold: 0.20 %% predicted published gain
+
+wrote research/e113-artifacts/rung01.json
