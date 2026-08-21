@@ -1,8 +1,8 @@
 diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-index 0b13d32..637205c 100644
+index 0b13d32..dd12331 100644
 --- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
 +++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
-@@ -920,17 +920,52 @@ public final class Qwen36MTPBlockSession {
+@@ -920,13 +920,101 @@ public final class Qwen36MTPBlockSession {
          0.42510483416251998,
      ]
  
@@ -49,18 +49,67 @@ index 0b13d32..637205c 100644
 -        let marginal = measuredRawDepthPrice.map { $0 * scale }
 +        let scale = total / raw.reduce(0.0, +)
 +        let marginal = raw.map { $0 * scale }
-         return DepthPrice(marginal: marginal,
-                           cumulative: prefixCosts(marginal))
-     }
- 
++        return DepthPrice(marginal: marginal,
++                          cumulative: prefixCosts(marginal))
++    }
++
 +    internal static func makeMeasuredDepthPrice() -> DepthPrice {
 +        makeDepthPrice(rescaling: measuredRawDepthPrice)
 +    }
 +
-     internal static func prefixCosts(_ marginal: [Double]) -> [Double] {
-         var out = [1.0]
-         var running = 1.0
-@@ -943,6 +978,41 @@ public final class Qwen36MTPBlockSession {
++    /// E94 rung 3. The depth price fitted to the RANKED M5 round cost instead
++    /// of any local host's.
++    ///
++    /// Two per-group affine fits over 50 official ranked runs on the reference
++    /// schedule, recovered from `effective_mean_draft_len` as the exact
++    /// rational `total_drafts / total_rounds`:
++    ///
++    ///     G = 1, M = 1...4 : round_us = 27181.5 + 3995.1 * M
++    ///     G = 2, M = 5...8 : round_us = 16943.2 + 7233.0 * M
++    ///
++    /// Normalised by the ranked width-1 round of 31176.6 us, the marginal cost
++    /// of the step into verify width `index + 2` is
++    ///
++    ///   * `rankedTierHeadStep` below the group boundary,
++    ///   * `rankedGroupStepFactor` times that for the step into width 5,
++    ///   * `rankedTierFactor` times that above the boundary.
++    ///
++    /// Index 7 prices the step into width 9, the second group transition. It
++    /// is unreachable under `segmentedVerifyDepthCap = 7`, so it keeps the
++    /// tier-2 marginal rather than carrying a constant no round can read.
++    ///
++    /// `G = ceil(M / 4)` in the whole-table quantized matrix-vector dispatch,
++    /// so verify width 5 is the first width of the second group.
++    internal static let quantizedGroupWidth = 4
++    internal static let rankedTierHeadStep = 0.128
++    internal static let rankedGroupStepFactor = 2.490
++    internal static let rankedTierFactor = 1.810
++
++    /// The ranked-shaped price. UNLIKE EVERY OTHER ARM THIS ONE DOES NOT HOLD
++    /// THE SHIPPED TOTAL, and the level is the point rather than an accident.
++    ///
++    /// `1 + sum(marginal)` is a cost in units of one width-1 round, so scaling
++    /// the marginals does not cancel out of `marginal[d] / cumulative[d]`. The
++    /// shipped 0.18 was set without a measured head-step anchor; 0.128 IS the
++    /// ranked anchor, measured against the same rounds that produced the tier
++    /// factors. Rescaling this curve to `maxDepth * headStepCostRatio` would
++    /// replace the one quantity the ranked board actually reports with the
++    /// number it is meant to correct. Shape and level are one fit.
++    internal static func makeRankedTierDepthPrice() -> DepthPrice {
++        var marginal = [Double](repeating: rankedTierHeadStep,
++                                count: Qwen36MTPLimits.maxDepth)
++        for index in 0 ..< marginal.count {
++            let enteringWidth = index + 2
++            if enteringWidth == quantizedGroupWidth + 1 {
++                marginal[index] = rankedTierHeadStep * rankedGroupStepFactor
++            } else if enteringWidth > quantizedGroupWidth + 1 {
++                marginal[index] = rankedTierHeadStep * rankedTierFactor
++            }
++        }
+         return DepthPrice(marginal: marginal,
+                           cumulative: prefixCosts(marginal))
+     }
+@@ -943,6 +1031,47 @@ public final class Qwen36MTPBlockSession {
  
      internal enum DepthPriceArm: String {
          case ship, pb5, pb7, pbfit
@@ -94,6 +143,12 @@ index 0b13d32..637205c 100644
 +        case amin
 +        /// E94. Global minimum of cost per token over the E92 refit shape.
 +        case amine92
++        /// E94 rung 3. The shipped greedy walk over a price fitted to the
++        /// RANKED M5 round cost. Every earlier arm was fitted to a local host
++        /// and then had to survive the transfer; this one is fitted to the
++        /// machine that scores us and has to survive the transfer backwards,
++        /// so a local loss inside the session null is the expected sign.
++        case m5fit
 +    }
 +
 +    /// True when the arm replaces the greedy walk with a global minimum.
@@ -102,18 +157,30 @@ index 0b13d32..637205c 100644
      }
  
      /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
-@@ -964,6 +1034,8 @@ public final class Qwen36MTPBlockSession {
+@@ -964,6 +1093,9 @@ public final class Qwen36MTPBlockSession {
          case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
          case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
          case .pbfit: return makeMeasuredDepthPrice()
 +        case .snap4, .amin: return makeUniformDepthPrice()
 +        case .amine92: return makeDepthPrice(rescaling: measuredRawDepthPriceE92)
++        case .m5fit: return makeRankedTierDepthPrice()
          }
      }()
  
-@@ -1081,20 +1153,14 @@ public final class Qwen36MTPBlockSession {
+@@ -1080,21 +1212,25 @@ public final class Qwen36MTPBlockSession {
+         // there would describe the next round's inputs, not this one's.
          if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
          guard cap > 0 else { return 0 }
++        // Hard guard 2. The ranked first-tier step is cheaper than the shipped
++        // one, so the ranked-shaped price would open drafting on rounds the
++        // shipped price leaves closed. Holding the entry test at the shipped
++        // threshold keeps the arm's non-drafting set exactly the shipped one,
++        // which is the state the campaign put on the stop list.
++        if Self.depthPriceArm == .m5fit,
++           positionAcceptEstimate(0) <= Self.headStepCostRatio
++        {
++            return 0
++        }
          let price = Self.depthPrice
 +        if Self.armUsesArgmin(Self.depthPriceArm) {
 +            return argminDepth(cap: cap, price: price)
@@ -136,7 +203,7 @@ index 0b13d32..637205c 100644
              reach *= p
              let threshold = price.marginal[depth] * (1.0 + expected) /
                  price.cumulative[depth]
-@@ -1106,9 +1172,58 @@ public final class Qwen36MTPBlockSession {
+@@ -1106,9 +1242,58 @@ public final class Qwen36MTPBlockSession {
              expected += reach
              depth += 1
          }
@@ -196,10 +263,10 @@ index 0b13d32..637205c 100644
      /// Written only when the phase trace is on, so the scored schedule runs
      /// byte-identical arithmetic without it.
 diff --git a/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift b/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
-index 422003b..9276959 100644
+index 422003b..d74e435 100644
 --- a/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
 +++ b/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
-@@ -262,4 +262,90 @@ struct QwenMTPDepthPriceTests {
+@@ -262,4 +262,196 @@ struct QwenMTPDepthPriceTests {
              #expect(walkDepth(pbfit, cap: cap, p: p) == 4)
          }
      }
@@ -288,5 +355,111 @@ index 422003b..9276959 100644
 +            }
 +            #expect(best != 4)
 +        }
++    }
++
++    // E94 rung 3. The ranked-shaped arm.
++
++    @Test("the ranked-shaped price reproduces the fitted tier factors")
++    func rankedPriceReproducesTheFittedTiers() {
++        let price = Qwen36MTPBlockSession.makeRankedTierDepthPrice()
++        let step = 0.128
++        let expected = [
++            step, step, step,
++            step * 2.490,
++            step * 1.810, step * 1.810, step * 1.810, step * 1.810,
++        ]
++        #expect(price.marginal.count == maxDepth)
++        #expect(price.cumulative.count == maxDepth + 1)
++        #expect(price.cumulative[0] == 1.0)
++        for index in 0 ..< maxDepth {
++            #expect(abs(price.marginal[index] - expected[index]) < 1e-15)
++        }
++        // The step into verify width 5 is the only group transition in range.
++        #expect(price.marginal[3] > price.marginal[2])
++        #expect(price.marginal[3] > price.marginal[4])
++    }
++
++    // This arm deliberately breaks the level invariant every other arm holds.
++    // `1 + sum(marginal)` is a cost in units of one width-1 round, so the
++    // level does not cancel out of `marginal[d] / cumulative[d]`; rescaling to
++    // `maxDepth * h` would put the shipped guess back in place of the ranked
++    // measurement. The test pins the intent so a later refactor cannot fold
++    // this arm into `makeDepthPrice(rescaling:)` by accident.
++    @Test("the ranked-shaped arm changes the level, and that is the point")
++    func rankedArmDoesNotHoldTheShippedTotal() {
++        let price = Qwen36MTPBlockSession.makeRankedTierDepthPrice()
++        let total = price.marginal.reduce(0, +)
++        #expect(abs(total - 1.62944) < 1e-12)
++        #expect(abs(total - Double(maxDepth) * h) > 0.18)
++    }
++
++    // The shape claim, in the form the walk actually reads. Below the boundary
++    // the ranked price is cheaper than the shipped flat one, so the arm drafts
++    // more readily; at and above the boundary it is dearer, so the arm stops.
++    @Test("the ranked-shaped price is cheap below the cliff and dear above it")
++    func rankedPriceIsCheapBelowTheCliff() {
++        let ranked = Qwen36MTPBlockSession.makeRankedTierDepthPrice()
++        let ship = Qwen36MTPBlockSession.makeUniformDepthPrice()
++        for index in 0 ..< maxDepth {
++            let rankedCoefficient = ranked.marginal[index]
++                / ranked.cumulative[index]
++            let shipCoefficient = ship.marginal[index] / ship.cumulative[index]
++            if index < 3 {
++                #expect(rankedCoefficient < shipCoefficient)
++            } else {
++                #expect(rankedCoefficient > shipCoefficient)
++            }
++        }
++    }
++
++    // Hard guards 1 and 2, checked over the whole legal input range rather
++    // than argued. Guard 2: the arm's non-drafting set must equal the shipped
++    // one, which is what the entry gate in `costModelDepth` buys. Guard 1: the
++    // arm must not move mass DOWN into depths 1 or 2, so whenever it selects 1
++    // or 2 the shipped walk must not have selected something deeper.
++    @Test("the ranked-shaped arm holds hard guards 1 and 2 at every input")
++    func rankedArmHoldsTheHardGuards() {
++        let ranked = Qwen36MTPBlockSession.makeRankedTierDepthPrice()
++        let ship = Qwen36MTPBlockSession.makeUniformDepthPrice()
++        var draftingSetDiffers = 0
++        var shallowerThanShip = 0
++        for cap in 1 ... 7 {
++            for step in 1 ... 10_000 {
++                let p = Double(step) / 10_000.0
++                let shipDepth = walkDepth(ship, cap: cap, p: p)
++                let armDepth = p <= h ? 0 : walkDepth(ranked, cap: cap, p: p)
++                if (armDepth == 0) != (shipDepth == 0) { draftingSetDiffers += 1 }
++                if armDepth == 1 || armDepth == 2, shipDepth > armDepth {
++                    shallowerThanShip += 1
++                }
++            }
++        }
++        #expect(draftingSetDiffers == 0)
++        #expect(shallowerThanShip == 0)
++    }
++
++    // The behaviour the ranked curve predicts: at the ranked cap the arm is
++    // bimodal on 3 and 7 and never selects 4, 5 or 6, because the group
++    // transition makes those depths a local maximum of modelled cost per
++    // token. This is the histogram direction rung 3 measures.
++    @Test("the ranked-shaped walk is bimodal on depths 3 and 7")
++    func rankedWalkIsBimodal() {
++        let ranked = Qwen36MTPBlockSession.makeRankedTierDepthPrice()
++        var middleDepths = 0
++        for step in 1 ... 10_000 {
++            let p = Double(step) / 10_000.0
++            let depth = p <= h ? 0 : walkDepth(ranked, cap: 7, p: p)
++            if depth >= 4, depth <= 6 { middleDepths += 1 }
++        }
++        #expect(middleDepths == 0)
++        // The accept rates the advisor measured on the ranked board all sit in
++        // the region where the arm holds depth 3 and the shipped walk runs on
++        // through the cliff.
++        let ship = Qwen36MTPBlockSession.makeUniformDepthPrice()
++        for p in [0.834, 0.866, 0.892, 0.897, 0.903] {
++            #expect(walkDepth(ranked, cap: 7, p: p) == 3)
++            #expect(walkDepth(ship, cap: 7, p: p) >= 5)
++        }
++        #expect(walkDepth(ranked, cap: 7, p: 0.99) == 7)
 +    }
  }
