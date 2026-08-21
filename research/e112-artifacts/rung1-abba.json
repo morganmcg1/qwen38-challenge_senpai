@@ -1,0 +1,652 @@
+{
+ "legs": [
+  {
+   "tag": "e112r1p1b",
+   "arm": "off",
+   "position": 1,
+   "flag": "0",
+   "witness_flag": "0,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 36.484130859375,
+   "exit_c": 58.70185470581055,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.031006695237010717,
+   "serial_s_per_tok": 0.07393240043893456,
+   "speedup": 2.3844011712246638,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 161788.5,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 72014,
+     "excess_us": -89774.5
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p2k",
+   "arm": "on",
+   "position": 2,
+   "flag": "1",
+   "witness_flag": "1,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 55.54340744018555,
+   "exit_c": 59.998226165771484,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.0309899493586272,
+   "serial_s_per_tok": 0.07414001575671136,
+   "speedup": 2.3923890581018887,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 161690.0,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 71797,
+     "excess_us": -89893.0
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p3b",
+   "arm": "off",
+   "position": 3,
+   "flag": "0",
+   "witness_flag": "0,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.572975158691406,
+   "exit_c": 59.247318267822266,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.030768355587497354,
+   "serial_s_per_tok": 0.07398340827785432,
+   "speedup": 2.404529162030268,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 160758.5,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 70473,
+     "excess_us": -90285.5
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p4k",
+   "arm": "on",
+   "position": 4,
+   "flag": "1",
+   "witness_flag": "1,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.86031723022461,
+   "exit_c": 59.47677993774414,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.030766830081120133,
+   "serial_s_per_tok": 0.07399358390830457,
+   "speedup": 2.404979119175175,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 160729.0,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 70702,
+     "excess_us": -90027.0
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p5b",
+   "arm": "off",
+   "position": 5,
+   "flag": "0",
+   "witness_flag": "0,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.22918701171875,
+   "exit_c": 59.277469635009766,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.03075562696903944,
+   "serial_s_per_tok": 0.07397578726522624,
+   "speedup": 2.4052765154062685,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 160589.5,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 70483,
+     "excess_us": -90106.5
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p6k",
+   "arm": "on",
+   "position": 6,
+   "flag": "1",
+   "witness_flag": "1,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.13481521606445,
+   "exit_c": 60.47835922241211,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.030998074216768146,
+   "serial_s_per_tok": 0.07401923625729978,
+   "speedup": 2.3878656377066063,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 161799.5,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 72069,
+     "excess_us": -89730.5
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p7b",
+   "arm": "off",
+   "position": 7,
+   "flag": "0",
+   "witness_flag": "0,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.09089279174805,
+   "exit_c": 59.862693786621094,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.0308778730686754,
+   "serial_s_per_tok": 0.07408643374219537,
+   "speedup": 2.3993373370445537,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 161389.5,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 70663,
+     "excess_us": -90726.5
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p8k",
+   "arm": "on",
+   "position": 8,
+   "flag": "1",
+   "witness_flag": "1,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.66238021850586,
+   "exit_c": 60.258480072021484,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.030813755933195353,
+   "serial_s_per_tok": 0.07398168928921223,
+   "speedup": 2.4009305924797206,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ],
+    [
+     1,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 161073.0,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 70612,
+     "excess_us": -90461.0
+    }
+   ]
+  },
+  {
+   "tag": "e112r1p9b",
+   "arm": "off",
+   "position": 9,
+   "flag": "0",
+   "witness_flag": "0,",
+   "status": "0",
+   "tokens": 512,
+   "entry_c": 56.772342681884766,
+   "exit_c": 60.082435607910156,
+   "worker_sha256": "a801f39a4e99f431ac74eb1848b35ebca8416f744f383004d8cddb6c8c9c2285",
+   "session_commit": "02d8b6f1f6cad0da06c757344c09ebe5d8aadb12",
+   "mtp_s_per_tok": 0.030771812424063683,
+   "serial_s_per_tok": 0.07417682628147304,
+   "speedup": 2.410544600339058,
+   "accepted_draft_rate": 0.8770161290322581,
+   "mean_draft_len": 6.358974358974359,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "witnesses": [
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ],
+    [
+     0,
+     1024
+    ]
+   ],
+   "mtp_rounds": 78,
+   "mtp_median_round_us": 160815.5,
+   "mtp_max_key_len": 1025,
+   "mtp_crossings": [
+    {
+     "round": 78,
+     "keys": 1025,
+     "round_us": 70649,
+     "excess_us": -90166.5
+    }
+   ]
+  }
+ ],
+ "mtp_s_per_tok": {
+  "off": {
+   "n": 5,
+   "mean": 0.030836072657257317,
+   "sd": 0.00010729145699477926,
+   "values": [
+    0.031006695237010717,
+    0.030768355587497354,
+    0.03075562696903944,
+    0.0308778730686754,
+    0.030771812424063683
+   ]
+  },
+  "on": {
+   "n": 4,
+   "mean": 0.030892152397427708,
+   "sd": 0.00011921320676428713,
+   "values": [
+    0.0309899493586272,
+    0.030766830081120133,
+    0.030998074216768146,
+    0.030813755933195353
+   ]
+  },
+  "delta": 5.60797401703908e-05,
+  "delta_pct": 0.18186408105116572
+ },
+ "serial_s_per_tok": {
+  "off": {
+   "n": 5,
+   "mean": 0.0740309712011367,
+   "sd": 9.921377366002309e-05,
+   "values": [
+    0.07393240043893456,
+    0.07398340827785432,
+    0.07397578726522624,
+    0.07408643374219537,
+    0.07417682628147304
+   ]
+  },
+  "on": {
+   "n": 4,
+   "mean": 0.07403363130288199,
+   "sd": 7.263294925031684e-05,
+   "values": [
+    0.07414001575671136,
+    0.07399358390830457,
+    0.07401923625729978,
+    0.07398168928921223
+   ]
+  },
+  "delta": 2.6601017452804188e-06,
+  "delta_pct": 0.0035932282153277686
+ },
+ "speedup": {
+  "off": {
+   "n": 5,
+   "mean": 2.400817757208962,
+   "sd": 0.009999530825621241,
+   "values": [
+    2.3844011712246638,
+    2.404529162030268,
+    2.4052765154062685,
+    2.3993373370445537,
+    2.410544600339058
+   ]
+  },
+  "on": {
+   "n": 4,
+   "mean": 2.396541101865848,
+   "sd": 0.0078096288805956015,
+   "values": [
+    2.3923890581018887,
+    2.404979119175175,
+    2.3878656377066063,
+    2.4009305924797206
+   ]
+  },
+  "delta": -0.004276655343114388,
+  "delta_pct": -0.17813327689171024
+ },
+ "mtp_median_round_us": {
+  "off": {
+   "n": 5,
+   "mean": 161068.3,
+   "sd": 502.74019135135796,
+   "values": [
+    161788.5,
+    160758.5,
+    160589.5,
+    161389.5,
+    160815.5
+   ]
+  },
+  "on": {
+   "n": 4,
+   "mean": 161322.875,
+   "sd": 508.94570355458023,
+   "values": [
+    161690.0,
+    160729.0,
+    161799.5,
+    161073.0
+   ]
+  },
+  "delta": 254.57500000001164,
+  "delta_pct": 0.1580540677464229
+ },
+ "entry_c": {
+  "off": {
+   "n": 5,
+   "mean": 52.42990570068359,
+   "sd": 8.918055894092227,
+   "values": [
+    36.484130859375,
+    56.572975158691406,
+    56.22918701171875,
+    56.09089279174805,
+    56.772342681884766
+   ]
+  },
+  "on": {
+   "n": 4,
+   "mean": 56.30023002624512,
+   "sd": 0.5901957087873645,
+   "values": [
+    55.54340744018555,
+    56.86031723022461,
+    56.13481521606445,
+    56.66238021850586
+   ]
+  },
+  "delta": 3.8703243255615263,
+  "delta_pct": 7.381902129782134
+ }
+}

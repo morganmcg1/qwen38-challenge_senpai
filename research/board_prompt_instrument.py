@@ -26,27 +26,114 @@ That makes two orthogonal probes out of one receipt:
     DRAFT   = mean of the five G=2 prompts    -> proposal head, selection,
                                                  schedule, and drafting cost
 
-Measured resolution, from 39 byte-identical replicate pairs with matching
-schedules (same scored-surface tree digest, so any difference is pure
-measurement):
+The replicate rule (Finding 46)
+-------------------------------
+A replicate pair is two runs of THE SAME COMPILED CODE. The default rule here
+is comment-insensitive CODE IDENTITY, not the byte digest of the scored tree.
 
-    probe            all pairs   same-mode   cross-mode
-    plutarch          0.0709 %    0.0431 %     0.0880 %
-    drafting mean     0.7205 %    0.1139 %     0.9762 %
-    all-8 mean        0.7091 %    0.0793 %     0.9636 %
+Each submission is diffed against one anchor tree over the scored surface. Each
+changed file is canonicalised by removing comments, blank lines and trailing
+whitespace, and the submission's identity is the set of files whose canonical
+form still differs from the anchor. Two submissions are replicates when those
+sets are equal. Anchor choice does not affect the comparison: two canonically
+equal trees produce equal identity sets against any anchor.
+
+Why the byte digest is the wrong default. Solvers resubmit identical code with
+a comment added and label the row a resample. Those rows are deliberate
+independent measurements of the same binary, and the byte digest throws every
+one of them away. What survives the byte rule is a narrower and measurably
+quieter population, so the byte rule reports a TARGET resolution about 3.0x too
+tight.
+
+Two exclusions, and both are load bearing.
+
+1. JSON manifests are never comment-stripped. `mtp-head.manifest.json` has no
+   comment syntax, and a `//` inside a declared head URL would be treated as a
+   line comment, which would merge two submissions that declare DIFFERENT
+   proposal heads into one identity.
+
+2. The stripper is STRING-LITERAL AWARE, not a regex. This is not a
+   precaution; the naive regex was measurably wrong on this corpus.
+   `Vendor/mlx-swift/Source/Cmlx/mlx-generated/*.cpp` carries the Metal kernel
+   source as a C++ string literal, and that literal contains `//` comments that
+   are part of the JIT source string. The regex deleted them, which merged
+   trees that JIT-compile DIFFERENT Metal source. Over 746 submissions the two
+   strippers disagreed on 1477 of 6735 changed source blobs and on 744 of 746
+   identities, and the regex manufactured 7 false replicate pairs out of 75.
+   Reproduce with `--validate-canon`.
+
+The rule is NOT "comments never matter". One case breaks that claim, and it is
+the same file family as exclusion 2. A `//` comment inside the Metal preamble
+string literal in `mlx-generated/*.cpp` is part of the text MLX hands to the
+JIT: `mlx-generated/quantized.cpp:3` returns that literal, and
+`jit_kernels.cpp` passes the built string to `Device::get_library`, which calls
+`newLibrary(source, ...)` at `metal/device.cpp:622`. So the comment reaches the
+Metal compiler even though the compiled GPU code is identical.
+
+Two halves of that, and only the first is sourced here.
+
+  * SOURCED. MLX's own in-process cache is keyed by the library NAME, not by
+    the source text: `Device::get_library` looks up `library_map_.find(name)`
+    at `metal/device.cpp:770-788`. So inside ONE worker process a comment
+    change in the literal cannot cause an extra MLX-level compile.
+  * NOT SOURCED FROM THIS CHECKOUT. Apple's driver-level compiled-shader cache
+    is keyed on the source text the driver receives, and that cache lives
+    outside MLX. If so, two trees differing only by such a comment miss each
+    other's cached library and pay a real recompile on first use in a fresh
+    process, which lands in warm-up rather than steady-state decode. Treat this
+    as plausible and unproven; do not quote a magnitude for it.
+
+The practical rule does not depend on settling the second half. The
+string-aware stripper KEEPS those comments, so two such trees get DIFFERENT
+identities and are never pooled as replicates, which is the safe behaviour
+either way. A comment outside the literal in the same file, and a comment in a
+`.metal` source compiled ahead of time into `mlx.metallib`, are both inert. Do
+not "simplify" the stripper back to a regex: that is precisely the merge this
+rule exists to prevent.
+
+Measured resolution. Run `--noise` to reproduce all three replicate classes,
+the class-by-time-gap split and the stratified variance-ratio tests.
+
+    per-run candidate-leg sd, same measurement mode, in percent
+
+    class                 pairs   same-mode   TARGET     DRAFT
+    byte-identical           40          18   0.0431    0.1139
+    comment-only diff        28          17   0.1281    0.0702
+    all code-identical       68          35   0.0945    0.0952
 
     published median floor, for comparison:   0.2770 %
 
+The widest class differs between the probes, so the conservative floor is taken
+per probe: TARGET 0.1281 % per run and 0.1812 % per pair, DRAFT 0.1139 % per run
+and 0.1611 % per pair. Use the conservative floor when a claim is about to spend
+GPU or a submission slot. Use the all-code-identical point estimate, 0.0945 %
+TARGET and 0.0952 % DRAFT, when reporting a measurement. State which one a
+number used.
+
+What the class split is and is not. Conditioning on the time gap does not
+remove it: inside the well-populated under-3-hour stratum the two classes still
+differ by a variance ratio of 11.7 at p = 0.0001. The reverse is not true.
+Inside the byte-identical class the time gap does nothing, F = 0.76 at
+p = 0.64, so the marginal "pairs over 3 hours apart are quieter" reading is an
+artefact of class composition. The CAUSE of the class split is still open. It
+is not a resample population: `--provenance` shows 39 of the 40 byte-identical
+pairs are two DIFFERENT solvers submitting the same scored tree, with different
+`submissionCommitSha` on every side.
+
 Two things follow.
 
-1. Plutarch is a 0.043 % target-path instrument, about 6x sharper than the
-   published median, and it is nearly immune to the mode: the mode inflates the
-   drafting probe 8.57x but plutarch only 2.04x.
+1. Plutarch is the sharpest target-path instrument on the board, and it is
+   nearly immune to the mode: the mode inflates the drafting probe 8.57x but
+   plutarch only 2.04x.
 
-2. The mode is DETECTABLE inside a single pair. A mode flip moves the drafting
-   probe by about 1 % while leaving plutarch under about 0.15 %. When two runs
-   are in the same mode, the drafting probe itself becomes a 0.114 %
-   instrument, which is 2.4x sharper than the published median.
+2. The mode is DETECTABLE inside a single pair, and the two states do not
+   overlap. Across 68 replicate pairs the largest same-mode |DRAFT| is
+   0.4907 % and the smallest cross-mode |DRAFT| is 0.9031 %, an empty band
+   0.41 % wide. The 0.60 % cut therefore classifies every pair without
+   ambiguity, and it sits 4.5 same-mode pair sd from zero, so conditioning on
+   it truncates a negligible share of the same-mode population. When two runs
+   share a mode the drafting probe is a 0.0952 % instrument, 2.9x sharper than
+   the published median.
 
 The predicted plutarch mode shift is 38 drafting rounds x 0.601 ms over a
 15.5 s plutarch leg, or 0.147 %. The measured cross-mode plutarch pair RMS is
@@ -61,8 +148,20 @@ A POSITIVE percentage means B is FASTER than A, matching
 Usage
 -----
     python3 research/board_prompt_instrument.py --noise
-        Re-measure the resolution from byte-identical replicate pairs.
+        Re-measure both probe resolutions over all three replicate classes,
+        the class-by-time-gap and class-by-solver splits, the stratified
+        variance-ratio tests, and the mode separation. Add `--byte-digest` to
+        fall back to the old, narrower replicate rule.
         Needs `git fetch upstream 'refs/heads/submissions/*:...'` first.
+
+    python3 research/board_prompt_instrument.py --validate-canon
+        Compare the string-aware stripper with the naive regex and report
+        every blob, identity and replicate pair they disagree on.
+
+    python3 research/board_prompt_instrument.py --provenance
+        Print `submissionCommitSha`, `createdAt`, `solverUsername`,
+        `promotionStatus` and `status` for the byte-identical pairs, which is
+        how you check what that replicate class actually contains.
 
     python3 research/board_prompt_instrument.py --read <a_prefix> <b_prefix>
         Read one pair through the instrument: mode classification, target-path
@@ -75,9 +174,12 @@ Reads /tmp/yukon-board/full.json, or $YUKON_BOARD_JSON.
 """
 
 import argparse
+import datetime as _dt
+import hashlib
 import json
 import math
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -85,6 +187,8 @@ from collections import defaultdict
 
 BOARD_JSON = os.environ.get("YUKON_BOARD_JSON", "/tmp/yukon-board/full.json")
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ANCHOR = os.environ.get("BOARD_ANCHOR",
+                        "b129f202fc25413015463da559777aaa59534065")
 
 PROMPT_NAMES = {
     "919318e1": "beagle", "192fb621": "botany", "4b9e88cd": "drama",
@@ -97,18 +201,193 @@ PROMPT_ORDER = ["plutarch", "drama", "travel", "beagle", "medicine",
 TARGET_PROBE = "plutarch"
 DRAFT_PROBES = ["beagle", "medicine", "republic", "essays", "botany"]
 
-# Measured per-run candidate-leg resolution, in percent. See the module
-# docstring for provenance. Re-measure with --noise after the board grows.
+# Measured per-run candidate-leg resolution, in percent, over ALL
+# code-identical replicate pairs. See the module docstring for provenance.
+# Re-measure with --noise after the board grows.
 RESOLUTION = {
-    "target_all": 0.0709,
-    "target_same_mode": 0.0431,
-    "draft_all": 0.7205,
-    "draft_same_mode": 0.1139,
+    "target_all": 0.1100,
+    "target_same_mode": 0.0945,
+    "draft_all": 0.6687,
+    "draft_same_mode": 0.0952,
+}
+# The CONSERVATIVE floor is the WIDEST single replicate class, per probe, not
+# the pooled point estimate. The widest class differs between the two probes:
+# comment-only for TARGET, byte-identical for DRAFT. Spend GPU or a submission
+# slot against these numbers. The advisor adopted 0.1196 / 0.1691 for TARGET
+# before the string-aware canonicalisation removed seven false replicates.
+CONSERVATIVE = {
+    "target_per_run": 0.1281, "target_per_pair": 0.1812,
+    "draft_per_run": 0.1139, "draft_per_pair": 0.1611,
 }
 # A mode flip moves the drafting probe by about this much and plutarch by far
 # less. Anything above the first number is a flip, not a mechanism.
 MODE_DRAFT_SHIFT = 0.60
 MODE_TARGET_SHIFT = 0.15
+
+# Comment stripping applies only to languages that have `//` or `/* */`.
+# A JSON manifest has neither, and a `//` inside a declared proposal-head URL
+# would be eaten as a line comment, merging two DIFFERENT heads into one
+# identity. See the module docstring.
+SOURCE_SUFFIXES = (".swift", ".h", ".hpp", ".cpp", ".c", ".cc", ".metal",
+                   ".m", ".mm")
+BUILD_PATHS = ["Sources", "Vendor", "Package.swift", "Package.resolved",
+               "tools", "mtp-head.manifest.json", "mtp-head"]
+BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+LINE_COMMENT = re.compile(r"//.*$", re.M)
+ZERO = "0" * 40
+
+
+# --- replicate identity -----------------------------------------------------
+
+def git(args):
+    return subprocess.run(["git"] + args, cwd=REPO, capture_output=True,
+                          text=True, errors="replace")
+
+
+_blob_cache = {}
+
+
+def blob_text(oid):
+    if oid not in _blob_cache:
+        proc = git(["cat-file", "blob", oid])
+        _blob_cache[oid] = proc.stdout if proc.returncode == 0 else ""
+    return _blob_cache[oid]
+
+
+def strip_comments_naive(text):
+    """Regex stripper. Wrong inside a string literal that contains `//`."""
+    text = BLOCK_COMMENT.sub("", text)
+    text = LINE_COMMENT.sub("", text)
+    return text
+
+
+def strip_comments_aware(text):
+    """Scanner that never strips inside a Swift, C or Metal string literal.
+
+    A `//` inside `MLXFast.metalKernel(source: "...")` is kernel source, not a
+    comment. The naive regex would delete the rest of that line including the
+    closing quote, merging two trees that compile different kernels. Handles
+    `"..."`, Swift `\"\"\"..."\"\"`, Swift raw `#"..."#`, and `'...'`.
+    """
+    out = []
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "/" and i + 1 < n and text[i + 1] == "/":
+            j = text.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if ch == "/" and i + 1 < n and text[i + 1] == "*":
+            j = text.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if ch == "#" and text.startswith('#"', i):
+            hashes = 1
+            while i - hashes >= 0 and text[i - hashes] == "#":
+                hashes += 1
+            close = '"' + "#" * hashes
+            j = text.find(close, i + 1 + hashes)
+            j = n if j < 0 else j + len(close)
+            out.append(text[i:j])
+            i = j
+            continue
+        if text.startswith('"""', i):
+            j = text.find('"""', i + 3)
+            j = n if j < 0 else j + 3
+            out.append(text[i:j])
+            i = j
+            continue
+        if ch in ('"', "'"):
+            j = i + 1
+            while j < n and text[j] != ch:
+                j += 2 if text[j] == "\\" else 1
+            j = min(j + 1, n)
+            out.append(text[i:j])
+            i = j
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def canon_code(text, path, aware=True):
+    """Remove the text the compiler discards. Comments cannot cost time."""
+    if not path.endswith(SOURCE_SUFFIXES):
+        return text
+    stripped = (strip_comments_aware(text) if aware
+                else strip_comments_naive(text))
+    return "\n".join(ln.rstrip() for ln in stripped.split("\n") if ln.strip())
+
+
+_canon_cache = {}
+
+
+def canon_digest(oid, path, aware=True):
+    key = (oid, path, aware)
+    if key not in _canon_cache:
+        canon = canon_code(blob_text(oid), path, aware)
+        _canon_cache[key] = hashlib.sha256(canon.encode()).hexdigest()[:16]
+    return _canon_cache[key]
+
+
+def changed_blobs(ref):
+    """{path: (anchor_oid, ref_oid)} over the scored surface, vs the anchor."""
+    proc = git(["diff", "--raw", "-z", ANCHOR, ref, "--"] + BUILD_PATHS)
+    if proc.returncode != 0:
+        return None
+    fields = proc.stdout.split("\0")
+    out = {}
+    i = 0
+    while i < len(fields):
+        meta = fields[i]
+        if not meta.startswith(":"):
+            i += 1
+            continue
+        parts = meta.split()
+        old_oid, new_oid, status = parts[2], parts[3], parts[4]
+        nfiles = 2 if status[0] in ("R", "C") else 1
+        path = fields[i + nfiles] if i + nfiles < len(fields) else ""
+        out[path] = (old_oid, new_oid)
+        i += 1 + nfiles
+    return out
+
+
+def code_identity(ref, aware=True):
+    """Comment-insensitive identity of one submission's scored surface.
+
+    The identity is the set of (path, canonical digest) entries that still
+    differ from the anchor. Two canonically equal trees produce equal sets
+    against any anchor, so the anchor choice does not affect the comparison.
+    """
+    changed = changed_blobs(ref)
+    if changed is None:
+        return None
+    items = []
+    for path, (old_oid, new_oid) in sorted(changed.items()):
+        if new_oid == ZERO:
+            items.append((path, "DELETED"))
+            continue
+        new_digest = canon_digest(new_oid, path, aware)
+        if old_oid != ZERO and canon_digest(old_oid, path, aware) == new_digest:
+            continue  # comment-only difference
+        items.append((path, new_digest))
+    return frozenset(items)
+
+
+def anchor_canon_lines(path):
+    """Canonical lines of one path in the campaign anchor tree."""
+    proc = git(["show", f"{ANCHOR}:{path}"])
+    if proc.returncode != 0:
+        return []
+    return canon_code(proc.stdout, path).split("\n")
+
+
+def byte_identity(ref):
+    """Byte digest of the scored surface. The narrower, stricter old rule."""
+    listing = git(["ls-tree", ref] + BUILD_PATHS)
+    if listing.returncode != 0:
+        return None
+    return listing.stdout.strip()
 
 
 def load_rows(path=BOARD_JSON):
@@ -157,82 +436,388 @@ def probes(pmap_a, pmap_b):
     return target, draft
 
 
-def tree_digests():
-    """Scored-surface content digest for every public submission branch.
-
-    `git ls-tree` returns the subtree object ids, which digest the whole scored
-    surface in constant time. Equal digests mean byte-identical scored code.
-    """
-    refs = subprocess.run(
-        ["git", "for-each-ref", "--format=%(refname:short)",
-         "refs/remotes/upstream/submissions/"],
-        cwd=REPO, capture_output=True, text=True, check=True).stdout.split()
-    out = {}
-    for ref in refs:
-        listing = subprocess.run(
-            ["git", "ls-tree", ref, "Sources", "Vendor",
-             "mtp-head.manifest.json"],
-            cwd=REPO, capture_output=True, text=True)
-        if listing.returncode != 0:
-            continue
-        out[ref.rsplit("/", 1)[-1][:8]] = listing.stdout.strip()
-    return out
-
-
 def rms(values):
     if not values:
         return float("nan")
     return math.sqrt(sum(v * v for v in values) / len(values))
 
 
-def report_noise(rows):
-    digests = tree_digests()
-    print(f"{len(digests)} submission branches digested", file=sys.stderr)
-    groups = defaultdict(list)
-    for row in rows:
-        if row.get("officialScore") is None:
-            continue
-        pmap = prompt_map(row)
-        if pmap is None:
-            continue
-        digest = digests.get((row.get("id") or "")[:8])
-        if digest is None:
-            continue
-        groups[(digest, schedule_signature(pmap))].append(pmap)
+def per_run_sd(values, floor=3):
+    """Per-run sd from paired differences: a pair carries twice the variance."""
+    if len(values) < floor:
+        return float("nan")
+    return rms(values) / math.sqrt(2)
 
-    per_probe = defaultdict(list)
+
+def collect(rows):
+    """Board rows that have a usable per-prompt block and a public branch."""
+    refs = git(["for-each-ref", "--format=%(refname:short)",
+                "refs/remotes/upstream/submissions/"]).stdout.split()
+    by_id = {r.rsplit("/", 1)[-1]: r for r in refs}
+    recs = []
+    for row in rows:
+        ref = by_id.get(row.get("id") or "")
+        pmap = prompt_map(row)
+        if ref is None or pmap is None or row.get("officialScore") is None:
+            continue
+        recs.append({
+            "id8": (row.get("id") or "")[:8], "ref": ref, "row": row,
+            "pmap": pmap, "sig": schedule_signature(pmap),
+            "solver": row.get("solverUsername") or "",
+            "score": row.get("officialScore"),
+            "date": (row.get("createdAt") or "")[:16].replace("T", " "),
+        })
+    return recs
+
+
+def hours_apart(rec_a, rec_b):
+    fmt = "%Y-%m-%d %H:%M"
+    ta = _dt.datetime.strptime(rec_a["date"], fmt)
+    tb = _dt.datetime.strptime(rec_b["date"], fmt)
+    return abs((tb - ta).total_seconds()) / 3600.0
+
+
+def replicate_pairs(recs, byte_digest=False):
+    """Every within-group pair under the chosen replicate rule.
+
+    Grouping also requires a bit-identical eight-prompt schedule, so a pair can
+    never mix two drafting policies.
+    """
+    identity = byte_identity if byte_digest else code_identity
+    groups = defaultdict(list)
+    for rec in recs:
+        key = identity(rec["ref"])
+        if key is None:
+            continue
+        groups[(key, rec["sig"])].append(rec)
+
+    pairs = []
     for members in groups.values():
         for i in range(len(members)):
             for j in range(i + 1, len(members)):
-                for name in PROMPT_ORDER:
-                    per_probe[name].append(cand_pct(members[i], members[j], name))
-                target, draft = probes(members[i], members[j])
-                per_probe["_target"].append(target)
-                per_probe["_draft"].append(draft)
+                a, b = members[i], members[j]
+                target, draft = probes(a["pmap"], b["pmap"])
+                bytes_equal = not git(
+                    ["diff", "--name-only", a["ref"], b["ref"], "--"]
+                    + BUILD_PATHS).stdout.split()
+                pairs.append({
+                    "a": a, "b": b, "target": target, "draft": draft,
+                    "bytes_equal": bytes_equal,
+                    "same_solver": a["solver"] == b["solver"],
+                    "gap": hours_apart(a, b),
+                    "same_mode": abs(draft) <= MODE_DRAFT_SHIFT,
+                })
+    return groups, pairs
 
-    npairs = len(per_probe["_target"])
+
+def _betacf(a, b, x, iters=200):
+    tiny = 1e-30
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c, d = 1.0, 1.0 - qab * x / qap
+    d = 1.0 / (d if abs(d) > tiny else tiny)
+    h = d
+    for m in range(1, iters):
+        m2 = 2 * m
+        for num in (m * (b - m) * x / ((qam + m2) * (a + m2)),
+                    -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))):
+            d = 1.0 + num * d
+            d = 1.0 / (d if abs(d) > tiny else tiny)
+            c = 1.0 + num / (c if abs(c) > tiny else tiny)
+            h *= d * c
+    return h
+
+
+def betainc(a, b, x):
+    """Regularised incomplete beta, so an F tail needs no SciPy."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    front = math.exp(math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+                     + a * math.log(x) + b * math.log1p(-x))
+    if x < (a + 1.0) / (a + b + 2.0):
+        return front * _betacf(a, b, x) / a
+    return 1.0 - front * _betacf(b, a, 1.0 - x) / b
+
+
+def f_two_sided_p(var1, df1, var2, df2):
+    """Two-sided p for var1 == var2. Sums of squares carry full df here.
+
+    These per-run sd figures are RMS with no mean removed, so a class of n
+    pairs contributes n degrees of freedom rather than n-1.
+    """
+    if not (var1 > 0 and var2 > 0 and df1 > 0 and df2 > 0):
+        return float("nan")
+    f = var1 / var2
+    upper = betainc(df2 / 2.0, df1 / 2.0, df2 / (df2 + df1 * f))
+    return min(1.0, 2.0 * min(upper, 1.0 - upper))
+
+
+FLOOR_HEADER = (f"{'group':>26} {'pairs':>6} {'same':>5} "
+                f"{'T same':>8} {'D same':>8} {'T all':>8} {'D all':>8}")
+
+
+def _floor_row(label, sub):
+    same = [p for p in sub if p["same_mode"]]
+    print(f"{label:>26} {len(sub):6d} {len(same):5d} "
+          f"{per_run_sd([p['target'] for p in same]):8.4f} "
+          f"{per_run_sd([p['draft'] for p in same]):8.4f} "
+          f"{per_run_sd([p['target'] for p in sub]):8.4f} "
+          f"{per_run_sd([p['draft'] for p in sub]):8.4f}")
+
+
+def report_noise(rows, byte_digest=False):
+    recs = collect(rows)
+    groups, pairs = replicate_pairs(recs, byte_digest)
+    rule = ("byte digest of the scored surface" if byte_digest
+            else "comment-insensitive code identity")
     replicated = sum(1 for m in groups.values() if len(m) > 1)
-    print(f"{len(groups)} (tree, schedule) groups, {replicated} replicated, "
-          f"{npairs} byte-identical pairs\n")
-    if npairs < 4:
+    print(f"replicate rule: {rule}")
+    print(f"{len(recs)} usable board rows, {len(groups)} (identity, schedule) "
+          f"groups, {replicated} replicated, {len(pairs)} pairs\n")
+    if len(pairs) < 4:
         print("not enough replicate pairs to measure resolution")
         return
 
-    same = [k for k in range(npairs) if abs(per_probe["_draft"][k]) <= MODE_DRAFT_SHIFT]
-    cross = [k for k in range(npairs) if abs(per_probe["_draft"][k]) > MODE_DRAFT_SHIFT]
+    print("Per-run candidate-leg sd in percent. A pair difference carries "
+          "twice the\nvariance of one run, so every cell is pairRMS / sqrt(2). "
+          "TARGET is plutarch\nalone; DRAFT is the mean of the five G=2 "
+          "prompts. `same` counts same-mode pairs.\n")
+    byte_pairs = [p for p in pairs if p["bytes_equal"]]
+    comment_pairs = [p for p in pairs if not p["bytes_equal"]]
+    classes = [("byte-identical", byte_pairs),
+               ("comment-only diff", comment_pairs),
+               ("all code-identical", pairs)]
 
-    print(f"{'probe':>10} {'all':>9} {'same-mode':>10} {'cross-mode':>11}")
-    for name in PROMPT_ORDER + ["_draft", "_target"]:
-        vals = per_probe[name]
-        row = [rms(vals) / math.sqrt(2)]
-        for idx in (same, cross):
-            sub = [vals[k] for k in idx]
-            row.append(rms(sub) / math.sqrt(2) if len(sub) >= 3 else float("nan"))
-        print(f"{name:>10} {row[0]:9.4f} {row[1]:10.4f} {row[2]:11.4f}")
-    print(f"\nsame-mode pairs {len(same)}, cross-mode pairs {len(cross)}")
-    print("Per-run candidate-leg standard deviation in percent. A pair "
-          "difference\ncarries twice the variance of one run, so each column "
-          "is pairRMS / sqrt(2).")
+    print("--- replicate class")
+    print(FLOOR_HEADER)
+    for label, sub in classes:
+        _floor_row(label, sub)
+
+    print("\n--- 2x2: replicate class by time gap")
+    print(FLOOR_HEADER)
+    for label, sub in classes:
+        for gap_label, keep in (("< 3 h", lambda p: p["gap"] < 3),
+                                (">= 3 h", lambda p: p["gap"] >= 3)):
+            _floor_row(f"{label}, {gap_label}", [p for p in sub if keep(p)])
+
+    print("\n--- 2x2: replicate class by solver identity")
+    print(FLOOR_HEADER)
+    for label, sub in classes:
+        for s_label, keep in (("same solver", lambda p: p["same_solver"]),
+                              ("diff solver", lambda p: not p["same_solver"])):
+            _floor_row(f"{label}, {s_label}", [p for p in sub if keep(p)])
+
+    print("\n--- marginals this replaces")
+    print(FLOOR_HEADER)
+    for label, keep in (("same solver", lambda p: p["same_solver"]),
+                        ("diff solver", lambda p: not p["same_solver"]),
+                        ("< 3 h", lambda p: p["gap"] < 3),
+                        (">= 3 h", lambda p: p["gap"] >= 3)):
+        _floor_row(label, [p for p in pairs if keep(p)])
+
+    print("\n--- is the split replicate class or time gap? stratified "
+          "variance-ratio tests")
+    print("Each test holds one factor fixed and varies the other, on the "
+          "same-mode\nTARGET probe. F is the variance ratio, p is two-sided.\n")
+    print(f"{'held fixed':>20} {'contrast':>28} {'n1':>4} {'n2':>4} "
+          f"{'F':>7} {'p':>8}")
+    tests = [
+        ("gap < 3 h", "comment-only vs byte-identical",
+         [p for p in comment_pairs if p["gap"] < 3],
+         [p for p in byte_pairs if p["gap"] < 3]),
+        ("gap >= 3 h", "comment-only vs byte-identical",
+         [p for p in comment_pairs if p["gap"] >= 3],
+         [p for p in byte_pairs if p["gap"] >= 3]),
+        ("byte-identical", "< 3 h vs >= 3 h",
+         [p for p in byte_pairs if p["gap"] < 3],
+         [p for p in byte_pairs if p["gap"] >= 3]),
+        ("comment-only", "< 3 h vs >= 3 h",
+         [p for p in comment_pairs if p["gap"] < 3],
+         [p for p in comment_pairs if p["gap"] >= 3]),
+        ("nothing", "comment-only vs byte-identical",
+         comment_pairs, byte_pairs),
+        ("nothing", "< 3 h vs >= 3 h",
+         [p for p in pairs if p["gap"] < 3],
+         [p for p in pairs if p["gap"] >= 3]),
+    ]
+    for held, contrast, sub1, sub2 in tests:
+        v1 = [p["target"] for p in sub1 if p["same_mode"]]
+        v2 = [p["target"] for p in sub2 if p["same_mode"]]
+        if not v1 or not v2:
+            continue
+        s1, s2 = per_run_sd(v1, 1), per_run_sd(v2, 1)
+        p_val = f_two_sided_p(s1 * s1, len(v1), s2 * s2, len(v2))
+        print(f"{held:>20} {contrast:>28} {len(v1):4d} {len(v2):4d} "
+              f"{(s1 * s1) / (s2 * s2):7.2f} {p_val:8.4f}")
+
+    print("\n--- mode separation, which decides whether `D same` is usable")
+    mags = sorted(abs(p["draft"]) for p in pairs)
+    below = [v for v in mags if v <= MODE_DRAFT_SHIFT]
+    above = [v for v in mags if v > MODE_DRAFT_SHIFT]
+    print(f"|DRAFT| below the {MODE_DRAFT_SHIFT} % cut, largest five: "
+          + ", ".join(f"{v:.4f}" for v in below[-5:]))
+    print(f"|DRAFT| above the cut, smallest five:      "
+          + ", ".join(f"{v:.4f}" for v in above[:5]))
+    if below and above:
+        sd_below = per_run_sd(below, 1) * math.sqrt(2)
+        print(f"gap across the cut {above[0] - below[-1]:.4f} %; the cut sits "
+              f"{MODE_DRAFT_SHIFT / sd_below:.1f} same-mode pair sd from zero")
+        print("A cut that far into the tail truncates a negligible share of "
+              "the same-mode\npopulation, so `D same` is a usable resolution "
+              "and not an artefact of the cut.")
+
+    print("\nCaveat on the DRAFT columns. The same-mode filter is a cut on the "
+          "DRAFT\nprobe itself, so `D same` is conditioned on its own value. "
+          "The separation\ncheck above bounds that bias. `D all` mixes in the "
+          "FACT-2 mode flip, which is\na real run-level state rather than "
+          "measurement noise.")
+    print("\n--- floors, measured now against the constants in use")
+    print(f"{'probe':>8} {'basis':>22} {'per run':>9} {'per pair':>9} "
+          f"{'in use':>9}")
+    live = {
+        ("TARGET", "conservative"): max(
+            per_run_sd([p["target"] for p in sub if p["same_mode"]], 1)
+            for _, sub in classes[:2]),
+        ("TARGET", "point estimate"): per_run_sd(
+            [p["target"] for p in pairs if p["same_mode"]], 1),
+        ("DRAFT", "conservative"): max(
+            per_run_sd([p["draft"] for p in sub if p["same_mode"]], 1)
+            for _, sub in classes[:2]),
+        ("DRAFT", "point estimate"): per_run_sd(
+            [p["draft"] for p in pairs if p["same_mode"]], 1),
+    }
+    in_use = {
+        ("TARGET", "conservative"): CONSERVATIVE["target_per_run"],
+        ("TARGET", "point estimate"): RESOLUTION["target_same_mode"],
+        ("DRAFT", "conservative"): CONSERVATIVE["draft_per_run"],
+        ("DRAFT", "point estimate"): RESOLUTION["draft_same_mode"],
+    }
+    for key, value in live.items():
+        basis = f"{key[1]}, same mode"
+        print(f"{key[0]:>8} {basis:>22} {value:9.4f} "
+              f"{value * math.sqrt(2):9.4f} {in_use[key]:9.4f}")
+    print("\nconservative = the widest single replicate class for that probe.")
+    print("Use the conservative floor to decide whether to spend GPU or a "
+          "submission\nslot. Use the point estimate when reporting a "
+          "measurement. Always state\nwhich one a number used. If `in use` "
+          "has drifted from the measured column,\nupdate RESOLUTION and "
+          "CONSERVATIVE at the top of this file.")
+
+
+def report_validate_canon(rows):
+    """Prove the comment stripper never eats a string literal on this corpus.
+
+    A `//` inside a kernel source string is code. The naive regex stripper
+    would delete it and merge two trees that compile different kernels. The
+    string-aware scanner cannot. If the two strippers partition the corpus
+    identically, the risk is absent here rather than merely unlikely.
+    """
+    recs = collect(rows)
+    print(f"{len(recs)} submissions; comparing the string-aware stripper with "
+          f"the naive regex\n")
+
+    blob_diff, blobs_seen = [], 0
+    for rec in recs:
+        changed = changed_blobs(rec["ref"]) or {}
+        for path, (_, new_oid) in changed.items():
+            if new_oid == ZERO or not path.endswith(SOURCE_SUFFIXES):
+                continue
+            blobs_seen += 1
+            if canon_digest(new_oid, path, True) != canon_digest(new_oid, path,
+                                                                 False):
+                blob_diff.append((rec["id8"], path))
+
+    print(f"changed source blobs inspected        {blobs_seen}")
+    print(f"blobs where the two strippers differ  {len(blob_diff)}")
+    for id8, path in blob_diff[:20]:
+        print(f"  {id8}  {path}")
+
+    ident_diff = sum(1 for rec in recs
+                     if code_identity(rec["ref"], True)
+                     != code_identity(rec["ref"], False))
+    print(f"submissions whose identity differs    {ident_diff}")
+
+    _, aware_pairs = replicate_pairs(recs)
+    naive_groups = defaultdict(list)
+    for rec in recs:
+        key = code_identity(rec["ref"], False)
+        if key is not None:
+            naive_groups[(key, rec["sig"])].append(rec)
+    naive_n = sum(len(m) * (len(m) - 1) // 2 for m in naive_groups.values())
+    print(f"replicate pairs, string-aware rule    {len(aware_pairs)}")
+    print(f"replicate pairs, naive regex rule     {naive_n}")
+    verdict = ("IDENTICAL. The naive rule was safe on this corpus, and the "
+               "aware rule\nremoves the risk for future trees."
+               if len(aware_pairs) == naive_n and not blob_diff
+               else "DIFFERENT. Use the string-aware rule; the naive rule "
+                    "merged distinct trees.")
+    print(f"\nverdict: {verdict}")
+
+
+def report_provenance(rows, limit=12):
+    """How the byte-identical replicate pairs were actually created.
+
+    A byte-identical pair is two board rows whose scored surfaces have the same
+    content. This prints the fields that show whether they are two runs of one
+    commit or two commits with the same content.
+    """
+    recs = collect(rows)
+    _, pairs = replicate_pairs(recs)
+    byte_pairs = [p for p in pairs if p["bytes_equal"]]
+    print(f"{len(byte_pairs)} byte-identical replicate pairs; "
+          f"showing the first {min(limit, len(byte_pairs))} by date\n")
+
+    def field(rec, key):
+        return rec["row"].get(key)
+
+    for pair in sorted(byte_pairs, key=lambda p: p["a"]["date"])[:limit]:
+        print(f"pair  target {pair['target']:+.4f} %  draft "
+              f"{pair['draft']:+.4f} %  gap {pair['gap']:.2f} h")
+        for side in ("a", "b"):
+            rec = pair[side]
+            sha = field(rec, "submissionCommitSha")
+            print(f"  {side.upper()} {rec['id8']}  {rec['date']}  "
+                  f"{rec['solver']:>14}  score {rec['score']:.8f}\n"
+                  f"     submissionCommitSha {sha}\n"
+                  f"     promotionStatus     {field(rec, 'promotionStatus')}  "
+                  f"status {field(rec, 'status')}")
+        sha_a = field(pair["a"], "submissionCommitSha")
+        sha_b = field(pair["b"], "submissionCommitSha")
+        if sha_a is None or sha_b is None:
+            verdict = "UNKNOWN, the field is absent on one side"
+        else:
+            verdict = "YES" if sha_a == sha_b else "NO"
+        print(f"     same submissionCommitSha: {verdict}\n")
+
+    shas = defaultdict(int)
+    for pair in byte_pairs:
+        for side in ("a", "b"):
+            shas[pair[side]["row"].get("submissionCommitSha")] += 1
+    missing = shas.get(None, 0)
+    print(f"submissionCommitSha present on "
+          f"{sum(v for k, v in shas.items() if k is not None)} pair sides, "
+          f"absent on {missing}")
+
+    same_solver = sum(1 for p in byte_pairs
+                      if p["a"]["solver"] == p["b"]["solver"])
+    both_shas = [p for p in byte_pairs
+                 if field(p["a"], "submissionCommitSha")
+                 and field(p["b"], "submissionCommitSha")]
+    same_sha = sum(1 for p in both_shas
+                   if field(p["a"], "submissionCommitSha")
+                   == field(p["b"], "submissionCommitSha"))
+    mixed_outcome = sum(
+        1 for p in byte_pairs
+        if field(p["a"], "promotionStatus") != field(p["b"], "promotionStatus"))
+    print(f"\nover all {len(byte_pairs)} byte-identical pairs\n"
+          f"  same solver on both sides          {same_solver}\n"
+          f"  both sides carry a commit sha      {len(both_shas)}\n"
+          f"  of those, the same commit sha      {same_sha}\n"
+          f"  sides disagree on promotionStatus  {mixed_outcome}\n"
+          "\nA byte-identical pair is therefore not a solver resample. It is\n"
+          "usually two different solvers submitting the same scored tree from\n"
+          "different commits, so the pair is two independent measurements.")
 
 
 def find_row(rows, prefix):
@@ -343,6 +928,12 @@ def main(argv=None):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--board", default=BOARD_JSON)
     parser.add_argument("--noise", action="store_true")
+    parser.add_argument("--byte-digest", action="store_true",
+                        help="use the old, narrower byte-digest replicate rule")
+    parser.add_argument("--validate-canon", action="store_true",
+                        help="compare the string-aware and naive strippers")
+    parser.add_argument("--provenance", action="store_true",
+                        help="show how the byte-identical pairs were created")
     parser.add_argument("--read", nargs=2, metavar=("A", "B"))
     parser.add_argument("--rank", action="store_true")
     parser.add_argument("--min-score", type=float, default=3.30)
@@ -351,7 +942,11 @@ def main(argv=None):
 
     rows = load_rows(args.board)
     if args.noise:
-        report_noise(rows)
+        report_noise(rows, args.byte_digest)
+    elif args.validate_canon:
+        report_validate_canon(rows)
+    elif args.provenance:
+        report_provenance(rows)
     elif args.read:
         report_read(rows, args.read[0], args.read[1])
     elif args.rank:
