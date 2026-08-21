@@ -220,7 +220,8 @@ while read -r block order; do
     fi
     E109_GOLDEN="${golden}" E109_HEAD_DIR="${head_dir}" \
     E109_TOKENS="${tokens}" E109_DEPTH="${depth}" \
-      research/e109_ab_leg.sh "${leg_dir}" "${label}" "${arm_env[@]}" \
+      research/e109_ab_leg.sh "${leg_dir}" "${label}" \
+        ${arm_env[@]+"${arm_env[@]}"} \
       || failed+=("b${block}-${label}")
     echo "block=${block}" >> "${leg_dir}/meta.txt"
     echo "arm_index=${idx}" >> "${leg_dir}/meta.txt"
