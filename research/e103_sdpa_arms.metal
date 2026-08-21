@@ -864,6 +864,152 @@ template <typename T, int D, int V, bool CAUSAL>
   }
 }
 
+// ---------------------------------------------------------------------------
+// h: tail-free control. The key loop is byte for byte the one in arm a, but the
+// cross-simdgroup output reduction and its sixteen threadgroup barriers are
+// removed and every simdgroup writes its own partial accumulator. The answer is
+// wrong on purpose; the arm exists only to price the tail.
+// ---------------------------------------------------------------------------
+
+template <typename T, int D, int V, bool CAUSAL>
+[[kernel]] void sdpa_h_tailfree(
+    const device T* queries [[buffer(0)]],
+    const device T* keys [[buffer(1)]],
+    const device T* values [[buffer(2)]],
+    device T* out [[buffer(3)]],
+    const constant int& gqa_factor [[buffer(4)]],
+    const constant int& N [[buffer(5)]],
+    const constant size_t& k_head_stride [[buffer(6)]],
+    const constant size_t& k_seq_stride [[buffer(7)]],
+    const constant size_t& v_head_stride [[buffer(8)]],
+    const constant size_t& v_seq_stride [[buffer(9)]],
+    const constant float& scale [[buffer(10)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint3 tpg [[threadgroups_per_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  constexpr int BN = 32;
+  constexpr int BD = 32;
+  constexpr int qk_per_thread = D / BD;
+  constexpr int v_per_thread = V / BD;
+  int inner_k_stride = BN * int(k_seq_stride);
+  int inner_v_stride = BN * int(v_seq_stride);
+
+  typedef float U;
+
+  thread U q[qk_per_thread];
+  thread U k[qk_per_thread];
+  thread U o[v_per_thread];
+
+  const int q_batch_head_idx = tid.x;
+  const int q_seq_idx = tid.y;
+  const int kv_head_idx = q_batch_head_idx / gqa_factor;
+  const int o_offset = q_batch_head_idx * tpg.y + q_seq_idx;
+  queries += o_offset * D + simd_lid * qk_per_thread;
+  keys += kv_head_idx * k_head_stride + simd_gid * k_seq_stride +
+      simd_lid * qk_per_thread;
+  values += kv_head_idx * v_head_stride + simd_gid * v_seq_stride +
+      simd_lid * v_per_thread;
+  out += o_offset * V + simd_gid * v_per_thread;
+
+  for (int i = 0; i < qk_per_thread; i++) {
+    q[i] = static_cast<U>(scale) * queries[i];
+  }
+  for (int i = 0; i < v_per_thread; i++) {
+    o[i] = 0;
+  }
+
+  U max_score = -INFINITY;
+  U sum_exp_score = 0;
+
+  for (int i = simd_gid; i < N; i += BN) {
+    bool use_key = true;
+    if (CAUSAL) {
+      use_key = i <= (N - int(tpg.y) + int(q_seq_idx));
+    }
+    if (use_key) {
+      for (int j = 0; j < qk_per_thread; j++) {
+        k[j] = keys[j];
+      }
+
+      U score = 0;
+      for (int j = 0; j < qk_per_thread; j++) {
+        score += q[j] * k[j];
+      }
+      score = simd_sum(score);
+
+      U new_max = max(max_score, score);
+      U factor = fast::exp(max_score - new_max);
+      U exp_score = fast::exp(score - new_max);
+
+      max_score = new_max;
+      sum_exp_score = sum_exp_score * factor + exp_score;
+
+      for (int j = 0; j < v_per_thread; j++) {
+        o[j] = o[j] * factor + exp_score * values[j];
+      }
+    }
+
+    keys += inner_k_stride;
+    values += inner_v_stride;
+  }
+
+  if (simd_lid == 0) {
+    for (int i = 0; i < v_per_thread; i++) {
+      out[i] = static_cast<T>(o[i] + sum_exp_score);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// j: launch-only control. The query load, the pointer arithmetic and the output
+// write survive; the key loop and the tail do not. This is the floor that no
+// change inside the kernel can go below while the trusted dispatcher keeps one
+// threadgroup per query vector.
+// ---------------------------------------------------------------------------
+
+template <typename T, int D, int V, bool CAUSAL>
+[[kernel]] void sdpa_j_launchonly(
+    const device T* queries [[buffer(0)]],
+    const device T* keys [[buffer(1)]],
+    const device T* values [[buffer(2)]],
+    device T* out [[buffer(3)]],
+    const constant int& gqa_factor [[buffer(4)]],
+    const constant int& N [[buffer(5)]],
+    const constant size_t& k_head_stride [[buffer(6)]],
+    const constant size_t& k_seq_stride [[buffer(7)]],
+    const constant size_t& v_head_stride [[buffer(8)]],
+    const constant size_t& v_seq_stride [[buffer(9)]],
+    const constant float& scale [[buffer(10)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint3 tpg [[threadgroups_per_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  constexpr int BD = 32;
+  constexpr int qk_per_thread = D / BD;
+  constexpr int v_per_thread = V / BD;
+
+  typedef float U;
+  thread U q[qk_per_thread];
+
+  const int q_batch_head_idx = tid.x;
+  const int q_seq_idx = tid.y;
+  const int o_offset = q_batch_head_idx * tpg.y + q_seq_idx;
+  queries += o_offset * D + simd_lid * qk_per_thread;
+  out += o_offset * V + simd_gid * v_per_thread;
+
+  for (int i = 0; i < qk_per_thread; i++) {
+    q[i] = static_cast<U>(scale) * queries[i];
+  }
+  if (simd_lid == 0) {
+    for (int i = 0; i < v_per_thread; i++) {
+      out[i] = static_cast<T>(q[i % qk_per_thread] +
+                              static_cast<U>(N) * 0.0f +
+                              static_cast<U>(gqa_factor) * 0.0f);
+    }
+  }
+}
+
 instantiate_kernel("a_shipped_c", sdpa_a_shipped, bfloat, 256, 256, true)
 instantiate_kernel("a_shipped_nc", sdpa_a_shipped, bfloat, 256, 256, false)
 instantiate_kernel("b_vecload_c", sdpa_b_vecload, bfloat, 256, 256, true)
@@ -875,3 +1021,5 @@ instantiate_kernel("d_pack6_c", sdpa_d_pack, bfloat, 256, 256, 6, true)
 instantiate_kernel("e_resident_c", sdpa_e_resident, bfloat, 256, 256, true)
 instantiate_kernel("f_nosoftmax_c", sdpa_f_nosoftmax, bfloat, 256, 256, true)
 instantiate_kernel("g_double_c", sdpa_g_double, bfloat, 256, 256, true)
+instantiate_kernel("h_tailfree_c", sdpa_h_tailfree, bfloat, 256, 256, true)
+instantiate_kernel("j_launchonly_c", sdpa_j_launchonly, bfloat, 256, 256, true)

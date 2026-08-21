@@ -52,6 +52,7 @@ static const ArmSpec kArms[] = {
     {"d_pack2_c", 2, 1, 1},    {"d_pack3_c", 3, 1, 1},
     {"d_pack6_c", 6, 1, 1},    {"e_resident_c", 1, 0, 0},
     {"f_nosoftmax_c", 1, 0, 0}, {"g_double_c", 1, 0, 0},
+    {"h_tailfree_c", 1, 0, 0}, {"j_launchonly_c", 1, 0, 0},
 };
 static const int kNumArms = (int)(sizeof(kArms) / sizeof(kArms[0]));
 
