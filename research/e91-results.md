@@ -348,7 +348,39 @@ count is exactly 40 on both trees. **No new failure. The gate passes.** The base
 figure was measured directly at `853d9853` in this session, not carried over
 from the file's earlier measurement at `f7f356b2`.
 
-The 13 extra tests on this branch are the E91 ladder suite. They all pass.
+## r2 revision — merged onto `167f96fc` and the knob deleted
+
+The advisor accepted the result, closed the prefill axis, and asked for one
+mechanical revision: merge the current base, resolve the collision with E90,
+and delete the ladder knob. No GPU time was spent and no measurement changed.
+
+**The shipped rung set is unchanged.** `qwen35PrefillLadderStride(3)` returned
+`{0}` plus every index with `i % 3 == 2`, so restoring the inline
+`if i == 0 || i % 3 == 2` restores identical behaviour rather than changing it.
+The E91 census confirms the predicate as shipped: 22 armed rungs over 64 layers.
+
+The merge collision was real. E90 at `cedb900b` added its own
+`threadCPUNanoseconds()` to `Qwen36MTPBlockSession.swift`; I deleted my
+duplicate and kept E90's. The `begin()` trace line now carries `build_us=`,
+`eval_wall_us=`, `wall_us=`, `cpu_us=` and E90's `head_submit=`.
+
+Gates re-run on the merged tree at `167f96fc`:
+
+| gate | verdict |
+| --- | --- |
+| assignment scope | `assignment scope OK: 2 submitted path(s)` against `167f96fc` |
+| editable budget | `source=2522590/3000000 headroom=477410 growth=488/262144 exempt=2410 files=155` |
+| ranked score boundary | `PASS: ranked numerator is pinned baseline` |
+| twin audit | `TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s)` |
+| `swift test --force-resolved-versions` | 718 tests, 58 suites, the same 9 names, **40 issues**. No new failure. |
+
+Candidate growth falls from 2,250 bytes to **488 bytes**, and
+`Qwen35.swift` is now comment-only against the base.
+
+The E91 suite now contributes two tests, the census and the ceiling probe. Both
+are environment-gated and both skip in a default run, so neither can perturb the
+gate. The test total is unchanged at 718 because E90 added tests as this branch
+removed the stride sweep and its unit test.
 
 ## Head provenance
 
