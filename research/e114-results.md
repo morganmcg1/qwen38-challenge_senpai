@@ -318,8 +318,8 @@ without the missing trace, and its withdrawal was correct on these grounds too.
 
 ### Arms that cannot be re-weighted at all
 
-Nine of the arms the assignment named have no recorded per-NA cells anywhere in
-this checkout: `xv4`, `xv4_stage`, `xv8` (E110 session B, still `wip` at the
+Eleven of the arms the assignment named have no recorded per-NA cells anywhere
+in this checkout: `xv4`, `xv4_stage`, `xv8` (E110 session B, still `wip` at the
 recorded base), `c_loadonly`, `n_nobias`, `n_nosums`, `g_pack32`, `d_bias1`,
 `e_bias6` (E111 reduced them to one weighted percentage; the per-NA cells live
 in a host-local `research/out/<tag>/arms.json` on another Mac), `h_prunenarrow`
