@@ -11,6 +11,16 @@
  * Build: clang -O2 -o /tmp/e89_duty research/e89_duty_cycle.c
  */
 #include <libproc.h>
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <mach/thread_policy.h>
+#include <sys/resource.h>
+
+/* Darwin role is not exported by the public SDK headers. */
+#ifndef PRIO_DARWIN_ROLE
+#define PRIO_DARWIN_ROLE 6
+#define PRIO_DARWIN_ROLE_UI_FOCAL 2
+#endif
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -138,7 +148,119 @@ static void coremap(const char *label, qos_class_t qos) {
   printf("\n");
 }
 
+/* Placement under the round-like duty cycle. `coremap` above runs the chain
+ * continuously, which is the easy case. This asks the question that matters:
+ * for a thread that is idle 99.6 percent of the time, which scheduling policy
+ * actually keeps it on the performance cluster? */
+#define PLACE_ROUNDS 60
+
+/* Hold the thread's duty cycle up during the GPU wait and see where the
+ * scheduler puts it. `pct` is the percentage of each 5 ms slice of the wait
+ * that the thread spends running instead of sleeping. */
+static void keepalive(const char *label, int pct) {
+  long ecore = 0, pcore = 0, unknown = 0;
+  double ghz = 0;
+  long n = 0;
+  for (int r = 0; r < PLACE_ROUNDS; r++) {
+    for (int slice = 0; slice < 30; slice++) { /* 30 x 5 ms = 150 ms */
+      if (pct > 0) sink = chain(sink + 1, (long)pct * 25000 / 10);
+      if (pct < 100) usleep((useconds_t)(5000 - 50 * pct));
+    }
+    struct rusage_info_v4 a, b;
+    size_t cpu = 0, cpu2 = 0;
+    pthread_cpu_number_np(&cpu);
+    proc_pid_rusage(getpid(), RUSAGE_INFO_V4, (rusage_info_t *)&a);
+    uint64_t t0 = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+    sink = chain(sink + 11, 300000);
+    uint64_t t1 = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+    proc_pid_rusage(getpid(), RUSAGE_INFO_V4, (rusage_info_t *)&b);
+    pthread_cpu_number_np(&cpu2);
+    if (cpu != cpu2 || cpu >= 64) { unknown++; continue; }
+    if (cpu < 4) ecore++;
+    else pcore++;
+    ghz += (double)(b.ri_cycles - a.ri_cycles) / (double)(t1 - t0);
+    n++;
+  }
+  printf("%-22s keepalive=%3d%%  ecore=%2ld pcore=%2ld migrated=%2ld  burst %5.3fGHz\n",
+         label, pct, ecore, pcore, unknown, n ? ghz / (double)n : 0.0);
+}
+
+static void placement(const char *label, int policy) {
+  switch (policy) {
+    case 1: pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0); break;
+    case 2:
+      pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+      setpriority(PRIO_DARWIN_ROLE, 0, PRIO_DARWIN_ROLE_UI_FOCAL);
+      break;
+    case 3: {
+      /* Real-time. Apple documents that time-constraint threads run on the
+       * performance cluster. Budget one round: 1 ms of work per 150 ms. */
+      mach_timebase_info_data_t tb;
+      mach_timebase_info(&tb);
+      double ns_per_tick = (double)tb.numer / (double)tb.denom;
+      struct thread_time_constraint_policy p;
+      p.period = (uint32_t)(150e6 / ns_per_tick);
+      p.computation = (uint32_t)(1e6 / ns_per_tick);
+      p.constraint = (uint32_t)(5e6 / ns_per_tick);
+      p.preemptible = 1;
+      kern_return_t kr = thread_policy_set(
+          mach_thread_self(), THREAD_TIME_CONSTRAINT_POLICY,
+          (thread_policy_t)&p, THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+      if (kr != KERN_SUCCESS) printf("%-22s thread_policy_set rc=%d\n", label, kr);
+      break;
+    }
+    default: break;
+  }
+  long ecore = 0, pcore = 0, unknown = 0;
+  double ghz[64];
+  long hits[64];
+  memset(ghz, 0, sizeof ghz);
+  memset(hits, 0, sizeof hits);
+  for (int r = 0; r < PLACE_ROUNDS; r++) {
+    usleep(150000);
+    struct rusage_info_v4 a, b;
+    size_t cpu = 0;
+    pthread_cpu_number_np(&cpu);
+    proc_pid_rusage(getpid(), RUSAGE_INFO_V4, (rusage_info_t *)&a);
+    uint64_t t0 = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+    sink = chain(sink + 11, 300000); /* about 600 us at full clock */
+    uint64_t t1 = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+    proc_pid_rusage(getpid(), RUSAGE_INFO_V4, (rusage_info_t *)&b);
+    size_t cpu2 = 0;
+    pthread_cpu_number_np(&cpu2);
+    if (cpu != cpu2 || cpu >= 64) { unknown++; continue; }
+    if (cpu < 4) ecore++;
+    else pcore++;
+    ghz[cpu] += (double)(b.ri_cycles - a.ri_cycles) / (double)(t1 - t0);
+    hits[cpu] += 1;
+  }
+  double tot = 0;
+  long n = 0;
+  for (int c = 0; c < 64; c++) {
+    tot += ghz[c];
+    n += hits[c];
+  }
+  printf("%-22s ecore=%2ld pcore=%2ld migrated=%2ld  mean %5.3fGHz  |", label, ecore,
+         pcore, unknown, n ? tot / (double)n : 0.0);
+  for (int c = 0; c < 64; c++)
+    if (hits[c]) printf(" cpu%d:%ld", c, hits[c]);
+  printf("\n");
+}
+
 int main(int argc, char **argv) {
+  if (argc > 1 && strcmp(argv[1], "placement") == 0) {
+    placement("warmup, discard", 0);
+    placement("A default", 0);
+    placement("B userinteractive", 1);
+    placement("C uix + UI_FOCAL role", 2);
+    placement("D time-constraint RT", 3);
+    return 0;
+  }
+  if (argc > 1 && strcmp(argv[1], "keepalive") == 0) {
+    keepalive("warmup, discard", 0);
+    for (int pct = 0; pct <= 100; pct = pct ? pct * 2 : 5) keepalive("sweep", pct);
+    return 0;
+  }
   if (argc > 1 && strcmp(argv[1], "coremap") == 0) {
     printf("perflevel0(P)=%s perflevel1(E)=%s\n", getenv("E89_P") ? getenv("E89_P") : "?",
            getenv("E89_E") ? getenv("E89_E") : "?");
