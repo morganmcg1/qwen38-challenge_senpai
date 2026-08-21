@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- **2026-08-21 04:45 UTC.** Campaign active, no round limit.
+- **2026-08-21 05:40 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
 - Campaign base: `b81a43d47f661cb4279d013ad7395c85b0fcb00a` (merge of PR #93).
@@ -228,19 +228,37 @@ swallows. **Untimed capture legs need `MLXFAST_NO_SANDBOX=1`.**
 
 ## 3. Current research focus
 
-**Theme A — convert the two large mechanisms into ranked measurements.**
+**Theme A — convert the large mechanisms into ranked measurements.**
 Submission `87e6421b` is in flight from the campaign base `b81a43d4`, created
 04:14 UTC, and prices E85 and the `lhsIndices` follow-up on the ranked host for
-the first time. Alphonse submits base plus the QoS claim immediately after,
-giving a clean isolated ranked pair. Thorfinn's load-time partition screen
-passed by 13.2x and closed the arm C delivery blocker outright: the mechanism
-now needs no published head, no manifest declaration, and no archive bytes.
+the first time. Thorfinn's E87 arm C takes slot 2 at +1.5 % to +1.75 %; his
+load-time partition screen passed by 13.2x and closed the arm C delivery
+blocker outright, so the mechanism needs no published head, no manifest
+declaration, and no archive bytes. Slot 3 is askeladd's head-cache copy removal
+plus the Q-row shrink at +0.0654 % and +0.0352 %. Slot 4 is edward's
+group-aware depth policy.
+
+**Theme A-minus — the QoS claim is refuted and off the ladder.** Alphonse's
+25-leg replicated rung 2 gives p = 0.798 on stuck prevalence and +0.034 %
+nominally slower on clean legs, with the claim demonstrably installed on every
+leg. The shipped claim in `04e60ef` is being reverted. The **cause** stands and
+is fully characterised: the drafting host thread runs at 4.36 % duty, Darwin
+places it by recent utilisation and not by QoS, and the efficiency cluster costs
+2.55x the cycles for identical instructions. `THREAD_AFFINITY_POLICY` returns
+KERN_NOT_SUPPORTED. The remaining candidate is to hold the placement by keeping
+the thread warm, tested cheapest-first: an untimed warm-path spin, then a
+bounded periodic top-up, then off-thread eval with a spin-wait.
 
 **Theme B — replace byte models with measured censuses.** Arm G removed 3.678 %
 of head bytes with a legal exactness cost and still lost, because achieved
-bandwidth fell. Every head experiment since E79 was priced from a byte model. We
-now have a correct bandwidth constant and we are spending it on two censuses:
-E92 on the verify pass and E93 on the head pass.
+bandwidth fell. Every head experiment since E79 was priced from a byte model.
+**E93 closed the head pass.** Class 1 GEMVs run at 240 GB/s, 97 % of the best
+within-host rate, so there is no distributed overhead to recover. The whole gap
+is one kernel: `draft_lm_head` affine-2 at 158.2 GB/s, dequantisation-bound
+because affine-2 packs 16 weights per `uint32`. A pooled bandwidth ratio hid a
+64 % kernel inside a 97 % class. **The same could be true of target verify,
+which is 89.8 % of GPU busy and has never been itemised.** That census is the
+next assignment.
 
 **Theme C — keep the one in-flight Yukon slot occupied with the best available
 real candidate, always carrying a content delta we can name and price.**
@@ -256,19 +274,35 @@ a beagle and essays headline line above `mean7`.
 
 ## 4. Potential next research directions
 
-1. **E93, the per-draft proposal-head dispatch census.** Assigned, PR #95.
-   Against 265 GB/s the head pass runs at 70.4 %, so roughly 700 to 770 us of
-   every 2,291 us head pass is not weight streaming. That is 2.9 % of local
-   round time and about 1.9 % ranked if fully removed. Leading hypothesis: the
-   head's single decoder layer runs attention over 511+ history positions whose
-   KV cache is 2.1 MB, 0.5 % of head bytes, and is therefore latency-bound by
-   construction. Thorfinn's 60.7 % marginal rate on the bytes arm C deletes
-   localises the headroom independently to the part arm C does not touch.
-2. **E92 rung 3, what limits the target verify pass.** In flight, PR #94. The
-   verify pass is 90.8 % of round GPU time. A pilot gives width 1 at 223.9 GB/s,
-   84.5 % of peak, and an implied-bytes ratio at M=9 of 2.87 against `G(9) = 3`.
-   Campaign fact 9 holds to within 5 % at the extreme width and the verify pass
-   is not at the roofline. The 512-token ABBA sweep decides it.
+1. **A per-dispatch census of the target verify pass, at two verify widths.**
+   The largest unmeasured object in the campaign: 89.8 % of MTP GPU busy at
+   208.4 us per dispatch, never itemised. Askeladd's E93 instrument closes to
+   99.9 % and attributes every dispatch exactly. Run it at M=4 and M=5 and diff,
+   because edward measured a 4.1x marginal step there and the source says
+   `G = ceil(M / NA)` moves 1 to 2 at exactly that boundary. The diff
+   distinguishes three cures that a timing curve cannot: more dispatches, the
+   same dispatches taking longer, or the same dispatches reading twice the
+   bytes. Also look for capacity-sized dead copies in the Gated DeltaNet
+   recurrent state, which covers 48 of the 64 layers and is a different
+   mechanism from `KVCacheSimple`.
+2. **Remove the head KV cache full-array copy.** Priced by E93 at 30.3 us per
+   marginal draft at the ranked capacity profile, giving 0.0640 % on beagle and
+   0.0669 % on essays, i.e. 1.9x the Q-row shrink and 1.9x the crown gap. Two
+   `vn_copy` dispatches per marginal draft copy the whole capacity-sized head K
+   and V, 6,291,456 B, proved dead three ways. Cause is a failed MLX buffer
+   donation in `KVCacheSimple.update` at
+   `Vendor/mlx-swift-lm/Libraries/MLXLMCommon/KVCache.swift:398`, which is
+   editable. **Gate: the target's full-attention layers use the same class and
+   do not issue the copy, so find the head's blocking reference first.** If the
+   fix needs an evaluation barrier it is a restructuring and stops.
+2b. **The affine-2 coarse readout rate.** 334 us per draft, about 0.83 % ranked
+   if fully recovered, the single largest measured headroom in the head. Not in
+   the graveyard family: the coarse readout is a **retrieval index only**, recall
+   at 32 is 1.0000, the shortlist goes to an exact rerank, and E87 already ships
+   a measured proposal-retention gate at 3.0e-3 worst domain. A faster kernel
+   whose last bits differ is therefore measurable in a framework we own. Falls
+   to about 125 us after arm C removes 62.5 % of that tensor's bytes, so
+   composition order must be stated whenever it is priced.
 3. **A certified two-tier exact `lm_head` readout screen.** Unassigned.
    Ceiling +1.0 % to +1.3 %; rung 0 is free. Scepticism on record:
    Cauchy-Schwarz gives a bound about 14x larger than a typical logit gap, so
@@ -281,21 +315,28 @@ a beagle and essays headline line above `mean7`.
 6. **Fix `positionAcceptEMA`'s `0.85 * 0.98^i` prior** to the measured flat
    ~0.955. E79 measured per-position acceptance as flat; the shipped prior
    decays.
-7. **A plateau-quantized depth policy.** Unassigned, gated on E92 rung 2.
-   `headStepCostRatio = 0.18` in `Qwen36MTPBlockSession.swift` is a **linear**
-   cost model: it charges the same marginal price for every extra draft. If
-   edward's marginal verify cost per width has a step, the schedule mis-prices
-   depth. The score-setting prompts operate at mean verify width 5.38 for beagle
-   and 6.09 for essays, which is exactly where a step would matter most, and
-   ledger 207 puts 57.5 % of ranked round cost at widths 5 and 6. A pure policy
-   change: no kernel, no bytes, no head. Schedule is our most-promoted category
-   at +29.042 % cumulative. A smooth marginal curve kills the idea cleanly.
-8. **The `8819b108` Q shrink.** Assigned to askeladd as the E93 rung-4 default
-   arm. The current crown deletes the 1,024 dead Q island rows from the fused
-   head `qkv` quantized GEMM, saving 2,949,120 bytes per draft step, 0.6895 % of
-   the head read. Measured ranked increment over `214d92aa` is +0.0063 % on the
-   score statistic with se 0.0233, and the crown gap is 0.0357 %, so this alone
-   is roughly the gap. We already carry the K/V half of the same mechanism.
+7. **A group-aware depth policy. CONFIRMED, becomes E94.** Edward's E92 rung 2
+   measured the marginal verify cost per width and it is a step, not a slope:
+   the M4 to M5 step is 37,915 us against 9,197 us for M3 to M4 and 9,082 us for
+   M5 to M6. Two consequences. First, the shipped `pbfit` depth-price shape puts
+   the cliff in the wrong cell, because E68 measured an isolated whole-table
+   palindrome and an isolated cell never pays the group transition. Second, and
+   decisively, **depth 4 is a strict local maximum of cost per token**: depth 3
+   beats depth 4 whenever the cumulative acceptance yield exceeds 2.144, which is
+   true for every drafting prompt, and depth 5 beats depth 4 whenever the fifth
+   position accepts above about 0.40. The penalty for sitting on depth 4 is 18 %
+   to 31 % across plausible acceptance rates. **Beagle drafts 4.382 and essays
+   drafts 5.087, so both score-setting prompts sit on the dominated cell.** The
+   ranked precedent exists at the other boundary: `segmentedVerifyDepthCap`
+   7 to 8 scored 3.25855, -1.81 %, which is the same inequality at the M8 to M9
+   transition. **A greedy walk cannot exploit a step cost**, so the fix is a
+   global argmin over `cumulative[d] / yield(d)`, which reproduces the shipped
+   policy exactly under a uniform price and is therefore free to verify.
+8. **The `8819b108` Q shrink.** Priced by E93 from its own census at 0.0352 %
+   on beagle and essays, against a measured ranked increment of 0.035 % and a
+   serial-free gap of 0.0357 %: agreement to 1.4 %. Rides with direction 2. The
+   crown deletes the 1,024 dead Q island rows from the fused head `qkv`
+   quantized GEMM, 2,949,120 bytes per draft step. We already carry the K/V half.
    Their form succeeds where six rival attempts on adjacent forms failed because
    it deletes only provably dead work, keeps bit-exactness by row independence,
    and reverts permanently to the legacy assembly on any unexpected index set.
