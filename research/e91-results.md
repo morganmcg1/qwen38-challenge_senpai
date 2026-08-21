@@ -309,9 +309,71 @@ gate are untouched, and read the score. Program.md's "official evaluation is
 part of the research loop" clause authorizes this; do it only after E92a says
 there is something to find.
 
+## Gates
+
+| gate | command | verdict |
+| --- | --- | --- |
+| assignment scope | `senpai/validate-assignment-scope.sh 853d9853 Sources/MLXFastModel/Qwen36MTPBlockSession.swift Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` | `assignment scope OK: 2 submitted path(s)` |
+| editable budget | `senpai/check-editable-budget.sh 853d9853` | `source=2511128/3000000 headroom=488872 growth=2250/262144 exempt=2410 files=154` |
+| ranked score boundary | `senpai/verify-ranked-score-boundary.sh` | `PASS: ranked numerator is pinned baseline; candidate edits affect the MTP denominator only` |
+| exactness across arms | 108 timed blocks, 9 schedules | one tail-row top-2 fingerprint `271|0x1.5p+4,0x1.f6p+3` for every arm |
+| `swift test` regression | `swift test -c release --force-resolved-versions -Xswiftc -enable-testing` | see below |
+
+### The `swift test` regression gate
+
+`senpai/known-test-failures.md` defines the gate as the **failing name set** and
+the **issue count**, never the exit code and never the test total.
+
+| tree | tests | suites | failing names | issues |
+| --- | ---: | ---: | ---: | ---: |
+| this branch | 718 | 57 | the same 9 | **40** |
+| base `853d9853`, filtered to those 9 names | 9 | 3 | the same 9 | **40** |
+
+Both runs exit 1, which the file says carries no information on its own. The
+name set is exactly the documented nine
+(`contestantDocsCommandBlocksKeepTheDependencyGraphFrozen`,
+`participantDocsExposeDefaultCLIInstallDirectory`,
+`qwen36ConfigContractDigestMatchesTheReferenceManifest`,
+`startupMemoryPolicyKeepsRanked128GiBProfile`,
+`submissionStaticReviewPromptCoversMeasurementStructureExploitation`,
+`theCheckedInDeclarationSelectsThePinnedHead`,
+`theEvenMedianRuleIsTheMeanOfTheTwoCentralValues`,
+`theQwenMTPTrackIsArmedOnQwen38`,
+`theSeededCalibrationExpectationMatchesItsRecordedProvenance`) and the issue
+count is exactly 40 on both trees. **No new failure. The gate passes.** The base
+figure was measured directly at `853d9853` in this session, not carried over
+from the file's earlier measurement at `f7f356b2`.
+
+The 13 extra tests on this branch are the E91 ladder suite. They all pass.
+
+## Head provenance
+
+The ladder harness loads the target model only. It builds
+`Qwen35TextModel` through `Qwen35RuntimeWeightCache` and calls
+`callWithHidden` over the 512-token seed with a fresh cache, which is the exact
+GPU work inside `Qwen36MTPBlockSession.begin()`. **No proposal head is attached
+in any E91 session**, so no `head_provenance_sha256` exists for these runs and
+none is quoted. This branch does not change `mtp-head.manifest.json`; it still
+declares `sha256`
+`559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71`,
+427742600 bytes, exactly as the base does. `begin()` reaches the head only after
+the prefill forward, so the head cannot affect any number in this report.
+
+## One correction for the advisor
+
+Advisor comment 4 says edward's light interval ledger is "merged at
+`Sources/MLXFastModel/E90GPUIntervalLedger.swift` on `cedb900b` with a
+reproducible patch at `research/e90-artifacts/gpu-interval-ledger.patch`".
+**Neither path exists on `853d9853`, the base this assignment names.** They are
+on `cedb900b`, a later tree. I therefore could not reuse the ledger and used
+E83's command-buffer commit counter instead, in an untimed census block only.
+The GPU busy and idle split asked for in rung 0 is consequently **not reported**;
+the phase split answers the same question without it, because `s1` proves the
+host finishes the whole 64-layer enqueue in 118.7 ms of a 4043 ms block.
+
 ## Files changed
 
-Candidate surface, one file:
+Candidate surface, two files:
 
 - `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` — adds
   `qwen35PrefillLadderStride(_:)`, parses `MLX_QWEN_MTP_PREFILL_LADDER` once
