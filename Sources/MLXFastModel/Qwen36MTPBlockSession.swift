@@ -625,7 +625,8 @@ public final class Qwen36MTPBlockSession {
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
                 + "wall_us=\((tBeginDone - tBegin0) / 1000) "
-                + "cpu_us=\((cpuBeginDone - cpuBegin0) / 1000)\n")
+                + "cpu_us=\((cpuBeginDone - cpuBegin0) / 1000) "
+                + "head_submit=\(Self.headSubmitPolicy)\n")
         }
         let readTail = (
             tailIDs.asArray(Int32.self).map { Int($0) },
@@ -744,6 +745,40 @@ public final class Qwen36MTPBlockSession {
     /// overlap this flag exists to undo.
     private static let traceSyncHeadChain =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_SYNC_HEAD"] == "1"
+
+    /// E90 rung 1: head-chain submission granularity.
+    ///
+    ///     ship     one `asyncEval` after the loop, as shipped
+    ///     everyN   submit each Nth chain step as soon as it is built
+    ///     mid      one extra submission at step ceil(d/2)
+    ///
+    /// SCHEDULING ONLY. Each arm evaluates the same graph, in the same order,
+    /// with the same inputs, so every arm must emit the identical token stream
+    /// and the identical round sequence. A mismatch is a defect in the arm.
+    private static let headSubmitPolicy =
+        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_HEAD_SUBMIT"] ?? "ship"
+    private static let headSubmitEvery: Int = {
+        guard headSubmitPolicy.hasPrefix("every") else { return 0 }
+        guard let n = Int(headSubmitPolicy.dropFirst("every".count)), n >= 1 else {
+            preconditionFailure(
+                "MLX_QWEN_MTP_HEAD_SUBMIT=\(headSubmitPolicy) is not everyN")
+        }
+        return n
+    }()
+    private static let headSubmitMid: Bool = {
+        precondition(
+            headSubmitPolicy == "ship" || headSubmitPolicy == "mid"
+                || headSubmitEvery > 0,
+            "MLX_QWEN_MTP_HEAD_SUBMIT=\(headSubmitPolicy) is not ship, mid or everyN")
+        return headSubmitPolicy == "mid"
+    }()
+
+    @inline(__always)
+    private static func headChainSubmits(step: Int, draftCount: Int) -> Bool {
+        if headSubmitEvery > 0 { return step % headSubmitEvery == 0 }
+        if headSubmitMid { return step == (draftCount + 1) / 2 }
+        return false
+    }
     /// Opened O_APPEND so the reference, verify and timed workers can each
     /// write the same file without a later process truncating an earlier
     /// one's rounds. Falls back to stderr when no path is configured, which
@@ -763,12 +798,14 @@ public final class Qwen36MTPBlockSession {
         traceSink.write(Data(line.utf8))
     }
 
-    /// CPU time consumed by the calling thread. A block whose wall time inflates
-    /// while this stays flat was off-core, not running slowly, so a host state
-    /// cannot masquerade as a GPU-side result.
+    /// CPU nanoseconds this thread has consumed. `CLOCK_THREAD_CPUTIME_ID`
+    /// advances only while the thread runs, so pairing it with the wall clock
+    /// separates a descheduled host from a slow one.
     @inline(__always)
     private static func threadCPUNanoseconds() -> UInt64 {
-        clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+        var value = timespec()
+        guard clock_gettime(CLOCK_THREAD_CPUTIME_ID, &value) == 0 else { return 0 }
+        return UInt64(value.tv_sec) * 1_000_000_000 + UInt64(value.tv_nsec)
     }
 
     /// Exact-value row dump for the LOCAL width-wall gate: hexfloat (`%a`)
@@ -1206,7 +1243,9 @@ public final class Qwen36MTPBlockSession {
         // split a round into head-chain graph build, verify graph build, and
         // the single blocking eval's GPU wall. Never on in a ranked run.
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
+        let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
         var tDraftBuilt: UInt64 = 0
+        var tSnapshotDone: UInt64 = 0
         var tVerifyBuilt: UInt64 = 0
         var tEvalDone: UInt64 = 0
         var tReadDone: UInt64 = 0
@@ -1397,12 +1436,15 @@ public final class Qwen36MTPBlockSession {
         asyncEval(draftId)
         let tSubmit1 = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
-        for _ in 1 ..< draftCount {
+        for step in 1 ..< draftCount {
             headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
             draftHidden = Self.lastHiddenRow(headHidden)
             draftId = model.draftTokenID(draftHidden)
             draftIdArrays.append(draftId)
+            if Self.headChainSubmits(step: step, draftCount: draftCount) {
+                asyncEval(draftId)
+            }
         }
         let tChainBuilt = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
@@ -1417,6 +1459,7 @@ public final class Qwen36MTPBlockSession {
         //    rejected single draft can then retain the primary's target work and
         //    discard only the draft token instead of re-forwarding the primary.
         let snapshot = Self.snapshotRecurrent(cache)
+        if Self.traceRounds { tSnapshotDone = DispatchTime.now().uptimeNanoseconds }
         let verifyTokens = concatenated(
             [MLXArray([Int32(primary)]).reshaped([1, 1])] + draftIdArrays,
             axis: 1)
@@ -1625,8 +1668,34 @@ public final class Qwen36MTPBlockSession {
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
                 + "round_us=\((tTailDone - tRound0) / 1000) "
+                // Thread CPU nanoseconds this round consumed, beside the wall
+                // clock. A round whose wall time rises while this stays flat
+                // lost the CPU to something else; a round where both rise ran
+                // the same host work at a lower clock. E89 measures the same
+                // field on a second host under the same name and units.
+                + "host_thread_cpu_ns=\(Self.threadCPUNanoseconds() &- cpuRound0) "
                 + scheduleTrace + "\n"
             Self.traceWrite(line)
+            // Absolute anchors on the mach uptime clock, so an offline reader
+            // can intersect the round's inter-anchor windows with the GPU
+            // execution intervals E90GPUIntervals records on the same axis.
+            // `verify_build_us` above keeps its historical meaning (it still
+            // spans the recurrent snapshot), and the split appears here.
+            Self.traceWrite(
+                "mtp-anchor: round=\(roundCount) d=\(draftCount) "
+                    + "acc=\(acceptedCount) "
+                    // One trace file collects every worker a leg spawns, and
+                    // the GPU interval ledger is per process, so the reader
+                    // needs the pid to join the two without mixing workers.
+                    + "pid=\(ProcessInfo.processInfo.processIdentifier) "
+                    + "t_round0=\(tRound0) t_draft0=\(tDraft0) "
+                    + "t_flush_built=\(tFlushBuilt) t_head1_built=\(tHead1Built) "
+                    + "t_submit1=\(tSubmit1) t_chain_built=\(tChainBuilt) "
+                    + "t_draft_built=\(tDraftBuilt) "
+                    + "t_snapshot_done=\(tSnapshotDone) "
+                    + "t_verify_built=\(tVerifyBuilt) t_eval_done=\(tEvalDone) "
+                    + "t_read_done=\(tReadDone) t_commit_done=\(tCommitDone) "
+                    + "t_tail_done=\(tTailDone)\n")
         }
         // No trailing eval: every host-read value was materialised by the
         // round bundle above. A successful wide-prefix replay intentionally

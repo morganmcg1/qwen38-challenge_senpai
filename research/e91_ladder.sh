@@ -1,58 +1,45 @@
 #!/usr/bin/env bash
 # Run one E91 seed-prefill session.
 #
-#   usage: research/e91_ladder.sh TAG [smoke|census|ladder|ceiling]
+#   usage: research/e91_ladder.sh TAG [census|ceiling]
 #
-#   smoke    two arms, one rep, no census. Proves the knob and the harness on
-#            the real checkpoint without spending a session.
-#   census   rung 0. No timed arm, so the selector swizzle is installed before
-#            the first MLX pipeline and every dispatch resolves to a kernel
-#            name, a grid and a threadgroup shape.
-#   ladder   rung 1. Nine schedules, ABBA, three reps. No census: the swizzle
-#            perturbs the clock.
+#   census   rung 0. One untimed begin(). The selector swizzle is installed
+#            before the first MLX pipeline, so every dispatch resolves to a
+#            kernel name, a grid and a threadgroup shape.
 #   ceiling  rung 2. Synthetic weights only, so the 15 GB checkpoint is never
 #            resident and the probe is cheap.
 #
-# Tests/-only instrument. The ladder profiles hold the real checkpoint, so they
-# take the same local run lock benchmark.sh takes: two overlapping resident
+# Rung 1, the asyncEval stride sweep, is closed and deleted; see
+# research/e91-results.md.
+#
+# Tests/-only instrument. The census profile holds the real checkpoint, so it
+# takes the same local run lock benchmark.sh takes: two overlapping resident
 # models out-of-memory this host.
 #
 # MLXFAST_LOCAL_COOL_GATE has no effect here, because this session never calls
-# benchmark.sh. The session is instead ABBA-counterbalanced inside the test and
-# records entry and exit GPU temperature per block. Every result carries
-# cool_gate_passed_real_gate=false, gate_qualified_for_timing=false and
+# benchmark.sh. Neither profile is a timing arm: the census swizzle locks on
+# every dispatch and the ceiling probe measures synthetic cells. Every result
+# carries cool_gate_passed_real_gate=false, gate_qualified_for_timing=false and
 # official_or_ranked_score=false.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 tag="${1:?usage: e91_ladder.sh TAG [PROFILE]}"
-profile="${2:-ladder}"
+profile="${2:-census}"
 
-run_ladder=1
+run_census=1
 run_ceiling=0
 case "${profile}" in
-  smoke)
-    : "${MLXFAST_E91_REPS:=1}"
-    : "${MLXFAST_E91_WARMUP:=1}"
-    : "${MLXFAST_E91_ARMS:=s1,off}"
-    ;;
   census)
-    : "${MLXFAST_E91_REPS:=0}"
     : "${MLXFAST_E91_WARMUP:=1}"
-    : "${MLXFAST_E91_CENSUS_ARMS:=ship,off}"
-    ;;
-  ladder)
-    : "${MLXFAST_E91_REPS:=3}"
-    : "${MLXFAST_E91_WARMUP:=2}"
     ;;
   ceiling)
-    run_ladder=0
+    run_census=0
     run_ceiling=1
     ;;
   *) echo "e91_ladder.sh: unknown profile ${profile}" >&2; exit 2 ;;
 esac
-export MLXFAST_E91_REPS MLXFAST_E91_WARMUP MLXFAST_E91_ARMS
-export MLXFAST_E91_CENSUS MLXFAST_E91_CENSUS_ARMS
+export MLXFAST_E91_WARMUP
 
 out="research/out/${tag}"
 rm -rf "${out}"
@@ -99,13 +86,13 @@ gpu_temp() {
   echo ""
 }
 
-export MLXFAST_RUN_E91_LADDER="${run_ladder}"
+export MLXFAST_RUN_E91_CENSUS="${run_census}"
 export MLXFAST_RUN_E91_CEILING="${run_ceiling}"
-export MLXFAST_E91_OUT="${PWD}/${out}/ladder.json"
+export MLXFAST_E91_OUT="${PWD}/${out}/census.json"
 export MLXFAST_E91_CEILING_OUT="${PWD}/${out}/ceiling.json"
 
-experiment="${MLXFAST_CENSUS_EXPERIMENT:-e91-prefill-ladder}"
-group="${MLXFAST_CENSUS_GROUP:-e91-prefill-ladder}"
+experiment="${MLXFAST_CENSUS_EXPERIMENT:-e91-prefill-${profile}}"
+group="${MLXFAST_CENSUS_GROUP:-e91-prefill}"
 
 {
   echo "tag=${tag}"
@@ -126,10 +113,8 @@ group="${MLXFAST_CENSUS_GROUP:-e91-prefill-ladder}"
   echo "swift=$(swift --version 2>&1 | head -1)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "seed_length=${MLXFAST_E91_SEED_LEN:-512}"
-  echo "reps=${MLXFAST_E91_REPS:-3}"
-  echo "warmup=${MLXFAST_E91_WARMUP:-2}"
-  echo "arms=${MLXFAST_E91_ARMS:-<test-default>}"
-  echo "census_arms=${MLXFAST_E91_CENSUS_ARMS:-<test-default>}"
+  echo "warmup=${MLXFAST_E91_WARMUP:-1}"
+  echo "ceiling_reps=${MLXFAST_E91_CEILING_REPS:-<test-default>}"
   echo "profile=${profile}"
   echo "gpu_temp_entry_c=$(gpu_temp)"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"

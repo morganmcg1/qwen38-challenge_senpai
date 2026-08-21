@@ -7,102 +7,62 @@ import Testing
 
 @testable import MLXFastModel
 
-// E91 -- the 512-token seed prefill, attacked on two axes.
+// E91 -- the 512-token seed prefill, censused and priced.
 //
 // `begin()` is 8.59 % of the ranked candidate leg and 0 % of the ranked serial
-// numerator, so every second removed from it is a pure ranked gain. E83 already
-// showed the seed leg is essentially all quantized GEMM. E91 asks the two
-// questions E83 left open.
+// numerator, so every second removed from it is a pure ranked gain. E83 showed
+// the seed leg is essentially all quantized GEMM; E91 named every kernel in it
+// and closed the schedule axis.
 //
-//   RUNG 1, the schedule axis. `Qwen35TextModelInner` fires `asyncEval` at
-//   `{0} + every i % 3 == 2` when the input is at least 512 rows. Nobody chose
-//   stride 3 for prefill; it was scaled from a decode-width Laguna receipt. The
-//   sweep drives the rung set from stride 1 to stride 16 and off, over one
-//   resident model, and reads absolute `begin` wall time. Bit-exactness is
-//   asserted across arms: `asyncEval` moves an enqueue boundary, never an op.
+//   RUNG 0, the census. Kernel names, dispatch counts, per-kernel grid and
+//   threadgroup shapes and command-buffer commits, per phase of one `begin()`.
+//   Untimed by construction: the selector swizzle takes a lock on every
+//   dispatch, so it perturbs any clock in the same session.
 //
-//   RUNG 2, the kernel ceiling. At M = 512 every prefill cell has an arithmetic
-//   intensity above 1000 FLOP/byte, so the honest ceiling is arithmetic, not
-//   bandwidth. The ceiling probe measures each cell three ways -- shipped
-//   `affine_qmm_t`, dense bf16 `matmul` at the same shape, and the machine's own
-//   measured read bandwidth and bf16 GEMM peak -- and weights the gap by the
-//   cell's measured share of the seed leg.
+//   RUNG 2, the kernel ceiling. The probe measures each prefill cell three ways
+//   -- shipped `affine_qmm_t`, dense bf16 `matmul` at the same shape, and the
+//   machine's own measured read bandwidth and bf16 GEMM peak -- and weights the
+//   gap by the cell's measured share of the seed leg.
 //
-// Timing-only instrument. Nothing here is on the submitted surface: Yukon never
-// packages `Tests/`. The rung-1 arms are exact; the rung-2 probe runs synthetic
-// weights and makes no token claim.
+// RUNG 1, the `asyncEval` stride sweep, is CLOSED and its knob is deleted. 108
+// timed blocks over nine schedules put the best arm at 0.94 sigma: the host
+// enqueues the whole 64-layer graph in 118.7 ms of a 4043 ms block, so prefill
+// has no host component to recover. See `research/e91-results.md`.
 //
-// Enable rung 1 with `MLXFAST_RUN_E91_LADDER=1` and rung 2 with
+// Nothing here is on the submitted surface: Yukon never packages `Tests/`. The
+// ceiling probe runs synthetic weights and makes no token claim.
+//
+// Enable rung 0 with `MLXFAST_RUN_E91_CENSUS=1` and rung 2 with
 // `MLXFAST_RUN_E91_CEILING=1`.
 
 @Suite(.serialized)
 struct E91PrefillLadderTests {
 
-    /// The shipped schedule, asserted as a property of the stride helper rather
-    /// than as a literal set, so a future stride change cannot pass silently.
-    @Test
-    func shippedPrefillLadderIsStrideThree() {
-        let shipped = qwen35PrefillLadderStride(3)
-        for layer in 0..<64 {
-            #expect(shipped.contains(layer) == (layer == 0 || layer % 3 == 2))
-        }
-        #expect(shipped.filter { $0 < 64 }.count == 22)
-        #expect(qwen35PrefillLadderStride(1).filter { $0 < 64 }.count == 64)
-        #expect(qwen35PrefillLadderStride(2).filter { $0 < 64 }.count == 33)
-        #expect(qwen35PrefillLadderStride(64).filter { $0 < 64 }.count == 2)
-        #expect(e91LadderRungs("ship") == shipped)
-        #expect(e91LadderRungs("off") == [])
-        #expect(e91LadderRungs("s4") == qwen35PrefillLadderStride(4))
-        #expect(e91LadderRungs("nonsense") == nil)
+    // MARK: - rung 0
+
+    private static var censusEnabled: Bool {
+        ProcessInfo.processInfo.environment["MLXFAST_RUN_E91_CENSUS"] == "1"
     }
 
-    // MARK: - rung 1
-
-    private static var ladderEnabled: Bool {
-        ProcessInfo.processInfo.environment["MLXFAST_RUN_E91_LADDER"] == "1"
-    }
-
-    @Test(.enabled(if: E91PrefillLadderTests.ladderEnabled))
-    func sweepThePrefillLadderStride() throws {
+    /// Every dispatch of one seed `begin()` on the shipped schedule, resolved to
+    /// a kernel name and a launch shape.
+    @Test(.enabled(if: E91PrefillLadderTests.censusEnabled))
+    func censusThePrefillBlock() throws {
         let env = ProcessInfo.processInfo.environment
         let outPath = try #require(
             env["MLXFAST_E91_OUT"], "MLXFAST_E91_OUT must name the JSON destination")
-
         let weightsPath = env["MLXFAST_E91_WEIGHTS"] ?? "weights"
         let promptPath =
             env["MLXFAST_E91_PROMPT"]
             ?? "correctness_prompts/public_longcopy_gate_english_512_1024.json"
         let seedLength = Int(env["MLXFAST_E91_SEED_LEN"] ?? "") ?? 512
-        let reps = Int(env["MLXFAST_E91_REPS"] ?? "") ?? 3
-        let warmup = Int(env["MLXFAST_E91_WARMUP"] ?? "") ?? 2
-        // `reps == 0` is the census-only session. No timed arm runs, so the
-        // selector swizzle may be installed before MLX builds its first
-        // pipeline, which is the only ordering that resolves a dispatch to a
-        // real kernel name.
-        let censusOnly = reps == 0
-        let runCensus = env["MLXFAST_E91_CENSUS"].map { $0 == "1" } ?? censusOnly
-        let armNames =
-            (env["MLXFAST_E91_ARMS"]?
-                .split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) })
-            .flatMap { $0.isEmpty ? nil : $0 }
-            ?? ["s1", "s2", "s4", "s6", "s8", "s12", "s16", "off"]
-        let censusArms =
-            (env["MLXFAST_E91_CENSUS_ARMS"]?
-                .split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) })
-            .flatMap { $0.isEmpty ? nil : $0 } ?? ["ship", "off"]
+        let warmup = Int(env["MLXFAST_E91_WARMUP"] ?? "") ?? 1
 
-        for name in armNames + censusArms + ["ship"] {
-            #expect(e91LadderRungs(name) != nil, "unknown E91 ladder arm \(name)")
-        }
-
-        var swizzleInstalled = false
-        if runCensus {
-            #expect(censusOnly, "a census session must set MLXFAST_E91_REPS=0")
-            swizzleInstalled = e83InstallSwizzles()
-            #expect(swizzleInstalled, "selector swizzle install failed")
-        }
+        // The swizzle must be installed before MLX builds its first pipeline;
+        // that is the only ordering in which a dispatch resolves to a real
+        // kernel name rather than to `<unbound>`.
+        let swizzleInstalled = e83InstallSwizzles()
+        #expect(swizzleInstalled, "selector swizzle install failed")
 
         let tokens = try e83LoadPromptTokens(promptPath)
         #expect(tokens.count >= seedLength)
@@ -113,93 +73,18 @@ struct E91PrefillLadderTests {
         let runtime = Qwen35RuntimeWeightCache(loader: loader, config: config)
         let model = try runtime.requireLibraryModel()
         let loadSeconds = Double(DispatchTime.now().uptimeNanoseconds - loadStart) / 1e9
-        let layerCount = config.numHiddenLayers
-
-        let shipped = qwen35PrefillLadderStride(3)
-        #expect(
-            model.model.prefillLadderRungs == shipped,
-            "a scored run must start on the shipped schedule")
 
         let harness = E83Harness(model: model, tokens: tokens, seedLength: seedLength)
-        var blocks: [[String: Any]] = []
-        var fingerprints: [String: Set<String>] = [:]
-
-        /// One `begin()` under the named schedule. The model instance carries
-        /// the rung set, so no environment variable and no rebuild is involved
-        /// and every arm sees the same resident weights.
-        func measure(_ label: String, pairArm: String, position: Int) -> [String: Any] {
-            let rungs = e91LadderRungs(label) ?? shipped
-            model.model.prefillLadderRungs = rungs
-            // Host CPU actually burned over the same interval. A stuck or
-            // spinning host shows up here and nowhere else in the wall clock.
-            let cpuStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
-            var block = harness.begin(arm: .baseline, phased: false)
-            block["host_thread_cpu_ns"] =
-                Int(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - cpuStart)
-            let armed = rungs.filter { $0 < layerCount }.count
-            block["arm"] = label
-            block["ladder_label"] = label
-            block["ladder_stride"] = e91LadderStride(label) ?? -1
-            block["forced_eval_points"] = armed
-            block["pair_arm"] = pairArm
-            block["pair_position"] = position
-            block["order"] = blocks.count
-            let fingerprint = e91Fingerprint(block)
-            block["token_fingerprint"] = fingerprint
-            fingerprints[label, default: []].insert(fingerprint)
-            return block
-        }
-
         harness.warmLikeTheSession()
-        model.model.prefillLadderRungs = shipped
         for _ in 0..<warmup { _ = harness.begin(arm: .baseline, phased: false) }
 
-        // Rung 0. Kernel names, dispatch counts, per-kernel grid shapes and
-        // command-buffer commits per phase of one `begin()`. Untimed: the
-        // selector swizzle perturbs the clock, so this never shares a session
-        // with a timed arm.
-        if runCensus && swizzleInstalled {
-            for label in censusArms {
-                model.model.prefillLadderRungs = e91LadderRungs(label) ?? shipped
-                var census = harness.censusBoundaries()
-                census["ladder_label"] = label
-                census["ladder_stride"] = e91LadderStride(label) ?? -1
-                census["forced_eval_points"] =
-                    (e91LadderRungs(label) ?? shipped).filter { $0 < layerCount }.count
-                census["order"] = blocks.count
-                blocks.append(e83Emit(census))
-            }
-        }
-
-        // Rung 1. ABBA inside every pair, so monotone thermal or clock drift
-        // cancels to first order in the ship-minus-arm difference. The final
-        // pair of each rep is ship against ship: the null that says how much of
-        // any measured difference the instrument invents.
-        for rep in 0..<reps {
-            for arm in armNames + ["ship_null"] {
-                let candidate = arm == "ship_null" ? "ship" : arm
-                for (position, label) in ["ship", candidate, candidate, "ship"].enumerated() {
-                    var block = measure(label, pairArm: arm, position: position)
-                    block["rep"] = rep
-                    blocks.append(e83Emit(block))
-                }
-            }
-        }
-        model.model.prefillLadderRungs = shipped
-
-        // `asyncEval` changes when work is enqueued, never what is computed. If
-        // any arm moves the tail row's top-2 evidence, the knob is not a pure
-        // scheduling change and no timing on this page is usable.
-        let allFingerprints = Set(fingerprints.values.flatMap { $0 })
-        if !censusOnly {
-            #expect(
-                allFingerprints.count == 1,
-                "prefill ladder stride changed the emitted evidence: \(fingerprints)")
-        }
+        var census = harness.censusBoundaries()
+        census["order"] = 0
+        let blocks = [e83Emit(census)]
 
         let payload: [String: Any] = [
             "schema": 1,
-            "experiment": env["MLXFAST_CENSUS_EXPERIMENT"] ?? "e91-prefill-ladder",
+            "experiment": env["MLXFAST_CENSUS_EXPERIMENT"] ?? "e91-prefill-census",
             "harness": "local",
             "cool_gate_passed_real_gate": false,
             "gate_qualified_for_timing": false,
@@ -208,22 +93,16 @@ struct E91PrefillLadderTests {
                 "weights_path": weightsPath,
                 "prompt_path": promptPath,
                 "seed_length": seedLength,
-                "reps": reps,
                 "warmup": warmup,
-                "arms": armNames,
-                "census_only": censusOnly,
-                "census_arms": runCensus ? censusArms : [],
                 "swizzle_installed": swizzleInstalled,
-                "shipped_forced_eval_points": shipped.filter { $0 < layerCount }.count,
                 "model_load_seconds": loadSeconds,
-                "num_hidden_layers": layerCount,
+                "num_hidden_layers": config.numHiddenLayers,
                 "hidden_size": config.hiddenSize,
                 "intermediate_size": config.intermediateSize,
                 "vocab_size": config.vocabSize,
                 "device": e83Device(),
                 "host": ProcessInfo.processInfo.hostName,
             ],
-            "token_fingerprints": fingerprints.mapValues { Array($0).sorted() },
             "blocks": blocks,
         ]
         let data = try JSONSerialization.data(
@@ -349,38 +228,6 @@ struct E91PrefillLadderTests {
 }
 
 // MARK: - helpers
-
-/// `nil` for an unparseable label, so a typo in the arm list fails the test
-/// instead of silently measuring the shipped schedule twice.
-func e91LadderRungs(_ label: String) -> Set<Int>? {
-    switch label {
-    case "ship", "default": return qwen35PrefillLadderStride(3)
-    case "off": return []
-    default:
-        guard label.hasPrefix("s"), let stride = Int(label.dropFirst()), stride > 0 else {
-            return nil
-        }
-        return qwen35PrefillLadderStride(stride)
-    }
-}
-
-func e91LadderStride(_ label: String) -> Int? {
-    switch label {
-    case "ship", "default": return 3
-    case "off": return 0
-    default: return label.hasPrefix("s") ? Int(label.dropFirst()) : nil
-    }
-}
-
-/// The tail row's exact top-2 evidence, in a form that a one-ulp move breaks.
-func e91Fingerprint(_ block: [String: Any]) -> String {
-    let primary = (block["first_primary"] as? Int).map(String.init) ?? "?"
-    let values =
-        (block["top2_values"] as? [Double])?
-        .map { String(format: "%a", $0) }
-        .joined(separator: ",") ?? "?"
-    return "\(primary)|\(values)"
-}
 
 /// A dense bf16 `matmul` at the same shape as the quantized cell: what this
 /// machine achieves when the dequantization work is removed but the arithmetic

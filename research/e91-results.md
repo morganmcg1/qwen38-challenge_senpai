@@ -25,7 +25,7 @@ locally is worth at most 0.03 % of the candidate leg.
 | `e91-census-1` | rung 0 dispatch census | `2cljbnbk` | `9e1e5edc` | 0 | 51 s |
 | `e91-ladder-1` | rung 1 full ladder | `ggrlh2xt` | `8e489996` | 0 | 13 min |
 
-Reproduction:
+Reproduction, as the sessions were run at commit `3c98a90`:
 
 ```bash
 swift build -c release --force-resolved-versions -Xswiftc -enable-testing --build-tests
@@ -34,6 +34,10 @@ research/e91_ladder.sh e91-ladder-1 ladder
 research/e91_ladder.sh e91-ceiling-1 ceiling
 python3 research/e91_report.py research/out/e91-ladder-1 research/out/e91-ceiling-1
 ```
+
+The `ladder` profile and its stride knob are deleted at merge; see "Files
+changed". Replaying the rung-1 arms needs commit `3c98a90`. The `census` and
+`ceiling` profiles still run on the merged tree.
 
 ## Rung 0 — the live dispatch census
 
@@ -373,30 +377,38 @@ host finishes the whole 64-layer enqueue in 118.7 ms of a 4043 ms block.
 
 ## Files changed
 
-Candidate surface, two files:
+The ladder knob that produced the rung-1 arms is **deleted** at the advisor's
+request, because the axis it measures is closed. The list below is the merged
+end state; the measured knob itself survives only in this report and in the
+branch history at commit `3c98a90`.
 
-- `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` — adds
-  `qwen35PrefillLadderStride(_:)`, parses `MLX_QWEN_MTP_PREFILL_LADDER` once
-  into `qwen35PrefillLadderRungs`, and gives `Qwen35TextModelInner` a
-  per-instance `prefillLadderRungs`. **The default is exactly the shipped
-  stride-3 set**, asserted by an always-on unit test, and both prefill call
-  sites now read the set instead of the literal `i == 0 || i % 3 == 2`.
+Candidate surface, one behaviour change and one comment:
+
 - `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` — the `begin()` trace line
-  gains `cpu_us=` from `CLOCK_THREAD_CPUTIME_ID` beside the existing `wall_us=`.
+  gains `wall_us=` and `cpu_us=` from `CLOCK_THREAD_CPUTIME_ID`, beside the
+  `build_us=`, `eval_wall_us=` and `head_submit=` fields already on the base.
+  The `threadCPUNanoseconds()` helper is E90's; my duplicate is gone.
+- `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` — comment only. Both
+  prefill call sites hold the shipped literal `i == 0 || i % 3 == 2`, so the
+  rung set is bit-for-bit what it was before E91.
 
 Research-only, never packaged by Yukon:
 
-- `Tests/MLXFastTests/E91PrefillLadderTests.swift` — the ladder sweep, the
-  census-only mode and the ceiling probe.
+- `Tests/MLXFastTests/E91PrefillLadderTests.swift` — the untimed dispatch census
+  of one `begin()` and the quantized GEMM ceiling probe. The stride sweep, the
+  arm helpers and the stride unit test are deleted with the knob.
 - `Tests/MLXFastTests/E83PrefillDecompositionTests.swift` — 15 declarations
   changed from `private` to internal for reuse; the dispatch ledger records grid
   and threadgroup per kernel; the swizzle installer gained the descriptor-based
   pipeline hook and a comment naming the ordering requirement.
-- `research/e91_ladder.sh`, `research/e91_report.py`, this file.
+- `research/e91_ladder.sh` — profiles `census` and `ceiling`; the `smoke` and
+  `ladder` profiles are deleted and the census artifact is now `census.json`.
+- `research/e91_report.py` — census and ceiling tables; the ABBA arm tables are
+  deleted.
 - `research/e83_wandb_stream.py` — a generic flattener for unknown block kinds.
+- this file.
 
-**Recommendation: close the prefill axis. Do not compose this instrument.** The
-knob is a measured no-op, so the only reason to keep `prefillLadderRungs` is
-future instrumentation. If the advisor does not want that, revert
-`Qwen35.swift` to the literal and keep only the `cpu_us` trace field, which
-costs one `clock_gettime_nsec_np` per `begin()` and answered a real question.
+**Recommendation: the prefill axis is closed.** The only instrument kept on the
+candidate surface is the `cpu_us` trace field, which costs one
+`clock_gettime(CLOCK_THREAD_CPUTIME_ID)` per `begin()` under `traceRounds` and
+answered a real question: the host burns 94.7 ms of CPU in a 4043 ms block.

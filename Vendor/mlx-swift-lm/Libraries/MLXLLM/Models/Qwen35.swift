@@ -2797,42 +2797,8 @@ let qwen35DecodeLadderRungs: Set<Int> = {
     }
 }()
 
-/// `{0}` plus every layer index that closes a `stride`-long group. Indices past
-/// the model's layer count are inert, so the bound is a constant.
-public func qwen35PrefillLadderStride(_ stride: Int) -> Set<Int> {
-    Set([0] + (0 ..< 256).filter { $0 % stride == stride - 1 })
-}
-
-/// Layer indices at which the `S >= 512` seed-prefill ladder fires `asyncEval`.
-///
-/// The shipped schedule is stride 3 — `{0}` plus every `i % 3 == 2`, which is 22
-/// rungs over 64 layers. `MLX_QWEN_MTP_PREFILL_LADDER` overrides it for stride
-/// research: `off`, `sN` for stride N, or an explicit comma-separated index
-/// list. Read once, so a scored run with the variable unset behaves exactly as
-/// before.
-let qwen35PrefillLadderRungs: Set<Int> = {
-    let shipped = qwen35PrefillLadderStride(3)
-    guard let raw = ProcessInfo.processInfo.environment["MLX_QWEN_MTP_PREFILL_LADDER"],
-          !raw.isEmpty
-    else { return shipped }
-    switch raw {
-    case "default", "ship": return shipped
-    case "off": return []
-    default:
-        if raw.hasPrefix("s"), let stride = Int(raw.dropFirst()), stride > 0 {
-            return qwen35PrefillLadderStride(stride)
-        }
-        let parsed = Set(raw.split(separator: ",").compactMap { Int($0) })
-        return parsed.isEmpty ? shipped : parsed
-    }
-}()
-
 public class Qwen35TextModelInner: Module {
     @ModuleInfo(key: "embed_tokens") var embedTokens: Embedding
-
-    /// Per-instance copy of the seed-prefill rung set, so one resident model can
-    /// measure several schedules in one session. Never written on a scored run.
-    public var prefillLadderRungs: Set<Int> = qwen35PrefillLadderRungs
 
     fileprivate let layers: [Qwen35DecoderLayer]
     let norm: RMSNorm
@@ -2891,9 +2857,11 @@ public class Qwen35TextModelInner: Module {
         // rest. Pure enqueue-timing change — no op is added, no reduction
         // order moves, so the emitted stream is bit-identical (Laguna receipt
         // for the same schedule shape: off 10.37 ms vs ladder 9.45 ms/step;
-        // schedule scaled from 40 to 64 layers, front rungs kept). The decode
-        // rung set is overridable via MLX_QWEN_MTP_LADDER and the prefill rung
-        // set via MLX_QWEN_MTP_PREFILL_LADDER, for schedule research.
+        // schedule scaled from 40 to 64 layers, front rungs kept). The rung
+        // set is overridable via MLX_QWEN_MTP_LADDER for schedule research.
+        // The seed-prefill stride is fixed at 3: E91 swept 9 schedules over 108
+        // blocks and the best arm was 0.94 sigma, because the host enqueues the
+        // whole graph in 118.7 ms of a 4043 ms GPU-bound block.
         let prefillLadder = inputs.dim(1) >= 512
         let ladderActive = inputs.dim(1) <= 9 || prefillLadder
         if hiddenStates.dtype == .bfloat16 && hiddenStates.dim(-1) == 5120 {
@@ -2918,7 +2886,7 @@ public class Qwen35TextModelInner: Module {
                 delta = out.delta
                 if ladderActive {
                     if prefillLadder {
-                        if prefillLadderRungs.contains(i) {
+                        if i == 0 || i % 3 == 2 {
                             asyncEval(base, out.delta)
                         }
                     } else if qwen35DecodeLadderRungs.contains(i) {
@@ -2938,7 +2906,7 @@ public class Qwen35TextModelInner: Module {
                     cache: cacheArray?[i], nConfirmed: nConfirmed)
                 if ladderActive {
                     if prefillLadder {
-                        if prefillLadderRungs.contains(i) {
+                        if i == 0 || i % 3 == 2 {
                             asyncEval(hiddenStates)
                         }
                     } else if qwen35DecodeLadderRungs.contains(i) {
@@ -3479,6 +3447,13 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private var _compactDraftGatherW: MLXArray?
     private var _compactDraftGatherS: MLXArray?
     private var _compactDraftGatherZ: MLXArray?
+    // The left-hand gather index. `gather_qmm` synthesises this when it is not
+    // given: `indices_or_default` builds `reshape(arange(1, uint32), [1])`, so
+    // the eager path pays an `arange` dispatch on every draft step to produce
+    // the single value 0. It is `uint32` because `gather_qmm` casts the indices
+    // to `uint32`, and `astype` returns the input unchanged only when the dtype
+    // already matches; an `int32` array would trade the `arange` for a cast.
+    private var _compactDraftGatherLhs: MLXArray?
     // Prefix 98_304, the promoted trim. A 49_152 halving was measured on the
     // public longcopy gate and REGRESSED: three of its committed argmax ids
     // live in [49_152, 248_044), the head could no longer propose them, and
@@ -3922,14 +3897,17 @@ extension Qwen35TextModel: MTPCapable {
             _compactDraftGatherW = exact.weight.reshaped([rows, 1, 640])
             _compactDraftGatherS = exact.scales.reshaped([rows, 1, 80])
             _compactDraftGatherZ = exactBiases.reshaped([rows, 1, 80])
+            _compactDraftGatherLhs = MLXArray([UInt32(0)])
         }
         let exactLogits: MLXArray
         if let gatherWeight = _compactDraftGatherW,
            let gatherScales = _compactDraftGatherS,
            let gatherZeroPoints = _compactDraftGatherZ,
+           let gatherLhs = _compactDraftGatherLhs,
            gatherWeight.shape == [Self.compactDraftPaddedCount, 1, 640],
            gatherScales.shape == [Self.compactDraftPaddedCount, 1, 80],
-           gatherZeroPoints.shape == [Self.compactDraftPaddedCount, 1, 80]
+           gatherZeroPoints.shape == [Self.compactDraftPaddedCount, 1, 80],
+           gatherLhs.shape == [1], gatherLhs.dtype == .uint32
         {
             // One dispatch reading 32 rows in place, where the eager path
             // needed three gathers writing ~92 KB of copies plus a matmul that
@@ -3937,7 +3915,7 @@ extension Qwen35TextModel: MTPCapable {
             // `qwen35DraftTop32` does not return sorted ids.
             exactLogits = gatherQuantizedMM(
                 x, gatherWeight, scales: gatherScales, biases: gatherZeroPoints,
-                rhsIndices: candidateIDs,
+                lhsIndices: gatherLhs, rhsIndices: candidateIDs,
                 transpose: true, groupSize: 64, bits: 4, mode: .affine)
         } else {
             let exactWeight = MLX.take(exact.weight, candidateIDs, axis: 0)
