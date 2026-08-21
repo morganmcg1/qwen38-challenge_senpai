@@ -3369,6 +3369,10 @@ private let qwen35DerivedClusterDumpPath: String? = {
 /// `MLX_E87_DERIVED_LOG`. A file is the only usable channel from model code:
 /// the worker's stdout carries the trusted protocol and `mtp-timed` installs a
 /// swallowing drain on its stderr, so `print` is both invisible and unsafe.
+///
+/// A scored run leaves this closed and every note becomes a no-op, because
+/// `benchmark.sh` gives the worker a Seatbelt profile that denies file writes.
+/// Only a trace leg, which sets `MLXFAST_NO_SANDBOX=1`, can open it.
 private let qwen35DerivedClusterLog: FileHandle? = {
     let requested = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"]
     // A fallback path, so an empty research directory separates "the build never

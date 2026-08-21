@@ -81,6 +81,7 @@ for i in "${!order[@]}"; do
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   MLX_E87_PROBE_FRACTION="${probe_fraction}" \
   MLX_E87_DERIVED_LOG="${PWD}/research/out/${tag}/derived.log" \
+  MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-${PWD}/research/out/${tag}/derived-order.bin}" \
   E79_HEAD_DIR="$(dir_for "${arm}")" \
     research/e79_trace_leg.sh "${tag}" "${tokens}" --sync-head
   status=$?

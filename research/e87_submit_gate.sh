@@ -104,6 +104,11 @@ for arm in "${arms[@]}"; do
     echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"
 
+  # The gate runs the worker under benchmark.sh's Seatbelt profile, which
+  # denies every file write except /dev/null. The two research sinks below
+  # therefore stay empty here, and that is the evidence that the derived index
+  # touches no file on a scored run. Read them from a trace leg instead:
+  # research/e79_trace_leg.sh sets MLXFAST_NO_SANDBOX=1.
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   MLX_E87_PROBE_FRACTION="${probe_fraction}" \
   MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-${PWD}/${out}/derived-order.bin}" \
