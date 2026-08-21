@@ -2,6 +2,8 @@ import Foundation
 import MLX
 import MLXNN
 import MLXRandom
+import Metal
+import ObjectiveC
 import Testing
 
 @testable import MLXLLM
@@ -148,5 +150,139 @@ struct E85FusedIntermediateTests {
         ).reshaped([candidates])
         #expect(cachedLhs.shape == gathered.shape)
         #expect(MLX.all(MLX.equal(cachedLhs, gathered)).item(Bool.self))
+    }
+}
+
+/// The probe below swizzles Metal dispatch entry points for the whole process,
+/// so it is opt-in for the same reason `E57SdpaChunkDispatchCountTests` is: a
+/// plain `swift test` would otherwise count the dispatches of every other GPU
+/// suite running beside it.
+private func e90ProbeEnabled() -> Bool {
+    ProcessInfo.processInfo.environment["MLXFAST_E90_DISPATCH_COUNT"] == "1"
+}
+
+@Suite(.serialized)
+struct E90GatherLhsDispatchCountTests {
+
+    /// E90 follow-up, the price of the change rather than its correctness.
+    /// Omitting `lhsIndices` makes `gather_qmm` synthesise `arange(1, uint32)`,
+    /// which is a real GPU dispatch on every draft step. Counting dispatches is
+    /// exact even though the counting hook perturbs timing, so this measures
+    /// the mechanism directly instead of hunting for it under timing noise.
+    @Test(
+        .enabled(
+            if: e90ProbeEnabled(),
+            "set MLXFAST_E90_DISPATCH_COUNT=1 to run the GPU probe"))
+    func cachedGatherLhsRemovesOneDispatchPerCall() throws {
+        try #require(E90TestDispatchCounter.install(), "no compute encoder hook")
+        MLXRandom.seed(90)
+        let inDimensions = 5120
+        let rows = 512
+        let candidates = 32
+
+        let dense = (MLXRandom.normal([rows, inDimensions]) * 0.05)
+            .asType(.bfloat16)
+        let (weight, scales, zeroPoints) = MLX.quantized(
+            dense, groupSize: 64, bits: 4, mode: .affine)
+        let biases = try #require(zeroPoints)
+        let w = weight.reshaped([rows, 1, inDimensions / 8])
+        let s = scales.reshaped([rows, 1, inDimensions / 64])
+        let b = biases.reshaped([rows, 1, inDimensions / 64])
+        let x = MLXRandom.normal([1, 1, inDimensions]).asType(.bfloat16)
+        let ids = MLXArray(
+            (0 ..< candidates).map { UInt32((rows - 1) - $0 * 7) })
+        let cachedLhs = MLXArray([UInt32(0)])
+
+        func run(lhs: MLXArray?) {
+            let out = gatherQuantizedMM(
+                x, w, scales: s, biases: b,
+                lhsIndices: lhs, rhsIndices: ids,
+                transpose: true, groupSize: 64, bits: 4, mode: .affine)
+            MLX.eval(out)
+        }
+
+        // Warm both forms so pipeline creation and buffer allocation are not
+        // inside either measured window.
+        run(lhs: nil)
+        run(lhs: cachedLhs)
+
+        let repeats = 8
+        let synthesised = E90TestDispatchCounter.measure {
+            for _ in 0 ..< repeats { run(lhs: nil) }
+        }
+        let cached = E90TestDispatchCounter.measure {
+            for _ in 0 ..< repeats { run(lhs: cachedLhs) }
+        }
+
+        #expect(
+            synthesised % repeats == 0 && cached % repeats == 0,
+            "dispatch counts \(synthesised) and \(cached) are not per-call stable")
+        let perCall = Double(synthesised - cached) / Double(repeats)
+        #expect(
+            perCall == 1.0,
+            "expected one dispatch removed per call, measured \(perCall) from \(synthesised) synthesised against \(cached) cached over \(repeats) calls")
+    }
+}
+
+/// Counts Metal compute dispatches by swizzling the two selectors MLX issues
+/// work through. Test-only: it never reaches the submitted surface, and it is
+/// a counter, not a timer, so the lock it takes cannot bias the result.
+private enum E90TestDispatchCounter {
+    private static let lock = NSLock()
+    private nonisolated(unsafe) static var count = 0
+    private nonisolated(unsafe) static var installed = false
+
+    static func install() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        if installed { return true }
+        guard let device = MTLCreateSystemDefaultDevice(),
+            let queue = device.makeCommandQueue(),
+            let buffer = queue.makeCommandBuffer(),
+            let encoder = buffer.makeComputeCommandEncoder()
+        else { return false }
+        let encoderClass: AnyClass = type(of: encoder as AnyObject)
+        encoder.endEncoding()
+        let hooked = [
+            "dispatchThreadgroups:threadsPerThreadgroup:",
+            "dispatchThreads:threadsPerThreadgroup:",
+        ].map { swizzle(encoderClass, $0) }
+        installed = hooked.contains(true)
+        return installed
+    }
+
+    static func measure(_ body: () -> Void) -> Int {
+        lock.lock()
+        count = 0
+        lock.unlock()
+        body()
+        lock.lock()
+        defer { lock.unlock() }
+        return count
+    }
+
+    fileprivate static func note() {
+        lock.lock()
+        count += 1
+        lock.unlock()
+    }
+
+    private typealias DispatchIMP =
+        @convention(c) (AnyObject, Selector, MTLSize, MTLSize) -> Void
+
+    private static func swizzle(_ cls: AnyClass, _ name: String) -> Bool {
+        let selector = NSSelectorFromString(name)
+        guard let method = class_getInstanceMethod(cls, selector) else {
+            return false
+        }
+        let original = unsafeBitCast(
+            method_getImplementation(method), to: DispatchIMP.self)
+        let replacement: @convention(block) (AnyObject, MTLSize, MTLSize) -> Void = {
+            encoder, grid, group in
+            E90TestDispatchCounter.note()
+            original(encoder, selector, grid, group)
+        }
+        method_setImplementation(method, imp_implementationWithBlock(replacement))
+        return true
     }
 }
