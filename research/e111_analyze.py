@@ -84,12 +84,21 @@ def reduce_session(tag: str) -> dict:
         })
     by = {r["arm"]: r for r in rows}
 
-    # b_constw deletes 32 of the 36 bytes per group with every instruction
-    # kept, so it prices a byte directly. Whatever the byte price cannot buy
-    # is not available to any metadata-traffic change.
-    byte_price = by["b_constw"]["saving_pct"] / (100.0 * (1 - 4 / 36))
+    # b_constw was meant to price a byte: it deletes 32 of the 36 bytes per
+    # group and keeps every arithmetic instruction. It does not, because the
+    # runtime-seeded replacement value is itself arithmetic whose cost grows
+    # with NA. The arm therefore measures (traffic removed - seed cost) and
+    # its implied byte price is not usable. Report it, and mark it.
+    b_price = by["b_constw"]["saving_pct"] / (100.0 * (1 - 4 / 36))
+
+    # n_nobias and n_nosums delete the same sums arithmetic, and only
+    # n_nobias also deletes the 2-byte bias load. Their difference is the
+    # whole cost of that load: its bytes, its issue slot and its registers.
+    load_pair = by["n_nobias"]["saving_pct"] - by["n_nosums"]["saving_pct"]
 
     return {
+        "bias_load_cost_pct": load_pair,
+        "bias_load_cost_per_byte_pct": load_pair / 2,
         "tag": tag,
         "shape": doc["shape"],
         "k": doc["k"], "n": doc["n"], "na": doc["na"],
@@ -106,8 +115,8 @@ def reduce_session(tag: str) -> dict:
         "code_control": doc["code_control"],
         "pack_control": doc.get("pack_control"),
         "arm_exactness": doc["arm_exactness"],
-        "byte_price_pct_per_pct_traffic": byte_price,
-        "predicted_onebyte_saving_pct": byte_price * 100.0 / 36,
+        "b_constw_implied_byte_price": b_price,
+        "b_constw_usable_as_byte_price": b_price > 0,
     }
 
 
@@ -141,9 +150,13 @@ def report(sessions: list[dict]) -> dict:
                   f"{r['us_sd']:>7.1f}{r['paired_pct']:>9.2f}"
                   f"{r['paired_sd']:>7.2f}{r['saving_pct']:>9.2f}"
                   f"{r['gbps']:>8.1f}")
-        print(f"  byte price {s['byte_price_pct_per_pct_traffic']:.4f} "
-              f"% time per % traffic; a 1 B/36 cut predicts "
-              f"{s['predicted_onebyte_saving_pct']:.4f} % of the kernel")
+        print(f"  bias load costs {s['bias_load_cost_pct']:+.3f} % "
+              f"(n_nobias - n_nosums), {s['bias_load_cost_per_byte_pct']:+.3f}"
+              f" % per byte")
+        print(f"  b_constw implied byte price "
+              f"{s['b_constw_implied_byte_price']:+.4f}"
+              + ("" if s["b_constw_usable_as_byte_price"]
+                 else "  <- NEGATIVE, seed arithmetic dominates, unusable"))
 
     print(f"\n== round-weighted over NA, weights {NA_WEIGHT}")
     print(f"   NA measured: {sorted({s['na'] for s in sessions})}")

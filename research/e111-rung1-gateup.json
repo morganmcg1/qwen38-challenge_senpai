@@ -1,0 +1,824 @@
+{
+  "sessions": [
+    {
+      "bias_load_cost_pct": 5.151271917355993,
+      "bias_load_cost_per_byte_pct": 2.5756359586779967,
+      "tag": "e111-r1-gateup-na2",
+      "shape": "mlp.gate_up",
+      "k": 5120,
+      "n": 34816,
+      "na": 2,
+      "groups": 2785280,
+      "shipped_stream_bytes": 100270080,
+      "shipped_gbps": 242.1664618978625,
+      "shipped_pct_of_peak": 88.70566369885073,
+      "blocks": 8,
+      "inner": 4,
+      "reps": 2,
+      "warm_passes": 3,
+      "arms": [
+        {
+          "arm": "a_shipped",
+          "group_bytes": 36,
+          "us_mean": 414.0543625,
+          "us_sd": 6.166510781618833,
+          "blocks": 8,
+          "gbps": 242.1664618978625,
+          "paired_pct": 0.0,
+          "paired_sd": 0.0,
+          "saving_pct": -0.0
+        },
+        {
+          "arm": "n_nobias",
+          "group_bytes": 34,
+          "us_mean": 389.0165875,
+          "us_sd": 3.0408754277287136,
+          "blocks": 8,
+          "gbps": 243.4331158179727,
+          "paired_pct": -6.036997786439158,
+          "paired_sd": 0.8521612624073687,
+          "saving_pct": 6.036997786439158
+        },
+        {
+          "arm": "n_nosums",
+          "group_bytes": 36,
+          "us_mean": 410.2819,
+          "us_sd": 2.408599302499289,
+          "blocks": 8,
+          "gbps": 244.39313554899692,
+          "paired_pct": -0.8857258690831646,
+          "paired_sd": 1.976614050527749,
+          "saving_pct": 0.8857258690831646
+        },
+        {
+          "arm": "d_bias1",
+          "group_bytes": 35,
+          "us_mean": 401.409175,
+          "us_sd": 4.452004535599657,
+          "blocks": 8,
+          "gbps": 242.85643196870126,
+          "paired_pct": -3.026327213741992,
+          "paired_sd": 2.2831735717322883,
+          "saving_pct": 3.026327213741992
+        },
+        {
+          "arm": "e_bias6",
+          "group_bytes": 35,
+          "us_mean": 403.330725,
+          "us_sd": 1.267593450767458,
+          "blocks": 8,
+          "gbps": 241.6994142957991,
+          "paired_pct": -2.5701037782237774,
+          "paired_sd": 1.5480753242811742,
+          "saving_pct": 2.5701037782237774
+        },
+        {
+          "arm": "b_constw",
+          "group_bytes": 4,
+          "us_mean": 361.1516875,
+          "us_sd": 3.2663064436924993,
+          "blocks": 8,
+          "gbps": 30.84886596300343,
+          "paired_pct": -12.767086752334503,
+          "paired_sd": 0.9252212800764701,
+          "saving_pct": 12.767086752334503
+        },
+        {
+          "arm": "c_loadonly",
+          "group_bytes": 36,
+          "us_mean": 402.7125875,
+          "us_sd": 1.6472344090604836,
+          "blocks": 8,
+          "gbps": 248.98670444464318,
+          "paired_pct": -2.7250940865485003,
+          "paired_sd": 1.0953668262894152,
+          "saving_pct": 2.7250940865485003
+        },
+        {
+          "arm": "g_pack32",
+          "group_bytes": 36,
+          "us_mean": 410.95475,
+          "us_sd": 3.0680669395751923,
+          "blocks": 8,
+          "gbps": 243.99299436251803,
+          "paired_pct": -0.7222863682990734,
+          "paired_sd": 2.082254635459261,
+          "saving_pct": 0.7222863682990734
+        }
+      ],
+      "fidelity": {
+        "cells_checked": 24,
+        "worst_rel": 0.003244397,
+        "worst_row": 24416,
+        "worst_m": 0,
+        "tolerance": 0.02,
+        "pass": true
+      },
+      "weight_control": {
+        "perturbed_rel": 1.513883,
+        "restored_rel": 0.0004226514,
+        "detected": true
+      },
+      "code_control": {
+        "damaged_differing": 2,
+        "restored_differing": 0,
+        "detected": true
+      },
+      "pack_control": {
+        "damaged_differing": 0,
+        "restored_differing": 0,
+        "detected": false
+      },
+      "arm_exactness": [
+        {
+          "arm": "a_shipped",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 69632,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "n_nobias",
+          "expect_bit_exact": false,
+          "differing": 69564,
+          "total": 69632,
+          "worst_abs": 8.609375,
+          "pass": true
+        },
+        {
+          "arm": "n_nosums",
+          "expect_bit_exact": false,
+          "differing": 69583,
+          "total": 69632,
+          "worst_abs": 10.32812,
+          "pass": true
+        },
+        {
+          "arm": "d_bias1",
+          "expect_bit_exact": false,
+          "differing": 69632,
+          "total": 69632,
+          "worst_abs": 1198.672,
+          "pass": true
+        },
+        {
+          "arm": "e_bias6",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 69632,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "b_constw",
+          "expect_bit_exact": false,
+          "differing": 69554,
+          "total": 69632,
+          "worst_abs": 5.046875,
+          "pass": true
+        },
+        {
+          "arm": "c_loadonly",
+          "expect_bit_exact": false,
+          "differing": 69597,
+          "total": 69632,
+          "worst_abs": 12.35938,
+          "pass": true
+        },
+        {
+          "arm": "g_pack32",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 69632,
+          "worst_abs": 0.0,
+          "pass": true
+        }
+      ],
+      "b_constw_implied_byte_price": 0.14362972596376317,
+      "b_constw_usable_as_byte_price": true
+    },
+    {
+      "bias_load_cost_pct": 4.108885614480168,
+      "bias_load_cost_per_byte_pct": 2.054442807240084,
+      "tag": "e111-r1-gateup-na3",
+      "shape": "mlp.gate_up",
+      "k": 5120,
+      "n": 34816,
+      "na": 3,
+      "groups": 2785280,
+      "shipped_stream_bytes": 100270080,
+      "shipped_gbps": 239.6735833407034,
+      "shipped_pct_of_peak": 87.79252137022102,
+      "blocks": 8,
+      "inner": 4,
+      "reps": 2,
+      "warm_passes": 3,
+      "arms": [
+        {
+          "arm": "a_shipped",
+          "group_bytes": 36,
+          "us_mean": 418.361,
+          "us_sd": 0.7204178529555845,
+          "blocks": 8,
+          "gbps": 239.6735833407034,
+          "paired_pct": 0.0,
+          "paired_sd": 0.0,
+          "saving_pct": -0.0
+        },
+        {
+          "arm": "n_nobias",
+          "group_bytes": 34,
+          "us_mean": 393.2034375,
+          "us_sd": 0.5497938884904313,
+          "blocks": 8,
+          "gbps": 240.84102774406696,
+          "paired_pct": -6.013033512507281,
+          "paired_sd": 0.24827861327432973,
+          "saving_pct": 6.013033512507281
+        },
+        {
+          "arm": "n_nosums",
+          "group_bytes": 36,
+          "us_mean": 410.3955125,
+          "us_sd": 1.7443492871371042,
+          "blocks": 8,
+          "gbps": 244.32547858329715,
+          "paired_pct": -1.9041478980271134,
+          "paired_sd": 0.325349234529038,
+          "saving_pct": 1.9041478980271134
+        },
+        {
+          "arm": "d_bias1",
+          "group_bytes": 35,
+          "us_mean": 420.7161375,
+          "us_sd": 0.5108983682481069,
+          "blocks": 8,
+          "gbps": 231.71157773808952,
+          "paired_pct": 0.5632477459919545,
+          "paired_sd": 0.23405348889918523,
+          "saving_pct": -0.5632477459919545
+        },
+        {
+          "arm": "e_bias6",
+          "group_bytes": 35,
+          "us_mean": 436.5299375,
+          "us_sd": 0.3395602952453952,
+          "blocks": 8,
+          "gbps": 223.31755883294946,
+          "paired_pct": 4.343176498105678,
+          "paired_sd": 0.2092053284811459,
+          "saving_pct": -4.343176498105678
+        },
+        {
+          "arm": "b_constw",
+          "group_bytes": 4,
+          "us_mean": 410.6031875,
+          "us_sd": 0.7633604212156679,
+          "blocks": 8,
+          "gbps": 27.13354484127087,
+          "paired_pct": -1.8541347381586695,
+          "paired_sd": 0.22263212009055944,
+          "saving_pct": 1.8541347381586695
+        },
+        {
+          "arm": "c_loadonly",
+          "group_bytes": 36,
+          "us_mean": 400.410175,
+          "us_sd": 1.6906240815154616,
+          "blocks": 8,
+          "gbps": 250.4184115700856,
+          "paired_pct": -4.290782764640478,
+          "paired_sd": 0.35914399140625264,
+          "saving_pct": 4.290782764640478
+        },
+        {
+          "arm": "g_pack32",
+          "group_bytes": 36,
+          "us_mean": 416.949225,
+          "us_sd": 1.4211300712059134,
+          "blocks": 8,
+          "gbps": 240.48510942789258,
+          "paired_pct": -0.33732623471257056,
+          "paired_sd": 0.3391760035267024,
+          "saving_pct": 0.33732623471257056
+        }
+      ],
+      "fidelity": {
+        "cells_checked": 24,
+        "worst_rel": 0.002789212,
+        "worst_row": 5,
+        "worst_m": 2,
+        "tolerance": 0.02,
+        "pass": true
+      },
+      "weight_control": {
+        "perturbed_rel": 1.513883,
+        "restored_rel": 0.0004226514,
+        "detected": true
+      },
+      "code_control": {
+        "damaged_differing": 3,
+        "restored_differing": 0,
+        "detected": true
+      },
+      "pack_control": {
+        "damaged_differing": 0,
+        "restored_differing": 0,
+        "detected": false
+      },
+      "arm_exactness": [
+        {
+          "arm": "a_shipped",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 104448,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "n_nobias",
+          "expect_bit_exact": false,
+          "differing": 104351,
+          "total": 104448,
+          "worst_abs": 8.90625,
+          "pass": true
+        },
+        {
+          "arm": "n_nosums",
+          "expect_bit_exact": false,
+          "differing": 104371,
+          "total": 104448,
+          "worst_abs": 10.32812,
+          "pass": true
+        },
+        {
+          "arm": "d_bias1",
+          "expect_bit_exact": false,
+          "differing": 104448,
+          "total": 104448,
+          "worst_abs": 1198.672,
+          "pass": true
+        },
+        {
+          "arm": "e_bias6",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 104448,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "b_constw",
+          "expect_bit_exact": false,
+          "differing": 104332,
+          "total": 104448,
+          "worst_abs": 5.625,
+          "pass": true
+        },
+        {
+          "arm": "c_loadonly",
+          "expect_bit_exact": false,
+          "differing": 104400,
+          "total": 104448,
+          "worst_abs": 13.01318,
+          "pass": true
+        },
+        {
+          "arm": "g_pack32",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 104448,
+          "worst_abs": 0.0,
+          "pass": true
+        }
+      ],
+      "b_constw_implied_byte_price": 0.020859015804285033,
+      "b_constw_usable_as_byte_price": true
+    },
+    {
+      "bias_load_cost_pct": 1.3990263299953254,
+      "bias_load_cost_per_byte_pct": 0.6995131649976627,
+      "tag": "e111-r1-gateup-na4",
+      "shape": "mlp.gate_up",
+      "k": 5120,
+      "n": 34816,
+      "na": 4,
+      "groups": 2785280,
+      "shipped_stream_bytes": 100270080,
+      "shipped_gbps": 206.94105373301593,
+      "shipped_pct_of_peak": 75.80258378498752,
+      "blocks": 8,
+      "inner": 4,
+      "reps": 2,
+      "warm_passes": 3,
+      "arms": [
+        {
+          "arm": "a_shipped",
+          "group_bytes": 36,
+          "us_mean": 484.5345,
+          "us_sd": 0.6605739128104635,
+          "blocks": 8,
+          "gbps": 206.94105373301593,
+          "paired_pct": 0.0,
+          "paired_sd": 0.0,
+          "saving_pct": -0.0
+        },
+        {
+          "arm": "n_nobias",
+          "group_bytes": 34,
+          "us_mean": 439.62305,
+          "us_sd": 0.48902161506419944,
+          "blocks": 8,
+          "gbps": 215.41072516557082,
+          "paired_pct": -9.268788563058735,
+          "paired_sd": 0.19097090187820467,
+          "saving_pct": 9.268788563058735
+        },
+        {
+          "arm": "n_nosums",
+          "group_bytes": 36,
+          "us_mean": 446.4017125,
+          "us_sd": 0.6181075644659241,
+          "blocks": 8,
+          "gbps": 224.61849314702172,
+          "paired_pct": -7.869762233063409,
+          "paired_sd": 0.217257075478424,
+          "saving_pct": 7.869762233063409
+        },
+        {
+          "arm": "d_bias1",
+          "group_bytes": 35,
+          "us_mean": 486.374675,
+          "us_sd": 0.5053829686485367,
+          "blocks": 8,
+          "gbps": 200.43148833766892,
+          "paired_pct": 0.379991552061848,
+          "paired_sd": 0.2006387301000561,
+          "saving_pct": -0.379991552061848
+        },
+        {
+          "arm": "e_bias6",
+          "group_bytes": 35,
+          "us_mean": 500.08856249999997,
+          "us_sd": 0.9077032364907076,
+          "blocks": 8,
+          "gbps": 194.93507212534982,
+          "paired_pct": 3.210279040665908,
+          "paired_sd": 0.2377565866699159,
+          "saving_pct": -3.210279040665908
+        },
+        {
+          "arm": "b_constw",
+          "group_bytes": 4,
+          "us_mean": 494.9547625,
+          "us_sd": 0.7336297157431952,
+          "blocks": 8,
+          "gbps": 22.50937023764874,
+          "paired_pct": 2.150881974626014,
+          "paired_sd": 0.2755865020818701,
+          "saving_pct": -2.150881974626014
+        },
+        {
+          "arm": "c_loadonly",
+          "group_bytes": 36,
+          "us_mean": 399.138325,
+          "us_sd": 0.6323786563444426,
+          "blocks": 8,
+          "gbps": 251.216367157927,
+          "paired_pct": -17.624122950522963,
+          "paired_sd": 0.22764175878818493,
+          "saving_pct": 17.624122950522963
+        },
+        {
+          "arm": "g_pack32",
+          "group_bytes": 36,
+          "us_mean": 482.91535,
+          "us_sd": 0.6561123618928262,
+          "blocks": 8,
+          "gbps": 207.63489915986312,
+          "paired_pct": -0.33404628624614624,
+          "paired_sd": 0.16481358623810338,
+          "saving_pct": 0.33404628624614624
+        }
+      ],
+      "fidelity": {
+        "cells_checked": 24,
+        "worst_rel": 0.003244397,
+        "worst_row": 24416,
+        "worst_m": 0,
+        "tolerance": 0.02,
+        "pass": true
+      },
+      "weight_control": {
+        "perturbed_rel": 1.513883,
+        "restored_rel": 0.0004226514,
+        "detected": true
+      },
+      "code_control": {
+        "damaged_differing": 4,
+        "restored_differing": 0,
+        "detected": true
+      },
+      "pack_control": {
+        "damaged_differing": 0,
+        "restored_differing": 0,
+        "detected": false
+      },
+      "arm_exactness": [
+        {
+          "arm": "a_shipped",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 139264,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "n_nobias",
+          "expect_bit_exact": false,
+          "differing": 139147,
+          "total": 139264,
+          "worst_abs": 8.90625,
+          "pass": true
+        },
+        {
+          "arm": "n_nosums",
+          "expect_bit_exact": false,
+          "differing": 139156,
+          "total": 139264,
+          "worst_abs": 10.32812,
+          "pass": true
+        },
+        {
+          "arm": "d_bias1",
+          "expect_bit_exact": false,
+          "differing": 139264,
+          "total": 139264,
+          "worst_abs": 2496.59,
+          "pass": true
+        },
+        {
+          "arm": "e_bias6",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 139264,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "b_constw",
+          "expect_bit_exact": false,
+          "differing": 139109,
+          "total": 139264,
+          "worst_abs": 5.9375,
+          "pass": true
+        },
+        {
+          "arm": "c_loadonly",
+          "expect_bit_exact": false,
+          "differing": 139198,
+          "total": 139264,
+          "worst_abs": 13.01318,
+          "pass": true
+        },
+        {
+          "arm": "g_pack32",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 139264,
+          "worst_abs": 0.0,
+          "pass": true
+        }
+      ],
+      "b_constw_implied_byte_price": -0.02419742221454266,
+      "b_constw_usable_as_byte_price": false
+    },
+    {
+      "bias_load_cost_pct": 2.2361662773580697,
+      "bias_load_cost_per_byte_pct": 1.1180831386790349,
+      "tag": "e111-r1-gateup-na5",
+      "shape": "mlp.gate_up",
+      "k": 5120,
+      "n": 34816,
+      "na": 5,
+      "groups": 2785280,
+      "shipped_stream_bytes": 100270080,
+      "shipped_gbps": 173.50587928710544,
+      "shipped_pct_of_peak": 63.555267138133864,
+      "blocks": 8,
+      "inner": 4,
+      "reps": 2,
+      "warm_passes": 3,
+      "arms": [
+        {
+          "arm": "a_shipped",
+          "group_bytes": 36,
+          "us_mean": 577.9059500000001,
+          "us_sd": 0.6182326422957417,
+          "blocks": 8,
+          "gbps": 173.50587928710544,
+          "paired_pct": 0.0,
+          "paired_sd": 0.0,
+          "saving_pct": -0.0
+        },
+        {
+          "arm": "n_nobias",
+          "group_bytes": 34,
+          "us_mean": 507.5804125,
+          "us_sd": 0.4643373417724332,
+          "blocks": 8,
+          "gbps": 186.57047763835845,
+          "paired_pct": -12.168952521835903,
+          "paired_sd": 0.11311577355414008,
+          "saving_pct": 12.168952521835903
+        },
+        {
+          "arm": "n_nosums",
+          "group_bytes": 36,
+          "us_mean": 520.50325,
+          "us_sd": 0.3891535723299193,
+          "blocks": 8,
+          "gbps": 192.64064153297798,
+          "paired_pct": -9.932786244477834,
+          "paired_sd": 0.11992729248752486,
+          "saving_pct": 9.932786244477834
+        },
+        {
+          "arm": "d_bias1",
+          "group_bytes": 35,
+          "us_mean": 583.4977375,
+          "us_sd": 1.0246751428588916,
+          "blocks": 8,
+          "gbps": 167.0697137878791,
+          "paired_pct": 0.9677783344357154,
+          "paired_sd": 0.24940434862147798,
+          "saving_pct": -0.9677783344357154
+        },
+        {
+          "arm": "e_bias6",
+          "group_bytes": 35,
+          "us_mean": 588.9218625,
+          "us_sd": 0.9036537973890941,
+          "blocks": 8,
+          "gbps": 165.53095785266422,
+          "paired_pct": 1.9063210169322196,
+          "paired_sd": 0.21454311049595556,
+          "saving_pct": -1.9063210169322196
+        },
+        {
+          "arm": "b_constw",
+          "group_bytes": 4,
+          "us_mean": 575.0237625,
+          "us_sd": 0.6543943479879554,
+          "blocks": 8,
+          "gbps": 19.375060174143677,
+          "paired_pct": -0.4986969997885189,
+          "paired_sd": 0.09420989043965634,
+          "saving_pct": 0.4986969997885189
+        },
+        {
+          "arm": "c_loadonly",
+          "group_bytes": 36,
+          "us_mean": 403.9362,
+          "us_sd": 0.9156876962932567,
+          "blocks": 8,
+          "gbps": 248.23246839476136,
+          "paired_pct": -30.103467249277607,
+          "paired_sd": 0.141801633185444,
+          "saving_pct": 30.103467249277607
+        },
+        {
+          "arm": "g_pack32",
+          "group_bytes": 36,
+          "us_mean": 577.0153,
+          "us_sd": 1.1467393463954567,
+          "blocks": 8,
+          "gbps": 173.77369369581706,
+          "paired_pct": -0.1539252899855491,
+          "paired_sd": 0.2677077125880228,
+          "saving_pct": 0.1539252899855491
+        }
+      ],
+      "fidelity": {
+        "cells_checked": 24,
+        "worst_rel": 0.002880398,
+        "worst_row": 29444,
+        "worst_m": 0,
+        "tolerance": 0.02,
+        "pass": true
+      },
+      "weight_control": {
+        "perturbed_rel": 1.513883,
+        "restored_rel": 0.0004226514,
+        "detected": true
+      },
+      "code_control": {
+        "damaged_differing": 5,
+        "restored_differing": 0,
+        "detected": true
+      },
+      "pack_control": {
+        "damaged_differing": 0,
+        "restored_differing": 0,
+        "detected": false
+      },
+      "arm_exactness": [
+        {
+          "arm": "a_shipped",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 174080,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "n_nobias",
+          "expect_bit_exact": false,
+          "differing": 173923,
+          "total": 174080,
+          "worst_abs": 8.90625,
+          "pass": true
+        },
+        {
+          "arm": "n_nosums",
+          "expect_bit_exact": false,
+          "differing": 173961,
+          "total": 174080,
+          "worst_abs": 10.32812,
+          "pass": true
+        },
+        {
+          "arm": "d_bias1",
+          "expect_bit_exact": false,
+          "differing": 174080,
+          "total": 174080,
+          "worst_abs": 2496.59,
+          "pass": true
+        },
+        {
+          "arm": "e_bias6",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 174080,
+          "worst_abs": 0.0,
+          "pass": true
+        },
+        {
+          "arm": "b_constw",
+          "expect_bit_exact": false,
+          "differing": 173896,
+          "total": 174080,
+          "worst_abs": 5.9375,
+          "pass": true
+        },
+        {
+          "arm": "c_loadonly",
+          "expect_bit_exact": false,
+          "differing": 174001,
+          "total": 174080,
+          "worst_abs": 13.01318,
+          "pass": true
+        },
+        {
+          "arm": "g_pack32",
+          "expect_bit_exact": true,
+          "differing": 0,
+          "total": 174080,
+          "worst_abs": 0.0,
+          "pass": true
+        }
+      ],
+      "b_constw_implied_byte_price": 0.0056103412476208375,
+      "b_constw_usable_as_byte_price": true
+    }
+  ],
+  "verdict": {
+    "weighted": {
+      "a_shipped": 0.0,
+      "n_nobias": 8.39449852011664,
+      "n_nosums": 6.131744234580993,
+      "d_bias1": -0.3686201056140466,
+      "e_bias6": -3.338762081001547,
+      "b_constw": -0.6013854440330797,
+      "c_loadonly": 14.024175412827551,
+      "g_pack32": 0.3381419201708229
+    },
+    "kill1": false,
+    "kill2": true,
+    "advance": false,
+    "na_measured": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "na_weight_covered": 1.0
+  },
+  "na_weights": {
+    "2": 0.024,
+    "3": 0.275,
+    "4": 0.667,
+    "5": 0.034
+  }
+}
