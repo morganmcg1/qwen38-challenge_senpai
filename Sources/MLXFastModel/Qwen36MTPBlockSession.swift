@@ -192,9 +192,6 @@ public final class Qwen36MTPBlockSession {
         // version of this; the per-position EMAs let depth 5-8 pay where the
         // ladder's cap of 4 left committed tokens on the table.
         draftPolicy = { [weak self] offeredDepth, _ in
-            if let pinned = Self.e92PinnedDraftCount {
-                return Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth, pinned)
-            }
             guard let self else { return Swift.min(offeredDepth, 1) }
             return self.costModelDepth(offeredDepth: offeredDepth)
         }
@@ -636,10 +633,6 @@ public final class Qwen36MTPBlockSession {
         seedTokenCount = seedTokens.count
         committedTokenCount = 0
         began = true
-        // E92 research instrument, off unless MLX_E92_BANDWIDTH=1. It runs here
-        // because the seed prefill has just been evaluated: the model is
-        // resident, the allocator is in steady state, and no round has started.
-        E92BandwidthProbe.runOnceIfRequested()
         return pendingPrimary!
     }
 
@@ -747,22 +740,6 @@ public final class Qwen36MTPBlockSession {
     /// overlap this flag exists to undo.
     private static let traceSyncHeadChain =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_SYNC_HEAD"] == "1"
-
-    /// E92 RESEARCH INSTRUMENT -- pin every round to exactly this many drafts,
-    /// so one leg measures exactly one verify width `M = drafts + 1`. It
-    /// bypasses the cost model and the shipped width cap of 7, which is the
-    /// only way to reach `M = 9` and the only way to hold `M = 1` for a whole
-    /// leg. It cannot break the contract: the value is still clamped to the
-    /// parent's offer and to `Qwen36MTPLimits.maxDepth`, and the emitted stream
-    /// is the same greedy target chain at any width.
-    ///
-    /// RESEARCH ONLY. This knob must not reach a submission.
-    private static let e92PinnedDraftCount: Int? = {
-        guard let raw = ProcessInfo.processInfo.environment["MLX_E92_PIN_DRAFTS"],
-              let value = Int(raw), value >= 0, value <= Qwen36MTPLimits.maxDepth
-        else { return nil }
-        return value
-    }()
 
     /// Opened O_APPEND so the reference, verify and timed workers can each
     /// write the same file without a later process truncating an earlier
@@ -1224,43 +1201,6 @@ public final class Qwen36MTPBlockSession {
             throw Qwen36MTPSessionError.invalidDepth(depth)
         }
         roundCount += 1
-        // E92 RESEARCH INSTRUMENT -- the same two trace lines the speculative
-        // branch writes, for the branch that proposes nothing. Without it the
-        // width-1 verify pass has no anchors and cannot serve as the reference
-        // point of a width sweep. Head-chain windows collapse to zero length
-        // because this branch runs no head work. RESEARCH ONLY.
-        func traceZeroDraftRound(
-            tRound0: UInt64, cpuRound0: UInt64, tDraftBuilt: UInt64,
-            tVerifyBuilt: UInt64, tEvalDone: UInt64, tReadDone: UInt64,
-            tCommitDone: UInt64
-        ) {
-            let tTailDone = DispatchTime.now().uptimeNanoseconds
-            Self.traceWrite(
-                "mtp-trace: round=\(roundCount) d=0 acc=0 "
-                    + "draft_build_us=\((tDraftBuilt - tRound0) / 1000) "
-                    + "d_pre_us=\((tDraftBuilt - tRound0) / 1000) "
-                    + "d_flush_us=0 d_head1_us=0 d_submit1_us=0 d_chain_us=0 "
-                    + "d_submit2_us=0 "
-                    + "verify_build_us=\((tVerifyBuilt - tDraftBuilt) / 1000) "
-                    + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "
-                    + "readout_us=\((tReadDone - tEvalDone) / 1000) "
-                    + "commit_us=\((tCommitDone - tReadDone) / 1000) "
-                    + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
-                    + "round_us=\((tTailDone - tRound0) / 1000) "
-                    + "host_thread_cpu_ns=\(Self.threadCPUNanoseconds() &- cpuRound0)"
-                    + "\n")
-            Self.traceWrite(
-                "mtp-anchor: round=\(roundCount) d=0 acc=0 "
-                    + "pid=\(ProcessInfo.processInfo.processIdentifier) "
-                    + "t_round0=\(tRound0) t_draft0=\(tDraftBuilt) "
-                    + "t_flush_built=\(tDraftBuilt) t_head1_built=\(tDraftBuilt) "
-                    + "t_submit1=\(tDraftBuilt) t_chain_built=\(tDraftBuilt) "
-                    + "t_draft_built=\(tDraftBuilt) "
-                    + "t_snapshot_done=\(tDraftBuilt) "
-                    + "t_verify_built=\(tVerifyBuilt) t_eval_done=\(tEvalDone) "
-                    + "t_read_done=\(tReadDone) t_commit_done=\(tCommitDone) "
-                    + "t_tail_done=\(tTailDone)\n")
-        }
         // Local-only phase trace (MLXFAST_QWEN_MTP_TRACE=1): three boundaries
         // split a round into head-chain graph build, verify graph build, and
         // the single blocking eval's GPU wall. Never on in a ranked run.
@@ -1338,10 +1278,6 @@ public final class Qwen36MTPBlockSession {
             // this backlog (the head cache is never created).
             headHistoryBacklogHidden.append(hidden)
             headHistoryBacklogTokens.append(primary)
-            // E92 RESEARCH INSTRUMENT. Every head-chain anchor collapses onto
-            // this instant, because this branch runs no head work at all.
-            tDraftBuilt = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
-            tSnapshotDone = tDraftBuilt
             let (serialLogits, serialHidden) = model.callWithHidden(
                 input: LMInput.Text(
                     tokens: MLXArray([primary]).reshaped([1, 1])),
@@ -1354,32 +1290,18 @@ public final class Qwen36MTPBlockSession {
             let serialLastRow = serialLogits[
                 0..., (serialLogits.dim(1) - 1) ..< serialLogits.dim(1), 0...]
             let (tailIDs, tailValues) = Self.linearTopTwoRows(serialLastRow)
-            tVerifyBuilt = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             eval(cache.flatMap { $0.state } + [tailIDs, tailValues])
-            tEvalDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             let readTail = (
                 tailIDs.asArray(Int32.self).map { Int($0) },
                 tailValues.asArray(Float.self).map { Double($0) }
             )
-            tReadDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             // Top-2 first ID == row argmax (same ordering); no separate argMax.
             pendingPrimary = readTail.0[0]
             pendingTop2 = readTail
             let (tailTokens, tailLogits) = readTail
-            tCommitDone = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
             Self.traceRow(
                 pos: seedTokenCount + committedTokenCount,
                 ids: tailTokens, values: tailLogits)
-            // E92 RESEARCH INSTRUMENT. The serial control leg keeps its
-            // historical silence; only a depth-carrying session that chose
-            // zero drafts reports, which is the width-1 verify pass.
-            if Self.traceRounds, depth != Qwen36MTPLimits.serialControlDepth {
-                traceZeroDraftRound(
-                    tRound0: tRound0, cpuRound0: cpuRound0,
-                    tDraftBuilt: tDraftBuilt, tVerifyBuilt: tVerifyBuilt,
-                    tEvalDone: tEvalDone, tReadDone: tReadDone,
-                    tCommitDone: tCommitDone)
-            }
             return Qwen36MTPRoundResult(
                 tokens: committed,
                 declaredRows: 1,
