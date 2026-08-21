@@ -29,11 +29,23 @@ else
   declare -a arms=(declared)
 fi
 
+probe_fraction="${E87_PROBE_FRACTION:-0.15}"
+
 dir_for() {
   case "$1" in
-    declared) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived) echo "${cache}/mtp-head-declared-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     *) echo "e87_submit_gate.sh: unknown arm $1" >&2; exit 2 ;;
+  esac
+}
+
+# `derived` is option B: the DECLARED head plus the cluster index the runtime
+# builds from it during the untimed warm. Every other arm pins the gate off so
+# a shipped index or the dense readout is what actually runs.
+index_for() {
+  case "$1" in
+    derived) echo "1" ;;
+    *) echo "0" ;;
   esac
 }
 
@@ -83,6 +95,8 @@ for arm in "${arms[@]}"; do
     echo "memory_bytes=$(sysctl -n hw.memsize)"
     echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
     echo "head_dir=${head_dir}"
+    echo "e87_derived_index=$(index_for "${arm}")"
+    echo "e87_probe_fraction=${probe_fraction}"
     echo "worker_sha256=$(
       shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
     echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"
@@ -90,6 +104,9 @@ for arm in "${arms[@]}"; do
     echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"
 
+  MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
+  MLX_E87_PROBE_FRACTION="${probe_fraction}" \
+  MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-}" \
   MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}" \
   MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}" \
   MLXFAST_SCORE_PATH="${PWD}/${out}/score.json" \

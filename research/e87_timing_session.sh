@@ -37,14 +37,26 @@ else
   declare -a order=(declared g128 declared g128 declared g128 declared g128 declared)
 fi
 
+probe_fraction="${E87_PROBE_FRACTION:-0.15}"
+
 dir_for() {
   case "$1" in
-    declared) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived) echo "${cache}/mtp-head-declared-run" ;;
     g128) echo "${cache}/e87/built/e87-coarse-g128-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     armc-damaged) echo "${cache}/e87/built/e87-armC-damaged-run" ;;
     pinned) echo "${cache}/mtp-head" ;;
     *) echo "e87_timing_session.sh: unknown arm $1" >&2; exit 2 ;;
+  esac
+}
+
+# `derived` is option B: the DECLARED head plus the cluster index the runtime
+# builds from it during the untimed warm. Every other arm pins the gate off so
+# a shipped index or the dense readout is what actually runs.
+index_for() {
+  case "$1" in
+    derived) echo "1" ;;
+    *) echo "0" ;;
   esac
 }
 
@@ -65,6 +77,8 @@ for i in "${!order[@]}"; do
     [[ "${order[$j]}" == "${arm}" ]] && rep=$((rep + 1))
   done
   tag="${prefix}-${arm}-${rep}"
+  MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
+  MLX_E87_PROBE_FRACTION="${probe_fraction}" \
   E79_HEAD_DIR="$(dir_for "${arm}")" \
     research/e79_trace_leg.sh "${tag}" "${tokens}" --sync-head
   status=$?
@@ -72,6 +86,8 @@ for i in "${!order[@]}"; do
     echo "e87_experiment=e87-coarse-draft-shortlist-traffic"
     echo "e87_arm=${arm}"
     echo "e87_leg_index=${i}"
+    echo "e87_derived_index=$(index_for "${arm}")"
+    echo "e87_probe_fraction=${probe_fraction}"
   } >> "research/out/${tag}/meta.txt"
   echo "leg ${tag} exit=${status}"
   ((status == 0)) || exit "${status}"

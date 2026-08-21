@@ -188,11 +188,24 @@ def bisect(rows: mx.array, leaves: int, iters: int, balance: str,
     return assign
 
 
+def order_fnv1a64(order: np.ndarray) -> str:
+    """The runtime's `qwen35ClusterOrderDigest`, over little-endian int32."""
+    digest = 0xCBF29CE484222325
+    for byte in order.astype("<i4").tobytes():
+        digest ^= byte
+        digest = (digest * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    return f"{digest:016x}"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rule", default="bisect")
     ap.add_argument("--balance", default="half", choices=["half", "natural"])
     ap.add_argument("--iters", type=int, default=8)
+    ap.add_argument("--from-dump",
+                    help="read the row order the Swift runtime wrote instead of "
+                         "deriving one, so the screen prices the exact partition "
+                         "the candidate uses")
     ap.add_argument("--out")
     ap.add_argument("--report", default="research/e87-bisect.json")
     args = ap.parse_args()
@@ -201,15 +214,28 @@ def main() -> None:
     rows = H.dequantized(H.load_exact())
     mx.eval(rows)
 
-    t0 = time.time()
-    assign = bisect(rows, leaves, args.iters, args.balance)
-    build_seconds = time.time() - t0
+    if args.from_dump:
+        order = np.fromfile(args.from_dump, dtype="<i4")
+        if order.shape != (H.PADDED_COUNT,):
+            raise SystemExit(f"{args.from_dump}: {order.shape[0]} rows")
+        if not np.array_equal(np.sort(order), np.arange(H.PADDED_COUNT)):
+            raise SystemExit(f"{args.from_dump} is not a permutation")
+        assign = np.empty(H.PADDED_COUNT, dtype=np.int32)
+        assign[order] = np.arange(H.PADDED_COUNT, dtype=np.int32) // ROWS_PER_LEAF
+        build_seconds = 0.0
+    else:
+        t0 = time.time()
+        assign = bisect(rows, leaves, args.iters, args.balance)
+        build_seconds = time.time() - t0
 
     counts = np.bincount(assign, minlength=leaves)
     if counts.min() != ROWS_PER_LEAF or counts.max() != ROWS_PER_LEAF:
         raise SystemExit(f"ragged leaves: {counts.min()}..{counts.max()}")
 
-    members = mx.array(np.argsort(assign, kind="stable").astype(np.int32))
+    canonical = np.argsort(assign, kind="stable").astype(np.int32)
+    if args.from_dump and not np.array_equal(canonical, order):
+        raise SystemExit(f"{args.from_dump} is not in canonical within-leaf order")
+    members = mx.array(canonical)
     probe = mx.mean(
         mx.take(rows, members, axis=0).reshape(leaves, ROWS_PER_LEAF, H.HIDDEN).astype(
             mx.float32),
@@ -226,10 +252,12 @@ def main() -> None:
         "rule": args.rule,
         "balance": args.balance,
         "iters": args.iters,
+        "from_dump": args.from_dump,
         "leaves": leaves,
         "rows_per_leaf": ROWS_PER_LEAF,
         "build_seconds": build_seconds,
         "assign_sha256": digest,
+        "order_fnv1a64": order_fnv1a64(canonical),
         "probe_sha256": hashlib.sha256(np.asarray(probe).tobytes()).hexdigest(),
         "path": str(path),
     }
