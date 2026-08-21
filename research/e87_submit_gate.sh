@@ -89,6 +89,10 @@ for arm in "${arms[@]}"; do
     echo "e87_arm=${arm}"
     echo "harness=local"
     echo "local_mode=--local-submit"
+    # Identity field, not a note. This gate keeps benchmark.sh's Seatbelt
+    # profile, so its absolute time is NOT comparable with an unsandboxed
+    # trace leg's. This gate decides tokens, never speed.
+    echo "sandbox=$([[ "${MLXFAST_NO_SANDBOX:-0}" == "1" ]] && echo off || echo on)"
     echo "tokens=${tokens}"
     echo "golden=correctness_prompts/public_longcopy_gate_english_512_1024.json"
     echo "cool_gate_passed_real_gate=false"

@@ -91,6 +91,13 @@ def meta_value(tag: str, key: str) -> str | None:
     return None
 
 
+def score_metric(tag: str, key: str):
+    path = OUT / tag / "score.json"
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text()).get("metrics", {}).get(key)
+
+
 def arm_of(tag: str) -> str:
     value = meta_value(tag, "e87_arm")
     if value is None:
@@ -171,6 +178,13 @@ def main() -> None:
             "accepted": sum(r["acc"] for r in rs),
             "gpu_temp_entry_c": meta_value(tag, "gpu_temp_entry_c"),
             "gpu_temp_exit_c": meta_value(tag, "gpu_temp_exit_c"),
+            "sandbox": meta_value(tag, "sandbox"),
+            "leg_index": int(meta_value(tag, "e87_leg_index") or -1),
+            "mtp_seconds_per_token": score_metric(tag, "mtp_seconds_per_token"),
+            "accepted_draft_rate": score_metric(tag, "accepted_draft_rate"),
+            "effective_mean_draft_len": score_metric(tag, "effective_mean_draft_len"),
+            "all_tokens_matched": score_metric(tag, "all_tokens_matched"),
+            "head_provenance_sha256": score_metric(tag, "head_provenance_sha256"),
             "round1_us": rs[0]["round_us"] if rs else None,
             "round2_us": rs[1]["round_us"] if len(rs) > 1 else None,
         })
@@ -200,6 +214,42 @@ def main() -> None:
              for arm, group in legs.items()}
     identical = len({seq for seqs in depth.values() for seq in seqs}) == 1
 
+    # A counterbalanced order cancels monotone drift only if each arm occupies
+    # the same mean position. Publish the sums so that is checkable rather than
+    # asserted, and take the session null from the base arm's own first and
+    # last leg.
+    by_arm_positions = {}
+    for s in stratum:
+        by_arm_positions.setdefault(s["arm"], []).append(s["leg_index"])
+    position = {arm: {"positions": sorted(p), "position_sum": sum(p),
+                      "mean_position": st.mean(p)}
+                for arm, p in by_arm_positions.items()}
+
+    base_legs = sorted((s for s in stratum if s["arm"] == args.base),
+                       key=lambda s: s["leg_index"])
+    null = None
+    if len(base_legs) > 1 and base_legs[0]["mtp_seconds_per_token"]:
+        first, last = base_legs[0], base_legs[-1]
+        null = {
+            "first_leg": first["tag"], "last_leg": last["tag"],
+            "first_seconds_per_token": first["mtp_seconds_per_token"],
+            "last_seconds_per_token": last["mtp_seconds_per_token"],
+            "session_null_pct": (last["mtp_seconds_per_token"]
+                                 / first["mtp_seconds_per_token"] - 1.0) * 100.0,
+        }
+
+    # The advisor reads this before any pooled number: a round only enters the
+    # paired estimator when it is clean in the base arm AND in the arm.
+    both_clean = {}
+    for arm, group in legs.items():
+        if arm == args.base:
+            continue
+        n = min(min(len(r) for r in legs[args.base]), min(len(r) for r in group))
+        both = sum(1 for i in range(n)
+                   if any(l[i]["clean"] for l in legs[args.base])
+                   and any(l[i]["clean"] for l in group))
+        both_clean[arm] = {"rounds_compared": n, "clean_in_both_arms": both}
+
     report = {
         "prefix": args.prefix,
         "harness": "local",
@@ -210,6 +260,10 @@ def main() -> None:
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
         "depth_sequence_identical_across_arms": identical,
+        "sandbox": sorted({s["sandbox"] for s in stratum if s["sandbox"]}),
+        "abba_position": position,
+        "session_null": null,
+        "clean_in_both_arms": both_clean,
         "per_leg_host_stratum": stratum,
         "achieved_bandwidth": bandwidth,
         "paired": {},
@@ -228,6 +282,27 @@ def main() -> None:
               f"{s['gpu_temp_exit_c'] or '-':>6} {s['round1_us']:>8.0f} "
               f"{s['round2_us']:>8.0f}   dirty med {dm}")
     print(f"\ndepth sequence identical across arms: {identical}")
+    print(f"sandbox: {','.join(report['sandbox']) or 'unrecorded'}")
+
+    print("\nabsolute mtp_seconds_per_token per leg:")
+    for s in sorted(stratum, key=lambda s: s["leg_index"]):
+        spt = s["mtp_seconds_per_token"]
+        print(f"  pos {s['leg_index']:>2} {s['arm']:<11} "
+              f"{spt if spt is None else f'{spt:.6f}':>10}  "
+              f"entry {s['gpu_temp_entry_c'] or '-':>8} exit {s['gpu_temp_exit_c'] or '-':>8}")
+
+    print("\nABBA position sums (equal sums mean linear drift cancels):")
+    for arm, p in sorted(position.items()):
+        print(f"  {arm:<11} positions {p['positions']} sum {p['position_sum']} "
+              f"mean {p['mean_position']:.2f}")
+    if null:
+        print(f"\nsession null ({args.base} first vs last leg): "
+              f"{null['session_null_pct']:+.3f} %  "
+              f"({null['first_seconds_per_token']:.6f} -> "
+              f"{null['last_seconds_per_token']:.6f})")
+    for arm, c in sorted(both_clean.items()):
+        print(f"rounds clean in BOTH {args.base} and {arm}: "
+              f"{c['clean_in_both_arms']}/{c['rounds_compared']}")
 
     print("\nachieved bandwidth of the per-draft head read (clean rounds):")
     print(f"  {'arm':<14} {'bytes/draft':>13} {'median us':>10} {'GB/s':>8}")
