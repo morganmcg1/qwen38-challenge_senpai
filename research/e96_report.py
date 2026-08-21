@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """Summarise E96 legs: per-round trace statistics beside the score metrics.
 
-    usage: research/e96_report.py TAG [TAG ...]
+    usage: research/e96_report.py [--fit-json PATH] [--bucket D,ACC] TAG [TAG ...]
 
 Each leg contributes its rounds keyed by (d, acc), because the repair path a
 round takes depends on both. A comparison between two arms is only valid
 inside one such bucket.
+
+`--fit-json` writes the analysis payload the W&B publisher consumes. It fits
+round cost against the repeat count over the `rep` arms. Those arms emit one
+shared token stream, so they populate one shared bucket and the slope is the
+marginal cost of one recurrent step.
 """
+import argparse
 import json
 import statistics
-import sys
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent / "out"
@@ -130,11 +135,116 @@ def stats(values):
     }
 
 
+def least_squares(points):
+    """Ordinary least squares slope, intercept and R^2 for (x, y) pairs."""
+    n = len(points)
+    mean_x = statistics.mean(x for x, _ in points)
+    mean_y = statistics.mean(y for _, y in points)
+    sxx = sum((x - mean_x) ** 2 for x, _ in points)
+    sxy = sum((x - mean_x) * (y - mean_y) for x, y in points)
+    slope = sxy / sxx
+    intercept = mean_y - slope * mean_x
+    residual = sum((y - slope * x - intercept) ** 2 for x, y in points)
+    total = sum((y - mean_y) ** 2 for _, y in points)
+    return {
+        "slope": slope,
+        "intercept": intercept,
+        "r_squared": 1.0 - residual / total if total else float("nan"),
+        "n": n,
+    }
+
+
+def fit_payload(legs, bucket, modelled_step_us=8112.6):
+    """Dose-response analysis over the token-exact repeat arms.
+
+    The slope of round cost against the repeat count is the marginal cost of
+    one recurrent step. `off` is reported beside it as the removal bracket, and
+    it is labelled unmatched because it emits different tokens and so lands at
+    different acceptance counts.
+    """
+    ladder = []
+    points = []
+    control = None
+    for leg in legs:
+        records = leg["buckets"].get(bucket, [])
+        values = [r["round_us"] for r in records if "round_us" in r]
+        if not values:
+            continue
+        mean = statistics.mean(values)
+        ladder.append([
+            leg["tag"], leg["step_mode"], int(leg["repeat"]), len(values),
+            mean, statistics.stdev(values) if len(values) > 1 else 0.0,
+            leg["gpu_temp_entry_c"], leg["gpu_temp_exit_c"],
+            bool(leg["score"].get("all_tokens_matched")),
+        ])
+        if leg["step_mode"] == "rep":
+            points.append((int(leg["repeat"]), mean))
+        if leg["step_mode"] == "clone":
+            control = mean if control is None else (control + mean) / 2
+
+    fit = least_squares(points) if len(points) > 2 else None
+
+    # The removal arm never shares a bucket with the control, so its rounds are
+    # pooled over every acceptance count at the control's draft width. The
+    # measured acceptance insensitivity at fixed width is what makes that
+    # pooling legible, and it is reported as a bracket, never as the headline.
+    removal = []
+    for leg in legs:
+        if leg["step_mode"] != "off":
+            continue
+        for (d, _acc), records in leg["buckets"].items():
+            if d != bucket[0]:
+                continue
+            removal.extend(r["round_us"] for r in records if "round_us" in r)
+
+    metrics = {
+        "bucket_d": bucket[0],
+        "bucket_acc": bucket[1],
+        "control_round_us": control,
+        "modelled_step_us_per_round": modelled_step_us,
+    }
+    if fit:
+        metrics.update({
+            "measured_step_us_per_round": fit["slope"],
+            "fit_intercept_us": fit["intercept"],
+            "fit_r_squared": fit["r_squared"],
+            "fit_points": fit["n"],
+        })
+        if control:
+            metrics["measured_step_round_share_pct"] = (
+                100.0 * fit["slope"] / control
+            )
+        metrics["model_overstatement_factor"] = modelled_step_us / fit["slope"]
+    if removal and control:
+        metrics.update({
+            "removal_round_us_unmatched": statistics.mean(removal),
+            "removal_rounds_n": len(removal),
+            "control_minus_removal_us_unmatched": control
+            - statistics.mean(removal),
+        })
+    return {
+        "metrics": metrics,
+        "tables": {
+            "arm_ladder": {
+                "columns": [
+                    "tag", "step_mode", "repeat", "rounds", "round_us_mean",
+                    "round_us_sd", "gpu_temp_entry_c", "gpu_temp_exit_c",
+                    "tokens_matched_own_reference",
+                ],
+                "rows": ladder,
+            }
+        },
+    }
+
+
 def main():
-    tags = sys.argv[1:]
-    if not tags:
-        print(__doc__)
-        return 2
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("tags", nargs="+")
+    parser.add_argument("--fit-json")
+    parser.add_argument("--bucket", default="4,4")
+    args = parser.parse_args()
+    tags = args.tags
+    bucket = tuple(int(part) for part in args.bucket.split(","))
     legs = [summarise(tag) for tag in tags]
     for leg in legs:
         metrics = leg["score"]
@@ -189,6 +299,15 @@ def main():
                 f" verify_build={summary['verify_build_us']['mean']:9.1f}"
                 f" eval_wall={summary['eval_wall_us']['mean']:9.1f}"
             )
+
+    payload = fit_payload(legs, bucket)
+    print()
+    print(f"== repeat dose-response in bucket d={bucket[0]} acc={bucket[1]} ==")
+    for key, value in payload["metrics"].items():
+        print(f"   {key:<38} {value}")
+    if args.fit_json:
+        Path(args.fit_json).write_text(json.dumps(payload, indent=2) + "\n")
+        print(f"   wrote {args.fit_json}")
     return 0
 
 
