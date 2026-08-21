@@ -2823,8 +2823,54 @@ let qwen35DecodeLadderRungs: Set<Int> = {
 //   prework  grid 32x5x80,  tg 32x1x1  -> 400 threadgroups, the live
 //            `qwen35_packed_gdn_prework` width, so the drain-and-fill bubble
 //            is the one a real removed dispatch would have paid
+// MLX_E105_DOSE_ALTERNATE=1 applies the dose on every second qualifying decode
+// forward instead of on all of them. Rung 0 measured a per-leg offset of 697 us
+// that carries 97.9 percent of the pair variance and is not thermal, so a
+// protocol that contrasts whole legs pays that offset in full. Alternating
+// inside one leg makes the contrast a difference between neighbouring rounds,
+// which cancels the offset by construction.
+//
+// The dose is numerically inert, so the token stream and the per-round verify
+// widths are identical to a dose-free leg. That is what lets the analysis pair
+// neighbouring rounds at equal width.
+//
+// Round `i` reported by the parent carries the dose when `i` is odd, but only
+// if exactly one qualifying forward runs per round. The counter is printed at
+// exit so that assumption is checked against `round_count` instead of assumed.
 let e105DoseCount = Int(ProcessInfo.processInfo.environment["MLX_E105_DOSE"] ?? "") ?? 0
 let e105DoseShape = ProcessInfo.processInfo.environment["MLX_E105_DOSE_SHAPE"] ?? "prework"
+let e105DoseAlternate =
+    ProcessInfo.processInfo.environment["MLX_E105_DOSE_ALTERNATE"] == "1"
+
+nonisolated(unsafe) private var e105DoseForwards = 0
+nonisolated(unsafe) private var e105DoseApplications = 0
+nonisolated(unsafe) private var e105DoseAtExitArmed = false
+
+/// Count one qualifying decode forward and report whether it takes the dose.
+///
+/// The accounting is printed at process exit rather than per round, so nothing
+/// is written inside a timed round.
+func e105DoseTakeTurn() -> Bool {
+    if !e105DoseAtExitArmed {
+        e105DoseAtExitArmed = true
+        atexit {
+            FileHandle.standardError.write(Data(
+                ("e105_dose_accounting"
+                 + " qualifying_forwards=\(e105DoseForwards)"
+                 + " dosed_forwards=\(e105DoseApplications)"
+                 + " alternate=\(e105DoseAlternate)"
+                 + " dose=\(e105DoseCount) shape=\(e105DoseShape)\n").utf8))
+        }
+    }
+    e105DoseForwards += 1
+    guard e105DoseAlternate else {
+        e105DoseApplications += 1
+        return true
+    }
+    let take = e105DoseForwards % 2 == 0
+    if take { e105DoseApplications += 1 }
+    return take
+}
 
 nonisolated(unsafe) private let e105DoseZero = MLXArray.zeros([1], dtype: .bfloat16)
 
@@ -2936,8 +2982,9 @@ public class Qwen35TextModelInner: Module {
             // a standalone entry RMSNorm — 63 launches removed per forward.
             // Ladder rungs force both halves of the pair: same graph
             // frontier, same overlap, no arithmetic change.
-            let e105DoseActive =
+            let e105DoseQualifies =
                 e105DoseCount > 0 && !prefillLadder && hiddenStates.dim(1) <= 9
+            let e105DoseActive = e105DoseQualifies && e105DoseTakeTurn()
             var base = hiddenStates
             var delta: MLXArray? = nil
             for (i, layer) in layers.enumerated() {
