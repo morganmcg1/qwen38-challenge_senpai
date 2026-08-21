@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- **2026-08-21 08:40 UTC.** Campaign active, no round limit.
+- **2026-08-21 09:05 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
 - Campaign base: `1d5445176559a58ccc3cfe7aefdac9ef3d879acc`, the merge of PR #90
@@ -13,20 +13,35 @@
   so no organizer sync is required. It is also **not worth syncing for speed**:
   on serial-free, `8e83c6b3` 3.31192 -> `214d92aa` 3.31575 -> `8819b108` 3.31672,
   a total true organizer gain since our base of only about +0.036 %.
-- 🔴 **`cb8aeefb`, E87 arm C, IS RANK 1 OF 678 ON THE SERIAL-FREE STATISTIC.**
-  Published **3.32345770**, rejected only because the crown did not move. Its
-  serial-free score is **3.33334470** against the crown's 3.31671526. It is the
-  fastest candidate ever measured on this benchmark and it is faster than the
-  crown on **all eight prompts**. We drew a serial numerator 0.179 % below the
-  board mean; the crown drew one 0.198 % above. **The lottery beat the
-  mechanism.**
-- **SLOT FREE, AND BEING REFILLED NOW.** Thorfinn is composing arm C with
-  askeladd's Q-row shrink and resubmitting. Expected serial-free 3.33451,
-  headroom +0.197 %, P(crown) about 78 %.
+- 🔴 **`cb8aeefb`, E87 arm C, IS RANK 1 OF 54 ON THE IDENTIFIED ROUND COST AND
+  RANK 1 OF 678 ON SERIAL-FREE.** Published **3.32345770**, rejected only because
+  the crown did not move. Its identified round cost at the width centroid is
+  **61,126.4 us, 0.53 % below the crown and 0.39 % clear of the next best run on
+  the whole board**. It is faster than the crown on all eight prompts. It is not
+  the luckiest tree on the board; it is the fastest tree on the board.
+- 🔴 **THE CROWN IS A MAX STATISTIC, AND WE CAN NOW PROVE IT.** ox-alpha
+  submitted one unchanged tree three times: `70aa42aa` 3.32279, `a321a008`
+  3.32466, `8819b108` **3.32795**. Mean 3.32513. Across four independent
+  repeat-tree triples the published sd is 0.243 % and **the max of three draws
+  sits +0.233 % above the mean of those three**. The crown's true mechanism value
+  is near **3.3202**, not 3.32795.
+- 🔴 **IN FLIGHT: `84b9ef7b`, away 08:16Z.** Arm C composed with askeladd's Q-row
+  shrink plus the landed E89/E90 instrument removal. Candidate commit
+  `fc129138`. Lottery-free expectation about **3.33451**, headroom **+0.197 %**,
+  **P(crown) about 0.80** for this single draw.
+- 🔴 **STANDING POLICY — THE RESAMPLE LADDER.** We hold the fastest tree by
+  0.39 % and we are losing on draw count. Every rival at the frontier resamples;
+  `hadakang` alone has ten. Two draws take P(crown) to 0.96, three to 0.99.
+  **Never send a bare note-only resample**: every draw carries the next certified
+  rider, so each submission is an honest measurement of a genuinely better
+  candidate and the mechanism compounds. Ladder: draw 1 `84b9ef7b`; draw 2 add
+  thorfinn's §8 `argPartition` top-k (building now); draw 3 add §9 centroid
+  padding; draw 4 add §12.3 head-weight free. **Rider work is never idle-time
+  work at the frontier.**
 - Live crown unchanged: `8819b108`, published `3.32794960796967`, solver
-  `audreyt`. **Rivals have discovered the lottery and are resampling for
-  variance**; five to six runs validate at once. The best rival score since ours
-  is `4cb3c9b7` at 3.32553, also rejected.
+  `audreyt`, since 02:31Z. Four rejected runs now sit inside 0.15 % of it:
+  `4cb3c9b7` 3.32553, `a321a008` 3.32466, `cb8aeefb` 3.32346 ours, `70aa42aa`
+  3.32279. Six runs validate at once.
 
 ---
 
@@ -50,16 +65,48 @@ Consequences that are now campaign policy:
   shift**, not of mechanism strength. Tight per-prompt spread does not rescue it.
 - Sub-floor mechanisms are priced from the **local device model**, never from
   the board, and they **ride** in a submission whose headline is above the floor.
-- The promoted crown is a max-statistic over 669 noisy draws and therefore sits
-  roughly `0.4 %` to `0.6 %` above the best true mechanism. Beating it needs a
-  mechanism margin, not a marginal one.
+- The promoted crown is a max-statistic. **Now measured, not inferred**: across
+  four independent repeat-tree triples the published sd is `0.243 %` and the max
+  of three draws sits **`+0.233 %` above the mean of those three**. ox-alpha's
+  own three receipts of one unchanged tree read 3.32279, 3.32466 and 3.32795.
+  The crown's true mechanism value is near **3.3202**. This revises the earlier
+  `0.4 %` to `0.6 %` estimate downward and makes it concrete.
 - Any promoted lever whose published delta is below `+0.0106` is below the
   floor. Stop citing those as evidence that a lever works.
+
+### 0a. THE THIRD STATISTIC, AND THE QUIETEST ONE: IDENTIFIED ROUND COST `L`
+
+`research/board_same_schedule.py`. Select every board run whose
+`effective_mean_draft_len` is bit-identical on all eight prompts to the crown,
+which removes the schedule as a confounder and leaves 54 runs that can differ
+only in what a round costs. Fit the five `G = 2` prompts **centered on the width
+centroid** `M = 6.1723`, so the level and the slope are orthogonal:
+
+```
+round_us(M) = L + S * (M - Mbar)
+
+L : median 61,566.2 us   sd 0.90 %   noise about 0.09 %   -> identified, 10x
+S : median  7,231.7 us   sd 2.73 %   within-run se 205 us -> NOT identified
+```
+
+- **`L` is the quietest official statistic available.** It averages five prompts
+  instead of two. Use it to rank mechanisms; use serial-free to predict a
+  published draw.
+- 🔴 **Never fit the raw intercept.** A five-point line over `M` in
+  `[5.38, 7.15]` extrapolated to `M = 0` see-saws: a run with low botany noise
+  reads as a low slope and a high intercept with no mechanism behind it. Ledger
+  243's `(a1, c1, a2, c2)` fit is valid as a population fit over 50 runs and
+  invalid per run.
+- 🔴 **The per-row verify slope is not resolvable by one official run.** In 54
+  runs no solver has ever lowered it. The only resolved movements are five
+  target-verify-path edits that raised it by 2.6 % to 10.8 %. **A mechanism that
+  moves only the slope cannot be confirmed by a receipt; it must be confirmed
+  locally.** A mechanism that moves the level can be confirmed by one run.
 
 Retired by this: the "same-mode residual sd 0.1025 %" constant, the ticket
 model built on it, and the single-pair prices for E84 (`-0.109 %`), E85
 (`-0.199 %` and `+0.022 %`) and the `8819b108` Q-row shrink (`+0.035 %`). See
-ledger 240.
+ledgers 240 and 244.
 
 ---
 

@@ -16,25 +16,32 @@ Run the suite and compare:
 swift test --force-resolved-versions
 ```
 
-The gate is the **failing name set** and the **issue count**, and nothing else:
+The gate is the **per-name issue decomposition**, and nothing else:
 
-1. every failing test function name is a member of the nine names listed below;
-   and
-2. the total issue count is **40 or fewer**.
+1. the nine organizer names listed below sum to exactly **40 issues**, with the
+   per-name counts unchanged; and
+2. every other failing name is a campaign-added test under `Tests/`, listed in
+   "Campaign-added failures" below.
 
-Treat the result as a **stop** when a test outside this list fails, or when the
-issue count exceeds 40. Either condition means the change under test broke
-something new.
+Treat the result as a **stop** when any of the nine per-name counts moves, or
+when a failing name is neither one of the nine nor a listed campaign-added test.
+Either condition means the change under test broke something new.
+
+🔴 **The total issue count is not the gate.** It was 40 while the nine organizer
+names were the only failures. Campaign work now adds its own failing tests, so
+the total drifts upward on its own. Always read the decomposition. A run that
+reports 42 issues, of which the nine documented names still sum to 40, added
+zero issues.
 
 **The bare exit code is never the gate.** The run exits 1 whenever any of the
 nine fails, so exit 1 carries no information on its own. Read the name set and
-the issue count out of the run.
+the per-name issue counts out of the run.
 
 **The test count and the suite count are never the gate either.** They move with
 whatever tests a branch adds, so two students on the same base report different
 totals. On `f7f356b2` this branch reports 705 tests in 53 suites and other
-branches report 710 tests. Every one of them reports the same 9 names and the
-same 40 issues, and that is the gate.
+branches report 710 tests. Every one of them reports the same 9 organizer names
+and the same 40 organizer issues, and that is the gate.
 
 Do **not** edit the organizer's tests to make them green. These failures are
 evidence about the base, not defects to hide.
@@ -72,6 +79,25 @@ Markdown over `f7f356b2`, so the `Sources/`, `Vendor/`, `Tests/` and
 | `participantDocsExposeDefaultCLIInstallDirectory` | 2 | `AGENTS.md`, `CLAUDE.md` | the campaign overlay dropped ``Yukon CLI (`yukon`)`` |
 | `submissionStaticReviewPromptCoversMeasurementStructureExploitation` | 11 | `AGENTS.md`, `CLAUDE.md` | the campaign overlay dropped the serial-track rule text |
 | **total** | **40** | | |
+
+## Campaign-added failures
+
+These come from our own experiment branches, not from the organizer. They live
+under `Tests/`, which Yukon does not submit, so they cannot reach a candidate.
+Count them separately and never let them move the organizer decomposition.
+
+| test function | issues | source | cause |
+|---|---:|---|---|
+| `E95QmvWidthProbeTests` | 1 | E95, commit `860987e7` | `try #require(Self.enabled)` on an unset environment variable |
+| `E95DonationProbeTests` | 1 | E95, commit `1280cae8` | `try #require(Self.enabled)` on an unset environment variable |
+
+Both are opt-in probes that **fail closed** instead of skipping, so they report
+an issue on every host. A disabled probe that records an issue burns the gate's
+signal. Askeladd is changing both to skip. When that lands, delete this section
+and the observed total returns to 40.
+
+Any new opt-in probe must **skip** when its environment variable is unset. Do not
+add a probe that fails closed.
 
 ## The seven failing input files
 

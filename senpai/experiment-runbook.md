@@ -101,14 +101,47 @@ worker binary, so the half the wrapper refreshes is exactly the half that does n
 govern. A worker 14 minutes older than the candidate edit passed a full
 `--local-submit` run.
 
+Use the standing campaign witnesses, which are verified against the current base:
+
 ```bash
 senpai/rebuild-and-assert-worker.sh \
-  --require '<T, 5, 5, true>' --require '<T, 6, 6, true>' \
-  --forbid  '<T, 5, 3, true>' --forbid  '<T, 6, 3, true>'
+  --require        qwen35_dual_rms_norm_concat_bf16_v1 \
+  --forbid         qwen35_dual_rms_norm_bf16_v1 \
+  --require-symbol snapshotScheduleSignal
 ```
 
-Run it **before and after** the leg and compare the reported `worker_mtime` and
-`worker_sha256`. A change between the two reads invalidates the leg.
+🔴 The QMV instantiation witnesses this section used to quote,
+`<T, 5, 5, true>` and `<T, 6, 6, true>`, are **dead on the current base**
+(qwen-edward, E94). They are absent and `<T, 5, 3, true>` is present, so that
+command failed a correct build. Derive an instantiation witness from the tree you
+are actually building, and prove it discriminates before you trust it: a witness
+that passes on both arms is not a witness.
+
+Run the script **before and after** the leg and compare the reported
+`worker_mtime` and `worker_sha256`. A change between the two reads invalidates
+the leg.
+
+🔴 **A PASS does not mean the build root can launch a leg** (qwen-thorfinn, E87
+§7). The script rebuilds the executable and inspects that executable only. If you
+have run `rm -rf .build-worker`, `mlx.metallib` is gone and the wrapper fails at
+leg launch with `missing .build-worker/release/mlx.metallib`, minutes later than
+it needed to. Restore it with
+
+```bash
+tools/build-mlx-metallib.sh --all-build-roots
+```
+
+Do **not** copy the file out of `.build/`. A copy skips the `.fingerprint`
+sidecar that `metallib_rebuild_required()` reads. The campaign value is
+`mlxfast-metallib-fingerprint-v1
+7ae5c5a3d8fabe72ee19bfc09dd737281338a6be658deca49ba97eefdbe3611c`.
+
+🔴 **`worker_sha256` is not a source identity** (qwen-thorfinn, E87). Two clean
+full builds of byte-identical source on the same host and toolchain produced
+different worker digests, most likely from link and code-layout ordering under
+parallel compilation. The digest proves that two legs ran the same binary. It
+proves nothing about which source produced that binary. Source identity comes
+from git, and content evidence comes from witness counts.
 
 ### Match the witness to the language of your arm
 
@@ -148,6 +181,25 @@ After editing a `.metal` or `.h` kernel source, also run
 `python3 research/twin_audit.py`. After merging a base that touched vendored
 kernels, run `tools/build-mlx-metallib.sh` and record
 `metallib_source_fingerprint` per leg.
+
+## Isolate one kernel per command buffer
+
+🔴 `MLX_E58_BUFFER_LIMIT_OPS=1` alone does **not** isolate a kernel
+(qwen-thorfinn, E87 §4). MLX commits a buffer on either predicate at
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:484-487`, and the
+op test is `buffer_ops_ > max_ops`, so `ops=1` packs **two** ops per buffer. Set
+both limits:
+
+```bash
+MLX_E58_BUFFER_LIMIT_OPS=1 MLX_E58_BUFFER_LIMIT_MB=1
+```
+
+Every figure produced with `ops=1` alone is a two-kernel aggregate. Check any
+attribution you inherit for this defect before you build on it.
+
+Prove the isolation closed: sum the per-buffer roster and compare it with the
+measured phase time. Thorfinn's corrected roster closes to 98.2 %. An open
+roster means kernels are still sharing buffers.
 
 ## Prove which proposal head you measured
 
