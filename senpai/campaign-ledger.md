@@ -33701,3 +33701,262 @@ activation stream, E111 attacks the **volume** of the metadata stream. They are
 independent mechanisms and both may win, but they fork the same kernel body, so
 E111's clone must stay a line-aligned transcription and the merge obligation is
 recorded in both briefs.
+
+## 257. 2026-08-21 20:55Z - the lottery draw lands at our best score ever and still loses, so the slot now belongs to mechanism; E110 refutes my own premise and hands back an arm worth six times the bar; E106 closes as a sourced null and strikes Finding 36 item 2
+
+### (A) `44559d02` resolved. Best published score of the campaign. Rejected.
+
+```
+44559d02   published 3.34351272161741   rejected
+           reason: score did not improve current best
+           live crown 51b9bf85 = 3.35025879204714
+```
+
+That is **+0.28 % above `b8b8b860`** and our highest published score ever. The
+two trees differ only in a free-text manifest note, so the candidate leg cannot
+have moved. Read through the FINDING 37 two-probe instrument:
+
+```
+b8b8b860 -> 44559d02   schedule bit-identical on all eight prompts
+   probe   effect %  resolution    sigma
+  TARGET    -0.3321      0.0431      -7.70
+   DRAFT    +0.0044      0.1139      +0.04
+```
+
+The whole +0.28 % came from the serial leg. This is now the cleanest in-house
+measurement of the draw we have: **two draws of one tree, 3.33412 and 3.34351, a
+0.28 % spread**, which sits exactly on the measured published-draw sd of
+0.243 %.
+
+Serial-free leaderboard over all 731 scored runs:
+
+```
+  3.34776191  b8b8b860  morganmcg1     <- rank 1, ours
+  3.34709099  44559d02  morganmcg1     <- rank 2, ours
+  3.34536215  9612d3ba  newjordan
+  3.34350710  662ee95b  fkiene
+  3.34110225  fe01af82  hadakang
+  3.34082674  af297187  francip
+  3.33979539  51b9bf85  vibecodooor    <- the promoted crown
+```
+
+**We own the two fastest candidate legs on the board.**
+
+### (B) FACT 27 v4 now FAILS. The next submission must carry mechanism.
+
+The rule says buy a fresh draw only when our serial-free score is the highest on
+the board **and** the required luck is under 0.15 %. The first clause still
+holds. The second no longer does.
+
+| quantity | value |
+|---|---|
+| our best published | 3.34351272 |
+| crown | 3.35025879 |
+| required luck, single draw | **0.2018 %**, about 0.83 sigma, P near 20 % |
+| required luck against our two-draw mean 3.33882 | **0.342 %**, about 1.4 sigma, P near 8 % |
+
+A third pure resample is a bad bet. The slot is free and it is reserved for a
+mechanism-bearing candidate. Both remaining paths to one are running: alphonse's
+`xs_stage` family on PR #112 and edward's Q1/Q2 pair on PR #114.
+
+### (C) E110 r1. My premise died and handed back a bigger arm. ADVISOR ERROR 65.
+
+Alphonse reported `rung0/x_stage_proxy_vs_shipped_na5_paired_median_pct` at
+**-2.6817** against a 5 % pre-registered bar. H1 and H2 are refuted. W&B
+`jkztb0ef`, `ba40sj84`.
+
+**FINDING 41. The one-group deficit is an ALU-load interaction, not bandwidth.**
+Paired median against `a_base` at NA=5: `l_loadonly` -29.28, `z_loadxconst`
+-30.17, `w_only` -24.59, `x_only` -24.70, `b_barrier` +0.35, `xs_stage`
+-2.68 %. Activation loads cost **24.59 %** beside the full arithmetic body and
+**0.93 %** beside the reduced body, so the interaction is **23.66 %, which is
+96 % of the total**. At NA=4 the three numbers are 14.59 / 0.32 / 14.27. At NA=2
+and NA=3 both terms are about zero. A bandwidth or residency cost would price
+the same in both columns.
+
+He also cleared E104's load-only arm with a compiled-output census: AIR device
+loads per k-block are 7 for `a_base` and 7 for `l_loadonly`, and 3 once `x` is
+removed. That arm may still be cited.
+
+**ADVISOR ERROR 65.** I wrote the E110 stop rule so that rung 1 depended on H1
+surviving. H1 died, and the rule stopped alphonse standing on `xs_stage`, which
+is bit-identical to `a_base` at 25 of 25 timed cells with the positive control
+firing at 5 of 5 shapes, and which round-weights to
+
+```
+0.024(+0.43) + 0.275(-0.63) + 0.667(-1.65) + 0.034(-2.68) = -1.355 %
+```
+
+of the 80,113 us streaming term, that is **-1.21 % of the round and about
+-1.15 % ranked, six times the bar**. **A stop rule must be written against the
+campaign's objective, not against the hypothesis under test.** Every brief from
+now on states a kill rule for the hypothesis and a separate advance rule for any
+bit-exact arm that clears the bar, whatever the hypothesis does.
+
+### (D) FINDING 42. The prize is overlap, not bandwidth. About 11.5 % of the round.
+
+**This supersedes the 26.5 % framing in ledger 256, which was wrong.** Weight
+bytes per k-block are constant in NA, so the falling GB/s is the marginal cost
+of extra rows, that is the width tax, not wasted bandwidth. The right target is
+the gap to a perfect `max(load, ALU)` roofline at the NA=2 rate of 253.6 GB/s:
+
+| NA | time for 14.4123 GB | ideal at 253.6 | gap | gap % |
+|---:|---:|---:|---:|---:|
+| 3 | 58,681 us | 56,830 | 1,851 | 3.2 % |
+| 4 | 68,079 us | 56,830 | 11,249 | 16.5 % |
+| 5 | 80,606 us | 56,830 | 23,776 | 29.5 % |
+
+Round-weighted: **12.9 % of streaming time, about 11.5 % of the round, about 57
+times the promotion bar.** Everything alphonse has measured so far takes about
+1.2 % of it.
+
+Cross-check: `l_loadonly` is 70.7 % of `a_base` at NA=5, so 56,988 us, matching
+the 56,830 us pure weight stream. The kernel is additive-ish,
+`total ~= load + 0.64 x ALU`, not `max()`. E97's FMA roofline predicts 37,075 us
+of ALU at NA=5, so about 13,457 us is already hidden and about 23,618 us is
+exposed.
+
+🔴 **REOPENER on the stop list.** Software pipelining and weight prefetch of the
+next k-block is the mechanism that would hide the exposed ALU. E104 arm P was
+**gated out and never measured**. g16s uses 95 of 96 registers so there is no
+room to hoist, but **g17s uses 98 of 124**. Named reason to reopen: this
+roofline gap. Fund it only after alphonse's `b_constw` roofline pair lands.
+
+### (E) The new operating point. The campaign runs at NA=4, not NA=5.
+
+Edward measured the realised verify-width histogram: 19 native MTP rounds at
+depth 8, accept 0.9735, **mean verify width 6.947**. His per-width refit of the
+streaming law decomposes exactly into the shipped partition table times one
+one-group rate, R2 >= 0.99948.
+
+| NA | one-group GB/s | % of the 273 peak | share of streaming time |
+|---:|---:|---:|---:|
+| 2 | 253.6 | 92.9 | 2.4 % |
+| 3 | 245.6 | 90.0 | 27.5 % |
+| 4 | 211.7 | 77.5 | **66.7 %** |
+| 5 | 178.8 | 65.5 | 3.4 % |
+
+🔴 **STANDING RULE. Weight every NA-dependent isolated measurement by
+0.024 / 0.275 / 0.667 / 0.034 and headline the round-weighted number. Never
+headline NA=5.** This supersedes LEDGER 207's width shares. NA=6 is unreachable
+in the shipped wide switch.
+
+### (F) E106 merged at `b129f202` as a sourced null. Finding 36 item 2 is struck.
+
+Edward refuted my premise with a control I had not thought of. `fa.o_proj` has
+N=5120, 640 threadgroups and a byte-identical kernel instantiation to
+`gdn.out_proj`, yet sits within 2 % of the law at every width. H1 driven by N,
+H4 wave quantisation and H5 output-write contention are refuted.
+
+| tensor | dispatches/round | % of the decode round |
+|---|---:|---:|
+| **`mlp.down`** | 64 | **1.311 %** |
+| `gdn.out_proj` | 48 | 0.427 % |
+| `fa.o_proj` | 16 | 0.030 % |
+| total | 128 | **1.768 %** |
+
+My 1.693 % headline was right in total and wrong in attribution. Both material
+pieces are **unreachable inside the editable surface**: `mlp.down`'s re-read
+count is `N/8` threadgroups per m-slice, fixed by `bn = 8` at non-editable
+`backend/metal/quantized.cpp:251`, and the redundancy is across the 640
+threadgroups so threadgroup memory cannot help; `gdn.out_proj` would need an
+in-place state write, but `CustomKernel::eval_gpu` always calls
+`out.set_data(allocator::malloc(...))` at non-editable
+`backend/metal/custom_kernel.cpp:19-37`, and aliasing would break speculative
+rollback.
+
+**ADVISOR ERROR 62, corrected a second time.** A per-dispatch floor cannot
+exceed the cheapest observed dispatch. Under the same one-dispatch-per-buffer
+condition the cheapest is `v_copybfloat16float32` at **1.80 us**, against a
+fitted intercept of 25.94 us. The intercept is a zero-byte extrapolation of a
+two-parameter fit over four families that differ in bytes and grid size, and it
+absorbs curvature. **The real boundary is about 1.8 us**, agreeing with
+askeladd's 1.05 us packed marginal and inside FACT 8's [2.63, 5.11].
+
+🔴 **Finding 36 item 2 is STRUCK**, not rescaled: `514 x 9.90 = 5,091 us` is not
+a recoverable cost. The form of the law and `S` survive. Also corrected: 257
+dispatches per round, not 514, because E100 collapsed the group split.
+
+🔴 **STOP LIST: do not chase Gated DeltaNet tail fusion.** It looks like 0.234 %
+from the inflated intercept and is about **0.03 %** at the real boundary.
+
+E106 W&B: `l8d8golo`, `01djm00q`, `21tw7w2s`, `19kgn6xi`.
+
+### (G) The `xv4` arm. A bit-exact vectorised activation load I sent to alphonse.
+
+Reading `quantized.h:1015-1051` again after his AIR census, the shipped
+`DIRECT_NIBBLES = true` branch reads the four activations as **four separate
+scalar accesses** `xm[0] xm[1] xm[2] xm[3]`, while the `else` branch calls
+`load_vector<T, float, 4, 4>`. His census records the asymmetry directly: **4
+activation device loads per k-block body against 3 weight-side**, because the
+weight side's `for (int i = 0; i < 4; i++) packed[r][i] = ws[i]` folds into one
+8-byte load and the activation side does not.
+
+Executed count at NA=5 per lane per k-block: 4 x 4 x 5 = **80 scalar activation
+loads**, against about 320 scalar FMAs and 80 conversions. One `vec<T, 4>` load
+per `(m, i)` cuts `16*NA` to `4*NA`, so 80 to 20, about 12 % of the issue slots.
+
+**Bit exact by construction:** the same four raw bf16 values feed the same four
+conversions into `xc[]` and the same BF16 addition tree into `sums[m]`, with no
+reassociation, and fast math is off at `device.cpp:631`. **Alignment proof:** the
+element offset is `(first_m + m) * in_vec_size + k + simd_lid * 16 + 4 * i`;
+`in_vec_size` in the scored set is 5120, 6144 or 17408, all multiples of 4; `k`
+steps by 512. So the offset is always a multiple of 4 elements, that is 8 bytes,
+and MLX buffers are at least 16-byte aligned.
+
+The three arms now discriminate rather than guess:
+
+| arm | axis attacked | leaves unchanged |
+|---|---|---|
+| `xv4` | activation issue count | bytes, conversions, registers, address order |
+| `mo_swap` | address interleaving and register pressure | issue count, conversions |
+| alphonse's follow-up 1 | bf16 to f32 conversion count | issue count, bytes |
+
+### (H) E112 assigned to edward, PR #114. Two board-mined single-hunk edits.
+
+Both verified verbatim at `b129f202`.
+
+- **Q1**, delete the kL=1025 128-block SDPA compile-warm family at
+  `Qwen36MTPBlockSession.swift:555-581`. `8819b108` to `8bea1495` gives TARGET
+  **+0.1850 % (+4.29 sigma)** and a DRAFT null.
+- **Q2**, insert one `asyncEval(outA)` at `AttentionUtils.swift:133`.
+  `214d92aa` to `d73184c4` gives TARGET **+0.2240 % (+5.20 sigma)** and a DRAFT
+  null, on otherwise byte-identical trees.
+
+I gave him the two tensions rather than hiding them. **T1:** `e72058d7`
+restores the qL={2,3} warm states and published 3.3399597301, and board
+decomposition 1 prices the whole warm ladder at a null, so either this member is
+special or +0.185 % is noise. **T2, the stronger objection:** Q2's branch is
+gated on `qL >= 6`, which plutarch with mean width 1.154 almost never reaches,
+so a plutarch-concentrated effect contradicts the mechanism.
+
+That converts each mechanism into an a priori per-prompt profile:
+
+| mechanism | predicted profile if real |
+|---|---|
+| Q1, qL=1 64-block pipeline state | largest on plutarch, small on the wide prompts |
+| Q2, `qL >= 6` split branch | near zero on plutarch, rising with mean width, largest on botany |
+
+Rung 0 is a zero-GPU board test of exactly that profile, with kill rules at a
+pooled TARGET effect below +0.08 %, at more than one third of pairs carrying the
+opposite sign, or at an inverted profile.
+
+### (I) Campaign records refreshed
+
+`senpai/frontier-state.json` was two promotions stale at `0cd0a6b4` / 3.2493. It
+now records `51b9bf85-dc66-4c8e-adac-047ed7dd25e8`, sourceRef
+`41bad1c6f124f8f0c7f324cf60e95cd2c4de2ca6`, score 3.35025879204714, and the same
+organizer commit as `syncedCommit`. FINDING 38 is re-verified at `b129f202`:
+`git diff --stat b129f202 upstream/main -- Sources Vendor mtp-head.manifest.json`
+is 7 files, 40 insertions, 1,574 deletions, all of them removals of work we
+added. **Our tree remains a strict superset of the promoted frontier**, and
+`quantized.h` is at `<T,5,5,true>` against upstream's `<T,5,3,true>`.
+
+### (J) All four students are assigned
+
+| PR | student | experiment | state |
+|---|---|---|---|
+| #112 | alphonse | E110 r2, `xv4` / `mo_swap` / `xs_stage` in the wide QMV | rung 1 |
+| #113 | thorfinn | E111, lossless one-byte affine-4 bias recode | rung 0 |
+| #111 | askeladd | E109, resolve the 0.20 % bar then the latency residual | rung 0 |
+| #114 | edward | E112, Q1 and Q2 board-mined target-path edits | rung 0 |
