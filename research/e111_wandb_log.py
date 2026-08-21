@@ -396,20 +396,20 @@ def log_rung1() -> None:
 
 
 def log_static() -> None:
-    regs: dict[str, dict] = {}
+    regs: dict[tuple[int, str], dict] = {}
     path = OUT / "e111" / "regs.txt"
     if not path.exists():
         print("no static census recorded, skipping")
         return
     for line in path.read_text().splitlines():
-        arch, _, payload = line.partition(" ")
-        if payload.startswith("{"):
-            regs[arch] = json.loads(payload)
+        head, arch, payload = line.split(" ", 2)
+        regs[(int(head.split("=")[1]), arch)] = json.loads(payload)
+    nas = sorted({na for na, _ in regs})
 
-    sessions = [an.reduce_session(t) for t in WEIGHTED_TAGS
-                if (OUT / t / "arms.json").exists()]
-    saving = {arm: an.weighted(sessions, arm)[0] for arm in an.ARMS}
-    local, ranked = regs[LOCAL_ARCH], regs[RANKED_ARCH]
+    sessions = {s["na"]: s for s in
+                (an.reduce_session(t) for t in WEIGHTED_TAGS
+                 if (OUT / t / "arms.json").exists())}
+    local, ranked = regs[(4, LOCAL_ARCH)], regs[(4, RANKED_ARCH)]
 
     run = start(
         job_type="static-budget", name="e111-static-budget",
@@ -422,60 +422,81 @@ def log_static() -> None:
             ),
             "tool": "xcrun metal-tt via research/agx_crossarch.py census",
             "metallib": (
-                "xcrun metal -std=metal3.1 -DE111_NA=4 "
-                "research/e111_bias6_arms.metal"
+                "xcrun metal -std=metal3.1 -DE111_NA=N "
+                "research/e111_bias6_arms.metal, N in 2 3 4 5"
             ),
+            "na_swept": nas,
             "selftest": "PASS, both arches, permutation guard included",
             **identity(ASSIGNMENT_BASE_SHA),
             **gate_flags("toolchain static analysis, no GPU", 0.0, False),
         },
     )
     table = wandb.Table(columns=[
-        "arm", "arm_role", "arch", "registers", "spill_bytes", "text_bytes",
-        "delta_spill_vs_shipped", "delta_text_vs_shipped",
-        "weighted_saving_pct", "text_sha8"])
-    for arch, kernels in regs.items():
+        "arm", "arm_role", "arch", "na", "registers", "spill_bytes",
+        "text_bytes", "delta_spill_vs_shipped", "delta_text_vs_shipped",
+        "measured_saving_pct", "na_weight", "text_sha8"])
+    for (na, arch), kernels in sorted(regs.items()):
         base = kernels["a_shipped"]
+        measured = sessions.get(na)
         for arm, value in sorted(kernels.items()):
+            hit = next((r for r in measured["arms"] if r["arm"] == arm),
+                       None) if measured else None
             table.add_data(
-                arm, ARM_ROLE.get(arm, "bandwidth reference"), arch,
+                arm, ARM_ROLE.get(arm, "bandwidth reference"), arch, na,
                 value["registers"], value["spill_bytes"], value["text_bytes"],
                 value["spill_bytes"] - base["spill_bytes"],
                 value["text_bytes"] - base["text_bytes"],
-                saving.get(arm), value["text_sha8"])
+                hit["saving_pct"] if hit else None, an.NA_WEIGHT.get(na),
+                value["text_sha8"])
     run.log({"registers_and_text": table})
 
+    # NA=4 carries 66.7 % of streaming time, so it is the width that decides
+    # whether the local measurement transfers.
     run.summary.update({
-        "local_arch_spills": any(
-            v["spill_bytes"] > 0 for v in local.values()),
-        "ranked_arch_spills": any(
-            v["spill_bytes"] > 0 for v in ranked.values()),
-        "local_register_ceiling": max(
-            v["registers"] for v in local.values() if v["spill_bytes"] > 0),
-        "shipped_spill_bytes_local": local["a_shipped"]["spill_bytes"],
-        "shipped_spill_bytes_ranked": ranked["a_shipped"]["spill_bytes"],
-        "d_bias1_spill_bytes_local": local["d_bias1"]["spill_bytes"],
-        "d_bias1_extra_spill_vs_shipped_local":
+        "dominant_na": 4,
+        "local_spilling_widths": [
+            na for na in nas
+            if any(v["spill_bytes"] > 0
+                   for v in regs[(na, LOCAL_ARCH)].values())],
+        "ranked_spilling_widths": [
+            na for na in nas
+            if any(v["spill_bytes"] > 0
+                   for v in regs[(na, RANKED_ARCH)].values())],
+        "shipped_spill_bytes_local_na4": local["a_shipped"]["spill_bytes"],
+        "shipped_spill_bytes_ranked_na4": ranked["a_shipped"]["spill_bytes"],
+        "d_bias1_extra_spill_vs_shipped_local_na4":
             local["d_bias1"]["spill_bytes"] - local["a_shipped"]["spill_bytes"],
-        "e_bias6_spill_bytes_local": local["e_bias6"]["spill_bytes"],
-        "e_bias6_extra_text_local":
-            local["e_bias6"]["text_bytes"] - local["a_shipped"]["text_bytes"],
-        "e_bias6_extra_text_ranked":
-            ranked["e_bias6"]["text_bytes"] - ranked["a_shipped"]["text_bytes"],
+        "d_bias1_extra_spill_vs_shipped_ranked_na4":
+            ranked["d_bias1"]["spill_bytes"]
+            - ranked["a_shipped"]["spill_bytes"],
+        "e_bias6_extra_text_vs_d_bias1_ranked_na4":
+            ranked["e_bias6"]["text_bytes"] - ranked["d_bias1"]["text_bytes"],
+        "d_bias1_extra_text_vs_shipped_ranked_na4":
+            ranked["d_bias1"]["text_bytes"] - ranked["a_shipped"]["text_bytes"],
+        "prereg_census_was_na5_only": True,
         "spill_ranks_these_arms": False,
-        "d_bias1_has_local_only_confound": True,
         "static_note": (
-            "The local generation pins every full arm at 96 registers and "
-            "spills the rest; the ranked generation spills nothing and lets "
-            "the same kernels reach 105 registers. d_bias1 is the only arm "
-            "that spills more than the shipped kernel locally, 48 B against "
-            "32 B, so its small negative result carries a local-only "
-            "confound. Spill does not rank the family as a whole: n_nosums "
-            "and e_bias6 both spill 16 B yet measure +6.13 % and -3.34 %. "
-            "e_bias6 spills less than the shipped kernel and is still the "
-            "worst arm, and it adds ISA text on both generations, +252 B "
-            "locally and +340 B on the ranked generation, so its "
-            "reconstruction cost is arithmetic and transfers."
+            "The static budget depends on NA, and the census in my "
+            "pre-registration was NA=5 only. Correcting it: the local "
+            "generation spills at NA=3, 4 and 5 and pins the full arms at 96 "
+            "registers, while the ranked generation spills at NA=5 only. At "
+            "NA=4, the width that carries 66.7 % of streaming time, every "
+            "local arm spills 16 to 48 B and no ranked arm spills at all, so "
+            "the dominant local measurement sits in a spill regime the "
+            "ranked runner does not enter. d_bias1 is the only arm that "
+            "spills more than the shipped kernel locally at NA=4, 48 B "
+            "against 32 B, which is a local-only confound on the arm whose "
+            "result kills the traffic hypothesis."
+        ),
+        "transfer_note": (
+            "The kill still transfers. At NA=4 on the ranked generation "
+            "d_bias1 and e_bias6 are both spill free, which is the regime "
+            "campaign rule 36 was fitted on, and e_bias6 carries 416 B more "
+            "ISA text than d_bias1 there, about +6 %. Rule 36 therefore "
+            "predicts the same ordering on the ranked runner that the local "
+            "timing measured. Locally the reconstruction penalty is also not "
+            "a spill artefact: at NA=4 e_bias6 spills 32 B less than d_bias1 "
+            "and is still 2.83 pp slower."
         ),
     })
     run.finish()
