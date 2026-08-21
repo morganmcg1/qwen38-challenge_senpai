@@ -49,9 +49,11 @@ entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 depth="${MLXFAST_QWEN_MTP_DEPTH:-8}"
+tokens="${MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS:-64}"
 
 MLXFAST_LOCAL_COOL_GATE=0 \
 MLXFAST_QWEN_MTP_DEPTH="${depth}" \
+MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}" \
 MLXFAST_SCORE_PATH="${PWD}/${out_dir}/score.json" \
 ./benchmark-qwen-mtp.sh --local-iterate 2>&1 | tee "${out_dir}/run.log"
 status="${PIPESTATUS[0]}"
@@ -80,6 +82,7 @@ exit_c="$(gpu_temp)"
   echo "gate_qualified_for_timing=false"
   echo "timing_valid=false"
   echo "offered_depth=${depth}"
+  echo "decode_tokens=${tokens}"
   echo "status=${status}"
 } > "${out_dir}/meta.txt"
 
