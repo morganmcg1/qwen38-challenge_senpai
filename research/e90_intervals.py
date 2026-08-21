@@ -31,6 +31,13 @@ TRACE_RE = re.compile(r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+) (.*)$")
 ANCHOR_RE = re.compile(r"^mtp-anchor: (.*)$")
 KV_RE = re.compile(r"(\w+)=([-\d.]+)")
 
+# The eight pure-host phases alphonse sums into HOSTSUM. They exclude the three
+# windows that contain a submission or an eval (`d_submit2`, `verify_graph`,
+# `eval_wall`) and the recurrent snapshot.
+HOST_PHASES = ["d_pre", "d_flush", "d_head1", "d_submit1", "d_chain", "readout",
+               "commit", "upkeep"]
+HOST_STUCK_US = 1500.0
+
 # Ordered anchor names. Consecutive pairs are the intervals of the round.
 ANCHORS = [
     ("t_round0", "t_draft0", "d_pre"),
@@ -201,6 +208,10 @@ def analyse(tag: str, skip_rounds: int) -> dict:
         row["gpu_idle_us_within_d_submit2"] = row["d_submit2_gpu_idle_us"]
         row["interval_sum_us"] = window_sum / 1000.0
         row["tiling_error_us"] = row["interval_sum_us"] - row["round_us"]
+        row["host_phase_sum_us"] = sum(row["%s_us" % p] for p in HOST_PHASES)
+        row["host_phase_idle_us"] = sum(
+            row["%s_gpu_idle_us" % p] for p in HOST_PHASES)
+        row["host_stuck"] = row["host_phase_sum_us"] > HOST_STUCK_US
         if previous_tail is not None:
             gap_lo, gap_hi = previous_tail, anchors["t_round0"]
             gap = max(0, gap_hi - gap_lo)
@@ -211,11 +222,18 @@ def analyse(tag: str, skip_rounds: int) -> dict:
         previous_tail = anchors["t_tail_done"]
         per_round.append(row)
 
-    keys = [k for k in per_round[0] if k not in ("round", "d", "acc")]
-    aggregate = {}
-    for key in keys:
-        values = [r[key] for r in per_round if r.get(key) is not None]
-        aggregate[key] = summarize(values)
+    keys = [k for k in per_round[0] if k not in ("round", "d", "acc", "host_stuck")]
+
+    def aggregate_over(rows: list[dict]) -> dict:
+        out = {}
+        for key in keys:
+            values = [r[key] for r in rows if r.get(key) is not None]
+            out[key] = summarize(values)
+        return out
+
+    aggregate = aggregate_over(per_round)
+    clean = [r for r in per_round if not r["host_stuck"]]
+    stuck = [r for r in per_round if r["host_stuck"]]
 
     return {
         "tag": tag,
@@ -248,16 +266,21 @@ def analyse(tag: str, skip_rounds: int) -> dict:
             )
             if k in meta
         },
+        "host_stuck_threshold_us": HOST_STUCK_US,
+        "frac_rounds_host_stuck": len(stuck) / len(per_round),
         "aggregate": aggregate,
+        "aggregate_clean": aggregate_over(clean) if clean else {},
+        "aggregate_stuck": aggregate_over(stuck) if stuck else {},
+        "rounds_clean": len(clean),
+        "rounds_stuck": len(stuck),
         "per_round": per_round,
     }
 
 
-def print_table(result: dict) -> None:
-    agg = result["aggregate"]
-    print("=== %s (pid %d, %d post-warmup rounds of %d) ==="
-          % (result["tag"], result["pid"], result["rounds_analysed"],
-             result["rounds_total"]))
+def print_stratum(agg: dict, title: str, rounds: int) -> None:
+    if not agg:
+        return
+    print("--- %s (%d rounds) ---" % (title, rounds))
     print("%-14s %12s %12s %12s %7s" % ("interval", "median_us", "gpu_busy_us",
                                         "gpu_idle_us", "idle_%"))
     for _, _, label in ANCHORS:
@@ -266,21 +289,41 @@ def print_table(result: dict) -> None:
         idle = agg["%s_gpu_idle_us" % label]["median"]
         share = 100.0 * idle / span if span else 0.0
         print("%-14s %12.1f %12.1f %12.1f %6.1f%%" % (label, span, busy, idle, share))
-    if "inter_round_gap_us" in agg:
+    if agg.get("inter_round_gap_us", {}).get("n"):
         span = agg["inter_round_gap_us"]["median"]
         busy = agg["inter_round_gap_gpu_busy_us"]["median"]
         idle = agg["inter_round_gap_gpu_idle_us"]["median"]
         print("%-14s %12.1f %12.1f %12.1f %6.1f%%"
               % ("(gap)", span, busy, idle, 100.0 * idle / span if span else 0.0))
     print("%-14s %12.1f %12.1f %12.1f %6.1f%%"
+          % ("HOSTSUM", agg["host_phase_sum_us"]["median"],
+             agg["host_phase_sum_us"]["median"] - agg["host_phase_idle_us"]["median"],
+             agg["host_phase_idle_us"]["median"],
+             100.0 * agg["host_phase_idle_us"]["median"]
+             / agg["host_phase_sum_us"]["median"]
+             if agg["host_phase_sum_us"]["median"] else 0.0))
+    print("%-14s %12.1f %12.1f %12.1f %6.1f%%"
           % ("ROUND", agg["round_us"]["median"], agg["gpu_busy_us_total"]["median"],
              agg["gpu_idle_us_total"]["median"],
              100.0 * agg["gpu_idle_us_total"]["median"] / agg["round_us"]["median"]))
-    print("tiling error median %.3f us (must be 0)" % agg["tiling_error_us"]["median"])
     if agg.get("host_thread_cpu_ns", {}).get("n"):
         print("host_thread_cpu_ns median %.0f (%.1f us)"
               % (agg["host_thread_cpu_ns"]["median"],
                  agg["host_thread_cpu_ns"]["median"] / 1000.0))
+
+
+def print_table(result: dict) -> None:
+    agg = result["aggregate"]
+    print("=== %s (pid %d, %d post-warmup rounds of %d) ==="
+          % (result["tag"], result["pid"], result["rounds_analysed"],
+             result["rounds_total"]))
+    print_stratum(agg, "all post-warmup rounds", result["rounds_analysed"])
+    print_stratum(result["aggregate_clean"], "host state CLEAN "
+                  "(HOSTSUM <= %.0f us)" % HOST_STUCK_US, result["rounds_clean"])
+    print_stratum(result["aggregate_stuck"], "host state STUCK "
+                  "(HOSTSUM > %.0f us)" % HOST_STUCK_US, result["rounds_stuck"])
+    print("frac_rounds_host_stuck %.3f" % result["frac_rounds_host_stuck"])
+    print("tiling error median %.3f us (must be 0)" % agg["tiling_error_us"]["median"])
     print("buffers: %s, union intervals %d, rounds with no device time %d"
           % (result["buffer_stats"], result["union_intervals"],
              result["rounds_without_gpu_busy"]))
