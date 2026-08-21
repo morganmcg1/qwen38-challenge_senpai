@@ -264,6 +264,311 @@ template <typename T>
 }
 
 // ---------------------------------------------------------------------------
+// e: neither the weight load nor the extract-and-fma block. Completes the 2x2
+// so the load side and the arithmetic side are separately identifiable.
+// ---------------------------------------------------------------------------
+
+template <typename T>
+[[kernel]] void e107_e_floor(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* biases [[buffer(2)]],
+    const device T* x [[buffer(3)]],
+    device T* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    const constant ulong& wseed [[buffer(7)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 32;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;
+
+  thread float result[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    result[r] = 0.0f;
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    thread ulong packed[rows_per_simd];
+    thread float scale_local[rows_per_simd];
+    thread float bias_local[rows_per_simd];
+    const ulong lane_mix =
+        wseed ^ (ulong(simd_lid) * 0x2545F4914F6CDD1Dul) ^
+        (ulong(out_row) * 0xD1342543DE82EF95ul);
+    for (int r = 0; r < rows_per_simd; r++) {
+      const int row = out_row + r;
+      packed[r] = lane_mix + ulong(k + r) * 0x9E3779B97F4A7C15ul;
+      const int group_index =
+          row * in_vec_size_g + k / 64 + (simd_lid * values_per_thread) / 64;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = biases[group_index];
+    }
+
+    thread float x0[values_per_thread];
+    const device T* xm = x + k + simd_lid * values_per_thread;
+    float sum = 0.0f;
+    for (int i = 0; i < values_per_thread; i += 4) {
+      x0[i] = static_cast<float>(xm[i]);
+      x0[i + 1] = static_cast<float>(xm[i + 1]);
+      x0[i + 2] = static_cast<float>(xm[i + 2]);
+      x0[i + 3] = static_cast<float>(xm[i + 3]);
+      sum += xm[i] + xm[i + 1] + xm[i + 2] + xm[i + 3];
+    }
+
+    for (int r = 0; r < rows_per_simd; r++) {
+      const float accum = sum * float(packed[r] & 0x03ul);
+      result[r] += scale_local[r] * accum + sum * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    const float reduced = simd_sum(result[r]);
+    if (simd_lid == 0) {
+      y[out_row + r] = static_cast<T>(reduced);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rung 1 candidate extractions. All three keep the shipped load pattern, the
+// shipped k-block structure and the shipped summation order, so each
+// elementary product and every partial sum is unchanged and the output is
+// expected to be BIT-IDENTICAL to a_shipped.
+//
+//   h_split   one 8-byte uint2 load; the value loop shifts a 32-bit word, so
+//             no 64-bit shift is ever issued (advisor arm B).
+//   f_mask    h_split plus mask-in-place with x pre-scaled by 4^-j, which is
+//             exact in FP32 because the scaling is a power of two, so the
+//             shift chain disappears entirely (advisor arm A composed with B).
+//   g_bfe     h_split with `extract_bits`, the hardware bitfield extract, in
+//             place of the shift-and-mask pair.
+// ---------------------------------------------------------------------------
+
+// 4^-j built directly from the FP32 exponent field, so it is exact and costs
+// no divide even when the surrounding loop is not unrolled.
+inline float e107_inv_pow4(int j) {
+  return as_type<float>(uint((127 - 2 * j) << 23));
+}
+
+#define E107_LOAD_BLOCK()                                                     \
+  thread uint2 packed[rows_per_simd];                                         \
+  thread float scale_local[rows_per_simd];                                    \
+  thread float bias_local[rows_per_simd];                                     \
+  for (int r = 0; r < rows_per_simd; r++) {                                   \
+    const int row = out_row + r;                                              \
+    const device uint8_t* ws = reinterpret_cast<const device uint8_t*>(w) +   \
+        row * in_vec_size_w + k / 4 + simd_lid * bytes_per_lane;              \
+    packed[r] = *reinterpret_cast<const device uint2*>(ws);                   \
+    const int group_index =                                                   \
+        row * in_vec_size_g + k / 64 + (simd_lid * values_per_thread) / 64;   \
+    scale_local[r] = scales[group_index];                                     \
+    bias_local[r] = biases[group_index];                                      \
+  }
+
+template <typename T>
+[[kernel]] void e107_h_split(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* biases [[buffer(2)]],
+    const device T* x [[buffer(3)]],
+    device T* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    const constant ulong& wseed [[buffer(7)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 32;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 4;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;
+
+  thread float result[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    result[r] = 0.0f;
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    E107_LOAD_BLOCK()
+
+    thread float x0[values_per_thread];
+    const device T* xm = x + k + simd_lid * values_per_thread;
+    float sum = 0.0f;
+    for (int i = 0; i < values_per_thread; i += 4) {
+      x0[i] = static_cast<float>(xm[i]);
+      x0[i + 1] = static_cast<float>(xm[i + 1]);
+      x0[i + 2] = static_cast<float>(xm[i + 2]);
+      x0[i + 3] = static_cast<float>(xm[i + 3]);
+      sum += xm[i] + xm[i + 1] + xm[i + 2] + xm[i + 3];
+    }
+
+    for (int r = 0; r < rows_per_simd; r++) {
+      float accum = 0.0f;
+      #pragma unroll
+      for (int j = 0; j < 16; j++) {
+        accum += x0[j] * float((packed[r].x >> (2 * j)) & 0x03u);
+      }
+      #pragma unroll
+      for (int j = 0; j < 16; j++) {
+        accum += x0[16 + j] * float((packed[r].y >> (2 * j)) & 0x03u);
+      }
+      result[r] += scale_local[r] * accum + sum * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    const float reduced = simd_sum(result[r]);
+    if (simd_lid == 0) {
+      y[out_row + r] = static_cast<T>(reduced);
+    }
+  }
+}
+
+template <typename T>
+[[kernel]] void e107_f_mask(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* biases [[buffer(2)]],
+    const device T* x [[buffer(3)]],
+    device T* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    const constant ulong& wseed [[buffer(7)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 32;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 4;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;
+
+  thread float result[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    result[r] = 0.0f;
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    E107_LOAD_BLOCK()
+
+    // x0 holds the activation pre-divided by 4^j inside its 16-value word.
+    // 4^-j is a power of two, so the division is exact in FP32 and
+    // (x / 4^j) * (v * 4^j) rounds exactly like x * v.
+    thread float x0[values_per_thread];
+    const device T* xm = x + k + simd_lid * values_per_thread;
+    float sum = 0.0f;
+    #pragma unroll
+    for (int i = 0; i < values_per_thread; i += 4) {
+      const float x00 = static_cast<float>(xm[i]);
+      const float x01 = static_cast<float>(xm[i + 1]);
+      const float x02 = static_cast<float>(xm[i + 2]);
+      const float x03 = static_cast<float>(xm[i + 3]);
+      const int j = i & 15;
+      x0[i] = x00 * e107_inv_pow4(j);
+      x0[i + 1] = x01 * e107_inv_pow4(j + 1);
+      x0[i + 2] = x02 * e107_inv_pow4(j + 2);
+      x0[i + 3] = x03 * e107_inv_pow4(j + 3);
+      sum += x00 + x01 + x02 + x03;
+    }
+
+    for (int r = 0; r < rows_per_simd; r++) {
+      float accum = 0.0f;
+      #pragma unroll
+      for (int j = 0; j < 16; j++) {
+        accum += x0[j] * float(packed[r].x & (0x03u << (2 * j)));
+      }
+      #pragma unroll
+      for (int j = 0; j < 16; j++) {
+        accum += x0[16 + j] * float(packed[r].y & (0x03u << (2 * j)));
+      }
+      result[r] += scale_local[r] * accum + sum * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    const float reduced = simd_sum(result[r]);
+    if (simd_lid == 0) {
+      y[out_row + r] = static_cast<T>(reduced);
+    }
+  }
+}
+
+template <typename T>
+[[kernel]] void e107_g_bfe(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* biases [[buffer(2)]],
+    const device T* x [[buffer(3)]],
+    device T* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    const constant ulong& wseed [[buffer(7)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  constexpr int rows_per_simd = 4;
+  constexpr int values_per_thread = 32;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int bytes_per_lane = 8;
+  const int in_vec_size_w = in_vec_size / 4;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * rows_per_simd;
+
+  thread float result[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    result[r] = 0.0f;
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {
+    E107_LOAD_BLOCK()
+
+    thread float x0[values_per_thread];
+    const device T* xm = x + k + simd_lid * values_per_thread;
+    float sum = 0.0f;
+    for (int i = 0; i < values_per_thread; i += 4) {
+      x0[i] = static_cast<float>(xm[i]);
+      x0[i + 1] = static_cast<float>(xm[i + 1]);
+      x0[i + 2] = static_cast<float>(xm[i + 2]);
+      x0[i + 3] = static_cast<float>(xm[i + 3]);
+      sum += xm[i] + xm[i + 1] + xm[i + 2] + xm[i + 3];
+    }
+
+    for (int r = 0; r < rows_per_simd; r++) {
+      float accum = 0.0f;
+      #pragma unroll
+      for (int j = 0; j < 16; j++) {
+        accum += x0[j] * float(extract_bits(packed[r].x, 2 * j, 2));
+      }
+      #pragma unroll
+      for (int j = 0; j < 16; j++) {
+        accum += x0[16 + j] * float(extract_bits(packed[r].y, 2 * j, 2));
+      }
+      result[r] += scale_local[r] * accum + sum * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    const float reduced = simd_sum(result[r]);
+    if (simd_lid == 0) {
+      y[out_row + r] = static_cast<T>(reduced);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // d: idealised coalesced stream, for the achievable-bandwidth reference.
 // ---------------------------------------------------------------------------
 
@@ -292,3 +597,7 @@ template <typename T>
 instantiate_kernel("a_shipped", e107_a_shipped, bfloat)
 instantiate_kernel("b_constw", e107_b_constw, bfloat)
 instantiate_kernel("c_loadonly", e107_c_loadonly, bfloat)
+instantiate_kernel("e_floor", e107_e_floor, bfloat)
+instantiate_kernel("h_split", e107_h_split, bfloat)
+instantiate_kernel("f_mask", e107_f_mask, bfloat)
+instantiate_kernel("g_bfe", e107_g_bfe, bfloat)

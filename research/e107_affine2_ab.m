@@ -35,9 +35,14 @@ static const int kN = 98336;         // out_vec_size
 static const int kGroup = 64;
 static const int kRowsPerTG = 8;     // 2 simdgroups x 4 rows
 
-enum { kArmA = 0, kArmB, kArmC, kArmCount };
+enum { kArmA = 0, kArmB, kArmC, kArmE, kArmH, kArmF, kArmG, kArmCount };
 static const char *kArmNames[kArmCount] = {"a_shipped", "b_constw",
-                                           "c_loadonly"};
+                                           "c_loadonly", "e_floor",
+                                           "h_split",   "f_mask",
+                                           "g_bfe"};
+// Arms that keep every elementary product and the shipped summation order, so
+// their whole output must be bit-identical to a_shipped.
+static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 1, 1, 1};
 
 static inline uint16_t f32_to_bf16(float f) {
   uint32_t u;
@@ -408,6 +413,47 @@ int main(int argc, char **argv) {
               "\"restored_rel\": %.6e, \"detected\": %s},\n",
               ctrl_rel, restored_rel,
               (ctrl_rel > 2.0e-2 && restored_rel < 2.0e-2) ? "true" : "false");
+    }
+
+    // --- arm-versus-shipped exactness, before any timing -------------------
+    {
+      uint16_t *ref = (uint16_t *)malloc(y_bytes);
+      int slice = 0;
+      runArm(queue, pso[kArmA], w, w_copies, scales, biases, x, y, seed, 1, 1,
+             &slice);
+      memcpy(ref, y.contents, y_bytes);
+      fprintf(out, "  \"arm_exactness\": [\n");
+      for (int a = 0; a < kArmCount; a++) {
+        memset(y.contents, 0, y_bytes);
+        slice = 0;
+        runArm(queue, pso[a], w, w_copies, scales, biases, x, y, seed, 1, 1,
+               &slice);
+        const uint16_t *got = (const uint16_t *)y.contents;
+        size_t differing = 0;
+        double worst = 0.0;
+        for (int i = 0; i < kN; i++) {
+          if (got[i] != ref[i]) {
+            differing++;
+            const double e = fabs(bf16_to_f32(got[i]) - bf16_to_f32(ref[i]));
+            if (e > worst) worst = e;
+          }
+        }
+        const int ok = kExpectBitExact[a] ? (differing == 0) : 1;
+        fprintf(stderr,
+                "e107_affine2_ab: exactness %-10s differing=%zu/%d worst=%.3e%s\n",
+                kArmNames[a], differing, kN, worst,
+                (kExpectBitExact[a] && differing) ? "   <-- BIT-EXACT VIOLATION"
+                                                  : "");
+        fprintf(out,
+                "%s    {\"arm\":\"%s\",\"expect_bit_exact\":%s,"
+                "\"differing\":%zu,\"total\":%d,\"worst_abs\":%.6e,"
+                "\"pass\":%s}",
+                a ? ",\n" : "", kArmNames[a],
+                kExpectBitExact[a] ? "true" : "false", differing, kN, worst,
+                ok ? "true" : "false");
+      }
+      fprintf(out, "\n  ],\n");
+      free(ref);
     }
 
     // --- warm, then time --------------------------------------------------
