@@ -1201,10 +1201,12 @@ public final class Qwen36MTPBlockSession {
         // stays out of `round_us`. See Qwen36MTPHostStateProbe.
         var e89ProbeNanos: UInt64 = 0
         var e89Usage0 = Qwen36MTPHostStateProbe.Usage()
+        var e89Thread0 = Qwen36MTPHostStateProbe.ThreadState()
         if Qwen36MTPHostStateProbe.enabled {
             Qwen36MTPHostStateProbe.applyForcedQoS()
             e89ProbeNanos = Qwen36MTPHostStateProbe.cpuProbeNanos()
             e89Usage0 = Qwen36MTPHostStateProbe.usage()
+            e89Thread0 = Qwen36MTPHostStateProbe.threadState()
         }
         // Local-only phase trace (MLXFAST_QWEN_MTP_TRACE=1): three boundaries
         // split a round into head-chain graph build, verify graph build, and
@@ -1616,7 +1618,8 @@ public final class Qwen36MTPBlockSession {
                 ? Qwen36MTPHostStateProbe.roundFields(
                     probeNanos: e89ProbeNanos,
                     delta: Qwen36MTPHostStateProbe.usage() - e89Usage0,
-                    legWallNanos: tTailDone - e89LegStartNanos)
+                    legWallNanos: tTailDone - e89LegStartNanos,
+                    threadStart: e89Thread0)
                 : ""
             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
                 + "acc=\(acceptedCount) "

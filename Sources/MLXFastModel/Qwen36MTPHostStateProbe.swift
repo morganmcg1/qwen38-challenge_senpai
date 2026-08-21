@@ -122,6 +122,12 @@ enum Qwen36MTPHostStateProbe {
 
     // MARK: - thread policy
 
+    /// `proc_pid_rusage` reports the WHOLE PROCESS, and the MLX worker and
+    /// completion threads contribute to it. `pth_user_time` and
+    /// `pth_system_time` are the calling thread's own CPU nanoseconds, which
+    /// is what separates a thread that runs slowly from a thread that blocks:
+    /// a slow thread burns CPU for the whole inflated phase, a blocked thread
+    /// does not.
     struct ThreadState {
         var qos: UInt32 = 0
         var qosRelativePriority: Int32 = 0
@@ -130,6 +136,9 @@ enum Qwen36MTPHostStateProbe {
         var basePriority: Int32 = 0
         var runState: Int32 = 0
         var machID: UInt64 = 0
+        var userNanos: UInt64 = 0
+        var systemNanos: UInt64 = 0
+        var cpuUsage: Int32 = 0
     }
 
     static func threadState() -> ThreadState {
@@ -152,6 +161,9 @@ enum Qwen36MTPHostStateProbe {
             state.currentPriority = info.pth_curpri
             state.basePriority = info.pth_priority
             state.runState = info.pth_run_state
+            state.userNanos = info.pth_user_time
+            state.systemNanos = info.pth_system_time
+            state.cpuUsage = info.pth_cpu_usage
         }
         return state
     }
@@ -211,10 +223,14 @@ enum Qwen36MTPHostStateProbe {
     /// `e86r1-default-1` changed state at round 34 and a two-point sample at
     /// rounds 3 and 40 would have read it as uniformly slow.
     static func roundFields(
-        probeNanos: UInt64, delta: Usage, legWallNanos: UInt64
+        probeNanos: UInt64, delta: Usage, legWallNanos: UInt64,
+        threadStart: ThreadState
     ) -> String {
         let state = threadState()
-        return "e89_probe_ns=\(probeNanos) "
+        return "e89_thr_user_ns=\(state.userNanos &- threadStart.userNanos) "
+            + "e89_thr_sys_ns=\(state.systemNanos &- threadStart.systemNanos) "
+            + "e89_thr_cpu=\(state.cpuUsage) "
+            + "e89_probe_ns=\(probeNanos) "
             + "e89_instr=\(delta.instructions) "
             + "e89_cycles=\(delta.cycles) "
             + "e89_user_ns=\(machTicksToNanos(delta.userTicks)) "
