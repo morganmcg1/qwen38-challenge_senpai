@@ -1,17 +1,22 @@
 # SENPAI Research State
 
-- **2026-08-21 13:20 UTC.** Campaign active, no round limit.
+- **2026-08-21 15:05 UTC.** Campaign active, no round limit.
 - 🔴🔴🔴 **WE HELD THE FRONTIER FOR NINE MINUTES AND LOST IT TWICE.**
   `f04b102e` was promoted at 11:13:00Z with **3.32824629**. hadakang's
   `276aa2c2` took it at 11:22:52Z with **3.33849825** on a bare RESAMPLE of our
   own tree. vibecodooor's `51b9bf85` took it at 13:00:36Z with **3.35025879**
-  on a real one-dispatch rerank fusion built on our tree. We are **rank 3 by
+  on a real one-dispatch rerank fusion built on our tree. We are **rank 6 by
   published score** and **rank 3 by serial-free** (ours 3.33711595, hadakang
   3.33753284, vibecodooor 3.33979539).
+- 🔴 **`87b654b2` (edward, margin-gated one-bit clamp) is VALIDATING** since
+  13:47:16Z. Expected receipt window 14:45Z–15:50Z. Pre-registered reading:
+  ≥3.42 full transfer, 3.36–3.42 half to three quarters, 3.33–3.36 weak,
+  3.30–3.33 near null, <3.30 refuted.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
-- Campaign base: `ad8403f1fcca4c3cc5b2f6aa7239ea7e40c81d1a`, the merge of PR
-  #100 (E98), on top of `0c7c3930` (ledger 248), `d5075d4c` (PR #89),
+- Campaign base: `5c2c3b8b613841d0d9677d4540e6a08e8bd40759`, the merge of PR
+  #102 (E100), on top of `97511edb` (PR #104), `9e6d1563` (ledger 249),
+  `ad8403f1` (PR #100), `0c7c3930` (ledger 248), `d5075d4c` (PR #89),
   `cd0a89da` (PR #99), `4d937ce3` (PR #97) and `09315fac` (PR #98).
 - ✅ **The advisor branch CONTAINS the tree that all three crowns are built
   on.** `git grep` for `buildDerivedClusterIndex` and `qwen_mtp_probe_sort`
@@ -29,6 +34,87 @@
 - 🔴 **The `41bad1c6` rerank kernel is queued for import by thorfinn (E101).**
   Take the `Qwen35.swift` hunks only; the manifest hunk is hadakang's resample
   marker and carries no scored behaviour.
+
+## 🔴🔴🔴 FINDING 31. THE ROUND IS AN IDENTITY IN `G / rate(partition)`
+
+```
+round_us  =  G  x  14.41235 GB  /  rate(partition)
+```
+
+Reproduces every measured local round to better than 0.03 %. This is not a fit;
+it is Finding 21 with the residual folded into `rate`. Its value is that it
+separates the two things a partition change can do: change `G`, or change
+`rate`.
+
+| partition | M | local GB/s | vs NA=1 | ranked GB/s | vs NA=1 |
+|---|--:|--:|--:|--:|--:|
+| `[1]` | 1 | 223.6 | 1.000 | 462.3 | 1.000 |
+| `[2]` | 2 | 206.6 | 0.924 | 409.8 | 0.886 |
+| `[3]` | 3 | 192.7 | 0.862 | 368.0 | 0.796 |
+| `[4]` | 4 | 167.1 | 0.747 | 333.9 | 0.722 |
+| `[3+2]` | 5 | 228.6 | 1.022 | 542.8 | 1.174 |
+| `[3+3]` | 6 | 209.1 | 0.935 | 477.7 | 1.033 |
+| `[4+3]` | 7 | 191.6 | 0.857 | 426.6 | 0.923 |
+| `[4+4]` | 8 | 175.8 | 0.786 | 385.3 | 0.833 |
+| `[3+3+3]` | 9 | 211.9 | 0.948 | — | — |
+
+Local one-group overhead against `max(DRAM floor 52,792 µs, FMA floor)`:
+NA=1 **1.221×**, NA=2 1.322×, NA=3 1.416×, NA=4 1.634×, NA=5 **1.959×**
+(103,404 µs measured post-collapse). At NA=5 the kernel reads at ~55 % of DRAM
+peak and computes at ~47 % of the FMA ceiling **simultaneously** — a latency or
+issue-rate problem, not a resource wall, and therefore repairable.
+
+**Prize:** NA=5 at the 1.221× overhead NA=1 already demonstrates would be
+64,459 µs against 103,404 today, i.e. **−37.7 % on 24.1 % of rounds**.
+**ASSIGNED as E104 / PR #106.**
+
+## 🔴🔴🔴 FINDING 32. THE GROUP-SCALING FACTOR — WHY FEWER WEIGHT STREAMS PAYS LOCALLY AND NOT ON THE RANKED BOX
+
+Collapsing M=5 from `[3+2]` to `[5]` halves the bytes and removes one concurrent
+instruction stream. Under Finding 31 the trade is exact:
+
+```
+time([3+2]) = 2W / r2      time([5]) = W / r1
+collapse gain = 1 - r2/(2 r1) = 1 - A/2 ,   A = r2 / r1
+```
+
+`A = 2` means two x-groups deliver exactly twice one group's aggregate
+bandwidth, so halving the byte count buys **nothing**. The entire value of the
+fewer-streams theme is the distance of `A` below 2.
+
+| | A | collapse gain |
+|---|--:|--:|
+| local, from alphonse's measured round (139.4 GB/s one-group) | **1.640** | **+18.0 %** |
+| ranked, route 1: group-scaling advantage, **no receipt data** | **2.040** | −2.0 % |
+| ranked, route 2: the two rival receipts | **1.994** [1.964, 2.024] | −0.3 ± 1.5 % |
+
+Route 1 uses only our own ranked cost curve: `[3]`→`[3+2]` scales aggregate
+bandwidth ×1.186 locally and ×1.475 ranked, an advantage of ×1.244. Route 2 is
+`dW = −0.070 ± 0.360 pp` over `ca9251b8` and `3ff80e86`, which shipped exactly
+this mechanism. **The two routes are independent and they agree.**
+
+Falsification at an M=5 share of 0.24 of G=2 rounds: if the ranked box kept its
+own NA ladder, `dW` would be −1.65 pp (**4.4 σ**); if it behaved like the local
+box, −4.32 pp (**11.8 σ**). Robust to the share — even 0.10 gives ~1.9 σ.
+
+**Consequences:**
+
+1. **The ranked G boundary does NOT move to M=6.** Edward's interim-7
+   composition prediction is refuted; `marginGateDepth` stays at **3** for
+   anything submitted.
+2. **New general rule for the stop list:** any "fewer weight streams" idea must
+   be priced on the **ranked** group-scaling factor, not the local one. They
+   differ by 1.24×, which is the difference between +18 % and 0 %.
+3. **E100 stays merged** — a large, clean, correctly measured local winner worth
+   ≈ −0.03 % ± 0.40 % published once the R=91→98 register tax (+0.0974 %) nets
+   against the width benefit.
+4. **`rate(NA)` is the largest remaining lever.** One wide ranked x-group at
+   NA=5 streams **272 GB/s** while two together stream **543 GB/s**: the machine
+   has ≥ 2× the outstanding-load capacity one wide group uses.
+
+Ranked prize if `rate(NA)` is repaired (G=2 leg effect at share 0.24):
+×1.10 → −2.25 % · ×1.25 → −4.86 % · ×1.50 → −8.05 % · ×1.75 → −10.33 % ·
+×2.00 → −12.04 %. **Even a 10 % lift is 8× the published detection floor.**
 
 ## 🔴 FINDING 23. BYTE-SHARE PRICING OVER-PRICES BY ABOUT 5x IN THIS KERNEL FAMILY
 

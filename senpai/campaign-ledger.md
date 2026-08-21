@@ -31271,3 +31271,745 @@ per-round latency - never from the weight path. The cumulative promoted ledger
 agrees: proposal head +38.1 %, schedule +29.0 %, runtime +21.7 %, kernel
 +16.1 %, and 140 of 154 editable files have never been changed by any
 promotion.
+
+## 250. 2026-08-21 14:35 UTC - the stale build, the first valid E100 arm, and a ranked instrument four times finer than the published floor
+
+Three things happened in the ninety minutes after entry 249. Edward put the
+margin gate on the official runner. Alphonse proved that every end-to-end leg
+he had reported for E100 had timed a stale binary, forced the build, and
+measured a **−12.810 %** local gain at depth 4. And I built a board instrument
+that reads a width-specific mechanism off the ranked runner at 0.509 pp, then
+used it to lower my own pre-registration for the mechanism alphonse is about to
+submit.
+
+### 250.1 FINDING 28 - the harness never rebuilds the worker binary, and the JIT quantized family is served from it
+
+Alphonse, PR #102, comment `e100-retraction-and-first-valid-arm`.
+
+For the `quantized` kernel family the metallib is dead. The chain is:
+
+```
+jit_kernels.cpp:915   get_quantized_kernel() -> d.get_library(lib_name, builder)
+device.cpp:770        that overload calls build_library_(builder()) directly and
+                      never opens default.metallib
+metal::quantized()    the R"preamble(...)" literal in mlx-generated/quantized.cpp,
+                      linked into .build-worker/release/mlxfast-runtime-worker
+Package.swift:284     excludes nojit_kernels.cpp and compiles jit_kernels.cpp
+```
+
+So the kernel source that actually runs is the string compiled into the worker
+binary. `benchmark-qwen-mtp.sh:200-206` extracts only
+`metallib_rebuild_required()` from `benchmark.sh`; it never extracts
+`swift_build_required()` at `benchmark.sh:1791-1806` and never reaches the
+worker build at `benchmark.sh:1842`. A run therefore rebuilds `mlx.metallib`,
+reports success, and times the previous binary.
+
+Timestamp proof read at 13:17 GMT: twin `quantized.cpp` 13:03:36, `mlx.metallib`
+13:04:36, object `quantized.cpp.o` **2026-08-20 21:11:03**, worker **2026-08-21
+10:44:44**. A forced `swift build --scratch-path .build-worker` flipped the
+template from `<T,5,3,true>` to `<T,5,5,true>` and produced worker
+`2a5d30ab64ac6430d05071a58f687be033b7f88842c9c62f594f45ea20c120a7`.
+
+**This is harness defect 12 and it retracts four reported E100 nulls**
+(+0.167 %, −0.098 %, +0.095 %, −0.016 %). They are one unchanged build measured
+eight times. The 17x to 840x probe-to-end-to-end discrepancy is withdrawn.
+
+Standing rule adopted for the campaign: **no timed kernel leg may be reported
+unless `senpai/rebuild-and-assert-worker.sh` has asserted the arm string inside
+the binary immediately before the leg, and the analysis refuses any leg whose
+binary template counts do not match its arm.** Alphonse implemented this in
+`research/e100_e2e_leg.sh` at commit `64b37243`; `meta.txt` now carries
+`worker_mtime_pre/post`, `worker_sha256_pre/post` and four template counts.
+
+Trap for anyone reusing that guard: it matches with `grep -c --`, so the needle
+is a regular expression. `NA in [2, 5]` is a character class and matches
+nothing.
+
+Triage of what else the defect could have touched, so no student spends legs on
+it: **E76 sections 3 to 5 are not at risk** (arms separated by +14.16 % to
++64.71 %, and three independent ranked trees agree); **E97 and E98 are not at
+risk** (in-process JIT pipelines built inside the measuring process); **E102 is
+not at risk** (CPU only, no GPU timing). Only E100 was affected.
+
+**ADVISOR ERROR 56 IS WITHDRAWN.** My f1 pre-registration for E100 was −6 % to
+−12 % at depth 4 and −0.5 % to −1.5 % at depth 8. The valid measurements are
+−12.810 % and −0.775 %. The band was right; the instrument was broken.
+
+### 250.2 E100 closed locally - four instruments, two directions, one number
+
+Alphonse, PR #102, comments `e100-base-arm-confirms-large-win`,
+`e100-abba-closed-4of4-three-sessions`, `e100-control2-dose-leg-result`.
+Host `ip-10-231-2-22.ec2.internal`, Apple M4 Pro `applegpu_g16s`, 48 GiB.
+
+Every leg: forced and witnessed worker build, `all_tokens_matched=true`,
+`residual_divergence_count=0`, `worker_sha256_pre == worker_sha256_post`,
+`git_dirty_build=0`.
+
+| session | tok | depth | base `b1` | base `b2` | collapse `a1` | collapse `a2` | delta | worst within-arm spread |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| `d8` | 64 | 8 | 0.086984 | 0.087191 | 0.086673 | 0.086814 | **−0.395 %** | 0.238 % |
+| `w512` | 512 | 8 | 0.033716 | 0.033717 | 0.033474 | 0.033437 | **−0.775 %** | 0.112 % |
+| `w512d4` | 512 | 4 | 0.037175 | 0.037196 | 0.032427 | 0.032417 | **−12.810 %** | **0.057 %** |
+
+`mean_draft` and `accept` are identical to the last digit in every arm of every
+session, so the token trajectory does not move: `d8` 5.400000 / 1.000, `w512`
+6.376623 / 0.885947, `w512d4` 3.936937 / 0.919908. The serial leg does not move
+either, which it cannot, because depth-0 decoding runs at `M = 1`.
+
+Round-level, with a pooled prefill of 4.031 s and a serial round of 65.83 ms:
+
+| session | M̄ | rounds | base round | collapse round | delta |
+|---|--:|--:|--:|--:|--:|
+| `d8` | 6.400 | 10 | 154.28 ms | 152.08 ms | −1.427 % |
+| `w512` | 7.377 | 77 | 171.85 ms | 170.11 ms | −1.011 % |
+| `w512d4` | 4.937 | 111 | 135.21 ms | 113.24 ms | **−16.250 %** |
+
+Base width law over the six base legs: `round_ms = 61.08 + 14.86 * M`.
+
+**The strongest internal check is that all three sessions recover the same
+per-`M = 5` saving.** Divide each session's absolute round saving by the
+fraction of its rounds that run at `M = 5`: `d8` ~22 ms, `w512` ~22 ms,
+`w512d4` ~23.4 ms, against the isolated probe's −25.3 ms. Three width mixes
+differing by a factor of twelve in reach, and one number.
+
+**The dose control is the best single measurement in the experiment.** Commit
+`e17f1561` moved `case 6` from `<T,6,3,true>` to `<T,6,2,true>`, splitting
+`M = 6` into three x-groups - a positive dose where the collapse is a negative
+one. Binary witness `worker_m6_ipg2=1`, `worker_m6_ipg3=0`. Result +1.345 % on
+seconds per token, +7.50 ms per round, +4.860 %. Then:
+
+```
+measured    +7.50 ms per round over the whole d8 session
+one stream   22.0 ms, taken from the collapse arm at M = 5
+implied M = 6 round share   7.50 / 22.0  =  34.1 %
+ledger 207 local M = 6 width share       =  33.4 %
+```
+
+Nothing was fitted. The collapse arm supplied the per-stream cost, ledger 207
+supplied the width share independently, and the dose leg closed the loop to
+0.7 pp. **Reading (a), "the scored decode never reaches the wide cross-row
+dispatch", is dead. Reading (b), "the extra passes are cache-served", is dead.
+Reading (c) is confirmed in both directions.** Finding 21's DRAM-floor picture
+holds at `G = 2`.
+
+The dose arm was reverted at `c049485c`. The submitted diff is exactly four
+lines in two files, once per twin:
+
+```
+-  static_assert(NA >= 2 && NA <= 4, "wide multi-row QMV supports NA in [2, 4]");
++  static_assert(NA >= 2 && NA <= 5, "wide multi-row QMV supports NA in [2, 5]");
+-          qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>(
++          qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>(
+```
+
+Honesty flags on every leg: `harness=local`, `timing_valid=false`,
+`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`,
+`MLXFAST_LOCAL_COOL_GATE=0`. Entry-temperature spread across the twelve legs
+14.5 C, exit 58.8 to 61.6 C. The two base `w512` legs entered at 50.0 C and
+51.1 C and differ by 0.0003 %, which bounds thermal sensitivity far below the
+effect.
+
+### 250.3 FINDING 29 - the within-run width tax, a 0.509 pp ranked instrument for zero GPU seconds
+
+Committed as `research/board_width_tax.py`.
+
+For one scored run form
+
+```
+W = mean over the five G=2 prompts of log(mtp_seconds_per_token)
+  - mean over the three G=1 prompts of log(mtp_seconds_per_token)
+```
+
+and compare it only inside a cohort of runs whose eight per-prompt
+`effective_mean_draft_len` values are bit-identical, so every run in the cohort
+offers the same eight verify-width mixes.
+
+Why it is sharp:
+
+1. It uses only the candidate leg, so the serial-baseline lottery of Finding 20
+   cannot enter it.
+2. Any run-level common shift cancels exactly. The FACT 2 measurement mode,
+   thermal state and a uniform per-kernel register tax all scale both terms.
+3. The FACT 2 mode very nearly cancels as well. It costs about 0.601 ms per
+   *drafting* round: about +1.0 % of a `G = 2` round, and +1.5 % on drama,
+   +1.44 % on travel and +0.15 % on plutarch, mean +1.03 %, on the `G = 1` side.
+
+**Measured resolution: `sd(W) = 0.509 pp` over a cohort of 215 runs at or above
+3.15 sharing one schedule.** That implies a per-prompt residual of 0.697 %
+after the run effect is removed, consistent with alphonse's rung 0 corpus,
+where one whole candidate leg carries 1.077 %. The instrument is about four
+times finer than the Finding 6 published floor on the same quantity.
+
+A second observation from the same cohort machinery, worth its own follow-up:
+in the 79-run **crown-schedule** cohort the per-prompt cohort standard
+deviations are plutarch **0.088 %**, drama 0.964 %, travel 1.188 %, beagle
+0.876 %, republic 0.869 %, essays 0.820 %, medicine 0.860 %, botany 1.027 %.
+Plutarch draws only 38 drafting rounds out of 487, so its candidate leg is
+almost pure `M = 1` decoding and is nearly immune to the FACT 2 mode.
+**Within a homogeneous cohort the plutarch candidate leg resolves a change to
+the non-drafting decode path at about 0.09 %.** That is the class of broad
+target-runtime improvement that cancels in the local serial-to-MTP ratio and
+that we have never been able to price. It should be built out next.
+
+### 250.4 Two rivals already shipped alphonse's exact four lines, and the instrument reads them as null
+
+Read directly out of the submission branches, not from a census note.
+
+`upstream/submissions/3ff80e86-...`, `quantized.h`, in the
+`out_vec_size >= 4096` switch:
+
+```
+        case 5:
+          // Single weight stream: one x-group claims all 5 verify rows
+          // (was IPG 3, i.e. 3+2 = two streams). Bit-exact to the vec path.
+          qmv_fast_crossrow_affine4_g64_mN<T, 5, 5, true>(
+```
+
+Cases 6 through 9 are the shipped `<T,6,3>`, `<T,7,4>`, `<T,8,4>`, `<T,9,3>`.
+**`3ff80e86` collapses `M = 5` and nothing else**, reached through a private
+`_mN` family so the shared `_wide` stays at `NA <= 4`. `ca9251b8` at line 1939
+is `qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>` with `case 6` untouched:
+alphonse's four lines plus `<T,9,5,true>` plus four unrelated editable files.
+
+Both trees share one schedule, so they sit in the same 215-run cohort. Shape =
+per-prompt log deviation from the cohort, minus the common shift measured on
+plutarch, drama and travel.
+
+| prompt | M | `3ff80e86` shape | `ca9251b8` shape |
+|---|--:|--:|--:|
+| beagle | 5.533 | −0.297 pp | +0.169 pp |
+| medicine | 5.768 | −0.310 pp | −0.174 pp |
+| republic | 6.270 | −0.052 pp | +0.389 pp |
+| essays | 6.425 | −0.315 pp | +0.481 pp |
+| botany | 6.776 | −0.540 pp | −0.052 pp |
+| **mean** | | **−0.303 pp** | **+0.163 pp** |
+| `W` z | | −0.59 | +0.32 |
+
+Four readings.
+
+**(a) The f2 claim that both clean ranked controls point the wrong way is
+withdrawn.** They point in opposite directions and `3ff80e86` is favourable.
+
+**(b) Neither is individually significant.** Both sit inside ±0.6 sd and their
+mean is **−0.070 ± 0.360 pp**, consistent with zero.
+
+**(c) Zero is not what the mechanism predicts.** The ranked `M = 5` round is
+53,108 us and the second stream at that width is worth 5,951 us, 11.21 % of the
+round. At alphonse's realisation factor of 0.72 that is 8.07 % per `M = 5`
+round. These two trees run at `M̄ = 5.53` to `6.78`, so an `M = 5` share of 15
+to 20 % predicts a shape of −1.2 to −1.6 pp. Measured −0.070 pp. **The
+prediction sits about 3.7 sd from the measurement.**
+
+**(d) Neither tree shows the width ordering the mechanism requires.** An
+`M = 5`-only collapse must help beagle at `M̄ = 5.53` most and botany at
+`M̄ = 6.78` least. `3ff80e86` runs the other way; `ca9251b8` has no order.
+
+**Where the disagreement most likely lives.**
+
+| machine | `M = 4` round | `M = 5` round | second stream | share of one 14.4 GB pass |
+|---|--:|--:|--:|--:|
+| local M4 Pro | 86,237 us | 126,103 us | 39,866 us | **0.755** |
+| ranked M5 | 43,162 us | 53,108 us | 9,946 us | **~0.33** |
+
+Locally the second pass is barely overlapped and costs three quarters of a
+first pass; on the ranked runner it costs about a third. Removing a pass can
+only pay what that pass costs. This is E54's lone-group table again: a single
+`NA = 5` group achieves 150.9 GB/s while two concurrent groups reach 228.6 GB/s
+through `MTL::DispatchTypeConcurrent`. **A bandwidth-rich machine loses more
+memory-level parallelism when the groups are collapsed than a bandwidth-poor
+one does.**
+
+A defect in my own ranked curve must be recorded beside this. The `G = 1` line
+`27,181.5 + 3,995.1 M` is fitted across plutarch, drama and travel, whose
+drafting fractions differ by more than an order of magnitude - plutarch draws
+38 drafting rounds out of 487. Extrapolating it to `M = 5` to price the
+collapse is not sound, and the gap between its 3,995 us per-row slope and the
+`G = 2` line's 7,233 us is the symptom. **The 5,951 us second-stream figure is
+an upper bound with an unquantified error, not a measurement.**
+
+**ADVISOR ERROR 57.** In `e100-f3` I gave alphonse a published pre-registration
+of +1.9 %, band +1.2 % to +2.5 %, priced from that cross-prompt two-line fit,
+without first asking the board whether anyone had already run the experiment.
+Two rivals had. Revised pre-registration issued in `e100-f4`: **central +0.6 %,
+band −0.5 % to +2.3 %.** The upper end survives because Finding 16 makes the
+published score `0.5 x raw_beagle + 0.5 x min(essays, medicine, republic,
+botany)` and the crown runs beagle at `M̄ = 5.382`, the lowest verify width
+above the boundary and the closest of the eight prompts to alphonse's
+`w512d4` session at `M̄ = 4.937`.
+
+**The decision is still to submit.** The local mechanism is real, large and
+quadruply confirmed; the two ranked precedents are `n = 1` each and both
+confounded, one by four extra editable files and a 98-register occupancy tax
+and the other by a 120-register tax; their combined estimate is consistent with
+zero rather than with a loss; and only an official run settles it.
+
+### 250.5 Edward submitted the margin gate - 87b654b2, validating since 13:47:16Z
+
+```
+benchmark   5d1ee4d7-80bd-4555-b182-6505f26ef495
+submission  87b654b2-63fd-44f8-a606-6709bad39ed0
+base        770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf
+model       senpai        note 24.4 KiB
+```
+
+Pre-submit chain complete. My four witnesses failed because
+`qwen_mtp_probe_sort` and `buildDerivedClusterIndex` do not exist on his base -
+my error, they live only on thorfinn's branches. He re-ran with
+`--require qwen35_dual_rms_norm_concat_bf16_v1 --require-symbol
+snapshotScheduleSignal --require-symbol marginGateArm --forbid
+qwen35_dual_rms_norm_bf16_v1` and passed, and **the rebuild was a no-op**: the
+worker digest stayed `945d67b3...` with `worker_mtime 2026-08-21T12:36:11Z`,
+which proves binary and source identity. `swift test` 724 tests, 61 suites, 40
+issues across the 9 documented names, zero added. `twin_audit.py` OK at 29
+twins and 1 waiver. Scope 1 submitted path. Budget: source 2,519,465 of
+3,000,000, growth 64,630 of 262,144, 154 files.
+`verify-ranked-score-boundary.sh` PASS. `--local-submit` passed the **real**
+cool gate at 39.8 C: score 1.792859587890524, `all_tokens_matched true`,
+`residual_divergence_count 0`, `head_provenance_sha256 dadbfb80...`.
+
+Submitted diff: one file, 91 inserted lines. `MarginGateArm` enum `off|g1`
+defaulting to `.g1` with a `preconditionFailure` on a malformed value,
+`marginGateDefaultThreshold = 9.4375`, `marginGateDepth = 3`,
+`pendingTop2Margin()` returning NaN before the first verify, three lines in
+`costModelDepth` that apply `cap = min(cap, 3)`, and a trace carrying `gate=`,
+`gt=` and `fire=`. His prediction: published about 3.43.
+
+### 250.6 Edward closes the cap-4 arm and shows the ranked-curve figure has no variance
+
+Cap 4, worker `945d67b3...`, 512 tokens, palindrome order:
+
+| leg | gate | rounds | fired | width | s/token | ratio | ranked us/token |
+|---|---|---:|---:|---:|---:|---:|---:|
+| `e99r5c4a1` | off | 110 | 0 | 4.918 | 0.035121 | 2.1170 | 11270.0 |
+| `e99r5c4b1` | default | 113 | 21 | 4.788 | 0.034702 | 2.1377 | 11256.2 |
+| `e99r5c4b2` | default | 113 | 21 | 4.788 | 0.034639 | 2.1500 | 11256.2 |
+| `e99r5c4a2` | off | 110 | 0 | 4.918 | 0.035079 | 2.1159 | 11270.0 |
+
+Cap 4 gain +0.123 % on ranked us/token. At cap 4 nearly every clamp is
+`M = 5 -> 4`, recovering 9,946 us against a token worth about 10,622 us, so the
+two nearly cancel. **The downside of the gate is bounded at zero, not at a
+loss.**
+
+The full measured threshold matrix, each entry against that cap's own arm-off
+mean:
+
+| threshold | cap 8 | cap 5 | cap 4 |
+|---|---|---|---|
+| 4.0000 | +1.78 % | - | - |
+| 8.2500 | **+3.22 %** | +2.83 % | −0.05 % |
+| 9.4375 | **+3.22 %** | +3.13 % | +0.12 % |
+| 11.5625 | +3.01 % | **+4.33 %** | **+0.45 %** |
+| 16.0000 | −3.00 % | +0.63 % | +0.32 % |
+| 1000.0000 | −5.66 % | - | - |
+
+Every cap peaks inside 8.25 to 11.5625. Cap 8 prefers 8.25 to 9.4375; caps 5
+and 4 prefer 11.5625.
+
+**Edward then showed that these figures carry no run-to-run variance at all.**
+He hashed the full `(round, depth, accepted)` sequence of eight arm-and-cap
+replicate pairs; all eight are bit-identical. Decoding is greedy and the
+schedule reads only model state, so on a fixed prompt the round sequence is a
+deterministic function of the arm, and the ranked-curve figure
+`sum_r C(d_r + 1) / sum_r (a_r + 1)` is a pure function of that sequence. His
+two cap-8 arm-off legs did not agree to within noise; they returned the
+identical value 10655.4. **`+3.22 %` against `+3.01 %` is an exact difference
+of the schedule, not two draws.** Replication can only sharpen the wall clock.
+
+He also refuted my rung 7 falsification arm. I proposed clamp depth 4 as the
+arm that would kill the stream-boundary account. It cannot: the two ranked
+lines cross at `M = 3.162`, so the pure discontinuity at `M = 4` is only
+2,713 us and the rest of the 9,946 us gap is one ordinary unit of `G = 2`
+slope. At `M >= 5` the real curve and a no-step control are the same line, so
+depth 4 and depth 5 give identical predictions under both accounts to four
+decimal places. His replacement discriminator is **`gain(depth 2) −
+gain(depth 3)`**: the stream-boundary account predicts about −0.73 pp with the
+ordering `d3 > d2 > d4 > d1`, and the drafting-cost-only account predicts about
++0.44 pp with the ordering `d2 > d1 > d3 > d4`. Depth 1 is the single most
+discriminating arm at 1.63 pp. Pre-registered replay on the ranked M5 curve at
+cap 8 and `t = 9.4375`: d1 +1.116 %, d2 +2.501 %, d3 **+3.228 %**, d4
++1.985 %, d5 +1.227 %, against a measured +3.222 % at d3.
+
+Recorded composition prediction, made before alphonse's result was known: if
+the `G` boundary moves from `M = 5` to `M = 6`, `marginGateDepth` should become
+4, the clamp saving per fired round changes from `C(5) − C(4)` to
+`C(6) − C(5)`, and the threshold plateau moves with it. **His depth-4 arm in
+today's session is therefore the pre-registered reading that a retuned gate
+would inherit, measured before anyone knew the boundary would move.**
+
+### 250.7 E102 terminal, askeladd, PR #104, MERGED at 97511edb
+
+Status `succeeded`, recommendation close. Commit `c98269104c...`. W&B
+`tk1myykr`, `j6zdgx8e`, `lstdr1e3`. Report `research/e102-results.md`. Zero GPU
+seconds, zero bytes of candidate growth.
+
+**Premise falsified.** `_wideN` is a `METAL_FUNC`, so the compiler inlines it
+into the same `[[kernel]]`, and the entry point allocates for the widest
+inlined body. `3ff80e86` pays **120 g17s registers at every width**, in 11 of
+11 `_wide` arms. Register table: `A_shipped` and `K_ctrlA_59b321ee` 94 g16s /
+91 g17s; `L_ca9251b8_real` 95 / **98**; `J_3ff80e86_wideN` 96 with 48 B spill /
+**120**; `N_wideN_all_widths` 96 with 320 B / **126 with 272 B spill**.
+
+**Second zero-parameter corroboration of the E77 occupancy law.** `R = 98`
+predicts +0.0974 % and measures +0.1068 %, residual +0.0094 pp. `R = 120`
+predicts +0.3569 % and measures +0.2934 %, residual −0.0635 pp. Both inside the
+0.113 % within-mode standard deviation, with opposite signs.
+
+**Instrument validated**: real-tree arms K and L reproduce patched arms A and B
+with byte-identical g17s AIR shas `846d5999` and `f7e64a2a`; real-tree arm J
+differs at `5d5fd459`.
+
+**Rung 2 negative.** `M = min(8,7) + 1 = 8` and the smallest scored
+`out_vec_size` is 5120, so the whole narrow 1024 to 4095 branch is dead code -
+eight dead instantiations. Pruning it changes registers by exactly zero.
+`H_prune_narrow` removes 37.64 % of the text and `I_prune_all_dead` 42.21 %
+(126,984 to 73,380 B, AIR 163/13,038 to 120/6,875). **Text is not a register
+lever.** The instruction-cache question is unanswered.
+
+**No escape.** The kernel name is built by trusted code at
+`mlx/backend/metal/quantized.cpp:263-273`, which is not in any of the 89
+`editablePaths`, and all 972 submission branches share one blob `5bdea16c`.
+**No submission can ever give `M = 5` its own allocation.**
+
+**Rung 0a.** The `ca9251b8` +0.38 % receipt needs no rows-per-simd mechanism.
+It is explained by the flat register tax, by the `warmTargetLaterWindowSDPA`
+warmup that its sibling `9b241879` adds in 173 lines and removes zero, and by a
+fixed-cost-as-percentage artefact from 2.7x leg-duration variation. The
+fixed-versus-proportional RMSE discriminator picks FIXED for `ca9251b8` and
+`ff73cbbd`, and PROPORTIONAL for `3ff80e86`. The `ca9251b8` to `9b241879` diff
+is **six** editable files, not two. `NA <= 6` still genuinely loses: `ff73cbbd`
+keeps +1.02 to +1.98 pp after the tax.
+
+Ranked evidence against `rows_per_simd = 2`, confirming advisor error 54:
+`e617ef07` +1.33 pp, `afb688fe` +1.79 pp, `60a5ac1f` +2.38 pp, with a decisive
+same-day two-file contrast of `e617ef07` against `72ce82dc` at +1.28 % on high
+width and −0.04 % on low width.
+
+Askeladd retracted his own interim-2 headline, interim-2 section 2 and
+interim-1 suspect 2. Interim-2 sections 1, 5, 6 and 7 stand. For alphonse:
+`case 6 -> <T,6,2,true>` is IPG-only, leaves the widest inlined body unchanged
+and keeps the entry point at 91 registers, so the dose test he ran was
+register-neutral. Unmeasured inference: `<T,5,5,true>` alone at 98 registers
+nets about −0.067 %. The Metal `MTLComputePipelineState` probe is a null
+instrument here, returning 1024/32/0 for every arm and cell.
+
+### 250.8 E103 assigned to askeladd, PR #105
+
+`qwen38-r1-e103-sdpa-fa-history-head-packing`, head
+`8408bdfc773c04c0d1f15fdc264e54b7459fe3dd`, `status:wip`. Theme 6's
+best-priced remaining item: SDPA over the FA history, a latency-class family
+worth 0.64 % to 1.45 % published under Finding 22.
+
+Source facts established for the brief. There is **no generated twin for
+`sdpa_vector`**, so this family is ahead-of-time compiled from `mlx.metallib`
+and `tools/build-mlx-metallib.sh` is the build path, not the JIT string.
+`scaled_dot_product_attention.metal` instantiates `sdpa_vector` at (64,64),
+(96,96), (128,128) and **(256,256)** for `float`, `bfloat16_t` and
+`float16_t`. In `sdpa_vector.h`: `:15` the template, `:43 BN = 32`,
+`:44 BD = 32`, `:45 qk_per_thread = D/BD` which is 8 at `D = 256`,
+`:56 threadgroup U outputs[BN*BD]`, `:99` the `for (int i = simd_gid; i < N; i
++= BN)` history loop, `:163-166` the cross-simdgroup transpose reduce,
+`:179 sdpa_vector_2pass_1`, `:320 sdpa_vector_2pass_2`.
+
+The derived redundancy that motivates the experiment: 24 query heads over 4 KV
+heads is 6 GQA siblings, times `M = 5` verify rows, is **120 threadgroups per
+layer reading only 4 distinct K and V tensors, a 30x redundancy**. One K tile
+at `BN = 32`, `D = 256`, bf16 is 16,384 B of threadgroup memory. At pack size 6
+the thread-local float budget is 6x8 for q plus 6x8 for o, which is 96 before
+anything else, against a g17s ceiling of 126.
+
+Rungs: 0 reachability with `MLX_E58_BUFFER_LIMIT_OPS=0` at forced depth 4 and
+depth 0, naming the exact trusted source line that selects between
+`sdpa_vector`, the two-pass form and steel attention, and whether it is inside
+the 89 editable paths; 1 static register and threadgroup budget with `metal-tt`
+and `jit_string_compile.py` for pack sizes 2, 3, 6 and M; 2 an isolated dose in
+the E98 `ABCCBA` style with a traffic-free control and a loop-free control;
+3 implementation behind `MLX_E103_SDPA_PACK` with the compiled-default trap, a
+floating-point exactness gate and a 512-token run; 4 the submission chain, but
+**hold**. Stop rules: if the kernel is outside the editable surface, stop and
+report; if the isolated ceiling is below 0.30 % of the local round, stop.
+
+### 250.9 The drama round count is settled at 252
+
+Item 9 of the standing list is closed. `research/e102_wide_row_pricing.py`
+recovers all eight crown round counts exactly, and reports that beagle, botany,
+drama and essays need the round-cost floor to disambiguate the integer multiple
+that the Finding 18b recovery rule leaves open. With that floor, drama is
+**252**, which is the value hard-coded in `research/board_same_schedule.py`.
+The bare recovery rule's 168 is the same fraction at two thirds of the round
+count. drama is a `G = 1` prompt and is not in the `L` and `S` fit set, so no
+published figure changes; the Finding 12 table's drama round of 60,098 us
+should be read as 40,065 us at `R = 252`.
+
+### 250.10 Board and slot state at 14:35Z
+
+```
+51b9bf85  vibecodooor    accepted  3.35025879 promoted   11:41:47Z   <- frontier
+276aa2c2  hadakang       accepted  3.33849825 promoted   11:22:52Z
+e18433d4  audreyt        rejected  3.33813079 -          11:43:51Z
+71eddde4  newjordan      rejected  3.33695815 -          11:25:37Z
+91623861  andreolf       rejected  3.33669020 -          12:11:37Z
+f04b102e  morganmcg1     accepted  3.32824629 promoted   10:17:01Z   <- ours, rank 6
+87b654b2  morganmcg1     validating                      13:47:16Z   <- in flight
+```
+
+Submission order for the next three slots: edward's `87b654b2` is in flight;
+alphonse's four-line collapse is next and is holding for that receipt;
+thorfinn's E101 chain C follows. All four students are busy. Nothing is idle.
+
+## 251. 2026-08-21 15:05 UTC - the round is an identity, the ranked box scales groups at exactly 2.0, and the fewer-streams theme dies on the official runner
+
+E100 is merged. Its local win is real and large. Its ranked value is approximately
+zero, and this section explains exactly why, with two independent routes that
+agree. The same arithmetic that kills the fewer-streams theme promotes
+`rate(NA)` to the largest remaining lever in the campaign.
+
+### 251.1 FINDING 31 - the round is an identity in `G / rate(partition)`
+
+Every measured local round time is reproduced to better than 0.03 % by
+
+```
+round_us  =  G  x  14.41235 GB  /  rate(partition)
+```
+
+where `G` is the number of x-groups, 14.41235 GB is the transformed weight set,
+and `rate` is the aggregate achieved bandwidth of that partition.
+
+| M | partition | G | predicted us | measured us | residual |
+|--:|---|--:|--:|--:|--:|
+| 1 | `[1]` | 1 | 64,455 | 64,445 | 0.016 % |
+| 2 | `[2]` | 1 | 69,760 | 69,776 | 0.023 % |
+| 3 | `[3]` | 1 | 74,791 | 74,778 | 0.017 % |
+| 4 | `[4]` | 1 | 86,250 | 86,237 | 0.015 % |
+| 5 | `[3+2]` | 2 | 126,090 | 126,103 | 0.010 % |
+
+This is not a fit. It is a restatement of Finding 21 (the round is 88.6 % DRAM
+weight streaming) with the residual folded into `rate`. Its value is that it
+separates the two things a partition change can do: change `G`, or change
+`rate`. Every prior discussion of the G boundary confused the two.
+
+The rate table is the campaign's most important new object.
+
+| partition | M | local GB/s | vs NA=1 | ranked GB/s | vs NA=1 |
+|---|--:|--:|--:|--:|--:|
+| `[1]` | 1 | 223.6 | 1.000 | 462.3 | 1.000 |
+| `[2]` | 2 | 206.6 | 0.924 | 409.8 | 0.886 |
+| `[3]` | 3 | 192.7 | 0.862 | 368.0 | 0.796 |
+| `[4]` | 4 | 167.1 | 0.747 | 333.9 | 0.722 |
+| `[3+2]` | 5 | 228.6 | 1.022 | 542.8 | 1.174 |
+| `[3+3]` | 6 | 209.1 | 0.935 | 477.7 | 1.033 |
+| `[4+3]` | 7 | 191.6 | 0.857 | 426.6 | 0.923 |
+| `[4+4]` | 8 | 175.8 | 0.786 | 385.3 | 0.833 |
+| `[3+3+3]` | 9 | 211.9 | 0.948 | - | - |
+
+Two facts fall straight out.
+
+**(a) Degradation with NA is real on both machines and slightly steeper on the
+ranked one** (0.722 against 0.747 at NA=4). A repair should transfer.
+
+**(b) The ranked box extracts far more from concurrent groups than the local box
+does.** This is the whole story of the next section.
+
+Overhead factors, taken as actual divided by `max(DRAM floor, FMA floor)`, where
+the one-group DRAM floor is 14.41235 GB at 273 GB/s = 52,792 us and the NA=5 FMA
+floor is 44,428 us (E97's 6.568 TFLOP/s less the 12.2 % dequant haircut):
+
+| NA | local one-group round us | overhead |
+|--:|--:|--:|
+| 1 | 64,445 | 1.221x |
+| 2 | 69,776 | 1.322x |
+| 3 | 74,778 | 1.416x |
+| 4 | 86,237 | 1.634x |
+| 5 | 103,404 (measured, post-collapse) | 1.959x |
+
+At NA=5 the kernel reads at roughly 55 % of DRAM peak and computes at roughly
+47 % of the FMA ceiling **at the same time**. Neither resource is exhausted.
+That is a latency or issue-rate problem, not a resource wall, and it is
+therefore repairable in principle.
+
+If NA=5 could be brought to the overhead NA=1 already demonstrates (1.221x), the
+local one-group M=5 round would fall from 103,404 to 64,459 us, a 37.7 %
+reduction on 24.1 % of rounds.
+
+### 251.2 FINDING 32 - the group-scaling factor, and why the fewer-streams theme is dead on the official runner
+
+Collapsing M=5 from `[3+2]` to `[5]` halves the bytes and removes one concurrent
+instruction stream. Under Finding 31 the trade is exact:
+
+```
+time([3+2]) = 2W / r2        time([5]) = W / r1
+collapse gain = 1 - r2 / (2 r1) = 1 - A/2 ,   A = r2 / r1
+```
+
+`A` is the group-scaling factor: the aggregate bandwidth of two x-groups divided
+by that of one. **`A = 2` means the collapse is worth exactly nothing.** The
+entire value of the fewer-streams theme is the distance of `A` below 2.
+
+**Local, from alphonse's own measurement, no extrapolation.** `[3+2]` measures
+126,103 us, so `r2 = 228.6 GB/s`. He measured the collapse at 17.5-18.6 % per
+M=5 round; at 18.0 % the one-group round is 103,404 us, so `r1 = 139.4 GB/s`.
+
+```
+A_local = 228.6 / 139.4 = 1.640     collapse gain = +18.0 %
+```
+
+**Ranked, route 1 - uses no rival receipt.** Take the step from `[3]` to `[3+2]`
+in our own ranked cost curve. Aggregate bandwidth scales x1.186 locally and
+x1.475 on the ranked box, an advantage of x1.244. Applying that advantage:
+
+```
+A_ranked (predicted) = 1.640 x 1.244 = 2.040     collapse gain = -2.0 %
+```
+
+**Ranked, route 2 - the two rival receipts measure it directly.** `ca9251b8` is
+alphonse's four lines almost verbatim; `3ff80e86` collapses M=5 only through a
+private `_mN` family. The Finding 29 width tax `W` reads them at
+`dW = -0.070 +/- 0.360 pp`. At an M=5 share of 0.24 of G=2 rounds:
+
+```
+M=5 round gain = -0.29 +/- 1.50 %
+A_ranked (measured) = 1.994   [1.964, 2.024]
+implied one-group rate at NA=5 = 272.2 GB/s = 50 % of the two-group 542.8
+```
+
+**Route 1 predicts 2.040. Route 2 measures 1.994. They agree, and they are
+independent.**
+
+Falsification margin, at the same 0.24 share:
+
+| counterfactual | A | predicted gain | predicted dW | sigma from receipts |
+|---|--:|--:|--:|--:|
+| ranked box keeps its own NA ladder | 1.862 | +6.9 % | -1.65 pp | **4.4** |
+| ranked box behaves like the local box | 1.640 | +18.0 % | -4.32 pp | **11.8** |
+
+The conclusion is robust to the share: even at 0.10 the conservative
+counterfactual is still about 1.9 sigma, and every plausible combination of
+share and realisation lands between 3 and 12 sigma.
+
+**Consequences, recorded.**
+
+1. **The ranked G boundary does not move to M=6.** Edward's interim-7
+   composition prediction is refuted, and `marginGateDepth` stays at 3 for
+   anything submitted. His `d2 - d3` discriminator is unaffected, since both
+   arms sit below the boundary under both accounts.
+2. **The stop list gains a general rule, not just an entry.** Any future
+   "fewer weight streams" idea must be priced on the **ranked** group-scaling
+   factor, not the local one. The two differ by 1.24x and that factor is the
+   difference between +18 % and 0 %.
+3. **E100 stays merged.** It is a large, clean, correctly measured local winner
+   with a self-contained submitted snapshot, and it costs approximately nothing
+   on the ranked box (-0.03 % +/- 0.40 % published, once the R=91 -> 98 register
+   tax of +0.0974 % is netted against the width benefit). It is not the ranked
+   win the local number suggested, and the ledger now says so plainly.
+4. **`rate(NA)` is promoted to the largest remaining lever.** The ranked box has
+   at least twice the outstanding-load capacity that one wide x-group uses.
+
+E104 prize on the ranked box, if `rate(NA)` is repaired:
+
+| one-group rate reaches | M=5 round us | vs today | G2 leg effect |
+|--:|--:|--:|--:|
+| 299 (x1.10) | 48,139 | -9.4 % | -2.25 % |
+| 340 (x1.25) | 42,362 | -20.2 % | -4.86 % |
+| 408 (x1.50) | 35,302 | -33.5 % | -8.05 % |
+| 476 (x1.75) | 30,259 | -43.0 % | -10.33 % |
+| 544 (x2.00) | 26,477 | -50.1 % | -12.04 % |
+
+Even a 10 % lift in the one-group rate is eight times the published detection
+floor of 0.277 %.
+
+### 251.3 E100 merged, and the register census that alphonse ran against his own headline
+
+PR #102 merged at `5c2c3b8b`. Commit `55c12442`, result doc `research/e100-results.md`,
+W&B `pqbw9o4k`, `kxoebkjx`, `mptpfk9c`, `8ikuvw7m`, `o73dyyyj`.
+Primary metric `mtp_seconds_per_token_512tok_depth8` 0.033717 -> 0.033455, -0.775 %.
+Pre-submit chain clean: 724 tests, 62 suites, 40 issues across the 9 organizer
+names with zero added; twin audit 29 runtime-effective twins with 1 allowlisted
+waiver; scope 2 paths; candidate growth 0; `--local-submit` through the **real**
+40 C gate with `all_tokens_matched true`, `residual_divergence_count 0`, and a
+568-row ledger that closes exactly.
+
+The dose control is what makes the result causal in both directions. Setting
+`case 6` from `<T,6,3,true>` to `<T,6,2,true>` - a register-neutral, IPG-only
+change - cost +1.345 % s/tok and +4.860 % per round, implying an M=6 share of
+34.1 % against the ledger 207 figure of 33.4 %.
+
+He then ran a register census against his own headline and reported the result
+that weakens it:
+
+| arm | M=5 partition | g16s regs | g17s regs | g17s spill |
+|---|---|--:|--:|--:|
+| base | `3+2` | 94 | **91** | 0 B |
+| cap5 (shipped) | `5` | 95 | **98** | 0 B |
+| cap8 | `5,6,7,8` | 96 | **126** | 48 B |
+
+**The ranked box pays +7 registers where the local box pays +1.** Local deltas
+under-represent the ranked occupancy tax by roughly 7x. A student volunteering
+the measurement that most undercuts his own promoted result is exactly the
+standard this campaign runs on.
+
+Two shelved items he surfaced: E76's `lazyfall` arm cut g17s from 98 to 93 at
+NA=5 and from 111 to 99 at NA=6, with zero spill and clean parity on seven
+shapes, and **was never timed** (worth approximately +0.0657 %); and rung 3
+`rows_per_simd` 4 -> 2, which stays dead by E76 sections 3 and 4.
+
+### 251.4 E104 assigned to alphonse - PR #106
+
+`rate(NA)` is now the campaign's largest lever, so it gets the student who just
+proved he will report against his own interest.
+
+Question: why does a lone wide x-group stream at 139 GB/s when a narrow one
+reaches 224? Hypotheses: H1 occupancy and H2 threadgroup count are both
+pre-refuted and enter as controls only; H3 dequant repeated per row is settled
+by source reading first; **H4 load stream depth is the leading hypothesis**; H5
+FMA dependency chain predicts the opposite sign and is the discriminator
+against H4.
+
+Rungs: 0 source op-count table in NA, free. 1 a pure-load arm holding grid,
+addresses, `values_per_thread`, `bytes_per_lane` and register allocation fixed
+while replacing the FMA block with a dependency-preserving reduction that is
+written out, at NA 1..6, with AIR instruction counts. 2 fix arms: **P**
+software pipelining and **V** `bytes_per_lane` 8 -> 16, both bit-exact, and **S**
+split accumulators, which changes reduction order and therefore needs the full
+floating-point gate. 3 integrate only if a bit-exact arm lifts the NA=5 overhead
+below 1.5x.
+
+Stop rules: dequant scales with NA, go straight to the fix; pure-load flat and
+no arm moves isolated NA=5 time by more than 3 %, close the `rate(NA)` axis
+permanently; floating-point gate failure, discard rather than repair.
+
+Scope is `quantized.h` and its JIT twin only. `case 6` must stay untouched,
+because askeladd's E98 lines and thorfinn's composed tree both depend on it.
+
+### 251.5 ADVISOR ERROR 59 - wrong absolute anchors in the E104 brief
+
+In the E104 brief I labelled the 1.221x overhead factor as belonging to NA=2
+when it belongs to NA=1, and I priced the local one-group M=5 round at 95,509 us
+from a 150.9 GB/s extrapolation when alphonse's own measurement gives 103,404 us
+and 139.4 GB/s. The prize percentage survives unchanged, at -32.5 % against
+-32.6 %, because both anchors scaled together, but the absolute figures were
+wrong and a student pricing a stop rule against them would have been pricing
+against a number I invented rather than one he measured. Corrected anchors are
+in 251.1. **Rule reinforced: when a student has measured the quantity, quote the
+student, never the extrapolation.**
+
+### 251.6 Standing orders at 15:05Z
+
+| PR | student | state | order |
+|---|---|---|---|
+| #101 | edward | wip, `87b654b2` validating | rung 8 accepted, theme closed; keep `marginGateDepth = 3`; finish `d9d4b9ff`; rung 9 is the per-position head-confidence reopener |
+| #103 | thorfinn | wip | pre-submit chain C, rebase onto `5c2c3b8b`, import the `41bad1c6` `Qwen35.swift` hunks, row-digest check, submit the composed tree when the slot frees |
+| #105 | askeladd | wip | rung 2 reordered: `b_vecload` and `c_fastpath` first, then the 5+(M-5) split arm, then packing; stacked stop rule at 383 us/round |
+| #106 | alphonse | wip, new | E104 as briefed, with the corrected anchors |
+
+Thorfinn's composed pre-registration, unchanged except for the E100 term now
+carrying Finding 32's reading:
+
+| mechanism | ranked expectation |
+|---|--:|
+| chain C fused top-32 | +0.32 % |
+| rival rerank import | +0.08 % |
+| E100 M=5 collapse | -0.03 % +/- 0.40 % |
+| **composed** | **+0.37 % +/- 0.42 %** |
+
+Board at 15:05Z: `51b9bf85` vibecodooor 3.35025879 holds the frontier;
+`276aa2c2` hadakang 3.33849825; ours `f04b102e` 3.32824629 at rank 6;
+`87b654b2` still validating since 13:47:16Z.
