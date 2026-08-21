@@ -3439,11 +3439,39 @@ private struct Qwen35RowTop32 {
     }
 }
 
+/// The fused row top-32 selection is the COMPILED DEFAULT: the ranked worker
+/// exports no environment, so an unset variable must reach the shipped path.
 /// `MLX_E101_ROW_TOP32=0` restores the `argPartition` row selection and its
-/// separate index arithmetic bit-for-bit. The `MLX_` prefix is load-bearing:
-/// the trusted worker's environment sanitizer drops `MLXFAST_*`.
-private let qwen35RowTop32Enabled: Bool =
-    ProcessInfo.processInfo.environment["MLX_E101_ROW_TOP32"] != "0"
+/// separate index arithmetic bit-for-bit, for research arms only. Any other
+/// value fails closed rather than resolving to a path the operator did not
+/// name, so a typo can never time one arm under the other arm's tag. The
+/// `MLX_` prefix is load-bearing: the trusted worker's environment sanitizer
+/// drops `MLXFAST_*`.
+private let qwen35RowTop32Enabled: Bool = qwen35RowTop32Resolved.enabled
+
+/// The resolved gate beside the raw text that produced it, so a trace can name
+/// which of the three cases a leg actually took.
+let qwen35RowTop32Resolved: (enabled: Bool, source: String) = {
+    guard let raw = ProcessInfo.processInfo.environment["MLX_E101_ROW_TOP32"],
+          !raw.isEmpty
+    else { return (true, "unset") }
+    switch raw {
+    case "1": return (true, "1")
+    case "0": return (false, "0")
+    default:
+        fatalError(
+            "MLX_E101_ROW_TOP32 must be unset, 0 or 1; got \(raw)")
+    }
+}()
+
+/// Counts the row-selection path each draft actually took. A leg that exports
+/// nothing must show `fused` rising and `argPartition` flat at zero, which is
+/// the bare-leg proof that the compiled default reaches the fused kernels.
+public nonisolated(unsafe) var qwen35RowTop32FusedDrafts: Int = 0
+public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
+
+/// `unset`, `0` or `1`, for the same trace line.
+public var qwen35RowTop32GateSource: String { qwen35RowTop32Resolved.source }
 
 // `MLXFAST_QWEN_MTP_TOP32=0` restores the argPartition path bit-for-bit.
 private let qwen35Top32Enabled: Bool =
@@ -4629,8 +4657,10 @@ extension Qwen35TextModel: MTPCapable {
         ).reshaped([probes * rowsPerCluster])
 
         if let rowTop32 = _draftRowTop32 {
+            qwen35RowTop32FusedDrafts += 1
             return rowTop32(rowScore, probed, perm)
         }
+        qwen35RowTop32ArgPartitionDrafts += 1
 
         let kth = probes * rowsPerCluster - candidateCount
         let local = MLX.argPartition(rowScore, kth: kth)[.ellipsis, (kth)...]
