@@ -42,7 +42,7 @@ from e82_st import SafeTensors, file_sha256, tree_digest, write_safetensors  # n
 CACHE = Path(os.path.expanduser("~/.cache/mlxfast/qwen3.8-27b-mtp-v1"))
 DECLARED_RUN = CACHE / "mtp-head-declared-run"
 CLUSTER_DIR = CACHE / "e87/clusters"
-COARSE = ("draft_lm_head.weight", "draft_lm_head.scales", "draft_lm_head.biases")
+
 
 
 def _u16(a: mx.array) -> np.ndarray:
@@ -151,7 +151,7 @@ def main() -> None:
     src = SafeTensors(DECLARED_RUN / "model.safetensors")
     tensors: dict[str, np.ndarray] = {}
     for name in src.names():
-        tensors[name] = new[name] if name in COARSE else src.array(name)
+        tensors[name] = new[name] if name in new else src.array(name)
     for name, value in new.items():
         if name not in tensors:
             tensors[name] = value
