@@ -3,19 +3,20 @@
 #
 #   usage: research/e96_rung1.sh [TOKENS] [FORCE_DRAFTS]
 #
-# Seven legs per direction, counterbalanced inside one ungated session:
+# Nine legs per direction, counterbalanced inside one ungated session:
 #
 #   vendor    the unmodified kernel and its (32, 4, 1) threadgroup
 #   clone     a byte-identical clone dispatched from Qwen35.swift, same geometry
 #   rep R=1   the clone plus the repetition scaffold, one repetition
-#   rep R=2,4,8   the same scan repeated, bit-identical output
+#   rep R=2,4,8,16  the same scan repeated, bit-identical output
+#   t1        the clone with the t-loop forced to one iteration
 #   off       no dispatch: y = v, state_out = state_in
 #
 # vendor - clone isolates any cost of moving the dispatch into the editable
 # file. clone - rep R=1 isolates the scaffold. The slope of round cost against
 # R measures one step directly, over arms that share one token stream and one
-# (d, acc) distribution. off is the removal bracket, and it is NOT bucket
-# matched: it emits different tokens, so its rounds land at different
+# (d, acc) distribution. off and t1 are the removal bracket, and they are NOT
+# bucket matched: they emit different tokens, so their rounds land at different
 # acceptance counts.
 #
 # Every arm runs through research/e96_direct_leg.sh, including the two
@@ -36,8 +37,10 @@ failures=0
 # slot:mode:repeat. The order is a palindrome, so every arm's two legs sit
 # symmetrically about the session midpoint and monotone thermal drift cancels
 # to first order.
-for spec in a1:vendor:1 a2:clone:1 a3:rep:1 a4:rep:2 a5:rep:4 a6:rep:8 a7:off:1 \
-            b7:off:1 b6:rep:8 b5:rep:4 b4:rep:2 b3:rep:1 b2:clone:1 b1:vendor:1
+for spec in a1:vendor:1 a2:clone:1 a3:rep:1 a4:rep:2 a5:rep:4 a6:rep:8 \
+            a7:rep:16 a8:t1:1 a9:off:1 \
+            b9:off:1 b8:t1:1 b7:rep:16 b6:rep:8 b5:rep:4 b4:rep:2 b3:rep:1 \
+            b2:clone:1 b1:vendor:1
 do
   IFS=: read -r slot mode reps <<<"${spec}"
   MLX_E96_REPEAT="${reps}" \
