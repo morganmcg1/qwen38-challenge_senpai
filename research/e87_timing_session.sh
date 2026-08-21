@@ -53,11 +53,15 @@ if [[ "${dirty}" != "0" ]]; then
   exit 1
 fi
 
-declare -A seen=()
+# bash 3.2 on macOS has no associative arrays, so count each arm's repeat by
+# rescanning the already-issued prefix of the leg order.
 for i in "${!order[@]}"; do
   arm="${order[$i]}"
-  seen["${arm}"]=$((${seen["${arm}"]:-0} + 1))
-  rep="${seen["${arm}"]}"
+  rep=0
+  for j in "${!order[@]}"; do
+    ((j <= i)) || break
+    [[ "${order[$j]}" == "${arm}" ]] && rep=$((rep + 1))
+  done
   tag="${prefix}-${arm}-${rep}"
   E79_HEAD_DIR="$(dir_for "${arm}")" \
     research/e79_trace_leg.sh "${tag}" "${tokens}" --sync-head
