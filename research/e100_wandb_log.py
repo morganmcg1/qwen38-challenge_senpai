@@ -18,10 +18,14 @@ Four runs:
                    prefill from the leg time.
   `e100-registers` the register census of the SHIPPED dispatcher entry point,
                    which is one Metal kernel holding every width.
+  `e100-presubmit` the full 512-token `--local-submit` leg and every pre-submit
+                   gate. This is the ONLY E100 leg that blocked on the real 40C
+                   cool gate, so it is the only one logged as gate-qualified.
 
-Every leg ran with the local cool gate off inside a counterbalanced session, so
+Every other leg ran with the local cool gate off inside a counterbalanced
+session, so
 `timing_valid`, `cool_gate_passed_real_gate` and `gate_qualified_for_timing` are
-logged false verbatim on every run. No number here is an official or ranked
+logged false verbatim on those runs. No number here is an official or ranked
 score.
 """
 
@@ -30,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import statistics
 import subprocess
 import sys
@@ -56,11 +61,12 @@ PRIOR_RECEIPT = {
 }
 
 
-def gate_flags() -> dict[str, object]:
+def gate_flags(qualified: bool = False) -> dict[str, object]:
+    """`qualified` is true only for a leg that blocked on the real 40C gate."""
     return {
-        "timing_valid": False,
-        "cool_gate_passed_real_gate": False,
-        "gate_qualified_for_timing": False,
+        "timing_valid": qualified,
+        "cool_gate_passed_real_gate": qualified,
+        "gate_qualified_for_timing": qualified,
         "official_or_ranked_score": False,
         "harness": "local",
     }
@@ -88,12 +94,12 @@ def identity(meta: dict[str, str]) -> dict[str, object]:
 
 
 def start(name: str, job_type: str, question: str, rung: int,
-          config: dict) -> wandb.sdk.wandb_run.Run:
+          config: dict, qualified: bool = False) -> wandb.sdk.wandb_run.Run:
     return wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP, job_type=job_type,
         name=name,
         config={"experiment": GROUP, "rung": rung, "question": question,
-                **config, **gate_flags()},
+                **config, **gate_flags(qualified)},
         reinit=True,
     )
 
@@ -351,11 +357,100 @@ def log_registers() -> None:
     run.finish()
 
 
+def log_presubmit() -> None:
+    """The one E100 leg that blocked on the real 40C gate, plus every gate."""
+    root = OUT / "e100-presubmit"
+    score = json.loads((root / "local-submit-512.json").read_text())
+    metrics = score["metrics"]
+    leg_log = (root / "local-submit-512.log").read_text()
+
+    passes = re.findall(r"cool-down gate passed \(current ([0-9.]+)C.*?"
+                        r"waited (\d+)s\)", leg_log)
+    checked = re.findall(r"reference_checked_rows=(\d+)/(\d+)", leg_log)
+
+    run = start(
+        "e100-presubmit", "local-submit",
+        "does the M = 5 one-x-group candidate hold exactness over a full "
+        "512-token window under the real thermal gate",
+        3,
+        {
+            "decode_tokens": metrics["decode_tokens"],
+            "mtp_depth": metrics["mtp_depth"],
+            "oracle": metrics["oracle"],
+            "rankable": metrics["rankable"],
+            "uses_pinned_mtp_head": metrics["uses_pinned_mtp_head"],
+            "head_provenance_sha256": metrics["head_provenance_sha256"],
+            "worker_sha256": "fd9e6b24950e8cc41b34574d19fb79a0c4b862f7fc09"
+                             "2198e1afd1c3bf9377f3",
+            "candidate_files": 2,
+            "candidate_changed_lines": 4,
+            "eos_token_id": 248044,
+            "golden_eos_generated_indices": [301, 692, 696, 701, 706, 713,
+                                             720, 727],
+            "base_sha": BASE_SHA,
+        },
+        qualified=True,
+    )
+
+    payload = {
+        "submit/passed": int(bool(score["passed"])),
+        "submit/all_tokens_matched": int(bool(metrics["all_tokens_matched"])),
+        "submit/residual_divergence_count":
+            metrics["residual_divergence_count"],
+        "submit/public_drift_tripwire_passed":
+            int(bool(metrics["public_drift_tripwire_passed"])),
+        "submit/mtp_seconds_per_token": metrics["mtp_seconds_per_token"],
+        "submit/serial_seconds_per_token": metrics["serial_seconds_per_token"],
+        "submit/mtp_decode_speedup": metrics["mtp_decode_speedup"],
+        "submit/accepted_draft_rate": metrics["accepted_draft_rate"],
+        "submit/effective_mean_draft_len": metrics["effective_mean_draft_len"],
+        # The window contains a real EOS at generated index 301, so an exact
+        # match over 512 tokens is post-EOS continuation evidence.
+        "submit/post_eos_tokens_matched_exactly": 512 - 301,
+    }
+    for index, (temp, waited) in enumerate(passes):
+        payload[f"submit/cool_gate_{index}_entry_c"] = float(temp)
+        payload[f"submit/cool_gate_{index}_waited_s"] = int(waited)
+    for index, (done, total) in enumerate(checked):
+        payload[f"submit/rows_checked_{index}"] = int(done)
+        payload[f"submit/rows_expected_{index}"] = int(total)
+        payload[f"submit/row_ledger_closed_{index}"] = int(done == total)
+
+    gates = wandb.Table(columns=["step", "gate", "exit_code", "verdict"])
+    for step, (gate, code, verdict) in enumerate(PRESUBMIT_GATES, start=1):
+        gates.add_data(step, gate, code, verdict)
+    payload["submit/gates"] = gates
+
+    run.log(payload)
+    run.summary.update({
+        "swift_test_issues": 40,
+        "swift_test_failing_names": 9,
+        "swift_test_issues_added_by_candidate": 0,
+    })
+    attach(run, root / "local-submit-512.json", root / "worker-assert.log",
+           root / "twin-audit.log", root / "budget.log", root / "scope.log",
+           root / "boundary.log")
+    run.finish()
+
+
+PRESUBMIT_GATES = [
+    ("senpai/rebuild-and-assert-worker.sh", 0, "PASS binary witnesses"),
+    ("tools/build-mlx-metallib.sh", 0, "PASS"),
+    ("research/twin_audit.py", 0, "PASS 29 runtime-effective twins"),
+    ("senpai/validate-assignment-scope.sh", 0, "PASS 2 submitted paths"),
+    ("senpai/check-editable-budget.sh", 0, "PASS 0 candidate growth"),
+    ("senpai/verify-ranked-score-boundary.sh", 0, "PASS denominator only"),
+    ("swift test --force-resolved-versions", 1, "40 pre-existing issues"),
+    ("benchmark-qwen-mtp.sh --local-submit", 0, "PASS 512 tokens, real gate"),
+]
+
+
 RUNS = {
     "corpus": log_corpus,
     "probe": log_probe,
     "e2e": log_e2e,
     "registers": log_registers,
+    "presubmit": log_presubmit,
 }
 
 
