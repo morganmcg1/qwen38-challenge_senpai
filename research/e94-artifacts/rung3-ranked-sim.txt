@@ -1,0 +1,304 @@
+E94 rung 3 - offline ranked-curve analysis
+stage A windows 2000   seed 94003
+
+price tables, marginal per entered verify width 2..9
+  ship   0.18000 0.18000 0.18000 0.18000 0.18000 0.18000 0.18000 0.18000   total 1.44000
+  m5fit  0.12800 0.12800 0.12800 0.31872 0.23168 0.23168 0.23168 0.23168   total 1.62944
+
+cost curve disagreement, us per round
+  M     ranked      local   ratio  rank marg   loc marg
+  1    31176.6    64445.4   2.067                      
+  2    35171.7    69775.5   1.984     3995.1     5330.1
+  3    39166.8    74778.4   1.909     3995.1     5002.9
+  4    43161.9    86237.4   1.998     3995.1    11459.0
+  5    53108.2   126103.1   2.374     9946.3    39865.7
+  6    60341.2   137842.6   2.284     7233.0    11739.5
+  7    67574.2   150431.4   2.226     7233.0    12588.8
+  8    74807.2   163957.1   2.192     7233.0    13525.7
+
+===============================================================================
+STAGE 0 - MODEL-FREE DEPTH MAP on the RANKED M5 cost curve
+===============================================================================
+For a converged flat per-position acceptance q: the depth each price
+selects, the depth that minimises cost per token, and the gap.
+
+     q  ship d  m5fit d  best d  ship us/tok  m5fit us/tok  best us/tok  m5fit-ship
+ 0.600       2        3       3      19983.1       19835.4      19835.4       0.74%
+ 0.620       2        3       3      19540.4       19245.3      19245.3       1.51%
+ 0.640       2        3       3      19109.5       18670.7      18670.7       2.30%
+ 0.660       3        3       3      18111.7       18111.7      18111.7       0.00%
+ 0.680       3        3       3      17568.1       17568.1      17568.1       0.00%
+ 0.700       3        3       3      17039.8       17039.8      17039.8       0.00%
+ 0.720       3        3       3      16526.7       16526.7      16526.7       0.00%
+ 0.740       3        3       3      16028.5       16028.5      16028.5       0.00%
+ 0.760       4        3       3      17075.5       15545.0      15545.0       8.96%
+ 0.780       4        3       3      16426.4       15076.0      15076.0       8.22%
+ 0.800       4        3       3      15798.5       14621.2      14621.2       7.45%
+ 0.820       5        3       3      15605.6       14180.4      14180.4       9.13%
+ 0.840       5        3       3      14882.9       13753.3      13753.3       7.59%
+ 0.860       6        3       3      14508.2       13339.5      13339.5       8.06%
+ 0.880       6        3       3      13713.1       12938.7      12938.7       5.65%
+ 0.900       7        3       3      13134.8       12550.7      12550.7       4.45%
+ 0.920       7        3       3      12294.2       12175.1      12175.1       0.97%
+ 0.940       7        3       7      11496.1       11811.6      11496.1      -2.74%
+ 0.960       7        3       7      10740.0       11459.9      10740.0      -6.70%
+ 0.980       7        7       7      10025.3       10025.3      10025.3       0.00%
+
+depths that are ever cost-optimal on the RANKED M5 curve: [3, 6, 7]
+the optimum jumps to the cap at q = 0.940; below that the optimum is shallow
+m5fit beats ship for q in [0.60, 0.92], best +9.13 %
+m5fit loses to ship for q in [0.93, 0.96], worst -6.70 %
+
+===============================================================================
+STAGE 0 - MODEL-FREE DEPTH MAP on the LOCAL M4 Pro cost curve
+===============================================================================
+For a converged flat per-position acceptance q: the depth each price
+selects, the depth that minimises cost per token, and the gap.
+
+     q  ship d  m5fit d  best d  ship us/tok  m5fit us/tok  best us/tok  m5fit-ship
+ 0.600       2        3       2      38152.2       39631.2      38152.2      -3.88%
+ 0.620       2        3       2      37307.1       38452.0      37307.1      -3.07%
+ 0.640       2        3       2      36484.4       37304.0      36484.4      -2.25%
+ 0.660       3        3       2      36187.1       36187.1      35683.5       0.00%
+ 0.680       3        3       2      35101.1       35101.1      34904.0       0.00%
+ 0.700       3        3       3      34045.6       34045.6      34045.6       0.00%
+ 0.720       3        3       3      33020.3       33020.3      33020.3       0.00%
+ 0.740       3        3       3      32024.9       32024.9      32024.9       0.00%
+ 0.760       4        3       3      40545.0       31058.9      31058.9      23.40%
+ 0.780       4        3       3      39003.7       30121.8      30121.8      22.77%
+ 0.800       4        3       3      37512.8       29213.2      29213.2      22.12%
+ 0.820       5        3       3      35649.3       28332.4      28332.4      20.52%
+ 0.840       5        3       3      33998.4       27479.0      27479.0      19.18%
+ 0.860       6        3       3      32297.6       26652.2      26652.2      17.48%
+ 0.880       6        3       3      30527.7       25851.5      25851.5      15.32%
+ 0.900       7        3       3      28788.0       25076.3      25076.3      12.89%
+ 0.920       7        3       3      26945.5       24325.9      24325.9       9.72%
+ 0.940       7        3       3      25196.3       23599.6      23599.6       6.34%
+ 0.960       7        3       3      23539.3       22896.9      22896.9       2.73%
+ 0.980       7        7       7      21972.7       21972.7      21972.7       0.00%
+
+depths that are ever cost-optimal on the LOCAL M4 Pro curve: [2, 3, 7]
+the optimum jumps to the cap at q = 0.980; below that the optimum is shallow
+m5fit beats ship for q in [0.76, 0.96], best +23.40 %
+m5fit loses to ship for q in [0.60, 0.64], worst -3.88 %
+
+===============================================================================
+STAGE A - REPRODUCTION CHECK, stationary acceptance, no margin clamp
+===============================================================================
+Shift the E92 profile in logit space until the realized accept rate
+matches the target. Mean draft length is then a free prediction of
+the shipped walk, driven by the live per-position EMA.
+
+target        acc obs  acc sim  len obs  len sim  len err      mu
+beagle         0.8340   0.8340   4.3818   6.7388   53.79%  -0.161
+essays         0.8974   0.8974   5.0870   6.8035   33.74%   0.386
+local ship     0.8750   0.8750   6.3590   6.7858    6.71%   0.168
+
+verdict: FAIL
+
+The model reproduces the measured LOCAL ship leg to under 7 %, so
+the port and the walk are sound, and it misses both ranked
+prompts by a large margin. Mechanism: in a Bernoulli chain the
+realized accept rate falls as depth rises, so calibrating one
+scalar to a high accept rate forces a high per-position q, and a
+high q sends the shipped walk to the cap. Mean depth 4.38 at
+accept 0.834 is unreachable by this base's walk under any
+constant profile. The ranked reference schedule that produced
+4.3818 is therefore NOT this base's walk, so Stage C stops
+requiring the walk to reproduce the ranked depth and prices the
+depths directly instead.
+
+===============================================================================
+STAGE B - VALIDATION against measured local rung-3 ground truth
+===============================================================================
+Calibrate the acceptance level on the local SHIP leg only, using its
+measured depth histogram and its measured tokens per round. Then
+predict the round cost per token of BOTH measured arms from the local
+cost curve, and compare with the measured rung-3 ABBA numbers.
+
+  calibrated mu +0.1333
+  profile 0.9700 0.9694 0.9598 0.9547 0.9548 0.9876 0.9516 0.8510
+
+arm      mean d  tok/rnd obs  tok/rnd sim  us/tok obs  us/tok sim     err
+ship     6.3590       6.5641       6.5641     23813.0     23482.8  -1.39%
+m5fit    4.4000       5.1200       4.9648     23056.0     23094.2   0.17%
+
+  measured local arm delta  +3.18 % for m5fit
+  simulated local arm delta +1.65 % for m5fit
+  agreement 1.52 pp
+
+  The local acceptance level sits at the top of the q axis, which is
+  where Stage 0 says m5fit gains little. The local measurement is
+  consistent with the map and carries no information about the
+  ranked prompts.
+
+===============================================================================
+STAGE C - DECISIVE RANKED COMPUTATION
+===============================================================================
+effective_mean_draft_len is exact on the board; the round count is
+inferred, so every admissible multiple of the reduced denominator is
+priced. The acceptance level is the only fitted scalar, and it is
+fixed by the accepted tokens per round the round count implies.
+
+--- beagle: draft_len 4.381818 = 241/55 ---
+  observed depth mixture d4=0.6182 d5=0.3818
+
+  round count 110: accepted/round 3.6545, accept rate 0.8340, mu -0.5558
+    profile 0.9420 0.9409 0.9229 0.9137 0.9138 0.9757 0.9080 0.7414
+      d  width   tokens   round us   us/token
+      0      1   1.0000    31176.6    31176.6
+      1      2   1.9420    35171.7    18110.9
+      2      3   2.8283    39166.8    13848.0
+      3      4   3.6463    43161.9    11837.0  <- m5fit
+      4      5   4.3938    53108.2    12087.2
+      5      6   5.0768    60341.2    11885.7
+      6      7   5.7432    67574.2    11766.0  <- best
+      7      8   6.3483    74807.2    11783.8  <- ship
+    observed-baseline us/token 12003.3 at the board depth mixture
+    m5fit vs observed baseline +1.385 %
+    m5fit vs this base's ship walk (d=7) -0.452 %
+
+  round count 165: accepted/round 2.1030, accept rate 0.4799, mu -2.1696
+    profile 0.7639 0.7601 0.7046 0.6783 0.6787 0.8887 0.6629 0.3635
+      d  width   tokens   round us   us/token
+      0      1   1.0000    31176.6    31176.6
+      1      2   1.7639    35171.7    19939.7
+      2      3   2.3445    39166.8    16705.6
+      3      4   2.7536    43161.9    15674.5  <- best  <- ship  <- m5fit
+      4      5   3.0311    53108.2    17521.0
+      5      6   3.2195    60341.2    18742.7
+      6      7   3.3868    67574.2    19952.1
+      7      8   3.4978    74807.2    21387.1
+    observed-baseline us/token 18004.9 at the board depth mixture
+    m5fit vs observed baseline +12.943 %
+    m5fit vs this base's ship walk (d=3) +0.000 %
+
+  round count 220: accepted/round 1.3273, accept rate 0.3029, mu -2.8648
+    profile 0.6175 0.6125 0.5434 0.5126 0.5131 0.7994 0.4952 0.2217
+      d  width   tokens   round us   us/token
+      0      1   1.0000    31176.6    31176.6
+      1      2   1.6175    35171.7    21744.5
+      2      3   1.9957    39166.8    19625.3  <- ship
+      3      4   2.2013    43161.9    19607.8  <- best  <- m5fit
+      4      5   2.3066    53108.2    23024.2
+      5      6   2.3607    60341.2    25560.8
+      6      7   2.4039    67574.2    28110.0
+      7      8   2.4253    74807.2    30844.2
+    observed-baseline us/token 24006.6 at the board depth mixture
+    m5fit vs observed baseline +18.323 %
+    m5fit vs this base's ship walk (d=2) +0.089 %
+
+  round count 275: accepted/round 0.8618, accept rate 0.1967, mu -3.3940
+    profile 0.4874 0.4822 0.4121 0.3826 0.3831 0.7013 0.3663 0.1437
+      d  width   tokens   round us   us/token
+      0      1   1.0000    31176.6    31176.6
+      1      2   1.4874    35171.7    23645.8
+      2      3   1.7225    39166.8    22738.7  <- best  <- ship  <- m5fit
+      3      4   1.8193    43161.9    23723.9
+      4      5   1.8564    53108.2    28608.2
+      5      6   1.8706    60341.2    32257.8
+      6      7   1.8805    67574.2    35933.3
+      7      8   1.8842    74807.2    39702.5
+    observed-baseline us/token 30008.2 at the board depth mixture
+    m5fit vs observed baseline +24.225 %
+    m5fit vs this base's ship walk (d=2) +0.000 %
+
+--- essays: draft_len 5.086957 = 117/23 ---
+  observed depth mixture d5=0.9130 d6=0.0870
+
+  round count 92: accepted/round 4.5652, accept rate 0.8974, mu +0.1275
+    profile 0.9699 0.9692 0.9596 0.9545 0.9546 0.9876 0.9514 0.8503
+      d  width   tokens   round us   us/token
+      0      1   1.0000    31176.6    31176.6
+      1      2   1.9699    35171.7    17854.9
+      2      3   2.9099    39166.8    13459.9
+      3      4   3.8119    43161.9    11323.0  <- m5fit
+      4      5   4.6728    53108.2    11365.3
+      5      6   5.4946    60341.2    10981.8
+      6      7   6.3062    67574.2    10715.4
+      7      8   7.0784    74807.2    10568.4  <- best  <- ship
+    observed-baseline us/token 10955.6 at the board depth mixture
+    m5fit vs observed baseline -3.354 %
+    m5fit vs this base's ship walk (d=7) -7.140 %
+
+  round count 115: accepted/round 3.4522, accept rate 0.6786, mu -1.2459
+    profile 0.8907 0.8886 0.8573 0.8415 0.8418 0.9526 0.8320 0.5898
+      d  width   tokens   round us   us/token
+      0      1   1.0000    31176.6    31176.6
+      1      2   1.8907    35171.7    18602.5
+      2      3   2.6822    39166.8    14602.6
+      3      4   3.3607    43161.9    12843.0  <- best  <- m5fit
+      4      5   3.9317    53108.2    13507.6
+      5      6   4.4124    60341.2    13675.5
+      6      7   4.8702    67574.2    13874.9  <- ship
+      7      8   5.2512    74807.2    14245.8
+    observed-baseline us/token 13694.5 at the board depth mixture
+    m5fit vs observed baseline +6.217 %
+    m5fit vs this base's ship walk (d=6) +7.437 %
+
+===============================================================================
+PREDICTED PUBLISHED SCORE MOVE
+===============================================================================
+published = 0.5 * raw_beagle + 0.5 * min(essays, medicine, republic,
+botany). A GAIN saturates at the advisor ceiling because another
+prompt becomes the binding minimum. A LOSS does not saturate, because
+a slower essays stays the minimum, so losses are carried uncapped.
+
+basis                   beagle %  essays %  published %
+observed                  +1.385    -3.354      -0.5851
+ship_walk                 -0.452    -7.140      -2.8728
+
+===============================================================================
+STAGE D - THE CORRECTED TIER SHAPE
+===============================================================================
+On the ranked curve the cost optimum jumps from a shallow depth to
+the cap at q = 0.940. m5fit encodes the right SHAPE - a
+cliff at the step into width 5 - but at the wrong PLACE. Solve the
+two factors so the walk crosses where the cost curve crosses.
+
+  rankedGroupStepFactor 2.490 -> 2.310
+  rankedTierFactor      1.810 -> 1.810
+  marginal 0.12800 0.12800 0.12800 0.29570 0.23168 0.23168 0.23168 0.23168   total 1.60642
+
+     q  ship d  m5fit d  fixed d  best d  fixed-ship
+ 0.600       2        3        3       3       0.74%
+ 0.620       2        3        3       3       1.51%
+ 0.640       2        3        3       3       2.30%
+ 0.660       3        3        3       3       0.00%
+ 0.680       3        3        3       3       0.00%
+ 0.700       3        3        3       3       0.00%
+ 0.720       3        3        3       3       0.00%
+ 0.740       3        3        3       3       0.00%
+ 0.760       4        3        3       3       8.96%
+ 0.780       4        3        3       3       8.22%
+ 0.800       4        3        3       3       7.45%
+ 0.820       5        3        3       3       9.13%
+ 0.840       5        3        3       3       7.59%
+ 0.860       6        3        3       3       8.06%
+ 0.880       6        3        3       3       5.65%
+ 0.900       7        3        3       3       4.45%
+ 0.920       7        3        3       3       0.97%
+ 0.940       7        3        7       7       0.00%
+ 0.960       7        3        7       7       0.00%
+ 0.980       7        7        7       7       0.00%
+
+  The corrected shape never selects a dominated depth on the ranked
+  curve. Now apply it to the two prompts that carry the score.
+
+prompt     ship d  m5fit d  fixed d  best d  ship us/tok  fixed us/tok  fixed-ship  spread d3..d7
+beagle          7        3        3       6      11783.8       11837.0      -0.45%          2.73%
+essays          7        3        7       7      10568.4       10568.4       0.00%          7.54%
+
+  At the acceptance level each ranked prompt implies, the shipped
+  flat price ALREADY selects a depth within a fraction of a percent
+  of the ranked optimum, and the cost per token is nearly flat over
+  depths 3 to 7. The dominated band exists, but beagle and essays do
+  not live in it, so the depth price has no ranked headroom on the
+  two prompts that carry the published score.
+
+===============================================================================
+STOP RULE, against this base's ship walk: beagle -0.452 %, essays -7.140 %,
+published -2.873 %. Threshold +0.500 % on beagle -> NEGATIVE
+===============================================================================
+
+written research/e94-artifacts/rung3-ranked-sim.json
