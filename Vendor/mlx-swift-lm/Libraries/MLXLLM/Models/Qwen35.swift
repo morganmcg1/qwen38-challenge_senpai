@@ -3451,6 +3451,10 @@ extension Qwen35TextModel: MTPCapable {
     /// the target's own lm_head rows, so this changes proposal quality and cost
     /// and nothing else.
     private func clusterCandidateIDs(_ x: MLXArray) -> MLXArray? {
+        // A head that ships no index uses the dense readout. A head that ships
+        // a broken one must fail, not silently fall back to a path that would
+        // report a plausible time for the wrong mechanism.
+        guard let shape = _draftClusterShape else { return nil }
         guard let centroidWeight = _draftCentroidW,
               let centroidScales = _draftCentroidS,
               let centroidBiases = _draftCentroidZ,
@@ -3458,8 +3462,8 @@ extension Qwen35TextModel: MTPCapable {
               let rowScales = _draftClusterS,
               let rowBiases = _draftClusterZ,
               let perm = _draftClusterPerm,
-              let shape = _draftClusterShape, shape.count == 3
-        else { return nil }
+              shape.count == 3
+        else { fatalError("Qwen MTP cluster index is incomplete") }
         let clusters = shape[0], rowsPerCluster = shape[1], probes = shape[2]
         let candidateCount = Self.draftRerankCandidateCount
         guard rowWeight.shape == [clusters, rowsPerCluster, 320],
@@ -3471,7 +3475,10 @@ extension Qwen35TextModel: MTPCapable {
               perm.shape == [clusters * rowsPerCluster],
               probes >= 1, probes <= clusters,
               probes * rowsPerCluster > candidateCount
-        else { return nil }
+        else {
+            fatalError(
+                "Qwen MTP cluster index shape \(shape) disagrees with its tensors")
+        }
 
         if _draftClusterLHS == nil {
             _draftClusterLHS = MLX.zeros([probes], dtype: .uint32)
@@ -3501,7 +3508,8 @@ extension Qwen35TextModel: MTPCapable {
         let permutedRow =
             MLX.take(probed.asType(.int32), MLX.floorDivide(local, width), axis: 0)
             * width + MLX.remainder(local, width)
-        return MLX.take(perm, permutedRow, axis: 0).asType(.int32)
+        // uint32 to match what `qwen35DraftTop32` hands the shared exact stage.
+        return MLX.take(perm, permutedRow, axis: 0).asType(.uint32)
     }
 
     private func draftTokenIDWithDeclaredRerank(_ x: MLXArray) -> MLXArray? {
