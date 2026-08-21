@@ -592,6 +592,7 @@ public final class Qwen36MTPBlockSession {
         guard !began else { throw Qwen36MTPSessionError.alreadyBegun }
         guard !seedTokens.isEmpty else { throw Qwen36MTPSessionError.emptySeed }
         let tBegin0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
+        let cpuBegin0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
         cache = model.newCache(parameters: nil)
         let (seedLogits, hidden) = model.callWithHidden(
             input: LMInput.Text(
@@ -619,9 +620,12 @@ public final class Qwen36MTPBlockSession {
                                            pendingHidden!, hidden])
         if Self.traceRounds {
             let tBeginDone = DispatchTime.now().uptimeNanoseconds
+            let cpuBeginDone = Self.threadCPUNanoseconds()
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
+                + "wall_us=\((tBeginDone - tBegin0) / 1000) "
+                + "cpu_us=\((cpuBeginDone - cpuBegin0) / 1000) "
                 + "head_submit=\(Self.headSubmitPolicy)\n")
         }
         let readTail = (
