@@ -775,3 +775,122 @@ struct QwenDraftTop32SelectionTests {
             "E28 / PR #33: qwen35BenchDraftTop32 returned a non-positive timing")
     }
 }
+
+/// E87 §8 chain B. Arm C handed `gatherQuantizedMM` its probe list through
+/// `MLX.sorted`, which cost 24.40 us per draft over 3,073 uint32 keys -- 7.94
+/// ns per key against the declared top-32 path's 0.388 ns. A one-dispatch
+/// bitmap compaction replaces it.
+///
+/// The exactness argument is structural, not statistical. `argPartition`
+/// returns a permutation of `[0, clusters)`, so its top segment holds DISTINCT
+/// indices, and the ascending order of a distinct set depends on the set alone.
+/// Both arms below read the same `order`, so the kernel cannot inherit a tie
+/// decision that `MLX.sorted` did not also see. The all-equal-score trial makes
+/// that concrete: `argPartition` picks its 3,073 clusters arbitrarily and the
+/// two arms must still agree exactly.
+@Suite
+struct QwenDraftProbeSortTests {
+    private static var env: [String: String] { ProcessInfo.processInfo.environment }
+
+    private static var enabled: Bool {
+        env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
+    }
+
+    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
+    /// compact rows at `qwen35DerivedClusterProbeFraction` 0.25.
+    private static let liveClusters = 12_292
+    private static let liveProbes = 3_073
+
+    private static func emit(_ name: String, _ payload: [String: Any]) throws {
+        print("E87_PROBE_SORT \(name) \(payload)")
+        guard let dir = env["MLXFAST_PROBE_SORT_OUT_DIR"] else { return }
+        let data = try JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).json"))
+    }
+
+    @Test(.enabled(if: QwenDraftProbeSortTests.enabled))
+    func theProbeCompactionMatchesSortedArgPartitionIncludingAllEqualScores() throws {
+        let requested = Int(Self.env["MLXFAST_PROBE_SORT_TRIALS"] ?? "") ?? 256
+        let seed = UInt64(Self.env["MLXFAST_PROBE_SORT_SEED"] ?? "") ?? 1
+        let (trials, bad, firstBad) = qwen35VerifyProbeSort(
+            clusters: Self.liveClusters, probes: Self.liveProbes,
+            trials: requested, seed: seed)
+        try Self.emit(
+            "verify",
+            [
+                "schema": "e87.probe_sort_verify.v1",
+                "entry_point": "qwen35VerifyProbeSort",
+                "clusters": Self.liveClusters,
+                "probes": Self.liveProbes,
+                "trials": trials,
+                "seed": Int(seed),
+                "tied_trials": trials / 4,
+                "all_equal_trials": trials / 4,
+                "mismatches": bad,
+                "first_bad_trial": firstBad,
+            ])
+        #expect(trials == requested)
+        #expect(
+            bad == 0 && firstBad == -1,
+            """
+            E87 §8: qwen_mtp_probe_sort disagreed with MLX.sorted on \(bad) of \
+            \(trials) rows (first at \(firstBad)). Both arms read the same \
+            argPartition output, so a failure here is a compaction bug, not a \
+            tie-break difference.
+            """
+        )
+    }
+
+    /// The gate above compares two arrays that are equal by construction, so it
+    /// would pass just as happily against a broken comparison. This proves it
+    /// can fail, using the smallest possible wrong answer: one selected index
+    /// swapped for one rejected index.
+    @Test(.enabled(if: QwenDraftProbeSortTests.enabled))
+    func theProbeCompactionGateRejectsASingleSwappedIndex() throws {
+        let caught = qwen35ProbeSortPositiveControl(
+            clusters: Self.liveClusters, probes: Self.liveProbes)
+        try Self.emit(
+            "positive_control",
+            [
+                "schema": "e87.probe_sort_positive_control.v1",
+                "entry_point": "qwen35ProbeSortPositiveControl",
+                "clusters": Self.liveClusters,
+                "probes": Self.liveProbes,
+                "damage": "swap one selected index for one rejected index",
+                "detected": caught,
+            ])
+        #expect(
+            caught,
+            """
+            E87 §8: the probe compaction gate accepted a selection with one \
+            index swapped out. The gate cannot fail, so its passes prove \
+            nothing. Fix the comparison before trusting the verify test.
+            """
+        )
+    }
+
+    @Test(.enabled(if: QwenDraftProbeSortTests.enabled))
+    func theOneDispatchCompactionIsCheaperThanTheSortItReplaces() throws {
+        let iters = Int(Self.env["MLXFAST_PROBE_SORT_BENCH_ITERS"] ?? "") ?? 200
+        let (sortedUs, kernelUs) = qwen35BenchProbeSort(
+            clusters: Self.liveClusters, probes: Self.liveProbes, iters: iters)
+        try Self.emit(
+            "bench",
+            [
+                "schema": "e87.probe_sort_bench.v1",
+                "entry_point": "qwen35BenchProbeSort",
+                "clusters": Self.liveClusters,
+                "probes": Self.liveProbes,
+                "iters": iters,
+                "mlx_sorted_us": sortedUs,
+                "compaction_us": kernelUs,
+                "saved_us": sortedUs - kernelUs,
+                "speedup": sortedUs / kernelUs,
+            ])
+        #expect(
+            sortedUs > 0 && kernelUs > 0,
+            "E87 §8: qwen35BenchProbeSort returned a non-positive timing")
+    }
+}
+

@@ -1,0 +1,60 @@
+{
+  "weight": {
+    "shipped_shape": [
+      98336,
+      320
+    ],
+    "rebuilt_shape": [
+      98336,
+      320
+    ],
+    "shipped_dtype": "mlx.core.uint32",
+    "rebuilt_dtype": "mlx.core.uint32",
+    "shape_match": true,
+    "dtype_match": true,
+    "byte_count": 125870080,
+    "differing_bytes": 0,
+    "bit_identical": true
+  },
+  "scales": {
+    "shipped_shape": [
+      98336,
+      80
+    ],
+    "rebuilt_shape": [
+      98336,
+      80
+    ],
+    "shipped_dtype": "mlx.core.bfloat16",
+    "rebuilt_dtype": "mlx.core.bfloat16",
+    "shape_match": true,
+    "dtype_match": true,
+    "byte_count": 15733760,
+    "differing_bytes": 0,
+    "bit_identical": true
+  },
+  "biases": {
+    "shipped_shape": [
+      98336,
+      80
+    ],
+    "rebuilt_shape": [
+      98336,
+      80
+    ],
+    "shipped_dtype": "mlx.core.bfloat16",
+    "rebuilt_dtype": "mlx.core.bfloat16",
+    "shape_match": true,
+    "dtype_match": true,
+    "byte_count": 15733760,
+    "differing_bytes": 0,
+    "bit_identical": true
+  },
+  "dequantized": {
+    "max_abs_diff": 0.0,
+    "mean_abs_diff": 0.0,
+    "rows_with_any_diff": 0,
+    "row_count": 98336
+  },
+  "all_bit_identical": true
+}

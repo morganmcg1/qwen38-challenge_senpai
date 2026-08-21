@@ -1,0 +1,11 @@
+{
+  "rule": "bisectnat",
+  "balance": "natural",
+  "iters": 8,
+  "leaves": 12292,
+  "rows_per_leaf": 8,
+  "build_seconds": 11.184324026107788,
+  "assign_sha256": "d07f7c415434359d5f63f32f444b151da6d30d5fe3a698cd7c6ca54e74244064",
+  "probe_sha256": "34dc78ae7e128d72252e0bf3535aa1f1e0df97679f39b669d17cfa4c1210e892",
+  "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/clusters/bisectnat-k12292.npz"
+}

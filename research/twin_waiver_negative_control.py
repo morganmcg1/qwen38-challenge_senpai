@@ -174,12 +174,12 @@ if LIVE_ROW:
         divergent,
     )
     assert_true(
-        "the row's checked_in_sha256 pins the LIVE twin body",
-        ta.body_digest(real_checked) == LIVE_ROW["checked_in_sha256"],
+        "the row's checked_in_comment_sha256 pins the LIVE twin body",
+        ta.comment_digest(real_checked) == LIVE_ROW["checked_in_comment_sha256"],
     )
     assert_true(
-        "the row's regenerated_sha256 pins the LIVE regenerated body",
-        ta.body_digest(real_regenerated) == LIVE_ROW["regenerated_sha256"],
+        "the row's regenerated_comment_sha256 pins the LIVE regenerated body",
+        ta.comment_digest(real_regenerated) == LIVE_ROW["regenerated_comment_sha256"],
     )
     assert_true(
         "the waived divergence is COMMENT-ONLY (every code line matches)",
@@ -285,8 +285,8 @@ else:
     # Part B's assertions are about the machinery and not about the live digests.
     # The finally block below restores the live row byte-for-byte.
     ta.KNOWN_COMMENT_DIVERGENCES[(STEM, HEADER)] = {
-        "checked_in_sha256": ta.body_digest(cbody),
-        "regenerated_sha256": ta.body_digest(rbody),
+        "checked_in_comment_sha256": ta.comment_digest(cbody),
+        "regenerated_comment_sha256": ta.comment_digest(rbody),
         "reason": "synthetic; installed in memory by the negative control only",
     }
 
@@ -428,8 +428,8 @@ try:
     # waiver somewhere".
     synthetic = (STEM, "mlx/backend/metal/kernels/does-not-exist.h")
     ta.KNOWN_COMMENT_DIVERGENCES[synthetic] = {
-        "checked_in_sha256": "0" * 64,
-        "regenerated_sha256": "1" * 64,
+        "checked_in_comment_sha256": "0" * 64,
+        "regenerated_comment_sha256": "1" * 64,
         "inherited_from": "synthetic",
         "adopted_by": "synthetic",
         "note": "synthetic row, removed below",
@@ -461,8 +461,8 @@ if LIVE_ROW:
     print(
         "NEGATIVE CONTROL PASSED: the allowlist's single row is LIVE, not dead --"
         " both pinned digests match the bodies actually in the tree, the"
-        " divergence they waive is comment-only across 3005 identical code"
-        " lines, and the row names its organizer and advisor provenance."
+        f" divergence they waive is comment-only across {len(ta.code_lines(real_checked))}"
+        " identical code lines, and the row names its organizer and advisor provenance."
         " Nothing waives any single-code-line mutation of that section, and the"
         " machinery -- exercised on a synthetic row and then removed without"
         " residue -- still cannot hide a code or comment change."

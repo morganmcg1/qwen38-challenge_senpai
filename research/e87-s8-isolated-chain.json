@@ -1,0 +1,83 @@
+{
+  "experiment": "e87-s8-probe-index-sort",
+  "harness": "local",
+  "measurement": "isolated chain cost under MLX_E58_BUFFER_LIMIT_OPS=1 MLX_E58_BUFFER_LIMIT_MB=1",
+  "label": "UPPER BOUND on the round contribution, not an attribution",
+  "why_upper_bound": "device.cpp:545-548 creates every compute encoder with MTL::DispatchTypeConcurrent, so a packed round may overlap these launch-bound dispatches with neighbours. One dispatch per command buffer removes that overlap and charges a full submit and drain.",
+  "identity": {
+    "host": "ip-10-231-2-95.ec2.internal",
+    "chip": "Apple M4 Pro Mac16,11, 20 GPU cores, 48 GiB",
+    "worker_sha256_instrumented": "7220dea88ed6d2aef0e846f6dc2eda68ba19d0f4036613920247b9ffef90d098",
+    "worker_sha256_clean_candidate": "6f26b00820fda4762ae0f5e2bcbb7f2a9f961dba35ff355ea0918465b0dc032e",
+    "arm_selector": "MLX_E87_PROBE_SORT environment gate, one binary serves both legs",
+    "census_instrument": "E58DispatchCensus, re-seated by cherry-pick of cd924bd6 and reverted by 3addd5b4 before any reported build",
+    "tokens": 64,
+    "forced_drafts": 8,
+    "mode": "--local-iterate",
+    "head": "declared run tree",
+    "width_phase": "w9|draft_head",
+    "steady_snapshots": 6
+  },
+  "legs": {
+    "base": {
+      "tag": "e87s8-base2",
+      "MLX_E87_PROBE_SORT": 0,
+      "phase_us_per_draft": 1640.2,
+      "phase_dispatches_per_draft": 62.5
+    },
+    "kernel": {
+      "tag": "e87s8-kernel",
+      "MLX_E87_PROBE_SORT": 1,
+      "phase_us_per_draft": 1647.49,
+      "phase_dispatches_per_draft": 59.5
+    }
+  },
+  "session_drift": {
+    "estimator": "median ratio of the 12 common roster rows above 20 us/draft",
+    "kernel_over_base": 1.013,
+    "note": "the two legs ran back to back and are not counterbalanced, so every raw delta below carries this 1.30 % drift"
+  },
+  "roster_delta": {
+    "removed_from_base": [
+      {
+        "signature": "merge_mbsort_uint32_uint32_bn512_tn4 grid=2x1x1 tg=512x1x1*1,partition_mbsort_uint32_uint32_bn512_tn4 grid=1x1x1 tg=3x1x1*1,sort_mbsort_uint32_uint32_bn512_tn4",
+        "us_per_draft": 24.28,
+        "buffers_per_draft": 1.0,
+        "role": "chain B, the 3,073-key index sort"
+      },
+      {
+        "signature": "affine_gather_qmv_fast_bfloat16_t_gs_64_b_2 grid=1x1x3073 tg=32x2x1*1",
+        "us_per_draft": 170.19,
+        "buffers_per_draft": 1.0,
+        "role": "stage-2 gather, unchanged work, listed only because its buffer signature changed"
+      }
+    ],
+    "added_in_kernel": [
+      {
+        "signature": "affine_gather_qmv_fast_bfloat16_t_gs_64_b_2 grid=1x1x3073 tg=32x2x1*1,custom_kernel_qwen_mtp_probe_sort_uint32_t_uint32_t grid=256x1x1 tg=256x1x1*1",
+        "us_per_draft": 184.15,
+        "buffers_per_draft": 1.0,
+        "role": "the same gather with the one-dispatch compaction packed into its command buffer"
+      }
+    ],
+    "no_uint32_mbsort_family_remains": true
+  },
+  "result": {
+    "base_pair_us_per_draft": 194.47,
+    "kernel_pair_us_per_draft": 184.15,
+    "raw_saving_us_per_draft": 10.32,
+    "drift_corrected_saving_us_per_draft": 12.84,
+    "marginal_cost_of_the_new_kernel_us_per_draft": 11.75,
+    "drift_corrected_cost_of_the_chain_it_replaces_us_per_draft": 24.6,
+    "relative_cost_of_the_replacement": 0.478,
+    "dispatches_per_draft_removed": 3.0,
+    "command_buffers_per_draft_removed": 1.0
+  },
+  "reproduce": [
+    "git cherry-pick -n cd924bd6   # re-seat E58DispatchCensus, keep only its installIfRequested call",
+    "senpai/rebuild-and-assert-worker.sh --require qwen_mtp_probe_sort --require qwen35_dual_rms_norm_concat_bf16_v1 --forbid qwen35_dual_rms_norm_bf16_v1 --require-symbol snapshotScheduleSignal --require-symbol buildDerivedClusterIndex --require-symbol makeQwen35ProbeSortKernel",
+    "MLX_E87_PROBE_SORT=0 research/e87_coarse_split_leg.sh e87s8-base2 8 64",
+    "MLX_E87_PROBE_SORT=1 research/e87_coarse_split_leg.sh e87s8-kernel 8 64",
+    "python3 research/e87_coarse_split.py --width-phase 'w9|draft_head' --drafts-per-round 8 --json research/out/<tag>/split.json research/out/<tag>/census.jsonl"
+  ]
+}

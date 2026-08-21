@@ -1,0 +1,196 @@
+{
+  "prefix": "e87p",
+  "experiment": "e87-coarse-draft-shortlist-traffic",
+  "harness": "local",
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "host": "Apple M4 Pro 48GB (not ranked M5)",
+  "base_arm": "declared",
+  "session_null_pct": 0.0,
+  "gpu_temp_entry_spread_c": 26.026954650878906,
+  "declared_head_bytes": 427738112,
+  "pct_per_pct_head_bytes": 0.0815,
+  "legs": [
+    {
+      "tag": "e87p-declared-1",
+      "arm": "declared",
+      "rep": 1,
+      "candidate_mtp_seconds_per_token": 0.031691576121374965,
+      "serial_seconds_per_token": 0.0738761133980006,
+      "local_ratio": 2.331096223017242,
+      "decode_tokens": 512,
+      "all_tokens_matched": true,
+      "accepted_draft_rate": 0.8770161290322581,
+      "effective_mean_draft_len": 6.358974358974359,
+      "residual_divergence_count": 0,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "uses_pinned_mtp_head": true,
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+      "head_loaded_bytes": 427746170,
+      "head_loaded_files": 2,
+      "gpu_temp_entry_c": 37.30734634399414,
+      "gpu_temp_exit_c": 66.55760955810547,
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "base_sha": "b181be0d9cbb81e033f894489c17d2d67fe40f92",
+      "worker_sha256": "3e97d1df1817778b6f2e0ea9de5c7fbec3d7c1bd5af7babc08d75d70ee1e8642",
+      "started": "2026-08-21T03:01:28Z",
+      "d_pre_us": 39.19230769230769,
+      "d_flush_us": 7.935897435897436,
+      "d_head1_us": 109.94871794871794,
+      "d_submit1_us": 310.71794871794873,
+      "d_chain_us": 337.9230769230769,
+      "d_submit2_us": 14488.948717948719,
+      "eval_wall_us": 72400.19230769231,
+      "readout_us": 20.21794871794872,
+      "commit_us": 282.2307692307692,
+      "upkeep_us": 93.55128205128206,
+      "rounds": 78,
+      "tokens_committed": 513,
+      "rounds_per_512": 77.84795321637426,
+      "rows_per_token": 1.1189083820662769,
+      "mean_d": 6.358974358974359,
+      "mean_acc": 5.576923076923077,
+      "draft_build_us_total": 1193174.0,
+      "draft_build_us_per_round": 15297.102564102564,
+      "verify_build_us_per_round": 68484.29487179487,
+      "round_us_total": 12213247.0
+    },
+    {
+      "tag": "e87p-armc-1",
+      "arm": "armc",
+      "rep": 1,
+      "candidate_mtp_seconds_per_token": 0.03141571697779,
+      "serial_seconds_per_token": 0.07404852728359401,
+      "local_ratio": 2.3570535517602282,
+      "decode_tokens": 512,
+      "all_tokens_matched": true,
+      "accepted_draft_rate": 0.8770161290322581,
+      "effective_mean_draft_len": 6.358974358974359,
+      "residual_divergence_count": 0,
+      "head_provenance_sha256": "29c674b5d0a63d997959afb28332e3faa9dbfdb2f12d71a46613d24bd882625d",
+      "uses_pinned_mtp_head": true,
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/built/e87-armC-plain-k12292-p25-run",
+      "head_loaded_bytes": 605145126,
+      "head_loaded_files": 2,
+      "gpu_temp_entry_c": 63.33430099487305,
+      "gpu_temp_exit_c": 69.39228820800781,
+      "cool_gate_passed_real_gate": "false",
+      "gate_qualified_for_timing": "false",
+      "base_sha": "b181be0d9cbb81e033f894489c17d2d67fe40f92",
+      "worker_sha256": "3e97d1df1817778b6f2e0ea9de5c7fbec3d7c1bd5af7babc08d75d70ee1e8642",
+      "started": "2026-08-21T03:04:57Z",
+      "d_pre_us": 86.84615384615384,
+      "d_flush_us": 25.846153846153847,
+      "d_head1_us": 328.4102564102564,
+      "d_submit1_us": 1204.371794871795,
+      "d_chain_us": 784.4230769230769,
+      "d_submit2_us": 10005.551282051281,
+      "eval_wall_us": 71416.1282051282,
+      "readout_us": 42.794871794871796,
+      "commit_us": 853.2820512820513,
+      "upkeep_us": 258.8205128205128,
+      "rounds": 78,
+      "tokens_committed": 513,
+      "rounds_per_512": 77.84795321637426,
+      "rows_per_token": 1.1189083820662769,
+      "mean_d": 6.358974358974359,
+      "mean_acc": 5.576923076923077,
+      "draft_build_us_total": 970157.0,
+      "draft_build_us_per_round": 12437.910256410256,
+      "verify_build_us_per_round": 69455.53846153847,
+      "round_us_total": 12048417.0
+    }
+  ],
+  "summary": {
+    "declared": {
+      "n": 1,
+      "spt_mean": 0.031691576121374965,
+      "spt_legs": [
+        0.031691576121374965
+      ],
+      "spt_stdev": 0.0,
+      "spt_spread_pct": 0.0,
+      "ratio_mean": 2.331096223017242,
+      "ratio_legs": [
+        2.331096223017242
+      ],
+      "serial_spt_mean": 0.0738761133980006,
+      "rounds_legs": [
+        78
+      ],
+      "rows_per_token_legs": [
+        1.1189
+      ],
+      "mean_d_legs": [
+        6.359
+      ],
+      "mean_acc_legs": [
+        5.5769
+      ],
+      "accepted_draft_rate_legs": [
+        0.8770161290322581
+      ],
+      "draft_build_us_per_round": 15297.102564102564,
+      "head_loaded_bytes": 427746170,
+      "head_provenance_sha256": [
+        "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9"
+      ],
+      "all_tokens_matched": true,
+      "gpu_temp_entry_c": [
+        37.30734634399414
+      ],
+      "gpu_temp_exit_c": [
+        66.55760955810547
+      ],
+      "spt_delta_pct_vs_base": 0.0,
+      "predicted_pct": 0.0,
+      "ratio_delta_pct_vs_base": 0.0
+    },
+    "armc": {
+      "n": 1,
+      "spt_mean": 0.03141571697779,
+      "spt_legs": [
+        0.03141571697779
+      ],
+      "spt_stdev": 0.0,
+      "spt_spread_pct": 0.0,
+      "ratio_mean": 2.3570535517602282,
+      "ratio_legs": [
+        2.3570535517602282
+      ],
+      "serial_spt_mean": 0.07404852728359401,
+      "rounds_legs": [
+        78
+      ],
+      "rows_per_token_legs": [
+        1.1189
+      ],
+      "mean_d_legs": [
+        6.359
+      ],
+      "mean_acc_legs": [
+        5.5769
+      ],
+      "accepted_draft_rate_legs": [
+        0.8770161290322581
+      ],
+      "draft_build_us_per_round": 12437.910256410256,
+      "head_loaded_bytes": 605145126,
+      "head_provenance_sha256": [
+        "29c674b5d0a63d997959afb28332e3faa9dbfdb2f12d71a46613d24bd882625d"
+      ],
+      "all_tokens_matched": true,
+      "gpu_temp_entry_c": [
+        63.33430099487305
+      ],
+      "gpu_temp_exit_c": [
+        69.39228820800781
+      ],
+      "spt_delta_pct_vs_base": -0.8704494296164348,
+      "predicted_pct": -1.8736660996904575,
+      "ratio_delta_pct_vs_base": 1.1135245506677731
+    }
+  }
+}

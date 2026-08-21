@@ -1,0 +1,369 @@
+{
+  "affine2_declared_ps_per_weight": 0.8,
+  "affine4_ps_per_weight": 0.21,
+  "drafts_per_round": 8,
+  "dram_gb_s": 265.0,
+  "legs": {
+    "research/out/e87c-mb1/census.jsonl": {
+      "census": "research/out/e87c-mb1/census.jsonl",
+      "combined": {
+        "axis_closed": true,
+        "non_memory_us_per_draft": 46.30470283018869,
+        "ps_per_weight": 0.2452513090227039,
+        "stop_rule_us": 60.0
+      },
+      "meta": {
+        "MLX_E85_FUSED_EMBED": "1",
+        "MLX_E85_GATHER_QMM": "1",
+        "arm": "ab",
+        "base_sha": "32d1ba1a1913a1829fd2252a4cba5343ddc54a5a",
+        "buffer_limit_mb": "1",
+        "census": "1",
+        "census_records": "152",
+        "cool_gate_passed_real_gate": "false",
+        "exit": "0",
+        "experiment": "e85-materialised-intermediate-census",
+        "finished": "2026-08-21T07:26:01Z",
+        "forced_drafts": "8",
+        "gate_qualified_for_timing": "false",
+        "gputime": "1",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "local_mode": "--local-iterate",
+        "official_or_ranked_score": "false",
+        "ops_per_buffer": "1",
+        "snapshot_rounds": "1",
+        "started": "2026-08-21T07:23:56Z",
+        "tag": "e87c-mb1",
+        "timing_valid": "false",
+        "tokens": "64",
+        "worker_sha256": "3f18718d8b6840da6ded26c0bb7bf78eb11b8989f9993adb5d1038e050946b48"
+      },
+      "phase_dispatches_per_draft": 60.5,
+      "phase_us_per_draft": 1674.6461666666667,
+      "phase_us_per_round": 13397.169333333333,
+      "roster": [
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x4352x1 tg=32x2x1*1,custom_kernel_qwen35_fused_residual_rms_norm_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t_bfloat16_t grid=1024x1x1 tg=1024x1x1*1",
+          "us_per_draft": 419.7274375
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 3.0,
+          "isolated": false,
+          "signature": "CV2ISigmoidADV2IMultiplyACEV2OMultiplyDB_VV_V2V2_11160318154034397263_contiguous grid=17408x1x1 tg=1024x1x1*1,affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x640x1 tg=32x2x1*1,g1_copybfloat16bfloat16 grid=17408x1x1 tg=1024x1x1*1",
+          "us_per_draft": 213.78039583333336
+        },
+        {
+          "buffers_per_draft": 1.875,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x640x1 tg=32x2x1*1",
+          "us_per_draft": 188.252625
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "affine_gather_qmv_fast_bfloat16_t_gs_64_b_2 grid=1x1x3073 tg=32x2x1*1",
+          "us_per_draft": 174.22220833333333
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x1536x1 tg=32x2x1*1",
+          "us_per_draft": 153.73527083333332
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "affine_qmv_bfloat16_t_gs_64_b_2_batch_0 grid=1x1537x1 tg=32x2x1*1",
+          "us_per_draft": 94.73004166666668
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=128x1x1 tg=32x1x4*1",
+          "us_per_draft": 90.2439375
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=9x640x1 tg=32x2x1*1",
+          "us_per_draft": 52.03991666666667
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 10.0,
+          "isolated": false,
+          "signature": "merge_mbsort_bfloat16_uint32_bn512_tn4 grid=13x1x1 tg=512x1x1*4,partition_mbsort_bfloat16_uint32_bn512_tn4 grid=1x1x1 tg=14x1x1*4,sort_mbsort_bfloat16_uint32_bn512_tn4 grid=13x1x1 tg=512x1x1*1,v_copyuint32uint32 grid=24584x1x1 tg=1024x1x1*1",
+          "us_per_draft": 47.57635416666667
+        },
+        {
+          "buffers_per_draft": 0.875,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=64x1x1 tg=32x1x4*1,rms_loopedbfloat16 grid=1024x1x1 tg=1024x1x1*1",
+          "us_per_draft": 44.249937499999994
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 8.0,
+          "isolated": false,
+          "signature": "merge_mbsort_bfloat16_uint32_bn512_tn4 grid=7x1x1 tg=512x1x1*3,partition_mbsort_bfloat16_uint32_bn512_tn4 grid=1x1x1 tg=8x1x1*3,sort_mbsort_bfloat16_uint32_bn512_tn4 grid=7x1x1 tg=512x1x1*1,v_copyuint32uint32 grid=12292x1x1 tg=1024x1x1*1",
+          "us_per_draft": 41.79858333333333
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "CV2ISigmoidBDV2IBroadcastACEV2IBroadcastCAFV2OMultiplyDE_VV_V2V2_11160318154034397263_strided_2 grid=256x24x1 tg=64x16x1*1,sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=24x1x1 tg=1024x1x1*1",
+          "us_per_draft": 34.53208333333333
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 4.0,
+          "isolated": false,
+          "signature": "merge_mbsort_uint32_uint32_bn512_tn4 grid=2x1x1 tg=512x1x1*1,partition_mbsort_uint32_uint32_bn512_tn4 grid=1x1x1 tg=3x1x1*1,sort_mbsort_uint32_uint32_bn512_tn4 grid=2x1x1 tg=512x1x1*1,v_copyuint32uint32 grid=3073x1x1 tg=1024x1x1*1",
+          "us_per_draft": 24.400958333333335
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "affine_gather_qmv_bfloat16_t_gs_64_b_4 grid=1x1x32 tg=32x2x1*1,v_copyint32uint32 grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 18.245625
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "steel_gemm_splitk_accum_bfloat16_float32 grid=2048x8x1 tg=128x8x1*1,steel_gemm_splitk_nt_bfloat16_float32_bm16_bn32_bk16_wm2_wn2_MN_naligned_K_taligned grid=64x1x8 tg=32x2x2*1",
+          "us_per_draft": 15.135416666666666
+        },
+        {
+          "buffers_per_draft": 0.875,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "custom_kernel_qwen35_attention_qk_rms_rope_bf16_v1_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_int32_ts_floats_bfloat16_t_bfloat16_t grid=1792x1x1 tg=64x1x1*1,scatter_axisbfloat16int32_none_intcc grid=1x1024x1 tg=1x1024x1*1",
+          "us_per_draft": 11.574666666666666
+        },
+        {
+          "buffers_per_draft": 0.75,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "custom_kernel_qwen35_embed_dual_rms_norm_concat_bf16_v1_int32_tc_uint32_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t grid=2048x1x1 tg=1024x1x1*1,custom_kernel_qwen_mtp_draft_rerank__98304_149740_bfloat16_t_uint32_t_int32_t grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 8.2551875
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=64x1x1 tg=32x1x4*1",
+          "us_per_draft": 7.704854166666667
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "rms_loopedbfloat16 grid=1024x1x1 tg=1024x1x1*1,vv_Addbfloat16 grid=5120x1x1 tg=1024x1x1*1",
+          "us_per_draft": 6.7352083333333335
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "v_copyint32int64 grid=32x1x1 tg=32x1x1*1,vs_Remainderint64 grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 3.9243958333333335
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "gather_frontint32_int64_int_1 grid=1x32x1 tg=1x32x1*1,vv_Addint64 grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 3.8958125
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "v_copyuint32int32 grid=3073x1x1 tg=1024x1x1*1,vs_Divideint64 grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 3.392291666666667
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "gg2_copybfloat16bfloat16 grid=256x4x1 tg=256x4x1*2",
+          "us_per_draft": 2.361125
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "gather_frontint32_int64_int_1 grid=1x32x1 tg=1x32x1*1,v_copyint32int64 grid=1x1x1 tg=1x1x1*1",
+          "us_per_draft": 2.3011458333333334
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "v_copyuint32int64 grid=32x1x1 tg=32x1x1*1,vs_Multiplyint32 grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 2.177916666666667
+        },
+        {
+          "buffers_per_draft": 1.0,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "v_copyint32int64 grid=1x1x1 tg=1x1x1*1,v_copyuint32int64 grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 2.1449166666666666
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "custom_kernel_qwen35_embed_dual_rms_norm_concat_bf16_v1_int32_t_uint32_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t grid=18432x1x1 tg=1024x1x1*1",
+          "us_per_draft": 1.2282916666666666
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "custom_kernel_qwen35_attention_qk_rms_rope_bf16_v1_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_int32_ts_floats_bfloat16_t_bfloat16_t grid=1792x1x1 tg=64x1x1*1,g3_copybfloat16bfloat16 grid=256x8x4 tg=32x8x4*1",
+          "us_per_draft": 1.0816041666666667
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 3.0,
+          "isolated": false,
+          "signature": "g2_copybfloat16bfloat16 grid=1024x8x1 tg=128x8x1*1,rmsbfloat16 grid=2048x1x1 tg=64x1x1*1,scatter_axisbfloat16int32_none_intcc grid=1x1024x1 tg=1x1024x1*1",
+          "us_per_draft": 1.0763958333333334
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "custom_kernel_qwen35_embed_dual_rms_norm_concat_bf16_v1_int32_tc_uint32_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t grid=2048x1x1 tg=1024x1x1*1",
+          "us_per_draft": 1.063375
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "g3_copybfloat16bfloat16 grid=256x8x4 tg=32x8x4*1,rope_bfloat16_ grid=32x8x1 tg=32x8x1*1",
+          "us_per_draft": 0.8220625
+        },
+        {
+          "buffers_per_draft": 0.25,
+          "dispatches_per_buffer": 1.0,
+          "isolated": true,
+          "signature": "custom_kernel_qwen_mtp_draft_rerank__98304_149740_bfloat16_t_uint32_t_int32_t grid=32x1x1 tg=32x1x1*1",
+          "us_per_draft": 0.6944583333333334
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "rms_loopedbfloat16 grid=1024x1x1 tg=1024x1x1*1,rms_loopedbfloat16 grid=8192x1x1 tg=1024x1x1*1",
+          "us_per_draft": 0.6353958333333333
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "gg1_copybfloat16bfloat16 grid=40960x1x1 tg=1024x1x1*1,gg1_copybfloat16bfloat16 grid=5120x1x1 tg=1024x1x1*1",
+          "us_per_draft": 0.5720625
+        },
+        {
+          "buffers_per_draft": 0.125,
+          "dispatches_per_buffer": 2.0,
+          "isolated": false,
+          "signature": "gg2_copybfloat16bfloat16 grid=2048x4x1 tg=256x4x1*2",
+          "us_per_draft": 0.3342083333333334
+        }
+      ],
+      "snapshot_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "stages": {
+        "stage1_centroids": {
+          "expected_bytes": 19667200,
+          "isolated": {
+            "achieved_gb_s": 207.61312519215787,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 0.0,
+            "fraction_of_dram_ceiling": 0.7834457554421052,
+            "measured_us": 94.73004166666668,
+            "memory_us_at_ceiling": 74.21584905660377,
+            "moved_bytes": 19667200,
+            "moved_mb": 19.6672,
+            "non_memory_us": 20.514192610062906,
+            "ps_per_weight": 0.3259582040475847,
+            "weights": 62935040
+          },
+          "shape": "[12292,5120] affine-2 g64 dense qmv",
+          "whole_buffer": {
+            "achieved_gb_s": 207.61312519215787,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 1.0,
+            "fraction_of_dram_ceiling": 0.7834457554421052,
+            "measured_us": 94.73004166666668,
+            "memory_us_at_ceiling": 74.21584905660377,
+            "moved_bytes": 19667200,
+            "moved_mb": 19.6672,
+            "non_memory_us": 20.514192610062906,
+            "ps_per_weight": 0.3259582040475847,
+            "signature": "affine_qmv_bfloat16_t_gs_64_b_2_batch_0 grid=1x1537x1 tg=32x2x1*1",
+            "weights": 62935040
+          }
+        },
+        "stage2_gather": {
+          "expected_bytes": 39334400,
+          "isolated": {
+            "achieved_gb_s": 225.77144656979007,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 0.0,
+            "fraction_of_dram_ceiling": 0.8519677229048682,
+            "measured_us": 174.22220833333333,
+            "memory_us_at_ceiling": 148.43169811320755,
+            "moved_bytes": 39334400,
+            "moved_mb": 39.3344,
+            "non_memory_us": 25.790510220125782,
+            "ps_per_weight": 0.20489786151026346,
+            "weights": 125870080
+          },
+          "shape": "[3073x8,5120] affine-2 g64 gather qmv",
+          "whole_buffer": {
+            "achieved_gb_s": 225.77144656979007,
+            "buffers_per_draft": 1.0,
+            "dispatches_per_buffer": 1.0,
+            "fraction_of_dram_ceiling": 0.8519677229048682,
+            "measured_us": 174.22220833333333,
+            "memory_us_at_ceiling": 148.43169811320755,
+            "moved_bytes": 39334400,
+            "moved_mb": 39.3344,
+            "non_memory_us": 25.790510220125782,
+            "ps_per_weight": 0.20489786151026346,
+            "signature": "affine_gather_qmv_fast_bfloat16_t_gs_64_b_2 grid=1x1x3073 tg=32x2x1*1",
+            "weights": 125870080
+          }
+        }
+      },
+      "steady_snapshots": 6
+    }
+  },
+  "stage_set": "armc",
+  "stop_rule_us": 60.0,
+  "width_phase": "w9|draft_head"
+}

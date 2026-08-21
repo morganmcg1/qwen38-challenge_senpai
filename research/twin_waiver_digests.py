@@ -131,14 +131,17 @@ def describe(stem):
             continue
         print("      paste-ready row for KNOWN_COMMENT_DIVERGENCES:")
         print(f"        ({stem!r}, {header!r}): {{")
+        # The gate reads COMMENT digests under these exact key names
+        # (twin_audit.comment_only_waiver). Printing body digests, or the
+        # short key names, produced a row that raised KeyError in the gate.
         print(
-            '            "checked_in_sha256": (\n'
-            f'                "{ta.body_digest(checked_body)}"\n'
+            '            "checked_in_comment_sha256": (\n'
+            f'                "{ta.comment_digest(checked_body)}"\n'
             "            ),"
         )
         print(
-            '            "regenerated_sha256": (\n'
-            f'                "{ta.body_digest(regenerated_body)}"\n'
+            '            "regenerated_comment_sha256": (\n'
+            f'                "{ta.comment_digest(regenerated_body)}"\n'
             "            ),"
         )
         print('            "inherited_from": "<organizer commit>",')

@@ -84,10 +84,25 @@ export MLX_E80_FORCE_DRAFTS="${drafts}"
   > "${out}/wrapper.out" 2> "${out}/wrapper.err"
 status=$?
 
+records="$(wc -l < "${census_path}" | tr -d ' ')"
+
 {
-  echo "census_records=$(wc -l < "${census_path}" | tr -d ' ')"
+  echo "census_records=${records}"
   echo "exit=${status}"
   echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } >> "${out}/meta.txt"
+
+# A census leg that decodes successfully but records nothing is the failure this
+# assertion exists to catch. The gate is compiled out of the worker unless
+# `Sources/MLXFastModel/E58DispatchCensus.swift` is present and installed, so a
+# cleanup that removes the instrument leaves every caller exiting 0 with an
+# empty census and a reducer that silently reports no roster at all.
+if [[ "${status}" -eq 0 && "${records}" -eq 0 ]]; then
+  echo "e85_census_leg.sh: leg ${tag} exited 0 but wrote 0 census records to" \
+       "${census_path}; the MLX_E58_DISPATCH_CENSUS gate is absent from the" \
+       "worker. Check that Sources/MLXFastModel/E58DispatchCensus.swift exists" \
+       "and that installIfRequested() is called, then rebuild." >&2
+  exit 3
+fi
 
 exit "${status}"

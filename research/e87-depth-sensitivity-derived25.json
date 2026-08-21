@@ -1,0 +1,80 @@
+{
+  "prefix": "e87r2t",
+  "harness": "local",
+  "base_arm": "declared",
+  "arm": "derived25",
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "rounds_used": 76,
+  "drafts_observed_min": 1.0,
+  "drafts_observed_max": 7.0,
+  "base_round_us_fit": {
+    "intercept_us": 56315.16935483873,
+    "slope_us_per_draft": 15692.124751095182
+  },
+  "saving_us_fit": {
+    "intercept_us": -248.4193548387093,
+    "slope_us_per_draft": 646.6129032258065
+  },
+  "by_observed_depth": {
+    "1.0": {
+      "rounds": 1,
+      "median_base_us": 71588.0,
+      "median_saving_us": 594.0,
+      "median_gain_pct": 0.8297480024585125
+    },
+    "3.0": {
+      "rounds": 4,
+      "median_base_us": 88608.0,
+      "median_saving_us": 1772.0,
+      "median_gain_pct": 1.9998194293968943
+    },
+    "4.0": {
+      "rounds": 5,
+      "median_base_us": 128304.0,
+      "median_saving_us": 2433.0,
+      "median_gain_pct": 1.896277590722035
+    },
+    "5.0": {
+      "rounds": 3,
+      "median_base_us": 138893.5,
+      "median_saving_us": 3161.0,
+      "median_gain_pct": 2.275844441964527
+    },
+    "6.0": {
+      "rounds": 3,
+      "median_base_us": 151763.0,
+      "median_saving_us": 3838.5,
+      "median_gain_pct": 2.5292726158549845
+    },
+    "7.0": {
+      "rounds": 60,
+      "median_base_us": 165755.0,
+      "median_saving_us": 4270.5,
+      "median_gain_pct": 2.576392868993394
+    }
+  },
+  "predicted": {
+    "beagle": {
+      "drafts_per_round": 4.382,
+      "predicted_base_round_us": 125078.06001413781,
+      "predicted_saving_us": 2585.0383870967744,
+      "predicted_round_gain_pct": 2.066740071603751,
+      "extrapolated_below_observed": false
+    },
+    "essays": {
+      "drafts_per_round": 5.087,
+      "predicted_base_round_us": 136141.0079636599,
+      "predicted_saving_us": 3040.900483870968,
+      "predicted_round_gain_pct": 2.2336403478683473,
+      "extrapolated_below_observed": false
+    },
+    "republic": {
+      "drafts_per_round": 4.989,
+      "predicted_base_round_us": 134603.1797380526,
+      "predicted_saving_us": 2977.532419354839,
+      "predicted_round_gain_pct": 2.2120817837656803,
+      "extrapolated_below_observed": false
+    }
+  }
+}
