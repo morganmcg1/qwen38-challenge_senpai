@@ -39,12 +39,27 @@ import argparse
 import json
 import pathlib
 
-PREAMBLE = """#include <metal_stdlib>
-using namespace metal;
+PREAMBLE = """#include "mlx_preamble.h"
 
-typedef bfloat bfloat16_t;
 typedef bfloat16_t InT;
 """
+
+# `custom_kernel.cpp:71` builds every MLXFast.metalKernel library as
+# `metal::utils() + source_`, and `metal::utils()` is the raw-string body of
+# this generated file. Reproducing an arm against a hand-written preamble
+# instead would change which `abs`, `exp` and `log1p` overloads bind, so the
+# arm would no longer be the shipped kernel.
+MLX_UTILS_CPP = (pathlib.Path(__file__).resolve().parent.parent
+                 / "Vendor/mlx-swift/Source/Cmlx/mlx-generated/utils.cpp")
+MLX_UTILS_OPEN = 'R"preamble('
+MLX_UTILS_CLOSE = ')preamble"'
+
+
+def mlx_preamble() -> str:
+    text = MLX_UTILS_CPP.read_text()
+    start = text.index(MLX_UTILS_OPEN) + len(MLX_UTILS_OPEN)
+    end = text.index(MLX_UTILS_CLOSE, start)
+    return text[start:end]
 
 PREWORK_HEADER = """
 inline InT qwen35_prework_sigmoid(InT x) {
@@ -502,6 +517,8 @@ def main() -> int:
 
     outdir = pathlib.Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+    (outdir / "mlx_preamble.h").write_text(
+        "#pragma once\n" + mlx_preamble())
     written = []
 
     if args.family in ("prework", "both"):

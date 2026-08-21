@@ -6,17 +6,28 @@ interval, and state what the protocol can and cannot resolve.
                                       [--known-dose LABEL=UNITS ...]
 
 THE ENDPOINT. Every leg reports `block_request_seconds`, one parent-measured
-wall-clock time per decode round. The leg statistic is a 10 %-trimmed mean over
-those rounds after dropping round 0. That number IS a decode-only round time,
-so a percentage quoted against it satisfies campaign rule 34 by construction --
+wall-clock time per decode round. That series IS decode-only round time, so a
+percentage quoted against it satisfies campaign rule 34 by construction --
 there is no `wall / rounds` denominator here and no seed model to get wrong.
 
-THE ESTIMATOR. Arms are paired inside a block:
+THE ESTIMATOR IS PAIRED TWICE. Rounds are NOT interchangeable: a round that
+verifies six draft rows costs far more than the truncated final round, so the
+round series has a standard deviation near 27 % of its own mean. That spread is
+work, not noise, and averaging it into a leg statistic throws away most of the
+protocol's power.
 
-    d_b = stat(arm, block b) - stat(control, block b)
+Every leg in a session replays the SAME reference rows with the same head, so
+the draft schedule is deterministic: round i costs the same work in every arm.
+The estimator therefore pairs at the round level first and at the block level
+second:
 
-and the reported effect is mean(d_b) with a Student-t 95 % interval over the k
-estimate blocks. Block 0 is a thermal conditioning block and never enters d.
+    d_b = mean_i ( t_arm[b][i] - t_control[b][i] )
+
+`round_alignment_verified` records that the arms really did agree round for
+round on `effective_draft_lengths`; if they ever disagree the pairing is
+rejected rather than silently averaged. The reported effect is mean(d_b) with a
+Student-t 95 % interval over the k estimate blocks. Block 0 is a thermal
+conditioning block and never enters d.
 
 WHAT THE HALF-WIDTH MEANS. Run two BYTE-IDENTICAL arms through the same
 protocol and the interval must cover zero; its half-width is the smallest
@@ -27,12 +38,14 @@ measured control round.
 NOISE DECOMPOSITION. Two variances drive that half-width and they are bought
 differently:
 
-    var(d_b) = 2 * (sigma_leg^2 + sigma_round^2 / n_rounds)
+    var(d_b) = 2 * sigma_leg^2 + sigma_pairdiff^2 / n_rounds
 
-`sigma_round / sqrt(n_rounds)` is the within-leg standard error and falls as
-the token window grows. `sigma_leg` is a per-leg offset -- clock and thermal
-state, allocation luck -- and only more blocks reduce it. The report separates
-them so the next student knows whether to buy tokens or blocks.
+`sigma_pairdiff` is measured directly as the standard deviation of the
+round-level differences inside a block, so the split needs no assumption about
+round-to-round work. It falls as the token window grows. `sigma_leg` is a
+per-leg offset -- clock and thermal state, allocation luck -- and only more
+blocks reduce it. The report separates them so the next student knows whether
+to buy tokens or blocks.
 """
 
 from __future__ import annotations
@@ -93,6 +106,8 @@ def load_legs(session: pathlib.Path) -> list[dict]:
                 "block": int(meta["block"]),
                 "arm": meta["arm_label"],
                 "arm_env": meta.get("arm_env", ""),
+                "round_us": us,
+                "draft_lengths": report["effective_draft_lengths"][1:],
                 "round_us_trimmed": trimmed_mean(us),
                 "round_us_mean": statistics.fmean(us),
                 "round_us_median": statistics.median(us),
@@ -111,6 +126,20 @@ def load_legs(session: pathlib.Path) -> list[dict]:
             }
         )
     return legs
+
+
+def pair_block(arm_leg: dict, control_leg: dict) -> dict:
+    """Round-align one arm leg against its control leg inside a block."""
+    n = min(len(arm_leg["round_us"]), len(control_leg["round_us"]))
+    aligned = (arm_leg["draft_lengths"][:n] == control_leg["draft_lengths"][:n])
+    per_round = [arm_leg["round_us"][i] - control_leg["round_us"][i]
+                 for i in range(n)]
+    return {
+        "rounds": n,
+        "aligned": aligned,
+        "mean_us": statistics.fmean(per_round),
+        "sd_us": statistics.stdev(per_round) if n > 1 else float("nan"),
+    }
 
 
 def contrast(diffs: list[float], control_round_us: float) -> dict:
@@ -161,17 +190,18 @@ def reduce_session(session: pathlib.Path, known_dose: dict[str, float]) -> dict:
     control_round_us = statistics.fmean(control_stats)
 
     contrasts = {}
+    pair_sds: list[float] = []
     for arm in arms:
         if arm == control:
             continue
-        diffs = [
-            block[arm]["round_us_trimmed"] - block[control]["round_us_trimmed"]
+        pairs = [
+            pair_block(block[arm], block[control])
             for block in by_block.values()
             if arm in block and control in block
         ]
-        if not diffs:
+        if not pairs:
             continue
-        entry = contrast(diffs, control_round_us)
+        entry = contrast([p["mean_us"] for p in pairs], control_round_us)
         control_env = next(
             leg["arm_env"] for leg in legs if leg["arm"] == control)
         arm_env = next(leg["arm_env"] for leg in legs if leg["arm"] == arm)
@@ -180,17 +210,25 @@ def reduce_session(session: pathlib.Path, known_dose: dict[str, float]) -> dict:
         entry["clears_bar"] = bool(
             entry["half_width_pct"] < BAR_PCT and entry["significant_at_95"]
         )
+        entry["round_alignment_verified"] = all(p["aligned"] for p in pairs)
+        entry["rounds_paired_per_block"] = [p["rounds"] for p in pairs]
+        entry["round_diff_sd_us"] = statistics.fmean(
+            [p["sd_us"] for p in pairs if p["sd_us"] == p["sd_us"]])
         contrasts[arm] = entry
+        pair_sds.append(entry["round_diff_sd_us"])
 
-    # Noise decomposition. var(d) = 2 (sigma_leg^2 + sigma_round^2 / n_rounds).
-    within_sem = statistics.median([leg["round_us_sem"] for leg in estimate])
+    # var(d_b) = 2 sigma_leg^2 + sigma_pairdiff^2 / n_rounds, with
+    # sigma_pairdiff measured, not assumed.
+    n_rounds = statistics.median([leg["rounds_used"] for leg in estimate])
+    sigma_pairdiff = statistics.fmean(pair_sds) if pair_sds else float("nan")
+    within_sem = sigma_pairdiff / math.sqrt(n_rounds)
     null_arms = [a for a, c in contrasts.items()
                  if c["byte_identical_to_control"]]
     sd_null = (
         statistics.fmean([contrasts[a]["sd_of_block_diffs_us"] for a in null_arms])
         if null_arms else float("nan")
     )
-    leg_var = (sd_null ** 2) / 2.0 - within_sem ** 2 if null_arms else float("nan")
+    leg_var = (sd_null ** 2 - within_sem ** 2) / 2.0 if null_arms else float("nan")
     sigma_leg = math.sqrt(leg_var) if leg_var == leg_var and leg_var > 0 else 0.0
 
     dose = {}
@@ -243,13 +281,14 @@ def reduce_session(session: pathlib.Path, known_dose: dict[str, float]) -> dict:
         },
         "noise": {
             "within_leg_sem_us_median": within_sem,
-            "rounds_per_leg": statistics.median([leg["rounds_used"] for leg in estimate]),
+            "rounds_per_leg": n_rounds,
             "round_sd_us_median": statistics.median(
                 [leg["round_us_sd"] for leg in estimate]),
+            "sigma_pairdiff_us": sigma_pairdiff,
             "sd_of_null_block_diffs_us": sd_null,
             "sigma_leg_us": sigma_leg,
             "leg_share_of_pair_variance": (
-                sigma_leg ** 2 / (sigma_leg ** 2 + within_sem ** 2)
+                2 * sigma_leg ** 2 / (2 * sigma_leg ** 2 + within_sem ** 2)
                 if null_arms and (sigma_leg or within_sem) else float("nan")
             ),
         },
@@ -287,7 +326,7 @@ def render(out: dict) -> str:
         f"  rounds/leg {noise['rounds_per_leg']:.0f}",
         "",
         f"{'arm':<8} {'effect us':>10} {'effect %':>9} {'half us':>9}"
-        f" {'half %':>8} {'sig':>4} {'null':>5}",
+        f" {'half %':>8} {'sig':>4} {'null':>5} {'algn':>5}",
     ]
     for arm, c in out["contrasts"].items():
         lines.append(
@@ -295,6 +334,7 @@ def render(out: dict) -> str:
             f" {c['half_width_us']:>9.1f} {c['half_width_pct']:>8.3f}"
             f" {'yes' if c['significant_at_95'] else 'no':>4}"
             f" {'yes' if c['byte_identical_to_control'] else 'no':>5}"
+            f" {'yes' if c['round_alignment_verified'] else 'NO':>5}"
         )
     lines += [
         "",
@@ -302,9 +342,11 @@ def render(out: dict) -> str:
         f" = {res['half_width_pct']:.3f} %"
         f"   {'CLEARS' if res['half_width_pct'] < out['bar_pct'] else 'ABOVE'}"
         f" the {out['bar_pct']:.2f} % bar",
-        f"  within-leg SEM {noise['within_leg_sem_us_median']:.1f} us"
-        f"   per-round SD {noise['round_sd_us_median']:.1f} us"
-        f"   leg offset sigma {noise['sigma_leg_us']:.1f} us"
+        f"  round-diff SD {noise['sigma_pairdiff_us']:.1f} us"
+        f"   -> within-leg SEM {noise['within_leg_sem_us_median']:.1f} us"
+        f" over {noise['rounds_per_leg']:.0f} rounds"
+        f"   raw per-round SD {noise['round_sd_us_median']:.1f} us",
+        f"  leg offset sigma {noise['sigma_leg_us']:.1f} us"
         f"   leg share of pair variance"
         f" {100 * noise['leg_share_of_pair_variance']:.1f} %",
         f"  cost {out['cost']['minutes_per_two_arm_decision']:.1f} min"
