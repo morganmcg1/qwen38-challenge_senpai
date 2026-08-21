@@ -37,8 +37,9 @@ def table(columns, rows):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True)
-    parser.add_argument("--rung5", default="",
-                        help="JSON from research/e99_rung5_price.py")
+    parser.add_argument("--rung5", nargs="*", default=[],
+                        help="JSON from research/e99_rung5_price.py; the first "
+                             "file is the headline offered cap")
     parser.add_argument("--name", required=True)
     parser.add_argument("--notes", default="")
     parser.add_argument("--group", default=EXPERIMENT)
@@ -166,27 +167,40 @@ def main() -> None:
     run.summary["realisable/leg_out_recovered_share_median"] = \
         statistics.median([f["recovered_share"] for f in transfer])
 
-    if args.rung5:
-        rung5 = json.loads(Path(args.rung5).read_text())
-        measured = rung5["off"] + rung5["on"] + rung5["sweep"]
+    measured_rows, replay_rows = [], []
+    for index, path in enumerate(args.rung5):
+        rung5 = json.loads(Path(path).read_text())
+        bundle = Path(path).stem
+        cap = rung5["off"][0]["offered_cap"]
+        for row in rung5["off"] + rung5["on"] + rung5["sweep"]:
+            measured_rows.append(dict(row, bundle=bundle))
+        for row in rung5["replay"]:
+            replay_rows.append(dict(row, bundle=bundle, offered_cap=cap))
+        # The first bundle is the configuration that the ranked runner uses, so
+        # it also owns the unprefixed summary keys.
+        prefixes = [f"rung5/cap{cap}"] + (["rung5"] if index == 0 else [])
+        for prefix in prefixes:
+            for field, values in rung5["contrasts"].items():
+                run.summary[f"{prefix}/{field}/off"] = values["off"]
+                run.summary[f"{prefix}/{field}/on"] = values["on"]
+                run.summary[f"{prefix}/{field}/delta_pct"] = values["delta_pct"]
+            run.summary[f"{prefix}/exactness_green"] = rung5["exactness_green"]
+            run.summary[f"{prefix}/dram_floor_violations"] = \
+                rung5["dram_floor_violations"]
+            run.summary[f"{prefix}/fired_share_on"] = \
+                statistics.fmean([row["fired_share"] for row in rung5["on"]])
+
+    if measured_rows:
+        columns = sorted({key for row in measured_rows for key in row})
         run.log({
-            "rung5_legs": table(list(measured[0]), measured),
-            "rung5_replay": table(list(rung5["replay"][0]), rung5["replay"]),
+            "rung5_legs": table(columns, measured_rows),
+            "rung5_replay": table(list(replay_rows[0]), replay_rows),
         })
-        for field, values in rung5["contrasts"].items():
-            run.summary[f"rung5/{field}/off"] = values["off"]
-            run.summary[f"rung5/{field}/on"] = values["on"]
-            run.summary[f"rung5/{field}/delta_pct"] = values["delta_pct"]
-        run.summary["rung5/exactness_green"] = rung5["exactness_green"]
-        run.summary["rung5/dram_floor_violations"] = \
-            rung5["dram_floor_violations"]
-        run.summary["rung5/fired_share_on"] = \
-            statistics.fmean([row["fired_share"] for row in rung5["on"]])
 
     artifact = wandb.Artifact(name="e99-oracle-report", type="analysis")
     artifact.add_file(args.report)
-    if args.rung5:
-        artifact.add_file(args.rung5)
+    for path in args.rung5:
+        artifact.add_file(path)
     run.log_artifact(artifact)
     print(f"run {run.id} {run.url}")
     run.finish()
