@@ -35,6 +35,32 @@ enum Qwen36MTPHostStateProbe {
     static let enabled =
         ProcessInfo.processInfo.environment["MLX_E89_PROBE"] == "1"
 
+    /// THE INSTRUMENT IS NOT PASSIVE. With every component on, a probed leg
+    /// sits at about 2,900 us of host phase sum per round while the same
+    /// worker binary with `MLX_E89_PROBE=0` sits at about 570 us, which is the
+    /// clean level. That is the signature the probe was built to observe, so
+    /// the probe must be decomposed before any of its readings mean anything.
+    ///
+    /// `MLX_E89_PARTS` selects components from `marks`, `probe`, `rusage`,
+    /// `thread` and `mem`. Unset means every component, which is the
+    /// state-inducing configuration. Each component alone is one ablation arm.
+    static let parts: Set<String> = {
+        guard let raw = ProcessInfo.processInfo.environment["MLX_E89_PARTS"],
+              !raw.isEmpty
+        else { return ["marks", "probe", "rusage", "thread", "mem"] }
+        return Set(raw.lowercased().split(separator: ",").map(String.init))
+    }()
+
+    @inline(__always)
+    static func on(_ part: String) -> Bool { enabled && parts.contains(part) }
+
+    /// The MLX allocator counters take the allocator lock, so an ablation arm
+    /// that excludes `mem` must not evaluate them at all.
+    @inline(__always)
+    private static func memoryMB(_ value: @autoclosure () -> Int) -> Int {
+        on("mem") ? value() >> 20 : 0
+    }
+
     /// `PRIO_DARWIN_ROLE`. The Darwin headers define it as a macro, so it does
     /// not survive into Swift.
     private static let prioDarwinRole: Int32 = 6
@@ -57,13 +83,14 @@ enum Qwen36MTPHostStateProbe {
     /// running" (cpu flat while wall inflates).
     @inline(__always)
     static func cpuMark() -> UInt64 {
-        enabled ? clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) : 0
+        on("marks") ? clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) : 0
     }
 
     /// Wall cost of the twelve `cpuMark` calls a traced round adds, measured
     /// on the same thread in the same round, so the analysis can subtract the
     /// instrument from the phase totals instead of assuming it is free.
     static func cpuMarkOverheadNanos() -> UInt64 {
+        guard on("marks") else { return 0 }
         let t0 = DispatchTime.now().uptimeNanoseconds
         for _ in 0 ..< 12 { overheadSink &+= clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) }
         return DispatchTime.now().uptimeNanoseconds - t0
@@ -102,6 +129,7 @@ enum Qwen36MTPHostStateProbe {
     }
 
     static func usage() -> Usage {
+        guard on("rusage") else { return Usage() }
         var info = rusage_info_v4()
         let rc = withUnsafeMutablePointer(to: &info) { pointer -> Int32 in
             pointer.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) {
@@ -132,6 +160,7 @@ enum Qwen36MTPHostStateProbe {
     /// under 0.05 % of a 13 second leg.
     @inline(never)
     static func cpuProbeNanos() -> UInt64 {
+        guard on("probe") else { return 0 }
         let t0 = DispatchTime.now().uptimeNanoseconds
         var x: UInt64 = 0x9E37_79B9_7F4A_7C15
         for _ in 0 ..< 20_000 {
@@ -164,6 +193,7 @@ enum Qwen36MTPHostStateProbe {
     }
 
     static func threadState() -> ThreadState {
+        guard on("thread") else { return ThreadState() }
         var state = ThreadState()
         var qos = QOS_CLASS_UNSPECIFIED
         var relative: Int32 = 0
@@ -233,6 +263,7 @@ enum Qwen36MTPHostStateProbe {
         return "e89-probe: header tag=\(tag) "
             + "timebase_numer=\(machTimebase.numer) "
             + "timebase_denom=\(machTimebase.denom) "
+            + "parts=\(parts.sorted().joined(separator: "+")) "
             + "forced_qos=\(applyForcedQoS()) "
             + "qos=\(state.qos) qos_rel=\(state.qosRelativePriority) "
             + "role=\(state.role) curpri=\(state.currentPriority) "
@@ -266,9 +297,9 @@ enum Qwen36MTPHostStateProbe {
             + "e89_qos=\(state.qos) e89_role=\(state.role) "
             + "e89_curpri=\(state.currentPriority) "
             + "e89_runstate=\(state.runState) e89_tid=\(state.machID) "
-            + "e89_active_mb=\(Memory.activeMemory >> 20) "
-            + "e89_cache_mb=\(Memory.cacheMemory >> 20) "
-            + "e89_peak_mb=\(Memory.peakMemory >> 20) "
+            + "e89_active_mb=\(memoryMB(Memory.activeMemory)) "
+            + "e89_cache_mb=\(memoryMB(Memory.cacheMemory)) "
+            + "e89_peak_mb=\(memoryMB(Memory.peakMemory)) "
             + "e89_leg_ms=\(legWallNanos / 1_000_000) "
     }
 }

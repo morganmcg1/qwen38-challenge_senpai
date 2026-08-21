@@ -62,10 +62,14 @@ def load(tag: str) -> tuple[list[dict], list[dict]]:
         rec["HOSTSUM"] = sum(rec[k] for k in HOST)
         if "e89_thr_user_ns" in rec:
             rec["THRCPU"] = rec["e89_thr_user_ns"] + rec["e89_thr_sys_ns"]
-            # The share of the round the submitting thread spent ON a CPU.
-            # A slow thread stays near its clean share; a blocked thread drops.
-            rec["THRCPU_frac"] = rec["THRCPU"] / (rec["round_us"] * 1000)
-            rec["HOSTCPU_frac"] = rec["THRCPU"] / (rec["HOSTSUM"] * 1000)
+        if "host_thread_cpu_ns" in rec:
+            # Occupancy over exactly the eight host phases. Near the clean
+            # value while wall time inflates means the thread is off-core.
+            # Rising with wall time means the thread is on-core but slow.
+            rec["HOSTOCC"] = rec["host_thread_cpu_ns"] / (rec["HOSTSUM"] * 1000)
+            rec["ROUNDOCC"] = rec["round_thread_cpu_ns"] / (rec["round_us"] * 1000)
+            rec["GPUWINCPU"] = (rec["cpu_submit2_ns"] + rec["cpu_verify_ns"]
+                                + rec["cpu_eval_ns"])
         rounds.append(rec)
     return rounds, headers
 
@@ -99,8 +103,8 @@ def main() -> None:
             if not (p / "trace.txt").exists():
                 continue
             rounds, headers = load(p.name)
-            if not rounds or "e89_probe_ns" not in rounds[0]:
-                print(f"skip {p.name}: no probe fields")
+            if not rounds:
+                print(f"skip {p.name}: no rounds")
                 continue
             meta = read_meta(p / "meta.txt")
             score = {}
@@ -109,10 +113,50 @@ def main() -> None:
                 score = json.loads(sp.read_text())
             legs.append({"tag": p.name, "arm": meta.get("e89_force_qos", "?"),
                          "position": int(meta.get("e89_position", -1)),
+                         "has_probe": "e89_probe_ns" in rounds[0],
                          "meta": meta, "rounds": rounds, "headers": headers,
                          "score": score})
     if not legs:
-        raise SystemExit("no probe legs found")
+        raise SystemExit("no legs found")
+
+    # ---- instrument cost. An `off` leg runs the same worker binary with
+    # MLX_E89_PROBE=0, so it is the control for the probe's own per-round work.
+    instrument = None
+    if any(l["arm"] == "off" for l in legs):
+        print("instrument ablation: each probe component against the probe-off "
+              "control legs")
+        print(f"  {'leg':<22}{'parts':<26}{'pos':>4}{'host_med_us':>12}"
+              f"{'ratio':>7}{'round_med_us':>13}{'cand_s_per_tok':>16}")
+        for leg in sorted(legs, key=lambda l: l["position"]):
+            post = leg["rounds"][WARMUP:]
+            leg["host_med"] = st.median([r["HOSTSUM"] for r in post])
+            leg["parts"] = ("none" if leg["arm"] == "off"
+                            else leg["meta"].get("e89_parts", "all"))
+        base = st.median([l["host_med"] for l in legs if l["arm"] == "off"])
+        for leg in sorted(legs, key=lambda l: l["position"]):
+            post = leg["rounds"][WARMUP:]
+            spt = leg["score"].get("candidate_mtp_seconds_per_token")
+            print(f"  {leg['tag']:<22}{leg['parts']:<26}{leg['position']:>4}"
+                  f"{leg['host_med']:>12.0f}{leg['host_med'] / base:>7.2f}"
+                  f"{st.median([r['round_us'] for r in post]):>13.0f}"
+                  + (f"{spt:>16.7f}" if spt else f"{'n/a':>16}"))
+        by_parts = {}
+        for leg in legs:
+            by_parts.setdefault(leg["parts"], []).append(leg["host_med"])
+        instrument = {"probe_off_host_med": base,
+                      "by_parts": {k: {"host_med": st.median(v),
+                                       "ratio": st.median(v) / base,
+                                       "n": len(v)}
+                                   for k, v in by_parts.items()}}
+        print()
+    legs = [l for l in legs if l["has_probe"]]
+    if not legs:
+        Path(ROOT / args.json_out).write_text(
+            json.dumps({"experiment": "e89-drafting-round-host-state",
+                        "rung": "0b", "harness": "local",
+                        "instrument_cost": instrument}, indent=1) + "\n")
+        print(f"wrote {args.json_out}")
+        return
 
     # A round is slow when its dependent-chain probe is above the midpoint of
     # the pooled bimodal distribution. The probe never touches the workload, so
@@ -177,6 +221,10 @@ def main() -> None:
         rows = {}
         for key, label in [
             ("e89_probe_ns", "cpu probe ns"),
+            ("host_thread_cpu_ns", "host phase cpu ns"),
+            ("HOSTOCC", "host occupancy"),
+            ("ROUNDOCC", "round occupancy"),
+            ("GPUWINCPU", "gpu-window cpu ns"),
             ("THRCPU", "thread cpu ns"),
             ("e89_thr_user_ns", "thread user ns"),
             ("e89_thr_sys_ns", "thread system ns"),
@@ -194,10 +242,13 @@ def main() -> None:
             ("e89_cache_mb", "mlx cache mb"),
             ("e89_active_mb", "mlx active mb"),
         ]:
+            if key not in fast[0]:
+                continue
             a = st.median([r[key] for r in fast])
             b = st.median([r[key] for r in slow])
             rows[key] = {"fast": a, "slow": b, "ratio": b / a if a else None}
-            print(f"{label:<24}{a:>14.0f}{b:>14.0f}"
+            fmt = ">14.4f" if max(abs(a), abs(b)) < 100 else ">14.0f"
+            print(f"{label:<24}{a:{fmt}}{b:{fmt}}"
                   + (f"{b / a:>9.2f}" if a else f"{'n/a':>9}"))
 
         for key, label in [("e89_qos_def", "qos default"),
@@ -296,6 +347,7 @@ def main() -> None:
         "harness": "local", "gate_qualified_for_timing": False,
         "cool_gate_passed_real_gate": False, "official_or_ranked_score": False,
         "probe_cut_ns": cut,
+        "instrument_cost": instrument,
         "discriminator": rows if slow and fast else None,
         "stuck_leg_rate": {"k": k, "n": n, "wilson95": ci},
         "legs": [{kk: vv for kk, vv in l.items()

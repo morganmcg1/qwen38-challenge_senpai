@@ -3,12 +3,14 @@
 #
 #   usage: research/e89_probe_session.sh PREFIX TOKENS LEGSPEC ...
 #
-# LEGSPEC is `name=qos`. `qos` is the value of MLX_E89_FORCE_QOS for that leg,
-# `none` to leave the thread policy exactly as the worker inherits it, or
-# `off` to also disable the probe itself (MLX_E89_PROBE=0). An `off` leg is
-# the instrument-cost control: same worker binary, no per-round probe work.
-# The `name` becomes the arm label in the tag; a repeated name gets the next
-# repeat index.
+# LEGSPEC is `name=qos[/parts]`. `qos` is the value of MLX_E89_FORCE_QOS for
+# that leg, `none` to leave the thread policy exactly as the worker inherits
+# it, or `off` to also disable the probe itself (MLX_E89_PROBE=0). An `off`
+# leg is the instrument-cost control: same worker binary, no per-round probe
+# work. `parts` is a `+`-separated subset of the probe components
+# `marks probe rusage thread mem`, which becomes MLX_E89_PARTS; omit it for
+# every component. The `name` becomes the arm label in the tag; a repeated
+# name gets the next repeat index.
 #
 # THERE IS NO ARM TO BALANCE. Rung 0b measures the natural rate at which a leg
 # lands in the slow host state, so the observation legs must be identical and
@@ -53,19 +55,24 @@ done
 export MLXFAST_QWEN_MTP_HEAD_DIR="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
 
 for i in "${!order[@]}"; do
-  qos="${order[$i]#*=}"
+  value="${order[$i]#*=}"
+  qos="${value%%/*}"
+  parts=""
+  [[ "${value}" == */* ]] && parts="${value#*/}"
   probe=1
-  unset MLX_E89_FORCE_QOS
+  unset MLX_E89_FORCE_QOS MLX_E89_PARTS
   case "${qos}" in
     off) probe=0 ;;
     none) ;;
     *) export MLX_E89_FORCE_QOS="${qos}" ;;
   esac
+  [[ -n "${parts}" ]] && export MLX_E89_PARTS="${parts//+/,}"
   export MLX_E89_PROBE="${probe}"
   research/e79_trace_leg.sh "${tags[$i]}" "${tokens}"
   status=$?
   {
     echo "e89_force_qos=${qos}"
+    echo "e89_parts=${parts:-all}"
     echo "e89_position=${i}"
     echo "e89_probe=${probe}"
   } >> "research/out/${tags[$i]}/meta.txt"
