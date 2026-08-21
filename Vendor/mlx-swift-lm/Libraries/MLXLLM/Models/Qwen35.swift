@@ -2797,6 +2797,71 @@ let qwen35DecodeLadderRungs: Set<Int> = {
     }
 }()
 
+// MARK: - E105 TEMPORARY research instrument: dispatch-boundary dose ladder
+//
+// NOT a candidate. Reverted before the branch tip is reported. Inert unless
+// MLX_E105_DOSE is set to a positive integer.
+//
+// E105 rung 0 proved that the GDN prework, q/k norm + RoPE and KV write
+// families are already one dispatch per layer, so the whole fusion prize is
+// bounded by (dispatches removed) x (marginal cost of one dispatch). This
+// instrument measures that marginal cost IN SITU, which is the only frame the
+// campaign's isolation discount cannot distort: it inserts `MLX_E105_DOSE`
+// extra dependent dispatches per decoder layer into the decode residual chain
+// and nothing else, so the round-time slope across two doses IS the per-
+// dispatch cost.
+//
+// The chain is strictly serial and strictly inside the critical path. The
+// first dose kernel reads the layer's own output, so it cannot start early,
+// and the final value is added back into `base`, so the next layer cannot
+// start until the chain drains. The chained value is identically zero: the
+// kernel multiplies by a zero buffer that the compiler cannot fold away, so
+// the bf16 add-back is exact and `all_tokens_matched` still has to hold.
+//
+// MLX_E105_DOSE_SHAPE selects the dispatch width:
+//   tiny     grid 1x1x1,    tg 1x1x1   -> 1 threadgroup,   lower bound on F
+//   prework  grid 32x5x80,  tg 32x1x1  -> 400 threadgroups, the live
+//            `qwen35_packed_gdn_prework` width, so the drain-and-fill bubble
+//            is the one a real removed dispatch would have paid
+let e105DoseCount = Int(ProcessInfo.processInfo.environment["MLX_E105_DOSE"] ?? "") ?? 0
+let e105DoseShape = ProcessInfo.processInfo.environment["MLX_E105_DOSE_SHAPE"] ?? "prework"
+
+private let e105DoseZero = MLXArray.zeros([1], dtype: .bfloat16)
+
+private let e105DoseKernel = MLXFast.metalKernel(
+    name: "e105_dispatch_dose_probe",
+    inputNames: ["x", "z"],
+    outputNames: ["o"],
+    source: """
+        uint lane = thread_position_in_grid.x
+            + thread_position_in_grid.y * 4099u
+            + thread_position_in_grid.z * 65537u;
+        if (lane == 0) {
+            o[0] = x[0] * z[0];
+        }
+        """
+)
+
+@inline(__always)
+private func e105DoseGrid() -> ((Int, Int, Int), (Int, Int, Int)) {
+    e105DoseShape == "tiny" ? ((1, 1, 1), (1, 1, 1)) : ((32, 5, 80), (32, 1, 1))
+}
+
+func e105ApplyDispatchDose(to base: MLXArray) -> MLXArray {
+    let (grid, threadGroup) = e105DoseGrid()
+    var chained = base
+    for _ in 0 ..< e105DoseCount {
+        chained = e105DoseKernel(
+            [chained, e105DoseZero],
+            grid: grid,
+            threadGroup: threadGroup,
+            outputShapes: [[1]],
+            outputDTypes: [.bfloat16]
+        )[0]
+    }
+    return base + chained
+}
+
 public class Qwen35TextModelInner: Module {
     @ModuleInfo(key: "embed_tokens") var embedTokens: Embedding
 
@@ -2871,6 +2936,8 @@ public class Qwen35TextModelInner: Module {
             // a standalone entry RMSNorm — 63 launches removed per forward.
             // Ladder rungs force both halves of the pair: same graph
             // frontier, same overlap, no arithmetic change.
+            let e105DoseActive =
+                e105DoseCount > 0 && !prefillLadder && hiddenStates.dim(1) <= 9
             var base = hiddenStates
             var delta: MLXArray? = nil
             for (i, layer) in layers.enumerated() {
@@ -2884,6 +2951,9 @@ public class Qwen35TextModelInner: Module {
                     cache: cacheArray?[i], nConfirmed: nConfirmed)
                 base = out.base
                 delta = out.delta
+                if e105DoseActive {
+                    base = e105ApplyDispatchDose(to: base)
+                }
                 if ladderActive {
                     if prefillLadder {
                         if i == 0 || i % 3 == 2 {
