@@ -1,4 +1,13 @@
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"mtp_seconds_per_token_512tok_depth4","available":true,"value":0.032422},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"mtp_seconds_per_token_512tok_depth8","available":true,"value":0.033455},"test_metric":{"name":"all_tokens_matched","available":true,"value":1}}
+
+**Choice of primary metric.** I use the 512-token **depth-8** MTP seconds/token (baseline
+0.033717, candidate 0.033455, **−0.775 %**) rather than the much larger depth-4 result
+(0.037185 → 0.032422, **−12.810 %**). Depth 8 is the harness default and the closer analogue
+of the ranked schedule, and it is the one arm independently reproduced by a
+**gate-qualified** leg. The depth-4 number is the better *mechanism* isolator, because that
+session puts ~94 % of round mass at M=5, but it is not the configuration the ranked runner
+uses. Quoting the larger number as the headline would overstate transfer. Both are reported
+in full in §4.2.
 
 # E100 — Fewer weight streams per round: collapse the M=5 verify width to one x-group
 
