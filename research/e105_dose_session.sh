@@ -5,7 +5,7 @@
 #
 # Runs the palindrome
 #
-#   A0  B1  C4  D4tiny  E4op  |  E4op  D4tiny  C4  B1  A0
+#   A0  Z0@32  B1  C4  D4tiny  E4op  |  E4op  D4tiny  C4  B1  Z0@32  A0
 #
 # inside one thermal session, so monotone thermal drift cancels to first
 # order across each arm pair. Every leg is `research/e105_dose_leg.sh`, which
@@ -31,29 +31,39 @@
 # prices dispatch width. 48 of the 80 removable dispatches are custom
 # kernels and 32 are `slice_update`s, so both numbers are load-bearing.
 #
-# Every leg runs at the same 64 decode tokens. `serial_seconds_per_token` is
-# total serial time over tokens and the serial pass runs exactly one target
-# forward per token, so any fixed prefill share is a constant offset that
-# drops out of the slope. The dose is gated off during prefill for the same
-# reason.
+# WHY A SECOND TOKEN COUNT AT DOSE 0. `--local-iterate` reports seconds per
+# token over a leg that also processes a 512-token seed, so
+#
+#   spt(n) = P / n + D
+#
+# where P is the fixed seed and warmup cost and D is the true marginal decode
+# cost per token. Every dosed leg runs at the same n, so P cancels out of the
+# slope and F is unaffected. But P does NOT cancel out of the DENOMINATOR, and
+# the e105-f1 promotion bar is a percentage of the local round. Two dose-0
+# legs at n = 32 and n = 64 solve the two-point system for D exactly, which
+# gives an honest decode-only local round to price the ceiling against. The
+# dose is gated off during prefill, so it cannot contaminate P.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 prefix="${1:-e105r12}"
 tokens="${MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS:-64}"
+probe_tokens="${MLXFAST_E105_PROBE_TOKENS:-32}"
 
-# leg-label dose shape
+# leg-label dose shape tokens
 legs=(
-  "a1 0 prework"
-  "b1 1 prework"
-  "c1 4 prework"
-  "d1 4 tiny"
-  "e1 4 op"
-  "e2 4 op"
-  "d2 4 tiny"
-  "c2 4 prework"
-  "b2 1 prework"
-  "a2 0 prework"
+  "a1 0 prework ${tokens}"
+  "z1 0 prework ${probe_tokens}"
+  "b1 1 prework ${tokens}"
+  "c1 4 prework ${tokens}"
+  "d1 4 tiny ${tokens}"
+  "e1 4 op ${tokens}"
+  "e2 4 op ${tokens}"
+  "d2 4 tiny ${tokens}"
+  "c2 4 prework ${tokens}"
+  "b2 1 prework ${tokens}"
+  "z2 0 prework ${probe_tokens}"
+  "a2 0 prework ${tokens}"
 )
 
 session_start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -62,12 +72,13 @@ tags=()
 failed=()
 
 for spec in "${legs[@]}"; do
-  read -r label dose shape <<<"${spec}"
-  tag="${prefix}-${label}-d${dose}-${shape}"
+  read -r label dose shape leg_tokens <<<"${spec}"
+  tag="${prefix}-${label}-d${dose}-${shape}-n${leg_tokens}"
   tags+=("${tag}")
   echo
-  echo "=== leg ${label}: dose=${dose} shape=${shape} tag=${tag} ==="
-  MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}" \
+  echo "=== leg ${label}: dose=${dose} shape=${shape} tokens=${leg_tokens} " \
+       "tag=${tag} ==="
+  MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${leg_tokens}" \
     research/e105_dose_leg.sh "${tag}" "${dose}" "${shape}"
   status=$?
   if [[ "${status}" -ne 0 ]]; then

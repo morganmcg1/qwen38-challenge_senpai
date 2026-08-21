@@ -75,6 +75,7 @@ def load(tag: str) -> dict:
         "tag": tag,
         "dose": dose,
         "shape": meta["dose_shape"],
+        "tokens": int(meta["decode_tokens"]),
         "added_dispatches_per_forward": dose * DECODER_LAYERS,
         "mtp_spt": score["mtp_seconds_per_token"],
         "serial_spt": score["serial_seconds_per_token"],
@@ -121,12 +122,54 @@ def slope(legs: list[dict], key: str) -> dict | None:
     }
 
 
-DENOM_LABELS = ("census_gpu_busy_round", "advisor_e96_round", "leg_wall_round")
+DENOM_LABELS = (
+    "census_gpu_busy_round",
+    "advisor_e96_round",
+    "leg_wall_round",
+    "decode_only_round",
+)
 
 
-def price(f_us: float, wall_round_us: float) -> dict:
+def decode_only_round(legs: list[dict]) -> dict | None:
+    """Strip the fixed seed and warmup share out of the reported round.
+
+    `spt(n) = P / n + D`. Two dose-0 token counts give P and D exactly, and
+    the honest local round is `D x (1 + mean_draft)`.
+    """
+    zero = [leg for leg in legs if leg["dose"] == 0]
+    by_n: dict[int, list[dict]] = {}
+    for leg in zero:
+        by_n.setdefault(leg["tokens"], []).append(leg)
+    if len(by_n) < 2:
+        return None
+    ns = sorted(by_n)
+    n_lo, n_hi = ns[0], ns[-1]
+    out: dict[str, object] = {"tokens": [n_lo, n_hi]}
+    for key, label in (("mtp_spt", "mtp"), ("serial_spt", "serial")):
+        s_lo = mean([leg[key] for leg in by_n[n_lo]])
+        s_hi = mean([leg[key] for leg in by_n[n_hi]])
+        # s = P/n + D  =>  D = (n_hi*s_hi - n_lo*s_lo) / (n_hi - n_lo)
+        d = (n_hi * s_hi - n_lo * s_lo) / (n_hi - n_lo)
+        p = (s_lo - d) * n_lo
+        out[label] = {
+            "spt_at_n_lo": s_lo,
+            "spt_at_n_hi": s_hi,
+            "fixed_seed_and_warmup_s": p,
+            "marginal_spt_s": d,
+            "fixed_share_of_reported_at_n_hi": 1.0 - d / s_hi,
+        }
+    draft = mean([leg["mean_draft"] for leg in by_n[n_hi]])
+    out["mean_draft_at_n_hi"] = draft
+    out["decode_only_round_us"] = out["mtp"]["marginal_spt_s"] * (1 + draft) * 1e6
+    return out
+
+
+def price(f_us: float, wall_round_us: float, decode_round_us: float) -> dict:
     denominators = dict(
-        zip(DENOM_LABELS, (CENSUS_ROUND_US, ADVISOR_ROUND_US, wall_round_us))
+        zip(
+            DENOM_LABELS,
+            (CENSUS_ROUND_US, ADVISOR_ROUND_US, wall_round_us, decode_round_us),
+        )
     )
     out: dict = {"F_us_per_dispatch": f_us, "denominators_us": denominators}
     for name, n in (("N80_real_max", N_REAL), ("N96_absolute", N_ABSOLUTE)):
@@ -157,17 +200,19 @@ def main() -> None:
     legs = [load(t) for t in args.tags]
 
     print("=== E105 in-situ dispatch-dose ladder ===")
-    hdr = (f'{"tag":<26}{"shape":>9}{"dose":>6}{"+disp":>7}{"mtp us/rnd":>12}'
-           f'{"serial us/rnd":>15}{"speedup":>9}{"draft":>7}{"match":>7}'
-           f'{"entryC":>8}{"exitC":>7}')
+    hdr = (f'{"tag":<34}{"shape":>9}{"dose":>6}{"n":>5}{"+disp":>7}'
+           f'{"mtp us/rnd":>12}{"serial us/rnd":>15}{"speedup":>9}{"draft":>7}'
+           f'{"match":>7}{"entryC":>8}{"exitC":>7}')
     print(hdr)
     print("-" * len(hdr))
     for leg in legs:
-        print(f'{leg["tag"]:<26}{leg["shape"]:>9}{leg["dose"]:>6}'
+        print(f'{leg["tag"]:<34}{leg["shape"]:>9}{leg["dose"]:>6}'
+              f'{leg["tokens"]:>5}'
               f'{leg["added_dispatches_per_forward"]:>7}{leg["mtp_round_us"]:>12.1f}'
               f'{leg["serial_round_us"]:>15.1f}{leg["speedup"]:>9.4f}'
               f'{leg["mean_draft"]:>7.3f}{str(leg["matched"]):>7}'
-              f'{leg["entry_c"]:>8}{leg["exit_c"]:>7}')
+              f'{float(leg["entry_c"] or "nan"):>8.2f}'
+              f'{float(leg["exit_c"] or "nan"):>7.2f}')
 
     voided = [leg["tag"] for leg in legs if not leg["matched"]]
     if voided:
@@ -182,16 +227,47 @@ def main() -> None:
           "official_or_ranked_score=false")
 
     report: dict[str, object] = {"legs": legs}
-    for shape in sorted({leg["shape"] for leg in legs if leg["dose"] > 0}):
+
+    dec = decode_only_round(legs)
+    if dec is None:
+        print("\nno second dose-0 token count: cannot separate the fixed seed "
+              "and warmup share, so `decode_only_round` falls back to the "
+              "reported wall round")
+        decode_round_us = mean(
+            [leg["mtp_round_us"] for leg in legs if leg["dose"] == 0]
+        )
+    else:
+        report["decode_only"] = dec
+        decode_round_us = dec["decode_only_round_us"]
+        print(f'\n--- fixed seed and warmup share, dose 0, n={dec["tokens"]} ---')
+        for label in ("mtp", "serial"):
+            b = dec[label]
+            print(f'  {label:<7} spt {b["spt_at_n_lo"] * 1e3:8.2f} ms at n='
+                  f'{dec["tokens"][0]}, {b["spt_at_n_hi"] * 1e3:8.2f} ms at n='
+                  f'{dec["tokens"][1]}  ->  fixed '
+                  f'{b["fixed_seed_and_warmup_s"]:.3f} s, marginal '
+                  f'{b["marginal_spt_s"] * 1e3:.2f} ms/token, fixed share of '
+                  f'the reported number {100 * b["fixed_share_of_reported_at_n_hi"]:.1f} %')
+        print(f'  decode-only local round      : {decode_round_us:,.1f} us')
+
+    # The scored round must be timed at one token count, so the slope uses the
+    # main token count only and the short probe legs stay out of it.
+    main_n = max(leg["tokens"] for leg in legs)
+    ladder = [leg for leg in legs if leg["tokens"] == main_n]
+
+    for shape in sorted({leg["shape"] for leg in ladder if leg["dose"] > 0}):
         # dose 0 belongs to every shape: it is the shared zero-dose reference.
-        sel = [leg for leg in legs if leg["shape"] == shape or leg["dose"] == 0]
+        sel = [leg for leg in ladder if leg["shape"] == shape or leg["dose"] == 0]
         block: dict[str, object] = {}
         for key, label in (("serial_round_us", "serial"), ("mtp_round_us", "mtp")):
             s = slope(sel, key)
             if s is None:
                 continue
             wall = mean([leg["mtp_round_us"] for leg in sel if leg["dose"] == 0])
-            block[label] = {**s, **price(s["F_us_per_dispatch"], wall)}
+            block[label] = {
+                **s,
+                **price(s["F_us_per_dispatch"], wall, decode_round_us),
+            }
             print(f"\n--- shape={shape}  pass={label} ---")
             print(f'  round us by added dispatches : {s["points"]}')
             print(f'  replicates                   : {s["replicates"]}')
