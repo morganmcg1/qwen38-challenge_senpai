@@ -3388,6 +3388,103 @@ private let qwen35DraftTop32FinalizeKernel = MLXFast.metalKernel(
 private let qwen35Top32Enabled: Bool =
     ProcessInfo.processInfo.environment["MLXFAST_QWEN_MTP_TOP32"] != "0"
 
+// Ascending compaction of the probe list that `gatherQuantizedMM` consumes.
+//
+// `MLX.argPartition` returns its top segment in partition order, so the
+// shipped path sorted 3,073 uint32 keys in four dispatches -- 24.40 us per
+// draft, 7.94 ns per key, against the declared top-32 path's 0.388 ns.
+//
+// That sort carries no selection semantics. `argPartition` returns a
+// permutation of [0, CLUSTERS), so the selected indices are DISTINCT, and the
+// ascending order of a distinct set is a function of the set alone -- never of
+// how `argPartition` happened to order it. A counting sort therefore
+// reproduces `MLX.sorted` exactly by construction: there is no tie rule to
+// state and no dependence on unspecified partition order. Contrast the
+// top-32 kernel above, whose inputs are float scores that really can tie.
+//
+// One threadgroup marks the selected indices in a threadgroup bitmap of
+// ceil(CLUSTERS/32) words, scans the per-word popcounts, and emits set bits in
+// ascending order. Thread `t` owns the ascending word range [t*WPT, t*WPT+WPT)
+// and the scan is exclusive over `t`, so the emitted ids ascend globally.
+private let qwen35ProbeSortTG = 256
+
+private func makeQwen35ProbeSortKernel(clusters: Int, probes: Int)
+    -> MLXFast.MLXFastKernel
+{
+    MLXFast.metalKernel(
+        name: "qwen_mtp_probe_sort",
+        inputNames: ["order"],
+        outputNames: ["probed"],
+        source: """
+            constexpr uint CLUSTERS = \(clusters);
+            constexpr uint PROBES   = \(probes);
+            constexpr uint SKIP     = CLUSTERS - PROBES;
+            constexpr uint WORDS    = (CLUSTERS + 31u) / 32u;
+            constexpr uint TG_SIZE  = \(qwen35ProbeSortTG);
+            constexpr uint WPT      = (WORDS + TG_SIZE - 1u) / TG_SIZE;
+
+            uint tid = thread_position_in_threadgroup.x;
+
+            threadgroup atomic_uint bits[WORDS];
+            threadgroup uint base[TG_SIZE];
+
+            for (uint w = tid; w < WORDS; w += TG_SIZE) {
+                atomic_store_explicit(&bits[w], 0u, memory_order_relaxed);
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            for (uint p = SKIP + tid; p < CLUSTERS; p += TG_SIZE) {
+                uint v = order[p];
+                atomic_fetch_or_explicit(
+                    &bits[v >> 5u], 1u << (v & 31u), memory_order_relaxed);
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            uint lo = tid * WPT;
+            uint count = 0u;
+            for (uint i = 0u; i < WPT; ++i) {
+                uint w = lo + i;
+                if (w >= WORDS) { break; }
+                count += popcount(
+                    atomic_load_explicit(&bits[w], memory_order_relaxed));
+            }
+            base[tid] = count;
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            if (tid == 0u) {
+                uint acc = 0u;
+                for (uint i = 0u; i < TG_SIZE; ++i) {
+                    uint c = base[i];
+                    base[i] = acc;
+                    acc += c;
+                }
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            uint at = base[tid];
+            for (uint i = 0u; i < WPT; ++i) {
+                uint w = lo + i;
+                if (w >= WORDS) { break; }
+                uint m = atomic_load_explicit(&bits[w], memory_order_relaxed);
+                while (m != 0u) {
+                    // `low - 1` is a mask of the trailing zeros, so its
+                    // popcount is the bit position. `ctz` needs MSL 2.1.
+                    uint low = m & (~m + 1u);
+                    probed[at++] = w * 32u + popcount(low - 1u);
+                    m ^= low;
+                }
+            }
+            """,
+        header: "",
+        ensureRowContiguous: false
+    )
+}
+
+/// `MLX_E87_PROBE_SORT=0` restores the `MLX.sorted` path bit-for-bit. The
+/// `MLX_` prefix is load-bearing: the worker sanitizer drops `MLXFAST_*`.
+private let qwen35ProbeSortEnabled: Bool =
+    ProcessInfo.processInfo.environment["MLX_E87_PROBE_SORT"] != "0"
+
 /// E85 arm gate. `MLX_E85_GATHER_QMM=0` restores the three-`take` rerank path.
 /// The `MLX_` prefix is load-bearing: the trusted worker's environment
 /// sanitizer drops `MLXFAST_*`, so an `MLXFAST_`-spelled gate would never
@@ -3598,6 +3695,105 @@ public func qwen35VerifyDraftTop32(trials: Int = 64, seed: UInt64 = 1) -> (Int, 
     return (trials, bad, firstBad)
 }
 
+/// Offline equivalence gate for the probe compaction kernel. Checks it against
+/// `MLX.sorted(MLX.argPartition(...))` at the live width, including rows
+/// quantised hard enough to force heavy ties and one all-equal row where the
+/// selected set is entirely at `argPartition`'s discretion. Both sides read the
+/// same `order`, which is the whole exactness argument: the kernel is a
+/// function of the set `argPartition` chose, never of how it ordered that set.
+/// Returns (checked, mismatches, firstBadTrial). Never called on a scored path.
+public func qwen35VerifyProbeSort(
+    clusters: Int = 12_292, probes: Int = 3_073,
+    trials: Int = 64, seed: UInt64 = 1
+) -> (Int, Int, Int) {
+    MLXRandom.seed(seed)
+    let sorter = makeQwen35ProbeSortKernel(clusters: clusters, probes: probes)
+    let kth = clusters - probes
+    var bad = 0
+    var firstBad = -1
+    for trial in 0 ..< trials {
+        var score = MLXRandom.normal([clusters]).asType(.bfloat16)
+        switch trial % 4 {
+        case 1: score = (MLXRandom.normal([clusters]) * 4).round().asType(.bfloat16)
+        case 2: score = MLX.zeros([clusters], dtype: .bfloat16)
+        default: break
+        }
+        let order = MLX.argPartition(score, kth: kth, axis: -1)
+        let mine = sorter(
+            [order],
+            grid: (qwen35ProbeSortTG, 1, 1),
+            threadGroup: (qwen35ProbeSortTG, 1, 1),
+            outputShapes: [[probes]],
+            outputDTypes: [.uint32]
+        )[0]
+        let theirs = MLX.sorted(order[(kth)...]).asType(.uint32)
+        eval(mine, theirs)
+        if !MLX.all(MLX.equal(mine, theirs)).item(Bool.self) {
+            bad += 1
+            if firstBad < 0 { firstBad = trial }
+        }
+    }
+    return (trials, bad, firstBad)
+}
+
+/// Positive control for `qwen35VerifyProbeSort`. Swaps one selected index for
+/// one rejected index -- the smallest possible wrong answer -- and requires the
+/// comparison to report it. A gate that cannot fail is not a gate.
+public func qwen35ProbeSortPositiveControl(
+    clusters: Int = 12_292, probes: Int = 3_073, seed: UInt64 = 7
+) -> Bool {
+    MLXRandom.seed(seed)
+    let sorter = makeQwen35ProbeSortKernel(clusters: clusters, probes: probes)
+    let kth = clusters - probes
+    let score = MLXRandom.normal([clusters]).asType(.bfloat16)
+    let order = MLX.argPartition(score, kth: kth, axis: -1)
+    var ids = order.asArray(UInt32.self)
+    ids.swapAt(0, kth)
+    let mine = sorter(
+        [MLXArray(ids)],
+        grid: (qwen35ProbeSortTG, 1, 1),
+        threadGroup: (qwen35ProbeSortTG, 1, 1),
+        outputShapes: [[probes]],
+        outputDTypes: [.uint32]
+    )[0]
+    let theirs = MLX.sorted(order[(kth)...]).asType(.uint32)
+    eval(mine, theirs)
+    return !MLX.all(MLX.equal(mine, theirs)).item(Bool.self)
+}
+
+/// Isolated micro-benchmark of the compaction step alone, with `argPartition`
+/// held outside the timed region on both arms. Returns (sortedUs, kernelUs).
+/// Never called on a scored path.
+public func qwen35BenchProbeSort(
+    clusters: Int = 12_292, probes: Int = 3_073, iters: Int = 200
+) -> (Double, Double) {
+    MLXRandom.seed(5)
+    let sorter = makeQwen35ProbeSortKernel(clusters: clusters, probes: probes)
+    let kth = clusters - probes
+    let score = MLXRandom.normal([clusters]).asType(.bfloat16)
+    let order = MLX.argPartition(score, kth: kth, axis: -1)
+    eval(order)
+    func mine() -> MLXArray {
+        sorter(
+            [order],
+            grid: (qwen35ProbeSortTG, 1, 1),
+            threadGroup: (qwen35ProbeSortTG, 1, 1),
+            outputShapes: [[probes]],
+            outputDTypes: [.uint32]
+        )[0]
+    }
+    for _ in 0 ..< 10 {
+        eval(mine())
+        eval(MLX.sorted(order[(kth)...]).asType(.uint32))
+    }
+    var t0 = Date()
+    for _ in 0 ..< iters { eval(MLX.sorted(order[(kth)...]).asType(.uint32)) }
+    let baseUs = Date().timeIntervalSince(t0) / Double(iters) * 1e6
+    t0 = Date()
+    for _ in 0 ..< iters { eval(mine()) }
+    return (baseUs, Date().timeIntervalSince(t0) / Double(iters) * 1e6)
+}
+
 public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     public let vocabularySize: Int
     public let kvHeads: [Int]
@@ -3634,6 +3830,7 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private var _draftClusterPerm: MLXArray?
     private var _draftClusterShape: [Int]?
     private var _draftClusterLHS: MLXArray?
+    private var _draftProbeSort: MLXFast.MLXFastKernel?
     // One attempt only: a head that cannot support a derived index must keep
     // the dense readout instead of re-deriving on every draft step.
     private var _derivedClusterAttempted = false
@@ -4206,16 +4403,30 @@ extension Qwen35TextModel: MTPCapable {
         if _draftClusterLHS == nil {
             _draftClusterLHS = MLX.zeros([probes], dtype: .uint32)
         }
+        if qwen35ProbeSortEnabled, _draftProbeSort == nil {
+            _draftProbeSort = makeQwen35ProbeSortKernel(
+                clusters: clusters, probes: probes)
+        }
         let centroidScore = quantizedMM(
             x, centroidWeight, scales: centroidScales, biases: centroidBiases,
             transpose: true, groupSize: 64, bits: 2, mode: .affine
         ).reshaped([clusters])
-        // `gatherQuantizedMM`'s sorted fast path needs indices in value order,
-        // while the top-C arrive in score order.
-        let probed = MLX.sorted(
-            MLX.argPartition(centroidScore, kth: clusters - probes)[
-                .ellipsis, (clusters - probes)...]
-        ).asType(.uint32)
+        // `gatherQuantizedMM` is handed the probes in ascending index order,
+        // while the top-C arrive in partition order.
+        let order = MLX.argPartition(centroidScore, kth: clusters - probes)
+        let probed: MLXArray
+        if let sorter = _draftProbeSort {
+            probed = sorter(
+                [order],
+                grid: (qwen35ProbeSortTG, 1, 1),
+                threadGroup: (qwen35ProbeSortTG, 1, 1),
+                outputShapes: [[probes]],
+                outputDTypes: [.uint32]
+            )[0]
+        } else {
+            probed = MLX.sorted(order[.ellipsis, (clusters - probes)...])
+                .asType(.uint32)
+        }
 
         let rowScore = gatherQuantizedMM(
             x.reshaped([1, 1, configuration.hiddenSize]),
