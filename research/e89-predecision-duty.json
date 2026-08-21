@@ -1,0 +1,176 @@
+{
+  "decision_round": 3,
+  "ever_demoted": {
+    "hit_mean_duty": 0.06819343642078021,
+    "hit_values": [
+      0.06657766531828106,
+      0.06597693674270497,
+      0.06673287915437424,
+      0.06526968086941522,
+      0.07282444491139595,
+      0.0717790115285098
+    ],
+    "n_hit": 6,
+    "n_rest": 14,
+    "rest_legs_at_or_below_highest_hit": 14,
+    "rest_mean_duty": 0.06323935259153265,
+    "test_hit_lower": {
+      "p_one_sided": 0.9999742002063984,
+      "relabelings": 38760,
+      "statistic": 0.004954083829247544
+    }
+  },
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "permanently_stuck": {
+    "hit_mean_duty": 0.06792719051743308,
+    "hit_values": [
+      0.06673287915437424,
+      0.06526968086941522,
+      0.0717790115285098
+    ],
+    "n_hit": 3,
+    "n_rest": 17,
+    "rest_legs_at_or_below_highest_hit": 16,
+    "rest_mean_duty": 0.06416058725022583,
+    "test_hit_lower": {
+      "p_one_sided": 0.9710526315789474,
+      "relabelings": 1140,
+      "statistic": 0.0037666032672072497
+    }
+  },
+  "prefix": "e89rA",
+  "question": "does duty before the demotion round predict demotion",
+  "sandbox": "off",
+  "work_or_speed": {
+    "label": "all legs",
+    "legs": [
+      "e89rA-ctl-1",
+      "e89rA-ctl-10",
+      "e89rA-ctl-2",
+      "e89rA-ctl-3",
+      "e89rA-ctl-4",
+      "e89rA-ctl-5",
+      "e89rA-ctl-6",
+      "e89rA-ctl-7",
+      "e89rA-ctl-8",
+      "e89rA-ctl-9",
+      "e89rA-spin-1",
+      "e89rA-spin-10",
+      "e89rA-spin-2",
+      "e89rA-spin-3",
+      "e89rA-spin-4",
+      "e89rA-spin-5",
+      "e89rA-spin-6",
+      "e89rA-spin-7",
+      "e89rA-spin-8",
+      "e89rA-spin-9"
+    ],
+    "n_demoted": 6,
+    "n_rest": 14,
+    "pre_clock_ghz": {
+      "demoted_median": 4.0687533370687365,
+      "ratio": 0.986636710437757,
+      "rest_median": 4.123861695013849,
+      "test_demoted_lower": {
+        "p_one_sided": 0.14471104231166151,
+        "relabelings": 38760,
+        "statistic": -0.08332236224151846
+      }
+    },
+    "pre_cycles": {
+      "demoted_median": 44921399.0,
+      "ratio": 1.0859389869967329,
+      "rest_median": 41366411.5,
+      "test_demoted_lower": {
+        "p_one_sided": 0.999406604747162,
+        "relabelings": 38760,
+        "statistic": 3098006.9761904776
+      }
+    },
+    "pre_instructions": {
+      "demoted_median": 136657922.5,
+      "ratio": 1.0041323805770423,
+      "rest_median": 136095524.0,
+      "test_demoted_lower": {
+        "p_one_sided": 0.6902734778121775,
+        "relabelings": 38760,
+        "statistic": 1470031.4047619104
+      }
+    },
+    "pre_ipc": {
+      "demoted_median": 3.082269731178817,
+      "ratio": 0.9314467554327115,
+      "rest_median": 3.3091206912271893,
+      "test_demoted_lower": {
+        "p_one_sided": 0.006062951496388029,
+        "relabelings": 38760,
+        "statistic": -0.19048639026265413
+      }
+    }
+  },
+  "work_or_speed_cluster2_only": {
+    "label": "sensitivity: legs confined to performance cores 9 to 13",
+    "legs": [
+      "e89rA-ctl-1",
+      "e89rA-ctl-10",
+      "e89rA-ctl-2",
+      "e89rA-ctl-3",
+      "e89rA-ctl-4",
+      "e89rA-ctl-5",
+      "e89rA-ctl-7",
+      "e89rA-ctl-8",
+      "e89rA-ctl-9",
+      "e89rA-spin-10",
+      "e89rA-spin-2",
+      "e89rA-spin-3",
+      "e89rA-spin-4",
+      "e89rA-spin-5",
+      "e89rA-spin-6",
+      "e89rA-spin-7",
+      "e89rA-spin-9"
+    ],
+    "n_demoted": 4,
+    "n_rest": 13,
+    "pre_clock_ghz": {
+      "demoted_median": 4.106549480824006,
+      "ratio": 1.0021366124836424,
+      "rest_median": 4.097794082831233,
+      "test_demoted_lower": {
+        "p_one_sided": 0.5869747899159664,
+        "relabelings": 2380,
+        "statistic": 0.017106745569272164
+      }
+    },
+    "pre_cycles": {
+      "demoted_median": 44021482.0,
+      "ratio": 1.0653779012873237,
+      "rest_median": 41320063.0,
+      "test_demoted_lower": {
+        "p_one_sided": 0.9936974789915967,
+        "relabelings": 2380,
+        "statistic": 2381345.3076923043
+      }
+    },
+    "pre_instructions": {
+      "demoted_median": 139840499.5,
+      "ratio": 1.0279773240068346,
+      "rest_median": 136034615.0,
+      "test_demoted_lower": {
+        "p_one_sided": 0.726890756302521,
+        "relabelings": 2380,
+        "statistic": 2800464.0
+      }
+    },
+    "pre_ipc": {
+      "demoted_median": 3.234311793498351,
+      "ratio": 0.9764164364585792,
+      "rest_median": 3.3124307137117253,
+      "test_demoted_lower": {
+        "p_one_sided": 0.05126050420168067,
+        "relabelings": 2380,
+        "statistic": -0.11340213983562819
+      }
+    }
+  }
+}
