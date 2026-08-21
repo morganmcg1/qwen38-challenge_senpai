@@ -84,10 +84,10 @@ struct E95QmvWidthProbeTests {
         return timed(4000) { tiny + 1 }
     }
 
-    @Test("the G step costs far less than a second pass over the same bytes")
+    @Test(
+        "the G step costs far less than a second pass over the same bytes",
+        .enabled(if: E95QmvWidthProbeTests.enabled))
     func widthStep() throws {
-        try #require(Self.enabled)
-
         let overhead = Self.evalOverheadMicroseconds()
         print(String(format: "E95_QMV overhead us=%.3f", overhead))
 

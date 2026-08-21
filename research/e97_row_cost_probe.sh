@@ -11,9 +11,17 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tag="${1:?usage: e97_row_cost_probe.sh TAG}"
+tag="${1:?usage: e97_row_cost_probe.sh TAG [row|peak|both]}"
+mode="${2:-row}"
 out_dir="research/out/${tag}"
 mkdir -p "${out_dir}"
+
+case "${mode}" in
+  row)  run_row=1; run_peak=0 ;;
+  peak) run_row=0; run_peak=1 ;;
+  both) run_row=1; run_peak=1 ;;
+  *) echo "unknown mode ${mode}" >&2; exit 2 ;;
+esac
 
 gpu_temp() {
   local macmon
@@ -29,8 +37,10 @@ gpu_temp() {
 entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-MLXFAST_RUN_E97_ROW_COST=1 \
+MLXFAST_RUN_E97_ROW_COST="${run_row}" \
+MLXFAST_RUN_E97_PEAK="${run_peak}" \
 MLXFAST_E97_ROW_OUT="${PWD}/${out_dir}/row-cost.json" \
+MLXFAST_E97_PEAK_OUT="${PWD}/${out_dir}/peak.json" \
 swift test --force-resolved-versions \
   --filter E97VerifyRowCostTests 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
@@ -39,7 +49,7 @@ exit_c="$(gpu_temp)"
 
 {
   echo "experiment=e97-ranked-per-row-verify-cost"
-  echo "rung=1"
+  echo "rung=${mode}"
   echo "harness=local"
   echo "started_utc=${start_iso}"
   echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"

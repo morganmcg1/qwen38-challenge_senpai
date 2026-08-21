@@ -52,6 +52,8 @@ private struct E97Sample {
 struct E97VerifyRowCostTests {
     static let enabled = ProcessInfo.processInfo.environment[
         "MLXFAST_RUN_E97_ROW_COST"] == "1"
+    static let peakEnabled = ProcessInfo.processInfo.environment[
+        "MLXFAST_RUN_E97_PEAK"] == "1"
 
     static let hidden = 5120
     static let groupSize = 64
@@ -100,10 +102,101 @@ struct E97VerifyRowCostTests {
         return min(max(count, 4), 500)
     }
 
-    @Test("the marginal verify row costs the same quantized or bf16")
-    func perRowSlope() throws {
-        try #require(Self.enabled)
+    /// Rung 0. The achievable arithmetic ceiling of this GPU through the same
+    /// library the scored path uses, so the per-row slope can be read as a
+    /// fraction of something measured rather than of a specification number.
+    @Test(
+        "achievable arithmetic peak of this GPU",
+        .enabled(if: E97VerifyRowCostTests.peakEnabled))
+    func achievablePeak() throws {
+        let overhead = Self.evalOverheadMicroseconds()
+        print(String(format: "E97_PEAK overhead us=%.3f", overhead))
 
+        var records: [[String: Any]] = []
+
+        func record(
+            _ label: String, _ dtype: String, _ flops: Double,
+            _ shape: [Int], _ body: () -> MLXArray
+        ) {
+            _ = Self.timed(2, body)
+            let rough = Self.timed(2, body)
+            let reps = min(max(Int((Self.targetCellMicroseconds / rough).rounded()), 3), 200)
+            let us = Self.timed(reps, body)
+            let net = us - overhead
+            let tflops = flops / (net * 1e-6) / 1e12
+            records.append([
+                "label": label, "dtype": dtype, "shape": shape,
+                "flops": flops, "us": us, "net_us": net,
+                "tflop_per_s": tflops, "replicates": reps,
+            ])
+            print(
+                "E97_PEAK \(label) dtype=\(dtype) shape=\(shape) "
+                    + String(
+                        format: "net_us=%.1f tflop_s=%.3f", net, tflops)
+                    + " replicates=\(reps)")
+        }
+
+        for size in [2048, 4096, 8192] {
+            for (name, dtype) in [
+                ("bfloat16", DType.bfloat16), ("float16", DType.float16),
+                ("float32", DType.float32),
+            ] {
+                let a = MLXRandom.normal([size, size], dtype: dtype)
+                let b = MLXRandom.normal([size, size], dtype: dtype)
+                eval(a, b)
+                record(
+                    "square_matmul", name, 2.0 * Double(size) * Double(size)
+                        * Double(size), [size, size, size]
+                ) { matmul(a, b) }
+            }
+        }
+
+        // The same ceiling question for the scored quantized shape: a wide
+        // batch through the split-K matrix kernel, where the weight stream is
+        // amortised over many rows.
+        for outputs in Self.shapes {
+            let dense = MLXRandom.normal([outputs, Self.hidden], dtype: .bfloat16)
+            eval(dense)
+            let (packed, scales, biases) = quantized(
+                dense, groupSize: Self.groupSize, bits: Self.bits, mode: .affine)
+            eval(packed, scales, biases)
+            for rows in [256, 1024] {
+                let x = MLXRandom.normal([rows, Self.hidden], dtype: .bfloat16)
+                eval(x)
+                let flops = 2.0 * Double(rows) * Double(Self.hidden)
+                    * Double(outputs)
+                record(
+                    "affine4_batch", "bfloat16", flops,
+                    [rows, Self.hidden, outputs]
+                ) {
+                    quantizedMM(
+                        x, packed, scales: scales, biases: biases,
+                        transpose: true, groupSize: Self.groupSize,
+                        bits: Self.bits, mode: .affine)
+                }
+                record(
+                    "bf16_batch", "bfloat16", flops, [rows, Self.hidden, outputs]
+                ) { matmul(x, dense.T) }
+            }
+        }
+
+        if let path = ProcessInfo.processInfo.environment["MLXFAST_E97_PEAK_OUT"],
+            !path.isEmpty
+        {
+            let data = try JSONSerialization.data(
+                withJSONObject: [
+                    "eval_overhead_us": overhead, "records": records,
+                ], options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: URL(fileURLWithPath: path))
+        }
+
+        #expect(!records.isEmpty)
+    }
+
+    @Test(
+        "the marginal verify row costs the same quantized or bf16",
+        .enabled(if: E97VerifyRowCostTests.enabled))
+    func perRowSlope() throws {
         let overhead = Self.evalOverheadMicroseconds()
         print(String(format: "E97_ROW overhead us=%.3f", overhead))
 
