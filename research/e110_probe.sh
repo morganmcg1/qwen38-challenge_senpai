@@ -15,7 +15,9 @@ shift
 out_dir="research/out/${tag}"
 arms_dir="/tmp/e110-arms"
 bin="/tmp/e110_rate_probe"
-arms="a_base,l_loadonly:diag,b_constw:diag,b_barrier,xs_stage,mo_stage,mo_swap"
+# The harness admits eight arms per session and runs its positive control on the
+# last one, so any override must end with an arm that is exact against a_base.
+arms="${E110_ARMS:-a_base,l_loadonly:diag,b_constw:diag,b_barrier,xs_stage,mo_stage,mo_swap}"
 mkdir -p "${out_dir}"
 
 macmon_bin=""

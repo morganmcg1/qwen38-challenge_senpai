@@ -219,6 +219,64 @@ BODY_MOSWAP = """
     }
 """
 
+# mu_swap: `mo_swap` with the m loop forced to unroll fully.
+#
+# `mo_swap` compiles to LESS machine text than the shipped body even though it
+# performs the same work, which is what a rolled loop looks like. A rolled m
+# loop makes `partial[r][m]` and `sums[m]` dynamically indexed, and it stops the
+# backend from hoisting the four nibble extractions of `packed[r][i]` out of the
+# m loop. This arm separates the nest order from the rolling.
+BODY_MUSWAP = BODY_MOSWAP.replace(
+    "    for (int m = 0; m < NA; m++) {\n      float sm = 0.0f;",
+    "#pragma clang loop unroll(full)\n"
+    "    for (int m = 0; m < NA; m++) {\n      float sm = 0.0f;")
+
+# mo_hoist: the shipped `i` outer nest, with the nibble extraction lifted out of
+# the m loop and the four staged activation values reduced to scalars.
+#
+# This keeps the property that makes the shipped nest cheap -- each
+# `packed[r][i]` is extracted once and reused by every m -- while removing the
+# `4 * NA` live registers the shipped `vec<float, NA> a0..a3` occupy. It is the
+# register half of the advisor's mo_swap hypothesis without the address-stream
+# half, so the pair separates the two.
+#
+# Bit exactness: for each (r, m) the accumulation into `partial[r][m]` still
+# runs over i in order over the same products, `n0[r]` is the same float the
+# implicit conversion produced, and `sums[m]` keeps the BF16 expression tree.
+BODY_MOHOIST = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      thread float n0[rows_per_simd], n1[rows_per_simd];
+      thread float n2[rows_per_simd], n3[rows_per_simd];
+      for (int r = 0; r < rows_per_simd; r++) {
+        n0[r] = float(packed[r][i] & 0x000f);
+        n1[r] = float((packed[r][i] >> 4) & 0x000f);
+        n2[r] = float((packed[r][i] >> 8) & 0x000f);
+        n3[r] = float((packed[r][i] >> 12) & 0x000f);
+      }
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        const float a0 = static_cast<float>(xm[0]);
+        const float a1 = static_cast<float>(xm[1]);
+        const float a2 = static_cast<float>(xm[2]);
+        const float a3 = static_cast<float>(xm[3]);
+        sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        for (int r = 0; r < rows_per_simd; r++) {
+          partial[r][m] += (a0 * n0[r] + a1 * n1[r] +
+                            a2 * n2[r] + a3 * n3[r]);
+        }
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
 # The weight-side loads of the shared prologue, and the constant stand-in that
 # `b_constw` puts in their place.
 WEIGHT_LOADS = """    for (int r = 0; r < rows_per_simd; r++) {
@@ -464,6 +522,8 @@ BODIES = {
     "xs_stage": None,
     "mo_stage": None,
     "mo_swap": (PROLOGUE, BODY_MOSWAP, EPILOGUE),
+    "mu_swap": (PROLOGUE, BODY_MUSWAP, EPILOGUE),
+    "mo_hoist": (PROLOGUE, BODY_MOHOIST, EPILOGUE),
 }
 
 STAGED = {"xs_stage": ("_xs", STAGED_BODY_XS),
@@ -471,12 +531,14 @@ STAGED = {"xs_stage": ("_xs", STAGED_BODY_XS),
 
 # Arms that must reproduce `a_base` bit for bit. The rest change the arithmetic
 # on purpose and are timing-only.
-EXACT_ARMS = ("b_barrier", "xs_stage", "mo_stage", "mo_swap")
+EXACT_ARMS = ("b_barrier", "xs_stage", "mo_stage", "mo_swap", "mu_swap",
+              "mo_hoist")
 
-# The harness runs its positive control on the LAST arm, so the last arm has to
-# be an exact one. `mo_swap` is the priority arm, so it takes that slot.
+# Every arm the census covers. The harness admits eight per timed session and
+# runs its positive control on the LAST one, so `research/e110_probe.sh` names
+# the timing subset and always ends it with an exact arm.
 ARMS = ("a_base", "l_loadonly", "b_constw", "b_barrier", "xs_stage",
-        "mo_stage", "mo_swap")
+        "mo_stage", "mo_swap", "mu_swap", "mo_hoist")
 
 
 def arm_source(base: str, arm: str) -> str:
