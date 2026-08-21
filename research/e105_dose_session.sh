@@ -5,7 +5,7 @@
 #
 # Runs the palindrome
 #
-#   A0  Z0@32  B1  C4  D4tiny  E4op  |  E4op  D4tiny  C4  B1  Z0@32  A0
+#   A0  Z0@32  B8  C24  D24tiny  E24op  |  E24op  D24tiny  C24  B8  Z0@32  A0
 #
 # inside one thermal session, so monotone thermal drift cancels to first
 # order across each arm pair. Every leg is `research/e105_dose_leg.sh`, which
@@ -15,11 +15,13 @@
 #
 # WHY THESE DOSES. The decision needs F, the marginal cost of one dispatch
 # boundary, in the regime where a fusion removes 80 to 96 dispatches per
-# round. Dose 1 and dose 4 per layer are 64 and 256 extra dispatches per
-# target forward, which brackets that regime instead of extrapolating into
-# it from far outside. A dose-16 smoke leg at 32 tokens showed the response
-# is large, so a small dose is enough and a large dose only risks leaving the
-# linear regime.
+# round. Two 32-token smoke legs bounded F at roughly 2 us, so a dose that
+# only brackets N=80 would put the whole signal inside run-to-run noise: 80
+# dispatches at 2 us is 160 us against a round of order 100 ms. Doses 8 and 24
+# per layer are 512 and 1536 extra dispatches per target forward, which lifts
+# the signal to a few percent of the reported number while keeping two points
+# apart by a factor of three so the ladder can still detect a bend. F is then
+# read from the slope and applied to N, rather than measured at N directly.
 #
 # WHY THREE SHAPES. Removing a real dispatch removes both its GPU boundary
 # and MLX's CPU cost for that graph node, and the two are not the same for
@@ -54,14 +56,14 @@ probe_tokens="${MLXFAST_E105_PROBE_TOKENS:-32}"
 legs=(
   "a1 0 prework ${tokens}"
   "z1 0 prework ${probe_tokens}"
-  "b1 1 prework ${tokens}"
-  "c1 4 prework ${tokens}"
-  "d1 4 tiny ${tokens}"
-  "e1 4 op ${tokens}"
-  "e2 4 op ${tokens}"
-  "d2 4 tiny ${tokens}"
-  "c2 4 prework ${tokens}"
-  "b2 1 prework ${tokens}"
+  "b1 8 prework ${tokens}"
+  "c1 24 prework ${tokens}"
+  "d1 24 tiny ${tokens}"
+  "e1 24 op ${tokens}"
+  "e2 24 op ${tokens}"
+  "d2 24 tiny ${tokens}"
+  "c2 24 prework ${tokens}"
+  "b2 8 prework ${tokens}"
   "z2 0 prework ${probe_tokens}"
   "a2 0 prework ${tokens}"
 )

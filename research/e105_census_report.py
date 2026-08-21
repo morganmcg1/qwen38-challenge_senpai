@@ -50,6 +50,28 @@ def parse_shape(text: str, prefix: str) -> tuple[int, int, int] | None:
     return None
 
 
+def width_anchors(tag: str) -> list[tuple[str, int, float]]:
+    """GPU-busy time per round at every observed verify width.
+
+    This is the denominator the campaign's family table uses, so it has to be
+    reported next to the families themselves.
+    """
+    path = pathlib.Path("research/out") / tag / "census.jsonl"
+    total: dict[str, float] = collections.defaultdict(float)
+    rounds: dict[str, set] = collections.defaultdict(set)
+    for line in path.read_text().splitlines():
+        if '"gputime"' not in line:
+            continue
+        rec = json.loads(line)
+        for key, val in (rec.get("exclusive_kernels") or {}).items():
+            w = key.split("|", 1)[0]
+            total[w] += val["gpu_ns"]
+            rounds[w].add(rec.get("round_last"))
+    return [
+        (w, len(rounds[w]), total[w] / len(rounds[w]) / 1e3) for w in sorted(total)
+    ]
+
+
 def load(tag: str, width: int, phase: str | None):
     path = pathlib.Path("research/out") / tag / "census.jsonl"
     rounds: set[int] = set()
@@ -155,6 +177,11 @@ def main() -> int:
 
     report["total_dispatches_per_round"] = total_disp_round
     report["total_us_per_round"] = total_us_round
+    anchors = width_anchors(args.tag)
+    report["width_anchors"] = anchors
+    report["census_round_us"] = next(
+        (us for w, _, us in anchors if w == f"w{args.width}"), None
+    )
 
     hdr = (
         f"{'family':16} {'tg':>6} {'tgcnt':>6} {'waves':>6} {'disp/rd':>8} "

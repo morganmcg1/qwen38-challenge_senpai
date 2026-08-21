@@ -133,8 +133,16 @@ DENOM_LABELS = (
 def decode_only_round(legs: list[dict]) -> dict | None:
     """Strip the fixed seed and warmup share out of the reported round.
 
-    `spt(n) = P / n + D`. Two dose-0 token counts give P and D exactly, and
-    the honest local round is `D x (1 + mean_draft)`.
+    `spt(n) = P / n + D`, where P is the 512-token seed plus warmup and D is
+    the marginal decode cost per token.
+
+    The two-point solve is taken from the SERIAL pass only. Serial decoding
+    runs exactly one target forward per token at every token count, so its
+    two points differ in nothing but n. The MTP pass does not qualify: its
+    mean draft length changes with n, so its two points differ in the work per
+    token as well and the solve would be biased. Both passes prefill the same
+    seed, so P carries over, and the MTP marginal cost is then
+    `spt_mtp(n_hi) - P / n_hi`.
     """
     zero = [leg for leg in legs if leg["dose"] == 0]
     by_n: dict[int, list[dict]] = {}
@@ -144,24 +152,37 @@ def decode_only_round(legs: list[dict]) -> dict | None:
         return None
     ns = sorted(by_n)
     n_lo, n_hi = ns[0], ns[-1]
-    out: dict[str, object] = {"tokens": [n_lo, n_hi]}
-    for key, label in (("mtp_spt", "mtp"), ("serial_spt", "serial")):
-        s_lo = mean([leg[key] for leg in by_n[n_lo]])
-        s_hi = mean([leg[key] for leg in by_n[n_hi]])
-        # s = P/n + D  =>  D = (n_hi*s_hi - n_lo*s_lo) / (n_hi - n_lo)
-        d = (n_hi * s_hi - n_lo * s_lo) / (n_hi - n_lo)
-        p = (s_lo - d) * n_lo
-        out[label] = {
+
+    s_lo = mean([leg["serial_spt"] for leg in by_n[n_lo]])
+    s_hi = mean([leg["serial_spt"] for leg in by_n[n_hi]])
+    # s = P/n + D  =>  D = (n_hi*s_hi - n_lo*s_lo) / (n_hi - n_lo)
+    d_serial = (n_hi * s_hi - n_lo * s_lo) / (n_hi - n_lo)
+    p = (s_lo - d_serial) * n_lo
+
+    m_lo = mean([leg["mtp_spt"] for leg in by_n[n_lo]])
+    m_hi = mean([leg["mtp_spt"] for leg in by_n[n_hi]])
+    d_mtp = m_hi - p / n_hi
+    draft = mean([leg["mean_draft"] for leg in by_n[n_hi]])
+
+    return {
+        "tokens": [n_lo, n_hi],
+        "fixed_seed_and_warmup_s": p,
+        "serial": {
             "spt_at_n_lo": s_lo,
             "spt_at_n_hi": s_hi,
-            "fixed_seed_and_warmup_s": p,
-            "marginal_spt_s": d,
-            "fixed_share_of_reported_at_n_hi": 1.0 - d / s_hi,
-        }
-    draft = mean([leg["mean_draft"] for leg in by_n[n_hi]])
-    out["mean_draft_at_n_hi"] = draft
-    out["decode_only_round_us"] = out["mtp"]["marginal_spt_s"] * (1 + draft) * 1e6
-    return out
+            "marginal_spt_s": d_serial,
+            "fixed_share_of_reported_at_n_hi": 1.0 - d_serial / s_hi,
+        },
+        "mtp": {
+            "spt_at_n_lo": m_lo,
+            "spt_at_n_hi": m_hi,
+            "marginal_spt_s": d_mtp,
+            "fixed_share_of_reported_at_n_hi": 1.0 - d_mtp / m_hi,
+            "mean_draft_at_n_hi": draft,
+        },
+        "decode_only_round_us": d_mtp * (1 + draft) * 1e6,
+        "decode_only_serial_token_us": d_serial * 1e6,
+    }
 
 
 def price(f_us: float, wall_round_us: float, decode_round_us: float) -> dict:
@@ -240,14 +261,17 @@ def main() -> None:
         report["decode_only"] = dec
         decode_round_us = dec["decode_only_round_us"]
         print(f'\n--- fixed seed and warmup share, dose 0, n={dec["tokens"]} ---')
-        for label in ("mtp", "serial"):
+        print(f'  fixed seed and warmup        : '
+              f'{dec["fixed_seed_and_warmup_s"]:.3f} s per leg, solved from '
+              f'the serial pass')
+        for label in ("serial", "mtp"):
             b = dec[label]
             print(f'  {label:<7} spt {b["spt_at_n_lo"] * 1e3:8.2f} ms at n='
                   f'{dec["tokens"][0]}, {b["spt_at_n_hi"] * 1e3:8.2f} ms at n='
-                  f'{dec["tokens"][1]}  ->  fixed '
-                  f'{b["fixed_seed_and_warmup_s"]:.3f} s, marginal '
-                  f'{b["marginal_spt_s"] * 1e3:.2f} ms/token, fixed share of '
-                  f'the reported number {100 * b["fixed_share_of_reported_at_n_hi"]:.1f} %')
+                  f'{dec["tokens"][1]}  ->  marginal '
+                  f'{b["marginal_spt_s"] * 1e3:6.2f} ms/token, fixed share of '
+                  f'the reported number '
+                  f'{100 * b["fixed_share_of_reported_at_n_hi"]:.1f} %')
         print(f'  decode-only local round      : {decode_round_us:,.1f} us')
 
     # The scored round must be timed at one token count, so the slope uses the
