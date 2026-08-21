@@ -2835,40 +2835,54 @@ let qwen35DecodeLadderRungs: Set<Int> = {
 // neighbouring rounds at equal width.
 //
 // Round `i` reported by the parent carries the dose when `i` is odd, but only
-// if exactly one qualifying forward runs per round. The counter is printed at
-// exit so that assumption is checked against `round_count` instead of assumed.
+// if exactly one qualifying forward runs per round. Set `MLX_E105_DOSE_WITNESS`
+// on a separate leg to record the per-forward schedule, so that assumption is
+// checked against `round_count` instead of assumed.
 let e105DoseCount = Int(ProcessInfo.processInfo.environment["MLX_E105_DOSE"] ?? "") ?? 0
 let e105DoseShape = ProcessInfo.processInfo.environment["MLX_E105_DOSE_SHAPE"] ?? "prework"
 let e105DoseAlternate =
     ProcessInfo.processInfo.environment["MLX_E105_DOSE_ALTERNATE"] == "1"
 
+/// Optional witness file for the dose schedule, named by the environment.
+///
+/// An earlier version reported the accounting from an `atexit` handler on the
+/// worker's stderr. Neither half of that worked: `mtp-timed` does not forward
+/// worker stderr by default, and the worker is terminated rather than exited,
+/// so the handler never ran. The witness is therefore appended to a file, and
+/// only when this variable is set -- the timing legs run with it unset and
+/// write nothing.
+let e105DoseWitnessPath =
+    ProcessInfo.processInfo.environment["MLX_E105_DOSE_WITNESS"] ?? ""
+
 nonisolated(unsafe) private var e105DoseForwards = 0
 nonisolated(unsafe) private var e105DoseApplications = 0
-nonisolated(unsafe) private var e105DoseAtExitArmed = false
+nonisolated(unsafe) private var e105DoseWitness: FileHandle? = nil
 
 /// Count one qualifying decode forward and report whether it takes the dose.
 ///
-/// The accounting is printed at process exit rather than per round, so nothing
-/// is written inside a timed round.
+/// When a witness file is configured, append one line per qualifying forward.
+/// The per-forward sequence is stronger evidence than a total: it shows that
+/// the dose alternates AND lets the reader check the forward count against
+/// `round_count`, which is what makes "round i is dosed iff i is odd" a
+/// verified statement rather than an assumption.
 func e105DoseTakeTurn() -> Bool {
-    if !e105DoseAtExitArmed {
-        e105DoseAtExitArmed = true
-        atexit {
-            FileHandle.standardError.write(Data(
-                ("e105_dose_accounting"
-                 + " qualifying_forwards=\(e105DoseForwards)"
-                 + " dosed_forwards=\(e105DoseApplications)"
-                 + " alternate=\(e105DoseAlternate)"
-                 + " dose=\(e105DoseCount) shape=\(e105DoseShape)\n").utf8))
-        }
-    }
     e105DoseForwards += 1
-    guard e105DoseAlternate else {
-        e105DoseApplications += 1
-        return true
-    }
-    let take = e105DoseForwards % 2 == 0
+    let take = e105DoseAlternate ? e105DoseForwards % 2 == 0 : true
     if take { e105DoseApplications += 1 }
+
+    if !e105DoseWitnessPath.isEmpty {
+        if e105DoseWitness == nil {
+            FileManager.default.createFile(
+                atPath: e105DoseWitnessPath, contents: nil)
+            e105DoseWitness = FileHandle(forWritingAtPath: e105DoseWitnessPath)
+        }
+        e105DoseWitness?.write(Data(
+            ("e105_dose_forward forward=\(e105DoseForwards)"
+             + " dosed=\(take ? 1 : 0)"
+             + " applications=\(e105DoseApplications)"
+             + " alternate=\(e105DoseAlternate)"
+             + " dose=\(e105DoseCount) shape=\(e105DoseShape)\n").utf8))
+    }
     return take
 }
 
