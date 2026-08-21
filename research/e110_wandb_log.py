@@ -17,9 +17,10 @@ therefore attacks the extraction schedule inside the k-block. Three runs:
       verify-width histogram, the rule 36b roofline pair, exactness and the
       pre-registered KILL and ADVANCE decisions.
   `e110-rung2-insitu`
-      The advanced arm inside the real kernel: full-window exactness and
-      matched ABBA absolute candidate MTP seconds per token against a fresh
-      unchanged base in the same session.
+      The advanced arm inside the real kernel: full-window exactness, matched
+      ABBA absolute candidate MTP seconds per token against a fresh unchanged
+      base in the same session, and the driver-read threadgroup memory that
+      killed the staging arm.
 
 Every timed leg here ran with no thermal gate, so `timing_valid`,
 `cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
@@ -498,6 +499,57 @@ def log_timing() -> None:
     run.finish()
 
 
+def log_tgmem(run) -> None:
+    """Driver-read threadgroup memory for each staging placement.
+
+    The occupancy column is the reason the staging arm is dead: the tile can
+    only be declared at the entry point, so every dispatch of that kernel pays
+    it, including M = 1.
+    """
+    path = OUT / "e110/rung2-tgmem.json"
+    if not path.exists():
+        print(f"[wandb] no {path}; run the driver probe first")
+        return
+    doc = json.loads(path.read_text())
+    pool = doc["max_threadgroup_memory_length"]
+
+    table = wandb.Table(columns=[
+        "variant", "compiled", "entry_point", "static_threadgroup_memory",
+        "max_threads", "threads_per_simd", "threadgroups_per_pool",
+        "simdgroups_per_pool", "compile_error"])
+    for variant in doc["variants"]:
+        if not variant["compiled"]:
+            table.add_data(variant["label"], False, None, None, None, None,
+                           None, None, variant.get("compile_error"))
+            continue
+        for entry in variant["entry_points"]:
+            tg_bytes = entry["static_threadgroup_memory"]
+            groups = pool // tg_bytes if tg_bytes else None
+            table.add_data(
+                variant["label"], True, entry["name"], tg_bytes,
+                entry["max_threads"], entry.get("threads_per_simd"), groups,
+                groups * SIMDGROUPS_PER_THREADGROUP if groups else None, None)
+    run.log({"threadgroup_memory": table})
+
+    def bytes_of(label: str):
+        for variant in doc["variants"]:
+            if variant["label"] == label and variant["compiled"]:
+                return max(e["static_threadgroup_memory"]
+                           for e in variant["entry_points"])
+        return None
+
+    entry_bytes = bytes_of("tile_entry")
+    run.summary.update({
+        "tgmem_device": doc["device"],
+        "tgmem_pool_bytes": pool,
+        "tgmem_shipped_bytes": bytes_of("shipped"),
+        "tgmem_tile_wide_compiles": bytes_of("tile_wide") is not None,
+        "tgmem_tile_entry_bytes": entry_bytes,
+        "tgmem_tile_entry_simdgroup_cap":
+            pool // entry_bytes * SIMDGROUPS_PER_THREADGROUP,
+    })
+
+
 def log_rung2() -> None:
     """The advanced arm inside the real kernel, in situ."""
     path = OUT / "e110/rung2-insitu.json"
@@ -510,7 +562,8 @@ def log_rung2() -> None:
         "e110-rung2-insitu", "timing",
         "Does the advanced arm lower absolute candidate MTP seconds per token "
         "in the real worker, with full-window exactness intact?",
-        3, {"arm": doc["arm"], "candidate_commit": doc["candidate_commit"],
+        3, {"rung": 2,
+            "arm": doc["arm"], "candidate_commit": doc["candidate_commit"],
             "base_commit": doc["base_commit"],
             "worker_fingerprint": doc.get("worker_fingerprint"),
             "token_window": doc.get("token_window"),
@@ -519,13 +572,35 @@ def log_rung2() -> None:
         meta_dir="e110-rung2")
 
     legs = wandb.Table(columns=[
-        "replicate", "position", "tree", "seconds_per_token", "rounds",
-        "gpu_temp_entry_c", "gpu_temp_exit_c"])
+        "replicate", "position", "tree", "tag", "seconds_per_token",
+        "serial_seconds_per_token", "local_ratio", "rounds",
+        "effective_mean_draft_len", "accepted_draft_rate", "all_tokens_matched",
+        "gpu_temp_entry_c", "gpu_temp_exit_c", "worker_sha256"])
     for leg in doc["legs"]:
         legs.add_data(leg["replicate"], leg["position"], leg["tree"],
-                      leg["seconds_per_token"], leg.get("rounds"),
-                      leg.get("gpu_temp_entry_c"), leg.get("gpu_temp_exit_c"))
+                      leg.get("tag"), leg["seconds_per_token"],
+                      leg.get("serial_seconds_per_token"),
+                      leg.get("local_ratio"), leg.get("rounds"),
+                      leg.get("effective_mean_draft_len"),
+                      leg.get("accepted_draft_rate"),
+                      leg.get("all_tokens_matched"),
+                      leg.get("gpu_temp_entry_c"), leg.get("gpu_temp_exit_c"),
+                      leg.get("worker_sha256"))
     run.log({"abba_legs": legs})
+
+    per_replicate = wandb.Table(columns=[
+        "replicate", "mtp_spt_base", "mtp_spt_xv4", "mtp_spt_pct",
+        "serial_spt_base", "serial_spt_xv4", "serial_spt_pct",
+        "ratio_base", "ratio_xv4", "ratio_pct", "base_pair_drift_pct"])
+    for rec in doc.get("per_replicate", []):
+        per_replicate.add_data(
+            rec["replicate"], rec["mtp_spt_base"], rec["mtp_spt_xv4"],
+            rec["mtp_spt_pct"], rec["serial_spt_base"], rec["serial_spt_xv4"],
+            rec["serial_spt_pct"], rec["ratio_base"], rec["ratio_xv4"],
+            rec["ratio_pct"], rec["base_pair_drift_pct"])
+    run.log({"per_replicate": per_replicate})
+
+    log_tgmem(run)
 
     if doc.get("exactness"):
         exact = wandb.Table(columns=[
@@ -537,7 +612,8 @@ def log_rung2() -> None:
         run.log({"exactness": exact})
 
     run.summary.update(doc["summary"])
-    attach(run, path, OUT / "e110-rung2/meta.txt")
+    attach(run, path, OUT / "e110/rung2-exactness.json",
+           OUT / "e110/rung2-tgmem.json", OUT / "e110-rung2/meta.txt")
     run.finish()
 
 
