@@ -112,6 +112,7 @@ def main() -> None:
     fold_rows = []
     for key, folds in doc["rung4"].items():
         for fold in folds:
+            control = fold.get("random_control") or {}
             fold_rows.append(dict(
                 policy_class=fold["policy_class"], treatment=fold["treatment"],
                 design=fold["fold"],
@@ -120,6 +121,11 @@ def main() -> None:
                 oracle_us_per_token=fold["oracle_us_per_token"],
                 gain_pct=fold["gain_pct"], oracle_gap_pct=fold["oracle_gap_pct"],
                 recovered_share=fold["recovered_share"],
+                control_clamped=control.get("clamped"),
+                control_mean_gain_pct=control.get("mean_gain_pct"),
+                control_p95_gain_pct=control.get("p95_gain_pct"),
+                control_max_gain_pct=control.get("max_gain_pct"),
+                beats_random_control=control.get("beaten_by_fit"),
                 policy="\n".join(fold["tree_text"])))
 
     run.log({

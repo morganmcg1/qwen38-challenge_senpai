@@ -49,6 +49,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import re
 import statistics
 from pathlib import Path
@@ -317,6 +318,11 @@ def thresholds(rounds: list[Round], name: str, limit: int = 24) -> list[float]:
     return [cuts[int(i * step)] for i in range(limit)]
 
 
+# Both clamp classes hold the shipped depth or move the round into the G = 1
+# band at depth 3. Only these classes have a matching random control.
+CLAMP_CLASSES = ('one_bit_g', 'margin_gate')
+
+
 def action_set(name: str):
     """Every action is a function of PRE-ROUND state only, so every policy
     built from them is implementable inside `costModelDepth`."""
@@ -325,10 +331,18 @@ def action_set(name: str):
                    for d in range(SEGMENTED_VERIFY_DEPTH_CAP + 1)]
         actions.append(('ship', lambda r: r.depth))
         return actions
-    if name == 'one_bit_g':
+    if name in CLAMP_CLASSES:
         return [('ship', lambda r: r.depth),
                 ('g1', lambda r: min(3, r.depth))]
     raise ValueError(name)
+
+
+# `margin_gate` is the smallest implementable form of the fitted policy: one
+# threshold on the pending primary's top-2 margin, one clamp into the G = 1
+# band. It is fitted with a single split so the reported threshold is a
+# constant a follow-up experiment can put straight into `costModelDepth`.
+CLASS_FEATURES = {'margin_gate': ('margin',)}
+CLASS_TREE_DEPTH = {'margin_gate': 1}
 
 
 def reward_table(rounds, curve, treatment, lam, actions):
@@ -351,7 +365,8 @@ def best_leaf(indices, table):
     return best
 
 
-def fit_tree(rounds, table, indices, depth_left, actions, min_leaf=12):
+def fit_tree(rounds, table, indices, depth_left, actions, min_leaf=12,
+             features=FEATURES):
     """Greedy cost-sensitive tree. Leaves hold one action each."""
     total, slot = best_leaf(indices, table)
     node = dict(kind='leaf', action=actions[slot][0], slot=slot,
@@ -360,7 +375,7 @@ def fit_tree(rounds, table, indices, depth_left, actions, min_leaf=12):
         return node
     subset = [rounds[i] for i in indices]
     best = None
-    for name in FEATURES:
+    for name in features:
         for cut in thresholds(subset, name):
             left, right = [], []
             for i in indices:
@@ -376,9 +391,10 @@ def fit_tree(rounds, table, indices, depth_left, actions, min_leaf=12):
     _, name, cut, left, right = best
     return dict(
         kind='split', feature=name, threshold=cut, count=len(indices),
-        left=fit_tree(rounds, table, left, depth_left - 1, actions, min_leaf),
+        left=fit_tree(rounds, table, left, depth_left - 1, actions, min_leaf,
+                      features),
         right=fit_tree(rounds, table, right, depth_left - 1, actions,
-                       min_leaf))
+                       min_leaf, features))
 
 
 def apply_tree(node, record: Round, actions) -> int:
@@ -407,13 +423,15 @@ def fit_policy(train, test, curve, treatment, max_depth, seed,
                class_name='absolute') -> dict:
     """Fit on `train`, report held-out `test`. Ratio objective, Dinkelbach."""
     actions = action_set(class_name)
+    features = CLASS_FEATURES.get(class_name, FEATURES)
+    max_depth = CLASS_TREE_DEPTH.get(class_name, max_depth)
     kept = usable(train, treatment)
     lam = seed
     tree = None
     for _ in range(32):
         table = reward_table(kept, curve, treatment, lam, actions)
         tree = fit_tree(kept, table, list(range(len(kept))), max_depth,
-                        actions)
+                        actions, features=features)
         train_score = evaluate_policy(
             kept, curve, treatment, lambda r: apply_tree(tree, r, actions))
         if abs(train_score['us_per_token'] - lam) < 1e-9:
@@ -434,6 +452,38 @@ def describe_tree(node, prefix='') -> list[str]:
     out += [f'{prefix}else:']
     out += describe_tree(node['right'], prefix + '    ')
     return out
+
+
+def random_clamp_control(rounds, curve, treatment, count, draws=200,
+                         seed=20260821) -> dict:
+    """Clamp the same NUMBER of rounds, chosen at random.
+
+    A gate that clamps 24 % of rounds also lowers the mean depth, and a lower
+    mean depth alone can move us/token. This control holds the clamp RATE and
+    destroys only the information in the gate, so whatever the fitted policy
+    earns above this control is allocation and not level.
+    """
+    generator = random.Random(seed)
+    kept = usable(rounds, treatment)
+    reference = actual(kept, curve)['us_per_token']
+    gains = []
+    for _ in range(draws):
+        clamped = set(generator.sample(range(len(kept)), count))
+        cost = tokens = 0.0
+        for index, record in enumerate(kept):
+            depth = min(3, record.depth) if index in clamped else record.depth
+            cost += curve(depth + 1)
+            tokens += token_row(record, treatment)[depth]
+        gains.append(100.0 * (reference - cost / tokens) / reference)
+    gains.sort()
+    return dict(mean_gain_pct=statistics.fmean(gains),
+                p95_gain_pct=gains[int(0.95 * (len(gains) - 1))],
+                max_gain_pct=gains[-1], draws=draws, clamped=count,
+                rounds=len(kept))
+
+
+def clamp_count(rounds, treatment, depth_of) -> int:
+    return sum(1 for r in usable(rounds, treatment) if depth_of(r) < r.depth)
 
 
 def pearson(xs, ys) -> float:
@@ -480,6 +530,26 @@ def published_move(gain_pct: float) -> dict:
 
 def nearest_prompt(width: float) -> str:
     return min(RANKED_WIDTH, key=lambda k: abs(RANKED_WIDTH[k] - width))
+
+
+def boundary_curve(step: float):
+    """The ranked curve with the G boundary resized to `step`.
+
+    The ranked round counts behind the fitted curve are inferred, so the size
+    of the M = 4 -> M = 5 jump carries real uncertainty. Everything the one-bit
+    G policy earns comes from that jump, so the conclusion has to be reported
+    against a range of jump sizes. The G = 1 line and the G = 2 slope are held;
+    only the G = 2 intercept moves, so `C(5) = C(4) * (1 + step)`.
+    """
+    c4 = RANKED_A1 + RANKED_C1 * 4
+    intercept = c4 * (1.0 + step) - RANKED_C2 * 5
+
+    def curve(width: int) -> float:
+        if width <= 4:
+            return RANKED_A1 + RANKED_C1 * width
+        return intercept + RANKED_C2 * width
+
+    return curve
 
 
 def analyse_leg(tag, info, rounds, curve_name) -> dict:
@@ -634,11 +704,11 @@ def main() -> None:
     print('=' * 79)
     print('RUNG 4 - BEST POLICY ON PRE-ROUND STATE ONLY, HELD OUT')
     print('=' * 79)
-    print(f'{"class":10s}{"treat":9s}{"design":20s}{"actual":>10s}'
+    print(f'{"class":12s}{"treat":9s}{"design":20s}{"actual":>10s}'
           f'{"fitted":>10s}{"gain %":>9s}{"oracle %":>9s}{"recov %":>9s}')
     fits = {}
     designs = splits(all_rounds, list(legs))
-    for class_name in ('absolute', 'one_bit_g'):
+    for class_name in ('absolute', 'one_bit_g', 'margin_gate'):
         for treatment in ('observed', 'impute'):
             folds = []
             for name, train, test in designs:
@@ -656,6 +726,15 @@ def main() -> None:
                                       - oracle_test['us_per_token']) \
                     / reference['us_per_token']
                 share = gain / oracle_gap if oracle_gap > 0 else float('nan')
+                control = None
+                if class_name in CLAMP_CLASSES:
+                    actions = action_set(class_name)
+                    changed = clamp_count(
+                        test, treatment,
+                        lambda r: apply_tree(fitted['tree'], r, actions))
+                    control = random_clamp_control(
+                        test, ranked_round_us, treatment, changed)
+                    control['beaten_by_fit'] = gain > control['p95_gain_pct']
                 folds.append(dict(
                     fold=name, treatment=treatment, policy_class=class_name,
                     held_out_us_per_token=fitted['held_out']['us_per_token'],
@@ -663,13 +742,20 @@ def main() -> None:
                     oracle_us_per_token=oracle_test['us_per_token'],
                     train_us_per_token=fitted['train_us_per_token'],
                     gain_pct=gain, oracle_gap_pct=oracle_gap,
-                    recovered_share=share,
+                    recovered_share=share, random_control=control,
                     tree_text=describe_tree(fitted['tree'])))
-                print(f'{class_name:10s}{treatment:9s}{name:20s}'
+                print(f'{class_name:12s}{treatment:9s}{name:20s}'
                       f'{reference["us_per_token"]:10.1f}'
                       f'{fitted["held_out"]["us_per_token"]:10.1f}'
                       f'{gain:+9.2f}{oracle_gap:9.2f}{100 * share:9.1f}')
-                if class_name == 'one_bit_g' and treatment == 'observed':
+                if control is not None and treatment == 'observed':
+                    print(f'        random clamp control: '
+                          f'{control["clamped"]}/{control["rounds"]} rounds, '
+                          f'mean {control["mean_gain_pct"]:+.2f} % '
+                          f'p95 {control["p95_gain_pct"]:+.2f} % '
+                          f'max {control["max_gain_pct"]:+.2f} % '
+                          f'-> fit beats control: {control["beaten_by_fit"]}')
+                if class_name in CLAMP_CLASSES and treatment == 'observed':
                     for line in describe_tree(fitted['tree'], '        '):
                         print(line)
             fits[f'{class_name}|{treatment}'] = folds
@@ -702,6 +788,43 @@ def main() -> None:
         oracle_gap_pct_min=worst, oracle_gap_pct_max=best,
         treatments_agree_in_sign=len(signs) == 1,
         published_move_at_oracle=published_move(best))
+
+    print()
+    print('=' * 79)
+    print('SENSITIVITY TO THE SIZE OF THE G BOUNDARY')
+    print('=' * 79)
+    print('The ranked curve fit puts the M=4 -> M=5 jump at +23.0 %. The local')
+    print('curve puts it at +46.2 %. Every one-bit G gain comes from that jump,')
+    print('so the headline leg is repriced across the range.')
+    print()
+    print(f'{"boundary step":>14s}{"actual":>10s}{"oracle":>10s}'
+          f'{"oracle %":>10s}{"1bitG":>10s}{"1bitG %":>9s}')
+    sensitivity = []
+    headline_rounds = legs[args.headline]['rounds']
+    for step in (0.10, 0.15, 0.230, 0.30, 0.462):
+        curve = boundary_curve(step)
+        reference = actual(headline_rounds, curve)
+        oracle_result = oracle(headline_rounds, curve, 'observed',
+                               reference['us_per_token'])
+        bit = one_bit_g(headline_rounds, curve, 'observed',
+                        reference['us_per_token'], 'truncate')
+        row = dict(
+            boundary_step_pct=100.0 * step,
+            actual_us_per_token=reference['us_per_token'],
+            oracle_us_per_token=oracle_result['us_per_token'],
+            oracle_gap_pct=100.0 * (reference['us_per_token']
+                                    - oracle_result['us_per_token'])
+            / reference['us_per_token'],
+            one_bit_g_us_per_token=bit['us_per_token'],
+            one_bit_g_gap_pct=100.0 * (reference['us_per_token']
+                                       - bit['us_per_token'])
+            / reference['us_per_token'])
+        sensitivity.append(row)
+        print(f'{100 * step:13.1f}%{row["actual_us_per_token"]:10.1f}'
+              f'{row["oracle_us_per_token"]:10.1f}{row["oracle_gap_pct"]:10.2f}'
+              f'{row["one_bit_g_us_per_token"]:10.1f}'
+              f'{row["one_bit_g_gap_pct"]:9.2f}')
+    report['boundary_sensitivity'] = sensitivity
 
     print()
     print('=' * 79)
