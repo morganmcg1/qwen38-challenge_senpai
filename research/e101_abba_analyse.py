@@ -41,7 +41,14 @@ import statistics
 import sys
 
 ROUND_CPU_RATIO = 1.25
+# The whole-leg score is not round-filtered, so a leg only has to be mostly
+# clean to contribute it. A per-round counter mean IS computed over the kept
+# subset, and that subset is selection-biased: dropping high-CPU rounds also
+# drops rounds with more drafts, so a leg that lost a quarter of its rounds
+# reports a cheaper mean round than a leg that lost none. Counter contrasts
+# therefore use legs the filter barely touched.
 MIN_CLEAN_FRACTION = 0.75
+MIN_COUNTER_FRACTION = 0.95
 
 # f1 ranked pricing table: (prompt, mean drafts per round, mean round us).
 # A latency-class saving of `u` us per draft removes `u * drafts` us from each
@@ -229,6 +236,7 @@ def classify(legs):
         leg["total"] = len(rows)
         leg["kept_fraction"] = len(kept) / len(rows) if rows else 0.0
         leg["clean"] = leg["kept_fraction"] >= MIN_CLEAN_FRACTION
+        leg["strict"] = leg["kept_fraction"] >= MIN_COUNTER_FRACTION
         leg["trace"] = reduce_rounds(kept or rows)
         leg["trace_all"] = reduce_rounds(rows)
     return reference, threshold
@@ -286,15 +294,22 @@ def main():
         )
 
     clean = [leg for leg in legs if leg["clean"]]
-    dropped = [f"{leg['tag']}({leg['kept_fraction']:.0%})"
-               for leg in legs if not leg["clean"]]
+    strict = [leg for leg in legs if leg["strict"]]
     print()
     print(f"round stall filter    keeps rounds with host_thread_cpu_ns <= "
           f"{ROUND_CPU_RATIO} x pooled median")
-    print(f"leg score filter      needs kept_fraction >= {MIN_CLEAN_FRACTION:.0%}; "
-          f"drops {dropped or 'nothing'}")
+    def names(flag):
+        out = ["{}({:.0%})".format(leg["tag"], leg["kept_fraction"])
+               for leg in legs if not leg[flag]]
+        return out or "nothing"
 
-    for name, subset in (("ALL LEGS", legs), ("CLEAN LEGS", clean)):
+    print(f"leg score filter      needs kept_fraction >= "
+          f"{MIN_CLEAN_FRACTION:.0%}; drops {names('clean')}")
+    print(f"leg counter filter    needs kept_fraction >= "
+          f"{MIN_COUNTER_FRACTION:.0%}; drops {names('strict')}")
+
+    for name, subset in (("ALL LEGS", legs), ("CLEAN LEGS", clean),
+                         ("STRICT LEGS", strict)):
         base = [leg for leg in subset if leg["e101_arm"] == "off"]
         kern = [leg for leg in subset if leg["e101_arm"] == "on"]
         print()
