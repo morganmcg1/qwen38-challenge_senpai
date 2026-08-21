@@ -29,7 +29,7 @@ FIELDS = (
     "residual_us",
     "closure_err_us",
 )
-REPEAT_ARMS = ("rep", "repchain")
+REPEAT_ARMS = ("rep", "repchain", "norm-rep")
 PHASE_GPU = frozenset({"round_us", "verify_build_us", "eval_wall_us"})
 PHASE_ALL = PHASE_GPU | {
     "draft_build_us", "readout_us", "commit_us", "upkeep_us"
@@ -124,8 +124,10 @@ def summarise(tag, warmup=1):
         buckets.setdefault(key, []).append(record)
     return {
         "tag": tag,
-        "step_mode": meta.get("step_mode"),
-        "repeat": meta.get("repeat", "1"),
+        # `arm` and `dose` name whichever family the leg varied. Legs recorded
+        # before the second family existed carry only the step fields.
+        "step_mode": meta.get("arm", meta.get("step_mode")),
+        "repeat": meta.get("dose", meta.get("repeat", "1")),
         "tg_y": meta.get("tg_y"),
         "force_drafts": meta.get("force_drafts"),
         "tokens": meta.get("tokens"),

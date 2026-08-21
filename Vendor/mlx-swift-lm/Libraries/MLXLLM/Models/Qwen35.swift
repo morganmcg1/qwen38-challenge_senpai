@@ -2031,6 +2031,126 @@ private let qwen35FusedResidualRMSNormKernel = MLXFast.metalKernel(
     ensureRowContiguous: false
 )
 
+// MARK: - E96 rung 3 fused-norm instrument (RESEARCH ONLY, NOT FOR SUBMISSION)
+
+/// Ablation instrument for the fused residual + RMSNorm family.
+///
+/// `MLX_E96_NORM` selects the arm:
+///   `vendor` (default) the unmodified fused kernel;
+///   `rep`    the same kernel body repeated `MLX_E96_NORM_REPEAT` times from
+///            the same inputs, which multiplies the family's work while
+///            leaving its output bit-identical;
+///   `off`    no dispatch at all: `h = x` and `normed = x`.
+///
+/// The `rep` arm is the measurement and `off` is only a bracket. Rung 1 showed
+/// that a removal arm changes the emitted tokens, drops acceptance to zero and
+/// then pays repair cost that swamps the removed work, while the repeat arm
+/// keeps one token stream and one bucket distribution across every dose.
+private enum Qwen35E96Norm {
+    enum Mode: String {
+        case vendor, rep, off
+    }
+
+    static let mode: Mode = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E96_NORM"] ?? ""
+        return Mode(rawValue: raw) ?? .vendor
+    }()
+
+    static let repeatCount: Int = {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "MLX_E96_NORM_REPEAT"],
+            let count = Int(raw), count >= 1, count <= 64
+        else { return 1 }
+        return count
+    }()
+
+    /// Runtime zeros indexed by the repetition counter, for the same reason as
+    /// `Qwen35E96Step.repeatOffsets`: without an address the compiler cannot
+    /// resolve, every repetition but the last is dead code.
+    nonisolated(unsafe) static let repeatOffsets = MLXArray.zeros(
+        [repeatCount], dtype: .int32)
+
+    static let repKernel = MLXFast.metalKernel(
+        name: "qwen35_e96_norm_rep",
+        inputNames: ["x", "r", "weight", "eps", "R", "rep_offsets"],
+        outputNames: ["h", "normed"],
+        source: """
+            constexpr uint n_reads = 4;
+            constexpr uint simd_size = 32;
+            constexpr uint lsize = 1024;
+
+            uint row = threadgroup_position_in_grid.x;
+            uint thread_id = thread_position_in_threadgroup.x;
+            uint simd_thread = thread_index_in_simdgroup;
+            uint simd_group = simdgroup_index_in_threadgroup;
+
+            uint axis_size = uint(x_shape[x_ndim - 1]);
+
+            threadgroup float local_inv_mean[1];
+            threadgroup float local_sums[simd_size];
+
+            for (int rep = 0; rep < R; ++rep) {
+                ulong offset = ulong(row) * ulong(axis_size)
+                             + ulong(rep_offsets[rep]);
+
+                float acc = 0.0f;
+                for (uint r_start = 0; r_start < axis_size;
+                     r_start += lsize * n_reads) {
+                    uint elem = r_start + thread_id * n_reads;
+                    for (uint i = 0; i < n_reads; ++i) {
+                        if (elem + i < axis_size) {
+                            float xi = float(x[offset + elem + i]);
+                            float ri = float(r[offset + elem + i]);
+                            bfloat hi = bfloat(xi + ri);
+                            acc += float(hi) * float(hi);
+                        }
+                    }
+                }
+
+                acc = simd_sum(acc);
+                if (simd_group == 0) {
+                    local_sums[simd_thread] = 0.0f;
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                if (simd_thread == 0) {
+                    local_sums[simd_group] = acc;
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                if (simd_group == 0) {
+                    acc = simd_sum(local_sums[simd_thread]);
+                    if (simd_thread == 0) {
+                        local_inv_mean[0] = metal::precise::rsqrt(
+                            acc / float(axis_size) + eps);
+                    }
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                float inv_mean = local_inv_mean[0];
+
+                for (uint r_start = 0; r_start < axis_size;
+                     r_start += lsize * n_reads) {
+                    uint elem = r_start + thread_id * n_reads;
+                    for (uint i = 0; i < n_reads; ++i) {
+                        if (elem + i < axis_size) {
+                            float xi = float(x[offset + elem + i]);
+                            float ri = float(r[offset + elem + i]);
+                            bfloat hi = bfloat(xi + ri);
+                            h[offset + elem + i] = hi;
+                            bfloat wi = weight[elem + i];
+                            normed[offset + elem + i] =
+                                wi * bfloat(float(hi) * inv_mean);
+                        }
+                    }
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+            }
+        """,
+        ensureRowContiguous: false
+    )
+}
+
 /// Wraps the fused residual+RMSNorm kernel.  Returns `(residual, normed)` where
 /// `residual = bf16(x + r)` and `normed = weight * RMSNorm(residual)` with the
 /// same arithmetic as the eager `postAttentionLayerNorm(x + r)`.
@@ -2040,10 +2160,18 @@ func qwen35FusedResidualRMSNorm(
     weight: MLXArray,
     eps: Float
 ) -> (residual: MLXArray, normed: MLXArray) {
+    if Qwen35E96Norm.mode == .off { return (x, x) }
     let nRows = x.size / x.dim(-1)
     let shape = x.shape
-    let outputs = qwen35FusedResidualRMSNormKernel(
-        [x, r, weight, MLXArray(eps)],
+    var kernel = qwen35FusedResidualRMSNormKernel
+    var inputs: [MLXArray] = [x, r, weight, MLXArray(eps)]
+    if Qwen35E96Norm.mode == .rep {
+        kernel = Qwen35E96Norm.repKernel
+        inputs.append(MLXArray(Qwen35E96Norm.repeatCount))
+        inputs.append(Qwen35E96Norm.repeatOffsets)
+    }
+    let outputs = kernel(
+        inputs,
         grid: (nRows * 1024, 1, 1),
         threadGroup: (1024, 1, 1),
         outputShapes: [shape, shape],

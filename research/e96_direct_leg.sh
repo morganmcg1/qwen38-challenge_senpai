@@ -61,6 +61,18 @@ export MLX_E96_STEP="${step}"
 [[ -n "${tg_y}" ]] && export MLX_E96_TG_Y="${tg_y}"
 [[ -n "${force_drafts}" ]] && export MLX_E96_FORCE_DRAFTS="${force_drafts}"
 [[ -n "${MLX_E96_REPEAT:-}" ]] && export MLX_E96_REPEAT
+[[ -n "${MLX_E96_NORM:-}" ]] && export MLX_E96_NORM
+[[ -n "${MLX_E96_NORM_REPEAT:-}" ]] && export MLX_E96_NORM_REPEAT
+
+# One leg varies exactly one family. `arm` and `dose` name whichever family
+# that is, so the report fits every family's dose-response with one code path.
+if [[ -n "${MLX_E96_NORM:-}" && "${MLX_E96_NORM}" != "vendor" ]]; then
+  arm="norm-${MLX_E96_NORM}"
+  dose="${MLX_E96_NORM_REPEAT:-1}"
+else
+  arm="${step}"
+  dose="${MLX_E96_REPEAT:-1}"
+fi
 
 # The sink is opened O_APPEND so every worker sharing one path writes into the
 # same file. The reference pass decodes at the same depth as the timed pass, so
@@ -92,6 +104,10 @@ gpu_temp() {
   echo "local_mode=direct-mtp-timed"
   echo "step_mode=${step}"
   echo "repeat=${MLX_E96_REPEAT:-1}"
+  echo "arm=${arm}"
+  echo "dose=${dose}"
+  echo "norm_mode=${MLX_E96_NORM:-vendor}"
+  echo "norm_repeat=${MLX_E96_NORM_REPEAT:-1}"
   echo "tg_y=${MLX_E96_TG_Y:-4}"
   echo "force_drafts=${MLX_E96_FORCE_DRAFTS:-<schedule>}"
   echo "cool_gate_passed_real_gate=false"
