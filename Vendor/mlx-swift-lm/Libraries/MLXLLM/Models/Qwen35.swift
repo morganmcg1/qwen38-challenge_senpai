@@ -202,7 +202,9 @@ private let qwen35CompiledGatedDeltaGBeta:
 ///   `off`    no dispatch at all: `y = v` and `state_out = state_in`;
 ///   `rep`    the clone's scan repeated `MLX_E96_REPEAT` times from the same
 ///            input state, which multiplies the step's work while leaving its
-///            output bit-identical.
+///            output bit-identical;
+///   `repchain` the same repetition, with each repetition addressed through
+///            the previous repetition's result, so they cannot overlap.
 /// `MLX_E96_TG_Y` sets the threadgroup y extent for the clone arms. The x
 /// extent stays 32, so both `simd_sum` calls still reduce over exactly one
 /// simdgroup and the arithmetic stays bit-identical.
@@ -218,7 +220,7 @@ private let qwen35CompiledGatedDeltaGBeta:
 /// the size the round budget predicts.
 private enum Qwen35E96Step {
     enum Mode: String {
-        case vendor, clone, t1, off, rep
+        case vendor, clone, t1, off, rep, repchain
     }
 
     static let mode: Mode = {
@@ -255,7 +257,8 @@ private enum Qwen35E96Step {
         name: "qwen35_e96_step_clone", oneIteration: false)
     static let t1Kernel = makeKernel(
         name: "qwen35_e96_step_t1", oneIteration: true)
-    static let repKernel = makeRepeatKernel()
+    static let repKernel = makeRepeatKernel(chained: false)
+    static let repChainKernel = makeRepeatKernel(chained: true)
 
     private static func makeKernel(
         name: String, oneIteration: Bool
@@ -345,7 +348,26 @@ private enum Qwen35E96Step {
     /// The clone's scan wrapped in a repetition loop. Every repetition reloads
     /// the same input state and recomputes the same values, so `R` copies of
     /// the step produce exactly the output of one step.
-    private static func makeRepeatKernel() -> MLXFast.MLXFastKernel? {
+    ///
+    /// `chained` makes repetition `r + 1` address its loads and stores through
+    /// a value that repetition `r` computed, so the repetitions cannot overlap.
+    /// The independent form measures the step's throughput cost; the chained
+    /// form measures its serial latency. The carry is an integer bitcast of the
+    /// final state masked by a runtime zero, so it is always zero, it never
+    /// enters float arithmetic, and no NaN or signed-zero value can change the
+    /// result. The mask is loaded from a device buffer, so the compiler cannot
+    /// fold the dependency away.
+    private static func makeRepeatKernel(
+        chained: Bool
+    ) -> MLXFast.MLXFastKernel? {
+        let carryInit = chained ? "int carry = 0;" : "constexpr int carry = 0;"
+        let carryUpdate =
+            chained
+            ? """
+                      carry = int(as_type<uint>(state[n_per_t - 1])
+                                  & as_type<uint>(rep_offsets[0]));
+              """
+            : ""
         let source = """
                     auto n = thread_position_in_grid.z;
                     auto b_idx = n / Hv;
@@ -366,8 +388,9 @@ private enum Qwen35E96Step {
                     auto i_state = state_in + (n * Dv + dv_idx) * Dk;
                     auto o_state = state_out + (n * Dv + dv_idx) * Dk;
 
+                    \(carryInit)
                     for (int rep = 0; rep < R; ++rep) {
-                      int zoff = rep_offsets[rep];
+                      int zoff = rep_offsets[rep] + carry;
                       auto q_ = q_base;
                       auto k_ = k_base;
                       auto v_ = v_base;
@@ -412,10 +435,12 @@ private enum Qwen35E96Step {
                         auto s_idx = n_per_t * dk_idx + i;
                         o_state[zoff + s_idx] = static_cast<StT>(state[i]);
                       }
+            \(carryUpdate)
                     }
             """
         return MLXFast.metalKernel(
-            name: "qwen35_e96_step_rep",
+            name: chained
+                ? "qwen35_e96_step_repchain" : "qwen35_e96_step_rep",
             inputNames: [
                 "q", "k", "v", "g", "beta", "state_in", "T", "R", "rep_offsets",
             ],
@@ -446,6 +471,7 @@ private func qwen35E96GatedDeltaStep(
     switch Qwen35E96Step.mode {
     case .t1: kernel = Qwen35E96Step.t1Kernel
     case .rep: kernel = Qwen35E96Step.repKernel
+    case .repchain: kernel = Qwen35E96Step.repChainKernel
     default: kernel = Qwen35E96Step.cloneKernel
     }
     guard let kernel else { return vendored() }
@@ -456,7 +482,7 @@ private func qwen35E96GatedDeltaStep(
     let Hv = v.dim(2)
     let Dv = v.dim(3)
     var inputs: [MLXArray] = [q, k, v, g, beta, state, MLXArray(T)]
-    if Qwen35E96Step.mode == .rep {
+    if Qwen35E96Step.mode == .rep || Qwen35E96Step.mode == .repchain {
         inputs.append(MLXArray(Qwen35E96Step.repeatCount))
         inputs.append(Qwen35E96Step.repeatOffsets)
     }
