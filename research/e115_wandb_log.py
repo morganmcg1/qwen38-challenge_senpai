@@ -19,6 +19,7 @@ import argparse
 import datetime
 import json
 import pathlib
+import statistics
 
 import wandb
 
@@ -129,6 +130,14 @@ def main() -> int:
             "widths": meta.get("widths"),
             "blocks": meta.get("blocks"),
             "blocks_dropped": payload["blocks_dropped"],
+            "estimator_pass": payload["pass"],
+            "estimator_note": (
+                "The forward pass is discarded. Sampling macmon idles the GPU "
+                "for about a second and the DVFS ramp costs a fixed 30 to 80 "
+                "ms that the first timed arm pays in full, so the palindrome "
+                "mean does not cancel it. Median forward-over-reverse gap is "
+                "+61.6 % on a_one and at most +0.4 % on every other arm."
+            ),
             "probe_file": (
                 "Tests/MLXFastTests/E115ConcurrentDispatchProbeTests.swift"
             ),
@@ -192,6 +201,26 @@ def main() -> int:
             record["nsplit_digest"], record["wrong_split_digest"])
     run.log({"rung1/fidelity": fidelity})
 
+    decomposition = wandb.Table(
+        columns=[
+            "shape", "na", "total_pct", "h3_slicing_pct",
+            "h1_concurrency_pct", "h2_weight_sharing_pct",
+            "group_scaling_ratio",
+        ])
+    for key, entry in payload["decomposition"].items():
+        shape, width = key.split("|")
+        decomposition.add_data(
+            shape, int(width[2:]), entry["total_pct"],
+            entry["h3_slicing_pct"], entry["h1_concurrency_pct"],
+            entry["h2_weight_sharing_pct"],
+            payload["group_scaling_ratio"].get(key))
+    run.log({"rung1/decomposition": decomposition})
+
+    ramp = wandb.Table(columns=["arm", "forward_over_reverse_pct"])
+    for arm, value in payload["ramp_forward_over_reverse_pct"].items():
+        ramp.add_data(arm, value)
+    run.log({"rung1/dvfs_ramp_contamination": ramp})
+
     aliasing = wandb.Table(
         columns=["shape", "delta_bytes", "full_tensor_bytes", "aliases"])
     for record in cells["slice_aliasing"]:
@@ -208,7 +237,14 @@ def main() -> int:
         flat[f"{prefix}/net_pct_faster"] = entry["net_pct_faster_vs_a_one"]
     for key, value in payload["round_weighted_net_pct"].items():
         flat[f"round_weighted/{key.replace('|', '/')}"] = value
+    for key, entry in payload["decomposition"].items():
+        prefix = f"decomposition/{key.replace('|', '/')}"
+        for name, value in entry.items():
+            flat[f"{prefix}/{name}"] = value
+    for key, value in payload["group_scaling_ratio"].items():
+        flat[f"group_scaling/{key.replace('|', '/')}"] = value
 
+    ratios = sorted(payload["group_scaling_ratio"].values())
     gate_up = payload["kill_rule_inputs"].get("mlp.gate_up|c_nsplit_pre")
     lm_head = payload["kill_rule_inputs"].get("lm_head|c_nsplit_pre")
     flat.update({
@@ -216,10 +252,20 @@ def main() -> int:
         "e115_nsplit_isolated_pct_faster_vs_one_dispatch_na4_lm_head": lm_head,
         "kill_rule_pct": payload["kill_rule_pct"],
         "kill_rule_passed": payload["kill_rule_passed"],
+        "group_scaling_ratio_median": statistics.median(ratios),
+        "group_scaling_ratio_min": ratios[0],
+        "group_scaling_ratio_max": ratios[-1],
         "all_nsplit_bit_exact": all(
             r["nsplit_bit_exact"] for r in cells["exactness"]),
         "all_positive_controls_differ": all(
             r["positive_control_differs"] for r in cells["exactness"]),
+        "verdict": (
+            "H1 real as a mechanism but not harvestable, H2 dead, H3 null. "
+            "Concurrency is worth +14 to +18 pp against serialised half "
+            "dispatches, but the split that creates the second dispatch costs "
+            "the same amount, so c_nsplit_pre lands at 0 % on three tensors "
+            "and -49.7 % on lm_head at NA=4. Kill rule fails."
+        ),
     })
     run.summary.update(flat)
     run.finish()

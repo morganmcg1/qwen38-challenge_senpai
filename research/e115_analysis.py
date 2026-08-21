@@ -3,10 +3,22 @@
 
     research/e115_analysis.py research/out/TAG/cells.json [--json OUT]
 
-Every arm is timed forward and then in reverse inside one block, so the block
-mean cancels monotone drift to first order. Block 0 is discarded: the GPU is
-still ramping its clocks there, which shows up as a large forward-to-reverse
-gap on the first arm.
+Every arm is timed forward and then in reverse inside one block.
+
+The forward pass is NOT usable. Reading the GPU temperature runs `macmon` as a
+subprocess, which leaves the GPU idle for about a second, and the DVFS ramp
+back to full clock costs a fixed 30 to 80 ms of wall clock. That fixed cost is
+paid entirely by whichever arm is timed first, so it is not monotone drift and
+the forward-to-reverse mean does not cancel it: it inflates `a_one` and makes
+every other arm look better than it is. On `mlp.gate_up` NA=4 the forward
+`a_one` cell reads 774 to 935 us against 685 to 690 us on the reverse pass,
+while every other arm agrees between the two passes to better than 1 %.
+
+Position inside a pass does not matter once the GPU is ramped: `f_nsplit4` is
+timed last on the forward pass and first on the reverse pass and the two agree
+to 0.3 %. The reverse pass therefore measures every arm at full clock, so
+`--pass reverse` is the default estimator. `--pass mean` reproduces the
+contaminated reading and exists only to show the size of the defect.
 
 Two estimators are reported for every arm, and a verdict is only stated when
 both agree:
@@ -48,7 +60,14 @@ def cell_key(cell: dict) -> tuple:
     return (cell["shape"], cell["width"], cell["arm"], cell["block"])
 
 
+PASS = "reverse"
+
+
 def mean_us(cell: dict) -> float:
+    if PASS == "reverse":
+        return cell["reverse_us"]
+    if PASS == "forward":
+        return cell["forward_us"]
     return (cell["forward_us"] + cell["reverse_us"]) / 2
 
 
@@ -57,11 +76,16 @@ def median(values: list[float]) -> float:
 
 
 def main() -> int:
+    global PASS
     parser = argparse.ArgumentParser()
     parser.add_argument("cells", type=pathlib.Path)
     parser.add_argument("--json", type=pathlib.Path, default=None)
     parser.add_argument("--drop-blocks", type=int, default=1)
+    parser.add_argument(
+        "--pass", dest="which_pass", default="reverse",
+        choices=("reverse", "forward", "mean"))
     args = parser.parse_args()
+    PASS = args.which_pass
 
     payload = load(args.cells)
     cells = payload["cells"]
@@ -93,12 +117,24 @@ def main() -> int:
     arms = list(dict.fromkeys(c["arm"] for c in kept))
 
     summary: dict[str, dict] = {}
-    print(f"harness=local  blocks_dropped={args.drop_blocks}  "
+    print(f"harness=local  pass={PASS}  blocks_dropped={args.drop_blocks}  "
           f"eval_overhead_us={payload.get('eval_overhead_us', float('nan')):.1f}")
     print(f"cool_gate_passed_real_gate="
           f"{str(payload.get('cool_gate_passed_real_gate')).lower()}  "
           f"gate_qualified_for_timing="
           f"{str(payload.get('gate_qualified_for_timing')).lower()}")
+    print()
+    print("DVFS ramp contamination: median 100*(forward/reverse - 1) per arm.")
+    print("Arms are timed in list order forward and in reverse order after.")
+    ramp: dict[str, float] = {}
+    for arm in arms:
+        gaps = [
+            100 * (c["forward_us"] / c["reverse_us"] - 1)
+            for c in kept if c["arm"] == arm and c["reverse_us"] > 0
+        ]
+        ramp[arm] = median(gaps)
+    print("  " + "  ".join(f"{arm}={ramp[arm]:+.1f}%" for arm in arms))
+
     print()
     print("host cost of each arm structure, from control.small (us)")
     for width in widths:
@@ -196,6 +232,56 @@ def main() -> int:
 
     print()
     print("=" * 100)
+    print("H1 / H2 / H3 decomposition, net percentage points faster than a_one")
+    print("  total = c_nsplit_pre, the deployable arm: pre-sliced, concurrent")
+    print("  H3 slicing     = e_nsplit_serial, the same two half-N dispatches")
+    print("                   with concurrency removed")
+    print("  H1 concurrency = total - H3, what running them together adds")
+    print("  H2 weight share= total - d_indep, what sharing one weight buffer")
+    print("                   adds over two separate half-N buffers")
+    print("=" * 100)
+    print(f"  {'shape':14s} {'NA':>3s} {'total':>8s} {'H3 slice':>9s} "
+          f"{'H1 concur':>10s} {'H2 share':>9s}")
+    decomposition: dict[str, dict] = {}
+    for shape in shapes:
+        for width in widths:
+            def pct(arm: str) -> float:
+                entry = summary.get(f"{shape}|NA{width}|{arm}")
+                return entry["net_pct_faster_vs_a_one"] if entry else float("nan")
+
+            total, serial, indep = (
+                pct("c_nsplit_pre"), pct("e_nsplit_serial"), pct("d_indep"))
+            print(f"  {shape:14s} {width:3d} {total:+8.2f} {serial:+9.2f} "
+                  f"{total - serial:+10.2f} {total - indep:+9.2f}")
+            decomposition[f"{shape}|NA{width}"] = {
+                "total_pct": total,
+                "h3_slicing_pct": serial,
+                "h1_concurrency_pct": total - serial,
+                "h2_weight_sharing_pct": total - indep,
+            }
+
+    print()
+    print("=" * 100)
+    print("group scaling measured directly: b_msplit / a_one net time ratio.")
+    print("b_msplit is two concurrent dispatches of NA rows over the FULL N, so")
+    print("it is the [w+w] partition against the [w] partition on one tensor.")
+    print("=" * 100)
+    group_scaling: dict[str, float] = {}
+    for shape in shapes:
+        cells_row = []
+        for width in widths:
+            arm = summary.get(f"{shape}|NA{width}|b_msplit")
+            base = summary.get(f"{shape}|NA{width}|{A_ONE}")
+            if not arm or not base or not base["net_us"]:
+                cells_row.append(f"NA{width}=nan")
+                continue
+            ratio = arm["net_us"] / base["net_us"]
+            group_scaling[f"{shape}|NA{width}"] = ratio
+            cells_row.append(f"[{width}+{width}]/[{width}]={ratio:.3f}")
+        print(f"  {shape:14s} " + "  ".join(cells_row))
+
+    print()
+    print("=" * 100)
     print(f"KILL RULE: c_nsplit must be >= {KILL_RULE_PCT:.1f} % faster than "
           f"a_one at NA={KILL_RULE_WIDTH} on {' and '.join(KILL_RULE_SHAPES)}")
     print("=" * 100)
@@ -218,6 +304,10 @@ def main() -> int:
             json.dumps(
                 {
                     "harness": "local",
+                    "pass": PASS,
+                    "ramp_forward_over_reverse_pct": ramp,
+                    "decomposition": decomposition,
+                    "group_scaling_ratio": group_scaling,
                     "blocks_dropped": args.drop_blocks,
                     "eval_overhead_us": payload.get("eval_overhead_us"),
                     "cool_gate_passed_real_gate": payload.get(

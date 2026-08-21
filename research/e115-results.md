@@ -183,3 +183,260 @@ entry and exit GPU temperature per block from `macmon`. No thermal gate:
 recorded in `cells.json` and in `meta.txt`. Exactness is checked in every cell:
 the concatenated split must be bit-identical to one dispatch, and a deliberately
 wrong split (halves concatenated in swapped order) must change the digest.
+
+---
+
+## Rung 1 — instrument defect found, and the estimator it forced
+
+The palindrome does **not** cancel what I designed it to cancel.
+
+Reading the GPU temperature runs `macmon pipe -s1` as a subprocess. That leaves
+the GPU idle for about a second, and the ramp back to full clock costs a fixed
+30 to 80 ms of wall clock. A fixed cost is not monotone drift. It is paid
+entirely by whichever arm is timed first, so the forward-to-reverse mean does
+not remove it: it inflates `a_one` and makes every other arm look better than
+it is.
+
+Median `100 × (forward / reverse − 1)` over all kept cells:
+
+| arm | `a_one` | `b_msplit` | `c_nsplit` | `c_nsplit_pre` | `d_indep` | `e_nsplit_serial` | `f_nsplit4` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| gap | **+61.6 %** | +0.2 % | +0.1 % | +0.1 % | +0.4 % | +0.0 % | +0.0 % |
+
+Position inside a pass does not matter once the GPU is ramped. `f_nsplit4` is
+timed last on the forward pass and first on the reverse pass and the two agree
+to 0.3 %. `b_msplit` is second forward and sixth reverse and agrees to 0.2 %.
+Only position 1 of the forward pass is contaminated.
+
+The reverse pass therefore measures every arm at full clock, and
+`--pass reverse` is the analysis default. Three independent checks say this is
+the correct estimator, not a convenient one:
+
+1. **The defect is arm-specific, not shape-specific.** A real property of
+   `a_one` would appear in both passes.
+2. **The host-cost control becomes physically sensible.** Under the reverse
+   estimator every one-eval arm control lands at 94.5 to 109 us against a
+   measured `eval` overhead of 100.7 us, and `e_nsplit_serial` lands at 190 us,
+   which is two evals. Under the contaminated mean, `a_one` read 149 to 163 us,
+   which is *higher* than the two-dispatch arms and physically impossible.
+3. **It reproduces an independent prior campaign measurement.** My `a_one` net
+   rate on `lm_head` is 244.1 / 238.7 / 206.6 / 175.1 GB/s at NA=2/3/4/5. The
+   campaign's isolated one-group table from E111 (`senpai/campaign-ledger.md`
+   `:34057-34058`, alphonse) is 242.2 / 239.7 / 206.9 / 173.5 GB/s. That is
+   agreement inside 0.8 % at every width, on a probe written independently.
+   The contaminated mean gives 221 GB/s at NA=2 and does not match.
+
+This defect is a property of sampling `macmon` between timed regions. Any
+future probe in this campaign that samples an external temperature source
+between arms inherits it. The cheap fix for a later probe is to ramp for a
+fixed **wall-clock** duration of at least 150 ms rather than for a fixed
+iteration count, or to sample temperature only at block boundaries outside the
+timed sequence.
+
+---
+
+## Rung 1 — result
+
+`harness=local`. `cool_gate_passed_real_gate=false`,
+`gate_qualified_for_timing=false`. Apple M4 Pro, 48 GiB,
+`ip-10-231-2-95.ec2.internal`, Swift 6.3.3, release build, `git_head`
+`b9acf36c`, `git_dirty=0`, base `91b51ec3`. Session 22:55:20Z to 23:07:06Z on
+2026-08-21. GPU 36.45 C at entry, 37.93 C at exit. 792 cells, 6 blocks, block 0
+discarded, 5 paired blocks per cell.
+
+### The deployable arm buys nothing
+
+`c_nsplit_pre` is the arm a rung-2 call-site change would actually ship:
+half-views hoisted out of the hot path, two concurrent `quantizedMM` calls,
+one weight buffer. Net percent faster than `a_one`:
+
+| shape | NA=2 | NA=3 | NA=4 | NA=5 |
+| --- | --- | --- | --- | --- |
+| `mlp.gate_up` | +0.65 | +0.23 | **−1.04** | −0.33 |
+| `lm_head` | −0.26 | −1.17 | **−49.69** | −17.36 |
+| `gdn.in_proj` | +0.30 | +0.27 | −0.10 | −0.73 |
+| `fa.qkv` | −0.18 | +0.49 | −0.19 | −0.72 |
+
+Null on three tensors at every width, and a large loss on `lm_head` at the two
+widths that carry 70 % of the local round weight. Per-block spreads are tight:
+most cells span under 1.5 pp across the 5 paired blocks.
+
+**Kill rule fails.** It required `c_nsplit` at NA=4 to be at least +3 % on both
+`mlp.gate_up` and `lm_head`. Measured: `mlp.gate_up` −1.69 %, `lm_head`
+−48.99 %. I stop at rung 1. No rung 2, no rung 3, no submission.
+
+### H1 / H2 / H3, in net percentage points against `a_one`
+
+`total` is `c_nsplit_pre`. `H3 slicing` is `e_nsplit_serial`, the same two
+half-N dispatches with concurrency removed. `H1 concurrency` is
+`total − H3`. `H2 weight sharing` is `total − d_indep`.
+
+| shape | NA | total | H3 slicing | H1 concurrency | H2 sharing |
+| --- | --- | --- | --- | --- | --- |
+| `mlp.gate_up` | 2 | +0.65 | −3.99 | +4.64 | +0.77 |
+| `mlp.gate_up` | 3 | +0.23 | −5.55 | +5.78 | −0.09 |
+| `mlp.gate_up` | 4 | −1.04 | **+6.70** | −7.73 | −0.59 |
+| `mlp.gate_up` | 5 | −0.33 | +2.41 | −2.74 | +0.23 |
+| `lm_head` | 2 | −0.26 | −3.21 | +2.95 | −0.32 |
+| `lm_head` | 3 | −1.17 | −3.53 | +2.35 | −0.11 |
+| `lm_head` | 4 | −49.69 | −3.12 | **−46.57** | −0.18 |
+| `lm_head` | 5 | −17.36 | −2.76 | −14.60 | −13.01 |
+| `gdn.in_proj` | 2 | +0.30 | −15.81 | +16.12 | −0.01 |
+| `gdn.in_proj` | 3 | +0.27 | −16.13 | +16.40 | +0.01 |
+| `gdn.in_proj` | 4 | −0.10 | −15.43 | +15.33 | −0.11 |
+| `gdn.in_proj` | 5 | −0.73 | −14.56 | +13.82 | +0.82 |
+| `fa.qkv` | 2 | −0.18 | −18.68 | +18.50 | +0.04 |
+| `fa.qkv` | 3 | +0.49 | −17.69 | +18.18 | +0.20 |
+| `fa.qkv` | 4 | −0.19 | −17.14 | +16.95 | +0.42 |
+| `fa.qkv` | 5 | −0.72 | −16.89 | +16.17 | +0.05 |
+
+**H2 shared-weight caching is dead.** `d_indep` gives each concurrent dispatch
+its own half-size weight buffer, which destroys every opportunity to reuse a
+cached weight line. It performs the same as the shared-buffer arm: the sharing
+column is inside ±0.8 pp in 15 of 16 cells. The 16th is `lm_head` NA=5, which
+sits inside the thrash regime described below and is not a clean sharing
+signal. The pre-registered discriminator agrees: under H2 I required the
+`b_msplit` net ratio to be below 1.90, and it is 1.96.
+
+**H1 request-level overlap is real as a mechanism and worthless as a lever.**
+Concurrency is doing genuine work: on `gdn.in_proj` and `fa.qkv` it is worth
++13.8 to +18.5 pp against the same two dispatches run back to back. But the
+`total` column shows the catch. The only way to create the second dispatch is
+to split, and splitting costs almost exactly what overlapping it repays. On
+`fa.qkv` NA=4 the split costs 39.7 us of GPU time, about 20 us for each extra
+dispatch, and concurrency hides 39.7 us. Net zero, at every width, on every
+tensor. The overlap prize the brief hoped to harvest is the *refund* on a fee
+the split itself charges.
+
+**H3 slicing has no independent benefit**, with one exception below. Slices do
+alias, so that premise was right: `Memory.activeMemory` grows by 0 bytes on the
+100 MB `mlp.gate_up` buffer and by 0 bytes on the 715 MB `lm_head` buffer, and
+the three smaller shapes show negative deltas, meaning memory was released. A
+copy would have added the full tensor size. But a hoisted, aliased, cost-free
+half-view still leaves `total` at zero.
+
+### Why: one dispatch already saturates the memory system
+
+The direct group-scaling measurement explains all three verdicts at once.
+`b_msplit` runs two concurrent dispatches of NA rows over the **full** N, so
+both read the same weights and the weight traffic doubles. Net time ratio
+against `a_one`:
+
+| shape | `[2+2]/[2]` | `[3+3]/[3]` | `[4+4]/[4]` | `[5+5]/[5]` |
+| --- | --- | --- | --- | --- |
+| `mlp.gate_up` | 2.014 | 2.004 | 1.741 | 1.815 |
+| `lm_head` | 1.958 | 1.962 | 2.031 | 2.167 |
+| `gdn.in_proj` | 1.864 | 1.848 | 2.114 | 2.032 |
+| `fa.qkv` | 1.851 | 1.803 | 1.850 | 2.122 |
+
+Median 1.960 over 16 cells, range 1.741 to 2.167; median 1.940 at NA=4 alone.
+Two concurrent readers of the *same* bytes cost two full passes. There is no
+bandwidth left for a second dispatch to use, so concurrency can only hide fixed
+per-dispatch costs such as launch and grid tail. That is exactly the +16 pp
+seen on the small tensors and exactly why it never exceeds the split penalty.
+
+### Secondary result: the first direct measurement of group scaling
+
+Rung 0 established that every campaign value of `A` is inferred. `A_local`
+= 1.640 is the identity `2(1 − c)` with the E100 collapse `c` = 0.180.
+`A_ranked` is inferred twice, or rests on `dW = −0.070 ± 0.360 pp`. None of
+them measures a `[w+w]` partition directly.
+
+The `b_msplit` column above is a direct, isolated, per-tensor measurement of
+the `[w+w]` against `[w]` ratio, which is the quantity Finding 31 models:
+**1.960, range 1.741 to 2.167**.
+
+That does not contradict `A_local` = 1.640, because `A_local` is a *round*
+ratio and a round contains work that does not scale with the group count. If a
+fraction `f` of the local round scales with `G`, then
+`A_round = f × A_tensor + (1 − f)`, so `f = 0.640 / 0.960 = 0.667`. Two thirds
+of the local round is group-scaling quantized matvec work. That is a testable
+number and a useful cross-check on Finding 22's per-tensor shares, which sum to
+about 60 % of the E96 frame.
+
+Caveat, stated plainly: `b_msplit` is two separate MLX `quantizedMM` calls. The
+shipped kernel forms its groups inside one dispatch. The two agree on weight
+byte traffic, which is what Finding 31 models, but not necessarily on launch
+overhead. Treat 1.960 as a measurement of the byte-traffic component of group
+scaling, not as a drop-in replacement for `A` in a round-level equation.
+
+### Two anomalies worth recording
+
+**`mlp.gate_up` at NA=4 and NA=5: the serial split is genuinely faster.**
+`e_nsplit_serial` is +6.70 % at NA=4, block range +5.91 to +7.41, and +2.41 %
+at NA=5. It is negative at NA=2 and NA=3. `a_one` on `mlp.gate_up` shows a rate
+dip at NA=4, 169.4 GB/s against 221.2 GB/s at NA=3, and splitting N in half
+side-steps that dip. Concurrency then gives the whole gain back, −7.73 pp. This
+is the one cell where the split has an independent benefit, and it is only
+reachable if the two half dispatches do **not** overlap.
+
+**`lm_head` concurrency cliff at NA=4.** All three concurrent arms collapse
+together: `c_nsplit` −48.99 %, `c_nsplit_pre` −49.69 %, `d_indep` −49.51 %,
+while serial `e_nsplit_serial` is only −3.12 %. NA=5 shows a smaller version.
+Two concurrent dispatches each streaming a 358 MB half thrash the memory
+system. Whatever a future experiment does with `lm_head`, it must not issue two
+concurrent large-N reads of it at the scored widths.
+
+### Four-way split
+
+`f_nsplit4` has no matching `control.small` arm, because the control tensor's
+quarter is 2048 rows and the probe skips quarters below 4096. Raw percent
+faster than `a_one`, host cost included:
+
+| shape | NA=2 | NA=3 | NA=4 | NA=5 |
+| --- | --- | --- | --- | --- |
+| `mlp.gate_up` | −2.09 | +0.02 | −1.80 | −1.10 |
+| `lm_head` | +0.28 | +0.27 | +0.18 | +0.23 |
+| `gdn.in_proj` | −2.26 | −2.13 | −1.91 | −1.62 |
+
+No knee. Four streams are not better than two, and on `lm_head` at NA=4 the
+four-way split avoids the two-way cliff entirely, which supports a
+working-set explanation for that cliff rather than a dispatch-count one.
+
+### Fidelity
+
+Every cell passed. `nsplit_bit_exact` is true for all 20 shape and width
+combinations, `positive_control_differs` is true for all 20, and
+`nsplit4_bit_exact` is true for all 12 combinations where the quarter split
+ran. An N-split of `quantizedMM` is bit-exact; it is simply not faster.
+
+### Scoring the pre-registration
+
+| pre-registered claim | outcome |
+| --- | --- |
+| H1: `c_nsplit_pre` ≥ +3 % at NA=4 | **falsified**, −1.04 % on `mlp.gate_up` |
+| H2: `b_msplit` ratio below 1.90 | **falsified**, 1.960 |
+| H3: `e_nsplit_serial` ≈ `c_nsplit_pre` ± 1.5 pp | **falsified**, −15 to −19 pp apart on the small tensors |
+| H1: `e_nsplit_serial` ≈ `a_one` ± 1.5 pp | **falsified**, and not in the predicted direction |
+| slices alias, `c_nsplit` within 1 pp of `c_nsplit_pre` | **confirmed**, 0 byte growth, arms within 0.7 pp |
+| `d_indep` within 1.5 pp of `c_nsplit_pre` | **confirmed**, 15 of 16 cells |
+
+I did not pre-register the outcome that actually occurred: a large split
+penalty that concurrency repays almost exactly. My honest prior, recorded
+before the run, was "H2 or a null, with a real but small concurrency benefit
+relative to forced serialisation". The direction was right and the magnitude
+was wrong. The concurrency benefit is large, +16 pp, not small; it is the split
+penalty that cancels it.
+
+### Suggested follow-ups, not implemented
+
+1. **Barrier-separated N-split on `mlp.gate_up` at NA=4 and NA=5.** The only
+   positive cell in this experiment. `e_nsplit_serial` bought +6.70 % of GPU
+   time at NA=4, round weighted +2.93 % across the four widths, but it needs
+   the two half dispatches serialised. MLX encodes concurrently by default
+   (Finding 17), so this would need `maybeInsertBarrier` between them rather
+   than a host round trip. My `e_nsplit_serial` pays a full blocking `eval`,
+   and the net estimator removes that host cost, so +6.70 % is the idealised
+   GPU-side ceiling for a free barrier. Worth one cheap probe before any
+   call-site work.
+2. **Explain the `mlp.gate_up` NA=4 rate dip.** 169.4 GB/s against 221.2 GB/s
+   at NA=3 is a 23 % loss at the dominant scored width on a tensor that carries
+   roughly 38 % of the round. Follow-up 1 is one workaround, but the dip itself
+   may have a cheaper fix inside the partition heuristic.
+3. **Verify `f` = 0.667 independently.** If two thirds of the local round is
+   group-scaling matvec work, that predicts the round-level effect of any
+   change to the group partition and should be checked against Finding 22.
+4. **Fix the ramp defect campaign-wide.** Ramp for a fixed wall-clock duration,
+   or move temperature sampling outside the timed sequence, in any probe that
+   reads `macmon` between arms.
+
