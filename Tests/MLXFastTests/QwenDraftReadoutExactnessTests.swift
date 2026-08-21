@@ -1021,4 +1021,62 @@ struct QwenRowTop32SelectionTests {
             chainUs > 0 && kernelUs > 0,
             "E101 / PR #103: qwen35BenchRowTop32 returned a non-positive timing")
     }
+
+    /// Composition gate for arm C plus the imported selected-row reranker.
+    /// The reranker reads `candidate_ids` positionally, while arm C emits the
+    /// same 32 rows in cluster-probe order rather than argPartition order. The
+    /// composed path is therefore only exact if the reranked token depends on
+    /// the shortlist SET and not on its emission ORDER. `controlChanged`
+    /// proves the comparison can fail: it replaces one member, so the scored
+    /// population differs and the winner must be allowed to move.
+    @Test(.enabled(if: QwenRowTop32SelectionTests.enabled))
+    func theSelectedRerankIgnoresShortlistEmissionOrder() throws {
+        let requested = Int(Self.env["MLXFAST_RERANK_ORDER_TRIALS"] ?? "") ?? 256
+        let seed = UInt64(Self.env["MLXFAST_RERANK_ORDER_SEED"] ?? "") ?? 1
+        let rows = 1_024
+        let (trials, mismatches, firstBad, setMismatches, controlChanged) =
+            qwen35VerifySelectedRerankOrderInvariance(
+                rows: rows, trials: requested, seed: seed)
+        try Self.emit(
+            "order_invariance",
+            [
+                "schema": "e101.selected_rerank_order_invariance.v1",
+                "entry_point": "qwen35VerifySelectedRerankOrderInvariance",
+                "kernel": "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+                "rows": rows,
+                "trials": trials,
+                "seed": Int(seed),
+                "mismatches": mismatches,
+                "first_bad_trial": firstBad,
+                "set_mismatches": setMismatches,
+                "control_changed": controlChanged,
+            ])
+        #expect(trials == requested)
+        #expect(
+            setMismatches == 0,
+            """
+            E101 / PR #103: the permuted shortlist was not a permutation on \
+            \(setMismatches) of \(trials) trials, so the test itself is \
+            broken and its passes prove nothing.
+            """
+        )
+        #expect(
+            mismatches == 0 && firstBad == -1,
+            """
+            E101 / PR #103: qwen_mtp_draft_selected_affine4_rerank_g64_v1 \
+            returned a different token for a reordered shortlist on \
+            \(mismatches) of \(trials) trials (first at \(firstBad)). Arm C \
+            emits the shortlist in cluster-probe order, so an order-sensitive \
+            reranker makes the composed path non-exact.
+            """
+        )
+        #expect(
+            controlChanged > 0,
+            """
+            E101 / PR #103: replacing a shortlist member never changed the \
+            reranked token in \(trials) trials. The comparison cannot fail, \
+            so the order-invariance pass is not evidence.
+            """
+        )
+    }
 }
