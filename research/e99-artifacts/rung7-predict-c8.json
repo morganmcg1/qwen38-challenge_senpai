@@ -1,0 +1,102 @@
+{
+  "threshold": 9.4375,
+  "legs": [
+    {
+      "leg": "e99r5c8a1",
+      "offered_cap": 8,
+      "rounds": 78,
+      "mean_width": 7.358974358974359,
+      "actual_us_per_token": 10655.401364522417,
+      "eligible": 19,
+      "depths": [
+        {
+          "clamp_depth": 1,
+          "us_per_token": 10536.49384288749,
+          "clamped": 19,
+          "tokens_given_up": 42,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 2,
+          "us_per_token": 10388.856701030929,
+          "clamped": 19,
+          "tokens_given_up": 28,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 3,
+          "us_per_token": 10311.496774193554,
+          "clamped": 15,
+          "tokens_given_up": 17,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 4,
+          "us_per_token": 10443.84305555557,
+          "clamped": 10,
+          "tokens_given_up": 9,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 5,
+          "us_per_token": 10524.707889546366,
+          "clamped": 9,
+          "tokens_given_up": 6,
+          "rounds": 78
+        }
+      ]
+    },
+    {
+      "leg": "e99r5c8a2",
+      "offered_cap": 8,
+      "rounds": 78,
+      "mean_width": 7.358974358974359,
+      "actual_us_per_token": 10655.401364522417,
+      "eligible": 19,
+      "depths": [
+        {
+          "clamp_depth": 1,
+          "us_per_token": 10536.49384288749,
+          "clamped": 19,
+          "tokens_given_up": 42,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 2,
+          "us_per_token": 10388.856701030929,
+          "clamped": 19,
+          "tokens_given_up": 28,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 3,
+          "us_per_token": 10311.496774193554,
+          "clamped": 15,
+          "tokens_given_up": 17,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 4,
+          "us_per_token": 10443.84305555557,
+          "clamped": 10,
+          "tokens_given_up": 9,
+          "rounds": 78
+        },
+        {
+          "clamp_depth": 5,
+          "us_per_token": 10524.707889546366,
+          "clamped": 9,
+          "tokens_given_up": 6,
+          "rounds": 78
+        }
+      ]
+    }
+  ],
+  "pooled": {
+    "1": 1.1159365805856347,
+    "2": 2.501498107607274,
+    "3": 3.227514183312761,
+    "4": 1.9854560305089861,
+    "5": 1.226546710959198
+  }
+}

@@ -1,54 +1,43 @@
 #!/usr/bin/env bash
-# E99 rungs 6 and 7: replicate the threshold plateau and price the clamp depth.
+# E99 rungs 6 and 7: the session null, the clamp depth, and the width-
+# dependent threshold.
 #
-#   usage: research/e99_rung67.sh debug   TOKENS CAP
-#          research/e99_rung67.sh session TOKENS CAP
+#   usage: research/e99_rung67.sh debug   TOKENS
+#          research/e99_rung67.sh session TOKENS
 #
-# Six arms, one build, one session. Arms B, C and D vary only the threshold at
-# the shipped clamp depth, which is rung 6. Arms C, E and F vary only the clamp
-# depth at the shipped threshold, which is rung 7. Arm A is the shared OFF
-# baseline and its own spread is the session null.
+# WHY THIS IS NOT TWELVE REPLICATES OF THREE THRESHOLDS.
 #
-#   A  gate off                     baseline and null
-#   B  t = 8.2500   depth 3         rung 6 low plateau point
-#   C  shipped default              rung 6 middle point AND rung 7 depth 3
-#   D  t = 11.5625  depth 3         rung 6 high plateau point
-#   E  t = 9.4375   depth 2         rung 7, M = 3, still G = 1
-#   F  t = 9.4375   depth 4         rung 7 FALSIFICATION arm, M = 5, G = 2
+# The recorded round sequence is bit-identical across replicates of the same
+# arm. Six arm-and-cap pairs were checked and all six match on the full
+# (round, depth, accepted) sequence. The ranked-curve figure is a pure
+# function of that sequence, so it carries ZERO run-to-run noise and
+# replicating a threshold point cannot sharpen it. Only the wall clock is
+# stochastic. Replication therefore goes where the noise is, and the freed
+# legs go into resolution instead.
 #
-# Arm C exports no gate variable at all, so its trace witnesses exactly what a
-# ranked worker would run.
-#
-# The session runs the arm order forward, backward, backward, forward. Every
-# arm then occupies positions summing to 50 out of 1..24, so a linear session
-# drift cancels EXACTLY rather than to first order, which three replicates of
-# six arms cannot do at any ordering.
+#   block N, 8 legs   the wall-clock null, and the proof that this build
+#                     reproduces the submitted build's shipped sequence.
+#                     Order O S S O O S S O, so each arm holds positions
+#                     summing to 18 of 1..8 and a linear drift cancels
+#                     exactly.
+#   block D, 3 legs   rung 7. Clamp depth 1, 2 and 4 at the shipped
+#                     threshold. Depth 3 is block N's shipped arm.
+#   block W, 5 legs   the width-dependent threshold. Cap 8 peaks at 8.25 to
+#                     9.4375 and cap 5 peaks at or above 11.5625, and both
+#                     figures are exact, so the optimum moves with width.
+#                     These legs place the cap-8 cliff and the cap-5 peak.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-mode="${1:?usage: e99_rung67.sh debug|session TOKENS CAP}"
+mode="${1:?usage: e99_rung67.sh debug|session TOKENS}"
 tokens="${2:?missing TOKENS}"
-cap="${3:?missing CAP}"
 failures=0
 
-arm_spec() {
-  case "$1" in
-    A) echo "off 9.4375 3" ;;
-    B) echo "g1 8.2500 3" ;;
-    C) echo "default 9.4375 3" ;;
-    D) echo "g1 11.5625 3" ;;
-    E) echo "g1 9.4375 2" ;;
-    F) echo "g1 9.4375 4" ;;
-    *) echo "e99_rung67: unknown arm $1" >&2; return 1 ;;
-  esac
-}
-
+# tag gate threshold depth cap
 run_leg() {
-  local tag="$1" arm="$2" block="$3"
-  local gate threshold depth
-  read -r gate threshold depth <<<"$(arm_spec "${arm}")" || return 1
-  echo "=== ${tag}: arm=${arm} gate=${gate} t=${threshold} d=${depth}" \
-       "cap=${cap} tokens=${tokens} ==="
+  local tag="$1" gate="$2" threshold="$3" depth="$4" cap="$5"
+  echo "=== ${tag}: gate=${gate} t=${threshold} d=${depth} cap=${cap}" \
+       "tokens=${tokens} ==="
   rm -rf "research/out/${tag}"
   local status
   if [[ "${gate}" == "default" ]]; then
@@ -69,8 +58,6 @@ run_leg() {
   {
     echo "experiment=e99-rung67"
     echo "e99_cap=${cap}"
-    echo "e99_arm=${arm}"
-    echo "e99_block=${block}"
     echo "e99_gate=${gate}"
     echo "e99_gate_threshold=${threshold}"
     echo "e99_gate_depth=${depth}"
@@ -83,6 +70,9 @@ run_leg() {
         | paste -sd, -)"
     echo "e99_traced_gate=$(
       grep -o 'gate=[a-z0-9]*' "${trace}" 2>/dev/null | sort -u | paste -sd, -)"
+    echo "e99_round_sequence_sha256=$(
+      grep -o 'round=[0-9]* d=[0-9]* acc=[0-9]*' "${trace}" 2>/dev/null \
+        | shasum -a 256 | awk '{print $1}')"
   } >> "research/out/${tag}/meta.txt"
   if ((status != 0)); then
     echo "e99_rung67: ${tag} exited ${status}" >&2
@@ -92,21 +82,31 @@ run_leg() {
 
 case "${mode}" in
   debug)
-    # Prove the depth override reaches the worker before an 85-minute session.
-    run_leg "e99r67dbgE" E 0
-    run_leg "e99r67dbgF" F 0
+    run_leg e99r67dbgE g1 9.4375 2 8
+    run_leg e99r67dbgF g1 9.4375 4 8
     ;;
   session)
-    for spec in "1 A B C D E F" "2 F E D C B A" \
-                "3 F E D C B A" "4 A B C D E F"; do
-      # shellcheck disable=SC2086
-      set -- ${spec}
-      block="$1"
-      shift
-      for arm in "$@"; do
-        run_leg "e99r67c${cap}${arm}${block}" "${arm}" "${block}"
-      done
-    done
+    # Block N: wall-clock null and cross-build reproduction.
+    run_leg e99r6n1o off     9.4375 3 8
+    run_leg e99r6n2s default 9.4375 3 8
+    run_leg e99r6n3s default 9.4375 3 8
+    run_leg e99r6n4o off     9.4375 3 8
+    run_leg e99r6n5o off     9.4375 3 8
+    run_leg e99r6n6s default 9.4375 3 8
+    run_leg e99r6n7s default 9.4375 3 8
+    run_leg e99r6n8o off     9.4375 3 8
+
+    # Block D: rung 7, the clamp depth at the shipped threshold.
+    run_leg e99r7d1 g1 9.4375 1 8
+    run_leg e99r7d2 g1 9.4375 2 8
+    run_leg e99r7d4 g1 9.4375 4 8
+
+    # Block W: the width-dependent threshold.
+    run_leg e99r6w8a g1  12.5000 3 8
+    run_leg e99r6w8b g1  14.0000 3 8
+    run_leg e99r6w5o off  9.4375 3 5
+    run_leg e99r6w5a g1  12.5000 3 5
+    run_leg e99r6w5b g1  14.0000 3 5
     ;;
   *)
     echo "e99_rung67: unknown mode ${mode}" >&2
