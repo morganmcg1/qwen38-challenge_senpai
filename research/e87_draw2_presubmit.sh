@@ -47,7 +47,9 @@ senpai/check-editable-budget.sh "${base_sha}" >> "${out}/chain.log" 2>&1
 rc_of budget $?
 
 log "step 4 assignment scope"
-senpai/validate-assignment-scope.sh >> "${out}/chain.log" 2>&1
+senpai/validate-assignment-scope.sh "${base_sha}" \
+  Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift \
+  Sources/MLXFastModel >> "${out}/chain.log" 2>&1
 rc_of scope $?
 
 log "step 5 ranked score boundary"
@@ -58,10 +60,23 @@ log "step 6 swift test (standing floor expected, exit code recorded not gated)"
 swift test --force-resolved-versions > "${out}/swift-test.log" 2>&1
 rc_of swift_test $?
 
-log "step 7 local-submit at 512 tokens, declared head"
-E87_TOKENS=512 research/e87_submit_gate.sh "${prefix}" declared \
+# The arm names the probe fraction the shipped source builds, and the gate
+# rejects `declared` because the derived index is now unconditional.
+log "step 7 local-submit at 512 tokens, derived index at probe fraction 0.25"
+E87_TOKENS=512 research/e87_submit_gate.sh "${prefix}" derived25 \
   >> "${out}/chain.log" 2>&1
 rc_of submit_gate $?
+
+# The bare exit code is not the gate. The gate is the failing name set and the
+# issue count, so record the decomposition next to the log rather than leaving
+# the next reader to re-derive it.
+log "swift test decomposition"
+{
+  echo "total_issues=$(grep -cE 'recorded an issue' "${out}/swift-test.log")"
+  grep -oE 'Test [a-zA-Z0-9_]+\(\) recorded an issue' "${out}/swift-test.log" \
+    | grep -oE 'Test [a-zA-Z0-9_]+' | sed 's/^Test //' | sort | uniq -c \
+    | awk '{print $2"="$1}'
+} | tee -a "${out}/chain.log" > "${out}/swift-test-names.txt"
 
 log "chain finished"
 cat "${out}/status.txt"
