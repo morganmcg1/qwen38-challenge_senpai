@@ -36,7 +36,7 @@ BENEFIT_WIDTHS = (5, 9)
 # Streams per round, ceil(M / IPG), for the two arms. Read from the dispatcher
 # rather than fitted; assert against the leg witness before trusting a rate.
 IPG_BASE = {2: 2, 3: 3, 4: 4, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3}
-IPG_COLLAPSE = dict(IPG_BASE, **{5: 5, 9: 5})
+IPG_COLLAPSE = {**IPG_BASE, 5: 5, 9: 5}
 
 
 def streams(m, ipg):
