@@ -80,10 +80,6 @@ public struct RuntimeStartupMemoryPolicy: Equatable, Sendable {
         physicalMemoryBytes: UInt64,
         requestedProfile: String? = nil
     ) -> RuntimeStartupMemoryPolicy {
-        // E58 research instrument, off unless MLX_E58_* is set. This is the
-        // earliest editable hook the worker reaches, so it is the only place a
-        // dispatch counter can map every pipeline the backbone and head create.
-        E58DispatchCensus.installIfRequested()
         installQwenMTPFullProfileCommandBufferDefaults(
             physicalMemoryBytes: physicalMemoryBytes,
             requestedProfile: requestedProfile
