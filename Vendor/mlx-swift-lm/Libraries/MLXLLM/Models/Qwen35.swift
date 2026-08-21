@@ -199,13 +199,26 @@ private let qwen35CompiledGatedDeltaGBeta:
 ///            so the threadgroup geometry becomes a variable;
 ///   `t1`     the clone with the t-loop forced to one iteration, which
 ///            separates launch plus state traffic from per-timestep work;
-///   `off`    no dispatch at all: `y = v` and `state_out = state_in`.
+///   `off`    no dispatch at all: `y = v` and `state_out = state_in`;
+///   `rep`    the clone's scan repeated `MLX_E96_REPEAT` times from the same
+///            input state, which multiplies the step's work while leaving its
+///            output bit-identical.
 /// `MLX_E96_TG_Y` sets the threadgroup y extent for the clone arms. The x
 /// extent stays 32, so both `simd_sum` calls still reduce over exactly one
 /// simdgroup and the arithmetic stays bit-identical.
+///
+/// WHY `rep` EXISTS. `off` and `t1` change the emitted tokens, so their rounds
+/// land in different `(d, acc)` buckets from the control's and no arm can be
+/// compared against a matched control. `rep` changes nothing the model can
+/// observe: every repetition recomputes the same scan from the same input
+/// state and writes the same values, so the arms share one token stream, one
+/// bucket distribution and one reference. The marginal round cost per extra
+/// repetition is therefore a direct dose-response measurement of the step, and
+/// it is the positive control that proves the instrument can resolve a cost of
+/// the size the round budget predicts.
 private enum Qwen35E96Step {
     enum Mode: String {
-        case vendor, clone, t1, off
+        case vendor, clone, t1, off, rep
     }
 
     static let mode: Mode = {
@@ -220,10 +233,27 @@ private enum Qwen35E96Step {
         return y
     }()
 
+    static let repeatCount: Int = {
+        guard let raw = ProcessInfo.processInfo.environment["MLX_E96_REPEAT"],
+              let count = Int(raw), count >= 1, count <= 64
+        else { return 1 }
+        return count
+    }()
+
+    /// Runtime zeros indexed by the repetition counter. Metal's optimiser may
+    /// legally delete every repetition but the last, because they store the
+    /// same values to the same addresses, and then delete the arithmetic that
+    /// fed them. Offsetting each store by a value the compiler must load makes
+    /// the addresses unknowable, so the whole body survives. The values are
+    /// zero at run time, so the arithmetic and the stored results are
+    /// unchanged.
+    static let repeatOffsets = MLXArray.zeros([repeatCount], dtype: .int32)
+
     static let cloneKernel = makeKernel(
         name: "qwen35_e96_step_clone", oneIteration: false)
     static let t1Kernel = makeKernel(
         name: "qwen35_e96_step_t1", oneIteration: true)
+    static let repKernel = makeRepeatKernel()
 
     private static func makeKernel(
         name: String, oneIteration: Bool
@@ -309,6 +339,87 @@ private enum Qwen35E96Step {
             outputNames: ["y", "state_out"],
             source: source)
     }
+
+    /// The clone's scan wrapped in a repetition loop. Every repetition reloads
+    /// the same input state and recomputes the same values, so `R` copies of
+    /// the step produce exactly the output of one step.
+    private static func makeRepeatKernel() -> MLXFast.MLXFastKernel? {
+        let source = """
+                    auto n = thread_position_in_grid.z;
+                    auto b_idx = n / Hv;
+                    auto hv_idx = n % Hv;
+                    auto hk_idx = hv_idx / (Hv / Hk);
+                    constexpr int n_per_t = Dk / 32;
+
+                    auto q_base = q + b_idx * T * Hk * Dk + hk_idx * Dk;
+                    auto k_base = k + b_idx * T * Hk * Dk + hk_idx * Dk;
+                    auto v_base = v + b_idx * T * Hv * Dv + hv_idx * Dv;
+                    auto y_base = y + b_idx * T * Hv * Dv + hv_idx * Dv;
+                    auto g_base = g + b_idx * T * Hv;
+                    auto beta_base = beta + b_idx * T * Hv;
+
+                    auto dk_idx = thread_position_in_threadgroup.x;
+                    auto dv_idx = thread_position_in_grid.y;
+
+                    auto i_state = state_in + (n * Dv + dv_idx) * Dk;
+                    auto o_state = state_out + (n * Dv + dv_idx) * Dk;
+
+                    for (int rep = 0; rep < R; ++rep) {
+                      int zoff = rep_offsets[rep];
+                      auto q_ = q_base;
+                      auto k_ = k_base;
+                      auto v_ = v_base;
+                      auto y_ = y_base;
+                      auto g_ = g_base;
+                      auto beta_ = beta_base;
+
+                      float state[n_per_t];
+                      for (int i = 0; i < n_per_t; ++i) {
+                        auto s_idx = n_per_t * dk_idx + i;
+                        state[i] = static_cast<float>(i_state[zoff + s_idx]);
+                      }
+                      for (int t = 0; t < T; ++t) {
+                        float kv_mem = 0.0f;
+                        for (int i = 0; i < n_per_t; ++i) {
+                          auto s_idx = n_per_t * dk_idx + i;
+                          state[i] = state[i] * g_[hv_idx];
+                          kv_mem += state[i] * k_[s_idx];
+                        }
+                        kv_mem = simd_sum(kv_mem);
+
+                        auto delta = (v_[dv_idx] - kv_mem) * beta_[hv_idx];
+
+                        float out = 0.0f;
+                        for (int i = 0; i < n_per_t; ++i) {
+                          auto s_idx = n_per_t * dk_idx + i;
+                          state[i] = state[i] + k_[s_idx] * delta;
+                          out += state[i] * q_[s_idx];
+                        }
+                        out = simd_sum(out);
+                        if (thread_index_in_simdgroup == 0) {
+                          y_[zoff + dv_idx] = static_cast<InT>(out);
+                        }
+                        q_ += Hk * Dk;
+                        k_ += Hk * Dk;
+                        v_ += Hv * Dv;
+                        y_ += Hv * Dv;
+                        g_ += Hv;
+                        beta_ += Hv;
+                      }
+                      for (int i = 0; i < n_per_t; ++i) {
+                        auto s_idx = n_per_t * dk_idx + i;
+                        o_state[zoff + s_idx] = static_cast<StT>(state[i]);
+                      }
+                    }
+            """
+        return MLXFast.metalKernel(
+            name: "qwen35_e96_step_rep",
+            inputNames: [
+                "q", "k", "v", "g", "beta", "state_in", "T", "R", "rep_offsets",
+            ],
+            outputNames: ["y", "state_out"],
+            source: source)
+    }
 }
 
 /// Route every recurrent-step dispatch through the E96 arm selector. The
@@ -329,9 +440,12 @@ private func qwen35E96GatedDeltaStep(
     }
     guard mask == nil, Qwen35E96Step.mode != .vendor else { return vendored() }
     if Qwen35E96Step.mode == .off { return (v, state) }
-    let kernel =
-        Qwen35E96Step.mode == .t1
-        ? Qwen35E96Step.t1Kernel : Qwen35E96Step.cloneKernel
+    let kernel: MLXFast.MLXFastKernel?
+    switch Qwen35E96Step.mode {
+    case .t1: kernel = Qwen35E96Step.t1Kernel
+    case .rep: kernel = Qwen35E96Step.repKernel
+    default: kernel = Qwen35E96Step.cloneKernel
+    }
     guard let kernel else { return vendored() }
     let B = k.dim(0)
     let T = k.dim(1)
@@ -339,8 +453,13 @@ private func qwen35E96GatedDeltaStep(
     let Dk = k.dim(3)
     let Hv = v.dim(2)
     let Dv = v.dim(3)
+    var inputs: [MLXArray] = [q, k, v, g, beta, state, MLXArray(T)]
+    if Qwen35E96Step.mode == .rep {
+        inputs.append(MLXArray(Qwen35E96Step.repeatCount))
+        inputs.append(Qwen35E96Step.repeatOffsets)
+    }
     let outputs = kernel(
-        [q, k, v, g, beta, state, MLXArray(T)],
+        inputs,
         template: [
             ("InT", q.dtype),
             ("StT", state.dtype),

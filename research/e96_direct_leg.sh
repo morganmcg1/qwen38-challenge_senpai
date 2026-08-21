@@ -60,6 +60,7 @@ export MLXFAST_NO_SANDBOX=1
 export MLX_E96_STEP="${step}"
 [[ -n "${tg_y}" ]] && export MLX_E96_TG_Y="${tg_y}"
 [[ -n "${force_drafts}" ]] && export MLX_E96_FORCE_DRAFTS="${force_drafts}"
+[[ -n "${MLX_E96_REPEAT:-}" ]] && export MLX_E96_REPEAT
 
 # The sink is opened O_APPEND so every worker sharing one path writes into the
 # same file. The reference pass decodes at the same depth as the timed pass, so
@@ -90,6 +91,7 @@ gpu_temp() {
   echo "tokens=${tokens}"
   echo "local_mode=direct-mtp-timed"
   echo "step_mode=${step}"
+  echo "repeat=${MLX_E96_REPEAT:-1}"
   echo "tg_y=${MLX_E96_TG_Y:-4}"
   echo "force_drafts=${MLX_E96_FORCE_DRAFTS:-<schedule>}"
   echo "cool_gate_passed_real_gate=false"

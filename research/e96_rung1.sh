@@ -15,6 +15,13 @@
 # (T - 1) is the per-timestep cost, and t1 - per_timestep is launch plus
 # state traffic.
 #
+# Every arm runs through research/e96_direct_leg.sh, including the two
+# unablated controls. The wrapper cannot time an ablated arm at all: its step 1
+# public drift tripwire compares against the M5 golden and exits first, and an
+# ablation changes the tokens by construction. Running the controls through the
+# wrapper and the ablations through the direct CLI would confound the arm with
+# the harness, so all eight legs take the identical path.
+#
 # The session builds nothing. Build and witness the worker before it starts.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -26,7 +33,8 @@ failures=0
 for spec in v1:vendor:4 c1:clone:4 t1:t1:4 o1:off:4 \
             o2:off:4 t2:t1:4 c2:clone:4 v2:vendor:4; do
   IFS=: read -r slot mode y <<<"${spec}"
-  research/e96_leg.sh "e96r1-${slot}-${mode}" "${tokens}" "${mode}" "${y}" "${drafts}"
+  research/e96_direct_leg.sh "e96r1-${slot}-${mode}" "${tokens}" "${mode}" \
+    "${y}" "${drafts}"
   status=$?
   failures=$((failures + (status != 0)))
   echo "e96_rung1: leg ${slot} mode=${mode} exit=${status}"

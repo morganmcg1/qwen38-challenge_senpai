@@ -55,10 +55,42 @@ def parse_rounds(tag):
 
 
 def score(tag):
+    """Leg metrics from whichever producer ran.
+
+    A wrapper leg leaves the composed `score.json`. A direct-CLI leg leaves the
+    trusted `mtp-timed` report itself, so the few comparable fields are lifted
+    out of it under the same names. An ablated arm may leave no report at all
+    when its post-window audit throws; the trace still carries the rounds.
+    """
     path = OUT / tag / "score.json"
+    if path.exists():
+        return json.loads(path.read_text()).get("metrics", {})
+    path = OUT / tag / "mtp-decode.json"
     if not path.exists():
         return {}
-    return json.loads(path.read_text()).get("metrics", {})
+    try:
+        report = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return {}
+    metrics = {
+        "mode": "direct-mtp-timed",
+        "decode_tokens": report.get("decode_token_count"),
+        "mtp_depth": report.get("mtp_depth"),
+        "all_tokens_matched": report.get("all_tokens_matched"),
+        "mtp_seconds_per_token": report.get("parent_measured_seconds_per_token"),
+        "accepted_draft_rate": report.get("accepted_draft_rate"),
+        "effective_mean_draft_len": report.get("effective_mean_draft_len"),
+        "residual_divergence_count": report.get("residual_divergence_count"),
+    }
+    serial = OUT / tag / "serial-control.json"
+    if serial.exists():
+        try:
+            metrics["serial_seconds_per_token"] = json.loads(
+                serial.read_text()
+            ).get("parent_measured_seconds_per_token")
+        except json.JSONDecodeError:
+            pass
+    return metrics
 
 
 def summarise(tag, warmup=1):
@@ -72,12 +104,14 @@ def summarise(tag, warmup=1):
     return {
         "tag": tag,
         "step_mode": meta.get("step_mode"),
+        "repeat": meta.get("repeat", "1"),
         "tg_y": meta.get("tg_y"),
         "force_drafts": meta.get("force_drafts"),
         "tokens": meta.get("tokens"),
         "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
         "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
-        "exit": meta.get("exit"),
+        "exit": meta.get("exit", meta.get("timed_exit")),
+        "leg_path": meta.get("leg_path", "wrapper"),
         "rounds_total": len(rounds),
         "rounds_kept": len(kept),
         "score": score(tag),
@@ -105,7 +139,8 @@ def main():
     for leg in legs:
         metrics = leg["score"]
         print(
-            f"{leg['tag']:<22} step={leg['step_mode']:<7} y={leg['tg_y']:<3}"
+            f"{leg['tag']:<22} step={leg['step_mode']:<7} R={leg['repeat']:<3}"
+            f" y={leg['tg_y']:<3}"
             f" d={leg['force_drafts']:<3} rounds={leg['rounds_kept']:<4}"
             f" exit={leg['exit']}"
             f" mtp_spt={metrics.get('mtp_seconds_per_token')}"
@@ -126,7 +161,7 @@ def main():
     print("== arm aggregate over identical (d, acc) buckets ==")
     by_arm = {}
     for leg in legs:
-        arm = f"{leg['step_mode']}/y{leg['tg_y']}"
+        arm = f"{leg['step_mode']}R{leg['repeat']}/y{leg['tg_y']}"
         for key, records in leg["buckets"].items():
             by_arm.setdefault(arm, {}).setdefault(key, []).extend(records)
     shared = None
