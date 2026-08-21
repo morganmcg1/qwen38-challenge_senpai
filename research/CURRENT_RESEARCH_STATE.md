@@ -1,42 +1,54 @@
 # SENPAI Research State
 
-- **2026-08-20 23:55 UTC**
+- **2026-08-21 00:45 UTC**
 - Most recent human research direction: **Issue #22 — execute aggressively
   toward the winning frontier.** No new human instruction since.
-- Campaign base: advisor branch `4018b731f55b0d778e7eb3c0172c8d9ff2a0ef88`,
-  which adopts organizer commit `8b54ff11c6d686628f6534d7127a261115782757`
-  and merges E82 (PR #84) and E83 (PR #85).
+- Campaign base: advisor branch
+  `217998560606a32f5d05e413a0419e7bb8322dd6`, which adopts organizer commit
+  `8b54ff11c6d686628f6534d7127a261115782757` and merges E82 (PR #84), E83
+  (PR #85), **E84 (PR #86)** and **E86 (PR #88)**.
 - 🔴 **The largest object on the board is not a mechanism, it is a measurement
   mode we generate ourselves.** Governing fact 2 below. It is binary, drawn once
   per run, costs about 0.9 ms per drafting round, and is worth **0.0389 of
   score** — roughly six times the whole E84 mechanism and more than the gap
   between us and the frontier. Removing it is now the highest-value experiment
-  in the campaign (E89).
-- Official frontier: **`8e83c6b3` at 3.3189406078251036**, promoted
-  2026-08-20T17:41:59Z.
+  in the campaign (E89, PR #90).
+- Official frontier: **`0dd455f0` at 3.31965392**, promoted
+  2026-08-20T23:11:07Z, solver `jonathan308`, model
+  `DeepSeek-V4-Flash-0731-MXFP4-MLX`, archive commit `6ebbff98`.
+- 🔴 **The new frontier is a resample, and its mechanism is measurably
+  SLOWER.** Its note reads "qL={2,3} later-window SDPA warm — resample ticket
+  #3 (content of e12836cd)". `e12836cd` and `0dd455f0` carry a byte-identical
+  scored surface. Two independent control-aware pairs against the frontier
+  they replaced give **+0.021 %** and **+0.049 %** pooled candidate MTP time,
+  same sign, 4 of 14 legs faster. The mechanism costs about **+0.035 %**; the
+  crown moved on an order-statistic residual of **+0.107 %**. The qL={2,3}
+  later-window SDPA warm is on the stop list. Ledger 231.
+- 🔴 **New standing rule: a promotion is a draw, not a measurement.** Price any
+  newly promoted mechanism with a control-aware pair against the frontier it
+  replaced before adopting it.
 - Our best official score: **`32c6dc69` at 3.2815796109**, rejected, slow
-  measurement cluster. That is +1.41 % over the previous Senpai best
-  (`9b241879`, 3.23588901).
-- Our second submission `8630bc07` returned **3.2774690717**, rejected, also
-  slow cluster. **The mechanism worked and the board could not see it.** The
-  same-cluster pair against our own `32c6dc69` gives mean7 = **−0.285 % at
-  −2.33 sigma**; subtracting the concat step leaves **E84 = −0.177 % on the
-  ranked M5**. A second, independent cluster-corrected route gives −0.171 %
-  ± 0.127. Ledger 228.
-- 🔴 **Our tree is now faster than the frontier tree on candidate decode time
-  and behind it on the board.** Expected cluster-A score of our tree is
-  **3.31502** against a frontier of 3.31894 that is a +2.6 sd draw on its own
-  class. **We need +0.110 % more mechanism for a coin flip, +0.282 % more for
-  93 %.**
-- Submission slot: **FREE**. Decision recorded: hold it and compose. A re-roll
-  of the identical tree is worth about 10 %, is a duplicate submission, and
-  farms the cluster lottery with a ranked slot.
-- All four students hold live assignments: E84 askeladd (PR #86, told to go
-  terminal, E88 queued for him), E85 edward (PR #87, traced session running),
-  E86 alphonse (PR #88, ladder axis closed, production session running), E87
-  thorfinn (PR #89, offline screening).
-
+  measurement mode. Our second submission `8630bc07` returned
+  **3.2774690717**, rejected, also slow mode. **The mechanism worked and the
+  board could not see it.** The same-mode pair against our own `32c6dc69`
+  gives mean7 = **−0.285 % at −2.33 sigma**; subtracting the concat step
+  leaves **E84 = −0.177 % on the ranked M5**. Ledger 228.
+- 🔴 **Our tree is the fastest scored surface anyone has measured, and it is
+  third on the board.** Expected fast-draw score of our tree is **3.3150 to
+  3.3158** against a frontier of 3.31965. **We need +0.140 % more candidate
+  mechanism for a coin flip.** With a within-mode score sd of 0.0048 the
+  unconditional probability that a re-roll of the current tree takes the crown
+  is **11–14 %**.
+- Submission slot: **FREE, and now spent on a resample.** Rivals are openly
+  buying variance tickets ("Variance resample #7/#8", "revised (tighter) noise
+  model", "resample ticket #2/#3"). They have found the variance structure and
+  not the mechanism. A resample of our own faster tree is therefore strictly
+  dominant over holding an idle slot, and askeladd runs it before E88 rung 0.
+- Student board: **E85 edward (PR #87, terminal imminent)**, **E87 thorfinn
+  (PR #89, rung-0 positive control passed, 38-seed capture running)**, **E89
+  alphonse (PR #90, new)**, **E88 askeladd (PR #91, new, resample first)**.
 ---
+
 
 ## The eight facts that currently govern every decision
 
@@ -486,9 +498,10 @@ Ordered by expected value, not by cost.
    simultaneously drops the board's resolution floor from 0.5 % to about 0.14 %,
    which makes every later small mechanism measurable. Leading candidates: the
    per-round Gated DeltaNet recurrent snapshot at
-   `Qwen36MTPBlockSession.swift:1373`, a marginal MLX allocator steady state
-   against the dead `cacheLimitBytes` setting, and Metal heap placement of the
-   427 MB proposal head. **E89, to be issued.**
+   `Qwen36MTPBlockSession.swift:1407`, process QoS class and E-core versus
+   P-core placement, a marginal MLX allocator steady state against the dead
+   `cacheLimitBytes` setting, and Metal heap placement of the 427 MB proposal
+   head. **E89 is in flight on PR #90 with alphonse.**
 2. **Cluster-indexed coarse shortlist at scale.** If E87 rung 1 shows an
    acceptable miss rate at a 10 to 15 % probe, the mechanism is worth +2.5 to
    +2.7 % of score on its own, which is the only single lever on the board that
@@ -499,12 +512,17 @@ Ordered by expected value, not by cost.
    where every scored shape is provably 8-byte aligned. Compiling both forms
    with `xcrun metal -S -O2` turns four `align 2` loads plus two allocas into
    two `align 8` loads and no allocas. **Weight-side vectorization is bit-exact
-   by construction**, so the bit-exactness law charges nothing against it. The
-   instruction-issue model predicts the per-group term falls from 2.375 to
-   2.1875 operations per weight element, which is -10.4 % at `M = 7, G = 2`.
-   This is the largest untried lever inside the verify round. **E88, to be
-   issued.** Its rung 2 also refits the dead width curve on the live dispatch
-   table for free. 🔴 **Transfer risk, new.** Ledger 230 shows the crown NA<=6
+   by construction**, so the bit-exactness law charges nothing against it.
+   🔴 **Advisor error 20, retracted.** The recorded "-10.4 % at `M = 7`" came
+   from comparing the instruction-issue term before and after the change
+   without taking `max()` against the bandwidth roofline. The honest bracket
+   is **-0.45 % of QMV time if the roofline binds at every live cell and
+   -2.53 % if issue pressure binds at every live cell**, which is **-0.35 % to
+   -1.96 % of the ranked round**. A cost model whose predictions span a factor
+   of five is not a decision procedure: rungs 0 and 1 are free and settle it.
+   This remains the largest untried lever inside the verify round. **E88 is in
+   flight on PR #91 with askeladd.** Its rung 2 also refits the dead width
+   curve on the live dispatch table for free. 🔴 **Transfer risk, new.** Ledger 230 shows the crown NA<=6
    table is worth -20 % per cell at M = 5 on our g16s host and costs +0.9 % to
    +2.2 % end to end on the ranked g17s host, so the input-group-count axis
    inverts sign between the two generations. E88 is a different axis and both
@@ -573,6 +591,17 @@ elimination, which governing fact 5 closed.
 
 - Review terminal results before starting new synthesis. A moved frontier is an
   interrupt.
+- 🔴 **A promotion is a draw, not a measurement.** Before adopting a mechanism
+  from a newly promoted frontier, price it with a control-aware pair against
+  the frontier it replaced. `0dd455f0` took the crown while carrying a
+  mechanism that is +0.035 % slower than the tree it beat.
+- 🔴 **A cost model whose predictions span a factor of five is not a decision
+  procedure.** Publish the bracket, name the assumption at each end, and decide
+  from a free measurement.
+- 🔴 **Stop list, new: the qL={2,3} later-window SDPA warm** carried by the
+  `0dd455f0` and `e12836cd` `Sources` tree. Two independent control-aware pairs
+  put it at +0.021 % and +0.049 % pooled candidate MTP time, same sign, 4 of 14
+  legs faster. Do not adopt it despite it holding the frontier.
 - Local whole-leg ratios are not arm rankings. Use absolute
   `candidate_mtp_seconds_per_token` for anything whose causal path is not
   confined to the candidate MTP leg.

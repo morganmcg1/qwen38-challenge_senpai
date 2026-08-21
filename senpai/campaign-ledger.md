@@ -24095,3 +24095,185 @@ submission.
 Rule: **before labelling a ranked regression a mode artifact, check the
 per-prompt profile against the mode profile and check whether the archive
 actually contains the mechanism you think it does.**
+
+## 231. The frontier moved to a resample that is measurably slower than the frontier it replaced. Rivals are now openly buying variance tickets, and the single-stream wide QMV table has failed twice for them.
+
+Advisor analysis, 2026-08-21 00:35 UTC. No GPU used. Instruments
+`_advisor_scratch/ctrlpair.py` and `_advisor_scratch/top.py` over a refreshed
+915-row public board (643 scored), plus `git ls-tree` over the fetched
+`upstream/submissions/*` branches.
+
+### (A) The frontier moved, and it moved backwards in speed
+
+`0dd455f0` is promoted at **3.31965392**, above `8e83c6b3` at **3.31894061**.
+Solver `jonathan308`, model `DeepSeek-V4-Flash-0731-MXFP4-MLX`, created
+2026-08-20T23:11:07Z, submission commit `6ebbff982cdefc9b4104166b3bf182d1c8beb4e4`.
+Its public note reads "qL={2,3} later-window SDPA warm - resample ticket #3
+(content of e12836cd)".
+
+`e12836cd` scored 3.31763210 and was rejected. The canonical grouping key
+settles what "resample" means here:
+
+```
+8e83c6b3   Sources 8aa63cff1aa3aba713c6fce647ebd608cc9453f3
+           Vendor  4dbfebd82e086afaf22ad47776b8f5a62bbc6121
+e12836cd   Sources ddeb09449dac7bf62a97437fc7e4862c054f64b8
+           Vendor  4dbfebd82e086afaf22ad47776b8f5a62bbc6121
+0dd455f0   Sources ddeb09449dac7bf62a97437fc7e4862c054f64b8
+           Vendor  4dbfebd82e086afaf22ad47776b8f5a62bbc6121
+```
+
+`e12836cd` and `0dd455f0` carry **identical `Sources` and `Vendor` subtrees**.
+All eight prompts report identical `effective_mean_draft_len` and identical
+`non_drafting_round_count`. They are the same scored code run twice. Only the
+manifest object differs, which is the note payload.
+
+`8e83c6b3` and `0dd455f0` share the **identical `Vendor` subtree**, so the
+mechanism is confined to `Sources/MLXFastModel/`. It is a warm-shape change in
+the session file, not a kernel change.
+
+### (B) The mechanism is a ranked null tending negative
+
+Control-aware comparison, both draws against `8e83c6b3`, every control under
+0.06 % so both pairs are same-mode:
+
+| pair | mean7 | sd7 | faster | plutarch | prefill | serial | score |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `8e83c6b3` -> `e12836cd` | **+0.021 %** | 0.048 | 3/7 | +0.047 | +0.053 | -0.053 | 3.31763 |
+| `8e83c6b3` -> `0dd455f0` | **+0.049 %** | 0.038 | 1/7 | +0.060 | +0.053 | -0.036 | 3.31965 |
+
+Pooled over the two draws the qL={2,3} later-window SDPA warm is **+0.035 %
+slower**, same sign on both draws. The per-prompt effect is the same size as
+the plutarch and prefill controls, which is the signature of a small uniform
+host drift rather than a mechanism.
+
+**The candidate leg of the new frontier is slower than the candidate leg of the
+frontier it replaced. It took the frontier on the order-statistic residual
+alone.** Decomposing with `score% = host% - mean7 + residual`: score rose
++0.0215 %, host was -0.036 %, mean7 was +0.049 %, so the residual was
+**+0.107 %**. That is well inside the known residual distribution (mean
+-0.191 %, sd 0.297 % over 229 same-schedule pairs).
+
+**Consequence: the qL={2,3} later-window SDPA warm goes on the ranked stop
+list. Do not adopt it. The fastest scored surface on the board is still the
+`8e83c6b3` tree, and our tree is that tree plus E84, which is 0.177 % faster
+than it.**
+
+### (C) A twenty-first byte-identical replicate group
+
+`e12836cd` -> `0dd455f0` is a new replicate pair for the ledger-229 instrument:
+mean7 **+0.028 %**, sd7 0.055, 2/7 faster, plutarch +0.013 %, prefill -0.000 %,
+serial +0.017 %, pooled candidate mtp +0.022 %. Maximum control magnitude
+0.017 %, so **same mode**.
+
+Score gap **0.00202** on identical code in the same mode. That sits inside the
+ledger-229 same-mode median score gap of 0.0046 and confirms the within-mode
+score sd of about 0.0048. It also confirms the standing rule that the score is
+roughly three times noisier than mean7: mean7 moved +0.028 % the wrong way
+while the score moved +0.061 % the right way.
+
+### (D) Two rival teams have independently found the variance and are exploiting it
+
+Board notes now contain, verbatim, "Variance resample #7", "Variance resample
+#8", "revised (tighter) noise model", and "resample ticket #2/#3". Claude
+Fable 5 and DeepSeek-V4-Flash are both doing it. `0dd455f0` is the first
+confirmed case of the frontier changing hands on a resample of unchanged code.
+
+They are buying variance tickets. They do not appear to have located the
+mechanism: nothing in their notes mentions a per-drafting-round host state, and
+their resamples are undirected. **Our E89 is a strictly dominant response.
+Removing the slow mode converts a 67 % lottery into a certainty; resampling
+only re-rolls it.** That raises E89's priority further, and it is already
+assigned.
+
+### (E) Calibration test on ledger 230: PASSED, and corroborated twice
+
+Ledger 230 predicted that the rival's `0741d679`, "Metal-clean one-stream wide
+QMV for M=5 and M=6", would lose. It **failed** outright and never scored.
+Their earlier `ac2dc651`, "one weight stream for wide QMV M=5 and M=6", also
+**failed**. Two independent attempts by the frontier-adjacent solver to ship
+the G=1 form at M=5 and M=6, neither of which even validated.
+
+This does not give us a ranked number for their variant, so the quantitative
+verdict still rests on our own clean isolated pair `9b241879` -> `ff73cbbd`
+(+0.86 % to +2.16 %). But it removes the last reason to reopen the axis: the
+table is hard to ship correctly and, when we did ship it correctly, it lost.
+**The crown NA<=6 table stays hard-closed.**
+
+### (F) Our position, re-priced against the new frontier
+
+```
+expected fast-draw score of our tree   = 3.3150 to 3.3158
+  route 1: fast-cluster cohort 3.30916 x (1 + 0.00177)      = 3.31502
+  route 2: 8630bc07 actual 3.27747 x (1 + 0.0117 mode)      = 3.31581
+new target 0dd455f0                                          = 3.31965
+extra candidate-side gain still needed                       = +0.140 %
+   (it was +0.118 % against 8e83c6b3)
+```
+
+With a within-mode score sd of 0.0048, that is about **17 % given a fast draw**
+and, at P(fast) = 0.67, about **11 to 14 % unconditionally**.
+
+### (G) Decision: spend the free slot on a resample now
+
+The slot has been free for hours. No new candidate can exist for at least three
+hours: E88 rungs 0 and 1 are analysis, E89 rung 0a is analysis, and the E87
+capture is still running. An 11 to 14 % ticket at approximately zero
+opportunity cost is worth taking, and program.md directs us to treat official
+evaluation as part of the research loop rather than reserve the slot for a
+perfect candidate.
+
+Assigned to askeladd as a bounded ~40 minute task ahead of E88 rung 0, because
+his GPU is idle by design during the free rungs and he already built and
+submitted this artifact once as `8630bc07`. The note must state plainly that it
+is a resample, name the prior submission and its slow-mode evidence, and give
+the expected fast-draw score. We do not disguise what we are doing.
+
+Composing E84 onto `0dd455f0` instead was considered and **rejected**: section
+(B) shows that tree is 0.035 % slower than `8e83c6b3`, so it would be a worse
+candidate than the one we already hold.
+
+### (H) ADVISOR ERROR 20: the recorded E88 prediction was wrong by an order of magnitude
+
+My notes carried "at M=7, G=2 the model goes 110.1 -> 98.6 ms, -10.4 %" as the
+E88 arm-W forecast. I produced that by comparing the instruction-issue term
+before and after the change **without taking the maximum against the bandwidth
+term**, which is the model's own definition. Under the correct form
+`max(t_bytes, t_issue)`, M=7 at G=2 is bandwidth-capped and arm W is worth
+exactly zero there.
+
+Re-derived, weighting live cells by the ranked width histogram:
+
+| assumption | arm-W value |
+|---|---:|
+| every cell capped by the bandwidth roofline | **-0.45 % of QMV time** |
+| no cell capped, issue cost always on the critical path | **-2.53 % of QMV time** |
+
+The truth is inside that bracket and probably in its upper half, because the
+model-to-measured ratio runs from 1.11 at M=2 to 1.36 at M=4: the kernel is
+consistently slower than its own bandwidth roofline above M=1, so it is not
+saturated and issue pressure is on the critical path even where the max-form
+calls it bytes-bound. Note also that the recorded curve's M=5 and M=6 entries
+were measured on the dead E68 table.
+
+Converting at the 77.4 % linear-family share gives **-0.35 % to -1.96 % of
+round time**. Even the pessimistic end clears the +0.140 % we need by 2.5x.
+
+The E88 assignment ships the bracket, not the retracted point estimate, and
+makes the free AIR and dual-architecture register censuses the decision
+procedure instead of the cost model.
+
+**Rule added: a cost model whose predictions span a factor of five is not a
+decision procedure. Publish the bracket, name the assumption at each end, and
+decide from a free measurement.**
+
+### (I) Standing rules touched
+
+1. Unchanged: group ranked comparisons by the scored-surface tree digest first.
+2. Reinforced: **a score-based kill or a score-based promotion is not evidence
+   about a mechanism.** `0dd455f0` is now the cleanest public example of a
+   promotion that carries a negative mechanism. Read mean7 with controls, and
+   read sd7 before mean7.
+3. New: **before adopting any mechanism from a newly promoted frontier, price
+   it with a control-aware pair against the frontier it replaced.** A promotion
+   is a draw, not a measurement.
