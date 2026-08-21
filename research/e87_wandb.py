@@ -19,6 +19,9 @@ One run holds every fact another agent needs to reproduce or overturn it:
   paired     the same session priced round-for-round, with the host-state
              stratum and the achieved bandwidth per arm.
   liveness   the damaged-index positive control.
+  derivation option B's load-time index: whether the table the runtime derives
+             from the declared head equals the table the screen priced, and
+             whether the derivation lands outside the timed window.
   submit-gate the rung-3 --local-submit legs, one directory each.
 
 usage:
@@ -28,6 +31,7 @@ usage:
       [--screen research/e87-screen.json] \
       [--timed research/e87-timing.json] \
       [--paired research/e87-paired.json] \
+      [--derivation research/e87-derivation.json] \
       [--submit-gate research/out/e87s-declared]
 """
 
@@ -203,6 +207,45 @@ def log_paired(run, path: Path) -> None:
                                               rows)})
 
 
+def log_derivation(run, path: Path) -> None:
+    """Option B: is the load-time index canonical, deterministic, and untimed."""
+    doc = json.loads(path.read_text())
+    det, place = doc["determinism"], doc["placement"]
+    run.log({
+        "derivation/matches_canonical": det["matches_canonical"],
+        "derivation/canonical_order_fnv1a64": det["canonical_order_fnv1a64"],
+        "derivation/runtime_order_fnv1a64":
+            ",".join(det["runtime_order_fnv1a64_values"]),
+        "derivation/processes": det["processes"],
+        "derivation/dumps_identical_across_processes":
+            det["dumps_identical_across_processes"],
+        "derivation/build_seconds_mean": place["build_seconds_mean"],
+        "derivation/build_seconds_min": place["build_seconds_min"],
+        "derivation/build_seconds_max": place["build_seconds_max"],
+        "derivation/worst_round1_excess_over_round2_us":
+            place["worst_round1_excess_over_round2_us"],
+        "derivation/worst_excess_as_fraction_of_build":
+            place["worst_excess_as_fraction_of_build"],
+        "derivation/build_is_outside_timed_window":
+            place["build_is_outside_timed_window"],
+        "derivation/builds_once_per_process": place["builds_once_per_process"],
+        "derivation/builds": table(
+            ["leg", "pid", "leaves", "rows_per_leaf", "probes", "probe_fraction",
+             "iterations", "centroid_bits", "order_fnv1a64", "build_seconds",
+             "dump_bytes", "dump_sha256"],
+            doc["builds"]),
+        "derivation/legs": table(
+            ["leg", "arm", "probe_fraction", "worker_processes_that_built",
+             "one_build_per_process", "rounds", "round1_us", "round2_us",
+             "round1_excess_over_round2_us", "mtp_seconds_per_token",
+             "all_tokens_matched", "residual_divergence_count",
+             "head_provenance_sha256", "effective_mean_draft_len",
+             "accepted_draft_rate", "gpu_temp_entry_c", "gpu_temp_exit_c"],
+            doc["legs"]),
+        "derivation/raw": table(["json"], [{"json": json.dumps(doc, indent=2)}]),
+    })
+
+
 def log_submit_gate(run, legs) -> None:
     """The rung-3 --local-submit legs, read straight from their leg trees."""
     rows = []
@@ -263,6 +306,7 @@ def main() -> None:
     ap.add_argument("--screen")
     ap.add_argument("--decision")
     ap.add_argument("--liveness")
+    ap.add_argument("--derivation")
     ap.add_argument("--timed", action="append", default=[])
     ap.add_argument("--paired", action="append", default=[])
     ap.add_argument("--submit-gate", action="append", default=[],
@@ -289,7 +333,8 @@ def main() -> None:
         },
     )
     for flag, fn in (("validate", log_validate), ("screen", log_screen),
-                     ("decision", log_decision), ("liveness", log_liveness)):
+                     ("decision", log_decision), ("liveness", log_liveness),
+                     ("derivation", log_derivation)):
         path = getattr(args, flag)
         if path:
             fn(run, Path(path))

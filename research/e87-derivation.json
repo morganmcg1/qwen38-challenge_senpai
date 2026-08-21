@@ -1,0 +1,203 @@
+{
+  "experiment": "e87-coarse-draft-shortlist-traffic",
+  "question": "is the derived index deterministic, canonical, and untimed",
+  "harness": "local",
+  "prefix": "e87r2p1",
+  "base_sha": "486d19fa89cc39da9aebe72ce7dc0db5cfa77406",
+  "worker_sha256": "878719eb995ee7f06788fcf8bb46e4532c41045e0f3f4e9bf3f0d7243f27b42d",
+  "cli_sha256": "0c526c64db5bd0ee342a1b1fea955085d23cbf2dfee236dc16dfca23836fcac2",
+  "metallib_source_fingerprint": "01b6c7163a0e3ee26265aba50815d7c9c5e891a587a71a0135b45bb9af38d0f2",
+  "host": "ip-10-231-2-95.ec2.internal",
+  "chip": "Apple M4 Pro",
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "sandbox_disabled_for_capture": true,
+  "determinism": {
+    "canonical_order_fnv1a64": "efa704192133552d",
+    "runtime_order_fnv1a64_values": [
+      "efa704192133552d"
+    ],
+    "matches_canonical": true,
+    "processes": 8,
+    "distinct_dump_sha256": [
+      "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    ],
+    "dumps_identical_across_processes": true
+  },
+  "placement": {
+    "build_seconds_min": 4.924,
+    "build_seconds_max": 4.966,
+    "build_seconds_mean": 4.943125,
+    "worst_round1_excess_over_round2_us": 27803.0,
+    "worst_excess_as_fraction_of_build": 0.005598670962545308,
+    "charged_window_seconds": [
+      16.013113975524902,
+      16.119704008102417
+    ],
+    "charged_window_if_build_were_timed_seconds": [
+      20.979113975524903,
+      21.085704008102418
+    ],
+    "build_is_outside_timed_window": true,
+    "builds_once_per_process": true
+  },
+  "builds": [
+    {
+      "leg": "e87r2p1-derived25-1",
+      "pid": 33510,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.924,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-1",
+      "pid": 33703,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.959,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-1",
+      "pid": 33805,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.928,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-1",
+      "pid": 33965,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.935,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-2",
+      "pid": 34175,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.966,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-2",
+      "pid": 34197,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.946,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-2",
+      "pid": 34228,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.926,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    },
+    {
+      "leg": "e87r2p1-derived25-2",
+      "pid": 34242,
+      "leaves": 12292,
+      "rows_per_leaf": 8,
+      "probes": 3073,
+      "probe_fraction": 0.25,
+      "iterations": 8,
+      "centroid_bits": 2,
+      "order_fnv1a64": "efa704192133552d",
+      "build_seconds": 4.961,
+      "dump_bytes": 393344,
+      "dump_sha256": "9290b204ac3096d4cf91e2243a0266092a75329e03990694e999355b60da546f"
+    }
+  ],
+  "legs": [
+    {
+      "leg": "e87r2p1-derived25-1",
+      "arm": "derived25",
+      "probe_fraction": "0.25",
+      "worker_processes_that_built": 4,
+      "build_entered_count": 4,
+      "one_build_per_process": true,
+      "rounds": 78,
+      "round1_us": 164551.0,
+      "round2_us": 136748.0,
+      "round1_excess_over_round2_us": 27803.0,
+      "summed_round_us": 11984128.0,
+      "mtp_seconds_per_token": 0.031275613233447075,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "effective_mean_draft_len": 6.358974358974359,
+      "accepted_draft_rate": 0.8770161290322581,
+      "gpu_temp_entry_c": "37.19655990600586",
+      "gpu_temp_exit_c": "70.81874084472656"
+    },
+    {
+      "leg": "e87r2p1-derived25-2",
+      "arm": "derived25",
+      "probe_fraction": "0.25",
+      "worker_processes_that_built": 4,
+      "build_entered_count": 4,
+      "one_build_per_process": true,
+      "rounds": 78,
+      "round1_us": 150184.0,
+      "round2_us": 136992.0,
+      "round1_excess_over_round2_us": 13192.0,
+      "summed_round_us": 12066570.0,
+      "mtp_seconds_per_token": 0.03148379689082503,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "effective_mean_draft_len": 6.358974358974359,
+      "accepted_draft_rate": 0.8770161290322581,
+      "gpu_temp_entry_c": "59.968849182128906",
+      "gpu_temp_exit_c": "63.62149429321289"
+    }
+  ]
+}
