@@ -400,11 +400,26 @@ def cmd_validate(args) -> None:
     del broken_rows, rows
 
     n = tok_ok = miss64 = miss_damaged = 0
+    # A proposal mismatch is only harmless if it is a near-tie in the exact
+    # rerank. If the runtime's token were far down my ordering, my reference
+    # would be wrong and every `m` below it would be meaningless.
+    gaps: list[float] = []
+    ranks: list[int] = []
     for _, _, x, proposal in chunks(args.limit, args.seeds, args.batch):
         ex = H.scores(exact, x)
         r = mx.argmax(ex, axis=1)
         vocab = np.asarray(H.compact_to_vocab(r))
         tok_ok += int(np.sum(vocab == proposal))
+        bad = np.nonzero(vocab != proposal)[0]
+        if bad.size:
+            got = H.vocab_to_compact(proposal[bad]).astype(np.int32)
+            rows_bad = mx.array(bad.astype(np.int32))
+            sub = mx.take(ex, rows_bad, axis=0)
+            best = mx.max(sub, axis=1)
+            mine = mx.take_along_axis(sub, mx.array(got)[:, None], axis=1)[:, 0]
+            ranks += [int(v) for v in np.asarray(mx.sum(sub > mine[:, None], axis=1))]
+            span = mx.max(sub, axis=1) - mx.min(sub, axis=1)
+            gaps += [float(v) for v in np.asarray((best - mine) / span)]
         miss64 += int(mx.sum(rank_of(H.scores(coarse, x), r) >= CANDIDATES).item())
         miss_damaged += int(mx.sum(rank_of(H.scores(damaged, x), r) >= CANDIDATES).item())
         n += x.shape[0]
@@ -418,6 +433,13 @@ def cmd_validate(args) -> None:
         "proposal_match": tok_ok / n,
         "m_shipped_g64": {"misses": miss64, "p": p, "lo": lo, "hi": hi},
         "m_damaged_control": {"misses": miss_damaged, "p": pd},
+        "proposal_mismatch": {
+            "count": len(ranks),
+            "rank_max": max(ranks, default=0),
+            "rank_above_1": sum(1 for v in ranks if v > 1),
+            "relative_gap_max": max(gaps, default=0.0),
+            "relative_gap_median": float(np.median(gaps)) if gaps else 0.0,
+        },
     }
     print(json.dumps(report, indent=2))
     if args.out:

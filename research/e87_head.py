@@ -145,6 +145,12 @@ def compact_to_vocab(index: mx.array) -> mx.array:
     return mx.where(index < PREFIX_COUNT, index, index + (CONTROL_START - PREFIX_COUNT))
 
 
+def vocab_to_compact(token: np.ndarray) -> np.ndarray:
+    """Inverse of `compact_to_vocab` for tokens the compact head can emit."""
+    return np.where(token < PREFIX_COUNT, token,
+                    token - (CONTROL_START - PREFIX_COUNT))
+
+
 def main() -> None:
     exact = load_exact()
     coarse = load_coarse()
