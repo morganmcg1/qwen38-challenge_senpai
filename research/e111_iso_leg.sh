@@ -28,6 +28,7 @@ fi
 bin="/tmp/e111/e111_bias6_ab"
 clang -fobjc-arc -O2 -framework Metal -framework Foundation \
   -o "${bin}" research/e111_bias6_ab.m 2>/dev/null || exit 1
+bin_sha="$(shasum -a 256 "${bin}" | cut -d' ' -f1)"
 
 gpu_temp() {
   local macmon
@@ -64,6 +65,8 @@ finished="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "base_sha=$(git rev-parse HEAD)"
   echo "worktree_dirty=$(git status --porcelain | wc -l | tr -d ' ')"
   echo "blob_sha256=$(shasum -a 256 "${blob}" | cut -d' ' -f1)"
+  echo "harness_sha256=${bin_sha}"
+  echo "kernel_src_sha256=$(shasum -a 256 research/e111_bias6_arms.metal | cut -d' ' -f1)"
   echo "args=$*"
 } > "${out}/meta.txt"
 

@@ -26,21 +26,21 @@
 #include <string.h>
 
 static const int kGroup = 64;
-static const int kNA = 5;
+static int kNA = 5;
 static const int kRowsPerTG = 8;
 static const int kValuesPerThread = 16;
 static const int kBlockSize = 16 * 32;
 
 enum { kArmA = 0, kArmNoBias, kArmNoSums, kArmBias1, kArmBias6, kArmConstW,
-       kArmLoadOnly, kArmCount };
+       kArmLoadOnly, kArmPack32, kArmCount };
 static const char *kArmNames[kArmCount] = {
-    "a_shipped", "n_nobias", "n_nosums", "d_bias1",
-    "e_bias6",   "b_constw", "c_loadonly"};
+    "a_shipped", "n_nobias",   "n_nosums", "d_bias1",
+    "e_bias6",   "b_constw",   "c_loadonly", "g_pack32"};
 // Bytes of the 64-element group record each arm actually streams.
-static const int kArmGroupBytes[kArmCount] = {36, 34, 36, 35, 35, 4, 36};
+static const int kArmGroupBytes[kArmCount] = {36, 34, 36, 35, 35, 4, 36, 36};
 // Arms that keep every elementary product and the shipped summation order, so
 // their whole output must be bit-identical to a_shipped.
-static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 1, 0, 0};
+static const int kExpectBitExact[kArmCount] = {1, 0, 0, 0, 1, 0, 0, 1};
 
 static int kK = 0, kN = 0;
 static size_t kGroups = 0;
@@ -124,7 +124,8 @@ typedef struct {
 static Timing runArm(id<MTLCommandQueue> queue, id<MTLComputePipelineState> pso,
                      id<MTLBuffer> __strong *w, int w_copies,
                      id<MTLBuffer> scales, id<MTLBuffer> biases,
-                     id<MTLBuffer> codes, id<MTLBuffer> x, id<MTLBuffer> y,
+                     id<MTLBuffer> codes, id<MTLBuffer> packed_sb,
+                     id<MTLBuffer> x, id<MTLBuffer> y,
                      uint64_t seed, int reps, int inner, int *slice) {
   const int in_vec_size = kK, out_vec_size = kN;
   MTLSize grid = MTLSizeMake(kNA, kN / kRowsPerTG, 1);
@@ -146,6 +147,7 @@ static Timing runArm(id<MTLCommandQueue> queue, id<MTLComputePipelineState> pso,
       [enc setBytes:&in_vec_size length:sizeof(int) atIndex:6];
       [enc setBytes:&out_vec_size length:sizeof(int) atIndex:7];
       [enc setBytes:&seed length:sizeof(uint64_t) atIndex:8];
+      [enc setBuffer:packed_sb offset:0 atIndex:9];
       [enc dispatchThreadgroups:grid threadsPerThreadgroup:tg];
     }
     [enc endEncoding];
@@ -212,6 +214,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--reps") && i + 1 < argc) reps = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--check-cells") && i + 1 < argc) check_cells = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--warm") && i + 1 < argc) warm = atoi(argv[++i]);
+      else if (!strcmp(argv[i], "--na") && i + 1 < argc) kNA = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--stream-tgs") && i + 1 < argc) stream_tgs = (uint)atoi(argv[++i]);
       else {
         fprintf(stderr, "e111_bias6_ab: unknown argument %s\n", argv[i]);
@@ -222,7 +225,12 @@ int main(int argc, char **argv) {
       fprintf(stderr,
               "usage: e111_bias6_ab --blob BIN --out JSON [--shape NAME] "
               "[--src FILE] [--blocks N] [--w-copies N] [--inner N] "
-              "[--reps N] [--check-cells N] [--warm N] [--stream-tgs N]\n");
+              "[--reps N] [--check-cells N] [--warm N] [--na N] "
+              "[--stream-tgs N]\n");
+      return 2;
+    }
+    if (kNA < 1 || kNA > 8) {
+      fprintf(stderr, "e111_bias6_ab: --na must be 1..8\n");
       return 2;
     }
 
@@ -275,6 +283,10 @@ int main(int argc, char **argv) {
       opts.languageVersion = MTLLanguageVersion3_1;
     }
     [opts setFastMathEnabled:NO];
+    // The shipped entry switch selects a different NA per verify width, so the
+    // arms are compiled per width instead of being templated. The bodies stay
+    // a line-aligned transcription for every width.
+    opts.preprocessorMacros = @{@"E111_NA": @(kNA)};
     NSError *err = nil;
     id<MTLLibrary> lib = [device newLibraryWithSource:src options:opts error:&err];
     if (!lib) {
@@ -327,6 +339,8 @@ int main(int argc, char **argv) {
                                                options:MTLResourceStorageModeShared];
     id<MTLBuffer> codes = [device newBufferWithLength:code_bytes
                                               options:MTLResourceStorageModeShared];
+    id<MTLBuffer> packed_sb = [device newBufferWithLength:kGroups * 4
+                                                 options:MTLResourceStorageModeShared];
     id<MTLBuffer> x = [device newBufferWithLength:x_bytes
                                           options:MTLResourceStorageModeShared];
     id<MTLBuffer> y = [device newBufferWithLength:y_bytes
@@ -344,6 +358,11 @@ int main(int argc, char **argv) {
       return 1;
     }
     fclose(bf);
+
+    uint32_t *pp = (uint32_t *)packed_sb.contents;
+    for (size_t g = 0; g < kGroups; g++) {
+      pp[g] = (uint32_t)sp[g] | ((uint32_t)bp[g] << 16);
+    }
 
     uint32_t rng = 0xC0FFEEu;
     uint8_t *w0 = (uint8_t *)w[0].contents;
@@ -395,7 +414,7 @@ int main(int argc, char **argv) {
     // --- fidelity, before any timing --------------------------------------
     {
       int slice = 0;
-      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, x, y, seed,
+      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, packed_sb, x, y, seed,
              1, 1, &slice);
       const uint16_t *yp = (const uint16_t *)y.contents;
       double worst_rel = 0.0;
@@ -430,7 +449,7 @@ int main(int argc, char **argv) {
       for (size_t i = 0; i < row_bytes; i++) w0[i] = 0xFF;
       for (int c = 1; c < w_copies; c++) memcpy(w[c].contents, w0, row_bytes);
       slice = 0;
-      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, x, y, seed,
+      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, packed_sb, x, y, seed,
              1, 1, &slice);
       const float pert_got = bf16_to_f32(((const uint16_t *)y.contents)[0]);
       const double ctrl_rel =
@@ -439,7 +458,7 @@ int main(int argc, char **argv) {
       free(saved);
       for (int c = 1; c < w_copies; c++) memcpy(w[c].contents, w0, row_bytes);
       slice = 0;
-      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, x, y, seed,
+      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, packed_sb, x, y, seed,
              1, 1, &slice);
       const float restored_got = bf16_to_f32(((const uint16_t *)y.contents)[0]);
       const double restored_rel =
@@ -458,14 +477,14 @@ int main(int argc, char **argv) {
     uint16_t *ref = (uint16_t *)malloc(y_bytes);
     {
       int slice = 0;
-      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, x, y, seed,
+      runArm(queue, pso[kArmA], w, w_copies, scales, biases, codes, packed_sb, x, y, seed,
              1, 1, &slice);
       memcpy(ref, y.contents, y_bytes);
       fprintf(out, "  \"arm_exactness\": [\n");
       for (int a = 0; a < kArmCount; a++) {
         memset(y.contents, 0, y_bytes);
         slice = 0;
-        runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y, seed, 1,
+        runArm(queue, pso[a], w, w_copies, scales, biases, codes, packed_sb, x, y, seed, 1,
                1, &slice);
         const uint16_t *got = (const uint16_t *)y.contents;
         size_t differing = 0;
@@ -494,13 +513,46 @@ int main(int argc, char **argv) {
       fprintf(out, "\n  ],\n");
     }
 
+    // --- pack control: a damaged interleaved record must break g_pack32 ----
+    {
+      const uint32_t saved_pack = pp[0];
+      pp[0] ^= 0x00010000u;
+      int slice = 0;
+      memset(y.contents, 0, y_bytes);
+      runArm(queue, pso[kArmPack32], w, w_copies, scales, biases, codes,
+             packed_sb, x, y, seed, 1, 1, &slice);
+      const uint16_t *got = (const uint16_t *)y.contents;
+      size_t damaged_diff = 0;
+      for (size_t i = 0; i < y_bytes / 2; i++) {
+        if (got[i] != ref[i]) damaged_diff++;
+      }
+      pp[0] = saved_pack;
+      slice = 0;
+      memset(y.contents, 0, y_bytes);
+      runArm(queue, pso[kArmPack32], w, w_copies, scales, biases, codes,
+             packed_sb, x, y, seed, 1, 1, &slice);
+      got = (const uint16_t *)y.contents;
+      size_t restored_diff = 0;
+      for (size_t i = 0; i < y_bytes / 2; i++) {
+        if (got[i] != ref[i]) restored_diff++;
+      }
+      fprintf(stderr,
+              "e111_bias6_ab: pack control damaged_diff=%zu restored_diff=%zu\n",
+              damaged_diff, restored_diff);
+      fprintf(out,
+              "  \"pack_control\": {\"damaged_differing\": %zu, "
+              "\"restored_differing\": %zu, \"detected\": %s},\n",
+              damaged_diff, restored_diff,
+              (damaged_diff > 0 && restored_diff == 0) ? "true" : "false");
+    }
+
     // --- code control: a damaged code must break e_bias6 -------------------
     {
       const uint8_t saved_code = cp[0];
       cp[0] ^= 0x01u;
       int slice = 0;
       memset(y.contents, 0, y_bytes);
-      runArm(queue, pso[kArmBias6], w, w_copies, scales, biases, codes, x, y,
+      runArm(queue, pso[kArmBias6], w, w_copies, scales, biases, codes, packed_sb, x, y,
              seed, 1, 1, &slice);
       const uint16_t *got = (const uint16_t *)y.contents;
       size_t damaged_diff = 0;
@@ -510,7 +562,7 @@ int main(int argc, char **argv) {
       cp[0] = saved_code;
       slice = 0;
       memset(y.contents, 0, y_bytes);
-      runArm(queue, pso[kArmBias6], w, w_copies, scales, biases, codes, x, y,
+      runArm(queue, pso[kArmBias6], w, w_copies, scales, biases, codes, packed_sb, x, y,
              seed, 1, 1, &slice);
       got = (const uint16_t *)y.contents;
       size_t restored_diff = 0;
@@ -536,13 +588,13 @@ int main(int argc, char **argv) {
     int slice = 0;
     for (int pass = 0; pass < warm; pass++) {
       for (int a = 0; a < kArmCount; a++) {
-        runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y, seed, 1,
+        runArm(queue, pso[a], w, w_copies, scales, biases, codes, packed_sb, x, y, seed, 1,
                inner, &slice);
       }
     }
     for (int s = 0; s < 2 * kArmCount; s++) {
       const int a = s < kArmCount ? s : (2 * kArmCount - 1 - s);
-      runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y, seed,
+      runArm(queue, pso[a], w, w_copies, scales, biases, codes, packed_sb, x, y, seed,
              reps, inner, &slice);
     }
     runStream(queue, stream_pso, w[0], sink, w_bytes, stream_tgs, 1, inner);
@@ -554,7 +606,7 @@ int main(int argc, char **argv) {
       const double at = seconds_since(g_session_start);
       for (int s = 0; s < 2 * kArmCount; s++) {
         const int a = s < kArmCount ? s : (2 * kArmCount - 1 - s);
-        t[s] = runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y,
+        t[s] = runArm(queue, pso[a], w, w_copies, scales, biases, codes, packed_sb, x, y,
                       seed, reps, inner, &slice);
       }
       fprintf(stderr, "e111_bias6_ab: block %d", b);

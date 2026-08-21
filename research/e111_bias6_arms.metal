@@ -38,7 +38,9 @@
 using namespace metal;
 
 #define SIMD_SIZE 32
+#ifndef E111_NA
 #define E111_NA 5
+#endif
 #define E111_ROWS_PER_SIMD 4
 #define E111_VALUES_PER_THREAD 16
 #define E111_BLOCK_SIZE (E111_VALUES_PER_THREAD * SIMD_SIZE)
@@ -678,6 +680,105 @@ template <typename T>
   }
 }
 
+// ---------------------------------------------------------------------------
+// g_pack32: the shipped values, read as one 32-bit interleaved record.
+//
+// a_shipped reads scales[g] and biases[g] from two buffers at the same index,
+// so it issues two 16-bit loads for every group of every row. This arm reads
+// the identical pair from one interleaved uint32 array. Bytes streamed,
+// values and summation order do not change, so the output must stay
+// bit-identical and the arm prices the second load instruction on its own.
+// ---------------------------------------------------------------------------
+template <typename T>
+[[kernel]] void e111_g_pack32(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* biases [[buffer(2)]],
+    const device uint8_t* codes [[buffer(3)]],
+    const device T* x [[buffer(4)]],
+    device T* y [[buffer(5)]],
+    const constant int& in_vec_size [[buffer(6)]],
+    const constant int& out_vec_size [[buffer(7)]],
+    const constant ulong& wseed [[buffer(8)]],
+    const device uint32_t* packed_sb [[buffer(9)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  const int first_m = int(tid.x) * E111_NA;
+  if (first_m >= E111_NA) {
+    return;
+  }
+  const int out_row = int(tid.y) * 8 + int(simd_gid) * E111_ROWS_PER_SIMD;
+  const int in_vec_size_w = in_vec_size / 2;
+  const int in_vec_size_g = in_vec_size / 64;
+
+  VF acc[E111_ROWS_PER_SIMD];
+  for (int r = 0; r < E111_ROWS_PER_SIMD; r++) {
+    acc[r] = VF(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += E111_BLOCK_SIZE) {
+    thread uint16_t packed[E111_ROWS_PER_SIMD][4];
+    thread float scale_local[E111_ROWS_PER_SIMD];
+    thread float bias_local[E111_ROWS_PER_SIMD];
+    for (int r = 0; r < E111_ROWS_PER_SIMD; r++) {
+      const int row = out_row + r;
+      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+          reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+          k / 2 + simd_lid * E111_BYTES_PER_LANE);
+      for (int i = 0; i < 4; i++) {
+        packed[r][i] = ws[i];
+      }
+      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      const uint32_t sb = packed_sb[group_index];
+      scale_local[r] = float(as_type<T>(uint16_t(sb & 0xFFFFu)));
+      bias_local[r] = float(as_type<T>(uint16_t(sb >> 16)));
+    }
+
+    VF sums = VF(0.0f);
+    VF partial[E111_ROWS_PER_SIMD];
+    for (int r = 0; r < E111_ROWS_PER_SIMD; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < E111_NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * E111_VALUES_PER_THREAD + 4 * i;
+        thread float xc[4];
+        xc[0] = static_cast<float>(xm[0]);
+        xc[1] = static_cast<float>(xm[1]);
+        xc[2] = static_cast<float>(xm[2]);
+        xc[3] = static_cast<float>(xm[3]);
+        sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        a0[m] = xc[0];
+        a1[m] = xc[1];
+        a2[m] = xc[2];
+        a3[m] = xc[3];
+      }
+      for (int r = 0; r < E111_ROWS_PER_SIMD; r++) {
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * ((packed[r][i] >> 4) & 0x000f) +
+                       a2 * ((packed[r][i] >> 8) & 0x000f) +
+                       a3 * ((packed[r][i] >> 12) & 0x000f));
+      }
+    }
+    for (int r = 0; r < E111_ROWS_PER_SIMD; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+  }
+
+  for (int r = 0; r < E111_ROWS_PER_SIMD; r++) {
+    for (int m = 0; m < E111_NA; m++) {
+      const float reduced = simd_sum(acc[r][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] = static_cast<T>(reduced);
+      }
+    }
+  }
+}
+
+
 #define instantiate_kernel(name, func, tname)  \
   template [[host_name(name)]] [[kernel]] decltype(func<tname>) func<tname>;
 
@@ -688,3 +789,4 @@ instantiate_kernel("d_bias1", e111_d_bias1, bfloat)
 instantiate_kernel("e_bias6", e111_e_bias6, bfloat)
 instantiate_kernel("b_constw", e111_b_constw, bfloat)
 instantiate_kernel("c_loadonly", e111_c_loadonly, bfloat)
+instantiate_kernel("g_pack32", e111_g_pack32, bfloat)
