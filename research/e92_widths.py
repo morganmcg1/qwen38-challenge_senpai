@@ -195,7 +195,26 @@ def combine(legs: list[dict], peak_gbs: float | None) -> dict:
             if groups:
                 row["implied_over_G_times_stream"] = implied / (
                     WEIGHT_STREAM_BYTES * groups)
+        verify_samples = [leg["verify_gpu_busy_us"] for leg in group]
+        round_samples = [leg["round_gpu_busy_us"] for leg in group]
+        row["legs_verify_gpu_busy_us"] = verify_samples
+        row["verify_spread_frac"] = (
+            (max(verify_samples) - min(verify_samples)) / verify
+            if verify else None)
+        row["round_spread_frac"] = (
+            (max(round_samples) - min(round_samples)) / round_busy
+            if round_busy else None)
         table.append(row)
+
+    for previous, row in zip(table, table[1:]):
+        if row["M"] != previous["M"] + 1:
+            continue
+        row["marginal_verify_gpu_busy_us"] = (
+            row["verify_gpu_busy_us"] - previous["verify_gpu_busy_us"])
+        row["marginal_round_gpu_busy_us"] = (
+            row["round_gpu_busy_us"] - previous["round_gpu_busy_us"])
+        row["marginal_verify_over_anchor"] = (
+            row["marginal_verify_gpu_busy_us"] / anchor if anchor else None)
     return {"anchor_verify_gpu_busy_us": anchor, "table": table}
 
 
@@ -222,11 +241,11 @@ def main() -> None:
                  leg["round_us"], leg["round_gpu_busy_us"],
                  leg["round_gpu_idle_us"], leg["frac_rounds_host_stuck"]))
     print()
-    print("%3s %11s %9s %3s %8s %10s %9s %12s %10s"
+    print("%3s %11s %9s %3s %8s %10s %9s %12s %10s %12s %11s"
           % ("M", "verify_us", "head_us", "G", "GB/s", "ratio_peak",
-             "verify%", "implied_GB", "impl/G"))
+             "verify%", "implied_GB", "impl/G", "marg_verify", "marg_round"))
     for row in combined["table"]:
-        print("%3d %11.1f %9.1f %3s %8s %10s %9.3f %12s %10s"
+        print("%3d %11.1f %9.1f %3s %8s %10s %9.3f %12s %10s %12s %11s"
               % (row["M"], row["verify_gpu_busy_us"], row["head_gpu_busy_us"],
                  row["G"],
                  "%.1f" % row["achieved_bandwidth_gbs"]
@@ -236,7 +255,11 @@ def main() -> None:
                  "%.2f" % (row["implied_bytes"] / 1e9)
                  if row.get("implied_bytes") else "-",
                  "%.3f" % row["implied_over_G_times_stream"]
-                 if row.get("implied_over_G_times_stream") else "-"))
+                 if row.get("implied_over_G_times_stream") else "-",
+                 "%.1f" % row["marginal_verify_gpu_busy_us"]
+                 if row.get("marginal_verify_gpu_busy_us") else "-",
+                 "%.1f" % row["marginal_round_gpu_busy_us"]
+                 if row.get("marginal_round_gpu_busy_us") else "-"))
 
     result = {"legs": legs, **combined}
     if arguments.output:

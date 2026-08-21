@@ -121,10 +121,10 @@ def leg_rows(doc: dict) -> list[dict]:
     return rows
 
 
-def log_rung2(run, doc: dict) -> None:
+def log_rung2(run, doc: dict, prefix: str = "rung2") -> None:
     legs = leg_rows(doc)
-    run.log({"rung2/legs": table(LEG_COLS, legs)})
-    run.log({"rung2/width_histograms": table(
+    run.log({f"{prefix}/legs": table(LEG_COLS, legs)})
+    run.log({f"{prefix}/width_histograms": table(
         ["tag", "M", "observed_width", "rounds"],
         [{"tag": leg["tag"], "M": leg["M"], "observed_width": int(width),
           "rounds": count}
@@ -139,29 +139,29 @@ def log_rung2(run, doc: dict) -> None:
         head = row.get("head_share_of_round_busy") or 0.0
         out["closure_share"] = verify + head
         table_rows.append(out)
-    run.log({"rung2/by_width": table(WIDTH_COLS, table_rows)})
+    run.log({f"{prefix}/by_width": table(WIDTH_COLS, table_rows)})
 
     scalars = {
-        "rung2/anchor_verify_gpu_busy_us": doc["anchor_verify_gpu_busy_us"],
-        "rung2/legs_with_delta_histogram": sum(
+        f"{prefix}/anchor_verify_gpu_busy_us": doc["anchor_verify_gpu_busy_us"],
+        f"{prefix}/legs_with_delta_histogram": sum(
             1 for leg in doc["legs"] if leg["width_is_delta"]),
-        "rung2/legs_total": len(doc["legs"]),
-        "rung2/max_abs_tiling_error_us": max(
+        f"{prefix}/legs_total": len(doc["legs"]),
+        f"{prefix}/max_abs_tiling_error_us": max(
             abs(leg["tiling_error_us"]) for leg in doc["legs"]),
-        "rung2/min_pin_purity": min(leg["pin_purity"] for leg in doc["legs"]),
-        "rung2/entry_temp_spread_c": (
+        f"{prefix}/min_pin_purity": min(leg["pin_purity"] for leg in doc["legs"]),
+        f"{prefix}/entry_temp_spread_c": (
             max(leg["gpu_temp_entry_c"] for leg in legs)
             - min(leg["gpu_temp_entry_c"] for leg in legs)),
     }
     for row in table_rows:
         width = row["M"]
-        scalars[f"rung2/verify_gpu_busy_us/M{width}"] = row["verify_gpu_busy_us"]
-        scalars[f"rung2/head_gpu_busy_us/M{width}"] = row["head_gpu_busy_us"]
-        scalars[f"rung2/closure_share/M{width}"] = row["closure_share"]
+        scalars[f"{prefix}/verify_gpu_busy_us/M{width}"] = row["verify_gpu_busy_us"]
+        scalars[f"{prefix}/head_gpu_busy_us/M{width}"] = row["head_gpu_busy_us"]
+        scalars[f"{prefix}/closure_share/M{width}"] = row["closure_share"]
         for key in ("achieved_bandwidth_gbs", "ratio_to_peak", "implied_bytes",
                     "implied_over_weight_stream", "implied_over_G_times_stream"):
             if row.get(key) is not None:
-                scalars[f"rung2/{key}/M{width}"] = row[key]
+                scalars[f"{prefix}/{key}/M{width}"] = row[key]
     run.log(scalars)
 
 
@@ -170,6 +170,7 @@ def main() -> None:
     ap.add_argument("--rung1", required=True)
     ap.add_argument("--rung1-reversed")
     ap.add_argument("--rung2")
+    ap.add_argument("--rung2-production")
     ap.add_argument("--peak-gbs", type=float)
     ap.add_argument("--name", default="e92-verify-pass-bandwidth")
     ap.add_argument("--notes", default="")
@@ -227,6 +228,9 @@ def main() -> None:
         log_rung1(run, reversed_doc, "reversed", "rung1_reversed")
     if rung2:
         log_rung2(run, rung2)
+    if args.rung2_production:
+        log_rung2(run, json.loads(Path(args.rung2_production).read_text()),
+                  "rung2_production")
 
     print(run.url)
     print(run.id)
