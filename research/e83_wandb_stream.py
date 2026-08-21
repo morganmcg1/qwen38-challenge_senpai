@@ -124,6 +124,26 @@ def isolated_row(block: dict) -> dict:
     return row
 
 
+def generic_row(block: dict) -> dict:
+    """Flatten any block kind this streamer has no bespoke row shape for.
+
+    E91 adds `e91_ceiling_cell`, `e91_ceiling_summary` and `e91_machine_peaks`
+    to the same stream. A named row shape per kind buys nothing here: every
+    field is already a scalar or a short list of scalars.
+    """
+    kind = block.get("kind", "unknown")
+    family = block.get("family")
+    stem = f"{kind}/{family}" if family else kind
+    row = {}
+    for key, value in block.items():
+        if key in ("kind", "family", "seconds"):
+            continue
+        if isinstance(value, bool) or isinstance(value, (int, float, str)):
+            row[f"{stem}/{key}"] = value
+    row[f"{kind}/order"] = block.get("order")
+    return row
+
+
 def census_row(block: dict) -> dict:
     row = {"census/order": block.get("order")}
     totals = block.get("totals") or {}
@@ -209,7 +229,7 @@ def main() -> int:
             elif kind in ("isolated_quantized_matmul", "isolated_sdpa"):
                 row = isolated_row(block)
             else:
-                row = {"unknown/order": block.get("order")}
+                row = generic_row(block)
             for key in ("gpu_temp_entry_c", "gpu_temp_exit_c"):
                 if block.get(key) is not None:
                     row[f"block/{key}"] = block[key]

@@ -592,6 +592,7 @@ public final class Qwen36MTPBlockSession {
         guard !began else { throw Qwen36MTPSessionError.alreadyBegun }
         guard !seedTokens.isEmpty else { throw Qwen36MTPSessionError.emptySeed }
         let tBegin0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
+        let cpuBegin0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
         cache = model.newCache(parameters: nil)
         let (seedLogits, hidden) = model.callWithHidden(
             input: LMInput.Text(
@@ -619,9 +620,12 @@ public final class Qwen36MTPBlockSession {
                                            pendingHidden!, hidden])
         if Self.traceRounds {
             let tBeginDone = DispatchTime.now().uptimeNanoseconds
+            let cpuBeginDone = Self.threadCPUNanoseconds()
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
-                + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000)\n")
+                + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
+                + "wall_us=\((tBeginDone - tBegin0) / 1000) "
+                + "cpu_us=\((cpuBeginDone - cpuBegin0) / 1000)\n")
         }
         let readTail = (
             tailIDs.asArray(Int32.self).map { Int($0) },
@@ -1398,7 +1402,7 @@ public final class Qwen36MTPBlockSession {
         asyncEval(draftId)
         let tSubmit1 = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
-        for step in 1 ..< draftCount {
+        for _ in 1 ..< draftCount {
             headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
             draftHidden = Self.lastHiddenRow(headHidden)
