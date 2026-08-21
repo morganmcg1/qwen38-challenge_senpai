@@ -104,9 +104,41 @@ def minus_live_case(m: int) -> str:
     return text[:open_at] + span + text[close_at:]
 
 
+# The generic tail of the dispatcher, which every unmatched width falls to.
+GENERIC_TAIL = "  qmv_fast_impl<T, group_size, bits>(\n"
+
+
+def no_fallback(m: int) -> str:
+    """`minus_live_case` with the generic tail also closed for that width.
+
+    This is the mis-prune the rung 2 fail-closed rule exists to prevent: a case
+    is deleted and nothing correct serves the width. It must be detected.
+    """
+    text = minus_live_case(m)
+    at = text.index("[[kernel]] void affine_qmv_fast(")
+    end = text.index("\ntemplate <", at)
+    body = text[at:end]
+    if body.count(GENERIC_TAIL) != 1:
+        raise SystemExit("e108: the generic tail anchor is not unique")
+    body = body.replace(
+        GENERIC_TAIL, f"  if (ntg.x == {m}) {{\n    return;\n  }}\n"
+                      + GENERIC_TAIL)
+    return text[:at] + body + text[end:]
+
+
+# A palindrome cancels LINEAR drift inside a block, not a convex clock ramp,
+# and the outermost slot pair is the one a ramp penalises most. A null arm is a
+# comment-only copy of another arm, so its compiled text digest must be
+# identical and its measured delta is the harness's own slot artefact at that
+# position. That is the empirical floor a real arm effect has to clear.
+NULL_MARK = "\n// e108 null control: comment-only copy of the arm it mirrors.\n"
+
 SETS = {
     "prune": ("a_base", "h_prunenarrow", "i_pruneall"),
+    "rung0": ("a_base", "h_prunenarrow", "i_pruneall", "i_pruneall_null",
+              "a_base_null"),
     "exact": ("a_base", "h_prunenarrow", "i_pruneall", "p_misprune5"),
+    "control": ("a_base", "p_nofallback5"),
     "extent": ("i_pruneall",) + tuple(f"i_minus_case{m}" for m in LIVE_WIDTHS),
     "e102base": ("v_a_pre_e100", "v_h_pre_e100", "v_i_pre_e100"),
 }
@@ -115,7 +147,10 @@ NAMES = {
     "a_base": lambda: e102_arm("A_shipped"),
     "h_prunenarrow": lambda: e102_arm("H_prune_narrow"),
     "i_pruneall": lambda: e102_arm("I_prune_all_dead"),
+    "a_base_null": lambda: e102_arm("A_shipped") + NULL_MARK,
+    "i_pruneall_null": lambda: e102_arm("I_prune_all_dead") + NULL_MARK,
     "p_misprune5": lambda: minus_live_case(5),
+    "p_nofallback5": lambda: no_fallback(5),
     "v_a_pre_e100": lambda: pre_e100(e102_arm("A_shipped")),
     "v_h_pre_e100": lambda: pre_e100(e102_arm("H_prune_narrow")),
     "v_i_pre_e100": lambda: pre_e100(e102_arm("I_prune_all_dead")),
