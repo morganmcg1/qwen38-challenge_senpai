@@ -4,7 +4,7 @@
 #
 #   usage: research/e94_run_leg.sh ARM TAG CAP [TOKENS]
 #
-# ARM is ship | snap4 | amin | amine92.
+# ARM is ship | snap4 | amin | amine92 | m5fit.
 #
 # `ship` runs the BRANCH TIP bytes with no patch at all, so the control stays
 # bit-identical to the tip as the assignment requires. Every other arm applies
@@ -29,7 +29,7 @@ readonly TESTS_FILE="Tests/MLXFastTests/QwenMTPDepthPriceTests.swift"
 readonly PATCH="research/e94-artifacts/e94-depth-price-arms.patch"
 
 case "${arm}" in
-  ship|snap4|amin|amine92) ;;
+  ship|snap4|amin|amine92|m5fit) ;;
   *) echo "e94_run_leg: unknown arm ${arm}" >&2; exit 2 ;;
 esac
 
@@ -106,7 +106,7 @@ other_arm_rounds="$(grep -c 'arm=' "${out}/trace.txt" 2>/dev/null || true)"
 {
   echo "e94_arm=${arm}"
   echo "e94_cap=${cap}"
-  echo "experiment=e94-rung2"
+  echo "experiment=${E94_EXPERIMENT:-e94}"
   echo "branch_commit=${pre_patch_sha}"
   echo "measured_commit_unwound=${transient_sha:-<tip>}"
   echo "worker_sha256_pre=${pre_worker}"
