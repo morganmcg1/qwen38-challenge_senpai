@@ -34,11 +34,18 @@ import sys
 
 SLOTS = (("a1", "base"), ("b1", "collapse"), ("b2", "collapse"), ("a2", "base"))
 
-# name, tag infix, offered depth, decode tokens
+# name, tag infix, offered depth, decode tokens, collapse-arm `twin_m9`.
+#
+# The first three sessions ran the two-line arm, which also collapsed M = 9.
+# `segmentedVerifyDepthCap` is 7, so M = 9 never executes; the advisor ordered
+# the line dropped because it widens the NA = 5 surface inside the single
+# shared kernel for no reachable gain. w512d4 therefore runs `<T,5,5,true>`
+# alone and expects `twin_m9` = 0 in both arms.
 SESSIONS = (
-    ("d8", "d8", 8, 64),
-    ("d4", "d4", 4, 64),
-    ("w512", "w512", 8, 512),
+    ("d8", "d8", 8, 64, "1"),
+    ("d4", "d4", 4, 64, "1"),
+    ("w512", "w512", 8, 512, "1"),
+    ("w512d4", "w512d4", 4, 512, "0"),
 )
 
 
@@ -58,12 +65,15 @@ def load(infix, slot):
     return dict(tag=tag, score=score, meta=meta)
 
 
-def check(leg, arm, depth, tokens):
+def check(leg, arm, depth, tokens, m9_collapse):
     m, s = leg["meta"], leg["score"]
     want5 = "1" if arm == "collapse" else "0"
+    want9 = m9_collapse if arm == "collapse" else "0"
     problems = []
     if m.get("twin_m5") != want5:
         problems.append("twin_m5=%s expected %s" % (m.get("twin_m5"), want5))
+    if m.get("twin_m9") != want9:
+        problems.append("twin_m9=%s expected %s" % (m.get("twin_m9"), want9))
     if m.get("arm") != arm:
         problems.append("arm=%s expected %s" % (m.get("arm"), arm))
     if m.get("offered_depth") != str(depth):
@@ -80,8 +90,8 @@ def check(leg, arm, depth, tokens):
     if s["residual_divergence_count"]:
         problems.append("residual_divergence_count=%d"
                         % s["residual_divergence_count"])
-    if m.get("git_dirty") != "0":
-        problems.append("git_dirty=%s" % m.get("git_dirty"))
+    if m.get("git_dirty_build", "0") != "0":
+        problems.append("git_dirty_build=%s" % m.get("git_dirty_build"))
     return problems
 
 
@@ -91,13 +101,13 @@ def main():
     args = ap.parse_args()
 
     legs, sessions = {}, []
-    for name, infix, depth, tokens in SESSIONS:
+    for name, infix, depth, tokens, m9_collapse in SESSIONS:
         present = {}
         for slot, arm in SLOTS:
             leg = load(infix, slot)
             if leg is None:
                 continue
-            problems = check(leg, arm, depth, tokens)
+            problems = check(leg, arm, depth, tokens, m9_collapse)
             if problems:
                 print("leg %s: %s" % (leg["tag"], "; ".join(problems)))
                 return 2
@@ -124,6 +134,12 @@ def main():
                   % (leg["tag"], m["arm"], m["git_head"][:8], m["git_dirty"],
                      float(m["gpu_temp_entry_c"]), float(m["gpu_temp_exit_c"]),
                      s["all_tokens_matched"], s["residual_divergence_count"]))
+    for tag, leg in sorted(legs.items()):
+        if leg["meta"].get("git_dirty") != "0":
+            print("  ADVISORY %s ran with %s uncommitted path(s); no build "
+                  "input was dirty (git_dirty_build=%s)"
+                  % (tag, leg["meta"]["git_dirty"],
+                     leg["meta"].get("git_dirty_build", "not recorded")))
     temps = [float(l["meta"]["gpu_temp_entry_c"]) for l in legs.values()]
     print("  entry temperature spread: %.1f C (min %.1f, max %.1f)"
           % (max(temps) - min(temps), min(temps), max(temps)))
