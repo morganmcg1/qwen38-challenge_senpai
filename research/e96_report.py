@@ -30,6 +30,13 @@ FIELDS = (
     "closure_err_us",
 )
 REPEAT_ARMS = ("rep", "repchain", "norm-rep")
+
+# Per-round cost the E95 dispatch census attributed to each family at M=5.
+MODELLED_US_PER_ROUND = {
+    "rep": 8112.6,
+    "repchain": 8112.6,
+    "norm-rep": 1187.1,
+}
 PHASE_GPU = frozenset({"round_us", "verify_build_us", "eval_wall_us"})
 PHASE_ALL = PHASE_GPU | {
     "draft_build_us", "readout_us", "commit_us", "upkeep_us"
@@ -272,6 +279,16 @@ def fit_payload(legs, bucket, modelled_step_us=8112.6):
             f"{arm}_r_squared": arm_fit["r_squared"],
             f"{arm}_points": arm_fit["n"],
         })
+        modelled = MODELLED_US_PER_ROUND.get(arm)
+        if modelled and arm_fit["slope"]:
+            metrics[f"{arm}_modelled_us"] = modelled
+            metrics[f"{arm}_model_overstatement_factor"] = (
+                modelled / arm_fit["slope"]
+            )
+            if control:
+                metrics[f"{arm}_round_share_pct"] = (
+                    100.0 * arm_fit["slope"] / control
+                )
     if "rep" in fits and "repchain" in fits:
         # A chained repetition cannot start before its predecessor finishes, so
         # its slope is the step's serial latency. The independent slope is a
