@@ -3008,6 +3008,23 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private var _draftHeadS: MLXArray?
     private var _draftHeadZ: MLXArray?
 
+    // Optional cluster index over the same coarse rows, carried by the head
+    // tree as `draft_cluster.*`. `rows.*` is the coarse readout permuted so
+    // cluster `c` owns rows `[c*rowsPerCluster, (c+1)*rowsPerCluster)`,
+    // `centroids.*` scores the clusters, and `perm` maps a permuted row back
+    // to its compact row. When present, the shortlist reads only the probed
+    // clusters instead of all 98,336 rows. Proposal-only, like the coarse
+    // readout it replaces: the exact reranker behind it is unchanged.
+    private var _draftClusterW: MLXArray?
+    private var _draftClusterS: MLXArray?
+    private var _draftClusterZ: MLXArray?
+    private var _draftCentroidW: MLXArray?
+    private var _draftCentroidS: MLXArray?
+    private var _draftCentroidZ: MLXArray?
+    private var _draftClusterPerm: MLXArray?
+    private var _draftClusterShape: [Int]?
+    private var _draftClusterLHS: MLXArray?
+
     // Input-independent compact copy of the loaded exact lm_head, used only
     // for draft proposals when no declared draft_lm_head is present. It is not
     // ModuleInfo because it is derived during warmup, not checkpoint state.
@@ -3102,6 +3119,26 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
             _draftHeadW = draftW
             _draftHeadS = weights.removeValue(forKey: "mtp.draft_lm_head.scales")
             _draftHeadZ = weights.removeValue(forKey: "mtp.draft_lm_head.biases")
+        }
+        if mtp != nil {
+            // Optional cluster index over the same coarse rows. Side-channel it
+            // out of the strict Module update the same way.
+            let clusterPrefix = "mtp.draft_cluster."
+            for key in weights.keys.filter({ $0.hasPrefix(clusterPrefix) }) {
+                guard let value = weights.removeValue(forKey: key) else { continue }
+                switch String(key.dropFirst(clusterPrefix.count)) {
+                case "rows.weight": _draftClusterW = value
+                case "rows.scales": _draftClusterS = value
+                case "rows.biases": _draftClusterZ = value
+                case "centroids.weight": _draftCentroidW = value
+                case "centroids.scales": _draftCentroidS = value
+                case "centroids.biases": _draftCentroidZ = value
+                case "perm": _draftClusterPerm = value
+                case "shape": _draftClusterShape = value.asArray(Int32.self).map(Int.init)
+                default:
+                    fatalError("Qwen MTP cluster index carries unknown tensor \(key)")
+                }
+            }
         }
         if mtp != nil, !weights.keys.contains(where: { $0.contains("mtp.") }) {
             // MTP enabled but no mtp.* keys in checkpoint → needs re-conversion.
@@ -3405,6 +3442,68 @@ extension Qwen35TextModel: MTPCapable {
         return outputs[0]
     }
 
+    /// The 32 shortlist candidates chosen by the cluster index, or nil when the
+    /// head ships no index and the dense coarse readout must run instead.
+    ///
+    /// Scores `K` centroids, probes the best `C` clusters, and ranks only the
+    /// `C * rowsPerCluster` rows those clusters own. The probe depends only on
+    /// the current hidden state, and the exact reranker behind it still sees
+    /// the target's own lm_head rows, so this changes proposal quality and cost
+    /// and nothing else.
+    private func clusterCandidateIDs(_ x: MLXArray) -> MLXArray? {
+        guard let centroidWeight = _draftCentroidW,
+              let centroidScales = _draftCentroidS,
+              let centroidBiases = _draftCentroidZ,
+              let rowWeight = _draftClusterW,
+              let rowScales = _draftClusterS,
+              let rowBiases = _draftClusterZ,
+              let perm = _draftClusterPerm,
+              let shape = _draftClusterShape, shape.count == 3
+        else { return nil }
+        let clusters = shape[0], rowsPerCluster = shape[1], probes = shape[2]
+        let candidateCount = Self.draftRerankCandidateCount
+        guard rowWeight.shape == [clusters, rowsPerCluster, 320],
+              rowScales.shape == [clusters, rowsPerCluster, 80],
+              rowBiases.shape == rowScales.shape,
+              centroidWeight.shape == [clusters, 320],
+              centroidScales.shape == [clusters, 80],
+              centroidBiases.shape == centroidScales.shape,
+              perm.shape == [clusters * rowsPerCluster],
+              probes >= 1, probes <= clusters,
+              probes * rowsPerCluster > candidateCount
+        else { return nil }
+
+        if _draftClusterLHS == nil {
+            _draftClusterLHS = MLX.zeros([probes], dtype: .uint32)
+        }
+        let centroidScore = quantizedMM(
+            x, centroidWeight, scales: centroidScales, biases: centroidBiases,
+            transpose: true, groupSize: 64, bits: 2, mode: .affine
+        ).reshaped([clusters])
+        // `gatherQuantizedMM`'s sorted fast path needs indices in value order,
+        // while the top-C arrive in score order.
+        let probed = MLX.sorted(
+            MLX.argPartition(centroidScore, kth: clusters - probes)[
+                .ellipsis, (clusters - probes)...]
+        ).asType(.uint32)
+
+        let rowScore = gatherQuantizedMM(
+            x.reshaped([1, 1, configuration.hiddenSize]),
+            rowWeight, scales: rowScales, biases: rowBiases,
+            lhsIndices: _draftClusterLHS, rhsIndices: probed,
+            transpose: true, groupSize: 64, bits: 2, mode: .affine,
+            sortedIndices: true
+        ).reshaped([probes * rowsPerCluster])
+
+        let kth = probes * rowsPerCluster - candidateCount
+        let local = MLX.argPartition(rowScore, kth: kth)[.ellipsis, (kth)...]
+        let width = MLXArray(Int32(rowsPerCluster))
+        let permutedRow =
+            MLX.take(probed.asType(.int32), MLX.floorDivide(local, width), axis: 0)
+            * width + MLX.remainder(local, width)
+        return MLX.take(perm, permutedRow, axis: 0).asType(.int32)
+    }
+
     private func draftTokenIDWithDeclaredRerank(_ x: MLXArray) -> MLXArray? {
         guard let coarseWeight = _draftHeadW,
               let coarseScales = _draftHeadS,
@@ -3435,26 +3534,30 @@ extension Qwen35TextModel: MTPCapable {
               exactBiases.shape == [Self.compactDraftPaddedCount, 80]
         else { return nil }
 
-        let coarse = quantizedMM(
-            x, coarseWeight, scales: coarseScales, biases: coarseBiases,
-            transpose: true, groupSize: coarseGroupSize, bits: 2, mode: .affine
-        )
         let candidateCount = Self.draftRerankCandidateCount
-        // Drift guard: the kernels bake these shapes in as constexpr.
-        guard qwen35Top32RealCount == Self.compactDraftRealCount,
-              qwen35Top32K == candidateCount
-        else { return nil }
         let candidateIDs: MLXArray
-        if qwen35Top32Enabled {
-            candidateIDs = qwen35DraftTop32(
-                coarse[0..., 0..., 0 ..< Self.compactDraftRealCount]
-                    .reshaped([Self.compactDraftRealCount]))
+        if let probed = clusterCandidateIDs(x) {
+            candidateIDs = probed
         } else {
-            let kth = Self.compactDraftRealCount - candidateCount
-            candidateIDs = MLX.argPartition(
-                coarse[0..., 0..., 0 ..< Self.compactDraftRealCount],
-                kth: kth, axis: -1
-            )[.ellipsis, (kth)...].reshaped([candidateCount])
+            let coarse = quantizedMM(
+                x, coarseWeight, scales: coarseScales, biases: coarseBiases,
+                transpose: true, groupSize: coarseGroupSize, bits: 2, mode: .affine
+            )
+            // Drift guard: the kernels bake these shapes in as constexpr.
+            guard qwen35Top32RealCount == Self.compactDraftRealCount,
+                  qwen35Top32K == candidateCount
+            else { return nil }
+            if qwen35Top32Enabled {
+                candidateIDs = qwen35DraftTop32(
+                    coarse[0..., 0..., 0 ..< Self.compactDraftRealCount]
+                        .reshaped([Self.compactDraftRealCount]))
+            } else {
+                let kth = Self.compactDraftRealCount - candidateCount
+                candidateIDs = MLX.argPartition(
+                    coarse[0..., 0..., 0 ..< Self.compactDraftRealCount],
+                    kth: kth, axis: -1
+                )[.ellipsis, (kth)...].reshaped([candidateCount])
+            }
         }
 
         let exactWeight = MLX.take(exact.weight, candidateIDs, axis: 0)

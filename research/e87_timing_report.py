@@ -32,6 +32,7 @@ PCT_PER_PCT_HEAD_BYTES = 0.0815  # % candidate s/token per 1% of declared head
 ARM_BYTES = {
     "declared": 0,
     "g128": -15_733_760,
+    "armc": -98_336_000,
     "pinned": None,
 }
 
