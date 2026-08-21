@@ -113,6 +113,35 @@ ARMS: dict[str, tuple[int, dict[int, int], list]] = {
                         + [(WIDE_CALL, 9, False)]),
 }
 
+# Arms taken verbatim from a ranked submission tree instead of being patched
+# here, so the measured object is the exact source the board scored.
+WIDEN = "qmv_fast_crossrow_affine4_g64_mN"
+REV_3FF = "upstream/submissions/3ff80e86-6875-4942-abf2-2552342413c4"
+
+# name -> (git rev, note, [(old, new) source patches applied to that rev])
+REV_ARMS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
+    "K_ctrlA_59b321ee": (
+        "upstream/submissions/59b321ee-eb5c-40ec-bb49-5218e4b8cd31",
+        "tier-A control of 3ff80e86; QMV files byte-identical to BASE_SHA",
+        []),
+    "J_3ff80e86_wideN": (
+        REV_3FF,
+        "separate _wideN helper with float[4][NA] accumulators; case 5 only",
+        []),
+    "L_ca9251b8_real": (
+        "upstream/submissions/ca9251b8-58cd-4d90-9a52-fa05f5657216",
+        "the real ca9251b8 tree; validates synthetic arm B",
+        []),
+    # What the single-weight-stream idea costs statically if it is taken to
+    # every reachable width instead of M = 5 alone. Static screen only; no
+    # ranked receipt exists for this table.
+    "N_wideN_all_widths": (
+        REV_3FF,
+        "single weight stream at every reachable width, M = 5..8",
+        [(WIDE_CALL.format(m=m, ipg=SHIPPED_IPG[m]),
+          f"{WIDEN}<T, {m}, {m}, true>") for m in (6, 7, 8)]),
+}
+
 CELL_WRAPPER = """
 [[kernel]] void {name}(
     const device uint32_t* w [[buffer(0)]],
@@ -130,6 +159,14 @@ CELL_WRAPPER = """
       int(tid.x) * {na}, int(tid.y) * 8 + int(simd_gid) * 4, simd_lid);
 }}
 """
+
+
+def rev_arm_source(rev: str, patches: list[tuple[str, str]]) -> str:
+    text = "".join(preamble(stem, rev) for stem in PREAMBLES)
+    for i, (old, new) in enumerate(patches):
+        text = replace_once(text, old, new, f"{rev}#{i}")
+    return text + (f'\ntemplate [[host_name("{ENTRY}")]] [[kernel]] '
+                   f"decltype({ENTRY_CELL}) {ENTRY_CELL};\n")
 
 
 def arm_source(na_bound: int, table: dict[int, int], drops: list) -> str:
@@ -232,7 +269,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=pathlib.Path, required=True)
     ap.add_argument("--arch", nargs="+", default=[LOCAL_ARCH, RANKED_ARCH])
-    ap.add_argument("--arms", nargs="+", default=list(ARMS))
+    ap.add_argument("--arms", nargs="+",
+                    default=list(ARMS) + list(REV_ARMS))
     ap.add_argument("--widths", nargs="+", type=int, default=[2, 3, 4, 5, 6])
     ap.add_argument("--keep", type=pathlib.Path,
                     help="keep the generated arm sources here")
@@ -245,16 +283,23 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="e102-") as tmp:
         root = pathlib.Path(tmp)
         for name in args.arms:
-            bound, table, drops = ARMS[name]
             work = root / name
             work.mkdir()
-            source = arm_source(bound, table, drops)
+            if name in REV_ARMS:
+                rev, note, patches = REV_ARMS[name]
+                source = rev_arm_source(rev, patches)
+                record = {"rev": rev, "note": note,
+                          "patches": [new for _, new in patches],
+                          "source_bytes": len(source)}
+            else:
+                bound, table, drops = ARMS[name]
+                source = arm_source(bound, table, drops)
+                record = {"na_bound": bound, "table": table,
+                          "dropped_cases": [m for _, m, _ in drops],
+                          "source_bytes": len(source)}
             if args.keep:
                 args.keep.mkdir(parents=True, exist_ok=True)
                 (args.keep / f"{name}.metal").write_text(source)
-            record = {"na_bound": bound, "table": table,
-                      "dropped_cases": [m for _, m, _ in drops],
-                      "source_bytes": len(source)}
             record["air_entry_scope"] = air_census(source, [ENTRY], work)[ENTRY]
             lib = build_metallib(source, work)
             for arch in args.arch:

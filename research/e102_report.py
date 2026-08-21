@@ -65,9 +65,16 @@ def main() -> int:
               f"{rec[G17]['text_bytes']:>7}")
 
     print("\n== does the dispatcher equal the widest body it inlines? ==")
+    # Arms that inline only the shipped vec<float, NA> `_wide` family. The
+    # `_wideN` arms J and N use float[4][NA] accumulators, which this
+    # bare-body census does not instantiate, so they have no comparison cell.
     widest = {"A_shipped": 4, "B_ca9251b8": 5, "C_m5_only": 5, "D_fact2b": 6,
-              "E_dead_m9_body": 4, "F_dead_m9_case": 4, "G_prune_both_m9": 4}
+              "E_dead_m9_body": 4, "F_dead_m9_case": 4, "G_prune_both_m9": 4,
+              "H_prune_narrow": 4, "I_prune_all_dead": 4,
+              "K_ctrlA_59b321ee": 4, "L_ca9251b8_real": 5}
     for name, rec in data["arms"].items():
+        if name not in widest:
+            continue
         cell = data["cells"].get(f"e102_cell_na{widest[name]}")
         if not cell:
             continue
