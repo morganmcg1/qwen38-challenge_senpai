@@ -39,6 +39,18 @@ HOST_GATE_US = 1500.0
 
 FIELD = re.compile(r"(\w+)=([-\d.]+)")
 
+# Head bytes each arm reads per draft, from the build reports. The declared
+# head is 427,738,112 B; g128 removes 15,733,760 B of coarse traffic; arm C
+# replaces the 157,337,600 B dense coarse read with a 19,667,200 B centroid
+# pass plus a 39,334,400 B probed-row pass. Reporting achieved bandwidth beside
+# every timed stage keeps a byte model honest about the fixed cost it omits.
+HEAD_BYTES = {
+    "declared": 427_738_112,
+    "g128": 412_004_352,
+    "armc": 329_402_112,
+    "armc-damaged": 329_402_112,
+}
+
 
 def rounds(tag: str) -> list[dict]:
     out = []
@@ -128,6 +140,20 @@ def main() -> None:
     if args.base not in legs:
         raise SystemExit(f"session has no {args.base} legs")
 
+    bandwidth = {}
+    for arm, group in legs.items():
+        per_draft = [r["submit2_per_draft_us"] for rs in group for r in rs
+                     if r["clean"] and "submit2_per_draft_us" in r]
+        if not per_draft or arm not in HEAD_BYTES:
+            continue
+        med = st.median(per_draft)
+        bandwidth[arm] = {
+            "head_bytes_per_draft": HEAD_BYTES[arm],
+            "submit2_per_draft_median_us": med,
+            "clean_drafting_rounds": len(per_draft),
+            "achieved_bandwidth_gbs": HEAD_BYTES[arm] / (med * 1e-6) / 1e9,
+        }
+
     # The fixture is fixed, so an arm that proposes the same tokens must
     # reproduce the same depth sequence. A divergence is the real acceptance
     # effect and it invalidates a strict round-for-round pairing.
@@ -146,6 +172,7 @@ def main() -> None:
         "official_or_ranked_score": False,
         "depth_sequence_identical_across_arms": identical,
         "per_leg_host_stratum": stratum,
+        "achieved_bandwidth": bandwidth,
         "paired": {},
     }
 
@@ -159,6 +186,13 @@ def main() -> None:
               f"{s['dirty_rounds']:>6} {s['clean_median_host_us']:>10.0f} "
               f"{s['max_host_us']:>9.0f}   dirty med {dm}")
     print(f"\ndepth sequence identical across arms: {identical}")
+
+    print("\nachieved bandwidth of the per-draft head read (clean rounds):")
+    print(f"  {'arm':<14} {'bytes/draft':>13} {'median us':>10} {'GB/s':>8}")
+    for arm, b in sorted(bandwidth.items()):
+        print(f"  {arm:<14} {b['head_bytes_per_draft']:>13,} "
+              f"{b['submit2_per_draft_median_us']:>10.1f} "
+              f"{b['achieved_bandwidth_gbs']:>8.1f}")
 
     keys = ("round_us", "draft_build_us", "d_submit2_us",
             "submit2_per_draft_us", "build_per_draft_us", "verify_build_us")

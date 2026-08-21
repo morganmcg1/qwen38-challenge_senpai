@@ -127,6 +127,20 @@
       "accepted": 435.0
     }
   ],
+  "achieved_bandwidth": {
+    "declared": {
+      "head_bytes_per_draft": 427738112,
+      "submit2_per_draft_median_us": 2297.5,
+      "clean_drafting_rounds": 301,
+      "achieved_bandwidth_gbs": 186.1754568008705
+    },
+    "g128": {
+      "head_bytes_per_draft": 412004352,
+      "submit2_per_draft_median_us": 2298.8571428571427,
+      "clean_drafting_rounds": 223,
+      "achieved_bandwidth_gbs": 179.22138105891128
+    }
+  },
   "paired": {
     "g128": {
       "round_us": {
