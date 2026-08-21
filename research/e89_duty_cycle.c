@@ -105,7 +105,52 @@ static void run(const char *label, long idle_us, long keepwarm_iters) {
          median(mn, ROUNDS), median(mg, ROUNDS), median(mi, ROUNDS));
 }
 
-int main(void) {
+/* Core-cluster calibration: which logical CPU indices belong to which cluster,
+ * and what clock each one reaches. Runs the register-only chain continuously so
+ * the duty-cycle effect above cannot contaminate the reading. */
+#define MAP_SLICES 40
+#define MAP_ITERS 200000
+
+static void coremap(const char *label, qos_class_t qos) {
+  if (qos != QOS_CLASS_UNSPECIFIED) pthread_set_qos_class_self_np(qos, 0);
+  double ghz[64];
+  long hits[64];
+  memset(ghz, 0, sizeof ghz);
+  memset(hits, 0, sizeof hits);
+  for (int s = 0; s < MAP_SLICES; s++) {
+    struct rusage_info_v4 a, b;
+    size_t cpu = 0;
+    pthread_cpu_number_np(&cpu);
+    proc_pid_rusage(getpid(), RUSAGE_INFO_V4, (rusage_info_t *)&a);
+    uint64_t t0 = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+    sink = chain(sink + 7, MAP_ITERS);
+    uint64_t t1 = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+    proc_pid_rusage(getpid(), RUSAGE_INFO_V4, (rusage_info_t *)&b);
+    size_t cpu2 = 0;
+    pthread_cpu_number_np(&cpu2);
+    if (cpu != cpu2 || cpu >= 64) continue; /* migrated mid-slice, unattributable */
+    ghz[cpu] += (double)(b.ri_cycles - a.ri_cycles) / (double)(t1 - t0);
+    hits[cpu] += 1;
+  }
+  printf("%-16s", label);
+  for (int c = 0; c < 64; c++)
+    if (hits[c]) printf("  cpu%d n=%ld %5.3fGHz", c, hits[c], ghz[c] / (double)hits[c]);
+  printf("\n");
+}
+
+int main(int argc, char **argv) {
+  if (argc > 1 && strcmp(argv[1], "coremap") == 0) {
+    printf("perflevel0(P)=%s perflevel1(E)=%s\n", getenv("E89_P") ? getenv("E89_P") : "?",
+           getenv("E89_E") ? getenv("E89_E") : "?");
+    coremap("unspecified", QOS_CLASS_UNSPECIFIED);
+    coremap("background", QOS_CLASS_BACKGROUND);
+    coremap("utility", QOS_CLASS_UTILITY);
+    coremap("default", QOS_CLASS_DEFAULT);
+    coremap("userinitiated", QOS_CLASS_USER_INITIATED);
+    coremap("userinteractive", QOS_CLASS_USER_INTERACTIVE);
+    coremap("background2", QOS_CLASS_BACKGROUND);
+    return 0;
+  }
   chase = malloc(CHASE_BYTES);
   /* one random permutation cycle, so the chase cannot be prefetched */
   for (uint32_t i = 0; i < CHASE_SLOTS; i++) chase[i] = i;

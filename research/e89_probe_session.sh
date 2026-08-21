@@ -4,10 +4,12 @@
 #   usage: research/e89_probe_session.sh PREFIX TOKENS LEGSPEC ...
 #
 # LEGSPEC is `name=qos[/parts]`. `qos` is the value of MLX_E89_FORCE_QOS for
-# that leg, `none` to leave the thread policy exactly as the worker inherits
-# it, or `off` to also disable the probe itself (MLX_E89_PROBE=0). An `off`
-# leg is the instrument-cost control: same worker binary, no per-round probe
-# work. `parts` is a `+`-separated subset of the probe components
+# that leg. `none` sets nothing, so the session's shipped performance-cluster
+# claim runs; `unclaimed` sends MLX_E89_FORCE_QOS=off, which suppresses that
+# claim and restores the pre-fix scheduling behaviour; `off` additionally
+# disables the probe itself (MLX_E89_PROBE=0) and is the instrument-cost
+# control: same worker binary, no per-round probe work.
+# `parts` is a `+`-separated subset of the probe components
 # `marks probe rusage thread mem`, which becomes MLX_E89_PARTS; omit it for
 # every component. The pseudo-part `synchead` is not a probe component: it
 # passes --sync-head to the leg, which drains the head chain every round. The
@@ -74,6 +76,7 @@ for i in "${!order[@]}"; do
   case "${qos}" in
     off) probe=0 ;;
     none) ;;
+    unclaimed) export MLX_E89_FORCE_QOS=off ;;
     *) export MLX_E89_FORCE_QOS="${qos}" ;;
   esac
   [[ -n "${parts}" ]] && export MLX_E89_PARTS="${parts//+/,}"
