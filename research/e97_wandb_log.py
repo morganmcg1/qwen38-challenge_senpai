@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Publish the E97 per-row verify cost attribution to W&B.
 
-    usage: research/e97_wandb_log.py [--out DIR]
+    usage: research/e97_wandb_log.py [--only RUN]
 
-Four runs, one per rung, plus the metadata census:
+Three rung runs, the metadata census, and the round reconstruction:
 
   `e97-peak`    rung 0: the arithmetic ceiling this GPU actually reached,
                 measured through the same MLX build the scored path uses.
@@ -15,6 +15,9 @@ Four runs, one per rung, plus the metadata census:
                 K-independent term, plus the matched NA contrast.
   `e97-census`  the lossless (scale, bias) cardinality census of the
                 transformed checkpoint.
+  `e97-recon`   advisor feedback f2 reading 3: the rung-2 fit extrapolated over
+                the quantized-projection geometry of one round and compared
+                with the independently fitted round-level per-row marginal.
 
 Every leg is a within-session relative measurement with the cool gate off, so
 `timing_valid`, `cool_gate_passed_real_gate` and `gate_qualified_for_timing`
@@ -430,22 +433,94 @@ def log_census(directory: pathlib.Path) -> dict:
     return payload
 
 
+def log_reconstruction(directory: pathlib.Path, ceilings: dict) -> dict:
+    """Advisor f2 reading 3: does the marginal verify row overlap other work?"""
+    payload = json.loads((directory / "reconstruction.json").read_text())
+
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        group=GROUP,
+        job_type="round-reconstruction",
+        name="e97-recon",
+        config={
+            "experiment": GROUP,
+            "rung": "f2-reading3",
+            "question": "does the marginal verify row overlap other round work",
+            "cpu_only": True,
+            "round_level_c_us_per_row": payload["round_level_c_us_per_row"],
+            "round_level_source": "E95 rung 2 width model, confirmed by E92",
+            **payload["calibration"],
+            **gate_flags(),
+        },
+        reinit=True,
+    )
+
+    table = wandb.Table(
+        columns=["class", "k", "n", "dispatches", "us_per_row_each",
+                 "us_per_row_launch", "us_per_row_width", "us_per_row_reduce",
+                 "us_per_row_total", "extrapolated_below_calibration"]
+    )
+    for entry in payload["classes"]:
+        table.add_data(*(entry[column] for column in table.columns))
+
+    peak = ceilings["affine4"]["tflop_per_s"]
+    metrics = {
+        "recon/classes": table,
+        "recon/isolated_sum_us_per_row": payload["isolated_sum_us_per_row"],
+        "recon/isolated_reduce_us_per_row": payload["isolated_reduce_us_per_row"],
+        "recon/isolated_width_us_per_row": payload["isolated_width_us_per_row"],
+        "recon/isolated_launch_us_per_row": payload["isolated_launch_us_per_row"],
+        "recon/round_level_c_us_per_row": payload["round_level_c_us_per_row"],
+        "recon/isolated_over_round_level": payload["isolated_over_round_level"],
+        "recon/trunk_macs_per_row": payload["trunk_macs_per_row"],
+        "recon/round_level_tflops": payload["implied_round_level_tflops"],
+        "recon/isolated_tflops": payload["implied_isolated_tflops"],
+        "recon/round_level_fraction_of_affine4_peak":
+            payload["implied_round_level_tflops"] / peak,
+        "recon/marginal_row_overlaps_other_work":
+            payload["isolated_over_round_level"] > 1.0,
+    }
+    run.log(metrics)
+    run.summary.update({k: v for k, v in metrics.items()
+                        if not isinstance(v, wandb.Table)})
+    run.finish()
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--peak-dir", default=str(OUT / "e97-peak-r0"))
     parser.add_argument("--row-dir", default=str(OUT / "e97-row-cost-r1"))
     parser.add_argument("--shape-dir", default=str(OUT / "e97-shape-r2"))
     parser.add_argument("--census-dir", default=str(OUT / "e97-census"))
+    parser.add_argument("--recon-dir", default=str(OUT / "e97-reconstruction"))
+    parser.add_argument("--only", choices=["peak", "row", "shape", "census",
+                                           "recon"],
+                        help="publish one run instead of the whole group")
     args = parser.parse_args()
 
-    ceilings = log_peak(pathlib.Path(args.peak_dir))
-    log_row(pathlib.Path(args.row_dir), ceilings)
-    log_shape(pathlib.Path(args.shape_dir), ceilings)
+    peak = json.loads((pathlib.Path(args.peak_dir) / "peak.json").read_text())
+    ceilings = rowcost.peak_ceilings(peak)
+
+    if args.only in (None, "peak"):
+        log_peak(pathlib.Path(args.peak_dir))
+    if args.only in (None, "row"):
+        log_row(pathlib.Path(args.row_dir), ceilings)
+    if args.only in (None, "shape"):
+        log_shape(pathlib.Path(args.shape_dir), ceilings)
     census_dir = pathlib.Path(args.census_dir)
-    if (census_dir / "census.json").exists():
-        log_census(census_dir)
-    else:
-        print(f"no census at {census_dir}, skipped", file=sys.stderr)
+    if args.only in (None, "census"):
+        if (census_dir / "census.json").exists():
+            log_census(census_dir)
+        else:
+            print(f"no census at {census_dir}, skipped", file=sys.stderr)
+    recon_dir = pathlib.Path(args.recon_dir)
+    if args.only in (None, "recon"):
+        if (recon_dir / "reconstruction.json").exists():
+            log_reconstruction(recon_dir, ceilings)
+        else:
+            print(f"no reconstruction at {recon_dir}, skipped", file=sys.stderr)
     return 0
 
 
