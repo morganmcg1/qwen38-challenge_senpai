@@ -34,7 +34,10 @@ shift || true
 if (($#)); then
   declare -a order=("$@")
 else
-  declare -a order=(declared g128 declared g128 declared g128 declared g128 declared)
+  echo "e87_timing_session.sh: name the legs explicitly. The old default" \
+       "A/B order needed the removed MLX_E87_DERIVED_INDEX gate, so no arm" \
+       "contrast is available from one build any more." >&2
+  exit 2
 fi
 
 dir_for() {
@@ -48,13 +51,19 @@ dir_for() {
   esac
 }
 
-# `derived*` is option B: the DECLARED head plus the cluster index the runtime
-# builds from it during the untimed warm. Every other arm pins the gate off so
-# a shipped index or the dense readout is what actually runs.
-index_for() {
+# The shipped source builds the derived index unconditionally, so there is no
+# longer any way to select the dense 98,336-row readout from the environment.
+# Reject the arms that used to mean "gate off" instead of timing arm C twice
+# and reporting the pair as a base-versus-arm contrast.
+require_derived_arm() {
   case "$1" in
-    derived|derived25) echo "1" ;;
-    *) echo "0" ;;
+    derived|derived25) return 0 ;;
+    *)
+      echo "e87_timing_session.sh: arm '$1' needs the removed" \
+           "MLX_E87_DERIVED_INDEX gate; the shipped path always derives the" \
+           "index, so this leg would measure arm C under another label" >&2
+      exit 2
+      ;;
   esac
 }
 
@@ -78,9 +87,9 @@ for i in "${!order[@]}"; do
     ((j <= i)) || break
     [[ "${order[$j]}" == "${arm}" ]] && rep=$((rep + 1))
   done
+  require_derived_arm "${arm}"
   tag="${prefix}-${arm}-${rep}"
   mkdir -p "research/out/${tag}"
-  MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   E79_HEAD_DIR="$(dir_for "${arm}")" \
     research/e79_trace_leg.sh "${tag}" "${tokens}" --sync-head
   status=$?
@@ -88,7 +97,7 @@ for i in "${!order[@]}"; do
     echo "e87_experiment=e87-coarse-draft-shortlist-traffic"
     echo "e87_arm=${arm}"
     echo "e87_leg_index=${i}"
-    echo "e87_derived_index=$(index_for "${arm}")"
+    echo "e87_derived_index=unconditional"
     echo "e87_probe_fraction=${probe_fraction}"
   } >> "research/out/${tag}/meta.txt"
   echo "leg ${tag} exit=${status}"

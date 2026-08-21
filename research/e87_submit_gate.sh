@@ -37,13 +37,18 @@ dir_for() {
   esac
 }
 
-# `derived*` is option B: the DECLARED head plus the cluster index the runtime
-# builds from it during the untimed warm. Every other arm pins the gate off so
-# a shipped index or the dense readout is what actually runs.
-index_for() {
+# The shipped source builds the derived index unconditionally, so there is no
+# longer any way to select the dense 98,336-row readout from the environment.
+# Reject the arms that used to mean "gate off" instead of silently running arm
+# C under a `declared` label.
+require_derived_arm() {
   case "$1" in
-    derived|derived25) echo "1" ;;
-    *) echo "0" ;;
+    derived|derived25) return 0 ;;
+    *)
+      echo "e87_submit_gate.sh: arm '$1' needs the removed MLX_E87_DERIVED_INDEX" \
+           "gate; the shipped path always derives the index" >&2
+      exit 2
+      ;;
   esac
 }
 
@@ -69,6 +74,7 @@ gpu_temp() {
 }
 
 for arm in "${arms[@]}"; do
+  require_derived_arm "${arm}"
   head_dir="$(dir_for "${arm}")"
   if [[ ! -s "${head_dir}/config.json" ]]; then
     echo "e87_submit_gate.sh: no head at ${head_dir}" >&2
@@ -101,7 +107,7 @@ for arm in "${arms[@]}"; do
     echo "memory_bytes=$(sysctl -n hw.memsize)"
     echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
     echo "head_dir=${head_dir}"
-    echo "e87_derived_index=$(index_for "${arm}")"
+    echo "e87_derived_index=unconditional"
     echo "e87_probe_fraction=${probe_fraction}"
     echo "worker_sha256=$(
       shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
@@ -110,7 +116,6 @@ for arm in "${arms[@]}"; do
     echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"
 
-  MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
   MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}" \
   MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}" \
   MLXFAST_SCORE_PATH="${PWD}/${out}/score.json" \

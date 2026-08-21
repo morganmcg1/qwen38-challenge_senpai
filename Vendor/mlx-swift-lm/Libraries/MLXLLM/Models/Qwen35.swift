@@ -3343,13 +3343,6 @@ private let qwen35Top32Enabled: Bool =
 private let qwen35GatherQMMRerankEnabled: Bool =
     ProcessInfo.processInfo.environment["MLX_E85_GATHER_QMM"] != "0"
 
-/// E87 arm gate. When the declared head ships no `draft_cluster.*` index, the
-/// runtime derives an equivalent one from the head it already loaded.
-/// `MLX_E87_DERIVED_INDEX=0` restores the dense 98,336-row coarse readout.
-/// The `MLX_` prefix is load-bearing for the same reason as the E85 gate.
-private let qwen35DerivedClusterEnabled: Bool =
-    ProcessInfo.processInfo.environment["MLX_E87_DERIVED_INDEX"] != "0"
-
 /// Fraction of leaves probed per draft step. 0.25 removes 23.0 % of the
 /// declared head's per-draft bytes at a worst-domain argmax miss rate of
 /// 2.3e-4, 13x inside the accepted gate.
@@ -4190,11 +4183,7 @@ extension Qwen35TextModel: MTPCapable {
     }
 
     private func draftTokenIDWithDeclaredRerank(_ x: MLXArray) -> MLXArray? {
-        // Before the shape guards, so a head that fails one of them still leaves
-        // a record of why no derived index exists.
-        if qwen35DerivedClusterEnabled, _draftClusterShape == nil,
-           !_derivedClusterAttempted
-        {
+        if _draftClusterShape == nil, !_derivedClusterAttempted {
             _derivedClusterAttempted = true
             buildDerivedClusterIndex()
         }
