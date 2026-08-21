@@ -122,11 +122,45 @@ def main() -> None:
     print(f"dense + top32      {dense_pipe_t * 1e6:8.1f} us   "
           f"(select costs {(dense_pipe_t - dense_t) * 1e6:.1f} us)")
 
+    # Arm G is the same kernel over the same rows with half the scale and bias
+    # traffic, so measure it rather than assuming the byte model holds.
+    g = H.requantize(H.dequantized(coarse), 128, 2)
+    gw, gs, gb = g["weight"], g["scales"], g["biases"]
+    mx.eval(gw, gs, gb)
+
+    def g128_pipe():
+        sc = mx.quantized_matmul(x, gw, gs, gb, transpose=True,
+                                 group_size=128, bits=2)
+        return mx.argpartition(-sc, 32, axis=-1)[:, :32]
+
+    g128_t = timed(
+        lambda: mx.quantized_matmul(x, gw, gs, gb, transpose=True,
+                                    group_size=128, bits=2),
+        args.iters)
+    g128_pipe_t = timed(g128_pipe, args.iters)
+    g128_bytes = H.PADDED_COUNT * (320 * 4 + 40 * 2 * 2)
+    stage_pct = 36.78 * 0.0815
+    print(f"armG g128          {g128_t * 1e6:8.1f} us   "
+          f"{g128_bytes / g128_t / 1e9:7.1f} GB/s   "
+          f"bytes {g128_bytes / dense_bytes:6.1%}   "
+          f"time {g128_pipe_t / dense_pipe_t:6.1%}   "
+          f"byte-model +{stage_pct * (1 - g128_bytes / dense_bytes):.2f}%   "
+          f"measured +{stage_pct * (1 - g128_pipe_t / dense_pipe_t):.2f}%")
+    del g, gw, gs, gb
+
     results = {
         "dense": {"rows": H.PADDED_COUNT, "seconds": dense_t,
                   "bytes": dense_bytes,
                   "gbps": dense_bytes / dense_t / 1e9},
         "dense_pipeline_seconds": dense_pipe_t,
+        "armG_g128": {
+            "seconds": g128_t, "pipeline_seconds": g128_pipe_t,
+            "bytes": g128_bytes,
+            "byte_fraction_of_dense": g128_bytes / dense_bytes,
+            "time_fraction_of_dense": g128_pipe_t / dense_pipe_t,
+            "predicted_pct_byte_model": stage_pct * (1 - g128_bytes / dense_bytes),
+            "predicted_pct_measured_time": stage_pct * (1 - g128_pipe_t / dense_pipe_t),
+        },
         "cells": [],
     }
 
@@ -197,9 +231,6 @@ def main() -> None:
             total_bytes = cent_bytes + gather_bytes
             byte_frac = total_bytes / dense_bytes
             time_frac = total_t / dense_pipe_t
-            # The coarse stage is 36.78 % of the declared head, and the price
-            # list turns 1 % of head bytes into 0.0815 % of candidate time.
-            stage_pct = 36.78 * 0.0815
             print(f"    rpc={rpc:<3} p={p:<6g} C={c:<6} "
                   f"gather {gather_t * 1e6:7.1f} us "
                   f"({gather_bytes / gather_t / 1e9:6.1f} GB/s)  "
