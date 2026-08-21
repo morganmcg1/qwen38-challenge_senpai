@@ -1,15 +1,50 @@
 # SENPAI Research State
 
-- **2026-08-21 05:40 UTC.** Campaign active, no round limit.
+- **2026-08-21 06:10 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
-- Campaign base: `b81a43d47f661cb4279d013ad7395c85b0fcb00a` (merge of PR #93).
+- Campaign base: `1d10e15105870d4a9f5db7fd9218fa728b2265f7` (merge of PR #95).
+  Its scored surface is byte-identical to `b81a43d4`; E93 changed no scored byte.
 - `BASE_SHA` for every submit call: `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
   Verified an ancestor of the campaign base.
 - Organizer `upstream/main`: `b40c28e9`, which is submission `8819b108`.
-- **In flight:** submission `87e6421b`, the campaign base `b81a43d4`, sent by
-  askeladd at 04:14 UTC, validating. It carries E85, the `lhsIndices` follow-up,
-  E88, E90 and E91 to the ranked host for the first time.
+- **Slot open.** `87e6421b` resolved at published `3.30652180` and was rejected.
+  Thorfinn is preparing **E87 arm C** for submission now: predicted `+1.46 %` on
+  the published score statistic, which is the only mechanism we hold that a
+  single ranked run can prove.
+
+---
+
+## 0. THE MEASUREMENT FLOOR. Read this before pricing anything.
+
+Measured on 18 byte-identical same-mode replicate pairs from the 669-row board
+by `research/board_replicate_floor.py`, and reproduced independently by alphonse:
+
+| statistic | median abs pair gap | max | pair sd | per-run sd |
+|---|---:|---:|---:|---:|
+| **published** `(raw_beagle + raw_essays)/2` | **0.1907 %** | 0.6833 % | 0.277 % | **0.196 %** |
+| **serial-free** (board-mean serial substituted) | **0.1194 %** | 0.3449 % | 0.160 % | **0.113 %** |
+
+**One ranked pair resolves nothing below `0.55 %` published or `0.32 %`
+serial-free.** Always price on the serial-free statistic: it is `1.73x` quieter
+for free, because it divides out the runner's serial lottery (sd `0.166 %`).
+
+Consequences that are now campaign policy:
+
+- A `7/7` same-sign per-prompt result is the signature of a **run-level common
+  shift**, not of mechanism strength. Tight per-prompt spread does not rescue it.
+- Sub-floor mechanisms are priced from the **local device model**, never from
+  the board, and they **ride** in a submission whose headline is above the floor.
+- The promoted crown is a max-statistic over 669 noisy draws and therefore sits
+  roughly `0.4 %` to `0.6 %` above the best true mechanism. Beating it needs a
+  mechanism margin, not a marginal one.
+- Any promoted lever whose published delta is below `+0.0106` is below the
+  floor. Stop citing those as evidence that a lever works.
+
+Retired by this: the "same-mode residual sd 0.1025 %" constant, the ticket
+model built on it, and the single-pair prices for E84 (`-0.109 %`), E85
+(`-0.199 %` and `+0.022 %`) and the `8819b108` Q-row shrink (`+0.035 %`). See
+ledger 240.
 
 ---
 
@@ -86,27 +121,40 @@ excellent locally and scores zero.
 
 ## 1b. Where we stand on the board
 
-### Serial-free, 661 scored rows
+### Serial-free, 669 scored rows
 
-| rank | id | serial-free | published | status |
-|---:|---|---:|---:|---|
-| 1 | `8819b108` | 3.31672423 | 3.32794961 | accepted, ox-alpha |
-| 2 | `214d92aa` | 3.31576204 | 3.32529025 | accepted, GPT 5.6 Sol |
-| **3** | **`83f0b282` ours** | **3.31554109** | 3.31378448 | rejected |
-| 4 | `1a4218f5` | 3.31502504 | 3.31348359 | rejected |
-| 11 | `8e83c6b3` | 3.31192494 | 3.31894061 | accepted |
+| rank | id | serial-free | published | status | created |
+|---:|---|---:|---:|---|---|
+| 1 | `08760612` | 3.32014868 | 3.31221976 | rejected, Claude Fable 5 | 03:50 |
+| 2 | `70aa42aa` | 3.32000680 | 3.32278736 | rejected, ox-alpha | 03:54 |
+| **3** | **`8819b108`** | **3.31671805** | **3.32794961** | **accepted, ox-alpha, CROWN** | 02:31 |
+| 4 | `32b51cca` | 3.31648433 | 3.31580600 | rejected | 04:25 |
+| 5 | `214d92aa` | 3.31575587 | 3.32529025 | accepted, GPT 5.6 Sol | 01:54 |
+| **6** | **`83f0b282` ours** | **3.31553492** | 3.31378448 | rejected | 00:43 |
+| 7 | `1a4218f5` | 3.31501887 | 3.31348359 | rejected | 00:32 |
+| **8** | **`87e6421b` ours** | **3.31484490** | **3.30652180** | **rejected** | 04:14 |
+| 16 | `8e83c6b3` | 3.31191878 | 3.31894061 | accepted | 08-20 17:41 |
 
-We fell from serial-free rank 1 to rank 3 of 661 in one night. The gap to the
-crown is 0.0357 %, and section 1 shows that gap is the Q half of the island
-dead-work mechanism.
+We are rank 6 and 8 on mechanism, down from rank 1 last night. **Three rivals
+now beat the crown on the serial-free statistic**, so the mechanism race is
+tighter than the published board shows. Read every gap in this table against the
+`0.32 %` serial-free floor in section 0: ranks 1 through 8 span `0.16 %` and are
+therefore **statistically indistinguishable from each other**. Only a mechanism
+worth more than the floor moves us, and E87 arm C at `+1.46 %` is that mechanism.
 
 ### What the two crown moves were
 
 `214d92aa` is `0dd455f0` plus a Metal kernel that reads the affine-4 embedding
-rows inside the dual-RMSNorm-concat kernel. **That is our own E85 arm (b).** The
-clean pair `0dd455f0 -> 214d92aa` prices it at mean7 −0.149 % and at
-**score statistic −0.199 %**, bit-exact, 7 of 7. Advisor error 30: I had priced
-it at −0.08 %. It is in `87e6421b`, now validating.
+rows inside the dual-RMSNorm-concat kernel. **That is our own E85 arm (b).**
+
+**Its ranked value is not measurable and is about `0.02 %`.** The pair
+`0dd455f0 -> 214d92aa` gave `-0.199 %` and our own pair `83f0b282 -> 87e6421b`
+gave `+0.022 %`. Both are below the `0.32 %` serial-free floor, they differ by
+`0.8` pair sigma, and neither is evidence. The correct price comes from E85's own
+device measurement: head GPU `2292.849 -> 2285.283` us per draft is `-0.33 %` of
+the head pass, and at the `6.3 %` ranked head share that is `-0.021 %` of round
+time. Advisor errors 30 and 35 are both instances of pricing this mechanism from
+the board instead of from the device.
 
 `8819b108` is `8e83c6b3` plus 264 lines in one file: island dead-work
 elimination in the proposal-head projections, applied to K/V **and Q**. Our E84

@@ -27262,3 +27262,220 @@ re-enters at position 3.
 - Alphonse recorded three instrument errors against himself in E89: two n=1
   over-reads and an iteration-bounded duty sweep that hid the transition. All
   three were reported by him before the advisor saw them.
+
+## 240. The single-pair resolution floor. `87e6421b` resolved. Advisor errors 35 and 36.
+
+Advisor entry, 2026-08-21 06:05 UTC, at advisor head `1d10e151`.
+
+This entry retires a measurement rule that has governed campaign pricing since
+ledger 190 and replaces it with a directly measured one. It also closes the
+`87e6421b` post-mortem, which turns out to need no mechanism at all.
+
+### 240.1 What prompted it
+
+`87e6421b` resolved at published `3.30652180` and was rejected. Its serial-free
+statistic is `3.31484490`, rank 8 of 669. It was submitted from `b81a43d4`, the
+merge of PR #93, and the only functional scored change against `83f0b282`
+(serial-free `3.31553492`) is E85 plus the `lhsIndices` gather.
+
+Per-prompt, base `83f0b282` against candidate `87e6421b`:
+
+```
+prompt        base s/tok     cand s/tok    delta %   role
+plutarch      0.03027078     0.03026788    -0.0096
+drama         0.01969605     0.01970149    +0.0276
+travel        0.01732857     0.01732728    -0.0074
+beagle        0.01195019     0.01195633    +0.0513   SETS SCORE
+essays        0.01100686     0.01100606    -0.0073   SETS SCORE
+republic      0.01090665     0.01090353    -0.0286
+medicine      0.01090067     0.01090391    +0.0297
+botany        0.01082407     0.01082146    -0.0241
+mean7            = +0.0059 %  sd 0.0304  faster 4/7
+score statistic  = +0.0220 %  (mean over beagle and essays)
+```
+
+The campaign had priced E85 at `-0.199 %` on the score statistic from the clean
+competitor pair `0dd455f0` to `214d92aa`. The two numbers appeared to be in
+direct contradiction, and the advisor's leading hypothesis was that the merged
+E90 research instrument was still live on the scored surface and cancelling the
+gain.
+
+### 240.2 The E90 instrument is inert. That hypothesis is refuted.
+
+`Sources/MLXFastModel/E90GPUIntervalLedger.swift:26-32`:
+
+```swift
+public static let enabled = environment["MLX_E90_GPU_INTERVALS"] == "1"
+
+public static func installIfRequested() {
+    guard enabled else { return }
+    E90IntervalLedger.shared.install()
+}
+```
+
+The `MTLCommandBuffer.commit` swizzle is installed only under that gate. A
+ranked run does not set `MLX_E90_GPU_INTERVALS`, so nothing is swizzled, no
+completion handler is attached, and no sink is opened. The single call site in
+`RuntimeStartupMemoryPolicy.swift:86` runs once at startup and returns
+immediately.
+
+The rest of the `Qwen36MTPBlockSession.swift` delta between the two submitted
+trees is guarded by `Self.traceRounds`, with one exception: the loop at the head
+chain became `for step in 1 ..< draftCount` with an added
+`if Self.headChainSubmits(step:draftCount:)` test. On the shipped path
+`headSubmitEvery == 0` and `headSubmitMid == false`, so the inlined test reads
+two static booleans and returns false, at most seven times per round inside a
+165 ms round.
+
+Nothing on the scored surface of `87e6421b` costs measurable time. The
+post-mortem needed a different explanation.
+
+### 240.3 The real explanation, measured on 18 byte-identical replicate pairs
+
+Instrument: `_advisor_scratch/floor.py`, over the 669 scored board rows that
+carry `officialMetrics.per_prompt`, joined to `git ls-tree <submission branch>
+Sources Vendor mtp-head.manifest.json` for 890 fetched submission branches. Two
+runs are a replicate pair when all three subtree object ids agree and all eight
+`effective_mean_draft_len` values agree to 1e-3. That yields 640 usable rows and
+**39 replicate pairs**, which split at the empty band alphonse found in the mean
+drafting-leg gap: 18 pairs below 0.562 %, 21 pairs above 1.172 %, nothing
+between.
+
+For the 18 same-mode pairs, the pair-to-pair difference of the score statistic:
+
+| statistic | median abs | p75 | max | pair sd | implied per-run sd |
+|---|---:|---:|---:|---:|---:|
+| **published** `(raw_beagle + raw_essays) / 2` | **0.1907 %** | 0.3496 % | 0.6833 % | 0.277 % | **0.196 %** |
+| **serial-free**, board-mean serial substituted | **0.1194 %** | — | 0.3449 % | 0.160 % | **0.113 %** |
+
+Alphonse reached `0.191 %` median independently on his own instrument over the
+same board. Two implementations, one number.
+
+The decomposition closes exactly. The published statistic carries the runner's
+serial lottery, whose sd across 669 rows is `0.166 %`. Removing it leaves
+`sqrt(0.196^2 - 0.166^2) = 0.104 %`, against the `0.113 %` measured directly on
+the serial-free statistic. The residual is the candidate's own within-mode
+variation.
+
+### 240.4 ADVISOR ERROR 36: the recorded same-mode residual was wrong by 1.9x
+
+The campaign has carried "same-tree same-mode residual sd 0.1025 %" since the
+ticket model was written. The measured value on the published score statistic is
+`0.196 %`. Every downstream number computed from `0.1025 %` is retired: the
+required draw of `+0.1247 %`, the predictive sd of `0.2203 %`, and the per-ticket
+`19.1 %` probability of beating the crown.
+
+### 240.5 The detection floor, and what it invalidates
+
+One ranked pair has a difference sd of `0.277 %` on the published statistic and
+`0.160 %` on the serial-free statistic. A two-sigma detection therefore needs:
+
+```
+published    >= 0.55 %
+serial-free  >= 0.32 %
+```
+
+Applying that to every single-pair mechanism price the campaign has recorded:
+
+| attribution | single-pair value | verdict |
+|---|---:|---|
+| E85 embed fusion, `0dd455f0` to `214d92aa` | -0.199 % | **below floor, uninformative** |
+| E85 + `lhsIndices`, `83f0b282` to `87e6421b` | +0.022 % | **below floor, uninformative** |
+| E84 dead-work elimination | -0.109 % | **below floor, uninformative** |
+| `8819b108` island Q-row shrink | +0.035 % | **below floor, uninformative** |
+| E87 arm C, predicted | **+1.46 %** | 4.6 sigma serial-free, decisive |
+
+The `-0.199 %` and the `+0.022 %` differ by `0.22 %`, which is `0.8` pair sigma.
+**There is no contradiction between them and there never was one.** Both are
+draws from the same distribution around a small true effect.
+
+The `7/7` same-sign per-prompt pattern that made the `0dd455f0` to `214d92aa`
+pair look convincing is not evidence of mechanism strength. A run-level common
+shift produces exactly that pattern, with a tight per-prompt spread, because it
+moves every prompt together. Within-pair per-prompt spread measures the
+idiosyncratic term only; it says nothing about the run-level term that dominates.
+
+### 240.6 ADVISOR ERROR 35, upheld and reframed
+
+The advisor predicted `+0.11 %` for E85 plus `lhsIndices` on the ranked host.
+Measured `+0.0220 %`, sign reversed, and inside noise.
+
+The prediction was wrong because it used the wrong instrument. E85's own local
+device measurement was available the whole time: head GPU cost fell from
+`2292.849` to `2285.283` us per draft, which is `-0.33 %` of the head pass. At
+the ranked head share of `6.3 %` that is `-0.021 %` of round time. That is the
+correct prediction, it is two significant figures from the observed value, and
+it was derivable before the submission was sent.
+
+**Rule.** For any mechanism below the `0.32 %` serial-free floor, the board
+cannot price it and must not be asked to. Price it from the local device model:
+askeladd's head-share form for head-path work,
+
+```
+ranked share saved = (removed us per head call * head calls per round)
+                     / (head us per round) * 6.3 %
+head us per round  = 2560 + 2226.5 * (drafts - 1)
+drafts             = mean verify width - 1
+```
+
+and the analogous verify-share form at `90.8 %` for verify-path work. Then
+**bundle** sub-floor mechanisms into a submission whose headline mechanism is
+above the floor. Never spend a submission slot expecting to observe a sub-floor
+change.
+
+### 240.7 The crown is an upward-biased estimate of the best mechanism
+
+With `0.196 %` of per-run noise and 669 scored rows, the maximum published score
+on the board is a max-statistic, not a mechanism estimate. The promoted crown
+therefore sits above the best true mechanism by roughly two to three run sigma,
+which is `0.4 %` to `0.6 %` of score.
+
+Two consequences.
+
+1. To take the crown we must beat the best mechanism **plus** a lucky draw of
+   that size. E87 arm C at `+1.46 %` over our own tree clears it with margin.
+2. Most of the promoted lever ledger is noise. Any promotion whose published
+   delta is below `+0.0106` is below the `0.32 %` serial-free floor at a score
+   near `3.32`. That covers the majority of the recorded schedule, memory and
+   warmup entries. The large head and kernel entries, `+0.281`, `+0.297`,
+   `+0.191`, `+0.134`, remain real. **Stop citing sub-`0.01` promoted deltas as
+   evidence that a lever works.**
+
+### 240.8 Policy changes taking effect now
+
+- **Price on the serial-free statistic, not the published score.** It is
+  `1.73x` quieter for free, using only the 669-row board mean serial per prompt.
+  `research/board_per_prompt.py pair` already computes it.
+- **A single ranked pair resolves nothing below `0.32 %` serial-free.** Record
+  such results as "consistent with the device model", never as a measured price.
+- **Sub-floor mechanisms ride, they do not fly.** They are bundled into the next
+  above-floor submission and their value is carried from the device model.
+- **The ticket model is retired in its old form.** Its noise input was wrong by
+  `1.9x`. It is not being refitted, because arm C makes the lottery question
+  moot for the next submission.
+
+### 240.9 What this does not change
+
+The cross-mode penalty is unaffected: 21 cross-mode pairs at a median `1.29 %`
+on the published statistic, and the empty band between the classes is as sharp
+as before. Alphonse's E89 target is still worth about `1.17 %` at the frontier
+and is still the largest single quantity we have identified. The floor result
+makes that work more valuable, not less, because the same host state is what
+produces the within-mode residual as well: the same-mode pairs' score gap tracks
+their drafting-leg gap, from `0.033 %` at a `0.057 %` gap to `0.683 %` at a
+`0.318 %` gap. The mode is the coarse bimodality of a graded stuck-round
+prevalence, not a two-valued switch.
+
+### 240.10 Open items carried
+
+- The `derived15` follow-up. Thorfinn measured it at leg-total `-1.952 %`
+  against `derived25`'s `-1.631 %`, a `+0.23 pp` published-score difference,
+  against a `3.3x` worse worst-domain shortlist miss rate. It ships after arm C,
+  not with it.
+- Arm G kernel leftovers were found on thorfinn's branch: the
+  `qmv_fast_singlerow_affine2<T, group_size>` template generalisation and a
+  dispatch gate widened to admit `group_size == 128`. Value-for-value identical
+  at g64, so it is dead code, and arm G is a measured dead end. Ordered removed
+  before submission.
+- E93 changed no scored byte. `git ls-tree` at `1d10e151` and at `b81a43d4`
+  return identical `Sources`, `Vendor` and `mtp-head.manifest.json` ids.
