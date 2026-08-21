@@ -78,9 +78,11 @@ for i in "${!order[@]}"; do
   esac
   [[ -n "${parts}" ]] && export MLX_E89_PARTS="${parts//+/,}"
   export MLX_E89_PROBE="${probe}"
-  declare -a legflags=()
-  ((sync)) && legflags+=(--sync-head)
-  research/e79_trace_leg.sh "${tags[$i]}" "${tokens}" "${legflags[@]}"
+  if ((sync)); then
+    research/e79_trace_leg.sh "${tags[$i]}" "${tokens}" --sync-head
+  else
+    research/e79_trace_leg.sh "${tags[$i]}" "${tokens}"
+  fi
   status=$?
   {
     echo "e89_force_qos=${qos}"
