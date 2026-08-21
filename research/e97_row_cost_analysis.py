@@ -80,8 +80,12 @@ def analyse(payload: dict) -> dict:
     fits: dict[str, dict] = {}
     for outputs in shapes:
         for kernel in kernels:
+            # M = 1 is excluded from the vector regime in BOTH arms. The bf16
+            # arm leaves gemv for the steel GEMM at M = 2 and the affine-4 arm
+            # has no `ntg.x == 1` case in the WIDE switch, so a fit that spans
+            # M = 1 straddles a kernel change and its slope is meaningless.
             for regime, keep in (
-                ("vector", lambda m: m < VECTOR_LIMIT),
+                ("vector2_9", lambda m: 2 <= m < VECTOR_LIMIT),
                 ("matrix", lambda m: m >= VECTOR_LIMIT),
             ):
                 selected = [
@@ -125,7 +129,7 @@ def analyse(payload: dict) -> dict:
 
     ratios = {}
     for outputs in shapes:
-        for regime in ("vector", "matrix"):
+        for regime in ("vector2_9", "matrix"):
             quantized = fits.get(f"affine4/{outputs}/{regime}")
             dense = fits.get(f"bf16/{outputs}/{regime}")
             if not quantized or not dense:
@@ -198,7 +202,7 @@ def analyse(payload: dict) -> dict:
     regime_step = {}
     for outputs in shapes:
         for kernel in kernels:
-            vector = fits.get(f"{kernel}/{outputs}/vector")
+            vector = fits.get(f"{kernel}/{outputs}/vector2_9")
             matrix = fits.get(f"{kernel}/{outputs}/matrix")
             if not vector or not matrix:
                 continue
@@ -243,6 +247,50 @@ def analyse(payload: dict) -> dict:
                     "blocks": len(values),
                 }
 
+    # Model-free rung-3 evidence. A band fit averages over the template changes
+    # inside the band, so the step at a group boundary is only visible width by
+    # width. Each increment is also priced two ways: as arithmetic, and as a
+    # fraction of the single-group weight read measured at M = 1.
+    increments: dict[str, dict] = {}
+    for outputs in shapes:
+        for kernel in kernels:
+            means = {
+                w["m"]: w["mean_us"]
+                for key, w in per_width.items()
+                if w["kernel"] == kernel and w["outputs"] == outputs
+            }
+            base = means.get(1)
+            for width in sorted(means):
+                if width - 1 not in means:
+                    continue
+                step = means[width] - means[width - 1]
+                record = {
+                    "kernel": kernel,
+                    "outputs": outputs,
+                    "from_m": width - 1,
+                    "to_m": width,
+                    "step_us": step,
+                    "crosses_group": groups(width) != groups(width - 1)
+                    if width < VECTOR_LIMIT
+                    else None,
+                    "ipg_from": inputs_per_group(width - 1)
+                    if width - 1 < VECTOR_LIMIT
+                    else None,
+                    "ipg_to": inputs_per_group(width)
+                    if width < VECTOR_LIMIT
+                    else None,
+                    "tflop_per_s_if_arithmetic": flops_per_row(outputs)
+                    / (step * 1e-6)
+                    / 1e12
+                    if step > 0
+                    else float("nan"),
+                }
+                if base:
+                    record["fraction_of_m1_weight_read"] = step / (
+                        base - overhead
+                    )
+                increments[f"{kernel}/{outputs}/{width - 1}to{width}"] = record
+
     nulls = {}
     for outputs in shapes:
         opened = next(
@@ -279,6 +327,181 @@ def analyse(payload: dict) -> dict:
         "regime_step": regime_step,
         "session_null": nulls,
         "per_width_mean_us": per_width,
+        "increments": increments,
+    }
+
+
+def peak_ceilings(peak: dict) -> dict:
+    """Rung 0. The best rate this GPU actually reached, per weight form.
+
+    `affine4` is the ceiling the scored kernel is allowed to be compared
+    against, because it already pays dequantisation; `dense` is the ceiling of
+    the same machine with no unpacking at all.
+    """
+    best: dict[str, dict] = {}
+    for record in peak["records"]:
+        form = "affine4" if record["label"] == "affine4_batch" else "dense"
+        if form not in best or record["tflop_per_s"] > best[form]["tflop_per_s"]:
+            best[form] = record
+    return {
+        form: {
+            "tflop_per_s": record["tflop_per_s"],
+            "label": record["label"],
+            "shape": record["shape"],
+            "dtype": record["dtype"],
+        }
+        for form, record in best.items()
+    }
+
+
+def against_peak(band_fits: dict, ceilings: dict) -> dict:
+    """Read every band slope as a fraction of a measured ceiling.
+
+    A marginal row buys `2 * K * N` multiply-accumulates and nothing else, so
+    `slope / (2 K N)` is directly comparable with a GEMM rate on the same GPU.
+    A high fraction means the per-row cost IS arithmetic and no kernel rewrite
+    can return much; a low fraction means the row is paying for something else.
+    """
+    out = {}
+    for key, fit_record in band_fits.items():
+        if fit_record["kernel"] != "affine4":
+            continue
+        rate = fit_record["tflop_per_s"]
+        out[key] = {
+            "tflop_per_s": rate,
+            "fraction_of_affine4_peak": rate / ceilings["affine4"]["tflop_per_s"],
+            "fraction_of_dense_peak": rate / ceilings["dense"]["tflop_per_s"],
+            "headroom_pct_vs_affine4_peak": 100.0
+            * (1.0 - rate / ceilings["affine4"]["tflop_per_s"]),
+        }
+    return out
+
+
+def analyse_shape(payload: dict) -> dict:
+    """Rung 2. Split the in-band per-row slope into K-proportional work and
+    K-independent per-row overhead.
+
+    For each (N, K) the G == 2 band slope is fitted over M = 5..8. Regressing
+    those slopes on K gives `s(K) = a + b * K`. `b * K` is the reduction-scaled
+    term, which is the multiply-accumulate chain plus the activation reads that
+    ride with it (hypotheses B and D). `a` is what a row costs before any
+    reduction runs: launch, group setup and register allocation (hypothesis C).
+    """
+    cells = payload["cells"]
+    overhead = payload["eval_overhead_us"]
+    shapes = sorted({c["outputs"] for c in cells})
+
+    band: dict[str, dict] = {}
+    for outputs in shapes:
+        for k in sorted({c["k"] for c in cells if c["outputs"] == outputs}):
+            selected = [
+                c for c in cells if c["outputs"] == outputs and c["k"] == k
+            ]
+            record = fit([(float(c["m"]), c["us"]) for c in selected])
+            record.update(
+                outputs=outputs,
+                k=k,
+                flops_per_row=2.0 * k * outputs,
+                tflop_per_s=(2.0 * k * outputs)
+                / (record["slope_us_per_row"] * 1e-6)
+                / 1e12,
+                intercept_net_us=record["intercept_us"] - overhead,
+            )
+            band[f"{outputs}/{k}"] = record
+
+    # The matched NA contrast. M 5 -> 6 adds a row at IPG 3 (NA 2 -> 3); M 7 -> 8
+    # adds a row at IPG 4 (NA 3 -> 4). Both steps add exactly one row, one idle
+    # x-group and the same multiply-accumulate count, so any gap between them is
+    # register pressure at the wider accumulator, not work.
+    na_contrast: dict[str, dict] = {}
+    for key in band:
+        outputs = band[key]["outputs"]
+        k = band[key]["k"]
+        means = {}
+        for width in (5, 6, 7, 8):
+            values = [
+                c["us"]
+                for c in cells
+                if c["outputs"] == outputs and c["k"] == k and c["m"] == width
+            ]
+            means[width] = sum(values) / len(values)
+        step_ipg3 = means[6] - means[5]
+        step_ipg4 = means[8] - means[7]
+        na_contrast[key] = {
+            "outputs": outputs,
+            "k": k,
+            "step_na2_to_3_us": step_ipg3,
+            "step_na3_to_4_us": step_ipg4,
+            "excess_pct": 100.0 * (step_ipg4 - step_ipg3) / step_ipg3,
+        }
+
+    slope_in_k: dict[str, dict] = {}
+    for outputs in shapes:
+        points = [
+            (float(record["k"]), record["slope_us_per_row"])
+            for record in band.values()
+            if record["outputs"] == outputs
+        ]
+        if len(points) < 3:
+            continue
+        record = fit(sorted(points))
+        reference = max(k for k, _ in points)
+        predicted = record["intercept_us"] + record["slope_us_per_row"] * reference
+        slope_in_k[str(outputs)] = {
+            "outputs": outputs,
+            "k_points": sorted(k for k, _ in points),
+            "us_per_row_per_k": record["slope_us_per_row"],
+            "se_us_per_row_per_k": record["se_slope_us_per_row"],
+            "k_independent_us_per_row": record["intercept_us"],
+            "se_k_independent_us_per_row": record["se_intercept_us"],
+            "r_squared": record["r_squared"],
+            "reference_k": reference,
+            "k_independent_share_at_reference_k": record["intercept_us"]
+            / predicted,
+        }
+
+    nulls = []
+    for null in payload["nulls"]:
+        nulls.append(null)
+    drift = {}
+    for outputs in shapes:
+        for k in sorted({c["k"] for c in cells if c["outputs"] == outputs}):
+            opened = next(
+                (
+                    n
+                    for n in nulls
+                    if n["outputs"] == outputs
+                    and n["k"] == k
+                    and n["label"] == "open"
+                ),
+                None,
+            )
+            closed = next(
+                (
+                    n
+                    for n in nulls
+                    if n["outputs"] == outputs
+                    and n["k"] == k
+                    and n["label"] == "close"
+                ),
+                None,
+            )
+            if opened and closed:
+                drift[f"{outputs}/{k}"] = {
+                    "open_us": opened["us"],
+                    "close_us": closed["us"],
+                    "drift_pct": 100.0
+                    * (closed["us"] - opened["us"])
+                    / opened["us"],
+                }
+
+    return {
+        "eval_overhead_us": overhead,
+        "eval_overhead_close_us": payload["eval_overhead_close_us"],
+        "band_slope_per_k": band,
+        "na_contrast": na_contrast,
+        "slope_in_k": slope_in_k,
+        "session_null": drift,
     }
 
 
@@ -288,10 +511,28 @@ def main() -> int:
         "path", nargs="?", default="research/out/e97-row-cost-r1/row-cost.json"
     )
     parser.add_argument("--json", default="")
+    parser.add_argument(
+        "--peak",
+        default="",
+        help="rung-0 peak.json; reads every band slope as a fraction of it",
+    )
+    parser.add_argument(
+        "--shape", default="", help="rung-2 shape.json; the K sweep"
+    )
     args = parser.parse_args()
 
     payload = json.loads(pathlib.Path(args.path).read_text())
     result = analyse(payload)
+
+    if args.peak:
+        ceilings = peak_ceilings(json.loads(pathlib.Path(args.peak).read_text()))
+        result["peak_ceilings"] = ceilings
+        result["against_peak"] = against_peak(result["band_fits"], ceilings)
+
+    if args.shape:
+        result["shape"] = analyse_shape(
+            json.loads(pathlib.Path(args.shape).read_text())
+        )
 
     print(f"eval_overhead_us={result['eval_overhead_us']:.2f} "
           f"close={result['eval_overhead_close_us']:.2f}")
@@ -338,6 +579,36 @@ def main() -> int:
             f"{w['net_us']:>11.1f}{w['range_pct']:>9.2f}"
         )
 
+    print("\nmarginal cost of each single added row (rung 3)")
+    print(
+        f"  {'arm':<20}{'step':>9}{'us':>9}{'G?':>5}{'IPG':>9}"
+        f"{'TFLOP/s if FMA':>16}{'x M=1 read':>12}"
+    )
+    for key in sorted(
+        result["increments"],
+        key=lambda k: (
+            result["increments"][k]["kernel"],
+            result["increments"][k]["outputs"],
+            result["increments"][k]["to_m"],
+        ),
+    ):
+        i = result["increments"][key]
+        arm = f"{i['kernel']}/{i['outputs']}"
+        step = f"{i['from_m']}->{i['to_m']}"
+        crosses = "" if i["crosses_group"] is None else (
+            "NEW" if i["crosses_group"] else "-"
+        )
+        ipg = (
+            f"{i['ipg_from']}->{i['ipg_to']}"
+            if i["ipg_from"] and i["ipg_to"]
+            else ""
+        )
+        print(
+            f"  {arm:<20}{step:>9}{i['step_us']:>9.1f}{crosses:>5}{ipg:>9}"
+            f"{i['tflop_per_s_if_arithmetic']:>16.2f}"
+            f"{i.get('fraction_of_m1_weight_read', float('nan')):>12.3f}"
+        )
+
     print("\nper-row slope inside each group band (rung 3)")
     for key in sorted(result["band_step"]):
         b = result["band_step"][key]
@@ -373,6 +644,74 @@ def main() -> int:
             f"  O={key:<8} open={null['open_us']:.1f} us "
             f"close={null['close_us']:.1f} us drift={null['drift_pct']:+.2f} %"
         )
+
+    if "against_peak" in result:
+        print("\nmeasured ceiling of this GPU (rung 0)")
+        for form, ceiling in sorted(result["peak_ceilings"].items()):
+            print(
+                f"  {form:<8} {ceiling['tflop_per_s']:.3f} TFLOP/s "
+                f"({ceiling['label']} {ceiling['shape']} {ceiling['dtype']})"
+            )
+        print("\nband slope as a fraction of that ceiling")
+        for key in sorted(result["against_peak"]):
+            a = result["against_peak"][key]
+            print(
+                f"  {key:<24} {a['tflop_per_s']:>6.2f} TFLOP/s "
+                f"affine4_peak={100 * a['fraction_of_affine4_peak']:>5.1f} % "
+                f"dense_peak={100 * a['fraction_of_dense_peak']:>5.1f} % "
+                f"headroom={a['headroom_pct_vs_affine4_peak']:>5.1f} %"
+            )
+
+    if "shape" in result:
+        shape = result["shape"]
+        print("\nrung 2: G == 2 band slope against the reduction length")
+        print(
+            f"  {'N/K':<16}{'slope us':>10}{'se':>8}{'TFLOP/s':>9}"
+            f"{'R2':>7}{'intercept':>11}"
+        )
+        for key in sorted(
+            shape["band_slope_per_k"],
+            key=lambda k: (
+                shape["band_slope_per_k"][k]["outputs"],
+                shape["band_slope_per_k"][k]["k"],
+            ),
+        ):
+            b = shape["band_slope_per_k"][key]
+            print(
+                f"  {key:<16}{b['slope_us_per_row']:>10.2f}"
+                f"{b['se_slope_us_per_row']:>8.2f}{b['tflop_per_s']:>9.2f}"
+                f"{b['r_squared']:>7.3f}{b['intercept_us']:>11.1f}"
+            )
+        print("\n  K-proportional versus K-independent per-row cost")
+        for key in sorted(shape["slope_in_k"]):
+            s = shape["slope_in_k"][key]
+            print(
+                f"    O={key:<8} b={1e3 * s['us_per_row_per_k']:.4f} "
+                f"+/- {1e3 * s['se_us_per_row_per_k']:.4f} ns/row/K   "
+                f"a={s['k_independent_us_per_row']:+.2f} "
+                f"+/- {s['se_k_independent_us_per_row']:.2f} us/row   "
+                f"R2={s['r_squared']:.4f}   "
+                f"a is {100 * s['k_independent_share_at_reference_k']:.1f} % "
+                f"of the slope at K={s['reference_k']}"
+            )
+        print("\n  matched NA step: 2->3 at IPG 3 versus 3->4 at IPG 4")
+        for key in sorted(
+            shape["na_contrast"],
+            key=lambda k: (
+                shape["na_contrast"][k]["outputs"],
+                shape["na_contrast"][k]["k"],
+            ),
+        ):
+            c = shape["na_contrast"][key]
+            print(
+                f"    {key:<16} na2_3={c['step_na2_to_3_us']:>9.2f} us "
+                f"na3_4={c['step_na3_to_4_us']:>9.2f} us "
+                f"excess={c['excess_pct']:+7.1f} %"
+            )
+        print("\n  rung-2 session null")
+        for key in sorted(shape["session_null"]):
+            n = shape["session_null"][key]
+            print(f"    {key:<16} drift={n['drift_pct']:+.2f} %")
 
     if args.json:
         out = pathlib.Path(args.json)
