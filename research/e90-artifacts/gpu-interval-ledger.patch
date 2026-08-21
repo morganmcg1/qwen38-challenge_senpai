@@ -1,0 +1,358 @@
+diff --git a/Sources/MLXFastModel/E90GPUIntervalLedger.swift b/Sources/MLXFastModel/E90GPUIntervalLedger.swift
+new file mode 100644
+index 0000000..e8a8048
+--- /dev/null
++++ b/Sources/MLXFastModel/E90GPUIntervalLedger.swift
+@@ -0,0 +1,195 @@
++import Darwin
++import Foundation
++import Metal
++import ObjectiveC
++
++// E90 RESEARCH INSTRUMENT -- record the GPU execution interval of every command
++// buffer this process submits, so an offline reader can place GPU busy and GPU
++// idle time inside the host anchors of one drafting round. Off unless
++// `MLX_E90_GPU_INTERVALS=1` is set, and the shipped default is a no-op.
++//
++// WHY NOT THE E58/E80 CENSUS. That instrument answers "which kernel spent the
++// time" and pays for it with a lock on every dispatch, every pipeline bind and
++// every barrier, which its own header calls unfit for timing. E90 asks only
++// "was the device running at host time T", so it hooks ONE selector -- command
++// buffer commit -- and does two clock reads plus one array append per buffer.
++// A drafting round submits tens of buffers, not thousands of dispatches, so the
++// added host cost stays about three orders of magnitude below the 4.7 ms window
++// under investigation.
++//
++// The `MLX_` prefix is load-bearing: `sanitizedRuntimeWorkerEnvironment` admits
++// `MLX_` and drops `MLXFAST_`, so an `MLXFAST_`-spelled gate would never reach
++// the worker process that owns the decode path.
++public enum E90GPUIntervals {
++    private static let environment = ProcessInfo.processInfo.environment
++
++    public static let enabled = environment["MLX_E90_GPU_INTERVALS"] == "1"
++
++    /// Installs the commit hook. Safe to call more than once.
++    public static func installIfRequested() {
++        guard enabled else { return }
++        E90IntervalLedger.shared.install()
++    }
++}
++
++/// `@unchecked Sendable` because every mutable field is reached only under
++/// `lock`. Completion handlers run on whichever thread the Metal driver picks,
++/// while `install` runs on the startup thread.
++private final class E90IntervalLedger: @unchecked Sendable {
++    static let shared = E90IntervalLedger()
++
++    private let lock = NSLock()
++    private var records: [(commit: UInt64, start: UInt64, end: UInt64, done: UInt64)] = []
++    private var installed = false
++    private var flushIndex = 0
++    private var committedBuffers = 0
++    private var completedBuffers = 0
++    /// Buffers whose driver timestamps are zero or inverted. They are counted
++    /// and dropped rather than folded into the union, because a zero start
++    /// would swallow the whole timeline.
++    private var invalidBuffers = 0
++
++    private static let flushEvery = 2048
++
++    /// Held for the lifetime of the process: a cancelled source stops firing.
++    private var terminationSource: DispatchSourceSignal?
++
++    private let sink: FileHandle = {
++        guard let path = ProcessInfo.processInfo
++            .environment["MLX_E90_GPU_INTERVALS_PATH"], !path.isEmpty
++        else { return FileHandle.standardError }
++        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
++        guard fd >= 0 else { return FileHandle.standardError }
++        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
++    }()
++
++    func install() {
++        lock.lock()
++        let already = installed
++        installed = true
++        lock.unlock()
++        guard !already else { return }
++        guard let device = MTLCreateSystemDefaultDevice(),
++            let queue = device.makeCommandQueue(),
++            let probe = queue.makeCommandBuffer()
++        else {
++            write(["event": "e90_install_failed"])
++            return
++        }
++        let bufferClass: AnyClass = type(of: probe as AnyObject)
++        let ok = swizzleCommit(bufferClass)
++        atexit_b { E90IntervalLedger.shared.flush(reason: "exit") }
++        installTerminationFlush()
++        write([
++            "event": "e90_installed",
++            "buffer_class": String(describing: bufferClass),
++            "commit_hook": ok ? 1 : 0,
++        ])
++    }
++
++    /// The harness stops the worker with SIGTERM, whose default action skips
++    /// `atexit`, so without this the last partial batch never reaches the sink.
++    /// A dispatch source runs the flush on an ordinary queue thread instead of
++    /// in signal context, then re-raises SIGTERM so the parent still observes
++    /// the same termination reason.
++    private func installTerminationFlush() {
++        signal(SIGTERM, SIG_IGN)
++        let source = DispatchSource.makeSignalSource(
++            signal: SIGTERM, queue: .global(qos: .userInitiated))
++        source.setEventHandler {
++            E90IntervalLedger.shared.flush(reason: "sigterm")
++            signal(SIGTERM, SIG_DFL)
++            raise(SIGTERM)
++        }
++        source.resume()
++        terminationSource = source
++    }
++
++    func record(commit: UInt64, start: UInt64, end: UInt64, done: UInt64) {
++        lock.lock()
++        completedBuffers += 1
++        if start == 0 || end == 0 || end < start {
++            invalidBuffers += 1
++        } else {
++            records.append((commit: commit, start: start, end: end, done: done))
++        }
++        let full = records.count >= Self.flushEvery
++        lock.unlock()
++        if full { flush(reason: "rolling") }
++    }
++
++    func noteCommit() {
++        lock.lock()
++        committedBuffers += 1
++        lock.unlock()
++    }
++
++    func flush(reason: String) {
++        lock.lock()
++        let batch = records
++        records.removeAll(keepingCapacity: true)
++        let index = flushIndex
++        flushIndex += 1
++        let committed = committedBuffers
++        let completed = completedBuffers
++        let invalid = invalidBuffers
++        lock.unlock()
++        guard !batch.isEmpty || reason == "exit" else { return }
++        // One flat array per field keeps the payload about a third the size of
++        // an array of objects, and the reader zips them by index.
++        write([
++            "event": "e90_intervals",
++            "reason": reason,
++            "flush": index,
++            "buffers": batch.count,
++            "committed_total": committed,
++            "completed_total": completed,
++            "invalid_total": invalid,
++            "commit_ns": batch.map { $0.commit },
++            "gpu_start_ns": batch.map { $0.start },
++            "gpu_end_ns": batch.map { $0.end },
++            "completed_ns": batch.map { $0.done },
++        ])
++    }
++
++    private func write(_ payload: [String: Any]) {
++        var line = payload
++        line["pid"] = ProcessInfo.processInfo.processIdentifier
++        line["t_ns"] = DispatchTime.now().uptimeNanoseconds
++        guard let data = try? JSONSerialization.data(withJSONObject: line) else { return }
++        lock.lock()
++        sink.write(data)
++        sink.write(Data("\n".utf8))
++        lock.unlock()
++    }
++}
++
++private typealias E90CommitIMP = @convention(c) (AnyObject, Selector) -> Void
++
++private func swizzleCommit(_ cls: AnyClass) -> Bool {
++    let selector = NSSelectorFromString("commit")
++    guard let method = class_getInstanceMethod(cls, selector) else { return false }
++    let original = unsafeBitCast(
++        method_getImplementation(method), to: E90CommitIMP.self)
++    let replacement: @convention(block) (AnyObject) -> Void = { buffer in
++        let commitNs = DispatchTime.now().uptimeNanoseconds
++        if let commandBuffer = buffer as? MTLCommandBuffer {
++            E90IntervalLedger.shared.noteCommit()
++            commandBuffer.addCompletedHandler { done in
++                // `gpuStartTime` and `gpuEndTime` are CFTimeInterval seconds on
++                // the same mach uptime clock as `DispatchTime`, so the host
++                // anchors of a round and the device intervals share one axis.
++                let start = done.gpuStartTime
++                let end = done.gpuEndTime
++                E90IntervalLedger.shared.record(
++                    commit: commitNs,
++                    start: start > 0 ? UInt64((start * 1e9).rounded()) : 0,
++                    end: end > 0 ? UInt64((end * 1e9).rounded()) : 0,
++                    done: DispatchTime.now().uptimeNanoseconds)
++            }
++        }
++        original(buffer, selector)
++    }
++    method_setImplementation(method, imp_implementationWithBlock(replacement))
++    return true
++}
+diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+index b946c17..1c12781 100644
+--- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
++++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+@@ -621,7 +621,8 @@ public final class Qwen36MTPBlockSession {
+             let tBeginDone = DispatchTime.now().uptimeNanoseconds
+             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
+                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
+-                + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000)\n")
++                + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
++                + "head_submit=\(Self.headSubmitPolicy)\n")
+         }
+         let readTail = (
+             tailIDs.asArray(Int32.self).map { Int($0) },
+@@ -740,6 +741,40 @@ public final class Qwen36MTPBlockSession {
+     /// overlap this flag exists to undo.
+     private static let traceSyncHeadChain =
+         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_SYNC_HEAD"] == "1"
++
++    /// E90 rung 1: head-chain submission granularity.
++    ///
++    ///     ship     one `asyncEval` after the loop, as shipped
++    ///     everyN   submit each Nth chain step as soon as it is built
++    ///     mid      one extra submission at step ceil(d/2)
++    ///
++    /// SCHEDULING ONLY. Each arm evaluates the same graph, in the same order,
++    /// with the same inputs, so every arm must emit the identical token stream
++    /// and the identical round sequence. A mismatch is a defect in the arm.
++    private static let headSubmitPolicy =
++        ProcessInfo.processInfo.environment["MLX_QWEN_MTP_HEAD_SUBMIT"] ?? "ship"
++    private static let headSubmitEvery: Int = {
++        guard headSubmitPolicy.hasPrefix("every") else { return 0 }
++        guard let n = Int(headSubmitPolicy.dropFirst("every".count)), n >= 1 else {
++            preconditionFailure(
++                "MLX_QWEN_MTP_HEAD_SUBMIT=\(headSubmitPolicy) is not everyN")
++        }
++        return n
++    }()
++    private static let headSubmitMid: Bool = {
++        precondition(
++            headSubmitPolicy == "ship" || headSubmitPolicy == "mid"
++                || headSubmitEvery > 0,
++            "MLX_QWEN_MTP_HEAD_SUBMIT=\(headSubmitPolicy) is not ship, mid or everyN")
++        return headSubmitPolicy == "mid"
++    }()
++
++    @inline(__always)
++    private static func headChainSubmits(step: Int, draftCount: Int) -> Bool {
++        if headSubmitEvery > 0 { return step % headSubmitEvery == 0 }
++        if headSubmitMid { return step == (draftCount + 1) / 2 }
++        return false
++    }
+     /// Opened O_APPEND so the reference, verify and timed workers can each
+     /// write the same file without a later process truncating an earlier
+     /// one's rounds. Falls back to stderr when no path is configured, which
+@@ -759,6 +794,16 @@ public final class Qwen36MTPBlockSession {
+         traceSink.write(Data(line.utf8))
+     }
+ 
++    /// CPU nanoseconds this thread has consumed. `CLOCK_THREAD_CPUTIME_ID`
++    /// advances only while the thread runs, so pairing it with the wall clock
++    /// separates a descheduled host from a slow one.
++    @inline(__always)
++    private static func threadCPUNanoseconds() -> UInt64 {
++        var value = timespec()
++        guard clock_gettime(CLOCK_THREAD_CPUTIME_ID, &value) == 0 else { return 0 }
++        return UInt64(value.tv_sec) * 1_000_000_000 + UInt64(value.tv_nsec)
++    }
++
+     /// Exact-value row dump for the LOCAL width-wall gate: hexfloat (`%a`)
+     /// per declared top-2 value so the serial leg's rows and a wide round's
+     /// rows can be compared BIT-FOR-BIT by position — the comparison the
+@@ -1194,7 +1239,9 @@ public final class Qwen36MTPBlockSession {
+         // split a round into head-chain graph build, verify graph build, and
+         // the single blocking eval's GPU wall. Never on in a ranked run.
+         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
++        let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
+         var tDraftBuilt: UInt64 = 0
++        var tSnapshotDone: UInt64 = 0
+         var tVerifyBuilt: UInt64 = 0
+         var tEvalDone: UInt64 = 0
+         var tReadDone: UInt64 = 0
+@@ -1385,12 +1432,15 @@ public final class Qwen36MTPBlockSession {
+         asyncEval(draftId)
+         let tSubmit1 = Self.traceRounds
+             ? DispatchTime.now().uptimeNanoseconds : 0
+-        for _ in 1 ..< draftCount {
++        for step in 1 ..< draftCount {
+             headHidden = model.mtpHeadHiddenForward(
+                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
+             draftHidden = Self.lastHiddenRow(headHidden)
+             draftId = model.draftTokenID(draftHidden)
+             draftIdArrays.append(draftId)
++            if Self.headChainSubmits(step: step, draftCount: draftCount) {
++                asyncEval(draftId)
++            }
+         }
+         let tChainBuilt = Self.traceRounds
+             ? DispatchTime.now().uptimeNanoseconds : 0
+@@ -1405,6 +1455,7 @@ public final class Qwen36MTPBlockSession {
+         //    rejected single draft can then retain the primary's target work and
+         //    discard only the draft token instead of re-forwarding the primary.
+         let snapshot = Self.snapshotRecurrent(cache)
++        if Self.traceRounds { tSnapshotDone = DispatchTime.now().uptimeNanoseconds }
+         let verifyTokens = concatenated(
+             [MLXArray([Int32(primary)]).reshaped([1, 1])] + draftIdArrays,
+             axis: 1)
+@@ -1613,8 +1664,34 @@ public final class Qwen36MTPBlockSession {
+                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
+                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
+                 + "round_us=\((tTailDone - tRound0) / 1000) "
++                // Thread CPU nanoseconds this round consumed, beside the wall
++                // clock. A round whose wall time rises while this stays flat
++                // lost the CPU to something else; a round where both rise ran
++                // the same host work at a lower clock. E89 measures the same
++                // field on a second host under the same name and units.
++                + "host_thread_cpu_ns=\(Self.threadCPUNanoseconds() &- cpuRound0) "
+                 + scheduleTrace + "\n"
+             Self.traceWrite(line)
++            // Absolute anchors on the mach uptime clock, so an offline reader
++            // can intersect the round's inter-anchor windows with the GPU
++            // execution intervals E90GPUIntervals records on the same axis.
++            // `verify_build_us` above keeps its historical meaning (it still
++            // spans the recurrent snapshot), and the split appears here.
++            Self.traceWrite(
++                "mtp-anchor: round=\(roundCount) d=\(draftCount) "
++                    + "acc=\(acceptedCount) "
++                    // One trace file collects every worker a leg spawns, and
++                    // the GPU interval ledger is per process, so the reader
++                    // needs the pid to join the two without mixing workers.
++                    + "pid=\(ProcessInfo.processInfo.processIdentifier) "
++                    + "t_round0=\(tRound0) t_draft0=\(tDraft0) "
++                    + "t_flush_built=\(tFlushBuilt) t_head1_built=\(tHead1Built) "
++                    + "t_submit1=\(tSubmit1) t_chain_built=\(tChainBuilt) "
++                    + "t_draft_built=\(tDraftBuilt) "
++                    + "t_snapshot_done=\(tSnapshotDone) "
++                    + "t_verify_built=\(tVerifyBuilt) t_eval_done=\(tEvalDone) "
++                    + "t_read_done=\(tReadDone) t_commit_done=\(tCommitDone) "
++                    + "t_tail_done=\(tTailDone)\n")
+         }
+         // No trailing eval: every host-read value was materialised by the
+         // round bundle above. A successful wide-prefix replay intentionally
+diff --git a/Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift b/Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
+index d0c82d9..81e281a 100644
+--- a/Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
++++ b/Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift
+@@ -80,6 +80,10 @@ public struct RuntimeStartupMemoryPolicy: Equatable, Sendable {
+         physicalMemoryBytes: UInt64,
+         requestedProfile: String? = nil
+     ) -> RuntimeStartupMemoryPolicy {
++        // E90 research instrument, off unless MLX_E90_GPU_INTERVALS=1. This is
++        // the earliest editable hook the worker reaches, so hooking here covers
++        // weight loading and warmup as well as the timed rounds.
++        E90GPUIntervals.installIfRequested()
+         installQwenMTPFullProfileCommandBufferDefaults(
+             physicalMemoryBytes: physicalMemoryBytes,
+             requestedProfile: requestedProfile
