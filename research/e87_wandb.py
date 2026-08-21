@@ -16,13 +16,19 @@ One run holds every fact another agent needs to reproduce or overturn it:
              cool_gate_passed_real_gate=false and gate_qualified_for_timing
              =false verbatim. It is directional causal evidence inside one
              session, never a score.
+  paired     the same session priced round-for-round, with the host-state
+             stratum and the achieved bandwidth per arm.
+  liveness   the damaged-index positive control.
+  submit-gate the rung-3 --local-submit legs, one directory each.
 
 usage:
   research/e87_wandb.py --name e87-coarse-shortlist \
       [--build research/e87-build-e87-coarse-g128.json] \
       [--validate research/e87-validate.json] \
       [--screen research/e87-screen.json] \
-      [--timed research/e87-timing.json]
+      [--timed research/e87-timing.json] \
+      [--paired research/e87-paired.json] \
+      [--submit-gate research/out/e87s-declared]
 """
 
 from __future__ import annotations
@@ -197,6 +203,48 @@ def log_paired(run, path: Path) -> None:
                                               rows)})
 
 
+def log_submit_gate(run, legs) -> None:
+    """The rung-3 --local-submit legs, read straight from their leg trees."""
+    rows = []
+    for leg in sorted(Path(p) for p in legs):
+        score_path = leg / "score.json"
+        if not score_path.is_file():
+            raise SystemExit(f"no score.json under {leg}")
+        meta = dict(
+            line.split("=", 1)
+            for line in (leg / "meta.txt").read_text().splitlines()
+            if "=" in line)
+        m = json.loads(score_path.read_text())["metrics"]
+        rows.append({
+            "tag": meta.get("tag", leg.name),
+            "arm": meta.get("e87_arm"),
+            "mode": m["mode"],
+            "decode_tokens": m["decode_tokens"],
+            "golden": meta.get("golden"),
+            "public_drift_tripwire_passed": m["public_drift_tripwire_passed"],
+            "all_tokens_matched": m["all_tokens_matched"],
+            "residual_divergence_count": m["residual_divergence_count"],
+            "head_provenance_sha256": m["head_provenance_sha256"],
+            "mtp_seconds_per_token": m["mtp_seconds_per_token"],
+            "serial_seconds_per_token": m["serial_seconds_per_token"],
+            "mtp_decode_speedup": m["mtp_decode_speedup"],
+            "effective_mean_draft_len": m["effective_mean_draft_len"],
+            "accepted_draft_rate": m["accepted_draft_rate"],
+            "gate_qualified_for_timing": meta.get("gate_qualified_for_timing"),
+            "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
+            "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
+            "exit": meta.get("exit"),
+        })
+    run.log({"submit_gate/legs": table(sorted({k for r in rows for k in r}), rows)})
+    for r in rows:
+        run.log({
+            f"submit_gate/{r['arm']}/mtp_seconds_per_token": r["mtp_seconds_per_token"],
+            f"submit_gate/{r['arm']}/all_tokens_matched": int(r["all_tokens_matched"]),
+            f"submit_gate/{r['arm']}/public_drift_tripwire_passed":
+                int(r["public_drift_tripwire_passed"]),
+        })
+
+
 def log_liveness(run, path: Path) -> None:
     """The damaged-index control that proves the cluster path is on the clock."""
     doc = json.loads(path.read_text())
@@ -217,6 +265,8 @@ def main() -> None:
     ap.add_argument("--liveness")
     ap.add_argument("--timed", action="append", default=[])
     ap.add_argument("--paired", action="append", default=[])
+    ap.add_argument("--submit-gate", action="append", default=[],
+                    help="leg directory written by research/e87_submit_gate.sh")
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
 
@@ -249,6 +299,9 @@ def main() -> None:
         for path in getattr(args, flag):
             fn(run, Path(path))
             print(f"logged {flag} from {path}")
+    if args.submit_gate:
+        log_submit_gate(run, args.submit_gate)
+        print(f"logged submit_gate from {args.submit_gate}")
     print(run.url)
     run.finish()
 
