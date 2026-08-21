@@ -1,0 +1,212 @@
+{
+ "off": [
+  {
+   "leg": "e99r5c6a1",
+   "gate": "off",
+   "threshold": 9.4375,
+   "offered_cap": 6,
+   "rounds": 85,
+   "fired_rounds": 0,
+   "fired_share": 0.0,
+   "clamped_rounds": 0,
+   "mean_width": 6.576470588235294,
+   "g1_share": 0.07058823529411765,
+   "effective_mean_draft_len": 5.576470588235294,
+   "accepted_draft_rate": 0.9008438818565401,
+   "all_tokens_matched": true,
+   "residual_divergence_count": 0,
+   "mtp_seconds_per_token": 0.03191071096807718,
+   "serial_seconds_per_token": 0.07428433978930116,
+   "local_ratio": 2.327881063621982,
+   "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+   "ranked_us_per_token": 10690.654296875,
+   "local_us_per_token": 23806.0900390625,
+   "measured_round_us": 145069.9176470588,
+   "min_round_us": 71925.0,
+   "dram_floor_violations": 0,
+   "first_floor_violation": "",
+   "entry_c": 37.04576110839844,
+   "exit_c": 61.05342102050781,
+   "worker_sha256": "41592d1c9a0cc19c8c8109bb64b8470954d6bf303b026fed17e3009a1fcdefdb",
+   "base_sha": "dff827a82732e70dc47e68dcbf6a44ab6c11d567",
+   "cool_gate_passed_real_gate": "false",
+   "gate_qualified_for_timing": "false"
+  },
+  {
+   "leg": "e99r5c6a2",
+   "gate": "off",
+   "threshold": 9.4375,
+   "offered_cap": 6,
+   "rounds": 85,
+   "fired_rounds": 0,
+   "fired_share": 0.0,
+   "clamped_rounds": 0,
+   "mean_width": 6.576470588235294,
+   "g1_share": 0.07058823529411765,
+   "effective_mean_draft_len": 5.576470588235294,
+   "accepted_draft_rate": 0.9008438818565401,
+   "all_tokens_matched": true,
+   "residual_divergence_count": 0,
+   "mtp_seconds_per_token": 0.031913625076413155,
+   "serial_seconds_per_token": 0.07411097665317357,
+   "local_ratio": 2.3222362384631694,
+   "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+   "ranked_us_per_token": 10690.654296875,
+   "local_us_per_token": 23806.0900390625,
+   "measured_round_us": 145127.31764705884,
+   "min_round_us": 72238.0,
+   "dram_floor_violations": 0,
+   "first_floor_violation": "",
+   "entry_c": 58.35041809082031,
+   "exit_c": 61.978336334228516,
+   "worker_sha256": "41592d1c9a0cc19c8c8109bb64b8470954d6bf303b026fed17e3009a1fcdefdb",
+   "base_sha": "dff827a82732e70dc47e68dcbf6a44ab6c11d567",
+   "cool_gate_passed_real_gate": "false",
+   "gate_qualified_for_timing": "false"
+  }
+ ],
+ "on": [
+  {
+   "leg": "e99r5c6b1",
+   "gate": "g1",
+   "threshold": 9.4375,
+   "offered_cap": 6,
+   "rounds": 90,
+   "fired_rounds": 22,
+   "fired_share": 0.24444444444444444,
+   "clamped_rounds": 22,
+   "mean_width": 6.177777777777778,
+   "g1_share": 0.25555555555555554,
+   "effective_mean_draft_len": 5.177777777777778,
+   "accepted_draft_rate": 0.9055793991416309,
+   "all_tokens_matched": true,
+   "residual_divergence_count": 0,
+   "mtp_seconds_per_token": 0.03189896675758064,
+   "serial_seconds_per_token": 0.0743792459834367,
+   "local_ratio": 2.3317133294218952,
+   "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+   "ranked_us_per_token": 10723.644335937499,
+   "local_us_per_token": 23453.3900390625,
+   "measured_round_us": 136477.7111111111,
+   "min_round_us": 73511.0,
+   "dram_floor_violations": 0,
+   "first_floor_violation": "",
+   "entry_c": 57.282833099365234,
+   "exit_c": 61.783424377441406,
+   "worker_sha256": "41592d1c9a0cc19c8c8109bb64b8470954d6bf303b026fed17e3009a1fcdefdb",
+   "base_sha": "dff827a82732e70dc47e68dcbf6a44ab6c11d567",
+   "cool_gate_passed_real_gate": "false",
+   "gate_qualified_for_timing": "false"
+  },
+  {
+   "leg": "e99r5c6b2",
+   "gate": "g1",
+   "threshold": 9.4375,
+   "offered_cap": 6,
+   "rounds": 90,
+   "fired_rounds": 22,
+   "fired_share": 0.24444444444444444,
+   "clamped_rounds": 22,
+   "mean_width": 6.177777777777778,
+   "g1_share": 0.25555555555555554,
+   "effective_mean_draft_len": 5.177777777777778,
+   "accepted_draft_rate": 0.9055793991416309,
+   "all_tokens_matched": true,
+   "residual_divergence_count": 0,
+   "mtp_seconds_per_token": 0.031599121168255806,
+   "serial_seconds_per_token": 0.07410816429182887,
+   "local_ratio": 2.345260296867916,
+   "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+   "ranked_us_per_token": 10723.644335937499,
+   "local_us_per_token": 23453.3900390625,
+   "measured_round_us": 135198.2888888889,
+   "min_round_us": 71784.0,
+   "dram_floor_violations": 0,
+   "first_floor_violation": "",
+   "entry_c": 58.146949768066406,
+   "exit_c": 62.050941467285156,
+   "worker_sha256": "41592d1c9a0cc19c8c8109bb64b8470954d6bf303b026fed17e3009a1fcdefdb",
+   "base_sha": "dff827a82732e70dc47e68dcbf6a44ab6c11d567",
+   "cool_gate_passed_real_gate": "false",
+   "gate_qualified_for_timing": "false"
+  }
+ ],
+ "sweep": [],
+ "contrasts": {
+  "ranked_us_per_token": {
+   "off": 10690.654296875,
+   "on": 10723.644335937499,
+   "delta_pct": -0.30858765185347237
+  },
+  "mtp_seconds_per_token": {
+   "off": 0.03191216802224517,
+   "on": 0.03174904396291822,
+   "delta_pct": 0.5111657071159724
+  },
+  "local_us_per_token": {
+   "off": 23806.0900390625,
+   "on": 23453.3900390625,
+   "delta_pct": 1.4815536672392184
+  },
+  "measured_round_us": {
+   "off": 145098.61764705883,
+   "on": 135838.0,
+   "delta_pct": 6.382292124646261
+  },
+  "effective_mean_draft_len": {
+   "off": 5.576470588235294,
+   "on": 5.177777777777778,
+   "delta_pct": 7.149554617909039
+  },
+  "accepted_draft_rate": {
+   "off": 0.9008438818565401,
+   "on": 0.9055793991416309,
+   "delta_pct": -0.5256756892583238
+  },
+  "local_ratio": {
+   "off": 2.3250586510425757,
+   "on": 2.3384868131449057,
+   "delta_pct": -0.5775407900488316
+  }
+ },
+ "replay": [
+  {
+   "threshold": 8.25,
+   "us_per_token": 10472.2308467742,
+   "clamped": 15,
+   "rounds": 85,
+   "gain_pct": 2.0431251823814676
+  },
+  {
+   "threshold": 9.1875,
+   "us_per_token": 10486.43853955376,
+   "clamped": 16,
+   "rounds": 85,
+   "gain_pct": 1.9102269295241858
+  },
+  {
+   "threshold": 9.4375,
+   "us_per_token": 10500.82020408164,
+   "clamped": 17,
+   "rounds": 85,
+   "gain_pct": 1.7757013511217095
+  },
+  {
+   "threshold": 10.4375,
+   "us_per_token": 10436.553497942392,
+   "clamped": 20,
+   "rounds": 85,
+   "gain_pct": 2.376849834222819
+  },
+  {
+   "threshold": 11.5625,
+   "us_per_token": 10458.572557172562,
+   "clamped": 22,
+   "rounds": 85,
+   "gain_pct": 2.170884337456114
+  }
+ ],
+ "exactness_green": true,
+ "dram_floor_violations": 0,
+ "reference_leg": "e99r5c6a1"
+}
