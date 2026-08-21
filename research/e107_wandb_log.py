@@ -351,11 +351,13 @@ def log_census() -> None:
 
     cells = wandb.Table(columns=[
         "signature", "bits", "n", "k", "bytes", "us_per_dispatch",
-        "achieved_gbps", "pct_of_achievable", "roofline_floor_us",
+        "achieved_gbps", "pct_of_achievable", "finding36_law_us",
+        "pct_over_finding36_law", "within_15pct_of_law", "roofline_floor_us",
         "headroom_us", "dispatches_per_round", "us_per_round",
         "pct_of_local_round", "headroom_pct_of_local_round"])
     affine2 = affine2_floor = 0.0
     headroom_pct: dict[str, float] = {}
+    law_pct: dict[str, float] = {}
     for signature, bits, n, k in CENSUS_CELLS:
         # Only the draft-head phase of a real MTP round is scored work. The
         # `w0|outside|` copies of the same shape are warmup.
@@ -371,9 +373,12 @@ def log_census() -> None:
         nbytes = qmv_bytes(n, bits, k)
         gbps = nbytes / (us * 1e-6) / 1e9
         floor = nbytes / ACHIEVABLE_GBPS / 1e9 * 1e6
+        law = FINDING36_FIXED_US + nbytes / 1e9 * FINDING36_SLOPE_US_PER_GB
+        over_law = 100.0 * (us - law) / law
         cells.add_data(
             signature, bits, n, k, nbytes, us, gbps,
-            100.0 * gbps / ACHIEVABLE_GBPS, floor, us - floor, per_round,
+            100.0 * gbps / ACHIEVABLE_GBPS, law, over_law, over_law <= 15.0,
+            floor, us - floor, per_round,
             us * per_round, 100.0 * us * per_round / LOCAL_ROUND_US,
             100.0 * (us - floor) * per_round / LOCAL_ROUND_US)
         headroom_pct[signature] = (
@@ -381,6 +386,7 @@ def log_census() -> None:
         if bits == 2:
             affine2 += us * per_round
             affine2_floor += floor * per_round
+            law_pct[signature] = over_law
     run.log({"scored_matvec_cells": cells})
 
     worst = max(headroom_pct, key=headroom_pct.get)
@@ -408,6 +414,13 @@ def log_census() -> None:
             "of 8 so the dense affine-2 readout takes the general qmv path",
         "largest_headroom_signature": worst,
         "largest_headroom_pct_of_local_round": headroom_pct[worst],
+        "worst_affine2_pct_over_finding36_law": max(law_pct.values()),
+        "rung0_stop_rule_fires": max(law_pct.values()) <= 15.0,
+        "rung0_stop_rule": (
+            "every live affine-2 dispatch is within 15 percent of the "
+            "Finding 36 law, so the premise that the coarse draft readout "
+            "is ALU bound does not hold on this base"
+        ),
     })
     run.finish()
 
