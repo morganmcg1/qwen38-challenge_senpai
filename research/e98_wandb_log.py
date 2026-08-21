@@ -10,6 +10,14 @@
                 40, 36 and 34 metadata bytes per 64 quantized elements through
                 the same kernel at M = 1, so the ladder prices a metadata byte
                 without writing a new kernel.
+  `e98-lut`     rung 1b: three JIT variants of the scored `affine_qmv_fast`
+                kernel, alternated ABCCBA. Arm (a) ships 36 B per 64 elements,
+                arm (b) reads a uint16 pair index plus a look-up table for
+                34 B, and arm (c) uses literal constants for 32 B.
+  `e98-lut-small`
+                rung 1b control: the same three arms with a 64-entry, 256-byte
+                look-up table, which shows whether table residency limits the
+                indexed arm.
 
 Every leg is a within-session relative measurement with the cool gate off, so
 `timing_valid`, `cool_gate_passed_real_gate` and `gate_qualified_for_timing`
@@ -238,7 +246,7 @@ def log_bytes(directory: pathlib.Path) -> None:
     run.finish()
 
 
-def log_lut(directory: pathlib.Path) -> None:
+def log_lut(directory: pathlib.Path, name: str = "e98-lut") -> None:
     payload = json.loads((directory / "lut.json").read_text())
     meta = read_meta(directory / "meta.txt")
     regs = json.loads((directory / "regs.json").read_text())
@@ -249,7 +257,7 @@ def log_lut(directory: pathlib.Path) -> None:
         project=PROJECT,
         group=GROUP,
         job_type="lut-emulation",
-        name="e98-lut",
+        name=name,
         config={
             "experiment": GROUP,
             "rung": "1b",
@@ -340,7 +348,7 @@ def log_lut(directory: pathlib.Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", choices=["census", "bytes", "lut"])
+    ap.add_argument("--only", choices=["census", "bytes", "lut", "lut-small"])
     args = ap.parse_args()
     if args.only in (None, "census"):
         log_census(OUT / "e98-census")
@@ -348,6 +356,8 @@ def main() -> None:
         log_bytes(OUT / "e98-bytes-r1a")
     if args.only in (None, "lut"):
         log_lut(OUT / "e98-lut-r1b")
+    if args.only in (None, "lut-small"):
+        log_lut(OUT / "e98-lut-r1b-small", name="e98-lut-small")
 
 
 if __name__ == "__main__":
