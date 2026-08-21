@@ -36,8 +36,10 @@ which is why the sweep folds z and not y.
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import pathlib
+import textwrap
 
 PREAMBLE = """#include "mlx_preamble.h"
 
@@ -344,6 +346,9 @@ QKROPE_BODY = """
   }
   threadgroup_barrier(mem_flags::mem_threadgroup);
 
+  // The stock RoPE primitive copies dimensions 64...255 unchanged before
+  // rotating nontraditional pairs (i, i + 32).  Here the final output is
+  // new storage, so only the pass-through tail needs an explicit copy.
   for (uint i = 0; i < n_reads; ++i) {
       uint element = first + i;
       if (element >= rotary_dimensions && element < axis_size) {
@@ -425,6 +430,97 @@ PREWORK_REDUCE_SHIPPED = """    threadgroup float local_inv_mean[UNITS];
 # argument.
 PREWORK_REDUCE_DIRECT = """    sumsq = simd_sum(sumsq);
     const float inv_mean = metal::precise::rsqrt(sumsq / Dk + 1e-6f);"""
+
+
+QWEN35 = (pathlib.Path(__file__).resolve().parent.parent
+          / "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift")
+
+
+def shipped_source(declaration: str) -> str:
+    """The `source:` string of one live `MLXFast.metalKernel` declaration."""
+    text = QWEN35.read_text()
+    at = text.index(declaration)
+    hits = [text.index(o, at) for o in ('let source = """', 'source: """')
+            if o in text[at:]]
+    if not hits:
+        raise SystemExit(f"no kernel source found after {declaration}")
+    open_at = min(hits)
+    start = text.index('"""', open_at) + 3
+    lines = text[start:].split("\n")[1:]
+    # Swift strips the indentation of the *closing* delimiter, which in this
+    # file is not the indentation of the opening line.
+    for at, line in enumerate(lines):
+        if line.strip().rstrip(",)") == '"""':
+            indent = len(line) - len(line.lstrip())
+            body = "\n".join(x[indent:] for x in lines[:at])
+            return textwrap.dedent(body).strip("\n")
+    raise SystemExit(f"unterminated kernel source after {declaration}")
+
+
+def arm_body(path: pathlib.Path, function: str) -> str:
+    text = path.read_text()
+    start = text.index(") {", text.index(f"[[kernel]] void {function}(")) + 3
+    return textwrap.dedent(text[start:text.rindex("}")]).strip("\n")
+
+
+# Undo the arm's parameterisation at its identity setting. Whatever is left
+# must be the live kernel character for character. `--verify` runs this on
+# every generation, so an arm cannot silently drift away from the kernel it
+# claims to reproduce, and the rung-1 result cannot end up describing code the
+# scored worker never runs.
+PREWORK_UNFOLD = [
+    ("const uint logical_head = threadgroup_position_in_grid.z * UNITS + unit;",
+     "const uint logical_head = threadgroup_position_in_grid.z;"),
+    ("threadgroup float local_inv_mean[UNITS];",
+     "threadgroup float local_inv_mean[1];"),
+    ("threadgroup float local_sums[UNITS][32];",
+     "threadgroup float local_sums[32];"),
+    ("local_sums[unit][", "local_sums["),
+    ("local_inv_mean[unit]", "local_inv_mean[0]"),
+]
+QKROPE_UNFOLD = [
+    ("uint row = threadgroup_position_in_grid.x * ROWS + sub;",
+     "uint row = threadgroup_position_in_grid.x;"),
+    ("uint thread_id = thread_position_in_threadgroup.x % 64;",
+     "uint thread_id = thread_position_in_threadgroup.x;"),
+    ("uint simd_group = simdgroup_index_in_threadgroup % 2;",
+     "uint simd_group = simdgroup_index_in_threadgroup;"),
+    ("threadgroup float local_inv_mean[ROWS];",
+     "threadgroup float local_inv_mean[1];"),
+    ("threadgroup float local_sums[ROWS][simd_size];",
+     "threadgroup float local_sums[simd_size];"),
+    ("threadgroup bfloat normalized[ROWS][256];",
+     "threadgroup bfloat normalized[256];"),
+    ("local_sums[sub][", "local_sums["),
+    ("local_inv_mean[sub]", "local_inv_mean[0]"),
+    ("normalized[sub][", "normalized["),
+]
+
+
+def verify_faithful(outdir: pathlib.Path, family: str) -> None:
+    if family == "prework":
+        body = arm_body(outdir / "arm_prework_g1.metal", "e109_prework_g1")
+        live = shipped_source("private let qwen35PackedGDNPreworkKernel")
+        rules, drop = PREWORK_UNFOLD, ("constexpr int ", "constexpr uint UNITS",
+                                       "const uint unit =")
+    else:
+        body = arm_body(outdir / "arm_qkrope_r1.metal", "e109_qkrope_r1")
+        live = shipped_source("private let qwen35AttentionQKRMSRoPEKernel")
+        rules, drop = QKROPE_UNFOLD, ("constexpr uint ROWS", "uint sub =")
+    kept = [line for line in body.splitlines()
+            if not line.strip().startswith(drop)]
+    text = "\n".join(kept).strip("\n")
+    for a, b in rules:
+        text = text.replace(a, b)
+    if text != live:
+        diff = "\n".join(difflib.unified_diff(
+            live.splitlines(), text.splitlines(),
+            "live kernel", f"{family} arm at identity", lineterm="", n=1))
+        raise SystemExit(
+            f"{family} arm is NOT the live kernel at its identity setting:\n"
+            + diff)
+    print(f"verified: {family} arm reproduces the live kernel exactly"
+          f" ({len(live.splitlines())} lines)")
 
 
 def prework_body(name: str, units: int, reduce_src: str, inv_mean: str) -> str:
@@ -589,6 +685,7 @@ def main() -> int:
         path.write_text(PREAMBLE + PREWORK_HEADER + prework_body(
             "e109_prework_g1nored", 1, PREWORK_REDUCE_DIRECT, "inv_mean"))
         written.append(path)
+        verify_faithful(outdir, "prework")
         spec = prework_spec(units)
         (outdir / "spec_prework.json").write_text(json.dumps(spec, indent=2))
 
@@ -604,6 +701,7 @@ def main() -> int:
             path = outdir / f"arm_qkrope_r{rows}.metal"
             path.write_text(PREAMBLE + body)
             written.append(path)
+        verify_faithful(outdir, "qkrope")
         spec = qkrope_spec(rows_list)
         (outdir / "spec_qkrope.json").write_text(json.dumps(spec, indent=2))
 
