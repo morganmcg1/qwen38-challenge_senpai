@@ -76,7 +76,7 @@ def dose_accounting(witness: pathlib.Path) -> dict | None:
     """
     if not witness.exists():
         return None
-    forwards: list[tuple[int, int]] = []
+    forwards: list[dict] = []
     fields: dict[str, str] = {}
     for line in witness.read_text().splitlines():
         if not line.startswith("e105_dose_forward"):
@@ -85,21 +85,78 @@ def dose_accounting(witness: pathlib.Path) -> dict | None:
         for token in line.split()[1:]:
             key, _, value = token.partition("=")
             fields[key] = value
-        forwards.append((int(fields["forward"]), int(fields["dosed"])))
+        forwards.append({"forward": int(fields["forward"]),
+                         "dosed": int(fields["dosed"]),
+                         "width": int(fields["width"])})
     if not forwards:
         return None
-    # The estimator assumes round i carries the dose exactly when i is odd.
-    # That holds only if the dose lands on every second qualifying forward,
-    # which is checked here against the recorded sequence rather than assumed.
     alternation_exact = all(
-        dosed == (1 if index % 2 == 0 else 0) for index, dosed in forwards)
+        f["dosed"] == (1 if i % 2 == 1 else 0)
+        for i, f in enumerate(forwards))
     return {
         "qualifying_forwards": len(forwards),
-        "dosed_forwards": sum(dosed for _, dosed in forwards),
+        "dosed_forwards": sum(f["dosed"] for f in forwards),
         "alternation_exact": alternation_exact,
         "alternate": fields.get("alternate") == "true",
         "dose": int(fields.get("dose", 0)),
         "shape": fields.get("shape", ""),
+        "sequence": forwards,
+    }
+
+
+def forward_stream_diagnosis(leg_dir: pathlib.Path) -> dict:
+    """What the qualifying-forward stream actually looks like inside one leg.
+
+    The alternating estimator needs to know which TIMED ROUNDS carry the dose.
+    The dose alternates over qualifying FORWARDS, so the two agree only if the
+    boundary-fused chain sees exactly one forward per round. This reads the
+    witness and checks that, using the row width as the fingerprint: a timed
+    round verifies one row per proposed draft plus the primary token, so its
+    width must be `effective_draft_lengths[i] + 1`.
+    """
+    report = json.loads((leg_dir / "report.json").read_text())
+    accounting = dose_accounting(leg_dir / "dose-witness.txt")
+    if accounting is None:
+        raise SystemExit(f"{leg_dir}: no dose-witness.txt")
+    sequence = accounting["sequence"]
+    widths = [f["width"] for f in sequence]
+    rounds = report["round_count"]
+    expected = [k + 1 for k in report["effective_draft_lengths"]]
+
+    def histogram(values: list[int]) -> dict[int, int]:
+        out: dict[int, int] = {}
+        for v in values:
+            out[v] = out.get(v, 0) + 1
+        return dict(sorted(out.items()))
+
+    # `begin()` warms every legal shape before the timed window opens, so the
+    # leg starts with an ascending 1..9 sweep. Everything after it is either a
+    # timed round or work the estimator must not attribute to a round.
+    sweep = 0
+    while sweep + 1 < len(widths) and widths[sweep + 1] == widths[sweep] + 1:
+        sweep += 1
+    warmup_sweep = widths[:sweep + 1]
+
+    return {
+        "leg": leg_dir.name,
+        "tokens": report["decode_token_count"],
+        "round_count": rounds,
+        "qualifying_forwards": len(sequence),
+        "forwards_per_round": len(sequence) / rounds if rounds else float("nan"),
+        "warmup_ascending_sweep": warmup_sweep,
+        "width_histogram_observed": histogram(widths),
+        "width_histogram_expected_for_rounds": histogram(expected),
+        # A verify carries at least two rows whenever any draft was proposed,
+        # so width-1 forwards can never be timed rounds in a drafting leg.
+        "width_one_forwards": sum(1 for w in widths if w == 1),
+        "wide_forwards_after_warmup": sum(
+            1 for w in widths[sweep + 1:] if w >= 5),
+        "verify_block_replayed_round_count": report[
+            "verify_block_replayed_round_count"],
+        "rejected_draft_total": report["rejected_draft_total"],
+        "alternation_exact": accounting["alternation_exact"],
+        "one_forward_per_round": len(sequence) - (sweep + 1) == rounds,
+        "tail_width_fingerprint_matched": widths[-rounds:] == expected,
     }
 
 
@@ -213,29 +270,41 @@ def analyse(leg_dir: pathlib.Path) -> dict:
         raise SystemExit(
             f"{leg_dir}: {rounds} round times but {len(widths)} widths")
 
-    # The dose lands on every second QUALIFYING forward. Round i therefore
-    # carries it when i is odd, and only if there was exactly one qualifying
-    # forward per round. That is checked, not assumed.
+    # Which rounds carry the dose. Without a witness this is the parity
+    # assumption "round i is dosed iff i is odd", which needs exactly one
+    # qualifying forward per round and an even number of warm-up forwards.
+    # Neither is safe: `begin()` warms every legal shape before the timed
+    # window opens, so the leg starts with a run of non-round forwards.
     dosed = [i % 2 == 1 for i in range(rounds)]
     alignment = None
     if accounting:
-        # The witness counts EVERY qualifying forward in the process, and
-        # warm-up runs many before the timed window opens: a 512-token leg
-        # records 401 forwards against 77 rounds. So the timed rounds are the
-        # last `round_count` forwards, preceded by `warmup_forwards`.
-        #
-        # Timed round i is then forward W + i + 1, which is dosed when
-        # W + i + 1 is even. The estimator assumes round i is dosed when i is
-        # odd, i.e. when i + 1 is even, so the two agree exactly when W is
-        # even. An odd W would invert every pair and flip the sign of the
-        # result, which is why this is checked rather than assumed.
-        forwards = accounting["qualifying_forwards"]
-        warmup = forwards - report["round_count"]
+        # With a witness the mapping is read off the ROW WIDTH instead. A
+        # timed round verifies one row per proposed draft plus the primary
+        # token, so round i has width `effective_draft_lengths[i] + 1`. The
+        # timed rounds are the last `round_count` qualifying forwards, and
+        # requiring that whole width vector to match the parent's own record
+        # identifies them by fingerprint rather than by parity. The dose flags
+        # of those forwards then replace the assumption entirely.
+        sequence = accounting["sequence"]
+        expected = [k + 1 for k in widths]
+        tail = sequence[-rounds:] if len(sequence) >= rounds else []
+        observed = [f["width"] for f in tail]
+        matched = bool(tail) and observed == expected
+        warmup = len(sequence) - rounds
+        witness_dosed = [f["dosed"] == 1 for f in tail]
+        if matched:
+            dosed = witness_dosed
         alignment = {
-            **accounting,
+            **{k: v for k, v in accounting.items() if k != "sequence"},
             "round_count": report["round_count"],
             "warmup_forwards": warmup,
-            "parity_matches_estimator": warmup >= 0 and warmup % 2 == 0,
+            "warmup_widths": [f["width"] for f in sequence[:warmup]],
+            "timed_widths_observed": observed,
+            "timed_widths_expected": expected,
+            "width_fingerprint_matched": matched,
+            "parity_assumption_agrees": (
+                matched and witness_dosed == [i % 2 == 1 for i in range(rounds)]
+            ),
         }
 
     pairs = pair_rounds(us, widths, dosed)
@@ -298,6 +367,56 @@ BAR_US = 355.0
 BAR_PERCENT = 0.20
 
 
+def synthetic_injection(leg_dirs: list[pathlib.Path], delta_us: float) -> dict:
+    """Recover a known effect of exactly `delta_us` from real null-leg data.
+
+    The GPU dose probe can only prove that the estimator sees SOMETHING; it
+    cannot prove the estimator returns the right number, because the true size
+    of the injected cost is not known independently. This check does. It takes
+    the measured round times of a leg that carried NO dose, adds `delta_us` to
+    the rounds the estimator will call dosed, and runs the same estimator.
+    The answer must come back at `delta_us` and the interval must cover it.
+
+    Everything except the injection is real measured data, so the round-to-
+    round noise, the width sequence and the within-leg drift are the ones the
+    protocol actually faces.
+    """
+    per_leg = []
+    for leg_dir in leg_dirs:
+        report = json.loads((leg_dir / "report.json").read_text())
+        widths = list(report["effective_draft_lengths"])
+        rounds = len(report["block_request_seconds"])
+        dosed = [i % 2 == 1 for i in range(rounds)]
+        us = [s * 1e6 + (delta_us if d else 0.0)
+              for s, d in zip(report["block_request_seconds"], dosed)]
+        pairs = summarise(
+            [p["difference_us"] for p in pair_rounds(us, widths, dosed)])
+        triples = summarise(
+            [t["estimate_us"] for t in triple_rounds(us, widths, dosed)])
+        per_leg.append({
+            "leg": leg_dir.name,
+            "pair_mean_us": pairs["mean_us"],
+            "pair_half_width_us": pairs["half_width_us"],
+            "pair_covers_delta": bool(
+                abs(pairs["mean_us"] - delta_us) <= pairs["half_width_us"]),
+            "triple_mean_us": triples["mean_us"],
+            "triple_half_width_us": triples["half_width_us"],
+            "triple_covers_delta": bool(
+                abs(triples["mean_us"] - delta_us) <= triples["half_width_us"]),
+        })
+    return {
+        "injected_us": delta_us,
+        "legs": per_leg,
+        "pair_bias_us": statistics.fmean(
+            leg["pair_mean_us"] - delta_us for leg in per_leg),
+        "triple_bias_us": statistics.fmean(
+            leg["triple_mean_us"] - delta_us for leg in per_leg),
+        "all_legs_cover_delta": all(
+            leg["pair_covers_delta"] and leg["triple_covers_delta"]
+            for leg in per_leg),
+    }
+
+
 def session_summary(results: list[dict]) -> dict:
     """Contrast the dosed legs against the null legs, not against zero.
 
@@ -353,13 +472,31 @@ def session_summary(results: list[dict]) -> dict:
         "single_leg_half_width_percent": 100.0 * median_half / control,
         "control_round_us": control,
         "clears_bar": bool(median_half <= BAR_US),
-        "round_alignment_verified": any(
+        "round_alignment_verified": all(
             r["dose_alignment"]
-            and r["dose_alignment"]["one_forward_per_round"]
+            and r["dose_alignment"]["width_fingerprint_matched"]
             and r["dose_alignment"]["alternation_exact"]
             and r["dose_alignment"]["alternate"]
-            for r in dosed),
+            for r in dosed) if dosed else False,
     }
+    # The frame, named. A percent without the round it divides is not a
+    # reportable number, so every consumer of this protocol gets the absolute
+    # microseconds per round under the v2 key as well as per arm.
+    out["e109_v2_control_round_us"] = control
+    out["arms"] = {}
+    for label in sorted({r["arm_label"] for r in results if r["arm_label"]}):
+        legs = [r for r in results if r["arm_label"] == label]
+        rounds = [r["e109_control_round_us"] for r in legs]
+        out["arms"][label] = {
+            "legs": len(legs),
+            "e109_v2_control_round_us": statistics.fmean(rounds),
+            "control_round_us_sd": (
+                statistics.stdev(rounds) if len(rounds) > 1 else float("nan")),
+            "dose_requested": legs[0]["dose_requested"],
+            "half_width_us_median": statistics.median(
+                [r["half_width_us"] for r in legs if r["pairs"] > 1]
+                or [float("nan")]),
+        }
 
     # The deliverable is a recipe, not a single number: how many legs buy how
     # much resolution, and what that costs in wall clock. Pooling k legs of
@@ -367,13 +504,35 @@ def session_summary(results: list[dict]) -> dict:
     wall = [float(r["leg_wall_seconds"]) for r in results
             if r.get("leg_wall_seconds")]
     seconds_per_leg = statistics.fmean(wall) if wall else float("nan")
+    # Resolution and DETECTION are different questions. A half-width under the
+    # bar only says the interval is narrow enough; whether a bar-sized arm
+    # comes back with an interval that excludes zero also depends on the leg's
+    # own offset, which the null legs measure directly. Power is the normal
+    # approximation P(|estimate| > half-width) at a true effect of one bar.
+    null_scatter = statistics.stdev(
+        [r["paired_difference_mean_us"] for r in null]) if len(null) > 1 else (
+            float("nan"))
+    effect = BAR_PERCENT / 100.0 * control
+
+    def power(k: int) -> float:
+        if math.isnan(null_scatter) or null_scatter <= 0:
+            return float("nan")
+        z = (effect - median_half / math.sqrt(k)) / (
+            null_scatter / math.sqrt(k))
+        return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+
     if not math.isnan(median_half):
+        out["detection"] = {
+            "effect_us": effect,
+            "null_leg_estimate_scatter_us": null_scatter,
+        }
         out["cost_curve"] = [
             {"legs": k,
              "half_width_us": median_half / math.sqrt(k),
              "half_width_percent": 100.0 * median_half / math.sqrt(k) / control,
              "minutes": k * seconds_per_leg / 60.0,
-             "clears_bar": bool(median_half / math.sqrt(k) <= BAR_US)}
+             "clears_bar": bool(median_half / math.sqrt(k) <= BAR_US),
+             "power_at_one_bar": power(k)}
             for k in (1, 2, 4, 8)
         ]
         needed = max(1, math.ceil((median_half / BAR_US) ** 2))
@@ -381,6 +540,51 @@ def session_summary(results: list[dict]) -> dict:
         out["minutes_to_reach_bar"] = needed * seconds_per_leg / 60.0
         out["seconds_per_leg"] = seconds_per_leg
     return out
+
+
+def render_forward_stream(diagnoses: list[dict]) -> list[str]:
+    lines = ["", "  FORWARD STREAM (diagnostic legs, witness enabled):"]
+    for d in diagnoses:
+        lines.append(
+            f"    {d['leg']}: tokens={d['tokens']} rounds={d['round_count']}"
+            f" qualifying_forwards={d['qualifying_forwards']}"
+            f" ({d['forwards_per_round']:.2f} per round)"
+            f" alternation_exact={d['alternation_exact']}")
+        lines.append(
+            f"      warmup ascending sweep {d['warmup_ascending_sweep']}"
+            f"   width histogram {d['width_histogram_observed']}")
+        lines.append(
+            f"      widths the ROUNDS need"
+            f" {d['width_histogram_expected_for_rounds']}"
+            f"   width-1 forwards {d['width_one_forwards']}"
+            f"   wide (>=5) after warmup {d['wide_forwards_after_warmup']}"
+            f"   replayed verify blocks"
+            f" {d['verify_block_replayed_round_count']}")
+        lines.append(
+            f"      one_forward_per_round={d['one_forward_per_round']}"
+            f"   tail_width_fingerprint_matched="
+            f"{d['tail_width_fingerprint_matched']}")
+    return lines
+
+
+def render_injection(check: dict) -> list[str]:
+    lines = ["",
+             f"  SYNTHETIC INJECTION on null legs, known effect"
+             f" {check['injected_us']:.1f} us:"]
+    for leg in check["legs"]:
+        lines.append(
+            f"    {leg['leg']}: pair {leg['pair_mean_us']:+.1f}"
+            f" +-{leg['pair_half_width_us']:.1f} us"
+            f" {'covers' if leg['pair_covers_delta'] else 'MISSES'};"
+            f" triple {leg['triple_mean_us']:+.1f}"
+            f" +-{leg['triple_half_width_us']:.1f} us"
+            f" {'covers' if leg['triple_covers_delta'] else 'MISSES'}")
+    lines.append(
+        f"    bias: pair {check['pair_bias_us']:+.1f} us,"
+        f" triple {check['triple_bias_us']:+.1f} us;"
+        f" all legs cover the injected value:"
+        f" {check['all_legs_cover_delta']}")
+    return lines
 
 
 def render(results: list[dict]) -> str:
@@ -406,17 +610,21 @@ def render(results: list[dict]) -> str:
     for r in results:
         a = r["dose_alignment"]
         if a is None:
-            state = ("DOSE REQUESTED but UNVERIFIED: no worker accounting"
-                     " reached the parent; rerun with"
-                     " MLX_DFLASH_TRACE_CACHE_SEAM=1"
+            state = ("DOSE REQUESTED but UNVERIFIED: this leg ran without"
+                     " MLX_E105_DOSE_WITNESS, so the round mapping is the"
+                     " parity assumption"
                      if r["dose_requested"] else "dose-free null leg")
             lines.append(f"  {r['leg']}: {state}")
             continue
         lines.append(
             f"  {r['leg']}: qualifying_forwards={a['qualifying_forwards']}"
             f" round_count={a['round_count']}"
-            f" one_forward_per_round={a['one_forward_per_round']}"
+            f" warmup_forwards={a['warmup_forwards']}"
+            f" warmup_widths={a['warmup_widths']}")
+        lines.append(
+            f"    width_fingerprint_matched={a['width_fingerprint_matched']}"
             f" alternation_exact={a['alternation_exact']}"
+            f" parity_assumption_agrees={a['parity_assumption_agrees']}"
             f" dosed_forwards={a['dosed_forwards']}"
             f" dose={a['dose']} shape={a['shape']}")
     lines.append("")
@@ -479,7 +687,8 @@ def render(results: list[dict]) -> str:
                 f"  +-{point['half_width_us']:>6.1f} us"
                 f" = {point['half_width_percent']:.3f} %"
                 f"  {point['minutes']:>5.1f} min"
-                f"  {'clears' if point['clears_bar'] else 'short of'} the bar")
+                f"  {'clears' if point['clears_bar'] else 'short of'} the bar"
+                f"  power at one bar {point['power_at_one_bar']:.2f}")
         lines.append(
             f"  -> {summary['legs_to_reach_bar']} leg(s) ="
             f" {summary['minutes_to_reach_bar']:.1f} min to resolve"
@@ -491,10 +700,31 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("legs", nargs="+", type=pathlib.Path)
     parser.add_argument("--json", type=pathlib.Path)
+    parser.add_argument(
+        "--witness-leg", action="append", default=[], type=pathlib.Path,
+        help="diagnostic leg that ran with MLX_E105_DOSE_WITNESS")
+    parser.add_argument(
+        "--inject-us", type=float,
+        help="known effect to recover from the null legs;"
+             " defaults to the bar as a fraction of the measured round")
     args = parser.parse_args()
 
     results = [analyse(leg) for leg in args.legs]
-    print(render(results))
+    text = render(results)
+    diagnoses = [forward_stream_diagnosis(leg) for leg in args.witness_leg]
+    if diagnoses:
+        text += "\n" + "\n".join(render_forward_stream(diagnoses))
+    null_legs = [leg for leg, r in zip(args.legs, results)
+                 if not r["dose_requested"]]
+    inject_us = args.inject_us
+    if inject_us is None:
+        inject_us = BAR_PERCENT / 100.0 * statistics.fmean(
+            r["e109_control_round_us"] for r in results)
+    injection = (synthetic_injection(null_legs, inject_us)
+                 if null_legs else None)
+    if injection:
+        text += "\n" + "\n".join(render_injection(injection))
+    print(text)
     if args.json:
         args.json.write_text(json.dumps(
             {"protocol": "e109-rung0-v2-within-leg-alternating-dose",
@@ -502,6 +732,8 @@ def main() -> int:
              "bar_us": BAR_US,
              "bar_percent": BAR_PERCENT,
              "session": session_summary(results),
+             "forward_stream_diagnosis": diagnoses,
+             "synthetic_injection": injection,
              "legs": results}, indent=2))
         print(f"\nwrote {args.json}")
     return 0

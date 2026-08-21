@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+import tempfile
 
 _SPEC = importlib.util.spec_from_file_location(
     "e109_v2_report", pathlib.Path(__file__).with_name("e109_v2_report.py"))
@@ -92,11 +93,41 @@ def main() -> int:
     if abs(got - DRIFT) > 1.0:
         failures.append(f"drift slope contaminated by the dose: {got}")
 
+    # 7. The synthetic-injection check rests on one identity: adding a known
+    #    value to the rounds the estimator calls dosed must move both
+    #    estimators by exactly that value, whatever the underlying series is.
+    #    If that failed, a recovered value could not be read as the injection.
+    injected = [null[i] + (DOSE if DOSED[i] else 0.0) for i in range(ROUNDS)]
+    for name, estimator in (("pair", pair_mean), ("triple", triple_mean)):
+        shift = (estimator(injected, FLAT, DOSED)
+                 - estimator(null, FLAT, DOSED))
+        if not close(shift, DOSE, 1e-6):
+            failures.append(f"{name} injection shift: {shift} != {DOSE}")
+
+    # 8. The witness parser must read the row width, and the width fingerprint
+    #    must reject a stream whose tail does not match the parent's own round
+    #    widths. That rejection is the only thing standing between an
+    #    unverified parity assumption and a wrong sign.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "dose-witness.txt"
+        rows = [(1, 0, 1), (2, 1, 2), (3, 0, 8), (4, 1, 8)]
+        path.write_text("".join(
+            f"e105_dose_forward forward={f} dosed={d} width={w}"
+            f" applications=0 alternate=true dose=4 shape=prework\n"
+            for f, d, w in rows))
+        got = v2.dose_accounting(path)
+        if [r["width"] for r in got["sequence"]] != [1, 2, 8, 8]:
+            failures.append(f"witness widths: {got['sequence']}")
+        if not got["alternation_exact"]:
+            failures.append("witness alternation not detected")
+        if got["qualifying_forwards"] != 4 or got["dosed_forwards"] != 2:
+            failures.append(f"witness counts: {got}")
+
     for failure in failures:
         print(f"FAIL {failure}")
     if failures:
         return 1
-    print("e109_v2_report selftest: 6/6 pass")
+    print("e109_v2_report selftest: 8/8 pass")
     return 0
 
 
