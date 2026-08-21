@@ -76,9 +76,50 @@ def table(columns, rows) -> wandb.Table:
     return t
 
 
+def leg_score(tag: str) -> dict:
+    """Score fields of the leg, so every table travels with the run that
+    produced it and with the head that leg actually used."""
+    path = Path("research/out") / tag / "score.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text()).get("metrics", {})
+
+
+def busy_split_rows(doc: dict) -> list[dict]:
+    """Split the round's GPU busy time across the host windows. This is a
+    window split, NOT a kernel-family split: the ledger records no pipeline
+    binding, so no kernel attribution is available from this data."""
+    agg = doc["aggregate"]
+    total = agg["gpu_busy_us_total"]["median"]
+    rows = []
+    for _, _, label in ANCHORS:
+        busy = agg["%s_gpu_busy_us" % label]["median"]
+        rows.append({
+            "tag": doc["tag"], "window": label, "gpu_busy_us": busy,
+            "share_of_round_gpu_busy_pct": 100.0 * busy / total,
+        })
+    return rows
+
+
 def log_leg(run, doc: dict) -> None:
     tag = doc["tag"]
     run.log({f"rung0b/{tag}/intervals": table(INTERVAL_COLS, interval_rows(doc))})
+    run.log({f"rung0b/{tag}/gpu_busy_split": table(
+        ["tag", "window", "gpu_busy_us", "share_of_round_gpu_busy_pct"],
+        busy_split_rows(doc))})
+
+    score = leg_score(tag)
+    if score:
+        run.log({f"rung0b/{tag}/score": table(sorted(score), [score])})
+        for key, value in score.items():
+            if isinstance(value, bool):
+                run.log({f"rung0b/{tag}/{key}": int(value)})
+            elif isinstance(value, (int, float)):
+                run.log({f"rung0b/{tag}/{key}": value})
+    stats = doc["buffer_stats"]
+    run.log({f"rung0b/{tag}/committed_buffers": stats["committed_total"],
+             f"rung0b/{tag}/invalid_buffers": stats["invalid_total"],
+             f"rung0b/{tag}/union_intervals": doc["union_intervals"]})
 
     per_round = doc["per_round"]
     columns = sorted(per_round[0])
@@ -125,6 +166,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rung0a", required=True)
     ap.add_argument("--intervals", required=True)
+    ap.add_argument("--followup")
     ap.add_argument("--name", default="e90-gpu-idle-accounting")
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
@@ -170,6 +212,19 @@ def main() -> None:
 
     for doc in docs:
         log_leg(run, doc)
+
+    if args.followup:
+        followup = json.loads(Path(args.followup).read_text())
+        for section, block in followup.items():
+            if not isinstance(block, dict):
+                continue
+            for key, value in block.items():
+                if isinstance(value, bool):
+                    run.log({f"followup/{section}/{key}": int(value)})
+                elif isinstance(value, (int, float)):
+                    run.log({f"followup/{section}/{key}": value})
+        run.log({"followup/lhsindices": wandb.Table(
+            columns=["json"], data=[[json.dumps(followup, indent=2)]])})
 
     run.log({"raw/intervals": wandb.Table(
         columns=["json"], data=[[json.dumps(docs, indent=2)]])})
