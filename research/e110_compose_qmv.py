@@ -25,7 +25,10 @@ import sys
 GEN = pathlib.Path("Vendor/mlx-swift/Source/Cmlx/mlx-generated")
 
 WIDE_ANCHOR = "  static_assert(NA >= 2 && NA <= 5,"
-ENTRY_ANCHOR = "    uint simd_lid [[thread_index_in_simdgroup]]) {\n  if (batched) {"
+# `if (batched) {` opens several kernels, so reach it through the one
+# `affine_qmv_fast` signature instead.
+ENTRY_SIGNATURE = "[[kernel]] void affine_qmv_fast("
+ENTRY_ANCHOR = "  if (batched) {"
 
 # NA * 512 bfloat16 = NA * 1024 B. The store, the barrier and the guarded
 # device write keep the array live at every optimisation level.
@@ -69,12 +72,11 @@ def main() -> int:
             sys.exit("e110_compose_qmv: wide anchor is not unique")
         quantized = quantized.replace(WIDE_ANCHOR, WIDE_PROBE + WIDE_ANCHOR, 1)
     elif args.tile == "entry":
-        if quantized.count(ENTRY_ANCHOR) != 1:
-            sys.exit("e110_compose_qmv: entry anchor is not unique")
-        signature, _ = ENTRY_ANCHOR.split("\n  if (batched) {")
-        quantized = quantized.replace(
-            ENTRY_ANCHOR, signature + "\n" + ENTRY_PROBE + "  if (batched) {", 1
-        )
+        if quantized.count(ENTRY_SIGNATURE) != 1:
+            sys.exit("e110_compose_qmv: entry signature is not unique")
+        start = quantized.index(ENTRY_SIGNATURE)
+        body = quantized.index(ENTRY_ANCHOR, start)
+        quantized = quantized[:body] + ENTRY_PROBE + quantized[body:]
 
     src = [preamble("utils"), preamble("gemm"), preamble("quantized_utils"), quantized]
     t, gs, b = args.type, args.group_size, args.bits

@@ -67,13 +67,22 @@ int main(int argc, const char **argv) {
       id<MTLLibrary> lib = [device newLibraryWithSource:src
                                                 options:opts
                                                   error:&err];
+      // A variant that cannot compile is a result, not a harness failure:
+      // MSL rejects a threadgroup declaration inside a non-kernel function.
       if (!lib) {
+        NSString *why = err ? [err localizedDescription] : @"unknown";
+        why = [why stringByReplacingOccurrencesOfString:@"\"" withString:@"'"];
+        why = [why stringByReplacingOccurrencesOfString:@"\n" withString:@" | "];
         fprintf(stderr, "e110_tgmem_probe: %s failed to compile: %s\n",
-                [label UTF8String],
-                err ? [[err localizedDescription] UTF8String] : "unknown");
-        return 1;
+                [label UTF8String], [why UTF8String]);
+        printf("    {\"label\": \"%s\", \"source\": \"%s\", \"compiled\": false, "
+               "\"compile_error\": \"%s\", \"entry_points\": []}%s\n",
+               [label UTF8String], [path UTF8String], [why UTF8String],
+               i + 1 == argc ? "" : ",");
+        continue;
       }
-      printf("    {\"label\": \"%s\", \"source\": \"%s\", \"entry_points\": [\n",
+      printf("    {\"label\": \"%s\", \"source\": \"%s\", \"compiled\": true, "
+             "\"entry_points\": [\n",
              [label UTF8String], [path UTF8String]);
       NSArray<NSString *> *names = [lib functionNames];
       names = [names sortedArrayUsingSelector:@selector(compare:)];
