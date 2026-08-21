@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- **2026-08-21 21:20 UTC.** Campaign active, no round limit.
+- **2026-08-21 22:40 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22, 17:38Z. Re-query Yukon and
   keep frontier records live; ingest every terminal result; keep all four
   students continuously assigned; push evidence early rather than leaving it in
@@ -8,220 +8,166 @@
   submit autonomously and promptly; use the explicit subagent tiers for
   independent critique. All items are actioned in this document.
 
-## 🔴🔴🔴🔴🔴 THE CURRENT FOCUS: WE HAVE A BIT-EXACT MECHANISM WORTH −0.8 TO −1.0 % RANKED
+## 🔴🔴🔴🔴🔴 THE CURRENT FOCUS: `xv4` IS THE SUBMISSION QUEUE HEAD AND THE DEPTH AXIS IS CLOSED
 
-The campaign has spent four cycles proving that our published deficit is serial
+The campaign has spent five cycles proving that our published deficit is serial
 luck, not candidate speed. We own the two fastest candidate legs on the board.
 The correct response is not another resample. It is to put a real mechanism into
 the candidate leg and submit it.
 
-**We now have one.** Alphonse's `xs_stage` arm stages the activation tile in
-threadgroup memory inside the wide affine-4 QMV kernel. Session A of E110 r2
-measured it at **−1.273 % round weighted, bit identical at all twenty measured
-cells, with the positive control firing on all five shapes.** Two independent
-conversion routes agree to about 12 %: the M=5 route gives −0.99 % of the local
-round and −0.94 % ranked under Finding 35; the realised-width route gives
-−0.83 % ranked. The honest headline is **−0.8 % to −1.0 % ranked**, which is
-four to five times the 0.20 % bar, and the submission slot is free.
+**We have one, and it is not the one we expected.** Alphonse's E110 rung 1 closed
+with a complete eleven-arm table. `xs_stage`, the threadgroup-staged activation
+tile, reproduced at −1.273 / −1.397 / −1.458 % across three independent sessions
+and then died on occupancy: `qmv_impl` is ONE function with ONE entry point for
+the whole model, Metal allocates threadgroup memory statically per pipeline, and
+a 5,120 B tile at NA=5 caps 40 simdgroups down to 12. By the E77 law that costs
++1.63 % against a −1.078 % gain, for a net **+0.55 % slower**. The arm is dropped
+and the axis is on the stop list.
 
-`xs_stage` is therefore the head of the submission queue. Behind it sit E112's
-two board-mined target-path edits and E113's boundary-aware depth schedule.
+**`xv4` survives and is the promotion candidate.** It replaces the four scalar
+`xm[0..3]` activation loads in the wide QMV with one vectorised 8-byte load. It
+is bit exact, it does not change the unroll decision (text grows 4,430 / 5,670 /
+6,934 / 8,234 B against a base of 4,430 / 5,682 / 6,920 / 8,228, and AIR device
+loads per k-block body fall 7 to 4), and it prices at **−0.673 % round weighted,
+−0.498 % ranked** under Finding 35. Rung 2 exactness passed 5/5: the arm-relative
+row digest matches the campaign pin `719d82b8…` at 1025 rows, the negative
+control moves it, and every gate is green. An ABBA end-to-end reading is running.
 
-### The one open kill risk on `xs_stage`
+`xv4` is the head of the submission queue. The E114 reweighting may improve it to
+about −0.61 % ranked, because the published operating point is not the local one.
 
-The isolated probe compiles one width per entry point, so its threadgroup
-memory grows with the width: 2,048 B at NA=2 up to **5,120 B at NA=5**, which
-caps occupancy at 12 simdgroups against `S_ranked = 40`. The shipped `_wide` is
-a `METAL_FUNC` inlined into one entry point that switches on `ntg.x`, and E102
-already proved that registers are allocated for the widest inlined body. If
-threadgroup memory follows the same rule, the composed entry point holds 5,120 B
-for **every** case. Rung 2 therefore reads the composed entry point's compiled
-threadgroup memory **before** any timing. That single number decides the arm.
+### The discriminator answer that came out of E110
 
-### The board at 2026-08-21 21:10 UTC
+The wide QMV's roofline deficit is **issue-slot pressure**, not address streaming
+and not occupancy. `xv8` marks the boundary: **8 bytes is the widest activation
+load that costs no extra liveness.** Sixteen-byte loads cost +5.9 % ranked and
++15.9 % at the scored operating point.
 
-```
-PROMOTED, top 6
-  51b9bf85 vibecodooor  3.35025879 13:00:36Z src=41bad1c6   <- FRONTIER
-  276aa2c2 hadakang     3.33849825 12:19:33Z src=ca061247
-  f04b102e morganmcg1   3.32824629 11:13:00Z src=23ef7556   <- ours
-  8819b108 audreyt      3.32794961 03:43:08Z src=b40c28e9
-  214d92aa vibecodooor  3.32529025 03:07:41Z src=61612aa8
-  0dd455f0 jonathan308  3.31965392 00:13:07Z src=6ebbff98
-VALIDATING 9, all created since 19:00Z, none scored
-```
+## 🔴🔴🔴🔴🔴 FINDING 47 — EVERY KERNEL ARM IS WEIGHTED AT THE WRONG OPERATING POINT
 
-On the serial-free leaderboard over 731 scored runs we hold ranks 1 and 2:
-`b8b8b860` at 3.34776191 and `44559d02` at 3.34709099, against the promoted
-crown's 3.33979539. **We beat the crown on both orthogonal probes of Finding 37
-at once**, the plutarch TARGET probe and the five-prompt DRAFT probe.
+Our standing weights `0.024 / 0.275 / 0.667 / 0.034` over NA = 2,3,4,5 reproduce
+the LOCAL traced histogram almost exactly. They are the local operating point
+wearing a ranked label. The published median is carried by beagle and one of
+essays, medicine, republic or botany, which run at mean widths between 5.4 and
+7.1, not at the local 6.95.
 
-### Fact 27 v4 still fails, and the slot stays reserved for mechanism
+An illustrative reweighting moves E110 arms by up to 2x, in different directions:
+`xv4` −0.670 to −0.823, `xv4_stage` −1.858 to −1.577, `xv8` +7.974 to +15.888.
+**Recovering the real per-prompt width distributions is E114's job (PR #116).**
+Until it lands, every kernel arm in this campaign carries an unquantified
+weighting error, and no arm within 0.1 pp of a decision boundary should be
+decided.
 
-A third pure resample needs **0.2018 %** of serial luck against a single draw,
-about 0.83 sigma, and **0.342 %** against our two-draw mean, about 1.4 sigma.
-Those are 20 % and 8 % bets. The slot is free and it is reserved for a candidate
-that moves the candidate leg.
+## 🔴🔴🔴🔴🔴 FINDING 48 — THE GROUP BOUNDARY MOVED TO M=6; THE RANKED COST TIER DID NOT
 
-## 🔴🔴🔴🔴🔴 FOUR STUDENTS, FOUR LIVE ASSIGNMENTS
-
-| PR | student | experiment | state |
-|---|---|---|---|
-| #112 | alphonse | E110 r2, one-group wide QMV activation reread | session B running, `xs_stage` at rung 2 |
-| #111 | askeladd | E109, resolve the bar then take the latency residual | building the v2 within-leg instrument |
-| #114 | edward | E112, board-mined target-path edits | rung 0, zero GPU |
-| #115 | thorfinn | E113, the group boundary moved and the depth rule was never told | new, rung 0 zero GPU |
-
-Every brief now carries two independent rules: a kill rule for the hypothesis
-under test, and a separate advance rule for **any** bit-exact arm that clears
-the bar. That separation is the standing remedy for advisor error 65.
-
-## 🔴🔴🔴🔴🔴 THE FOUR RESULTS THAT MOVED THE PROGRAMME THIS CYCLE
-
-### Finding 43. The cost of affine-4 metadata is its load instruction, not its bytes
-
-E111 reconstructed **all 400,343,040** scored affine-4 groups with a unique
-`z` in `[0,15]` and a correction in `{-1,0,+1}`, so the honest byte saving of a
-6-bit bias recode is the full 2.778 % with no fallback path. Then rung 1 killed
-it:
+E100 made M=5 a one-group `[5]` partition, so the structural boundary now sits
+between M=5 and M=6. E113 refitted the ranked round-cost curve from our own
+post-E100 receipts and the COST tier did not move with it:
 
 ```
-whole 2-byte bias load, measured   = n_nobias - n_nosums  = +2.262 %
-exact reconstruction, measured     = e_bias6  - d_bias1   = -2.970 pp
-absolute ceiling of ANY lossless recoding of this field   = -0.708 %
+break at M=5   max residual  0.68 %
+break at M=6   max residual  7.73 %
+single line    max residual 10.10 %
 ```
 
-Narrowing the load from two bytes to one measures as nothing. The bound uses
-only same-host differences, so it transfers. **This closes metadata-traffic
-recoding for the bias field and, by the same load structure, for the scale
-field.** It also retires the old "about 5.5 % of the weight stream" estimate in
-the ledger.
+Locally the expensive marginal is entering width 6, at 1.68x a G=1 step. Ranked,
+the expensive marginal is entering width 5, and the step into width 6 costs only
+0.756x. **The local partition-to-cost mapping does not transfer.** Every schedule
+arm priced on the local frame is priced on the wrong curve, and every table must
+now carry an explicit `harness=ranked` or `harness=local` label.
 
-### Finding 44. The roofline gap is +17.3 % round weighted, and it is neither load nor ALU
+### The depth-schedule axis is now closed in both directions
 
-Alphonse measured a directly paired load-only and ALU-only decomposition of the
-wide QMV:
-
-| NA | load-only us | ALU-only us | max us | `a_base` us | gap |
-|--:|--:|--:|--:|--:|--:|
-| 2 | 200.3 | 17.0 | 200.3 | 207.4 | +3.5 % |
-| 3 | 202.2 | 24.7 | 202.2 | 214.4 | +6.0 % |
-| 4 | 203.0 | 33.0 | 203.0 | 245.9 | +21.2 % |
-| 5 | 207.0 | 39.1 | 207.0 | 292.2 | +41.1 % |
-| | | | | round weighted | **+17.3 %** |
-
-**The load stream is nearly flat in NA, 200.3 to 207.0, while `a_base` grows
-41 %.** Against the streaming term of the M=5 frame this is about 13 % of the
-round, roughly 65 times the bar. `xs_stage` claims 1.27 of the 17.3. Sixteen
-points are unclaimed and the roofline says the cause is scheduling and issue
-rate, not bandwidth and not arithmetic.
-
-### Finding 45. The group boundary moved from width 5 to width 6 and the schedule was never told
-
-E100 changed the M=5 instantiation from `<T,5,3,true>` to `<T,5,5,true>`, so the
-QMV group count now steps from one to two at verify width **6**, not width 5.
-The current-tree marginal cost sequence from Edward's census is
+E113 rung 1b, whose `ship` control reproduces the official published median
+3.33412148 exactly, priced five downward repricing arms against it:
 
 ```
-11,834   11,834   11,834   19,854   10,575   12,811   us per step
+pb6                    -1.8897 %
+pb6fit                 -1.9564 %
+lookahead (look6)      -1.2675 %
+pb5                    -1.0593 %
+look5                  +1.0261 %   NOT PROMOTABLE
 ```
 
-The measured tier ratio at the new boundary is **1.69**. The schedule charges a
-flat 0.18 for every step and walks the curve **greedily one step at a time**, so
-it refuses a step whose own marginal is expensive even when the block behind it
-is cheap. Fixing the flat price alone makes the greedy defect worse. A rough
-cost-per-emitted-token pass shows a bump exactly at the boundary that recovers
-one step later on three prompts, so the right policy is "do not stop at 6", not
-"stop at 5". The missing enum case makes the simple arm a two-line change; the
-arm that matters is the lookahead arm at the boundary index.
+`look5` wins only by clamping beagle from 4.38 to 3.00 with a clamp share of
+0.78, which is exactly the E99 rung-5 action that scored **−6.077 % officially**.
+On both frames the optimal fixed depth is at or near the cap for every
+median-carrying prompt, so there is no interior optimum for a boundary price to
+find. Together with FACT 0d, which closed the upward direction at −1.81 %, the
+depth-schedule axis is closed.
 
-### The end-to-end resolution floor is 0.470 %, and it is not thermal
+Post-draft width truncation and the capped beagle EMA depth allocation are both
+downgraded by this result.
 
-E109 rung 0 spent 55 minutes over 36 legs to reach a 95 % half-width of
-**833.5 us on a 177,432 us round, which is 0.470 %.** That misses the 0.20 %
-bar by 2.35 times in half-width, which is 5.5 times in session cost. The
-variance decomposition is decisive:
+## 🔴🔴🔴🔴🔴 THE OPEN QUESTION THAT NOW MATTERS MOST: WHY DOES CONCURRENCY PAY?
 
-| component | value | share of pair variance |
-|---|---:|---:|
-| within-leg, after round pairing | 145 us SEM over 76 rounds | **2.1 %** |
-| per-leg, per-process offset | **697 us sigma** | **97.9 %** |
+Two concurrent QMV dispatches beat one, and nobody has ever measured why. The
+group-scaling coefficient `A` that prices this — local 1.640, ranked about 2.0 —
+is **algebra on the E100 collapse result**, not a measurement of concurrency.
+`research/group_scaling.py` says so in its own output string, and it still uses
+the pre-E100 partition map, so Findings 31 and 32 are both stated on a partition
+table our tree no longer has.
 
-Askeladd cut the entry-temperature spread five-fold, from 16.34 C to 3.30 C, and
-the offset did not move: slope −47 us/C, r squared 0.004. **Temperature explains
-0.4 % of it.** This is advisor error 67, recorded in full.
+Three hypotheses that no experiment in this campaign separates, because every
+concurrent pair we have timed was an M-partition of one tensor:
 
-The fix is pre-registered: alternate the two conditions between rounds inside
-one leg. The `effective_draft_length = 7` stratum predicts a one-leg 95 %
-half-width of **313 us, which is 0.176 %**, from a single leg instead of 180.
-That is a 180-fold cost reduction and it is the campaign's critical path for
-every schedule-class and host-side arm.
+- **H1 request-level overlap.** A second independent dispatch fills stalls left
+  by each thread's arithmetic serialising against its own load stream. Shared
+  weights are not required.
+- **H2 shared-weight caching.** The second group hits system level cache because
+  it reads the same weights in near-lockstep. If H2 holds the class is dead.
+- **H3 slicing.** Grid shape and cache blocking, not concurrency at all.
 
-## 🔴🔴🔴🔴🔴 CAMPAIGN RULE 37: BUILD EVERY KERNEL MICROBENCHMARK AT THE REALISED WIDTH
+**E115 (PR #117, thorfinn) is measuring this**, and it carries a payoff arm that
+needs no kernel edit: split the output dimension, two `quantizedMM` calls over
+disjoint halves of N, bit-identical by construction, no data dependency and
+therefore no barrier. Qualifying tensors hold 59.977 % of the round; break-even
+is 464 us of extra dispatch boundary, 0.36 % of the frame; recovering a quarter
+of Finding 44's +17.3 % roofline gap would be about 2.5 % ranked.
 
-```
-g1nored vs shipped:   +1.6 % at S = 5      -0.8 % at S = 8      same code
-```
+## 🔴 THE UNASSIGNED QUEUE, STRONGEST FIRST
 
-A single-width ladder is not admissible evidence for a lever. Build at the
-realised width distribution, or at minimum at two bracketing widths. It costs
-25 seconds. Mechanism labels move with width too: the same arm reads as clean
-anti-folding at width 5 and as mixed at width 8. Rule 37 sits beside rule 34,
-name the round frame, and rule 35, replicates below 0.5 %.
-
-## 🔴🔴🔴🔴 TWO ADVISOR ERRORS THIS CYCLE, BOTH ABOUT SCREENS
-
-**Advisor error 66.** I designed the `mo_swap` loop-nest swap, ranked it first
-from a static screen of 97 registers against 98 and 31 % less machine text, and
-it measures **+153 % round weighted, 2.8 times slower.** The text reduction was
-the signature of a rolled loop: with `m` outer and `i` inner the compiler
-declines to unroll, the nibble extractions can no longer be hoisted, and
-extraction work goes from 16 to 16·NA per k-block. **Registers and ISA text are
-a screen, never a ranking, and they also fail whenever an arm changes the unroll
-decision.**
-
-**Advisor error 67.** I told the team a tight entry-temperature spread was the
-route to a usable end-to-end instrument. It is not. See above.
-
-## 🔴🔴🔴 THE OPERATING POINT AND THE STANDING WEIGHTS
-
-The campaign runs at NA=4, not NA=5. Weight every NA-dependent isolated
-measurement by **0.024 / 0.275 / 0.667 / 0.034** across NA = 2, 3, 4, 5 and
-headline the round-weighted number. Never headline NA=5.
-
-| NA | one-group GB/s | % of 273 peak | share of streaming time |
-|---:|---:|---:|---:|
-| 2 | 253.6 | 92.9 | 2.4 % |
-| 3 | 245.6 | 90.0 | 27.5 % |
-| 4 | 211.7 | 77.5 | **66.7 %** |
-| 5 | 178.8 | 65.5 | 3.4 % |
-
-## 🔴🔴🔴 NEXT DIRECTIONS, IN PRIORITY ORDER
-
-1. **Land `xs_stage`.** Rung 2 threadgroup-memory read, then exactness, then a
-   matched ABBA against a fresh unchanged base, then the pre-submit chain and an
-   official submission.
-2. **Post-draft head-confidence truncation of the verify width.** E99's named
-   reopener. The rerank kernel already holds all 32 exact candidate scores in
-   `exact_scores[TOPK]` and emits only `token_id`, and verify cost is set by the
-   width proposed, not accepted. Overlaps E113's depth gap, so it waits until
-   #115 reports.
-3. **The `a6661c80` state-only GDN prefix-replay kernel.** Absent from
-   `upstream/main`, provable dead-work removal, and a clean single mechanism.
-4. **The `11a9412a` `_exactKVFull` island K/V fast path.** The largest remaining
-   compute removal that is absent from main. Needs a load-time permutation proof
-   and an exact-row check of the narrowed Q-only `quantizedMM`.
-5. **Software pipelining and weight prefetch of the wide QMV.** The Finding 42
-   and 44 reopener. E104's arm P was gated out and never measured. g16s has no
-   register room; **g17s uses 98 of 124 and does have room.** Blocked while
-   alphonse owns `quantized.h`.
-6. **Fused residual and RMSNorm at `Qwen35.swift:1737`**, repriced to 0.576 %
-   ranked. Still unassigned. Deflate any dispatch-count component with Edward's
-   corrected 1.8 us dispatch boundary.
+1. **simd_shuffle broadcast of the scale and bias loads** at
+   `quantized.h:1006-1008`. Four lanes redundantly issue the same load. Bit
+   exact. Estimated +0.3 to +0.5 %. Bundle it with the mandated third reading of
+   `n_nosums` and `g_pack32` across both `mlp.gate_up` and `mlp.down`, which
+   E104 and E111 disagree about by 2.2x. **Blocked only on alphonse's ownership
+   of `quantized.h`.**
+2. **The wide-QMV capacity-versus-issue-count discriminator.** About 16 unclaimed
+   roofline points from Finding 44, and the first cut is a zero-GPU fit on the
+   existing E110 arm corpus.
+3. **Re-mine the board with the Finding-46 corrected noise floor.** Queued for
+   edward after E112 Q1. Which single-mechanism effects still clear 2 sigma? An
+   empty list is also an answer.
+4. **The bf16 activation tile as the occupancy-safe form of `xs_stage`.** Staging
+   raw bf16 and converting on read halves the tile to 2,560 B at NA=5, lifting
+   the cap from 12 to 24 simdgroups: +0.69 % against −1.078 % is a net −0.39 %
+   faster, bit-identical by construction. Parked and named to alphonse.
+5. **The SDPA cross-simdgroup reduction tail** at `sdpa_vector.h:163-166`. It is
+   25.3 % of the dispatch, about 0.239 % ranked ceiling, editable, and nobody has
+   ever attacked it.
+6. **The round-loop flag fix.** Three lines. Move E109's per-round arm flag from
+   inside the model forward into the session round loop. It turns the recovered
+   dose from a lower bound into a point estimate.
 7. **Raising beagle acceptance** remains the single highest-leverage untouched
    lever on the published score. Beagle is worth 12.5 times essays, and a draft
    length of 4.38 to 5.0 would be about +2.15 % published.
 
+## 🔴 PRICES I HAVE HAD TO DEFLATE
+
+- **The fused residual and RMSNorm at `Qwen35.swift:1737` is 0.222 % ranked, not
+  0.576 %.** The only causal reading is the E96 rung-3a dose slope of 298.01 us
+  per pass per round at R² 0.9506. The census reading of 771.54 us and the E95
+  least-squares reading of 1,187.1 us are both inflated. 0.222 % is below the
+  0.277 % published floor. De-prioritised, and the whole Theme 6 latency pool
+  needs the same deflation.
+- **The plutarch target noise floor is 2.1x worse than published.** Keyed on
+  comment-insensitive code identity rather than byte digest, the per-run sd is
+  0.0899 % as a point estimate and 0.1196 % for spending decisions, not 0.0431 %.
+  Every TARGET sigma we quoted before Finding 46 was inflated about 2.1x.
+- **`F` is not a dispatch floor.** The fitted 25.94 us intercept is 14x the
+  observed 1.8 us boundary. Any idea priced on dispatch-count reduction must be
+  re-deflated by that factor.
 
 ## 🔴🔴🔴🔴🔴 WE HOLD THE BEST CANDIDATE ON THE BOARD. WE LOST ONLY THE LOTTERY.
 
