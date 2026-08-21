@@ -44,7 +44,7 @@ def short(kernel: str) -> str:
                   "affine_qmm", "rms_norm", "layer_norm"):
         if probe in kernel:
             return probe
-    return kernel.split("_")[0][:24]
+    return kernel[:24]
 
 
 def sweep(path):
@@ -79,8 +79,13 @@ def sweep(path):
 
 # Immediate predecessor of each N=5120 projection. Every one is a distinct
 # elementwise op, so the string identifies the tensor without a marker scan.
+# MLX fuses the Gated DeltaNet output gate differently at one row than at two
+# or more, so that tensor needs both forms. Each key was confirmed by dispatch
+# count: 48 per round for the 48 recurrent layers, 16 for the 16 attention
+# layers, 64 for the 64 MLP blocks.
 PRED_TO_TENSOR = {
     "Cf4IAsTypeADf4ISigmoidCE": "gdn.out_proj",
+    "v_copyfloat32bfloat16": "gdn.out_proj",
     "CV2ISigmoidBDV2IBroadcas": "fa.o_proj",
     "CV2ISigmoidADV2IMultiply": "mlp.down",
 }
