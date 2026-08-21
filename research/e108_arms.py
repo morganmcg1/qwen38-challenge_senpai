@@ -81,6 +81,19 @@ def e102_arm(name: str) -> str:
     return arm_source(bound, table, drops)
 
 
+# E102 rung 1 censused a tree that predates the E100 collapse, where the live
+# wide case 5 still used two x-groups. Reversing exactly that one instantiation
+# reconstructs E102's base, which is what turns a text-size gate failure into a
+# quantified base-drift statement instead of an unexplained instrument fault.
+E100_COLLAPSE = (WIDE_CALL.format(m=5, ipg=5), WIDE_CALL.format(m=5, ipg=3))
+
+
+def pre_e100(text: str) -> str:
+    if text.count(E100_COLLAPSE[0]) != 1:
+        raise SystemExit("e108: the E100 collapse anchor is not unique")
+    return text.replace(*E100_COLLAPSE)
+
+
 def minus_live_case(m: int) -> str:
     """`i_pruneall` with one LIVE wide case removed, located inside the span."""
     text = e102_arm("I_prune_all_dead")
@@ -95,6 +108,7 @@ SETS = {
     "prune": ("a_base", "h_prunenarrow", "i_pruneall"),
     "exact": ("a_base", "h_prunenarrow", "i_pruneall", "p_misprune5"),
     "extent": ("i_pruneall",) + tuple(f"i_minus_case{m}" for m in LIVE_WIDTHS),
+    "e102base": ("v_a_pre_e100", "v_h_pre_e100", "v_i_pre_e100"),
 }
 
 NAMES = {
@@ -102,6 +116,9 @@ NAMES = {
     "h_prunenarrow": lambda: e102_arm("H_prune_narrow"),
     "i_pruneall": lambda: e102_arm("I_prune_all_dead"),
     "p_misprune5": lambda: minus_live_case(5),
+    "v_a_pre_e100": lambda: pre_e100(e102_arm("A_shipped")),
+    "v_h_pre_e100": lambda: pre_e100(e102_arm("H_prune_narrow")),
+    "v_i_pre_e100": lambda: pre_e100(e102_arm("I_prune_all_dead")),
     **{f"i_minus_case{m}": (lambda m=m: minus_live_case(m))
        for m in LIVE_WIDTHS},
 }
