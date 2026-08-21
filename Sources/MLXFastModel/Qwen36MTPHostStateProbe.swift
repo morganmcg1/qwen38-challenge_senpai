@@ -111,6 +111,21 @@ enum Qwen36MTPHostStateProbe {
         var qosUserInteractive: UInt64 = 0
         var qosBackground: UInt64 = 0
         var qosMaintenance: UInt64 = 0
+        var pageins: UInt64 = 0
+        var voluntarySwitches: UInt64 = 0
+        var involuntarySwitches: UInt64 = 0
+        var minorFaults: UInt64 = 0
+        var majorFaults: UInt64 = 0
+        var compressions: UInt64 = 0
+        var decompressions: UInt64 = 0
+        var swapins: UInt64 = 0
+        var footprintBytes: UInt64 = 0
+        var compressedBytes: UInt64 = 0
+        var hostFreePages: UInt64 = 0
+        var hostCompressorPages: UInt64 = 0
+        var hostPageins: UInt64 = 0
+        var hostDecompressions: UInt64 = 0
+        var hostSwapins: UInt64 = 0
 
         static func - (lhs: Usage, rhs: Usage) -> Usage {
             Usage(
@@ -124,30 +139,103 @@ enum Qwen36MTPHostStateProbe {
                 qosUserInteractive: lhs.qosUserInteractive
                     &- rhs.qosUserInteractive,
                 qosBackground: lhs.qosBackground &- rhs.qosBackground,
-                qosMaintenance: lhs.qosMaintenance &- rhs.qosMaintenance)
+                qosMaintenance: lhs.qosMaintenance &- rhs.qosMaintenance,
+                pageins: lhs.pageins &- rhs.pageins,
+                voluntarySwitches: lhs.voluntarySwitches
+                    &- rhs.voluntarySwitches,
+                involuntarySwitches: lhs.involuntarySwitches
+                    &- rhs.involuntarySwitches,
+                minorFaults: lhs.minorFaults &- rhs.minorFaults,
+                majorFaults: lhs.majorFaults &- rhs.majorFaults,
+                compressions: lhs.compressions &- rhs.compressions,
+                decompressions: lhs.decompressions &- rhs.decompressions,
+                swapins: lhs.swapins &- rhs.swapins,
+                // Levels, not counters: report the value at the end of the round.
+                footprintBytes: lhs.footprintBytes,
+                compressedBytes: lhs.compressedBytes,
+                hostFreePages: lhs.hostFreePages,
+                hostCompressorPages: lhs.hostCompressorPages,
+                hostPageins: lhs.hostPageins &- rhs.hostPageins,
+                hostDecompressions: lhs.hostDecompressions
+                    &- rhs.hostDecompressions,
+                hostSwapins: lhs.hostSwapins &- rhs.hostSwapins)
         }
     }
 
     static func usage() -> Usage {
         guard on("rusage") else { return Usage() }
+        var out = Usage()
+
         var info = rusage_info_v4()
         let rc = withUnsafeMutablePointer(to: &info) { pointer -> Int32 in
             pointer.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) {
                 proc_pid_rusage(getpid(), RUSAGE_INFO_V4, $0)
             }
         }
-        guard rc == 0 else { return Usage() }
-        return Usage(
-            instructions: info.ri_instructions,
-            cycles: info.ri_cycles,
-            userTicks: info.ri_user_time,
-            systemTicks: info.ri_system_time,
-            qosDefault: info.ri_cpu_time_qos_default,
-            qosUtility: info.ri_cpu_time_qos_utility,
-            qosUserInitiated: info.ri_cpu_time_qos_user_initiated,
-            qosUserInteractive: info.ri_cpu_time_qos_user_interactive,
-            qosBackground: info.ri_cpu_time_qos_background,
-            qosMaintenance: info.ri_cpu_time_qos_maintenance)
+        guard rc == 0 else { return out }
+        out.instructions = info.ri_instructions
+        out.cycles = info.ri_cycles
+        out.userTicks = info.ri_user_time
+        out.systemTicks = info.ri_system_time
+        out.qosDefault = info.ri_cpu_time_qos_default
+        out.qosUtility = info.ri_cpu_time_qos_utility
+        out.qosUserInitiated = info.ri_cpu_time_qos_user_initiated
+        out.qosUserInteractive = info.ri_cpu_time_qos_user_interactive
+        out.qosBackground = info.ri_cpu_time_qos_background
+        out.qosMaintenance = info.ri_cpu_time_qos_maintenance
+        out.pageins = info.ri_pageins
+
+        // Voluntary and involuntary switches separate the two scheduling
+        // stories. A thread that waits on the GPU raises `ru_nvcsw`. A thread
+        // that the scheduler takes off core raises `ru_nivcsw`. Pooling them
+        // would hide exactly the distinction the round needs.
+        var ru = rusage()
+        if getrusage(RUSAGE_SELF, &ru) == 0 {
+            out.voluntarySwitches = UInt64(bitPattern: Int64(ru.ru_nvcsw))
+            out.involuntarySwitches = UInt64(bitPattern: Int64(ru.ru_nivcsw))
+            out.minorFaults = UInt64(bitPattern: Int64(ru.ru_minflt))
+            out.majorFaults = UInt64(bitPattern: Int64(ru.ru_majflt))
+        }
+
+        var vm = task_vm_info_data_t()
+        var vmCount = mach_msg_type_number_t(
+            MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)
+        let vmrc = withUnsafeMutablePointer(to: &vm) { pointer -> kern_return_t in
+            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(vmCount)) {
+                task_info(
+                    mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &vmCount)
+            }
+        }
+        if vmrc == KERN_SUCCESS {
+            // `task_vm_info` has no compression or swap-out counter. It does
+            // carry a lifetime compressed-byte total, which rises by exactly
+            // the bytes the compressor took in, so it serves as the counter.
+            out.compressions = vm.compressed_lifetime
+            out.decompressions = UInt64(bitPattern: Int64(vm.decompressions))
+            out.swapins = UInt64(bitPattern: vm.ledger_swapins)
+            out.footprintBytes = vm.phys_footprint
+            out.compressedBytes = vm.compressed
+        }
+
+        // System-wide memory pressure. This is the direct replacement for the
+        // refused two-model-holder arm: it observes the whole machine without
+        // adding a second 27 GB resident process.
+        var stats = vm_statistics64_data_t()
+        var statCount = mach_msg_type_number_t(
+            MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
+        let hostrc = withUnsafeMutablePointer(to: &stats) { pointer -> kern_return_t in
+            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(statCount)) {
+                host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &statCount)
+            }
+        }
+        if hostrc == KERN_SUCCESS {
+            out.hostFreePages = UInt64(stats.free_count)
+            out.hostCompressorPages = UInt64(stats.compressor_page_count)
+            out.hostPageins = stats.pageins
+            out.hostDecompressions = UInt64(stats.decompressions)
+            out.hostSwapins = stats.swapins
+        }
+        return out
     }
 
     // MARK: - dependent-chain CPU speed probe
@@ -170,6 +258,58 @@ enum Qwen36MTPHostStateProbe {
         probeSink = x
         return DispatchTime.now().uptimeNanoseconds - t0
     }
+
+    /// The chain above runs a fixed and known instruction stream, so measuring
+    /// cycles across it converts a wall time into a core clock. This separates
+    /// the two ways a round can lose time: a lower clock at the same work per
+    /// cycle, or the same clock at a lower work per cycle.
+    struct ProbeClock {
+        var nanos: UInt64 = 0
+        var cycles: UInt64 = 0
+        var instructions: UInt64 = 0
+    }
+
+    @inline(never)
+    static func cpuProbeClock() -> ProbeClock {
+        guard on("probe") else { return ProbeClock() }
+        let before = usage()
+        let nanos = cpuProbeNanos()
+        let after = usage()
+        return ProbeClock(
+            nanos: nanos,
+            cycles: after.cycles &- before.cycles,
+            instructions: after.instructions &- before.instructions)
+    }
+
+    // MARK: - core identity
+
+    /// The logical CPU the calling thread runs on right now. A move between
+    /// the performance and efficiency clusters changes the clock and the work
+    /// per cycle together, so the core number tells the two apart directly.
+    @inline(__always)
+    static func coreNumber() -> Int {
+        guard on("thread") else { return -1 }
+        var cpu = 0
+        return pthread_cpu_number_np(&cpu) == 0 ? cpu : -1
+    }
+
+    static let performanceCoreCount: Int = {
+        var value: Int32 = 0
+        var size = MemoryLayout<Int32>.size
+        if sysctlbyname("hw.perflevel0.logicalcpu", &value, &size, nil, 0) == 0 {
+            return Int(value)
+        }
+        return -1
+    }()
+
+    static let efficiencyCoreCount: Int = {
+        var value: Int32 = 0
+        var size = MemoryLayout<Int32>.size
+        if sysctlbyname("hw.perflevel1.logicalcpu", &value, &size, nil, 0) == 0 {
+            return Int(value)
+        }
+        return -1
+    }()
 
     // MARK: - thread policy
 
@@ -269,21 +409,41 @@ enum Qwen36MTPHostStateProbe {
             + "role=\(state.role) curpri=\(state.currentPriority) "
             + "basepri=\(state.basePriority) tid=\(state.machID) "
             + "instr0=\(usage.instructions) cycles0=\(usage.cycles) "
-            + "user_ticks0=\(usage.userTicks)\n"
+            + "user_ticks0=\(usage.userTicks) "
+            + "pcores=\(performanceCoreCount) ecores=\(efficiencyCoreCount) "
+            + "core0=\(coreNumber())\n"
     }
 
     /// Per-round fields. Emitted on every round, because E86 leg
     /// `e86r1-default-1` changed state at round 34 and a two-point sample at
     /// rounds 3 and 40 would have read it as uniformly slow.
     static func roundFields(
-        probeNanos: UInt64, delta: Usage, legWallNanos: UInt64,
-        threadStart: ThreadState
+        probe: ProbeClock, delta: Usage, legWallNanos: UInt64,
+        threadStart: ThreadState, coreStart: Int, coreEnd: Int
     ) -> String {
         let state = threadState()
         return "e89_thr_user_ns=\(state.userNanos &- threadStart.userNanos) "
             + "e89_thr_sys_ns=\(state.systemNanos &- threadStart.systemNanos) "
             + "e89_thr_cpu=\(state.cpuUsage) "
-            + "e89_probe_ns=\(probeNanos) "
+            + "e89_core_a=\(coreStart) e89_core_b=\(coreEnd) "
+            + "e89_probe_ns=\(probe.nanos) "
+            + "e89_probe_cyc=\(probe.cycles) "
+            + "e89_probe_ins=\(probe.instructions) "
+            + "e89_nvcsw=\(delta.voluntarySwitches) "
+            + "e89_nivcsw=\(delta.involuntarySwitches) "
+            + "e89_minflt=\(delta.minorFaults) "
+            + "e89_majflt=\(delta.majorFaults) "
+            + "e89_pageins=\(delta.pageins) "
+            + "e89_vm_comp=\(delta.compressions) "
+            + "e89_vm_decomp=\(delta.decompressions) "
+            + "e89_vm_swapin=\(delta.swapins) "
+            + "e89_vm_footprint_mb=\(delta.footprintBytes >> 20) "
+            + "e89_vm_compressed_mb=\(delta.compressedBytes >> 20) "
+            + "e89_host_free_mb=\((delta.hostFreePages &* 16384) >> 20) "
+            + "e89_host_compressor_mb=\((delta.hostCompressorPages &* 16384) >> 20) "
+            + "e89_host_pageins=\(delta.hostPageins) "
+            + "e89_host_decomp=\(delta.hostDecompressions) "
+            + "e89_host_swapin=\(delta.hostSwapins) "
             + "e89_instr=\(delta.instructions) "
             + "e89_cycles=\(delta.cycles) "
             + "e89_user_ns=\(machTicksToNanos(delta.userTicks)) "

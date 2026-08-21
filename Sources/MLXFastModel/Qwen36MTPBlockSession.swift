@@ -1199,13 +1199,15 @@ public final class Qwen36MTPBlockSession {
         roundCount += 1
         // E89 host-state probe, before the round clock starts so its cost
         // stays out of `round_us`. See Qwen36MTPHostStateProbe.
-        var e89ProbeNanos: UInt64 = 0
+        var e89Probe = Qwen36MTPHostStateProbe.ProbeClock()
         var e89MarkOverheadNanos: UInt64 = 0
         var e89Usage0 = Qwen36MTPHostStateProbe.Usage()
         var e89Thread0 = Qwen36MTPHostStateProbe.ThreadState()
+        var e89CoreStart = -1
         if Qwen36MTPHostStateProbe.enabled {
             Qwen36MTPHostStateProbe.applyForcedQoS()
-            e89ProbeNanos = Qwen36MTPHostStateProbe.cpuProbeNanos()
+            e89CoreStart = Qwen36MTPHostStateProbe.coreNumber()
+            e89Probe = Qwen36MTPHostStateProbe.cpuProbeClock()
             e89MarkOverheadNanos = Qwen36MTPHostStateProbe.cpuMarkOverheadNanos()
             e89Usage0 = Qwen36MTPHostStateProbe.usage()
             e89Thread0 = Qwen36MTPHostStateProbe.threadState()
@@ -1640,10 +1642,12 @@ public final class Qwen36MTPBlockSession {
             // occupancy that separates a slow thread from an off-core one.
             let e89Fields = Qwen36MTPHostStateProbe.enabled
                 ? Qwen36MTPHostStateProbe.roundFields(
-                    probeNanos: e89ProbeNanos,
+                    probe: e89Probe,
                     delta: Qwen36MTPHostStateProbe.usage() - e89Usage0,
                     legWallNanos: tTailDone - e89LegStartNanos,
-                    threadStart: e89Thread0)
+                    threadStart: e89Thread0,
+                    coreStart: e89CoreStart,
+                    coreEnd: Qwen36MTPHostStateProbe.coreNumber())
                     + "host_sum_us=\(((tChainBuilt - tRound0) + (tTailDone - tEvalDone)) / 1000) "
                     + "host_thread_cpu_ns=\((cChainBuilt - cRound0) + (cTailDone - cEvalDone)) "
                     + "round_thread_cpu_ns=\(cTailDone - cRound0) "
