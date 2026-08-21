@@ -79,7 +79,8 @@ STAGE_SETS = {
     # row, so the grid is ceil(98336/8) = 12292 row blocks.
     "declared": {
         "dense_coarse": {
-            "key": "affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0 grid=1x12292x1",
+            "key": "affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0 "
+                   "grid=1x12292x1 tg=32x2x1",
             "bytes": affine2_bytes(COMPACT_ROWS, HIDDEN),
             "weights": COMPACT_ROWS * HIDDEN,
             "shape": f"[{COMPACT_ROWS},{HIDDEN}] affine-2 g64 dense qmv",
@@ -113,6 +114,24 @@ def aggregate(snapshots, field: str, prefix: str):
             agg[short]["dispatches"] += value.get("dispatches", 0)
             agg[short]["gpu_ns"] += value.get("gpu_ns", 0)
     return agg
+
+
+def roster(whole, exclusive, per_draft: int):
+    """Every buffer signature in the phase, so no cost hides outside the stages."""
+    rows = []
+    for key, value in whole.items():
+        # A signature is `kernel*count` joined by commas, so a buffer holds one
+        # kernel exactly once only when there is a single `*1` term.
+        solo = key[:-2] if key.endswith("*1") and "," not in key else None
+        rows.append({
+            "signature": key,
+            "us_per_draft": value["gpu_ns"] / 1e3 / per_draft,
+            "buffers_per_draft": value["buffers"] / per_draft,
+            "dispatches_per_buffer": value["dispatches"] / max(value["buffers"], 1),
+            "isolated": solo is not None and solo in exclusive,
+        })
+    rows.sort(key=lambda row: -row["us_per_draft"])
+    return rows
 
 
 def price(measured_us: float, moved_bytes: int, weights: int) -> dict:
@@ -175,6 +194,7 @@ def main() -> int:
             "phase_us_per_round": phase_ns / 1e3 / n,
             "phase_us_per_draft": phase_ns / 1e3 / per_draft,
             "phase_dispatches_per_draft": phase_disp / per_draft,
+            "roster": roster(whole, exclusive, per_draft),
             "stages": {},
         }
 

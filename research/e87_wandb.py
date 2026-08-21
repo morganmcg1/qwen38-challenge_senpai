@@ -379,6 +379,51 @@ def log_abba(run, path: Path) -> None:
     })
 
 
+def log_coarse_split(run, path: Path) -> None:
+    """Section 4: is the affine-2 coarse readout limited by bytes or unpacking?
+
+    Every row is one command buffer that carried exactly one kernel, so the
+    buffer interval is that kernel's GPU time and the achieved rate needs no
+    fit. `stage_set` names which coarse pass the leg measured.
+    """
+    doc = json.loads(path.read_text())
+    rows = []
+    scalars = {}
+    for census, leg in doc["legs"].items():
+        tag = Path(census).parent.name
+        for key in ("phase_us_per_round", "phase_us_per_draft",
+                    "phase_dispatches_per_draft"):
+            scalars[f"coarse_split/{tag}/{key}"] = leg[key]
+        for name, stage in leg["stages"].items():
+            source = stage["isolated"] or stage["whole_buffer"]
+            rows.append({
+                "leg": tag,
+                "stage": name,
+                "shape": stage["shape"],
+                "isolated": stage["isolated"] is not None,
+                "us_per_draft": source["measured_us"],
+                "moved_mb": source["moved_mb"],
+                "achieved_gb_s": source["achieved_gb_s"],
+                "fraction_of_dram_ceiling": source["fraction_of_dram_ceiling"],
+                "memory_us_at_ceiling": source["memory_us_at_ceiling"],
+                "non_memory_us": source["non_memory_us"],
+                "ps_per_weight": source["ps_per_weight"],
+                "whole_buffer_us_per_draft": stage["whole_buffer"]["measured_us"],
+                "whole_buffer_dispatches": stage["whole_buffer"]["dispatches_per_buffer"],
+            })
+            for key in ("achieved_gb_s", "non_memory_us", "ps_per_weight"):
+                scalars[f"coarse_split/{tag}/{name}/{key}"] = source[key]
+        combined = leg.get("combined")
+        if combined:
+            for key, value in combined.items():
+                scalars[f"coarse_split/{tag}/combined/{key}"] = value
+    run.log(scalars)
+    run.log({
+        "coarse_split/stages": table(sorted(rows[0]), rows),
+        "coarse_split/raw": table(["json"], [{"json": json.dumps(doc, indent=2)}]),
+    })
+
+
 def log_liveness(run, path: Path) -> None:
     """The damaged-index control that proves the cluster path is on the clock."""
     doc = json.loads(path.read_text())
@@ -397,6 +442,8 @@ def main() -> None:
     ap.add_argument("--screen")
     ap.add_argument("--decision")
     ap.add_argument("--liveness")
+    ap.add_argument("--coarse-split", action="append", default=[],
+                    help="one e87-coarse-split JSON per stage set")
     ap.add_argument("--derivation")
     ap.add_argument("--abba",
                     help="report written by research/e87_abba_probe.py")
@@ -435,6 +482,7 @@ def main() -> None:
             fn(run, Path(path))
             print(f"logged {flag} from {path}")
     for flag, fn in (("build", log_build), ("timed", log_timed),
+                     ("coarse_split", log_coarse_split),
                      ("paired", log_paired), ("headline", log_headline)):
         for path in getattr(args, flag):
             fn(run, Path(path))
