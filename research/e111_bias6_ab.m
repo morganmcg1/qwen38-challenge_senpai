@@ -198,6 +198,7 @@ int main(int argc, char **argv) {
     const char *out_path = NULL;
     const char *shape_name = "unknown";
     int blocks = 6, w_copies = 2, inner = 4, reps = 2, check_cells = 24;
+    int warm = 3;
     uint stream_tgs = 2048;
 
     for (int i = 1; i < argc; i++) {
@@ -210,6 +211,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--inner") && i + 1 < argc) inner = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--reps") && i + 1 < argc) reps = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--check-cells") && i + 1 < argc) check_cells = atoi(argv[++i]);
+      else if (!strcmp(argv[i], "--warm") && i + 1 < argc) warm = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--stream-tgs") && i + 1 < argc) stream_tgs = (uint)atoi(argv[++i]);
       else {
         fprintf(stderr, "e111_bias6_ab: unknown argument %s\n", argv[i]);
@@ -220,7 +222,7 @@ int main(int argc, char **argv) {
       fprintf(stderr,
               "usage: e111_bias6_ab --blob BIN --out JSON [--shape NAME] "
               "[--src FILE] [--blocks N] [--w-copies N] [--inner N] "
-              "[--reps N] [--check-cells N] [--stream-tgs N]\n");
+              "[--reps N] [--check-cells N] [--warm N] [--stream-tgs N]\n");
       return 2;
     }
 
@@ -373,9 +375,10 @@ int main(int argc, char **argv) {
             "  \"weight_bytes\": %zu,\n  \"metadata_bytes\": %zu,\n"
             "  \"shipped_stream_bytes\": %zu,\n  \"w_copies\": %d,\n"
             "  \"blocks\": %d,\n  \"inner\": %d,\n  \"reps\": %d,\n"
-            "  \"order\": \"palindrome\",\n",
+            "  \"warm_passes\": %d,\n  \"order\": \"palindrome\",\n",
             shape_name, blob_path, kK, kN, kGroup, kNA, kNA, tg_count, kGroups,
-            w_bytes, 2 * sb_bytes, shipped_stream, w_copies, blocks, inner, reps);
+            w_bytes, 2 * sb_bytes, shipped_stream, w_copies, blocks, inner, reps,
+            warm);
 
     fprintf(out, "  \"pipelines\": {");
     for (int a = 0; a < kArmCount; a++) {
@@ -526,10 +529,21 @@ int main(int argc, char **argv) {
     free(ref);
 
     // --- warm, then time --------------------------------------------------
+    // The first dispatch of a session runs at a low clock. One warm pass is
+    // not enough: the smoke run measured slot 0 at 1,394 us against 539 us for
+    // the same arm in the mirror slot. Warm every arm several times and throw
+    // the whole first palindrome away.
     int slice = 0;
-    for (int a = 0; a < kArmCount; a++) {
-      runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y, seed, 1,
-             inner, &slice);
+    for (int pass = 0; pass < warm; pass++) {
+      for (int a = 0; a < kArmCount; a++) {
+        runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y, seed, 1,
+               inner, &slice);
+      }
+    }
+    for (int s = 0; s < 2 * kArmCount; s++) {
+      const int a = s < kArmCount ? s : (2 * kArmCount - 1 - s);
+      runArm(queue, pso[a], w, w_copies, scales, biases, codes, x, y, seed,
+             reps, inner, &slice);
     }
     runStream(queue, stream_pso, w[0], sink, w_bytes, stream_tgs, 1, inner);
 
