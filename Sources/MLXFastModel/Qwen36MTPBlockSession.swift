@@ -709,9 +709,35 @@ public final class Qwen36MTPBlockSession {
     /// the host builds the verify graph WHILE the asynchronously submitted head
     /// chain runs on the GPU, so a head-chain stall is indistinguishable from
     /// host build cost there. Draining the chain before the window moves that
-    /// GPU time into `draft_build_us` and leaves `verify_build_us` as pure host
-    /// graph construction. Never enable on a timed candidate: it destroys the
-    /// head/verify overlap the round is designed around.
+    /// GPU time into `draft_build_us`. Never enable on a timed candidate: it
+    /// destroys the head/verify overlap the round is designed around.
+    ///
+    /// DRAINING THE CHAIN DOES NOT LEAVE `verify_build_us` AS PURE HOST GRAPH
+    /// CONSTRUCTION, and an earlier version of this comment said it did. The
+    /// window still contains the decode asyncEval ladder fired from
+    /// `Qwen35TextModelInner.callAsFunction`, so the host blocks there on the
+    /// MLX async-submission throttle while the GPU runs. E86 measured the split
+    /// by removing the ladder (`MLX_QWEN_MTP_LADDER=off`), which is the only
+    /// configuration that leaves the window free of GPU submissions. Declared
+    /// head, 512 decode tokens, --sync-head, M4 Pro, median us per round:
+    ///
+    ///     ladder off:      verify_build   2,294   eval_wall  149,866
+    ///     ladder shipped:  verify_build  72,330   eval_wall   77,092
+    ///
+    /// Host encode of the whole 64-layer verify graph is 2,294 us. Under the
+    /// shipped ladder `verify_build_us` reads 72,330 us, so that counter is
+    /// ~97 % GPU wait and only ~3 % host build. The two counters partition one
+    /// GPU cost at the rung positions: their sum is flat at ~149.3 ms for every
+    /// non-empty rung set. Read `verify_build_us + eval_wall_us` as the verify
+    /// pipeline cost, and never read `verify_build_us` alone as host op-count
+    /// evidence.
+    ///
+    /// In production, where the chain is not drained, the window also absorbs
+    /// the head-chain GPU time: the same shipped rung set reads 83,202 us of
+    /// `verify_build_us` and 4,766 us of `d_submit2_us`, against 72,330 us and
+    /// 15,985 us under --sync-head. The ~11 ms difference is head GPU execute
+    /// moving out of `d_submit2_us` and into the verify window, which is the
+    /// overlap this flag exists to undo.
     private static let traceSyncHeadChain =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_SYNC_HEAD"] == "1"
     /// Opened O_APPEND so the reference, verify and timed workers can each
