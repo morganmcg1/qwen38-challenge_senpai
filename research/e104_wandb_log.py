@@ -3,7 +3,7 @@
 
     usage: research/e104_wandb_log.py [--only RUN]
 
-Four runs:
+Six runs:
 
   `e104-census`     rung 0: the per-NA AIR census of the shipped kernel and of
                     the three variant arms. Device loads, nibble unpack, float
@@ -16,6 +16,17 @@ Four runs:
                     per arm per NA.
   `e104-controls`   the two negative controls that withdrew the FMA-fusion
                     explanation, plus the cold-start slot bias correction.
+  `e104-partition-ladder`
+                    rung 0.5: isolated one-group versus split dispatch at
+                    NA=2..8 over five shapes, with the NA=2 and NA=3 null
+                    controls. Gives `A_local` per width against the
+                    ranked-neutral threshold, plus registers and spill on
+                    both target architectures.
+  `e104-arithmetic-arms`
+                    rung 2: four arithmetic variants that cut or reorder the
+                    floating-point work at fixed memory traffic. Tests whether
+                    floating-point issue is the binding constraint, and
+                    compares AIR operation counts with compiled ISA text size.
 
 Every leg here ran with the local cool gate off, so `timing_valid`,
 `cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
@@ -43,6 +54,13 @@ UPSTREAM_NOTE = "senpai/qwen38-mtp-r1"
 DRAM_PEAK_GBS = 273.0
 ARMS = ("a_base", "l_loadonly", "z_noxload", "xw_widex")
 WARMUP_BLOCKS = 1
+
+# Advisor break-even law (PR #106): A_ranked = A_local * 1.244, and collapsing
+# a split dispatch is ranked-neutral at A_ranked == 2.
+LOCAL_TO_RANKED_A = 1.244
+RANKED_NEUTRAL_A = 2.0 / LOCAL_TO_RANKED_A
+FP_OPS_PER_NA = {"a_base": 160, "n_nosums": 148, "xf_exactfma": 112,
+                 "f_fmamax": 88, "s_splitacc": 160}
 
 
 def gate_flags(qualified: bool = False) -> dict[str, object]:
@@ -295,8 +313,185 @@ def log_controls() -> None:
     run.finish()
 
 
+def _ladder_cells(name: str):
+    d = OUT / name
+    doc = json.loads((d / "rate.json").read_text())
+    return d, doc, load_cells(doc), read_meta(d / "meta.txt")
+
+
+def log_partition_ladder() -> None:
+    d, doc, cells, meta = _ladder_cells("e104-r05-ladder")
+    arms = doc["arms"]
+    one, split = arms[0], arms[1]
+    spec = json.loads((d / "census.json").read_text())["partitions"][split]
+    run = start(
+        "e104-partition-ladder", "partition-ladder",
+        "At which activation width does collapsing a split dispatch into one "
+        "wide group stop paying, once the local-to-ranked transfer is applied?",
+        0.5,
+        {"shapes": 5, "widths": "2..8", "arms": arms,
+         "order": doc["order"], "blocks_per_cell": doc["pairs"],
+         "warmup_blocks_discarded": WARMUP_BLOCKS,
+         "local_to_ranked_a": LOCAL_TO_RANKED_A,
+         "ranked_neutral_a": RANKED_NEUTRAL_A,
+         "splits": {k: v["partition"] for k, v in spec.items()},
+         "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
+         "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
+         "arm_sha256": {a: meta.get(f"arm_{a}_sha256") for a in arms}},
+    )
+    per_cell = wandb.Table(columns=[
+        "shape", "na", "split", "t1_us", "t2_us", "r1_gbs", "r2_gbs",
+        "a_local"])
+    ladder = wandb.Table(columns=[
+        "na", "split", "a_local_median", "a_local_min", "a_local_max",
+        "a_ranked", "ranked_gain_pct", "verdict"])
+    by_na: dict[int, list[float]] = {}
+    for (shape, m), c in sorted(cells.items()):
+        t1 = statistics.median(c["seconds"][one])
+        t2 = statistics.median(c["seconds"][split])
+        # `read_bytes` prices one weight stream plus the activations; a G-way
+        # split rereads the weights G times but the activations only once.
+        weights = c["flops"] / (2.0 * m) * (0.5 + 4.0 / 64.0)
+        acts = c["bytes"] - weights
+        r1 = c["bytes"] / t1 / 1e9
+        r2 = (spec[str(m)]["weight_streams"] * weights + acts) / t2 / 1e9
+        a = r2 / r1
+        by_na.setdefault(m, []).append(a)
+        per_cell.add_data(shape, m, spec[str(m)]["partition"], t1 * 1e6,
+                          t2 * 1e6, r1, r2, a)
+    for na in sorted(by_na):
+        vals = by_na[na]
+        med = statistics.median(vals)
+        ranked = med * LOCAL_TO_RANKED_A
+        gain = 100.0 * (1.0 - ranked / 2.0)
+        verdict = ("null control" if abs(med - 1.0) < 0.02
+                   else "collapse wins" if med < RANKED_NEUTRAL_A
+                   else "collapse loses")
+        ladder.add_data(na, spec[str(na)]["partition"], med, min(vals),
+                        max(vals), ranked, gain, verdict)
+        run.log({"na": na, "a_local": med, "a_ranked": ranked,
+                 "ranked_gain_pct": gain})
+    run.log({"per_cell": per_cell, "a_ladder": ladder})
+    med5 = statistics.median(by_na[5])
+    med6 = statistics.median(by_na[6])
+    run.summary.update({
+        "null_control_a_na2": statistics.median(by_na[2]),
+        "null_control_a_na3": statistics.median(by_na[3]),
+        "instrument_noise_floor_pct": 0.2,
+        "a_local_na5": med5,
+        "a_local_na6": med6,
+        "ranked_gain_pct_na5": 100.0 * (1.0 - med5 * LOCAL_TO_RANKED_A / 2.0),
+        "ranked_gain_pct_na6": 100.0 * (1.0 - med6 * LOCAL_TO_RANKED_A / 2.0),
+        "last_width_where_collapse_pays": 5,
+        "collapse_recommended_at_m6": False,
+        "exactness_all_cells_bit_identical": True,
+        "g16s_register_budget": 96,
+        "g17s_register_budget": 124,
+        "g16s_spills_from_na": 6,
+        "g17s_spills_from_na": 8,
+    })
+    attach(run, d / "rate.json", d / "meta.txt", d / "census.json",
+           d / "analysis.txt")
+    run.finish()
+
+
+def log_arithmetic_arms() -> None:
+    d, doc, cells, meta = _ladder_cells("e104-r2-arith")
+    arms = doc["arms"]
+    census = json.loads((d / "census.json").read_text())
+    regs = {r["arm"]: r for r in census["arms"]}
+    fidelity: dict[str, list[bool]] = {}
+    for row in doc["measurements"]:
+        if row["kind"] != "fidelity":
+            continue
+        for a in row["arms"]:
+            fidelity.setdefault(a["arm"], []).append(a["bit_identical"])
+    run = start(
+        "e104-arithmetic-arms", "arithmetic-arms",
+        "Is floating-point instruction issue the binding constraint that makes "
+        "a wide x-group stream slowly at NA=5?",
+        2,
+        {"shapes": 5, "widths": "2..8", "arms": arms,
+         "order": doc["order"], "blocks_per_cell": doc["pairs"],
+         "warmup_blocks_discarded": WARMUP_BLOCKS,
+         "air_fp_ops_per_na": FP_OPS_PER_NA,
+         "exact_required_arms": ["xf_exactfma"],
+         "promotion_bar_rate_lift_pct": 10.0,
+         "closure_bar_na5_move_pct": 3.0,
+         "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
+         "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
+         "arm_sha256": {a: meta.get(f"arm_{a}_sha256") for a in arms}},
+    )
+    per_cell = wandb.Table(columns=["shape", "na", "arm", "us", "gbs",
+                                    "change_pct_vs_base"])
+    codegen = wandb.Table(columns=[
+        "arm", "na", "air_fp_ops_per_kblock", "g16s_regs", "g16s_spill_b",
+        "g16s_text_b", "g16s_text_change_pct", "g17s_regs", "g17s_spill_b"])
+    by_na_arm: dict[tuple[int, str], list[float]] = {}
+    for (shape, m), c in sorted(cells.items()):
+        base = statistics.median(c["seconds"]["a_base"])
+        for arm in arms:
+            sec = statistics.median(c["seconds"][arm])
+            chg = 100.0 * (sec - base) / base
+            by_na_arm.setdefault((m, arm), []).append(chg)
+            per_cell.add_data(shape, m, arm, sec * 1e6,
+                              c["bytes"] / sec / 1e9, chg)
+    for arm in arms:
+        for na in range(2, 9):
+            g16 = regs[arm]["applegpu_g16s"][str(na)]
+            g17 = regs[arm]["applegpu_g17s"][str(na)]
+            base_text = regs["a_base"]["applegpu_g16s"][str(na)]["text_bytes"]
+            codegen.add_data(
+                arm, na, FP_OPS_PER_NA[arm] * na, g16["registers"],
+                g16["spill_bytes"], g16["text_bytes"],
+                100.0 * (g16["text_bytes"] / base_text - 1.0),
+                g17["registers"], g17["spill_bytes"])
+    run.log({"per_cell": per_cell, "codegen": codegen})
+    for na in range(2, 9):
+        run.log({"na": na, **{f"{a}/change_pct": statistics.median(
+            by_na_arm[(na, a)]) for a in arms if a != "a_base"}})
+
+    exact5 = statistics.median(by_na_arm[(5, "xf_exactfma")])
+    nosums5 = statistics.median(by_na_arm[(5, "n_nosums")])
+    run.summary.update({
+        "xf_exactfma_bit_identical_cells":
+            f"{sum(fidelity['xf_exactfma'])}/{len(fidelity['xf_exactfma'])}",
+        "xf_exactfma_air_fp_ops_cut_pct": -30.0,
+        "xf_exactfma_g16s_text_change_pct_na5": 100.0 * (
+            regs["xf_exactfma"]["applegpu_g16s"]["5"]["text_bytes"]
+            / regs["a_base"]["applegpu_g16s"]["5"]["text_bytes"] - 1.0),
+        "xf_exactfma_change_pct_na5": exact5,
+        "n_nosums_change_pct_na5": nosums5,
+        "f_fmamax_change_pct_na5": statistics.median(
+            by_na_arm[(5, "f_fmamax")]),
+        "f_fmamax_g16s_spill_b_na5":
+            regs["f_fmamax"]["applegpu_g16s"]["5"]["spill_bytes"],
+        "s_splitacc_change_pct_na5": statistics.median(
+            by_na_arm[(5, "s_splitacc")]),
+        "s_splitacc_g16s_spill_b_na5":
+            regs["s_splitacc"]["applegpu_g16s"]["5"]["spill_bytes"],
+        "h4_fp_issue_saturation_refuted": True,
+        "h5_split_accumulators_refuted": True,
+        "air_op_count_predicts_time": False,
+        "isa_text_bytes_predicts_time": True,
+        "backend_contracts_fma_by_default": True,
+        "promotion_bar_met": False,
+        "closure_bar_met_for_exact_arms": abs(exact5) <= 3.0,
+        "rate_na_axis_recommended_closed": True,
+        "n_nosums_is_legal_candidate": False,
+        "n_nosums_reason_illegal": "drops the affine bias-sum term; sums is "
+                                   "already hoisted out of the row loop, so "
+                                   "there is no bit-exact route to this win",
+    })
+    attach(run, d / "rate.json", d / "meta.txt", d / "census.json",
+           d / "analysis.txt", d / "air-census.json")
+    run.finish()
+
+
 RUNS = {"census": log_census, "rate-sweep": log_rate_sweep,
-        "occupancy": log_occupancy, "controls": log_controls}
+        "occupancy": log_occupancy, "controls": log_controls,
+        "partition-ladder": log_partition_ladder,
+        "arithmetic-arms": log_arithmetic_arms}
 
 
 def main() -> int:
