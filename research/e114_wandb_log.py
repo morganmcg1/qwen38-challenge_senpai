@@ -93,12 +93,12 @@ def rung0_tables(run, d: dict) -> None:
                 val.add_data(frame, gt, cov["rounds"], cov["mean_width"], est,
                              w["2"], w["3"], w["4"], w["5"],
                              e["max_abs_err"], e["tol"], e["pass"])
-            lo, hi = cov["lo"], cov["hi"]
-            val.add_data(frame, gt, cov["rounds"], cov["mean_width"],
-                         "identified bound",
-                         *["[%.4f, %.4f]" % (lo[na], hi[na])
-                           for na in NA_CELLS],
-                         None, None, cov["covered"])
+            for edge in ("lo", "hi"):
+                b = cov[edge]
+                val.add_data(frame, gt, cov["rounds"], cov["mean_width"],
+                             "identified bound %s" % edge,
+                             *[b[na] for na in NA_CELLS],
+                             None, None, cov["covered"])
     run.log({"rung0/validation_against_traced_truth": val})
 
     rec = wandb.Table(columns=[
