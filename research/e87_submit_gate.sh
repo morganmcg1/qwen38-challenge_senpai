@@ -31,7 +31,7 @@ fi
 
 dir_for() {
   case "$1" in
-    declared|dense|derived|derived25|derived15) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived|derived25) echo "${cache}/mtp-head-declared-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     *) echo "e87_submit_gate.sh: unknown arm $1" >&2; exit 2 ;;
   esac
@@ -42,17 +42,14 @@ dir_for() {
 # a shipped index or the dense readout is what actually runs.
 index_for() {
   case "$1" in
-    derived|derived25|derived15) echo "1" ;;
+    derived|derived25) echo "1" ;;
     *) echo "0" ;;
   esac
 }
 
-probe_for() {
-  case "$1" in
-    derived15) echo "0.15" ;;
-    *) echo "${E87_PROBE_FRACTION:-0.25}" ;;
-  esac
-}
+# The probe fraction is a compile-time constant in the model code. Record it in
+# the leg meta so the byte model in research/e87_paired.py stays checkable.
+probe_fraction=0.25
 
 dirty="$(git status --porcelain -- Sources Vendor Package.swift | wc -l | tr -d ' ')"
 if [[ "${dirty}" != "0" ]]; then
@@ -73,7 +70,6 @@ gpu_temp() {
 
 for arm in "${arms[@]}"; do
   head_dir="$(dir_for "${arm}")"
-  probe_fraction="$(probe_for "${arm}")"
   if [[ ! -s "${head_dir}/config.json" ]]; then
     echo "e87_submit_gate.sh: no head at ${head_dir}" >&2
     exit 1
@@ -114,15 +110,7 @@ for arm in "${arms[@]}"; do
     echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"
 
-  # The gate runs the worker under benchmark.sh's Seatbelt profile, which
-  # denies every file write except /dev/null. The two research sinks below
-  # therefore stay empty here, and that is the evidence that the derived index
-  # touches no file on a scored run. Read them from a trace leg instead:
-  # research/e79_trace_leg.sh sets MLXFAST_NO_SANDBOX=1.
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
-  MLX_E87_PROBE_FRACTION="${probe_fraction}" \
-  MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-${PWD}/${out}/derived-order.bin}" \
-  MLX_E87_DERIVED_LOG="${PWD}/${out}/derived.log" \
   MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}" \
   MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}" \
   MLXFAST_SCORE_PATH="${PWD}/${out}/score.json" \

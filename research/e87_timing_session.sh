@@ -39,7 +39,7 @@ fi
 
 dir_for() {
   case "$1" in
-    declared|dense|derived|derived25|derived15) echo "${cache}/mtp-head-declared-run" ;;
+    declared|dense|derived|derived25) echo "${cache}/mtp-head-declared-run" ;;
     g128) echo "${cache}/e87/built/e87-coarse-g128-run" ;;
     armc) echo "${cache}/e87/built/e87-armC-plain-k12292-p25-run" ;;
     armc-damaged) echo "${cache}/e87/built/e87-armC-damaged-run" ;;
@@ -53,19 +53,14 @@ dir_for() {
 # a shipped index or the dense readout is what actually runs.
 index_for() {
   case "$1" in
-    derived|derived25|derived15) echo "1" ;;
+    derived|derived25) echo "1" ;;
     *) echo "0" ;;
   esac
 }
 
-# Probe fraction only reaches model code when the derived index is on. The
-# dense arms still receive a value; it is inert there.
-probe_for() {
-  case "$1" in
-    derived15) echo "0.15" ;;
-    *) echo "${E87_PROBE_FRACTION:-0.25}" ;;
-  esac
-}
+# The probe fraction is a compile-time constant in the model code. Record it in
+# the leg meta so the byte model in research/e87_paired.py stays checkable.
+probe_fraction=0.25
 
 dirty="$(git status --porcelain -- Sources Vendor Package.swift | wc -l | tr -d ' ')"
 if [[ "${dirty}" != "0" ]]; then
@@ -84,12 +79,8 @@ for i in "${!order[@]}"; do
     [[ "${order[$j]}" == "${arm}" ]] && rep=$((rep + 1))
   done
   tag="${prefix}-${arm}-${rep}"
-  probe_fraction="$(probe_for "${arm}")"
   mkdir -p "research/out/${tag}"
   MLX_E87_DERIVED_INDEX="$(index_for "${arm}")" \
-  MLX_E87_PROBE_FRACTION="${probe_fraction}" \
-  MLX_E87_DERIVED_LOG="${PWD}/research/out/${tag}/derived.log" \
-  MLX_E87_DERIVED_DUMP="${E87_DERIVED_DUMP:-${PWD}/research/out/${tag}/derived-order.bin}" \
   E79_HEAD_DIR="$(dir_for "${arm}")" \
     research/e79_trace_leg.sh "${tag}" "${tokens}" --sync-head
   status=$?

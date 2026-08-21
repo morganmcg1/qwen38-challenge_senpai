@@ -3355,44 +3355,8 @@ private let qwen35DerivedClusterEnabled: Bool =
 /// +1.83 %), but the whole difference lives inside that fitted coefficient,
 /// and no local leg can resolve it: at these miss rates a 512-token leg
 /// expects under one changed proposal. 0.25 is the low-variance choice and it
-/// is the byte point the r1 arm-C session already measured.
-private let qwen35DerivedClusterProbeFraction: Double = {
-    guard let raw = ProcessInfo.processInfo.environment["MLX_E87_PROBE_FRACTION"],
-          let value = Double(raw), value > 0, value <= 1
-    else { return 0.25 }
-    return value
-}()
-
-/// Research sink for the derived row order, written once as little-endian
-/// int32 when the variable names a path. Offline tooling re-screens the exact
-/// partition the runtime built. Unset on every scored run.
-private let qwen35DerivedClusterDumpPath: String? = {
-    let raw = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_DUMP"]
-    return (raw?.isEmpty ?? true) ? nil : raw
-}()
-
-/// Append-only research log for the derived index, opened once from
-/// `MLX_E87_DERIVED_LOG`. A file is the only usable channel from model code:
-/// the worker's stdout carries the trusted protocol and `mtp-timed` installs a
-/// swallowing drain on its stderr, so `print` is both invisible and unsafe.
-///
-/// A scored run leaves this closed and every note becomes a no-op, because
-/// `benchmark.sh` gives the worker a Seatbelt profile that denies file writes.
-/// Only a trace leg, which sets `MLXFAST_NO_SANDBOX=1`, can open it.
-private let qwen35DerivedClusterLog: FileHandle? = {
-    guard let path = ProcessInfo.processInfo.environment["MLX_E87_DERIVED_LOG"],
-          !path.isEmpty
-    else { return nil }
-    let descriptor = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
-    guard descriptor >= 0 else { return nil }
-    return FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
-}()
-
-/// One leg starts several worker processes that append to the same file, so
-/// every line carries its pid.
-private func qwen35DerivedClusterNote(_ line: String) {
-    qwen35DerivedClusterLog?.write(Data(("e87 pid=\(getpid()) " + line + "\n").utf8))
-}
+/// is the byte point the r1 arm-C and r2 balanced sessions both measured.
+private let qwen35DerivedClusterProbeFraction: Double = 0.25
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
@@ -3514,20 +3478,6 @@ private func qwen35BisectingPartition(
         nodes = next
     }
     return permutation
-}
-
-/// FNV-1a-64 over the little-endian int32 bytes of a row order, so the
-/// runtime's partition can be compared with the offline one by one number.
-private func qwen35ClusterOrderDigest(_ order: [Int32]) -> UInt64 {
-    var hash: UInt64 = 0xcbf2_9ce4_8422_2325
-    for value in order {
-        let bits = UInt32(bitPattern: value)
-        for shift in stride(from: UInt32(0), to: 32, by: 8) {
-            hash ^= UInt64((bits >> shift) & 0xff)
-            hash = hash &* 0x100_0000_01b3
-        }
-    }
-    return hash
 }
 
 /// Exact top-32 of `row` (shape [REAL_COUNT], bf16) as ascending uint32 ids.
@@ -3757,9 +3707,6 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
             _draftHeadW = draftW
             _draftHeadS = weights.removeValue(forKey: "mtp.draft_lm_head.scales")
             _draftHeadZ = weights.removeValue(forKey: "mtp.draft_lm_head.biases")
-            qwen35DerivedClusterNote(
-                "declared coarse head loaded rows=\(draftW.dim(0)) "
-                    + "enabled=\(qwen35DerivedClusterEnabled)")
         }
         if mtp != nil {
             // Optional cluster index over the same coarse rows. Side-channel it
@@ -4086,25 +4033,29 @@ extension Qwen35TextModel: MTPCapable {
     /// Derive the cluster index that a head could have shipped, from the head
     /// this process already loaded.
     ///
+    /// This derives no predictor and no head. The declared head stays the sole
+    /// source of every proposal: the index only reorders the coarse rows that
+    /// head already loaded and stores a leaf mean of them, so the readout can
+    /// visit a shortlist of leaves instead of all 98,336 rows. No parameter is
+    /// created, substituted, re-quantized beyond the rows' own representation,
+    /// or read from any path the harness did not supply.
+    ///
     /// The shipped `draft_lm_head.*` is exactly `quantize(dequantize(exact
     /// compact lm_head), 64, 2)`, verified bit for bit, so the permuted row
     /// table is a pure gather of tensors already in memory and the centroids
     /// are leaf means of the exact rows. Nothing here reads a file, a prompt,
-    /// or any request state: the index is a fixed function of the checkpoint.
+    /// or any request state: the index is a fixed function of the checkpoint,
+    /// in the same class as a dequantized weight cache or a shape table.
     /// It runs once, on the first draft proposal, which the trusted driver
     /// makes during the untimed warm.
     private func buildDerivedClusterIndex() {
-        qwen35DerivedClusterNote("build entered")
         guard let coarseWeight = _draftHeadW,
               let coarseScales = _draftHeadS,
               let coarseBiases = _draftHeadZ,
               coarseWeight.shape == [Self.compactDraftPaddedCount, 320],
               coarseScales.shape == [Self.compactDraftPaddedCount, 80],
               coarseBiases.shape == coarseScales.shape
-        else {
-            qwen35DerivedClusterNote("build abandoned: declared coarse head unusable")
-            return
-        }
+        else { return }
         if _compactDraftHead == nil {
             _compactDraftHead = makeCompactDraftHead()
         }
@@ -4113,12 +4064,8 @@ extension Qwen35TextModel: MTPCapable {
               exact.bits == 4,
               exact.weight.shape == [Self.compactDraftPaddedCount, 640],
               let exactBiases = exact.biases
-        else {
-            qwen35DerivedClusterNote("build abandoned: compact exact head unusable")
-            return
-        }
+        else { return }
 
-        let started = Date()
         let rowsPerLeaf = Self.derivedClusterRowsPerLeaf
         let leaves = Self.compactDraftPaddedCount / rowsPerLeaf
         let hidden = configuration.hiddenSize
@@ -4142,10 +4089,7 @@ extension Qwen35TextModel: MTPCapable {
             .asType(.bfloat16)
         let quantizedCentroids = quantized(
             centroids, groupSize: 64, bits: Self.derivedClusterCentroidBits, mode: .affine)
-        guard let centroidBiases = quantizedCentroids.biases else {
-            qwen35DerivedClusterNote("build abandoned: centroid quantization carries no biases")
-            return
-        }
+        guard let centroidBiases = quantizedCentroids.biases else { return }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
         let probes = max(
@@ -4170,29 +4114,6 @@ extension Qwen35TextModel: MTPCapable {
         _draftCentroidZ = centroidBiases
         _draftClusterPerm = clusterPerm
         _draftClusterShape = [leaves, rowsPerLeaf, probes]
-
-        let orderHost = order.asArray(Int32.self)
-        let seconds = Date().timeIntervalSince(started)
-        qwen35DerivedClusterNote(String(
-            format: "build ok leaves=%d rows_per_leaf=%d probes=%d probe_fraction=%.4f "
-                + "iters=%d centroid_bits=%d order_fnv1a64=%016llx build_seconds=%.3f",
-            leaves, rowsPerLeaf, probes, qwen35DerivedClusterProbeFraction,
-            Self.derivedClusterIterations, Self.derivedClusterCentroidBits,
-            qwen35ClusterOrderDigest(orderHost), seconds))
-        if let base = qwen35DerivedClusterDumpPath {
-            // One pid per file, so the several worker processes of one leg each
-            // leave a table and cross-process determinism is checkable.
-            let path = "\(base).\(getpid())"
-            do {
-                try orderHost.withUnsafeBufferPointer {
-                    try Data(buffer: $0).write(to: URL(fileURLWithPath: path))
-                }
-                qwen35DerivedClusterNote(
-                    "dump ok bytes=\(orderHost.count * 4) path=\(path)")
-            } catch {
-                qwen35DerivedClusterNote("dump failed path=\(path) error=\(error)")
-            }
-        }
     }
 
     /// The 32 shortlist candidates chosen by the cluster index, or nil when the

@@ -19,6 +19,11 @@ Answers two questions that a timed session cannot.
 A capture leg needs MLXFAST_NO_SANDBOX=1: benchmark.sh gives the worker a
 Seatbelt profile that denies every file write except /dev/null, so a scored leg
 leaves both sinks empty by construction. research/e79_trace_leg.sh sets it.
+
+The two sinks were removed from the candidate before the pre-submit chain, so
+this tool now reads the archived `e87r2p1` capture legs and the report it
+already wrote. Restore MLX_E87_DERIVED_LOG and MLX_E87_DERIVED_DUMP in
+Qwen35.swift on a scratch branch to capture a new base or a new host.
 """
 from __future__ import annotations
 
