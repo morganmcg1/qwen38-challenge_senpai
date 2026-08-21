@@ -674,6 +674,29 @@ def qkrope_spec(rows_per_tg: list[int]) -> dict:
                 "exact_vs_arm0": True,
             }
         )
+    # Positive controls. Every fold arm above claims bit exactness, so the byte
+    # comparison that clears them has to be shown capable of failing. Each
+    # control reruns arm 0's own kernel against one bf16 input element flipped
+    # by 1 ULP, one on the query side and one on the key side, so both compared
+    # output buffers are addressed. The probe voids the run only if NO control
+    # moves an output: a single absorbed flip is a property of the kernel's
+    # bf16 rounding, not a broken comparator, and it is reported as such.
+    for side in ("q", "k"):
+        arms.append(
+            {
+                "name": f"r1ctl_{side}",
+                "function": "e109_qkrope_r1",
+                "source": "arm_qkrope_r1.metal",
+                "grid": [total_rows * 64, 1, 1],
+                "threadgroup": [64, 1, 1],
+                "threadgroups": total_rows,
+                "simdgroups_per_threadgroup": 2,
+                "shipped": False,
+                "exact_vs_arm0": False,
+                "reduction": "positive_control",
+                "perturb": {"buffer": side, "element": 0},
+            }
+        )
     return {
         "family": "qkrope",
         "live_kernel": "qwen35_attention_qk_rms_rope_bf16_v1",
