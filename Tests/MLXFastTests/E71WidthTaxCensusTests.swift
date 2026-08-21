@@ -79,6 +79,10 @@ struct E71WidthTaxCensusTests {
         #expect(tokens.count >= seedLength + 256)
 
         let config = try Qwen35Config.load(from: weightsPath)
+        // E80. Install the census before the first pipeline is created, so
+        // every kernel the weight load and the warmup build is named. A
+        // pipeline created earlier would be reported as `<unmapped>`.
+        E58DispatchCensus.installIfRequested()
         let loader = try Qwen35WeightLoader(weightsPath: weightsPath)
         let loadStart = DispatchTime.now().uptimeNanoseconds
         let runtime = Qwen35RuntimeWeightCache(loader: loader, config: config)
@@ -193,11 +197,18 @@ private final class E71Harness {
 
         var samples: [Double] = []
         samples.reserveCapacity(reps)
-        for _ in 0..<reps {
+        // E80. One GPU-time window per BLOCK, covering the timed reps only, so
+        // the seed prefill and the warmup reps cannot enter the attribution.
+        E58DispatchCensus.beginWindow("\(arm.name)|w\(width)|o\(order)", width: width)
+        for rep in 0..<reps {
+            E58DispatchCensus.beginRound(round: rep, width: width, depth: width - 1)
+            E58DispatchCensus.phase("verify_block")
             let start = DispatchTime.now().uptimeNanoseconds
             _ = round(width: width, cursor: &cursor, caches: caches)
             samples.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9)
+            E58DispatchCensus.endRound(accepted: 0)
         }
+        E58DispatchCensus.endWindow()
         let klEnd = caches.map(\.offset).max() ?? cursor
 
         // The caches hold one full-attention KV window plus 48 fp32 recurrent
