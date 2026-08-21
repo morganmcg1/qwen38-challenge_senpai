@@ -388,12 +388,18 @@ def log_coarse_split(run, path: Path) -> None:
     """
     doc = json.loads(path.read_text())
     rows = []
+    kernels = []
     scalars = {}
     for census, leg in doc["legs"].items():
         tag = Path(census).parent.name
+        run.config.update({f"coarse_split/{tag}/{k}": v
+                           for k, v in leg["meta"].items()},
+                          allow_val_change=True)
         for key in ("phase_us_per_round", "phase_us_per_draft",
                     "phase_dispatches_per_draft"):
             scalars[f"coarse_split/{tag}/{key}"] = leg[key]
+        for entry in leg["roster"]:
+            kernels.append({"leg": tag, **entry})
         for name, stage in leg["stages"].items():
             source = stage["isolated"] or stage["whole_buffer"]
             rows.append({
@@ -420,6 +426,7 @@ def log_coarse_split(run, path: Path) -> None:
     run.log(scalars)
     run.log({
         "coarse_split/stages": table(sorted(rows[0]), rows),
+        "coarse_split/kernels": table(sorted(kernels[0]), kernels),
         "coarse_split/raw": table(["json"], [{"json": json.dumps(doc, indent=2)}]),
     })
 

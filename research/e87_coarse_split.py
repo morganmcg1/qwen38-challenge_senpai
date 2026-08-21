@@ -31,6 +31,7 @@ import argparse
 import collections
 import json
 import sys
+from pathlib import Path
 
 DRAM_GB_S = 265.0
 AFFINE4_PS_PER_WEIGHT = 0.21
@@ -116,6 +117,17 @@ def aggregate(snapshots, field: str, prefix: str):
     return agg
 
 
+def leg_meta(census_path: str) -> dict:
+    """Experiment identity written next to the census by the leg wrapper."""
+    meta = Path(census_path).parent / "meta.txt"
+    out = {}
+    for line in meta.read_text().splitlines():
+        if "=" in line:
+            key, _, value = line.partition("=")
+            out[key] = value
+    return out
+
+
 def roster(whole, exclusive, per_draft: int):
     """Every buffer signature in the phase, so no cost hides outside the stages."""
     rows = []
@@ -189,6 +201,7 @@ def main() -> int:
 
         leg = {
             "census": path,
+            "meta": leg_meta(path),
             "steady_snapshots": n,
             "snapshot_ids": [s["snapshot"] for s in snaps],
             "phase_us_per_round": phase_ns / 1e3 / n,
