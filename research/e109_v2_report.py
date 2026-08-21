@@ -530,7 +530,9 @@ def session_summary(results: list[dict]) -> dict:
             {"legs": k,
              "half_width_us": median_half / math.sqrt(k),
              "half_width_percent": 100.0 * median_half / math.sqrt(k) / control,
-             "minutes": k * seconds_per_leg / 60.0,
+             "minutes_per_arm": k * seconds_per_leg / 60.0,
+             # A decision needs the null arm as well, so it costs 2k legs.
+             "decision_minutes": 2 * k * seconds_per_leg / 60.0,
              "clears_bar": bool(median_half / math.sqrt(k) <= BAR_US),
              "power_at_one_bar": power(k)}
             for k in (1, 2, 4, 8)
@@ -680,19 +682,22 @@ def render(results: list[dict]) -> str:
     if "cost_curve" in summary:
         lines.append("")
         lines.append(
-            f"  cost of one decision at {summary['seconds_per_leg']:.0f} s/leg:")
+            f"  cost at {summary['seconds_per_leg']:.0f} s/leg;"
+            f" a decision needs the null arm too, so it costs twice:")
         for point in summary["cost_curve"]:
             lines.append(
-                f"    {point['legs']:>2} leg(s)"
+                f"    {point['legs']:>2} leg(s)/arm"
                 f"  +-{point['half_width_us']:>6.1f} us"
                 f" = {point['half_width_percent']:.3f} %"
-                f"  {point['minutes']:>5.1f} min"
+                f"  {point['minutes_per_arm']:>5.1f} min/arm"
+                f"  {point['decision_minutes']:>5.1f} min/decision"
                 f"  {'clears' if point['clears_bar'] else 'short of'} the bar"
                 f"  power at one bar {point['power_at_one_bar']:.2f}")
         lines.append(
-            f"  -> {summary['legs_to_reach_bar']} leg(s) ="
-            f" {summary['minutes_to_reach_bar']:.1f} min to resolve"
-            f" {BAR_PERCENT:.2f} %")
+            f"  -> {summary['legs_to_reach_bar']} leg(s)/arm ="
+            f" {summary['minutes_to_reach_bar']:.1f} min/arm"
+            f" ({2 * summary['minutes_to_reach_bar']:.1f} min/decision)"
+            f" to resolve {BAR_PERCENT:.2f} %")
     return "\n".join(lines)
 
 

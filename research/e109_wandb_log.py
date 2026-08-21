@@ -366,11 +366,13 @@ def log_v2(report_path: pathlib.Path,
     # The recipe another student runs: how many legs buy how much resolution,
     # what that costs, and how often a bar-sized arm actually reads non-zero.
     cost = wandb.Table(
-        columns=["legs", "half_width_us", "half_width_pct", "minutes",
+        columns=["legs_per_arm", "half_width_us", "half_width_pct",
+                 "minutes_per_arm", "decision_minutes",
                  "clears_bar", "power_at_one_bar"])
     for point in session["cost_curve"]:
         cost.add_data(point["legs"], point["half_width_us"],
-                      point["half_width_percent"], point["minutes"],
+                      point["half_width_percent"], point["minutes_per_arm"],
+                      point["decision_minutes"],
                       point["clears_bar"], point["power_at_one_bar"])
     payload["v2/cost_curve"] = cost
 
