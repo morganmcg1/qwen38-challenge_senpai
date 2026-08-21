@@ -1,0 +1,281 @@
+{
+  "samples": 18092,
+  "cells": [
+    {
+      "arm": "armC-bisect-K12292-p0.25",
+      "misses": 4,
+      "n": 18092,
+      "m": 0.00022109219544550078,
+      "m_lo": 8.598169002452233e-05,
+      "m_hi": 0.0005683928991671887,
+      "worse_than_shipped": 4,
+      "better_than_shipped": 0,
+      "net_miss_vs_shipped": 0.00022109219544550078,
+      "net_miss_lo": 4.47011432474141e-06,
+      "net_miss_hi": 0.00022109219544550078,
+      "net_miss_worst_domain": 0.00022662889518413598,
+      "net_miss_worst_work": 0.00037965072133637056,
+      "centroid_bytes": 19667200,
+      "stage2_bytes": 39334400,
+      "read_bytes": 59001600,
+      "removed_bytes": 98336000,
+      "head_pct": 22.98976809436144,
+      "score_gain_pct": 1.8736660996904575,
+      "breakeven_m": 0.009069051789402021,
+      "predicted_score_pct": 1.8279884521114171,
+      "predicted_worst_pct": 1.8279884521114171,
+      "predicted_worst_domain_pct": 1.826844569945415,
+      "by_domain": {
+        "expository": {
+          "n": 8825,
+          "m": 0.00022662889518413598,
+          "net": 0.00022662889518413598
+        },
+        "narrative": {
+          "n": 9267,
+          "m": 0.00021581957483543757,
+          "net": 0.00021581957483543757
+        }
+      },
+      "by_work": {
+        "candle": {
+          "n": 3009,
+          "m": 0.00033233632436025255,
+          "net": 0.00033233632436025255
+        },
+        "frankenstein": {
+          "n": 2649,
+          "m": 0.00037750094375235937,
+          "net": 0.00037750094375235937
+        },
+        "mobydick": {
+          "n": 3768,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "pride": {
+          "n": 2850,
+          "m": 0.0003508771929824561,
+          "net": 0.0003508771929824561
+        },
+        "problemsofphilosophy": {
+          "n": 3182,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "wealthofnations": {
+          "n": 2634,
+          "m": 0.00037965072133637056,
+          "net": 0.00037965072133637056
+        }
+      }
+    },
+    {
+      "arm": "armC-plain-K12292-p0.25",
+      "misses": 11,
+      "n": 18092,
+      "m": 0.0006080035374751271,
+      "m_lo": 0.00033954388897561825,
+      "m_hi": 0.0010884891140488353,
+      "worse_than_shipped": 11,
+      "better_than_shipped": 0,
+      "net_miss_vs_shipped": 0.0006080035374751271,
+      "net_miss_lo": 0.0002932608184116353,
+      "net_miss_hi": 0.0006080035374751271,
+      "net_miss_worst_domain": 0.0010790978741771879,
+      "net_miss_worst_work": 0.0011325028312570782,
+      "centroid_bytes": 19667200,
+      "stage2_bytes": 39334400,
+      "read_bytes": 59001600,
+      "removed_bytes": 98336000,
+      "head_pct": 22.98976809436144,
+      "score_gain_pct": 1.8736660996904575,
+      "breakeven_m": 0.009069051789402021,
+      "predicted_score_pct": 1.7480525688480961,
+      "predicted_worst_pct": 1.7480525688480961,
+      "predicted_worst_domain_pct": 1.6507244788854505,
+      "by_domain": {
+        "expository": {
+          "n": 8825,
+          "m": 0.00011331444759206799,
+          "net": 0.00011331444759206799
+        },
+        "narrative": {
+          "n": 9267,
+          "m": 0.0010790978741771879,
+          "net": 0.0010790978741771879
+        }
+      },
+      "by_work": {
+        "candle": {
+          "n": 3009,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "frankenstein": {
+          "n": 2649,
+          "m": 0.0011325028312570782,
+          "net": 0.0011325028312570782
+        },
+        "mobydick": {
+          "n": 3768,
+          "m": 0.0010615711252653928,
+          "net": 0.0010615711252653928
+        },
+        "pride": {
+          "n": 2850,
+          "m": 0.0010526315789473684,
+          "net": 0.0010526315789473684
+        },
+        "problemsofphilosophy": {
+          "n": 3182,
+          "m": 0.00031426775612822125,
+          "net": 0.00031426775612822125
+        },
+        "wealthofnations": {
+          "n": 2634,
+          "m": 0.0,
+          "net": 0.0
+        }
+      }
+    },
+    {
+      "arm": "armG-g128",
+      "misses": 4,
+      "n": 18092,
+      "m": 0.00022109219544550078,
+      "m_lo": 8.598169002452233e-05,
+      "m_hi": 0.0005683928991671887,
+      "worse_than_shipped": 4,
+      "better_than_shipped": 0,
+      "net_miss_vs_shipped": 0.00022109219544550078,
+      "net_miss_lo": 4.47011432474141e-06,
+      "net_miss_hi": 0.00022109219544550078,
+      "net_miss_worst_domain": 0.00022662889518413598,
+      "net_miss_worst_work": 0.0005307855626326964,
+      "centroid_bytes": 0,
+      "stage2_bytes": 141603840,
+      "read_bytes": 141603840,
+      "removed_bytes": 15733760,
+      "head_pct": 3.6783628950978304,
+      "score_gain_pct": 0.2997865759504732,
+      "breakeven_m": 0.0014510482863043233,
+      "predicted_score_pct": 0.25410892837143273,
+      "predicted_worst_pct": 0.25410892837143273,
+      "predicted_worst_domain_pct": 0.2529650462054307,
+      "by_domain": {
+        "expository": {
+          "n": 8825,
+          "m": 0.00022662889518413598,
+          "net": 0.00022662889518413598
+        },
+        "narrative": {
+          "n": 9267,
+          "m": 0.00021581957483543757,
+          "net": 0.00021581957483543757
+        }
+      },
+      "by_work": {
+        "candle": {
+          "n": 3009,
+          "m": 0.00033233632436025255,
+          "net": 0.00033233632436025255
+        },
+        "frankenstein": {
+          "n": 2649,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "mobydick": {
+          "n": 3768,
+          "m": 0.0005307855626326964,
+          "net": 0.0005307855626326964
+        },
+        "pride": {
+          "n": 2850,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "problemsofphilosophy": {
+          "n": 3182,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "wealthofnations": {
+          "n": 2634,
+          "m": 0.00037965072133637056,
+          "net": 0.00037965072133637056
+        }
+      }
+    },
+    {
+      "arm": "shipped-g64",
+      "misses": 0,
+      "n": 18092,
+      "m": 0.0,
+      "m_lo": 0.0,
+      "m_hi": 0.00021228406700157248,
+      "worse_than_shipped": 0,
+      "better_than_shipped": 0,
+      "net_miss_vs_shipped": 0.0,
+      "net_miss_lo": 0.0,
+      "net_miss_hi": 0.0,
+      "net_miss_worst_domain": 0.0,
+      "net_miss_worst_work": 0.0,
+      "centroid_bytes": 0,
+      "stage2_bytes": 157337600,
+      "read_bytes": 157337600,
+      "removed_bytes": 0,
+      "head_pct": 0.0,
+      "score_gain_pct": 0.0,
+      "breakeven_m": 0.0,
+      "predicted_score_pct": 0.0,
+      "predicted_worst_pct": 0.0,
+      "predicted_worst_domain_pct": 0.0,
+      "by_domain": {
+        "expository": {
+          "n": 8825,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "narrative": {
+          "n": 9267,
+          "m": 0.0,
+          "net": 0.0
+        }
+      },
+      "by_work": {
+        "candle": {
+          "n": 3009,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "frankenstein": {
+          "n": 2649,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "mobydick": {
+          "n": 3768,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "pride": {
+          "n": 2850,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "problemsofphilosophy": {
+          "n": 3182,
+          "m": 0.0,
+          "net": 0.0
+        },
+        "wealthofnations": {
+          "n": 2634,
+          "m": 0.0,
+          "net": 0.0
+        }
+      }
+    }
+  ]
+}
