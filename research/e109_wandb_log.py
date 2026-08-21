@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import statistics
 
 import wandb
 
@@ -171,15 +172,24 @@ def log_protocol(tag: str) -> str:
     return url
 
 
-def log_shape(family: str) -> str:
-    verdict_path = OUT / f"e109-shape-{family}" / "verdict.json"
-    report = json.loads(verdict_path.read_text())
+def log_shape(spec: str) -> str:
+    """`spec` is `family` or `family:suffix`, naming a sweep output directory.
+
+    The width-stratified sweeps (`prework:-s5`, `prework:-s8`, ...) are the ones
+    that decided rung 1: the `g1nored` lever wins at the nominal width S=5 and
+    loses at the modal realised width S=8, so a sweep logged without its width
+    is not interpretable.
+    """
+    family, _, suffix = spec.partition(":")
+    directory = f"e109-shape-{family}{suffix}"
+    report = json.loads((OUT / directory / "verdict.json").read_text())
     v = report["verdict"]
+    rows = report.get("rows")
 
     run = wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP,
         job_type="kernel-shape-sweep",
-        name=f"e109-rung1-{family}",
+        name=f"e109-rung1-{family}{suffix}",
         config={
             "rung": "1a" if family == "prework" else "1b",
             "question": (
@@ -188,7 +198,12 @@ def log_shape(family: str) -> str:
             ),
             "live_kernel": report["live_kernel"],
             "dispatch": report["dispatch"],
-            "sweep_command": f"research/e109_shape_probe.sh {family}",
+            "sweep_dir": f"research/out/{directory}",
+            "sweep_command": (
+                f"research/e109_shape_probe.sh {family}"
+                + (f" --rows {rows}" if rows is not None else "")
+            ),
+            "verify_rows": rows,
             "reps": report["reps"],
             "inner": report["inner"],
             **RESIDUAL[family],
@@ -226,7 +241,26 @@ def log_shape(family: str) -> str:
             g17.get("registers"), g17.get("spill_bytes"),
             g17.get("text_bytes"), g17.get("text_sha8"),
             a["shipped"], a["exact_vs_arm0"])
-    run.log({f"shape/{family}": table})
+    payload = {f"shape/{family}": table}
+
+    controls = report.get("positive_controls")
+    if controls:
+        # A bit-exactness claim is worthless without evidence that the
+        # comparison can fail. Each control perturbs one input channel that the
+        # lever's own surface reads, and must move at least one output byte.
+        control_table = wandb.Table(
+            columns=["control", "perturbed_buffer", "perturbed_element",
+                     "fired", "mismatch_bytes", "output_bytes",
+                     "mismatch_by_buffer"])
+        for c in controls:
+            control_table.add_data(
+                c["name"], c["perturbation"]["buffer"],
+                c["perturbation"]["element"], c["mismatched"],
+                c["mismatch_bytes"], c["output_bytes"],
+                json.dumps(c["mismatch_by_buffer"]))
+        payload[f"shape/{family}_positive_controls"] = control_table
+
+    run.log(payload)
 
     for a in report["arms"]:
         run.log({
@@ -237,6 +271,9 @@ def log_shape(family: str) -> str:
         })
 
     run.summary.update({
+        "verify_rows": rows,
+        "positive_control_fired": bool(
+            controls and any(c["mismatched"] for c in controls)),
         "mechanism": v["mechanism"],
         "mechanism_reason": v["reason"],
         "log_log_slopes": report["log_log_slopes"],
@@ -255,17 +292,123 @@ def log_shape(family: str) -> str:
     return url
 
 
+def log_v2(report_path: pathlib.Path) -> str:
+    """Rung 0 v2: the same dose resolved from inside a single leg.
+
+    v1 contrasted whole legs and failed the bar at 833.5 us, because a per-leg
+    offset with SD 697 us carried 97.9 percent of the pair variance. v2 moves
+    the contrast between neighbouring rounds of one leg, where that offset is
+    common to both members and cancels.
+    """
+    report = json.loads(report_path.read_text())
+    legs = report["legs"]
+    dosed = [leg for leg in legs if leg["dose_alignment"]]
+    null = [leg for leg in legs if not leg["dose_alignment"]]
+
+    run = wandb.init(
+        entity=ENTITY, project=PROJECT, group=GROUP,
+        job_type="measurement-protocol",
+        name="e109-rung0-protocol-v2",
+        config={
+            "rung": "0-v2",
+            "question": (
+                "does a within-leg alternating dose resolve 0.20 % of a "
+                "decode-only round in ONE leg, where whole-leg contrasts "
+                "needed 180 legs and 4.6 hours"
+            ),
+            "estimator": (
+                "mean difference over non-overlapping neighbouring round pairs "
+                "at equal verify width, opposite dose state, round 0 dropped"
+            ),
+            "drift_control": (
+                "equal-width DUD/UDU triples, (x0 + x2) / 2 - x1, which cancels "
+                "a linear within-leg drift that the phase-locked pair "
+                "estimator absorbs as -drift"
+            ),
+            "endpoint": "block_request_seconds (parent-measured decode round)",
+            "v1_half_width_us": 833.5,
+            "v1_half_width_pct": 0.470,
+            "v1_sigma_leg_us": 697.0,
+            "v1_leg_share_of_pair_variance": 0.979,
+            "predicted_half_width_us": 313.0,
+            "report": str(report_path),
+            **identity(),
+            **gate_flags("within-leg alternating-dose timing legs, GPU"),
+        },
+        reinit=True,
+    )
+
+    table = wandb.Table(
+        columns=["leg", "arm", "arm_env", "matched", "round_count", "pairs",
+                 "pairs_by_width", "control_round_us", "effect_us",
+                 "half_width_us", "half_width_pct", "drift_us_per_round",
+                 "triples", "drift_cancelled_us", "drift_cancelled_half_us",
+                 "one_forward_per_round", "dosed_forwards", "entry_c",
+                 "exit_c", "wall_seconds"])
+    for leg in legs:
+        alignment = leg["dose_alignment"] or {}
+        table.add_data(
+            leg["leg"], leg["arm_label"], leg["arm_env"],
+            leg["all_tokens_matched"], leg["round_count"], leg["pairs"],
+            json.dumps(leg["pairs_by_width"]), leg["e109_control_round_us"],
+            leg["paired_difference_mean_us"], leg["half_width_us"],
+            leg["half_width_percent"], leg["within_leg_drift_us_per_round"],
+            leg["drift_cancelled_triples"], leg["drift_cancelled_mean_us"],
+            leg["drift_cancelled_half_width_us"],
+            alignment.get("one_forward_per_round"),
+            alignment.get("dosed_forwards"), leg["gpu_temp_entry_c"],
+            leg["gpu_temp_exit_c"], leg["leg_wall_seconds"])
+    run.log({"v2/legs": table})
+
+    halves = sorted(leg["half_width_us"] for leg in dosed)
+    median_half = statistics.median(halves) if halves else float("nan")
+    control_us = statistics.fmean(
+        leg["e109_control_round_us"] for leg in legs)
+    # The null legs run the identical estimator over a dose-free series. If
+    # any of their intervals excludes zero, the estimator is manufacturing an
+    # effect and no dosed reading from the same session can be believed.
+    null_clean = all(
+        abs(leg["paired_difference_mean_us"]) <= leg["half_width_us"]
+        for leg in null) if null else False
+
+    run.summary.update({
+        "dosed_legs": len(dosed),
+        "null_legs": len(null),
+        "single_leg_half_width_us_median": median_half,
+        "single_leg_half_width_us_min": halves[0] if halves else None,
+        "single_leg_half_width_us_max": halves[-1] if halves else None,
+        "single_leg_half_width_pct_median": 100.0 * median_half / control_us,
+        "clears_0p20_bar": bool(median_half <= report["bar_us"]),
+        "bar_us": report["bar_us"],
+        "control_round_us": control_us,
+        "null_covers_zero": null_clean,
+        "dosed_effect_us_median": statistics.median(
+            [leg["paired_difference_mean_us"] for leg in dosed]) if dosed else None,
+        "dosed_effect_us_drift_cancelled_median": statistics.median(
+            [leg["drift_cancelled_mean_us"] for leg in dosed]) if dosed else None,
+        "all_legs_matched": all(leg["all_tokens_matched"] for leg in legs),
+        "improvement_over_v1": 833.5 / median_half if median_half else None,
+    })
+    url = run.url
+    run.finish()
+    return url
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol")
-    parser.add_argument("--shape", action="append", default=[])
+    parser.add_argument("--v2", type=pathlib.Path)
+    parser.add_argument("--shape", action="append", default=[],
+                        help="FAMILY or FAMILY:SUFFIX, e.g. prework:-s8")
     args = parser.parse_args()
 
     urls = {}
     if args.protocol:
         urls["e109-rung0-protocol"] = log_protocol(args.protocol)
-    for family in args.shape:
-        urls[f"e109-rung1-{family}"] = log_shape(family)
+    if args.v2:
+        urls["e109-rung0-protocol-v2"] = log_v2(args.v2)
+    for spec in args.shape:
+        urls[f"e109-rung1-{spec.replace(':', '')}"] = log_shape(spec)
     for name, url in urls.items():
         print(f"{name}  {url}")
     return 0
