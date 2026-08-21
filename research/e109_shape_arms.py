@@ -588,6 +588,25 @@ def prework_spec(units: list[int]) -> dict:
             "reduction": "direct",
         }
     )
+    # Positive control. `g1nored` claims bit exactness against arm 0, and that
+    # claim is only worth something if the comparison can fail. This arm is
+    # arm 0's own kernel reading one bf16 input element flipped by 1 ULP, so it
+    # MUST mismatch. The probe voids the run if it does not.
+    arms.append(
+        {
+            "name": "g1ctl",
+            "function": "e109_prework_g1",
+            "source": "arm_prework_g1.metal",
+            "grid": [32, S, 2 * HK + HV],
+            "threadgroup": [32, 1, 1],
+            "threadgroups": S * (2 * HK + HV),
+            "simdgroups_per_threadgroup": 1,
+            "shipped": False,
+            "exact_vs_arm0": False,
+            "reduction": "positive_control",
+            "perturb": {"buffer": "qkv", "element": 4096},
+        }
+    )
     return {
         "family": "prework",
         "live_kernel": "qwen35_packed_gdn_prework",

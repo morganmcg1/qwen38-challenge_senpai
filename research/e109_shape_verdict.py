@@ -29,6 +29,11 @@ advance: the sweep is negative unless some arm beats the shipped arm by more
 than 15 %. `verdict.actionable` reports that decision, and it is independent of
 which mechanism the curve names -- naming H1 does not make a 3 % win worth
 shipping.
+
+`actionable` also requires a positive control that mismatched in the same
+session. Arms that claim bit exactness are cleared by a byte comparison, and a
+comparison that has never failed is not evidence. A control arm is excluded
+from the curve, from the lever list, and from the best-arm search.
 """
 
 from __future__ import annotations
@@ -120,19 +125,31 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
         arms.append(entry)
     arms.sort(key=lambda a: (a["variant"] != "shipped", a["fold_factor"]))
 
-    shipped = next((a for a in arms if a["shipped"]), arms[0])
-    best = min(arms, key=lambda a: a["us_per_dispatch_median"])
+    # A control arm is deliberately wrong, so it may never win the sweep, sit
+    # on the curve, or be offered as a lever. It answers one question only:
+    # can the byte comparison that clears every other arm actually fail?
+    controls = [a for a in arms if a["variant"] == "positive_control"]
+    candidates = [a for a in arms if a["variant"] != "positive_control"]
+
+    shipped = next((a for a in candidates if a["shipped"]), candidates[0])
+    best = min(candidates, key=lambda a: a["us_per_dispatch_median"])
     gain = 1.0 - best["us_per_dispatch_median"] / shipped["us_per_dispatch_median"]
 
     # Only the shape ladder can be read as a curve. A lever arm changes the
     # kernel body at a fold factor the ladder already occupies, so including it
     # would put two times at one abscissa.
-    sweep = [a for a in arms if a["variant"] == "shipped"]
-    levers = [a for a in arms if a["variant"] != "shipped"]
+    sweep = [a for a in candidates if a["variant"] == "shipped"]
+    levers = [a for a in candidates if a["variant"] != "shipped"]
     seq = slopes([(a["fold_factor"], a["us_per_dispatch_median"]) for a in sweep])
     mechanism, why = classify(seq)
 
-    exact = all(a["exact_vs_arm0"] for a in arms)
+    exact = all(a["exact_vs_arm0"] for a in candidates)
+    # An exactness claim counts only when a control mismatched in the same
+    # session. With no control the byte comparison is untested, so `exact` is
+    # an unproven assertion and cannot license promotion.
+    control_fired = bool(controls) and all(
+        not a["exact_vs_arm0"] and a.get("mismatch_bytes", 0) > 0
+        for a in controls)
     return {
         "family": timing["family"],
         "harness": "local",
@@ -155,6 +172,16 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
             }
             for a in levers
         ],
+        "positive_controls": [
+            {
+                "name": a["name"],
+                "perturbation": spec_by_name[a["name"]]["perturb"],
+                "mismatched": not a["exact_vs_arm0"],
+                "mismatch_bytes": a.get("mismatch_bytes"),
+                "output_bytes": a.get("output_bytes"),
+            }
+            for a in controls
+        ],
         "verdict": {
             "mechanism": mechanism,
             "reason": why,
@@ -164,8 +191,10 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
             "best_us_per_dispatch": best["us_per_dispatch_median"],
             "fractional_gain_vs_shipped": gain,
             "min_useful_gain": MIN_USEFUL_GAIN,
-            "actionable": bool(gain > MIN_USEFUL_GAIN and exact),
+            "actionable": bool(
+                gain > MIN_USEFUL_GAIN and exact and control_fired),
             "all_folds_bit_exact": exact,
+            "exactness_check_proven_by_control": control_fired,
         },
     }
 
@@ -203,6 +232,7 @@ def render(out: dict) -> str:
         f"   gain {100 * v['fractional_gain_vs_shipped']:+.1f} %"
         f" (floor {100 * v['min_useful_gain']:.0f} %)",
         f"  bit-exact folds {v['all_folds_bit_exact']}"
+        f"   proven by control {v['exactness_check_proven_by_control']}"
         f"   ACTIONABLE {v['actionable']}",
     ]
     for lever in out["levers"]:
@@ -211,6 +241,14 @@ def render(out: dict) -> str:
             f" {lever['us_per_dispatch_median']:.3f} us"
             f"   gain {100 * lever['gain_vs_shipped']:+.1f} %"
             f"   bit-exact {lever['exact_vs_arm0']}")
+    if not out["positive_controls"]:
+        lines.append("  positive control ABSENT -- no exactness claim is proven")
+    for c in out["positive_controls"]:
+        p = c["perturbation"]
+        lines.append(
+            f"  control {c['name']} flips {p['buffer']}[{p['element']}] by"
+            f" 1 ULP -> mismatched {c['mismatched']}"
+            f" ({c['mismatch_bytes']} of {c['output_bytes']} output bytes)")
     return "\n".join(lines)
 
 

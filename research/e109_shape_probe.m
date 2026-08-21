@@ -87,6 +87,7 @@ typedef struct {
   char name[64];
   int is_out;
   id<MTLBuffer> shared;          // inputs and constants
+  id<MTLBuffer> perturbed;       // `shared` with one element changed
   id<MTLBuffer> per_arm[MAX_ARMS];  // outputs
   size_t length;
 } Buf;
@@ -101,6 +102,12 @@ typedef struct {
   int simdgroups_per_tg;
   int shipped;
   int exact_vs_arm0;
+  // Positive control. A byte comparison that has never failed proves nothing,
+  // so one arm reruns arm 0's own kernel against an input whose single named
+  // element was changed. That arm MUST mismatch; if it does not, every other
+  // arm's `exact_vs_arm0` is worthless and the run is void.
+  int perturb_buf;
+  long perturb_elem;
   id<MTLComputePipelineState> pso;
   NSUInteger max_threads;
   NSUInteger exec_width;
@@ -195,7 +202,9 @@ static void encode(id<MTLComputeCommandEncoder> enc, Arm *arm, Buf *bufs,
   [enc setComputePipelineState:arm->pso];
   for (int i = 0; i < nbuf; i++) {
     id<MTLBuffer> b = bufs[i].is_out ? bufs[i].per_arm[arm_index]
-                                     : bufs[i].shared;
+                                     : (i == arm->perturb_buf
+                                            ? bufs[i].perturbed
+                                            : bufs[i].shared);
     [enc setBuffer:b offset:0 atIndex:(NSUInteger)i];
   }
   [enc dispatchThreads:arm->grid threadsPerThreadgroup:arm->tg];
@@ -270,6 +279,21 @@ int main(int argc, const char *argv[]) {
       arms[a].simdgroups_per_tg = [number(s, @"simdgroups_per_threadgroup") intValue];
       arms[a].shipped = [s[@"shipped"] boolValue];
       arms[a].exact_vs_arm0 = [s[@"exact_vs_arm0"] boolValue];
+      arms[a].perturb_buf = -1;
+      arms[a].perturb_elem = -1;
+      if (s[@"perturb"]) {
+        NSDictionary *p = s[@"perturb"];
+        NSString *want = number(p, @"buffer");
+        for (int i = 0; i < nbuf; i++) {
+          if ([want isEqualToString:bufspecs[i][@"name"]]) arms[a].perturb_buf = i;
+        }
+        if (arms[a].perturb_buf < 0) {
+          fprintf(stderr, "e109_shape_probe: %s perturbs unknown buffer %s\n",
+                  arms[a].name, [want UTF8String]);
+          return 1;
+        }
+        arms[a].perturb_elem = [(NSNumber *)number(p, @"element") longValue];
+      }
 
       NSString *src = inlinePreamble(
           readTextFile([dir stringByAppendingPathComponent:
@@ -350,6 +374,28 @@ int main(int argc, const char *argv[]) {
       }
     }
 
+    // One perturbed copy per buffer that some arm asks for, made after every
+    // input is filled. The change is a single bf16 or f32 element, which is the
+    // smallest perturbation the kernel can see.
+    for (int a = 0; a < narm; a++) {
+      int i = arms[a].perturb_buf;
+      if (i < 0 || bufs[i].perturbed) continue;
+      bufs[i].perturbed = [device newBufferWithLength:bufs[i].length
+                                              options:MTLResourceStorageModeShared];
+      memcpy(bufs[i].perturbed.contents, bufs[i].shared.contents, bufs[i].length);
+      NSString *dtype = bufspecs[i][@"dtype"];
+      long e = arms[a].perturb_elem;
+      if ([dtype isEqualToString:@"bf16"]) {
+        uint16_t *p = (uint16_t *)bufs[i].perturbed.contents;
+        p[e] = (uint16_t)(p[e] ^ 1u);
+      } else {
+        uint32_t *p = (uint32_t *)bufs[i].perturbed.contents;
+        p[e] = p[e] ^ 1u;
+      }
+      fprintf(stderr, "e109_shape_probe: positive control %s perturbs"
+              " %s[%ld] by 1 ULP\n", arms[a].name, bufs[i].name, e);
+    }
+
     for (int a = 0; a < narm; a++)
       for (int w = 0; w < 3; w++) timeArm(queue, &arms[a], bufs, nbuf, a, inner);
 
@@ -396,16 +442,33 @@ int main(int argc, const char *argv[]) {
       for (int i = 0; i < n; i++) var += (v[i] - mean) * (v[i] - mean);
       var = n > 1 ? var / (n - 1) : 0.0;
 
-      int exact = 1, mismatch_bytes = 0;
-      if (a > 0 && arms[a].exact_vs_arm0) {
+      // The positive control is compared on the same path as every other arm,
+      // so a comparison that cannot fail is caught here rather than assumed.
+      int exact = 1, mismatch_bytes = 0, compared = 0;
+      size_t out_bytes = 0;
+      if (a > 0 && (arms[a].exact_vs_arm0 || arms[a].perturb_buf >= 0)) {
+        compared = 1;
         for (int i = 0; i < nbuf; i++) {
           if (!bufs[i].is_out) continue;
+          out_bytes += bufs[i].length;
           const uint8_t *p = bufs[i].per_arm[a].contents;
           const uint8_t *q0 = bufs[i].per_arm[0].contents;
           for (size_t b = 0; b < bufs[i].length; b++)
             if (p[b] != q0[b]) { exact = 0; mismatch_bytes++; }
         }
-        if (!exact) all_exact = 0;
+        if (arms[a].perturb_buf >= 0) {
+          if (exact) {
+            fprintf(stderr, "e109_shape_probe: VOID -- positive control %s"
+                    " matched arm 0, so the byte comparison cannot fail\n",
+                    arms[a].name);
+            return 3;
+          }
+          fprintf(stderr, "e109_shape_probe: positive control %s changed"
+                  " %d of %zu output bytes\n",
+                  arms[a].name, mismatch_bytes, out_bytes);
+        } else if (!exact) {
+          all_exact = 0;
+        }
       }
       fprintf(out,
               "    {\"name\": \"%s\", \"function\": \"%s\", "
@@ -416,6 +479,7 @@ int main(int argc, const char *argv[]) {
               "\"us_per_dispatch_median\": %.4f, \"us_per_dispatch_min\": %.4f, "
               "\"us_per_dispatch_mean\": %.4f, \"us_per_dispatch_sd\": %.4f, "
               "\"exact_vs_arm0\": %s, \"checked_exact\": %s, "
+              "\"positive_control\": %s, \"output_bytes\": %zu, "
               "\"mismatch_bytes\": %d}%s\n",
               arms[a].name, arms[a].function, arms[a].threadgroups,
               arms[a].simdgroups_per_tg,
@@ -424,8 +488,8 @@ int main(int argc, const char *argv[]) {
               (unsigned long)arms[a].max_threads,
               (unsigned long)arms[a].exec_width, (unsigned long)arms[a].tg_mem,
               median * 1e6, sorted[0] * 1e6, mean * 1e6, sqrt(var) * 1e6,
-              exact ? "true" : "false",
-              (a > 0 && arms[a].exact_vs_arm0) ? "true" : "false",
+              exact ? "true" : "false", compared ? "true" : "false",
+              arms[a].perturb_buf >= 0 ? "true" : "false", out_bytes,
               mismatch_bytes, a + 1 == narm ? "" : ",");
       free(sorted);
     }
