@@ -10,6 +10,10 @@
     "fit_points": 10,
     "measured_step_round_share_pct": 0.6544198994640095,
     "model_overstatement_factor": 9.662464500802033,
+    "rep_slope_us": 839.5994623655915,
+    "rep_intercept_us": 127349.64583333334,
+    "rep_r_squared": 0.9923242246316354,
+    "rep_points": 10,
     "removal_round_us_unmatched": 129223.86633663367,
     "removal_rounds_n": 202,
     "control_minus_removal_us_unmatched": -927.1163366336696

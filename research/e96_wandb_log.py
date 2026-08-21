@@ -144,6 +144,7 @@ def log_legs(tags):
             reinit=True,
         )
         run.log(leg_metrics(leg))
+        print(f"{tag} {run.id} {run.url}")
         run.finish()
 
 
@@ -171,6 +172,7 @@ def log_model(path):
     run.log(payload["metrics"])
     for name, table in payload.get("tables", {}).items():
         run.log({name: wandb.Table(columns=table["columns"], data=table["rows"])})
+    print(f"model {run.id} {run.url}")
     run.finish()
 
 
