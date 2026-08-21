@@ -192,6 +192,9 @@ public final class Qwen36MTPBlockSession {
         // version of this; the per-position EMAs let depth 5-8 pay where the
         // ladder's cap of 4 left committed tokens on the table.
         draftPolicy = { [weak self] offeredDepth, _ in
+            if let pinned = Self.e92PinnedDraftCount {
+                return Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth, pinned)
+            }
             guard let self else { return Swift.min(offeredDepth, 1) }
             return self.costModelDepth(offeredDepth: offeredDepth)
         }
@@ -633,6 +636,10 @@ public final class Qwen36MTPBlockSession {
         seedTokenCount = seedTokens.count
         committedTokenCount = 0
         began = true
+        // E92 research instrument, off unless MLX_E92_BANDWIDTH=1. It runs here
+        // because the seed prefill has just been evaluated: the model is
+        // resident, the allocator is in steady state, and no round has started.
+        E92BandwidthProbe.runOnceIfRequested()
         return pendingPrimary!
     }
 
@@ -740,6 +747,22 @@ public final class Qwen36MTPBlockSession {
     /// overlap this flag exists to undo.
     private static let traceSyncHeadChain =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE_SYNC_HEAD"] == "1"
+
+    /// E92 RESEARCH INSTRUMENT -- pin every round to exactly this many drafts,
+    /// so one leg measures exactly one verify width `M = drafts + 1`. It
+    /// bypasses the cost model and the shipped width cap of 7, which is the
+    /// only way to reach `M = 9` and the only way to hold `M = 1` for a whole
+    /// leg. It cannot break the contract: the value is still clamped to the
+    /// parent's offer and to `Qwen36MTPLimits.maxDepth`, and the emitted stream
+    /// is the same greedy target chain at any width.
+    ///
+    /// RESEARCH ONLY. This knob must not reach a submission.
+    private static let e92PinnedDraftCount: Int? = {
+        guard let raw = ProcessInfo.processInfo.environment["MLX_E92_PIN_DRAFTS"],
+              let value = Int(raw), value >= 0, value <= Qwen36MTPLimits.maxDepth
+        else { return nil }
+        return value
+    }()
 
     /// Opened O_APPEND so the reference, verify and timed workers can each
     /// write the same file without a later process truncating an earlier

@@ -80,6 +80,11 @@ public struct RuntimeStartupMemoryPolicy: Equatable, Sendable {
         physicalMemoryBytes: UInt64,
         requestedProfile: String? = nil
     ) -> RuntimeStartupMemoryPolicy {
+        // E90 research instrument, off unless MLX_E90_GPU_INTERVALS=1. This is
+        // the earliest editable hook the worker reaches, so hooking here covers
+        // weight loading and warmup as well as the timed rounds. RESEARCH ONLY:
+        // it must not reach a submission.
+        E90GPUIntervals.installIfRequested()
         installQwenMTPFullProfileCommandBufferDefaults(
             physicalMemoryBytes: physicalMemoryBytes,
             requestedProfile: requestedProfile
