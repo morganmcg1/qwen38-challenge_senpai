@@ -319,18 +319,233 @@ BODY_WIDEX = """
     }
 """
 
-BODIES = {
-    "l_loadonly": BODY_LOADONLY,
-    "z_noxload": BODY_NOXLOAD,
-    "xw_widex": BODY_WIDEX,
+# --- arithmetic arms ---------------------------------------------------------
+# Rung 0 counted 72 * NA fmul and 88 * NA fadd per k-block, so the kernel issues
+# 160 * NA scalar FP instructions to deliver 128 * NA useful flops. These arms
+# move only that instruction count. The load stream is byte-identical in all of
+# them, so a time change is attributable to FP issue and nothing else.
+#
+# `a0 * (packed & 0xf)` is EXACT in float32: a bf16-derived float carries at
+# most 8 significand bits and a nibble at most 4, so the product needs at most
+# 12 of the 24 available bits. `fma(a1, w1, a0 * w0)` therefore returns exactly
+# what `round(a1 * w1) + round(a0 * w0)` returns, and the same holds down the
+# chain. `xf_exactfma` keeps the incumbent summation ORDER as well, so it is
+# required to be bit-identical and the probe checks that at every cell.
+
+# `metal::fma` has no `vec<float, N>` overload past N = 4, and every wide cell
+# past NA = 4 is the point of this experiment. The helper applies the scalar
+# overload lane by lane, which is what a vector fma lowers to on this hardware
+# anyway, and it takes the second operand as a scalar so no splat is built.
+FMA_HELPER = """
+template <int N>
+static inline vec<float, N> e104_fma(
+    vec<float, N> a, float b, vec<float, N> c) {
+  vec<float, N> r;
+  for (int m = 0; m < N; m++) {
+    r[m] = fma(a[m], b, c[m]);
+  }
+  return r;
 }
+
+"""
+
+# xf_exactfma: 1 mul + 3 fma + 1 add replaces 4 mul + 4 add per row and quarter,
+# which is 112 * NA instructions instead of 160 * NA, a 30.0 % cut.
+BODY_EXACTFMA = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        a0[m] = static_cast<float>(xm[0]);
+        a1[m] = static_cast<float>(xm[1]);
+        a2[m] = static_cast<float>(xm[2]);
+        a3[m] = static_cast<float>(xm[3]);
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        VF t = a0 * (packed[r][i] & 0x000f);
+        t = e104_fma(a1, float((packed[r][i] >> 4) & 0x000f), t);
+        t = e104_fma(a2, float((packed[r][i] >> 8) & 0x000f), t);
+        t = e104_fma(a3, float((packed[r][i] >> 12) & 0x000f), t);
+        partial[r] += t;
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
+# f_fmamax: the headroom bound. It folds `partial[r]` and `acc[r]` into the fma
+# chains, which reaches 88 * NA instructions, a 45.0 % cut. That reorders the
+# additions, so it is a diagnostic arm and is never a candidate.
+BODY_FMAMAX = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        a0[m] = static_cast<float>(xm[0]);
+        a1[m] = static_cast<float>(xm[1]);
+        a2[m] = static_cast<float>(xm[2]);
+        a3[m] = static_cast<float>(xm[3]);
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] =
+            e104_fma(a0, float(packed[r][i] & 0x000f), partial[r]);
+        partial[r] =
+            e104_fma(a1, float((packed[r][i] >> 4) & 0x000f), partial[r]);
+        partial[r] =
+            e104_fma(a2, float((packed[r][i] >> 8) & 0x000f), partial[r]);
+        partial[r] =
+            e104_fma(a3, float((packed[r][i] >> 12) & 0x000f), partial[r]);
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] = e104_fma(partial[r], scale_local[r], acc[r]);
+      acc[r] = e104_fma(sums, bias_local[r], acc[r]);
+    }
+"""
+
+# n_nosums: the calibration point. It drops three of the four adds in the bias
+# correction, which is 148 * NA instructions, a 7.5 % cut, while every device
+# load survives. With the base and the two fma arms it gives four points on the
+# instruction-count axis, so the slope of time against instructions is
+# measured rather than assumed. The output is wrong on purpose.
+BODY_NOSUMS = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        sums[m] += xm[0];
+        a0[m] = static_cast<float>(xm[0]);
+        a1[m] = static_cast<float>(xm[1]);
+        a2[m] = static_cast<float>(xm[2]);
+        a3[m] = static_cast<float>(xm[3]);
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * ((packed[r][i] >> 4) & 0x000f) +
+                       a2 * ((packed[r][i] >> 8) & 0x000f) +
+                       a3 * ((packed[r][i] >> 12) & 0x000f));
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
+# s_splitacc: the advisor's arm S under H5. Two accumulator sets alternate on
+# k-block parity, so the dependent chain through `acc` is half as long. The
+# rung 0 census already gives the kernel 4 * NA independent accumulator lanes
+# at NA = 5, so the prediction is null; the arm exists to measure that rather
+# than assert it. It changes the summation order, so it is diagnostic.
+PROLOGUE_SPLITACC = PROLOGUE.replace(
+    """  VF acc[rows_per_simd];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r] = VF(0.0f);
+  }
+
+  for (int k = 0; k < in_vec_size; k += block_size) {""",
+    """  VF acc[rows_per_simd][2];
+  for (int r = 0; r < rows_per_simd; r++) {
+    acc[r][0] = VF(0.0f);
+    acc[r][1] = VF(0.0f);
+  }
+
+  int par = 0;
+  for (int k = 0; k < in_vec_size; k += block_size) {""")
+
+BODY_SPLITACC = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+    for (int i = 0; i < 4; i++) {
+      VF a0, a1, a2, a3;
+      for (int m = 0; m < NA; m++) {
+        const device T* xm = x + (first_m + m) * in_vec_size + k +
+            simd_lid * values_per_thread + 4 * i;
+        sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+        a0[m] = static_cast<float>(xm[0]);
+        a1[m] = static_cast<float>(xm[1]);
+        a2[m] = static_cast<float>(xm[2]);
+        a3[m] = static_cast<float>(xm[3]);
+      }
+      for (int r = 0; r < rows_per_simd; r++) {
+        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                       a1 * ((packed[r][i] >> 4) & 0x000f) +
+                       a2 * ((packed[r][i] >> 8) & 0x000f) +
+                       a3 * ((packed[r][i] >> 12) & 0x000f));
+      }
+    }
+    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r][par] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+    par ^= 1;
+"""
+
+EPILOGUE_SPLITACC = """  }
+
+  for (int r = 0; r < rows_per_simd; r++) {
+    for (int m = 0; m < NA; m++) {
+      const float reduced = simd_sum(acc[r][0][m] + acc[r][1][m]);
+      if (simd_lid == 0) {
+        y[(first_m + m) * out_vec_size + out_row + r] =
+            static_cast<T>(reduced);
+      }
+    }
+  }
+}
+"""
+
+BODIES = {
+    "l_loadonly": (PROLOGUE, BODY_LOADONLY, EPILOGUE),
+    "z_noxload": (PROLOGUE, BODY_NOXLOAD, EPILOGUE),
+    "xw_widex": (PROLOGUE, BODY_WIDEX, EPILOGUE),
+    "xf_exactfma": (FMA_HELPER + PROLOGUE, BODY_EXACTFMA, EPILOGUE),
+    "f_fmamax": (FMA_HELPER + PROLOGUE, BODY_FMAMAX, EPILOGUE),
+    "n_nosums": (PROLOGUE, BODY_NOSUMS, EPILOGUE),
+    "s_splitacc": (PROLOGUE_SPLITACC, BODY_SPLITACC, EPILOGUE_SPLITACC),
+}
+
+# Scalar FP instructions per k-block per thread, from the rung 0 census
+# identity 72 * NA fmul + 88 * NA fadd. The analysis regresses time on this.
+FP_OPS_PER_NA = {
+    "a_base": 160,
+    "xf_exactfma": 112,
+    "f_fmamax": 88,
+    "n_nosums": 148,
+    "s_splitacc": 160,
+}
+
+ARITH_ARMS = ("a_base", "n_nosums", "xf_exactfma", "f_fmamax", "s_splitacc")
 
 
 def arm_source(base: str, arm: str) -> str:
     if arm == "a_base":
         return base
+    prologue, body, epilogue = BODIES[arm]
     start, end = wide_fn_span(base)
-    return base[:start] + PROLOGUE + BODIES[arm] + EPILOGUE + base[end:]
+    return base[:start] + prologue + body + epilogue + base[end:]
 
 
 # --- isolated per-NA entry points for the AIR census -------------------------
@@ -439,7 +654,33 @@ def emit_ladder_arms(outdir: pathlib.Path, raw: str) -> tuple[str, ...]:
     return tuple(plans)
 
 
-SETS = {"rate": emit_rate_arms, "ladder": emit_ladder_arms}
+def emit_arith_arms(outdir: pathlib.Path, raw: str) -> tuple[str, ...]:
+    """The FP-instruction axis, on the same per-width entry points as rung 0.5.
+
+    `a_base` here is byte-for-byte the `x_onegroup` arm of the ladder set, so
+    the two sessions price the same kernel and their absolute times compare.
+    """
+    base = widen_asserts(raw)
+    one_group = {na: na for na in LADDER_NA}
+    manifest = {}
+    for arm in ARITH_ARMS:
+        text = ladder_source(arm_source(base, arm), one_group)
+        (outdir / ("arm_%s.metal" % arm)).write_text(text)
+        (outdir / ("iso_%s.metal" % arm)).write_text(iso_source(
+            arm_source(base, arm)))
+        manifest[arm] = {
+            str(na): {"ipg": na, "partition": str(na), "weight_streams": 1,
+                      "fp_ops_per_kblock": FP_OPS_PER_NA[arm] * na}
+            for na in LADDER_NA
+        }
+        print("%-12s %8d bytes  %d FP ops per NA per k-block"
+              % (arm, len(text), FP_OPS_PER_NA[arm]))
+    (outdir / "partitions.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return ARITH_ARMS
+
+
+SETS = {"rate": emit_rate_arms, "ladder": emit_ladder_arms,
+        "arith": emit_arith_arms}
 
 
 def main() -> int:

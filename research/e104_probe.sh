@@ -47,13 +47,21 @@ clang -fobjc-arc -O2 -Wno-format-nonliteral -framework Metal \
   | grep -v 'setFastMathEnabled\|deprecated' | tee "${out_dir}/build.log"
 
 # No GPU: the source-level census that prices the arms before they are timed.
-if [[ "${set_name}" == "ladder" ]]; then
-  python3 research/e104_ladder_census.py --dir "${arms_dir}" \
-    --arms "$(IFS=,; echo "${arm_names[*]}")" \
-    --out "${out_dir}/census.json" 2>&1 | tee "${out_dir}/census.log"
-else
+arm_list="$(IFS=,; echo "${arm_names[*]}")"
+if [[ "${set_name}" == "rate" ]]; then
   python3 research/e104_arm_census.py --dir "${arms_dir}" \
     --out "${out_dir}/census.json" 2>&1 | tee "${out_dir}/census.log"
+else
+  python3 research/e104_ladder_census.py --dir "${arms_dir}" \
+    --arms "${arm_list}" \
+    --out "${out_dir}/census.json" 2>&1 | tee "${out_dir}/census.log"
+fi
+if [[ "${set_name}" == "arith" ]]; then
+  # The register census cannot see the FP instruction count, and that count is
+  # the whole axis these arms move, so read it from the AIR as well.
+  python3 research/e104_arm_census.py --dir "${arms_dir}" --arms "${arm_list}" \
+    --na 2,3,4,5,6 --out "${out_dir}/air-census.json" 2>&1 \
+    | tee "${out_dir}/air-census.log"
 fi
 
 entry_c="$(gpu_temp)"

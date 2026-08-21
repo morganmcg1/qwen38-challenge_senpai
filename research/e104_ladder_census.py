@@ -108,7 +108,9 @@ def main() -> int:
             print(f"  {arch:>14}  " + "  ".join(cells))
 
     have = {row["arm"]: row for row in rows if row["compiled"]}
-    if len(have) == len(arms):
+    # The tax only means anything for the two-arm partition ladder. Other arm
+    # sets reuse this census for the per-width counts alone.
+    if len(arms) == 2 and len(have) == 2:
         one, two = have[arms[0]], have[arms[1]]
         print("\nregister tax of collapsing to one group (ranked arch "
               f"{RANKED_ARCH})")

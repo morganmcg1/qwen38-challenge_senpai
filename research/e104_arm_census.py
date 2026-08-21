@@ -38,6 +38,7 @@ PROBE_NA = (2, 3, 4, 5, 6)
 # static counts can be reweighted into counts per k-block, which is the unit the
 # rate identity is written in.
 INNER_TRIP = {"a_base": 4, "l_loadonly": 4, "z_noxload": 4, "xw_widex": 2}
+DEFAULT_INNER_TRIP = 4
 
 DEVICE_LOAD = re.compile(r"^\s*%\S+ = load .*addrspace\(1\)", re.M)
 ANY_LOAD = re.compile(r"^\s*%\S+ = load ", re.M)
@@ -191,16 +192,21 @@ def air_for(src: pathlib.Path, entry: str, inner_trip: int) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", default="/tmp/e104-arms")
+    ap.add_argument("--arms", default=",".join(ARMS))
+    ap.add_argument("--na", default=",".join(str(n) for n in PROBE_NA))
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
+    arms = tuple(a for a in args.arms.split(",") if a)
+    probe_na = tuple(int(n) for n in args.na.split(",") if n)
     arms_dir = pathlib.Path(args.dir)
     results: dict[str, dict] = {}
-    for arm in ARMS:
+    for arm in arms:
         src = arms_dir / ("iso_%s.metal" % arm)
         results[arm] = {
-            str(na): air_for(src, "e104_iso_na%d" % na, INNER_TRIP[arm])
-            for na in PROBE_NA
+            str(na): air_for(src, "e104_iso_na%d" % na,
+                             INNER_TRIP.get(arm, DEFAULT_INNER_TRIP))
+            for na in probe_na
         }
 
     out = pathlib.Path(args.out)
