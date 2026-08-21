@@ -46,6 +46,16 @@ swift_bin="${MLXFAST_SWIFT_BIN:-.build/release/mlxfast-swift}"
 
 mkdir -p "${out_dir}"
 
+# `@LEG@` in any arm env value expands to this leg's absolute output
+# directory, so a per-arm instrument can write one file per leg instead of
+# every leg appending to a shared path.
+abs_out_dir="$(cd "${out_dir}" && pwd)"
+arm_env=()
+for kv in "$@"; do
+  arm_env+=("${kv//@LEG@/${abs_out_dir}}")
+done
+set -- ${arm_env[@]+"${arm_env[@]}"}
+
 gpu_temp() {
   local macmon
   for macmon in "${MLXFAST_MACMON_BIN:-}" "${HOME}/bin/macmon" \
