@@ -312,16 +312,31 @@ def log_timing() -> None:
         summary[f"cells_over_1pct/{arm}"] = len(over)
         summary[f"inside_instrument_floor/{arm}"] = abs(med) <= POOLED_FLOOR_PCT
 
+    verdict = json.loads((OUT / "e108/rung0-verdict.json").read_text())
+    for arm in others:
+        lo, hi = verdict["verdict"][arm]["pooled_median_ci95_pct"]
+        summary[f"pooled_median_ci95_lo_pct/{arm}"] = lo
+        summary[f"pooled_median_ci95_hi_pct/{arm}"] = hi
+
     target = "i_pruneall"
     med = statistics.median(pooled[target])
     over = [v for v in pooled[target] if abs(v) > CELL_LIMIT_PCT]
     negative = abs(med) <= POOLED_FLOOR_PCT and not over
+    # A `_null` arm is the same machine code in a different palindrome slot, so
+    # its pooled median is what the instrument reads when the true effect is
+    # zero. A real arm has to clear that, not just the pre-registered floor.
+    zero_point = verdict["instrument_zero_point_pct"]
     summary.update({
         "stop_rule_pooled_floor_pct": POOLED_FLOOR_PCT,
         "stop_rule_cell_limit_pct": CELL_LIMIT_PCT,
         "stop_rule_arm": target,
         "stop_rule_negative": negative,
         "hypothesis_supported": "H0_null" if negative else "H1_or_H2",
+        "instrument_zero_point_pct": zero_point,
+        "effect_below_zero_point": abs(med) <= zero_point,
+        "gpu_temp_entry_spread_c": (
+            max(c["temp"] for c in cells.values())
+            - min(c["temp"] for c in cells.values())),
     })
     run.summary.update(summary)
     attach(run, OUT / "e108-rung0/probe.json", OUT / "e108-rung0/meta.txt",
@@ -354,10 +369,27 @@ def log_extent() -> None:
                 edit["ref_changed_bytes"], edit["common_prefix_bytes"],
                 total - edit["ref_changed_to"])
     run.log({"executed_path_extent": table})
-    run.summary.update({
-        f"reference_text_bytes/{arch.replace('applegpu_', '')}":
-            doc["arms"][ref][arch]["text_bytes"]
-        for arch in (LOCAL_ARCH, RANKED_ARCH)})
+
+    summary: dict[str, object] = {}
+    for arch in (LOCAL_ARCH, RANKED_ARCH):
+        short = arch.replace("applegpu_", "")
+        total = doc["arms"][ref][arch]["text_bytes"]
+        live = sum(total - rec[arch]["text_bytes"]
+                   for name, rec in doc["arms"].items() if name != ref)
+        summary[f"reference_text_bytes/{short}"] = total
+        summary[f"live_case_extent_bytes/{short}"] = live
+        summary[f"live_case_share_pct/{short}"] = 100.0 * live / total
+        # Metal allocates registers once for the whole entry point, so any case
+        # whose removal lowers the count is setting the ceiling for every width.
+        base_reg = doc["arms"][ref][arch]["registers"]
+        summary[f"reference_registers/{short}"] = base_reg
+        for name, rec in doc["arms"].items():
+            if name == ref or rec[arch]["registers"] == base_reg:
+                continue
+            summary[f"register_ceiling_case/{short}"] = name
+            summary[f"register_ceiling_drop/{short}"] = (
+                base_reg - rec[arch]["registers"])
+    run.summary.update(summary)
     attach(run, OUT / "e108/extent-census.json")
     run.finish()
 

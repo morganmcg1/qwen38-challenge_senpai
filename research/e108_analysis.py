@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import random
 import statistics
 
 CELL_LIMIT_PCT = 1.0
@@ -71,6 +72,17 @@ def exactness(doc: dict) -> tuple[dict, list[str], list[str]]:
                 f"{row['differing']}/{row['total']} differ, "
                 f"detected={row['detected']}")
     return matrix, failures, controls
+
+
+def bootstrap_median_ci(values: list[float], draws: int = 20000,
+                        seed: int = 108) -> tuple[float, float]:
+    if not values:
+        return (float("nan"), float("nan"))
+    rng = random.Random(seed)
+    n = len(values)
+    meds = sorted(statistics.median(rng.choices(values, k=n))
+                  for _ in range(draws))
+    return (meds[int(0.025 * draws)], meds[int(0.975 * draws)])
 
 
 def census_text(path: pathlib.Path | None) -> dict:
@@ -156,11 +168,14 @@ def main() -> int:
         print(row)
 
     print("\n== pooled over cells, percent ==")
+    ci = {arm: bootstrap_median_ci(pooled[arm]) for arm in arms}
     for arm in arms:
         values = sorted(pooled[arm])
         n = len(values)
         positive = sum(1 for v in values if v > 0)
+        lo, hi = ci[arm]
         print(f"{arm:<16} median={statistics.median(values):+.3f} "
+              f"ci95=[{lo:+.3f},{hi:+.3f}] "
               f"mean={statistics.fmean(values):+.3f} "
               f"q1={values[n // 4]:+.3f} q3={values[(3 * n) // 4]:+.3f} "
               f"min={values[0]:+.3f} max={values[-1]:+.3f} "
@@ -176,6 +191,8 @@ def main() -> int:
     # its delta is the harness's slot artefact at that palindrome position and
     # nothing else. A real arm effect has to clear it.
     nulls = {a: a[:-len("_null")] for a in arms if a.endswith("_null")}
+    resolution = max((abs(statistics.median(pooled[a])) for a in nulls),
+                     default=None)
     if nulls:
         print("\n== null controls: same machine code, different slot ==")
         for null, twin in nulls.items():
@@ -199,6 +216,7 @@ def main() -> int:
         no_cell = not breaches[arm]
         stop = inside_floor and no_cell
         verdict[arm] = {"pooled_median_pct": med,
+                        "pooled_median_ci95_pct": list(ci[arm]),
                         "cells_over_1pct": breaches[arm],
                         "negative_by_rule": stop}
         print(f"{arm:<16} pooled median {med:+.3f} % "
@@ -209,6 +227,11 @@ def main() -> int:
         for line in breaches[arm]:
             print(f"    over limit: {line}")
 
+    if resolution is not None:
+        print(f"\ninstrument zero point from the null arms: "
+              f"{resolution:.3f} % pooled. A real arm has to clear this, "
+              f"not just the {POOLED_FLOOR_PCT} % floor.")
+
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps({
@@ -218,6 +241,7 @@ def main() -> int:
                       for s, m in cells},
             "pooled": {a: pooled[a] for a in arms},
             "verdict": verdict,
+            "instrument_zero_point_pct": resolution,
             "exactness_failures": failures,
             "harness_positive_controls": controls,
         }, indent=2) + "\n")
