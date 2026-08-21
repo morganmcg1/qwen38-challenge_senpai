@@ -67,18 +67,40 @@ def read_meta(path: pathlib.Path) -> dict[str, str]:
     return out
 
 
-def dose_accounting(stderr_log: pathlib.Path) -> dict[str, str] | None:
-    """The worker prints its own alignment evidence at exit."""
-    if not stderr_log.exists():
+def dose_accounting(witness: pathlib.Path) -> dict | None:
+    """Read the worker's own record of the dose schedule, one line per forward.
+
+    Returns None when the leg ran without `MLX_E105_DOSE_WITNESS`, which is the
+    normal case for a timing leg: the witness is recorded once on a separate
+    leg, so no timing leg pays for the file writes.
+    """
+    if not witness.exists():
         return None
-    for line in reversed(stderr_log.read_text().splitlines()):
-        if line.startswith("e105_dose_accounting"):
-            fields = {}
-            for token in line.split()[1:]:
-                key, _, value = token.partition("=")
-                fields[key] = value
-            return fields
-    return None
+    forwards: list[tuple[int, int]] = []
+    fields: dict[str, str] = {}
+    for line in witness.read_text().splitlines():
+        if not line.startswith("e105_dose_forward"):
+            continue
+        fields = {}
+        for token in line.split()[1:]:
+            key, _, value = token.partition("=")
+            fields[key] = value
+        forwards.append((int(fields["forward"]), int(fields["dosed"])))
+    if not forwards:
+        return None
+    # The estimator assumes round i carries the dose exactly when i is odd.
+    # That holds only if the dose lands on every second qualifying forward,
+    # which is checked here against the recorded sequence rather than assumed.
+    alternation_exact = all(
+        dosed == (1 if index % 2 == 0 else 0) for index, dosed in forwards)
+    return {
+        "qualifying_forwards": len(forwards),
+        "dosed_forwards": sum(dosed for _, dosed in forwards),
+        "alternation_exact": alternation_exact,
+        "alternate": fields.get("alternate") == "true",
+        "dose": int(fields.get("dose", 0)),
+        "shape": fields.get("shape", ""),
+    }
 
 
 def pair_rounds(us: list[float], widths: list[int],
@@ -182,7 +204,7 @@ def summarise(values: list[float]) -> dict:
 def analyse(leg_dir: pathlib.Path) -> dict:
     report = json.loads((leg_dir / "report.json").read_text())
     meta = read_meta(leg_dir / "meta.txt")
-    accounting = dose_accounting(leg_dir / "stderr.log")
+    accounting = dose_accounting(leg_dir / "dose-witness.txt")
 
     us = [s * 1e6 for s in report["block_request_seconds"]]
     widths = list(report["effective_draft_lengths"])
@@ -197,15 +219,11 @@ def analyse(leg_dir: pathlib.Path) -> dict:
     dosed = [i % 2 == 1 for i in range(rounds)]
     alignment = None
     if accounting:
-        forwards = int(accounting["qualifying_forwards"])
+        forwards = accounting["qualifying_forwards"]
         alignment = {
-            "qualifying_forwards": forwards,
-            "dosed_forwards": int(accounting["dosed_forwards"]),
+            **accounting,
             "round_count": report["round_count"],
             "one_forward_per_round": forwards == report["round_count"],
-            "alternate": accounting["alternate"] == "true",
-            "dose": int(accounting["dose"]),
-            "shape": accounting["shape"],
         }
 
     pairs = pair_rounds(us, widths, dosed)
@@ -323,8 +341,10 @@ def session_summary(results: list[dict]) -> dict:
         "single_leg_half_width_percent": 100.0 * median_half / control,
         "control_round_us": control,
         "clears_bar": bool(median_half <= BAR_US),
-        "round_alignment_verified": bool(dosed) and all(
-            r["dose_alignment"] and r["dose_alignment"]["one_forward_per_round"]
+        "round_alignment_verified": any(
+            r["dose_alignment"]
+            and r["dose_alignment"]["one_forward_per_round"]
+            and r["dose_alignment"]["alternation_exact"]
             and r["dose_alignment"]["alternate"]
             for r in dosed),
     }
@@ -384,6 +404,7 @@ def render(results: list[dict]) -> str:
             f"  {r['leg']}: qualifying_forwards={a['qualifying_forwards']}"
             f" round_count={a['round_count']}"
             f" one_forward_per_round={a['one_forward_per_round']}"
+            f" alternation_exact={a['alternation_exact']}"
             f" dosed_forwards={a['dosed_forwards']}"
             f" dose={a['dose']} shape={a['shape']}")
     lines.append("")
