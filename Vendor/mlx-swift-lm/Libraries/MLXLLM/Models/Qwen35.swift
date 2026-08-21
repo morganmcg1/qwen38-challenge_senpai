@@ -2865,7 +2865,7 @@ nonisolated(unsafe) private var e105DoseWitness: FileHandle? = nil
 /// the dose alternates AND lets the reader check the forward count against
 /// `round_count`, which is what makes "round i is dosed iff i is odd" a
 /// verified statement rather than an assumption.
-func e105DoseTakeTurn() -> Bool {
+func e105DoseTakeTurn(width: Int) -> Bool {
     e105DoseForwards += 1
     let take = e105DoseAlternate ? e105DoseForwards % 2 == 0 : true
     if take { e105DoseApplications += 1 }
@@ -2876,9 +2876,16 @@ func e105DoseTakeTurn() -> Bool {
                 atPath: e105DoseWitnessPath, contents: nil)
             e105DoseWitness = FileHandle(forWritingAtPath: e105DoseWitnessPath)
         }
+        // `width` is the row count of this forward. A target verify carries
+        // one row per proposed draft plus the primary token, so the verify
+        // sequence can be matched against the parent's own
+        // `effective_draft_lengths`. Without it there is no way to tell which
+        // forwards are the timed rounds: warm-up is not a constant, it grew
+        // 20 -> 324 between a 32-token and a 512-token leg.
         e105DoseWitness?.write(Data(
             ("e105_dose_forward forward=\(e105DoseForwards)"
              + " dosed=\(take ? 1 : 0)"
+             + " width=\(width)"
              + " applications=\(e105DoseApplications)"
              + " alternate=\(e105DoseAlternate)"
              + " dose=\(e105DoseCount) shape=\(e105DoseShape)\n").utf8))
@@ -2998,7 +3005,8 @@ public class Qwen35TextModelInner: Module {
             // frontier, same overlap, no arithmetic change.
             let e105DoseQualifies =
                 e105DoseCount > 0 && !prefillLadder && hiddenStates.dim(1) <= 9
-            let e105DoseActive = e105DoseQualifies && e105DoseTakeTurn()
+            let e105DoseActive =
+                e105DoseQualifies && e105DoseTakeTurn(width: hiddenStates.dim(1))
             var base = hiddenStates
             var delta: MLXArray? = nil
             for (i, layer) in layers.enumerated() {

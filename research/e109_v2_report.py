@@ -219,11 +219,23 @@ def analyse(leg_dir: pathlib.Path) -> dict:
     dosed = [i % 2 == 1 for i in range(rounds)]
     alignment = None
     if accounting:
+        # The witness counts EVERY qualifying forward in the process, and
+        # warm-up runs many before the timed window opens: a 512-token leg
+        # records 401 forwards against 77 rounds. So the timed rounds are the
+        # last `round_count` forwards, preceded by `warmup_forwards`.
+        #
+        # Timed round i is then forward W + i + 1, which is dosed when
+        # W + i + 1 is even. The estimator assumes round i is dosed when i is
+        # odd, i.e. when i + 1 is even, so the two agree exactly when W is
+        # even. An odd W would invert every pair and flip the sign of the
+        # result, which is why this is checked rather than assumed.
         forwards = accounting["qualifying_forwards"]
+        warmup = forwards - report["round_count"]
         alignment = {
             **accounting,
             "round_count": report["round_count"],
-            "one_forward_per_round": forwards == report["round_count"],
+            "warmup_forwards": warmup,
+            "parity_matches_estimator": warmup >= 0 and warmup % 2 == 0,
         }
 
     pairs = pair_rounds(us, widths, dosed)
