@@ -2,7 +2,7 @@ import Foundation
 import MLX
 import Testing
 
-// E97 rung 1 -- what does a marginal verify row cost, and is that cost
+// E97 -- what does a marginal verify row cost, and is that cost
 // dequantisation?
 //
 // The E95 width model prices a verify row at 10,268 us over the whole trunk.
@@ -54,6 +54,8 @@ struct E97VerifyRowCostTests {
         "MLXFAST_RUN_E97_ROW_COST"] == "1"
     static let peakEnabled = ProcessInfo.processInfo.environment[
         "MLXFAST_RUN_E97_PEAK"] == "1"
+    static let shapeEnabled = ProcessInfo.processInfo.environment[
+        "MLXFAST_RUN_E97_SHAPE"] == "1"
 
     static let hidden = 5120
     static let groupSize = 64
@@ -68,6 +70,18 @@ struct E97VerifyRowCostTests {
     static let blocks = 8
     /// Wall time each cell should integrate, before the fixed per-eval cost.
     static let targetCellMicroseconds = 120_000.0
+
+    /// Rung 2 sweeps the reduction length at fixed launch geometry. The wide
+    /// sweep is on the cheaper `mlp.gate_up` width; `lm_head` gets a two-point
+    /// check that the same proportionality holds at the expensive width.
+    static let shapePlan: [(Int, [Int])] = [
+        (34816, [1024, 2048, 3072, 4096, 5120, 6144, 7168, 8192]),
+        (248320, [2560, 5120]),
+    ]
+    /// The G == 2 band. M 5 and 6 run IPG 3, M 7 and 8 run IPG 4, so the band
+    /// also carries a matched NA 2->3 against NA 3->4 contrast.
+    static let shapeWidths = [5, 6, 7, 8]
+    static let shapeBlocks = 6
 
     private static func packedBytes(outputs: Int) -> Int {
         outputs * hidden / 2 + 4 * (outputs * hidden / groupSize)
@@ -340,5 +354,124 @@ struct E97VerifyRowCostTests {
         }
 
         #expect(!samples.isEmpty)
+    }
+
+    /// Rung 2. Separate FMA throughput (B) from occupancy and register
+    /// pressure (C) without editing a kernel.
+    ///
+    /// The reduction length K is the discriminator. `get_qmv_batch_limit`
+    /// returns 10 for every K once `out_vec_size > 4096`, and the WIDE table is
+    /// switched on `ntg.x` alone, so sweeping K holds the kernel, the launch
+    /// geometry, the group split and the register allocation fixed while it
+    /// scales the multiply-accumulate and activation traffic linearly. Fit the
+    /// in-band per-row slope as `s(K) = a + b * K`: `b` prices the work that
+    /// scales with the reduction (B and D) and `a` prices the per-row cost that
+    /// does not (C).
+    @Test(
+        "rung 2: the per-row cost shape in K and in NA",
+        .enabled(if: E97VerifyRowCostTests.shapeEnabled))
+    func rung2CostShape() throws {
+        let overhead = Self.evalOverheadMicroseconds()
+        print(String(format: "E97_SHAPE overhead us=%.3f", overhead))
+
+        var cells: [[String: Any]] = []
+        var nulls: [[String: Any]] = []
+
+        for (outputs, reductions) in Self.shapePlan {
+            for k in reductions {
+                let dense = MLXRandom.normal([outputs, k], dtype: .bfloat16)
+                eval(dense)
+                let (packed, scales, biases) = quantized(
+                    dense, groupSize: Self.groupSize, bits: Self.bits,
+                    mode: .affine)
+                eval(packed, scales, biases)
+
+                var inputs: [Int: MLXArray] = [:]
+                for width in Self.shapeWidths {
+                    let x = MLXRandom.normal([width, k], dtype: .bfloat16)
+                    eval(x)
+                    inputs[width] = x
+                }
+
+                func body(_ width: Int) -> () -> MLXArray {
+                    let x = inputs[width]!
+                    return {
+                        quantizedMM(
+                            x, packed, scales: scales, biases: biases,
+                            transpose: true, groupSize: Self.groupSize,
+                            bits: Self.bits, mode: .affine)
+                    }
+                }
+
+                var counts: [Int: Int] = [:]
+                for width in Self.shapeWidths {
+                    counts[width] = Self.replicates(for: body(width))
+                }
+
+                func nullCell(_ label: String) {
+                    let reference = body(Self.shapeWidths[1])
+                    _ = Self.timed(2, reference)
+                    let us = Self.timed(counts[Self.shapeWidths[1]]!, reference)
+                    nulls.append([
+                        "label": label, "outputs": outputs, "k": k,
+                        "m": Self.shapeWidths[1], "us": us,
+                    ])
+                    print(
+                        "E97_SHAPE null label=\(label) outputs=\(outputs) k=\(k) "
+                            + String(format: "us=%.3f", us))
+                }
+
+                nullCell("open")
+                for block in 0 ..< Self.shapeBlocks {
+                    let up = block % 2 == 0
+                    let order =
+                        up ? Self.shapeWidths : Self.shapeWidths.reversed()
+                    for width in order {
+                        let run = body(width)
+                        _ = Self.timed(2, run)
+                        let us = Self.timed(counts[width]!, run)
+                        cells.append([
+                            "outputs": outputs, "k": k, "m": width,
+                            "block": block, "ascending": up, "us": us,
+                            "replicates": counts[width]!,
+                        ])
+                        print(
+                            "E97_SHAPE cell outputs=\(outputs) k=\(k) m=\(width) "
+                                + "block=\(block) up=\(up) "
+                                + String(
+                                    format: "us=%.3f net_us=%.3f", us,
+                                    us - overhead)
+                                + " replicates=\(counts[width]!)")
+                    }
+                }
+                nullCell("close")
+
+                inputs.removeAll()
+                Memory.clearCache()
+            }
+        }
+
+        let overheadClose = Self.evalOverheadMicroseconds()
+        print(String(format: "E97_SHAPE overhead_close us=%.3f", overheadClose))
+
+        if let path = ProcessInfo.processInfo.environment[
+            "MLXFAST_E97_SHAPE_OUT"], !path.isEmpty
+        {
+            let payload: [String: Any] = [
+                "group_size": Self.groupSize,
+                "bits": Self.bits,
+                "blocks": Self.shapeBlocks,
+                "widths": Self.shapeWidths,
+                "eval_overhead_us": overhead,
+                "eval_overhead_close_us": overheadClose,
+                "nulls": nulls,
+                "cells": cells,
+            ]
+            let data = try JSONSerialization.data(
+                withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: URL(fileURLWithPath: path))
+        }
+
+        #expect(!cells.isEmpty)
     }
 }
