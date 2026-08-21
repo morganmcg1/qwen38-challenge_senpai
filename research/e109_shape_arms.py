@@ -123,7 +123,7 @@ PREWORK_BODY = """
   constexpr int Dv = 128;
   constexpr int NKeep = 3;
   constexpr int C = 10240;
-  constexpr int T = 5;
+  constexpr int T = __T__;
   constexpr uint UNITS = __UNITS__;
 
   const uint unit = thread_position_in_threadgroup.z;
@@ -385,7 +385,9 @@ QKROPE_BODY = """
 }
 """
 
-# Live verify geometry, S = 5: the width the scored MTP round actually runs.
+# Verify geometry. S = 5 is the assignment's nominal width. The realised MTP
+# round is wider than that, so `--rows` reruns the same ladder at a measured
+# width and shows whether the mechanism verdict depends on the width.
 S = 5
 HK, DK, HV, DV, NKEEP = 16, 128, 48, 128, 3
 C = 2 * HK * DK + HV * DV          # 10240 logical channels
@@ -528,7 +530,8 @@ def prework_body(name: str, units: int, reduce_src: str, inv_mean: str) -> str:
             .replace("__NAME__", name)
             .replace("__REDUCE__", reduce_src)
             .replace("__INVMEAN__", inv_mean)
-            .replace("__UNITS__", str(units)))
+            .replace("__UNITS__", str(units))
+            .replace("__T__", str(S)))
 
 
 def prework_spec(units: list[int]) -> dict:
@@ -595,10 +598,10 @@ def prework_spec(units: list[int]) -> dict:
     #
     # The element is chosen, not arbitrary. `g1nored` replaces the RMS
     # reduction, which writes `q_out` and `k_out`, so the control has to move
-    # those buffers or it does not cover the claim. Row 2 of a query channel
-    # also reaches `conv_out`, which copies `qkv` verbatim, so at least one
-    # mismatch is guaranteed and a null result means the arithmetic absorbed
-    # the flip rather than that the comparator is broken.
+    # those buffers or it does not cover the claim. A query channel of row
+    # S - NKEEP is the first row copied verbatim into `conv_out`, so at least
+    # one mismatch is guaranteed at any width, and a null result would mean the
+    # arithmetic absorbed the flip rather than that the comparator is broken.
     #
     # A first attempt used qkv[4096], a VALUE channel of row 0. It reaches only
     # `v_out` through `static_cast<InT>(acc)`, and the bf16 rounding of that
@@ -616,11 +619,13 @@ def prework_spec(units: list[int]) -> dict:
             "shipped": False,
             "exact_vs_arm0": False,
             "reduction": "positive_control",
-            "perturb": {"buffer": "qkv", "element": 2 * QKV_ROW_STRIDE + 0},
+            "perturb": {"buffer": "qkv",
+                        "element": (S - NKEEP) * QKV_ROW_STRIDE},
         }
     )
     return {
         "family": "prework",
+        "rows": S,
         "live_kernel": "qwen35_packed_gdn_prework",
         "live_grid": [32, S, 2 * HK + HV],
         "live_threadgroup": [32, 1, 1],
@@ -699,6 +704,7 @@ def qkrope_spec(rows_per_tg: list[int]) -> dict:
         )
     return {
         "family": "qkrope",
+        "rows": S,
         "live_kernel": "qwen35_attention_qk_rms_rope_bf16_v1",
         "live_grid": [total_rows * 64, 1, 1],
         "live_threadgroup": [64, 1, 1],
@@ -709,13 +715,17 @@ def qkrope_spec(rows_per_tg: list[int]) -> dict:
 
 
 def main() -> int:
+    global S
     parser = argparse.ArgumentParser()
     parser.add_argument("--outdir", required=True)
     parser.add_argument("--family", default="both",
                         choices=["prework", "qkrope", "both"])
     parser.add_argument("--prework-units", default="1,2,4,8,16")
     parser.add_argument("--qkrope-rows", default="1,2,4")
+    parser.add_argument("--rows", type=int, default=S,
+                        help="verify width in tokens per MTP round")
     args = parser.parse_args()
+    S = args.rows
 
     outdir = pathlib.Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)

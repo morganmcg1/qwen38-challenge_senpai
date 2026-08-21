@@ -32,11 +32,13 @@ bin="${out_dir}/probe"
 reps="${E109_SHAPE_REPS:-24}"
 inner="${E109_SHAPE_INNER:-32}"
 cores="${E109_GPU_CORES:-20}"
+rows="${E109_SHAPE_ROWS:-5}"
 
 mkdir -p "${arms_dir}"
 
-echo "e109_shape_probe: generating ${family} arms"
-python3 research/e109_shape_arms.py --outdir "${arms_dir}" --family "${family}"
+echo "e109_shape_probe: generating ${family} arms at verify width ${rows}"
+python3 research/e109_shape_arms.py --outdir "${arms_dir}" --family "${family}" \
+  --rows "${rows}"
 
 echo "e109_shape_probe: building the timing harness"
 clang -fobjc-arc -O2 -Wno-deprecated-declarations \

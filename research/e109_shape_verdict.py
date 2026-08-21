@@ -155,6 +155,7 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
         "harness": "local",
         "device": timing["device"],
         "live_kernel": spec["live_kernel"],
+        "rows": spec["rows"],
         "dispatch": timing["dispatch"],
         "gpu_cores_assumed": cores,
         "reps": timing["reps"],
@@ -205,7 +206,8 @@ def build(timing: dict, census: dict, spec: dict, cores: int) -> dict:
 
 def render(out: dict) -> str:
     lines = [
-        f"E109 rung 1 -- {out['family']} ({out['live_kernel']})",
+        f"E109 rung 1 -- {out['family']} ({out['live_kernel']})"
+        f"   verify width {out['rows']}",
         f"  {out['device']}   {out['dispatch']}   reps {out['reps']}"
         f" x inner {out['inner']}   cores assumed {out['gpu_cores_assumed']}",
         "",
