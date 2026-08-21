@@ -243,25 +243,26 @@ def main():
               f"{statistics.mean(spt) if spt else 0:>10.5f}"
               f"{(max(spt) - min(spt)) if len(spt) > 1 else 0:>9.5f}")
 
-    if "ctl" in arms and "uix" in arms:
+    treated = next((name for name in ("fix", "uix") if name in arms), None)
+    if "ctl" in arms and treated:
         a = [g["prevalence"] for g in arms["ctl"]]
-        b = [g["prevalence"] for g in arms["uix"]]
+        b = [g["prevalence"] for g in arms[treated]]
         p, n = permutation_p(a, b)
-        print(f"\nFIX TEST, prevalence, ctl over uix")
+        print(f"\nFIX TEST, prevalence, ctl over {treated}")
         print(f"  ctl mean {statistics.mean(a):.3f} n={len(a)}   "
-              f"uix mean {statistics.mean(b):.3f} n={len(b)}")
+              f"{treated} mean {statistics.mean(b):.3f} n={len(b)}")
         print(f"  exact one-sided permutation p={p} over {n} relabelings"
               if p is not None else f"  {n} relabelings, too many to enumerate")
         sa = [g["score"].get("mtp_seconds_per_token") for g in arms["ctl"]]
-        sb = [g["score"].get("mtp_seconds_per_token") for g in arms["uix"]]
+        sb = [g["score"].get("mtp_seconds_per_token") for g in arms[treated]]
         sa = [s for s in sa if s]
         sb = [s for s in sb if s]
         if sa and sb:
             p2, n2 = permutation_p(sa, sb)
             delta = statistics.mean(sa) - statistics.mean(sb)
-            print(f"  absolute candidate s/token ctl {statistics.mean(sa):.5f} "
-                  f"uix {statistics.mean(sb):.5f}  "
-                  f"delta {delta:+.5f} ({100 * delta / statistics.mean(sa):+.2f} %)")
+            print(f"  absolute candidate s/token ctl {statistics.mean(sa):.6f} "
+                  f"{treated} {statistics.mean(sb):.6f}  "
+                  f"delta {delta:+.6f} ({100 * delta / statistics.mean(sa):+.3f} %)")
             print(f"  exact one-sided permutation p={p2} over {n2} relabelings"
                   if p2 is not None else f"  {n2} relabelings")
 
