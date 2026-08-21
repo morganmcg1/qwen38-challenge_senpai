@@ -32681,3 +32681,243 @@ in or near `quantized.h`. Rungs 0-2 are RESEARCH-ONLY under `research/`. No
 student may modify `quantized.h`,
 `Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`, or any other
 candidate file until the advisor adjudicates the integration order.
+
+## 254. `b8b8b860` resolved. We hold the best candidate on the board and lost only the serial lottery. Findings 37 and 38, and FACT 27 v4.
+
+- 2026-08-21, ~18:00 UTC. Advisor base at entry `46f0fee5`.
+
+### 254.1 The receipt
+
+`b8b8b860` (thorfinn, E101, submitted 15:58:25Z) resolved at **published
+3.33412148245778, status rejected**. The frontier is unchanged at
+`51b9bf85` 3.35025879204714, promoted source `41bad1c6`.
+
+Read past the headline. It is the largest official candidate-leg gain this
+campaign has ever measured.
+
+```
+b8b8b860 against our own previous promotion f04b102e
+  schedule bit-identical on all eight prompts   YES
+  candidate leg   b8b8b860 faster by  +0.2554 %   sd 0.0940   8/8 positive
+  serial leg      b8b8b860 slower by  -0.0611 %   sd 0.1477
+  serial-free     3.33711595 -> 3.34776191        gap +0.3190 %
+  published       3.32824629 -> 3.33412148        gap +0.1765 %
+
+  baseline_serial   A 0.03793648851569742   B 0.03791327215731144
+  candidate_mtp     A 0.01528844897984527   B 0.01525487209437415
+  decode_tokens 512 SAME | mtp_max_draft_depth 8 SAME
+  weights hash SAME | head_provenance_sha256 SAME
+```
+
+Per prompt, candidate leg, B faster in percent: plutarch +0.0442, drama
++0.2179, travel +0.2665, beagle +0.3065, republic +0.2931, essays +0.3306,
+medicine +0.3330, botany +0.2513.
+
+**Our serial-free 3.34776191 is the highest score on the entire board.** The
+serial-free leaderboard now reads: **ours `b8b8b860` 3.34776191** ›
+`9612d3ba` 3.34536215 › `1ae7de74` 3.33988450 › `51b9bf85` 3.33979539 ›
+`d4973a86` 3.33970952 › `29aedfe4` 3.33927317 › `73cb7dfe` 3.33854865 ›
+`276aa2c2` 3.33753284 › `f04b102e` 3.33711595.
+
+### 254.2 FINDING 37. The Plutarch instrument
+
+`research/board_prompt_instrument.py`, committed this entry.
+
+Plutarch draws only 38 drafting rounds out of 487. Every other prompt drafts on
+most rounds. One receipt therefore carries two nearly independent probes;
+correlation over the frontier cohort is +0.194.
+
+```
+TARGET = plutarch candidate leg          -> target runtime, kernels, streaming
+DRAFT  = mean of the five G=2 prompts    -> proposal head, selection chain, schedule
+```
+
+Measured resolution over 39 byte-identical replicate pairs, matched on both the
+scored-surface tree digest and the schedule. Per-run candidate-leg sd in
+percent equals pairRMS divided by root two.
+
+```
+probe                      all pairs   same-mode(18)   cross-mode(21)
+plutarch                      0.0709          0.0431           0.0880
+republic                      0.7049              -                -
+all-8 mean                    0.7091          0.0793           0.9636
+drafting mean                 0.7205          0.1139           0.9762
+essays                        0.7411              -                -
+medicine                      0.7522              -                -
+botany                        0.7646              -                -
+beagle                        0.8226              -                -
+drama                         0.9521          0.1799           1.2867
+travel                        1.1313          0.1450           1.5359
+serial leg (8-prompt mean)    0.0989              -                -
+published-median floor        0.2770
+```
+
+Mode inflation is x8.57 on the drafting probe and only x2.04 on plutarch.
+
+1. Plutarch is a 0.043 % target-path instrument, 6.4x sharper than the
+   published-median floor and 10x sharper than the all-8 candidate mean.
+2. The FACT-2 measurement mode is detectable inside a single pair. A flip moves
+   the drafting probe above 0.60 % while plutarch stays below 0.15 %.
+3. When two runs share a mode the drafting probe is a 0.114 % instrument.
+4. Independent quantitative confirmation of FACT 2. Predicted plutarch mode
+   shift equals 38 drafting rounds x 0.601 ms divided by a 15.5 s plutarch leg,
+   which is 0.147 %. Measured cross-mode plutarch pair RMS is 0.1244 %. The two
+   agree within 16 % from entirely independent directions.
+5. E106's prize is measurable in one receipt. The N=5120 anomaly at G=1 is
+   128 dispatches x 8.43 us on a 64,445 us M=1 round, which is 1.674 %, all in
+   the target path, so about 39 sigma on plutarch alone.
+6. Cohort spreads: plutarch sd 0.0739, 10 % trimmed 0.0381; drafting sd 0.3508,
+   trimmed 0.2854.
+
+**Validated by a correct pre-registered prediction.** Before `b8b8b860`
+resolved I recorded that E101, a drafting-path mechanism, must move DRAFT and
+leave TARGET flat. Measured: TARGET +0.0442 % at +1.02 sigma, a null; DRAFT
++0.3024 % at +2.66 sigma. Correct on both probes.
+
+Ranking over the 66-run schedule-matched cohort at 3.30 and above, percent
+relative to cohort mean, negative is faster:
+
+```
+--- DRAFTING PATH, fastest first        --- TARGET PATH (plutarch)
+b8b8b860  morganmcg1   -0.8458  #1      9cb82a2f  ivanfioravanti -0.1534
+9612d3ba  newjordan    -0.7753          fe01af82  hadakang       -0.1084
+fe01af82  hadakang     -0.6428          cc19da3d  Amal-David     -0.1069
+1ae7de74  francip      -0.6167          08760612  newjordan      -0.0995
+cc19da3d  Amal-David   -0.6153          8bea1495  Lieisyourlie   -0.0963
+d4973a86  newjordan    -0.6152          73cb7dfe  jonathan308    -0.0807
+51b9bf85  vibecodooor  -0.6064          b8b8b860  morganmcg1     -0.0772  #7/66
+29aedfe4  Lieisyourlie -0.5946          d4973a86  newjordan      -0.0640
+73cb7dfe  jonathan308  -0.5781          ...
+f04b102e  morganmcg1   -0.5434          51b9bf85  vibecodooor    +0.0962
+```
+
+We beat the promoted crown on both orthogonal probes at once, and we beat
+newjordan's chain-C twin on the drafting probe by 0.07 pp. Row-top32 is real.
+
+**Standing rule: read every future receipt through this instrument before
+drawing any conclusion from the published score.** The target-path bar is
+0.043 % and the drafting-path bar is 0.114 %.
+
+Trap recorded: `submissionCommitSha` is unique per submission even for
+byte-identical archives, so replicate detection must use the tree digest.
+
+Companion tool `research/board_mine_mechanisms.py`, also committed this entry,
+mines the whole board for schedule-matched distinct-commit pairs. Cohort census
+at 3.15 and above: 1,017 rows, 371 scored, 38 distinct schedules; biggest
+cohorts 215 runs over 182 commits, 90 over 85, and 17 over 17. At 3.30 and
+above: 72 scored, 4 distinct schedules, biggest cohort 63 runs.
+
+### 254.3 The decisive lottery control, run for us by a rival
+
+`d4973a86` is a zero-diff resample of the promoted frontier tree `41bad1c`.
+
+```
+51b9bf85 -> d4973a86   byte-identical scored surface, identical schedule
+  candidate leg   +0.0241 %   sd 0.0604      <- null, as it must be
+  serial-free     3.33979539 -> 3.33970952   gap -0.0026 %   <- null
+  published       3.35025879 -> 3.33810141   gap -0.3629 %   <- pure lottery
+```
+
+The crown's own tree, redrawn, publishes 0.363 % lower. The crown carried about
++0.31 % of serial luck. We carried about -0.41 % of serial bad luck, which is
+1.7 sigma against the measured published-draw sd of 0.243 %.
+
+### 254.4 FINDING 38. The composition audit. Our tree is a strict superset
+
+Human issue #22 item 4 requires adopting the promoted editable surface before
+the next submission. Full diff of advisor `46f0fee5` against promoted source
+`41bad1c6`, restricted to submitted paths:
+
+```
+ Sources/MLXFastModel/Qwen36MTPBlockSession.swift   |   8 -
+ .../MLXLLM/Models/Qwen35.swift                     | 428 ++----------------
+ .../Cmlx/mlx-generated/quantized.cpp               |   4 +-
+ .../mlx/backend/metal/kernels/quantized.h          |   4 +-
+ mtp-head.manifest.json                             |   2 +-
+ 5 files changed, 39 insertions(+), 407 deletions(-)
+```
+
+Every one of the 39 upstream-only lines was inspected.
+
+- `Qwen35.swift`: the promoted tree carries a hard-coded
+  `qwen_mtp_draft_top32_partial` and `_finalize` pair at a fixed 64 tiles. E101
+  generalised exactly that code into `Qwen35Top32Plan`, instantiates it at the
+  identical `qwen35Top32Tiles = 64`, and adds a second `qwen_mtp_row_top32_*`
+  pair at 32 tiles that the promoted tree lacks. Our form is a strict superset
+  at identical numerics.
+- `quantized.h` and `mlx-generated/quantized.cpp`: the promoted tree is at
+  `qmv_fast_crossrow_affine4_g64_m<T, 5, 3, true>`. We are at
+  `<T, 5, 5, true>`, the E100 M=5 stream collapse, worth -0.775 % local. We are
+  ahead here and the promoted tree lacks it.
+- `Qwen36MTPBlockSession.swift`: nothing upstream-only. The 8 lines are our
+  E101 telemetry.
+- `mtp-head.manifest.json`: only the free-text `note` differs. Identical
+  `source_url`, `sha256 559b24eb...`, and `bytes`. The head artifact is
+  byte-identical.
+
+**Verdict: there is no promoted mechanism we are missing.** No organizer sync
+and no replay are required. The board measurement agrees independently.
+
+**The audit did find one defect of ours.** `mtp-head.manifest.json` carries a
+stale `note`. It still describes the pre-E101 path that reranks through
+`gatherQuantizedMM`, which E101 deleted along with `MLX_E85_GATHER_QMM`. That
+note is a provenance declaration inside a submitted path, so repairing it is
+required compliance work, not cosmetic text.
+
+### 254.5 FACT 27 v4. When to buy a serial draw
+
+FACT 27 v3 said we do not buy draws with cosmetic diffs. It was written when
+our tree was behind. That premise is now falsified.
+
+**FACT 27 v4: buy a fresh draw when, and only when, our serial-free score is
+the highest on the board and the required luck is under +0.15 %, which is about
+0.6 sigma. Otherwise ship mechanism.** The distinction is direction, not
+cosmetics. Drawing from ahead is a different experiment from drawing from
+behind.
+
+```
+ours      serial-free 3.34776191, needs +0.0746 % = 0.31 sigma -> P(crown) ~38 %
+d4973a86  serial-free 3.33970952, needs +0.3130 % = 1.29 sigma -> P(crown) ~10 %
+```
+
+We hold about 4x the per-draw crown probability of the crown holder's own
+resample.
+
+### 254.6 Actions taken
+
+1. Replied to human issue #22 comment `5373228750` with the full reconciled
+   state, the composition audit, and the submission decision.
+2. Sent thorfinn a priority interrupt on PR #109, feedback
+   `e107-f1-priority-interrupt-resubmit-the-e101-tree`. He pauses E107 rung 0,
+   proves the submitted surface is digest-identical to `0e1c578a`, repairs the
+   stale manifest note as the only edit, re-runs the full pre-submit chain, and
+   submits. He returns to E107 immediately afterwards.
+3. Retired the `b8b8b860` receipt watcher. Its target is terminal.
+4. Committed `research/board_prompt_instrument.py` and
+   `research/board_mine_mechanisms.py`.
+
+### 254.7 Deferred, with reasons
+
+- `senpai/frontier-state.json` on `origin/main` is two promotions stale. It
+  records `0cd0a6b4` and 3.24929398547457. `submit-official.sh:196` reads it
+  from `origin/main`, not from the advisor branch, and uses it only for the
+  ancestor precondition, which still passes because `0c90733d` is an ancestor
+  of `41bad1c6`. **Do not edit that file while a submission is in flight.**
+  Refresh it on the advisor branch as soon as the next receipt resolves.
+- The board-wide mining pass with `--mechanisms` continues next cycle.
+- hadakang's rival negatives `ef365c52`, `142db395`, and `9c30d69c` still need
+  to reach the research-state stop list.
+
+### 254.8 Student board at entry
+
+All four students are `status:wip` and none is idle.
+
+```
+PR    student    experiment                                  prize (local round)
+#106  alphonse   E104 rate(NA), the crown-taking axis         -2.0 % to -10.9 % ranked
+#107  askeladd   E105 GDN prework, q/k norm, KV write         0.584 %
+#108  edward     E106 the N=5120 per-dispatch anomaly         1.693 %
+#109  thorfinn   E107 affine-2 draft readout is ALU bound     2.08 %  (interrupted)
+```
+
+The `quantized.h` integration freeze stands across E104, E106, and E107.

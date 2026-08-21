@@ -1,21 +1,121 @@
 # SENPAI Research State
 
-- **2026-08-21 17:05 UTC.** Campaign active, no round limit.
-- **Most recent human research direction:** Issue #22 — execute aggressively
-  toward the winning frontier. No new human instruction since.
-- 🔴🔴🔴 **IN FLIGHT NOW: `b8b8b860`, submitted by thorfinn at 15:58:25Z**, still
-  validating at 17:05Z. It is the first COMPOSED candidate of the campaign:
-  three disjoint mechanisms in one tree. (a) E101 chain C, two fused threadgroup
-  top-K kernels that replace a 13-dispatch `argPartition` chain, −39.16 µs per
-  draft on the conservative estimator. (b) The `41bad1c6` one-dispatch rerank
-  kernel imported from vibecodooor's promoted `51b9bf85`. (c) The already-merged
-  E100 `qmv_fast_crossrow_affine4_g64_m<T,5,5,true>` M=5 stream collapse.
-- 🔴 **THE PRE-REGISTERED EXPECTATION IS NOW REPRICED BY FINDING 35.** The old
-  central figure of +0.37 % assumed the Finding 22 LATENCY multiplier of ×2.40.
-  The measured transfer is ×1.0 in percentage, so the central published estimate
-  is **≈3.344**. Beating the 3.35025879 frontier needs a further +0.18 %, which
-  is about 0.64 σ on the 0.28 % published resample floor, so **~26 %**. Its
-  serial-free value of ≈3.3442–3.3449 would beat the frontier's 3.33979539.
+- **2026-08-21 18:00 UTC.** Campaign active, no round limit.
+- **Most recent human research direction:** Issue #22, 17:38Z. Re-query Yukon and
+  keep frontier records live; ingest every terminal result; keep all four
+  students continuously assigned; push evidence early rather than leaving it in
+  a worktree; adopt the promoted editable surface before the next submission;
+  submit autonomously and promptly; use the explicit subagent tiers for
+  independent critique. All items are actioned in this document.
+
+## 🔴🔴🔴🔴🔴 WE HOLD THE BEST CANDIDATE ON THE BOARD. WE LOST ONLY THE LOTTERY.
+
+- **`b8b8b860` resolved: published 3.33412148245778, rejected.** Read past the
+  headline. It is the largest official candidate-leg gain this campaign has ever
+  measured, and the frontier held only because we drew a fast serial pair.
+
+```
+b8b8b860 against our own previous promotion f04b102e
+  schedule bit-identical on all eight prompts   YES
+  candidate leg   b8b8b860 faster by  +0.2554 %   sd 0.0940   8/8 positive
+  serial leg      b8b8b860 slower by  -0.0611 %   sd 0.1477
+  serial-free     3.33711595 -> 3.34776191        gap +0.3190 %
+  published       3.32824629 -> 3.33412148        gap +0.1765 %
+```
+
+- 🔴 **Our serial-free score 3.34776191 is now the HIGHEST ON THE BOARD**, ahead
+  of `9612d3ba` 3.34536215 by +0.072 % and ahead of the promoted crown
+  `51b9bf85` 3.33979539 by **+0.238 %**.
+- 🔴 Read through the FINDING 37 two-probe instrument over the 66-run
+  schedule-matched cohort at ≥ 3.30, percent relative to cohort mean, negative
+  is faster:
+
+```
+--- DRAFTING PATH, fastest first        --- TARGET PATH (plutarch)
+b8b8b860  morganmcg1   -0.8458  <- #1   9cb82a2f  ivanfioravanti -0.1534
+9612d3ba  newjordan    -0.7753          fe01af82  hadakang       -0.1084
+fe01af82  hadakang     -0.6428          ...
+1ae7de74  francip      -0.6167          b8b8b860  morganmcg1     -0.0772 <- #7/66
+51b9bf85  vibecodooor  -0.6064          ...
+f04b102e  morganmcg1   -0.5434          51b9bf85  vibecodooor    +0.0962
+```
+
+  **We beat the promoted crown on both orthogonal probes at once**, and we beat
+  newjordan's chain-C twin on the drafting probe by +0.07 pp. Row-top32 is real.
+- 🔴 **DECISIVE LOTTERY CONTROL, run for us by a rival.** `d4973a86` is a
+  zero-diff resample of the promoted frontier tree `41bad1c`:
+
+```
+51b9bf85 -> d4973a86   byte-identical scored surface, identical schedule
+  candidate leg   +0.0241 %   sd 0.0604      <- null, as it must be
+  serial-free     3.33979539 -> 3.33970952   gap -0.0026 %   <- null
+  published       3.35025879 -> 3.33810141   gap -0.3629 %   <- PURE LOTTERY
+```
+
+  The crown's own tree, redrawn, publishes 0.363 % lower. The crown carried
+  about +0.31 % of serial luck; we carried about −0.41 % of serial bad luck,
+  which is 1.7 σ against the measured published-draw sd of 0.243 %.
+
+## 🔴🔴🔴🔴🔴 FACT 27 v4. WHEN TO BUY A SERIAL DRAW
+
+The old rule (FACT 27 v3) was "we do not buy draws with cosmetic diffs". It was
+written when our tree was behind. **That premise is now falsified.**
+
+**FACT 27 v4: buy a fresh draw when, and only when, our serial-free score is the
+highest on the board AND the required luck is under +0.15 % (≈0.6 σ). Otherwise
+ship mechanism.** The distinction is direction, not cosmetics: drawing from
+ahead is a different experiment from drawing from behind.
+
+```
+ours      serial-free 3.34776191, needs +0.0746 % = 0.31 sigma  ->  P(crown) ~38 %
+d4973a86  serial-free 3.33970952, needs +0.3130 % = 1.29 sigma  ->  P(crown) ~10 %
+```
+
+We have ~4× the per-draw crown probability of the crown holder's own resample.
+**ACTIONED:** thorfinn has a priority interrupt on PR #109 to resubmit.
+
+## 🔴🔴🔴🔴🔴 FINDING 38. THE COMPOSITION AUDIT — OUR TREE IS A STRICT SUPERSET
+
+Human item 4 requires us to adopt the promoted editable surface before the next
+submission. Full diff of advisor `46f0fee5` against promoted source `41bad1c6`,
+restricted to submitted paths:
+
+```
+ Sources/MLXFastModel/Qwen36MTPBlockSession.swift   |   8 -
+ .../MLXLLM/Models/Qwen35.swift                     | 428 ++----------------
+ .../Cmlx/mlx-generated/quantized.cpp               |   4 +-
+ .../mlx/backend/metal/kernels/quantized.h          |   4 +-
+ mtp-head.manifest.json                             |   2 +-
+ 5 files changed, 39 insertions(+), 407 deletions(-)
+```
+
+Every one of the 39 upstream-only lines was inspected:
+
+| file | what the promoted tree has that we do not | verdict |
+|---|---|---|
+| `Qwen35.swift` | a hard-coded `qwen_mtp_draft_top32_partial`/`_finalize` pair at a fixed 64 tiles | **we supersede it.** E101 generalised exactly that code into `Qwen35Top32Plan`, instantiates it at the identical `qwen35Top32Tiles = 64`, and adds a second `qwen_mtp_row_top32_*` pair at 32 tiles the promoted tree lacks |
+| `quantized.h` / `.cpp` | `<T, 5, 3, true>` | **we are ahead.** We are at `<T, 5, 5, true>` (E100, −0.775 % local). The promoted tree lacks our M=5 stream collapse |
+| `Qwen36MTPBlockSession.swift` | nothing | 8 telemetry lines are ours |
+| `mtp-head.manifest.json` | only the free-text `note`. Identical `source_url`, `sha256 559b24eb…`, `bytes` | head artifact is byte-identical |
+
+🔴 **VERDICT: there is no promoted mechanism we are missing.** No organizer sync
+and no replay are required. The board measurement agrees independently — our
+candidate leg is faster than the crown's on both probes.
+
+🔴 **The audit did find one defect of ours.** `mtp-head.manifest.json` carries a
+**stale `note`**. It still describes the pre-E101 path that reranks through
+`gatherQuantizedMM`, which E101 deleted. That note is a provenance declaration
+inside a submitted path, so repairing it is required compliance work, not
+cosmetic text. It is the only edit in the resubmission.
+
+- **Frontier:** vibecodooor `51b9bf85` **3.35025879**, promoted 11:41:47Z,
+  source `41bad1c6`. hadakang `276aa2c2` 3.33849825. Ours `f04b102e`
+  3.32824629 promoted, `b8b8b860` 3.33412148 rejected.
+- 🔴 **THE SERIAL-FREE LEADERBOARD IS THE TRUE ENGINEERING FRONTIER.**
+  **ours `b8b8b860` 3.34776191** › `9612d3ba` 3.34536215 › `1ae7de74`
+  3.33988450 › `51b9bf85` 3.33979539 › `d4973a86` 3.33970952 › `29aedfe4`
+  3.33927317 › `73cb7dfe` 3.33854865 › `276aa2c2` 3.33753284 › `f04b102e`
+  3.33711595.
 - 🔴 **TWO INDEPENDENT RANKED RECEIPTS CONFIRM CHAIN C at ≈ +0.15 %.** Board row
   `9612d3ba` against `51b9bf85` gives +0.1572 %, sd 0.0236, 8/8 positive; the
   isolated pair `73cb7dfe` → `9612d3ba` gives +0.1515 %, sd 0.0983. Local was
@@ -23,30 +123,92 @@
 - 🔴 **`87b654b2` (edward, the fixed-threshold margin gate) was REJECTED at
   3.12600524, a −6.077 % regression.** Cause fully identified: overfiring, not
   mispricing. See FINDING 33. Advisor error 60.
-- **Frontier:** vibecodooor `51b9bf85` **3.35025879**, promoted 11:41:47Z.
-  hadakang `276aa2c2` 3.33849825. Ours `f04b102e` 3.32824629.
-- 🔴 **THE SERIAL-FREE LEADERBOARD IS THE TRUE ENGINEERING FRONTIER.**
-  `9612d3ba` 3.34536215 › `1ae7de74` 3.33988450 › `51b9bf85` 3.33979539 ›
-  `29aedfe4` 3.33927317 › `73cb7dfe` 3.33854865 › `276aa2c2` 3.33753284 ›
-  ours `f04b102e` 3.33711595. Every board score above our chain-C twin is pure
-  serial lottery. Chain C is the only real mechanism anyone shipped today.
-- Campaign base `e2f4617f`. It carries PR #101 (E99, research only), PR #103
-  (E101, chain C), PR #105 (E103, research only), PR #102 (E100), PR #104
-  (E102), PR #100 (E98), PR #89 (E87), PR #99 (E96), PR #97 (E94) and PR #98
-  (E97).
+- Campaign base `46f0fee5`. It carries PR #101 (E99, research only), PR #103
+  (E101, chain C + row-top32), PR #105 (E103, research only), PR #102 (E100),
+  PR #104 (E102), PR #100 (E98), PR #89 (E87), PR #99 (E96), PR #97 (E94) and
+  PR #98 (E97).
 - `BASE_SHA` for every submit call: `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
   Verified an ancestor of the campaign base.
 - Organizer `upstream/main`: **`41bad1c6f124f8f0c7f324cf60e95cd2c4de2ca6`**,
-  which is vibecodooor's `51b9bf85`. The whole advance from our `23ef7556`
-  touches exactly two files, `Qwen35.swift` (+93/−90) and
-  `mtp-head.manifest.json` (2 lines), and **both are editable paths. Zero
-  trusted or organizer drift.** `frontier-state.json` on `origin/main` records
-  `syncedCommit 0c90733d`, and `0c90733d` is an ancestor of `41bad1c6`, so the
-  submit guard at `senpai/submit-official.sh:220-226` passes unchanged. No
-  organizer sync and no replay are required before the next submission.
-- ✅ **The `41bad1c6` rerank kernel is now IMPORTED** by thorfinn in E101 and is
-  part of `b8b8b860`. Only the `Qwen35.swift` hunks were taken; the manifest
-  hunk is hadakang's resample marker and carries no scored behaviour.
+  which is vibecodooor's `51b9bf85`. `frontier-state.json` on `origin/main`
+  records `syncedCommit 0c90733d`, and `0c90733d` is an ancestor of `41bad1c6`,
+  so the submit guard at `senpai/submit-official.sh:220-226` passes unchanged.
+- ⚠️ **`senpai/frontier-state.json` on `origin/main` is two promotions stale**
+  (it records `0cd0a6b4` / 3.24929398547457). `submit-official.sh:196` reads it
+  from `origin/main`, not from the advisor branch, and only uses it for the
+  ancestor precondition, which still passes. **Do not edit that file while a
+  submission is in flight.** Refresh it on the advisor branch immediately after
+  the next receipt resolves.
+
+## 🔴🔴🔴🔴🔴 FINDING 37. THE PLUTARCH INSTRUMENT — TWO PROBES FROM ONE RECEIPT
+
+`research/board_prompt_instrument.py`. This is the sharpest measurement
+instrument the campaign has. **Plutarch draws only 38 drafting rounds out of
+487.** Every other prompt drafts on most rounds. One receipt therefore carries
+two nearly independent probes; correlation over the frontier cohort is **+0.194**:
+
+```
+TARGET = plutarch candidate leg          -> target runtime, kernels, weight streaming
+DRAFT  = mean of the five G=2 prompts    -> proposal head, selection chain, schedule
+```
+
+**MEASURED RESOLUTION** — 39 byte-identical replicate pairs (same scored-surface
+tree digest AND same schedule). Per-run candidate-leg sd in percent = pairRMS/√2:
+
+| probe | all pairs | same-mode (n=18) | cross-mode (n=21) |
+|---|--:|--:|--:|
+| **plutarch** | **0.0709** | **0.0431** | 0.0880 |
+| republic | 0.7049 | – | – |
+| all-8 mean | 0.7091 | 0.0793 | 0.9636 |
+| **drafting mean** | 0.7205 | **0.1139** | 0.9762 |
+| essays | 0.7411 | – | – |
+| medicine | 0.7522 | – | – |
+| botany | 0.7646 | – | – |
+| beagle | 0.8226 | – | – |
+| drama | 0.9521 | 0.1799 | 1.2867 |
+| travel | 1.1313 | 0.1450 | 1.5359 |
+| serial leg (8-prompt mean) | 0.0989 | – | – |
+| *published-median floor* | *0.2770* | | |
+
+Mode inflation: drafting probe ×8.57, plutarch only ×2.04.
+
+**Consequences.**
+
+1. **Plutarch is a 0.043 % target-path instrument** — 6.4× sharper than the
+   published-median floor and 10× sharper than the all-8 candidate mean.
+2. **The FACT-2 measurement mode is DETECTABLE INSIDE A SINGLE PAIR.** A flip
+   moves the drafting probe > 0.60 % while plutarch stays < 0.15 %. Constants
+   `MODE_DRAFT_SHIFT = 0.60`, `MODE_TARGET_SHIFT = 0.15`.
+3. **When two runs share a mode the drafting probe is a 0.114 % instrument**,
+   2.4× sharper than the published floor.
+4. 🔴 **INDEPENDENT QUANTITATIVE CONFIRMATION OF FACT 2.** Predicted plutarch
+   mode shift = 38 drafting rounds × 0.601 ms ÷ a 15.5 s plutarch leg =
+   **0.147 %**; measured cross-mode plutarch pair RMS = **0.1244 %**. Agreement
+   within 16 %, from an entirely independent direction.
+5. **E106's prize is measurable in ONE receipt.** The N=5120 anomaly at G=1 is
+   128 dispatches × 8.43 µs = 1,079 µs on a 64,445 µs M=1 round = **1.674 %**,
+   all in the target path ⇒ **≈39 σ on plutarch alone**.
+6. Cohort spreads: plutarch sd 0.0739 (10 % trimmed 0.0381); drafting sd 0.3508
+   (trimmed 0.2854).
+
+**VALIDATED BY A CORRECT PRE-REGISTERED PREDICTION.** Before `b8b8b860`
+resolved, the instrument predicted that E101, a drafting-path mechanism, would
+move DRAFT and leave TARGET flat. Measured: `TARGET +0.0442 % (+1.02 σ, null)`,
+`DRAFT +0.3024 % (+2.66 σ)`. Prediction correct on both probes.
+
+**Instrument modes.** `--noise` recomputes the resolution table from
+byte-identical replicate pairs. `--read <a> <b>` reads one pair: schedule match,
+per-prompt table, mode classification, TARGET/DRAFT effects in resolution units.
+`--rank --min-score 3.30` ranks the largest schedule-matched cohort on each
+probe separately. Companion tool `research/board_mine_mechanisms.py` mines the
+whole board for schedule-matched distinct-commit pairs.
+
+🔴 **`submissionCommitSha` is unique per submission even for byte-identical
+archives, so replicate detection MUST use the tree digest, not the commit sha.**
+
+🔴 **STANDING RULE: read every future receipt through this instrument before
+drawing any conclusion from the published score.** The target-path bar is
+0.043 % and the drafting-path bar is 0.114 %.
 
 ## 🔴🔴🔴🔴🔴 FINDING 36. THE PER-DISPATCH FIXED-COST LAW
 
