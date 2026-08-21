@@ -156,6 +156,8 @@ public final class Qwen36MTPBlockSession {
     public private(set) var seedTokenCount = 0
     public private(set) var committedTokenCount = 0
     public private(set) var roundCount = 0
+    /// Leg wall-clock origin for the E89 host-state probe.
+    private var e89LegStartNanos: UInt64 = 0
     public private(set) var acceptedDraftTotal = 0
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
@@ -591,6 +593,11 @@ public final class Qwen36MTPBlockSession {
     public func begin(seedTokens: [Int]) throws -> Int {
         guard !began else { throw Qwen36MTPSessionError.alreadyBegun }
         guard !seedTokens.isEmpty else { throw Qwen36MTPSessionError.emptySeed }
+        e89LegStartNanos = DispatchTime.now().uptimeNanoseconds
+        if Qwen36MTPHostStateProbe.enabled {
+            Qwen36MTPHostStateProbe.applyForcedQoS()
+            Self.traceWrite(Qwen36MTPHostStateProbe.headerLine(tag: "begin"))
+        }
         let tBegin0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         cache = model.newCache(parameters: nil)
         let (seedLogits, hidden) = model.callWithHidden(
@@ -1190,6 +1197,15 @@ public final class Qwen36MTPBlockSession {
             throw Qwen36MTPSessionError.invalidDepth(depth)
         }
         roundCount += 1
+        // E89 host-state probe, before the round clock starts so its cost
+        // stays out of `round_us`. See Qwen36MTPHostStateProbe.
+        var e89ProbeNanos: UInt64 = 0
+        var e89Usage0 = Qwen36MTPHostStateProbe.Usage()
+        if Qwen36MTPHostStateProbe.enabled {
+            Qwen36MTPHostStateProbe.applyForcedQoS()
+            e89ProbeNanos = Qwen36MTPHostStateProbe.cpuProbeNanos()
+            e89Usage0 = Qwen36MTPHostStateProbe.usage()
+        }
         // Local-only phase trace (MLXFAST_QWEN_MTP_TRACE=1): three boundaries
         // split a round into head-chain graph build, verify graph build, and
         // the single blocking eval's GPU wall. Never on in a ranked run.
@@ -1596,6 +1612,12 @@ public final class Qwen36MTPBlockSession {
             // in principle be overlapping, so the tail segments are the budget
             // for any further pipelining work.
             let tTailDone = DispatchTime.now().uptimeNanoseconds
+            let e89Fields = Qwen36MTPHostStateProbe.enabled
+                ? Qwen36MTPHostStateProbe.roundFields(
+                    probeNanos: e89ProbeNanos,
+                    delta: Qwen36MTPHostStateProbe.usage() - e89Usage0,
+                    legWallNanos: tTailDone - e89LegStartNanos)
+                : ""
             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
                 + "acc=\(acceptedCount) "
                 + "draft_build_us=\((tDraftBuilt - tRound0) / 1000) "
@@ -1613,6 +1635,7 @@ public final class Qwen36MTPBlockSession {
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
                 + "round_us=\((tTailDone - tRound0) / 1000) "
+                + e89Fields
                 + scheduleTrace + "\n"
             Self.traceWrite(line)
         }
