@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+"""E93 -- reduce the per-draft proposal-head dispatch census.
+
+    usage:
+      research/e93_head_census.py counts LEG [LEG ...]
+      research/e93_head_census.py gputime LEG [LEG ...]
+
+`counts` fits every `draft_head` dispatch count to
+
+    dispatches(d) = A + B * (d - 1)
+
+where `d` is the round's draft count. `A` is the first draft step, which also
+carries the round's history flush, and `B` is the marginal draft step. The fit
+is exact on integer counts, so a residual means the model is wrong rather than
+noisy.
+
+`gputime` reads the E80 Metal command-buffer clock. In the default buffer
+geometry `by_width_phase` gives the IN-SITU head pass. With one op per command
+buffer `exclusive_kernels` gives each shape's ISOLATED GPU time.
+
+Every byte figure below is derived from the tensor shape and dtype recorded in
+`mtp-head-declared-run/model.safetensors.index.json` plus the dispatch grid, and
+never from a guess.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from collections import defaultdict
+
+# --- the per-draft class map -------------------------------------------------
+#
+# Key is the census `shapes` string. Value is
+#   (class, tensor, weight_bytes_read, activation_bytes_moved)
+#
+# `weight_bytes_read` counts persistent head or target weights only.
+# `activation_bytes_moved` counts read plus write of transient tensors, and is
+# reported separately because it is not part of the 427,738,112 byte head model.
+
+AFFINE4 = lambda k, n: n * k // 2 + 4 * (n * k // 64)   # noqa: E731  4 bits + bf16 scale + bf16 bias
+AFFINE2 = lambda k, n: n * k // 4 + 4 * (n * k // 64)   # noqa: E731
+BF16 = lambda n: 2 * n                                   # noqa: E731
+
+CLASS_NAMES = {
+    1: "weight-streaming GEMV",
+    2: "attention over head history",
+    3: "norms and elementwise",
+    4: "readout and rerank",
+    5: "island scatter",
+}
+
+# The three O = 5120 affine-4 GEMVs share one grid, so they are one row with a
+# multiplicity of three. Their input widths differ (10240, 6144, 17408) but the
+# qmv grid encodes the output width only.
+FC_BYTES = AFFINE4(10240, 5120)
+O_BYTES = AFFINE4(6144, 5120)
+DOWN_BYTES = AFFINE4(17408, 5120)
+
+CACHE_CAPACITY = 768        # bf16 [1, 4, capacity, 256]; grows by 256 steps
+CACHE_ARRAY_BYTES = 2 * 4 * CACHE_CAPACITY * 256
+
+MAP = {
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x640x1 tg=32x2x1":
+        (1, "fc + o_proj + down_proj (3 dispatches, O=5120)",
+         FC_BYTES + O_BYTES + DOWN_BYTES, 0),
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x1536x1 tg=32x2x1":
+        (1, "q_proj (O=12288)", AFFINE4(5120, 12288), 0),
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x4352x1 tg=32x2x1":
+        (1, "mlp gate_up fused (O=34816)", AFFINE4(5120, 34816), 0),
+    "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=64x1x1 tg=32x1x4":
+        (1, "Q precision island, dense bf16 [1024,5120]", BF16(1024 * 5120), 0),
+    "gemv_al_bfloat16_bm4_bn1_sm1_sn32_tm4_tn4_nc0_axpby0 grid=128x1x1 tg=32x1x4":
+        (1, "K/V exact dense bf16 [2048,5120]", BF16(2048 * 5120), 0),
+
+    "custom_kernel_qwen35_attention_qk_rms_rope_bf16_v1_bfloat16_t_bfloat16_t_"
+    "bfloat16_t_bfloat16_t_floats_int32_ts_floats_bfloat16_t_bfloat16_t "
+    "grid=1792x1x1 tg=64x1x1":
+        (2, "q_norm + k_norm + RoPE (28 heads)", BF16(2 * 256), BF16(2 * 28 * 256)),
+    "gg2_copybfloat16bfloat16 grid=256x4x1 tg=256x4x1":
+        (2, "K and V cache append, 1 position (2 dispatches)", 0, 2 * 2 * BF16(4 * 256)),
+    "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=24x1x1 tg=1024x1x1":
+        (2, "SDPA over head history", 0, 2 * BF16(4 * 512 * 256)),
+    "vn_copybfloat16bfloat16 grid=196608x1x1 tg=1024x1x1":
+        (2, "head KV cache full-array copy (2 dispatches, capacity-sized)",
+         0, 2 * 2 * CACHE_ARRAY_BYTES),
+
+    "custom_kernel_qwen35_embed_dual_rms_norm_concat_bf16_v1_int32_tc_uint32_t_"
+    "bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_bfloat16_t_floats_bfloat16_t "
+    "grid=2048x1x1 tg=1024x1x1":
+        (3, "fused quantized-embed dual RMSNorm concat",
+         AFFINE4(5120, 1) + BF16(2 * 5120), BF16(3 * 5120)),
+    "custom_kernel_qwen35_fused_residual_rms_norm_bfloat16_t_bfloat16_t_"
+    "bfloat16_t_floats_bfloat16_t_bfloat16_t grid=1024x1x1 tg=1024x1x1":
+        (3, "post_attention_layernorm, fused residual", BF16(5120), BF16(3 * 5120)),
+    "rms_loopedbfloat16 grid=1024x1x1 tg=1024x1x1":
+        (3, "input_layernorm and mtp.norm (2 dispatches)",
+         2 * BF16(5120), 2 * BF16(2 * 5120)),
+    "vv_Addbfloat16 grid=5120x1x1 tg=1024x1x1":
+        (3, "attention residual add", 0, BF16(3 * 5120)),
+    "CV2ISigmoidADV2IMultiplyACEV2OMultiplyDB_VV_V2V2_"
+    "11160318154034397263_contiguous grid=17408x1x1 tg=1024x1x1":
+        (3, "SwiGLU silu(gate) * up", 0, BF16(3 * 17408)),
+    "CV2ISigmoidBDV2IBroadcastACEV2IBroadcastCAFV2OMultiplyDE_VV_V2V2_"
+    "11160318154034397263_strided_2 grid=256x24x1 tg=64x16x1":
+        (3, "attention output sigmoid gate", 0, BF16(3 * 6144)),
+    "g1_copybfloat16bfloat16 grid=17408x1x1 tg=1024x1x1":
+        (3, "gate/up split copy", 0, BF16(2 * 17408)),
+
+    "affine_qmv_fast_bfloat16_t_gs_64_b_2_batch_0 grid=1x12292x1 tg=32x2x1":
+        (4, "draft_lm_head coarse readout, affine-2 [98336,5120]",
+         AFFINE2(5120, 98336), 0),
+    "custom_kernel_qwen_mtp_draft_top32_partial_bfloat16_t_uint32_t_uint32_t "
+    "grid=16384x1x1 tg=256x1x1":
+        (4, "top-32 partial reduction over 98336 logits", 0, BF16(98336)),
+    "custom_kernel_qwen_mtp_draft_top32_finalize_uint32_t_uint32_t_uint32_t "
+    "grid=256x1x1 tg=256x1x1":
+        (4, "top-32 finalize", 0, 4 * 256 * 64),
+    "affine_gather_qmv_bfloat16_t_gs_64_b_4 grid=1x1x32 tg=32x2x1":
+        (4, "gatherQuantizedMM, 32 rows of the target compact head",
+         AFFINE4(5120, 32), 0),
+    "custom_kernel_qwen_mtp_draft_rerank__98304_149740_bfloat16_t_uint32_t_int32_t "
+    "grid=32x1x1 tg=32x1x1":
+        (4, "exact rerank over the 32 candidates", 0, BF16(32)),
+
+    "scatter_axisbfloat16int32_none_intcc grid=1x1024x1 tg=1x1024x1":
+        (5, "replaceExactRows putAlong scatter, 1024 Q island rows",
+         4 * 1024, 2 * BF16(1024)),
+}
+
+# Weights owned by the TARGET, not by the declared head artifact. They are read
+# on the head path but must not be charged to the 427,738,112 byte head model.
+TARGET_OWNED_BYTES = AFFINE4(5120, 1) + AFFINE4(5120, 32)
+HEAD_ARTIFACT_BYTES = 427_738_112
+
+
+def load(path):
+    with open(path) as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+VN_COPY_PREFIX = "vn_copybfloat16bfloat16 grid="
+VN_COPY_CANONICAL = "vn_copybfloat16bfloat16 grid=196608x1x1 tg=1024x1x1"
+
+
+def canonical(shape):
+    """Fold the head KV cache copy onto one key.
+
+    Its grid is the cache CAPACITY, which steps by 256 positions, so the same
+    logical dispatch appears under a new key every time the cache grows. The
+    capacity itself is reported separately.
+    """
+    if shape.startswith(VN_COPY_PREFIX):
+        return VN_COPY_CANONICAL
+    return shape
+
+
+def fit_counts(paths):
+    """Fit A + B*(d-1) per shape over the STEADY-STATE `draft_head` rounds.
+
+    Two kinds of round are excluded and counted:
+
+      flush      the first drafting round of a process also flushes the whole
+                 512-position seed history into the head cache, so its first
+                 step runs prefill-width shapes that no later round runs;
+      growth     a round in which the head KV cache crosses a 256-position
+                 capacity step pays one extra concatenate.
+
+    Both are real, but neither is the marginal draft step this census prices.
+    """
+    per_depth = defaultdict(lambda: defaultdict(list))
+    totals = defaultdict(list)
+    seen_pids = set()
+    dropped = {"flush": 0, "growth": 0}
+    capacities = defaultdict(int)
+    for path in paths:
+        rounds = [r for r in load(path)
+                  if r.get("event") == "round" and "draft_head" in r.get("phases", {})]
+        modes = defaultdict(lambda: defaultdict(int))
+        for record in rounds:
+            modes[record["width"] - 1][record["phases"]["draft_head"]["dispatches"]] += 1
+        for record in rounds:
+            phase = record["phases"]["draft_head"]
+            depth = record["width"] - 1
+            key = (path, record["pid"])
+            if key not in seen_pids:
+                seen_pids.add(key)
+                dropped["flush"] += 1
+                continue
+            modal = max(modes[depth].items(), key=lambda kv: kv[1])[0]
+            if phase["dispatches"] != modal:
+                dropped["growth"] += 1
+                continue
+            totals[depth].append(phase["dispatches"])
+            for shape, count in phase.get("shapes", {}).items():
+                if shape.startswith(VN_COPY_PREFIX):
+                    grid = int(shape.split("grid=")[1].split("x")[0])
+                    capacities[grid * 4 // (4 * 256)] += count
+                per_depth[depth][canonical(shape)].append(count)
+    return per_depth, totals, dropped, capacities
+
+
+def solve(pairs):
+    """Least-squares A, B for count = A + B*(d-1) from {d: [counts]}."""
+    xs, ys = [], []
+    for depth, counts in pairs.items():
+        for count in counts:
+            xs.append(depth - 1)
+            ys.append(count)
+    n = len(xs)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+    mean_x = sum(xs) / n
+    mean_y = sum(ys) / n
+    var = sum((x - mean_x) ** 2 for x in xs)
+    slope = 0.0 if var == 0 else sum(
+        (x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / var
+    intercept = mean_y - slope * mean_x
+    residual = max(abs(y - (intercept + slope * x)) for x, y in zip(xs, ys))
+    return intercept, slope, residual
+
+
+def report_counts(paths):
+    per_depth, totals, dropped, capacities = fit_counts(paths)
+    depths = sorted(per_depth)
+    print(f"legs: {len(paths)}   draft depths observed: {depths}")
+    print(f"rounds dropped: seed-history-flush={dropped['flush']} "
+          f"cache-growth={dropped['growth']}")
+    print("head KV cache capacity observed (positions -> copy dispatches): "
+          + ", ".join(f"{c}->{n}" for c, n in sorted(capacities.items())))
+    for depth in depths:
+        counts = totals[depth]
+        print(f"  d={depth:2d}  rounds={len(counts):3d}  "
+              f"draft_head dispatches {sorted(set(counts))}")
+
+    shapes = sorted({s for depth in per_depth for s in per_depth[depth]})
+    rows = []
+    for shape in shapes:
+        pairs = {d: per_depth[d].get(shape, [0] * len(totals[d])) for d in depths}
+        first, marginal, residual = solve(pairs)
+        rows.append((shape, first, marginal, residual))
+
+    # A shape whose count is an exact affine function of the draft count runs on
+    # every marginal draft step. A shape with a residual runs only on the round's
+    # FIRST head call, whose flush block is 1 + the previous round's acceptance
+    # wide, so its grid moves with the flush width and the affine fit fails.
+    marginal_rows = [r for r in rows if r[3] <= 0.01 and r[2] > 0.01]
+    first_only = [r for r in rows if r[3] > 0.01 or r[2] <= 0.01]
+
+    print()
+    print("MARGINAL DRAFT STEP -- shapes whose count is exactly A + B*(d-1)")
+    print(f"{'first':>7} {'marg':>6} {'res':>5}  class  shape")
+    total_first = total_marginal = 0.0
+    unmapped = []
+    for shape, first, marginal, residual in marginal_rows:
+        entry = MAP.get(shape)
+        cls = entry[0] if entry else "?"
+        if entry is None:
+            unmapped.append(shape)
+        total_first += first
+        total_marginal += marginal
+        print(f"{first:7.2f} {marginal:6.2f} {residual:5.2f}  {cls:>5}  {shape[:96]}")
+    print(f"{total_first:7.2f} {total_marginal:6.2f}         TOTAL")
+    if unmapped:
+        print("\nUNMAPPED marginal shapes:")
+        for shape in unmapped:
+            print("  " + shape)
+
+    print()
+    print(f"FIRST HEAD CALL ONLY -- {len(first_only)} flush-width-dependent shapes, "
+          "not part of the marginal draft step")
+
+    print()
+    print("per-class marginal dispatches and modelled bytes per draft step")
+    by_class = defaultdict(lambda: [0.0, 0, 0])
+    for shape, _first, marginal, _res in marginal_rows:
+        entry = MAP.get(shape)
+        if entry is None:
+            continue
+        cls, _tensor, weight_bytes, activation_bytes = entry
+        by_class[cls][0] += marginal
+        by_class[cls][1] += weight_bytes
+        by_class[cls][2] += activation_bytes
+    weight_total = activation_total = 0
+    for cls in sorted(by_class):
+        dispatches, weight_bytes, activation_bytes = by_class[cls]
+        weight_total += weight_bytes
+        activation_total += activation_bytes
+        print(f"  class {cls} {CLASS_NAMES[cls]:<30} "
+              f"dispatches={dispatches:5.2f} weight_bytes={weight_bytes:12,d} "
+              f"activation_bytes={activation_bytes:11,d}")
+    print(f"  {'':<38} weight total   = {weight_total:12,d}")
+    print(f"  {'':<38} activation tot = {activation_total:12,d}")
+    head_only = weight_total - TARGET_OWNED_BYTES
+    delta = head_only - HEAD_ARTIFACT_BYTES
+    print()
+    print(f"  declared-head weight actually read  = {head_only:12,d}")
+    print(f"  target-owned weight read on the path= {TARGET_OWNED_BYTES:12,d}")
+    print(f"  campaign head artifact byte model   = {HEAD_ARTIFACT_BYTES:12,d}")
+    print(f"  difference                          = {delta:12,d} "
+          f"({100.0 * delta / HEAD_ARTIFACT_BYTES:+.3f} %)")
+    print(f"  activation traffic, stated separately = {activation_total:,d} "
+          f"({100.0 * activation_total / head_only:.2f} % of head weight bytes)")
+
+
+def report_gputime(paths):
+    for path in paths:
+        snapshots = [r for r in load(path) if r.get("event") == "gputime"]
+        print(f"=== {path}  snapshots={len(snapshots)}")
+        phase_ns = defaultdict(int)
+        phase_dispatch = defaultdict(int)
+        exclusive = defaultdict(lambda: [0, 0, 0])
+        rounds = 0
+        # Drop the first snapshot: it carries weight loading and warmup.
+        for snapshot in snapshots[1:]:
+            rounds += snapshot.get("rounds", 0)
+            for key, bucket in snapshot.get("by_width_phase", {}).items():
+                phase_ns[key] += bucket["gpu_ns"]
+                phase_dispatch[key] += bucket["dispatches"]
+            for key, bucket in snapshot.get("exclusive_kernels", {}).items():
+                exclusive[key][0] += bucket["buffers"]
+                exclusive[key][1] += bucket["gpu_ns"]
+                exclusive[key][2] = max(exclusive[key][2], bucket["max_ns"])
+        print(f"  rounds after dropping snapshot 0: {rounds}")
+        for key in sorted(phase_ns, key=lambda k: -phase_ns[k]):
+            print(f"  {key:<34} gpu_us={phase_ns[key] / 1e3:12.1f} "
+                  f"dispatches={phase_dispatch[key]:8d}")
+        head = [(k, v) for k, v in exclusive.items() if "|draft_head|" in k]
+        if head:
+            print("  exclusive draft_head kernels (isolated GPU us per dispatch):")
+            for key, (buffers, gpu_ns, max_ns) in sorted(
+                    head, key=lambda kv: -kv[1][1]):
+                shape = key.split("|", 2)[2]
+                cls = MAP.get(shape, ("?", "", 0, 0))[0]
+                print(f"    class {cls}  n={buffers:6d} "
+                      f"mean_us={gpu_ns / max(buffers, 1) / 1e3:8.2f} "
+                      f"max_us={max_ns / 1e3:8.2f}  {shape[:80]}")
+
+
+def main():
+    if len(sys.argv) < 3:
+        print(__doc__)
+        return 2
+    mode, paths = sys.argv[1], sys.argv[2:]
+    if mode == "counts":
+        report_counts(paths)
+    elif mode == "gputime":
+        report_gputime(paths)
+    else:
+        print(__doc__)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
