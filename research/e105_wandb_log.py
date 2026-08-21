@@ -305,8 +305,11 @@ def log_dose(prefix: str) -> str:
     required_table = wandb.Table(columns=["shape", "pass", "case", "required_F_us"])
 
     summary: dict = {}
-    for shape in sorted(k for k in report if k not in ("legs", "decode_only")):
-        for pas, block in report[shape].items():
+    for shape in sorted(k for k in ("tiny", "prework", "op") if k in report):
+        for pas in ("serial", "mtp"):
+            block = report[shape].get(pas)
+            if block is None:
+                continue
             slope_table.add_data(
                 shape,
                 pas,
@@ -369,6 +372,31 @@ def log_dose(prefix: str) -> str:
             )
         run.log({"dose/decode_only_decomposition": dtab})
         summary["denominator/decode_only_round_us"] = dec["decode_only_round_us"]
+        for k, v in dec["seed_model_check"].items():
+            summary[f"denominator/seed_model_{k}"] = v
+
+    contrast = report.get("shape_contrast")
+    if contrast:
+        for k, v in contrast.items():
+            if not isinstance(v, dict):
+                summary[f"contrast/{k}"] = v
+
+    # Repeatability of the identical mirrored legs. The ceiling this experiment
+    # is chasing has to be read against this, not against the slope alone.
+    for key in ("serial_round_us", "mtp_round_us"):
+        diffs = []
+        seen: dict[tuple, list[float]] = {}
+        for leg in legs:
+            seen.setdefault((leg["shape"], leg["dose"], leg["tokens"]), []).append(
+                leg[key]
+            )
+        for vals in seen.values():
+            if len(vals) == 2:
+                diffs.append(abs(vals[0] - vals[1]))
+        if diffs:
+            diffs.sort()
+            summary[f"noise/{key}_median_mirror_diff_us"] = diffs[len(diffs) // 2]
+            summary[f"noise/{key}_max_mirror_diff_us"] = diffs[-1]
 
     summary["dose/all_tokens_matched"] = all(leg["matched"] for leg in legs)
     if temps:
