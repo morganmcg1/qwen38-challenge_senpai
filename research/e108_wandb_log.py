@@ -110,7 +110,8 @@ def attach(run, *paths: pathlib.Path) -> None:
         return
     artifact = wandb.Artifact(f"{run.name}-artifacts", type="analysis")
     for path in present:
-        artifact.add_file(str(path))
+        # Several legs write the same basename in different run directories.
+        artifact.add_file(str(path), name=f"{path.parent.name}/{path.name}")
     run.log_artifact(artifact)
 
 
