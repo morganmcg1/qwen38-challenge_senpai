@@ -1,0 +1,38 @@
+{
+  "fast": {
+    "blocked_total_pct_of_round": 93.50716283292978,
+    "blocked_total_us": 154473.83299999998,
+    "d_submit2_us": 4655.0,
+    "duty_if_both_spun_pct": 97.53127512106536,
+    "duty_if_only_eval_spun_pct": 50.37680326876513,
+    "duty_pct": 4.024112288135594,
+    "eval_blocked_us": 76574.6455,
+    "eval_cpu_us": 385.35450000000003,
+    "eval_wall_us": 76960.0,
+    "host_sum_us": 638.0,
+    "n_rounds": 1290,
+    "round_us": 165200.0,
+    "thread_cpu_us": 6647.833500000001,
+    "verify_build_blocked_us": 77899.1875,
+    "verify_build_cpu_us": 4999.8125,
+    "verify_build_us": 82899.0
+  },
+  "slow": {
+    "blocked_total_pct_of_round": 83.42258093633409,
+    "blocked_total_us": 138631.645,
+    "d_submit2_us": 4309.0,
+    "duty_if_both_spun_pct": 98.68951016969551,
+    "duty_if_only_eval_spun_pct": 59.76639246600072,
+    "duty_pct": 15.266929233361415,
+    "eval_blocked_us": 73949.208,
+    "eval_cpu_us": 1587.792,
+    "eval_wall_us": 75537.0,
+    "host_sum_us": 3218.5,
+    "n_rounds": 390,
+    "round_us": 166180.0,
+    "thread_cpu_us": 25370.583,
+    "verify_build_blocked_us": 64682.437,
+    "verify_build_cpu_us": 18365.563000000002,
+    "verify_build_us": 83048.0
+  }
+}

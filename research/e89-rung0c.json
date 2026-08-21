@@ -1,0 +1,218 @@
+{
+  "prefix": "e89v1",
+  "cut_us": 1264.0,
+  "clean_band_us": 632.0,
+  "harness": "local",
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "legs": [
+    {
+      "leg": "e89v1-ctl-1",
+      "pos": 0,
+      "arm": "ctl",
+      "prevalence": 1.0,
+      "ghz": 0.0,
+      "forced_qos": "unclaimed",
+      "parts": "marks+rusage+thread",
+      "sync_head": "0",
+      "host_med_us": 3339.0,
+      "mtp_seconds_per_token": 0.053968578577041626,
+      "cores": {
+        "11": 1,
+        "2": 6,
+        "1": 5,
+        "0": 4,
+        "3": 1
+      }
+    },
+    {
+      "leg": "e89v1-fix-1",
+      "pos": 1,
+      "arm": "fix",
+      "prevalence": 0.058823529411764705,
+      "ghz": 0.0,
+      "forced_qos": "none",
+      "parts": "marks+rusage+thread",
+      "sync_head": "0",
+      "host_med_us": 632.0,
+      "mtp_seconds_per_token": 0.053771828301250935,
+      "cores": {
+        "11": 6,
+        "9": 5,
+        "10": 6
+      }
+    }
+  ],
+  "discriminator": {
+    "host_sum_us": {
+      "fast": 635.5,
+      "slow": 3307.5,
+      "ratio": 5.20456333595594
+    },
+    "host_thread_cpu_ns": {
+      "fast": 635833.5,
+      "slow": 3201270.0,
+      "ratio": 5.0347614587781235
+    },
+    "round_thread_cpu_ns": {
+      "fast": 6616229.5,
+      "slow": 25769521.0,
+      "ratio": 3.894895272299729
+    },
+    "e89_probe_ns": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_probe_span_ns": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_probe_cyc": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_probe_ins": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_instr": {
+      "fast": 119096132.0,
+      "slow": 121635371.0,
+      "ratio": 1.0213209191378272
+    },
+    "e89_cycles": {
+      "fast": 33354921.0,
+      "slow": 104050844.5,
+      "ratio": 3.1195050499445043
+    },
+    "e89_user_ns": {
+      "fast": 8158562.0,
+      "slow": 27048645.5,
+      "ratio": 3.3153692403146535
+    },
+    "e89_sys_ns": {
+      "fast": 2227604.0,
+      "slow": 12978041.5,
+      "ratio": 5.826009245808501
+    },
+    "e89_thr_user_ns": {
+      "fast": 6328000.0,
+      "slow": 22816000.0,
+      "ratio": 3.6055625790139065
+    },
+    "e89_thr_sys_ns": {
+      "fast": 288000.0,
+      "slow": 2828500.0,
+      "ratio": 9.821180555555555
+    },
+    "e89_nvcsw": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_nivcsw": {
+      "fast": 162.0,
+      "slow": 195.0,
+      "ratio": 1.2037037037037037
+    },
+    "e89_minflt": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_majflt": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_pageins": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_vm_comp": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_vm_decomp": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_vm_swapin": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_vm_footprint_mb": {
+      "fast": 27611.5,
+      "slow": 27608.0,
+      "ratio": 0.9998732412219546
+    },
+    "e89_vm_compressed_mb": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_host_free_mb": {
+      "fast": 73.0,
+      "slow": 221.0,
+      "ratio": 3.0273972602739727
+    },
+    "e89_host_compressor_mb": {
+      "fast": 544.0,
+      "slow": 544.0,
+      "ratio": 1.0
+    },
+    "e89_host_pageins": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_host_decomp": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_host_swapin": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "verify_build_us": {
+      "fast": 82661.0,
+      "slow": 82686.0,
+      "ratio": 1.000302440086619
+    },
+    "eval_wall_us": {
+      "fast": 76765.5,
+      "slow": 75275.0,
+      "ratio": 0.980583725762224
+    },
+    "d_submit2_us": {
+      "fast": 4650.5,
+      "slow": 3951.5,
+      "ratio": 0.8496935813353402
+    },
+    "round_us": {
+      "fast": 164872.5,
+      "slow": 165517.0,
+      "ratio": 1.0039090812597613
+    },
+    "e89_cache_mb": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    },
+    "e89_active_mb": {
+      "fast": 0.0,
+      "slow": 0.0,
+      "ratio": null
+    }
+  }
+}
