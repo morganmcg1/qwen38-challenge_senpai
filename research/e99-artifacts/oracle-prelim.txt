@@ -1,0 +1,187 @@
+===============================================================================
+RECORDED LEGS
+===============================================================================
+leg           cap  rounds   width   accept  censored   round_us   model_us
+e94c4a          4     110   4.918   0.9327     0.882   126621.6   123674.8
+e94c5a          5      97   5.804   0.8927     0.804   136839.6   133875.7
+e94c6a          6      85   6.576   0.9008     0.812   145128.9   143396.7
+e94c7a          7      78   7.359   0.8770     0.782   157398.4   154143.3
+
+===============================================================================
+COUNTERFACTUALS ON THE RANKED CURVE
+===============================================================================
+leg        treat        actual    oracle   gap %     fixed  fixed %     1bitG  1bitG %  share
+e94c4a     observed    11270.0   10927.5    3.04   11358.4     0.78   11075.7     1.72   0.57
+e94c4a     exclude     20017.2   14703.0   26.55   16972.3   -15.21   17003.2    15.06   0.57
+e94c4a     impute      11270.0   10884.3    3.42   11281.7     0.10   11075.7     1.72   0.50
+e94c5a     observed    11122.5   10476.1    5.81   11409.5     2.58   10643.7     4.31   0.74
+e94c5a     exclude     18925.1   13207.2   30.21   14910.5   -21.21   14910.5    21.21   0.70
+e94c5a     impute      11122.5   10409.7    6.41   11149.2     0.24   10643.7     4.31   0.67
+e94c6a     observed    10690.7   10086.5    5.65   11218.4     4.94   10221.3     4.39   0.78
+e94c6a     exclude     19054.6   12989.4   31.83   14693.4   -22.89   14693.4    22.89   0.72
+e94c6a     impute      10690.7    9980.0    6.65   10789.1     0.92   10221.3     4.39   0.66
+e94c7a     observed    10655.4    9866.6    7.40   11335.0     6.38   10044.2     5.74   0.77
+e94c7a     exclude     19296.7   12561.5   34.90   14974.5   -22.40   14491.7    24.90   0.71
+e94c7a     impute      10655.4    9714.2    8.83   10706.6     0.48   10044.2     5.74   0.65
+
+===============================================================================
+COUNTERFACTUALS ON THE LOCAL CURVE
+===============================================================================
+leg        treat        actual    oracle   gap %     fixed  fixed %     1bitG  1bitG %  share
+e94c4a     observed    26570.8   22243.1   16.29   22694.1   -14.59   22627.3    14.84   0.91
+e94c4a     exclude     46052.8   29105.7   36.80   32404.0   -29.64   33972.3    26.23   0.71
+e94c4a     impute      26570.8   22155.5   16.62   22540.9   -15.17   22627.3    14.84   0.89
+e94c5a     observed    25313.7   22404.5   11.49   22917.9    -9.46   22872.8     9.64   0.84
+e94c5a     exclude     42971.0   26683.3   37.90   29791.1   -30.67   29791.1    30.67   0.81
+e94c5a     impute      25313.7   22331.2   11.78   22800.1    -9.93   22872.8     9.64   0.82
+e94c6a     observed    23806.1   22002.1    7.58   22835.4    -4.08   22291.5     6.36   0.84
+e94c6a     exclude     42217.2   26290.7   37.73   29357.4   -30.46   29357.4    30.46   0.81
+e94c6a     impute      23806.1   21920.7    7.92   22702.0    -4.64   22291.5     6.36   0.80
+e94c7a     observed    23437.0   21283.7    9.19   23115.2    -1.37   21612.2     7.79   0.85
+e94c7a     exclude     42362.5   26060.2   38.48   29919.1   -29.37   29481.4    30.41   0.79
+e94c7a     impute      23437.0   21074.9   10.08   22966.3    -2.01   21612.2     7.79   0.77
+
+===============================================================================
+IS THE ROUND PREDICTABLE AT ALL? PRE-ROUND STATE VERSUS OUTCOME
+===============================================================================
+feature       r(accepted)  r(accepts<3)
+d_ship              0.646        -0.241
+prev_acc            0.611        -0.292
+margin              0.505        -0.480
+reach7              0.464        -0.110
+prev_depth          0.437        -0.013
+prev_full           0.359        -0.321
+reach4              0.326        -0.243
+reach3              0.321        -0.229
+ema5                0.289         0.089
+ema6                0.282         0.105
+ema0                0.272        -0.171
+reach1              0.272        -0.171
+ema7                0.256         0.082
+ema3                0.253        -0.202
+round_idx          -0.253         0.204
+ema1                0.240        -0.135
+ema2                0.206        -0.173
+ema4                0.119        -0.036
+streak              0.072        -0.182
+
+===============================================================================
+RUNG 4 - BEST POLICY ON PRE-ROUND STATE ONLY, HELD OUT
+===============================================================================
+class     treat    design                  actual    fitted   gain % oracle %  recov %
+absolute  observed parity even->odd       11080.3   10875.0    +1.85     6.05     30.6
+absolute  observed parity odd->even       10793.6   10637.4    +1.45     4.84     29.9
+absolute  observed time first->second     11925.1   12078.8    -1.29     9.74    -13.2
+absolute  observed leg-out e94c4a         11270.0   11150.6    +1.06     3.04     34.9
+absolute  observed leg-out e94c5a         11122.5   10885.3    +2.13     5.81     36.7
+absolute  observed leg-out e94c6a         10690.7   10430.5    +2.43     5.65     43.1
+absolute  observed leg-out e94c7a         10655.4   10331.0    +3.04     7.40     41.1
+absolute  impute   parity even->odd       11080.3   10823.7    +2.32     7.12     32.5
+absolute  impute   parity odd->even       10793.6   10582.4    +1.96     5.61     34.9
+absolute  impute   time first->second     11925.1   11987.5    -0.52    11.30     -4.6
+absolute  impute   leg-out e94c4a         11270.0   11125.7    +1.28     3.42     37.4
+absolute  impute   leg-out e94c5a         11122.5   10831.7    +2.61     6.41     40.8
+absolute  impute   leg-out e94c6a         10690.7   10396.4    +2.75     6.65     41.4
+absolute  impute   leg-out e94c7a         10655.4   10502.7    +1.43     8.83     16.2
+one_bit_g observed parity even->odd       11080.3   10875.0    +1.85     6.05     30.6
+        if margin <= 9.4375:
+            if margin <= 1.1875:
+                ship  (n=14)
+            else:
+                g1  (n=30)
+        else:
+            if ema0 <= 0.927571:
+                g1  (n=12)
+            else:
+                ship  (n=129)
+one_bit_g observed parity odd->even       10793.6   10560.0    +2.16     4.84     44.7
+        if margin <= 11.4375:
+            if margin <= 7.125:
+                g1  (n=34)
+            else:
+                ship  (n=14)
+        else:
+            if ema2 <= 0.999745:
+                ship  (n=116)
+            else:
+                g1  (n=21)
+one_bit_g observed time first->second     11925.1   11806.8    +0.99     9.74     10.2
+        if streak <= 21.5:
+            if reach3 <= 0.701439:
+                g1  (n=12)
+            else:
+                ship  (n=160)
+        else:
+            g1  (n=12)
+one_bit_g observed leg-out e94c4a         11270.0   11142.6    +1.13     3.04     37.2
+        if margin <= 11.5625:
+            if round_idx <= 37:
+                ship  (n=12)
+            else:
+                g1  (n=61)
+        else:
+            if ema0 <= 0.921693:
+                g1  (n=13)
+            else:
+                ship  (n=174)
+one_bit_g observed leg-out e94c5a         11122.5   10886.0    +2.13     5.81     36.6
+        if margin <= 8.25:
+            if prev_depth <= 3.5:
+                ship  (n=14)
+            else:
+                g1  (n=44)
+        else:
+            if ema0 <= 0.927571:
+                g1  (n=24)
+            else:
+                ship  (n=191)
+one_bit_g observed leg-out e94c6a         10690.7   10423.6    +2.50     5.65     44.2
+        if margin <= 9.4375:
+            g1  (n=62)
+        else:
+            if ema0 <= 0.921691:
+                g1  (n=18)
+            else:
+                ship  (n=205)
+one_bit_g observed leg-out e94c7a         10655.4   10331.0    +3.04     7.40     41.1
+        if margin <= 10.4375:
+            g1  (n=68)
+        else:
+            if ema2 <= 0.999918:
+                ship  (n=200)
+            else:
+                g1  (n=24)
+one_bit_g impute   parity even->odd       11080.3   10875.0    +1.85     7.12     26.0
+one_bit_g impute   parity odd->even       10793.6   10560.0    +2.16     5.61     38.6
+one_bit_g impute   time first->second     11925.1   11806.8    +0.99    11.30      8.8
+one_bit_g impute   leg-out e94c4a         11270.0   11142.6    +1.13     3.42     33.0
+one_bit_g impute   leg-out e94c5a         11122.5   10886.0    +2.13     6.41     33.2
+one_bit_g impute   leg-out e94c6a         10690.7   10423.6    +2.50     6.65     37.6
+one_bit_g impute   leg-out e94c7a         10655.4   10331.0    +3.04     8.83     34.5
+
+===============================================================================
+HEADLINE - RANKED CURVE AT THE RANKED OPERATING POINT
+===============================================================================
+leg e94c5a, mean verify width 5.804, nearest ranked prompt republic (5.989)
+  observed  oracle gap   5.81 %   one-bit G   4.31 %   best fixed  +2.58 %
+  exclude   oracle gap  30.21 %   one-bit G  21.21 %   best fixed -21.21 %
+  impute    oracle gap   6.41 %   one-bit G   4.31 %   best fixed  +0.24 %
+  censoring treatments agree in sign: True
+  oracle gap range 5.81 % .. 30.21 %
+  published move if the FULL oracle gap were realised on every prompt: +4.7855 %
+
+===============================================================================
+WIDTH SURROGATE FOR THE SCORING PROMPTS
+===============================================================================
+One local fixture cannot produce eight prompts. The cap sweep moves
+the local mean verify width across the band the scoring prompts
+occupy, so each leg is the nearest available surrogate for the
+prompt at its width. This is a width match, not a prompt match.
+
+leg           width    prompt  prompt w  oracle %  1bitG %  fixed %
+e94c4a        4.918    beagle     5.382      3.04     1.72    +0.78
+e94c5a        5.804  republic     5.989      5.81     4.31    +2.58
+e94c6a        6.576  medicine     6.256      5.65     4.39    +4.94
+e94c7a        7.359    botany     7.148      7.40     5.74    +6.38
+
+wrote research/e99-artifacts/oracle-prelim.json
