@@ -226,15 +226,36 @@ static void placement(const char *label, int policy) {
       if (kr != KERN_SUCCESS) printf("%-22s thread_policy_set rc=%d\n", label, kr);
       break;
     }
+    case 4: {
+      /* Affinity tags. Documented as a cache-sharing hint, and widely reported
+       * to be unimplemented on Apple silicon, but it is the only placement API
+       * left untested and the check is cheap. */
+      struct thread_affinity_policy p = {.affinity_tag = 1};
+      kern_return_t kr = thread_policy_set(
+          mach_thread_self(), THREAD_AFFINITY_POLICY, (thread_policy_t)&p,
+          THREAD_AFFINITY_POLICY_COUNT);
+      printf("%-22s thread_policy_set rc=%d%s\n", label, kr,
+             kr == KERN_NOT_SUPPORTED ? " (KERN_NOT_SUPPORTED)" : "");
+      break;
+    }
     default: break;
   }
+  /* Policies 5 and above spin for `prewarm_us` immediately before the burst,
+   * to ask whether a short recent-utilisation spike is enough to earn a
+   * performance core, which would be far cheaper than a continuous spin. */
+  long prewarm_us = policy >= 5 ? (policy == 5 ? 2000 : policy == 6 ? 10000 : 40000) : 0;
   long ecore = 0, pcore = 0, unknown = 0;
   double ghz[64];
   long hits[64];
   memset(ghz, 0, sizeof ghz);
   memset(hits, 0, sizeof hits);
   for (int r = 0; r < PLACE_ROUNDS; r++) {
-    usleep(150000);
+    usleep((useconds_t)(150000 - prewarm_us));
+    if (prewarm_us) {
+      uint64_t w0 = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+      while (clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - w0 < (uint64_t)prewarm_us * 1000)
+        sink = chain(sink + 1, 2000);
+    }
     struct rusage_info_v4 a, b;
     size_t cpu = 0;
     pthread_cpu_number_np(&cpu);
@@ -271,6 +292,10 @@ int main(int argc, char **argv) {
     placement("B userinteractive", 1);
     placement("C uix + UI_FOCAL role", 2);
     placement("D time-constraint RT", 3);
+    placement("E affinity tag", 4);
+    placement("F prewarm 2ms", 5);
+    placement("G prewarm 10ms", 6);
+    placement("H prewarm 40ms", 7);
     return 0;
   }
   if (argc > 1 && strcmp(argv[1], "keepalive") == 0) {
