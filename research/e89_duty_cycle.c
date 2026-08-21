@@ -155,16 +155,31 @@ static void coremap(const char *label, qos_class_t qos) {
 #define PLACE_ROUNDS 60
 
 /* Hold the thread's duty cycle up during the GPU wait and see where the
- * scheduler puts it. `pct` is the percentage of each 5 ms slice of the wait
- * that the thread spends running instead of sleeping. */
+ * scheduler puts it. `pct` is the target percentage of each 5 ms slice of the
+ * wait that the thread spends running instead of sleeping.
+ *
+ * The spin is bounded by the wall clock, not by an iteration count, because an
+ * iteration count silently under-delivers once the thread is demoted to a
+ * slower core: that is exactly the state under test, so a fixed count makes the
+ * high-duty arms unreachable. The duty cycle actually achieved is measured and
+ * reported next to the target. */
+#define SLICE_NS 5000000ULL
+
 static void keepalive(const char *label, int pct) {
   long ecore = 0, pcore = 0, unknown = 0;
   double ghz = 0;
   long n = 0;
+  uint64_t busy_ns = 0, wall_ns = 0;
   for (int r = 0; r < PLACE_ROUNDS; r++) {
     for (int slice = 0; slice < 30; slice++) { /* 30 x 5 ms = 150 ms */
-      if (pct > 0) sink = chain(sink + 1, (long)pct * 25000 / 10);
-      if (pct < 100) usleep((useconds_t)(5000 - 50 * pct));
+      uint64_t s0 = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+      uint64_t spin_ns = SLICE_NS * (uint64_t)pct / 100;
+      uint64_t s1 = s0;
+      while (spin_ns && (s1 = clock_gettime_nsec_np(CLOCK_UPTIME_RAW)) - s0 < spin_ns)
+        sink = chain(sink + 1, 2000);
+      busy_ns += s1 - s0;
+      if (pct < 100) usleep((useconds_t)((SLICE_NS - spin_ns) / 1000));
+      wall_ns += clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - s0;
     }
     struct rusage_info_v4 a, b;
     size_t cpu = 0, cpu2 = 0;
@@ -181,8 +196,10 @@ static void keepalive(const char *label, int pct) {
     ghz += (double)(b.ri_cycles - a.ri_cycles) / (double)(t1 - t0);
     n++;
   }
-  printf("%-22s keepalive=%3d%%  ecore=%2ld pcore=%2ld migrated=%2ld  burst %5.3fGHz\n",
-         label, pct, ecore, pcore, unknown, n ? ghz / (double)n : 0.0);
+  printf("%-14s target=%3d%% actual=%5.1f%%  ecore=%2ld pcore=%2ld migrated=%2ld"
+         "  burst %5.3fGHz\n",
+         label, pct, wall_ns ? 100.0 * (double)busy_ns / (double)wall_ns : 0.0,
+         ecore, pcore, unknown, n ? ghz / (double)n : 0.0);
 }
 
 static void placement(const char *label, int policy) {
@@ -257,8 +274,10 @@ int main(int argc, char **argv) {
     return 0;
   }
   if (argc > 1 && strcmp(argv[1], "keepalive") == 0) {
-    keepalive("warmup, discard", 0);
-    for (int pct = 0; pct <= 100; pct = pct ? pct * 2 : 5) keepalive("sweep", pct);
+    keepalive("warmup", 0);
+    static const int duty[] = {0, 10, 25, 40, 55, 70, 85, 95, 100};
+    for (unsigned i = 0; i < sizeof duty / sizeof *duty; i++)
+      keepalive("sweep", duty[i]);
     return 0;
   }
   if (argc > 1 && strcmp(argv[1], "coremap") == 0) {
