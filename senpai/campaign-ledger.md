@@ -27479,3 +27479,404 @@ prevalence, not a two-valued switch.
   before submission.
 - E93 changed no scored byte. `git ls-tree` at `1d10e151` and at `b81a43d4`
   return identical `Sources`, `Vendor` and `mtp-head.manifest.json` ids.
+
+## 241. E92 terminal: the verify-width cliff, the depth-4 dominance theorem, and the ranked operating point. Advisor error 37.
+
+Advisor entry, 2026-08-21 06:35 UTC, at advisor head `34d26c2e`.
+
+This entry records edward's terminal E92 result, the assumption-free theorem it
+supports, a correction to the margin I first published for that theorem, and
+three student findings that arrived in the same cycle: alphonse's MLX
+active-task throttle, askeladd's donation-failure diagnosis, and arm-G
+leftovers on thorfinn's submission branch.
+
+### 241.1 E92 production sweep, terminal
+
+Edward, PR #94, W&B `ytcemy51`, sync-head control `afcgo536`. Job `2694a061`,
+exit 0, about 60 minutes, 18 legs, tags `e92p{1..9}{c,d}`, `pin_purity=1.000`,
+512 decode tokens, declared head, ungated ABBA. Per-width `c`/`d` spread at
+most 2.1 %; round-busy spread at most 0.65 %.
+
+```
+ M   G   verify us   round busy us   marg verify   marg round     GB/s   % of 265
+ 1   1    64,445.4        64,445.4            -            -    223.6      84.4
+ 2   1    69,608.6        69,775.5      5,163.1      5,330.1    207.0      78.1
+ 3   1    73,920.8        74,778.4      4,312.2      5,002.9    195.0      73.6
+ 4   1    84,856.9        86,237.4     10,936.1     11,459.1    169.8      64.1
+ 5   2   124,161.6       126,103.1     39,304.8     39,865.7    232.2      87.6
+ 6   2   136,363.9       137,842.6     12,202.2     11,739.6    211.4      79.8
+ 7   2   147,265.7       150,431.4     10,901.9     12,588.8    195.7      73.9
+ 8   2   158,713.1       163,957.1     11,447.3     13,525.7    181.6      68.5
+ 9   3   196,838.2       204,028.5     38,125.2     40,071.5    219.7      82.9
+```
+
+The step into width 5 is 3.48x the step into 4 and 3.40x the step into 6. The
+step into 9 is 2.96x the step into 8. Both land exactly where `G = ceil(M/4)`
+increments in the `quantized.h:1924-1977` WIDE switch. Pooled verify bandwidth
+226.0 GB/s against a predicted 229.6, a 1.6 % miss, which reconfirms the
+90.8 / 9.2 verify-to-head split.
+
+`get_qmv_batch_limit` branches only on `arch_gen == 13 || 14`, so the boundary
+**location** cannot move between gen 16 and gen 17. Only its height can.
+
+The sync-head control moves attribution but not device time: -0.175 %,
+-0.279 % and +0.045 % at M1, M6 and M9. That reconfirms the E90 scheduling
+negative from a second direction.
+
+### 241.2 Unbiased per-position acceptance: E79 confirmed
+
+`research/e92-artifacts/acceptance-profile.json`:
+
+```
+position   1       2       3       4       5       6       7       8
+q_i     0.9659  0.9652  0.9543  0.9486  0.9487  0.9859  0.9451  0.8333
+```
+
+E79's flat 0.9551 is confirmed and is **not** survivorship-biased. My standing
+doubt is withdrawn.
+
+Pooled `Y(d)`: 1.9659, 2.8981, 3.7878, 4.6317, 5.4324, 6.2217, 6.9678, 7.5895.
+Pinned `Y(d)`: 1.9800, 2.9042, 3.8320, 4.6700, 5.2989, 6.1644, 6.9219, 7.4483.
+
+The shipped prior `0.85 * 0.98^i` in `recordAcceptOutcome` is wrong in level and
+in shape against this. That is a separate experiment. It must not be bundled
+into E94, because it changes the walk's inputs everywhere at once and would
+confound the depth arms.
+
+### 241.3 Measured cost per token, and the depth-4 anomaly
+
+Production round busy divided by `Y`:
+
+```
+depth        1        2        3        4        5        6        7        8
+pinned  35,240.2 25,748.4 22,504.5 27,002.8 26,013.4 24,403.3 23,686.7 27,392.6
+pooled  35,492.9 25,802.6 22,767.1 27,226.1 25,374.2 24,178.5 23,530.7 26,883.0
+```
+
+**Depth 4 is the most expensive of depths 2 through 8, by 20.0 %. Depth 3 is
+the cheapest.** The local `snap4` prize is 0.859 % pooled and 0.874 % pinned of
+the 12,023,171 us leg, against a 0.143 % session null, so six times the null.
+
+Edward's caveat, which I accept: the adaptive schedule reaches depth 7 only when
+the head is hot, and those 60 rounds accept 6.133 drafts, so adaptive depth 7
+costs 22,986 us per token against fixed depth 3's 22,504. That is a 2.1 % gap,
+not 5.3 %. "Always draft 3" is therefore **not** a free win, and `snap4` rather
+than `amine92` is the candidate.
+
+### 241.4 The depth-4 dominance theorem, assumption-free
+
+Let `a_i = prod_{j<=i} q_j`, so `Y(3) = 1 + a1 + a2 + a3` and
+`r4 = Y(4) - Y(3) = a4`. Acceptance probabilities are at most 1, so
+`a1 >= a2 >= a3 >= a4`. Hence
+
+```
+Y(4)/Y(3) = 1 + a4 / (1 + a1 + a2 + a3)
+         <= 1 + a4 / (1 + 3*a4)
+         <= 1.25,   attained only in the limit q -> 1
+```
+
+**`Y(4)/Y(3) <= 1.25` holds for every acceptance profile that can exist.** No
+fit, no EMA, no per-position estimate, no prompt dependence.
+
+Measured against it: `C(w5)/C(w4) = 126,103.1 / 86,237.4 = 1.4623`.
+
+`1.25 < 1.4623`, so a depth-4 round is dominated by a depth-3 round
+unconditionally. The result uses two measured numbers and one combinatorial
+inequality. It does not use `makeMeasuredDepthPrice`, the rescaling to
+`8h = 1.44`, the `pure`-versus-`hadd` choice, or any acceptance estimate, so it
+survives every objection available against the fitted price array.
+
+Margins, computed by `_advisor_scratch/snap4margin.py`:
+
+| normalisation | M4 Pro measured | M5 at a 1.126x flatter cliff |
+|---|---:|---:|
+| `C(w5)/C(w4)` against the 1.25 ceiling | 17.0 % | 12.8 % |
+| marginal step into width 5 must fall | 39,866 to 21,559 us = 45.9 % | 35,405 to 21,559 us = 39.1 % |
+| rescaled `m4` must fall | 0.411272 to 0.306204 = 25.5 % | 0.365250 to 0.306204 = 16.2 % |
+
+At a realistic flat acceptance near 0.955 rather than the `q -> 1` worst case,
+the rescaled `m4` margin widens to 33.7 % on M4 Pro and 25.4 % on M5.
+
+For depth 4 to become viable on M5 at perfect acceptance, the marginal step
+into width 5 must fall 39.1 % below the measured value, a total cliff
+flattening of 1.343x against the 1.126x already assumed. The `G = ceil(M/4)`
+increment that creates the step cannot move between gen 16 and gen 17.
+**`snap4` transfers.**
+
+### 241.5 Advisor error 37
+
+I first published this margin as 29 %, by holding `Y3 = 3.832` fixed while
+letting `r4` rise to its ceiling of 1. Those two cannot move independently:
+`r4 = 1` forces every acceptance probability to 1 and therefore `Y3 = 4`.
+Maximising one while fixing the other is not a valid bound.
+
+Edward's original 0.735 % is also not the decision margin, for a different and
+more interesting reason. He rearranged the decision to
+`r4 * (C3 - 3*m4) > m4` and read the margin off the coefficient:
+`C3 - 3*m4 = 1.224816 - 1.233816 = -0.009`, which is 0.735 % of `C3`. That
+coefficient really is near zero, but a coefficient near zero does not make the
+decision near. The required `r4` is `m4 / (C3 - 3*m4) = -45.7`, so the failure
+is not marginal at all. The near-zero value is a coincidence of the
+rearrangement.
+
+Both readings are superseded by 241.4.
+
+### 241.6 The ranked operating point, from the board
+
+Per-prompt fields on the crown `8819b108`, `officialMetrics.per_prompt`:
+
+| prompt | `effective_mean_draft_len` | `non_drafting_round_count` |
+|---|---:|---:|
+| botany | 6.1481 | 0 |
+| medicine | 5.2556 | 0 |
+| essays | 5.0870 | 0 |
+| republic | 4.9892 | 0 |
+| beagle | 4.3818 | 0 |
+| travel | 2.6557 | 0 |
+| drama | 2.2976 | 0 |
+| plutarch | 0.1540 | 449 |
+
+Two new facts. On seven of eight prompts the walk **never** declines to draft;
+the non-drafting state is a plutarch-only phenomenon. And the two prompts that
+set the published score sit at mean chosen depth 4.38 and 5.09, against the
+local fixture's 6.359, which is why the local depth-4 round share of 6.4 %
+understates the ranked share.
+
+Chosen-depth histogram from the three unpinned local legs, all identical, 78
+rounds: depth 1 one round, depth 3 four, depth 4 five, depth 5 five, depth 6
+three, depth 7 sixty. Mean depth 6.359, verify width 7.36.
+
+### 241.7 The ranked price of `snap4`, and what is still unknown
+
+```
+cost per token at depth 4 on M5 = 121,642 / 4.670 = 26,048 us
+cost per token at depth 3       =  86,237 / 3.832 = 22,505 us
+saving per depth-4 round        = 13.6 %
+ranked decode share, beagle     = 0.914
+ranked leg saving               = 12.4 % x (token share carried by depth-4 rounds)
+```
+
+| depth-4 token share | ranked leg saving |
+|---:|---:|
+| 6.4 %, the local histogram | +0.80 % |
+| 15 % | +1.86 % |
+| 21.6 %, ledger 207 | +2.68 % |
+
+The dominance result is settled. The **share** is not, and it is the entire
+multiplier on the prize. That is what the E94 cap-4, cap-5 and cap-8 screens
+must measure; the depth histogram is the primary output and the
+seconds-per-token delta is confirmation.
+
+`snap4` is now first or second on the submission ladder, alongside thorfinn's
+arm C at +1.46 %.
+
+### 241.8 Ranked guard rail against uniform shallowing
+
+`h = 0.32`, twice the shipped 0.18, scored 2.84585 on the ranked runner, which
+is -14 %. Uniform shallowing is ranked-catastrophic because it drives rounds to
+depths 1 and 2 at 35,240 and 25,748 us per token against depth 3's 22,504. No
+ranked result exists against a **targeted** guard, which is why `snap4` is alive
+and `amin` and `amine92` remain screens only.
+
+### 241.9 `measuredRawDepthPrice` refit
+
+`research/e92-artifacts/depth-price-refit.json`. After
+`makeMeasuredDepthPrice` rescaling to `8h = 1.44`:
+
+```
+production_pure  0.054987 0.051612 0.118217 0.411272 0.121110 0.129871 0.139537 0.413395
+production_hadd  0.107193 0.101751 0.144108 0.325511 0.152204 0.143889 0.147377 0.317968
+sync_head_pure   0.054846 0.051304 0.118140 0.414950 0.116943 0.140468 0.133325 0.410025
+sync_head_hadd   0.098103 0.096068 0.139800 0.332756 0.139024 0.154451 0.149582 0.330215
+shipped e68_pbfit 0.120143 0.133370 0.158251 0.183781 0.289106 0.199179 0.161977 0.194194
+```
+
+`production_pure` is adopted. The head marginal is about 2.3 ms against a
+64.5 ms width-1 anchor, so the honest additive term is 0.036 and not 0.18, and
+`hadd` double-charges it.
+
+### 241.10 Alphonse: the MLX active-task throttle
+
+`research/e89_block_budget.py`, 1,290 fast and 390 slow rounds, medians:
+
+```
+span                       wall us   thread CPU us   blocked us
+verify_build window         82,899           5,000       77,899
+eval at :1518               76,960             385       76,575
+whole round                165,200           6,648      154,474
+```
+
+Duty 4.02 % fast and 15.27 % slow. He retracted his own continuous-spin design:
+spinning only at `:1518` reaches 50.38 % duty, which sits inside the band where
+every arm of his own sweep stayed on the efficiency cluster; spinning at both
+regions reaches 97.53 %.
+
+The second blocked region is MLX's active-task throttle:
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/transforms.cpp:270`,
+`static constexpr int MAX_ACTIVE_TASKS = 10;`, reaching
+`scheduler::wait_for_one()` at `scheduler.h:100`, entered through the decode
+`asyncEval` ladder at `Qwen35.swift:2692-2749` on rungs
+`{0,1,9,19,29,39,49,57}`. `mlx/transforms.cpp` is **not** editable;
+`Qwen35.swift` **is**.
+
+Poll API verified: `Vendor/mlx-swift/Source/Cmlx/mlx-c/mlx/c/array.h:388`
+declares `int _mlx_array_is_available(bool*, const mlx_array)`, `extern "C"`,
+non-blocking, and `MLXArray.ctx` is `public internal(set)` at
+`MLXArray.swift:10`. `Sources/MLXFastModel/Qwen36MTPEvalPoll.swift` is
+committed, 17 lines, no call site, and both builds succeed with no
+`Package.swift` change.
+
+**Valuation, and it is not what the discovery looks like.** E90 measured the
+round at 99.5 % GPU busy: 163,737.7 us busy against 165,183.9 us of round, with
+840.4 us of idle. E92 then showed that overlapping the head chain with verify at
+M9 moves 11,036 us out of `d_submit2` and verify absorbs all of it, a 0.014 %
+difference. The device is throughput-limited, not occupancy-limited, so hoisting
+the wait **cannot add throughput**. The value is entirely the duty side effect on
+cluster placement. Recorded as: a second, larger blocked region exists, it is
+reachable from an editable file, and it is the only lever that can lift achieved
+duty from 50 % to 97.5 %.
+
+### 241.11 Alphonse: rung A contamination, quarantined and pre-registered
+
+He kept working in the shell after launching the rung-A session, injecting host
+contention into a host-contention experiment. Legs `ctl-1`, `spin-1` and
+`spin-2` overlap his activity window; he stopped at 06:03:36 and legs 4 through
+20 run on an idle host.
+
+Both finished legs came out mixed rather than latched: `ctl-1` prevalence 0.314
+with 15 E-core and 55 P-core rounds, `spin-1` prevalence 0.214 with 13 and 57.
+In rung 2, eight of ten control legs were pure performance-cluster, one pure
+efficiency-cluster and one mixed, so getting mixed on both of the first two
+rung-A legs is a Fisher exact of 0.0036 against the rung-2 base rate.
+
+He quarantined legs 1 to 3, pre-registered before seeing the data that he would
+report both the 20-leg and the 17-leg analysis and lead with whichever is
+honest, and declined to restart because legs 4 to 20 settle the question at zero
+extra cost. Both decisions accepted. The quarantine rule was fixed in advance on
+a mechanism and a timestamp, not on an outcome.
+
+Advisor guidance added: mixed legs **raise** the power of the test rather than
+lowering it, because per-leg prevalence becomes continuous instead of a
+near-Bernoulli draw. If legs 4 to 20 stay mixed, the correct analysis is a
+Wilcoxon rank-sum on per-leg prevalence with an exact permutation p-value, not a
+declaration that the session is spoiled.
+
+A free readout: the spin reports `warm_spin=ms=200,blocks=16839`, which is 690 M
+dependent iterations per second and, at 6 to 7 cycles of latency, about 4.1 to
+4.5 GHz. That is the first **measured** effective core clock in this campaign
+rather than an inferred one. The field is now permanent on both arms.
+
+Instrument error five, his: adding host contention to a host-contention
+experiment. The fix is a rule and it is now campaign-wide. **Once a probe
+session is launched, the host is off limits until it terminates. Prepare and
+commit every analysis script before launch.**
+
+### 241.12 Askeladd: E95 rung 1a is a STOP, and it closes E93
+
+The head KV cache full-array copy cannot be removed without a host barrier.
+
+The blocking reference is the read window that `KVCacheSimple.update` returned
+on the previous step, kept alive by the in-flight command buffer's completion
+keep-alive set. The chain:
+
+1. `MLXLMCommon/KVCache.swift:434` — the `slice_update` that must donate.
+2. `MLXLMCommon/KVCache.swift:437` — the returned read window, the blocking
+   reference.
+3. `mlx/backend/common/slicing.cpp:20` — `shared_buffer_slice` makes that read
+   window share the parent's `array::Data` rather than copying.
+4. `mlx/array.h:294` — `is_donatable()` requires
+   `array_desc_.use_count() == 1 && array_desc_->data.use_count() == 1`; the
+   shared `Data` raises the second count to 2.
+5. `mlx/backend/metal/indexing.cpp:731` and `copy.cpp:13-19` — donation fails,
+   so MLX allocates a new capacity-sized buffer and emits the full-array
+   `vn_copy`.
+6. `mlx/backend/metal/eval.cpp:47-67` — **the piece nobody had.** Every
+   evaluated array's inputs have `data_shared_ptr()` inserted into a set the
+   command buffer's completed handler captures. The reference lives until the
+   **GPU** finishes that buffer, not until Swift releases the value.
+
+Probe `Tests/MLXFastTests/E95DonationProbeTests.swift`, env-gated, real
+`KVCacheSimple`, `mlx_array_data_float32` pointer identity plus
+`Memory.peakMemory`, exit 0 in 13.1 s, `capacity_bytes = 16,777,216`,
+16 steps:
+
+| arm | `buffer_moved` | peak / (K+V) |
+|---|---|---:|
+| `lazy_read`, the head chain | true | 16.01x |
+| `lazy_no_read` | false | 1.01x |
+| `async_read` | true | 8.00x |
+| `sync_read` | false | 1.00x |
+| `sync_no_read` | false | 1.00x |
+
+`asyncEval` does **not** retire the keep-alive set; a blocking `eval` does; and
+the head chain already uses `asyncEval`. So the only route to donation is a host
+barrier between marginal draft steps.
+
+This explains all three E93 observations with one mechanism and no free
+parameters: no copy on the first head call, because the round-tail blocking
+`eval` has already retired the prior buffers; copies on every marginal step
+after it; and no copies in target verify, where each layer's cache is updated
+once per round with a blocking `eval` between rounds.
+
+**Recorded as a measured rejection, not a rule-triggered one.** The head chain
+overlaps about 2.4 ms per step of host graph construction against about 2.2 ms
+per step of GPU work. A per-step blocking `eval` serialises them to recover the
+26 to 30 us of `vn_copy`, a loss of more than an order of magnitude, and it also
+destroys the pipelining E85 and E93 both measured.
+
+He also cleared the rollback risk he raised himself: the head cache is a
+`KVCacheSimple`, head rollback goes through `trimTrimmable` to
+`KVCache.swift:467-472` which only decrements `offset`, and the recurrent
+snapshot and rollback functions apply only to the target's `ArraysCache`
+entries and build fresh slice expressions. Nothing depends on `slice_update`
+producing a fresh array.
+
+Advisor decision on the rider: build the Q-row shrink, do **not** time it. It is
+the same dead-work-elimination mechanism the crown `8819b108` promoted at
++0.00901 published, so it closes a parity gap with the crown, and it is the only
+adjacent island form with a ranked accept — five rival attempts at island-row
+*restructuring* have been rejected. Its expected value of 0.0352 % is nine times
+below the serial-free detection floor, so no timing session can resolve it. The
+evidence contract is exactness plus dispatch and byte counters, and it is held as
+a certified rider for composition into the next above-floor submission. Rung 2,
+the per-dispatch census of `target_verify` at M=4 and M=5, gets the GPU.
+
+### 241.13 Arm-G leftovers on thorfinn's submission branch
+
+`git diff c05403c4 960bd973 -- Sources Vendor` shows `Qwen35.swift +162/-48`,
+`quantized.h +21/-13` and `mlx-generated/quantized.cpp +21/-13`. The kernel
+change generalises `qmv_fast_singlerow_affine2_g64<T>` to
+`qmv_fast_singlerow_affine2<T, group_size>` with
+`static_assert(group_size % 32 == 0)` and widens the `:1913` gate from
+`group_size == 64` to `(group_size == 64 || group_size == 128)`.
+
+It is value-for-value identical at g64, so it is dead code, and arm G is FACT 22,
+a measured dead end. Ordered removed before submission. Required end state:
+`git diff 34d26c2e -- Vendor/mlx-swift/` is empty.
+
+### 241.14 PR #94 merge conflict and its resolution
+
+`merge_experiment` failed on a content conflict in
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`: base blob `1c12781b`, ours
+`992eb655`, theirs `49aa9eea`. Both sides edited the `begin(seedTokens:)` trace
+emit. Edward's side removed `head_submit=\(Self.headSubmitPolicy)`, which is the
+rung-0a cleanup that was ordered. The advisor side, from E91 on PR #93, added
+`cpuBegin0`, `cpuBeginDone` and the `wall_us=` and `cpu_us=` trace fields.
+
+Resolution is to keep both: drop `head_submit=`, keep `wall_us=` and `cpu_us=`,
+and let `cpu_us=` carry the newline. `threadCPUNanoseconds()` is defined at
+`:805`, outside the conflict, so it merges on its own. Everything else on the
+branch auto-merges, including the `E90GPUIntervalLedger.swift` deletion, the
+`RuntimeStartupMemoryPolicy.swift` hook removal, the whole
+`MLX_QWEN_MTP_HEAD_SUBMIT` block and the `asyncEval(draftId)` call in the chain
+loop. All of that is wanted.
+
+PR #94 routed back to `wip` with `needs-rebase` so edward can resolve and
+re-submit.
+
+### 241.15 Instruments added
+
+- `_advisor_scratch/snap4margin.py` — the depth-4 dominance theorem and its
+  three margin normalisations on M4 Pro and M5.
+- `_advisor_scratch/oppoint.py` — per-prompt ranked operating point from
+  `officialMetrics.per_prompt`.

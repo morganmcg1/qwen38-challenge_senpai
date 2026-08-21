@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- **2026-08-21 06:10 UTC.** Campaign active, no round limit.
+- **2026-08-21 06:40 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22 — execute aggressively
   toward the winning frontier. No new human instruction since.
 - Campaign base: `1d10e15105870d4a9f5db7fd9218fa728b2265f7` (merge of PR #95).
@@ -45,6 +45,57 @@ Retired by this: the "same-mode residual sd 0.1025 %" constant, the ticket
 model built on it, and the single-pair prices for E84 (`-0.109 %`), E85
 (`-0.199 %` and `+0.022 %`) and the `8819b108` Q-row shrink (`+0.035 %`). See
 ledger 240.
+
+---
+
+## 0b. THE DEPTH-4 DOMINANCE THEOREM. The strongest result we hold.
+
+E92 measured the production round-busy cost at every verify width. Depth 4 is
+the most expensive draft depth of 2 through 8, by `20.0 %`, because verify
+width 5 is where `G = ceil(M/4)` increments in the `quantized.h:1924-1977` WIDE
+switch. The marginal step into width 5 is `39,865.7 us`, which is `3.48x` the
+step into 4 and `3.40x` the step into 6.
+
+The theorem needs no cost-model fit. With `a_i = prod_{j<=i} q_j`, acceptance
+probabilities at most 1 give `a1 >= a2 >= a3 >= a4`, so
+
+```
+Y(4)/Y(3) = 1 + a4/(1 + a1 + a2 + a3) <= 1 + a4/(1 + 3*a4) <= 1.25
+```
+
+for **every acceptance profile that can exist**. Measured against it,
+`C(w5)/C(w4) = 126,103.1/86,237.4 = 1.4623`. Since `1.25 < 1.4623`, a depth-4
+round is dominated by a depth-3 round unconditionally. Two measured numbers,
+one combinatorial inequality, no rescaling and no acceptance estimate.
+
+Margins, from `research/depth4_dominance.py`:
+
+| normalisation | M4 Pro measured | M5, cliff `1.126x` flatter |
+|---|---:|---:|
+| `C(w5)/C(w4)` against the `1.25` ceiling | `17.0 %` | `12.8 %` |
+| marginal step into width 5 must fall | `45.9 %` | `39.1 %` |
+| rescaled `m4` must fall | `25.5 %` | `16.2 %` |
+
+`get_qmv_batch_limit` branches only on `arch_gen == 13 || 14`, so the boundary
+**location** cannot move between gen 16 and gen 17. **`snap4` transfers.**
+
+**What is settled and what is not.** The dominance is settled. The *share* of
+ranked tokens carried by depth-4 rounds is not, and it is the entire multiplier
+on the prize: `+0.80 %` at the local `6.4 %` share, `+1.86 %` at `15 %`,
+`+2.68 %` at ledger 207's `21.6 %`. The ranked walk sits at mean chosen depth
+`4.3818` on beagle and `5.0870` on essays against the local fixture's `6.359`,
+so the local share understates the ranked one. E94's cap-4, cap-5 and cap-8
+screens measure it; the depth histogram is the primary output.
+
+**Guard rail.** `h = 0.32`, uniform shallowing, scored `2.84585` ranked, which
+is `-14 %`. Uniform shallowing is catastrophic because depths 1 and 2 cost
+`35,240` and `25,748 us` per token against depth 3's `22,504`. Only a
+**targeted** guard is alive. `amin` and `amine92` stay screens.
+
+Advisor error 37: I first published this margin as `29 %`, holding `Y3` fixed
+while letting `r4` reach 1, which is inconsistent. Edward's `0.735 %` reads a
+near-degenerate coefficient of a rearranged inequality and is not the decision
+margin either. See ledger 241.
 
 ---
 
