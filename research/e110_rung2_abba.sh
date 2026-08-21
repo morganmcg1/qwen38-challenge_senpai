@@ -2,25 +2,32 @@
 # E110 rung 2: `xv4` against the unchanged base, ABBA-counterbalanced inside
 # one session.
 #
-#   usage: research/e110_rung2_abba.sh [REPLICATES] [TOKENS] [LABEL]
+#   usage: research/e110_rung2_abba.sh [REPLICATES] [TOKENS] [LABEL] [FIRST]
 #
 # Each replicate runs base, xv4, xv4, base in that order. The arm effect is
 # therefore orthogonal to monotone thermal drift to first order, and the two
 # same-arm pairs give the session null. Every leg rebuilds the worker and
 # witnesses its own arm in the JIT string before and after it is timed.
 #
-# Rung 2 was run as `research/e110_rung2_abba.sh 2 512 r2`.
+# FIRST numbers the first replicate, so a later session EXTENDS an existing
+# estimate instead of restarting it. Each replicate is a self-contained ABBA
+# quad, so replicates pool across sessions; the per-replicate base-pair drift
+# is the null that shows whether they may.
+#
+# Rung 2 ran as `research/e110_rung2_abba.sh 3 512 r2` then
+# `research/e110_rung2_abba.sh 3 512 r2 4`.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 replicates="${1:-2}"
 tokens="${2:-512}"
 label="${3:-r2}"
+first="${4:-1}"
 
 export E110_EXPERIMENT="e110-rung2"
 
 failures=0
-for ((rep = 1; rep <= replicates; rep++)); do
+for ((rep = first; rep < first + replicates; rep++)); do
   position=0
   for arm in base xv4 xv4 base; do
     position=$((position + 1))

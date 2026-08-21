@@ -15,10 +15,8 @@
 # able to fail, and because the two arms swap require and forbid, each of the
 # three needles below is proven able to fire inside every ABBA session.
 #
-# `rebuild-and-assert-worker.sh` matches with `grep` in BRE mode, so `[` and
-# `]` MUST be escaped. An unescaped `xm[0]` is the character class `[0]` and
-# silently matches nothing, which turns `--require` into a false failure and
-# `--forbid` into a guard that cannot fail.
+# The needles below are literal. `rebuild-and-assert-worker.sh` matches with
+# `grep -F` since HARNESS DEFECT 14 was fixed, so brackets must NOT be escaped.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -31,8 +29,8 @@ readonly TWIN="Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 readonly PATCH="research/e110-artifacts/e110-xv4.patch"
 
 readonly XV4_LOAD='const vec<T, 4> xv = '
-readonly XV4_SUM='sums\[m\] += xv\[0\] + xv\[1\] + xv\[2\] + xv\[3\];'
-readonly BASE_SUM='sums\[m\] += xm\[0\] + xm\[1\] + xm\[2\] + xm\[3\];'
+readonly XV4_SUM='sums[m] += xv[0] + xv[1] + xv[2] + xv[3];'
+readonly BASE_SUM='sums[m] += xm[0] + xm[1] + xm[2] + xm[3];'
 
 case "${arm}" in
   xv4)  require=("${XV4_LOAD}" "${XV4_SUM}"); forbid=("${BASE_SUM}") ;;

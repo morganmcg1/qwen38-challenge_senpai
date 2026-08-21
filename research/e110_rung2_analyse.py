@@ -33,6 +33,12 @@ RANKED_TRANSFER = 0.95
 PROMOTION_BAR_PCT = 0.20
 ADVANCE_BAR_PCT = -0.50
 RUNG3_BAR_PCT = -0.40
+# f4 item 8: advance when the point estimate is negative AND its upper
+# confidence bound excludes a regression larger than this.
+NO_REGRESSION_BAR_PCT = 0.20
+
+T95_TWO_SIDED = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447,
+                 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179}
 
 # Rule 35 repeatability of this local harness.
 REPEATABILITY_MTP_PCT = 0.33
@@ -68,6 +74,8 @@ def main(argv=None) -> int:
     ap.add_argument("--tokens", type=int, default=512)
     ap.add_argument("--label", default="r2")
     ap.add_argument("--exactness", default="research/out/e110/rung2-exactness.json")
+    ap.add_argument("--session-split", type=int, default=0,
+                    help="last replicate of session 1; 0 means one session")
     args = ap.parse_args(argv)
 
     order = ["base", "xv4", "xv4", "base"]
@@ -129,19 +137,42 @@ def main(argv=None) -> int:
 
     def pooled(short: str) -> dict:
         values = [row[f"{short}_pct"] for row in per_replicate]
-        spread = statistics.stdev(values) if len(values) > 1 else 0.0
+        n = len(values)
+        mean = statistics.fmean(values)
+        spread = statistics.stdev(values) if n > 1 else 0.0
+        sem = spread / n ** 0.5 if n > 1 else None
+        half = T95_TWO_SIDED.get(n - 1, 1.96) * sem if sem is not None else None
         return {
-            "mean_pct": statistics.fmean(values),
+            "mean_pct": mean,
             "median_pct": statistics.median(values),
             "stdev_pct": spread,
-            "sem_pct": spread / len(values) ** 0.5 if len(values) > 1 else None,
+            "sem_pct": sem,
+            "t95_half_width_pct": half,
+            "ci95_lower_pct": mean - half if half is not None else None,
+            "ci95_upper_pct": mean + half if half is not None else None,
             "min_pct": min(values),
             "max_pct": max(values),
-            "n_replicates": len(values),
+            "n_replicates": n,
         }
 
     mtp, serial, ratio = pooled("mtp_spt"), pooled("serial_spt"), pooled("ratio")
     headline = mtp["mean_pct"]
+
+    # Replicates pool across sessions only if the sessions agree, so report
+    # them separately and let that assumption be checked rather than assumed.
+    per_session = []
+    if args.session_split:
+        for index, keep in ((1, False), (2, True)):
+            rows = [row for row in per_replicate
+                    if (row["replicate"] > args.session_split) == keep]
+            if rows:
+                per_session.append({
+                    "session": index,
+                    "replicates": [row["replicate"] for row in rows],
+                    "n": len(rows),
+                    "mtp_spt_pct_mean": statistics.fmean(
+                        row["mtp_spt_pct"] for row in rows),
+                })
 
     entry = [leg["gpu_temp_entry_c"] for leg in legs
              if leg["gpu_temp_entry_c"] is not None]
@@ -192,6 +223,9 @@ def main(argv=None) -> int:
             "mtp_spt_pct_median": mtp["median_pct"],
             "mtp_spt_pct_stdev": mtp["stdev_pct"],
             "mtp_spt_pct_sem": mtp["sem_pct"],
+            "mtp_spt_pct_t95_half_width": mtp["t95_half_width_pct"],
+            "mtp_spt_pct_ci95_lower": mtp["ci95_lower_pct"],
+            "mtp_spt_pct_ci95_upper": mtp["ci95_upper_pct"],
             "mtp_spt_pct_min": mtp["min_pct"],
             "mtp_spt_pct_max": mtp["max_pct"],
             "mtp_spt_base_mean_s": statistics.fmean(
@@ -214,6 +248,12 @@ def main(argv=None) -> int:
             "repeatability_mtp_pct": REPEATABILITY_MTP_PCT,
             "repeatability_serial_pct": REPEATABILITY_SERIAL_PCT,
             "clears_rung3_bar": headline <= RUNG3_BAR_PCT,
+            "no_regression_bar_pct": NO_REGRESSION_BAR_PCT,
+            "clears_no_regression_rule": bool(
+                headline < 0.0
+                and mtp["ci95_upper_pct"] is not None
+                and mtp["ci95_upper_pct"] < NO_REGRESSION_BAR_PCT),
+            "per_session": per_session,
             "exactness_passed": exact_ok,
             "n_legs": len(legs),
             "n_legs_missing": len(missing),
@@ -250,8 +290,19 @@ def main(argv=None) -> int:
               f"serial {row['serial_spt_pct']:+.3f} % "
               f"ratio {row['ratio_pct']:+.3f} % "
               f"base-pair drift {row['base_pair_drift_pct']:+.3f} %")
+    for row in per_session:
+        print(f"  session {row['session']} k{row['replicates']}: "
+              f"mtp {row['mtp_spt_pct_mean']:+.3f} %")
     print(f"POOLED absolute candidate MTP s/token {headline:+.3f} % "
           f"(sd {mtp['stdev_pct']:.3f}, n {mtp['n_replicates']})")
+    if mtp["t95_half_width_pct"] is not None:
+        print(f"  95 % CI [{mtp['ci95_lower_pct']:+.3f}, "
+              f"{mtp['ci95_upper_pct']:+.3f}] % "
+              f"(t95 half-width {mtp['t95_half_width_pct']:.3f})")
+    print("  no-regression rule "
+          + ("CLEARED" if doc["summary"]["clears_no_regression_rule"]
+             else "NOT cleared")
+          + f" (upper bound must be < {NO_REGRESSION_BAR_PCT:+.2f} %)")
     print(f"  round frame {doc['summary']['round_frame_pct']:+.3f} % "
           f"ranked {doc['summary']['ranked_frame_pct']:+.3f} %")
     print(f"  exactness {'PASS' if exact_ok else 'FAIL'}; "
