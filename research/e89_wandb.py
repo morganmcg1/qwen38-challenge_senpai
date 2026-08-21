@@ -83,6 +83,7 @@ def main() -> None:
                      config=config)
 
     for key, doc in docs.items():
+        log_scalars(run, key, doc)
         legs = doc.get("legs")
         if isinstance(legs, list) and legs and isinstance(legs[0], dict):
             run.log({f"{key}/legs": table(
