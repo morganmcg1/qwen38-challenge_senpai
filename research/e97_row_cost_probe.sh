@@ -32,7 +32,7 @@ start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 MLXFAST_RUN_E97_ROW_COST=1 \
 MLXFAST_E97_ROW_OUT="${PWD}/${out_dir}/row-cost.json" \
 swift test --force-resolved-versions \
-  --filter 'E97 verify row cost' 2>&1 | tee "${out_dir}/probe.log"
+  --filter E97VerifyRowCostTests 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
 
 exit_c="$(gpu_temp)"
