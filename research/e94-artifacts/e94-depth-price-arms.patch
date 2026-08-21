@@ -1,0 +1,234 @@
+diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+index 49aa9ee..2707b20 100644
+--- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
++++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+@@ -916,17 +916,52 @@ public final class Qwen36MTPBlockSession {
+         0.42510483416251998,
+     ]
+ 
+-    internal static func makeMeasuredDepthPrice() -> DepthPrice {
++    /// E92 rung 2, production sweep, job `2694a061`. `pure` form: the marginal
++    /// ROUND GPU-busy cost of the step into verify width `index + 2`,
++    /// normalised by the width-1 round cost, with no additive `h`. Medians of
++    /// two ABBA-counterbalanced legs per width, 512 decode tokens, pinned
++    /// width, `pin_purity = 1.000` on every leg.
++    ///
++    /// The shape differs from `measuredRawDepthPrice` in the one way that
++    /// matters: the group-transition cliff sits at the step into width 5
++    /// (index 3) and repeats at width 9 (index 7), because the whole-table
++    /// quantized matrix-vector dispatch uses `G = ceil(M / 4)` groups. The
++    /// E68 curve put its cliff at width 6. Both cannot be right on the same
++    /// dispatch table, and `G = ceil(M / 4)` is confirmed both by the timing
++    /// and by the `NA` table in `quantized.h`.
++    ///
++    /// `h` is NOT added here. E68 added a flat 0.18 because the head cost was
++    /// unmeasured; E92 measured the head marginal at ~2.3 ms against a 64.5 ms
++    /// width-1 anchor, which is 0.036, so the additive term was damping the
++    /// shape by about a third for no measured reason.
++    internal static let measuredRawDepthPriceE92: [Double] = [
++        0.08270645,
++        0.07762945,
++        0.17781030,
++        0.61859579,
++        0.18216268,
++        0.19533968,
++        0.20987759,
++        0.62178894,
++    ]
++
++    /// Rescale a raw marginal curve to the shipped total, so an arm changes
++    /// the SHAPE of the price and never its level.
++    internal static func makeDepthPrice(rescaling raw: [Double]) -> DepthPrice {
+         precondition(
+-            measuredRawDepthPrice.count == Qwen36MTPLimits.maxDepth,
+-            "E68 pbfit: measuredRawDepthPrice is not filled from rung 1")
++            raw.count == Qwen36MTPLimits.maxDepth,
++            "depth price: the raw curve is not filled from a rung-1 sweep")
+         let total = Double(Qwen36MTPLimits.maxDepth) * headStepCostRatio
+-        let scale = total / measuredRawDepthPrice.reduce(0.0, +)
+-        let marginal = measuredRawDepthPrice.map { $0 * scale }
++        let scale = total / raw.reduce(0.0, +)
++        let marginal = raw.map { $0 * scale }
+         return DepthPrice(marginal: marginal,
+                           cumulative: prefixCosts(marginal))
+     }
+ 
++    internal static func makeMeasuredDepthPrice() -> DepthPrice {
++        makeDepthPrice(rescaling: measuredRawDepthPrice)
++    }
++
+     internal static func prefixCosts(_ marginal: [Double]) -> [Double] {
+         var out = [1.0]
+         var running = 1.0
+@@ -939,6 +974,24 @@ public final class Qwen36MTPBlockSession {
+ 
+     internal enum DepthPriceArm: String {
+         case ship, pb5, pb7, pbfit
++        /// E94. The shipped greedy walk with one guard: a walk that returns 4
++        /// returns 3 instead. Depth 4 pays the width-5 group-transition step
++        /// and buys one draft position for it, so it is a strict local MAXIMUM
++        /// of modelled cost per token for every acceptance profile, because
++        /// the only free parameter is bounded by 1. One inequality, one guard.
++        case snap4
++        /// E94 implementation check. Global minimum of cost per token over the
++        /// SHIPPED uniform price. The greedy walk stops at the first local
++        /// minimum; against a flat price the two agree on nearly every round,
++        /// so a difference here is a bug in the argmin, not science.
++        case amin
++        /// E94. Global minimum of cost per token over the E92 refit shape.
++        case amine92
++    }
++
++    /// True when the arm replaces the greedy walk with a global minimum.
++    internal static func armUsesArgmin(_ arm: DepthPriceArm) -> Bool {
++        arm == .amin || arm == .amine92
+     }
+ 
+     /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
+@@ -960,6 +1013,8 @@ public final class Qwen36MTPBlockSession {
+         case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
+         case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
+         case .pbfit: return makeMeasuredDepthPrice()
++        case .snap4, .amin: return makeUniformDepthPrice()
++        case .amine92: return makeDepthPrice(rescaling: measuredRawDepthPriceE92)
+         }
+     }()
+ 
+@@ -1077,20 +1132,14 @@ public final class Qwen36MTPBlockSession {
+         if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
+         guard cap > 0 else { return 0 }
+         let price = Self.depthPrice
++        if Self.armUsesArgmin(Self.depthPriceArm) {
++            return argminDepth(cap: cap, price: price)
++        }
+         var reach = 1.0
+         var expected = 0.0
+         var depth = 0
+         while depth < cap {
+-            var p = positionAcceptEMA[depth]
+-            if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
+-                let margin = tail.1[0] - tail.1[1]
+-                let conf = 1.0 / (1.0 + exp(-margin / 2.0))
+-                p = Swift.min(p, conf)
+-            } else if depth == 1, let tail = pendingTop2, tail.1.count >= 2 {
+-                let margin = tail.1[0] - tail.1[1]
+-                let conf2 = 1.0 / (1.0 + exp(-margin / 3.0))
+-                p = Swift.min(p, conf2)
+-            }
++            let p = positionAcceptEstimate(depth)
+             reach *= p
+             let threshold = price.marginal[depth] * (1.0 + expected) /
+                 price.cumulative[depth]
+@@ -1102,9 +1151,58 @@ public final class Qwen36MTPBlockSession {
+             expected += reach
+             depth += 1
+         }
++        if Self.depthPriceArm == .snap4, depth == 4 { return 3 }
+         return depth
+     }
+ 
++    /// The acceptance estimate for one draft position, before anything is
++    /// proposed: the per-position EMA, tightened at the first two positions by
++    /// the pending primary's target top-2 margin.
++    private func positionAcceptEstimate(_ depth: Int) -> Double {
++        var p = positionAcceptEMA[depth]
++        if depth == 0, let tail = pendingTop2, tail.1.count >= 2 {
++            let margin = tail.1[0] - tail.1[1]
++            let conf = 1.0 / (1.0 + exp(-margin / 2.0))
++            p = Swift.min(p, conf)
++        } else if depth == 1, let tail = pendingTop2, tail.1.count >= 2 {
++            let margin = tail.1[0] - tail.1[1]
++            let conf2 = 1.0 / (1.0 + exp(-margin / 3.0))
++            p = Swift.min(p, conf2)
++        }
++        return p
++    }
++
++    /// Global minimum of modelled cost per token over the whole legal depth
++    /// range. The greedy walk stops at the FIRST depth where extending does
++    /// not pay, which is correct only when cost per token has one local
++    /// minimum. A group-transition step breaks that: the step into verify
++    /// width 5 makes depth 4 a local maximum, so the greedy walk can stop at
++    /// depth 3 and never see that depth 7 is cheaper, or stop AT depth 4 when
++    /// the reach is high enough to clear the small width-4 step. This walk
++    /// scores every depth and takes the best one. It reads exactly the same
++    /// inputs as the greedy walk and never changes which tokens are emitted.
++    private func argminDepth(cap: Int, price: DepthPrice) -> Int {
++        var reach = 1.0
++        var expected = 0.0
++        var bestDepth = 0
++        var bestCost = price.cumulative[0]
++        for depth in 0 ..< cap {
++            let p = positionAcceptEstimate(depth)
++            reach *= p
++            expected += reach
++            let cost = price.cumulative[depth + 1] / (1.0 + expected)
++            if Self.traceRounds {
++                scheduleTrace += String(
++                    format: "%d:%.6f/%.6f/%.6f;", depth, p, reach, cost)
++            }
++            if cost < bestCost {
++                bestCost = cost
++                bestDepth = depth + 1
++            }
++        }
++        return bestDepth
++    }
++
+     /// Trace-gated record of the schedule's inputs and its extension walk.
+     /// Written only when the phase trace is on, so the scored schedule runs
+     /// byte-identical arithmetic without it.
+diff --git a/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift b/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
+index 422003b..ec06540 100644
+--- a/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
++++ b/Tests/MLXFastTests/QwenMTPDepthPriceTests.swift
+@@ -262,4 +262,49 @@ struct QwenMTPDepthPriceTests {
+             #expect(walkDepth(pbfit, cap: cap, p: p) == 4)
+         }
+     }
++
++    // E94. The E92 arm holds the shipped level like every other arm, and it
++    // carries the group-transition cliff at the step into verify width 5.
++    @Test("the E92 arm holds the total and puts its cliff at width 5")
++    func e92ArmHoldsTheTotalAndCliffsAtWidthFive() {
++        let price = Qwen36MTPBlockSession.makeDepthPrice(
++            rescaling: Qwen36MTPBlockSession.measuredRawDepthPriceE92)
++        #expect(price.marginal.count == maxDepth)
++        #expect(abs(price.marginal.reduce(0, +) - Double(maxDepth) * h) < 1e-12)
++        let cliff = price.marginal[3]
++        for depth in 0 ..< maxDepth where depth != 3 && depth != 7 {
++            #expect(cliff > 2.0 * price.marginal[depth])
++        }
++    }
++
++    // E94, the theorem `snap4` implements. Depth 4 pays the width-5 step and
++    // buys exactly one draft position for it. Extending from 3 to 4 lowers
++    // cost per token only when `r4 > m3 * Y3 / C3`, and `Y3 >= 1 + 3 * r4`
++    // because reach is non-increasing, so the condition needs
++    // `r4 > (m3 + 3 * m3 * r4) / C3`. With the E92 price `3 * m3 > C3`, so no
++    // acceptance profile can satisfy it: depth 4 is dominated by depth 3 for
++    // every round, not on average.
++    @Test("depth 4 is dominated by depth 3 for every acceptance profile")
++    func depthFourIsAlwaysDominated() {
++        let price = Qwen36MTPBlockSession.makeDepthPrice(
++            rescaling: Qwen36MTPBlockSession.measuredRawDepthPriceE92)
++        #expect(3.0 * price.marginal[3] > price.cumulative[3])
++        for step in 1 ... 100 {
++            let p = Double(step) / 100.0
++            var reach = 1.0
++            var expected = 0.0
++            var best = 0
++            var bestCost = price.cumulative[0]
++            for depth in 0 ..< maxDepth {
++                reach *= p
++                expected += reach
++                let cost = price.cumulative[depth + 1] / (1.0 + expected)
++                if cost < bestCost {
++                    bestCost = cost
++                    best = depth + 1
++                }
++            }
++            #expect(best != 4)
++        }
++    }
+ }
