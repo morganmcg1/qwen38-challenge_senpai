@@ -39,6 +39,8 @@ def wilson(k, n, z=1.96):
 def load(prefix, warmup):
     legs = {}
     for d in sorted(glob.glob(f"research/out/{prefix}-*")):
+        if not os.path.isfile(d + "/trace.txt"):
+            continue
         tag = os.path.basename(d)
         rows = []
         for line in open(d + "/trace.txt"):
@@ -63,19 +65,55 @@ def load(prefix, warmup):
             "spt": metrics["mtp_seconds_per_token"],
             "matched": metrics.get("all_tokens_matched"),
             "draftlen": metrics.get("effective_mean_draft_len"),
+            "warm_spin": warm_spin(d + "/trace.txt"),
         }
     return legs
 
 
-def permutation(legs, key):
-    """Exact one-sided permutation p for 'fix lowers key' over ctl and fix."""
-    obs = [(L["arm"], L[key]) for L in legs.values() if L["arm"] in ("ctl", "fix")]
+def warm_spin(path):
+    """Read every `warm_spin=ms=N,blocks=M` the warm path emitted in one leg.
+
+    Blocks divided by milliseconds is the spin's own throughput, so it reads
+    out the effective clock of the core the untimed warm path ran on.
+    """
+    seen = []
+    for line in open(path):
+        m = re.search(r"warm_spin=ms=(\d+),blocks=(\d+)", line)
+        if m:
+            ms, blocks = int(m.group(1)), int(m.group(2))
+            seen.append({"ms": ms, "blocks": blocks,
+                         "blocks_per_ms": blocks / ms if ms else None})
+    return seen
+
+
+def treated_arm(legs, requested):
+    """Name the arm that `ctl` is compared against.
+
+    A session may carry extra arms that are not part of the contrast, such as
+    the forced-background positive control or a longer-leg side sweep, so the
+    caller names the treated arm when more than one candidate is present.
+    """
+    arms = {L["arm"] for L in legs.values()}
+    if requested is not None:
+        if requested not in arms:
+            raise SystemExit(f"treated arm {requested!r} not in {sorted(arms)}")
+        return requested
+    rest = arms - {"ctl", "bg"}
+    if len(rest) != 1:
+        raise SystemExit(
+            f"ambiguous treated arm among {sorted(rest)}; pass --treated NAME")
+    return rest.pop()
+
+
+def permutation(legs, key, treated):
+    """Exact one-sided permutation p for 'the treated arm lowers key'."""
+    obs = [(L["arm"], L[key]) for L in legs.values() if L["arm"] in ("ctl", treated)]
     values = [v for _, v in obs]
-    nfix = sum(1 for a, _ in obs if a == "fix")
+    nfix = sum(1 for a, _ in obs if a == treated)
     total = sum(values)
     n = len(values)
-    observed = (sum(v for a, v in obs if a == "fix") / nfix
-                - (total - sum(v for a, v in obs if a == "fix")) / (n - nfix))
+    observed = (sum(v for a, v in obs if a == treated) / nfix
+                - (total - sum(v for a, v in obs if a == treated)) / (n - nfix))
     hits = draws = 0
     for idx in itertools.combinations(range(n), nfix):
         s = sum(values[i] for i in idx)
@@ -87,9 +125,15 @@ def permutation(legs, key):
 
 
 def main():
-    prefix = sys.argv[1]
-    warmup = int(sys.argv[2]) if len(sys.argv) > 2 else 8
-    out_json = sys.argv[3] if len(sys.argv) > 3 else None
+    argv = sys.argv[1:]
+    requested = None
+    if "--treated" in argv:
+        i = argv.index("--treated")
+        requested = argv[i + 1]
+        del argv[i:i + 2]
+    prefix = argv[0]
+    warmup = int(argv[1]) if len(argv) > 1 else 8
+    out_json = argv[2] if len(argv) > 2 else None
     doc = {"prefix": prefix, "warmup_rounds": warmup, "decode_tokens": 512,
            "harness": "local", "sandbox": "off",
            "cool_gate_passed_real_gate": False,
@@ -129,12 +173,15 @@ def main():
               f"Wilson95 [{lo:.3f}, {hi:.3f}]  "
               f"mean prevalence {statistics.mean(L['prev'] for L in g):.3f}")
 
-    print("\nEXACT PERMUTATION TEST, one sided, hypothesis 'fix lowers the value'")
+    treated = treated_arm(legs, requested)
+    doc["treated_arm"] = treated
+    print(f"\nEXACT PERMUTATION TEST, one sided, "
+          f"hypothesis '{treated} lowers the value'")
     doc["permutation"] = {}
     for key, label in (("prev", "prevalence"), ("spt", "mtp_seconds_per_token")):
-        r = permutation(legs, key)
+        r = permutation(legs, key, treated)
         doc["permutation"][label] = r
-        print(f"  {label:<24} fix minus ctl {r['statistic']:+.6f}  "
+        print(f"  {label:<24} {treated} minus ctl {r['statistic']:+.6f}  "
               f"p={r['p_one_sided']:.3f} over {r['relabelings']} relabelings")
 
     print("\nABSOLUTE s/token, CLEAN LEGS ONLY, prevalence below 0.10")
@@ -150,11 +197,30 @@ def main():
         doc.setdefault("clean_leg_spt", {})[arm] = {
             "n": len(g), "mean": means[arm], "sd": sd}
         print(f"  {arm:<5} n={len(g)}  mean {means[arm]:.7f}  sd {sd:.7f}")
-    if "ctl" in means and "fix" in means:
-        d = means["fix"] - means["ctl"]
-        doc["clean_leg_fix_minus_ctl"] = d
-        doc["clean_leg_fix_minus_ctl_pct"] = 100 * d / means["ctl"]
-        print(f"  fix minus ctl {d:+.7f} ({100 * d / means['ctl']:+.3f} %)")
+    if "ctl" in means and treated in means:
+        d = means[treated] - means["ctl"]
+        doc["clean_leg_treated_minus_ctl"] = d
+        doc["clean_leg_treated_minus_ctl_pct"] = 100 * d / means["ctl"]
+        print(f"  {treated} minus ctl {d:+.7f} "
+              f"({100 * d / means['ctl']:+.3f} %)")
+
+    spun = {t: L["warm_spin"] for t, L in legs.items() if L["warm_spin"]}
+    if any(w["ms"] for ws in spun.values() for w in ws):
+        print("\nWARM-PATH SPIN, blocks per ms reads out the warm core's clock")
+        doc["warm_spin"] = {}
+        for arm in arms:
+            rates = [w["blocks_per_ms"]
+                     for t, L in legs.items() if L["arm"] == arm
+                     for w in L["warm_spin"] if w["blocks_per_ms"]]
+            if not rates:
+                print(f"  {arm:<5} no spin")
+                continue
+            doc["warm_spin"][arm] = {
+                "n": len(rates), "median_blocks_per_ms": statistics.median(rates),
+                "min_blocks_per_ms": min(rates), "max_blocks_per_ms": max(rates)}
+            print(f"  {arm:<5} n={len(rates)}  "
+                  f"median {statistics.median(rates):.1f}  "
+                  f"min {min(rates):.1f}  max {max(rates):.1f}")
 
     print("\nPRICE OF THE STATE ITSELF, leg level, arms pooled")
     obs = [L for L in legs.values() if L["arm"] != "bg"]
