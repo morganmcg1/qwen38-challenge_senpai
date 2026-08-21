@@ -375,7 +375,23 @@ The +1.69 % inherits his cost curve and width shares. It is **not** a rescaling 
 
 ---
 
-## 7. Suggested follow-ups, not implemented
+## 7. W&B evidence
+
+Entity `wandb-applied-ai-team`, project `qwen38-mlx-challenge-senpai`, group `e100-fewer-weight-streams-per-round`.
+
+| Run | ID | URL | `gate_qualified_for_timing` | Content |
+|---|---|---|---|---|
+| `e100-corpus` | `o73dyyyj` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o73dyyyj | **false** | 612-tree ranked re-pricing, empirical null, ρ |
+| `e100-probe` | `mptpfk9c` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/mptpfk9c | **false** | isolated kernel probe, bit-exactness, per-shape deltas, width-tax null |
+| `e100-e2e` | `kxoebkjx` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/kxoebkjx | **false** | ABBA over 4 slots x 3 sessions + round-cost model |
+| `e100-registers` | `8ikuvw7m` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8ikuvw7m | **false** | `peak_live_regs` census, both GPU families, 3 arms |
+| **`e100-presubmit`** | **`pqbw9o4k`** | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/pqbw9o4k | **true** | the 512-token `--local-submit` leg and all 8 gates |
+
+The first four runs log `timing_valid=false`, `cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false` and `harness="local"` verbatim, because every leg in them ran with `MLXFAST_LOCAL_COOL_GATE=0` inside a counterbalanced session.
+
+`e100-presubmit` is the single exception and logs those three flags **true**, because it blocked on the real 40 C gate three times (entry 40.0 / 39.5 / 39.6 C after 20 / 40 / 40 s). It still logs `official_or_ranked_score=false` and `rankable=false`: a gate-qualified local leg is not a ranked score.
+
+## 8. Suggested follow-ups, not implemented
 
 1. **The depth schedule is now mis-tuned against its own kernel.** The arm moves the G cliff from M=4→5 to M=5→6. After the change, `w512d4` at 113.24 ms/round is *cheaper* than `w512` at 170.11 ms and yields a higher local ratio (2.2729 versus 2.2014). E94 concluded that only depths 3, 6 and 7 were ever cost-optimal under the old curve. Depth 4 is now cheap, so the schedule should be re-fitted against the new curve. This may be worth more than the kernel change itself.
 2. **The next prize is M=6 at NA=6**, 2 streams → 1, covering 33.4 % of local width mass. §4.6 now prices the blocker exactly: `cap8` reaches 126 g17s registers with 48 B spill. E76 records g17s `_wide` registers for NA=2..6 as 83 / 90 / 91 / 98 / 111.
