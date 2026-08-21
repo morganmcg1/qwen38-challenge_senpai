@@ -18,6 +18,7 @@ import glob
 import json
 import math
 import pathlib
+import random
 import re
 import statistics as st
 
@@ -35,11 +36,17 @@ def load(root: pathlib.Path) -> dict[str, dict]:
             hit = re.search(rf"^{name}=([0-9.]+)", meta, re.M)
             return float(hit.group(1)) if hit else None
 
+        def text(name: str) -> str:
+            hit = re.search(rf"^{name}=(.*)$", meta, re.M)
+            return hit.group(1).strip() if hit else ""
+
         legs[tag] = {
             "t": [x * 1e6 for x in rep["block_request_seconds"]],
             "k": rep["effective_draft_lengths"],
             "entry": field("gpu_temp_entry_c"),
             "exit": field("gpu_temp_exit_c"),
+            "started": text("started_utc"),
+            "wall": field("leg_wall_seconds"),
             "order": int(field("leg_index") or 0),
             "decode_s": rep.get("decode_seconds"),
             "seed_s": rep.get("seed_prefill_seconds"),
@@ -120,6 +127,78 @@ def main() -> int:
     print(f"     leg offset SD              {st.pstdev(ys):8.0f} us")
     print(f"     slope {slope:8.0f} us/C   r {r:+.3f}   r2 {r * r:.3f}")
     print(f"     residual SD after removal  {st.pstdev(resid):8.0f} us")
+
+    # Hypothesis D. Is the leg offset EXCHANGEABLE or is it DRIFT? The two
+    # answers point at different redesigns, so the question is worth a
+    # zero-GPU test on data that already exists.
+    #
+    #   exchangeable -> the offset is drawn fresh per leg and is independent of
+    #                   when the leg ran. Leg count is then the only lever, and
+    #                   shorter legs buy leg count at the same wall clock.
+    #   drift        -> the offset is a function of session time. ABBA already
+    #                   removes the linear part inside a block, and shorter
+    #                   legs shrink the residual curvature as well.
+    #
+    # Two statistics decide it: the regression of the offset on chronological
+    # leg order, and the lag-1 autocorrelation of the offset series in that
+    # order. Order comes from `started_utc`, not from the block index, so a
+    # retried or reordered leg cannot corrupt it.
+    chrono = sorted(have, key=lambda g: g["started"])
+    seq = [level[id(g)] - arm_mean[g["arm"]] for g in chrono]
+    pos = [float(i) for i in range(len(seq))]
+    o_slope, o_r, o_resid = regress(pos, seq)
+    print(f"\nD  leg offset vs chronological order   n {len(seq)}")
+    print(f"     slope {o_slope:8.1f} us/leg   r {o_r:+.3f}   r2 {o_r * o_r:.3f}"
+          f"   total swing {o_slope * (len(seq) - 1):+8.0f} us")
+    print(f"     residual SD after order removal {st.pstdev(o_resid):8.0f} us"
+          f"   (raw {st.pstdev(seq):.0f} us)")
+
+    def acf1(xs: list[float]) -> float:
+        m = st.mean(xs)
+        num = sum((a - m) * (b - m) for a, b in zip(xs, xs[1:]))
+        den = sum((x - m) ** 2 for x in xs)
+        return num / den if den else 0.0
+
+    # Permutation null: if the offsets are exchangeable, every ordering of the
+    # same 36 values is equally likely, so the observed lag-1 value has to be
+    # judged against the distribution of lag-1 values over reorderings. A fixed
+    # seed keeps this reproducible.
+    rng = random.Random(20260821)
+    obs = acf1(seq)
+    obs_resid = acf1(o_resid)
+    null = []
+    shuffled = list(seq)
+    for _ in range(20000):
+        rng.shuffle(shuffled)
+        null.append(acf1(shuffled))
+    p_two = sum(1 for v in null if abs(v) >= abs(obs)) / len(null)
+    null_sd = st.pstdev(null)
+    print(f"     lag-1 autocorrelation {obs:+.3f}"
+          f"   permutation null SD {null_sd:.3f}   two-sided p {p_two:.3f}")
+    print(f"     lag-1 after order removal {obs_resid:+.3f}")
+    verdict = ("DRIFT" if (p_two < 0.05 or o_r * o_r > 0.10)
+               else "EXCHANGEABLE")
+    print(f"     verdict  {verdict}")
+
+    # What that verdict is worth. A leg costs a fixed setup plus a per-token
+    # decode, so halving the token window does NOT halve the leg. Measure the
+    # split from the legs themselves where a second token window is available;
+    # otherwise report the 512-token leg cost and let the caller supply the
+    # fixed part.
+    walls = [g["wall"] for g in have if g["wall"]]
+    decodes = [g["decode_s"] for g in have if g["decode_s"]]
+    if walls and decodes:
+        fixed = st.mean(walls) - st.mean(decodes)
+        print(f"\n   leg cost   wall {st.mean(walls):6.1f} s"
+              f"   decode {st.mean(decodes):6.1f} s"
+              f"   fixed setup {fixed:6.1f} s")
+        for frac in (0.5, 0.25):
+            wall_h = fixed + st.mean(decodes) * frac
+            gain = math.sqrt(st.mean(walls) / wall_h)
+            print(f"   at {frac:.0%} tokens: leg {wall_h:5.1f} s"
+                  f"   legs per hour x{st.mean(walls) / wall_h:.2f}"
+                  f"   resolution x{gain:.2f} better"
+                  f"   IF the offset stays per-leg")
 
     # How many legs each design needs to put the 95 % half-width under the bar.
     control = st.mean([st.mean(g["t"]) for g in legs.values()])
