@@ -99,7 +99,7 @@ def arm_of(tag: str) -> str:
 
 
 def head_bytes_of(tag: str, arm: str) -> int | None:
-    if arm != "derived":
+    if not arm.startswith("derived"):
         return HEAD_BYTES.get(arm)
     raw = meta_value(tag, "e87_probe_fraction")
     if raw is None:
@@ -169,6 +169,10 @@ def main() -> None:
             "max_host_us": max(r["host_us"] for r in rs),
             "drafts": sum(r["d"] for r in rs),
             "accepted": sum(r["acc"] for r in rs),
+            "gpu_temp_entry_c": meta_value(tag, "gpu_temp_entry_c"),
+            "gpu_temp_exit_c": meta_value(tag, "gpu_temp_exit_c"),
+            "round1_us": rs[0]["round_us"] if rs else None,
+            "round2_us": rs[1]["round_us"] if len(rs) > 1 else None,
         })
 
     if args.base not in legs:
@@ -213,13 +217,16 @@ def main() -> None:
 
     print(f"host-state stratum (absolute {HOST_GATE_US:.0f} us gate on "
           f"{len(HOST_PHASES)} host phases):")
-    print(f"{'leg':<26} {'arm':<10} {'rnds':>5} {'clean':>6} {'dirty':>6} "
-          f"{'clean med':>10} {'max':>9}")
+    print(f"{'leg':<30} {'arm':<11} {'rnds':>5} {'clean':>6} {'dirty':>6} "
+          f"{'clean med':>10} {'max':>9} {'entC':>6} {'exitC':>6} "
+          f"{'rnd1':>8} {'rnd2':>8}")
     for s in stratum:
         dm = "-" if s["dirty_median_host_us"] is None else f"{s['dirty_median_host_us']:.0f}"
-        print(f"{s['tag']:<26} {s['arm']:<10} {s['rounds']:>5} {s['clean_rounds']:>6} "
+        print(f"{s['tag']:<30} {s['arm']:<11} {s['rounds']:>5} {s['clean_rounds']:>6} "
               f"{s['dirty_rounds']:>6} {s['clean_median_host_us']:>10.0f} "
-              f"{s['max_host_us']:>9.0f}   dirty med {dm}")
+              f"{s['max_host_us']:>9.0f} {s['gpu_temp_entry_c'] or '-':>6} "
+              f"{s['gpu_temp_exit_c'] or '-':>6} {s['round1_us']:>8.0f} "
+              f"{s['round2_us']:>8.0f}   dirty med {dm}")
     print(f"\ndepth sequence identical across arms: {identical}")
 
     print("\nachieved bandwidth of the per-draft head read (clean rounds):")
