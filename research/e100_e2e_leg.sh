@@ -69,6 +69,10 @@ exit_c="$(gpu_temp)"
   echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "git_head=$(git rev-parse HEAD)"
   echo "git_dirty=$(git status --porcelain | wc -l | tr -d ' ')"
+  # Only these paths reach the built worker. A research-only file left
+  # uncommitted while a leg runs is recorded but does not invalidate the leg.
+  echo "git_dirty_build=$(git status --porcelain -- Sources Vendor Package.swift \
+    Package.resolved tools mtp-head.manifest.json | wc -l | tr -d ' ')"
   echo "twin_m5=$(grep -c 'qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>' "${twin}")"
   echo "twin_m9=$(grep -c 'qmv_fast_crossrow_affine4_g64_m<T, 9, 5, true>' "${twin}")"
   echo "twin_na_bound=$(grep -o 'wide multi-row QMV supports NA in \[2, [0-9]\]' "${twin}" | head -1)"
