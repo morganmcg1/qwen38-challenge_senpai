@@ -1,0 +1,44 @@
+{
+  "control": "reversed draft_cluster.perm",
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "passed": true,
+  "arms": [
+    {
+      "tag": "e87smoke-declared-1",
+      "arm": "declared",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+      "worker_sha256": "2290140cd439450c567dcb7eff59f15a86b9fd37499261523f08c64a7630c757",
+      "decode_tokens": 64,
+      "effective_mean_draft_len": 5.5,
+      "accepted_draft_rate": 0.9818181818181818,
+      "all_tokens_matched": true,
+      "mtp_seconds_per_token": 0.08593965694308281,
+      "serial_seconds_per_token": 0.12912854738533497
+    },
+    {
+      "tag": "e87smoke-armc-1",
+      "arm": "armc",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/built/e87-armC-plain-k12292-p25-run",
+      "worker_sha256": "2290140cd439450c567dcb7eff59f15a86b9fd37499261523f08c64a7630c757",
+      "decode_tokens": 64,
+      "effective_mean_draft_len": 5.5,
+      "accepted_draft_rate": 0.9818181818181818,
+      "all_tokens_matched": true,
+      "mtp_seconds_per_token": 0.08538501709699631,
+      "serial_seconds_per_token": 0.12924611009657383
+    },
+    {
+      "tag": "e87live-armc-damaged-1",
+      "arm": "armc-damaged",
+      "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/built/e87-armC-damaged-run",
+      "worker_sha256": "2290140cd439450c567dcb7eff59f15a86b9fd37499261523f08c64a7630c757",
+      "decode_tokens": 64,
+      "effective_mean_draft_len": 0.46875,
+      "accepted_draft_rate": 0,
+      "all_tokens_matched": true,
+      "mtp_seconds_per_token": 0.13453460857272148,
+      "serial_seconds_per_token": 0.1300819367170334
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "prefix": "e87c",
+  "harness": "local",
+  "estimator": "paired per-round median, E89 host gate",
+  "host_gate_us": 1500.0,
+  "host_phases": [
+    "d_pre_us",
+    "d_flush_us",
+    "d_head1_us",
+    "d_submit1_us",
+    "d_chain_us",
+    "readout_us",
+    "commit_us",
+    "upkeep_us"
+  ],
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "depth_sequence_identical_across_arms": true,
+  "per_leg_host_stratum": [
+    {
+      "tag": "e87c-armc-1",
+      "arm": "armc",
+      "rounds": 78,
+      "clean_rounds": 1,
+      "dirty_rounds": 77,
+      "clean_median_host_us": 928.0,
+      "dirty_median_host_us": 3644.0,
+      "max_host_us": 7561.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-armc-2",
+      "arm": "armc",
+      "rounds": 78,
+      "clean_rounds": 63,
+      "dirty_rounds": 15,
+      "clean_median_host_us": 697.0,
+      "dirty_median_host_us": 3397.0,
+      "max_host_us": 5217.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-armc-3",
+      "arm": "armc",
+      "rounds": 78,
+      "clean_rounds": 56,
+      "dirty_rounds": 22,
+      "clean_median_host_us": 737.5,
+      "dirty_median_host_us": 3458.5,
+      "max_host_us": 5318.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-armc-4",
+      "arm": "armc",
+      "rounds": 78,
+      "clean_rounds": 51,
+      "dirty_rounds": 27,
+      "clean_median_host_us": 719.0,
+      "dirty_median_host_us": 3855.0,
+      "max_host_us": 9285.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-declared-1",
+      "arm": "declared",
+      "rounds": 78,
+      "clean_rounds": 75,
+      "dirty_rounds": 3,
+      "clean_median_host_us": 636.0,
+      "dirty_median_host_us": 1840.0,
+      "max_host_us": 1945.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-declared-2",
+      "arm": "declared",
+      "rounds": 78,
+      "clean_rounds": 68,
+      "dirty_rounds": 10,
+      "clean_median_host_us": 651.0,
+      "dirty_median_host_us": 3077.0,
+      "max_host_us": 3389.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-declared-3",
+      "arm": "declared",
+      "rounds": 78,
+      "clean_rounds": 69,
+      "dirty_rounds": 9,
+      "clean_median_host_us": 658.0,
+      "dirty_median_host_us": 3018.0,
+      "max_host_us": 4847.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-declared-4",
+      "arm": "declared",
+      "rounds": 78,
+      "clean_rounds": 1,
+      "dirty_rounds": 77,
+      "clean_median_host_us": 815.0,
+      "dirty_median_host_us": 3268.0,
+      "max_host_us": 5611.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    },
+    {
+      "tag": "e87c-declared-5",
+      "arm": "declared",
+      "rounds": 78,
+      "clean_rounds": 65,
+      "dirty_rounds": 13,
+      "clean_median_host_us": 633.0,
+      "dirty_median_host_us": 3260.0,
+      "max_host_us": 6575.0,
+      "drafts": 496.0,
+      "accepted": 435.0
+    }
+  ],
+  "achieved_bandwidth": {
+    "armc": {
+      "head_bytes_per_draft": 329402112,
+      "submit2_per_draft_median_us": 1678.75,
+      "clean_drafting_rounds": 171,
+      "achieved_bandwidth_gbs": 196.2186817572599
+    },
+    "declared": {
+      "head_bytes_per_draft": 427738112,
+      "submit2_per_draft_median_us": 2291.0,
+      "clean_drafting_rounds": 278,
+      "achieved_bandwidth_gbs": 186.7036717590572
+    }
+  },
+  "paired": {
+    "armc": {
+      "round_us": {
+        "rounds_paired": 63,
+        "median_delta_us": -4291.5,
+        "median_pct": -2.581873640703536,
+        "mean_pct": -2.4848454913754563,
+        "pct_stdev": 0.3103260537731345,
+        "sign_test_arm_faster": 63,
+        "sign_test_n": 63,
+        "base_median_us": 166187.5
+      },
+      "draft_build_us": {
+        "rounds_paired": 63,
+        "median_delta_us": -4237.5,
+        "median_pct": -25.59267568059177,
+        "mean_pct": -25.20315986790638,
+        "pct_stdev": 2.3312680387826337,
+        "sign_test_arm_faster": 63,
+        "sign_test_n": 63,
+        "base_median_us": 16522.5
+      },
+      "d_submit2_us": {
+        "rounds_paired": 63,
+        "median_delta_us": -4307.0,
+        "median_pct": -26.880669165173,
+        "mean_pct": -26.530422959873302,
+        "pct_stdev": 2.3499042327723636,
+        "sign_test_arm_faster": 63,
+        "sign_test_n": 63,
+        "base_median_us": 15986.0
+      },
+      "submit2_per_draft_us": {
+        "rounds_paired": 63,
+        "median_delta_us": -616.4285714285711,
+        "median_pct": -26.880669165173,
+        "mean_pct": -26.530422959873306,
+        "pct_stdev": 2.3499042327723636,
+        "sign_test_arm_faster": 63,
+        "sign_test_n": 63,
+        "base_median_us": 2287.4285714285716
+      },
+      "build_per_draft_us": {
+        "rounds_paired": 63,
+        "median_delta_us": -606.6428571428569,
+        "median_pct": -25.59267568059176,
+        "mean_pct": -25.20315986790638,
+        "pct_stdev": 2.3312680387826337,
+        "sign_test_arm_faster": 63,
+        "sign_test_n": 63,
+        "base_median_us": 2369.0714285714284
+      },
+      "verify_build_us": {
+        "rounds_paired": 63,
+        "median_delta_us": -66.0,
+        "median_pct": -0.09511862257206571,
+        "mean_pct": -0.12029106677350301,
+        "pct_stdev": 0.268492420072856,
+        "sign_test_arm_faster": 47,
+        "sign_test_n": 63,
+        "base_median_us": 72274.5
+      }
+    }
+  }
+}

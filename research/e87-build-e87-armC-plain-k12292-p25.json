@@ -1,0 +1,58 @@
+{
+  "tag": "e87-armC-plain-k12292-p25",
+  "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-thorfinn/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/built/e87-armC-plain-k12292-p25-run",
+  "file_bytes": 605141556,
+  "file_sha256": "59c523698e40a6e40bcce2ba0ab3b0c391b7c8043f051c48e3845f752829cdd0",
+  "head_provenance_sha256": "29c674b5d0a63d997959afb28332e3faa9dbfdb2f12d71a46613d24bd882625d",
+  "tree_bytes": 605145126,
+  "declared_tensor_bytes": 427738112,
+  "tensor_bytes": 605136268,
+  "tensor_bytes_delta": 177398156,
+  "new_shapes": {
+    "draft_cluster.rows.weight": [
+      12292,
+      8,
+      320
+    ],
+    "draft_cluster.rows.scales": [
+      12292,
+      8,
+      80
+    ],
+    "draft_cluster.rows.biases": [
+      12292,
+      8,
+      80
+    ],
+    "draft_cluster.centroids.weight": [
+      12292,
+      320
+    ],
+    "draft_cluster.centroids.scales": [
+      12292,
+      80
+    ],
+    "draft_cluster.centroids.biases": [
+      12292,
+      80
+    ],
+    "draft_cluster.perm": [
+      98336
+    ],
+    "draft_cluster.shape": [
+      3
+    ]
+  },
+  "declared_tensors_byte_identical": true,
+  "cluster_table": "plain-k12292",
+  "clusters": 12292,
+  "rows_per_cluster": 8,
+  "probe_fraction": 0.25,
+  "clusters_probed": 3073,
+  "rows_probed": 24584,
+  "centroid_bits": 2,
+  "centroid_bytes": 19667200,
+  "stage2_bytes": 39334400,
+  "dense_stage_bytes": 157337600,
+  "padding_rows_remapped": 6
+}

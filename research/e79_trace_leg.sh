@@ -87,6 +87,10 @@ gpu_temp() {
   echo "harness=local"
   echo "tokens=${tokens}"
   echo "local_mode=--local-iterate"
+  # Identity field, not a note. A trace leg turns benchmark.sh's Seatbelt
+  # profile off so the worker can write the trace at all, and an absolute time
+  # from a leg with sandbox=off is not comparable with one from sandbox=on.
+  echo "sandbox=$([[ "${MLXFAST_NO_SANDBOX:-0}" == "1" ]] && echo off || echo on)"
   echo "sync_head=${sync_head}"
   echo "trace=${trace}"
   echo "cool_gate=${cool_gate}"
