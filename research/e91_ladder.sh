@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Run one E91 seed-prefill session.
 #
-#   usage: research/e91_ladder.sh TAG [smoke|ladder|ceiling]
+#   usage: research/e91_ladder.sh TAG [smoke|census|ladder|ceiling]
 #
-#   smoke    two arms, one rep, plus the boundary census. Proves the knob and
-#            the harness on the real checkpoint without spending a session.
-#   ladder   rung 1. Nine schedules, ABBA, three reps, plus the census.
+#   smoke    two arms, one rep, no census. Proves the knob and the harness on
+#            the real checkpoint without spending a session.
+#   census   rung 0. No timed arm, so the selector swizzle is installed before
+#            the first MLX pipeline and every dispatch resolves to a kernel
+#            name, a grid and a threadgroup shape.
+#   ladder   rung 1. Nine schedules, ABBA, three reps. No census: the swizzle
+#            perturbs the clock.
 #   ceiling  rung 2. Synthetic weights only, so the 15 GB checkpoint is never
 #            resident and the probe is cheap.
 #
@@ -32,6 +36,11 @@ case "${profile}" in
     : "${MLXFAST_E91_WARMUP:=1}"
     : "${MLXFAST_E91_ARMS:=s1,off}"
     ;;
+  census)
+    : "${MLXFAST_E91_REPS:=0}"
+    : "${MLXFAST_E91_WARMUP:=1}"
+    : "${MLXFAST_E91_CENSUS_ARMS:=ship,off}"
+    ;;
   ladder)
     : "${MLXFAST_E91_REPS:=3}"
     : "${MLXFAST_E91_WARMUP:=2}"
@@ -42,7 +51,8 @@ case "${profile}" in
     ;;
   *) echo "e91_ladder.sh: unknown profile ${profile}" >&2; exit 2 ;;
 esac
-export MLXFAST_E91_REPS MLXFAST_E91_WARMUP MLXFAST_E91_ARMS MLXFAST_E91_CENSUS
+export MLXFAST_E91_REPS MLXFAST_E91_WARMUP MLXFAST_E91_ARMS
+export MLXFAST_E91_CENSUS MLXFAST_E91_CENSUS_ARMS
 
 out="research/out/${tag}"
 rm -rf "${out}"
@@ -119,6 +129,7 @@ group="${MLXFAST_CENSUS_GROUP:-e91-prefill-ladder}"
   echo "reps=${MLXFAST_E91_REPS:-3}"
   echo "warmup=${MLXFAST_E91_WARMUP:-2}"
   echo "arms=${MLXFAST_E91_ARMS:-<test-default>}"
+  echo "census_arms=${MLXFAST_E91_CENSUS_ARMS:-<test-default>}"
   echo "profile=${profile}"
   echo "gpu_temp_entry_c=$(gpu_temp)"
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"

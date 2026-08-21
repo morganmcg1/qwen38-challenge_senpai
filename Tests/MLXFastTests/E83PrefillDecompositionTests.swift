@@ -1043,13 +1043,16 @@ private final class E83PinnedHead {
 
 // MARK: - dispatch and command-buffer census
 
-private final class E83DispatchLedger: @unchecked Sendable {
+final class E83DispatchLedger: @unchecked Sendable {
     static let shared = E83DispatchLedger()
 
     private let lock = NSLock()
     private var pipelineNames: [ObjectIdentifier: String] = [:]
     private var encoderBinding: [ObjectIdentifier: String] = [:]
     private var counts: [String: Int] = [:]
+    /// `"<kernel>|grid=x,y,z|tg=x,y,z" -> launches`. The grid separates two
+    /// kernels that share a name prefix but not a tile shape.
+    private var shapeCounts: [String: Int] = [:]
     private var dispatches = 0
     private var commits = 0
     private var recording = false
@@ -1067,11 +1070,16 @@ private final class E83DispatchLedger: @unchecked Sendable {
         lock.unlock()
     }
 
-    func dispatch(encoder: AnyObject) {
+    func dispatch(encoder: AnyObject, grid: MTLSize? = nil, threadgroup: MTLSize? = nil) {
         lock.lock()
         if recording {
             let name = encoderBinding[ObjectIdentifier(encoder)] ?? "<unbound>"
             counts[name, default: 0] += 1
+            if let grid, let threadgroup {
+                let key = "\(name)|grid=\(grid.width),\(grid.height),\(grid.depth)"
+                    + "|tg=\(threadgroup.width),\(threadgroup.height),\(threadgroup.depth)"
+                shapeCounts[key, default: 0] += 1
+            }
             dispatches += 1
         }
         lock.unlock()
@@ -1086,6 +1094,7 @@ private final class E83DispatchLedger: @unchecked Sendable {
     func start() {
         lock.lock()
         counts = [:]
+        shapeCounts = [:]
         dispatches = 0
         commits = 0
         recording = true
@@ -1099,6 +1108,7 @@ private final class E83DispatchLedger: @unchecked Sendable {
             "dispatches": dispatches,
             "command_buffer_commits": commits,
             "kernels": counts,
+            "kernel_shapes": shapeCounts,
         ]
         lock.unlock()
         return value
@@ -1126,7 +1136,8 @@ private func e83SwizzleDispatch(_ cls: AnyClass, _ name: String) -> Bool {
     let original = unsafeBitCast(method_getImplementation(method), to: E83DispatchIMP.self)
     let replacement: @convention(block) (AnyObject, MTLSize, MTLSize) -> Void = {
         encoder, grid, threadgroup in
-        E83DispatchLedger.shared.dispatch(encoder: encoder)
+        E83DispatchLedger.shared.dispatch(
+            encoder: encoder, grid: grid, threadgroup: threadgroup)
         original(encoder, selector, grid, threadgroup)
     }
     method_setImplementation(method, imp_implementationWithBlock(replacement))
@@ -1175,9 +1186,39 @@ private func e83SwizzleNewPipeline(_ cls: AnyClass) -> Bool {
     return true
 }
 
+private typealias E83NewPipelineDescIMP = @convention(c) (
+    AnyObject, Selector, AnyObject, UInt, UnsafeMutableRawPointer?, UnsafeMutableRawPointer?
+) -> UnsafeMutableRawPointer?
+
+private func e83SwizzleNewPipelineDescriptor(_ cls: AnyClass) -> Bool {
+    let selector = NSSelectorFromString(
+        "newComputePipelineStateWithDescriptor:options:reflection:error:")
+    guard let method = class_getInstanceMethod(cls, selector) else { return false }
+    let original = unsafeBitCast(method_getImplementation(method), to: E83NewPipelineDescIMP.self)
+    let replacement:
+        @convention(block) (
+            AnyObject, AnyObject, UInt, UnsafeMutableRawPointer?, UnsafeMutableRawPointer?
+        ) -> UnsafeMutableRawPointer? = { device, descriptor, options, reflection, errorOut in
+            let result = original(device, selector, descriptor, options, reflection, errorOut)
+            if let result {
+                let pipeline = Unmanaged<AnyObject>.fromOpaque(result).takeUnretainedValue()
+                let name =
+                    (descriptor as? MTLComputePipelineDescriptor)?.computeFunction?.name
+                    ?? "<unnamed-descriptor>"
+                E83DispatchLedger.shared.note(pipeline: pipeline, name: name)
+            }
+            return result
+        }
+    method_setImplementation(method, imp_implementationWithBlock(replacement))
+    return true
+}
+
 nonisolated(unsafe) private var e83SwizzlesInstalled = false
 
-private func e83InstallSwizzles() -> Bool {
+/// Install once, before any MLX GPU work. The pipeline-name map is only
+/// populated by the creation hook, so a pipeline built before the hook exists
+/// reports `<unmapped>` for the rest of the process.
+func e83InstallSwizzles() -> Bool {
     if e83SwizzlesInstalled { return true }
     guard let device = MTLCreateSystemDefaultDevice(),
         let queue = device.makeCommandQueue(),
@@ -1190,6 +1231,8 @@ private func e83InstallSwizzles() -> Bool {
     encoder.endEncoding()
 
     var ok = e83SwizzleNewPipeline(deviceClass)
+    // Best effort: MLX only takes the descriptor path for linked functions.
+    _ = e83SwizzleNewPipelineDescriptor(deviceClass)
     ok = e83SwizzleSetPipeline(encoderClass) && ok
     ok = e83SwizzleDispatch(encoderClass, "dispatchThreadgroups:threadsPerThreadgroup:") && ok
     ok = e83SwizzleDispatch(encoderClass, "dispatchThreads:threadsPerThreadgroup:") && ok

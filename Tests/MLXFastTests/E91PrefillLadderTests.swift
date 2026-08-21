@@ -75,16 +75,33 @@ struct E91PrefillLadderTests {
         let seedLength = Int(env["MLXFAST_E91_SEED_LEN"] ?? "") ?? 512
         let reps = Int(env["MLXFAST_E91_REPS"] ?? "") ?? 3
         let warmup = Int(env["MLXFAST_E91_WARMUP"] ?? "") ?? 2
-        let runCensus = env["MLXFAST_E91_CENSUS"] != "0"
+        // `reps == 0` is the census-only session. No timed arm runs, so the
+        // selector swizzle may be installed before MLX builds its first
+        // pipeline, which is the only ordering that resolves a dispatch to a
+        // real kernel name.
+        let censusOnly = reps == 0
+        let runCensus = env["MLXFAST_E91_CENSUS"].map { $0 == "1" } ?? censusOnly
         let armNames =
             (env["MLXFAST_E91_ARMS"]?
                 .split(separator: ",")
                 .map { $0.trimmingCharacters(in: .whitespaces) })
             .flatMap { $0.isEmpty ? nil : $0 }
             ?? ["s1", "s2", "s4", "s6", "s8", "s12", "s16", "off"]
+        let censusArms =
+            (env["MLXFAST_E91_CENSUS_ARMS"]?
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) })
+            .flatMap { $0.isEmpty ? nil : $0 } ?? ["ship", "off"]
 
-        for name in armNames + ["ship"] {
+        for name in armNames + censusArms + ["ship"] {
             #expect(e91LadderRungs(name) != nil, "unknown E91 ladder arm \(name)")
+        }
+
+        var swizzleInstalled = false
+        if runCensus {
+            #expect(censusOnly, "a census session must set MLXFAST_E91_REPS=0")
+            swizzleInstalled = e83InstallSwizzles()
+            #expect(swizzleInstalled, "selector swizzle install failed")
         }
 
         let tokens = try e83LoadPromptTokens(promptPath)
@@ -137,15 +154,21 @@ struct E91PrefillLadderTests {
         model.model.prefillLadderRungs = shipped
         for _ in 0..<warmup { _ = harness.begin(arm: .baseline, phased: false) }
 
-        // Rung 0. Kernel names, dispatch counts and command-buffer commits per
-        // phase of one `begin()`. Untimed: the selector swizzle perturbs the
-        // clock, so this can never share a block with a timed arm.
-        if runCensus {
-            model.model.prefillLadderRungs = shipped
-            var census = harness.censusBoundaries()
-            census["ladder_label"] = "ship"
-            census["order"] = blocks.count
-            blocks.append(e83Emit(census))
+        // Rung 0. Kernel names, dispatch counts, per-kernel grid shapes and
+        // command-buffer commits per phase of one `begin()`. Untimed: the
+        // selector swizzle perturbs the clock, so this never shares a session
+        // with a timed arm.
+        if runCensus && swizzleInstalled {
+            for label in censusArms {
+                model.model.prefillLadderRungs = e91LadderRungs(label) ?? shipped
+                var census = harness.censusBoundaries()
+                census["ladder_label"] = label
+                census["ladder_stride"] = e91LadderStride(label) ?? -1
+                census["forced_eval_points"] =
+                    (e91LadderRungs(label) ?? shipped).filter { $0 < layerCount }.count
+                census["order"] = blocks.count
+                blocks.append(e83Emit(census))
+            }
         }
 
         // Rung 1. ABBA inside every pair, so monotone thermal or clock drift
@@ -168,9 +191,11 @@ struct E91PrefillLadderTests {
         // any arm moves the tail row's top-2 evidence, the knob is not a pure
         // scheduling change and no timing on this page is usable.
         let allFingerprints = Set(fingerprints.values.flatMap { $0 })
-        #expect(
-            allFingerprints.count == 1,
-            "prefill ladder stride changed the emitted evidence: \(fingerprints)")
+        if !censusOnly {
+            #expect(
+                allFingerprints.count == 1,
+                "prefill ladder stride changed the emitted evidence: \(fingerprints)")
+        }
 
         let payload: [String: Any] = [
             "schema": 1,
@@ -186,6 +211,9 @@ struct E91PrefillLadderTests {
                 "reps": reps,
                 "warmup": warmup,
                 "arms": armNames,
+                "census_only": censusOnly,
+                "census_arms": runCensus ? censusArms : [],
+                "swizzle_installed": swizzleInstalled,
                 "shipped_forced_eval_points": shipped.filter { $0 < layerCount }.count,
                 "model_load_seconds": loadSeconds,
                 "num_hidden_layers": layerCount,
