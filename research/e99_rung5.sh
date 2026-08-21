@@ -29,7 +29,9 @@ run_leg() {
   echo "=== ${tag}: gate=${gate} t=${threshold} cap=${cap} tokens=${tokens} ==="
   rm -rf "research/out/${tag}"
   local status
-  if [[ "${gate}" == "off" ]]; then
+  if [[ "${gate}" == "default" ]]; then
+    # The shipped path. This leg exports no gate variable at all, so its trace
+    # witnesses what the ranked worker would run.
     env -u MLX_QWEN_MTP_MARGIN_GATE -u MLX_QWEN_MTP_MARGIN_GATE_T \
       MLXFAST_QWEN_MTP_DEPTH="${cap}" \
       research/e79_trace_leg.sh "${tag}" "${tokens}"
@@ -57,10 +59,13 @@ run_leg() {
 
 case "${mode}" in
   abba)
+    # The B arm exports nothing, so it measures the shipped default path and
+    # its threshold is the compiled constant. Pass that same value so the
+    # recorded threshold and the traced `gt=` witness agree.
     threshold="${1:?missing THRESHOLD}"
     run_leg "e99r5c${cap}a1" off "${threshold}"
-    run_leg "e99r5c${cap}b1" g1 "${threshold}"
-    run_leg "e99r5c${cap}b2" g1 "${threshold}"
+    run_leg "e99r5c${cap}b1" default "${threshold}"
+    run_leg "e99r5c${cap}b2" default "${threshold}"
     run_leg "e99r5c${cap}a2" off "${threshold}"
     ;;
   sweep)

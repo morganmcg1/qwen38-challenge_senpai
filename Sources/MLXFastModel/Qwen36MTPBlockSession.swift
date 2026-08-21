@@ -1062,12 +1062,16 @@ public final class Qwen36MTPBlockSession {
         case off, g1
     }
 
-    /// A malformed value fails the run instead of falling back to `off`,
-    /// which is what keeps an arm session from silently timing the ship path.
+    /// `g1` is the shipped default. The ranked worker exports no campaign
+    /// environment, so an arm that needs a variable to switch on submits a
+    /// bit-identical no-op. The variable stays as a research override only.
+    ///
+    /// A malformed value fails the run instead of falling back, which is what
+    /// keeps an arm session from silently timing the wrong path.
     internal static let marginGateArm: MarginGateArm = {
         guard let raw = ProcessInfo.processInfo
             .environment["MLX_QWEN_MTP_MARGIN_GATE"], !raw.isEmpty
-        else { return .off }
+        else { return .g1 }
         guard let arm = MarginGateArm(rawValue: raw) else {
             preconditionFailure(
                 "MLX_QWEN_MTP_MARGIN_GATE=\(raw) is not a margin gate arm")

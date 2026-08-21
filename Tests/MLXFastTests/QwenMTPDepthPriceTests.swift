@@ -234,12 +234,13 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    // E99 rung 5. The margin gate is an environment-selected research arm, so
-    // an ordinary process must see it off, and the clamp depth must be the
-    // widest draft that still streams the weights once.
-    @Test("the margin gate is off and clamps into the G = 1 band")
-    func marginGateDefaultsOff() {
-        #expect(Qwen36MTPBlockSession.marginGateArm == .off)
+    // E99 rung 5. The ranked worker exports no campaign environment, so the
+    // gate must be on and fully configured in a process that sets nothing, and
+    // the clamp depth must be the widest draft that still streams the weights
+    // once.
+    @Test("the margin gate ships on and clamps into the G = 1 band")
+    func marginGateShipsOn() {
+        #expect(Qwen36MTPBlockSession.marginGateArm == .g1)
         #expect(Qwen36MTPBlockSession.marginGateThreshold
             == Qwen36MTPBlockSession.marginGateDefaultThreshold)
         let width = Qwen36MTPBlockSession.marginGateDepth + 1
