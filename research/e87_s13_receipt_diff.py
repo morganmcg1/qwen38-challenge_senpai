@@ -119,6 +119,104 @@ def main(argv):
             r["id"][:8], r.get("officialScore") or float("nan"),
             r.get("status"), str(r.get("submissionCommitSha"))[:7]))
 
+    widths = [1.0 + field(tables[0][k], "effective_mean_draft_len") for k in order]
+    shape_report(widths, deltas, order)
+    mode_report(rows, picked, tables)
+
+
+def shape_report(widths, deltas, order):
+    """Separate a fixed per-call penalty from a per-row cost.
+
+    A cost paid per verified row rises with verify width.  A cost paid once per
+    target call does not, and once expressed as a percentage of a round whose
+    time grows with width, it falls.  That contrast identified the `b3f88ed2`
+    Q-row rider.  It needs no round-count reconstruction, because two runs that
+    share a schedule share round counts prompt by prompt, so the ratio of round
+    times equals the ratio of per-token times.
+
+    `plutarch` is excluded from the fit.  It is about 92 % non-drafting, so it
+    barely exercises the drafting path at all and is the control rather than a
+    point on the curve.
+    """
+    pts = [(w, d, PROMPT_NAMES[k]) for w, d, k in zip(widths, deltas, order)
+           if PROMPT_NAMES[k] != "plutarch"]
+    n = len(pts)
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    mx, my = st.fmean(xs), st.fmean(ys)
+    sxx = sum((x - mx) ** 2 for x in xs)
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    slope = sxy / sxx
+    inter = my - slope * mx
+    resid = [y - inter - slope * x for x, y in zip(xs, ys)]
+    se = ((sum(r * r for r in resid) / (n - 2)) / sxx) ** 0.5
+    print()
+    print("  delta %% against verify width (1 + draft len), %d drafting prompts,"
+          " plutarch excluded" % n)
+    print("    slope     %+.4f %% per row   se %.4f   t %+.2f" % (slope, se, slope / se))
+    print("    intercept %+.4f %%   at width 1" % inter)
+    if abs(slope / se) < 2.0:
+        verdict = "no width dependence resolved"
+    elif slope > 0:
+        verdict = "RISING: a per-row cost, it scales with verify width"
+    else:
+        verdict = "FALLING: a fixed per-call cost diluted by wider rounds"
+    print("    %s" % verdict)
+    plut = [(w, d) for w, d, k in zip(widths, deltas, order)
+            if PROMPT_NAMES[k] == "plutarch"]
+    if plut:
+        print("    control  plutarch width %.3f  delta %+.3f %%  "
+              "(92 %% non-drafting: near mode-free)" % (plut[0][0], plut[0][1]))
+
+
+def mode_report(rows, picked, tables):
+    """Locate each run in the measurement-speed distribution of its own cohort.
+
+    The advisor's `L / plutarch` diagnostic needs per-prompt round counts.  The
+    board publishes `effective_mean_draft_len` and `non_drafting_round_count`
+    but not accepted counts, and the scheduler picks depth adaptively, so round
+    counts are not recoverable from public fields.  `plutarch` itself is the
+    part of that diagnostic that is recoverable: it is about 92 % non-drafting,
+    so its candidate time is a near mode-free probe of machine speed.
+    """
+    key = "c1ec5866"
+    sched = tuple(
+        (field(e, "effective_mean_draft_len"), field(e, "non_drafting_round_count"))
+        for _, e in sorted(tables[-1].items())
+    )
+    cohort = []
+    for r in rows:
+        if r.get("officialScore") is None:
+            continue
+        t = per_prompt(r)
+        if len(t) != 8 or key not in t:
+            continue
+        s = tuple(
+            (field(e, "effective_mean_draft_len"), field(e, "non_drafting_round_count"))
+            for _, e in sorted(t.items())
+        )
+        if s == sched:
+            cohort.append((field(t[key], "mtp_seconds_per_token_mean"), r["id"][:8]))
+    cohort.sort()
+    print()
+    print("  measurement mode: plutarch candidate seconds per token, "
+          "same-schedule cohort of %d" % len(cohort))
+    if not cohort:
+        return
+    times = [c[0] for c in cohort]
+    print("    cohort min %.8f  median %.8f  max %.8f"
+          % (times[0], st.median(times), times[-1]))
+    for r in picked:
+        rid = r["id"][:8]
+        hit = [i for i, c in enumerate(cohort) if c[1] == rid]
+        if not hit:
+            print("    %s  not in this cohort" % rid)
+            continue
+        i = hit[0]
+        print("    %s  %.8f  rank %d of %d  (%.0f th pct, lower is faster)"
+              % (rid, cohort[i][0], i + 1, len(cohort),
+                 100.0 * i / max(len(cohort) - 1, 1)))
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
