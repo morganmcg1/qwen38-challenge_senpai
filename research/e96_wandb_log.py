@@ -16,8 +16,9 @@ the modelled 8,112.6 us per round.
 Every E96 leg runs with the local cool gate disabled inside one
 counterbalanced session, so `cool_gate_passed_real_gate` and
 `gate_qualified_for_timing` are logged false verbatim on every run. The `off`
-and `t1` arms emit unverified tokens by construction, so `tokens_verified` is
-logged per arm.
+and `t1` arms change the emitted tokens by construction, so `tokens_verified`
+reports each arm's match against its own reference and
+`public_drift_tripwire_run` reports whether the M5 golden gate ran at all.
 """
 
 from __future__ import annotations
@@ -62,7 +63,9 @@ def leg_config(leg):
     return {
         "experiment": "e96",
         "harness": "local",
-        "local_mode": "--local-iterate",
+        "local_mode": leg.get("local_mode"),
+        "leg_path": leg.get("leg_path"),
+        "public_drift_tripwire_run": leg.get("public_drift_tripwire_run"),
         "host": HOST,
         "hostname": leg.get("hostname"),
         "base_sha": leg.get("base_sha"),
@@ -71,6 +74,7 @@ def leg_config(leg):
         "head_provenance_sha256": metrics.get("head_provenance_sha256"),
         "tokens": int(leg["tokens"]) if leg["tokens"] else None,
         "step_mode": leg["step_mode"],
+        "step_repeat": int(leg["repeat"]),
         "threadgroup_x": 32,
         "threadgroup_y": int(leg["tg_y"]) if leg["tg_y"] else None,
         "grid": "32 x 128 x 48",
@@ -120,6 +124,10 @@ def enrich(leg, tag):
     leg["base_sha"] = meta.get("base_sha")
     leg["worker_sha256"] = meta.get("worker_sha256")
     leg["head_dir"] = meta.get("head_dir")
+    leg["local_mode"] = meta.get("local_mode", "--local-iterate")
+    leg["public_drift_tripwire_run"] = meta.get(
+        "public_drift_tripwire_run", "true"
+    ) == "true"
     return leg
 
 
