@@ -247,7 +247,9 @@ private enum Qwen35E96Step {
     /// the addresses unknowable, so the whole body survives. The values are
     /// zero at run time, so the arithmetic and the stored results are
     /// unchanged.
-    static let repeatOffsets = MLXArray.zeros([repeatCount], dtype: .int32)
+    /// The decode path is single-threaded, so one shared buffer is safe.
+    nonisolated(unsafe) static let repeatOffsets = MLXArray.zeros(
+        [repeatCount], dtype: .int32)
 
     static let cloneKernel = makeKernel(
         name: "qwen35_e96_step_clone", oneIteration: false)
