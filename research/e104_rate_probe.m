@@ -32,9 +32,21 @@
 #define NARM 4
 static const char *kArmName[NARM] = {"a_base", "l_loadonly", "z_noxload",
                                      "xw_widex"};
-// Arms that must reproduce a_base bit for bit. The two diagnostic arms change
-// the arithmetic on purpose and are never quoted as correctness-bearing.
-static const int kArmExactVsBase[NARM] = {1, 0, 0, 1};
+// An arm named "fm_<base>" reads arm_<base>.metal but compiles it with fast
+// math on. That contracts multiply-add into fma, which changes rounding, so
+// such an arm is a timing-only diagnostic and can never ship.
+#define FM_PREFIX "fm_"
+// Diagnostic arms deliberately change the arithmetic, so they are never quoted
+// as correctness-bearing. Every other arm must reproduce a_base bit for bit.
+static const char *kDiagPrefix[] = {"l_", "z_", FM_PREFIX};
+static int kArmExactVsBase[NARM] = {1, 0, 0, 1};
+
+static int armIsDiagnostic(const char *name) {
+  for (size_t i = 0; i < sizeof(kDiagPrefix) / sizeof(kDiagPrefix[0]); i++) {
+    if (!strncmp(name, kDiagPrefix[i], strlen(kDiagPrefix[i]))) return 1;
+  }
+  return 0;
+}
 
 static inline uint16_t f32_to_bf16(float f) {
   uint32_t u;
@@ -127,7 +139,7 @@ static double flops(const Operands *o, int m) {
 
 static id<MTLComputePipelineState> buildArm(id<MTLDevice> device,
                                             const char *path, NSString *fn,
-                                            const char *label) {
+                                            const char *label, int fast_math) {
   NSString *src = [NSString stringWithContentsOfFile:@(path)
                                             encoding:NSUTF8StringEncoding
                                                error:nil];
@@ -142,7 +154,9 @@ static id<MTLComputePipelineState> buildArm(id<MTLDevice> device,
   } else {
     opts.languageVersion = MTLLanguageVersion3_1;
   }
-  [opts setFastMathEnabled:NO];
+  // MLX builds every JIT library with fast math off (device.cpp
+  // Device::build_library_), so the default matches the scored kernel.
+  [opts setFastMathEnabled:fast_math ? YES : NO];
   NSError *err = nil;
   uint64_t t0 = mach_absolute_time();
   id<MTLLibrary> lib = [device newLibraryWithSource:src options:opts error:&err];
@@ -317,6 +331,7 @@ int main(int argc, char **argv) {
     const char *fn_name = "affine_qmv_fast_bfloat16_t_64_4_false";
     const char *widths_arg = "2,3,4,5,6";
     const char *shapes_arg = "0,1,2,3,4";
+    const char *arms_arg = NULL;
     int pairs = 4, samples = 48;
     double target_ms = 40.0;
 
@@ -330,6 +345,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--samples") && i + 1 < argc) samples = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--macmon") && i + 1 < argc) g_macmon = argv[++i];
       else if (!strcmp(argv[i], "--target-ms") && i + 1 < argc) target_ms = atof(argv[++i]);
+      else if (!strcmp(argv[i], "--arms") && i + 1 < argc) arms_arg = argv[++i];
       else {
         fprintf(stderr, "e104_rate_probe: unknown argument %s\n", argv[i]);
         return 2;
@@ -341,6 +357,29 @@ int main(int argc, char **argv) {
               "[--widths L] [--shapes L] [--pairs N] [--samples N] "
               "[--macmon PATH] [--target-ms MS]\n");
       return 2;
+    }
+
+    if (arms_arg) {
+      char buf[512];
+      snprintf(buf, sizeof(buf), "%s", arms_arg);
+      int n = 0;
+      for (char *tok = strtok(buf, ","); tok && n < NARM;
+           tok = strtok(NULL, ",")) {
+        kArmName[n] = strdup(tok);
+        kArmExactVsBase[n] = !armIsDiagnostic(tok);
+        n++;
+      }
+      if (n != NARM) {
+        fprintf(stderr, "e104_rate_probe: --arms needs exactly %d names\n",
+                NARM);
+        return 2;
+      }
+      if (armIsDiagnostic(kArmName[0])) {
+        fprintf(stderr,
+                "e104_rate_probe: arm 0 is the exactness reference and must "
+                "not be a diagnostic arm\n");
+        return 2;
+      }
     }
 
     mach_timebase_info_data_t tb;
@@ -385,8 +424,11 @@ int main(int argc, char **argv) {
     id<MTLComputePipelineState> arm[NARM];
     for (int a = 0; a < NARM; a++) {
       char path[1024];
-      snprintf(path, sizeof(path), "%s/arm_%s.metal", dir, kArmName[a]);
-      arm[a] = buildArm(device, path, fn, kArmName[a]);
+      int fast_math = !strncmp(kArmName[a], FM_PREFIX, strlen(FM_PREFIX));
+      const char *srcName =
+          fast_math ? kArmName[a] + strlen(FM_PREFIX) : kArmName[a];
+      snprintf(path, sizeof(path), "%s/arm_%s.metal", dir, srcName);
+      arm[a] = buildArm(device, path, fn, kArmName[a], fast_math);
     }
 
     FILE *out = fopen(out_path, "w");
