@@ -1,0 +1,74 @@
+replicate rule: comment-insensitive code identity
+746 usable board rows, 697 (identity, schedule) groups, 36 replicated, 68 pairs
+
+Per-run candidate-leg sd in percent. A pair difference carries twice the
+variance of one run, so every cell is pairRMS / sqrt(2). TARGET is plutarch
+alone; DRAFT is the mean of the five G=2 prompts. `same` counts same-mode pairs.
+
+--- replicate class
+                     group  pairs  same   T same   D same    T all    D all
+            byte-identical     40    18   0.0431   0.1139   0.0708   0.7201
+         comment-only diff     28    17   0.1281   0.0702   0.1491   0.5876
+        all code-identical     68    35   0.0945   0.0952   0.1100   0.6687
+
+--- 2x2: replicate class by time gap
+                     group  pairs  same   T same   D same    T all    D all
+     byte-identical, < 3 h     28    12   0.0410   0.0855   0.0721   0.7212
+    byte-identical, >= 3 h     12     6   0.0471   0.1559   0.0676   0.7174
+  comment-only diff, < 3 h     21    14   0.1401   0.0385   0.1542   0.5553
+ comment-only diff, >= 3 h      7     3   0.0380   0.1448   0.1326   0.6752
+ all code-identical, < 3 h     49    26   0.1065   0.0646   0.1147   0.6553
+all code-identical, >= 3 h     19     9   0.0443   0.1523   0.0968   0.7021
+
+--- 2x2: replicate class by solver identity
+                     group  pairs  same   T same   D same    T all    D all
+byte-identical, same solver      1     1      nan      nan      nan      nan
+byte-identical, diff solver     39    17   0.0421   0.1131   0.0711   0.7290
+comment-only diff, same solver     10     5   0.1009   0.1111   0.1271   0.6912
+comment-only diff, diff solver     18    12   0.1379   0.0428   0.1600   0.5212
+all code-identical, same solver     11     6   0.0950   0.1140   0.1224   0.6601
+all code-identical, diff solver     57    29   0.0944   0.0908   0.1074   0.6703
+
+--- marginals this replaces
+                     group  pairs  same   T same   D same    T all    D all
+               same solver     11     6   0.0950   0.1140   0.1224   0.6601
+               diff solver     57    29   0.0944   0.0908   0.1074   0.6703
+                     < 3 h     49    26   0.1065   0.0646   0.1147   0.6553
+                    >= 3 h     19     9   0.0443   0.1523   0.0968   0.7021
+
+--- is the split replicate class or time gap? stratified variance-ratio tests
+Each test holds one factor fixed and varies the other, on the same-mode
+TARGET probe. F is the variance ratio, p is two-sided.
+
+          held fixed                     contrast   n1   n2       F        p
+           gap < 3 h comment-only vs byte-identical   14   12   11.69   0.0001
+          gap >= 3 h comment-only vs byte-identical    3    6    0.65   0.7794
+      byte-identical              < 3 h vs >= 3 h   12    6    0.76   0.6396
+        comment-only              < 3 h vs >= 3 h   14    3   13.56   0.0538
+             nothing comment-only vs byte-identical   17   18    8.83   0.0000
+             nothing              < 3 h vs >= 3 h   26    9    5.78   0.0094
+
+--- mode separation, which decides whether `D same` is usable
+|DRAFT| below the 0.6 % cut, largest five: 0.1804, 0.1884, 0.2425, 0.3492, 0.4907
+|DRAFT| above the cut, smallest five:      0.9031, 0.9852, 0.9943, 0.9975, 1.0309
+gap across the cut 0.4125 %; the cut sits 4.5 same-mode pair sd from zero
+A cut that far into the tail truncates a negligible share of the same-mode
+population, so `D same` is a usable resolution and not an artefact of the cut.
+
+Caveat on the DRAFT columns. The same-mode filter is a cut on the DRAFT
+probe itself, so `D same` is conditioned on its own value. The separation
+check above bounds that bias. `D all` mixes in the FACT-2 mode flip, which is
+a real run-level state rather than measurement noise.
+
+--- floors, measured now against the constants in use
+   probe                  basis   per run  per pair    in use
+  TARGET conservative, same mode    0.1281    0.1812    0.1281
+  TARGET point estimate, same mode    0.0945    0.1336    0.0945
+   DRAFT conservative, same mode    0.1139    0.1611    0.1139
+   DRAFT point estimate, same mode    0.0952    0.1347    0.0952
+
+conservative = the widest single replicate class for that probe.
+Use the conservative floor to decide whether to spend GPU or a submission
+slot. Use the point estimate when reporting a measurement. Always state
+which one a number used. If `in use` has drifted from the measured column,
+update RESOLUTION and CONSERVATIVE at the top of this file.

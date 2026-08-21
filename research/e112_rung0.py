@@ -21,6 +21,14 @@ set of files whose canonical form differs from the anchor. Both board pairs the
 advisor cited differ from their partner by the mechanism plus a comment block,
 so a comment-sensitive digest would have missed them.
 
+The canonicaliser and the measured floor both come from
+`research/board_prompt_instrument.py`. This file used to hold its own copies.
+The stripper copy was a regex that deleted `//` inside the Metal kernel source
+strings in `Vendor/.../mlx-generated/*.cpp`, which merged trees that
+JIT-compile different kernels, and the floor copy was 0.0431 %, which was the
+spread of one narrow replicate class rather than the measurement floor. Both
+copies are gone. Never reintroduce a second one.
+
 An ISOLATED PAIR for a mechanism is two submissions whose identities are equal
 after the mechanism text itself is also canonicalised away, and which disagree
 on whether the mechanism is present. Nothing else in the compiled candidate
@@ -38,7 +46,6 @@ Usage
 """
 
 import argparse
-import datetime as _dt
 import difflib
 import hashlib
 import json
@@ -49,6 +56,15 @@ import statistics
 import subprocess
 import sys
 from collections import defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# One canonicaliser and one floor for the whole campaign. The copies that used
+# to live here held a naive comment regex that ate `//` inside the Metal kernel
+# source strings in `mlx-generated/*.cpp`, and a TARGET floor of 0.0431 % that
+# the corrected canonicalisation retracted.
+from board_prompt_instrument import (  # noqa: E402
+    CONSERVATIVE, canon_code as _canon_code_aware, strip_comments_aware)
 
 BOARD_JSON = os.environ.get("YUKON_BOARD_JSON", "/tmp/yukon-board/full.json")
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -65,9 +81,9 @@ PROMPT_ORDER = ["plutarch", "drama", "travel", "beagle", "medicine",
 TARGET_PROBE = "plutarch"
 DRAFT_PROBES = ["beagle", "medicine", "republic", "essays", "botany"]
 
-# research/board_prompt_instrument.py, measured from byte-identical replicates.
-RES_TARGET_SAME_MODE = 0.0431
-RES_DRAFT_SAME_MODE = 0.1139
+# The conservative TARGET floor is the widest single replicate class, from
+# research/board_prompt_instrument.py. Re-measure it with `--noise` there.
+RES_TARGET_SAME_MODE = CONSERVATIVE["target_per_run"]
 MODE_DRAFT_SHIFT = 0.60
 
 BUILD_PATHS = ["Sources", "Vendor", "Package.swift", "Package.resolved",
@@ -76,26 +92,15 @@ BUILD_PATHS = ["Sources", "Vendor", "Package.swift", "Package.resolved",
 Q1_PATH = "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 Q2_PATH = "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift"
 
-BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.S)
-LINE_COMMENT = re.compile(r"//.*$", re.M)
-# Only these carry `//` comments. A JSON manifest does not, and stripping it
-# there would silently erase the tail of any URL and merge two DIFFERENT
-# declared proposal heads into one identity.
-SOURCE_SUFFIXES = (".swift", ".h", ".hpp", ".cpp", ".c", ".cc", ".metal",
-                   ".m", ".mm")
-
 
 def strip_comments(text):
-    """Remove the text the compiler discards. Comments cannot cost time."""
-    text = BLOCK_COMMENT.sub("", text)
-    text = LINE_COMMENT.sub("", text)
-    return "\n".join(ln.rstrip() for ln in text.split("\n") if ln.strip())
+    """Comment-free, blank-free text. Comments cannot cost decode time."""
+    stripped = strip_comments_aware(text)
+    return "\n".join(ln.rstrip() for ln in stripped.split("\n") if ln.strip())
 
 
 def canon_code(text, path=""):
-    if path.endswith(SOURCE_SUFFIXES):
-        return strip_comments(text), False
-    return text, False
+    return _canon_code_aware(text, path), False
 
 
 def canon_q1(text):
@@ -399,10 +404,12 @@ def report_mechanism(recs, mech_key, require_schedule=True):
     print(f"\nPOOLED TARGET effect   {pooled:+.4f} %")
     print(f"  distinct runs         {len(runs_a)} without the favoured state, "
           f"{len(runs_b)} with it")
+    floor = RES_TARGET_SAME_MODE
     print(f"  naive resolution      {naive_res:.4f} %  "
-          f"(0.0431 / sqrt({len(pairs)}))   sigma {pooled / naive_res:+.2f}")
+          f"({floor:.4f} / sqrt({len(pairs)}))   "
+          f"sigma {pooled / naive_res:+.2f}")
     print(f"  independent-run res   {proper_res:.4f} %  "
-          f"(0.0431 * sqrt(1/{len(runs_a)} + 1/{len(runs_b)}))   "
+          f"({floor:.4f} * sqrt(1/{len(runs_a)} + 1/{len(runs_b)}))   "
           f"sigma {pooled / proper_res:+.2f}")
     print(f"  signs                 {pos} positive, {neg} negative "
           f"({neg / len(pairs):.0%} opposite)")
@@ -429,136 +436,6 @@ def runs_pmaps(pairs):
         seen[p["a"]["id8"]] = p["a"]
         seen[p["b"]["id8"]] = p["b"]
     return seen.values()
-
-
-def report_noise(recs, focus=()):
-    """Re-measure the TARGET resolution from code-identical replicates.
-
-    The instrument's 0.0431 % came from byte-identical trees. Comment-only
-    edits cannot change the binary, so this widens the replicate set with the
-    canonical identity used above, and reports the spread inside every group.
-    """
-    groups = defaultdict(list)
-    for rec in recs:
-        key, _ = identity(rec["ref"], None)
-        if key is None:
-            continue
-        groups[(key, rec["sig"])].append(rec)
-
-    diffs = defaultdict(list)
-    replicated = 0
-    for members in groups.values():
-        if len(members) < 2:
-            continue
-        replicated += 1
-        for i in range(len(members)):
-            for j in range(i + 1, len(members)):
-                for name in PROMPT_ORDER:
-                    diffs[name].append(
-                        cand_pct(members[i]["pmap"], members[j]["pmap"], name))
-                diffs["_draft"].append(statistics.fmean(
-                    cand_pct(members[i]["pmap"], members[j]["pmap"], n)
-                    for n in DRAFT_PROBES))
-
-    npairs = len(diffs[TARGET_PROBE])
-    print(f"{len(groups)} (code identity, schedule) groups, {replicated} "
-          f"replicated, {npairs} replicate pairs\n")
-    same = [k for k in range(npairs) if abs(diffs["_draft"][k]) <= MODE_DRAFT_SHIFT]
-    print(f"{'probe':>10} {'all pairs':>10} {'same-mode':>10} {'n same':>7}")
-    for name in PROMPT_ORDER + ["_draft"]:
-        vals = diffs[name]
-        sub = [vals[k] for k in same]
-        allv = math.sqrt(sum(v * v for v in vals) / len(vals)) / math.sqrt(2)
-        samev = (math.sqrt(sum(v * v for v in sub) / len(sub)) / math.sqrt(2)
-                 if sub else float("nan"))
-        print(f"{name:>10} {allv:10.4f} {samev:10.4f} {len(sub):7d}")
-    print("\nPer-run candidate-leg standard deviation in percent "
-          "(pair RMS / sqrt 2).")
-
-    for prefix in focus:
-        hit = [r for r in recs if r["id8"].startswith(prefix)]
-        if not hit:
-            continue
-        rec = hit[0]
-        key, _ = identity(rec["ref"], None)
-        members = groups.get((key, rec["sig"]), [])
-        print(f"\nreplicates of {rec['id8']} ({rec['solver']}): "
-              f"{len(members)} runs of the same code identity and schedule")
-        for m in sorted(members, key=lambda r: r["date"]):
-            print(f"  {m['id8']} {m['solver']:>14} {m['date']} "
-                  f"published {m['score']:.8f}  plutarch "
-                  f"{m['pmap'][TARGET_PROBE]['mtp_seconds_per_token_mean']:.8f}")
-
-
-def hours_apart(pair):
-    fmt = "%Y-%m-%d %H:%M"
-    ta = _dt.datetime.strptime(pair["a"]["date"], fmt)
-    tb = _dt.datetime.strptime(pair["b"]["date"], fmt)
-    return abs((tb - ta).total_seconds()) / 3600.0
-
-
-def report_replicate_audit(recs):
-    """Split the replicate noise into byte-identical and comment-only pairs.
-
-    If the two classes have the same spread, comment-insensitive identity is
-    sound and the wider set simply measures the floor better. If the
-    comment-only class is much wider, the canonicalisation merged trees that
-    are not really the same binary and the wider floor is not trustworthy.
-    """
-    groups = defaultdict(list)
-    for rec in recs:
-        key, _ = identity(rec["ref"], None)
-        if key is None:
-            continue
-        groups[(key, rec["sig"])].append(rec)
-
-    rows = []
-    for members in groups.values():
-        if len(members) < 2:
-            continue
-        for i in range(len(members)):
-            for j in range(i + 1, len(members)):
-                a, b = members[i], members[j]
-                names = git(["diff", "--name-only", a["ref"], b["ref"], "--"]
-                            + BUILD_PATHS).stdout.split()
-                rows.append({
-                    "a": a, "b": b, "files": names,
-                    "target": cand_pct(a["pmap"], b["pmap"], TARGET_PROBE),
-                    "draft": statistics.fmean(
-                        cand_pct(a["pmap"], b["pmap"], n) for n in DRAFT_PROBES),
-                })
-
-    def sd(values):
-        if not values:
-            return float("nan")
-        return math.sqrt(sum(v * v for v in values) / len(values)) / math.sqrt(2)
-
-    print(f"{len(rows)} replicate pairs under comment-insensitive identity\n")
-    print(f"{'class':>26} {'pairs':>6} {'same-mode':>10} {'plutarch sd':>12}")
-    classes = [
-        ("byte-identical", [r for r in rows if not r["files"]]),
-        ("comment-only diff", [r for r in rows if r["files"]]),
-        ("same solver",
-         [r for r in rows if r["a"]["solver"] == r["b"]["solver"]]),
-        ("different solvers",
-         [r for r in rows if r["a"]["solver"] != r["b"]["solver"]]),
-        ("under 3 h apart", [r for r in rows if hours_apart(r) <= 3]),
-        ("over 3 h apart", [r for r in rows if hours_apart(r) > 3]),
-        ("all", rows),
-    ]
-    for label, sub in classes:
-        same = [r for r in sub if abs(r["draft"]) <= MODE_DRAFT_SHIFT]
-        print(f"{label:>26} {len(sub):6d} {len(same):10d} "
-              f"{sd([r['target'] for r in same]):12.4f}")
-
-    print("\nlargest same-mode plutarch replicate deltas")
-    ordered = sorted((r for r in rows if abs(r["draft"]) <= MODE_DRAFT_SHIFT),
-                     key=lambda r: -abs(r["target"]))
-    for r in ordered[:12]:
-        print(f"  {r['a']['id8']} {r['b']['id8']} "
-              f"{r['a']['solver'][:12]:>12}/{r['b']['solver'][:12]:<12} "
-              f"plutarch {r['target']:+.4f} draft {r['draft']:+.4f} "
-              f"files {r['files']}")
 
 
 def report_near(recs, mech_key, max_extra=3):
@@ -771,9 +648,6 @@ def main(argv=None):
     ap.add_argument("--allow-schedule-mismatch", action="store_true")
     ap.add_argument("--neighbours", metavar="ID8")
     ap.add_argument("--max-files", type=int, default=4)
-    ap.add_argument("--noise", action="store_true")
-    ap.add_argument("--replicate-audit", action="store_true")
-    ap.add_argument("--focus", nargs="*", default=[])
     ap.add_argument("--near", action="store_true")
     ap.add_argument("--max-extra", type=int, default=3)
     ap.add_argument("--single-file", metavar="PATH")
@@ -787,12 +661,6 @@ def main(argv=None):
           f"fetched tree\n")
     if args.neighbours:
         report_neighbours(recs, args.neighbours, args.max_files)
-        return 0
-    if args.noise:
-        report_noise(recs, args.focus)
-        return 0
-    if args.replicate_audit:
-        report_replicate_audit(recs)
         return 0
     if args.single_file:
         report_single_file(recs, args.single_file, args.grep,
