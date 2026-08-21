@@ -137,6 +137,20 @@ def read_rounds(path):
     return rows
 
 
+def read_rounds_unfiltered(tag):
+    """Every traced round including the cold first one, for row accounting."""
+    rows = []
+    path = f"research/out/{tag}/trace.txt"
+    if not os.path.exists(path):
+        return rows
+    with open(path) as handle:
+        for line in handle:
+            if line.startswith("mtp-trace: round="):
+                rows.append({k: int(v)
+                             for k, v in re.findall(r"(\w+)=(-?\d+)", line)})
+    return rows
+
+
 def reduce_rounds(rows):
     """Mean of every counter over the rounds handed in.
 
@@ -352,6 +366,35 @@ def main():
               f"arm={leg['e101_arm']:3s} sel_env={source:>6s} "
               f"fused={t.get('sel_fused', 0):6d} "
               f"argpart={t.get('sel_argpart', 0):6d}")
+
+    print()
+    print("row ledger closure (every round, unfiltered; two independent checks)")
+    print(f"  {'tag':14s} {'rounds':>6s} {'targetRows':>10s} {'emitted':>7s} "
+          f"{'drafts':>6s} {'acc':>6s} {'rej':>6s} {'accRate':>9s} {'dLen':>8s} "
+          f"{'closes':>7s}")
+    for leg in legs:
+        rows = leg["rounds"]
+        if not rows:
+            continue
+        # Round 1 is dropped from the timing reduction but not from the ledger,
+        # so re-read the whole trace for accounting.
+        allrows = read_rounds_unfiltered(leg["tag"])
+        n = len(allrows)
+        drafts = sum(row["d"] for row in allrows)
+        accepted = sum(row["acc"] for row in allrows)
+        rate = accepted / drafts if drafts else float("nan")
+        dlen = drafts / n if n else float("nan")
+        closes = (abs(rate - leg["accepted_draft_rate"]) < 1e-12
+                  and abs(dlen - leg["effective_mean_draft_len"]) < 1e-9
+                  and accepted + n == leg["decode_tokens"] + 1)
+        print(f"  {leg['tag']:14s} {n:6d} {drafts + n:10d} {accepted + n:7d} "
+              f"{drafts:6d} {accepted:6d} {drafts - accepted:6d} "
+              f"{rate:9.7f} {dlen:8.5f} {'OK' if closes else 'FAIL':>7s}")
+    print("  targetRows = sum(d+1): every row the target actually evaluated.")
+    print("  emitted    = sum(acc+1) = decode_tokens + 1, the committed stream.")
+    print("  closes     = accRate and dLen reproduce accepted_draft_rate and")
+    print("               effective_mean_draft_len from score.json exactly, and")
+    print("               the emitted count equals decode_tokens + 1.")
 
     print()
     print("f1 ranked price of a latency-class saving (harness=ranked model)")
