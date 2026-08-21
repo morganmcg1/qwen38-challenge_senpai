@@ -7,6 +7,8 @@
       research/e95_verify_census.py kernels  LEG [LEG ...]
       research/e95_verify_census.py gdn      LEG [LEG ...]
       research/e95_verify_census.py step     LEG_A LEG_B --width=4 --width2=5
+      research/e95_verify_census.py model    LEG@M [LEG@M ...]
+      research/e95_verify_census.py rowcost  LEG_A LEG_B --width=5 --width2=8
 
 `counts` fits the per-round `target_verify` dispatch count of every shape at
 every observed verify width M. It is an exact integer model, so a residual means
@@ -571,6 +573,172 @@ def report_step(path_a, path_b, phase="target_verify", width_a=4, width_b=5):
           f"{us_b - us_a:+.1f} us/round")
 
 
+# out_vec_size -> (dispatches per round, mean MAC count of one dispatch).
+# `groups` below is O/8, the tid.y extent, which is the threadgroup count that
+# an idle-launch model would charge for. MACs are K*O. For every class except
+# O=5120 the two are collinear because K is 5120, so O=5120 -- which holds
+# out_proj at K=6144 and down_proj at K=17408 behind one grid -- is the only
+# shape that can separate a launch-count cost from an arithmetic cost.
+QMV_WORK = {
+    out: (count, sum(k * out for k in ks) / len(ks))
+    for out, (_name, ks, count) in QMV_CLASSES.items()
+}
+
+
+def solve(rows, targets):
+    """Least squares for a small dense system, without a numpy dependency."""
+    n = len(rows[0])
+    a = [[sum(r[i] * r[j] for r in rows) for j in range(n)] for i in range(n)]
+    b = [sum(r[i] * t for r, t in zip(rows, targets)) for i in range(n)]
+    for i in range(n):
+        pivot = max(range(i, n), key=lambda r: abs(a[r][i]))
+        a[i], a[pivot] = a[pivot], a[i]
+        b[i], b[pivot] = b[pivot], b[i]
+        for r in range(i + 1, n):
+            factor = a[r][i] / a[i][i]
+            for c in range(i, n):
+                a[r][c] -= factor * a[i][c]
+            b[r] -= factor * b[i]
+    x = [0.0] * n
+    for i in reversed(range(n)):
+        x[i] = (b[i] - sum(a[i][c] * x[c] for c in range(i + 1, n))) / a[i][i]
+    return x
+
+
+def report_model(specs, phase="target_verify"):
+    """Fit `us/round = a + b*G + c*M` over a width ladder and test the residual.
+
+    Weight bytes scale with G and arithmetic scales with M, so a ladder that
+    moves G and M independently separates the two. The per-class table then
+    asks whether the M term tracks threadgroup count (O/8) or MAC count (K*O).
+    """
+    points = []
+    for spec in specs:
+        path, _, text = spec.partition("@")
+        width = int(text)
+        _classes, measured, rounds = leg_classes(path, phase, width)
+        if rounds == 0:
+            print(f"=== {path}: no w{width}|{phase} rounds")
+            continue
+        points.append((width, groups(width), measured, rounds, path))
+    print(f"{'M':>3} {'IPG':>4} {'G':>3} {'idle':>5} {'rounds':>7} "
+          f"{'measured us':>13} {'fit us':>11} {'resid':>9} {'resid %':>8}")
+    rows = [[1.0, float(g), float(m)] for m, g, _us, _n, _p in points]
+    fit = solve(rows, [us for _m, _g, us, _n, _p in points])
+    for (width, g, us, rounds, _path), row in zip(points, rows):
+        modelled = sum(f * r for f, r in zip(fit, row))
+        print(f"{width:3d} {IPG[width]:4d} {g:3d} {width - g:5d} {rounds:7d} "
+              f"{us:13.1f} {modelled:11.1f} {us - modelled:9.1f} "
+              f"{100.0 * (us - modelled) / us:8.2f}")
+    alpha, beta, gamma = fit
+    pass_bytes = WEIGHT_STREAM_BYTES
+    macs = sum(count * work for count, work in QMV_WORK.values())
+    print(f"\n    fixed        a = {alpha:10.1f} us/round")
+    print(f"    per pass     b = {beta:10.1f} us/round  "
+          f"= {pass_bytes / (beta * 1e-6) / 1e9:6.1f} GB/s over "
+          f"{pass_bytes / 1e6:.0f} MB of affine-4 weights")
+    print(f"    per row      c = {gamma:10.1f} us/round  "
+          f"= {macs / (gamma * 1e-6) / 1e12:6.2f} TMAC/s over "
+          f"{macs / 1e9:.2f} G multiply-accumulates")
+    report_ranked_weighting(fit)
+
+
+# Mean verify width of each ranked prompt, carried forward from the campaign
+# ledger. The published score is the mean of the two per-prompt ratios.
+RANKED_WIDTHS = {"beagle": 5.38, "essays": 6.09}
+VERIFY_PHASE_SHARE = 0.908
+
+
+def report_ranked_weighting(fit):
+    """Cost-weight every dispatch class by the ranked verify-width mix.
+
+    affine-4 group-64 packing costs 0.5625 bytes per weight, so bytes and
+    multiply-accumulates are exactly proportional for every class. One share of
+    the weight stream therefore prices both the b*G and the c*M term, and the
+    fixed term a belongs to no class.
+    """
+    alpha, beta, gamma = fit
+    macs = {out: count * work for out, (count, work) in QMV_WORK.items()}
+    total = sum(macs.values())
+    print(f"\n    cost weighted by the ranked verify-width mix "
+          f"(phase share {100 * VERIFY_PHASE_SHARE:.1f} % of the candidate leg)")
+    header = "".join(f"{'%s M=%.2f' % (n, m):>22}"
+                     for n, m in RANKED_WIDTHS.items())
+    print(f"    {'class':<44}{header}")
+    verify = {}
+    for name, width in RANKED_WIDTHS.items():
+        pass_count = groups(round(width))
+        verify[name] = alpha + beta * pass_count + gamma * width
+    for out, share in sorted(macs.items(), key=lambda kv: -kv[1]):
+        cells = ""
+        for name, width in RANKED_WIDTHS.items():
+            variable = beta * groups(round(width)) + gamma * width
+            us = variable * share / total
+            cells += f"{us:12.0f} us {100 * us / verify[name]:6.1f} %"
+        print(f"    {QMV_CLASSES[out][0][:36]:<36} "
+              f"[O={out:6d}]{cells}")
+    for label, value in (("fixed a, no class", lambda _w: alpha),
+                         ("weight stream b*G", lambda w: beta * groups(round(w))),
+                         ("arithmetic   c*M", lambda w: gamma * w)):
+        cells = "".join(
+            f"{value(w):12.0f} us {100 * value(w) / verify[n]:6.1f} %"
+            for n, w in RANKED_WIDTHS.items())
+        print(f"    {label:<44}{cells}")
+    cells = "".join(f"{verify[n]:12.0f} us {100.0:6.1f} %"
+                    for n in RANKED_WIDTHS)
+    print(f"    {'target_verify total':<44}{cells}")
+    print(f"    NOTE E[G] is taken at the rounded mean width. The ranked mix "
+          f"also holds widths with G=1 and G=3,\n         so the b*G share is "
+          f"an approximation; the c*M share is exact because the model is "
+          f"linear in M.")
+
+
+def report_rowcost(path_a, path_b, phase="target_verify", width_a=5, width_b=8):
+    """Is the per-row cost a threadgroup-launch cost or an arithmetic cost?
+
+    Both widths must use the same G, so the step between them adds rows without
+    adding a weight pass. A launch cost would be constant per threadgroup; an
+    arithmetic cost would be constant per multiply-accumulate.
+    """
+    left, us_a, _ = leg_classes(path_a, phase, width_a)
+    right, us_b, _ = leg_classes(path_b, phase, width_b)
+    span = width_b - width_a
+    print(f"=== M={width_a} (G={groups(width_a)}) -> M={width_b} "
+          f"(G={groups(width_b)}), {span} extra rows at equal weight passes")
+    print(f"    {'us/row':>10} {'n':>5} {'us/disp/row':>12} {'groups':>8} "
+          f"{'ns/group':>10} {'MMAC':>10} {'us/MMAC':>9}  class")
+    observed = []
+    for out, (count, work) in sorted(QMV_WORK.items(), key=lambda kv: -kv[1][1]):
+        label = f"qmv {QMV_CLASSES[out][0]} [O={out}]"
+        if label not in left or label not in right:
+            continue
+        per_row = (right[label][0] - left[label][0]) / span
+        per_disp = per_row / count
+        tg = out / 8
+        observed.append((label, per_row, count * tg, count * work / 1e6))
+        print(f"    {per_row:10.1f} {count:5d} {per_disp:12.3f} {tg:8.0f} "
+              f"{per_disp * 1e3 / tg:10.2f} {work / 1e6:10.2f} "
+              f"{per_disp / (work / 1e6):9.4f}  {label[:60]}")
+    print(f"    phase {us_a:.1f} -> {us_b:.1f} us/round")
+    for name, pick in (("launch  us = d*threadgroups", (1,)),
+                       ("work    us = w*MMAC", (2,)),
+                       ("both    us = d*threadgroups + w*MMAC", (1, 2))):
+        design = [[row[1 + c] for c in pick] for row in observed]
+        coefficients = solve(design, [row[1] for row in observed])
+        signal = sum(row[1] ** 2 for row in observed)
+        error = sum((row[1] - sum(c * v for c, v in zip(coefficients, d))) ** 2
+                    for row, d in zip(observed, design))
+        terms = []
+        for index, column in enumerate(pick):
+            if column == 1:
+                terms.append(f"d={coefficients[index] * 1e3:7.3f} ns/threadgroup")
+            else:
+                rate = 1.0 / coefficients[index]   # MMAC/us == TMAC/s
+                terms.append(f"w={coefficients[index]:.4f} us/MMAC ({rate:.2f} TMAC/s)")
+        print(f"    {name:38s} {'  '.join(terms)}   "
+              f"rms residual {100.0 * (error / signal) ** 0.5:5.2f} %")
+
+
 def report_gdn(paths, phase="target_verify"):
     """Audit every Gated DeltaNet recurrent-state dispatch, per round and width."""
     print(f"GDN recurrent state: {GDN_V_HEADS} heads x {GDN_HEAD_DIM} x "
@@ -636,6 +804,10 @@ def main():
         report_closure(kept[0], kept[1], width=width)
     elif mode == "step":
         report_step(kept[0], kept[1], width_a=width, width_b=width2)
+    elif mode == "model":
+        report_model(kept)
+    elif mode == "rowcost":
+        report_rowcost(kept[0], kept[1], width_a=width, width_b=width2)
     elif mode == "gdn":
         report_gdn(kept)
     else:
