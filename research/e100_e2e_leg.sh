@@ -15,9 +15,10 @@
 # temperature are recorded for every leg, and the honesty flags below stay
 # false. This leg is directional causal evidence, never a ranked score.
 #
-# MLX_QWEN_MTP_TRACE=1 emits one `mtp-trace:` line per round, so the width
-# histogram that decides whether the M = 5 dispatch entry is reached at all can
-# be read out of the same leg that produced the timing.
+# Set MLXFAST_E100_TRACE=1 for a DIAGNOSTIC leg. It emits one `mtp-trace:` line
+# per round to a file, which gives the verify width histogram that decides
+# whether the M = 5 dispatch entry is reached at all. The round trace adds host
+# work, so a traced leg is never a timed leg of the ABBA session.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -42,18 +43,26 @@ gpu_temp() {
 entry_c="$(gpu_temp)"
 start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+trace_path=""
+if [[ "${MLXFAST_E100_TRACE:-0}" == "1" ]]; then
+  trace_path="${PWD}/${out_dir}/rounds.trace"
+  : > "${trace_path}"
+fi
+
 MLXFAST_LOCAL_COOL_GATE=0 \
-MLX_QWEN_MTP_TRACE=1 \
+MLX_QWEN_MTP_TRACE="${MLXFAST_E100_TRACE:-0}" \
+MLX_QWEN_MTP_TRACE_PATH="${trace_path}" \
 MLXFAST_SCORE_PATH="${PWD}/${out_dir}/score.json" \
 ./benchmark-qwen-mtp.sh --local-iterate 2>&1 | tee "${out_dir}/run.log"
 status="${PIPESTATUS[0]}"
 
 exit_c="$(gpu_temp)"
 
-# Verify width histogram, read straight off the candidate leg's trace. `d` is
-# the draft count, so the verify width is d + 1.
-grep -o 'mtp-trace: round=[0-9]* d=[0-9]*' "${out_dir}/run.log" \
-  | awk '{print $3}' | sort | uniq -c | sort -k2 > "${out_dir}/width_hist.txt"
+# Verify width histogram. `d` is the draft count, so the verify width is d + 1.
+if [[ -s "${trace_path:-/dev/null}" ]]; then
+  grep -o ' d=[0-9]*' "${trace_path}" | tr -d ' d=' | sort -n | uniq -c \
+    > "${out_dir}/draft_hist.txt"
+fi
 
 {
   echo "experiment=e100-fewer-weight-streams-per-round"
@@ -76,10 +85,13 @@ grep -o 'mtp-trace: round=[0-9]* d=[0-9]*' "${out_dir}/run.log" \
   echo "cool_gate_passed_real_gate=false"
   echo "gate_qualified_for_timing=false"
   echo "timing_valid=false"
+  echo "traced=${MLXFAST_E100_TRACE:-0}"
   echo "status=${status}"
 } > "${out_dir}/meta.txt"
 
 cat "${out_dir}/meta.txt"
-echo "--- verify width histogram (count, d) ---"
-cat "${out_dir}/width_hist.txt"
+if [[ -s "${out_dir}/draft_hist.txt" ]]; then
+  echo "--- draft-count histogram (count, d); verify width is d + 1 ---"
+  cat "${out_dir}/draft_hist.txt"
+fi
 exit "${status}"
