@@ -47,7 +47,16 @@ WIDTH_COLS = ["M", "legs", "verify_gpu_busy_us", "head_gpu_busy_us",
               "verify_share_of_round_busy", "head_share_of_round_busy",
               "closure_share", "G", "modelled_weight_bytes",
               "achieved_bandwidth_gbs", "ratio_to_peak", "implied_bytes",
-              "implied_over_weight_stream", "implied_over_G_times_stream"]
+              "implied_over_weight_stream", "implied_over_G_times_stream",
+              "marginal_verify_gpu_busy_us", "marginal_round_gpu_busy_us",
+              "marginal_verify_over_anchor", "verify_spread_frac",
+              "round_spread_frac"]
+
+ACCEPTANCE_COLS = ["pinned_depth", "position", "reach", "conditional", "rounds"]
+
+COST_COLS = ["depth", "width", "round_gpu_busy_us", "expected_tokens_pinned",
+             "us_per_token_pinned", "expected_tokens_pooled",
+             "us_per_token_pooled"]
 
 
 def table(columns, rows) -> wandb.Table:
@@ -159,9 +168,63 @@ def log_rung2(run, doc: dict, prefix: str = "rung2") -> None:
         scalars[f"{prefix}/head_gpu_busy_us/M{width}"] = row["head_gpu_busy_us"]
         scalars[f"{prefix}/closure_share/M{width}"] = row["closure_share"]
         for key in ("achieved_bandwidth_gbs", "ratio_to_peak", "implied_bytes",
-                    "implied_over_weight_stream", "implied_over_G_times_stream"):
+                    "implied_over_weight_stream", "implied_over_G_times_stream",
+                    "marginal_verify_gpu_busy_us", "marginal_round_gpu_busy_us",
+                    "marginal_verify_over_anchor", "verify_spread_frac",
+                    "round_spread_frac"):
             if row.get(key) is not None:
                 scalars[f"{prefix}/{key}/M{width}"] = row[key]
+    run.log(scalars)
+
+
+def log_acceptance(run, doc: dict, prefix: str = "acceptance") -> None:
+    rows = []
+    for depth, row in sorted(doc["per_pinned_depth"].items(),
+                             key=lambda kv: int(kv[0])):
+        for index, reach in enumerate(row["reach"]):
+            rows.append({"pinned_depth": int(depth), "position": index + 1,
+                         "reach": reach,
+                         "conditional": row["conditional"][index],
+                         "rounds": row["rounds"]})
+    run.log({f"{prefix}/per_position": table(ACCEPTANCE_COLS, rows)})
+
+    scalars = {}
+    for depth, row in doc["per_pinned_depth"].items():
+        scalars[f"{prefix}/expected_tokens/d{depth}"] = row["expected_tokens"]
+        scalars[f"{prefix}/mean_accepted/d{depth}"] = row["mean_accepted"]
+        scalars[f"{prefix}/rounds/d{depth}"] = row["rounds"]
+    for index, q in enumerate(doc["pooled_conditional"]):
+        scalars[f"{prefix}/pooled_conditional/i{index + 1}"] = q
+    for depth, y in enumerate(doc["pooled_expected_tokens"]):
+        scalars[f"{prefix}/pooled_expected_tokens/d{depth}"] = y
+    run.log(scalars)
+
+
+def log_depth_price(run, doc: dict, prefix: str = "depth_price") -> None:
+    rows = []
+    for label, raw in doc["raw"].items():
+        for index, value in enumerate(raw):
+            rows.append({"form": label, "step_into_width": index + 2,
+                         "raw": value,
+                         "rescaled": doc["rescaled"][label][index]})
+    run.log({f"{prefix}/shapes": table(
+        ["form", "step_into_width", "raw", "rescaled"], rows)})
+    run.log({f"{prefix}/cost_per_token": table(
+        COST_COLS, doc["cost_per_token"])})
+
+    scalars = {}
+    for row in doc["cost_per_token"]:
+        depth = row["depth"]
+        scalars[f"{prefix}/us_per_token_pinned/d{depth}"] = row[
+            "us_per_token_pinned"]
+        scalars[f"{prefix}/us_per_token_pooled/d{depth}"] = row[
+            "us_per_token_pooled"]
+    for tag, histogram in doc["chosen_depth_histograms"].items():
+        scalars[f"{prefix}/chosen_depth_mass_4/{tag}"] = histogram[
+            "mass_at_depth_4"]
+        scalars[f"{prefix}/chosen_depth_mass_5/{tag}"] = histogram[
+            "mass_at_depth_5"]
+        scalars[f"{prefix}/chosen_depth_mean/{tag}"] = histogram["mean_depth"]
     run.log(scalars)
 
 
@@ -171,6 +234,9 @@ def main() -> None:
     ap.add_argument("--rung1-reversed")
     ap.add_argument("--rung2")
     ap.add_argument("--rung2-production")
+    ap.add_argument("--rung2-production-widths")
+    ap.add_argument("--acceptance")
+    ap.add_argument("--depth-price")
     ap.add_argument("--peak-gbs", type=float)
     ap.add_argument("--name", default="e92-verify-pass-bandwidth")
     ap.add_argument("--notes", default="")
@@ -231,6 +297,14 @@ def main() -> None:
     if args.rung2_production:
         log_rung2(run, json.loads(Path(args.rung2_production).read_text()),
                   "rung2_production")
+    if args.rung2_production_widths:
+        log_rung2(run,
+                  json.loads(Path(args.rung2_production_widths).read_text()),
+                  "rung2_production_widths")
+    if args.acceptance:
+        log_acceptance(run, json.loads(Path(args.acceptance).read_text()))
+    if args.depth_price:
+        log_depth_price(run, json.loads(Path(args.depth_price).read_text()))
 
     print(run.url)
     print(run.id)
