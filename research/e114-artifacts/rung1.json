@@ -1,0 +1,660 @@
+{
+ "delta_weights": {
+  "gt1": {
+   "2": 0.09178678424508821,
+   "3": 0.06714548490588501,
+   "4": -0.1877799782735437,
+   "5": 0.02884770912257048
+  },
+  "gt2": {
+   "2": -0.024,
+   "3": -0.027167065873320406,
+   "4": -0.09739726974946006,
+   "5": 0.14856433562278037
+  },
+  "maxent": {
+   "2": 0.015814273516222728,
+   "3": 0.07334264339540753,
+   "4": -0.15625275089927493,
+   "5": 0.06709583398764464
+  }
+ },
+ "frames": {
+  "local": {
+   "arms": [
+    {
+     "arm": "l_loadonly",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 10.347608942332647,
+     "move_hi_pp": 7.694729020805408,
+     "move_lo_pp": -10.347608942332647,
+     "na": {
+      "2": -3.63,
+      "3": -6.32,
+      "4": -17.63,
+      "5": -29.21
+     },
+     "points": {
+      "gt1": -12.917966740936503,
+      "gt2": -16.99583278920682,
+      "maxent": -14.381291111673425
+     },
+     "published_hi": -6.882740979194592,
+     "published_lo": -24.925078942332647,
+     "role": "diagnostic",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": -14.57747
+    },
+    {
+     "arm": "b_constw_e110",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 0.9089675802293726,
+     "move_hi_pp": 0.6255044549625808,
+     "move_lo_pp": -0.9089675802293726,
+     "na": {
+      "2": -91.31,
+      "3": -87.78,
+      "4": -86.37,
+      "5": -86.17
+     },
+     "points": {
+      "gt1": -87.4194585730666,
+      "gt2": -86.67239699081311,
+      "maxent": -87.03180493767488
+     },
+     "published_hi": -86.24400554503742,
+     "published_lo": -87.77847758022938,
+     "role": "diagnostic",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": -86.86951
+    },
+    {
+     "arm": "b_barrier",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 0.18534759916070898,
+     "move_hi_pp": 0.10018529014212924,
+     "move_lo_pp": -0.18534759916070898,
+     "na": {
+      "2": -0.63,
+      "3": 0.12,
+      "4": 0.41,
+      "5": 0.4
+     },
+     "points": {
+      "gt1": 0.1881088359553782,
+      "gt2": 0.33862210337759796,
+      "maxent": 0.26779504455324415
+     },
+     "published_hi": 0.40513529014212923,
+     "published_lo": 0.11960240083929102,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": 0.30495
+    },
+    {
+     "arm": "xs_stage",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 1.0176525709973292,
+     "move_hi_pp": 0.4459051459012171,
+     "move_lo_pp": -1.0176525709973292,
+     "na": {
+      "2": 0.22,
+      "3": -0.81,
+      "4": -1.44,
+      "5": -2.79
+     },
+     "points": {
+      "gt1": -1.114847619488892,
+      "gt2": -1.53127168239753,
+      "maxent": -1.2925940226522807
+     },
+     "published_hi": -0.8269048540987829,
+     "published_lo": -2.290462570997329,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": -1.27281
+    },
+    {
+     "arm": "mo_stage",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 23.425374409833466,
+     "move_hi_pp": 20.389397927988284,
+     "move_lo_pp": -23.425374409833466,
+     "na": {
+      "2": 60.66,
+      "3": 127.1,
+      "4": 163.21,
+      "5": 176.63
+     },
+     "points": {
+      "gt1": 139.73546418470966,
+      "gt2": 156.95579062180758,
+      "maxent": 148.08481067559725
+     },
+     "published_hi": 171.6642279279883,
+     "published_lo": 127.84945559016654,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": 151.27483
+    },
+    {
+     "arm": "mo_swap",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 24.891985522300132,
+     "move_hi_pp": 21.83369299425246,
+     "move_lo_pp": -24.891985522300132,
+     "na": {
+      "2": 60.5,
+      "3": 127.55,
+      "4": 165.93,
+      "5": 180.61
+     },
+     "points": {
+      "gt1": 141.43563448959588,
+      "gt2": 159.35740135604084,
+      "maxent": 150.04389569484442
+     },
+     "published_hi": 175.17799299425246,
+     "published_lo": 128.45231447769987,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": 153.3443
+    },
+    {
+     "arm": "b_constw_e111",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 2.4743570788697897,
+     "move_hi_pp": 2.4743570788697897,
+     "move_lo_pp": -0.8467958275568876,
+     "na": {
+      "2": 12.77,
+      "3": 1.85,
+      "4": -2.15,
+      "5": 0.5
+     },
+     "points": {
+      "gt1": 1.1348758617845032,
+      "gt2": -0.7143603298173158,
+      "maxent": 0.08550508725867889
+     },
+     "published_hi": 1.8725370788697897,
+     "published_lo": -1.4486158275568877,
+     "role": "withdrawn",
+     "sign_identified": false,
+     "src": "E111",
+     "standing_pct": -0.60182
+    },
+    {
+     "arm": "f44_roofline_gap",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 16.46464826877545,
+     "move_hi_pp": 16.46464826877545,
+     "move_lo_pp": -10.504050310767358,
+     "na": {
+      "2": 3.5,
+      "3": 6.0,
+      "4": 21.2,
+      "5": 41.1
+     },
+     "points": {
+      "gt1": 15.26930030369943,
+      "gt2": 21.12657724008028,
+      "maxent": 17.312169075333493
+     },
+     "published_hi": 33.73644826877545,
+     "published_lo": 6.767749689232641,
+     "role": "quantity",
+     "sign_identified": true,
+     "src": "Finding 44",
+     "standing_pct": 17.2718
+    }
+   ],
+   "points": {
+    "gt1": {
+     "2": 0.12061203496364882,
+     "3": 0.33047546102561837,
+     "4": 0.48723610551096336,
+     "5": 0.06167639849976949
+    },
+    "gt2": {
+     "2": 0.0,
+     "3": 0.23993826952304528,
+     "4": 0.5804818844050668,
+     "5": 0.17957984607188793
+    },
+    "maxent": {
+     "2": 0.041621771184560986,
+     "3": 0.3376643073951993,
+     "4": 0.5211474943997749,
+     "5": 0.09956642702046481
+    }
+   }
+  },
+  "ranked": {
+   "arms": [
+    {
+     "arm": "l_loadonly",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 10.442725234219024,
+     "move_hi_pp": 7.720433908910914,
+     "move_lo_pp": -10.442725234219024,
+     "na": {
+      "2": -3.63,
+      "3": -6.32,
+      "4": -17.63,
+      "5": -29.21
+     },
+     "points": {
+      "gt1": -12.867096057922572,
+      "gt2": -16.94110452153905,
+      "maxent": -14.303534631547748
+     },
+     "published_hi": -6.8570360910890855,
+     "published_lo": -25.020195234219024,
+     "role": "diagnostic",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": -14.57747
+    },
+    {
+     "arm": "b_constw_e110",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 0.9066398218183878,
+     "move_hi_pp": 0.6271472233889455,
+     "move_lo_pp": -0.9066398218183878,
+     "na": {
+      "2": -91.31,
+      "3": -87.78,
+      "4": -86.37,
+      "5": -86.17
+     },
+     "points": {
+      "gt1": -87.41184230606353,
+      "gt2": -86.68293156999407,
+      "maxent": -87.03762647156015
+     },
+     "published_hi": -86.24236277661106,
+     "published_lo": -87.7761498218184,
+     "role": "diagnostic",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": -86.86951
+    },
+    {
+     "arm": "b_barrier",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 0.18482106131022724,
+     "move_hi_pp": 0.10009681645205842,
+     "move_lo_pp": -0.18482106131022724,
+     "na": {
+      "2": -0.63,
+      "3": 0.12,
+      "4": 0.41,
+      "5": 0.4
+     },
+     "points": {
+      "gt1": 0.18973107667117592,
+      "gt2": 0.3363028057470351,
+      "maxent": 0.2665628306185837
+     },
+     "published_hi": 0.4050468164520584,
+     "published_lo": 0.12012893868977276,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": 0.30495
+    },
+    {
+     "arm": "xs_stage",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 1.0287412578752748,
+     "move_hi_pp": 0.4459558025167596,
+     "move_lo_pp": -1.0287412578752748,
+     "na": {
+      "2": 0.22,
+      "3": -0.81,
+      "4": -1.44,
+      "5": -2.79
+     },
+     "points": {
+      "gt1": -1.1170866899779162,
+      "gt2": -1.5303271045909452,
+      "maxent": -1.2909318165072838
+     },
+     "published_hi": -0.8268541974832404,
+     "published_lo": -2.301551257875275,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": -1.27281
+    },
+    {
+     "arm": "mo_stage",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 23.413522606058677,
+     "move_hi_pp": 20.499627689397187,
+     "move_lo_pp": -23.413522606058677,
+     "na": {
+      "2": 60.66,
+      "3": 127.1,
+      "4": 163.21,
+      "5": 176.63
+     },
+     "points": {
+      "gt1": 139.8246080721396,
+      "gt2": 156.71076613274332,
+      "maxent": 147.9050994900174
+     },
+     "published_hi": 171.7744576893972,
+     "published_lo": 127.86130739394133,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": 151.27483
+    },
+    {
+     "arm": "mo_swap",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 24.886497535469715,
+     "move_hi_pp": 21.95427219674744,
+     "move_lo_pp": -24.886497535469715,
+     "na": {
+      "2": 60.5,
+      "3": 127.55,
+      "4": 165.93,
+      "5": 180.61
+     },
+     "points": {
+      "gt1": 141.51365999627183,
+      "gt2": 159.09821643516045,
+      "maxent": 149.8470773326075
+     },
+     "published_hi": 175.29857219674744,
+     "published_lo": 128.4578024645303,
+     "role": "arm",
+     "sign_identified": true,
+     "src": "E110 A",
+     "standing_pct": 153.3443
+    },
+    {
+     "arm": "b_constw_e111",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 2.4659480836128167,
+     "move_hi_pp": 2.4659480836128167,
+     "move_lo_pp": -0.8166325344890395,
+     "na": {
+      "2": 12.77,
+      "3": 1.85,
+      "4": -2.15,
+      "5": 0.5
+     },
+     "points": {
+      "gt1": 1.1126671897350677,
+      "gt2": -0.6748727740929134,
+      "maxent": 0.10530349451093146
+     },
+     "published_hi": 1.8641280836128167,
+     "published_lo": -1.4184525344890395,
+     "role": "withdrawn",
+     "sign_identified": false,
+     "src": "E111",
+     "standing_pct": -0.60182
+    },
+    {
+     "arm": "f44_roofline_gap",
+     "guaranteed_move_pp": 0.0,
+     "immaterial_proven": false,
+     "max_move_pp": 16.628103727198493,
+     "move_hi_pp": 16.628103727198493,
+     "move_lo_pp": -10.53939398318975,
+     "na": {
+      "2": 3.5,
+      "3": 6.0,
+      "4": 21.2,
+      "5": 41.1
+     },
+     "points": {
+      "gt1": 15.20063195983164,
+      "gt2": 21.0659696801678,
+      "maxent": 17.21228627550679
+     },
+     "published_hi": 33.89990372719849,
+     "published_lo": 6.732406016810248,
+     "role": "quantity",
+     "sign_identified": true,
+     "src": "Finding 44",
+     "standing_pct": 17.2718
+    }
+   ],
+   "points": {
+    "gt1": {
+     "2": 0.1157867842450882,
+     "3": 0.34214548490588503,
+     "4": 0.47922002172645634,
+     "5": 0.06284770912257048
+    },
+    "gt2": {
+     "2": 0.0,
+     "3": 0.24783293412667962,
+     "4": 0.56960273025054,
+     "5": 0.18256433562278038
+    },
+    "maxent": {
+     "2": 0.03981427351622273,
+     "3": 0.34834264339540755,
+     "4": 0.5107472491007251,
+     "5": 0.10109583398764464
+    }
+   }
+  }
+ },
+ "item5": {
+  "collapse_prices": {
+   "e104_f33_ranked": {
+    "band": null,
+    "note": "E104 Finding 33, measured ranked",
+    "pct": 1.9
+   },
+   "f32_route1": {
+    "band": null,
+    "note": "Finding 32 ranked route 1",
+    "pct": -2.0
+   },
+   "f32_route2": {
+    "band": 1.5,
+    "note": "Finding 32 ranked route 2",
+    "pct": -0.3
+   }
+  },
+  "curve_difference_price": {
+   "exceeds_fit_residual": true,
+   "exceeds_placebo": false,
+   "note": "M=6,7,8 share one partition across both fits, so any difference there is drift. The register tax should make the post-E100 fit SLOWER at M>=6 by about 0.10 %; it does not.",
+   "pct": 1.102842875488149,
+   "placebo_unchanged_partition": {
+    "6": {
+     "pct": 1.1776365070631531,
+     "post_us": 59630.600000000006,
+     "pre_us": 60341.2
+    },
+    "7": {
+     "pct": 1.2364186331469489,
+     "post_us": 66738.70000000001,
+     "pre_us": 67574.2
+    },
+    "8": {
+     "pct": 1.2838336416815417,
+     "post_us": 73846.8,
+     "pre_us": 74807.2
+    }
+   },
+   "post_us": 52522.5,
+   "pre_us": 53108.2,
+   "resid_pct": 0.68,
+   "usable_as_price": false,
+   "worst_placebo_pct": 1.2838336416815417
+  },
+  "nets": {
+   "e104_f33_ranked/e102_measured": {
+    "gain_pct": 1.9,
+    "net_hi": 1.15573109471923,
+    "net_lo": -0.1068,
+    "net_point": 0.11244857397066033,
+    "tax_pct": 0.1068
+   },
+   "e104_f33_ranked/e77_law": {
+    "gain_pct": 1.9,
+    "net_hi": 1.1651310947192302,
+    "net_lo": -0.0974,
+    "net_point": 0.12184857397066033,
+    "tax_pct": 0.0974
+   },
+   "f32_route1/e102_measured": {
+    "gain_pct": -2.0,
+    "net_hi": -0.1068,
+    "net_lo": -1.4357800997044528,
+    "net_point": -0.33758797260069506,
+    "tax_pct": 0.1068
+   },
+   "f32_route1/e77_law": {
+    "gain_pct": -2.0,
+    "net_hi": -0.0974,
+    "net_lo": -1.4263800997044527,
+    "net_point": -0.3281879726006951,
+    "tax_pct": 0.0974
+   },
+   "f32_route2/e102_measured": {
+    "gain_pct": -0.3,
+    "net_hi": 0.6905880598226716,
+    "net_lo": -1.3028820897340074,
+    "net_point": -0.14141819589010426,
+    "tax_pct": 0.1068
+   },
+   "f32_route2/e77_law": {
+    "gain_pct": -0.3,
+    "net_hi": 0.6999880598226715,
+    "net_lo": -1.2934820897340074,
+    "net_point": -0.13201819589010427,
+    "tax_pct": 0.0974
+   }
+  },
+  "per_prompt_m5_time_share": {
+   "beagle": {
+    "hi": 0.8298465086130791,
+    "lo": 0.0,
+    "points": {
+     "gt1": 0.0820741701094078,
+     "gt2": 0.2348284155028868,
+     "maxent": 0.13308902953051255
+    }
+   },
+   "botany": {
+    "hi": 0.219994260199796,
+    "lo": 0.0,
+    "points": {
+     "gt1": 0.03301241722927055,
+     "gt2": 0.08296633019843332,
+     "maxent": 0.04292252015382773
+    }
+   },
+   "essays": {
+    "hi": 0.5559059550269895,
+    "lo": 0.0,
+    "points": {
+     "gt1": 0.06841635434058879,
+     "gt2": 0.18352206360095016,
+     "maxent": 0.10584263453949312
+    }
+   },
+   "medicine": {
+    "hi": 0.49702677476781615,
+    "lo": 0.0,
+    "points": {
+     "gt1": 0.06415940404792173,
+     "gt2": 0.16900678940909178,
+     "maxent": 0.0975162936988875
+    }
+   },
+   "republic": {
+    "hi": 0.5911131560953354,
+    "lo": 0.0,
+    "points": {
+     "gt1": 0.07069598577486268,
+     "gt2": 0.19160678389675226,
+     "maxent": 0.11035817758637968
+    }
+   }
+  },
+  "published_weighted_share": {
+   "hi": 0.6644900498522264,
+   "lo": 0.0,
+   "points": {
+    "gt1": 0.073062085032284,
+    "gt2": 0.20223755801895332,
+    "maxent": 0.11539398630034754
+   }
+  },
+  "register_tax": {
+   "e102_measured": 0.1068,
+   "e77_law": 0.0974
+  }
+ },
+ "primary_metric": {
+  "definition": "max over the E110 arm table of |published-weighted - standing-weighted|, at the maxent width shape, rate table harness=ranked",
+  "guaranteed_lower_bound": 0.0,
+  "identified_set_upper_bound": 24.886497535469715,
+  "kill_rule_pp": 0.05,
+  "name": "e114_max_abs_arm_reweight_pp",
+  "shape_ensemble_hi": 5.753916435160448,
+  "shape_ensemble_lo": -11.830640003728178,
+  "value": 3.497222667392492
+ },
+ "prompt_mix": {
+  "beagle": 4.0519217204021556e-05,
+  "botany": 3.067755311030355e-06,
+  "essays": 3.181189232336312e-05,
+  "medicine": 9.65430705697622e-06,
+  "republic": 3.6183398416883034e-06
+ },
+ "receipt": "b8b8b860-18cd-42b3-a828-2c223aaa2173",
+ "standing_weights": {
+  "2": 0.024,
+  "3": 0.275,
+  "4": 0.667,
+  "5": 0.034
+ },
+ "unresolved": {
+  "c_loadonly": "E111 reduced to `weighted %` only; per-NA cells live in thorfinn's host-local `research/out/<tag>/arms.json`",
+  "d_bias1": "same as c_loadonly",
+  "e_bias6": "same as c_loadonly",
+  "g_pack32": "same as c_loadonly",
+  "h_prunenarrow": "E108 reported one pooled percentage, never per NA",
+  "i_pruneall": "same as h_prunenarrow",
+  "n_nobias": "same as c_loadonly",
+  "n_nosums": "same as c_loadonly, except the single cell NA=5 = +9.93 %",
+  "xv4": "E110 session B per-NA cells; alphonse PR #112 was still wip at the recorded base and `research/out/<tag>/arms.json` is host-local",
+  "xv4_stage": "same as xv4",
+  "xv8": "same as xv4"
+ }
+}

@@ -1,0 +1,94 @@
+==============================================================================
+E114 rung 0 - ranked verify-width recovery   receipt b8b8b860 (rejected)
+==============================================================================
+
+-- round-count admissibility, harness=ranked --
+  prompt    chosen admissible R                  curve    resid%
+  beagle       110 [110, 165, 220, 275, 330, 38    110    -0.25% 
+  botany        81 [81, 108, 135, 162, 189, 216     81    -0.11% 
+  drama        252 [168, 252, 336, 420, 504]       252    -0.57% 
+  essays        92 [92, 115, 138, 161, 184, 207     92    +0.68% 
+  medicine      90 [90, 180, 270, 360, 450]         90    -0.11% 
+  plutarch     487 [487]                           487    -0.06% 
+  republic      93 [93, 186, 279, 372, 465]         93    -0.21% 
+  travel       212 [212, 424]                      212    +0.47% 
+
+-- validation on traced ground truth, rate table harness=local --
+  GT1  E106 census, W&B 19kgn6xi, 19 rounds         rounds  19  mean width 6.9474
+      traced     NA2 0.0242  NA3 0.2748  NA4 0.6667  NA5 0.0343
+      maxent     NA2 0.0050  NA3 0.2594  NA4 0.6885  NA5 0.0471   max|err| 0.0218  tol 0.10  PASS
+      transport  NA2 0.0000  NA3 0.1474  NA4 0.7649  NA5 0.0877   max|err| 0.1274  tol 0.10  FAIL
+      bound      NA2[0.000,0.082]  NA3[0.000,0.489]  NA4[0.511,1.000]  NA5[0.000,0.242]
+      coverage   PASS (10 vertices, widest band 0.489)
+  GT2  E109 witness w512, 77 rounds, 512 tokens     rounds  77  mean width 7.3766
+      traced     NA2 0.0000  NA3 0.1080  NA4 0.8425  NA5 0.0495
+      maxent     NA2 0.0009  NA3 0.1948  NA4 0.7820  NA5 0.0223   max|err| 0.0868  tol 0.05  FAIL
+      transport  NA2 0.0058  NA3 0.2074  NA4 0.7685  NA5 0.0183   max|err| 0.0994  tol 0.05  FAIL
+      bound      NA2[0.000,0.046]  NA3[0.000,0.281]  NA4[0.719,1.000]  NA5[0.000,0.134]
+      coverage   PASS (6 vertices, widest band 0.281)
+  GT3 g1_share observed 0.0641  bound [0.0000,0.2137] PASS  |  maxent 0.0600 PASS  transport 0.0447 PASS
+  point estimate maxent     pre-registered gate: FAIL
+  point estimate transport  pre-registered gate: FAIL
+
+-- validation on traced ground truth, rate table harness=ranked --
+  GT1  E106 census, W&B 19kgn6xi, 19 rounds         rounds  19  mean width 6.9474
+      traced     NA2 0.0233  NA3 0.2850  NA4 0.6567  NA5 0.0350
+      maxent     NA2 0.0048  NA3 0.2690  NA4 0.6782  NA5 0.0480   max|err| 0.0214  tol 0.10  PASS
+      transport  NA2 0.0000  NA3 0.1535  NA4 0.7566  NA5 0.0898   max|err| 0.1315  tol 0.10  FAIL
+      bound      NA2[0.000,0.080]  NA3[0.000,0.502]  NA4[0.498,1.000]  NA5[0.000,0.249]
+      coverage   PASS (10 vertices, widest band 0.502)
+  GT2  E109 witness w512, 77 rounds, 512 tokens     rounds  77  mean width 7.3766
+      traced     NA2 0.0000  NA3 0.1129  NA4 0.8363  NA5 0.0509
+      maxent     NA2 0.0009  NA3 0.2028  NA4 0.7734  NA5 0.0229   max|err| 0.0899  tol 0.05  FAIL
+      transport  NA2 0.0056  NA3 0.2158  NA4 0.7598  NA5 0.0187   max|err| 0.1030  tol 0.05  FAIL
+      bound      NA2[0.000,0.045]  NA3[0.000,0.291]  NA4[0.709,1.000]  NA5[0.000,0.139]
+      coverage   PASS (6 vertices, widest band 0.291)
+  GT3 g1_share observed 0.0641  bound [0.0000,0.2137] PASS  |  maxent 0.0600 PASS  transport 0.0447 PASS
+  point estimate maxent     pre-registered gate: FAIL
+  point estimate transport  pre-registered gate: FAIL
+
+-- per-prompt NA weights  harness=ranked widths, rate table harness=local, constraints=mean_only --
+  prompt         M P(M=1)   band | transport                                    | widen%
+  plutarch   1.154  0.922  0.974 | NA2 0.5010  NA3 0.2234  NA4 0.1567  NA5 0.1189 |  0.00
+  drama      3.298  0.000  1.000 | NA2 0.4073  NA3 0.2431  NA4 0.2058  NA5 0.1438 |  0.00
+  travel     3.656  0.000  1.000 | NA2 0.3234  NA3 0.2565  NA4 0.2594  NA5 0.1606 |  0.00
+  beagle     5.382  0.000  1.000 | NA2 0.0914  NA3 0.2508  NA4 0.5089  NA5 0.1489 |  0.00
+  republic   5.989  0.000  1.000 | NA2 0.0504  NA3 0.2294  NA4 0.5962  NA5 0.1240 |  0.00
+  essays     6.087  0.000  0.950 | NA2 0.0451  NA3 0.2251  NA4 0.6105  NA5 0.1193 |  0.00
+  medicine   6.256  0.000  0.855 | NA2 0.0368  NA3 0.2169  NA4 0.6355  NA5 0.1108 |  0.00
+  botany     7.148  0.000  0.390 | NA2 0.0073  NA3 0.1549  NA4 0.7811  NA5 0.0567 |  0.00
+
+-- per-prompt NA weights  harness=ranked widths, rate table harness=local, constraints=with_cost --
+  prompt         M P(M=1)   band | transport                                    | widen%
+  plutarch   1.154  0.922  0.974 | NA2 0.5010  NA3 0.2234  NA4 0.1567  NA5 0.1189 |  0.00
+  drama      3.298  0.000  0.686 | NA2 0.4073  NA3 0.2431  NA4 0.2058  NA5 0.1438 |  0.00
+  travel     3.656  0.000  0.484 | NA2 0.3234  NA3 0.2565  NA4 0.2594  NA5 0.1606 |  0.00
+  beagle     5.382  0.000  1.000 | NA2 0.0914  NA3 0.2508  NA4 0.5089  NA5 0.1489 |  0.00
+  republic   5.989  0.000  1.000 | NA2 0.0504  NA3 0.2294  NA4 0.5962  NA5 0.1240 |  0.00
+  essays     6.087  0.000  0.950 | NA2 0.0451  NA3 0.2251  NA4 0.6105  NA5 0.1193 |  0.00
+  medicine   6.256  0.000  0.855 | NA2 0.0368  NA3 0.2169  NA4 0.6355  NA5 0.1108 |  0.00
+  botany     7.148  0.000  0.390 | NA2 0.0073  NA3 0.1549  NA4 0.7811  NA5 0.0567 |  0.00
+
+-- per-prompt NA weights  harness=ranked widths, rate table harness=ranked, constraints=mean_only --
+  prompt         M P(M=1)   band | transport                                    | widen%
+  plutarch   1.154  0.922  0.976 | NA2 0.4870  NA3 0.2342  NA4 0.1561  NA5 0.1227 |  0.00
+  drama      3.298  0.000  1.000 | NA2 0.3943  NA3 0.2538  NA4 0.2041  NA5 0.1478 |  0.00
+  travel     3.656  0.000  1.000 | NA2 0.3121  NA3 0.2669  NA4 0.2565  NA5 0.1645 |  0.00
+  beagle     5.382  0.000  1.000 | NA2 0.0878  NA3 0.2597  NA4 0.5007  NA5 0.1518 |  0.00
+  republic   5.989  0.000  1.000 | NA2 0.0485  NA3 0.2378  NA4 0.5872  NA5 0.1266 |  0.00
+  essays     6.087  0.000  0.952 | NA2 0.0434  NA3 0.2334  NA4 0.6014  NA5 0.1218 |  0.00
+  medicine   6.256  0.000  0.861 | NA2 0.0354  NA3 0.2251  NA4 0.6264  NA5 0.1132 |  0.00
+  botany     7.148  0.000  0.402 | NA2 0.0070  NA3 0.1615  NA4 0.7733  NA5 0.0581 |  0.00
+
+-- per-prompt NA weights  harness=ranked widths, rate table harness=ranked, constraints=with_cost --
+  prompt         M P(M=1)   band | transport                                    | widen%
+  plutarch   1.154  0.922  0.976 | NA2 0.4870  NA3 0.2342  NA4 0.1561  NA5 0.1227 |  0.00
+  drama      3.298  0.000  0.697 | NA2 0.3943  NA3 0.2538  NA4 0.2041  NA5 0.1478 |  0.00
+  travel     3.656  0.000  0.497 | NA2 0.3121  NA3 0.2669  NA4 0.2565  NA5 0.1645 |  0.00
+  beagle     5.382  0.000  1.000 | NA2 0.0878  NA3 0.2597  NA4 0.5007  NA5 0.1518 |  0.00
+  republic   5.989  0.000  1.000 | NA2 0.0485  NA3 0.2378  NA4 0.5872  NA5 0.1266 |  0.00
+  essays     6.087  0.000  0.952 | NA2 0.0434  NA3 0.2334  NA4 0.6014  NA5 0.1218 |  0.00
+  medicine   6.256  0.000  0.861 | NA2 0.0354  NA3 0.2251  NA4 0.6264  NA5 0.1132 |  0.00
+  botany     7.148  0.000  0.402 | NA2 0.0070  NA3 0.1615  NA4 0.7733  NA5 0.0581 |  0.00
+
+wrote research/e114-artifacts/rung0.json
