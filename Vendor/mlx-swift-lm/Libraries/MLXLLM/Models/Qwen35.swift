@@ -3444,6 +3444,13 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private var _compactDraftGatherW: MLXArray?
     private var _compactDraftGatherS: MLXArray?
     private var _compactDraftGatherZ: MLXArray?
+    // The left-hand gather index. `gather_qmm` synthesises this when it is not
+    // given: `indices_or_default` builds `reshape(arange(1, uint32), [1])`, so
+    // the eager path pays an `arange` dispatch on every draft step to produce
+    // the single value 0. It is `uint32` because `gather_qmm` casts the indices
+    // to `uint32`, and `astype` returns the input unchanged only when the dtype
+    // already matches; an `int32` array would trade the `arange` for a cast.
+    private var _compactDraftGatherLhs: MLXArray?
     // Prefix 98_304, the promoted trim. A 49_152 halving was measured on the
     // public longcopy gate and REGRESSED: three of its committed argmax ids
     // live in [49_152, 248_044), the head could no longer propose them, and
@@ -3887,14 +3894,17 @@ extension Qwen35TextModel: MTPCapable {
             _compactDraftGatherW = exact.weight.reshaped([rows, 1, 640])
             _compactDraftGatherS = exact.scales.reshaped([rows, 1, 80])
             _compactDraftGatherZ = exactBiases.reshaped([rows, 1, 80])
+            _compactDraftGatherLhs = MLXArray([UInt32(0)])
         }
         let exactLogits: MLXArray
         if let gatherWeight = _compactDraftGatherW,
            let gatherScales = _compactDraftGatherS,
            let gatherZeroPoints = _compactDraftGatherZ,
+           let gatherLhs = _compactDraftGatherLhs,
            gatherWeight.shape == [Self.compactDraftPaddedCount, 1, 640],
            gatherScales.shape == [Self.compactDraftPaddedCount, 1, 80],
-           gatherZeroPoints.shape == [Self.compactDraftPaddedCount, 1, 80]
+           gatherZeroPoints.shape == [Self.compactDraftPaddedCount, 1, 80],
+           gatherLhs.shape == [1], gatherLhs.dtype == .uint32
         {
             // One dispatch reading 32 rows in place, where the eager path
             // needed three gathers writing ~92 KB of copies plus a matmul that
@@ -3902,7 +3912,7 @@ extension Qwen35TextModel: MTPCapable {
             // `qwen35DraftTop32` does not return sorted ids.
             exactLogits = gatherQuantizedMM(
                 x, gatherWeight, scales: gatherScales, biases: gatherZeroPoints,
-                rhsIndices: candidateIDs,
+                lhsIndices: gatherLhs, rhsIndices: candidateIDs,
                 transpose: true, groupSize: 64, bits: 4, mode: .affine)
         } else {
             let exactWeight = MLX.take(exact.weight, candidateIDs, axis: 0)

@@ -134,5 +134,19 @@ struct E85FusedIntermediateTests {
         #expect(
             worst <= spread * 1e-3,
             "gather_qmm logits drifted by \(worst) against a spread of \(spread)")
+
+        // E90 follow-up: a cached `uint32` left-hand index must be BIT-identical
+        // to the array `gather_qmm` synthesises when the argument is omitted,
+        // because the only difference is that the `arange` dispatch disappears.
+        let cachedLhs = gatherQuantizedMM(
+            x,
+            weight.reshaped([rows, 1, inDimensions / 8]),
+            scales: scales.reshaped([rows, 1, inDimensions / 64]),
+            biases: biases.reshaped([rows, 1, inDimensions / 64]),
+            lhsIndices: MLXArray([UInt32(0)]), rhsIndices: ids,
+            transpose: true, groupSize: 64, bits: 4, mode: .affine
+        ).reshaped([candidates])
+        #expect(cachedLhs.shape == gathered.shape)
+        #expect(MLX.all(MLX.equal(cachedLhs, gathered)).item(Bool.self))
     }
 }
