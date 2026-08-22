@@ -64,6 +64,9 @@ def legs(label: str) -> list[dict]:
                 metrics = {}
         found.append({
             "tag": d.name, "arm": arm, "meta": meta, "metrics": metrics,
+            "dir": d,
+            "cell": meta.get("e135_cell", ""),
+            "table": meta.get("e135_table", "onepass67"),
             "rep": int(meta.get("e135_replicate", 0)),
             "pos": int(meta.get("e135_position", 0)),
             "idx": int(meta.get("e135_leg_index", 0)),

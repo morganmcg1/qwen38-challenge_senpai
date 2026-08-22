@@ -1942,14 +1942,44 @@ public enum Qwen35CustomQMV {
     /// one-pass table therefore pays twice the launch count of the shipped
     /// table at M = 6, 7 and 8 for the same work, which prices the table
     /// against itself. Under `tight` both tables launch the same count.
+    ///
+    /// E135 measured the difference instead of predicting it. One counter-
+    /// balanced `W T T W` session of twelve 512-token legs on one worker put
+    /// `tight` **1.806 % +- 0.066 %** ahead of `wide` on absolute candidate
+    /// seconds per token, with the serial leg flat at `+0.003 % +- 0.084 %`
+    /// because `M = 1` reaches `default: break` and launches no routed QMV at
+    /// all. That is the first lever in this kernel that moved the clock:
+    /// instruction issue fell 46.4 %, resident simdgroups fell 15.7 % and
+    /// weight passes fell 50.0 %, and none of the three moved it.
     public enum Grid: String, Sendable {
         case wide
         case tight
+
+        /// The grid a run with no override selects, so the grid the ranked
+        /// runner uses.
+        public static let compiledDefault = Grid.tight
     }
+
+    /// The compiled-in grid, as one literal the worker's string table carries.
+    ///
+    /// Both `Grid` raw values are short and appear in the binary whichever one
+    /// ships, exactly like the `Table.witness` literals, so neither is a
+    /// witness on its own. This whole literal exists only for the case
+    /// actually selected, which makes it a `strings` witness that can fail.
+    /// `defaultGridWitnessNamesTheCompiledDefault` pins it against
+    /// `Grid.compiledDefault`, and `flushPipelineLog` keeps it reachable.
+    ///
+    /// The grid never enters the Metal source, so unlike `planWitness` this
+    /// literal must NOT be emitted into the JIT text: the source string is the
+    /// pipeline cache key, and naming the grid there would split one pipeline
+    /// set into two for a difference the kernel cannot observe.
+    public static let defaultGridWitness = "e135_default_grid/tight"
 
     public static let grid: Grid = {
         let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_GRID"]
-        guard let raw, let parsed = Grid(rawValue: raw) else { return .wide }
+        guard let raw, let parsed = Grid(rawValue: raw) else {
+            return Grid.compiledDefault
+        }
         return parsed
     }()
 
@@ -2060,6 +2090,7 @@ public enum Qwen35CustomQMV {
               "grid": "\(grid.rawValue)",
               "plan": "\(planWitness)",
               "default_route": "\(defaultRouteWitness)",
+              "default_grid": "\(defaultGridWitness)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {

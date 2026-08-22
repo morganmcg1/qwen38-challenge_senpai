@@ -136,6 +136,54 @@ struct E135TightLaunchGridTests {
         }
     }
 
+    /// The ranked runner sets no environment, so the grid it takes is whatever
+    /// `grid` falls back to. Both raw values are compiled in whichever one
+    /// ships, so neither `"wide"` nor `"tight"` can witness the fallback on its
+    /// own; this whole literal exists only for the case selected.
+    @Test("the default-grid witness names the compiled default and can fail")
+    func defaultGridWitnessNamesTheCompiledDefault() throws {
+        #expect(
+            Qwen35CustomQMV.defaultGridWitness
+                == "e135_default_grid/"
+                    + Qwen35CustomQMV.Grid.compiledDefault.rawValue)
+
+        // The witness is worthless if the optimizer can fold it out of a
+        // shorter shipped string, and worthless if the fallback ignores it.
+        #expect(Qwen35CustomQMV.defaultGridWitness.utf8.count >= 16)
+        #expect(Qwen35CustomQMV.Grid.compiledDefault == .tight)
+
+        // With no override the process must take the compiled default. A leg
+        // that exports nothing is the ranked leg, so this is the assertion the
+        // whole submission rests on.
+        if ProcessInfo.processInfo.environment["MLX_E120_QMV_GRID"] == nil {
+            #expect(Qwen35CustomQMV.grid == Qwen35CustomQMV.Grid.compiledDefault)
+        }
+    }
+
+    /// The kernel reads no grid state, so the two settings must not split one
+    /// pipeline set into two. A JIT source that mentioned the grid would change
+    /// the cache key and charge a compile for a difference the kernel cannot
+    /// observe.
+    @Test("the launch grid does not reach the JIT source or the pipeline name")
+    func gridIsAbsentFromEveryPipelineCacheKey() throws {
+        for useTable in [true, false] {
+            for tier in Qwen35CustomQMV.tiers {
+                let name = Qwen35CustomQMV.pipelineName(
+                    useTable: useTable, tier: tier)
+                #expect(!name.contains("tight"))
+                #expect(!name.contains("wide") || name.contains("qmv_wide"))
+            }
+        }
+        for tier in Qwen35CustomQMV.tiers {
+            for table in [true, false] {
+                let source = Qwen35CustomQMV.generatedSource(
+                    table: table, tier: tier)
+                #expect(!source.contains("e135_default_grid"))
+                #expect(!source.contains("tight"))
+            }
+        }
+    }
+
     /// The §C census the assignment asks to be reproduced from source rather
     /// than quoted. Threadgroup `y` count is `n / rps / 2`, because `launch`
     /// asks for `n / rps` threads against a threadgroup of `(32, 2, 1)`.

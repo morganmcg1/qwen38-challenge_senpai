@@ -13,6 +13,9 @@
 # permitted mode; entry and exit temperature are recorded per leg and the legs
 # keep `cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false`.
 #
+# BOTH ARMS ARE SET EXPLICITLY. Rung 4 moved the compiled default from
+# `.wide` to `.tight`, so an unset selector no longer means wide.
+#
 # NO REBUILD BETWEEN LEGS. Both grids are compiled into one worker and the arm
 # is chosen at run time by `MLX_E120_QMV_GRID`, so every leg times the same
 # bytes and `worker_sha256` is asserted equal across the session.
@@ -56,8 +59,7 @@ for arm in wide tight; do
   echo "=== witness ${tag}: grid=${arm} tokens=${witness_tokens} ==="
   out="research/out/${tag}"
   mkdir -p "${out}"
-  [[ "${arm}" == "wide" ]] && unset MLX_E120_QMV_GRID \
-                           || export MLX_E120_QMV_GRID="${arm}"
+  export MLX_E120_QMV_GRID="${arm}"
   export MLX_E120_QMV_PIPELINE_LOG="${PWD}/${out}/pipelines.json"
   research/e79_trace_leg.sh "${tag}" "${witness_tokens}" --no-trace
   status=$?
@@ -95,8 +97,7 @@ for ((rep = first; rep < first + replicates; rep++)); do
     position=$((position + 1))
     tag="e135${label}k${rep}p${position}${arm}"
     echo "=== ${tag}: grid=${arm} replicate=${rep} tokens=${tokens} ==="
-    [[ "${arm}" == "wide" ]] && unset MLX_E120_QMV_GRID \
-                             || export MLX_E120_QMV_GRID="${arm}"
+    export MLX_E120_QMV_GRID="${arm}"
     research/e79_trace_leg.sh "${tag}" "${tokens}" --no-trace
     status=$?
     unset MLX_E120_QMV_GRID
