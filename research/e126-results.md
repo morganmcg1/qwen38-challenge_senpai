@@ -473,3 +473,165 @@ therefore leaks 0.000513 index units instead of cancelling exactly. That is
 0.63 % of the 0.0817 per-run noise, so it changes no classification, but the
 selftest bounds it rather than asserting exact cancellation.
 
+
+## Rung -1 receipt, and the campaign result it forced
+
+The ranked receipt for submission `cf9a9eda-fdb6-4d94-b090-5451db4ff9ea`,
+candidate commit `6d515e25`, published **3.26815344** and was rejected.
+
+The pre-registered reading fires. The band was `<= 3.3420`, meaning "the ranked
+transfer chain for a wide-QMV mechanism is refuted". The advisor's per-prompt
+diagnosis went further and identified the shape: regressing the observed
+per-prompt candidate-leg change on cost per **verified row** gives R2 0.9492
+through the origin, at 0.2274 ms per verified row, against R2 0.268 for both a
+per-drafting-round shape and a mode-flip shape.
+
+`research/e126_receipt_pair.py` reads the same receipt with no weight vector at
+all and agrees: against `7bef7d4c` the candidate leg is +0.446 % slower on the
+seven drafting prompts while the runner-owned serial leg moved -0.218 %, giving
+a tree-attributable +0.664 % with 1 sem 0.226 against a predicted -0.415 %.
+
+E121 was reverted on the scored surface in commit `04171655`. After the revert
+the scored surface is byte-identical to `2127858b`, so no timed confirmation of
+the revert is available or needed.
+
+## Rung 4 — the cross-architecture width census
+
+`research/e126_census.py`. Zero GPU. Artifact
+`research/e126-artifacts/rung4-census.json`.
+
+### The dispatch table, read from the source and not assumed
+
+`NA` is the row count of one weight-stream group, not the draft width. The
+shipped dispatch at `quantized.h:1930-1975` splits a draft of width `M` into
+groups of `IPG`:
+
+| M | IPG | groups as NA | `SHARE_SUMS = NA <= 4` |
+| ---: | ---: | --- | --- |
+| 3 | 3 | `[3]` | true |
+| 4 | 4 | `[4]` | true |
+| **5** | **5** | `[5]` | **false** |
+| 6 | 3 | `[3, 3]` | true |
+| 7 | 4 | `[4, 3]` | true |
+| 8 | 4 | `[4, 4]` | true |
+| 9 | 3 | `[3, 3, 3]` | true |
+
+`M = 5` is the only dispatched width where `SHARE_SUMS` is false, because it is
+the one entry hand-set to `IPG = 5` instead of the `ceil(M / ceil(M / 4))` rule
+stated above the template. It is therefore a single-width control that pays the
+two extra parameters and the threadgroup allocation, and never the split, the
+exchange or the barriers.
+
+`NA = 2` is unreachable. No dispatched width leaves `TAIL == 2`, so the standing
+weight `{2: 0.024}` belongs to the separate narrow function
+`qmv_fast_crossrow_affine4_g64<T, 2>` and not to the wide helper.
+
+The census asserts this table against the source and fails if it changes.
+
+### Result — the control is a perfect null, and the sign inverts across architectures
+
+Registers and resident simdgroups, reverted -> E121. Residency is derived,
+`floor(register_file_bytes / (registers * 128))`. It is a cost observation and
+never correctness evidence (Rule 73).
+
+**`applegpu_g17s`, the ranked architecture:**
+
+| cell | registers | resident simdgroups | text bytes |
+| --- | ---: | ---: | ---: |
+| M3, M6, M9 (NA 3) | 89 -> 95 (**+6**) | 44 -> 41 (**-3**) | 5900 -> 6046 |
+| M4, M7, M8 (NA 4) | 90 -> 102 (**+12**) | 44 -> 38 (**-6**) | 7218 -> 7336 |
+| **M5 (NA 5, control)** | 101 -> 101 (**+0**) | 39 -> 39 (**+0**) | 8452 -> 8452 |
+| entry, all widths inlined | 101 -> 102 (+1) | 39 -> 38 (-1) | 125092 -> 126028 |
+
+**`applegpu_g16s`, the local architecture:**
+
+| cell | registers | resident simdgroups | text bytes |
+| --- | ---: | ---: | ---: |
+| M3, M6, M9 (NA 3) | 82 -> 79 (**-3**) | 37 -> 38 (**+1**) | 5670 -> 5858 |
+| M4, M7, M8 (NA 4) | 94 -> 90 (**-4**) | 32 -> 34 (**+2**) | 6934 -> 7178 |
+| **M5 (NA 5, control)** | 93 -> 93 (**+0**) | 33 -> 33 (**+0**) | 8234 -> 8234 |
+| entry, all widths inlined | 94 -> 93 (-1) | 32 -> 33 (+1) | 119344 -> 120842 |
+
+### Reading
+
+1. **The cost is the split and the exchange, not the parameters or the
+   allocation.** `M = 5` is identical between the two trees on both
+   architectures: zero register change, zero residency change, identical ISA
+   text size. The extra parameters and the threadgroup allocation are free. The
+   pre-registered branch "absent at M = 5, present at M = 6, 7, 8" is the one
+   that fires, on both architectures.
+
+2. **The signature inverts between the two architectures.** On the ranked
+   `g17s`, E121 costs 6 to 12 registers and loses 3 to 6 of 44 resident
+   simdgroups. On the local `g16s`, the same source saves 3 to 4 registers and
+   gains 1 to 2 simdgroups. The same edit is a residency win locally and a
+   residency loss on the ranked runner.
+
+3. **The occupancy signature reproduces the sign of the transfer failure.**
+   Weighting the per-NA residency change by the standing NA weights:
+
+   | architecture | weighted occupancy change |
+   | --- | ---: |
+   | `applegpu_g17s` | **-10.97 %** |
+   | `applegpu_g16s` | **+4.91 %** |
+   | ratio | **-2.23** |
+
+   The advisor's measured leg-to-ranked anchor is **-4.8**. The census
+   reproduces the sign inversion exactly, and the magnitude to within a factor
+   of about 2.2, using no timing at all. A static occupancy proxy is not
+   expected to recover the coefficient, so the agreement is in sign and regime
+   only, and that is how it should be quoted.
+
+4. **The NA 4 cells carry the damage.** NA 4 serves M 4, 7 and 8 and holds 0.667
+   of the round, and it is the cell that loses 6 of 44 simdgroups on `g17s`.
+
+### Relation to the pre-receipt flags
+
+Both transfer-risk flags recorded in rung 1, before the receipt existed, are
+confirmed and generalised by this census. Flag 1 stated that at NA 4 E121 costs
+12 registers and 6 of 44 resident simdgroups on `g17s`, while saving 4 registers
+and gaining 2 on `g16s`. The census reproduces exactly those numbers and adds
+NA 3, the `M = 5` null, and the entry point.
+
+### What the instrument is now good for
+
+The census is a zero-GPU screen that reads the ranked architecture. It answers,
+before any submission, whether a candidate edit moves `g17s` residency and
+whether it moves that residency in the same direction as `g16s`. E121 would have
+been stopped by this screen. The screen is a cost observation only: it cannot
+price a mechanism, and it says nothing about correctness.
+
+## Correction issued during this experiment
+
+I posted, and then withdrew within 20 minutes, a claim that the standing NA
+weights disagree with the measured operating point by about a factor of two in
+width, and that `SHARE_SUMS` is false for most executed rounds. Both statements
+were wrong. I had conflated `NA`, the weight-stream group size, with `M`, the
+draft width. A draft width near 7.36 runs at NA 4 and NA 3, so mean NA 3.79 is
+consistent with the measured operating point, and `SHARE_SUMS` is true at every
+dispatched width except `M = 5`. The retraction is recorded on PR #127 and the
+corrected dispatch table is the one above.
+
+## Cancelled rung 2, and the one pair that survived
+
+The rung-2 in-situ ABBA session was cancelled after 2 of 20 legs so that the
+E121 revert could be committed. `research/e121_e2e_leg.sh` makes a transient
+commit for every `base` leg and unwinds it only when `HEAD` still equals that
+transient commit, so a revert commit underneath a live session would have left
+the scored surface dirty and failed every later leg.
+
+One paired contrast survived. It is n=1 and position-confounded, so it is
+directional only and it does not carry `e126_in_situ_prediction_error_pp`.
+
+| leg | arm | pos | entry C | exit C | candidate s/token | serial s/token | local ratio |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| k1p1 | `share_off` | 1 | 37.285 | 58.406 | 0.030690494 | 0.073576201 | 2.397361 |
+| k1p2 | `share_on` | 2 | 41.180 | 60.057 | 0.030522945 | 0.073601867 | 2.411362 |
+
+Absolute candidate MTP: `share_on` 0.546 % faster. Local ratio +0.584 %. The
+serial leg moved +0.035 %. Entry-temperature spread 3.895 C with the treatment
+arm hotter, so the direction is conservative. `cool_gate_passed_real_gate=false`
+and `gate_qualified_for_timing=false`, both verbatim. Both arms report
+`effective_mean_draft_len = 6.358974`, which is a bit-exactness cross-check on
+the pair.
+

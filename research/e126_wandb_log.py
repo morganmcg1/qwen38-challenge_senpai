@@ -65,6 +65,7 @@ RUN_IDS = {
     "e126-rung1-isolated": "e126rng10",
     "e126-rung2-insitu": "e126rng20",
     "e126-receipt-cf9a9eda": "e126rcpt0",
+    "e126-rung4-census": "e126rng40",
 }
 
 
@@ -427,65 +428,175 @@ def log_rung1() -> None:
     run.finish()
 
 
+def leg(tag: str) -> dict:
+    """One cancelled-session leg, read straight from its own output files."""
+    out = pathlib.Path("research/out") / tag
+    fields = dict(
+        line.split("=", 1) for line in
+        out.joinpath("meta.txt").read_text().splitlines() if "=" in line)
+    metrics = json.loads(out.joinpath("score.json").read_text())["metrics"]
+    return {"tag": tag, "meta": fields, "metrics": metrics}
+
+
 def log_rung2() -> None:
-    doc = json.loads((ART / "rung2-insitu.json").read_text())
-    core, pred = doc["core"], doc["prediction"]
-    measured, thermal = doc["measured"], doc["thermal_per_arm"]
-    secondary = doc["secondary_metric"]
+    """The in-situ session that was cancelled to deliver the E121 revert.
+
+    2 of 20 legs finished, which is one unbalanced `base` then `share` pair.
+    The pre-registered secondary metric needed the counterbalanced session, so
+    it is logged as void rather than as a value: a single pair at positions 1
+    and 2 confounds the arm with monotone thermal drift.
+    """
+    base, share = leg("e121e126r2k1p1base"), leg("e121e126r2k1p2share")
+
+    def pct_faster(slow: float, fast: float) -> float:
+        return 100.0 * (slow - fast) / slow
+
+    mtp_base = float(base["metrics"]["mtp_seconds_per_token"])
+    mtp_share = float(share["metrics"]["mtp_seconds_per_token"])
+    ser_base = float(base["metrics"]["serial_seconds_per_token"])
+    ser_share = float(share["metrics"]["serial_seconds_per_token"])
+    entry_base = float(base["meta"]["gpu_temp_entry_c"])
+    entry_share = float(share["meta"]["gpu_temp_entry_c"])
+    measured = pct_faster(mtp_base, mtp_share)
 
     run = start(
-        job_type="in-situ-abba", name="e126-rung2-insitu",
+        job_type="in-situ-abba-cancelled", name="e126-rung2-insitu",
         config={
             **identity(),
             **gate_flags("end-to-end benchmark wrapper, 512 tokens", True),
             "rung": 2,
-            "arms": doc["arms"],
-            "g_min_ask_dropped_because": doc["g_min_ask_dropped_because"],
-            "order": core["order"],
-            "replicates": core["replicates"],
-            "token_window": core["token_window"],
-            "leg_commit": core["candidate_commit"],
-            "base_commit_transient": core["base_commit"],
-            "worker_fingerprint": core["worker_fingerprint"],
-            "reproduction": core["reproduction"],
-            "predicted_leg_pct_faster": pred["predicted_leg_pct_faster"],
-            "wide_qmv_to_leg": pred["wide_qmv_to_leg"],
-            "wide_qmv_to_leg_width_mix": pred["wide_qmv_to_leg_width_mix"],
+            "arms": ["share_off", "share_on"],
+            "status": "cancelled",
+            "cancelled_because": (
+                "E121 was reverted on advisor instruction F3 after the ranked "
+                "receipt cf9a9eda published 3.26815344. e121_e2e_leg.sh makes "
+                "a transient commit per base leg, so a revert commit under a "
+                "live session would have left the scored surface dirty."),
+            "legs_planned": 20,
+            "legs_finished": 2,
+            "token_window": 512,
+            "reproduction": "research/e121_e2e_abba.sh 5 512 e126r2 1",
+            "predicted_leg_pct_faster": 0.72658,
+            "design_valid": False,
+            "design_defect": "single pair at positions 1 and 2, not ABBA",
         })
 
-    for row in core["per_replicate"]:
-        run.log({"replicate": row["replicate"],
-                 "mtp_spt_pct": row["mtp_spt_pct"],
-                 "serial_spt_pct": row["serial_spt_pct"],
-                 "ratio_pct": row["ratio_pct"],
-                 "base_pair_drift_pct": row["base_pair_drift_pct"]})
-    run.log({"legs": core["legs"], "thermal_per_arm": thermal,
-             "transfer_models": doc["transfer_models"]})
+    for row in (base, share):
+        run.log({
+            "tag": row["tag"],
+            "arm": row["meta"]["e121_arm"],
+            "position": int(row["meta"]["e121_position"]),
+            "entry_c": float(row["meta"]["gpu_temp_entry_c"]),
+            "exit_c": float(row["meta"]["gpu_temp_exit_c"]),
+            "mtp_seconds_per_token":
+                float(row["metrics"]["mtp_seconds_per_token"]),
+            "serial_seconds_per_token":
+                float(row["metrics"]["serial_seconds_per_token"]),
+            "effective_mean_draft_len":
+                float(row["metrics"]["effective_mean_draft_len"]),
+            "all_tokens_matched": bool(row["metrics"]["all_tokens_matched"]),
+        })
 
     run.summary.update({
-        "e126_rung2_leg_pct_faster": measured["leg_pct_faster"],
-        "e126_rung2_leg_ci95_lower": measured["ci95_pct_faster"][0],
-        "e126_rung2_leg_ci95_upper": measured["ci95_pct_faster"][1],
-        "e126_rung2_leg_stdev_pct": measured["stdev_pct"],
-        "e126_rung2_mtp_spt_base_s": measured["mtp_spt_base_mean_s"],
-        "e126_rung2_mtp_spt_share_s": measured["mtp_spt_share_mean_s"],
-        "e126_rung2_local_ratio_pct": measured["local_ratio_pct_mean"],
-        "e126_rung2_ranked_frame_pct": measured["ranked_frame_pct_faster"],
-        "e126_rung2_n_replicates": measured["n_replicates"],
-        "e126_rung2_n_legs": measured["n_legs"],
-        "e126_in_situ_prediction_error_pp": secondary["candidate"],
-        "e126_in_situ_prediction_error_baseline_pp": secondary["baseline"],
-        "e126_in_situ_prediction_error_beat_baseline":
-            secondary["beat_baseline"],
-        "e126_rung2_entry_c_base": thermal["base"]["entry_c_mean"],
-        "e126_rung2_entry_c_share": thermal["share"]["entry_c_mean"],
-        "e126_rung2_entry_c_imbalance": thermal["share_minus_base_entry_c"],
-        "e126_rung2_thermal_report_fired": thermal["balance_report_fired"],
-        "schedule_invariant": measured["schedule_invariant"],
-        "exactness_passed": measured["exactness_passed"],
+        "e126_rung2_status": "cancelled",
+        "e126_rung2_n_pairs": 1,
+        "e126_rung2_mtp_spt_base_s": mtp_base,
+        "e126_rung2_mtp_spt_share_s": mtp_share,
+        "e126_rung2_leg_pct_faster_directional": measured,
+        "e126_rung2_serial_pct_faster_directional":
+            pct_faster(ser_base, ser_share),
+        "e126_rung2_local_ratio_pct_directional": pct_faster(
+            mtp_base / ser_base, mtp_share / ser_share),
+        "e126_rung2_entry_c_base": entry_base,
+        "e126_rung2_entry_c_share": entry_share,
+        "e126_rung2_entry_c_imbalance": entry_share - entry_base,
+        "e126_in_situ_prediction_error_pp": None,
+        "e126_in_situ_prediction_error_void_because":
+            "cancelled before the counterbalanced session completed",
+        "e126_in_situ_prediction_error_face_value_pp":
+            abs(0.72658 - measured),
+        "e126_in_situ_prediction_error_baseline_pp": 0.452,
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
     })
+    run.finish()
+
+
+def weighted_occupancy(tables: dict, arch: str) -> float:
+    """Round-weighted residency change, percent. Negative means E121 lost.
+
+    NA 2 is excluded because no dispatched width leaves a two-row tail, so the
+    standing weight at NA 2 belongs to the separate narrow function.
+    """
+    weights = {"NA3": 0.275, "NA4": 0.667, "NA5": 0.034}
+    total = 0.0
+    for row in tables[arch]["na_body"]:
+        weight = weights.get(row["cell"])
+        if weight is None:
+            continue
+        total += weight * (row["sg_e121"] - row["sg_reverted"]) \
+            / row["sg_reverted"]
+    return 100.0 * total
+
+
+def log_census() -> None:
+    """The zero-GPU cross-architecture width census that located the cost."""
+    doc = json.loads((ART / "rung4-census.json").read_text())
+    tables, verdict = doc["tables"], doc["discriminator"]
+
+    run = start(
+        job_type="cross-arch-census", name="e126-rung4-census",
+        config={
+            **identity(),
+            **gate_flags("xcrun metal-tt AGX backend, no GPU execution",
+                         False),
+            "rung": 4,
+            "question": (
+                "Which part of E121 costs 0.2274 ms per verified row on "
+                "applegpu_g17s, and does it read at all on applegpu_g16s?"),
+            "discriminator": (
+                "M=5 is the only dispatched width with SHARE_SUMS false, so a "
+                "cost absent there comes from the split, the exchange or the "
+                "barriers; a cost present there comes from the extra "
+                "parameters or the threadgroup allocation."),
+            "dispatch_table": doc["dispatch_table"],
+            "e121_commit": doc["e121_commit"],
+            "reverted_commit": doc["reverted_commit"],
+            "register_file_bytes": doc["register_file_bytes"],
+            "residency_formula":
+                "floor(register_file_bytes / (registers * 128))",
+            "residency_is_cost_observation_not_correctness": True,
+        })
+
+    for arch, groups in tables.items():
+        for label, rows in groups.items():
+            for row in rows:
+                run.log({"arch": arch, "axis": label, **row})
+
+    g17 = verdict["per_arch"][RANKED_ARCH]
+    g16 = verdict["per_arch"][LOCAL_ARCH]
+    occ_ranked = weighted_occupancy(tables, RANKED_ARCH)
+    occ_local = weighted_occupancy(tables, LOCAL_ARCH)
+    summary = {
+        "e126_census_reading_ranked": g17["reading"],
+        "e126_census_reading_local": g16["reading"],
+        "e126_census_weighted_occupancy_pct_ranked": occ_ranked,
+        "e126_census_weighted_occupancy_pct_local": occ_local,
+        "e126_census_occupancy_ratio": occ_ranked / occ_local,
+        "e126_census_leg_to_ranked_anchor": -4.8,
+        "e126_census_sign_inversion_reproduced":
+            occ_ranked * occ_local < 0.0,
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+    }
+    for arch, tag in ((RANKED_ARCH, "ranked"), (LOCAL_ARCH, "local")):
+        for row in tables[arch]["na_body"]:
+            cell = row["cell"].lower()
+            summary["e126_census_%s_sg_delta_%s" % (cell, tag)] = \
+                row["sg_delta"]
+            summary["e126_census_%s_registers_delta_%s" % (cell, tag)] = \
+                row["registers_delta"]
+    run.summary.update(summary)
     run.finish()
 
 
@@ -553,6 +664,7 @@ RUNS = {
     "e126-rung0-model": log_rung0,
     "e126-rung1-isolated": log_rung1,
     "e126-rung2-insitu": log_rung2,
+    "e126-rung4-census": log_census,
     "e126-receipt-cf9a9eda": log_receipt,
 }
 
