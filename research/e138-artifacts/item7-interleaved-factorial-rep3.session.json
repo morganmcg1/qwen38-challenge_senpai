@@ -1,0 +1,17 @@
+{
+  "artifact": "research/e138-artifacts/item7-interleaved-factorial-rep3.json",
+  "commit": "eca351106007cbb295ad54e808f5615a5216aa7d",
+  "cool_gate_passed_real_gate": false,
+  "ended_utc": "2026-08-22T21:55:14Z",
+  "exit_status": 0,
+  "gate_qualified_for_timing": false,
+  "gpu_temp_entry_c": 45.17994689941406,
+  "gpu_temp_exit_c": 66.49571990966797,
+  "measured_source_dirty": true,
+  "measured_source_dirty_paths": [
+    "research/e138_plan_surface.sh"
+  ],
+  "official_or_ranked_score": false,
+  "resident_worker_pids": [],
+  "started_utc": "2026-08-22T21:53:21Z"
+}

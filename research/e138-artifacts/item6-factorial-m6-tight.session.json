@@ -1,0 +1,15 @@
+{
+  "artifact": "research/e138-artifacts/item6-factorial-m6-tight.json",
+  "commit": "d6e68c99881785be46f03c80884a0eb273d8e6a4",
+  "cool_gate_passed_real_gate": false,
+  "ended_utc": "2026-08-22T21:42:06Z",
+  "exit_status": 0,
+  "gate_qualified_for_timing": false,
+  "gpu_temp_entry_c": 40.535484313964844,
+  "gpu_temp_exit_c": 58.80412673950195,
+  "measured_source_dirty": false,
+  "measured_source_dirty_paths": [],
+  "official_or_ranked_score": false,
+  "resident_worker_pids": [],
+  "started_utc": "2026-08-22T21:41:09Z"
+}

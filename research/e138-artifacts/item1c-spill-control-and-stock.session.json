@@ -1,0 +1,14 @@
+{
+  "artifact": "research/e138-artifacts/item1c-spill-control-and-stock.json",
+  "commit": "16f8420c9cfb96f65a20b8c35d29bda592f35c5b",
+  "cool_gate_passed_real_gate": false,
+  "dirty": true,
+  "ended_utc": "2026-08-22T21:28:54Z",
+  "exit_status": 0,
+  "gate_qualified_for_timing": false,
+  "gpu_temp_entry_c": 38.61135482788086,
+  "gpu_temp_exit_c": 64.44612121582031,
+  "official_or_ranked_score": false,
+  "resident_worker_pids": [],
+  "started_utc": "2026-08-22T21:27:41Z"
+}

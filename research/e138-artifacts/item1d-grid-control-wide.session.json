@@ -1,0 +1,14 @@
+{
+  "artifact": "research/e138-artifacts/item1d-grid-control-wide.json",
+  "commit": "6e522af48a7991f410f4f29bde56b884f7ad830c",
+  "cool_gate_passed_real_gate": false,
+  "dirty": true,
+  "ended_utc": "2026-08-22T21:33:23Z",
+  "exit_status": 0,
+  "gate_qualified_for_timing": false,
+  "gpu_temp_entry_c": 39.27418518066406,
+  "gpu_temp_exit_c": 54.70195388793945,
+  "official_or_ranked_score": false,
+  "resident_worker_pids": [],
+  "started_utc": "2026-08-22T21:32:48Z"
+}
