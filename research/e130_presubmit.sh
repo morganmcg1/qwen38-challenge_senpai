@@ -36,7 +36,7 @@ mkdir -p "${out}" research/e130-artifacts
 readonly HEADER="Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
 readonly TWIN="Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 readonly PATCH="research/e130-artifacts/e130-prune-na5.patch"
-readonly BASE_SHA="f880eb26517cd7a3a153799348cb4f2caf8e4e58"
+readonly BASE_SHA="221065c5f16e9118797c15421cbdf0e91269dd5c"
 
 readonly WITNESS=(
   --forbid  'qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>'
@@ -133,5 +133,5 @@ python3 research/e121_presubmit_receipt.py \
   --worker-sha256 "${worker_sha}" \
   --worker-mtime "${worker_mtime}" \
   --worker-sha256-post "${post_worker}" \
-  --out research/e130-artifacts/rung3-presubmit.json
+  --out research/e130-artifacts/rung4-presubmit.json
 exit $?
