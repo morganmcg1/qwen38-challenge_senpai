@@ -255,20 +255,37 @@
     },
     {
       "admissible": true,
-      "aicc": 116.18700156364912,
-      "breakpoint": 4,
-      "family": "passcount_slopeonly",
+      "aicc": 118.72613715366421,
+      "breakpoint": 6,
+      "family": "passcount_affine",
       "hi": [
-        29416.222613632533,
-        4939.083909002406
+        37462.17965780418,
+        3945.0946785988126
       ],
       "lo": [
-        29416.222613632533,
-        1444.9380687165249
+        26521.191928587483,
+        3945.0946785988162
       ],
-      "name": "passcount_slopeonly@M>=4",
+      "name": "passcount_affine@M>=6",
       "params": 3,
-      "rmse_us": 672.9611475416136
+      "rmse_us": 788.6980690282072
+    },
+    {
+      "admissible": true,
+      "aicc": 137.63673483511073,
+      "breakpoint": 8,
+      "family": "passcount_freeslope",
+      "hi": [
+        70174.72271823665,
+        0.0
+      ],
+      "lo": [
+        23402.36374048818,
+        5368.6951264855925
+      ],
+      "name": "passcount_freeslope@M>=8",
+      "params": 4,
+      "rmse_us": 1435.060939526579
     },
     {
       "admissible": false,

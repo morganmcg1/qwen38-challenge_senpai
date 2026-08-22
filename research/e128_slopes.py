@@ -424,9 +424,18 @@ def candidate_curves(points: list[dict], decomp: list) -> list:
         })
     ok = [r for r in grid if r["admissible"]]
     ok.sort(key=lambda row: row["aicc"])
+    # Take the best admissible curve of each family before filling by aicc.
+    # A per-row tier and a flat per-pass tier price a one-pass table very
+    # differently, so a same-family top three would hide that disagreement.
+    seen, picked = set(), []
+    for row in ok:
+        if row["family"] not in seen:
+            seen.add(row["family"])
+            picked.append(row)
+    picked += [r for r in ok if r not in picked]
     rest = [r for r in grid if not r["admissible"]]
     rest.sort(key=lambda row: row["aicc"])
-    keep = ok[:3] + rest[:3]
+    keep = picked[:4] + rest[:3]
     keep.sort(key=lambda row: (not row["admissible"], row["aicc"]))
     return keep
 

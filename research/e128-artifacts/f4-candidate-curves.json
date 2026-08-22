@@ -1,6 +1,21 @@
 {
   "breakpoint": 6,
   "curves": {
+    "affine_b6": {
+      "aicc": 118.72613715366421,
+      "breakpoint": 6,
+      "hi": [
+        37462.17965780418,
+        3945.0946785988126
+      ],
+      "lo": [
+        26521.191928587483,
+        3945.0946785988162
+      ],
+      "model": "passcount_affine",
+      "name": "passcount_affine@M>=6",
+      "rmse_us": 788.6980690282072
+    },
     "freeslope_b6": {
       "aicc": 93.43140895492094,
       "breakpoint": 6,
@@ -15,6 +30,21 @@
       "model": "passcount_freeslope",
       "name": "passcount_freeslope@M>=6",
       "rmse_us": 90.5706062742009
+    },
+    "freeslope_b8": {
+      "aicc": 137.63673483511073,
+      "breakpoint": 8,
+      "hi": [
+        70174.72271823665,
+        0.0
+      ],
+      "lo": [
+        23402.36374048818,
+        5368.6951264855925
+      ],
+      "model": "passcount_freeslope",
+      "name": "passcount_freeslope@M>=8",
+      "rmse_us": 1435.060939526579
     },
     "scaled_affine_b3": {
       "aicc": 91.91127960505472,
@@ -45,21 +75,6 @@
       "model": "passcount_scaled_affine",
       "name": "passcount_scaled_affine@M>=5",
       "rmse_us": 129.3831669514299
-    },
-    "slopeonly_b4": {
-      "aicc": 116.18700156364912,
-      "breakpoint": 4,
-      "hi": [
-        29416.222613632533,
-        4939.083909002406
-      ],
-      "lo": [
-        29416.222613632533,
-        1444.9380687165249
-      ],
-      "model": "passcount_slopeonly",
-      "name": "passcount_slopeonly@M>=4",
-      "rmse_us": 672.9611475416136
     },
     "slopeonly_b5": {
       "aicc": 111.26871465351216,
