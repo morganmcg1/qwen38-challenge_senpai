@@ -241,11 +241,88 @@ public final class Qwen36MTPBlockSession {
         var value: Int = 0
     }
 
+    /// E130 rung 11, research only, opt-in through `MLX_E130_RESIDENCY_PROBE=1`.
+    ///
+    /// Records the allocator counters at the instant the wired ticket is sized,
+    /// then samples them once a second until the process ends, so post-sizing
+    /// growth is measurable. Below the 96 GiB gate no ticket exists, so the
+    /// probe reproduces the sizing instant by clearing the warm cache the same
+    /// way the wired path does.
+    ///
+    /// Output goes to `MLX_E130_RESIDENCY_PROBE_PATH`, not to stderr, because
+    /// harness defect 32 makes the `mtp-timed` parent discard every worker
+    /// stderr line. A file sink needs `MLXFAST_NO_SANDBOX=1`.
+    private static func e130ResidencyProbe(clearsWarmCache: Bool) {
+        guard ProcessInfo.processInfo.environment["MLX_E130_RESIDENCY_PROBE"] == "1"
+        else { return }
+        if clearsWarmCache { Memory.clearCache() }
+
+        let active = Memory.activeMemory
+        let peak = Memory.peakMemory
+        let physical = ProcessInfo.processInfo.physicalMemory
+        let recommended = GPU.maxRecommendedWorkingSetBytes() ?? -1
+        e130ProbeSizingCount += 1
+        var line = "e130-residency pid=\(getpid()) phase=sizing event=\(e130ProbeSizingCount)"
+        line += " active=\(active) peak=\(peak)"
+        line += " cache=\(Memory.cacheMemory) slack_mb=\(wiredZHDefaultSlackMB)"
+        line += " maxrec=\(recommended) physmem=\(physical)"
+        line += " resources=\(Memory.numResources)"
+        line += " reslimit=\(Memory.resourceLimit)"
+        line += " wired_gate_passed=\(!clearsWarmCache)\n"
+        e130ProbeSink.write(Data(line.utf8))
+
+        // One sampler per process. A local leg builds a session per depth
+        // policy, so an unguarded sampler would multiply with each session.
+        guard e130ProbeSizingCount == 1 else { return }
+        let started = Date()
+        let sampler = Thread {
+            var index = 0
+            while true {
+                Thread.sleep(forTimeInterval: 1.0)
+                index += 1
+                let now = Memory.activeMemory
+                var sample = "e130-residency pid=\(getpid()) phase=sample index=\(index)"
+                sample += " elapsed_s=\(String(format: "%.1f", -started.timeIntervalSinceNow))"
+                sample += " active=\(now) peak=\(Memory.peakMemory)"
+                sample += " cache=\(Memory.cacheMemory)"
+                sample += " resources=\(Memory.numResources)"
+                sample += " growth=\(now - active)\n"
+                e130ProbeSink.write(Data(sample.utf8))
+            }
+        }
+        sampler.name = "e130-residency-probe"
+        sampler.stackSize = 64 << 10
+        sampler.start()
+    }
+
+    nonisolated(unsafe) private static var e130ProbeSizingCount = 0
+
+    /// O_APPEND so the reference, serial and MTP workers of one leg each add
+    /// their own sizing events to the same file instead of truncating it.
+    private static let e130ProbeSink: FileHandle = {
+        guard let path = ProcessInfo.processInfo
+            .environment["MLX_E130_RESIDENCY_PROBE_PATH"], !path.isEmpty
+        else { return FileHandle.standardError }
+        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return FileHandle.standardError }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
+    }()
+
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
         guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else { return }
-        guard ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
-        else { return }
+        // E130 rung 11, research only, removed before submission. The shipped
+        // gate is 96 GiB, so the wired path never runs on a development host
+        // and the slack cannot be measured causally. Lowering the gate lets one
+        // binary serve every rung of the slack ladder, so the arms differ only
+        // by environment.
+        let gateGiB = environment["MLX_E130_WIRED_GATE_GIB"]
+            .flatMap(UInt64.init) ?? 96
+        guard ProcessInfo.processInfo.physicalMemory >= (gateGiB << 30)
+        else {
+            e130ResidencyProbe(clearsWarmCache: true)
+            return
+        }
 
         wiredTicketLock.lock()
         defer { wiredTicketLock.unlock() }
@@ -256,6 +333,7 @@ public final class Qwen36MTPBlockSession {
         // backbone, head, and persistent runtime tensors rather than scratch.
         Memory.clearCache()
         let active = Memory.activeMemory
+        e130ResidencyProbe(clearsWarmCache: false)
         guard active > 0 else { return }
 
         let fraction = environment["DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION"]
@@ -264,6 +342,10 @@ public final class Qwen36MTPBlockSession {
             .flatMap(Int.init) ?? wiredZHDefaultSlackMB
         var target = Int(Double(active) * min(max(fraction, 0.0), 1.0))
         target += max(0, slackMB) << 20
+        // E130 rung 11 bound-C safety, research only. Reported so the reader can
+        // decide whether the recommended-working-set clamp bound on this host
+        // rather than inferring it from the post-clamp request.
+        let preClampTarget = target
 
         // The MLX backend rejects a wired limit above the recommended working
         // set. Keep a 256 MiB margin for system bookkeeping and fail closed on
@@ -293,8 +375,13 @@ public final class Qwen36MTPBlockSession {
         var line = "mlxfast: qwen-mtp wired-zh request=\(target)"
         line += " applied=\(applied) active=\(active)"
         line += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
-        line += " maxrec=\(recommended)\n"
-        FileHandle.standardError.write(Data(line.utf8))
+        line += " maxrec=\(recommended)"
+        line += " preclamp=\(preClampTarget)"
+        line += " clamped=\(target < preClampTarget)\n"
+        // Harness defect 32: the `mtp-timed` parent builds its worker without
+        // `forwardsWorkerStderr`, so a stderr line from here is discarded. The
+        // sink falls back to stderr when no path is configured.
+        e130ProbeSink.write(Data(line.utf8))
     }
 
     /// Input-independent shape warm, run OUTSIDE every scored window.

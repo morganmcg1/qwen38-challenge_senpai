@@ -28,7 +28,7 @@ arm="${2:?usage: e130_admission_leg.sh TAG ARM TOKENS}"
 tokens="${3:?usage: e130_admission_leg.sh TAG ARM TOKENS}"
 
 case "${arm}" in
-  s64|s512) : ;;
+  s64|s512|s1024|s2048) : ;;
   *) echo "e130 admission: unknown arm ${arm}" >&2; exit 2 ;;
 esac
 

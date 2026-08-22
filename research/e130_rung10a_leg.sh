@@ -43,9 +43,24 @@ tag="${1:?usage: e130_rung10a_leg.sh TAG ARM TOKENS}"
 arm="${2:?usage: e130_rung10a_leg.sh TAG ARM TOKENS}"
 tokens="${3:?usage: e130_rung10a_leg.sh TAG ARM TOKENS}"
 
+# Rung 11 generalises the arm set from {none, s64, s512} to any `s<MiB>` rung.
+# 2048 MiB is the F16 bound-C hard ceiling and is refused here rather than in
+# the caller, so no session order can walk past it by accident.
+readonly E130_BOUND_C_CEILING_MB=2048
 case "${arm}" in
-  none|s64|s512) : ;;
-  *) echo "e130 rung10a: unknown arm ${arm}" >&2; exit 2 ;;
+  none) : ;;
+  s[0-9]*)
+    slack_mb="${arm#s}"
+    if [[ ! "${slack_mb}" =~ ^[0-9]+$ ]]; then
+      echo "e130 slack leg: malformed arm ${arm}" >&2; exit 2
+    fi
+    if (( slack_mb > E130_BOUND_C_CEILING_MB )); then
+      echo "e130 slack leg: arm ${arm} exceeds the bound-C ceiling of" >&2
+      echo "e130 slack leg: ${E130_BOUND_C_CEILING_MB} MiB. Refusing to run." >&2
+      exit 2
+    fi
+    ;;
+  *) echo "e130 slack leg: unknown arm ${arm}" >&2; exit 2 ;;
 esac
 
 out="research/out/${tag}"
@@ -69,20 +84,13 @@ export MLXFAST_NO_SANDBOX=1
 export MLX_E130_RESIDENCY_PROBE_PATH="${wired_sink}"
 unset MLX_E130_RESIDENCY_PROBE
 
-case "${arm}" in
-  none)
-    unset MLX_E130_WIRED_GATE_GIB
-    unset DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB
-    ;;
-  s64)
-    export MLX_E130_WIRED_GATE_GIB=32
-    export DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB=64
-    ;;
-  s512)
-    export MLX_E130_WIRED_GATE_GIB=32
-    export DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB=512
-    ;;
-esac
+if [[ "${arm}" == "none" ]]; then
+  unset MLX_E130_WIRED_GATE_GIB
+  unset DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB
+else
+  export MLX_E130_WIRED_GATE_GIB=32
+  export DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB="${arm#s}"
+fi
 
 # The low-memory startup profile would clobber MLX_MAX_* with 128/64. Prove it
 # is disengaged with THIS leg's worker binary and THIS leg's environment. The
@@ -161,11 +169,14 @@ status=$?
     echo "wired_residency_active=true"
     echo "wired_outcome_line=$(grep 'wired-zh' "${wired_sink}" | head -1)"
     echo "wired_outcome_count=$(grep -c 'wired-zh' "${wired_sink}")"
+    # F16 bound-C safety. Both counters must stay at zero on every rung.
+    echo "wired_clamped_count=$(grep -c 'clamped=true' "${wired_sink}")"
+    echo "wired_apply_failures=$(grep -cE 'applied=(-1|0) ' "${wired_sink}")"
   else
     echo "wired_residency_active=false"
   fi
 } >> "${out}/meta.txt"
 
 echo "=== ${tag} arm=${arm} ==="
-grep -E "gpu_temp|swap_|wired_residency_active|wired_outcome_line|exit=" "${out}/meta.txt"
+grep -E "gpu_temp|swap_|wired_residency_active|wired_outcome_line|wired_clamped_count|wired_apply_failures|exit=" "${out}/meta.txt"
 exit "${status}"

@@ -17,7 +17,7 @@ reps="${2:?usage: e130_admission_session.sh PREFIX REPS TOKENS}"
 tokens="${3:?usage: e130_admission_session.sh PREFIX REPS TOKENS}"
 
 for rep in $(seq 1 "${reps}"); do
-  for arm in s64 s512; do
+  for arm in ${E130_ADMISSION_ARMS:-s64 s512}; do
     tag="${prefix}-${rep}-${arm}"
     echo "############ rep ${rep}/${reps} arm=${arm} tag=${tag} ############"
     research/e130_admission_leg.sh "${tag}" "${arm}" "${tokens}"
