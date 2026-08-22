@@ -53,6 +53,8 @@ OUR_CURVE = {"breakpoint": 6,
              "hi": (27725.396919580293, 5323.531364694667)}
 CLIFF_WEIGHTS = (0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50, 0.75, 1.00)
 FLAT_LEVELS = (0.18, 0.19, 0.20, 0.22, 0.24, 0.27, 0.30, 0.35, 0.45, 0.60)
+TIER_FACTORS = (1.0, 1.10, 1.20, 1.33, 1.50, 1.75, 2.0301, 2.50, 3.00, 4.2689)
+FAMILIES = {"cliff": CLIFF_WEIGHTS, "flat": FLAT_LEVELS, "tier": TIER_FACTORS}
 
 
 def greedy_at(boundaries):
@@ -123,6 +125,47 @@ def cliff_price(weight: float, cliff: int = 4) -> tuple:
     for value in marginal:
         cumulative.append(cumulative[-1] + value)
     return marginal, cumulative[:len(PRICE_CUMULATIVE)], ratio
+
+
+def boundary_price(weight: float, cliff: int = 4) -> tuple:
+    """`makeBoundaryDepthPrice`, the shipped one-boundary form.
+
+    `weight` is the tier factor. Unlike `cliff_price` this HOLDS THE TOTAL at
+    `maxDepth * headStepCostRatio`, which is the convention every existing arm
+    in `Qwen36MTPBlockSession` follows, so the shallow entries fall as the one
+    priced entry rises. `weight = 1` is the shipped uniform table exactly.
+    """
+    count = len(PRICE_MARGINAL)
+    total = count * 0.18
+    within = total / (count - 1 + weight)
+    marginal = [within] * count
+    marginal[cliff] = within * weight
+    cumulative = [1.0]
+    for value in marginal:
+        cumulative.append(cumulative[-1] + value)
+    return marginal, cumulative[:len(PRICE_CUMULATIVE)], weight
+
+
+# `measuredRawDepthPrice` from `Qwen36MTPBlockSession.swift`. E68 rung 3
+# measured this shape end to end on this host at -3.500 percent candidate MTP
+# seconds per token, and E75 measured it at +0.33 percent on the crown kernel
+# table. It is the only price shape in the tree with a real GPU result, so it
+# is the external anchor for whether this replayer prices shapes correctly.
+MEASURED_RAW = [0.26300121724709807, 0.29195567495854047,
+                0.34642143034825884, 0.40231023217247086,
+                0.63287276451077956, 0.43601634825870655,
+                0.35457813598673293, 0.42510483416251998]
+
+
+def measured_price() -> tuple:
+    """`makeMeasuredDepthPrice`, rescaled to the shipped total."""
+    total = len(PRICE_MARGINAL) * 0.18
+    scale = total / sum(MEASURED_RAW)
+    marginal = [value * scale for value in MEASURED_RAW]
+    cumulative = [1.0]
+    for value in marginal:
+        cumulative.append(cumulative[-1] + value)
+    return marginal, cumulative[:len(PRICE_CUMULATIVE)]
 
 
 def flat_price(level: float, cliff: int = 4) -> tuple:
@@ -219,7 +262,7 @@ def main() -> int:
     ap.add_argument("--curve", choices=("board", "ours"), default="board")
     ap.add_argument("--cliff", type=int, default=4)
     ap.add_argument("--only-cliff", action="store_true")
-    ap.add_argument("--family", choices=("cliff", "flat"), default="cliff")
+    ap.add_argument("--family", choices=tuple(FAMILIES), default="cliff")
     ap.add_argument("--json", type=pathlib.Path,
                     default=here / "e134-artifacts/rung3-boundaries.json")
     args = ap.parse_args()
@@ -260,11 +303,18 @@ def main() -> int:
         if n_differ:
             for d in range(CAP):
                 plans.append(("costaware@%d" % d, "costaware", [d]))
-    make_price = cliff_price if args.family == "cliff" else flat_price
-    grid = CLIFF_WEIGHTS if args.family == "cliff" else FLAT_LEVELS
-    tag = args.family + "price@%.2f"
+    make_price = {"cliff": cliff_price, "flat": flat_price,
+                  "tier": boundary_price}[args.family]
+    grid = FAMILIES[args.family]
+    tag = args.family + "price@%.4f"
     for weight in grid:
         plans.append((tag % weight, "price", weight))
+    fixed = {"pb5": boundary_price(2.0301, 3)[:2],
+             "pb6": boundary_price(2.0301, 4)[:2],
+             "pb7": boundary_price(2.0301, 5)[:2],
+             "pbfit": measured_price()}
+    for name in fixed:
+        plans.append((name, "table", name))
 
     _, _, cliff_ratio = make_price(grid[-1], args.cliff)
     print("\n## the %s price family, cliff boundary %d"
@@ -288,6 +338,8 @@ def main() -> int:
             elif kind == "costaware":
                 ratios = force_ratios(panel, costaware_at(boundaries),
                                       args.windows)
+            elif kind == "table":
+                ratios = price_ratios(panel, fixed[boundaries], args.windows)
             else:
                 marginal, cumulative, _ = make_price(boundaries, args.cliff)
                 ratios = price_ratios(panel, (marginal, cumulative),
@@ -383,7 +435,7 @@ def main() -> int:
           % (in_sample, lofo_mean, lofo_sd, lofo_mean - in_sample))
     for prompt, picks in chosen.items():
         print("   %-10s weights %s" % (
-            prompt, " ".join("%.2f" % w for w in picks)))
+            prompt, " ".join("%.4f" % w for w in picks)))
     print("\n%-10s %10s %10s %10s" % (
         "weight", "median %", "mean depth", "accept"))
     for weight in grid:
@@ -393,7 +445,19 @@ def main() -> int:
                     for p, v in sample.items())
         accept = sum(RANKED_PROMPTS[p]["weight"] * v["accept_rate"]
                      for p, v in sample.items())
-        print("%-10.2f %+10.4f %10.3f %10.3f" % (weight, mean, depth, accept))
+        print("%-10.4f %+10.4f %10.3f %10.3f" % (weight, mean, depth, accept))
+
+    print("\n## the price arms that already exist in the Swift tree")
+    print("   `pbfit` is the external anchor: E68 rung 3 measured it end to")
+    print("   end on this host at -3.500 percent candidate MTP seconds per")
+    print("   token, and E75 measured it at +0.33 percent on the crown table.")
+    print("%-8s %12s %8s   %s" % ("arm", "median %", "sd", "marginal"))
+    for name in fixed:
+        mean, sd = summarise(per_seed[name])
+        shape = " ".join("%.3f" % v for v in fixed[name][0])
+        print("%-8s %+12.4f %8.4f   %s" % (name, mean, sd, shape))
+    print("%-8s %+12.4f %8.4f   %s" % (
+        "ship", 0.0, 0.0, " ".join("%.3f" % v for v in PRICE_MARGINAL)))
 
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps({
