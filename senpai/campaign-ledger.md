@@ -47464,3 +47464,575 @@ already priced above); `a67df0cc`, `e44c0ba5`, `72d1d8be`, `cefa0ac6`
 unread.
 
 New tool: `_advisor_scratch/nullpair.py`, the F165 replicate instrument.
+
+## 289 — WE TAKE THE CROWN, THE MECHANISM THAT WON IS REFUTED, AND THE KERNEL'S CURRENCY INVERTS
+
+Session of 2026-08-22, approximately 16:00Z to 16:40Z. Advisor base
+`d6cbce09` at open. Four students active, no PR merged, one ranked
+promotion.
+
+### 289.1 / FINDING 167 — `623e77af` IS PROMOTED AT 3.52085227 AND HOLDS THE TOP OF THE PUBLIC BOARD
+
+```
+623e77af-7a6a-41f0-afab-478037aafbb8   morganmcg1
+officialScore        3.52085227003175
+status               accepted
+promotionStatus      promoted
+improved             true
+promotionFinishedAt  2026-08-22T16:05:35.191Z
+promotedSourceRef    60d5b34a5ad62296faa9746dccab71e762e4001c
+submissionCommitSha  fd562cb75bf1be4bafee87824f7a631dfe09b9c7
+```
+
+Displaced crown `0b8602e1` (nagaral) at 3.51925374. First Senpai row at the
+top of the board. The single in-flight submission slot became free at
+16:05Z for the first time since 14:12Z.
+
+The arm: thorfinn E129, per-width templated Route B entry points plus
+one-pass tables at widths 6 and 7 on askeladd's D_S body. Candidate commit
+`bbce0deb`, timed commit `ebed7498`, one submitted path
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`.
+
+**Validity conditions pass.** `effective_mean_draft_len` and
+`non_drafting_round_count` are identical to every printed digit on all
+eight prompts against `0c6191b7`. The one-pass table is bit-exact by
+construction (F148) and that is now confirmed at rank, not only by
+`static_assert`.
+
+**The hypothesis is refuted by a factor of about 25.** Pre-registered band
+`-3 %` to `-9 %` candidate, central `-5 %`, refuted if worse than `-1 %`.
+Measured `-0.2032 %` F83-weighted. FINDING 156's five parameter-free
+readings predicted `-7.59`, `-8.60`, `-2.56`, `-2.60` and `+0.05 %`; only
+the cross-sectional fit, which the advisor had already labelled worthless,
+came close.
+
+**Common-denominator leaderboard, anchor `623e77af`, cluster 0.30,
+n = 15** (`research/common_denominator.py`; serial-vector-only sd
+0.1027 %, candidate-vector-only sd 0.0956 %):
+
+```
+rank  common-den   published   id         solver          status
+   1    3.520852    3.520852   623e77af   morganmcg1      accepted   OURS
+   2    3.516574    3.517689   3b376ba2   Lieisyourlie    rejected
+   3    3.515031    3.512100   1d3f0589   Lieisyourlie    rejected
+   4    3.514224    3.519254   0b8602e1   nagaral         accepted
+   5    3.513514    3.516067   4be07d0c   jonathan308     rejected
+   6    3.512378    3.512706   0c6191b7   morganmcg1      rejected   OURS, previous
+   7    3.511388    3.516617   cf79f7df   Lieisyourlie    accepted
+  12    3.509429    3.518453   48423d09   noskillcoding   accepted
+  15    3.508402    3.504731   bed5081a   nijaru          rejected
+```
+
+We lead the second-best candidate by `+0.1216 %`, the displaced crown by
+`+0.1885 %` and our own previous submission by `+0.1359 %`. **This is the
+first time our lead survives the common-denominator correction.** Note
+against F165: the crown was taken on a candidate improvement of 0.20 %
+F83-weighted, which is inside the measured null band, so the promotion was
+partly a favourable serial draw.
+
+### 289.2 / FINDING 167.1 — THE DOSE-RESPONSE IS TEXTBOOK AND IT LOCATES THE EFFECT
+
+```
+prompt     eff      Mbar    cand d%   serial d%   raw d%    F83 w
+plutarch  0.154   1.15    -0.0593    -0.4342   -0.3751    0.0000
+drama     2.298   3.30    +0.3457    +0.1780   -0.1672    0.0000
+travel    2.656   3.66    +0.3660    -0.5314   -0.8942    0.0000
+beagle    4.382   5.38    -0.1492    +0.2800   +0.4299    0.4862
+republic  4.989   5.99    -0.1459    +0.1812   +0.3275    0.0100
+essays    5.087   6.09    -0.3246    -0.2738   +0.0510    0.1598
+medicine  5.256   6.26    -0.3129    +0.7169   +1.0330    0.2508
+botany    6.148   7.15    +0.0924    -0.1275   -0.2196    0.0124
+
+unweighted 8-prompt candidate mean  -0.0235 %  sd 0.2694  se 0.0952  z -0.25
+F83-weighted candidate mean         -0.2032 %
+published median delta              +0.2319 %
+```
+
+A step exactly at `Mbar = 6` where `{6:6}` turns on, and a return to zero
+at `Mbar = 7.15` where mass moves to `M = 8`, which the arm does not touch.
+Under F165's measured null the per-prompt candidate spread of a
+byte-identical replicate is at most 0.077 %; drama and travel moved 4 to 5
+times that. Not noise, not a mode artefact.
+
+**The templating tax is measured and real.** drama `+0.3457 %` and travel
+`+0.3660 %` are 7.3 and 7.7 standard deviations against the F165 null
+(sd 0.0476 %). Neither prompt touches width 6 or 7; ten tiered entry points
+replacing two shared switches is the only change that reaches them.
+plutarch sits inside the null at `-0.0593 %`, which is correct: 449 of its
+487 rounds are non-drafting and reach `default: break`, never the tiered
+entry points.
+
+So the arm is a `+0.35 %` tax at widths 3 to 5 and a `-0.67 %` benefit
+where widths 6 and 7 run. It nets positive only because the F83-weighted
+prompts sit high. **A cheaper route to one-pass at width 6, without ten
+entry points, would be worth more than the arm as shipped.**
+
+### 289.3 / FINDING 167.2 — THE RANKED PAIR RECONSTRUCTS THE PER-PROMPT ROUND-COST CURVE
+
+New instrument `_advisor_scratch/roundcurve.py`. Because the schedule is
+bit-exact across the pair, the round count `R` is pinned (F111), so
+`round_us = mtp_seconds_per_token_mean * 512 * 1e6 / R` and **the mean
+round-time change equals the candidate seconds-per-token change exactly.**
+
+```
+prompt      Mbar     R   us/round before   us/round after   delta us   delta %
+plutarch   1.154   487           31813.9          31795.0      -18.9   -0.0593
+drama      3.298   252           38708.9          38842.8     +133.8   +0.3457
+travel     3.656   212           40103.7          40250.5     +146.8   +0.3660
+beagle     5.382   110           52531.6          52453.2      -78.4   -0.1492
+republic   5.989    93           56266.4          56184.3      -82.1   -0.1459
+essays     6.087    92           57570.0          57383.1     -186.9   -0.3246
+medicine   6.256    90           58113.2          57931.4     -181.8   -0.3129
+botany     7.148    81           63732.9          63791.8      +58.9   +0.0924
+```
+
+This is the first direct per-prompt cost-curve measurement from a ranked
+pair in this campaign.
+
+**Inverting for the per-width change.** Give widths 6 and 7 full credit for
+the templating tax, then divide medicine's `-181.8 us` by the mass at those
+widths:
+
+```
+mass at 6+7   saving per affected round   round_us(6)   step from M=5   ratio to slope 3388
+   0.25              1530.8 us              57015.2        12179.2            3.594
+   0.35              1093.4 us              57452.6        12616.6            3.724
+   0.50               765.4 us              57780.6        12944.6            3.820
+   0.65               588.8 us              57957.2        13121.2            3.873
+pre-arm                                      58546.0        13710.0            4.046
+predicted one-pass line                      48224.1         3388.2            1.000
+```
+
+**`round_us(6)` fell by between 1.0 % and 2.6 %. FINDING 156 required
+17.63 %. The cost cliff at the M=5 to M=6 boundary keeps 89 % to 96 % of
+its magnitude.**
+
+### 289.4 / FINDING 169 — THE BINDING CONSTRAINT AT THE WIDE WIDTHS IS OCCUPANCY-LIMITED LATENCY, AND THAT INVERTS THE CURRENCY
+
+Fit `T = max(issue, latency / occupancy)` to the one observation using
+thorfinn's own census. Two passes of `wide<3>` is 90 registers and 44
+resident simdgroups; one pass of `wide<6>` on the D_S body is 105 registers
+and 37 resident simdgroups. Statements per output element fall 33.5 %.
+
+```
+observed post/pre   implied L    pre floor L/44   headroom   post floor L/37   post issue
+      0.974        36.04 I2        0.819 I2        18.1 %       0.974 I2       0.665 I2
+      0.981        36.30 I2        0.825 I2        17.5 %       0.981 I2       0.665 I2
+      0.990        36.63 I2        0.833 I2        16.8 %       0.990 I2       0.665 I2
+```
+
+Stable across the whole plausible range.
+
+> **The two-pass form at width 6 was issue-bound with about 17 % of slack
+> above its latency floor. The one-pass form cut issue by 33.5 %, which
+> carried it through that slack and onto the floor at reduced occupancy. It
+> is now latency-bound. The 17 % was all the arithmetic headroom that
+> existed at width 6, and it is spent.**
+
+Consistent with every other fact held. It explains the 22-fold shortfall on
+the affected rounds without a measurement fault. It explains why `{7:7}` is
+neutral: `wide<7>` at 118 registers and 33 resident simdgroups against
+`wide<4>` at 94 and 42 is a 21 % occupancy loss for a 25.9 % statement cut,
+which the model prices as a wash. It explains botany at `+0.0924 %`.
+
+**FINDING 157's central thesis is in serious doubt at widths 6 and 7.** The
+statement census remains correct arithmetic about the kernel text. It is no
+longer a valid price at those widths, because the kernel does not pay for
+statements it can hide.
+
+**THE CURRENCY INVERTS. At widths 6 and 7 the unit of value is a deleted
+REGISTER, not a deleted statement.** The g17s residency staircase is
+`floor(3968 / regs)`:
+
+```
+width   body        regs now   resident sg   regs for +1 sg   to find   occupancy gain
+  5     wide<5>        102          38             101            1         +2.63 %
+  6     wide<6> D_S    105          37             104            1         +2.70 %
+  7     wide<7> D_S    118          33             116            2         +3.03 %
+```
+
+With QMV share 87.35 % of the leg and ranked masses `mass(6) = 0.188`,
+`mass(7) = 0.211`, one register at width 6 is worth about `+0.44 %` of the
+candidate leg and two at width 7 about `+0.56 %`. **Together roughly five
+times the arm just promoted.**
+
+**Sharp falsifiable prediction.** If the latency model holds, any form that
+deletes instructions at widths 6 or 7 without crossing a staircase step
+buys exactly zero. If W1, W2 or A1 shows a real gain at constant registers,
+the model dies. Issued to thorfinn as F25 with the table columns reordered
+so registers are the headline and instructions are context.
+
+### 289.5 / FINDING 168 — THE SHIPPED DRAFT READOUT IS 0.87 % WRONG AND THAT IS WORTH ABOUT 1.76 % OF RANKED SCORE
+
+From askeladd's E133 interim 5 `exact0` control, 42 cells, 0 anomalies, and
+a damaged `simhash8` control that still fails at p = 0.9943, so the gate can
+fail both ways: **absolute miss `8.663123e-03` on beagle**, the shipped
+chain's own miss against the exact affine-4 argmax. At the pinned
+`MISS_TO_SCORE_PCT = 203.0` that is **1.759 % of ranked score**.
+
+The ledger recorded the shipped chain at `2.266e-4` (E87 arm C, derived
+bisect partition, p = 0.25, 4 misses of 18,092), **38 times smaller**, and
+"plain k-means r1 shipped" at 1.079e-3, 8 times smaller. The advisor
+carried `2.266e-4` into the acceptance-axis report, the C1 break-even, the
+qat-q4 closure and the head-precision break-even table.
+
+**Hypothesis (b) killed at source.** Read `f17daf34^`, the commit before the
+`a0f8588` frontier import: both stages were already affine-2 before the
+import.
+
+```
+f17daf34^ : Qwen35.swift:5359  quantizedMM(x, centroidWeight, ..., groupSize: 64, bits: 2, mode: .affine)
+f17daf34^ : Qwen35.swift:5380  gatherQuantizedMM(..., groupSize: 64, bits: 2, mode: .affine)
+occurrences of 'a2g64'  at f17daf34^ : 0     at f17daf34 : 2
+```
+
+The import added `qwen_e121_a2_qmv4` and the two `*_a2g64_v1` kernels as a
+faster implementation of arithmetic that was **already 2-bit**. The
+reconciliation must be (a), a reference-set difference.
+
+**A third independent measurement was already in the ledger** at `## 197(G)`,
+approximately line 13790. `research/e28-draft-readout-exactness-n24000.json`,
+24,000 synthetic isotropic trials:
+
+```
+fast_shortlist_misses_exact_top1   1831
+fast_exact_top1_miss_rate          0.07629167    containment at K=32 = 92.371 %
+rerank_disagrees_with_oracle       0 over 22,169 trials
+top32_set_churn_rate               4.1667e-05
+rerank_top1_changes                0
+```
+
+Two independent instruments now put the shipped chain's argmax miss in the
+1e-2 decade. `rerank_disagrees_with_oracle = 0` is load-bearing: once the
+true argmax reaches the exact affine-4 rerank, the rerank always picks it,
+so **the entire base miss is upstream of the rerank.**
+
+### 289.6 / THE ONE-INTEGER LEVER — `qwen35Top32K`
+
+Read at source in `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`:
+
+```
+:3798  private let qwen35Top32RealCount = 98_330
+:3799  private let qwen35Top32K         = 32
+:3800  private let qwen35Top32TG        = 256
+:3801  private let qwen35Top32Tiles     = 64
+:3819  cands        = tiles * qwen35Top32K
+:3820  finPerThread = cands / qwen35Top32TG
+:4057  precondition(plan.perThread <= 32 && plan.finPerThread <= 32, ...)
+```
+
+Shipped cluster plan: `cands = 2048`, `finPerThread = 8`. **At `K = 128`:
+`cands = 8192`, `finPerThread = 32`, which sits exactly on the `:4057`
+precondition and does not violate it. One integer literal, no plan
+redesign, no new kernel, no new dispatch.** `K = 256` needs `tiles` 64 to
+32 and stays inside the precondition.
+
+Priced on F144's measured `readout C` of 92,160 B for 32 affine-4 g64 rows,
+2,880 B per row, step 323.59 MB, 7 % head share:
+
+```
+K    rerank bytes  extra/step   step frac   gross cost   break-even miss   share of 8.663e-3
+32       92,160          0        0           0             -                 -
+64      184,320     92,160     0.0285 %     0.0020 %      9.8e-06           0.11 %
+128     368,640    276,480     0.0854 %     0.0060 %      2.95e-05          0.34 %
+256     737,280    645,120     0.199 %      0.0140 %      6.9e-05           0.80 %
+```
+
+**`K = 32` to `128` pays for itself if it recovers one part in 294 of the
+base miss.** If `R` is 70 % of the base miss and a fourfold shortlist
+recovers half of `R`, this one integer is worth `+0.61 %` ranked. Orthogonal
+to C1, to the probe fraction and to everything in flight. `Qwen35.swift` is
+thorfinn's file; askeladd produces the number, thorfinn implements.
+
+### 289.7 / EDWARD E134 RUNG 4 — `pb6`, +2.3422 % HELD OUT, AND WHY IT SURVIVES THE PROMOTION
+
+W&B `0r1qdl1y`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0r1qdl1y).
+Terminal result at commit `fdfbcafd`, `status: succeeded`,
+`e134_replayed_ranked_median_pct = +2.3422` leave-one-prompt-out, six
+seeds, sd 0.0463, in sample `+2.3967`, bar `+0.50`.
+
+Arm: raise only `marginal[4]`, the M=5 to M=6 pass boundary, through the
+shipped hold-total `makeBoundaryDepthPrice` form. Tier grid, held out:
+
+```
+tier      median %  mean depth  accept
+1.0000     +0.0000     4.384     0.749   the shipped flat price, exactly
+1.2500     +1.7955     4.201     0.759
+1.3500     +2.3201     4.119     0.763   plateau opens
+1.4000     +2.3967     4.086     0.764
+1.4500     +2.3912     4.052     0.763   PROPOSED
+1.6000     +2.3659     3.950     0.763   plateau closes
+2.0301     -2.2338     3.236     0.729   E56's constant
+4.2689     -2.7799     3.380     0.711   the TRUE measured cost ratio
+```
+
+**Four controls hold.** Flat price at the same shallow level `-0.2970`,
+ruling out a level effect. Placebo tiers at boundaries 3 and 5 both select
+the null at every prompt and every seed. Board curve at the same tier
+`-1.6469`. The seven-entry discount alone is worth `-0.2970`, so the whole
+`+2.39` is the one raised entry.
+
+**Anchor failure, reported not hidden.** The replayer reproduces E128's
+independently written `rankedprice` arm to 0.245 pp (`-3.0962` against
+`-2.8508`) but does **not** reproduce E68's measured GPU result for `pbfit`
+(`+0.0610` against `-3.500`). The instrument is internally consistent and
+externally uncalibrated.
+
+**Table conditionality, and the resolution.** Edward refit on the predicted
+post-`{6:6,7:7}` curve and found `pb6` at boundary 4 flipping to `-0.8963`
+with the same family at boundary 6 worth `+7.4412`. **289.3 refutes that
+curve.** The measured post-promotion step at boundary 4 keeps 89 % to 96 %
+of its magnitude, so `pb6` at boundary 4 stands and the `+7.4412` boundary-6
+arm is fitted to a curve that does not exist. This holds under both branches
+of the open question on thorfinn's build: if the one-pass table is not in
+the submitted archive the table never changed, and if it is in and the cost
+did not fall the cliff is intact for a physical reason.
+
+### 289.8 / EDWARD E134 RUNG 5 — THE ROUND-1 EXCESS CLEARS THE 30 ms BAR AND IS GPU-SIDE ON 15 OF 15 LEGS
+
+`harness=local`, M4 Pro, zero GPU, `research/e134_rung5_round1.py`,
+artifact `research/e134-artifacts/rung5-round1-excess.json`.
+
+```
+arm                        legs   E_total range      F83-weighted   ranked upper bound
+forced depth-7, matched     12    14.9 .. 31.3 ms       20.53 ms         +0.3707 %
+shipped, pooled tail         3         -26.5 .. 32.4    25.15 ms         +0.4313 %
+shipped, width-matched       3    28.8 .. 32.9 ms       31.25 ms         +0.5359 %
+```
+
+Twelve of twelve forced legs positive. Depth-matched controls at
+`|ctrl| <= 418 us` against effects of 15 to 31 ms, a separation of 35 to 75
+times. `dec@2` and `dec@3` centre on zero and change sign across legs, so it
+is one round and not a decay.
+
+**E65 does not apply.** `Qwen36MTPBlockSession.swift:729-738` records
+`verify_build_us` at about 97 % GPU wait, so the GPU pipeline is
+`d_submit2_us + verify_build_us + eval_wall_us`.
+
+```
+arm                     GPU share of E_total   host excess
+forced, 12 legs             1.055 .. 1.163     negative on every leg
+shipped width-matched       1.059 .. 1.082     negative on every leg
+```
+
+`host_thread_cpu_ns` shows round 1 burning **15 to 21 ms less host CPU while
+taking 15 to 32 ms more wall time.** A host graph-build cost cannot have
+that signature. E65 moved host graph build and measured neutral; this is a
+different cost. **The warm-refill is authorised.**
+
+Attribution to a statement: on forced legs at `d = 7` the whole excess lands
+in `d_submit2_us`; on shipped legs at `d = 3` or `4` it lands in
+`verify_build_us`. Our own source at `:742-746` documents that these two
+counters partition one GPU cost and that which one absorbs a stall depends
+on head chain length. **The arms name different counters and the same
+physical event.**
+
+### 289.9 / CAMPAIGN RULE 106 — A FIRST-ROUND EXCESS MUST BE MEASURED AGAINST A WIDTH-MATCHED OR DEPTH-MATCHED TAIL
+
+Two students found the same defect in the advisor's F18 statistic within one
+hour, in different files, with different tools.
+
+- **Alphonse**, interim 20: on a three-round smoke leg `C_raw` reads
+  `-11.08 ms` while the same data at matched depth reads `+8.73 ms`. **The
+  confound reverses the sign.** He now reports `C_raw`, `C_depth_matched`
+  and `C_regression`, keeping the advisor's definition visible for audit.
+- **Edward**, rung 5: `E@1` on `benchfixture` reads `-26.5 ms` against a
+  mixed-width tail and `+28.8 ms` against a width-matched tail. His control
+  had a 95th percentile of 56 to 68 ms against an effect of 18 to 32 ms, so
+  it had no resolving power at all until he matched.
+
+> **RULE 106.** A first-round excess must be measured against a tail matched
+> on that round's own dispatch width or draft count. A mixed-tail median is
+> the wrong baseline; it can invert the sign and it destroys the control's
+> resolving power.
+
+Edward's 15 legs also calibrate alphonse's `C` channel before his ladder
+lands: the same physical quantity on a different host with a different tool
+reads 15 to 35 ms. If alphonse's depth-controlled `C` lands in that band his
+instrument is externally validated by an independent implementation.
+
+The advisor's interim-18 magnitude argument is also now void from the other
+side. The **total** round-1 excess is 20 to 31 ms and alphonse's arm effect
+is 4.033 ms, so a round-1 channel needs his slack change to remove 13 % to
+20 % of the excess, an ordinary fraction. **Channel `C` is the whole
+discriminator and no arithmetic pre-empts it.**
+
+### 289.10 / ASKELADD E133 INTERIM 5 — C1 SURVIVES, AND THE BEST-PRICED CELL IS INTERIOR
+
+Base `197e0550`, host g16s, 1,176 cells, 11,244 samples, 421 s CPU, offline
+only, not gate-qualified. **234 of 588 full-C1 cells and 254 of 588 hybridA
+cells clear both T0 and T0b.**
+
+Best full-C1 cell `qlowrank256-N4096-p0.25`: 264 B per row, removes
+40,081,056 B per step (12.39 %), gross 0.867 %, acceptance cost 0.040 pp,
+**predicted ranked `+0.827 / +0.717 / +0.469 %`** on the F1.5 realised,
+pooled and raw-miss conversions. Worst gating stratum net miss 1.5244e-03
+against T0 = 3.0e-3, recall 0.99956 against T0b = 0.997.
+
+```
+FULL C1 byte ladder          B/row cells clear maxgain%  best predicted %          best arm
+                              40    84    7    1.238   0.369/0.261/0.169  qlowrank32-N16384-p0.5
+                              72    84   13    1.209   0.723/0.495/0.352  wlowrank64-N8192-p0.5
+                             136    84   24    1.151   0.765/0.563/0.350  qlowrank128-N4096-p0.5
+                             264    84   34    1.035   0.827/0.717/0.469  qlowrank256-N4096-p0.25
+                             520    84   54    0.802   0.668/0.583/0.403  qlowrank512-N1024-p0.25
+                            1032    84   66    0.337   0.384/0.154/-0.094 simhash8192-N1024-p0.25
+                            1600    21   21   -0.002  -0.002              exact0-N64-p0.25 (control)
+SURVIVOR WIDTH  N=256 +0.217 | N=1024 +0.668 | N=4096 +0.827 | N=8192 +0.723 | N=16384 +0.479
+```
+
+- **Whitening loses**, in the direction he pre-registered. 252 exactly
+  paired twins: net miss 39 win / 134 tie / 79 loss, mean delta
+  `+1.3277e-04`, sign-test p `2.927e-04`. The whitened estimator is
+  algebraically identical before rounding (rel err 3.1e-16), so the whole
+  difference is quantization. Correct derivation: with one per-row max-abs
+  int8 scale the error variance is
+  `(max_j |a_j t_j| / 254)^2 * sum_j lambda_j / t_j^2`, minimised at
+  `t_j = 1`; whitening picks `t_j = sqrt(lambda_j)` giving ratio
+  `lambda_1 * r / sum_j lambda_j >= 1`. **Drop `wlowrank`; ship plain
+  `qlowrank`.**
+- **`essays_bacon` holdout passes.** Selected cell: cross-fit net 3.5149e-03
+  and recall 0.99649; holdout net 1.7575e-03 and recall 1.00000. Prompt-pool
+  specialization is not a live concern.
+- **The spectrum does not predict miss.** At 45.6 % captured query energy
+  (r=64) the shortlist retains the affine-4 argmax essentially always. Rank
+  preservation at coarse resolution is far easier than score preservation
+  because stage C rescores exactly.
+- Negative net miss at r >= 512 (`-2.178e-04`): the arm repairs more of the
+  shipped chain's own base misses than it creates.
+- Family clearing: `exact` 21/21; `qlowrank` 72/126; `wlowrank` 72/126;
+  `lowrank` row-PCA 48/126; `simhash` 38/126; `sign` 3/63. **Query-fitted
+  int8 low-rank dominates SimHash at equal bytes.**
+
+### 289.11 / THE PROBE-FRACTION COMPOUND, AND N=4096 DE-RISKED
+
+Advisor arithmetic reproducing askeladd's 0.867 % exactly:
+
+```
+stage A sketch, 12,292 centroid rows       3.245 MB
+stage B sketch, 98,336 x p rows            6.490 (p=.25)  12.980 (p=.50)  25.961 (p=1.0)
+stage C exact affine-2 rescore of N=4096   6.554 MB
+R projection + mu + final affine-4         2.733 MB
+today's stage total                       59.094 MB      step = 323.59 MB
+
+p=0.25 with centroids   19.02 MB  removed 40.07 MB  gross +0.867 %
+p=0.50 with centroids   25.51 MB  removed 33.58 MB  gross +0.726 %
+p=1.00 NO centroid stage 35.25 MB removed 23.85 MB  gross +0.516 %
+```
+
+**Doubling the probe fraction costs 0.140 pp and breaks even at a miss
+recovery of 6.9e-4, which is 8.0 % of the base miss. Probing everything
+costs 0.351 pp, deletes the centroid stage, the probe sort and the
+`argPartition` at `:5613`, and breaks even at 1.7e-3, which is 20 % of the
+base miss.** If `P` is half the base miss, `p = 1.00` is
+`+0.516 % + 0.879 % = +1.40 %` against his `+0.827 %`.
+
+**N=4096 de-risked without a comparison-based top-k**, two separate
+selections:
+
+1. **Top-N of the sketch-scored rows.** Three dispatches: a 256-bin
+   histogram through threadgroup atomics with a device atomic merge; one
+   single-threadgroup pass that prefix-sums 256 bins to find the bin holding
+   the N-th score, giving `tau`; one compaction pass emitting rows with
+   `score > tau` into a fixed-capacity buffer, with the `qwen_top32_ordinal`
+   tiebreak at `:3827-3836` on the boundary bin and a hard capacity clamp.
+   O(rows), no sorting network, N nearly free.
+2. **Top-32 of the N exactly-rescored survivors.** Partition N across T
+   threadgroups, each keeping a local top-32 in threadgroup memory, then one
+   small merge kernel over `T * 32`. **Exact by construction.** At N=4096
+   and T=32 each group sees 128 rows, so `finPerThread` never exceeds 32 and
+   `:4057` holds untouched. The merge over 1,024 elements fits one
+   threadgroup inside the 32,768 B budget.
+
+### 289.12 / ADVISOR ERRORS 123 THROUGH 126
+
+**123.** The "cheapest clearing cell" selection rule is falsified. The
+cheapest clearing cell at 40 B per row prices at `+0.369 %`; the best at
+264 B per row prices at `+0.827 %`. The cheapest rule gives away 0.458 pp,
+which is 4.7 times the 0.0967 % noise floor. Clearing T0 does not make the
+miss free; a cell sitting on T0 = 3.0e-3 pays 0.61 pp. **Corrected rule:
+select on predicted ranked value, report the whole ladder, and treat bytes
+as an input to the price and never as the selection statistic.**
+
+**124.** The whitening instruction assumed a per-coordinate scale. With a
+per-row max-abs int8 scale, whitening strictly loses. Withdrawn.
+
+**125.** Ruling "price on the incremental miss" made an 8.663e-3 base miss
+worth 1.76 % ranked invisible by construction. The ledger had already
+retired a 7.6 % measurement at `## 197(G)` with "it gates nothing", which
+was true about correctness and irrelevant about value, because quality is
+acceptance and acceptance converts at 203 pp. **From now on report both;
+`m_absolute` against the exact affine-4 global argmax is the headline.**
+
+**126.** Gate B in E134 F5 supplied a **predicted** post-arm curve derived
+from FINDING 156's statement census, with `round_us(6) = 48224.1` and
+`round_us(7) = 51612.4`. The ranked receipt refutes both. Edward correctly
+used what he was given and produced a `+7.4412 %` boundary-6 arm fitted to a
+curve that does not exist. **A gate must be defined against a measurement,
+or against a measurement that will exist before the gate is read. A gate
+defined against a model prediction propagates the model's error into the
+student's result.**
+
+A related coupling error, same root: the tripwire test
+`E134PassBoundaryPriceTests.swift` parses the IPG literal out of
+`Qwen35.swift` and derives the pass boundary from it. The receipt proves the
+declared pass count and the measured cost step are **different quantities**.
+The table now says one pass at width 6 and the cost says the step is still
+there. A test coupled to the literal will send the next session to refit a
+price that needs no refit, and will stay silent if a kernel change moves the
+cost step without moving the literal. **Couple the price boundary to a
+checked-in measured curve fingerprint with a provenance line naming the
+ranked receipt it came from.**
+
+### 289.13 / CAMPAIGN RULE 105 — TOKEN WINDOW
+
+Never estimate a ranked effect at a token window other than 512 unless the
+mechanism is proven window-invariant, and state the proof. Harness defect 27
+is the same error in the opposite sign: a 64 or 128-token window understates
+a per-round kernel effect by 3.8 times.
+
+Alphonse's F18 arithmetic is the worked case. The same `-4.033 ms` per
+64-token leg reads:
+
+```
+reading                                           64 tok    128 tok   256 tok    512 tok
+one-time round-1 cost (fixed ms)                -0.1963   -0.0982   -0.0491   -0.0245 %
+per-round tax (0.419 ms on a 213.5 ms round)    -0.1963   -0.1963   -0.1963   -0.1963 %
+```
+
+Steady-state reading gives `z = 10.5` and one receipt settles it; round-1
+reading gives `z = 1.3` and one receipt settles nothing. He flagged this
+against his own interest and then launched at 64 tokens anyway, caught it
+one leg in, cancelled job `1d02a374` at 142 s and deleted every leg
+directory. The 512-token ladder is job `89a1a96e`, 13 legs including one
+untraced `s512` leg to convert the trace-tax caveat into a measurement.
+
+### 289.14 / STATE AT SESSION CLOSE
+
+```
+PR   student   revision   state
+128  thorfinn  r1         WIP. F24 and F25 issued. Awaiting the submitted-archive
+                          witness string, the architecture-conditionality answer,
+                          the terminal result, and the W1/W2/A1 register table.
+130  alphonse  r2         WIP. F19 and F20 issued. 512-token ladder job 89a1a96e
+                          running, 13 legs. Archive 5846b986 parked on the
+                          pre-promotion base, 8/8 gates, not submitted.
+133  askeladd  r1         WIP. F4 and F5 issued. Awaiting the P/C/R decomposition,
+                          the m_absolute(K) curve, and the 2.266e-4 reconciliation.
+134  edward    r2         Revision requested. Warm-refill implementation, then
+                          gate A, then the measured-curve refit.
+```
+
+**The in-flight submission slot is free.** Nothing may enter it until it is
+composed on the promoted snapshot `60d5b34a`. Alphonse's archive predates
+the promotion and would regress against our own frontier.
+
+Rule 93 rows still to price: `48f182c6` Carme99 batched draft-id readout;
+`05341264` and `dacf7005` newjordan; `a67df0cc` and `b6cb0fea` ofou;
+`e44c0ba5` vibecodooor; `775a26e3` noskillcoding warm-phase allocator
+pre-materialization, the F166 rival, still validating; `72d1d8be`
+scarletbright; `cefa0ac6` jonathan308; `1486f911` Amal-David.
+
+New tool: `_advisor_scratch/roundcurve.py`, the ranked round-cost curve
+reconstructor.
