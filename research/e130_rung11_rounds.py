@@ -65,12 +65,64 @@ def group_by_pid(rounds: list[dict]) -> dict[int, list[dict]]:
     return groups
 
 
+def ols_on_depth(entries: list[dict]) -> tuple[float, float] | None:
+    """Least squares `round_us ~ a + b * d` over the given rounds.
+
+    Returns None when the rounds carry fewer than two distinct draft counts,
+    because the slope is then unidentified.
+    """
+    xs = [float(e.get("d", 0)) for e in entries]
+    ys = [e["round_us"] for e in entries]
+    if len(set(xs)) < 2:
+        return None
+    n = float(len(xs))
+    mean_x = sum(xs) / n
+    mean_y = sum(ys) / n
+    sxx = sum((x - mean_x) ** 2 for x in xs)
+    if sxx == 0.0:
+        return None
+    sxy = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+    slope = sxy / sxx
+    return mean_y - slope * mean_x, slope
+
+
 def decompose(entries: list[dict]) -> dict:
-    """A leg's round-1 excess and steady-state median, in microseconds."""
+    """A leg's round-1 excess and steady-state median, in microseconds.
+
+    THE DEPTH CONFOUND. F18 defines C as `round_us[1] - median(round_us[2..N])`.
+    The schedule ramps, so round 1 usually runs a smaller draft count than the
+    steady rounds, and round time rises steeply with draft count. The literal
+    difference therefore mixes a one-time crossing cost with a schedule effect,
+    and it can even come out negative. `c_raw` keeps F18's definition, and two
+    depth-controlled forms sit beside it:
+
+      c_depth_matched  round 1 against only the steady rounds that ran the
+                       same draft count. Exact, but empty when the schedule
+                       never revisits round 1's depth.
+      c_regression     round 1 against `a + b * d` fitted on the steady rounds.
+                       Uses every round and extrapolates a little.
+
+    Read c_regression as the headline and c_depth_matched as its check.
+    """
     series = [e["round_us"] for e in entries]
     first = series[0]
     tail = series[1:]
+    tail_entries = entries[1:]
     steady = statistics.median(tail) if tail else float("nan")
+    first_depth = entries[0].get("d", 0)
+
+    matched = [e["round_us"] for e in tail_entries
+               if e.get("d", 0) == first_depth]
+    c_matched = (first - statistics.median(matched)) if matched else float("nan")
+
+    fitted = ols_on_depth(tail_entries) if len(tail_entries) >= 3 else None
+    if fitted is None:
+        c_regression = float("nan")
+        depth_slope = float("nan")
+    else:
+        intercept, depth_slope = fitted
+        c_regression = first - (intercept + depth_slope * first_depth)
+
     accepted = [e.get("acc", 0) for e in entries]
     # Tokens a round commits: the primary plus every accepted draft.
     committed = [a + 1 for a in accepted]
@@ -83,7 +135,12 @@ def decompose(entries: list[dict]) -> dict:
         "steady_mean_us": statistics.mean(tail) if tail else float("nan"),
         "steady_sd_us": (
             statistics.stdev(tail) if len(tail) > 1 else float("nan")),
-        "round1_excess_us": first - steady,
+        "round1_depth": first_depth,
+        "c_raw_us": first - steady,
+        "c_depth_matched_us": c_matched,
+        "c_depth_matched_n": len(matched),
+        "c_regression_us": c_regression,
+        "depth_slope_us_per_draft": depth_slope,
         "committed_tokens": sum(committed),
         "steady_mean_committed_tokens_per_round": steady_committed,
         "steady_seconds_per_token": (
@@ -141,9 +198,11 @@ def main() -> int:
     root = pathlib.Path(__file__).resolve().parent.parent / "research" / "out"
     if not root.exists():
         root = pathlib.Path("research/out")
-    legs = sorted(p for p in root.glob(f"{args.prefix}-*") if p.is_dir())
+    # Bare `prefix*` rather than `prefix-*` so a single named leg, such as a
+    # trace smoke test, is readable with the same tool as a whole session.
+    legs = sorted(p for p in root.glob(f"{args.prefix}*") if p.is_dir())
     if not legs:
-        print(f"no legs under {root} matching {args.prefix}-*", file=sys.stderr)
+        print(f"no legs under {root} matching {args.prefix}*", file=sys.stderr)
         return 2
 
     records = []
@@ -153,12 +212,15 @@ def main() -> int:
         if "error" in record:
             print(f"{record['tag']:<28} ERROR {record['error']}")
             continue
-        print(f"{record['tag']:<28} pid={record['timed_pid']} "
-              f"rounds={record['rounds']:>3} "
-              f"round1={record['round1_us'] / 1000:>9.2f} ms  "
-              f"steady={record['steady_median_us'] / 1000:>8.2f} ms  "
-              f"C={record['round1_excess_us'] / 1000:>9.2f} ms  "
-              f"B={record['steady_seconds_per_token']:.9f} s/tok")
+        print(f"{record['tag']:<26} n={record['rounds']:>3} "
+              f"r1={record['round1_us'] / 1000:>8.2f}ms(d={record['round1_depth']}) "
+              f"steady={record['steady_median_us'] / 1000:>8.2f}ms  "
+              f"C_raw={record['c_raw_us'] / 1000:>8.2f}  "
+              f"C_match={record['c_depth_matched_us'] / 1000:>8.2f}"
+              f"(n={record['c_depth_matched_n']})  "
+              f"C_reg={record['c_regression_us'] / 1000:>8.2f}  "
+              f"b={record['depth_slope_us_per_draft'] / 1000:>7.2f}ms/draft  "
+              f"B={record['steady_seconds_per_token']:.9f}")
         if args.dump:
             trace = pathlib.Path(record["trace_path"])
             entries = group_by_pid(parse_anchor_lines(trace))[
