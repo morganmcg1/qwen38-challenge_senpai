@@ -46,6 +46,7 @@ import sys
 
 CONTROL_SHAPE = "control.small"
 A_ONE = "a_one"
+DEFECT19_FACTOR = 1.5
 
 # `quantized.h:1922-1979`. IPG is the second template argument of
 # `qmv_fast_crossrow_affine4_g64_m`; M=1 and M=2 do not reach that template.
@@ -116,6 +117,29 @@ def main() -> int:
     def control(width: int, arm: str) -> float:
         blocks = table.get((CONTROL_SHAPE, width, arm))
         return statistics.median(blocks.values()) if blocks else 0.0
+
+    # Harness defect 19, the bimodal low-clock tail: a whole timed block reads
+    # far above the cell median. Flag it per block instead of pooling it into
+    # the cell statistic.
+    flagged: set[tuple[str, int, str, int]] = set()
+    dispersion: list[dict] = []
+    for (shape_k, width_k, arm_k), blocks_k in table.items():
+        med = statistics.median(blocks_k.values())
+        hits = [b for b, v in blocks_k.items() if v > DEFECT19_FACTOR * med]
+        for b in hits:
+            flagged.add((shape_k, width_k, arm_k, b))
+        dispersion.append({
+            "shape": shape_k,
+            "width": width_k,
+            "arm": arm_k,
+            "median_us": med,
+            "min_us": min(blocks_k.values()),
+            "max_us": max(blocks_k.values()),
+            "max_over_median": max(blocks_k.values()) / med if med > 0 else float("nan"),
+            "n_blocks": len(blocks_k),
+            "n_flagged": len(hits),
+            "flagged_blocks": sorted(hits),
+        })
 
     out: dict = {
         "source": str(args.cells),
@@ -191,12 +215,15 @@ def main() -> int:
                 base_ctrl = control(width, A_ONE)
                 arm_ctrl = control(width, arm)
                 shared = sorted(set(base) & set(other))
-                pcts = []
+                pcts, trimmed = [], []
                 for b in shared:
                     bn = base[b] - base_ctrl
                     an = other[b] - arm_ctrl
                     if bn > 0:
                         pcts.append((bn - an) / bn * 100.0)
+                        if ((shape, width, A_ONE, b) not in flagged
+                                and (shape, width, arm, b) not in flagged):
+                            trimmed.append((bn - an) / bn * 100.0)
                 raw_pcts = [
                     (base[b] - other[b]) / base[b] * 100.0 for b in shared
                 ]
@@ -211,6 +238,10 @@ def main() -> int:
                             statistics.mean(raw_pcts) if raw_pcts else float("nan")),
                         "raw_pct_faster_sem": sem(raw_pcts),
                         "n_blocks": len(pcts),
+                        "net_pct_faster_trimmed_mean": (
+                            statistics.mean(trimmed) if trimmed else float("nan")),
+                        "net_pct_faster_trimmed_sem": sem(trimmed),
+                        "n_blocks_trimmed": len(trimmed),
                         "arm_raw_us": statistics.median(other.values()),
                         "arm_net_us": statistics.median(other.values()) - arm_ctrl,
                     }
@@ -238,6 +269,74 @@ def main() -> int:
                     print(f"  rate M={other} {w[other]['partition']:>6} "
                           f"{w[other]['a_one_net_gbs']:>8.1f} GB/s   "
                           f"vs M=8 [4+4] {w[8]['a_one_net_gbs']:.1f} GB/s")
+
+    # Rung 0b: the rate curve against N at fixed K, so the deficit can be read
+    # against N, grid.y and weight bytes at the same time.
+    by_hidden: dict[int, list[str]] = {}
+    for shape in shapes:
+        by_hidden.setdefault(geometry[shape][1], []).append(shape)
+    out["n_curves"] = {}
+    for hidden, group in by_hidden.items():
+        if len(group) < 3:
+            continue
+        ordered = sorted(group, key=lambda s: geometry[s][0])
+        print("\n" + "=" * 96)
+        print(f"N curve at K={hidden}: a_one net GB/s per M, and the "
+              f"e_nsplit_serial net % at M=8")
+        print("=" * 96)
+        header = (f"{'N':>7} {'grid.y':>7} {'MB':>7}"
+                  + "".join(f" {'M=' + str(wd):>8}" for wd in widths)
+                  + f" {'split@8 %':>10} {'se':>6}")
+        print(header)
+        print("-" * len(header))
+        curve = []
+        for shape in ordered:
+            outputs, _ = geometry[shape]
+            w = out["shapes"][shape]["widths"]
+            row = (f"{outputs:>7} {(outputs + 7) // 8:>7} "
+                   f"{packed_bytes(outputs, hidden) / 1e6:>7.1f}")
+            rates = {}
+            for wd in widths:
+                if wd in w:
+                    rates[wd] = w[wd]["a_one_net_gbs"]
+                    row += f" {w[wd]['a_one_net_gbs']:>8.1f}"
+                else:
+                    row += f" {'-':>8}"
+            split = w.get(8, {}).get("arms", {}).get("e_nsplit_serial")
+            if split:
+                row += (f" {split['net_pct_faster_mean']:>10.3f} "
+                        f"{split['net_pct_faster_sem']:>6.3f}")
+            print(row)
+            curve.append({
+                "shape": shape,
+                "outputs": outputs,
+                "grid_y": (outputs + 7) // 8,
+                "weight_bytes": packed_bytes(outputs, hidden),
+                "a_one_net_gbs": rates,
+                "m8_split_net_pct": (
+                    split["net_pct_faster_mean"] if split else None),
+                "m8_split_net_sem": split["net_pct_faster_sem"] if split else None,
+            })
+        out["n_curves"][hidden] = curve
+        print("\nnote: at fixed K, grid.y = N/8 and weight bytes are both "
+              "proportional to N, so this sweep cannot separate them.")
+
+    # Harness defect 19: per-block dispersion for every cell.
+    print("\n" + "=" * 96)
+    print(f"harness defect 19: blocks above {DEFECT19_FACTOR} x the cell median")
+    print("=" * 96)
+    out["defect19_dispersion"] = dispersion
+    hot = sorted((d for d in dispersion if d["n_flagged"]),
+                 key=lambda d: -d["max_over_median"])
+    print(f"cells={len(dispersion)} cells_with_flagged_block={len(hot)} "
+          f"flagged_blocks={sum(d['n_flagged'] for d in dispersion)}")
+    print(f"{'shape':>16} {'M':>3} {'arm':>18} {'median us':>10} "
+          f"{'max us':>10} {'max/med':>8} {'flagged':>8} {'n':>3}")
+    for d in hot:
+        print(f"{d['shape']:>16} {d['width']:>3} {d['arm']:>18} "
+              f"{d['median_us']:>10.2f} {d['max_us']:>10.2f} "
+              f"{d['max_over_median']:>8.2f} "
+              f"{str(d['flagged_blocks']):>8} {d['n_blocks']:>3}")
 
     # Harness-defect-16 proof: residual forward-versus-reverse gap per arm.
     print("\n" + "=" * 96)
