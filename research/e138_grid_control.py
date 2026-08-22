@@ -67,7 +67,120 @@ def corrected(path: pathlib.Path, expect_grid: str) -> dict:
         "dispatch": dispatch,
         "launch": launch,
         "n": {s["name"]: s["n"] for s in payload["shapes"]},
+        "k": {s["name"]: s["k"] for s in payload["shapes"]},
     }
+
+
+def factorial(wide_path: pathlib.Path, tight_path: pathlib.Path,
+              baseline: str | None = None) -> dict:
+    wide = corrected(wide_path, "wide")
+    tight = corrected(tight_path, "tight")
+
+    cells = sorted(
+        {c for _, c in wide["us"]} & {c for _, c in tight["us"]},
+        key=lambda c: (c.split(":")[1] == "stock", c),
+    )
+    plans = [c for c in cells if not c.endswith(":stock")]
+    if not plans:
+        raise SystemExit("no plan cell is present in both artifacts")
+    baseline = baseline or max(plans, key=lambda c: int(c.split(":")[1]))
+    if baseline not in plans:
+        raise SystemExit(f"baseline {baseline} is not in both artifacts")
+    dispatch = wide["dispatch"]
+    names = sorted(dispatch, key=lambda s: (wide["n"][s], s))
+
+    shapes = []
+    for name in names:
+        bw, bt = wide["us"][(name, baseline)], tight["us"][(name, baseline)]
+        rows = []
+        for cell in cells:
+            w, t = wide["us"][(name, cell)], tight["us"][(name, cell)]
+            row = {
+                "shape": name,
+                "n": wide["n"][name],
+                "k": wide["k"][name],
+                "plan": cell,
+                "wide_us": w,
+                "tight_us": t,
+                "tight_minus_wide_pct": 100.0 * (t - w) / w,
+                "launched_threadgroups_wide": wide["launch"][(name, cell)],
+                "launched_threadgroups_tight": tight["launch"][(name, cell)],
+            }
+            if not cell.endswith(":stock"):
+                row["advantage_wide_pct"] = 100.0 * (bw - w) / bw
+                row["advantage_tight_pct"] = 100.0 * (bt - t) / bt
+                row["interaction_pp"] = (
+                    row["advantage_tight_pct"] - row["advantage_wide_pct"]
+                )
+                row["interaction_us"] = (bt - t) - (bw - w)
+            rows.append(row)
+        rank_w = sorted(plans, key=lambda c: wide["us"][(name, c)])
+        rank_t = sorted(plans, key=lambda c: tight["us"][(name, c)])
+        shapes.append({
+            "name": name,
+            "n": wide["n"][name],
+            "dispatch": dispatch[name],
+            "rows": rows,
+            "rank_wide": rank_w,
+            "rank_tight": rank_t,
+            "order_same": rank_w == rank_t,
+            "best_wide": rank_w[0],
+            "best_tight": rank_t[0],
+        })
+
+    tot = {
+        (c, g): sum(src["us"][(n, c)] * dispatch[n] for n in names)
+        for c in cells
+        for g, src in (("wide", wide), ("tight", tight))
+    }
+    totals = []
+    for cell in cells:
+        w, t = tot[(cell, "wide")], tot[(cell, "tight")]
+        entry = {
+            "plan": cell,
+            "wide_us": w,
+            "tight_us": t,
+            "tight_minus_wide_pct": 100.0 * (t - w) / w,
+        }
+        if not cell.endswith(":stock"):
+            entry["advantage_wide_us"] = tot[(baseline, "wide")] - w
+            entry["advantage_tight_us"] = tot[(baseline, "tight")] - t
+            entry["interaction_us"] = (
+                entry["advantage_tight_us"] - entry["advantage_wide_us"]
+            )
+        totals.append(entry)
+
+    out = {
+        "harness": "local",
+        "baseline_plan": baseline,
+        "plans": plans,
+        "cells": cells,
+        "shapes": shapes,
+        "totals": totals,
+        "best_plan_wide": min(plans, key=lambda c: tot[(c, "wide")]),
+        "best_plan_tight": min(plans, key=lambda c: tot[(c, "tight")]),
+        "shapes_with_order_change": [s["name"] for s in shapes
+                                     if not s["order_same"]],
+    }
+    out["grid_changes_the_global_winner"] = (
+        out["best_plan_wide"] != out["best_plan_tight"]
+    )
+    out["plan_axis_and_grid_axis_are_separable"] = not out[
+        "shapes_with_order_change"
+    ]
+    out["max_abs_interaction_pp"] = max(
+        abs(r["interaction_pp"])
+        for s in shapes
+        for r in s["rows"]
+        if "interaction_pp" in r
+    )
+    if "5:5:4" in plans and "6:6:4" in plans:
+        sw = tot[("6:6:4", "wide")] - tot[("5:5:4", "wide")]
+        st = tot[("6:6:4", "tight")] - tot[("5:5:4", "tight")]
+        out["step_wide_us"] = sw
+        out["step_tight_us"] = st
+        out["step_tight_vs_wide_pct"] = 100.0 * (st - sw) / sw
+    return out
 
 
 def main() -> int:
@@ -77,126 +190,83 @@ def main() -> int:
     )
     if len(argv) != 2:
         raise SystemExit(__doc__)
-    wide = corrected(pathlib.Path(argv[0]), "wide")
-    tight = corrected(pathlib.Path(argv[1]), "tight")
-
-    cells = sorted(
-        {c for _, c in wide["us"]} & {c for _, c in tight["us"]},
-        key=lambda c: (c.split(":")[1] == "stock", c),
-    )
-    plans = [c for c in cells if not c.endswith(":stock")]
-    if not plans:
-        raise SystemExit("no plan cell is present in both artifacts")
-    baseline = flags.get("--baseline", max(plans, key=lambda c: int(c.split(":")[1])))
-    if baseline not in plans:
-        raise SystemExit(f"baseline {baseline} is not in both artifacts")
-    dispatch = wide["dispatch"]
-    names = sorted(dispatch, key=lambda s: (wide["n"][s], s))
+    r = factorial(pathlib.Path(argv[0]), pathlib.Path(argv[1]),
+                  flags.get("--baseline"))
 
     print("E138 launch-grid x plan factorial   harness=local")
-    print(f"baseline plan for every advantage and interaction: {baseline}")
+    print("baseline plan for every advantage and interaction: %s"
+          % r["baseline_plan"])
     print()
     print("launched threadgroups per call (Qwen35.swift:1957-1961, columns x per column)")
     print("%-34s %7s %6s %10s %10s" % ("shape", "N", "plan", "wide", "tight"))
-    for name in names:
-        for cell in plans:
-            print(
-                "%-34s %7d %6s %10d %10d"
-                % (
-                    name,
-                    wide["n"][name],
-                    cell,
-                    wide["launch"][(name, cell)],
-                    tight["launch"][(name, cell)],
-                )
-            )
+    for shape in r["shapes"]:
+        for row in shape["rows"]:
+            if row["plan"].endswith(":stock"):
+                continue
+            print("%-34s %7d %6s %10d %10d"
+                  % (shape["name"], shape["n"], row["plan"],
+                     row["launched_threadgroups_wide"],
+                     row["launched_threadgroups_tight"]))
     print()
 
     print("per shape, drift-corrected microseconds per call")
-    reversals = []
-    for name in names:
-        print(
-            "%s   N=%d   dispatched %dx per verify"
-            % (name, wide["n"][name], dispatch[name])
-        )
-        print(
-            "    %6s %10s %10s %8s %10s %10s %9s"
-            % ("plan", "wide", "tight", "T-W %", "advW %", "advT %", "inter pp")
-        )
-        for cell in cells:
-            w, t = wide["us"][(name, cell)], tight["us"][(name, cell)]
-            if cell.endswith(":stock"):
-                print(
-                    "    %6s %10.1f %10.1f %7.1f %%%10s %10s %9s"
-                    % (cell, w, t, 100.0 * (t - w) / w, "-", "-", "-")
-                )
+    for shape in r["shapes"]:
+        print("%s   N=%d   dispatched %dx per verify"
+              % (shape["name"], shape["n"], shape["dispatch"]))
+        print("    %6s %10s %10s %8s %10s %10s %9s"
+              % ("plan", "wide", "tight", "T-W %", "advW %", "advT %",
+                 "inter pp"))
+        for row in shape["rows"]:
+            if "interaction_pp" not in row:
+                print("    %6s %10.1f %10.1f %7.1f %%%10s %10s %9s"
+                      % (row["plan"], row["wide_us"], row["tight_us"],
+                         row["tight_minus_wide_pct"], "-", "-", "-"))
                 continue
-            bw, bt = wide["us"][(name, baseline)], tight["us"][(name, baseline)]
-            aw, at = 100.0 * (bw - w) / bw, 100.0 * (bt - t) / bt
-            print(
-                "    %6s %10.1f %10.1f %7.1f %% %9.2f %9.2f %+8.2f"
-                % (cell, w, t, 100.0 * (t - w) / w, aw, at, at - aw)
-            )
-        rank_w = sorted(plans, key=lambda c: wide["us"][(name, c)])
-        rank_t = sorted(plans, key=lambda c: tight["us"][(name, c)])
-        same = rank_w == rank_t
-        reversals.append((name, same))
-        print("    rank wide  %s" % " < ".join(rank_w))
-        print(
-            "    rank tight %s%s"
-            % (" < ".join(rank_t), "" if same else "   <- ORDER CHANGES")
-        )
+            print("    %6s %10.1f %10.1f %7.1f %% %9.2f %9.2f %+8.2f"
+                  % (row["plan"], row["wide_us"], row["tight_us"],
+                     row["tight_minus_wide_pct"], row["advantage_wide_pct"],
+                     row["advantage_tight_pct"], row["interaction_pp"]))
+        print("    rank wide  %s" % " < ".join(shape["rank_wide"]))
+        print("    rank tight %s%s"
+              % (" < ".join(shape["rank_tight"]),
+                 "" if shape["order_same"] else "   <- ORDER CHANGES"))
         print()
 
     print("dispatch-weighted totals over the whole 64-layer step")
-    print(
-        "%6s %12s %12s %9s %12s %12s %11s"
-        % ("plan", "wide us", "tight us", "T-W %", "advW us", "advT us", "inter us")
-    )
-    tot = {
-        (c, g): sum(src["us"][(n, c)] * dispatch[n] for n in names)
-        for c in cells
-        for g, src in (("wide", wide), ("tight", tight))
-    }
-    for cell in cells:
-        w, t = tot[(cell, "wide")], tot[(cell, "tight")]
-        if cell.endswith(":stock"):
-            print(
-                "%6s %12.0f %12.0f %8.2f %%%12s %12s %11s"
-                % (cell, w, t, 100.0 * (t - w) / w, "-", "-", "-")
-            )
+    print("%6s %12s %12s %9s %12s %12s %11s"
+          % ("plan", "wide us", "tight us", "T-W %", "advW us", "advT us",
+             "inter us"))
+    for entry in r["totals"]:
+        if "interaction_us" not in entry:
+            print("%6s %12.0f %12.0f %8.2f %%%12s %12s %11s"
+                  % (entry["plan"], entry["wide_us"], entry["tight_us"],
+                     entry["tight_minus_wide_pct"], "-", "-", "-"))
             continue
-        aw = tot[(baseline, "wide")] - w
-        at = tot[(baseline, "tight")] - t
-        print(
-            "%6s %12.0f %12.0f %8.2f %% %11.0f %12.0f %+11.0f"
-            % (cell, w, t, 100.0 * (t - w) / w, aw, at, at - aw)
-        )
+        print("%6s %12.0f %12.0f %8.2f %% %11.0f %12.0f %+11.0f"
+              % (entry["plan"], entry["wide_us"], entry["tight_us"],
+                 entry["tight_minus_wide_pct"], entry["advantage_wide_us"],
+                 entry["advantage_tight_us"], entry["interaction_us"]))
 
     print()
-    best_w = min(plans, key=lambda c: tot[(c, "wide")])
-    best_t = min(plans, key=lambda c: tot[(c, "tight")])
-    print(
-        "global best plan   wide %s   tight %s%s"
-        % (best_w, best_t, "" if best_w == best_t else "   <- GRID CHANGES THE WINNER")
-    )
-    changed = [n for n, same in reversals if not same]
-    if changed:
-        print("per-shape plan order changes under: %s" % ", ".join(changed))
+    print("global best plan   wide %s   tight %s%s"
+          % (r["best_plan_wide"], r["best_plan_tight"],
+             "   <- GRID CHANGES THE WINNER"
+             if r["grid_changes_the_global_winner"] else ""))
+    print("largest absolute per-shape interaction: %.2f pp"
+          % r["max_abs_interaction_pp"])
+    if r["shapes_with_order_change"]:
+        print("per-shape plan order changes under: %s"
+              % ", ".join(r["shapes_with_order_change"]))
     else:
         print("per-shape plan order is identical under both grids for every shape:")
         print("    the plan axis and the grid axis are separable on this evidence")
 
-    if "5:5:4" in plans and "6:6:4" in plans:
-        sw = tot[("6:6:4", "wide")] - tot[("5:5:4", "wide")]
-        st = tot[("6:6:4", "tight")] - tot[("5:5:4", "tight")]
+    if "step_wide_us" in r:
         print()
         print("isolated dispatch-weighted M=5 -> M=6 step")
-        print("    wide  %10.1f us" % sw)
-        print(
-            "    tight %10.1f us   %+.2f %% against wide"
-            % (st, 100.0 * (st - sw) / sw)
-        )
+        print("    wide  %10.1f us" % r["step_wide_us"])
+        print("    tight %10.1f us   %+.2f %% against wide"
+              % (r["step_tight_us"], r["step_tight_vs_wide_pct"]))
 
     print()
     print("harness=local. Both sessions anchor on the grid-independent 6:stock")
