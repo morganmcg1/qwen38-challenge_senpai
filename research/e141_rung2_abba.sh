@@ -20,12 +20,16 @@
 # guaranteed rejects. `parent_measured_seconds_per_token`, absolute, already
 # contains both. Because the ranked numerator is the runner's own prebuilt
 # serial baseline and no candidate edit can move it
-# (`senpai/verify-ranked-score-boundary.sh`), the ranked gain is
+# (`senpai/verify-ranked-score-boundary.sh`), no psi_serial share is ever
+# subtracted and there is no local-ratio cancellation term.
 #
-#   net_ranked_pct = 100 * (1 - full_seconds_per_token / shipped_seconds_per_token)
-#
-# with no coefficient and no local-ratio cancellation term. Only the candidate
-# MTP leg is touched, so this is the case where the local contrast transfers.
+# That does NOT make the local percentage the ranked percentage. CAMPAIGN
+# RULE 115 applies, because half of this mechanism is a fixed absolute cost per
+# round. `research/e141_rung2_report.py` splits the contrast into a
+# deterministic round-count ratio, which transfers unchanged, and an absolute
+# per-round cost, which it re-expresses over the 52,726 us ranked round rather
+# than the ~195,000 us local one. This script only has to deliver clean matched
+# absolute microseconds per round; the conversion belongs to the report.
 #
 # ARM WITNESS (Rule 114). Decoding is deterministic for a fixed prompt, golden,
 # depth and build, so `round_count` is an exact behavioural signature of the
