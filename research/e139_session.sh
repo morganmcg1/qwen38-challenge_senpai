@@ -15,10 +15,12 @@
 #
 #   ship      shipped default: bf16-narrowed rerank store, probe fraction 0.25
 #   fp32      MLX_E139_FP32_TIEBREAK=1
-#   p015      MLX_E139_PROBE_FRACTION=0.15
-#   p010      MLX_E139_PROBE_FRACTION=0.10
-#   fp32p015  both riders, probe fraction 0.15
-#   fp32p010  both riders, probe fraction 0.10
+#   p0<D>     MLX_E139_PROBE_FRACTION=0.<D>
+#   fp32p0<D> both riders, probe fraction 0.<D>
+#
+# The probe arm name carries the fraction: `p0` stands for the leading `0.`
+# and the rest are the decimal digits, so `p015` is 0.15, `p002` is 0.02 and
+# `p0075` is 0.075.
 #
 # WITNESS (CAMPAIGN RULE 114). The round trace carries
 # `sel_env=<top32 gate>+e139fp32:<gate>:<drafts>+e139p:<gate>:<probes>`. A leg
@@ -49,12 +51,13 @@ leaves=12292
 case "${arm}" in
   ship)     arm_env=();                        want_fp32=unset; want_p=unset ;;
   fp32)     arm_env=(MLX_E139_FP32_TIEBREAK=1); want_fp32=1;    want_p=unset ;;
-  p015)     arm_env=(MLX_E139_PROBE_FRACTION=0.15); want_fp32=unset; want_p=0.15 ;;
-  p010)     arm_env=(MLX_E139_PROBE_FRACTION=0.10); want_fp32=unset; want_p=0.10 ;;
-  fp32p015) arm_env=(MLX_E139_FP32_TIEBREAK=1 MLX_E139_PROBE_FRACTION=0.15)
-            want_fp32=1; want_p=0.15 ;;
-  fp32p010) arm_env=(MLX_E139_FP32_TIEBREAK=1 MLX_E139_PROBE_FRACTION=0.10)
-            want_fp32=1; want_p=0.10 ;;
+  p0[0-9]*) want_p="0.${arm#p0}"
+            arm_env=(MLX_E139_PROBE_FRACTION="${want_p}"); want_fp32=unset ;;
+  fp32p0[0-9]*)
+            want_p="0.${arm#fp32p0}"
+            arm_env=(MLX_E139_FP32_TIEBREAK=1
+                     MLX_E139_PROBE_FRACTION="${want_p}")
+            want_fp32=1 ;;
   *) echo "e139_session: unknown arm ${arm}" >&2; exit 2 ;;
 esac
 

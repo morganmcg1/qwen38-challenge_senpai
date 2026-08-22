@@ -1,22 +1,22 @@
 {
   "samples": 11244,
   "base_sha": "197e0550ab46842b639a4ff4fe3f4889ca3b01ec",
-  "wall_seconds": 12.754191160202026,
+  "wall_seconds": 12.713079929351807,
   "p_head_step_accuracy": 0.8030060476698684,
   "p_head_step_accuracy_by_stratum": {
     "beagle": 0.807639299074621,
     "min_carriers": 0.8068379790940766,
     "zero_weight": 0.7768595041322314,
-    "essays_bacon_holdout": 0.492091388400703,
-    "essays_bacon": 0.492091388400703
+    "essays_bacon": 0.492091388400703,
+    "essays_bacon_holdout": 0.492091388400703
   },
   "p_row_accepted": 0.7280327285663465,
   "p_row_accepted_by_stratum": {
     "beagle": 0.7365623154164206,
     "min_carriers": 0.7301829268292683,
     "zero_weight": 0.6942148760330579,
-    "essays_bacon_holdout": 0.3989455184534271,
-    "essays_bacon": 0.3989455184534271
+    "essays_bacon": 0.3989455184534271,
+    "essays_bacon_holdout": 0.3989455184534271
   },
   "offline_shipped_chain_reproduces_runtime": 0.9919957310565635,
   "shipped": {
@@ -53,6 +53,7 @@
     "predicted_pct_raw_miss": 0.0,
     "passes_t0": true,
     "passes_t0b": true,
+    "passes_t0b_leaf": true,
     "by_stratum": {
       "beagle": {
         "gating": true,
@@ -330,6 +331,7 @@
     "predicted_pct_raw_miss": 0.0,
     "passes_t0": true,
     "passes_t0b": true,
+    "passes_t0b_leaf": true,
     "by_stratum": {
       "beagle": {
         "gating": true,
@@ -619,6 +621,7 @@
       "predicted_pct_raw_miss": -0.6811028770975619,
       "passes_t0": true,
       "passes_t0b": true,
+      "passes_t0b_leaf": true,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -928,6 +931,7 @@
       "predicted_pct_raw_miss": -0.6845111760666728,
       "passes_t0": true,
       "passes_t0b": true,
+      "passes_t0b_leaf": true,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -1237,6 +1241,7 @@
       "predicted_pct_raw_miss": -0.7318498985090287,
       "passes_t0": true,
       "passes_t0b": true,
+      "passes_t0b_leaf": true,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -1546,6 +1551,7 @@
       "predicted_pct_raw_miss": -0.8236728316244811,
       "passes_t0": true,
       "passes_t0b": true,
+      "passes_t0b_leaf": true,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -1856,6 +1862,7 @@
       "predicted_pct_raw_miss": -0.9154957647399337,
       "passes_t0": true,
       "passes_t0b": true,
+      "passes_t0b_leaf": true,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -2166,6 +2173,7 @@
       "predicted_pct_raw_miss": -0.8511155474520227,
       "passes_t0": true,
       "passes_t0b": true,
+      "passes_t0b_leaf": true,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -2475,6 +2483,7 @@
       "predicted_pct_raw_miss": -1.058267120241739,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -2786,6 +2795,7 @@
       "predicted_pct_raw_miss": -1.0684165245240327,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -3098,6 +3108,7 @@
       "predicted_pct_raw_miss": -1.1396637554749725,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -3410,6 +3421,7 @@
       "predicted_pct_raw_miss": -1.1669805629526675,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -3730,6 +3742,7 @@
       "predicted_pct_raw_miss": -1.3539592355276437,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -4058,6 +4071,7 @@
       "predicted_pct_raw_miss": -1.5851452251757907,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -4386,6 +4400,7 @@
       "predicted_pct_raw_miss": -2.3468190197019867,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -4712,6 +4727,7 @@
       "predicted_pct_raw_miss": -3.417944033740378,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -5053,6 +5069,7 @@
       "predicted_pct_raw_miss": -5.505837340461696,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -5403,6 +5420,7 @@
       "predicted_pct_raw_miss": -7.565524405191875,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -5765,6 +5783,7 @@
       "predicted_pct_raw_miss": -10.266214848029156,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -6122,6 +6141,7 @@
       "predicted_pct_raw_miss": -13.215576872478714,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -6479,6 +6499,7 @@
       "predicted_pct_raw_miss": -17.80337041049511,
       "passes_t0": false,
       "passes_t0b": true,
+      "passes_t0b_leaf": false,
       "by_stratum": {
         "beagle": {
           "gating": true,
@@ -6844,6 +6865,7 @@
         "predicted_pct_raw_miss": -0.6811028770975619,
         "passes_t0": true,
         "passes_t0b": true,
+        "passes_t0b_leaf": true,
         "by_stratum": {
           "beagle": {
             "gating": true,
@@ -7159,6 +7181,7 @@
         "predicted_pct_raw_miss": -0.6811028770975619,
         "passes_t0": true,
         "passes_t0b": true,
+        "passes_t0b_leaf": true,
         "by_stratum": {
           "beagle": {
             "gating": true,
