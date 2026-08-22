@@ -20,12 +20,10 @@ import re
 import subprocess
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-PATCH = "research/e121-artifacts/e121-share.patch"
 SUBMITTED = (
     "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
     "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
 )
-BASE_SHA = "2127858ba770ddc06027205d8df89a8db21d80f5"
 GROWTH_BASE = "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf"
 
 
@@ -78,7 +76,13 @@ def main() -> int:
     ap.add_argument("--worker-mtime", required=True)
     ap.add_argument("--worker-sha256-post", required=True)
     ap.add_argument("--out", type=pathlib.Path, required=True)
+    ap.add_argument("--experiment", default="e121-rung3-presubmit")
+    ap.add_argument("--arm", default="share")
+    ap.add_argument("--base-sha",
+                    default="2127858ba770ddc06027205d8df89a8db21d80f5")
+    ap.add_argument("--patch", default="research/e121-artifacts/e121-share.patch")
     args = ap.parse_args()
+    base_sha, patch = args.base_sha, args.patch
 
     cand = failing_names(args.test_log_candidate)
     base = failing_names(args.test_log_base)
@@ -91,9 +95,9 @@ def main() -> int:
                   "exit": code, "passed": code == 0,
                   "observation": text.splitlines()[-1] if text else ""})
 
-    code, text = run("senpai/validate-assignment-scope.sh", BASE_SHA, *SUBMITTED)
+    code, text = run("senpai/validate-assignment-scope.sh", base_sha, *SUBMITTED)
     steps.append({"step": "assignment_scope",
-                  "command": f"senpai/validate-assignment-scope.sh {BASE_SHA} "
+                  "command": f"senpai/validate-assignment-scope.sh {base_sha} "
                              + " ".join(SUBMITTED),
                   "exit": code, "passed": code == 0, "observation": text})
 
@@ -126,15 +130,15 @@ def main() -> int:
         if args.submit_score.exists() else {}
     metrics = score.get("metrics", {})
 
-    _, diff = run("git", "diff", "--stat", f"{BASE_SHA}..HEAD", "--", *SUBMITTED)
+    _, diff = run("git", "diff", "--stat", f"{base_sha}..HEAD", "--", *SUBMITTED)
     _, head = run("git", "rev-parse", "HEAD")
 
     receipt = {
-        "experiment": "e121-rung3-presubmit",
-        "arm": "share",
+        "experiment": args.experiment,
+        "arm": args.arm,
         "harness": "local",
         "candidate_commit": head,
-        "base_sha": BASE_SHA,
+        "base_sha": base_sha,
         "submitted_paths": list(SUBMITTED),
         "submitted_diff_stat": diff,
         "worker_sha256": args.worker_sha256,
@@ -147,7 +151,7 @@ def main() -> int:
             "base": test_totals(args.test_log_base) | {"names": base},
             "added_by_candidate": sorted(set(cand) - set(base)),
             "removed_by_candidate": sorted(set(base) - set(cand)),
-            "base_tree_method": f"git apply -R {PATCH}, quantized.cpp recompiled",
+            "base_tree_method": f"git apply -R {patch}, quantized.cpp recompiled",
         },
         "local_submit": {
             "passed": score.get("passed"),

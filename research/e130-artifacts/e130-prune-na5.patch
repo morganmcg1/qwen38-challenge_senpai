@@ -1,0 +1,26 @@
+diff --git a/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp b/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+index f3d26477..b2c5422b 100644
+--- a/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
++++ b/Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+@@ -1950,7 +1950,7 @@ template <typename T, int group_size, int bits, bool batched>
+               tid, simd_gid, simd_lid);
+           return;
+         case 5:
+-          qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>(
++          qmv_fast_crossrow_affine4_g64<T, 5>(
+               w, scales, biases, x, y, in_vec_size, out_vec_size,
+               tid, simd_gid, simd_lid);
+           return;
+diff --git a/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h b/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+index 8c56e0e4..3ae8feec 100644
+--- a/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
++++ b/Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
+@@ -1937,7 +1937,7 @@ template <typename T, int group_size, int bits, bool batched>
+               tid, simd_gid, simd_lid);
+           return;
+         case 5:
+-          qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>(
++          qmv_fast_crossrow_affine4_g64<T, 5>(
+               w, scales, biases, x, y, in_vec_size, out_vec_size,
+               tid, simd_gid, simd_lid);
+           return;

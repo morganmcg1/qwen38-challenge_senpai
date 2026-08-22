@@ -1,0 +1,255 @@
+{
+  "harness": "ranked",
+  "experiment": "E130 rung 7",
+  "submission": "0c6191b7-215b-4dfc-873f-2449fbce5416",
+  "arm": "prune_na5_pair",
+  "registered_before_receipt": true,
+  "coupling_model": {
+    "equation": "saving_pct = s_head * g * c * 100",
+    "g_residency": 0.1282,
+    "g_source": "rung3 census e130_ranked_g17s_f47_weighted_residency_pct",
+    "s_head_grid": [
+      0.07,
+      0.08,
+      0.09
+    ],
+    "s_head_source": "FINDING 143, ledger 280, four independent lines",
+    "c_bracket": [
+      0.199,
+      0.301
+    ],
+    "c_source": "F8 working bracket",
+    "grid": [
+      {
+        "s_head": 0.07,
+        "c": 0.199,
+        "predicted_candidate_saving_pct": 0.17858260000000004
+      },
+      {
+        "s_head": 0.07,
+        "c": 0.25,
+        "predicted_candidate_saving_pct": 0.22435000000000002
+      },
+      {
+        "s_head": 0.07,
+        "c": 0.301,
+        "predicted_candidate_saving_pct": 0.2701174
+      },
+      {
+        "s_head": 0.08,
+        "c": 0.199,
+        "predicted_candidate_saving_pct": 0.20409440000000004
+      },
+      {
+        "s_head": 0.08,
+        "c": 0.25,
+        "predicted_candidate_saving_pct": 0.2564
+      },
+      {
+        "s_head": 0.08,
+        "c": 0.301,
+        "predicted_candidate_saving_pct": 0.3087056
+      },
+      {
+        "s_head": 0.09,
+        "c": 0.199,
+        "predicted_candidate_saving_pct": 0.2296062
+      },
+      {
+        "s_head": 0.09,
+        "c": 0.25,
+        "predicted_candidate_saving_pct": 0.28845
+      },
+      {
+        "s_head": 0.09,
+        "c": 0.301,
+        "predicted_candidate_saving_pct": 0.3472938
+      }
+    ],
+    "predicted_candidate_saving_pct": {
+      "floor": 0.17858260000000004,
+      "central": 0.2564,
+      "ceiling": 0.3472938
+    }
+  },
+  "instrument": {
+    "candidate_rel_sd_pct_pooled": 0.05315912325562183,
+    "candidate_rel_sd_pct_tier0": 0.02792890836756801,
+    "score_rel_sd_pct_pooled": 0.254552213801061,
+    "score_rel_sd_pct_tier0": 0.1415926126720176,
+    "source": "research/e130-artifacts/rung6-instrument-sd.json"
+  },
+  "tier0": {
+    "n": 4,
+    "candidate_mean_spt": 0.014766404334375,
+    "members": [
+      {
+        "receipt": "3b376ba2-7211-422e-9f6c-d2e01c75f905",
+        "short": "3b376ba2",
+        "solver": "Lieisyourlie",
+        "promoted_source_ref": null,
+        "promotion_status": null,
+        "official_score": 3.51768892183081,
+        "candidate_mtp_seconds_per_token_mean": 0.014760259742615744,
+        "baseline_serial_seconds_per_token_mean": 0.03796694896300323
+      },
+      {
+        "receipt": "c63eaa21-9e02-4d05-8bc0-56f945ace68a",
+        "short": "c63eaa21",
+        "solver": "newjordan",
+        "promoted_source_ref": null,
+        "promotion_status": null,
+        "official_score": 3.50774680384397,
+        "candidate_mtp_seconds_per_token_mean": 0.014768017310416326,
+        "baseline_serial_seconds_per_token_mean": 0.03795339600765146
+      },
+      {
+        "receipt": "48423d09-19bb-41b2-8c6e-fc07ee032213",
+        "short": "48423d09",
+        "solver": "noskillcoding",
+        "promoted_source_ref": "c0dbec051c58bccf5435ee1e1e5b01271dc7e179",
+        "promotion_status": "promoted",
+        "official_score": 3.51845338033139,
+        "candidate_mtp_seconds_per_token_mean": 0.01476822339463979,
+        "baseline_serial_seconds_per_token_mean": 0.03793143038637936
+      },
+      {
+        "receipt": "cf79f7df-305e-4ffd-b78f-4f65f5c3b0dd",
+        "short": "cf79f7df",
+        "solver": "Lieisyourlie",
+        "promoted_source_ref": "a0f8588668c603864deffe407f5895b31858414e",
+        "promotion_status": "promoted",
+        "official_score": 3.51661723756985,
+        "candidate_mtp_seconds_per_token_mean": 0.014769116882234812,
+        "baseline_serial_seconds_per_token_mean": 0.037952381593640894
+      }
+    ]
+  },
+  "noise_model": {
+    "candidate_spt_paired_vs_parent": {
+      "conservative_pooled_sd_pct": 0.0751783530719634,
+      "optimistic_tier0_sd_pct": 0.0394974409956901
+    },
+    "candidate_spt_vs_tier0_mean": {
+      "conservative_pooled_sd_pct": 0.059433706611930176,
+      "optimistic_tier0_sd_pct": 0.031225468823622378
+    },
+    "published_median_paired_vs_parent": {
+      "conservative_pooled_sd_pct": 0.35999119308955624,
+      "optimistic_tier0_sd_pct": 0.20024219317260786
+    }
+  },
+  "rank_diagnostics": {
+    "positive_control_across_family": {
+      "n": 164,
+      "spearman_spt_vs_score": -0.9272237563424156,
+      "expected": "strongly negative: lower decode time scores higher"
+    },
+    "within_tier": [
+      {
+        "rank": 0,
+        "n": 4,
+        "candidate_spt_range_pct": 0.059981596057074836,
+        "score_range_pct": 0.3045858015578945,
+        "spearman_spt_vs_score": 0.0
+      },
+      {
+        "rank": 1,
+        "n": 3,
+        "candidate_spt_range_pct": 0.08393759534889372,
+        "score_range_pct": 0.9025352793141306,
+        "spearman_spt_vs_score": -0.5
+      },
+      {
+        "rank": 2,
+        "n": 57,
+        "candidate_spt_range_pct": 0.36716460100311316,
+        "score_range_pct": 1.0702623149931696,
+        "spearman_spt_vs_score": -0.437192118226601
+      },
+      {
+        "rank": 3,
+        "n": 73,
+        "candidate_spt_range_pct": 0.786198570570089,
+        "score_range_pct": 1.4912552876630856,
+        "spearman_spt_vs_score": -0.5410033320992225
+      },
+      {
+        "rank": 5,
+        "n": 22,
+        "candidate_spt_range_pct": 0.43348215627353665,
+        "score_range_pct": 2.08369367596888,
+        "spearman_spt_vs_score": -0.3619424054206663
+      }
+    ]
+  },
+  "power": {
+    "candidate_spt": {
+      "z_at_prediction_floor": 2.3754524102044963,
+      "z_at_prediction_central": 3.410556224270633,
+      "z_at_prediction_ceiling": 4.619598405774572,
+      "resolves_prediction_at_2sigma": true
+    },
+    "published_median": {
+      "z_at_prediction_floor": 0.4960749135759369,
+      "z_at_prediction_central": 0.7122396461966072,
+      "z_at_prediction_ceiling": 0.9647286007733042,
+      "resolves_prediction_at_2sigma": false
+    }
+  },
+  "decision_rule": {
+    "headline_statistic": "candidate_mtp_seconds_per_token_mean",
+    "headline_reference": "cf79f7df-305e-4ffd-b78f-4f65f5c3b0dd",
+    "headline_delta_definition": "delta_pct = 100 * (parent_candidate_spt - candidate_spt) / parent_candidate_spt; positive means the arm is faster",
+    "secondary_statistic": "officialScore (published median of raw_p)",
+    "secondary_is_underpowered": true,
+    "sigma_pct": 0.0751783530719634,
+    "outcomes": [
+      {
+        "label": "A_confirmed_at_predicted_magnitude",
+        "condition_pct": "delta_pct >= 0.1786",
+        "meaning": "coupling c lies at or above the F8 bracket floor"
+      },
+      {
+        "label": "B_real_but_sub_predicted",
+        "condition_pct": "0.1504 <= delta_pct < 0.1786",
+        "meaning": "effect is real at 2 sigma but c is below the F8 bracket"
+      },
+      {
+        "label": "C_null",
+        "condition_pct": "abs(delta_pct) < 0.1504",
+        "meaning": "no resolvable effect; report the 2 sigma upper bound on c rather than a point estimate"
+      },
+      {
+        "label": "D_harmful",
+        "condition_pct": "delta_pct <= -0.1504",
+        "meaning": "the arm costs time; the residency model has the wrong sign"
+      }
+    ],
+    "c_estimator": "c_hat = delta_pct / (s_head * G_RESIDENCY * 100); report the band over s_head in {0.07, 0.09} and delta_pct +/- 2 sigma",
+    "c_upper_bound_under_null": 0.16754703158449608
+  },
+  "promotion_arithmetic": {
+    "parent_receipt": "cf79f7df",
+    "parent_official_score": 3.51661723756985,
+    "tier0_best_receipt": "48423d09",
+    "tier0_best_solver": "noskillcoding",
+    "tier0_best_official_score": 3.51845338033139,
+    "frontier_gap_abs": 0.0018361427615398718,
+    "frontier_gap_pct": 0.05221332426865807,
+    "tier0_candidate_rel_sd_pct": 0.02792890836756801,
+    "tier0_score_rel_sd_pct": 0.1415926126720176,
+    "gap_is_within_median_noise": true,
+    "predicted_score_floor": 3.522908539234838,
+    "predicted_score_central": 3.525657022174706,
+    "predicted_score_ceiling": 3.528872793993276,
+    "published_median_abs_sd": 0.008951627029143771,
+    "z_of_predicted_score_over_tier0_best": 0.5690299629401622,
+    "note": "The tier-0 score spread is median noise, not speed: within-tier candidate decode time varies by 0.0279 % while the published median varies by 0.1416 %. The top promoted row is therefore not demonstrably faster than our parent. A promotion decision on one receipt is close to a coin flip even if the arm delivers the central prediction, so promotion is not the readout."
+  },
+  "caveats": [
+    "The arm's residency gain is a static resident_simdgroups_derived floor-law quantity. Rung 5 retracted the occupancy probe, so no validated local measurement of c exists. This receipt is the first measurement of c on the ranked harness.",
+    "F121 shows case 5 is never entered on the scored target path, so the arm deletes zero executed instructions. Any effect must come from residency alone.",
+    "Single-receipt readout. The pooled sd is the conservative instrument, the tier-0 sd is optimistic with only 3 dof."
+  ]
+}

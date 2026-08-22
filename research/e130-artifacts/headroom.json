@@ -1,0 +1,428 @@
+{
+ "answer_by_arm": {
+  "s1024": {
+   "absorbable_after_wiring_at_unwired_zero_mib": 0.0,
+   "headroom_at_sizing_mib": 1023.025379,
+   "min_steady_headroom_mib": 0.10484695434570312,
+   "min_steady_unwired_mib": 1911.078125,
+   "slack_mib": 1024.0,
+   "slack_utilisation_pct": 99.89399909973145,
+   "why_zero": "unwired_bytes is already above zero in steady state at this rung, before any new consumer arrives"
+  },
+  "s2048": {
+   "absorbable_after_wiring_at_unwired_zero_mib": 0.0,
+   "headroom_at_sizing_mib": 2047.025379,
+   "min_steady_headroom_mib": 0.11717605590820312,
+   "min_steady_unwired_mib": 887.6875,
+   "slack_mib": 2048.0,
+   "slack_utilisation_pct": 99.91724491119385,
+   "why_zero": "unwired_bytes is already above zero in steady state at this rung, before any new consumer arrives"
+  },
+  "s512": {
+   "absorbable_after_wiring_at_unwired_zero_mib": 0.0,
+   "headroom_at_sizing_mib": 511.025379,
+   "min_steady_headroom_mib": 0.023426055908203125,
+   "min_steady_unwired_mib": 2423.09375,
+   "slack_mib": 512.0,
+   "slack_utilisation_pct": 99.78494644165039,
+   "why_zero": "unwired_bytes is already above zero in steady state at this rung, before any new consumer arrives"
+  },
+  "s64": {
+   "absorbable_after_wiring_at_unwired_zero_mib": 0.0,
+   "headroom_at_sizing_mib": 63.025379,
+   "min_steady_headroom_mib": 0.023426055908203125,
+   "min_steady_unwired_mib": 2871.09375,
+   "slack_mib": 64.0,
+   "slack_utilisation_pct": 98.27957153320312,
+   "why_zero": "unwired_bytes is already above zero in steady state at this rung, before any new consumer arrives"
+  }
+ },
+ "block_price": {
+  "after_wiring": {
+   "admitted": false,
+   "displaces_admitted_tail_mib": 30.364990234375,
+   "price_is_valid_only_if": "the displaced tail sits above the 64 MiB mark, which at the shipped slack of 64 MiB it does not",
+   "price_pct_95_bound": 0.0028557077582226803,
+   "price_pct_point_estimate": 0.0009293071954396267,
+   "safe_slack_mib": 94.364990234375
+  },
+  "before_wiring": {
+   "admitted": true,
+   "binding_constraint": "physical maxrec, not the slack",
+   "slack_consumed_mib": 0.0,
+   "why": "the block joins active_at_sizing, so the ticket grows to cover it; capacity == active_at_sizing + slack"
+  },
+  "block_mb": 31.84,
+  "block_mib": 30.364990234375
+ },
+ "design_rule": "keep the admission cut at or above the shipped 64 MiB; if a post-wiring resident consumer of X MiB ships, raise wiredZHDefaultSlackMB by X, or move the allocation before the wiring call and pay nothing",
+ "experiment": "e130-headroom",
+ "harness": "local",
+ "marginal_rate": {
+  "abs_bound_pct_per_mib_at_95": 9.404606213210129e-05,
+  "caveat": "measured above 64 MiB only; the knee is unlocated in [0, 64] MiB and FINDING 172 shows it is steep there",
+  "ci95_pct": [
+   -0.06514848928124731,
+   0.18658738727008897
+  ],
+  "measured_over": "s64 -> s2048",
+  "pct": 0.060719448994420826,
+  "pct_per_mib": 3.0604560985091144e-05,
+  "se_pct": 0.0532295782651568,
+  "significant": false,
+  "span_mib": 1984.0,
+  "valid_range_mib": [
+   64,
+   2048
+  ]
+ },
+ "physical_headroom": {
+  "max_recommended_bytes": 40200896512,
+  "spare_bytes": 14053170176,
+  "spare_gib": 13.088034629821777,
+  "spare_mib": 13402.1474609375,
+  "wired_at_sizing_bytes": 26147726336
+ },
+ "question": "largest additional resident block absorbable with unwired_bytes still exactly 0",
+ "sizing_identity": {
+  "draws": [
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s1024",
+    "capacity": 27220446196,
+    "headroom_at_sizing_bytes": 1072719860,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s1024",
+    "slack_mb": 1024,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s1024",
+    "capacity": 27220446196,
+    "headroom_at_sizing_bytes": 1072719860,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s1024",
+    "slack_mb": 1024,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s1024",
+    "capacity": 27220446196,
+    "headroom_at_sizing_bytes": 1072719860,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s1024",
+    "slack_mb": 1024,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s2048",
+    "capacity": 28294188020,
+    "headroom_at_sizing_bytes": 2146461684,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s2048",
+    "slack_mb": 2048,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s2048",
+    "capacity": 28294188020,
+    "headroom_at_sizing_bytes": 2146461684,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s2048",
+    "slack_mb": 2048,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s2048",
+    "capacity": 28294188020,
+    "headroom_at_sizing_bytes": 2146461684,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s2048",
+    "slack_mb": 2048,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s512",
+    "capacity": 26683575284,
+    "headroom_at_sizing_bytes": 535848948,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s512",
+    "slack_mb": 512,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s512",
+    "capacity": 26683575284,
+    "headroom_at_sizing_bytes": 535848948,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s512",
+    "slack_mb": 512,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s512",
+    "capacity": 26683575284,
+    "headroom_at_sizing_bytes": 535848948,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s512",
+    "slack_mb": 512,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s64",
+    "capacity": 26213813236,
+    "headroom_at_sizing_bytes": 66086900,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s64",
+    "slack_mb": 64,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s64",
+    "capacity": 26213813236,
+    "headroom_at_sizing_bytes": 66086900,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s64",
+    "slack_mb": 64,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s64",
+    "capacity": 26213813236,
+    "headroom_at_sizing_bytes": 66086900,
+    "identity_holds": true,
+    "leg": "e130-r11adm-1-s64",
+    "slack_mb": 64,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s1024",
+    "capacity": 27220446196,
+    "headroom_at_sizing_bytes": 1072719860,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s1024",
+    "slack_mb": 1024,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s1024",
+    "capacity": 27220446196,
+    "headroom_at_sizing_bytes": 1072719860,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s1024",
+    "slack_mb": 1024,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s1024",
+    "capacity": 27220446196,
+    "headroom_at_sizing_bytes": 1072719860,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s1024",
+    "slack_mb": 1024,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s2048",
+    "capacity": 28294188020,
+    "headroom_at_sizing_bytes": 2146461684,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s2048",
+    "slack_mb": 2048,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s2048",
+    "capacity": 28294188020,
+    "headroom_at_sizing_bytes": 2146461684,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s2048",
+    "slack_mb": 2048,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s2048",
+    "capacity": 28294188020,
+    "headroom_at_sizing_bytes": 2146461684,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s2048",
+    "slack_mb": 2048,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s512",
+    "capacity": 26683575284,
+    "headroom_at_sizing_bytes": 535848948,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s512",
+    "slack_mb": 512,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s512",
+    "capacity": 26683575284,
+    "headroom_at_sizing_bytes": 535848948,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s512",
+    "slack_mb": 512,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s512",
+    "capacity": 26683575284,
+    "headroom_at_sizing_bytes": 535848948,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s512",
+    "slack_mb": 512,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s64",
+    "capacity": 26213813236,
+    "headroom_at_sizing_bytes": 66086900,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s64",
+    "slack_mb": 64,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s64",
+    "capacity": 26213813236,
+    "headroom_at_sizing_bytes": 66086900,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s64",
+    "slack_mb": 64,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   },
+   {
+    "active_at_sizing": 26146704372,
+    "arm": "s64",
+    "capacity": 26213813236,
+    "headroom_at_sizing_bytes": 66086900,
+    "identity_holds": true,
+    "leg": "e130-r11adm-2-s64",
+    "slack_mb": 64,
+    "unwired_at_sizing": 0,
+    "wired_at_sizing": 26147726336
+   }
+  ],
+  "identity_holds_everywhere": true,
+  "violations": [],
+  "wired_at_sizing_distinct_values": [
+   26147726336
+  ],
+  "wired_at_sizing_identical_across_arms": true
+ },
+ "steady_by_arm": {
+  "s1024": {
+   "max_headroom_bytes": 116468,
+   "max_slack_used_mib": 1022.9205322265625,
+   "max_unwired_bytes": 2414985472,
+   "min_headroom_bytes": 109940,
+   "min_slack_used_mib": 1022.91455078125,
+   "min_unwired_bytes": 2003910656,
+   "roles": [
+    "s1024/w1",
+    "s1024/w2",
+    "s1024/w3"
+   ],
+   "slack_mib": 1024.0,
+   "slack_utilisation_pct": 99.89399909973145,
+   "unwired_is_zero_in_steady_state": false
+  },
+  "s2048": {
+   "max_headroom_bytes": 755188,
+   "max_slack_used_mib": 2046.9013671875,
+   "max_unwired_bytes": 1341221760,
+   "min_headroom_bytes": 122868,
+   "min_slack_used_mib": 2046.30517578125,
+   "min_unwired_bytes": 930807808,
+   "roles": [
+    "s2048/w1",
+    "s2048/w2",
+    "s2048/w3"
+   ],
+   "slack_mib": 2048.0,
+   "slack_utilisation_pct": 99.91724491119385,
+   "unwired_is_zero_in_steady_state": false
+  },
+  "s512": {
+   "max_headroom_bytes": 132596,
+   "max_slack_used_mib": 511.001953125,
+   "max_unwired_bytes": 2951736192,
+   "min_headroom_bytes": 24564,
+   "min_slack_used_mib": 510.89892578125,
+   "min_unwired_bytes": 2540797952,
+   "roles": [
+    "s512/w1",
+    "s512/w2",
+    "s512/w3"
+   ],
+   "slack_mib": 512.0,
+   "slack_utilisation_pct": 99.78494644165039,
+   "unwired_is_zero_in_steady_state": false
+  },
+  "s64": {
+   "max_headroom_bytes": 132596,
+   "max_slack_used_mib": 62.9951171875,
+   "max_unwired_bytes": 3421498240,
+   "min_headroom_bytes": 24564,
+   "min_slack_used_mib": 62.89892578125,
+   "min_unwired_bytes": 3010560000,
+   "roles": [
+    "s64/w1",
+    "s64/w2",
+    "s64/w3"
+   ],
+   "slack_mib": 64.0,
+   "slack_utilisation_pct": 98.27957153320312,
+   "unwired_is_zero_in_steady_state": false
+  }
+ },
+ "timed": false
+}

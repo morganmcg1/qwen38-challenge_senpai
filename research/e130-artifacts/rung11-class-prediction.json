@@ -1,0 +1,541 @@
+{
+  "experiment": "e130-rung11-class-prediction",
+  "harness": "local",
+  "made_before": "the rung 11 timing legs",
+  "kv_page_bytes": 17825792,
+  "kv_class": "2^24",
+  "slope_pct_per_512mib": -0.2249142857142857,
+  "anchor_measured_pct": -0.1968,
+  "anchor_identity_error_pct": 2.001953124997069e-06,
+  "anchor_identity_holds": true,
+  "steps": {
+    "s64_to_s512": {
+      "from": "s64",
+      "to": "s512",
+      "slack_delta_mib": 448.0,
+      "per_role": {
+        "w1": {
+          "admitted_mib": 448.0,
+          "admitted_count": 74.0,
+          "by_class": {
+            "2^24": {
+              "count_delta": 8.0,
+              "bytes_mib": 136.0
+            },
+            "2^23": {
+              "count_delta": 9.0,
+              "bytes_mib": 72.0
+            },
+            "2^22": {
+              "count_delta": 36.0,
+              "bytes_mib": 144.0
+            },
+            "2^21": {
+              "count_delta": 8.0,
+              "bytes_mib": 16.0
+            },
+            "2^20": {
+              "count_delta": 3.0,
+              "bytes_mib": 3.0
+            },
+            "2^18": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.25
+            },
+            "2^16": {
+              "count_delta": 5.0,
+              "bytes_mib": 0.3125
+            },
+            "2^15": {
+              "count_delta": 4.0,
+              "bytes_mib": 0.125
+            }
+          },
+          "attributed_mib": 371.6875,
+          "unattributed_mib": 76.3125,
+          "kv_class_mib": 136.0,
+          "kv_fraction_of_admitted": 0.30357142857142855
+        },
+        "w2": {
+          "admitted_mib": 448.00390625,
+          "admitted_count": 75.5,
+          "by_class": {
+            "2^24": {
+              "count_delta": 8.0,
+              "bytes_mib": 136.0
+            },
+            "2^23": {
+              "count_delta": 9.0,
+              "bytes_mib": 72.0
+            },
+            "2^22": {
+              "count_delta": 36.0,
+              "bytes_mib": 144.0
+            },
+            "2^21": {
+              "count_delta": 8.0,
+              "bytes_mib": 16.0
+            },
+            "2^20": {
+              "count_delta": 3.0,
+              "bytes_mib": 3.0
+            },
+            "2^18": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.25
+            },
+            "2^16": {
+              "count_delta": 5.0,
+              "bytes_mib": 0.3125
+            },
+            "2^15": {
+              "count_delta": 4.0,
+              "bytes_mib": 0.125
+            },
+            "2^13": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.0078125
+            },
+            "2^12": {
+              "count_delta": 0.5,
+              "bytes_mib": 0.001953125
+            }
+          },
+          "attributed_mib": 371.697265625,
+          "unattributed_mib": 76.306640625,
+          "kv_class_mib": 136.0,
+          "kv_fraction_of_admitted": 0.30356878166171125
+        },
+        "w3": {
+          "admitted_mib": 448.009765625,
+          "admitted_count": 75.0,
+          "by_class": {
+            "2^24": {
+              "count_delta": 8.0,
+              "bytes_mib": 136.0
+            },
+            "2^23": {
+              "count_delta": 9.0,
+              "bytes_mib": 72.0
+            },
+            "2^22": {
+              "count_delta": 36.0,
+              "bytes_mib": 144.0
+            },
+            "2^21": {
+              "count_delta": 8.0,
+              "bytes_mib": 16.0
+            },
+            "2^20": {
+              "count_delta": 3.0,
+              "bytes_mib": 3.0
+            },
+            "2^18": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.25
+            },
+            "2^16": {
+              "count_delta": 5.0,
+              "bytes_mib": 0.3125
+            },
+            "2^15": {
+              "count_delta": 4.0,
+              "bytes_mib": 0.125
+            },
+            "2^13": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.0078125
+            }
+          },
+          "attributed_mib": 371.6953125,
+          "unattributed_mib": 76.314453125,
+          "kv_class_mib": 136.0,
+          "kv_fraction_of_admitted": 0.3035648113836804
+        }
+      },
+      "scored_role_admitted_mib": 448.0,
+      "scored_role_kv_fraction": 0.30357142857142855,
+      "admitted_mib_mean_over_roles": 448.0045572916667,
+      "kv_fraction_mean_over_roles": 0.30356834053894005
+    },
+    "s512_to_s1024": {
+      "from": "s512",
+      "to": "s1024",
+      "slack_delta_mib": 512.0,
+      "per_role": {
+        "w1": {
+          "admitted_mib": 512.015625,
+          "admitted_count": 109.0,
+          "by_class": {
+            "2^24": {
+              "count_delta": 8.0,
+              "bytes_mib": 136.0
+            },
+            "2^23": {
+              "count_delta": 13.0,
+              "bytes_mib": 104.0
+            },
+            "2^22": {
+              "count_delta": 37.0,
+              "bytes_mib": 148.0
+            },
+            "2^21": {
+              "count_delta": 12.0,
+              "bytes_mib": 24.0
+            },
+            "2^20": {
+              "count_delta": 3.0,
+              "bytes_mib": 3.0
+            },
+            "2^19": {
+              "count_delta": 9.0,
+              "bytes_mib": 4.5
+            },
+            "2^18": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.25
+            },
+            "2^16": {
+              "count_delta": 15.0,
+              "bytes_mib": 0.9375
+            },
+            "2^15": {
+              "count_delta": 11.0,
+              "bytes_mib": 0.34375
+            }
+          },
+          "attributed_mib": 421.03125,
+          "unattributed_mib": 90.984375,
+          "kv_class_mib": 136.0,
+          "kv_fraction_of_admitted": 0.26561689401568556
+        },
+        "w2": {
+          "admitted_mib": 511.92376708984375,
+          "admitted_count": 110.5,
+          "by_class": {
+            "2^24": {
+              "count_delta": 8.0,
+              "bytes_mib": 136.0
+            },
+            "2^23": {
+              "count_delta": 13.0,
+              "bytes_mib": 104.0
+            },
+            "2^22": {
+              "count_delta": 37.0,
+              "bytes_mib": 148.0
+            },
+            "2^21": {
+              "count_delta": 12.0,
+              "bytes_mib": 24.0
+            },
+            "2^20": {
+              "count_delta": 3.0,
+              "bytes_mib": 3.0
+            },
+            "2^19": {
+              "count_delta": 9.0,
+              "bytes_mib": 4.5
+            },
+            "2^18": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.25
+            },
+            "2^16": {
+              "count_delta": 15.0,
+              "bytes_mib": 0.9375
+            },
+            "2^15": {
+              "count_delta": 11.0,
+              "bytes_mib": 0.34375
+            },
+            "2^13": {
+              "count_delta": -9.0,
+              "bytes_mib": -0.0703125
+            },
+            "2^12": {
+              "count_delta": -1.0,
+              "bytes_mib": -0.00390625
+            },
+            "2^8": {
+              "count_delta": 11.5,
+              "bytes_mib": 0.0028076171875
+            }
+          },
+          "attributed_mib": 420.9598388671875,
+          "unattributed_mib": 90.96392822265625,
+          "kv_class_mib": 136.0,
+          "kv_fraction_of_admitted": 0.26566455543395723
+        },
+        "w3": {
+          "admitted_mib": 511.8970947265625,
+          "admitted_count": 122.0,
+          "by_class": {
+            "2^24": {
+              "count_delta": 8.0,
+              "bytes_mib": 136.0
+            },
+            "2^23": {
+              "count_delta": 13.0,
+              "bytes_mib": 104.0
+            },
+            "2^22": {
+              "count_delta": 37.0,
+              "bytes_mib": 148.0
+            },
+            "2^21": {
+              "count_delta": 12.0,
+              "bytes_mib": 24.0
+            },
+            "2^20": {
+              "count_delta": 3.0,
+              "bytes_mib": 3.0
+            },
+            "2^19": {
+              "count_delta": 9.0,
+              "bytes_mib": 4.5
+            },
+            "2^18": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.25
+            },
+            "2^16": {
+              "count_delta": 14.5,
+              "bytes_mib": 0.90625
+            },
+            "2^15": {
+              "count_delta": 11.0,
+              "bytes_mib": 0.34375
+            },
+            "2^13": {
+              "count_delta": -10.0,
+              "bytes_mib": -0.078125
+            },
+            "2^12": {
+              "count_delta": -0.5,
+              "bytes_mib": -0.001953125
+            },
+            "2^8": {
+              "count_delta": 24.0,
+              "bytes_mib": 0.005859375
+            }
+          },
+          "attributed_mib": 420.92578125,
+          "unattributed_mib": 90.9713134765625,
+          "kv_class_mib": 136.0,
+          "kv_fraction_of_admitted": 0.2656783978675371
+        }
+      },
+      "scored_role_admitted_mib": 512.015625,
+      "scored_role_kv_fraction": 0.26561689401568556,
+      "admitted_mib_mean_over_roles": 511.94549560546875,
+      "kv_fraction_mean_over_roles": 0.26565328243906
+    },
+    "s1024_to_s2048": {
+      "from": "s1024",
+      "to": "s2048",
+      "slack_delta_mib": 1024.0,
+      "per_role": {
+        "w1": {
+          "admitted_mib": 1023.390625,
+          "admitted_count": 190.0,
+          "by_class": {
+            "2^24": {
+              "count_delta": 16.0,
+              "bytes_mib": 272.0
+            },
+            "2^23": {
+              "count_delta": 22.0,
+              "bytes_mib": 176.0
+            },
+            "2^22": {
+              "count_delta": 80.0,
+              "bytes_mib": 320.0
+            },
+            "2^21": {
+              "count_delta": 29.0,
+              "bytes_mib": 58.0
+            },
+            "2^20": {
+              "count_delta": 6.0,
+              "bytes_mib": 6.0
+            },
+            "2^19": {
+              "count_delta": 13.0,
+              "bytes_mib": 6.5
+            },
+            "2^18": {
+              "count_delta": 3.0,
+              "bytes_mib": 0.75
+            },
+            "2^16": {
+              "count_delta": 14.0,
+              "bytes_mib": 0.875
+            },
+            "2^15": {
+              "count_delta": 7.0,
+              "bytes_mib": 0.21875
+            }
+          },
+          "attributed_mib": 840.34375,
+          "unattributed_mib": 183.046875,
+          "kv_class_mib": 272.0,
+          "kv_fraction_of_admitted": 0.2657831656411744
+        },
+        "w2": {
+          "admitted_mib": 1024.2617797851562,
+          "admitted_count": 190.5,
+          "by_class": {
+            "2^24": {
+              "count_delta": 16.0,
+              "bytes_mib": 272.0
+            },
+            "2^23": {
+              "count_delta": 22.0,
+              "bytes_mib": 176.0
+            },
+            "2^22": {
+              "count_delta": 80.0,
+              "bytes_mib": 320.0
+            },
+            "2^21": {
+              "count_delta": 29.0,
+              "bytes_mib": 58.0
+            },
+            "2^20": {
+              "count_delta": 6.0,
+              "bytes_mib": 6.0
+            },
+            "2^19": {
+              "count_delta": 14.0,
+              "bytes_mib": 7.0
+            },
+            "2^18": {
+              "count_delta": 3.0,
+              "bytes_mib": 0.75
+            },
+            "2^17": {
+              "count_delta": 1.0,
+              "bytes_mib": 0.125
+            },
+            "2^16": {
+              "count_delta": 14.0,
+              "bytes_mib": 0.875
+            },
+            "2^15": {
+              "count_delta": 7.5,
+              "bytes_mib": 0.234375
+            },
+            "2^13": {
+              "count_delta": 9.0,
+              "bytes_mib": 0.0703125
+            },
+            "2^12": {
+              "count_delta": 0.5,
+              "bytes_mib": 0.001953125
+            },
+            "2^8": {
+              "count_delta": -11.5,
+              "bytes_mib": -0.0028076171875
+            }
+          },
+          "attributed_mib": 841.0538330078125,
+          "unattributed_mib": 183.20794677734375,
+          "kv_class_mib": 272.0,
+          "kv_fraction_of_admitted": 0.2655571118323416
+        },
+        "w3": {
+          "admitted_mib": 1024.0140380859375,
+          "admitted_count": 178.5,
+          "by_class": {
+            "2^24": {
+              "count_delta": 16.0,
+              "bytes_mib": 272.0
+            },
+            "2^23": {
+              "count_delta": 22.0,
+              "bytes_mib": 176.0
+            },
+            "2^22": {
+              "count_delta": 80.0,
+              "bytes_mib": 320.0
+            },
+            "2^21": {
+              "count_delta": 29.0,
+              "bytes_mib": 58.0
+            },
+            "2^20": {
+              "count_delta": 6.0,
+              "bytes_mib": 6.0
+            },
+            "2^19": {
+              "count_delta": 14.0,
+              "bytes_mib": 7.0
+            },
+            "2^18": {
+              "count_delta": 3.0,
+              "bytes_mib": 0.75
+            },
+            "2^16": {
+              "count_delta": 14.5,
+              "bytes_mib": 0.90625
+            },
+            "2^15": {
+              "count_delta": 7.0,
+              "bytes_mib": 0.21875
+            },
+            "2^13": {
+              "count_delta": 10.5,
+              "bytes_mib": 0.08203125
+            },
+            "2^12": {
+              "count_delta": 0.5,
+              "bytes_mib": 0.001953125
+            },
+            "2^8": {
+              "count_delta": -24.0,
+              "bytes_mib": -0.005859375
+            }
+          },
+          "attributed_mib": 840.953125,
+          "unattributed_mib": 183.0609130859375,
+          "kv_class_mib": 272.0,
+          "kv_fraction_of_admitted": 0.26562135857865377
+        }
+      },
+      "scored_role_admitted_mib": 1023.390625,
+      "scored_role_kv_fraction": 0.2657831656411744,
+      "admitted_mib_mean_over_roles": 1023.8888142903646,
+      "kv_fraction_mean_over_roles": 0.2656538786840566
+    }
+  },
+  "predictions": {
+    "s64_to_s512": {
+      "admitted_mib": 448.0045572916667,
+      "kv_fraction": 0.30356834053894005,
+      "kv_fraction_at_anchor": 0.30356834053894005,
+      "kv_fraction_ratio": 1.0,
+      "constant_slope_pct": -0.196802001953125,
+      "class_weighted_pct": -0.196802001953125,
+      "slope_pct_per_512mib": -0.2249142857142857
+    },
+    "s512_to_s1024": {
+      "admitted_mib": 511.94549560546875,
+      "kv_fraction": 0.26565328243906,
+      "kv_fraction_at_anchor": 0.30356834053894005,
+      "kv_fraction_ratio": 0.8751020675194009,
+      "constant_slope_pct": -0.22489034271240232,
+      "class_weighted_pct": -0.19680200387276992,
+      "slope_pct_per_512mib": -0.2249142857142857
+    },
+    "s1024_to_s2048": {
+      "admitted_mib": 1023.8888142903646,
+      "kv_fraction": 0.2656538786840566,
+      "kv_fraction_at_anchor": 0.30356834053894005,
+      "kv_fraction_ratio": 0.8751040316405458,
+      "constant_slope_pct": -0.4497797291346959,
+      "class_weighted_pct": -0.39360405431596507,
+      "slope_pct_per_512mib": -0.2249142857142857
+    }
+  }
+}

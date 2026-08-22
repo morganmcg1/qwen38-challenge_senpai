@@ -1,0 +1,138 @@
+{
+ "arm": "prune_na5_pair",
+ "base_sha": "221065c5f16e9118797c15421cbdf0e91269dd5c",
+ "candidate_commit": "978e88c1158bfcc14befad63716fff7b0b98e723",
+ "experiment": "e130-rung3-presubmit",
+ "harness": "local",
+ "local_submit": {
+  "cool_gates": [
+   {
+    "passed_at_c": 39.6,
+    "phase": "MTP reference pass",
+    "waited_s": 20
+   },
+   {
+    "passed_at_c": 38.8,
+    "phase": "true serial control",
+    "waited_s": 50
+   },
+   {
+    "passed_at_c": 40.0,
+    "phase": "native-MTP decode",
+    "waited_s": 40
+   }
+  ],
+  "metrics": {
+   "accepted_draft_rate": 0.8770161290322581,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "effective_mean_draft_len": 6.358974358974359,
+   "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+   "mode": "qwen-mtp-local-submit",
+   "mtp_decode_speedup": 2.4936251173056188,
+   "mtp_depth": 8,
+   "mtp_seconds_per_token": 0.02954257046803832,
+   "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+   "official_score": false,
+   "oracle": "candidate-local-mtp-golden-rows",
+   "public_drift_tripwire_passed": true,
+   "rankable": false,
+   "ranked_decode_speedup_floor": 0.9,
+   "residual_divergence_count": 0,
+   "serial_seconds_per_token": 0.07366809574887156,
+   "uses_pinned_mtp_head": true
+  },
+  "passed": true
+ },
+ "passed": true,
+ "steps": [
+  {
+   "command": "python3 research/twin_audit.py",
+   "exit": 0,
+   "observation": "TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s) (non-comment lines byte-identical, both comment streams sha256-pinned)",
+   "passed": true,
+   "step": "twin_audit"
+  },
+  {
+   "command": "senpai/validate-assignment-scope.sh 221065c5f16e9118797c15421cbdf0e91269dd5c Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+   "exit": 0,
+   "observation": "assignment scope OK: 2 submitted path(s) against BASE_SHA=221065c5f16e9118797c15421cbdf0e91269dd5c",
+   "passed": true,
+   "step": "assignment_scope"
+  },
+  {
+   "command": "senpai/check-editable-budget.sh 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+   "exit": 0,
+   "observation": "editable budget OK: source=2594062/3000000 bytes headroom=405938 growth=139227/262144 exempt=2410/2147483648 files=154 (growth base=770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf; contract=770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf; base source=2454835, exempt=2410, files=154)",
+   "passed": true,
+   "step": "editable_budget"
+  },
+  {
+   "command": "senpai/verify-ranked-score-boundary.sh",
+   "exit": 0,
+   "observation": "PASS: ranked numerator is pinned baseline; candidate edits affect the MTP denominator only",
+   "passed": true,
+   "step": "ranked_score_boundary"
+  },
+  {
+   "command": "senpai/rebuild-and-assert-worker.sh --self-test",
+   "exit": 0,
+   "observation": "rebuild-and-assert-worker: self-test PASS",
+   "passed": true,
+   "step": "harness_self_test"
+  },
+  {
+   "command": "senpai/rebuild-and-assert-worker.sh --no-build <witness set>, before and after the submit leg",
+   "exit": 0,
+   "observation": "575277bdd932f22d -> 575277bdd932f22d",
+   "passed": true,
+   "step": "worker_unchanged_across_local_submit"
+  }
+ ],
+ "submitted_diff_stat": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp               | 2 +-\n Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | 2 +-\n 2 files changed, 2 insertions(+), 2 deletions(-)",
+ "submitted_paths": [
+  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+ ],
+ "swift_test": {
+  "added_by_candidate": [],
+  "base": {
+   "issues": 40,
+   "names": [
+    "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+    "participantDocsExposeDefaultCLIInstallDirectory",
+    "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+    "startupMemoryPolicyKeepsRanked128GiBProfile",
+    "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+    "theCheckedInDeclarationSelectsThePinnedHead",
+    "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+    "theQwenMTPTrackIsArmedOnQwen38",
+    "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+   ],
+   "suites": 67,
+   "tests": 737
+  },
+  "base_tree_method": "git apply -R research/e130-artifacts/e130-prune-na5.patch, quantized.cpp recompiled",
+  "candidate": {
+   "issues": 40,
+   "names": [
+    "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+    "participantDocsExposeDefaultCLIInstallDirectory",
+    "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+    "startupMemoryPolicyKeepsRanked128GiBProfile",
+    "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+    "theCheckedInDeclarationSelectsThePinnedHead",
+    "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+    "theQwenMTPTrackIsArmedOnQwen38",
+    "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+   ],
+   "suites": 67,
+   "tests": 737
+  },
+  "removed_by_candidate": []
+ },
+ "worker_mtime": "2026-08-22T11:32:51Z",
+ "worker_sha256": "575277bdd932f22d765aab4cec2c3fe22068296923fdad84d4c411ecf2a4c15c",
+ "worker_sha256_post": "575277bdd932f22d765aab4cec2c3fe22068296923fdad84d4c411ecf2a4c15c",
+ "worker_unchanged_across_local_submit": true
+}

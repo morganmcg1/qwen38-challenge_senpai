@@ -1,0 +1,224 @@
+{
+  "harness": "ranked",
+  "receipt": "0c6191b7-215b-4dfc-873f-2449fbce5416",
+  "receipt_status": "rejected",
+  "receipt_score": 3.51270586307339,
+  "reference": "3b376ba2-7211-422e-9f6c-d2e01c75f905",
+  "reference_solver": "Lieisyourlie",
+  "reference_score": 3.51768892183081,
+  "per_prompt": [
+    {
+      "prompt": "beagle",
+      "mtp_seconds_per_token_mean": 0.0112860783,
+      "serial_seconds_per_token_mean": 0.0378667929,
+      "raw_ratio_of_means": 3.3551772275,
+      "reference_raw_ratio_of_means": 3.3637419225,
+      "reference_mtp_seconds_per_token_mean": 0.0112774628,
+      "effective_mean_draft_len": 4.381818181818182,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    },
+    {
+      "prompt": "botany",
+      "mtp_seconds_per_token_mean": 0.0100827499,
+      "serial_seconds_per_token_mean": 0.0379382696,
+      "raw_ratio_of_means": 3.7626907318,
+      "reference_raw_ratio_of_means": 3.7722042938,
+      "reference_mtp_seconds_per_token_mean": 0.0100861348,
+      "effective_mean_draft_len": 6.148148148148148,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    },
+    {
+      "prompt": "drama",
+      "mtp_seconds_per_token_mean": 0.0190520547,
+      "serial_seconds_per_token_mean": 0.0378297674,
+      "raw_ratio_of_means": 1.9856003983,
+      "reference_raw_ratio_of_means": 1.9938204236,
+      "reference_mtp_seconds_per_token_mean": 0.0190509337,
+      "effective_mean_draft_len": 2.2976190476190474,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    },
+    {
+      "prompt": "essays",
+      "mtp_seconds_per_token_mean": 0.0103446015,
+      "serial_seconds_per_token_mean": 0.0379671133,
+      "raw_ratio_of_means": 3.6702344986,
+      "reference_raw_ratio_of_means": 3.6716359211,
+      "reference_mtp_seconds_per_token_mean": 0.0103281757,
+      "effective_mean_draft_len": 5.086956521739131,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    },
+    {
+      "prompt": "medicine",
+      "mtp_seconds_per_token_mean": 0.010215207,
+      "serial_seconds_per_token_mean": 0.0378502617,
+      "raw_ratio_of_means": 3.7052858253,
+      "reference_raw_ratio_of_means": 3.7037692783,
+      "reference_mtp_seconds_per_token_mean": 0.0102171523,
+      "effective_mean_draft_len": 5.2555555555555555,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    },
+    {
+      "prompt": "plutarch",
+      "mtp_seconds_per_token_mean": 0.0302605,
+      "serial_seconds_per_token_mean": 0.0380572127,
+      "raw_ratio_of_means": 1.2576531353,
+      "reference_raw_ratio_of_means": 1.2553898175,
+      "reference_mtp_seconds_per_token_mean": 0.0302723886,
+      "effective_mean_draft_len": 0.1540041067761807,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 449
+    },
+    {
+      "prompt": "republic",
+      "mtp_seconds_per_token_mean": 0.0102202559,
+      "serial_seconds_per_token_mean": 0.0378783674,
+      "raw_ratio_of_means": 3.7062053798,
+      "reference_raw_ratio_of_means": 3.7109596063,
+      "reference_mtp_seconds_per_token_mean": 0.0102295664,
+      "effective_mean_draft_len": 4.989247311827957,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    },
+    {
+      "prompt": "travel",
+      "mtp_seconds_per_token_mean": 0.0166054589,
+      "serial_seconds_per_token_mean": 0.0380916172,
+      "raw_ratio_of_means": 2.2939213803,
+      "reference_raw_ratio_of_means": 2.288867655,
+      "reference_mtp_seconds_per_token_mean": 0.0166202637,
+      "effective_mean_draft_len": 2.6556603773584904,
+      "parity_ok": true,
+      "head_provenance_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+      "non_drafting_round_count": 0
+    }
+  ],
+  "published_median_recomputed": 3.51270586305,
+  "reference_median_recomputed": 3.5176889218,
+  "mode_index": {
+    "candidate": -14.245490337055571,
+    "reference": -14.24614023705711,
+    "difference": 0.0006499000015391942,
+    "nominal_label_candidate": "fast",
+    "nominal_label_reference": "fast",
+    "threshold": -12.9,
+    "usable_for_mode_classification": false,
+    "why_unusable": "F137: with the frontier draft kernels present, a draft-path saving and a slow draw share a per-prompt signature, so the index is confounded."
+  },
+  "coupling": {
+    "residency_gain_g17s": 0.1282,
+    "residency_gain_g16s": 0.0,
+    "per_prompt_delta_pct_vs_reference": {
+      "beagle": 0.07639572972033876,
+      "botany": -0.033559932195237424,
+      "drama": 0.0058842260313979305,
+      "essays": 0.15903873517566844,
+      "medicine": -0.019039551754555527,
+      "plutarch": -0.03927209100374447,
+      "republic": -0.0910155879138894,
+      "travel": -0.08907680568267404
+    },
+    "mean_delta_pct_vs_reference": -0.0038306597028369676,
+    "tier_members": [
+      "3b376ba2",
+      "c63eaa21",
+      "48423d09",
+      "cf79f7df"
+    ],
+    "tier_candidate_means": [
+      0.014760259750000001,
+      0.0147680173125,
+      0.014768223399999999,
+      0.014769116875
+    ],
+    "tier_mean_candidate_spt": 0.014766404334375,
+    "receipt_mean_candidate_spt": 0.014758363275,
+    "observed_delta_pct_vs_tier": -0.05445509409681454,
+    "observed_saving_pct": 0.05445509409681454,
+    "se_optimistic_pct": 0.031193148286122067,
+    "se_conservative_pct": 0.05947940820149441,
+    "se_conservative_ci95_pct": [
+      0.05444825525211988,
+      0.07815057581361766
+    ],
+    "z_optimistic": 1.745738955148743,
+    "z_conservative": 0.9155285121926677,
+    "by_head_share": {
+      "lo": {
+        "head_share": 0.07,
+        "percent_worth_of_c_equals_1": 0.8974000000000002,
+        "c_point": 0.06068096066059118,
+        "c_band_2se_conservative": [
+          -0.07187845142207963,
+          0.193240372743262
+        ],
+        "c_band_2se_point": [
+          -0.008837979134644078,
+          0.13019990045582644
+        ]
+      },
+      "mid": {
+        "head_share": 0.08,
+        "percent_worth_of_c_equals_1": 1.0256,
+        "c_point": 0.05309584057801729,
+        "c_band_2se_conservative": [
+          -0.0628936449943197,
+          0.1690853261503543
+        ],
+        "c_band_2se_point": [
+          -0.007733231742813569,
+          0.11392491289884815
+        ]
+      },
+      "hi": {
+        "head_share": 0.09,
+        "percent_worth_of_c_equals_1": 1.1538000000000002,
+        "c_point": 0.04719630273601537,
+        "c_band_2se_conservative": [
+          -0.05590546221717305,
+          0.1502980676892038
+        ],
+        "c_band_2se_point": [
+          -0.0068739837713898385,
+          0.10126658924342058
+        ]
+      }
+    },
+    "f8_bracket": [
+      0.199,
+      0.301
+    ],
+    "f8_bracket_bottom_rejected_optimistic": true,
+    "f8_bracket_bottom_rejected_conservative": true,
+    "smallest_separable_c_at_2se_optimistic": 0.06082907232083086,
+    "smallest_separable_c_at_2se_conservative": 0.11598948557233699,
+    "c_0p01_vs_c_0p15_sigma_on_mean_candidate_time_conservative": 2.414011913393457,
+    "c_0p01_vs_c_0p15_sigma_on_mean_candidate_time_optimistic": 4.603062143101503,
+    "c_0p01_vs_c_0p15_sigma_on_published_median": 0.5044203998135582
+  },
+  "serial_null_pct": {
+    "per_prompt": {
+      "beagle": -0.1784168650561288,
+      "botany": -0.28567695590719966,
+      "drama": -0.4064151436760114,
+      "essays": 0.12080914660814719,
+      "medicine": 0.021898698584835268,
+      "plutarch": 0.14094515199230978,
+      "republic": -0.21901211263007725,
+      "travel": 0.13152238876276462
+    },
+    "mean": -0.08429321141517003,
+    "sd": 0.21446904170704936
+  }
+}
