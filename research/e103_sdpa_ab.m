@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_ARMS 16
+#define MAX_ARMS 24
 
 typedef struct {
   const char *name;
@@ -53,6 +53,10 @@ static const ArmSpec kArms[] = {
     {"d_pack6_c", 6, 1, 1},    {"e_resident_c", 1, 0, 0},
     {"f_nosoftmax_c", 1, 0, 0}, {"g_double_c", 1, 0, 0},
     {"h_tailfree_c", 1, 0, 0}, {"j_launchonly_c", 1, 0, 0},
+    {"k_ident_c", 1, 1, 1},    {"k_pad_c", 1, 1, 1},
+    {"l_divhoist_c", 1, 1, 1}, {"m_chunk2_c", 1, 1, 1},
+    {"m_padchunk2_c", 1, 1, 1}, {"p_pad2hoist_c", 1, 1, 1},
+    {"m_padchunk4_c", 1, 1, 1}, {"p_best_c", 1, 1, 1},
 };
 static const int kNumArms = (int)(sizeof(kArms) / sizeof(kArms[0]));
 
@@ -257,6 +261,7 @@ int main(int argc, char **argv) {
     const char *lens_arg = "512,768,1024";
     int pairs = 3, kv_copies = 16, inner_cap = 512;
     double target_ms = 40.0;
+    int verify_only = 0;
 
     for (int i = 1; i < argc; i++) {
       if (!strcmp(argv[i], "--src") && i + 1 < argc) src_path = argv[++i];
@@ -267,6 +272,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--kv-copies") && i + 1 < argc) kv_copies = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--inner-cap") && i + 1 < argc) inner_cap = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--target-ms") && i + 1 < argc) target_ms = atof(argv[++i]);
+      else if (!strcmp(argv[i], "--verify-only")) verify_only = 1;
       else {
         fprintf(stderr, "e103_sdpa_ab: unknown argument %s\n", argv[i]);
         return 2;
@@ -275,7 +281,7 @@ int main(int argc, char **argv) {
     if (!out_path) {
       fprintf(stderr, "usage: e103_sdpa_ab --out JSON [--src FILE] "
                       "[--widths L] [--lens L] [--pairs N] [--kv-copies N] "
-                      "[--inner-cap N] [--target-ms MS]\n");
+                      "[--inner-cap N] [--target-ms MS] [--verify-only]\n");
       return 2;
     }
 
@@ -314,12 +320,14 @@ int main(int argc, char **argv) {
       return 1;
     }
     MTLCompileOptions *opts = [MTLCompileOptions new];
-    if (@available(macOS 26.0, *)) {
-      opts.languageVersion = MTLLanguageVersion4_0;
+    // Pinned to the same -std and math mode as the offline AIR/register census
+    // so runtime fidelity results describe the binaries that census measured.
+    opts.languageVersion = MTLLanguageVersion3_1;
+    if (@available(macOS 15.0, *)) {
+      opts.mathMode = MTLMathModeSafe;
     } else {
-      opts.languageVersion = MTLLanguageVersion3_1;
+      [opts setFastMathEnabled:NO];
     }
-    [opts setFastMathEnabled:NO];
     NSError *err = nil;
     uint64_t t0 = mach_absolute_time();
     id<MTLLibrary> lib = [device newLibraryWithSource:src options:opts error:&err];
@@ -369,6 +377,9 @@ int main(int argc, char **argv) {
     fprintf(out, "  \"heads\": %d,\n  \"kv_heads\": %d,\n  \"head_dim\": %d,\n",
             kHeads, kKVHeads, kDim);
     fprintf(out, "  \"kv_copies\": %d,\n  \"pairs\": %d,\n", kv_copies, pairs);
+    fprintf(out, "  \"language_version\": \"metal3.1\",\n"
+                 "  \"math_mode\": \"safe\",\n  \"verify_only\": %s,\n",
+            verify_only ? "true" : "false");
     fprintf(out, "  \"order\": \"palindrome\",\n  \"arms\": [");
     for (int a = 0; a < kNumArms; a++) {
       fprintf(out, "%s\"%s\"", a ? ", " : "", kArms[a].name);
@@ -446,29 +457,43 @@ int main(int argc, char **argv) {
                   differing, total, worst, differing ? "false" : "true");
         }
 
-        // --- positive control: perturb one key, arm a must react ----------
+        // --- positive control: perturb one key, every arm must react ------
+        // A bit-exactness claim is worth nothing unless the same comparison can
+        // fail, so the control runs on every arm rather than on arm a alone.
+        // The launch-only control ignores the key buffer by construction and is
+        // the one arm that must NOT react.
         {
           uint16_t *kp = (uint16_t *)o.keys.contents;
           uint16_t saved = kp[0];
-          kp[0] = f32_to_bf16(bf16_to_f32(saved) + 0.25f);
           uint16_t *snap = malloc(total * 2);
-          memcpy(snap, ya, total * 2);
-          dispatchOnce(queue, pso[0], &o, 0);
-          size_t differing = 0;
-          for (size_t i = 0; i < total; i++) {
-            if (snap[i] != ya[i]) differing++;
+          for (int a = 0; a < kNumArms; a++) {
+            const uint16_t *yb = (const uint16_t *)o.out[a].contents;
+            memcpy(snap, yb, total * 2);
+            kp[0] = f32_to_bf16(bf16_to_f32(saved) + 0.25f);
+            dispatchOnce(queue, pso[a], &o, a);
+            size_t differing = 0;
+            for (size_t i = 0; i < total; i++) {
+              if (snap[i] != yb[i]) differing++;
+            }
+            kp[0] = saved;
+            dispatchOnce(queue, pso[a], &o, a);
+            const int must_react = kArms[a].correctness;
+            fprintf(stderr,
+                    "e103_sdpa_ab:   positive control %-14s -> "
+                    "differing=%zu/%zu%s\n",
+                    kArms[a].name, differing, total,
+                    (must_react && !differing) ? "   <-- CONTROL DID NOT FIRE"
+                                               : "");
+            fprintf(out,
+                    ",\n    {\"kind\":\"positive_control\",\"n\":%d,\"m\":%d,"
+                    "\"arm\":\"%s\",\"expect_react\":%s,"
+                    "\"differing\":%zu,\"total\":%zu,\"detected\":%s}",
+                    n, m, kArms[a].name, must_react ? "true" : "false",
+                    differing, total, differing ? "true" : "false");
           }
           free(snap);
-          kp[0] = saved;
-          dispatchOnce(queue, pso[0], &o, 0);
-          fprintf(stderr,
-                  "e103_sdpa_ab:   positive control: one key perturbed -> "
-                  "differing=%zu/%zu\n", differing, total);
-          fprintf(out,
-                  ",\n    {\"kind\":\"positive_control\",\"n\":%d,\"m\":%d,"
-                  "\"differing\":%zu,\"total\":%zu,\"detected\":%s}",
-                  n, m, differing, total, differing ? "true" : "false");
         }
+        if (verify_only) continue;
 
         // --- calibrate, warm, then time -----------------------------------
         int slice = 0;
