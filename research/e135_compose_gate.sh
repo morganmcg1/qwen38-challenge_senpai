@@ -10,16 +10,16 @@
 # The leg exports no MLX_E120_QMV_GRID, no MLX_E120_QMV_TABLE and no
 # MLX_E135_PROBE_ARM, so it takes the route the ranked runner takes, and every
 # arm witness is read back off the run's own trace (CAMPAIGN RULE 114), never
-# off an environment variable. Advisor F17 orders probe rung p10, whose derived
-# integer 1230 the leg must report, and advisor F18 orders width 2 into the
+# off an environment variable. Advisor F20 orders probe rung p15, whose derived
+# integer 1844 the leg must report, and advisor F18 orders width 2 into the
 # routed set, which the plan witness and the `columns_by_width` census carry.
 set -u
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
-tag="e135w2"
+tag="e135w2p15"
 out="research/out/${tag}"
-log_dir="research/out/e135w2gate"
+log_dir="research/out/e135w2p15gate"
 mkdir -p "${log_dir}"
 rc=0
 
@@ -65,12 +65,12 @@ git status --porcelain -- Sources Vendor Package.swift mtp-head.manifest.json \
 # the four tables, and passes only after all four moved.
 step rebuild senpai/rebuild-and-assert-worker.sh \
   --require 'e135_default_grid/tight' \
-  --require 'e135_default_probe/p10' \
+  --require 'e135_default_probe/p15' \
   --require 'e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4' \
   --require 'e120_default_route/tiered_switch/shipped' \
   --require 'columns_by_width' \
   --forbid 'e135_default_grid/wide' \
-  --forbid 'e135_default_probe/p15' \
+  --forbid 'e135_default_probe/p10' \
   --forbid 'e135_default_probe/p25' \
   --forbid 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4' \
   --forbid 'e120_default_route/tiered_switch/onepass67' \
@@ -209,7 +209,7 @@ import sys
 WANT_PLAN = "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
 WANT_ROUTE = "e120_default_route/tiered_switch/shipped"
 WANT_GRID = "e135_default_grid/tight"
-WANT_PROBE = "e135_default_probe/p10"
+WANT_PROBE = "e135_default_probe/p15"
 
 trace = json.load(open(sys.argv[1]))
 ok = True

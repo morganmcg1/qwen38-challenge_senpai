@@ -18,7 +18,7 @@ struct E135ProbeArmTests {
 
     /// The ranked runner sets no environment, so the fraction it takes is
     /// whatever `probeArm` falls back to. Every raw value is compiled in
-    /// whichever rung ships, so `"p10"` cannot witness the fallback on its
+    /// whichever rung ships, so `"p15"` cannot witness the fallback on its
     /// own; this whole literal exists only for the rung selected.
     @Test("the default-probe witness names the compiled default and can fail")
     func defaultProbeWitnessNamesTheCompiledDefault() throws {
@@ -30,11 +30,11 @@ struct E135ProbeArmTests {
         // The witness is worthless if the optimizer can fold it out of a
         // shorter shipped string, and worthless if the fallback ignores it.
         #expect(Qwen35CustomQMV.defaultProbeWitness.utf8.count >= 16)
-        #expect(Qwen35CustomQMV.ProbeArm.compiledDefault == .p10)
+        #expect(Qwen35CustomQMV.ProbeArm.compiledDefault == .p15)
 
         if ProcessInfo.processInfo.environment["MLX_E135_PROBE_ARM"] == nil {
             #expect(Qwen35CustomQMV.probeArm == Qwen35CustomQMV.ProbeArm.compiledDefault)
-            #expect(qwen35DerivedClusterProbeFraction == 0.10)
+            #expect(qwen35DerivedClusterProbeFraction == 0.15)
         }
     }
 
@@ -56,20 +56,29 @@ struct E135ProbeArmTests {
     }
 
     /// The declared head has 98,336 padded rows in leaves of 8, so 12,292
-    /// leaves. The rung the ranked run takes must derive exactly 1230 probes,
-    /// which is the integer the runtime gate reads back off the leg's own
-    /// trace. The two other rungs must derive different integers, or the trace
-    /// could not tell the arms apart.
-    @Test("the shipped rung derives 1230 probes from the declared head")
-    func theShippedRungDerives1230Probes() throws {
+    /// leaves. Every rung must derive a different integer, or the trace could
+    /// not tell the arms apart, and the shipped rung must derive the exact
+    /// integer the runtime gate reads back off the leg's own trace.
+    ///
+    /// The name states no rung on purpose. The compiled default has moved
+    /// twice on advisor evidence, and a name that carries the integer goes
+    /// stale silently on every move.
+    @Test("every rung derives a distinct probe count and the shipped one is pinned")
+    func everyRungDerivesADistinctProbeCount() throws {
         let leaves = 98_336 / 8
         #expect(leaves == 12_292)
 
         #expect(Qwen35CustomQMV.ProbeArm.p25.probes(leaves: leaves) == 3073)
         #expect(Qwen35CustomQMV.ProbeArm.p15.probes(leaves: leaves) == 1844)
         #expect(Qwen35CustomQMV.ProbeArm.p10.probes(leaves: leaves) == 1230)
+
+        let derived = Qwen35CustomQMV.ProbeArm.allCases.map { $0.probes(leaves: leaves) }
+        #expect(Set(derived).count == derived.count)
+
+        // Move this integer with `compiledDefault`; the gate asserts the same
+        // one against the trace.
         #expect(
-            Qwen35CustomQMV.ProbeArm.compiledDefault.probes(leaves: leaves) == 1230)
+            Qwen35CustomQMV.ProbeArm.compiledDefault.probes(leaves: leaves) == 1844)
 
         // The rule never returns zero, whatever the head size, because a step
         // that scores no leaf cannot propose.

@@ -2045,7 +2045,16 @@ public enum Qwen35CustomQMV {
 
         /// The rung a run with no override selects, so the rung the ranked
         /// runner uses.
-        public static let compiledDefault = ProbeArm.p10
+        ///
+        /// `p15` and not `p10`. Two ranked receipts on two different bases
+        /// agree that 0.25 -> 0.15 is faster, and a third receipt measured
+        /// 0.25 -> 0.12 as 1.04 % *slower* on the candidate medpair at a
+        /// digit-identical draft length, so the probe curve turns over
+        /// somewhere between 0.15 and 0.12. `p10` sits on the far side of that
+        /// turnover and has no ranked measurement of its own. The live
+        /// acceptance ladder that cleared `p10` counts rounds, so it cannot
+        /// see a pure time regression at a fixed round count.
+        public static let compiledDefault = ProbeArm.p15
 
         public var fraction: Double {
             switch self {
@@ -2069,7 +2078,7 @@ public enum Qwen35CustomQMV {
     /// carries.
     ///
     /// Every `ProbeArm` raw value is compiled in whichever one ships, exactly
-    /// like the `Grid` and `Table` raw values, so `"p10"` on its own witnesses
+    /// like the `Grid` and `Table` raw values, so `"p15"` on its own witnesses
     /// nothing. This whole literal exists only for the case actually selected.
     /// `defaultProbeWitnessNamesTheCompiledDefault` pins it against
     /// `ProbeArm.compiledDefault`, and `flushPipelineLog` keeps it reachable.
@@ -2077,7 +2086,7 @@ public enum Qwen35CustomQMV {
     /// The rung never enters the Metal source: the fraction changes how many
     /// leaves are scored, not the kernel text, and naming it there would split
     /// one pipeline set in two for a difference the kernel cannot observe.
-    public static let defaultProbeWitness = "e135_default_probe/p10"
+    public static let defaultProbeWitness = "e135_default_probe/p15"
 
     public static let probeArm: ProbeArm = {
         let raw = ProcessInfo.processInfo.environment["MLX_E135_PROBE_ARM"]

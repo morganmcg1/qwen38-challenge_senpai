@@ -7,7 +7,7 @@ source tree the worker happened to be built from, and it names a control rung
 whose integer must differ so a check that cannot fail cannot pass.
 
 Usage:
-    e135_probe_check.py PIPELINES.JSON [--arm p10]
+    e135_probe_check.py PIPELINES.JSON [--arm p15] [--default-arm p15]
 """
 import argparse
 import json
@@ -20,10 +20,14 @@ CONTROL = {"p10": "p15", "p15": "p25", "p25": "p15"}
 
 parser = argparse.ArgumentParser()
 parser.add_argument("path")
-parser.add_argument("--arm", default="p10", choices=sorted(ARMS))
+parser.add_argument("--arm", default="p15", choices=sorted(ARMS))
+# The rung the leg ran and the rung compiled in are the same on a bare leg and
+# differ on an override leg, so the witness assertion needs its own name.
+parser.add_argument("--default-arm", default="p15", choices=sorted(ARMS))
 args = parser.parse_args()
 
 want_arm = args.arm
+want_default = args.default_arm
 want_fraction = ARMS[want_arm]
 want_count = COUNTS[want_arm]
 control_arm = CONTROL[want_arm]
@@ -71,9 +75,10 @@ if control == count:
 
 # A leg that overrides the rung still reports the compiled default, so the
 # witness literal must always name the rung the ranked runner would take.
-if default_probe != "e135_default_probe/p10":
-    print(f"FAIL default_probe {default_probe!r} does not name the p10 rung; "
-          f"a run that exports nothing would not take 0.10")
+if default_probe != f"e135_default_probe/{want_default}":
+    print(f"FAIL default_probe {default_probe!r} does not name the "
+          f"{want_default} rung; a run that exports nothing would not take "
+          f"{ARMS[want_default]}")
     ok = False
 
 print("PASS probe witness" if ok else "FAIL probe witness")
