@@ -46756,3 +46756,327 @@ half hours. Rivals are drawing lottery tickets; we are shipping mechanisms.
   point estimate with no error bar, on a channel 9.6× noisier than the one it was
   being compared against.
 - **120** — quoted `0.4383 / 0.18` as 2.9× when it is 2.44×.
+
+## 287 — 2026-08-22 ~15:15Z — FINDING 162: THE CROWN'S HEADLINE IS A PUBLISHED-MEDIAN ARTEFACT. FINDING 163: THE WIRED ALLOWANCE HAS NO FLOOR AND THE LADDER IS THREE TIMES THE PRIZE. ADVISOR ERROR 121. THE C1 COMPLIANCE RULING.
+
+Board at 15:15Z. `623e77af` (ours, thorfinn's one-pass `{6:6,7:7}` arm on the D_S body) is still
+`validating` at 62 minutes. Queued 14:12:57Z, so the 42-130 minute window closes at 16:23Z.
+The crown moved twice in this window and neither move was a mechanism.
+
+```
+PROMOTED top 4
+  0b8602e1 nagaral        3.51925374  14:47:00Z  src=c2e43231   <- NEW CROWN
+  48423d09 noskillcoding  3.51845338  11:18:03Z  src=c0dbec05
+  cf79f7df Lieisyourlie   3.51661724  10:10:38Z  src=a0f85886
+  d3c491b5 morganmcg1     3.49065044  09:08:38Z  src=6f1cd66f   <- OURS
+VALIDATING 9, ours at position 4 of 9
+```
+
+---
+
+### 287.1 / FINDING 162 — THE NEW CROWN'S "+0.72 %" AND "+0.88 %" ARE PUBLISHED-MEDIAN ARTEFACTS. MY ORIGINAL PRICE WAS RIGHT.
+
+`0b8602e1`'s public note is a restoration list: three mechanisms with prior promotion receipts,
+restored onto `c0dbec0` after whole-file overlays deleted them. It prices francip's E87
+probe-select at **+0.72 %** and cites an isolated ranked pair at **+0.88 %**. Both numbers are
+published medians. Priced on the F154 instrument (`_advisor_scratch/probesel.py`):
+
+**Nagaral's claimed isolated pair `2d02ef0b` -> `555cb9e3`, both on `a0f8588`:**
+
+```
+prompt      cand delta %   serial delta %
+beagle         -1.2415        +0.3090
+medicine       +0.3740        +0.0800
+essays         -0.1850        +0.0767
+botany         +0.4629        -0.0088
+republic       -0.4832        +0.1247
+plutarch       -0.0867        +0.0046
+drama          -0.1195        -0.3759
+travel         +0.7876        +0.1703
+unweighted 8-prompt candidate mean   -0.0359 %   se 0.0187 %   z = -1.92
+F83-weighted candidate speedup       +0.5385 %   (entirely one prompt)
+serial 8-prompt mean                 +0.0475 %
+published median                     +0.8856 %
+```
+
+**Four of eight prompts moved the wrong way.** The entire F83-weighted gain is beagle alone.
+
+The mechanism's own signature is absent. It removes a fixed dispatch count per draft step, and
+draft steps per leg are almost equal across the five median carriers — beagle 482, medicine 473,
+essays 468, botany 498, republic 464 — so the absolute saving must be almost equal. beagle has
+the LARGEST leg time of the five, so beagle must show the SMALLEST percentage gain. It shows the
+largest, and two others show losses. Decomposition of the +0.8856: F83-weighted candidate
++0.5385, F83-weighted serial +0.1837, F82 surrogate residual +0.16.
+
+**Francip's actual promotion pair `4d3a03aa` -> `bc070b7b`:**
+
+```
+beagle -0.0751  medicine -0.0620  essays -0.0611  botany -0.0996  republic -0.1022
+plutarch -0.1336  drama +0.0129   travel -0.1077
+unweighted 8-prompt candidate mean   -0.0823 %   z = -4.4   REAL
+F83-weighted candidate speedup       +0.0641 %
+published median                     +0.2198 %
+```
+
+That one is real, uniform and small. **+0.064 %, not +0.72 %.** My crown audit priced this same
+kernel from our constants at ranked **0.074 % [0.062, 0.144]**. Two independent routes agree at
+about 0.07 %. **There is no advisor error here; Rule 63 and Rule 100 did exactly what they were
+written for, and the rival's headline is ten times too large.**
+
+**Crown move `48423d09` -> `0b8602e1`, all three restorations together:** unweighted candidate
+mean -0.0268 % at z = -1.43, F83-weighted +0.1262 %, serial +0.1281 %, published +0.0227 %.
+
+**Our `0c6191b7` versus the new crown `0b8602e1`:** unweighted 8-prompt candidate mean
+**+0.0400 %** (we are faster), F83-weighted **+0.0218 %** (crown faster). Common-denominator
+leaderboard anchored on `0b8602e1`: crown 3.519254 rank 3, ours 3.517402 rank 4, gap 0.053 %.
+
+> **WE ARE AT CANDIDATE PARITY WITH THE CROWN. The published gap is the serial draw. Nobody on
+> this board has produced a mechanism worth more than 0.13 % in the last six hours, and
+> thorfinn's in-flight arm predicts -3 % to -9 % on the candidate leg.**
+
+### 287.2 / TWO PROMOTED MECHANISMS ARE GENUINELY MISSING FROM OUR TREE — VERIFIED AT SOURCE
+
+The crown's note is a map of what whole-file overlays deleted. Two of the three are in
+`Qwen36MTPBlockSession.swift`. Both confirmed absent this session, Rule 103 citations:
+
+1. **E020 replay-prefetch, five lines.** `:1526-1531` calls
+   `Self.restoreAfterPrefixReject(model, cache, acceptedCount:draftCount:to:)` and nothing
+   submits the restored GDN boundary state afterwards. The only two `asyncEval` calls in the
+   whole file are `:1403` and `:1415`, both in the draft chain. The restored recurrent state is
+   first touched cold by the next round's draft forward. Promoted at a published +0.039 %,
+   re-validated at a published +0.033 %, so the true value is plausibly +0.01 % to +0.04 %.
+2. **Normed-verify warm, about thirty lines.** The scored verify at `:1447-1450` calls
+   `model.callWithHiddenAndNormed`. The warm width loop at `:421-423` calls the plain
+   `model.callWithHidden` for every width `1 ... maxDepth + 1`. Two distinct public functions,
+   `Qwen35.swift:5240` and `:5260`, second conformer pair `:5858`/`:5865`. **The post-norm
+   expression every scored verify evaluates is never warmed and cold-compiles inside the first
+   timed verify of every leg.** The file's own comment block at `:1440-1446` documents why the
+   normed overload exists; the warm loop was never updated to match.
+
+The third, francip's probe-select, is in `Qwen35.swift`. Our tree has zero occurrences of
+`qwen_mtp_e87_probe_select`; `:5613` still runs `MLX.argPartition(centroidScore, kth: clusters -
+probes)` followed by our own `qwen_mtp_probe_sort` compaction (`:4162`). Held: it is worth
++0.064 %, it costs about 190 lines in thorfinn's file, and it collides with both E129 and E133.
+
+**ASSIGNED**: mechanisms 1 and 2 to edward as E134 rung 1c, with a **prize bound before any
+patch**. Mechanism 2's whole prize is one cold compile in the first timed verify, so it is
+bounded above by `round_1_verify_us - median(round_2..N verify_us)` in ONE leg with zero code
+change. Mechanism 1's bound is the round-time excess of rollback rounds over non-rollback rounds
+at matched verify width, computable on traces he already holds. Stop rules: under 3 ms and under
+200 microseconds respectively.
+
+### 287.3 / FINDING 163 — THE WIRED ALLOWANCE IS A FIRST-COME-FIRST-SERVED POOL WITH NO FLOOR, AND THE HEAD/BACKBONE QUESTION IS CLOSED
+
+Alphonse's interims 14 and 15. 36 resize draws and 109 steady draws, 12 legs, 3 worker roles per
+leg. `research/e130_admission_read.py`, W&B `e130adm`, commit `67ebca93`.
+
+**The lottery is refuted.** `wired_count` 2157, `wired_bytes` 26,147,726,336, `unwired_bytes` 0,
+page tax 1,021,964 B — every column has exactly ONE distinct value across all 25 draws in both
+arms, to the byte. My `s64_bimodal` pre-registration is refuted by its own stated condition.
+Rung 10a's apparent bimodality was the two-sample palindrome accident F158 predicted.
+
+**The head is IN. Exclusion rate 0.0 %.** My decision rule named 2.4-2.6 % (backbone) and 33 %
+(head); the measurement lands on neither because nothing present at sizing is ever excluded.
+
+🔴 **BUT THE QUESTION IS STILL ANSWERED, BY A DIFFERENT INSTRUMENT WITH NO POWER PROBLEM.**
+Advisor error 119 was right that the serial leg cannot resolve 0.197 % at residual sd 0.4788 %.
+Alphonse did not go back to it. He used two exact, role-independent arguments:
+
+- **Class-shrink**: a weight dropped after sizing would leave its wired size class one member
+  short. **Zero shrink events over 109 steady draws.**
+- **The class delta of the extra 448 MiB**: `2^22` +36 buffers, `2^24` +8, `2^23` +9, `2^21` +8,
+  `2^20` +3, identical in all three roles. **No weight class appears.** Dominated by the
+  17,825,792 B class = one page of per-layer KV at 4,352 tokens x 4,096 B/token/layer.
+
+> **THE -0.1968 % IS ADMISSION OF POST-SIZING KV, GATED DELTANET AND SCRATCH STATE. IT IS
+> BACKBONE, AND NOT BECAUSE THE HEAD IS EXCLUDED, BUT BECAUSE EVERY BYTE THE ALLOWANCE BUYS IS
+> BACKBONE STATE.** F12's plutarch head attribution is a different receipt and is untouched.
+
+**BOUND A IS WITHDRAWN A THIRD TIME AND IS NOW THE WRONG SHAPE ENTIRELY.** There is no floor.
+
+```
+role  arm    slack used        unwired    headroom left
+w1    s64     62.90 / 64      2871.1 MiB   132,596 B
+w1    s512   510.92 / 512     2442.7 MiB    28,148 B
+w2    s64     63.00 / 64      3213.3 MiB    24,564 B
+w2    s512   511.00 / 512     2765.4 MiB    24,564 B
+w3    s64     63.00 / 64      3263.0 MiB    20,468 B
+w3    s512   511.00 / 512     2815.0 MiB    20,468 B
+```
+
+**512 MiB is consumed to within 25 KB and 2.4-2.8 GiB is still unwired. The allowance saturates
+at both values.** Response is 1:1 and deterministic: w2 +448.00 MiB slack -> -448.0 MiB unwired,
+w3 identical, about 6.1 MiB per admitted allocation, no dispersion over four draws each.
+`headroom_bytes` is identical between arms within a role and does not change when capacity grows
+448 MiB — the signature of first-come-first-served admission against a stream of like-sized
+buffers, not a capacity race.
+
+**Correction he issued against himself**: the largest unwired buffer is 17,825,792 B only for w2
+and w3. **Role w1 holds one 254,279,680 B unwired buffer in every draw**, which is larger than
+every head tensor, so the naive size bound proves nothing and was replaced by the class-shrink
+argument. Identity caveat: the local wrapper attaches the organizer-pinned BF16 head at
+849,398,784 B, not the declared 427,742,600 B head; arguments 1 and 2 are head-agnostic.
+
+**Committed**: revert `893a5add` (restores `case 5:` in both `quantized.h` and its twin, both
+byte-identical to base), probe removal `c95103ae`, rung-10b closure `19fa1949`. The shipped diff
+is now exactly one integer literal and its corrected documentation comment.
+
+### 287.4 / 🔴🔴 THE SLACK LADDER IS ORDERED — CENTRAL PREDICTION -0.675 %, THREE TIMES RECEIPT 2's CURRENT VALUE
+
+Alphonse wrote: *"512 is not the right value because it is enough. It is the best value because
+it is the largest one I have timed."* That sentence is the experiment. Bound C's ceiling is about
+2,154 MiB and there are two untimed doublings inside it.
+
+**Pre-registered, before any leg runs:**
+
+```
+model                      s512->s1024   s1024->s2048   s512->s2048   s64->s2048
+linear in admitted bytes     -0.225 %      -0.450 %       -0.675 %      -0.872 %
+saturating (the null)         0.000         0.000          0.000        -0.197 %
+```
+
+Decision rule: better than **-0.35 %** confirms linear and ships the argmax; between -0.35 % and
+-0.05 % ships the argmax as sub-linear; worse than **-0.05 %** refutes linear, ships 512, and
+converts a guess into a measured ceiling. All three are results.
+
+**Design, because a palindrome will not carry four arms.** Arms `s64/s512/s1024/s2048`; twelve
+legs as `ABCD | DCBA | one random permutation`; fit `y ~ arm + leg_index` for **7 df and
+t_crit 2.365** instead of 2 df and 4.303; at residual sd 0.0498 % that resolves 0.06 % at 2 sigma,
+ten times finer than the smallest predicted step. Absolute candidate s/token is the headline
+(F160). Admission readout at EVERY rung, because the class table will show the 1:1 response
+breaking before the timing does. `MLX_E130_WIRED_GATE_GIB` re-added as a measurement-only patch
+because the `:225` 96 GiB guard never fires on a 48 GiB host; removed again before any archive.
+
+**Hard bound-C safety rule**: do not exceed 2,048 MiB. Stop and report on any of: a
+`set_wired_limit` failure; the `:249` `min(target, recommended - 256 MiB)` clamp binding; the
+254,279,680 B scratch buffer appearing in the WIRED set; any leg slower than its `s1024`
+counterpart by more than 2 sigma.
+
+**Option A stands** — receipt 2 carries the wiring change alone and `case 5:` stays reverted.
+Only the integer changes. The ladder costs zero submission time because the slot is occupied by
+`623e77af` until 16:23Z at the latest.
+
+### 287.5 / 🔴 ADVISOR ERROR 121 — MY C1 KILL RULE CAPPED THE SEARCH WHERE THE PAYOUT IS MAXIMAL INSTEAD OF WHERE IT REACHES ZERO
+
+My T0 gate said *"no cell <= 200 B/row clears ⇒ CLOSE C1."* Today's readout B is 24,584 rows at
+**1,600 bytes per row**, and the mechanism pays at every byte size below that. Using askeladd's
+corrected byte model and 0.02167 % ranked per MB removed, with the projection and mu charged once
+across both stages:
+
+```
+b B/row  equivalent family          hybridA removed  hybridA %  full C1 removed  full C1 %
+  136    simhash1024 / lowrank128        34.9 MB      +0.757        52.9 MB      +1.147
+  264    simhash2048 / lowrank256        31.1 MB      +0.674        47.5 MB      +1.030
+  520    simhash4096 / lowrank512        23.5 MB      +0.510        36.8 MB      +0.798
+ 1032    simhash8192 / lowrank1024        8.3 MB      +0.180        15.3 MB      +0.332
+```
+
+SimHash at `S` bits and int8 low-rank at `r = S/8` cost the same row bytes AND the same
+projection bytes, so they are directly comparable at every rung. **Full C1 at 1,032 B/row still
+clears the +0.30 % advance floor; at 520 B/row it is +0.80 %.** His pilot searched only the two
+cheapest rungs and reported 0 of 240 — a search over the wrong region.
+
+**CORRECTED KILL RULE: close C1 only when no cell at ANY byte size up to 1,400 B/row clears T0
+(worst-stratum net miss <= 3.0e-3) and T0b (recall >= 0.997). Select the CHEAPEST clearing cell,
+not the best cell under a byte cap.**
+
+### 287.6 / RULING — A QUERY-FITTED PROJECTION BASIS IS LEGAL
+
+Askeladd asked before implementing. The ruling does not rest on the calibration-set analogy,
+though that is sound. **The sketch is a shortlist generator.** Stage C rescores survivors with the
+exact affine-4 rerank and the target verifies every emitted token exactly, so a wrong basis costs
+ACCEPTANCE and never CORRECTNESS. `program.md` already makes the proposal head editable, says a
+new head "may change proposal quality and cost, but it may not redefine the target answer", and
+lists compact or quantized head representations as a research area. The pinned head is itself a
+q2/q4 rerank head, and two-bit quantization requires a calibration corpus.
+
+Four conditions: (1) fit only on data we generate from public fixtures or self-generated text,
+never hidden-prompt-derived; (2) frozen at build time, **no update path at run time** — this is
+the `program.md` clause that actually bites, "future state shared across requests"; (3) provenance
+recorded in a source comment — fixtures, sample count, moment, procedure; (4) shortlist only,
+never the exact rerank, target verification, row ledger, or top-two evidence.
+
+**Added requirement**: fit on everything except `essays_bacon` and score `essays_bacon` — the
+outlier at acceptance 0.3989, mean draft 1.996, 285 rounds, F83 weight 0.1598. If the basis holds
+on the worst-behaved family, prompt-pool specialization is not live.
+
+### 287.7 / ASKELADD'S BASIS DEFECT, ACCEPTED, AND THE WHITENING INSTRUCTION
+
+He fitted the low-rank basis to the **row** covariance. The sketch replaces `row . x` by
+`(P row) . (P x)`, residual `row . (I - P)(x - mu)`, which is governed by the **query**
+distribution. Top-256 of 5,120 keeps 0.151 of the row variance against 0.05 for a random subspace,
+so the row table is near-isotropic and row-PCA sketching is hopeless by construction. **His
+`lowrank` pilot numbers do not license a kill.** His `simhash` numbers are honest evidence and
+they are bad: `simhash2048` at 264 B/row gives net miss 8.438e-2, 28x off T0.
+
+🔴 **WHITEN BEFORE QUANTIZING.** With `x̃ = Vᵣᵀ(x - mu)`, `w̃ = Vᵣᵀ row` and `x̃_j = sqrt(λ_j) u_j`
+with `u_j` unit variance, the score is `Σ_j (w̃_j sqrt(λ_j)) u_j`. Quantize the **energy-weighted**
+coefficients `w̃_j sqrt(λ_j)`, not the raw `w̃_j`. Raw int8 spends equal precision on every
+direction while the score error scales with `sqrt(λ_j)`; whitening equalises score error across
+`j` and is worth several effective bits on a decaying spectrum. Costs nothing: a per-row scale is
+already stored. Do this BEFORE widening `r` — whitened int8 at `r = 256` (264 B/row, +1.03 %) may
+do what raw int8 at `r = 1024` (1,032 B/row, +0.33 %) cannot.
+
+**hybridA IS DEMOTED. F2's framing is refuted by his own measurement**:
+`lowrank256-hybridA-N1024-p0.25` and the full-C1 cell at the same size gave identical net miss
+and identical recall, and the two stage-A modes track to within one or two samples across the
+pilot. The error is a stage-B failure. hybridA is the same bet with a smaller payout, not an
+independent failure mode. Keep gating it separately; stop treating it as a hedge. **If C1 dies,
+hybridA dies with it.**
+
+**Byte model corrections accepted**: `row . x = (row - mu).(x - mu) + row.mu + c(x)`, and the
+per-row `row.mu` term needs one fp32 ⇒ SimHash costs `S/8 + 8`, low-rank `r + 8`. My D3 table said
+132 at S=1024; it is **136**. The 32-row affine-4 rerank at 92,160 B is charged in both columns,
+his convention, since `removed_bytes` is unaffected. `shipped_stage_bytes() = 59,093,760 B`
+reconciles with F144's 59.00 MB stage. His full 240-cell grid runs in 3 s after 13 s of setup;
+the full 11,244-sample sweep costs about a minute, so extra families are free.
+
+### 287.8 / W1, W2 AND A1 — THREE BIT-EXACT COMPILE-ONLY LOAD-WIDTH FORMS, ISSUED
+
+Read at source this session in `qwen_e120_qmv_wide<NA,USE_TABLE>`, `Qwen35.swift:1425-1520`.
+**None changes accumulation order; Rule 92 does not bite on any of them.**
+
+- **W1**, the largest. The weight side does FOUR separate scalar `uint16` loads of eight
+  contiguous bytes (`packed[r][i] = ws[i]`, i = 0..3) while the activation side of the same
+  kernel already uses one vectorised `vec<bfloat16_t,4>` load. One `vec<ushort,4>` load replaces
+  them. Alignment verified: `in_vec_size_w = in_vec_size / 2` is 2560 / 3072 / 8704 at
+  K = 5120 / 6144 / 17408, all divisible by 8; `k/2` is a multiple of 256; `simd_lid*8` is a
+  multiple of 8. Removes about 3 of F157's `38` ⇒ `35/IPG`; at IPG = 6 the cell goes
+  12.583 -> 12.083 = **-3.97 % of the cell, -4.1 % of QMV, -3.6 % of leg, -1.8 % ranked after the
+  2x F87 haircut.**
+  🔴 **DECIDED BY ONE COMPILE**: does the g17s ISA show four discrete 16-bit loads, or has the
+  compiler already coalesced them? If already coalesced, W1 is worth nothing AND F157's
+  decomposition of the `38` is mislabelled, which I also need to know.
+- **W2**: `ushort4 n = (ushort4(p) >> ushort4(0,4,8,12)) & 0xf;` replaces about six scalar integer
+  ops with about two vector ops per (r,i), sixteen per k-block. `((p>>12)&0xf)` is already
+  redundant on a uint16. F157 puts the nibble block at 28 of the 38 weight-side statements.
+- **A1**: `float4 f = float4(xv);` replaces four scalar bf16->float conversions. bf16->float is
+  exact, so values are bit-identical.
+
+Deliverable is a **table**, not a yes/no: ISA instruction count in the k-block, delta, registers,
+spill and resident simdgroups for shipped / W1 / W2 / A1 / W1+W2+A1 on `applegpu_g17s`, with the
+delta restated in F151 currency at IPG = 6 and 7 under the RANKED width masses
+(`mass(6)=0.188`, `mass(7)=0.211`, `P(M>=6)=0.5861`), not the local `benchfixture` histogram.
+Kill condition: any form that costs a resident simdgroup at NA=6 or NA=7 dies regardless of
+instruction count (D_S sits at 105/0 and 118/0 against the 126 ceiling).
+
+🔴 **THE SAME PATTERN EXISTS IN ALPHONSE'S FILE** at
+`Vendor/mlx-swift/.../kernels/quantized.h:908` and `:1004`, twins `mlx-generated/quantized.cpp:921`
+and `:1017`, inside `qmv_fast_crossrow_affine4_g64`, whose activation side already uses
+`load_vector<T, float, values_per_thread, 4>`. **Routed to alphonse with a DIFFERENT price**: that
+function barely executes on the scored path because Route B carries 308 of 312 target rounds, so
+the value is the `affine_qmv_fast` **entry-point register allocation**, currently 90 after
+`prune_na5_pair`. The g17s staircase gives 44 resident simdgroups at both 90 and 89; **he must
+reach 88 to gain one**. If it does not reach 88 it is worth nothing and I drop it. Ladder first.
+
+### 287.9 / WHAT EVERY STUDENT IS DOING NOW
+
+```
+#128 thorfinn  623e77af validating; ABCCBA re-weighted to ranked masses; W1/W2/A1 compile table
+#130 alphonse  the s64/s512/s1024/s2048 slack ladder, 12 legs, y ~ arm + leg_index, 7 df
+#133 askeladd  essays_bacon holdout, query spectrum, whitened int8, sweep extended to 1400 B/row
+#134 edward    rung 1b selection-strength curve (CPU) + oracle sign arm (CPU)
+               + rung 1c prize bounds for the two missing mechanisms (GPU)
+```
+
+Every student has a CPU track and a GPU track, and no two students share a file.
