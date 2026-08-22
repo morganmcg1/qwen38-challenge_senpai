@@ -1,0 +1,93 @@
+==============================================================================
+E117 a_tensor_shipped_frame   harness=local   frame=A_tensor
+Apple M4 Pro 20-core, 48 GiB; cool_gate_passed_real_gate=false;
+gate_qualified_for_timing=false; timing_valid=false
+grid-volume trough band V in [16384, 18432]
+==============================================================================
+
+------------------------------------------------------------------------------
+RUNG 0B: synthetic N sweep, K=5120
+------------------------------------------------------------------------------
+
+A_tensor(IPG=4, G=2) = T(M=8) / T(M=4)   [shipped frame]   <- SHIPPED POINT
+shape                N  V(1grp)  V(Ggrp)  T(1grp)us  T(Ggrp)us  A_tensor  flags
+n08192            8192     4096     8192     193.63     254.99    1.3169  DEFECT19-EXCLUDED
+n12288           12288     6144    12288     229.40     364.57    1.5892  DEFECT19-EXCLUDED
+n14336           14336     7168    14336     248.55     426.81    1.7172  
+n16384           16384     8192    16384     271.92     544.02    2.0007  Ggrp-in-trough
+n16480           16480     8240    16480     280.04     549.55    1.9624  Ggrp-in-trough
+n20480           20480    10240    20480     328.47     645.13    1.9640  
+n24576           24576    12288    24576     374.15     763.53    2.0407  
+n32768           32768    16384    32768     558.14     979.16    1.7543  1grp-in-trough,DEFECT19-EXCLUDED
+n33792           33792    16896    33792     576.02     996.74    1.7304  1grp-in-trough
+n34816           34816    17408    34816     592.81    1027.20    1.7328  1grp-in-trough
+n35840           35840    17920    35840     614.47    1057.26    1.7206  1grp-in-trough
+n36864           36864    18432    36864     626.61    1084.65    1.7310  1grp-in-trough
+n40960           40960    20480    40960     660.82    1191.71    1.8034  
+  all defect-19-clean shapes: n=10 mean=1.8403 min=1.7172 max=2.0407 range=17.6 % of mean sd=0.1344
+  both endpoints out of the trough: n=4 mean=1.8813 min=1.7172 max=2.0407 range=17.2 % of mean sd=0.1475
+
+------------------------------------------------------------------------------
+RUNG 0: the four real tensors
+------------------------------------------------------------------------------
+
+A_tensor(IPG=4, G=2) = T(M=8) / T(M=4)   [shipped frame]   <- SHIPPED POINT
+shape                N  V(1grp)  V(Ggrp)  T(1grp)us  T(Ggrp)us  A_tensor  flags
+fa.qkv           14336     7168    14336     244.06     427.31    1.7508  
+gdn.in_proj      16480     8240    16480     278.12     550.41    1.9790  Ggrp-in-trough
+lm_head         248320   124160   248320    3455.08    6769.86    1.9594  
+mlp.gate_up      34816    17408    34816     592.09    1026.43    1.7336  1grp-in-trough
+  all defect-19-clean shapes: n=4 mean=1.8557 min=1.7336 max=1.9790 range=13.2 % of mean sd=0.1315
+  both endpoints out of the trough: n=2 mean=1.8551 min=1.7508 max=1.9594 range=11.2 % of mean sd=0.1475
+
+A_tensor(IPG=3, G=2) = T(M=6) / T(M=3)   [shipped frame]
+shape                N  V(1grp)  V(Ggrp)  T(1grp)us  T(Ggrp)us  A_tensor  flags
+fa.qkv           14336     5376    10752     512.74     363.88    0.7097  DEFECT19-EXCLUDED
+gdn.in_proj      16480     6180    12360     256.38     413.14    1.6115  DEFECT19-EXCLUDED
+lm_head         248320    93120   186240    2987.61    5812.77    1.9456  
+mlp.gate_up      34816    13056    26112     457.13     891.86    1.9510  DEFECT19-EXCLUDED
+  all defect-19-clean shapes: n=1 mean=1.9456 min=1.9456 max=1.9456 range=0.0 % of mean
+  both endpoints out of the trough: n=1 mean=1.9456 min=1.9456 max=1.9456 range=0.0 % of mean
+
+A_tensor(IPG=3, G=3) = T(M=9) / T(M=3)   [shipped frame]
+shape                N  V(1grp)  V(Ggrp)  T(1grp)us  T(Ggrp)us  A_tensor  flags
+fa.qkv           14336     5376    16128     512.74     606.21    1.1823  DEFECT19-EXCLUDED
+gdn.in_proj      16480     6180    18540     256.38     659.90    2.5740  DEFECT19-EXCLUDED
+lm_head         248320    93120   279360    2987.61    8660.93    2.8990  
+mlp.gate_up      34816    13056    39168     457.13    1280.11    2.8003  DEFECT19-EXCLUDED
+  all defect-19-clean shapes: n=1 mean=2.8990 min=2.8990 max=2.8990 range=0.0 % of mean
+  both endpoints out of the trough: n=1 mean=2.8990 min=2.8990 max=2.8990 range=0.0 % of mean
+
+------------------------------------------------------------------------------
+RUNG 1: cross-session replicate
+------------------------------------------------------------------------------
+
+A_tensor(IPG=4, G=2) = T(M=8) / T(M=4)   [shipped frame]   <- SHIPPED POINT
+shape                N  V(1grp)  V(Ggrp)  T(1grp)us  T(Ggrp)us  A_tensor  flags
+gdn.in_proj      16480     8240    16480     272.18     551.09    2.0247  Ggrp-in-trough
+mlp.gate_up      34816    17408    34816     592.06    1025.61    1.7323  1grp-in-trough
+  all defect-19-clean shapes: n=2 mean=1.8785 min=1.7323 max=2.0247 range=15.6 % of mean sd=0.2068
+
+==============================================================================
+DEFECT-19 DISPERSION CENSUS (blocks above 1.5 x the cell median)
+==============================================================================
+rung0b: 210 cells, 11 cells with a flagged block, 11 flagged blocks
+    n12288         M=4  a_one            median=   327.16 us  max=   767.69 us  max/med=2.35  blocks=[1]
+    n08192         M=4  a_one            median=   291.38 us  max=   676.47 us  max/med=2.32  blocks=[1]
+    n08192         M=4  c_nsplit         median=   239.82 us  max=   499.46 us  max/med=2.08  blocks=[1]
+    n12288         M=4  c_nsplit         median=   307.47 us  max=   600.46 us  max/med=1.95  blocks=[1]
+    n08192         M=2  a_one            median=   489.46 us  max=   801.19 us  max/med=1.64  blocks=[3]
+    n12288         M=2  a_one            median=   272.33 us  max=   432.46 us  max/med=1.59  blocks=[2]
+    n08192         M=2  c_nsplit         median=   524.10 us  max=   825.69 us  max/med=1.58  blocks=[3]
+    n32768         M=8  a_one            median=  1085.89 us  max=  1658.31 us  max/med=1.53  blocks=[1]
+    n08192         M=5  a_one            median=   385.33 us  max=   588.09 us  max/med=1.53  blocks=[0]
+    n12288         M=3  e_nsplit_serial  median=   421.34 us  max=   638.97 us  max/med=1.52  blocks=[1]
+    n12288         M=3  c_nsplit         median=   330.88 us  max=   497.51 us  max/med=1.50  blocks=[1]
+rung0: 135 cells, 5 cells with a flagged block, 7 flagged blocks
+    gdn.in_proj    M=2  a_one            median=   318.67 us  max=   638.67 us  max/med=2.00  blocks=[6]
+    gdn.in_proj    M=1  a_one            median=   318.32 us  max=   588.00 us  max/med=1.85  blocks=[0, 6]
+    gdn.in_proj    M=3  a_one            median=   351.96 us  max=   634.49 us  max/med=1.80  blocks=[7]
+    mlp.gate_up    M=3  e_nsplit_serial  median=   668.88 us  max=  1129.64 us  max/med=1.69  blocks=[3]
+    fa.qkv         M=3  c_nsplit         median=   386.34 us  max=   596.48 us  max/med=1.54  blocks=[1, 2]
+rung1: 126 cells, 1 cells with a flagged block, 2 flagged blocks
+    gdn.in_proj    M=2  a_one            median=   315.46 us  max=   651.71 us  max/med=2.07  blocks=[5, 7]

@@ -42,6 +42,13 @@ rate deficit. The answer moves the whole question onto firmer ground.
    can work, so 6 of 8 are empty at M=8. Removing them would cut launched
    volume 4x with no extra dispatch and no barrier. That file belongs to
    another agent this round, so it is reported, not implemented.
+8. **The same trough explains the campaign's `A_tensor` spread.**
+   `A_tensor(IPG=4)` is not a constant: it spans 1.717 to 2.041 across N. Its
+   structure is entirely the trough moving under one endpoint or the other.
+   `lm_head`, the only tensor with both IPG pairs clean and both clear of the
+   trough, reads 1.9456 at IPG=3 and 1.9594 at IPG=4, **0.71 % apart**. The
+   apparent IPG dependence is a trough artefact of `mlp.gate_up`, so the second
+   label on an `A` should be the endpoint grid volumes, not the IPG.
 
 ## Experiment identity tuple
 
@@ -634,6 +641,129 @@ Mean of the three session means is **+6.73 %**, standard error 0.90. All three
 clear the +3.0 % replication gate. The effect is real. It has no affordable
 trigger.
 
+## `A_tensor` in the shipped frame — the IPG spread is a trough artefact
+
+Answering advisor feedback 2. `harness=local`, frame `A_tensor`, zero extra GPU
+cost: every value below comes from `a_one_net_us` cells already committed under
+`research/e117-artifacts/`. Script: `research/e117_a_tensor.py`.
+
+```text
+A_tensor(IPG=p, G=g) = T(M = p*g, [p+p+...]) / T(M = p, [p])
+```
+
+Each endpoint carries its launched grid volume `V = M x grid.y`, because the
+rung-0b trough over `V` in `[16384, 18432]` moves the two endpoints
+independently.
+
+### Is `A_tensor(IPG=4)` stable across N? No.
+
+Over the 10 defect-19-clean shapes of the rung-0b sweep it spans **1.7172 to
+2.0407**, mean **1.8403**, sd 0.1344, a range of **17.6 % of the mean**. There
+is no single shipped-frame group-scaling constant.
+
+### Does it track the M=8 rate deficit? Completely.
+
+Sorting the same 10 shapes by which endpoint sits in the trough removes almost
+all of the spread:
+
+| bucket | n | mean `A_tensor(IPG=4)` | range |
+| --- | --- | --- | --- |
+| one-group endpoint `V=N/2` in the trough | 4 | **1.7287** | 1.7206–1.7328 |
+| two-group endpoint `V=N` in the trough | 2 | **1.9815** | 1.9624–2.0007 |
+| neither endpoint in the trough | 4 | 1.8813 | 1.7172–2.0407 |
+
+The first bucket is tight to 0.7 %. A depressed one-group endpoint lowers `A`; a
+depressed two-group endpoint raises it. The two remaining wide values in the
+third bucket are the two shoulders: N=14336 puts its one-group endpoint at
+`V=7168`, on the second dip below `V ~ 8000`, and N=40960 puts it at `V=20480`,
+on the upper shoulder. Both depress the one-group endpoint and both lower `A`,
+in the same direction the model requires.
+
+### The decisive test of the IPG claim: `lm_head`
+
+`lm_head` is the only tensor whose IPG=3 and IPG=4 pairs are both defect-19
+clean and both have every endpoint volume far above the trough, from 93,120 to
+279,360:
+
+```text
+lm_head   A_tensor(IPG=3, G=2) = 5812.77 / 2987.61 = 1.9456
+lm_head   A_tensor(IPG=4, G=2) = 6769.86 / 3455.08 = 1.9594     0.71 % apart
+lm_head   A_tensor(IPG=3, G=3) = 8660.93 / 2987.61 = 2.8990     0.9663 per stream
+```
+
+**When neither endpoint is near the trough, IPG=3 and IPG=4 agree to 0.71 %.**
+IPG is not the carrier.
+
+### Why `mlp.gate_up` looked like an IPG effect
+
+| tensor | pair | endpoint volumes | `A_tensor` |
+| --- | --- | --- | --- |
+| `mlp.gate_up` | IPG=3, G=2 | 13,056 → 26,112 (both clear) | 1.9510 |
+| `mlp.gate_up` | IPG=4, G=2 | **17,408** → 34,816 | **1.7336** |
+| `gdn.in_proj` | IPG=4, G=2 | 8,240 → **16,480** | **1.9790** |
+| `lm_head` | IPG=4, G=2 | 124,160 → 248,320 (both clear) | 1.9594 |
+| `fa.qkv` | IPG=4, G=2 | 7,168 → 14,336 | 1.7508 |
+
+`mlp.gate_up` at IPG=4 puts its one-group endpoint at `V=17,408`, squarely in
+the trough, which depresses `T(M=4)`'s rate and therefore `A`. Its IPG=3 pair
+clears the trough at both ends. The 11–12 % gap the feedback attributes to IPG
+is the trough sitting on one cell of one tensor.
+
+The counter-example settles it: at the **same** IPG=4, `gdn.in_proj` reads
+1.9790 against `mlp.gate_up`'s 1.7336, **14.2 % apart**. If IPG were the carrier
+they would agree. They differ because the trough lands on the two-group endpoint
+for `gdn.in_proj` and on the one-group endpoint for `mlp.gate_up`.
+
+### Cross-session replication of `A_tensor(IPG=4)`
+
+| tensor | rung 0 | rung 1 | gap |
+| --- | --- | --- | --- |
+| `mlp.gate_up` | 1.7336 | 1.7323 | 0.07 % |
+| `gdn.in_proj` | 1.9790 | 2.0247 | 2.3 % |
+
+### What I recommend for campaign rule 58
+
+I agree an unlabelled `A` is invalid, and I have applied the frame label
+throughout. I do not think the second label should be the IPG.
+
+1. **Label `A_tensor` with both endpoint launched grid volumes, not the IPG.**
+   IPG is a proxy that happens to correlate on `mlp.gate_up` and fails on
+   `lm_head` and `gdn.in_proj`.
+2. **Do not record 1.734 as the campaign shipped-frame constant.** It is the
+   `mlp.gate_up` value at one N on one host, depressed by the trough. The
+   off-trough readings cluster near **1.95 to 1.98**.
+3. **E115's `A_tensor = 1.960` is not "essentially the IPG=3 value".** It sits
+   inside the off-trough cluster, which is where an average over mixed cells
+   should land. It does not need a 13 % correction.
+4. The residual `f` question in the feedback is affected. Pairing
+   `A_round = 1.640` with the off-trough `A_tensor ~ 1.95` gives `f ~ 0.67`,
+   not the `0.87` the IPG=4 pairing implied. I cannot close the gap against
+   Finding 21's 0.886 and Finding 22's 0.898 from this data, and the feedback
+   is right that `A_round = 1.640` is not a clean anchor because the E100
+   collapse moved the group count and the per-group width together. I am
+   leaving that open rather than resolving it with an unmeasured identity.
+
+### Defect-19 census across all three rungs
+
+Rule: a block above 1.5 x its cell median is flagged. A `(shape, width)` ratio
+is excluded if **any** arm at that width holds a flagged block.
+
+| rung | cells | cells with a flagged block | flagged blocks |
+| --- | --- | --- | --- |
+| rung 0 | 135 | 5 | 7 |
+| rung 0b | 210 | 11 | 11 |
+| rung 1 | 126 | 1 | 2 |
+
+Rung 0: `gdn.in_proj` M=2/M=1/M=3 `a_one` at 2.00/1.85/1.80 x median,
+`mlp.gate_up` M=3 `e_nsplit_serial` at 1.69, `fa.qkv` M=3 `c_nsplit` at 1.54.
+Rung 1: `gdn.in_proj` M=2 `a_one`, blocks 5 and 7, at 2.07 x median.
+Rung 0b: the 11-row table in the rung-0b section above.
+
+No load-bearing cell is flagged in any rung. The exclusion removed three of the
+four IPG=3 ratios and two of the twelve rung-0b IPG=4 ratios. The `fa.qkv` IPG=3
+ratio of 0.7097 — a two-group dispatch reading faster than one group, which is
+not physical — is the clearest evidence the rule is catching real contamination.
+
 ## Reproduction
 
 ```bash
@@ -656,12 +786,23 @@ python3 research/e117_analysis.py research/out/TAG/cells.json --json OUT.json
 python3 research/e117_rung1_price.py research/out/TAG/cells.json
 python3 research/e117_wandb_log.py research/out/TAG --name NAME --rung N
 python3 research/e117_reconcile.py
+
+# advisor feedback 2: shipped-frame A_tensor, reads only committed artifacts
+python3 research/e117_a_tensor.py
+python3 research/e117_a_tensor.py --write   # adds the column to the artifacts
 ```
 
 Artifacts under `research/e117-artifacts/`, committed per CAMPAIGN RULE 40:
 `rung0-mframe-summary.json`, `rung0-mframe-meta.txt`, `rung0-pricing.txt`,
 `rung0b-nsweep-summary.json`, `rung0b-nsweep-meta.txt`,
-`rung1-routes-summary.json`, `rung1-routes-meta.txt`, `rung1-price.txt`.
+`rung1-routes-summary.json`, `rung1-routes-meta.txt`, `rung1-price.txt`,
+`rung-a-tensor.txt`.
+
+Each summary JSON now carries an `a_tensor_ipg4_shipped_frame` value on every
+`n_curves` entry and an `a_tensor_shipped_frame` block holding the per-shape
+endpoint volumes, the defect-19 exclusion flags, and the aggregates.
+`research/e117_a_tensor.py` reads only those committed artifacts, so no number
+in this section comes from a host-local path.
 
 ## Suggested follow-ups, not implemented
 

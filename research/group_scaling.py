@@ -4,11 +4,24 @@
 W = 14.41235e9
 local  = {1: 64445, 2: 69776, 3: 74778, 4: 86237, 5: 126103}
 ranked = {1: 31177, 2: 35172, 3: 39167, 4: 43162, 5: 53108}
-Gof    = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2}
-rate   = lambda t, m: Gof[m] * W / (t[m] * 1e-6) / 1e9
+#  SHIPPED partition, post-E100.  Gof[5] was 2 before E100 collapsed [3+2] to
+#  [5]; it is 1 today.  Quote this dict for "how many groups does M ship now".
+Gof          = {1: 1, 2: 1, 3: 1, 4: 1, 5: 1}
+#  The partition E100 measured against.  Every M=5 term below prices the
+#  pre-collapse [3+2] configuration, so it must use this dict, not Gof.
+Gof_pre_e100 = {**Gof, 5: 2}
+rate   = lambda t, m, g=Gof: g[m] * W / (t[m] * 1e-6) / 1e9
 
 # ---------------------------------------------------------------- local, measured
-r2_loc = rate(local, 5)                       # [3+2] aggregate
+#  IDENTITY, NOT A MEASUREMENT.  A_loc is algebraically 2*(1-COLLAPSE_MEASURED);
+#  it re-expresses alphonse's E100 collapse and adds no independent information.
+#  The E100 collapse moved the group count AND the per-group width together
+#  ([3+2] -> [5]), so A_loc cannot be assigned to a single per-group width.
+#  Per campaign rule 58 this is an A_round in the local frame with no clean IPG
+#  label.  The measured shipped-frame counterpart is A_tensor(IPG=4) from E117
+#  rung 0b, which is 1.72-2.04 depending on where both endpoint launched grid
+#  volumes sit on the trough curve.  See research/e117_a_tensor.py.
+r2_loc = rate(local, 5, Gof_pre_e100)         # [3+2] aggregate
 COLLAPSE_MEASURED = 0.180                     # alphonse: -17.5..-18.6 % per M=5 round
 t1_loc = local[5] * (1 - COLLAPSE_MEASURED)   # one-group [5] round, measured
 r1_loc = W / (t1_loc * 1e-6) / 1e9
@@ -23,8 +36,8 @@ print(f"  group-scaling factor A_local = r2/r1 = {A_loc:.3f}")
 print(f"  collapse gain = 1 - A/2 = {100*(1-A_loc/2):+.1f} %   (matches by construction)")
 
 # --------------------------------------------- independent ranked corroboration
-sc_loc = rate(local, 5)  / rate(local, 3)
-sc_rnk = rate(ranked, 5) / rate(ranked, 3)
+sc_loc = rate(local, 5, Gof_pre_e100)  / rate(local, 3)
+sc_rnk = rate(ranked, 5, Gof_pre_e100) / rate(ranked, 3)
 adv    = sc_rnk / sc_loc
 A_rnk_pred = A_loc * adv
 print()
@@ -41,7 +54,7 @@ meas_dW, sd_dW, share = -0.070, 0.360, 0.24
 gain   = (meas_dW / 100.0) / share
 gain_s = (sd_dW  / 100.0) / share
 A_rnk  = 2 * (1 + gain)
-r2_rnk = rate(ranked, 5)
+r2_rnk = rate(ranked, 5, Gof_pre_e100)
 print()
 print("=" * 76)
 print("ROUTE 2 - the two rival receipts (ca9251b8, 3ff80e86) measure it directly")
