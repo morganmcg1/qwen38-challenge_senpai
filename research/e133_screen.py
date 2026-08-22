@@ -2552,14 +2552,14 @@ def cmd_screen(args) -> None:
     for field, r in wp["fields"].items():
         print(f"{field:34s}{r['whitened_wins']:6d}{r['ties']:6d}"
               f"{r['whitened_losses']:8d}"
-              f"{r['mean_delta_whitened_minus_plain']:13.4e}"
-              f"{r['sign_test_p']:12.3e}")
+              f"{fmt_opt(r['mean_delta_whitened_minus_plain'], '.4e'):>13s}"
+              f"{fmt_opt(r['sign_test_p'], '.3e'):>12s}")
     print(f"  T0 verdict flips {wp['t0_verdict_flips']}, "
           f"T0b verdict flips {wp['t0b_verdict_flips']}")
     print(f"  best clearing plain    {wp['best_clearing_plain_arm']} "
-          f"{wp['best_clearing_plain_predicted_pct']:.3f}")
+          f"{fmt_opt(wp['best_clearing_plain_predicted_pct'], '.3f')}")
     print(f"  best clearing whitened {wp['best_clearing_whitened_arm']} "
-          f"{wp['best_clearing_whitened_predicted_pct']:.3f}")
+          f"{fmt_opt(wp['best_clearing_whitened_predicted_pct'], '.3f')}")
     # F3.4. The held-out query energy at each rank, beside the empirical net
     # miss the same rank actually achieves. If captured energy predicted the
     # miss, the two columns would move together.
