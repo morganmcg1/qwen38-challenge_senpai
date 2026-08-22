@@ -1750,7 +1750,7 @@ public enum Qwen35CustomQMV {
     /// is allocated the maximum over every case body, so `rps` is the lever
     /// that keeps a wide single-pass body inside the budget. Lowering it costs
     /// proportionally more activation re-reads, which stay in cache.
-    static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = [
+    public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = [
         (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
     ]
 
@@ -1770,9 +1770,9 @@ public enum Qwen35CustomQMV {
     /// fewer than a full group, so the full-group body always dominates.
     /// Widths that share an `ipg` therefore share an entry point with no
     /// register cost, and the shipped table has only three distinct values.
-    static func tier(m: Int) -> Int { plan(m: m).ipg }
+    public static func tier(m: Int) -> Int { plan(m: m).ipg }
 
-    static let tiers: [Int] = Set(widthPlan.map(\.ipg)).sorted()
+    public static let tiers: [Int] = Set(widthPlan.map(\.ipg)).sorted()
 
     /// Launch geometry for one routed cell. `y` carries `n / (2 * rps)`
     /// threadgroups of two simdgroups.

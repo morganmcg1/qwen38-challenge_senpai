@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # E120 rung 5e -- the headline end-to-end measurement.
 #
-#   usage: research/e120_rung5e_session.sh TAG [tokens] [depth] [order]
+#   usage: research/e120_rung5e_session.sh TAG [tokens] [depth] [order] [var]
 #
 #   TAG     output directory name under research/out/
 #   tokens  decode tokens per timed leg, default 512
 #   depth   offered draft ceiling, default 8 (the ranked workflow's value)
-#   order   arm sequence of Qwen35CustomQMV.Arm raw values, default
+#   order   sequence of `var` values, default
 #           `off,sumtable,sumtable,off,off,sumtable,sumtable,off`
+#   var     the runtime switch the legs sweep, `MLX_E120_QMV_ARM` (default) or
+#           `MLX_E120_QMV_ENTRY`. Reference rows always come from the `off`
+#           arm, whichever switch the legs sweep.
 #
 # WHAT IS MEASURED. The headline is ABSOLUTE candidate seconds per token on
 # the native-MTP leg, `parent_measured_seconds_per_token` from the trusted
@@ -43,13 +46,20 @@ tag="${1:?usage: e120_rung5e_session.sh TAG [tokens] [depth] [order]}"
 tokens="${2:-512}"
 depth="${3:-8}"
 order="${4:-off,sumtable,sumtable,off,off,sumtable,sumtable,off}"
+var="${5:-MLX_E120_QMV_ARM}"
 
-# `Qwen35CustomQMV.arm` falls back to `sumtable` for any raw value it does not
-# know, so a typo here would silently time the shipped arm twice.
+# `Qwen35CustomQMV.arm` and `.entry` both fall back to the shipped value for
+# any raw string they do not know, so a typo here would silently time the same
+# configuration twice.
+case "${var}" in
+  MLX_E120_QMV_ARM) legal="off replica fill_noconsume sumtable" ;;
+  MLX_E120_QMV_ENTRY) legal="shared_switch tiered_switch" ;;
+  *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
+esac
 for arm in ${order//,/ }; do
-  case "${arm}" in
-    off|replica|fill_noconsume|sumtable) ;;
-    *) echo "e120_rung5e_session.sh: unknown arm '${arm}'" >&2; exit 2 ;;
+  case " ${legal} " in
+    *" ${arm} "*) ;;
+    *) echo "e120_rung5e_session.sh: '${arm}' is not a legal ${var} value" >&2; exit 2 ;;
   esac
 done
 
@@ -174,8 +184,8 @@ for arm in ${serial_arms}; do
   serial_path="${out_dir}/serial-control.${arm}.json"
   [[ -s "${serial_path}" ]] && continue
   cool_gate "the serial control (${arm})"
-  echo "=== serial control (${tokens} tokens, depth=0, arm=${arm})"
-  MLX_E120_QMV_ARM="${arm}" \
+  echo "=== serial control (${tokens} tokens, depth=0, ${var}=${arm})"
+  env "${var}=${arm}" \
   "${swift_bin}" mtp-timed "${common_args[@]}" \
     --golden "${golden_path}" \
     --tokens "${tokens}" \
@@ -195,7 +205,7 @@ for arm in "${arms[@]}"; do
   cool_gate "leg ${label}"
   entry_c="$(gpu_temp)"
   leg_start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "=== leg ${label}: MLX_E120_QMV_ARM=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
+  echo "=== leg ${label}: ${var}=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
 
   # Worker assertion BEFORE the leg. The binary is never rebuilt inside this
   # session, so the certificate that matters per leg is that the bytes did not
@@ -204,7 +214,12 @@ for arm in "${arms[@]}"; do
   # instead.
   worker_before="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
 
-  MLX_E120_QMV_ARM="${arm}" \
+  # The pipeline log is the warmup gate for a multi-pipeline entry point. It
+  # records the dispatch ordinal at which each QMV specialization and each
+  # verify width was first reached, so a pipeline that first compiled inside
+  # the timed window is visible after the fact.
+  env "${var}=${arm}" \
+      "MLX_E120_QMV_PIPELINE_LOG=${PWD}/${out_dir}/pipelines.${label}.json" \
   "${swift_bin}" mtp-timed "${common_args[@]}" \
     --golden "${golden_path}" \
     --tokens "${tokens}" \
@@ -239,6 +254,7 @@ worker_sha256_end="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
   echo "tokens=${tokens}"
   echo "offered_draft_depth=${depth}"
   echo "order=${order}"
+  echo "sweep_variable=${var}"
   echo "head_dir=${head_dir}"
   echo "head_safetensors_sha256=${head_sha256}"
   echo "worker_sha256_start=${worker_sha256_start}"

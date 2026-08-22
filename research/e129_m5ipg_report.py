@@ -169,6 +169,33 @@ def parse_histogram(text: str) -> dict[int, int]:
     return out
 
 
+def ranked_histogram() -> dict[int, float]:
+    """F83-weighted max-entropy width histogram over the routed widths.
+
+    The board publishes a mean verify width per prompt and no histogram, so
+    each prompt contributes the maximum-entropy distribution on its mean
+    (`research/e114_width_recovery.maxent`), renormalised onto the widths the
+    wide-QMV entry point serves. Prompts are then combined with their F83
+    median-sensitivity weights. Every value here is DERIVED from two published
+    per-prompt facts, not measured.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import e114_width_recovery as e114  # noqa: PLC0415
+
+    mix = {"beagle": (5.382, 0.4862), "medicine": (6.256, 0.2508),
+           "essays": (6.087, 0.1598), "botany": (7.148, 0.0124),
+           "republic": (5.989, 0.0100)}
+    routed = tuple(range(3, 9))
+    out = {m: 0.0 for m in routed}
+    for width, weight in mix.values():
+        full = e114.maxent(width)
+        total = sum(full[m] for m in routed)
+        for m in routed:
+            out[m] += weight * full[m] / total
+    scale = sum(out.values())
+    return {m: p / scale for m, p in out.items()}
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -197,6 +224,8 @@ def main() -> int:
         report["timing"] = timing
         report["occupancy_control"] = control_summary(timing["cells"])
         report["round_model"] = round_model(timing["cells"], histogram)
+        report["round_model_ranked"] = round_model(
+            timing["cells"], ranked_histogram())
 
     out_path = out_dir / "m5ipg-report.json"
     with out_path.open("w") as handle:
@@ -232,16 +261,19 @@ def main() -> int:
                 f"sd {100 * control['sd']:.4f}, sem {100 * control['sem']:.4f}, "
                 f"{control['positive_cells']}/{control['cells']} positive"
             )
-        model = report["round_model"]
-        print(
-            f"\nrouted-round model over {model['routed_rounds']} rounds: "
-            f"wide QMV {model['wide_qmv_us_shipped']:.0f} us shipped, compare saves "
-            f"{model['wide_qmv_us_saved_by_compare']:.0f} us "
-            f"({100 * model['wide_qmv_gain_fraction']:+.3f} %), "
-            f"{model['us_saved_per_routed_round']:+.1f} us/round"
-        )
-        if model["missing_cells"]:
-            print(f"missing cells: {', '.join(model['missing_cells'])}")
+        for label, key in (("local fixture", "round_model"),
+                           ("ranked maxent", "round_model_ranked")):
+            model = report[key]
+            print(
+                f"\n{label} routed-round model, {model['routed_rounds']:.4g} "
+                f"rounds: wide QMV {model['wide_qmv_us_shipped']:.0f} us "
+                f"shipped, compare saves "
+                f"{model['wide_qmv_us_saved_by_compare']:.0f} us "
+                f"({100 * model['wide_qmv_gain_fraction']:+.3f} %), "
+                f"{model['us_saved_per_routed_round']:+.1f} us/round"
+            )
+            if model["missing_cells"]:
+                print(f"missing cells: {', '.join(model['missing_cells'])}")
     print(f"\nwrote {out_path}")
     return 0
 
