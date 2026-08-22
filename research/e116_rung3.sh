@@ -59,7 +59,7 @@ if [[ -z "${dose_unit_us}" || -z "${alpha}" ]]; then
   echo "e116_rung3: legs done; rerun the reducer with rung 1 and rung 2:"
   echo "  python3 research/e116_transfer_report.py \\"
   echo "    research/out/${tag}/b[123]-* --dose-unit-us US --alpha A \\"
-  echo "    --json research/out/e116-artifacts/rung3-transfer.json"
+  echo "    --json research/e116-artifacts/rung3-transfer.json"
   exit "${status}"
 fi
 
@@ -71,4 +71,4 @@ done
 
 python3 research/e116_transfer_report.py "${legs[@]}" \
   --dose-unit-us "${dose_unit_us}" --alpha "${alpha}" \
-  --json "research/out/e116-artifacts/rung3-transfer.json"
+  --json "research/e116-artifacts/rung3-transfer.json"

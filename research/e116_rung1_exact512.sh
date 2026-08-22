@@ -36,7 +36,7 @@ python3 research/e116_row_digest_check.py e116x512k0 e116x512k12 \
   --pin 719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e \
   --expect-rows 1025 \
   --negative-control e116r1-insitu-k0 \
-  --json research/out/e116-artifacts/row-digest-512.json \
+  --json research/e116-artifacts/row-digest-512.json \
   || failures=$((failures + 1))
 
 echo
