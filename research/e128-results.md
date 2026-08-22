@@ -908,6 +908,967 @@ implemented here.
 
 ---
 
+## Advisor follow-ups F4, F5 and F6
+
+Six zero-GPU items were assigned after the headline result. All are answered on
+the assignment PR and every number is reproducible from the artifacts listed at
+the end of this section. None of them changes the E128 primary metric.
+
+### F4 3a — the ranked per-prompt width histograms
+
+`research/e128_width_histograms.py` -> `f4-width-histograms.json`.
+
+```
+prompt      F83 wt   mean M     M=1     M=2     M=3     M=4     M=5     M=6     M=7     M=8
+beagle      0.4862    5.382  0.0000  0.0478  0.2740  0.1105  0.1127  0.0638  0.0539  0.3373
+medicine    0.2508    6.256  0.0000  0.0109  0.1600  0.1062  0.0468  0.0859  0.1418  0.4484
+essays      0.1598    6.087  0.0000  0.0008  0.0124  0.0439  0.1186  0.4905  0.3338  0.0000
+botany      0.0124    7.148  0.0000  0.0004  0.0415  0.0630  0.0632  0.0372  0.1262  0.6685
+republic    0.0100    5.989  0.0000  0.0070  0.2445  0.1079  0.0450  0.0685  0.0425  0.4846
+drama       0.0000    3.298  0.0000  0.1406  0.5002  0.3088  0.0380  0.0031  0.0020  0.0072
+travel      0.0000    3.656  0.0000  0.0435  0.5148  0.2965  0.0682  0.0489  0.0206  0.0074
+plutarch    0.0000    1.154  0.9220  0.0182  0.0458  0.0123  0.0012  0.0003  0.0001  0.0000
+F83-WTD     0.9192    5.773  0.0000  0.0285  0.1940  0.0971  0.0944  0.1437  0.1274  0.3150
+```
+
+The means are exact and pinned to the `d3c491b5` receipt. The shapes are
+inferred from the local proxy fixtures and are weakest for `essays`, whose two
+sub-prompts disagree strongly (total variation from pooled 0.0621 and 0.8814).
+The shapes are invariant to the choice of R: total variation is 0.0000 on the
+seven drafting prompts and at most 0.0759 on plutarch.
+
+### F4 3c — the tier-2 slope anomaly
+
+`research/e128_slopes.py` -> `f4-slopes.json`, `f4-candidate-curves.json`.
+
+The tier is a **per-row** cost, not a fixed per-pass cost, and the break really
+is at M>=6. Every model that fits well wants a negative pass constant, which is
+not physical. Ranked by AICc among physically admissible models:
+
+```
+model@break                     params    rmse     aicc         c        a        k
+passcount_slopeonly@M>=6             3     285   102.45     27725        0     1877
+passcount_slopeonly@M>=5             3     495   111.27     27644        0     1872
+passcount_slopeonly@M>=4             3     673   116.19     29416        0     3494
+passcount_affine@M>=6                3     789   118.73     26521    10941        0
+```
+
+The admissible slope ratio is **1.54**, bracket [1.54, 1.82]. The earlier
+3388.3 / 6167.5 / 1.82 reading came from an inadmissible fit and should not be
+quoted. A ratio of 1.00 is rejected. Smooth curvature is ruled out: a quadratic
+with no tier has rmse 672 against 91 for the two-segment form. Leave-one-out at
+a fixed break gives `dslope = 2779 +/- 161`, t = 17.30. Under a joint
+family-and-break leave-one-out the family is 8/8 robust and the break is not.
+
+### F4 3b — ranked prices for the three live arms
+
+`research/e128_arm_prices.py` -> `f4-arm-prices.json`. Median deltas by Rule 67.
+
+| arm | price | robustness |
+| --- | --- | --- |
+| one-pass `{6,7,8}` | +8.2 to +12.3 % at c=0.445 | needs the tier at M=6,7 to be real |
+| per-width templating | +0.90 to +4.15 % over c | curve-invariant and reading-invariant |
+| `prune_na5_pair` | +0.06 to +0.86 % | curve-invariant, share unknown |
+| one-pass `{6,7}` | +2.20 or −2.87 % | sign depends on the residency scope |
+| one-pass `{6}` | +1.14 or −4.10 % | sign depends on the residency scope |
+
+Two ambiguities decide signs rather than magnitudes and are flagged rather than
+guessed: the definition of `c`, and whether arm 2's residency loss is charged
+only at the widths the new table changes or across the whole round.
+
+### F4 2 — the board curve against ours
+
+The board curve breaks entering M=5; ours breaks entering M=6. The shipped
+dispatch table at `Qwen35.swift:1565` reads
+`[(3,3), (4,4), (5,5), (6,3), (7,4), (8,4), (9,3)]`, so the pass count changes
+between M=5 and M=6, which is our break. The board curve is fitted across
+solvers that ship different tables, and a mixture fit will place a single break
+between the members and inflate the upper slope; its slope ratio of 1.804 is
+consistent with that, against our 1.545.
+
+The disputed width carries 9.44 % of F83-weighted rounds, and the cost of
+getting it wrong is concentrated entirely in arms that re-derive the depth price
+from the curve: `rankedprice` moves from −3.27 % on our break to −11.02 % on the
+board break. Every other arm moves by under one point, so the E128 headline is
+unaffected.
+
+### F4 4 — the discrimination-signal ranking
+
+`research/e128_signals.py` -> `f4-signals.json`. Per-position AUC against the
+uncensored forced-depth outcomes, per fixture, never pooled.
+
+```
+                          margin    ema_j  reach_j   streak prev_acc round_idx
+BAND p>=0.93              0.8763   0.6439   0.7589   0.8269   0.8013   0.6624
+LOWER proxy               0.8520   0.7960   0.8185   0.8064   0.8034   0.8679
+ALL fixtures              0.7627   0.6984   0.7295   0.6932   0.7197   0.7479
+```
+
+Three results. The margin's `benchfixture` AUC of 0.7958 reproduces E122's
+0.7998 from a different instrument, confirming that E122's pooled 0.5109 was a
+stratification artifact. The margin is the **best** free signal in the band, so
+the shipped override is driven by the strongest cheap signal available, not the
+weakest. And `round_idx` scores 0.8679 on prose proxies but 0.6624 in the band,
+with `benchfixture` below chance at 0.3812, which is F98's late-window
+degeneration appearing as a signal that does not exist where the ranked mass is.
+
+This reconciles with the headline rather than contradicting it. AUC measures
+ranking; the E128 loss is in level. `levelfix1.05`, a pure level scale, is the
+best implementable arm at −0.2167 %, while `recal`, which refits the sigmoid
+scale constants, is −1.2092 % and deleting the override outright is −3.7049 %.
+The signal ranks well and the clamp sits too low, and only the level fix helps.
+
+Of the five candidate signals, the shortlist-score spread is the one to build:
+the 32 exact scores already sit in `threadgroup float exact_scores[TOPK]` at
+`Qwen35.swift:3716`, so one `simd_max`, one `simd_sum` and a one-float write
+make it measurable. Per-layer residual magnitudes and the hidden-state norm are
+rejected on cost, because both need a host-visible reduction inside the target
+forward pass and neither can distinguish a hard token the head got right from a
+hard token the head got wrong.
+
+The band stratum rests on 32 rejects across two fixtures. The ordering is
+provisional.
+
+### F5 — a two-channel estimator for the board index
+
+`research/e128_two_channel.py` -> `f5-two-channel.json`. 190 board rows scoring
+at least 3.25, decomposed into a thermal or dispatch **mode** direction and a
+**mechanism** direction centred on our crown.
+
+```
+one mode flip  = -1.0438 index units      one e-fold of score = -9.5466 units
+cos(u_mode, u_mech) = -0.4615             cond(basis) = 6.64
+variance shares: mode 89.7 %, mech 10.2 %, resid 0.1 %
+held-out mean |profile - model|: 7.9434 (mu) -> 4.4027 (+mode) -> 0.5770 (+mech)
+```
+
+The rival `cf79f7df` leads us by 0.744 %, and 96.8 % of that lead is a **mode**
+move, not a mechanism move. Our own crown drifted +0.6436 towards the slow mode
+while mechanism paid it back, and the F76 single-index classifier reported
+nothing. Registered prediction for alphonse's next receipt: if built on
+`d3c491b5`, index −13.3603 +/- 0.1419; if on `f17daf34`/`cf79f7df`, −14.2081
++/- 0.1419.
+
+### F6 — the NA census against the raw ranked round costs
+
+`research/e128_census.py` -> `f6-census.json`.
+
+The advisor's census uses `ceil(M/4)`, which puts the pass boundary at M>=5.
+The dispatch table puts it at M>=6. With the wrong boundary the pooled fit
+collapses to rmse 2930 with both terms pinned at their bounds.
+
+Fitting `T(M) = c + f(G-1) + bM + k(G-1)M` with `f, k >= 0` on the eight raw
+receipt-derived round costs, in width-histogram expectation:
+
+```
+best      f =      0.0 us   k = 1875.1 us/row   b = 3449.0   rmse  285.3
+at census f =  10187.2 us   k =  429.9 us/row   b = 3540.6   rmse  710.0
+F(1,4) = 20.781      5 % crit 7.709      1 % crit 21.20
+f not rejected at 5 %: [0, 4881] us; the census 10187 us is outside
+```
+
+The data reject the census magnitude at 5 % and just fail to reject it at 1 %.
+With four residual degrees of freedom that is a weak rejection. The free-`f`
+optimum reproduces `slopeonly_b6` exactly, which is the check that the two fits
+are the same object.
+
+The excess profile splits by model family rather than by author:
+`passcount_affine@M>=6`, one of our own admissible curves, reproduces the
+census's shrinking profile at +21.80/+20.21/+18.84 against the census
++24.29/+21.57/+19.40, while the per-row-tier families grow.
+
+Repricing the census arm on the real histograms instead of a two-point lattice
+gives 9.37 % against 12.73 %, or +8.7036 % on the exact Rule 67 median. Ranked
+by absolute microseconds saved times round share, the build order is `[8, 6, 7]`
+under the census and `[8, 7, 6]` under our curve, so **M=8 is first under both**
+and the disagreement only swaps the near-tied second and third places.
+
+M=9 is unreachable, not merely unobserved: `segmentedVerifyDepthCap = 7` at
+`Qwen36MTPBlockSession.swift:1008` caps `M = d + 1` at 8, so `case 9` in the
+dispatch table is dead code and the census's M=9 row prices work that cannot
+execute.
+
+### Base movement
+
+The advisor branch moved from `526d3973` to `221065c5` during the follow-ups.
+This branch is rebased onto `221065c5`. The move changed `Qwen35.swift`,
+`quantized.cpp` and `quantized.h`, and did **not** change
+`Qwen36MTPBlockSession.swift` or the QMV dispatch table. The scheduler the
+replayer models and the pass boundary the curves rest on are both unchanged, so
+every conclusion above holds on the current base without replay.
+
+---
+
+## Advisor follow-up F7 — the board stratification, and the head-share retraction
+
+### F7 item 3 — stratify the board by QMV dispatch table
+
+**Answer. The ranked level price of one extra QMV dispatch pass is
+`f = 50.4 ± 253.0 µs`, 95 % CI `[−445.5, +546.2]`.** It is statistically zero.
+This comes from 200 board submissions with 996 high-width prompt-rows,
+submission and prompt fixed effects, and errors clustered on the submission.
+Model R wins the likelihood comparison by `ΔAICc = 756.5` and `ΔBIC = 751.8`.
+
+#### The stratum table
+
+`research/e128_strata.py` walks the 456 local submission trees with
+`git cat-file` and reads the wide-output (`out_vec_size >= 4096`) branch of
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h`,
+where the table appears as `qmv_fast_crossrow_affine4_g64_m<T, M, IPG>`.
+F127 pointed at `research/board_width1_qmv_variants.py`, which scans
+`quantized.h` and `quantized.cpp` for the width-1 variants; the per-M grouped
+table is a different construct and needed its own extractor. **No board
+submission carries the `let cases` E120 form** that our own base uses at
+`Qwen35.swift:1565`; that form exists only in this checkout.
+
+```
+extraction over 456 local trees
+   202  wide m-table found
+   220  crossrow present, no per-M table
+    34  no crossrow at all
+```
+
+The 202 tables collapse to 15 strata by `G(M) = ceil(M / IPG(M))`:
+
+```
+G(1..9)                 subs   pts  score p50       first
+1,1,1,1,2,2,2,2,3        121   968     2.8831  2026-08-15
+1,1,1,1,2,2,2,3,3         39   312     2.9114  2026-08-16
+1,1,1,1,2,1,2,1,1         12    96     3.0545  2026-08-17
+1,1,1,1,2,1,1,1,1          9    72     3.0950  2026-08-17
+1,1,1,1,2,1,2,3,1          9    72     3.0253  2026-08-17
+1,1,1,1,2,3,2,3,3          2    16     2.8905  2026-08-17
+1,1,1,2,2,1,1,1,1          2    16     3.0925  2026-08-17
+1,1,1,1,1,1,2,1,1          1     8     3.1040  2026-08-17
+1,1,1,1,2,1,1,3,1          1     8     3.0340  2026-08-17
+1,1,1,1,2,2,2,4,3          1     8     2.9339  2026-08-17
+1,1,1,1,1,1,1,1,1          1     8     3.1391  2026-08-17
+1,1,1,1,1,1,2,3,1          1     8     3.0955  2026-08-17
+1,1,1,1,2,2,1,2,3          1     8     2.8998  2026-08-16
+1,1,1,1,2,3,2,2,3          1     8     2.9214  2026-08-17
+1,1,1,2,2,1,2,1,1          1     8     3.1103  2026-08-17
+```
+
+Two structural facts fall out immediately.
+
+1. **The M = 5 boundary is not stratified.** 199 of 202 tables use `IPG(5) = 3`,
+   so `G(5) = 2` almost everywhere. Only three singletons match our base's
+   `IPG(5) = 5`. F130.1's observation that the board breaks at M = 5 and we
+   break at M = 6 is therefore a comparison of `n = 199` against `n = 1`, and
+   the board cannot test that boundary on its own.
+2. **The M >= 6 part is heavily stratified.** `G(6)` is 2 in 162 submissions,
+   1 in 37, and 3 in 3. `G(8)` runs over 1, 2, 3 and 4. That is where the
+   pass price is identified.
+
+#### Two data problems, solved and reported
+
+**The round count.** `effective_mean_draft_len` is `D / R` with integer `D` and
+`R`, so `R` is recoverable only up to an integer multiple of the printed
+decimal's minimal denominator. `research/e128_rounds_check.py` validates the
+rational reconstruction against the `ROUNDS` vector `rankedcurve.py` hard-codes:
+it reproduces 7 of 8 prompts exactly over all 164 reference-schedule rows, and
+misses only drama, where the minimal denominator is 84 and `rankedcurve.py`
+picks `3 x 84 = 252` over the minimal legal `2 x 84 = 168`. Pruning the
+remaining multiples on the physical constraint `alpha = (512/R − 1)/dl` in
+`[0.15, 1]` still leaves a factor-2 span for 5 of 8 prompts, so the multiple
+must be chosen, not assumed.
+
+Curve consistency chooses it, and chooses it very strongly. On the
+reference-schedule rows the wrong drama multiple raises the pooled hinge RSS
+from `1.87e8` to `3.86e10`, a factor of 206, and flips beagle from `+14.58 %`
+above the low-prompt line to `−13.03 %` below it. The multiple is therefore
+identified about two orders of magnitude more sharply than the P-versus-R
+difference the fit has to resolve. `research/e128_strata_curve.py` picks the
+multiples by coordinate descent on a free-break hinge fit, which is neutral
+between the two models because both are hinge-shaped inside one stratum.
+
+**Coverage.** None of the 164 reference-schedule rows has a local tree, and
+none of the 202 table-bearing rows runs the reference schedule. The set with a
+validated `R` and the set with a known `G` are disjoint, which is why the
+recovery above was necessary rather than optional.
+
+#### Where the break actually sits
+
+`rankedcurve.py` asserts the break by splitting the prompts into
+`{plutarch, drama, travel}` and `{beagle, republic, essays, medicine, botany}`.
+`research/e128_break_scan.py` scans it freely on the 164 reference rows:
+
+```
+pooled-RSS best break M* = 3.4375     RSS at M* = 5.0 is 19.8x worse
+beagle against the line through republic/essays/medicine/botany
+    median −0.58 %   p10 −0.70 %   p90 +0.10 %
+beagle against the line through plutarch/drama/travel
+    median +14.58 %  p10 +12.38 %  p90 +15.01 %
+```
+
+Beagle sits on the wide-prompt line to within 0.6 %, so there is **no second
+break between M = 5.4 and M = 7.1** on the board. The sampled widths leave a
+gap between travel at 3.656 and beagle at 5.382, and a hinge anywhere inside
+that gap gives an identical fit, so `M* = 3.4375` should be read as "the break
+is somewhere in `[3.5, 5.38)`", which is compatible with `G(5) = 2`.
+
+#### Per-stratum fits
+
+Free-break hinge, per-submission intercepts, over the full width range:
+
+```
+G(1..9)                 subs     M*      b_lo      b_hi      rmse   G steps at
+1,1,1,1,2,2,2,2,3        121  3.500    5034.7    9886.6    1946.4       [5, 9]
+1,1,1,1,2,2,2,3,3         39  3.375    4800.9    9565.9     419.8       [5, 8]
+1,1,1,1,2,1,2,1,1         12  1.500   -8694.6    7732.8    1801.3       [5, 7]
+1,1,1,1,2,1,1,1,1          9  3.500    4769.8    8338.5     568.3          [5]
+1,1,1,1,2,1,2,3,1          9  3.375    4692.6    8700.6     407.1    [5, 7, 8]
+```
+
+Four of five fittable strata put the break at 3.375 to 3.500 whether their own
+`G` steps at 5 only, at 5 and 8, at 5 and 9, or at 5, 7 and 8. **The break does
+not move with the table above M = 5.** That is Model P's forbidden outcome.
+
+#### The decisive arm: the high-width segment
+
+Every stratum has `G(1..4) = 1,1,1,1`, so the strata are indistinguishable
+below M = 5 and the whole test lives above it. Restricting to prompt-rows with
+mean width >= 4.5 gives 996 points over 200 submissions
+(`research/e128_strata_highwidth.py`):
+
+```
+model                     b us/row        f us/pass       rmse    aicc     bic
+line                 9530.7 +-  57.3              -      723.0  13621.6 14508.7
+Model P              9530.1 +-  57.4    50.3 +- 236.3    723.0  13624.7 14515.5
+Model P, deviation   9531.3 +-  57.3  -268.7 +- 238.0    722.4  13623.1 14514.0
+two-way FE, clustered
+                     9760.9 +-  87.6    50.4 +- 253.0    536.0        -       -
+```
+
+`Model P, deviation` prices `Gbar_s(M) − Gbar_S1(M)`, the pass deviation from
+the majority table, which removes any curvature common to every stratum. The
+two-way specification adds prompt fixed effects, so `f` is then identified only
+by the same prompt sitting in strata with different pass counts and any
+per-prompt round-count bias drops out. Adding the pass term does not lower the
+RMSE in any specification and AICc and BIC both get worse.
+
+Per-stratum slopes of the high segment, own intercepts and own slope:
+
+```
+G(1..9)                 subs         b      se      rmse
+1,1,1,1,2,2,2,2,3        120    9992.5    80.7     774.3
+1,1,1,1,2,2,2,3,3         38    9363.4    72.5     403.7
+1,1,1,1,2,1,2,1,1         12    8225.3   175.3     534.0
+1,1,1,1,2,1,1,1,1          9    8253.9   216.5     599.4
+1,1,1,1,2,1,2,3,1          9    8601.1   100.9     281.0
+```
+
+The one-pass strata are 12 % to 18 % faster per row, but they are also the
+newest submissions with the highest scores, so the levels are confounded with
+everything else those solvers shipped on 2026-08-17. That confound pushes
+**towards** Model P, and Model P still loses. The two-way within estimator is
+the one that removes it, and it returns `f = 50.4 ± 253.0`.
+
+#### Joint fit with `b` constrained equal
+
+Full width range, per-submission intercepts, 1616 points over 202 submissions:
+
+```
+Model P   b = 6737.4 +- 64.2   f = 6022.0 +- 246.6   rmse 2255.7  aicc 25424.9
+Model R   M* = 3.500   b_lo = 4991.1   b_hi = 9533.9  rmse 1783.5  aicc 24668.3
+P + R     f = 2265.4 +- 222.3   step = 3881.5 +- 122.1   rmse 1721.2
+linear    b = 8059.8                                    rmse 2690.6  aicc 25992.1
+
+AICc prefers Model R, dAICc = 756.5
+BIC  prefers Model R, dBIC  = 751.8
+```
+
+Over the full range Model P has to explain the low-to-high slope change with a
+level term and gets `f = 6022`, but it fits far worse than one hinge. Fitting
+both together halves `f` to 2265 and leaves the hinge carrying 3882. Above the
+break, where the strata actually differ, `f` collapses to zero. The consistent
+reading is that the hinge is real, the pass term is not, and Model P's apparent
+`f` over the full range is the hinge in disguise.
+
+#### What this prices
+
+Thorfinn's one-pass tables, repriced on the measured `f` instead of the curve's
+own tier break (`research/e128_reprice_onepass.py`, Rule 67 exact median,
+receipt `d3c491b5`, curve `slopeonly_b6`):
+
+```
+table         pass price used        c=0        c=0.445   c=0.445 everywhere
+{6:6}         measured 50.4      +0.0068       -1.6594       -5.5417
+{6:6}         95 % upper 546.2   +0.0733       -1.4111       -5.4789
+{6:6}         curve unit 10187   +1.3842       +0.9854       -4.2407
+{6,7}         measured 50.4      +0.0156       -2.8792       -5.5334
+{6,7}         95 % upper 546.2   +0.1690       -2.4713       -5.3885
+{6,7}         curve unit 10187   +2.4312       +1.7731       -3.2518
+{6,7,8}       measured 50.4      +0.0510       -4.0704       -5.4999
+{6,7,8}       95 % upper 546.2   +0.5562       -3.5148       -5.0228
+{6,7,8}       curve unit 10187   +11.1169      +7.2103       +4.9520
+```
+
+The arm is worth at most `+0.56 %` even at the 95 % upper edge of `f`, and it
+is net negative as soon as the residency loss is priced at any `c` above about
+0.02. My own F6 census pricing of `+2.2006 %` for `{6,7}` and `+12.3266 %` for
+`{6,7,8}` was 40x to 240x too optimistic, because it read the saving off the
+curve's tier break rather than measuring the pass. **I withdraw the F6 arm-2
+prices and recommend against spending a submission slot on the one-pass
+family.**
+
+This also settles the F6 census dispute. The census unit was 10,187.2 µs and
+the profile could not reject it below 4,881 µs at 5 %. The board rejects
+anything above 546 µs at 95 %, a 19x tighter bound, and confirms the profile's
+maximum-likelihood `f = 0` with n in the hundreds instead of six receipt
+points.
+
+#### Honest limits
+
+- `f` is a **level** price. The board cannot rule out a pass-count effect that
+  scales with M, because `G` and M are close to collinear inside one stratum.
+- The M = 5 boundary is untestable on the board, so F130.1's board-versus-us
+  break difference is still explained equally well by either model.
+- The round-count multiple is chosen by curve consistency. The choice is
+  identified 206x more strongly than the effect being measured, but it is a
+  choice, and a reader who rejects it should treat the whole item as
+  unidentified rather than as evidence for Model R.
+- Stratum membership is confounded with submission date and score. The two-way
+  within estimator removes the level part of that confound but not a slope
+  part.
+
+### F7 item 4 — the head share, re-derived
+
+The proposal head runs once per proposed draft, so a round of M rows carries
+`M − 1` head steps and the head enters the fitted curve as
+`h(M − 1) = −h + hM`. It sits **entirely in the per-row slope**, with a
+compensating `−h` in the intercept. `h` and the target per-row cost are
+perfectly collinear in slope space, so `h` can never be fitted from the curve;
+it has to be pinned from outside. That is exactly why a wrong F13 propagated
+silently.
+
+Using the advisor's frame, which reproduces both of their published numbers
+(round 55,645.4 µs, 4.3818 steps, 323.59 MB per step):
+
+```
+head share                    %   us/round  h us/step   rate GB/s   k_lo-h   k_hi-h   ratio
+F13 retracted              1.82     1012.7      231.1      1400.1   3214.9   5092.4  1.5840
+byte/rate at 462.2 GB/s    5.51     3066.1      699.7       462.5   2746.3   4623.8  1.6836
+corrected low 7 %          7.00     3895.2      888.9       364.0   2557.1   4434.6  1.7342
+rung-0b via F35            7.10     3950.8      901.6       358.9   2544.4   4421.9  1.7379
+E79 anchor                 8.40     4674.2     1066.7       303.3   2379.3   4256.8  1.7891
+corrected high 9 %         9.00     5008.1     1142.9       283.1   2303.1   4180.6  1.8152
+E82 draft_build local     10.06     5597.9     1277.5       253.3   2168.5   4046.0  1.8658
+```
+
+My 1400.1 GB/s reproduces the advisor's 1391 GB/s to 0.7 %, so the frame is
+confirmed.
+
+**The answer to the third-model question is no, and the sign is the opposite of
+the one hoped for.** A four-times-larger head term does not absorb the 1.82x.
+The head chain costs the same per step at every width, so it is a constant
+subtracted from both slopes, and subtracting a constant from both terms of a
+ratio above one moves that ratio **further** from one. The residual target-side
+slope ratio rises from 1.5840 under F13 to 1.7342 at a 7 % head and 1.8152 at
+a 9 % head. Essentially the whole 1.82x survives on the target side, and at a
+9 % head the target-side ratio is 1.8152, which is the 1.82x almost exactly.
+
+**Effect on conditioning: better in accuracy, worse in the residual puzzle.**
+
+- Better, because `h` is a fixed exogenous input to the decomposition, not a
+  free parameter. Four independent lines now agree on 7 % to 9 %, against F13's
+  chain of two unmeasured coefficients, and the implied streaming rate moves
+  from an impossible 1400 GB/s to a plausible 283 to 364 GB/s under the ranked
+  M = 1 rate of 462.2 GB/s.
+- Worse, because the correction moves 657.8 to 911.8 µs per row out of the
+  target term and into the head term. That is 19.1 % to 26.5 % of `k_lo` and
+  12.4 % to 17.1 % of `k_hi`. Every target-side per-row conclusion I drew from
+  the fitted slopes was overstated by that amount, and the unexplained
+  target-side step gets larger, not smaller.
+
+The head is now 25.8 % to 33.2 % of the marginal cost of a draft row below the
+break and 16.7 % to 21.5 % above it. That reprices head work upward by a factor
+of four across the campaign.
+
+**The E128 headline is unaffected.** The reach estimator is priced on the
+end-to-end fitted curve, and the internal head-versus-target split of `k` never
+enters that pricing. `−0.2171 %` for `levelfix1.05` and `+8.5248 %` for the
+oracle stand exactly as reported.
+
+---
+
+## F8 - Finding 150, the per-row runner state in the cost curves
+
+`harness=ranked`, board receipts only, zero GPU. Script `research/e128_state_fe.py`
+with `research/e128_state_s45.py`; artifact `research/e128-artifacts/f8-state-fe.json`.
+Reproduce with `cd research && python3 e128_state_fe.py --json e128-artifacts/f8-state-fe.json`.
+
+### The frame correction Finding 150 needs
+
+Finding 150 writes the state as `round_us(row, M) = a + s_row + b*M`. That
+collapse is not exact in this frame. `round_us` is the run's mean over ALL
+rounds, drafting and non-drafting together, because `effective_mean_draft_len
+= D/R` and `round_us = 512*spt/R` divide by the same total round count `R`. A
+constant added only to drafting rounds enters the mean scaled by the drafting
+fraction `phi = 1 - non_drafting_round_count / R`, so the exact form is
+
+```text
+round_us(row, prompt) = a + b * mbar + s_row * phi
+```
+
+Both forms are fitted below. The flat form is the literal request and is the
+conservative one, because a free per-row intercept absorbs strictly more than
+the state does. The `phi` form is what Finding 150 actually predicts, and it is
+testable inside a single submission row because `phi` varies across the eight
+prompts of one run.
+
+### Item 1 - our ranked curve with a per-row intercept
+
+Our ranked curve is fitted on ONE submission row. `e128_slopes.py` calls
+`load_receipt(board, "d3c491b5")` and `build_points` returns eight points, one
+per prompt, from that single receipt. The premise "pooled receipts from rows in
+different states" is therefore not true of our curve. It is true of F97's board
+curve over 147 official runs, and that curve is refitted with the state term in
+item 3.
+
+Because there is one submission row, `s_row` has exactly one level and is
+perfectly collinear with `a`:
+
+```text
+prompt         R     n0    phi     mbar   round_us
+plutarch     487    449  0.078   1.1540    31806.5
+drama        252      0  1.000   3.2976    39306.3
+travel       212      0  1.000   3.6557    41051.1
+beagle       110      0  1.000   5.3818    53011.9
+republic      93      0  1.000   5.9892    57021.7
+essays        92      0  1.000   6.0870    57951.2
+medicine      90      0  1.000   6.2556    59015.7
+botany        81      0  1.000   7.1481    64734.9
+
+design rank with the s_row column 2, without it 2, columns 3
+line, no s_row        a 22439.9 +- 1969.0   b 5757.9 +- 377.5   rmse 1575.2
+line, + flat s_row    a 11220.0 +- 1100.7   b 5757.9 +- 422.0   rmse 1575.2
+slope moves by 0.000000 us/row; residual rmse moves by 0.000000 us
+```
+
+The exact `phi` form IS identified inside one row, because plutarch drafts on
+only 38 of its 487 rounds while the other seven prompts draft on every round:
+
+```text
+line, + s*phi         a 24664.0 +- 305.9   b 6715.9 +- 79.4   s -7788.2 +- 485.9
+phi correlation with mbar 0.7528
+```
+
+On a single-slope line `s` is nonsense: `phi` is 0.75-correlated with `mbar`, so
+a badly misspecified line hands the state term its curvature. In the correct
+two-segment form below, `s` lands at `+973 +- 3504 us`, consistent with zero and
+consistent with the advisor's `817 us`.
+
+### Item 2 - does the M >= 6 break survive the state term?
+
+Yes, in both forms.
+
+```text
+no s_row
+  break M>=6   a 27894.3   b 3388.3 +- 83.7   jump 10322.5   dslope 2779.3 +- 185.5   rmse   90.6  bic  82.5
+  break M>=4   a 28989.8   b 2369.5           jump  5670.5   dslope 4243.4            rmse  118.6  bic  86.8
+  break M>=5   a 28083.6   b 3217.5           jump  6785.0   dslope 3325.3            rmse  127.1  bic  87.9
+  line         a 22439.9   b 5757.9                                                   rmse 1575.2  bic 124.0
+  break advantage over the line   dBIC 41.54
+
++ flat s_row  (rank deficient; RSS and every slope identical to the row above)
+  break M>=6   b 3388.3 +- 102.5   jump 10322.5   dslope 2779.3 +- 227.2   rmse   90.6  bic  84.6
+  line         b 5757.9 +- 422.0                                          rmse 1575.2  bic 126.1
+  break advantage over the line   dBIC 41.54
+
++ s*phi
+  break M>=6   b 2976.1 +- 1487.1  jump 11556.2   dslope 3150.3 +- 1354.2  s  973.2 +- 3503.7  rmse  88.9  bic 84.3
+  line         b 6715.9 +-   79.4                                         s -7788.2 +-  485.9  rmse 195.0  bic 92.7
+  break advantage over the line   dBIC 8.42
+```
+
+Read BIC, not AICc, on these eight points: at `k=6` the AICc correction has
+`n - k - 1 = 1` in its denominator and the penalty explodes, which is why the
+flat row shows `dAICc -28.97` while its RSS is bit-identical to the no-state
+row.
+
+The break does not depend on the state term. With the flat form the fit is
+algebraically the same fit. With the `phi` form the two-segment residual falls
+further, to `88.9 us` against the line's `195.0 us`, the upper-tier slope
+increment stays positive at `3150.3 +- 1354.2`, and the slope ratio rises to
+`2.06`. **The `M >= 6` break is not an artifact of unbalanced state
+assignment.** Model P is not rescued by Finding 150.
+
+### Item 3 - the board population with a per-row intercept
+
+Panel: every board row with eight complete per-prompt records, `803` rows and
+`6424` points; the table-bearing subset from F7 is `202` rows and `1616` points.
+Round counts come from the F7 rational reconstruction. Standard errors are
+clustered on submission.
+
+```text
+Model P   T = a + s_row + b*M + f*ceil(M/IPG), b common across strata
+  no s_row                a 16389.5   b 6775.0 +- 119.7   f 6065.5 +- 439.1   rmse 5299.8  aicc 27723.8
+  row FE, clustered                   b 6737.4 +-  77.0   f 6022.0 +- 313.3   rmse 2255.7  aicc 25424.9
+  row+prompt FE, clustered            b 6644.5 +- 139.7   f 3197.4 +- 370.6   rmse 1783.5  aicc 24684.1
+  row+prompt FE, + s*phi              b 8842.1 +- 293.1   f 2907.5 +- 362.0   rmse 1685.4  aicc 24504.1
+
+Model R   T = a + s_row + b_lo*M + d*max(0, M - M*)
+  row+prompt FE, M*=4.375   b_lo 5699.7 +- 197.2   d 4013.5 +- 454.2          rmse 1739.4  aicc 24603.4
+  row+prompt FE, one slope  b    6964.9 +- 174.1                              rmse 1869.1  aicc 24833.1
+  row+prompt FE, R and P    b_lo 5395.7 +- 191.9   d 3975.9   f 3152.4        rmse 1649.7  aicc 24434.9
+
+P against R with the state term in both:  dAICc 80.8   dBIC 80.8  (favours R)
+```
+
+The per-row intercept does what Finding 150 predicts: it removes a large error
+component. Residual rmse falls from `5299.8` to `2255.7 us` with row FE and to
+`1783.5 us` with row and prompt FE. It does not, however, change the ranking.
+
+`f` looks strongly positive over the full width range, and that is a trap:
+
+```text
+corr(gbar, hinge at M*=4.375) 0.7854      corr(gbar, step at M>=5) 0.8582
+```
+
+`G(M)` steps at `M=5` in 199 of the 202 table-bearing trees, so over the full
+range `G` IS the break wearing Model P's clothes. The identifying variation for
+`f` is the high-width region, where `G` runs 1, 2, 3 and 4 across strata while
+the break is behind us:
+
+```text
+high width, mbar >= 4.5, 996 points, 200 rows, row+prompt FE, clustered
+  b 9760.9 +- 87.6      f 50.4 +- 253.0      rmse 536.0
+```
+
+Unchanged from F7. **The ranked level price of one extra QMV dispatch pass
+remains `50.4 +- 253.0 us`, 95 % CI `[-445.5, +546.2]`, statistically zero,
+after the per-row intercept is added.**
+
+The per-stratum free break is also unchanged by the row intercept:
+
+```text
+G(1..9)                   subs     M*       b_lo       b_hi      rmse   G steps at
+1,1,1,1,2,2,2,2,3          121  3.500     5034.7     9886.6    1946.4   [5, 9]
+1,1,1,1,2,2,2,3,3           39  3.375     4800.9     9565.9     419.8   [5, 8]
+1,1,1,1,2,1,2,1,1           12  1.500    -8694.6     7732.8    1801.3   [5, 6, 7, 8]
+1,1,1,1,2,1,2,3,1            9  3.375     4692.6     8700.6     407.1   [5, 6, 7, 8, 9]
+1,1,1,1,2,1,1,1,1            9  3.500     4769.8     8338.5     568.3   [5, 6]
+```
+
+The break stays near `M* = 3.4` whatever the tree's own pass vector says. That
+is Model P's forbidden outcome, and the state term does not repair it.
+
+### Item 4 - a calibrated state classifier
+
+A per-row intercept in a global cost curve is **not** a state estimator. On the
+full board its range is `72,037 us`, `44x` the `1,640 us` the state model
+predicts, because it absorbs the whole quality difference between one solver
+tree and another.
+
+The two channels have to be separated by their per-prompt shape. Writing `dr`
+for drafting rounds and `W = 512`,
+
+```text
+spt_ip = c_i * base_p  +  s_i * 1e-6 * dr_ip / W
+```
+
+`c_i` is the row's multiplicative tree speed and `s_i` is the additive state in
+microseconds per drafting round. The shapes differ: on our crown the drafting
+share runs 0.074 on plutarch to 0.492 on drama while per-token time runs the
+other way, 0.0303 s on plutarch down to 0.0102 s on botany. That is the same
+asymmetry that makes plutarch the state's null. Fitted by alternating least
+squares.
+
+**The decisive check.** Refitting on exactly the six rows of Finding 150's own
+comparison:
+
+```text
+six-row local fit, relative misfit 0.00141
+id        solver                 c  s_rel us       se      fit       f76
+d3c491b5  morganmcg1        0.9988       739      188  0.00302    -13.36
+cf79f7df  Lieisyourlie      1.0007       -26       40  0.00066    -14.21
+48423d09  noskillcoding     0.9997        42       47  0.00076    -14.17
+3b376ba2  Lieisyourlie      1.0007       -70       39  0.00064    -14.25
+390ec878  newjordan         1.0004        13       45  0.00073    -14.20
+c63eaa21  newjordan         0.9997        40       53  0.00087    -14.17
+```
+
+An estimator built from a different frame, on 803 board rows and then localised,
+puts our crown `739 +- 188 us` per drafting round above the cluster. The
+advisor's independent `modetest.py` says `817 us`. That is agreement to
+`0.4` standard errors. The five cluster rows span `112 us` with individual
+standard errors of `39` to `53 us`, across three solver accounts and at least
+three trees. **Finding 150 is confirmed by an independent estimator.**
+
+Campaign-wide, one common `base_p` fails: relative misfit `0.0583`, five times
+the `1.15 %` the state is worth. `base_p` is only a valid shape inside one
+draft-schedule family, so rows are grouped by the normalised per-prompt
+drafting-round vector, which is a schedule fingerprint needing no source access,
+and the estimator is refitted family by family:
+
+```text
+fam    rows   misfit      s p5     s p95  gap k=2  gap k=3    F76   3-way centres
+1        76   0.0351    -36522      9300    35776    20868  0.868     -34396    -4229     7340
+2        29   0.0071    -58189      8104    55053    30577  0.759     -59097   -20665     2057
+4        20   0.0691    -25353     14121    32826    22532  0.850     -31508    -1129    13557
+5       359   0.0237     -1924      2888     2556    16450  0.822     -29509      -82     3391
+6        92   0.0106     -1208      2187     9093     6874  0.935       -362     1308    13386
+7       220   0.0166      -459      4343     5047     2731  0.645       -223      927     5239
+```
+
+Family 7 holds our recent frontier. Restricting to our own 13 rows in it:
+
+```text
+2-way centres -218 and 809 us, spacing 1027 us, variance explained 0.852
+agreement with the F76 -12.9 band 1.000 (13 of 13)
+slow-state rows 32c6dc69 8630bc07 55af6534 84b9ef7b 7bef7d4c
+```
+
+**Cluster centres, spacing, agreement rate.** Combining the two anchors gives
+three levels on one scale, referenced to the family-7 median:
+
+```text
+level          s us/drafting round   evidence
+slow                          +809   five morganmcg1 rows, F76 index above -12.9
+middle                        -218   eight morganmcg1 rows including d3c491b5, F76 below -12.9
+fast (S3)                     -957   the Finding 150 cluster, first board row 2026-08-22T09:28Z
+```
+
+Spacings `1027 us` and `739 us`, mean `883 us`, total span `1766 us`. Finding
+150 predicts about `820 us` and `1640 us`. Classification agreement with the
+F76 `-12.9` band is `13 of 13` inside family 7. **The state model is confirmed
+and the F76 index is a working classifier inside one schedule family.**
+
+It is not yet a campaign-wide classifier. Across all families whose rank-1 tree
+model holds to 2 % the agreement falls to `0.595` and the correlation to
+`-0.4013`, because each family's `s` is referenced to its own median and the
+medians are not on a common scale. Fixing that needs a row measured in a known
+state inside each family.
+
+### Item 5 - the estimated state of every morganmcg1 board row
+
+`s_local` is microseconds per drafting round relative to the row's own
+schedule-family median. `fit` is the row's relative residual under the rank-1
+tree model; a value above about `0.02` means the estimate is not trustworthy.
+
+```text
+id        created                score        c  fam   s_local      se      fit      f76 promotion
+4437d061  2026-08-17T22:03:30  2.86127   0.9568    1       461    3451  0.02757     9.19 None
+9197ed62  2026-08-18T17:08:40  3.06938   1.0512    5       318    7050  0.05685   -13.71 None
+ca9251b8  2026-08-18T22:44:18  3.23251   1.0018    5      -255    1190  0.01041   -13.71 None
+2c766441  2026-08-19T06:19:42  3.07213   0.9388    1      3008    3094  0.02864     6.50 None
+ff73cbbd  2026-08-20T06:42:09  3.17230   1.0027    5       468    1359  0.01174   -13.22 None
+9b241879  2026-08-20T09:30:36  3.23589   0.9975    5         2    1356  0.01189   -13.65 None
+2da69933  2026-08-20T12:00:44  3.21126   0.8777    1       481    1373  0.01345     9.34 None
+32c6dc69  2026-08-20T18:48:46  3.28158   0.9780    7      1178     522  0.00642   -11.92 None
+8630bc07  2026-08-20T21:15:23  3.27747   0.9787    7       976     568  0.00701   -12.00 None
+83f0b282  2026-08-21T00:43:51  3.31378   0.9838    7       -98     367  0.00458   -13.15 None
+55af6534  2026-08-21T01:48:52  3.28303   0.9819    7       855     366  0.00451   -12.14 None
+87e6421b  2026-08-21T04:14:33  3.30652   0.9836    7       -83     371  0.00463   -13.13 None
+cb8aeefb  2026-08-21T06:26:12  3.32346   0.9819    7      -214     480  0.00600   -13.23 None
+84b9ef7b  2026-08-21T08:16:17  3.30142   0.9780    7       700     623  0.00774   -12.20 None
+f04b102e  2026-08-21T10:17:01  3.32825   0.9814    7      -246     509  0.00637   -13.29 promoted
+87b654b2  2026-08-21T13:47:16  3.12601   0.9897    4     -6171    6172  0.08215   -15.18 None
+b8b8b860  2026-08-21T15:58:25  3.33412   0.9803    7      -312     553  0.00693   -13.37 None
+44559d02  2026-08-21T18:35:20  3.34351   0.9830    7      -494     605  0.00759   -13.49 None
+7bef7d4c  2026-08-22T00:30:55  3.29792   0.9824    7       336     456  0.00567   -12.52 None
+cf9a9eda  2026-08-22T06:20:41  3.26815   0.9900    7       -23     199  0.00246   -12.99 None
+d3c491b5  2026-08-22T08:27:51  3.49065   0.9587    7      -276    1833  0.02347   -13.36 promoted
+```
+
+Readings for re-pricing:
+
+- Five of our rows were measured in the SLOW state: `32c6dc69`, `8630bc07`,
+  `55af6534`, `84b9ef7b`, `7bef7d4c`. Every one of them has an F76 index above
+  `-12.9`. Any comparison that treats these as equivalent to a `-13.x` row
+  charges the candidate about `1027 us` per drafting round that the code did
+  not spend.
+- Eight family-7 rows sit in the MIDDLE state, including both promotions
+  `f04b102e` and `d3c491b5` and the anchor `44559d02`. Comparisons inside that
+  set are state-clean.
+- `d3c491b5` is in the middle state, not the fast one. Its `08:27:51Z` creation
+  time is before the `09:28Z` first appearance of S3, so the `739 us` gap to the
+  Finding 150 cluster is a state gap and not a code gap.
+- Three rows are the depth-sweep characterisations in family 1 with an F76 index
+  near `+9`, and `87b654b2` in family 4 has a `0.082` relative misfit. Their
+  states are not resolvable by this estimator and should not be re-priced.
+- The four family-5 rows all sit in the fast F76 band; their `s` spread of about
+  `720 us` is within their own standard errors, so they cannot be split.
+
+### What F8 does and does not change
+
+- The E128 headline is unaffected. Section 6 prices policies on the fitted
+  end-to-end curve, and the curve is unchanged: the flat state term is
+  algebraically absorbed and the `phi` term leaves the `M >= 6` break in place.
+- F7's answer to the Model P question is unaffected. `f = 50.4 +- 253.0 us` on
+  the high-width segment, and the break still does not move with the tree's own
+  pass vector.
+- F6's withdrawn one-pass arm prices stay withdrawn.
+- New for the campaign: five of our own board rows are measured in the slow
+  state, the F76 index classifies our family-7 rows perfectly, and an
+  independent estimator reproduces the advisor's `817 us` offset as
+  `739 +- 188 us`.
+
+### Suggested follow-ups, not implemented
+
+1. Put every schedule family on one state scale by submitting one deliberately
+   identical repeat of a known-state tree inside each family. Without that
+   anchor the classifier stays family-local.
+2. Re-price the F5 two-channel mode estimator with the state term. F5 attributes
+   `96.8 %` of the rival gap to a MODE move; F8 now gives that mode a physical
+   unit, and the two should be reconciled.
+3. `f = 3152.4 +- 329.2` survives beside the hinge in the joint board fit. Neither
+   pure model is complete. A third shape, for example a pass term that carries
+   its own per-row work, may fit both facts.
+
+## F9 - the known state step, Thorfinn's fixed shape, and the round price
+
+`harness=ranked`. Zero GPU. `research/e128_f9.py`, artifact
+`research/e128-artifacts/f9-state-shape-price.json`.
+
+F9 replaces F8's free per-row intercept with Alphonse's identified label, tests
+Thorfinn's deleted-instruction shape as a fixed regressor, and audits the
+shipped depth price for a per-drafting-round term.
+
+### 1. The state as a known offset
+
+F8 fitted `d3c491b5` against the five-row cluster
+`cf79f7df 48423d09 3b376ba2 390ec878 c63eaa21` and got `739 +- 188 us`. Those
+five rows are exactly Alphonse's cluster 0 and `d3c491b5` is in his cluster 1,
+where he measures `928.1 +- 31.9 us`. The two estimates are 1.01 of our SE
+apart, from different methods on the same account partition.
+
+Inside one receipt `phi` takes two values, `0.078` for plutarch and exactly
+`1.000` for the other seven prompts. A free `s` is therefore a plutarch
+indicator, not a state term, which is why F8's free-s line fit fell to
+rmse 195.0 with `s = -7788 us`: it deleted one point.
+
+Entering the step as a fixed offset `y - 930 * phi`:
+
+```
+                             k   rmse     bic     b                step
+line, raw                    2  1575.2  124.03   5757.9+-344.6
+line, known s=930            2  1760.5  125.81   5643.5+-385.1
+break M>=6, raw              3   285.3   98.77   3446.1+-202.3     1877.5+-154.6
+break M>=6, known s=930      3   323.3  100.78   3060.9+-229.3     2097.4+-175.2
+
+slope ratio hi/lo   raw 1.545   known s 1.685
+dBIC(line - break)  raw +25.26  known s +25.04
+```
+
+Break sweep under the known offset: `M>=3` 106.78, `M>=4` 114.37, `M>=5`
+109.46, **`M>=6` 100.78**, `M>=7` 121.81, `M>=8` 126.36. The break stays at
+M>=6 and the slope ratio rises. Model P is not rescued.
+
+### 2. Thorfinn's fixed shape
+
+`u(M) = 38 * M / IPG(M)` from the `let cases` table at `Qwen35.swift:1565`:
+
+```
+M              1       2       3       4       5       6       7       8       9
+u   ours    38.0    38.0    38.0    38.0    38.0    76.0    66.5    76.0   114.0
+u   board   38.0    38.0    38.0    38.0    63.3    76.0    66.5    76.0   114.0
+```
+
+The shape steps at M=6 under our table and at M=5 under the board table, which
+are the two measured break locations, with no fitted break parameter. That
+part of the prediction lands.
+
+The magnitude does not follow, for two reasons.
+
+`38 * ceil(M / IPG) = 38 * pass count`, so the exact accounting is Model P
+rescaled. `TH exact + M` and `P free pass` agree to the last digit at
+rmse 788.7 and bic 115.04, with `g = f / 38`. The only place the ideal
+per-output-element form differs is the M=7 tail group, where it predicts a cost
+dip, `u(7) = 66.5` below `u(6) = u(8) = 76.0`.
+
+The one-parameter form fails because `u` is flat across M=1..5 while the round
+cost rises about 3.1 ms per row there:
+
+```
+                       k   rmse    bic
+TH ideal 38M/IPG       2  2513.1  131.51
+line a+bM              2  1575.2  124.03
+TH ideal + M           3   617.6  111.13
+P free pass            3   788.7  115.04
+R free break M>=6      4    90.6   82.50
+```
+
+Board population, 202 table-bearing rows x 8 prompts, each row using its own
+IPG table, row and prompt fixed effects, SEs clustered by row:
+
+```
+                        rmse       aicc
+M only                1869.1   24833.1
+P  M + passes         1783.5   24684.1
+TH ubar only          3476.1   26838.3
+TH ubar + M           1784.7   24686.4
+R  M + hinge(4.375)   1739.4   24603.4
+R + P                 1649.7   24434.9
+```
+
+The dip test `[M, passes, dip]` gives `dip = 34.4 +- 42.7`. The ideal form
+predicts 86.7 and the exact form predicts 0, so neither is rejected;
+`corr(ubar, gbar) = 0.9894` makes the test underpowered by construction.
+
+Verdict: the break location is instruction-accounted on both tables; the break
+magnitude is not. Model R survives.
+
+### 4. The per-drafting-round term and the shipped depth price
+
+The shipped price has a fixed per-**round** term, the literal `1.0` that
+`prefixCosts` (`:936`) and `makeUniformDepthPrice` (`:871-878`) seed the
+cumulative with, giving `cumulative[d] = 1 + d*0.18`. It is charged whether the
+round drafts or not, so it is not a per-drafting-round term. The correct cost
+is `C(0) = 1` and `C(d) = 1 + s_u + d*h` for `d >= 1`, which no shipped
+`DepthPrice` can express: `prefixCosts` pins the base at 1.0 and every arm
+holds the marginal total at `maxDepth * headStepCostRatio`.
+
+The mispricing runs both ways. At the entry decision the shipped rule extends
+when `reach > h` while the correct rule needs `reach > s_u + h`, so it enters
+drafting too eagerly. Once drafting, the correct cumulative is larger, so the
+correct threshold is smaller and the shipped rule stops too early.
+
+`s_u = 930 / 31139.8 = 0.02987`, 16.6 % of one 0.18 step. Optimal fixed depth,
+`phi` held at the shipped value, acceptance from the rung-1 forced-depth-7
+legs, de-stated `slopeonly b6` cost curve:
+
+```
+prompt        phi   d*(0)   d*(930)   s to go deeper   s to go shallower
+plutarch    0.078       4         4          +41750                none
+drama       1.000       4         4          +11550              -25400
+travel      1.000       4         4          +53475              -15175
+beagle      1.000       4         4          +30475              -22500
+republic    1.000       4         4          +20475              -23650
+essays      1.000       3         3          +10525              -14200
+medicine    1.000       4         4          +34625              -22350
+botany      1.000       4         4          +61450              -14400
+```
+
+Ranked median difference `+0.00000000`. The smallest critical cost anywhere is
+`+10,525 us`, 11.3x the state term. The result holds across three de-stated
+curves: `slopeonly b6` and `piece b6` move no prompt, `line` moves medicine
+from 5 to 6, and the median difference stays `+0.00000000`. The depth ladder is
+quantised by the M=6 pass cliff, `C0(6)-C0(5) = 15,645 us`, which is 16.8x the
+term, and by the within-segment step of 3,061 us, still 3.3x the term.
+
+The optimal flat threshold is `h = 0.270` at both `s = 0` and `s = 930`, so the
+state term does not move it. That level is not a recommendation: it comes from
+a pooled-EMA fixed-signal model that removes the shipped rule's adaptivity.
+
+The state-aware price `marginal[0] = 0.18 + s_u` changes one prompt's depth,
+beagle 6 to 7, worth `+0.5888 %` on beagle's own raw. Beagle is not a median
+prompt, so the published median is unchanged in both states: gain if slow
+`+0.00000000`, cost if fast `+0.00000000`. The hedge is worth zero.
+
+The entry side is dead for a structural reason. The top-2 margin is
+`score[0] - score[1]` on a sorted pair, so it is non-negative, and
+`conf = 1/(1 + exp(-margin/2))` lies in `[0.5, 1)`. The lowest confidence in
+1,678 recorded rounds is `0.5000`, 2.38x the corrected gate of `0.2099`. The
+margin censor at `:1083-1087` can never pull `p` below 0.5, so it can never
+reach either gate; the entry decision is set by `positionAcceptEMA[0]` alone.
+A separate consequence is that the `conf` and `conf2` censors are only ever
+active when the corresponding EMA is above 0.5, so they cannot deepen a cold
+prompt or gate a struggling one.
+
+
+
 ## W&B runs and reproduction
 
 Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
@@ -922,6 +1883,7 @@ Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
 | `e128-section5-our-ranked-curve` | `al4e8bmq` | our own fitted ranked cost curve |
 | `e128-rung2-counterfactual-pricing` | `0wkulqix` | board-curve control pass |
 | **`e128-rung2-our-curve-pricing`** | **`mys5l3kq`** | **the headline: primary metric, R band, curve sweep, board depth scan** |
+| `e128-f4-to-f9-followups` | `5c4mq2lk` | 519 scalars from the zero-GPU advisor follow-ups F4 to F9 |
 
 `0wkulqix` carries a `metric_correction_note`. Its primary metric was first
 written as `0.0` by the bug described in section 6, and was corrected in place
@@ -975,8 +1937,33 @@ python3 research/e128_price.py \
 python3 research/e128_board_depth_scan.py \
     --json research/e128-artifacts/board-depth-scan.json
 
+# advisor follow-ups F4 to F9, all zero GPU
+python3 research/e128_width_histograms.py \
+    --json research/e128-artifacts/f4-width-histograms.json
+python3 research/e128_slopes.py \
+    --json research/e128-artifacts/f4-slopes.json \
+    --curves-json research/e128-artifacts/f4-candidate-curves.json
+python3 research/e128_arm_prices.py \
+    --json research/e128-artifacts/f4-arm-prices.json
+python3 research/e128_two_channel.py \
+    --json research/e128-artifacts/f5-two-channel.json
+python3 research/e128_census.py \
+    --json research/e128-artifacts/f6-census.json
+python3 research/e128_signals.py \
+    --json research/e128-artifacts/f4-signals.json
+
+# F7, F8 and F9 read their inputs relative to research/, so run them there
+cd research
+python3 e128_f7_artifact.py
+python3 e128_reprice_onepass.py --json e128-artifacts/f7-onepass-repriced.json
+python3 e128_head_share.py
+python3 e128_state_fe.py --json e128-artifacts/f8-state-fe.json
+python3 e128_f9.py --json e128-artifacts/f9-state-shape-price.json
+cd ..
+
 # publish
 python3 research/e128_wandb_log.py --only rung2
+python3 research/e128_wandb_log.py --only followups
 ```
 
 Producing the rung-1 legs is the only expensive step, at roughly 40 minutes on
@@ -990,11 +1977,16 @@ raised `KeyError: 'f83_weight'`.
 
 ### Scope evidence
 
+Re-verified after the rebase onto `221065c5`:
+
 ```
-git diff 526d3973 -- Sources/ Vendor/ mtp-head.manifest.json Package.swift \
+git diff 221065c5 -- Sources/ Vendor/ mtp-head.manifest.json Package.swift \
     benchmark.json                                        (empty)
 senpai/verify-ranked-score-boundary.sh                    PASS
-senpai/check-editable-budget.sh 526d3973
-    source=2585357/3000000  growth=0/262144  files=154    OK
+senpai/check-editable-budget.sh 221065c5
+    source=2594084/3000000  growth=0/262144  files=154    OK
 ```
+
+Every file this branch adds is under `research/`, which `benchmark.json` does
+not submit. The candidate surface is byte-identical to the base.
 

@@ -71,6 +71,7 @@ HOST = "apple-m4-pro-applegpu_g16s-48gib"
 ART = pathlib.Path("research/e128-artifacts")
 
 BASE_SHA = "526d39739ad76380b56a199a6344d0db02bca765"
+REBASE_SHA = "221065c5f16e9118797c15421cbdf0e91269dd5c"
 ADVISOR_BRANCH = "senpai/qwen38-mtp-r1"
 PR_NUMBER = 129
 
@@ -724,6 +725,204 @@ def _median(values: list) -> float:
             0.5 * (ordered[n // 2 - 1] + ordered[n // 2]))
 
 
+def log_followups() -> None:
+    """The zero-GPU advisor follow-ups F4 through F9 in one run."""
+    hists = load("f4-width-histograms.json")
+    slopes = load("f4-slopes.json")
+    arms = load("f4-arm-prices.json")
+    channel = load("f5-two-channel.json")
+    census = load("f6-census.json")
+    signals = load("f4-signals.json")
+    sweep = load("f4-curve-sweep-admissible.json")
+    strata = load("f7-strata.json")
+    onepass = load("f7-onepass-repriced.json")
+    head = load("f7-head-share.json")
+    state = load("f8-state-fe.json")
+    f9 = load("f9-state-shape-price.json")
+    if census is None or signals is None:
+        print("followups: missing artifact, skipping")
+        return
+
+    run = start("e128-f4-to-f9-followups", {
+        "harness": "ranked",
+        "gpu_seconds": 0,
+        "rebased_onto": REBASE_SHA,
+        "receipt_anchor": "d3c491b5",
+        "headline_curve": "passcount_slopeonly@M>=6",
+        "pass_boundary_first_two_pass": census["census"]["first_two_pass"],
+        "dispatch_table_source": "Qwen35.swift:1565",
+    })
+
+    flat = {
+        "f6_pooled_best_f_us": census["pooled_best"]["f"],
+        "f6_pooled_best_k_us_per_row": census["pooled_best"]["k"],
+        "f6_pooled_best_rmse_us": census["pooled_best"]["rmse_us"],
+        "f6_pooled_at_census_f_us": census["pooled_fit"]["f"],
+        "f6_pooled_at_census_k_us_per_row": census["pooled_fit"]["k"],
+        "f6_pooled_at_census_rmse_us": census["pooled_fit"]["rmse_us"],
+        "f6_census_us_per_unit": census["census"]["us_per_unit"],
+        "f6_arm_f83_weighted_qmv_saving": census["arm_price"][
+            "f83_weighted_qmv"],
+        "f6_arm_leg_frame": census["arm_price"]["leg_frame"],
+        "f6_arm_rule67_median_pct": census["arm_price"]["rule67_median_pct"],
+        "f6_m9_mass_max": max(census["m9_mass"].values()),
+    }
+    for width, row in census["excess_profiles"].items():
+        for model, value in row.items():
+            flat["f6_excess_pct_%s_M%s" % (model, width)] = value
+    for width, row in census["table_design"].items():
+        flat["f6_design_f83_share_M%s" % width] = row["f83_share"]
+        flat["f6_design_census_weighted_M%s" % width] = row["census_weighted"]
+        flat["f6_design_slopeonly_weighted_M%s" % width] = row[
+            "slopeonly_weighted"]
+
+    for stratum, row in signals["strata"].items():
+        for name, value in row.items():
+            flat["f4_auc_%s_%s" % (stratum, name)] = value
+    for fixture, row in signals["summary"].items():
+        for name, value in row.items():
+            flat["f4_auc_fixture_%s_%s" % (fixture, name)] = value
+
+    if hists is not None:
+        weighted = hists["f83_weighted"]
+        flat["f4_hist_f83_mean_M"] = weighted["mean_M"]
+        flat["f4_hist_f83_sd_M"] = weighted["sd_M"]
+        flat["f4_hist_f83_p_M_ge_6"] = weighted["p_M_ge_6"]
+        for index, value in enumerate(weighted["probs"]):
+            flat["f4_hist_f83_p_M%d" % (index + 1)] = value
+    if slopes is not None and "admissible_table" in slopes:
+        for row in slopes["admissible_table"][:4]:
+            key = "%s_b%s" % (row["model"], row["breakpoint"])
+            flat["f4_slope_rmse_%s" % key] = row["rmse"]
+            flat["f4_slope_aicc_%s" % key] = row["aicc"]
+    if arms is not None and "summary" in arms:
+        for key, value in arms["summary"].items():
+            flat["f4_arm_%s" % key] = value
+    if sweep is not None:
+        for curve, row in sweep["curves"].items():
+            gains = row["median_gain_pct_vs_ship"]
+            flat["f4_sweep_%s_oracle" % curve] = gains["oracle"]
+            flat["f4_sweep_%s_levelfix105" % curve] = gains["levelfix1.05"]
+            flat["f4_sweep_%s_rankedprice" % curve] = gains["rankedprice"]
+    if channel is not None and "summary" in channel:
+        for key, value in channel["summary"].items():
+            if isinstance(value, (int, float)):
+                flat["f5_%s" % key] = value
+
+    if strata is not None:
+        flat["f7_pass_price_f_us"] = strata["f_hat_us"]
+        flat["f7_pass_price_se_us"] = strata["f_se_us"]
+        flat["f7_pass_price_ci95_lo_us"] = strata["f_ci95_us"][0]
+        flat["f7_pass_price_ci95_hi_us"] = strata["f_ci95_us"][1]
+        for key, value in strata["coverage"].items():
+            flat["f7_coverage_%s" % key] = value
+        for name, row in strata["joint_full_range"].items():
+            for key, value in row.items():
+                if isinstance(value, (int, float)):
+                    flat["f7_joint_%s_%s" % (name, key)] = value
+        for name, row in strata["per_stratum_hinge"].items():
+            tag = name.replace(",", "")
+            for key in ("star", "rmse"):
+                if key in row:
+                    flat["f7_stratum_%s_%s" % (tag, key)] = row[key]
+    if onepass is not None:
+        for table, row in onepass["tables"].items():
+            tag = table.replace("{", "").replace("}", "").replace(
+                ":", "").replace(",", "_")
+            for key, value in row.items():
+                if isinstance(value, (int, float)):
+                    flat["f7_onepass_%s_%s" % (tag, key)] = value
+    if head is not None:
+        for name, row in head.items():
+            tag = name.replace(" ", "_").replace("/", "_").replace("%", "pct")
+            for key, value in row.items():
+                flat["f7_head_%s_%s" % (tag, key)] = value
+    if state is not None:
+        s4 = state["section4"]
+        flat["f8_six_row_misfit"] = s4["six_row"]["misfit"]
+        for sid, row in s4["six_row"]["rows"].items():
+            for key, value in row.items():
+                flat["f8_six_%s_%s" % (sid, key)] = value
+        if s4.get("ours_family"):
+            for key, value in s4["ours_family"].items():
+                flat["f8_ours_family_%s" % key] = value
+        flat["f8_als_relative_misfit"] = s4["als_rel_rmse"]
+        flat["f8_hinge_star"] = s4["star"]
+        for row in s4["families"]:
+            tag = row["family"]
+            for key in ("rows", "misfit", "gap_k2_us", "gap_k3_us",
+                        "f76_agreement"):
+                flat["f8_family%d_%s" % (tag, key)] = row[key]
+        for name, row in state["section3"].items():
+            for value, label in zip(row["beta"], row["names"]):
+                flat["f8_board_%s_%s" % (name, label)] = value
+            flat["f8_board_%s_rmse" % name] = row["rmse"]
+            flat["f8_board_%s_aicc" % name] = row["aicc"]
+        for name, row in state["section2"].items():
+            tag = name.replace("+ ", "").replace(" ", "_").replace("*", "")
+            flat["f8_ours_%s_break" % tag] = row["best"]["breakpoint"]
+            flat["f8_ours_%s_break_rmse" % tag] = row["best"]["rmse"]
+            flat["f8_ours_%s_break_bic" % tag] = row["best"]["bic"]
+            flat["f8_ours_%s_line_bic" % tag] = row["line"]["bic"]
+    if f9 is not None:
+        flat["f9_state_us"] = f9["state_us"]
+        flat["f9_best_break_known_s"] = f9["section1"]["best_break_known_s"]
+        for name, row in f9["section1"]["fits"].items():
+            tag = name.replace(" ", "_")
+            flat["f9_ours_%s_rmse" % tag] = row["rmse"]
+            flat["f9_ours_%s_bic" % tag] = row["bic"]
+        for offs, rows in f9["section2"]["our_points"].items():
+            otag = offs.replace(" ", "_")
+            for name, rmse, bic, params in rows:
+                tag = name.replace(" ", "_").replace(">=", "ge").replace(
+                    "/", "_").replace("+", "plus")
+                flat["f9_shape_%s_%s_rmse" % (otag, tag)] = rmse
+                flat["f9_shape_%s_%s_bic" % (otag, tag)] = bic
+                flat["f9_shape_%s_%s_params" % (otag, tag)] = params
+        for m, value in enumerate(f9["section2"]["u_ours"], start=1):
+            flat["f9_u_ours_m%d" % m] = value
+        for m, value in enumerate(f9["section2"]["u_board"], start=1):
+            flat["f9_u_board_m%d" % m] = value
+        if f9.get("section2b"):
+            for offs, name, rmse, aicc in f9["section2b"]["board"]:
+                tag = "%s_%s" % (offs.replace(" ", "_"),
+                                 name.replace(" ", "_").replace("+", "plus")
+                                 .replace(".", "p"))
+                flat["f9_board_%s_rmse" % tag] = rmse
+                flat["f9_board_%s_aicc" % tag] = aicc
+        s4 = f9["section4"]
+        flat["f9_s_u_price_units"] = s4["s_u"]
+        flat["f9_flat_argmax_s0"] = s4["flat_argmax"]["s0"]
+        flat["f9_flat_argmax_s_known"] = s4["flat_argmax"]["s_known"]
+        for key, value in s4["median"].items():
+            flat["f9_median_%s" % key] = value
+        flat["f9_median_recoverable"] = s4["median"]["ds"] - s4["median"]["d0"]
+        for prompt, row in s4["per_prompt"].items():
+            for key in ("phi", "d0", "ds", "dship"):
+                flat["f9_%s_%s" % (prompt, key)] = row[key]
+        for prompt, row in s4["critical_s"].items():
+            for key in ("up", "down"):
+                if row[key] is not None:
+                    flat["f9_%s_critical_s_%s" % (prompt, key)] = row[key]
+        for name, row in s4["cells"].items():
+            tag = name.replace(" ", "_").replace(".", "p").replace("+", "plus")
+            for s_true, value in row.items():
+                flat["f9_cell_%s_s%s" % (tag, s_true.split(".")[0])] = value
+        for name, row in f9["section4c"].items():
+            tag = name.replace(" ", "_").replace(">=", "ge")
+            flat["f9_curve_%s_moved" % tag] = row["moved"]
+            flat["f9_curve_%s_delta_median" % tag] = row["delta_median"]
+        worst = min(v["min_conf"] for v in f9["section4d"].values())
+        flat["f9_min_margin_confidence"] = worst
+        flat["f9_entry_gate_rounds"] = sum(v["rounds"]
+                                           for v in f9["section4d"].values())
+
+    run.log(flat)
+    run.summary.update(flat)
+    run.finish()
+    print("followups: logged %d scalars" % len(flat))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=None)
@@ -732,7 +931,8 @@ def main() -> int:
             "rung1": log_rung1, "jensen": log_jensen,
             "ourcurve": log_ourcurve,
             "rung2": lambda: log_rung2("ours"),
-            "rung2board": lambda: log_rung2("board")}
+            "rung2board": lambda: log_rung2("board"),
+            "followups": log_followups}
     for name, fn in runs.items():
         if args.only and name not in args.only:
             continue
