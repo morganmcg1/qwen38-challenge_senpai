@@ -583,6 +583,56 @@ def report(result: dict) -> None:
                   "simdgroups(derived) %2d"
                   % (name, cell["registers"], cell["spill_bytes"],
                      cell["text_bytes"], cell["simdgroups_derived"]))
+    verdict(result)
+
+
+VERDICT_CLASSES = ("int_alu", "convert", "bitcast", "load", "fma")
+
+
+def verdict(result: dict) -> None:
+    """One table per cell: operation counts and register deltas together.
+
+    A form that removes statements but adds registers can lose residency and
+    cost more than it saves, so the two columns are only meaningful side by
+    side. Deltas are against `shipped` in the same cell, never across cells.
+    """
+    print()
+    print("verdict, statements and registers against shipped in the same cell")
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        rows = {n: e["cells"][key] for n, e in result["variants"].items()
+                if e["compiled"] and key in e["cells"]}
+        if "shipped" not in rows:
+            continue
+        ref = rows["shipped"]
+        print()
+        print("  NA=%d RPS=%d, %s" % (na, rps, RANKED))
+        print("      %-22s %8s %7s  %s %5s %5s %6s %6s %4s"
+              % ("variant", "stmt/out", "delta%",
+                 " ".join("%7s" % c for c in VERDICT_CLASSES),
+                 "reg", "dreg", "spill", "dspill", "dsg"))
+        for name, row in rows.items():
+            air, cell = row["air"], row.get(RANKED)
+            d = 100.0 * (row["air_per_output_element"]
+                         - ref["air_per_output_element"]) \
+                / ref["air_per_output_element"]
+            line = ("      %-22s %8.4f %+7.2f  %s"
+                    % (name, row["air_per_output_element"], d,
+                       " ".join("%7d" % air.get(c, 0)
+                                for c in VERDICT_CLASSES)))
+            if cell is None:
+                print(line + "        no metal-tt")
+                continue
+            base = ref[RANKED]
+            print(line + " %5d %+5d %6d %+6d %+4d"
+                  % (cell["registers"], cell["registers"] - base["registers"],
+                     cell["spill_bytes"],
+                     cell["spill_bytes"] - base["spill_bytes"],
+                     cell["simdgroups_derived"]
+                     - base["simdgroups_derived"]))
+        print("      shipped emits %d load(s) and %d convert(s) in the hot "
+              "region. F157 counts 4 weight loads and no conversions."
+              % (ref["air"].get("load", 0), ref["air"].get("convert", 0)))
 
 
 def main() -> int:
