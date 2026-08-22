@@ -108,10 +108,16 @@ RUNGS = {
     },
 }
 
-# The advisor's rung-2 bars. >= +0.30 % on the absolute candidate leg advances
-# to rung 3; 0 to +0.30 % reports and runs the N=8192 fallback once; negative
-# refutes the byte model and stops the arm.
-RUNG2_ADVANCE_PCT = 0.30
+# The rung-2 bars are stated twice in the assignment and the two statements
+# disagree. The PR body section D advances at +0.30 %. F4 section 8 calls the
+# rules "unchanged" and then advances at +0.6 % and closes below +0.25 %,
+# which also opens an unlabelled dead zone between +0.25 % and +0.6 %. The
+# rung-1 prediction of +0.546 % lands inside that dead zone, so the choice of
+# bar decides the experiment. Both are logged and the verdict says which bars
+# the result clears rather than picking one.
+RUNG2_ADVANCE_PR_BODY_PCT = 0.30
+RUNG2_ADVANCE_F4_PCT = 0.60
+RUNG2_CLOSE_PCT = 0.25
 
 LEG_COLUMNS = [
     "tag", "arm", "position", "flag", "arm_witnessed", "c1_draft_steps",
@@ -119,7 +125,8 @@ LEG_COLUMNS = [
     "speedup", "mean_d", "mean_acc", "realised_acceptance",
     "median_round_us", "median_draft_build_us", "rounds", "decode_tokens",
     "all_tokens_matched", "residual_divergence_count", "entry_c", "exit_c",
-    "status", "worker_sha256", "session_commit",
+    "status", "worker_sha256", "session_commit", "base_sha",
+    "dirty_candidate_paths",
 ]
 
 
@@ -132,10 +139,16 @@ def rung2_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
         verdict = "no-contrast"
     elif not payload["all_arms_witnessed"] or not exact:
         verdict = "invalid"
-    elif headline >= RUNG2_ADVANCE_PCT:
-        verdict = "local-winner"
+    elif headline >= RUNG2_ADVANCE_F4_PCT:
+        verdict = "local-winner-on-both-bars"
+    elif headline >= RUNG2_ADVANCE_PR_BODY_PCT:
+        # Clears the PR body bar and fails the F4 bar. Neither advancing nor
+        # closing is defensible without the advisor resolving the two.
+        verdict = "held-for-stop-rule-ruling"
+    elif headline >= RUNG2_CLOSE_PCT:
+        verdict = "below-both-advance-bars-above-close-bar"
     elif headline > 0.0:
-        verdict = "below-bar"
+        verdict = "close-positive-but-below-close-bar"
     else:
         verdict = "byte-model-refuted"
 
@@ -147,8 +160,22 @@ def rung2_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
             payload.get("e136_realised_acceptance_delta_pp"),
         "e136_accepted_stream_divergences":
             payload["accepted_stream_divergences"],
+        "e136_c1_candidate_leg_pct_two_sigma":
+            payload.get("e136_c1_candidate_leg_pct_two_sigma"),
         "e136_rung2_verdict": verdict,
-        "e136_rung2_advance_bar_pct": RUNG2_ADVANCE_PCT,
+        "e136_rung2_advance_bar_pr_body_pct": RUNG2_ADVANCE_PR_BODY_PCT,
+        "e136_rung2_advance_bar_f4_pct": RUNG2_ADVANCE_F4_PCT,
+        "e136_rung2_close_bar_pct": RUNG2_CLOSE_PCT,
+        "e136_rung2_stop_rule_contradiction_unresolved": True,
+        # The binary that actually decoded the tokens. A session whose worker
+        # digest moved is not a comparison, and `base_sha` may legitimately
+        # move across a research-tooling commit that the worker never links.
+        "e136_rung2_worker_uniform":
+            payload.get("identity", {}).get("worker_uniform"),
+        "e136_rung2_base_sha_uniform":
+            payload.get("identity", {}).get("base_sha_uniform"),
+        "e136_rung2_no_dirty_candidate_paths":
+            payload.get("identity", {}).get("no_dirty_candidate_paths"),
         "e136_rung2_all_arms_witnessed": payload["all_arms_witnessed"],
         "e136_rung2_all_tokens_matched": payload["all_tokens_matched"],
         "e136_rung2_entry_temp_spread_c": payload["entry_temp_spread_c"],
