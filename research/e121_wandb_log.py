@@ -266,18 +266,64 @@ def log_isolated() -> None:
                         rec.get("clears_submission_bar"))
     run.log({"score_frames": frames})
 
+    # Three gates decide whether the instrument was measuring at all. A run
+    # that trips any of them is void, not merely noisy.
+    val = doc.get("validity", {})
+    control = val.get("control_per_width_pct", {})
+    worst = max(control.values(), key=abs) if control else None
     validity = wandb.Table(columns=["gate", "observed", "limit", "passed"])
-    for name, rec in sorted(doc.get("validity", {}).items()):
-        if isinstance(rec, dict):
-            validity.add_data(name, rec.get("observed"), rec.get("limit"),
-                              rec.get("passed"))
+    validity.add_data(
+        "implied bandwidth below 1.2 x DRAM peak",
+        val.get("implausible_row_count"), 0,
+        val.get("implausible_row_count") == 0)
+    validity.add_data(
+        f"byte-identical control {val.get('control_arm')} within tolerance",
+        worst, val.get("control_tolerance_pct"),
+        worst is not None and abs(worst) <= val.get("control_tolerance_pct", 0))
+    validity.add_data(
+        "every positive control fired",
+        sum(1 for c in doc.get("positive_controls", []) if "detected=True" in c),
+        len(doc.get("positive_controls", [])),
+        all("detected=True" in c for c in doc.get("positive_controls", [])))
+    validity.add_data("session void", val.get("void"), False,
+                      val.get("void") is False)
     run.log({"validity_gates": validity})
 
-    pre = wandb.Table(columns=["prediction", "band", "measured", "hit"])
-    for name, rec in sorted(doc.get("preregistered", {}).items()):
-        if isinstance(rec, dict):
-            pre.add_data(name, str(rec.get("band")), rec.get("measured"),
-                         rec.get("hit"))
+    # Scored against the arm numbers this run logs, so a reader can see which
+    # mechanism claims survived contact with the measurement.
+    pre_doc = doc.get("preregistered", {})
+    shipped = doc["arms"].get("g_split_pred", {})
+    na4 = shipped.get("per_width_pct", {}).get("4")
+    pp_na4 = doc["arms"].get("g_split_pred_pp", {}).get("per_width_pct", {}).get("4")
+    ladder = pre_doc.get("ladder_alu_only_na4_pct")
+    rows = []
+    if na4 is not None and ladder is not None:
+        rows.append(("ladder over-prediction at NA = 4 (pp)",
+                     pre_doc.get("ceiling_na4_pct"), ladder - na4, 0.2))
+    if na4 is not None:
+        band = pre_doc.get("na4_band_if_branch", [None, None])
+        rows.append((f"NA = 4 effect lands in the branch-fork band "
+                     f"{band}, not the predicated band "
+                     f"{pre_doc.get('na4_band_if_predicated')}",
+                     f"{band[0]} to {band[1]}", na4, None))
+    rw = shipped.get("round_weighted_pct")
+    if rw is not None:
+        band = pre_doc.get("round_weighted_band", [None, None])
+        rows.append((f"round-weighted effect in {band}",
+                     f"{band[0]} to {band[1]}", rw, None))
+    if pp_na4 is not None and na4 is not None:
+        rows.append(("ping-pong buffer beats the second barrier at NA = 4 (pp)",
+                     "+0.1 to +0.4", pp_na4 - na4, None))
+    pre = wandb.Table(columns=["prediction", "predicted", "measured", "hit"])
+    for name, predicted, measured, tol in rows:
+        if tol is not None:
+            hit = abs(measured - predicted) <= tol
+        elif isinstance(predicted, str) and " to " in predicted:
+            lo, hi = (float(v) for v in predicted.split(" to "))
+            hit = lo <= measured <= hi
+        else:
+            hit = None
+        pre.add_data(name, str(predicted), measured, hit)
     run.log({"preregistered_predictions": pre})
 
     if rate.get("measurements"):
@@ -293,10 +339,43 @@ def log_isolated() -> None:
                                   rec["total"], rec["bit_identical"])
         run.log({"fidelity": fidelity})
 
+    # The probe measured NA = 2, but the shipped dispatcher never reaches
+    # `wide<2>`: verify width M = 2 goes to `qmv_fast_crossrow_affine4_g64<T,2>`,
+    # a separate function the arm does not touch, and no `_m` instantiation
+    # produces a two-input group. The NA = 2 round weight therefore carries a
+    # zero effect in the shipped frame.
+    dispatch = wandb.Table(columns=[
+        "verify_width_m", "template", "ipg", "tail", "groups_produced",
+        "arm_active"])
+    for m, ipg, groups, active in (
+            (2, None, "qmv_fast_crossrow_affine4_g64<T, 2> (separate function)",
+             False),
+            (3, 3, "wide<3>", True), (4, 4, "wide<4>", True),
+            (5, 5, "wide<5>", False), (6, 3, "wide<3>", True),
+            (7, 4, "wide<4> + wide<3>", True), (8, 4, "wide<4>", True),
+            (9, 3, "wide<3>", True)):
+        dispatch.add_data(
+            m, f"qmv_fast_crossrow_affine4_g64_m<T, {m}, {ipg}, true>"
+            if ipg else groups, ipg, (m % ipg) if ipg else None, groups, active)
+    run.log({"shipped_dispatch_map": dispatch})
+
+    shipped_rec = doc["arms"].get("g_split_pred", {})
+    per_width = shipped_rec.get("cost_weighted_per_width_pct", {})
+    corrected = sum(ROUND_WEIGHTS[int(w)] * (0.0 if int(w) == 2 else v)
+                    for w, v in per_width.items() if int(w) in ROUND_WEIGHTS)
+
     summary: dict[str, object] = {
         "exactness_failures": doc.get("exactness_failures"),
         "positive_controls": doc.get("positive_controls"),
         "thermal": doc.get("thermal"),
+        "shipped_frame_corrected/cost_weighted_round_pct": corrected,
+        "shipped_frame_corrected/predicted_leg_pct":
+            corrected * E116_KERNEL_TO_LEG,
+        "shipped_frame_corrected/predicted_ranked_pct":
+            corrected * E116_KERNEL_TO_LEG * RANKED_TRANSFER,
+        "shipped_frame_corrected/reason":
+            "verify width M = 2 uses a separate function the arm does not "
+            "touch, so the NA = 2 round weight carries a zero effect",
     }
     for arm in arms:
         rec = doc["arms"][arm]

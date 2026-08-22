@@ -74,8 +74,14 @@ trap unwind EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
 
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "e121_e2e_leg: worktree is dirty; refusing to time over uncommitted work" >&2
+# The refusal is scoped to the SCORED surface, not to the whole worktree. What
+# must be committed is the code that will run, so that the W&B result names a
+# reproducible commit. An edit under `research/` cannot reach the timed binary,
+# and forbidding it would mean no analysis or note could be written during the
+# ninety minutes a session takes.
+if [[ -n "$(git status --porcelain -- Sources Vendor Package.swift)" ]]; then
+  echo "e121_e2e_leg: scored surface is dirty; refusing to time over" \
+       "uncommitted work" >&2
   exit 1
 fi
 
