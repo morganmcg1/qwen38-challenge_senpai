@@ -76,6 +76,50 @@ def ranked_histogram() -> dict[int, float]:
     return out
 
 
+def untruncated_histogram() -> dict[int, float]:
+    """The same F83 mixture before the routed renormalisation.
+
+    `ranked_histogram` divides out the M=2 mass because M=2 is below
+    `Qwen35CustomQMV.widths` and never reaches either pipeline. Keeping that
+    mass changes every width share by one common factor, so it is a
+    denominator choice, not a different belief about the runner.
+    """
+    weights = {p: w for p, (_, w) in census.RANKED_WIDTH_MIX.items()}
+    total = sum(weights.values())
+    out: dict[int, float] = {}
+    for prompt, (width, _w) in census.RANKED_WIDTH_MIX.items():
+        share = weights[prompt] / total
+        for m, p in census.e114.maxent(width).items():
+            out[m] = out.get(m, 0.0) + share * p
+    return out
+
+
+# Edward's F83-weighted ranked frame, quoted by the advisor in F22 section 3.
+# Only these four numbers were stated. mass(8) below is the stated tail minus
+# the two stated masses; nothing else is reconstructed. The mass under M=6 was
+# not stated, so this frame can price a pair only when the differing widths lie
+# inside {6, 7, 8}, and its denominator still hides an unstated mass(2).
+F83_STATED = {6: 0.188, 7: 0.211}
+F83_TAIL_GE_6 = 0.5861
+F83_MEAN_M = 5.7732
+
+
+def f83_frame() -> dict[int, float]:
+    return dict(F83_STATED) | {8: F83_TAIL_GE_6 - sum(F83_STATED.values())}
+
+
+def f83_mass(widths: tuple[int, ...], mass_2: float) -> float:
+    """Share of routed rounds at `widths` under the stated F83 frame.
+
+    `mass_2` is the unstated mass the frame puts at M=2. Passing 0 treats the
+    stated numbers as already routed; passing the maxent value renormalises
+    them the way `ranked_histogram` renormalises ours. The two ends bracket the
+    frame rather than pretending one of them is known.
+    """
+    frame = f83_frame()
+    return sum(frame[m] for m in widths) / (1.0 - mass_2)
+
+
 def mass(hist: dict[int, float], widths: tuple[int, ...],
          weight: dict[int, int] | None) -> float:
     if weight is None:
@@ -85,6 +129,45 @@ def mass(hist: dict[int, float], widths: tuple[int, ...],
         num = sum(hist[m] * weight[m] for m in widths)
         den = sum(hist[m] * weight[m] for m in RANKED_WIDTHS)
     return num / den
+
+
+def frame_comparison() -> list[dict]:
+    """Price every pair under each candidate ranked frame.
+
+    The three frames agree on the mean verification width to four significant
+    figures and disagree on the shape of the top of the distribution. A table
+    change is priced by the shape, so agreement on the mean is not agreement on
+    the answer.
+    """
+    loc = local_histogram()
+    routed, untrunc = ranked_histogram(), untruncated_histogram()
+    mass_2 = untrunc[2]
+    rows = []
+    print("transfer factor by ranked frame, rounds weighting")
+    print(f"  {'pair':26s} {'widths':10s} {'maxent unt':>11s} "
+          f"{'maxent rtd':>11s} {'F83 as-is':>10s} {'F83 renorm':>11s}")
+    for a, b in PAIRS:
+        w = differing_widths(a, b)
+        lr = mass(loc, w, None)
+        cells = {
+            "maxent_untruncated": mass(untrunc, w, None) / lr,
+            "maxent_routed": mass(routed, w, None) / lr,
+            "f83_as_stated": f83_mass(w, 0.0) / lr,
+            "f83_renormalised": f83_mass(w, mass_2) / lr,
+        }
+        print(f"  {a + ' -> ' + b:26s} {str(list(w)):10s} "
+              + " ".join(f"{cells[k]:>11.3f}" for k in
+                         ("maxent_untruncated", "maxent_routed",
+                          "f83_as_stated", "f83_renormalised")))
+        rows.append({"from": a, "to": b, "widths": list(w),
+                     "local_mass_rounds": lr, "factors": cells,
+                     "spread_pct": 100.0 * (max(cells.values())
+                                            / min(cells.values()) - 1.0)})
+    print(f"  unstated F83 mass at M=2 bracketed by 0 and {mass_2:.4f}")
+    worst = max(rows, key=lambda r: r["spread_pct"])
+    print(f"  widest frame disagreement {worst['spread_pct']:.1f} % on "
+          f"{worst['from']} -> {worst['to']}")
+    return rows
 
 
 def main() -> int:
@@ -124,6 +207,9 @@ def main() -> int:
                         "local_mass_passes": lp, "ranked_mass_passes": rp,
                         "transfer_passes": fp})
 
+    print()
+    frames = frame_comparison()
+
     measured = {}
     for spec in args.delta:
         name, _, value = spec.partition("=")
@@ -151,7 +237,11 @@ def main() -> int:
         "harness": "local-to-ranked transfer, first order",
         "local_histogram": loc,
         "ranked_histogram": rank,
+        "untruncated_histogram": untruncated_histogram(),
+        "f83_stated_frame": {"mass": f83_frame(), "tail_ge_6": F83_TAIL_GE_6,
+                             "mean_m": F83_MEAN_M},
         "pairs": records,
+        "frame_comparison": frames,
     }, indent=1) + "\n")
     print()
     print("wrote %s" % args.out)
