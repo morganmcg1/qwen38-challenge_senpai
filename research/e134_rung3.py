@@ -347,9 +347,16 @@ def main() -> int:
     tag = args.family + "price@%.4f"
     for weight in grid:
         plans.append((tag % weight, "price", weight))
-    fixed = {"pb5": boundary_price(2.0301, 3)[:2],
-             "pb6": boundary_price(2.0301, 4)[:2],
-             "pb7": boundary_price(2.0301, 5)[:2],
+    # E56's tier is 2.0301 and is what `pb5` and `pb7` still use in Swift.
+    # `depthPriceArm = .pb6` does NOT: it passes `passBoundaryTierFactor`,
+    # 1.45. Naming these rows `pb5/pb6/pb7` therefore stopped being true when
+    # the shipped arm moved, and a reader would have scored our shipped arm
+    # from the 2.0301 row. The tier is now in every label and the shipped
+    # combination is its own row.
+    fixed = {"pb5@2.0301": boundary_price(2.0301, 3)[:2],
+             "pb6@2.0301": boundary_price(2.0301, 4)[:2],
+             "pb7@2.0301": boundary_price(2.0301, 5)[:2],
+             "pb6@1.45 SHIPPED": boundary_price(1.45, 4)[:2],
              "pbfit": measured_price(),
              "rankedprice": e128_price.ranked_price_table()}
     for name in fixed:

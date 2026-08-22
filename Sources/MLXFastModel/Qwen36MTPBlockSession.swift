@@ -961,16 +961,25 @@ public final class Qwen36MTPBlockSession {
     /// reproduce that experiment's published arithmetic exactly.
     internal static let boundaryTierFactor = 2.0301
 
-    /// E134: the verify width at which the QMV entry point stops covering the
-    /// rows in one group and reads the whole projection weight set a second
-    /// time.
+    /// E134: the verify width this stack prices as a boundary.
     ///
-    /// The dispatch table at `Qwen35.swift:1565` is
-    /// `[(3,3), (4,4), (5,5), (6,3), (7,4), (8,4), (9,3)]`, so
-    /// `passes(M) = ceil(M / IPG(M))` is 1 up to width 5 and 2 from width 6.
-    /// `E134PassBoundaryPriceTests` parses that literal and fails if the table
-    /// moves the boundary, because this constant and the tier below are fitted
-    /// to one dispatch table and to nothing else.
+    /// The name is historical. It came from the pre-`onepass67` dispatch table
+    /// `[(3,3), (4,4), (5,5), (6,3), (7,4), (8,4), (9,3)]`, where
+    /// `passes(M) = ceil(M / IPG(M))` was 1 up to width 5 and 2 from width 6.
+    /// That justification is DEAD. The compiled default route is
+    /// `Qwen35CustomQMV.widthPlan` / `onepass67`,
+    /// `[(3,3), (4,4), (5,5), (6,6), (7,7), (8,4), (9,3)]`, so width 6 is now
+    /// one pass and the structural pass boundary is width 8.
+    ///
+    /// Width 6 is still the right place to price, for a different and
+    /// independently measured reason: the ranked round-cost curve refitted in
+    /// E134 item 2 puts its largest step at exactly this width, and boundary 4
+    /// is the argmax in 24 of 24 leave-one-prompt-out refits. So this constant
+    /// is now justified by a measurement, not by a pass-count law.
+    ///
+    /// `E134PassBoundaryPriceTests` pins the measured curve and fails if the
+    /// step moves. It no longer parses the dispatch table for this value,
+    /// because the table no longer decides it.
     internal static let passBoundaryVerifyWidth = 6
 
     /// E134: the tier factor for the pass boundary.
@@ -991,6 +1000,12 @@ public final class Qwen36MTPBlockSession {
     /// the held-out value to `+2.4683 %`. The measured argmax is `1.40`, worth
     /// `+0.0137 pp` more than `1.45` against a leave-one-prompt-out spread of
     /// `0.0751 pp`, so the constant does not move.
+    ///
+    /// The upper side is closed too. On the measured curve the replayed median
+    /// falls away monotonically above the plateau: `+2.4880 %` at `1.45`,
+    /// `+2.0969 %` at `1.70`, `+1.9173 %` at `1.74`, `+0.6588 %` at `1.85`.
+    /// The leave-one-prompt-out selection picks `1.45` in all 48 folds, so
+    /// raising the tier towards the physical cost ratio only loses value.
     ///
     /// Rule 79: no local timing leg can validate this. Only a ranked receipt
     /// can, so the local pre-submit run is an exactness gate and never
