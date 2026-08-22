@@ -95,6 +95,58 @@ def auc(scores_pos: list[float], scores_neg: list[float]) -> float | None:
     return u / (n_pos * n_neg)
 
 
+def stratified_auc(groups: list[list[tuple[float, int]]]) -> tuple[float | None, int, int]:
+    """AUC over prompt strata: discordant pairs are counted WITHIN a prompt.
+
+    Pooling the raw margin across prompts lets a between-prompt difference in
+    margin scale masquerade as discrimination. The shipped policy decides
+    inside one request, so the within-prompt comparison is the one that
+    matches the decision it would make.
+    """
+    u_total = 0.0
+    pair_total = 0
+    n_pos_total = 0
+    n_neg_total = 0
+    for pairs in groups:
+        pos = [m for m, y in pairs if y == 1]
+        neg = [m for m, y in pairs if y == 0]
+        if not pos or not neg:
+            continue
+        value = auc(pos, neg)
+        if value is None:
+            continue
+        u_total += value * len(pos) * len(neg)
+        pair_total += len(pos) * len(neg)
+        n_pos_total += len(pos)
+        n_neg_total += len(neg)
+    if pair_total == 0:
+        return None, n_pos_total, n_neg_total
+    return u_total / pair_total, n_pos_total, n_neg_total
+
+
+def bootstrap_stratified(groups: list[list[tuple[float, int]]], reps: int,
+                         rng: random.Random):
+    """Cluster bootstrap: resample rounds inside each prompt, keep the strata."""
+    if reps <= 0 or not groups:
+        return None, None
+    values = []
+    for _ in range(reps):
+        resampled = []
+        for pairs in groups:
+            if not pairs:
+                continue
+            n = len(pairs)
+            resampled.append([pairs[rng.randrange(n)] for _ in range(n)])
+        value, _, _ = stratified_auc(resampled)
+        if value is not None:
+            values.append(value)
+    if len(values) < reps // 4:
+        return None, None
+    values.sort()
+    return (values[int(0.025 * len(values))],
+            values[min(len(values) - 1, int(0.975 * len(values)))])
+
+
 def bootstrap_auc(pairs: list[tuple[float, int]], reps: int, rng: random.Random):
     """Percentile CI, resampling ROUNDS (the independent unit of the trace)."""
     if not pairs or reps <= 0:
@@ -253,10 +305,20 @@ def main() -> int:
     if pooled:
         pooled_raw = position_table(pooled, key="margin")
         pooled_z = position_table(pooled, key="margin_z")
+        by_prompt_tables = {
+            prompt: position_table([r for r in pooled if r["prompt"] == prompt])
+            for prompt in per_prompt}
         result["pooled"] = {"rounds": len(pooled), "positions": {}}
         for position in pooled_raw:
             lo, hi = bootstrap_auc(pooled_raw[position]["pairs"], args.boot, rng)
             zlo, zhi = bootstrap_auc(pooled_z[position]["pairs"], args.boot, rng)
+            groups = [table[position]["pairs"] for table in by_prompt_tables.values()
+                      if position in table]
+            strat, n_pos, n_neg = stratified_auc(groups)
+            slo, shi = bootstrap_stratified(groups, args.boot, rng)
+            informative = sum(
+                1 for pairs in groups
+                if any(y == 1 for _, y in pairs) and any(y == 0 for _, y in pairs))
             result["pooled"]["positions"][position] = {
                 "observed": pooled_raw[position]["observed"],
                 "accepted": pooled_raw[position]["accepted"],
@@ -267,6 +329,11 @@ def main() -> int:
                 "auc_raw_ci": [lo, hi],
                 "auc_within_prompt_z": pooled_z[position]["auc"],
                 "auc_z_ci": [zlo, zhi],
+                "auc_stratified": strat,
+                "auc_stratified_ci": [slo, shi],
+                "stratified_accepted": n_pos,
+                "stratified_rejected": n_neg,
+                "informative_prompts": informative,
                 "bins": margin_bins(pooled_raw[position]["pairs"]),
             }
 
@@ -297,19 +364,29 @@ def main() -> int:
     if pooled:
         text.append("")
         text.append("## pooled over prompts")
-        text.append("   pos    n   acc_rate   AUC(raw)   [95% CI]        AUC(within-prompt z)")
+        text.append("   AUC(raw)   one nat-valued threshold across every prompt")
+        text.append("   AUC(strat) discordant pairs counted only inside one prompt")
+        text.append("   AUC(z)     within-prompt standardised margin, diagnostic only")
+        text.append("   pos    n  rej  acc_rate   AUC(raw)   [95% CI]         "
+                    "AUC(strat)   [95% CI]         AUC(z)  prompts")
         for position in range(1, 6):
             cell = result["pooled"]["positions"][position]
             a = cell["auc_raw_margin"]
             ci = cell["auc_raw_ci"]
+            s = cell["auc_stratified"]
+            sci = cell["auc_stratified_ci"]
             z = cell["auc_within_prompt_z"]
             text.append(
-                f"   {position:>3} {cell['observed']:>5} "
+                f"   {position:>3} {cell['observed']:>5} {cell['rejected']:>4} "
                 f"{(cell['accept_rate'] or float('nan')):>9.4f} "
                 f"{(a if a is not None else float('nan')):>9.4f} "
                 f"[{(ci[0] if ci[0] is not None else float('nan')):.4f}, "
                 f"{(ci[1] if ci[1] is not None else float('nan')):.4f}] "
-                f"{(z if z is not None else float('nan')):>12.4f}")
+                f"{(s if s is not None else float('nan')):>11.4f} "
+                f"[{(sci[0] if sci[0] is not None else float('nan')):.4f}, "
+                f"{(sci[1] if sci[1] is not None else float('nan')):.4f}] "
+                f"{(z if z is not None else float('nan')):>8.4f} "
+                f"{cell['informative_prompts']:>6}")
     report = "\n".join(text)
     print(report)
 
