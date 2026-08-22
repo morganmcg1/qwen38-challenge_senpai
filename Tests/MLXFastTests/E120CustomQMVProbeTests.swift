@@ -655,6 +655,237 @@ struct E120CustomQMVProbeTests {
 
         #expect(!cells.isEmpty)
     }
+
+    // MARK: rung 2 entry-point width switch
+
+    /// The shipped `IPG` at `M = 5`, and the value it replaced.
+    static let m5IPGShipped = 3
+    static let m5IPGCompare =
+        Int(ProcessInfo.processInfo.environment["MLXFAST_E120_M5_IPG"] ?? "") ?? 5
+
+    /// The shipped table pipeline, rebuilt under a private name with one
+    /// template argument of the `M = 5` case replaced.
+    ///
+    /// A Metal entry point is allocated `max` registers over every case body,
+    /// so the widest body sets the occupancy of the whole switch and every
+    /// routed width pays it. On the promoted snapshot `xcrun metal-tt` reports
+    /// 102 entry registers for `(5, 5)` and 94 for `(5, 3)` on the gen-17
+    /// architecture the ranked M5 uses, and 96 against 93 on this host's
+    /// gen-16. Those simdgroup figures are derived from the compiler's register
+    /// report, not measured occupancy, which is what this probe supplies.
+    ///
+    /// The prediction is therefore that every width moves, not only `M = 5`.
+    /// `M = 5` is the only body whose own instruction count changes.
+    fileprivate static func m5Kernel(ipg: Int) -> MLXFast.MLXFastKernel {
+        var source = Qwen35CustomQMV.generatedSource(table: true)
+        let shipped = "qwen_e120_qmv_m<5, \(m5IPGShipped), USE_TABLE>"
+        precondition(source.contains(shipped), "shipped M=5 case not found in generated source")
+        if ipg != m5IPGShipped {
+            source = source.replacingOccurrences(
+                of: shipped, with: "qwen_e120_qmv_m<5, \(ipg), USE_TABLE>")
+        }
+        return MLXFast.metalKernel(
+            name: "e129_qmv_sums_m5ipg\(ipg)",
+            inputNames: ["w", "scales", "biases", "x", "xsums"],
+            outputNames: ["y"],
+            source: source,
+            header: Qwen35CustomQMV.generatedHeader,
+            ensureRowContiguous: true)
+    }
+
+    /// The same buffers, grid and threadgroup `matmulWithTable` binds.
+    fileprivate static func m5Apply(
+        _ kernel: MLXFast.MLXFastKernel, _ x: MLXArray, _ w: E120Weights, _ xsums: MLXArray
+    ) -> MLXArray {
+        let n = w.packed.dim(0)
+        var outShape = x.shape
+        outShape[outShape.count - 1] = n
+        return kernel(
+            [w.packed, w.scales, w.biases, x, xsums],
+            template: [("USE_TABLE", true)],
+            grid: (x.dim(-2) * 32, (n / 8) * 2, 1),
+            threadGroup: (32, 2, 1),
+            outputShapes: [outShape],
+            outputDTypes: [.bfloat16]
+        )[0]
+    }
+
+    @Test(
+        "the M=5 IPG choice changes no output element at any routed width",
+        .enabled(if: E120CustomQMVProbeTests.runtimeEnabled))
+    func m5IPGExactness() throws {
+        var records: [[String: Any]] = []
+        let shipped = Self.m5Kernel(ipg: Self.m5IPGShipped)
+        let compare = Self.m5Kernel(ipg: Self.m5IPGCompare)
+
+        for shape in Self.shapes + [("control.small", 512, 4096)] {
+            let w = Self.makeWeights(
+                hidden: shape.hidden, outputs: shape.outputs,
+                seed: UInt64(0xE120) &+ UInt64(shape.outputs))
+            MLXRandom.seed(UInt64(0xB1F5) &+ UInt64(shape.outputs))
+            let block = MLXRandom.normal([9, shape.hidden]).asType(.bfloat16)
+            eval(block)
+
+            for width in 3 ... 9 {
+                let x = contiguous(block[0 ..< width])
+                eval(x)
+                let reference = Self.mlx(x, w)
+                let table = Qwen35CustomQMV.xsumsTable(x)
+                eval(reference, table)
+
+                // `x_hit` control: one activation moved by half a unit must
+                // change the output, or the comparison cannot fail.
+                let bumped = x + MLXArray(Float(0.5)).asType(.bfloat16)
+                eval(bumped)
+                let bumpedTable = Qwen35CustomQMV.xsumsTable(bumped)
+                eval(bumpedTable)
+
+                let a = Self.m5Apply(shipped, x, w, table)
+                let b = Self.m5Apply(compare, x, w, table)
+                let hit = Self.m5Apply(compare, bumped, w, bumpedTable)
+                eval(a, b, hit)
+
+                let shippedVsMLX = Self.mismatches(reference, a)
+                let compareVsMLX = Self.mismatches(reference, b)
+                let crossDiffering = Self.mismatches(a, b)
+                let xHit = Self.mismatches(reference, hit)
+                records.append([
+                    "shape": shape.name,
+                    "outputs": shape.outputs,
+                    "hidden": shape.hidden,
+                    "width": width,
+                    "elements": reference.size,
+                    "ipg_shipped": Self.m5IPGShipped,
+                    "ipg_compare": Self.m5IPGCompare,
+                    "shipped_vs_mlx": shippedVsMLX,
+                    "compare_vs_mlx": compareVsMLX,
+                    "differing_elements": crossDiffering,
+                    "max_abs_diff": Self.maxAbsDiff(a, b),
+                    "bit_exact": crossDiffering == 0,
+                    "x_hit": xHit,
+                    "positive_control_can_fail": xHit > 0,
+                ])
+                #expect(shippedVsMLX == 0)
+                #expect(compareVsMLX == 0)
+                #expect(crossDiffering == 0)
+                #expect(xHit > 0)
+                print("E129_M5IPG_EXACT " + e120JSON(records[records.count - 1]))
+                fflush(stdout)
+            }
+        }
+
+        if let path = ProcessInfo.processInfo.environment["MLXFAST_E129_M5IPG_EXACT_OUT"],
+            !path.isEmpty
+        {
+            let data = try JSONSerialization.data(
+                withJSONObject: ["records": records], options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: URL(fileURLWithPath: path))
+        }
+        #expect(!records.isEmpty)
+    }
+
+    @Test(
+        "matched ABBA timing of the M=5 IPG choice at every routed width",
+        .enabled(if: E120CustomQMVProbeTests.timingEnabled))
+    func m5IPGTiming() throws {
+        var cells: [[String: Any]] = []
+        let shipped = Self.m5Kernel(ipg: Self.m5IPGShipped)
+        let compare = Self.m5Kernel(ipg: Self.m5IPGCompare)
+
+        for shape in Self.shapes {
+            let w = Self.makeWeights(
+                hidden: shape.hidden, outputs: shape.outputs,
+                seed: UInt64(0xE120) &+ UInt64(shape.outputs))
+            let maxWidth = Self.widths.max() ?? 9
+            MLXRandom.seed(UInt64(0xB1F5) &+ UInt64(shape.outputs))
+            let block = MLXRandom.normal([maxWidth, shape.hidden]).asType(.bfloat16)
+            eval(block)
+
+            for width in Self.widths {
+                let x = contiguous(block[0 ..< width])
+                eval(x)
+                let table = Qwen35CustomQMV.xsumsTable(x)
+                eval(table)
+
+                let arms: [E120Arm] = [
+                    E120Arm(
+                        name: "a_ipg\(Self.m5IPGCompare)",
+                        body: { [Self.m5Apply(compare, x, w, table)] }),
+                    E120Arm(
+                        name: "b_ipg\(Self.m5IPGShipped)",
+                        body: { [Self.m5Apply(shipped, x, w, table)] }),
+                ]
+
+                Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                let probeUs = Self.timed(8, arms[0].body)
+                let count = max(8, min(600, Int(Self.targetMicroseconds / max(probeUs, 1.0))))
+                for arm in arms { _ = Self.timed(3, arm.body) }
+
+                for blockIndex in 0 ..< Self.blocks {
+                    let entryTemp = e120GPUTemperature()
+                    Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                    let forward = arms.map { Self.timed(count, $0.body) }
+                    let reverse = Array(
+                        arms.reversed().map { Self.timed(count, $0.body) }.reversed())
+                    let exitTemp = e120GPUTemperature()
+
+                    let mean = (0 ..< arms.count).map { 0.5 * (forward[$0] + reverse[$0]) }
+                    var record: [String: Any] = [
+                        "shape": shape.name,
+                        "outputs": shape.outputs,
+                        "hidden": shape.hidden,
+                        "width": width,
+                        "block": blockIndex,
+                        "replicates": count,
+                        "ipg_shipped": Self.m5IPGShipped,
+                        "ipg_compare": Self.m5IPGCompare,
+                        "saved_us_per_matvec": mean[0] - mean[1],
+                        "saved_fraction": (mean[0] - mean[1]) / mean[0],
+                        "arms": arms.enumerated().map { index, arm in
+                            [
+                                "arm": arm.name,
+                                "forward_us": forward[index],
+                                "reverse_us": reverse[index],
+                            ] as [String: Any]
+                        },
+                    ]
+                    if let entryTemp { record["gpu_temp_entry_c"] = entryTemp }
+                    if let exitTemp { record["gpu_temp_exit_c"] = exitTemp }
+                    cells.append(record)
+                    print("E129_M5IPG_BLOCK " + e120JSON(record))
+                    fflush(stdout)
+                }
+                eval(MLXArray(0))
+            }
+            Memory.clearCache()
+        }
+
+        if let path = ProcessInfo.processInfo.environment["MLXFAST_E129_M5IPG_OUT"], !path.isEmpty {
+            let payload: [String: Any] = [
+                "group_size": Self.groupSize,
+                "bits": Self.bits,
+                "ramp_seconds": Self.rampSeconds,
+                "target_us": Self.targetMicroseconds,
+                "cool_gate_passed_real_gate": false,
+                "gate_qualified_for_timing": false,
+                "blocks": Self.blocks,
+                "widths": Self.widths,
+                "ipg_shipped": Self.m5IPGShipped,
+                "ipg_compare": Self.m5IPGCompare,
+                "cells": cells,
+            ]
+            let data = try JSONSerialization.data(
+                withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: URL(fileURLWithPath: path))
+        }
+        #expect(!cells.isEmpty)
+    }
+}
+
+private func e120JSON(_ object: [String: Any]) -> String {
+    guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+    else { return "{}" }
+    return String(decoding: data, as: UTF8.self)
 }
 
 /// One macmon sample. The probe runs under no thermal gate, so the entry and

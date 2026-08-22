@@ -51,6 +51,8 @@ MLXFAST_E120_BLOCKS="${blocks}" \
 MLXFAST_E120_OUT="${PWD}/${out_dir}/cells.json" \
 MLXFAST_E120_FILL_OUT="${PWD}/${out_dir}/fill.json" \
 MLXFAST_E120_EXACT_OUT="${PWD}/${out_dir}/exact.json" \
+MLXFAST_E129_M5IPG_OUT="${PWD}/${out_dir}/m5ipg.json" \
+MLXFAST_E129_M5IPG_EXACT_OUT="${PWD}/${out_dir}/m5ipg-exact.json" \
 swift test -c "${config}" --force-resolved-versions \
   --filter "${filter}" 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"

@@ -1757,6 +1757,18 @@ public enum Qwen35CustomQMV {
         try? json.write(toFile: path, atomically: true, encoding: .utf8)
     }
 
+    /// The exact strings the two shipped QMV pipelines are built from.
+    ///
+    /// The rung 2 probe compiles them again under a second kernel name with one
+    /// template argument textually replaced, so a single binary can time two
+    /// `IPG` choices in one counterbalanced session instead of comparing two
+    /// builds. Nothing in the scored path calls these.
+    public static func generatedSource(table: Bool) -> String {
+        qwen35E120QMVSource(table: table)
+    }
+
+    public static var generatedHeader: String { qwen35E120QMVHeader }
+
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
