@@ -667,6 +667,16 @@ int main(int argc, char **argv) {
           }
           dispatchOnce(queue, pso[a][0], &o, a, m);
           hit_meta = countDiffering(&o, a, m).differing;
+          if (a == 1) {
+            const uint16_t *y0 = (const uint16_t *)o.y[0].contents;
+            const uint16_t *ya2 = (const uint16_t *)o.y[a].contents;
+            for (int j = 0; j < kMetaProbeRows; j++) {
+              const int col = (int)((size_t)o.n * j / kMetaProbeRows + 1);
+              fprintf(stderr,
+                      "e118_qmv_probe:   DIAG col=%d base=%.4f pert=%.4f\n", col,
+                      bf16_to_f32(y0[col]), bf16_to_f32(ya2[col]));
+            }
+          }
           for (int j = 0; j < kMetaProbeRows; j++) {
             const size_t base = ((size_t)o.n * j / kMetaProbeRows + 1) * gpr;
             for (size_t g = 0; g < gpr; g++) {
