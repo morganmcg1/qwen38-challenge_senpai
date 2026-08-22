@@ -36,7 +36,10 @@ cache="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1"
 out="${cache}/e133/screen"
 head_dir="${cache}/mtp-head-declared-run"
 cli=.build/release/mlxfast-swift
-manifest=research/e124-corpus-manifest.json
+# The E133 manifest carries the E124 windows unchanged plus the reweighting
+# windows F1.3 asks for, and each stage skips a seed that already has output,
+# so pointing here reuses the first capture instead of repeating it.
+manifest=research/e133-corpus-manifest.json
 
 stage="${1:-}"; shift || true
 steps=512

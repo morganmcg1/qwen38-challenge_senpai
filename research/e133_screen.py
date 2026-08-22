@@ -14,19 +14,33 @@ best `N` rows, rescores those `N` exactly with affine-2, and then takes the
 top-32 as before. D never changes, so the proposal is correct exactly when the
 global affine-4 argmax survives into the top-32.
 
-  miss(arm) = the exact affine-4 argmax over all 98,330 reachable rows is not
-              in the arm's final 32.
-
-The decision quantity is the PAIRED net miss rate against the shipped chain,
-because the shipped chain already misses at some rate and that rate is already
-priced into the baseline score.
-
 WHY THIS IS NOT research/e87_screen.py. E87's baseline is the DENSE coarse
 readout and its arm-C tables come from its own k-means. Neither describes what
-ships now. Screening C1 against E87's baseline would price the sketch against
-a readout the runtime stopped using when E121 landed, so the whole net-miss
-column would be wrong. research/e133_index.py rebuilds the live derived index
-and this file screens against it.
+ships now. Screening C1 against E87's baseline would price the sketch against a
+readout the runtime stopped using when E121 landed. research/e133_index.py
+rebuilds the live derived index and this file screens against it.
+
+WHAT F1 CHANGED, AND WHY EACH CHANGE IS HERE.
+
+  F1.3  Finding 83 gives three strata, not ten domains. `beagle` carries the
+        first 0.5 term of the median outright; medicine, essays, republic and
+        botany share the second; plutarch, drama and travel carry exactly
+        zero. The kill uses the WORSE OF THE TWO GATING STRATA. A maximum over
+        ten noisy near-zero domain estimates is biased upward hard enough to
+        close C1 on noise alone.
+  F1.4c Record the RANK of the exact argmax in the sketch ordering, not a
+        boolean at one `N`. The net miss at width `N` IS `P(rank >= N)`, so one
+        rank per sample gives the whole survival curve, and the curve's shape
+        constrains the `N = 256` tail far better than a dozen raw events. Every
+        count carries an exact Clopper-Pearson interval, and the tail-fit
+        estimate is reported beside the raw count, never instead of it.
+  F1.5  Two miss rates. `m_absolute` is against the exact affine-4 argmax and
+        carries the kill. `m_incremental` is against the SHIPPED chain output
+        and carries the price, because the shipped chain is already
+        approximate and its own misses are already in the baseline score.
+  F1.5  A miss costs `m * (p - q)`, not `m`. `p` is the head's per-step
+        accuracy and `q` is the chance the substituted row is itself the
+        target's argmax. Both are measured here against the serial golden.
 
 Sub-commands:
   corpus     inventory the captured hidden states, with per-seed acceptance
@@ -59,13 +73,24 @@ import e133_index as IX  # noqa: E402
 CACHE = Path(os.path.expanduser("~/.cache/mlxfast/qwen3.8-27b-mtp-v1/e133"))
 DUMP_DIR = CACHE / "screen/hidden"
 VERIFY_DIR = CACHE / "screen/verify"
-MANIFEST = Path(__file__).resolve().parent / "e124-corpus-manifest.json"
+REFERENCE_DIR = CACHE / "screen/reference"
+MANIFEST = Path(__file__).resolve().parent / "e133-corpus-manifest.json"
 PCA_CACHE = CACHE / "pca-basis.npy"
 
 LEAVES = H.PADDED_COUNT // IX.ROWS_PER_LEAF          # 12,292
 SHIPPED_PROBE_FRACTION = IX.PROBE_FRACTION           # 0.25
 SHORTLIST = 32                                       # draftRerankCandidateCount
 Z = 1.959963984540054
+
+# F1.3. `zero_weight` is reported and never gates.
+GATING_STRATA = ("beagle", "min_carriers")
+ALL_STRATA = ("beagle", "min_carriers", "zero_weight")
+
+# F1.4c. The survival curve is read at these widths from one stored rank.
+RANK_GRID = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
+
+T0_NET_MISS = 3.0e-3
+T0B_RECALL = 0.997
 
 # --- ranked byte model (assignment section D3, all values in the ranked frame)
 AFFINE2_ROW_BYTES = 320 * 4 + 80 * 2 + 80 * 2        # 1,600
@@ -77,30 +102,118 @@ BEAGLE_ROUND_US = 55_870.0           # ranked beagle round time
 HEAD_SHARE_LO = 0.07
 HEAD_SHARE_HI = 0.09
 MU_BYTES = H.HIDDEN * 2              # bf16 mean vector
-# Finding 69 exchange rate: one unit of net argmax miss rate costs 203 % of
-# score. `e87_head.MISS_TO_SCORE_PCT` still holds the superseded 206.6 from
-# E82 rung 0, so E133 states its own rate rather than editing E87's record.
-MISS_TO_SCORE_PCT = 203.0
+MISS_TO_SCORE_PCT = H.MISS_TO_SCORE_PCT      # Finding 69, 203.0 after F1.7
+assert MISS_TO_SCORE_PCT == 203.0, MISS_TO_SCORE_PCT
 
 SKETCH_SEED = 133                    # fixed seed of R, stated here and in the brief
+
+
+# --------------------------------------------------------------------------
+# interval estimates
 
 
 def wilson(k: int, n: int) -> tuple[float, float, float]:
     if n == 0:
         return float("nan"), float("nan"), float("nan")
     p = k / n
-    d = 1 + Z * Z / n
+    d = 1.0 + Z * Z / n
     centre = (p + Z * Z / (2 * n)) / d
     half = Z * math.sqrt(p * (1 - p) / n + Z * Z / (4 * n * n)) / d
     return p, max(0.0, centre - half), min(1.0, centre + half)
 
 
+def _betainc(a: float, b: float, x: float) -> float:
+    """Regularized incomplete beta by the Lentz continued fraction."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    if x > (a + 1.0) / (a + b + 2.0):
+        return 1.0 - _betainc(b, a, 1.0 - x)
+    lbeta = math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b)
+    front = math.exp(math.log(x) * a + math.log1p(-x) * b - lbeta) / a
+    f, c, d = 1.0, 1.0, 0.0
+    for i in range(0, 300):
+        m = i // 2
+        if i == 0:
+            numerator = 1.0
+        elif i % 2 == 0:
+            numerator = (m * (b - m) * x) / ((a + 2 * m - 1) * (a + 2 * m))
+        else:
+            numerator = -((a + m) * (a + b + m) * x) / ((a + 2 * m) * (a + 2 * m + 1))
+        d = 1.0 + numerator * d
+        if abs(d) < 1e-30:
+            d = 1e-30
+        d = 1.0 / d
+        c = 1.0 + numerator / c
+        if abs(c) < 1e-30:
+            c = 1e-30
+        f *= c * d
+        if abs(1.0 - c * d) < 1e-15:
+            break
+    return front * (f - 1.0)
+
+
+def _beta_quantile(a: float, b: float, target: float) -> float:
+    lo, hi = 0.0, 1.0
+    for _ in range(120):
+        mid = 0.5 * (lo + hi)
+        if _betainc(a, b, mid) < target:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def clopper_pearson(k: int, n: int, alpha: float = 0.05) -> tuple[float, float, float]:
+    """Exact binomial interval. F1.4c needs this for the rare-event counts;
+    Wilson is not trustworthy at a handful of events."""
+    if n == 0:
+        return float("nan"), float("nan"), float("nan")
+    lo = 0.0 if k == 0 else _beta_quantile(k, n - k + 1, alpha / 2)
+    hi = 1.0 if k == n else _beta_quantile(k + 1, n - k, 1 - alpha / 2)
+    return k / n, lo, hi
+
+
+def tail_fit(counts: dict[int, int], n: int, target: int,
+             bootstrap: int = 200) -> dict:
+    """Power-law fit of the survival curve `P(rank >= N)`, read at `target`.
+
+    F1.4c: at small `N` the event is common and the estimate is tight, and the
+    slope constrains the tail far better than a dozen raw events. The fit is
+    reported BESIDE the raw count, never instead of it.
+    """
+    grid = [g for g in sorted(counts) if 0 < g < target and counts[g] >= 20]
+    if len(grid) < 3 or n == 0:
+        return {"usable": False, "reason": "fewer than three populated grid points"}
+    x = np.log(np.asarray(grid, dtype=np.float64))
+    obs = np.asarray([counts[g] for g in grid], dtype=np.float64)
+    rng = np.random.default_rng(SKETCH_SEED)
+
+    def fit(k: np.ndarray) -> float:
+        y = np.log(np.maximum(k, 0.5) / n)
+        slope, intercept = np.polyfit(x, y, 1)
+        return float(np.exp(intercept + slope * math.log(target)))
+
+    draws = np.array([fit(rng.binomial(n, obs / n).astype(np.float64))
+                      for _ in range(bootstrap)])
+    return {
+        "usable": True,
+        "grid": grid,
+        "p": fit(obs),
+        "lo": float(np.percentile(draws, 2.5)),
+        "hi": float(np.percentile(draws, 97.5)),
+    }
+
+
 # --------------------------------------------------------------------------
-# corpus
+# the captured corpus
 
 
-def seed_domains() -> dict[str, str]:
-    return {s["id"]: s["domain"] for s in json.load(MANIFEST.open())["seeds"]}
+def seed_meta() -> dict[str, dict]:
+    blob = json.load(MANIFEST.open())
+    return {s["id"]: {"domain": s["domain"], "stratum": s["stratum"]}
+            for s in blob["seeds"]}
 
 
 def seed_shards() -> dict[str, list[tuple[Path, Path]]]:
@@ -114,63 +227,210 @@ def seed_shards() -> dict[str, list[tuple[Path, Path]]]:
     return by_seed
 
 
+def draft_ledger(seed: str) -> dict[str, np.ndarray] | None:
+    """The trusted parent's own record of every draft row it evaluated.
+
+    `row_ledger` carries, per draft row, the token the shipped runtime proposed
+    (`token`), the token the fixed target actually produced there
+    (`reference_token`), and the parent's accept verdict. That makes `p` and
+    `q` from F1.5 measured quantities rather than positional guesses.
+    """
+    path = VERIFY_DIR / f"{seed}.json"
+    if not path.exists():
+        return None
+    rows = [r for r in json.loads(path.read_text())["row_ledger"]
+            if r["kind"] == "draft"]
+    if not rows:
+        return None
+    return {
+        "token": np.asarray([r["token"] for r in rows], dtype=np.int64),
+        "reference": np.asarray([r["reference_token"] for r in rows], dtype=np.int64),
+        "accepted": np.asarray([bool(r["accepted"]) for r in rows], dtype=bool),
+        "round": np.asarray([r["round"] for r in rows], dtype=np.int64),
+        "draft_index": np.asarray([r["draft_index"] for r in rows], dtype=np.int64),
+    }
+
+
+def align_shard(seed: str, shards, ledger) -> tuple[Path, Path, int]:
+    """Pick the dump shard that holds the real draft rows and find its offset.
+
+    The worker warms legal shapes before the leg, so the head runs a few times
+    on a dummy row first, and the CLI-side process contributes a warmup-only
+    shard. Alignment is then CHECKED, not assumed: the dumped proposal ids must
+    equal the ledger's draft tokens one for one. A mismatch raises instead of
+    quietly shifting every `q`.
+    """
+    want = ledger["token"]
+    for x_path, tok_path in sorted(shards, key=lambda s: -s[1].stat().st_size):
+        tok = np.fromfile(tok_path, dtype=np.int32).astype(np.int64)
+        if tok.size < want.size:
+            continue
+        skip = tok.size - want.size
+        if not np.array_equal(tok[skip:], want):
+            bad = int(np.argmax(tok[skip:] != want))
+            raise SystemExit(
+                f"{seed}: dump shard {tok_path.name} does not match the row "
+                f"ledger at draft row {bad} "
+                f"(dump {tok[skip + bad]} vs ledger {want[bad]}); "
+                f"skip={skip}, dump={tok.size}, ledger={want.size}")
+        return x_path, tok_path, skip
+    raise SystemExit(f"{seed}: no dump shard holds {want.size} draft rows")
+
+
 def chunks(batch: int, limit: int = 0, only_seeds: set[str] | None = None):
-    """Yield `(seed, domain, x_bf16, proposal_tokens)`."""
-    dom = seed_domains()
+    """Yield `(seed, stratum, x_bf16, proposal, reference, accepted)`.
+
+    Every yielded sample is one verified draft row: the hidden state that
+    reached the readout, the token the shipped chain returned for it, the
+    target's own token at that row, and the parent's accept verdict.
+    """
+    meta = seed_meta()
     total = 0
     for seed, shards in sorted(seed_shards().items()):
         if only_seeds and seed not in only_seeds:
             continue
-        for x_path, tok_path in shards:
-            x = np.memmap(x_path, dtype=np.float32, mode="r").reshape(-1, H.HIDDEN)
-            tok = np.memmap(tok_path, dtype=np.int32, mode="r")
-            n = min(x.shape[0], tok.shape[0])
-            for start in range(0, n, batch):
-                if limit and total >= limit:
-                    return
-                stop = min(start + batch, n)
-                if limit:
-                    stop = min(stop, start + (limit - total))
-                xb = mx.array(np.ascontiguousarray(x[start:stop])).astype(mx.bfloat16)
-                yield seed, dom.get(seed, "?"), xb, np.asarray(tok[start:stop])
-                total += stop - start
+        ledger = draft_ledger(seed)
+        if ledger is None:
+            print(f"  skip {seed}: no verify ledger", flush=True)
+            continue
+        x_path, _, skip = align_shard(seed, shards, ledger)
+        stratum = meta.get(seed, {}).get("stratum", "unknown")
+        x = np.memmap(x_path, dtype=np.float32, mode="r").reshape(-1, H.HIDDEN)
+        n = ledger["token"].size
+        for start in range(0, n, batch):
+            if limit and total >= limit:
+                return
+            stop = min(start + batch, n)
+            if limit:
+                stop = min(stop, start + (limit - total))
+            xb = mx.array(
+                np.ascontiguousarray(x[skip + start: skip + stop])
+            ).astype(mx.bfloat16)
+            yield (seed, stratum, xb,
+                   ledger["token"][start:stop],
+                   ledger["reference"][start:stop],
+                   ledger["accepted"][start:stop])
+            total += stop - start
+
+
+def cmd_selftest(args) -> None:
+    """Check the two estimators that carry the kill decision against closed
+    forms and against a survival curve whose answer is known in advance.
+
+    The screen reports rare-event rates near 1e-3 on a few thousand samples, so
+    a silently wrong interval would move the T0 verdict without moving any
+    measured number.
+    """
+    ok = True
+
+    # Clopper-Pearson at k=0 and k=n has the closed form 1 - (alpha/2)^(1/n).
+    for n in (1000, 4088, 4599):
+        _, _, hi = clopper_pearson(0, n)
+        want = 1.0 - 0.025 ** (1.0 / n)
+        good = abs(hi - want) < 1e-12
+        ok &= good
+        print(f"CP k=0 n={n:5d} hi={hi:.10e} closed_form={want:.10e} "
+              f"{'ok' if good else 'MISMATCH'}")
+        _, lo, _ = clopper_pearson(n, n)
+        want_lo = 0.025 ** (1.0 / n)
+        good = abs(lo - want_lo) < 1e-12
+        ok &= good
+        print(f"CP k=n n={n:5d} lo={lo:.10e} closed_form={want_lo:.10e} "
+              f"{'ok' if good else 'MISMATCH'}")
+
+    # A textbook interior case: k=3, n=4088.
+    p, lo, hi = clopper_pearson(3, 4088)
+    print(f"CP k=3 n=4088 -> {p:.4e} [{lo:.4e}, {hi:.4e}]")
+    good = lo < p < hi and hi < T0_NET_MISS
+    ok &= good
+    print(f"  three events in one gating stratum stay under T0: "
+          f"{'ok' if good else 'MISMATCH'}")
+
+    # The tail fit must recover a planted power law, and its interval must
+    # cover the planted value.
+    truth_a, truth_b, n = 0.30, 1.5, 8000
+    counts = {g: int(round(n * truth_a * g ** -truth_b)) for g in RANK_GRID}
+    fit = tail_fit(counts, n, 256)
+    truth = truth_a * 256 ** -truth_b
+    good = fit["usable"] and fit["lo"] <= truth <= fit["hi"]
+    ok &= good
+    print(f"tail_fit planted={truth:.4e} est={fit['p']:.4e} "
+          f"[{fit['lo']:.4e}, {fit['hi']:.4e}] {'ok' if good else 'MISMATCH'}")
+
+    # A curve with no tail must not be fitted into one.
+    flat = tail_fit({g: (n if g <= 1 else 0) for g in RANK_GRID}, n, 256)
+    good = not flat["usable"]
+    ok &= good
+    print(f"tail_fit refuses a degenerate curve: {'ok' if good else 'MISMATCH'}"
+          f" ({flat.get('reason', '')})")
+
+    # The score constant must be the corrected one (F1 section 7).
+    good = MISS_TO_SCORE_PCT == 203.0
+    ok &= good
+    print(f"MISS_TO_SCORE_PCT={MISS_TO_SCORE_PCT} "
+          f"{'ok' if good else 'MISMATCH: expected 203.0'}")
+
+    print("SELFTEST", "PASS" if ok else "FAIL")
+    if not ok:
+        raise SystemExit(1)
 
 
 def cmd_corpus(args) -> None:
-    dom = seed_domains()
+    meta = seed_meta()
     rows = []
     for seed, shards in sorted(seed_shards().items()):
-        samples = sum(
+        dumped = sum(
             np.memmap(t, dtype=np.int32, mode="r").shape[0] for _, t in shards)
         verify = VERIFY_DIR / f"{seed}.json"
-        meta = json.loads(verify.read_text()) if verify.exists() else {}
+        blob = json.loads(verify.read_text()) if verify.exists() else {}
+        ledger = draft_ledger(seed)
+        samples = 0 if ledger is None else int(ledger["token"].size)
+        skip = None
+        if ledger is not None:
+            _, _, skip = align_shard(seed, shards, ledger)
         rows.append({
             "seed": seed,
-            "domain": dom.get(seed, "?"),
-            "samples": int(samples),
+            "domain": meta.get(seed, {}).get("domain", "?"),
+            "stratum": meta.get(seed, {}).get("stratum", "?"),
+            # Usable samples are the ledger's draft rows, not the raw dump: the
+            # worker's shape warmup contributes rows that no ledger row owns.
+            "samples": samples,
+            "dumped_rows": int(dumped),
+            "warmup_rows_skipped": skip,
             "shards": len(shards),
-            "accepted_draft_rate": meta.get("accepted_draft_rate"),
-            "effective_mean_draft_len": meta.get("effective_mean_draft_len"),
-            "round_count": meta.get("round_count"),
-            "parity_all_ok": meta.get("parity_all_ok"),
-            "all_tokens_matched": meta.get("all_tokens_matched"),
+            "accepted_draft_rate": blob.get("accepted_draft_rate"),
+            "accepted_draft_total": blob.get("accepted_draft_total"),
+            "effective_mean_draft_len": blob.get("effective_mean_draft_len"),
+            "round_count": blob.get("round_count"),
+            "parity_all_ok": blob.get("parity_all_ok"),
+            "all_tokens_matched": blob.get("all_tokens_matched"),
+            "head_sha256": (blob.get("head_provenance") or {}).get("sha256"),
         })
-    total = sum(r["samples"] for r in rows)
-    by_domain: dict[str, int] = {}
+    by_stratum: dict[str, int] = {}
     for r in rows:
-        by_domain[r["domain"]] = by_domain.get(r["domain"], 0) + r["samples"]
-    print(f"{'seed':20s}{'domain':10s}{'samples':>9s}{'accept':>9s}{'meanM':>8s}"
+        by_stratum[r["stratum"]] = by_stratum.get(r["stratum"], 0) + r["samples"]
+    total = sum(r["samples"] for r in rows)
+
+    print(f"{'seed':22s}{'stratum':14s}{'samples':>8s}{'accept':>9s}{'meanM':>8s}"
           f"{'rounds':>8s}  parity")
     for r in rows:
         acc = r["accepted_draft_rate"]
         mdl = r["effective_mean_draft_len"]
-        print(f"{r['seed']:20s}{r['domain']:10s}{r['samples']:9d}"
-              f"{acc if acc is None else round(acc, 4):>9}"
-              f"{mdl if mdl is None else round(mdl, 3):>8}"
+        print(f"{r['seed']:22s}{r['stratum']:14s}{r['samples']:8d}"
+              f"{'' if acc is None else round(acc, 4):>9}"
+              f"{'' if mdl is None else round(mdl, 3):>8}"
               f"{str(r['round_count']):>8}  {r['parity_all_ok']}")
     print(f"\ntotal samples {total}")
-    print("by domain " + json.dumps(by_domain))
-    out = {"samples": total, "by_domain": by_domain, "seeds": rows}
+    for stratum in ALL_STRATA:
+        n = by_stratum.get(stratum, 0)
+        note = "gating" if stratum in GATING_STRATA else "reported only"
+        ok = "" if stratum not in GATING_STRATA else (
+            "  meets 4,000" if n >= 4000 else "  BELOW 4,000")
+        print(f"  {stratum:14s}{n:7d}  ({note}){ok}")
+
+    out = {"samples": total, "by_stratum": by_stratum, "seeds": rows,
+           "parity_failures": [r["seed"] for r in rows
+                               if r["parity_all_ok"] is not True]}
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=2))
         print(f"wrote {args.out}")
@@ -193,12 +453,12 @@ class Index:
             "group_size": 64,
             "bits": int(blob["centroid_bits"]),
         }
-        # Canonical permuted position of every REAL compact row. Values at or
-        # above REAL_COUNT are the six padding copies and are not canonical.
         position = np.full(H.PADDED_COUNT, -1, dtype=np.int32)
         position[self.order] = np.arange(H.PADDED_COUNT, dtype=np.int32)
         self.position_of_row = mx.array(position[: H.REAL_COUNT])
         assert int(np.min(position[: H.REAL_COUNT])) >= 0
+        # Permuted position -> compact id, matching `clusterPerm` at :5535.
+        self.perm_mx = mx.array(self.cluster_perm)
 
 
 # --------------------------------------------------------------------------
@@ -345,34 +605,59 @@ def price(removed_bytes: int) -> dict:
 # counters
 
 
-class Cell:
-    __slots__ = ("miss", "worse", "better", "n", "recall_hit", "probe_hit",
-                 "survivor_hit", "by_domain")
+class Stratum:
+    """Everything the gate and the price need, per stratum, for one cell."""
+
+    __slots__ = ("n", "miss_abs", "miss_inc", "worse", "better", "recall",
+                 "probe_hit", "survivor_hit", "subst_is_target", "subst_total",
+                 "subst_shipped_is_target")
 
     def __init__(self) -> None:
-        self.miss = self.worse = self.better = self.n = 0
-        self.recall_hit = self.probe_hit = self.survivor_hit = 0
-        self.by_domain: dict[str, list[int]] = {}
+        self.n = self.miss_abs = self.miss_inc = 0
+        self.worse = self.better = self.recall = 0
+        self.probe_hit = self.survivor_hit = 0
+        self.subst_is_target = self.subst_total = 0
+        self.subst_shipped_is_target = 0
 
-    def add(self, domain: str, miss: np.ndarray, base: np.ndarray,
-            recall: np.ndarray, probe: np.ndarray, survivor: np.ndarray) -> None:
-        n = int(miss.size)
-        hit = int(miss.sum())
-        worse = int((miss & ~base).sum())
-        better = int((base & ~miss).sum())
-        self.miss += hit
-        self.worse += worse
-        self.better += better
-        self.n += n
-        self.recall_hit += int(recall.sum())
-        self.probe_hit += int(probe.sum())
-        self.survivor_hit += int(survivor.sum())
-        slot = self.by_domain.setdefault(domain, [0, 0, 0, 0, 0])
-        slot[0] += hit
-        slot[1] += worse
-        slot[2] += better
-        slot[3] += n
-        slot[4] += int(recall.sum())
+
+class Cell:
+    __slots__ = ("by_stratum", "ranks")
+
+    def __init__(self) -> None:
+        self.by_stratum: dict[str, Stratum] = {}
+        # F1.4c: survival counts `#{rank >= N}` per stratum, from one stored
+        # rank per sample. Any grid width can be read without a rerun.
+        self.ranks: dict[str, dict[int, int]] = {}
+
+    def slot(self, stratum: str) -> Stratum:
+        if stratum not in self.by_stratum:
+            self.by_stratum[stratum] = Stratum()
+            self.ranks[stratum] = {g: 0 for g in RANK_GRID}
+        return self.by_stratum[stratum]
+
+    def add(self, stratum: str, miss_abs, base_abs, miss_inc, recall, probe,
+            survivor, subst_total: int = 0, subst_hit: int = 0,
+            subst_shipped_hit: int = 0) -> None:
+        s = self.slot(stratum)
+        s.n += int(miss_abs.size)
+        s.miss_abs += int(miss_abs.sum())
+        s.miss_inc += int(miss_inc.sum())
+        s.worse += int((miss_abs & ~base_abs).sum())
+        s.better += int((base_abs & ~miss_abs).sum())
+        s.recall += int(recall.sum())
+        s.probe_hit += int(probe.sum())
+        s.survivor_hit += int(survivor.sum())
+        s.subst_total += subst_total
+        s.subst_is_target += subst_hit
+        s.subst_shipped_is_target += subst_shipped_hit
+
+    def add_ranks(self, stratum: str, rank: np.ndarray) -> None:
+        self.slot(stratum)
+        for g in RANK_GRID:
+            self.ranks[stratum][g] += int((rank >= g).sum())
+
+    def pooled(self, field: str) -> int:
+        return sum(getattr(s, field) for s in self.by_stratum.values())
 
 
 # --------------------------------------------------------------------------
@@ -402,6 +687,7 @@ class Screen:
         b = x.shape[0]
         exact_scores = H.scores(self.exact, x)
         argmax_row = mx.argmax(exact_scores, axis=1)
+        exact_perm = mx.take(exact_scores, self.index.order_mx, axis=1)
         coarse_all = H.scores_all(self.coarse, x)
         coarse_perm = mx.take(coarse_all, self.index.order_mx, axis=1)
         at = mx.take_along_axis(
@@ -416,11 +702,12 @@ class Screen:
         order_a2 = mx.argsort(-centroid_scores, axis=1)
         crank_a2 = mx.take_along_axis(
             mx.argsort(order_a2, axis=1), leaf_r[:, None], axis=1)[:, 0]
-        mx.eval(argmax_row, coarse_perm, gt_perm, pos_r, leaf_r, gt_leaf,
-                order_a2, crank_a2)
+        mx.eval(argmax_row, exact_perm, coarse_perm, gt_perm, pos_r, leaf_r,
+                gt_leaf, order_a2, crank_a2)
         return {
             "b": b,
             "argmax_row": argmax_row,
+            "exact_perm": exact_perm,
             "coarse_perm": coarse_perm,
             "gt_perm": gt_perm,
             "gt_leaf": gt_leaf,
@@ -430,26 +717,49 @@ class Screen:
             "crank_a2": crank_a2,
         }
 
-    def shipped_miss(self, f) -> np.ndarray:
+    def probe_positions(self, order_c: mx.array, clusters: int, b: int) -> mx.array:
+        positions = (order_c[:, :clusters, None] * IX.ROWS_PER_LEAF
+                     + mx.arange(IX.ROWS_PER_LEAF, dtype=mx.int32)[None, None, :])
+        return positions.reshape(b, clusters * IX.ROWS_PER_LEAF).astype(mx.int32)
+
+    def output_row(self, f, positions: mx.array, order_key: mx.array) -> mx.array:
+        """Stage C then D: affine-2 top-32 of `positions`, then affine-4 argmax.
+
+        `order_key` ranks the candidates for the top-32 cut, so the shipped
+        chain passes its affine-2 scores and an arm passes the same affine-2
+        scores restricted to its survivors. Returns the PERMUTED position, the
+        only form `clusterPerm` accepts (D5 hazard 1).
+        """
+        keep = min(SHORTLIST, order_key.shape[1])
+        top = mx.argpartition(-order_key, kth=keep - 1, axis=1)[:, :keep]
+        chosen = mx.take_along_axis(positions, top, axis=1)
+        exact = mx.take_along_axis(f["exact_perm"], chosen, axis=1)
+        return mx.take_along_axis(
+            chosen, mx.argmax(exact, axis=1)[:, None].astype(mx.int32), axis=1)[:, 0]
+
+    def shipped(self, f):
         """The live chain: affine-2 centroids, 25 % probe, affine-2 top-32."""
         clusters = max(1, math.ceil(SHIPPED_PROBE_FRACTION * LEAVES))
+        positions = self.probe_positions(f["order_a2"], clusters, f["b"])
+        keys = mx.take_along_axis(f["coarse_perm"], positions, axis=1)
+        out = self.output_row(f, positions, keys)
         cum_gt = mx.cumsum(
             mx.take_along_axis(f["gt_leaf"], f["order_a2"], axis=1), axis=1)
         miss = mx.logical_or(mx.logical_not(f["crank_a2"] < clusters),
                              cum_gt[:, clusters - 1] >= SHORTLIST)
-        mx.eval(miss)
-        return np.asarray(miss).astype(bool)
+        mx.eval(miss, out)
+        return np.asarray(miss).astype(bool), out
 
 
 def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
-            survivor_widths, base_miss: np.ndarray, domain: str,
+            survivor_widths, base_miss: np.ndarray, base_out: mx.array,
+            stratum: str, reference: np.ndarray, base_vocab: np.ndarray,
             cells: dict[tuple, Cell], stage_a: str = "sketch") -> None:
     """One sketch cell family. `stage_a` chooses who orders the leaves.
 
     `sketch` sketches both stages, which is C1 as designed. `affine2` keeps
-    today's exact centroid readout and sketches only the 24,584-row stage, so
-    a stage-A failure and a stage-B failure can be told apart and priced
-    apart.
+    today's exact centroid readout and sketches only the 24,584-row stage, so a
+    stage-A failure and a stage-B failure can be told apart and priced apart.
     """
     b = f["b"]
     q = sketch.query(x, screen.mu)
@@ -463,47 +773,162 @@ def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
         crank_r = f["crank_a2"]
     mx.eval(order_c, crank_r)
 
-    row_scores = sketch.score_rows(q)
+    row_perm = mx.take(sketch.score_rows(q), screen.index.order_mx, axis=1)
     max_clusters = max(max(1, math.ceil(p * LEAVES)) for p in probe_fractions)
-    positions = (order_c[:, :max_clusters, None] * IX.ROWS_PER_LEAF
-                 + mx.arange(IX.ROWS_PER_LEAF, dtype=mx.int32)[None, None, :])
-    positions = positions.reshape(b, max_clusters * IX.ROWS_PER_LEAF).astype(mx.int32)
-    row_perm = mx.take(row_scores, screen.index.order_mx, axis=1)
-    sk_probe = mx.take_along_axis(row_perm, positions, axis=1)
-    co_probe = mx.take_along_axis(f["coarse_perm"], positions, axis=1)
-    gt_probe = mx.take_along_axis(f["gt_perm"], positions, axis=1)
-    is_r = positions == f["pos_r"][:, None]
-    mx.eval(sk_probe, co_probe, gt_probe, is_r)
+    positions_full = screen.probe_positions(order_c, max_clusters, b)
+    sk_full = mx.take_along_axis(row_perm, positions_full, axis=1)
+    co_full = mx.take_along_axis(f["coarse_perm"], positions_full, axis=1)
+    is_r_full = positions_full == f["pos_r"][:, None]
+    mx.eval(sk_full, co_full, is_r_full)
 
     max_width = max(survivor_widths)
     for p in probe_fractions:
         clusters = max(1, math.ceil(p * LEAVES))
         width = clusters * IX.ROWS_PER_LEAF
-        sk = sk_probe[:, :width]
+        sk = sk_full[:, :width]
+        co = co_full[:, :width]
+        is_r = is_r_full[:, :width]
+        positions = positions_full[:, :width]
+        probe_hit = crank_r < clusters
+
+        # F1.4c. The rank of the exact argmax in the sketch ordering. A sample
+        # whose leaf was never probed is beyond every width, so it is parked at
+        # `width` rather than dropped, which would bias the curve low.
+        sk_at_r = mx.max(mx.where(is_r, sk, mx.full(sk.shape, -3.4e38, mx.float32)),
+                         axis=1)
+        rank = mx.where(probe_hit,
+                        mx.sum((sk > sk_at_r[:, None]).astype(mx.int32), axis=1),
+                        width)
+        mx.eval(rank)
+        rank_np = np.asarray(rank)
+
         top = mx.argpartition(-sk, kth=max_width - 1, axis=1)[:, :max_width]
         top = mx.take_along_axis(
             top, mx.argsort(-mx.take_along_axis(sk, top, axis=1), axis=1), axis=1)
-        exact_top1 = mx.argmax(co_probe[:, :width], axis=1).astype(mx.int32)
-        probe_hit = np.asarray(crank_r < clusters).astype(bool)
+        exact_top1 = mx.argmax(co, axis=1).astype(mx.int32)
         mx.eval(top, exact_top1)
+
         for n_keep in survivor_widths:
             sel = top[:, :n_keep]
-            beaten = mx.sum(
-                mx.take_along_axis(gt_probe[:, :width], sel, axis=1).astype(mx.int32),
-                axis=1)
-            survivor = mx.any(
-                mx.take_along_axis(is_r[:, :width], sel, axis=1), axis=1)
+            out = screen.output_row(f, mx.take_along_axis(positions, sel, axis=1),
+                                    mx.take_along_axis(co, sel, axis=1))
+            survivor = mx.any(mx.take_along_axis(is_r, sel, axis=1), axis=1)
             recall = mx.any(sel == exact_top1[:, None], axis=1)
-            miss = mx.logical_or(mx.logical_not(survivor), beaten >= SHORTLIST)
-            mx.eval(miss, survivor, recall)
-            key = (sketch.key, stage_a, n_keep, p)
-            cells.setdefault(key, Cell()).add(
-                domain,
-                np.asarray(miss).astype(bool), base_miss,
-                np.asarray(recall).astype(bool), probe_hit,
-                np.asarray(survivor).astype(bool))
-        del sk, top, exact_top1
-    del row_scores, row_perm, sk_probe, co_probe, gt_probe, is_r, positions
+            mx.eval(out, survivor, recall)
+
+            miss_abs = np.asarray(out != f["pos_r"]).astype(bool)
+            miss_inc = np.asarray(out != base_out).astype(bool)
+            # F1.5. A substituted row costs `p - q`: the shipped token might
+            # have been accepted, and the substitute might be accepted too.
+            # Both sides are counted on the SAME substituted rows, so the
+            # difference is the exact net acceptance loss, not a mix of a
+            # conditional rate and a pooled one.
+            swapped = miss_inc
+            hit = shipped_hit = 0
+            if swapped.any():
+                out_vocab = np.asarray(H.compact_to_vocab(
+                    mx.take(screen.index.perm_mx, out, axis=0)))
+                hit = int((out_vocab[swapped] == reference[swapped]).sum())
+                shipped_hit = int((base_vocab[swapped] == reference[swapped]).sum())
+            cell = cells.setdefault((sketch.key, stage_a, n_keep, p), Cell())
+            cell.add(stratum, miss_abs, base_miss, miss_inc,
+                     np.asarray(recall).astype(bool),
+                     np.asarray(probe_hit).astype(bool),
+                     np.asarray(survivor).astype(bool),
+                     subst_total=int(swapped.sum()), subst_hit=hit,
+                     subst_shipped_hit=shipped_hit)
+            if n_keep == max_width:
+                cell.add_ranks(stratum, rank_np)
+            del sel, out, survivor, recall
+        del sk, co, is_r, positions, top, exact_top1
+    del row_perm, sk_full, co_full, is_r_full, positions_full
+
+
+# --------------------------------------------------------------------------
+# reporting
+
+
+def summarize(arm: str, cell: Cell, model: dict, extra: dict,
+              p_by_stratum: dict) -> dict:
+    by_stratum = {}
+    for name, s in cell.by_stratum.items():
+        m_abs, abs_lo, abs_hi = clopper_pearson(s.miss_abs, s.n)
+        m_inc, inc_lo, inc_hi = clopper_pearson(s.miss_inc, s.n)
+        net = (s.worse - s.better) / s.n if s.n else float("nan")
+        disc = s.worse + s.better
+        _, dlo, dhi = wilson(s.worse, disc)
+        q = (s.subst_is_target / s.subst_total) if s.subst_total else 0.0
+        # `p` in F1.5, measured on the substituted rows themselves. The pooled
+        # per-step acceptance is reported too, but pricing a conditional event
+        # with a pooled rate would mix two different populations.
+        p_sub = ((s.subst_shipped_is_target / s.subst_total)
+                 if s.subst_total else 0.0)
+        p_step = p_by_stratum.get(name, float("nan"))
+        loss = (s.subst_shipped_is_target - s.subst_is_target) / s.n if s.n else 0.0
+        by_stratum[name] = {
+            "n": s.n,
+            "misses_absolute": s.miss_abs,
+            "m_absolute": m_abs, "m_absolute_lo": abs_lo, "m_absolute_hi": abs_hi,
+            "misses_incremental": s.miss_inc,
+            "m_incremental": m_inc, "m_incremental_lo": inc_lo,
+            "m_incremental_hi": inc_hi,
+            "net_miss": net,
+            "net_miss_lo": (2 * dlo - 1) * disc / s.n if disc and s.n else 0.0,
+            "net_miss_hi": (2 * dhi - 1) * disc / s.n if disc and s.n else 0.0,
+            "discordant": disc,
+            "recall": s.recall / s.n if s.n else float("nan"),
+            "probe_hit_rate": s.probe_hit / s.n if s.n else float("nan"),
+            "survivor_hit_rate": s.survivor_hit / s.n if s.n else float("nan"),
+            "p_head_step_accuracy": p_step,
+            "p_shipped_is_target_on_substituted": p_sub,
+            "q_substitute_is_target": q,
+            "substitutions": s.subst_total,
+            # F1.5: the realised acceptance loss, not the raw miss rate.
+            # Identical to m_incremental * (p_sub - q) by construction.
+            "acceptance_loss": loss,
+            "acceptance_loss_pooled_p": m_inc * (p_step - q) if p_step == p_step
+                                        else None,
+            "survival_curve": {str(g): cell.ranks.get(name, {}).get(g, 0)
+                               for g in RANK_GRID},
+            "tail_fit_at_survivors": tail_fit(
+                cell.ranks.get(name, {}), s.n, int(extra.get("survivors", 256))),
+        }
+
+    gating = {k: v for k, v in by_stratum.items() if k in GATING_STRATA}
+
+    def worst(field: str) -> float:
+        return max((v[field] for v in gating.values()), default=float("nan"))
+
+    def lowest(field: str) -> float:
+        return min((v[field] for v in gating.values()), default=float("nan"))
+
+    # T0 is the ABSOLUTE NET miss: the arm's extra absolute misses less the
+    # shipped chain's absolute misses that the arm repairs. Raw `m_absolute`
+    # is reported beside it because the shipped chain is itself approximate.
+    net_worst = worst("net_miss")
+    loss = max((v["acceptance_loss"] for v in gating.values()
+                if v["acceptance_loss"] is not None), default=0.0)
+    return {
+        "arm": arm,
+        **extra,
+        "n": sum(v["n"] for v in by_stratum.values()),
+        "n_gating": sum(v["n"] for v in gating.values()),
+        "net_miss_worst_gating": net_worst,
+        "net_miss_worst_gating_hi": worst("net_miss_hi"),
+        "m_absolute_worst_gating": worst("m_absolute"),
+        "m_absolute_worst_gating_hi": worst("m_absolute_hi"),
+        "m_incremental_worst_gating": worst("m_incremental"),
+        "recall_worst_gating": lowest("recall"),
+        "acceptance_loss_worst_gating": loss,
+        **model,
+        # F1.5: price on the realised acceptance loss, kill on absolute miss.
+        "predicted_pct_gating": model["pct_head_share_7"] - MISS_TO_SCORE_PCT * loss,
+        "predicted_pct_raw_miss":
+            model["pct_head_share_7"] - MISS_TO_SCORE_PCT * worst("m_incremental"),
+        "passes_t0": net_worst <= T0_NET_MISS,
+        "passes_t0b": lowest("recall") >= T0B_RECALL,
+        "by_stratum": by_stratum,
+    }
 
 
 # --------------------------------------------------------------------------
@@ -541,8 +966,9 @@ def cmd_validate(args) -> None:
     damaged = Sketch("simhash", 8, screen.rows, screen.centroids, screen.mu, None)
 
     n = tok_ok = shipped_miss = damaged_miss = 0
+    accept_hits = verdict_ok = shipped_reproduces = 0
     ranks: list[int] = []
-    for _, _, x, proposal in chunks(args.batch, args.limit):
+    for _, stratum, x, proposal, reference, accepted in chunks(args.batch, args.limit):
         f = screen.front(x)
         vocab = np.asarray(H.compact_to_vocab(f["argmax_row"]))
         tok_ok += int(np.sum(vocab == proposal))
@@ -553,23 +979,42 @@ def cmd_validate(args) -> None:
             got = mx.array(H.vocab_to_compact(proposal[bad]).astype(np.int32))
             mine = mx.take_along_axis(sub, got[:, None], axis=1)[:, 0]
             ranks += [int(v) for v in np.asarray(mx.sum(sub > mine[:, None], axis=1))]
-        base = screen.shipped_miss(f)
-        shipped_miss += int(base.sum())
+        # F1.5: `p`, the shipped chain's per-step acceptance at this row.
+        accept_hits += int((proposal == reference).sum())
+        # The parent's own verdict must agree with that comparison, or the
+        # ledger does not mean what the price model assumes it means.
+        verdict_ok += int(((proposal == reference) == accepted).sum())
+
+        base_miss, base_out = screen.shipped(f)
+        base_vocab = np.asarray(H.compact_to_vocab(
+            mx.take(screen.index.perm_mx, base_out, axis=0)))
+        shipped_reproduces += int((base_vocab == proposal).sum())
+        shipped_miss += int(base_miss.sum())
         cells: dict[tuple, Cell] = {}
-        run_arm(screen, damaged, f, x, [SHIPPED_PROBE_FRACTION], [256], base, "all", cells)
+        run_arm(screen, damaged, f, x, [SHIPPED_PROBE_FRACTION], [256],
+                base_miss, base_out, stratum, reference, base_vocab, cells)
         damaged_miss += cells[
-            (damaged.key, "sketch", 256, SHIPPED_PROBE_FRACTION)].miss
+            (damaged.key, "sketch", 256, SHIPPED_PROBE_FRACTION)].pooled("miss_abs")
         n += f["b"]
 
-    p, lo, hi = wilson(shipped_miss, n)
+    _, lo, hi = clopper_pearson(shipped_miss, n)
     report = {
         "samples": n,
-        "proposal_match": tok_ok / n if n else float("nan"),
+        "offline_argmax_matches_runtime_proposal": tok_ok / n if n else float("nan"),
         "proposal_mismatch": {"count": len(ranks), "rank_max": max(ranks, default=0)},
-        "m_shipped_live_chain": {"misses": shipped_miss, "p": p, "lo": lo, "hi": hi},
+        "ledger_verdict_consistent": verdict_ok / n if n else float("nan"),
+        "offline_shipped_chain_reproduces_runtime":
+            shipped_reproduces / n if n else float("nan"),
+        "p_head_step_accuracy": accept_hits / n if n else float("nan"),
+        "m_shipped_live_chain": {
+            "misses": shipped_miss, "p": shipped_miss / n if n else float("nan"),
+            "lo": lo, "hi": hi},
         "m_damaged_simhash8_control": {
             "misses": damaged_miss, "p": damaged_miss / n if n else float("nan")},
     }
+    report["control_can_fail"] = (
+        report["m_damaged_simhash8_control"]["p"]
+        > 10 * max(report["m_shipped_live_chain"]["p"], 1e-6))
     print(json.dumps(report, indent=2))
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=2))
@@ -586,25 +1031,42 @@ def cmd_screen(args) -> None:
 
     cells: dict[tuple, Cell] = {}
     base_cell = Cell()
+    accept: dict[str, list[int]] = {}
     n = 0
     t0 = time.time()
-    for seed, domain, x, _ in chunks(args.batch, args.limit):
+    for _, stratum, x, proposal, reference, accepted in chunks(args.batch, args.limit):
         f = screen.front(x)
-        base = screen.shipped_miss(f)
-        zeros = np.zeros_like(base)
-        base_cell.add(domain, base, base, ~zeros, ~zeros, ~zeros)
+        base_miss, base_out = screen.shipped(f)
+        base_vocab = np.asarray(H.compact_to_vocab(
+            mx.take(screen.index.perm_mx, base_out, axis=0)))
+        falses = np.zeros_like(base_miss)
+        base_cell.add(stratum, base_miss, base_miss, falses, ~falses, ~falses, ~falses)
+        slot = accept.setdefault(stratum, [0, 0, 0])
+        slot[0] += int(proposal.size)
+        slot[1] += int((base_vocab == reference).sum())
+        slot[2] += int((base_vocab == proposal).sum())
         for sketch in sketches:
             for stage_a in stages:
-                run_arm(screen, sketch, f, x, fractions, widths, base, domain,
-                        cells, stage_a)
+                run_arm(screen, sketch, f, x, fractions, widths, base_miss,
+                        base_out, stratum, reference, base_vocab, cells, stage_a)
         n += f["b"]
         if n % (args.batch * 10) == 0:
             print(f"  {n} samples  {time.time() - t0:.0f}s", flush=True)
 
+    p_by_stratum = {k: (v[1] / v[0] if v[0] else float("nan"))
+                    for k, v in accept.items()}
+    aligned = sum(v[0] for v in accept.values())
     out = {
         "samples": n,
         "base_sha": args.base_sha,
-        "shipped": summarize("shipped", base_cell, price(0), {}),
+        "wall_seconds": time.time() - t0,
+        "p_head_step_accuracy": (sum(v[1] for v in accept.values()) / aligned
+                                 if aligned else float("nan")),
+        "p_head_step_accuracy_by_stratum": p_by_stratum,
+        "offline_shipped_chain_reproduces_runtime":
+            (sum(v[2] for v in accept.values()) / aligned
+             if aligned else float("nan")),
+        "shipped": summarize("shipped", base_cell, price(0), {}, p_by_stratum),
         "cells": [],
     }
     shipped_bytes = shipped_stage_bytes()
@@ -612,87 +1074,40 @@ def cmd_screen(args) -> None:
         sketch = next(s for s in sketches if s.key == key)
         arm_bytes = arm_stage_bytes(sketch.bytes_per_row, sketch.proj_bytes,
                                     n_keep, p, stage_a)
-        model = price(shipped_bytes - arm_bytes)
         tag = "" if stage_a == "sketch" else "-hybridA"
         out["cells"].append(summarize(
-            f"{key}{tag}-N{n_keep}-p{p:g}", cell, model,
+            f"{key}{tag}-N{n_keep}-p{p:g}", cell, price(shipped_bytes - arm_bytes),
             {"family": sketch.family, "size": sketch.size, "stage_a": stage_a,
              "bytes_per_row": sketch.bytes_per_row, "proj_bytes": sketch.proj_bytes,
              "survivors": n_keep, "probe_fraction": p,
-             "arm_stage_bytes": arm_bytes, "shipped_stage_bytes": shipped_bytes}))
-    out["cells"].sort(key=lambda c: -c["predicted_pct_worst_domain"])
+             "arm_stage_bytes": arm_bytes, "shipped_stage_bytes": shipped_bytes},
+            p_by_stratum))
+    out["cells"].sort(key=lambda c: -c["predicted_pct_gating"])
 
-    print(f"\n{'arm':28s}{'B/row':>7s}{'m':>10s}{'net':>11s}{'netBeagle':>11s}"
-          f"{'recall':>9s}{'gain%':>8s}{'pred%':>8s}{'predWD%':>9s}")
+    print(f"\n{'arm':30s}{'B/row':>7s}{'netWorst':>11s}{'mAbsWorst':>11s}"
+          f"{'mInc':>11s}{'loss':>11s}{'recall':>9s}{'gain%':>8s}{'pred%':>8s}"
+          f"{'T0':>4s}{'T0b':>5s}")
     for cell in out["cells"][: args.top]:
-        print(f"{cell['arm']:28s}{cell['bytes_per_row']:7d}{cell['m']:10.5f}"
-              f"{cell['net_miss']:11.3e}{cell['net_miss_low_acceptance']:11.3e}"
-              f"{cell['recall_affine2_top1']:9.5f}{cell['pct_head_share_7']:8.3f}"
-              f"{cell['predicted_pct']:8.3f}{cell['predicted_pct_worst_domain']:9.3f}")
+        print(f"{cell['arm']:30s}{cell['bytes_per_row']:7d}"
+              f"{cell['net_miss_worst_gating']:11.3e}"
+              f"{cell['m_absolute_worst_gating']:11.3e}"
+              f"{cell['m_incremental_worst_gating']:11.3e}"
+              f"{cell['acceptance_loss_worst_gating']:11.3e}"
+              f"{cell['recall_worst_gating']:9.5f}{cell['pct_head_share_7']:8.3f}"
+              f"{cell['predicted_pct_gating']:8.3f}"
+              f"{'ok' if cell['passes_t0'] else 'NO':>4s}"
+              f"{'ok' if cell['passes_t0b'] else 'NO':>5s}")
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=2))
         print(f"wrote {args.out}")
 
 
-LOW_ACCEPTANCE_DOMAIN = "beagle"
-
-
-def summarize(arm: str, cell: Cell, model: dict, extra: dict) -> dict:
-    m, m_lo, m_hi = wilson(cell.miss, cell.n)
-    net = (cell.worse - cell.better) / cell.n if cell.n else float("nan")
-    disc = cell.worse + cell.better
-    _, dlo, dhi = wilson(cell.worse, disc)
-    net_lo = (2 * dlo - 1) * disc / cell.n if disc and cell.n else 0.0
-    net_hi = (2 * dhi - 1) * disc / cell.n if disc and cell.n else 0.0
-    by_domain = {}
-    for domain, (hit, worse, better, total, recall) in cell.by_domain.items():
-        # A per-domain stratum is small, so the discordant-pair interval is
-        # reported with the point estimate. One extra miss in a 600-sample
-        # stratum already reads as 1.7e-3 against a 3.0e-3 gate.
-        d = worse + better
-        _, lo, hi = wilson(worse, d)
-        by_domain[domain] = {
-            "n": total,
-            "m": hit / total,
-            "net": (worse - better) / total,
-            "net_lo": (2 * lo - 1) * d / total if d else 0.0,
-            "net_hi": (2 * hi - 1) * d / total if d else 0.0,
-            "discordant": d,
-            "recall": recall / total,
-        }
-    worst = max((v["net"] for v in by_domain.values()), default=net)
-    low = by_domain.get(LOW_ACCEPTANCE_DOMAIN, {}).get("net", float("nan"))
-    penalty = MISS_TO_SCORE_PCT
-    return {
-        "arm": arm,
-        **extra,
-        "n": cell.n,
-        "misses": cell.miss,
-        "m": m,
-        "m_lo": m_lo,
-        "m_hi": m_hi,
-        "worse_than_shipped": cell.worse,
-        "better_than_shipped": cell.better,
-        "net_miss": net,
-        "net_miss_lo": net_lo,
-        "net_miss_hi": net_hi,
-        "net_miss_worst_domain": worst,
-        "net_miss_low_acceptance": low,
-        "recall_affine2_top1": cell.recall_hit / cell.n if cell.n else float("nan"),
-        "probe_hit_rate": cell.probe_hit / cell.n if cell.n else float("nan"),
-        "survivor_hit_rate": cell.survivor_hit / cell.n if cell.n else float("nan"),
-        **model,
-        "predicted_pct": model["pct_head_share_7"] - penalty * net,
-        "predicted_pct_worst_domain": model["pct_head_share_7"] - penalty * worst,
-        "predicted_pct_low_acceptance":
-            model["pct_head_share_7"] - penalty * (low if low == low else 0.0),
-        "by_domain": by_domain,
-    }
-
-
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
+
+    t = sub.add_parser("selftest")
+    t.set_defaults(func=cmd_selftest)
 
     c = sub.add_parser("corpus")
     c.add_argument("--out", default="research/e133-corpus.json")

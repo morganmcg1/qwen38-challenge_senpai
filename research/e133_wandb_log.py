@@ -24,19 +24,24 @@ GROUP = "e133-sketch-first-draft-readout-offline-screen"
 HOST = "apple-m4-pro-applegpu_g16s-20core-48gib"
 BASE_SHA = "197e0550ab46842b639a4ff4fe3f4889ca3b01ec"
 
-# T0 kills a cell whose worst-domain net miss exceeds this. T0b kills a cell
-# that loses the exact affine-2 top-1 more often than 0.3 % of the time.
+# T0 kills a cell whose worst GATING-STRATUM absolute net miss exceeds this.
+# T0b kills a cell that loses the exact affine-2 top-1 more often than 0.3 %
+# of the time. F1.2 makes `beagle` and `min_carriers` the gating strata;
+# `zero_weight` is reported and never gates.
 T0_NET_MISS = 3.0e-3
 T0B_RECALL = 0.997
+GATING_STRATA = ("beagle", "min_carriers")
+SAMPLE_FLOOR = 4000
 
 RUNGS = {
     "1": {
         "run_name": "e133-rung1-corpus-capture",
         "file": "research/e133-corpus.json",
         "question":
-            "how many decode-position hidden states did the instrumented "
-            "worker capture over the committed E124 corpus, and does every "
-            "seed keep MTP parity with its serial reference",
+            "how many draft-row hidden states did the instrumented worker "
+            "capture over the reweighted E133 corpus, does each gating "
+            "stratum clear 4,000 samples, and does every seed keep MTP "
+            "parity with its serial reference",
         "command":
             "research/e133_job.sh research/e133_capture.sh all "
             "--steps 512 --depth 8",
@@ -63,26 +68,37 @@ RUNGS = {
 
 CELL_COLUMNS = [
     "arm", "family", "size", "stage_a", "bytes_per_row", "proj_bytes",
-    "survivors", "probe_fraction", "n", "misses", "m", "m_lo", "m_hi",
-    "worse_than_shipped", "better_than_shipped",
-    "net_miss", "net_miss_lo", "net_miss_hi",
-    "net_miss_worst_domain", "net_miss_low_acceptance",
-    "recall_affine2_top1", "probe_hit_rate", "survivor_hit_rate",
+    "survivors", "probe_fraction", "n", "n_gating",
+    "net_miss_worst_gating", "net_miss_worst_gating_hi",
+    "m_absolute_worst_gating", "m_absolute_worst_gating_hi",
+    "m_incremental_worst_gating", "recall_worst_gating",
+    "acceptance_loss_worst_gating",
     "arm_stage_bytes", "shipped_stage_bytes", "removed_bytes",
     "removed_step_fraction", "pct_byte_rate", "pct_head_share_7",
-    "pct_head_share_9", "predicted_pct", "predicted_pct_worst_domain",
-    "predicted_pct_low_acceptance", "passes_t0", "passes_t0b",
+    "pct_head_share_9", "predicted_pct_gating", "predicted_pct_raw_miss",
+    "passes_t0", "passes_t0b",
 ]
 
-DOMAIN_COLUMNS = [
-    "arm", "domain", "n", "m", "net", "net_lo", "net_hi", "discordant",
-    "recall",
+STRATUM_COLUMNS = [
+    "arm", "stratum", "gating", "n",
+    "misses_absolute", "m_absolute", "m_absolute_lo", "m_absolute_hi",
+    "misses_incremental", "m_incremental", "m_incremental_lo",
+    "m_incremental_hi",
+    "net_miss", "net_miss_lo", "net_miss_hi", "discordant",
+    "recall", "probe_hit_rate", "survivor_hit_rate",
+    "p_head_step_accuracy", "p_shipped_is_target_on_substituted",
+    "q_substitute_is_target", "substitutions",
+    "acceptance_loss", "acceptance_loss_pooled_p",
+    "tail_fit_usable", "tail_fit_p", "tail_fit_lo", "tail_fit_hi",
 ]
+
+SURVIVAL_COLUMNS = ["arm", "stratum", "n", "width", "count", "survival"]
 
 SEED_COLUMNS = [
-    "seed", "domain", "samples", "shards", "accepted_draft_rate",
-    "effective_mean_draft_len", "round_count", "parity_all_ok",
-    "all_tokens_matched",
+    "seed", "domain", "stratum", "samples", "dumped_rows",
+    "warmup_rows_skipped", "shards", "accepted_draft_rate",
+    "accepted_draft_total", "effective_mean_draft_len", "round_count",
+    "parity_all_ok", "all_tokens_matched", "head_sha256",
 ]
 
 
@@ -95,8 +111,13 @@ def flatten(prefix: str, value, out: dict) -> None:
 
 
 def gates(cell: dict) -> tuple[bool, bool]:
-    return (cell["net_miss_worst_domain"] <= T0_NET_MISS,
-            cell["recall_affine2_top1"] >= T0B_RECALL)
+    """Re-derive T0 and T0b here instead of trusting the screen's own flags.
+
+    The publisher and the screen must agree, and an independent recomputation
+    is what makes a disagreement visible.
+    """
+    return (cell["net_miss_worst_gating"] <= T0_NET_MISS,
+            cell["recall_worst_gating"] >= T0B_RECALL)
 
 
 def table(columns: list[str], rows: list[dict]) -> wandb.Table:
@@ -109,20 +130,30 @@ def table(columns: list[str], rows: list[dict]) -> wandb.Table:
 def corpus_summary(payload: dict) -> tuple[dict, dict]:
     seeds = payload["seeds"]
     parity = [s for s in seeds if s.get("parity_all_ok") is not True]
+    by_stratum = payload["by_stratum"]
     summary = {
         "corpus_samples": payload["samples"],
         "corpus_seeds": len(seeds),
         "corpus_seeds_without_parity": len(parity),
-        "corpus_meets_6000_floor": payload["samples"] >= 6000,
     }
-    flatten("by_domain", payload["by_domain"], summary)
+    flatten("by_stratum", by_stratum, summary)
+    for stratum in GATING_STRATA:
+        summary["gating_floor_met/%s" % stratum] = (
+            by_stratum.get(stratum, 0) >= SAMPLE_FLOOR)
+    summary["all_gating_floors_met"] = all(
+        by_stratum.get(s, 0) >= SAMPLE_FLOOR for s in GATING_STRATA)
     return summary, {"corpus_seeds": table(SEED_COLUMNS, seeds)}
 
 
 def validate_summary(payload: dict) -> tuple[dict, dict]:
     summary: dict = {"validate_samples": payload["samples"]}
-    for section in ("proposal_match", "proposal_mismatch",
-                    "m_shipped_live_chain", "m_damaged_simhash8_control"):
+    for key in ("offline_argmax_matches_runtime_proposal",
+                "ledger_verdict_consistent",
+                "offline_shipped_chain_reproduces_runtime",
+                "p_head_step_accuracy"):
+        summary[key] = payload.get(key)
+    for section in ("proposal_mismatch", "m_shipped_live_chain",
+                    "m_damaged_simhash8_control"):
         flatten(section, payload.get(section), summary)
     # The control only proves anything if it actually fails.
     summary["control_can_fail"] = (
@@ -133,19 +164,36 @@ def validate_summary(payload: dict) -> tuple[dict, dict]:
 
 def screen_summary(payload: dict) -> tuple[dict, dict]:
     cells = []
-    domains = []
+    strata = []
+    survival = []
+    disagreements = 0
     for cell in payload["cells"]:
         t0, t0b = gates(cell)
+        disagreements += int(t0 != cell["passes_t0"] or t0b != cell["passes_t0b"])
         row = dict(cell)
         row["passes_t0"] = t0
         row["passes_t0b"] = t0b
         cells.append(row)
-        for domain, stats in cell["by_domain"].items():
-            domains.append({"arm": cell["arm"], "domain": domain, **stats})
+        for stratum, stats in cell["by_stratum"].items():
+            fit = stats.get("tail_fit_at_survivors") or {}
+            strata.append({
+                "arm": cell["arm"], "stratum": stratum,
+                "gating": stratum in GATING_STRATA,
+                "tail_fit_usable": fit.get("usable", False),
+                "tail_fit_p": fit.get("p"), "tail_fit_lo": fit.get("lo"),
+                "tail_fit_hi": fit.get("hi"),
+                **{k: v for k, v in stats.items()
+                   if k not in ("survival_curve", "tail_fit_at_survivors")},
+            })
+            for width, count in stats.get("survival_curve", {}).items():
+                survival.append({
+                    "arm": cell["arm"], "stratum": stratum, "n": stats["n"],
+                    "width": int(width), "count": count,
+                    "survival": count / stats["n"] if stats["n"] else None,
+                })
 
     survivors = [c for c in cells if c["passes_t0"] and c["passes_t0b"]]
-    best = max(survivors, key=lambda c: c["predicted_pct_worst_domain"],
-               default=None)
+    best = max(survivors, key=lambda c: c["predicted_pct_gating"], default=None)
     # The primary metric is what a compliant cell is worth on the ranked
     # score. No compliant cell means the mechanism is worth exactly zero.
     summary = {
@@ -154,26 +202,35 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
         "cells_passing_t0": sum(1 for c in cells if c["passes_t0"]),
         "cells_passing_t0b": sum(1 for c in cells if c["passes_t0b"]),
         "cells_passing_both": len(survivors),
+        "gate_recomputation_disagreements": disagreements,
         "e133_best_cell_ranked_pct":
-            best["predicted_pct_worst_domain"] if best else 0.0,
+            best["predicted_pct_gating"] if best else 0.0,
         "e133_worst_domain_net_miss_rate":
-            min((c["net_miss_worst_domain"] for c in cells), default=float("nan")),
+            min((c["net_miss_worst_gating"] for c in cells),
+                default=float("nan")),
         "best_cell_arm": best["arm"] if best else None,
+        "p_head_step_accuracy": payload.get("p_head_step_accuracy"),
+        "offline_shipped_chain_reproduces_runtime":
+            payload.get("offline_shipped_chain_reproduces_runtime"),
         "t0_threshold": T0_NET_MISS,
         "t0b_threshold": T0B_RECALL,
         "miss_to_score_pct": 203.0,
     }
+    flatten("p_by_stratum", payload.get("p_head_step_accuracy_by_stratum", {}),
+            summary)
     if best:
         for key in ("family", "size", "stage_a", "survivors", "probe_fraction",
-                    "bytes_per_row", "removed_bytes", "pct_byte_rate",
-                    "pct_head_share_7", "pct_head_share_9", "net_miss",
-                    "net_miss_worst_domain", "net_miss_low_acceptance",
-                    "recall_affine2_top1"):
+                    "bytes_per_row", "proj_bytes", "removed_bytes",
+                    "pct_byte_rate", "pct_head_share_7", "pct_head_share_9",
+                    "net_miss_worst_gating", "m_absolute_worst_gating",
+                    "m_incremental_worst_gating", "acceptance_loss_worst_gating",
+                    "recall_worst_gating", "predicted_pct_raw_miss"):
             summary["best_cell/%s" % key] = best[key]
     flatten("shipped", {k: v for k, v in payload["shipped"].items()
-                        if k != "by_domain"}, summary)
+                        if k != "by_stratum"}, summary)
     return summary, {"screen_cells": table(CELL_COLUMNS, cells),
-                     "screen_by_domain": table(DOMAIN_COLUMNS, domains)}
+                     "screen_by_stratum": table(STRATUM_COLUMNS, strata),
+                     "screen_survival": table(SURVIVAL_COLUMNS, survival)}
 
 
 BUILDERS = {"1": corpus_summary, "2": validate_summary, "3": screen_summary}
@@ -209,7 +266,7 @@ def main() -> int:
                      name=spec["run_name"], job_type="offline-screen",
                      config={"experiment": "E133", "rung": args.rung,
                              "base_sha": BASE_SHA, "host": HOST,
-                             "corpus": "e124-corpus-manifest.json",
+                             "corpus": "e133-corpus-manifest.json",
                              "command": spec["command"],
                              "question": spec["question"]})
     for name, value in tables.items():
