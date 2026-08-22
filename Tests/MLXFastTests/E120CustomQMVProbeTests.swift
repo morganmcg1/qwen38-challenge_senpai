@@ -69,6 +69,11 @@ struct E120CustomQMVProbeTests {
         "gdn.in_proj": (5120, 16480),
         "fa.qkv": (5120, 14336),
         "mlp.down": (17408, 5120),
+        // 24 query heads x 256. 12 k-blocks, a chunk count no other cell has.
+        "fa.o_proj": (6144, 5120),
+        // linear_num_value_heads 48 x 128 head_v_dim. Same shape as
+        // `fa.o_proj`; both names are kept so the report names the call site.
+        "gdn.out_proj": (6144, 5120),
         // Smallest wide-eligible output width at the shipped K. The fill cost
         // does not depend on N, so a cheap consumer resolves it better.
         "stream.small": (5120, 4096),
@@ -292,6 +297,12 @@ struct E120CustomQMVProbeTests {
                     if arm == .sumTable {
                         record["table_hit"] = tableHit
                         record["restored_diff"] = restoredDiff
+                        // 5b: the shipped gate is a pure function of the shape
+                        // and the width, so record what it decided here.
+                        record["table_routed"] = Qwen35CustomQMV.tablePays(
+                            n: shape.outputs, kBlocks: shape.hidden / 512, m: width)
+                        record["gate_volume"] =
+                            shape.outputs * (shape.hidden / 512) * width
                         #expect(tableHit > 0)
                         #expect(restoredDiff == 0)
                     }
@@ -315,6 +326,32 @@ struct E120CustomQMVProbeTests {
                     MLXRandom.normal([width, shape.hidden]).asType(.bfloat16))
                 eval(x)
                 #expect(Self.custom(x, w, .replica) == nil)
+            }
+
+            // 5c: `ensureRowContiguous: false` makes a strided activation
+            // silently wrong, and a shape-fixed probe cannot catch it. The left
+            // half of a [6, 2K] block keeps row stride 2K, so the guard must
+            // decline it and MLX must own the cell.
+            let wide = MLXRandom.normal([6, 2 * shape.hidden]).asType(.bfloat16)
+            eval(wide)
+            let leftHalf = wide[0 ..< 6, 0 ..< shape.hidden]
+            eval(leftHalf)
+            #expect(leftHalf.shape == [6, shape.hidden])
+            let dense = Qwen35CustomQMV.rowContiguous(leftHalf, rowStride: shape.hidden)
+            #expect(dense == false, "MLX materialised the slice; the stride case is untested")
+            if !dense {
+                #expect(Self.custom(leftHalf, w, .replica) == nil)
+                #expect(Self.custom(leftHalf, w, .sumTable) == nil)
+                // The same values, densely packed, must be routed and exact.
+                let packed = contiguous(leftHalf)
+                eval(packed)
+                guard let routed = Self.custom(packed, w, .sumTable) else {
+                    Issue.record("\(shape.name): declined the packed copy")
+                    continue
+                }
+                let reference = Self.mlx(packed, w)
+                eval(routed, reference)
+                #expect(Self.mismatches(reference, routed) == 0)
             }
         }
 

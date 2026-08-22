@@ -117,6 +117,34 @@ def host_cost(log: pathlib.Path) -> dict | None:
     return None
 
 
+_SWIFT_FIELD = re.compile(r'"(\w+)": ([^,\]]+)')
+
+
+def exact_from_log(log: pathlib.Path) -> dict | None:
+    """Recover exactness records from a session that predates `exact.json`.
+    Swift prints a dictionary literal, not JSON."""
+    if not log.exists():
+        return None
+    records = []
+    for line in log.read_text().splitlines():
+        if not line.startswith("E120 exactness"):
+            continue
+        raw = dict(_SWIFT_FIELD.findall(line))
+        record = {}
+        for key, value in raw.items():
+            value = value.strip().strip('"')
+            if value in ("true", "false"):
+                record[key] = value == "true"
+            elif re.fullmatch(r"-?\d+", value):
+                record[key] = int(value)
+            elif re.fullmatch(r"-?\d+\.\d+", value):
+                record[key] = float(value)
+            else:
+                record[key] = value
+        records.append(record)
+    return {"records": records} if records else None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("out_dir", type=pathlib.Path)
@@ -129,7 +157,8 @@ def main() -> int:
     meta = read_meta(args.out_dir / "meta.txt")
     cells = load(args.out_dir / "cells.json")
     fill = load(args.out_dir / "fill.json")
-    exact = load(args.out_dir / "exact.json")
+    exact = load(args.out_dir / "exact.json") or exact_from_log(
+        args.out_dir / "probe.log")
     census = load(args.census) if args.census else load(args.out_dir / "census.json")
     hosts = host_cost(args.out_dir / "probe.log")
 
@@ -259,23 +288,25 @@ def main() -> int:
             exact_all = exact_all and record["differing_elements"] == 0
             table.add_data(
                 record["shape"], record["outputs"], record["hidden"],
-                record["width"], record["arm"], record["elements"],
+                record["width"], record.get("arm", "replica"), record["elements"],
                 record["differing_elements"], record["max_abs_diff"],
-                record["bit_exact"], record["x_hit"], record["meta_hit"],
+                record["bit_exact"], record.get("x_hit"), record.get("meta_hit"),
                 record.get("table_hit"), record.get("restored_diff"),
-                record["positive_control_can_fail"])
+                record.get("positive_control_can_fail"))
         run.log({f"rung{args.rung}/exactness": table})
         summary["bit_exact_all_cells"] = exact_all
         summary["exactness_cells"] = len(exact["records"])
 
     if census:
         archs = sorted(census)
-        table = wandb.Table(columns=["kernel", "arch", "registers", "spill_bytes", "text_bytes"])
+        table = wandb.Table(
+            columns=["kernel", "arch", "registers", "spill_bytes", "text_bytes",
+                     "text_sha8"])
         for arch in archs:
             for kernel, record in sorted(census[arch].items()):
                 table.add_data(
                     kernel, arch, record["registers"], record["spill_bytes"],
-                    record["text_bytes"])
+                    record["text_bytes"], record.get("text_sha8"))
         run.log({f"rung{args.rung}/census": table})
         summary["max_spill_bytes"] = max(
             record["spill_bytes"] for arch in archs for record in census[arch].values())

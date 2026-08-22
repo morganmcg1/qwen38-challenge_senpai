@@ -806,8 +806,8 @@ final class Qwen35GatedDeltaNet: Module {
         _ x: MLXArray
     ) -> (MLXArray, MLXArray, MLXArray, MLXArray)? {
         if let w = _inW, let s = _inS, let zp = _inZ {
-            let y = quantizedMM(
-                x, w, scales: s, biases: zp, transpose: true,
+            let y = qwen35RoutedQuantizedMM(
+                x, w, scales: s, biases: zp,
                 groupSize: _inGS, bits: _inBits, mode: _inMode)
             let qkvEnd = keyDim * 2 + valueDim
             let zEnd = qkvEnd + valueDim
@@ -1682,6 +1682,34 @@ public enum Qwen35CustomQMV {
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
+    /// The chunk-sum table only pays for itself when the recomputation it
+    /// removes is worth more than one fill dispatch. The consumer gain is
+    /// `c * N * kBlocks * M` with `c` about 0.0223 us per (column, k-block,
+    /// row) at M=4 and 0.0234 at M=8, and the measured in-stream fill costs
+    /// 4.85 us. Break-even is therefore near `N * kBlocks * M = 220,000`.
+    ///
+    /// Two measured endpoints bracket the constant, both `harness=local` on
+    /// Apple M4 Pro at the E120 rung-2 session:
+    ///   `control.small`, N=4096, kBlocks=1,  M=8 -> volume    32,768, net -2.15 us
+    ///   `stream.small`,  N=4096, kBlocks=10, M=4 -> volume   163,840, net +2.75 us
+    /// The gate sits above the negative endpoint and just under the positive
+    /// one, so it never routes a shape measured to lose.
+    ///
+    /// This is a pure function of shape and width. It reads no clock, no
+    /// counter and no state that survives a request.
+    public static let tableBreakEvenVolume = 220_000
+
+    public static func tablePays(n: Int, kBlocks: Int, m: Int) -> Bool {
+        n * kBlocks * m > tableBreakEvenVolume
+    }
+
+    /// True when the last two dimensions are densely packed, so a kernel with
+    /// `ensureRowContiguous: false` may index the buffer as `row * k + col`.
+    public static func rowContiguous(_ a: MLXArray, rowStride: Int) -> Bool {
+        let s = a.strides
+        return s.count >= 2 && s[s.count - 1] == 1 && s[s.count - 2] == rowStride
+    }
+
     /// Cells the replica may take from MLX. Returns `(m, k, n)` or `nil`.
     static func routable(
         _ x: MLXArray, _ w: MLXArray, scales: MLXArray, biases: MLXArray,
@@ -1701,6 +1729,12 @@ public enum Qwen35CustomQMV {
         }
         let m = x.size / k
         guard Self.widths.contains(m), x.dim(-2) == m else { return nil }
+        // `ensureRowContiguous: false` makes a strided input silently wrong,
+        // and a shape-fixed probe cannot catch it. Fall back to MLX instead.
+        guard rowContiguous(x, rowStride: k), rowContiguous(w, rowStride: k / 8),
+            rowContiguous(scales, rowStride: k / groupSize),
+            rowContiguous(biases, rowStride: k / groupSize)
+        else { return nil }
         return (m, k, n)
     }
 
@@ -1767,7 +1801,10 @@ public enum Qwen35CustomQMV {
                 groupSize: groupSize, bits: bits, mode: mode)
         else { return nil }
 
-        if arm == .fillNoConsume || arm == .sumTable {
+        if arm == .fillNoConsume
+            || (arm == .sumTable
+                && tablePays(n: cell.n, kBlocks: cell.k / 512, m: cell.m))
+        {
             return matmulWithTable(
                 x, w, scales: scales, biases: biases, xsums: xsumsTable(x),
                 groupSize: groupSize, bits: bits, mode: mode,
@@ -1784,6 +1821,30 @@ public enum Qwen35CustomQMV {
             outputDTypes: [.bfloat16]
         )[0]
     }
+}
+
+/// `quantizedMM` with the candidate-owned wide QMV dispatch in front of it.
+/// `Qwen35CustomQMV.matmul` returns nil for every arm, shape, width, group
+/// size, bit width and mode it does not own, so this is a drop-in replacement
+/// at any transposed affine call site.
+func qwen35RoutedQuantizedMM(
+    _ x: MLXArray,
+    _ w: MLXArray,
+    scales: MLXArray,
+    biases: MLXArray,
+    groupSize: Int,
+    bits: Int,
+    mode: QuantizationMode
+) -> MLXArray {
+    if let y = Qwen35CustomQMV.matmul(
+        x, w, scales: scales, biases: biases,
+        groupSize: groupSize, bits: bits, mode: mode)
+    {
+        return y
+    }
+    return quantizedMM(
+        x, w, scales: scales, biases: biases, transpose: true,
+        groupSize: groupSize, bits: bits, mode: mode)
 }
 
 final class Qwen35FusedMLP: Module, UnaryLayer {
@@ -1808,14 +1869,8 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
 
     private func fusedGateUp(_ x: MLXArray) -> MLXArray? {
         if let w = _fqW, let s = _fqS, let z = _fqZ {
-            if let y = Qwen35CustomQMV.matmul(
+            return qwen35RoutedQuantizedMM(
                 x, w, scales: s, biases: z,
-                groupSize: _fqGS, bits: _fqBits, mode: _fqMode)
-            {
-                return y
-            }
-            return quantizedMM(
-                x, w, scales: s, biases: z, transpose: true,
                 groupSize: _fqGS, bits: _fqBits, mode: _fqMode)
         }
         if let w = _fbfW {
@@ -2707,8 +2762,8 @@ final class Qwen35Attention: Module {
         // permutation of the output range.
         if let kvExact = _exactKVDenseW, islandFastPathReady() {
             if let w = _qOnlyW, let s = _qOnlyS, let z = _qOnlyZ {
-                var q = quantizedMM(
-                    x, w, scales: s, biases: z, transpose: true,
+                var q = qwen35RoutedQuantizedMM(
+                    x, w, scales: s, biases: z,
                     groupSize: _qkvGS, bits: _qkvBits, mode: _qkvMode)
                 q = replaceExactRows(q, input: x, kvOnly: false)
                 let kvRows = matmul(x, kvExact.transposed(1, 0))
@@ -2727,8 +2782,8 @@ final class Qwen35Attention: Module {
             }
         }
         if let w = _qkvW, let s = _qkvS, let z = _qkvZ {
-            var y = quantizedMM(
-                x, w, scales: s, biases: z, transpose: true,
+            var y = qwen35RoutedQuantizedMM(
+                x, w, scales: s, biases: z,
                 groupSize: _qkvGS, bits: _qkvBits, mode: _qkvMode)
             y = replaceExactRows(y, input: x, kvOnly: false)
             let qEnd = _qOut
@@ -2784,8 +2839,8 @@ final class Qwen35Attention: Module {
             return (y[.ellipsis, ..<kEnd], y[.ellipsis, kEnd...])
         }
         if let w = _kvW, let s = _kvS, let z = _kvZ {
-            var y = quantizedMM(
-                x, w, scales: s, biases: z, transpose: true,
+            var y = qwen35RoutedQuantizedMM(
+                x, w, scales: s, biases: z,
                 groupSize: _kvGS, bits: _kvBits, mode: _kvMode)
             y = replaceExactRows(y, input: x, kvOnly: true)
             return (y[.ellipsis, ..<_kvOut], y[.ellipsis, _kvOut...])
@@ -4823,7 +4878,7 @@ extension Qwen35TextModel: MTPCapable {
         let normed = model.norm(hidden)
         let logits: MLXArray
         if let lmHead {
-            logits = lmHead(normed)
+            logits = routedLMHead(lmHead, normed)
         } else {
             logits = model.embedTokens.asLinear(normed)
         }
@@ -4843,7 +4898,7 @@ extension Qwen35TextModel: MTPCapable {
         let normed = model.norm(hidden)
         let logits: MLXArray
         if let lmHead {
-            logits = lmHead(normed)
+            logits = routedLMHead(lmHead, normed)
         } else {
             logits = model.embedTokens.asLinear(normed)
         }
@@ -4907,7 +4962,7 @@ extension Qwen35TextModel: MTPCapable {
         if configuration.tieWordEmbeddings {
             logits = model.embedTokens.asLinear(mtpOut)
         } else {
-            logits = lmHead!(mtpOut)
+            logits = routedLMHead(lmHead!, mtpOut)
         }
         return (logits, mtpOut)
     }
@@ -4959,9 +5014,20 @@ extension Qwen35TextModel: MTPCapable {
     /// rows. Companion to `mtpHeadHiddenForward` for the rows that need logits.
     public func applyLMHead(_ x: MLXArray) -> MLXArray {
         if let lmHead {
-            return lmHead(x)
+            return routedLMHead(lmHead, x)
         }
         return model.embedTokens.asLinear(x)
+    }
+
+    /// `lmHead` with the candidate-owned wide QMV dispatch in front of it. The
+    /// vocabulary projection is the widest single matvec in the round, so it is
+    /// the largest beneficiary of the hoisted activation chunk sums.
+    func routedLMHead(_ head: Linear, _ x: MLXArray) -> MLXArray {
+        guard let q = head as? QuantizedLinear, q.bias == nil, let z = q.biases
+        else { return head(x) }
+        return qwen35RoutedQuantizedMM(
+            x, q.weight, scales: q.scales, biases: z,
+            groupSize: q.groupSize, bits: q.bits, mode: q.mode)
     }
 
     /// Draft-only vocabulary projection: the declared head's coarser lm_head
