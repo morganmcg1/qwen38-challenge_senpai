@@ -186,6 +186,25 @@ struct E120CustomQMVProbeTests {
         }
     }
 
+    /// Brings every arm to the same thermal and allocator state before a block.
+    ///
+    /// HARNESS DEFECT. Ramping `arms[0]` alone put the whole burst's allocator
+    /// growth immediately before the first timed arm, which is always `arms[0]`
+    /// in the forward pass. ABBA cannot cancel that, because the ramp sits
+    /// outside the counterbalanced pair. Measured on E129 at `b15aaf51`: the
+    /// byte-identical M=5 control read +38.95 % for `a_compare`, and
+    /// `a_compare`'s forward leg ran up to 12x its own reverse leg while
+    /// `b_shipped` matched itself within 1 %.
+    ///
+    /// Each arm now gets an equal share of the burst, and every arm then takes
+    /// a discarded timed run so the reclaim that follows the burst is charged
+    /// to no arm in particular.
+    static func settle(_ arms: [E120Arm], seconds: Double) {
+        let share = seconds / Double(max(arms.count, 1))
+        for arm in arms { rampBurst(arm.body, seconds: share) }
+        for arm in arms { _ = timed(2, arm.body) }
+    }
+
     /// Graph construction only: build the op and drop it without evaluating.
     /// This is the whole host-side price of a dispatch, including the source
     /// string that `write_signature` rebuilds on every call.
@@ -464,7 +483,7 @@ struct E120CustomQMVProbeTests {
 
                 for blockIndex in 0 ..< Self.blocks {
                     let entryTemp = e120GPUTemperature()
-                    Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                    Self.settle(arms, seconds: Self.rampSeconds)
                     let forward = arms.map { Self.timed(count, $0.body) }
                     let reverse = Array(
                         arms.reversed().map { Self.timed(count, $0.body) }.reversed())
@@ -590,7 +609,7 @@ struct E120CustomQMVProbeTests {
 
                 for blockIndex in 0 ..< Self.blocks {
                     let entryTemp = e120GPUTemperature()
-                    Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                    Self.settle(arms, seconds: Self.rampSeconds)
                     let forward = arms.map { Self.timed(count, $0.body) }
                     let reverse = Array(
                         arms.reversed().map { Self.timed(count, $0.body) }.reversed())
@@ -948,7 +967,7 @@ struct E120CustomQMVProbeTests {
 
                 for blockIndex in 0 ..< Self.blocks {
                     let entryTemp = e120GPUTemperature()
-                    Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                    Self.settle(arms, seconds: Self.rampSeconds)
                     let forward = arms.map { Self.timed(count, $0.body) }
                     let reverse = Array(
                         arms.reversed().map { Self.timed(count, $0.body) }.reversed())

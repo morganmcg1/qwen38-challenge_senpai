@@ -1584,6 +1584,7 @@ private func qwen35E120QMVSource(table: Bool, tier: Int?) -> String {
         .joined(separator: "\n")
     let nullDecl = table ? "" : "\n        const device float* qmv_null_sums = nullptr;"
     return """
+            // \(Qwen35CustomQMV.planWitness)
             const int qmv_m = x_shape[x_ndim - 2];
             const int qmv_k = x_shape[x_ndim - 1];
             const int qmv_n = w_shape[0];
@@ -1600,10 +1601,35 @@ private func qwen35E120QMVSource(table: Bool, tier: Int?) -> String {
         """
 }
 
+/// Every pipeline name as a whole literal.
+///
+/// `senpai/rebuild-and-assert-worker.sh` witnesses kernel content through the
+/// worker's string table, and a name assembled by `+` or interpolation never
+/// reaches it. Building these by concatenation left the shipped pipeline set
+/// unwitnessable, so the pre-submit chain could neither require a name that is
+/// present nor forbid one that is absent.
+///
+/// `MLX` also keys its library cache by this name and rebuilds the library
+/// whenever one name is seen with two different sources, so a collision here
+/// would put a full JIT compile in the decode loop. A total `switch` makes both
+/// properties checkable by reading one list.
+private func qwen35E120QMVName(table: Bool, tier: Int?) -> String {
+    switch (table, tier) {
+    case (false, nil): return "qwen35_custom_affine4_g64_qmv_wide_v2"
+    case (true, nil): return "qwen35_custom_affine4_g64_qmv_wide_sums_v2"
+    case (false, 3): return "qwen35_custom_affine4_g64_qmv_wide_na3_v2"
+    case (false, 4): return "qwen35_custom_affine4_g64_qmv_wide_na4_v2"
+    case (false, 5): return "qwen35_custom_affine4_g64_qmv_wide_na5_v2"
+    case (true, 3): return "qwen35_custom_affine4_g64_qmv_wide_sums_na3_v2"
+    case (true, 4): return "qwen35_custom_affine4_g64_qmv_wide_sums_na4_v2"
+    case (true, 5): return "qwen35_custom_affine4_g64_qmv_wide_sums_na5_v2"
+    default: preconditionFailure("no pipeline name for tier \(tier as Any)")
+    }
+}
+
 private func qwen35E120QMVKernel(table: Bool, tier: Int?) -> MLXFast.MLXFastKernel {
     MLXFast.metalKernel(
-        name: "qwen35_custom_affine4_g64_qmv_wide"
-            + (table ? "_sums" : "") + (tier.map { "_na\($0)" } ?? "") + "_v2",
+        name: qwen35E120QMVName(table: table, tier: tier),
         inputNames: table
             ? ["w", "scales", "biases", "x", "xsums"] : ["w", "scales", "biases", "x"],
         outputNames: ["y"],
@@ -1753,6 +1779,23 @@ public enum Qwen35CustomQMV {
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = [
         (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
     ]
+
+    /// `widthPlan` as one literal the worker's string table can carry.
+    ///
+    /// The dispatch table reaches the built worker only through interpolation
+    /// into the generated Metal source, so no `m:ipg:rps` triple is a literal
+    /// and `senpai/rebuild-and-assert-worker.sh` cannot witness which table the
+    /// timed binary holds. This literal is the witness. `qwen35E120QMVSource`
+    /// emits it as a comment so the optimizer cannot strip it, and
+    /// `planWitnessMatchesWidthPlan` fails the build if the two ever diverge.
+    public static let planWitness =
+        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
+
+    /// `planWitness` rendered from `widthPlan`. Equality is asserted by test.
+    public static var renderedPlan: String {
+        "e120_width_plan/"
+            + widthPlan.map { "\($0.m):\($0.ipg):\($0.rps)" }.joined(separator: ",")
+    }
 
     static func plan(m: Int) -> (m: Int, ipg: Int, rps: Int) {
         guard let entry = widthPlan.first(where: { $0.m == m }) else {
