@@ -48544,3 +48544,586 @@ ships.
 | probe fraction above 0.25 for accuracy | — | **dead (FINDING 170)** | closed |
 | W1/W2/A1 nibble load-width axis | — | **dead (F25 item 4)** | closed |
 | qL{1..5} and qL{2,3} SDPA warms | — | **dead, three receipts** | closed |
+
+
+## 291 — the qL warm axis dies at source, we own the fastest candidate, and the wired-slack guard question is answered
+
+Round opened 2026-08-22T17:50Z. Board: `dacf7005` (newjordan) took the published crown at
+`3.52326653` at 17:29:33Z from source `166e0cad`, ending our 84-minute hold at `3.52085227`.
+Four students working, submission slot free.
+
+### 291.1 — FINDING 176. We do not hold the crown and we do hold the fastest candidate
+
+`research/common_denominator.py --anchor 623e77af --cluster 0.30`, 827 rows with complete
+per-prompt evidence, 18 rows in the cluster.
+
+```
+rank  common-den   published   id         solver           status
+   1    3.520852    3.520852   623e77af   morganmcg1       accepted   <== OURS
+   2    3.519644    3.523267   dacf7005   newjordan        accepted
+   3    3.517032    3.520475   e44c0ba5   vibecodooor      rejected
+   4    3.516574    3.517689   3b376ba2   Lieisyourlie     rejected
+   5    3.515031    3.512100   1d3f0589   Lieisyourlie     rejected
+   6    3.514310    3.512415   cefa0ac6   jonathan308      rejected
+   7    3.514224    3.519254   0b8602e1   nagaral          accepted
+
+cluster published median  mean 3.515303  sd 0.1283 %  span 0.527 %
+serial-vector-only    sd 0.0987 %   <- pure numerator lottery
+candidate-vector-only sd 0.1049 %   <- real tree differences
+```
+
+The crown holder's candidate is **0.034 % slower than ours**. About half of everything that
+moves at the top of this board is the pinned serial numerator, which no candidate edit can
+change. **A candidate gain must be large compared with 0.1 % to be visible at all.** That is
+the effect-size bar for every live experiment.
+
+### 291.2 — FINDING 177. The cleanest isolated ranked A/B of the campaign, and it is a null
+
+`166e0cad` is our promoted `60d5b34a` plus exactly one change, stated in the rival's own
+public note: the SDPA warm loop restored from `qL in [1, 5, 4]` to `qL in [1, 2, 3, 4, 5]`.
+The receipts confirm the schedule did not move — `effective_mean_draft_len` and
+`non_drafting_round_count` are digit-identical on all eight prompts.
+
+```
+prompt        cand d%   serial d%    raw d%       draftlen A/B   nondraft A/B
+beagle        +0.0313    +0.1562    +0.1248   4.3818/4.3818        0/0
+medicine      -0.0082    -0.5019    -0.4938   5.2556/5.2556        0/0
+essays        +0.0371    +0.0540    +0.0170   5.0870/5.0870        0/0
+botany        +0.0224    +0.5662    +0.5437   6.1481/6.1481        0/0
+republic      -0.0489    -0.0865    -0.0376   4.9892/4.9892        0/0
+plutarch      -0.0359    +0.0456    +0.0816   0.1540/0.1540      449/449
+drama         +0.0000    +0.0061    +0.0060   2.2976/2.2976        0/0
+travel        +0.0331    +0.4615    +0.4282   2.6557/2.6557        0/0
+
+candidate 8-prompt mean  +0.0039 %   sd 0.0329  se 0.0116  z +0.33
+candidate F83-weighted   +0.0189 %
+serial    8-prompt mean  +0.0877 %   sd 0.3297
+published median delta   +0.0686 %
+```
+
+Benefit of the restore `-0.0039 %`, 2σ CI `[-0.0271, +0.0193] %`. Through FINDING 166's price
+model at 56 ms of leg per 1 % ranked, **the qL restore cannot be worth more than about 1.1 ms
+of one-time GPU work per leg, and the point estimate is adverse.** The entire `+0.0686 %`
+published gain is the serial numerator.
+
+### 291.3 — FINDING 178. The qL warm ladder is structurally incapable of warming anything
+
+Read at source this round, `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/scaled_dot_product_attention.cpp`:
+
+```
+:341-348   kname = "sdpa_vector_" + dtype + "_" + q.shape(-1) + "_" + v.shape(-1)
+:364-371   func_consts = { has_mask(20), query_transposed(21), do_causal(22),
+                           bool_mask(23), float_mask(24), has_sinks(25) }
+:374-378   hash_name = kname + mask flag + qt|qnt + c|nc + sinks|nosinks
+:392       set_bytes(N, 5)                       <- key length is a RUNTIME ARGUMENT
+:430-437   kname = "sdpa_vector_2pass_1_" + dtype + "_" + qkdim + "_" + vdim
+:510-524   same six booleans plus {blocks, DataTypeInt, 26}; hash_name += to_string(blocks)
+:572       "sdpa_vector_2pass_2_" + dtype + "_" + vdim, plain get_kernel(kname)
+```
+
+Base functions are AOT-instantiated into `mlx.metallib` at
+`kernels/scaled_dot_product_attention.metal:31-42` for head dims 64, 96, 128 and 256 in
+`float` and `bfloat16_t`. Ours is 256/256.
+
+**The pipeline cache key holds dtype, two head dimensions, five booleans and `blocks`. It
+holds no `qL` and no `kL`.** Therefore `[1,5,4]` and `[1,2,3,4,5]` compile the identical
+pipeline set. There is no chunk-B cold JIT to remove.
+
+Our shipped `warmTargetLaterWindowSDPA` (`Qwen36MTPBlockSession.swift:501-580`) already warms
+both `blocks` families, at kL=1024 and kL=1025. Alphonse's supporting chain is verified:
+`AttentionUtils.swift:125 let split = 5`, both chunks use `mask: .causal`, and
+`segmentedVerifyDepthCap = 7` caps chunk-B at qL in {1,2,3}. His 81.8 %-of-rounds figure is
+correct and irrelevant — those rounds dispatch a pipeline resident since the first SDPA call
+of the process.
+
+Two rivals (noskillcoding `48423d0` claiming "+0.18 % official", newjordan `dacf7005`) have
+promoted on a mechanism that cannot work. Source and receipt agree on zero.
+
+> **CAMPAIGN RULE 110.** A warm-phase change is worth zero unless it changes a pipeline cache
+> key. Before proposing or pricing any warm-parity mechanism, read the `kname`, `func_consts`
+> and `hash_name` construction for the target kernel family, and name the field the new warm
+> call changes. Two shapes that differ only in a runtime buffer argument share one pipeline.
+
+> **ADVISOR ERROR 132.** In F7 and F23 I told two students that a rival "took the crown by
+> restoring" deleted warm mechanisms, and I treated the deleted warm set as a live queue. Both
+> rival warm claims are refuted, one by our own ranked pair and one at source. I priced a
+> rival's mechanism from a published median in the same session in which I wrote Rule 108.
+
+**Rule 108 consequence: do NOT carry the qL restore forward.** It is provably inert, so our
+tree is not missing anything from `166e0cad`, and our next receipt is already an isolated A/B
+of our own new mechanism against the frontier.
+
+### 291.4 — HYPOTHESIS 179. There IS an unwarmed key field, and it is `query_transposed`
+
+The one boolean in the SDPA key that source alone cannot settle.
+
+- Warm, `Qwen36MTPBlockSession.swift:539-546` and `:565-573`, allocates
+  `MLXArray.zeros([b, qHeads, qL, headDim])`. A fresh `zeros` is row-contiguous, so
+  `query_transposed = !q.flags().row_contiguous` is false and the warm compiles `_qnt`.
+- Scored, `AttentionUtils.swift:127-140`, passes **slices**:
+  `queries[0..., 0..., 0 ..< split, 0...]` and `queries[0..., 0..., split..., 0...]`.
+
+If the scored queries are not row-contiguous, the scored path needs `_qt` and the warm never
+built it. That is up to three missing specialisations — one-pass, two-pass-1 at `blocks=64`,
+and two-pass-1 at `blocks=128` — each built by `newComputePipelineState` **inside the timed
+window**, the first two at round 1.
+
+Round-1 excess is 20 to 31 ms F83-weighted, GPU-side on 15 of 15 legs, and burns 15 to 21 ms
+**less** host CPU than the tail. A driver-side pipeline specialisation has that shape.
+Assigned to edward as E134 rung 6. Gate is three `row_contiguous` prints, zero GPU. Advance at
+10 ms of recovered round-1 excess, which is +0.18 % ranked.
+
+### 291.5 — FINDING 175 resolved. The 96 GiB guard question is answered per rung
+
+Alphonse, interim 27. `Qwen36MTPBlockSession.swift:222-227` guards on
+`physicalMemory >= 96 GiB`; every student host reports 48 GiB.
+
+```
+rung   timed base              guard patched in the exact timed binary?   threshold
+9      1470f0c4                NO                                         96 GiB
+10     e76bcda2                NO                                         96 GiB
+10a    0bcfc5d7, ec300cfb      YES on the four `s` legs, NO on two `none`  32 / 96 GiB
+11     cbf87ee8                YES on all 13 legs                          32 GiB
+12     42cdd52d                NO                                         96 GiB
+```
+
+Override added in `077f42b7`, removed in `69a6d26e`, reading `MLX_E130_WIRED_GATE_GIB`.
+Compiled presence counted per base. `research/e130_rung10a_leg.sh:112` unsets the variable for
+the `none` arm and `:115` exports 32 for every `s` arm.
+
+**Stands:** rungs 10a and 11, therefore FINDING 173, FINDING 173.1, FINDING 163 and the
+placement rule. **Withdrawn as wiring measurements:** rungs 9 and 10; they remain valid
+128-token session and round-decomposition data.
+
+The witness now satisfies Rule 109 and Rule 101. It reads the **base** code's own stderr line
+at `:271-275` through an `MLX_`-prefixed sink path, carries four distinct values, and satisfies
+`applied = active_at_sizing + slack` exactly against a constant
+`active_at_sizing = 26,146,704,372`:
+
+```
+26,146,704,372 +    67,108,864 (  64 MiB) = 26,213,813,236   exact
+26,146,704,372 +   536,870,912 ( 512 MiB) = 26,683,575,284   exact
+26,146,704,372 + 1,073,741,824 (1024 MiB) = 27,220,446,196   exact
+26,146,704,372 + 2,147,483,648 (2048 MiB) = 28,294,188,020   exact
+```
+
+Failing polarity demonstrated twice by design on the `none` legs and once by accident on rung
+12, which is now an unplanned false-positive test of the ladder method: two arms, provably the
+same machine code, true effect exactly zero by construction.
+
+### 291.6 — HARNESS DEFECT 34, corrected to edward's reading
+
+Worker stderr is **unreachable from `mtp-timed` by any environment setting**.
+`MLX_DFLASH_TRACE_CACHE_SEAM` is read only at `MLXFastCLI/main.swift:1409`, on the path
+reaching `runtimeWorkerOptions(forwardsWorkerStderr:)`. `runQwenMTPTimed` calls the same
+function at `:1799` without that argument, takes the `:2234` default `false`, and `:2311`
+computes `false && !officialRun`. `QwenRuntimeWorker.swift:2046` and `:2207` then install
+`emit: { _ in }`.
+
+**Campaign standard route:** alphonse's `MLX_E130_RESIDENCY_PROBE_PATH` sink, an
+`MLX_`-prefixed file path read inside the session and written per leg. Do not build a second
+one.
+
+### 291.7 — askeladd E136 rung 0. The widened selection clears the gate
+
+W&B [`6gcblooq`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6gcblooq).
+`e136_widened_selection_us_per_draft_step = 18.240887917943606`.
+
+```
+plan            added us/step   ranked % @174.1   ranked % @247.2   recall   stop
+N=32 shipped     0 (8.52 us)         —                 —              —       —
+N=1,024            14.94           0.086            0.060           1.0    proceed
+N=4,096 SELECTED   18.24           0.105            0.074           1.0    proceed
+N=8,192            22.42           0.129            0.091           1.0    proceed
+```
+
+Three replicates: `18.230`, `18.287`, `18.206 us`, spread 0.44 %. **Net on the selected cell
+`+0.573 %` at the strict rate and `+0.604 %` at the E93 rate.** The curve is nearly flat in
+`N`: `+3.30 us` from 1,024 to 4,096 and `+4.18 us` to 8,192 against a `14.94 us` intercept, so
+the fixed four-dispatch chain over 34,424 rows is the whole cost. That retires D5 hazard 5 and
+E133 transfer risk 4, and it means the `N=8,192` fallback needs no re-pricing.
+
+Design lands as four dispatches, not three: `hist` (65,536 bins, top 16 ordinal bits),
+`reduce` (256 threadgroups fold to 256 coarse bins), `thresh` (one threadgroup, writes
+`ctl = [tau, above, capacity_left, 0]`), `compact` (two-region emission with the
+`qwen_top32_ordinal` tiebreak). Both deviations from the advisor spec are approved on
+measurement.
+
+Four defects found and fixed inside the rung, three of which would have produced a wrong gate:
+
+1. A single compaction cursor raced rows above `tau` against boundary-bin rows; recall read
+   `0.96875` at `N=1,024`. Fixed with two regions and two cursors.
+2. `tiles` pinned at 32 made stage 2 do identical work at every `N`.
+   `tiles(N) = max(8, min(32, ceil(N/256)))`; `perThread <= 32` holds, so `Qwen35.swift:4455`
+   is never touched.
+3. All-zero placeholder `ctl` sets `tau = 0`, so every row clears and compaction performs an
+   append it would never perform.
+4. An 8-bit histogram key has recall `0.4375`; its low bit is a float exponent bit.
+   **Rule: recall is 1.0 exactly when at least 32 rows are strictly above `tau`, because bin
+   order is strictly monotone in score.**
+
+> **CAMPAIGN RULE 111.** A part table finds where the time went. It never decides a gate. Any
+> per-dispatch time measured near the submit-and-sync floor must be reported with its
+> replicate spread, and a gate decided on it is invalid.
+
+Evidence: across three replicates whose whole-arm slopes agreed to 0.44 %, the `N4096.hist`
+part arm read `6.19`, `19.97`, `6.19 us` and `N4096.reduce` read `7.75`, `24.18`, `7.75 us`,
+against a `97 us` submit-and-sync floor.
+
+> **FACT 34.** One threadgroup occupies one GPU core and that core reaches about 21 GB/s,
+> roughly a twentieth of the machine. A single-threadgroup reduction over a large array is
+> core-bandwidth-bound, not latency-bound. One thread walking 65,536 fine bins measured
+> `12.20 us`; 256 threads each walking a private block measured `11.08 us`; 8 simdgroups
+> reducing one group at a time measured `38.64 us`. Spreading the same read across 256
+> threadgroups in its own dispatch is what works.
+
+Two independent harness cross-validations: the null dispatch at `0.78 to 1.06 us` against the
+campaign's three-shape ABBA figure of `1.049 to 1.053 us`; the shipped two-dispatch selection
+at `8.40 to 8.52 us` against the in-source claim of `9.54 us`.
+
+> **ADVISOR ERROR 133.** F1 set the rung-0b advance bar at `+0.20 %`. Askeladd's own measured
+> pure-gain floors, `floor_pure_gain = (2 + 2*sqrt(1+D))/n` converted at
+> `MISS_TO_SCORE_PCT = 203.0`, are `0.455 %` on beagle, `0.464 %` on min_carriers and
+> `0.276 %` on the pooled corpus. My bar was below the floor on every stratum. Corrected:
+> decide on the pooled corpus, advance at `>= +0.40 %`, close at `< +0.25 %`, and require
+> `>= +0.50 %` before deciding on beagle alone.
+
+Rung 0b correction accepted: `research/e133-attrib.json` holds only counts, so the arm is
+additive inside `attrib_batch` in `research/e133_screen.py`, costing one 19-second corpus
+replay plus one extra full-vocabulary `quantized_matmul` per batch. Askeladd's arithmetic
+insight is now the first thing to check: if `quantized_matmul` accumulates in fp32 and rounds
+only its **output** to bf16, the tie is created by output rounding, the fp32 arm is a store-type
+change rather than an accumulation change, and it stays clear of Rule 92. Standing warning
+under Rule 107: breaking a tie differently does not create acceptance, and a coin flip is
+worth exactly zero.
+
+### 291.8 — thorfinn E135 rung 0, and why the warm census became load-bearing
+
+Bit-exactness proven at runtime: `tightGridIsBitIdenticalOnTheScoredShapes`, 6 of 7 scored
+shapes x 7 routed widths x `replica` and `sumtable` arms = 84 comparisons, 0 differing output
+elements, with a Rule-101 positive control that fires. Witness `columns_by_width` read off
+`launch.grid.0 / 32`, both polarities demonstrated.
+
+```
+wide  launched columns  {3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9}
+tight launched columns  {3:1, 4:1, 5:1, 6:1, 7:1, 8:2, 9:3}
+by_width             257 dispatches at EVERY routed width
+first_index_by_width {3:0, 4:257, 5:514, 6:771, 7:1028, 8:1285, 9:1542}
+```
+
+The arithmetic progression of step 257 proves every width and every tier pipeline was first
+reached inside `warmAllDepthShapes`, before any scored token. **No QMV pipeline is compiled
+inside a timed window.** Together with FINDING 178 this eliminates the two largest kernel
+families as sources of in-window pipeline compilation, which is a direct constraint on
+edward's round-1 excess.
+
+Rung 1 running: `W T T W` x three palindromes, 12 legs, 512 decode tokens, one build,
+`MLXFAST_LOCAL_COOL_GATE=0`, entry and exit GPU temperature per leg,
+`cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false` preserved verbatim.
+Advisor upgrade issued: pair on **round index**, not width stratum, because the arms are
+bit-identical in behaviour, which makes the work term identically zero per observation and
+takes `n` from 7 strata to hundreds of paired rounds.
+
+### 291.9 — edward E134 Gate A passes, and the refit is the campaign critical path
+
+`harness=ranked`, zero GPU. `research/e134_gates.py`, artifacts under
+`research/e134-artifacts/`. Attach gate: 12 legs, 1,494 rounds, 0 unmatched, 0 accept
+mismatches, 0 margin mismatches. External calibration `a1326b4b` against base `036fd9ca`,
+isolated A/B on `headStepCostRatio`, ranked `-1.164 %`.
+
+```
+h        ours       board
+0.14   -2.1362    -2.3631
+0.16   -0.9842    -1.0520     ranked -1.164
+0.18    0.0000     0.0000     <- shipped, argmax on BOTH curves
+0.22   -2.4091    -1.9379
+0.32  -20.2183   -18.4206
+```
+
+Absolute error against the receipt `0.180 pp` (our curve) and `0.112 pp` (board curve), fitted
+to neither. A1 and A2 both pass on both curves. **The pb6 headline `+2.3422 %` held out stands
+as a replayed number, pending the measured-curve refit.**
+
+The refit is ordered ahead of everything except the running item-0 matrix. Advisor
+pre-registration, so the refit is falsifiable rather than confirmatory: edward found that on
+thorfinn's **predicted** post-arm curve pb6 flips to `-0.8963` and boundary 6 becomes
+`+7.4412`. The predicted curve was wrong at rank by 25x (FINDING 156 predicted `-7.59 %`, the
+receipt measured `-0.2032 %`). The **measured** post-arm curve in ledger 289.3 has
+`round_us(6)` falling only 1.0 to 2.6 %, so the boundary-4 cliff keeps 89 to 96 % of its
+magnitude. **Prediction: the refit confirms boundary 4 and pb6 survives near `+2.3 %`.**
+
+### 291.10 — ADVISOR ERRORS 129 to 131, recorded
+
+> **ADVISOR ERROR 129.** My W-NORM mechanism is wrong and edward refuted it at source.
+> `callWithHidden` (`Qwen35.swift:5638`) and `callWithHiddenAndNormed` (`:5658`) build the same
+> MLX graph; `normed` is on the critical path to `logits` in both, so the warm loop already
+> materialises it. MLX specialises on primitive, shape and dtype, not on the Swift function.
+> What differs at the scored site is the retained set across the eval: `:1524-1593` holds
+> `verifyHidden` and `verifyNormed` live and never evals `verifyLogits`. This is Rule 110
+> before Rule 110 existed.
+
+> **ADVISOR ERROR 130.** My F8 plutarch arithmetic was inverted. A fixed saving `S` is `S / T`
+> of the leg, and ranked plutarch has the longest leg: `487 x 31,795 us = 15.48 s`, so 20 ms
+> is 0.13 %, against beagle's `110 x 52,453 us = 5.77 s` where 20 ms is 0.35 %. Corrected
+> discriminator: a fixed one-time round-1 deletion reads largest on the **shortest** leg,
+> about 2.7:1; a residency or eviction tax scales with drafting work and reads near zero on
+> plutarch (449 of 487 non-drafting).
+
+> **ADVISOR ERROR 131.** I ran a four-rung wired-slack ladder for two campaign rounds without
+> verifying the mechanism was live on the measuring host. Rule 90 should have caught it and
+> Rule 109 now does.
+
+### 291.11 — the `_nax` tensor path is closed with named reopeners
+
+Full audit this round. **No quantized MATVEC nax variant exists anywhere.**
+`kernels/quantized_nax.h` (1681 lines) has zero `qmv`/`qvm` matches and is MATMUL-only:
+`affine_qmm_t_nax:1205`, `affine_qmm_n_nax:1264`, `affine_gather_qmm_{t,n,rhs}_nax:1324/1392/1461`.
+`fp_quantized_nax.h` is likewise `fp_qmm_*` only.
+
+`get_qmv_batch_limit(K=5120, N, g17s) = 10` (`quantized.cpp:84-124`; `D>4096` reaches the final
+else). Dispatch at `:1409-1447`: `M >= vector_limit` takes `qmm_splitk`/`qmm`, else
+`dispatch_qmv`. **M = 1..9 always uses matvec on M5, and it is not data-dependent.** Trap at
+`:1418-1425`: when `M >= vector_limit && transpose && B == 1`, `qmm_splitk` is taken before
+`qmm()`, so split-K bypasses `qmm_nax` entirely.
+
+`is_nax_available()` (`device.cpp:913-931`) is true on M5 g17s and false on every student
+g16s. Its call sites are `quantized.cpp:697, 892, 1237`, `matmul.cpp:915, 2443, 2517`,
+`scaled_dot_product_attention.cpp:177` — **none inside any qmv or qvm function**.
+`quantized.cpp`, `device.cpp` and `jit_kernels.cpp` are **not** in `editablePaths`, so the
+threshold and the guard are trusted, unmodifiable code.
+
+The `MLXFast.metalKernel` path imposes no restriction on Metal features: `metal_kernel.cpp:64`
+emits `header` verbatim, `device.cpp:632` sets `MTL::LanguageVersion4_0` on macOS 26+, and
+MLX's own `mlx-generated/gemm_nax.cpp:229-234` already feeds
+`<MetalPerformancePrimitives/MetalPerformancePrimitives.h>` through the same `newLibrary`
+entry point. So a custom kernel *could* use `mpp::tensor_ops::matmul2d`.
+
+> **FINDING 175b — RULING.** The tensor path has no legal target. Every `M >= 4` quantized
+> matmul on our critical path is the bit-exact target verify, and Rule 92's accumulation-order
+> wall makes a tensor-core accumulation fatal. The draft path is exactness-free but runs at
+> `M = 1`. **Reopeners: (a) a demonstration that the ranked parent accepts non-bit-identical
+> declared top-two row evidence; or (b) a draft-path consumer with `M >= 4`.**
+
+### 291.12 — the ranked slate after the hostile review of FINDING 171
+
+A frontier research agent reviewed FINDING 171 adversarially. Its verdict: "the three levers
+eliminated" is **one collinear arm, not three eliminations** — issue, weight passes, occupancy
+and launch count all move together with `ipg` in the same table edit. Pre-registered
+consequence: **a null in E135 kills FINDING 171 and FINDING 169 jointly**, and the follow-on is
+family attribution, not a fifth QMV micro-lever.
+
+Alternative-cause audit: A1 instrument error **refuted** (FINDING 165). A2 DRAM roofline
+**refuted by the passes lever itself** — one-pass halved weight traffic at M=6/7 and time did
+not move, and the achieved-bandwidth ladder NA=2..7 of `223.8/199.7/175.2/150.9/117.8/97.9 GB/s`
+**falls** as width rises. A3 command-buffer and host dispatch **closed by three receipts** (E29,
+E58, E62). A6 thermal **refuted**. A7 width masses **refuted** (`mass(6)=0.188`,
+`mass(7)=0.211`, `P(M>=6)=0.5861`). A8 warm and first-touch **refuted for the step**.
+
+Two survive:
+
+- **A4, GPU-side inter-dispatch dependency drain.** The dispatch census (`## 198(H)`) shows
+  **+109 dispatches per round at M=5 to 6** (873 to 982) against +29 at 6 to 7 and 7 to 8;
+  about 64 of the +109 are SDPA chunk overhead. This step at exactly 5 to 6 coincides with the
+  cost cliff and has never been priced as time.
+- **A5, the step may not live in QMV at all.** The 87.35 % QMV share is a **leg average**; the
+  M=5 to 6 step has never been attributed to a kernel family by direct time measurement.
+  Candidates changing at exactly M=6: SDPA split-5 (`qL*gqa<=32` caps the fused vector path at
+  qL<=5) and GDN packed mixer behaviour at S=6.
+- **A9, epistemic hole.** Every occupancy figure routes through the applegpu register-staircase
+  model of the M5 allocator. Apple's own M5 material describes allocation as tracking **live**
+  registers over the shader's lifetime, which is not a launch-time static decision. Prefer
+  experiments whose interpretation does not route through the staircase.
+
+Ranked slate, priced by expected ranked value:
+
+```
+P1  cliff family attribution        redirects the largest open prize   cheapest test in the campaign
+P2  the 254,279,680-byte unwired    0.3 to 1.5 %                        admission-side only
+    scratch buffer
+P3  serialized host-side round      0.3 to 1.0 %                        readout+commit+upkeep
+    bookkeeping
+P4  GDN S=2 mid-state write         0.2 to 0.6 %                        highest correctness risk
+P5  pre-registered E135             conditional                         one receipt cap
+    conditionals
+P6  C2 precision-island quantization 0.38 to 0.45 %                     filler, unowned
+```
+
+**P1 is the next assignment to issue.** Two rungs: (a) zero GPU, re-key archived traces by
+realized verify width using the existing eleven-way per-round segment split at
+`Qwen36MTPBlockSession.swift:1617-1636`, width-matched per Rule 106; (b) under 5 s of GPU, run
+`MLXFAST_RUN_QMV_COST_CURVE=1` `sweepGatedDelta(widths:1...12)` at
+`Tests/MLXFastTests/QwenQMVCostCurveTests.swift:911-965`, **which has never been run** despite
+the ledger naming it twice as the first assignment to issue when a slot frees. Stop rule: if
+30 % or more of the step is non-QMV, redirect the campaign immediately; under 10 %, close A5.
+Owner will be alphonse — he already holds 12 traced 512-token legs and 924 rounds with the
+segment split, so rung (a) needs no new data.
+
+### 291.13 — submission slot allocation
+
+Slot free since alphonse released it. **Allocated to edward's `pb6`.** The reason is Rule 79,
+not expected value alone: a schedule change has **no local instrument**, so pb6 can only be
+settled by a ranked receipt, while thorfinn's tight grid has a valid local instrument (the
+serial leg runs at M=1, falls to `default: break`, and never reaches Route B) and askeladd's C1
+has a local absolute-time gate. The scarce resource goes to the candidate that cannot use
+anything else.
+
+Thorfinn is second. pb6 and the tight grid are disjoint in instruction and byte sets — a
+scheduler constant in `Qwen36MTPBlockSession.swift` against one word in the Route B launch
+geometry in `Qwen35.swift` — so Rule 75 is satisfied by inspection, but they ship as **two
+isolated receipts**, not one bundle, so each keeps its attribution.
+
+### 291.14 — round actions
+
+- FINDING 176, 177, 178 recorded; HYPOTHESIS 179 assigned to edward as E134 rung 6.
+- CAMPAIGN RULES 110 and 111 adopted; FACT 34 adopted.
+- ADVISOR ERRORS 129, 130, 131, 132, 133 recorded.
+- FINDING 175 resolved; FINDING 173, 173.1 and 163 confirmed; rungs 9 and 10 withdrawn as
+  wiring measurements.
+- HARNESS DEFECT 34 corrected; alphonse's sink path adopted as the campaign warm-telemetry
+  route.
+- Feedback issued: `e130-f24`, `e134-f10`, `e135-f2`, `e136-f2`.
+- Stop list adds: the qL{1..5} and qL{2,3} SDPA warm ladders now closed **at source** as well
+  as by three receipts; the `_nax` tensor path closed with two named reopeners.
+
+### 291.15 — FINDING 180: the published crown is now held by the ninth-fastest candidate, and it is a declared zero-delta resample
+
+At 18:09:31Z, forty minutes after `dacf7005` took the crown, `b6cb0fea` (ofou, model
+`ox-alpha`) promoted at `3.52509130` from source `d44ad229`. Its public note declares, in
+plain text, that the archive is the promoted tree `c2e43231` / `0b8602e1` (nagaral,
+`3.51925374`) with **zero deltas across the editable surface**: `git diff` empty on every
+editable path, no manifest edits, the same declared head
+`hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae628274`.
+
+So we have a second exact-replicate ranked pair, and this one took the crown.
+
+```
+0b8602e1 3.51925374  ->  b6cb0fea 3.52509130   (bit-identical trees)
+prompt        cand d%  serial d%     raw d%
+beagle        +0.0552    +0.6248    +0.5693
+medicine      +0.1114    +0.3627    +0.2511
+essays        +0.0317    -0.1706    -0.2022
+botany        +0.2049    -0.1736    -0.3777
+republic      +0.1292    -0.1955    -0.3243
+plutarch      -0.0256    -0.2938    -0.2684
+drama         +0.0487    +0.3272    +0.2784
+travel        +0.0237    -0.3514    -0.3751
+candidate 8-prompt mean  +0.0724 %  sd 0.0725  se 0.0256  z +2.83
+serial    8-prompt mean  +0.0162 %  sd 0.3653  se 0.1292
+candidate F83-weighted   +0.0637 %
+published median delta   +0.1659 %
+```
+
+Two things follow, and the second one is a correction to our own instrument.
+
+**(a) The merit ordering and the published ordering have come apart completely.**
+`research/common_denominator.py --anchor 623e77af --cluster 0.30`, now on 1,135 board rows
+with 830 usable, 19 in the cluster:
+
+```
+rank  common-den   published   id         solver           status
+   1    3.520852    3.520852   623e77af   morganmcg1       accepted   <== OURS
+   2    3.519644    3.523267   dacf7005   newjordan        accepted
+   3    3.517032    3.520475   e44c0ba5   vibecodooor      rejected
+   4    3.516574    3.517689   3b376ba2   Lieisyourlie     rejected
+   5    3.515031    3.512100   1d3f0589   Lieisyourlie     rejected
+   6    3.514310    3.512415   cefa0ac6   jonathan308      rejected
+   7    3.514224    3.519254   0b8602e1   nagaral          accepted
+   8    3.513514    3.516067   4be07d0c   jonathan308      rejected
+   9    3.512714    3.525091   b6cb0fea   ofou             accepted   <== THE PUBLISHED CROWN
+  10    3.512378    3.512706   0c6191b7   morganmcg1       rejected
+cluster published median  mean 3.515818  sd 0.1395 %  span 0.579 %
+serial-vector-only    sd 0.1150 %
+candidate-vector-only sd 0.1021 %
+```
+
+The account holding the published crown owns the **ninth**-fastest candidate in the cluster.
+Its tree is `0.2312 %` slower than ours on a pinned serial vector. We hold rank 1. We are
+third on the board. Rule 100 is no longer a caution; it is the literal state of the
+leaderboard.
+
+Direct comparison of our tree against the published crown:
+
+```
+b6cb0fea  ->  623e77af
+prompt        cand d%  serial d%     raw d%
+beagle        -0.1755    -0.4089    -0.2338
+medicine      -0.4351    +0.3198    +0.7581
+essays        -0.2822    -0.2980    -0.0158
+botany        -0.2167    -0.4083    -0.1921
+republic      -0.2703    -0.0427    +0.2283
+plutarch      +0.0105    -0.1043    -0.1147
+drama         +0.1681    -0.1481    -0.3156
+travel        +0.1267    +0.0013    -0.1252
+candidate 8-prompt mean -0.1343 %  sd 0.2137
+candidate F83-weighted  -0.2449 %
+published median delta  -0.1203 %
+```
+
+Our candidate is faster on all five weighted prompts and slower on the three zero-weight
+prompts. That sign pattern is the FINDING 167.1 templating tax, still visible: our one-pass
+`{6:6,7:7}` table costs at widths 3 to 5 and pays where widths 6 and 7 run.
+
+**(b) ADVISOR ERROR 134 — the `se` printed by `candmean.py` is a within-run standard error
+and it understates the null of a pair difference by about three times.**
+
+We now hold two declared exact-replicate ranked pairs:
+
+```
+pair                              candidate 8-prompt mean   printed se   printed z
+48423d09 -> bed5081a  (F165)              +0.0121 %           0.0168       +0.72
+0b8602e1 -> b6cb0fea  (F180)              +0.0724 %           0.0256       +2.83
+```
+
+The second one is a provably null pair that returns `z = +2.83` on our sharpest instrument.
+The printed `se` is computed from the eight per-prompt values inside one pair; it prices only
+the within-run per-prompt term. FINDING 154 already measured a separate **run-level candidate
+random effect** with sd `0.0470 %`, and a difference of two runs therefore carries
+`0.0470 x sqrt(2) = 0.0665 %`. Both null pairs sit inside `+/- 2 x 0.0665 %`. A third handle
+agrees: the same tree drawn twice moved `0.043 %` on the common-denominator scale.
+
+**CAMPAIGN RULE 112.** The null standard deviation of the candidate 8-prompt mean difference
+between two ranked receipts is `0.067 %`, not the `0.017` to `0.026 %` that `candmean.py`
+prints. Divide the printed `z` by about three before you believe it. The 2-sigma
+single-receipt bar on the candidate mean is `0.133 %`. Report both numbers whenever a ranked
+pair is priced.
+
+Re-reading the round's own measurements under Rule 112:
+
+- FINDING 177, the qL warm ladder: candidate mean `+0.0039 %`. Null at any width. Unchanged.
+- FINDING 172, the warm refill: candidate mean `+5.0378 %`. 75 sigma even on the corrected
+  null. Unchanged.
+- FINDING 167, our own `623e77af` arm: F83-weighted `-0.2032 %`, unweighted `-0.0235 %`. The
+  unweighted mean is inside the corrected null. The claim that the arm was worth `-0.20 %`
+  rests on the F83 weighting and on the per-prompt dose-response, not on the unweighted mean.
+  That was already how it was reported, and it survives, but it is closer to the floor than
+  the printed `z` suggested.
+- `b6cb0fea` versus `623e77af`: unweighted `-0.1343 %` against a null sd of `0.0665 %` is
+  `z = -2.0`. Our candidate is faster than the published crown's at about two sigma.
+
+**(c) What this changes operationally.**
+
+Nothing about Rule 72. We do not re-roll; we submit mechanisms. Others may sample their own
+distribution, and `b6cb0fea` shows that it works, but a resample teaches us nothing and
+consumes the one slot we have.
+
+What it does change is the expected value of shipping `pb6`. Our common-denominator position
+is `3.520852`. A replay of `pb6` at its held-out `+2.3912 %` lands at `3.6050`. The published
+median null has a spread of about `+/- 0.4 %`, or `+/- 0.014` at this level. To lose the
+crown from `3.6050` we would need a draw about `2.2 %` low, roughly five and a half sigma.
+Even one third of the predicted effect wins comfortably. The measured-curve refit is the
+single highest-value task in the campaign, and it is one zero-GPU replay.
+
+**(d) One external fact worth keeping.** The same note reports, as a published measurement,
+that MLX quantized matmul at wide shapes is internally dequantize-plus-dense with zero output
+difference on wide projections, and that narrow-N k and v projections differ. That is
+consistent with `get_qmv_batch_limit(K=5120, N, g17s) = 10` and the `qmm_splitk` trap at
+`quantized.cpp:1418-1425`. It does not open the tensor path: every `M >= 4` quantized matmul
+on our critical path is the bit-exact target verify, and Rule 92 still applies. Recorded, not
+actioned.
+
+**(e) The note also credits our Route B mechanism by name** as "senpai/morganmcg1 #1063
+(+13.24 %): ownership of the wide cross-row affine-4/group-64 verification QMV, hoisting
+per-k-block activation chunk sums into a table consumed at verify width M>=4", and observes
+that it is candidate-asymmetric because the serial denominator never runs those widths. Three
+independent accounts now build on it. That is the correct reading of the ranked causal
+boundary and it is worth noting that rivals have converged on it independently.

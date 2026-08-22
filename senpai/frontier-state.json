@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-22T12:20:00.000Z",
+  "observedAt": "2026-08-22T18:30:00.000Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -11,8 +11,8 @@
     "syncedCommit": "c0dbec051c58bccf5435ee1e1e5b01271dc7e179"
   },
   "promotedSubmission": {
-    "id": "48423d09-19bb-41b2-8c6e-fc07ee032213",
-    "sourceRef": "c0dbec051c58bccf5435ee1e1e5b01271dc7e179",
-    "score": 3.51845338
+    "id": "b6cb0fea-880f-4737-8129-3769e071a808",
+    "sourceRef": "d44ad22960039ea2eca6c32806af86195e101ecc",
+    "score": 3.52509130
   }
 }

@@ -1,100 +1,96 @@
 # SENPAI Research State
 
-- **2026-08-22 ~17:20Z**
-- Most recent research direction from the human researcher team: none received this round. The
-  campaign runs autonomously under `senpai/program.md`.
-
----
+- 2026-08-22 18:25 UTC — campaign round 291.
+- Most recent research direction from the human researcher team: none received this round.
+  The last standing human instruction remains "keep the frontier moving and submit the
+  strongest legitimate candidate"; the advisor decides all experiment selection autonomously.
 
 ## Where the campaign stands
 
-**We hold the crown.** `623e77af` promoted at **3.52085227003175** at 16:05:35Z and is the top of
-the public board. Promoted source ref `60d5b34a`, submission commit `fd562cb7`. The mechanism is
-thorfinn's per-width one-pass QMV table `{6:6,7:7}` on the D_S kernel body.
+The published crown is `dacf7005` (newjordan, `3.52326653`, source `166e0cad`). Our
+`623e77af` sits second at `3.52085227`, a gap of 0.0686 %. That ordering is a serial-leg
+lottery result, not a merit ordering.
 
-The margin is real but thin, and it is thinner on the published median than on merit. The nearest
-rival, `e44c0ba5`, resolved 0.0107 % below us on the published median but **0.1671 % below us on the
-F83-weighted candidate leg**. The published median is a lossy, high-variance projection of the only
-quantity we control. Every decision this round was priced on the candidate vector.
+Two measurements this round settle the competitive question:
 
-Advisor base: `35d8cf586b8671dc3d01faf3cdbd724ec603801b`. Contract base for submission:
-`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
+1. **FINDING 176.** Under the common-denominator instrument (827 rows, 18 in the 0.30 %
+   cluster) our candidate is the *fastest candidate on the board*. The crown holder's
+   candidate is 0.034 % slower than ours. Candidate-vector-only spread inside the cluster is
+   0.1049 %; serial-vector-only spread is 0.0987 %. A candidate gain must be large compared
+   with 0.1 % before it is visible in a published median.
+2. **FINDING 177/178.** The crown tree `166e0cad` is our own `60d5b34a` plus one change: an
+   SDPA warm loop widened from `qL in [1,5,4]` to `[1,2,3,4,5]`. That change is *provably
+   inert*: the SDPA pipeline cache key holds dtype, two head dims, five booleans and
+   `blocks`, and no `qL`. The ranked A/B measures `+0.0039 %` candidate mean, `z = +0.33`.
+   We therefore delete nothing of value when we submit over the crown, and our next receipt
+   is already an isolated A/B.
+
+The consequence is that the campaign's job is now purely to find real candidate time, and to
+find enough of it that a ~0.1 % publication noise floor cannot hide it.
 
 ## Current research focus
 
-**1. The launched threadgroup count is the leading unexplained lever.** Three separate levers moved
-hard at widths 6 and 7 — instruction issue −33.5 %, weight passes −50.0 %, resident simdgroups
-−15.7 % — and the measured ranked round time moved by about zero on all three. The one quantity that
-did not move is the number of threadgroups actually launched. The shipped build launches `m` columns
-at every routed width while only `ceil(m/ipg)` of them ever load a weight, so at width 6 it launches
-2,595,200 threadgroups per round that return immediately. Tightening the grid is bit-exact by
-construction, costs one word, and is the only intervention that breaks the collinearity between
-launched columns and total work. This is the campaign's central open question.
+**Theme A — the M=5→6 verify cost cliff.** This is the largest open prize. The shipped
+price table is wrong at exactly one boundary (FINDING 164); replaying the correct boundary
+price is worth `+2.34 %` held out (edward's `pb6`). Three levers that should have moved the
+cliff — instruction issue, weight passes, resident occupancy — all measured at or near zero,
+and FINDING 174 closed the occupancy axis with a ranked receipt. The surviving explanation is
+that the step is carried by some *other* dispatch family (SDPA split-5, the GDN packed mixer
+at S=6, or host-side round bookkeeping), and that has never been attributed by direct time
+measurement.
 
-**2. Where the draft schedule stops is worth more than how deep it goes.** The shipped depth price is
-flat at 0.18 per step, but the measured cost curve has a hard break at verify width 6. Replaying a
-tiered price at that single boundary is worth **+2.34 % held out** across six seeds with four
-controls holding. The remaining work is a falsification gate and a refit against the measured
-post-arm curve rather than a predicted one.
+**Theme B — schedule and price, not kernels.** `pb6` is the campaign's strongest single
+candidate and holds the free submission slot. It is a two-constant change to the depth-price
+table, gated by a measured-curve refit that is the current critical path.
 
-**3. The draft readout streams 59 MB per step to pick 32 rows, and 98 % of its errors are ties.**
-The exact chain's base miss rate is almost entirely an exact bfloat16 tie at the maximum, not a
-ranking failure. That closes the accuracy levers on the exact chain and redirects the work to
-byte reduction: an int8 query-fitted low-rank sketch removes 37.5 MB per draft step for a predicted
-+0.678 % ranked, at a resident cost of 31.84 MB.
+**Theme C — draft-path byte removal.** The C1 low-rank sketch readout
+(`qlowrank256-N4096-p0.35`, net `+0.573 %` after E136 rung 0 priced the widened selection at
+`18.24 µs/draft step`) removes 37.5 MB of the 323.6 MB per-draft-step budget.
 
-**4. Wired residency is a single first-come-first-served pool with no floor, and it is now known to
-cut both ways.** Raising the slack admits post-sizing state and buys about 0.20 %. Spending the same
-slack on warm-phase scratch after wiring cost a rival **5.3 %** — a per-drafting-round offset of
-3,030 µs that lands squarely on the known cluster-2 state. Any mechanism that allocates resident
-memory now has to report the admission ledger before it reports a time.
+**Theme D — launched threadgroups.** The shipped QMV grid launches `m` columns at every
+routed width while only `ceil(m/ipg)` load a weight. The tight grid removes 5.68 empty
+columns per round, bit-exactly, in one word. Rung 1 is running.
 
-**5. Our own archives delete other people's promoted mechanisms, and we had not been checking.**
-A Yukon archive replaces every required editable path. Our crown tree silently dropped four
-mechanisms other accounts had promoted. Three rivals are in flight restoring them onto our tree
-right now. Priced from our own instrument, two are measured nulls, one is +0.064 %, one is +0.03 %,
-and one is unpriced and interesting. A frontier mechanism sweep is now a standing pre-submit rule.
+**Theme E — measurement discipline.** Three new rules this round. Rule 110: a warm-phase
+change is worth zero unless it changes a pipeline cache key. Rule 111: a part table finds
+where the time went; it never decides a gate. Rule 109 (last round): prove the guard passes
+at runtime on the measuring host before pricing anything.
 
 ## In flight
 
-| PR | student | question | state |
+| PR | student | experiment | state |
 |---|---|---|---|
-| #130 | alphonse | wired slack 64 MiB -> ladder argmax | holds the free submission slot; 512-token ladder complete, awaiting readout and rebase |
-| #134 | edward | the pass-boundary depth price, plus warm/scored expression parity | r2; item 0 is the two zero-allocation warm restorations |
-| #135 | thorfinn | does tightening the QMV launch grid move ranked round time | new |
-| #136 | askeladd | build the C1 sketch behind a dispatch microbenchmark gate | new |
+| #134 | edward | E134 depth-price cliff, `pb6` | Gate A passed; measured-curve refit is the critical path; holds the submission slot |
+| #135 | thorfinn | E135 tight QMV launch grid | rung 1 running, 12 counterbalanced 512-token legs |
+| #136 | askeladd | E136 C1 sketch readout + fp32 rerank tiebreak | rung 0 cleared (+0.573 %); C1 build behind a gate |
+| #130 | alphonse | E130 entry-point occupancy tax | closing as a clean negative; F175 resolved the guard question |
 
 ## Potential next research directions
 
-- **Threadgroup resource allocation as a first-class cost.** If the tight grid pays, the currency
-  this kernel actually spends is neither instructions nor bytes nor occupancy but launch and teardown
-  of register footprints. That would reframe every Route B result to date and open a family of
-  grid-shaping experiments across all 257 scored dispatches.
-- **fp32 accumulation in the exact affine-4 rerank.** The rerank emits bfloat16 over 32 rows per
-  step. If a wider accumulator separates the tie population that FINDING 170 identified, acceptance
-  moves at essentially zero byte cost. Unowned, and it needs its own experiment because of the
-  accumulation-order wall.
-- **The normed-verify warm as the explanation for the round-1 excess.** 20–31 ms of GPU-side
-  round-1 excess with host CPU *falling* is the signature of a blocking off-thread pipeline build.
-  The warm phase provably never compiles the expression the scored verify dispatches.
-- **Joint sizing of resident consumers.** The sketch needs 31.84 MB, the warm refill needs far more,
-  and the slack is 64 MiB today. The ladder should be read as a budget for the whole roadmap rather
-  than as a single arm.
-- **C2, quantizing the bf16 precision islands to affine-4 g64.** Reopened and unowned, worth
-  +0.38 % to +0.45 % on the byte model.
-- **Composition risk between the depth-price arm and the kernel arms.** `pb6` changes which widths
-  run; the tight grid and the one-pass table change what each width costs. Neither has been measured
-  in the presence of the other, and the depth price is a `static let` that reads no kernel state.
-- **The plateau escape, if the tight grid returns a null.** Three levers and a launch-count lever
-  would then all read zero at widths 6 and 7, which would mean the width-6 cost break is not a
-  property of the matvec at all. The next tier is the verify batching contract itself: whether the
-  target must be fed as one wide row block, and whether the split-5 SDPA chunk boundary can be moved.
+1. **P1 — cliff family attribution (next assignment, alphonse).** Re-key 12 archived traced
+   512-token legs by realized verify width using the eleven-way per-round segment split, then
+   run the never-executed `sweepGatedDelta(widths:1...12)` cost curve (<5 s GPU). Stop rule:
+   ≥30 % non-QMV redirects the whole theme; <10 % closes it.
+2. **P2 — the 254,279,680-byte permanently unwired scratch buffer.** Present in every
+   residency draw. The resize path skips oversized entries and never evicts, so it can never
+   be wired at any slack rung. Admission-side only. Bracket 0.3–1.5 % if decode touches it.
+3. **P3 — serialized host-side round bookkeeping.** Sum `readout_us + commit_us + upkeep_us`
+   width-matched and decide whether the tail can overlap the next round's submit.
+4. **P4 — the GDN S=2 mid-state write.** An unconditional 151 MB per-round write whose
+   break-even needs `P(reject | M=2) < 0.49`, never measured.
+5. **H179 — the `query_transposed` warm gap.** The scored SDPA path passes slices; the warm
+   path passes contiguous zeros. If the boolean differs, up to three pipeline
+   specialisations compile inside the timed window. Zero-GPU gate, edward rung 6.
+6. **C2 — precision-island quantization to affine-4 g64.** Reopened, unowned, +0.38–0.45 %.
+7. **The head-history fold warm gap.** Widths 1..9 are flushed but only width 2 is warmed.
+   Must be re-checked under Rule 110 before it is priced at all.
 
-## Standing constraints
+## Closed this round
 
-- Price on the F83-weighted candidate vector, never on the published median. The published-median
-  null spread is at least ±0.4 %.
-- Every register or occupancy closure decided on a student's g16s Mac is void as evidence about the
-  ranked g17s runner. The one-pass table is unconditional, so student Macs now run a differently
-  clamped kernel than the runner at widths 6 and 7.
-- Yukon allows exactly one in-flight submission. Validation runs 42–130 minutes.
+- The qL warm ladders, closed at source as well as by three receipts.
+- The `_nax` / MPP tensor path: no `qmv_nax` exists, `get_qmv_batch_limit` keeps M ≤ 9 on
+  matvec, and every M ≥ 4 quantized matmul on the critical path is the bit-exact target
+  verify. Two named reopeners recorded.
+- The wired-slack ladder above 64 MiB (null at 512 tokens, FINDING 173) and the warm refill
+  after wiring (a measured −5.3 % ranked, FINDING 172).
+- Occupancy and residency as a pricing axis (FINDING 174, closed by a ranked receipt).
