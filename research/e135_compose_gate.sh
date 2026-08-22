@@ -41,12 +41,60 @@ echo "host        $(hostname)"
 git status --porcelain -- Sources Vendor Package.swift mtp-head.manifest.json \
   | sed 's/^/dirty: /'
 
-step rebuild senpai/rebuild-and-assert-worker.sh
+# A bare invocation exits 2 and asserts nothing, so every arm witness is named
+# here. `noteLaunch` is a Swift identifier and lives in the symbol table, not
+# the string table. Every string needle is at least 16 bytes (HARNESS DEFECT
+# 38): `strings` splits shorter runs and a short needle can match by accident.
+step rebuild senpai/rebuild-and-assert-worker.sh \
+  --require 'e135_default_grid/tight' \
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4' \
+  --require 'e120_default_route/tiered_switch/onepass67' \
+  --require 'columns_by_width' \
+  --forbid 'e135_default_grid/wide' \
+  --require-symbol 'noteLaunch'
 echo "worker_sha256 $(digest)"
 
-step swift-test swift test --force-resolved-versions
+# The suite never exits 0 on this host: ten tests fail on the unchanged base.
+# Nine are the long-documented organizer contract and documentation tests and
+# the tenth, `theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax`, is
+# inherited from the composed base, whose `Qwen36MTPBlockSession.swift` and
+# `E130WiredResidencySlackTests.swift` are byte-identical here. The verdict is
+# therefore the failing SET, not the exit code: any name outside the inherited
+# list is a campaign-added failure and stops the chain.
+echo
+echo "################ swift-test ################"
+swift test --force-resolved-versions 2>&1 | tee "${log_dir}/swift-test.log"
+echo "EXIT swift-test=${PIPESTATUS[0]} (exit code is not the verdict)"
+grep -oE '✘ Test [A-Za-z0-9_]+\(\)' "${log_dir}/swift-test.log" \
+  | sed 's/✘ Test //' | sort -u > "${log_dir}/failing-tests.txt"
+cat > "${log_dir}/inherited-tests.txt" <<'INHERITED'
+contestantDocsCommandBlocksKeepTheDependencyGraphFrozen()
+participantDocsExposeDefaultCLIInstallDirectory()
+qwen36ConfigContractDigestMatchesTheReferenceManifest()
+startupMemoryPolicyKeepsRanked128GiBProfile()
+submissionStaticReviewPromptCoversMeasurementStructureExploitation()
+theCheckedInDeclarationSelectsThePinnedHead()
+theEvenMedianRuleIsTheMeanOfTheTwoCentralValues()
+theQwenMTPTrackIsArmedOnQwen38()
+theSeededCalibrationExpectationMatchesItsRecordedProvenance()
+theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax()
+INHERITED
+added="$(comm -23 "${log_dir}/failing-tests.txt" "${log_dir}/inherited-tests.txt")"
+echo "failing tests: $(wc -l < "${log_dir}/failing-tests.txt" | tr -d ' ')"
+if [[ -n "${added}" ]]; then
+  echo "FAIL campaign-added test failures:"
+  echo "${added}"
+  rc=1
+else
+  echo "ok   every failing test is on the inherited list"
+fi
+
 step twin-audit python3 research/twin_audit.py
-step all-gates senpai/run-all-gates.sh
+step scope senpai/validate-assignment-scope.sh
+step budget senpai/check-editable-budget.sh \
+  770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf
+step score-boundary senpai/verify-ranked-score-boundary.sh
+step cliff-census senpai/entry-point-cliff-census.sh
 
 if [[ "${rc}" -ne 0 ]]; then
   echo
