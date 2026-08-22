@@ -923,6 +923,100 @@ def log_followups() -> None:
     print("followups: logged %d scalars" % len(flat))
 
 
+def log_f10() -> None:
+    """F10: the serial lottery, the median carriers, and the row-keyed shape."""
+    f10 = load("f10-carrier-and-shape.json")
+    if f10 is None:
+        print("f10: missing artifact, skipping")
+        return
+
+    s0, s1, s2 = f10["section0"], f10["section1"], f10["section2"]
+    s3, s3b, s4 = f10["section3"], f10["section3_board"], f10["section4"]
+
+    run = start("e128-f10-carriers-and-row-keyed-shape", {
+        "harness": "ranked",
+        "gpu_seconds": 0,
+        "rebased_onto": REBASE_SHA,
+        "receipt_anchor": "d3c491b5",
+        "board_rows": f10["n_rows"],
+        "pass_price_source": "f7_board_measured_50.4us",
+        "state_label_source": "f76_mode_index",
+        "alphonse_state_file_present": False,
+    })
+
+    flat = {
+        "f10_board_rows": f10["n_rows"],
+        "f10_serial_run_sd_pct": s0["run_sd_pct"],
+        "f10_serial_resid_sd_pct": s0["resid_sd_pct"],
+        "f10_serial_resid_over_run": s0["resid_sd_pct"] / s0["run_sd_pct"],
+        "f10_approx_mean_err_pct": s0["approx_mean_err_pct"],
+        "f10_approx_sd_err_pct": s0["approx_sd_err_pct"],
+        "f10_approx_max_abs_err_pct": s0["approx_max_abs_err_pct"],
+        "f10_approx_exact_rows": s0["approx_exact_rows"],
+    }
+    for name, row in s0["serial"].items():
+        flat["f10_serial_%s_sd_pct" % name] = row["sd_pct"]
+        flat["f10_carrier_share_%s" % name] = s0["carrier_share"][name]
+    for i, row in enumerate(s0["common_serial"]):
+        flat["f10_rule100_%s_published" % row["id"]] = row["published"]
+        flat["f10_rule100_%s_common" % row["id"]] = row["common"]
+        flat["f10_rule100_%s_published_rank" % row["id"]] = i
+
+    for arm, row in s1.items():
+        tag = arm.replace(".", "p")
+        for key in ("median_pct", "beagle_pct", "min4_pct",
+                    "replay_mean_pct", "replay_sd_pct"):
+            flat["f10_arm_%s_%s" % (tag, key)] = row[key]
+
+    for name, row in s2["ranked"].items():
+        for key in ("mean_M", "p_M_eq_8", "p_M_ge_6"):
+            flat["f10_width_%s_%s" % (name, key)] = row[key]
+    for name, row in s2["aggregates"].items():
+        tag = name.split(" ")[0].replace("-", "_")
+        for key in ("mean_M", "p_M_eq_8", "p_M_ge_6"):
+            flat["f10_width_agg_%s_%s" % (tag, key)] = row[key]
+    for name, row in s2["onepass_prices"].items():
+        tag = (name.replace("{", "").replace("}", "").replace(":", "")
+               .replace(",", "_").replace(" c=", "_c").replace(".", "p"))
+        for key in ("ranked_median_pct", "ranked_beagle_pct",
+                    "bench_frame_median_pct", "withdrawn_tier_break_pct"):
+            flat["f10_onepass_%s_%s" % (tag, key)] = row[key]
+        flat["f10_onepass_%s_f_lo_pct" % tag] = row["f_band_pct"][0]
+        flat["f10_onepass_%s_f_hi_pct" % tag] = row["f_band_pct"][1]
+
+    for offset, fits in s3.items():
+        otag = offset.replace(" ", "").replace("=", "")
+        for fit in fits:
+            tag = (fit["name"].replace(" ", "_").replace(">=", "ge")
+                   .replace("+", "plus"))
+            flat["f10_ours_%s_%s_rmse" % (otag, tag)] = fit["rmse"]
+            flat["f10_ours_%s_%s_bic" % (otag, tag)] = fit["bic"]
+    for fit in s3b:
+        otag = fit["offset"].replace(" ", "").replace("=", "")
+        tag = (fit["name"].replace(" ", "_").replace(">=", "ge")
+               .replace("+", "plus").replace(".", "p"))
+        flat["f10_board_%s_%s_rmse" % (otag, tag)] = fit["rmse"]
+        flat["f10_board_%s_%s_aicc" % (otag, tag)] = fit["aicc"]
+
+    flat["f10_state_index_variance_explained"] = \
+        s4["index_variance_explained"]
+    flat["f10_state_largest_step_us"] = s4["span_us"]
+    for i, centre in enumerate(s4["index_centres"]):
+        flat["f10_state_mode%d_index_centre" % i] = centre
+    for fit in s4["fits"]:
+        tag = (fit["name"].replace(" ", "_").replace("+", "plus"))
+        flat["f10_state_%s_rmse" % tag] = fit["rmse"]
+        flat["f10_state_%s_aicc" % tag] = fit["aicc"]
+        for nm, b, se in zip(fit["names"], fit["beta"], fit["se"]):
+            flat["f10_state_%s_%s" % (tag, nm)] = b
+            flat["f10_state_%s_%s_se" % (tag, nm)] = se
+
+    run.log(flat)
+    run.summary.update(flat)
+    run.finish()
+    print("f10: logged %d scalars" % len(flat))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=None)
@@ -932,7 +1026,8 @@ def main() -> int:
             "ourcurve": log_ourcurve,
             "rung2": lambda: log_rung2("ours"),
             "rung2board": lambda: log_rung2("board"),
-            "followups": log_followups}
+            "followups": log_followups,
+            "f10": log_f10}
     for name, fn in runs.items():
         if args.only and name not in args.only:
             continue

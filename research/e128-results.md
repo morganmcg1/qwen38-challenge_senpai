@@ -1869,6 +1869,275 @@ prompt or gate a struggling one.
 
 
 
+## F10 - the serial lottery, the median carriers, and the row-keyed shape
+
+F10 asks four things: replicate Finding 153 independently, re-read every E128
+arm with beagle as a first-class line, settle the width-frame disagreement
+between the local benchfixture and the ranked masses, and test the
+one-parameter row-keyed shape `38 / IPG(M)`. One script,
+`research/e128_f10.py`, answers all four. Zero GPU.
+
+### F10.0 - Finding 153 replicates to the digit
+
+I recomputed the serial statistics on the same 806 board rows that carry
+complete per-prompt official metrics, from `/tmp/yukon-board/full.json`.
+
+| prompt | n | mean s/tok | sd % | p5-p95 % | min-max % |
+| --- | --- | --- | --- | --- | --- |
+| beagle | 806 | 0.037990 | 0.239 | 0.705 | 2.218 |
+| medicine | 806 | 0.037991 | 0.230 | 0.695 | 1.720 |
+| essays | 806 | 0.037998 | 0.226 | 0.676 | 1.893 |
+| republic | 806 | 0.037991 | 0.226 | 0.657 | 1.978 |
+| botany | 806 | 0.037997 | 0.232 | 0.682 | 1.868 |
+| travel | 806 | 0.038001 | 0.230 | 0.662 | 1.984 |
+| plutarch | 806 | 0.037994 | 0.209 | 0.640 | 1.780 |
+| drama | 806 | 0.037991 | 0.232 | 0.684 | 1.783 |
+
+Run-level serial mean sd is `0.1115 %`; the within-run per-prompt residual sd
+is `0.1992 %`, `1.79x` larger. The draw is therefore per pair, not per run,
+exactly as Finding 153 states.
+
+The median-carrier census also reproduces exactly: beagle occupies order
+statistic 4 or 5 on `789 / 806` rows (97.9 %), then medicine 43.2 %, essays
+24.7 %, republic 20.8 %, botany 11.4 %, travel 1.0 %, plutarch 0.7 %, drama
+0.2 %.
+
+**One correction to the stated approximation.** The shorthand
+`published ~ 0.5*raw_beagle + 0.5*min(medicine, essays, republic, botany)` is
+exact on only `770 / 806` rows (95.5 %). Across all 806 rows its error has
+mean `-0.2139 %`, sd `1.4638 %`, and max abs `17.4007 %`. That sd is about
+15x the `0.0967 %` serial-noise term the same finding warns about, so the
+approximation is a good intuition but must not be used as a pricing surrogate.
+Every price in this document uses the exact Rule 67 median.
+
+Rule 100 re-ranking on a common serial leg confirms both claims in the
+finding. Replacing each row's per-prompt serial numerator with the population
+mean and recomputing the exact median moves the top of the board:
+
+| id | solver | published | common-serial | rank move |
+| --- | --- | --- | --- | --- |
+| `1da2702f` | noskillcoding | 3.51845338 | 3.51669571 | -4 |
+| `855c8d53` | Lieisyourlie | 3.51768892 | 3.52385635 | +1 |
+| `a0f85886` | Lieisyourlie | 3.51661724 | 3.51865875 | 0 |
+| `f95e74f1` | newjordan | 3.51594121 | 3.51630077 | -2 |
+| `c57a39de` | morganmcg1 | 3.51270586 | 3.51964965 | +3 |
+| `47cf806e` | Lieisyourlie | 3.51244872 | 3.51702161 | +2 |
+| `8b54c469` | newjordan | 3.50774680 | 3.51589813 | 0 |
+| `6f1cd66f` | morganmcg1 | 3.49065044 | 3.49231845 | 0 |
+
+The published leader `1da2702f` falls to rank 5 on candidate merit, and
+`c57a39de` rises to rank 2. Top-of-board ordering is not merit ordering.
+
+### F10.1 - every arm re-read with beagle first-class
+
+Every column below except the median is a candidate-leg quantity, so the
+`0.0967 %` serial term does not apply to it. The `replay` column holds each
+arm's per-prompt candidate effect fixed and recomputes the exact Rule 67
+median on all 806 board raw vectors; it prices the arm against the population
+carrier structure instead of against the single ordering our own receipt drew.
+It is an ordering-robustness check on our own arm, not a claim about anybody
+else's candidate.
+
+| arm | median | beagle | min4 | replay | sd |
+| --- | --- | --- | --- | --- | --- |
+| `oracle` | +8.5248 | +13.1247 | +2.4925 | +9.0586 | 1.6538 |
+| `ship` / `price0.18` | +0.0000 | +0.0000 | +0.0000 | +0.0000 | 0.0000 |
+| `levelfix1.05` | -0.2171 | -0.3028 | -0.6766 | -0.1901 | 0.2093 |
+| `marginfull` | -0.3561 | -0.8092 | -0.2072 | -0.2917 | 0.6478 |
+| `levelfix1.10` | -0.4012 | -0.5643 | -0.7888 | -0.3435 | 0.2582 |
+| `price0.20` | -0.4856 | +0.4396 | -2.6853 | -0.4005 | 0.4865 |
+| `expectedonly` | -0.6772 | +0.5736 | -3.5234 | -0.5542 | 0.6110 |
+| `recal` | -1.2092 | -0.5038 | -2.3869 | -0.9082 | 0.3930 |
+| `reachonly` | -1.8542 | -1.5808 | -2.6334 | -1.4985 | 0.4800 |
+| `nomargin0` | -2.1716 | -2.0777 | -2.7849 | -1.7793 | 0.4949 |
+| `rankedprice` | -2.8508 | -3.8851 | -2.4282 | -2.1546 | 1.4188 |
+| `nomargin` | -3.7049 | -3.9119 | -4.0344 | -3.6192 | 0.3958 |
+| `marginup` | -4.2494 | -4.0617 | -4.9372 | -3.8324 | 0.9551 |
+| `jensen_both` | -7.8260 | -11.3311 | -5.5670 | -7.9383 | 0.8570 |
+| `jensen` | -11.1665 | -14.7573 | -8.3604 | -10.6190 | 1.0871 |
+| `static7` | -16.5209 | -20.0263 | -13.7641 | -15.8763 | 1.3778 |
+
+The headline is robust to the carrier structure. `levelfix1.05` replays at
+`-0.1901 +- 0.2093` against the single-receipt `-0.2171`, `oracle` replays at
+`+9.0586 +- 1.65` against `+8.5248`, and the ordering of the arms is
+preserved. The whole submitted conclusion, that the shipped price is a local
+optimum and every implementable move is negative, does not depend on which
+ordering our own receipt happened to draw.
+
+Reading beagle alone changes the picture for two arms. `price0.20` is
+`+0.4396` on beagle and `expectedonly` is `+0.5736`, both positive, but both
+lose more on botany (`-2.685` and `-3.523`) than beagle gains. The `min` half
+of the carrier structure is what kills them, which is exactly why the four
+must be priced as a `min` and never as a mean.
+
+### F10.2 - the width frame, arbitrated
+
+The disagreement over Thorfinn's one-pass arm is a frame disagreement, so I
+built both frames from the same script.
+
+| prompt | carrier | mean M | P(M=8) | P(M>=6) |
+| --- | --- | --- | --- | --- |
+| beagle | 97.9 % | 5.3818 | 0.3373 | 0.4550 |
+| medicine | 43.2 % | 6.2556 | 0.4484 | 0.6760 |
+| essays | 24.7 % | 6.0870 | 0.0000 | 0.8243 |
+| republic | 20.8 % | 5.9892 | 0.4846 | 0.5956 |
+| botany | 11.4 % | 7.1481 | 0.6685 | 0.8319 |
+| travel | 1.0 % | 3.6557 | 0.0074 | 0.0769 |
+| plutarch | 0.7 % | 1.1540 | 0.0000 | 0.0004 |
+| drama | 0.2 % | 3.2976 | 0.0072 | 0.0123 |
+
+| aggregate | mean M | P(M=8) | P(M>=6) |
+| --- | --- | --- | --- |
+| carrier-weighted | 5.7947 | 0.3506 | 0.5804 |
+| F83-weighted | 5.7732 | 0.3150 | 0.5861 |
+| benchfixture (local) | 7.3590 | 0.7692 | 0.8718 |
+
+My independent benchfixture reconstruction gives mean M `7.3590` and `76.9 %`
+of the mass at M=8. Askeladd quoted `7.359` and about `77 %`. The two frames
+are therefore both reconstructed correctly, and the disagreement is only about
+which one prices the ranked score. The local frame carries `2.2x` the M=8 mass
+of the carrier-weighted ranked frame.
+
+Priced at the board-measured pass price `f = 50.4 +- 253.0 us` from F7, not at
+the withdrawn tier-break reading:
+
+| table | c | ranked median | ranked beagle | bench frame | withdrawn |
+| --- | --- | --- | --- | --- | --- |
+| `{6:6}` | 0.000 | +0.0068 | +0.0061 | +0.0049 | +1.5329 |
+| `{6:6}` | 0.445 | -1.6594 | -0.4157 | -0.3348 | +1.1416 |
+| `{6:6,7:7}` | 0.000 | +0.0156 | +0.0112 | +0.0078 | +2.8402 |
+| `{6:6,7:7}` | 0.445 | -2.8792 | -0.7959 | -0.5526 | +2.2006 |
+| `{6:6,7:7,8:8}` | 0.000 | +0.0510 | +0.0435 | +0.0668 | +16.3081 |
+| `{6:6,7:7,8:8}` | 0.445 | -4.0704 | -3.2959 | -5.0485 | +12.3266 |
+
+Because `f` is statistically zero, the honest `f +- 1 SE` band at `c = 0` is
+`[+0.0000, +0.0407]` for `{6:6}`, `[+0.0000, +0.0938]` for `{6:6,7:7}`, and
+`[+0.0000, +0.3081]` for `{6:6,7:7,8:8}`. At `c = 0.445` the band is
+`[-1.6845, -1.5330]`, `[-2.9204, -2.6717]`, and `[-4.1265, -3.7878]`.
+
+The ranked frame prices `{6:6,7:7}` at `c = 0.445` `5.2x` worse than the
+benchfixture frame, `-2.8792` against `-0.5526`. The advisor's implied ratio,
+`12.55 / 2.6`, is `4.8x`. Two independent reconstructions agree on the size of
+the frame effect. The recommendation is unchanged: the whole one-pass family
+is either statistically zero at `c = 0` or clearly negative at any real
+residency cost, so it should not take a submission slot.
+
+### F10.3 - the row-keyed shape partly reverses the F9 verdict
+
+`row_keyed(M) = 38 / IPG(M)` is a per-row cost, not a per-round cost, so it
+does not grow with M. It falls as the template packs more rows per group and
+jumps back when the table drops IPG.
+
+| M | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ours | 38.00 | 19.00 | 12.67 | 9.50 | 7.60 | 12.67 | 9.50 | 9.50 | 12.67 |
+| board | 38.00 | 19.00 | 12.67 | 9.50 | 12.67 | 12.67 | 9.50 | 9.50 | 12.67 |
+
+Ours jumps at M=6, the board at M=5, which is where each stratum's free break
+landed. One free scale reproduces a level jump at the right place with no
+fitted break location and no fitted jump size.
+
+On our own eight measured points:
+
+```
+## raw
+line a+bM        k=2 rmse 1575.2 bic 124.03  a 22439.9+-1797.5  b 5757.9+-344.6
+row-keyed only   k=2 rmse 7606.9 bic 149.23  a 63446.9+-6050.2  q -924.8+-370.5
+row-keyed + M    k=3 rmse  138.5 bic  87.21  a 12386.5+-432.9   b 6908.8+-56.3   q 317.4+-12.5
+row-keyed x M    k=3 rmse  617.6 bic 111.13  a 13992.6+-1785.7  b 3699.1+-419.4  q 344.5+-65.7
+R free break M>=6 k=4 rmse  90.6 bic  82.50  a 27894.3+-201.7   b 3388.3+-72.5   jump 10322.5+-365.1  dslope 2779.3+-160.6
+
+## known s=930
+line a+bM        k=2 rmse 1760.5 bic 125.81
+row-keyed only   k=2 rmse 7631.4 bic 149.28
+row-keyed + M    k=3 rmse  132.6 bic  86.52  a 10926.2+-414.6  b 6931.2+-53.9  q 355.1+-12.0
+row-keyed x M    k=3 rmse  696.1 bic 113.05
+R free break M>=6 k=4 rmse 88.9 bic  82.19  a 28273.1+-198.0  b 2994.4+-71.1  jump 11501.4+-358.3  dslope 3133.8+-157.6
+```
+
+F9 concluded that Thorfinn's ideal shape predicted the break LOCATION but not
+its MAGNITUDE, because the per-round form `38 M / IPG(M)` left a large
+residual. The per-ROW form does not. `row-keyed + M` uses three parameters,
+fits no break location and no jump size, and reaches rmse `138.5` and BIC
+`87.21`, against `1575.2 / 124.03` for a plain line. The free-break model R
+still wins on BIC, but by only `4.71` raw and `4.33` under the known offset,
+with one extra parameter. That is a much weaker margin than F9 implied, and it
+means the observed jump is largely explained by a quantity that is computable
+from the table alone.
+
+### F10.3b - the same test on the board population
+
+202 table-bearing rows, each row keyed by its own m-table, row and prompt
+fixed effects, SEs clustered by row:
+
+```
+## raw
+M only            rmse 1869.1 aicc 24833.1  b 6964.9+-174.1
+row-keyed only    rmse 2915.4 aicc 26269.8  q -692.4+-48.3
+row-keyed + M     rmse 1674.5 aicc 24480.3  b 9867.2+-249.0  q 484.5+-30.8
+P  M + passes     rmse 1783.5 aicc 24684.1  b 6644.5+-139.7  f 3197.4+-370.6
+R  M + hinge4.375 rmse 1739.4 aicc 24603.4  b_lo 5699.7+-197.2  d 4013.5+-454.2
+R + row-keyed     rmse 1665.4 aicc 24465.4  b_lo 8888.8+-605.9  d 1372.7+-756.1  q 393.4+-53.0
+
+## known s=930
+row-keyed + M     rmse 1674.7 aicc 24480.8  b 9810.0+-246.8  q 509.1+-30.5
+R + row-keyed     rmse 1662.5 aicc 24459.8  b_lo 8677.1+-596.8  d 1589.5+-749.0  q 403.6+-52.0
+
+corr(row-keyed, mbar) -0.7554   corr(row-keyed, gbar) -0.3224
+```
+
+The board says the same thing more sharply. `R + row-keyed` is the best model
+at aicc `24465.4`, and adding the row-keyed term to R shrinks the hinge from
+`4013.5 +- 454.2` to `1372.7 +- 756.1`, which is no longer significant. On the
+board population, the row-keyed shape absorbs the break.
+
+### F10.4 - the state term as a factor, and the blocked item
+
+Alphonse's `research/e130-artifacts/rung8-state-model.json` is absent from this
+branch and his E130 branch is outside my read scope for this launch, so I
+recovered the same factor from the public board and publish the labels for him
+to check. The label source is the F76 mode index, which F8 checked against the
+ALS state assignment and matched on 13 of 13 rows.
+
+202 rows, k-means into 3 levels on the F76 index: mode 0 centre `-11.682`
+(92 rows), mode 1 `-9.685` (80 rows), mode 2 `+9.276` (30 rows); index
+variance explained `0.942`. With the mode entering as `s_k * phi`, in us per
+drafting round, as a difference from mode 0:
+
+```
+M + phi                rmse 1760.0 aicc 24641.3  b 9296.7+-234.5  a -10614.4+-1154.3
+M + phi + mode         rmse 1737.3 aicc 24604.6  b 9382.5+-235.9  a -11624.1+-1192.7  s1 1964.8+-568.9  s2 -286.9+-691.1
+M + hinge + phi + mode rmse 1718.7 aicc 24572.5  b_lo 6588.6+-890.2  d 3178.3+-1001.2  a -3546.8+-2591.8  s1 1862.7+-572.3  s2 377.4+-804.4
+M + pass + phi + mode  rmse 1667.3 aicc 24474.5  b 8956.0+-298.2  f 2822.4+-342.8  a -10690.5+-1320.0  s1 1622.6+-532.0  s2 -1229.4+-570.6
+
+the VALIDATED two-way rule, index < -12.9 (1 of 202 rows):
+M + phi + F76 slow     rmse 1760.0 aicc 24643.9  b 9296.9+-234.6  a -10615.2+-1155.5  s_slow 64.0+-261.0
+```
+
+**Honest negative.** Only 1 of 202 table-bearing rows falls on the far side of
+the validated threshold, so this panel cannot identify the state step with
+Alphonse's own rule. The three-way k-means split is finer than the validated
+rule, so its labels are not his, and the widest index gap, mode 0 to mode 2,
+carries no step at all, which is what a contaminated label looks like. Item 3
+needs his file, or a panel that spans the modes.
+
+The `costModelDepth` conclusion does not depend on that. F9.4 priced the
+missing per-drafting-round term at the known `930 us` and found the ranked
+median delta is exactly zero. The M=6 pass cliff on our curve is `15,645 us`,
+`16.8x` that term, and the smallest cost that would move any prompt's chosen
+depth is `10,525 us`, `11.3x` it. The largest mode difference recovered here
+is `1964.8 us` per drafting round, still `5.4x` below that threshold. The
+lever stays closed. What the factor form changes is the error bar: fitting `s`
+blind on a single receipt produced a plutarch dummy, and this design cannot,
+because the mode label comes from outside the fit.
+
+One method warning for reuse: a full-panel ALS on all 202 rows is
+unidentified. It recovers levels of `-66849 / -32830 / -8269 us`, because with
+only 8 prompts per row the row cost `c_i` and the state term `s_i` are nearly
+collinear. Use `als_state` only on a small same-family subset, as F8 did.
+
+
+
 ## W&B runs and reproduction
 
 Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
@@ -1884,6 +2153,7 @@ Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
 | `e128-rung2-counterfactual-pricing` | `0wkulqix` | board-curve control pass |
 | **`e128-rung2-our-curve-pricing`** | **`mys5l3kq`** | **the headline: primary metric, R band, curve sweep, board depth scan** |
 | `e128-f4-to-f9-followups` | `5c4mq2lk` | 519 scalars from the zero-GPU advisor follow-ups F4 to F9 |
+| `e128-f10-carriers-and-row-keyed-shape` | `k4sy1yco` | 406 scalars from F10: the serial lottery, the carriers, the width frames and the row-keyed shape |
 
 `0wkulqix` carries a `metric_correction_note`. Its primary metric was first
 written as `0.0` by the bug described in section 6, and was corrected in place
@@ -1952,18 +2222,20 @@ python3 research/e128_census.py \
 python3 research/e128_signals.py \
     --json research/e128-artifacts/f4-signals.json
 
-# F7, F8 and F9 read their inputs relative to research/, so run them there
+# F7 to F10 read their inputs relative to research/, so run them there
 cd research
 python3 e128_f7_artifact.py
 python3 e128_reprice_onepass.py --json e128-artifacts/f7-onepass-repriced.json
 python3 e128_head_share.py
 python3 e128_state_fe.py --json e128-artifacts/f8-state-fe.json
 python3 e128_f9.py --json e128-artifacts/f9-state-shape-price.json
+python3 e128_f10.py --json e128-artifacts/f10-carrier-and-shape.json
 cd ..
 
 # publish
 python3 research/e128_wandb_log.py --only rung2
 python3 research/e128_wandb_log.py --only followups
+python3 research/e128_wandb_log.py --only f10
 ```
 
 Producing the rung-1 legs is the only expensive step, at roughly 40 minutes on
