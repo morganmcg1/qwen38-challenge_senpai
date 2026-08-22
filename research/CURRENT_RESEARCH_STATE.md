@@ -1,8 +1,8 @@
 # SENPAI Research State
 
-- 2026-08-22 05:50 UTC
+- 2026-08-22 06:10 UTC
 - Track `qwen3.8-27b-mtp-v1`. Advisor branch `senpai/qwen38-mtp-r1` at
-  `3b8ea425`. Campaign base `origin/main` at `770a3ff2`. Organizer
+  `3f40d9b0`. Campaign base `origin/main` at `770a3ff2`. Organizer
   `upstream/main` at `fac135f2`. Crown `bc070b7b` at 3.35922017, unchanged.
 
 ## Most recent research direction from the human researcher team
@@ -55,11 +55,13 @@ measurement that settles it and is the most important outstanding measurement in
 the campaign. Askeladd's E125 must put a corrected prediction on the record
 before 5e lands.
 
-### 🔴 E121 was measured, and it is not being submitted
+### 🔴 E121 is merged, not submitted, and it turned out to overlap Route B
 
 Alphonse's stop rule fired: predicted -0.888 % against a measured pooled
 -0.436 % absolute candidate MTP seconds per token, sd 0.093, n=2, ranked frame
--0.415 %. The arithmetic that follows is why the slot stays closed.
++0.415 %. Merged as `3f40d9b0` because the mechanism is exact and the
+kernel-frame effect is well separated from zero; not submitted, because the
+arithmetic below says a marginal win is a certain loss on a slow draw.
 
 ```
 xv4 + E121, fast draw    3.3552   =  -0.12 % under the crown
@@ -67,14 +69,83 @@ xv4 + E121, slow draw    3.3116
 probability of promotion              about 25 %
 ```
 
-At the predicted +0.855 % it would have read 3.3699, or +0.32 % over the crown.
-**The 2.04 times shortfall is exactly the distance between a marginal win and a
-certain loss.** E121 is a local winner, not submitted, superseded. The one
-remaining Yukon slot is held for Route B.
+**No single mechanism in the queue reaches the mode-proof line alone.**
+Composition is the only path. Which makes the next two findings the most
+important thing on this page.
 
-E121 remains a composition component. Route B plus E121 plus the E124 island
-deletion is the only path to +1.86 % that any current evidence supports. **No
-single mechanism in the queue reaches the mode-proof line alone.**
+### 🔴🔴 FINDING F90 — E121 AND ROUTE B REMOVE THE SAME WORK
+
+The shipped wide QMV now carries `constexpr bool SHARE_SUMS = NA <= 4;`. Each
+simdgroup accumulates `sums[m]` for its own half of the m range, then the two
+simdgroups exchange through `sums_xchg` with two threadgroup barriers per
+k-block. **That is the same activation chunk-sum tree Route B hoists.** E121
+halves it; Route B removes all of it.
+
+Thorfinn's 7x7 grid was measured against a base that did not contain E121, so
+his gross numbers price Route B against a control that no longer exists.
+
+The overlap is not uniform. `SHARE_SUMS` keys off IPG, not M:
+
+| M | IPG (= NA) | shares today | thorfinn ranked % |
+| --: | --: | :-: | --: |
+| 3 | 3 | yes | 0.01 |
+| 4 | 4 | yes | 2.36 |
+| **5** | **5** | **no** | **2.78** |
+| 6 | 3 | yes | 1.32 |
+| 7 | 4 | yes | 2.37 |
+| 8 | 4 | yes | 3.28 |
+| 9 | 3 | yes | 1.44 |
+
+M=5 is the only wide width that does not share, so Route B's 6.52 % at M=5
+survives whole — and M=5 sits at beagle's ranked mean width of 5.382 on the
+prompt carrying weight 0.484 of the published median.
+
+If the overlap is total at the sharing widths, gross drops by the full 1.463 %:
+M=4 from 5.88 to about 4.4, ranked 2.36 to about 1.77. Round-weighted, Route B
+falls from about +2.5 % to about +1.9 % before the transfer correction, and to
+roughly +1.0 to +1.2 % after it.
+
+**Alphonse measures the overlap directly in E126, PR #127**, with three isolated
+arms: `share_off`, `share_on`, `sums_free`. The `sums_free vs share_off`
+contrast is also a cross-instrument replication of thorfinn's 5.88 %.
+
+### 🔴🔴 FINDING F91 — THE FIRST TRANSFER FACTOR ABOVE 1, AND IT BELONGS TO ROUTE B
+
+From E123's entry-point census, which askeladd computed and correctly declined
+to headline once his kill rule had fired:
+
+| arm | arch | registers | spill | text | resident simdgroups |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `a_base` | g16s | 94 | 0 | 24942 | 32 |
+| `n_nosums` | g16s | 95 | 0 | 22710 | 32 |
+| `a_base` | g17s | 101 | 0 | 25898 | 39 |
+| `n_nosums` | g17s | 99 | 0 | 23608 | **40** |
+
+Deleting the **whole** sums tree crosses a resident-simdgroup step on the
+**ranked** architecture and crosses nothing on the local one. Deleting half
+crosses nothing anywhere, consistent with E121 measuring 39 -> 38 for its gated
+arm.
+
+Every factor in F87 runs against us. This one runs for us, and Route B is the
+only mechanism that deletes the whole tree. A second and probably larger version
+of the same effect: the shipped entry point inlines every width and pays the F66
+entry-point occupancy tax, while thorfinn's replica is specialised to one width
+and does not pay it at all.
+
+Requested from thorfinn for zero GPU time: an entry-point census of the replica
+and of the consuming QMV body on both `applegpu_g16s` and `applegpu_g17s`.
+Added to askeladd's correction table as a fourth index axis beside mechanism
+class, roofline distance and launched volume.
+
+### 🔴 `quantized.h` is close to exhausted for in-place gains
+
+Every remaining group in E123's priced census is either not deletable, already a
+template parameter (`DIRECT_NIBBLES`), numerics changing, or on the stop list.
+The one apparently unexploited bit-exact group, activation register moves at
+6.781 % weighted, is the extraction-hoist axis that `mo_hoist` closed at +2 to
++185 %. What remains is a bit-exact reduction of the E121 exchange, worth about
++0.11 to +0.17 % ranked and subsumed if Route B lands. **That is why alphonse's
+slot goes to composition science and not to another kernel mechanism.**
 
 ### Route B, and why it is the largest thing we have measured
 
@@ -359,6 +430,13 @@ now established, and one lever is established and forbidden.
 - **Rule 74.** Before describing an offline screen as free, verify on a **named
   reachable host** that the interpreter, the corpus and every auxiliary table
   exist. A screen needing a 370 MB corpus copy, or a GPU re-capture, is not free.
+- **Rule 75.** Before adding two mechanisms in a plan, name the instructions or
+  bytes each one removes and show the two sets are disjoint. A composition sum
+  is a claim about independence. If the sets intersect, carry the intersection
+  as a subtraction and schedule the experiment that measures it **before**
+  either mechanism is promoted. Merging one of an overlapping pair also moves
+  the control the other one measures against, so the in-flight experiment must
+  re-derive on the new base (Rule 65). Earned by Advisor Error 91.
 - **Rule 56 extended.** Census the **entry point** on g17s, not only the body,
   and apply the build threshold to the arm including its entry-point cost.
 
@@ -458,18 +536,19 @@ not be resubmitted alone.**
 
 ## 🔴🔴🔴🔴 THE FOUR EXPERIMENTS IN FLIGHT
 
-All four Macs are busy. Two experiments closed this cycle and two opened.
+All four Macs are busy. Three experiments closed this cycle and three opened.
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #121 | thorfinn | E120 own the QMV dispatch, hoisted activation sums | **rungs 1, 2 and 5d passed. Gate settled. Rung 5a exactness in flight, then 5e, the decisive in-situ measurement** |
-| #122 | alphonse | E121 cross-simdgroup activation-sum sharing | **halted on his own stop rule at -0.436 %. Not submitted. Finishing the NA re-weighting and the ABBA fix, then a terminal result** |
-| #125 | edward | E124 delete the MTP head precision islands and price the acceptance exchange | **new this cycle**, Stage 0 zero GPU |
-| #126 | askeladd | E125 explain and correct the isolated-to-in-situ over-prediction | **new this cycle**, Stage 0 pre-registered prediction due first |
+| #121 | thorfinn | E120 own the QMV dispatch, hoisted activation sums | **rungs 1, 2 and 5d passed. Gate settled. Rung 5a exactness in flight, then 5e, the decisive in-situ measurement. Must merge `3f40d9b0` and re-derive: E121 moved his control** |
+| #125 | edward | E124 delete the MTP head precision islands and price the acceptance exchange | Stage 0 zero GPU |
+| #126 | askeladd | E125 explain and correct the isolated-to-in-situ over-prediction | Stage 0 pre-registered prediction due before 5e |
+| #127 | alphonse | E126 price Route B on the shipped base, settle the in-situ transfer | **new this cycle**, rung 0 zero GPU, rung 1 is what thorfinn needs to read 5e |
 
-Closed this cycle: **#123 E122 merged as a decisive null**, pooled stratified AUC
-0.5109 [0.4850, 0.5364]; **#124 E123 merged despite its own kill rule firing**,
-primary metric 0.66 to 0.2908 pp with five practice-changing findings.
+Closed this cycle: **#122 E121 merged**, exact, +0.415 % ranked, not submitted;
+**#123 E122 merged as a decisive null**, pooled stratified AUC 0.5109 [0.4850,
+0.5364]; **#124 E123 merged despite its own kill rule firing**, primary metric
+0.66 to 0.2908 pp with five practice-changing findings.
 
 ### E120 — the ship path, and the measurement that decides it
 
@@ -1588,7 +1667,7 @@ co-located with edward only.
 | student | PR | experiment | files owned this cycle |
 |---|---|---|---|
 | thorfinn | #121 | E120 own the QMV dispatch, rung 5e decisive | `Qwen35.swift`, `research/`, `Tests/` |
-| alphonse | #122 | E121 halted at -0.436 %, terminal result pending | `quantized.h` and `mlx-generated/quantized.cpp` (sole owner, no comment lines), `research/` |
+| alphonse | #127 | E126 Route B overlap and the in-situ transfer law | `quantized.h` and `mlx-generated/quantized.cpp` (sole owner, no comment lines), `research/` |
 | edward | #125 | E124 delete the MTP head precision islands | `Qwen35.swift` restricted to `sanitize` and a research-only arm selector, `research/`, `Tests/` |
 | askeladd | #126 | E125 isolated-to-in-situ transfer law | `research/` only |
 

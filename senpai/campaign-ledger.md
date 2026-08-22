@@ -40116,3 +40116,214 @@ a class-wise correction table and applies it to Route B and to E124.
 5. Composition. Route B plus E121 sum sharing plus the island deletion is the
    only path to a mode-proof candidate at +1.86 % ranked. No single mechanism in
    the queue reaches it alone.
+
+## 270 — 2026-08-22 06:10Z — E121 MERGED, AND IT TURNS OUT TO OVERLAP ROUTE B
+
+Base moved twice more this cycle: `3b8ea425` -> `cc3da2ba` (ledger 269) -> `3f40d9b0`
+(merge of PR #122, E121). Crown unchanged at `bc070b7b` 3.35922017.
+
+Four students are now working. All four assignments are live at the same time for the
+first time this round.
+
+| PR | student | experiment | state |
+| --- | --- | --- | --- |
+| #121 | thorfinn | E120 Route B, own the QMV dispatch and hoist the activation sums | rung 5e pending |
+| #125 | edward | E124 `noislands`, delete the MTP head precision islands | stage 0 |
+| #126 | askeladd | E125 explain and correct the isolated-to-in-situ over-prediction | stage 0 |
+| #127 | alphonse | E126 price Route B on the shipped base, settle the transfer | rung 0 |
+
+### 270.1 E121 TERMINAL AND MERGED — PR #122
+
+`status: inconclusive`, head `11e0615b`, merged as `3f40d9b0`. W&B `3inupzgh` (rung 0
+census), `q3oflj3p` (rung 2 isolated), `qmr3mgl8` (rung 3 in situ), `5zms9ntd` (NA
+re-weight). Write-up `research/e121-results.md`, 696 lines.
+
+- `candidate_mtp_seconds_per_token` 0.030646 -> 0.030512.
+- Kernel frame **+1.463 %** round-weighted, CI95 ex-NA5 [+1.042, +2.243].
+- Leg frame **-0.436 %**, n=2 ABBA, sd 0.093, CI95 [-1.268, +0.395].
+- Ranked frame **+0.415 %**. Schedule invariant.
+- Bit-exact over 512 tokens against the pinned 1025-row digest `719d82b8`, three
+  negative controls all moved the digest, 8/8 legs matched.
+
+Merged despite `inconclusive` because the mechanism is exact, the kernel-frame effect is
+well separated from zero, and the in-situ shortfall is a *pricing* failure rather than a
+mechanism failure. The pricing failure is now its own experiment twice over, E125 and
+E126.
+
+**Harness defect 25, diagnosed and fixed by alphonse, is the most valuable thing in the
+PR.** `swift build` decides what to compile from file stat, so under `base/share/share/base`
+only leg 3 rebuilds, and leg 3 is always the same arm. That is an arm-attached thermal
+confound that counterbalancing cannot remove: 11 s of prep against 50 to 53 s, entry 8 C
+hotter, and only a rebuilt worker pays first-use Metal JIT. Share ran 5.31 C hotter, hot
+legs were 0.072 % slower, so the confound ran against the candidate and the true effect is
+nearer -0.49 %. The fix, in `research/e121_e2e_abba.sh`, touches both sources every leg so
+every leg pays the same compile and the same JIT, pads with `E121_PREP_FLOOR_SECONDS`, and
+prints a per-arm thermal balance report that fires correctly on the known-bad session.
+**Every student copies this. Nobody reinvents it.**
+
+Two retractions from alphonse, both correct and both unprompted. He withdrew his occupancy-class
+explanation, because occupancy is what the arm pays and not what it earns: ungated goes
+39 -> 32 simdgroups, gated 39 -> 38, and the gain is arithmetic. He then showed that
+NA re-weighting explains 47 % of the shortfall and cuts the over-prediction from 2.04x to
+1.55x, but that 2.6 sd remain, so it is partly a weighting error and not only a weighting
+error.
+
+### 270.2 FINDING F90 — E121 AND ROUTE B REMOVE THE SAME WORK, AND THE OVERLAP HAS A WIDTH MAP
+
+This is the finding of the cycle and I found it only while writing alphonse's next brief.
+
+The shipped wide QMV now carries `constexpr bool SHARE_SUMS = NA <= 4;`. Each simdgroup
+accumulates `sums[m]` for its own half of the m range, then the two simdgroups exchange
+through `sums_xchg` with two threadgroup barriers per k-block. **That is the same
+activation chunk-sum tree that Route B hoists into a replica kernel.** E121 halves it.
+Route B removes all of it.
+
+Thorfinn's 7x7 grid was measured against a base that did not contain E121. His gross
+numbers therefore price Route B against a control that no longer exists.
+
+The overlap is not uniform. `SHARE_SUMS` keys off IPG, not M, and the dispatch switch maps
+them like this:
+
+| M | IPG (= NA) | shares today | thorfinn ranked % |
+| --: | --: | :-: | --: |
+| 3 | 3 | yes | 0.01 |
+| 4 | 4 | yes | 2.36 |
+| **5** | **5** | **no** | **2.78** |
+| 6 | 3 | yes | 1.32 |
+| 7 | 4 | yes | 2.37 |
+| 8 | 4 | yes | 3.28 |
+| 9 | 3 | yes | 1.44 |
+
+M=5 is the only wide width that does not share, because the wide helper asserts
+`NA <= 5` and alphonse gated the share at `NA <= 4`. So Route B's 6.52 % at M=5 survives
+whole, and M=5 sits at beagle's ranked mean width of 5.382 on the prompt that carries
+weight 0.484 of the published median.
+
+Worst case at the sharing widths, if the overlap is total, gross drops by the full
+1.463 %: M=4 from 5.88 to about 4.4, ranked 2.36 to about 1.77. Round-weighted, Route B
+would fall from about +2.5 % ranked to about +1.9 % before the isolated-to-in-situ
+correction, and to roughly +1.0 to +1.2 % after it.
+
+**Assigned to alphonse as E126, PR #127.** He measures the overlap directly with three
+isolated arms on his own instrument: `share_off`, `share_on`, `sums_free`. The
+`sums_free vs share_off` contrast is also a cross-instrument replication of thorfinn's
+5.88 %, which is worth having on its own under Rule 62.
+
+### 270.3 FINDING F91 — A TRANSFER FACTOR ABOVE 1, AND IT BELONGS TO ROUTE B
+
+Buried in E123's entry-point census, which askeladd computed and correctly declined to
+headline because his kill rule had already fired:
+
+| arm | arch | registers | spill | text | resident simdgroups |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `a_base` | g16s | 94 | 0 | 24942 | 32 |
+| `n_nosums` | g16s | 95 | 0 | 22710 | 32 |
+| `a_base` | g17s | 101 | 0 | 25898 | 39 |
+| `n_nosums` | g17s | 99 | 0 | 23608 | **40** |
+
+Deleting the **whole** sums tree crosses a resident-simdgroup step on the **ranked**
+architecture and crosses nothing on the local one. Deleting **half** of it crosses
+nothing anywhere, which is consistent with E121 measuring 39 -> 38 for the gated arm.
+
+Every transfer factor in F87 is above 1 in the direction that hurts us. This is the first
+one that runs the other way, and Route B is the only mechanism in the campaign that
+deletes the whole tree.
+
+There is a second and probably larger version of the same effect. The shipped entry point
+inlines every width into one kernel and pays the F66 entry-point occupancy tax. Thorfinn's
+replica is a bespoke custom kernel specialised to one width and does not pay it at all.
+
+Requested from thorfinn for zero GPU time: an entry-point census of the replica kernel and
+of the consuming QMV body, on both `applegpu_g16s` and `applegpu_g17s`. If the consumer
+reaches 40 resident simdgroups on g17s, that is worth more than any other free observation
+available to him. Added to askeladd's correction table as a fourth index axis alongside
+mechanism class, roofline distance and launched volume.
+
+### 270.4 ADVISOR ERROR 91 — I MERGED AN OVERLAPPING MECHANISM WITHOUT RE-PRICING EITHER SIDE
+
+I have priced Route B at about +2.5 % ranked in every plan for two cycles. I merged E121
+this cycle. The two remove the same instructions, and I did not notice until I sat down to
+write alphonse's next brief, four mutations later.
+
+The mistake is not the merge. E121 is exact, cheap and measured, and it is worth keeping
+whether or not Route B lands. The mistake is that I kept a composition sum on the board —
+E121 +0.415, Route B +2.5, `noislands` +0.43, C1 +0.3 — while one pair in that sum shares a
+mechanism. A composition sum is a claim about independence, and I never checked it.
+
+**New rule.** Before adding two mechanisms in a plan, name the instructions or bytes each
+one removes and show that the two sets are disjoint. If they are not disjoint, the plan
+carries the intersection as a subtraction and the experiment that measures the
+intersection is scheduled before either mechanism is promoted. See Rule 75.
+
+This also changes how a merge interacts with an in-flight experiment. Merging E121 moved
+the control that thorfinn's decisive rung measures against. I have asked him to merge
+`3f40d9b0` and re-derive on it rather than port a diff (Rule 65), and to treat the shipped
+`SHARE_SUMS` body as the 5e control.
+
+### 270.5 `quantized.h` IS CLOSE TO EXHAUSTED FOR IN-PLACE GAINS
+
+Checked while looking for a direct-score alternative for alphonse. Reading E123's priced
+census against the stop list, group by group:
+
+| group | class | deletable | weighted % | verdict |
+| --- | --- | :-: | ---: | --- |
+| lane FMAs | `alu` | c | 27.124 | not deletable |
+| nibble integer operations | `alu` | a | 12.497 | already a template parameter, `DIRECT_NIBBLES` |
+| activation widenings | `cvt` | b | 8.901 | numerics change, ceiling only |
+| sums add tree | `alu` | a (half) | 8.476 | half is E121, the rest is Route B |
+| nibble integer to float | `alu` | c | 7.141 | not deletable |
+| activation register moves | `alu` | a | 6.781 | **closed by `mo_hoist`, ledger 258.8** |
+| weight element loads | `ld` | c | 6.420 | not deletable |
+| activation vec4 loads | `ld` | c | 6.211 | `xv4` shipped in E110 |
+| final accumulate | `alu` | c | 5.086 | not deletable |
+| metadata loads | `ld` | c | 3.210 | not deletable |
+| metadata widenings | `cvt` | c | 1.218 | not deletable |
+| epilogue `simd_sum` | `ssum` | c | 0.754 | not deletable |
+
+The one apparently unexploited bit-exact group, activation register moves at 6.781 %
+weighted, is the extraction-hoist axis that `mo_hoist` closed at +2 to +185 % across
+widths. That axis stays closed.
+
+So the remaining in-place value in `quantized.h` is small and it is all in the E121
+exchange: E123 prices barriers at only 0.167 of alphonse's 0.801 pp exchange cost, so the
+cost is threadgroup access, and there is no bank-conflict penalty, so padding `sums_xchg`
+is waste. A bit-exact reduction of the per-k-block exchange is worth roughly +0.11 to
++0.17 % ranked, and it is subsumed if Route B lands. It is E126 rung 3 and it is a hedge,
+not a headline.
+
+**This is why alphonse's slot goes to composition science and not to another kernel
+mechanism.** There is no longer a large in-place mechanism in that file to assign.
+
+### 270.6 THE BANDWIDTH CONTRADICTION IS STILL OPEN, AND NOW HAS THREE INSTRUMENTS ON IT
+
+| source | mechanism | design | bandwidth dependence |
+| --- | --- | --- | --- |
+| alphonse E121 | gated cross-simdgroup share of the sums | 10 cells, 5 shapes, split 2 vs 3 | `r = -0.938`, gain spans 2.7x over a 1.2x bandwidth span |
+| thorfinn E120 | hoist of the same sums | 49 cells, 7 shapes x 7 widths | flat, sd 0.10 to 0.77 pp across 74 to 246 GB/s |
+| askeladd E123 | injection ladder | 36 arms, DRAM bound at 253.8 GB/s | still over-prices by 2.16x |
+
+Three readings remain live: the mechanisms genuinely differ; alphonse's `r` is shape
+identity wearing a bandwidth costume with n=5 and a two-group split; thorfinn's replica
+probe drives every shape into one regime. E126 rung 1 has 15 cells and two mechanisms of
+very different size on one instrument, with achieved GB/s as a continuous covariate and
+regressions run within shape and within width. That is the cleanest shot at it.
+
+### 270.7 CAMPAIGN ARITHMETIC, RESTATED WITH THE OVERLAP
+
+```
+crown bc070b7b                                3.35922017
+our 7bef7d4c receipt, mode-corrected          3.34136
+parity on a fast draw                         +0.53 % ranked
+beat the crown on either draw                 +1.86 % ranked
+```
+
+| mechanism | ranked, as priced before | ranked, after overlap and transfer | owner |
+| --- | --: | --- | --- |
+| E121, merged | +0.415 % | +0.415 %, measured in situ | done |
+| Route B | +2.5 % | +1.0 to +1.9 %, overlap and transfer both unmeasured | thorfinn |
+| `noislands` | +0.43 % | +0.41 to +0.45 % | edward |
+| C1 | +0.3 % | unowned, rung 0 blocked on corpus location | none |
+
+The sum still clears +1.86 % if Route B lands anywhere near the top of its band. It does
+not clear it if Route B lands at +1.0 % and nothing else moves. That is the whole reason
+E126 exists and the reason 5e must run against the shipped control.
