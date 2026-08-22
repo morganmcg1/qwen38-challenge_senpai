@@ -56,10 +56,13 @@ git status --porcelain -- Sources Vendor Package.swift mtp-head.manifest.json \
 # ran is read off the run's own `plan` trace field (CAMPAIGN RULE 114).
 step rebuild senpai/rebuild-and-assert-worker.sh \
   --require 'e135_default_grid/tight' \
+  --require 'e135_default_probe/p10' \
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4' \
   --require 'e120_default_route/tiered_switch/shipped' \
   --require 'columns_by_width' \
   --forbid 'e135_default_grid/wide' \
+  --forbid 'e135_default_probe/p15' \
+  --forbid 'e135_default_probe/p25' \
   --forbid 'e120_default_route/tiered_switch/onepass67' \
   --require-symbol 'noteLaunch'
 echo "worker_sha256 $(digest)"
@@ -141,11 +144,12 @@ import sys
 WANT_PLAN = "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
 WANT_ROUTE = "e120_default_route/tiered_switch/shipped"
 WANT_GRID = "e135_default_grid/tight"
+WANT_PROBE = "e135_default_probe/p10"
 
 trace = json.load(open(sys.argv[1]))
 ok = True
 for key, want in (("plan", WANT_PLAN), ("default_route", WANT_ROUTE),
-                  ("default_grid", WANT_GRID)):
+                  ("default_grid", WANT_GRID), ("default_probe", WANT_PROBE)):
     got = trace.get(key)
     print("%-14s %s" % (key, got))
     if got != want:

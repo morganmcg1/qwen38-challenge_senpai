@@ -2016,6 +2016,65 @@ public enum Qwen35CustomQMV {
         return parsed
     }()
 
+    /// Rungs of the leaf pre-selection fraction.
+    ///
+    /// The fraction sets how many of the 12,292 declared-head leaves the
+    /// cluster kernel scores per draft step, so it trades per-draft bytes
+    /// against the argmax miss rate. It was a plain compiled constant, which
+    /// made every rung a rebuild and made a counterbalanced ladder impossible
+    /// inside one build. These rungs are research instruments: `p25` and `p15`
+    /// are the two fractions already carried by ranked receipts, and
+    /// `compiledDefault` is the only fraction a run that exports nothing --
+    /// the ranked run -- can take.
+    public enum ProbeArm: String, Sendable, CaseIterable {
+        case p25
+        case p15
+        case p10
+
+        /// The rung a run with no override selects, so the rung the ranked
+        /// runner uses.
+        public static let compiledDefault = ProbeArm.p10
+
+        public var fraction: Double {
+            switch self {
+            case .p25: return 0.25
+            case .p15: return 0.15
+            case .p10: return 0.10
+            }
+        }
+
+        /// Leaves scored per draft step for a head with `leaves` leaves.
+        ///
+        /// The declared head has 12,292, so the rungs derive 3073, 1844 and
+        /// 1230. The gate reads the integer back off the run's own trace, so
+        /// the rule must exist once and be callable from a test.
+        public func probes(leaves: Int) -> Int {
+            max(1, Int((fraction * Double(leaves)).rounded(.up)))
+        }
+    }
+
+    /// The compiled-in probe rung, as one literal the worker's string table
+    /// carries.
+    ///
+    /// Every `ProbeArm` raw value is compiled in whichever one ships, exactly
+    /// like the `Grid` and `Table` raw values, so `"p10"` on its own witnesses
+    /// nothing. This whole literal exists only for the case actually selected.
+    /// `defaultProbeWitnessNamesTheCompiledDefault` pins it against
+    /// `ProbeArm.compiledDefault`, and `flushPipelineLog` keeps it reachable.
+    ///
+    /// The rung never enters the Metal source: the fraction changes how many
+    /// leaves are scored, not the kernel text, and naming it there would split
+    /// one pipeline set in two for a difference the kernel cannot observe.
+    public static let defaultProbeWitness = "e135_default_probe/p10"
+
+    public static let probeArm: ProbeArm = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E135_PROBE_ARM"]
+        guard let raw, let parsed = ProbeArm(rawValue: raw) else {
+            return ProbeArm.compiledDefault
+        }
+        return parsed
+    }()
+
     /// Launch geometry for one routed cell.
     ///
     /// `using` is a parameter rather than a read of the static so one process
@@ -2138,6 +2197,7 @@ public enum Qwen35CustomQMV {
               "plan": "\(planWitness)",
               "default_route": "\(defaultRouteWitness)",
               "default_grid": "\(defaultGridWitness)",
+              "default_probe": "\(defaultProbeWitness)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {
@@ -2155,6 +2215,7 @@ public enum Qwen35CustomQMV {
               "columns_by_width": {
             \(columns)
               },
+              "probe_arm": "\(probeArm.rawValue)",
               "probe_fraction": \(qwen35DerivedClusterProbeFraction),
               "probe_leaves": \(pipelineProbeLeaves),
               "probe_count": \(pipelineProbeCount)
@@ -4981,18 +5042,20 @@ private func qwen35ClusterRowQMV(
     )[0]
 }
 
-/// Fraction of leaves probed per draft step. 0.25 removes 23.0 % of the
-/// declared head's per-draft bytes at a worst-domain argmax miss rate of
-/// 2.3e-4, 13x inside the accepted gate.
+/// Fraction of leaves probed per draft step, read from the selected
+/// `Qwen35CustomQMV.ProbeArm`. 0.25 removes 23.0 % of the declared head's
+/// per-draft bytes at a worst-domain argmax miss rate of 2.3e-4, 13x inside
+/// the accepted gate.
 ///
-/// 0.15 is now carried by two independent ranked receipts on two different
-/// bases, read on the candidate leg alone rather than on the raw ratio, whose
-/// serial half is pinned hardware measured about 9.6x noisier:
+/// 0.15 is carried by two independent ranked receipts on two different bases,
+/// read on the candidate leg alone rather than on the raw ratio, whose serial
+/// half is pinned hardware measured about 9.6x noisier:
 /// `b6cb0fea -> 02742bf0` gives -0.3836 % on a wide-grid base and
 /// `ed608e64 -> 08b67f12` gives -0.2786 % on a tight-grid base, pooling to
 /// -0.3311 % with 2 sigma of 0.0948 %. Acceptance is unchanged: the tight-grid
 /// pair reports digit-identical draft lengths on seven of eight prompts.
-public let qwen35DerivedClusterProbeFraction: Double = 0.15
+public let qwen35DerivedClusterProbeFraction: Double =
+    Qwen35CustomQMV.probeArm.fraction
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
@@ -6034,8 +6097,7 @@ extension Qwen35TextModel: MTPCapable {
         guard let centroidBiases = quantizedCentroids.biases else { return }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
-        let probes = max(
-            1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
+        let probes = Qwen35CustomQMV.probeArm.probes(leaves: leaves)
         Qwen35CustomQMV.noteProbe(leaves: leaves, probes: probes)
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
