@@ -288,7 +288,7 @@ def run_cell(cache, seed, prompt, cell, curve, windows, tally=None):
             "us_per_token": run["us_per_token"]}
 
 
-def tier_ratios(cache, seed, curve, tier, windows):
+def tier_ratios(cache, seed, curve, tier, windows, walker=None):
     install(curve)
     price = boundary_price(tier, SHIPPED_CLIFF)[:2]
     out = {}
@@ -296,7 +296,7 @@ def tier_ratios(cache, seed, curve, tier, windows):
         entry = cache[(seed, prompt)]
         base = simulate(None, entry["factory"](entry["p_target"]), windows)
         run = simulate(None, entry["factory"](entry["p_target"]), windows,
-                       price=price)
+                       price=price, walker=walker)
         out[prompt] = {"ratio": run["us_per_token"] / base["us_per_token"],
                        "mean_depth": run["mean_depth"],
                        "accept_rate": run["accept_rate"]}
