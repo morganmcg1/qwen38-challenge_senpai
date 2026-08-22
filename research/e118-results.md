@@ -30,7 +30,7 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 - Supporting research files: `research/e118_arms.py`,
   `research/e118_qmv_probe.m`, `research/e118_probe.sh`,
   `research/e118_analysis.py`, `research/e118_wandb_log.py`,
-  `research/e118-artifacts/`.
+  `research/e118_wandb_check.py`, `research/e118-artifacts/`.
 - MTP head provenance and draft policy: not applicable. This probe runs no
   session and proposes no draft.
 - Token window, fixture, reference source, harness: not applicable to a
@@ -1010,6 +1010,16 @@ Group `e118-wide-qmv-metadata-load-instruction-screen`, project
 | [`e118cost1`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118cost1) | `e118-cost-model` | the instruction-price ladder, the per-width prices, the ILP control, the no-free-parameter predictions and the failed observational AIR regression |
 | [`e118rng21`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118rng21) | `e118-rung2-finding53` | the Finding 53 decomposition, the registered rule's outcome, the scaffolding confound and the threadgroup-occupancy table |
 | [`e118hst01`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118hst01) | `e118-sumshoist-ceiling` | `x_sumshoist` against `a_base` and `n_nosums`, its bit-exactness ledger and controls, its static budget, and the table-production cost |
+
+All six states were read back from the server after publishing, not inferred
+from the exit code: `python3 research/e118_wandb_check.py --verify` prints
+`VERIFY_OK` with all six at `state=finished` and every load-bearing summary
+key present. The same file's `--dry` mode rebuilds all sixteen tables offline
+against `summary.json` with a stub `wandb`. That mode exists because it was
+missing: when the analysis script changed `screen_prediction` from one reading
+per arm to one reading per arm and width, the logger raised `KeyError` on the
+fourth of six runs, leaving three published and three absent. A one-second
+offline build would have caught it before the first network round trip.
 
 ---
 
