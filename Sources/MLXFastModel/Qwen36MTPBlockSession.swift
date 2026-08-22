@@ -205,13 +205,22 @@ public final class Qwen36MTPBlockSession {
     /// without this one-time resize the driver must re-establish residency for
     /// the whole tower on later command buffers.
     ///
-    /// Capacity is deliberately the live post-warm footprint plus only a small
-    /// page-rounding allowance. After cached warm temporaries are cleared,
-    /// persistent weights fit in the one resize while later scratch fails the
-    /// fit test and stays on the commit-free unwired path. The ticket is never
-    /// ended because shrinking the limit would evict the resident weights.
+    /// Capacity is the live post-warm footprint plus an allowance for what the
+    /// scored window allocates and then keeps live: target KV, Gated DeltaNet
+    /// recurrent and convolution state, and head history KV. E130 rung 9
+    /// measured that persistent growth at 218.71 MiB over a 1024-token window,
+    /// so the previous 64 MiB allowance could not wire it.
+    ///
+    /// `ResidencySet::insert` admits one buffer at a time while
+    /// `allocatedSize() + buf <= capacity`, so the allowance is spent in
+    /// allocation order, and page rounding is charged against it because the
+    /// set counts page-rounded allocation sizes while the sizing input counts
+    /// buffer lengths. Live scratch peaks near 2.4 GB, far above the
+    /// allowance, so its bulk still fails the fit test and stays on the
+    /// commit-free unwired path. The ticket is never ended because shrinking
+    /// the limit would evict the resident weights.
     private static let wiredZHDefaultFraction = 1.0
-    private static let wiredZHDefaultSlackMB = 64
+    private static let wiredZHDefaultSlackMB = 512
     private static let wiredTicketLock = NSLock()
     nonisolated(unsafe) private static var wiredTicketRetainer: WiredMemoryTicket?
 
@@ -256,6 +265,8 @@ public final class Qwen36MTPBlockSession {
         line += " active=\(active) peak=\(peak)"
         line += " cache=\(Memory.cacheMemory) slack_mb=\(wiredZHDefaultSlackMB)"
         line += " maxrec=\(recommended) physmem=\(physical)"
+        line += " resources=\(Memory.numResources)"
+        line += " reslimit=\(Memory.resourceLimit)"
         line += " wired_gate_passed=\(!clearsWarmCache)\n"
         e130ProbeSink.write(Data(line.utf8))
 
@@ -273,6 +284,7 @@ public final class Qwen36MTPBlockSession {
                 sample += " elapsed_s=\(String(format: "%.1f", -started.timeIntervalSinceNow))"
                 sample += " active=\(now) peak=\(Memory.peakMemory)"
                 sample += " cache=\(Memory.cacheMemory)"
+                sample += " resources=\(Memory.numResources)"
                 sample += " growth=\(now - active)\n"
                 e130ProbeSink.write(Data(sample.utf8))
             }

@@ -48,6 +48,10 @@ import statistics
 from pathlib import Path
 
 MIB = 1 << 20
+
+# The allowance rung 9 measured against, and the value rung 10 replaces. Kept
+# fixed here so the rung-9 verdict stays readable after the constant moves;
+# `slack_mb_in_build` records what the measured binary actually carried.
 SHIPPED_SLACK_MIB = 64
 
 # F10's arithmetic, recomputed here from Qwen35Config.swift:225-260 rather than
@@ -136,10 +140,16 @@ def summarize(process: dict) -> dict:
         "peak_at_sizing": peak_at_sizing,
         "active_at_sizing_mib": active_at_sizing / MIB,
         "peak_at_sizing_mib": peak_at_sizing / MIB,
-        "slack_mb_shipped": first.get("slack_mb"),
+        "slack_mb_in_build": first.get("slack_mb"),
         "maxrec": first.get("maxrec"),
         "physmem": first.get("physmem"),
         "wired_gate_passed": first.get("wired_gate_passed"),
+        # Live non-heap Metal buffers at the sizing instant. `ResidencySet`
+        # charges each one its page-rounded `allocatedSize()`, while the sizing
+        # input sums `length()`, so this count bounds the page-rounding tax the
+        # slack must absorb before it can wire a single byte of growth.
+        "resources_at_sizing": first.get("resources"),
+        "resource_limit": first.get("reslimit"),
         # Later sizing events are separate sessions in the same process. Their
         # active counts are diagnostic, not part of the first ticket's growth.
         "later_sizing_active_mib": [s["active"] / MIB for s in sizing[1:]],
