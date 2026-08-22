@@ -445,11 +445,22 @@ def apply_to_route_b(pre: dict, table: dict, fit: dict, inv: dict) -> dict:
                              / exposure(mu_situ, fit["p"])))
 
     if not f_points:
-        return {"identified": False,
-                "note": "not measured: no frame term is identified, the "
-                        "Stage 0 registered band stands unchanged",
-                "point": pre["predictions"]["primary"]["ranked_pct"],
-                "low": pre["envelope"][0], "high": pre["envelope"][1]}
+        reg = pre["predictions"]["primary"]
+        return {
+            "identified": False,
+            "note": "not measured: no frame term is identified, so the Stage 0 "
+                    "registered band stands unchanged",
+            "sources": {},
+            "F_point": reg["F"], "F_band": [1.00, 2.041284403669725],
+            "W_point": W_CENTRAL, "W_band": list(W_BAND),
+            "C_point": reg["C"], "C_band": list(pre["envelope"]),
+            "isolated_ranked_pct": isolated,
+            "point": reg["ranked_pct"],
+            "low": pre["envelope"][0], "high": pre["envelope"][1],
+            "registered_point": reg["ranked_pct"],
+            "parity_line_pct": pre["decision_lines"]["parity"],
+            "mode_proof_line_pct": pre["decision_lines"]["mode_proof"],
+        }
 
     vals = [v for _, v in f_points]
     f_point = math.exp(statistics.fmean([math.log(v) for v in vals]))
@@ -478,14 +489,14 @@ def apply_to_route_b(pre: dict, table: dict, fit: dict, inv: dict) -> dict:
 
 def back_check(route_b: dict) -> dict:
     pair = PUBLISHED_PAIRS["alphonse_threadgroup_exchange"]
-    if not route_b.get("identified"):
-        return {"identified": False,
-                "note": "not measured: no corrected composite to test"}
     c = route_b["C_point"]
     pred = pair["isolated_pct"] / c
     sd = pair["in_situ_sd"]
     return {
-        "identified": True,
+        "identified": bool(route_b.get("identified")),
+        "composite_source": ("E125 measured frame term"
+                             if route_b.get("identified")
+                             else "Stage 0 registered composite, unchanged"),
         "predicted_pct": pred,
         "measured_pct": pair["in_situ_pct"],
         "sd": sd,
