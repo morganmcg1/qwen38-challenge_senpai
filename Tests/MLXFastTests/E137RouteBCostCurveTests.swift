@@ -171,11 +171,18 @@ private func e137Sweep(
             row["routed_seconds_per_call"] = routedSamples[routedSamples.count / 2]
             row["routed_seconds_per_call_min"] = routedSamples[0]
             row["routed_seconds_per_call_max"] = routedSamples[routedSamples.count - 1]
+            // Every replicate is kept so the reader can interval the median and
+            // the width step itself. A min-to-max envelope over 15 draws is an
+            // extreme-value range, not an uncertainty on the median, and it is
+            // far too wide to decide a 30 % boundary.
+            row["routed_samples"] = routedSamples
         }
         row["fallback_seconds_per_call"] = fallbackSamples[fallbackSamples.count / 2]
         row["fallback_seconds_per_call_min"] = fallbackSamples[0]
         row["fallback_seconds_per_call_max"] = fallbackSamples[fallbackSamples.count - 1]
+        row["fallback_samples"] = fallbackSamples
         row["tap_overhead_seconds_per_call"] = taps[taps.count / 2]
+        row["tap_samples"] = taps
 
         // Route B advertises a bit-exact replica of the incumbent. Checking it
         // here also proves both arms really dispatched their own kernel.
