@@ -37,7 +37,7 @@ import e120_g17s_census as e120  # noqa: E402
 ARCHS = e120.ARCHS
 SIMDGROUP_BUDGET = e120.SIMDGROUP_BUDGET
 SHIPPED_CASES = e120.WIDTH_CASES
-ONE_PASS_CASES = tuple((m, m) for m, _ in SHIPPED_CASES)
+ONE_PASS_CASES = tuple((m, m, rps) for m, _, rps in SHIPPED_CASES)
 BODY_NA = (2, 3, 4, 5, 6, 7, 8, 9)
 
 # `rows_per_simd` sets how many output rows one simdgroup accumulates. Live
@@ -48,7 +48,7 @@ BODY_NA = (2, 3, 4, 5, 6, 7, 8, 9)
 BODY_RPS = (1, 2, 4)
 
 # Passes over the weight matrix per routed width, shipped against one-pass.
-SHIPPED_PASSES = {m: -(-m // ipg) for m, ipg in SHIPPED_CASES}
+SHIPPED_PASSES = {m: -(-m // ipg) for m, ipg, _ in SHIPPED_CASES}
 
 # Realised verification widths over the 312 rounds of the rung 5e session.
 REALISED_HISTOGRAM = {4: 16, 5: 20, 6: 20, 7: 12, 8: 240}
@@ -182,7 +182,7 @@ def main() -> int:
     print("\npasses over the weight matrix per routed width")
     print("  shipped : " + "  ".join(
         "M=%d:%d" % (m, p) for m, p in sorted(SHIPPED_PASSES.items())))
-    print("  onepass : " + "  ".join("M=%d:1" % m for m, _ in SHIPPED_CASES))
+    print("  onepass : " + "  ".join("M=%d:1" % m for m, *_ in SHIPPED_CASES))
     weighted = sum(rounds * SHIPPED_PASSES[m]
                    for m, rounds in REALISED_HISTOGRAM.items())
     total = sum(REALISED_HISTOGRAM.values())

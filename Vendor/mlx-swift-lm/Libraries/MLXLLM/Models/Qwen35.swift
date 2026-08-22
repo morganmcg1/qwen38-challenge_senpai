@@ -1785,8 +1785,8 @@ public enum Qwen35CustomQMV {
     public enum Table: String, Sendable {
         /// Two verify passes at M=6, M=7 and M=8.
         case shipped
-        /// One pass at M=6 and M=7. `IPG = M` satisfies `M % IPG != 1`.
-        case onePass67 = "onepass67"
+        /// One pass at every routed width. `IPG = M` satisfies `M % IPG != 1`.
+        case onePass = "onepass"
     }
 
     /// Which dispatch table the entry points are built from.
@@ -1805,20 +1805,26 @@ public enum Qwen35CustomQMV {
         (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
     ]
 
-    /// M=6 and M=7 in one pass. M=8 stays at two passes until a spill-free
-    /// `wide<8>` exists; adding `(8, 8, 4)` here is the whole change.
-    public static let onePass67Plan: [(m: Int, ipg: Int, rps: Int)] = [
-        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4),
+    /// One pass over the weight matrix at every width the board can reach.
+    ///
+    /// `ipg = m` alone does not fit: at `rps = 4` the g17s sum-table entry
+    /// point needs 114 registers at M=6, and 126 with 16 bytes of spill at
+    /// M=7. Halving `rps` at exactly those widths brings them to 92, 96 and
+    /// 105 registers with no spill, which is why this table carries `rps` per
+    /// width instead of one constant. M=9 is above the ranked verify cap, so it
+    /// stays on tier 3 and adds no pipeline.
+    public static let onePassPlan: [(m: Int, ipg: Int, rps: Int)] = [
+        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 8, 2), (9, 3, 4),
     ]
 
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
         switch table {
         case .shipped: return shippedPlan
-        case .onePass67:
+        case .onePass:
             precondition(
                 entry == .tiered,
                 "the one-pass table is only legal on tiered entry points")
-            return onePass67Plan
+            return onePassPlan
         }
     }()
 
@@ -1833,13 +1839,13 @@ public enum Qwen35CustomQMV {
     public static let shippedPlanWitness =
         "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
 
-    public static let onePass67PlanWitness =
-        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
+    public static let onePassPlanWitness =
+        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:8:2,9:3:4"
 
     public static var planWitness: String {
         switch table {
         case .shipped: return shippedPlanWitness
-        case .onePass67: return onePass67PlanWitness
+        case .onePass: return onePassPlanWitness
         }
     }
 

@@ -76,7 +76,7 @@ readonly WITNESS=(
   # pipeline log proves the selection at run time. `renderPlan` equality with
   # each literal is asserted by `planWitnessMatchesWidthPlan`.
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4'
-  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4'
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:8:2,9:3:4'
 )
 
 if [[ -n "$(git status --porcelain)" ]]; then

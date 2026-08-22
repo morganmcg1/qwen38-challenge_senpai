@@ -65,11 +65,22 @@ import e120_g17s_census as e120  # noqa: E402
 
 ARCHS = e120.ARCHS
 SIMDGROUP_BUDGET = e120.SIMDGROUP_BUDGET
-# `Qwen35CustomQMV.shippedPlan` and `Qwen35CustomQMV.onePass67Plan`. Keep these
-# in step with the Swift literals; `--table` selects which one is censused.
+# `shipped` and `onepass` are `Qwen35CustomQMV.shippedPlan` and
+# `Qwen35CustomQMV.onePassPlan`; keep them in step with the Swift literals. The
+# other entries are measured alternatives, kept as the record of why `onepass`
+# carries `rps` per width. `--table` selects which one is censused.
 PLANS = {
     "shipped": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4)),
-    "onepass67": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4)),
+    "onepass": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 8, 2), (9, 3, 4)),
+    # `ipg = m` at the shipped `rps = 4`. Refuted: the g17s sum-table entry
+    # point needs 114 registers at M=6 and spills 16 bytes at M=7, and the
+    # ranked-weighted residency falls 0.36 %.
+    "onepass67rps4": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4)),
+    # `onepass` without M=8, the fallback if one pass at M=8 disappoints.
+    "onepass67r2": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 4, 4), (9, 3, 4)),
+    # M=9 as well. Identical to `onepass` on the ranked mix because the verify
+    # cap is 8, so `onepass` keeps M=9 on tier 3 and saves a pipeline.
+    "onepassr2": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 8, 2), (9, 9, 2)),
 }
 
 WIDTH_CASES = ()

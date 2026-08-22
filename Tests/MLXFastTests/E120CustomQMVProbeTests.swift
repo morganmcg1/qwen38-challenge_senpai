@@ -228,8 +228,8 @@ struct E120CustomQMVProbeTests {
             Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.shippedPlan)
                 == Qwen35CustomQMV.shippedPlanWitness)
         #expect(
-            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.onePass67Plan)
-                == Qwen35CustomQMV.onePass67PlanWitness)
+            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.onePassPlan)
+                == Qwen35CustomQMV.onePassPlanWitness)
         #expect(
             Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.widthPlan)
                 == Qwen35CustomQMV.planWitness)
@@ -249,7 +249,7 @@ struct E120CustomQMVProbeTests {
     func widthPlansAreWellFormed() throws {
         let plans: [(String, [(m: Int, ipg: Int, rps: Int)])] = [
             ("shipped", Qwen35CustomQMV.shippedPlan),
-            ("onepass67", Qwen35CustomQMV.onePass67Plan),
+            ("onepass", Qwen35CustomQMV.onePassPlan),
         ]
         for (name, plan) in plans {
             #expect(plan.map(\.m) == Array(Qwen35CustomQMV.widths), "\(name) width coverage")
@@ -263,25 +263,30 @@ struct E120CustomQMVProbeTests {
         }
     }
 
-    /// The one-pass arm is a two-cell edit. Anything wider is a different
-    /// experiment, and M=8 stays at two passes until `wide<8>` is spill free.
-    @Test("the one-pass table differs from shipped only at M=6 and M=7")
-    func onePassTableIsATwoCellEdit() throws {
+    /// The one-pass arm moves exactly the widths that made more than one pass
+    /// and the board can still reach. M=9 is above the ranked verify cap, so
+    /// moving it would buy nothing and would add a seventh pipeline.
+    @Test("the one-pass table moves exactly M=6, M=7 and M=8")
+    func onePassTableMovesOnlyTheMultiPassWidths() throws {
         let shipped = Dictionary(
             uniqueKeysWithValues: Qwen35CustomQMV.shippedPlan.map { ($0.m, ($0.ipg, $0.rps)) })
         let onePass = Dictionary(
-            uniqueKeysWithValues: Qwen35CustomQMV.onePass67Plan.map { ($0.m, ($0.ipg, $0.rps)) })
+            uniqueKeysWithValues: Qwen35CustomQMV.onePassPlan.map { ($0.m, ($0.ipg, $0.rps)) })
         let moved = shipped.keys.filter { shipped[$0]! != onePass[$0]! }.sorted()
-        #expect(moved == [6, 7])
-        #expect(onePass[6]!.0 == 6)
-        #expect(onePass[7]!.0 == 7)
-        #expect(onePass[8]!.0 == shipped[8]!.0)
+        #expect(moved == [6, 7, 8])
+        for m in moved {
+            #expect(onePass[m]!.0 == m, "M=\(m) makes one pass")
+            // `rps = 4` costs the g17s entry point 114 registers at M=6 and
+            // spills at M=7. Halving it is what makes one pass fit.
+            #expect(onePass[m]!.1 == 2, "M=\(m) halves rows per simdgroup")
+        }
+        #expect(onePass[9]!.0 == shipped[9]!.0)
     }
 
     @Test("every tier of every table has its own entry-point name")
     func everyTierHasADistinctEntryPoint() throws {
         #expect(Set(Qwen35CustomQMV.shippedPlan.map(\.ipg)).sorted() == [3, 4, 5])
-        #expect(Set(Qwen35CustomQMV.onePass67Plan.map(\.ipg)).sorted() == [3, 4, 5, 6, 7])
+        #expect(Set(Qwen35CustomQMV.onePassPlan.map(\.ipg)).sorted() == [3, 4, 5, 6, 7, 8])
 
         // MLX keys its library cache by name and recompiles when one name is
         // seen with a different source, so two tiers sharing a name would
