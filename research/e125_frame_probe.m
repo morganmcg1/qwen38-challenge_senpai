@@ -1240,8 +1240,11 @@ int main(int argc, char **argv) {
         for (int f = 0; f < n_frames; f++) {
           Operands *fo = &ops[frame_kidx[f]];
           if (frames[f].consumer) consumerStart();
-          runArm(queue, pso[0][wi], fo, 0, m, 1, 1, frames[f].cycle);
-          double probe = runArm(queue, pso[0][wi], fo, 0, m, 1, 1,
+          // The probe is averaged over several dispatches. A single dispatch
+          // measured this kernel about four times slow, which set `inner` four
+          // times low and left every frame with a quarter of `target_ms`.
+          runArm(queue, pso[0][wi], fo, 0, m, 1, 4, frames[f].cycle);
+          double probe = runArm(queue, pso[0][wi], fo, 0, m, 2, 8,
                                 frames[f].cycle);
           if (frames[f].consumer) consumerStop();
           inner[f] = (int)(target_ms * 1e-3 / probe);
