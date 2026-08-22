@@ -1,0 +1,199 @@
+{
+  "by_ntg_and_n": {
+    "M=1|N=12288": {
+      "dispatches": 460,
+      "projection": "unmapped",
+      "wide_branch": true
+    },
+    "M=1|N=34816": {
+      "dispatches": 460,
+      "projection": "target mlp.gate_up",
+      "wide_branch": true
+    },
+    "M=1|N=5120": {
+      "dispatches": 1312,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=2|N=14336": {
+      "dispatches": 16,
+      "projection": "target fa.qkv",
+      "wide_branch": true
+    },
+    "M=2|N=16480": {
+      "dispatches": 48,
+      "projection": "target gdn.in_proj",
+      "wide_branch": true
+    },
+    "M=2|N=248320": {
+      "dispatches": 1,
+      "projection": "lm_head (target verify rows or head draft readout)",
+      "wide_branch": true
+    },
+    "M=2|N=34816": {
+      "dispatches": 64,
+      "projection": "target mlp.gate_up",
+      "wide_branch": true
+    },
+    "M=2|N=5120": {
+      "dispatches": 131,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=3|N=5120": {
+      "dispatches": 4,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=4|N=5120": {
+      "dispatches": 3,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=5|N=5120": {
+      "dispatches": 5,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=6|N=5120": {
+      "dispatches": 1,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=7|N=5120": {
+      "dispatches": 4,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    },
+    "M=8|N=5120": {
+      "dispatches": 48,
+      "projection": "N=5120 projection (target gdn.out_proj / fa.o_proj / mlp.down, or MTP head fc / o_proj / down)",
+      "wide_branch": true
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "counts": {
+    "accepted_histogram": {
+      "0": 3,
+      "1": 4,
+      "2": 4,
+      "3": 3,
+      "4": 5,
+      "5": 1,
+      "6": 3,
+      "7": 48
+    },
+    "by_ntg": {
+      "1": 2232,
+      "2": 260,
+      "3": 4,
+      "4": 3,
+      "5": 5,
+      "6": 1,
+      "7": 4,
+      "8": 48
+    },
+    "by_ntg_tiles": {
+      "1|1536": 460,
+      "1|4352": 460,
+      "1|640": 1312,
+      "2|1792": 16,
+      "2|2060": 48,
+      "2|31040": 1,
+      "2|4352": 64,
+      "2|640": 131,
+      "3|640": 4,
+      "4|640": 3,
+      "5|640": 5,
+      "6|640": 1,
+      "7|640": 4,
+      "8|640": 48
+    },
+    "by_phase_ntg": {
+      "draft_head|1": 2232,
+      "draft_head|2": 3,
+      "draft_head|3": 4,
+      "draft_head|4": 3,
+      "draft_head|5": 5,
+      "draft_head|6": 1,
+      "draft_head|7": 4,
+      "draft_head|8": 48,
+      "target_verify|2": 257
+    },
+    "by_phase_ntg_n": {
+      "draft_head|M=1|N=12288": 460,
+      "draft_head|M=1|N=34816": 460,
+      "draft_head|M=1|N=5120": 1312,
+      "draft_head|M=2|N=5120": 3,
+      "draft_head|M=3|N=5120": 4,
+      "draft_head|M=4|N=5120": 3,
+      "draft_head|M=5|N=5120": 5,
+      "draft_head|M=6|N=5120": 1,
+      "draft_head|M=7|N=5120": 4,
+      "draft_head|M=8|N=5120": 48,
+      "target_verify|M=2|N=14336": 16,
+      "target_verify|M=2|N=16480": 48,
+      "target_verify|M=2|N=248320": 1,
+      "target_verify|M=2|N=34816": 64,
+      "target_verify|M=2|N=5120": 128
+    },
+    "per_round_total_mean": 36.014084507042256,
+    "per_round_total_median": 35,
+    "rounds_counted": 71,
+    "verify_width_histogram": {
+      "2": 1,
+      "4": 4,
+      "5": 4,
+      "6": 1,
+      "7": 1,
+      "8": 60
+    }
+  },
+  "entry_point_shape_cost_ns": {},
+  "gate_qualified_for_timing": false,
+  "gpu_time": {
+    "busy_ns": 34963569119,
+    "by_phase_entry_ns": {},
+    "by_phase_entry_share": {
+      "draft_head": 0.0,
+      "seed_prefill": 0.0,
+      "target_verify": 0.0
+    },
+    "by_phase_total_ns": {
+      "draft_head": 659366493,
+      "seed_prefill": 3986234750,
+      "target_verify": 8153797888
+    },
+    "entry_point_ns": 0,
+    "entry_point_share_of_busy": 0.0,
+    "idle_ns": 1918376376,
+    "mixed_buffer_uncovered_ns": 0,
+    "shapes_with_exclusive_cost": 100
+  },
+  "harness": "local",
+  "instrument": "E58 dispatch census + E80 GPU-time ledger, applied from research/e80-artifacts/gputime-census.patch and reverted",
+  "instrument_is_timing_safe": false,
+  "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
+  "label": "benchfixture-512",
+  "official_or_ranked_score": false,
+  "pids_in_census": {
+    "81987": {
+      "gputime_snapshots": 32,
+      "max_width": 1,
+      "rounds": 512
+    },
+    "82151": {
+      "gputime_snapshots": 4,
+      "max_width": 8,
+      "rounds": 78
+    }
+  },
+  "qmv_arm": "sumtable (shipped default, MLX_E120_QMV_ARM unset)",
+  "question_3_ntg_x_equals_5": {
+    "dispatches_any_n": 5,
+    "dispatches_n_ge_4096": 5,
+    "reachable": true
+  },
+  "rung": "0b",
+  "worker_pid": 82151
+}
