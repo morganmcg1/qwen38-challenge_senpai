@@ -905,3 +905,96 @@ implemented here.
    with forced-depth legs. It is a real correctness-adjacent wart in the driver
    and is worth a separate look, though it is outside the E128 scope and I did
    not touch it.
+
+---
+
+## W&B runs and reproduction
+
+Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
+`e128-reach-estimator-vs-ranked-depth-optimum`.
+
+| run | id | what it holds |
+| --- | --- | --- |
+| `e128-rung0-replayer` | `vcxlulwz` | the replayer gate, 1.000000 agreement |
+| `e128-f1-identity-and-r-pinning` | `nyypkdsl` | the identity tuple and the pinned R |
+| `e128-rung1-uncensored-acceptance` | `mwv9a8fh` | 12 forced-depth-7 legs, uncensored acceptance |
+| `e128-hypothesis-j-and-correction-sign` | `1azn4agj` | Jensen decomposition and the R-free sign |
+| `e128-section5-our-ranked-curve` | `al4e8bmq` | our own fitted ranked cost curve |
+| `e128-rung2-counterfactual-pricing` | `0wkulqix` | board-curve control pass |
+| **`e128-rung2-our-curve-pricing`** | **`mys5l3kq`** | **the headline: primary metric, R band, curve sweep, board depth scan** |
+
+`0wkulqix` carries a `metric_correction_note`. Its primary metric was first
+written as `0.0` by the bug described in section 6, and was corrected in place
+to `-0.2353 %`.
+
+No GPU work was needed after rung 1. Every number in sections 3 to 7 is produced
+offline from recorded rounds, public board receipts, and the fitted cost curve.
+
+`RUNS` below is the directory holding the recorded leg dumps. `SHIPPED` holds
+the shipped-schedule legs and `FORCED` the depth-7 legs.
+
+```bash
+# rung 0: the replayer gate, 3634 rounds over 21 legs
+python3 research/e128_replay.py "$RUNS"/* \
+    --json research/e128-artifacts/rung0-replay.json
+
+# rung 1: uncensored acceptance from the 12 forced-depth-7 legs
+#         (producing those legs is the only step that needs the model)
+python3 research/e128_accept.py "$FORCED"/* \
+    --json research/e128-artifacts/rung1-forced.json
+python3 research/e128_accept.py "$SHIPPED"/* \
+    --json research/e128-artifacts/rung1-shipped.json
+
+# sections 3 and 4: Jensen decomposition and the R-free sign
+python3 research/e128_jensen.py \
+    --shipped research/e128-artifacts/rung1-shipped.json \
+    --forced research/e128-artifacts/rung1-forced.json \
+    --json research/e128-artifacts/jensen-and-sign.json
+
+# section 5: fit our own ranked cost curve
+python3 research/e128_ourcurve.py \
+    --identity research/e128-artifacts/rung0-identity.json \
+    --shipped research/e128-artifacts/rung1-shipped.json \
+    --json research/e128-artifacts/section5-ourcurve.json \
+    --curve-json research/e128-artifacts/our-ranked-curve.json
+
+# section 6: the headline pass, sensitivity, R band and curve sweep
+python3 research/e128_price.py \
+    --accept research/e128-artifacts/rung1-forced.json \
+    --shipped research/e128-artifacts/rung1-shipped.json \
+    --jensen research/e128-artifacts/jensen-and-sign.json \
+    --curve-json research/e128-artifacts/our-ranked-curve.json \
+    --curve-key assumed --windows 400 --fit-windows 120 \
+    --json research/e128-artifacts/rung2-ours-pricing.json \
+    --sensitivity-json research/e128-artifacts/rung2-ours-sensitivity.json \
+    --r-band-json research/e128-artifacts/rung2-ours-r-band.json \
+    --curve-sweep board assumed ours_b4 ours_b5 ours_meanfit predicted \
+    --curve-sweep-json research/e128-artifacts/rung2-curve-sweep.json
+
+# section 7: the board-side depth scan
+python3 research/e128_board_depth_scan.py \
+    --json research/e128-artifacts/board-depth-scan.json
+
+# publish
+python3 research/e128_wandb_log.py --only rung2
+```
+
+Producing the rung-1 legs is the only expensive step, at roughly 40 minutes on
+the M4 Pro. Every offline pass finishes in under 10 minutes.
+
+One reproduction warning, learned the hard way in this experiment: do not pipe
+these scripts through `head`. `e128_board_depth_scan.py` writes its JSON after
+printing, so a closed stdout kills the write and leaves a stale artifact behind.
+I committed a truncated artifact that way and only caught it when the logger
+raised `KeyError: 'f83_weight'`.
+
+### Scope evidence
+
+```
+git diff 526d3973 -- Sources/ Vendor/ mtp-head.manifest.json Package.swift \
+    benchmark.json                                        (empty)
+senpai/verify-ranked-score-boundary.sh                    PASS
+senpai/check-editable-budget.sh 526d3973
+    source=2585357/3000000  growth=0/262144  files=154    OK
+```
+
