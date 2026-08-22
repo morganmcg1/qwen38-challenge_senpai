@@ -1096,10 +1096,65 @@ def main() -> None:
         "ledger_f_serial_us": LEDGER_F_SERIAL_US,
     }
 
+    def sweep(rep: int) -> dict:
+        """One pass of the survivor ladder. Returns `added_us_per_step` per arm.
+
+        Repeating the whole ladder is the only replicate that means anything
+        here. The part arms are far noisier than the whole-arm slope -- the
+        histogram arm read 6.19 and 19.97 us on two passes whose whole-arm
+        slopes agreed to 0.4 percent -- so a decision must rest on the slope.
+        """
+        added = {}
+        for n in [int(v) for v in args.survivors.split(",")]:
+            arm = TwoStageArm(rows_c1, probes_c1, n, tiles_for(n),
+                              with_rescore=True)
+            row = run(arm)
+            row["plan"] = arm.plan.as_dict()
+            row["added_us_per_step"] = (row["batch"]["us_per_selection"]
+                                        - ship_row["batch"]["us_per_selection"])
+            row["added_us_isolated"] = (row["us_per_call"]
+                                        - ship_row["us_per_call"])
+            row["added_ranked_pct"] = row["added_us_per_step"] / US_PER_RANKED_PCT
+            parts = {p.label.split(".", 1)[1]: run(p)["us_per_call_min"] - floor_min
+                     for p in arm.parts()}
+            ship_parts = {
+                "partial":
+                    out["arms"]["shipped.partial"]["us_per_call_min"] - floor_min,
+                "finalize":
+                    out["arms"]["shipped.finalize"]["us_per_call_min"] - floor_min}
+            row["parts_us_above_floor"] = parts
+            row["shipped_parts_us_above_floor"] = ship_parts
+            # Independent estimate of the same difference: sum the priced
+            # dispatches instead of trusting one whole-arm subtraction. Both arms
+            # pay exactly one submit-and-sync per call, so the floor cancels and
+            # is not added back. What this sum omits is the in-buffer cost of
+            # having more dispatches at all, which the whole-arm number carries,
+            # so the two estimates bracket the true added cost.
+            row["added_us_from_parts"] = (
+                sum(parts.values()) - sum(ship_parts.values()))
+            # The ledger entry that supersedes FACT 8 prices one more dispatch on
+            # the scored MTP pass at 1.049-1.053 us on a student M4 Pro, because
+            # the five-row forward hides CPU encode behind GPU work. The isolated
+            # arms here hide nothing, so the parts sum plus that marginal is the
+            # transfer estimate, and the isolated whole-arm difference is a bound.
+            row["added_us_from_parts_plus_ledger_f"] = (
+                row["added_us_from_parts"]
+                + LEDGER_F_MTP_US * (arm.dispatches - ship.dispatches))
+            out["correctness"][arm.label] = correctness(arm, ship)
+            added[arm.label] = row["added_us_per_step"]
+            print(f"  -> r{rep} {arm.label} added:"
+                  f" batched {row['added_us_per_step']:7.2f}"
+                  f"  isolated {row['added_us_isolated']:7.2f}"
+                  f"  parts+F {row['added_us_from_parts_plus_ledger_f']:7.2f} us"
+                  f"  = {row['added_ranked_pct']:6.3f} % ranked,"
+                  f" recall {out['correctness'][arm.label]['recall_of_true_top32']}")
+        return added
+
+
+
     out["replicates"] = []
     for rep in range(args.replicates):
-        out["replicates"].append(sweep(args, out, ship, ship_row, null, floor,
-                                       floor_min, rows_c1, probes_c1, rep))
+        out["replicates"].append(sweep(rep))
 
     selected = out["arms"].get("N4096")
     if selected:
@@ -1136,62 +1191,6 @@ def main() -> None:
     print(json.dumps(out["verdict"], indent=2))
     print(json.dumps(out["anchor_check"], indent=2))
     print(f"wrote {args.out}")
-
-
-def sweep(args, out, ship, ship_row, null, floor, floor_min, rows_c1,
-          probes_c1, rep: int) -> dict:
-    """One pass of the survivor ladder. Returns `added_us_per_step` per arm.
-
-    Repeating the whole ladder is the only replicate that means anything
-    here. The part arms are far noisier than the whole-arm slope -- the
-    histogram arm read 6.19 and 19.97 us on two passes whose whole-arm slopes
-    agreed to 0.4 percent -- so a decision must rest on the slope.
-    """
-    added = {}
-    for n in [int(v) for v in args.survivors.split(",")]:
-        arm = TwoStageArm(rows_c1, probes_c1, n, tiles_for(n),
-                          with_rescore=True)
-        row = run(arm)
-        row["plan"] = arm.plan.as_dict()
-        row["added_us_per_step"] = (row["batch"]["us_per_selection"]
-                                    - ship_row["batch"]["us_per_selection"])
-        row["added_us_isolated"] = (row["us_per_call"]
-                                    - ship_row["us_per_call"])
-        row["added_ranked_pct"] = row["added_us_per_step"] / US_PER_RANKED_PCT
-        parts = {p.label.split(".", 1)[1]: run(p)["us_per_call_min"] - floor_min
-                 for p in arm.parts()}
-        ship_parts = {
-            "partial":
-                out["arms"]["shipped.partial"]["us_per_call_min"] - floor_min,
-            "finalize":
-                out["arms"]["shipped.finalize"]["us_per_call_min"] - floor_min}
-        row["parts_us_above_floor"] = parts
-        row["shipped_parts_us_above_floor"] = ship_parts
-        # Independent estimate of the same difference: sum the priced
-        # dispatches instead of trusting one whole-arm subtraction. Both arms
-        # pay exactly one submit-and-sync per call, so the floor cancels and
-        # is not added back. What this sum omits is the in-buffer cost of
-        # having more dispatches at all, which the whole-arm number carries,
-        # so the two estimates bracket the true added cost.
-        row["added_us_from_parts"] = (
-            sum(parts.values()) - sum(ship_parts.values()))
-        # The ledger entry that supersedes FACT 8 prices one more dispatch on
-        # the scored MTP pass at 1.049-1.053 us on a student M4 Pro, because
-        # the five-row forward hides CPU encode behind GPU work. The isolated
-        # arms here hide nothing, so the parts sum plus that marginal is the
-        # transfer estimate, and the isolated whole-arm difference is a bound.
-        row["added_us_from_parts_plus_ledger_f"] = (
-            row["added_us_from_parts"]
-            + LEDGER_F_MTP_US * (arm.dispatches - ship.dispatches))
-        out["correctness"][arm.label] = correctness(arm, ship)
-        added[arm.label] = row["added_us_per_step"]
-        print(f"  -> r{rep} {arm.label} added:"
-              f" batched {row['added_us_per_step']:7.2f}"
-              f"  isolated {row['added_us_isolated']:7.2f}"
-              f"  parts+F {row['added_us_from_parts_plus_ledger_f']:7.2f} us"
-              f"  = {row['added_ranked_pct']:6.3f} % ranked,"
-              f" recall {out['correctness'][arm.label]['recall_of_true_top32']}")
-    return added
 
 
 if __name__ == "__main__":
