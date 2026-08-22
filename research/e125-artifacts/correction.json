@@ -1,0 +1,1958 @@
+{
+ "experiment": "e125",
+ "stage": 2,
+ "harness": "local",
+ "cool_gate_passed_real_gate": false,
+ "gate_qualified_for_timing": false,
+ "official_or_ranked_score": false,
+ "device": "Apple M4 Pro",
+ "architecture": "applegpu_g16s",
+ "peak_bandwidth_gb_s": 273.0,
+ "session_valid": true,
+ "form": "predicted in-situ = isolated / (W x F); F = exposure(mu_isolated) / exposure(mu_in_situ); exposure(mu) = (1 - mu^p)^((p-1)/p); mu = memory-bound time fraction, taken as the achieved bandwidth over the bus share the kernel actually had",
+ "isolated_grid_confound": {
+  "source": "research/e123-artifacts/rate.json",
+  "by_arm": {
+   "k_alu16": {
+    "pooled_slope_pct_per_gbs": 0.7677399823553833,
+    "within_width_slope_pct_per_gbs": {
+     "2": 0.01898484714758947,
+     "3": -0.03891961220963402,
+     "4": -0.017485187659518203,
+     "5": 0.2218631401828749
+    },
+    "within_width_sign": {
+     "2": 1,
+     "3": -1,
+     "4": -1,
+     "5": 1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   },
+   "k_ld16": {
+    "pooled_slope_pct_per_gbs": 1.0102789137054906,
+    "within_width_slope_pct_per_gbs": {
+     "2": 0.03426811040883719,
+     "3": -0.0038414614813942535,
+     "4": -0.058154978252176526,
+     "5": -0.05781526381179736
+    },
+    "within_width_sign": {
+     "2": 1,
+     "3": -1,
+     "4": -1,
+     "5": -1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   },
+   "k_shuf16": {
+    "pooled_slope_pct_per_gbs": 1.049650686497419,
+    "within_width_slope_pct_per_gbs": {
+     "2": 0.18699841529277417,
+     "3": 0.005823948612726642,
+     "4": -0.09619052031882404,
+     "5": -0.18251700229939624
+    },
+    "within_width_sign": {
+     "2": 1,
+     "3": 1,
+     "4": -1,
+     "5": -1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   },
+   "k_tgld16": {
+    "pooled_slope_pct_per_gbs": 0.9088206077205809,
+    "within_width_slope_pct_per_gbs": {
+     "2": 0.01156520589707675,
+     "3": -0.024171839903585738,
+     "4": -0.17117976962565037,
+     "5": -0.029542232831421735
+    },
+    "within_width_sign": {
+     "2": 1,
+     "3": -1,
+     "4": -1,
+     "5": -1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   },
+   "n_halfsums_free": {
+    "pooled_slope_pct_per_gbs": -0.03234387017579847,
+    "within_width_slope_pct_per_gbs": {
+     "2": -0.012650708419748597,
+     "3": -0.0005852222842596537,
+     "4": 0.0018153561906576836,
+     "5": 0.004147217425938631
+    },
+    "within_width_sign": {
+     "2": -1,
+     "3": -1,
+     "4": 1,
+     "5": 1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   },
+   "n_nosums": {
+    "pooled_slope_pct_per_gbs": -0.10880066234930566,
+    "within_width_slope_pct_per_gbs": {
+     "2": -0.02519368342166739,
+     "3": -0.014084930772769039,
+     "4": 0.008075466281403215,
+     "5": 0.02514062992381007
+    },
+    "within_width_sign": {
+     "2": -1,
+     "3": -1,
+     "4": 1,
+     "5": 1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   },
+   "q_scaffold": {
+    "pooled_slope_pct_per_gbs": 0.0004921962128224787,
+    "within_width_slope_pct_per_gbs": {
+     "2": -0.00256569897843512,
+     "3": -0.0026733422495597886,
+     "4": 0.0007969161221386302,
+     "5": 0.01504291304394012
+    },
+    "within_width_sign": {
+     "2": -1,
+     "3": -1,
+     "4": 1,
+     "5": 1
+    },
+    "sign_stable_within_width": false,
+    "pooled_sign_matches_all_within": false
+   }
+  },
+  "n_arms": 7,
+  "n_arms_sign_stable_within_width": 0,
+  "identified": false,
+  "note": "The pooled achieved-GB/s slope in the isolated grid is confounded with the width axis. Where the within-width sign is not stable, the pooled slope is a between-width effect and cannot be read as a bandwidth law."
+ },
+ "exposure_fits": {
+  "ld": {
+   "identified": true,
+   "p": 11.0,
+   "p_band": [
+    1.0,
+    32.0
+   ],
+   "sse": 10.448033977938604,
+   "sse_flat_law": 10.855191345434994,
+   "beats_flat_law": true,
+   "variance_explained_vs_flat": 0.03750807835069758,
+   "n_points": 29,
+   "n_groups": 6,
+   "groups": [
+    "mlp_down_k17408_n5120|2",
+    "mlp_down_k17408_n5120|3",
+    "mlp_down_k17408_n5120|4",
+    "mlp_gate_up_k5120_n34816|2",
+    "mlp_gate_up_k5120_n34816|3",
+    "mlp_gate_up_k5120_n34816|4"
+   ],
+   "unhidden_price_us_per_k_block": {
+    "mlp_gate_up_k5120_n34816|2": 0.027056279716075347,
+    "mlp_gate_up_k5120_n34816|3": 0.08052603832128145,
+    "mlp_gate_up_k5120_n34816|4": 0.26512700715955956,
+    "mlp_down_k17408_n5120|2": 0.02732575736936469,
+    "mlp_down_k17408_n5120|3": 0.022537704137239722,
+    "mlp_down_k17408_n5120|4": 0.05085803506424685
+   },
+   "mu_range": [
+    0.49069497274269386,
+    0.9205629734296163
+   ]
+  },
+  "alu": {
+   "identified": true,
+   "p": 1.55,
+   "p_band": [
+    1.05,
+    3.8000000000000003
+   ],
+   "sse": 5.261991027184921,
+   "sse_flat_law": 5.565809227583484,
+   "beats_flat_law": true,
+   "variance_explained_vs_flat": 0.05458652784807583,
+   "n_points": 28,
+   "n_groups": 6,
+   "groups": [
+    "mlp_down_k17408_n5120|2",
+    "mlp_down_k17408_n5120|3",
+    "mlp_down_k17408_n5120|4",
+    "mlp_gate_up_k5120_n34816|2",
+    "mlp_gate_up_k5120_n34816|3",
+    "mlp_gate_up_k5120_n34816|4"
+   ],
+   "unhidden_price_us_per_k_block": {
+    "mlp_gate_up_k5120_n34816|2": 0.014423677289427405,
+    "mlp_gate_up_k5120_n34816|3": 0.06984673573574283,
+    "mlp_gate_up_k5120_n34816|4": 0.06605208665917532,
+    "mlp_down_k17408_n5120|2": 0.015350382803468312,
+    "mlp_down_k17408_n5120|3": 0.012527400075022975,
+    "mlp_down_k17408_n5120|4": 0.011087532878231336
+   },
+   "mu_range": [
+    0.5536130527743699,
+    0.9053640576508539
+   ]
+  },
+  "deletion": {
+   "identified": true,
+   "p": 2.8,
+   "p_band": [
+    1.85,
+    4.5
+   ],
+   "sse": 10.31284569320828,
+   "sse_flat_law": 13.328530496069757,
+   "beats_flat_law": true,
+   "variance_explained_vs_flat": 0.22625786119112867,
+   "n_points": 33,
+   "n_groups": 6,
+   "groups": [
+    "mlp_down_k17408_n5120|2",
+    "mlp_down_k17408_n5120|3",
+    "mlp_down_k17408_n5120|4",
+    "mlp_gate_up_k5120_n34816|2",
+    "mlp_gate_up_k5120_n34816|3",
+    "mlp_gate_up_k5120_n34816|4"
+   ],
+   "unhidden_price_us_per_k_block": {
+    "mlp_gate_up_k5120_n34816|2": 0.32367491593763853,
+    "mlp_gate_up_k5120_n34816|3": 1.520223072139513,
+    "mlp_gate_up_k5120_n34816|4": 4.833667152363161,
+    "mlp_down_k17408_n5120|2": 0.2098093625394447,
+    "mlp_down_k17408_n5120|3": 0.30918380522641126,
+    "mlp_down_k17408_n5120|4": 0.5562333027786549
+   },
+   "mu_range": [
+    0.49069497274269386,
+    0.9205629734296163
+   ]
+  }
+ },
+ "hold_out": {
+  "ld": {
+   "identified": true,
+   "full_p": 11.0,
+   "rows": [
+    {
+     "held_out": "base",
+     "kind": "frame",
+     "p": 10.0,
+     "p_shift": -1.0
+    },
+    {
+     "held_out": "consumer",
+     "kind": "frame",
+     "p": 10.0,
+     "p_shift": -1.0
+    },
+    {
+     "held_out": "cycle",
+     "kind": "frame",
+     "p": 9.0,
+     "p_shift": -2.0
+    },
+    {
+     "held_out": "k1024",
+     "kind": "frame",
+     "p": 12.5,
+     "p_shift": 1.5
+    },
+    {
+     "held_out": "k2048",
+     "kind": "frame",
+     "p": 10.5,
+     "p_shift": -0.5
+    },
+    {
+     "held_out": "k4096",
+     "kind": "frame",
+     "p": 1.0,
+     "p_shift": -10.0
+    },
+    {
+     "held_out": "mlp_down_k17408_n5120",
+     "kind": "shape",
+     "p": 5.0,
+     "p_shift": -6.0
+    },
+    {
+     "held_out": "mlp_gate_up_k5120_n34816",
+     "kind": "shape",
+     "p": 1.0,
+     "p_shift": -10.0
+    }
+   ],
+   "max_abs_p_shift": 10.0,
+   "stable": false
+  },
+  "alu": {
+   "identified": true,
+   "full_p": 1.55,
+   "rows": [
+    {
+     "held_out": "base",
+     "kind": "frame",
+     "p": 1.65,
+     "p_shift": 0.09999999999999987
+    },
+    {
+     "held_out": "consumer",
+     "kind": "frame",
+     "p": 2.6500000000000004,
+     "p_shift": 1.1000000000000003
+    },
+    {
+     "held_out": "cycle",
+     "kind": "frame",
+     "p": 1.45,
+     "p_shift": -0.10000000000000009
+    },
+    {
+     "held_out": "k1024",
+     "kind": "frame",
+     "p": 1.2,
+     "p_shift": -0.3500000000000001
+    },
+    {
+     "held_out": "k2048",
+     "kind": "frame",
+     "p": 1.4,
+     "p_shift": -0.15000000000000013
+    },
+    {
+     "held_out": "k4096",
+     "kind": "frame",
+     "p": 1.45,
+     "p_shift": -0.10000000000000009
+    },
+    {
+     "held_out": "mlp_down_k17408_n5120",
+     "kind": "shape",
+     "p": 1.05,
+     "p_shift": -0.5
+    },
+    {
+     "held_out": "mlp_gate_up_k5120_n34816",
+     "kind": "shape",
+     "p": 1.9500000000000002,
+     "p_shift": 0.40000000000000013
+    }
+   ],
+   "max_abs_p_shift": 1.1000000000000003,
+   "stable": false
+  },
+  "deletion": {
+   "identified": true,
+   "full_p": 2.8,
+   "rows": [
+    {
+     "held_out": "base",
+     "kind": "frame",
+     "p": 2.8,
+     "p_shift": 0.0
+    },
+    {
+     "held_out": "consumer",
+     "kind": "frame",
+     "p": 2.8,
+     "p_shift": 0.0
+    },
+    {
+     "held_out": "cycle",
+     "kind": "frame",
+     "p": 2.8,
+     "p_shift": 0.0
+    },
+    {
+     "held_out": "k1024",
+     "kind": "frame",
+     "p": 2.9000000000000004,
+     "p_shift": 0.10000000000000053
+    },
+    {
+     "held_out": "k2048",
+     "kind": "frame",
+     "p": 2.85,
+     "p_shift": 0.050000000000000266
+    },
+    {
+     "held_out": "k4096",
+     "kind": "frame",
+     "p": 2.8,
+     "p_shift": 0.0
+    },
+    {
+     "held_out": "mlp_down_k17408_n5120",
+     "kind": "shape",
+     "p": 3.5,
+     "p_shift": 0.7000000000000002
+    },
+    {
+     "held_out": "mlp_gate_up_k5120_n34816",
+     "kind": "shape",
+     "p": 2.7,
+     "p_shift": -0.09999999999999964
+    }
+   ],
+   "max_abs_p_shift": 0.7000000000000002,
+   "stable": true
+  }
+ },
+ "fitted_points": 33,
+ "held_out_points": [
+  {
+   "held_out": "base",
+   "kind": "frame",
+   "p": 2.8,
+   "p_shift": 0.0
+  },
+  {
+   "held_out": "consumer",
+   "kind": "frame",
+   "p": 2.8,
+   "p_shift": 0.0
+  },
+  {
+   "held_out": "cycle",
+   "kind": "frame",
+   "p": 2.8,
+   "p_shift": 0.0
+  },
+  {
+   "held_out": "k1024",
+   "kind": "frame",
+   "p": 2.9000000000000004,
+   "p_shift": 0.10000000000000053
+  },
+  {
+   "held_out": "k2048",
+   "kind": "frame",
+   "p": 2.85,
+   "p_shift": 0.050000000000000266
+  },
+  {
+   "held_out": "k4096",
+   "kind": "frame",
+   "p": 2.8,
+   "p_shift": 0.0
+  },
+  {
+   "held_out": "mlp_down_k17408_n5120",
+   "kind": "shape",
+   "p": 3.5,
+   "p_shift": 0.7000000000000002
+  },
+  {
+   "held_out": "mlp_gate_up_k5120_n34816",
+   "kind": "shape",
+   "p": 2.7,
+   "p_shift": -0.09999999999999964
+  }
+ ],
+ "correction_table": {
+  "ld": {
+   "rows": [
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "cycle",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 243.0919331153415,
+     "frame_roofline_distance": 0.10955335855186266,
+     "frame_mu": 0.8904466414481373,
+     "isolated_price_us_per_k_block": -0.00041232562500042035,
+     "frame_price_us_per_k_block": 0.00759643999999966,
+     "transfer_factor": -0.05427879704182996
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "consumer",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 194.69567300881738,
+     "frame_roofline_distance": 0.2868290365977385,
+     "frame_mu": 0.9137988476530049,
+     "isolated_price_us_per_k_block": -0.00041232562500042035,
+     "frame_price_us_per_k_block": -0.01734861624999908,
+     "transfer_factor": 0.023767061249074673
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k1024",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 246.15058520402218,
+     "frame_roofline_distance": 0.09834950474717152,
+     "frame_mu": 0.9016504952528285,
+     "isolated_price_us_per_k_block": -0.00041232562500042035,
+     "frame_price_us_per_k_block": 0.13702353125000144,
+     "transfer_factor": -0.0030091592388472766
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k2048",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 244.02512841480743,
+     "frame_roofline_distance": 0.10613506075162116,
+     "frame_mu": 0.8938649392483788,
+     "isolated_price_us_per_k_block": -0.00041232562500042035,
+     "frame_price_us_per_k_block": 0.04383881562500047,
+     "transfer_factor": -0.009405491893929694
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k4096",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 251.31369174628526,
+     "frame_roofline_distance": 0.07943702657038365,
+     "frame_mu": 0.9205629734296163,
+     "isolated_price_us_per_k_block": -0.00041232562500042035,
+     "frame_price_us_per_k_block": 0.0028132976562496026,
+     "transfer_factor": -0.14656309974327075
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "cycle",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 239.7637972332932,
+     "frame_roofline_distance": 0.12174433247877947,
+     "frame_mu": 0.8782556675212205,
+     "isolated_price_us_per_k_block": 0.06768402749999965,
+     "frame_price_us_per_k_block": 0.06872347562499996,
+     "transfer_factor": 0.984874919151758
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "consumer",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 189.85202406663672,
+     "frame_roofline_distance": 0.30457134041525014,
+     "frame_mu": 0.9107146902644232,
+     "isolated_price_us_per_k_block": 0.06768402749999965,
+     "frame_price_us_per_k_block": -0.047442426874998486,
+     "transfer_factor": -1.4266560957839238
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k1024",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 219.30754523314218,
+     "frame_roofline_distance": 0.1966756584866587,
+     "frame_mu": 0.8033243415133413,
+     "isolated_price_us_per_k_block": 0.06768402749999965,
+     "frame_price_us_per_k_block": 0.08337129500000007,
+     "transfer_factor": 0.8118385050873876
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k2048",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 228.86624401599835,
+     "frame_roofline_distance": 0.16166210983150786,
+     "frame_mu": 0.8383378901684921,
+     "isolated_price_us_per_k_block": 0.06768402749999965,
+     "frame_price_us_per_k_block": 0.04263172187499986,
+     "transfer_factor": 1.5876447050028957
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k4096",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 241.71889804305405,
+     "frame_roofline_distance": 0.11458279105108404,
+     "frame_mu": 0.885417208948916,
+     "isolated_price_us_per_k_block": 0.06768402749999965,
+     "frame_price_us_per_k_block": 0.07819572265625041,
+     "transfer_factor": 0.8655719929533698
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "cycle",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 206.98709915786696,
+     "frame_roofline_distance": 0.24180549759023084,
+     "frame_mu": 0.7581945024097692,
+     "isolated_price_us_per_k_block": 0.25794570187499916,
+     "frame_price_us_per_k_block": 0.25362802749999885,
+     "transfer_factor": 1.017023648441221
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "consumer",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 170.0755563040694,
+     "frame_roofline_distance": 0.377012614270808,
+     "frame_mu": 0.88583135445525,
+     "isolated_price_us_per_k_block": 0.25794570187499916,
+     "frame_price_us_per_k_block": 0.15869120125000222,
+     "transfer_factor": 1.6254568611439983
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k1024",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 184.28424482128924,
+     "frame_roofline_distance": 0.32496613618575376,
+     "frame_mu": 0.6750338638142462,
+     "isolated_price_us_per_k_block": 0.25794570187499916,
+     "frame_price_us_per_k_block": 0.3179761218749997,
+     "transfer_factor": 0.8112109184613578
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k2048",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 197.5918673373999,
+     "frame_roofline_distance": 0.27622026616337036,
+     "frame_mu": 0.7237797338366296,
+     "isolated_price_us_per_k_block": 0.25794570187499916,
+     "frame_price_us_per_k_block": 0.26193954843750067,
+     "transfer_factor": 0.9847527928244312
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k4096",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 205.91357838801932,
+     "frame_roofline_distance": 0.24573780810249335,
+     "frame_mu": 0.7542621918975067,
+     "isolated_price_us_per_k_block": 0.25794570187499916,
+     "frame_price_us_per_k_block": 0.25797358281250027,
+     "transfer_factor": 0.9998919232845582
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "cycle",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 207.85084275024437,
+     "frame_roofline_distance": 0.2386416016474565,
+     "frame_mu": 0.7613583983525435,
+     "isolated_price_us_per_k_block": -0.04804083088235282,
+     "frame_price_us_per_k_block": -0.04869354466911764,
+     "transfer_factor": 0.9865954760286987
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "consumer",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 137.81350963809885,
+     "frame_roofline_distance": 0.49518860938425324,
+     "frame_mu": 0.9053640576508539,
+     "isolated_price_us_per_k_block": -0.04804083088235282,
+     "frame_price_us_per_k_block": -0.06327064908088222,
+     "transfer_factor": 0.759290944225018
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k1024",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 174.03328510036084,
+     "frame_roofline_distance": 0.3625154391928175,
+     "frame_mu": 0.6374845608071825,
+     "isolated_price_us_per_k_block": -0.04804083088235282,
+     "frame_price_us_per_k_block": 0.02593841000000019,
+     "transfer_factor": -1.8521116322223479
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k2048",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 179.68443277429353,
+     "frame_roofline_distance": 0.34181526456302735,
+     "frame_mu": 0.6581847354369726,
+     "isolated_price_us_per_k_block": -0.04804083088235282,
+     "frame_price_us_per_k_block": 0.024994202656250186,
+     "transfer_factor": -1.9220789533903964
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k4096",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 188.4062917118851,
+     "frame_roofline_distance": 0.3098670633264282,
+     "frame_mu": 0.6901329366735718,
+     "isolated_price_us_per_k_block": -0.04804083088235282,
+     "frame_price_us_per_k_block": 0.030508044062500073,
+     "transfer_factor": -1.5746938998755324
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "cycle",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 199.19551059875002,
+     "frame_roofline_distance": 0.27034611502289374,
+     "frame_mu": 0.7296538849771063,
+     "isolated_price_us_per_k_block": 0.037250171139705926,
+     "frame_price_us_per_k_block": 0.03390998272058804,
+     "transfer_factor": 1.0985016255136553
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "consumer",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 137.71544790933217,
+     "frame_roofline_distance": 0.49554780985592617,
+     "frame_mu": 0.9238016102620509,
+     "isolated_price_us_per_k_block": 0.037250171139705926,
+     "frame_price_us_per_k_block": -0.008003273529411522,
+     "transfer_factor": -4.654366866609508
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k1024",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 151.9028214356789,
+     "frame_roofline_distance": 0.4435794086605168,
+     "frame_mu": 0.5564205913394832,
+     "isolated_price_us_per_k_block": 0.037250171139705926,
+     "frame_price_us_per_k_block": 0.01852810781250014,
+     "transfer_factor": 2.010468177142989
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k2048",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 169.367876063369,
+     "frame_roofline_distance": 0.37960484958472895,
+     "frame_mu": 0.620395150415271,
+     "isolated_price_us_per_k_block": 0.037250171139705926,
+     "frame_price_us_per_k_block": 0.014994791718750067,
+     "transfer_factor": 2.4842073060025816
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k4096",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 185.45205629329945,
+     "frame_roofline_distance": 0.32068843848608264,
+     "frame_mu": 0.6793115615139174,
+     "isolated_price_us_per_k_block": 0.037250171139705926,
+     "frame_price_us_per_k_block": 0.015401917499999973,
+     "transfer_factor": 2.418541142017284
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "cycle",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 173.1124365588865,
+     "frame_roofline_distance": 0.3658885107733095,
+     "frame_mu": 0.6341114892266905,
+     "isolated_price_us_per_k_block": 0.038646822610294194,
+     "frame_price_us_per_k_block": 0.03633854154411759,
+     "transfer_factor": 1.063521566031322
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "consumer",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 113.44214848690778,
+     "frame_roofline_distance": 0.5844609945534514,
+     "frame_mu": 0.804293419647478,
+     "isolated_price_us_per_k_block": 0.038646822610294194,
+     "frame_price_us_per_k_block": 0.07516476047794118,
+     "transfer_factor": 0.5141614549764445
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k1024",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 133.95972755875542,
+     "frame_roofline_distance": 0.5093050272573061,
+     "frame_mu": 0.49069497274269386,
+     "isolated_price_us_per_k_block": 0.038646822610294194,
+     "frame_price_us_per_k_block": 0.06710208312499999,
+     "transfer_factor": 0.5759407280739945
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k2048",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 151.13636340740297,
+     "frame_roofline_distance": 0.4463869472256301,
+     "frame_mu": 0.5536130527743699,
+     "isolated_price_us_per_k_block": 0.038646822610294194,
+     "frame_price_us_per_k_block": 0.045999720937500044,
+     "transfer_factor": 0.8401534144697039
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k4096",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 171.04689494126634,
+     "frame_roofline_distance": 0.3734545972847386,
+     "frame_mu": 0.6265454027152614,
+     "isolated_price_us_per_k_block": 0.038646822610294194,
+     "frame_price_us_per_k_block": 0.047775371093750074,
+     "transfer_factor": 0.808927732543556
+    }
+   ],
+   "n_independent_points": 30,
+   "measured": true,
+   "median_transfer_factor": 0.8115247117743727,
+   "transfer_factor_range": [
+    -4.654366866609508,
+    2.4842073060025816
+   ],
+   "note": null
+  },
+  "alu": {
+   "rows": [
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "cycle",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 243.0919331153415,
+     "frame_roofline_distance": 0.10955335855186266,
+     "frame_mu": 0.8904466414481373,
+     "isolated_price_us_per_k_block": 0.005992063749999943,
+     "frame_price_us_per_k_block": -0.00624761562499998,
+     "transfer_factor": -0.9590960951602976
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "consumer",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 194.69567300881738,
+     "frame_roofline_distance": 0.2868290365977385,
+     "frame_mu": 0.9137988476530049,
+     "isolated_price_us_per_k_block": 0.005992063749999943,
+     "frame_price_us_per_k_block": -0.04630287187500102,
+     "transfer_factor": -0.12941019654625496
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k1024",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 246.15058520402218,
+     "frame_roofline_distance": 0.09834950474717152,
+     "frame_mu": 0.9016504952528285,
+     "isolated_price_us_per_k_block": 0.005992063749999943,
+     "frame_price_us_per_k_block": 0.013039468749999727,
+     "transfer_factor": 0.45953281263855694
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k2048",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 244.02512841480743,
+     "frame_roofline_distance": 0.10613506075162116,
+     "frame_mu": 0.8938649392483788,
+     "isolated_price_us_per_k_block": 0.005992063749999943,
+     "frame_price_us_per_k_block": 0.0054007328125003085,
+     "transfer_factor": 1.1094908705964799
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k4096",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 251.31369174628526,
+     "frame_roofline_distance": 0.07943702657038365,
+     "frame_mu": 0.9205629734296163,
+     "isolated_price_us_per_k_block": 0.005992063749999943,
+     "frame_price_us_per_k_block": -0.00033154843749905183,
+     "transfer_factor": -18.072966336983807
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "cycle",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 239.7637972332932,
+     "frame_roofline_distance": 0.12174433247877947,
+     "frame_mu": 0.8782556675212205,
+     "isolated_price_us_per_k_block": 0.03517361062500015,
+     "frame_price_us_per_k_block": 0.03288001499999993,
+     "transfer_factor": 1.0697565261147304
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "consumer",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 189.85202406663672,
+     "frame_roofline_distance": 0.30457134041525014,
+     "frame_mu": 0.9107146902644232,
+     "isolated_price_us_per_k_block": 0.03517361062500015,
+     "frame_price_us_per_k_block": -0.0460254543749997,
+     "transfer_factor": -0.7642208230779771
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k1024",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 219.30754523314218,
+     "frame_roofline_distance": 0.1966756584866587,
+     "frame_mu": 0.8033243415133413,
+     "isolated_price_us_per_k_block": 0.03517361062500015,
+     "frame_price_us_per_k_block": 0.052686290312500716,
+     "transfer_factor": 0.6676046162364674
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k2048",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 228.86624401599835,
+     "frame_roofline_distance": 0.16166210983150786,
+     "frame_mu": 0.8383378901684921,
+     "isolated_price_us_per_k_block": 0.03517361062500015,
+     "frame_price_us_per_k_block": 0.03606047343749985,
+     "transfer_factor": 0.975406234917109
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k4096",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 241.71889804305405,
+     "frame_roofline_distance": 0.11458279105108404,
+     "frame_mu": 0.885417208948916,
+     "isolated_price_us_per_k_block": 0.03517361062500015,
+     "frame_price_us_per_k_block": 0.04832434140625175,
+     "transfer_factor": 0.727865286963843
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "cycle",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 206.98709915786696,
+     "frame_roofline_distance": 0.24180549759023084,
+     "frame_mu": 0.7581945024097692,
+     "isolated_price_us_per_k_block": 0.03915229874999966,
+     "frame_price_us_per_k_block": 0.04011752125000001,
+     "transfer_factor": 0.9759401261612007
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "consumer",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 170.0755563040694,
+     "frame_roofline_distance": 0.377012614270808,
+     "frame_mu": 0.88583135445525,
+     "isolated_price_us_per_k_block": 0.03915229874999966,
+     "frame_price_us_per_k_block": 0.04590785562500059,
+     "transfer_factor": 0.8528452966702724
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k1024",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 184.28424482128924,
+     "frame_roofline_distance": 0.32496613618575376,
+     "frame_mu": 0.6750338638142462,
+     "isolated_price_us_per_k_block": 0.03915229874999966,
+     "frame_price_us_per_k_block": 0.04863685000000029,
+     "transfer_factor": 0.804992485121866
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k2048",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 197.5918673373999,
+     "frame_roofline_distance": 0.27622026616337036,
+     "frame_mu": 0.7237797338366296,
+     "isolated_price_us_per_k_block": 0.03915229874999966,
+     "frame_price_us_per_k_block": 0.05008037031250012,
+     "transfer_factor": 0.7817893219576932
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k4096",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 205.91357838801932,
+     "frame_roofline_distance": 0.24573780810249335,
+     "frame_mu": 0.7542621918975067,
+     "isolated_price_us_per_k_block": 0.03915229874999966,
+     "frame_price_us_per_k_block": 0.04548118906250043,
+     "transfer_factor": 0.8608459795586352
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "cycle",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 207.85084275024437,
+     "frame_roofline_distance": 0.2386416016474565,
+     "frame_mu": 0.7613583983525435,
+     "isolated_price_us_per_k_block": 0.0036597972426471283,
+     "frame_price_us_per_k_block": 0.002858225735294001,
+     "transfer_factor": 1.2804437373350697
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "consumer",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 137.81350963809885,
+     "frame_roofline_distance": 0.49518860938425324,
+     "frame_mu": 0.9053640576508539,
+     "isolated_price_us_per_k_block": 0.0036597972426471283,
+     "frame_price_us_per_k_block": 0.012100605698529254,
+     "transfer_factor": 0.3024474422046453
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k1024",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 174.03328510036084,
+     "frame_roofline_distance": 0.3625154391928175,
+     "frame_mu": 0.6374845608071825,
+     "isolated_price_us_per_k_block": 0.0036597972426471283,
+     "frame_price_us_per_k_block": 0.02453149499999996,
+     "transfer_factor": 0.1491876969849222
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k2048",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 179.68443277429353,
+     "frame_roofline_distance": 0.34181526456302735,
+     "frame_mu": 0.6581847354369726,
+     "isolated_price_us_per_k_block": 0.0036597972426471283,
+     "frame_price_us_per_k_block": 0.021964625781250025,
+     "transfer_factor": 0.16662233534482945
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k4096",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 188.4062917118851,
+     "frame_roofline_distance": 0.3098670633264282,
+     "frame_mu": 0.6901329366735718,
+     "isolated_price_us_per_k_block": 0.0036597972426471283,
+     "frame_price_us_per_k_block": 0.020386366406250023,
+     "transfer_factor": 0.1795218024495583
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "cycle",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 199.19551059875002,
+     "frame_roofline_distance": 0.27034611502289374,
+     "frame_mu": 0.7296538849771063,
+     "isolated_price_us_per_k_block": 0.009359381066176575,
+     "frame_price_us_per_k_block": 0.006327737867647045,
+     "transfer_factor": 1.479103790634241
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "consumer",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 137.71544790933217,
+     "frame_roofline_distance": 0.49554780985592617,
+     "frame_mu": 0.9238016102620509,
+     "isolated_price_us_per_k_block": 0.009359381066176575,
+     "frame_price_us_per_k_block": -0.02062965238970616,
+     "transfer_factor": -0.4536858348057645
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k1024",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 151.9028214356789,
+     "frame_roofline_distance": 0.4435794086605168,
+     "frame_mu": 0.5564205913394832,
+     "isolated_price_us_per_k_block": 0.009359381066176575,
+     "frame_price_us_per_k_block": 0.013035425937499845,
+     "transfer_factor": 0.7179957993740613
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k2048",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 169.367876063369,
+     "frame_roofline_distance": 0.37960484958472895,
+     "frame_mu": 0.620395150415271,
+     "isolated_price_us_per_k_block": 0.009359381066176575,
+     "frame_price_us_per_k_block": 0.009605902812499956,
+     "transfer_factor": 0.9743364313448406
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k4096",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 185.45205629329945,
+     "frame_roofline_distance": 0.32068843848608264,
+     "frame_mu": 0.6793115615139174,
+     "isolated_price_us_per_k_block": 0.009359381066176575,
+     "frame_price_us_per_k_block": 0.010680530312500158,
+     "transfer_factor": 0.876303029187853
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "cycle",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 173.1124365588865,
+     "frame_roofline_distance": 0.3658885107733095,
+     "frame_mu": 0.6341114892266905,
+     "isolated_price_us_per_k_block": 0.009732514338235423,
+     "frame_price_us_per_k_block": 0.007209865257352821,
+     "transfer_factor": 1.3498885195267603
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "consumer",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 113.44214848690778,
+     "frame_roofline_distance": 0.5844609945534514,
+     "frame_mu": 0.804293419647478,
+     "isolated_price_us_per_k_block": 0.009732514338235423,
+     "frame_price_us_per_k_block": -0.0016540715073531942,
+     "transfer_factor": -5.883974359614695
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k1024",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 133.95972755875542,
+     "frame_roofline_distance": 0.5093050272573061,
+     "frame_mu": 0.49069497274269386,
+     "isolated_price_us_per_k_block": 0.009732514338235423,
+     "frame_price_us_per_k_block": -0.002431495937500028,
+     "transfer_factor": -4.002685831440059
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k2048",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 151.13636340740297,
+     "frame_roofline_distance": 0.4463869472256301,
+     "frame_mu": 0.5536130527743699,
+     "isolated_price_us_per_k_block": 0.009732514338235423,
+     "frame_price_us_per_k_block": 0.010015990156249988,
+     "transfer_factor": 0.9716976740599456
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k4096",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 171.04689494126634,
+     "frame_roofline_distance": 0.3734545972847386,
+     "frame_mu": 0.6265454027152614,
+     "isolated_price_us_per_k_block": 0.009732514338235423,
+     "frame_price_us_per_k_block": -0.0016256336718749598,
+     "transfer_factor": -5.986904987647197
+    }
+   ],
+   "n_independent_points": 30,
+   "measured": true,
+   "median_transfer_factor": 0.7229305431689521,
+   "transfer_factor_range": [
+    -18.072966336983807,
+    1.479103790634241
+   ],
+   "note": null
+  },
+  "deletion": {
+   "rows": [
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "cycle",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 243.0919331153415,
+     "frame_roofline_distance": 0.10955335855186266,
+     "frame_mu": 0.8904466414481373,
+     "isolated_price_us_per_k_block": 0.1412301600000035,
+     "frame_price_us_per_k_block": 0.07588904499999102,
+     "transfer_factor": 1.8610085289651517
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "consumer",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 194.69567300881738,
+     "frame_roofline_distance": 0.2868290365977385,
+     "frame_mu": 0.9137988476530049,
+     "isolated_price_us_per_k_block": 0.1412301600000035,
+     "frame_price_us_per_k_block": 0.2731323650000036,
+     "transfer_factor": 0.5170758873632629
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k1024",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 246.15058520402218,
+     "frame_roofline_distance": 0.09834950474717152,
+     "frame_mu": 0.9016504952528285,
+     "isolated_price_us_per_k_block": 0.1412301600000035,
+     "frame_price_us_per_k_block": 0.2602916275000027,
+     "transfer_factor": 0.5425843364862054
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k2048",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 244.02512841480743,
+     "frame_roofline_distance": 0.10613506075162116,
+     "frame_mu": 0.8938649392483788,
+     "isolated_price_us_per_k_block": 0.1412301600000035,
+     "frame_price_us_per_k_block": 0.10173530000000142,
+     "transfer_factor": 1.388211957894669
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 2,
+     "frame": "k4096",
+     "isolated_gb_s": 242.47936526207238,
+     "isolated_roofline_distance": 0.11179719684222578,
+     "frame_gb_s": 251.31369174628526,
+     "frame_roofline_distance": 0.07943702657038365,
+     "frame_mu": 0.9205629734296163,
+     "isolated_price_us_per_k_block": 0.1412301600000035,
+     "frame_price_us_per_k_block": 0.0708503937499998,
+     "transfer_factor": 1.9933574469373205
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "cycle",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 239.7637972332932,
+     "frame_roofline_distance": 0.12174433247877947,
+     "frame_mu": 0.8782556675212205,
+     "isolated_price_us_per_k_block": 0.4855000000000018,
+     "frame_price_us_per_k_block": 0.367770059999998,
+     "transfer_factor": 1.3201183369848117
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "consumer",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 189.85202406663672,
+     "frame_roofline_distance": 0.30457134041525014,
+     "frame_mu": 0.9107146902644232,
+     "isolated_price_us_per_k_block": 0.4855000000000018,
+     "frame_price_us_per_k_block": -0.04297385499999109,
+     "transfer_factor": -11.297566857804647
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k1024",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 219.30754523314218,
+     "frame_roofline_distance": 0.1966756584866587,
+     "frame_mu": 0.8033243415133413,
+     "isolated_price_us_per_k_block": 0.4855000000000018,
+     "frame_price_us_per_k_block": 1.4693877549999996,
+     "transfer_factor": 0.3304097222451687
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k2048",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 228.86624401599835,
+     "frame_roofline_distance": 0.16166210983150786,
+     "frame_mu": 0.8383378901684921,
+     "isolated_price_us_per_k_block": 0.4855000000000018,
+     "frame_price_us_per_k_block": 0.9644447999999954,
+     "transfer_factor": 0.5033984319268496
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 3,
+     "frame": "k4096",
+     "isolated_gb_s": 236.54330370490067,
+     "isolated_roofline_distance": 0.13354101206996094,
+     "frame_gb_s": 241.71889804305405,
+     "frame_roofline_distance": 0.11458279105108404,
+     "frame_mu": 0.885417208948916,
+     "isolated_price_us_per_k_block": 0.4855000000000018,
+     "frame_price_us_per_k_block": 1.0911109562500059,
+     "transfer_factor": 0.44495932995540316
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "cycle",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 206.98709915786696,
+     "frame_roofline_distance": 0.24180549759023084,
+     "frame_mu": 0.7581945024097692,
+     "isolated_price_us_per_k_block": 3.5705220300000007,
+     "frame_price_us_per_k_block": 3.6181178750000016,
+     "transfer_factor": 0.9868451369899051
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "consumer",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 170.0755563040694,
+     "frame_roofline_distance": 0.377012614270808,
+     "frame_mu": 0.88583135445525,
+     "isolated_price_us_per_k_block": 3.5705220300000007,
+     "frame_price_us_per_k_block": 1.412591719999989,
+     "transfer_factor": 2.527639076066529
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k1024",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 184.28424482128924,
+     "frame_roofline_distance": 0.32496613618575376,
+     "frame_mu": 0.6750338638142462,
+     "isolated_price_us_per_k_block": 3.5705220300000007,
+     "frame_price_us_per_k_block": 3.9424635000000023,
+     "transfer_factor": 0.9056575996201356
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k2048",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 197.5918673373999,
+     "frame_roofline_distance": 0.27622026616337036,
+     "frame_mu": 0.7237797338366296,
+     "isolated_price_us_per_k_block": 3.5705220300000007,
+     "frame_price_us_per_k_block": 3.728121962500005,
+     "transfer_factor": 0.9577267229760046
+    },
+    {
+     "shape": "mlp_gate_up_k5120_n34816",
+     "m": 4,
+     "frame": "k4096",
+     "isolated_gb_s": 205.10758042475044,
+     "isolated_roofline_distance": 0.24869018159432077,
+     "frame_gb_s": 205.91357838801932,
+     "frame_roofline_distance": 0.24573780810249335,
+     "frame_mu": 0.7542621918975067,
+     "isolated_price_us_per_k_block": 3.5705220300000007,
+     "frame_price_us_per_k_block": 3.664832118750006,
+     "transfer_factor": 0.9742661912758579
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "cycle",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 207.85084275024437,
+     "frame_roofline_distance": 0.2386416016474565,
+     "frame_mu": 0.7613583983525435,
+     "isolated_price_us_per_k_block": 0.0724998323529412,
+     "frame_price_us_per_k_block": 0.082924169117648,
+     "transfer_factor": 0.8742907300051768
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "consumer",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 137.81350963809885,
+     "frame_roofline_distance": 0.49518860938425324,
+     "frame_mu": 0.9053640576508539,
+     "isolated_price_us_per_k_block": 0.0724998323529412,
+     "frame_price_us_per_k_block": -0.19606511176470529,
+     "transfer_factor": -0.36977426376573885
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k1024",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 174.03328510036084,
+     "frame_roofline_distance": 0.3625154391928175,
+     "frame_mu": 0.6374845608071825,
+     "isolated_price_us_per_k_block": 0.0724998323529412,
+     "frame_price_us_per_k_block": 0.2185273849999998,
+     "transfer_factor": 0.33176543229555083
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k2048",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 179.68443277429353,
+     "frame_roofline_distance": 0.34181526456302735,
+     "frame_mu": 0.6581847354369726,
+     "isolated_price_us_per_k_block": 0.0724998323529412,
+     "frame_price_us_per_k_block": 0.25671985750000115,
+     "transfer_factor": 0.28240835383348123
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 2,
+     "frame": "k4096",
+     "isolated_gb_s": 206.7906471269047,
+     "isolated_roofline_distance": 0.24252510209925016,
+     "frame_gb_s": 188.4062917118851,
+     "frame_roofline_distance": 0.3098670633264282,
+     "frame_mu": 0.6901329366735718,
+     "isolated_price_us_per_k_block": 0.0724998323529412,
+     "frame_price_us_per_k_block": 0.2603431175000006,
+     "transfer_factor": 0.27847800644448006
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "cycle",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 199.19551059875002,
+     "frame_roofline_distance": 0.27034611502289374,
+     "frame_mu": 0.7296538849771063,
+     "isolated_price_us_per_k_block": 0.12663699117647093,
+     "frame_price_us_per_k_block": 0.11944937500000125,
+     "transfer_factor": 1.0601729073632207
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "consumer",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 137.71544790933217,
+     "frame_roofline_distance": 0.49554780985592617,
+     "frame_mu": 0.9238016102620509,
+     "isolated_price_us_per_k_block": 0.12663699117647093,
+     "frame_price_us_per_k_block": -0.12932892941176485,
+     "transfer_factor": -0.9791853358135891
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k1024",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 151.9028214356789,
+     "frame_roofline_distance": 0.4435794086605168,
+     "frame_mu": 0.5564205913394832,
+     "isolated_price_us_per_k_block": 0.12663699117647093,
+     "frame_price_us_per_k_block": 0.6568937424999994,
+     "transfer_factor": 0.1927815459080447
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k2048",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 169.367876063369,
+     "frame_roofline_distance": 0.37960484958472895,
+     "frame_mu": 0.620395150415271,
+     "isolated_price_us_per_k_block": 0.12663699117647093,
+     "frame_price_us_per_k_block": 0.3160358799999994,
+     "transfer_factor": 0.4007044743668699
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 3,
+     "frame": "k4096",
+     "isolated_gb_s": 196.70123441256646,
+     "isolated_roofline_distance": 0.27948265782942683,
+     "frame_gb_s": 185.45205629329945,
+     "frame_roofline_distance": 0.32068843848608264,
+     "frame_mu": 0.6793115615139174,
+     "isolated_price_us_per_k_block": 0.12663699117647093,
+     "frame_price_us_per_k_block": 0.2523701612500009,
+     "transfer_factor": 0.5017906655415686
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "cycle",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 173.1124365588865,
+     "frame_roofline_distance": 0.3658885107733095,
+     "frame_mu": 0.6341114892266905,
+     "isolated_price_us_per_k_block": 0.5988274867647075,
+     "frame_price_us_per_k_block": 0.6292491838235305,
+     "transfer_factor": 0.9516539745447576
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "consumer",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 113.44214848690778,
+     "frame_roofline_distance": 0.5844609945534514,
+     "frame_mu": 0.804293419647478,
+     "isolated_price_us_per_k_block": 0.5988274867647075,
+     "frame_price_us_per_k_block": 0.05015522941176568,
+     "transfer_factor": 11.939482558208205
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k1024",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 133.95972755875542,
+     "frame_roofline_distance": 0.5093050272573061,
+     "frame_mu": 0.49069497274269386,
+     "isolated_price_us_per_k_block": 0.5988274867647075,
+     "frame_price_us_per_k_block": 0.9581667100000022,
+     "transfer_factor": 0.6249721269952138
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k2048",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 151.13636340740297,
+     "frame_roofline_distance": 0.4463869472256301,
+     "frame_mu": 0.5536130527743699,
+     "isolated_price_us_per_k_block": 0.5988274867647075,
+     "frame_price_us_per_k_block": 0.6525810512499994,
+     "transfer_factor": 0.9176292900593289
+    },
+    {
+     "shape": "mlp_down_k17408_n5120",
+     "m": 4,
+     "frame": "k4096",
+     "isolated_gb_s": 172.55893413370907,
+     "isolated_roofline_distance": 0.3679159921842159,
+     "frame_gb_s": 171.04689494126634,
+     "frame_roofline_distance": 0.3734545972847386,
+     "frame_mu": 0.6265454027152614,
+     "isolated_price_us_per_k_block": 0.5988274867647075,
+     "frame_price_us_per_k_block": 0.6460445674999988,
+     "transfer_factor": 0.9269135859805966
+    }
+   ],
+   "n_independent_points": 30,
+   "measured": true,
+   "median_transfer_factor": 0.7496314285001953,
+   "transfer_factor_range": [
+    -11.297566857804647,
+    11.939482558208205
+   ],
+   "note": null
+  }
+ },
+ "class_table": [
+  {
+   "mechanism_class": "ld @ consumer",
+   "factor": 0.2689642581127596,
+   "low": -4.654366866609508,
+   "high": 1.6254568611439983,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the consumer frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "ld @ cycle",
+   "factor": 1.0018095622349599,
+   "low": -0.05427879704182996,
+   "high": 1.0985016255136553,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the cycle frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "ld @ k1024",
+   "factor": 0.6935758232676762,
+   "low": -1.8521116322223479,
+   "high": 2.010468177142989,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k1024 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "ld @ k2048",
+   "factor": 0.9124531036470676,
+   "low": -1.9220789533903964,
+   "high": 2.4842073060025816,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k2048 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "ld @ k4096",
+   "factor": 0.8372498627484629,
+   "low": -1.5746938998755324,
+   "high": 2.418541142017284,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k4096 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "alu @ consumer",
+   "factor": -0.29154801567600974,
+   "low": -5.883974359614695,
+   "high": 0.8528452966702724,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the consumer frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "alu @ cycle",
+   "factor": 1.1751001317249,
+   "low": -0.9590960951602976,
+   "high": 1.479103790634241,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the cycle frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "alu @ k1024",
+   "factor": 0.5635687144375121,
+   "low": -4.002685831440059,
+   "high": 0.804992485121866,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k1024 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "alu @ k2048",
+   "factor": 0.9730170527023931,
+   "low": 0.16662233534482945,
+   "high": 1.1094908705964799,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k2048 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "alu @ k4096",
+   "factor": 0.45369354470670065,
+   "low": -18.072966336983807,
+   "high": 0.876303029187853,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k4096 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "deletion @ consumer",
+   "factor": 0.07365081179876204,
+   "low": -11.297566857804647,
+   "high": 11.939482558208205,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the consumer frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "deletion @ cycle",
+   "factor": 1.0235090221765628,
+   "low": 0.8742907300051768,
+   "high": 1.8610085289651517,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the cycle frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "deletion @ k1024",
+   "factor": 0.43717488439087815,
+   "low": 0.1927815459080447,
+   "high": 0.9056575996201356,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k1024 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "deletion @ k2048",
+   "factor": 0.7105138609930892,
+   "low": 0.28240835383348123,
+   "high": 1.388211957894669,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k2048 frame at a fixed shape and a fixed width"
+  },
+  {
+   "mechanism_class": "deletion @ k4096",
+   "factor": 0.7143521257610825,
+   "low": 0.27847800644448006,
+   "high": 1.9933574469373205,
+   "n_independent_points": 6,
+   "measured": true,
+   "evidence": "Stage 1 frame axis, isolated base frame against the k4096 frame at a fixed shape and a fixed width"
+  }
+ ],
+ "published_pair_inversion": {
+  "identified": true,
+  "pairs": {
+   "alphonse_threadgroup_exchange": {
+    "identified": true,
+    "isolated_cell": "fa_qkv_k5120_n14336|m4",
+    "isolated_gb_s": 189.7610046287166,
+    "isolated_mu": 0.6950952550502439,
+    "observed_total_transfer": 2.041284403669725,
+    "frame_term_after_removing_W": 1.5348003035110713,
+    "implied_in_situ_mu": 0.8676217058472047,
+    "implied_in_situ_gb_s": 236.86072569628686
+   },
+   "rule58_launched_volume": {
+    "identified": false,
+    "note": "not measured: the isolated cell of this pair was never published"
+   }
+  },
+  "n_solved": 1,
+  "consistent": false,
+  "in_situ_mu_point": 0.8676217058472047,
+  "in_situ_mu_band": [
+   0.8676217058472047,
+   0.8676217058472047
+  ],
+  "note": "One published pair is enough to calibrate the in-situ point. A second pair is a held-out check, not extra precision."
+ },
+ "route_b": {
+  "identified": true,
+  "sources": {
+   "published_inversion": 1.5348003035110713
+  },
+  "F_point": 1.5348003035110713,
+  "F_band": [
+   1.4123025301126548,
+   1.5148165148339956
+  ],
+  "W_point": 1.33,
+  "W_band": [
+   1.0,
+   1.76
+  ],
+  "C_point": 2.041284403669725,
+  "C_band": [
+   1.4123025301126548,
+   2.666077066107832
+  ],
+  "isolated_ranked_pct": 1.95805833,
+  "point": 0.9592285751460674,
+  "low": 0.7344342573182033,
+  "high": 1.3864298110715783,
+  "registered_point": 1.0295274883011727,
+  "parity_line_pct": 0.53,
+  "mode_proof_line_pct": 1.86,
+  "frame_axis_sensitivity": {
+   "alu|consumer": {
+    "median": -0.29154801567600974,
+    "n": 6,
+    "measured": true
+   },
+   "alu|cycle": {
+    "median": 1.1751001317249,
+    "n": 6,
+    "measured": true
+   },
+   "alu|k1024": {
+    "median": 0.5635687144375121,
+    "n": 6,
+    "measured": true
+   },
+   "alu|k2048": {
+    "median": 0.9730170527023931,
+    "n": 6,
+    "measured": true
+   },
+   "alu|k4096": {
+    "median": 0.45369354470670065,
+    "n": 6,
+    "measured": true
+   },
+   "deletion|consumer": {
+    "median": 0.07365081179876204,
+    "n": 6,
+    "measured": true
+   },
+   "deletion|cycle": {
+    "median": 1.0235090221765628,
+    "n": 6,
+    "measured": true
+   },
+   "deletion|k1024": {
+    "median": 0.43717488439087815,
+    "n": 6,
+    "measured": true
+   },
+   "deletion|k2048": {
+    "median": 0.7105138609930892,
+    "n": 6,
+    "measured": true
+   },
+   "deletion|k4096": {
+    "median": 0.7143521257610825,
+    "n": 6,
+    "measured": true
+   },
+   "ld|consumer": {
+    "median": 0.2689642581127596,
+    "n": 6,
+    "measured": true
+   },
+   "ld|cycle": {
+    "median": 1.0018095622349599,
+    "n": 6,
+    "measured": true
+   },
+   "ld|k1024": {
+    "median": 0.6935758232676762,
+    "n": 6,
+    "measured": true
+   },
+   "ld|k2048": {
+    "median": 0.9124531036470676,
+    "n": 6,
+    "measured": true
+   },
+   "ld|k4096": {
+    "median": 0.8372498627484629,
+    "n": 6,
+    "measured": true
+   }
+  }
+ },
+ "alphonse_back_check": {
+  "identified": true,
+  "composite_source": "E125 measured frame term",
+  "predicted_pct": 0.436,
+  "measured_pct": 0.436,
+  "sd": 0.093,
+  "sd_away": 0.0,
+  "note": "The composite C is applied to alphonse's shipped isolated number. The alphonse pair also calibrates the in-situ point, so this is a consistency check of the composite, not an independent test."
+ },
+ "e124": {
+  "low": 0.0,
+  "high": 0.0,
+  "factor": 1.0,
+  "note": "no correction. Rule 69: E124 was measured in situ, so the frame term is already paid and applying it again would double count."
+ }
+}

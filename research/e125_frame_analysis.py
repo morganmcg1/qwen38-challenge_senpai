@@ -43,6 +43,7 @@ import argparse
 import json
 import math
 import pathlib
+import random
 import statistics
 import sys
 
@@ -51,6 +52,7 @@ sys.path.insert(0, str(HERE))
 
 import e118_analysis as e118a  # noqa: E402
 
+BOOTSTRAP_DRAWS = 4000
 PEAK_BANDWIDTH_GB_S = 273.0
 BANDWIDTH_GATE_FACTOR = 1.2
 # A frame whose weight stream fits in cache may exceed the DRAM roofline
@@ -59,9 +61,19 @@ STREAMING_FRAMES = ("base", "cycle", "consumer")
 NULL_SCAFFOLD_GATE_PCT = 0.5
 
 # (class, low rung, high rung, injected instructions per k-block on each rung).
+#
+# The first two classes inject ordinary work. The last three inject the
+# mechanism E121 rung 3 actually added: an exchange through threadgroup memory
+# and the barriers that make it legal. `tg_scaffold` uses `q_scaffold` and not
+# `a_base` as its zero rung for the same reason the deletion does -- every
+# injected arm is built from the scaffold source, so an `a_base` reference
+# would charge the exchange for a codegen difference as well.
 LADDER = (
     ("ld", "k_ld8", "k_ld16", 8, 16),
     ("alu", "k_alu8", "k_alu16", 8, 16),
+    ("tg_scaffold", "q_scaffold", "k_tg0", 0, 1),
+    ("tgld", "k_tgld8", "k_tgld16", 8, 16),
+    ("bar", "k_tgst8", "k_barst8", 0, 8),
 )
 # The one real deletion in the arm set: the whole activation add tree.
 #
@@ -385,7 +397,75 @@ def frame_law(cell_map: dict) -> dict:
                 "note": None if len(v) >= 2 else "not measured: fewer than 2 "
                                                  "independent points"}
             for f, v in per_frame.items()}
+        out[klass]["transfer_by_frame"] = frame_transfer(by_cellframe)
     return out
+
+
+def _slope_through_origin(rows: list) -> float | None:
+    """Least squares slope of frame price on base price, forced through zero.
+
+    Three estimators were available and they disagree, so the choice is stated
+    rather than hidden. A median of per-cell ratios divides by a base price
+    that is itself measured, so a cell whose base price sits near zero emits an
+    arbitrarily large ratio and the median then reports which cells landed near
+    zero. A ratio of sums fixes that but weights linearly, so a cell whose base
+    price is small still contributes its full noise to the numerator. The
+    origin-forced slope weights each cell by `base**2`, which is the same as
+    weighting by how much price the cell actually resolves, and it is the
+    maximum likelihood estimate of a single proportionality constant under
+    equal per-cell noise. `ratio_of_sums` is kept beside it as a sensitivity.
+    """
+    den = sum(b * b for _, b in rows)
+    return sum(a * b for a, b in rows) / den if den > 0 else None
+
+
+def frame_transfer(by_cellframe: dict) -> dict:
+    """Per frame: how an isolated base-frame price transfers into that frame.
+
+    `slope` is the in-situ price per unit of isolated price. `transfer_factor`
+    is its reciprocal, which is the direction the published anchors use: above
+    one means the frame hides the mechanism, below one means the frame charges
+    more for it than the isolated cell predicted.
+    """
+    pairs: dict[str, list[tuple[float, float]]] = {}
+    for (shape, m, frame), pt in by_cellframe.items():
+        ref = by_cellframe.get((shape, m, "base"))
+        if ref is None or frame == "base":
+            continue
+        pairs.setdefault(frame, []).append(
+            (pt["value_us_per_k_block"], ref["value_us_per_k_block"]))
+    out = {}
+    for frame, rows in pairs.items():
+        slope = _slope_through_origin(rows)
+        den = sum(b for _, b in rows)
+        boot_slope, boot_transfer = [], []
+        rng = random.Random(20260822)
+        for _ in range(BOOTSTRAP_DRAWS):
+            draw = [rows[rng.randrange(len(rows))] for _ in rows]
+            s = _slope_through_origin(draw)
+            if s is None:
+                continue
+            boot_slope.append(s)
+            if s != 0:
+                boot_transfer.append(1.0 / s)
+        out[frame] = {
+            "slope": slope,
+            "slope_ci95": _pct_band(boot_slope),
+            "transfer_factor": 1.0 / slope if slope else None,
+            "transfer_ci95": _pct_band(boot_transfer),
+            "ratio_of_sums": (sum(a for a, _ in rows) / den) if den else None,
+            "n_cells": len(rows),
+            "base_positive_frac": sum(1 for _, b in rows if b > 0) / len(rows),
+            "measured": len(rows) >= 2,
+        }
+    return out
+
+
+def _pct_band(v: list) -> list:
+    if not v:
+        return [None, None]
+    v = sorted(v)
+    return [v[int(0.025 * len(v))], v[min(len(v) - 1, int(0.975 * len(v)))]]
 
 
 def main() -> int:

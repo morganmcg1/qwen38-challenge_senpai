@@ -22,7 +22,8 @@ out_dir="research/out/${tag}"
 arms_dir="/tmp/e125-arms"
 bin="/tmp/e125_frame_probe"
 arm_rev="${E125_ARM_REV:-5d97175c~1}"
-arms="$(python3 research/e125_arms.py --arm-list)"
+arm_set="${E125_ARM_SET:-work}"
+arms="$(python3 research/e125_arms.py --arm-list --set "${arm_set}")"
 [[ -n "${arms}" ]] || { echo "e125_probe: empty arm list" >&2; exit 1; }
 mkdir -p "${out_dir}"
 
@@ -41,8 +42,8 @@ gpu_temp() {
 }
 
 rm -rf "${arms_dir}"
-python3 research/e125_arms.py --emit "${arms_dir}" --rev "${arm_rev}" 2>&1 \
-  | tee "${out_dir}/arms.log" || exit 1
+python3 research/e125_arms.py --emit "${arms_dir}" --rev "${arm_rev}" \
+  --set "${arm_set}" 2>&1 | tee "${out_dir}/arms.log" || exit 1
 
 clang -fobjc-arc -O2 -Wno-format-nonliteral -framework Metal \
   -framework Foundation -o "${bin}" research/e125_frame_probe.m 2>&1 \
@@ -68,6 +69,7 @@ exit_c="$(gpu_temp)"
   echo "instrument=research/e125_frame_probe.m (E118 probe plus the frame axis)"
   echo "arms=${arms}"
   echo "arm_twin_rev=${arm_rev}"
+  echo "arm_set=${arm_set}"
   echo "arm_twin_sha=$(git rev-parse "${arm_rev}")"
   echo "args=$*"
   echo "started_utc=${start_iso}"

@@ -74,8 +74,27 @@ DEFAULT_REV = "5d97175c~1"
 #   k_alu8/16   ALU injection, two rungs, same
 #   q_scaffold  byte identical to `a_base`, so its frame response is the
 #               instrument's own noise in every frame
-ARMS = ("a_base", "q_scaffold", "n_nosums", "k_ld8", "k_ld16", "k_alu8",
-        "k_alu16")
+ARMS_WORK = ("a_base", "q_scaffold", "n_nosums", "k_ld8", "k_ld16", "k_alu8",
+             "k_alu16")
+
+# The synchronisation set. E121 rung2 -> rung3 shares chunk sums across
+# simdgroups, so it adds a threadgroup exchange and two barriers to every
+# k-block. None of the arms above carry that mechanism, so a class-by-regime
+# table built on `ARMS_WORK` alone would have to place the E121 anchor in a
+# proxy cell. These arms measure the mechanism itself.
+#
+#   k_tg0       the threadgroup scaffold at zero injected instructions:
+#               threadgroup storage plus one fence per k-block. Contrast
+#               against `a_base` is the cost of introducing the exchange.
+#   k_tgld8/16  threadgroup-memory reads, two rungs, zero rung `k_tg0`
+#   k_tgst8     threadgroup-memory writes, the zero rung of the barrier ladder
+#   k_barst8    the same writes plus 8 barriers, so `k_barst8` - `k_tgst8`
+#               cancels scaffold and store and leaves synchronisation alone
+ARMS_SYNC = ("a_base", "q_scaffold", "k_ld8", "k_ld16", "n_nosums", "k_tg0",
+             "k_tgld8", "k_tgld16", "k_tgst8", "k_barst8")
+
+ARM_SETS = {"work": ARMS_WORK, "sync": ARMS_SYNC}
+ARMS = ARMS_WORK
 
 
 def base_source(outdir: pathlib.Path, rev: str) -> str:
@@ -87,7 +106,7 @@ def base_source(outdir: pathlib.Path, rev: str) -> str:
     return path.read_text()
 
 
-def emit(outdir: pathlib.Path, rev: str) -> None:
+def emit(outdir: pathlib.Path, rev: str, arms: tuple) -> None:
     e123.install()
     outdir.mkdir(parents=True, exist_ok=True)
     base = widen_asserts(base_source(outdir, rev))
@@ -95,7 +114,7 @@ def emit(outdir: pathlib.Path, rev: str) -> None:
     print("e125_arms: twins pinned at %s  base=%d bytes  sha=%s"
           % (rev, len(base), hashlib.sha256(base.encode()).hexdigest()[:12]))
     seen: dict[str, str] = {}
-    for arm in ARMS:
+    for arm in arms:
         text = e118.arm_source(base, arm)
         digest = hashlib.sha256(text.encode()).hexdigest()[:12]
         if digest in seen:
@@ -105,26 +124,28 @@ def emit(outdir: pathlib.Path, rev: str) -> None:
         (outdir / ("arm_%s.metal" % arm)).write_text(text)
         print("%-15s %8d bytes  sha=%s  exact=%s"
               % (arm, len(text), digest, arm not in e123.DIAGNOSTIC_ARMS))
-    print("\n--arms %s" % arm_list())
+    print("\n--arms %s" % arm_list(arms))
 
 
-def arm_list() -> str:
+def arm_list(arms: tuple = ARMS) -> str:
     return ",".join(a + (":diag" if a in e123.DIAGNOSTIC_ARMS else "")
-                    for a in ARMS)
+                    for a in arms)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--emit", type=pathlib.Path)
     parser.add_argument("--rev", default=DEFAULT_REV)
+    parser.add_argument("--set", default="work", choices=sorted(ARM_SETS))
     parser.add_argument("--arm-list", action="store_true")
     args = parser.parse_args()
+    arms = ARM_SETS[args.set]
     if args.arm_list:
-        print(arm_list())
+        print(arm_list(arms))
         return 0
     if not args.emit:
         parser.error("one of --emit or --arm-list is required")
-    emit(args.emit, args.rev)
+    emit(args.emit, args.rev, arms)
     return 0
 
 
