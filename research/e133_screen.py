@@ -1543,6 +1543,7 @@ class Tally:
     def __init__(self) -> None:
         self.n: dict[str, int] = {}
         self.c: dict[str, dict[str, int]] = {}
+        self.score_dtype = "unknown"
 
     def count(self, stratum: str, name: str, value) -> None:
         self.c.setdefault(stratum, {})
@@ -1606,10 +1607,14 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
     miss = np.asarray(out32 != argmax).astype(bool)
 
     # `H.scores` is a plain slice of `H.scores_all`, so the rerank reads the
-    # SAME float32 values that define `argmax_row`. A shortlisted row can then
-    # only be lost to an exact tie, and this measures the tie directly instead
-    # of assuming it. `exact_scores` is indexed by compact id.
-    exact_scores = H.scores(screen.exact, x)
+    # SAME values that define `argmax_row`. A shortlisted row can then only be
+    # lost to an exact tie, and this measures the tie directly instead of
+    # assuming it. `exact_scores` is indexed by compact id. The widening to
+    # float32 is lossless and only moves the values through numpy, so every
+    # equality below is still decided at the head's own output precision.
+    raw_scores = H.scores(screen.exact, x)
+    tally.score_dtype = str(raw_scores.dtype)
+    exact_scores = raw_scores.astype(mx.float32)
     s_true = mx.take_along_axis(exact_scores, argmax[:, None].astype(mx.int32),
                                 axis=1)[:, 0]
     s_out = mx.take_along_axis(exact_scores, out32[:, None].astype(mx.int32),
@@ -1769,6 +1774,7 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
                  "shortlist_shipped": SHORTLIST,
                  "probe_fraction_shipped": ATTRIB_PROBE,
                  "miss_to_score_pct": MISS_TO_SCORE_PCT,
+                 "exact_score_dtype": tally.score_dtype,
                  "by_stratum": {}, "k_curve": {}, "k_curve_sketch": {},
                  "probe_curve": {}, "k_price": {}}
     for s in strata:
