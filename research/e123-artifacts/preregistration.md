@@ -329,12 +329,21 @@ instruction. Measured before the session on `applegpu_g16s`:
 | source accounting, `20 * NA` | 40 | 60 | 80 | 100 |
 | `n_halfsums_free` -> `n_nosums`, bytes | 192 | 338 | 354 | 514 |
 | implied instructions | 23.3 | 41.0 | 42.9 | 62.3 |
-| source accounting | 20 | 20 | 40 | 40 |
+| source accounting, `20 * halfsums_kept(NA)` | 20 | 40 | 40 | 60 |
+
+`halfsums_kept(NA) = (NA + 1) / 2`, so the surviving add trees are 1, 2, 2 and
+3 at NA=2, 3, 4 and 5. This row was written as `20 | 20 | 40 | 40` in the first
+draft of this section. That was an arithmetic slip in the prose only; the
+generator, the census and the arm code always used `halfsums_kept`. The row is
+corrected here before any timing data exists, and the correction is disclosed
+in the result.
 
 The whole-tree deletion agrees with the source accounting to within 5 % at
 every width, so the count behind the 1.66x is right and a miscount cannot
-explain the ratio. The half-tree rows do not agree as well, so **`D` is taken
-from the machine text and the source-accounting value is reported beside it.**
+explain the ratio. The half-tree rows sit 4 to 17 % above their source count,
+in the same direction and of the same order as the whole-tree rows, so **`D` is
+taken from the machine text and the source-accounting value is reported beside
+it.**
 
 **Point prediction: `R` = 1.35, band [1.05, 1.90].** Reasoning: two live
 mechanisms pull in opposite directions. E118's Finding 60 says this loop is
