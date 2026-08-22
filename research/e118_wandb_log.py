@@ -129,12 +129,16 @@ def log_arms() -> None:
     weighted = doc["weighted"]
     table = wandb.Table(columns=[
         "arm", "role", "round_weighted_pct_faster", "na2_pct", "na3_pct",
-        "na4_pct", "na5_pct"])
+        "na4_pct", "na5_pct", "identified_local_lo", "identified_local_hi",
+        "identified_ranked_lo", "identified_ranked_hi"])
     for arm, row in sorted(weighted.items(),
                            key=lambda kv: -kv[1]["standing_pct"]):
         na = row["na"]
+        loc = row.get("identified_local") or [None, None]
+        rnk = row.get("identified_ranked") or [None, None]
         table.add_data(arm, row["role"], row["standing_pct"],
-                       na.get("2"), na.get("3"), na.get("4"), na.get("5"))
+                       na.get("2"), na.get("3"), na.get("4"), na.get("5"),
+                       loc[0], loc[1], rnk[0], rnk[1])
     run.log({"arms_round_weighted": table})
 
     abs_us = wandb.Table(columns=["cell", "median_us"])
@@ -169,6 +173,9 @@ def log_arms() -> None:
 
     pm = doc["primary_metric"]
     disc = doc["discriminator"]
+    best = weighted[pm["arm"]]
+    ident_local = best.get("identified_local") or [None, None]
+    ident_ranked = best.get("identified_ranked") or [None, None]
     run.summary.update({
         "primary_metric_name": pm["name"],
         "e118_best_bit_exact_arm_round_weighted_pct_faster_vs_a_base":
@@ -176,6 +183,12 @@ def log_arms() -> None:
         "primary_metric_arm": pm["arm"],
         "kill_rule_pct": pm["kill_rule_pct"],
         "kill_rule_cleared": pm["cleared"],
+        "primary_metric_identified_local_lo": ident_local[0],
+        "primary_metric_identified_local_hi": ident_local[1],
+        "primary_metric_identified_ranked_lo": ident_ranked[0],
+        "primary_metric_identified_ranked_hi": ident_ranked[1],
+        "kill_rule_cleared_anywhere_in_identified_set":
+            ident_local[1] is not None and ident_local[1] >= KILL_RULE_PCT,
         "discriminator_verdict": disc["verdict"],
         "discriminator_s_bcast_pct": disc["s_bcast"],
         "discriminator_s_bcast_all_pct": disc["s_bcast_all"],

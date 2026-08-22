@@ -130,6 +130,38 @@ broadcast arm is a large, unambiguous loss.
 Absolute `a_base` microseconds on `mlp.gate_up`: 415.4, 430.3, 499.9 and 592.8
 at NA 2, 3, 4 and 5.
 
+### The null is weighting-robust, required by the assignment
+
+The assignment asks for the same number under the E114 identified-set bounds,
+so the ranking cannot depend on one chosen weight vector.
+`research/e118_analysis.py` imports `research/scoring_weights.py` and sweeps
+every admissible per-NA weight vector the four board facts per prompt allow.
+The interval below is the range of the round-weighted percent over that whole
+set, not a confidence interval.
+
+| arm | role | standing | identified local | identified ranked |
+| --- | --- | ---: | ---: | ---: |
+| `l_loadonly` | diagnostic | +12.790 | [ +4.048, +23.936] | [ +4.018, +24.037] |
+| `n_nobias` | diagnostic | +8.055 | [ +5.849, +10.786] | [ +5.842, +10.810] |
+| `n_nosums` | diagnostic | +5.763 | [ +2.045, +8.733] | [ +2.032, +8.750] |
+| `g_pack32` | promotion | +0.220 | **[ +0.127, +0.441]** | **[ +0.127, +0.441]** |
+| `p_split_meta` | promotion | -0.003 | [ -0.030, +0.055] | [ -0.030, +0.056] |
+| `q_scaffold` | null control | -0.036 | [ -0.050, +0.102] | [ -0.050, +0.104] |
+| `d_bias1` | diagnostic | -0.485 | [ -0.866, -0.120] | [ -0.870, -0.129] |
+| `p_prefetch_w` | beside metric | -2.165 | [-39.899, +0.125] | [-40.418, +0.125] |
+| `e_bias6` | beside metric | -3.262 | [ -4.190, -2.244] | [ -4.192, -2.246] |
+| `z_ballast` | spill control | -5.277 | [-44.896, -2.020] | [-45.434, -2.019] |
+| `s_bcast_all` | promotion | -7.348 | [-10.642, -6.147] | [-10.688, -6.167] |
+| `s_bcast_scale` | promotion | -7.751 | [ -8.757, -6.547] | [ -8.760, -6.553] |
+| `s_bcast_pack32` | promotion | -8.498 | [-39.851, -5.814] | [-40.275, -5.821] |
+| `s_bcast` | promotion | -16.614 | [-45.299, -13.583] | [-45.688, -13.622] |
+
+**The whole identified set for `g_pack32` lies below the `+0.5 %` kill rule.**
+The best admissible weighting reaches `+0.441 %` and still does not clear it,
+so the null does not depend on the standing weights. The arm ranking is
+identical under both the local and the ranked weight family, and no promotion
+arm changes sign anywhere in the set.
+
 ### Every shape agrees
 
 Round-weighted percent, all five scored shapes:
@@ -284,7 +316,9 @@ Every timing number in this report comes from the repaired probe.
   device loads, not 15, because the front end coalesces the eight scalar
   metadata reads. There is no load-issue pressure left to remove. The best
   bit-exact arm gains `+0.22 %` round weighted against a `+0.5 %` kill rule
-  and a `0.036 %` noise floor, so the route is closed.
+  and a `0.036 %` noise floor, so the route is closed. The whole E114
+  identified set for that arm is `[+0.127, +0.441]`, so the null holds under
+  every admissible weighting and not only under the standing weights.
 - **Evidence for the mechanism being absent:** `s_bcast` removes zero loads
   and loses 16.6 %; `g_pack32` removes one load of seven and gains 0.22 %;
   `p_split_meta` is byte-identical text and measures zero. Deleting
