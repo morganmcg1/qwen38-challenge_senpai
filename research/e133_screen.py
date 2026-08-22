@@ -1165,7 +1165,12 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
         mx.eval(rank)
         rank_np = np.asarray(rank)
 
-        top = mx.argpartition(-sk, kth=max_width - 1, axis=1)[:, :max_width]
+        # A probe fraction low enough to gather fewer rows than the requested
+        # survivor width is legal and interesting: at p = 0.01 the chain sees
+        # 984 rows, so keeping 4096 of them means keeping all of them.
+        # `argpartition` rejects that outright, so clamp instead of crashing.
+        keep_width = min(max_width, sk.shape[1])
+        top = mx.argpartition(-sk, kth=keep_width - 1, axis=1)[:, :keep_width]
         top = mx.take_along_axis(
             top, mx.argsort(-mx.take_along_axis(sk, top, axis=1), axis=1), axis=1)
         exact_top1 = mx.take_along_axis(
@@ -1301,6 +1306,14 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         "m_absolute_worst_gating_hi": worst("m_absolute_hi"),
         "m_incremental_worst_gating": worst("m_incremental"),
         "recall_worst_gating": lowest("recall"),
+        # E139 F2 section 2. On the probe-fraction ladder the binding margin
+        # is not the shortlist threshold but whether the leaf that owns the
+        # true argmax row was probed at all. `probe_hit_rate` at probe count
+        # P is exactly P(leaf rank of the argmax < P), so reading it across
+        # the ladder traces the whole CDF of that rank and shows the margin
+        # collapsing before recall breaks rather than after.
+        "probe_hit_rate_worst_gating": lowest("probe_hit_rate"),
+        "survivor_hit_rate_worst_gating": lowest("survivor_hit_rate"),
         "acceptance_loss_worst_gating": loss,
         "acceptance_loss_pooled_worst_gating": loss_pooled,
         "substitutions_live_gating": subs_live,
@@ -1338,6 +1351,15 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
             model["pct_head_share_7"] - MISS_TO_SCORE_PCT * worst("m_incremental"),
         "passes_t0": net_worst <= T0_NET_MISS,
         "passes_t0b": lowest("recall") >= T0B_RECALL,
+        # E139. `recall` is survivor retention CONDITIONAL on the probed set,
+        # so it is identically 1.0 whenever the survivor width covers every
+        # probed row, and `passes_t0b` cannot fail for such a cell however
+        # many leaf rows the probe never reached. This reads the same
+        # threshold against the leaf term instead. Added, not substituted:
+        # changing `passes_t0b` in place would silently move recorded
+        # verdicts on the narrow-width sketch families, where the two
+        # definitions really do differ.
+        "passes_t0b_leaf": lowest("probe_hit_rate") >= T0B_RECALL,
         "by_stratum": by_stratum,
     }
 
@@ -2539,14 +2561,14 @@ def cmd_screen(args) -> None:
     for field, r in wp["fields"].items():
         print(f"{field:34s}{r['whitened_wins']:6d}{r['ties']:6d}"
               f"{r['whitened_losses']:8d}"
-              f"{r['mean_delta_whitened_minus_plain']:13.4e}"
-              f"{r['sign_test_p']:12.3e}")
+              f"{fmt_opt(r['mean_delta_whitened_minus_plain'], '.4e'):>13s}"
+              f"{fmt_opt(r['sign_test_p'], '.3e'):>12s}")
     print(f"  T0 verdict flips {wp['t0_verdict_flips']}, "
           f"T0b verdict flips {wp['t0b_verdict_flips']}")
     print(f"  best clearing plain    {wp['best_clearing_plain_arm']} "
-          f"{wp['best_clearing_plain_predicted_pct']:.3f}")
+          f"{fmt_opt(wp['best_clearing_plain_predicted_pct'], '.3f')}")
     print(f"  best clearing whitened {wp['best_clearing_whitened_arm']} "
-          f"{wp['best_clearing_whitened_predicted_pct']:.3f}")
+          f"{fmt_opt(wp['best_clearing_whitened_predicted_pct'], '.3f')}")
     # F3.4. The held-out query energy at each rank, beside the empirical net
     # miss the same rank actually achieves. If captured energy predicted the
     # miss, the two columns would move together.
