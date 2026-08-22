@@ -117,8 +117,8 @@ def kernel_names(metallib: pathlib.Path) -> list[str]:
     return names
 
 
-def translate(metallib: pathlib.Path, arch: str,
-              workdir: pathlib.Path) -> dict[str, dict]:
+def translate(metallib: pathlib.Path, arch: str, workdir: pathlib.Path,
+              select=None) -> dict[str, dict]:
     """Run the real AGX backend for `arch` and read one record per kernel.
 
     Each kernel is translated on its own. `__GPU_METADATA` carries no kernel
@@ -126,9 +126,15 @@ def translate(metallib: pathlib.Path, arch: str,
     linker's, not the pipeline script's: translating a multi-kernel script and
     zipping the two lists silently mispairs records. Requesting one kernel per
     script costs one process per kernel and removes the ambiguity entirely.
+
+    `select` is an optional predicate on the kernel name. A library that
+    carries the whole quantized twin holds twenty kernels of which a census
+    usually wants four, and translating the other sixteen costs one process
+    each for a record nobody reads.
     """
     found = {}
-    for index, name in enumerate(kernel_names(metallib)):
+    wanted = [n for n in kernel_names(metallib) if select is None or select(n)]
+    for index, name in enumerate(wanted):
         script = workdir / f"pipeline_{index}.mtlp-json"
         script.write_text(json.dumps({"pipelines": {"compute_pipelines": [
             {"compute_function": name}]}}))

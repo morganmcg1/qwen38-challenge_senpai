@@ -80,6 +80,7 @@ RUN_IDS = {
     "e125-frame-axis": "e125frame1",
     "e125-frame-axis-sync": "e125sync01",
     "e125-register-census": "e125cens01",
+    "e125-residency-law": "e125resl01",
     "e125-correction": "e125corr01",
 }
 
@@ -128,6 +129,31 @@ EXPECTED_SUMMARY_KEYS = {
         "e125_allocation_register_cost",
         "e125_parameter_register_cost",
         "e125_ranked_registers_to_gain_one_simdgroup",
+        "cool_gate_passed_real_gate",
+        "gate_qualified_for_timing",
+        "official_or_ranked_score",
+    ),
+    "e125resl01": (
+        "primary_metric_name",
+        "e125_two_channel_coefficient_entry_point",
+        "e125_two_channel_coefficient_isolated_bodies",
+        "e125_two_channel_instruction_pct_isolated_bodies",
+        "e125_two_channel_instruction_sign_ok",
+        "e125_f5_bracket_consistent_as_registered",
+        "e125_f5_bracket_consistent_in_leg_frame",
+        "e125_two_channel_anchors_tested",
+        "e125_two_channel_anchors_passed",
+        "e125_r_gain_bandwidth_pooled",
+        "e125_r_gain_residency_pooled",
+        "e125_partial_r_gain_bandwidth_given_residency",
+        "e125_r_gain_bandwidth_width_demeaned",
+        "e125_r_gain_deleted_instructions_pooled",
+        "e125_r2_instructions_only",
+        "e125_r2_gain_from_bandwidth",
+        "e125_r2_gain_from_residency",
+        "e125_bandwidth_survives_residency_control",
+        "e125_ladder_contrasts_pure_instruction_channel",
+        "e125_ladder_contrasts_total",
         "cool_gate_passed_real_gate",
         "gate_qualified_for_timing",
         "official_or_ranked_score",
@@ -633,10 +659,166 @@ def log_correction(dry: bool = False) -> None:
     run.finish()
 
 
+def log_residency_law(dry: bool = False) -> None:
+    """F5: the two-channel law, and residency against bandwidth as regressors.
+
+    Zero GPU again. Every input is an already-published artifact, so this run
+    holds analysis and no new measurement.
+    """
+    doc = json.loads((ART / "residency-law.json").read_text())
+    channels = doc["two_channel"]
+    bracket = doc["coefficient_bracket"]
+    stats = doc["bandwidth_versus_residency"]
+    audit = doc["channel_audit"]
+    pooled = stats["pooled"]
+    models = stats["models"]
+    body = channels.get("isolated_bodies_f47_weighted", {})
+    entry = channels.get("entry_point", {})
+    cfg = {
+        "question": (
+            "F5 proposes `observed transfer = instruction channel x residency "
+            "channel`. Does it hold across the three anchors and across "
+            "mechanism classes, and do my Stage 0 bandwidth correlations "
+            "survive once residency is controlled"),
+        "command": ("python3 research/e125_residency_law.py --out "
+                    "research/e125-artifacts/residency-law.json"),
+        "model": "effect_pct = instruction_channel + coefficient * "
+                 "resident_simdgroup_change_pct",
+        "inputs": doc["sources"],
+        "anchors": doc["anchors"],
+        "simdgroup_budget": doc["simdgroup_budget"],
+        "identification_note": (
+            "one architecture-spanning anchor and two unknowns, so the E121 "
+            "solve is exactly determined and is not a test. The testable "
+            "content is the coefficient value, the instruction-channel sign, "
+            "and the third anchor."),
+        **identity(),
+        **gate_flags("analysis of published artifacts, no GPU", False),
+    }
+    if dry:
+        print(json.dumps({"run": "e125-residency-law", "config": cfg},
+                         indent=2))
+        return
+    run = start(job_type="analysis", name="e125-residency-law", config=cfg)
+
+    contrasts = wandb.Table(columns=[
+        "class", "low_rung", "high_rung", "width", "registers_local",
+        "residency_pct_local", "registers_ranked", "residency_pct_ranked",
+        "pure_instruction_channel"])
+    for row in doc["contrast_residency"]:
+        contrasts.add_data(
+            row["class"], row["low_rung"], row["high_rung"], row["width"],
+            str(row["registers_local"]), row["residency_pct_local"],
+            str(row["registers_ranked"]), row["residency_pct_ranked"],
+            row["pure_instruction_channel"])
+
+    solves = wandb.Table(columns=[
+        "residency_frame", "residency_pct_local", "residency_pct_ranked",
+        "coefficient_pct_time_per_pct_residency", "instruction_channel_pct",
+        "instruction_sign_ok"])
+    for frame, rec in sorted(channels.items()):
+        solves.add_data(
+            frame, rec["residency_pct_local"], rec["residency_pct_ranked"],
+            rec["coefficient_pct_time_per_pct_residency"],
+            rec["instruction_channel_pct"], rec["instruction_channel_sign_ok"])
+
+    anchors = wandb.Table(columns=[
+        "anchor", "axis", "residency_frame", "observed", "predicted",
+        "verdict", "is_a_test", "why"])
+    for row in doc["anchor_checks"]:
+        anchors.add_data(
+            row["anchor"], row["axis"], row.get("frame", ""), row["observed"],
+            row["predicted"], row["verdict"], row["is_a_test"], row["why"])
+
+    cells = wandb.Table(columns=[
+        "shape", "width", "achieved_gb_s", "a_base_us", "gain_pct_vs_a_base",
+        "gain_pct_vs_scaffold", "deleted_issue_lanes", "residency_pct_local",
+        "residency_pct_ranked"])
+    for row in doc["cells"]:
+        cells.add_data(
+            row["shape"], row["width"], row["achieved_gb_s"], row["a_base_us"],
+            row["gain_pct_vs_a_base"], row["gain_pct_vs_scaffold"],
+            row["deleted_issue_lanes"], row["residency_pct_local"],
+            row["residency_pct_ranked"])
+
+    regressors = wandb.Table(columns=[
+        "model", "r2", "rmse", "n", "intercept", "coefficients"])
+    for name, model in models.items():
+        if model.get("singular"):
+            continue
+        regressors.add_data(name, model["r2"], model["rmse"], model["n"],
+                            model["intercept"], str(model["coefficients"]))
+
+    within = wandb.Table(columns=[
+        "width", "n", "r_gain_bandwidth", "deleted_issue_lanes",
+        "residency_pct_local", "residency_is_constant_within_width"])
+    for row in stats["within_width"]:
+        within.add_data(row["width"], row["n"], row["r_gain_bandwidth"],
+                        row["deleted_issue_lanes"], row["residency_pct_local"],
+                        row["residency_is_constant_within_width"])
+
+    run.log({"contrast_residency": contrasts, "two_channel_solve": solves,
+             "anchor_checks": anchors, "cells": cells,
+             "regressor_models": regressors, "within_width": within})
+
+    demeaned = stats["width_demeaned"]
+    tested = [a for a in doc["anchor_checks"] if a["is_a_test"]]
+    passed = [a for a in tested if a["verdict"] == "passes"]
+    instructions_r2 = models["instructions_only"]["r2"]
+    run.summary.update({
+        "primary_metric_name": "e125_two_channel_coefficient_isolated_bodies",
+        "e125_two_channel_coefficient_entry_point":
+            entry.get("coefficient_pct_time_per_pct_residency"),
+        "e125_two_channel_coefficient_isolated_bodies":
+            body.get("coefficient_pct_time_per_pct_residency"),
+        "e125_two_channel_instruction_pct_isolated_bodies":
+            body.get("instruction_channel_pct"),
+        "e125_two_channel_instruction_sign_ok":
+            bool(body.get("instruction_channel_sign_ok")),
+        "e125_f5_bracket_consistent_as_registered":
+            bracket["as_registered_in_f5"]["consistent"],
+        "e125_f5_bracket_consistent_in_leg_frame":
+            bracket["leg_frame_on_both_sides"]["consistent"],
+        "e125_f5_bracket_leg_frame_lower":
+            bracket["leg_frame_on_both_sides"]["lower_bound"],
+        "e125_f5_bracket_leg_frame_upper":
+            bracket["leg_frame_on_both_sides"]["upper_bound"],
+        "e125_two_channel_anchors_tested": len(tested),
+        "e125_two_channel_anchors_passed": len(passed),
+        "e125_r_gain_bandwidth_pooled": pooled["r_gain_bandwidth"],
+        "e125_r_gain_residency_pooled": pooled["r_gain_residency"],
+        "e125_partial_r_gain_bandwidth_given_residency":
+            pooled["partial_r_gain_bandwidth_given_residency"],
+        "e125_r_gain_bandwidth_width_demeaned":
+            demeaned["r_gain_bandwidth"],
+        "e125_r_gain_deleted_instructions_pooled":
+            pooled["r_gain_deleted_instructions"],
+        "e125_r2_instructions_only": instructions_r2,
+        "e125_r2_gain_from_bandwidth":
+            models["instructions_and_bandwidth"]["r2"] - instructions_r2,
+        "e125_r2_gain_from_residency":
+            models["instructions_and_residency"]["r2"] - instructions_r2,
+        "e125_bandwidth_survives_residency_control":
+            abs(pooled["partial_r_gain_bandwidth_given_residency"]) > 0.5,
+        "e125_ladder_contrasts_pure_instruction_channel":
+            audit["n_pure_instruction_channel"],
+        "e125_ladder_contrasts_total": audit["n_contrasts"],
+        "e125_worst_contaminated_class": audit["worst_contaminated"]["class"],
+        "e125_worst_contaminated_residency_pct_local":
+            audit["worst_contaminated"]["residency_pct_local"],
+        "timing_valid": False,
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+        "official_or_ranked_score": False,
+    })
+    run.finish()
+
+
 RUNS = {
     "e125-frame-axis": lambda dry=False: log_frame_axis(dry, "work"),
     "e125-frame-axis-sync": lambda dry=False: log_frame_axis(dry, "sync"),
     "e125-register-census": log_register_census,
+    "e125-residency-law": log_residency_law,
     "e125-correction": log_correction,
 }
 
