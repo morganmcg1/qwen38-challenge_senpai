@@ -112,6 +112,12 @@ ATTRIB_STRATUM_COLUMNS = [
     "m_absolute_exact_centroid_chain", "base_miss_live", "live_rate",
     "perfect_readout_acceptance_gain", "perfect_readout_pct_realised",
     "perfect_readout_pct_full_rate",
+    "miss_exact_score_tie", "miss_gap_below_1e6_relative",
+    "miss_gap_below_1e4_relative", "mean_tied_rows_at_argmax_on_miss",
+    "rows_with_a_tied_argmax", "rows_with_a_tied_argmax_rate",
+    "sketch_net_miss", "sketch_net_miss_rate", "sketch_net_miss_exact_tie",
+    "sketch_net_miss_gap_below_1e6", "sketch_net_miss_live",
+    "sketch_net_miss_acceptance_delta",
 ]
 
 ATTRIB_K_COLUMNS = [

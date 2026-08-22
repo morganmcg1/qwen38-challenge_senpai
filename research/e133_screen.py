@@ -1674,6 +1674,8 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
 
     s_miss: dict[int, np.ndarray] = {}
     s_out: dict[int, np.ndarray] = {}
+    s_comp: dict[int, mx.array] = {}
+    sk_gap = np.zeros(0)
     if sketch is not None:
         state = sketch_state(screen, sketch, f, x)
         pos_s, _, co_s, _ = probe(state["order_c"], clusters)
@@ -1688,8 +1690,13 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
             mx.eval(o)
             s_out[k] = np.asarray(H.compact_to_vocab(o))
             s_miss[k] = np.asarray(o != argmax).astype(bool)
-            del o
-        del state, pos_s, co_s, sk, top, pos_n, co_n
+            s_comp[k] = o
+        ss = mx.take_along_axis(
+            exact_scores, s_comp[SHORTLIST][:, None].astype(mx.int32),
+            axis=1)[:, 0]
+        mx.eval(ss)
+        sk_gap = s_true_np - np.asarray(ss).astype(np.float64)
+        del state, pos_s, co_s, sk, top, pos_n, co_n, ss
 
     for record in records:
         tally.size(record, b)
@@ -1734,6 +1741,22 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
                     (miss & (gap <= 1e-4 * scale)).sum())
         tally.count(record, "argmax_tied_rows", n_at_max_np[miss].sum())
         tally.count(record, "rows_with_a_tied_argmax", (n_at_max_np > 1).sum())
+        if sketch is not None:
+            # The same question for the sketch arm's INCREMENTAL loss: the arm
+            # misses a row the shipped chain gets. If those rows are also exact
+            # ties, the T0 net miss is priced far above what it can cost.
+            net = s_miss[SHORTLIST] & ~miss
+            nl = net & live
+            tally.count(record, "sk_net_miss", net.sum())
+            tally.count(record, "sk_net_miss_exact_tie",
+                        (net & (sk_gap == 0.0)).sum())
+            tally.count(record, "sk_net_miss_gap_below_1e6",
+                        (net & (sk_gap <= 1e-6 * scale)).sum())
+            tally.count(record, "sk_net_miss_live", nl.sum())
+            tally.count(record, "sk_net_miss_live_shipped_is_target",
+                        (base_vocab[nl] == reference[nl]).sum())
+            tally.count(record, "sk_net_miss_live_arm_is_target",
+                        (s_out[SHORTLIST][nl] == reference[nl]).sum())
         # What a PERFECT readout would buy, measured rather than assumed. On a
         # live missed row the shipped token was accepted exactly when it
         # matched the reference; the true argmax token would be accepted
@@ -1823,6 +1846,15 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
             "rows_with_a_tied_argmax": tally.get(s, "rows_with_a_tied_argmax"),
             "rows_with_a_tied_argmax_rate":
                 tally.rate(s, "rows_with_a_tied_argmax"),
+            "sketch_net_miss": tally.get(s, "sk_net_miss"),
+            "sketch_net_miss_rate": tally.rate(s, "sk_net_miss"),
+            "sketch_net_miss_exact_tie": tally.get(s, "sk_net_miss_exact_tie"),
+            "sketch_net_miss_gap_below_1e6":
+                tally.get(s, "sk_net_miss_gap_below_1e6"),
+            "sketch_net_miss_live": tally.get(s, "sk_net_miss_live"),
+            "sketch_net_miss_acceptance_delta":
+                (tally.get(s, "sk_net_miss_live_arm_is_target")
+                 - tally.get(s, "sk_net_miss_live_shipped_is_target")) / n,
             # The measured ranked value of a PERFECT readout on this stratum.
             "base_miss_live": live_missed,
             "live_rate": tally.rate(s, "live"),
@@ -1979,6 +2011,21 @@ def cmd_attrib(args) -> None:
               f"{r['mean_tied_rows_at_argmax_on_miss']:15.3f}"
               f"{r['rows_with_a_tied_argmax']:13d}"
               f"{r['rows_with_a_tied_argmax_rate']:10.5f}")
+
+    if out["sketch_cell"]:
+        print(f"\n=== and the INCREMENTAL loss of {out['sketch_cell']}: tie or "
+              f"real gap?")
+        print(f"{'stratum':22s}{'netMiss':>9s}{'netRate':>11s}{'gap == 0':>10s}"
+              f"{'gap<1e-6':>10s}{'netLive':>9s}{'acceptDelta':>13s}"
+              f"{'x203 pct':>10s}")
+        for s, r in out["by_stratum"].items():
+            d = r["sketch_net_miss_acceptance_delta"]
+            print(f"{s:22s}{r['sketch_net_miss']:9d}"
+                  f"{r['sketch_net_miss_rate']:11.4e}"
+                  f"{r['sketch_net_miss_exact_tie']:10d}"
+                  f"{r['sketch_net_miss_gap_below_1e6']:10d}"
+                  f"{r['sketch_net_miss_live']:9d}{d:13.4e}"
+                  f"{MISS_TO_SCORE_PCT * d:10.3f}")
 
     print("\n=== what a perfect readout is actually worth (measured, not assumed)")
     print(f"{'stratum':22s}{'m_abs':>11s}{'x203 pct':>10s}{'liveMissed':>12s}"
