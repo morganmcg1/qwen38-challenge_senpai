@@ -2153,6 +2153,40 @@ func qwen35DualRMSNormConcat(
 
 // MARK: - Attention
 
+/// Which of the proposal head's BF16 precision-island corrections to install.
+///
+/// RESEARCH-ONLY selector for E124, read once in `Qwen35TextModel.sanitize`.
+/// `all` is the default and reproduces the shipped behaviour exactly. The
+/// partial arms exist to separate the acceptance cost of the correction from
+/// the time cost of the traffic it adds: K and V together are 20.97 MB of
+/// dense BF16 per proposal step, while Q is 10.49 MB plus a `putAlong` scatter
+/// over only 1,024 of 12,288 output rows.
+enum Qwen35IslandArm: String {
+    case all
+    case none
+    case q
+    case kv
+
+    var installsQ: Bool { self == .all || self == .q }
+    var installsKV: Bool { self == .all || self == .kv }
+
+    /// `MLXFAST_QWEN_MTP_ISLAND_ARM` selects the arm. The older
+    /// `MLXFAST_QWEN_MTP_EXACT_QKV_ROWS=0` kill switch keeps its meaning and
+    /// wins, so no existing invocation changes behaviour.
+    static func fromEnvironment(_ env: [String: String]) -> Qwen35IslandArm {
+        if env["MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] == "0" { return .none }
+        guard let raw = env["MLXFAST_QWEN_MTP_ISLAND_ARM"], !raw.isEmpty else {
+            return .all
+        }
+        guard let arm = Qwen35IslandArm(rawValue: raw.lowercased()) else {
+            fatalError(
+                "MLXFAST_QWEN_MTP_ISLAND_ARM='\(raw)' is not one of "
+                    + "all, none, q, kv")
+        }
+        return arm
+    }
+}
+
 final class Qwen35Attention: Module {
     let attentionHeads: Int
     let kvHeads: Int
@@ -2462,7 +2496,8 @@ final class Qwen35Attention: Module {
     func installExactQKVRows(
         qWeight: MLXArray, qIndices: MLXArray, qOutputCount: Int,
         kWeight: MLXArray, kIndices: MLXArray, kOutputCount: Int,
-        vWeight: MLXArray, vIndices: MLXArray, vOutputCount: Int
+        vWeight: MLXArray, vIndices: MLXArray, vOutputCount: Int,
+        arm: Qwen35IslandArm = .all
     ) {
         precondition(
             qWeight.dim(0) == qIndices.dim(0)
@@ -2474,23 +2509,37 @@ final class Qwen35Attention: Module {
         {
             // Put the island rows back in output order once, so K and V need no
             // scatter at all. `argSort` of a permutation is its inverse.
-            let kNatural = take(
-                kWeight, argSort(kIndices.asType(.int32)), axis: 0)
-            let vNatural = take(
-                vWeight, argSort(vIndices.asType(.int32)), axis: 0)
-            let kvNatural = concatenated([kNatural, vNatural], axis: 0)
-                .contiguous()
-            let qOnlyWeight = qWeight.contiguous()
-            let qOnlyIndices = qIndices.asType(.int32).contiguous()
-            eval(kvNatural, qOnlyWeight, qOnlyIndices)
-
-            _exactKVDenseW = kvNatural
-            _exactKVDenseKOut = kOutputCount
-            _exactQKVWeight = qOnlyWeight
-            _exactQKVIndices = qOnlyIndices
+            // A partial arm allocates only the tensors it installs, so an
+            // uninstalled island never occupies resident memory in its leg.
+            if arm.installsKV {
+                let kNatural = take(
+                    kWeight, argSort(kIndices.asType(.int32)), axis: 0)
+                let vNatural = take(
+                    vWeight, argSort(vIndices.asType(.int32)), axis: 0)
+                let kvNatural = concatenated([kNatural, vNatural], axis: 0)
+                    .contiguous()
+                eval(kvNatural)
+                _exactKVDenseW = kvNatural
+                _exactKVDenseKOut = kOutputCount
+            }
+            if arm.installsQ {
+                let qOnlyWeight = qWeight.contiguous()
+                let qOnlyIndices = qIndices.asType(.int32).contiguous()
+                eval(qOnlyWeight, qOnlyIndices)
+                _exactQKVWeight = qOnlyWeight
+                _exactQKVIndices = qOnlyIndices
+                _exactQRowCount = qWeight.dim(0)
+            }
             _exactKVIndices = nil
-            _exactQRowCount = qWeight.dim(0)
             return
+        }
+        // Every partial arm below depends on the complete-permutation branch to
+        // separate Q from K/V. The generic scatter form fuses all three into one
+        // index list, so it cannot express `q` or `kv`.
+        guard arm == .all else {
+            fatalError(
+                "Qwen MTP island arm \(arm.rawValue) requires complete K and V "
+                    + "index permutations; this head has a partial island set")
         }
         let weight = concatenated([qWeight, kWeight, vWeight], axis: 0).contiguous()
         let qkvIndices = concatenated(
@@ -4336,13 +4385,25 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
                     "Qwen MTP precision-island artifact is incomplete; expected "
                         + "Q/K/V weight+indices tensors")
             }
-            if ProcessInfo.processInfo.environment[
-                "MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] != "0"
+            let environment = ProcessInfo.processInfo.environment
+            let arm = Qwen35IslandArm.fromEnvironment(environment)
+            if environment["MLXFAST_QWEN_MTP_ISLAND_ARM"] != nil
+                || environment["MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] != nil
             {
+                // Witness that a research leg selected the arm it believes it
+                // ran. Silent when neither variable is set, so the shipped
+                // default prints exactly what it prints today.
+                let witness = "qwen-mtp-island-arm: \(arm.rawValue)"
+                    + " installsQ=\(arm.installsQ)"
+                    + " installsKV=\(arm.installsKV)\n"
+                FileHandle.standardError.write(Data(witness.utf8))
+            }
+            if arm != .none {
                 layer.selfAttn.installExactQKVRows(
                     qWeight: qWeight, qIndices: qIndices, qOutputCount: 12_288,
                     kWeight: kWeight, kIndices: kIndices, kOutputCount: 1_024,
-                    vWeight: vWeight, vIndices: vIndices, vOutputCount: 1_024)
+                    vWeight: vWeight, vIndices: vIndices, vOutputCount: 1_024,
+                    arm: arm)
             }
         }
 
