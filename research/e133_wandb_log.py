@@ -99,6 +99,18 @@ SPECTRUM_COLUMNS = [
     "best_recall", "best_bytes_per_row",
 ]
 
+LADDER_COLUMNS = [
+    "stage_a", "bytes_per_row", "cells", "cells_passing_both",
+    "max_byte_rate_gain_pct", "min_net_miss_worst_gating", "best_arm",
+    "best_family", "best_predicted_pct", "best_predicted_pct_pooled",
+    "best_predicted_pct_raw_miss", "best_net_miss", "best_recall",
+]
+
+WHITENING_COLUMNS = [
+    "field", "better", "whitened_wins", "ties", "whitened_losses",
+    "mean_delta_whitened_minus_plain", "sign_test_p",
+]
+
 STRATUM_COLUMNS = [
     "arm", "stage_a", "stratum", "gating", "watch", "n",
     "misses_absolute", "m_absolute", "m_absolute_lo", "m_absolute_hi",
@@ -306,10 +318,50 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
                 for rank, row in rows.items()]
     flatten("query_energy",
             payload.get("query_basis", {}).get("energy_kept", {}), summary)
+    ladder = [{"stage_a": stage_a, "bytes_per_row": int(size), **row}
+              for stage_a, rows in payload.get("byte_ladder", {}).items()
+              for size, row in rows.items()]
+    # F3.2 asks for the cheapest clearing cell. The ladder shows the gain is
+    # not monotone in size, so the best-priced rung is published beside it.
+    for stage_a, rows in payload.get("byte_ladder", {}).items():
+        tag = STAGE_A_LABEL.get(stage_a, stage_a)
+        clearing = [(int(s), r) for s, r in rows.items()
+                    if r["cells_passing_both"]]
+        summary["%s/ladder/rungs" % tag] = len(rows)
+        summary["%s/ladder/rungs_with_a_clearing_cell" % tag] = len(clearing)
+        if clearing:
+            cheap_size, cheap = min(clearing, key=lambda kv: kv[0])
+            best_size, top = max(clearing,
+                                 key=lambda kv: kv[1]["best_predicted_pct"])
+            summary["%s/ladder/cheapest_bytes_per_row" % tag] = cheap_size
+            summary["%s/ladder/cheapest_arm" % tag] = cheap["best_arm"]
+            summary["%s/ladder/cheapest_predicted_pct" % tag] = \
+                cheap["best_predicted_pct"]
+            summary["%s/ladder/best_priced_bytes_per_row" % tag] = best_size
+            summary["%s/ladder/best_priced_arm" % tag] = top["best_arm"]
+            summary["%s/ladder/best_priced_predicted_pct" % tag] = \
+                top["best_predicted_pct"]
+            summary["%s/ladder/cheapest_rule_costs_pct" % tag] = \
+                top["best_predicted_pct"] - cheap["best_predicted_pct"]
+    whitening = payload.get("whitening_paired", {})
+    white_rows = [{"field": field, **row}
+                  for field, row in whitening.get("fields", {}).items()]
+    for field in ("paired_cells", "t0_verdict_flips", "t0b_verdict_flips",
+                  "best_clearing_plain_arm",
+                  "best_clearing_plain_predicted_pct",
+                  "best_clearing_whitened_arm",
+                  "best_clearing_whitened_predicted_pct"):
+        summary["whitening/%s" % field] = whitening.get(field)
+    for field, row in whitening.get("fields", {}).items():
+        for stat in ("whitened_wins", "ties", "whitened_losses",
+                     "mean_delta_whitened_minus_plain", "sign_test_p"):
+            summary["whitening/%s/%s" % (field, stat)] = row.get(stat)
     return summary, {"screen_cells": table(CELL_COLUMNS, cells),
                      "screen_by_stratum": table(STRATUM_COLUMNS, strata),
                      "screen_survival": table(SURVIVAL_COLUMNS, survival),
-                     "screen_spectrum": table(SPECTRUM_COLUMNS, spectrum)}
+                     "screen_spectrum": table(SPECTRUM_COLUMNS, spectrum),
+                     "screen_byte_ladder": table(LADDER_COLUMNS, ladder),
+                     "screen_whitening": table(WHITENING_COLUMNS, white_rows)}
 
 
 BUILDERS = {"1": corpus_summary, "2": validate_summary, "3": screen_summary}

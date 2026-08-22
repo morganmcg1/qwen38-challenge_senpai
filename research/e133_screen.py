@@ -456,6 +456,16 @@ def cmd_selftest(args) -> None:
     print(f"whitening is exact before rounding: rel_err={err:.3e} "
           f"{'ok' if good else 'MISMATCH'}")
 
+    # The sign test that decides F3.3 must reproduce the closed form
+    # `2 * P(X <= k)` for a fair coin, and must refuse to call a single event.
+    for wins, losses, want in ((0, 1, 1.0), (0, 10, 2.0 / 1024),
+                               (3, 3, 1.0), (0, 0, 1.0)):
+        got = sign_test(wins, losses)
+        good = abs(got - want) < 1e-12
+        ok &= good
+        print(f"sign_test({wins},{losses}) = {got:.6e} "
+              f"{'ok' if good else f'MISMATCH: expected {want:.6e}'}")
+
     # The byte model each cell is priced with, at the sizes F3.2 asks for.
     want = {("simhash", 1024): 136, ("simhash", 2048): 264,
             ("simhash", 4096): 520, ("simhash", 8192): 1032,
@@ -1459,15 +1469,19 @@ def fmt_opt(value, spec: str = ".4f") -> str:
 
 
 def fmt_cell(cell: dict) -> str:
-    nan = float("nan")
+    # `x or nan` would print a measured 0.0 as nan, which reads as "not
+    # measured" for exactly the cells that did best.
+    def opt(value):
+        return float("nan") if value is None else value
+
     return (f"{cell['arm']:34s}{cell['bytes_per_row']:7d}"
             f"{cell['net_miss_worst_gating']:11.3e}"
             f"{cell['m_absolute_worst_gating']:11.3e}"
             f"{cell['m_incremental_worst_gating']:11.3e}"
             f"{cell['acceptance_loss_worst_gating']:11.3e}"
             f"{cell['recall_worst_gating']:9.5f}"
-            f"{cell['net_miss_essays_bacon'] or nan:11.3e}"
-            f"{cell['net_miss_essays_bacon_holdout'] or nan:11.3e}"
+            f"{opt(cell['net_miss_essays_bacon']):11.3e}"
+            f"{opt(cell['net_miss_essays_bacon_holdout']):11.3e}"
             f"{cell['pct_head_share_7']:8.3f}"
             f"{cell['predicted_pct_gating']:8.3f}"
             f"{cell['predicted_pct_pooled']:8.3f}"
@@ -1475,6 +1489,105 @@ def fmt_cell(cell: dict) -> str:
             f"{cell['substitutions_live_gating']:7d}"
             f"{'ok' if cell['passes_t0'] else 'NO':>4s}"
             f"{'ok' if cell['passes_t0b'] else 'NO':>5s}")
+
+
+def byte_ladder(out: dict, stages) -> dict:
+    """Best clearing cell at every per-row byte size, per stage.
+
+    F3.2's kill rule asks whether ANY cell clears at ANY byte size, and its
+    selection rule asks for the cheapest one that does. Both questions are
+    answered by one table, and the table also shows the thing neither rule
+    anticipates: the byte-rate gain falls with size while the miss penalty
+    falls faster, so the best-priced size is interior, not the cheapest.
+    """
+    table: dict = {}
+    for stage_a in stages:
+        rows: dict = {}
+        sizes = sorted({c["bytes_per_row"] for c in out["cells"]
+                        if c["stage_a"] == stage_a})
+        for size in sizes:
+            arms = [c for c in out["cells"] if c["stage_a"] == stage_a
+                    and c["bytes_per_row"] == size]
+            ok = [c for c in arms if c["passes_t0"] and c["passes_t0b"]]
+            best = max(ok, key=lambda c: c["predicted_pct_gating"], default=None)
+            rows[str(size)] = {
+                "cells": len(arms),
+                "cells_passing_both": len(ok),
+                "max_byte_rate_gain_pct": max(c["pct_head_share_7"] for c in arms),
+                "min_net_miss_worst_gating":
+                    min(c["net_miss_worst_gating"] for c in arms),
+                "best_arm": best["arm"] if best else None,
+                "best_family": best["family"] if best else None,
+                "best_predicted_pct": best["predicted_pct_gating"] if best else None,
+                "best_predicted_pct_pooled":
+                    best["predicted_pct_pooled"] if best else None,
+                "best_predicted_pct_raw_miss":
+                    best["predicted_pct_raw_miss"] if best else None,
+                "best_net_miss": best["net_miss_worst_gating"] if best else None,
+                "best_recall": best["recall_worst_gating"] if best else None,
+            }
+        table[stage_a] = rows
+    return table
+
+
+def sign_test(wins: int, losses: int) -> float:
+    """Two-sided exact sign test. Ties carry no information and are dropped."""
+    n = wins + losses
+    if not n:
+        return 1.0
+    k = min(wins, losses)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / (1 << n)
+    return min(1.0, 2.0 * tail)
+
+
+def whitening_paired(out: dict) -> dict:
+    """F3.3, decided as a paired comparison instead of a leaderboard read.
+
+    `wlowrank` and `qlowrank` differ only in the int8 grid, so every cell has
+    an exact twin at the same stage, rank, survivor width and probe fraction.
+    Comparing the twins removes all of the between-cell variation and leaves
+    the quantization change on its own.
+    """
+    def key(c):
+        return (c["stage_a"], c["size"], c["survivors"], c["probe_fraction"])
+
+    plain = {key(c): c for c in out["cells"] if c["family"] == "qlowrank"}
+    white = {key(c): c for c in out["cells"] if c["family"] == "wlowrank"}
+    shared = sorted(set(plain) & set(white))
+    report: dict = {"paired_cells": len(shared), "fields": {}}
+    for field, better in (("net_miss_worst_gating", "lower"),
+                          ("m_incremental_worst_gating", "lower"),
+                          ("recall_worst_gating", "higher"),
+                          ("predicted_pct_gating", "higher")):
+        wins = ties = losses = 0
+        total = 0.0
+        for k in shared:
+            delta = white[k][field] - plain[k][field]
+            total += delta
+            if abs(delta) < 1e-12:
+                ties += 1
+            elif (delta < 0) == (better == "lower"):
+                wins += 1
+            else:
+                losses += 1
+        report["fields"][field] = {
+            "better": better, "whitened_wins": wins, "ties": ties,
+            "whitened_losses": losses,
+            "mean_delta_whitened_minus_plain": total / len(shared) if shared else None,
+            "sign_test_p": sign_test(wins, losses),
+        }
+    report["t0_verdict_flips"] = sum(
+        1 for k in shared if plain[k]["passes_t0"] != white[k]["passes_t0"])
+    report["t0b_verdict_flips"] = sum(
+        1 for k in shared if plain[k]["passes_t0b"] != white[k]["passes_t0b"])
+    for tag, side in (("plain", plain), ("whitened", white)):
+        ok = [side[k] for k in shared
+              if side[k]["passes_t0"] and side[k]["passes_t0b"]]
+        best = max(ok, key=lambda c: c["predicted_pct_gating"], default=None)
+        report[f"best_clearing_{tag}_arm"] = best["arm"] if best else None
+        report[f"best_clearing_{tag}_predicted_pct"] = (
+            best["predicted_pct_gating"] if best else None)
+    return report
 
 
 def spectrum_vs_miss(out: dict, stages) -> dict:
@@ -1647,9 +1760,10 @@ def cmd_screen(args) -> None:
         best = max(ok, key=lambda c: c["predicted_pct_gating"], default=None)
         # F3.2 (advisor error 121). The decision is not "does the best cell
         # win", it is "does ANY cell up to the byte ceiling clear the gates".
-        # The cell to implement is then the CHEAPEST clearing cell, because
-        # bytes bought above the gate buy accuracy nobody scores.
-        cheap = min(ok, key=lambda c: (c["bytes_per_row"], c["arm_stage_bytes"],
+        # The per-row byte size is the design choice; the survivor width and
+        # probe fraction are tuning, so the cheapest cell is the smallest
+        # clearing code implemented as well as that code allows.
+        cheap = min(ok, key=lambda c: (c["bytes_per_row"],
                                        -c["predicted_pct_gating"]), default=None)
         out["by_stage_a"][stage_a] = {
             "label": "full C1" if stage_a == "sketch" else "hybridA",
@@ -1688,6 +1802,38 @@ def cmd_screen(args) -> None:
         else:
             print(f"  NO cell clears T0 and T0b up to "
                   f"{out['by_stage_a'][stage_a]['byte_ceiling_searched']} B/row")
+    out["byte_ladder"] = byte_ladder(out, stages)
+    for stage_a, rows in out["byte_ladder"].items():
+        print(f"\n=== byte ladder  ({out['by_stage_a'][stage_a]['label']})")
+        print(f"{'B/row':>7s}{'cells':>7s}{'clear':>7s}{'maxGain%':>10s}"
+              f"{'minNet':>11s}{'bestPredF':>11s}{'bestPredP':>11s}"
+              f"{'bestPredR':>11s}   best clearing arm")
+        for size, row in sorted(rows.items(), key=lambda kv: int(kv[0])):
+            print(f"{size:>7s}{row['cells']:7d}{row['cells_passing_both']:7d}"
+                  f"{row['max_byte_rate_gain_pct']:10.3f}"
+                  f"{row['min_net_miss_worst_gating']:11.3e}"
+                  f"{fmt_opt(row['best_predicted_pct'], '.3f'):>11s}"
+                  f"{fmt_opt(row['best_predicted_pct_pooled'], '.3f'):>11s}"
+                  f"{fmt_opt(row['best_predicted_pct_raw_miss'], '.3f'):>11s}"
+                  f"   {row['best_arm']}")
+    # F3.3. The whitened grid is decided on its 252 exact twins, not on where
+    # either family happens to land in the leaderboard.
+    out["whitening_paired"] = whitening_paired(out)
+    wp = out["whitening_paired"]
+    print(f"\n=== F3.3 whitening, paired on {wp['paired_cells']} twin cells")
+    print(f"{'field':34s}{'wins':>6s}{'ties':>6s}{'losses':>8s}"
+          f"{'meanDelta':>13s}{'signTestP':>12s}")
+    for field, r in wp["fields"].items():
+        print(f"{field:34s}{r['whitened_wins']:6d}{r['ties']:6d}"
+              f"{r['whitened_losses']:8d}"
+              f"{r['mean_delta_whitened_minus_plain']:13.4e}"
+              f"{r['sign_test_p']:12.3e}")
+    print(f"  T0 verdict flips {wp['t0_verdict_flips']}, "
+          f"T0b verdict flips {wp['t0b_verdict_flips']}")
+    print(f"  best clearing plain    {wp['best_clearing_plain_arm']} "
+          f"{wp['best_clearing_plain_predicted_pct']:.3f}")
+    print(f"  best clearing whitened {wp['best_clearing_whitened_arm']} "
+          f"{wp['best_clearing_whitened_predicted_pct']:.3f}")
     # F3.4. The held-out query energy at each rank, beside the empirical net
     # miss the same rank actually achieves. If captured energy predicted the
     # miss, the two columns would move together.
@@ -1720,8 +1866,9 @@ def slim(out: dict, top: int) -> dict:
         keep.update((block["best_arm"], block["cheapest_arm"]))
         arms = [c for c in out["cells"] if c["stage_a"] == stage]
         keep.update(c["arm"] for c in arms[:top])
-    for rows in out.get("spectrum_vs_miss", {}).values():
-        keep.update(row["best_arm"] for row in rows.values())
+    for block in ("spectrum_vs_miss", "byte_ladder"):
+        for rows in out.get(block, {}).values():
+            keep.update(row["best_arm"] for row in rows.values())
     trimmed = [c if c["arm"] in keep
                else {k: v for k, v in c.items() if k != "by_stratum"}
                for c in out["cells"]]
