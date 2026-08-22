@@ -367,40 +367,95 @@ def log_cost_model() -> None:
     )
 
     prices = wandb.Table(columns=[
-        "class", "pct_per_instruction", "sem", "r2_median", "cells"])
+        "class", "pct_per_instruction", "sem", "r2_median", "cells",
+        "us_per_instruction", "scaffold_pct_cancelled",
+        "biased_three_point_slope"])
     for klass, c in model["classes"].items():
         prices.add_data(klass, c["pct_per_instruction_median"], c["sem"],
-                        c["r2_median"], c["cells"])
+                        c["r2_median"], c["cells"],
+                        c.get("us_per_instruction_median"),
+                        c.get("scaffold_pct_median"),
+                        c.get("slope_three_point_median"))
+
+    # The single biggest finding of the ladder is that the price is not
+    # constant in NA, so it gets its own table rather than a summary scalar.
+    per_width = wandb.Table(columns=[
+        "class", "na", "pct_per_instruction", "us_per_instruction",
+        "r2_median", "cells"])
+    for klass, c in model["classes"].items():
+        for na, row in sorted(c.get("per_na", {}).items()):
+            per_width.add_data(klass, int(na),
+                               row.get("pct_per_instruction_median"),
+                               row.get("us_per_instruction_median"),
+                               row.get("r2_median"), row.get("cells"))
 
     percell = wandb.Table(columns=["class", "shape", "na", "slope", "r2"])
     for klass, fits in model.get("per_cell", {}).items():
         for f in fits:
             percell.add_data(klass, f["shape"], f["m"], f["slope"], f["r2"])
 
+    # The prediction is made per width, because the price is per width. A
+    # width with no measured price for a class the arm moves is dropped
+    # rather than predicted from the pooled price, and `widths_dropped`
+    # plus `standing_weight_covered` say exactly how much of the standing
+    # weight the prediction is allowed to speak for.
     pred = wandb.Table(columns=[
+        "arm", "na", "delta_device_loads", "delta_shuffles",
+        "predicted_pct_faster", "measured_pct_faster", "residual_pp",
+        "shapes"])
+    coverage = wandb.Table(columns=[
         "arm", "delta_device_loads", "delta_shuffles",
-        "predicted_pct_faster", "measured_pct_faster", "residual_pp"])
-    for arm, p in model.get("screen_prediction", {}).items():
-        pred.add_data(arm, p["delta_device_loads"], p["delta_shuffles"],
-                      p["predicted_pct_faster"], p["measured_pct_faster"],
-                      p["measured_pct_faster"] - p["predicted_pct_faster"])
+        "weighted_predicted_over_covered", "weighted_measured_over_covered",
+        "weighted_residual_pp_over_covered", "standing_weight_covered",
+        "widths_ok", "widths_dropped", "complete_over_standing_weights"])
+    for arm, p in sorted(model.get("screen_prediction", {}).items()):
+        for na, row in sorted(p.get("per_na", {}).items()):
+            if row.get("status") != "ok":
+                continue
+            pred.add_data(arm, int(na), p["delta_device_loads"],
+                          p["delta_shuffles"], row["predicted_pct_faster"],
+                          row["measured_pct_faster"], row["residual_pct"],
+                          row["shapes"])
+        wm = p.get("weighted_measured_over_covered")
+        wp = p.get("weighted_predicted_over_covered")
+        coverage.add_data(
+            arm, p["delta_device_loads"], p["delta_shuffles"], wp, wm,
+            (wm - wp) if (wm is not None and wp is not None) else None,
+            p.get("standing_weight_covered"),
+            ",".join(str(w) for w in p.get("widths_ok", [])),
+            ",".join(str(w) for w in p.get("widths_dropped", [])),
+            p.get("complete_over_standing_weights"))
 
-    run.log({"instruction_price": prices, "price_per_cell": percell,
-             "screen_prediction": pred})
+    run.log({"instruction_price": prices, "price_per_width": per_width,
+             "price_per_cell": percell, "screen_prediction": pred,
+             "screen_prediction_coverage": coverage})
 
     classes = model["classes"]
     updates: dict[str, object] = {}
     for klass in ("ld", "alu", "shuf"):
         if klass in classes:
+            c = classes[klass]
             updates["pct_per_instruction_" + klass] = \
-                classes[klass]["pct_per_instruction_median"]
-            updates["r2_" + klass] = classes[klass]["r2_median"]
+                c["pct_per_instruction_median"]
+            updates["sem_" + klass] = c["sem"]
+            updates["r2_" + klass] = c["r2_median"]
+            updates["us_per_instruction_" + klass] = \
+                c.get("us_per_instruction_median")
+            # The three-point slope uses the scaffolded low anchor, so the
+            # gap between it and the headline slope is the scaffolding bias
+            # that the scaffold-cancelled fit removes.
+            updates["biased_three_point_slope_" + klass] = \
+                c.get("slope_three_point_median")
     ilp = model.get("ilp_control")
     if ilp:
         updates["ilp_two_chain_pct_per_instruction"] = \
             ilp["two_chain_pct_per_instruction"]
         updates["ilp_four_chain_pct_per_instruction"] = \
             ilp["four_chain_pct_per_instruction"]
+        # Four independent chains cost slightly MORE than two, so the ALU
+        # price is issue throughput and not dependency latency.
+        updates["ilp_four_minus_two_pct"] = ilp["four_minus_two_pct"]
+        updates["ilp_reads"] = ilp["reads"]
     if "shuf" in classes and "ld" in classes:
         updates["shuffle_over_load_price_ratio"] = (
             classes["shuf"]["pct_per_instruction_median"] /
@@ -483,12 +538,22 @@ def log_rung2() -> None:
 
     run.log({"finding53_decomposition": decomp, "occupancy_budget": occ})
 
+    # The best exchange arm spills 160 B at NA=5 and loses 31 % there, which
+    # drags the standing average below the bar on its own. Both readings are
+    # published: the honest all-width one that decides the bar, and the
+    # spill-excluded one with the weight it actually covers, so a later
+    # experiment can see the mechanism is worth about +1.1 % where it fits.
     updates: dict[str, object] = {
         "rung2_best_exact_arm": verdict.get("best_arm"),
         "rung2_best_exact_round_weighted_pct": verdict.get("standing_pct"),
         "rung2_bar_pct": verdict.get("bar_pct"),
         "rung2_bar_cleared": verdict.get("cleared"),
         "rung2_counts_in_primary_metric": verdict.get("in_primary_metric"),
+        "rung2_standing_pct_excluding_local_spill":
+            verdict.get("standing_pct_excluding_local_spill"),
+        "rung2_excluding_local_spill_coverage":
+            verdict.get("excluding_local_spill_coverage"),
+        "rung2_dropped_widths": json.dumps(verdict.get("dropped_widths", {})),
     }
     for r in d["rows"]:
         for key in ("mechanism_ceiling_pct", "registered_ceiling_pct",
@@ -555,20 +620,52 @@ def log_hoist() -> None:
                         else d["capture_of_nosums_na"].get(na),
                         (h - c) if c is not None else None)
 
-    fill = wandb.Table(columns=["shape", "table_bytes", "fill_us", "max_m"])
+    # The per-width numbers above deliberately exclude the cost of building
+    # the table. Charging the whole fill to a single dispatch is the harshest
+    # possible accounting and it is what decides the axis, so it is logged
+    # next to the gross number rather than in prose.
+    absu = doc.get("absolute_us", {})
+    weights = {int(k): v for k, v in doc.get("standing_weights", {}).items()}
+    fill = wandb.Table(columns=[
+        "shape", "table_bytes", "fill_us", "max_m", "na",
+        "a_base_us", "sumshoist_us", "gross_pct_faster",
+        "net_pct_faster_including_fill"])
+    net_weighted: dict[str, float] = {}
     for row in doc.get("sums_table", []):
-        fill.add_data(row["shape"], row["table_bytes"], row["fill_us"],
-                      row["max_m"])
+        shape = row["shape"]
+        acc, wsum = 0.0, 0.0
+        for na in sorted(weights):
+            cell = absu.get("%s|NA%d" % (shape, na))
+            if not cell or "a_base" not in cell or "x_sumshoist" not in cell:
+                continue
+            base, hoisted = cell["a_base"], cell["x_sumshoist"]
+            gross = (base - hoisted) / base * 100.0
+            net = (base - (hoisted + row["fill_us"])) / base * 100.0
+            fill.add_data(shape, row["table_bytes"], row["fill_us"],
+                          row["max_m"], na, base, hoisted, gross, net)
+            acc += weights[na] * net
+            wsum += weights[na]
+        if wsum:
+            net_weighted[shape] = acc / wsum
 
     run.log({"sumshoist_per_width": per_na, "table_production_cost": fill})
-    run.summary.update({
+    updates: dict[str, object] = {
         "sumshoist_round_weighted_pct": d["standing_pct"],
         "n_nosums_ceiling_round_weighted_pct": d["nosums_standing_pct"],
         "capture_of_ceiling_weighted": d["capture_of_nosums_weighted"],
         "shippable_from_research": d["shippable_from_research"],
         "excludes_table_production": d["excludes_table_production"],
         "counts_in_primary_metric": False,
-    })
+    }
+    for shape, val in net_weighted.items():
+        updates["net_round_weighted_pct_including_fill|" + shape] = val
+    # One fill is one full command-buffer round trip, so these net numbers
+    # are an upper bound on the true production cost, and they are also the
+    # cost of building the table once for one dispatch. A table shared over
+    # many matvecs with the same x and K amortises it.
+    updates["fill_accounting"] = (
+        "whole fill charged to one dispatch; upper bound on true cost")
+    run.summary.update(updates)
     run.finish()
 
 
