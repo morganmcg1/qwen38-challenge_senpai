@@ -2074,6 +2074,19 @@ public enum Qwen35CustomQMV {
     /// `ceil(m / ipg)`, and the two disagree at every routed width.
     public nonisolated(unsafe) static var pipelineColumns: [Int: Int] = [:]
 
+    /// Leaf count and probe count the derived-cluster table actually built, so
+    /// a leg witnesses its own compiled probe fraction instead of trusting the
+    /// source tree the worker was built from.
+    public nonisolated(unsafe) static var pipelineProbeLeaves = 0
+    public nonisolated(unsafe) static var pipelineProbeCount = 0
+
+    static func noteProbe(leaves: Int, probes: Int) {
+        guard pipelineLogPath != nil else { return }
+        pipelineProbeLeaves = leaves
+        pipelineProbeCount = probes
+        flushPipelineLog()
+    }
+
     static func noteLaunch(width: Int, columns: Int) {
         guard pipelineLogPath != nil else { return }
         if pipelineColumns.updateValue(columns, forKey: width) != columns {
@@ -2141,7 +2154,10 @@ public enum Qwen35CustomQMV {
               },
               "columns_by_width": {
             \(columns)
-              }
+              },
+              "probe_fraction": \(qwen35DerivedClusterProbeFraction),
+              "probe_leaves": \(pipelineProbeLeaves),
+              "probe_count": \(pipelineProbeCount)
             }
 
             """
@@ -6020,6 +6036,7 @@ extension Qwen35TextModel: MTPCapable {
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
         let probes = max(
             1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
+        Qwen35CustomQMV.noteProbe(leaves: leaves, probes: probes)
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
         let clusterScales = MLX.take(coarseScales, order, axis: 0)
