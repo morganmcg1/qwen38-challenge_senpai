@@ -48036,3 +48036,511 @@ scarletbright; `cefa0ac6` jonathan308; `1486f911` Amal-David.
 
 New tool: `_advisor_scratch/roundcurve.py`, the ranked round-cost curve
 reconstructor.
+
+## 290 — the crown holds by 0.011 %, our own archive ate four receipted mechanisms, and the warm-refill is a residency trap
+
+Advisor round after merging PR #128 (thorfinn E129) and PR #133 (askeladd E133).
+Base moved `b8a68333` -> `ea546d1f` -> **`35d8cf58`**. Campaign contract base for
+`submit-official.sh` is unchanged at `770a3ff2`.
+
+### 290.1 The crown holds, and the margin is 0.011 % of published median
+
+Board at 17:15Z. `623e77af` (ours) promoted at **3.52085227003175**, still the
+top of the public board. Eight rows validating, none of them ours, so the
+in-flight submission slot is free and alphonse holds it.
+
+The row that nearly took it:
+
+```
+e44c0ba5  vibecodooor  3.5204753205  rejected
+  "E122b: measured M=2 sum-table route below the bandwidth-saturation cliff"
+```
+
+`_advisor_scratch/candmean.py 623e77af e44c0ba5`. Identical
+`effective_mean_draft_len` and identical `non_drafting_round_count` on all eight
+prompts, so this is a clean same-schedule candidate-leg comparison:
+
+```
+prompt        cand d%  serial d%     raw d%
+beagle        +0.1241    -0.1187    -0.2424
+medicine      +0.3552    -0.6354    -0.9872
+essays        +0.0945    +0.2966    +0.2019
+botany        +0.0714    -0.0194    -0.0908
+republic      +0.1756    +0.0658    -0.1096
+plutarch      +0.0164    +0.2772    +0.2608
+drama         -0.3233    +0.0795    +0.4041
+travel        -0.1254    +0.1924    +0.3182
+
+candidate 8-prompt mean  +0.0486 %  sd 0.2029  se 0.0717  z +0.68
+candidate F83-weighted   +0.1671 %
+published median delta   -0.0107 %
+```
+
+**We are genuinely faster: +0.1671 % on the F83-weighted candidate leg.** The
+published median reported only 0.0107 % of that. This is the sharpest live
+demonstration of FINDING 165 to date — the published median is a lossy,
+high-variance projection of the thing we actually control. Keep pricing on the
+candidate vector.
+
+### 290.2 FINDING 170 — the shipped draft-readout base miss is 98 % an exact bfloat16 tie
+
+Askeladd E133 rung 4, W&B run `blldv9cd`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/blldv9cd),
+artifact `research/e133-attrib.json`, 11,244 samples, offline, zero GPU.
+
+**82 of the 84 missed rows are an exact bf16 tie.** The row the shipped chain
+returns has the identical exact affine-4 score as the reference argmax.
+
+```
+stratum        n     m_absolute   P    C    R          R_rank R_tie R_rerank  gap==0  tied  rate
+beagle       5,079  8.6631e-03  0.0  0.0  8.6631e-03     1     1      42       42      76   1.496 %
+min_carriers 4,592  6.7509e-03  0.0  0.0  6.7509e-03     0     0      31       31      51   1.111 %
+zero_weight  1,573  5.7216e-03  0.0  0.0  5.7216e-03     0     0       9        9      25   1.589 %
+essays_bacon   569  8.7873e-03  0.0  0.0  8.7873e-03     0     0       5        5      15   2.636 %
+```
+
+`probe_hit_rate_affine2 = 1.000000` on every stratum and on all 11,244 samples.
+`exact_score_dtype = mlx.core.bfloat16`. With 8 mantissa bits over 98,330 rows,
+1.1–2.6 % of positions carry a two-way tie at the maximum, and the chain loses
+about 55 % of them. Neither probing nor clustering contributes: P and C are
+exactly 0.0 on every stratum.
+
+**The F4.1 reconciliation is exact.** E87's strict-rank statistic replayed on the
+E133 corpus gives beagle `1.9689e-4` (one row in 5,079) against the ledger's
+`2.266e-4` at lines 26205-26212, and 0.0 on the other three strata. Both numbers
+are correct. They measure different quantities. The 44x ratio between them is the
+tie population and nothing else.
+
+Two consequences, both measured rather than argued:
+
+- `m_absolute` at probe fraction `p` in {0.25, 0.35, 0.50, 0.75, 1.00} is **flat
+  to the last digit**. Probing everything costs 0.351 pp of bytes and recovers
+  `0.000e+00`.
+- `m_absolute(K)`: K = 64 recovers two beagle rows and is then flat forever.
+  Worst-gating recovery is `0.0` at every K from 32 to 2,048, with net pp going
+  −0.002 to −0.126. **The argmax is K = 32, the shipped value.**
+
+**Closed by FINDING 170:**
+
+- The `qwen35Top32K` widening at `Qwen35.swift:3799` is **dead**. Ledger 289.6's
+  "+0.61 %, one integer" is withdrawn.
+- The probe fraction above 0.25 is **dead as an accuracy lever on the exact
+  chain**. Ledger 289.11's +1.40 % compound is withdrawn.
+- Ledger 289.5's "1.76 % of ranked score" accuracy debt is **withdrawn**.
+
+The probe fraction stays alive for the *sketch*, because stage A there is
+approximate: `p 0.25 -> 0.35` costs 0.056 pp of bytes and buys 0.177 pp of
+acceptance, net **+0.120 pp**. That is why the selected C1 cell moved to
+`p = 0.35`.
+
+### 290.3 CAMPAIGN RULE 107 and ADVISOR ERROR 127
+
+> **RULE 107.** A readout or shortlist change is priced on its measured realised
+> acceptance delta, never on a miss rate. A miss rate may gate, and when it does
+> it must declare what fraction of it is a tie.
+
+**ADVISOR ERROR 127.** My error-125 ruling — "price on `m_absolute`, the absolute
+miss against the exact argmax, not the incremental miss" — was right as a
+*diagnostic* requirement and wrong as a *pricing* rule. It forced the measurement
+that produced FINDING 170, which is why the error was productive. But the proxy is
+44x wrong on the shipped chain because it counts ties. Zero of the eleven
+arm-only misses is a tie; essentially every base miss is. **The base error and
+the arm error are different kinds of error and must never share a denominator.**
+
+One number is still owed. Askeladd states "a perfect readout has a measured
+realised acceptance value of zero or below on all four strata" without an error
+bar, and two closed levers rest on it. Per-stratum standard error and the
+smallest acceptance delta resolvable at 2σ are requested.
+
+### 290.4 Askeladd E133 merged — the C1 sketch selection
+
+PR #133 merged at **`35d8cf58`**. `e133_best_cell_ranked_pct` 0.0 ->
+**+0.6782284211652958**. W&B runs `7ppyblde`, `y8bs5w33`, `qn4euyez`, `nl31frlw`,
+`btb5bzz3`, `blldv9cd`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7ppyblde
+and siblings). Research files only, 26 files, zero submitted-surface bytes. The
+implementer's brief is `research/e133-result.md`, 266 lines.
+
+**Selected cell `qlowrank256-N4096-p0.35`**: query-fitted PCA basis, int8 codes,
+no whitening, r = 256, N = 4096, p = 0.35, full C1 with both stages sketched,
+cross-fit.
+
+```
+per row                       264 B  = 256 int8 codes + fp32 norm + fp32 row.mu
+sketch A  12,292 centroid rows      3,245,088 B
+sketch B  34,424 probed rows        9,087,936 B
+exact C   4,096 survivors affine-2  6,553,600 B
+projection R[5120,256] bf16         2,621,440 B
+mu[5120] bf16                          10,240 B
+affine-4 rerank, 32 rows               92,160 B
+stage total under C1               21,610,464 B
+stage total today                  59,093,760 B
+removed per draft step             37,483,296 B = 11.58 % of the 323.59 MB step
+```
+
+Resident cost **31.84 MB = 47.4 % of today's 64 MiB slack**. Predicted ranked
+**+0.678 %** absolute price, +0.767 % F1.5 incremental, +0.714 % pooled,
++0.590 % raw-miss bound. Worst-domain net miss `6.5331e-04`, 4.6x inside the
+T0 gate of 3.0e-3; recall worst gating 0.99956 against T0b = 0.997.
+
+Sweep: 2,156 cells, 11,244 samples, 22 seeds, 656.8 s. 893 cells clear both
+gates. The `exact0` control ran 77 cells with 0 anomalies.
+
+Family order confirmed: query-fitted int8 low-rank > basis-free int8 low-rank >
+SimHash > sign codes. The query fit is worth **+0.253 pp** over the best
+basis-free cell. **Whitening loses on 462 paired twins** — 66 win, 259 tie, 137
+loss, mean −0.0266 pp, sign test p = 6.98e-07. Advisor error 124 confirmed.
+
+Caveat not buried: on the 569-sample watch stratum `essays_bacon` the cross-fit
+net miss is 3.5149e-03, above T0; the holdout is 1.7575e-03 with recall 1.00000.
+That is a family property at 264 B/row, not a probe-move artefact.
+
+Ordered fallbacks are recorded in `research/e133-result.md`. The largest
+unmeasured risk is named honestly: the dispatch budget goes 7 -> 8 at a survivor
+width 16x D5's sizing.
+
+**New unowned lever from his follow-up 2.** The exact affine-4 rerank emits
+bfloat16. Whether an fp32 accumulation in `qwen35DraftSelectedAffine4RerankKernel`
+separates the FINDING 170 ties and changes acceptance is untested. It touches 32
+rows per step, so it costs almost nothing in bytes. Queued, not assigned: Rule 92
+makes any accumulation-order change its own experiment.
+
+### 290.5 Thorfinn E129 merged — the table is unconditional and the nibble axis is closed
+
+PR #128 merged at **`ea546d1f`**. `yukon/official_score_median` 3.51270586 ->
+**3.52085227003175**. W&B runs `7i7fd526`, `yuijkhna`, `ezqgp5lg`, `1n8zqhkj`,
+`cym8xztn`, `51riqfwv`. 57 files, +18,359 / −75.
+
+**F25 item 2 — the width table is unconditional.** `Qwen35.swift:1811` sets
+`compiledDefault = Table.onePass67`; `:1873` (`MLX_E120_QMV_TABLE`) is the only
+override; a grep across the region for
+`g16s|g17s|applegpu|supportsFamily|MTLGPUFamily|deviceName|gpuFamily|architecture`
+returns one prose comment at `:1429`. **Every g16s host now selects `{6:6,7:7}`.**
+
+```
+NA  g17s regs  g17s spill  g16s regs  g16s spill  g16s state
+5      98          0          96         0        at ceiling
+6     105          0          96         0        CLAMPED, NO SPILL
+7     118          0          96        32 B      clamped and spilling
+```
+
+g16s at NA=6 runs a different, more tightly clamped kernel at higher residency
+(`floor(3072/96) = 32`) than the ranked runner (`floor(3968/105) = 37`).
+**Consequence, communicated to alphonse and edward: every absolute candidate
+seconds-per-token number measured on a student Mac before this merge is void.**
+
+**F25 item 4 — no W1/W2/A1 form crosses a residency step on g17s.** Ranked
+F47-weighted occupancy gain **0.0000 %**. His caveat is accepted in full: W1 and
+A1 compile to byte-identical machine text as shipped at all five routed cells, and
+W2 changes text only at NA=5 (+2 B) and at NA=7 on g16s (−10 B). **The family had
+no shot at falsifying FINDING 169. The model survives untested, not victorious.**
+
+Transfer trap: on g16s, W2 and W1+W2+A1 reach 93 registers at NA=6 and **do**
+cross, gaining a weighted 1.0264 %, against 0.0000 % ranked. `transfer_hazard:
+true`. **The nibble load-width axis is closed.**
+
+Rule 101 fired again, on my own instruction this time. `Table.witness` is a total
+switch, so the worker string table carries all four literals and the
+`e120_width_plan --require` string could not fail. The load-bearing proof is the
+runtime pipeline set: `qmv_sums_na6_v2` and `qmv_sums_na7_v2` cannot exist under
+the shipped table.
+
+Dose-response is real and he retracts his first reading. Groups fixed a priori,
+candidate contrast −0.4506 pp, exact permutation p = 0.0143; against an empirical
+null from 400 random serial-leg pairs (sd 0.2219 pp), two-sided p = 0.0425.
+
+Where the score moved: beagle is 88.5 % of the +0.00814641 delta, and 65.2 % of
+beagle's move is the **serial** leg, inside the measured 0.42 % serial noise.
+Serial mean −0.0014 %, a pure null, which validates the instrument.
+
+Unresolved reconciliation: he reads `wide<5>` at 98 registers and `wide<3>` at 94;
+the carried F130.2 table says 102 and 90. Agreement is exact at NA=6 and NA=7.
+**Ruling: his census is authoritative for anything he prices.**
+
+### 290.6 FINDING 171 — the launched threadgroup count is the only quantity that did not move
+
+Verified at source on the PR #128 head.
+
+```swift
+// Qwen35.swift:1956-1960
+static func launch(m: Int, n: Int) -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int)) {
+    let entry = plan(m: m)
+    let columns = grid == .tight ? (m + entry.ipg - 1) / entry.ipg : m
+    return ((columns * 32, n / entry.rps, 1), (32, 2, 1))
+}
+// :1948-1955
+public enum Grid: String, Sendable { case wide; case tight }
+public static let grid: Grid = { env "MLX_E120_QMV_GRID" ?? .wide }()
+```
+
+```c
+// :1546-1550, inside qwen_e120_qmv_m
+const int first_m = group_x * IPG;
+if (first_m >= M) { return; }
+// :1600, the entry point
+const int qmv_gx = int(qmv_tid.x);
+```
+
+`grid` defaults to `.wide`, so **the shipped and promoted build launches `m`
+columns at every routed width while only `ceil(m/ipg)` of them ever load a
+weight.** `qmv_gx` is the raw launch index, so tightening the grid is bit-exact by
+construction.
+
+Thorfinn's three-lever test at widths 6 and 7 moved issue −46.4 %, occupancy
+−15.7 % and weight passes −50.0 %. Fitting `T ~ issue^a x occupancy^-b` gives
+`a = +0.0065` and `b = −0.0096`. **Both are about zero.**
+
+| lever | change at M=6 | measured effect on ranked round time |
+|---|--:|--:|
+| instruction issue per output element | −33.5 % | about 0 |
+| weight passes over the matrix | −50.0 % | about 0 |
+| resident simdgroups | −15.7 % | about 0 |
+| **launched threadgroups** | **0.0 %** | **not yet measured** |
+
+F83-weighted launched columns: wide **6.9985** against tight **1.3192**, so tight
+launches **5.30x fewer threadgroups for identical bit-exact output**.
+
+Threadgroup accounting, advisor-derived, per launched column, over the seven
+scored linear shapes at `tg per column = n/rps/2 = n/8`:
+
+```
+gdn.in_proj  5120->16480  x48   98,880
+fa.qkv       5120->14336  x16   28,672
+mlp.gate_up  5120->34816  x64  278,528
+lm_head      5120->248320 x1    31,040
+gdn.out_proj 6144->5120   x48   30,720
+fa.o_proj    6144->5120   x16   10,240
+mlp.down    17408->5120   x64   40,960
+TOTAL 257 dispatches                519,040 threadgroups per column
+```
+
+Under `onePass67`:
+
+```
+M  ipg  wide cols  working  empty  empty threadgroups per round
+3   3      3         1        2      1,038,080
+4   4      4         1        3      1,557,120
+5   5      5         1        4      2,076,160
+6   6      6         1        5      2,595,200
+7   7      7         1        6      3,114,240
+8   4      8         2        6      3,114,240
+```
+
+For the empties to be worth 1 % of the 57,931 µs width-6 round they must cost
+579 µs across 2,595,200 launches, which is 0.22 ns each. Honest advisor bracket:
+**+0.2 % to +1.5 % of the candidate leg.** If the measured effect is larger, the
+mechanism is threadgroup resource allocation — an empty group still has its full
+105-register footprint allocated and freed — and that single mechanism would
+explain all four rows of the table above at once.
+
+**The collinearity argument.** On M = 3, 4, 5 the table sets `ipg = m`, so exactly
+one column works and `m − 1` return. Launched columns and total work are both
+linear in `m` there, so the F119 slope of 3,388.5 µs per unit width fits either.
+`.tight` is the only intervention that breaks the collinearity, because it holds
+columns at 1 across M = 3…7 while work still rises.
+
+**The serial leg runs at M = 1, falls to `default: break` and never reaches Route
+B, so the local serial-to-MTP ratio is a valid instrument for this change.** That
+is rare and it is why E135 is worth a dedicated student.
+
+FINDING 169's occupancy-limited latency model is now in doubt. It predicted that
+one register at width 6 is worth about +0.44 % of the candidate leg. Thorfinn's
+fit says occupancy explains nothing. **FINDING 171 is the leading model and
+FINDING 169 is retained only as the alternative it must beat.**
+
+### 290.7 🔴 FINDING 172 — the warm-refill and the wired slack are the same lever, pulled in opposite directions
+
+Rival submission `775a26e3` (noskillcoding, "Warm-phase allocator
+pre-materialization: land round-1 buffer-pool materialization before timing")
+resolved **rejected at 3.31488986** against his own promoted `48423d09` at
+3.51845338. Same schedule on all eight prompts.
+
+```
+prompt        cand d%  serial d%     draftlen A/B   nondraft A/B
+beagle        +5.6133    -0.1053   4.3818/4.3818        0/0
+medicine      +5.7209    -0.1291   5.2556/5.2556        0/0
+essays        +6.1823    -0.3214   5.0870/5.0870        0/0
+botany        +6.2282    +0.2095   6.1481/6.1481        0/0
+republic      +5.4694    +0.2064   4.9892/4.9892        0/0
+drama         +5.1706    -0.0366   2.2976/2.2976        0/0
+travel        +5.8316    +0.0015   2.6557/2.6557        0/0
+plutarch      +0.0864    -0.0060   0.1540/0.1540      449/449
+
+candidate 8-prompt mean  +5.0378 %   sd 2.0310   se 0.7181   z +7.02
+candidate F83-weighted   +5.2838 %
+serial    8-prompt mean  -0.0226 %   sd 0.1752            <- pure null
+```
+
+FINDING 166's honest bracket for the warm-refill was **+0.3 % to +0.9 % benefit**.
+The measured downside on one plausible implementation is **an order of magnitude
+larger than the modelled upside**.
+
+Converted to a per-drafting-round offset with the 290.3-era ranked round-cost
+curve:
+
+```
+prompt      R    round us    d%       us per drafting round
+beagle    110      52453   +5.6133          2944
+medicine   90      57931   +5.7209          3314
+essays     92      57383   +6.1823          3548
+botany     81      63792   +6.2282          3973
+republic   93      56184   +5.4694          3073
+drama     252      38843   +5.1706          2008
+travel    212      40251   +5.8316          2347
+                          mean of the seven  3030
+```
+
+**3,030 µs per drafting round.** FINDING 152 measured the three ranked runner
+states as per-drafting-round candidate offsets of −2.7 µs, 928.1 µs and
+**3,256 ± 598 µs**. He landed in cluster 2. FINDING 152 also established that the
+state shows only in the candidate leg — candidate ICC +0.8242, serial ICC
+−0.1038 — so **a flat serial leg is exactly what a state change looks like, not
+evidence against one**.
+
+The mechanism follows from FINDING 163, which we measured at source. There is
+exactly one `WiredMemoryTicket`; `set_wired_limit` is called once and never
+shrunk; every buffer lands in `unwired_set_`; `resize()` admits greedily until
+full, skips oversized entries and **never evicts**. `Memory.clearCache()` at
+`Qwen36MTPBlockSession.swift:235`, inside `wireResidentWeightsIfEnabled()`,
+empties the pool immediately before wiring. **That call is load-bearing**: it
+exists so the ticket admits weights rather than warm scratch. The slack above the
+sized tower is `wiredZHDefaultSlackMB = 64` at `:212-213`.
+
+A warm-phase allocation that runs after wiring lands in the ticket
+first-come-first-served, before decode has allocated anything, and consumes the
+slack. The post-sizing KV, GDN and scratch state decode later needs then finds the
+ticket full, is never admitted because nothing is ever evicted, and every drafting
+round pays DRAM for it. That predicts the observed shape exactly: a tax
+proportional to drafting work and near zero on the one prompt that barely drafts.
+
+**Alphonse's E130 line is the same lever from the other side.** He measured
+64 -> 512 MiB as about −0.20 % of candidate time purely by admitting post-sizing
+state. The receipt above prices the spend side at +5.3 %.
+
+Operational consequences, issued this round:
+
+- **Plutarch is the discriminating control for this whole class of change.** It
+  carries exactly 0.0000 F83 weight, so it is free to run. A genuine round-1
+  first-touch deletion is a fixed millisecond saving spread over the leg and must
+  therefore show a **larger** percentage on plutarch's 487 short rounds. A
+  residency eviction shows **near zero** on plutarch.
+- Any warm arm must report `wired_count`, `wired_bytes`, `unwired_bytes` and the
+  page tax at the start of decode, for base and arm, **before** any timing leg.
+  If `unwired_bytes` rises above zero the arm is already dead.
+- Alphonse now owes one extra column: the largest additional resident block, in
+  MB, that each ladder rung can absorb with `unwired_bytes` still exactly 0. That
+  column prices askeladd's 31.84 MB sketch and every future resident consumer at
+  once.
+
+The two zero-allocation warm mechanisms — the deleted normed-verify warm and E020
+— carry none of this risk and are now ordered ahead of the refill.
+
+### 290.8 🔴 ADVISOR ERROR 128 — I recorded three deleted frontier mechanisms and did not act on them
+
+Two rival accounts published audits of our own promoted tree `60d5b34a` today.
+Because a Yukon archive replaces every required editable path, promoting our tree
+deleted four mechanisms that other accounts had previously promoted. Three
+submissions are in flight right now restoring them **onto our tree**:
+`d60a4571` (noskillcoding), `dacf7005` (newjordan), `98b118fe` (nagaral).
+
+**Ledger 287.2 recorded three of these four as missing from our tree and I neither
+assigned them nor added a pre-submit gate.** Two crowns later they are still
+missing and rivals are farming them. That is the error.
+
+All four deletions confirmed at source on `35d8cf58` this session:
+
+- `Qwen36MTPBlockSession.swift:541` and `:567` — `for qL in [1, 5, 4]`.
+- `:421` warm width loop calls `model.callWithHidden`; `:1448` scored verify calls
+  `model.callWithHiddenAndNormed`.
+- `:1759 restoreAfterPrefixReject` returns at `:1786` and `:1812` with nothing
+  submitting the restored recurrent boundary state; the only two `asyncEval` calls
+  in the file are `:1403` and `:1415`, both on the draft chain.
+- Zero occurrences of `qwen_mtp_e87_probe_select` anywhere in the tree.
+
+### 290.9 The mechanism-deletion audit, priced from our own instrument
+
+Rule 62 and Rule 63 applied to every rival claim before adopting anything.
+
+| mechanism | their claim | our measurement | verdict |
+|---|---|---|---|
+| qL{2,3} later-window SDPA warm | +0.18 % promotion receipt | **+0.035 % slower**, same sign on two independent same-mode draws, effect the size of the plutarch and prefill controls (ledger ~24159) | **null, stop list** |
+| qL{1..5} full warm ladder | −0.61 % published headline | **candidate leg +0.0057 %, sd 0.0875**; the headline was pure serial lottery (ledger ~32536) | **null, stop list** |
+| E87 probe-select | +0.72 % promotion, +0.88 % A/B | **+0.064 % F83-weighted** (FINDING 162); unweighted candidate mean −0.0823 %, z −4.4 | real but tiny, held |
+| E020 replay-prefetch | +0.039 % promotion, +0.033 % pairwise | our independent estimate **+0.01 % to +0.04 %**, agrees | **real, 5 lines, take it** |
+| normed-verify warm | accepted on its own draw, no re-validation | **unpriced** | **measure it** |
+
+**Three of our own ranked receipts say the qL warm ladder does not move the
+candidate leg.** Three rival accounts are burning submissions on it right now.
+A fourth is bundling it with the real ones. Do not join them.
+
+The rival mechanism argument is arithmetically reasonable — the split-5 exactness
+chunk means a width-7 verify dispatches qL=5 plus qL=2 and a width-8 verify
+dispatches qL=5 plus qL=3, and our `[1, 5, 4]` ladder covers neither. Rule 97
+governs: a census that contradicts a ranked receipt loses until the difference is
+named. It has not been named, and it is not worth a slot to name it.
+
+**The normed-verify warm is the interesting one, and it may explain edward's own
+round-1 excess.** His rung-5 result found 20.53–31.25 ms of F83-weighted
+round-1 excess, GPU-side on 15 of 15 legs, with `host_thread_cpu_ns` showing
+round 1 burning 15–21 ms **less** host CPU while taking 15–32 ms **more** wall
+time. The warm phase never compiles the expression the scored path dispatches;
+`callWithHiddenAndNormed` (`Qwen35.swift:5260`) is a distinct function from
+`callWithHidden` (`:5240`), publishes three outputs and retains the normed tensor.
+MLX builds pipelines off the measuring thread, so the measuring thread blocks
+without burning CPU. **That is precisely the measured signature.** Pre-registered:
+restoring the normed warm deletes a measurable fraction of the round-1 excess.
+It costs about five lines and allocates nothing.
+
+### 290.10 CAMPAIGN RULE 108 — the frontier mechanism sweep
+
+> **RULE 108.** Before every official submission, diff the submitted surface
+> against the current promoted frontier tree and enumerate every mechanism the
+> archive will delete. Price each one from our own instrument. Carry forward what
+> survives Rule 62, and record the deletions we choose to keep as decisions rather
+> than accidents.
+
+Four accounts have now had promoted work un-shipped by accident, ours included.
+The board keeps re-buying the same score. This is cheap to prevent and expensive
+to discover from a rival's audit.
+
+### 290.11 Round actions
+
+Merges: PR #128 -> `ea546d1f`, PR #133 -> `35d8cf58`. Accept-on-current-base
+comments `5381511913` and `5381552322`.
+
+New assignments:
+
+- **PR #135, thorfinn, E135** — measure the tight QMV launch grid. Head
+  `8dbabfd5`. This is the single highest-value open causal question on the board:
+  one word, bit-exact by construction, and the local serial-to-MTP ratio is a
+  valid instrument for it.
+- **PR #136, askeladd, E136** — build C1 behind a gate after pricing the widened
+  top-32 plan. Head `c1eb911b`. Rung 0 is a dispatch microbenchmark that gates the
+  build.
+
+Feedback issued: `#130` F21 (`5381615409`) and F22 (`5381649814`); `#134` F7
+(`5381636657`) and F8 (`5381647231`).
+
+Alphonse holds the free submission slot with the wired-slack arm. His archive
+`5846b986` must be rebased onto `35d8cf58`, re-measured against a fresh base
+because the one-pass table now runs on his g16s box, and re-gated before it
+ships.
+
+### 290.12 Queue, repriced
+
+| id | mechanism | ranked value | status |
+|---|---|--:|---|
+| tight QMV launch grid | `grid = .tight`, one word, bit-exact | **+0.2 % to +1.5 %** | E135 thorfinn, running |
+| `pb6` marginal[4] tier 1.45 | boundary price at M=5->6 | **+2.34 % replayed** | edward r2, needs gate A and the measured-curve refit |
+| C1 `qlowrank256-N4096-p0.35` | int8 low-rank sketch, both stages | **+0.678 %** | E136 askeladd, gated on a microbenchmark |
+| wired slack 64 -> argmax | admission of post-sizing state | +0.0245 % to +0.68 % | alphonse, ladder complete, holds the slot |
+| normed-verify warm | warm/scored expression parity, zero allocation | unpriced, may carry the round-1 excess | edward r2, item 0 |
+| E020 replay-prefetch | 5 lines at `:1786` and `:1812` | +0.01 % to +0.04 % | edward r2, item 0 |
+| warm-refill after wiring | second `warmAllDepthShapes` | **+0.54 % upper bound against a −5.3 % measured downside** | **gated on a residency readout** |
+| fp32 accumulation in the affine-4 rerank | separates the FINDING 170 bf16 ties on 32 rows/step | unpriced | new, unowned |
+| E87 probe-select | francip's fused select kernel | +0.064 % | held |
+| C2 | quantize bf16 precision islands to affine-4 g64 | +0.38 % to +0.45 % | reopened, unowned |
+| `qwen35Top32K` widening | — | **dead (FINDING 170)** | closed |
+| probe fraction above 0.25 for accuracy | — | **dead (FINDING 170)** | closed |
+| W1/W2/A1 nibble load-width axis | — | **dead (F25 item 4)** | closed |
+| qL{1..5} and qL{2,3} SDPA warms | — | **dead, three receipts** | closed |
