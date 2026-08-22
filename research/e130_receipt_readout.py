@@ -97,9 +97,19 @@ HEAD_SHARE_LO = 0.07
 HEAD_SHARE_MID = 0.08
 HEAD_SHARE_HI = 0.09
 
-# research/e130_schedule_family.py, tier 0: the four receipts carrying our
-# exact parent tree, from three independent solvers.
+# research/e130_schedule_family.py, tier 0. I first called this "our exact
+# parent tree measured four times". That is WITHDRAWN, and the advisor has
+# recorded the withdrawal. Rung 8 shows tier 0 is ONE RUNNER STATE sampled
+# across at least three different source trees whose mechanisms are worth
+# under 23 us per drafting round. It is the correct same-state reference the
+# advisor's FINDING 150 procedure asks for, but a contrast against it still
+# carries a small between-tree term.
 TIER0_MEMBERS = ("3b376ba2", "c63eaa21", "48423d09", "cf79f7df")
+
+# 390ec878 landed after tier 0 was fixed and rung 9's cluster3 readout shows it
+# shares the same state. It is used only as a sensitivity arm so the
+# pre-registered tier-0 statistic stays exactly as registered.
+STATE_A_LATE_MEMBERS = ("390ec878",)
 TIER0_CANDIDATE_REL_SD_PCT = 0.0279
 TIER0_SCORE_REL_SD_PCT = 0.1416
 TIER0_N = 4
@@ -290,10 +300,10 @@ def main() -> int:
     print("empirical se of the mean        %.4f %%"
           % (st.stdev(deltas) / math.sqrt(8.0)))
     print("\nThat pairing uses one reference run. The stronger test compares")
-    print("this receipt with the whole tier of receipts carrying our exact")
-    print("parent tree, so the reference is an average and not a single draw.")
+    print("this receipt with the whole tier of receipts that share its runner")
+    print("state, so the reference is an average and not a single draw.")
 
-    # The test: this receipt against the tier that shares our parent tree.
+    # The test: this receipt against the tier that shares its runner state.
     tier_rows = [load_receipt(p) for p in TIER0_MEMBERS]
     tier_means = [st.mean([per_prompt(r)[n]["mtp_seconds_per_token_mean"]
                            for n in names]) for r in tier_rows]
@@ -311,7 +321,7 @@ def main() -> int:
 
     print()
     print("TIER TEST. mean candidate decode time, seconds per token.")
-    print("  parent tier   %s" % " ".join(TIER0_MEMBERS))
+    print("  state tier    %s" % " ".join(TIER0_MEMBERS))
     for prefix, value in zip(TIER0_MEMBERS, tier_means):
         print("    %-9s %.8f" % (prefix, value))
     print("  tier mean     %.8f   tier rel sd %.4f %% on 3 dof"
@@ -328,6 +338,19 @@ def main() -> int:
     print("  z = %+.2f conservative, %+.2f optimistic"
           % (observed_saving_pct / se_conservative,
              observed_saving_pct / se_pt))
+
+    wide_members = TIER0_MEMBERS + STATE_A_LATE_MEMBERS
+    wide_means = tier_means + [
+        st.mean([per_prompt(load_receipt(p))[n]["mtp_seconds_per_token_mean"]
+                 for n in names])
+        for p in STATE_A_LATE_MEMBERS
+    ]
+    wide_mean = st.mean(wide_means)
+    wide_saving_pct = -100.0 * (cand_mean - wide_mean) / wide_mean
+    print("  sensitivity, adding %s to the same-state reference:"
+          % " ".join(STATE_A_LATE_MEMBERS))
+    print("    reference mean %.8f over %d rows, saving %+.4f %%"
+          % (wide_mean, len(wide_members), wide_saving_pct))
 
     print("\nc = saving / (s_head * g),  g = %.4f on g17s, %.4f on g16s"
           % (RESIDENCY_GAIN_G17S, RESIDENCY_GAIN_G16S))

@@ -234,6 +234,14 @@ public final class Qwen36MTPBlockSession {
     /// The probe runs on both sides of the 96 GiB gate. Below the gate no
     /// ticket exists, so it reproduces the sizing instant itself by clearing
     /// the warm cache the same way the wired path does.
+    ///
+    /// Output goes to `MLX_E130_RESIDENCY_PROBE_PATH`, not to stderr. The
+    /// `mtp-timed` parent builds its worker through `runtimeWorkerOptions`
+    /// without `forwardsWorkerStderr`, so `WorkerStderrDrain` installs a
+    /// swallowing emitter and every worker stderr line is discarded. The
+    /// first run of this probe wrote to stderr and produced no output at all
+    /// for that reason. A file sink needs `MLXFAST_NO_SANDBOX=1`, the same
+    /// requirement the round trace carries.
     private static func e130ResidencyProbe(clearsWarmCache: Bool) {
         guard ProcessInfo.processInfo.environment["MLX_E130_RESIDENCY_PROBE"] == "1"
         else { return }
@@ -244,12 +252,12 @@ public final class Qwen36MTPBlockSession {
         let physical = ProcessInfo.processInfo.physicalMemory
         let recommended = GPU.maxRecommendedWorkingSetBytes() ?? -1
         e130ProbeSizingCount += 1
-        var line = "e130-residency phase=sizing event=\(e130ProbeSizingCount)"
+        var line = "e130-residency pid=\(getpid()) phase=sizing event=\(e130ProbeSizingCount)"
         line += " active=\(active) peak=\(peak)"
         line += " cache=\(Memory.cacheMemory) slack_mb=\(wiredZHDefaultSlackMB)"
         line += " maxrec=\(recommended) physmem=\(physical)"
         line += " wired_gate_passed=\(!clearsWarmCache)\n"
-        FileHandle.standardError.write(Data(line.utf8))
+        e130ProbeSink.write(Data(line.utf8))
 
         // One sampler per process. A local leg builds a session per depth
         // policy, so an unguarded sampler would multiply with each session.
@@ -261,12 +269,12 @@ public final class Qwen36MTPBlockSession {
                 Thread.sleep(forTimeInterval: 1.0)
                 index += 1
                 let now = Memory.activeMemory
-                var sample = "e130-residency phase=sample index=\(index)"
+                var sample = "e130-residency pid=\(getpid()) phase=sample index=\(index)"
                 sample += " elapsed_s=\(String(format: "%.1f", -started.timeIntervalSinceNow))"
                 sample += " active=\(now) peak=\(Memory.peakMemory)"
                 sample += " cache=\(Memory.cacheMemory)"
                 sample += " growth=\(now - active)\n"
-                FileHandle.standardError.write(Data(sample.utf8))
+                e130ProbeSink.write(Data(sample.utf8))
             }
         }
         sampler.name = "e130-residency-probe"
@@ -275,6 +283,17 @@ public final class Qwen36MTPBlockSession {
     }
 
     nonisolated(unsafe) private static var e130ProbeSizingCount = 0
+
+    /// O_APPEND so the reference, serial and MTP workers of one leg each add
+    /// their own sizing events to the same file instead of truncating it.
+    private static let e130ProbeSink: FileHandle = {
+        guard let path = ProcessInfo.processInfo
+            .environment["MLX_E130_RESIDENCY_PROBE_PATH"], !path.isEmpty
+        else { return FileHandle.standardError }
+        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return FileHandle.standardError }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
+    }()
 
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
