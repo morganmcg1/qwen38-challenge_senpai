@@ -28,5 +28,8 @@ x_sumshare_split   211145 bytes  sha=34c077e187bb  exact=True   extra=simd_gid, 
 x_sumshare_owner   210967 bytes  sha=4dfe440131c9  exact=True   extra=simd_gid, sums_xchg
 n_halfsums_free   209459 bytes  sha=a1170adfe60e  exact=False  extra=-
 x_sumshare_min    210633 bytes  sha=c0d142491a81  exact=True   extra=simd_gid, sums_xchg
+x_sumshoist       209965 bytes  sha=c4bbe945a65a  exact=True   extra=sums_table
+c_rps4            210971 bytes  sha=7143352347af  exact=True   extra=-  [census only]
+c_rps8            210976 bytes  sha=594cb0be7bc2  exact=True   extra=-  [census only]
 
---arms a_base,q_scaffold,s_bcast,s_bcast_all,s_bcast_scale,p_split_meta,g_pack32,s_bcast_pack32,p_prefetch_w,n_nosums:diag,l_loadonly:diag,n_nobias:diag,d_bias1:diag,e_bias6,z_ballast,k_alu8,k_alu16,k_ld8,k_ld16,k_shuf8,k_shuf16,k_alu16w,y_algebra:diag,y_hsum_tree:diag,n_halfsums:diag,x_sumshare_split,x_sumshare_owner,n_halfsums_free:diag,x_sumshare_min
+--arms a_base,q_scaffold,s_bcast,s_bcast_all,s_bcast_scale,p_split_meta,g_pack32,s_bcast_pack32,p_prefetch_w,n_nosums:diag,l_loadonly:diag,n_nobias:diag,d_bias1:diag,e_bias6,z_ballast,k_alu8,k_alu16,k_ld8,k_ld16,k_shuf8,k_shuf16,k_alu16w,y_algebra:diag,y_hsum_tree:diag,n_halfsums:diag,x_sumshare_split,x_sumshare_owner,n_halfsums_free:diag,x_sumshare_min,x_sumshoist
