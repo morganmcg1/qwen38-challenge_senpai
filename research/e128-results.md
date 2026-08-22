@@ -316,6 +316,14 @@ sitting at or just past the ranked depth optimum in the level direction. The
 remaining 11 percent is per-round **discrimination**, which is a different axis
 from the one this experiment audits.
 
+The `+11.04 %` here and the `+8.52 %` in section 6 are the same effect measured
+in two places, and both are reported rather than one being chosen. This number
+is the R-free per-token price over our own 12 fixtures. Section 6 transfers the
+same arm onto the eight ranked prompts and recomputes the median, which is the
+quantity the score actually uses. **`+8.52 %` is the headline oracle figure**;
+`+11.04 %` is the same ceiling before the ranked median dilutes it across
+prompts the arm cannot help.
+
 ---
 
 ## Section 5 — our own ranked cost curve
