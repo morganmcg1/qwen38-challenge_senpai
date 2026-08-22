@@ -423,12 +423,16 @@ EXACT_ARMS = ("a_scaffold", "b_barrier2", "x_split_dup", "x_split_pred",
               "x_split_pp", "x_split_pred_pp", "x_min_ask", "g_min_ask",
               "g_split_pred", "g_split_pred_pp")
 
-# Rung 0 censuses every form; the timed set is chosen from the census and the
-# probe runs its positive control on the last arm, so the last arm must be one
-# that is required to be bit exact.
-CENSUS_ARMS = ("a_base", "a_scaffold", "x_split_pred", "x_split_pred_pp",
-               "x_min_ask", "g_min_ask", "g_split_pred", "g_split_pred_pp")
-ARMS = CENSUS_ARMS
+# Rung 0 censused every form. The timed set drops the ungated ping-pong, whose
+# barrier question `g_split_pred_pp` already answers, and keeps `x_min_ask` as
+# the guaranteed-skip reference: its uniform branch is real control flow, while
+# the predicated form may compile to a masked add that still issues.
+#
+# The probe runs its positive control on the last arm, so the last arm must be
+# one that is required to be bit exact. `g_split_pred` is last because it is
+# the primary candidate.
+ARMS = ("a_base", "a_scaffold", "x_split_pred", "x_min_ask", "g_min_ask",
+        "g_split_pred_pp", "g_split_pred")
 
 BASE_KERNEL = """
 [[kernel]] void e121_iso_na%(na)d(
