@@ -4049,66 +4049,12 @@ private let qwen35DraftSelectKernel = MLXFast.metalKernel(
     ensureRowContiguous: false
 )
 
-// ---------------------------------------------------------------------------
-// E139 RESEARCH SCAFFOLD -- REMOVED BEFORE COMPOSITION.
-//
-// Two rider arms, both PROPOSAL SIDE ONLY, selected per process so one worker
-// binary can serve every arm of a zero-noise acceptance session. Neither gate
-// reaches the target verification path, so neither can change the emitted
-// token stream: they change which token the head PROPOSES.
-//
-// `MLX_E139_FP32_TIEBREAK=1` keeps the fp32 `simd_sum` result in
-// `exact_scores` instead of narrowing it through bf16 and widening it back,
-// which removes the ties that narrowing manufactures. Unset reproduces the
-// shipped source character for character and the shipped kernel name.
-//
-// `MLX_E139_PROBE_FRACTION=0.15` overrides the derived-cluster probe
-// fraction. Unset is the shipped 0.25.
-//
-// Both fail closed on an unrecognised value rather than resolving to the
-// other arm, so a typo can never time one arm under the other arm's tag. The
-// `MLX_` prefix is load-bearing: the trusted worker's environment sanitizer
-// drops every other prefix.
-let qwen35E139Fp32TiebreakResolved: (enabled: Bool, source: String) = {
-    guard let raw = ProcessInfo.processInfo.environment["MLX_E139_FP32_TIEBREAK"],
-          !raw.isEmpty
-    else { return (false, "unset") }
-    switch raw {
-    case "1": return (true, "1")
-    case "0": return (false, "0")
-    default:
-        fatalError("MLX_E139_FP32_TIEBREAK must be unset, 0 or 1; got \(raw)")
-    }
-}()
-
-/// The Metal store expression the rerank kernel compiles for this process.
-private let qwen35E139RerankStoreExpression: String =
-    qwen35E139Fp32TiebreakResolved.enabled ? "reduced" : "float(InT(reduced))"
-
-let qwen35E139ProbeFractionResolved: (value: Double, source: String) = {
-    guard let raw = ProcessInfo.processInfo.environment["MLX_E139_PROBE_FRACTION"],
-          !raw.isEmpty
-    else { return (0.25, "unset") }
-    guard let parsed = Double(raw), parsed > 0.0, parsed <= 1.0 else {
-        fatalError(
-            "MLX_E139_PROBE_FRACTION must be unset or a fraction in (0, 1]; got \(raw)")
-    }
-    return (parsed, raw)
-}()
-
-/// Live counters for the trace witness. `drafts` rises only when the scored
-/// rerank kernel actually runs, and `probes` is the leaf count the cluster
-/// index build derived from the resolved fraction.
-public nonisolated(unsafe) var qwen35E139RerankDrafts: Int = 0
-public nonisolated(unsafe) var qwen35E139ResolvedProbes: Int = 0
-
 // PROPOSAL SIDE ONLY. Consume the E87 cluster/dense shortlist in place, score
 // its 32 selected rows directly from the full affine-4/group-64 matrix, and
 // reduce the exact BF16 values in one dispatch. This replaces gather_qmm plus
 // the separate value/id reducer without changing shortlist identity or order.
 private let qwen35DraftSelectedAffine4RerankKernel = MLXFast.metalKernel(
-    name: "qwen_mtp_draft_selected_affine4_rerank_g64_v1"
-        + (qwen35E139Fp32TiebreakResolved.enabled ? "_e139fp32" : ""),
+    name: "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
     inputNames: ["x", "candidate_ids", "weight", "scales", "biases"],
     outputNames: ["token_id"],
     source: """
@@ -4168,7 +4114,7 @@ private let qwen35DraftSelectedAffine4RerankKernel = MLXFast.metalKernel(
         for (uint r = 0; r < 4; ++r) {
             float reduced = simd_sum(result[r]);
             if (lane == 0) {
-                exact_scores[candidate_base + r] = \(qwen35E139RerankStoreExpression);
+                exact_scores[candidate_base + r] = float(InT(reduced));
             }
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -4580,18 +4526,8 @@ let qwen35RowTop32Resolved: (enabled: Bool, source: String) = {
 public nonisolated(unsafe) var qwen35RowTop32FusedDrafts: Int = 0
 public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
 
-/// `unset`, `0` or `1`, for the same trace line, followed by the E139 rider
-/// arms this process actually executed. CAMPAIGN RULE 114: the trace names the
-/// arm from the run's own state, never from the environment it was asked with.
-/// `e139fp32:<gate>:<drafts through the rerank kernel>` and
-/// `e139p:<gate>:<leaves probed per draft step>`.
-public var qwen35RowTop32GateSource: String {
-    qwen35RowTop32Resolved.source
-        + "+e139fp32:\(qwen35E139Fp32TiebreakResolved.source)"
-        + ":\(qwen35E139RerankDrafts)"
-        + "+e139p:\(qwen35E139ProbeFractionResolved.source)"
-        + ":\(qwen35E139ResolvedProbes)"
-}
+/// `unset`, `0` or `1`, for the same trace line.
+public var qwen35RowTop32GateSource: String { qwen35RowTop32Resolved.source }
 
 // `MLXFAST_QWEN_MTP_TOP32=0` restores the argPartition path bit-for-bit.
 private let qwen35Top32Enabled: Bool =
@@ -4941,10 +4877,7 @@ private func qwen35ClusterRowQMV(
 /// and no local leg can resolve it: at these miss rates a 512-token leg
 /// expects under one changed proposal. 0.25 is the low-variance choice and it
 /// is the byte point the r1 arm-C and r2 balanced sessions both measured.
-/// E139 research scaffold: `MLX_E139_PROBE_FRACTION` overrides this constant
-/// per process. Unset resolves to the shipped 0.25.
-private let qwen35DerivedClusterProbeFraction: Double =
-    qwen35E139ProbeFractionResolved.value
+private let qwen35DerivedClusterProbeFraction: Double = 0.25
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
@@ -5988,7 +5921,6 @@ extension Qwen35TextModel: MTPCapable {
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
         let probes = max(
             1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
-        qwen35E139ResolvedProbes = probes
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
         let clusterScales = MLX.take(coarseScales, order, axis: 0)
@@ -6183,7 +6115,6 @@ extension Qwen35TextModel: MTPCapable {
             }
         }
 
-        qwen35E139RerankDrafts += 1
         return qwen35DraftSelectedAffine4RerankKernel(
             [x.reshaped([configuration.hiddenSize]), candidateIDs,
              exact.weight, exact.scales, exactBiases],
