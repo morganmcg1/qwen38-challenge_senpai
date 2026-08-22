@@ -42570,3 +42570,552 @@ thorfinn is filling it today with rung 2-lite.
 W&B: crown analysis run `crownd3c4`
 https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/crownd3c4 and report
 https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/reports/Senpai-takes-the-Qwen-3.8-27B-MTP-crown:-3.49065-with-a-candidate-owned-wide-matvec--VmlldzoxNzc4NTAzMg==
+
+## 277 — THE PASS-COUNT LEVER OPENS, THE RESIDENCY COEFFICIENT CLOSES, AND THE ROOFLINE HEADROOM IS REFUTED
+
+2026-08-22, advisor. Base `f880eb26517cd7a3a153799348cb4f2caf8e4e58`. Crown held at
+`d3c491b5-902f-4f80-8d33-b7938f980d2d`, score 3.49065043561149, source `6f1cd66f`.
+
+Six results landed in one cycle. Four of them are campaign level. Two of them are mine and are
+errors. This entry records all of them, and it changes the order of the whole programme.
+
+### FINDING 130 — THE PASS COUNT, NOT THE WIDTH, SETS THE PRICE OF A WIDE MATVEC
+
+Two students found the same mechanism on the same day, from different instruments, without
+knowing about each other's work.
+
+Thorfinn measured rung 2-lite `(5,5) -> (5,3)` directly and REFUTED it. `IPG=3` at `M=5` makes
+`ceil(5/3) = 2` passes over the weight matrix where the shipped `(5,5)` makes one.
+
+```
+shape          M=5 slowdown   sign consistency
+fa.qkv            +20.5 %        0/6 blocks favour the arm
+gdn.in_proj       +18.6 %        0/6
+lm_head           +39.4 %        0/6
+mlp.down          +20.3 %        0/6
+mlp.gate_up       +27.1 %        0/6
+```
+
+`ipg3 at M=5` measures 0.95 to 0.98 times `ipg5 at M=6`. The extra pass, not the width, sets the
+price. Net on the realised histogram: -0.418 %. Exactness was a clean pass: 49 cells,
+13,788,096 elements, 0 differing, `controls_can_fail=true`. Job `2d506cb8`, 675 s, ungated ABBA,
+`git_head=f1bb04b4`. The arm is reverted. Rung 2-lite is dead and goes on the local stop list.
+
+That refutation inverts into the campaign's largest open lever. The shipped table
+`(3,3) (4,4) (5,5) (6,3) (7,4) (8,4) (9,3)` at `Qwen35.swift:1565` makes ONE pass at M=3,4,5 and
+TWO passes at M=6,7,8 and THREE at M=9. Over the realised histogram `{4:16, 5:20, 6:20, 7:12,
+8:240}`, 308 rounds, it averages 1.8831 passes. `IPG = M` is legal at every routed width because
+`M % M == 0` satisfies `static_assert(M % IPG != 1)`.
+
+Edward reached the same place from our own ranked receipts. He fitted our ranked round-cost curve
+against per-prompt realised width histograms under monotone constraints and swept the tier break:
+
+```
+round_us(M) = 27894.3 + 3388.3 M    for M < 6
+              21541.1 + 6167.5 M    for M >= 6
+leave-one-prompt-out returns M >= 6 on all eight drops, rmse 70-96 us
+
+M          1      2      3      4      5      6      7      8
+ours    31283  34671  38059  41447  44836  58546  64714  70881
+board   31182  35148  39115  43081  52792  59946  67100  74254
+```
+
+The tier break sits exactly where the table goes one-pass to two-pass. Priced against the
+one-pass tier-1 line:
+
+```
+M   two-pass actual   one-pass tier-1 line   excess    as % of one-pass
+6        58546              48224            10322        +21.4 %
+7        64714              51612            13102        +25.4 %
+8        70881              55000            15881        +28.9 %
+```
+
+Value of a one-pass table on the local histogram: `{6:6}` +1.0 % of round time, `{6:6,7:7}`
++1.8 %, `{6:6,7:7,8:8}` +20.3 %. M=8 alone is 18.6 of the 20.3 points because it is 76.9 % of
+routed rounds.
+
+The structural bracket from E63's `T(M,G) = G*a + b*M`, using thorfinn's measured pass premium to
+solve for `a/b`, is [9.8 %, 19.8 %] of the round at M=8, which is [7.6 %, 15.4 %] of the leg and
+a published band of 3.76 to 4.09. Edward's independent ranked estimate of 22.4 % of the round
+sits at the top of that bracket.
+
+#### FINDING 130.1 — A CROSS-SOLVER CONTRAST CONFIRMS THE TIER BREAK IS THE PASS-COUNT BREAK
+
+F97 fitted the BOARD's ranked cost curve over 147 official runs and placed the tier break at M=5.
+Edward fitted OUR curve from our own eight per-prompt receipts and placed it at M=6.
+
+The board mostly ships the organizer's calibrated `<T,5,3>`, two passes at M=5. We ship E100's
+`<T,5,5>`, one pass at M=5. The two curves' break points differ by exactly one width, and it is
+exactly the width where our table differs from the organizer default.
+
+This is the closest thing to a controlled cross-solver experiment this campaign will ever run,
+and neither fit was performed with the other in view. It is also a correction to F97: F97's G
+labels, `G=1` for M=1..4 and `G=2` for M=5..8, are PRE-E100 and must not be reused. The current
+shipped grouping is `G=1` for M=1..5, `G=2` for M=6,7,8, `G=3` for M=9, which is FINDING 45.
+
+#### FINDING 130.2 — THE REGISTER CENSUS OF `qwen_e120_qmv_wide<NA>`
+
+Thorfinn, `research/e129_pass_count_census.py`, `xcrun metal-tt`, zero GPU, sumtable arm:
+
+```
+NA   g16s regs/spill   g17s regs/spill   g17s resident
+2       74 / 0            87 / 0             45
+3       84 / 0            90 / 0             44
+4       93 / 0            94 / 0             42
+5       96 / 0           102 / 0             38
+6       96 / 16          111 / 0             35
+7       96 / 64          125 / 0             31
+8       96 / 96          126 / 48            31
+9       96 / 160         126 / 160           31
+whole-switch one-pass-everywhere:  g16s 96 / 160,  g17s 126 / 160 / 31
+```
+
+On g17s, NA=6 and NA=7 are spill-free. That is the first time in this campaign that any body
+above NA=5 has been spill-free anywhere. g16s caps at 96 registers and spills instead, so THE
+LOCAL HOST CANNOT TEST NA >= 6 CLEANLY. Every NA >= 6 arm is a g17s-only claim under Rule 83 and
+must be censused offline, never timed locally.
+
+### FINDING 135 — E104 LOST TO SPILL IN THE SHARED SWITCH, NOT TO THE PASS COUNT
+
+This is the advisor's synthesis of F130.2 against the E104 receipt, and it is what unblocks the
+whole lever.
+
+The prior stop-list entry, ledger 258, said: do not widen `NA` beyond 5 and do not collapse M=6,
+M=7 or M=8, because E104 prices those at -16.5 %, -31.2 % and -50.9 % ranked. The receipt behind
+it is submission `9b241879-1fcf-4cb4-bac5-ca2bca58d4c5`, candidate `c1207a0d`, scored
+3.23588901. It REVERTED our collapsed table and was faster on 8 of 8 prompts, mean -0.383 %,
+sign test p=0.0039, wide-five -0.548 % against narrow-three -0.107 %.
+
+`qwen35E120QMVSource(table:)` at `Qwen35.swift:1562-1594` emits ONE Metal function that inlines
+all seven bodies behind `switch (qmv_m)`. The register allocator must satisfy the widest inlined
+body in that function, not the body that executes. Set every width to one pass and the widest
+inlined body becomes NA=9, and the allocator gives up: g17s 126 registers with 160 BYTES OF
+SPILL, g16s 96 with 160.
+
+E63 (PR #66, ledger 15875-15950) fitted the old kernel as `t ~ a + b*NA + s*1[peak live > 128]`
+with `a = 37.79 ms` per pass, `b = 11.65 ms` per NA, and a spill step `s = 21.25 ms`, which is
+-17.4 % at NA=6. The old kernel's peak live at NA=6,7,8,9 was 140, 152, 171, 190. E104's
+-16.5 / -31.2 / -50.9 % grows monotonically with distance over the 128-register boundary. That is
+the signature of `s`, not of the pass count.
+
+E104 therefore did not measure the price of one pass. E104 measured the price of spilling a
+shared switch.
+
+Three consequences, all now issued to thorfinn as E129-F10:
+
+1. PER-WIDTH TEMPLATING IS A HARD PREREQUISITE FOR ANY ONE-PASS TABLE, not an optimisation
+   that can be sequenced after it. Ship templating, prove it bit-exact and warm, measure it
+   alone, and only then change the table inside the templated pipelines. Changing the table
+   inside the shared switch reproduces E104 exactly.
+2. THE M=8 SPILL IS THE CAMPAIGN'S HIGHEST-VALUE ENGINEERING QUESTION. NA=8 on g17s is 126
+   registers with 48 bytes of spill, and M=8 is 76.9 % of routed rounds and 18.6 of the 20.3
+   points of the prize. `{6:6, 7:7}` is the safe arm at +1.8 % with both bodies spill-free.
+   `{6:6, 7:7, 8:8}` is the big arm at +20.3 % with spill on the dominant width. Getting
+   `qwen_e120_qmv_wide<8>` under the g17s boundary is worth more than any other open task.
+   Census the `USE_TABLE=false` arm too, and report the spill SITE from the ISA, not only the
+   byte count: 48 bytes is 12 slots, and a cold prologue store costs almost nothing while a
+   k-loop spill is fatal.
+3. THE ONE-PASS TABLE COSTS RESIDENCY EVEN WHEN TEMPLATED. Per-width bodies at
+   `{6:6,7:7,8:8}` are 90, 94, 102, 111, 125, 126 registers, so weighted resident simdgroups
+   fall from 38.0 to about 32.3. That is acceptable only because F131 measures the residency
+   coefficient at zero. The two arms must be reported separately and never as one number.
+
+The stop-list entry is REOPENED for `qwen_e120_qmv_wide` ONLY. It stays CLOSED for
+`qmv_fast_crossrow_affine4_g64_m` in `quantized.h`, which is still emitted behind a shared
+switch and would reproduce E104 verbatim.
+
+### FINDING 131 — THE RESIDENCY COEFFICIENT IS MEASURED NULL ON g16s BY TWO INSTRUMENTS
+
+```
+                 design                          c          n          2 sigma
+alphonse   six-rung register ladder, M=1,2    -0.0014   10 strata   [-0.0124, +0.0095]
+thorfinn   single-binary IPG substitution     +0.0105   15 cells    [-0.174, +0.195]
+F110       modelled, entry-point leg frame    +0.445        --      [0.139, 0.819]
+```
+
+Alphonse also reports `c = +0.0036 %/%`, 2 sigma [-0.0044, +0.0116], n=9 strata at M in {3,6,9},
+and `+0.0032 +/- 0.0035` at M=1 alone. Both designs sit far below the 0.05 %/% kill gate.
+F110's `c = 0.445` is DEAD as a point estimate. That is ADVISOR ERROR 105.
+
+### FINDING 132 — THE LOCAL HOST CANNOT TEST THE RESIDENCY HYPOTHESIS AT ANY WIDTH
+
+Alphonse measured achieved bandwidth as `read_bytes / seconds` on the base arm:
+
+```
+shape                        M     GB/s   % of g16s 227 STREAM copy
+fa_qkv_k5120_n14336          1    235.6      103.8 %
+gdn_in_proj_k5120_n16480     1    236.6      104.2 %
+lm_head_k5120_n248320        1    247.9      109.2 %
+mlp_down_k17408_n5120        1    238.5      105.1 %
+mlp_gate_up_k5120_n34816     1    243.6      107.3 %
+(same five at M=2)                207-248     91-109 %
+mlp_gate_up                  3    237.1      104.5 %
+mlp_gate_up                  6    122.0       53.8 %
+mlp_gate_up                  9     82.1       36.2 %
+```
+
+Three regimes on g16s: M=1,2,3 memory-saturated, M=6,9 ALU-bound because arithmetic intensity
+rises with M at fixed weight traffic. A null residency coefficient is what BOTH local regimes
+predict, so F131's null is consistent with a non-zero g17s coefficient and does not by itself
+close the axis on the ranked machine.
+
+Two corrections to the frame alphonse used, both mine to make:
+
+- The 227 GB/s figure is a STREAM COPY benchmark. The campaign's own read-only ceiling on this
+  host is 265 GB/s, FACT 33, measured by edward in E92. Percentages above 100 % are the artefact
+  of comparing a read stream against a copy benchmark, not evidence of superlinearity.
+- The "% of g17s 542.8" column is void. See F134.
+
+### FINDING 134 — THE 542.8 GB/s M5 CEILING IS A PRE-E100 ARTEFACT, AND THE 2.8x ROOFLINE
+### HEADROOM IS REFUTED
+
+`research/finding22_reprice.py:21` states it verbatim: `RANKED_STREAM_RATE = 542.8  # GB/s,
+28.8247 GB / 53108 us`. That is `2 * 14.4123 GB` over a ranked M=5 round time, computed when M=5
+still dispatched `<T,5,3>` and therefore read the weights TWICE. Post-E100 the ranked M=5 round
+is `G=1` and achieves 273.0 GB/s. Finding 31 lists 542.8 in a column labelled "ranked GB/s",
+which is an ACHIEVED rate. Using the machine's own best observed cell as its ceiling forces that
+cell to 100 % saturation by construction.
+
+No STREAM figure for the ranked host exists or can exist in this repository: every g17s number
+the campaign owns is offline compilation through `xcrun metal-tt`. Treat 546 GB/s as the highest
+rate ever observed on any Apple part in scope, never as an M5 ceiling.
+
+The "2.8x headroom to the memory roofline" I had been carrying is not a roofline measurement at
+all. It is algebraically `2 * (M=8 round / M=5 round) = 2 * 74254.6 / 52791.9 = 2.8131`, with the
+weight bytes and the machine bandwidth cancelling out. It contains no bandwidth information. That
+is ADVISOR ERROR 107.
+
+Corrected ranked achieved rates, round frame, under the current G table:
+
+```
+M   G   bytes GB   ranked us   ranked GB/s
+1   1     14.41      31,182       462.2
+5   1     14.41      52,792       273.0
+8   2     28.82      74,255       388.2
+```
+
+M=1 is the fastest bytes-per-second cell on the ranked machine and M=8 is faster than M=5. There
+is no 2.8x headroom at M=8 relative to M=5; the sign is the other way.
+
+THE CORRECT INSTRUMENT IS WITHIN-SEGMENT INFLATION. Inside a fixed-G segment the bytes are
+constant, so every extra microsecond is non-byte work:
+
+```
+ranked G=1, M=1 -> M=4 : 31,182 -> 43,081 us  = +38.2 %  for zero extra bytes
+ranked G=2, M=6 -> M=8 : 59,946 -> 74,255 us  = +23.9 %  for zero extra bytes
+```
+
+If arithmetic were free, M=8 at the M=6 byte rate saves 19.3 % of the M=8 round and M=4 at the
+M=1 rate saves 27.6 % of the M=4 round. These are upper bounds that also contain occupancy and
+issue rate. Build on 19 to 28 % within-segment envelopes, never on 2.8x.
+
+This is consistent with Finding 31's own conclusion: at NA=5 the kernel reads at roughly 55 % of
+DRAM peak and computes at roughly 47 % of the FMA ceiling AT THE SAME TIME. Neither resource is
+exhausted. It is a latency or issue-rate problem.
+
+#### FINDING 134.1 — `quantized.h` IS EXHAUSTED FOR IN-PLACE BIT-EXACT GAINS
+
+Re-audited every class of the E123 priced census against the stop list and against the
+bit-exactness wall. Exactly one class survives as a candidate-owned removal: the second half of
+the sums add tree, nominally 4.2 % of the instruction budget and about 2 % after the 2.16x
+census over-prediction correction. Route B already deletes it. Everything else is either shipped
+(`DIRECT_NIBBLES`, `x_sumshoist`, `mo_hoist`, `xv4`), forbidden by the accumulation-order wall
+(activation widenings), or the actual work (lane FMAs, weight loads, final accumulate).
+
+#### FINDING 134.2 — THE ACCUMULATION-ORDER WALL, RESTATED WITH ITS RECEIPT
+
+No change to floating-point accumulation order in the target verify path is safe, and the
+campaign has already measured why. Ledger 8794-8801: ONE CHARACTER OF REASSOCIATION MOVED
+DECLARED TOP-TWO ROW EVIDENCE AT 52 OF 64 POSITIONS, with top-1 flips zero, while the local run
+reported `all_tokens_matched=true`, `residual_divergence_count=0` and
+`public_drift_tripwire_passed=true`. The local legs generate their own reference rows from the
+candidate binary, so the parity line cannot see a row-evidence move.
+
+The only admissible evidence for an order change is a per-position row-evidence digest showing
+ZERO moved rows over the full 512-token window, which is the definition of bit-exact. The only
+safe accumulation-order change is no change. Route B is built that way for exactly this reason,
+and `quantized.h:820-822`, `quantized.h:965-967` and `Qwen35.swift:1406-1408` all state it as the
+design contract. Promote this to RULE 92.
+
+### FINDING 133 — PER-WIDTH TEMPLATING IS REOPENED AND IS NOW A STANDALONE CANDIDATE
+
+F125 stop-listed templating by comparing it against rung 2-lite, where it added only +0.68
+marginal residency points. Rung 2-lite is dead, so the correct comparison is against the SHIPPED
+table:
+
+```
+design                          pipelines   g17s weighted sg   gain vs shipped
+shipped, one shared switch              2         38.000              --
+per-width templating                 <= 14        41.870          +10.18 %
+```
+
++10.18 % residency across about 88 % of the round, 308 of 312 target rounds, with byte-identical
+executed bodies, so bit-exact by construction.
+
+ONLY THREE PIPELINES ARE NEEDED, times `USE_TABLE` for six total, not fourteen. The per-width
+body maxima take only three distinct values on g17s:
+
+```
+width       groups          body      max regs g17s   sg derived
+3,6,9   3 / 3+3 / 3+3+3    wide<3>          90            44
+4,7,8   4 / 4+3 / 4+4      wide<4>          94            42
+5       5                  wide<5>         102            38
+weighted over {4:16,5:20,6:20,7:12,8:240} = 12896/308 = 41.87
+```
+
+M=5 gains nothing because it sets the shared maximum. Beagle carries 0.4862 of the marginal
+weight at a mean width of 5.382, so weight this per prompt and never by the local histogram.
+
+Templating is also the prerequisite for the pass-count arm, because it confines NA=8's 126
+registers and 31 simdgroups to the `{7,8}` pipeline instead of imposing them on every width.
+MAIN RISK: warmup. A pipeline first compiled inside a timed leg looks like a catastrophic
+regression. Gate it and report which pipelines were warm at the first timed token.
+
+Two receipts at very different leverage identify `c` far better than either alone:
+
+```
+                              residency gain   x ranked share   c=0.445    c=0.139    c=0.010
+prune_na5_pair (alphonse)         +12.82 %       5 % to 15 %    +0.29 %    +0.09 %   +0.007 %
+per-width templating (thorfinn)   +10.18 %          ~88 %       +3.99 %    +1.25 %    +0.09 %
+```
+
+### E131 — ASKELADD, TERMINAL, `status: succeeded`
+
+Primary metric `e131_ranked_recoverable_residency_pct` 0.0 -> 4.6716. Commit `5478d0a3`.
+W&B `j3met2i3`, `qekys3ce`, `9611wd3u`, `2wnhr3cd`, `71a9ay4f`. Compile-only, no GPU, no timing,
+no score claim. Merged; the diff is pure addition of `research/`,
+`senpai/entry-point-cliff-census.sh` and `senpai/experiment-runbook.md`, with zero submitted
+surface touched.
+
+#### FINDING 136 — ROUTE C: THE HEAD PROJECTIONS PAY 101 REGISTERS TO RUN A 57-REGISTER BODY
+
+Askeladd proved the live call path first. The shipped head is the declared affine-4 head.
+`quantized.cpp:254` launches `grid_dims(M, ...)`, so `ntg.x == M`, and EVERY steady-state head
+projection launches at `ntg.x == 1`. It misses the wide switch, misses the `<4096` switch, falls
+to `default: break` at `quantized.h:2022`, and runs `qmv_fast_impl` at 57 registers inside a
+function that allocated 101.
+
+That is 39 derived simdgroups where 69 is possible: +76.92 % on g17s, +65.63 % on g16s, a
+44-register gap over 232.96 MB per draft step of head weights. Share-weighted curve by depth:
+d=0 76.92, d=1 13.84, d=2 2.41, d=4 4.67, d=7 7.82. The unrouted byte share at d=7 is 10.16 %,
+which agrees with E82's `draft_build` at 10.06 %.
+
+The follow-up askeladd did not implement, and which is now assigned: route the head's
+`ntg.x == 1` projections to a narrow Route C entry point that holds ONLY `qmv_fast_impl`. The
+host-side kernel selection lives in the non-editable `quantized.cpp`, so the mechanism must be a
+`MLXFast.metalKernel` custom kernel dispatched from `Qwen35.swift`, exactly as Route B is. The
+four head projections already enter `qwen35RoutedQuantizedMM` and are rejected on `m == 1` at
+`Qwen35.swift:1740-1766`.
+
+F127 closes the M<=2 axis for TARGET rounds. It does NOT close the head's `ntg.x == 1`
+population, which is a separate 31.44 dispatches per round.
+
+Route C is a third `c` measurement at a third leverage point, and unlike the other two it is a
+real submitted-surface candidate.
+
+#### E131 CORRECTIONS TO THE ADVISOR'S OWN F126 TABLE
+
+- ROW 8 IS WRONG. The centroid score 5120 -> 12292 is NOT
+  `qmv_fast_singlerow_affine2_g64`. `12292 % 8 == 4`, so `fast = false` at `quantized.cpp:259`
+  with `bn = 8`, and it runs non-fast `affine_qmv<bf16,64,2,false>`. The 98336-guarded affine-2
+  entry point is the DEAD dense fallback and dispatches zero times.
+  THIS GIVES DRAFT-PATH MECHANISM C5 ITS MECHANISM: padding 12,292 to 12,296 makes
+  `12296 % 8 == 0` and flips the centroid pass onto the fast path.
+- Rows 3 and 4 PROVED at tensor level. `precision_islands.k/v.indices` are complete permutations
+  of 0...1023, so K and V take the `_exactKVDenseW` branch and the affine-4 K/V pack is never
+  built: 20.97 MB dense BF16 per draft step where 5.90 MB of affine-4 would do. This explains the
+  E82 and E124 losses. STOP-LISTED, do not act.
+- Rows 2 and 6 REFINED. q_proj enters `qwen35RoutedQuantizedMM` at `:2870`/`:2890`; mlp gate+up
+  at `:1907` through `Qwen35FusedMLP.fusedGateUp`, not `qwen35RoutedLinear`.
+- `qmv_fast_impl<bfloat16_t, 64, 4>` censused as a first-class cell: g16s 57/0/2940 B/53 sg,
+  g17s 57/0/3030 B/69 sg. ISA hashes `859d6120`, `2b139877`.
+- Class A, the literal two-register diet, is 0.175 % including the wide-QMV cell and 0.0225 %
+  excluding it, not zero as rung 1 first said. Class B split at `ntg.x == 1` is 4.6716 % / 0.0.
+  On a wider denominator that adds the affine-2 readout and the K/V island bytes, class B is
+  4.5761 % on g17s and 3.904 % on g16s. Rung 2 stays skipped under every reading.
+
+#### E131 RUNG 3 — THE ENTRY-POINT CLIFF GATE IS NOW ON THE ADVISOR BRANCH
+
+`senpai/entry-point-cliff-census.sh --base "$BASE_SHA"`. Six scored entry points, two
+architectures, both source forms, read-only, 3.94 s against a 30 s budget. Exit 1 on a lost g17s
+resident simdgroup, exit 2 on gate error, exit 0 otherwise. Three proofs pass: `e121_fails`
+(101 to 102 registers, 39 to 38 sg), `e126_passes`, `revert_clean` (byte-exact restoration).
+Wired into `senpai/experiment-runbook.md` between `verify-ranked-score-boundary.sh` and
+`--local-submit`. New cells go in `SCORED_CELLS` or `ROUTE_B_KERNELS` in
+`research/e131_cliff_gate.py`.
+
+It fails on a REGISTER REGRESSION, not on a measured slowdown. Discharge an exit 1 by pricing the
+removed work against `c * delta residency` in a named frame under Rule 87, never by a waiver.
+Given F131, `c` is now measured near zero on g16s, so an exit 1 that is accompanied by real
+deleted work should usually be discharged rather than obeyed. THE GATE IS A REGISTER INSTRUMENT
+AND IS ACCURATE AS ONE. IT IS NOT A TIME INSTRUMENT.
+
+`research/e131_thorfinn_dryrun.py` rewrites the dispatch-table literal IN MEMORY and censuses
+both architectures in under 4 s without touching `Qwen35.swift`, so it never conflicts with
+thorfinn's working tree. It reproduced his predicted `102 -> 94` and `38 -> 42` at +10.53 %
+exactly, and additionally found that the no-table pipeline moves `101 -> 93` and `39 -> 42` at
++7.69 %. This instrument is now on the campaign critical path for the pass-count lever.
+
+### E128 — EDWARD, THE ESTIMATOR AXIS IS CLOSED, THE DISCRIMINATION AXIS IS OPEN
+
+Every implementable arm is negative on BOTH the board curve and our own curve. Best implementable
+is `marginfull` at -0.356 %. `oracle` is +8.52 % with 8 of 8 prompts positive.
+
+```
+arm            board curve   our curve      arm            board curve   our curve
+ship                0.0000      0.0000      marginup           -4.5400     -4.2494
+marginfull         -0.3300     -0.3561      jensen_both        -7.6200     -7.8260
+expectedonly       -0.7600     -0.6772      jensen            -11.0700    -11.1665
+levelfix           -1.0200     -0.9673      static7           -16.5900    -16.5209
+recal              -1.3300     -1.2092      oracle             +9.0800     +8.5248
+reachonly          -1.9700     -1.8542      rankedprice        -5.6300     -2.8508
+nomargin1          -2.1800     -1.9507      nomargin           -4.0300     -3.7049
+nomargin0          -2.4400     -2.1716
+```
+
+The shipped flat 0.18 is optimal on our own curve. Sweep: 0.06 -9.99, 0.14 -2.24, 0.18 0.00,
+0.20 -0.49, 0.23 -4.12, 0.26 -8.28, 0.30 -15.62, 0.36 -31.52. It overprices depths 0 to 3 by
+66 %, underprices depth 4 by 2.4x, underprices 5 to 7 by 9 %, and those errors cancel under the
+realised depth distribution. The shipped price is not right for the reason the code implies, but
+it is right where it lands.
+
+R IS RE-PINNED BY THE COST CURVE. The assumed R vector minimises residual at `t=0` exactly, rmse
+90.6 us or 0.179 % of a round, and one eighth of a step toward the predicted vector doubles it.
+F111's band stands as the uncertainty; the curve picks the point.
+
+Jensen bias is BIDIRECTIONAL and load-bearing. Fitting through the mean width puts the step at
+M>=5; fitting against the histogram puts it at M>=6. Per-prompt bias: plutarch +0.02, drama
++0.44, travel +2.22, beagle +14.57, republic +18.59, essays -1.91, medicine -1.94, botany -1.31.
+
+Reconstruction is exact on the anchor: `44559d02` official 3.34351272 equals model-reconstructed
+3.34351272. Validation gate passes on the mean, depth +0.136 and accept -0.0155, and the MAX
+fails on 2 of 12 fixtures, `beagle_a` +0.506 depth and `drama_dollhouse` -0.057 accept.
+
+New tool `research/e128_ourcurve.py`, artifacts `research/e128-artifacts/section5-ourcurve.json`
+and `our-ranked-curve.json`, commit `6035ce1f`. Edward holds per-prompt maximum-entropy width
+histograms tilted onto each published mean, with plutarch's 449 non-drafting rounds pinned at
+M=1. Thorfinn must request that artifact rather than rebuild it.
+
+OPEN AND UNEXPLAINED: the fitted tier-2 slope is 1.82x the tier-1 slope, 6167.5 against 3388.3,
+and the board curve shows the same ratio, 7154.2 against 3966.4. Under `T(M,G) = G*a + b*M` the
+slope inside a segment is `b` and must be the same in both segments. The fit is absorbing
+something. Either the model is wrong or the piecewise fit over eight aggregate points is
+ill-conditioned in the slopes while remaining well-conditioned in the break location, which
+leave-one-prompt-out already showed it is. This must be resolved before the one-pass arms are
+priced from these slopes.
+
+### E130 — ALPHONSE, REVISION r2, AWAITING AN OFFICIAL RECEIPT
+
+`prune_na5_pair`: one line at `quantized.h:1940` plus the twin at
+`mlx-generated/quantized.cpp:1953`, so `case 5` calls `qmv_fast_crossrow_affine4_g64<T,5>`
+exactly as `case 2` does. -22 bytes total. Primary metric
+`e130_ranked_g17s_f47_weighted_residency_pct` 0.0 -> +12.82, entry 101/39 sg to 90/44. All four
+NA cells move +12.82 %, so the E121 veto passes. g16s control exactly +0.00 %. Spill 0 and
+`entry == max(bodies)` hold on both architectures before and after.
+`e130_bit_exact_cells_differing = 0` over 120 cells, `max_ulp 0`, positive control fired on every
+arm. W&B `e130final`, `e130rung2`, `e130rung2m1`. `swift test` 737 tests, 67 suites, exactly 40
+issues, matching the floor. `twin_audit` OK over 29 twins. Budget OK, growth -22/262144. Scope
+OK, 2 paths.
+
+Q3 OVERRIDE ACCEPTED, F3 ITEM 7 WITHDRAWN. `ntg.x == 5` with `n >= 4096` IS reachable, 5 of 2557
+dispatches or about 0.005 % of decode, but `ca_scalar_tail2` costs +4970 source bytes for an
+identical +12.82 %. `prune_na5_pair` at -22 bytes is strictly better.
+
+WITNESS-SET CORRECTION, standing. If `prune_na5_pair` lands, the witness
+`--require 'qmv_fast_crossrow_affine4_g64_m<T, 5, 5, true>'` MUST BECOME `--forbid`, because the
+instantiation disappears. Keep `--forbid '<T, 5, 3, true>'`. Do NOT add
+`qmv_fast_crossrow_affine4_g64<T, 5>` as a require: the `n < 4096` branch already instantiates it
+on both sides, so it witnesses nothing. The discriminating witness is the ABSENCE of
+`<T,5,5,true>`.
+
+### RUNG 0b CENSUS OF THE SCORED DECODE PATH (alphonse, benchfixture, 512 tokens, depth 8)
+
+```
+target verify at ntg.x == 1        ZERO dispatches                 confirms F127
+target verify at ntg.x == 2        257 dispatches in 1 of 71 rounds
+head projections at ntg.x == 1     2232 dispatches = 31.44/round -> qmv_fast_impl<T,64,4>
+head fc at ntg.x == S              exactly 1/round, widths {2:3,3:4,4:3,5:5,6:1,7:4,8:48}
+affine_qmv_fast at bits == 2       NEVER DISPATCHED
+decode GPU time                    target_verify 92.5 %, draft_head 7.5 %
+entry point                        under 8.8 % of decode (LOCAL share)
+```
+
+TRAP RECORDED AS ADVISOR ERROR 106, caught before sending: 8.8 % is the LOCAL entry-point share.
+F13 measures the head at 7.70 % LOCAL but only 1.82 % RANKED. Never carry a local share into a
+ranked price for the head. F128's ranked bracket of 5 to 15 %, dominated by M=2 target verify at
+about 5.2 % maxent on beagle, stands.
+
+FLAGGED INCONSISTENCY, unresolved. Askeladd reports 232.96 MB per draft step of head weights at
+`ntg.x == 1`. F13 puts the whole head at 1019 us per ranked round, which at beagle's 4.38 draft
+steps is 233 us per step, implying about 1 TB/s. One of the two is wrong. The most likely error
+is the byte count: the ledger already flags that the head bytes law used TOTAL ARTIFACT bytes,
+and with the cluster index the readout streams 59.0 MB, not 157.3 MB. Resolve before pricing
+Route C from bytes.
+
+### RULE 92 — THE ACCUMULATION-ORDER WALL
+
+No change to floating-point accumulation order in the target verify path is admissible, and no
+local parity line can clear one. A green `--local-iterate` parity line is not exactness evidence,
+because the local legs generate their own reference rows from the candidate binary. The only
+admissible evidence is a per-position row-evidence digest with zero moved rows over the full
+512-token window, which is the definition of bit-exact. Reassociation is permitted in exactly one
+place, `qmv_fast_singlerow_affine2_g64` at `quantized.h:1069-1083`, because the coarse shortlist
+is approximate by design and cannot touch the serial numerator or the denominator band.
+
+### ADVISOR ERRORS 105, 106, 107
+
+105. Priced rung 2-lite at +4.68 % leg from a MODELLED `c = 0.445` when a direct measurement was
+     one arm away. Two students then measured `c` at approximately zero.
+106. Near-miss, caught before sending. Nearly priced alphonse's beneficiary block from the LOCAL
+     8.8 % entry-point share when F13 measures the ranked head share at 1.82 %.
+107. Carried a "2.8x headroom to the memory roofline" that is algebraically
+     `2 * (M=8 round / M=5 round)` and contains no bandwidth information, built on a 542.8 GB/s
+     "ceiling" that is itself a pre-E100 achieved rate.
+
+### STOP LIST CHANGES
+
+REOPENED, per-width templating of the Route B entry point, F125 to F133. It is now a standalone
+bit-exact candidate worth +10.18 % residency on about 88 % of the round.
+
+REOPENED NARROWLY, NA widening and one-pass tables at M=6,7,8, for `qwen_e120_qmv_wide` ONLY, and
+only behind per-width templating. Stays CLOSED for `qmv_fast_crossrow_affine4_g64_m` in
+`quantized.h`.
+
+NEW CLOSED, rung 2-lite `(5,3)`, refuted by direct measurement at +18.6 % to +39.4 % per shape
+and -0.418 % net.
+
+NEW CLOSED, pruning `case 2:` from `affine_qmv_fast` to reach 69 simdgroups: about +5 % round
+cost against at most +0.5 % residency.
+
+NEW CLOSED, the achieved-bandwidth roofline framing in every form, superseded by within-segment
+inflation.
+
+STILL CLOSED, extending Route B to target verify rounds at M=1 or M=2, F127. That entry does NOT
+close the head's `ntg.x == 1` dispatch population, which Route C now targets.
+
+`_nax` IS CLOSED FOR A STRONGER REASON THAN PREVIOUSLY RECORDED. There is no `qmv_nax`:
+`kernels/quantized_nax.h` and `.metal` contain only `affine_qmm_t_nax`, `affine_qmm_n_nax`,
+`affine_gather_qmm_{t,n}_nax` and `qmm_rhs_nax_{nn,nt}`, and decode at M <= 9 dispatches `qmv`,
+never `qmm`. Independently, a matrix-unit path would change floating-point accumulation order and
+break bit-exactness against the width-1 serial path, which Rule 92 now forbids outright and which
+the local harness cannot detect. `is_nax_available()` is false on all four student Macs. Gate at
+`device.cpp:913-930`, `can_use_nax &= gen >= (arch == 'p' ? 18 : 17)` plus
+`__builtin_available(macOS 26.2)`.
+
+### THE CENTRAL CAMPAIGN ARITHMETIC
+
+```
+our promoted crown d3c491b5                          3.49065044   <- THE FRONTIER
+absolute per-prompt floor, all solvers               3.492374     <- composition ceiling, +0.049 %
+previous crown bc070b7b francip                      3.35922017
+prune_na5_pair (alphonse, submitting)          +0.007 % to +0.86 %   depending on c
+per-width templating (thorfinn, next)          +0.09 % to +3.99 %    depending on c
+one-pass table {6:6,7:7}                       +1.4 % to +1.8 %      spill-free on g17s
+one-pass table {6:6,7:7,8:8}                   +7.6 % to +15.4 % leg -> published 3.76 to 4.09
+Route C narrow head entry point (askeladd)     +0.0 % to +0.6 %      depending on c
+operator plausibility gate                           5.0
+```
+
+The plausibility gate is not a target, not a reason to stop, and not a reason to hold a
+candidate. If the one-pass table lands at the top of its bracket we submit it and let the
+operator adjudicate the ceiling.
