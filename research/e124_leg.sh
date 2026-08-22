@@ -38,7 +38,12 @@ research/e79_trace_leg.sh "${tag}" "${tokens}" "$@"
 status=$?
 
 out="research/out/${tag}"
-witness="$(grep -h '^qwen-mtp-island-arm: ' "${out}/wrapper.err" 2>/dev/null \
+# The witness lands in trace.txt, not wrapper.err. The `mtp-timed` parent
+# drains the runtime worker's stderr into a swallowing emitter and only shows
+# it when the worker exits badly, so a successful leg discards every worker
+# stderr line. The trace file is the one worker-written artifact it keeps.
+witness="$(grep -h '^qwen-mtp-island-arm: ' \
+  "${out}/trace.txt" "${out}/wrapper.err" 2>/dev/null \
   | sort -u | tr '\n' ';')"
 {
   echo "experiment=e124-noislands-acceptance-exchange"
@@ -51,8 +56,9 @@ witness="$(grep -h '^qwen-mtp-island-arm: ' "${out}/wrapper.err" 2>/dev/null \
 # every arm in that session is silently `all`. That is the one failure mode
 # that would make the whole experiment a null for the wrong reason.
 if [[ "${status}" -eq 0 && -z "${witness}" ]]; then
-  echo "e124_leg.sh: ${tag} exited 0 but printed no island-arm witness;" \
-       "the worker predates the selector. Rebuild before timing." >&2
+  echo "e124_leg.sh: ${tag} exited 0 but wrote no island-arm witness;" \
+       "the worker predates the selector, or the leg ran --no-trace so" \
+       "the witness had nowhere to land. Rebuild before timing." >&2
   exit 3
 fi
 if [[ "${status}" -eq 0 && "${witness}" != "qwen-mtp-island-arm: ${arm} "* ]]; then

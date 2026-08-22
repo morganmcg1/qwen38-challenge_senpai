@@ -2192,6 +2192,35 @@ enum Qwen35IslandArm: String {
         }
         return arm
     }
+
+    /// Record which arm this process selected, where a research leg can read
+    /// it afterwards.
+    ///
+    /// Not stderr. The `mtp-timed` parent drains the runtime worker's stderr
+    /// into a swallowing emitter and surfaces it only when the worker exits
+    /// badly, so a successful leg discards every worker stderr line.
+    /// `Qwen36MTPBlockSession.traceSink` documents the same behaviour and
+    /// solves it the same way: append to the configured trace file, which is
+    /// opened `O_APPEND` precisely so the reference, serial and timed workers
+    /// of one leg can all write it.
+    func writeWitness() {
+        let line = "qwen-mtp-island-arm: \(rawValue)"
+            + " installsQ=\(installsQ) installsKV=\(installsKV)\n"
+        let data = Data(line.utf8)
+        if let path = ProcessInfo.processInfo
+            .environment["MLX_QWEN_MTP_TRACE_PATH"], !path.isEmpty
+        {
+            let descriptor = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+            if descriptor >= 0 {
+                let handle = FileHandle(
+                    fileDescriptor: descriptor, closeOnDealloc: true)
+                handle.write(data)
+                try? handle.close()
+                return
+            }
+        }
+        FileHandle.standardError.write(data)
+    }
 }
 
 final class Qwen35Attention: Module {
@@ -4399,11 +4428,8 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
             {
                 // Witness that a research leg selected the arm it believes it
                 // ran. Silent when neither variable is set, so the shipped
-                // default prints exactly what it prints today.
-                let witness = "qwen-mtp-island-arm: \(arm.rawValue)"
-                    + " installsQ=\(arm.installsQ)"
-                    + " installsKV=\(arm.installsKV)\n"
-                FileHandle.standardError.write(Data(witness.utf8))
+                // default writes exactly what it writes today.
+                arm.writeWitness()
             }
             if arm != .none {
                 layer.selfAttn.installExactQKVRows(
