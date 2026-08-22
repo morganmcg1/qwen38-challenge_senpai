@@ -1351,6 +1351,15 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
             model["pct_head_share_7"] - MISS_TO_SCORE_PCT * worst("m_incremental"),
         "passes_t0": net_worst <= T0_NET_MISS,
         "passes_t0b": lowest("recall") >= T0B_RECALL,
+        # E139. `recall` is survivor retention CONDITIONAL on the probed set,
+        # so it is identically 1.0 whenever the survivor width covers every
+        # probed row, and `passes_t0b` cannot fail for such a cell however
+        # many leaf rows the probe never reached. This reads the same
+        # threshold against the leaf term instead. Added, not substituted:
+        # changing `passes_t0b` in place would silently move recorded
+        # verdicts on the narrow-width sketch families, where the two
+        # definitions really do differ.
+        "passes_t0b_leaf": lowest("probe_hit_rate") >= T0B_RECALL,
         "by_stratum": by_stratum,
     }
 
