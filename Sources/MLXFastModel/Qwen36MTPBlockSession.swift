@@ -1095,8 +1095,8 @@ public final class Qwen36MTPBlockSession {
         case ship, pb5, pb6, pb7, pbfit
     }
 
-    /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
-    /// shipped value so a leg session cannot leave another arm behind.
+    /// THE ONE VALUE AN ARM SESSION VARIES. `QwenMTPDepthPriceTests` pins the
+    /// compiled default so a leg session cannot leave another arm behind.
     ///
     /// The shipped arm is `pb6`: one priced step at the width-6 pass boundary,
     /// tier `1.45`, with the total held so every shallower step gets cheaper.
@@ -1118,7 +1118,26 @@ public final class Qwen36MTPBlockSession {
     /// the structural pass boundary off width 6 to width 8, so the pass-count
     /// law no longer justifies this width; `E134PassBoundaryPriceTests` pins
     /// that move and pins the measured ranked curve that does justify it.
-    internal static let depthPriceArm: DepthPriceArm = .pb6
+    ///
+    /// `MLX_E134_DEPTH_PRICE_ARM` selects the arm at run time so a local A/B
+    /// can time two arms with ONE worker binary. Rebuilding between arms is
+    /// what this avoids: a price arm changes the round count, and comparing
+    /// two separately built binaries also compares every other source change
+    /// between them, which is how the first `pb6` screen ended up carrying an
+    /// unrelated flag-hoisting commit.
+    ///
+    /// Unset gives `.pb6`, so the compiled default IS the shipped behaviour.
+    /// The read happens once, when this `static let` initialises, so no round
+    /// pays for it. The value cannot vary with prompt content, benchmark
+    /// phase, or anything else the request carries. An unrecognised value
+    /// falls back to the default, which is the right runtime behaviour and
+    /// the wrong test behaviour, so CAMPAIGN RULE 114 applies: witness the arm
+    /// from the run's own schedule, never from the variable it was asked with.
+    internal static let depthPriceArm: DepthPriceArm = {
+        let requested = ProcessInfo.processInfo
+            .environment["MLX_E134_DEPTH_PRICE_ARM"] ?? ""
+        return DepthPriceArm(rawValue: requested) ?? .pb6
+    }()
 
     /// Built once. A computed property here would allocate two arrays on
     /// every round, inside the timed path.

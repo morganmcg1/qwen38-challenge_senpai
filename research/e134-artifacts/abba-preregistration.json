@@ -1,0 +1,85 @@
+{
+  "experiment": "e134",
+  "item": "F14 item 5b: same-binary ABBA arm A/B",
+  "written_before_any_leg_ran": true,
+  "harness": "local",
+  "supersedes": "F13's two-binary A/B design, which F14 item 1 showed is impossible: depthPriceArm is a compile-time static let, so two arms means two binaries and therefore two of everything else as well.",
+
+  "design": {
+    "arms": ["ship", "pb6"],
+    "selector": "MLX_E134_DEPTH_PRICE_ARM, read once at static-let initialisation inside the worker process",
+    "one_worker_binary": true,
+    "fixture": "benchfixture (correctness_prompts/public_longcopy_gate_english_512_256.json)",
+    "fixtures_count": 1,
+    "tokens": 512,
+    "offered_depth": 8,
+    "order_within_replicate": ["ship", "pb6", "pb6", "ship"],
+    "replicates": 3,
+    "mean_position_per_arm": 2.5,
+    "driver": "research/e134_abba.sh",
+    "report": "research/e134_abba_report.py"
+  },
+
+  "primary_metric": {
+    "name": "percent reduction in absolute candidate decode seconds per token, ship to pb6",
+    "field": "parent_measured_seconds_per_token",
+    "basis": "decode only",
+    "direction": "higher is better",
+    "estimator": "within-replicate contrast mean(ship legs) vs mean(pb6 legs); with order ABBA this cancels linear thermal drift exactly",
+    "aggregate": "mean of the three per-replicate contrasts, with the sample sd reported"
+  },
+
+  "secondary_metrics": [
+    {
+      "name": "percent reduction on the ranked-shaped basis",
+      "field": "(seed_prefill_seconds + decode_seconds) / decode_token_count",
+      "why": "the ranked leg times seed processing and decoding in one window. Seed prefill is about 4.00 s on every leg of every arm, so it dilutes any round-side gain by about 1.31x. The decode-only number is the honest measure of the mechanism; this one is the honest measure of what the score would see."
+    },
+    {"name": "round_count", "why": "the arm's behavioural signature and the mechanism it acts through"},
+    {"name": "effective_mean_draft_len", "why": "shows the width mix the arm buys"},
+    {"name": "declared_rows_total", "why": "rows are NOT the mechanism; the leg-prediction work refuted a rows-only cost model"},
+    {"name": "all_tokens_matched", "why": "exactness gate, must be true on every leg"},
+    {"name": "residual_divergence_count", "why": "exactness gate, must be 0 on every leg"},
+    {"name": "gpu_temp_entry_c", "why": "program.md requires the entry-temperature spread beside any ungated effect"}
+  ],
+
+  "gate_labels_carried_verbatim": {
+    "cool_gate_passed_real_gate": false,
+    "gate_qualified_for_timing": false,
+    "official_or_ranked_score": false,
+    "timing_valid": true,
+    "note": "timing_valid is true here only because E128_NO_TRACE=1 removes the per-round trace writes that made every earlier e128 leg unusable for timing. The cool gate is still not taken, which is why the ABBA counterbalance is mandatory."
+  },
+
+  "priors_and_predictions": {
+    "traced_screen_benchfixture_pct": 1.4247,
+    "traced_screen_caveat": "timing_valid=false; two worker binaries; the arms were collected in different sessions",
+    "width_priced_model_benchfixture_pct": {"flat_pre_arm": 2.6295, "measured": 2.7754, "rows_only": 2.0906},
+    "archived_ranked_weighted_observed_pct": 2.0892,
+    "expectation": "between +1.4 and +2.8 percent on the decode basis, most likely near +1.4 because that is the only figure measured end to end on this fixture"
+  },
+
+  "decision_rule": {
+    "one_sided": true,
+    "why_one_sided": "F14 item 3. On applegpu_g16s the na6 entry point clamps and na7 spills, so this host's width-6 cliff is steeper than the ranked runner's. That biases pb6 to look BETTER locally than it will on the runner. A local win therefore transfers nothing; a local loss is decisive against the arm.",
+    "block": "point estimate <= 0.0 percent. Report to the advisor that pb6 does not survive a same-binary test, and do not run the pre-submit chain on it.",
+    "escalate": "0.0 < point estimate < 1.0 percent. This is below the +1.07 percent jackknife floor from the item 2 refit. Do not decide alone; hand the number to the advisor.",
+    "proceed": "point estimate >= 1.0 percent. This does NOT prove a ranked win. It only removes the same-binary objection and permits the pre-submit chain to continue on the shipped arm.",
+    "invalidate": "any leg whose witnessed round_count disagrees with its requested arm is discarded and never averaged. If any leg is discarded the session is reported as failed, not repaired by dropping the leg."
+  },
+
+  "stop_rule": {
+    "planned_replicates": 3,
+    "extension_declared_in_advance": "extend to 5 replicates if and only if the sample sd of the three per-replicate contrasts exceeds 0.5 percentage points",
+    "no_adaptive_extension_on_the_estimate": true
+  },
+
+  "known_confound_this_session_removes": "The archived shipped-vs-pb6 comparison spans two worker digests and up to eleven hours. Worse, the commit range c102b021..a9714610 carried the arm flip AND the hoisting of five ProcessInfo.environment computed properties to static lets, one of which sat on the timed reject path at about 46.5 microseconds per read. Bounded at about 0.04 percent on medicine_hist, two orders below the effect, but real. One binary removes it exactly.",
+
+  "known_limits_this_session_does_not_remove": [
+    "one fixture, so nothing here speaks to prompt sensitivity",
+    "no cool gate, so this is directional causal evidence within one counterbalanced session and never a gate-qualified or ranked number",
+    "one host generation, and that host's width-6 cliff is steeper than the runner's",
+    "the local serial-to-MTP ratio is not reported as evidence, because a depth-price arm changes only the MTP leg and the absolute candidate time is the direct measure"
+  ]
+}
