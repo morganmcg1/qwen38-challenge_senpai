@@ -287,9 +287,11 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
                 })
 
     survivors = [c for c in cells if c["passes_t0"] and c["passes_t0b"]]
-    best = max(survivors, key=lambda c: c["predicted_pct_gating"], default=None)
+    best = max(survivors, key=lambda c: c["predicted_pct_absolute"], default=None)
     # The primary metric is what a compliant cell is worth on the ranked
     # score. No compliant cell means the mechanism is worth exactly zero.
+    # Advisor error 125 makes the absolute-miss price the headline, so the
+    # incremental price is published beside it rather than as the metric.
     summary = {
         "screen_samples": payload["samples"],
         "screen_cells": len(cells),
@@ -298,6 +300,8 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
         "cells_passing_both": len(survivors),
         "gate_recomputation_disagreements": disagreements,
         "e133_best_cell_ranked_pct":
+            best["predicted_pct_absolute"] if best else 0.0,
+        "e133_best_cell_ranked_pct_incremental":
             best["predicted_pct_gating"] if best else 0.0,
         # The selected cell's own worst gating stratum when a compliant cell
         # exists. With no compliant cell there is nothing to select, so the
@@ -329,18 +333,19 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
             "net_miss_essays_bacon", "recall_essays_bacon",
             "net_miss_essays_bacon_holdout", "recall_essays_bacon_holdout",
             "acceptance_loss_pooled_worst_gating", "substitutions_live_gating",
+            "predicted_pct_absolute", "predicted_pct_absolute_9",
             "predicted_pct_gating", "predicted_pct_pooled",
             "predicted_pct_raw_miss")
     if best:
         for key in keys:
             summary["best_cell/%s" % key] = best[key]
     basis_free = [c for c in survivors if c["family"] in BASIS_FREE_FAMILIES]
-    chosen = max(basis_free, key=lambda c: c["predicted_pct_gating"],
+    chosen = max(basis_free, key=lambda c: c["predicted_pct_absolute"],
                  default=None)
     summary["basis_free/cells_passing_both"] = len(basis_free)
     summary["basis_free/best_arm"] = chosen["arm"] if chosen else None
     summary["basis_free/best_predicted_pct"] = (
-        chosen["predicted_pct_gating"] if chosen else 0.0)
+        chosen["predicted_pct_absolute"] if chosen else 0.0)
     if chosen:
         for key in keys:
             summary["basis_free/best_cell/%s" % key] = chosen[key]

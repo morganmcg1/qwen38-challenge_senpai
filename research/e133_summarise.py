@@ -30,6 +30,8 @@ def show_cell(cell: dict, survival: bool = False) -> None:
     print(f"  recall worst       {cell['recall_worst_gating']:.5f}")
     print(f"  gain% 7/9 share    {cell['pct_head_share_7']:.3f} / "
           f"{cell['pct_head_share_9']:.3f}   byte-rate {cell['pct_byte_rate']:.3f}")
+    print(f"  pred% ABSOLUTE     {cell['predicted_pct_absolute']:.3f}"
+          f"   at 9% head share {cell['predicted_pct_absolute_9']:.3f}")
     print(f"  pred% F1.5 loss    {cell['predicted_pct_gating']:.3f}")
     print(f"  pred% pooled p     {cell['predicted_pct_pooled']:.3f}")
     print(f"  pred% raw mInc     {cell['predicted_pct_raw_miss']:.3f}")
@@ -55,6 +57,70 @@ def show_cell(cell: dict, survival: bool = False) -> None:
         print("    " + "  ".join(f"{g}:{cur[str(g)] / n:.5f}" for g in RANK_GRID
                                  if str(g) in cur))
         print(f"    tail fit: {v['tail_fit_at_survivors']}")
+
+
+def clearing(cells):
+    return [c for c in cells if c["passes_t0"] and c["passes_t0b"]]
+
+
+def best_abs(cells):
+    return max(clearing(cells), key=lambda c: c["predicted_pct_absolute"],
+               default=None)
+
+
+def width_ladder(out: dict) -> None:
+    """Survivor width against the best absolute-miss price at that width.
+
+    The design fixed `N = 256`. This axis shows what that choice costs.
+    """
+    for stage in sorted({c["stage_a"] for c in out["cells"]}):
+        rows = [c for c in out["cells"] if c["stage_a"] == stage]
+        print(f"\n=== survivor width ladder  (stage_a={stage})")
+        print(f"{'N':>7s}{'cells':>7s}{'clear':>7s}{'B/row':>7s}"
+              f"{'predABS':>9s}{'predF':>8s}   best clearing arm")
+        for n in sorted({c["survivors"] for c in rows}):
+            at = [c for c in rows if c["survivors"] == n]
+            b = best_abs(at)
+            print(f"{n:7d}{len(at):7d}{len(clearing(at)):7d}"
+                  f"{b['bytes_per_row'] if b else 0:7d}"
+                  f"{b['predicted_pct_absolute'] if b else 0.0:9.3f}"
+                  f"{b['predicted_pct_gating'] if b else 0.0:8.3f}"
+                  f"   {b['arm'] if b else 'None'}")
+
+
+def family_table(out: dict) -> None:
+    """Clearing count per family per stage, so a family can be retired."""
+    stages = sorted({c["stage_a"] for c in out["cells"]})
+    print("\n=== family x stage, cells clearing both gates")
+    print(f"{'family':>12s}" + "".join(f"{s:>16s}" for s in stages))
+    for fam in sorted({c["family"] for c in out["cells"]}):
+        line = f"{fam:>12s}"
+        for s in stages:
+            at = [c for c in out["cells"]
+                  if c["family"] == fam and c["stage_a"] == s]
+            line += f"{len(clearing(at)):>8d}/{len(at):<8d}"
+        print(line)
+
+
+def basis_free(out: dict) -> None:
+    """Best clearing cell that needs no captured query basis.
+
+    A query-fitted basis carries a provenance obligation and a transfer risk,
+    so the price of dropping it is worth publishing on its own line.
+    """
+    free = {"simhash", "sign", "lowrank", "exact"}
+    cells = [c for c in out["cells"] if c["family"] in free]
+    b, overall = best_abs(cells), best_abs(out["cells"])
+    print("\n=== basis-free best clearing cell (no captured query basis)")
+    if b is None:
+        print("  none clears")
+        return
+    print(f"  {b['arm']}  {b['bytes_per_row']} B/row  "
+          f"predABS {b['predicted_pct_absolute']:.3f}  "
+          f"net {b['net_miss_worst_gating']:.3e}  "
+          f"recall {b['recall_worst_gating']:.5f}")
+    print(f"  query fit is worth "
+          f"{overall['predicted_pct_absolute'] - b['predicted_pct_absolute']:+.3f} pp")
 
 
 def main() -> None:
@@ -108,6 +174,10 @@ def main() -> None:
               f"net={c['net_miss_worst_gating']:.3e} "
               f"rec={c['recall_worst_gating']:.6f} "
               f"abs={c['m_absolute_worst_gating']:.6e}")
+
+    width_ladder(out)
+    family_table(out)
+    basis_free(out)
 
     for arm in [a for a in args.arms.split(",") if a]:
         cell = next((c for c in out["cells"] if c["arm"] == arm), None)
