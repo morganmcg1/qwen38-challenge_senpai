@@ -57,11 +57,31 @@ from e128_replay import (
 
 # ---------------------------------------------------------------- ranked data
 
-# F97, fitted over 147 official runs. `round_us(M)` at verify width M = d + 1.
-RANKED_TIER = {
-    1: (27215.4, 3966.4),   # M = 1..4
-    2: (17020.7, 7154.2),   # M = 5..8
+# The ranked round cost `round_us(M)` at verify width `M = d + 1`.
+#
+# The default is F97, fitted over 147 official runs of other solvers. Route B
+# changed our candidate and did not change theirs, so that curve is the board's
+# and no longer ours. `--curve-json` swaps in the curve `e128_ourcurve.py` fits
+# from our own receipts, which moves the tier step from M >= 5 to M >= 6 and
+# lowers both marginal slopes.
+CURVE = {
+    "name": "board_f97",
+    "breakpoint": 5,
+    "lo": (27215.4, 3966.4),
+    "hi": (17020.7, 7154.2),
 }
+
+
+def load_curve(path: Path, key: str | None) -> None:
+    data = json.loads(path.read_text())
+    if key is not None:
+        data = data["curves"][key]
+    CURVE.update({
+        "name": data.get("name", "%s:%s" % (path.name, key)),
+        "breakpoint": int(data["breakpoint"]),
+        "lo": tuple(data["lo"]),
+        "hi": tuple(data["hi"]),
+    })
 
 # F92 realised behaviour per ranked prompt, and F83 marginal weights.
 #
@@ -99,8 +119,7 @@ DECODE_TOKENS = 512
 
 
 def ranked_round_us(rows: int) -> float:
-    tier = 1 if rows <= 4 else 2
-    intercept, slope = RANKED_TIER[tier]
+    intercept, slope = CURVE["lo"] if rows < CURVE["breakpoint"] else CURVE["hi"]
     return intercept + slope * rows
 
 
@@ -657,6 +676,7 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
         "transfer": transfer,
         "arms": results,
         "windows": windows,
+        "curve": dict(CURVE),
     }
 
 
@@ -731,7 +751,22 @@ def main() -> int:
                         help="jensen-and-sign.json; supplies the measured "
                              "level bias and Jensen gain per fixture")
     parser.add_argument("--r-band-json", type=Path)
+    parser.add_argument("--curve-json", type=Path,
+                        help="ranked cost curve fitted by e128_ourcurve.py; "
+                             "the F97 board curve is used when omitted")
+    parser.add_argument("--curve-key",
+                        help="named curve inside a multi-curve --curve-json")
+    parser.add_argument("--curve-sweep", nargs="*", default=[],
+                        help="curve names to reprice every arm against")
+    parser.add_argument("--curve-sweep-json", type=Path)
     args = parser.parse_args()
+    if args.curve_json:
+        load_curve(args.curve_json, args.curve_key)
+    print("ranked cost curve %s: break M>=%d  %.1f + %.1f M  |  %.1f + %.1f M"
+          % (CURVE["name"], CURVE["breakpoint"], CURVE["lo"][0], CURVE["lo"][1],
+             CURVE["hi"][0], CURVE["hi"][1]))
+    print("round us by M: %s" % "  ".join(
+        "%d:%.0f" % (m, ranked_round_us(m)) for m in range(1, 10)))
 
     legs = {}
     for path in [args.accept] + args.extra_accept:
@@ -889,6 +924,42 @@ def main() -> int:
             "harness": "ranked",
             "variants": rows,
         }, indent=2) + "\n")
+
+    if args.curve_sweep:
+        # The tier step and the R vector are the two structural choices in the
+        # cost curve, so every arm is repriced on each candidate curve. A
+        # conclusion that changes sign between curves is a conclusion about the
+        # fit, not about the scheduler.
+        arms = [a for a in ARMS if not a.startswith("price")]
+        saved = dict(CURVE)
+        curves = {}
+        for key in args.curve_sweep:
+            load_curve(args.curve_json, key)
+            out = price(legs, receipt, args.windows, args.fit_windows,
+                        level_rows=level_rows)
+            curves[key] = {
+                "curve": dict(CURVE),
+                "round_us": {m: ranked_round_us(m) for m in range(1, 10)},
+                "medians": out["medians"],
+                "median_gain_pct_vs_ship": out["median_gain_pct_vs_ship"],
+                "simulated_depth_ship": {
+                    p: e["simulated_depth_ship"]
+                    for p, e in out["transfer"].items()},
+            }
+        CURVE.update(saved)
+
+        print("\nmedian gain vs ship (%) by ranked cost curve:")
+        print("%-14s %6s" % ("curve", "break")
+              + "".join("%11s" % a for a in arms))
+        for key, row in curves.items():
+            print("%-14s %6d" % (key, row["curve"]["breakpoint"]) + "".join(
+                "%11.4f" % row["median_gain_pct_vs_ship"][a] for a in arms))
+
+        if args.curve_sweep_json:
+            args.curve_sweep_json.parent.mkdir(parents=True, exist_ok=True)
+            args.curve_sweep_json.write_text(json.dumps({
+                "harness": "ranked", "curves": curves,
+            }, indent=2) + "\n")
 
     if args.identity:
         identity = json.loads(args.identity.read_text())

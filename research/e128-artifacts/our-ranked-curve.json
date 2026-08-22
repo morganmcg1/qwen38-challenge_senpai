@@ -1,0 +1,147 @@
+{
+ "harness": "ranked",
+ "source": "e128_ourcurve.py",
+ "receipt": "d3c491b5",
+ "fit": "dist",
+ "r_scenario": "assumed",
+ "r_vector": {
+  "beagle": 110.0,
+  "medicine": 90.0,
+  "essays": 92.0,
+  "botany": 81.0,
+  "republic": 93.0,
+  "drama": 252.0,
+  "travel": 212.0,
+  "plutarch": 487.0
+ },
+ "rmse_us": 90.57060627420289,
+ "model": "piece",
+ "breakpoint": 6,
+ "lo": [
+  27894.325374109325,
+  3388.2623367073757
+ ],
+ "hi": [
+  21541.133402215033,
+  6167.542819345323
+ ],
+ "curves": {
+  "predicted": {
+   "name": "ours_d3c491b5_predicted",
+   "r_scenario": "predicted",
+   "rmse_us": 1238.2396754953004,
+   "model": "step",
+   "breakpoint": 7,
+   "lo": [
+    26136.386531965807,
+    4204.771803535765
+   ],
+   "hi": [
+    38558.606145534366,
+    4204.771803535765
+   ]
+  },
+  "assumed": {
+   "name": "ours_d3c491b5_assumed",
+   "r_scenario": "assumed",
+   "rmse_us": 90.57060627420289,
+   "model": "piece",
+   "breakpoint": 6,
+   "lo": [
+    27894.325374109325,
+    3388.2623367073757
+   ],
+   "hi": [
+    21541.133402215033,
+    6167.542819345323
+   ]
+  },
+  "band_lo": {
+   "name": "ours_d3c491b5_band_lo",
+   "r_scenario": "band_lo",
+   "rmse_us": 1332.3488003555165,
+   "model": "line",
+   "breakpoint": 10,
+   "lo": [
+    26069.357861617344,
+    5833.496340178576
+   ],
+   "hi": [
+    26069.357861617344,
+    5833.496340178576
+   ]
+  },
+  "band_hi": {
+   "name": "ours_d3c491b5_band_hi",
+   "r_scenario": "band_hi",
+   "rmse_us": 560.2253491303073,
+   "model": "piece",
+   "breakpoint": 6,
+   "lo": [
+    28629.775347199873,
+    1421.397549876795
+   ],
+   "hi": [
+    13661.378969149671,
+    7084.431393870059
+   ]
+  },
+  "board": {
+   "name": "board_f97",
+   "breakpoint": 5,
+   "lo": [
+    27215.4,
+    3966.4
+   ],
+   "hi": [
+    17020.7,
+    7154.2
+   ],
+   "rmse_us": null,
+   "model": "piece"
+  },
+  "ours_b4": {
+   "name": "ours_b4",
+   "model": "piece",
+   "breakpoint": 4,
+   "rmse_us": 118.59780170094234,
+   "lo": [
+    28989.753051512344,
+    2369.4913688235765
+   ],
+   "hi": [
+    17686.537853255337,
+    6612.9204981175835
+   ]
+  },
+  "ours_b5": {
+   "name": "ours_b5",
+   "model": "piece",
+   "breakpoint": 5,
+   "rmse_us": 127.05270305537505,
+   "lo": [
+    28083.573936516517,
+    3217.4914348586694
+   ],
+   "hi": [
+    18241.93005990884,
+    6542.810231240261
+   ]
+  },
+  "ours_meanfit": {
+   "name": "ours_meanfit",
+   "model": "piece",
+   "breakpoint": 5,
+   "rmse_us": 146.5835820237875,
+   "lo": [
+    27586.7427009535,
+    3626.8260167627063
+   ],
+   "hi": [
+    17385.836010870687,
+    6636.2505727415255
+   ]
+  }
+ },
+ "name": "ours_d3c491b5_assumed"
+}
