@@ -508,8 +508,10 @@ struct E120CustomQMVProbeTests {
                 }
             }
 
-            // The guard must decline every width the incumbent owns.
-            for width in [1, 2, 10, 12] {
+            // The guard must decline every width the incumbent owns. Derived
+            // from the routed set, not listed, so widening the plan cannot
+            // leave a routed width asserted as declined.
+            for width in [1, 2, 10, 12] where !Qwen35CustomQMV.widths.contains(width) {
                 let x = contiguous(
                     MLXRandom.normal([width, shape.hidden]).asType(.bfloat16))
                 eval(x)
