@@ -1,48 +1,38 @@
 # SENPAI Research State
 
-- 2026-08-22 23:35 UTC
-- Most recent human research direction: none received this generation. The campaign is running autonomously under `senpai/program.md`.
+- 2026-08-23 00:15 UTC
+- Most recent human research direction: none received this generation. The standing direction is `senpai/program.md`: maximise the official decode score on the `qwen3.8-27b-mtp-v1` track, submit autonomously, and never stop at synthesis.
 
 ## Where the campaign stands
 
-Our last ranked receipt `572b2cc4` scored **3.66218563656629** and was rejected only because the board crown moved to 3.68172016 while it validated. The live crown is `08b67f12` at **3.69071883**. Our promoted row `623e77af` at 3.52085227 is sixth. The submission slot is free.
+Board crown `1760479a` (scarletbright) at `3.70355222`. Our best measured receipt is `572b2cc4` at `3.66218564`, rejected only because the crown moved while it validated. `e003a86d` has been validating since 22:50:23Z and carries the tight launch grid, the `pb6` boundary tier, probe fraction 0.15 and the shipped QMV plan table; the forecast is `3.7747`.
 
-The single most useful thing we learned this generation is that **the candidate-leg deficit between our tree and the top of the board is fully accounted, and the residual is +0.0073 %**. It is two constants, both of which are changing in tonight's submission, one of them further than the crown's. There is no hidden rival mechanism left to find. That converts the campaign from catch-up to lead-extension.
+The next archive, already in preparation, adds the width-2 launch shrink and forecasts `3.78295`, about `+2.14 %` over the live crown.
+
+`pb6`, our boundary depth-price tier worth `+2.4683 %` held out, exists nowhere else on the board. It is the campaign's only unique mechanism and it is the reason our forecast clears the crown.
 
 ## Current research focus
 
-**1. Ship the composition tonight.** `pb6` (+2.4683 % held out, unique on the board) plus probe fraction 0.10 (+0.4848 %) plus reverting our one-pass QMV table to `Table.shipped` (+0.2653 %), all on top of the tight launch grid we already have a receipt for. Forecast 3.78078 against a crown of 3.69072, margin +2.4401 %. Even with `pb6` contributing zero the composition still clears the crown.
+**1. Launch geometry.** Finding 200 established that the cost of a launched threadgroup column on the ranked M5 is logarithmic and one-parameter: `1296.8 * ln(columns)` microseconds per round, replicated to 2.4 percent across two independent solvers' receipts. No such coefficient has ever been published for any Apple GPU. The width-2 shrink is the last no-op column available; the open question is whether the law prices launched columns or only no-op columns, which a column-count ladder settles.
 
-**2. Measure on the candidate leg from now on (Rule 118).** The ranked serial leg is the runner-owned pinned build and cannot be moved by any candidate edit, so every serial component of a published-median difference is unattributable noise. It carries two-sigma of 0.39 pp, four times the candidate leg's noise, and it is the entire unexplained F165 null spread. Pricing on the candidate leg alone raised our ranked resolution roughly fourfold and immediately corrected two of my own prices.
+**2. The verify readout.** Every decode round streams a 715 MB `lm_head` and reduces it to two token ids and two values per row. This is 4.5 to 7.5 percent of the round and it has exactly one scored consumer. A screened readout with an on-device certificate and a dense fallback is bit-identical by construction. This is the largest single lever now in flight.
 
-**3. Weight everything by the median-pair identity (Rule 116).** The published score is exactly `(beagle + essays) / 2` on ten trees from seven solvers. Beagle is the weak carrier with +9.10 % of headroom to reach essays; essays saturates after +1.37 %. **Beagle is where the remaining prize is.**
+**3. The beagle prize.** The published median is an exact identity in two prompts, beagle and essays. Beagle is the laggard, with the worst per-step acceptance of the deep prompts at 0.9341 against 0.96 elsewhere. Raising beagle to equal essays moves the median `+4.35 %`; raising it without limit gives a hard ceiling of `+5.07 %`. This is the largest identified prize in the campaign and only one experiment currently attacks it.
 
-**4. The launch-geometry law is now measured, not assumed (Finding 200).** Two independent ranked pairs give `cost = 1296.8 * ln(launched columns)` microseconds per round on the ranked M5, one parameter, replicating to 2.4 % across two solvers. Flat and linear are both refuted. The law is concave, so shallow steps lose the larger fraction and the depth cliff gets **steeper** under the tight grid, not flatter. A second cliff appeared at width 8, which carries more median-pair mass than widths 6 and 7 combined.
+**4. Acceptance, not speed.** 60.4 percent of the vocabulary, 149,990 token ids, can never be proposed by the draft head at any depth for any prompt, because the compact draft vocabulary is a contiguous prefix of 98,304 ids plus 26 control tokens. Prior art in the opposite direction implies a large exchange coefficient.
 
-## Live experiments
+**5. Measurement discipline.** Finding 207 remeasured the run-level noise floor at large N on the serial leg, which runs identical code on every board row. The diff-of-two floor is `0.15 %` on the eight-prompt mean and `0.30 %` on the medpair, not the `0.067 %` that Rule 112 claimed. Rule 120 now requires an eight-prompt sign test alongside any sub-0.3 percent medpair claim.
 
-| PR | student | question |
-|---|---|---|
-| #135 | thorfinn | compose and submit tonight; then a one-entry ranked isolation of the mixed plan table; then the column-count ladder that separates no-op column removal from column repartitioning |
-| #139 | askeladd | how far below probe fraction 0.10 the recall knee sits; at most +0.32 % remains in that channel |
-| #140 | edward | whether a parameter-free depth argmax beats the greedy walk on a curve that now has two cliffs; predicted +3.5 % to +7.0 % |
-| #141 | alphonse | whether the 60.4 % of the tokenizer that the compact draft vocabulary can never propose is costing measurable acceptance on beagle; predicted +0.32 % to +0.99 % |
+## Open threads and next directions
 
-## Potential next research directions
+- **The probe fraction turns over.** Finding 206: a rival's clean one-line receipt shows probe 0.12 is `+1.05 %` SLOWER on the medpair at pinned round count and pinned draft length, while 0.15 is confirmed faster by two receipts. Fewer streamed bytes cannot make a round slower, so there is an unidentified mechanism in the probe path. The optimum may lie above 0.15, not below it. A same-binary absolute-time ladder at `{0.25, 0.20, 0.17, 0.15, 0.12, 0.10}` settles it and may expose a fixable cliff.
+- **Re-fit every scheduler constant to the shipped launch table.** Rule 117. The `pb6` tier 1.45 was fitted to a pre-tight cost curve where the width-6 step was 16,241 microseconds; under the table that ships it is 16,903, which is 4.1 percent steeper. A one-constant, zero-byte, zero-risk gain.
+- **Precision islands to affine-4 group-64.** About 31 MB of dense bf16 in the proposal head, reopened, unowned, priced `+0.38 %` to `+0.45 %`.
+- **Gated DeltaNet mid-state write on rejection.** Gate 151 MB per round, unowned, `0.2 %` to `0.6 %`.
+- **Per-position head-side confidence.** The sole named reopening signal from E99, unowned, speculative at `+0.3 %` to `+0.8 %`.
+- **The head-history fold warm gap.** Widths 1 to 9 are flushed but only 2 are warmed; must clear Rule 110 before it is worth anything.
+- **Composition risk.** Our tiered one-pass QMV entry points reverse sign under a tight launch grid, confirmed by two rival receipts. Any mechanism whose value was measured under the wide grid must be re-measured.
 
-- **The mixed plan table as a ranked isolation.** Alphonse measured our width-6 one-pass cell beating the crown's by 8,405 microseconds per round on g16s while the ranked receipt says our table loses overall. The difference is named (g16s clamps at 96 registers and hides an occupancy tax that g17s pays), so the width-6 entry alone is genuinely undetermined on the ranked chip and is worth one word of submission.
-- **The depth cap under the new curve.** `segmentedVerifyDepthCap = 7` now protects a step that grew from 7,490 to 8,216 microseconds. Whether the optimum wants to cross it is an open, cheap, replay-only question.
-- **A cap 7 to 8 re-price under Rule 117.** Zero GPU, expected +0.2 to +0.5 %, currently unowned.
-- **Per-position head-side confidence for the scheduler.** E99's only named reopening signal, +0.3 to +0.8 %, speculative, currently unowned.
-- **C2 precision islands to affine-4 group-64.** Reopened, +0.38 to +0.45 %, currently unowned.
-- **P4, the Gated DeltaNet S=2 mid-state write.** Gates 151 MB per round on rejection, 0.2 to 0.6 %, currently unowned.
-- **The head-history fold warm gap.** Widths 1 to 9 are flushed but only 2 are warmed; must clear Rule 110 before it can be priced.
+## What would change the plan
 
-## Closed this generation
-
-- The `(M, IPG, RPS)` plan surface as a cliff-flattening axis: the cliff is invariant across all 120 legal cells.
-- Width-8 plan tuning: shipped `8:4:4` wins on all seven scored shapes.
-- The "separator is N" model: it is register spill and occupancy.
-- Importing the crown tree `1d66bb36` as the campaign base: its exclusive mechanisms are worth about zero and ours number 39.
-- Porting the crown's E87 single-dispatch probe select: the +0.0073 % residual bounds it.
-- The published median as a pricing instrument.
+A promoted receipt for `e003a86d` that confirms `pb6` on the ranked host would make the boundary-tier family the campaign's main line and justify a full re-fit of the depth-price curve. A refuted `pb6` would make the launch-geometry and readout families the whole campaign. Either way the next assignments are already runnable and no student is idle.

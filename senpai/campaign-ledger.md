@@ -51248,3 +51248,254 @@ A frontier research agent returned the compact draft vocabulary as the largest c
 | #141 | alphonse | the unproposable-token channel: census, bit-exact coarse derivation, full-vocabulary acceptance control, cheapest prefix | new |
 
 Forecast for tonight's submission from our own receipt: `3.66219 x 1.024683 x 1.004848 x 1.002653 = 3.78078`, against a crown of `3.69072`, margin **+2.4401 %**. With `pb6` contributing zero the composition still clears the crown at 3.69326.
+
+## 298 — FINDINGS 204 to 207: the width-2 launch shrink, per-round amplification on our tree, the probe fraction turns over, and the noise floor is remeasured at large N
+
+Recorded 2026-08-23 ~00:05Z. Advisor base `5800f88e` (Merge PR #139). Campaign base `origin/main` `770a3ff2`. Board crown `1760479a` (scarletbright) at `3.70355222`, source `e8f14c44`.
+
+Our `e003a86d` is in flight since 22:50:23Z. It carries the tight launch grid, `pb6` tier 1.45, probe fraction 0.15 and `Table.compiledDefault = .shipped`. Forecast 3.7747.
+
+### 298.1 — FINDING 204: the current crown is a width-2 launch shrink, and our tree has the same gap
+
+Crown `1760479a` is one file, 8 insertions and 4 deletions, on base `1d66bb36`. No session, twin, manifest, schedule or AOT edit. The mechanism is launch geometry at verify width 2.
+
+At `M = 2` the MLX library wide branch dispatches `qmv_fast_crossrow_affine4_g64<T,2>`, a pair kernel that consumes two input rows per group, while the library host still launches `M = 2` X-groups. One of the two groups fails `if (first_m >= M) return;` and does no work. The crown emits its own `case 2:` with `inputs_per_group = 2`, widens `widths` from `3...9` to `2...9`, and teaches `activeInputGroups` that width 2 uses IPG 2, so the host launches `ceil(2/2) = 1` column.
+
+Priced on the candidate leg against `08b67f12`:
+
+```
+prompt      Mbar     R   us/round A   us/round B   delta us   cand d%   serial d%
+plutarch   1.156   487      31697.1      31627.1      -70.0   -0.2208    -0.5051
+drama      3.298   252      36570.6      36209.1     -361.6   -0.9887    -0.1741
+travel     3.648   212      37798.8      37718.5      -80.3   -0.2125    -0.1577
+beagle     5.382   110      49948.3      49739.7     -208.7   -0.4177    +0.1509
+republic   5.989    93      53498.4      53456.3      -42.1   -0.0788    -0.1539
+essays     6.087    92      55006.8      54717.5     -289.3   -0.5260    -0.3837
+medicine   6.256    90      55333.5      55294.5      -39.0   -0.0705    -0.6495
+botany     7.148    81      61184.0      61018.8     -165.2   -0.2700    +0.0357
+candidate 8-prompt mean -0.3481 %  sd 0.2822 | medpair -0.4719 % | serial mean -0.2297 %
+```
+
+`effective_mean_draft_len` and `non_drafting_round_count` are digit-identical on all eight prompts, so this is a pure time change at pinned round count. All eight prompts move the same way; a two-sided sign test gives `p = 0.0078`. The medpair effect is LARGER than the eight-prompt mean, which is the favourable direction under Rule 116.
+
+Our tree has the identical gap: `Qwen35.swift:1779` reads `public static let widths = 3 ... 9` and `:2126` guards `Self.widths.contains(m)`.
+
+**Transfer is safe.** The F130.2 register census at `NA = IPG = 2` gives 87 g17s registers against a ceiling of 126 and 74 g16s registers against 96, so there is no occupancy tax at either generation.
+
+**It is not a pure geometry change.** `quantized.h:1918-1926` shows the wide branch requires `out_vec_size >= 4096` and dispatches `case 2: qmv_fast_crossrow_affine4_g64<T,2>`, a DIFFERENT template from the `qmv_fast_crossrow_affine4_g64_m<T,M,IPG,true>` used at cases 3 through 9. Emitting our own `case 2:` swaps the library body for ours as well as changing the launch. **Exclude the width-2 pair from any launch-law fit.**
+
+All seven scored shapes pass `routable` at width 2: every `n` is at least 4096 and divisible by 8, and every `k` is divisible by 512.
+
+**Port cost in our tree.** Widen `widths` at `:1779`; add `(2,2,4)` to every `Table` case plan at `:1794-1866`; emit `case 2:` at `:1591-1605`. The `static_assert(M % IPG != 1)` at `:1545` passes because `2 % 2 == 0`. `Grid.launch` at `:1957-1961` then yields one column with no further edit. `tiers` grows from 3 to 4 bodies.
+
+**The no-op column axis is exhausted after width 2.** Under `.shipped` plus the tight grid, widths 3, 4 and 5 already launch one column; width 6 launches 2, width 7 launches 2, width 8 launches 2 and width 9 launches 3, and every one of those columns does work. Width 9 is unreachable because `segmentedVerifyDepthCap = 7` limits depth to 7 and therefore width to 8. Width 8 to one column would need IPG 8, which costs 126 registers plus 48 bytes of spill on g17s and 96 plus 160 bytes on g16s, and is almost certainly a loser by the width-7 analogy in E138.
+
+**The new launch witness under `.shipped` plus tight plus width 2 is `{2:1, 3:1, 4:1, 5:1, 6:2, 7:2, 8:2, 9:3}`.** The witness issued in E135 F18 was written against `onePass67` and is wrong at widths 6 and 7.
+
+**Open sub-question.** The implied per-prompt `P(M = 2)` from the measured savings is plutarch 0.078, drama 0.402, travel 0.089, beagle 0.232, republic 0.047, essays 0.322, medicine 0.043, botany 0.184. Edward's replayed essays histogram leaves only 0.2081 for all of widths 1 through 4, so essays cannot supply 0.322 at width 2 alone. The leading explanation is that the win is the kernel BODY, not the launch geometry, and the body win is width-2 specific.
+
+### 298.2 — FINDING 205: a per-round absolute saving is amplified about 4 percent on our pb6 tree
+
+The ranked improvement from a per-round saving `s` is `s / c`, where `c` is the mean round time. `pb6` lowers `c` by declining deep rounds. No rival tree carries `pb6`.
+
+```
+R ratio pb6/ship   beagle 118/119 = 0.9916 , essays 151/146 = 1.0342  -> medpair 1.0139
+T ratio pb6/ship   1 / 1.024683                                       -> 0.9759
+c ratio            0.9759 / 1.0139                                    -> 0.9625
+amplification      1 / 0.9625                                         -> 1.039
+```
+
+So the width-2 shrink is worth about `+0.495 %` on our tree against `+0.4765 %` measured on the crown. The same factor applies to the whole launch-geometry family and to any other per-round absolute mechanism we compose onto `pb6`.
+
+### 298.3 — ADVISOR ERROR 143: I applied the launch law to a table we do not ship
+
+I built the two-cliff step table on the `onePass67` column set `{6:1, 7:1, 8:2, 9:3}`. Thorfinn reverted that table to `.shipped` `{6:2, 7:2, 8:2, 9:3}` in `e003a86d`. Edward reproduced my law to 0.1 microseconds on all eight entries, `round saving at width M = 1296.8 * ln(M / cols(M))`, and then applied it to the table that actually ships:
+
+```
+step into              2        3        4        5        6        7        8        9
+base (per_round)   3446.1   3446.1   3446.1   3446.1  16241.3   1626.1   7490.5   5323.5
+log_onePass67      2547.2   2920.3   3073.0   3156.7  16004.9   1426.2   8216.2   5696.6
+log_shipped        2547.2   2920.3   3073.0   3156.7  16903.8   1426.2   7317.3   5696.6
+
+boundary-4 ratio step(6)/step(5):  base 4.7130 | log_onePass67 5.0701 | log_shipped 5.3548
+```
+
+**Under the table that ships there is ONE cliff and it is 4.1 percent STEEPER than pre-tight, and the width-8 step falls BELOW its pre-tight value.** My claim of a second cliff at width 8 is withdrawn, and with it the raised prediction for the E140 depth-argmax cell.
+
+### 298.4 — ADVISOR ERROR 144: my uniform-shift invariance gate was mis-stated
+
+I told edward that a uniform per-round shift cannot change a ratio-based score. That is false here. Total leg time is `T = R * c`, and the score compares two arms that run DIFFERENT round counts over the same fixed 512-token window. A per-round saving `s` is invariant only if `R_pb6 / R_ship == T_pb6 / T_ship`, which is not the case: `pb6` runs MORE rounds in LESS total time, so its measured advantage must GROW under a uniform shift. Edward measured exactly that: a uniform `-2257` microsecond shift moves `E_pb6` from `+2.7353` to `+3.0656` and `D_curvelook` from `-2.4882` to `-1.2295`.
+
+**The correct invariance test is that the chosen depth distribution is unchanged, not that the median is unchanged.**
+
+### 298.5 — E140 cell D is refuted, and the depth-cap axis closes with it
+
+```
+curve            A_ship   C_flatlook  D_curvelook   E_pb6    F_pb6look   G_pb68   H_pb68look
+base             +0.0000    +0.0000     -2.4882    +2.7353    +2.1388   +2.7504    +2.2385
+uniform          +0.0000    +0.0000     -1.2295    +3.0656    +2.2540   +3.0656    +2.2540
+log_onePass67    +0.0000    +0.0000     -1.3384    +3.0527    +2.2200   +3.0670    +2.3467
+log_shipped      +0.0000    +0.0000     -1.0968    +3.2276    +2.3888   +3.2276    +2.3888
+```
+
+`D - E` is `-4.39` on `onePass67` and `-4.32` on `log_shipped`. `pb68` is worth `+0.0052` percentage points; its fitted width-8 tier is 1.10 on base, 1.20 on `log_onePass67` and exactly 1.00 on `log_shipped`, where it collapses to `pb6`.
+
+**`wants_past_cap = 0.0000` on every curve.** `segmentedVerifyDepthCap` never binds for cell D, so the queued 7 to 8 re-price is deleted without spending a GPU hour. The cap does bind elsewhere: ship 0.1691, pb6 0.1280, pb6 plus argmax 0.1588.
+
+The perturbation table over 200 windows, 6 seeds and curve leave-one-out does not fire my falsifier. The ratio of the argmax layer's degradation slope to `pb6`'s is 0.5177, 0.5432, 0.5356 and 0.5364 across four cost-model forms, agreeing to 0.026. The crossover is at a cliff cut of 0.1707. **Named reopening condition: if a future mechanism flattens the width-6 step by more than 17 percent, the argmax layer becomes live again.**
+
+### 298.6 — FINDING 206: the probe fraction turns over between 0.15 and 0.12, and 0.12 is a one percent regression
+
+Board row `9b6023c1` is a clean one-line isolation on the tight-grid crown `8849fad`: `qwen35DerivedClusterProbeFraction` 0.25 to 0.12. Priced against `ed608e64`, which is that exact source:
+
+```
+prompt        cand d%   serial d%     raw d%     draftlen A/B      nondraft A/B
+beagle       +1.2096     -0.2617    -1.4538   4.3818/4.3818          0/0
+medicine     +0.7813     -0.1132    -0.8876   5.2556/5.2556          0/0
+essays       +0.8930     +0.3694    -0.5190   5.0870/5.0870          0/0
+botany       +0.1272     +0.3601    +0.2326   6.1481/6.1481          0/0
+republic     +0.7704     -0.0874    -0.8512   4.9892/4.9892          0/0
+plutarch     +0.3917     -0.4342    -0.8226   0.1540/0.1557        449/449
+drama        +2.5615     -0.2305    -2.7222   2.2976/2.3187          0/0
+travel       +1.5249     +0.5766    -0.9341   2.6557/2.6479          0/0
+candidate 8-prompt mean +1.0324 %  sd 0.7065 | medpair +1.0513 % | serial mean +0.0224 %
+```
+
+The control at the same anchor, probe 0.25 to 0.15, is `08b67f12`: candidate mean `-0.1961 %`, medpair `-0.2609 %`, faster. A second independent receipt on a wide base, `b6cb0fea -> 02742bf0`, gives medpair `-0.3866 %`, faster. So 0.15 is confirmed twice and 0.12 is a large regression.
+
+**On beagle and essays, the two prompts that set the median, `effective_mean_draft_len` is digit-identical. The medpair regression is therefore a PURE PER-ROUND TIME increase at pinned round count and pinned depth distribution.** No byte-removal model can produce it: fewer probed rows means fewer streamed bytes.
+
+Draft length does move on the shallow prompts, drama 2.2976 to 2.3187, travel 2.6557 to 2.6479 and plutarch 0.1540 to 0.1557, so the eight-prompt vector mixes a time change with an acceptance change. The medpair does not.
+
+**This contradicts our own E139 live ladder**, which measured zero accepted-token loss at 0.15 and 0.10 and priced 0.10 at `+0.4848 %` faster. That instrument counts decode rounds. It is blind to a pure per-round time change at fixed round count, which is exactly the failure mode here.
+
+**Significance.** All eight prompts move the same way, sign test `p = 0.0078`. The eight-prompt mean is 6.9 sigma against the Finding 207 floor below, and the medpair is 3.5 sigma. The per-prompt scatter for this pair, sd 0.7065, is twice the typical pair, which says the effect is heterogeneous across prompts rather than a uniform shift.
+
+**Decision taken.** Thorfinn ships `ProbeArm.compiledDefault = .p15` in the width-2 archive, not `.p10`. The arithmetic: shipping 0.15 gains nothing and risks nothing; shipping 0.10 gains `+0.16 %` if our ladder is right and loses about `1.3 %` if 0.10 sits past the same turnover as 0.12. The width-2 lever in the same archive is worth `+0.495 %` and must not be put behind a `+0.16 %` increment with a measured negative tail. `e003a86d` already carries 0.15 and is unaffected.
+
+**Named reopening condition for 0.10.** A same-binary ABBA session on ABSOLUTE candidate seconds per token, not round counts, at `p` in `{0.25, 0.20, 0.17, 0.15, 0.12, 0.10}`, palindrome order, one worker, with entry and exit GPU temperature per leg. If absolute time falls monotonically with `p` at pinned round count, the ranked receipt is a host artefact and 0.10 reopens. If absolute time rises between 0.15 and 0.12, we have found a new mechanism in the probe path and the optimum may lie ABOVE 0.15.
+
+### 298.7 — FINDING 207 and CAMPAIGN RULE 120: the run-level noise floor, remeasured at large N
+
+Rule 112 claimed the null standard deviation of the candidate eight-prompt mean difference between two ranked receipts is `0.067 %`. That figure came from a handful of pairs and is now under test, because the provably decode-null Finding 197 pair reads `-158` microseconds per drafting round rather than zero.
+
+**The serial leg is the correct instrument.** Every board row runs the same runner-owned prebuilt serial workspace, so any dispersion in the serial per-prompt vector is pure run-level noise: host state, thermal state, runner drift and the Finding 75 measurement mode. Taking `y[r][p] = ln(serial_seconds_per_token)`, removing the prompt mean, and reading the standard deviation of the row effect over the 40 scored rows between 12:00Z and 23:00Z:
+
+```
+                                              per-row sd    diff-of-two sd
+serial    8-prompt mean   (IDENTICAL CODE)      0.1073 %        0.1517 %
+serial    medpair mean    (IDENTICAL CODE)      0.1335 %        0.1888 %
+prefill   8-prompt mean   (candidate build)     0.3596 %        0.5085 %
+```
+
+The serial row effect is **unimodal**. Quantiles run `min -0.1983, p10 -0.1435, p25 -0.0668, median -0.0112, p75 +0.0799, p90 +0.1097, max +0.3222` and the largest interior gap is 0.05 percentage points. There is no bimodality on the serial leg, which is consistent with Fact 2: the Finding 75 measurement mode acts on the DRAFTING path only, and the serial leg never drafts.
+
+**A direct candidate-leg estimate from per-prompt residual scatter.** For a given pair the scatter of the eight per-prompt candidate deltas around their own mean is measurement noise plus real heterogeneity:
+
+```
+A         B         what                                         mean %     sd %    se8 %  medpair
+ed608e64  c466d4d7  fkiene tight-grid sibling                   -0.0025   0.1593   0.0563  -0.0221
+ed608e64  08b67f12  probe 0.25 -> 0.15  (confirmed lever)       -0.1961   0.2392   0.0846  -0.2609
+08b67f12  1760479a  width-2 launch shrink (crown)               -0.3481   0.2822   0.0998  -0.4719
+ed608e64  0b2f0014  F194 one-pass table on tight base           +0.3280   0.3353   0.1186  +0.2671
+ed608e64  115c5c50  F197 provable decode-null (prefill swizzle) +0.2597   0.3534   0.1250  +0.1389
+ed608e64  572b2cc4  our tight grid (different tree)             +0.3795   0.3462   0.1224  +0.2613
+ed608e64  f4335350  Carme99 tight-grid sibling                  +0.4402   0.4576   0.1618  +0.2864
+ed608e64  9b6023c1  probe 0.25 -> 0.12  (FINDING 206)           +1.0324   0.7065   0.2498  +1.0513
+```
+
+`ed608e64 -> c466d4d7` is the cleanest null pair on the board: candidate mean `-0.0025 %`, per-prompt sd 0.1593, medpair `-0.0221 %`. Their published scores nevertheless differ by 0.0045, or 0.12 percent, and that difference is entirely the serial leg. **This vindicates Rule 112 as a BEST-CASE within-state figure** and simultaneously shows it is not the unconditional bar, because other pairs with no decode mechanism read three times as much.
+
+**CAMPAIGN RULE 120 replaces Rule 112 as the operative bar.** Two ranked receipts differ by run-level noise with:
+
+```
+per-prompt candidate sd                about 0.34 %
+8-prompt mean, diff of two             1 sigma 0.15 %   2 sigma 0.30 %
+medpair mean, diff of two              1 sigma 0.30 %   2 sigma 0.60 %
+best case, two rows in one run state   8-prompt 1 sigma 0.067 %
+```
+
+Rule 112's `0.067 %` survives only as the best case and may be quoted only when the two rows are shown to sit in the same run state. **Every single-receipt claim below `0.30 %` on the medpair must now be supported by the eight-prompt sign test as well as the magnitude.** The width-2 lever passes that test at `p = 0.0078` with 8 of 8 prompts favourable, so it stands. Finding 206 passes it too.
+
+**Practical consequence.** The medpair is only two prompts, so it is the NOISIEST of the summaries even though Rule 116 makes it the only unbiased one. Report the eight-prompt mean, its per-prompt sign count, and the medpair together. Do not decide a sub-0.3 percent medpair claim from one receipt alone.
+
+### 298.8 — the one-entry mixed table is priced and cancelled
+
+Changing `Table.shipped.plan` at width 6 from `(6,3,4)` to `(6,6,4)`:
+
+```
+launch benefit  1296.8*ln(2) = 899 us/round on width-6 rounds only
+                899 * 0.11665 medpair mass = 104.9 us of 52,860 us = +0.198 %
+body penalty    the F194 receipt already contains 899*(0.11665+0.10165) = 196.3 us
+                of launch benefit, so the measured +0.2646 % implies a body penalty
+                of 0.636 % across widths 6 and 7 combined
+                split by g17s occupancy loss times mass
+                (6: 42->37 simdgroups on 0.11665 ; 7: 41->33 on 0.10165)
+                gives about 0.26 % at width 6 and 0.37 % at width 7
+net at width 6 alone:  +0.198 % - 0.262 % = -0.064 %
+```
+
+That is inside the Rule 120 medpair noise bar. **Cancelled.** Named reopening condition: if the column-count ladder shows the launch law prices launched COLUMNS rather than NO-OP columns, the launch benefit doubles and this becomes live again. E138's g16s body win is not contradicted, because g16s clamps at 96 registers and never pays the occupancy tax.
+
+### 298.9 — askeladd E139 terminal, merged at `5800f88e`
+
+Primary `e139_composed_rider_ranked_pct` delta `0.0`, composition empty by construction. Commit `10490e07`. W&B `han2y2jg` (live acceptance channel, 23 legs, 10 rungs) and `bzqaguve` (corpus probe ladder, 19 rungs). Both carry `timing_valid=false` and `gate_qualified_for_timing=false`, correctly.
+
+**Rider A, the fp32 rerank tiebreak at `Qwen35.swift:4117`, is worth exactly `+0.0000 %` and is CLOSED.** It moves acceptance in the pre-registered direction, `+0.5098` percentage points on benchfixture and `+0.3092` on natural history, and removes 4 verified rows per fixture, but it moves ZERO decode rounds. Bounded 0 to 0.70 percent, below the 0.5658 percent local session null.
+
+**The complete live probe ladder, 23 legs, 0 failures:**
+
+```
+p     probes  gross%  x0.95   band[0.75,1.15]  dR bf  dR nh  debit%   net worst
+0.15   1844   0.3403 0.3233 [0.2552,0.3913]     0      0    0.0000   +0.3233
+0.10   1230   0.5103 0.4848 [0.3827,0.5868]     0      0    0.0000   +0.4848
+0.09   1107   0.5444 0.5172 [0.4083,0.6261]     0      0    0.0000   +0.5172
+0.08    984   0.5784 0.5495 [0.4338,0.6652]     0     +1    0.3846   +0.1649
+0.07    861   0.6125 0.5819 [0.4594,0.7044]    +1     +1    1.2821   -0.7002
+0.06    738   0.6465 0.6142                    +1     +1    1.2821   -0.6679
+0.05    615   0.6806 0.6466                    +1     +1    1.2821   -0.6355
+0.04    492   0.7147 0.6790                    +1     -1    1.2821   -0.6031
+0.03    369   0.7487 0.7113                    +2     -1    2.5641   -1.8528
+0.02    246   0.7828 0.7437                    +3     +6    3.8462   -3.1025
+```
+
+The acceptance knee is between 0.09 and 0.08 and everything at or below 0.07 is net negative on both fixtures. The `p -> 0` asymptote of `+0.81 %` is unreachable and the entire remaining prize below 0.10 is `+0.0324` percentage points; my earlier `+0.32 %` was ten times too large. Askeladd declined `p = 0.09` himself on margin grounds. **Finding 206 now supersedes this ladder for values below 0.15, because the ladder's channel cannot see a pure time change.**
+
+Negative-polarity control passed on three knobs, with one vacuous case reported honestly. Zero candidate bytes: he reverted the whole Vendor scaffold and preserved the instrument in history at `8e7a9620`.
+
+**HARNESS DEFECT 39**: `research/e133_screen.py` computes `recall` over probed rows only, so it is identically 1.0 at all 19 rungs; the correct field is `probe_hit_rate`. **HARNESS DEFECT 40**: that defective field sits inside kill rule `passes_t0b`, which therefore cannot fail; `passes_t0b_leaf` added additively. Both fixed.
+
+`MISS_TO_SCORE_PCT = 203.0` validated by a live four-point calibration at `209.5 +/- 93.1`, 0.07 sigma, but the per-leg estimator is unusable. The probe channel is a step function with wide plateaus and is non-monotone on natural history; accept rate is not a safe headline.
+
+**The campaign `swift test` floor is now 41 issues under 10 names** on this base. One-round quantisation limits are 1.2821 percent on benchfixture, 78 rounds, and 0.3846 percent on natural history, 260 rounds.
+
+### 298.10 — the board-levers audit and the claimed slow-draw mode
+
+A delegated agent enumerated all 92 scored rows in the 24-hour window, built the parent-child graph and priced about 45 isolations on the candidate-leg medpair. Its instrument recovered the width-2 lever at `+0.4743 %` against my `+0.4765 %`, so it is calibrated.
+
+It claimed a new finding: an occasional roughly 1 percent candidate slow-draw mode, plutarch-immune, from five same-content pairs. **That claim is partly a rediscovery of our own Findings 75 and 80** — the ranked measurement mode is three-valued, run-level and acts on the drafting path only, at about 0.93 milliseconds per drafting round per step, and a slow run publishes `1.3170 +/- 0.0589 %` below the same candidate fast. Plutarch immunity is the signature, because 449 of its 487 rounds do not draft.
+
+**But the Finding 206 pair is NOT a mode step.** Running the mode index on it gives a mean saving of `-664.0` microseconds per drafting round with sd 414.7, which is not the constant per-drafting-round offset a mode step produces, and the shape is monotone in draft length: drama `-1519`, travel `-873`, beagle `-700`, essays `-539`, medicine `-477`, republic `-450`, botany `-88`. The known-null Finding 197 pair reads `-158.2` with sd 219.8 in the same shape, so part of that shape is a shared nuisance axis, but the magnitude is 4.2 times the null.
+
+Other results from the audit, not independently verified by me: only one portable lever clears `+0.15 %`, the probe fraction 0.25 to 0.15; and well-evidenced nulls that save student slots include the GDN row-interleaved scan at `+0.04 %` averaged over five receipts despite a claimed 43 percent kernel speedup, qL warms at `-0.03 %`, the E121 restores at `+0.01 %`, the draft-id readout, the E122 family, E124 and swizzles, head swaps at 0 for 4, the scheduler re-price, and allocator pre-materialization at `-6.2 %`.
+
+### 298.11 — E142 assigned to askeladd: the certified verify readout
+
+`verifyLogits` has shape `[1, M, 248320]` and has exactly ONE scored consumer, `Self.linearTopTwoRows(verifyLogits)` at `Qwen36MTPBlockSession.swift:1645`, bound at `:1632`. Every round streams the whole `5120 x 248320` affine-4 group-64 `lm_head`, about 635.7 MB packed plus about 79.5 MB of scales and zeros, and reduces it to two ids and two values per row.
+
+Two independent size estimates agree. F22 gives `lm_head` 4.132 percent of QMV time against an 88.643 percent QMV share. E137 measured `head.lm_head` at 3,642.2 microseconds per call at M=5 and 4,788.2 at M=6 with dispatch count 1; applying E137's own transfer factor 0.7858 gives 3,763 microseconds of a 49,948 microsecond beagle round, or 7.53 percent. 715 MB over 3,642 microseconds is 196 GB/s, close to E93's measured 186.7 GB/s, so the pass is bandwidth-bound and time tracks bytes. **Take 6.6 percent of the medpair round, band 4.5 to 7.5 percent.**
+
+The mechanism has four parts and the fourth is what makes it shippable: screen an upper bound `U_v(h) >= logit_v(h)` from load-time derived tables; keep a shortlist; prove on device that `max over non-shortlisted U_v < s2`; and fall back to the dense readout whenever the certificate fails. The output is then bit-identical by construction on every input. A free tight threshold is available: the draft token's own exact logit, because the accept rate is 0.834 to 0.903 on ranked prompts.
+
+Pre-registered price: point `+3.0 %`, band `+1.5 %` to `+5.0 %`, minimum useful `+0.8 %`, refuted below `+0.5 %` net. Hard gate `e142_top2_bit_identity = 1.0`. Forbidden: approximation without a certificate, which is how C1 failed by under-reading live acceptance loss 18.4 times; pricing from `research/e82-head-bytes.json`; and using accept rate as a headline.
+
+### 298.12 — assignments in flight after this entry
+
+| PR | student | mechanism | state |
+|---|---|---|---|
+| #135 | thorfinn | width-2 launch shrink plus probe 0.15, then the column-count ladder | wip, F1 to F20 issued |
+| #140 | edward | post-tight production curves; Item B, re-fit the pb6 tier on `log_shipped` under Rule 117 | wip, F1 to F6 issued |
+| #141 | alphonse | the unproposable-token channel: 60.4 percent of the vocabulary can never be proposed | wip |
+| #142 | askeladd | the certified exact verify readout on the 715 MB lm_head | new |
+
+Forecast for the width-2 archive from our own receipt: `3.66219 x 1.024683 x 1.002653 x 1.002603 x 1.00495 = 3.78295`, against a crown of `3.70355`, margin **+2.14 %**.
