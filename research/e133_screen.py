@@ -1462,8 +1462,8 @@ def main() -> None:
                    default="simhash256,simhash512,simhash1024,simhash2048,"
                            "lowrank32,lowrank64,lowrank128,lowrank256,"
                            "qlowrank64,qlowrank128,qlowrank256,"
-                           "sign64,sign256,sign5120")
-    s.add_argument("--widths", default="64,256,1024,4096,8192,16384")
+                           "sign64,sign256,sign5120,exact0")
+    s.add_argument("--widths", default="64,256,1024,4096,8192,16384,24584")
     s.add_argument("--probes", default="0.25,0.35,0.50")
     s.add_argument("--stage-a", default="sketch,affine2",
                    help="sketch = C1 as assigned; affine2 = keep the exact "
