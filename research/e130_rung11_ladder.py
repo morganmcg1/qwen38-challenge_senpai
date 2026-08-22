@@ -54,14 +54,37 @@ T_CRIT_95 = {
     11: 2.200985, 12: 2.178813, 13: 2.160369, 14: 2.144787, 15: 2.131450,
 }
 
-# F16 section 3. Percent change in candidate seconds per token, predicted by
-# the linear-in-admitted-bytes model. The saturating null predicts 0.0 for all.
-PREREGISTERED_LINEAR = {
-    ("s512", "s1024"): -0.225,
-    ("s1024", "s2048"): -0.450,
-    ("s512", "s2048"): -0.675,
-    ("s64", "s2048"): -0.872,
+# Percent change in candidate seconds per token under each pre-registered
+# model. All three were written down before any leg ran.
+#
+# CONSTANT SLOPE (F16 section 3, renamed after F17 section 1). This is the one
+# measured rung 10a slope extrapolated: -0.1968 % over +448 MiB is -0.2249 %
+# per 512 MiB. It carries no independent claim about the slope, only about how
+# far the slope reaches. A null here refutes the reach, not the slope.
+#
+# SATURATING NULL. Predicts 0.0 everywhere. F17 section 2 points out that this
+# is the wrong alternative and that our own rung 10 data already rejects it:
+# unwired remaining at s512 is 2,442.7 / 2,765.4 / 2,815.0 MiB across the three
+# roles, so under first-come admission the useful bytes do not run out until
+# roughly 2,400 MiB above s512, which is above the 2,048 MiB ceiling. It is
+# kept as a reported reference point, not as the live alternative.
+#
+# DECLINING MARGINAL VALUE (F17 section 2). The physically motivated
+# alternative. The s64 -> s512 admissions were dominated by the 17,825,792 B
+# per-layer KV class, which is the hottest state in the round. If early
+# admissions are hot by accident of size class, later admissions are colder and
+# the slope decays without ever reaching zero.
+PREREGISTERED = {
+    ("s512", "s1024"): {"constant_slope": -0.225, "saturating": 0.0,
+                        "declining_value": -0.15},
+    ("s1024", "s2048"): {"constant_slope": -0.450, "saturating": 0.0,
+                         "declining_value": -0.20},
+    ("s512", "s2048"): {"constant_slope": -0.675, "saturating": 0.0,
+                        "declining_value": -0.35},
+    ("s64", "s2048"): {"constant_slope": -0.872, "saturating": 0.0,
+                       "declining_value": -0.55},
 }
+MODELS = ("constant_slope", "saturating", "declining_value")
 
 
 def read_meta(path: Path) -> dict:
@@ -308,13 +331,80 @@ def thermal(legs: list[dict]) -> dict:
     }
 
 
+def selftest() -> int:
+    """Recover known coefficients from a synthetic ladder.
+
+    The solver is hand written and the last four legs break the palindrome's
+    balance, so an unbalanced design is exactly where a normal-equations bug
+    would hide. This plants a known arm effect and a known session trend in the
+    real leg order and checks that both come back, then plants pure trend with
+    no arm effect and checks that every contrast returns zero.
+    """
+    truth = {"s64": 1.0000, "s512": 0.9980, "s1024": 0.9965, "s2048": 0.9955}
+    slope = -0.0004
+    centre = 6.5
+    failures = []
+
+    def build(effects: dict[str, float], drift: float) -> list[dict]:
+        return [
+            {"tag": f"t{i + 1:02d}", "index": i + 1, "arm": arm,
+             "slack_mb": SLACK_MB[arm],
+             "wired_clamped_count": 0, "wired_apply_failures": 0,
+             "mtp_seconds_per_token": effects[arm] + drift * (i + 1 - centre)}
+            for i, arm in enumerate(ORDER)
+        ]
+
+    model = fit(build(truth, slope), "mtp_seconds_per_token")
+    if model["df"] != 7:
+        failures.append(f"expected 7 residual df, got {model['df']}")
+    if abs(model["slope_per_leg"] - slope) > 1e-9:
+        failures.append(f"slope {model['slope_per_leg']} != {slope}")
+    for arm, value in truth.items():
+        got = model["arm_means_adjusted"][arm]
+        if abs(got - value) > 1e-9:
+            failures.append(f"arm {arm}: {got} != {value}")
+    got = contrast(model, "s512", "s2048")["pct"]
+    want = 100.0 * (truth["s2048"] - truth["s512"]) / truth["s512"]
+    if abs(got - want) > 1e-9:
+        failures.append(f"s512_to_s2048 contrast {got} != {want}")
+
+    # Pure trend, no arm effect. Every contrast must be exactly zero, which is
+    # the case a design that confounds trend with arm identity would fail.
+    flat = {arm: 1.0 for arm in ARMS}
+    trend_only = fit(build(flat, slope), "mtp_seconds_per_token")
+    for lo, hi in (("s64", "s512"), ("s512", "s1024"), ("s1024", "s2048")):
+        pct = contrast(trend_only, lo, hi)["pct"]
+        if abs(pct) > 1e-9:
+            failures.append(f"trend leaked into {lo}->{hi}: {pct}")
+
+    # A positive control that proves the check above can fail: drop the trend
+    # column from the data but keep it in the model, and the arm means must
+    # still be flat; then plant an arm effect and require a non-zero contrast.
+    planted = dict(flat)
+    planted["s2048"] = 0.99
+    control = fit(build(planted, slope), "mtp_seconds_per_token")
+    if abs(contrast(control, "s512", "s2048")["pct"]) < 0.5:
+        failures.append("positive control did not fire: a planted 1 % arm "
+                        "effect was not recovered")
+
+    for line in failures:
+        print(f"  FAIL {line}")
+    print(f"selftest: {'PASS' if not failures else 'FAIL'}"
+          f"  ({len(failures)} problems)")
+    return 1 if failures else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--prefix", default="e130-r11")
     ap.add_argument("--root", type=Path, default=Path("research/out"))
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--wandb", action="store_true")
     args = ap.parse_args()
+
+    if args.selftest:
+        return selftest()
 
     legs = [read_leg(args.root, args.prefix, i + 1, arm)
             for i, arm in enumerate(ORDER)]
@@ -365,23 +455,31 @@ def main() -> int:
 
     if primary:
         table = []
-        for (lo, hi), predicted in PREREGISTERED_LINEAR.items():
+        for (lo, hi), predictions in PREREGISTERED.items():
             got = report["channels"]["candidate_mtp_seconds_per_token"][
                 "contrasts"].get(f"{lo}_to_{hi}", {})
-            table.append({
+            ci = got.get("ci95_pct")
+            row = {
                 "contrast": f"{lo}_to_{hi}",
-                "linear_model_predicts_pct": predicted,
-                "saturating_null_predicts_pct": 0.0,
                 "measured_pct": got.get("pct"),
-                "ci95_pct": got.get("ci95_pct"),
-                "linear_prediction_inside_ci":
-                    (got.get("ci95_pct") is not None
-                     and got["ci95_pct"][0] <= predicted <= got["ci95_pct"][1]),
-                "null_inside_ci":
-                    (got.get("ci95_pct") is not None
-                     and got["ci95_pct"][0] <= 0.0 <= got["ci95_pct"][1]),
-            })
+                "ci95_pct": ci,
+                "predicts_pct": dict(predictions),
+                "inside_ci": {
+                    model: (ci is not None and ci[0] <= value <= ci[1])
+                    for model, value in predictions.items()
+                },
+            }
+            survivors = [m for m, ok in row["inside_ci"].items() if ok]
+            row["models_not_excluded"] = survivors
+            table.append(row)
         report["preregistered_test"] = table
+        report["preregistered_note"] = (
+            "constant_slope is the single measured rung 10a slope "
+            "extrapolated, so it tests reach and not slope (F17 section 1). "
+            "saturating is reported as a reference point only; rung 10 already "
+            "rejects it because unwired remaining at s512 exceeds the ladder "
+            "ceiling (F17 section 2)."
+        )
 
         means = primary["arm_means_adjusted"]
         argmax = min(means, key=means.get)
@@ -431,14 +529,16 @@ def main() -> int:
                   f"  {'SIG' if c['significant'] else 'ns'}")
 
     if "preregistered_test" in report:
-        print("\n=== pre-registered test (F16 section 3) ===")
+        print("\n=== pre-registered test (F16 section 3, F17 sections 1-2) ===")
+        print(f"  {'contrast':<16} {'slope':>7} {'satur':>7} {'declin':>7}"
+              f" {'measured':>9}  models not excluded")
         for row in report["preregistered_test"]:
             measured = row["measured_pct"]
-            got = f"{measured:+.4f}" if measured is not None else "  n/a "
-            print(f"  {row['contrast']:<16} linear {row['linear_model_predicts_pct']:+.3f}"
-                  f"  null 0.000  measured {got}"
-                  f"  linear_in_ci={row['linear_prediction_inside_ci']}"
-                  f"  null_in_ci={row['null_inside_ci']}")
+            got = f"{measured:+.4f}" if measured is not None else "    n/a"
+            p = row["predicts_pct"]
+            print(f"  {row['contrast']:<16} {p['constant_slope']:+7.3f}"
+                  f" {p['saturating']:+7.3f} {p['declining_value']:+7.3f}"
+                  f" {got:>9}  {','.join(row['models_not_excluded']) or 'NONE'}")
         print(f"\n  argmax   {report['ladder_argmax_arm']} "
               f"({report['ladder_argmax_slack_mb']} MiB)")
         print(f"  DECISION {report['decision']}")

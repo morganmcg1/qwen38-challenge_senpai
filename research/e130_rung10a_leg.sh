@@ -84,6 +84,23 @@ export MLXFAST_NO_SANDBOX=1
 export MLX_E130_RESIDENCY_PROBE_PATH="${wired_sink}"
 unset MLX_E130_RESIDENCY_PROBE
 
+# F18 round decomposition. `MLX_QWEN_MTP_TRACE=1` emits one `mtp-round:` line
+# carrying `round_us=` and one `mtp-anchor:` line per round, so the reader can
+# split a leg mean into its round-1 excess and its steady-state median.
+#
+# COST. Under this flag a round pays about twelve DispatchTime.now() reads,
+# two formatted lines, and one `mtp-row:` line per accepted row. Against a
+# ~237,000 us MTP round and a ~73,700 us serial round that is order 0.04 %,
+# and it is identical on every arm, so it cancels in each arm contrast. It
+# still sits inside the absolute headline, so the ladder's absolute seconds
+# per token is not directly comparable with an untraced receipt.
+export MLX_QWEN_MTP_TRACE=1
+export MLX_QWEN_MTP_TRACE_PATH="${PWD}/${out}/trace.txt"
+: > "${MLX_QWEN_MTP_TRACE_PATH}"
+# Never on a timed leg: draining the head chain destroys the head/verify
+# overlap the round is built around.
+unset MLX_QWEN_MTP_TRACE_SYNC_HEAD
+
 if [[ "${arm}" == "none" ]]; then
   unset MLX_E130_WIRED_GATE_GIB
   unset DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB
@@ -165,6 +182,13 @@ status=$?
   echo "swap_exit=$(swap_counters)"
   echo "exit=${status}"
   echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  # `mtp-anchor:` is the only line that carries both a pid and every phase
+  # stamp, so the F18 reader joins on it alone. `mtp-trace:` has no pid, and
+  # O_APPEND from several workers can interleave whole lines between the two.
+  echo "trace_anchor_lines=$(grep -c '^mtp-anchor:' "${MLX_QWEN_MTP_TRACE_PATH}" 2>/dev/null || echo 0)"
+  echo "trace_round_lines=$(grep -c '^mtp-trace:' "${MLX_QWEN_MTP_TRACE_PATH}" 2>/dev/null || echo 0)"
+  echo "trace_row_lines=$(grep -c '^mtp-row:' "${MLX_QWEN_MTP_TRACE_PATH}" 2>/dev/null || echo 0)"
+  echo "trace_pids=$(grep -o 'pid=[0-9]*' "${MLX_QWEN_MTP_TRACE_PATH}" 2>/dev/null | sort -u | tr '\n' ',')"
   if grep -q "wired-zh" "${wired_sink}" 2>/dev/null; then
     echo "wired_residency_active=true"
     echo "wired_outcome_line=$(grep 'wired-zh' "${wired_sink}" | head -1)"
