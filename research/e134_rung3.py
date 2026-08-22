@@ -51,6 +51,17 @@ CAP = min(MAX_DEPTH, SEGMENTED_VERIFY_DEPTH_CAP)
 OUR_CURVE = {"breakpoint": 6,
              "lo": (27725.39691958033, 3446.0718068476417),
              "hi": (27725.396919580293, 5323.531364694667)}
+
+# Our own curve after thorfinn's `{6:6, 7:7}` one-pass table promotes. Widths
+# 6 and 7 stop reading the projection weights twice, so they fall onto our
+# fitted one-pass line and the pass cliff moves from M=6 to M=8. Both segments
+# are unchanged; only the breakpoint moves, which is exactly the parameter-free
+# prediction FINDING 156 asked for. Pricing the tier family on this curve says
+# whether a boundary-4 constant survives that table change.
+ONEPASS67_CURVE = {"breakpoint": 8,
+                   "lo": (27725.39691958033, 3446.0718068476417),
+                   "hi": (27725.396919580293, 5323.531364694667)}
+CURVES = {"ours": OUR_CURVE, "onepass67": ONEPASS67_CURVE}
 CLIFF_WEIGHTS = (0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50, 0.75, 1.00)
 FLAT_LEVELS = (0.18, 0.19, 0.20, 0.22, 0.24, 0.27, 0.30, 0.35, 0.45, 0.60)
 TIER_FACTORS = (1.0, 1.10, 1.20, 1.33, 1.50, 1.75, 2.0301, 2.50, 3.00, 4.2689)
@@ -259,16 +270,20 @@ def main() -> int:
     ap.add_argument("--fit-windows", type=int, default=60)
     ap.add_argument("--seed", type=int, default=128)
     ap.add_argument("--seeds", type=int, default=6)
-    ap.add_argument("--curve", choices=("board", "ours"), default="board")
+    ap.add_argument("--curve", choices=("board",) + tuple(CURVES),
+                    default="board")
     ap.add_argument("--cliff", type=int, default=4)
     ap.add_argument("--only-cliff", action="store_true")
     ap.add_argument("--family", choices=tuple(FAMILIES), default="cliff")
+    ap.add_argument("--grid", default="",
+                    help="comma separated grid that replaces the family "
+                         "default, used to refine around a peak")
     ap.add_argument("--json", type=pathlib.Path,
                     default=here / "e134-artifacts/rung3-boundaries.json")
     args = ap.parse_args()
 
-    if args.curve == "ours":
-        e128_price.CURVE = OUR_CURVE
+    if args.curve in CURVES:
+        e128_price.CURVE = CURVES[args.curve]
     print("## price curve in force: %s" % args.curve)
     print("round us by rows  %s" % " ".join(
         "%.1f" % ranked_round_us(m) for m in range(1, MAX_DEPTH + 2)))
@@ -306,13 +321,16 @@ def main() -> int:
     make_price = {"cliff": cliff_price, "flat": flat_price,
                   "tier": boundary_price}[args.family]
     grid = FAMILIES[args.family]
+    if args.grid:
+        grid = tuple(float(part) for part in args.grid.split(","))
     tag = args.family + "price@%.4f"
     for weight in grid:
         plans.append((tag % weight, "price", weight))
     fixed = {"pb5": boundary_price(2.0301, 3)[:2],
              "pb6": boundary_price(2.0301, 4)[:2],
              "pb7": boundary_price(2.0301, 5)[:2],
-             "pbfit": measured_price()}
+             "pbfit": measured_price(),
+             "rankedprice": e128_price.ranked_price_table()}
     for name in fixed:
         plans.append((name, "table", name))
 
