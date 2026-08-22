@@ -1,0 +1,328 @@
+{
+  "summary": {
+    "legs": 12,
+    "rounds": 1678,
+    "sched_agreement": 0.9922526817640047,
+    "depth_agreement": 0.9934445768772348,
+    "depth_rounds": 1678,
+    "ema_agreement": 1.0,
+    "ema_rounds": 1678,
+    "ema_max_abs_error": 4.999999999588667e-07
+  },
+  "legs": [
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/beagle_a",
+      "prompt_id": "beagle_a",
+      "forced_depth": "none",
+      "rounds": 119,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.5294117647058824,
+      "static_depth_agreement": 1.0,
+      "sched_agreement": 1.0,
+      "depth_agreement": 1.0,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "8d928252c33519dc06aebd5ecc0c6aa5dec6dcb8",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": []
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/beagle_b",
+      "prompt_id": "beagle_b",
+      "forced_depth": "none",
+      "rounds": 126,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.49206349206349204,
+      "static_depth_agreement": 0.992063492063492,
+      "sched_agreement": 0.992063492063492,
+      "depth_agreement": 0.992063492063492,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "4b66f77348ac155520966be17628e0edaf2dd66d",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 126,
+          "kind": "depth",
+          "margin": 7.875,
+          "shipped": 1,
+          "replayed": 7,
+          "shipped_sched": "0:0.978610/0.978610/0.180000;",
+          "replayed_sched": "0:0.978610/0.978610/0.180000;1:0.932453/0.912508/0.301822;2:0.999913/0.912429/0.382648;3:0.998080/0.910677/0.444570;4:0.999639/0.910348/0.493349;5:0.989947/0.901196/0.532854;6:0.999266/0.900535/0.564730;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/benchfixture",
+      "prompt_id": "benchfixture",
+      "forced_depth": "none",
+      "rounds": 78,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.1923076923076923,
+      "static_depth_agreement": 0.9871794871794871,
+      "sched_agreement": 0.9871794871794871,
+      "depth_agreement": 0.9871794871794871,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "8d928252c33519dc06aebd5ecc0c6aa5dec6dcb8",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 78,
+          "kind": "depth",
+          "margin": 13.75,
+          "shipped": 1,
+          "replayed": 7,
+          "shipped_sched": "0:0.996561/0.996561/0.180000;",
+          "replayed_sched": "0:0.996561/0.996561/0.180000;1:0.988856/0.985455/0.304560;2:0.976014/0.961818/0.394679;3:0.990737/0.952909/0.460968;4:0.981564/0.935340/0.512450;5:0.999467/0.934842/0.552513;6:0.999652/0.934517/0.585599;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/botany_andrews",
+      "prompt_id": "botany_andrews",
+      "forced_depth": "none",
+      "rounds": 143,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.6223776223776224,
+      "static_depth_agreement": 0.993006993006993,
+      "sched_agreement": 0.993006993006993,
+      "depth_agreement": 0.993006993006993,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 143,
+          "kind": "depth",
+          "margin": 8.125,
+          "shipped": 1,
+          "replayed": 7,
+          "shipped_sched": "0:0.983085/0.983085/0.180000;",
+          "replayed_sched": "0:0.983085/0.983085/0.180000;1:0.937517/0.921659/0.302505;2:0.996681/0.918599/0.384451;3:0.998582/0.917297/0.446884;4:0.985854/0.904321/0.496113;5:0.986329/0.891958/0.534786;6:0.960035/0.856311/0.565695;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/drama_dollhouse",
+      "prompt_id": "drama_dollhouse",
+      "forced_depth": "none",
+      "rounds": 92,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.44565217391304346,
+      "static_depth_agreement": 0.9891304347826086,
+      "sched_agreement": 0.9891304347826086,
+      "depth_agreement": 0.9891304347826086,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 92,
+          "kind": "depth",
+          "margin": 8.75,
+          "shipped": 6,
+          "replayed": 7,
+          "shipped_sched": "0:0.987568/0.987568/0.180000;1:0.948664/0.936871/0.303188;2:0.999962/0.936836/0.387058;3:0.999931/0.936771/0.451318;4:0.999955/0.936729/0.502121;5:0.999926/0.936660/0.543294;",
+          "replayed_sched": "0:0.987568/0.987568/0.180000;1:0.948664/0.936871/0.303188;2:0.999962/0.936836/0.387058;3:0.999931/0.936771/0.451318;4:0.999955/0.936729/0.502121;5:0.999926/0.936660/0.543294;6:0.999886/0.936553/0.577336;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/essays_bacon",
+      "prompt_id": "essays_bacon",
+      "forced_depth": "none",
+      "rounds": 285,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.7403508771929824,
+      "static_depth_agreement": 0.9964912280701754,
+      "sched_agreement": 0.9894736842105263,
+      "depth_agreement": 0.9964912280701754,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 285,
+          "kind": "depth",
+          "margin": 0.75,
+          "shipped": 1,
+          "replayed": 3,
+          "shipped_sched": "0:0.477421/0.477421/0.180000;",
+          "replayed_sched": "0:0.477421/0.477421/0.180000;1:0.558883/0.266823/0.225369;2:0.890706/0.237661/0.230856;3:0.788918/0.187495/0.231651;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/essays_montaigne",
+      "prompt_id": "essays_montaigne",
+      "forced_depth": "none",
+      "rounds": 146,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.6643835616438356,
+      "static_depth_agreement": 0.9931506849315068,
+      "sched_agreement": 0.9931506849315068,
+      "depth_agreement": 0.9931506849315068,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 146,
+          "kind": "depth",
+          "margin": 4.625,
+          "shipped": 1,
+          "replayed": 5,
+          "shipped_sched": "0:0.909691/0.909691/0.180000;",
+          "replayed_sched": "0:0.909691/0.909691/0.180000;1:0.823707/0.749319/0.291309;2:0.921579/0.690557/0.351928;3:0.997341/0.688720/0.391508;4:0.734438/0.505822/0.422611;5:0.839848/0.424814/0.430495;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/medicine_hippoc",
+      "prompt_id": "medicine_hippoc",
+      "forced_depth": "none",
+      "rounds": 80,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.2625,
+      "static_depth_agreement": 0.9875,
+      "sched_agreement": 0.9875,
+      "depth_agreement": 0.9875,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 80,
+          "kind": "depth",
+          "margin": 5.5,
+          "shipped": 1,
+          "replayed": 7,
+          "shipped_sched": "0:0.939913/0.939913/0.180000;",
+          "replayed_sched": "0:0.939913/0.939913/0.180000;1:0.862158/0.810354/0.295919;2:0.999981/0.810339/0.364006;3:0.999993/0.810333/0.416175;4:0.999963/0.810303/0.457424;5:0.999975/0.810282/0.490854;6:0.999957/0.810247/0.518497;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/medicine_hist",
+      "prompt_id": "medicine_hist",
+      "forced_depth": "none",
+      "rounds": 153,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.5816993464052288,
+      "static_depth_agreement": 0.9934640522875817,
+      "sched_agreement": 0.9934640522875817,
+      "depth_agreement": 0.9934640522875817,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 153,
+          "kind": "depth",
+          "margin": 7.875,
+          "shipped": 1,
+          "replayed": 6,
+          "shipped_sched": "0:0.980876/0.980876/0.180000;",
+          "replayed_sched": "0:0.980876/0.980876/0.180000;1:0.932453/0.914621/0.302168;2:0.999474/0.914140/0.383228;3:0.999921/0.914068/0.445282;4:0.929709/0.849817/0.494341;5:0.659711/0.560634/0.528018;6:0.914684/0.512803/0.530840;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/plutarch_lives",
+      "prompt_id": "plutarch_lives",
+      "forced_depth": "none",
+      "rounds": 180,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.6722222222222223,
+      "static_depth_agreement": 0.9944444444444445,
+      "sched_agreement": 0.9944444444444445,
+      "depth_agreement": 0.9944444444444445,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 180,
+          "kind": "depth",
+          "margin": 10.625,
+          "shipped": 2,
+          "replayed": 7,
+          "shipped_sched": "0:0.934564/0.934564/0.180000;1:0.927913/0.867194/0.295103;",
+          "replayed_sched": "0:0.934564/0.934564/0.180000;1:0.927913/0.867194/0.295103;2:0.939226/0.814491/0.370821;3:0.965092/0.786059/0.422679;4:0.995745/0.782714/0.460707;5:0.945264/0.739872/0.491213;6:0.845348/0.625449/0.512731;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/republic_jowett",
+      "prompt_id": "republic_jowett",
+      "forced_depth": "none",
+      "rounds": 104,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.4711538461538462,
+      "static_depth_agreement": 0.9903846153846154,
+      "sched_agreement": 0.9903846153846154,
+      "depth_agreement": 0.9903846153846154,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 104,
+          "kind": "depth",
+          "margin": 7.625,
+          "shipped": 5,
+          "replayed": 7,
+          "shipped_sched": "0:0.978385/0.978385/0.180000;1:0.927012/0.906974/0.301787;2:0.999665/0.906670/0.381886;3:0.996852/0.903816/0.443224;4:0.999943/0.903764/0.491426;",
+          "replayed_sched": "0:0.978385/0.978385/0.180000;1:0.927012/0.906974/0.301787;2:0.999665/0.906670/0.381886;3:0.996852/0.903816/0.443224;4:0.999943/0.903764/0.491426;5:0.999795/0.903579/0.530489;6:0.999376/0.903015/0.562776;"
+        }
+      ]
+    },
+    {
+      "run_dir": ".mlxfast-private/e122/runs-e124/travel_eothen",
+      "prompt_id": "travel_eothen",
+      "forced_depth": "none",
+      "rounds": 172,
+      "offered_depth": 8,
+      "static_sched_agreement": 0.5988372093023255,
+      "static_depth_agreement": 0.9941860465116279,
+      "sched_agreement": 0.9941860465116279,
+      "depth_agreement": 0.9941860465116279,
+      "ema_agreement": 1.0,
+      "ema_max_abs_error": 4.999999999588667e-07,
+      "all_tokens_matched": null,
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "worker_sha256": "cee9fe9f04d4173a692905645b0d448377f0e84c0988776051633eee2ca09017",
+      "divergences": [
+        {
+          "round": 172,
+          "kind": "depth",
+          "margin": 11.0625,
+          "shipped": 3,
+          "replayed": 7,
+          "shipped_sched": "0:0.996055/0.996055/0.180000;1:0.930170/0.926500/0.304483;2:0.927114/0.858972/0.386809;",
+          "replayed_sched": "0:0.996055/0.996055/0.180000;1:0.930170/0.926500/0.304483;2:0.927114/0.858972/0.386809;3:0.954711/0.820070/0.441997;4:0.965630/0.791884/0.481562;5:0.969702/0.767891/0.510961;6:0.791760/0.607985/0.533196;"
+        }
+      ]
+    }
+  ]
+}

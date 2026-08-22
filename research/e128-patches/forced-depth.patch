@@ -1,0 +1,54 @@
+diff --git a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+index 0d17ee20..6b91b540 100644
+--- a/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
++++ b/Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+@@ -193,10 +193,49 @@ public final class Qwen36MTPBlockSession {
+         // ladder's cap of 4 left committed tokens on the table.
+         draftPolicy = { [weak self] offeredDepth, _ in
+             guard let self else { return Swift.min(offeredDepth, 1) }
++            if let forced = Qwen36MTPBlockSession.e128ForcedDepth {
++                // Run the shipped walk anyway and DISCARD its answer. The walk
++                // writes the round's `sched=` trace, so a forced leg still
++                // records what the estimator would have chosen on the same
++                // inputs, which is what makes the offline replayer checkable
++                // on this arm too.
++                _ = self.costModelDepth(offeredDepth: offeredDepth)
++                return self.e128ClampedForcedDepth(
++                    offeredDepth: offeredDepth, forced: forced)
++            }
+             return self.costModelDepth(offeredDepth: offeredDepth)
+         }
+     }
+ 
++    /// E128 rung-1 instrument, research only, never on a timed leg.
++    ///
++    /// The shipped schedule is adaptive, so acceptance at position j is only
++    /// ever observed on rounds the estimator already believed would reach j.
++    /// Every acceptance vector read from a shipped trace is therefore survivor
++    /// biased upward at depth. Pinning the depth removes the selection and
++    /// exposes every position on every round, which is the uncensored
++    /// measurement a counterfactual depth policy has to be priced on.
++    ///
++    /// `DARKBLOOM_` is one of the six prefixes `sanitizedRuntimeWorkerEnvironment`
++    /// forwards, so this gate survives into a runtime-worker leg. An
++    /// `MLXFAST_`-spelled gate is dropped and would silently do nothing
++    /// (harness defect 28).
++    private static let e128ForcedDepth: Int? = {
++        guard let raw = ProcessInfo.processInfo
++            .environment["DARKBLOOM_E128_FORCE_DEPTH"],
++            let value = Int(raw) else { return nil }
++        return value
++    }()
++
++    /// Keeps the forced arm inside the caps the shipped policy already
++    /// respects, so the arm cannot reach a verify width the campaign has not
++    /// proven exact. Only the estimator is removed, never the width envelope.
++    private func e128ClampedForcedDepth(offeredDepth: Int, forced: Int) -> Int {
++        Swift.max(0, Swift.min(
++            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
++            Swift.min(Self.segmentedVerifyDepthCap, forced)))
++    }
++
+     // MARK: - warm
+ 
+     /// Keep the ranked M5-Max model allocations in Metal's residency set
