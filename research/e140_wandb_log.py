@@ -63,6 +63,7 @@ def main() -> int:
     rule116 = load("rule116.json")
     perturb = load("perturb.json")
     oracle = load("oracle-state.json")
+    posttight = load("posttight.json")
     if gate is None or cells is None:
         raise SystemExit("the cell C gate and the 2x2 must both be present")
 
@@ -314,6 +315,91 @@ def main() -> int:
             summary["e140_pb6look_degradation_at_max_cut_pp"] = (
                 perturb["tier_sweep"][worst]["argmax"]["at_shipped"]
                 - perturb["tier_sweep"]["0.000000"]["argmax"]["at_shipped"])
+        # F3's falsifier: if pb6 and the argmax layer degrade at the same rate
+        # the adaptivity claim is refuted. The ratio of the two least-squares
+        # slopes over the cut grid is that test, one number per curve form.
+        def slope(form, name):
+            xs = perturb["fractions"]
+            ys = []
+            for fraction in xs:
+                entry = perturb["arms"]["%s|%s|%.6f" % (form, name, fraction)]
+                ys.append((entry["curve_lopo"] or entry["in_sample"])[0])
+            mx = sum(xs) / len(xs)
+            my = sum(ys) / len(ys)
+            return (sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+                    / sum((x - mx) ** 2 for x in xs))
+
+        forms = ("pre_arm", "per_round", BEST_FORM, "proportional")
+        run.log({"cliff_degradation_slope": table(
+            ["curve_form", "cell", "pp_per_10pct_of_cut"],
+            [[form, name, slope(form, name) * 0.10]
+             for form in forms
+             for name in ("D_curvelook", "E_pb6", "F_pb6look")])})
+        for form in forms:
+            summary["e140_slope_ratio_pb6look_over_pb6_%s" % form] = (
+                slope(form, "F_pb6look") / slope(form, "E_pb6"))
+        summary["e140_pb6_slope_pp_per_10pct"] = slope(BEST_FORM,
+                                                       "E_pb6") * 0.10
+        summary["e140_pb6look_slope_pp_per_10pct"] = slope(BEST_FORM,
+                                                           "F_pb6look") * 0.10
+
+    if posttight is not None:
+        # F3 arm (a) and F4 items 3, 4 and 8. `log_shipped` is the curve the
+        # next ranked receipt will walk, so it is the one that decides.
+        rows = []
+        for key, entry in sorted(posttight["arms"].items()):
+            form, variant, name = key.split("|")
+            rows.append([form, variant, name, entry["in_sample"][0],
+                         entry["curve_lopo"][0] if entry["curve_lopo"]
+                         else None, entry["mean_depth"]]
+                        + list(entry["depth_share"]))
+        run.log({"posttight_arms": table(
+            ["curve_form", "curve_variant", "cell", "in_sample_pct",
+             "curve_lopo_pct", "f83_weighted_mean_depth"]
+            + ["depth_share_%d" % d for d in range(9)], rows)})
+        run.log({"posttight_steps": table(
+            ["curve_variant"] + ["step_into_%d" % m for m in range(2, 10)],
+            [[name] + list(steps)
+             for name, steps in sorted(posttight["steps"].items())])})
+        run.log({"posttight_tier8_fit": table(
+            ["curve_variant", "best_tier8", "best_pct", "at_tier8_1_pct"],
+            [[name, entry["best_tier8"],
+              entry["by_tier"]["%.2f" % entry["best_tier8"]],
+              entry["at_one"]]
+             for name, entry in sorted(posttight["tier8_fits"].items())])})
+        run.log({"posttight_cap_probe": table(
+            ["curve_variant", "rounds", "wants_past_cap_share",
+             "mean_capped_depth", "mean_uncapped_depth"]
+            + ["uncapped_depth_share_%d" % d for d in range(9)],
+            [[name, entry["rounds"], entry["wants_past_cap_share"],
+              entry["mean_capped_depth"], entry["mean_uncapped_depth"]]
+             + list(entry["uncapped_depth_share"])
+             for name, entry in sorted(posttight["cap_probe"].items())])})
+
+        def post(variant, name, form=BEST_FORM):
+            entry = posttight["arms"]["%s|%s|%s" % (form, variant, name)]
+            return (entry["curve_lopo"] or entry["in_sample"])[0]
+
+        summary["e140_launch_coef_us"] = posttight["launch_coef"]
+        for variant in ("base", "uniform", "log_onePass67", "log_shipped"):
+            for name in ("D_curvelook", "E_pb6", "F_pb6look", "G_pb68",
+                         "H_pb68look"):
+                summary["e140_%s_%s_pct" % (variant, name)] = post(variant,
+                                                                   name)
+        summary["e140_posttight_shipped_cellD_pct"] = post("log_shipped",
+                                                           "D_curvelook")
+        summary["e140_posttight_shipped_cellD_minus_pb6_pp"] = (
+            post("log_shipped", "D_curvelook") - post("log_shipped", "E_pb6"))
+        summary["e140_posttight_shipped_cellD_minus_pb68_pp"] = (
+            post("log_shipped", "D_curvelook") - post("log_shipped", "G_pb68"))
+        summary["e140_pb68_best_gain_over_pb6_pp"] = max(
+            entry["by_tier"]["%.2f" % entry["best_tier8"]] - entry["at_one"]
+            for entry in posttight["tier8_fits"].values())
+        summary["e140_cellD_wants_past_cap_share"] = max(
+            entry["wants_past_cap_share"]
+            for entry in posttight["cap_probe"].values())
+        summary["e140_uniform_shift_pb6_move_pp"] = (
+            post("uniform", "E_pb6") - post("base", "E_pb6"))
 
     if oracle is not None:
         # Replaces the EMA with the true per-position acceptance vector, so a
