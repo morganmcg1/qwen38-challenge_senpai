@@ -1,0 +1,34 @@
+{
+ "command": "swift test --force-resolved-versions",
+ "tests": 737,
+ "suites": 67,
+ "outcome": "failed",
+ "seconds": 21.78,
+ "issues": 40,
+ "failing_test_functions": [
+  "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+  "participantDocsExposeDefaultCLIInstallDirectory",
+  "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+  "startupMemoryPolicyKeepsRanked128GiBProfile",
+  "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+  "theCheckedInDeclarationSelectsThePinnedHead",
+  "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+  "theQwenMTPTrackIsArmedOnQwen38",
+  "theSeededCalibrationExpectationMatchesItsRecordedProvenance"
+ ],
+ "issues_by_source_file": {
+  "BenchmarkScriptTests.swift": 13,
+  "Qwen35ArtifactContractTests.swift": 2,
+  "QwenMTPOpenSurfaceTests.swift": 6,
+  "QwenMTPTrackNamingTests.swift": 16,
+  "RuntimeStartupMemoryPolicyTests.swift": 2,
+  "SetupScriptTests.swift": 1
+ },
+ "pre_existing_floor": {
+  "issues": 40,
+  "test_functions": 9,
+  "source_files": 6
+ },
+ "matches_pre_existing_floor": true,
+ "touches_e130_surface": false
+}
