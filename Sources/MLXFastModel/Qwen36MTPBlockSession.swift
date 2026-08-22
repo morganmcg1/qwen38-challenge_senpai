@@ -310,7 +310,14 @@ public final class Qwen36MTPBlockSession {
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
         guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else { return }
-        guard ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
+        // E130 rung 10a, research only, removed before submission. The shipped
+        // gate is 96 GiB, so the wired path never runs on a development host
+        // and the slack cannot be measured causally. Lowering the gate lets one
+        // binary serve the no-wiring, 64 MiB and 512 MiB arms, so they differ
+        // only by environment.
+        let gateGiB = environment["MLX_E130_WIRED_GATE_GIB"]
+            .flatMap(UInt64.init) ?? 96
+        guard ProcessInfo.processInfo.physicalMemory >= (gateGiB << 30)
         else {
             e130ResidencyProbe(clearsWarmCache: true)
             return
@@ -364,7 +371,10 @@ public final class Qwen36MTPBlockSession {
         line += " applied=\(applied) active=\(active)"
         line += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
         line += " maxrec=\(recommended)\n"
-        FileHandle.standardError.write(Data(line.utf8))
+        // Harness defect 32: the `mtp-timed` parent builds its worker without
+        // `forwardsWorkerStderr`, so a stderr line from here is discarded. The
+        // sink falls back to stderr when no path is configured.
+        e130ProbeSink.write(Data(line.utf8))
     }
 
     /// Input-independent shape warm, run OUTSIDE every scored window.
