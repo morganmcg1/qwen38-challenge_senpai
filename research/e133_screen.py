@@ -99,7 +99,8 @@ ALL_STRATA = ("beagle", "min_carriers", "zero_weight")
 WATCH_STRATA = ("essays_bacon",)
 
 # F1.4c. The survival curve is read at these widths from one stored rank.
-RANK_GRID = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
+RANK_GRID = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
+             16384)
 
 T0_NET_MISS = 3.0e-3
 T0B_RECALL = 0.997
@@ -1029,8 +1030,10 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
                      subst_total=int(miss_inc.sum()),
                      subst_live=int(swapped.sum()), subst_hit=hit,
                      subst_shipped_hit=shipped_hit, watch=watch)
-            if n_keep == max_width:
-                cell.add_ranks(stratum, rank_np, watch)
+            # The rank does not depend on `n_keep`, so every cell of this
+            # (family, stage_a, probe) group carries the same curve and each
+            # one can be tail-fitted at its own survivor width.
+            cell.add_ranks(stratum, rank_np, watch)
             del sel, out, survivor, recall
         del sk, co, is_r, comp, positions, top, exact_top1
     del sk_full, co_full, is_r_full, comp_full, positions_full
@@ -1418,8 +1421,9 @@ def main() -> None:
     s.add_argument("--families",
                    default="simhash256,simhash512,simhash1024,simhash2048,"
                            "lowrank32,lowrank64,lowrank128,lowrank256,"
-                           "qlowrank32,qlowrank64,qlowrank128,qlowrank256")
-    s.add_argument("--widths", default="64,128,256,512,1024")
+                           "qlowrank64,qlowrank128,qlowrank256,"
+                           "sign64,sign256,sign5120")
+    s.add_argument("--widths", default="64,256,1024,4096,8192,16384")
     s.add_argument("--probes", default="0.25,0.35,0.50")
     s.add_argument("--stage-a", default="sketch,affine2",
                    help="sketch = C1 as assigned; affine2 = keep the exact "
