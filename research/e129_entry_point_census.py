@@ -153,8 +153,8 @@ def body_only(table: bool) -> str:
 
 def arm_source(header: str, table: bool) -> str:
     """One library holding every variant of one shipped pipeline."""
-    base = ("qwen35_custom_affine4_g64_qmv_wide_sums_v1" if table
-            else "qwen35_custom_affine4_g64_qmv_wide_v1")
+    base = ("qwen35_custom_affine4_g64_qmv_wide_sums_v2" if table
+            else "qwen35_custom_affine4_g64_qmv_wide_v2")
     inputs = e120.QMV_INPUTS + ([("xsums", "float")] if table else [])
     use_table = [("bool", "USE_TABLE", "true")] if table else []
     parts = [e120.PRELUDE, header, ""]

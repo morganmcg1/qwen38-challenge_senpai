@@ -1421,7 +1421,7 @@ private let qwen35CompiledFusedSwiGLU:
 /// accumulation of the same BF16 expression tree, in the same `i` order, so the
 /// two paths agree bit for bit.
 private let qwen35E120QMVHeader = """
-    template <int NA, bool USE_TABLE>
+    template <int NA, int RPS, bool USE_TABLE>
     inline void qwen_e120_qmv_wide(
         const device uint32_t* w,
         const device bfloat16_t* scales,
@@ -1437,7 +1437,7 @@ private let qwen35E120QMVHeader = """
         uint simd_lid
     ) {
         typedef vec<float, NA> VF;
-        constexpr int rows_per_simd = 4;
+        constexpr int rows_per_simd = RPS;
         constexpr int values_per_thread = 16;
         constexpr int block_size = values_per_thread * 32;
         constexpr int bytes_per_lane = 8;
@@ -1522,7 +1522,7 @@ private let qwen35E120QMVHeader = """
         }
     }
 
-    template <int M, int IPG, bool USE_TABLE>
+    template <int M, int IPG, int RPS, bool USE_TABLE>
     inline void qwen_e120_qmv_m(
         const device uint32_t* w,
         const device bfloat16_t* scales,
@@ -1544,11 +1544,11 @@ private let qwen35E120QMVHeader = """
             return;
         }
         if (TAIL == 0 || M - first_m >= IPG) {
-            qwen_e120_qmv_wide<IPG, USE_TABLE>(
+            qwen_e120_qmv_wide<IPG, RPS, USE_TABLE>(
                 w, scales, biases, x, xsums, y, in_vec_size, out_vec_size,
                 sums_stride, first_m, out_row, simd_lid);
         } else {
-            qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE>(
+            qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), RPS, USE_TABLE>(
                 w, scales, biases, x, xsums, y, in_vec_size, out_vec_size,
                 sums_stride, first_m, out_row, simd_lid);
         }
@@ -1559,17 +1559,25 @@ private let qwen35E120QMVHeader = """
 /// whether the chunk-sum table is a bound buffer at all: the four-input
 /// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
 /// false` never reads.
-private func qwen35E120QMVSource(table: Bool) -> String {
+///
+/// `tier` selects the widths this entry point carries. `nil` emits all seven,
+/// which is the shared switch. A value emits only the widths whose `ipg`
+/// equals it, so the compiler allocates that entry point for its own widest
+/// body instead of for the union of all of them.
+private func qwen35E120QMVSource(table: Bool, tier: Int?) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
-    let cases = [(3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
-        .map { m, ipg in
+    let cases = Qwen35CustomQMV.widthPlan
+        .filter { tier == nil || $0.ipg == tier }
+        .map { plan in
             """
-                    case \(m):
-                        qwen_e120_qmv_m<\(m), \(ipg), \(flag)>(
+                    case \(plan.m):
+                        qwen_e120_qmv_m<\(plan.m), \(plan.ipg), \(plan.rps), \(flag)>(
                             w, scales, biases, x, \(sums), y,
                             qmv_k, qmv_n, qmv_stride,
-                            qmv_gx, qmv_out_row, qmv_lid);
+                            qmv_gx,
+                            int(qmv_tid.y) * \(2 * plan.rps) + int(qmv_sgid) * \(plan.rps),
+                            qmv_lid);
                         break;
             """
         }
@@ -1583,7 +1591,6 @@ private func qwen35E120QMVSource(table: Bool) -> String {
             const uint3 qmv_tid = threadgroup_position_in_grid;
             const uint qmv_lid = thread_index_in_simdgroup;
             const uint qmv_sgid = simdgroup_index_in_threadgroup;
-            const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
             const int qmv_gx = int(qmv_tid.x);\(nullDecl)
             switch (qmv_m) {
         \(cases)
@@ -1593,23 +1600,38 @@ private func qwen35E120QMVSource(table: Bool) -> String {
         """
 }
 
-private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1",
-    inputNames: ["w", "scales", "biases", "x"],
-    outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false),
-    header: qwen35E120QMVHeader,
-    ensureRowContiguous: true
-)
+private func qwen35E120QMVKernel(table: Bool, tier: Int?) -> MLXFast.MLXFastKernel {
+    MLXFast.metalKernel(
+        name: "qwen35_custom_affine4_g64_qmv_wide"
+            + (table ? "_sums" : "") + (tier.map { "_na\($0)" } ?? "") + "_v2",
+        inputNames: table
+            ? ["w", "scales", "biases", "x", "xsums"] : ["w", "scales", "biases", "x"],
+        outputNames: ["y"],
+        source: qwen35E120QMVSource(table: table, tier: tier),
+        header: qwen35E120QMVHeader,
+        ensureRowContiguous: true
+    )
+}
 
-private let qwen35CustomAffine4QMVTableKernel = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
-    inputNames: ["w", "scales", "biases", "x", "xsums"],
-    outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true),
-    header: qwen35E120QMVHeader,
-    ensureRowContiguous: true
-)
+/// The shared-switch pair. The `shared` arm dispatches these; they are the
+/// comparison the templated arm is measured against.
+private let qwen35CustomAffine4QMVKernel = qwen35E120QMVKernel(table: false, tier: nil)
+private let qwen35CustomAffine4QMVTableKernel = qwen35E120QMVKernel(table: true, tier: nil)
+
+/// One entry point per distinct `ipg`. Building the descriptor is free; a
+/// pipeline is compiled only when a dispatch first reaches it, and the shipped
+/// arm reaches four of these six.
+private let qwen35CustomAffine4QMVTierKernels: [Int: MLXFast.MLXFastKernel] =
+    Dictionary(
+        uniqueKeysWithValues: Qwen35CustomQMV.tiers.map {
+            ($0, qwen35E120QMVKernel(table: false, tier: $0))
+        })
+
+private let qwen35CustomAffine4QMVTierTableKernels: [Int: MLXFast.MLXFastKernel] =
+    Dictionary(
+        uniqueKeysWithValues: Qwen35CustomQMV.tiers.map {
+            ($0, qwen35E120QMVKernel(table: true, tier: $0))
+        })
 
 /// Produces the activation chunk-sum table consumed by
 /// `qwen35CustomAffine4QMVTableKernel`.
@@ -1694,9 +1716,69 @@ public enum Qwen35CustomQMV {
         return Arm(rawValue: raw) ?? .sumTable
     }()
 
+    public enum Entry: String, Sendable {
+        /// One switch over all seven routed widths.
+        case shared = "shared_switch"
+        /// One entry point per distinct `ipg`.
+        case tiered = "tiered_switch"
+    }
+
+    /// Which entry-point layout the dispatch uses. Both layouts emit the same
+    /// case bodies from the same generator, so they execute identical code and
+    /// differ only in the register maximum the compiler allocates. Read once at
+    /// process start, exactly like `arm`, and never varies with the request,
+    /// the prompt or the benchmark phase.
+    public static let entry: Entry = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_ENTRY"]
+        guard let raw, !raw.isEmpty else { return .tiered }
+        return Entry(rawValue: raw) ?? .tiered
+    }()
+
     /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
     /// and M=2 reach different kernels and are left to MLX.
     static let widths = 3 ... 9
+
+    /// How the shared entry point is specialized for each routed width.
+    ///
+    /// `ipg` is how many input rows one threadgroup accumulates, so the kernel
+    /// makes `ceil(m / ipg)` passes over the whole weight matrix. Weight
+    /// traffic dominates every routed cell, so `ipg = m` and its single pass
+    /// is the target wherever the register ceiling allows it.
+    ///
+    /// `rps` is how many output rows one simdgroup accumulates. Live vector
+    /// registers scale as roughly `(2 * rps + 5) * na`, and a Metal entry point
+    /// is allocated the maximum over every case body, so `rps` is the lever
+    /// that keeps a wide single-pass body inside the budget. Lowering it costs
+    /// proportionally more activation re-reads, which stay in cache.
+    static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = [
+        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
+    ]
+
+    static func plan(m: Int) -> (m: Int, ipg: Int, rps: Int) {
+        guard let entry = widthPlan.first(where: { $0.m == m }) else {
+            preconditionFailure("width \(m) is routed but has no entry-point plan")
+        }
+        return entry
+    }
+
+    /// The entry point a width is dispatched to.
+    ///
+    /// A Metal entry point is allocated the maximum register count over every
+    /// branch inlined into it, so one switch over all seven widths charges
+    /// `M = 3` for the `M = 5` body. A width's own maximum is exactly its
+    /// `ipg`: the tail group of a partial pass carries `m % ipg` rows, which is
+    /// fewer than a full group, so the full-group body always dominates.
+    /// Widths that share an `ipg` therefore share an entry point with no
+    /// register cost, and the shipped table has only three distinct values.
+    static func tier(m: Int) -> Int { plan(m: m).ipg }
+
+    static let tiers: [Int] = Set(widthPlan.map(\.ipg)).sorted()
+
+    /// Launch geometry for one routed cell. `y` carries `n / (2 * rps)`
+    /// threadgroups of two simdgroups.
+    static func launch(m: Int, n: Int) -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int)) {
+        ((m * 32, n / plan(m: m).rps, 1), (32, 2, 1))
+    }
 
     /// Rung 2b instrument. Set `MLX_E120_QMV_PIPELINE_LOG` to a writable path
     /// and the entry point records every distinct JIT specialization it asks
@@ -1743,6 +1825,7 @@ public enum Qwen35CustomQMV {
         let json = """
             {
               "arm": "\(arm.rawValue)",
+              "entry": "\(entry.rawValue)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {
@@ -1763,8 +1846,8 @@ public enum Qwen35CustomQMV {
     /// template argument textually replaced, so a single binary can time two
     /// `IPG` choices in one counterbalanced session instead of comparing two
     /// builds. Nothing in the scored path calls these.
-    public static func generatedSource(table: Bool) -> String {
-        qwen35E120QMVSource(table: table)
+    public static func generatedSource(table: Bool, tier: Int? = nil) -> String {
+        qwen35E120QMVSource(table: table, tier: tier)
     }
 
     public static var generatedHeader: String { qwen35E120QMVHeader }
@@ -1873,12 +1956,25 @@ public enum Qwen35CustomQMV {
         else { return nil }
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
-        notePipeline("qmv_sums_v1/USE_TABLE=\(consume)", width: cell.m)
-        return qwen35CustomAffine4QMVTableKernel(
+        let kernel: MLXFast.MLXFastKernel
+        switch entry {
+        case .shared:
+            kernel = qwen35CustomAffine4QMVTableKernel
+            notePipeline("qmv_sums_v2/USE_TABLE=\(consume)", width: cell.m)
+        case .tiered:
+            let tier = Self.tier(m: cell.m)
+            guard let tiered = qwen35CustomAffine4QMVTierTableKernels[tier] else {
+                preconditionFailure("no tier-\(tier) table entry point")
+            }
+            kernel = tiered
+            notePipeline("qmv_sums_na\(tier)_v2/USE_TABLE=\(consume)", width: cell.m)
+        }
+        let launch = Self.launch(m: cell.m, n: cell.n)
+        return kernel(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
-            grid: (cell.m * 32, (cell.n / 8) * 2, 1),
-            threadGroup: (32, 2, 1),
+            grid: launch.grid,
+            threadGroup: launch.threadGroup,
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
         )[0]
@@ -1910,11 +2006,24 @@ public enum Qwen35CustomQMV {
 
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
-        notePipeline("qmv_wide_v1", width: cell.m)
-        return qwen35CustomAffine4QMVKernel(
+        let kernel: MLXFast.MLXFastKernel
+        switch entry {
+        case .shared:
+            kernel = qwen35CustomAffine4QMVKernel
+            notePipeline("qmv_wide_v2", width: cell.m)
+        case .tiered:
+            let tier = Self.tier(m: cell.m)
+            guard let tiered = qwen35CustomAffine4QMVTierKernels[tier] else {
+                preconditionFailure("no tier-\(tier) entry point")
+            }
+            kernel = tiered
+            notePipeline("qmv_wide_na\(tier)_v2", width: cell.m)
+        }
+        let launch = Self.launch(m: cell.m, n: cell.n)
+        return kernel(
             [w, scales, biases, x],
-            grid: (cell.m * 32, (cell.n / 8) * 2, 1),
-            threadGroup: (32, 2, 1),
+            grid: launch.grid,
+            threadGroup: launch.threadGroup,
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
         )[0]

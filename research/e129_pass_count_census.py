@@ -40,6 +40,13 @@ SHIPPED_CASES = e120.WIDTH_CASES
 ONE_PASS_CASES = tuple((m, m) for m, _ in SHIPPED_CASES)
 BODY_NA = (2, 3, 4, 5, 6, 7, 8, 9)
 
+# `rows_per_simd` sets how many output rows one simdgroup accumulates. Live
+# vector registers scale as roughly `(2 * RPS + 5) * NA`, so lowering it is the
+# only lever that buys one-pass width without raising the entry point's
+# register ceiling. It costs proportionally more activation re-reads, which the
+# cache absorbs, and it needs a matching grid in the entry point.
+BODY_RPS = (1, 2, 4)
+
 # Passes over the weight matrix per routed width, shipped against one-pass.
 SHIPPED_PASSES = {m: -(-m // ipg) for m, ipg in SHIPPED_CASES}
 
@@ -47,8 +54,8 @@ SHIPPED_PASSES = {m: -(-m // ipg) for m, ipg in SHIPPED_CASES}
 REALISED_HISTOGRAM = {4: 16, 5: 20, 6: 20, 7: 12, 8: 240}
 
 
-def body_only(table: bool) -> str:
-    """One inlined `qwen_e120_qmv_wide<NA>` with no width dispatch above it."""
+def body_only(table: bool, rps: int) -> str:
+    """One inlined `qwen_e120_qmv_wide<NA, RPS>` with no width dispatch above."""
     sums = "xsums" if table else "qmv_null_sums"
     flag = "USE_TABLE" if table else "false"
     null_decl = "" if table else "\n    const device float* qmv_null_sums = nullptr;"
@@ -58,29 +65,31 @@ def body_only(table: bool) -> str:
     const uint3 qmv_tid = threadgroup_position_in_grid;
     const uint qmv_lid = thread_index_in_simdgroup;
     const uint qmv_sgid = simdgroup_index_in_threadgroup;
-    const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
+    const int qmv_out_row = int(qmv_tid.y) * %d + int(qmv_sgid) * %d;
     const int qmv_first_m = int(qmv_tid.x) * NA;%s
-    qwen_e120_qmv_wide<NA, %s>(
+    qwen_e120_qmv_wide<NA, %d, %s>(
         w, scales, biases, x, %s, y,
         qmv_k, qmv_n, qmv_stride,
-        qmv_first_m, qmv_out_row, qmv_lid);""" % (null_decl, flag, sums)
+        qmv_first_m, qmv_out_row, qmv_lid);""" % (
+        2 * rps, rps, null_decl, rps, flag, sums)
 
 
-def arm_source(header: str, table: bool) -> str:
-    base = ("qwen35_custom_affine4_g64_qmv_wide_sums_v1" if table
-            else "qwen35_custom_affine4_g64_qmv_wide_v1")
+def arm_source(header: str, table: bool, rps: int) -> str:
+    base = ("qwen35_custom_affine4_g64_qmv_wide_sums_v2" if table
+            else "qwen35_custom_affine4_g64_qmv_wide_v2")
     inputs = e120.QMV_INPUTS + ([("xsums", "float")] if table else [])
     use_table = [("bool", "USE_TABLE", "true")] if table else []
     parts = [e120.PRELUDE, header, ""]
-    parts.append(e120.generate(base, inputs, e120.QMV_OUTPUTS,
-                               e120.qmv_body(table), use_table or None))
-    parts.append(e120.generate("%s_onepass" % base, inputs, e120.QMV_OUTPUTS,
-                               e120.qmv_body(table, ONE_PASS_CASES),
-                               use_table or None))
+    if rps == 4:
+        parts.append(e120.generate(base, inputs, e120.QMV_OUTPUTS,
+                                   e120.qmv_body(table), use_table or None))
+        parts.append(e120.generate("%s_onepass" % base, inputs, e120.QMV_OUTPUTS,
+                                   e120.qmv_body(table, ONE_PASS_CASES),
+                                   use_table or None))
     for na in BODY_NA:
         parts.append(e120.generate(
             "%s_body_na%d" % (base, na), inputs, e120.QMV_OUTPUTS,
-            body_only(table), [("int", "NA", str(na))] + use_table))
+            body_only(table, rps), [("int", "NA", str(na))] + use_table))
     return "\n".join(parts) + "\n"
 
 
@@ -94,7 +103,7 @@ def classify(kernel: str) -> tuple[str, int | None]:
 
 def rows(census: dict) -> list[dict]:
     out = []
-    for arm, per_arch in census.items():
+    for (arm, rps), per_arch in census.items():
         for arch, kernels in per_arch.items():
             budget = SIMDGROUP_BUDGET[arch]
             for kernel, stats in kernels.items():
@@ -102,6 +111,7 @@ def rows(census: dict) -> list[dict]:
                 registers = stats["registers"]
                 out.append({
                     "arm": arm,
+                    "rows_per_simd": rps,
                     "arch": arch,
                     "variant": variant,
                     "na": na,
@@ -126,19 +136,20 @@ def main() -> int:
     args = parser.parse_args()
 
     header = e120.swift_literal("qwen35E120QMVHeader")
-    arms = {
-        "replica_no_table": arm_source(header, table=False),
-        "sumtable": arm_source(header, table=True),
-    }
+    arms = {}
+    for rps in BODY_RPS:
+        arms[("replica_no_table", rps)] = arm_source(header, False, rps)
+        arms[("sumtable", rps)] = arm_source(header, True, rps)
 
     census: dict = {}
     with tempfile.TemporaryDirectory() as tmp:
         workdir = pathlib.Path(tmp)
-        for tag, source in arms.items():
+        for (tag, rps), source in arms.items():
+            name = "%s-rps%d" % (tag, rps)
             if args.keep:
                 args.keep.mkdir(parents=True, exist_ok=True)
-                (args.keep / ("%s.metal" % tag)).write_text(source)
-            census[tag] = e120.census(source, tag, workdir)
+                (args.keep / ("%s.metal" % name)).write_text(source)
+            census[(tag, rps)] = e120.census(source, name, workdir)
 
     table = rows(census)
     result = {
@@ -158,12 +169,13 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
 
-    print("%-17s %-14s %-15s %3s %6s %6s %9s %9s"
-          % ("arm", "arch", "variant", "NA", "regs", "spill", "text B", "resident"))
-    for row in sorted(table, key=lambda r: (r["arm"], r["arch"], r["variant"],
-                                            r["na"] or 0)):
-        print("%-17s %-14s %-15s %3s %6s %6s %9s %9s"
-              % (row["arm"], row["arch"], row["variant"],
+    header_fmt = "%-17s %4s %-14s %-15s %3s %6s %6s %9s %9s"
+    print(header_fmt % ("arm", "RPS", "arch", "variant", "NA", "regs", "spill",
+                        "text B", "resident"))
+    for row in sorted(table, key=lambda r: (r["arm"], r["rows_per_simd"], r["arch"],
+                                            r["variant"], r["na"] or 0)):
+        print(header_fmt
+              % (row["arm"], row["rows_per_simd"], row["arch"], row["variant"],
                  row["na"] if row["na"] else "-", row["registers"],
                  row["spill_bytes"], row["text_bytes"], row["resident_simdgroups"]))
 

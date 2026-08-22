@@ -33,8 +33,8 @@ export MLX_E58_BUFFER_LIMIT_OPS=0
 
 echo "== worker certificate before the timed run =="
 senpai/rebuild-and-assert-worker.sh \
-    --require "qwen35_custom_affine4_g64_qmv_wide_v1" \
-    --require "qwen35_custom_affine4_g64_qmv_wide_sums_v1" \
+    --require "qwen35_custom_affine4_g64_qmv_wide_v2" \
+    --require "qwen35_custom_affine4_g64_qmv_wide_sums_v2" \
     --require "qwen35_custom_affine4_g64_xsums_v1" \
     --require "MLX_E120_QMV_ARM" \
     --require "SHARE_SUMS" \

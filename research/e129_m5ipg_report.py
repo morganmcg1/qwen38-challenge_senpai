@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""E129 rung 2c/2d -- summarise the isolated M=5 IPG probe.
+"""E129 -- summarise one width-table QMV probe.
 
     usage: research/e129_m5ipg_report.py OUT_DIR [--histogram 4:16,5:20,...]
 
 OUT_DIR is a `research/e120_probe.sh` output directory holding `m5ipg.json`
 and `m5ipg-exact.json`.
 
-The timing arms are `a_ipg5` (the value rung 2-lite replaced) and `b_ipg3`
-(shipped). Each block times both arms forward and then in reverse, so the
-per-block arm mean is the palindromic mean and monotone thermal drift cancels
-to first order. `harness=local`, ungated: `cool_gate_passed_real_gate=false`.
+The timing arms are `a_compare` (the candidate width table) and `b_shipped`.
+Each block times both arms forward and then in reverse, so the per-block arm
+mean is the palindromic mean and monotone thermal drift cancels to first
+order. `harness=local`, ungated: `cool_gate_passed_real_gate=false`.
 
-The reported effect per cell is the median over blocks of
-`(mean_a - mean_b) / mean_a`, positive when the shipped IPG=3 is faster.
+`compare_gain` is the fraction of shipped time the candidate table saves,
+`(b - a) / b`, positive when the candidate is faster. Cells whose pass count
+is unchanged execute byte-identical code in both pipelines, so they are
+controls that isolate the shared entry point's occupancy channel; cells whose
+pass count changes are treated.
 """
 
 from __future__ import annotations
@@ -71,24 +74,46 @@ def summarise_timing(payload: dict) -> dict:
             saved.append(arms[a_name] - arms[b_name])
             fractions.append((arms[a_name] - arms[b_name]) / arms[a_name])
         temps = [b["gpu_temp_entry_c"] for b in blocks if "gpu_temp_entry_c" in b]
+        gains = [-f / (1 - f) for f in fractions]
+        head = blocks[0]
         rows.append(
             {
                 "shape": shape,
                 "width": width,
                 "blocks": len(blocks),
-                "replicates": blocks[0]["replicates"],
+                "replicates": head["replicates"],
+                "passes_shipped": head.get("passes_shipped"),
+                "passes_compare": head.get("passes_compare"),
+                "treated": head.get("passes_shipped") != head.get("passes_compare"),
                 "a_us_median": statistics.median(a_us),
                 "b_us_median": statistics.median(b_us),
                 "saved_us_median": statistics.median(saved),
                 "saved_fraction_median": statistics.median(fractions),
-                "saved_fraction_min": min(fractions),
-                "saved_fraction_max": max(fractions),
-                "sign_agree": sum(1 for f in fractions if f > 0),
+                "compare_gain_median": statistics.median(gains),
+                "compare_gain_min": min(gains),
+                "compare_gain_max": max(gains),
+                "compare_sign_agree": sum(1 for g in gains if g > 0),
                 "gpu_temp_entry_min_c": min(temps) if temps else None,
                 "gpu_temp_entry_max_c": max(temps) if temps else None,
             }
         )
     return {"cells": rows}
+
+
+def control_summary(rows: list[dict]) -> dict:
+    """Occupancy-only channel: the cells whose pass count did not change."""
+    gains = [row["compare_gain_median"] for row in rows if not row["treated"]]
+    if len(gains) < 2:
+        return {"cells": len(gains)}
+    mean = statistics.fmean(gains)
+    sd = statistics.stdev(gains)
+    return {
+        "cells": len(gains),
+        "mean_gain": mean,
+        "sd": sd,
+        "sem": sd / len(gains) ** 0.5,
+        "positive_cells": sum(1 for g in gains if g > 0),
+    }
 
 
 def round_model(rows: list[dict], histogram: dict[int, int]) -> dict:
@@ -106,14 +131,14 @@ def round_model(rows: list[dict], histogram: dict[int, int]) -> dict:
             if row is None:
                 missing.append(f"{shape}@M={width}")
                 continue
-            base_us += rounds * calls * row["a_us_median"]
-            saved_us += rounds * calls * row["saved_us_median"]
+            base_us += rounds * calls * row["b_us_median"]
+            saved_us -= rounds * calls * row["saved_us_median"]
     return {
         "histogram": {str(k): v for k, v in sorted(histogram.items())},
         "routed_rounds": total_rounds,
-        "wide_qmv_us_ipg5": base_us,
-        "wide_qmv_us_saved": saved_us,
-        "wide_qmv_saved_fraction": saved_us / base_us if base_us else None,
+        "wide_qmv_us_shipped": base_us,
+        "wide_qmv_us_saved_by_compare": saved_us,
+        "wide_qmv_gain_fraction": saved_us / base_us if base_us else None,
         "us_saved_per_routed_round": saved_us / total_rounds if total_rounds else None,
         "missing_cells": missing,
     }
@@ -163,11 +188,14 @@ def main() -> int:
     if timing_path.exists():
         payload = load(timing_path)
         timing = summarise_timing(payload)
-        report["ipg_shipped"] = payload["ipg_shipped"]
-        report["ipg_compare"] = payload["ipg_compare"]
+        report["cases_shipped"] = payload["cases_shipped"]
+        report["cases_compare"] = payload["cases_compare"]
+        report["passes_shipped"] = payload["passes_shipped"]
+        report["passes_compare"] = payload["passes_compare"]
         report["cool_gate_passed_real_gate"] = payload["cool_gate_passed_real_gate"]
         report["gate_qualified_for_timing"] = payload["gate_qualified_for_timing"]
         report["timing"] = timing
+        report["occupancy_control"] = control_summary(timing["cells"])
         report["round_model"] = round_model(timing["cells"], histogram)
 
     out_path = out_dir / "m5ipg-report.json"
@@ -184,25 +212,33 @@ def main() -> int:
             f"x_hit_min={exact['x_hit_min']}"
         )
     if "timing" in report:
-        print(f"\nipg{report['ipg_compare']} -> ipg{report['ipg_shipped']}, "
-              f"positive = shipped is faster")
-        print(f"{'shape':<14}{'M':>3}{'a_us':>10}{'b_us':>10}"
-              f"{'saved_us':>10}{'saved_%':>9}{'sign':>6}")
+        print(f"\nshipped {report['cases_shipped']}")
+        print(f"compare {report['cases_compare']}   positive gain = compare is faster")
+        print(f"{'shape':<14}{'M':>3}{'pass':>6}{'shipped_us':>12}{'compare_us':>12}"
+              f"{'gain_%':>9}{'sign':>7}")
         for row in report["timing"]["cells"]:
+            passes = f"{row['passes_shipped']}>{row['passes_compare']}"
             print(
-                f"{row['shape']:<14}{row['width']:>3}"
-                f"{row['a_us_median']:>10.3f}{row['b_us_median']:>10.3f}"
-                f"{row['saved_us_median']:>10.3f}"
-                f"{100 * row['saved_fraction_median']:>9.3f}"
-                f"{row['sign_agree']:>3}/{row['blocks']}"
+                f"{row['shape']:<14}{row['width']:>3}{passes:>6}"
+                f"{row['b_us_median']:>12.3f}{row['a_us_median']:>12.3f}"
+                f"{100 * row['compare_gain_median']:>9.3f}"
+                f"{row['compare_sign_agree']:>4}/{row['blocks']}"
+            )
+        control = report["occupancy_control"]
+        if "mean_gain" in control:
+            print(
+                f"\noccupancy-only control ({control['cells']} unchanged-pass cells): "
+                f"mean gain {100 * control['mean_gain']:+.4f} %, "
+                f"sd {100 * control['sd']:.4f}, sem {100 * control['sem']:.4f}, "
+                f"{control['positive_cells']}/{control['cells']} positive"
             )
         model = report["round_model"]
         print(
             f"\nrouted-round model over {model['routed_rounds']} rounds: "
-            f"wide QMV {model['wide_qmv_us_ipg5']:.0f} us -> saved "
-            f"{model['wide_qmv_us_saved']:.0f} us "
-            f"({100 * model['wide_qmv_saved_fraction']:.3f} %), "
-            f"{model['us_saved_per_routed_round']:.1f} us/round"
+            f"wide QMV {model['wide_qmv_us_shipped']:.0f} us shipped, compare saves "
+            f"{model['wide_qmv_us_saved_by_compare']:.0f} us "
+            f"({100 * model['wide_qmv_gain_fraction']:+.3f} %), "
+            f"{model['us_saved_per_routed_round']:+.1f} us/round"
         )
         if model["missing_cells"]:
             print(f"missing cells: {', '.join(model['missing_cells'])}")

@@ -47,10 +47,15 @@ readonly WITNESS=(
   --forbid  'constexpr bool SHARE_SUMS = NA <= 4;'
   --forbid  'threadgroup float sums_xchg[1 * 4 * 32];'
   --require 'sums[m] += load_vector'
-  --require 'qwen35_custom_affine4_g64_qmv_wide_v1'
-  --require 'qwen35_custom_affine4_g64_qmv_wide_sums_v1'
+  --require 'qwen35_custom_affine4_g64_qmv_wide_v2'
+  --require 'qwen35_custom_affine4_g64_qmv_wide_sums_v2'
+  --forbid  'qwen35_custom_affine4_g64_qmv_wide_v1'
+  --forbid  'qwen35_custom_affine4_g64_qmv_wide_sums_v1'
   --require 'qwen35_custom_affine4_g64_xsums_v1'
   --require 'inline void qwen_e120_qmv_m('
+  --require 'template <int NA, int RPS, bool USE_TABLE>'
+  --require 'qwen_e120_qmv_m<8, 8, 2, USE_TABLE>'
+  --forbid  'qwen_e120_qmv_m<8, 4, USE_TABLE>'
 )
 
 if [[ -n "$(git status --porcelain)" ]]; then

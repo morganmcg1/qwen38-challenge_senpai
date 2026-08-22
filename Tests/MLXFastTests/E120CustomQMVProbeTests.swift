@@ -658,63 +658,133 @@ struct E120CustomQMVProbeTests {
 
     // MARK: rung 2 entry-point width switch
 
-    /// The shipped `(M, IPG)` width table of the generated QMV entry point.
-    ///
-    /// `qwen_e120_qmv_m<M, IPG>` splits the `M` input rows into `ceil(M / IPG)`
-    /// groups, and every group re-reads the whole weight matrix. The shipped
-    /// table therefore makes one pass at `M = 3, 4, 5`, two at `M = 6, 7, 8`
-    /// and three at `M = 9`.
-    static let shippedCases: [(m: Int, ipg: Int)] = [
-        (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3),
-    ]
+    typealias WidthPlan = [(m: Int, ipg: Int, rps: Int)]
 
-    /// The compare table. `MLXFAST_E129_CASES="6:6,7:7,8:8"` replaces the `IPG`
-    /// of the named widths only; every other width keeps its shipped value, so
-    /// the two pipelines execute identical code there and any difference at
-    /// those widths isolates the shared entry point's occupancy channel.
-    static let compareCases: [(m: Int, ipg: Int)] = {
-        var table = [Int: Int](uniqueKeysWithValues: shippedCases.map { ($0.m, $0.ipg) })
-        let spec = ProcessInfo.processInfo.environment["MLXFAST_E129_CASES"] ?? "6:6,7:7,8:8"
+    /// The plan the candidate ships, read from the source under test.
+    static let sourcePlan: WidthPlan = Qwen35CustomQMV.widthPlan
+
+    /// Applies an `M:IPG:RPS` override spec on top of the shipped plan. Widths
+    /// the spec omits keep their shipped values, so the two pipelines execute
+    /// identical code there and those widths isolate the shared entry point's
+    /// occupancy channel.
+    static func plan(overriding spec: String) -> WidthPlan {
+        var table = [Int: (ipg: Int, rps: Int)](
+            uniqueKeysWithValues: sourcePlan.map { ($0.m, (ipg: $0.ipg, rps: $0.rps)) })
         for entry in spec.split(separator: ",") {
-            let parts = entry.split(separator: ":")
-            guard parts.count == 2, let m = Int(parts[0]), let ipg = Int(parts[1]) else { continue }
-            table[m] = ipg
+            let parts = entry.split(separator: ":").compactMap { Int($0) }
+            guard parts.count == 3 else { continue }
+            table[parts[0]] = (ipg: parts[1], rps: parts[2])
         }
-        return shippedCases.map { (m: $0.m, ipg: table[$0.m] ?? $0.ipg) }
-    }()
+        return sourcePlan.map {
+            (m: $0.m, ipg: table[$0.m]?.ipg ?? $0.ipg, rps: table[$0.m]?.rps ?? $0.rps)
+        }
+    }
 
-    static func passes(_ cases: [(m: Int, ipg: Int)]) -> [String: Int] {
+    /// The `b_shipped` arm. Defaults to the plan in the source under test.
+    /// `MLXFAST_E129_SHIPPED_CASES` moves it so any two plans can be paired,
+    /// which is what isolates one axis at a time: holding `rows_per_simd`
+    /// equal in both arms leaves only the pass count changing.
+    static let shippedCases: WidthPlan = plan(
+        overriding: ProcessInfo.processInfo.environment["MLXFAST_E129_SHIPPED_CASES"] ?? "")
+
+    /// The `a_compare` arm. The default reverses the shipped plan back to the
+    /// promoted two-pass table, so `a_compare` is the incumbent.
+    static let compareCases: WidthPlan = plan(
+        overriding: ProcessInfo.processInfo.environment["MLXFAST_E129_CASES"]
+            ?? "6:3:4,7:4:4,8:4:4")
+
+    static func passes(_ cases: WidthPlan) -> [String: Int] {
         var out: [String: Int] = [:]
         for entry in cases { out["\(entry.m)"] = (entry.m + entry.ipg - 1) / entry.ipg }
         return out
     }
 
-    static func caseTag(_ cases: [(m: Int, ipg: Int)]) -> String {
-        cases.map { "\($0.m)x\($0.ipg)" }.joined(separator: "_")
+    static func caseTag(_ cases: WidthPlan) -> String {
+        cases.map { "\($0.m)x\($0.ipg)x\($0.rps)" }.joined(separator: "_")
     }
 
-    /// The shipped table pipeline, rebuilt under a private name with the
-    /// template arguments of the named width cases replaced.
+    /// One side of the comparison: a width plan, an entry-point layout, and the
+    /// pipelines they produce.
     ///
-    /// A Metal entry point is allocated `max` registers over every case body,
-    /// so the widest body sets the occupancy of the whole switch and every
-    /// routed width pays it. Two channels therefore move at once: the pass
-    /// count of the changed widths, and the occupancy of all of them.
-    fileprivate static func casesKernel(_ cases: [(m: Int, ipg: Int)])
-        -> MLXFast.MLXFastKernel
-    {
-        var source = Qwen35CustomQMV.generatedSource(table: true)
+    /// A Metal entry point is allocated `max` registers over every case body it
+    /// inlines. `shared` puts all seven widths in one switch, so the widest
+    /// body sets the occupancy of every routed width. `tiered` emits one entry
+    /// point per distinct `ipg`, which is a width's own maximum because a tail
+    /// group is never wider than a full group. Both layouts come from the same
+    /// generator and execute identical code.
+    fileprivate struct Arm {
+        let plan: WidthPlan
+        let tiered: Bool
+        let label: String
+        /// Keyed by `ipg`, or by `0` for the single shared switch.
+        private let kernels: [Int: MLXFast.MLXFastKernel]
+
+        init(_ plan: WidthPlan, tiered: Bool, label: String) {
+            self.plan = plan
+            self.tiered = tiered
+            self.label = label
+            let tiers = tiered ? Set(plan.map(\.ipg)).sorted() : [0]
+            self.kernels = Dictionary(
+                uniqueKeysWithValues: tiers.map {
+                    ($0, casesKernel(plan, tier: tiered ? $0 : nil, label: label))
+                })
+        }
+
+        var pipelineCount: Int { kernels.count }
+
+        func kernel(m: Int) -> MLXFast.MLXFastKernel {
+            let key = tiered ? (plan.first { $0.m == m }?.ipg ?? 0) : 0
+            guard let kernel = kernels[key] else {
+                preconditionFailure("arm \(label) has no pipeline for width \(m)")
+            }
+            return kernel
+        }
+
+        /// The same buffers, grid and threadgroup the shipped call sites bind.
+        func apply(_ x: MLXArray, _ w: E120Weights, _ xsums: MLXArray) -> MLXArray {
+            let n = w.packed.dim(0)
+            let m = x.dim(-2)
+            let entry = plan.first { $0.m == m } ?? (m: m, ipg: m, rps: 4)
+            var outShape = x.shape
+            outShape[outShape.count - 1] = n
+            return kernel(m: m)(
+                [w.packed, w.scales, w.biases, x, xsums],
+                template: [("USE_TABLE", true)],
+                grid: (m * 32, n / entry.rps, 1),
+                threadGroup: (32, 2, 1),
+                outputShapes: [outShape],
+                outputDTypes: [.bfloat16]
+            )[0]
+        }
+    }
+
+    /// The shipped generated source, rebuilt under a private name with the
+    /// template arguments and `out_row` expression of the changed width cases
+    /// replaced, and optionally restricted to one `ipg` tier.
+    fileprivate static func casesKernel(
+        _ cases: WidthPlan, tier: Int?, label: String
+    ) -> MLXFast.MLXFastKernel {
+        var source = Qwen35CustomQMV.generatedSource(table: true, tier: nil)
         for (index, entry) in cases.enumerated() {
-            let shipped = shippedCases[index]
-            precondition(entry.m == shipped.m, "case tables must cover the same widths")
-            let from = "qwen_e120_qmv_m<\(shipped.m), \(shipped.ipg), USE_TABLE>"
+            let shipped = sourcePlan[index]
+            precondition(entry.m == shipped.m, "case plans must cover the same widths")
+            let from = """
+                qwen_e120_qmv_m<\(shipped.m), \(shipped.ipg), \(shipped.rps), USE_TABLE>
+                """
             precondition(source.contains(from), "shipped case \(from) not in generated source")
-            guard entry.ipg != shipped.ipg else { continue }
+            guard entry.ipg != shipped.ipg || entry.rps != shipped.rps else { continue }
             source = source.replacingOccurrences(
-                of: from, with: "qwen_e120_qmv_m<\(entry.m), \(entry.ipg), USE_TABLE>")
+                of: from,
+                with: "qwen_e120_qmv_m<\(entry.m), \(entry.ipg), \(entry.rps), USE_TABLE>")
+            let rowFrom = "int(qmv_tid.y) * \(2 * shipped.rps) + int(qmv_sgid) * \(shipped.rps)"
+            let rowTo = "int(qmv_tid.y) * \(2 * entry.rps) + int(qmv_sgid) * \(entry.rps)"
+            source = replaceRowExpression(source, case: entry.m, from: rowFrom, to: rowTo)
+        }
+        if let tier {
+            source = dropCases(source, keeping: cases.filter { $0.ipg == tier }.map(\.m))
         }
         return MLXFast.metalKernel(
-            name: "e129_qmv_sums_\(caseTag(cases))",
+            name: "e129_qmv_sums_\(label)\(tier.map { "_na\($0)" } ?? "")_\(caseTag(cases))",
             inputNames: ["w", "scales", "biases", "x", "xsums"],
             outputNames: ["y"],
             source: source,
@@ -722,21 +792,42 @@ struct E120CustomQMVProbeTests {
             ensureRowContiguous: true)
     }
 
-    /// The same buffers, grid and threadgroup `matmulWithTable` binds.
-    fileprivate static func m5Apply(
-        _ kernel: MLXFast.MLXFastKernel, _ x: MLXArray, _ w: E120Weights, _ xsums: MLXArray
-    ) -> MLXArray {
-        let n = w.packed.dim(0)
-        var outShape = x.shape
-        outShape[outShape.count - 1] = n
-        return kernel(
-            [w.packed, w.scales, w.biases, x, xsums],
-            template: [("USE_TABLE", true)],
-            grid: (x.dim(-2) * 32, (n / 8) * 2, 1),
-            threadGroup: (32, 2, 1),
-            outputShapes: [outShape],
-            outputDTypes: [.bfloat16]
-        )[0]
+    /// Removes every `case M:` block the tier does not carry, so the compiler
+    /// inlines only the bodies this entry point can reach.
+    private static func dropCases(_ source: String, keeping widths: [Int]) -> String {
+        var out = source
+        for entry in sourcePlan where !widths.contains(entry.m) {
+            let head = "        case \(entry.m):\n"
+            guard let start = out.range(of: head),
+                let end = out.range(of: "break;\n", range: start.upperBound ..< out.endIndex)
+            else { preconditionFailure("case \(entry.m) not found in generated source") }
+            out = out.replacingCharacters(in: start.lowerBound ..< end.upperBound, with: "")
+        }
+        return out
+    }
+
+    /// `out_row` is written once per case, so replace only the occurrence that
+    /// follows this case's `qwen_e120_qmv_m<...>` instantiation.
+    private static func replaceRowExpression(
+        _ source: String, case m: Int, from: String, to: String
+    ) -> String {
+        guard from != to,
+            let anchor = source.range(of: "qwen_e120_qmv_m<\(m), "),
+            let hit = source.range(of: from, range: anchor.upperBound ..< source.endIndex)
+        else { return source }
+        return source.replacingCharacters(in: hit, with: to)
+    }
+
+    /// `a_compare` and `b_shipped`. `MLXFAST_E129_TIERED` names the arms whose
+    /// entry point is templated per `ipg`; the default templates the shipped
+    /// plan and leaves the compare arm on the shared switch, so with no case
+    /// override the two arms differ in the register maximum alone.
+    fileprivate static var armPair: (compare: Arm, shipped: Arm) {
+        let tiered = ProcessInfo.processInfo.environment["MLXFAST_E129_TIERED"] ?? "shipped"
+        return (
+            Arm(compareCases, tiered: tiered.contains("compare"), label: "compare"),
+            Arm(shippedCases, tiered: tiered.contains("shipped"), label: "shipped")
+        )
     }
 
     @Test(
@@ -744,8 +835,7 @@ struct E120CustomQMVProbeTests {
         .enabled(if: E120CustomQMVProbeTests.runtimeEnabled))
     func m5IPGExactness() throws {
         var records: [[String: Any]] = []
-        let shipped = Self.casesKernel(Self.shippedCases)
-        let compare = Self.casesKernel(Self.compareCases)
+        let (compare, shipped) = Self.armPair
 
         for shape in Self.shapes + [("control.small", 512, 4096)] {
             let w = Self.makeWeights(
@@ -769,9 +859,9 @@ struct E120CustomQMVProbeTests {
                 let bumpedTable = Qwen35CustomQMV.xsumsTable(bumped)
                 eval(bumpedTable)
 
-                let a = Self.m5Apply(shipped, x, w, table)
-                let b = Self.m5Apply(compare, x, w, table)
-                let hit = Self.m5Apply(compare, bumped, w, bumpedTable)
+                let a = shipped.apply(x, w, table)
+                let b = compare.apply(x, w, table)
+                let hit = compare.apply(bumped, w, bumpedTable)
                 eval(a, b, hit)
 
                 let shippedVsMLX = Self.mismatches(reference, a)
@@ -784,10 +874,14 @@ struct E120CustomQMVProbeTests {
                     "hidden": shape.hidden,
                     "width": width,
                     "elements": reference.size,
-                    "cases_shipped": Self.caseTag(Self.shippedCases),
-                    "cases_compare": Self.caseTag(Self.compareCases),
-                    "passes_shipped": Self.passes(Self.shippedCases)["\(width)"] ?? 0,
-                    "passes_compare": Self.passes(Self.compareCases)["\(width)"] ?? 0,
+                    "cases_shipped": Self.caseTag(shipped.plan),
+                    "cases_compare": Self.caseTag(compare.plan),
+                    "tiered_shipped": shipped.tiered,
+                    "tiered_compare": compare.tiered,
+                    "pipelines_shipped": shipped.pipelineCount,
+                    "pipelines_compare": compare.pipelineCount,
+                    "passes_shipped": Self.passes(shipped.plan)["\(width)"] ?? 0,
+                    "passes_compare": Self.passes(compare.plan)["\(width)"] ?? 0,
                     "shipped_vs_mlx": shippedVsMLX,
                     "compare_vs_mlx": compareVsMLX,
                     "differing_elements": crossDiffering,
@@ -820,8 +914,7 @@ struct E120CustomQMVProbeTests {
         .enabled(if: E120CustomQMVProbeTests.timingEnabled))
     func m5IPGTiming() throws {
         var cells: [[String: Any]] = []
-        let shipped = Self.casesKernel(Self.shippedCases)
-        let compare = Self.casesKernel(Self.compareCases)
+        let (compare, shipped) = Self.armPair
 
         for shape in Self.shapes {
             let w = Self.makeWeights(
@@ -841,10 +934,10 @@ struct E120CustomQMVProbeTests {
                 let arms: [E120Arm] = [
                     E120Arm(
                         name: "a_compare",
-                        body: { [Self.m5Apply(compare, x, w, table)] }),
+                        body: { [compare.apply(x, w, table)] }),
                     E120Arm(
                         name: "b_shipped",
-                        body: { [Self.m5Apply(shipped, x, w, table)] }),
+                        body: { [shipped.apply(x, w, table)] }),
                 ]
 
                 Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
@@ -868,10 +961,14 @@ struct E120CustomQMVProbeTests {
                         "width": width,
                         "block": blockIndex,
                         "replicates": count,
-                        "cases_shipped": Self.caseTag(Self.shippedCases),
-                        "cases_compare": Self.caseTag(Self.compareCases),
-                        "passes_shipped": Self.passes(Self.shippedCases)["\(width)"] ?? 0,
-                        "passes_compare": Self.passes(Self.compareCases)["\(width)"] ?? 0,
+                        "cases_shipped": Self.caseTag(shipped.plan),
+                        "cases_compare": Self.caseTag(compare.plan),
+                        "tiered_shipped": shipped.tiered,
+                        "tiered_compare": compare.tiered,
+                        "pipelines_shipped": shipped.pipelineCount,
+                        "pipelines_compare": compare.pipelineCount,
+                        "passes_shipped": Self.passes(shipped.plan)["\(width)"] ?? 0,
+                        "passes_compare": Self.passes(compare.plan)["\(width)"] ?? 0,
                         "saved_us_per_matvec": mean[0] - mean[1],
                         "saved_fraction": (mean[0] - mean[1]) / mean[0],
                         "arms": arms.enumerated().map { index, arm in
@@ -903,10 +1000,14 @@ struct E120CustomQMVProbeTests {
                 "gate_qualified_for_timing": false,
                 "blocks": Self.blocks,
                 "widths": Self.widths,
-                "cases_shipped": Self.caseTag(Self.shippedCases),
-                "cases_compare": Self.caseTag(Self.compareCases),
-                "passes_shipped": Self.passes(Self.shippedCases),
-                "passes_compare": Self.passes(Self.compareCases),
+                "cases_shipped": Self.caseTag(shipped.plan),
+                "cases_compare": Self.caseTag(compare.plan),
+                "passes_shipped": Self.passes(shipped.plan),
+                "passes_compare": Self.passes(compare.plan),
+                "tiered_shipped": shipped.tiered,
+                "tiered_compare": compare.tiered,
+                "pipelines_shipped": shipped.pipelineCount,
+                "pipelines_compare": compare.pipelineCount,
                 "cells": cells,
             ]
             let data = try JSONSerialization.data(
