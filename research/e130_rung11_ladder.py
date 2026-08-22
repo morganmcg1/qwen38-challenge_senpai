@@ -48,7 +48,14 @@ ORDER = [
     "s2048", "s512", "s64", "s1024",
 ]
 ARMS = ("s64", "s512", "s1024", "s2048")
-SLACK_MB = {"s64": 64, "s512": 512, "s1024": 1024, "s2048": 2048}
+
+# Leg 13 is a thirteenth s512 leg run with the round trace switched off. It is
+# deliberately outside ORDER and outside ARMS, so it never enters the fit. Its
+# only job is to price the trace itself, which every fitted leg pays.
+UNTRACED_ARM = "s512untraced"
+UNTRACED_INDEX = 13
+SLACK_MB = {"s64": 64, "s512": 512, "s1024": 1024, "s2048": 2048,
+            UNTRACED_ARM: 512}
 
 # Two-sided 95 % Student t. Only the degrees of freedom this design can produce.
 T_CRIT_95 = {
@@ -89,6 +96,50 @@ PREREGISTERED = {
 }
 MODELS = ("constant_slope", "saturating", "declining_value")
 
+# --------------------------------------------------------------------------
+# F19 section 2 and 3. Position dependence of the s64 -> s512 admission.
+#
+# The rung 10a anchor was measured at 64 decode tokens. Campaign rule 105
+# forbids carrying that percentage to 512 tokens unless the mechanism is proven
+# window invariant, so this ladder re-measures the same contrast at 512 and
+# these constants say what each mechanism predicts we should see.
+#
+# The s64 -> s512 step admits 448.0 MiB (rung 11 admission screen, slope
+# 1.000). 136.0 MiB of that is eight buffers of 17,825,792 B in the per-layer
+# KV size class; the other 312.0 MiB is not KV. A KV page holds 4,352 tokens
+# per layer, so neither window changes the ALLOCATION, only how much of the
+# page is TOUCHED. Touched KV bytes go as the mean sequence length over the
+# timed window: 512 + 64/2 = 544 tokens against 512 + 512/2 = 768 tokens, at
+# 8 * len * 4096 B, which is 17.00 MiB at 64 tokens and 24.00 MiB at 512.
+#
+# Non-KV admitted bytes are touched by an unknown fraction f that we assume is
+# the same at both windows, because GDN recurrent state and scratch are sized
+# by the model and not by position. Benefit is taken proportional to touched
+# bytes, so the 512-token effect is the anchor scaled by
+#
+#     ratio(f) = (f * 312.0 + 24.00) / (f * 312.0 + 17.00)
+#
+# which is 1.0213 at f = 1 and 1.4118 at f = 0. That is the whole content of
+# the split: f near 1 means the tax rides on position-invariant state and the
+# percentage barely moves, f near 0 means it rides on KV pages and the
+# percentage grows by 41 %.
+ANCHOR_PCT_64 = -0.1968
+ANCHOR_ADMITTED_MIB = 448.0
+KV_ADMITTED_MIB = 136.0
+NONKV_ADMITTED_MIB = ANCHOR_ADMITTED_MIB - KV_ADMITTED_MIB
+KV_TOUCHED_MIB = {64: 17.00, 512: 24.00}
+
+# The third mechanism. If the tax is paid once in round 1 rather than every
+# round, it is a fixed 4.033 ms per leg, which is -0.1963 % of a 64-token leg
+# and only -0.0245 % of a 512-token leg.
+ONE_TIME_MS_PER_LEG = 4.033
+ONE_TIME_PCT_512 = -0.0245
+
+# Pre-registered in PR 130 interim 21 before this ladder ran: f = 1 dominates,
+# so the 512-token contrast should land near -0.2010 % and not near -0.2778 %.
+PREDICTED_PCT_512 = -0.2010
+POSITION_GRID = (1.0, 0.75, 0.5, 0.25, 0.0)
+
 
 def read_meta(path: Path) -> dict:
     meta: dict[str, str] = {}
@@ -128,6 +179,10 @@ def read_leg(root: Path, prefix: str, index: int, arm: str) -> dict:
         "base_sha": meta.get("base_sha"),
         "cool_gate_passed_real_gate": meta.get("cool_gate_passed_real_gate"),
         "gate_qualified_for_timing": meta.get("gate_qualified_for_timing"),
+        "leg_trace": meta.get("leg_trace"),
+        "trace_anchor_lines": int(meta.get("trace_anchor_lines", "0") or 0),
+        "trace_round_lines": int(meta.get("trace_round_lines", "0") or 0),
+        "trace_row_lines": int(meta.get("trace_row_lines", "0") or 0),
     }
     entry = swap_fields(meta.get("swap_entry", ""))
     exit_ = swap_fields(meta.get("swap_exit", ""))
@@ -247,6 +302,7 @@ def fit(legs: list[dict], field: str) -> dict | None:
         "trend_share_of_arm_only_residual":
             1.0 - sse / ss_arm_only if ss_arm_only > 0 else float("nan"),
         "grand_mean": grand,
+        "centre": centre,
         "residuals": {leg["tag"]: r for leg, r in zip(used, residuals)},
         "_inv": inv,
         "_sigma2": sigma2,
@@ -357,6 +413,226 @@ def thermal(legs: list[dict]) -> dict:
     }
 
 
+def position_prediction(fraction: float) -> dict:
+    """Carry the 64-token anchor to 512 tokens for one non-KV touched fraction."""
+    at64 = fraction * NONKV_ADMITTED_MIB + KV_TOUCHED_MIB[64]
+    at512 = fraction * NONKV_ADMITTED_MIB + KV_TOUCHED_MIB[512]
+    ratio = at512 / at64
+    return {
+        "nonkv_touched_fraction": fraction,
+        "touched_mib_at_64": at64,
+        "touched_mib_at_512": at512,
+        "ratio": ratio,
+        "pct": ANCHOR_PCT_64 * ratio,
+    }
+
+
+def implied_touched_fraction(pct: float) -> float | None:
+    """Invert ratio(f). None when the measurement sits off this family."""
+    ratio = pct / ANCHOR_PCT_64
+    denominator = NONKV_ADMITTED_MIB * (1.0 - ratio)
+    if abs(denominator) < 1e-9:
+        return None
+    return (ratio * KV_TOUCHED_MIB[64] - KV_TOUCHED_MIB[512]) / denominator
+
+
+def position_dependence(models: dict) -> dict:
+    """F19 section 3. Decide which mechanism pays the wired-slack tax.
+
+    Three channels are read on the one contrast that already has a 64-token
+    anchor, s64 -> s512:
+
+        A   candidate seconds per token over the whole timed leg
+        B   steady-state decode seconds per token, round 1 removed
+        C   depth-controlled round-1 excess, in milliseconds per leg
+
+    B says WHERE the tax is paid, A says HOW BIG it is at the only window the
+    ranked score uses, and C is the cross check, because a one-time tax has to
+    appear there in milliseconds and has to leave B alone.
+
+    A IS THE SHIPPING NUMBER EITHER WAY. It is a direct 512-token measurement,
+    so the mechanism does not change it; the mechanism only decides whether
+    that percentage may be carried to any other window under campaign rule 105.
+    """
+    primary = models.get("candidate_mtp_seconds_per_token")
+    steady = models.get("steady_seconds_per_token")
+    round1 = models.get("round1_excess_us")
+
+    out: dict = {
+        "contrast": "s64_to_s512",
+        "decode_tokens": 512,
+        "anchor_pct_at_64_tokens": ANCHOR_PCT_64,
+        "preregistered_pct_at_512": PREDICTED_PCT_512,
+        "preregistered_in": "PR 130 interim 21, before any leg of this ladder ran",
+        "touched_byte_family": [position_prediction(f) for f in POSITION_GRID],
+    }
+    if not primary:
+        out["usable"] = False
+        out["verdict"] = "undecided: the candidate channel did not fit"
+        return out
+
+    a = contrast(primary, "s64", "s512")
+    if not a.get("usable"):
+        out["usable"] = False
+        out["verdict"] = "undecided: the s64 to s512 contrast is missing"
+        return out
+    out["usable"] = True
+    out["measured_pct"] = a["pct"]
+    out["measured_se_pct"] = a["se_pct"]
+    out["measured_ci95_pct"] = a["ci95_pct"]
+
+    hypotheses = {
+        "one_time_round1": ONE_TIME_PCT_512,
+        "per_round_position_invariant": position_prediction(1.0)["pct"],
+        "per_round_kv_dominated": position_prediction(0.0)["pct"],
+        "window_invariant_carry_of_anchor": ANCHOR_PCT_64,
+    }
+    scored = {}
+    for name, predicted in hypotheses.items():
+        z = ((a["pct"] - predicted) / a["se_pct"]) if a["se_pct"] else float("nan")
+        scored[name] = {
+            "predicted_pct": predicted,
+            "measured_minus_predicted_pp": a["pct"] - predicted,
+            "z": z,
+            "inside_ci95": a["ci95_pct"][0] <= predicted <= a["ci95_pct"][1],
+        }
+    out["hypotheses"] = scored
+    out["hypotheses_not_excluded"] = [
+        name for name, row in scored.items() if row["inside_ci95"]
+    ]
+    out["implied_nonkv_touched_fraction"] = implied_touched_fraction(a["pct"])
+
+    # Channel B. The difference of two fits on the SAME legs is positively
+    # correlated, so this standard error is an upper bound. That makes a
+    # "consistent" reading weak evidence and an "inconsistent" reading strong.
+    b = contrast(steady, "s64", "s512") if steady else {"usable": False}
+    out["steady_state_contrast"] = b
+    out["steady_state_note"] = (
+        "channel B is decode rounds only and channel A includes the 512-token "
+        "seed prefill, so only their CONTRASTS may be compared, never their "
+        "levels (F18)"
+    )
+    b_versus_a = None
+    if b.get("usable"):
+        se_diff = (a["se_pct"] ** 2 + b["se_pct"] ** 2) ** 0.5
+        t_crit = T_CRIT_95.get(primary["df"], 1.96)
+        b_versus_a = {
+            "b_minus_a_pp": b["pct"] - a["pct"],
+            "conservative_se_pp": se_diff,
+            "conservative_se_is_an_upper_bound": True,
+            "b_consistent_with_a": abs(b["pct"] - a["pct"]) <= t_crit * se_diff,
+            "b_consistent_with_zero": abs(b["pct"]) <= t_crit * b["se_pct"],
+        }
+    out["b_versus_a"] = b_versus_a
+
+    # Channel C is read in milliseconds per leg, never as a percentage: a
+    # one-time cost divided by a token count is not a rate.
+    c = contrast(round1, "s64", "s512") if round1 else {"usable": False}
+    if c.get("usable"):
+        c = dict(c)
+        c["delta_ms_per_leg"] = c["delta"] / 1000.0
+        c["one_time_reference_ms_per_leg"] = ONE_TIME_MS_PER_LEG
+    out["round1_contrast"] = c
+
+    if not b_versus_a:
+        out["verdict"] = "undecided: the steady-state channel did not fit"
+        out["mechanism"] = None
+        return out
+
+    per_round = (b_versus_a["b_consistent_with_a"]
+                 and not b_versus_a["b_consistent_with_zero"])
+    one_time = (b_versus_a["b_consistent_with_zero"]
+                and not b_versus_a["b_consistent_with_a"])
+    if per_round:
+        nearest = min(("per_round_position_invariant", "per_round_kv_dominated"),
+                      key=lambda n: abs(scored[n]["z"]))
+        out["mechanism"] = nearest
+        out["window_invariant_percentage"] = True
+        out["verdict"] = (
+            f"per-round tax; the steady state carries it and the 512-token "
+            f"contrast is nearest {nearest}"
+        )
+    elif one_time:
+        out["mechanism"] = "one_time_round1"
+        out["window_invariant_percentage"] = False
+        out["verdict"] = (
+            "one-time round-1 tax; the percentage is not window invariant, so "
+            "restate every rung in milliseconds per leg"
+        )
+    else:
+        out["mechanism"] = None
+        out["window_invariant_percentage"] = None
+        out["verdict"] = (
+            "mixture or underpowered: the steady state is consistent with both "
+            "the full effect and with zero"
+        )
+    out["ship_pct_at_512"] = a["pct"]
+    out["ship_note"] = (
+        "the shipping number is the direct 512-token measurement; the "
+        "mechanism only decides whether it may be carried to another window"
+    )
+    return out
+
+
+def trace_tax(primary: dict | None, untraced: dict) -> dict:
+    """Price the round trace that all twelve fitted legs carry.
+
+    Leg 13 repeats s512 with the trace off. The fitted s512 mean sits at the
+    design centre, so the session trend is carried forward to leg 13 before the
+    two are compared. That is one step beyond the fitted range, and together
+    with the single untraced leg it is the main weakness of this number.
+    """
+    value = untraced.get("mtp_seconds_per_token")
+    out = {
+        "tag": untraced.get("tag"),
+        "untraced_seconds_per_token": value,
+        "leg_trace": untraced.get("leg_trace"),
+        "trace_anchor_lines": untraced.get("trace_anchor_lines"),
+        "trace_round_lines": untraced.get("trace_round_lines"),
+        "trace_row_lines": untraced.get("trace_row_lines"),
+        "round_trace_error": untraced.get("round_trace_error"),
+        "self_check_note": (
+            "an empty round trace on this leg is the expected result and "
+            "proves the trace really was off"
+        ),
+    }
+    trace_off = (untraced.get("leg_trace") == "0"
+                 and not untraced.get("trace_anchor_lines"))
+    out["trace_confirmed_off"] = trace_off
+    if not primary or value is None or "s512" not in primary["_present"]:
+        out["usable"] = False
+        return out
+
+    present = primary["_present"]
+    k = len(primary["columns"])
+    vector = [0.0] * k
+    vector[present.index("s512")] = 1.0
+    vector[-1] = UNTRACED_INDEX - primary["centre"]
+    inv = primary["_inv"]
+    var_pred = primary["_sigma2"] * sum(
+        vector[i] * inv[i][j] * vector[j] for i in range(k) for j in range(k)
+    )
+    predicted = sum(b * v for b, v in zip(
+        [primary["arm_means_adjusted"][arm] for arm in present]
+        + [primary["slope_per_leg"]], vector))
+    se = (var_pred + primary["_sigma2"]) ** 0.5
+    delta = predicted - value
+    t_crit = T_CRIT_95.get(primary["df"], 1.96)
+    half = t_crit * 100.0 * se / value
+    out.update({
+        "usable": True,
+        "traced_s512_predicted_at_leg_13": predicted,
+        "trace_cost_seconds_per_token": delta,
+        "trace_cost_pct": 100.0 * delta / value,
+        "se_pct": 100.0 * se / value,
+        "t": (delta / se) if se else float("nan"),
+        "ci95_pct": [100.0 * delta / value - half, 100.0 * delta / value + half],
+        "significant": abs(100.0 * delta / value) > half,
+        "positive_means_the_trace_costs_time": True,
+    })
+    return out
+
+
 def selftest() -> int:
     """Recover known coefficients from a synthetic ladder.
 
@@ -413,6 +689,37 @@ def selftest() -> int:
         failures.append("positive control did not fire: a planted 1 % arm "
                         "effect was not recovered")
 
+    # F19 touched-byte family. These five numbers were published in PR 130
+    # interim 21 before the ladder ran, so a typo in any admitted-byte constant
+    # would move the goalposts after the fact.
+    published = {1.0: -0.2010, 0.75: -0.2023, 0.5: -0.2048,
+                 0.25: -0.2113, 0.0: -0.2778}
+    for fraction, want in published.items():
+        got = position_prediction(fraction)["pct"]
+        if abs(got - want) > 5e-5:
+            failures.append(f"position family f={fraction}: {got:.6f} != {want}")
+        back = implied_touched_fraction(got)
+        if back is None or abs(back - fraction) > 1e-6:
+            failures.append(f"implied fraction did not round trip at f={fraction}")
+
+    # Trace tax. Plant a leg 13 that is exactly 1 % faster than a flat, driftless
+    # ladder and require the reader to price the trace at +1 %.
+    flat_fit = fit(build(flat, 0.0), "mtp_seconds_per_token")
+    planted_tax = trace_tax(flat_fit, {
+        "tag": "t13", "mtp_seconds_per_token": 1.0 / 1.01,
+        "leg_trace": "0", "trace_anchor_lines": 0,
+    })
+    if not planted_tax.get("trace_confirmed_off"):
+        failures.append("trace_confirmed_off did not fire on an untraced leg")
+    if abs(planted_tax.get("trace_cost_pct", 0.0) - 1.0) > 1e-9:
+        failures.append(f"trace tax {planted_tax.get('trace_cost_pct')} != 1.0")
+    still_traced = trace_tax(flat_fit, {
+        "tag": "t13", "mtp_seconds_per_token": 1.0,
+        "leg_trace": "1", "trace_anchor_lines": 41,
+    })
+    if still_traced.get("trace_confirmed_off"):
+        failures.append("trace_confirmed_off fired on a leg that was traced")
+
     for line in failures:
         print(f"  FAIL {line}")
     print(f"selftest: {'PASS' if not failures else 'FAIL'}"
@@ -434,6 +741,9 @@ def main() -> int:
 
     legs = [read_leg(args.root, args.prefix, i + 1, arm)
             for i, arm in enumerate(ORDER)]
+    # Leg 13 is read but never fitted, so it cannot move any arm mean.
+    untraced = read_leg(args.root, args.prefix, UNTRACED_INDEX, UNTRACED_ARM)
+    all_legs = legs + [untraced]
 
     channels = {
         "candidate_mtp_seconds_per_token": "mtp_seconds_per_token",
@@ -465,16 +775,17 @@ def main() -> int:
         "permutation_seed_material": "e130-rung11-slack-ladder-F16",
         "permutation_seed": 14383609076371482244,
         "legs": legs,
-        "thermal": thermal(legs),
+        "untraced_leg": untraced,
+        "thermal": thermal(all_legs),
         "one_binary_served_every_arm":
-            len({leg["worker_sha256"] for leg in legs
+            len({leg["worker_sha256"] for leg in all_legs
                  if leg.get("worker_sha256")}) == 1,
         "exactness_all_legs":
-            all(leg.get("all_tokens_matched") is True for leg in legs
+            all(leg.get("all_tokens_matched") is True for leg in all_legs
                 if "all_tokens_matched" in leg),
         "channels": {},
     }
-    report["safety"] = safety(legs, primary)
+    report["safety"] = safety(all_legs, primary)
 
     for name, model in models.items():
         if model is None:
@@ -484,6 +795,9 @@ def main() -> int:
         block["contrasts"] = {f"{lo}_to_{hi}": contrast(model, lo, hi)
                               for lo, hi in pairs}
         report["channels"][name] = block
+
+    report["position_dependence"] = position_dependence(models)
+    report["trace_tax"] = trace_tax(primary, untraced)
 
     if primary:
         table = []
@@ -560,6 +874,70 @@ def main() -> int:
                   f"  95% CI [{c['ci95_pct'][0]:+.4f}, {c['ci95_pct'][1]:+.4f}]"
                   f"  {'SIG' if c['significant'] else 'ns'}")
 
+    pos = report["position_dependence"]
+    print("\n=== F19 section 3: position dependence of s64 -> s512 ===")
+    if not pos.get("usable"):
+        print(f"  {pos.get('verdict')}")
+    else:
+        print(f"  measured at 512 tokens  {pos['measured_pct']:+.4f} %"
+              f"  se {pos['measured_se_pct']:.4f}"
+              f"  95% CI [{pos['measured_ci95_pct'][0]:+.4f},"
+              f" {pos['measured_ci95_pct'][1]:+.4f}]")
+        print(f"  64-token anchor         {pos['anchor_pct_at_64_tokens']:+.4f} %"
+              f"   pre-registered 512-token call "
+              f"{pos['preregistered_pct_at_512']:+.4f} %")
+        print(f"  {'hypothesis':<34} {'predicts':>9} {'z':>7}  in CI")
+        for name, row in pos["hypotheses"].items():
+            print(f"  {name:<34} {row['predicted_pct']:+9.4f}"
+                  f" {row['z']:+7.2f}  {'yes' if row['inside_ci95'] else 'no'}")
+        frac = pos.get("implied_nonkv_touched_fraction")
+        print(f"  implied non-KV touched fraction  "
+              f"{'off the family' if frac is None else f'{frac:+.4f}'}")
+        b = pos.get("steady_state_contrast") or {}
+        if b.get("usable"):
+            bv = pos["b_versus_a"]
+            print(f"  channel B (steady state)  {b['pct']:+.4f} %"
+                  f"  se {b['se_pct']:.4f}"
+                  f"   B-A {bv['b_minus_a_pp']:+.4f} pp"
+                  f" (conservative se {bv['conservative_se_pp']:.4f})")
+            print(f"    B consistent with A  {bv['b_consistent_with_a']}"
+                  f"   B consistent with zero  {bv['b_consistent_with_zero']}")
+        else:
+            print("  channel B (steady state)  not usable")
+        c = pos.get("round1_contrast") or {}
+        if c.get("usable"):
+            print(f"  channel C (round-1 excess)  "
+                  f"{c['delta_ms_per_leg']:+.3f} ms/leg"
+                  f"   one-time reference "
+                  f"{c['one_time_reference_ms_per_leg']:.3f} ms/leg")
+        else:
+            print("  channel C (round-1 excess)  not usable")
+        print(f"  MECHANISM {pos.get('mechanism')}")
+        print(f"  VERDICT   {pos['verdict']}")
+        ship = pos.get("ship_pct_at_512")
+        print("  ship n/a" if ship is None
+              else f"  ship at 512 tokens  {ship:+.4f} %")
+
+    tt = report["trace_tax"]
+    print("\n=== trace tax: leg 13, untraced s512 (F19 section 3) ===")
+    print(f"  leg_trace={tt.get('leg_trace')}"
+          f"  anchor_lines={tt.get('trace_anchor_lines')}"
+          f"  trace_confirmed_off={tt.get('trace_confirmed_off')}")
+    if tt.get("round_trace_error"):
+        print(f"  round trace error (expected): {tt['round_trace_error']}")
+    if tt.get("usable"):
+        print(f"  untraced  {tt['untraced_seconds_per_token']:.8f} s/token")
+        print(f"  traced s512 carried to leg 13  "
+              f"{tt['traced_s512_predicted_at_leg_13']:.8f} s/token")
+        print(f"  trace costs {tt['trace_cost_pct']:+.4f} %"
+              f"  se {tt['se_pct']:.4f}  t={tt['t']:+.2f}"
+              f"  95% CI [{tt['ci95_pct'][0]:+.4f}, {tt['ci95_pct'][1]:+.4f}]"
+              f"  {'SIG' if tt['significant'] else 'ns'}")
+        print("  NOTE never put this leg's absolute seconds per token in the "
+              "same table as the archive receipt")
+    else:
+        print("  not usable")
+
     if "preregistered_test" in report:
         print("\n=== pre-registered test (F16 section 3, F17 sections 1-2) ===")
         print(f"  {'contrast':<16} {'slope':>7} {'satur':>7} {'declin':>7}"
@@ -608,6 +986,29 @@ def main() -> int:
             "e130_rung11_one_binary": report["one_binary_served_every_arm"],
             "e130_rung11_exact_all_legs": report["exactness_all_legs"],
         }
+        pos_block = report["position_dependence"]
+        if pos_block.get("usable"):
+            flat.update({
+                "e130_rung11_pos_measured_pct": pos_block["measured_pct"],
+                "e130_rung11_pos_se_pct": pos_block["measured_se_pct"],
+                "e130_rung11_pos_anchor_pct_at_64": ANCHOR_PCT_64,
+                "e130_rung11_pos_preregistered_pct": PREDICTED_PCT_512,
+                "e130_rung11_pos_implied_nonkv_touched_fraction":
+                    pos_block.get("implied_nonkv_touched_fraction"),
+                "e130_rung11_pos_mechanism": pos_block.get("mechanism"),
+                "e130_rung11_pos_window_invariant":
+                    pos_block.get("window_invariant_percentage"),
+                "e130_rung11_pos_ship_pct_at_512":
+                    pos_block.get("ship_pct_at_512"),
+            })
+            for name, row in pos_block["hypotheses"].items():
+                flat[f"e130_rung11_pos_z_{name}"] = row["z"]
+        tax_block = report["trace_tax"]
+        flat["e130_rung11_trace_confirmed_off"] = tax_block.get(
+            "trace_confirmed_off")
+        if tax_block.get("usable"):
+            flat["e130_rung11_trace_cost_pct"] = tax_block["trace_cost_pct"]
+            flat["e130_rung11_trace_cost_se_pct"] = tax_block["se_pct"]
         if primary:
             block = report["channels"]["candidate_mtp_seconds_per_token"]
             flat["e130_rung11_residual_sd_pct"] = block["residual_sd_pct"]
