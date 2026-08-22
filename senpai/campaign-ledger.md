@@ -35829,3 +35829,318 @@ reduced, and the census `selector` defect where `swizzleDispatch(cls, name)` in
 it to `DispatchLedger.shared.dispatch(...)` around line 285, so `dispatchThreads:` and
 `dispatchThreadgroups:` are indistinguishable. That file is not in the tree and is recovered with
 `git cherry-pick -n cd924bd6`.
+
+
+## 262 — 2026-08-22 00:45 UTC — `xv4` submitted as `7bef7d4c`; advisor error 76; the maintained base ships instrumentation in the timed round body; four-agent research round
+
+### 262.1 Official submission `7bef7d4c` is validating
+
+qwen-alphonse submitted the `xv4` candidate at 2026-08-22T00:30:55Z.
+
+| field | value |
+|---|---|
+| submission ID | `7bef7d4c-7c7b-4969-bce5-e3065b0bcbfe` |
+| board prefix | `7bef7d4` |
+| status | `validating` |
+| model attribution | `Model: senpai` |
+| note size | 6,622 bytes |
+| submitted from | HEAD `91da3251`, **unmerged** |
+| mechanism commit | `1f531ce7` |
+| BASE_SHA | `770a3ff2…`, exactly `origin/main` |
+| W&B | [`uxnv7gzr`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/uxnv7gzr) ABBA, [`tt0o2csj`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tt0o2csj) pre-submit |
+
+The crown was unmoved at submission time and remains `51b9bf85` vibecodooor
+3.35025879204714, matching `senpai/frontier-state.json`. The guard refreshed
+`upstream/main` `23ef7556..41bad1c6`, which is the commit `frontier-state.json`
+already records as `syncedCommit`, so no organizer sync is required.
+
+`research/yukon_receipt_watch.sh 7bef7d4c 60` runs under the job supervisor with
+a four-hour ceiling.
+
+### 262.2 ADVISOR ERROR 76 — I proved surface-neutrality against the wrong base
+
+In E110 feedback f7 item 1 I told alphonse that merging the advisor head
+`f14f0f14` before submitting was free, on the grounds that `f14f0f14` "touches no
+source file, no editable path, and nothing in the build graph".
+
+That statement is true of `f14f0f14` **against its own parent**. It is false of
+`f14f0f14` **against alphonse's branch**, which was cut before PRs #114, #115,
+#116 and #117 merged. The merge range is `f2d8bcbf..f14f0f14`, 29 commits.
+
+Alphonse ran a real trial merge, diffed the result against the tree he measured
+restricted to `editablePaths`, and refused the merge. I reproduced his check:
+
+```
+git --no-pager diff --stat f2d8bcbf f14f0f14 -- Sources/MLXFastModel Vendor/mlx-swift-lm Vendor/mlx-swift mtp-head.manifest.json
+  Sources/MLXFastModel/E58DispatchCensus.swift          | 1142 +
+  Sources/MLXFastModel/Qwen36MTPBlockSession.swift      |   37 ++-
+  Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift |    4 +
+  3 files changed, 1181 insertions(+), 2 deletions(-)
+```
+
+His numbers to the line. He submitted the measured tree instead and will merge
+after the receipt, which cannot change a sent archive.
+
+Three points for the record.
+
+1. **He was right to override an explicit instruction from me.** The binding
+   invariant I had stated twice was "submit exactly the surface you measured".
+   The merge was a means to that end. When the means broke the end, he kept the
+   end and reported. That is the correct order of precedence and I want it
+   repeated.
+2. **He lost nothing by skipping it.** I checked the merge range for a
+   performance mechanism: there is none. All 1,181 lines are research
+   instrumentation.
+3. **He also overrode my f3 note-content list in favour of ledger rule 54**, and
+   was right again. Rule 54 is a considered rule about what rivals mine from our
+   public notes; the f3 list was written without re-reading it.
+
+### 262.3 CAMPAIGN RULE 55 — submitted-surface diffs are taken from the submitting branch
+
+> Before any official submission, diff the **submitted** surface against the
+> **exact measured** tree over `editablePaths` only, computed from the submitting
+> branch's own merge base. Never accept a diff taken against the advisor head's
+> parent. Merge for Senpai ancestry only **after** the receipt lands.
+
+### 262.4 CAMPAIGN HAZARD — the maintained base carries research instrumentation inside the timed round body
+
+Alphonse's finding is not local to his branch. Every future submission from
+`senpai/qwen38-mtp-r1` currently carries this into the ranked archive. Read at
+`f14f0f14`:
+
+- `RuntimeStartupMemoryPolicy.swift:83-86` — `E58DispatchCensus.installIfRequested()`
+- `Qwen36MTPBlockSession.swift:604-605` — `phase("seed_prefill")` and a `defer { phase("outside") }`
+- `:1262-1269` — `beginRound(round:width:depth:)`, `defer { endRound(accepted:) }`, `fireTax()`, `censusAccepted`
+- `:1312`, `:1326`, `:1360`, `:1449`, `:1495` — five more `phase(...)` calls
+- **`:1256-1259` — `if let forced = E58DispatchCensus.forcedDrafts { draftCount = Swift.min(forced, depth, Qwen36MTPLimits.maxDepth) }`**
+- `:559-566`, `:722-726` — the `MLX_E112_SKIP_1025_WARM` flag, its trace write, and the changed `if` condition
+
+The runtime cost is negligible — static-Bool-guarded calls, nanoseconds per
+round — and it is **not** the reason to remove them. The reason is item
+`:1256-1259`: an environment override of `draftCount` inside the scored draft
+decision. It is research-legal, being input-independent and off by default, but
+it is exactly the shape `submissionStaticReviewPromptCoversMeasurementStructureExploitation`
+exists to catch, and it sits in the decision path whose rows the trusted parent
+audits. That is not a position to defend on a contested submission.
+
+**Routed to qwen-edward on PR #118 as feedback
+`e116-f1-the-maintained-base-ships-census-hooks-in-the-timed-round-body`.**
+`Sources/MLXFastModel/` must contain zero research instrumentation at terminal
+report; every item is preserved as one `research/e116-artifacts/instruments.patch`
+whose `git apply --check` exit code is reported in the result body. The
+verification step exists because harness defect 11 records that
+`research/e95-artifacts/e95-census-instrument.patch` bit-rotted unnoticed. The
+deletion happens **last**, after every E116 rung is logged.
+
+This is also my own miss: `program.md` requires a cleanup PR after merging a
+winner, and I merged E112, E113, E114 and E115 without one.
+
+### 262.5 CORRECTION to ledger 261 — `E58DispatchCensus.swift` IS in the tree
+
+Ledger 261 records the census `selector` defect and states "That file is not in
+the tree and is recovered with `git cherry-pick -n cd924bd6`." That was true
+before PR #114 merged. The E112 merge at `67fedb4a` restored the file. It is
+present at `f14f0f14` at 1,142 lines, and the `selector` defect is live in it:
+`swizzleDispatch(cls, name)` captures `selector` but never passes it to
+`DispatchLedger.shared.dispatch(...)`, so `dispatchThreads:` and
+`dispatchThreadgroups:` remain indistinguishable in every census this campaign
+has run. Under 262.4 the file leaves `Sources/` again and moves into the E116
+patch; the defect should be fixed in the patch, not in `Sources/`.
+
+### 262.6 Four-agent research round — full synthesis in `research/RESEARCH_IDEAS_2026-08-22_00:45.md`
+
+Batch `e119-round-synthesis-2026-08-22`: `roofline` (explore, frontier), `sdpa`
+(explore, smart), `beagle` (general-purpose, frontier), `lit`
+(search_research_publications, smart). All four returned. Headlines below;
+detail, kill rules and rung structure in the ideas file.
+
+### 262.7 FINDING 49 — the wide-QMV roofline residue exceeds the serial sum, so it is a stall class
+
+Finding 44 recomputed against the zero-overlap sum of its own two arms:
+
+| NA | load-only | ALU-only | serial sum | shipped | shipped vs serial sum |
+|--:|--:|--:|--:|--:|--:|
+| 2 | 200.3 | 17.0 | 217.3 | 207.4 | −4.6 % |
+| 3 | 202.2 | 24.7 | 226.9 | 214.4 | −5.5 % |
+| 4 | 203.0 | 33.0 | 236.0 | 245.9 | +4.2 % |
+| 5 | 207.0 | 39.1 | 246.1 | 292.2 | **+18.7 %** |
+
+At NA=2/3 overlap works. At NA=5 the kernel is slower than running the halves
+back to back. **No throughput mechanism can exceed the serial sum.** This retires
+load-issue saturation, memory-queue depth, conversion throughput and bandwidth as
+explanations of the residue and leaves two: register-slack collapse of latency
+hiding, and instruction-fetch pressure.
+
+Supporting arithmetic: essential k-loop liveness estimates to `13·NA + 30` =
+56/69/82/95 against measured g16s allocation 70/93/94/95 at a 96 budget, so slack
+runs about 40/27/14/1 — monotone-inverse to the gap 3.5/6.0/21.2/41.1. On g17s
+the budget is 124 and slack never falls below about 26. The kernel's own dispatch
+comment at `quantized.h:1953-1958` independently calls the M = 7/8/9 pattern "a
+register cliff, not work scaling".
+
+**Discriminating arm `xr_split2`**, bit exact by construction: split the k-block
+row loop into two half-passes over rows `{0,1}` and `{2,3}`, each with its own
+`i`-loop, each recomputing the `r`-independent `sums`. Halves the live
+`packed`/`scale_local`/`bias_local`/`partial` set; grows text ~30 % and doubles
+activation loads. Register mechanism predicts a large NA=5 recovery; fetch
+mechanism predicts a loss. **The sign alone discriminates.** Routed to alphonse
+as a zero-GPU compile screen; kill if g16s NA=5 registers do not fall from 95 to
+≤ 87 at zero spill, or if CAMPAIGN RULE 38 fires and the unroll dies.
+
+### 262.8 FINDING 50 — the SDPA tail ceiling is measured at 0.249–0.391 % ranked, not estimated
+
+E103's ablation arm `h_tailfree_c` already priced complete removal of the
+cross-simdgroup reduction tail end to end
+(W&B [`bj9zpvtw`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/bj9zpvtw)):
+
+```
+us saved / round:  N=512 362.11 | 576 360.15 | 768 341.14 | 1024 319.92
+window mean 341.90 us/round = 0.2688 % local = 0.249 - 0.391 % ranked
+```
+
+This supersedes my standing 0.239 % estimate and the saving falls with N, so
+there is no adverse window surprise.
+
+Live call path proven: single-pass `sdpa_vector` at qL ∈ {1,4,5}, N ∈ [512,1023],
+32 simdgroups, 24·qL threadgroups. `qL*gqa <= 32` with gqa = 6 caps qL at 5, and
+E103's census names `sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks
+grid=24x5x1 tg=1024x1x1`. No `mlx-generated` twin, so AOT and a metallib rebuild
+is mandatory; `-fno-fast-math` at `kernels/CMakeLists.txt:18` means the compiler
+will not reassociate, so an addressing-only change is safe by construction.
+
+Mechanism: the store at `:164` is `outputs[l*32 + g]`, stride-32 words with every
+lane of a simdgroup in one bank; the read at `:166` is stride-1. Executed 8 times
+by each of 32 simdgroups, plus 17 full-threadgroup barriers over 1024 threads and
+8 dependent divides on the critical path.
+
+Bit-exact arms: **A `k_pad`** (pad the stride to `BD+1`, five characters, bank
+index becomes `(l+g) mod 32`), **C `m_padchunk2/4`** (stage C components per
+barrier pair), **D `l_divhoist`** (move the `:167` divide to the epilogue).
+Rejected: fewer participating simdgroups (geometry owned by the non-editable
+`:358`, and redistribution changes summation order), `simd_shuffle` replacement
+(Metal shuffles are intra-simdgroup only), tree-reduce and atomics (change
+reduction order, diagnostic only).
+
+Rung 1 kill: best bit-exact arm below 0.35 of the 341.90 µs/round ceiling.
+Against the 0.20 % ranked bar this needs f ≥ 0.51–0.80; against the Finding 46
+target-path receipt bar of 0.1281 % it needs only f ≥ 0.11–0.17, and `k_pad` is a
+target-path change so the TARGET probe is the correct instrument.
+
+**`sdpa_vector.h` is `editablePaths[76]` and is held by no current student. This
+is the strongest unassigned experiment on the board.**
+
+### 262.9 CORRECTION — Finding 44's NA=2 row is a bench instantiation
+
+The scored `ntg.x == 2` path dispatches `qmv_fast_crossrow_affine4_g64<T,2>` at
+`quantized.h:1923-1927`, not `wide<...,2>`. Finding 44's NA=2 row therefore does
+not describe the shipped NA=2 path. NA=2 carries standing weight 0.024 so no
+campaign conclusion moves, but no future brief should cite that row as shipped
+behaviour.
+
+Related open source question: `quantized.h:981` declares `typedef vec<float, NA> VF`
+and MSL's built-in `vec` is documented for 1–4 lanes. How `NA=5` lowers is
+unresolved, and the NA=5 liveness estimate in Finding 49 depends on it.
+
+### 262.10 HARNESS HAZARD 19 — bimodal GPU clock state, independent of defect 16
+
+Apple microbenchmark work on M4 Max (2606.12765) reports explicit clock-state
+bimodality with a rare low-clock tail at roughly 2.7 % incidence running near
+half speed. At our effect sizes one uncaught low-clock leg is a 2× outlier inside
+a six-replicate ABBA. This is a second clock-state hazard, distinct from harness
+defect 16's fixed DVFS ramp.
+
+**Standing requirement from here:** every timed arm reports per-leg dispersion,
+not only the arm mean and CI, and any leg above about 1.5× the arm median is
+flagged in the result rather than silently pooled.
+
+### 262.11 Literature that changes how we read our own data
+
+- **The step-shaped `C(k)` may be a dispatch-plan switch, not physics.** No
+  published source reports a step-shaped verify curve; all report flat-then-
+  linear. The batch-invariance literature establishes that split-K, tile size and
+  reduction tree are selected as a function of operand shape. Our local M=5 step
+  is 3.48× and the ranked step 1.23×. Falsifier: force one fixed reduction plan
+  and tiling across rows 1..8 and re-measure. If the step moves or flattens it
+  was the plan. This is a third arm for E117's existing N sweep at near-zero
+  marginal cost.
+- **Apple inverts the standard threadgroup heuristic.** Barriers are cheap
+  (~2 cycles); scattered threadgroup access is expensive; the register file is
+  ~208 KiB with `simd_shuffle` at 1–2 cycles against only 32 KiB of threadgroup
+  memory. This independently explains why `xs_stage` and `xv4_stage` lost — we
+  staged into the expensive resource — and independently predicts that **E118 arm
+  1 `s_bcast` is the right primitive on this hardware.** Raises the prior on E118
+  materially.
+- **One genuine M5 datapoint.** `Kernel Contracts` (2604.22032) measures on M5
+  that batching k matvecs into one matmul is 3–17× faster, above 10× median.
+  Weak, but it is the only M5 GPU number in the indexed literature and it favours
+  the batched-rows path on our ranked host.
+- **Gap recorded: no published GPU microbenchmark of the M5 generation exists.**
+  Every Apple GPU measurement found is M1–M4. Every g16s→g17s inference we make
+  remains externally unvalidated.
+- **Weaver (2607.06763)** — rollback-free delta-rule verification as a read-only
+  masked triangular solve, deleting snapshot and rollback cost together across 48
+  GDN layers. Parked: E106 put the GDN tail at ~0.03 % and E96 the whole
+  recurrent step at 0.67 % of the round. **Reopener: a measured snapshot plus
+  rollback cost above 0.30 % of the round.**
+- **STree (2505.14969) is a useful negative.** Its cumulative-product trick needs
+  diagonal transitions; Gated DeltaNet's `I − βkkᵀ` does not commute. **Do not
+  attempt to port it.**
+- **Traversal Verification (2505.12398) does not transfer.** Its gains come from
+  leaf-to-root joint acceptance under sampling; under greedy exact match against
+  a fixed serial trajectory the accepted set collapses to the longest correct
+  prefix.
+
+### 262.12 Beagle — the E99 named reopener is scoped and gated
+
+Beagle carries 0.457 of published sensitivity and is worth 12.5× essays. Two
+facts must be held together: the **unconditional mean** is at a local optimum
+(15 of 15 board rows at any other mean draft length score lower, monotone on both
+sides), while the **conditional allocation** retains a measured pool (E113 rung 0
+puts `d*` at 6 against a realised 5.382, a 2.06 % gap; E99 rung 8's gated oracle
+gap is 2.88–3.95 %). The lever is which rounds go deep, not how deep on average.
+Every recorded negative constrains the mean; none constrains the allocation.
+
+`qwen35DraftSelectKernel` at `Qwen35.swift:2972-3060` reduces a full 98,336-row
+readout to a bare argmax and discards every runner-up, so **no head-side
+confidence reaches the host at all**. The existing margin overrides at `:1104-1111`
+use the *target's* margin and stop at depth 1.
+
+**P1, ranked best:** track `margin = best_value − second_value` through the same
+shuffle reduction (registers only, zero extra memory traffic), append `d` scalars
+to the round's existing single eval bundle at `:1491-1493`, and scale the reject
+penalty and optimism transfer in `recordAcceptOutcome` by a bounded monotone
+function of it. Draft ids stay bit-identical because the comparison order that
+picks the token is untouched.
+
+**Rung 0 gate, trace-only and zero GPU-timed cost:** per-position AUC of head
+margin → acceptance on the reject-rich `research/e17_prose_*_512.txt` proxies via
+`research/e21_fit.py:421-495`. **AUC ≤ 0.55 at positions 2–5 kills the reopener;
+AUC ≥ 0.65 licenses the timed arm.** If the signal is dead the instrument never
+ships. P1 does not touch depth 0, so ledger item 125's absorbing-state cliff is
+not in play.
+
+**P5, stale-suffix recycling after a reject, is BLOCKED pending a legality
+ruling** — the tokens are head-produced within the same request, but it is close
+enough to a token-history shortcut that I will decide before assigning it.
+
+### 262.13 Board at 00:45Z
+
+Crown unmoved since 13:00Z: `51b9bf85` vibecodooor 3.35025879, src `41bad1c6`.
+Ours `f04b102e` 3.32824629 sits third promoted.
+
+Rival results that confirm our own negatives:
+
+- **`833dd905`** (DeepSeek-V4-Flash, "Crown `51b9bf8` + qL={1..5} later-window
+  SDPA warm, ticket #17") **rejected at 3.34513649**, below the crown. This is
+  the family E112 Q1 proved **structurally null** — `qL` reaches SDPA pipeline
+  identity only through `do_causal = do_causal_ && q.shape(2) > 1`. Ticket #18
+  `7d8b5770` was submitted at 00:33Z regardless.
+- **`448508db`** (Grok 4.6, swapping the Amal q2/q4 head pin for a "morgan LR3
+  trained" head) **rejected at 3.18739471**, a 4.9 % loss. Consistent with the
+  standing campaign fact that no custom head has ever beaten the declared head.
+- **`0e849bfc`** (Claude Fable 5, "Single-weight-pass verify at width 5,
+  `wide8<5,5>` crossrow QMV") is validating. This is a replication of our own
+  E100 `<T,5,5,true>`.
+
+Nine rows are validating including ours. Twenty-nine rows created since 19:00Z
+and every scored one has been rejected.
