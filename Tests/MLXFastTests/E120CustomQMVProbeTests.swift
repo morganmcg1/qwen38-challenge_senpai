@@ -658,34 +658,63 @@ struct E120CustomQMVProbeTests {
 
     // MARK: rung 2 entry-point width switch
 
-    /// The shipped `IPG` at `M = 5`, and the value it replaced.
-    static let m5IPGShipped = 3
-    static let m5IPGCompare =
-        Int(ProcessInfo.processInfo.environment["MLXFAST_E120_M5_IPG"] ?? "") ?? 5
+    /// The shipped `(M, IPG)` width table of the generated QMV entry point.
+    ///
+    /// `qwen_e120_qmv_m<M, IPG>` splits the `M` input rows into `ceil(M / IPG)`
+    /// groups, and every group re-reads the whole weight matrix. The shipped
+    /// table therefore makes one pass at `M = 3, 4, 5`, two at `M = 6, 7, 8`
+    /// and three at `M = 9`.
+    static let shippedCases: [(m: Int, ipg: Int)] = [
+        (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3),
+    ]
 
-    /// The shipped table pipeline, rebuilt under a private name with one
-    /// template argument of the `M = 5` case replaced.
+    /// The compare table. `MLXFAST_E129_CASES="6:6,7:7,8:8"` replaces the `IPG`
+    /// of the named widths only; every other width keeps its shipped value, so
+    /// the two pipelines execute identical code there and any difference at
+    /// those widths isolates the shared entry point's occupancy channel.
+    static let compareCases: [(m: Int, ipg: Int)] = {
+        var table = [Int: Int](uniqueKeysWithValues: shippedCases.map { ($0.m, $0.ipg) })
+        let spec = ProcessInfo.processInfo.environment["MLXFAST_E129_CASES"] ?? "6:6,7:7,8:8"
+        for entry in spec.split(separator: ",") {
+            let parts = entry.split(separator: ":")
+            guard parts.count == 2, let m = Int(parts[0]), let ipg = Int(parts[1]) else { continue }
+            table[m] = ipg
+        }
+        return shippedCases.map { (m: $0.m, ipg: table[$0.m] ?? $0.ipg) }
+    }()
+
+    static func passes(_ cases: [(m: Int, ipg: Int)]) -> [String: Int] {
+        var out: [String: Int] = [:]
+        for entry in cases { out["\(entry.m)"] = (entry.m + entry.ipg - 1) / entry.ipg }
+        return out
+    }
+
+    static func caseTag(_ cases: [(m: Int, ipg: Int)]) -> String {
+        cases.map { "\($0.m)x\($0.ipg)" }.joined(separator: "_")
+    }
+
+    /// The shipped table pipeline, rebuilt under a private name with the
+    /// template arguments of the named width cases replaced.
     ///
     /// A Metal entry point is allocated `max` registers over every case body,
     /// so the widest body sets the occupancy of the whole switch and every
-    /// routed width pays it. On the promoted snapshot `xcrun metal-tt` reports
-    /// 102 entry registers for `(5, 5)` and 94 for `(5, 3)` on the gen-17
-    /// architecture the ranked M5 uses, and 96 against 93 on this host's
-    /// gen-16. Those simdgroup figures are derived from the compiler's register
-    /// report, not measured occupancy, which is what this probe supplies.
-    ///
-    /// The prediction is therefore that every width moves, not only `M = 5`.
-    /// `M = 5` is the only body whose own instruction count changes.
-    fileprivate static func m5Kernel(ipg: Int) -> MLXFast.MLXFastKernel {
+    /// routed width pays it. Two channels therefore move at once: the pass
+    /// count of the changed widths, and the occupancy of all of them.
+    fileprivate static func casesKernel(_ cases: [(m: Int, ipg: Int)])
+        -> MLXFast.MLXFastKernel
+    {
         var source = Qwen35CustomQMV.generatedSource(table: true)
-        let shipped = "qwen_e120_qmv_m<5, \(m5IPGShipped), USE_TABLE>"
-        precondition(source.contains(shipped), "shipped M=5 case not found in generated source")
-        if ipg != m5IPGShipped {
+        for (index, entry) in cases.enumerated() {
+            let shipped = shippedCases[index]
+            precondition(entry.m == shipped.m, "case tables must cover the same widths")
+            let from = "qwen_e120_qmv_m<\(shipped.m), \(shipped.ipg), USE_TABLE>"
+            precondition(source.contains(from), "shipped case \(from) not in generated source")
+            guard entry.ipg != shipped.ipg else { continue }
             source = source.replacingOccurrences(
-                of: shipped, with: "qwen_e120_qmv_m<5, \(ipg), USE_TABLE>")
+                of: from, with: "qwen_e120_qmv_m<\(entry.m), \(entry.ipg), USE_TABLE>")
         }
         return MLXFast.metalKernel(
-            name: "e129_qmv_sums_m5ipg\(ipg)",
+            name: "e129_qmv_sums_\(caseTag(cases))",
             inputNames: ["w", "scales", "biases", "x", "xsums"],
             outputNames: ["y"],
             source: source,
@@ -711,12 +740,12 @@ struct E120CustomQMVProbeTests {
     }
 
     @Test(
-        "the M=5 IPG choice changes no output element at any routed width",
+        "the width-table IPG choice changes no output element at any routed width",
         .enabled(if: E120CustomQMVProbeTests.runtimeEnabled))
     func m5IPGExactness() throws {
         var records: [[String: Any]] = []
-        let shipped = Self.m5Kernel(ipg: Self.m5IPGShipped)
-        let compare = Self.m5Kernel(ipg: Self.m5IPGCompare)
+        let shipped = Self.casesKernel(Self.shippedCases)
+        let compare = Self.casesKernel(Self.compareCases)
 
         for shape in Self.shapes + [("control.small", 512, 4096)] {
             let w = Self.makeWeights(
@@ -755,8 +784,10 @@ struct E120CustomQMVProbeTests {
                     "hidden": shape.hidden,
                     "width": width,
                     "elements": reference.size,
-                    "ipg_shipped": Self.m5IPGShipped,
-                    "ipg_compare": Self.m5IPGCompare,
+                    "cases_shipped": Self.caseTag(Self.shippedCases),
+                    "cases_compare": Self.caseTag(Self.compareCases),
+                    "passes_shipped": Self.passes(Self.shippedCases)["\(width)"] ?? 0,
+                    "passes_compare": Self.passes(Self.compareCases)["\(width)"] ?? 0,
                     "shipped_vs_mlx": shippedVsMLX,
                     "compare_vs_mlx": compareVsMLX,
                     "differing_elements": crossDiffering,
@@ -785,12 +816,12 @@ struct E120CustomQMVProbeTests {
     }
 
     @Test(
-        "matched ABBA timing of the M=5 IPG choice at every routed width",
+        "matched ABBA timing of the width-table IPG choice at every routed width",
         .enabled(if: E120CustomQMVProbeTests.timingEnabled))
     func m5IPGTiming() throws {
         var cells: [[String: Any]] = []
-        let shipped = Self.m5Kernel(ipg: Self.m5IPGShipped)
-        let compare = Self.m5Kernel(ipg: Self.m5IPGCompare)
+        let shipped = Self.casesKernel(Self.shippedCases)
+        let compare = Self.casesKernel(Self.compareCases)
 
         for shape in Self.shapes {
             let w = Self.makeWeights(
@@ -809,10 +840,10 @@ struct E120CustomQMVProbeTests {
 
                 let arms: [E120Arm] = [
                     E120Arm(
-                        name: "a_ipg\(Self.m5IPGCompare)",
+                        name: "a_compare",
                         body: { [Self.m5Apply(compare, x, w, table)] }),
                     E120Arm(
-                        name: "b_ipg\(Self.m5IPGShipped)",
+                        name: "b_shipped",
                         body: { [Self.m5Apply(shipped, x, w, table)] }),
                 ]
 
@@ -837,8 +868,10 @@ struct E120CustomQMVProbeTests {
                         "width": width,
                         "block": blockIndex,
                         "replicates": count,
-                        "ipg_shipped": Self.m5IPGShipped,
-                        "ipg_compare": Self.m5IPGCompare,
+                        "cases_shipped": Self.caseTag(Self.shippedCases),
+                        "cases_compare": Self.caseTag(Self.compareCases),
+                        "passes_shipped": Self.passes(Self.shippedCases)["\(width)"] ?? 0,
+                        "passes_compare": Self.passes(Self.compareCases)["\(width)"] ?? 0,
                         "saved_us_per_matvec": mean[0] - mean[1],
                         "saved_fraction": (mean[0] - mean[1]) / mean[0],
                         "arms": arms.enumerated().map { index, arm in
@@ -870,8 +903,10 @@ struct E120CustomQMVProbeTests {
                 "gate_qualified_for_timing": false,
                 "blocks": Self.blocks,
                 "widths": Self.widths,
-                "ipg_shipped": Self.m5IPGShipped,
-                "ipg_compare": Self.m5IPGCompare,
+                "cases_shipped": Self.caseTag(Self.shippedCases),
+                "cases_compare": Self.caseTag(Self.compareCases),
+                "passes_shipped": Self.passes(Self.shippedCases),
+                "passes_compare": Self.passes(Self.compareCases),
                 "cells": cells,
             ]
             let data = try JSONSerialization.data(

@@ -1562,7 +1562,7 @@ private let qwen35E120QMVHeader = """
 private func qwen35E120QMVSource(table: Bool) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
-    let cases = [(3, 3), (4, 4), (5, 3), (6, 3), (7, 4), (8, 4), (9, 3)]
+    let cases = [(3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
         .map { m, ipg in
             """
                     case \(m):
