@@ -15,15 +15,16 @@
 # which accepts in the zero-weight cluster; it informs the mechanism and cannot
 # kill or pass an arm.
 #
-# WHY THE CLI COMES OUT OF `.build-worker` (HARNESS DEFECT). On this checkout
-# `swift build -c release --product mlxfast-swift` into the default `.build`
-# scratch path reports `Build of product 'mlxfast-swift' complete!` and leaves
-# the binary untouched, even when Vendor/.../Qwen35.swift is newer than
-# `.build/.../MLXLLM.build/Qwen35.swift.o`. Measured on 2026-08-22: source
-# 06:11, object 21 Aug 23:59, binary 20 Aug 15:57, build reported complete in
-# 9.72 s. The `.build-worker` scratch path tracks the same source correctly, so
-# the CLI is built there and asserted by content before any leg runs. A build
-# that reports success is not evidence; the string and symbol assertions are.
+# WHICH BINARY CARRIES THE ARM. `mlxfast-swift` is the trusted parent, and
+# Package.swift gives MLXFastCLI no dependency on MLXLLM or MLXFastModel. It
+# holds no model code, so no assertion on it can ever witness a Qwen35.swift
+# edit; it spawns `.build-worker/release/mlxfast-runtime-worker`, which is the
+# one artifact that carries the arm selector. The selector therefore has to
+# survive `sanitizedRuntimeWorkerEnvironment`, which starts from an empty
+# environment and forwards only an exact key list plus the prefixes
+# `DARKBLOOM_ DYLD_ LC_ METAL_ MLX_ MTL_`. That is why the variable is spelled
+# `DARKBLOOM_QWEN_MTP_ISLAND_ARM` and why the witness is written into
+# `MLX_QWEN_MTP_TRACE_PATH`.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -31,16 +32,9 @@ ARMS=(all none q kv)
 read -r -a H_SEEDS <<< "${E124_H_SEEDS:-benchfixture}"
 read -r -a L_SEEDS <<< "${E124_L_SEEDS:-}"
 
-CLI=".build-worker/release/mlxfast-swift"
-
-if [[ "${E124_SKIP_BUILD:-0}" != "1" ]]; then
-  echo "== building the CLI in the scratch path that tracks the source =="
-  CLANG_MODULE_CACHE_PATH="$PWD/.build-worker/clang-module-cache" \
-    swift build -c release --force-resolved-versions \
-    --scratch-path .build-worker --product mlxfast-swift || exit 1
-fi
-
-senpai/rebuild-and-assert-worker.sh --no-build --worker "${CLI}" \
+BUILD_ARGS=()
+[[ "${E124_SKIP_BUILD:-0}" == "1" ]] && BUILD_ARGS=(--no-build)
+senpai/rebuild-and-assert-worker.sh ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"} \
   --require DARKBLOOM_QWEN_MTP_ISLAND_ARM \
   --require 'qwen-mtp-island-arm: ' \
   --require-symbol Qwen35IslandArm || exit 1
@@ -61,7 +55,6 @@ for arm in "${ARMS[@]}"; do
   fi
   echo "=== e124 stage 1: arm ${arm} ==="
   DARKBLOOM_QWEN_MTP_ISLAND_ARM="${arm}" \
-  MLXFAST_SWIFT_BIN="${CLI}" \
   E122_RUNS_DIR="runs-e124-arm-${arm}" \
     research/e122_rung0_session.sh "${H_SEEDS[@]}" ${L_SEEDS[@]+"${L_SEEDS[@]}"} \
     || status=1
