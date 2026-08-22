@@ -41254,3 +41254,289 @@ mode-corrected 3.34136. That receipt is the Rule 81 confirmation Route B is enti
 Cleanup owed after the submission lands: delete the dead `qkv(_:)` fast path at
 `Qwen35.swift:2281-2300`, the dead E121 code, and the research-only `Qwen35IslandArm`
 selector.
+
+## 273 — 2026-08-22 08:30Z — THE RESIDENCY FLOOR LAW, THE ENTRY-POINT OCCUPANCY TAX, AND AN UNPINNED RANKED ROUND COUNT
+
+Three things happened. Alphonse's revert landed and merged, so the base is clean. His
+cross-architecture census turned out to contain an exact instrument that reads the ranked
+machine with no GPU. And while stress-testing my own E128 estimate I found that the
+ranked round count it rests on is not measured and is very probably wrong.
+
+### E126 MERGED as `d46eb29b`. The base is clean.
+
+PR #127, alphonse, terminal `succeeded`. Primary
+`e126_census_weighted_occupancy_pct_ranked` 4.912 -> -10.9705. W&B `e126rng40`, `e126rcpt0`,
+`e126rng20`, `e126rng00`, `e126rng10`.
+
+I verified the merge in a detached worktree before taking it. Conflict-free. At the new base:
+
+```
+quantized.h                 8c56e0e4e2724a8ba798ff04d6f8e90cc4310c9b   == pre-E121
+mlx-generated/quantized.cpp f3d264775a050f2106d5b38080b397b8e393ac18   == pre-E121
+Qwen35.swift                f9c272b63fc36b58ffaf9c9fdd53769d2fb43917   == unchanged by the merge
+```
+
+Over the submitted surface the new base differs from `2127858b` — the exact tree thorfinn
+measured his rung 5e `off` control against — by **one file only**, `Qwen35.swift` at
++650/-38, which is Route B plus the E124 island-arm selector. So the shipping candidate is
+literally the `sumtable` arm of thorfinn's own 5e pair, measured at +4.249 % leg and
++4.036 % ranked against a tree whose corrected ranked score we know (3.34136). That is the
+cleanest pre-registration this campaign has had.
+
+Alphonse's honesty record on this one is good: he cancelled the rung-2 in-situ ABBA after
+2 of 20 legs to deliver the revert, declared the secondary metric VOID rather than
+reporting the surviving unbalanced pair as a result, and retracted an incorrect NA-versus-M
+width claim within 20 minutes of posting it.
+
+### F101 — THE RESIDENCY FLOOR LAW
+
+```
+resident simdgroups = floor(REGISTER_BUDGET / registers_per_thread)
+REGISTER_BUDGET = 3072 on applegpu_g16s,  3968 on applegpu_g17s
+```
+
+Holds **exactly in all 8 census cells on both architectures**. This is not a fitted
+relation; it is the allocator. It converts a compile into an exact occupancy reading for
+the ranked machine, at zero GPU cost and with no thermal gate.
+
+This retires `phi` and the roofline as the regime axis. `phi` was a proxy for a quantity we
+can now compute.
+
+### F102 — THE ENTRY POINT PAYS MAX-OVER-BODIES REGISTER PRESSURE
+
+```
+g16s: max(66, 82, 94, 93) = 94    measured entry point = 94    CONFIRMED
+g17s: max(93, 89, 90, 101) = 101  thorfinn read incumbent = 101 CONFIRMED, and 3968/101 = 39
+```
+
+Every wide-QMV dispatch, at every width, currently runs at the worst width's occupancy. The
+`switch` over M compiles to one kernel allocated against NA=5.
+
+Templating per width, priced through F101 and weighted by F47:
+
+```
+applegpu_g17s (RANKED)   entry 101 regs -> 39 sg paid at every width
+  NA2 body  93 -> 42 sg   +7.69 %   weight 0.024
+  NA3 body  89 -> 44 sg  +12.82 %   weight 0.275
+  NA4 body  90 -> 44 sg  +12.82 %   weight 0.667
+  NA5 body 101 -> 39 sg   +0.00 %   weight 0.034
+  F47-weighted: +12.26 %   ->  +1.23 to +3.68 % ranked at 0.10-0.30 %/%
+
+applegpu_g16s (LOCAL)    entry  94 regs -> 32 sg
+  NA2  66 -> 46 sg +43.75 % | NA3  82 -> 37 sg +15.62 %
+  NA4  94 -> 32 sg  +0.00 % | NA5  93 -> 33 sg  +3.12 %
+  F47-weighted:  +5.45 %
+```
+
+**On g16s the dominant NA=4 cell IS the register maximum, so templating buys it exactly
+zero. On g17s it has eleven registers of slack.** That is why nobody found this locally,
+and it is a 2.3x systematic understatement for any local measurement of this arm.
+
+Assigned as **E130, PR #130, alphonse**. This is the largest identified untried lever.
+
+### F103 — THE REGISTER DELTA INVERTS SIGN ACROSS GPU GENERATIONS
+
+```
+cell   g16s regs   g16s sg      g17s regs   g17s sg
+NA2    66 ->  68   46 -> 45     93 ->  80   42 -> 49
+NA3    82 ->  79   37 -> 38     89 ->  95   44 -> 41
+NA4    94 ->  90   32 -> 34     90 -> 102   44 -> 38
+NA5    93 ->  93   33 -> 33    101 -> 101   39 -> 39
+F47-weighted residency:  g16s +4.86 %   g17s -10.57 %
+```
+
+The same source moves registers **-4 on g16s and +12 on g17s** at the dominant cell. NA5 is
+an exact null on both architectures because `SHARE_SUMS = NA <= 4` is false there, including
+identical ISA text sizes (8234/8234 g16s, 8452/8452 g17s). That null is the internal control
+that rules out compiler noise, and it is exactly the discriminator alphonse pre-registered.
+
+**F100 is confirmed and upgraded.** The regime variable is the register budget, and the cost
+is the split and the exchange, not the extra parameters and not the threadgroup allocation.
+
+The residency coefficient brackets from two confounded points:
+
+```
+g16s:  +4.86 % residency, +1.463 % kernel gain  -> 0.301 %/%  (LOWER bound; E121 also added barriers)
+g17s: -10.57 % residency, +2.10 % ranked loss   -> 0.199 %/%  (UPPER bound; same confound, opposite sign)
+```
+
+E130 rung 2 attacks this with a regression discontinuity: the floor law is a step function,
+so a register ladder walking through a step separates occupancy from instruction count. If
+time moves only at the crossings, occupancy is causal. If it moves smoothly, my pricing
+model dies and the axis closes again.
+
+### F104 — THE RANKED ROUND COUNT R IS UNPUBLISHED, UNPINNED, AND PROBABLY WRONG
+
+I stress-tested the +2.6 % E128 estimate. It survived every shape test. Then I checked its
+input and the input is an assumption.
+
+Published per-prompt fields are exactly `accepted_pair_count`, `effective_mean_draft_len`,
+`head_provenance_sha256`, `mtp_seconds_per_token_mean`, `non_drafting_round_count`,
+`noop_reference_decode_speedup`, `parity_ok`, `prefill_seconds_per_token`, `prompt_sha256`,
+`raw_ratio_of_means`, `serial_seconds_per_token_mean`.
+
+Three traps, all of which I walked into:
+
+- `accepted_pair_count` is **1** on every prompt of every receipt. It is the thermal pair
+  count, not a round count. A calibration script built on it produced -99 % errors.
+- `noop_reference_decode_speedup` is **exactly 1** everywhere, consistent with `program.md`
+  saying there is no no-op normalization. It is not an anchor.
+- `non_drafting_round_count` is **0** on all seven drafting prompts and **449** on plutarch.
+
+The accounting leaves R free:
+
+```
+R = 512 - A,   A = R * eff * accept_rate   =>   accept_rate = (512 - R) / (R * eff)
+```
+
+Two unknowns, one equation. `research/rankedcurve.py` hardcodes an assumed vector under a
+"maximal-tokens-per-round rule". **F12, F92's accept rates, the fitted ranked cost curve,
+F97, and my +2.6 % all inherit it.**
+
+**It is arithmetically infeasible.** The shipped `costModelDepth` with the uniform 0.18 price
+is a step function of a flat per-position acceptance, with exact thresholds
+
+```
+d>=1 at p>0.1800  d>=2 at p>0.4742  d>=3 at p>0.6497  d>=4 at p>0.7527
+d>=5 at p>0.8168  d>=6 at p>0.8591  d>=7 at p>0.8884
+```
+
+so `E[depth] = sum_k P(p > t_k)`, and the maximum mean `p` compatible with an observed
+`E[depth]` is a small LP over the threshold points:
+
+| prompt | eff | assumed R | p from accounting | max feasible E[p] | verdict |
+|---|--:|--:|--:|--:|---|
+| beagle | 4.3818 | 110 | 0.9335 | 0.8401 | **INFEASIBLE** |
+| medicine | 5.2556 | 90 | 0.9637 | 0.8935 | **INFEASIBLE** |
+| essays | 5.0870 | 92 | 0.9646 | 0.8832 | **INFEASIBLE** |
+| botany | 6.1481 | 81 | 0.9597 | 0.9480 | **INFEASIBLE** |
+| republic | 4.9892 | 93 | 0.9661 | 0.8772 | **INFEASIBLE** |
+| drama | 2.2976 | 252 | 0.5983 | 0.6803 | feasible |
+| travel | 2.6557 | 212 | 0.6960 | 0.7172 | feasible |
+
+**It fails on exactly the five prompts that carry the median and holds on exactly the two
+that carry zero weight.** Mechanically: at p = 0.9335 the shipped scheduler runs to the cap
+of 7, yet beagle reports a mean of 4.38.
+
+R decides the SIGN of the E128 correction, not just its size:
+
+```
+beagle, sweeping R   accept rate  per-step p  optimal d   gain %   direction
+      96                0.9889      0.9959        7.0      9.546   DEEPER
+     110 (assumed)      0.8340      0.9335        7.0      2.231   DEEPER
+     118                0.7620      0.9012        3.0      2.279   SHALLOWER
+     150                0.5508      0.7887        3.0      8.715   SHALLOWER
+```
+
+Eight rounds of R separate "draft deeper" from "draft shallower". The gain is near zero only
+where the observed depth happens to sit at the optimum.
+
+Re-pinning R also moves the fitted cost curve, because `round_us = 512 * mtp_spt / R`. At the
+minimum feasible R the deep prompts get 17-20 % cheaper per round and the shallow ones 3-10 %
+dearer, so the curve **flattens**. The two effects fight: a flatter curve favours deeper
+drafting while a lower acceptance favours shallower. The sign is currently undetermined.
+
+### F105 — THE SCHEDULER'S `expected` IS PROFILE-FREE EQUAL TO THE ACCEPTED-DRAFT COUNT
+
+`reach *= p` then `expected += reach`, so at termination
+
+```
+expected = sum_{k=0}^{d-1} prod_{j=0}^{k} p_j  ==  E[accepted drafts this round]
+```
+
+identically, with no flatness assumption. Combined with the window accounting:
+
+```
+R = 512 / (1 + E[accepted drafts per round])
+```
+
+**So the calibration E128 was sent to audit is the same number that pins R.** One measurement
+answers both. Implied `E[expected]` under the assumed vector: beagle 3.6545, medicine 4.6889,
+essays 4.5652, botany 5.3210, republic 4.5054, drama 1.0317, travel 1.4151, plutarch 0.0513.
+
+Pre-registered falsifier for E128 rung 1, from the stop rule plus monotonicity of `reach`:
+
+```
+beagle    R=110 survives ONLY IF geo-mean(p_0..p_3) >= 0.8995 AND p_4 <= 0.7442
+medicine  R= 90 survives ONLY IF geo-mean(p_0..p_4) >= 0.9282 AND p_5 <= 0.7823
+essays    R= 92 survives ONLY IF geo-mean(p_0..p_4) >= 0.8922 AND p_5 <= 0.9328
+```
+
+A flat or slowly-declining profile falsifies the assumed R outright.
+
+Also mechanically explained: `non_drafting_round_count = 0` on all drafting prompts because
+the depth-0 threshold is 0.18 while the margin gate floors `p` at `sigmoid(0) = 0.5`. The
+depth-0 gate can never fire.
+
+### F106 — THE CANDIDATE'S OWN SERIAL-EQUIVALENT ROUND IS ALREADY 9 TO 22 % FASTER
+
+R-robust, plutarch only, published fields only. Receipt `44559d02`:
+
+```
+candidate leg total          15,539,832 us
+non-drafting rounds                 449   (a hard lower bound on R)
+baseline serial M=1 round      37,995.0 us   (a serial leg IS 512 rounds at M=1, so this is direct)
+upper bound on candidate M=1   34,609.9 us   ratio 0.9109
+value at R=512                 30,351.2 us   ratio 0.7988
+```
+
+The serial M=1 round is prompt-independent to 0.53 % (44559d02 mean 37,938.9, sd 60.2). So a
+real share of our ranked score already comes from accumulated candidate-runtime kernel work,
+not from drafting. Route B does not help M=1 rounds, which is consistent with the width
+weighting.
+
+### PRE-REGISTRATION, RECORDED BEFORE THE RECEIPT
+
+Thorfinn is submitting Route B from `d46eb29b`. Prediction band from ledger 272 stands:
+model A +4.036 % -> 3.4763, model B +1.918 % -> 3.4054, model C +1.321 % -> 3.3855, and the
+same three at slow mode (-1.3170 %) 3.4305 / 3.3606 / 3.3409. Crown 3.35922017.
+
+**New refinement, recorded now so it cannot be fitted afterwards.** Thorfinn read Route B on
+g17s at 102 registers and 38 simdgroups against the incumbent 101 and 39. By F101 that is a
+**-2.56 % residency loss on the ranked machine**, worth **-0.26 to -0.77 % ranked** at the
+F103 bracket. Route B is a mostly-instruction mechanism carrying a small residency penalty,
+so I expect the receipt in the **lower half** of the pre-registered band.
+
+### NEW RULES
+
+**Rule 82** — Every register-channel change reports its `applegpu_g17s` F47-weighted residency
+delta, computed from the F101 floor law, BEFORE any timing. A negative weighted delta is a
+veto regardless of local timing.
+
+**Rule 83** — A closure on the register or occupancy axis decided on `applegpu_g16s` is void as
+evidence about `applegpu_g17s`. F103 is the reason.
+
+**Rule 84** — Any quantity derived from the ranked round count R is labelled R-dependent. R is
+unpinned. An unlabelled R-dependent number is invalid.
+
+### STOP-LIST REOPENINGS
+
+`Omega / occupancy as a pricing instrument` and `dead-width pruning as a register lever` are
+**reopened, narrowly**: `applegpu_g17s` only, through the F101 floor law only, and only while
+the law keeps verifying. Recorded reason that changed: F103 voids all prior g16s evidence on
+this axis, and E121 supplies the first ranked calibration point for residency.
+
+### ADVISOR ERRORS
+
+**97.** I built the fitted ranked cost curve, F97, and the whole E128 assignment on an R vector
+I never checked against the shipped scheduler. It is infeasible on all five median-carrying
+prompts. The +2.6 % E128 headline was unlabelled and conditional; I have corrected it on the PR.
+
+**98.** I assigned thorfinn E129 rung 2, entry-point templating, in `quantized.h`, which
+alphonse solely owns. The rung was unimplementable as written. Scope cut and reassigned as E130.
+
+### ASSIGNMENTS AFTER THIS CYCLE
+
+| PR | student | experiment | state |
+|---|---|---|---|
+| #126 | askeladd | E125 transfer correction table | WIP, F5 sent: residency replaces `phi` |
+| #128 | thorfinn | E129 ship the clean candidate | WIP, scope cut to rung 0, submitting |
+| #129 | edward | E128 pin R and audit the estimator | WIP, F1 sent: R is the defect |
+| #130 | alphonse | E130 entry-point occupancy tax | NEW |
+
+Board at 08:15Z: crown `bc070b7b` 3.35922017 unmoved for six hours, **zero validating**, our
+slot free, 53 consecutive rejections since 19:00Z. The board is saturated and our submission
+is the only distinct mechanism in flight.
+
+Cleanup still owed after the submission lands: delete the dead `qkv(_:)` fast path at
+`Qwen35.swift:2281-2300`, the dead E121 code, and the research-only `Qwen35IslandArm` selector.
