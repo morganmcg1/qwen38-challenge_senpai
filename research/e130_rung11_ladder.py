@@ -330,22 +330,38 @@ def contrast(model: dict, lo: str, hi: str) -> dict:
     se = variance ** 0.5
     base = model["arm_means_adjusted"][lo]
     delta = model["arm_means_adjusted"][hi] - base
-    pct = 100.0 * delta / base
-    se_pct = 100.0 * se / base
     t_crit = T_CRIT_95.get(model["df"], 1.96)
-    half = t_crit * se_pct
-    return {
+
+    # Significance is decided on the absolute scale. Dividing by a base that is
+    # negative or near zero flips the sign of t and inverts the interval, which
+    # silently reported a null round-1 channel as significant.
+    t = delta / se if se else float("nan")
+    out = {
         "from": lo,
         "to": hi,
         "usable": True,
         "delta": delta,
-        "pct": pct,
-        "se_pct": se_pct,
-        "t": pct / se_pct if se_pct else float("nan"),
+        "se_abs": se,
+        "t": t,
         "t_crit_95": t_crit,
-        "ci95_pct": [pct - half, pct + half],
-        "significant": abs(pct) > half,
+        "ci95_abs": [delta - t_crit * se, delta + t_crit * se],
+        "significant": abs(t) > t_crit if se else False,
     }
+    if base > 0:
+        pct = 100.0 * delta / base
+        se_pct = 100.0 * se / base
+        half = t_crit * se_pct
+        out.update({
+            "pct": pct,
+            "se_pct": se_pct,
+            "ci95_pct": [pct - half, pct + half],
+        })
+    else:
+        # A percentage of a non-positive base is not interpretable. The channel
+        # is read in its own units instead.
+        out.update({"pct": None, "se_pct": None, "ci95_pct": None,
+                    "pct_undefined_because_base_not_positive": True})
+    return out
 
 
 def decision(pct: float | None) -> str:
@@ -456,7 +472,8 @@ def position_dependence(models: dict) -> dict:
     """
     primary = models.get("candidate_mtp_seconds_per_token")
     steady = models.get("steady_seconds_per_token")
-    round1 = models.get("round1_excess_us")
+    round1 = models.get("round1_excess_depth_matched_us")
+    regression = models.get("round1_excess_regression_us")
 
     out: dict = {
         "contrast": "s64_to_s512",
@@ -527,12 +544,15 @@ def position_dependence(models: dict) -> dict:
 
     # Channel C is read in milliseconds per leg, never as a percentage: a
     # one-time cost divided by a token count is not a rate.
-    c = contrast(round1, "s64", "s512") if round1 else {"usable": False}
-    if c.get("usable"):
-        c = dict(c)
-        c["delta_ms_per_leg"] = c["delta"] / 1000.0
-        c["one_time_reference_ms_per_leg"] = ONE_TIME_MS_PER_LEG
-    out["round1_contrast"] = c
+    for label, model in (("round1_contrast", round1),
+                         ("round1_contrast_regression_control", regression)):
+        c = contrast(model, "s64", "s512") if model else {"usable": False}
+        if c.get("usable"):
+            c = dict(c)
+            c["delta_ms_per_leg"] = c["delta"] / 1000.0
+            c["se_ms_per_leg"] = c["se_abs"] / 1000.0
+            c["one_time_reference_ms_per_leg"] = ONE_TIME_MS_PER_LEG
+        out[label] = c
 
     if not b_versus_a:
         out["verdict"] = "undecided: the steady-state channel did not fit"
@@ -754,7 +774,14 @@ def main() -> int:
         # F18 channel C, depth controlled. Fitted in microseconds, and its
         # contrasts are read in MILLISECONDS PER LEG, never as a percentage:
         # a one-time cost divided by a token count is not a rate.
-        "round1_excess_us": "c_regression_us",
+        #
+        # Campaign rule 106 requires the tail to be matched on round 1's own
+        # draft count. c_depth_matched_us does that directly against the steady
+        # rounds that actually ran at that depth, so it is the headline form.
+        # c_regression_us extrapolates a linear depth model to round 1's depth
+        # and is kept as a reported control, not as the decision statistic.
+        "round1_excess_depth_matched_us": "c_depth_matched_us",
+        "round1_excess_regression_us": "c_regression_us",
     }
     models = {name: fit(legs, field) for name, field in channels.items()}
     primary = models["candidate_mtp_seconds_per_token"]
@@ -870,9 +897,16 @@ def main() -> int:
         for key, c in block["contrasts"].items():
             if not c.get("usable"):
                 continue
-            print(f"  {key:<16} {c['pct']:+.4f} %  t={c['t']:+.2f}"
-                  f"  95% CI [{c['ci95_pct'][0]:+.4f}, {c['ci95_pct'][1]:+.4f}]"
-                  f"  {'SIG' if c['significant'] else 'ns'}")
+            flag = "SIG" if c["significant"] else "ns"
+            if c["pct"] is None:
+                print(f"  {key:<16} {c['delta']:+.4g} abs  t={c['t']:+.2f}"
+                      f"  95% CI [{c['ci95_abs'][0]:+.4g},"
+                      f" {c['ci95_abs'][1]:+.4g}]  {flag}"
+                      f"   (percent undefined: base not positive)")
+            else:
+                print(f"  {key:<16} {c['pct']:+.4f} %  t={c['t']:+.2f}"
+                      f"  95% CI [{c['ci95_pct'][0]:+.4f},"
+                      f" {c['ci95_pct'][1]:+.4f}]  {flag}")
 
     pos = report["position_dependence"]
     print("\n=== F19 section 3: position dependence of s64 -> s512 ===")
@@ -904,14 +938,18 @@ def main() -> int:
                   f"   B consistent with zero  {bv['b_consistent_with_zero']}")
         else:
             print("  channel B (steady state)  not usable")
-        c = pos.get("round1_contrast") or {}
-        if c.get("usable"):
-            print(f"  channel C (round-1 excess)  "
-                  f"{c['delta_ms_per_leg']:+.3f} ms/leg"
-                  f"   one-time reference "
-                  f"{c['one_time_reference_ms_per_leg']:.3f} ms/leg")
-        else:
-            print("  channel C (round-1 excess)  not usable")
+        for label, title in (("round1_contrast", "C depth-matched (rule 106)"),
+                             ("round1_contrast_regression_control",
+                              "C regression control")):
+            c = pos.get(label) or {}
+            if c.get("usable"):
+                print(f"  {title:<28} {c['delta_ms_per_leg']:+.3f}"
+                      f" +/- {c['se_ms_per_leg']:.3f} ms/leg"
+                      f"  t={c['t']:+.2f}"
+                      f"   one-time reference "
+                      f"{c['one_time_reference_ms_per_leg']:.3f} ms/leg")
+            else:
+                print(f"  {title:<28} not usable")
         print(f"  MECHANISM {pos.get('mechanism')}")
         print(f"  VERDICT   {pos['verdict']}")
         ship = pos.get("ship_pct_at_512")
