@@ -1681,8 +1681,15 @@ public enum Qwen35CustomQMV {
     /// is a strict allowlist and drops every `MLXFAST_*` name, so an
     /// `MLXFAST_`-prefixed override would never reach the runtime worker and
     /// every arm of an end-to-end A/B would silently time `sumtable`.
+    ///
+    /// It is also 16 UTF-8 bytes on purpose. Swift stores a literal of 15 bytes
+    /// or fewer inline in the `String` value, so it never reaches the binary's
+    /// string table and `senpai/rebuild-and-assert-worker.sh --require` reports
+    /// zero copies for a name that is certainly compiled in. FINDING 28 needs
+    /// the arm switch to be assertable inside the built worker, so the name is
+    /// long enough for `strings` to witness it.
     public static let arm: Arm = {
-        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV"]
+        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_ARM"]
         guard let raw, !raw.isEmpty else { return .sumTable }
         return Arm(rawValue: raw) ?? .sumTable
     }()

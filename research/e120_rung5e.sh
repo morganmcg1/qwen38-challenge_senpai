@@ -77,9 +77,9 @@ for arm in "${arms[@]}"; do
   label="$(printf '%02d-%s' "${index}" "${arm}")"
   entry_c="$(gpu_temp)"
   arm_start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "=== rung 5e arm ${label}: MLX_E120_QMV=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
+  echo "=== rung 5e arm ${label}: MLX_E120_QMV_ARM=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
 
-  MLX_E120_QMV="${arm}" \
+  MLX_E120_QMV_ARM="${arm}" \
   MLXFAST_QWEN_MTP_DEPTH="${depth}" \
   MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}" \
   MLXFAST_SCORE_PATH="${PWD}/${out_dir}/score.${label}.json" \

@@ -26,7 +26,7 @@ jq -c '{seed_tokens: .cases[0].prompt_tokens, emitted: []}' "${public_golden}" >
 
 echo "swift_bin=${swift_bin}"
 echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR}"
-echo "arm=${MLX_E120_QMV:-<unset>}"
+echo "arm=${MLX_E120_QMV_ARM:-<unset>}"
 
 overall=0
 for depth in "${depths[@]}"; do
