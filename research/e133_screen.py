@@ -2727,17 +2727,19 @@ def cmd_screen(args) -> None:
     print(f"\n=== F3.3 whitening, paired on {wp['paired_cells']} twin cells")
     print(f"{'field':34s}{'wins':>6s}{'ties':>6s}{'losses':>8s}"
           f"{'meanDelta':>13s}{'signTestP':>12s}")
+    # A grid selected without a whitened family has no twins, so every paired
+    # field is legitimately absent. Printing that as "-" keeps the run alive.
     for field, r in wp["fields"].items():
         print(f"{field:34s}{r['whitened_wins']:6d}{r['ties']:6d}"
               f"{r['whitened_losses']:8d}"
-              f"{r['mean_delta_whitened_minus_plain']:13.4e}"
-              f"{r['sign_test_p']:12.3e}")
+              f"{fmt_opt(r['mean_delta_whitened_minus_plain'], '.4e'):>13s}"
+              f"{fmt_opt(r['sign_test_p'], '.3e'):>12s}")
     print(f"  T0 verdict flips {wp['t0_verdict_flips']}, "
           f"T0b verdict flips {wp['t0b_verdict_flips']}")
     print(f"  best clearing plain    {wp['best_clearing_plain_arm']} "
-          f"{wp['best_clearing_plain_predicted_pct']:.3f}")
+          f"{fmt_opt(wp['best_clearing_plain_predicted_pct'], '.3f')}")
     print(f"  best clearing whitened {wp['best_clearing_whitened_arm']} "
-          f"{wp['best_clearing_whitened_predicted_pct']:.3f}")
+          f"{fmt_opt(wp['best_clearing_whitened_predicted_pct'], '.3f')}")
     # F3.4. The held-out query energy at each rank, beside the empirical net
     # miss the same rank actually achieves. If captured energy predicted the
     # miss, the two columns would move together.
