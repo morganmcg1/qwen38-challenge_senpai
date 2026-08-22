@@ -921,6 +921,260 @@
       "latency_bound"
     ]
   },
+  "architecture_axis": {
+    "anchor": {
+      "submission": "cf9a9eda-fdb6-4d94-b090-5451db4ff9ea",
+      "published_score": 3.26815344,
+      "outcome": "rejected",
+      "mechanism": "cross-simdgroup chunk-sum sharing",
+      "mechanism_class": "occupancy_cliff",
+      "frame_pair": "local g16s leg -> ranked g17s leg",
+      "axis": "architecture",
+      "from_pct": 0.433,
+      "from_interval_pct": [
+        0.34,
+        0.526
+      ],
+      "from_interval_note": "+-0.093, the sd F4 published for the paired local leg reading",
+      "to_pct": -2.1,
+      "to_interval_pct": [
+        -2.474,
+        -1.726
+      ],
+      "to_interval_note": "+-BOARD_RESAMPLE_SPREAD_PCT 0.374, the byte-identical resample spread from F96. A ranked delta smaller than this cannot be resolved by one run.",
+      "factor": -4.849,
+      "factor_interval": [
+        -7.276,
+        -3.282
+      ],
+      "arithmetic_check": "3.34136 * (1 - 0.0210) = 3.2712 against the published 3.26815"
+    },
+    "local_arch": "applegpu_g16s",
+    "ranked_arch": "applegpu_g17s",
+    "by_frame": {
+      "entry_point": {
+        "physical": "correct. `qmv_fast_crossrow_affine4_g64_wide` is a METAL_FUNC and the shipped `switch (ntg.x)` inlines every live width into one entry point, so one register allocation and therefore one occupancy serves every dispatched width.",
+        "local_occupancy_change_pct": 3.125,
+        "ranked_occupancy_change_pct": -2.564102564102564,
+        "predicted_factor": -0.8205128205128205,
+        "sign_correct": true,
+        "inside_anchor_interval": false,
+        "magnitude_shortfall": 5.909718750000001,
+        "implied_leg_elasticity": {
+          "applegpu_g16s": 0.13856,
+          "applegpu_g17s": 0.8190000000000001
+        },
+        "elasticity_ratio_ranked_over_local": 5.91079676674365
+      },
+      "isolated_bodies_f47_weighted": {
+        "physical": "a proxy. Per-width bodies never get their own register allocation in the shipped kernel, so this frame describes a machine that does not exist. It is reported because it is the frame the earlier residency tables used.",
+        "local_occupancy_change_pct": 4.859819330199765,
+        "ranked_occupancy_change_pct": -10.570454545454547,
+        "predicted_factor": -2.175071505182898,
+        "sign_correct": true,
+        "inside_anchor_interval": false,
+        "magnitude_shortfall": 2.2293519953001524,
+        "implied_leg_elasticity": {
+          "applegpu_g16s": 0.08909796240968516,
+          "applegpu_g17s": 0.198666953343367
+        },
+        "elasticity_ratio_ranked_over_local": 2.2297586608082907
+      }
+    },
+    "verdict": {
+      "sign_reproduced": true,
+      "magnitude_reproduced": false,
+      "statement": "the census reproduces the SIGN of the third anchor in both frames and the MAGNITUDE in neither. The sign is the part no within-host frame axis can produce, and it is the part that cost the campaign a submission.",
+      "residual_candidates": [
+        "the leg elasticity of occupancy is not one and is not equal on the two architectures",
+        "the QMV share of the leg differs between thorfinn's rung 5g local leg and the ranked eight-prompt leg",
+        "the barrier and exchange instruction cost is a second term that the register census cannot see at all",
+        "the local reading is one host, one public fixture and a short token window; the ranked reading is eight hidden prompts at 512 tokens"
+      ]
+    },
+    "mechanism": {
+      "entry_registers": {
+        "applegpu_g16s": {
+          "pre_e121": 94,
+          "share_on": 93
+        },
+        "applegpu_g17s": {
+          "pre_e121": 101,
+          "share_on": 102
+        }
+      },
+      "resident_simdgroups": {
+        "applegpu_g16s": {
+          "pre_e121": 32,
+          "share_on": 33
+        },
+        "applegpu_g17s": {
+          "pre_e121": 39,
+          "share_on": 38
+        }
+      },
+      "binding_body": {
+        "applegpu_g16s": {
+          "pre_e121": 4,
+          "share_on": 5
+        },
+        "applegpu_g17s": {
+          "pre_e121": 5,
+          "share_on": 4
+        }
+      },
+      "statement": "on applegpu_g16s the pre-E121 ceiling was the NA=4 body at 94 registers, so cutting NA=4 to 90 let the NA=5 body at 93 become the ceiling and bought one simdgroup. On applegpu_g17s the pre-E121 ceiling was already the NA=5 body at 101 registers, which E121 cannot touch, and raising NA=4 from 90 to 102 made NA=4 the new ceiling and lost one simdgroup. The same edit, one register each way, on opposite sides of a floor-division cliff.",
+      "regime_variable": "not `does the register budget bind` -- nothing spills on either architecture. It is `how many registers separate the entry point from the next floor(budget / registers) cliff, and in which direction does the edit move it`. That is computable with no GPU time."
+    },
+    "actionable_gate": {
+      "rule": "before submitting a kernel edit, census the shipped entry point on the ranked architecture and check the cliff distance. An edit that adds registers while the entry point sits within its `registers_to_lose_one` margin buys a ranked regression no local measurement on this host can see.",
+      "current_shipped_state": {
+        "registers": 102,
+        "resident": 38,
+        "registers_to_lose_one": 3,
+        "registers_to_gain_one": 1
+      },
+      "immediate_consequence": "the shipped entry point is at 102 registers on applegpu_g17s and needs only 1 fewer to recover a simdgroup, which is +2.63 % occupancy. Reverting E121 does exactly that.",
+      "next_ceiling": "below that, applegpu_g17s is floored by the NA=5 body at 101 registers. Reaching 40 resident simdgroups needs the entry point at 99 or fewer, so it needs the NA=5 body cut by two as well."
+    }
+  },
+  "frame_pair_table": {
+    "rows": {
+      "e120_rung5e_sumtable": {
+        "axis": "frame",
+        "frame_pair": "kernel frame -> leg frame",
+        "host_changes": false,
+        "mechanism_class": "deletion",
+        "component_classes": [
+          "deletion",
+          "ld"
+        ],
+        "anchor_factor": 0.763,
+        "anchor_interval": [
+          0.76,
+          0.766
+        ],
+        "table_by_regime": {
+          "reference": {
+            "factor": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "identified": true,
+            "definitional": true
+          },
+          "resident": {
+            "factor": 0.9909950560058156,
+            "ci95": [
+              0.9673474016775598,
+              1.3302513080240428
+            ],
+            "identified": true,
+            "definitional": false
+          },
+          "latency_bound": {
+            "factor": 0.9073203788279636,
+            "ci95": [
+              0.8385417225478081,
+              0.9369539782378368
+            ],
+            "identified": true,
+            "definitional": false
+          },
+          "bandwidth_contended": {
+            "factor": 2.430888874271083,
+            "ci95": [
+              null,
+              null
+            ],
+            "identified": false,
+            "definitional": false
+          }
+        },
+        "instrument": "e125 frame sessions, one host, ungated ABBA"
+      },
+      "e121_rung2_to_rung3_share": {
+        "axis": "frame",
+        "frame_pair": "isolated cell -> in-situ round",
+        "host_changes": false,
+        "mechanism_class": "sync",
+        "component_classes": [
+          "deletion",
+          "sync"
+        ],
+        "anchor_factor": 1.535,
+        "anchor_interval": [
+          1.268,
+          1.946
+        ],
+        "table_by_regime": {
+          "reference": {
+            "factor": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "identified": true,
+            "definitional": true
+          },
+          "latency_bound": {
+            "factor": 0.2504698390550883,
+            "ci95": [
+              0.15427833689069256,
+              0.8151658137840043
+            ],
+            "identified": true,
+            "definitional": false
+          },
+          "bandwidth_contended": {
+            "factor": 0.1888072634972157,
+            "ci95": [
+              0.10234042672377529,
+              3.185884201993952
+            ],
+            "identified": true,
+            "definitional": false
+          }
+        },
+        "instrument": "e125 frame sessions, one host, ungated ABBA"
+      },
+      "e121_local_g16s_leg_to_ranked_g17s_leg": {
+        "axis": "architecture",
+        "frame_pair": "local g16s leg -> ranked g17s leg",
+        "host_changes": true,
+        "mechanism_class": "occupancy_cliff",
+        "component_classes": [
+          "occupancy_cliff"
+        ],
+        "anchor_factor": -4.849,
+        "anchor_interval": [
+          -7.276,
+          -3.282
+        ],
+        "predicted_by_regime": {
+          "entry_point": {
+            "factor": -0.8205128205128205,
+            "sign_correct": true,
+            "inside_anchor_interval": false
+          },
+          "isolated_bodies_f47_weighted": {
+            "factor": -2.175071505182898,
+            "sign_correct": true,
+            "inside_anchor_interval": false
+          }
+        },
+        "instrument": "e125 zero-GPU register census, both architectures"
+      }
+    },
+    "axes": [
+      "mechanism class",
+      "frame pair",
+      "regime"
+    ],
+    "never_collapsed": "the three rows are three different transfers. Two hold the host fixed and move the frame; the third holds the frame fixed and moves the architecture. Averaging them would hide the only sign change in the set.",
+    "which_anchors_the_frame_table_fails": "both of them. The class-by-regime table reproduces neither frame-axis anchor under its own kill rule, and it cannot address the architecture anchor at all because every point in it comes from one host."
+  },
   "marginal_summary": {
     "n_observations": 216,
     "residual_sum_of_squares": {
@@ -4055,5 +4309,23 @@
     ],
     "reason": "the ledger prices `noislands` through the Finding 85 class coefficients 0.24 for draft-path head bytes and 0.95 for draft-path dispatch deletions. Those are already measured isolated-to-in-situ transfers. Every row of this table is a per-cell instruction-price transfer for the same step, so multiplying the two would count the step twice. Rule 69 forbids mixing the classes as well.",
     "where_the_uncertainty_is": "the ledger marks the 0.304 % dispatch residual [INFERRED]. That component, not the frame, carries E124's risk, and nothing measured in Stage 1 or Stage 2 speaks to it."
+  },
+  "falsified_stage0_terms": {
+    "F_floor_1p43": {
+      "registered": 1.43,
+      "measured": 0.763,
+      "status": "falsified",
+      "evidence": "E120 rung 5e measured 0.763, which is 24 % below the floor Stage 0 registered. The floor was a prediction, not a bound."
+    },
+    "bandwidth_regime_law": {
+      "registered": "the transfer factor rises with achieved bandwidth, r = -0.938 on the E123 isolated scan",
+      "status": "does not replicate",
+      "evidence": "thorfinn re-ran it in situ on this experiment's own window inside rung 5g and measured r = -0.067, permutation p = 0.855. Only M=3 kept a negative slope. Independently, E125 session 1 falsified the same law as stated: at mlp_gate_up M=4 the k1024 frame at achieved-rate ratio 0.675 and the consumer frame at 0.623 give opposite-sign effects, so the achieved rate does not order the factor.",
+      "replacement": "the regime axis moves off bandwidth and onto the register file: specifically the distance from the shipped entry point to its next floor(budget / registers) occupancy cliff, and the direction an edit moves it. See `architecture_axis`."
+    },
+    "branch_R_per_shape_gains": {
+      "status": "void, unchanged",
+      "evidence": "fractional per-shape gains cluster by inputs-per-group and not by draft width M, so a per-shape M law has no support."
+    }
   }
 }

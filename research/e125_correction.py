@@ -201,6 +201,104 @@ BOARD_RESAMPLE_SPREAD_PCT = 0.374
 LOCAL_LEG_RESOLUTION_PCT = 0.08
 DECISION_LINES = {"parity": 0.53, "mode_proof": 1.86}
 
+# Stage 0 registered terms that later evidence has since settled AGAINST this
+# experiment. They are recorded here so no downstream reader picks them up.
+FALSIFIED_STAGE0 = {
+    "F_floor_1p43": {
+        "registered": 1.43,
+        "measured": 0.763,
+        "status": "falsified",
+        "evidence":
+            "E120 rung 5e measured 0.763, which is 24 % below the floor Stage "
+            "0 registered. The floor was a prediction, not a bound.",
+    },
+    "bandwidth_regime_law": {
+        "registered":
+            "the transfer factor rises with achieved bandwidth, r = -0.938 on "
+            "the E123 isolated scan",
+        "status": "does not replicate",
+        "evidence":
+            "thorfinn re-ran it in situ on this experiment's own window inside "
+            "rung 5g and measured r = -0.067, permutation p = 0.855. Only M=3 "
+            "kept a negative slope. Independently, E125 session 1 falsified "
+            "the same law as stated: at mlp_gate_up M=4 the k1024 frame at "
+            "achieved-rate ratio 0.675 and the consumer frame at 0.623 give "
+            "opposite-sign effects, so the achieved rate does not order the "
+            "factor.",
+        "replacement":
+            "the regime axis moves off bandwidth and onto the register file: "
+            "specifically the distance from the shipped entry point to its "
+            "next floor(budget / registers) occupancy cliff, and the direction "
+            "an edit moves it. See `architecture_axis`.",
+    },
+    "branch_R_per_shape_gains": {
+        "status": "void, unchanged",
+        "evidence":
+            "fractional per-shape gains cluster by inputs-per-group and not by "
+            "draft width M, so a per-shape M law has no support.",
+    },
+}
+
+# --- the third axis: the architecture the leg runs on -------------------------
+#
+# F4 named three anchors and warned that collapsing them is Advisor Error 94.
+# They are three DIFFERENT transfers. Two of them hold the host fixed and move
+# the frame; the third holds the frame fixed and moves the architecture. The
+# class-by-regime table in this file is built entirely from one host, so it
+# cannot reach the third anchor at all, let alone reproduce its sign. That is a
+# structural limit of the instrument and is reported as one.
+ARCH_ANCHOR = {
+    "e121_local_g16s_leg_to_ranked_g17s_leg": {
+        "submission": "cf9a9eda-fdb6-4d94-b090-5451db4ff9ea",
+        "published_score": 3.26815344,
+        "outcome": "rejected",
+        "mechanism": "cross-simdgroup chunk-sum sharing",
+        "mechanism_class": "occupancy_cliff",
+        "frame_pair": "local g16s leg -> ranked g17s leg",
+        "axis": "architecture",
+        # In situ inside thorfinn's rung 5g, on the local architecture.
+        "from_pct": 0.433,
+        "from_interval_pct": (0.340, 0.526),
+        "from_interval_note":
+            "+-0.093, the sd F4 published for the paired local leg reading",
+        # The ranked M5 run, as the board resolved it.
+        "to_pct": -2.10,
+        "to_interval_pct": (-2.474, -1.726),
+        "to_interval_note":
+            "+-BOARD_RESAMPLE_SPREAD_PCT 0.374, the byte-identical resample "
+            "spread from F96. A ranked delta smaller than this cannot be "
+            "resolved by one run.",
+        "factor": -4.849,
+        "factor_interval": (-7.276, -3.282),
+        "arithmetic_check":
+            "3.34136 * (1 - 0.0210) = 3.2712 against the published 3.26815",
+    },
+}
+
+# `leg %` per `resident simdgroup %`, the one free coefficient in the census
+# predictor. It is NOT fitted here: it is reported per architecture so the
+# reader can see whether one value serves both.
+ARCH_FRAMES = {
+    "entry_point": {
+        "key": "whole_e121_change",
+        "field": "entry_fraction",
+        "physical":
+            "correct. `qmv_fast_crossrow_affine4_g64_wide` is a METAL_FUNC and "
+            "the shipped `switch (ntg.x)` inlines every live width into one "
+            "entry point, so one register allocation and therefore one "
+            "occupancy serves every dispatched width.",
+    },
+    "isolated_bodies_f47_weighted": {
+        "key": "whole_e121_change",
+        "field": "body_f47_weighted_fraction",
+        "physical":
+            "a proxy. Per-width bodies never get their own register "
+            "allocation in the shipped kernel, so this frame describes a "
+            "machine that does not exist. It is reported because it is the "
+            "frame the earlier residency tables used.",
+    },
+}
+
 
 def load(name: str) -> dict:
     p = ART / name
@@ -798,12 +896,200 @@ def route_b(pre: dict, table: dict) -> dict:
 
 # --------------------------------------------------------------------------
 
+def architecture_axis(census: dict) -> dict:
+    """Price the third anchor from the zero-GPU register census.
+
+    The frame table cannot reach this anchor: every point in it comes from one
+    host. The census can, because it runs the real AGX backend for both
+    architectures and reports what each one allocates.
+
+    The predictor is one line. `E121` moves the shipped entry point by one
+    register on each architecture, in OPPOSITE directions, and on each
+    architecture that one register crosses a `floor(budget / registers)` cliff.
+    So the predicted transfer factor is the ratio of the two fractional
+    occupancy changes, and it is negative by construction.
+    """
+    anchor = ARCH_ANCHOR["e121_local_g16s_leg_to_ranked_g17s_leg"]
+    local, ranked = census["arches"]
+    out = {"anchor": dict(anchor), "local_arch": local, "ranked_arch": ranked,
+           "by_frame": {}}
+    for frame, spec in ARCH_FRAMES.items():
+        rung = census["ladder"][spec["key"]]
+        a = rung[local][spec["field"]]
+        b = rung[ranked][spec["field"]]
+        factor = None if not a else b / a
+        lo, hi = anchor["factor_interval"]
+        out["by_frame"][frame] = {
+            "physical": spec["physical"],
+            "local_occupancy_change_pct": 100 * a,
+            "ranked_occupancy_change_pct": 100 * b,
+            "predicted_factor": factor,
+            "sign_correct": factor is not None and factor < 0,
+            "inside_anchor_interval":
+                factor is not None and lo <= factor <= hi,
+            "magnitude_shortfall":
+                None if not factor else anchor["factor"] / factor,
+            # leg percent per resident-simdgroup percent, one per architecture.
+            "implied_leg_elasticity": {
+                local: None if not a else anchor["from_pct"] / (100 * a),
+                ranked: None if not b else anchor["to_pct"] / (100 * b)},
+        }
+    for frame, cell in out["by_frame"].items():
+        e = cell["implied_leg_elasticity"]
+        cell["elasticity_ratio_ranked_over_local"] = (
+            None if not e[local] else e[ranked] / e[local])
+    signs = [c["sign_correct"] for c in out["by_frame"].values()]
+    inside = [c["inside_anchor_interval"] for c in out["by_frame"].values()]
+    out["verdict"] = {
+        "sign_reproduced": all(signs),
+        "magnitude_reproduced": any(inside),
+        "statement":
+            "the census reproduces the SIGN of the third anchor in both "
+            "frames and the MAGNITUDE in neither. The sign is the part no "
+            "within-host frame axis can produce, and it is the part that "
+            "cost the campaign a submission.",
+        "residual_candidates": [
+            "the leg elasticity of occupancy is not one and is not equal on "
+            "the two architectures",
+            "the QMV share of the leg differs between thorfinn's rung 5g "
+            "local leg and the ranked eight-prompt leg",
+            "the barrier and exchange instruction cost is a second term that "
+            "the register census cannot see at all",
+            "the local reading is one host, one public fixture and a short "
+            "token window; the ranked reading is eight hidden prompts at 512 "
+            "tokens",
+        ],
+    }
+    ep = census["ladder"]["whole_e121_change"]
+    out["mechanism"] = {
+        "entry_registers": {
+            arch: {"pre_e121": census["arms"]["pre_e121"][arch]["entry"][
+                       "registers"],
+                   "share_on": census["arms"]["share_on"][arch]["entry"][
+                       "registers"]}
+            for arch in (local, ranked)},
+        "resident_simdgroups": {
+            arch: {"pre_e121": ep[arch]["entry_from"],
+                   "share_on": ep[arch]["entry_to"]}
+            for arch in (local, ranked)},
+        "binding_body": {
+            arch: {arm: census["inlining_law"]["%s/%s" % (arch, arm)][
+                "widest_body_width"] for arm in ("pre_e121", "share_on")}
+            for arch in (local, ranked)},
+        "statement":
+            "on %s the pre-E121 ceiling was the NA=4 body at 94 registers, so "
+            "cutting NA=4 to 90 let the NA=5 body at 93 become the ceiling and "
+            "bought one simdgroup. On %s the pre-E121 ceiling was already the "
+            "NA=5 body at 101 registers, which E121 cannot touch, and raising "
+            "NA=4 from 90 to 102 made NA=4 the new ceiling and lost one "
+            "simdgroup. The same edit, one register each way, on opposite "
+            "sides of a floor-division cliff." % (local, ranked),
+        "regime_variable":
+            "not `does the register budget bind` -- nothing spills on either "
+            "architecture. It is `how many registers separate the entry point "
+            "from the next floor(budget / registers) cliff, and in which "
+            "direction does the edit move it`. That is computable with no GPU "
+            "time.",
+    }
+    cliffs = census["cliffs"]
+    out["actionable_gate"] = {
+        "rule":
+            "before submitting a kernel edit, census the shipped entry point "
+            "on the ranked architecture and check the cliff distance. An edit "
+            "that adds registers while the entry point sits within its "
+            "`registers_to_lose_one` margin buys a ranked regression no local "
+            "measurement on this host can see.",
+        "current_shipped_state": cliffs["%s/share_on" % ranked],
+        "immediate_consequence":
+            "the shipped entry point is at %d registers on %s and needs only "
+            "%d fewer to recover a simdgroup, which is %+.2f %% occupancy. "
+            "Reverting E121 does exactly that."
+            % (cliffs["%s/share_on" % ranked]["registers"], ranked,
+               cliffs["%s/share_on" % ranked]["registers_to_gain_one"],
+               100 * (cliffs["%s/pre_e121" % ranked]["resident"]
+                      / cliffs["%s/share_on" % ranked]["resident"] - 1)),
+        "next_ceiling":
+            "below that, %s is floored by the NA=5 body at 101 registers. "
+            "Reaching 40 resident simdgroups needs the entry point at 99 or "
+            "fewer, so it needs the NA=5 body cut by two as well." % ranked,
+    }
+    return out
+
+
+def frame_pair_table(table: dict, arch: dict | None) -> dict:
+    """The deliverable F4 asked for: correction(class, frame pair, regime).
+
+    Three anchors, three frame pairs, one row each. Collapsing them into one
+    number is Advisor Error 94, so they are never averaged here.
+    """
+    rows = {}
+    for name, anchor in ANCHORS.items():
+        klass = anchor["mechanism_class"]
+        row = table["rows"].get(klass, {})
+        by_regime = {}
+        if row.get("measured"):
+            for regime, cell in row["by_regime"].items():
+                if not cell.get("measured"):
+                    continue
+                by_regime[regime] = {
+                    "factor": cell["factor"], "ci95": cell["ci95"],
+                    "identified": cell.get("identified", False),
+                    "definitional": cell.get("definitional", False)}
+        rows[name] = {
+            "axis": "frame",
+            "frame_pair": ("isolated cell -> in-situ round"
+                           if name.startswith("e121")
+                           else "kernel frame -> leg frame"),
+            "host_changes": False,
+            "mechanism_class": klass,
+            "component_classes": list(anchor["component_classes"]),
+            "anchor_factor": anchor["factor"],
+            "anchor_interval": list(anchor["measurement_interval"]),
+            "table_by_regime": by_regime,
+            "instrument": "e125 frame sessions, one host, ungated ABBA",
+        }
+    if arch is not None:
+        name = "e121_local_g16s_leg_to_ranked_g17s_leg"
+        a = arch["anchor"]
+        rows[name] = {
+            "axis": "architecture",
+            "frame_pair": a["frame_pair"],
+            "host_changes": True,
+            "mechanism_class": a["mechanism_class"],
+            "component_classes": ["occupancy_cliff"],
+            "anchor_factor": a["factor"],
+            "anchor_interval": list(a["factor_interval"]),
+            "predicted_by_regime": {
+                frame: {"factor": cell["predicted_factor"],
+                        "sign_correct": cell["sign_correct"],
+                        "inside_anchor_interval": cell[
+                            "inside_anchor_interval"]}
+                for frame, cell in arch["by_frame"].items()},
+            "instrument": "e125 zero-GPU register census, both architectures",
+        }
+    return {
+        "rows": rows,
+        "axes": ["mechanism class", "frame pair", "regime"],
+        "never_collapsed":
+            "the three rows are three different transfers. Two hold the host "
+            "fixed and move the frame; the third holds the frame fixed and "
+            "moves the architecture. Averaging them would hide the only sign "
+            "change in the set.",
+        "which_anchors_the_frame_table_fails":
+            "both of them. The class-by-regime table reproduces neither "
+            "frame-axis anchor under its own kill rule, and it cannot address "
+            "the architecture anchor at all because every point in it comes "
+            "from one host.",
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--law", action="append", default=[], metavar="NAME=FILE",
                     help="frame-law artifact, one per session")
     ap.add_argument("--scan", default="e123-bandwidth-scan.json")
     ap.add_argument("--prereg", default="routeb-prediction.json")
+    ap.add_argument("--census", default="e121-census.json")
     ap.add_argument("--out", default="correction.json")
     args = ap.parse_args()
 
@@ -814,6 +1100,7 @@ def main() -> int:
 
     pts = gather_points(laws)
     table = class_regime_table(pts)
+    arch = architecture_axis(load(args.census))
     result = {
         "harness": "local",
         "timing_valid": False,
@@ -826,9 +1113,12 @@ def main() -> int:
         "class_regime_table": table,
         "anchor_test": anchor_test(table),
         "composite_diagnostic": composite_diagnostic(table),
+        "architecture_axis": arch,
+        "frame_pair_table": frame_pair_table(table, arch),
         "marginal_summary": marginal_summary(laws, pts),
         "route_b": route_b(load(args.prereg), table),
         "e124_noislands": E124_STATEMENT,
+        "falsified_stage0_terms": FALSIFIED_STAGE0,
     }
     (ART / args.out).write_text(json.dumps(result, indent=2) + "\n")
 
@@ -901,6 +1191,46 @@ def main() -> int:
                               "speedup"))
         print("  shared admissible regime: %s"
               % (", ".join(cd["shared_admissible_regime"]) or "none"))
+
+    print("\nthird axis: architecture. %s -> %s, from the zero-GPU census"
+          % (arch["local_arch"], arch["ranked_arch"]))
+    m = arch["mechanism"]
+    for a in (arch["local_arch"], arch["ranked_arch"]):
+        print("  %-14s entry %d -> %d registers, %d -> %d resident "
+              "simdgroups, ceiling body NA%d -> NA%d"
+              % (a, m["entry_registers"][a]["pre_e121"],
+                 m["entry_registers"][a]["share_on"],
+                 m["resident_simdgroups"][a]["pre_e121"],
+                 m["resident_simdgroups"][a]["share_on"],
+                 m["binding_body"][a]["pre_e121"],
+                 m["binding_body"][a]["share_on"]))
+    an = arch["anchor"]
+    print("  anchor  %+.3f %% local -> %+.3f %% ranked, factor %.3f "
+          "[%.2f, %.2f]" % (an["from_pct"], an["to_pct"], an["factor"],
+                            *an["factor_interval"]))
+    for frame, cell in arch["by_frame"].items():
+        print("  %-30s predicts %+7.3f  sign %s  magnitude %s (short by "
+              "%.1fx)" % (frame, cell["predicted_factor"],
+                          "ok" if cell["sign_correct"] else "WRONG",
+                          "ok" if cell["inside_anchor_interval"] else "misses",
+                          abs(cell["magnitude_shortfall"])))
+    print("  gate: %s" % arch["actionable_gate"]["immediate_consequence"])
+
+    fp = result["frame_pair_table"]
+    print("\ncorrection(mechanism class, frame pair, regime) - three anchors, "
+          "three transfers")
+    print("  %-38s %-12s %-30s %s"
+          % ("frame pair", "class", "anchor", "instrument axis"))
+    for name, row in fp["rows"].items():
+        lo, hi = row["anchor_interval"]
+        print("  %-38s %-12s %7.3f [%7.2f,%7.2f]      %s"
+              % (row["frame_pair"], row["mechanism_class"],
+                 row["anchor_factor"], lo, hi, row["axis"]))
+    print("  fails: %s" % fp["which_anchors_the_frame_table_fails"])
+
+    print("\nStage 0 terms settled against this experiment")
+    for name, v in result["falsified_stage0_terms"].items():
+        print("  %-26s %s" % (name, v["status"]))
 
     rb = result["route_b"]
     print("\nRoute B ranked prediction, deletion row, W_ranked=%.2f"

@@ -430,6 +430,15 @@ def report(rows: dict, out: pathlib.Path | None) -> int:
                 "there. A cost measured at M=5 therefore does not falsify the "
                 "register hypothesis; it is what the register hypothesis "
                 "predicts."),
+            "cleanest_future_test": (
+                "M=5 separates the two components better than any other "
+                "width. On the ranked architecture it dispatches NA=5 alone, "
+                "the NA=5 body is byte-identical under E121, and yet it is "
+                "allocated 102 registers instead of 101 because the NA=4 body "
+                "is inlined beside it. So at M=5 the E121 cost is the "
+                "occupancy term with the instruction term set to zero, while "
+                "at M=3 and M=4 it is both. Timing E121 against pre-E121 at "
+                "M=5 and at M=4 on a g17s host splits the two terms directly."),
         },
     }
     if out is not None:
