@@ -36,8 +36,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 from pathlib import Path
+
+import e130_rung11_rounds
 
 ORDER = [
     "s64", "s512", "s1024", "s2048",
@@ -142,6 +145,24 @@ def read_leg(root: Path, prefix: str, index: int, arm: str) -> dict:
         leg["mtp_decode_speedup"] = metrics.get("mtp_decode_speedup")
         leg["all_tokens_matched"] = metrics.get("all_tokens_matched")
         leg["decode_tokens"] = metrics.get("decode_tokens")
+
+    # F18. Channel B is the steady-state decode rate and channel C is the
+    # depth-controlled round-1 excess. B is NOT comparable in level with the
+    # reported seconds per token, because the report includes the 512-token
+    # seed prefill and B is built only from decode rounds. Only the arm
+    # contrasts of the two channels may be compared.
+    rounds = e130_rung11_rounds.read_leg(out)
+    if "error" not in rounds:
+        leg["steady_seconds_per_token"] = rounds["steady_seconds_per_token"]
+        leg["c_raw_us"] = rounds["c_raw_us"]
+        leg["c_depth_matched_us"] = rounds["c_depth_matched_us"]
+        leg["c_regression_us"] = rounds["c_regression_us"]
+        leg["depth_slope_us_per_draft"] = rounds["depth_slope_us_per_draft"]
+        leg["round_count"] = rounds["rounds"]
+        leg["round1_depth"] = rounds["round1_depth"]
+        leg["timed_pid"] = rounds["timed_pid"]
+    else:
+        leg["round_trace_error"] = rounds["error"]
     return leg
 
 
@@ -168,7 +189,12 @@ def invert(matrix: list[list[float]]) -> list[list[float]]:
 
 def fit(legs: list[dict], field: str) -> dict | None:
     """Least squares for ``y = mean(arm) + slope * (leg_index - centre)``."""
-    used = [leg for leg in legs if leg.get(field) is not None]
+    # NaN is excluded as well as None. The F18 round-1 channel returns NaN when
+    # a leg's steady rounds carry one draft count, so its slope is unidentified,
+    # and a single NaN would otherwise poison the whole normal-equation solve.
+    used = [leg for leg in legs
+            if leg.get(field) is not None
+            and not (isinstance(leg[field], float) and math.isnan(leg[field]))]
     present = [arm for arm in ARMS if any(leg["arm"] == arm for leg in used)]
     if len(present) < 2:
         return None
@@ -413,6 +439,12 @@ def main() -> int:
         "candidate_mtp_seconds_per_token": "mtp_seconds_per_token",
         "serial_seconds_per_token": "serial_seconds_per_token",
         "local_ratio_mtp_decode_speedup": "mtp_decode_speedup",
+        # F18 channel B. Same design, same 7 df, steady-state decode only.
+        "steady_seconds_per_token": "steady_seconds_per_token",
+        # F18 channel C, depth controlled. Fitted in microseconds, and its
+        # contrasts are read in MILLISECONDS PER LEG, never as a percentage:
+        # a one-time cost divided by a token count is not a rate.
+        "round1_excess_us": "c_regression_us",
     }
     models = {name: fit(legs, field) for name, field in channels.items()}
     primary = models["candidate_mtp_seconds_per_token"]

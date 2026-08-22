@@ -94,9 +94,16 @@ unset MLX_E130_RESIDENCY_PROBE
 # and it is identical on every arm, so it cancels in each arm contrast. It
 # still sits inside the absolute headline, so the ladder's absolute seconds
 # per token is not directly comparable with an untraced receipt.
-export MLX_QWEN_MTP_TRACE=1
+# F19 section 5 asks for the trace tax as a measured quantity rather than an
+# estimate. `E130_LEG_TRACE=0` runs one otherwise identical untraced leg, so
+# the tax is the contrast between it and its traced counterpart.
 export MLX_QWEN_MTP_TRACE_PATH="${PWD}/${out}/trace.txt"
 : > "${MLX_QWEN_MTP_TRACE_PATH}"
+if [[ "${E130_LEG_TRACE:-1}" == "0" ]]; then
+  unset MLX_QWEN_MTP_TRACE
+else
+  export MLX_QWEN_MTP_TRACE=1
+fi
 # Never on a timed leg: draining the head chain destroys the head/verify
 # overlap the round is built around.
 unset MLX_QWEN_MTP_TRACE_SYNC_HEAD
@@ -155,6 +162,7 @@ swap_counters() {
   echo "local_mode=--local-iterate"
   echo "wired_gate_gib=${MLX_E130_WIRED_GATE_GIB:-<shipped-96>}"
   echo "wired_slack_mb=${DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB:-<shipped-default>}"
+  echo "leg_trace=${E130_LEG_TRACE:-1}"
   echo "mlx_max_mb_per_buffer=${MLX_MAX_MB_PER_BUFFER}"
   echo "mlx_max_ops_per_buffer=${MLX_MAX_OPS_PER_BUFFER}"
   echo "darkbloom_startup_memory_profile=${DARKBLOOM_STARTUP_MEMORY_PROFILE}"

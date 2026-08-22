@@ -72,7 +72,20 @@ for arm in "${order[@]}"; do
   echo "############ leg ${index}/${total} exit=$? ############"
 done
 
+# F19 section 5. One extra s512 leg with the trace OFF, otherwise identical.
+# Every ladder arm carries the trace, so it cancels in each arm contrast, but
+# it does sit inside the absolute headline. This leg turns that caveat into a
+# measured number: the trace tax is this leg against the traced s512 arm mean.
+# It sits LAST so it cannot perturb the counterbalanced twelve.
+untraced_tag="${prefix}-13-s512untraced"
+echo "############ leg 13/13  arm=s512 UNTRACED  tag=${untraced_tag} ############"
+E130_LEG_TRACE=0 research/e130_rung10a_leg.sh "${untraced_tag}" s512 "${tokens}"
+echo "############ leg 13/13 exit=$? ############"
+
 echo "=== session complete: ${prefix} ==="
+echo "--- ${untraced_tag} ---"
+grep -E "^(arm|exit|leg_trace|gpu_temp_entry_c|gpu_temp_exit_c|trace_anchor_lines)=" \
+  "research/out/${untraced_tag}/meta.txt" 2>/dev/null || echo "missing"
 index=0
 for arm in "${order[@]}"; do
   index=$((index + 1))
