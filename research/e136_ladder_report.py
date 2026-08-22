@@ -296,6 +296,8 @@ def main() -> int:
             else:
                 want = (tight_us + f["slope"]
                         * (cen["wide"][key] - cen["tight"][key]) / rounds)
+            f["wide_predicted_us_per_round"] = want
+            f["wide_out_of_sample_error_us"] = wide_us - want
             pred = f"   predict {want:9.1f} vs {wide_us:9.1f}  ({wide_us - want:+8.1f})"
         print(f"  {f['name']}  {f['slope']:14.4f}   {f['residual_sd']:10.1f}"
               f"   {f['ratio_to_noise']:7.2f}{pred}")
@@ -366,6 +368,8 @@ def main() -> int:
             "arms": summary,
             "fits": fits,
             "pooled_noise_us_per_round": noise,
+            "wide_us_per_round": wide_us,
+            "tight_us_per_round": tight_us,
         }, indent=2, default=str))
         print(f"\n  wrote {args.json}")
     return 0
