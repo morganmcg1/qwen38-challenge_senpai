@@ -9,6 +9,13 @@
       "row_count_ok": true,
       "rows": 1025,
       "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+      "tag": "e129x512dflt"
+    },
+    {
+      "matches_pin": true,
+      "row_count_ok": true,
+      "rows": 1025,
+      "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
       "tag": "e129x512base"
     },
     {
@@ -23,7 +30,7 @@
       "row_count_ok": true,
       "rows": 1025,
       "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
-      "tag": "e129x512onep"
+      "tag": "e129x512one67"
     }
   ],
   "order_control": {
