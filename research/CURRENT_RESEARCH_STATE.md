@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- **2026-08-22 00:50 UTC**
+- **2026-08-22 01:30 UTC**
 - Track `qwen3.8-27b-mtp-v1`. Advisor branch `senpai/qwen38-mtp-r1`.
   `BASE_SHA` for every submission is `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
   `upstream/main` is `41bad1c6`, which is the promoted `51b9bf85` tree.
@@ -11,6 +11,34 @@ No new human direction since Issue #22. The standing direction remains: keep
 every student productive, submit the strongest legitimate candidate promptly,
 and treat the published plausibility ceiling as an administrative gate rather
 than a research target.
+
+## 🔴🔴🔴🔴🔴 CURRENT RESEARCH FOCUS — FINDING 51 REORGANISES THE KERNEL PROGRAMME
+
+Three students reported inside one hour and their results converge on one
+mechanism: **the wide crossrow QMV kernel is bound by total instruction issue.**
+
+- Askeladd's pre-registered three-way discriminator selected it directly.
+  `p_split_meta`, which separates the metadata load from the weight load, is a
+  null at −0.03 %, so the load-issue port is not the constraint.
+  `s_bcast`, which replaces device loads with register shuffles, costs
+  −15.53 %, so memory latency is not the constraint. `n_nosums`, which deletes
+  only arithmetic, pays +7.60 %.
+- Edward measured round absorption `alpha = 1.177`, CI [1.114, 1.241]. A
+  microsecond removed from the kernel returns at least a microsecond of round
+  time. The round has no overlap slack.
+- Alphonse showed the register channel is a compile-time null and that register
+  count does not predict time.
+
+Finding 49 left two candidate explanations for the roofline residue. Register
+slack is now dead. Instruction-issue pressure stands, and `xv4` — which removes
+three of four activation load instructions and buys −0.7498 % end to end — is
+the existence proof.
+
+**The two live levers campaign-wide are now dispatch shape and inner-loop
+instruction count.** Everything else in the kernel neighbourhood has been
+measured and closed: arithmetic, precision, packing, threadgroup staging,
+register relief, software pipelining, metadata recoding, shuffle broadcast,
+concurrent N-split, and the serialised N-split on `mlp.gate_up`.
 
 ## 🔴🔴🔴🔴🔴 LIVE: `xv4` IS IN OFFICIAL VALIDATION AS `7bef7d4c`
 
@@ -31,109 +59,139 @@ Expected published score at the measured centre is 3.35782 against a crown of
 3.35025879. Three of the four corners of the (CI end × serial-draw) box beat
 the crown; the fourth misses by less than the 0.277 % published noise floor.
 
-Alphonse is running the zero-GPU `xr_split2` compile screen while the receipt
-validates. Validation historically takes 56 to 130 minutes.
+**One recorded transfer risk.** `xv4` raises g17s registers at NA=2 (83 → 93)
+and NA=5 (98 → 101), both at zero spill, while lowering them on g16s. NA=2 and
+NA=5 together carry 5.8 % of shipped rounds. The receipt tests exactly this.
 
-## 🔴🔴🔴🔴 ADVISOR ERROR 76 AND CAMPAIGN RULE 55
+Validation historically takes 56 to 130 minutes.
 
-I told alphonse that merging the advisor head `f14f0f14` into his branch before
-submitting was surface-neutral. I had diffed `f14f0f14` against its own parent.
-His branch was cut before four merges landed, so the true range is
-`f2d8bcbf..f14f0f14`: 1,181 added lines of research instrumentation inside
-`Sources/MLXFastModel/`. He refused the merge and submitted the exact tree he
-measured. He was right to override the instruction.
+## 🔴🔴🔴🔴 THE FOUR EXPERIMENTS IN FLIGHT
 
-**Campaign rule 55.** Before any official submission, diff the submitted
-surface against the exact measured tree over `editablePaths` only, computed
-from the submitting branch's own merge base. Never accept a diff taken against
-the advisor head's parent. Merge for ancestry only after the receipt lands.
+**#112 alphonse — SDPA reduction tail, rung 0, zero GPU.** Finding 50 gives the
+tail a ceiling of 0.249 to 0.391 % ranked, the largest measured ceiling left on
+the board. `sdpa_vector.h:163-169` writes at stride 32 into one bank per
+simdgroup, then reads at stride 1, with two barriers and eight dependent
+divides. Arms are `k_pad` (pad the row to 33), `m_padchunk2/4`, and
+`l_divhoist`. `-fno-fast-math` at `kernels/CMakeLists.txt:18` makes an
+addressing-only change bit exact by construction. Deliverables are compile,
+threadgroup bytes, bit-exactness against the E103 reference tail with the
+positive control firing, registers and spill on **both** g16s and g17s under
+rule 56, AIR instruction counts, and occupancy arithmetic against the 32,768
+byte budget.
 
-## 🔴🔴🔴🔴 HAZARD: THE MAINTAINED BASE SHIPS INSTRUMENTATION IN THE TIMED ROUND BODY
+**#117 thorfinn — the serialised N-split, pivoted to `gdn.in_proj`.** Rung 0
+killed the `mlp.gate_up` mechanism at −14.276 % at the shipped M=8 and produced
+Finding 52, the first shipped-frame M-frame cost curve. It also found a new
+positive cell: `gdn.in_proj` at M=8 `[4+4]` is +5.270 % ± 0.196, worth an
+idealised +0.48 % ranked after paying 96 barriers. His serialiser is a blocking
+host `eval` at ~96 µs, so the instrument is disqualified, not the mechanism.
+Rung 0b replicates; rung 1 attempts a cheap barrier by false data dependency,
+since `maybeInsertBarrier()` is not editable and the encoder is already
+`MTL::DispatchTypeConcurrent`.
 
-At `f14f0f14` the submitted surface carries `E58DispatchCensus.installIfRequested()`,
-eight `phase(...)` calls, `beginRound`/`endRound`/`fireTax`, the
-`MLX_E112_SKIP_1025_WARM` flag, and — the reason this matters — an env override
-of `draftCount` inside the scored draft decision at
-`Qwen36MTPBlockSession.swift:1256-1259`. The runtime cost is nanoseconds and is
-not the concern. The concern is that a benchmark-phase-adjacent override in the
-scored path is exactly the shape that
-`submissionStaticReviewPromptCoversMeasurementStructureExploitation` exists to
-catch.
+**#118 edward — measured kernel→round→leg transfer.** Rung 2 delivered
+`alpha = 1.177` and fixed the E109 round-alignment defect. Rung 3, the k = 0,
+4, 8, 12 leg ladder, is running; rung 4 measures the wide-QMV share directly
+and reprices every shelved arm. Rung 4 also carries the instrumentation
+cleanup: `Sources/` must contain zero research instrumentation at terminal
+report, with everything preserved as one `research/e116-artifacts/instruments.patch`
+that passes `git apply --check`.
 
-Edward owns the cleanup on PR #118. `Sources/` must contain zero research
-instrumentation at his terminal report, with everything preserved as one
-`research/e116-artifacts/instruments.patch` and a reported `git apply --check`
-exit code. Deletion happens last, after every rung is logged.
+**#120 askeladd — the inner-loop instruction screen.** The first reading is
+above. The full 5-shape × 4-NA × 8-block session is running. The headline
+deliverable I asked for is an **AIR-instruction-count → microsecond regression**
+with slope, standard error and R², split into device loads, threadgroup
+accesses, shuffles and arithmetic. If that slope exists with a usable error,
+every future bit-exact arm can be priced at compile time before any GPU is
+booked.
 
-## Current research focus
+## 🔴🔴🔴 POTENTIAL NEXT RESEARCH DIRECTIONS
 
-The campaign is bandwidth-bound and the round is 88.6 % DRAM weight streaming.
-Every surviving lever is one of four kinds.
+Ordered by measured ceiling and by how cheaply the next decision can be
+reached.
 
-1. **Wide-QMV kernel efficiency.** Finding 44 puts the roofline gap at +17.3 %
-   round-weighted, about 13 % of the round. Finding 49 then showed the residue
-   at NA=5 *exceeds the serial sum of the load-only and ALU-only arms by
-   18.7 %*, which retires every throughput explanation and leaves two
-   survivors: register-slack collapse of latency hiding, and instruction-fetch
-   pressure. `xr_split2` discriminates them by sign alone.
-2. **The SDPA cross-simdgroup reduction tail.** Finding 50 prices complete
-   removal at 0.249–0.391 % ranked from E103's own measured ablation. Arm A
-   `k_pad` is a five-character bit-exact padding change. `sdpa_vector.h` is
-   editable and owned by nobody. This is the strongest unassigned experiment.
-3. **Dispatch shape and scheduling.** E115 killed the concurrent N-split but
-   left a serialised gate_up split worth +1.06 % to +1.64 % ranked if it
-   survives at the realised `[4+4]` verify width. That is E117.
-4. **Conditional draft allocation.** Every recorded schedule negative
-   constrains the *mean* draft length, which is at a local optimum. None
-   constrains *which rounds go deep*. E113 leaves a 2.06 % conditional pool on
-   beagle and the head discards all of its own confidence at
-   `Qwen35.swift:2972-3060`. Beagle P1 routes head margin into the acceptance
-   EMA behind a trace-only AUC gate.
-
-## Measurement discipline that now governs every assignment
-
-- Local ratio evidence is admissible only for changes confined to the candidate
-  MTP leg. Broad kernel work is judged on matched absolute candidate seconds
-  per token.
-- Harness defect 16, the macmon DVFS ramp, costs a fixed 30–80 ms paid entirely
-  by the first-timed arm and does **not** cancel in an ABBA mean. Reverse-pass
-  analysis or an equivalent fix is mandatory.
-- Harness defect 19, a bimodal GPU clock with a ~2.7 % low-clock tail near half
-  speed, means every timed arm must report per-leg dispersion and flag any leg
-  above ~1.5× the arm median.
-- Campaign rule 39 sizes a 0.20 % effect at 2σ as roughly 17 to 19 legs.
-- Finding 46 sets the receipt-reading floors: TARGET 0.1281 % per run, DRAFT
-  0.1139 % per run, published median 0.2770 %.
-
-## Potential next research directions
-
-1. **SDPA tail arm A `k_pad`** — highest measured ceiling among unassigned
-   work, bit exact, existing E103 harness with existing positive controls,
-   zero-GPU rung 0, unowned file. Assign to the next student who frees.
-2. **Beagle P1 rung 0** — the trace-only AUC gate on head margin versus
-   acceptance at positions 2–5. AUC ≤ 0.55 kills the reopener; AUC ≥ 0.65
-   licenses a timed arm. Needs `Qwen36MTPBlockSession.swift`, so it queues
-   behind E116.
-3. **`xr_split2` timed arm** — only if alphonse's compile screen shows g16s
-   NA=5 registers falling from 95 to at most 87 at zero spill.
-4. **The fixed-dispatch-plan arm for `C(k)`** — force one reduction plan and
-   tiling across verify rows 1..8 and re-measure the step. The batch-invariance
-   literature says the step may be a plan switch rather than physics. It folds
-   into E117's existing N sweep at near-zero marginal cost.
-5. **The bf16→f32 conversion count in the wide-QMV inner loop** — demoted,
-   because the roofline analysis puts conversions inside the 17–39 µs ALU-only
-   arm, which cannot produce the residue.
-6. **One traced per-round verify-width sequence from a ranked-representative
-   prompt** — the only thing that closes E114's four free dimensions in the
-   ranked NA weight vector.
-7. **N-selective stream collapse** and **the width-aware Q-row narrowed pack**
-   remain live but unprioritised.
+1. **A bit-exact cheaper `sums` add tree.** `n_nosums` is +7.60 % on askeladd's
+   table with a concordant +6.132 % from E111, and it is now the largest single
+   term left in the wide QMV. Two readings agree; E104's dissenting −4.47 % is
+   resolved against. The work is to find a route that removes add-tree
+   instructions without changing the bf16 summation order.
+2. **Beagle P1 — per-position head-side confidence into the acceptance EMA.**
+   The unconditional depth mean is at a local optimum, but the conditional
+   allocation still holds a 2 to 4 % pool. `qwen35DraftSelectKernel` discards
+   every runner-up, so no head-side confidence reaches the host today. P1
+   tracks `margin = best − second` through the same shuffle reduction and
+   appends `d` scalars to the round's existing eval bundle. Rung 0 is a
+   trace-only AUC gate at zero GPU: AUC ≤ 0.55 at positions 2–5 kills it,
+   AUC ≥ 0.65 licenses the timed arm. It needs
+   `Qwen36MTPBlockSession.swift`, so it waits for E116.
+3. **The fixed-dispatch-plan arm for `C(k)`.** The step-shaped cost prefix may
+   be a dispatch-plan switch rather than physics. The falsifier is to force one
+   fixed reduction plan and tiling across rows 1 to 8 and re-measure. It needs
+   `quantized.h:1918-1979`, so it waits for alphonse.
+4. **N-selective stream collapse** — collapse M=5 only above an N cutoff,
+   rather than uniformly.
+5. **One traced per-round verify-width sequence from a ranked-representative
+   prompt.** This is the only thing that closes E114's four free dimensions in
+   the ranked NA weight vector, and it would retire the largest remaining
+   source of pricing uncertainty in the campaign.
+6. **Resolve harness defect 20.** Every realised-width weight in the campaign
+   sits downstream of a harness choice that none of them records. A single
+   matched census under both harnesses would let us label the existing weights
+   rather than re-derive them.
+7. **The width-aware Q-row narrowed pack** remains live but unprioritised.
 8. **The census `selector` defect** in `E58DispatchCensus.swift`, which makes
    `dispatchThreads:` and `dispatchThreadgroups:` indistinguishable in every
    census this campaign has run. Fix it inside the E116 preserved patch, not in
    `Sources/`.
 9. **Rule on P5 legality** — stale-suffix recycling of head-produced tokens as
    free verify rows within one request. Blocked pending my decision.
+
+## Measurement discipline that now governs every assignment
+
+- Local ratio evidence is admissible only for changes confined to the candidate
+  MTP leg. Broad kernel work is judged on matched absolute candidate seconds
+  per token.
+- Rule 34, extended by harness defect 20: name the round frame **and** name the
+  harness. A width histogram without a harness label is not usable evidence.
+- Rule 56: census `applegpu_g17s` before booking local time on any
+  register-channel arm.
+- Rule 57: do not weight an isolated per-group cell with a realised-width
+  histogram unless the dispatch grouping matches in both frames.
+- Harness defect 16, the macmon DVFS ramp, costs a fixed 30–80 ms paid entirely
+  by the first-timed arm and does **not** cancel in an ABBA mean. Reverse-pass
+  analysis or a fixed wall-clock discarded ramp burst is mandatory. Thorfinn
+  uses 0.30 s; askeladd uses 150 ms; both work.
+- Harness defect 19, a bimodal GPU clock with a ~2.7 % low-clock tail near half
+  speed, means every timed arm must report per-leg dispersion and flag any leg
+  above ~1.5× the arm median. It was observed live in E117 rung 0.
+- Campaign rule 39 sizes a 0.20 % effect at 2σ as roughly 17 to 19 legs.
+- Finding 46 sets the receipt-reading floors: TARGET 0.1281 % per run, DRAFT
+  0.1139 % per run, published median 0.2770 %.
+- Campaign rule 55: before any official submission, diff the **submitted**
+  surface against the **exact measured** tree over `editablePaths` only,
+  computed from the submitting branch's own merge base.
+
+## 🔴🔴 RULES AND CORRECTIONS ADDED THIS ROUND
+
+- **Campaign rule 56.** A register-channel arm must be censused on
+  `applegpu_g17s` before any local timing is booked. `xr_split2u` at NA=4 is
+  g16s 94 → 86 and g17s 90 → 95: the two architectures disagree in sign at the
+  operating point carrying two thirds of the round.
+- **Campaign rule 57.** An isolated per-group cell may not be weighted by a
+  realised-width histogram unless the dispatch grouping is the same in both
+  frames.
+- **Harness defect 20.** `--local-iterate` and `mtp-timed` realise different
+  width histograms on the same 512-token window. Rule 34 now requires naming
+  the harness as well as the round frame.
+- **Advisor error 77.** I priced E117 across two different dispatch frames and
+  was wrong by more than an order of magnitude and wrong in sign.
+- **Advisor error 78.** I raised a prior from the Apple FFT paper's
+  `simd_shuffle` cost claim; the claim is falsified on this part.
+- **`vec<float,5>` resolved.** The backend allocates exactly five registers and
+  AIR keeps a true `<5 x float>`. Every NA=5 register number this campaign has
+  quoted means what it appears to mean.
+- **Baseline correction.** Since E110 rung 1c the worktree `a_base` compiles to
+  `xv4`. Any register table on this branch must state which body it belongs to.
 
 ## 🔴🔴🔴🔴🔴 WE HOLD THE BEST CANDIDATE ON THE BOARD. WE LOST ONLY THE LOTTERY.
 

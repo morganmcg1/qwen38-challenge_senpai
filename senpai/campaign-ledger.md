@@ -36144,3 +36144,428 @@ Rival results that confirm our own negatives:
 
 Nine rows are validating including ours. Twenty-nine rows created since 19:00Z
 and every scored one has been rejected.
+
+## 263 — 2026-08-22 01:25Z — Finding 51: the wide QMV is total-instruction-issue bound
+
+Four students reported inside one hour. Three of the four reports converge on
+one mechanism. This entry records that convergence first, then the four
+individual results, then the rules and errors they created.
+
+### 263.1 FINDING 51 — the binding resource in the wide QMV is total instruction issue
+
+Three independent readings, from three different students on three different
+Macs, using three different instruments, select the same answer.
+
+**Reading 1 — askeladd, E118 first reading, a pre-registered three-way
+discriminator.** On `mlp.gate_up` K=5120 N=34816 NA=4:
+
+| arm | what it changes | percent vs `a_base` |
+|---|---|--:|
+| `s_bcast` | replaces 8 predicated metadata loads with 8 `simd_shuffle` calls | **-15.53** |
+| `p_split_meta` | separates the metadata load from the weight load | -0.03 |
+| `n_nosums` | deletes the activation add tree, keeps every load | **+7.60** |
+
+The discriminator was written before the measurement. If the binding resource
+were the load-issue port, `p_split_meta` would move. It does not; it is a
+null at three hundredths of a percent. If the binding resource were memory
+latency, replacing a device load with a register shuffle would win.
+It loses by 15.5 percent. If the binding resource is total instruction issue,
+then any instruction removed pays and any instruction added costs, whatever
+its class. `n_nosums` removes arithmetic instructions only and pays 7.60
+percent. `s_bcast` adds shuffle instructions and costs 15.53 percent.
+
+**Reading 2 — edward, E116 rung 2, round absorption.** `alpha = 1.177`, 95
+percent CI [1.114, 1.241], excludes 1.00 from above. A microsecond of GPU work
+removed from the round returns at least a microsecond of round time. The round
+has no overlap slack that could absorb a kernel saving.
+
+**Reading 3 — alphonse, E110 `xr_split2`, the register channel.** The
+register channel is a compile-time null. Register count does not predict time:
+`mo_swap` has the best g17s register profile of any arm this campaign has
+built and costs +153 percent round weighted.
+
+Finding 49 left two survivors for the roofline residue at NA=4 and NA=5.
+Survivor (a) was register slack. It is now **dead**. Survivor (b) was
+instruction-issue pressure. It **stands**, and Finding 51 is its name.
+
+`xv4` is the existence proof at the other end. It removes three of the four
+activation load instructions per `(m,i)` pair and buys -0.7498 percent
+end-to-end in the candidate leg. It changed no bytes, no precision, no
+scheduling and no occupancy. It removed instructions.
+
+**Actionable implication.** Any bit-exact instruction deleted from the wide
+QMV inner loop pays, and by edward's alpha it transfers to the round at a
+factor of at least one. The two live levers campaign-wide are now
+**dispatch shape** and **inner-loop instruction count**. Everything else in
+the kernel neighbourhood has been measured and closed.
+
+### 263.2 CAMPAIGN RULE 56 — census the ranked architecture before booking local time
+
+> A register-channel arm must be censused on `applegpu_g17s` before any local
+> timing is booked. The local g16s register result does not transfer.
+
+Adopted from alphonse. The proof is in his own screen. `xr_split2u` at NA=4,
+which carries 66.7 percent of the shipped round weight, is g16s 94 to 86 —
+a clean saving of eight registers at zero spill — and g17s 90 to 95, a rise of
+five. The two architectures disagree in sign at the operating point that
+matters most.
+
+### 263.3 CAMPAIGN RULE 57 — do not cross dispatch frames when weighting a cell
+
+> An isolated per-group cell may not be weighted by a realised-width histogram
+> unless the dispatch grouping is the same in both frames.
+
+Born from advisor error 77 below. E115 measured isolated one-group cells at
+NA=2..5. The shipped kernel dispatches partitions, not single groups: M=8 ships
+as `[4+4]`, two groups. Weighting an isolated one-group NA=4 cell by the
+probability that the shipped round runs at NA=4 mixes two different frames and
+produces a number with no referent.
+
+### 263.4 ADVISOR ERROR 77 — I priced E117 in the wrong frame
+
+I priced the serialised N-split at +1.11 percent and +1.73 percent of round by
+weighting E115's isolated one-group NA cells with the standing NA histogram.
+Thorfinn priced it in the shipped M frame and got +0.10 percent ranked as an
+idealised free-barrier ceiling, and the mechanism measures **-14.276 percent**
+at the shipped M=8 operating point. My number was wrong by more than an order
+of magnitude and wrong in sign at the point that carries 87 percent of the
+weight. Campaign rule 57 exists so this cannot recur.
+
+### 263.5 ADVISOR ERROR 78 — an external microbenchmark raised a prior and I let it look like a verdict
+
+I raised askeladd's prior on `s_bcast` from the Apple FFT paper (2603.27569),
+which reports `simd_shuffle` at one to two cycles and argues that Apple GPUs
+invert the standard register-versus-threadgroup heuristic. On this part, eight
+shuffles cost +36.6 microseconds, more than the eight device loads they
+replace. The paper's register-file claim survives; its shuffle cost claim is
+falsified here.
+
+> Standing rule, reaffirmed: an external microbenchmark may raise a prior. It
+> may never supply a verdict.
+
+### 263.6 The `vec<float,5>` question is resolved, from a compile probe
+
+Alphonse settled the open question left by the Finding 44 correction. MSL's
+`vec<T,N>` class template is not limited to four lanes; only the `floatN`
+typedefs are. Storage pads to the next power of two: `sizeof(vec<float,5>)` is
+32 and `alignof` is 32, while `sizeof(vec<float,3>)` is 16. AIR keeps a true
+`<5 x float>` with real five-wide intrinsics such as `llvm.fmuladd.v5f32`,
+neither padded to eight nor scalarized. The backend allocates exactly five
+registers: the `b_constw` arm reads 12, 16, 20, 24 at NA=2,3,4,5, a clean
+increment of four per NA with no jump at five.
+
+**Consequence: every NA=5 register number this campaign has quoted means what
+it appears to mean**, including Finding 49's liveness estimate. One inference
+that is not measured: a *spilled* `VF` occupies 32 bytes rather than 20, which
+would explain the large NA=5 spill frames when they occur.
+
+### 263.7 Baseline correction, campaign-wide — the worktree `a_base` now compiles to `xv4`
+
+Since E110 rung 1c the worktree `a_base` **is** the `xv4` body. The register
+tables quoted in the E110 r3 brief — g16s 70/93/94/95 and g17s 83/90/91/98 —
+are the **pre-`xv4`** body, reproduced exactly by alphonse's new `a_scaffold`
+arm. Any register table produced on this branch from here on must state which
+body it belongs to.
+
+### 263.8 `xv4` raises g17s registers at NA=2 and NA=5
+
+All at zero spill.
+
+| arch | NA2 | NA3 | NA4 | NA5 |
+|---|---|---|---|---|
+| g16s pre-`xv4` to `xv4` | 70 to 66 | 93 to 82 | 94 to 94 | 95 to 93 |
+| g17s pre-`xv4` to `xv4` | 83 to **93** | 90 to 89 | 91 to 90 | 98 to **101** |
+
+NA=2 and NA=5 together carry 5.8 percent of shipped rounds. This is a
+hardware-transfer risk in exactly the direction the `7bef7d4c` receipt will
+test. Record it now so the receipt reading is honest either way.
+
+Full census, `R / spill bytes / text bytes`:
+
+```
+g16s  a_scaffold  70/0/4430   93/0/5682   94/0/6920   95/0/8228
+      a_base(xv4) 66/0/4430   82/0/5670   94/0/6934   93/0/8234
+      xr_split2   59/0/3078   70/0/3992   84/0/4914   85/160/5936
+      xr_split2u  57/0/4436   70/0/5674   86/0/6988   96/176/8534
+g17s  a_scaffold  83/0/4644   90/0/5900   91/0/7206   98/0/8492
+      a_base(xv4) 93/0/4670   89/0/5900   90/0/7218  101/0/8452
+      xr_split2   72/0/3184   75/0/4090   92/0/5002   94/160/5992
+      xr_split2u  70/0/4640   83/0/5924   95/0/7204  107/0/8480
+```
+
+### 263.9 E110 `xr_split2` — premise falsified, null, zero GPU spent
+
+Commit `fa17b0eb`, research-only. The submitted surface was verified
+byte-identical to `91da3251` across all 89 `editablePaths`, so the frozen
+`quantized.h` under submission was not disturbed.
+
+**Campaign rule 38, the unroll trap, fired again.** The loop form `xr_split2`
+did not unroll. Four independent proofs at NA=5: AIR device loads per k-block
+are `a_base` 4, `xr_split2` 7, `xr_split2u` 14; AIR shape is 293 lines and 26
+blocks, 298 and 26, 473 and 35; allocas show one `[2 x ...]` set versus two;
+machine text is 5936 bytes versus 8534. `xr_split2u` is the honest
+implementation of the idea and `xr_split2` is a different, smaller program.
+
+**Verdict against the pre-registered rule** (g16s NA=5 must fall from 95 to 87
+or below at zero spill): `xr_split2` reaches 85 but spills 160 bytes and fails;
+`xr_split2u` reaches 96 with 176 bytes and fails both clauses.
+
+**Why the mechanism cannot work.** The r-split halves weight-side liveness —
+`packed[4][4]`, `scale_local[4]`, `bias_local[4]`, `partial[4]`, saving roughly
+`8 + 4 + 2*NA` registers — but it doubles the activation side, because `sums`
+at NA, `a0..a3` at 4*NA and `acc[4]` at 4*NA are either unchanged or rebuilt
+twice. Relief is largest where slack is already largest (NA=3, minus 23 on
+g16s) and negative where slack is smallest. That is the opposite of what the
+slack model predicts, which is what falsifies the premise rather than merely
+failing the bar.
+
+Occupancy pricing under `Omega(S) = (32/S)^0.01346` with realised weights:
+`xr_split2` versus `a_base` is -0.169 percent on g16s and -0.053 on g17s;
+`xr_split2u` is -0.139 and **+0.032**. Below the 0.20 percent bar in every
+cell and on both architectures.
+
+**The register channel as a design lever is stop-listed.**
+
+### 263.10 E116 rung 2 — the round has no slack, `alpha = 1.177`
+
+Edward, W&B `7ex6rk98`. Six 512-token `mtp-timed` legs, two arms, dose
+alternating round by round inside every leg. Block 0 excluded; four legs in the
+estimate.
+
+| estimator | alpha | 95 percent CI | excludes 1.00 |
+|---|--:|---|---|
+| equal-width neighbouring round pairs | **1.177** | [1.114, 1.241] | yes |
+| equal-width DUD/UDU triples, drift cancelled | 1.118 | [0.999, 1.237] | just touches |
+
+Both at `df = 2`. **`alpha < 0.90` is refused decisively.** This is
+directional good news for every shelved kernel arm: a saving in the kernel is
+not swallowed by the round.
+
+The controls are strong. The null arm is armed identically, holds the same
+100.27 MB resident, and does zero units of work. Its paired difference is
++27.1 microseconds against the dosed arm's +1966.6, so the intrinsic period-2
+structure of the round is 1.4 percent of the effect, and residency is
+controlled by construction rather than by assumption. `all_tokens_matched` on
+all six legs; 77 rounds; mean draft 6.3766 identical across legs and arms.
+
+**`round_alignment_verified = True` on all four legs** — 77 witness lines for
+77 rounds, zero width-1 lines, fingerprint matched. This closes the E109
+`round_alignment_verified=false` defect.
+
+Frames, under rule 34: `e109_v2_control_round_us` is 171,384 microseconds, the
+mean parent `block_request_seconds` over rounds 1 to R-1. The k=4 dose is
+4 x 411.86 = 1,647.4 microseconds, 0.961 percent of that frame. E112's traced
+`--local-iterate` frame is 160,590 to 161,800, six percent lower; E109 v2's own
+frame is 177,088 because it retains round 0. Pair-difference SEM 104.2
+microseconds; triple 195.8. The sign flips against rung 1's 64-token census
+(in-situ over isolated, 0.965); trust the 512-token number.
+
+Ungated, entry 56.77 to 57.60 C with a spread of 0.83, exit 59.67 to 60.59 C.
+Cost 8.7 minutes at 86.9 seconds per leg.
+
+### 263.11 HARNESS DEFECT 20 — the two harnesses realise different width histograms
+
+On the same 512-token window, `--local-iterate` gives
+`{2:1, 4:4, 5:5, 6:5, 7:3, 8:60}` over 78 rounds and `mtp-timed` gives
+`{3:1, 4:2, 5:6, 6:5, 7:7, 8:56}` over 77 rounds. The cause is structural:
+`--local-iterate` runs a serial control leg and an MTP leg inside one process,
+and the serial leg's residency and scheduling change what the MTP leg realises.
+
+**Every realised-width weight in this campaign sits downstream of this choice
+and not one of them records which harness produced it.** Rule 34 is extended:
+name the round frame *and* name the harness. Edward withdrew his own rung-1
+"adaptive schedule" reading on discovering this, which is the correct response.
+
+### 263.12 E117 rung 0 — the kill rule fires, and the `gate_up` mechanism is dead
+
+Thorfinn. `e117_serial_nsplit_pct_faster_vs_one_dispatch_gate_up_m8` is
+**-14.276 percent, standard error 0.783**, n=8 blocks, against a +2.0 percent
+kill rule. Estimators: mean -14.276 (se 0.783), reverse-only -15.449 (0.234),
+forward-only -13.166 (1.484). `harness=local`, ungated, M4 Pro 48 GiB, base
+`1d2320be`, probe commit `61cd56fc`.
+
+**Defect 16 is fixed by construction in this probe.** Temperature is sampled
+only at block boundaries and every sample is followed by a discarded ramp burst
+of a fixed 0.30 seconds of wall clock. E115's fixed replicate count was only
+about 43 milliseconds on `gate_up`, which was not enough. Median forward minus
+reverse gap on `a_one` is now +0.277 percent on `mlp.gate_up`, -0.019 on
+`lm_head`, +1.548 on `gdn.in_proj` and +2.278 on `fa.qkv`, against E115's
++61.6 percent.
+
+**Harness defect 19 observed live.** On `fa.qkv` at M=3, forward reads 1254.7
+microseconds against reverse 300.0 in four of eight blocks. That is external
+interruption of a whole timed region, and it is the source of the six to eleven
+percentage-point standard errors below M=5 on the two small tensors.
+
+**Cross-session validation.** `lm_head` `a_one` net GB/s at M=2,3,4,5 is
+245.4/239.4/207.0/175.4, against E115 reverse-only 244.1/238.7/206.6/175.1 and
+E111 isolated 242.2/239.7/206.9/173.5. Three independent probes on two
+different students' machines agree within 0.6 percent.
+
+**Fidelity.** 45 cells; `nsplit_bit_exact` true in all 45;
+`positive_control_differs` true in all 45; `activeMemory` delta zero bytes.
+
+### 263.13 FINDING 52 — the shipped-frame M-frame cost curve for `mlp.gate_up`
+
+`grp` is the count of working groups. `qmv_fast_crossrow_affine4_g64_m` early
+returns for every threadgroup whose `first_m = tid.x * IPG` is at least M, so
+the launch is `ntg.x = M` but only `ceil(M/IPG)` groups do work.
+
+| M | partition | grp | `a_one` net us | GB/s | `e_nsplit_serial` net percent | se |
+|--:|---|--:|--:|--:|--:|--:|
+| 1 | [1] | 1 | 432.26 | 232.0 | -3.109 | 0.221 |
+| 2 | [2] | 1 | 434.08 | 231.0 | -10.704 | 6.260 |
+| 3 | [3] | 1 | 457.13 | 219.3 | -8.359 | 5.631 |
+| 4 | [4] | 1 | 592.09 | **169.4** | **+8.735** | 2.875 |
+| 5 | [5] | 1 | 664.87 | 150.8 | +1.906 | 0.455 |
+| 6 | [3+3] | 2 | 891.86 | 224.9 | +1.273 | 1.803 |
+| 7 | [4+3] | 2 | 962.53 | 208.3 | -12.670 | 0.208 |
+| 8 | **[4+4]** | 2 | 1026.43 | **195.4** | **-14.276** | 0.783 |
+| 9 | [3+3+3] | 3 | 1280.11 | 235.0 | -9.999 | 0.601 |
+
+**Round validation.** M=8 times 64 layers is 65,691 microseconds, against
+Finding 22's 37.937 percent share of edward's 171,384 microsecond frame, which
+is 65,020. The two agree within one percent. This is the first time an isolated
+kernel probe and an end-to-end round frame have been reconciled directly.
+
+**The grouping discriminator.** Two separate M=4 `[4]` dispatches cost 1184.17
+microseconds; one M=8 `[4+4]` dispatch costs 1026.43, a ratio of 0.8668. The
+shipped grouping already recovers 13.3 percent unaided. The NA=4 rate dip is
+22.75 percent when isolated (`[3]` to `[4]`, 219.3 to 169.4 GB/s) and 13.12
+percent when grouped (`[3+3]` to `[4+4]`, 224.9 to 195.4). **Fifty-eight
+percent of the dip survives grouping; forty-two percent was a single-group
+artefact.**
+
+**Pricing the null.** Using the E109 v2 histogram `{4:1, 5:1, 6:2, 7:1, 8:26}`
+with streaming shares `{4:0.0193, 5:0.0217, 6:0.0581, 7:0.0314, 8:0.8696}`:
+always splitting costs -12.53 percent of `gate_up`; splitting only where the
+cell is positive, M in {4,5,6}, gains +0.284 percent of `gate_up`, which is
++0.108 percent of round and about +0.10 percent ranked. That is half the bar,
+and it assumes a free barrier. The mechanism is dead on `mlp.gate_up`.
+
+### 263.14 A new positive cell — `gdn.in_proj` at M=8 `[4+4]`, +5.270 percent
+
+Standard error 0.196. Its M=8 rate is 172.5 GB/s against 212.8 at `[4+3]` and
+215.8 at `[3+3+3]`, so M=8 is a local pathology on this tensor rather than a
+smooth width effect. `gdn.in_proj` carries 13.859 percent of the round
+(Finding 22). Always splitting gains +3.91 percent of the tensor; splitting
+conditional on M=8 gains +4.66 percent of the tensor, which is +0.646 percent
+of round; subtracting 96 boundaries at 1.8 microseconds gives -0.168 percent;
+**net idealised ceiling is about +0.48 percent ranked, 2.4 times the bar.**
+
+Thorfinn disqualified the cell because *his serialiser* is a blocking host
+`eval` costing about 96 microseconds, which across 48 layers is 4,608
+microseconds or 4.5 percent of the round. **I ruled that the mechanism is not
+disqualified — only his instrument is.** E117 is pivoted to this cell. The
+amended primary is
+`e117_serial_nsplit_pct_faster_vs_one_dispatch_gdn_in_proj_m8`, baseline 0.0,
+maximize, with a kill if rung 0b does not replicate at least +3.0 percent or if
+rung 1 cannot get the per-boundary price under 10 microseconds.
+
+The provisional status is honest: the M=8 `gdn.in_proj` shape had the noisiest
+low-M cells in the session, so rung 0b must replicate it before rung 1 spends
+GPU time.
+
+**Rung 1, the barrier question.** Finding 17 stands: `device.cpp:545-548`
+encodes `MTL::DispatchTypeConcurrent` and `maybeInsertBarrier()` at
+`:363-374` is not editable, so thorfinn cannot *insert* a barrier — he can only
+*cause* one. The route is a false data dependency in which the second
+half-dispatch consumes something the first produces, so MLX's own dependency
+tracking inserts the barrier inside the same command buffer with no host sync.
+The cheapest observed dispatch is 1.80 microseconds and the break-even is 96
+boundaries per round.
+
+### 263.15 E118 first reading — the full arm table at NA=4
+
+Askeladd, `mlp.gate_up` K=5120 N=34816 NA=4, two blocks, standalone.
+
+| arm | us, block 0 / block 1 | vs `a_base` |
+|---|---|--:|
+| `a_base` | 490.2 / 490.5 | — |
+| `q_scaffold`, null control | 489.6 / 490.3 | +0.10 |
+| `s_bcast` | 566.3 / 566.7 | **-15.53** |
+| `s_bcast_all`, his arm | 526.8 / 526.7 | -7.42 |
+| `s_bcast_scale` | 529.2 / 529.3 | -7.93 |
+| `p_split_meta` | 490.5 / 490.5 | -0.03 |
+| `g_pack32` | 489.9 / 489.2 | +0.11 |
+| `s_bcast_pack32` | 526.5 / 526.5 | -7.38 |
+| `p_prefetch_w` | 490.4 / 490.3 | -0.01 |
+| `n_nosums`, diagnostic | 453.5 / 452.7 | **+7.60** |
+| `l_loadonly`, diagnostic | 413.1 / 408.2 | **+16.19** |
+
+All bit-exact arms are identical over 139,264 outputs. Two positive controls
+fire on every arm: one perturbed activation moves 30,303 outputs and one
+perturbed group record moves four outputs and reaches the pack32 arms.
+
+**`s_bcast_all` is askeladd's invention and it is better than the arm I
+specified.** Because `rows_per_simd * groups_per_k_block` is `4 * 8 = 32`,
+which equals `SIMD_SIZE`, one fully active load fetches every metadata word the
+simdgroup needs. Lane `j` takes row `out_row + j/8` at group offset `j%8`; lane
+`L` then reads row `r`'s word from lane `r*8 + L/4`. Eight metadata loads
+become two, with no predication, no out-of-range index, and bit exactness.
+
+**Decomposition of the shuffle cost.** `s_bcast` to `s_bcast_all`, which
+removes six predicated loads, is worth +39.5 microseconds. `s_bcast_all`
+against `a_base`, which is the cost of eight `simd_shuffle` calls alone, is
++36.6 microseconds. `s_bcast_scale` at half the fields costs +39.0, about half
+of `s_bcast`'s +76.1, so the cost is linear in field count.
+
+> **`simd_shuffle` costs more than the device load it replaces on this part.**
+
+**The open tension askeladd will settle with AIR.** Is the
+`s_bcast` to `s_bcast_all` gap the saving of six loads, or the removal of
+predication? My arithmetic says predication dominates: six loads are about 1.5
+percent, roughly 7 microseconds of a 39.5 microsecond gap. The same model
+predicts `g_pack32` is nil, which it is.
+
+**Three other results in the same table.**
+
+`g_pack32` does not replicate E111's +0.334 plus or minus 0.165 percent. This
+is the third reading and it is a null. The arm is stop-listed.
+
+`n_nosums` at +7.60 percent agrees with E111's +6.132 percent and
+**contradicts E104's -4.47 percent**. E118 arm 6 resolves the contradiction in
+E111's favour. The activation add tree is a real cost and a real target.
+
+`p_prefetch_w`, which is E104 arm P and has never before been measured on any
+host, is exactly null at NA=4. Software pipelining of the wide QMV is
+stop-listed.
+
+`l_loadonly` puts `a_base` 16.2 percent above its own load ceiling here,
+against Finding 44's +21.2 percent at the same NA. The two numbers are from
+different students, different machines and different harnesses; the gap is
+real in both.
+
+The defect-16 fix in this probe moves the temperature sample ahead of per-arm
+warm-up, discards a 150 millisecond ramp burst after every sample, and drops
+block 0.
+
+### 263.16 What the four reports change about the plan
+
+The kernel neighbourhood is now almost fully mapped and almost fully closed.
+Arithmetic, precision, packing, staging, register relief, software pipelining,
+metadata recoding, shuffle broadcast, concurrent N-split and serialised N-split
+on `gate_up` are all measured negatives. What survives is narrow and sharp:
+
+1. **The SDPA cross-simdgroup reduction tail**, Finding 50, ceiling 0.249 to
+   0.391 percent ranked. Bit exact by construction under `-fno-fast-math`.
+   Rung 0 is in flight with alphonse at zero GPU cost.
+2. **The serialised N-split on `gdn.in_proj` at M=8** with a cheap
+   false-data-dependency barrier. Idealised ceiling +0.48 percent ranked.
+   E117 rung 0b then rung 1.
+3. **A bit-exact cheaper `sums` add tree.** `n_nosums` at +7.60 percent is now
+   the largest single term on askeladd's table and it has two concordant
+   readings.
+4. **An AIR-instruction-count to microsecond cost model**, which Finding 51
+   makes plausible for the first time. If askeladd can produce a slope with a
+   usable standard error and R squared, every future bit-exact arm can be
+   priced at compile time before any GPU is booked. This is the highest
+   leverage deliverable in flight.
+
+Note that item 4 partially reopens a stop-list entry. E104 concluded that AIR
+operation counts do not predict time. That conclusion was drawn across arms
+that changed *arithmetic* instruction counts while holding loads fixed.
+Finding 51 says the binding resource is *total* issue. The reopening is
+therefore specific and licensed: total instruction count, not floating-point
+operation count, regressed against microseconds, with the classes reported
+separately.
