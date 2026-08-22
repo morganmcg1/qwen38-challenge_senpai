@@ -45,6 +45,7 @@ RUN_IDS = {
     "e118-spill-defect": "e118spil1",
     "e118-cost-model": "e118cost1",
     "e118-rung2-finding53": "e118rng21",
+    "e118-sumshoist-ceiling": "e118hst01",
 }
 
 
@@ -439,9 +440,11 @@ def log_rung2() -> None:
             ),
             "rule": (
                 "the registered rule was: stop unless the registered ceiling "
-                "n_halfsums reaches +2.5 %. It reached -0.378 % and the rule "
-                "fired. Rung 2b is an UNREGISTERED follow-up that first "
-                "de-confounds the ceiling arm from its scaffolding."
+                "n_halfsums reaches +2.5 %% at NA=4. It reached %+.3f %% and "
+                "the rule fired. Rung 2b is an UNREGISTERED follow-up that "
+                "first de-confounds the ceiling arm from its scaffolding."
+                % next((r["registered_ceiling_pct"] for r in d["rows"]
+                        if r["na"] == 4), float("nan"))
             ),
             "shape": d["shape"],
             "note": d["note"],
@@ -497,12 +500,85 @@ def log_rung2() -> None:
     run.finish()
 
 
+def log_hoist() -> None:
+    """Feedback 3's whole-table hoist, and why it is a ceiling and not an arm.
+
+    `sums` carries no `out_row`, no `simd_gid` and no `tid.y`, so the whole
+    table is recomputed once per simdgroup per threadgroup in y. Replacing the
+    computation with a load from a precomputed table is bit exact and prices
+    the entire redundancy. It is logged separately from the primary metric
+    because the delivery route is not editable from `research/`.
+    """
+    doc = summary()
+    hoist = doc.get("hoist_verdict") or {}
+    d = hoist.get("x_sumshoist")
+    if not d:
+        print("no hoist_verdict in summary.json, skipping")
+        return
+    run = start(
+        job_type="sums-table-hoist", name="e118-sumshoist-ceiling",
+        config={
+            "question": (
+                "the `sums` reduction is recomputed once per simdgroup per "
+                "threadgroup in y -- 8704 times at mlp.gate_up N=34816. What "
+                "is a bit-exact, load-paying removal of the whole redundancy "
+                "worth, and how much of the free `n_nosums` ceiling does it "
+                "capture"
+            ),
+            "method": (
+                "a tenth device buffer holding a [k_block][lane][m] table with "
+                "the per-lane stride padded to 8 floats, filled by a Metal "
+                "kernel that writes the identical expression tree in the "
+                "identical two precisions, read as one vec<float,4> at NA<=4 "
+                "and vec<float,4> plus one scalar at NA=5"
+            ),
+            "not_shippable_reason": (
+                "the host-side buffer binding lives in quantized.cpp, which "
+                "is not in editablePaths. This is a ceiling measurement for a "
+                "delivery decision, not an arm."
+            ),
+            "excludes_table_production": True,
+            **identity(),
+            **gate_flags("standalone Metal probe, ungated local timing", False),
+        },
+    )
+
+    per_na = wandb.Table(columns=[
+        "na", "sumshoist_pct_faster", "n_nosums_ceiling_pct",
+        "capture_of_ceiling", "load_price_pp"])
+    for na in sorted(d["na"], key=int):
+        h = d["na"][na]
+        c = d["nosums_na"].get(na)
+        per_na.add_data(int(na), h, c,
+                        d["capture_of_ceiling_na"].get(na)
+                        if "capture_of_ceiling_na" in d
+                        else d["capture_of_nosums_na"].get(na),
+                        (h - c) if c is not None else None)
+
+    fill = wandb.Table(columns=["shape", "table_bytes", "fill_us", "max_m"])
+    for row in doc.get("sums_table", []):
+        fill.add_data(row["shape"], row["table_bytes"], row["fill_us"],
+                      row["max_m"])
+
+    run.log({"sumshoist_per_width": per_na, "table_production_cost": fill})
+    run.summary.update({
+        "sumshoist_round_weighted_pct": d["standing_pct"],
+        "n_nosums_ceiling_round_weighted_pct": d["nosums_standing_pct"],
+        "capture_of_ceiling_weighted": d["capture_of_nosums_weighted"],
+        "shippable_from_research": d["shippable_from_research"],
+        "excludes_table_production": d["excludes_table_production"],
+        "counts_in_primary_metric": False,
+    })
+    run.finish()
+
+
 RUNS = {
     "e118-arms": log_arms,
     "e118-static-budget": log_static,
     "e118-spill-defect": log_spill_defect,
     "e118-cost-model": log_cost_model,
     "e118-rung2-finding53": log_rung2,
+    "e118-sumshoist-ceiling": log_hoist,
 }
 
 
