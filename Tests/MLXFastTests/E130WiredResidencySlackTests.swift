@@ -10,15 +10,26 @@ import Testing
 // path. The allowance is one integer literal, and the value that is correct is
 // decided by three measured bounds that no compiler and no other test checks.
 //
-// E130 rung 9 measured the failure directly: the shipped 64 MiB allowance was
-// short of the persistent post-sizing growth by 154.71 MiB, so part of the
-// tower could not stay resident and which part missed varied between runs.
+// E130 rung 9 measured the failure and rung 10 measured its mechanism. The
+// allowance is not spent when the ticket is sized: at that instant the whole
+// tower fits and tens of MiB are still free. It is spent afterwards, by the
+// persistent state the scored window allocates, and then it runs out. At the
+// shipped 64 MiB the probe measured 62.90 to 63.00 MiB consumed and under
+// 25 KB of headroom left, against a persistent growth of 218.71 MiB — so about
+// 156 MiB of persistent state never became resident.
+//
 // The bounds below are the arithmetic that replaced 64 with 512. They are
 // cheap text and integer checks, so this class of regression does not need a
 // model, a GPU, or a timed leg to catch — which is the whole point.
 //
 // Every bound has a POSITIVE CONTROL: a slack value that must fail it. A bound
 // that cannot fail is not a bound.
+//
+// RETRACTION PINNED BY THIS FILE. An earlier revision derived a page-rounding
+// tax of 34.80 to 129.23 MiB from `Memory.numResources`. That inference had no
+// measurement under it and was wrong by more than 35x. The tax is now measured,
+// and `theMeasuredPageTaxRefutesTheResourceCountModel` keeps the retracted
+// model from returning.
 
 private let sessionSourcePath = "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 
@@ -63,30 +74,63 @@ private let gib = 1 << 30
 
 /// E130 rung 9, run `e130rung9`, artifact
 /// `research/e130-artifacts/rung9-allocation-growth.json`. Persistent active
-/// growth after the sizing instant over a 1024-token window, measured on seven
-/// worker processes. MEASURED, not derived.
-private let measuredPersistentGrowthMB = 218.71
+/// growth after the sizing instant, as `growth_min_last_third_mib`. MEASURED on
+/// seven worker processes.
+///
+/// Two frames, because the same compiled constant serves every worker role and
+/// the roles do not grow by the same amount. The scored-role frame is the
+/// `mtp_decode` worker over a 512-token window. The max-over-roles frame is the
+/// largest growth any probed process reached, and it is the one bound A uses:
+/// an allowance that only covers the average role still strands the others.
+private let measuredPersistentGrowthScoredRoleMB = 218.71
+private let measuredPersistentGrowthMaxOverRolesMB = 267.79
 
-/// E130 rung 10. `Memory.numResources` at the sizing instant, identical in
-/// every probed process. MEASURED.
+/// E130 rung 10 admission probe, three worker processes, identical to the byte
+/// in all three. `wired_bytes_sum` at the greedy fill in `ResidencySet::resize`
+/// against `Memory.activeMemory` at the sizing instant. Both MEASURED, and
+/// their difference is the page-rounding tax that the residency set charges and
+/// the sizing input does not.
+private let measuredResidencySetBytesAtGreedyFill = 26_147_726_336.0
+
+/// `Memory.numResources` at the sizing instant, and the number of allocations
+/// the residency set actually holds. Both MEASURED. They differ by 2.07x
+/// because MLX serves small tensors from a 1 MiB heap that enters the set as
+/// one allocation, which is why a per-resource page charge is not a valid model.
 private let measuredResourceCountAtSizing = 4454
+private let measuredResidencySetAllocationCount = 2157
 
-/// `ResidencySet` counts page-rounded allocation sizes, while the sizing input
-/// counts buffer lengths, so every live buffer charges up to one short page of
-/// rounding against the allowance. Apple Silicon uses 16 KiB pages for the
-/// application and 4 KiB for some driver mappings; the expected case charges
-/// half a 16 KiB page per buffer and the worst case charges a whole one.
-/// DERIVED from the measured resource count, per Rule 89.
-private let derivedPageTaxExpectedMB =
-    Double(measuredResourceCountAtSizing) * 8.0 / 1024.0
-private let derivedPageTaxWorstCaseMB =
-    Double(measuredResourceCountAtSizing) * 16.0 / 1024.0
+/// E130 rung 10 admission session, `s64` and `s512` arms, three worker roles,
+/// four to five process draws each. All MEASURED at steady state.
+///
+/// These three numbers are why bound A is necessary but NOT sufficient. The
+/// allowance is a first-come-first-served pool that persistent state and
+/// scratch draw from together, and it is exhausted at BOTH sizes: the fill
+/// stops with well under 200 KB unspent either way, and gigabytes stay
+/// unwired. Raising the allowance does not reach a threshold and stop helping.
+/// It buys residency one byte at a time, at a measured slope of exactly 1.0.
+///
+/// The first value is the largest steady-state headroom left unspent by the
+/// greedy fill, over both arms and all three worker roles. The per-role values
+/// are 132,596, 24,564 and 20,468 bytes, and each role reports the SAME value
+/// in both arms even though the capacity differs by 448 MiB.
+private let measuredMaxHeadroomAtSaturationBytes = 132_596.0
+
+/// Change in admitted bytes for the 448 MiB change in allowance, in the two
+/// roles that reported no dispersion across four draws each. MEASURED, and
+/// equal to the change in allowance.
+private let measuredSlackDeltaMB = 448.0
+private let measuredAdmittedDeltaMB = 448.0
+
+/// Smallest steady-state unwired total observed in the `s512` arm. Residency
+/// demand therefore exceeds the shipped allowance by at least this much.
+/// MEASURED.
+private let measuredMinUnwiredAtS512MB = 2442.7
 
 /// Live scratch peaks near this during the scored window. The allowance must
 /// stay structurally below it: scratch that fails the fit test takes the
 /// commit-free unwired path, and an allowance large enough to admit scratch
 /// would put per-round allocation churn on the committing path instead.
-/// MEASURED.
+/// MEASURED. With bound A demoted, this is the only real ceiling.
 private let observedScratchFloorMB = 2370.0
 
 /// This 48 GiB development host. Both MEASURED with `sysctl hw.memsize` and
@@ -109,6 +153,14 @@ private let derivedRankedRecommendedWorkingSetBytes =
 /// the clamp check below demands a large headroom rather than a tight fit.
 private let measuredActiveAtSizingBytes = 26_146_704_372.0
 
+/// The page-rounding tax, as the difference of two measured byte counts rather
+/// than as a per-buffer guess. 1,021,964 B, which is 474 B per admitted
+/// allocation, or 2.9 % of one 16 KiB page: the buffers are already page
+/// multiples and there is almost nothing to round.
+private let measuredPageTaxBytes =
+    measuredResidencySetBytesAtGreedyFill - measuredActiveAtSizingBytes
+private let measuredPageTaxMB = measuredPageTaxBytes / Double(mib)
+
 /// The source keeps this margin under the recommended working set for system
 /// bookkeeping before applying the clamp.
 private let clampMarginBytes = 256.0 * Double(mib)
@@ -129,8 +181,15 @@ private func wiredTargetBytes(
     return min(requested, max(0.0, recommendedBytes - clampMarginBytes))
 }
 
+/// Bound A on the max-over-roles frame: 268.76 MiB.
 private func satisfiesBoundA(slackMB: Int) -> Bool {
-    Double(slackMB) >= measuredPersistentGrowthMB + derivedPageTaxWorstCaseMB
+    Double(slackMB) >= measuredPersistentGrowthMaxOverRolesMB + measuredPageTaxMB
+}
+
+/// Bound A on the scored-role frame alone: 219.68 MiB. Kept so the positive
+/// controls can show which frame each verdict comes from.
+private func satisfiesBoundAScoredRoleOnly(slackMB: Int) -> Bool {
+    Double(slackMB) >= measuredPersistentGrowthScoredRoleMB + measuredPageTaxMB
 }
 
 private func satisfiesBoundC(slackMB: Int) -> Bool {
@@ -147,9 +206,13 @@ struct E130WiredResidencySlackTests {
         return slackMB
     }
 
-    /// BOUND A, the floor. The allowance must cover what the scored window
-    /// allocates and keeps live after sizing, plus the page rounding the
-    /// residency set charges and the sizing input does not.
+    /// BOUND A, a NECESSARY BUT NOT SUFFICIENT lower bound.
+    ///
+    /// An allowance smaller than the persistent state the scored window keeps
+    /// live cannot be defended at any point in the design, so this still has to
+    /// hold. It does NOT mean the allowance is large enough:
+    /// `theWiredSlackIsExhaustedAtEveryMeasuredSize` shows the pool saturates
+    /// at 512 MiB as well, so clearing this bound settles nothing on its own.
     @Test
     func theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax() throws {
         let slackMB = try shippedSlackMB()
@@ -157,21 +220,96 @@ struct E130WiredResidencySlackTests {
         #expect(
             satisfiesBoundA(slackMB: slackMB),
             """
-            bound A fails: slack \(slackMB) MiB is below the measured \
-            persistent growth \(measuredPersistentGrowthMB) MiB plus the \
-            worst-case page tax \(derivedPageTaxWorstCaseMB) MiB. Part of the \
-            tower cannot stay resident, and which part misses is decided by \
-            unordered-set iteration, so the run-to-run split is a lottery.
+            bound A fails: slack \(slackMB) MiB is below the largest measured \
+            persistent growth \(measuredPersistentGrowthMaxOverRolesMB) MiB \
+            plus the measured page tax \(measuredPageTaxMB) MiB. Some worker \
+            role would exhaust its allowance during the window and leave the \
+            remainder of its persistent state off the resident path.
             """
         )
 
-        // POSITIVE CONTROLS. 64 MiB is the value E130 rung 9 falsified: it is
-        // short of the growth alone, before any page tax. 256 MiB clears the
-        // expected tax but not the worst case, which is why it was rejected as
-        // marginal rather than adopted as the fix.
+        // POSITIVE CONTROL. 64 MiB is the value E130 rung 9 falsified. It is
+        // short of the growth on either frame, before any page tax at all.
         #expect(satisfiesBoundA(slackMB: 64) == false)
-        #expect(Double(256) >= measuredPersistentGrowthMB + derivedPageTaxExpectedMB)
+        #expect(satisfiesBoundAScoredRoleOnly(slackMB: 64) == false)
+
+        // POSITIVE CONTROL at the boundary, which proves the bound is tight
+        // and not merely satisfied by a large shipped value.
+        #expect(satisfiesBoundA(slackMB: 268) == false)
+        #expect(satisfiesBoundA(slackMB: 269))
+
+        // 256 MiB is the frame-sensitive case and the reason both frames are
+        // kept. It clears the scored role and fails the worst observed role.
+        // An earlier revision rejected 256 for a page tax that did not exist;
+        // it is still rejected, but only on evidence that was measured.
+        #expect(satisfiesBoundAScoredRoleOnly(slackMB: 256))
         #expect(satisfiesBoundA(slackMB: 256) == false)
+    }
+
+    /// The allowance is exhausted at every size E130 measured, so no value of
+    /// it is "enough". This is the fact that demotes bound A, and it is pinned
+    /// here so a future reader cannot restore the floor story from the bound
+    /// alone.
+    @Test
+    func theWiredSlackIsExhaustedAtEveryMeasuredSize() throws {
+        let slackMB = try shippedSlackMB()
+
+        // The same absolute headroom is left in both arms, so measuring it
+        // against the SMALLER allowance is the weakest form of the claim.
+        // Even there the fill spends better than 99 % of what it was given.
+        #expect(
+            measuredMaxHeadroomAtSaturationBytes / (64.0 * Double(mib)) < 0.01)
+
+        // Residency demand beyond the sizing point, as what the s512 arm
+        // admitted plus what it still could not admit. An allowance below this
+        // saturates and keeps buying residency for every byte added.
+        let measuredDemandMB = Double(slackMB) + measuredMinUnwiredAtS512MB
+        #expect(measuredDemandMB > Double(slackMB))
+
+        // POSITIVE CONTROL: an allowance above the measured demand would not
+        // saturate, and the same comparison must report that.
+        #expect((measuredDemandMB > 16.0 * 1024.0) == false)
+    }
+
+    /// Admitted bytes respond one for one to the allowance. Slope 1.0 is what
+    /// makes the allowance a pool rather than a reservation, and it is why the
+    /// shipped value is justified by the timing ladder and not by arithmetic.
+    @Test
+    func theAdmittedBytesRespondOneForOneToTheAllowance() throws {
+        let slope = measuredAdmittedDeltaMB / measuredSlackDeltaMB
+        #expect(abs(slope - 1.0) < 0.005)
+
+        // POSITIVE CONTROL: a reservation model, where the allowance stops
+        // being consumed once the persistent growth is covered, admits only
+        // the growth above the old allowance and must fail the same check.
+        let reservationDeltaMB = measuredPersistentGrowthMaxOverRolesMB - 64.0
+        let reservationSlope = reservationDeltaMB / measuredSlackDeltaMB
+        #expect((abs(reservationSlope - 1.0) < 0.005) == false)
+    }
+
+    /// The retracted model must not come back. A page charge per live resource
+    /// overstates the measured tax by more than 30x, because the residency set
+    /// holds roughly half as many allocations as there are resources and those
+    /// allocations are already page multiples.
+    @Test
+    func theMeasuredPageTaxRefutesTheResourceCountModel() throws {
+        #expect(measuredPageTaxBytes == 1_021_964.0)
+
+        let bytesPerAdmittedAllocation =
+            measuredPageTaxBytes / Double(measuredResidencySetAllocationCount)
+        #expect(bytesPerAdmittedAllocation < 1024.0)
+
+        // The retracted derivation, reconstructed here only so the comparison
+        // is explicit rather than remembered.
+        let retractedExpectedTaxMB =
+            Double(measuredResourceCountAtSizing) * 8.0 / 1024.0
+        #expect(retractedExpectedTaxMB / measuredPageTaxMB > 30.0)
+
+        // POSITIVE CONTROL: the same check applied to a genuine whole-page
+        // charge must not clear the threshold, so the assertion above can fail.
+        let wholePageTaxMB =
+            Double(measuredResidencySetAllocationCount) * 16.0 / 1024.0
+        #expect((retractedExpectedTaxMB / wholePageTaxMB > 30.0) == false)
     }
 
     /// BOUND C, the ceiling, and the binding one. Keep the allowance well
