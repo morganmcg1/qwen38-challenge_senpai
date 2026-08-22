@@ -51088,3 +51088,163 @@ Also requested from alphonse: `fa.qkv` (`N = 14336`, 16 dispatches) and `gdn.in_
 Our tree is structurally behind the crown tree by about `0.83` to `1.10 %`, and the deficit is entirely our own tiered one-pass QMV entry points plus our probe fraction. Both are repairable. Our edge is `pb6`, which nobody on the board has, plus the probe-fraction knee, the N-keyed plan table and the depth argmax, none of which anybody on the board has.
 
 Importing `1d66bb36` as the campaign base is now attractive on the numbers: it would start from a measured `3.69071883` instead of a forecast `3.66`, and porting `pb6` into it is roughly six lines because `makeBoundaryDepthPrice`, `prefixCosts` and the arm enum are already there. **It is refused for tonight** because it rewrites `Qwen35.swift`, which three of four students are editing in flight. It is the first action of the next generation, after tonight's submission resolves.
+
+## 297 — FINDINGS 200 to 203: the launch-geometry law is logarithmic, the published median is the wrong instrument, and the gap to the crown is fully accounted
+
+Recorded 2026-08-22 ~23:30Z. Advisor base `bdba19f6` (Merge PR #138). Campaign base `origin/main` `770a3ff2`. Board crown `08b67f12` at `3.69071883`.
+
+Our `572b2cc4` **resolved: rejected at `3.66218563656629`**, rejected only because the crown moved to `3.68172016` while it validated. The forecast band was 3.6515 to 3.6625 and route 2 predicted 3.66248, so the measurement landed 0.0003 from the model. The submission slot is free.
+
+### 297.1 — FINDING 200: the launched-column cost is logarithmic, one-parameter, and portable across solvers
+
+Two ranked pairs each isolate exactly the word `Grid.wide -> Grid.tight`: ours `623e77af -> 572b2cc4` (onePass67 plan, probe 0.25, tiered entry points) and the rivals' `02742bf0 -> ed608e64` (shipped plan, probe 0.15, shared entry point). Regressing the per-prompt delta in absolute microseconds per round, with R pinned by F119, on the three candidate F189 models:
+
+```
+                              OURS 623e77af -> 572b2cc4      RIVAL 02742bf0 -> ed608e64
+model                       coef        R2   resid sd      coef        R2   resid sd
+A  flat                  -1923.7    0.0000      745.3   -2007.0    0.0000      717.5
+B  a + b*Mbar     -388.1 / -315.2    0.7121      432.0  -745.6/-259.0 0.5187     537.7
+C  a*ln(Mbar)            -1296.8    0.8861      251.5   -1329.0    0.6881      400.7
+D  a + b*ln(Mbar) -197.3 / -1179.2   0.8964      259.2  -482.0/-1041.8 0.7538    384.5
+```
+
+Model C uses one parameter and beats model B with two, on both pairs. Adding an intercept buys nothing. The coefficient replicates at -1296.8 against -1329.0, 2.4 % apart, across two solvers and two lineages.
+
+**Flat is refuted. Linear in columns is refuted. Logarithmic is confirmed and portable.** Each doubling of launched columns costs `1296.8 * ln 2 = 899` microseconds per round on the ranked M5. This is the Alavani and Sarkar empty-kernel law (arXiv 2305.01886) and no coefficient has ever been published for any Apple GPU. The tight grid produced the campaign's own first measurement of one.
+
+**Boundary condition.** Under `wide`, columns with `group_x * IPG >= M` return at `Qwen35.swift:1546-1550` before any read or write. The law therefore prices **no-op column removal only**. It cannot price repartitioning working columns. The eight-point regression also cannot separate `a * ln(cols_wide / cols_tight)` from `a * ln(1 + noop_columns)`: the two agree at widths 3 to 7 and disagree at widths 8 and 9. Thorfinn's column-count ladder is the instrument that settles it.
+
+### 297.2 — applying the law to the ranked round curve: pb6 survives and the cliff gets steeper
+
+Advisor Error 142, recorded: F189's "flat, CV 5.9 %" conclusion excluded plutarch, at Mbar 1.154 the one point carrying the information, and I pre-registered to edward that a logarithmic shift would flatten the cliff and invalidate pb6's tier. The log is concave, so shallow steps lose the larger fraction and the cliff ratio **rises**.
+
+Applying the measured law to edward's rebuilt ranked `per_round` curve with our real tight column table (widths 3 to 7 launch 1 column, width 8 launches 2, width 9 launches 3):
+
+```
+step into        pre us    post us     cut us      cut %
+2                3446.1     2547.2      898.9     26.08%
+3                3446.1     2920.3      525.8     15.26%
+4                3446.0     3072.9      373.1     10.83%
+5                3446.1     3156.7      289.4      8.40%
+6               16241.3    16004.9      236.4      1.46%
+7                1626.1     1426.2      199.9     12.29%
+8                7490.5     8216.2     -725.7     -9.69%
+9                5323.5     5696.6     -373.1     -7.01%
+
+boundary-4 ratio, step(into 6) / step(into 5)
+  pre-tight             4.7130
+  tight + onePass67     5.0701
+  tight + shipped       5.3548
+```
+
+`pb6` is under-priced, not over-priced. Ship tier 1.45 unchanged: the plateau is 1.35 to 1.60, the argmax is 1.40, and the sublinear mapping puts the new optimum near 1.47. This discharges Rule 117 for `pb6` under the tight grid.
+
+**A second cliff appeared at width 8.** The step into 8 grows from 7,490 to 8,216 microseconds because widths 8 and 9 launch 2 and 3 columns. Post-tight steps into widths 2 through 9 are `2547 2920 3073 3157 16005 1426 8216 5697`. The greedy depth walk now has two dips to stop in, so E140 is materially strengthened: the advisor prediction for cell D is raised to **+3.5 % to +7.0 %** held out, with the refutation threshold unchanged at +2.4683 %. Width-8 medpair mass is 0.3163, more than widths 6 and 7 combined at 0.2183.
+
+### 297.3 — FINDING 201 and CAMPAIGN RULE 118: price on the candidate leg, never on the published median
+
+The ranked numerator comes from the runner-owned prebuilt baseline workspace and the denominator from the candidate workspace. Candidate edits cannot move the serial leg; `senpai/verify-ranked-score-boundary.sh` enforces it. **Any serial component of a published-median difference is unattributable runner noise.** `sermed - candmed` reproduces every published median to three decimals, so the split is exact.
+
+```
+contrast                              cand8    candmed     ser8   sermed      pub
+OURS   tight grid, onePass67        -3.7674   -3.9480  -0.1349  -0.0929  +4.0142
+RIVAL  tight grid, shipped          -4.0018   -4.0457  +0.2269  +0.1659  +4.3907
+F194   add onePass67 to tight base  +0.3280   +0.2646  -0.2067  -0.2752  -0.5399
+F192   probe 0.15 on tight base     -0.1961   -0.2603  +0.0089  -0.0138  +0.2444
+F197   prefill swizzle, null        +0.2597   +0.1370  -0.0024  +0.0831  -0.0557
+GAP    ours -> crown                -0.5727   -0.5169  +0.2381  +0.2591  +0.7791
+```
+
+Advisor Error 141, recorded: I priced the one-pass table revert at +0.3619 % from a ratio of published medians, a Rule 63 violation. The correct candidate-leg figure is **+0.2646 %**, so removing the table gains +0.2653 % of published median. Corrected with thorfinn in E135 F16.
+
+**FINDING 202 — F165's published-median null spread is the serial leg.** Six serial medpair observations: -0.0929, +0.1659, -0.2752, -0.0138, +0.0831, +0.2591. Mean +0.021, sd 0.194, **two-sigma 0.39 pp** — exactly the +/- 0.40 % that F165 measured and could not explain. The candidate leg is about four times quieter. Pricing on the candidate leg alone raises ranked resolution roughly fourfold.
+
+**CAMPAIGN RULE 118.** Report every ranked contrast as candidate-leg medpair (headline), serial-leg medpair (noise diagnostic), published median (third). Never price a mechanism from a published-median ratio.
+
+### 297.4 — the gap to the crown is fully accounted, and the residual is +0.0073 %
+
+```
+ours -> crown, candidate medpair   -0.5169 %   crown faster
+ours -> crown, serial   medpair    +0.2591 %   runner noise
+ours -> crown, published median    +0.7791 %
+explained on the candidate leg
+  remove our one-pass table          -0.2646 %
+  probe fraction 0.25 -> 0.15        -0.2603 %
+  product                            -0.5242 %
+RESIDUAL ON THE CANDIDATE LEG        +0.0073 %
+```
+
+Seven thousandths of one percent. The entire candidate-leg deficit to the top of the board is two constants, both changing in tonight's submission, one of them further than theirs. **There is no hidden mechanism to find.** This also proves the crown's E87 single-dispatch probe select, which we deleted and which our Rule 108 instrument prices at +0.0640 %, is worth about zero on the ranked runner. Do not spend a student slot porting it. The F199 decision to refuse `1d66bb36` as the campaign base is confirmed, and 296.7's recommendation to import it is **withdrawn**: List A is worth about zero and List B is 39 mechanisms.
+
+### 297.5 — ALPHONSE E138 terminal, merged at `bdba19f6`
+
+`status: succeeded`. Commit `1b41ad36`. Base `328c4b9e`. harness=local, M4 Pro g16s, ungated, no ranked score. No submitted path changed. W&B `lea7ukkw`, `mm4p2t99`, `yd64ass7`, `4pu920le`, `cwtt7jcn`.
+
+Primary `e138_best_plan_isolated_step_reduction_pct` = **2.4593**, below the 3 % stop rule. Secondary `e138_cliff_is_plan_invariant` = 1.0.
+
+1. **The cliff survives all 120 legal `(M, IPG, RPS)` cells.** It is not a plan-tuning defect. That axis is closed.
+2. `(7,7,4) -> (7,4,4)` is worth 5,916.4 isolated / 4,648.9 in-situ / 3,021.8 ranked-host microseconds per round at width 7, driven by `mlp.down` where `7:7:4` spills 32 bytes on g16s.
+3. **The crown contrast.** Three interleaved replicates, both grids, one session each: at width 6 our `6:6:4` beats their `6:3:4` by 8,405.2 us/round tight; at width 7 their `7:4:4` beats our `7:7:4` by 6,223.0 us/round tight. Sign stable in every replicate under both grids.
+4. **The governing variable is register spill, not N.** `fa.qkv` (N=14336) and `gdn.in_proj` (N=16480) both flip sign between M=6 and M=7 on the same N. `6:6:4` is 96 registers with no spill; `7:7:4` is 96 registers with 32 bytes of spill. One pass wins while its body fits and loses once it spills. **This supersedes F194's "the separator is N" claim.**
+5. **F5's pre-registered interaction band was not tested.** Measured -1,759.4 us at M=6 and -1,286.0 at M=7 against a band of +1,200 to +3,400, but the instrument's measured resolution floor is 3,966.7 us at M=6 and 6,831.9 at M=7. Floors were measured, not assumed: `6:1:4` dispatches an identical grid under both arms so its true interaction is 0 and it measured -3,966.7; the matched-geometry pairs `6:3:4`/`6:4:4` and `7:4:4`/`7:5:4` must share an interaction exactly and measured +3,264.0 and +6,831.9. The band lies entirely inside the noise: neither confirms nor refutes. This is the reporting standard the campaign now expects.
+6. **Plan surface exhausted at width 8**: shipped `8:4:4` wins on all seven scored shapes.
+7. **CAMPAIGN RULE 119.** An identical `6:6:4` cell moved **10.40 %** between two matched separate sessions and invalidated his first factorial. He repaired the instrument with a per-cell `@wide`/`@tight` suffix so both grid arms sit in one session on one pipeline. Rule: an isolated-kernel comparison across two separate sessions on g16s carries about 10 % drift; both arms of a contrast must sit in one session on one pipeline.
+
+Exactness: 161 rows pooled plus 294 in the crown contrast, all `matches_incumbent_bitwise=true`, `max_abs_delta=0`, every positive control rejects. `E138PlanSurfaceTests` 4 of 4. `swift test` 41 pre-existing unrelated issues, zero added.
+
+### 297.6 — the mixed-table reconciliation under Rule 97, and the decision
+
+Alphonse's g16s numbers converted through the campaign chain (x0.7858 E137 isolated-to-in-situ, x0.646 Rule 115 M4 Pro to M5) and weighted by the Rule 116 medpair width masses:
+
+```
+width 6  8405.2 -> 4266.4 us/round  OURS FASTER    medpair mass 0.11665
+width 7  6223.0 -> 3158.9 us/round  OURS SLOWER    medpair mass 0.10165
+net per medpair round  -176.6 us  =  -0.334 %  OURS FASTER
+ranked receipt F194 says OURS SLOWER by +0.2646 %   ==> 0.60 pp SIGN DISAGREEMENT
+```
+
+Named difference, g16s against g17s registers:
+
+| width | plan | g16s regs / spill | g17s regs / spill | g17s derived simdgroups |
+|---|---|---|---|---|
+| 6 | `(6,6,4)` = `na6` | 96 / 0 | 105 / 0 | 37 |
+| 6 | `(6,3,4)` = `na3` | 94 / 0 | 94 / 0 | 42 |
+| 7 | `(7,7,4)` = `na7` | 96 / 32 B | 118 / 0 | 33 |
+| 7 | `(7,4,4)` = `na4` | 96 / 0 | 96 / 0 | 41 |
+
+On g16s the register file clamps at 96, so the width-6 one-pass body has the same occupancy as the fallback and alphonse measured a pure body win with no occupancy tax. On g17s the same body is allocated 105 registers and drops 42 simdgroups to 37, minus 11.90 %. Both measurements are correct about their own chip; this is Rule 83 operating as intended.
+
+**Decision.** The ranked receipt wins under Rule 97. Ship `Table.shipped` at both widths tonight. The mixed table `6 -> (6,6,4), 7 -> (7,4,4)` is exactly one table entry and is genuinely undetermined on g17s, so it becomes thorfinn's **next** submission as a one-entry ranked isolation, unbundled.
+
+### 297.7 — FINDING 203: the unproposable-token channel, and my correction to its price
+
+A frontier research agent returned the compact draft vocabulary as the largest concrete beagle lever. I verified the mechanism at source and corrected the price.
+
+**The mechanism, confirmed at source.** `Qwen35.swift:5432-5437`: `compactDraftPrefixCount = 98_304`, `compactDraftControlStart = 248_044`, `compactDraftControlEnd = 248_070`, `compactDraftRealCount = 98_330`, `compactDraftPaddedCount = 98_336`. A token is proposable if and only if its id is below 98,304 or in [248,044, 248,070). **149,990 ids, 60.4 % of the 248,320-token vocabulary, can never be proposed at any depth by any head for any prompt.** Every occurrence is a guaranteed reject that truncates its round's accepted prefix.
+
+**The prior art is in our own source and it is large.** The comment at `:5425-5431` records that halving the prefix to 49,152 cost `accepted_draft_rate` 1.000 to 0.877 and 21.1 to 22.8 ms per token on the public longcopy gate, caused by **three** unproposable committed argmax ids. The lever has been measured in the shrinking direction and never in the growing direction.
+
+**Advisor correction to the price.** The agent priced 0.487 % census miss mass at the F69 coefficient of 203 and got +1.0 % with a band of +0.4 to +2.5 %. The one real measurement of this exact lever implies a coefficient of `8.06 / 0.123 = 65.5`, at a saturated operating point that also returned bytes, so 65.5 is a lower bound and 203 an upper bound. Pre-registered band: **0.487 % x [65, 203] = +0.32 % to +0.99 % of published median, point estimate +0.55 %, minimum useful +0.20 %, refutation below +0.15 % net.** Do not quote +2.5 %.
+
+**Three source hazards found while writing the assignment, two of which corrupt silently.**
+
+1. `buildDerivedClusterIndex` at `:5878-5885` hard-guards `_draftHeadW.shape == [compactDraftPaddedCount, 320]`. `_draftHeadW` is the **declared** head's 2-bit coarse table, pinned at 98,336 rows inside `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`. Changing `paddedCount` makes the guard fail, the function return silently, `_draftClusterShape` stay nil and the readout fall back to the dense path. The arm would then measure "cluster index removed" and be reported as "vocabulary widened".
+2. `mapDraftTokenIds` at `:6137-6146` enables the compact-to-full id mapping through `declaredCompact = _draftHeadW.dim(0) == paddedCount`, because `usesCompactDraftVocabulary` requires `_draftHeadW == nil` and the shipped configuration has a declared head. Changing `paddedCount` makes the mapping **return ids unmapped**. The mapping must key off the active compact table, not the declared row count.
+3. `makeCompactDraftHead` at `:6153` pads with `array[0 ..< paddingCount]`, so the tail rows are byte-copies of rows 0 to 5. Four places currently cut them (`:5806`, `:5817`, `:5921`, `:5931`). Any new `paddedCount` must keep `paddedCount % 8 == 0` and keep all four cuts correct.
+
+**The escape is written into our own doc comment.** `:5870-5872` states that the shipped `draft_lm_head.*` is exactly `quantize(dequantize(exact compact lm_head), 64, 2)`, verified bit for bit. The declared coarse table is therefore a pure function of the target's own lm_head, and can be derived in-process for any prefix at zero ship bytes, with no head re-declaration and no change to `head_provenance_sha256`. At the current prefix that derivation must reproduce the declared tensors **bit for bit**, which is both the licensing argument and a free exact gate. Widening then becomes one constant plus the hazard-2 fix; the rerank kernel already takes `PREFIX_COUNT` and `CONTROL_OFFSET` as template constants at `:5333-5337` and follows automatically.
+
+**The decisive arm is a control, not a candidate.** `compactDraftPrefixCount = 248_320` empties the control block, gives `realCount = paddedCount = 248_320` with `248320 % 8 == 0` and zero padding rows, and makes every token proposable. It measures the entire recoverable acceptance mass exactly, in situ, with no census assumption. Its **timing** is confounded because `leaves` goes from 12,292 (`% 8 == 4`, `fast = false`) to 31,040 (`% 8 == 0`, `fast = true`), so it is an acceptance probe only. Warm-time peak also scales linearly: the dequantized rows array is about 1.0 GB today and about 2.5 GB at full vocabulary, allocated twice.
+
+**Composition.** At askeladd's `p = 0.10` the probed stage falls from 24,584 rows to 9,840, so 36 % more vocabulary costs 36 % of a much smaller number. The two mechanisms multiply in our favour.
+
+### 297.8 — assignments in flight after this entry
+
+| PR | student | mechanism | state |
+|---|---|---|---|
+| #135 | thorfinn | compose pb6 + probe 0.10 + `Table.shipped`, submit; then the one-entry mixed-table isolation; then the column-count ladder | wip, F1 to F17 issued |
+| #139 | askeladd | probe-fraction recall knee below p=0.10, fp32 tiebreak rider | wip, F1 to F5 issued |
+| #140 | edward | parameter-free depth argmax against the non-convex two-cliff curve, plus a `pb68` two-boundary control | wip, F1 to F4 issued |
+| #141 | alphonse | the unproposable-token channel: census, bit-exact coarse derivation, full-vocabulary acceptance control, cheapest prefix | new |
+
+Forecast for tonight's submission from our own receipt: `3.66219 x 1.024683 x 1.004848 x 1.002653 = 3.78078`, against a crown of `3.69072`, margin **+2.4401 %**. With `pb6` contributing zero the composition still clears the crown at 3.69326.

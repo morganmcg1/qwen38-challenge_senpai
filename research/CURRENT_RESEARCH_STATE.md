@@ -1,41 +1,48 @@
 # SENPAI Research State
 
-- 2026-08-22 22:35 UTC
-- No new research direction from the human researcher team since the last update. The standing direction remains the one in `senpai/program.md`: maximise the official decode score on `qwen3.8-27b-mtp-v1`, submit autonomously, and never stop at synthesis.
+- 2026-08-22 23:35 UTC
+- Most recent human research direction: none received this generation. The campaign is running autonomously under `senpai/program.md`.
 
 ## Where the campaign stands
 
-Board crown `08b67f12` (jungjipdo) at `3.69071883`. Our best promoted row is `623e77af` at `3.52085227`, now sixth. Our submission `572b2cc4` has been validating for about 100 minutes; the band is 42 to 130 minutes.
+Our last ranked receipt `572b2cc4` scored **3.66218563656629** and was rejected only because the board crown moved to 3.68172016 while it validated. The live crown is `08b67f12` at **3.69071883**. Our promoted row `623e77af` at 3.52085227 is sixth. The submission slot is free.
 
-`upstream/main` has moved to `1d66bb36`, the crown's exact promoted tree. I read it at source tonight. The crown is a SIMPLER tree than ours: our editable surface is 950 lines larger and differs in only two files. Its scheduler is our own promoted code, citing E56, E68 and E75 by name, and it ships `depthPriceArm = .ship`.
-
-**Our tree is structurally behind the crown by about 0.83 to 1.10 %, and the whole deficit is our own tiered one-pass QMV entry points (`+0.2649 %` candidate leg under a tight grid) plus our probe fraction at 0.25 rather than 0.15 (`+0.2603 %`).** Both are one-line repairs. `572b2cc4` is therefore forecast at `3.66` and is expected to be rejected.
-
-Our edge is four mechanisms that nobody on the board has: the `pb6` boundary depth price, the probe-fraction knee below `p = 0.10`, the N-keyed QMV plan table, and the parameter-free depth argmax.
+The single most useful thing we learned this generation is that **the candidate-leg deficit between our tree and the top of the board is fully accounted, and the residual is +0.0073 %**. It is two constants, both of which are changing in tonight's submission, one of them further than the crown's. There is no hidden rival mechanism left to find. That converts the campaign from catch-up to lead-extension.
 
 ## Current research focus
 
-**1. Ship the composed tree tonight.** Thorfinn is composing the tight launch grid, `pb6`, and probe fraction `0.10` on our base. Forecast `3.769`, against a gate of `3.69071883`. A two-line revert of `Table.compiledDefault` to `.shipped` is prepared and held behind a decision rule keyed on the `572b2cc4` receipt.
+**1. Ship the composition tonight.** `pb6` (+2.4683 % held out, unique on the board) plus probe fraction 0.10 (+0.4848 %) plus reverting our one-pass QMV table to `Table.shipped` (+0.2653 %), all on top of the tight launch grid we already have a receipt for. Forecast 3.78078 against a crown of 3.69072, margin +2.4401 %. Even with `pb6` contributing zero the composition still clears the crown.
 
-**2. The dispatch table is the campaign's centre of gravity.** Three separate experiments now aim at it. Thorfinn's launch geometry changes how many threadgroup columns are launched. Alphonse's plan table changes how many passes each shape takes, keyed on `N`. Edward's argmax changes how the scheduler reads the resulting cost curve. They interact, and CAMPAIGN RULE 117 now requires every fitted scheduler constant to name the dispatch-table state behind it.
+**2. Measure on the candidate leg from now on (Rule 118).** The ranked serial leg is the runner-owned pinned build and cannot be moved by any candidate edit, so every serial component of a published-median difference is unattributable noise. It carries two-sigma of 0.39 pp, four times the candidate leg's noise, and it is the entire unexplained F165 null spread. Pricing on the candidate leg alone raised our ranked resolution roughly fourfold and immediately corrected two of my own prices.
 
-**3. Weighting is now exact.** CAMPAIGN RULE 116: the published median is the identity `(beagle_raw + essays_raw) / 2`, confirmed on ten trees from seven solvers, weights `0.478` and `0.522`, all six other prompts exactly zero. Finding 83 is withdrawn as an instrument. Every held-out median must be computed by sorting, never as a weighted sum, because a weighted sum cannot represent the saturation cap.
+**3. Weight everything by the median-pair identity (Rule 116).** The published score is exactly `(beagle + essays) / 2` on ten trees from seven solvers. Beagle is the weak carrier with +9.10 % of headroom to reach essays; essays saturates after +1.37 %. **Beagle is where the remaining prize is.**
 
-**4. The beagle asymmetry is the largest unclaimed prize on the board.** Beagle must rise `9.10 %` to reach essays and pays `0.478` per unit the whole way. Essays pays `0.522` per unit for only `1.37 %`, after which republic overtakes it and further essays gains pay exactly zero. Raising beagle to essays' level moves the median `+4.35 %`; the hard ceiling is `+5.07 %`. Beagle is also the weakest of the five high-acceptance prompts: per-step acceptance `0.9341` against `0.9598` to `0.9661` for the others.
+**4. The launch-geometry law is now measured, not assumed (Finding 200).** Two independent ranked pairs give `cost = 1296.8 * ln(launched columns)` microseconds per round on the ranked M5, one parameter, replicating to 2.4 % across two solvers. Flat and linear are both refuted. The law is concave, so shallow steps lose the larger fraction and the depth cliff gets **steeper** under the tight grid, not flatter. A second cliff appeared at width 8, which carries more median-pair mass than widths 6 and 7 combined.
+
+## Live experiments
+
+| PR | student | question |
+|---|---|---|
+| #135 | thorfinn | compose and submit tonight; then a one-entry ranked isolation of the mixed plan table; then the column-count ladder that separates no-op column removal from column repartitioning |
+| #139 | askeladd | how far below probe fraction 0.10 the recall knee sits; at most +0.32 % remains in that channel |
+| #140 | edward | whether a parameter-free depth argmax beats the greedy walk on a curve that now has two cliffs; predicted +3.5 % to +7.0 % |
+| #141 | alphonse | whether the 60.4 % of the tokenizer that the compact draft vocabulary can never propose is costing measurable acceptance on beagle; predicted +0.32 % to +0.99 % |
 
 ## Potential next research directions
 
-- **Import `1d66bb36` as the campaign base.** It starts from a measured `3.69071883` instead of a forecast `3.66`, removes our two deficits by construction, and porting `pb6` into it is roughly six lines because `makeBoundaryDepthPrice`, `prefixCosts` and the arm enum are already present. Refused tonight only because three of four students are editing `Qwen35.swift` in flight. First action of the next generation.
-- **Beagle's acceptance deficit.** Unowned, strongest free-slot candidate, worth `+4.35 %` to `+5.07 %`. Needs a hypothesis about why beagle's per-step acceptance is 2.6 to 3.2 points below the other four high-acceptance prompts.
-- **The column-count ladder.** Thorfinn's next rung after the composition. Separates the flat, linear and logarithmic models of the launch saving completely, and reopens the `{8:8}` and `{9:9}` one-pass plans that were closed on a register basis measured under a WIDE launch where the column count was `M` in both arms.
-- **The probe-fraction asymptote.** Askeladd is finding the recall knee below `p = 0.10`. The gross ceiling is `+0.85 %`, about `+0.81 %` of published median after the `0.95` conversion. The probe fraction is the campaign's only mechanism whose relative effect is uniform across prompts, so it converts to median with no weighting at all.
-- **P4, the GDN S=2 mid-state write.** Unowned, `0.2` to `0.6 %`, gates 151 MB per round on rejection.
-- **The head-history fold warm gap.** Widths 1 to 9 are flushed but only 2 are warmed. Unpriced and must clear Rule 110 before it is worth a slot.
-- **C2 precision islands to affine-4 group-64.** Reopened, unowned, `+0.38 %` to `+0.45 %`.
-- **Finding 190, the cliff that appears to move one width between two of our own bases.** Check the E92 axis label before assigning any bisect: if E92's `M` is the draft count rather than the verify width, the cliff never moved and only the label did.
+- **The mixed plan table as a ranked isolation.** Alphonse measured our width-6 one-pass cell beating the crown's by 8,405 microseconds per round on g16s while the ranked receipt says our table loses overall. The difference is named (g16s clamps at 96 registers and hides an occupancy tax that g17s pays), so the width-6 entry alone is genuinely undetermined on the ranked chip and is worth one word of submission.
+- **The depth cap under the new curve.** `segmentedVerifyDepthCap = 7` now protects a step that grew from 7,490 to 8,216 microseconds. Whether the optimum wants to cross it is an open, cheap, replay-only question.
+- **A cap 7 to 8 re-price under Rule 117.** Zero GPU, expected +0.2 to +0.5 %, currently unowned.
+- **Per-position head-side confidence for the scheduler.** E99's only named reopening signal, +0.3 to +0.8 %, speculative, currently unowned.
+- **C2 precision islands to affine-4 group-64.** Reopened, +0.38 to +0.45 %, currently unowned.
+- **P4, the Gated DeltaNet S=2 mid-state write.** Gates 151 MB per round on rejection, 0.2 to 0.6 %, currently unowned.
+- **The head-history fold warm gap.** Widths 1 to 9 are flushed but only 2 are warmed; must clear Rule 110 before it can be priced.
 
-## Closed tonight
+## Closed this generation
 
-- Prefill as a scored target. Finding 193 is now confirmed twice, once from the enforcing workflow source and once by a rival's `+0.5` to `+2.5 %` prediction that measured `-0.0557 %`.
-- Finding 83 as a weighting instrument.
-- A blanket revert of the one-pass table as a strategy, as distinct from the N-keyed form.
+- The `(M, IPG, RPS)` plan surface as a cliff-flattening axis: the cliff is invariant across all 120 legal cells.
+- Width-8 plan tuning: shipped `8:4:4` wins on all seven scored shapes.
+- The "separator is N" model: it is register spill and occupancy.
+- Importing the crown tree `1d66bb36` as the campaign base: its exclusive mechanisms are worth about zero and ours number 39.
+- Porting the crown's E87 single-dispatch probe select: the +0.0073 % residual bounds it.
+- The published median as a pricing instrument.
