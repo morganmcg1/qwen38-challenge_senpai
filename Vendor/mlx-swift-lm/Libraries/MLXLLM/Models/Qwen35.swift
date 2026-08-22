@@ -1882,10 +1882,36 @@ public enum Qwen35CustomQMV {
 
     public static let tiers: [Int] = Set(widthPlan.map(\.ipg)).sorted()
 
-    /// Launch geometry for one routed cell. `y` carries `n / (2 * rps)`
-    /// threadgroups of two simdgroups.
+    /// How many threadgroups the `x` axis carries.
+    ///
+    /// `wide` launches `m` of them and `tight` launches `ceil(m / ipg)`, which
+    /// is the number that do any work: group `g` starts at `first_m = g * ipg`
+    /// and `qwen_e120_qmv_m` returns immediately once that reaches `M`. The
+    /// two settings are bit-identical by construction, because the groups
+    /// `tight` removes write nothing.
+    ///
+    /// This matters most where `rps` is small. `y` carries `n / (2 * rps)`
+    /// threadgroups, so halving `rps` doubles the launched total while the
+    /// working total stays at `ceil(m / ipg) * n / (2 * rps)`. Under `wide` the
+    /// one-pass table therefore pays twice the launch count of the shipped
+    /// table at M = 6, 7 and 8 for the same work, which prices the table
+    /// against itself. Under `tight` both tables launch the same count.
+    public enum Grid: String {
+        case wide
+        case tight
+    }
+
+    public static let grid: Grid = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_GRID"]
+        guard let raw, let parsed = Grid(rawValue: raw) else { return .wide }
+        return parsed
+    }()
+
+    /// Launch geometry for one routed cell.
     static func launch(m: Int, n: Int) -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int)) {
-        ((m * 32, n / plan(m: m).rps, 1), (32, 2, 1))
+        let entry = plan(m: m)
+        let columns = grid == .tight ? (m + entry.ipg - 1) / entry.ipg : m
+        return ((columns * 32, n / entry.rps, 1), (32, 2, 1))
     }
 
     /// Rung 2b instrument. Set `MLX_E120_QMV_PIPELINE_LOG` to a writable path
@@ -1960,6 +1986,7 @@ public enum Qwen35CustomQMV {
               "arm": "\(arm.rawValue)",
               "entry": "\(entry.rawValue)",
               "table": "\(table.rawValue)",
+              "grid": "\(grid.rawValue)",
               "plan": "\(planWitness)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),

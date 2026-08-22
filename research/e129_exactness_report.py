@@ -14,9 +14,18 @@ import json
 import pathlib
 import sys
 
-LEGS = (("base", "shared switch, shipped plan"),
-        ("tier", "tiered switch, shipped plan"),
-        ("onep", "tiered switch, one-pass plan"))
+LEGS = (("base", "shared switch, shipped, wide grid"),
+        ("tier", "tiered switch, shipped, wide grid"),
+        ("onep", "tiered switch, one-pass, wide grid"),
+        ("basetight", "shared switch, shipped, tight grid"),
+        ("tiertight", "tiered switch, shipped, tight grid"),
+        ("oneptight", "tiered switch, one-pass, tight grid"))
+
+# A tight-grid leg must reproduce its wide-grid leg element for element. That
+# is a stronger statement than "both are bit exact against quantizedMM",
+# because it also covers the rows where the one-pass table is already wrong:
+# dropping the empty threadgroups must not change even a wrong answer.
+GRID_PAIRS = (("base", "basetight"), ("tier", "tiertight"), ("onep", "oneptight"))
 
 
 def read(path: pathlib.Path) -> list[dict]:
@@ -65,20 +74,43 @@ def main() -> int:
         if tabled and summary[leg]["table_controls_live"] != len(tabled):
             failures.append("%s: a chunk-sum table control did not fire" % leg)
 
-    print("%-6s %-30s %5s %10s %9s %s" % (
+    grid_pairs = {}
+    for wide, tight in GRID_PAIRS:
+        left, right = read(root / ("%s.json" % wide)), read(root / ("%s.json" % tight))
+        if not left or not right:
+            continue
+        key = lambda r: (r["shape"], r["width"], r["arm"])  # noqa: E731
+        by_key = {key(r): r for r in left}
+        moved = [key(r) for r in right
+                 if key(r) in by_key
+                 and (r["differing_elements"] != by_key[key(r)]["differing_elements"]
+                      or r["max_abs_diff"] != by_key[key(r)]["max_abs_diff"])]
+        grid_pairs["%s->%s" % (wide, tight)] = {
+            "rows_compared": len(by_key), "rows_moved": len(moved), "moved": moved}
+        if moved:
+            failures.append("%s vs %s: the tight grid changed %d rows %s"
+                            % (wide, tight, len(moved), moved[:6]))
+
+    print("%-10s %-38s %5s %10s %9s %s" % (
         "leg", "configuration", "rows", "bit exact", "controls", "widths"))
     for leg, _ in LEGS:
         row = summary.get(leg)
         if row is None:
-            print("%-6s %-30s  MISSING" % (leg, "-"))
+            print("%-10s %-38s  MISSING" % (leg, "-"))
             continue
-        print("%-6s %-30s %5d %10d %9d %s" % (
+        print("%-10s %-38s %5d %10d %9d %s" % (
             leg, row["description"], row["rows"], row["bit_exact"],
             row["controls_live"],
             "".join(str(w) for w in row["widths"])))
 
+    if grid_pairs:
+        print("\ndropping the empty x threadgroups, element for element:")
+        for name, pair in grid_pairs.items():
+            print("  %-22s %d of %d rows moved" % (
+                name, pair["rows_moved"], pair["rows_compared"]))
+
     (root / "summary.json").write_text(json.dumps(
-        {"legs": summary, "failures": failures,
+        {"legs": summary, "grid_pairs": grid_pairs, "failures": failures,
          "pass": not failures}, indent=2) + "\n")
 
     if failures:

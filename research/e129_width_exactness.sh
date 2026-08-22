@@ -37,12 +37,13 @@ echo "shapes          ${SHAPES}"
 echo "out             ${OUT}"
 
 run_leg () {
-    local name="$1" entry="$2" table="$3"
+    local name="$1" entry="$2" table="$3" grid="${4:-wide}"
     echo
-    echo "=== leg ${name}: entry=${entry} table=${table} ==="
+    echo "=== leg ${name}: entry=${entry} table=${table} grid=${grid} ==="
     MLXFAST_RUN_MLX_RUNTIME_TESTS=1 \
     MLX_E120_QMV_ENTRY="${entry}" \
     MLX_E120_QMV_TABLE="${table}" \
+    MLX_E120_QMV_GRID="${grid}" \
     MLXFAST_E120_SHAPES="${SHAPES}" \
     MLXFAST_E120_EXACT_OUT="${OUT}/${name}.json" \
     MLX_E120_QMV_PIPELINE_LOG="${OUT}/${name}-pipelines.json" \
@@ -54,9 +55,14 @@ run_leg () {
 
 # The shared switch on the shipped plan is the control: it is the built worker
 # today, so a failure here indicts the harness and not the new widths.
-run_leg base shared_switch shipped
-run_leg tier tiered_switch shipped
-run_leg onep tiered_switch onepass
+run_leg base shared_switch shipped wide
+run_leg tier tiered_switch shipped wide
+run_leg onep tiered_switch onepass wide
+# `tight` drops the x threadgroups that return before doing any work. It must
+# leave every row bit identical, on both tables and on the shared switch.
+run_leg basetight shared_switch shipped tight
+run_leg tiertight tiered_switch shipped tight
+run_leg oneptight tiered_switch onepass tight
 
 echo
 python3 research/e129_exactness_report.py "${OUT}"

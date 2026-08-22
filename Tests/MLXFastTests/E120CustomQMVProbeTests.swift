@@ -283,6 +283,27 @@ struct E120CustomQMVProbeTests {
         #expect(onePass[9]!.0 == shipped[9]!.0)
     }
 
+    /// The `x` axis launches one threadgroup per column and only
+    /// `ceil(m / ipg)` of them reach any work. This asserts the arithmetic on
+    /// both tables, so the empty count that `tight` removes is a recorded
+    /// number and not a claim in a comment.
+    @Test("the tight grid launches exactly the threadgroups that do work")
+    func tightGridLaunchesOnlyWorkingColumns() throws {
+        for (name, plan) in [("shipped", Qwen35CustomQMV.shippedPlan),
+                             ("onepass", Qwen35CustomQMV.onePassPlan)] {
+            for entry in plan {
+                let working = (entry.m + entry.ipg - 1) / entry.ipg
+                #expect(
+                    working <= entry.m,
+                    "\(name) M=\(entry.m): more working columns than columns")
+                // Group `working - 1` must start below M, and group `working`
+                // must not, or the tight count is wrong in one direction.
+                #expect((working - 1) * entry.ipg < entry.m)
+                #expect(working * entry.ipg >= entry.m)
+            }
+        }
+    }
+
     @Test("every tier of every table has its own entry-point name")
     func everyTierHasADistinctEntryPoint() throws {
         #expect(Set(Qwen35CustomQMV.shippedPlan.map(\.ipg)).sorted() == [3, 4, 5])
