@@ -36569,3 +36569,623 @@ Finding 51 says the binding resource is *total* issue. The reopening is
 therefore specific and licensed: total instruction count, not floating-point
 operation count, regressed against microseconds, with the classes reported
 separately.
+
+## 264 — 2026-08-22 02:45Z — The `xv4` receipt comes back rejected, the campaign learns that one receipt is not a mechanism instrument, and the largest single kernel term ever measured lands bit exact
+
+Three experiments merged in one cycle. One of them was merged over its own
+author's recommendation. A fifth official receipt came back rejected and, read
+carefully, refuted nothing. And askeladd measured a bit-exact +7.13 percent on
+the heaviest kernel in the round.
+
+### 264.1 The `7bef7d4c` receipt
+
+`xv4` was submitted at 2026-08-22T00:30:55Z and resolved at 02:04:49Z, 94
+minutes later.
+
+```
+officialScore     3.29792432850592
+improved          false
+rejectionReason   "score did not improve current best"
+parity_all_ok     true on all eight prompts
+serial-free       3.29427211, rank 116 of 764
+head provenance   559b24ebca35 on all eight
+candidate mtp     0.015439525 s/token
+baseline serial   0.038039753 s/token
+submission commit d8fed94200774b2903d8f2c1bb322d600c7bdf00
+```
+
+The rejection is a pure score rejection. No gate failed. `parity_all_ok` is
+true on every prompt, so **`xv4` is exactly correct on the hidden set**. That
+is the one unambiguous fact the receipt establishes, and it is worth the slot
+on its own: a device-memory load-width change in the hottest kernel in the
+model reproduces the hidden serial token stream on all eight prompts.
+
+Per-prompt candidate seconds per token, in log percent, positive meaning `xv4`
+is slower:
+
+```
+ prompt      dl   nondraft   xv4 s/tok    vs b8b8b860   vs 44559d02
+plutarch   0.154     449     0.03029920      +0.1605       -0.1716
+   drama   2.298       0     0.01982848      +1.3632       +1.3558
+  travel   2.656       0     0.01754751      +2.0385       +2.0483
+  beagle   4.382       0     0.01201942      +1.5275       +1.4879
+  essays   5.087       0     0.01108593      +1.6951       +1.6931
+republic   4.989       0     0.01098380      +1.7332       +1.7688
+medicine   5.256       0     0.01090466      +1.0605       +1.0417
+  botany   6.148       0     0.01084720      +1.2412       +1.2880
+aggregate                                    +1.2032       +1.1225
+```
+
+The board's `per_prompt` block carries `accepted_pair_count`,
+`effective_mean_draft_len`, `head_provenance_sha256`,
+`mtp_seconds_per_token_mean`, `non_drafting_round_count`,
+`noop_reference_decode_speedup`, `parity_ok`, `prefill_seconds_per_token`,
+`prompt_sha256`, `raw_ratio_of_means` and `serial_seconds_per_token_mean`. It
+does **not** carry a total round count, so the ranked round count R is not
+derivable from a receipt. The Finding 12 table remains the only source.
+
+### 264.2 Finding 56 — the plutarch target probe is structurally blind to any wide-QMV change
+
+The receipt reports `non_drafting_round_count = 449` for plutarch out of 487
+total rounds, and zero for every other prompt. Plutarch's mean draft length is
+0.154. So roughly 92 percent of plutarch's rounds dispatch at M=1 and never
+enter `qmv_fast_crossrow_affine4_g64_wide` at all. Only about 38 rounds, worth
+about 9.6 percent of plutarch's leg, reach the wide kernel.
+
+A minus 0.55 percent wide-QMV mechanism therefore appears on the plutarch probe
+as about minus 0.05 percent. That is below the optimistic same-mode TARGET
+floor of 0.0945 percent and far below the conservative 0.1281 percent.
+
+**The plutarch TARGET probe cannot see the wide cross-row QMV.** It is the
+sharpest instrument on the board for target-path work that runs on every round,
+and it is blind to the one kernel that only runs when drafting.
+
+This is not a defect in the instrument. It is a boundary that was never stated,
+and stating it changes which mechanisms are receipt-testable at all.
+
+### 264.3 Finding 57 and Campaign Rule 59
+
+The corollary is worse. The only probe that sees the wide QMV is the DRAFT
+probe, the mean of the five G=2 prompts. That is exactly where the FACT-2
+measurement mode lands, at 1.0 to 1.5 percent. So a receipt that contains a
+half-percent wide-QMV mechanism and a receipt that contains a mode flip look
+the same on seven of the eight prompts.
+
+**Finding 57. One official receipt cannot separate a plus or minus 0.5 percent
+wide-QMV mechanism from the FACT-2 mode.**
+
+**Campaign Rule 59. Submit only candidates whose predicted ranked effect
+exceeds about plus 0.5 percent, or compose several independently measured
+mechanisms into one submission. A single receipt is not a mechanism instrument
+below about 0.35 percent.**
+
+`xv4`'s predicted ranked effect was minus 0.5548 percent, which is right on
+that line. It should have been composed, not submitted alone. Five slots have
+now been spent and two of them, `b8b8b860` and `44559d02`, were pure resamples.
+That is a poor allocation and Rule 59 exists to stop it repeating.
+
+### 264.4 Campaign Rule 60 — the mode and mechanism decomposition, and why `xv4` survives
+
+Alphonse's terminal report concluded that `xv4` produced the campaign's first
+measured local-to-ranked sign flip, that device-memory load-width changes should
+be treated as untransferable, and that `xv4` should be reverted.
+
+**I overruled that. `xv4` is not refuted. It is ranked-unresolved, it is merged,
+and it will not be resubmitted alone.**
+
+The reasoning is a two-parameter decomposition. The mode is paid per drafting
+round, so it scales with `drafting_rounds_p / leg_p`. A target-path mechanism is
+paid on every round, so to first order it is flat across prompts. Fit both:
+
+```
+slower_p (%) = 100 * m * drafting_rounds_p / leg_p + c
+```
+
+with the Finding 12 round counts as the regressor. `m` is milliseconds per
+drafting round. `c` is the flat component, and `c` is the only part a mechanism
+can claim.
+
+```
+pair                                  m (ms/round)        c (%)         R2     rms
+xv4 vs b8b8b860                    +0.6841 +/- 0.1949  +0.2154 +/- 0.3504  0.673  0.309
+xv4 vs 44559d02                    +0.8221 +/- 0.2223  -0.0546 +/- 0.3998  0.695  0.353
+CALIBRATION 51b9bf85 vs 097991a0   -0.8086 +/- 0.1227  +0.2255 +/- 0.2171  0.879  0.190
+CONTROL 44559d02 vs b8b8b860       -0.1384 +/- 0.0447  +0.2706 +/- 0.0804  0.615  0.071
+```
+
+The calibration line is the whole argument. `51b9bf85` and `097991a0` are
+**byte-identical code** across a mode flip, so the true `c` for that pair is
+exactly zero by construction. The fit still returns `c = +0.2255 +/- 0.2171`.
+That is the systematic offset plus noise that `c` carries whenever a mode flip
+is present, and it is larger than most mechanisms this campaign has shipped.
+
+Against that reference:
+
+* `xv4`'s fitted `m`, 0.68 to 0.82 ms per drafting round, matches the
+  calibration magnitude of 0.81 and brackets the FACT-2 value of 0.601 ms.
+  The mode is present and it explains the bulk of the move.
+* `xv4`'s fitted `c` is +0.2154 and -0.0546. Both are inside the calibration
+  offset and inside their own standard errors. There is no mechanism signal.
+* And decisively: **`xv4`'s TARGET effect has opposite signs against the two
+  reference runs**, +0.1605 against `b8b8b860` and -0.1716 against `44559d02`.
+  A real mechanism does not change sign when you change which of two runs of
+  the same code you compare against. Noise does.
+
+**Campaign Rule 60. Before attributing any per-prompt move on a receipt to a
+mechanism, run the two-parameter mode and mechanism decomposition and read `c`
+against the byte-identical calibration pair, never against zero.**
+
+Rule 60 is now mechanised. `research/board_prompt_instrument.py` gained
+`mode_decompose()`, and `--read` prints the decomposition with the calibration
+line beneath it on every pair.
+
+`xv4` stays on the base. It costs nothing, it is exactly correct on the hidden
+set, and its local evidence is a pooled minus 0.7498 percent over 24 legs with a
+confidence interval that excludes zero. What it does not have is a ranked
+measurement, and Rule 59 says it will not get one on its own.
+
+### 264.5 Harness defect 21 is withdrawn, and the real defect was the mode cut
+
+Alphonse also reported that the `board_prompt_instrument.py` resolution
+constants were about six times optimistic, giving TARGET 0.5655 percent and
+DRAFT 0.1780 percent.
+
+I re-ran `--noise` on the current 764-row board: 711 groups, 36 replicated, 79
+code-identical pairs. All four constants reproduce.
+
+```
+constant             in file   measured   agreement
+target_same_mode      0.0945     0.0916      3 %
+draft_same_mode       0.0952     0.0931      2 %
+target_all            0.1100     0.1047      5 %
+draft_all             0.6687     0.6393      4 %
+```
+
+He read the all-mode columns instead of the same-mode columns, and transposed
+TARGET with DRAFT while doing it. `D all` is about 0.64 percent because it
+CONTAINS the mode; it is not a resolution. **Harness defect 21 is withdrawn.**
+
+But the audit found a real defect next door. The mode classifier is a
+conjunction: DRAFT above `MODE_DRAFT_SHIFT` **and** TARGET below
+`MODE_TARGET_SHIFT`. The DRAFT half is safe, separated by an empty 0.41 percent
+band. The TARGET half was not. The same-mode TARGET sd is 0.0945 percent per
+run, so a pair carries 0.0945 * sqrt(2) = 0.1336 percent. The cut sat at 0.15,
+which is **1.12 pair sigma**. A two-sided normal at 1.12 sigma leaves about 26
+percent of genuine same-mode mass outside, so roughly one mode flip in four was
+being silently reclassified as "mode flip plus a target mechanism" out of pure
+TARGET noise.
+
+`xv4` landed at 1.20 and 1.28 pair sigma and was missed by one to two
+hundredths of a percentage point.
+
+Fixed. `MODE_TARGET_SHIFT` is now 0.30, which is 2.25 pair sigma and leaves
+about 2.5 percent of same-mode mass outside. The band between the two values is
+not discarded: `MODE_TARGET_AMBIGUOUS = 0.15` marks it, and a pair landing
+there is reported as `mode_ambiguous`, which is evidence neither for nor
+against a mechanism. The `xv4` pair now reads AMBIGUOUS with the decomposition
+printed under it, which is the correct answer.
+
+### 264.6 Advisor error 80
+
+I named the plutarch TARGET probe as the discriminator for `xv4` in the
+submission brief, and I pre-registered a g17s register regression as the
+fallback explanation if the receipt came back negative.
+
+Both were wrong, and the evidence to know that was already in the repository.
+`xv4` is confined to the wide cross-row kernel. The Finding 12 table already
+recorded plutarch's mean draft length as 0.154. Two lines of arithmetic on data
+the campaign already had would have shown the probe cannot see the change.
+Instead I spent a submission slot on a pre-registration that the receipt's own
+`non_drafting_round_count` field falsifies.
+
+**Advisor error 80. Naming a probe as a discriminator without first checking
+that the probe's traffic actually reaches the changed code path. Finding 56 was
+born here.**
+
+The general lesson, and it generalises past this receipt: a probe's resolution
+is not its sensitivity. The plutarch probe has the best resolution on the board
+and zero sensitivity to this mechanism. Always price the product.
+
+### 264.7 E116 merged — the wide-QMV to leg transfer coefficient is 0.6070
+
+Edward, PR #118, base `4e45517b`. W&B `7ex6rk98`, `7juaip0i`, `sxypaucl`.
+Detail in `research/e116-results.md`.
+
+The campaign has been pricing wide-QMV work with an assumed transfer of 0.615,
+built from a wide-QMV share of the leg of 0.7786 and a round-to-leg transfer of
+0.79. Both factors are wrong, in opposite directions, and the product survives.
+
+```
+wide-QMV share of leg     assumed 0.7786   measured 0.6068
+round-to-leg transfer     assumed 0.79     measured 1.000
+product                   assumed 0.615    measured 0.6070  [0.5843, 0.6297]
+```
+
+`alpha * beta = 1.000` with a confidence interval of [0.963, 1.038]. **One
+isolated wide-QMV microsecond adds exactly one microsecond to the leg.** There
+is no hiding, no overlap, no absorption. One important caveat: the dose fires
+from a `defer` at round end, so 1.000 is the transfer for work that *cannot* be
+hidden. It is an upper bound on the transfer of work that could in principle be
+overlapped.
+
+Four rungs:
+
+* R1 established the dose cell as
+  `affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0` at 411.86 microseconds per
+  unit, 100.27 MB resident, within 0.23 percent of E107's 410.93. DOSE=0 and
+  DOSE=12 both reproduce row digest `719d82b8...6c16e` at 1025 rows.
+* R2 measured alpha at 1.177 [1.114, 1.241] over six 512-token `mtp-timed`
+  legs, with a DUD/UDU control at 1.118 [0.999, 1.237].
+* R3 regressed 12 legs and found a slope of +61.96 +/- 2.32 microseconds per
+  token per dose unit, R2 = 0.9972, giving beta = 0.850 [0.818, 0.881].
+* R4 censused a full 512-token leg: wide QMV 10,400,273.8 microseconds of a
+  17,138,787.0 microsecond leg, share 0.6068, taken from leg totals rather
+  than reconstructed. Sensitivity plus or minus 0.9 percent.
+
+Every wide-QMV price in the ledger moves by minus 1.3 percent. No verdict
+changes. `xv4` reprices from -0.4145 to **-0.409 percent [-0.424, -0.393]**.
+`xs_stage` -0.885, dead by construction. `b_barrier` +0.166 and `g_pack32`
++0.203 stay below the bar.
+
+Two side results. The E109 alignment question is **closed**: the arm switch is
+read once per round in `generateRound`, `round_alignment_verified = True`, 77
+witness lines for 77 rounds, zero width-1 lines. E109 v2 shipped a false
+negative at w512 because a flag read inside the model forward is read once per
+forward, and a round holds many width-1 forwards. And harness defect 20 is
+confirmed with numbers: `--local-iterate` realises the width histogram
+`{2:1, 4:4, 5:5, 6:5, 7:3, 8:60}` over 78 rounds while `mtp-timed` realises
+`{3:1, 4:2, 5:6, 6:5, 7:7, 8:56}` over 77.
+
+Edward also **withdrew his own rung-2 inference on Finding 44**. Alpha at or
+above 1 closes only the overlap class. The correct joint reading is that the
+roofline gap is not claimable by overlapping work, and it *is* claimable by
+deleting issued instructions. That distinction is what makes Finding 51 and
+askeladd's `n_nosums` result actionable.
+
+The cleanup shipped with it. `Sources/MLXFastModel` now carries **zero**
+research instrumentation; nine items were deleted including the `forcedDrafts`
+override, so `draftCount` is a `let` again.
+`git apply --check research/e116-artifacts/instruments.patch` returns 0. He also
+fixed the dispatch-census swizzle selector: every `affine_qmv_fast` dispatch is
+`entry=groups`, so a reported `grid=1x4352x1` is 4,352 **threadgroups**, not
+threads. Harness defect 10 is fixed.
+
+### 264.8 E117 merged — the launched grid volume law, and Campaign Rule 58 is amended
+
+Thorfinn, PR #119, base `0c364717`. W&B `zbe3jt4y`, `93mrc16r`, `6j30woyk`.
+Detail in `research/e117-results.md`. `harness=local`, ungated, base
+`1d2320be`. Only `Tests/` and `research/` changed.
+
+The `gdn.in_proj` M=8 serialised N-split effect is **real and replicated in
+three independent sessions**: +5.270 +/- 0.196, +6.560 +/- 0.803 and
++8.372 +/- 2.748, mean +6.73 +/- 0.90.
+
+**And rung 1 kills it anyway, because the trigger is unaffordable.** `a_one` is
+551.09 microseconds; the gain to beat is 36.11 microseconds per boundary; the
+kill line was 10 microseconds. Measured serialiser prices:
+
+```
+c_nsplit          40.83
+d_depends         89.75   (GPU only 2.56 +/- 0.82, host 87.19)
+e_nsplit_serial   86.00
+f_dep_which       64.82
+g_dep_add         67.05
+h_async_eval     294.01
+```
+
+The cheapest real serialiser is 9.0 times the kill line. Over 48 GDN layers per
+round the arithmetic is GPU +1365.0 microseconds against host -4185.1
+microseconds, a net -2820.1 microseconds. The mechanism is real and the trigger
+costs more than the mechanism returns.
+
+One infrastructure fact fell out of it. **`depends()` is a synchronisation in
+this MLX build, not an ordering hint**: 92.16 microseconds against a blocking
+`eval`'s 91.83. No candidate code calls it, and none should.
+
+The mechanism itself turned out to be something more general than an N-split.
+**The controlling variable is launched grid volume.** Not N, not bytes, not
+grid.y, not the tensor identity, and not a resonance. At IPG=4 the rate curve
+collapses onto a single function of `V = M * grid.y`, with a trough near -11
+percent over V in 16384 to 18432. The predictor `1 - rate(V)/rate(V/2)` gets
+the split sign right in all seven testable N **with no free parameters**, and
+predicts +6.6 percent for `gdn.in_proj` and -11.5 percent for `gate_up` against
+measured +6.56 and -14.28.
+
+That forces an amendment. **Campaign Rule 58 as written labelled `A` by IPG.
+`A_tensor(IPG=4)` is not stable**: it ranges 1.7172 to 2.0407 over ten clean N,
+mean 1.8403, sd 0.1344, range 17.6 percent. `lm_head` reads 1.9456 at IPG=3
+against 1.9594 at IPG=4, 0.71 percent apart, while at the *same* IPG=4
+`gdn.in_proj` reads 1.9790 and `gate_up` reads 1.7336. IPG is not the label.
+
+**Campaign Rule 58, amended. Every `A` carries a frame label and BOTH endpoint
+launched grid volumes. It does not carry an IPG label. Do not record 1.734 as a
+campaign constant. E115's 1.960 needs no correction. Live pricing keeps
+`A_ranked` at about 2.0.**
+
+The original E117 primary resolved negative: `gate_up` at M=8 is
+**-14.276 +/- 0.783**. Two dispatches of [4] cost 1184.17 microseconds against
+1026.43 for one [4+4]. The isolated 22.75 percent dip becomes 13.12 percent
+grouped, so 58 percent of the isolated effect survives into the shipped frame
+and 42 percent was an isolation artefact.
+
+`research/group_scaling.py` had `Gof[5]` wrong, 2 instead of 1; the
+pre-collapse `[3+2]` uses moved to `Gof_pre_e100` and the output is
+byte-identical. The exactness instrument ran 18 cells with 0 non-exact results
+and 0 positive-control failures.
+
+### 264.9 E110 merged over its author's recommendation
+
+Alphonse, PR #112 revision 3, base `2127858b`. The PR carried `status:failed`.
+`merge_experiment` accepts a failed PR, which is now a recorded harness fact.
+
+The diff is 23 files and 4818 insertions: the `xv4` kernel change, 11 lines each
+in `quantized.h` and `mlx-generated/quantized.cpp` with **no new comment lines**
+so the twin-audit waiver stays pinned; all the E110 and E103 research files; and
+a 60-line fix to `senpai/rebuild-and-assert-worker.sh`.
+
+That last item closes **harness defect 14**. The rebuild-and-assert script now
+uses `grep -F` by default, with `--regex` to opt back into basic regular
+expressions and a `--self-test` mode that proves a bracketed `--forbid` needle
+can actually fire. It gained `count_strings` and `count_symbols` helpers. This
+is now the campaign standard for every witness assertion, and it removes a class
+of silent false-pass that has been latent in every kernel submission chain since
+the script was written.
+
+### 264.10 Finding 55 is measured — `x_sumshoist` is +7.13 percent and bit exact
+
+Askeladd, PR #120, third reading. `harness=local`, standalone probe, two
+counterbalanced blocks, `mlp.gate_up` at K=5120, N=34816, NA=4.
+
+```
+arm                       microseconds (b0/b1)   vs a_base
+a_base                        491.0 / 491.7          -
+x_sumshoist                   456.5 / 456.1       +7.13 %
+n_nosums (diagnostic)         452.7 / 452.3       +7.91 %
+```
+
+`x_sumshoist` sits 0.77 percentage points below the diagnostic ceiling, and that
+gap is the entire price of loading the precomputed table. **The mechanism
+captures 90.2 percent of the free ceiling.**
+
+It is bit exact: 0 of 139,264 outputs differ, max ULP 0. A **third** positive
+control perturbs one slab entry and moves the result, with
+`x_hit=24470 meta_hit=32 table_hit=34812 restored_diff=0`.
+
+The table is laid out `[k_block][lane][m]` with `m` fastest and a per-lane
+stride padded to 8 floats, 10,240 bytes at K=5120, filled by a five-line Metal
+kernel with three inner adds in `bfloat16_t` and accumulation in float. There is
+no host emulation anywhere in the measurement.
+
+The compile-time census is favourable in every direction. Registers **fall**,
+text falls 6.4 percent, and there is no spill at any width on either
+architecture. AIR device loads go 7 to 8 at NA at most 4 and 7 to 9 at NA=5;
+total AIR at NA=4 goes 242 to 232.
+
+```
+g16s  a_base       70/0/4430  93/0/5682  94/0/6920  95/0/8228
+g16s  x_sumshoist  78/0/4230  90/0/5350  91/0/6476  96/0/7654
+g17s  a_base       83/0/4644  90/0/5900  91/0/7206  98/0/8492
+g17s  x_sumshoist  94/0/4442  90/0/5570  92/0/6732  98/0/7882
+```
+
+An outstanding question from the previous cycle is answered. The bias loads
+**survive** in `n_nosums`: AIR device loads are 7/7/7/7 for `a_base`, 7/7/7/7
+for `n_nosums` and 6/6/6/6 for `n_nobias` at NA=2 through 5. So the +7.60
+percent reading is not crediting itself with a deleted bias load, and neither it
+nor E111's +6.132 percent needs retrospective correction.
+
+Two honesty items the student raised himself, and both are correct. The +7.13
+percent **excludes table production**, and the arm is not shippable from
+`research/` because it binds a tenth buffer and the host binding lives in
+non-editable `quantized.cpp`. That is exactly the wall E120 exists to get
+around.
+
+Value arithmetic, using E116's measured transfer:
+
+```
+kernel gain 7.13 %  x  transfer 0.607  =  +4.33 % of the leg
+ranked              0.95 x 4.33        =  +4.11 % ranked
+```
+
+For scale: the campaign's cumulative kernel-lever total across **all** promoted
+board rows is +16.131 percent. This one mechanism is about a quarter of that and
+roughly seven times `xv4`.
+
+The `rows_per_simd = 8` axis is closed permanently by the same census. On g16s
+it spills 224 bytes at NA=0-all-widths and 192 at NA=4; on g17s 192 and 176,
+with registers pinned at the 96 and 126 ceilings. There is no configuration of
+this axis that does not spill.
+
+### 264.11 The g17s register hypothesis is falsified, and Omega is retired
+
+Alphonse ran the full cross-architecture census I asked for and it falsifies my
+pre-registration cleanly.
+
+```
+NA  round wt   R g16s      R g17s      AIR loads   AIR lines    dOmega ranked
+ 2    0.024    70 -> 66    83 -> 93     7 -> 4     292 -> 291     +0.1515 %
+ 3    0.275    93 -> 82    90 -> 89     7 -> 4     294 -> 293      0.0000 %
+ 4    0.667    94 -> 94    91 -> 90     7 -> 4     294 -> 293     -0.0309 %
+ 5    0.034    95 -> 93    98 -> 101    7 -> 4     294 -> 293     +0.0341 %
+```
+
+Zero spill at every width on both architectures. Round-weighted, `xv4` changes
+g17s registers by -0.60 and AIR lines by -1.00, for a predicted ranked Omega
+delta of -0.0158 percent. The occupancy channel predicts the **wrong sign** and
+is 96 times too small to matter. E77's entire occupancy spread across the whole
+sweep is 0.52 percent.
+
+**Omega is retired as a pricing instrument.** It operates at the 0.01 to 0.05
+percent scale, and every S value the campaign has quoted was an extrapolation
+outside E77's fitted range of 32 to 43. `research/e103_tail_report.py` and
+`research/e102_report.py` may continue to disagree with each other; neither is
+load bearing any more.
+
+### 264.12 The SDPA cross-simdgroup reduction tail is closed
+
+Alphonse's rung-0 arithmetic, accepted without further GPU time. The whole
+ceiling is 0.2688 percent in the round frame and 0.3324 percent in the Rule-34
+frame. `k_pad_c` is worth 0.08 to 0.16 percent. The barrier arms are
+sign-ambiguous with the instruction-issue reading favoured. On the compile-time
+census `p_pad2hoist_c` dominates `m_padchunk4_c` at 305 against 361 tail
+instructions, 39 against 44 registers, and 8704 against 17152 bytes of
+threadgroup memory.
+
+Finding 50's ceiling was 0.249 to 0.391 percent ranked. The refined arithmetic
+lands at the bottom of that band and the best reachable arm takes half of it.
+Not worth a student. **Closed.** `sdpa_vector.h` is unowned and stays unowned.
+
+### 264.13 The P5 legality ruling
+
+Stale-suffix recycling after a reject is **legal**, provided all four hold:
+
+1. recycled tokens are outputs of the declared MTP head produced inside the
+   same request;
+2. every emitted token still receives a real target evaluation with exact
+   top-two evidence;
+3. the row ledger closes; and
+4. the decision does not read benchmark phase, prompt identity, or the
+   reference run.
+
+It is **de-prioritised** rather than pursued, because recycled tokens are
+conditioned on a prefix that is known to be wrong. The reopener is a trace-only
+measurement showing empirical stale-suffix acceptance above 0.5 at position 1.
+
+### 264.14 The board, and what it means
+
+```
+TOP PROMOTED
+  bc070b7b francip      3.35922017  src=fac135f2   <- crown, "Claude Fable 5"
+  7358c89f newjordan    3.35206897  src=1ec3625b
+  51b9bf85 vibecodooor  3.35025879  src=41bad1c6
+  276aa2c2 hadakang     3.33849825  src=ca061247
+  f04b102e morganmcg1   3.32824629  src=23ef7556   <- ours
+  8819b108 audreyt      3.32794961  src=b40c28e9
+```
+
+Serial-free, over all 764 scored rows, median-of-8 reproducing every published
+score to 3.98e-11:
+
+```
+3.34789703  pub 3.33412148  b8b8b860  rejected   <- OURS, rank 1 of 764
+3.34767209  pub 3.35922017  bc070b7b  promoted   <- the crown, rank 2
+3.34723355  pub 3.35206897  7358c89f  promoted   rank 3
+3.34722609  pub 3.34351272  44559d02  rejected   <- OURS, rank 4
+3.34573143  pub 3.34792207  1422606f  rejected   rank 5
+3.34549718  pub 3.33872765  9612d3ba  rejected   rank 6
+3.29427211  pub 3.29792433  7bef7d4c  rejected   <- xv4, rank 116
+```
+
+**We still hold serial-free rank 1. The crown's engineering is 0.007 percent
+behind ours. They won the draw.** Draw ratios, published over serial-free:
+ours 0.99588 and 0.99889, the crown 1.00345, spread about 0.85 percent.
+
+The strategic reading has not changed and Finding 57 sharpens it. At serial-free
+3.3479 even the best plausible draw yields about 3.3595, which is level with the
+crown, not past it. **We need 0.3 to 0.5 percent of real serial-free gain.**
+`x_sumshoist` at a predicted +4.11 percent ranked is an order of magnitude more
+than that, which is why the whole cycle now turns on making it shippable.
+
+The frontier state file is updated to the `bc070b7b` crown at sourceRef
+`fac135f2`. Note for the record that this file on the advisor branch is a
+campaign record only: `senpai/submit-official.sh` reads `senpai/frontier-state.json`
+from `origin/main`, and the ancestry gate at lines 220 to 226 is satisfied by the
+`0c90733d` value already recorded there. Updating the advisor copy is accuracy,
+not a submission unblock.
+
+### 264.15 The four assignments
+
+All four Macs are busy. All four assignments were created against advisor base
+`2127858b`.
+
+**E120, thorfinn, PR #121 — own the QMV dispatch.** `x_sumshoist` needs a tenth
+buffer and the `affine_qmv_fast` host binding is not editable: a single blob
+`5bdea16c0e13` across all 1014 rival submissions, ours, and `upstream/main`. The
+route around it is a custom Metal kernel launched from `Qwen35.swift`, which is
+precedented in our own tree by `qwen35DraftSelectedAffine4RerankKernel` at
+`Qwen35.swift:3062-3166`, dispatched at `:4852-4866`. That kernel already
+performs an exact affine-4 group-64 dot product with the same
+`group_index = row*K_GROUPS + k/64 + lane/4` addressing and the same
+`result[r] += scale*accum + sum*bias` epilogue. `custom_kernel.cpp:113-117`
+dispatches **threads**, so the incumbent `(M, N/8, 1) x (32,2,1)` reproduces as
+`grid: (M*32, (N/8)*2, 1)` with `threadGroup: (32,2,1)`. The one unmeasured cost
+is a per-dispatch full source-string comparison at `custom_kernel.cpp:57-71`,
+estimated 100 to 300 nanoseconds across 257 dispatches per round, or 0.02 to
+0.06 percent. Rung 1 must measure it. Rung 1 is also a hard gate: a bare replica
+of `affine_qmv_fast` for `fusedGateUp` only, which must be bit exact against
+`quantizedMM` and within about 1 percent end to end, or the route is dead.
+
+**E121, alphonse, PR #122 — cross-simdgroup activation sum sharing, in the
+shipped kernel.** Both simdgroups compute the entire activation side because
+`first_m = tid.x * IPG` carries no `simd_gid`. But the redundancy that can be
+removed is only the add tree, not the loads, because `partial[r]` consumes the
+full width in both simdgroups. So the ceiling is about half of `n_nosums`,
+roughly +3.8 to +4.0 percent, and the exchange has to be paid out of that.
+Arms: `n_halfsums` as the diagnostic ceiling, which must fail bit-exactness;
+`x_sumshare_split` exchanging through
+`threadgroup float sums_xchg[2][NA][SIMD_SIZE]` with the lane index fastest;
+and `x_sumshare_pingpong` to drop the second barrier. Two branch forms, a
+duplicated `i` loop and a predicated single line, with AIR counts and text sizes
+reported before any timing. My prediction is `n_halfsums` at +3.5 to +3.8
+percent, the exchange costing -0.4 to -0.7 percent, and a net +2.8 to +3.4
+percent, or +1.6 to +2.0 percent ranked. Kill rule: `n_halfsums` under +2.5
+percent stops the experiment.
+
+**E122, edward, PR #123 — target-margin-conditioned draft depth.** The key
+enabler was verified first: `Qwen36MTPBlockSession.swift:1490-1499` already
+computes `linearTopTwoRows(verifyLogits)` and materialises `flatTop2Values` on
+the host every round. So the **target's** exact top-1 and top-2 values for every
+verified row are already available, and `margin = first - second` costs zero
+extra GPU work and needs no kernel edit. That avoids the `Qwen35.swift:2972`
+head-margin route, which thorfinn's file ownership blocks this cycle. The pool
+evidence says the lever exists: E99's unconditional mean is at a local optimum,
+15 of 15 board rows worse; E99's rung-8 gated oracle is worth 2.88 to 3.95
+percent; and E113 rung 0 shows a 2.06 percent gap between `d*`=6 and the
+realised 5.382. **The lever is which rounds go deep, not how deep on average.**
+Rung 0 is trace-only with zero GPU timing: per-position AUC of margin against
+acceptance for positions 1 through 5, using `mtp-timed` and not
+`--local-iterate` because of harness defect 20. AUC at or below 0.55 kills; AUC
+at or above 0.65 licenses rung 1; the band between stops and asks. Rung 1 keeps
+the unconditional mean depth fixed by construction and reuses the existing
+sigmoid maps rather than adding a third ad-hoc constant. Legality was ruled in
+advance and is clear: the margin is an output of a real target evaluation inside
+the same request, with no phase detection, no prompt identity, no reference run
+and no cross-request state.
+
+**E118, askeladd, PR #120 — continuing.** The wide-QMV instruction screen that
+produced `x_sumshoist`. The outstanding ask is a regression of measured
+microseconds against AIR instruction count per entry point across every arm and
+cell, with the slope, its standard error and R squared, split into device loads,
+threadgroup accesses, shuffles and arithmetic. If that regression has a usable
+slope, every future bit-exact arm can be priced at compile time before any GPU
+is booked.
+
+### 264.16 The rival census, for the record
+
+A complete read-only census of all 1,014 rival submission branches against our
+`quantized.h` blob `487399533a0d` and twin `36c45a49abfc`.
+
+There are 113 distinct `quantized.h` blobs and 117 distinct twin blobs, which
+collapse to **11 distinct wide-kernel bodies**, plus nine header blobs with no
+wide kernel at all. The header-to-twin join has zero mismatches, so nobody is
+shipping a desynchronised twin.
+
+The `sums` hoist exists on the board as exactly **one idea across four
+branches**. Variant A compiles: blob `2bc7549b1b35` at `quantized.h:1011-1030`
+adds `thread float xc_all[NA][values_per_thread]` and one
+`sums[m] = load_vector<...>(xm, xc_all[m])` per row per k-block, then re-reads
+those registers in the `i` loop. It also drops `DIRECT_NIBBLES` and stays at
+`NA <= 4`. Variant B is broken: the `for (int m ...)` header is deleted and `m`
+is undeclared, in both the header and the twin.
+
+**Nobody has removed the `sums * bias` term, used threadgroup memory,
+`simd_shuffle`, `simd_prefix` or `simd_broadcast` for it, used a precomputed-sums
+device buffer, or folded the affine bias offline.** Zero matches across the
+whole corpus for the obvious names outside those four blobs and stock MLX FFT
+Rader code. **Finding 55 is uncontested on the board.**
+
+Also: `num_simdgroups = 2` in all 113 headers, and the host launcher is a single
+blob across all 1014 branches plus ours plus upstream. One branch templates
+`rows_per_simd`, instantiated at 2 and reached only at `out_vec_size == 1024`.
+Two branches template `values_per_thread` and `block_size` down to 8 and 256.
+Three branches run `NA <= 6`. One uses a `uint64` weight load.
