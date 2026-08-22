@@ -62,6 +62,13 @@ struct E138PlanSurfaceTests {
         #expect(!E138Cell(m: 6, ipg: 5, rps: 4).legal)
         #expect(!E138Cell(m: 5, ipg: 4, rps: 4).legal)
         #expect(!E138Cell(m: 9, ipg: 8, rps: 4).legal)
+
+        // The stock cell is not a plan, so the tail rule does not apply to it.
+        let stock = E138Cell(m: 6, ipg: 0, rps: 0)
+        #expect(stock.isStock)
+        #expect(stock.legal)
+        #expect(stock.label == "6:stock")
+        #expect(!E138Cell(m: 6, ipg: 6, rps: 4).isStock)
     }
 
     @Test(.enabled(if: E138PlanSurfaceTests.enabled))
@@ -120,20 +127,29 @@ struct E138Cell: Hashable {
     let ipg: Int
     let rps: Int
 
+    /// `ipg == 0` is not a plan. It selects the stock MLX quantized matmul at
+    /// this width, so the surface can separate a plan effect from a
+    /// replica-versus-stock code difference in one interleaved block.
+    var isStock: Bool { ipg == 0 }
+
     /// `Qwen35.swift:1545`, `static_assert(M % IPG != 1)`. A one-row tail group
     /// would take the clamped `TAIL >= 2 ? TAIL : 2` branch at
     /// `Qwen35.swift:1556` and read and write one row past `M`.
-    var legal: Bool { ipg >= 1 && ipg <= m && m % ipg != 1 }
-    var passes: Int { (m + ipg - 1) / ipg }
-    var label: String { "\(m):\(ipg):\(rps)" }
+    var legal: Bool { isStock || (ipg >= 1 && ipg <= m && m % ipg != 1) }
+    var passes: Int { isStock ? 0 : (m + ipg - 1) / ipg }
+    var label: String { isStock ? "\(m):stock" : "\(m):\(ipg):\(rps)" }
     var name: String { "e138_qmv_m\(m)_ipg\(ipg)_rps\(rps)_v1" }
 }
 
 private func e138ParseCells(_ raw: String) -> [E138Cell] {
     raw.split(separator: ",").compactMap { entry in
-        let parts = entry.split(separator: ":").compactMap {
-            Int($0.trimmingCharacters(in: .whitespaces))
+        let fields = entry.split(separator: ":").map {
+            $0.trimmingCharacters(in: .whitespaces)
         }
+        if fields.count == 2, fields[1] == "stock", let m = Int(fields[0]) {
+            return E138Cell(m: m, ipg: 0, rps: 0)
+        }
+        let parts = fields.compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
         return E138Cell(m: parts[0], ipg: parts[1], rps: parts[2])
     }
@@ -198,6 +214,11 @@ private func e138Kernel(_ cell: E138Cell) -> MLXFast.MLXFastKernel {
 private func e138Matmul(
     _ cell: E138Cell, _ x: MLXArray, _ weight: E138QuantWeight, tight: Bool
 ) -> MLXArray {
+    if cell.isStock {
+        return quantizedMM(
+            x, weight.w, scales: weight.scales, biases: weight.biases,
+            transpose: true, groupSize: 64, bits: 4)
+    }
     var outShape = x.shape
     outShape[outShape.count - 1] = weight.n
     let columns = tight ? cell.passes : cell.m
@@ -286,8 +307,11 @@ private func e138Sweep(
             "ipg": cell.ipg,
             "rps": cell.rps,
             "passes": cell.passes,
-            "launched_columns": tight ? cell.passes : cell.m,
-            "threadgroups_per_column": shape.n / (2 * cell.rps),
+            "is_stock": cell.isStock,
+            "launched_columns": cell.isStock
+                ? 0 : (tight ? cell.passes : cell.m),
+            "threadgroups_per_column": cell.isStock
+                ? 0 : shape.n / (2 * cell.rps),
             "seconds_per_call": cellSamples[cellSamples.count / 2],
             "samples": cellSamples,
             "reference_seconds_per_call": refSamples[refSamples.count / 2],

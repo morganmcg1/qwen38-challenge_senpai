@@ -160,10 +160,17 @@ def weighted_total(table: dict, shapes: dict, choice: dict[str, str]) -> float:
     return total
 
 
+def sort_key(label: str) -> tuple:
+    parts = label.split(":")
+    if parts[-1] == "stock":
+        return (int(parts[0]), 99, 99)
+    return tuple(int(p) for p in parts)
+
+
 def cells_at_width(table: dict, m: int) -> list[str]:
     return sorted(
         {entry["cell"] for entry in table.values() if entry["m"] == m},
-        key=lambda label: tuple(int(p) for p in label.split(":")),
+        key=sort_key,
     )
 
 
@@ -182,11 +189,15 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
 
     per_width: dict[int, dict] = {}
     for m in widths:
-        cells = complete_cells(table, shapes, m)
-        if not cells:
+        measured = complete_cells(table, shapes, m)
+        if not measured:
             continue
+        # The stock MLX kernel is a reference arm, not a shippable plan, so it
+        # never competes for the plan optimum. It is reported beside it.
+        stock = [c for c in measured if c.endswith(":stock")]
+        cells = [c for c in measured if not c.endswith(":stock")]
         globals_: dict[str, float] = {}
-        for cell in cells:
+        for cell in measured:
             globals_[cell] = weighted_total(
                 table, shapes, {name: cell for name in shapes}
             )
@@ -196,10 +207,11 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
                 cells, key=lambda c: table[(name, c)]["us_per_call"]
             )
         keyed_total = weighted_total(table, shapes, keyed_choice)
-        best_global = min(globals_, key=lambda c: globals_[c])
+        best_global = min(cells, key=lambda c: globals_[c]) if cells else None
         ship = shipped.get(m)
         per_width[m] = {
             "cells": cells,
+            "stock_cells": stock,
             "global_totals_us": globals_,
             "best_global_cell": best_global,
             "best_global_total_us": globals_[best_global],
@@ -207,6 +219,8 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
             "shipped_total_us": globals_.get(ship) if ship else None,
             "shape_keyed_choice": keyed_choice,
             "shape_keyed_total_us": keyed_total,
+            "shape_keyed_distinct_plans": sorted(set(keyed_choice.values())),
+            "stock_total_us": {c: globals_[c] for c in stock},
         }
 
     out = {
@@ -229,37 +243,80 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
         "sessions": [a["_session"] for a in artifacts],
     }
 
-    # The E138 step and the primary metric.
+    # The E138 step and the primary metric. A plan TABLE chooses a plan at
+    # every width, so the step it produces is `total6(its plan) -
+    # total5(its plan)`, not `total6(its plan) - total5(shipped)`. Both are
+    # reported, because a table that also speeds M=5 can widen the step while
+    # making the round strictly cheaper, and that must not read as a loss.
     if 5 in per_width and 6 in per_width:
         ship5 = per_width[5]["shipped_total_us"]
         ship6 = per_width[6]["shipped_total_us"]
         if ship5 is not None and ship6 is not None:
             shipped_step = ship6 - ship5
-            best_global_step = per_width[6]["best_global_total_us"] - ship5
-            keyed_step = per_width[6]["shape_keyed_total_us"] - ship5
-            out["step"] = {
+            variants = {
+                "best_global": (
+                    per_width[5]["best_global_total_us"],
+                    per_width[6]["best_global_total_us"],
+                ),
+                "shape_keyed": (
+                    per_width[5]["shape_keyed_total_us"],
+                    per_width[6]["shape_keyed_total_us"],
+                ),
+            }
+            step = {
                 "shipped_m5_us": ship5,
                 "shipped_m6_us": ship6,
                 "shipped_step_us": shipped_step,
-                "best_global_m6_us": per_width[6]["best_global_total_us"],
-                "best_global_step_us": best_global_step,
-                "best_global_reduction_pct": 100.0
-                * (shipped_step - best_global_step)
-                / shipped_step,
-                "shape_keyed_m6_us": per_width[6]["shape_keyed_total_us"],
-                "shape_keyed_step_us": keyed_step,
-                "shape_keyed_reduction_pct": 100.0
-                * (shipped_step - keyed_step)
-                / shipped_step,
             }
+            for label, (m5, m6) in variants.items():
+                step[f"{label}_m5_us"] = m5
+                step[f"{label}_m6_us"] = m6
+                step[f"{label}_step_us"] = m6 - m5
+                step[f"{label}_reduction_pct"] = (
+                    100.0 * (shipped_step - (m6 - m5)) / shipped_step
+                )
+                # The M=6 total against the shipped M=6 total. This is the
+                # quantity that actually pays in the round.
+                step[f"{label}_m6_saving_us"] = ship6 - m6
+            out["step"] = step
             best = max(
-                out["step"]["best_global_reduction_pct"],
-                out["step"]["shape_keyed_reduction_pct"],
+                step["best_global_reduction_pct"],
+                step["shape_keyed_reduction_pct"],
             )
             out["e138_best_plan_isolated_step_reduction_pct"] = best
             # A cliff is plan-invariant when no plan removes a useful part of
             # it. The pre-registered threshold for "useful" is 3 %.
             out["e138_cliff_is_plan_invariant"] = 1.0 if best < 3.0 else 0.0
+
+    # Item 2: a shape-keyed table multiplies compiled entry points. Count the
+    # distinct plans the table needs across every measured width.
+    keyed_plans = sorted(
+        {
+            cell
+            for block in per_width.values()
+            for cell in block["shape_keyed_distinct_plans"]
+        },
+        key=sort_key,
+    )
+    shipped_plans = sorted(
+        {
+            block["shipped_cell"]
+            for block in per_width.values()
+            if block["shipped_cell"]
+        },
+        key=sort_key,
+    )
+    out["pipeline_count"] = {
+        "shipped_distinct_plans": shipped_plans,
+        "shipped_pipelines": len(shipped_plans),
+        "shape_keyed_distinct_plans": keyed_plans,
+        "shape_keyed_pipelines": len(keyed_plans),
+        "finding_133_ceiling": 14,
+        "over_finding_133_ceiling": len(keyed_plans) > 14,
+        "note": "FINDING 167.1 charges +0.35 % per extra resident pipeline "
+        "even when the plans are identical, so a table is only worth its "
+        "pipelines if the plan saving clears that tax.",
+    }
 
     # RULE 115 ranked pricing of every width where a plan beats the shipped one.
     pricing = {}
@@ -304,15 +361,53 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
     return out
 
 
+def matrix(result: dict) -> str:
+    """Item 1a: the seven scored shapes against the plan, microseconds per
+    call, with the dispatch count beside each row."""
+    lines = []
+    for m, block in sorted(result["per_width"].items()):
+        cells = block["cells"] + block["stock_cells"]
+        ship = block["shipped_cell"]
+        lines.append(f"M={m}  per-shape microseconds per call  (shipped {ship})")
+        lines.append(
+            "%-34s %4s " % ("shape", "disp")
+            + "".join("%11s" % c for c in cells)
+        )
+        for name in sorted(result["shapes"]):
+            row = result["cells"]
+            disp = result["shapes"][name]["calls_per_verify"]
+            values = [row[f"{name}|{c}"]["us_per_call"] for c in cells]
+            base = row[f"{name}|{ship}"]["us_per_call"] if ship else None
+            lines.append(
+                "%-34s %4d " % (name, disp)
+                + "".join("%11.1f" % v for v in values)
+            )
+            if base:
+                lines.append(
+                    "%-34s %4s " % ("    vs shipped", "")
+                    + "".join(
+                        "%10.1f%%" % (100.0 * (v - base) / base) for v in values
+                    )
+                )
+        lines.append(
+            "%-34s %4s " % ("WEIGHTED TOTAL", "")
+            + "".join("%11.0f" % block["global_totals_us"][c] for c in cells)
+        )
+        lines.append("")
+    return "\n".join(lines)
+
+
 def report(result: dict) -> str:
     lines = ["E138 plan surface  harness=local", ""]
     for m, block in sorted(result["per_width"].items()):
         lines.append(f"width M={m}   shipped={block['shipped_cell']}")
         totals = block["global_totals_us"]
         ship = block["shipped_total_us"]
-        for cell in block["cells"]:
+        for cell in block["cells"] + block["stock_cells"]:
             delta = "" if ship is None else f"  {totals[cell] - ship:+9.1f} us"
             mark = " <-- shipped" if cell == block["shipped_cell"] else ""
+            if cell.endswith(":stock"):
+                mark = " <-- stock MLX, reference only"
             lines.append(
                 f"    global {cell:<8} {totals[cell]:10.1f} us{delta}{mark}"
             )
@@ -329,9 +424,11 @@ def report(result: dict) -> str:
             "isolated dispatch-weighted M=5 -> M=6 step",
             f"    shipped        {step['shipped_step_us']:10.1f} us",
             f"    best global    {step['best_global_step_us']:10.1f} us"
-            f"   reduction {step['best_global_reduction_pct']:+6.2f} %",
+            f"   reduction {step['best_global_reduction_pct']:+6.2f} %"
+            f"   M=6 saving {step['best_global_m6_saving_us']:+8.1f} us",
             f"    shape-keyed    {step['shape_keyed_step_us']:10.1f} us"
-            f"   reduction {step['shape_keyed_reduction_pct']:+6.2f} %",
+            f"   reduction {step['shape_keyed_reduction_pct']:+6.2f} %"
+            f"   M=6 saving {step['shape_keyed_m6_saving_us']:+8.1f} us",
             "",
             "PRIMARY  e138_best_plan_isolated_step_reduction_pct = "
             f"{result['e138_best_plan_isolated_step_reduction_pct']:.2f}",
@@ -339,6 +436,17 @@ def report(result: dict) -> str:
             f"{result['e138_cliff_is_plan_invariant']:.1f}",
             "",
         ]
+
+    pipes = result["pipeline_count"]
+    lines += [
+        "pipeline count (FINDING 133 ceiling 14, FINDING 167.1 tax +0.35 %/each)",
+        f"    shipped      {pipes['shipped_pipelines']:2d}  "
+        f"{', '.join(pipes['shipped_distinct_plans'])}",
+        f"    shape-keyed  {pipes['shape_keyed_pipelines']:2d}  "
+        f"{', '.join(pipes['shape_keyed_distinct_plans'])}",
+        f"    over ceiling: {pipes['over_finding_133_ceiling']}",
+        "",
+    ]
 
     if result["ranked_pricing"]:
         lines.append("RULE 115 ranked pricing (absolute microseconds)")
@@ -362,6 +470,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("artifacts", nargs="+", type=pathlib.Path)
     parser.add_argument("--out", type=pathlib.Path)
+    parser.add_argument("--matrix", action="store_true")
     parser.add_argument(
         "--shipped",
         default="5:5:5:4,6:6:6:4,7:7:7:4,8:8:4:4,9:9:3:4",
@@ -375,6 +484,8 @@ def main() -> int:
         shipped[int(parts[0])] = ":".join(parts[1:])
 
     result = analyse(load(args.artifacts), shipped)
+    if args.matrix:
+        print(matrix(result))
     text = report(result)
     print(text)
     if args.out:
