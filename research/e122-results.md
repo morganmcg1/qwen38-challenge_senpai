@@ -511,6 +511,22 @@ Artifacts, committed: `research/e122-artifacts/rung0-forced.{json,txt}`,
 `rung0-shipped.{json,txt}`, `rung0-value.{json,txt}`. Raw traces live under
 `.mlxfast-private/e122/` and are gitignored.
 
+### W&B
+
+Group `e122-target-margin-conditioned-depth`, project
+`wandb-applied-ai-team/qwen38-mlx-challenge-senpai`.
+
+| run | id | contents |
+| --- | --- | --- |
+| `e122-rung0-forced` | [`9pv5vd0k`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/9pv5vd0k) | the primary gate, the per-position and per-prompt tables, the margin resolution report, and the value model |
+| `e122-rung0-shipped` | [`oma770wk`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/oma770wk) | the confounded shipped-policy arm, descriptive only |
+
+Both runs carry `harness=local`, `timing_valid=false`,
+`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false` and
+`official_or_ranked_score=false` in config. The shipped-arm run labels its own
+statistics `_contaminated` and sets `arm_is_confounded=true`, so a later reader
+cannot mistake 0.5295 for a clean measurement.
+
 ---
 
 ## 10. What this closes, and what it does not
