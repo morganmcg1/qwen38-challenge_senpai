@@ -9,7 +9,7 @@
  "occupancy_rule": "Rule 89",
  "exactness_rule": "Rule 92",
  "tool": "research/e133_nibble_floor.py census",
- "base_sha": "a2bf59127fd5628c0d8e2bd3e0e44a9521d27e2b",
+ "base_sha": "4f2a8d2f42ab2296329cbbcc50ae89d85009f1f9",
  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
  "ranked_arch": "applegpu_g17s",
  "bytes_per_instruction_bracket": [
@@ -1211,5 +1211,6 @@
     }
    }
   }
- }
+ },
+ "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/51riqfwv"
 }
