@@ -76,10 +76,12 @@ def summarise(path: Path) -> dict:
 
     round_count = blob.get("round_count") or len(rounds)
     accepted = blob.get("accepted_draft_total", 0)
+    emitted = blob.get("emitted_token_total") or len(tails)
+    declared_rows = blob.get("declared_rows_total") or len(ledger)
     return {
         "path": str(path),
         "round_count": round_count,
-        "tokens": blob.get("emitted_token_count") or len(tails),
+        "tokens": emitted,
         "all_tokens_matched": blob.get("all_tokens_matched"),
         "parity_all_ok": blob.get("parity_all_ok"),
         "residual_divergence_count": blob.get("residual_divergence_count"),
@@ -91,9 +93,14 @@ def summarise(path: Path) -> dict:
         "target_tail_total": blob.get("target_tail_total"),
         "accepted_draft_rate": blob.get("accepted_draft_rate"),
         "mean_accepted_drafts_per_round": accepted / round_count if round_count else 0.0,
-        "mean_tokens_per_round": (accepted + round_count) / round_count
-        if round_count
-        else 0.0,
+        # Rounds are the unit of cost, so this is the acceptance channel that
+        # reaches the score. Taken from the emitted count rather than
+        # accepted + rounds, because the window truncates the final round.
+        "mean_tokens_per_round": emitted / round_count if round_count else 0.0,
+        # Target rows actually evaluated per emitted token. A second, coarser
+        # cost view: the verify forward is batched, so rows move round cost
+        # less than round count does, but both must point the same way.
+        "declared_rows_per_token": declared_rows / emitted if emitted else 0.0,
         # Rule 114 witness.
         "widened_draft_rows": len(widened_rows),
         "widened_draft_rows_accepted": sum(1 for r in widened_rows if r["accepted"]),
@@ -107,6 +114,50 @@ def summarise(path: Path) -> dict:
         else 0.0,
         "top_truncating_tokens": truncating.most_common(12),
     }
+
+
+def attribute(arms: dict) -> dict:
+    """Split the acceptance gain into its two inseparable causes.
+
+    Widening does two things that cannot be separated by construction. It lets
+    the head propose a high id at all, and it repartitions the cluster index
+    over 248,320 rows instead of 98,336, which also changes the shortlist for
+    ids the shipped table already held. Only the first is the hypothesis.
+
+    The ledger settles the split directly: an accepted draft row carrying a
+    high id is the hypothesis firing, and the rest of the gain is the
+    repartition. Neither is a confound for the DECISION, because no
+    implementation can widen without repartitioning, but the explanation
+    should say which one paid.
+    """
+    out: dict = {"seeds": {}}
+    for seed in MEDPAIR:
+        shipped = arms.get("shipped", {}).get("seeds", {}).get(seed)
+        full = arms.get("full", {}).get("seeds", {}).get(seed)
+        if not shipped or not full:
+            continue
+        gain = full["accepted_draft_total"] - shipped["accepted_draft_total"]
+        direct = full["widened_draft_rows_accepted"]
+        out["seeds"][seed] = {
+            "accepted_shipped": shipped["accepted_draft_total"],
+            "accepted_full": full["accepted_draft_total"],
+            "accepted_gain": gain,
+            "accepted_gain_from_high_ids": direct,
+            "accepted_gain_from_repartition": gain - direct,
+            "shipped_rounds_truncated_by_unproposable": shipped[
+                "rounds_truncated_by_unproposable_token"
+            ],
+        }
+    if set(out["seeds"]) == set(MEDPAIR):
+        for key in (
+            "accepted_gain",
+            "accepted_gain_from_high_ids",
+            "accepted_gain_from_repartition",
+        ):
+            out[f"medpair_{key}"] = sum(
+                MEDPAIR[s] * out["seeds"][s][key] for s in MEDPAIR
+            )
+    return out
 
 
 def main() -> None:
@@ -145,6 +196,7 @@ def main() -> None:
                 for key in (
                     "mean_accepted_drafts_per_round",
                     "mean_tokens_per_round",
+                    "declared_rows_per_token",
                     "accepted_draft_rate",
                     "truncation_share_of_rounds_pct",
                 )
@@ -166,7 +218,15 @@ def main() -> None:
                 "rounds_saved_pct": 100.0 * (1.0 - base_tpr / cand_tpr)
                 if cand_tpr
                 else 0.0,
+                "declared_rows_per_token_shipped": base["declared_rows_per_token"],
+                "declared_rows_per_token_full": cand["declared_rows_per_token"],
+                "target_rows_saved_pct": 100.0
+                * (1.0 - cand["declared_rows_per_token"]
+                   / base["declared_rows_per_token"])
+                if base["declared_rows_per_token"]
+                else 0.0,
             }
+        report["attribution"] = attribute(report["arms"])
 
     Path(args.out).write_text(json.dumps(report, indent=2) + "\n")
 
@@ -202,6 +262,25 @@ def main() -> None:
                 f"trunc={m['truncation_share_of_rounds_pct']:.3f} %"
             )
 
+    attribution = report.get("attribution", {})
+    if attribution.get("seeds"):
+        print("\n== where the extra accepted drafts came from ==")
+        for seed, a in attribution["seeds"].items():
+            print(
+                f"  {seed:18s} accepted {a['accepted_shipped']} -> "
+                f"{a['accepted_full']} ({a['accepted_gain']:+d}); "
+                f"high ids {a['accepted_gain_from_high_ids']:+d}, "
+                f"repartition {a['accepted_gain_from_repartition']:+d}"
+            )
+        if "medpair_accepted_gain" in attribution:
+            print(
+                f"  medpair            gain "
+                f"{attribution['medpair_accepted_gain']:+.2f} = high ids "
+                f"{attribution['medpair_accepted_gain_from_high_ids']:+.2f} + "
+                f"repartition "
+                f"{attribution['medpair_accepted_gain_from_repartition']:+.2f}"
+            )
+
     if "delta" in report:
         d = report["delta"]
         print(
@@ -211,6 +290,11 @@ def main() -> None:
             f"tokens/round {d['mean_tokens_per_round_shipped']:.4f} -> "
             f"{d['mean_tokens_per_round_full']:.4f}  "
             f"rounds saved {d['rounds_saved_pct']:.4f} %"
+        )
+        print(
+            f"target rows/token {d['declared_rows_per_token_shipped']:.4f} -> "
+            f"{d['declared_rows_per_token_full']:.4f}  "
+            f"rows saved {d['target_rows_saved_pct']:.4f} %"
         )
     print(f"\nwrote {args.out}")
 
