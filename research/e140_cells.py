@@ -303,18 +303,33 @@ def run_cell(cache, seed, prompt, cell, curve, windows, tally=None):
             "us_per_token": run["us_per_token"]}
 
 
-def tier_ratios(cache, seed, curve, tier, windows, walker=None):
+def tier_ratios(cache, seed, curve, tier, windows, walker=None, prompts=None,
+                base_cache=None, curve_key=None):
+    """`base_cache` memoises the unpriced arm, which no tier can change.
+
+    A tier grid re-prices the same denominator dozens of times, so the caller
+    may pass a dict and a key that identifies the curve. The key must name the
+    curve, not just the variant: a leave-one-prompt-out fold runs a refitted
+    curve, and reusing another fold's denominator would silently mix them.
+    """
     install(curve)
     price = boundary_price(tier, SHIPPED_CLIFF)[:2]
     out = {}
-    for prompt in RANKED_PROMPTS:
+    for prompt in (prompts or RANKED_PROMPTS):
         entry = cache[(seed, prompt)]
-        base = simulate(None, entry["factory"](entry["p_target"]), windows)
+        slot = (curve_key, seed, prompt)
+        if base_cache is not None and slot in base_cache:
+            base = base_cache[slot]
+        else:
+            base = simulate(None, entry["factory"](entry["p_target"]), windows)
+            if base_cache is not None:
+                base_cache[slot] = base
         run = simulate(None, entry["factory"](entry["p_target"]), windows,
                        price=price, walker=walker)
         out[prompt] = {"ratio": run["us_per_token"] / base["us_per_token"],
                        "mean_depth": run["mean_depth"],
-                       "accept_rate": run["accept_rate"]}
+                       "accept_rate": run["accept_rate"],
+                       "depth_counts": run["depth_counts"]}
     return out
 
 
