@@ -1896,7 +1896,7 @@ public enum Qwen35CustomQMV {
     /// one-pass table therefore pays twice the launch count of the shipped
     /// table at M = 6, 7 and 8 for the same work, which prices the table
     /// against itself. Under `tight` both tables launch the same count.
-    public enum Grid: String {
+    public enum Grid: String, Sendable {
         case wide
         case tight
     }
