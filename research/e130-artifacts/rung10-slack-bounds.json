@@ -1,0 +1,114 @@
+{
+  "bit_exactness": "the constant reaches only WiredMemoryTicket(size:) and thence the MTLResidencySet capacity; it never reaches a tensor, a kernel argument, a dispatch shape, a dtype, a reduction order or a scheduling decision, so no emitted token can change",
+  "bound_1_covers_growth": {
+    "covers_growth": true,
+    "headroom_after_growth_mib": 293.28516006469727,
+    "measured_persistent_growth_mib": 218.71483993530273,
+    "name": "slack exceeds measured persistent growth",
+    "page_rounding": {
+      "current_slack_survives_expected_tax": false,
+      "expected_tax_mib": 34.796875,
+      "expected_tax_vs_current_slack_pct": 54.3701171875,
+      "expected_tax_vs_proposed_slack_pct": 6.7962646484375,
+      "live_buffers_at_sizing_upper_bound": 4454,
+      "page_bytes": 16384,
+      "survives_expected_tax": true,
+      "survives_worst_case_tax": true,
+      "worst_case_tax_mib": 69.58950233459473
+    },
+    "ratio_slack_over_growth": 2.3409476931307127,
+    "slack_mib": 512
+  },
+  "bound_2_below_clamp": {
+    "local_measured": {
+      "active_at_sizing_gib": 23.7287360355258,
+      "clamp_ceiling_gib": 37.19000244140625,
+      "clamp_is_inactive": true,
+      "headroom_for_slack_mib": 13784.336799621582,
+      "headroom_over_proposed_slack": 26.922532811760902,
+      "host": "48 GiB local, measured",
+      "maxrec_bytes": 40200896512,
+      "maxrec_gib": 37.44000244140625,
+      "maxrec_over_physmem": 0.7800000508626302,
+      "name": "ticket stays below the clamp (48 GiB local, measured)",
+      "physmem_bytes": 51539607552,
+      "physmem_gib": 48.0,
+      "proposed_slack_pct_of_headroom": 3.714360780955786,
+      "requested_target_gib": 24.2287360355258
+    },
+    "ranked_modelled": [
+      {
+        "active_at_sizing_gib": 23.7287360355258,
+        "clamp_ceiling_gib": 99.59000650979578,
+        "clamp_is_inactive": true,
+        "headroom_for_slack_mib": 77681.94096565247,
+        "headroom_over_proposed_slack": 151.72254094853997,
+        "host": "128 GiB ranked, extrapolated at this host's 0.78000",
+        "maxrec_bytes": 107202390698,
+        "maxrec_gib": 99.84000650979578,
+        "maxrec_over_physmem": 0.7800000508577796,
+        "name": "ticket stays below the clamp (128 GiB ranked, extrapolated at this host's 0.78000)",
+        "physmem_bytes": 137438953472,
+        "physmem_gib": 128.0,
+        "proposed_slack_pct_of_headroom": 0.6590978464690833,
+        "requested_target_gib": 24.2287360355258
+      },
+      {
+        "active_at_sizing_gib": 23.7287360355258,
+        "clamp_ceiling_gib": 95.75,
+        "clamp_is_inactive": true,
+        "headroom_for_slack_mib": 73749.77429962158,
+        "headroom_over_proposed_slack": 144.0425279289484,
+        "host": "128 GiB ranked, conservative 0.75 rule",
+        "maxrec_bytes": 103079215104,
+        "maxrec_gib": 96.0,
+        "maxrec_over_physmem": 0.75,
+        "name": "ticket stays below the clamp (128 GiB ranked, conservative 0.75 rule)",
+        "physmem_bytes": 137438953472,
+        "physmem_gib": 128.0,
+        "proposed_slack_pct_of_headroom": 0.6942394127470938,
+        "requested_target_gib": 24.2287360355258
+      }
+    ]
+  },
+  "bound_3_design_property": {
+    "admission_is_first_come": true,
+    "current_slack_pct_of_tower": 0.263393717669695,
+    "name": "design property survives: large scratch still fails the fit test",
+    "pct_of_live_scratch_still_unwired": 87.62450927940175,
+    "peak_live_scratch_mib": 2369.8871154785156,
+    "peak_pool_growth_mib": 3219.5743923187256,
+    "residual_headroom_after_persistent_mib": 293.28516006469727,
+    "residual_pct_of_peak_live_scratch": 12.37549072059825,
+    "residual_pct_of_peak_pool": 9.109438836525047,
+    "slack_pct_of_tower": 2.10714974135756,
+    "tower_at_sizing_gib": 23.7287360355258,
+    "tower_at_sizing_mib": 24298.225700378418
+  },
+  "current_slack_mib": 64,
+  "experiment": "e130-rung10",
+  "proposed_slack_mib": 512,
+  "question": "is 512 MiB the right wired residency slack",
+  "resource_reading": {
+    "active_at_sizing_distinct": [
+      25478536312
+    ],
+    "log": "research/out/e130-rung10-t128/residency.log",
+    "process_count": 3,
+    "resource_limit": [
+      499000
+    ],
+    "resources_at_sizing": [
+      4454,
+      4454,
+      4454
+    ],
+    "resources_max": 4454,
+    "resources_median": 4454,
+    "resources_min": 4454,
+    "slack_mb_in_build": [
+      512
+    ]
+  },
+  "shortfall_of_current_slack_mib": 154.71483993530273
+}
