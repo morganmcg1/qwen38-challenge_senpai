@@ -43,6 +43,8 @@ import argparse
 import collections
 import json
 import pathlib
+import re
+import statistics
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -54,11 +56,21 @@ from e134_rung3 import CURVES  # noqa: E402
 LEGS = ("beagle_a", "benchfixture", "essays_montaigne", "medicine_hist")
 
 
+ROUND_US = re.compile(r"round_us=([0-9.]+)")
+
+
 def load(root, arm, leg):
     report = json.loads((root / arm / leg / "report.json").read_text())
     widths = collections.Counter(d + 1 for d in report["effective_draft_lengths"])
+    meta = (root / arm / leg / "meta.txt").read_text()
+    trace = (root / arm / leg / "trace.txt").read_text()
+    in_round = sum(float(m) for m in ROUND_US.findall(trace))
     return {
         "widths": widths,
+        "timing_valid": "timing_valid=false" not in meta,
+        "phase_trace": "phase_trace=1" in meta,
+        "in_round_us": in_round,
+        "seed_us": report["seed_prefill_seconds"] * 1e6,
         "rounds": report["round_count"],
         "tokens": report["decode_token_count"],
         "rows": report["declared_rows_total"],
@@ -130,6 +142,54 @@ def main():
     if bad:
         raise SystemExit("e134_leg_prediction: %d leg(s) failed exactness" % bad)
     print("all legs exact")
+
+    # Every `e128_session.sh` leg sets `MLX_QWEN_MTP_TRACE=1` and writes two
+    # lines inside every round, so `meta.txt` records `timing_valid=false`.
+    # That label must travel with any time reported here. The trace cost is
+    # NOT common mode: `pb6` changes the round count, so a per-round overhead
+    # biases the arm comparison. The bias is bounded rather than assumed.
+    #
+    # `round_us` spans `tRound0` to `tTailDone` and both `traceWrite` calls
+    # happen after `tTailDone`, so the whole trace cost sits in
+    # `decode_seconds - sum(round_us) - seed_prefill_seconds`. Regressing that
+    # residual on round count gives the largest per-round overhead the data
+    # will support.
+    traced = [leg for leg, arm in arms.items()
+              for run in arm.values() if not run["timing_valid"]]
+    print("\n## timing_valid=false on %d of %d legs; the trace cost is bounded"
+          % (len(traced), 2 * len(LEGS)))
+    print("%-18s %-5s %6s %10s %10s %10s"
+          % ("leg", "arm", "rounds", "seed_us", "in_round", "residual"))
+    points = []
+    for leg, arm in arms.items():
+        for name, run in arm.items():
+            residual = (run["spt_us"] * run["tokens"] - run["in_round_us"]
+                        - run["seed_us"])
+            points.append((run["rounds"], residual))
+            print("%-18s %-5s %6d %10.0f %10.0f %10.0f"
+                  % (leg, name, run["rounds"], run["seed_us"],
+                     run["in_round_us"], residual))
+
+    mx = statistics.fmean(x for x, _ in points)
+    my = statistics.fmean(y for _, y in points)
+    slope = (sum((x - mx) * (y - my) for x, y in points)
+             / sum((x - mx) ** 2 for x, _ in points))
+    spread = max(abs(arms[leg]["ship"]["rounds"] - arms[leg]["pb6"]["rounds"])
+                 for leg in LEGS)
+    worst_leg = max(LEGS, key=lambda leg: abs(arms[leg]["ship"]["rounds"]
+                                              - arms[leg]["pb6"]["rounds"]))
+    worst_us = arms[worst_leg]["ship"]["spt_us"] * arms[worst_leg]["ship"]["tokens"]
+    bias_pp = abs(slope) * spread / worst_us * 100.0
+    print("per-round residual slope %.1f us/round" % slope)
+    print("largest round-count difference %d rounds, on %s"
+          % (spread, worst_leg))
+    print("=> worst-case trace bias %.4f pp, and it penalises the arm with "
+          "MORE rounds" % bias_pp)
+    print("seed prefill is %.1f %% of the timed leg and is arm-invariant, so "
+          "it dilutes every round-policy gain"
+          % (statistics.fmean(run["seed_us"] / (run["spt_us"] * run["tokens"])
+                              for arm in arms.values()
+                              for run in arm.values()) * 100.0))
 
     print("\n## observed, per leg")
     print("%-18s %7s %7s %7s %7s %9s %9s %8s"
