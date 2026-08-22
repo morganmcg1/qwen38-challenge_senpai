@@ -1,0 +1,29 @@
+746 submissions; comparing the string-aware stripper with the naive regex
+
+changed source blobs inspected        6735
+blobs where the two strippers differ  1477
+  95611e60  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  95deb85a  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  055fb5ee  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  3147d255  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  0f835e36  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  93a1a040  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  10b10822  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  a4a95963  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  088f763b  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  b5130678  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  129885a9  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  e969e7aa  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  19488ddb  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  75c8d33b  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  bed27c3a  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  3f7921b8  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  e5051ba4  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  adb36a34  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  227e9413  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+  b71bb354  Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp
+submissions whose identity differs    744
+replicate pairs, string-aware rule    68
+replicate pairs, naive regex rule     75
+
+verdict: DIFFERENT. Use the string-aware rule; the naive rule merged distinct trees.

@@ -1,0 +1,39 @@
+anchor b129f202   746 scored submissions with a fetched tree
+
+==============================================================================
+MECHANISM Q2: Q2 asyncEval(outA) between the split-5 SDPA chunks
+  file       Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift
+  proposal   INSERT the call
+  helps if   the mechanism ends up present
+==============================================================================
+
+746 scored board rows carry a readable tree; 1 contain the mechanism, 745 do not.
+696 distinct residual code identities.
+
+ISOLATED SCHEDULE-MATCHED PAIRS: 2
+A lacks the favoured state, B has it. Positive TARGET means the mechanism
+made plutarch FASTER.
+
+       A        B       A solver       B solver           B date   TARGET%   sigma    DRAFT%  mode
+1a4218f5 d73184c4    vibecodooor     Amal-David 2026-08-21 03:16   -0.0095   -0.07   -0.0729     -
+214d92aa d73184c4    vibecodooor     Amal-David 2026-08-21 03:16   +0.2240   +1.75   -0.0834     -
+
+POOLED TARGET effect   +0.1073 %
+  distinct runs         2 without the favoured state, 1 with it
+  naive resolution      0.0906 %  (0.1281 / sqrt(2))   sigma +1.18
+  independent-run res   0.1569 %  (0.1281 * sqrt(1/2 + 1/1))   sigma +0.68
+  signs                 1 positive, 1 negative (50% opposite)
+
+PER-PROMPT PROFILE over 2 pairs
+  predicted if the mechanism is real: near zero on plutarch, rising with mean draft width, largest on botany
+
+   prompt  mean draft len   effect %  sd over pairs
+ plutarch           0.154    +0.1073         0.1651
+    drama           2.298    -0.0131         0.0007
+   travel           2.656    -0.0341         0.0639
+   beagle           4.382    -0.1038         0.0221
+ medicine           5.256    -0.0838         0.0259
+ republic           4.989    -0.0313         0.0062
+   essays           5.087    -0.0760         0.0506
+   botany           6.148    -0.0958         0.0410
+

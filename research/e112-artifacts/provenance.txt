@@ -1,0 +1,121 @@
+40 byte-identical replicate pairs; showing the first 12 by date
+
+pair  target +0.0420 %  draft -0.0702 %  gap 2.77 h
+  A 55fa8d31  2026-08-15 12:20      mpjunior92  score 2.39551435
+     submissionCommitSha 115934e82a46902f19a96440fa96cd99111742be
+     promotionStatus     promoted  status accepted
+  B 19cfafde  2026-08-15 15:06  rainbowpuffpuff  score 2.39970116
+     submissionCommitSha beda697dd135bd5f18d4eaaf63afe40f232330d0
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target -0.1952 %  draft -1.8030 %  gap 1.17 h
+  A daf42d3e  2026-08-15 12:53    mega-dmitriy  score 2.41908291
+     submissionCommitSha d819641272812d71108ddcf4343aa41fb565c622
+     promotionStatus     promoted  status accepted
+  B 20c1b6cd  2026-08-15 14:03    Lieisyourlie  score 2.37257959
+     submissionCommitSha d0c4fcbc157304d1f7727ad983cf68ecf27079ab
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target -0.2437 %  draft -1.8154 %  gap 3.30 h
+  A daf42d3e  2026-08-15 12:53    mega-dmitriy  score 2.41908291
+     submissionCommitSha d819641272812d71108ddcf4343aa41fb565c622
+     promotionStatus     promoted  status accepted
+  B 015b718d  2026-08-15 16:11  rainbowpuffpuff  score 2.36872902
+     submissionCommitSha 8ca18e6683673295ec1955829eb5c064614af6c1
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target -0.0485 %  draft -0.0124 %  gap 2.13 h
+  A 20c1b6cd  2026-08-15 14:03    Lieisyourlie  score 2.37257959
+     submissionCommitSha d0c4fcbc157304d1f7727ad983cf68ecf27079ab
+     promotionStatus     None  status rejected
+  B 015b718d  2026-08-15 16:11  rainbowpuffpuff  score 2.36872902
+     submissionCommitSha 8ca18e6683673295ec1955829eb5c064614af6c1
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target +0.1045 %  draft -1.1801 %  gap 1.58 h
+  A 5b656013  2026-08-15 15:24        hadakang  score 2.51003299
+     submissionCommitSha 08897af24b57e5e11950f5aaa45097b7da5d093d
+     promotionStatus     promoted  status accepted
+  B 7ea9817b  2026-08-15 16:59  rainbowpuffpuff  score 2.47806324
+     submissionCommitSha 04a0fc91e8bbb9947caccbf8356b9520ecfbebc8
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target +0.1061 %  draft -1.9942 %  gap 15.67 h
+  A 91743270  2026-08-15 20:04   noskillcoding  score 2.71511825
+     submissionCommitSha deb63ad0d1701d9d14cacd34d901ae7c0588c432
+     promotionStatus     promoted  status accepted
+  B 9a46aef7  2026-08-16 11:44   maxkongerskov  score 2.68437050
+     submissionCommitSha bbc942bb15c31cfd80290e37413db4e430d63478
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target -0.0359 %  draft -0.2425 %  gap 1.03 h
+  A c08eb406  2026-08-15 21:15   a-github-name  score 2.72743223
+     submissionCommitSha b6ce964b16bbb7836480a29e9f5e436bb99a35dd
+     promotionStatus     promoted  status accepted
+  B b92784b8  2026-08-15 22:17          uee9b6  score 2.70892278
+     submissionCommitSha dbfa51c95e770dd39b5d919b69e09fb8cd93070b
+     promotionStatus     None  status rejected
+     same submissionCommitSha: NO
+
+pair  target +0.0109 %  draft -1.1145 %  gap 1.23 h
+  A db106c2c  2026-08-16 06:24    machalabs-ai  score 2.87565033
+     submissionCommitSha None
+     promotionStatus     superseded  status accepted
+  B fdcaf9e7  2026-08-16 07:38         ggu77wt  score 2.84374810
+     submissionCommitSha None
+     promotionStatus     None  status rejected
+     same submissionCommitSha: UNKNOWN, the field is absent on one side
+
+pair  target +0.0161 %  draft -0.1285 %  gap 0.73 h
+  A 9ff11c51  2026-08-16 09:05    machalabs-ai  score 2.90354559
+     submissionCommitSha 6e5c10d50709f317c169c640ee20d76bd5e8b7bf
+     promotionStatus     failed  status accepted
+  B e6c5ef35  2026-08-16 09:49        DawgZter  score 2.90421103
+     submissionCommitSha None
+     promotionStatus     promoted  status accepted
+     same submissionCommitSha: UNKNOWN, the field is absent on one side
+
+pair  target +0.0809 %  draft -0.1804 %  gap 0.77 h
+  A 9ff11c51  2026-08-16 09:05    machalabs-ai  score 2.90354559
+     submissionCommitSha 6e5c10d50709f317c169c640ee20d76bd5e8b7bf
+     promotionStatus     failed  status accepted
+  B 1c2787b0  2026-08-16 09:51    machalabs-ai  score 2.89305961
+     submissionCommitSha None
+     promotionStatus     None  status rejected
+     same submissionCommitSha: UNKNOWN, the field is absent on one side
+
+pair  target -0.2043 %  draft -1.2286 %  gap 1.47 h
+  A 9ff11c51  2026-08-16 09:05    machalabs-ai  score 2.90354559
+     submissionCommitSha 6e5c10d50709f317c169c640ee20d76bd5e8b7bf
+     promotionStatus     failed  status accepted
+  B 957fde89  2026-08-16 10:33      Amal-David  score 2.86645714
+     submissionCommitSha None
+     promotionStatus     None  status rejected
+     same submissionCommitSha: UNKNOWN, the field is absent on one side
+
+pair  target +0.0648 %  draft -0.0519 %  gap 0.03 h
+  A e6c5ef35  2026-08-16 09:49        DawgZter  score 2.90421103
+     submissionCommitSha None
+     promotionStatus     promoted  status accepted
+  B 1c2787b0  2026-08-16 09:51    machalabs-ai  score 2.89305961
+     submissionCommitSha None
+     promotionStatus     None  status rejected
+     same submissionCommitSha: UNKNOWN, the field is absent on one side
+
+submissionCommitSha present on 54 pair sides, absent on 26
+
+over all 40 byte-identical pairs
+  same solver on both sides          1
+  both sides carry a commit sha      21
+  of those, the same commit sha      0
+  sides disagree on promotionStatus  21
+
+A byte-identical pair is therefore not a solver resample. It is
+usually two different solvers submitting the same scored tree from
+different commits, so the pair is two independent measurements.

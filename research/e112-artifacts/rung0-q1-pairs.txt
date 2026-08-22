@@ -1,0 +1,39 @@
+anchor b129f202   746 scored submissions with a fetched tree
+
+==============================================================================
+MECHANISM Q1: Q1 kL=1025 128-block SDPA compile-warm family
+  file       Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+  proposal   DELETE the family
+  helps if   the mechanism ends up absent
+==============================================================================
+
+746 scored board rows carry a readable tree; 167 contain the mechanism, 579 do not.
+695 distinct residual code identities.
+
+ISOLATED SCHEDULE-MATCHED PAIRS: 2
+A lacks the favoured state, B has it. Positive TARGET means the mechanism
+made plutarch FASTER.
+
+       A        B       A solver       B solver           B date   TARGET%   sigma    DRAFT%  mode
+9ad17378 9d5569bb   Lieisyourlie       hadakang 2026-08-20 00:57   +0.0132   +0.10   -0.0448     -
+8819b108 8bea1495        audreyt   Lieisyourlie 2026-08-21 07:26   +0.1850   +1.44   -0.0349     -
+
+POOLED TARGET effect   +0.0991 %
+  distinct runs         2 without the favoured state, 2 with it
+  naive resolution      0.0906 %  (0.1281 / sqrt(2))   sigma +1.09
+  independent-run res   0.1281 %  (0.1281 * sqrt(1/2 + 1/2))   sigma +0.77
+  signs                 2 positive, 0 negative (0% opposite)
+
+PER-PROMPT PROFILE over 2 pairs
+  predicted if the mechanism is real: largest on plutarch, small on the wide prompts
+
+   prompt  mean draft len   effect %  sd over pairs
+ plutarch           0.154    +0.0991         0.1215
+    drama           2.298    -0.0151         0.0041
+   travel           2.656    +0.1915         0.3450
+   beagle           4.457    -0.0494         0.0940
+ medicine           5.012    -0.0051         0.0194
+ republic           5.129    -0.0681         0.0987
+   essays           5.256    -0.0750         0.1570
+   botany           5.962    -0.0016         0.0184
+
