@@ -69,17 +69,18 @@ done
   echo "e122_rung0_session: missing ${weights}/config.json" >&2; exit 1; }
 
 # The DECLARED head, not the organizer-pinned one: the ranked candidate leg
-# runs the head named by mtp-head.manifest.json, so the schedule signal has to
-# be collected against that head. The digest check makes the provenance an
-# assertion rather than a directory-name convention.
+# runs the head named by mtp-head.manifest.json, and `setup-qwen-mtp.sh` never
+# reads that declaration. research/fetch-declared-head.sh re-verifies the
+# manifest tree digest and restages the run tree; it downloads nothing when the
+# verified tree is already present. The manifest `sha256` is a TREE digest over
+# the verified directory, so it never equals the digest of one file.
 head_dir="${E122_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
-[[ -s "${head_dir}/config.json" ]] || {
-  echo "e122_rung0_session: no MTP head at ${head_dir}" >&2; exit 1; }
-declared_sha="$(jq -r .sha256 mtp-head.manifest.json)"
-head_sha="$(shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
-[[ "${head_sha}" == "${declared_sha}" ]] || {
-  echo "e122_rung0_session: head digest ${head_sha} != declared ${declared_sha}" >&2
+head_verification="$(research/fetch-declared-head.sh 2>&1)" || {
+  echo "e122_rung0_session: declared head verification failed" >&2
+  echo "${head_verification}" >&2
   exit 1; }
+[[ -s "${head_dir}/config.json" && -s "${head_dir}/model.safetensors" ]] || {
+  echo "e122_rung0_session: no run-tree MTP head at ${head_dir}" >&2; exit 1; }
 
 # One model-holding process at a time, reusing benchmark.sh's own lock and
 # orphan scan so this session and a local benchmark exclude each other.
@@ -212,8 +213,8 @@ for id in "$@"; do
     echo "dirty_candidate_paths=$(git status --porcelain -- Sources Vendor \
       Package.swift Package.resolved mtp-head.manifest.json | wc -l | tr -d ' ')"
     echo "head_dir=${head_dir}"
-    echo "head_safetensors_sha256=$(
-      shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
+    echo "head_manifest_tree_sha256=$(jq -r .sha256 mtp-head.manifest.json)"
+    echo "head_verification=${head_verification//$'\n'/ | }"
     echo "worker_sha256=$(shasum -a 256 "${worker}" | awk '{print $1}')"
     echo "cli_sha256=$(shasum -a 256 "${swift_bin}" | awk '{print $1}')"
     echo "host=$(hostname)"
