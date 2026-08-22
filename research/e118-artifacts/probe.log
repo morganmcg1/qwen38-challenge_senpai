@@ -1,0 +1,636 @@
+e118_qmv_probe: a_base compiled in 0.00s  src=210032 bytes
+e118_qmv_probe:   a_base e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   a_base e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   a_base e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   a_base e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: q_scaffold compiled in 0.00s  src=209350 bytes
+e118_qmv_probe:   q_scaffold e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   q_scaffold e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   q_scaffold e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   q_scaffold e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: s_bcast compiled in 0.00s  src=209617 bytes
+e118_qmv_probe:   s_bcast e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: s_bcast_all compiled in 0.00s  src=209685 bytes
+e118_qmv_probe:   s_bcast_all e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_all e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_all e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_all e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: s_bcast_scale compiled in 0.00s  src=209572 bytes
+e118_qmv_probe:   s_bcast_scale e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_scale e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_scale e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_scale e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: p_split_meta compiled in 0.00s  src=209437 bytes
+e118_qmv_probe:   p_split_meta e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   p_split_meta e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   p_split_meta e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   p_split_meta e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: g_pack32 compiled in 0.00s  src=209532 bytes
+e118_qmv_probe:   g_pack32 e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   g_pack32 e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   g_pack32 e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   g_pack32 e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: s_bcast_pack32 compiled in 0.00s  src=209675 bytes
+e118_qmv_probe:   s_bcast_pack32 e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_pack32 e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_pack32 e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   s_bcast_pack32 e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: p_prefetch_w compiled in 0.00s  src=209969 bytes
+e118_qmv_probe:   p_prefetch_w e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   p_prefetch_w e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   p_prefetch_w e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   p_prefetch_w e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: n_nosums compiled in 0.00s  src=209269 bytes
+e118_qmv_probe:   n_nosums e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   n_nosums e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   n_nosums e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   n_nosums e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: l_loadonly compiled in 0.00s  src=209028 bytes
+e118_qmv_probe:   l_loadonly e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   l_loadonly e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   l_loadonly e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   l_loadonly e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: n_nobias compiled in 0.00s  src=209210 bytes
+e118_qmv_probe:   n_nobias e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   n_nobias e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   n_nobias e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   n_nobias e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: d_bias1 compiled in 0.00s  src=209457 bytes
+e118_qmv_probe:   d_bias1 e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   d_bias1 e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   d_bias1 e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   d_bias1 e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: e_bias6 compiled in 0.00s  src=209787 bytes
+e118_qmv_probe:   e_bias6 e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   e_bias6 e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   e_bias6 e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   e_bias6 e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: z_ballast compiled in 0.00s  src=209771 bytes
+e118_qmv_probe:   z_ballast e118_iso_na2  max_threads=1024  tg_mem=0
+e118_qmv_probe:   z_ballast e118_iso_na3  max_threads=1024  tg_mem=0
+e118_qmv_probe:   z_ballast e118_iso_na4  max_threads=1024  tg_mem=0
+e118_qmv_probe:   z_ballast e118_iso_na5  max_threads=1024  tg_mem=0
+e118_qmv_probe: shape mlp_gate_up_k5120_n34816  w=89.1MB
+e118_qmv_probe:   fidelity M=2  base_vs_double max_rel=1.267e-01 rms=6.597e-03  base_nonfinite=0/69632
+e118_qmv_probe:     q_scaffold      vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=69632/69632 max_ulp=33355 max_rel=1.821e+00  vs_double rel=4.583e+02 rms=1.191e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=69548/69632 max_ulp=32885 max_rel=2.000e+00  vs_double rel=7.884e+01 rms=1.413e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=69543/69632 max_ulp=32944 max_rel=2.000e+00  vs_double rel=4.814e+01 rms=1.576e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=69632/69632 max_ulp=34329 max_rel=2.000e+00  vs_double rel=5.087e+04 rms=1.122e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/69632 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=6.597e-03   exact
+e118_qmv_probe:   fidelity M=3  base_vs_double max_rel=1.267e-01 rms=5.187e-03  base_nonfinite=0/104448
+e118_qmv_probe:     q_scaffold      vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=104448/104448 max_ulp=33355 max_rel=1.957e+00  vs_double rel=4.583e+02 rms=1.025e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=104297/104448 max_ulp=32885 max_rel=2.000e+00  vs_double rel=7.884e+01 rms=1.137e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=104334/104448 max_ulp=32944 max_rel=2.000e+00  vs_double rel=4.814e+01 rms=1.435e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=104448/104448 max_ulp=34329 max_rel=2.000e+00  vs_double rel=5.087e+04 rms=1.069e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/104448 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=5.187e-03   exact
+e118_qmv_probe:   fidelity M=4  base_vs_double max_rel=1.267e-01 rms=4.422e-03  base_nonfinite=0/139264
+e118_qmv_probe:     q_scaffold      vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=139264/139264 max_ulp=33388 max_rel=1.957e+00  vs_double rel=4.583e+02 rms=1.043e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=139111/139264 max_ulp=32987 max_rel=2.000e+00  vs_double rel=7.884e+01 rms=1.645e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=139141/139264 max_ulp=33082 max_rel=2.000e+00  vs_double rel=4.814e+01 rms=1.906e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=139264/139264 max_ulp=34402 max_rel=2.000e+00  vs_double rel=5.087e+04 rms=1.271e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/139264 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.267e-01 rms=4.422e-03   exact
+e118_qmv_probe:   fidelity M=5  base_vs_double max_rel=1.115e+00 rms=4.311e-03  base_nonfinite=0/174080
+e118_qmv_probe:     q_scaffold      vs base differing=0/174080 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.115e+00 rms=4.311e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=173877/174080 max_ulp=33112 max_rel=2.000e+00  vs_double rel=1.044e+03 rms=1.994e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3f95 arm=0x3fd7
+e118_qmv_probe:     s_bcast_all     vs base differing=173877/174080 max_ulp=33112 max_rel=2.000e+00  vs_double rel=1.044e+03 rms=1.994e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3f95 arm=0x3fd7
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/174080 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.115e+00 rms=4.311e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/174080 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.115e+00 rms=4.311e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/174080 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.115e+00 rms=4.311e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=173870/174080 max_ulp=33125 max_rel=2.000e+00  vs_double rel=1.207e+03 rms=1.989e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3f95 arm=0x3fd7
+e118_qmv_probe:     p_prefetch_w    vs base differing=173952/174080 max_ulp=33205 max_rel=2.000e+00  vs_double rel=1.207e+03 rms=3.315e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3f95 arm=0x4046
+e118_qmv_probe:     n_nosums        vs base differing=174080/174080 max_ulp=33388 max_rel=1.957e+00  vs_double rel=2.574e+03 rms=1.077e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=173860/174080 max_ulp=32987 max_rel=2.000e+00  vs_double rel=8.887e+01 rms=1.551e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=173897/174080 max_ulp=33082 max_rel=2.000e+00  vs_double rel=4.814e+01 rms=1.809e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=174080/174080 max_ulp=34402 max_rel=2.000e+00  vs_double rel=1.149e+05 rms=1.206e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/174080 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.115e+00 rms=4.311e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=174000/174080 max_ulp=33337 max_rel=2.000e+00  vs_double rel=1.207e+03 rms=4.152e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3f95 arm=0x4130
+e118_qmv_probe:   control q_scaffold      x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast         x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_all     x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_scale   x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_split_meta    x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control g_pack32        x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_pack32  x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_prefetch_w    x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control e_bias6         x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control z_ballast       x_hit=21171 meta_hit=16 restored_diff=0
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 0 inner=56  a_base=416.0us  q_scaffold=414.6us  s_bcast=422.0us  s_bcast_all=414.5us  s_bcast_scale=414.3us  p_split_meta=420.8us  g_pack32=420.1us  s_bcast_pack32=414.7us  p_prefetch_w=412.4us  n_nosums=413.2us  l_loadonly=407.4us  n_nobias=391.6us  d_bias1=403.3us  e_bias6=406.1us  z_ballast=412.7us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 1 inner=56  a_base=414.3us  q_scaffold=414.3us  s_bcast=422.1us  s_bcast_all=414.9us  s_bcast_scale=414.4us  p_split_meta=414.6us  g_pack32=413.5us  s_bcast_pack32=414.0us  p_prefetch_w=412.7us  n_nosums=413.5us  l_loadonly=407.3us  n_nobias=391.6us  d_bias1=403.8us  e_bias6=405.6us  z_ballast=412.4us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 2 inner=56  a_base=415.2us  q_scaffold=415.3us  s_bcast=423.0us  s_bcast_all=414.8us  s_bcast_scale=418.8us  p_split_meta=415.7us  g_pack32=414.9us  s_bcast_pack32=415.3us  p_prefetch_w=413.8us  n_nosums=414.2us  l_loadonly=408.8us  n_nobias=392.4us  d_bias1=404.4us  e_bias6=406.0us  z_ballast=413.5us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 3 inner=56  a_base=417.3us  q_scaffold=417.6us  s_bcast=423.7us  s_bcast_all=421.8us  s_bcast_scale=423.6us  p_split_meta=423.6us  g_pack32=421.1us  s_bcast_pack32=416.7us  p_prefetch_w=413.8us  n_nosums=412.3us  l_loadonly=406.1us  n_nobias=389.5us  d_bias1=401.6us  e_bias6=403.3us  z_ballast=411.4us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 4 inner=56  a_base=417.2us  q_scaffold=417.9us  s_bcast=424.2us  s_bcast_all=417.8us  s_bcast_scale=416.4us  p_split_meta=415.2us  g_pack32=414.6us  s_bcast_pack32=416.3us  p_prefetch_w=415.6us  n_nosums=415.4us  l_loadonly=410.6us  n_nobias=394.7us  d_bias1=406.9us  e_bias6=407.4us  z_ballast=419.7us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 5 inner=56  a_base=415.7us  q_scaffold=416.0us  s_bcast=422.6us  s_bcast_all=415.7us  s_bcast_scale=415.1us  p_split_meta=415.6us  g_pack32=414.9us  s_bcast_pack32=415.0us  p_prefetch_w=414.0us  n_nosums=414.9us  l_loadonly=408.8us  n_nobias=393.0us  d_bias1=404.7us  e_bias6=406.6us  z_ballast=414.1us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 6 inner=56  a_base=415.4us  q_scaffold=415.2us  s_bcast=422.4us  s_bcast_all=415.3us  s_bcast_scale=415.1us  p_split_meta=415.3us  g_pack32=414.7us  s_bcast_pack32=414.9us  p_prefetch_w=414.0us  n_nosums=414.5us  l_loadonly=408.5us  n_nobias=392.4us  d_bias1=404.2us  e_bias6=406.0us  z_ballast=413.6us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 block 7 inner=56  a_base=414.9us  q_scaffold=414.6us  s_bcast=422.0us  s_bcast_all=415.6us  s_bcast_scale=415.0us  p_split_meta=415.2us  g_pack32=414.2us  s_bcast_pack32=414.6us  p_prefetch_w=413.5us  n_nosums=414.2us  l_loadonly=408.5us  n_nobias=392.3us  d_bias1=404.5us  e_bias6=406.3us  z_ballast=413.3us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=2 thermal entry=38.7C exit=52.1C
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 0 inner=17  a_base=435.4us  q_scaffold=430.2us  s_bcast=493.2us  s_bcast_all=461.9us  s_bcast_scale=465.7us  p_split_meta=429.1us  g_pack32=427.6us  s_bcast_pack32=454.2us  p_prefetch_w=428.1us  n_nosums=422.3us  l_loadonly=415.2us  n_nobias=404.4us  d_bias1=431.5us  e_bias6=446.4us  z_ballast=437.2us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 1 inner=17  a_base=429.6us  q_scaffold=430.1us  s_bcast=493.5us  s_bcast_all=464.7us  s_bcast_scale=468.0us  p_split_meta=432.0us  g_pack32=428.6us  s_bcast_pack32=455.7us  p_prefetch_w=430.1us  n_nosums=423.6us  l_loadonly=417.4us  n_nobias=407.0us  d_bias1=433.7us  e_bias6=448.3us  z_ballast=440.1us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 2 inner=17  a_base=430.3us  q_scaffold=431.1us  s_bcast=494.5us  s_bcast_all=464.4us  s_bcast_scale=468.2us  p_split_meta=430.8us  g_pack32=428.3us  s_bcast_pack32=455.9us  p_prefetch_w=430.1us  n_nosums=422.7us  l_loadonly=415.4us  n_nobias=405.1us  d_bias1=432.6us  e_bias6=448.8us  z_ballast=438.8us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 3 inner=17  a_base=429.6us  q_scaffold=431.3us  s_bcast=495.4us  s_bcast_all=465.1us  s_bcast_scale=468.1us  p_split_meta=431.2us  g_pack32=428.4us  s_bcast_pack32=455.9us  p_prefetch_w=429.6us  n_nosums=423.5us  l_loadonly=415.6us  n_nobias=406.0us  d_bias1=432.3us  e_bias6=448.4us  z_ballast=439.6us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 4 inner=17  a_base=430.9us  q_scaffold=430.3us  s_bcast=494.9us  s_bcast_all=464.4us  s_bcast_scale=467.4us  p_split_meta=430.5us  g_pack32=428.6us  s_bcast_pack32=455.4us  p_prefetch_w=429.5us  n_nosums=423.9us  l_loadonly=416.4us  n_nobias=406.4us  d_bias1=432.4us  e_bias6=447.5us  z_ballast=438.7us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 5 inner=17  a_base=430.5us  q_scaffold=430.6us  s_bcast=495.1us  s_bcast_all=463.8us  s_bcast_scale=467.7us  p_split_meta=430.1us  g_pack32=428.5us  s_bcast_pack32=455.8us  p_prefetch_w=429.2us  n_nosums=422.1us  l_loadonly=415.6us  n_nobias=405.6us  d_bias1=431.8us  e_bias6=448.6us  z_ballast=438.6us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 6 inner=17  a_base=430.1us  q_scaffold=430.0us  s_bcast=494.8us  s_bcast_all=465.0us  s_bcast_scale=468.3us  p_split_meta=429.9us  g_pack32=427.3us  s_bcast_pack32=455.3us  p_prefetch_w=429.5us  n_nosums=422.4us  l_loadonly=415.5us  n_nobias=405.9us  d_bias1=432.9us  e_bias6=448.4us  z_ballast=439.4us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 block 7 inner=17  a_base=430.5us  q_scaffold=430.3us  s_bcast=495.7us  s_bcast_all=464.3us  s_bcast_scale=468.2us  p_split_meta=429.8us  g_pack32=428.2us  s_bcast_pack32=455.5us  p_prefetch_w=429.1us  n_nosums=422.9us  l_loadonly=415.3us  n_nobias=405.9us  d_bias1=432.5us  e_bias6=448.0us  z_ballast=438.9us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=3 thermal entry=49.8C exit=71.6C
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 0 inner=14  a_base=497.2us  q_scaffold=496.8us  s_bcast=572.7us  s_bcast_all=532.7us  s_bcast_scale=534.8us  p_split_meta=497.6us  g_pack32=497.8us  s_bcast_pack32=534.2us  p_prefetch_w=498.4us  n_nosums=461.3us  l_loadonly=419.4us  n_nobias=453.3us  d_bias1=500.1us  e_bias6=512.2us  z_ballast=515.7us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 1 inner=14  a_base=499.0us  q_scaffold=497.2us  s_bcast=573.6us  s_bcast_all=533.8us  s_bcast_scale=536.6us  p_split_meta=497.6us  g_pack32=497.3us  s_bcast_pack32=534.7us  p_prefetch_w=498.1us  n_nosums=461.9us  l_loadonly=418.4us  n_nobias=453.9us  d_bias1=500.6us  e_bias6=512.9us  z_ballast=515.8us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 2 inner=14  a_base=498.3us  q_scaffold=498.6us  s_bcast=575.1us  s_bcast_all=533.6us  s_bcast_scale=535.7us  p_split_meta=497.9us  g_pack32=497.7us  s_bcast_pack32=534.7us  p_prefetch_w=497.7us  n_nosums=460.6us  l_loadonly=417.9us  n_nobias=453.3us  d_bias1=499.8us  e_bias6=512.7us  z_ballast=516.6us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 3 inner=14  a_base=499.9us  q_scaffold=500.4us  s_bcast=577.4us  s_bcast_all=535.8us  s_bcast_scale=538.2us  p_split_meta=500.5us  g_pack32=499.8us  s_bcast_pack32=538.1us  p_prefetch_w=500.4us  n_nosums=463.8us  l_loadonly=418.6us  n_nobias=456.9us  d_bias1=504.7us  e_bias6=515.7us  z_ballast=518.2us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 4 inner=14  a_base=499.7us  q_scaffold=500.5us  s_bcast=577.0us  s_bcast_all=535.4us  s_bcast_scale=538.5us  p_split_meta=499.8us  g_pack32=500.6us  s_bcast_pack32=537.4us  p_prefetch_w=500.2us  n_nosums=463.5us  l_loadonly=419.0us  n_nobias=455.5us  d_bias1=503.5us  e_bias6=515.3us  z_ballast=517.8us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 5 inner=14  a_base=500.2us  q_scaffold=500.1us  s_bcast=576.9us  s_bcast_all=535.3us  s_bcast_scale=539.1us  p_split_meta=501.1us  g_pack32=500.2us  s_bcast_pack32=537.4us  p_prefetch_w=500.7us  n_nosums=463.1us  l_loadonly=418.4us  n_nobias=455.5us  d_bias1=502.9us  e_bias6=516.1us  z_ballast=517.8us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 6 inner=14  a_base=500.1us  q_scaffold=500.5us  s_bcast=577.7us  s_bcast_all=536.5us  s_bcast_scale=539.7us  p_split_meta=499.7us  g_pack32=496.8us  s_bcast_pack32=535.3us  p_prefetch_w=500.8us  n_nosums=462.8us  l_loadonly=418.2us  n_nobias=455.4us  d_bias1=502.9us  e_bias6=517.1us  z_ballast=518.0us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 block 7 inner=14  a_base=500.6us  q_scaffold=500.0us  s_bcast=578.0us  s_bcast_all=535.5us  s_bcast_scale=539.0us  p_split_meta=501.7us  g_pack32=499.7us  s_bcast_pack32=536.8us  p_prefetch_w=500.6us  n_nosums=463.3us  l_loadonly=417.8us  n_nobias=456.0us  d_bias1=503.0us  e_bias6=515.8us  z_ballast=518.0us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=4 thermal entry=51.1C exit=56.6C
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 0 inner=11  a_base=596.3us  q_scaffold=594.8us  s_bcast=970.0us  s_bcast_all=670.9us  s_bcast_scale=632.5us  p_split_meta=595.4us  g_pack32=594.1us  s_bcast_pack32=946.2us  p_prefetch_w=969.7us  n_nosums=538.7us  l_loadonly=425.3us  n_nobias=523.6us  d_bias1=602.7us  e_bias6=607.3us  z_ballast=1006.1us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 1 inner=11  a_base=592.8us  q_scaffold=592.5us  s_bcast=965.8us  s_bcast_all=668.9us  s_bcast_scale=632.1us  p_split_meta=592.0us  g_pack32=592.3us  s_bcast_pack32=942.9us  p_prefetch_w=970.5us  n_nosums=539.1us  l_loadonly=433.4us  n_nobias=523.3us  d_bias1=599.8us  e_bias6=606.7us  z_ballast=1007.3us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 2 inner=11  a_base=591.5us  q_scaffold=589.5us  s_bcast=962.7us  s_bcast_all=665.0us  s_bcast_scale=626.2us  p_split_meta=591.0us  g_pack32=588.6us  s_bcast_pack32=940.2us  p_prefetch_w=966.0us  n_nosums=533.0us  l_loadonly=420.0us  n_nobias=519.0us  d_bias1=596.2us  e_bias6=602.3us  z_ballast=999.1us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 3 inner=11  a_base=591.2us  q_scaffold=591.6us  s_bcast=964.8us  s_bcast_all=667.6us  s_bcast_scale=629.5us  p_split_meta=592.1us  g_pack32=589.9us  s_bcast_pack32=942.7us  p_prefetch_w=967.1us  n_nosums=535.8us  l_loadonly=423.2us  n_nobias=522.0us  d_bias1=598.3us  e_bias6=604.6us  z_ballast=1006.1us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 4 inner=11  a_base=592.8us  q_scaffold=591.4us  s_bcast=965.3us  s_bcast_all=668.6us  s_bcast_scale=629.6us  p_split_meta=592.2us  g_pack32=590.5us  s_bcast_pack32=943.8us  p_prefetch_w=968.0us  n_nosums=535.9us  l_loadonly=424.6us  n_nobias=523.6us  d_bias1=599.1us  e_bias6=604.6us  z_ballast=1004.0us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 5 inner=11  a_base=594.2us  q_scaffold=594.6us  s_bcast=968.1us  s_bcast_all=669.8us  s_bcast_scale=630.0us  p_split_meta=594.5us  g_pack32=592.4us  s_bcast_pack32=943.6us  p_prefetch_w=969.9us  n_nosums=537.7us  l_loadonly=425.2us  n_nobias=523.6us  d_bias1=599.5us  e_bias6=604.0us  z_ballast=1002.9us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 6 inner=11  a_base=596.4us  q_scaffold=595.3us  s_bcast=968.5us  s_bcast_all=672.2us  s_bcast_scale=632.9us  p_split_meta=595.3us  g_pack32=596.7us  s_bcast_pack32=944.8us  p_prefetch_w=971.9us  n_nosums=539.7us  l_loadonly=425.8us  n_nobias=524.7us  d_bias1=603.1us  e_bias6=607.6us  z_ballast=1007.5us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 block 7 inner=11  a_base=596.2us  q_scaffold=594.4us  s_bcast=970.0us  s_bcast_all=671.6us  s_bcast_scale=633.8us  p_split_meta=595.2us  g_pack32=594.8us  s_bcast_pack32=946.3us  p_prefetch_w=971.7us  n_nosums=539.6us  l_loadonly=425.6us  n_nobias=523.9us  d_bias1=601.3us  e_bias6=606.2us  z_ballast=1008.6us
+e118_qmv_probe:   mlp_gate_up_k5120_n34816 M=5 thermal entry=53.0C exit=56.1C
+e118_qmv_probe: shape gdn_in_proj_k5120_n16480  w=42.2MB
+e118_qmv_probe:   fidelity M=2  base_vs_double max_rel=4.552e-01 rms=3.373e-03  base_nonfinite=0/32960
+e118_qmv_probe:     q_scaffold      vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=32960/32960 max_ulp=33326 max_rel=1.916e+00  vs_double rel=9.441e+02 rms=8.638e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=32928/32960 max_ulp=32895 max_rel=2.000e+00  vs_double rel=6.524e+01 rms=1.234e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=32948/32960 max_ulp=33011 max_rel=2.000e+00  vs_double rel=9.343e+01 rms=1.936e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=32960/32960 max_ulp=34423 max_rel=1.961e+00  vs_double rel=9.669e+04 rms=1.510e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/32960 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.373e-03   exact
+e118_qmv_probe:   fidelity M=3  base_vs_double max_rel=4.552e-01 rms=3.298e-03  base_nonfinite=0/49440
+e118_qmv_probe:     q_scaffold      vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=49440/49440 max_ulp=33326 max_rel=1.916e+00  vs_double rel=9.441e+02 rms=8.455e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=49378/49440 max_ulp=32895 max_rel=2.000e+00  vs_double rel=6.524e+01 rms=1.098e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=49402/49440 max_ulp=33011 max_rel=2.000e+00  vs_double rel=9.343e+01 rms=1.691e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=49440/49440 max_ulp=34423 max_rel=1.961e+00  vs_double rel=9.669e+04 rms=1.296e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/49440 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.298e-03   exact
+e118_qmv_probe:   fidelity M=4  base_vs_double max_rel=4.552e-01 rms=3.126e-03  base_nonfinite=0/65920
+e118_qmv_probe:     q_scaffold      vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=65920/65920 max_ulp=33326 max_rel=1.916e+00  vs_double rel=9.441e+02 rms=8.751e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=65820/65920 max_ulp=32895 max_rel=2.000e+00  vs_double rel=6.524e+01 rms=1.038e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=65849/65920 max_ulp=33011 max_rel=2.000e+00  vs_double rel=9.343e+01 rms=1.617e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=65920/65920 max_ulp=34423 max_rel=1.961e+00  vs_double rel=9.669e+04 rms=1.228e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/65920 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.126e-03   exact
+e118_qmv_probe:   fidelity M=5  base_vs_double max_rel=4.552e-01 rms=3.285e-03  base_nonfinite=0/82400
+e118_qmv_probe:     q_scaffold      vs base differing=0/82400 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.285e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=82333/82400 max_ulp=33249 max_rel=2.000e+00  vs_double rel=1.523e+02 rms=2.936e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbe94 arm=0xc0a1
+e118_qmv_probe:     s_bcast_all     vs base differing=82333/82400 max_ulp=33249 max_rel=2.000e+00  vs_double rel=1.523e+02 rms=2.936e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbe94 arm=0xc0a1
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/82400 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.285e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/82400 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.285e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/82400 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.285e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=82339/82400 max_ulp=33243 max_rel=2.000e+00  vs_double rel=1.474e+02 rms=3.020e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbe94 arm=0xc0a1
+e118_qmv_probe:     p_prefetch_w    vs base differing=82365/82400 max_ulp=33243 max_rel=2.000e+00  vs_double rel=1.981e+02 rms=3.663e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbe94 arm=0xbf8f
+e118_qmv_probe:     n_nosums        vs base differing=82400/82400 max_ulp=33351 max_rel=1.916e+00  vs_double rel=9.441e+02 rms=9.313e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=82286/82400 max_ulp=32895 max_rel=2.000e+00  vs_double rel=8.122e+01 rms=1.120e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=82328/82400 max_ulp=33055 max_rel=2.000e+00  vs_double rel=1.134e+02 rms=1.804e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=82400/82400 max_ulp=34423 max_rel=1.961e+00  vs_double rel=9.669e+04 rms=1.316e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/82400 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.552e-01 rms=3.285e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=82385/82400 max_ulp=33312 max_rel=2.000e+00  vs_double rel=5.839e+02 rms=5.212e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbe94 arm=0x40da
+e118_qmv_probe:   control q_scaffold      x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast         x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_all     x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_scale   x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_split_meta    x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control g_pack32        x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_pack32  x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_prefetch_w    x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control e_bias6         x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control z_ballast       x_hit=8397 meta_hit=16 restored_diff=0
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 0 inner=64  a_base=205.7us  q_scaffold=205.0us  s_bcast=210.9us  s_bcast_all=206.2us  s_bcast_scale=206.1us  p_split_meta=204.8us  g_pack32=204.1us  s_bcast_pack32=206.0us  p_prefetch_w=204.0us  n_nosums=204.2us  l_loadonly=197.5us  n_nobias=194.1us  d_bias1=200.7us  e_bias6=202.4us  z_ballast=204.3us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 1 inner=64  a_base=204.9us  q_scaffold=204.9us  s_bcast=210.9us  s_bcast_all=205.7us  s_bcast_scale=205.8us  p_split_meta=205.1us  g_pack32=204.4us  s_bcast_pack32=205.8us  p_prefetch_w=203.9us  n_nosums=204.0us  l_loadonly=197.7us  n_nobias=193.8us  d_bias1=200.7us  e_bias6=202.0us  z_ballast=204.5us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 2 inner=64  a_base=204.0us  q_scaffold=205.3us  s_bcast=209.7us  s_bcast_all=207.2us  s_bcast_scale=205.8us  p_split_meta=204.0us  g_pack32=202.8us  s_bcast_pack32=202.8us  p_prefetch_w=201.1us  n_nosums=201.3us  l_loadonly=194.6us  n_nobias=190.9us  d_bias1=197.3us  e_bias6=199.4us  z_ballast=201.2us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 3 inner=64  a_base=203.2us  q_scaffold=205.1us  s_bcast=210.7us  s_bcast_all=207.0us  s_bcast_scale=206.9us  p_split_meta=206.4us  g_pack32=205.7us  s_bcast_pack32=207.5us  p_prefetch_w=205.6us  n_nosums=205.4us  l_loadonly=199.3us  n_nobias=195.4us  d_bias1=201.3us  e_bias6=201.8us  z_ballast=204.6us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 4 inner=64  a_base=204.9us  q_scaffold=205.0us  s_bcast=210.9us  s_bcast_all=206.5us  s_bcast_scale=206.1us  p_split_meta=205.3us  g_pack32=204.4us  s_bcast_pack32=205.8us  p_prefetch_w=203.7us  n_nosums=204.1us  l_loadonly=197.4us  n_nobias=193.8us  d_bias1=199.6us  e_bias6=201.6us  z_ballast=204.4us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 5 inner=64  a_base=205.1us  q_scaffold=205.1us  s_bcast=211.0us  s_bcast_all=206.3us  s_bcast_scale=204.7us  p_split_meta=205.1us  g_pack32=204.3us  s_bcast_pack32=206.0us  p_prefetch_w=204.0us  n_nosums=204.4us  l_loadonly=197.5us  n_nobias=194.1us  d_bias1=200.3us  e_bias6=202.1us  z_ballast=204.5us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 6 inner=64  a_base=206.2us  q_scaffold=206.8us  s_bcast=210.9us  s_bcast_all=206.3us  s_bcast_scale=206.1us  p_split_meta=205.0us  g_pack32=204.4us  s_bcast_pack32=205.9us  p_prefetch_w=204.1us  n_nosums=204.2us  l_loadonly=197.7us  n_nobias=194.1us  d_bias1=200.2us  e_bias6=202.2us  z_ballast=204.4us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 block 7 inner=64  a_base=206.6us  q_scaffold=206.0us  s_bcast=213.8us  s_bcast_all=207.8us  s_bcast_scale=208.5us  p_split_meta=206.7us  g_pack32=205.6us  s_bcast_pack32=208.2us  p_prefetch_w=206.0us  n_nosums=206.0us  l_loadonly=199.3us  n_nobias=195.5us  d_bias1=201.9us  e_bias6=203.8us  z_ballast=206.7us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=2 thermal entry=54.0C exit=57.1C
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 0 inner=29  a_base=219.8us  q_scaffold=213.4us  s_bcast=245.0us  s_bcast_all=230.0us  s_bcast_scale=232.3us  p_split_meta=213.1us  g_pack32=212.2us  s_bcast_pack32=225.2us  p_prefetch_w=211.7us  n_nosums=209.8us  l_loadonly=202.1us  n_nobias=202.7us  d_bias1=215.4us  e_bias6=223.1us  z_ballast=218.3us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 1 inner=29  a_base=211.4us  q_scaffold=210.9us  s_bcast=242.9us  s_bcast_all=227.8us  s_bcast_scale=230.2us  p_split_meta=210.5us  g_pack32=209.6us  s_bcast_pack32=223.7us  p_prefetch_w=209.8us  n_nosums=206.2us  l_loadonly=198.1us  n_nobias=198.7us  d_bias1=211.8us  e_bias6=220.1us  z_ballast=214.2us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 2 inner=29  a_base=211.7us  q_scaffold=212.0us  s_bcast=244.0us  s_bcast_all=228.5us  s_bcast_scale=231.4us  p_split_meta=212.2us  g_pack32=210.8us  s_bcast_pack32=224.6us  p_prefetch_w=212.1us  n_nosums=208.4us  l_loadonly=200.7us  n_nobias=200.6us  d_bias1=214.3us  e_bias6=222.1us  z_ballast=216.6us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 3 inner=29  a_base=213.1us  q_scaffold=213.3us  s_bcast=245.3us  s_bcast_all=230.2us  s_bcast_scale=232.2us  p_split_meta=213.3us  g_pack32=212.9us  s_bcast_pack32=226.2us  p_prefetch_w=212.9us  n_nosums=209.0us  l_loadonly=201.3us  n_nobias=201.7us  d_bias1=214.2us  e_bias6=222.1us  z_ballast=217.3us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 4 inner=29  a_base=212.7us  q_scaffold=213.2us  s_bcast=245.1us  s_bcast_all=230.2us  s_bcast_scale=232.6us  p_split_meta=213.4us  g_pack32=212.2us  s_bcast_pack32=226.0us  p_prefetch_w=213.0us  n_nosums=209.0us  l_loadonly=200.6us  n_nobias=201.4us  d_bias1=214.4us  e_bias6=222.7us  z_ballast=217.0us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 5 inner=29  a_base=213.8us  q_scaffold=213.8us  s_bcast=246.0us  s_bcast_all=230.7us  s_bcast_scale=234.4us  p_split_meta=214.5us  g_pack32=213.4us  s_bcast_pack32=227.9us  p_prefetch_w=214.7us  n_nosums=210.2us  l_loadonly=201.8us  n_nobias=202.8us  d_bias1=216.0us  e_bias6=223.7us  z_ballast=219.1us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 6 inner=29  a_base=214.3us  q_scaffold=214.6us  s_bcast=247.0us  s_bcast_all=231.9us  s_bcast_scale=234.2us  p_split_meta=214.5us  g_pack32=213.9us  s_bcast_pack32=227.1us  p_prefetch_w=213.7us  n_nosums=209.9us  l_loadonly=202.5us  n_nobias=202.6us  d_bias1=216.2us  e_bias6=223.0us  z_ballast=218.7us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 block 7 inner=29  a_base=214.7us  q_scaffold=214.8us  s_bcast=246.5us  s_bcast_all=231.4us  s_bcast_scale=234.8us  p_split_meta=214.7us  g_pack32=213.6us  s_bcast_pack32=227.7us  p_prefetch_w=214.3us  n_nosums=209.8us  l_loadonly=201.7us  n_nobias=202.4us  d_bias1=216.1us  e_bias6=223.4us  z_ballast=218.7us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=3 thermal entry=54.8C exit=57.2C
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 0 inner=25  a_base=258.2us  q_scaffold=251.3us  s_bcast=285.8us  s_bcast_all=265.4us  s_bcast_scale=267.9us  p_split_meta=248.1us  g_pack32=247.9us  s_bcast_pack32=266.8us  p_prefetch_w=248.4us  n_nosums=230.5us  l_loadonly=203.9us  n_nobias=226.3us  d_bias1=249.5us  e_bias6=256.4us  z_ballast=256.3us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 1 inner=25  a_base=248.4us  q_scaffold=247.9us  s_bcast=286.1us  s_bcast_all=264.7us  s_bcast_scale=267.6us  p_split_meta=247.5us  g_pack32=247.3us  s_bcast_pack32=266.5us  p_prefetch_w=249.1us  n_nosums=230.7us  l_loadonly=203.8us  n_nobias=227.3us  d_bias1=249.5us  e_bias6=255.3us  z_ballast=256.9us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 2 inner=25  a_base=248.7us  q_scaffold=247.9us  s_bcast=285.9us  s_bcast_all=265.0us  s_bcast_scale=267.5us  p_split_meta=248.2us  g_pack32=247.7us  s_bcast_pack32=266.7us  p_prefetch_w=248.0us  n_nosums=229.3us  l_loadonly=203.7us  n_nobias=226.3us  d_bias1=249.6us  e_bias6=255.4us  z_ballast=256.9us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 3 inner=25  a_base=248.1us  q_scaffold=248.6us  s_bcast=285.1us  s_bcast_all=265.4us  s_bcast_scale=267.6us  p_split_meta=248.5us  g_pack32=247.8us  s_bcast_pack32=267.0us  p_prefetch_w=247.9us  n_nosums=230.4us  l_loadonly=204.1us  n_nobias=227.1us  d_bias1=249.5us  e_bias6=256.2us  z_ballast=257.1us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 4 inner=25  a_base=247.5us  q_scaffold=247.9us  s_bcast=284.9us  s_bcast_all=264.4us  s_bcast_scale=266.7us  p_split_meta=247.5us  g_pack32=247.9us  s_bcast_pack32=266.5us  p_prefetch_w=248.2us  n_nosums=229.8us  l_loadonly=205.2us  n_nobias=226.9us  d_bias1=249.2us  e_bias6=256.0us  z_ballast=256.5us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 5 inner=25  a_base=245.5us  q_scaffold=245.7us  s_bcast=282.7us  s_bcast_all=261.1us  s_bcast_scale=264.0us  p_split_meta=244.6us  g_pack32=244.4us  s_bcast_pack32=262.9us  p_prefetch_w=244.3us  n_nosums=226.1us  l_loadonly=200.5us  n_nobias=222.8us  d_bias1=245.6us  e_bias6=251.8us  z_ballast=252.6us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 6 inner=25  a_base=245.1us  q_scaffold=244.5us  s_bcast=282.0us  s_bcast_all=261.0us  s_bcast_scale=263.0us  p_split_meta=244.1us  g_pack32=243.5us  s_bcast_pack32=262.3us  p_prefetch_w=243.7us  n_nosums=226.0us  l_loadonly=200.4us  n_nobias=222.3us  d_bias1=245.1us  e_bias6=251.5us  z_ballast=252.3us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 block 7 inner=25  a_base=246.1us  q_scaffold=246.0us  s_bcast=283.7us  s_bcast_all=264.0us  s_bcast_scale=265.3us  p_split_meta=246.2us  g_pack32=246.2us  s_bcast_pack32=264.7us  p_prefetch_w=246.1us  n_nosums=228.2us  l_loadonly=203.1us  n_nobias=224.8us  d_bias1=247.7us  e_bias6=253.9us  z_ballast=254.7us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=4 thermal entry=54.9C exit=75.8C
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 0 inner=25  a_base=292.3us  q_scaffold=292.0us  s_bcast=478.7us  s_bcast_all=329.5us  s_bcast_scale=310.8us  p_split_meta=292.3us  g_pack32=292.0us  s_bcast_pack32=459.1us  p_prefetch_w=474.8us  n_nosums=264.6us  l_loadonly=207.4us  n_nobias=258.6us  d_bias1=295.0us  e_bias6=297.8us  z_ballast=491.1us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 1 inner=25  a_base=291.9us  q_scaffold=291.6us  s_bcast=478.9us  s_bcast_all=329.8us  s_bcast_scale=310.7us  p_split_meta=292.8us  g_pack32=291.4us  s_bcast_pack32=459.5us  p_prefetch_w=475.3us  n_nosums=264.6us  l_loadonly=205.7us  n_nobias=257.8us  d_bias1=295.1us  e_bias6=298.0us  z_ballast=490.6us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 2 inner=25  a_base=292.7us  q_scaffold=291.9us  s_bcast=478.6us  s_bcast_all=329.8us  s_bcast_scale=310.8us  p_split_meta=292.2us  g_pack32=291.0us  s_bcast_pack32=458.9us  p_prefetch_w=474.5us  n_nosums=264.4us  l_loadonly=206.2us  n_nobias=257.9us  d_bias1=295.7us  e_bias6=298.2us  z_ballast=491.2us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 3 inner=25  a_base=292.8us  q_scaffold=292.1us  s_bcast=478.2us  s_bcast_all=327.3us  s_bcast_scale=308.5us  p_split_meta=290.0us  g_pack32=291.2us  s_bcast_pack32=458.4us  p_prefetch_w=474.7us  n_nosums=264.0us  l_loadonly=206.3us  n_nobias=256.6us  d_bias1=293.6us  e_bias6=294.6us  z_ballast=487.4us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 4 inner=25  a_base=292.9us  q_scaffold=291.0us  s_bcast=478.9us  s_bcast_all=330.3us  s_bcast_scale=310.4us  p_split_meta=292.4us  g_pack32=291.5us  s_bcast_pack32=458.8us  p_prefetch_w=475.1us  n_nosums=264.6us  l_loadonly=206.2us  n_nobias=257.8us  d_bias1=295.4us  e_bias6=298.1us  z_ballast=490.8us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 5 inner=25  a_base=292.8us  q_scaffold=292.2us  s_bcast=478.0us  s_bcast_all=328.9us  s_bcast_scale=310.6us  p_split_meta=292.0us  g_pack32=291.4us  s_bcast_pack32=458.3us  p_prefetch_w=474.7us  n_nosums=264.5us  l_loadonly=205.8us  n_nobias=258.0us  d_bias1=295.6us  e_bias6=298.2us  z_ballast=491.4us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 6 inner=25  a_base=292.5us  q_scaffold=291.3us  s_bcast=478.7us  s_bcast_all=329.9us  s_bcast_scale=310.6us  p_split_meta=291.9us  g_pack32=291.9us  s_bcast_pack32=459.0us  p_prefetch_w=474.4us  n_nosums=264.9us  l_loadonly=206.1us  n_nobias=257.7us  d_bias1=295.3us  e_bias6=297.6us  z_ballast=492.0us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 block 7 inner=25  a_base=290.3us  q_scaffold=290.4us  s_bcast=476.0us  s_bcast_all=326.0us  s_bcast_scale=307.8us  p_split_meta=289.6us  g_pack32=288.5us  s_bcast_pack32=456.7us  p_prefetch_w=471.6us  n_nosums=262.0us  l_loadonly=205.6us  n_nobias=255.2us  d_bias1=292.3us  e_bias6=294.6us  z_ballast=487.3us
+e118_qmv_probe:   gdn_in_proj_k5120_n16480 M=5 thermal entry=54.9C exit=58.8C
+e118_qmv_probe: shape fa_qkv_k5120_n14336  w=36.7MB
+e118_qmv_probe:   fidelity M=2  base_vs_double max_rel=2.476e-01 rms=6.263e-03  base_nonfinite=0/28672
+e118_qmv_probe:     q_scaffold      vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=28672/28672 max_ulp=33328 max_rel=1.604e+00  vs_double rel=4.231e+02 rms=9.870e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=28624/28672 max_ulp=32889 max_rel=2.000e+00  vs_double rel=5.724e+01 rms=1.006e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=28623/28672 max_ulp=32871 max_rel=2.000e+00  vs_double rel=3.377e+01 rms=1.241e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=28672/28672 max_ulp=34277 max_rel=1.859e+00  vs_double rel=2.615e+04 rms=6.701e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/28672 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=6.263e-03   exact
+e118_qmv_probe:   fidelity M=3  base_vs_double max_rel=2.476e-01 rms=5.166e-03  base_nonfinite=0/43008
+e118_qmv_probe:     q_scaffold      vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=43008/43008 max_ulp=33377 max_rel=1.604e+00  vs_double rel=4.231e+02 rms=9.959e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=42951/43008 max_ulp=32912 max_rel=2.000e+00  vs_double rel=5.724e+01 rms=1.201e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=42948/43008 max_ulp=32955 max_rel=2.000e+00  vs_double rel=3.377e+01 rms=1.349e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=43008/43008 max_ulp=34303 max_rel=1.937e+00  vs_double rel=2.615e+04 rms=8.482e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/43008 max_ulp=0 max_rel=0.000e+00  vs_double rel=2.476e-01 rms=5.166e-03   exact
+e118_qmv_probe:   fidelity M=4  base_vs_double max_rel=9.629e+00 rms=6.086e-03  base_nonfinite=0/57344
+e118_qmv_probe:     q_scaffold      vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=57344/57344 max_ulp=33377 max_rel=1.604e+00  vs_double rel=1.226e+04 rms=1.036e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=57264/57344 max_ulp=32912 max_rel=2.000e+00  vs_double rel=9.493e+02 rms=1.211e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=57263/57344 max_ulp=32955 max_rel=2.000e+00  vs_double rel=9.742e+01 rms=1.277e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=57344/57344 max_ulp=34303 max_rel=1.965e+00  vs_double rel=5.981e+05 rms=8.123e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/57344 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.086e-03   exact
+e118_qmv_probe:   fidelity M=5  base_vs_double max_rel=9.629e+00 rms=6.591e-03  base_nonfinite=0/71680
+e118_qmv_probe:     q_scaffold      vs base differing=0/71680 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.591e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=71628/71680 max_ulp=33203 max_rel=2.000e+00  vs_double rel=1.149e+03 rms=3.120e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3ff8 arm=0x410f
+e118_qmv_probe:     s_bcast_all     vs base differing=71628/71680 max_ulp=33203 max_rel=2.000e+00  vs_double rel=1.149e+03 rms=3.120e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3ff8 arm=0x410f
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/71680 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.591e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/71680 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.591e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/71680 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.591e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=71642/71680 max_ulp=33240 max_rel=2.000e+00  vs_double rel=1.149e+03 rms=4.220e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3ff8 arm=0x410f
+e118_qmv_probe:     p_prefetch_w    vs base differing=71648/71680 max_ulp=33246 max_rel=2.000e+00  vs_double rel=4.591e+03 rms=4.645e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3ff8 arm=0x411f
+e118_qmv_probe:     n_nosums        vs base differing=71680/71680 max_ulp=33377 max_rel=1.842e+00  vs_double rel=1.226e+04 rms=9.898e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=71590/71680 max_ulp=32917 max_rel=2.000e+00  vs_double rel=9.493e+02 rms=1.273e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=71595/71680 max_ulp=32957 max_rel=2.000e+00  vs_double rel=1.683e+02 rms=1.436e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=71680/71680 max_ulp=34324 max_rel=1.965e+00  vs_double rel=5.981e+05 rms=9.467e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/71680 max_ulp=0 max_rel=0.000e+00  vs_double rel=9.629e+00 rms=6.591e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=71650/71680 max_ulp=33274 max_rel=2.000e+00  vs_double rel=4.591e+03 rms=4.760e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0x3ff8 arm=0x4146
+e118_qmv_probe:   control q_scaffold      x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast         x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_all     x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_scale   x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_split_meta    x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control g_pack32        x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_pack32  x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_prefetch_w    x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control e_bias6         x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control z_ballast       x_hit=10608 meta_hit=16 restored_diff=0
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 0 inner=64  a_base=181.2us  q_scaffold=181.5us  s_bcast=186.6us  s_bcast_all=182.3us  s_bcast_scale=182.0us  p_split_meta=181.5us  g_pack32=180.9us  s_bcast_pack32=182.6us  p_prefetch_w=180.7us  n_nosums=180.7us  l_loadonly=174.2us  n_nobias=171.7us  d_bias1=177.2us  e_bias6=179.1us  z_ballast=181.1us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 1 inner=64  a_base=181.2us  q_scaffold=181.3us  s_bcast=186.9us  s_bcast_all=182.3us  s_bcast_scale=182.4us  p_split_meta=181.4us  g_pack32=181.4us  s_bcast_pack32=182.3us  p_prefetch_w=180.7us  n_nosums=180.4us  l_loadonly=174.3us  n_nobias=172.0us  d_bias1=177.5us  e_bias6=179.2us  z_ballast=181.0us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 2 inner=64  a_base=181.0us  q_scaffold=181.1us  s_bcast=186.6us  s_bcast_all=182.3us  s_bcast_scale=182.0us  p_split_meta=181.7us  g_pack32=180.8us  s_bcast_pack32=182.5us  p_prefetch_w=180.8us  n_nosums=180.7us  l_loadonly=174.4us  n_nobias=172.2us  d_bias1=177.3us  e_bias6=179.2us  z_ballast=181.0us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 3 inner=64  a_base=181.2us  q_scaffold=181.3us  s_bcast=186.3us  s_bcast_all=181.4us  s_bcast_scale=182.1us  p_split_meta=181.0us  g_pack32=181.1us  s_bcast_pack32=182.9us  p_prefetch_w=182.1us  n_nosums=182.0us  l_loadonly=175.2us  n_nobias=172.9us  d_bias1=177.7us  e_bias6=179.0us  z_ballast=180.8us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 4 inner=64  a_base=180.9us  q_scaffold=181.6us  s_bcast=186.7us  s_bcast_all=182.2us  s_bcast_scale=182.2us  p_split_meta=181.2us  g_pack32=181.0us  s_bcast_pack32=182.5us  p_prefetch_w=180.9us  n_nosums=180.6us  l_loadonly=174.1us  n_nobias=172.0us  d_bias1=177.7us  e_bias6=179.1us  z_ballast=181.3us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 5 inner=64  a_base=181.3us  q_scaffold=181.0us  s_bcast=187.3us  s_bcast_all=182.3us  s_bcast_scale=182.3us  p_split_meta=180.9us  g_pack32=181.1us  s_bcast_pack32=182.3us  p_prefetch_w=180.5us  n_nosums=180.4us  l_loadonly=174.2us  n_nobias=171.7us  d_bias1=177.4us  e_bias6=179.2us  z_ballast=181.1us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 6 inner=64  a_base=180.4us  q_scaffold=181.9us  s_bcast=186.9us  s_bcast_all=182.9us  s_bcast_scale=183.1us  p_split_meta=181.9us  g_pack32=180.6us  s_bcast_pack32=180.7us  p_prefetch_w=178.5us  n_nosums=177.7us  l_loadonly=171.1us  n_nobias=168.6us  d_bias1=174.2us  e_bias6=175.8us  z_ballast=177.6us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 block 7 inner=64  a_base=179.9us  q_scaffold=179.9us  s_bcast=185.1us  s_bcast_all=180.9us  s_bcast_scale=180.6us  p_split_meta=180.4us  g_pack32=181.2us  s_bcast_pack32=183.1us  p_prefetch_w=181.7us  n_nosums=181.4us  l_loadonly=175.2us  n_nobias=172.7us  d_bias1=178.2us  e_bias6=179.5us  z_ballast=181.8us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=2 thermal entry=56.4C exit=73.6C
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 0 inner=34  a_base=198.1us  q_scaffold=193.7us  s_bcast=217.1us  s_bcast_all=203.9us  s_bcast_scale=205.7us  p_split_meta=189.3us  g_pack32=188.4us  s_bcast_pack32=200.6us  p_prefetch_w=189.0us  n_nosums=185.2us  l_loadonly=177.7us  n_nobias=178.4us  d_bias1=190.2us  e_bias6=197.0us  z_ballast=192.7us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 1 inner=34  a_base=189.1us  q_scaffold=189.2us  s_bcast=217.7us  s_bcast_all=203.8us  s_bcast_scale=206.7us  p_split_meta=190.2us  g_pack32=188.5us  s_bcast_pack32=200.8us  p_prefetch_w=189.0us  n_nosums=185.0us  l_loadonly=177.3us  n_nobias=178.7us  d_bias1=190.5us  e_bias6=198.0us  z_ballast=192.8us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 2 inner=34  a_base=189.5us  q_scaffold=189.1us  s_bcast=217.8us  s_bcast_all=203.6us  s_bcast_scale=206.0us  p_split_meta=188.9us  g_pack32=188.2us  s_bcast_pack32=200.2us  p_prefetch_w=189.1us  n_nosums=185.3us  l_loadonly=177.5us  n_nobias=178.3us  d_bias1=190.6us  e_bias6=197.1us  z_ballast=192.5us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 3 inner=34  a_base=189.0us  q_scaffold=189.4us  s_bcast=217.2us  s_bcast_all=204.0us  s_bcast_scale=206.0us  p_split_meta=189.2us  g_pack32=188.3us  s_bcast_pack32=201.0us  p_prefetch_w=189.3us  n_nosums=185.5us  l_loadonly=177.3us  n_nobias=178.6us  d_bias1=189.9us  e_bias6=196.8us  z_ballast=192.8us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 4 inner=34  a_base=189.5us  q_scaffold=189.5us  s_bcast=216.8us  s_bcast_all=203.6us  s_bcast_scale=205.6us  p_split_meta=189.0us  g_pack32=188.2us  s_bcast_pack32=200.9us  p_prefetch_w=189.1us  n_nosums=185.4us  l_loadonly=177.9us  n_nobias=178.8us  d_bias1=190.5us  e_bias6=197.3us  z_ballast=192.5us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 5 inner=34  a_base=189.5us  q_scaffold=189.4us  s_bcast=217.9us  s_bcast_all=203.8us  s_bcast_scale=205.9us  p_split_meta=189.5us  g_pack32=188.3us  s_bcast_pack32=200.3us  p_prefetch_w=189.1us  n_nosums=185.3us  l_loadonly=177.7us  n_nobias=179.0us  d_bias1=190.5us  e_bias6=197.0us  z_ballast=192.7us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 6 inner=34  a_base=189.5us  q_scaffold=189.4us  s_bcast=217.2us  s_bcast_all=203.7us  s_bcast_scale=206.0us  p_split_meta=189.0us  g_pack32=187.9us  s_bcast_pack32=200.8us  p_prefetch_w=189.1us  n_nosums=185.1us  l_loadonly=177.9us  n_nobias=179.3us  d_bias1=190.4us  e_bias6=197.4us  z_ballast=193.0us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 block 7 inner=34  a_base=189.2us  q_scaffold=189.5us  s_bcast=217.1us  s_bcast_all=203.8us  s_bcast_scale=206.2us  p_split_meta=188.9us  g_pack32=188.3us  s_bcast_pack32=200.6us  p_prefetch_w=189.0us  n_nosums=185.9us  l_loadonly=177.7us  n_nobias=178.8us  d_bias1=190.7us  e_bias6=197.2us  z_ballast=192.7us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=3 thermal entry=56.2C exit=58.5C
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 0 inner=27  a_base=229.4us  q_scaffold=223.0us  s_bcast=250.3us  s_bcast_all=231.7us  s_bcast_scale=234.2us  p_split_meta=217.0us  g_pack32=216.3us  s_bcast_pack32=234.0us  p_prefetch_w=217.4us  n_nosums=201.6us  l_loadonly=178.7us  n_nobias=198.6us  d_bias1=217.9us  e_bias6=223.9us  z_ballast=224.8us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 1 inner=27  a_base=217.8us  q_scaffold=217.9us  s_bcast=251.0us  s_bcast_all=233.3us  s_bcast_scale=234.0us  p_split_meta=216.8us  g_pack32=217.0us  s_bcast_pack32=233.9us  p_prefetch_w=217.8us  n_nosums=201.2us  l_loadonly=178.5us  n_nobias=198.3us  d_bias1=218.6us  e_bias6=224.3us  z_ballast=224.7us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 2 inner=27  a_base=219.1us  q_scaffold=219.3us  s_bcast=252.7us  s_bcast_all=233.8us  s_bcast_scale=236.9us  p_split_meta=218.9us  g_pack32=218.3us  s_bcast_pack32=235.5us  p_prefetch_w=219.4us  n_nosums=202.5us  l_loadonly=180.1us  n_nobias=200.3us  d_bias1=219.9us  e_bias6=225.8us  z_ballast=226.5us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 3 inner=27  a_base=218.9us  q_scaffold=219.0us  s_bcast=251.4us  s_bcast_all=234.0us  s_bcast_scale=235.6us  p_split_meta=218.5us  g_pack32=218.5us  s_bcast_pack32=235.3us  p_prefetch_w=218.8us  n_nosums=203.0us  l_loadonly=180.0us  n_nobias=200.2us  d_bias1=219.9us  e_bias6=225.7us  z_ballast=226.1us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 4 inner=27  a_base=218.4us  q_scaffold=218.3us  s_bcast=251.4us  s_bcast_all=234.0us  s_bcast_scale=235.6us  p_split_meta=218.6us  g_pack32=217.7us  s_bcast_pack32=235.3us  p_prefetch_w=218.9us  n_nosums=202.7us  l_loadonly=179.7us  n_nobias=199.6us  d_bias1=220.5us  e_bias6=225.6us  z_ballast=226.0us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 5 inner=27  a_base=218.8us  q_scaffold=219.1us  s_bcast=251.9us  s_bcast_all=233.8us  s_bcast_scale=235.9us  p_split_meta=218.5us  g_pack32=218.4us  s_bcast_pack32=234.8us  p_prefetch_w=218.7us  n_nosums=203.0us  l_loadonly=179.4us  n_nobias=200.1us  d_bias1=219.8us  e_bias6=225.5us  z_ballast=226.4us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 6 inner=27  a_base=218.8us  q_scaffold=218.4us  s_bcast=251.8us  s_bcast_all=233.7us  s_bcast_scale=235.8us  p_split_meta=218.8us  g_pack32=218.2us  s_bcast_pack32=234.6us  p_prefetch_w=219.1us  n_nosums=202.5us  l_loadonly=179.7us  n_nobias=199.9us  d_bias1=220.0us  e_bias6=225.4us  z_ballast=226.5us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 block 7 inner=27  a_base=217.9us  q_scaffold=219.0us  s_bcast=251.6us  s_bcast_all=232.8us  s_bcast_scale=236.1us  p_split_meta=219.0us  g_pack32=218.1us  s_bcast_pack32=234.8us  p_prefetch_w=218.5us  n_nosums=203.3us  l_loadonly=179.3us  n_nobias=200.0us  d_bias1=219.8us  e_bias6=225.7us  z_ballast=226.2us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=4 thermal entry=56.4C exit=74.7C
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 0 inner=21  a_base=273.4us  q_scaffold=266.8us  s_bcast=421.3us  s_bcast_all=289.0us  s_bcast_scale=273.1us  p_split_meta=256.3us  g_pack32=255.2us  s_bcast_pack32=400.5us  p_prefetch_w=415.7us  n_nosums=231.9us  l_loadonly=181.6us  n_nobias=225.5us  d_bias1=258.0us  e_bias6=259.8us  z_ballast=429.4us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 1 inner=21  a_base=255.1us  q_scaffold=255.0us  s_bcast=417.8us  s_bcast_all=287.3us  s_bcast_scale=270.8us  p_split_meta=255.0us  g_pack32=253.4us  s_bcast_pack32=398.7us  p_prefetch_w=414.5us  n_nosums=231.2us  l_loadonly=181.1us  n_nobias=225.8us  d_bias1=257.7us  e_bias6=259.7us  z_ballast=428.7us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 2 inner=21  a_base=256.3us  q_scaffold=256.6us  s_bcast=420.4us  s_bcast_all=289.7us  s_bcast_scale=273.0us  p_split_meta=257.5us  g_pack32=257.1us  s_bcast_pack32=402.3us  p_prefetch_w=416.9us  n_nosums=233.1us  l_loadonly=185.2us  n_nobias=227.3us  d_bias1=260.1us  e_bias6=262.3us  z_ballast=429.5us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 3 inner=21  a_base=257.5us  q_scaffold=257.3us  s_bcast=422.3us  s_bcast_all=290.6us  s_bcast_scale=273.4us  p_split_meta=257.5us  g_pack32=256.5us  s_bcast_pack32=402.4us  p_prefetch_w=417.0us  n_nosums=233.0us  l_loadonly=183.4us  n_nobias=227.5us  d_bias1=260.2us  e_bias6=262.4us  z_ballast=430.9us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 4 inner=21  a_base=258.1us  q_scaffold=257.7us  s_bcast=421.0us  s_bcast_all=289.9us  s_bcast_scale=274.6us  p_split_meta=257.7us  g_pack32=257.1us  s_bcast_pack32=401.9us  p_prefetch_w=417.0us  n_nosums=234.0us  l_loadonly=184.6us  n_nobias=227.4us  d_bias1=259.6us  e_bias6=262.6us  z_ballast=430.2us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 5 inner=21  a_base=258.8us  q_scaffold=258.5us  s_bcast=422.1us  s_bcast_all=293.9us  s_bcast_scale=277.0us  p_split_meta=259.9us  g_pack32=258.2us  s_bcast_pack32=406.1us  p_prefetch_w=419.4us  n_nosums=235.3us  l_loadonly=186.3us  n_nobias=230.7us  d_bias1=263.1us  e_bias6=265.7us  z_ballast=435.0us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 6 inner=21  a_base=259.4us  q_scaffold=260.0us  s_bcast=425.9us  s_bcast_all=294.0us  s_bcast_scale=276.0us  p_split_meta=259.4us  g_pack32=258.7us  s_bcast_pack32=404.6us  p_prefetch_w=419.7us  n_nosums=235.9us  l_loadonly=186.6us  n_nobias=229.4us  d_bias1=262.9us  e_bias6=265.4us  z_ballast=435.3us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 block 7 inner=21  a_base=260.1us  q_scaffold=260.0us  s_bcast=425.8us  s_bcast_all=293.0us  s_bcast_scale=276.8us  p_split_meta=259.4us  g_pack32=258.8us  s_bcast_pack32=404.1us  p_prefetch_w=419.5us  n_nosums=236.1us  l_loadonly=185.7us  n_nobias=229.9us  d_bias1=264.0us  e_bias6=264.7us  z_ballast=434.7us
+e118_qmv_probe:   fa_qkv_k5120_n14336 M=5 thermal entry=55.7C exit=64.5C
+e118_qmv_probe: shape mlp_down_k17408_n5120  w=44.6MB
+e118_qmv_probe:   fidelity M=2  base_vs_double max_rel=4.626e-02 rms=3.541e-03  base_nonfinite=0/10240
+e118_qmv_probe:     q_scaffold      vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=10240/10240 max_ulp=33602 max_rel=1.323e+00  vs_double rel=6.145e+02 rms=1.283e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=10230/10240 max_ulp=33102 max_rel=2.000e+00  vs_double rel=1.020e+01 rms=1.105e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=10232/10240 max_ulp=33258 max_rel=2.000e+00  vs_double rel=2.297e+01 rms=1.647e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=10240/10240 max_ulp=34603 max_rel=1.878e+00  vs_double rel=2.194e+04 rms=1.234e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/10240 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.541e-03   exact
+e118_qmv_probe:   fidelity M=3  base_vs_double max_rel=4.626e-02 rms=3.298e-03  base_nonfinite=0/15360
+e118_qmv_probe:     q_scaffold      vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=15360/15360 max_ulp=33647 max_rel=1.323e+00  vs_double rel=6.145e+02 rms=1.381e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=15341/15360 max_ulp=33102 max_rel=2.000e+00  vs_double rel=1.020e+01 rms=9.810e-01   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=15342/15360 max_ulp=33258 max_rel=2.000e+00  vs_double rel=2.297e+01 rms=1.455e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=15360/15360 max_ulp=34603 max_rel=1.939e+00  vs_double rel=2.194e+04 rms=1.072e+03   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/15360 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.626e-02 rms=3.298e-03   exact
+e118_qmv_probe:   fidelity M=4  base_vs_double max_rel=4.960e-02 rms=3.139e-03  base_nonfinite=0/20480
+e118_qmv_probe:     q_scaffold      vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=20480/20480 max_ulp=33647 max_rel=1.323e+00  vs_double rel=6.145e+02 rms=1.384e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=20453/20480 max_ulp=33102 max_rel=2.000e+00  vs_double rel=1.830e+01 rms=9.237e-01   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=20458/20480 max_ulp=33258 max_rel=2.000e+00  vs_double rel=2.297e+01 rms=1.329e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=20480/20480 max_ulp=34603 max_rel=1.939e+00  vs_double rel=2.194e+04 rms=9.800e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/20480 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.139e-03   exact
+e118_qmv_probe:   fidelity M=5  base_vs_double max_rel=4.960e-02 rms=3.041e-03  base_nonfinite=0/25600
+e118_qmv_probe:     q_scaffold      vs base differing=0/25600 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.041e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=25587/25600 max_ulp=33415 max_rel=2.000e+00  vs_double rel=1.297e+02 rms=2.331e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xc089 arm=0x40b0
+e118_qmv_probe:     s_bcast_all     vs base differing=25587/25600 max_ulp=33415 max_rel=2.000e+00  vs_double rel=1.297e+02 rms=2.331e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xc089 arm=0x40b0
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/25600 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.041e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/25600 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.041e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/25600 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.041e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=25588/25600 max_ulp=33415 max_rel=2.000e+00  vs_double rel=1.297e+02 rms=2.434e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xc089 arm=0x40b0
+e118_qmv_probe:     p_prefetch_w    vs base differing=25586/25600 max_ulp=33472 max_rel=2.000e+00  vs_double rel=5.730e+01 rms=3.442e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xc089 arm=0x416c
+e118_qmv_probe:     n_nosums        vs base differing=25600/25600 max_ulp=33647 max_rel=1.323e+00  vs_double rel=6.145e+02 rms=1.390e+01   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=25563/25600 max_ulp=33102 max_rel=2.000e+00  vs_double rel=1.830e+01 rms=9.011e-01   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=25569/25600 max_ulp=33258 max_rel=2.000e+00  vs_double rel=2.297e+01 rms=1.244e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=25600/25600 max_ulp=34603 max_rel=1.939e+00  vs_double rel=2.194e+04 rms=9.093e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/25600 max_ulp=0 max_rel=0.000e+00  vs_double rel=4.960e-02 rms=3.041e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=25588/25600 max_ulp=33537 max_rel=2.000e+00  vs_double rel=1.641e+02 rms=4.969e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xc089 arm=0x41bb
+e118_qmv_probe:   control q_scaffold      x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast         x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_all     x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_scale   x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_split_meta    x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control g_pack32        x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_pack32  x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_prefetch_w    x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control e_bias6         x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control z_ballast       x_hit=2851 meta_hit=16 restored_diff=0
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 0 inner=28  a_base=250.4us  q_scaffold=247.5us  s_bcast=282.1us  s_bcast_all=252.0us  s_bcast_scale=261.5us  p_split_meta=246.5us  g_pack32=244.9us  s_bcast_pack32=259.7us  p_prefetch_w=246.9us  n_nosums=242.9us  l_loadonly=216.3us  n_nobias=233.7us  d_bias1=245.6us  e_bias6=247.3us  z_ballast=247.9us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 1 inner=28  a_base=248.6us  q_scaffold=248.0us  s_bcast=281.3us  s_bcast_all=253.2us  s_bcast_scale=262.5us  p_split_meta=247.7us  g_pack32=244.2us  s_bcast_pack32=262.1us  p_prefetch_w=247.9us  n_nosums=245.1us  l_loadonly=216.2us  n_nobias=232.9us  d_bias1=243.0us  e_bias6=247.0us  z_ballast=251.0us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 2 inner=28  a_base=247.0us  q_scaffold=247.7us  s_bcast=280.7us  s_bcast_all=253.1us  s_bcast_scale=260.5us  p_split_meta=247.0us  g_pack32=243.2us  s_bcast_pack32=260.0us  p_prefetch_w=247.6us  n_nosums=243.5us  l_loadonly=216.5us  n_nobias=232.9us  d_bias1=241.8us  e_bias6=247.5us  z_ballast=249.5us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 3 inner=28  a_base=247.9us  q_scaffold=248.3us  s_bcast=280.8us  s_bcast_all=254.4us  s_bcast_scale=262.2us  p_split_meta=248.7us  g_pack32=243.8us  s_bcast_pack32=260.9us  p_prefetch_w=246.4us  n_nosums=243.3us  l_loadonly=216.3us  n_nobias=233.5us  d_bias1=244.0us  e_bias6=248.2us  z_ballast=251.6us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 4 inner=28  a_base=247.2us  q_scaffold=245.7us  s_bcast=279.3us  s_bcast_all=248.3us  s_bcast_scale=258.9us  p_split_meta=244.0us  g_pack32=240.4us  s_bcast_pack32=258.4us  p_prefetch_w=242.4us  n_nosums=239.9us  l_loadonly=212.2us  n_nobias=228.2us  d_bias1=238.9us  e_bias6=243.5us  z_ballast=247.4us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 5 inner=28  a_base=244.4us  q_scaffold=244.2us  s_bcast=278.5us  s_bcast_all=249.3us  s_bcast_scale=259.1us  p_split_meta=245.7us  g_pack32=242.1us  s_bcast_pack32=256.4us  p_prefetch_w=243.3us  n_nosums=240.4us  l_loadonly=212.5us  n_nobias=228.5us  d_bias1=240.3us  e_bias6=244.0us  z_ballast=249.0us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 6 inner=28  a_base=245.3us  q_scaffold=245.9us  s_bcast=279.7us  s_bcast_all=251.3us  s_bcast_scale=260.9us  p_split_meta=245.7us  g_pack32=241.5us  s_bcast_pack32=259.1us  p_prefetch_w=246.2us  n_nosums=241.8us  l_loadonly=215.1us  n_nobias=231.1us  d_bias1=240.8us  e_bias6=247.3us  z_ballast=249.2us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 block 7 inner=28  a_base=244.8us  q_scaffold=246.2us  s_bcast=280.1us  s_bcast_all=251.2us  s_bcast_scale=260.0us  p_split_meta=245.4us  g_pack32=242.9us  s_bcast_pack32=259.4us  p_prefetch_w=245.3us  n_nosums=241.8us  l_loadonly=214.8us  n_nobias=231.3us  d_bias1=241.0us  e_bias6=246.4us  z_ballast=249.4us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=2 thermal entry=55.4C exit=57.0C
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 0 inner=20  a_base=257.3us  q_scaffold=259.3us  s_bcast=289.0us  s_bcast_all=275.5us  s_bcast_scale=278.1us  p_split_meta=258.3us  g_pack32=257.6us  s_bcast_pack32=268.1us  p_prefetch_w=247.2us  n_nosums=255.4us  l_loadonly=224.8us  n_nobias=248.2us  d_bias1=259.3us  e_bias6=275.2us  z_ballast=251.9us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 1 inner=20  a_base=258.1us  q_scaffold=259.5us  s_bcast=289.9us  s_bcast_all=274.2us  s_bcast_scale=278.6us  p_split_meta=261.0us  g_pack32=258.7us  s_bcast_pack32=269.9us  p_prefetch_w=246.2us  n_nosums=253.5us  l_loadonly=225.0us  n_nobias=246.7us  d_bias1=261.5us  e_bias6=272.3us  z_ballast=252.7us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 2 inner=20  a_base=259.6us  q_scaffold=259.6us  s_bcast=290.0us  s_bcast_all=274.5us  s_bcast_scale=277.6us  p_split_meta=259.5us  g_pack32=257.9us  s_bcast_pack32=268.7us  p_prefetch_w=246.0us  n_nosums=253.0us  l_loadonly=224.9us  n_nobias=247.6us  d_bias1=260.5us  e_bias6=273.2us  z_ballast=253.1us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 3 inner=20  a_base=259.4us  q_scaffold=259.8us  s_bcast=290.8us  s_bcast_all=274.5us  s_bcast_scale=277.7us  p_split_meta=258.0us  g_pack32=259.9us  s_bcast_pack32=268.8us  p_prefetch_w=246.3us  n_nosums=255.0us  l_loadonly=224.9us  n_nobias=248.2us  d_bias1=260.3us  e_bias6=274.7us  z_ballast=253.5us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 4 inner=20  a_base=260.0us  q_scaffold=259.7us  s_bcast=288.3us  s_bcast_all=273.0us  s_bcast_scale=279.8us  p_split_meta=257.2us  g_pack32=258.2us  s_bcast_pack32=269.3us  p_prefetch_w=246.2us  n_nosums=254.6us  l_loadonly=225.5us  n_nobias=246.6us  d_bias1=261.5us  e_bias6=274.2us  z_ballast=252.4us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 5 inner=20  a_base=259.4us  q_scaffold=259.0us  s_bcast=289.4us  s_bcast_all=274.1us  s_bcast_scale=278.2us  p_split_meta=258.1us  g_pack32=257.1us  s_bcast_pack32=269.2us  p_prefetch_w=246.7us  n_nosums=253.8us  l_loadonly=224.4us  n_nobias=246.7us  d_bias1=260.1us  e_bias6=274.0us  z_ballast=253.2us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 6 inner=20  a_base=260.3us  q_scaffold=260.4us  s_bcast=289.8us  s_bcast_all=272.7us  s_bcast_scale=278.6us  p_split_meta=259.7us  g_pack32=257.9us  s_bcast_pack32=268.6us  p_prefetch_w=247.4us  n_nosums=254.8us  l_loadonly=225.4us  n_nobias=247.0us  d_bias1=260.4us  e_bias6=276.1us  z_ballast=252.7us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 block 7 inner=20  a_base=258.5us  q_scaffold=260.7us  s_bcast=289.8us  s_bcast_all=274.8us  s_bcast_scale=277.8us  p_split_meta=261.9us  g_pack32=258.1us  s_bcast_pack32=268.4us  p_prefetch_w=245.4us  n_nosums=253.4us  l_loadonly=224.6us  n_nobias=246.4us  d_bias1=261.1us  e_bias6=272.6us  z_ballast=253.0us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=3 thermal entry=55.2C exit=57.1C
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 0 inner=19  a_base=316.9us  q_scaffold=308.9us  s_bcast=348.0us  s_bcast_all=316.6us  s_bcast_scale=325.0us  p_split_meta=298.5us  g_pack32=293.3us  s_bcast_pack32=323.5us  p_prefetch_w=297.2us  n_nosums=275.4us  l_loadonly=227.4us  n_nobias=272.3us  d_bias1=300.7us  e_bias6=305.0us  z_ballast=308.9us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 1 inner=19  a_base=298.8us  q_scaffold=298.3us  s_bcast=344.4us  s_bcast_all=318.8us  s_bcast_scale=326.2us  p_split_meta=297.8us  g_pack32=293.5us  s_bcast_pack32=322.8us  p_prefetch_w=298.0us  n_nosums=275.8us  l_loadonly=225.7us  n_nobias=272.4us  d_bias1=299.1us  e_bias6=305.9us  z_ballast=307.3us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 2 inner=19  a_base=299.3us  q_scaffold=298.1us  s_bcast=344.0us  s_bcast_all=319.4us  s_bcast_scale=325.3us  p_split_meta=297.5us  g_pack32=295.8us  s_bcast_pack32=323.6us  p_prefetch_w=298.5us  n_nosums=276.7us  l_loadonly=228.5us  n_nobias=273.2us  d_bias1=301.9us  e_bias6=306.1us  z_ballast=307.4us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 3 inner=19  a_base=298.7us  q_scaffold=298.6us  s_bcast=345.7us  s_bcast_all=320.5us  s_bcast_scale=328.3us  p_split_meta=299.2us  g_pack32=295.5us  s_bcast_pack32=324.5us  p_prefetch_w=299.1us  n_nosums=277.1us  l_loadonly=228.8us  n_nobias=273.4us  d_bias1=302.2us  e_bias6=306.9us  z_ballast=309.8us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 4 inner=19  a_base=301.6us  q_scaffold=297.7us  s_bcast=344.9us  s_bcast_all=319.6us  s_bcast_scale=327.6us  p_split_meta=299.8us  g_pack32=296.0us  s_bcast_pack32=324.3us  p_prefetch_w=299.9us  n_nosums=275.5us  l_loadonly=227.8us  n_nobias=272.8us  d_bias1=302.5us  e_bias6=307.6us  z_ballast=309.1us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 5 inner=19  a_base=299.2us  q_scaffold=298.9us  s_bcast=345.6us  s_bcast_all=320.1us  s_bcast_scale=328.7us  p_split_meta=299.8us  g_pack32=295.8us  s_bcast_pack32=325.2us  p_prefetch_w=300.6us  n_nosums=277.1us  l_loadonly=227.5us  n_nobias=274.2us  d_bias1=303.2us  e_bias6=309.3us  z_ballast=308.8us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 6 inner=19  a_base=299.3us  q_scaffold=298.6us  s_bcast=345.0us  s_bcast_all=320.7us  s_bcast_scale=327.6us  p_split_meta=300.3us  g_pack32=296.6us  s_bcast_pack32=324.8us  p_prefetch_w=301.0us  n_nosums=277.3us  l_loadonly=227.2us  n_nobias=273.5us  d_bias1=301.6us  e_bias6=308.3us  z_ballast=309.1us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 block 7 inner=19  a_base=299.8us  q_scaffold=298.7us  s_bcast=346.1us  s_bcast_all=320.3us  s_bcast_scale=328.3us  p_split_meta=298.5us  g_pack32=296.2us  s_bcast_pack32=325.2us  p_prefetch_w=299.4us  n_nosums=277.5us  l_loadonly=227.5us  n_nobias=273.3us  d_bias1=302.7us  e_bias6=307.5us  z_ballast=309.8us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=4 thermal entry=55.2C exit=69.6C
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 0 inner=18  a_base=350.8us  q_scaffold=343.7us  s_bcast=629.1us  s_bcast_all=452.5us  s_bcast_scale=364.5us  p_split_meta=345.9us  g_pack32=342.4us  s_bcast_pack32=565.8us  p_prefetch_w=612.4us  n_nosums=316.4us  l_loadonly=233.1us  n_nobias=306.8us  d_bias1=348.9us  e_bias6=350.6us  z_ballast=637.1us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 1 inner=18  a_base=340.3us  q_scaffold=343.1us  s_bcast=623.7us  s_bcast_all=450.1us  s_bcast_scale=362.5us  p_split_meta=341.3us  g_pack32=339.6us  s_bcast_pack32=558.8us  p_prefetch_w=607.9us  n_nosums=312.3us  l_loadonly=229.5us  n_nobias=303.7us  d_bias1=346.3us  e_bias6=350.0us  z_ballast=630.6us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 2 inner=18  a_base=343.2us  q_scaffold=340.3us  s_bcast=625.9us  s_bcast_all=448.6us  s_bcast_scale=364.0us  p_split_meta=341.9us  g_pack32=340.4us  s_bcast_pack32=561.5us  p_prefetch_w=607.2us  n_nosums=312.7us  l_loadonly=229.9us  n_nobias=303.9us  d_bias1=345.3us  e_bias6=351.2us  z_ballast=634.2us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 3 inner=18  a_base=342.7us  q_scaffold=341.6us  s_bcast=626.4us  s_bcast_all=451.4us  s_bcast_scale=365.5us  p_split_meta=345.0us  g_pack32=341.1us  s_bcast_pack32=562.1us  p_prefetch_w=612.3us  n_nosums=315.3us  l_loadonly=231.7us  n_nobias=308.0us  d_bias1=350.9us  e_bias6=351.5us  z_ballast=634.9us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 4 inner=18  a_base=345.7us  q_scaffold=345.2us  s_bcast=626.6us  s_bcast_all=450.8us  s_bcast_scale=364.5us  p_split_meta=343.3us  g_pack32=341.5us  s_bcast_pack32=564.7us  p_prefetch_w=610.9us  n_nosums=314.8us  l_loadonly=231.5us  n_nobias=310.4us  d_bias1=349.2us  e_bias6=350.8us  z_ballast=634.7us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 5 inner=18  a_base=346.7us  q_scaffold=344.3us  s_bcast=630.0us  s_bcast_all=454.4us  s_bcast_scale=364.0us  p_split_meta=345.0us  g_pack32=345.1us  s_bcast_pack32=565.7us  p_prefetch_w=612.6us  n_nosums=317.2us  l_loadonly=233.3us  n_nobias=309.4us  d_bias1=350.7us  e_bias6=355.7us  z_ballast=639.4us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 6 inner=18  a_base=345.3us  q_scaffold=343.4us  s_bcast=626.9us  s_bcast_all=450.1us  s_bcast_scale=364.4us  p_split_meta=346.0us  g_pack32=344.5us  s_bcast_pack32=568.6us  p_prefetch_w=611.5us  n_nosums=315.9us  l_loadonly=232.6us  n_nobias=308.6us  d_bias1=352.1us  e_bias6=355.0us  z_ballast=638.8us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 block 7 inner=18  a_base=345.1us  q_scaffold=346.7us  s_bcast=634.1us  s_bcast_all=454.1us  s_bcast_scale=366.1us  p_split_meta=344.7us  g_pack32=344.4us  s_bcast_pack32=567.8us  p_prefetch_w=613.2us  n_nosums=315.0us  l_loadonly=233.5us  n_nobias=309.1us  d_bias1=351.3us  e_bias6=352.8us  z_ballast=639.3us
+e118_qmv_probe:   mlp_down_k17408_n5120 M=5 thermal entry=54.5C exit=58.8C
+e118_qmv_probe: shape lm_head_k5120_n248320  w=635.7MB
+e118_qmv_probe:   fidelity M=2  base_vs_double max_rel=1.711e-01 rms=3.077e-03  base_nonfinite=0/496640
+e118_qmv_probe:     q_scaffold      vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=496640/496640 max_ulp=33366 max_rel=1.802e+00  vs_double rel=5.444e+02 rms=9.891e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=495611/496640 max_ulp=32836 max_rel=2.000e+00  vs_double rel=2.917e+01 rms=8.423e-01   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=495949/496640 max_ulp=32944 max_rel=2.000e+00  vs_double rel=5.236e+01 rms=1.392e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=496638/496640 max_ulp=34390 max_rel=2.000e+00  vs_double rel=2.156e+04 rms=9.156e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/496640 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.077e-03   exact
+e118_qmv_probe:   fidelity M=3  base_vs_double max_rel=1.711e-01 rms=3.408e-03  base_nonfinite=0/744960
+e118_qmv_probe:     q_scaffold      vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=744960/744960 max_ulp=33366 max_rel=1.891e+00  vs_double rel=5.444e+02 rms=9.999e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=743753/744960 max_ulp=32940 max_rel=2.000e+00  vs_double rel=3.855e+01 rms=1.165e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=743987/744960 max_ulp=32951 max_rel=2.000e+00  vs_double rel=5.236e+01 rms=1.406e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=744958/744960 max_ulp=34390 max_rel=2.000e+00  vs_double rel=4.578e+04 rms=9.654e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/744960 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.408e-03   exact
+e118_qmv_probe:   fidelity M=4  base_vs_double max_rel=1.711e-01 rms=3.085e-03  base_nonfinite=0/993280
+e118_qmv_probe:     q_scaffold      vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     s_bcast_all     vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     p_prefetch_w    vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     n_nosums        vs base differing=993280/993280 max_ulp=33366 max_rel=1.891e+00  vs_double rel=5.444e+02 rms=9.238e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=991722/993280 max_ulp=32940 max_rel=2.000e+00  vs_double rel=3.855e+01 rms=1.046e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=991867/993280 max_ulp=32951 max_rel=2.000e+00  vs_double rel=5.236e+01 rms=1.188e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=993277/993280 max_ulp=34390 max_rel=2.000e+00  vs_double rel=4.578e+04 rms=8.308e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=0/993280 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.085e-03   exact
+e118_qmv_probe:   fidelity M=5  base_vs_double max_rel=1.711e-01 rms=3.125e-03  base_nonfinite=0/1241600
+e118_qmv_probe:     q_scaffold      vs base differing=0/1241600 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.125e-03   exact
+e118_qmv_probe:     s_bcast         vs base differing=1241288/1241600 max_ulp=33263 max_rel=2.000e+00  vs_double rel=1.820e+02 rms=3.628e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbd22 arm=0x4076
+e118_qmv_probe:     s_bcast_all     vs base differing=1241288/1241600 max_ulp=33263 max_rel=2.000e+00  vs_double rel=1.820e+02 rms=3.628e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbd22 arm=0x4076
+e118_qmv_probe:     s_bcast_scale   vs base differing=0/1241600 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.125e-03   exact
+e118_qmv_probe:     p_split_meta    vs base differing=0/1241600 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.125e-03   exact
+e118_qmv_probe:     g_pack32        vs base differing=0/1241600 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.125e-03   exact
+e118_qmv_probe:     s_bcast_pack32  vs base differing=1241352/1241600 max_ulp=33263 max_rel=2.000e+00  vs_double rel=1.820e+02 rms=3.766e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbd22 arm=0x4076
+e118_qmv_probe:     p_prefetch_w    vs base differing=1241099/1241600 max_ulp=33216 max_rel=2.000e+00  vs_double rel=2.125e+02 rms=3.357e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbd22 arm=0xc10b
+e118_qmv_probe:     n_nosums        vs base differing=1241600/1241600 max_ulp=33366 max_rel=1.891e+00  vs_double rel=5.444e+02 rms=9.217e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     l_loadonly      vs base differing=1239774/1241600 max_ulp=32940 max_rel=2.000e+00  vs_double rel=3.855e+01 rms=1.077e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     n_nobias        vs base differing=1239751/1241600 max_ulp=32951 max_rel=2.000e+00  vs_double rel=5.236e+01 rms=1.144e+00   (diagnostic arm, difference expected)
+e118_qmv_probe:     d_bias1         vs base differing=1241594/1241600 max_ulp=34390 max_rel=2.000e+00  vs_double rel=4.578e+04 rms=7.817e+02   (diagnostic arm, difference expected)
+e118_qmv_probe:     e_bias6         vs base differing=0/1241600 max_ulp=0 max_rel=0.000e+00  vs_double rel=1.711e-01 rms=3.125e-03   exact
+e118_qmv_probe:     z_ballast       vs base differing=1240933/1241600 max_ulp=33216 max_rel=2.000e+00  vs_double rel=1.718e+02 rms=3.109e+00   *** EXACTNESS FAILURE ***
+e118_qmv_probe:       FIRST MISMATCH m=0 n=0 base=0xbd22 arm=0xc0e1
+e118_qmv_probe:   control q_scaffold      x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast         x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_all     x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_scale   x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_split_meta    x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control g_pack32        x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control s_bcast_pack32  x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control p_prefetch_w    x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control e_bias6         x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   control z_ballast       x_hit=177004 meta_hit=16 restored_diff=0
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 0 inner=13  a_base=2866.0us  q_scaffold=2865.1us  s_bcast=2898.9us  s_bcast_all=2862.4us  s_bcast_scale=2865.6us  p_split_meta=2878.7us  g_pack32=2866.3us  s_bcast_pack32=2862.2us  p_prefetch_w=2859.5us  n_nosums=2877.3us  l_loadonly=2909.0us  n_nobias=2747.4us  d_bias1=2819.7us  e_bias6=2806.3us  z_ballast=2881.7us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 1 inner=13  a_base=2855.8us  q_scaffold=2856.3us  s_bcast=2892.8us  s_bcast_all=2853.5us  s_bcast_scale=2861.8us  p_split_meta=2861.0us  g_pack32=2861.0us  s_bcast_pack32=2845.1us  p_prefetch_w=2840.7us  n_nosums=2842.4us  l_loadonly=2838.7us  n_nobias=2685.3us  d_bias1=2768.6us  e_bias6=2774.2us  z_ballast=2840.5us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 2 inner=13  a_base=2845.5us  q_scaffold=2844.2us  s_bcast=2883.4us  s_bcast_all=2838.6us  s_bcast_scale=2843.9us  p_split_meta=2844.8us  g_pack32=2852.3us  s_bcast_pack32=2841.2us  p_prefetch_w=2839.3us  n_nosums=2844.2us  l_loadonly=2841.2us  n_nobias=2686.5us  d_bias1=2766.4us  e_bias6=2772.9us  z_ballast=2838.1us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 3 inner=13  a_base=2860.7us  q_scaffold=2867.1us  s_bcast=2899.8us  s_bcast_all=2863.2us  s_bcast_scale=2861.2us  p_split_meta=2864.8us  g_pack32=2862.7us  s_bcast_pack32=2864.2us  p_prefetch_w=2863.5us  n_nosums=2866.3us  l_loadonly=2868.0us  n_nobias=2709.1us  d_bias1=2808.6us  e_bias6=2806.5us  z_ballast=2918.8us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 4 inner=13  a_base=2864.3us  q_scaffold=2853.9us  s_bcast=2896.4us  s_bcast_all=2859.3us  s_bcast_scale=2852.8us  p_split_meta=2857.3us  g_pack32=2860.9us  s_bcast_pack32=2870.9us  p_prefetch_w=2850.7us  n_nosums=2855.1us  l_loadonly=2849.8us  n_nobias=2688.5us  d_bias1=2770.0us  e_bias6=2774.1us  z_ballast=2841.2us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 5 inner=13  a_base=2842.2us  q_scaffold=2844.6us  s_bcast=2886.0us  s_bcast_all=2847.1us  s_bcast_scale=2839.9us  p_split_meta=2845.8us  g_pack32=2849.6us  s_bcast_pack32=2842.4us  p_prefetch_w=2840.5us  n_nosums=2843.3us  l_loadonly=2842.6us  n_nobias=2685.5us  d_bias1=2767.1us  e_bias6=2772.7us  z_ballast=2837.7us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 6 inner=13  a_base=2867.7us  q_scaffold=2868.6us  s_bcast=2907.0us  s_bcast_all=2869.2us  s_bcast_scale=2861.0us  p_split_meta=2872.3us  g_pack32=2875.2us  s_bcast_pack32=2867.4us  p_prefetch_w=2889.2us  n_nosums=2904.3us  l_loadonly=2900.3us  n_nobias=2685.4us  d_bias1=2766.1us  e_bias6=2772.8us  z_ballast=2834.6us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 block 7 inner=13  a_base=2866.8us  q_scaffold=2872.9us  s_bcast=2911.7us  s_bcast_all=2882.0us  s_bcast_scale=2864.3us  p_split_meta=2872.8us  g_pack32=2875.7us  s_bcast_pack32=2864.2us  p_prefetch_w=2862.6us  n_nosums=2865.9us  l_loadonly=2877.7us  n_nobias=2740.3us  d_bias1=2806.3us  e_bias6=2810.8us  z_ballast=2877.4us
+e118_qmv_probe:   lm_head_k5120_n248320 M=2 thermal entry=64.0C exit=66.2C
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 0 inner=3  a_base=2956.7us  q_scaffold=2947.1us  s_bcast=3404.5us  s_bcast_all=3178.0us  s_bcast_scale=3185.8us  p_split_meta=2937.7us  g_pack32=2926.4us  s_bcast_pack32=3113.9us  p_prefetch_w=2935.3us  n_nosums=2888.7us  l_loadonly=2879.4us  n_nobias=2786.1us  d_bias1=2971.8us  e_bias6=3069.0us  z_ballast=3037.8us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 1 inner=3  a_base=2935.3us  q_scaffold=2935.4us  s_bcast=3390.6us  s_bcast_all=3174.7us  s_bcast_scale=3184.6us  p_split_meta=2937.7us  g_pack32=2928.3us  s_bcast_pack32=3111.2us  p_prefetch_w=2939.1us  n_nosums=2893.3us  l_loadonly=2881.0us  n_nobias=2773.9us  d_bias1=2952.1us  e_bias6=3059.6us  z_ballast=3008.6us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 2 inner=3  a_base=2936.7us  q_scaffold=2936.5us  s_bcast=3388.7us  s_bcast_all=3175.9us  s_bcast_scale=3183.4us  p_split_meta=2929.8us  g_pack32=2927.4us  s_bcast_pack32=3114.3us  p_prefetch_w=2937.1us  n_nosums=2893.6us  l_loadonly=2878.9us  n_nobias=2770.4us  d_bias1=2954.8us  e_bias6=3059.6us  z_ballast=3003.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 3 inner=3  a_base=2931.3us  q_scaffold=2954.5us  s_bcast=3380.5us  s_bcast_all=3175.9us  s_bcast_scale=3185.8us  p_split_meta=2956.5us  g_pack32=2953.9us  s_bcast_pack32=3115.8us  p_prefetch_w=2950.8us  n_nosums=2913.9us  l_loadonly=2887.2us  n_nobias=2769.0us  d_bias1=2947.3us  e_bias6=3050.7us  z_ballast=2991.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 4 inner=3  a_base=2934.1us  q_scaffold=2935.5us  s_bcast=3378.2us  s_bcast_all=3163.1us  s_bcast_scale=3176.1us  p_split_meta=2932.8us  g_pack32=2919.8us  s_bcast_pack32=3107.7us  p_prefetch_w=2944.1us  n_nosums=2905.8us  l_loadonly=2901.8us  n_nobias=2773.0us  d_bias1=2950.1us  e_bias6=3050.6us  z_ballast=2997.7us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 5 inner=3  a_base=2944.6us  q_scaffold=2943.7us  s_bcast=3380.0us  s_bcast_all=3170.0us  s_bcast_scale=3178.0us  p_split_meta=2939.9us  g_pack32=2931.8us  s_bcast_pack32=3109.5us  p_prefetch_w=2934.9us  n_nosums=2897.7us  l_loadonly=2884.4us  n_nobias=2770.7us  d_bias1=2948.1us  e_bias6=3052.1us  z_ballast=2999.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 6 inner=3  a_base=2937.9us  q_scaffold=2938.6us  s_bcast=3384.1us  s_bcast_all=3176.8us  s_bcast_scale=3180.2us  p_split_meta=2937.7us  g_pack32=2929.2us  s_bcast_pack32=3110.4us  p_prefetch_w=2937.2us  n_nosums=2902.8us  l_loadonly=2890.5us  n_nobias=2785.1us  d_bias1=2949.9us  e_bias6=3052.5us  z_ballast=3000.6us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 block 7 inner=3  a_base=2936.3us  q_scaffold=2942.4us  s_bcast=3387.9us  s_bcast_all=3176.8us  s_bcast_scale=3185.8us  p_split_meta=2939.9us  g_pack32=2929.4us  s_bcast_pack32=3115.4us  p_prefetch_w=2936.2us  n_nosums=2886.3us  l_loadonly=2896.5us  n_nobias=2775.0us  d_bias1=2950.3us  e_bias6=3064.1us  z_ballast=3002.7us
+e118_qmv_probe:   lm_head_k5120_n248320 M=3 thermal entry=62.7C exit=66.1C
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 0 inner=3  a_base=3423.2us  q_scaffold=3415.8us  s_bcast=3958.6us  s_bcast_all=3672.9us  s_bcast_scale=3678.1us  p_split_meta=3417.3us  g_pack32=3413.1us  s_bcast_pack32=3668.4us  p_prefetch_w=3421.0us  n_nosums=3158.2us  l_loadonly=2887.5us  n_nobias=3109.6us  d_bias1=3434.9us  e_bias6=3523.7us  z_ballast=3545.0us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 1 inner=3  a_base=3419.8us  q_scaffold=3416.7us  s_bcast=3957.3us  s_bcast_all=3668.2us  s_bcast_scale=3684.0us  p_split_meta=3420.9us  g_pack32=3414.8us  s_bcast_pack32=3670.4us  p_prefetch_w=3420.4us  n_nosums=3159.7us  l_loadonly=2888.4us  n_nobias=3112.8us  d_bias1=3434.4us  e_bias6=3524.8us  z_ballast=3543.6us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 2 inner=3  a_base=3420.3us  q_scaffold=3418.3us  s_bcast=3955.6us  s_bcast_all=3671.4us  s_bcast_scale=3678.9us  p_split_meta=3416.4us  g_pack32=3412.5us  s_bcast_pack32=3669.5us  p_prefetch_w=3420.8us  n_nosums=3158.9us  l_loadonly=2882.1us  n_nobias=3107.4us  d_bias1=3433.4us  e_bias6=3526.0us  z_ballast=3542.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 3 inner=3  a_base=3415.0us  q_scaffold=3412.8us  s_bcast=3949.8us  s_bcast_all=3665.0us  s_bcast_scale=3677.6us  p_split_meta=3412.4us  g_pack32=3409.2us  s_bcast_pack32=3658.9us  p_prefetch_w=3419.7us  n_nosums=3161.9us  l_loadonly=2933.1us  n_nobias=3113.1us  d_bias1=3431.3us  e_bias6=3521.9us  z_ballast=3544.4us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 4 inner=3  a_base=3411.9us  q_scaffold=3408.7us  s_bcast=3946.2us  s_bcast_all=3664.8us  s_bcast_scale=3672.5us  p_split_meta=3411.3us  g_pack32=3407.2us  s_bcast_pack32=3664.9us  p_prefetch_w=3417.6us  n_nosums=3161.0us  l_loadonly=2910.5us  n_nobias=3102.0us  d_bias1=3429.7us  e_bias6=3520.0us  z_ballast=3541.0us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 5 inner=3  a_base=3409.8us  q_scaffold=3407.2us  s_bcast=3945.0us  s_bcast_all=3662.4us  s_bcast_scale=3671.8us  p_split_meta=3410.3us  g_pack32=3404.8us  s_bcast_pack32=3661.7us  p_prefetch_w=3413.7us  n_nosums=3154.7us  l_loadonly=2897.5us  n_nobias=3101.1us  d_bias1=3426.1us  e_bias6=3518.0us  z_ballast=3543.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 6 inner=3  a_base=3419.4us  q_scaffold=3411.6us  s_bcast=3950.2us  s_bcast_all=3663.3us  s_bcast_scale=3678.0us  p_split_meta=3414.5us  g_pack32=3410.1us  s_bcast_pack32=3663.7us  p_prefetch_w=3421.5us  n_nosums=3155.1us  l_loadonly=2888.7us  n_nobias=3107.1us  d_bias1=3437.0us  e_bias6=3526.4us  z_ballast=3546.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 block 7 inner=3  a_base=3423.0us  q_scaffold=3413.5us  s_bcast=3954.6us  s_bcast_all=3666.8us  s_bcast_scale=3678.9us  p_split_meta=3418.0us  g_pack32=3413.5us  s_bcast_pack32=3667.4us  p_prefetch_w=3425.0us  n_nosums=3157.0us  l_loadonly=2883.8us  n_nobias=3102.4us  d_bias1=3432.6us  e_bias6=3521.4us  z_ballast=3544.6us
+e118_qmv_probe:   lm_head_k5120_n248320 M=4 thermal entry=62.9C exit=66.0C
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 0 inner=3  a_base=4070.2us  q_scaffold=4061.2us  s_bcast=6615.5us  s_bcast_all=4583.3us  s_bcast_scale=4318.5us  p_split_meta=4057.6us  g_pack32=4056.3us  s_bcast_pack32=6556.7us  p_prefetch_w=6696.1us  n_nosums=3670.1us  l_loadonly=2891.2us  n_nobias=3573.3us  d_bias1=4106.6us  e_bias6=4148.4us  z_ballast=6947.5us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 1 inner=3  a_base=4067.6us  q_scaffold=4056.4us  s_bcast=6619.9us  s_bcast_all=4586.3us  s_bcast_scale=4318.2us  p_split_meta=4062.4us  g_pack32=4054.2us  s_bcast_pack32=6552.1us  p_prefetch_w=6692.2us  n_nosums=3671.4us  l_loadonly=2892.5us  n_nobias=3568.7us  d_bias1=4112.8us  e_bias6=4147.6us  z_ballast=6953.5us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 2 inner=3  a_base=4068.4us  q_scaffold=4054.4us  s_bcast=6611.1us  s_bcast_all=4582.0us  s_bcast_scale=4312.4us  p_split_meta=4061.0us  g_pack32=4053.7us  s_bcast_pack32=6555.8us  p_prefetch_w=6686.1us  n_nosums=3661.2us  l_loadonly=2913.0us  n_nobias=3563.2us  d_bias1=4101.8us  e_bias6=4140.9us  z_ballast=6948.5us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 3 inner=3  a_base=4060.1us  q_scaffold=4049.8us  s_bcast=6604.3us  s_bcast_all=4583.4us  s_bcast_scale=4309.9us  p_split_meta=4053.1us  g_pack32=4048.4us  s_bcast_pack32=6554.4us  p_prefetch_w=6694.4us  n_nosums=3660.7us  l_loadonly=2905.7us  n_nobias=3565.3us  d_bias1=4105.6us  e_bias6=4145.4us  z_ballast=6957.1us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 4 inner=3  a_base=4068.4us  q_scaffold=4055.1us  s_bcast=6610.5us  s_bcast_all=4584.9us  s_bcast_scale=4315.5us  p_split_meta=4059.8us  g_pack32=4054.2us  s_bcast_pack32=6557.3us  p_prefetch_w=6691.6us  n_nosums=3674.9us  l_loadonly=2908.9us  n_nobias=3572.3us  d_bias1=4106.9us  e_bias6=4151.2us  z_ballast=6950.5us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 5 inner=3  a_base=4067.9us  q_scaffold=4055.3us  s_bcast=6617.2us  s_bcast_all=4582.1us  s_bcast_scale=4321.0us  p_split_meta=4060.8us  g_pack32=4053.9us  s_bcast_pack32=6556.6us  p_prefetch_w=6693.2us  n_nosums=3668.7us  l_loadonly=2888.1us  n_nobias=3570.6us  d_bias1=4105.8us  e_bias6=4153.5us  z_ballast=6954.9us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 6 inner=3  a_base=4065.7us  q_scaffold=4058.5us  s_bcast=6614.1us  s_bcast_all=4584.0us  s_bcast_scale=4319.5us  p_split_meta=4061.7us  g_pack32=4050.2us  s_bcast_pack32=6566.0us  p_prefetch_w=6702.7us  n_nosums=3671.0us  l_loadonly=2891.6us  n_nobias=3570.3us  d_bias1=4108.5us  e_bias6=4150.7us  z_ballast=6950.5us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 block 7 inner=3  a_base=4061.8us  q_scaffold=4053.4us  s_bcast=6614.0us  s_bcast_all=4582.4us  s_bcast_scale=4319.9us  p_split_meta=4060.5us  g_pack32=4054.3us  s_bcast_pack32=6561.8us  p_prefetch_w=6692.4us  n_nosums=3671.1us  l_loadonly=2894.3us  n_nobias=3570.1us  d_bias1=4108.6us  e_bias6=4150.1us  z_ballast=6950.0us
+e118_qmv_probe:   lm_head_k5120_n248320 M=5 thermal entry=63.4C exit=86.2C
+e118_qmv_probe: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/research/out/e118-full2/rate.json
