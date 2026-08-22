@@ -78,5 +78,6 @@ python3 research/e129_presubmit_receipt.py \
   --worker-sha256 "${worker_sha}" \
   --worker-mtime "${worker_mtime}" \
   --worker-sha256-post "${post_worker}" \
+  --timed-commit "$(git rev-parse HEAD)" \
   --out "${out}/rung0-presubmit.json"
 exit $?

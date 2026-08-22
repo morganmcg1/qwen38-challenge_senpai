@@ -10,9 +10,10 @@ change for the step to fail, so a reader can tell a green step from a vacuous
 one. Structure follows `research/e121_presubmit_receipt.py`.
 
 The `swift test` gate here is the per-name decomposition from
-`senpai/known-test-failures.md`, not a candidate-versus-base comparison: this
-branch changes no submitted byte against the advisor head, so there is no
-second tree to build.
+`senpai/known-test-failures.md`, not a candidate-versus-base comparison. The
+gate cannot be a candidate-versus-base build because the base moves under the
+branch whenever the advisor merges, and a moving control is worse than a fixed
+per-name census.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ SUBMITTED = ("Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",)
 # the one submitted file.
 SCOPE_BASE = "2127858ba770ddc06027205d8df89a8db21d80f5"
 GROWTH_BASE = "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf"
-ADVISOR_HEAD = "d46eb29b178c123b6d243127039920872f158440"
+ADVISOR_BRANCH = "senpai/qwen38-mtp-r1"
 
 # `senpai/known-test-failures.md`: the nine organizer names and their issue
 # counts, and the campaign-added tests that are allowed to fail as well.
@@ -50,6 +51,20 @@ ALLOWED_CAMPAIGN_FAILURES = {"E95QmvWidthProbeTests", "E95DonationProbeTests"}
 def run(*argv: str) -> tuple[int, str]:
     proc = subprocess.run(argv, cwd=REPO, capture_output=True, text=True)
     return proc.returncode, (proc.stdout + proc.stderr).strip()
+
+
+def resolve_advisor_head() -> str:
+    """The advisor head, read from the ref rather than pinned in this file.
+
+    A pinned sha silently ages into a comparison against a tree nobody is on.
+    That is what happened here: the constant predated an accepted merge, so the
+    surface check reported the merged work as this branch's own change.
+    """
+    for ref in ("origin/" + ADVISOR_BRANCH, ADVISOR_BRANCH):
+        code, sha = run("git", "rev-parse", "--verify", "--quiet", ref)
+        if code == 0 and sha.strip():
+            return sha.strip()
+    raise SystemExit("cannot resolve the advisor branch %r" % ADVISOR_BRANCH)
 
 
 def failing_issues(log: pathlib.Path) -> dict[str, int]:
@@ -105,6 +120,9 @@ def main() -> int:
     ap.add_argument("--worker-sha256", required=True)
     ap.add_argument("--worker-mtime", required=True)
     ap.add_argument("--worker-sha256-post", required=True)
+    ap.add_argument("--timed-commit", default="",
+                    help="commit whose build produced the submit log, when the "
+                         "receipt is regenerated after a research-only edit")
     ap.add_argument("--out", type=pathlib.Path, required=True)
     args = ap.parse_args()
 
@@ -139,18 +157,62 @@ def main() -> int:
                   "exit": code, "passed": code == 0,
                   "observation": text.splitlines()[-1] if text else ""})
 
-    # Rule 55: the submitted surface must be identical to the advisor head.
+    # The submitted surface, in two halves.
+    #
+    # This branch used to be a pure revert that changed no submitted byte, and
+    # the old single check asserted exactly that. E129 changes the surface on
+    # purpose, so that check now demands the experiment not exist. Splitting it
+    # keeps both things it was actually protecting and drops the part that only
+    # described the old arm.
     _, editable = run(
         "bash", "-lc",
         "python3 -c \"import json;d=json.load(open('benchmark.json'));"
         "print(' '.join(d['editablePaths']))\"")
-    code, surface = run("git", "diff", "--stat", ADVISOR_HEAD, "HEAD", "--",
-                        *editable.split())
-    steps.append({"step": "rule55_surface_matches_advisor_head",
-                  "command": f"git diff --stat {ADVISOR_HEAD} HEAD -- "
-                             "<editablePaths>",
-                  "exit": 0 if not surface else 1, "passed": not surface,
-                  "observation": surface or "empty"})
+    editable_paths = editable.split()
+    advisor_head = resolve_advisor_head()
+
+    # (a) We changed the files this experiment owns, and no others. This is
+    # what catches a submitted byte picked up from another student's branch.
+    _, touched = run("git", "diff", "--name-only", advisor_head, "HEAD", "--",
+                     *editable_paths)
+    touched_set = sorted(p for p in touched.split() if p)
+    owns_only = touched_set == sorted(SUBMITTED)
+    steps.append({"step": "surface_touches_only_owned_paths",
+                  "command": f"git diff --name-only {advisor_head[:12]} HEAD "
+                             "-- <editablePaths>",
+                  "exit": 0 if owns_only else 1, "passed": owns_only,
+                  "observation": "%s (owned: %s)"
+                                 % (touched_set or "empty", sorted(SUBMITTED))})
+
+    # (b) The advisor merged no submitted byte since we branched, so this
+    # candidate drops nobody's promoted work. A non-empty diff here means the
+    # base moved under us and the arm must be replayed on the new base.
+    _, mergebase = run("git", "merge-base", "HEAD", advisor_head)
+    mergebase = mergebase.strip()
+    _, drift = run("git", "diff", "--stat", mergebase, advisor_head, "--",
+                   *editable_paths)
+    steps.append({"step": "advisor_surface_contained_since_branch_point",
+                  "command": f"git diff --stat {mergebase[:12]} "
+                             f"{advisor_head[:12]} -- <editablePaths>",
+                  "exit": 0 if not drift else 1, "passed": not drift,
+                  "observation": drift or
+                                 f"empty; advisor added no submitted byte "
+                                 f"since {mergebase[:12]}"})
+
+    # (c) The tree that was timed and the tree being certified must carry the
+    # same submitted bytes. They can be different commits: fixing a research
+    # script after the timed leg is normal and must not force a rerun. What
+    # must never differ is a submitted byte.
+    if args.timed_commit:
+        _, moved = run("git", "diff", "--stat", args.timed_commit, "HEAD", "--",
+                       *editable_paths)
+        steps.append({"step": "submitted_surface_unchanged_since_timed_commit",
+                      "command": f"git diff --stat {args.timed_commit[:12]} "
+                                 "HEAD -- <editablePaths>",
+                      "exit": 0 if not moved else 1, "passed": not moved,
+                      "observation": moved or
+                                     f"empty; {args.timed_commit[:12]} and HEAD "
+                                     "carry identical submitted bytes"})
 
     worker_stable = args.worker_sha256 == args.worker_sha256_post
     steps.append({"step": "worker_unchanged_across_local_submit",
@@ -187,7 +249,7 @@ def main() -> int:
         "arm": "route_b_sumtable_on_the_reverted_base",
         "harness": "local",
         "candidate_commit": head,
-        "advisor_head": ADVISOR_HEAD,
+        "advisor_head": advisor_head,
         "scope_base": SCOPE_BASE,
         "submitted_paths": list(SUBMITTED),
         "worker_sha256": args.worker_sha256,
