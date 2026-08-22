@@ -42,6 +42,7 @@ import subprocess
 import time
 
 import mlx.core as mx
+import numpy as np
 
 # Shipped shape constants, `Qwen35.swift:4196-4199` and `:4446`.
 TG = 256
@@ -290,6 +291,9 @@ def hist_source(rows: int) -> str:
     A threadgroup-local histogram cannot hold 65,536 bins in 32 KB, so the adds
     go straight to device memory. Contention stays low because a 34,424 row
     population spreads over roughly a thousand live bins.
+
+    A second 256-bin coarse level over the top 8 bits costs one more atomic per
+    row and lets the threshold scan read 512 words instead of 65,536.
     """
     return DEP_GUARD + f"""
         constexpr uint ROWS  = {rows};
@@ -300,6 +304,8 @@ def hist_source(rows: int) -> str:
             uint b = qwen_top32_ordinal(float(score[i])) >> 16;
             atomic_fetch_add_explicit(
                 (device atomic_uint *)&bins[b], 1u, memory_order_relaxed);
+            atomic_fetch_add_explicit(
+                (device atomic_uint *)&coarse[b >> 8], 1u, memory_order_relaxed);
         }}
         """
 
@@ -307,41 +313,53 @@ def hist_source(rows: int) -> str:
 def thresh_source(survivors: int) -> str:
     """Stage 1(ii): one threadgroup finds the exact boundary bin.
 
-    `ctl` is [tau, count_strictly_above_tau, capacity_left_in_tau, cursor].
-    Each of the 256 threads reduces a contiguous run of 256 bins, then one
-    thread walks the 256 group sums down from the top and re-walks the single
-    group that straddles `WANT`. That is 512 serial adds, cheaper in barriers
-    than a two-level parallel scan at this width.
+    `ctl` is [tau, count_strictly_above_tau, capacity_left_in_tau, 0].
+
+    The scan is two level. Each of the 256 threads loads one coarse bin, one
+    thread walks those down from the top to the group that straddles `WANT`,
+    then each thread loads one fine bin of that group and one thread walks
+    those. That reads 512 words. Summing the fine histogram directly would
+    read all 65,536 words, and one threadgroup holds one GPU core, so that
+    scan runs at a twentieth of machine bandwidth and dominated the added
+    cost when it was measured: 12.2 us of a 21.7 us candidate selection.
     """
     return DEP_GUARD + f"""
-        constexpr uint NBINS  = {HIST_BINS};
         constexpr uint GROUPS = {HIST_GROUPS};
-        constexpr uint PER    = NBINS / GROUPS;
+        constexpr uint PER    = {HIST_BINS // HIST_GROUPS};
         constexpr uint WANT   = {survivors};
 
         uint tid = thread_position_in_threadgroup.x;
-        uint s = 0u;
-        for (uint i = 0; i < PER; ++i) {{ s += bins[tid * PER + i]; }}
         threadgroup uint g[GROUPS];
-        g[tid] = s;
-        threadgroup_barrier(mem_flags::mem_threadgroup);
+        threadgroup uint sh[2];
 
+        g[tid] = coarse[tid];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
         if (tid == 0) {{
-            uint acc = 0u, above_groups = 0u;
-            uint gsel = 0u;
+            uint acc = 0u, above_groups = 0u, gsel = 0u;
             for (int q = int(GROUPS) - 1; q >= 0; --q) {{
                 uint prev = acc;
                 acc += g[q];
                 if (acc >= WANT) {{ gsel = uint(q); above_groups = prev; break; }}
                 if (q == 0) {{ gsel = 0u; above_groups = prev; }}
             }}
-            uint acc2 = above_groups;
+            sh[0] = gsel;
+            sh[1] = above_groups;
+        }}
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        uint gsel = sh[0];
+        uint above_groups = sh[1];
+        g[tid] = bins[gsel * PER + tid];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        if (tid == 0) {{
+            uint acc = above_groups;
             uint tau = gsel * PER;
             uint above = above_groups;
             for (int b = int(PER) - 1; b >= 0; --b) {{
-                uint prev = acc2;
-                acc2 += bins[gsel * PER + uint(b)];
-                if (acc2 >= WANT) {{
+                uint prev = acc;
+                acc += g[b];
+                if (acc >= WANT) {{
                     tau = gsel * PER + uint(b); above = prev; break;
                 }}
                 if (b == 0) {{ tau = gsel * PER; above = prev; }}
@@ -357,9 +375,18 @@ def thresh_source(survivors: int) -> str:
 def compact_source(rows: int, capacity: int) -> str:
     """Stage 1(iii): emit the survivors into a fixed-capacity buffer.
 
-    Rows above the boundary bin are unconditional and cannot overflow, because
-    the threshold scan chose `tau` so that fewer than `WANT` rows sit above it.
-    Boundary-bin rows compete for what is left under a hard capacity clamp.
+    The buffer has two regions and two cursors. Rows STRICTLY above the
+    boundary bin take slots [0, above) and cannot overflow, because the
+    threshold scan chose `tau` so that fewer than `WANT` rows sit above it.
+    Rows inside the boundary bin take slots from `above` upward and compete
+    for what is left under a hard capacity clamp.
+
+    One shared cursor is not enough, and that is measured, not assumed. With
+    a single cursor the clamp drops whichever rows arrive after slot `CAP`
+    regardless of their score, so a genuine top-32 row can be discarded while
+    a boundary-bin row is kept. That cost one of the true top 32 at N=1024,
+    recall 0.96875, in the first run of this benchmark.
+
     Unfilled slots keep ordinal 0, the minimum, so they never win stage 2.
     """
     return DEP_GUARD + f"""
@@ -369,13 +396,20 @@ def compact_source(rows: int, capacity: int) -> str:
 
         uint gid = thread_position_in_grid.x;
         uint tau = ctl[0];
+        uint above = ctl[1];
 
         for (uint i = gid; i < ROWS; i += GRID) {{
             uint o = qwen_top32_ordinal(float(score[i]));
             uint b = o >> 16;
             if (b < tau) {{ continue; }}
-            uint slot = atomic_fetch_add_explicit(
-                (device atomic_uint *)&cursor[0], 1u, memory_order_relaxed);
+            uint slot;
+            if (b > tau) {{
+                slot = atomic_fetch_add_explicit(
+                    (device atomic_uint *)&cursor[0], 1u, memory_order_relaxed);
+            }} else {{
+                slot = above + atomic_fetch_add_explicit(
+                    (device atomic_uint *)&cursor[1], 1u, memory_order_relaxed);
+            }}
             if (slot < CAP) {{
                 surv_ord[slot] = o;
                 surv_row[slot] = i;
@@ -404,6 +438,28 @@ def kernel(name, inputs, outputs, source, header=""):
     return mx.fast.metal_kernel(
         name=name, input_names=inputs, output_names=outputs,
         source=source, header=header, ensure_row_contiguous=False)
+
+
+def host_ordinals(score) -> "np.ndarray":
+    """`qwen_top32_ordinal` on the host, over a whole bf16 score vector."""
+    v = np.asarray(score.astype(mx.float32), dtype=np.float32)
+    u = v.view(np.uint32)
+    o = np.where(u & 0x80000000, ~u, u | 0x80000000).astype(np.uint32)
+    o[np.isnan(v)] = 0xFFFFFFFF
+    o[v == 0.0] = 0x80000000
+    return o
+
+
+def host_sketch(score, survivors: int):
+    """The exact `bins`, `coarse`, `tau` and `above` stage 1 would produce."""
+    keys = (host_ordinals(score) >> 16).astype(np.int64)
+    bins = np.bincount(keys, minlength=HIST_BINS).astype(np.uint32)
+    coarse = bins.reshape(HIST_GROUPS, -1).sum(axis=1).astype(np.uint32)
+    tail = np.cumsum(bins[::-1])[::-1]          # rows at or above each bin
+    hits = np.nonzero(tail >= survivors)[0]
+    tau = int(hits[-1]) if hits.size else 0
+    above = int(tail[tau + 1]) if tau + 1 < HIST_BINS else 0
+    return bins, coarse, tau, above
 
 
 _DEP_SEED = None
@@ -524,10 +580,11 @@ class TwoStageArm:
         self.survivors = survivors
         self.plan = Plan(survivors, tiles)
         self.plan.check()
-        self.hist = kernel("e136_sketch_hist", ["score", "dep"], ["bins"],
-                           hist_source(rows), ORDINAL_HEADER)
-        self.thresh = kernel("e136_sketch_thresh", ["bins", "dep"], ["ctl"],
-                             thresh_source(survivors))
+        self.hist = kernel("e136_sketch_hist", ["score", "dep"],
+                           ["bins", "coarse"], hist_source(rows),
+                           ORDINAL_HEADER)
+        self.thresh = kernel("e136_sketch_thresh", ["bins", "coarse", "dep"],
+                             ["ctl"], thresh_source(survivors))
         self.compact = kernel("e136_sketch_compact", ["score", "ctl", "dep"],
                               ["surv_ord", "surv_row", "cursor"],
                               compact_source(rows, survivors), ORDINAL_HEADER)
@@ -551,22 +608,27 @@ class TwoStageArm:
         self.with_rescore = with_rescore
         self.dispatches = 5 + (1 if with_rescore else 0)
 
-    def step(self, dep):
-        bins = self.hist(inputs=[self.score, dep],
-                         grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
-                         output_shapes=[[HIST_BINS]],
-                         output_dtypes=[mx.uint32], init_value=0)[0]
-        ctl = self.thresh(inputs=[bins, dep], grid=(HIST_GROUPS, 1, 1),
+    def stage1(self, score, dep):
+        """Histogram, threshold and compaction. Returns bins, ctl, survivors."""
+        h = self.hist(inputs=[score, dep],
+                      grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
+                      output_shapes=[[HIST_BINS], [HIST_GROUPS]],
+                      output_dtypes=[mx.uint32, mx.uint32], init_value=0)
+        ctl = self.thresh(inputs=[h[0], h[1], dep], grid=(HIST_GROUPS, 1, 1),
                           threadgroup=(HIST_GROUPS, 1, 1),
                           output_shapes=[[4]], output_dtypes=[mx.uint32],
                           init_value=0)[0]
-        surv = self.compact(inputs=[self.score, ctl, dep],
+        surv = self.compact(inputs=[score, ctl, dep],
                             grid=(HIST_TILES * TG, 1, 1),
                             threadgroup=(TG, 1, 1),
                             output_shapes=[[self.survivors],
-                                           [self.survivors], [1]],
+                                           [self.survivors], [2]],
                             output_dtypes=[mx.uint32, mx.uint32, mx.uint32],
                             init_value=0)
+        return h[0], ctl, surv
+
+    def step(self, dep):
+        _, _, surv = self.stage1(self.score, dep)
         surv_ord, surv_row = surv[0], surv[1]
         if self.with_rescore:
             score = self.rescore(
@@ -590,26 +652,36 @@ class TwoStageArm:
         return dep_seed()
 
     def parts(self) -> list:
-        """The same dispatches, each priced on its own."""
+        """The same dispatches, each priced on its own.
+
+        Every stand-in input is the value stage 1 would really produce. A
+        placeholder is not neutral here: an all-zero `ctl` sets `tau` to 0, so
+        every one of the 34,424 rows clears the threshold and the compaction
+        performs an atomic append it would never perform in the real chain.
+        """
         surv_score = mx.random.normal([self.survivors]).astype(mx.bfloat16)
         surv_row = mx.random.randint(
             0, self.rows, [self.survivors]).astype(mx.uint32)
-        bins = mx.random.randint(0, 4, [HIST_BINS]).astype(mx.uint32)
-        ctl = mx.array([0, 0, 0, 0], dtype=mx.uint32)
+        bins_h, coarse_h, tau, above = host_sketch(self.score, self.survivors)
+        bins = mx.array(bins_h, dtype=mx.uint32)
+        coarse = mx.array(coarse_h, dtype=mx.uint32)
+        ctl = mx.array([tau, above, max(0, self.survivors - above), 0],
+                       dtype=mx.uint32)
         cand = mx.random.randint(
             0, 2 ** 31 - 1, [self.plan.cands]).astype(mx.uint32)
         cidx = mx.random.randint(
             0, self.rows, [self.plan.cands]).astype(mx.uint32)
         out = [
             PartArm(f"{self.label}.hist", self.hist, [self.score],
-                    (HIST_TILES * TG, 1, 1), (TG, 1, 1), [[HIST_BINS]],
-                    [mx.uint32], init_value=0),
-            PartArm(f"{self.label}.thresh", self.thresh, [bins],
+                    (HIST_TILES * TG, 1, 1), (TG, 1, 1),
+                    [[HIST_BINS], [HIST_GROUPS]], [mx.uint32, mx.uint32],
+                    init_value=0),
+            PartArm(f"{self.label}.thresh", self.thresh, [bins, coarse],
                     (HIST_GROUPS, 1, 1), (HIST_GROUPS, 1, 1), [[4]],
                     [mx.uint32], init_value=0),
             PartArm(f"{self.label}.compact", self.compact, [self.score, ctl],
                     (HIST_TILES * TG, 1, 1), (TG, 1, 1),
-                    [[self.survivors], [self.survivors], [1]],
+                    [[self.survivors], [self.survivors], [2]],
                     [mx.uint32, mx.uint32, mx.uint32], init_value=0),
             PartArm(f"{self.label}.partial", self.partial,
                     [surv_score, surv_row], (self.plan.tiles * TG, 1, 1),
@@ -792,53 +864,29 @@ def correctness(arm_two, arm_ship) -> dict:
     comparison to notice.
     """
     dep = arm_two.seed()
-    ids = arm_two.step(dep)
-    mx.eval(ids)
-    host = arm_two.score.astype(mx.float32)
-    order = mx.argsort(host)
+    order = mx.argsort(arm_two.score.astype(mx.float32))
     true_top = set(order[-TOPK:].tolist())
-    # Replay stage 1 alone to read the survivor set back.
-    bins = arm_two.hist(inputs=[arm_two.score, dep], grid=(HIST_TILES * TG, 1, 1),
-                        threadgroup=(TG, 1, 1), output_shapes=[[HIST_BINS]],
-                        output_dtypes=[mx.uint32], init_value=0)[0]
-    ctl = arm_two.thresh(inputs=[bins, dep], grid=(HIST_GROUPS, 1, 1),
-                         threadgroup=(HIST_GROUPS, 1, 1), output_shapes=[[4]],
-                         output_dtypes=[mx.uint32], init_value=0)[0]
-    surv = arm_two.compact(inputs=[arm_two.score, ctl, dep],
-                           grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
-                           output_shapes=[[arm_two.survivors],
-                                          [arm_two.survivors], [1]],
-                           output_dtypes=[mx.uint32, mx.uint32, mx.uint32],
-                           init_value=0)
+    bins, ctl, surv = arm_two.stage1(arm_two.score, dep)
     mx.eval(bins, ctl, surv[0], surv[1], surv[2])
     kept = set(surv[1].tolist())
-    emitted = int(surv[2].item())
+    cursors = surv[2].tolist()
     # Positive control. Raise the single worst row above every other row: it
     # must appear in the survivor set. A gate that cannot fail is not a gate.
-    worst = int(mx.argmin(arm_two.score.astype(mx.float32)).item())
-    damaged = mx.array(arm_two.score.astype(mx.float32))
-    damaged[worst] = float(mx.max(arm_two.score.astype(mx.float32)).item()) + 1.0
-    damaged = damaged.astype(mx.bfloat16)
-    dbins = arm_two.hist(inputs=[damaged, dep], grid=(HIST_TILES * TG, 1, 1),
-                         threadgroup=(TG, 1, 1), output_shapes=[[HIST_BINS]],
-                         output_dtypes=[mx.uint32], init_value=0)[0]
-    dctl = arm_two.thresh(inputs=[dbins, dep], grid=(HIST_GROUPS, 1, 1),
-                          threadgroup=(HIST_GROUPS, 1, 1), output_shapes=[[4]],
-                          output_dtypes=[mx.uint32], init_value=0)[0]
-    dsurv = arm_two.compact(inputs=[damaged, dctl, dep],
-                            grid=(HIST_TILES * TG, 1, 1),
-                            threadgroup=(TG, 1, 1),
-                            output_shapes=[[arm_two.survivors],
-                                           [arm_two.survivors], [1]],
-                            output_dtypes=[mx.uint32, mx.uint32, mx.uint32],
-                            init_value=0)
+    host = arm_two.score.astype(mx.float32)
+    worst = int(mx.argmin(host).item())
+    damaged = mx.array(host)
+    damaged[worst] = float(mx.max(host).item()) + 1.0
+    _, _, dsurv = arm_two.stage1(damaged.astype(mx.bfloat16), dep)
     mx.eval(dsurv[1])
     control_ok = worst in set(dsurv[1].tolist()) and worst not in kept
+    # The device threshold must agree with the host model of the same scan.
+    _, _, host_tau, host_above = host_sketch(arm_two.score, arm_two.survivors)
     return {
         "positive_control_worst_row": worst,
         "positive_control_detects_the_change": control_ok,
         "survivors_requested": arm_two.survivors,
-        "rows_that_passed_the_threshold": emitted,
+        "rows_above_tau_emitted": cursors[0],
+        "rows_in_tau_bin_emitted": cursors[1],
         "distinct_rows_kept": len(kept),
         "true_top32_kept": len(true_top & kept),
         "recall_of_true_top32": len(true_top & kept) / TOPK,
@@ -846,6 +894,10 @@ def correctness(arm_two, arm_ship) -> dict:
         "histogram_covers_every_row": int(mx.sum(bins).item()) == arm_two.rows,
         "tau_bin": int(ctl[0].item()),
         "rows_strictly_above_tau": int(ctl[1].item()),
+        "host_tau_bin": host_tau,
+        "host_rows_strictly_above_tau": host_above,
+        "device_threshold_matches_host":
+            int(ctl[0].item()) == host_tau and int(ctl[1].item()) == host_above,
     }
 
 
