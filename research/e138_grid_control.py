@@ -1,0 +1,575 @@
+#!/usr/bin/env python3
+"""E138: the launch-grid x plan factorial.
+
+    usage: research/e138_grid_control.py ARTIFACT... [--baseline=PLAN]
+
+Advisor feedback F2 section 4 asks for the sweep to run as a two-by-plan
+factorial: every plan cell under both `wide` and `tight`, the plan ranking
+under each grid, and the interaction term stated explicitly. This script is
+that report. It supersedes the narrower two-anchor control approved in F1
+section 6, which measured only `(5,5,4)` and `(6,6,4)`.
+
+It remains a control handed to the advisor, not a launch-column law. thorfinn
+owns the launch column law under E135.
+
+Both sessions must anchor on `6:stock`. The stock MLX quantized matmul does not
+read `MLX_E120_QMV_GRID`, so it is the only reference cell whose cost is
+identical in both sessions, which makes the two sets of drift-corrected
+microseconds comparable in absolute terms.
+
+Interaction, per shape and per plan, against the one-pass baseline plan:
+
+    advantage(plan, grid) = us(baseline, grid) - us(plan, grid)
+    interaction(plan)     = advantage(plan, tight) - advantage(plan, wide)
+
+A positive interaction means the plan buys more under the tight grid than it
+buys under the wide grid. A null interaction means the plan axis and the grid
+axis are separable, so the plan ranking transfers between grids.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import statistics
+import sys
+
+
+def load(paths: list[pathlib.Path]) -> dict:
+    """Drift-corrected microseconds keyed by (shape, plan, grid).
+
+    A cell label may name its own grid as `plan@grid`. When it does not, the
+    session-level grid applies. Every artifact must anchor on `6:stock`, and a
+    plan measured in several sessions contributes several samples so the
+    session-to-session spread can be reported next to the effect.
+    """
+    us: dict[tuple[str, str, str], list[float]] = {}
+    launch: dict[tuple[str, str, str], int] = {}
+    dispatch, n_of, k_of = {}, {}, {}
+    for path in paths:
+        payload = json.loads(path.read_text())
+        session_grid = payload["grid"]
+        if payload["reference_cell"].split("@")[0] != "6:stock":
+            raise SystemExit(
+                f"{path} anchors on {payload['reference_cell']}; the factorial "
+                "requires the grid-independent 6:stock anchor"
+            )
+        for shape in payload["shapes"]:
+            name = shape["name"]
+            if not shape["exactness_positive_control_rejects"]:
+                raise SystemExit(f"{path}: {name} positive control passed")
+            dispatch[name] = shape["calls_per_verify"]
+            n_of[name], k_of[name] = shape["n"], shape["k"]
+            anchor = statistics.median(
+                [v for row in shape["rows"] for v in row["reference_samples"]]
+            )
+            for row in shape["rows"]:
+                if not row["matches_incumbent_bitwise"]:
+                    raise SystemExit(
+                        f"{path}: {name} {row['cell']} not exact")
+                plan = row["cell"].split("@")[0]
+                grid = row.get("grid") or (
+                    row["cell"].split("@")[1] if "@" in row["cell"]
+                    else session_grid
+                )
+                ratio = statistics.median(row["samples"]) / statistics.median(
+                    row["reference_samples"]
+                )
+                us.setdefault((name, plan, grid), []).append(ratio * anchor * 1e6)
+                launch[(name, plan, grid)] = (
+                    row["launched_columns"] * row["threadgroups_per_column"]
+                )
+    return {
+        "samples": us,
+        "us": {key: statistics.median(v) for key, v in us.items()},
+        "spread_pct": {
+            key: (100.0 * (max(v) - min(v)) / statistics.median(v))
+            if len(v) > 1 else 0.0
+            for key, v in us.items()
+        },
+        "sessions": {key: len(v) for key, v in us.items()},
+        "dispatch": dispatch,
+        "launch": launch,
+        "n": n_of,
+        "k": k_of,
+    }
+
+
+def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
+    data = load(paths)
+    both = {(s, p) for s, p, g in data["us"] if g == "wide"} & {
+        (s, p) for s, p, g in data["us"] if g == "tight"
+    }
+    if not both:
+        raise SystemExit("no plan is present under both grids")
+    wide = {
+        "us": {(s, p): data["us"][(s, p, "wide")] for s, p in both},
+        "launch": {(s, p): data["launch"][(s, p, "wide")] for s, p in both},
+        "n": data["n"],
+        "k": data["k"],
+        "dispatch": data["dispatch"],
+    }
+    tight = {
+        "us": {(s, p): data["us"][(s, p, "tight")] for s, p in both},
+        "launch": {(s, p): data["launch"][(s, p, "tight")] for s, p in both},
+        "n": data["n"],
+        "k": data["k"],
+        "dispatch": data["dispatch"],
+    }
+
+    cells = sorted(
+        {c for _, c in wide["us"]},
+        key=lambda c: (c.split(":")[1] == "stock", c),
+    )
+    plans = [c for c in cells if not c.endswith(":stock")]
+    if not plans:
+        raise SystemExit("no plan cell is present in both artifacts")
+    baseline = baseline or max(plans, key=lambda c: int(c.split(":")[1]))
+    if baseline not in plans:
+        raise SystemExit(f"baseline {baseline} is not in both artifacts")
+    base_m = baseline.split(":")[0]
+    same_width = [c for c in plans if c.split(":")[0] == base_m]
+    dispatch = wide["dispatch"]
+    names = sorted(
+        {s for s, _ in both if all((s, p) in wide["us"] for p in cells)},
+        key=lambda s: (wide["n"][s], s),
+    )
+
+    shapes = []
+    for name in names:
+        bw, bt = wide["us"][(name, baseline)], tight["us"][(name, baseline)]
+        rows = []
+        for cell in cells:
+            w, t = wide["us"][(name, cell)], tight["us"][(name, cell)]
+            row = {
+                "shape": name,
+                "n": wide["n"][name],
+                "k": wide["k"][name],
+                "plan": cell,
+                "wide_us": w,
+                "tight_us": t,
+                "tight_minus_wide_pct": 100.0 * (t - w) / w,
+                "launched_threadgroups_wide": wide["launch"][(name, cell)],
+                "launched_threadgroups_tight": tight["launch"][(name, cell)],
+                "sessions_wide": data["sessions"][(name, cell, "wide")],
+                "sessions_tight": data["sessions"][(name, cell, "tight")],
+                "session_spread_wide_pct":
+                    data["spread_pct"][(name, cell, "wide")],
+                "session_spread_tight_pct":
+                    data["spread_pct"][(name, cell, "tight")],
+            }
+            # An advantage is only meaningful against a plan at the same width.
+            # A cell at another width differs by the width step, not by a plan
+            # choice, so it carries timings without an advantage column.
+            if not cell.endswith(":stock") and cell.split(":")[0] == base_m:
+                row["advantage_wide_pct"] = 100.0 * (bw - w) / bw
+                row["advantage_tight_pct"] = 100.0 * (bt - t) / bt
+                row["interaction_pp"] = (
+                    row["advantage_tight_pct"] - row["advantage_wide_pct"]
+                )
+                row["interaction_us"] = (bt - t) - (bw - w)
+            rows.append(row)
+        rank_w = sorted(same_width, key=lambda c: wide["us"][(name, c)])
+        rank_t = sorted(same_width, key=lambda c: tight["us"][(name, c)])
+        shapes.append({
+            "name": name,
+            "n": wide["n"][name],
+            "dispatch": dispatch[name],
+            "rows": rows,
+            "rank_wide": rank_w,
+            "rank_tight": rank_t,
+            "order_same": rank_w == rank_t,
+            "best_wide": rank_w[0],
+            "best_tight": rank_t[0],
+        })
+
+    tot = {
+        (c, g): sum(src["us"][(n, c)] * dispatch[n] for n in names)
+        for c in cells
+        for g, src in (("wide", wide), ("tight", tight))
+    }
+    totals = []
+    for cell in cells:
+        w, t = tot[(cell, "wide")], tot[(cell, "tight")]
+        entry = {
+            "plan": cell,
+            "wide_us": w,
+            "tight_us": t,
+            "tight_minus_wide_pct": 100.0 * (t - w) / w,
+        }
+        # Same guard as the per-shape rows: a cell at another width differs
+        # from the baseline by the width step, not by a plan choice, so it
+        # carries no advantage and no plan x grid interaction.
+        if not cell.endswith(":stock") and cell.split(":")[0] == base_m:
+            entry["advantage_wide_us"] = tot[(baseline, "wide")] - w
+            entry["advantage_tight_us"] = tot[(baseline, "tight")] - t
+            entry["interaction_us"] = (
+                entry["advantage_tight_us"] - entry["advantage_wide_us"]
+            )
+        totals.append(entry)
+
+    out = {
+        "harness": "local",
+        "baseline_plan": baseline,
+        "plans": plans,
+        "cells": cells,
+        "shapes": shapes,
+        "totals": totals,
+        "best_plan_wide": min(same_width, key=lambda c: tot[(c, "wide")]),
+        "best_plan_tight": min(same_width, key=lambda c: tot[(c, "tight")]),
+        "shapes_with_order_change": [s["name"] for s in shapes
+                                     if not s["order_same"]],
+    }
+    out["grid_changes_the_global_winner"] = (
+        out["best_plan_wide"] != out["best_plan_tight"]
+    )
+    out["plan_axis_and_grid_axis_are_separable"] = not out[
+        "shapes_with_order_change"
+    ]
+    # The baseline plan carries an interaction of exactly zero by construction,
+    # so it is excluded from every summary of interaction size.
+    out["max_abs_interaction_pp"] = max(
+        abs(r["interaction_pp"])
+        for s in shapes
+        for r in s["rows"]
+        if "interaction_pp" in r and r["plan"] != baseline
+    )
+    out["max_abs_interaction_pp_excluding_6_1_4"] = max(
+        abs(r["interaction_pp"])
+        for s in shapes
+        for r in s["rows"]
+        if "interaction_pp" in r and r["plan"] not in (baseline, "6:1:4")
+    )
+    # An interaction below the replicate spread of the two cells it is built
+    # from is not resolved by this evidence, whatever its sign.
+    out["max_session_spread_pct"] = max(
+        max(r["session_spread_wide_pct"], r["session_spread_tight_pct"])
+        for s in shapes
+        for r in s["rows"]
+    )
+    out["interaction_resolved_above_replicate_spread"] = (
+        out["max_abs_interaction_pp"] > out["max_session_spread_pct"]
+    )
+
+    # Null control. When a plan launches the identical grid under both arms,
+    # the two arms run the same pipeline over the same dispatch, so the true
+    # interaction is exactly zero. Anything the estimator reports for such a
+    # plan is its own resolution floor, measured rather than assumed.
+    out["null_control_rows"] = [
+        {
+            "shape": s["name"],
+            "n": s["n"],
+            "plan": r["plan"],
+            "launched_threadgroups": r["launched_threadgroups_wide"],
+            "interaction_pp": r["interaction_pp"],
+            "tight_minus_wide_pct": r["tight_minus_wide_pct"],
+        }
+        for s in shapes
+        for r in s["rows"]
+        if "interaction_pp" in r
+        and r["launched_threadgroups_wide"] == r["launched_threadgroups_tight"]
+        and r["plan"] != baseline
+    ]
+    # A second, weaker null: two plans that share a grid pair must share an
+    # interaction, so the difference between their interactions is also zero
+    # by construction.
+    matched = {}
+    for s in shapes:
+        for r in s["rows"]:
+            if "interaction_pp" not in r or r["plan"] == baseline:
+                continue
+            key = (s["name"], r["launched_threadgroups_wide"],
+                   r["launched_threadgroups_tight"])
+            matched.setdefault(key, []).append(r)
+    out["matched_geometry_pairs"] = [
+        {
+            "shape": shape,
+            "plans": [r["plan"] for r in rows],
+            "launched_threadgroups_wide": lw,
+            "launched_threadgroups_tight": lt,
+            "interaction_spread_pp": (
+                max(r["interaction_pp"] for r in rows)
+                - min(r["interaction_pp"] for r in rows)
+            ),
+        }
+        for (shape, lw, lt), rows in matched.items()
+        if len(rows) > 1
+    ]
+    floors = [abs(r["interaction_pp"]) for r in out["null_control_rows"]]
+    floors += [p["interaction_spread_pp"]
+               for p in out["matched_geometry_pairs"]]
+    out["interaction_resolution_floor_pp"] = max(floors) if floors else None
+    if floors:
+        real = [
+            abs(r["interaction_pp"])
+            for s in shapes
+            for r in s["rows"]
+            if "interaction_pp" in r
+            and r["plan"] != baseline
+            and r["launched_threadgroups_wide"]
+            != r["launched_threadgroups_tight"]
+        ]
+        out["max_abs_interaction_pp_grid_differs"] = max(real) if real else 0.0
+        out["interaction_resolved_above_null_control"] = (
+            out["max_abs_interaction_pp_grid_differs"]
+            > out["interaction_resolution_floor_pp"]
+        )
+    if "5:5:4" in plans and "6:6:4" in plans:
+        sw = tot[("6:6:4", "wide")] - tot[("5:5:4", "wide")]
+        st = tot[("6:6:4", "tight")] - tot[("5:5:4", "tight")]
+        out["step_wide_us"] = sw
+        out["step_tight_us"] = st
+        out["step_tight_vs_wide_pct"] = 100.0 * (st - sw) / sw
+
+    # CAMPAIGN RULE 116 asks for absolute microseconds per round. An
+    # interaction quoted in percentage points cannot be compared with a band
+    # quoted in microseconds, so the same two null controls are also carried
+    # here as a dispatch-weighted resolution floor in microseconds per round.
+    interaction_us = {
+        e["plan"]: e["interaction_us"]
+        for e in totals
+        if "interaction_us" in e and e["plan"] != baseline
+    }
+    same_grid_plans = [
+        p for p in interaction_us
+        if all(wide["launch"][(n, p)] == tight["launch"][(n, p)] for n in names)
+    ]
+    geometry = {}
+    for plan in interaction_us:
+        key = tuple(
+            (wide["launch"][(n, plan)], tight["launch"][(n, plan)])
+            for n in names
+        )
+        geometry.setdefault(key, []).append(plan)
+    out["null_control_total_us"] = [
+        {"plan": p, "true_interaction_us": 0.0,
+         "measured_interaction_us": interaction_us[p]}
+        for p in sorted(same_grid_plans)
+    ]
+    out["matched_geometry_total_us"] = [
+        {"plans": sorted(group),
+         "true_interaction_spread_us": 0.0,
+         "measured_interaction_spread_us": (
+             max(interaction_us[p] for p in group)
+             - min(interaction_us[p] for p in group)
+         )}
+        for group in geometry.values()
+        if len(group) > 1
+    ]
+    floors_us = [abs(r["measured_interaction_us"])
+                 for r in out["null_control_total_us"]]
+    floors_us += [r["measured_interaction_spread_us"]
+                  for r in out["matched_geometry_total_us"]]
+    out["interaction_resolution_floor_us"] = (
+        max(floors_us) if floors_us else None
+    )
+    real_us = {p: v for p, v in interaction_us.items()
+               if p not in same_grid_plans}
+    out["interaction_us_where_grid_differs"] = dict(sorted(real_us.items()))
+    out["max_abs_interaction_us_grid_differs"] = (
+        max((abs(v) for v in real_us.values()), default=0.0)
+    )
+    if floors_us:
+        out["interaction_resolved_above_null_control_us"] = (
+            out["max_abs_interaction_us_grid_differs"]
+            > out["interaction_resolution_floor_us"]
+        )
+    return out
+
+
+def band_verdict(report: dict, plan: str, low: float, high: float) -> dict:
+    """Score one plan's interaction against a pre-registered microsecond band.
+
+    A band verdict is only meaningful when the estimator can resolve an effect
+    of that size, so the floor decides whether the comparison may be read at
+    all. Reporting `inside` or `outside` without the floor would present an
+    unresolved measurement as a test of the band.
+    """
+    value = report["interaction_us_where_grid_differs"].get(plan)
+    if value is None:
+        raise SystemExit(f"{plan} carries no interaction against the grid")
+    floor = report["interaction_resolution_floor_us"]
+    return {
+        "plan": plan,
+        "baseline_plan": report["baseline_plan"],
+        "interaction_us": value,
+        "band_low_us": low,
+        "band_high_us": high,
+        "inside_band": low <= value <= high,
+        "resolution_floor_us": floor,
+        "band_width_us": high - low,
+        "floor_exceeds_band_low": floor is not None and floor >= low,
+        "floor_exceeds_band_width": floor is not None and floor >= high - low,
+        "band_is_testable": floor is not None and floor < low,
+    }
+
+
+def main() -> int:
+    argv = [a for a in sys.argv[1:] if not a.startswith("--")]
+    flags = dict(
+        a.split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a
+    )
+    if not argv:
+        raise SystemExit(__doc__)
+    r = factorial([pathlib.Path(a) for a in argv], flags.get("--baseline"))
+
+    print("E138 launch-grid x plan factorial   harness=local")
+    print("baseline plan for every advantage and interaction: %s"
+          % r["baseline_plan"])
+    print()
+    print("launched threadgroups per call (Qwen35.swift:1957-1961, columns x per column)")
+    print("%-34s %7s %6s %10s %10s" % ("shape", "N", "plan", "wide", "tight"))
+    for shape in r["shapes"]:
+        for row in shape["rows"]:
+            if row["plan"].endswith(":stock"):
+                continue
+            print("%-34s %7d %6s %10d %10d"
+                  % (shape["name"], shape["n"], row["plan"],
+                     row["launched_threadgroups_wide"],
+                     row["launched_threadgroups_tight"]))
+    print()
+
+    print("per shape, drift-corrected microseconds per call")
+    for shape in r["shapes"]:
+        print("%s   N=%d   dispatched %dx per verify"
+              % (shape["name"], shape["n"], shape["dispatch"]))
+        print("    %6s %10s %10s %8s %10s %10s %9s %9s"
+              % ("plan", "wide", "tight", "T-W %", "advW %", "advT %",
+                 "inter pp", "spread %"))
+        for row in shape["rows"]:
+            spread = max(row["session_spread_wide_pct"],
+                         row["session_spread_tight_pct"])
+            if "interaction_pp" not in row:
+                print("    %6s %10.1f %10.1f %7.1f %%%10s %10s %9s %9.2f"
+                      % (row["plan"], row["wide_us"], row["tight_us"],
+                         row["tight_minus_wide_pct"], "-", "-", "-", spread))
+                continue
+            flag = (
+                ""
+                if row["plan"] == r["baseline_plan"]
+                or abs(row["interaction_pp"]) > spread
+                else "  unresolved"
+            )
+            print("    %6s %10.1f %10.1f %7.1f %% %9.2f %9.2f %+8.2f %9.2f%s"
+                  % (row["plan"], row["wide_us"], row["tight_us"],
+                     row["tight_minus_wide_pct"], row["advantage_wide_pct"],
+                     row["advantage_tight_pct"], row["interaction_pp"],
+                     spread, flag))
+        print("    rank wide  %s" % " < ".join(shape["rank_wide"]))
+        print("    rank tight %s%s"
+              % (" < ".join(shape["rank_tight"]),
+                 "" if shape["order_same"] else "   <- ORDER CHANGES"))
+        print()
+
+    print("dispatch-weighted totals over the whole 64-layer step")
+    print("%6s %12s %12s %9s %12s %12s %11s"
+          % ("plan", "wide us", "tight us", "T-W %", "advW us", "advT us",
+             "inter us"))
+    for entry in r["totals"]:
+        if "interaction_us" not in entry:
+            print("%6s %12.0f %12.0f %8.2f %%%12s %12s %11s"
+                  % (entry["plan"], entry["wide_us"], entry["tight_us"],
+                     entry["tight_minus_wide_pct"], "-", "-", "-"))
+            continue
+        print("%6s %12.0f %12.0f %8.2f %% %11.0f %12.0f %+11.0f"
+              % (entry["plan"], entry["wide_us"], entry["tight_us"],
+                 entry["tight_minus_wide_pct"], entry["advantage_wide_us"],
+                 entry["advantage_tight_us"], entry["interaction_us"]))
+
+    print()
+    print("global best plan   wide %s   tight %s%s"
+          % (r["best_plan_wide"], r["best_plan_tight"],
+             "   <- GRID CHANGES THE WINNER"
+             if r["grid_changes_the_global_winner"] else ""))
+    print("largest absolute per-shape interaction: %.2f pp"
+          % r["max_abs_interaction_pp"])
+    if r["shapes_with_order_change"]:
+        print("per-shape plan order changes under: %s"
+              % ", ".join(r["shapes_with_order_change"]))
+    else:
+        print("per-shape plan order is identical under both grids for every shape:")
+        print("    the plan axis and the grid axis are separable on this evidence")
+
+    if r.get("null_control_rows") or r.get("matched_geometry_pairs"):
+        print()
+        print("null control: plans whose two arms dispatch the same grid")
+        print("a same-grid plan runs one pipeline over one dispatch twice, so")
+        print("its true interaction is 0.00 pp and the reading below is floor")
+        print("%-34s %8s %6s %10s %11s"
+              % ("shape", "plan", "tgs", "inter pp", "T-W %"))
+        for row in r["null_control_rows"]:
+            print("%-34s %8s %6d %+10.2f %10.2f %%"
+                  % (row["shape"], row["plan"], row["launched_threadgroups"],
+                     row["interaction_pp"], row["tight_minus_wide_pct"]))
+        for pair in r["matched_geometry_pairs"]:
+            print("%-34s %8s   pair  %+10.2f  (spread of equal interactions)"
+                  % (pair["shape"], "/".join(pair["plans"]),
+                     pair["interaction_spread_pp"]))
+        print()
+        print("measured interaction resolution floor: %.2f pp"
+              % r["interaction_resolution_floor_pp"])
+        print("largest interaction where the grid really differs: %.2f pp"
+              % r["max_abs_interaction_pp_grid_differs"])
+        print("interaction resolved above the null control: %s"
+              % ("YES" if r["interaction_resolved_above_null_control"]
+                 else "NO -- the plan x grid interaction is not resolved"))
+
+    if r.get("interaction_resolution_floor_us") is not None:
+        print()
+        print("CAMPAIGN RULE 116: the same controls in absolute microseconds "
+              "per round")
+        print("%-46s %12s" % ("null control (true interaction 0 us)",
+                              "measured us"))
+        for row in r["null_control_total_us"]:
+            print("%-46s %+12.1f" % ("  plan %s, same grid under both arms"
+                                     % row["plan"],
+                                     row["measured_interaction_us"]))
+        for row in r["matched_geometry_total_us"]:
+            print("%-46s %+12.1f" % ("  pair %s, equal interactions required"
+                                     % "/".join(row["plans"]),
+                                     row["measured_interaction_spread_us"]))
+        print()
+        print("%-46s %12.1f" % ("interaction resolution floor",
+                                r["interaction_resolution_floor_us"]))
+        for plan, value in r["interaction_us_where_grid_differs"].items():
+            print("%-46s %+12.1f" % ("interaction, %s against %s"
+                                     % (plan, r["baseline_plan"]), value))
+        print("%-46s %12s"
+              % ("resolved above the null control",
+                 "YES" if r["interaction_resolved_above_null_control_us"]
+                 else "NO"))
+        band = flags.get("--band")
+        if band:
+            low, high = (float(v) for v in band.split(","))
+            for plan in r["interaction_us_where_grid_differs"]:
+                v = band_verdict(r, plan, low, high)
+                print()
+                print("band verdict for %s against %s"
+                      % (plan, v["baseline_plan"]))
+                print("    interaction        %+10.1f us" % v["interaction_us"])
+                print("    band               %+10.1f to %+.1f us"
+                      % (v["band_low_us"], v["band_high_us"]))
+                print("    inside band        %s"
+                      % ("YES" if v["inside_band"] else "NO"))
+                print("    resolution floor   %10.1f us"
+                      % v["resolution_floor_us"])
+                print("    band is testable   %s"
+                      % ("YES" if v["band_is_testable"] else
+                         "NO -- the floor is at or above the band floor, so "
+                         "this comparison cannot test the band"))
+
+    if "step_wide_us" in r:
+        print()
+        print("isolated dispatch-weighted M=5 -> M=6 step")
+        print("    wide  %10.1f us" % r["step_wide_us"])
+        print("    tight %10.1f us   %+.2f %% against wide"
+              % (r["step_tight_us"], r["step_tight_vs_wide_pct"]))
+
+    print()
+    print("harness=local. Both sessions anchor on the grid-independent 6:stock")
+    print("cell, so these microseconds are comparable across the two grids.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

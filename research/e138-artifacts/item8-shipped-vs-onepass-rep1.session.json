@@ -1,0 +1,16 @@
+{
+  "artifact": "research/e138-artifacts/item8-shipped-vs-onepass-rep1.json",
+  "commit": "ec9938064aab1bb77e26a623e02a3592532f0157",
+  "cool_gate_passed_real_gate": false,
+  "ended_utc": "2026-08-22T22:17:27Z",
+  "exit_status": 0,
+  "gate_qualified_for_timing": false,
+  "gpu_temp_entry_c": 36.51165008544922,
+  "gpu_temp_exit_c": 67.55793762207031,
+  "measured_source_dirty": false,
+  "measured_source_dirty_paths": [],
+  "official_or_ranked_score": false,
+  "other_dirty_paths": [],
+  "resident_worker_pids": [],
+  "started_utc": "2026-08-22T22:15:17Z"
+}

@@ -1,0 +1,14 @@
+{
+  "artifact": "research/e138-artifacts/item1a-m5-m7-rows.json",
+  "commit": "3f871da92e19cba43cb4faf137249fff3e1539ad",
+  "cool_gate_passed_real_gate": false,
+  "dirty": true,
+  "ended_utc": "2026-08-22T21:24:06Z",
+  "exit_status": 0,
+  "gate_qualified_for_timing": false,
+  "gpu_temp_entry_c": 37.864715576171875,
+  "gpu_temp_exit_c": 62.621700286865234,
+  "official_or_ranked_score": false,
+  "resident_worker_pids": [],
+  "started_utc": "2026-08-22T21:22:46Z"
+}

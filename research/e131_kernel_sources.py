@@ -297,13 +297,21 @@ def cluster_qmv_present(text: str) -> bool:
     return "qwen35ClusterAffine2QMVHeader" in text
 
 
-def e120_qmv_body(text: str, table: bool, tier: int | None = None) -> str:
+def e120_qmv_body(text: str, table: bool, tier: int | None = None,
+                  plan: list[tuple[int, int, int]] | None = None) -> str:
     """Rebuild `qwen35E120QMVSource(table:tier:)` from the Swift text.
 
     Only the interpolation semantics are known here. The dispatch width plan,
     the per-case template and the body itself are all read out of Swift, so a
     change to any of them reaches the census. `tier` keeps only the widths
     whose `ipg` equals it, exactly as the Swift `filter` does.
+
+    `plan` replaces the shipped dispatch table with a hypothetical one, which
+    is what a plan-surface census needs: the case template, the kernel body and
+    every interpolation rule still come from live Swift, so the compiler sees
+    the shipped kernel instantiated at another `(m, ipg, rps)`. The emitted
+    witness comment then renders the hypothetical plan rather than the shipped
+    one, so a censused source cannot claim to be the shipped route.
     """
     func = qmv_source_func(text)
     sums = ternary(func, "sums")[0 if table else 1]
@@ -311,7 +319,10 @@ def e120_qmv_body(text: str, table: bool, tier: int | None = None) -> str:
     null_decl = ternary(func, "nullDecl")[0 if table else 1]
 
     table_case = default_table(text)
-    plan = [entry for entry in width_plan(text, table_case)
+    witness = plan_witness(text, table_case) if plan is None \
+        else render_plan(plan)
+    source_plan = width_plan(text, table_case) if plan is None else plan
+    plan = [entry for entry in source_plan
             if tier is None or entry[1] == tier]
     if not plan:
         raise SourceUnavailable(
@@ -330,8 +341,7 @@ def e120_qmv_body(text: str, table: bool, tier: int | None = None) -> str:
         .replace("\\(flag)", flag).replace("\\(sums)", sums)
         for m, ipg, rps in plan)
     body = (body_template
-            .replace("\\(Qwen35CustomQMV.planWitness)",
-                     plan_witness(text, table_case))
+            .replace("\\(Qwen35CustomQMV.planWitness)", witness)
             .replace("\\(nullDecl)", null_decl)
             .replace("\\(cases)", cases))
     if "\\(" in body:
