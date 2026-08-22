@@ -194,6 +194,20 @@ const float n3 = float(extract_bits(p, 12, 4));
 """)
 
 variant(
+    "bfe_narrow",
+    "`extract_bits` kept at sixteen bits. AGX addresses register halves, so a "
+    "ushort bitfield extract may avoid the widening to uint that `bfe` "
+    "forces before it does anything useful.",
+    _sim_mask,
+    """
+const ushort p = ushort(packed[r][i]);
+const float n0 = float(extract_bits(p, ushort(0), ushort(4)));
+const float n1 = float(extract_bits(p, ushort(4), ushort(4)));
+const float n2 = float(extract_bits(p, ushort(8), ushort(4)));
+const float n3 = float(extract_bits(p, ushort(12), ushort(4)));
+""")
+
+variant(
     "rolling",
     "One shift feeds the next, so the shift amounts are all 4 and the top "
     "nibble needs no mask. Fewer distinct constants, one fewer mask, at the "
