@@ -1,0 +1,35 @@
+/tmp/e118-arms/base_raw.metal 206415 worktree affine_qmv_fast_bfloat16_t_64_4_false
+a_base            210032 bytes  sha=0314241f2568  exact=True   extra=-
+q_scaffold        209350 bytes  sha=c00bd0077e0c  exact=True   extra=-
+s_bcast           209617 bytes  sha=387d4db61ade  exact=True   extra=-
+s_bcast_all       209685 bytes  sha=7b0702345db2  exact=True   extra=-
+s_bcast_scale     209572 bytes  sha=bb549b5b9d3f  exact=True   extra=-
+p_split_meta      209437 bytes  sha=0c7d06178a73  exact=True   extra=-
+g_pack32          209532 bytes  sha=387621b193ab  exact=True   extra=packed_sb
+s_bcast_pack32    209675 bytes  sha=0d916f960dc9  exact=True   extra=packed_sb
+p_prefetch_w      209969 bytes  sha=f1673911df2c  exact=True   extra=-
+n_nosums          209269 bytes  sha=8bebf02d3637  exact=False  extra=-
+l_loadonly        209028 bytes  sha=fdeb24d01b77  exact=False  extra=-
+n_nobias          209210 bytes  sha=336493fad11c  exact=False  extra=-
+d_bias1           209457 bytes  sha=f4c4285b1f31  exact=False  extra=bias_codes
+e_bias6           209787 bytes  sha=46b242f4f325  exact=True   extra=bias_codes
+z_ballast         209771 bytes  sha=a932369f26f1  exact=True   extra=-
+k_alu8            210060 bytes  sha=c949458c9ef1  exact=True   extra=-
+k_alu16           210508 bytes  sha=d5760ae7af44  exact=True   extra=-
+k_ld8             210343 bytes  sha=44c3727a7df0  exact=True   extra=-
+k_ld16            211015 bytes  sha=2439414479e9  exact=True   extra=-
+k_shuf8           210140 bytes  sha=02b1d7c4aeb8  exact=True   extra=-
+k_shuf16          210668 bytes  sha=f232f84cc39a  exact=True   extra=-
+k_alu16w          210508 bytes  sha=43b47e5980f8  exact=True   extra=-
+y_algebra         209352 bytes  sha=600809d58018  exact=False  extra=-
+y_hsum_tree       209354 bytes  sha=675d59ffa8de  exact=False  extra=-
+n_halfsums        210383 bytes  sha=e5eb96f52f53  exact=False  extra=simd_gid
+x_sumshare_split   211145 bytes  sha=34c077e187bb  exact=True   extra=simd_gid, sums_xchg
+x_sumshare_owner   210967 bytes  sha=4dfe440131c9  exact=True   extra=simd_gid, sums_xchg
+n_halfsums_free   209459 bytes  sha=a1170adfe60e  exact=False  extra=-
+x_sumshare_min    210633 bytes  sha=c0d142491a81  exact=True   extra=simd_gid, sums_xchg
+x_sumshoist       209965 bytes  sha=c4bbe945a65a  exact=True   extra=sums_table
+c_rps4            210971 bytes  sha=7143352347af  exact=True   extra=-  [census only]
+c_rps8            210976 bytes  sha=594cb0be7bc2  exact=True   extra=-  [census only]
+
+--arms a_base,q_scaffold,s_bcast,s_bcast_all,s_bcast_scale,p_split_meta,g_pack32,s_bcast_pack32,p_prefetch_w,n_nosums:diag,l_loadonly:diag,n_nobias:diag,d_bias1:diag,e_bias6,z_ballast,k_alu8,k_alu16,k_ld8,k_ld16,k_shuf8,k_shuf16,k_alu16w,y_algebra:diag,y_hsum_tree:diag,n_halfsums:diag,x_sumshare_split,x_sumshare_owner,n_halfsums_free:diag,x_sumshare_min,x_sumshoist
