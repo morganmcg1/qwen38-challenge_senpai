@@ -1,0 +1,144 @@
+{
+  "abba_counterbalanced": false,
+  "harness": "local",
+  "legs": {
+    "beagle_a": {
+      "pb6": {
+        "accepted": 394,
+        "decode_spt_us": 32472.179736942053,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 96,
+        "rounds": 118,
+        "rows": 608,
+        "spt_us": 32472.179736942053,
+        "tokens": 512
+      },
+      "ship": {
+        "accepted": 393,
+        "decode_spt_us": 33197.55266420543,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 112,
+        "rounds": 119,
+        "rows": 624,
+        "spt_us": 33197.55266420543,
+        "tokens": 512
+      }
+    },
+    "benchfixture": {
+      "pb6": {
+        "accepted": 430,
+        "decode_spt_us": 29120.70695310831,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 50,
+        "rounds": 82,
+        "rows": 562,
+        "spt_us": 29120.70695310831,
+        "tokens": 512
+      },
+      "ship": {
+        "accepted": 435,
+        "decode_spt_us": 29541.57628118992,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 61,
+        "rounds": 78,
+        "rows": 574,
+        "spt_us": 29541.57628118992,
+        "tokens": 512
+      }
+    },
+    "essays_montaigne": {
+      "pb6": {
+        "accepted": 361,
+        "decode_spt_us": 35224.289167672396,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 157,
+        "rounds": 151,
+        "rows": 669,
+        "spt_us": 35224.289167672396,
+        "tokens": 512
+      },
+      "ship": {
+        "accepted": 366,
+        "decode_spt_us": 34929.142566397786,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 136,
+        "rounds": 146,
+        "rows": 648,
+        "spt_us": 34929.142566397786,
+        "tokens": 512
+      }
+    },
+    "medicine_hist": {
+      "pb6": {
+        "accepted": 343,
+        "decode_spt_us": 36588.216898962855,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 180,
+        "rounds": 169,
+        "rows": 692,
+        "spt_us": 36588.216898962855,
+        "tokens": 512
+      },
+      "ship": {
+        "accepted": 359,
+        "decode_spt_us": 38022.75191992521,
+        "divergence": 0,
+        "matched": true,
+        "rejected": 177,
+        "rounds": 153,
+        "rows": 689,
+        "spt_us": 38022.75191992521,
+        "tokens": 512
+      }
+    }
+  },
+  "models": {
+    "flat_pre_arm": {
+      "beagle_a": 3.4135830322510947,
+      "benchfixture": 2.6295447524092417,
+      "essays_montaigne": -0.15229989288430312,
+      "medicine_hist": 2.516469861441504
+    },
+    "measured": {
+      "beagle_a": 3.679680582098014,
+      "benchfixture": 2.7754218397476946,
+      "essays_montaigne": 0.7849001927989239,
+      "medicine_hist": 2.36445839340141
+    },
+    "measured_per_round": {
+      "beagle_a": 3.6232072913519526,
+      "benchfixture": 2.7354938011472174,
+      "essays_montaigne": 0.6721169457483369,
+      "medicine_hist": 2.2326688703418487
+    },
+    "measured_proportional": {
+      "beagle_a": 3.6504996366105544,
+      "benchfixture": 2.7541217404900067,
+      "essays_montaigne": 0.7070686366746549,
+      "medicine_hist": 2.330371662363398
+    },
+    "rows_only": {
+      "beagle_a": 2.564102564102564,
+      "benchfixture": 2.0905923344947737,
+      "essays_montaigne": -3.2407407407407405,
+      "medicine_hist": -0.43541364296081275
+    }
+  },
+  "note": "arms collected in separate sessions; per-leg SIGN is the evidence, magnitude carries thermal drift",
+  "observed": {
+    "beagle_a": 2.1850192832000452,
+    "benchfixture": 1.4246678108019206,
+    "essays_montaigne": -0.84498667756747,
+    "medicine_hist": 3.7728332341211015
+  },
+  "ranked_weight_held": 0.8968,
+  "ranked_weighted_observed": 2.0891548612111426,
+  "thermally_matched": false
+}
