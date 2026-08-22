@@ -244,3 +244,232 @@ Assumptions, all falsifiable:
 
 **E121 removes about 44 % of Route B's leg value.** That is the headline of
 this rung, and it is the number thorfinn needs before spending a 5e session.
+
+## Rung 1 — isolated, GPU, five arms
+
+Session `research/out/e126-rung1/`, leg commit `10a52275`, worktree clean.
+Command:
+
+```
+research/e126_probe.sh e126-rung1 --shapes 0,1,2,3,4 --widths 3,4,5
+python3 research/e126_analysis.py research/out/e126-rung1/rate.json \
+  --model research/e126-artifacts/rung0-model.json \
+  --census research/e126-artifacts/rung0-census.json \
+  --out research/e126-artifacts/rung1-summary.json
+```
+
+Five arms, five scored shapes, widths 3/4/5, palindrome order, four blocks with
+block 0 discarded as warmup, so every cell is a pooled median of three blocks.
+`harness=local`. `cool_gate_passed_real_gate=false` and
+`gate_qualified_for_timing=false`, preserved verbatim. Nothing here is a score.
+
+### Validity
+
+`void=false`, no reasons. 60 exactness checks, zero failures: both exact arms
+are bit-identical at every cell and the three `:diag` arms differ, as they must.
+Five positive controls fired, so the comparison can detect a difference.
+
+Entry temperature 33.26 to 36.68 C, spread 3.41 / 2.43 / 2.08 C at NA 3/4/5,
+exit maximum 38.06 C. Drift is small and the palindrome cancels its monotone
+part.
+
+### Headline
+
+Percent faster than `share_off`, the pre-E121 body:
+
+| arm | NA3 | NA4 | NA5 |
+| --- | ---: | ---: | ---: |
+| `n_sums_free` | 5.416 | **9.279** | 11.234 |
+| `n_nosums_e123` | 1.203 | 7.297 | 8.898 |
+| `n_sums_loaded` | 0.772 | 5.311 | 6.843 |
+| `share_on` (E121) | 0.304 | 1.662 | 0.144 |
+
+Percent faster than `share_on`, the shipped body. The first row is the primary
+metric:
+
+| arm | NA3 | NA4 | NA5 |
+| --- | ---: | ---: | ---: |
+| `n_sums_free` (**primary**) | 5.026 | **7.706** | 11.059 |
+| `n_nosums_e123` | 0.914 | 5.744 | 8.746 |
+| `n_sums_loaded` (faithful) | 0.410 | 3.703 | 6.706 |
+
+Primary round-weighted **6.898 %**, CI95 [6.514, 7.226], weight coverage 1.000.
+Overlap `O` = 0.056 / 0.179 / 0.000 at NA 3/4/5.
+
+**The primary lands at 7.706 % at NA=4, inside the advisor's `>= 5.0` band: the
+overlap is small and Route B keeps its price.** Every stopping rule was checked
+and none fires.
+
+### The crux: which arm is thorfinn's basis
+
+Rung 0 could not decide whether thorfinn's 5.88 % came from a `sums_free`-shaped
+body or from the mix-faithful body that still applies the published sums. The
+measurement decides it:
+
+| arm | measured vs `share_off` at NA=4 | thorfinn 5.88 | ratio |
+| --- | ---: | ---: | ---: |
+| `n_sums_free` | 9.279 | 5.88 | 1.58 |
+| `n_sums_loaded` (faithful) | 5.311 | 5.88 | **1.11** |
+
+The faithful arm reproduces him to 11 %. The upper-bound arm does not. So his
+basis is the faithful one, and the rung-0 worry that the upper bound was being
+priced is resolved in his favour.
+
+The cross-instrument replication test uses `n_sums_free` as written, and gives
+ratios 2.46 / 1.58 / 1.72 at NA 3/4/5. Only NA=3 exceeds 2x, and NA=3 is the
+one width where the isolated arms differ in residency, so that cell is
+occupancy confounded and is not evidence that either mechanism was misread.
+
+### Task 4 revised — thorfinn's rung 5e re-priced on the shipped base
+
+His 5e ran against a pre-E121 control and measured +4.249 % leg. The question
+this rung answers is what the same arm would read against the base that now
+ships. Scale his per-width gross gain by the measured surviving fraction
+`gain(loaded vs share_on) / gain(loaded vs share_off)`, then subtract his
+replica-dispatch cost, whose absolute value does not change when E121 is
+present:
+
+| width | thorfinn gross | surviving fraction | marginal | replica cost | net |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| NA3 | +2.20 | 0.531 | +1.17 | 2.23 | **-1.06** |
+| NA4 | +5.88 | 0.697 | +4.10 | 2.42 | +1.68 |
+| NA5 | +6.52 | 0.980 | +6.39 | 2.12 | +4.27 |
+
+| base | round net | leg | ranked |
+| --- | ---: | ---: | ---: |
+| `share_off`, his own control | +2.449 % | +1.487 % | +1.412 % |
+| shipped, with E121 | **+0.973 %** | **+0.591 %** | +0.561 % |
+
+**E121 removes 60.3 % of Route B's leg value**, against the 44 % predicted at
+rung 0. The revised leg point of +0.59 % still falls inside the pre-registered
+interval [+0.45, +1.15].
+
+The leg conversion used here is 0.6068 at the standing NA weights. F95 says that
+coefficient is width dependent, and inverting 5e implies 0.796 at mean width
+7.359. Both figures are stated with their width, and neither is used unlabelled.
+
+### The ranked residency picture inverts against the shipped base
+
+Registers / resident simdgroups for the isolated per-width kernels:
+
+| arm | g16s NA3 | NA4 | NA5 | g17s NA3 | NA4 | NA5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `share_off` | 82/37 | 94/32 | 93/33 | 89/**44** | 90/**44** | 101/39 |
+| `n_sums_free` | 78/39 | 94/32 | 95/32 | 98/40 | 94/**42** | 98/40 |
+| `n_nosums_e123` | 86/35 | 94/32 | 95/32 | 98/40 | 96/**41** | 99/40 |
+| `n_sums_loaded` | 87/35 | 94/32 | 95/32 | 93/42 | 94/**42** | 100/39 |
+| `share_on` (shipped) | 79/38 | 90/34 | 93/33 | 95/41 | 102/**38** | 101/39 |
+
+Askeladd reports that deleting the whole add tree costs 3 of 44 resident
+simdgroups at NA=4 on g17s. My `n_nosums_e123` reads 41 against `share_off`'s
+44, which is his number exactly, from an independent emitter built on the
+current base. The finding replicates.
+
+**His conclusion does not carry to the base that ships.** Against `share_on` at
+38, every sums-deleting arm *gains* residency at NA=4 on g17s: 42, 41, 42. The
+ranked-unfavourable reading is true only against a pre-E121 body that no longer
+exists. This agrees with the rung-0 entry-point census, where the shipped entry
+sits at 38 and the sums-free entry reaches 40.
+
+E121 itself costs 12 registers and 6 of 44 resident simdgroups at NA=4 on g17s,
+while on g16s it saves 4 registers and gains 2 simdgroups. The exchange's
+residency effect has opposite sign on the two architectures at the scored
+width, and the ranked side is the losing one. That is a falsifiable prediction
+about `cf9a9eda`: if E121's ranked gain comes in under its local gain, this is
+the first place to look.
+
+A register or residency census is a cost observation, never correctness
+evidence.
+
+### Bandwidth covariate
+
+Slopes are fitted within width across the five shapes, which is where achieved
+rate actually varies. Within-cell slopes are a noise floor at n=3 and are not
+used.
+
+| contrast | NA3 | NA4 | NA5 |
+| --- | ---: | ---: | ---: |
+| `free vs off`, %/(GB/s) | -0.0228 (r -0.76) | -0.0240 (r -0.66) | -0.0032 (r -0.28) |
+| `free vs on`, %/(GB/s) | **+0.0305** (r +0.88) | **+0.0450** (r +0.61) | -0.0055 (r -0.60) |
+| `on vs off`, %/(GB/s) | -0.0499 (r -0.96) | **-0.0755** (r -0.90) | +0.0078 (r +0.65) |
+
+Two readings, both for the transfer question:
+
+1. Route B against the pre-E121 body is close to bandwidth independent, which
+   corroborates thorfinn's flat result over his 49 cells and contradicts the
+   strong negative slope I reported from 10 cells in E121.
+2. The two mechanisms separate cleanly. E121's own effect *shrinks* as achieved
+   bandwidth rises, and Route B's remaining prize *grows*. The ranked M5 streams
+   at 542.8 GB/s against the 145 to 236 GB/s measured here, so the sign is a
+   transfer risk for E121 and a transfer opportunity for Route B. The measured
+   span does not reach the ranked rate, so no numerical extrapolation is made.
+
+### Harness defect 30 does not bias this session
+
+The block is ten slots in palindrome order, so `share_off` holds the two extreme
+slots and `share_on` the two middle ones: exactly the shape askeladd reports.
+Two in-session bounds:
+
+- Palindrome asymmetry `slot[9-i] - slot[i]` cancels the arm effect and exposes
+  monotone drift. The largest median over all arms and widths is 0.214 pp.
+- The convex part is confounded with the arm effect at every width except NA=5,
+  where the shipped gate folds off and `share_on` is byte-identical to
+  `share_off` while sitting in the opposite slot pair. Extreme minus middle
+  reads **-0.144 pp**.
+
+Both bounds are far below the 7.706 pp primary effect, so `--warm-sweep-reps`
+is not needed for this arm set at this window. Discarding block 0 removes the
+ramp: in block 0 slot 0 runs 39 % slow, and by block 1 the asymmetry is gone.
+
+### Occupancy confounding, per contrast cell
+
+17 of the contrast cells differ in isolated residency on the timed g16s. The
+important reading is the one that carries the round weight:
+
+- At NA=4 the three diagnostic arms and `share_off` are all 94 registers / 32
+  simdgroups, so every `vs share_off` number at NA=4 is occupancy clean.
+- At NA=4 `share_on` sits at 34 simdgroups against the diagnostic arms' 32, so
+  the primary 7.706 % is if anything understated and the overlap `O(4) = 0.179`
+  is an over-estimate.
+- NA=3 is badly confounded. `n_sums_free` reads 5.416 % against
+  `n_nosums_e123`'s 1.203 % for only 12 deleted adds per lane, and the arms
+  stand at 39 against 35 simdgroups. The NA=3 cells price occupancy, not
+  instructions.
+- Rule 56 means none of these per-width cliffs reaches the shipped kernel,
+  which inlines every width into one allocation.
+
+### Pre-registered bands, scored
+
+| prediction | point | band | measured | verdict |
+| --- | ---: | --- | ---: | --- |
+| `free_vs_off` NA=4 | 6.40 | [4.50, 8.50] | 9.279 | MISS high |
+| **primary `free_vs_on`** NA=4 | 4.70 | [4.00, 6.60] | **7.706** | MISS high |
+| `e123_vs_off` NA=4 | 6.40 | [5.00, 7.50] | 7.297 | in band |
+| `loaded_vs_on` NA=4 | 1.70 | [0.50, 3.50] | 3.703 | MISS high |
+| overlap `O` NA=4 | 0.25 | [0.15, 0.35] | 0.179 | in band |
+| primary, round weighted | 3.70 | [3.00, 5.00] | 6.898 | MISS high |
+
+Four of six miss, and every miss is in the same direction: the rung-0 model
+under-predicted how much a deletion buys. The two predictions that hold are the
+ones anchored on E123's measured deletion price rather than on the analytic
+instruction count, so the analytic count is the part that is wrong, not the
+E123 price ladder.
+
+The primary missing high is a favourable miss, but it is still a miss, and the
+honest reading is that the model is not yet good enough to price a mechanism
+without measuring it.
+
+## Mode index tool
+
+`research/e126_modeindex.py` carries the F76 weight vector relayed on PR #127
+and reads a ranked receipt mode corrected. `--selftest` reproduces every anchor
+the advisor published, checks the slow correction against `7bef7d4c`, and runs a
+positive control that moves the index by 8.77 units, more than the 1.000 unit
+mode flip.
+
+One defect in the relayed vector: the eight weights sum to `-1.0e-4`, not to
+zero, because they are published to four decimal places. A uniform 5 % speedup
+therefore leaks 0.000513 index units instead of cancelling exactly. That is
+0.63 % of the 0.0817 per-run noise, so it changes no classification, but the
+selftest bounds it rather than asserting exact cancellation.
+
