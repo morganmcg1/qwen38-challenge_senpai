@@ -1,0 +1,71 @@
+{
+  "adds": [
+    {
+      "credited": "senpai, promoted as 623e77af on source 60d5b34a",
+      "mechanism": "one-pass QMV width specialisation, table {6:6, 7:7}",
+      "our_price_pct": 0.1206,
+      "our_price_source": "our own promoted pair: cf79f7df 3.51661724 to 623e77af 3.52085227 on the published median."
+    },
+    {
+      "credited": "senpai E134, not yet submitted",
+      "mechanism": "pb6 pass-boundary depth price, width 6 at tier 1.45",
+      "our_price_pct": 2.4683,
+      "our_price_source": "E134 item 2, replayed ranked median percent, leave-one-prompt-out held out on the measured post-arm curve. Rule 79: no ranked receipt yet."
+    }
+  ],
+  "board_snapshot": "/tmp/yukon-board/full.json",
+  "deletes": [
+    {
+      "confidence": "high, three independent lines agree",
+      "credited": "noskillcoding 48423d09, restored by nagaral 0b8602e1",
+      "mechanism": "qL{2,3} later-window SDPA warm",
+      "our_file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "our_price_pct": 0.0,
+      "our_price_source": "FINDING 177 measured it as a null on our own ranked pair. FINDING 178 explains the null at source: the MLX SDPA pipeline cache key is kname + mask flag + qt|qnt + c|nc + sinks|nosinks, and qL never reaches any of those fields. E134 rung 6 confirms it from the other side: the warm query and both scored chunk expressions resolve to _qnt at every width 1 to 9, so the shipped [1, 5, 4] warm already compiles every specialisation [1, 2, 3, 4, 5] would."
+    },
+    {
+      "confidence": "medium, our instrument and the rival receipt disagree by an order of magnitude",
+      "credited": "francip, restored by nagaral 0b8602e1",
+      "mechanism": "E87 probe-select",
+      "our_file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "our_price_pct": 0.064,
+      "our_price_source": "advisor F7 section 2 rival-mechanism audit, priced F83-weighted from our own instrument. Real but tiny. The rival's own note claims +0.72 to +0.88 percent from published medians, which Rule 62 and Rule 63 forbid us from using as a price."
+    },
+    {
+      "confidence": "medium, our host measures a regression where the ranked M5 measured a small gain",
+      "credited": "Amal-David, restored by nagaral 0b8602e1",
+      "mechanism": "E020 replay-prefetch",
+      "our_file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "our_price_pct": -0.4767,
+      "our_price_source": "E134 item 0 measured this mechanism directly as the W-PREFETCH arm: +0.4767 percent +- 0.0963 SLOWER on absolute candidate seconds per token, worse on 4 of 4 pairs, and +15.41 percent on width-matched round-1 excess. Local M4 Pro, ABBA-counterbalanced, ungated. The rival holds a +0.033 percent ranked increment, so this is a host disagreement, not a refutation of their receipt."
+    },
+    {
+      "confidence": "high on round 1, low on the end-to-end mean, which is inside its own spread",
+      "credited": "newjordan 1d7876fd, restored by nagaral 0b8602e1",
+      "mechanism": "normed-verify warm (callWithHiddenAndNormed)",
+      "our_file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "our_price_pct": -0.0293,
+      "our_price_source": "E134 item 0 measured this mechanism directly as the W-NORM arm: +0.0293 percent +- 0.0513 slower on absolute candidate seconds per token and +24.87 percent +- 3.54 WORSE on width-matched round-1 excess, worse on 4 of 4 pairs on both metrics. Rule 110 predicts the null: the warm normed call changes no pipeline cache key."
+    }
+  ],
+  "effect_of_adding_them_pct": 2.5889,
+  "effect_of_deleting_them_pct": 0.442,
+  "frontier": {
+    "id": "b6cb0fea-880f-4737-8129-3769e071a808",
+    "promoted_at": "2026-08-22T18:09:31.536Z",
+    "score": 3.52509129797624,
+    "solver": "ofou",
+    "source_ref": "d44ad22960039ea2eca6c32806af86195e101ecc"
+  },
+  "harness": "ranked-model",
+  "held_value_of_deleted_set_pct": -0.442,
+  "net_conservative_pct": 2.5249,
+  "net_pct": 3.0309000000000004,
+  "our_crown": {
+    "id": "623e77af-7a6a-41f0-afab-478037aafbb8",
+    "score": 3.52085227003175,
+    "source_ref": "60d5b34a5ad62296faa9746dccab71e762e4001c"
+  },
+  "source_diff_available": false,
+  "source_diff_note": "yukon reset is forbidden in this maintained checkout, so no rival source tree was read. Every rival mechanism is named from its own public note and priced only from this campaign's own measurements."
+}
