@@ -1,0 +1,1510 @@
+{
+  "board_curve_refit": {
+    "table": [
+      {
+        "aicc": 138.35609514640012,
+        "beta": [
+          26377.519047619026,
+          3689.360822510822,
+          282.8322510822517
+        ],
+        "model": "quadratic",
+        "params": 3,
+        "rmse_us": 1195.655357496688
+      },
+      {
+        "aicc": 143.18472286289364,
+        "beta": [
+          21192.261111111107,
+          6517.683333333335
+        ],
+        "model": "line",
+        "params": 2,
+        "rmse_us": 2041.3640031140644
+      },
+      {
+        "aicc": 144.48307558959496,
+        "beta": [
+          19162.238383838376,
+          4060.0454545454504,
+          5570.339393939396
+        ],
+        "model": "passcount_affine",
+        "params": 3,
+        "rmse_us": 1680.4846833039899
+      },
+      {
+        "aicc": 150.29712168101096,
+        "beta": [
+          23273.41210191081,
+          407.8159235668614,
+          5497.874522292995,
+          478.26815286624657
+        ],
+        "model": "passcount_freeslope",
+        "params": 4,
+        "rmse_us": 1555.9477016201213
+      },
+      {
+        "aicc": 161.38127352094807,
+        "beta": [
+          39046.70072992704,
+          -6388.804379562059,
+          2566.7175182481774
+        ],
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 4296.802011453235
+      },
+      {
+        "aicc": 165.509988997126,
+        "beta": [
+          19100.17441860465,
+          3899.2139534883713
+        ],
+        "model": "passcount",
+        "params": 2,
+        "rmse_us": 7056.22902531334
+      },
+      {
+        "aicc": 167.62597512329546,
+        "beta": [
+          35467.01151079133,
+          -654.4011990407631
+        ],
+        "model": "passcount_scaled",
+        "params": 2,
+        "rmse_us": 7936.445946038012
+      }
+    ],
+    "values_us": [
+      31181.800000000003,
+      35148.200000000004,
+      39114.600000000006,
+      43081.0,
+      52791.7,
+      59945.899999999994,
+      67100.1,
+      74254.3,
+      81408.5
+    ]
+  },
+  "boundary_sweep": [
+    {
+      "aicc": 94.42974264973077,
+      "boundary_M": 3,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 172.75232401454045
+    },
+    {
+      "aicc": 129.79373421996502,
+      "boundary_M": 4,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 1575.1541015820583
+    },
+    {
+      "aicc": 122.83442215722864,
+      "boundary_M": 5,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 1019.5854323904653
+    },
+    {
+      "aicc": 118.72613715366421,
+      "boundary_M": 6,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 788.6980690282072
+    },
+    {
+      "aicc": 122.45228988263992,
+      "boundary_M": 7,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 995.5228909501982
+    },
+    {
+      "aicc": 128.3034015017774,
+      "boundary_M": 8,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 1435.0609395265785
+    },
+    {
+      "aicc": 91.91127960505472,
+      "boundary_M": 3,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 147.59248191234877
+    },
+    {
+      "aicc": 106.17455809654722,
+      "boundary_M": 4,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 359.93011263480633
+    },
+    {
+      "aicc": 89.80445261155019,
+      "boundary_M": 5,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 129.3831669514299
+    },
+    {
+      "aicc": 93.50185818629734,
+      "boundary_M": 6,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 163.01889863689541
+    },
+    {
+      "aicc": 127.23573283135755,
+      "boundary_M": 7,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 1342.4254605312904
+    },
+    {
+      "aicc": 128.3034015017774,
+      "boundary_M": 8,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 1435.060939526579
+    },
+    {
+      "aicc": 101.23363082345664,
+      "boundary_M": 3,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 147.4912118213568
+    },
+    {
+      "aicc": 97.74514054911904,
+      "boundary_M": 4,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 118.5978017009391
+    },
+    {
+      "aicc": 98.84696509436112,
+      "boundary_M": 5,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 127.05270305537307
+    },
+    {
+      "aicc": 93.43140895492094,
+      "boundary_M": 6,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 90.5706062742009
+    },
+    {
+      "aicc": 114.62630222872892,
+      "boundary_M": 7,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 340.63467066657097
+    },
+    {
+      "aicc": 137.63673483511073,
+      "boundary_M": 8,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 1435.060939526579
+    }
+  ],
+  "breakpoint": 6,
+  "candidate_curves": [
+    {
+      "aicc": 89.80445261155019,
+      "breakpoint": 5,
+      "family": "passcount_scaled_affine",
+      "hi": [
+        18539.833242177614,
+        6499.324819760979
+      ],
+      "lo": [
+        28003.741121497143,
+        3249.662409880486
+      ],
+      "name": "passcount_scaled_affine@M>=5",
+      "params": 3,
+      "rmse_us": 129.3831669514299
+    },
+    {
+      "aicc": 91.91127960505472,
+      "breakpoint": 3,
+      "family": "passcount_scaled_affine",
+      "hi": [
+        15860.72600957629,
+        6869.511878298828
+      ],
+      "lo": [
+        27891.852810059885,
+        3434.755939149414
+      ],
+      "name": "passcount_scaled_affine@M>=3",
+      "params": 3,
+      "rmse_us": 147.59248191234877
+    },
+    {
+      "aicc": 93.43140895492094,
+      "breakpoint": 6,
+      "family": "passcount_freeslope",
+      "hi": [
+        21541.133402215026,
+        6167.542819345319
+      ],
+      "lo": [
+        27894.32537410927,
+        3388.26233670739
+      ],
+      "name": "passcount_freeslope@M>=6",
+      "params": 4,
+      "rmse_us": 90.5706062742009
+    },
+    {
+      "aicc": 93.50185818629734,
+      "breakpoint": 6,
+      "family": "passcount_scaled_affine",
+      "hi": [
+        19414.822154644397,
+        6469.945922914412
+      ],
+      "lo": [
+        28281.721884704668,
+        3234.972961457206
+      ],
+      "name": "passcount_scaled_affine@M>=6",
+      "params": 3,
+      "rmse_us": 163.01889863689541
+    },
+    {
+      "aicc": 94.42974264973077,
+      "breakpoint": 3,
+      "family": "passcount_affine",
+      "hi": [
+        15124.250880187523,
+        6979.95195268422
+      ],
+      "lo": [
+        24277.400149253095,
+        6979.951952684223
+      ],
+      "name": "passcount_affine@M>=3",
+      "params": 3,
+      "rmse_us": 172.75232401454045
+    }
+  ],
+  "f_tests": {
+    "passcount_affine": {
+      "dof": 4,
+      "f": 299.3241551474845,
+      "p": 6.550226865334772e-05,
+      "q": 1
+    },
+    "passcount_scaled_affine": {
+      "dof": 4,
+      "f": 8.958697466026274,
+      "p": 0.04021449274215377,
+      "q": 1
+    }
+  },
+  "harness": "ranked",
+  "joint_selection": {
+    "full": {
+      "aicc": 89.80445261155019,
+      "boundary_M": 5,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 129.3831669514299,
+      "slope_ratio": 2.0
+    },
+    "loo": [
+      {
+        "aicc": 77.76876825753763,
+        "boundary_M": 6,
+        "dropped": "plutarch",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 95.0983879587464,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 80.78981801227852,
+        "boundary_M": 5,
+        "dropped": "drama",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 118.00196614720758,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 80.13332925651375,
+        "boundary_M": 5,
+        "dropped": "travel",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 112.5963424626298,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 80.74446433908871,
+        "boundary_M": 5,
+        "dropped": "beagle",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 117.6203116316066,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 83.00018842780261,
+        "boundary_M": 5,
+        "dropped": "republic",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 138.18382828012176,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 79.1895527857075,
+        "boundary_M": 6,
+        "dropped": "essays",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 105.25612099047312,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 79.33202107422322,
+        "boundary_M": 5,
+        "dropped": "medicine",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 106.33270806926373,
+        "slope_ratio": 2.0
+      },
+      {
+        "aicc": 79.64674747895103,
+        "boundary_M": 3,
+        "dropped": "botany",
+        "model": "passcount_scaled_affine",
+        "params": 3,
+        "rmse_us": 108.75018720076376,
+        "slope_ratio": 2.0
+      }
+    ]
+  },
+  "leverage": [
+    {
+      "hat": 0.9969723048284485,
+      "mass_above_break": 0.0004367478021814668,
+      "mbar": 1.1540041067761808,
+      "mean_M_above_break": 6.271796198598885,
+      "prompt": "plutarch"
+    },
+    {
+      "hat": 0.4594167202503467,
+      "mass_above_break": 0.01229968609900568,
+      "mbar": 3.2976190476190474,
+      "mean_M_above_break": 7.338230544720142,
+      "prompt": "drama"
+    },
+    {
+      "hat": 0.4493986721895263,
+      "mass_above_break": 0.07694480609923741,
+      "mbar": 3.6556603773584904,
+      "mean_M_above_break": 6.460478539358493,
+      "prompt": "travel"
+    },
+    {
+      "hat": 0.16987658567125014,
+      "mass_above_break": 0.45504555106274347,
+      "mbar": 5.381818181818182,
+      "mean_M_above_break": 7.600983494296057,
+      "prompt": "beagle"
+    },
+    {
+      "hat": 0.2216169789969654,
+      "mass_above_break": 0.5955596956800792,
+      "mbar": 5.989247311827957,
+      "mean_M_above_break": 7.69864698942081,
+      "prompt": "republic"
+    },
+    {
+      "hat": 0.985156356703154,
+      "mass_above_break": 0.8242998640822402,
+      "mbar": 6.086956521739131,
+      "mean_M_above_break": 6.40494195172913,
+      "prompt": "essays"
+    },
+    {
+      "hat": 0.2211945291724445,
+      "mass_above_break": 0.6760409502027686,
+      "mbar": 6.2555555555555555,
+      "mean_M_above_break": 7.536256078706666,
+      "prompt": "medicine"
+    },
+    {
+      "hat": 0.49636785218787927,
+      "mass_above_break": 0.8319379243784105,
+      "mbar": 7.148148148148148,
+      "mean_M_above_break": 7.758835028792525,
+      "prompt": "botany"
+    }
+  ],
+  "model_table_corrected_labels": [
+    {
+      "aicc": 93.43140895492094,
+      "beta": [
+        34247.51734600353,
+        -6353.191971894259,
+        3388.2623367073893,
+        2779.2804826379324
+      ],
+      "cond": 228.12151280938758,
+      "curve": [
+        31282.58771081666,
+        34670.85004752405,
+        38059.112384231434,
+        41447.37472093883,
+        44835.637057646214,
+        58546.39031828694,
+        64713.933137632266,
+        70881.47595697758,
+        95709.35114817004
+      ],
+      "dof": 4,
+      "implied_slope_ratio": 1.8202672067413626,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 90.5706062742009,
+      "rss": 65624.27776701056
+    },
+    {
+      "aicc": 93.50185818629734,
+      "beta": [
+        37148.62161476493,
+        -8866.899730060262,
+        3234.9729614572057
+      ],
+      "cond": 172.90291371251115,
+      "curve": [
+        31516.694846161874,
+        34751.66780761908,
+        37986.640769076286,
+        41221.61373053349,
+        44456.5866919907,
+        58234.49769213087,
+        64704.44361504528,
+        71174.3895379597,
+        97892.1923839287
+      ],
+      "dof": 5,
+      "implied_slope_ratio": 2.0,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 163.01889863689541,
+      "rss": 212601.29050229103
+    },
+    {
+      "aicc": 116.16747196234228,
+      "beta": [
+        28566.540728195214,
+        1794.6179537570465,
+        446.0859400393197
+      ],
+      "cond": 199.06084743711585,
+      "curve": [
+        30807.24462199158,
+        33940.12039586659,
+        37965.16804982023,
+        42882.38758385251,
+        48691.77899796344,
+        55393.342292153,
+        62987.07746642121,
+        71472.98452076805,
+        80851.06345519354
+      ],
+      "dof": 5,
+      "implied_slope_ratio": 1.0,
+      "model": "quadratic",
+      "params": 3,
+      "rmse_us": 672.1402322165358,
+      "rss": 3614179.934112789
+    },
+    {
+      "aicc": 118.72613715366421,
+      "beta": [
+        15580.204199370804,
+        10940.987729216678,
+        3945.094678598816
+      ],
+      "cond": 53.15768970973931,
+      "curve": [
+        30466.2866071863,
+        34411.381285785115,
+        38356.47596438393,
+        42301.57064298275,
+        46246.66532158156,
+        61132.74772939706,
+        65077.84240799587,
+        69022.93708659468,
+        83909.01949441018
+      ],
+      "dof": 5,
+      "implied_slope_ratio": 1.0,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 788.6980690282072,
+      "rss": 4976357.152710582
+    },
+    {
+      "aicc": 124.19382505175514,
+      "beta": [
+        22439.94062393493,
+        5757.901966117208
+      ],
+      "cond": 15.050269083367311,
+      "curve": [
+        28197.84259005214,
+        33955.744556169346,
+        39713.64652228655,
+        45471.54848840376,
+        51229.450454520964,
+        56987.352420638184,
+        62745.25438675539,
+        68503.1563528726,
+        74261.0583189898
+      ],
+      "dof": 6,
+      "implied_slope_ratio": 1.0,
+      "model": "line",
+      "params": 2,
+      "rmse_us": 1575.1630437366132,
+      "rss": 19849108.914828733
+    },
+    {
+      "aicc": 133.50970886040872,
+      "beta": [
+        29929.325562039176,
+        1456.8061599780108
+      ],
+      "cond": 21.902760204336257,
+      "curve": [
+        31386.131722017188,
+        32842.937881995196,
+        34299.74404197321,
+        35756.55020195122,
+        37213.356361929225,
+        68599.48808394642,
+        70056.29424392442,
+        71513.10040390244,
+        102899.23212591963
+      ],
+      "dof": 6,
+      "implied_slope_ratio": 1.0,
+      "model": "passcount",
+      "params": 2,
+      "rmse_us": 2819.618310191725,
+      "rss": 63601979.321347505
+    },
+    {
+      "aicc": 135.09879848407425,
+      "beta": [
+        35222.20053702001,
+        -35.26681626526955
+      ],
+      "cond": 24.13099792693162,
+      "curve": [
+        35186.93372075474,
+        35151.66690448947,
+        35116.4000882242,
+        35081.13327195893,
+        35045.866455693664,
+        70021.19927885679,
+        69950.66564632625,
+        69880.13201379571,
+        104714.39757189776
+      ],
+      "dof": 6,
+      "implied_slope_ratio": 2.0,
+      "model": "passcount_scaled",
+      "params": 2,
+      "rmse_us": 3114.0359758160203,
+      "rss": 77577760.46941148
+    }
+  ],
+  "model_table_pre_e100_labels": [
+    {
+      "aicc": 89.80445261155019,
+      "beta": [
+        37467.64900081665,
+        -9463.907879319511,
+        3249.662409880488
+      ],
+      "cond": 169.96143775603895,
+      "curve": [
+        31253.40353137763,
+        34503.065941258115,
+        37752.728351138605,
+        41002.390761019094,
+        51036.45734098251,
+        57535.78216074349,
+        64035.10698050446,
+        70534.43180026545,
+        96816.8104296313
+      ],
+      "dof": 5,
+      "implied_slope_ratio": 2.0,
+      "model": "passcount_scaled_affine",
+      "params": 3,
+      "rmse_us": 129.3831669514299,
+      "rss": 133920.03112305267
+    },
+    {
+      "aicc": 98.84696509436112,
+      "beta": [
+        37925.21781312406,
+        -9841.643876607628,
+        3217.4914348586785,
+        3325.318796381581
+      ],
+      "cond": 208.24521668632178,
+      "curve": [
+        31301.065371375105,
+        34518.556806233784,
+        37736.04824109246,
+        40953.53967595115,
+        50955.9812161101,
+        57498.79144735036,
+        64041.60167859062,
+        70584.41190983087,
+        97213.44743189774
+      ],
+      "dof": 4,
+      "implied_slope_ratio": 2.0335128666869746,
+      "model": "passcount_freeslope",
+      "params": 4,
+      "rmse_us": 127.05270305537307,
+      "rss": 129139.11482941444
+    },
+    {
+      "aicc": 116.16747196234228,
+      "beta": [
+        28566.540728195214,
+        1794.6179537570465,
+        446.0859400393197
+      ],
+      "cond": 199.06084743711585,
+      "curve": [
+        30807.24462199158,
+        33940.12039586659,
+        37965.16804982023,
+        42882.38758385251,
+        48691.77899796344,
+        55393.342292153,
+        62987.07746642121,
+        71472.98452076805,
+        80851.06345519354
+      ],
+      "dof": 5,
+      "implied_slope_ratio": 1.0,
+      "model": "quadratic",
+      "params": 3,
+      "rmse_us": 672.1402322165358,
+      "rss": 3614179.934112789
+    },
+    {
+      "aicc": 122.83442215722864,
+      "beta": [
+        16477.285352851282,
+        9406.931949527807,
+        4093.3466020342144
+      ],
+      "cond": 52.32767636424311,
+      "curve": [
+        29977.563904413302,
+        34070.910506447515,
+        38164.25710848173,
+        42257.60371051595,
+        55757.88226207797,
+        59851.228864112185,
+        63944.5754661464,
+        68037.92206818062,
+        81538.20061974262
+      ],
+      "dof": 5,
+      "implied_slope_ratio": 1.0,
+      "model": "passcount_affine",
+      "params": 3,
+      "rmse_us": 1019.5854323904653,
+      "rss": 8316435.631542817
+    },
+    {
+      "aicc": 124.19382505175514,
+      "beta": [
+        22439.94062393493,
+        5757.901966117208
+      ],
+      "cond": 15.050269083367311,
+      "curve": [
+        28197.84259005214,
+        33955.744556169346,
+        39713.64652228655,
+        45471.54848840376,
+        51229.450454520964,
+        56987.352420638184,
+        62745.25438675539,
+        68503.1563528726,
+        74261.0583189898
+      ],
+      "dof": 6,
+      "implied_slope_ratio": 1.0,
+      "model": "line",
+      "params": 2,
+      "rmse_us": 1575.1630437366132,
+      "rss": 19849108.914828733
+    },
+    {
+      "aicc": 134.8494577844383,
+      "beta": [
+        29148.102229991633,
+        1309.8051809244184
+      ],
+      "cond": 21.740810616307588,
+      "curve": [
+        30457.90741091605,
+        31767.71259184047,
+        33077.51777276489,
+        34387.322953689305,
+        64845.23036460536,
+        66155.03554552978,
+        67464.84072645419,
+        68774.64590737861,
+        99232.55331829467
+      ],
+      "dof": 6,
+      "implied_slope_ratio": 1.0,
+      "model": "passcount",
+      "params": 2,
+      "rmse_us": 3065.883653932773,
+      "rss": 75197140.63561738
+    },
+    {
+      "aicc": 135.8726467020785,
+      "beta": [
+        34113.89964910273,
+        -98.6420187095661
+      ],
+      "cond": 24.820088953883733,
+      "curve": [
+        34015.257630393164,
+        33916.6156116836,
+        33817.97359297403,
+        33719.33157426446,
+        67241.3791111098,
+        67044.09507369067,
+        66846.81103627154,
+        66649.5269988524,
+        99678.36444214989
+      ],
+      "dof": 6,
+      "implied_slope_ratio": 2.0,
+      "model": "passcount_scaled",
+      "params": 2,
+      "rmse_us": 3268.3495734526027,
+      "rss": 85456871.47430249
+    }
+  ],
+  "our_freeslope_curve_us": [
+    31282.58771081666,
+    34670.85004752405,
+    38059.112384231434,
+    41447.37472093883,
+    44835.637057646214,
+    58546.39031828694,
+    64713.933137632266,
+    70881.47595697758,
+    95709.35114817004
+  ],
+  "our_piece_curve_us": [
+    31282.5877108167,
+    34670.85004752407,
+    38059.112384231456,
+    41447.374720938824,
+    44835.63705764621,
+    58546.39031828697,
+    64713.93313763229,
+    70881.4759569776,
+    77049.01877632295
+  ],
+  "passes_post_e100": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    3.0
+  ],
+  "passes_pre_e100": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    3.0
+  ],
+  "r_scenario": "assumed",
+  "ratio_by_r_scenario": [
+    {
+      "b_hi": 6167.542819345325,
+      "b_lo": 3388.2623367073866,
+      "best_model": "passcount_freeslope",
+      "contains_two": false,
+      "excludes_one": true,
+      "ratio": 1.8202672067413652,
+      "ratio_ci95": [
+        1.6609342013410626,
+        1.9796002121416678
+      ],
+      "scenario": "assumed",
+      "se_ratio": 0.05739661577820698
+    },
+    {
+      "b_hi": 6847.31693885506,
+      "b_lo": 3269.883716412495,
+      "best_model": "passcount_scaled_affine",
+      "contains_two": true,
+      "excludes_one": false,
+      "ratio": 2.0940551813773656,
+      "ratio_ci95": [
+        0.4015422257778716,
+        3.7865681369768596
+      ],
+      "scenario": "predicted",
+      "se_ratio": 0.6096948687318062
+    },
+    {
+      "b_hi": 6605.376428576661,
+      "b_lo": 5082.156006013448,
+      "best_model": "line",
+      "contains_two": true,
+      "excludes_one": false,
+      "ratio": 1.2997193358017476,
+      "ratio_ci95": [
+        0.07971691859592389,
+        2.5197217530075715
+      ],
+      "scenario": "band_lo",
+      "se_ratio": 0.4394821387629048
+    },
+    {
+      "b_hi": 7084.431393870062,
+      "b_lo": 1421.3975498767927,
+      "best_model": "passcount_freeslope",
+      "contains_two": true,
+      "excludes_one": false,
+      "ratio": 4.9841308608447665,
+      "ratio_ci95": [
+        0.2974640451019708,
+        9.670797676587561
+      ],
+      "scenario": "band_hi",
+      "se_ratio": 1.6882805532214682
+    }
+  ],
+  "receipt": {
+    "id": "d3c491b5-902f-4f80-8d33-b7938f980d2d",
+    "prefix": "d3c491b5",
+    "score": 3.49065043561149
+  },
+  "retracted": {
+    "appears_elsewhere_in_research": [
+      "research/finding22_reprice.py:8",
+      "research/finding22_reprice.py:21"
+    ],
+    "appears_in_e128_work": false,
+    "figure": "542.8 GB/s ranked stream rate",
+    "reason": "advisor error 107: 2 * 14.4123 GB / 53108 us is an achieved rate measured when M=5 still read the weights twice, so it is not a ceiling",
+    "replacement_instrument": "within-segment inflation"
+  },
+  "slope_errors": {
+    "b_hi": 6167.542819345325,
+    "b_lo": 3388.2623367073866,
+    "breakpoint": 6,
+    "cond": 46.91382396606311,
+    "dof": 4,
+    "dslope": 2779.280482637939,
+    "dslope_ci95": [
+      2333.3358340120913,
+      3225.2251312637864
+    ],
+    "dslope_ci95_excludes_zero": true,
+    "dslope_t": 17.300987114829407,
+    "ratio": 1.8202672067413652,
+    "ratio_ci95": [
+      1.6609342013410626,
+      1.9796002121416678
+    ],
+    "ratio_ci95_contains_two": false,
+    "ratio_ci95_excludes_one": true,
+    "rmse": 90.57060627419973,
+    "se_b_hi": 143.9282887592923,
+    "se_b_lo": 72.45550119605575,
+    "se_dslope": 160.64288495167423,
+    "se_ratio": 0.05739661577820698
+  },
+  "slope_loo": {
+    "breakpoint": 6,
+    "full": {
+      "b_hi": 6167.542819345323,
+      "b_lo": 3388.2623367073757,
+      "ratio": 1.82026720674137,
+      "rmse": 90.57060627420289
+    },
+    "rows": [
+      {
+        "b_hi": 6126.432086341905,
+        "b_lo": 2976.122760441732,
+        "dropped": "plutarch",
+        "jump_us": 11556.170883769422,
+        "ratio": 2.058528017652265,
+        "rmse": 95.00867040217813
+      },
+      {
+        "b_hi": 6171.698118714634,
+        "b_lo": 3363.036678689017,
+        "dropped": "drama",
+        "jump_us": 10474.312654496965,
+        "ratio": 1.835156350753954,
+        "rmse": 90.67727090784754
+      },
+      {
+        "b_hi": 6142.515216394776,
+        "b_lo": 3440.0861994955744,
+        "dropped": "travel",
+        "jump_us": 10061.283603609958,
+        "ratio": 1.7855701456828212,
+        "rmse": 74.14302420414276
+      },
+      {
+        "b_hi": 6137.098952889488,
+        "b_lo": 3370.922512331659,
+        "dropped": "beagle",
+        "jump_us": 10424.502661849372,
+        "ratio": 1.8205992366892085,
+        "rmse": 70.25995762210306
+      },
+      {
+        "b_hi": 6214.1107337499325,
+        "b_lo": 3391.034265587007,
+        "dropped": "republic",
+        "jump_us": 10281.990139382857,
+        "ratio": 1.8325119261731302,
+        "rmse": 80.63417693159124
+      },
+      {
+        "b_hi": 5922.758681348454,
+        "b_lo": 3381.2020749773387,
+        "dropped": "essays",
+        "jump_us": 10774.672059553224,
+        "ratio": 1.7516724969441968,
+        "rmse": 96.06488475656076
+      },
+      {
+        "b_hi": 6152.273278264614,
+        "b_lo": 3388.8658574167275,
+        "dropped": "medicine",
+        "jump_us": 10318.092290258961,
+        "ratio": 1.8154372398069434,
+        "rmse": 93.23515714581094
+      },
+      {
+        "b_hi": 6199.725832134957,
+        "b_lo": 3384.7309118273024,
+        "dropped": "botany",
+        "jump_us": 10325.608391406144,
+        "ratio": 1.8316746570521123,
+        "rmse": 95.1529655624632
+      }
+    ],
+    "spread": {
+      "b_hi": [
+        5922.758681348454,
+        6214.1107337499325,
+        291.35205240147843
+      ],
+      "b_hi_rel_range": 0.04750310407546976,
+      "b_lo": [
+        2976.122760441732,
+        3440.0861994955744,
+        463.9634390538422
+      ],
+      "b_lo_rel_range": 0.13903608544870835,
+      "ratio": [
+        1.7516724969441968,
+        2.058528017652265
+      ],
+      "ratio_crosses_one": false
+    }
+  },
+  "tier_decomposition": [
+    {
+      "a": -9463.907879319511,
+      "aicc": 89.80445261155019,
+      "b": 3249.662409880488,
+      "boundary_M": 5,
+      "c": 28003.74112149714,
+      "family": "passcount_scaled_affine",
+      "k": 3249.662409880488,
+      "monotone": true,
+      "name": "passcount_scaled_affine@M>=5",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 129.3831669514299,
+      "step_nonnegative": true,
+      "tier_step_us": 6784.404170082929
+    },
+    {
+      "a": -12031.126800483595,
+      "aicc": 91.91127960505472,
+      "b": 3434.755939149414,
+      "boundary_M": 3,
+      "c": 27891.852810059885,
+      "family": "passcount_scaled_affine",
+      "k": 3434.755939149414,
+      "monotone": true,
+      "name": "passcount_scaled_affine@M>=3",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 147.59248191234877,
+      "step_nonnegative": false,
+      "tier_step_us": -1726.8589830353521
+    },
+    {
+      "a": -6353.191971894259,
+      "aicc": 93.43140895492094,
+      "b": 3388.2623367073893,
+      "boundary_M": 6,
+      "c": 27894.32537410927,
+      "family": "passcount_freeslope",
+      "k": 2779.2804826379324,
+      "monotone": true,
+      "name": "passcount_freeslope@M>=6",
+      "params": 4,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 90.5706062742009,
+      "step_nonnegative": true,
+      "tier_step_us": 10322.490923933336
+    },
+    {
+      "a": -8866.899730060262,
+      "aicc": 93.50185818629734,
+      "b": 3234.9729614572057,
+      "boundary_M": 6,
+      "c": 28281.721884704668,
+      "family": "passcount_scaled_affine",
+      "k": 3234.9729614572057,
+      "monotone": true,
+      "name": "passcount_scaled_affine@M>=6",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 163.01889863689541,
+      "step_nonnegative": true,
+      "tier_step_us": 10542.93803868297
+    },
+    {
+      "a": -9153.149269065576,
+      "aicc": 94.42974264973077,
+      "b": 6979.9519526842205,
+      "boundary_M": 3,
+      "c": 24277.4001492531,
+      "family": "passcount_affine",
+      "k": 0.0,
+      "monotone": false,
+      "name": "passcount_affine@M>=3",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 172.75232401454045,
+      "step_nonnegative": false,
+      "tier_step_us": -9153.149269065576
+    },
+    {
+      "a": -11303.215198256916,
+      "aicc": 97.74514054911904,
+      "b": 2369.4913688235933,
+      "boundary_M": 4,
+      "c": 28989.75305151229,
+      "family": "passcount_freeslope",
+      "k": 4243.429129293983,
+      "monotone": true,
+      "name": "passcount_freeslope@M>=4",
+      "params": 4,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 118.5978017009391,
+      "step_nonnegative": true,
+      "tier_step_us": 5670.501318919018
+    },
+    {
+      "a": -9841.643876607628,
+      "aicc": 98.84696509436112,
+      "b": 3217.4914348586785,
+      "boundary_M": 5,
+      "c": 28083.57393651643,
+      "family": "passcount_freeslope",
+      "k": 3325.318796381581,
+      "monotone": true,
+      "name": "passcount_freeslope@M>=5",
+      "params": 4,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 127.05270305537307,
+      "step_nonnegative": true,
+      "tier_step_us": 6784.950105300275
+    },
+    {
+      "a": -11866.56540134079,
+      "aicc": 101.23363082345664,
+      "b": 3637.927637473205,
+      "boundary_M": 3,
+      "c": 27684.742454880223,
+      "family": "passcount_freeslope",
+      "k": 3237.9746229238913,
+      "monotone": true,
+      "name": "passcount_freeslope@M>=3",
+      "params": 4,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 147.4912118213568,
+      "step_nonnegative": false,
+      "tier_step_us": -2152.641532569116
+    },
+    {
+      "a": 0.0,
+      "aicc": 102.45444699960726,
+      "b": 3446.071806847641,
+      "boundary_M": 6,
+      "c": 27725.39691958033,
+      "family": "passcount_slopeonly",
+      "k": 1877.4595578470207,
+      "monotone": true,
+      "name": "passcount_slopeonly@M>=6",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 285.26053982088024,
+      "step_nonnegative": true,
+      "tier_step_us": 11264.757347082124
+    },
+    {
+      "a": -11581.442296074834,
+      "aicc": 106.17455809654722,
+      "b": 3433.0246934839424,
+      "boundary_M": 4,
+      "c": 27238.211869537015,
+      "family": "passcount_scaled_affine",
+      "k": 3433.0246934839424,
+      "monotone": true,
+      "name": "passcount_scaled_affine@M>=4",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 359.93011263480633,
+      "step_nonnegative": true,
+      "tier_step_us": 2150.6564778609354
+    },
+    {
+      "a": 0.0,
+      "aicc": 108.38950030884828,
+      "b": 17667.24115928359,
+      "boundary_M": 3,
+      "c": 13236.550484102649,
+      "family": "passcount_slopeonly",
+      "k": -10410.111471456397,
+      "monotone": false,
+      "name": "passcount_slopeonly@M>=3",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 413.3702867255588,
+      "step_nonnegative": false,
+      "tier_step_us": -31230.334414369194
+    },
+    {
+      "a": 0.0,
+      "aicc": 111.26871465351216,
+      "b": 3347.919234074957,
+      "boundary_M": 5,
+      "c": 27644.489178962143,
+      "family": "passcount_slopeonly",
+      "k": 1871.5951154495017,
+      "monotone": true,
+      "name": "passcount_slopeonly@M>=5",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 494.8697842519503,
+      "step_nonnegative": true,
+      "tier_step_us": 9357.97557724751
+    },
+    {
+      "a": 108107.35591493372,
+      "aicc": 114.62630222872892,
+      "b": 3612.422847066126,
+      "boundary_M": 7,
+      "c": 27508.99159702599,
+      "family": "passcount_freeslope",
+      "k": -11902.057215768908,
+      "monotone": false,
+      "name": "passcount_freeslope@M>=7",
+      "params": 4,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 340.63467066657097,
+      "step_nonnegative": true,
+      "tier_step_us": 24792.955404551365
+    },
+    {
+      "a": 0.0,
+      "aicc": 116.18700156364912,
+      "b": 1444.9380687165228,
+      "boundary_M": 4,
+      "c": 29416.222613632537,
+      "family": "passcount_slopeonly",
+      "k": 3494.1458402858825,
+      "monotone": true,
+      "name": "passcount_slopeonly@M>=4",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 672.9611475416136,
+      "step_nonnegative": true,
+      "tier_step_us": 13976.58336114353
+    },
+    {
+      "a": 10940.987729216678,
+      "aicc": 118.72613715366421,
+      "b": 3945.094678598816,
+      "boundary_M": 6,
+      "c": 26521.191928587483,
+      "family": "passcount_affine",
+      "k": 0.0,
+      "monotone": true,
+      "name": "passcount_affine@M>=6",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 788.6980690282072,
+      "step_nonnegative": true,
+      "tier_step_us": 10940.987729216678
+    },
+    {
+      "a": 10043.949725185965,
+      "aicc": 122.45228988263992,
+      "b": 4397.835464524102,
+      "boundary_M": 7,
+      "c": 25707.37946013156,
+      "family": "passcount_affine",
+      "k": 0.0,
+      "monotone": true,
+      "name": "passcount_affine@M>=7",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 995.5228909501982,
+      "step_nonnegative": true,
+      "tier_step_us": 10043.949725185965
+    },
+    {
+      "a": 9406.931949527807,
+      "aicc": 122.83442215722864,
+      "b": 4093.3466020342144,
+      "boundary_M": 5,
+      "c": 25884.21730237909,
+      "family": "passcount_affine",
+      "k": 0.0,
+      "monotone": true,
+      "name": "passcount_affine@M>=5",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 1019.5854323904653,
+      "step_nonnegative": true,
+      "tier_step_us": 9406.931949527807
+    },
+    {
+      "a": 0.0,
+      "aicc": 123.80047329375553,
+      "b": 4562.608940478408,
+      "boundary_M": 7,
+      "c": 25319.68406300278,
+      "family": "passcount_slopeonly",
+      "k": 1138.707597299139,
+      "monotone": true,
+      "name": "passcount_slopeonly@M>=7",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 1083.0425994067991,
+      "step_nonnegative": true,
+      "tier_step_us": 7970.953181093973
+    },
+    {
+      "a": -26289.040233097876,
+      "aicc": 127.23573283135755,
+      "b": 4530.696410580898,
+      "boundary_M": 7,
+      "c": 25497.690632451056,
+      "family": "passcount_scaled_affine",
+      "k": 4530.696410580898,
+      "monotone": true,
+      "name": "passcount_scaled_affine@M>=7",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 1342.4254605312904,
+      "step_nonnegative": true,
+      "tier_step_us": 5425.834640968413
+    },
+    {
+      "a": 3822.7979658636914,
+      "aicc": 128.3034015017774,
+      "b": 5368.695126485599,
+      "boundary_M": 8,
+      "c": 23402.363740488177,
+      "family": "passcount_affine",
+      "k": 0.0,
+      "monotone": true,
+      "name": "passcount_affine@M>=8",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 1435.0609395265785,
+      "step_nonnegative": true,
+      "tier_step_us": 3822.7979658636914
+    },
+    {
+      "a": 0.0,
+      "aicc": 128.3034015017774,
+      "b": 5368.695126485588,
+      "boundary_M": 8,
+      "c": 23402.36374048816,
+      "family": "passcount_slopeonly",
+      "k": 477.84974573296347,
+      "monotone": true,
+      "name": "passcount_slopeonly@M>=8",
+      "params": 3,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 1435.0609395265785,
+      "step_nonnegative": true,
+      "tier_step_us": 3822.7979658637078
+    },
+    {
+      "a": -39126.763046021166,
+      "aicc": 128.3034015017774,
+      "b": 5368.695126485609,
+      "boundary_M": 8,
+      "c": 23402.363740488203,
+      "family": "passcount_scaled_affine",
+      "k": 5368.695126485609,
+      "monotone": true,
+      "name": "passcount_scaled_affine@M>=8",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 1435.060939526579,
+      "step_nonnegative": true,
+      "tier_step_us": 3822.797965863705
+    },
+    {
+      "a": -82.24545896950255,
+      "aicc": 129.79373421996502,
+      "b": 5771.358906609946,
+      "boundary_M": 4,
+      "c": 22425.95224390541,
+      "family": "passcount_affine",
+      "k": 0.0,
+      "monotone": true,
+      "name": "passcount_affine@M>=4",
+      "params": 3,
+      "pass_overhead_nonnegative": false,
+      "rmse_us": 1575.1541015820583,
+      "step_nonnegative": false,
+      "tier_step_us": -82.24545896950255
+    },
+    {
+      "a": 11640.109126799267,
+      "aicc": 137.63673483511073,
+      "b": 5368.695126485596,
+      "boundary_M": 8,
+      "c": 23402.363740488177,
+      "family": "passcount_freeslope",
+      "k": -977.1638951169466,
+      "monotone": true,
+      "name": "passcount_freeslope@M>=8",
+      "params": 4,
+      "pass_overhead_nonnegative": true,
+      "rmse_us": 1435.060939526579,
+      "step_nonnegative": true,
+      "tier_step_us": 3822.797965863694
+    }
+  ],
+  "within_segment_inflation": [
+    {
+      "curve": "ours",
+      "inflation_pct": 43.32457874686375,
+      "m_hi": 5.0,
+      "m_lo": 1.0,
+      "passes": 1,
+      "saving_pct_if_arithmetic_free": 30.22829658783267,
+      "us_hi": 44835.63705764621,
+      "us_lo": 31282.5877108167
+    },
+    {
+      "curve": "ours",
+      "inflation_pct": 21.06890889708324,
+      "m_hi": 8.0,
+      "m_lo": 6.0,
+      "passes": 2,
+      "saving_pct_if_arithmetic_free": 17.402410816300684,
+      "us_hi": 70881.4759569776,
+      "us_lo": 58546.39031828697
+    },
+    {
+      "curve": "board_f97_labels",
+      "inflation_pct": 38.16072195960463,
+      "m_hi": 4.0,
+      "m_lo": 1.0,
+      "passes": 1,
+      "saving_pct_if_arithmetic_free": 27.620528771384134,
+      "us_hi": 43081.0,
+      "us_lo": 31181.800000000003
+    },
+    {
+      "curve": "board_f97_labels",
+      "inflation_pct": 40.65525451917633,
+      "m_hi": 8.0,
+      "m_lo": 5.0,
+      "passes": 2,
+      "saving_pct_if_arithmetic_free": 28.904184673480195,
+      "us_hi": 74254.3,
+      "us_lo": 52791.7
+    },
+    {
+      "curve": "board_corrected_labels",
+      "inflation_pct": 69.30292670724587,
+      "m_hi": 5.0,
+      "m_lo": 1.0,
+      "passes": 1,
+      "saving_pct_if_arithmetic_free": 40.93427565318032,
+      "us_hi": 52791.7,
+      "us_lo": 31181.800000000003
+    },
+    {
+      "curve": "board_corrected_labels",
+      "inflation_pct": 23.868855084334385,
+      "m_hi": 8.0,
+      "m_lo": 6.0,
+      "passes": 2,
+      "saving_pct_if_arithmetic_free": 19.269456448986798,
+      "us_hi": 74254.3,
+      "us_lo": 59945.899999999994
+    }
+  ]
+}

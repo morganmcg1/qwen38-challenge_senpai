@@ -1,0 +1,94 @@
+{
+  "breakpoint": 5,
+  "curves": {
+    "affine_b3": {
+      "aicc": 94.42974264973077,
+      "breakpoint": 3,
+      "hi": [
+        15124.250880187523,
+        6979.95195268422
+      ],
+      "lo": [
+        24277.400149253095,
+        6979.951952684223
+      ],
+      "model": "passcount_affine",
+      "name": "passcount_affine@M>=3",
+      "rmse_us": 172.75232401454045
+    },
+    "freeslope_b6": {
+      "aicc": 93.43140895492094,
+      "breakpoint": 6,
+      "hi": [
+        21541.133402215026,
+        6167.542819345319
+      ],
+      "lo": [
+        27894.32537410927,
+        3388.26233670739
+      ],
+      "model": "passcount_freeslope",
+      "name": "passcount_freeslope@M>=6",
+      "rmse_us": 90.5706062742009
+    },
+    "scaled_affine_b3": {
+      "aicc": 91.91127960505472,
+      "breakpoint": 3,
+      "hi": [
+        15860.72600957629,
+        6869.511878298828
+      ],
+      "lo": [
+        27891.852810059885,
+        3434.755939149414
+      ],
+      "model": "passcount_scaled_affine",
+      "name": "passcount_scaled_affine@M>=3",
+      "rmse_us": 147.59248191234877
+    },
+    "scaled_affine_b5": {
+      "aicc": 89.80445261155019,
+      "breakpoint": 5,
+      "hi": [
+        18539.833242177614,
+        6499.324819760979
+      ],
+      "lo": [
+        28003.741121497143,
+        3249.662409880486
+      ],
+      "model": "passcount_scaled_affine",
+      "name": "passcount_scaled_affine@M>=5",
+      "rmse_us": 129.3831669514299
+    },
+    "scaled_affine_b6": {
+      "aicc": 93.50185818629734,
+      "breakpoint": 6,
+      "hi": [
+        19414.822154644397,
+        6469.945922914412
+      ],
+      "lo": [
+        28281.721884704668,
+        3234.972961457206
+      ],
+      "model": "passcount_scaled_affine",
+      "name": "passcount_scaled_affine@M>=6",
+      "rmse_us": 163.01889863689541
+    }
+  },
+  "harness": "ranked",
+  "hi": [
+    18539.833242177614,
+    6499.324819760979
+  ],
+  "lo": [
+    28003.741121497143,
+    3249.662409880486
+  ],
+  "model": "passcount_scaled_affine",
+  "r_scenario": "assumed",
+  "receipt": "d3c491b5",
+  "rmse_us": 129.3831669514299,
+  "source": "e128_slopes.py"
+}
