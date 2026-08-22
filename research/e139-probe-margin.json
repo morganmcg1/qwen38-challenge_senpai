@@ -1,0 +1,868 @@
+{
+  "samples": 11244,
+  "leaves": 12292,
+  "shortlist": 32,
+  "bytes_per_row": 1600,
+  "model_ratio_at_p015": 0.973,
+  "crank_quantiles_pooled": {
+    "0.5": 1.0,
+    "0.9": 46.0,
+    "0.99": 482.27999999999884,
+    "0.999": 1551.0839999999953,
+    "0.9999": 2244.598000000071,
+    "1.0": 2440.0
+  },
+  "crank_max_pooled": 2440,
+  "crank_quantiles_by_stratum": {
+    "beagle": {
+      "0.5": 1.0,
+      "0.9": 51.0,
+      "0.99": 474.4400000000005,
+      "0.999": 1329.8019999999824,
+      "0.9999": 1668.2425999999896,
+      "1.0": 1685.0,
+      "max": 1685,
+      "n": 5079
+    },
+    "min_carriers": {
+      "0.5": 1.0,
+      "0.9": 44.0,
+      "0.99": 499.630000000001,
+      "0.999": 1822.1229999999487,
+      "0.9999": 2358.280199999994,
+      "1.0": 2440.0,
+      "max": 2440,
+      "n": 4592
+    },
+    "zero_weight": {
+      "0.5": 1.0,
+      "0.9": 40.0,
+      "0.99": 384.8799999999994,
+      "0.999": 1296.136000000029,
+      "0.9999": 1947.4660000000742,
+      "1.0": 2041.0,
+      "max": 2041,
+      "n": 1573
+    }
+  },
+  "ladder": [
+    {
+      "p": 0.005,
+      "probes": 62,
+      "coarse_rows": 496,
+      "gross_pct_unscaled": 0.8337266293766804,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9180896478121665,
+        "leaf_miss_rate": 0.0819103521878335,
+        "cut_miss_rate": 0.0,
+        "leaf_margin_min": -2379,
+        "cut_margin_min": 12
+      },
+      "recall_worst_gating": 0.9137625516834023,
+      "leaf_miss_rate_worst_gating": 0.08623744831659776,
+      "cut_margin_min_worst_gating": 12,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9137625516834023,
+          "leaf_miss_rate": 0.08623744831659776,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1624,
+          "cut_margin_min": 12
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9229094076655052,
+          "leaf_miss_rate": 0.07709059233449478,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -2379,
+          "cut_margin_min": 15
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9179910998092816,
+          "leaf_miss_rate": 0.08200890019071837,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1980,
+          "cut_margin_min": 22
+        }
+      }
+    },
+    {
+      "p": 0.0075,
+      "probes": 93,
+      "coarse_rows": 744,
+      "gross_pct_unscaled": 0.8251429277789797,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9413020277481323,
+        "leaf_miss_rate": 0.05869797225186766,
+        "cut_miss_rate": 0.0,
+        "leaf_margin_min": -2348,
+        "cut_margin_min": 9
+      },
+      "recall_worst_gating": 0.9364048040952944,
+      "leaf_miss_rate_worst_gating": 0.06359519590470565,
+      "cut_margin_min_worst_gating": 9,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9364048040952944,
+          "leaf_miss_rate": 0.06359519590470565,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1593,
+          "cut_margin_min": 9
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9453397212543554,
+          "leaf_miss_rate": 0.0546602787456446,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -2348,
+          "cut_margin_min": 14
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9453273998728544,
+          "leaf_miss_rate": 0.05467260012714558,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1949,
+          "cut_margin_min": 20
+        }
+      }
+    },
+    {
+      "p": 0.01,
+      "probes": 123,
+      "coarse_rows": 984,
+      "gross_pct_unscaled": 0.8168361197812047,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9528637495553184,
+        "leaf_miss_rate": 0.04713625044468161,
+        "cut_miss_rate": 0.0,
+        "leaf_margin_min": -2318,
+        "cut_margin_min": 8
+      },
+      "recall_worst_gating": 0.9501870446938374,
+      "leaf_miss_rate_worst_gating": 0.04981295530616263,
+      "cut_margin_min_worst_gating": 8,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9501870446938374,
+          "leaf_miss_rate": 0.04981295530616263,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1563,
+          "cut_margin_min": 8
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9542682926829268,
+          "leaf_miss_rate": 0.04573170731707317,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -2318,
+          "cut_margin_min": 13
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9574062301335029,
+          "leaf_miss_rate": 0.04259376986649714,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1919,
+          "cut_margin_min": 20
+        }
+      }
+    },
+    {
+      "p": 0.015,
+      "probes": 185,
+      "coarse_rows": 1480,
+      "gross_pct_unscaled": 0.7996687165858032,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9657595161864105,
+        "leaf_miss_rate": 0.03424048381358947,
+        "cut_miss_rate": 0.0,
+        "leaf_margin_min": -2256,
+        "cut_margin_min": 5
+      },
+      "recall_worst_gating": 0.9635755069895648,
+      "leaf_miss_rate_worst_gating": 0.03642449301043513,
+      "cut_margin_min_worst_gating": 5,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9635755069895648,
+          "leaf_miss_rate": 0.03642449301043513,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1501,
+          "cut_margin_min": 5
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9658101045296167,
+          "leaf_miss_rate": 0.03418989547038327,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -2256,
+          "cut_margin_min": 13
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9726636999364272,
+          "leaf_miss_rate": 0.02733630006357279,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1857,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.02,
+      "probes": 246,
+      "coarse_rows": 1968,
+      "gross_pct_unscaled": 0.7827782069903273,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9756314478833156,
+        "leaf_miss_rate": 0.024368552116684455,
+        "cut_miss_rate": 0.0,
+        "leaf_margin_min": -2195,
+        "cut_margin_min": 3
+      },
+      "recall_worst_gating": 0.9738675958188153,
+      "leaf_miss_rate_worst_gating": 0.02613240418118467,
+      "cut_margin_min_worst_gating": 3,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9761764126796614,
+          "leaf_miss_rate": 0.023823587320338648,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1440,
+          "cut_margin_min": 3
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9738675958188153,
+          "leaf_miss_rate": 0.02613240418118467,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -2195,
+          "cut_margin_min": 12
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9790209790209791,
+          "leaf_miss_rate": 0.02097902097902098,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1796,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.03,
+      "probes": 369,
+      "coarse_rows": 2952,
+      "gross_pct_unscaled": 0.7487202941994501,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9855923159018143,
+        "leaf_miss_rate": 0.01431874777659196,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -2072,
+        "cut_margin_min": -3
+      },
+      "recall_worst_gating": 0.9843205574912892,
+      "leaf_miss_rate_worst_gating": 0.0156794425087108,
+      "cut_margin_min_worst_gating": -3,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9856270919472337,
+          "leaf_miss_rate": 0.014176018901358535,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -1317,
+          "cut_margin_min": -3
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9843205574912892,
+          "leaf_miss_rate": 0.0156794425087108,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -2072,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.989192625556262,
+          "leaf_miss_rate": 0.01080737444373808,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1673,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.04,
+      "probes": 492,
+      "coarse_rows": 3936,
+      "gross_pct_unscaled": 0.7146623814085726,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9902170046246888,
+        "leaf_miss_rate": 0.009694059053717539,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1949,
+        "cut_margin_min": -4
+      },
+      "recall_worst_gating": 0.989329268292683,
+      "leaf_miss_rate_worst_gating": 0.010670731707317074,
+      "cut_margin_min_worst_gating": -4,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9907462098838354,
+          "leaf_miss_rate": 0.009056900964756842,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -1194,
+          "cut_margin_min": -4
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.989329268292683,
+          "leaf_miss_rate": 0.010670731707317074,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1949,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9910998092816274,
+          "leaf_miss_rate": 0.008900190718372537,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1550,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.05,
+      "probes": 615,
+      "coarse_rows": 4920,
+      "gross_pct_unscaled": 0.6806044686176953,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9937744574884383,
+        "leaf_miss_rate": 0.0061366061899679825,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1826,
+        "cut_margin_min": -7
+      },
+      "recall_worst_gating": 0.9932491289198606,
+      "leaf_miss_rate_worst_gating": 0.006750871080139373,
+      "cut_margin_min_worst_gating": -7,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9936995471549518,
+          "leaf_miss_rate": 0.00610356369364048,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -1071,
+          "cut_margin_min": -7
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9932491289198606,
+          "leaf_miss_rate": 0.006750871080139373,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1826,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9955499046408137,
+          "leaf_miss_rate": 0.004450095359186269,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1427,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.06,
+      "probes": 738,
+      "coarse_rows": 5904,
+      "gross_pct_unscaled": 0.646546555826818,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9951085023123444,
+        "leaf_miss_rate": 0.0048025613660619,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1703,
+        "cut_margin_min": -7
+      },
+      "recall_worst_gating": 0.9945557491289199,
+      "leaf_miss_rate_worst_gating": 0.00544425087108014,
+      "cut_margin_min_worst_gating": -7,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9950777712148061,
+          "leaf_miss_rate": 0.004725339633786178,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -948,
+          "cut_margin_min": -7
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9945557491289199,
+          "leaf_miss_rate": 0.00544425087108014,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1703,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9968213604577241,
+          "leaf_miss_rate": 0.003178639542275906,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1304,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.07,
+      "probes": 861,
+      "coarse_rows": 6888,
+      "gross_pct_unscaled": 0.6124886430359406,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9961757381714692,
+        "leaf_miss_rate": 0.003735325506937033,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1580,
+        "cut_margin_min": -9
+      },
+      "recall_worst_gating": 0.9956445993031359,
+      "leaf_miss_rate_worst_gating": 0.004355400696864111,
+      "cut_margin_min_worst_gating": -9,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9962591061232526,
+          "leaf_miss_rate": 0.0035440047253396337,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -825,
+          "cut_margin_min": -9
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9956445993031359,
+          "leaf_miss_rate": 0.004355400696864111,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1580,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9974570883661793,
+          "leaf_miss_rate": 0.0025429116338207248,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1181,
+          "cut_margin_min": 18
+        }
+      }
+    },
+    {
+      "p": 0.075,
+      "probes": 922,
+      "coarse_rows": 7376,
+      "gross_pct_unscaled": 0.5955981334404649,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9967093561010316,
+        "leaf_miss_rate": 0.0032017075773745998,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1519,
+        "cut_margin_min": -9
+      },
+      "recall_worst_gating": 0.9958623693379791,
+      "leaf_miss_rate_worst_gating": 0.004137630662020906,
+      "cut_margin_min_worst_gating": -9,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9970466627288836,
+          "leaf_miss_rate": 0.002756448119708604,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -764,
+          "cut_margin_min": -9
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9958623693379791,
+          "leaf_miss_rate": 0.004137630662020906,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1519,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9980928162746344,
+          "leaf_miss_rate": 0.0019071837253655435,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1120,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.08,
+      "probes": 984,
+      "coarse_rows": 7872,
+      "gross_pct_unscaled": 0.5784307302450633,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9970651013874067,
+        "leaf_miss_rate": 0.002845962290999644,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1457,
+        "cut_margin_min": -9
+      },
+      "recall_worst_gating": 0.9962979094076655,
+      "leaf_miss_rate_worst_gating": 0.0037020905923344947,
+      "cut_margin_min_worst_gating": -9,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9974404410316992,
+          "leaf_miss_rate": 0.002362669816893089,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -702,
+          "cut_margin_min": -9
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9962979094076655,
+          "leaf_miss_rate": 0.0037020905923344947,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1457,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9980928162746344,
+          "leaf_miss_rate": 0.0019071837253655435,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1058,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.09,
+      "probes": 1107,
+      "coarse_rows": 8856,
+      "gross_pct_unscaled": 0.5443728174541859,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9975097829953753,
+        "leaf_miss_rate": 0.00240128068303095,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1334,
+        "cut_margin_min": -10
+      },
+      "recall_worst_gating": 0.9965156794425087,
+      "leaf_miss_rate_worst_gating": 0.003484320557491289,
+      "cut_margin_min_worst_gating": -10,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9982279976373302,
+          "leaf_miss_rate": 0.0015751132112620594,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -579,
+          "cut_margin_min": -10
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9965156794425087,
+          "leaf_miss_rate": 0.003484320557491289,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1334,
+          "cut_margin_min": 11
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9980928162746344,
+          "leaf_miss_rate": 0.0019071837253655435,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -935,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.1,
+      "probes": 1230,
+      "coarse_rows": 9840,
+      "gross_pct_unscaled": 0.5103149046633086,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9980434009249377,
+        "leaf_miss_rate": 0.0018676627534685165,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -1211,
+        "cut_margin_min": -11
+      },
+      "recall_worst_gating": 0.9973867595818815,
+      "leaf_miss_rate_worst_gating": 0.002613240418118467,
+      "cut_margin_min_worst_gating": -11,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.998424886788738,
+          "leaf_miss_rate": 0.001378224059854302,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -456,
+          "cut_margin_min": -11
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9973867595818815,
+          "leaf_miss_rate": 0.002613240418118467,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -1211,
+          "cut_margin_min": 10
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9987285441830897,
+          "leaf_miss_rate": 0.0012714558169103624,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -812,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.125,
+      "probes": 1537,
+      "coarse_rows": 12296,
+      "gross_pct_unscaled": 0.42530856948607815,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9987548914976877,
+        "leaf_miss_rate": 0.0011561721807186055,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -904,
+        "cut_margin_min": -12
+      },
+      "recall_worst_gating": 0.9980400696864111,
+      "leaf_miss_rate_worst_gating": 0.00195993031358885,
+      "cut_margin_min_worst_gating": -12,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.999212443394369,
+          "leaf_miss_rate": 0.0005906674542232723,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": -149,
+          "cut_margin_min": -12
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9980400696864111,
+          "leaf_miss_rate": 0.00195993031358885,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -904,
+          "cut_margin_min": 10
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9993642720915448,
+          "leaf_miss_rate": 0.0006357279084551812,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -505,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.15,
+      "probes": 1844,
+      "coarse_rows": 14752,
+      "gross_pct_unscaled": 0.34030223430884765,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9993774457488438,
+        "leaf_miss_rate": 0.0005336179295624333,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -597,
+        "cut_margin_min": -12
+      },
+      "recall_worst_gating": 0.998911149825784,
+      "leaf_miss_rate_worst_gating": 0.0010888501742160278,
+      "cut_margin_min_worst_gating": -12,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9998031108485922,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": 158,
+          "cut_margin_min": -12
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.998911149825784,
+          "leaf_miss_rate": 0.0010888501742160278,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -597,
+          "cut_margin_min": 10
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 0.9993642720915448,
+          "leaf_miss_rate": 0.0006357279084551812,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -198,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.175,
+      "probes": 2152,
+      "coarse_rows": 17216,
+      "gross_pct_unscaled": 0.2550190055316914,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9997331910352187,
+        "leaf_miss_rate": 0.00017787264318747776,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": -289,
+        "cut_margin_min": -12
+      },
+      "recall_worst_gating": 0.9995644599303136,
+      "leaf_miss_rate_worst_gating": 0.00043554006968641115,
+      "cut_margin_min_worst_gating": -12,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9998031108485922,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": 466,
+          "cut_margin_min": -12
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 0.9995644599303136,
+          "leaf_miss_rate": 0.00043554006968641115,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": -289,
+          "cut_margin_min": 10
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 1.0,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": 110,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.2,
+      "probes": 2459,
+      "coarse_rows": 19672,
+      "gross_pct_unscaled": 0.1700126703544609,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9999110636784062,
+        "leaf_miss_rate": 0.0,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": 18,
+        "cut_margin_min": -12
+      },
+      "recall_worst_gating": 0.9998031108485922,
+      "leaf_miss_rate_worst_gating": 0.0,
+      "cut_margin_min_worst_gating": -12,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9998031108485922,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": 773,
+          "cut_margin_min": -12
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 1.0,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": 18,
+          "cut_margin_min": 10
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 1.0,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": 417,
+          "cut_margin_min": 17
+        }
+      }
+    },
+    {
+      "p": 0.25,
+      "probes": 3073,
+      "coarse_rows": 24584,
+      "gross_pct_unscaled": 0.0,
+      "pooled": {
+        "n": 11244,
+        "recall": 0.9999110636784062,
+        "leaf_miss_rate": 0.0,
+        "cut_miss_rate": 8.893632159373888e-05,
+        "leaf_margin_min": 632,
+        "cut_margin_min": -12
+      },
+      "recall_worst_gating": 0.9998031108485922,
+      "leaf_miss_rate_worst_gating": 0.0,
+      "cut_margin_min_worst_gating": -12,
+      "per_stratum": {
+        "beagle": {
+          "n": 5079,
+          "recall": 0.9998031108485922,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.00019688915140775743,
+          "leaf_margin_min": 1387,
+          "cut_margin_min": -12
+        },
+        "min_carriers": {
+          "n": 4592,
+          "recall": 1.0,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": 632,
+          "cut_margin_min": 10
+        },
+        "zero_weight": {
+          "n": 1573,
+          "recall": 1.0,
+          "leaf_miss_rate": 0.0,
+          "cut_miss_rate": 0.0,
+          "leaf_margin_min": 1031,
+          "cut_margin_min": 17
+        }
+      }
+    }
+  ],
+  "knee": null
+}
