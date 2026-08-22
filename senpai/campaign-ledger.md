@@ -37189,3 +37189,615 @@ blob across all 1014 branches plus ours plus upstream. One branch templates
 `rows_per_simd`, instantiated at 2 and reached only at `out_vec_size == 1024`.
 Two branches template `values_per_thread` and `block_size` down to 8 and 256.
 Three branches run `NA <= 6`. One uses a `uint64` weight load.
+
+
+## 265 — 2026-08-22 03:20Z — The campaign gets a measured cost model, the largest kernel mechanism gets a real price, two students were building the same arm, and the crown is opened at source level
+
+E118 came back terminal at 02:56Z and merged. Its registered question resolved
+negative. Almost nothing else about it is negative.
+
+### 265.1 The registered axis is dead, and he corrected himself against his own interest
+
+`e118_best_bit_exact_arm_round_weighted_pct_faster_vs_a_base = +0.3364`
+(`g_pack32`) against a `+0.5 %` kill rule. **Not cleared.** Third independent
+reading of `g_pack32`, and it sits inside the null control's own scatter:
+`q_scaffold`, which is byte-identical text, reaches 0.291 % round-weighted on its
+own. **Stop-listed.**
+
+He volunteered a correction that weakens his own negative. He had previously
+quoted the E114 identified set for `g_pack32` as `[+0.127, +0.441]`, entirely
+below the bar. On the full five shapes it is `[+0.240, +0.538]` local and
+`[+0.240, +0.539]` ranked, so **the most favourable corner now just clears
++0.5 %**. The point estimate does not, and the verdict stands, but "the whole
+identified set is below the bar" is no longer true and he wrote that into the
+report rather than quietly dropping it. That is the standard.
+
+The mechanism behind the null is itself a result. The discriminator reads
+`s_bcast -16.59`, `s_bcast_all -7.38`, byte-identical `p_split_meta +0.08`,
+`n_nosums +5.86`. Together with the AIR census, which shows `a_base` issues
+**7 device loads at every width, not 15**, the conclusion is that the front end
+already coalesces the eight scalar metadata reads. **There is no load-issue
+pressure left to remove.** The binding resource is total instruction issue.
+
+### 265.2 Finding 58 — the instruction price ladder
+
+This is the campaign's first measured cost model, and it is the most transferable
+thing anyone has produced in ten experiments.
+
+The method matters as much as the numbers. Prices come from arms that inject an
+**exactly known** instruction count at a **fixed register footprint**, taken in
+the same counterbalanced session as the arms they price. So the slopes are
+measured, not fitted.
+
+```
+class          %/instr/k-block     sem      us/instr   R2med  cells
+device load        0.33423       0.12342    1.4405     0.954    15
+ALU                0.07097       0.00825    0.1996     0.947    20
+simd_shuffle       0.96486       0.09394    2.3934     0.994    15
+```
+
+**A `simd_shuffle` costs 2.89 device loads, or 13.6 ALU operations.** That number
+retrospectively explains advisor error 78 and askeladd's `s_bcast` at -16.59 %,
+and it closes the shuffle axis on arithmetic rather than on one measurement.
+
+**Validation, out of sample and with no free parameter.** 80 injected ALU
+instructions times 0.09398 predicts `n_nosums` at **+7.518 %** against **+7.518 %**
+measured at NA=4 — an arm the ladder never saw. Three-decimal agreement is luck
+and the honest band is plus or minus 0.66 pp, and he said so. The prediction is
+still the strongest methodological result of the cycle.
+
+### 265.3 Finding 59 — the price is not constant in NA
+
+```
+loads  0.102 / 0.329 / 0.583             at NA 2/3/4
+ALU    0.0043 / 0.0676 / 0.0940 / 0.0793 at NA 2/3/4/5
+```
+
+A pooled price would be wrong at every width. `screen_prediction` is therefore
+per width, and any width lacking a measured price is **dropped rather than
+extrapolated**. Every prediction carries the standing weight it is allowed to
+speak for.
+
+The load price varies by 5.7x across three widths. That is not a refinement, it
+is the difference between a usable instrument and a misleading one, and it is
+why the campaign's earlier attempts to price arms from instruction counts failed.
+
+### 265.4 Finding 60 — issue throughput, not dependency latency
+
+The ILP control: four independent chains cost **more** than two, 1.950 % against
+1.731 %, a difference of +0.219 pp. If the kernel were latency bound, more
+independent chains would hide more latency and cost less.
+
+**The binding resource is issue throughput.** Every instruction issued costs,
+regardless of what it depends on. This closes instruction-level parallelism as a
+lever and it explains Finding 49's stall class without needing a stall at all.
+
+### 265.5 The methodological finding: observational regression FAILS where injection works
+
+I asked for a regression of measured microseconds against AIR instruction count
+across arms. He ran it and it **fails**, and he published the failure next to the
+result that worked.
+
+```
+univariate     0.175 us/instr,  R2med 0.146
+multivariate   R2med 0.749, but device_loads coefficient -1.67 +/- 1.42
+```
+
+A **negative** load price. Arms differ in too many instruction counts at once, so
+the design matrix is collinear and the coefficients are meaningless even where
+the fit looks acceptable.
+
+**That failure is the argument for the injection ladder.** An observational
+regression across arms that were designed to answer different questions cannot
+recover a causal price. An injected ladder at fixed register footprint can. This
+generalises well past this kernel and it should govern how the campaign prices
+anything from static counts in future.
+
+### 265.6 `x_sumshoist` gets a real number and a real cost, and I correct the framing
+
+The refined figure over five shapes and four widths is **+5.376 %**
+round-weighted, not the +7.13 % from the two-block partial session. It is **bit
+exact at all 20 cells over 4,467,008 outputs**, differing = 0, max ULP = 0,
+including NA=5. It captures **91.7 %** of the free `n_nosums` ceiling and it
+lowers both register pressure and machine text.
+
+Then the cost. From `research/e118-results.md` section 5.4:
+
+```
+shape          table B   fill us   a_base us NA4   x_sumshoist us NA4   saving us   net %
+mlp.gate_up     10240     117.0        500.3            465.2            35.1     -16.37
+lm_head         10240     161.2       3385.3           3139.8           245.6      +2.49
+mlp.down        34816     217.5        297.1            279.0            18.1     -67.10
+gdn.in_proj     10240     428.4        248.1            231.0            17.1    -165.83
+fa.qkv          10240     452.1        220.1            206.1            14.0    -199.02
+```
+
+Round-weighted net on `mlp.gate_up` including the fill: **-18.98 %**. Read
+literally, the mechanism is dead.
+
+**It is not dead, and his own report says why.** The 117 to 452 microsecond fill
+is one command buffer with `encode, commit, waitUntilCompleted`. The work itself
+is 51.2 KB of `x` read and 10 KB written, about **0.3 microseconds** at this
+host's bandwidth. Two independent checks confirm the 0.3 is the real quantity:
+
+1. **Traffic.** At K=5120 and `max_m = 5` the fill moves about 61 KB. At 273 GB/s
+   that is 0.22 microseconds, the same order as his 0.3.
+2. **Shape independence.** `offset(kb, l)` uses only the k-block, the lane and
+   `m` — not `out_row`, not `N`, not the weight matrix. So at fixed K the fill
+   cost **cannot** depend on N. His five fills span 117 to 452 microseconds at
+   the **same** K=5120 for `gate_up`, `gdn.in_proj` and `fa.qkv`. A 3.9x spread
+   on a provably shape-independent quantity is harness overhead.
+
+He flagged the upper bound himself, in the same paragraph, and stated the
+indexing property from the source. The report body is careful. The summary
+headline is not, and on a result this large that difference matters.
+
+**Campaign Rule 61. When a measurement is an upper bound by a factor you can
+estimate, put the estimate in the headline, not in the caveat.** A reader who
+stops at the summary must not reach the opposite conclusion from the one the body
+supports.
+
+### 265.7 The break-even, which is the number that actually decides it
+
+The indexing property converts the question from "is the fill cheap?" into "how
+many matvecs share each fill?", which is a dispatch census, not a timing.
+
+```
+per layer, one table per distinct activation tensor, four tables
+
+  GDN layer, 48 of them
+    input-norm x     -> gdn.in_proj      17.1 us saved
+    post-attn x      -> mlp.gate_up      35.1
+    mlp intermediate -> mlp.down         18.1
+    gdn output       -> out_proj        ~18
+                                        ----
+                                        ~88 us saved for 4 fills
+
+  attention layer, 16 of them
+    input-norm x     -> fa.qkv           14.0
+    post-attn x      -> mlp.gate_up      35.1
+    mlp intermediate -> mlp.down         18.1
+    attn output      -> o_proj          ~18
+                                        ----
+                                        ~85 us saved for 4 fills
+
+  lm_head                               245.6 us saved for 1 fill
+
+saved per round   48*88 + 16*85 + 246   ~= 5,830 us
+fills per round   4*64 + 1              ~=   257
+
+BREAK-EVEN COST PER FILL = 5,830 / 257 = 22.7 us
+```
+
+**A separate fill dispatch pays as long as it costs under about 22.7
+microseconds.** A real in-stream dispatch costs about 1.80 microseconds of
+boundary plus about 0.3 of work, roughly **eleven times under the break-even**.
+At the shipped M=8 the partition is [4+4], so every saving above roughly doubles
+while the fill count does not, and the margin widens.
+
+Priced in the leg frame with E116's transfer:
+
+```
+gain   5.376 % x 0.6068 wide-QMV leg share   = 3.262 % of leg
+cost   257 fills x 2.1 us = 600 us per round
+       against 222,582 us per round          = 0.270 % of leg
+net                                          = +2.99 % of leg
+ranked x 0.95                                = +2.84 % ranked
+```
+
+**The mechanism survives a naive separate dispatch by an order of magnitude.**
+Fusing the fill into the producer, which our editable
+`qwen35_dual_rms_norm_concat_bf16_v1` can cover for 59.98 % of the round, is now
+an optimisation rather than a prerequisite. That is a materially shorter path to a
+submittable candidate and thorfinn has been told.
+
+The 257 count is my layer arithmetic, not a census. Thorfinn has been asked to
+census the real distinct-activation count in one round before trusting it,
+because that number moves the break-even in both directions.
+
+### 265.8 Rung 2 of Finding 53 is answered, and I had two students building it
+
+The registered rule fired: `n_halfsums` reached **-0.096 %** round-weighted
+against a +2.5 % bar. But the ceiling arm carries its own scaffolding, so he
+de-confounded it.
+
+```
+n_halfsums          -0.096 %  round-weighted, confounded
+n_halfsums_free     +2.266 %  at NA=4, compile-time, no branch, no duplication
+body duplication     2.675 pp  cost
+x_sumshare_min      +1.465 %  at NA=4
+x_sumshare_min      +0.024 %  round-weighted, ALL WIDTHS
+x_sumshare_min      +1.127 %  round-weighted, NA=5 EXCLUDED, coverage 0.966
+```
+
+He scored his own pre-registrations honestly: ceiling predicted +3.5 to 4.7,
+actual +2.266, **wrong and over**; duplication cost predicted 4 to 5 pp, actual
+2.675, **wrong and over, direction right**; min beats split by more than 2 pp,
+actual 3.84 pp, **correct**; min will not clear +1.0 %, **wrong, it clears at
+NA=4**.
+
+**Advisor error 81.** I briefed alphonse's E121 with the same rung-2 arm set I
+had already given askeladd in comment `5377122398` on PR #120. Two students, two
+Macs, one arm. I caught it only because askeladd finished first. My own prediction
+for E121 was `n_halfsums` at +3.5 to +3.8 % and a net +2.8 to +3.4 %; the measured
+de-confounded ceiling is +2.266 % and the best exchange nets +0.024 % standing.
+Wrong on both.
+
+**The rule this needs: before writing an assignment, grep the open PRs for the
+arm names, not just the experiment titles.** Titles diverged here; the arms did
+not.
+
+### 265.9 The redirect, and why it is now the best shippable item in the campaign
+
+`x_sumshare_min` collapses from +1.465 % at NA=4 to +0.024 % standing for exactly
+one reason: **it spills 160 bytes at NA=5 and loses 31 % there.** NA=5 carries
+0.034 of the standing round weight. A width worth 3.4 % is destroying a mechanism
+that pays on the other 96.6 %.
+
+Alphonse owns `quantized.h`. The wide kernel is already templated on NA with
+`static_assert(NA >= 2 && NA <= 5)` at `:980`. An `if constexpr (NA <= 4)` gate
+costs nothing at runtime.
+
+```
+1.127 % kernel  x 0.966 coverage = +1.089 % round-weighted
+                x 0.607 transfer = +0.661 % of the leg
+                x 0.95  ranked   = +0.628 % ranked
+```
+
+**That clears Campaign Rule 59's +0.5 % bar on its own, it is bit exact, it lives
+entirely inside a surface we already own, and it needs no dispatch ownership and
+no new buffer.** Nothing else in the campaign is both this large and this close
+to shippable. E121 has been redirected onto it.
+
+One hazard was written into the brief. A compile-time gate on NA does not
+partition the kernel: `qmv_fast_crossrow_affine4_g64_m` inlines `_wide` as a
+`METAL_FUNC`, and **E102 established that the entry point allocates for the
+widest inlined body**. Gating NA=5 onto the unshared path may therefore leave the
+NA=5 register pressure in the entry point and leave NA=4 still paying for it. He
+must census the entry point, not the inlined body, before timing anything.
+
+### 265.10 Two axes closed by static census, and one retraction
+
+**`rows_per_simd = 8` is closed permanently.** It spills 192 bytes on g16s and
+**176 bytes on the ranked g17s** at NA=4. Zero spill is not reachable on the
+ranked architecture at this setting. Closed on the campaign's own stated
+condition.
+
+**Threadgroup memory never binds on this kernel.** The largest rung-2 arm still
+allows 25 concurrent threadgroups. Occupancy pressure from a threadgroup exchange
+buffer is not a design constraint here. Bank conflicts still are.
+
+**Retraction, his own.** His rung-1 claim that spill separates exact from wrong is
+**false**. The largest still-exact spill is 160 bytes and the smallest wrong spill
+is 80. Spilling is necessary but not sufficient for the NA=5 exactness failures.
+There were 45 failures, all at NA=5, across all five shapes and nine arms, with
+**zero positive-control failures**. The `z_ballast` control still attributes cause
+to spilling.
+
+**A clean register census is not an exactness proof.** Compare outputs.
+
+### 265.11 Contradictions resolved and harness state
+
+- **E111 beats E104 on `n_nosums`.** AIR `device_loads` is 7/7/7/7 for both
+  `a_base` and `n_nosums`, so the bias loads survive in the diagnostic arm and no
+  retrospective correction is needed to either +7.60 % or E111's +6.132 %.
+- **E104 arm P closed.** `p_prefetch_w` is null wherever it fits. Software
+  pipelining stays stop-listed.
+- **Advisor error 78 recorded** at his request, and `s_bcast_all`, an arm he added
+  unrequested, is named and kept because it is load bearing for the
+  discriminator.
+- **Harness defect 16 residual** worst case is `a_base` itself at -0.160 %,
+  against thorfinn's +61.6 % before the fix. **Defect 19 flagged 0 of 600 blocks.**
+  `base_nonfinite = 0` at all 20 cells.
+- He found and repaired two harness defects mid-experiment and documented them in
+  section 9.3. He also added `research/e118_wandb_check.py --verify`, which reads
+  run state back from the server rather than inferring it from an exit code,
+  after the logger died with a `KeyError` on the fourth of six runs and left three
+  published and three missing. **That tool should be standard for every student.**
+
+W&B: `e118arms1`, `e118stat1`, `e118spil1`, `e118cost1`, `e118rng21`, `e118hst01`
+in group `e118-wide-qmv-metadata-load-instruction-screen`. All six verified
+`finished` by reading the server.
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118arms1
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118stat1
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118spil1
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118cost1
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118rng21
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118hst01
+
+### 265.12 E123, and the state of the four Macs
+
+Askeladd freed and was reassigned inside the same cycle. **E123, PR #124:
+complete the price ladder, then run a priced deletion audit.**
+
+The ladder has three classes and needs four more. It has no `threadgroup` load
+class, no `threadgroup` store class and no barrier class — and **alphonse's
+redirected E121 exchange arm uses all three today**. It also has no measured
+price for the bf16-to-float conversion, which is 64 instructions per lane per
+k-block at NA=4 and is therefore, at the ALU price of 0.09398, worth about
+**6.0 %** if it costs anything at all. It may well be free, since bf16 is the top
+16 bits of a float and the widening may be folded into the load. **A measured
+zero is a valuable answer.**
+
+Rung 0 extends the ladder with those four classes plus `simd_sum`, with a
+held-out validation gate of plus or minus 1.0 pp. It must separate a conflict-free
+lane-fastest threadgroup access from a 4-way bank-conflicted one, because that
+distinction is what alphonse needs. Rung 1 is a complete priced instruction census
+of the wide kernel at every width, ranked by predicted round-weighted percentage
+and split into deletable-bit-exact, deletable-with-precision-change, and not
+deletable. Rung 2 builds only what rung 1 predicts above +1.0 %.
+
+Primary metric `e123_ladder_out_of_sample_prediction_error_pp`, baseline 0.66,
+minimize. **The instrument's value is that it lets us not run things.**
+
+All four Macs are busy:
+
+| PR | student | experiment |
+|---|---|---|
+| #121 | thorfinn | E120 own the QMV dispatch; rung 1 hard gate, then the in-stream fill cost against 22.7 us |
+| #122 | alphonse | E121 redirected: `x_sumshare_min` gated off at NA=5, predicted +0.628 % ranked |
+| #123 | edward | E122 target-margin-conditioned draft depth; rung 0 trace, zero GPU |
+| #124 | askeladd | E123 complete the price ladder, then the priced deletion audit |
+
+### 265.13 The crown is opened: `bc070b7b` is a dispatch-count mechanism, and we already own half of it
+
+I sent a research agent at the promoted crown `bc070b7b` (francip, 3.35922017,
+`sourceRef fac135f2`, commit `561b0a14`, parent `41bad1c6`) with one question:
+what is the mechanism, and what part of it do we not already have? The answer is
+clean, and it is the first time this campaign has read a rival's winning edit at
+source level rather than inferring it from a score.
+
+**The mechanism.** They replaced two full GPU argsorts on the draft-proposal
+path with two single-threadgroup Metal kernels. The path is
+`Qwen35TextModel.clusterCandidateIDs`, reached **once per draft token** through
+`draftTokenID -> draftTokenIDWithDeclaredRerank -> clusterCandidateIDs`. It picks
+the 32 candidate vocabulary ids that the exact affine-4 reranker then scores.
+
+The incumbent answers two *selection* questions by *fully sorting*. That is not a
+figure of speech. `ArgPartition::eval_gpu` in the vendored MLX
+(`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/sort.cpp:342-353`) carries
+the comment `// We direct arg partition to sort for now` and calls
+`gpu_merge_sort(s, d, in, out, axis_, true)`. **`kth` is never used on the GPU.**
+Tile selection at `sort.cpp:286-307` pins `bn=512, tn=4`, so `n_per_block=2048`
+for bf16, and the cost is `1 + 2*ceil(log2(n_blocks))` sort kernels plus one
+unconditional `copy_gpu_inplace` at `sort.cpp:260-269`.
+
+| call | N | blocks | passes | sort kernels | with copy |
+|---|--:|--:|--:|--:|--:|
+| A centroid `argPartition` | 12,292 | 7 | 3 | 7 | **8** |
+| B row `argPartition` | 24,584 | 13 | 4 | 9 | **10** |
+
+Their public note labels these the other way round — "9-dispatch merge sort" for
+the 12,292 call and "7-dispatch" for the 24,584 call. Passes are monotone in N at
+a fixed tile, so that ordering is impossible. The sum is 16 either way, so their
+headline survives their own transposition.
+
+**Before and after on the selection path**, excluding the `gatherQuantizedMM`
+that both keep:
+
+| step | dispatches |
+|---|--:|
+| A argsort (our `Qwen35.swift:4753`) | 8 |
+| probe-sort compaction (our `:4755-4763`) | 1 |
+| B argsort (our `:4782`) | 10 |
+| `[kth...]` slice | 0 — `shared_buffer_slice`, `backend/common/slicing.cpp:68` |
+| index lookup ops (our `:4783-4789`) | 5 (their count) to 8 (ours) |
+| **total before** | **24 to 27** |
+| **total after** | **2** |
+
+Their "~23 to 2" is supported and, if anything, conservative.
+
+**How they got there.** Not batching, not a persistent threadgroup, not a
+reduction-tree change. A different algorithm, plus a single-threadgroup
+cooperative reduction.
+
+Kernel 1, `qwen_mtp_e87_probe_select` (crown `:3529-3672`), runs two 8-bit
+histogram passes to find the key threshold `T`, resolves the index cut among keys
+equal to `T` with a bitmap and a popcount walk, then compacts in ascending index
+order with a simd prefix scan. The decisive insight is visible by comparing it
+against the probe-sort kernel that **already existed at `41bad1c6` and exists in
+our tree at `:3562-3634`**. That kernel reads `order`, the argsort output, and
+compacts through a bitmap:
+
+```metal
+for (uint p = SKIP + tid; p < CLUSTERS; p += TG_SIZE) {
+    uint v = order[p];
+    atomic_fetch_or_explicit(&bits[v >> 5u], 1u << (v & 31u), memory_order_relaxed);
+}
+```
+
+They noticed that the compaction never needs `order`. It only needs to know
+**which** indices are in the top-P. A radix threshold answers that directly from
+`score`, so the eight-dispatch argsort in front of it becomes unnecessary. The
+same bitmap and popcount machinery is then reused for the tie-break index cut.
+**They deleted a sort by noticing that nothing downstream read its ordering.**
+
+Kernel 2, `qwen_mtp_e87_shortlist` (crown `:3683-3757`), packs each element as
+`(key16 << 16) | index`, which turns a two-field (ordinal, index) comparison into
+a single 32-bit `simd_max`. It is guarded by
+`static_assert(N < 65536u, "index must fit in 16 bits")` at crown `:3700`.
+Because the index is embedded, every packed value is distinct, so the winner is
+unambiguous by construction.
+
+**Bit-exactness: exact by construction, on two stated conditions.** The agent
+verified this against MLX source rather than against the rival's comment.
+`LessThan::operator()` at `kernels/sort.h:40-57` compares values only and forces
+NaN last; `ThreadSort` swaps only on strict less at `sort.h:75`; the merge at
+`sort.h:142` takes from B only on strict less, so ties take from A, the
+lower-index run. The sort is therefore stable, and in the ascending output equal
+values keep lower indices first, which means **the top-K tail holds the higher
+indices**. Their key function reproduces all three behaviours:
+
+```metal
+inline ushort qwen_e87_key16(float v) {
+    if (isnan(v))  { return 0xFFFFu; }   // NaN ranks above every number
+    if (v == 0.0f) { return 0x8000u; }   // -0 folds into +0 -> tie -> index rule
+    uint u = as_type<uint>(v);
+    uint o = (u & 0x80000000u) ? (~u) : (u | 0x80000000u);
+    return ushort(o >> 16);
+}
+```
+
+The `>> 16` truncation is lossless **iff the input is bf16**, because bf16-to-f32
+leaves the low 16 mantissa bits zero: the positive branch truncates nothing and
+the negative branch drops a constant `0xFFFF`, preserving order. Both scores are
+bf16. The two conditions are that the score tensors stay bf16, and that the
+pinned MLX argsort stays stable by value — which is an implementation detail, not
+an API contract.
+
+**Their gate is weaker than ours.** `qwen35VerifyE87Select` (crown `:3760-3812`)
+runs 64 trials including `MLX.zeros`, an all-equal row where every pick is
+decided by the tie rule alone. It ships **no positive control**. Our equivalent
+`qwen35RowTop32PositiveControl` (our `:3988-4010`) does, and its docstring states
+the principle this campaign has now proved twice: *a gate that cannot fail is not
+a gate*. Their environment gate also **fails open** —
+`environment["MLX_E87_SELECT"] != "0"` at crown `:3498-3499` enables on any typo —
+where our E101 gate `fatalError`s on an unrecognised value at our `:3517-3528`.
+If we adopt this, we port our discipline, not theirs.
+
+**We already own half of it.** Our E101 `Qwen35RowTop32` (our `:3452-3500`, gate
+`:3512`, call site `:4776-4780`) is an independent implementation of their
+kernel 2. Same `NSIMD`/`PB` structure, same `taken`/`tk2` 32-bit slot bitmasks,
+same 32-round two-level tournament. Two real differences: ours is **2 dispatches**
+(partial over 32 threadgroups, then finalize in 1) where theirs is 1, and ours
+uses a full 32-bit ordinal that forces a two-field compare at our `:3418`, where
+their 16-bit packing permits the single `simd_max` that permits the single
+dispatch.
+
+**What we lack is the prize.** We have no equivalent of kernel 1. We still run
+the full argsort at `:4753` feeding the probe-sort compaction at `:4755-4763`.
+That is **eight dispatches per draft step that we pay and they do not.**
+
+**The smallest carrying set is three hunks in one file:**
+
+| # | take from crown | place in our tree |
+|---|---|---|
+| 1 | `:3494-3517` (`qwen35E87SelectEnabled`, `qwen35E87KeyHeader`, `qwen35E87SelectTG`) plus `:3529-3672` (`makeQwen35E87ProbeSelectKernel`) | after our `makeQwen35ProbeSortKernel`, near `:3635` |
+| 2 | `:4206` `private var _draftProbeSelect` | beside our `_draftRowTop32`, near `:4183` |
+| 3 | `:4771-4797`, **probe half only** | replaces our `:4753-4766` |
+
+We skip `makeQwen35E87ShortlistKernel` and `_draftShortlist` entirely, because we
+have that half already. A cherry-pick will conflict, but trivially: their hunk 3
+and our E101 hunk touch **disjoint halves** of `clusterCandidateIDs` — theirs the
+pre-`gatherQuantizedMM` half, ours the post half.
+
+**Value, priced in our own constants.** Ranked round 53,108 us. Shortlist calls
+per round equal `draftCount`, confirmed at `Qwen36MTPBlockSession.swift:1394` and
+`:1406-1412` and empirically by `sel_fused=500` over 78 rounds in
+`research/e101-results.md:69`, giving 6.36 local and 4.5 to 5.3 ranked.
+Per-dispatch marginal on the MTP leg is 0.92 to 1.05 us in situ, with 1.80 us as
+the isolated whole-dispatch upper bound.
+
+The agent ran the right sanity check first — their gain, predicted from our
+constants against their published score:
+
+```text
+21-23 dispatches x 0.92-1.80 us x 4.5-5.3 drafts / 53,108 us = 0.164 % to 0.413 %
+observed 3.35922017 / 3.35025879 - 1                          = +0.2675 %
+```
+
+Near the centre of the predicted band. **Our per-dispatch constants transfer to
+the ranked M5 well enough to price a rival's receipt to within a factor of two**,
+which is a validation of Finding 12 and E106 that we did not previously have.
+
+Our incremental gain, probe-select only, minus eight dispatches per draft step:
+
+| frame | central | range |
+|---|--:|---|
+| ranked | **0.074 %** | 0.062 % to 0.144 % |
+| local, M4 Pro | 0.035 % | 0.032 % to 0.062 % |
+| score on a 3.359 base | **+0.0025** | +0.0021 to +0.0048 |
+
+Adding the row-top32 collapse to one dispatch takes it to minus nine and a ranked
+central of **0.083 %**.
+
+**This is below Rule 59 on its own and must be composed.** It is also below our
+local end-to-end noise floor at 0.03 to 0.06 %, so an end-to-end 512-token A/B
+**cannot** resolve it. It has to be screened with an isolated micro-benchmark,
+which is exactly what their `qwen35BenchE87Select` at crown `:3815-3878` and our
+`qwen35BenchRowTop32` at our `:4014-4040` exist for.
+
+**Three second-order mechanisms their note does not mention.**
+
+1. **`order` is never materialised.** The new path reads `centroidScore` (12,292
+   bf16, 24.6 KB) instead of `order` (12,292 uint32, 49.2 KB), eliminating that
+   buffer and its writes. Their note speaks only of dispatch count.
+2. **A single-threadgroup occupancy trade, and an M4-to-M5 transfer risk.**
+   `grid == threadGroup == 1024` means **one GPU core**, against 7 and 13 blocks
+   for the incumbent argsorts. Worse, the 256-bin scans at crown `:3583-3592` and
+   `:3608-3618`, and the 385-word popcount walk at `:3645-3656`, execute on
+   `tid == 0` **alone** while 1,023 threads park at a barrier. Those segments
+   scale with clock, not with cores, so the gain may transfer to M5 **less** than
+   naive scaling assumes. We should expect our adopted copy to be worth somewhat
+   less on the ranked host than the local screen suggests, not more.
+3. **Dead warm-up work.** `_draftProbeSort` is still constructed and JIT-compiled
+   at crown `:4763-4766` and then never dispatched, because the new block returns
+   first. Harmless per round; it keeps dead Metal source in the build. If we
+   adopt, we delete it.
+
+Also: both their kernels use `ensureRowContiguous: true` (crown `:3669`, `:3754`)
+where ours use `false`. Inputs are contiguous here so there is no live defect, but
+"exactly one dispatch" is conditional on that, and we should keep `false`.
+
+**One unresolved contradiction, logged rather than papered over.** Our own ledger
+at `campaign-ledger.md:27133-27150` records "27 proposal-side dispatches per draft
+step". That cannot be reconciled with the incumbent selection chain alone needing
+24 to 27, because the chain is not the whole proposal side. Either that census
+predates the E87 cluster index, or it counts command-buffer flushes rather than
+kernel enqueues. **Settle it before that constant is reused for pricing.**
+
+### 265.14 The bigger prize on the draft path, which francip did not take
+
+The agent's strategic reading is the most valuable line in the report, and it is
+not about the crown's edit at all.
+
+The shortlist *selection* is not the dominant cost of the draft step.
+`gatherQuantizedMM` over 24,584 rows of 5,120 2-bit weights, plus scales and
+biases, is about **23.6 MB of reads per draft step**, and the centroid QMM adds
+about **11.8 MB** — against 21 to 41 us for the entire selection chain that
+francip optimised.
+
+Pricing that in the ranked frame with our own constants:
+
+```text
+35.4 MB / 273 GB/s          = 129.7 us per draft step
+x 4.5 to 5.3 ranked drafts  = 584 to 687 us per ranked round
+/ 53,108 us ranked round    = 1.10 % to 1.29 % of the ranked round
+```
+
+**That is fifteen times the probe-select prize, on the same path, and nobody on
+the board has touched it.** francip optimised the cheap part because it is the
+*safe* part: bit-exact by construction, zero acceptance-rate risk. The expensive
+part is the gather and the row readout, and changing what is gathered changes
+proposals.
+
+That does not make it unreachable. It makes it a different class of experiment:
+one where the acceptance rate is an outcome to be measured rather than an
+invariant to be preserved. We have the instrument for that already — E122 is
+building the margin-to-acceptance fit this round, and E99's gated oracle bounded
+the reachable acceptance headroom at 2.88 to 3.95 %. **A draft path that reads
+half as much and accepts one percent less is a win, and we have never priced that
+trade because we have always treated the proposal path as exactness-critical when
+only the target path is.**
+
+Logged as a research target. Not assigned this round; all four Macs are busy and
+the three in-flight kernel experiments are each worth more per unit of risk.
+
+### 265.15 Routing, and why I am not disrupting E120
+
+The adoption touches `Qwen35.swift`, which thorfinn owns for E120 this round.
+E120 is chasing `x_sumshoist` at **+2.84 % ranked net**, which is thirty-eight
+times the probe-select prize. I am not interrupting that for a 0.074 % item, and
+I am not handing a second student the same file.
+
+The crown adoption is queued as thorfinn's fallback if E120 rung 1 kills Route A,
+and as his follow-on otherwise. I have posted the full three-hunk specification to
+PR #121 so it sits with the file owner, explicitly marked *do not start now*.
+
+**Campaign rule 62.** When a rival's promoted receipt is opened, price their
+published gain from our own constants **before** pricing our incremental
+adoption. If our constants cannot reproduce their observed score movement to
+within a factor of two, the mechanism has been misread and the incremental
+estimate is worthless. This check cost nothing here and validated the E106
+per-dispatch boundary and the Finding 12 ranked round length against an
+independent external measurement, which no internal experiment can do.
