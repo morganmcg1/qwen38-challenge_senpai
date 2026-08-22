@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-22 12:25Z
+- 2026-08-22 13:05Z
 
 ## Most recent research direction from the human researcher team
 
@@ -9,70 +9,137 @@ None received this cycle. The campaign runs autonomously under
 
 ## Where the campaign actually stands
 
-**FINDING 150 (ledger 281) resets the board reading.** The published crown moved
-from `3.49065` to `3.51845` on 2026-08-22 between 08:27Z and 11:18Z. None of
-that move is mechanism.
+**We own the second-fastest candidate on the board. We lost the crown to the
+pinned serial numerator, not to a rival mechanism.**
+
+Finding 153 (ledger 282) recomputed every board row with complete per-prompt
+official metrics (n = 806) on a **common serial denominator**. The seven-row
+frontier cluster — every row within `0.30 %` mean absolute candidate-leg
+difference, therefore one tree family in one runner state by Rule 98 — ranks
+like this on candidate merit:
 
 ```
-T1 = 6f1cd66f  our promoted source                     3.49065044  state S2
-T2 = a0f85886  T1 + 278 lines affine-2 cluster QMV     3.51661724  state S3
-T3 = c0dbec05  T1 + 10 lines of SDPA warm list         3.51845338  state S3
+rank  common-denominator   published    id         solver          Yukon
+  1        3.525618        3.517689   3b376ba2   Lieisyourlie    rejected
+  2        3.521408        3.512706   0c6191b7   morganmcg1      rejected   <- OURS
+  3        3.520417        3.516617   cf79f7df   Lieisyourlie    accepted
+  4        3.518779        3.512449   dd3c1ff7   Lieisyourlie    rejected
+  5        3.518453        3.518453   48423d09   noskillcoding   ACCEPTED = crown
+  6        3.518057        3.515941   390ec878   newjordan       rejected
+  7        3.517655        3.507747   c63eaa21   newjordan       rejected
 ```
 
-Five rows from three solver accounts carrying at least three different trees
-agree on all eight per-prompt candidate times to better than `0.3 %`, maximum
-`0.033 %` for the closest pair. The offset against our row is a per-drafting-
-round constant of `817 us`, null on plutarch, with no serial-leg movement. That
-is Finding 78's ranked measurement mode, now resolved into **three** states
-spaced about `1.15 %` apart on the candidate leg, matching Finding 75's
-three-slot round robin. State S3 has no board row before 2026-08-22T09:28Z.
+The crown is rank 5 of 7 on merit. It drew the slowest serial legs.
 
-**We still hold the mechanism frontier.** `d3c491b5` is the fastest row in its
-state band by `0.28 %`. Our tree drawn in S3 publishes about `3.5153` to
-`3.5185`.
+## The two noise terms that now govern every decision
 
-Retracted this cycle: Finding 137 (the mode index was never confounded, it was
-reporting a third state), Finding 138 (it isolated the state, not the draft
-path). New Rule 98 and advisor error 113 recorded.
+```
+serial numerator lottery, within one state     sd 0.0967 %   Finding 153
+candidate-leg run noise, within one state      sd 0.0735 %   Finding 153
+runner state term, three levels                up to 2.3 %   Finding 152
+```
+
+**Finding 152** identifies the state: one step is `930.9 us` per drafting round,
+which is one extra full DRAM traversal of the 427,742,600-byte pinned proposal
+head at `459.5 GB/s`, matching Finding 143's ranked `462.2 GB/s` to `0.59 %`.
+The cause is in our own source. `Qwen36MTPBlockSession.swift:212-213` sizes the
+wired residency ticket at the live post-warm footprint plus a `64 MiB` slack,
+and then `143.75` to `215.75 MiB` of KV, GDN recurrent state, GDN conv state and
+head history KV allocate on top of it. The head is the last large object loaded,
+so it sits at the tail of allocation-ordered wiring and falls out first.
+
+**Finding 153** shows what is underneath the state term. Removing the state term
+takes the ranked runner from a `2.3 %`-resolution instrument to a `0.20 %`-
+resolution one. That is the largest measurement improvement available and it is
+one integer: `wiredZHDefaultSlackMB` `64` to `512`.
+
+Neither finding licenses re-rolling. Resubmitting a tree to chase a serial draw
+is a duplicate submission and stays forbidden under Finding 79 and Rule 72. The
+answer to a `0.084 %` merit lead inside a `0.19 %` band is to make the lead
+`1 %` or `10 %`.
+
+## Which prompts the score actually pays for
+
+At n = 806, the prompts occupying median order statistics 4 and 5:
+
+```
+  beagle      789 / 806   97.9 %      mean M 5.38, per-step p 0.9341
+  medicine    348 / 806   43.2 %      mean M 6.26
+  essays      199 / 806   24.7 %      mean M 6.09
+  republic    168 / 806   20.8 %      mean M 5.99
+  botany       92 / 806   11.4 %      mean M 7.15
+  travel        8 / 806    1.0 %
+  plutarch      6 / 806    0.7 %
+  drama         2 / 806    0.2 %
+```
+
+`published = 0.5 * raw_beagle + 0.5 * min(medicine, essays, republic, botany)`.
+beagle alone carries half the score and has the lowest acceptance of the five
+drafting prompts. The second half is a `min`, so it is pessimistic: helping
+three of four and hurting the fourth may move nothing.
+
+**The ranked mass that pays sits at `M = 5` to `7`.** The local benchfixture
+runs at mean width `7.36` with about `77 %` of its mass at `M = 8` and is the
+wrong frame for pricing width work.
 
 ## Current research focus
 
-1. **State pinning is now the largest single lever on the board.** The state
-   costs `820 us` per drafting round, touches only the drafting path, is null on
-   plutarch, and never touches the serial leg. Finding 143 puts the ranked
-   proposal-head share at 7 to 9 % of the round, so the state is 17 to 21 % of
-   the head path. Any candidate-side change that pins the fast state is worth
-   more than the whole current mechanism queue. Open question: is the state a
-   distinct physical runner, a DVFS or thermal level, or a memory-placement
-   outcome for the 427 MB head artifact?
-2. **Pass count: Model P against Model R.** Whether a one-pass QMV table at
-   `M=6,7` earns anything is still the largest open mechanism question, worth
-   `0 %` to `+4.1 %`. Thorfinn owns the ranked instrument; edward owns the
-   zero-GPU board-stratification test.
-3. **Draft-path bytes.** Finding 144 reconciles the per-draft-step budget at
-   `323.59 MB`. Finding 143 raises the head transfer coefficient from `0.24` to
-   about `1.0`, so every head-byte price in the campaign was understated about
-   four times. C1 sketch readout `+0.92 %` to `+1.08 %`, C2 island quantization
-   `+0.38 %` to `+0.45 %`.
-4. **The `qat-q4` head declaration.** A 3.2x smaller reconstruction error at
-   identical bytes recovers `0.71` of `0.82` accuracy points. Modelled at
-   `+1.57 %` ranked. Under investigation.
-5. **Register and occupancy work is priced near zero.** Finding 149 fixes
-   `c ~ 0`: only deleted instructions convert. Route C and per-width templating
-   are riders, not headline arms.
+1. **Collapse the multi-pass QMV table at the widths that carry the ranked
+   median.** Finding 151 shows the adverse reading of the one-pass arm came
+   entirely from dropping `rows_per_simd` 4 to 2 to protect registers. At
+   `RPS = 4` the arm is `-2.0506` statements per output element at
+   `{6:6, 7:7}`, which is `-12.55 %` of QMV issue and `-10.97 %` of the leg.
+   Per-width templating is a hard prerequisite and is itself free upside
+   bounded below by zero (`+9.18 %` g17s residency, zero statement change).
+   Askeladd's D_S code-motion patch clears NA=7 to `118` registers and `0`
+   spill. Owner thorfinn, PR #128.
+
+2. **Remove the runner state term.** Measure post-sizing allocation growth, then
+   raise the residency slack. Owner alphonse, PR #130.
+
+3. **Decide C1, the sketch-first draft readout.** It removes `53.06 MB` of the
+   `323.59 MB` draft step and about `99.3 %` of the readout stage's instruction
+   issue, and is priced at `+0.90 %` to `+1.47 %` ranked, central `+1.15 %`. It
+   wins under both the byte model and the instruction model. The offline
+   falsifier is **not** free: the 18,092-sample hidden-state corpus is not on
+   the advisor host and recapture costs one to two hours of exclusive
+   resident-model GPU time. Owner askeladd, PR #133.
+
+4. **Get the ranked per-prompt width histograms.** They are the only thing that
+   settles the frame conflict between askeladd's `-2.6 %` local price and the
+   `-12.55 %` ranked price for `{6:6,7:7}`, and they gate the order in which
+   thorfinn ships his two receipts. Owner edward, PR #129.
 
 ## Potential next research directions
 
-- Build a state-classified leaderboard and re-price every rival receipt of the
-  last week through Rule 98. Several campaign findings were fitted to published
-  gaps that may be state artifacts.
-- Determine whether the state is observable from the candidate side inside one
-  run, for example from a warm-time timing probe, and whether any legal
-  candidate action makes the fast state more likely.
-- Revert the 278-line cluster QMV import once `0c6191b7` resolves. It measures
-  zero and costs source bytes and foreign kernel surface.
-- Resolve the Model P against Model R question, then decide the one-pass table
-  at `M=8` on askeladd's spill result.
-- Re-run the head-bytes queue at the corrected transfer coefficient.
-- Keep one genuinely new mechanism in flight at all times; program policy
-  forbids duplicate submissions and this campaign forbids re-rolling for luck.
+- **C2, quantize the bf16 precision islands to affine-4 g64.** `22.61 MB` per
+  draft step, `+0.38 %` to `+0.45 %`. Reopened: the E82 blocker was a power
+  failure, not a result. Unowned.
+- **Route C, reach the `qmv_fast_impl` body at a lower allocated register
+  count.** Prefer askeladd's C2 form, the shipped `qwen_e120_qmv_wide<1,false>`
+  at 56 registers and 70 derived simdgroups, which needs no new kernel text.
+  Rider only; Finding 149 prices the residency-only channel at about zero.
+- **`{8:8}` as a rider behind `{6:6,7:7}`.** Real, and askeladd proved it beats
+  two passes of `wide<4>` by `9.25 %` to `16.62 %` even at the harshest spill
+  charge, but it earns most of that on prompts with near-zero ranked weight.
+- **The `min` structure of the second median carrier.** Because half the score
+  is `min(medicine, essays, republic, botany)`, an arm that lifts the current
+  worst of those four is worth more than an arm that lifts the mean. Nobody has
+  looked at whether the identity of that argmin is stable across runs.
+- **The beagle depth schedule specifically.** beagle carries `97.9 %` of the
+  median at the lowest acceptance of the five. E128 found the shipped flat
+  `0.18` threshold optimal on the eight-prompt aggregate curve; it has not been
+  tested against beagle alone with the `costModelDepth` fixed-round-cost term
+  that Finding 152 implies is missing.
+- **A stale-suffix recycling trace (O3).** Legal; the reopener is a zero-GPU
+  trace showing stale-suffix acceptance above `0.5` at position 1.
+
+## Closed this cycle
+
+The qat-q4 head declaration (advisor error 114: priced from a non-significant
+acceptance delta; it is `2.7 %` to `3.4 %` slower per token and has no external
+identity). C4, the probe-fraction reduction, retired because C1 inverts its
+gradient. C5, centroid-table padding, dead because the imported kernel handles
+the tail through `n_valid`. `rows_per_simd = 2` as spill relief, because
+candidate B is worse than doing nothing. Deleting `case 9`, because
+`Qwen35.swift:1699` routes `3...9` with `default: break`.

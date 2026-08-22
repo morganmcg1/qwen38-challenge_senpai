@@ -44153,3 +44153,693 @@ the recent-window table used above.
 Standing procedure for every new rival row: run `cluster3.py` with the new row
 and the four nearest recent rows before writing a single word about its
 mechanism.
+
+## 282 — 2026-08-22 13:00Z — FINDING 153: we own the second-fastest candidate on the board and lost the crown to the pinned serial numerator. FINDING 152: the runner state is an undersized wired-residency ticket. FINDING 151: the one-pass table is a large win at rows_per_simd = 4
+
+### 282.1 FINDING 153 — THE RANKED SERIAL NUMERATOR IS A LOTTERY WORTH MORE THAN THE ENTIRE FRONTIER SPREAD
+
+Alphonse submitted `0c6191b7` at 11:42:38Z (frontier import `a0f8588` plus
+`prune_na5_pair`). It resolved at **3.51270586**, our best published score ever,
+and Yukon rejected it because the live crown `48423d09` stood at 3.51845338.
+
+The rejection is not the result. I pulled every board row carrying complete
+per-prompt official metrics (n = 806) and recomputed each published median on a
+**common serial denominator**. Instrument: `_advisor_scratch/serialdiag.py` and
+`_advisor_scratch/f153cluster.py`.
+
+The seven-row frontier cluster — every row within 0.30 % mean absolute
+candidate-leg difference of `48423d09`, therefore one tree family in one runner
+state by Rule 98 — ranks like this on candidate merit:
+
+```
+rank  common-denominator   published    id         solver          Yukon      created
+  1        3.525618        3.517689   3b376ba2   Lieisyourlie    rejected   10:50:40Z
+  2        3.521408        3.512706   0c6191b7   morganmcg1      rejected   11:42:38Z  <- OURS
+  3        3.520417        3.516617   cf79f7df   Lieisyourlie    accepted   09:28:33Z
+  4        3.518779        3.512449   dd3c1ff7   Lieisyourlie    rejected   11:47:24Z
+  5        3.518453        3.518453   48423d09   noskillcoding   ACCEPTED   10:04:03Z  <- CROWN
+  6        3.518057        3.515941   390ec878   newjordan       rejected   11:02:45Z
+  7        3.517655        3.507747   c63eaa21   newjordan       rejected   09:36:25Z
+```
+
+**The crown is rank 5 of 7 on candidate merit.** It holds the crown because it
+drew the slowest serial legs of the seven. Our candidate beat the crown's by
+**+0.0839 %** and `cf79f7df`'s by **+0.0281 %**, and was faster than
+`cf79f7df` on 8 of 8 prompts and faster than `48423d09` on 7 of 8.
+
+Counterfactual, holding our candidate legs fixed and swapping only the serial
+vector:
+
+```
+our candidate x our own serial draw   3.512706   <- what we published
+our candidate x cf79f7df's serial     3.517607   beats cf79f7df
+our candidate x d3c491b5's serial     3.518261   beats cf79f7df
+our candidate x 48423d09's serial     3.521408   TAKES THE CROWN
+```
+
+#### The dispersion of the pinned serial build
+
+The serial leg is a runner-owned, prebuilt, unchangeable workspace doing
+identical work on every run. Across 806 rows:
+
+```
+prompt      n     mean s/tok    sd %    p5-p95 %   min-max %
+plutarch   806     0.037994    0.209      0.640      1.780
+drama      806     0.037991    0.232      0.685      1.783
+travel     806     0.038001    0.230      0.662      1.984
+beagle     806     0.037990    0.239      0.705      2.218
+republic   806     0.037991    0.226      0.659      1.978
+essays     806     0.037998    0.226      0.678      1.893
+medicine   806     0.037991    0.230      0.695      1.720
+botany     806     0.037997    0.232      0.682      1.868
+```
+
+Run-level serial mean sd **0.1114 %**; within-run per-prompt residual sd
+**0.1992 %**. The draw is therefore **per pair, not per run**. This confirms
+Finding 62 and puts a number on it for the first time.
+
+Because the serial leg is the numerator, a fast serial draw *lowers* the score.
+Our draw sat at the **12.9th percentile** of the resampled distribution; the
+crown's at the **64.3rd**.
+
+#### The number that sets the decision bar
+
+Within the seven-row frontier cluster:
+
+```
+published median   mean 3.514515   sd 0.0994 %   span 0.305 %
+  serial-vector-only reconstruction     sd 0.0967 %
+  candidate-vector-only reconstruction  sd 0.0735 %
+```
+
+**Within one runner state the pinned serial leg alone contributes sd 0.0967 %
+to the published median — more variance than every real candidate difference
+across the whole frontier cluster combined.** Two same-state rows whose
+published medians differ by less than about 0.20 % are not distinguishable.
+
+This does not replace the F152 state term; it sits underneath it. The full
+published-median noise budget is now:
+
+```
+serial numerator lottery, within state        sd 0.0967 %      Finding 153
+candidate-leg run noise, within state         sd 0.0735 %      Finding 153
+runner state term, three levels               up to 2.3 % span Finding 152
+```
+
+Removing the state term (alphonse rung 10) takes the ranked runner from a
+2.3 %-resolution instrument to a 0.20 %-resolution instrument. That is the
+single largest measurement improvement available to this campaign and it is one
+integer.
+
+#### The median-carrier table at n = 806
+
+Which prompts occupy median order statistics 4 and 5:
+
+```
+  beagle      789 / 806   97.9 %
+  medicine    348 / 806   43.2 %
+  essays      199 / 806   24.7 %
+  republic    168 / 806   20.8 %
+  botany       92 / 806   11.4 %
+  travel        8 / 806    1.0 %
+  plutarch      6 / 806    0.7 %
+  drama         2 / 806    0.2 %
+```
+
+`published = 0.5 * raw_beagle + 0.5 * min(medicine, essays, republic, botany)`
+to a very good approximation. This is Finding 82 at 2.5x the sample and it
+sharpens Finding 83. **beagle alone carries half the ranked score, and beagle
+has the lowest per-step acceptance of the five drafting prompts (p = 0.9341
+against 0.9598 to 0.9661).** The second half is a `min` over four prompts, so it
+is an order statistic and it is pessimistic: a change that helps three of four
+and hurts the fourth may not move the score at all.
+
+#### What Finding 153 does NOT license
+
+Re-rolling. Resubmitting a byte-identical or cosmetically-changed tree to chase
+a better serial draw is a duplicate submission and remains forbidden under
+Finding 79 and Rule 72. The correct response to a 0.084 % merit lead inside a
+0.19 % noise band is to make the lead 1 % or 10 %. We have three arms that do
+exactly that: thorfinn's one-pass table (2.6 % to 11 %), C1 (+1.15 %), and
+alphonse's residency fix (+0.4 % plus the instrument improvement).
+
+#### RULE 100 (NEW)
+
+**NEVER READ THE TOP-OF-BOARD ORDERING AS A MERIT ORDERING. RECOMPUTE EVERY
+RIVAL COMPARISON ON A COMMON SERIAL DENOMINATOR BEFORE PRICING ANYTHING.**
+Instruments: `_advisor_scratch/serialdiag.py`, `_advisor_scratch/f153cluster.py`.
+Standing procedure alongside Rule 98's `cluster3.py`.
+
+`0c6191b7` also resolves the F152 state question for our own row: its candidate
+vector sits 0.084 % to 0.135 % from the two frontier rows, not the 1.15 % of a
+state step, so **`0c6191b7` drew the fast state.** Alphonse's rung-8 cluster 1
+(`morganmcg1` at +928 microseconds) referred to `d3c491b5`, our earlier row.
+We drew the fast state, held a top-2 candidate, and still lost on the numerator.
+
+`prune_na5_pair` is **not** proven by this row. Our candidate beat `cf79f7df`'s
+on 8 of 8 prompts, but the candidate noise has a large run-level component, so
+8 of 8 is one draw and not eight, and the two trees differ by more than the 22
+bytes of the arm. Record it as consistent with 0 to +0.1 %.
+
+### 282.2 FINDING 152 — THE RUNNER STATE IS THE WIRED RESIDENCY TICKET, AND IT IS UNDERSIZED BY CONSTRUCTION
+
+Alphonse regressed the per-prompt candidate offset on five rival covariates
+through the origin over the eight prompts of `d3c491b5` against `48423d09`,
+competing on residual scatter:
+
+```
+model                 slope       resid/effect
+per drafting round    903.6 us       0.4388     <- WINS
+per draft step        204.3 us       0.7369
+per token             153.3 us       0.7384
+multiplicative          0.86 %       0.8645
+per round             285.1 us       1.0807
+```
+
+Controls behave correctly: the **serial leg fits no model** (min resid 0.9797),
+and the within-state pair `48423d09` against `cf79f7df` **fits no model**
+(min resid 1.2746).
+
+Fitting the same slope across the whole frontier draft-schedule family
+(163 receipts):
+
+```
+cluster 0   n =   3    -2.7 +/-  44.5 us   Lieisyourlie, newjordan, noskillcoding
+cluster 1   n =   3   928.1 +/-  31.9 us   fkiene, morganmcg1, nagaral
+cluster 2   n = 157   3256   +/- 598   us  25 accounts
+```
+
+Clusters 0 and 1 are **930.9 microseconds** apart, separation over scatter 21x
+to 29x, six disjoint solver accounts. Splitting cluster 2 at its widest internal
+gap gives 21 rows at 2622.8 +/- 90.2 (12 solvers, 00:10Z to 09:52Z) and 11 rows
+at 3577.4 +/- 136.4 (7 solvers, 00:30Z to 09:32Z): **step 954.6 microseconds,
+gap 2.7 sd, the same step inside the OLD trees, both parts running all day.**
+
+**MY "S3 BEGAN AT 09:28Z" CLAIM IS WITHDRAWN.** The state is not new and it is
+not an epoch. Correct decomposition of the 2026-08-22 board:
+
+```
+old trees -> frontier tree   ~2620 us per drafting round   REAL mechanism, OURS (d3c491b5, 08:27Z)
+state A   -> state B         ~ 940 us per drafting round   LOTTERY
+```
+
+Time order: old trees `L H L L H L L L L H L L H L L H L L H L L H L H H L L H L L H L`,
+20 alternations of 31; frontier tree `B A B A B A`, 5 of 5, where an epoch
+predicts 1. Wald-Wolfowitz z = +2.2, suggestive of Finding 75's round robin,
+not decisive.
+
+**Inside one state, the Spearman correlation between the published median and
+the candidate decode time is exactly +0.0000**, against **-0.9272** across the
+whole 164-receipt family. The top of the board today carries no rank
+information. Finding 153 now explains why: within a state, the numerator
+lottery dominates.
+
+#### The size derivation
+
+All seven classified rows carry identical head provenance `559b24ebca35`, size
+427,742,600 bytes.
+
+```
+step                                   930.9 us
+implied rate for 427,742,600 bytes     459.5 GB/s
+FINDING 143 ranked M=1 rate            462.2 GB/s
+mismatch                                 0.59 %
+```
+
+**One state step is one extra full DRAM traversal of the pinned proposal head,
+once per drafting round, to within 0.6 %.**
+
+#### The source mechanism, verified at `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:214-275`
+
+```swift
+Memory.clearCache()
+let active = Memory.activeMemory
+var target = Int(Double(active) * fraction)      // wiredZHDefaultFraction = 1.0
+target += slackMB << 20                          // wiredZHDefaultSlackMB  = 64
+if let recommended = GPU.maxRecommendedWorkingSetBytes() {
+    target = min(target, max(0, recommended - (256 << 20)))
+}
+```
+
+The guard at `:225` is
+`ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)`. **It fires on
+the 128 GiB M5 and never on a 48 GiB student Mac.** The doc comment at
+`:202-212` states the intent: capacity is deliberately the live post-warm
+footprint plus only a small page-rounding allowance, so persistent weights fit
+in the one resize while later scratch fails the fit test. `warmAllDepths()`
+calls `warmAllDepthShapes()` then `Self.wireResidentWeightsIfEnabled()`, and
+the warm uses a throwaway `warmCache`.
+
+Post-sizing allocation, derived from `Sources/MLXFastModel/Qwen35Config.swift:238-249`
+(hidden 5120, 64 layers, 24 heads, 4 KV, head_dim 256, `linear_num_value_heads`
+48, `linear_num_key_heads` 16, `linear_value_head_dim` 128,
+`linear_key_head_dim` 128, `linear_conv_kernel_dim` 4,
+`full_attention_interval` 4 giving 16 full-attention and 48 GDN layers,
+`mtp_num_hidden_layers` 1; 512 seed plus 512 decode = 1024 tokens):
+
+```
+object                        arithmetic                              bytes
+target KV, 16 FA layers       16 * 4 * 256 * 2 * 2 B * 1024      64.00 MiB exactly
+GDN recurrent state, 48 lyr   48 * 48 * 128 * 128 * {2,4} B      72.0 - 144.0 MiB
+GDN conv state                48 * 10240 * 4 * 2 B                3.75 MiB
+head history KV               1 * 4 * 256 * 2 * 2 B * 1024        4.00 MiB
+-------------------------------------------------------------------------------
+total allocated AFTER sizing                                    143.75 - 215.75 MiB
+slack available                                                  64.00 MiB
+shortfall                                                        79.75 - 151.75 MiB
+```
+
+The head is the **last** large object loaded
+(`QwenRuntimeMTPWorker.swift:153` backbone, `:179` and `:186` head), so it sits
+at the tail of allocation-ordered wiring and is the first to fall out. It is
+also touched once per drafting round and never on the serial leg, so LRU
+selects it again. Four independent signatures, one mechanism, one integer.
+
+#### The ruling (sent as E130 F10)
+
+I rejected all three of alphonse's proposed options. **Option 4 is rung 9:**
+measure post-sizing allocation growth (`active_end - active_at_sizing`, plus
+`peak - active_at_sizing`) at 512 and 128 tokens with a research-only stderr
+print placed **outside** the 96 GiB guard. That quantity is fixed by layer
+counts and token window, so it transfers exactly to M5. If growth exceeds
+64 MiB the slack is provably too small; I predict 144 to 216 MiB. **Rung 10 is
+the fix:** `wiredZHDefaultSlackMB` 64 -> **512**, justified against three
+bounds: it exceeds the measured growth; it stays far below
+`maxRecommendedWorkingSetBytes - 256 MiB`; and it is small against the 14.8 GB
+weight tower so large scratch still fails the fit test. The change touches no
+arithmetic, no kernel, no schedule, and no token.
+
+Value: one step is about **1.15 % of the leg**, the three-level spread is
+**2.3 %**, and the draw is roughly 2:1 favouring fast, so the direct expectation
+is about **+0.4 %**. The larger prize is removing a +/-1.15 % unlabelled term
+from every future receipt.
+
+**OWNERSHIP: alphonse now owns `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`
+lines 200 to 275 for the rest of E130.** Edward keeps the rest of that file and
+has been told.
+
+Alphonse's candidate-action table for the same region: `:222`
+`wireResidentWeightsIfEnabled()`; `:225` the 96 GiB guard needs a source edit;
+`:212-213` fraction 1.0 and slack 64 MiB are settable through
+`DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION` and `..._SLACK_MB`; `:249` the 256 MiB
+margin needs a source edit; `RuntimeStartupMemoryPolicy.swift:74-75`
+`MLX_MAX_MB_PER_BUFFER=512`; `:66` a second 96 GiB guard needs a source edit;
+`:142` and `:111` allocator cache 32 GiB and 6 GiB through
+`DARKBLOOM_STARTUP_MEMORY_PROFILE`; `QwenRuntimeMTPWorker.swift:153`, `:179`,
+`:186` trusted read-only; `Qwen36MTPBlockSession.swift:234` `Memory.clearCache()`
+needs a source edit.
+
+### 282.3 FINDING 151 — THORFINN'S TWO-FAMILY STATEMENT MODEL, AND THE RPS=4 RE-DERIVATION THAT RECOVERS THE ARM
+
+For `qwen_e120_qmv_wide<NA, RPS, USE_TABLE>`:
+
+```
+row-keyed  per output element = 38 / IPG    4 weight halfword loads, 1 weight address,
+                                            2 metadata loads, 1 group index,
+                                            2 bf16 widenings, 28 nibble ops
+m-keyed    per output element = 25 / RPS    1 sum-table load, 4 vec<bf16,4> activation
+                                            loads, 16 bf16 widenings, 4 addresses
+product    per output element = constant
+```
+
+I re-derived this independently in `_advisor_scratch/rps4.py` and it reproduces
+his published table to three decimals.
+
+```
+M   base    RPS=2    RPS=4    d(RPS=2)  d(RPS=4)
+3   18.917  18.917   18.917    +0.000    +0.000
+4   15.750  15.750   15.750    +0.000    +0.000
+5   13.850  13.850   13.850    +0.000    +0.000
+6   18.917  18.833   12.583    -0.083    -6.333
+7   15.750  17.929   11.679    +2.179    -4.071
+8   15.750  15.750   11.000    +0.000    -4.750
+```
+
+Thorfinn's published weighted base is 16.334 and his weighted delta at RPS=2 is
+**+0.444, or +2.72 %, ADVERSE**, with `mass(7) = 0.211` implying
+`mass(6) = 0.188`.
+
+**THE KEY FINDING: the arm is adverse only because thorfinn dropped
+`rows_per_simd` from 4 to 2 to protect registers. `RPS` is not set by the
+one-pass table.** At RPS = 4:
+
+```
+{6:6, 7:7} at RPS=4   -2.0506 stmt/oe  = -12.55 % of QMV issue = -10.97 % of leg (x0.8735, F139)
+                                                                 -5.48 % after the 2x F87 haircut
+{6:6} alone at RPS=4  -1.1916 stmt/oe  =  -7.30 % of QMV issue =  -6.37 % of leg
+                                                                 -3.19 % after the 2x haircut
+```
+
+Residency cost priced at the measured `c` (Finding 131: alphonse -0.0014
+[-0.0124, +0.0095]; thorfinn +0.0105 [-0.174, +0.195]; Finding 149 physics: the
+kernel is issue-bound so only deleted instructions convert) is approximately
+zero.
+
+#### Finding 151 resolves Finding 32 from a second direction with no 542.8 GB/s anywhere
+
+E123 measured `weight_element_loads` at only **6.420 %** of QMV time, so a
+channel worth 6.4 % cannot buy 23 %. At M=8 the arithmetic intensity is
+16 MAC per byte, so the kernel is **issue-bound, not bandwidth-bound**. This
+also explains why `ff73cbbd` read +2.164 % slower than `9b241879`. It does
+**not** settle Finding 130.1, where the board's break is at M=5 and ours at M=6.
+
+#### Clean separation of the two changes
+
+```
+shared_switch -> tiered_switch   templating   ZERO statement change
+                                              g17s 38.098 -> 41.597 resident sg (+9.18 %)
+                                              free upside bounded below by zero
+shipped       -> onepass         the adverse or beneficial half, depending on RPS
+```
+
+Templating is a **hard prerequisite** for one-pass: with a shared switch the
+allocator must satisfy the widest inlined body, giving g17s 126 registers and
+160 bytes of spill everywhere.
+
+Worker witnessed:
+`worker_sha256 f4c90bf4c2e0f83444ed26e96d0d3e1dc45d57f7c9095e95bcd65571d8fb9b8a`,
+`rebuild-and-assert-worker: PASS`, 22 require, 7 forbid, 1 require-symbol. The
+witness pins both dispatch plans as whole literals in the format `M:IPG:RPS`:
+shipped `e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4`; one-pass
+substitutes `6:6:2,7:7:2` and must now substitute `6:6:4,7:7:4`. Ten tiered
+entry-point names resolve, `qmv_wide_na{3,4,5,6,7}_v2` and
+`qmv_wide_sums_na{3,4,5,6,7}_v2`; the `_v1` forms are forbidden and absent.
+
+Budget at his head: source 2,611,164 of 3,000,000 (headroom 388,836), growth
+156,329 of 262,144 (105,815 bytes left), 154 files. `Qwen35.swift` went
+252,119 to 269,199 bytes, so all of E129 is 17,080 bytes of growth and the file
+is at 51.3 % of the 524,288-byte per-file limit.
+
+### 282.4 ASKELADD'S E132 TERMINAL RESULT — MERGED AT `197e0550`
+
+`e132_na8_spill_bytes_applegpu_g17s` 48.0 -> 0.0, direction minimize,
+`status: succeeded`. **No W&B runs: compile-only census through
+`xcrun metal-tt`, no GPU, no timing (Rule 83).** Artifacts in
+`research/e132-artifacts/`: `air-inner-loop.json`, `case9-cost.json`,
+`d_s-body.patch`, `disasm-probe.json`, `f2-instruction-table.json`,
+`f3-spill-price.json`, `instruction-channel.json`, `register-budget.json`,
+`rung0-table-census.json`.
+
+**Answer: yes to the literal question, no to the premise.** Six bit-exact
+bodies reach 0 spill at NA=8 on g17s (G4, G4_D, G_wide, G_wide_D, B_rows2,
+B_rows2_D). All six are worse than keeping the spill. The spill was never what
+blocked `{8:8}`.
+
+**Headline: charging the spill 2, 4 or 8 memory instructions per slot per k
+block, one pass of `wide<8>` still beats two passes of `wide<4>` by 9.25 % to
+16.62 % on the shipped RPS=4 body.** Whole-histogram QMV work per output
+element: PR #128 as cut -2.6 %; adding `{8:8}` -9.7 % worst and -15.2 % best;
+with D_S -15.2 % to -16.5 % and no spill sensitivity.
+
+Corroboration: edward's ranked fit puts the M=8 two-pass excess at **+28.9 %**;
+askeladd's compile-only model, with no timing input at all, gives **+22.5 %**
+unspilled and **+10.2 %** at the harshest charge.
+
+**Candidate D_S (`late_meta` plus `sink_sums`) is recommended: pure code
+motion, -67 source bytes, +1.164 histogram-weighted deleted instructions per
+output element.** Patch at `research/e132_wide_matvec.py patch` and
+`research/e132-artifacts/d_s-body.patch`.
+
+**CORRECTION 1 — THE g17s REGISTER TABLE IN FINDING 130.2 WAS SPLICED. The
+scored arm is `sumtable` at M >= 4:**
+
+```
+NA   scored sumtable arm g17s   with D_S    derived resident sg (budget 3968)
+ 5          102 / 0                --                38  (today)
+ 6          114 / 0             105 / 0              34 -> 37
+ 7          126 / 16            118 / 0              31 -> 33
+ 8          126 / 64            126 / 16             31
+```
+
+**D_S fully clears NA=7.** Finding 130.2's `111/0` and `125/0` are the wrong arm
+and are superseded.
+
+**CORRECTION 4 — FINDING 34 IS WRONG, FINDING 33 SURVIVES.** Metal frames are
+16-byte aligned and allocated on demand, so the law is
+`slots in [frame/4 - 3, frame/4]`, not `(frame - 16)/4`. Recalibrated to
+**17.77 bytes per slot on g16s and 18.49 on g17s**. **The register ceiling is
+126 on g17s and 96 on g16s.** Finding 34's 124 is wrong.
+
+**`case 9`: KEEP.** The shipped table pairs `(9,3)`, so `case 9` inlines three
+passes of `wide<3>` and `wide<9>` is never instantiated. It buys 0 registers and
+0 residency, but `Qwen35.swift:1699` routes `3...9` with `default: break`, so
+deleting `case 9` alone silently corrupts an M=9 round.
+
+**Rung 2 gate fix.** `senpai/entry-point-cliff-census.sh` now decides on the
+width-weighted Route B surface; per-entry-point losses are warnings.
+`research/e132_gate_proofs.py` exits 0 with 5 proofs in 10.19 s against a 30 s
+budget and byte-for-byte reproducible register values. `templated_fails` was
+renamed **`wide8_detected`**, a detection proof rather than a verdict. Proofs:
+`e121_fails` fail; `e126_passes` pass; `revert_clean` pass; `templated_passes`
+pass, 38.000 -> 41.870 sg (+10.18 %), 1 -> 5 pipelines; `wide8_detected` fail,
+41.870 -> 33.299 sg (-20.47 %). Live run on `f17daf34`: PASS in 4.59 s, 8 entry
+points (3 JIT twins, 3 Route B, 2 cluster QMV).
+
+**Rung 3 Route C, design only.** C1 slices `qmv_fast_impl` verbatim by anchor
+from `quantized.h` with the only edit being two `const constant int&` becoming
+`const int`, and reproduces 101 -> 57 exactly. **C2 is better and needs no new
+kernel text: the shipped `qwen_e120_qmv_wide<1,false>` sits at 56 registers and
+70 derived simdgroups**, inheriting Route B's bit-exactness argument.
+Residency-only price +0.0152 % at Finding 131's c = 0.0105, +0.6451 % at
+c = 0.445. Dispatch for implementers: host side `quantized.cpp:251-254`
+`bn=8, bk=32, group_dims(32,2,1), grid_dims(M,(N+7)/8,B)`; the MLXFast
+equivalent at M=1 is `grid: (32, (n/8)*2, 1), threadGroup: (32,2,1)`. **Rider
+only; do not implement.**
+
+**Question 3 answer, which independently confirms Finding 143.** The 232.98 MB
+is not the head but the affine-4 g64 subset reaching `affine_qmv_fast` at
+`ntg.x == 1`: 54.5 % of the declared 427,738,112-byte head (fc 29.49,
+q_proj 35.39, o_proj 17.69, gate_up 100.26, down_proj 50.13 MB). The byte count
+survives: 427.74 MB over Finding 13's 2,226.5-microsecond marginal draft step is
+**192.1 GB/s**, matching thorfinn's standalone bench of 191.8 GB/s to 0.16 %.
+Finding 13's 1,019-microsecond ranked head figure would require 1,902 GB/s,
+which is 7.18x FACT 33's 265 GB/s ceiling. Inversion table: 200 GB/s gives a
+17.35 % head share; 265 gives 13.09 %; 273 gives 12.71 %; 400 gives 8.67 %;
+546 gives 6.35 %; 1902.3 gives 1.82 %. **Every plausible row puts the ranked
+head share at 6 % to 17 %, three to nine times the assumed 1.82 %.**
+
+**B_rows2 is worse than doing nothing, so candidate B is DEAD**, and
+`rows_per_simd = 2` as spill relief is now closed.
+
+Gates on base `f17daf34` (the PR body's `770a3ff2` was stale): twin audit OK;
+scope 0 of 24 changed paths in the submitted surface; budget OK with 405,916
+bytes of headroom and 0 growth; ranked boundary PASS; cliff census PASS in
+4.61 s; `swift test` exit 1 **at the documented floor**, 9 names and 40 issues
+reproducing `senpai/known-test-failures.md` exactly with zero added.
+
+Follow-ups he could not execute: relaying the D_S patch and the Route C design
+to PR #128, because he has no tool to comment outside his own PR. I relayed both
+in E129 F17.
+
+### 282.5 THE HISTOGRAM FRAME CONFLICT AND ITS RESOLUTION DIRECTION
+
+Askeladd prices `{6:6,7:7}` at **-2.6 %** on the whole local benchfixture
+histogram `{2:1,4:4,5:5,6:5,7:3,8:60}`, mean width 7.359, about 77 % of the mass
+at M=8. I price it at **-12.55 %** on ranked masses `mass(6) = 0.188` and
+`mass(7) = 0.211`. Both are arithmetically correct in their own frame, which is
+Rule 57.
+
+Finding 153 resolves the *direction* of the conflict even before edward's
+histograms land. The ranked median carriers run at
+`M = effective_mean_draft_len + 1` of 5.38 for beagle, 6.26 medicine, 6.09
+essays, 5.99 republic, 7.15 botany, against 7.36 for the local benchfixture.
+**The ranked mass that pays sits at M = 5 to 7, not M = 8, and beagle at
+M = 5.38 carries 97.9 % of the median.**
+
+Therefore: **`{6:6,7:7}` is the prize and `{8:8}` is the rider**, which is the
+opposite of askeladd's local ordering. I have instructed thorfinn to ship
+`{6:6,7:7}` first and `{6:6,7:7,8:8}` second, and to make `{6:6,7:7}` the
+receipt if only one lands before the base moves. Edward's per-prompt ranked
+width histograms remain the deliverable that settles it and stay first in his
+queue.
+
+### 282.6 THE qat-q4 HEAD DECLARATION IS CLOSED — ADVISOR ERROR 114
+
+**ADVISOR ERROR 114: I priced qat-q4 at +1.57 % ranked from a statistically
+non-significant acceptance delta while the measured round counts and the derived
+milliseconds per token both pointed the other way.**
+
+- **No external identity.** Built locally by `research/e82_build_head.py` on
+  alphonse's Mac from
+  `~/.cache/mlxfast/qwen3.8-27b-mtp-v1/e82/xkm-retrained/parents/parent-a-qat-4bit-aware.safetensors`.
+  Build record `research/e82-build-e82-qat-q4.json`, `file_sha256 dbfb207c...`,
+  tree digest `4bbb9132...`, `tree_bytes 427,742,640`. The xkm parent HF
+  revision is recorded nowhere. Declaring it would need an HF upload of a
+  derivative of two other participants' artifacts, so licence and consent gate
+  it.
+- **My "same master weights" reading was wrong.** `finetune_rel_l2_vs_master`
+  is 0.094 to 0.0998 on all eight trunk tensors, a genuinely different trained
+  trunk. Legality is still fine: a declared head is legal whatever its
+  provenance, per `.github/scripts/run-submission-static-review.sh:510` and
+  `:535`.
+- **Acceptance gain is not significant.** Pooled d3-6 94.37 % [92.90, 95.55]
+  against 93.52 % [91.96, 94.79]; paired McNemar 7 against 5 discordant over
+  311 cells, chi-square 0.083, not significant. E82's own +1.0 point stop rule
+  recorded `advance: false`.
+- **The 18.6 % milliseconds-per-round anomaly was a cross-session artifact.**
+  The matched comparator `declared-A` at 165.41 ms gives **+10.9 %, not
+  +18.6 %**. The deeper-rounds mechanism is confirmed (qat-q4 69 drafting
+  rounds, draft length 6.739, 7.42 tokens per round, against 74, 6.351, 6.92)
+  and the per-draft head cost is identical (2.3836 against 2.3747 ms).
+- **Seconds per token loses.** Derived milliseconds per token 24.73 and 24.78
+  for qat-q4 against 23.91 and 24.12 for declared: **+2.7 % to +3.4 % slower**,
+  because verify grew 9.1 % for 5.3 % more rows. Live-schedule rounds per 512:
+  135.86 against 134.57, +0.96 %, in `research/e82-accept-clean.json`.
+- **No production-mode timed qat-q4 leg exists anywhere.**
+  `MLX_QWEN_MTP_TRACE_SYNC_HEAD=1` destroys the head/verify overlap, per
+  `Qwen36MTPBlockSession.swift:713-719`.
+
+Declaration mechanics if ever revived: manifest-only, zero Swift changes. The
+runner fetches
+`https://huggingface.co/<repo>/resolve/<rev>/model.safetensors` per
+`.github/workflows/qwen-mtp-ranked-benchmark.yml:2384-2516`; the parser is
+`Sources/MLXFastTrustedHarness/QwenMTPHeadDeclaration.swift:80-168`; the tree
+digest is sha256 over `"<file sha256>  <relpath>\n"` sorted with README
+excluded; local rehearsal is `research/fetch-declared-head.sh`.
+
+### 282.7 ADVISOR ERROR 115
+
+**I quoted Finding 130.2's g17s register table to thorfinn without checking
+which arm it came from. It was spliced, and the scored `sumtable` arm differs at
+NA=6, 7 and 8.** Corrected in E129 F17. The general lesson is Rule 90 applied to
+a census rather than to a dispatch: name the arm as well as the entry point.
+
+### 282.8 C1 SKETCH READOUT — RE-DERIVED AT +0.90 % TO +1.47 %, CENTRAL +1.15 %, NOW ASSIGNED AS E133
+
+Full design, call chain, geometry, byte budget, warm hook, storage layout,
+hazards, kill rule and 120-cell sweep are written into the E133 assignment on
+PR #133 and are not duplicated here. The load-bearing numbers:
+
+```
+bytes removed per draft step     53.06 MB of the 323.59 MB step
+                                 89.9 % of the 59.00 MB readout stage
+instruction issue removed        about 99.3 % of the stage (Rule 94 currency)
+ranked byte-and-rate price       +0.90 %
+head-share x byte-fraction, 7 %  +1.15 %
+head-share x byte-fraction, 9 %  +1.47 %
+break-even miss rate m           5.7e-3 against today's worst-domain 2.266e-4
+                                 13x to 25x acceptance headroom
+```
+
+**C1 wins under both the byte model and the instruction model**, which is rare
+in this campaign.
+
+Two corrections recorded with it. First, **the head's measured in-situ rate is
+186 to 200 GB/s, not the 235 to 248 GB/s at ledger 42745-42753, which are TARGET
+shapes.** The two C1 dispatches measured 209.1 GB/s (94.06 microseconds) and
+230.4 GB/s (170.74 microseconds). Second, **the rival's `qwen_e121_a2_qmv4`
+reads the identical 1,600 bytes per row** (`Qwen35.swift:4297` and `:4308-4325`:
+weight 32 lanes times 8 bytes times 5 k-blocks = 1,280; scales and biases 80
+groups times 2 bytes each = 160 plus 160). It removed instruction issue and
+**zero bytes**. The byte floor of the current stage is 59.00 MB over 265 GB/s =
+222.6 microseconds per draft step, and the pre-import census measured the stage
+at 264.8 microseconds, so **at most 42.2 microseconds, 16 %, was ever removable
+by instruction work.**
+
+**THE OFFLINE FALSIFIER IS NOT FREE, and ledger line 43892 plus
+`research/CURRENT_RESEARCH_STATE.md` are wrong to advertise it as such.** The
+18,092-sample corpus (raw headerless `float32[N,5120]` shards plus `int32[N]`
+tokens, 370,524,160 bytes) lives under
+`~/.cache/mlxfast/qwen3.8-27b-mtp-v1/e87/screen/hidden`, glob-memmapped at
+`research/e87_screen.py:55` and `:87-103`. It is not on the advisor host and not
+in edward's cache. `research/e87-corpus-manifest.json` and
+`research/e87_job.sh:10` point at thorfinn's home;
+`research/e124-corpus-manifest.json` holds only prompt-text pointers and zero
+hidden states. The ledger already admits this at 39545-39557 (advisor error 89)
+and 39668. Recapture costs one to two hours of exclusive resident-model GPU
+time: apply `research/e87-artifacts/hidden-state-dump.patch` (3,133 bytes;
+`MLX_E87_HIDDEN_DUMP` has no hits in `Sources/`), run `research/e87_rebuild.sh`,
+then `e87_capture.sh plans`, `reference --steps 512`, and
+`capture --steps 512 --depth 8` over 37 seeds. E133 rung 1 budgets exactly this.
+
+The e87 screen fixes, verified at source: `MISS_TO_SCORE_PCT` 206.6 -> 203 at
+`research/e87_decide.py:33` (sole use `:74`) and `research/e87_head.py:58`
+(companion `:55 BYTES_TO_SCORE_PCT = 0.0815`). `e87_screen.py` reads
+`H.MISS_TO_SCORE_PCT` at `:381`, `:648`, `:649`, `:651`, so only two files hold
+the constant.
+
+**C4 (probe fraction 0.25 -> 0.15) is RETIRED**: under C1 the gradient inverts,
+because 0.25 -> 0.50 takes the row pass from 3.25 to 6.50 MB and is still 6x
+cheaper than today. **C5 (pad the centroid table 12,292 -> 12,296) is DEAD**:
+the imported centroid kernel handles the `N = 12,292 = 8*1536 + 4` tail natively
+through `n_valid` at `Qwen35.swift:4374-4377`.
+
+**DECISION: KEEP the 278-line cluster-QMV import.** C1 reuses
+`qwen_e121_a2_qmv4` verbatim as its exact 256-row rescore body, and the kernel
+fixes the tail. It is bit-exact and worth ranked zero. Keep the code; stop
+attributing value to it. Advisor error 113 stands as recorded.
+
+### 282.9 BUDGET CLARIFICATION, VERIFIED AT SOURCE
+
+`.github/scripts/run-submission-static-review.sh:353-369` compares committed
+blob sizes of changed paths at `review_base` against `review_head`, where the
+review base is the **contract base**.
+
+```
+check-editable-budget.sh 770a3ff2...  -> source 2594084/3000000  headroom 405916  growth 139249/262144
+check-editable-budget.sh a0f8588...   -> source 2594084/3000000  headroom 405916  growth 0/262144
+```
+
+So there are **122,895 bytes of growth headroom while the contract base is
+`770a3ff2`, and the full 262,144 if it moves to `a0f8588` or `c0dbec05`.**
+`senpai/submit-official.sh` is invoked with `770a3ff2...` today, so **assume
+122,895 bytes.**
+
+### 282.10 RULES ADDED
+
+**RULE 99 — A REGISTER CENSUS IS A DETECTOR, NOT A JUDGE.** A gate reports that
+a scored surface moved; the researcher decides the sign. Adopted from askeladd's
+`templated_fails` to `wide8_detected` rename.
+
+**RULE 100 — NEVER READ THE TOP-OF-BOARD ORDERING AS A MERIT ORDERING.**
+Recompute every rival comparison on a common serial denominator before pricing
+anything. Instruments `_advisor_scratch/serialdiag.py` and
+`_advisor_scratch/f153cluster.py`, run alongside Rule 98's `cluster3.py`.
+
+### 282.11 STOP-LIST CHANGES
+
+- **NEW CLOSED**: the qat-q4 head declaration; C4; C5; deleting `case 9`;
+  `rows_per_simd = 2` as spill relief (candidate B is worse than doing nothing).
+- **REOPENED and now the biggest lever**: one-pass tables at M=6 and 7, and at
+  M=8 as a rider, for `qwen_e120_qmv_wide` at `rows_per_simd = 4`, behind
+  per-width templating and on the D_S body. Still closed for
+  `qmv_fast_crossrow_affine4_g64_m`.
+- **REOPENED**: C2 precision-island quantization. The E82 blocker was a power
+  failure, not a result.
+
+### 282.12 ASSIGNMENT STATE AT THE END OF THIS ENTRY
+
+```
+PR #128  thorfinn   E129  r1  WIP     templating + one-pass at RPS=4, two receipts
+PR #129  edward     E128  r1  WIP     ranked width histograms first, then the 38/IPG test
+PR #130  alphonse   E130  r2  WIP     rung 9 allocation growth, then rung 10 slack 64 -> 512
+PR #133  askeladd   E133  r1  NEW     C1 offline screen, corpus check then 120-cell sweep
+```
+
+Merged this round: PR #132 (askeladd E132) at `197e0550`.
+
+### 282.13 THE CENTRAL CAMPAIGN ARITHMETIC, POST-F151/F152/F153
+
+```
+crown 48423d09 (c0dbec05)  published 3.51845338  common-denominator rank 5 of 7
+prior cf79f7df (a0f85886)  published 3.51661724  common-denominator rank 3 of 7
+OUR   0c6191b7             published 3.51270586  common-denominator rank 2 of 7
+OUR   d3c491b5 (6f1cd66f)  published 3.49065044  promoted, drawn in the slow state
+
+within-state published-median noise floor            sd 0.0967 %   Finding 153
+runner state term, three levels                      up to 2.3 %   Finding 152
+
+what we own that the board does not:
+  prune_na5_pair                          0 to +0.1 %, not proven
+  per-width templating (thorfinn)         ~0 direct, HARD PREREQUISITE
+  D_S late_meta + sink_sums (merged)      clears NA=7 spill, +1.164 instr/oe
+  one-pass {6:6,7:7} at RPS=4             -2.6 % local frame / -10.97 % ranked frame
+  one-pass {8:8} at RPS=4                 real but on near-zero-weight ranked mass
+  C1 sketch readout (E133)                +0.90 % to +1.47 %, central +1.15 %
+  C2 island quantization                  +0.38 % to +0.45 %, unowned
+  residency ticket fix (E130 rung 10)     +0.4 % direct, and removes the +/-1.15 % term
+operator plausibility gate 5.0            never a reason to hold a candidate
+```
+
+Three of those arms clear the 0.0967 % noise floor by 4x to 113x. The campaign
+does not need the lottery; it needs one of them to land.
