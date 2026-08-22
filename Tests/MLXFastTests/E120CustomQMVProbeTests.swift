@@ -296,7 +296,12 @@ struct E120CustomQMVProbeTests {
                         #expect(restoredDiff == 0)
                     }
                     records.append(record)
-                    print("E120 exactness \(record)")
+                    print(
+                        "E120_EXACT "
+                            + (String(
+                                data: (try? JSONSerialization.data(
+                                    withJSONObject: record, options: [.sortedKeys])) ?? Data(),
+                                encoding: .utf8) ?? "{}"))
                     fflush(stdout)
                     #expect(differing == 0)
                     #expect(xHitDiffering > 0)
@@ -311,6 +316,12 @@ struct E120CustomQMVProbeTests {
                 eval(x)
                 #expect(Self.custom(x, w, .replica) == nil)
             }
+        }
+
+        if let path = ProcessInfo.processInfo.environment["MLXFAST_E120_EXACT_OUT"], !path.isEmpty {
+            let data = try JSONSerialization.data(
+                withJSONObject: ["records": records], options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: URL(fileURLWithPath: path))
         }
 
         #expect(!records.isEmpty)
