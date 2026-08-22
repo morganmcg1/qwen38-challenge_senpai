@@ -700,6 +700,7 @@ int main(int argc, char **argv) {
     const char *arms_arg = NULL;
     const char *frames_arg = "base";
     int pairs = 5, samples = 48, n_cycle = 4, inner_max = 64, warm_pairs = 1;
+    int warm_sweep_reps = 2;
     double target_ms = 40.0, ramp_ms = 150.0, consumer_mb = 512.0;
 
     for (int i = 1; i < argc; i++) {
@@ -719,6 +720,7 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--consumer-mb") && i + 1 < argc) consumer_mb = atof(argv[++i]);
       else if (!strcmp(argv[i], "--inner-max") && i + 1 < argc) inner_max = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--warm-pairs") && i + 1 < argc) warm_pairs = atoi(argv[++i]);
+      else if (!strcmp(argv[i], "--warm-sweep-reps") && i + 1 < argc) warm_sweep_reps = atoi(argv[++i]);
       else {
         fprintf(stderr, "e125_frame_probe: unknown argument %s\n", argv[i]);
         return 2;
@@ -730,7 +732,7 @@ int main(int argc, char **argv) {
               "[--fn NAME] [--widths L] [--shapes L] [--pairs N] "
               "[--samples N] [--macmon PATH] [--target-ms MS] [--ramp-ms MS] "
               "[--frames LIST] [--cycle N] [--consumer-mb MB] "
-              "[--inner-max N] [--warm-pairs N]\n"
+              "[--inner-max N] [--warm-pairs N] [--warm-sweep-reps N]\n"
               "  --frames takes comma separated frame names:\n"
               "    base        one weight allocation, E118's frame\n"
               "    cycle       --cycle N bit-identical allocations, advanced\n"
@@ -748,8 +750,9 @@ int main(int argc, char **argv) {
       fprintf(stderr, "e125_frame_probe: --inner-max must be at least 1\n");
       return 2;
     }
-    if (warm_pairs < 0) {
-      fprintf(stderr, "e125_frame_probe: --warm-pairs must not be negative\n");
+    if (warm_pairs < 0 || warm_sweep_reps < 0) {
+      fprintf(stderr, "e125_frame_probe: --warm-pairs and --warm-sweep-reps "
+                      "must not be negative\n");
       return 2;
     }
 
@@ -934,9 +937,11 @@ int main(int argc, char **argv) {
             target_ms);
     fprintf(out, "  \"inner_max\": %d,\n  \"warm_pairs\": %d,\n", inner_max,
             warm_pairs);
+    fprintf(out, "  \"warm_sweep_reps\": %d,\n", warm_sweep_reps);
     fprintf(out, "  \"harness\": \"local\",\n");
     fprintf(out, "  \"defect16_fix\": \"temperature sampled before warm-up, "
-                 "then a discarded ramp burst, then timing\",\n");
+                 "then a discarded ramp burst, then a discarded arm "
+                 "palindrome, then timing\",\n");
     fprintf(out, "  \"frame_order\": \"forward on even blocks, reverse on odd "
                  "blocks, arm palindrome inside every frame-block\",\n");
     fprintf(out, "  \"consumer_bytes_per_pass\": %zu,\n",
@@ -1283,6 +1288,23 @@ int main(int argc, char **argv) {
             if (frames[f].consumer) consumerStart();
             rampBurst(queue, pso[0][wi], fo, 0, m, ramp_ms * 1e-3,
                       frames[f].cycle);
+
+            // Harness defect 16, residual. The ramp burst alone does not
+            // finish the clock ramp after the ~1 s idle that the temperature
+            // sample costs. The slot sequence then falls steeply and convexly
+            // over the first few slots, and a convex fall does NOT cancel in
+            // the arm palindrome: arm 0 pairs the slowest slot with the
+            // fastest one, arm N/2 pairs two middle slots. The measured
+            // residual was +50 % on arm 0 against +12 % on the last arm. One
+            // discarded palindrome per frame-block pays the ramp on every arm
+            // before any arm is timed.
+            for (int w = 0; w < warm_sweep_reps; w++) {
+              for (int slot = 0; slot < slots; slot++) {
+                const int a = slot < g_narm ? slot : slots - 1 - slot;
+                runArm(queue, pso[a][wi], fo, a, m, 1, inner[f],
+                       frames[f].cycle);
+              }
+            }
 
             const unsigned long long c0 = consumerPasses();
             double t[2 * MAXARM];
