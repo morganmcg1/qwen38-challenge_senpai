@@ -165,9 +165,14 @@ for id in "$@"; do
   entry_c="$(gpu_temp)"
   start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+  # The warm telemetry line is written by the worker, whose stderr the parent
+  # drops unless `MLX_DFLASH_TRACE_CACHE_SEAM=1` is set. Only the CLI reads
+  # this name; no Sources file under the worker consults it, so it forwards
+  # the stream and changes nothing else. It is set identically on every arm.
   leg_env=(MLXFAST_NO_SANDBOX=1
            MLX_QWEN_MTP_TRACE=1
            MLX_QWEN_MTP_TRACE_PATH="${trace_path}"
+           MLX_DFLASH_TRACE_CACHE_SEAM=1
            "${arm_env[@]}")
 
   echo "=== e134: ${arm} leg ${id} (${tokens} tokens, offer ${depth}) ==="
