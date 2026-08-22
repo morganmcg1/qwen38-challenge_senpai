@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "harness": "compile_only",
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "base_ref": "HEAD",
+  "base_sha": "14294ae1d20a5cdb8f00bd6ee3493b5d611908a7",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "histogram": {
+    "4": 16,
+    "5": 20,
+    "6": 20,
+    "7": 12,
+    "8": 240
+  },
+  "histogram_total": 308,
+  "tool": "research/e132_wide_matvec.py templating-proof",
+  "question": "does MLXFast.metalKernel templating produce independent pipelines with independent register allocation?",
+  "source_evidence": [
+    "mlx/backend/common/metal_kernel.cpp:289-298 appends a hash of the template arguments to kernel_name",
+    "mlx/backend/common/metal_kernel.cpp:331-338 emits one [[host_name(kernel_name)]] explicit instantiation per argument list",
+    "mlx/backend/metal/custom_kernel.cpp:59-72 calls d.get_library(name_) and d.get_kernel(name_, lib) with that same name, so each argument list compiles its own MTLLibrary and owns its own MTLComputePipelineState"
+  ],
+  "instantiations": {
+    "5": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 7774,
+        "text_sha8": "1a2cb36c",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 102,
+        "spill_bytes": 0,
+        "text_bytes": 7972,
+        "text_sha8": "0b3c1089",
+        "simdgroups_derived": 38
+      }
+    },
+    "6": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "text_bytes": 4954,
+        "text_sha8": "6a309264",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 114,
+        "spill_bytes": 0,
+        "text_bytes": 5040,
+        "text_sha8": "87bcb47e",
+        "simdgroups_derived": 34
+      }
+    },
+    "8": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 96,
+        "text_bytes": 6614,
+        "text_sha8": "7db151ef",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 126,
+        "spill_bytes": 64,
+        "text_bytes": 6460,
+        "text_sha8": "5c7b1d27",
+        "simdgroups_derived": 31
+      }
+    }
+  },
+  "shared_switch_one_pass_678": {
+    "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 112,
+      "text_bytes": 41270,
+      "text_sha8": "78b84f9e",
+      "simdgroups_derived": 32
+    },
+    "applegpu_g17s": {
+      "registers": 126,
+      "spill_bytes": 64,
+      "text_bytes": 41982,
+      "text_sha8": "6f22bbdb",
+      "simdgroups_derived": 31
+    }
+  },
+  "independent_machine_code": {
+    "applegpu_g16s": true,
+    "applegpu_g17s": true
+  },
+  "independent_register_allocation": {
+    "applegpu_g16s": false,
+    "applegpu_g17s": true
+  },
+  "register_ceiling": {
+    "applegpu_g16s": 96,
+    "applegpu_g17s": 126
+  },
+  "register_allocation_saturated": {
+    "applegpu_g16s": true,
+    "applegpu_g17s": false
+  },
+  "verdict": "independent",
+  "runtime_seconds": 0.97
+}

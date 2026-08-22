@@ -1,0 +1,1238 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "timing_valid": false,
+  "harness": "compile_only",
+  "tool": "research/e132_instruction_probe.py loops",
+  "note": "AIR is pre-register-allocation and therefore carries no spill code. Read it with the machine-code numbers from research/e132_wide_matvec.py rung1.",
+  "widths": [
+    6,
+    7,
+    8,
+    9
+  ],
+  "rows": {
+    "baseline": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.83,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 5.0,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.38,
+          "loop_count": 12
+        },
+        "9": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.89,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.67,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.86,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.25,
+          "loop_count": 11
+        },
+        "9": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.78,
+          "loop_count": 11
+        }
+      }
+    },
+    "D_late_meta": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.38,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.03,
+          "loop_count": 12
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.58,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.21,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 3.91,
+          "loop_count": 11
+        },
+        "9": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.47,
+          "loop_count": 11
+        }
+      }
+    },
+    "S_sink_sums": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.83,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 5.0,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.38,
+          "loop_count": 12
+        },
+        "9": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.89,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.67,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.86,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.25,
+          "loop_count": 11
+        },
+        "9": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.78,
+          "loop_count": 11
+        }
+      }
+    },
+    "D_S": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.38,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.03,
+          "loop_count": 12
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.58,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.21,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 3.91,
+          "loop_count": 11
+        },
+        "9": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.47,
+          "loop_count": 11
+        }
+      }
+    },
+    "G4": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.83,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 5.0,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 145,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 79,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.53,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.89,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.67,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.86,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 139,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 72,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.34,
+          "loop_count": 13
+        },
+        "9": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.78,
+          "loop_count": 11
+        }
+      }
+    },
+    "G2": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.83,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 5.0,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 143,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 77,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.47,
+          "loop_count": 15
+        },
+        "9": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.89,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.67,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.86,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 139,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 72,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.34,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.78,
+          "loop_count": 11
+        }
+      }
+    },
+    "G4_D": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.38,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 134,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 80,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.19,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.58,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.21,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 128,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 73,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.0,
+          "loop_count": 13
+        },
+        "9": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.47,
+          "loop_count": 11
+        }
+      }
+    },
+    "G2_D": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.38,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 132,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 78,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.12,
+          "loop_count": 15
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.58,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.21,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 128,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 73,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.0,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.47,
+          "loop_count": 11
+        }
+      }
+    },
+    "G4_D_S": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.38,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 134,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 80,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.19,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.58,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.21,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 128,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 73,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.0,
+          "loop_count": 13
+        },
+        "9": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.47,
+          "loop_count": 11
+        }
+      }
+    },
+    "G_wide": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 145,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 79,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 6.04,
+          "loop_count": 14
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 5.0,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 145,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 79,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.53,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 147,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 81,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 4.08,
+          "loop_count": 15
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 139,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 72,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.79,
+          "loop_count": 13
+        },
+        "7": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.86,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 139,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 72,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.34,
+          "loop_count": 13
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 141,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 74,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.92,
+          "loop_count": 14
+        }
+      }
+    },
+    "G_wide_D": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 134,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 80,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.58,
+          "loop_count": 14
+        },
+        "7": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 134,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 80,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.19,
+          "loop_count": 14
+        },
+        "9": {
+          "air_inner_loop_blocks": 19,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 82,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.78,
+          "loop_count": 15
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 128,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 73,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.33,
+          "loop_count": 13
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 128,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 73,
+          "output_elements_per_thread": 32,
+          "air_inner_loop_instructions_per_output_element": 4.0,
+          "loop_count": 13
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 130,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.61,
+          "loop_count": 14
+        }
+      }
+    },
+    "B_rows2": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.83,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 5.0,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 131,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 66,
+          "output_elements_per_thread": 16,
+          "air_inner_loop_instructions_per_output_element": 8.19,
+          "loop_count": 10
+        },
+        "9": {
+          "air_inner_loop_blocks": 16,
+          "air_inner_loop_instructions": 140,
+          "air_inner_loop_loads": 11,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 75,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.89,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.67,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.86,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 12,
+          "air_inner_loop_instructions": 127,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 60,
+          "output_elements_per_thread": 16,
+          "air_inner_loop_instructions_per_output_element": 7.94,
+          "loop_count": 9
+        },
+        "9": {
+          "air_inner_loop_blocks": 14,
+          "air_inner_loop_instructions": 136,
+          "air_inner_loop_loads": 10,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 69,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.78,
+          "loop_count": 11
+        }
+      }
+    },
+    "B_rows2_D": {
+      "sumtable": {
+        "6": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.38,
+          "loop_count": 12
+        },
+        "7": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.61,
+          "loop_count": 12
+        },
+        "8": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 120,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 67,
+          "output_elements_per_thread": 16,
+          "air_inner_loop_instructions_per_output_element": 7.5,
+          "loop_count": 10
+        },
+        "9": {
+          "air_inner_loop_blocks": 17,
+          "air_inner_loop_instructions": 129,
+          "air_inner_loop_loads": 9,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 10,
+          "air_inner_loop_int_alu": 76,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.58,
+          "loop_count": 12
+        }
+      },
+      "notable": {
+        "6": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 24,
+          "air_inner_loop_instructions_per_output_element": 5.21,
+          "loop_count": 11
+        },
+        "7": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 28,
+          "air_inner_loop_instructions_per_output_element": 4.46,
+          "loop_count": 11
+        },
+        "8": {
+          "air_inner_loop_blocks": 13,
+          "air_inner_loop_instructions": 116,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 61,
+          "output_elements_per_thread": 16,
+          "air_inner_loop_instructions_per_output_element": 7.25,
+          "loop_count": 9
+        },
+        "9": {
+          "air_inner_loop_blocks": 15,
+          "air_inner_loop_instructions": 125,
+          "air_inner_loop_loads": 8,
+          "air_inner_loop_fma": 0,
+          "air_inner_loop_float_alu": 15,
+          "air_inner_loop_int_alu": 70,
+          "output_elements_per_thread": 36,
+          "air_inner_loop_instructions_per_output_element": 3.47,
+          "loop_count": 11
+        }
+      }
+    }
+  }
+}

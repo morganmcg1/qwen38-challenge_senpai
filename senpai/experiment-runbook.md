@@ -102,16 +102,50 @@ warns on a residency gain, on new spill, and on a cell it could not find. It
 needs no GPU, no model, and no thermal gate, and it runs in about four seconds.
 
 Coverage is the three `affine_qmv_fast` JIT-twin cells that the scored worker
-reaches plus the three Route B `MLXFast.metalKernel` pipelines, each extracted
-read-only at the requested revision and compiled from scratch. Add a cell to
-`SCORED_CELLS` or `ROUTE_B_KERNELS` in `research/e131_cliff_gate.py` when a new
-entry point joins the scored path.
+reaches, the Route B `MLXFast.metalKernel` pipelines, and the cluster QMV
+pipelines, each extracted read-only at the requested revision and compiled from
+scratch. Add a cell to `JIT_CELLS` in `research/e131_cliff_gate.py`, or a role
+to `ROUTE_B_ROLES` or `CLUSTER_QMV_ROLES` in
+`research/e131_kernel_sources.py`, when a new entry point joins the scored path.
+The gate also enumerates each compiled library, so a pipeline that no role names
+is still censused and cannot be lost by a stale list.
 
 Every simdgroup figure the gate prints is `derived` under Rule 89:
 `floor(3072 / registers)` on `applegpu_g16s` and `floor(3968 / registers)` on
 `applegpu_g17s`. It is a model output computed from the register count, never a
 measurement. A failure is a register regression, not a measured slowdown, so
 read the register delta first.
+
+### One pipeline per width needs the width-weighted surface
+
+A shared-switch kernel allocates registers for its widest arm, so one entry
+point serves every routed width. Per-width templating through
+`MLXFast.metalKernel` breaks that tie: each width gets its own pipeline and its
+own register allocation, so a per-entry-point comparison can report a loss that
+no routed width pays. The gate therefore also computes a **width-weighted Route
+B QMV surface**: it maps each routed width to the pipeline that serves it,
+weights the derived residency by the measured width histogram
+`{4: 16, 5: 20, 6: 20, 7: 12, 8: 240}` over 308 rounds, and decides the Route B
+verdict on that sum. A per-entry-point Route B QMV loss is now a warning; the
+surface decides. The single-entry-point figure is the special case where every
+width maps to the same pipeline, so shared-switch builds keep their old verdict.
+
+### The gate is a register instrument, not a time instrument
+
+The gate is accurate about registers and says nothing directly about time.
+F131 measured the residency-to-time coefficient at `-0.0014` and `+0.0105` on
+two independent designs, both far inside the `0.05 %/%` kill gate, and F114 puts
+deleted instruction count at `r = +0.949` against measured gain. An exit 1 that
+comes with real deleted work is a demand for a price, not a verdict. Report the
+work you removed in **instructions per output element**, weighted by the width
+histogram, and set it against `c x Δresidency`.
+
+Worked example: adding `{8: 8}` to the Route B table costs `41.870 -> 33.299`
+derived weighted simdgroups on `applegpu_g17s`, so the gate exits 1. The same
+edit deletes one whole pass of `qwen_e120_qmv_wide<4>` at `M = 8`, which is
+`9.7 %` to `15.2 %` of whole-histogram QMV instructions per output element even
+when every spill slot is charged eight memory instructions per `k` block. That
+price discharges the exit 1.
 
 ### Exit 1 is stop-and-justify, and only a price discharges it
 
@@ -145,6 +179,20 @@ that failure and its revert:
 ```bash
 python3 research/e131_rung3_receipt.py --outdir research/e131-artifacts
 ```
+
+### Acceptance suite
+
+Run this after any change to the gate:
+
+```bash
+python3 research/e132_gate_proofs.py
+```
+
+It holds the three E121 revision proofs, proves that per-width templating with
+the shipped table passes, and proves that adding `{8: 8}` is detected as a
+residency loss. It builds the two templated libraries in memory, needs no GPU,
+and finishes in about ten seconds. The last proof is named `wide8_detected`
+because it tests detection, not desirability.
 
 ## Prove the built worker carries your edit
 

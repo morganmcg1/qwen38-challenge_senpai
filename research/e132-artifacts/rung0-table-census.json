@@ -1,0 +1,2574 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "harness": "compile_only",
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "base_ref": "HEAD",
+  "base_sha": "14294ae1d20a5cdb8f00bd6ee3493b5d611908a7",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "histogram": {
+    "4": 16,
+    "5": 20,
+    "6": 20,
+    "7": 12,
+    "8": 240
+  },
+  "histogram_total": 308,
+  "tool": "research/e132_wide_matvec.py rung0",
+  "rung": 0,
+  "tables": {
+    "shipped": [
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        3
+      ]
+    ],
+    "one_pass_6": [
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        3
+      ]
+    ],
+    "one_pass_67": [
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        3
+      ]
+    ],
+    "one_pass_678": [
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        9,
+        3
+      ]
+    ]
+  },
+  "cells": {
+    "sumtable": {
+      "switch_shipped": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "text_bytes": 47862,
+          "text_sha8": "4858361e",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "text_bytes": 49718,
+          "text_sha8": "1674d9ed",
+          "simdgroups_derived": 38
+        }
+      },
+      "switch_one_pass_6": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 47372,
+          "text_sha8": "bf787292",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "text_bytes": 49072,
+          "text_sha8": "f22e578d",
+          "simdgroups_derived": 34
+        }
+      },
+      "switch_one_pass_67": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "text_bytes": 41280,
+          "text_sha8": "9da50478",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "text_bytes": 42476,
+          "text_sha8": "1af74ce6",
+          "simdgroups_derived": 31
+        }
+      },
+      "switch_one_pass_678": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 112,
+          "text_bytes": 41270,
+          "text_sha8": "78b84f9e",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 64,
+          "text_bytes": 41982,
+          "text_sha8": "6f22bbdb",
+          "simdgroups_derived": 31
+        }
+      },
+      "pipeline_m3_ipg3": {
+        "applegpu_g16s": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "text_bytes": 5440,
+          "text_sha8": "c8444025",
+          "simdgroups_derived": 36
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5690,
+          "text_sha8": "a877ba6f",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m4_ipg4": {
+        "applegpu_g16s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 6584,
+          "text_sha8": "a2687931",
+          "simdgroups_derived": 33
+        },
+        "applegpu_g17s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6824,
+          "text_sha8": "109489dc",
+          "simdgroups_derived": 42
+        }
+      },
+      "pipeline_m5_ipg5": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "text_bytes": 7774,
+          "text_sha8": "1a2cb36c",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "text_bytes": 7972,
+          "text_sha8": "0b3c1089",
+          "simdgroups_derived": 38
+        }
+      },
+      "pipeline_m6_ipg3": {
+        "applegpu_g16s": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "text_bytes": 5440,
+          "text_sha8": "8bf6a403",
+          "simdgroups_derived": 36
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5690,
+          "text_sha8": "30faaa2b",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m6_ipg6": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 4954,
+          "text_sha8": "6a309264",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "text_bytes": 5040,
+          "text_sha8": "87bcb47e",
+          "simdgroups_derived": 34
+        }
+      },
+      "pipeline_m7_ipg4": {
+        "applegpu_g16s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 11788,
+          "text_sha8": "138feb63",
+          "simdgroups_derived": 33
+        },
+        "applegpu_g17s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 12272,
+          "text_sha8": "dcbba82e",
+          "simdgroups_derived": 42
+        }
+      },
+      "pipeline_m7_ipg7": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "text_bytes": 5842,
+          "text_sha8": "e0a6cd25",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "text_bytes": 5784,
+          "text_sha8": "a6710fbc",
+          "simdgroups_derived": 31
+        }
+      },
+      "pipeline_m8_ipg4": {
+        "applegpu_g16s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 6584,
+          "text_sha8": "e35ce26b",
+          "simdgroups_derived": 33
+        },
+        "applegpu_g17s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6824,
+          "text_sha8": "7cd6c20e",
+          "simdgroups_derived": 42
+        }
+      },
+      "pipeline_m8_ipg8": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "text_bytes": 6614,
+          "text_sha8": "7db151ef",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 64,
+          "text_bytes": 6460,
+          "text_sha8": "5c7b1d27",
+          "simdgroups_derived": 31
+        }
+      },
+      "pipeline_m9_ipg3": {
+        "applegpu_g16s": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "text_bytes": 5418,
+          "text_sha8": "b0ce7c9b",
+          "simdgroups_derived": 36
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5676,
+          "text_sha8": "6c8e6996",
+          "simdgroups_derived": 44
+        }
+      },
+      "body_na2": {
+        "applegpu_g16s": {
+          "registers": 74,
+          "spill_bytes": 0,
+          "text_bytes": 4306,
+          "text_sha8": "687e546e",
+          "simdgroups_derived": 41
+        },
+        "applegpu_g17s": {
+          "registers": 87,
+          "spill_bytes": 0,
+          "text_bytes": 4528,
+          "text_sha8": "3ddbf62c",
+          "simdgroups_derived": 45
+        }
+      },
+      "body_na3": {
+        "applegpu_g16s": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "text_bytes": 5412,
+          "text_sha8": "f9d2556f",
+          "simdgroups_derived": 36
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5660,
+          "text_sha8": "67071bd2",
+          "simdgroups_derived": 44
+        }
+      },
+      "body_na4": {
+        "applegpu_g16s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 6572,
+          "text_sha8": "b8a14721",
+          "simdgroups_derived": 33
+        },
+        "applegpu_g17s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6812,
+          "text_sha8": "3d859622",
+          "simdgroups_derived": 42
+        }
+      },
+      "body_na5": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "text_bytes": 7746,
+          "text_sha8": "01f2b0d5",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "text_bytes": 7946,
+          "text_sha8": "70887537",
+          "simdgroups_derived": 38
+        }
+      },
+      "body_na6": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 4926,
+          "text_sha8": "d363c528",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "text_bytes": 5014,
+          "text_sha8": "727cd181",
+          "simdgroups_derived": 34
+        }
+      },
+      "body_na7": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "text_bytes": 5814,
+          "text_sha8": "524fbbf6",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "text_bytes": 5758,
+          "text_sha8": "2791d427",
+          "simdgroups_derived": 31
+        }
+      },
+      "body_na8": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "text_bytes": 6602,
+          "text_sha8": "ea702c23",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 64,
+          "text_bytes": 6448,
+          "text_sha8": "91fe3333",
+          "simdgroups_derived": 31
+        }
+      },
+      "body_na9": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 160,
+          "text_bytes": 7432,
+          "text_sha8": "d274748f",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 112,
+          "text_bytes": 7274,
+          "text_sha8": "d2e5dc6d",
+          "simdgroups_derived": 31
+        }
+      }
+    },
+    "notable": {
+      "switch_shipped": {
+        "applegpu_g16s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 50980,
+          "text_sha8": "94c20421",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 52914,
+          "text_sha8": "b12f3840",
+          "simdgroups_derived": 39
+        }
+      },
+      "switch_one_pass_6": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 50284,
+          "text_sha8": "bd4346a6",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "text_bytes": 52098,
+          "text_sha8": "22b6c2ad",
+          "simdgroups_derived": 35
+        }
+      },
+      "switch_one_pass_67": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "text_bytes": 43558,
+          "text_sha8": "41499180",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "text_bytes": 44870,
+          "text_sha8": "200d1955",
+          "simdgroups_derived": 31
+        }
+      },
+      "switch_one_pass_678": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "text_bytes": 43220,
+          "text_sha8": "9993b6a8",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 48,
+          "text_bytes": 44142,
+          "text_sha8": "494ff551",
+          "simdgroups_derived": 31
+        }
+      },
+      "pipeline_m3_ipg3": {
+        "applegpu_g16s": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5764,
+          "text_sha8": "0a78bb6e",
+          "simdgroups_derived": 37
+        },
+        "applegpu_g17s": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5992,
+          "text_sha8": "1c4831b2",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m4_ipg4": {
+        "applegpu_g16s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 7012,
+          "text_sha8": "2dbb905f",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7296,
+          "text_sha8": "ca100b53",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m5_ipg5": {
+        "applegpu_g16s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8328,
+          "text_sha8": "790fe403",
+          "simdgroups_derived": 33
+        },
+        "applegpu_g17s": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8544,
+          "text_sha8": "ffa640c5",
+          "simdgroups_derived": 39
+        }
+      },
+      "pipeline_m6_ipg3": {
+        "applegpu_g16s": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5764,
+          "text_sha8": "1b9a5204",
+          "simdgroups_derived": 37
+        },
+        "applegpu_g17s": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5992,
+          "text_sha8": "274cec5d",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m6_ipg6": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 5068,
+          "text_sha8": "c3698d51",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "text_bytes": 5176,
+          "text_sha8": "79142637",
+          "simdgroups_derived": 35
+        }
+      },
+      "pipeline_m7_ipg4": {
+        "applegpu_g16s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 12540,
+          "text_sha8": "7effbb2a",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 13046,
+          "text_sha8": "d94f715d",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m7_ipg7": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "text_bytes": 5954,
+          "text_sha8": "0affb203",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "text_bytes": 5822,
+          "text_sha8": "823069dd",
+          "simdgroups_derived": 31
+        }
+      },
+      "pipeline_m8_ipg4": {
+        "applegpu_g16s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 7012,
+          "text_sha8": "a49c8114",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7296,
+          "text_sha8": "619b059d",
+          "simdgroups_derived": 44
+        }
+      },
+      "pipeline_m8_ipg8": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "text_bytes": 6786,
+          "text_sha8": "c2ec3a3c",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 48,
+          "text_bytes": 6682,
+          "text_sha8": "7cd80f32",
+          "simdgroups_derived": 31
+        }
+      },
+      "pipeline_m9_ipg3": {
+        "applegpu_g16s": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5764,
+          "text_sha8": "98da9528",
+          "simdgroups_derived": 37
+        },
+        "applegpu_g17s": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5992,
+          "text_sha8": "cbdfd9f0",
+          "simdgroups_derived": 44
+        }
+      },
+      "body_na2": {
+        "applegpu_g16s": {
+          "registers": 66,
+          "spill_bytes": 0,
+          "text_bytes": 4494,
+          "text_sha8": "9af8a65a",
+          "simdgroups_derived": 46
+        },
+        "applegpu_g17s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 4734,
+          "text_sha8": "dcbb16a7",
+          "simdgroups_derived": 42
+        }
+      },
+      "body_na3": {
+        "applegpu_g16s": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5734,
+          "text_sha8": "44fbd34f",
+          "simdgroups_derived": 37
+        },
+        "applegpu_g17s": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5964,
+          "text_sha8": "0aa1795e",
+          "simdgroups_derived": 44
+        }
+      },
+      "body_na4": {
+        "applegpu_g16s": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6998,
+          "text_sha8": "743fb8c1",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7282,
+          "text_sha8": "e7012cae",
+          "simdgroups_derived": 44
+        }
+      },
+      "body_na5": {
+        "applegpu_g16s": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8298,
+          "text_sha8": "3660dc6b",
+          "simdgroups_derived": 33
+        },
+        "applegpu_g17s": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8516,
+          "text_sha8": "5673073b",
+          "simdgroups_derived": 39
+        }
+      },
+      "body_na6": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 5038,
+          "text_sha8": "8c31406d",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "text_bytes": 5148,
+          "text_sha8": "2a2f6cd3",
+          "simdgroups_derived": 35
+        }
+      },
+      "body_na7": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "text_bytes": 5924,
+          "text_sha8": "211a1595",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "text_bytes": 5794,
+          "text_sha8": "08696cd1",
+          "simdgroups_derived": 31
+        }
+      },
+      "body_na8": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "text_bytes": 6772,
+          "text_sha8": "bf0449e9",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 48,
+          "text_bytes": 6668,
+          "text_sha8": "a7258ca1",
+          "simdgroups_derived": 31
+        }
+      },
+      "body_na9": {
+        "applegpu_g16s": {
+          "registers": 96,
+          "spill_bytes": 240,
+          "text_bytes": 8048,
+          "text_sha8": "25176339",
+          "simdgroups_derived": 32
+        },
+        "applegpu_g17s": {
+          "registers": 126,
+          "spill_bytes": 160,
+          "text_bytes": 7864,
+          "text_sha8": "5fb2997a",
+          "simdgroups_derived": 31
+        }
+      }
+    }
+  },
+  "matrix": [
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "shipped",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 47862,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "shipped",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 102,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 38,
+      "isa_text_bytes": 49718,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 38,
+        "5": 38,
+        "6": 38,
+        "7": 38,
+        "8": 38
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        }
+      },
+      "weighted_simdgroups_derived": 38.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "shipped",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 49028,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 33,
+        "5": 32,
+        "6": 36,
+        "7": 33,
+        "8": 33
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 33.1299
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "shipped",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 102,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 38,
+      "isa_text_bytes": 50948,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 42,
+        "5": 38,
+        "6": 44,
+        "7": 42,
+        "8": 42
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        }
+      },
+      "weighted_simdgroups_derived": 41.8701
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_6",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 16,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 47372,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_6",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 114,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 34,
+      "isa_text_bytes": 49072,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 34,
+        "5": 34,
+        "6": 34,
+        "7": 34,
+        "8": 34
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        },
+        "6": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "simdgroups_derived": 34
+        }
+      },
+      "weighted_simdgroups_derived": 34.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_6",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 16,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 48542,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 33,
+        "5": 32,
+        "6": 32,
+        "7": 33,
+        "8": 33
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.8701
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_6",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 114,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 34,
+      "isa_text_bytes": 50298,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 42,
+        "5": 38,
+        "6": 34,
+        "7": 42,
+        "8": 42
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        },
+        "6": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "simdgroups_derived": 34
+        }
+      },
+      "weighted_simdgroups_derived": 41.2208
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_67",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 64,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 41280,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_67",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 126,
+      "entry_spill_bytes": 16,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 42476,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 31,
+        "5": 31,
+        "6": 31,
+        "7": 31,
+        "8": 31
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        },
+        "6": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "simdgroups_derived": 34
+        },
+        "7": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 31.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_67",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 64,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 42596,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 33,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 33
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.8312
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_67",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 126,
+      "entry_spill_bytes": 16,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 43810,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 42,
+        "5": 38,
+        "6": 34,
+        "7": 31,
+        "8": 42
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        },
+        "6": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "simdgroups_derived": 34
+        },
+        "7": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 40.7922
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_678",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 112,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 41270,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "simdgroups_derived": 32
+        },
+        "8": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_678",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 126,
+      "entry_spill_bytes": 64,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 41982,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 31,
+        "5": 31,
+        "6": 31,
+        "7": 31,
+        "8": 31
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        },
+        "6": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "simdgroups_derived": 34
+        },
+        "7": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "simdgroups_derived": 31
+        },
+        "8": {
+          "registers": 126,
+          "spill_bytes": 64,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 31.0
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_678",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 96,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 42626,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 33,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "simdgroups_derived": 36
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 64,
+          "simdgroups_derived": 32
+        },
+        "8": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0519
+    },
+    {
+      "arm": "sumtable",
+      "use_table": true,
+      "table": "one_pass_678",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 126,
+      "entry_spill_bytes": 64,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 43446,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 42,
+        "5": 38,
+        "6": 34,
+        "7": 31,
+        "8": 31
+      },
+      "body_registers": {
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 42
+        },
+        "5": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "simdgroups_derived": 38
+        },
+        "6": {
+          "registers": 114,
+          "spill_bytes": 0,
+          "simdgroups_derived": 34
+        },
+        "7": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "simdgroups_derived": 31
+        },
+        "8": {
+          "registers": 126,
+          "spill_bytes": 64,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 32.2208
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "shipped",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 94,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 50980,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "shipped",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 101,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 39,
+      "isa_text_bytes": 52914,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 39,
+        "5": 39,
+        "6": 39,
+        "7": 39,
+        "8": 39
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        }
+      },
+      "weighted_simdgroups_derived": 39.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "shipped",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 94,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 52184,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 33,
+        "6": 37,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        }
+      },
+      "weighted_simdgroups_derived": 32.3896
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "shipped",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 101,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 39,
+      "isa_text_bytes": 54158,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 44,
+        "5": 39,
+        "6": 44,
+        "7": 44,
+        "8": 44
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        }
+      },
+      "weighted_simdgroups_derived": 43.6753
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_6",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 16,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 50284,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_6",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 111,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 35,
+      "isa_text_bytes": 52098,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 35,
+        "5": 35,
+        "6": 35,
+        "7": 35,
+        "8": 35
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        },
+        "6": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "simdgroups_derived": 35
+        }
+      },
+      "weighted_simdgroups_derived": 35.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_6",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 16,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 51488,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 33,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0649
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_6",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 111,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 35,
+      "isa_text_bytes": 53342,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 4,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 44,
+        "5": 39,
+        "6": 35,
+        "7": 44,
+        "8": 44
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        },
+        "6": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "simdgroups_derived": 35
+        }
+      },
+      "weighted_simdgroups_derived": 43.0909
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_67",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 48,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 43558,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_67",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 125,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 44870,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 31,
+        "5": 31,
+        "6": 31,
+        "7": 31,
+        "8": 31
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        },
+        "6": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "simdgroups_derived": 35
+        },
+        "7": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 31.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_67",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 48,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 44902,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 33,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0649
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_67",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 125,
+      "entry_spill_bytes": 0,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 46118,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 4,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 44,
+        "5": 39,
+        "6": 35,
+        "7": 31,
+        "8": 44
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        },
+        "6": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "simdgroups_derived": 35
+        },
+        "7": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 42.5844
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_678",
+      "structure": "shared_switch",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 96,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 43220,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "simdgroups_derived": 32
+        },
+        "8": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_678",
+      "structure": "shared_switch",
+      "arch": "applegpu_g17s",
+      "entry_registers": 126,
+      "entry_spill_bytes": 48,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 44142,
+      "distinct_pipelines": 1,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 31,
+        "5": 31,
+        "6": 31,
+        "7": 31,
+        "8": 31
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        },
+        "6": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "simdgroups_derived": 35
+        },
+        "7": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "simdgroups_derived": 31
+        },
+        "8": {
+          "registers": 126,
+          "spill_bytes": 48,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 31.0
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_678",
+      "structure": "per_width",
+      "arch": "applegpu_g16s",
+      "entry_registers": 96,
+      "entry_spill_bytes": 96,
+      "entry_simdgroups_derived": 32,
+      "isa_text_bytes": 44676,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 32,
+        "5": 33,
+        "6": 32,
+        "7": 32,
+        "8": 32
+      },
+      "body_registers": {
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "simdgroups_derived": 37
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "simdgroups_derived": 32
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "simdgroups_derived": 33
+        },
+        "6": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "simdgroups_derived": 32
+        },
+        "7": {
+          "registers": 96,
+          "spill_bytes": 48,
+          "simdgroups_derived": 32
+        },
+        "8": {
+          "registers": 96,
+          "spill_bytes": 96,
+          "simdgroups_derived": 32
+        }
+      },
+      "weighted_simdgroups_derived": 32.0649
+    },
+    {
+      "arm": "notable",
+      "use_table": false,
+      "table": "one_pass_678",
+      "structure": "per_width",
+      "arch": "applegpu_g17s",
+      "entry_registers": 126,
+      "entry_spill_bytes": 48,
+      "entry_simdgroups_derived": 31,
+      "isa_text_bytes": 45504,
+      "distinct_pipelines": 7,
+      "per_width_ipg": {
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 3
+      },
+      "per_width_simdgroups_derived": {
+        "4": 44,
+        "5": 39,
+        "6": 35,
+        "7": 31,
+        "8": 31
+      },
+      "body_registers": {
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "simdgroups_derived": 44
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "simdgroups_derived": 39
+        },
+        "6": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "simdgroups_derived": 35
+        },
+        "7": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "simdgroups_derived": 31
+        },
+        "8": {
+          "registers": 126,
+          "spill_bytes": 48,
+          "simdgroups_derived": 31
+        }
+      },
+      "weighted_simdgroups_derived": 32.4545
+    }
+  ],
+  "runtime_seconds": 8.17
+}
