@@ -94,6 +94,7 @@ RUNGS = {
     "2": {
         "run_name": "e136-rung2-c1-sketch-readout-abba",
         "file": "research/e136-rung2.json",
+        "companion": "research/e136-cliff-census.json",
         "job_type": "decode-abba",
         "question":
             "does the C1 sketch shortlist lower ABSOLUTE candidate MTP "
@@ -108,16 +109,31 @@ RUNGS = {
     },
 }
 
-# The rung-2 bars are stated twice in the assignment and the two statements
-# disagree. The PR body section D advances at +0.30 %. F4 section 8 calls the
-# rules "unchanged" and then advances at +0.6 % and closes below +0.25 %,
-# which also opens an unlabelled dead zone between +0.25 % and +0.6 %. The
-# rung-1 prediction of +0.546 % lands inside that dead zone, so the choice of
-# bar decides the experiment. Both are logged and the verdict says which bars
-# the result clears rather than picking one.
-RUNG2_ADVANCE_PR_BODY_PCT = 0.30
-RUNG2_ADVANCE_F4_PCT = 0.60
-RUNG2_CLOSE_PCT = 0.25
+# F5 resolved ADVISOR ERROR 136: the PR body section D bars govern, and the
+# F4 section 8 restatement is retracted. Advancing also needs the headline to
+# be separated from the session's own within-arm 2 sigma null, so a large
+# point estimate inside a wide null cannot advance.
+RUNG2_ADVANCE_PCT = 0.30
+RUNG2_HOLD_PCT = 0.10
+
+# Rung 1 predicted the C1 acceptance loss from the offline E133 corpus screen
+# on the shipping `lowrank256` basis. Logging the prediction next to the
+# measurement is what turns a negative result into a calibration of the
+# screen.
+RUNG1_PREDICTED_ACC_LOSS_PP = 100.0 * 7.8756e-4
+
+# Rule 107 net for C1, gross byte gain minus C1's own predicted acceptance
+# cost, quoted on both bandwidth lines because the byte-to-time coefficient is
+# not settled. The 265 GB/s line is the ceiling; E93 measured 186.7 GB/s on
+# the head pass.
+RUNG1_NET_PCT_AT_265_GB_S = 0.546
+RUNG1_NET_PCT_AT_186_7_GB_S = 0.353
+
+# Local `benchfixture` drafts deeper than the F83-weighted ranked prompt mix
+# (effective mean draft length 6.359 against about 4.9), so a local per-cent
+# is worth less on the ranked board. F5 requires this to be STATED, never
+# silently applied: every logged per-cent below is local.
+LOCAL_TO_RANKED_HAIRCUT = 1.3
 
 LEG_COLUMNS = [
     "tag", "arm", "position", "flag", "arm_witnessed", "c1_draft_steps",
@@ -133,24 +149,34 @@ LEG_COLUMNS = [
 def rung2_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
     mtp = payload["mtp_s_per_tok"]
     headline = payload.get("e136_c1_candidate_leg_pct")
+    null = payload.get("e136_session_null_2sigma_pct")
     exact = (payload["all_tokens_matched"]
              and payload["accepted_stream_divergences"] == 0)
+    separated = (headline is not None and null is not None
+                 and abs(headline) > null)
     if headline is None:
         verdict = "no-contrast"
     elif not payload["all_arms_witnessed"] or not exact:
         verdict = "invalid"
-    elif headline >= RUNG2_ADVANCE_F4_PCT:
-        verdict = "local-winner-on-both-bars"
-    elif headline >= RUNG2_ADVANCE_PR_BODY_PCT:
-        # Clears the PR body bar and fails the F4 bar. Neither advancing nor
-        # closing is defensible without the advisor resolving the two.
-        verdict = "held-for-stop-rule-ruling"
-    elif headline >= RUNG2_CLOSE_PCT:
-        verdict = "below-both-advance-bars-above-close-bar"
-    elif headline > 0.0:
-        verdict = "close-positive-but-below-close-bar"
+    elif headline >= RUNG2_ADVANCE_PCT and separated:
+        verdict = "ADVANCE"
+    elif headline >= RUNG2_HOLD_PCT:
+        verdict = "HOLD"
     else:
-        verdict = "byte-model-refuted"
+        verdict = "CLOSE"
+
+    measured_acc_loss_pp = payload.get("e136_realised_acceptance_delta_pp")
+    acc_ratio = (abs(measured_acc_loss_pp) / RUNG1_PREDICTED_ACC_LOSS_PP
+                 if measured_acc_loss_pp else None)
+
+    # FINDING 181 clearance. This host clamps at 96 registers from NA=5 up
+    # while the ranked host grants 126, so a register delta on a routed
+    # wide-QMV entry point would make g16s absolute time an unsafe screen.
+    census = json.loads(pathlib.Path(spec["companion"]).read_text())
+    worst_reg_delta = max(
+        abs(cell[arch]["registers_delta"])
+        for cell in census["cells"]
+        for arch in ("applegpu_g16s", "applegpu_g17s"))
 
     summary = {
         # Primary. Absolute candidate MTP time is the only quantity the ranked
@@ -162,11 +188,24 @@ def rung2_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
             payload["accepted_stream_divergences"],
         "e136_c1_candidate_leg_pct_two_sigma":
             payload.get("e136_c1_candidate_leg_pct_two_sigma"),
+        "e136_session_null_2sigma_pct": null,
+        "e136_rung2_separated_from_session_null": separated,
         "e136_rung2_verdict": verdict,
-        "e136_rung2_advance_bar_pr_body_pct": RUNG2_ADVANCE_PR_BODY_PCT,
-        "e136_rung2_advance_bar_f4_pct": RUNG2_ADVANCE_F4_PCT,
-        "e136_rung2_close_bar_pct": RUNG2_CLOSE_PCT,
-        "e136_rung2_stop_rule_contradiction_unresolved": True,
+        "e136_rung2_advance_bar_pct": RUNG2_ADVANCE_PCT,
+        "e136_rung2_hold_bar_pct": RUNG2_HOLD_PCT,
+        # The calibration result. The offline corpus screen predicted the
+        # acceptance cost of the shipping basis; the live session measured it.
+        "e136_rung2_predicted_acc_loss_pp": RUNG1_PREDICTED_ACC_LOSS_PP,
+        "e136_rung2_acc_loss_underprediction_ratio": acc_ratio,
+        "e136_rung2_rule107_net_pct_at_265_gb_s": RUNG1_NET_PCT_AT_265_GB_S,
+        "e136_rung2_rule107_net_pct_at_186_7_gb_s":
+            RUNG1_NET_PCT_AT_186_7_GB_S,
+        # Stated, not applied: every per-cent logged here is a LOCAL per-cent.
+        "e136_local_to_ranked_haircut_stated_not_applied":
+            LOCAL_TO_RANKED_HAIRCUT,
+        "e136_rung2_cliff_census_verdict": census["verdict"],
+        "e136_rung2_cliff_census_worst_registers_delta": worst_reg_delta,
+        "e136_rung2_finding181_applies": worst_reg_delta != 0,
         # The binary that actually decoded the tokens. A session whose worker
         # digest moved is not a comparison, and `base_sha` may legitimately
         # move across a research-tooling commit that the worker never links.
