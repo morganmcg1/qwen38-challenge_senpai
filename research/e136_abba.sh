@@ -40,6 +40,22 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+# STALENESS GUARD (E136 defect 5, ledger 202(H) again). A clean worktree does
+# NOT imply a current worker. `--local-iterate` extracts only
+# `metallib_rebuild_required()` from benchmark.sh, never `swift_build_required()`,
+# so it will happily time a `.build-worker` binary built before the candidate
+# edit. The first rung-2 witness session did exactly that: a worker 1h45m older
+# than the C1 commit ran BOTH arms, and the `on` leg reported
+# `e136_c1_draft_steps=0 e136_shipped_selection_draft_steps=31`. The trace
+# witness caught it, but only after two legs of GPU time. Assert the gate string
+# is inside the binary before spending any.
+worker_bin=".build-worker/release/mlxfast-runtime-worker"
+if ! strings -a "${worker_bin}" | grep -qF -- 'MLX_E136_C1_SKETCH'; then
+  echo "e136_abba: ${worker_bin} carries no MLX_E136_C1_SKETCH gate." >&2
+  echo "e136_abba: run senpai/rebuild-and-assert-worker.sh first." >&2
+  exit 1
+fi
+
 session_commit="$(git rev-parse HEAD)"
 worker_start="$(
   shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"

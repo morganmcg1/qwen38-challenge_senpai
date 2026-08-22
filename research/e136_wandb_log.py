@@ -91,7 +91,89 @@ RUNGS = {
             "MLXFAST_C1_OUT_DIR=research/e136-c1-gate "
             "swift test --force-resolved-versions --filter E136C1SketchTests",
     },
+    "2": {
+        "run_name": "e136-rung2-c1-sketch-readout-abba",
+        "file": "research/e136-rung2.json",
+        "job_type": "decode-abba",
+        "question":
+            "does the C1 sketch shortlist lower ABSOLUTE candidate MTP "
+            "seconds per token on a matched ABBA decode pair, and does it "
+            "leave the accepted token stream unchanged",
+        "command":
+            "senpai/rebuild-and-assert-worker.sh --require MLX_E136_C1_SKETCH "
+            "&& research/await-lock-then-run.sh 3600 research/e133_job.sh "
+            "research/e136_abba.sh 512 r2 && "
+            "python3 research/e136_analyse.py --label r2 "
+            "--json research/e136-rung2.json",
+    },
 }
+
+# The advisor's rung-2 bars. >= +0.30 % on the absolute candidate leg advances
+# to rung 3; 0 to +0.30 % reports and runs the N=8192 fallback once; negative
+# refutes the byte model and stops the arm.
+RUNG2_ADVANCE_PCT = 0.30
+
+LEG_COLUMNS = [
+    "tag", "arm", "position", "flag", "arm_witnessed", "c1_draft_steps",
+    "shipped_selection_draft_steps", "mtp_s_per_tok", "serial_s_per_tok",
+    "speedup", "mean_d", "mean_acc", "realised_acceptance",
+    "median_round_us", "median_draft_build_us", "rounds", "decode_tokens",
+    "all_tokens_matched", "residual_divergence_count", "entry_c", "exit_c",
+    "status", "worker_sha256", "session_commit",
+]
+
+
+def rung2_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
+    mtp = payload["mtp_s_per_tok"]
+    headline = payload.get("e136_c1_candidate_leg_pct")
+    exact = (payload["all_tokens_matched"]
+             and payload["accepted_stream_divergences"] == 0)
+    if headline is None:
+        verdict = "no-contrast"
+    elif not payload["all_arms_witnessed"] or not exact:
+        verdict = "invalid"
+    elif headline >= RUNG2_ADVANCE_PCT:
+        verdict = "local-winner"
+    elif headline > 0.0:
+        verdict = "below-bar"
+    else:
+        verdict = "byte-model-refuted"
+
+    summary = {
+        # Primary. Absolute candidate MTP time is the only quantity the ranked
+        # numerator responds to; the sign is flipped so faster reads positive.
+        "e136_c1_candidate_leg_pct": headline,
+        "e136_realised_acceptance_delta_pp":
+            payload.get("e136_realised_acceptance_delta_pp"),
+        "e136_accepted_stream_divergences":
+            payload["accepted_stream_divergences"],
+        "e136_rung2_verdict": verdict,
+        "e136_rung2_advance_bar_pct": RUNG2_ADVANCE_PCT,
+        "e136_rung2_all_arms_witnessed": payload["all_arms_witnessed"],
+        "e136_rung2_all_tokens_matched": payload["all_tokens_matched"],
+        "e136_rung2_entry_temp_spread_c": payload["entry_temp_spread_c"],
+        "e136_rung2_legs": len(payload["legs"]),
+        "e136_rung2_decode_tokens": payload["legs"][0].get("decode_tokens"),
+        # Absolute times, which lead, and the local ratio, which is a valid
+        # SECOND readout here only because arm C1 changes work confined to the
+        # candidate MTP leg.
+        "e136_rung2_mtp_s_per_tok_off": mtp["off"]["mean"],
+        "e136_rung2_mtp_s_per_tok_on": mtp["on"]["mean"],
+        "e136_rung2_mtp_s_per_tok_sd_off": mtp["off"]["sd"],
+        "e136_rung2_mtp_s_per_tok_sd_on": mtp["on"]["sd"],
+        "e136_rung2_serial_s_per_tok_delta_pct":
+            payload["serial_s_per_tok"].get("delta_pct"),
+        "e136_rung2_local_ratio_delta_pct":
+            payload["speedup"].get("delta_pct"),
+    }
+    for key in ("mean_draft_len", "realised_acceptance", "median_round_us",
+                "median_draft_build_us"):
+        block = payload.get(key, {})
+        if "delta_pct" in block:
+            summary["e136_rung2_%s_off" % key] = block["off"]["mean"]
+            summary["e136_rung2_%s_on" % key] = block["on"]["mean"]
+            summary["e136_rung2_%s_delta_pct" % key] = block["delta_pct"]
+    return summary, {"rung2_legs": table(LEG_COLUMNS, payload["legs"])}
 
 
 def rung0_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
@@ -340,7 +422,7 @@ def table(columns: list[str], rows: list[dict]) -> wandb.Table:
 
 
 BUILDERS = {"0": rung0_summary, "0b": rung0b_summary,
-            "1": rung1_summary}
+            "1": rung1_summary, "2": rung2_summary}
 
 
 def main() -> int:
@@ -358,7 +440,10 @@ def main() -> int:
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
         "harness": "local",
-        "timing_valid": False,
+        # Rung 2 is the only rung that times a decode leg. Its timing is real
+        # but ungated and counterbalanced, so it stays `harness=local` with
+        # both cool-gate fields false.
+        "timing_valid": spec.get("timing_valid", False),
         "host": HOST,
         "base_sha": BASE_SHA,
         "rung": args.rung,
