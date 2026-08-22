@@ -80,6 +80,19 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   harness noise floor: `-0.036 %` round weighted.
 - Exact-token and row-ledger verdict: not applicable. No session ran.
 
+### W&B runs
+
+Group `e118-wide-qmv-metadata-load-instruction-screen`, project
+`wandb-applied-ai-team/qwen38-mlx-challenge-senpai`. Every run carries
+`harness=local`, `cool_gate_passed_real_gate=false`,
+`gate_qualified_for_timing=false` and `official_or_ranked_score=false`.
+
+| Run ID | Name | Contents |
+| --- | --- | --- |
+| [`e118arms1`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118arms1) | `e118-arms` | the 15 timed arms by width and shape, the primary metric, the discriminator, Finding 44, the defect-16 forward-reverse gap and the E111 bias axis |
+| [`e118stat1`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118stat1) | `e118-static-budget` | AIR device loads and shuffles, plus registers, spill bytes and ISA text for `applegpu_g16s` and `applegpu_g17s` at NA 2-5 |
+| [`e118spil1`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e118spil1) | `e118-spill-defect` | the 25 NA=5 exactness failures, each arm against the exact double reference, and the spill-to-exactness join that carries the `z_ballast` control |
+
 ### Primary metric
 
 | Metric | Baseline | Candidate | Delta |
