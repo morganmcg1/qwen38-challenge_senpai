@@ -418,34 +418,88 @@ def patched_header(header: str, name: str) -> str:
 # exactness, without a GPU
 # --------------------------------------------------------------------------
 
+def _sim_pair_crosstalk(p: int) -> list[float]:
+    """Synthetic fault: a pair-packer that leaks between the two lanes of a
+    byte. It is correct whenever at most one nibble of a byte is set, so a
+    one-hot sweep cannot see it. It is the control for the exhaustive sweep."""
+    out = _sim_magic_bf16_pair(p)
+    for half in range(2):
+        byte = (p >> (8 * half)) & 0xFF
+        if (byte & 0xF) and (byte >> 4):
+            out[2 * half + 1] += 1.0
+    return out
+
+
+def _sweep(sim, words) -> tuple[float, int | None]:
+    """Worst absolute error of `sim` over `words`, and the first bad word."""
+    worst = 0.0
+    first_bad = None
+    for packed in words:
+        got = sim(packed)
+        for position in range(4):
+            expected = float((packed >> (4 * position)) & 0xF)
+            error = abs(float(got[position]) - expected)
+            if error > worst:
+                worst = error
+            if error and first_bad is None:
+                first_bad = packed
+    return worst, first_bad
+
+
+ONE_HOT = [value << (4 * position)
+           for value in range(16) for position in range(4)]
+EXHAUSTIVE = range(1 << 16)
+
+
 def exactness() -> int:
-    """Every idiom, every nibble value, every position, against `float(v)`."""
+    """Every idiom against `float(v)` over the complete 16-bit packed domain.
+
+    The nibbles of a packed word are not independent in the pair-packing
+    idioms, so a one-hot sweep is not a proof for them. `packed` is a
+    `uint16_t`, so the whole input domain is only 65536 words and exhaustion
+    is affordable."""
     ok = True
-    print("bit-exactness of each idiom, all 16 values at all 4 positions")
+    print("bit-exactness of each idiom")
+    print("  one-hot domain   %d words" % len(ONE_HOT))
+    print("  exhaustive domain %d words, the complete uint16_t input space"
+          % len(EXHAUSTIVE))
+    print()
+    print("  %-22s %-10s %-10s %s" % ("idiom", "one-hot", "exhaustive",
+                                      "verdict"))
     for name, spec in VARIANTS.items():
         sim = spec["sim"]
         if sim is None and spec["sites"]:
-            print("  %-22s EXACT BY CONSTRUCTION, load width only, no nibble "
-                  "arithmetic to simulate" % name)
+            print("  %-22s %-10s %-10s load width only, no nibble arithmetic"
+                  % (name, "n/a", "n/a"))
             continue
         if sim is None:
-            print("  %-22s SKIPPED, declared not exact" % name)
+            print("  %-22s %-10s %-10s declared not exact"
+                  % (name, "skip", "skip"))
             continue
-        worst = 0.0
-        for value in range(16):
-            for position in range(4):
-                packed = value << (4 * position)
-                got = sim(packed)[position]
-                worst = max(worst, abs(float(got) - float(value)))
-        status = "EXACT" if worst == 0.0 else "NOT EXACT, max abs %g" % worst
-        ok = ok and worst == 0.0
-        print("  %-22s %s" % (name, status))
-    # A positive control: the comparison must be able to fail.
-    broken = [v + 0.5 for v in range(16)]
-    print("  %-22s %s" % ("positive control",
-                          "detected" if any(abs(broken[v] - v) > 0
-                                            for v in range(16))
-                          else "NOT DETECTED, the check is inert"))
+        one_hot, _ = _sweep(sim, ONE_HOT)
+        full, first_bad = _sweep(sim, EXHAUSTIVE)
+        ok = ok and full == 0.0
+        verdict = "EXACT" if full == 0.0 else (
+            "NOT EXACT, max abs %g, first bad word 0x%04x" % (full, first_bad))
+        print("  %-22s %-10s %-10s %s"
+              % (name, "%g" % one_hot, "%g" % full, verdict))
+
+    print()
+    print("  positive controls, the sweep must be able to fail")
+    offset, _ = _sweep(lambda p: [v + 0.5 for v in _sim_mask(p)], ONE_HOT)
+    print("    %-30s one-hot %g   %s"
+          % ("constant offset", offset,
+             "detected" if offset else "NOT DETECTED, the check is inert"))
+    cross_one_hot, _ = _sweep(_sim_pair_crosstalk, ONE_HOT)
+    cross_full, cross_word = _sweep(_sim_pair_crosstalk, EXHAUSTIVE)
+    print("    %-30s one-hot %g   exhaustive %g   %s"
+          % ("pair lane cross-talk", cross_one_hot, cross_full,
+             "detected only by the exhaustive sweep, first bad word 0x%04x"
+             % cross_word if cross_full and not cross_one_hot
+             else "control did not behave as designed"))
+    if cross_one_hot or not cross_full:
+        print("    the cross-talk control is broken, treat the run as invalid")
+        ok = False
     return 0 if ok else 1
 
 
@@ -707,6 +761,23 @@ def report(result: dict) -> None:
 VERDICT_CLASSES = ("int_alu", "convert", "bitcast", "load", "fma")
 
 
+def classify(same_digest: bool, dbytes: int, dreg: int) -> str:
+    """How much a source change actually moved the machine code.
+
+    A digest difference on its own proves nothing. The neutrality control
+    `shipped_lifted` renames the shipped arithmetic without changing it and
+    still lands on a different digest at the same size and register count, so
+    the backend is free to permute code that costs the same.
+    """
+    if same_digest:
+        return "identical, the compiler already emits this, worth exactly 0"
+    if dbytes == 0 and dreg == 0:
+        return "permutation, same size and registers, no evidence of value"
+    if dbytes == 0:
+        return "permutation plus %+d register(s)" % dreg
+    return "size %+d bytes, %+d register(s)" % (dbytes, dreg)
+
+
 def verdict(result: dict) -> None:
     """One table per cell: operation counts and register deltas together.
 
@@ -754,16 +825,24 @@ def verdict(result: dict) -> None:
         base_sha = ref.get(RANKED, {}).get("text_sha8")
         if base_sha is None:
             continue
-        print("      machine-code identity against shipped, %s" % base_sha)
+        base_text = ref[RANKED]["text_bytes"]
+        print("      machine code against shipped, %s, %d text bytes"
+              % (base_sha, base_text))
+        print("      %-22s %9s %7s %7s  %s"
+              % ("variant", "sha", "bytes", "dbytes", "class"))
         for name, row in rows.items():
             if name == "shipped":
                 continue
-            got = row[RANKED]["text_sha8"]
-            same = got == base_sha
-            print("      %-22s %s  %s" % (
-                name, got,
-                "IDENTICAL, the compiler already produced this code"
-                if same else "different, the source change reached the ISA"))
+            cell = row[RANKED]
+            same = cell["text_sha8"] == base_sha
+            dbytes = cell["text_bytes"] - base_text
+            dreg = cell["registers"] - ref[RANKED]["registers"]
+            print("      %-22s %9s %7d %+7d  %s"
+                  % (name, cell["text_sha8"], cell["text_bytes"], dbytes,
+                     classify(same, dbytes, dreg)))
+        print("      `shipped_lifted` is the neutrality control. It is the "
+              "shipped arithmetic renamed, so any class above `permutation` "
+              "means the digest is reading codegen noise, not work.")
 
 
 ENTITY = "wandb-applied-ai-team"
