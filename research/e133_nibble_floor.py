@@ -601,7 +601,8 @@ def base_sha() -> str:
                           check=True).stdout.strip()
 
 
-def run_census(out: pathlib.Path | None, cells, translate: bool) -> int:
+def run_census(out: pathlib.Path | None, cells, translate: bool,
+               wandb: bool = False) -> int:
     header = shipped_header()
     result = {
         "schema_version": 1,
@@ -642,6 +643,9 @@ def run_census(out: pathlib.Path | None, cells, translate: bool) -> int:
             result["variants"][name] = {
                 "note": note, "compiled": True, "cells": rows}
     report(result)
+    if wandb:
+        result["wandb_url"] = log_wandb(result)
+        print("\nW&B %s" % result["wandb_url"])
     if out is not None:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(result, indent=1) + "\n")
@@ -762,6 +766,72 @@ def verdict(result: dict) -> None:
                 if same else "different, the source change reached the ISA"))
 
 
+ENTITY = "wandb-applied-ai-team"
+PROJECT = "qwen38-mlx-challenge-senpai"
+GROUP = "e133-nibble-floor"
+
+
+def log_wandb(result: dict) -> str | None:
+    import wandb
+
+    run = wandb.init(
+        entity=ENTITY, project=PROJECT, group=GROUP, job_type="census",
+        name="e133-f23-load-width-census",
+        config={
+            "experiment": GROUP,
+            "question": ("does the AGX backend already coalesce the four "
+                         "scalar uint16 weight loads and the four scalar "
+                         "bf16-to-float widenings, and what is the register "
+                         "floor of the nibble extraction?"),
+            "harness": "compile_only",
+            "instrument": "xcrun metal-tt, AGX backend, zero GPU seconds",
+            "timing_valid": False,
+            "gate_qualified_for_timing": False,
+            "official_or_ranked_score": False,
+            "no_agx_instruction_printer": True,
+            "decided_by": "machine-code digest of __TEXT,__text",
+            "simdgroup_budget": SIMDGROUP_BUDGET,
+            "cells": result["cells"],
+            "toolchain": result["toolchain"],
+            "base_sha": result["base_sha"],
+            "pr_number": 128,
+        })
+    columns = ["variant", "arch", "na", "rps", "air_machine",
+               "air_int_alu", "air_load", "air_per_output_element",
+               "registers", "spill_bytes", "text_bytes", "text_sha8",
+               "resident_simdgroups", "identical_to_shipped"]
+    data, summary = [], {}
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        rows = {n: e["cells"][key] for n, e in result["variants"].items()
+                if e["compiled"] and key in e["cells"]}
+        for arch in ARCHES:
+            ref = rows.get("shipped", {}).get(arch, {}).get("text_sha8")
+            for name, row in rows.items():
+                cell = row.get(arch)
+                if cell is None:
+                    continue
+                data.append([name, arch, na, rps, row["air"]["machine"],
+                             row["air"]["int_alu"], row["air"]["load"],
+                             row["air_per_output_element"],
+                             cell["registers"], cell["spill_bytes"],
+                             cell["text_bytes"], cell["text_sha8"],
+                             cell["simdgroups_derived"],
+                             cell["text_sha8"] == ref])
+                if arch == RANKED:
+                    summary["%s/na%d/registers" % (name, na)] = \
+                        cell["registers"]
+                    summary["%s/na%d/resident_simdgroups" % (name, na)] = \
+                        cell["simdgroups_derived"]
+                    summary["%s/na%d/identical_to_shipped" % (name, na)] = \
+                        cell["text_sha8"] == ref
+    run.log({"census/rows": wandb.Table(columns=columns, data=data)})
+    run.summary.update(summary)
+    url = run.url
+    run.finish()
+    return url
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -772,6 +842,7 @@ def main() -> int:
     run.add_argument("--out", type=pathlib.Path)
     run.add_argument("--air-only", action="store_true",
                      help="skip metal-tt; AIR statements only")
+    run.add_argument("--wandb", action="store_true")
     run.add_argument("--cell", action="append",
                      help="NA,RPS; repeatable, defaults to the ranked set")
     args = parser.parse_args()
@@ -783,7 +854,7 @@ def main() -> int:
     cells = CELLS
     if args.cell:
         cells = tuple(tuple(int(v) for v in c.split(",")) for c in args.cell)
-    return run_census(args.out, cells, not args.air_only)
+    return run_census(args.out, cells, not args.air_only, args.wandb)
 
 
 if __name__ == "__main__":
