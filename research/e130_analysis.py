@@ -104,7 +104,16 @@ def main() -> int:
     ap.add_argument("--census", type=pathlib.Path, required=True)
     ap.add_argument("--out", type=pathlib.Path, required=True)
     ap.add_argument("--wandb", action="store_true")
+    ap.add_argument("--clean-widths", default="3,6,9",
+                    help="widths whose executed instructions are identical "
+                         "across every ladder rung")
+    ap.add_argument("--run-id", default="e130rung2")
+    ap.add_argument("--run-name", default="e130-rung2-occupancy-response")
+    ap.add_argument("--artifact-name", default="e130-rung2")
     args = ap.parse_args()
+
+    global CLEAN_WIDTHS
+    CLEAN_WIDTHS = tuple(int(w) for w in args.clean_widths.split(","))
 
     timing, census = load(args.timing, args.census)
     cells = collect(timing)
@@ -372,7 +381,7 @@ def main() -> int:
         import wandb
         run = wandb.init(project="qwen38-mlx-challenge-senpai",
                          entity="wandb-applied-ai-team",
-                         id="e130rung2", name="e130-rung2-occupancy-response",
+                         id=args.run_id, name=args.run_name,
                          resume="allow", config={
                              "experiment": "E130",
                              "base_sha": report["base_sha"],
@@ -394,12 +403,12 @@ def main() -> int:
         run.summary.update({
             k: v for k, v in report.items()
             if isinstance(v, (int, float, bool, str)) or v is None})
-        art = wandb.Artifact("e130-rung2", type="analysis")
+        art = wandb.Artifact(args.artifact_name, type="analysis")
         art.add_file(str(args.out))
         art.add_file(str(args.census))
         run.log_artifact(art)
         run.finish()
-        print("logged to W&B run e130rung2")
+        print("logged to W&B run %s" % args.run_id)
     return 0
 
 
