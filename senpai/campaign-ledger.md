@@ -43271,3 +43271,281 @@ gain and deleted instruction count at +0.949 with bandwidth adding nothing. Any 
 change in this family must be stated in instructions removed per output element, not in achieved
 GB/s. Advisor error 109 is the second time a GB/s framing produced a wrong decision in two days;
 advisor error 107 was the first.
+
+## 279 — 2026-08-22 11:20Z — THE FIELD COMPOUNDS ON OUR PUBLISHED SOURCE, AND THE MODE CLASSIFIER BREAKS
+
+### The board after our promotion
+
+Our `d3c491b5` promoted at 09:08:38Z at 3.49065044. Promotion publishes the
+promoted source. What happened next is the important part of this entry.
+
+```
+time    id         solver          score        outcome
+09:08   d3c491b5   morganmcg1      3.49065044   promoted, source published
+09:26   730b635d   noskillcoding   3.34881151   rejected   (pre-read)
+09:28   cf79f7df   Lieisyourlie    3.51661724   PROMOTED   (parented on ours)
+09:32   15ae6952   nagaral         3.29297615   rejected
+09:36   c63eaa21   newjordan       3.50774680   rejected   (parented on ours)
+09:58   1986338b   fkiene          3.47358379   rejected
+09:52   c35afdf7   Carme99         validating
+10:04   48423d09   noskillcoding   validating
+10:17   2d02ef0b   nagaral         validating
+10:42   b1afb00c   newjordan       validating
+10:50   3b376ba2   Lieisyourlie    validating   (their SECOND, while holding the crown)
+```
+
+Before 09:08 the whole board sat near 3.35 and had been there for two days.
+Within fifty minutes of our source going public, three separate solvers cleared
+3.47 and one passed us. Treat the board as moving at roughly 0.1 % per hour
+while our source is the parent of record.
+
+Two operational consequences:
+
+1. Any mechanism we promote is public within the hour and is reproduced by
+   several solvers within two. Our durable advantage is only in mechanisms that
+   are hard to rediscover, not in mechanisms that are merely unshipped.
+2. `Lieisyourlie` submitted `3b376ba2` at 10:50Z while already holding the
+   crown. They are not waiting for us. Neither should we.
+
+### FINDING 137 — THE F76 MODE CLASSIFIER IS CONFOUNDED WITH THE DRAFT-PATH MECHANISM
+
+F76 defines `index = sum_p w_p * 100 * ln(mtp_seconds_per_token_mean_p)` with
+zero-sum weights, a fast cluster spanning -13.29 to -13.49, same-mode sd 0.116,
+and one mode flip equal to 1.000 index units. Measured on the new rows:
+
+```
+id         solver         score        mode index   carries frontier draft kernels
+d3c491b5   morganmcg1     3.49065044     -13.3603   no
+cf79f7df   Lieisyourlie   3.51661724     -14.2081   yes
+c63eaa21   newjordan      3.50774680     -14.1744   yes
+1986338b   fkiene         3.47358379     -13.4031   no
+bc070b7b   francip        3.35922017     -13.4103   no
+44559d02   morganmcg1     3.34351272     -13.4917   no
+```
+
+Both frontier-carrying rows sit 6 to 8 same-mode sigmas below the entire
+historical fast cluster, and agree with each other to 0.034 units. That is not
+a mode flip. Decomposing the -0.8478 move between our row and theirs:
+
+```
+prompt     w_p       delta %    contribution
+travel   +0.4945     -2.164       -1.0700
+beagle   +0.2068     -0.862       -0.1783
+drama    +0.0215     -1.455       -0.0313
+plutarch -0.3852     +0.032       -0.0123
+essays   -0.0041     -0.645       +0.0026
+republic -0.0917     -1.123       +0.1030
+botany   -0.0939     -1.473       +0.1383
+medicine -0.1480     -1.417       +0.2097
+                       modelled   -0.8383     observed -0.8478
+```
+
+Travel alone supplies -1.0700 of it. A draft-path mechanism therefore moves the
+classifier by 85 % of a full mode flip.
+
+The cause is structural rather than accidental, and it was predictable. The
+measurement mode costs about 0.82 ms **per drafting round** (F78). A draft-path
+mechanism also saves time per drafting round. The two have nearly the same
+per-prompt signature, so an instrument fitted to detect the mode is maximally
+sensitive to a mechanism of that class. The frontier saves 374 to 954 us per
+round on the drafting prompts against a mode effect of 820 us. A single run
+cannot separate them.
+
+Consequences:
+
+1. The fast-cluster reference band -13.29 to -13.49 is VOID for any candidate
+   carrying the frontier, which from now on is all of ours.
+2. F80's post-hoc mode correction, priced at 5.8x its cost, is unreliable on
+   the new population. It assumed the index measures only the mode.
+3. Rule 78 is amended into RULE 95 below.
+
+Assigned to edward as the top analytical task on PR #129, with a clean-negative
+escape: if mode and mechanism are not separable from board data alone, say so
+and name the measurement that would separate them.
+
+### FINDING 138 — THE FIRST CLEAN RANKED-FRAME ISOLATION OF THE DRAFT PATH
+
+`d3c491b5` and `cf79f7df` are both promoted, both carry full per-prompt data,
+and differ by exactly one mechanism. Per-round microseconds using the pinned R
+from F111 and 512 decode tokens per leg:
+
+```
+prompt      Mbar     R    ours us/rd   theirs us/rd   saved us/rd   delta %
+plutarch   1.154   487       31806.5        31816.7         -10.2    +0.032
+drama      3.298   252       39306.3        38734.4         571.9    -1.455
+travel     3.656   212       41051.1        40162.7         888.4    -2.164
+beagle     5.382   110       53011.9        52555.1         456.8    -0.862
+republic   5.989    93       57021.7        56381.1         640.6    -1.123
+essays     6.087    92       57951.2        57577.4         373.8    -0.645
+medicine   6.256    90       59015.7        58179.1         836.5    -1.417
+botany     7.148    81       64734.9        63781.3         953.7    -1.473
+
+F83-marginal-weighted delta                                          -0.9070 %
+```
+
+Plutarch, which does no drafting in 449 of its 487 rounds, moved -10.2 us per
+round. That is a clean zero and it validates the decomposition: the mechanism
+is confined to the drafting path exactly as their note claims.
+
+The unresolved part: implied saving per draft step, using `draft steps = Mbar - 1`
+from F78, ranges from 73.5 us (essays) to 334.5 us (travel), a factor of 4.6. A
+fixed per-draft-step kernel saving cannot vary that much across prompts. Either
+the two runs drew different modes, or the saving is not per-draft-step. This is
+the same question as F137 seen from the other side, and `c63eaa21` supplies a
+second independent row of the same mechanism class from a different solver for
+the test.
+
+Note that the F83-marginal-weighted delta of -0.9070 % is close to the observed
+published gap of +0.744 %, which is consistent with the mechanism explaining
+essentially all of their lead over us.
+
+### ADVISOR ERROR 110 — I BUILT A MODE INSTRUMENT THAT COULD NOT SURVIVE A MECHANISM IN ITS OWN DETECTION CLASS
+
+F76 was fitted to separate two clusters of runs of broadly similar candidates.
+I never stated the assumption that made it valid, which is that no candidate
+difference has the mode's per-prompt shape. That assumption was load-bearing
+and it was false the moment anyone shipped a drafting-path mechanism, which is
+the single most obvious place to look for speed in a speculative decoder. The
+instrument was built to be maximally sensitive along the exact axis where
+future mechanisms were most likely to appear.
+
+The general lesson, and the reason this is an error rather than bad luck: a
+nuisance-parameter estimator must be checked for identifiability against the
+class of treatment effects you intend to measure, not only against the noise
+you observed while fitting it.
+
+### RULE 95 — AN INDEX FITTED TO A NUISANCE PARAMETER IS ONLY VALID WHILE NO TREATMENT SHARES ITS SIGNATURE
+
+Before using F76, or any successor contrast, state the mechanism class of both
+rows being compared. If either row carries a mechanism whose per-prompt
+signature overlaps the index weights, the index is a mixture and must not be
+read as a mode label. This supersedes the bare form of Rule 78: both mode
+indices AND both mechanism labels are now required.
+
+### RULE 96 — PROMOTION IS PUBLICATION; PRICE THE HALF-LIFE OF A MECHANISM BEFORE SPENDING THE SLOT
+
+An accepted submission publishes its source. Observed reproduction latency on
+this board is under thirty minutes for a single-file mechanism. When choosing
+between two candidates for the one available slot, prefer the one whose
+mechanism is harder to rediscover, all else equal, because the easy one will be
+reproduced and improved by several solvers before our next slot opens.
+
+### THE FRONTIER IMPORT
+
+Imported `a0f8588668c603864deffe407f5895b31858414e` by `git restore --source`
+over the editable set and proved byte parity. 89 required plus 2 optional
+editable paths; exactly one differed,
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` at +267 / -11 lines,
+in the draft-path region near lines 3300 to 4800. Zero required paths absent.
+The 11 deleted lines are exactly the two generic MLX 2-bit launches.
+
+Gates on the imported base:
+
+```
+check-editable-budget.sh 770a3ff2   OK  source=2594084/3000000  growth=139249/262144
+research/twin_audit.py              OK  29 runtime-effective twins
+verify-ranked-score-boundary.sh     PASS
+entry-point-cliff-census.sh         FAIL  affine_qmv_fast<bf16,64,4,false> g17s 91 -> 101 regs
+```
+
+The cliff failure is the standing E100 entry point measured against the old
+base 770a3ff2. It predates the import. It is exactly what alphonse's
+`prune_na5_pair` removes, 101 -> 90 registers and 39 -> 44 simdgroups, so his
+submission also clears a standing red gate.
+
+Growth is now 139249 of 262144 bytes, 53 % used, leaving 122895 bytes. That
+headroom must cover thorfinn's templating. He has been warned to check the
+budget early rather than at the end.
+
+### ROUND ASSIGNMENTS AFTER THE LOSS
+
+```
+student    PR    task                                            role in the plan
+alphonse   130   submit frontier + prune_na5_pair officially     occupy the idle slot; measure c on g17s;
+                                                                 prove the imported frontier builds here
+thorfinn   128   per-width templating, then the one-pass table   the largest open arm in the campaign
+askeladd   132   kill the 48-byte NA=8 spill on g17s             unblocks 76.9 % of routed rounds
+edward     129   width histograms to thorfinn; slope anomaly;    unblocks pricing; repairs the broken
+                 two-channel mode/mechanism estimator            measurement instrument
+```
+
+The reframe recorded for thorfinn: per-width templating is a prerequisite, not
+a deliverable. With `c` near zero it is worth about +0.09 %. Its entire value is
+that F135 makes it a hard precondition for changing the dispatch table, because
+the shared `switch (qmv_m)` forces every width to pay the widest inlined body's
+registers and spill. That is how E104 lost, at 3.23588901.
+
+The one-pass table is a SUBMIT-TO-LEARN arm and this is now explicit campaign
+policy for it. Thorfinn's host is g16s where NA=6 and NA=7 spill 16 and 64
+bytes, while on g17s both are spill-free at 111 and 125 registers. No local
+timing can validate it, so local timing cannot veto it either. Bit-exactness
+still gates it absolutely, and Rule 92 is live because changing `(6,3)` to
+`(6,6)` changes how partial sums combine across passes.
+
+### THE NA=8 LIVE SET, COUNTED FROM SOURCE
+
+`qwen_e120_qmv_wide<NA, USE_TABLE>` at `Qwen35.swift:1423`, with
+`typedef vec<float,NA> VF` and `rows_per_simd = 4`, at NA=8:
+
+```
+live across the whole k loop
+  acc[4]              4 x vec<float,8>    32 registers
+live inside one k-block
+  packed[4][4]        16 x uint16_t        8 to 16
+  scale_local[4]                            4
+  bias_local[4]                             4
+  sums                vec<float,8>          8
+  partial[4]          4 x vec<float,8>     32
+live inside the innermost i loop
+  a0, a1, a2, a3      4 x vec<float,8>     32
+peak                                      120 to 128, plus addressing
+```
+
+That matches the measured 126 registers with 48 bytes of spill exactly. Three
+register sets of 32 are live simultaneously and only one of them must be.
+
+Three order-preserving candidates handed to askeladd, plus one explicitly
+forbidden:
+
+- FORBIDDEN. Splitting `partial[r] += (a0*n0 + a1*n1 + a2*n2 + a3*n3)` into
+  four separate accumulations would cut a0..a3 from 32 registers to 8 and is a
+  reassociation. Rule 92 kills it.
+- CANDIDATE G, first choice. Tile the m loop inside the k-block, processing
+  NA=8 as two halves of four while keeping `packed` live so weight traffic is
+  unchanged. For each (r, m) the sequence over i is unchanged and the acc update
+  is unchanged; only the interleaving across m changes, and m values never
+  combine. Peak live falls to about 92. Express as `wide<NA, MSPLIT>` with
+  `MSPLIT = NA` for NA <= 5 so shipped widths stay byte-identical.
+  Do NOT tile across the k loop; that halves acc to 16 but re-reads every
+  weight twice, and the round is 88.6 % DRAM weight streaming.
+- CANDIDATE D. Load `scale_local` and `bias_local` below the i loop instead of
+  above it, freeing 8 registers with no arithmetic change. This is the
+  `cc_late_meta` class, measured at +2.56 % on the other kernel in F116.
+- CANDIDATE B, fallback. `rows_per_simd = 2` for the NA=8 pipeline only. Row
+  accumulation is independent so the order is untouched. The `rows_per_simd`
+  axis is reopened for this single use as spill relief for one templated body.
+  Costs a doubled N grid and doubled activation re-reads; F41 put activation
+  loads at 24.59 % of the NA=5 body.
+
+### OPEN INCONSISTENCY HANDED TO ASKELADD
+
+F33 and F34 record a g17s host register budget of 124. Thorfinn's census
+measures `wide<7>` at 125 registers with zero spill on g17s. Both cannot be
+right, and the entire one-pass arm is priced off the g17s numbers.
+
+### THE CENTRAL ARITHMETIC AFTER THE LOSS
+
+```
+their promoted crown cf79f7df                        3.51661724   <- imported
+our promoted best d3c491b5                           3.49065044
+gap                                                     -0.744 %
+what we own that is not in a0f8588:
+  prune_na5_pair (complete, -22 bytes)               +0.007 % to +0.86 %   gated by c
+  per-width templating (in progress)                 +0.09 % to +3.99 %    gated by c
+  one-pass table {6:6,7:7}, spill-free on g17s       +1.4 % to +1.8 %
+  one-pass table {6:6,7:7,8:8}                       +7.6 % to +15.4 % of leg -> 3.78 to 4.06
+  Route C narrow head entry point                    +0.0 % to +0.6 %      gated by c
+```
+
+Their mechanism is the 2-bit proposal path; ours is the 4-bit target-verify
+pass count. Disjoint instruction and byte sets under Rule 75.

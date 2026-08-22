@@ -1,150 +1,119 @@
 # SENPAI Research State
 
-- 2026-08-22 10:40 UTC
-- Most recent research direction from the human researcher team: none since the last brief. The
-  standing direction is unchanged: take and hold the Qwen 3.8 27B native-MTP crown, submit the
-  strongest legitimate candidate autonomously, and never hold a candidate back because of the
-  operator plausibility ceiling.
+- 2026-08-22 11:20Z
 
-## Where the campaign stands
+## Most recent research direction from the human researcher team
 
-WE HOLD THE CROWN. Submission `d3c491b5-902f-4f80-8d33-b7938f980d2d` promoted at
-**3.49065043561149**, source `6f1cd66fc214d4281b37da335e21077c7e9d7ad5`, improving the previous
-crown `bc070b7b` (francip, 3.35922017) by 3.913 %. The candidate is thorfinn's Route B: a
-candidate-owned wide matvec that removes the sums add tree from the target verify path. The
-advisor branch already contains the promoted scored surface.
+None received this round. The campaign is operating autonomously under
+`senpai/program.md`.
 
-We hold six of the eight per-prompt floors. The best composition envelope any rival can build
-from all published per-prompt bests publishes at 3.492374, which is +0.049 % over us. Nobody can
-reach us by composition. Two rivals are already redrawing on our promoted source `6f1cd66f`, so
-the lead erodes only if they compose a new mechanism onto Route B.
+## Where we stand
 
-Our submission slot is FREE. Nine submissions resolved, none in flight.
+We took the Qwen 3.8 27B MTP crown at 09:08Z with `d3c491b5` at **3.49065044**
+and lost it twenty minutes later to `cf79f7df` (`Lieisyourlie`) at
+**3.51661724**. We trail by 0.744 %.
+
+Promotion publishes the promoted source. Within fifty minutes of ours going
+public, three separate solvers cleared 3.47 by compounding on our Route B, and
+five candidates are validating now. The board had been flat near 3.35 for two
+days before that. Assume roughly 0.1 % per hour of frontier movement while our
+source is the parent of record, and assume any mechanism we promote is
+reproduced within the hour.
+
+The rival frontier `a0f8588668c603864deffe407f5895b31858414e` is imported into
+the advisor branch with proved byte parity. Exactly one editable path differed.
+Our submission slot is free.
 
 ## Current research focus
 
-The campaign pivoted this cycle. For most of its life the frontier moved through register and
-occupancy work on the wide matvec. That axis is now measured out, and a much larger one opened.
+**The pass count on the target-verify path is the campaign's largest open arm,
+and it is the one thing on this list that rivals cannot cheaply rediscover.**
 
-**1. THE PASS-COUNT LEVER IS THE LARGEST OPEN ARM, BY AN ORDER OF MAGNITUDE.**
+Everything the field is currently copying lives on the draft-proposal path. Our
+open lever lives on the target-verify path, is disjoint from theirs under
+Rule 75, and requires offline g17s register census work to even see. That
+asymmetry is our only durable advantage, so the round is organised around it.
 
-The shipped dispatch table makes one pass over the weight matrix at M=3,4,5 and TWO passes at
-M=6,7,8 and THREE at M=9. Two students found independently, from a direct microbenchmark and
-from a fit to our own eight ranked receipts, that the extra pass and not the width sets the
-price. The excess over a one-pass line is +21.4 % at M=6, +25.4 % at M=7 and +28.9 % at M=8, and
-M=8 is 76.9 % of routed rounds. A one-pass table is worth 7.6 % to 15.4 % of the leg and would
-publish between 3.76 and 4.09.
+The shipped dispatch table runs two verify passes at M=6, 7 and 8 and three at
+M=9. Fitted from our own ranked receipts, the excess over the one-pass line is
++21.4 %, +25.4 % and +28.9 % at M=6, 7 and 8. M=8 alone is 76.9 % of routed
+rounds. Collapsing all three is worth +7.6 % to +15.4 % of the leg, which
+composes onto 3.51662 as a published score between 3.78 and 4.06.
 
-A cross-solver contrast confirms the mechanism. The board's fitted cost curve breaks at M=5 and
-ours breaks at M=6, and that is exactly the width where our table differs from the organizer
-default.
+Three things gate it, and one student owns each:
 
-**2. THE BLOCKER IS SPILL IN THE SHARED SWITCH, AND TEMPLATING REMOVES IT.**
+1. **Per-width templating** (thorfinn, PR #128). The shared `switch (qmv_m)`
+   inlines all seven bodies into one Metal function, so the register allocator
+   must satisfy the widest. Changing the table inside it reproduces E104, which
+   scored 3.23588901. Templating is a prerequisite, not a deliverable: with the
+   residency coefficient near zero it is worth about +0.09 % on its own.
+2. **The NA=8 register spill** (askeladd, PR #132). `wide<8>` is 126 registers
+   with 48 bytes of spill on g17s. NA=6 and NA=7 are already spill-free. Until
+   the spill goes, the arm is worth +1.8 % instead of +7.6 % to +15.4 %.
+3. **The tier-2 slope anomaly** (edward, PR #129). The fitted in-segment slope
+   above M=5 is 1.82 times the slope below it, which the cost model forbids.
+   Every number in the bracket above depends on that extrapolation.
 
-The prior stop-list entry rested on E104, which priced collapsing M=6,7,8 at -16.5 %, -31.2 % and
--50.9 % ranked with a real receipt behind it. That entry is now explained. The Route B entry
-point emits ONE Metal function that inlines every width body behind a switch, so the register
-allocator must satisfy the widest inlined body. One-pass-everywhere in a shared switch measures
-126 registers with 160 BYTES OF SPILL on the ranked architecture. E104 measured the spill step,
-not the pass count.
+Alphonse (PR #130) is submitting `frontier + prune_na5_pair` now. The arm is
+small, worth +0.007 % to +0.86 %, but the submission is correct for three
+reasons that are not about its score: the slot is idle while five rivals
+validate; it is the only way to measure the residency coefficient `c` on the
+ranked architecture, which gates roughly +4 % of downstream work; and it proves
+the imported frontier builds and passes exactness in our tree before we stack
+the pass-count arm on it.
 
-Per-width templating is therefore a hard prerequisite, not an optimisation. It is also a
-standalone bit-exact candidate worth +10.18 % residency across 88 % of the round, using only
-three pipelines, and it is the only work item that is both immediately shippable and required by
-the bigger arm.
+## A measurement instrument broke this round
 
-**3. THE RESIDENCY COEFFICIENT IS MEASURED NULL, WHICH CHANGES HOW WE PRICE EVERYTHING.**
+The F76 mode classifier no longer separates the measurement mode from a
+draft-path mechanism. Both frontier-carrying rows read 6 to 8 same-mode sigmas
+below the entire historical fast cluster, driven almost entirely by travel.
+The cause is structural: the mode costs about 0.82 ms per drafting round and a
+draft-path mechanism saves time per drafting round, so an instrument fitted to
+detect one is maximally sensitive to the other.
 
-Two students, two independent designs, both return a residency coefficient indistinguishable from
-zero and far below the kill gate. The modelled 0.445 that drove several recent priorities is dead
-as a point estimate. This is advisor error 105. Consequences: register-only arms are cheap
-insurance rather than levers; the entry-point cliff gate is a register instrument and not a time
-instrument; and an arm that loses residency while deleting real work should usually proceed.
+This voids the fast-cluster reference band for every candidate we will submit
+from now on, and it makes F80's post-hoc mode correction unreliable. Edward
+owns the repair. A clean negative is acceptable: if mode and mechanism are not
+separable from board data, we need that stated plus the measurement that would
+separate them.
 
-The local host cannot settle the question, because it is memory-saturated at M=1,2,3 and
-ALU-bound at M=6,9, and a null is what both regimes predict. Three receipts at very different
-leverage (12.82 % on a small share, 10.18 % on 88 % of the round, 76.92 % on the head path) will
-identify the ranked coefficient far better than any local ladder.
-
-**4. THE ROOFLINE FRAMING IS REFUTED AND REPLACED.**
-
-The 542.8 GB/s "M5 ceiling" is a pre-E100 achieved rate computed with double-counted bytes, and
-the 2.8x headroom built on it is algebraically two times a ratio of round times with the
-bandwidth cancelled out. Advisor error 107. The correct instrument is within-segment inflation:
-inside a fixed pass count the bytes are constant, so ranked M=1 to M=4 inflating by 38.2 % and
-M=6 to M=8 by 23.9 % are pure non-byte work. Build on 19 to 28 % envelopes, never on 2.8x.
-
-**5. `quantized.h` IS EXHAUSTED FOR IN-PLACE BIT-EXACT GAINS.**
-
-Exactly one class of the priced instruction census survives as a candidate-owned removal, and
-Route B already deletes it. Everything else is shipped, forbidden by the accumulation-order wall,
-or the actual work. Future kernel value must come from the Route B custom-kernel surface, not
-from editing the vendored kernel in place.
-
-## Live assignments
-
-| PR | student | topic | state |
-|---|---|---|---|
-| #128 | thorfinn | Route B per-width templating, then the one-pass table | WIP. Rung 2-lite refuted and reverted. Templating first, table second. |
-| #129 | edward | ranked cost curve and depth scheduling | WIP. Estimator axis closed. Next: price the templating and one-pass arms on our own curve, and resolve the tier-2 slope anomaly. |
-| #130 | alphonse | `prune_na5_pair` entry-point register diet | Revision r2. Awaiting an official submission and receipt. |
-| #131 | askeladd | entry-point census and the cliff gate | Terminal, succeeded, merged. Next: Route C. |
+The general lesson is recorded as Rule 95. A nuisance-parameter estimator must
+be checked for identifiability against the class of treatment effects you
+intend to measure, not only against the noise present while fitting it.
 
 ## Potential next research directions
 
-**Immediate, already assigned or about to be.**
+**Near term, already owned.** Land the one-pass table. Add `(8,8)` the moment
+askeladd clears the spill. Census NA=9 while he is there; if the same mechanism
+clears it we can retire the last multi-pass width entirely.
 
-1. Get `qwen_e120_qmv_wide<8>` under the ranked register boundary. It currently spills 48 bytes
-   and carries 18.6 of the 20.3 points of the one-pass prize. This is the single highest-value
-   engineering task open. Report the spill site from the ISA, not the byte count, and census the
-   no-table arm.
-2. Ship per-width templating with a proven warmup gate, measure it alone, then build the
-   `{6:6,7:7}` spill-free table on top of it, then attempt `{6:6,7:7,8:8}`.
-3. Route C: a narrow custom entry point for the head's `ntg.x == 1` projections, which today pay
-   a 101-register allocation to run a 57-register body. +76.92 % residency on the head path, a
-   real submitted-surface candidate, and a third leverage point for the residency coefficient.
-4. Resolve the tier-2 slope anomaly. The fitted marginal cost per row is 1.8x higher in the
-   two-pass regime on both our curve and the board curve, which the pass-count model does not
-   predict. Either the model is incomplete or the piecewise fit is ill-conditioned in the slopes.
-   This must be settled before the one-pass arms are priced from those slopes.
+**Route C, unowned and ready.** Every steady-state head projection launches at
+`ntg.x == 1`, misses both switches in `affine_qmv_fast`, and runs a 57-register
+body inside a function that allocated 101. That is +76.92 % g17s residency
+across 31.44 dispatches per round. A narrow kernel holding only `qmv_fast_impl`,
+dispatched from Swift, captures it. One flagged inconsistency must be settled
+first: the 232.96 MB/step head byte count disagrees with the measured ranked
+head time by about a factor of four, probably because the byte law used total
+artifact bytes rather than the 59.0 MB the readout actually streams.
 
-**Near term, unowned.**
+**Head weight quality, the largest unexploited pool.** Declared head accuracy
+is 92.31 % against 93.13 % for `master-bf16`, a 0.82 point gap worth about
++1.8 % ranked. That is 39 times the entire draft-readout approximation pool,
+which the acceptance-exchange law caps at +0.046 %. Shipping full bf16 loses on
+bytes at -0.68 %, so the question is whether concentrated precision islands on
+the damaged tensors beat the uniform line by the required 1.38 times. The
+decisive first step is offline and needs no GPU: decompose the 0.82 points by
+tensor on the E124 median-regime corpus. Existing islands cover q, k and v only,
+and K and V are already fully bf16, so the gap lives in uncovered tensors.
 
-5. The scheduler-discrimination axis. The oracle depth schedule is worth +8.52 % on our own curve
-   with 8 of 8 prompts positive, while every implementable estimator arm is negative. The pooled
-   AUC of the top-2 margin is 0.5109, so the discrimination signal is NOT in the margin.
-   Enumerate where else it could be: hidden-state norms, head-chain agreement, position in the
-   round, per-layer residual magnitudes, entropy of the shortlist scores.
-6. Concentrated bf16 precision islands on the head tensors that carry the requantization damage.
-   The declared head loses 0.82 acceptance points against the bf16 master, worth about +1.8 %
-   ranked, which is 39x the whole draft-readout pool. Shipping the full master loses 0.68 %
-   because it adds 1.354x the head bytes; a concentrated set wins if the recovery-per-byte curve
-   beats the uniform line by 1.38x. The decisive screen is offline and needs no GPU: decompose
-   the 0.82 points by tensor.
-7. C1, the sign-sketch low-rank first pass on the draft readout, +0.23 % to +0.34 % ranked,
-   designed and unowned.
-8. C5, pad the centroid table from 12,292 to 12,296 rows. Askeladd confirmed the mechanism:
-   `12292 % 8 == 4` fails the fast-path gate, and 12,296 clears it. Three lines, bit-exact on
-   proposals, +0.03 %. A rider on any draft-path PR, never a standalone assignment.
-9. P5, stale-suffix recycling after a reject. Legal, de-prioritised, and its reopener is a
-   zero-GPU trace measurement showing stale-suffix acceptance above 0.5 at position 1.
+**C1 sign-sketch readout**, designed and unowned, +0.23 % to +0.34 % ranked.
 
-**Structural, after the next promotion.**
+**The within-segment inflation instrument.** With the roofline framing refuted,
+the correct measure of remaining headroom is time growth at constant bytes
+inside a fixed pass count: +38.2 % from M=1 to M=4, and +23.9 % from M=6 to
+M=8. Build future pricing on 19 % to 28 %, never on the old 2.8 times figure.
 
-10. Cleanup PR: delete the dead `qkv(_:)` island fast path, the dead E121 code, the research-only
-    `Qwen35IslandArm` selector, and the now-dead `bits == 2` affine-2 readout branch, which
-    censuses as never dispatched.
-11. Re-rank all 37 E87 decision cells with the corrected acceptance coefficient of 203.
-
-## Standing constraints that shape every direction
-
-- Bit-exactness against the hidden serial token stream is absolute. One character of
-  reassociation once moved declared top-two row evidence at 52 of 64 positions while the local
-  parity line stayed green. A local parity line cannot clear an accumulation-order change.
-- The local host is `applegpu_g16s` and the ranked host is `applegpu_g17s`. A register or
-  occupancy closure decided on the local host is void as evidence about the ranked host, and the
-  register delta has already been observed to invert sign across the two.
-- Only five of the eight ranked prompts carry any marginal weight, and beagle alone carries
-  0.4862. Weight every price per prompt, never by the local histogram.
-- The operator plausibility ceiling of 5.0 is not a target and never a reason to hold a
-  candidate.
+**Strategic.** Prefer mechanisms that are hard to rediscover. The board has
+demonstrated it will reproduce a single-file mechanism within thirty minutes of
+publication, so a mechanism's value to us is its gain multiplied by the time we
+hold it exclusively.
