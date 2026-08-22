@@ -1,145 +1,134 @@
 # SENPAI Research State
 
-- 2026-08-22 13:05Z
+- **2026-08-22, ~14:00 UTC.** Advisor base
+  `83e07638b78b562112843b3fbc2325a345bd6232` (Merge PR #129, edward E128).
+  Campaign contract base `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`. Organizer
+  `upstream/main` `c0dbec051c58bccf5435ee1e1e5b01271dc7e179`. Ledger through
+  `## 283`.
 
-## Most recent research direction from the human researcher team
+- **Most recent human research direction.** None new this generation. The
+  standing direction remains the one in `senpai/program.md`: maximise the
+  official decode score, treat the plausibility ceiling as an administrative
+  gate rather than a target, and submit the strongest legitimate candidate
+  autonomously.
 
-None received this cycle. The campaign runs autonomously under
-`senpai/program.md`.
+---
 
-## Where the campaign actually stands
+## Where the campaign stands
 
-**We own the second-fastest candidate on the board. We lost the crown to the
-pinned serial numerator, not to a rival mechanism.**
+We hold one promoted row, `d3c491b5` at **3.49065044**. The live crown is
+`48423d09` (noskillcoding) at **3.51845338**.
 
-Finding 153 (ledger 282) recomputed every board row with complete per-prompt
-official metrics (n = 806) on a **common serial denominator**. The seven-row
-frontier cluster — every row within `0.30 %` mean absolute candidate-leg
-difference, therefore one tree family in one runner state by Rule 98 — ranks
-like this on candidate merit:
+The most important thing we learned this generation is that **the published
+median is a bad instrument and we were reading our own position wrong**.
 
-```
-rank  common-denominator   published    id         solver          Yukon
-  1        3.525618        3.517689   3b376ba2   Lieisyourlie    rejected
-  2        3.521408        3.512706   0c6191b7   morganmcg1      rejected   <- OURS
-  3        3.520417        3.516617   cf79f7df   Lieisyourlie    accepted
-  4        3.518779        3.512449   dd3c1ff7   Lieisyourlie    rejected
-  5        3.518453        3.518453   48423d09   noskillcoding   ACCEPTED = crown
-  6        3.518057        3.515941   390ec878   newjordan       rejected
-  7        3.517655        3.507747   c63eaa21   newjordan       rejected
-```
+- **FINDING 153.** On a common denominator, our rejected `0c6191b7` is the
+  second-fastest candidate in the seven-row frontier cluster, and it beat the
+  crown's candidate leg by +0.0839 %. We lost the crown to the pinned serial
+  NUMERATOR, not to a rival mechanism. The crown is rank 5 of 7 on merit.
+  Instrument: `research/common_denominator.py --anchor <live crown>`.
+- **FINDING 154.** Within one classified runner state, the 8-prompt mean of
+  `mtp_seconds_per_token_mean` is a **5.17x sharper** instrument than the
+  published median: noise se 0.0187 % against 0.0967 %. On that instrument our
+  row beats the crown at **z = +3.88** where the published median read
+  **z = -1.65**. Same two runs, opposite signs. Rule 59's ranked bar drops to
+  about **0.053 %**.
+- **FINDING 152.** A two-state runner lottery worth about 930 us per drafting
+  round, roughly 1.15 % of the published median, sits on top of every receipt.
+  It is not the GPU clock (alphonse rung 8b, ICC +0.8242, p = 0.00005). It is
+  the wired residency ticket, under-sized by construction.
 
-The crown is rank 5 of 7 on merit. It drew the slowest serial legs.
+The practical consequence: **we do not need luck, we need one of the three
+in-flight mechanisms to land, and we can now read the result at one twentieth of
+the old noise floor.**
 
-## The two noise terms that now govern every decision
+---
 
-```
-serial numerator lottery, within one state     sd 0.0967 %   Finding 153
-candidate-leg run noise, within one state      sd 0.0735 %   Finding 153
-runner state term, three levels                up to 2.3 %   Finding 152
-```
+## Current focus: three mechanisms in flight, one axis closed by proof
 
-**Finding 152** identifies the state: one step is `930.9 us` per drafting round,
-which is one extra full DRAM traversal of the 427,742,600-byte pinned proposal
-head at `459.5 GB/s`, matching Finding 143's ranked `462.2 GB/s` to `0.59 %`.
-The cause is in our own source. `Qwen36MTPBlockSession.swift:212-213` sizes the
-wired residency ticket at the live post-warm footprint plus a `64 MiB` slack,
-and then `143.75` to `215.75 MiB` of KV, GDN recurrent state, GDN conv state and
-head history KV allocate on top of it. The head is the last large object loaded,
-so it sits at the tail of allocation-ordered wiring and falls out first.
+### 1. Pass-count collapse in the wide QMV — the campaign's biggest lever
+`{6:6, 7:7}` at `rows_per_simd = 4`, on askeladd's D_S body, behind per-width
+templating. Thorfinn, PR #128, **authorised to submit and minutes away**.
+Bit-exact by F148 and confirmed by an eight-leg width gate at 84 rows per leg
+with `max_abs_diff = 0`. Four pre-registered predictions span **-8.6 % to
++0.05 %**; my band is **-3 % to -9 %, central -5 %**. Two students' censuses and
+one ranked cross-sectional fit are about 25 sigma apart on this question, so the
+receipt discriminates whatever it says.
 
-**Finding 153** shows what is underneath the state term. Removing the state term
-takes the ranked runner from a `2.3 %`-resolution instrument to a `0.20 %`-
-resolution one. That is the largest measurement improvement available and it is
-one integer: `wiredZHDefaultSlackMB` `64` to `512`.
+### 2. The wired residency ticket — eliminate the runner-state lottery
+`wiredZHDefaultSlackMB` 64 to 512. Alphonse, PR #130. Measured post-sizing
+growth **218.71 MiB** against 64 MiB of slack, exceeded in all seven worker
+processes by 3.07x to 3.42x, plus a page-rounding tax of 34.8 to 69.6 MiB over
+4,454 live buffers. True floor **253.51 to 288.30 MiB**. Expected value
+**+0.38 %**, realised as variance elimination rather than mean speedup, so the
+ranked test is the state classification of the next three receipts. Open
+mechanism question: his greedy-hash-order admission story predicts a 2.4-2.6 %
+slow rate against an observed 33-50 %, a 13-21x gap. A zero-timing local probe
+of `unwired_set_` at 20 starts per arm settles it today.
 
-Neither finding licenses re-rolling. Resubmitting a tree to chase a serial draw
-is a duplicate submission and stays forbidden under Finding 79 and Rule 72. The
-answer to a `0.084 %` merit lead inside a `0.19 %` band is to make the lead
-`1 %` or `10 %`.
+### 3. Discrimination, not price, in the depth scheduler
+Edward, PR #134. **FINDING 155 closes the depth-PRICE axis with a proof**: the
+shipped `price.marginal` vector equals our fitted ranked cost curve, normalised,
+to four significant figures on all eight entries. That explains why all nineteen
+E128 price arms lost and why the F9 corrected price moved zero prompts. What
+remains is the **+8.52 % oracle discrimination gap**. The missing thing is
+information, not functional form: `Qwen36MTPBlockSession.swift:1490-1495`
+already computes per-row top-2 evidence for every verified row and the scheduler
+throws all of it away except the tail. Zero GPU cost, already in his file, same
+legality class as the shipped `pendingTop2` use. Score every arm **per
+boundary**, because the depth-4 marginal is 4.05x the base.
 
-## Which prompts the score actually pays for
+### 4. Sketch-first draft readout (C1) — the largest single unexploited number
+Askeladd, PR #133, offline screen only, no scored-surface change. Removes
+**53.06 MB of the 323.59 MB per-draft-step byte budget**, worth **+0.90 % to
++1.47 %, central +1.15 %**, with 13x to 25x headroom against the break-even miss
+rate. Kill line is a worst-stratum net miss rate above 3.0e-3.
 
-At n = 806, the prompts occupying median order statistics 4 and 5:
-
-```
-  beagle      789 / 806   97.9 %      mean M 5.38, per-step p 0.9341
-  medicine    348 / 806   43.2 %      mean M 6.26
-  essays      199 / 806   24.7 %      mean M 6.09
-  republic    168 / 806   20.8 %      mean M 5.99
-  botany       92 / 806   11.4 %      mean M 7.15
-  travel        8 / 806    1.0 %
-  plutarch      6 / 806    0.7 %
-  drama         2 / 806    0.2 %
-```
-
-`published = 0.5 * raw_beagle + 0.5 * min(medicine, essays, republic, botany)`.
-beagle alone carries half the score and has the lowest acceptance of the five
-drafting prompts. The second half is a `min`, so it is pessimistic: helping
-three of four and hurting the fourth may move nothing.
-
-**The ranked mass that pays sits at `M = 5` to `7`.** The local benchfixture
-runs at mean width `7.36` with about `77 %` of its mass at `M = 8` and is the
-wrong frame for pricing width work.
-
-## Current research focus
-
-1. **Collapse the multi-pass QMV table at the widths that carry the ranked
-   median.** Finding 151 shows the adverse reading of the one-pass arm came
-   entirely from dropping `rows_per_simd` 4 to 2 to protect registers. At
-   `RPS = 4` the arm is `-2.0506` statements per output element at
-   `{6:6, 7:7}`, which is `-12.55 %` of QMV issue and `-10.97 %` of the leg.
-   Per-width templating is a hard prerequisite and is itself free upside
-   bounded below by zero (`+9.18 %` g17s residency, zero statement change).
-   Askeladd's D_S code-motion patch clears NA=7 to `118` registers and `0`
-   spill. Owner thorfinn, PR #128.
-
-2. **Remove the runner state term.** Measure post-sizing allocation growth, then
-   raise the residency slack. Owner alphonse, PR #130.
-
-3. **Decide C1, the sketch-first draft readout.** It removes `53.06 MB` of the
-   `323.59 MB` draft step and about `99.3 %` of the readout stage's instruction
-   issue, and is priced at `+0.90 %` to `+1.47 %` ranked, central `+1.15 %`. It
-   wins under both the byte model and the instruction model. The offline
-   falsifier is **not** free: the 18,092-sample hidden-state corpus is not on
-   the advisor host and recapture costs one to two hours of exclusive
-   resident-model GPU time. Owner askeladd, PR #133.
-
-4. **Get the ranked per-prompt width histograms.** They are the only thing that
-   settles the frame conflict between askeladd's `-2.6 %` local price and the
-   `-12.55 %` ranked price for `{6:6,7:7}`, and they gate the order in which
-   thorfinn ships his two receipts. Owner edward, PR #129.
+---
 
 ## Potential next research directions
 
-- **C2, quantize the bf16 precision islands to affine-4 g64.** `22.61 MB` per
-  draft step, `+0.38 %` to `+0.45 %`. Reopened: the E82 blocker was a power
-  failure, not a result. Unowned.
-- **Route C, reach the `qmv_fast_impl` body at a lower allocated register
-  count.** Prefer askeladd's C2 form, the shipped `qwen_e120_qmv_wide<1,false>`
-  at 56 registers and 70 derived simdgroups, which needs no new kernel text.
-  Rider only; Finding 149 prices the residency-only channel at about zero.
-- **`{8:8}` as a rider behind `{6:6,7:7}`.** Real, and askeladd proved it beats
-  two passes of `wide<4>` by `9.25 %` to `16.62 %` even at the harshest spill
-  charge, but it earns most of that on prompts with near-zero ranked weight.
-- **The `min` structure of the second median carrier.** Because half the score
-  is `min(medicine, essays, republic, botany)`, an arm that lifts the current
-  worst of those four is worth more than an arm that lifts the mean. Nobody has
-  looked at whether the identity of that argmin is stable across runs.
-- **The beagle depth schedule specifically.** beagle carries `97.9 %` of the
-  median at the lowest acceptance of the five. E128 found the shipped flat
-  `0.18` threshold optimal on the eight-prompt aggregate curve; it has not been
-  tested against beagle alone with the `costModelDepth` fixed-round-cost term
-  that Finding 152 implies is missing.
-- **A stale-suffix recycling trace (O3).** Legal; the reopener is a zero-GPU
-  trace showing stale-suffix acceptance above `0.5` at position 1.
+**Ready to assign to the next free student.**
 
-## Closed this cycle
+1. **C2, precision-island quantization.** Quantize the bf16 precision islands to
+   affine-4 g64; removes 22.61 MB per draft step, worth **+0.38 % to +0.45 %**.
+   Reopened and unowned. Needs `Qwen35.swift`, so it schedules after E129 lands.
+2. **A cleanup PR after receipt 1 merges.** Prune stale experiment flags and
+   dead code paths from the Route B dispatch table and the E120 arm switches.
+   Deletion is the default; the winning behaviour becomes the only main path.
+3. **The `qwen_e120_qmv_wide<8,8>` rider.** Askeladd's compile-only model says
+   one pass of `wide<8>` beats two passes of `wide<4>` by 9.25-16.62 % on the
+   shipped RPS=4 body even at the harshest spill charge, and D_S removes the
+   spill sensitivity. It is the rider behind `{6:6, 7:7}`, not the prize, because
+   the ranked mass that pays sits at M = 5-7.
 
-The qat-q4 head declaration (advisor error 114: priced from a non-significant
-acceptance delta; it is `2.7 %` to `3.4 %` slower per token and has no external
-identity). C4, the probe-fraction reduction, retired because C1 inverts its
-gradient. C5, centroid-table padding, dead because the imported kernel handles
-the tail through `n_valid`. `rows_per_simd = 2` as spill relief, because
-candidate B is worse than doing nothing. Deleting `case 9`, because
-`Qwen35.swift:1699` routes `3...9` with `default: break`.
+**Themes worth opening once a slot frees.**
+
+4. **Shortlist-score entropy as a scheduler input.** Already resident in
+   threadgroup memory at `Qwen35.swift:3716` at approximately zero cost. Edward's
+   per-position AUC ranking in the paying acceptance band puts margin first at
+   0.8763; entropy has never been measured and is the only cheap signal left
+   that is not a transform of the ones already used.
+5. **A censoring-aware reach estimator.** F112 shows the shipped reach estimator
+   is biased low by 9-24 % and no E128 arm tested the censoring correction.
+6. **The head's own dispatch count.** Rung 0b measured 31.44 head projections
+   per round at `ntg.x == 1`, all falling through to `qmv_fast_impl<T,64,4>` at
+   57 registers. Nobody has asked whether that dispatch count can be reduced by
+   batching, which the `Kernel Contracts` result (2604.22032) claims is 3-17x
+   faster on M5 for exactly this shape class.
+7. **A second, independent read of the runner state.** If alphonse's residency
+   story is refuted by his own 20-start probe, the state has no explanation and
+   it is worth 1.15 % of every receipt. That would become the top priority.
+
+**Standing methodological commitments.**
+
+- Read every ranked receipt with the FINDING 154 instrument, after classifying
+  its state with `research/common_denominator.py` and `research/cluster3.py`.
+  Never decide from the published median (Rule 63, Rule 100).
+- Every build or worker witness needs a demonstrated failing polarity on a real
+  commit (Rule 101). A witness that cannot fail is inventory, not a gate.
+- Price in instructions removed per output element, never in bandwidth, for
+  anything in the QMV family (Rule 94).
+- Keep the submission slot moving. FACT 10 allows exactly one in-flight
+  submission and validation runs 42-130 minutes, so the queue is the scarcest
+  resource in the campaign after GPU time.

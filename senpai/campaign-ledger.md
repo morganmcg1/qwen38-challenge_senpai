@@ -44843,3 +44843,813 @@ operator plausibility gate 5.0            never a reason to hold a candidate
 
 Three of those arms clear the 0.0967 % noise floor by 4x to 113x. The campaign
 does not need the lottery; it needs one of them to land.
+
+## 283 — FINDING 154, FINDING 155, RULE 101, HARNESS DEFECT 32, THE E128 MERGE, AND THE 25-SIGMA RULING
+
+Date: 2026-08-22, advisor base `83e07638b78b562112843b3fbc2325a345bd6232`
+(Merge PR #129 = edward E128). Campaign main `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`
+unchanged. Organizer `upstream/main` `c0dbec051c58bccf5435ee1e1e5b01271dc7e179`.
+
+Four students busy: thorfinn #128 (E129 receipt 1, authorised to submit),
+alphonse #130 r2 (E130 rung 10), askeladd #133 (E133 C1 offline screen),
+edward #134 (E134 oracle discrimination gap, new this section).
+
+---
+
+### 283.1 — FINDING 155: THE SHIPPED DEPTH PRICE **IS** OUR RANKED COST CURVE
+
+Edward fitted the ranked round cost from promoted receipts, with no reference to
+the scheduler source:
+
+```
+round_us(M) = 27894.3 + 3388.3 M   for M < 6
+round_us(M) = 21541.1 + 6167.5 M   for M >= 6
+round_us(M=1) = 31282.6
+```
+
+Divide each per-depth marginal of that fitted curve by `round_us(M=1)` and
+compare against the shipped `price.marginal` vector in
+`Qwen36MTPBlockSession.swift`:
+
+```
+ d   M->M+1     marginal us    /round(1)    shipped   ratio
+ 0   1->2         3388.3       0.108313     0.1083   1.0001
+ 1   2->3         3388.3       0.108313     0.1083   1.0001
+ 2   3->4         3388.3       0.108313     0.1083   1.0001
+ 3   4->5         3388.3       0.108313     0.1083   1.0001
+ 4   5->6        13710.3       0.438272     0.4383   0.9999
+ 5   6->7         6167.5       0.197154     0.1972   0.9998
+ 6   7->8         6167.5       0.197154     0.1972   0.9998
+ 7   8->9         6167.5       0.197154     0.1972   0.9998
+```
+
+All eight entries agree to four significant figures.
+
+**The depth-price axis is therefore CLOSED WITH A PROOF, not with a null.** The
+shipped price vector already is the ranked cost curve, normalised. This is the
+single explanation for two separate results that had no explanation before:
+
+1. All nineteen of edward's E128 price arms lost against `ship`. They lost
+   because `ship` already carries the correct price and every arm perturbs it
+   away from the truth.
+2. Edward's F9 corrected price, derived from the per-drafting-round slow-state
+   term, moved **zero prompts** and produced a ranked median delta of exactly
+   `+0.00000000` across three curves. A correction to an already-correct vector
+   cannot move a decision.
+
+**The depth-4 cliff.** The `d = 4` marginal is `0.4383`, which is `4.05x` the
+base `0.1083`. The cause is the `M = 5 -> M = 6` step costing 13,710 us against
+a 3,388 us local slope, that is, the pass-count break. Operational consequence:
+
+> **A wrong depth decision at the depth-4 boundary costs about four times a
+> wrong decision at any boundary below it. Score every discrimination arm PER
+> BOUNDARY, weighted by F83, and headline the depth-4 boundary.**
+
+This is now the design constraint on E134.
+
+---
+
+### 283.2 — FINDING 154: THE 8-PROMPT CANDIDATE MEAN IS A 5.17x SHARPER RANKED INSTRUMENT
+
+Tool `_advisor_scratch/f154.py`, run against the seven-row frontier cluster
+identified by `research/common_denominator.py --anchor 48423d09`.
+
+Variance decomposition of the two legs, expressed as percentages of the leg
+mean, computed within one classified runner state:
+
+```
+                total sd    run-level sd   within-run per-prompt sd   se of the 8-prompt mean
+SERIAL leg      0.1541 %      0.0315 %             0.1509 %                  0.0533 %
+CANDIDATE leg   0.0707 %      0.0470 %             0.0529 %                  0.0187 %
+```
+
+Cluster-relative candidate-leg 8-prompt means, negative meaning faster, with the
+F83-weighted figure alongside:
+
+```
+   8-prompt   F83-wtd  id         solver           published  status
+    -0.0742   -0.0661  0c6191b7   morganmcg1        3.512706  rejected  <== OURS
+    -0.0703   -0.1275  3b376ba2   Lieisyourlie      3.517689  rejected
+    +0.0097   -0.0060  cf79f7df   Lieisyourlie      3.516617  accepted
+    +0.0249   +0.0372  dd3c1ff7   Lieisyourlie      3.512449  rejected
+    +0.0285   +0.0475  48423d09   noskillcoding     3.518453  accepted  <== CROWN
+    +0.0320   +0.0658  c63eaa21   newjordan         3.507747  rejected
+    +0.0494   +0.0491  390ec878   newjordan         3.515941  rejected
+```
+
+Our `0c6191b7` against the crown `48423d09` reads **+0.1027 % at z = +3.88** on
+this instrument. The published median read the same pair at **z = -1.65**. Same
+two runs, opposite signs, because the published median carries the pinned serial
+leg's noise and the candidate mean does not.
+
+```
+published median, within-state noise sd  0.0967 %   2 sigma 0.1934 %
+8-prompt mean candidate leg, noise se    0.0187 %   2 sigma 0.0374 %
+sharpening factor                        5.17 x
+```
+
+**Three caveats that travel with the number.**
+
+- `0.0187 %` is an UPPER bound on the noise, because it still contains any
+  tree-by-prompt interaction. The true instrument is at least this sharp.
+- It is valid ONLY within one classified runner state. Condition on the F152
+  state labels first, using `research/common_denominator.py` and
+  `research/cluster3.py`. Across states the instrument is meaningless.
+- Use the unweighted 8-prompt mean for DETECTION and the F83 weights for
+  PRICING. They disagree in sign on `3b376ba2` and `cf79f7df`, which is expected
+  and is not a defect.
+
+**Consequence for Rule 59.** The single-receipt bar drops from 0.45 % at 2 sigma
+to about **0.053 % for a two-run comparison** and about **0.037 % against a
+cluster mean**, provided both rows are in the same classified state. Every
+mechanism currently in flight clears that bar by one to two orders of magnitude.
+
+---
+
+### 283.3 — RULE 101: A WITNESS THAT CANNOT FAIL IS WORSE THAN NO WITNESS
+
+> **RULE 101. Every `--require` string in a build or worker witness must have a
+> DEMONSTRATED FAILING POLARITY on a real commit. Presence-when-present is not
+> evidence. You must show a commit where the mechanism is absent and the check
+> fails. A witness whose two polarities have never both been observed is
+> inventory, not a gate.**
+
+Origin: thorfinn's own defect on PR #128. He moved four width-plan literals into
+separate `Table` cases so that a witness string could name the active plan. All
+four literals then compiled into the worker string table regardless of which
+case was the default, so all four `--require` checks passed on every build,
+including builds with the wrong default. The witness could not fail.
+
+Repair, which is the pattern to copy: replace the four plan literals with ONE
+gate literal that names the compiled default,
+`e120_default_route/tiered_switch/onepass67`, add `forbid` entries for the three
+wrong defaults, reference the literal from a pipeline-log JSON payload so the
+linker cannot dead-strip it, and pin it with a unit test. Then rebuild once with
+the default flipped and record that the check fails.
+
+**Honest limitation recorded in the same repair, and worth generalising.** The
+`sink_sums` half of candidate D_S is pure code motion: it moves the `xsums` read
+without changing one character of kernel text. No string witness can detect it.
+Thorfinn covered that half with a register census plus a unit test instead of
+pretending a string could see it. **When a mechanism is invisible to strings,
+say so and name the substitute instrument. Do not invent a string that happens
+to correlate.**
+
+A second lesson from the same repair: the witness set was about to exist in two
+copies, in the build script and in the test. It now lives in one sourced file
+that both read.
+
+---
+
+### 283.4 — HARNESS DEFECT 32: `mtp-timed` DISCARDS WORKER STDERR
+
+`runtimeWorkerOptions` is called without `forwardsWorkerStderr`, so
+`WorkerStderrDrain` receives a swallowing emitter. A stderr probe placed inside
+the worker produces a clean exit-0 leg with **zero output**, which reads as "the
+probe never ran" rather than "the probe ran and you cannot see it". Two agents
+lost time to this.
+
+**Workaround.** Write to a path taken from an environment variable, open with
+`O_APPEND`, tag every line with its pid because all four phase workers share the
+file, and export `MLXFAST_NO_SANDBOX=1`.
+
+**Correction to an earlier suspicion.** `sanitizedRuntimeWorkerEnvironment` at
+`Sources/MLXFastHarness/QwenRuntimeWorker.swift:2578` DOES allowlist the `MLX_`
+prefix. Environment stripping was not the cause. See also
+`Qwen36MTPBlockSession.swift:767` and `:814`, which document the discard.
+
+---
+
+### 283.5 — THE 25-SIGMA CONFLICT AND MY RULING
+
+Two students produced estimates of the same quantity that are about 25 sigma
+apart, and I had to rule before thorfinn spent the campaign's only free
+submission slot.
+
+**Edward, E128 F6/F7.** The ranked pass price is `f = 50.4 +/- 253.0 us`,
+statistically zero. Repriced at measured `f`, collapsing `{6,7,8}` is worth
+`+0.0510` at best. His recommendation: "do not spend a submission slot on it".
+
+**Thorfinn, F151 instruction census.** `{6:6, 7:7}` at `rows_per_simd = 4`
+removes 2.0506 statements per output element, which is 12.55 % of QMV issue and
+10.97 % of the leg; his own conservative figure after the 2x F87 in-situ haircut
+is **-2.56 % of leg**.
+
+**I ruled for thorfinn and authorised the submission.** Five reasons, given to
+both students:
+
+1. **Edward's own fit contradicts his own `f`.** Extrapolating his low-M line to
+   M=6 gives 48,224 us; his measured M=6 is 58,546 us. That is **+10,322 us of
+   excess, +17.6 % of the round**, appearing exactly where the shipped table
+   goes from one pass to two at `(5,5) -> (6,3)`. At M=7 the excess is
+   +13,102 us, +20.2 %. If `f` is 50 us, something else must produce 10,322 us
+   at the pass boundary, and he has not named it. I checked the obvious
+   candidate, the SDPA width wall at `qL >= 6`: 16 layers x 4.19 MB is about
+   **170 us**, two orders of magnitude too small.
+2. **His own F9 is the strongest causal identification in the campaign and it
+   favours thorfinn.** Thorfinn's fixed instruction shape predicts the break
+   LOCATION with zero fitted parameters: M=6 for our table, M=5 for the board's,
+   and the board ships `(5,3)`. **The break moves when the table moves.**
+3. **`f` is confounded.** F145 proved that every pass-count collapse previously
+   measured in this codebase came bundled with a register tax; three ranked
+   receipts, mean +2.164 % slower, 0 of 7 prompts faster. A fitted `f` near zero
+   is exactly what that cancellation looks like. Thorfinn's arm is outside that
+   support: askeladd's corrected g17s census puts `wide<6>` + D_S at 105 regs /
+   0 spill and `wide<7>` + D_S at 118 / 0.
+4. **The register cost thorfinn does pay is free at the measured `c`.** The g17s
+   entry moves 90 regs / 44 sg to 105 / 37, which is -15.9 % occupancy, but
+   three independent readings put `c` near zero: F131 gives `-0.0014
+   [-0.0124, +0.0095]` and `+0.0105 [-0.174, +0.195]`, and alphonse's tier test
+   gives `+0.047 to +0.061`.
+5. **The asymmetry is favourable.** The arm is bit-exact by F148 and confirmed
+   bit-exact by thorfinn's eight-leg width gate. The worst case is a flat
+   receipt, which discriminates between the two censuses. No outcome teaches
+   nothing.
+
+**This ruling is a prediction, not a preference, and it is pre-registered.** See
+283.6.
+
+---
+
+### 283.6 — THE FOUR PRE-REGISTERED PREDICTIONS FOR RECEIPT 1
+
+Recorded before the run, in the PR, so the receipt discriminates rather than
+merely reports.
+
+| theory | source | predicted delta candidate s/token |
+|---|---|--:|
+| pass count causes the break | edward's own ranked curve, mass(6)=0.188, mass(7)=0.211 | **-8.6 %** |
+| thorfinn's instruction census, after the 2x F87 haircut | F151 at RPS=4 | **-2.56 %** |
+| askeladd's compile-only model | E132, local histogram frame | **-2.6 %** |
+| edward's cross-sectional `f` | E128 F6/F7 | **+0.05 %, that is, null** |
+
+**My band: -3 % to -9 %, central -5 %. Anything at or above -1 % refutes both
+censuses and confirms edward.**
+
+Read the receipt with the F154 instrument, that is, the 8-prompt mean of
+`mtp_seconds_per_token_mean` after classifying the runner state, NOT with the
+published median.
+
+---
+
+### 283.7 — MY F19 RULING TO THORFINN: SHIP ON THE DIGEST
+
+PR #128, feedback `5380658992`. Thorfinn asked two questions before shipping.
+
+**Q1, should he wait for the ABCCBA timed confirmation? No. Submit on the
+512-token digest.** His local g16s host spills at NA=6 and NA=7, so an ABCCBA on
+that host measures a kernel body the ranked M5 never executes. It is a
+measurement of the wrong thing, and it costs an hour of the submission window.
+Run it behind the submission as a cross-architecture record.
+
+**Q2, keep or drop the inert `onepass6` table? Keep it.** It is inert, it is
+cheap, and it is the only instrument that separates the M=6 contribution from
+the M=7 contribution in a follow-up.
+
+**Three conditions attached.**
+
+- Prove the Rule 101 failing polarity on the default-route literal before
+  submitting: one throwaway rebuild with `Table.compiledDefault = .shipped`,
+  showing the witness fails.
+- Pre-register the four predictions of 283.6 in the PR before the run.
+- Order of operations: Rule 101 proof, then the 512-token digest, then the
+  pre-registration, then the full pre-submit chain, then
+  `senpai/submit-official.sh 770a3ff2... --model "senpai" --note-file
+  senpai/submission-note-<tag>.md`, then post the submission id immediately,
+  then run the ABCCBA and prepare receipt 2 while validation runs.
+
+Everything from F16, F17 and F18 is unchanged: D_S first, `rps = 4` only,
+`case 9` stays, register ceilings 126 on g17s and 96 on g16s.
+
+**Thorfinn's two self-found defects, both fixed before I saw them.** First,
+`Table.compiledDefault` was `.shipped` while every local leg set
+`MLX_E120_QMV_TABLE=onepass67`, so **the archive would have shipped the
+templated entry point running the two-pass plan** — the receipt's mechanism
+absent from the scored surface. Second, the Rule 101 witness defect of 283.3. He
+also added a `default` leg to the digest that sets neither environment variable,
+which is the only leg that measures the archive exactly as scored, and listed it
+first. This is the standard to hold everyone to.
+
+**Gate ledger at his local `1cfb3bb5`.** `swift test` 745 tests, 40 issues over
+9 organizer-named functions, zero campaign-added; the E120 candidate-owned QMV
+dispatch suite 6 tests pass; the eight-leg width exactness gate passes at
+`rps = 4` with 84 rows per leg, 84 bit-exact, 84 controls fired,
+`max_abs_diff = 0`, widths 3456789, validated against MLX's own `quantizedMM`
+rather than candidate rows; `rebuild-and-assert-worker.sh` passes;
+`twin_audit.py` OK with 29 twins and one allowlisted comment-only waiver;
+`verify-ranked-score-boundary.sh` passes; `validate-assignment-scope.sh` passes
+with one submitted path; `check-editable-budget.sh 770a3ff2` passes with source
+2,612,346 / 3,000,000 and growth 157,511 / 262,144, leaving 104,633 bytes.
+
+**The E65 unroll hazard is FALSIFIED.** The 40 rows the gate flags
+`known_backend_defect` are NA>=7 `USE_TABLE=false` research arms; every
+`sumtable` row at those widths is clean, and production routes
+`tablePays(m) = m >= 4` to sumtable.
+
+---
+
+### 283.8 — E128 MERGED: WHAT EDWARD ESTABLISHED, AND WHAT IT CLOSES
+
+PR #129 merged at `83e07638`. `accept_result_on_current_base` `5380679814`.
+Result commit `f3955d9b`, `status: succeeded`.
+`e128_recoverable_ranked_median_pct` baseline 0.0, candidate **-0.21714608972021043**.
+W&B: `vcxlulwz`, `nyypkdsl`, `mwv9a8fh`, `1azn4agj`, `al4e8bmq`, `0wkulqix`,
+`mys5l3kq`, `5c4mq2lk`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vcxlulwz
+and siblings).
+
+**The zero-GPU replayer is validated.** Depth agreement 1.000000 over 3,634
+rounds in 21 legs; the `44559d02` anchor reconstructs to `3.34351272` exactly.
+This is now a campaign instrument, `research/e128_ourcurve.py`.
+
+**The arm table settles the price axis.** ship 0.0000, marginfull -0.3561,
+price0.20 -0.4856, expectedonly -0.6772, recal -1.2092, reachonly -1.8542,
+rankedprice -2.8508, jensen -11.1665, static7 -16.5209, **oracle +8.5248**.
+Shipped is the best member of its own family. **The loss is discrimination, not
+price**, and 283.1 now explains why.
+
+**The entry gate is structurally dead.** The top-2 margin on a sorted pair is
+non-negative, so the sigmoid confidence never falls below 0.5, which is 2.38x
+the corrected gate. That branch can never fire.
+
+**Best untried signal, from his per-position AUC in the `p >= 0.93` band:**
+margin 0.8763, streak 0.8269, prev_acc 0.8013, reach 0.7589. The best signal he
+could not reach from his own file is shortlist-score entropy or spread, already
+resident in threadgroup memory at `Qwen35.swift:3716` at approximately zero
+cost.
+
+**A rival read that matters.** `cf79f7df` leads us by 0.744 % on the published
+median, of which **96.8 % is a thermal-mode move, not a mechanism move**.
+
+**Stated limits.** The anchor-fidelity gate passes on means, depth +0.13572 and
+accept -0.01552, but two per-fixture tolerances fail: beagle_a depth 0.5060
+against a 0.25 tolerance, and drama_dollhouse accept 0.0570 against 0.05.
+**Treat any arm difference below 0.2 % in the replayer as noise.** He also
+declined to recommend the flat-threshold argmax `h = 0.270`, correctly, because
+pooled-EMA replay removes adaptivity that a live run has.
+
+---
+
+### 283.9 — E134 ASSIGNED TO EDWARD: BUY DISCRIMINATION, NOT PRICE
+
+PR #134, head `58b8dd1d88fb2d808d4faedc8b4a367e733c2d92`. Title: "Convert the
++8.52 % oracle discrimination gap into a shipped depth decision, by adding
+information the estimator has never seen".
+
+**The diagnosis.** All nineteen E128 arms reshape the SAME three inputs:
+`positionAcceptEMA`, the tail top-2 margin, and the price vector. 283.1 proves
+the price vector is already exact. **The missing thing is information, not
+functional form.**
+
+**The headline signal.** `Qwen36MTPBlockSession.swift:1490-1495` computes
+per-row top-2 evidence for EVERY verified row, because the row ledger requires
+it. The scheduler consumes only the tail, as `pendingTop2`, divided by 2.0 at
+depth 0 and by 3.0 at depth 1. **The full previous-round margin vector is
+already computed, already resident in his own file, costs zero GPU work, and is
+discarded.**
+
+Legality is argued explicitly in the brief and is the same class as the shipped
+`pendingTop2` use: within-request, derived from target evaluations already
+declared to the parent, no cross-request state. The shipped code is the
+precedent.
+
+Other local inputs named: streak, prev_acc, realised width history, and a
+censoring-aware Kaplan-Meier style reach estimator, because F112 shows the
+current reach estimator is biased low by 9-24 % and the `levelfix` arm does not
+test that.
+
+**Rung 0 is an urgent zero-GPU interim before anything else**, and it is the
+reconciliation of 283.5: is `f` identified at all given its collinearity with
+the M>=6 break; is the board's table variation confounded by registers, which
+`research/e131_thorfinn_dryrun.py` can stratify in under four seconds; if `f` is
+50 us what produces 10,322 us at M=6; and does he withdraw "do not spend a
+slot".
+
+**Stop and advance rules.** Stop if the new inputs carry under 0.02 incremental
+AUC at the depth-4 boundary. Stop if the oracle gap is spread evenly across
+boundaries rather than concentrated. Advance at `>= +0.50 %` held out. Close the
+axis if nothing clears `+0.30 %` held out. Every fitted parameter must be
+validated leave-one-fixture-out and the HELD-OUT number is the headline.
+
+Scope: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` except lines 200-275,
+which are alphonse's, plus `research/` and `Tests/MLXFastTests/E134*.swift`.
+Rule 79 restated: a local timing measurement cannot validate a draft-depth or
+schedule change.
+
+---
+
+### 283.10 — ALPHONSE RUNG 9: THE WIRED TICKET IS UNDER-SIZED BY 3.42x, MEASURED
+
+`research/e130_rung9_growth.py`,
+`research/e130-artifacts/rung9-allocation-growth.json`, W&B `e130rung9`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/e130rung9).
+
+```
+MTP leg, 512 decode tokens
+  active at ticket sizing        24,298.00 MiB  (25,478,536,312 B)
+  persistent post-sizing growth     218.71 MiB
+  shipped slack                      64.00 MiB
+  shortfall                         154.71 MiB
+  ratio                                3.42 x
+```
+
+My F10 band, derived from `Qwen35Config.swift` arithmetic before any measurement
+existed, was 143.75-215.75 MiB. Measured 218.71, which is 1.4 % above the top of
+the band. The slack is exceeded in **all seven worker processes across both
+token windows**, by 3.07x to 3.42x.
+
+```
+512 tok / 1024 window   role            n    min   minL3  median    max   poolmax
+  drift_tripwire  42  196.7  211.9  263.6  2404.8  3063.5
+  reference       46  202.7  226.1  276.2  2495.4  3155.7
+  serial_control  24  199.5  226.5  566.5  2495.4  3219.6
+  mtp_decode      30  196.5  218.7  268.0  2369.9  3120.5
+128 tok / 640 window: reference 17/214.1/267.8/488.3; serial_control 21/201.6/201.6/784.7;
+                      mtp_decode 15/216.6/216.6/2246.9
+serial_control  128 tok 201.59 MiB | 512 tok 226.48 MiB
+  -> slope 66.38 KiB/decode token, intercept 193.29 MiB
+```
+
+Term-by-term agreement with the predicted arithmetic:
+
+| term | predicted | measured | agreement |
+|---|--:|--:|---|
+| per decode token, `16 * 4 * 256 * 2 * 2` | 64.00 KiB | 66.38 KiB | **3.7 %** |
+| fixed: GDN recurrent fp32 + conv + 512-token seed KV | 179.75 MiB | 193.29 MiB | 7.5 %, worse for the slack |
+| total at the 1024-token window, MTP leg | 215.75 MiB | 218.71 MiB | **1.4 %** |
+
+**The sizing input is bit-identical in all seven processes and both windows**:
+`active = 25,478,536,312`, `cache = 0`. The under-sizing is deterministic. It is
+not a race and it is not page rounding of the input.
+
+**The live tower at sizing is 23.73 GiB, not 14.8 GB.** The allocator also holds
+the untied embedding, the output projections and the proposal head. This revises
+F10's third bound.
+
+The head-history KV term, predicted at +4.00 MiB for MTP minus serial, measured
+-7.8 MiB, is below the plus or minus 10 MiB between-process scatter and is not
+claimed.
+
+---
+
+### 283.11 — MY F12 RULING: MECHANISM CORRECTED, VICTIM IDENTIFIED BY HIS OWN CONTROL
+
+PR #130 feedback `5380669387`.
+
+**ADVISOR ERROR 116, self-corrected.** My F10 mechanism story was wrong on its
+own terms. `Memory.activeMemory` is read at `:236` AFTER the head loads, so the
+head is INSIDE the 23.73 GiB the ticket is sized from. Under insert-ordered
+residency it is already admitted, and the natural exclusion candidates are the
+post-sizing KV, GDN and conv allocations.
+
+**Alphonse's plutarch zero-dose control rules those out.** KV, GDN and conv are
+touched on EVERY round. Plutarch runs 444 rounds with zero drafting and shows
+-2,744 us observed against +383,792 us predicted by the per-round law, a ratio
+of -0.0072, rejecting that law 139-fold. **The displaced object is touched only
+on drafting rounds, so it is the proposal head.** That rescues the size
+derivation: 930.9 us for 427,742,600 B is 459.5 GB/s, against F143's ranked M=1
+rate of 462.2 GB/s, a 0.59 % mismatch.
+
+**The open question moved from the victim to the eviction PATH**, and I offered
+two options, both of which alphonse then rejected with source evidence. See
+283.13.
+
+**The three bounds I gave him.**
+
+- **Bound A, floor: 218.71 MiB measured.** Every term is fixed by layer counts,
+  head dimensions and the window, so it is identical on M5. Shipped floor
+  **256 MiB** as first proposed.
+- **Bound B, the `maxRecommendedWorkingSetBytes` clamp, does not bind.**
+  Measured on his box, `maxrec / physmem = 0.78002`
+  (`physmem = 51,539,607,552`, `maxrec = 40,200,896,512`). On 128 GiB that is a
+  recommended figure near 99.83 GiB and a clamp near 99.58 GiB. The ticket at
+  512 MiB slack is 24.23 GiB, leaving **75.35 GiB of headroom**. The clamp bites
+  only above about 75.8 GiB of slack. Labelled derived under Rule 89.
+- **Bound C, ceiling: do not admit the scratch.** Instantaneous live peaks run
+  2,369.9-2,495.4 MiB above sizing and the pool reaches about 3.1 GiB. Keep
+  slack structurally below about **2,370 MiB**.
+
+```
+safe window  [256 MiB, 2048 MiB]      recommend 512 MiB
+  = 2.34x the measured need, 2.1 % of the 23.73 GiB tower, log-centre of the window
+```
+
+**Change the ABSOLUTE term, not `fraction`.** The growth is absolute — 64
+layers, 16 full-attention layers, head_dim 256, fixed window — not proportional
+to the tower. `wiredZHDefaultFraction` stays at 1.0.
+
+**Rung 10 = 10a + 10b.** 10a is a local ABBA on his own Mac behind a
+research-only flag that bypasses the 96 GiB guard: arm A no wiring, arm B
+`wiredLimit = active + 64 MiB`, arm C `active + 512 MiB`. A versus C is the
+positive control and is reported first; B versus C is the treatment. 10b is the
+ship: `wiredZHDefaultSlackMB` 64 to 512, a unit test pinning the arithmetic
+against all three bounds, the bounds written into the PR, and **removal of the
+82-line probe before the branch carries any submission**.
+
+**Value: about +0.38 % direct**, being `0.33 x 1.15 %`, plus the removal of a
+plus or minus 1.15 % term from every future receipt. **Receipt 2 is very likely
+alphonse's. Do not compose onto thorfinn's branch; keep it separable for
+attribution.**
+
+---
+
+### 283.12 — ALPHONSE'S RUNG 8B AND HIS THREE OTHER RUNG-9 RESULTS, ALL ACCEPTED
+
+**Harness defect 19 is NOT the cause of the runner state.** Candidate-leg ICC
+**+0.8242**, F = 33.8 on 5 and 36 df, within-receipt sd 216.4 us. Serial leg ICC
+-0.1038, F = 0.3, as a co-timed control. Cluster means -0.9 us and +864.1 us,
+step 865.0 us. Cluster-0 sd 21.5-33.8 us; cluster-1 sd 275-324 us; all seven
+drafting prompts positive in every cluster-1 receipt. Monte Carlo null over
+20,000 trials, seed 130, 4-of-8 hit rate, receipt means preserved: median ICC
++0.2289, p95 +0.4639, max +0.8306, **p = 0.00005**.
+
+**His honest refinement against his own model.** Within cluster 1 there is a
+reproducible prompt main effect, **F = 3.61 on 6 and 12 df, 63.5 % of the sum of
+squares, residual sd 223 us**. republic and essays are low at about 520-560 us;
+drama, travel, beagle and botany are high at about 950-1,125 us. **The
+per-drafting-round constant is first-order only.** Note that republic and essays
+are two of the four `min`-carriers, so the structure is not score-neutral.
+
+**His independent `0c6191b7` cluster-3 check**, run without seeing my F153.
+Per-prompt candidate agreement: `3b376ba2` mean 0.0641 % and max 0.1588;
+`cf79f7df` 0.0840 / 0.2039; `48423d09` 0.1351 / 0.2253; `c63eaa21` 0.1419 /
+0.2150; `390ec878` 0.1454 / 0.2578; **`d3c491b5` 1.2466 / 2.3624, EXCLUDED at
+4.2x and 6.8x over.** **Our own parent tree is the one row that fails the
+same-state test**, so the 3.4907 to 3.5127 gain is one state draw, not the arm.
+The state model fits the `d3c491b5` / `0c6191b7` pair at exactly one step:
+candidate mean -1.2212 %, slope -986.8 us, residual over effect 0.4062. Against
+`3b376ba2` no state model fits, minimum 1.1593.
+
+**His tier test rejects my F8 bracket.** Against the same-state tier
+`{3b376ba2, c63eaa21, 48423d09, cf79f7df}`: tier mean 0.01476640, receipt
+0.01475836, saving **+0.0545 %**, se 0.0595 conservative or 0.0312 optimistic,
+z +0.92 or +1.75. Derived `c = +0.0607` at `s_head = 0.07`, +0.0531 at 0.08,
++0.0472 at 0.09. **F8's bracket `c in [0.199, 0.301]` is REJECTED at 2 se.** The
+pre-registered 2 sigma null was 0.1504 % and the effect was not detected.
+Pre-registration artifact `research/e130-artifacts/rung7-preregistration.json`
+at commit `8cbdc3a0`, unedited.
+
+**He accepts the `prune_na5_pair` ruling without reservation** — consistent with
+0 to +0.1 %, one draw not eight, and the two trees differ by more than 22 bytes.
+He is not asking to re-roll.
+
+**RETRACTION 9 accepted: the head-provenance defect does not exist.** Three
+digests over two weight objects: `mtp-head-declared/` is 1 file, 427,742,600 B,
+`559b24eb...`, matching the manifest and every ranked receipt;
+`mtp-head-declared-run/` is 2 files, 427,746,170 B, `dadbfb80...`, adding only
+`config.json`; `mtp-head/` is 5 files, 849,400,347 B, `62516c6f...`, the
+organizer-pinned object. The two `model.safetensors` **share inode 3434710**.
+Rung 0b used `research/e79_trace_leg.sh`, whose default is
+`mtp-head-declared-run`, so F143's 7.4816 % head GPU share was measured behind
+the correct declared weights. **A naive digest comparison across those three
+directories produces a false mismatch, and `uses_pinned_mtp_head = true` in a
+local `score.json` is a local-mode constant, not a provenance claim.**
+
+Base audit: `aef791b2..b5ee7664` touches no source at all, and his tree carries
+every scored change on the advisor branch.
+
+---
+
+### 283.13 — ALPHONSE INTERIM 9 AND MY F13 RULING: 512 SHIPS, THE MECHANISM IS 20x SHORT
+
+PR #130 comment `5380736430`, my feedback `5380759664`.
+
+**New measurement: a page-rounding tax the sizing input does not carry.** The
+probe now logs `Memory.numResources`. At the sizing instant there are **4,454
+live Metal buffers**, identical in every probed process, `reslimit = 499000`.
+`ResidencySet` counts page-rounded allocation sizes; the sizing input counts
+buffer lengths. Every live buffer therefore charges up to one short 16 KiB page.
+
+```
+charge per buffer        tax
+ 8 KiB (expected)      34.80 MiB
+16 KiB (worst case)    69.59 MiB
+```
+
+The expected tax alone is 54 % of the old 64 MiB slack.
+
+**Steady-state arithmetic, which is the frame that decides the literal.** His
+table is the initial-`resize()` frame; both matter, and the steady state is
+stricter because the post-sizing growth competes for whatever slack survives the
+first fill.
+
+```
+spare = slack - post-sizing growth (218.71) - page tax
+                       expected tax 34.80      worst tax 69.59
+slack  64 MiB              -189.51  FAIL           -224.30  FAIL
+slack 256 MiB                +2.49  MARGINAL        -32.30  FAIL
+slack 512 MiB              +258.49  SAFE           +223.70  SAFE
+```
+
+**Bound A is retired and replaced: the true floor is 253.51 MiB expected and
+288.30 MiB worst case.** 512 MiB clears both and stays two orders below bound
+C. The ship is approved.
+
+**His mechanism read rejects both of my options with source evidence.** There is
+exactly one `WiredMemoryTicket` in the codebase, at
+`Qwen36MTPBlockSession.swift:353`, so `set_wired_limit` is called once per
+process, 0 to target, and never shrunk; my shrink-eviction option is ruled out
+by construction. `insert` and `erase` fire only on a genuine `newBuffer` or
+release, that is on a buffer-cache miss and never on recycle, and `erase`
+commits only for an already-wired buffer; my churn-reinsertion option is ruled
+out.
+
+**His third option.** `capacity_` and `wired_limit_` both start at 0, so before
+sizing every buffer fails the fit test and lands in `unwired_set_`, which is a
+`std::unordered_set<const MTL::Allocation*>`. Iteration is hash order over
+pointer values, which varies per process with ASLR. `resize()` then admits
+greedily from that unordered set until full, skipping oversized entries and
+never evicting. At 64 MiB the tower sits on the capacity edge, so whether a
+given large buffer gets in is decided by hash order. At 512 MiB the tower always
+fits and the ordering stops mattering.
+
+**My F13 objection: the model predicts a 2.4-2.6 % slow rate. We observe
+33-50 %.** Taking his model literally, the head is excluded only if it is
+reached when remaining capacity is below its own size, so under a uniform random
+order over bytes:
+
+```
+                      demand    capacity(s64)   overflow    head      P(head excluded)
+expected tax        24,551.51      24,362.00     +189.51   407.93        2.433 %
+worst-case tax      24,586.30      24,362.00     +224.30   407.93        2.571 %
+```
+
+The frontier tree gives 3 slow of 6 receipts and F75's independent estimate is
+1/3. **The model is 13x to 21x short on the rate.** Inverted: to produce a
+one-in-three slow rate it needs an overflow of **7,787 MiB** against a measured
+**224 MiB**, so it is 35x short in the quantity it is built from.
+
+Three ways it could still be right, in my order of prior:
+
+- **(a) The excluded unit is not one 407.93 MiB object.** The step is 930.9 us
+  per drafting round, which is 430.3 MB of TRAFFIC at 462.2 GB/s, not
+  necessarily 430 MB of OBJECT. If the excluded set is several mid-sized head
+  tensors, each is individually far more likely to fall past the fill boundary
+  and the aggregate event becomes common.
+- **(b) The tax is larger than he bounds it.** He bounds the page charge but
+  does not measure it. The ranked command-buffer geometry raises active at
+  sizing from 25,478,536,312 to 26,146,704,372 B, and may raise the buffer count
+  with it.
+- **(c) The `:249` clamp binds on the ranked host and never locally.**
+  `maxRecommendedWorkingSetBytes` can fall under co-tenant pressure. Locally
+  `request = applied`, so it does not bind on his box. Unfalsifiable from here;
+  named, not pursued.
+
+**The corroboration he did not claim, and should.** Cluster-0 within-receipt sd
+is 21.5-33.8 us; cluster-1 is 275-324 us on a 930 us step. That **10x dispersion
+asymmetry** is a direct prediction of partial admission: the fully-admitted
+state has nothing left to vary, while a partially-admitted state varies by
+however much the ordering happened to exclude, about plus or minus 30 % of the
+step. A host-identity, clock-state or fixed thermal-mode explanation all predict
+symmetric dispersion. His is the only mechanism on the table that predicts the
+asymmetry we measured.
+
+**The decisive local test I ordered, which needs no timing at all.** With
+`fraction = 1.0`, capacity is `active + slack` on both hosts, and the tower,
+the growth and the buffer count are properties of the model, the window and the
+command-buffer geometry, not of the host's physical memory. Once the 96 GiB
+guard is bypassed and the ranked command-buffer profile is exported, which 10a
+already does, **the overflow on a 48 GiB box is the same overflow the ranked M5
+has.** His box is a faithful replica of the ranked residency arithmetic. So:
+add a research-only probe reporting `unwired_set_.size()` and its total bytes at
+steady state, plus per-tensor wired membership for the head and for the backbone
+as a control; run 20 process starts at s64 and 20 at s512; pre-register that
+s512 gives zero unwired bytes in 20 of 20, that s64 is bimodal with modes near 0
+and near 430 MB at a rate between 1/3 and 1/2, and that when the head is out it
+is out as a SET of tensors rather than as one object. **If s64 comes back
+unimodal and small in 20 of 20, the residency story is refuted and the runner
+state is something else.** The probe must not land on a submitted path.
+
+**Value framing recorded for the receipt.** The expected published-median gain
+is `0.33 x 1.15 % = +0.38 %`, but it is the elimination of a lottery rather than
+a mean speedup, so **a single receipt cannot measure it**. The ranked test is
+the state classification of the next three receipts after the fix ships. If the
+plus or minus 930 us per-drafting-round step survives three post-fix receipts,
+the fix did not work.
+
+**Rung 10 state.** `wiredZHDefaultSlackMB` 64 to 512 committed, `fraction` left
+at 1.0, doc comment rewritten, bounds checked in at
+`research/e130-artifacts/rung10-slack-bounds.json`, new test
+`Tests/MLXFastTests/E130WiredResidencySlackTests.swift` pinning all three bounds
+with positive controls, bound B labelled derived under Rule 89 with a 32 GiB
+headroom demand rather than a tight fit. 10a launched 13:47Z as the palindrome
+`none s64 s512 s512 s64 none`, 512 tokens per leg, one binary, arms differing
+only by environment, ungated under the standing counterbalanced mode with entry
+and exit temperatures recorded and both gate flags preserved verbatim. Debug leg
+passed 13:37-13:39Z with wiring active on three worker processes,
+`request = applied = 26,683,575,284`, tokens matched, and swapins, swapouts and
+compressor pages unchanged.
+
+---
+
+### 283.14 — ASKELADD E133 RUNG 0, AND MY F1 POWER CORRECTION
+
+PR #133, his comment, my feedback `5380675432`.
+
+**Rung 0, 30 seconds, no GPU: the E87 corpus is absent on his Mac.** No `e87/`
+directory anywhere under his cache; `find /Users/ec2-user/.senpai -type d -name
+e87` returns nothing; only `mtp-head*` directories are present; free disk
+74 GiB. **The E87 seed TEXTS are missing too** —
+`research/e87-corpus-manifest.json` pins 120 seeds that all resolve into
+thorfinn's home, so `research/e87_capture.sh plans` would fail on the first
+seed, and `research/e87_job.sh:10` hard-codes thorfinn's HOME.
+
+**Thorfinn's rider confirms the corpus is intact on HIS Mac**: `du -sh` 360M,
+148 files, `*.x.f32` totalling exactly 370,524,160 B, which is 18,092 samples of
+`float32[N, 5120]`, `*.tok.i32` 72,368 B, total 370,596,528, newest mtime
+2026-08-21 00:11.
+
+> **ADVISOR ERROR 89 CORRECTED. The corpus was never lost. It was only ever
+> unreachable from anywhere but thorfinn's Mac.** Campaign knowledge:
+> `research/e87-corpus-manifest.json` and `research/e87_job.sh:10` resolve
+> through `$HOME`, which is the PER-ROLE home, so every absolute path in those
+> two files is thorfinn-only.
+
+**My F1 ruling.**
+
+**e124 seeds approved for recapture.** The E87 set is narrative, economics and
+philosophy with no beagle-domain text. Beagle carries 97.9 % of the ranked
+median at the lowest per-step acceptance, `p = 0.9341`. Screening a
+low-acceptance mechanism on a corpus with no low-acceptance domain is a screen
+of the wrong thing.
+
+**Drop plutarch, drama and travel from the gate entirely**, F83 weight exactly
+0.0000, Rule 70. Capture them as out-of-band sanity only if cheap.
+
+**The power problem, corrected before he spends GPU time.**
+
+```
+pooled, 5,400 samples          se 7.44e-4   2se 1.49e-3   half the kill line, usable
+beagle stratum, ~980 samples   se 1.75e-3   2se 3.50e-3   LARGER than the 3.0e-3 kill line
+```
+
+"Worst of ten domains" is a maximum over ten noisy near-zero estimates, so it is
+biased strongly upward and would close C1 on noise. Three corrections:
+
+- **(a) Three strata, not ten.** `beagle` = beagle_a + beagle_b;
+  `min-carriers` = medicine_hippoc, medicine_hist, essays_montaigne,
+  essays_bacon, botany_andrews, republic_jowett; `zero-weight` reported but
+  never gating. The kill applies to the worse of the first two.
+- **(b) Reweight the capture.** At least 4,000 samples in the beagle stratum and
+  4,000 in the min-carrier stratum, which is about 8 windows each at 489 per
+  window, 16 windows total, at different paragraph offsets from the same pinned
+  works. At 4,000 the beagle 2 se falls to 1.73e-3.
+- **(c) RECORD THE RANK, NOT THE MISS.** This is the largest gain and it costs
+  nothing. The net miss at survivor width N is exactly
+  `P(rank of the exact affine-4 argmax within the sketch ordering > N)`. Report
+  the survival curve for `N in {1,2,4,8,16,32,64,128,256,512,1024}`. At small N
+  the event is common and the estimate is tight, and the curve's shape
+  constrains the tail at N=256 far better than about twelve raw events. Report
+  BOTH the raw count with an exact Clopper-Pearson interval AND the tail-fit
+  estimate, and say so if they disagree. The same fix applies to the T0b recall
+  gate, and it collapses the whole N sweep into one curve read at five points.
+
+**Two price corrections, both in his favour.** First, the cost of a miss is
+`m x (p - q)` where `p` is per-step acceptance, 0.9341 on beagle, and `q` is the
+probability that the substituted row is the target's argmax anyway. Both are
+measurable in his capture and `q > 0`, so my `m = 5.7e-3` break-even is
+conservative by at least `1 / 0.9341`. Second, report TWO miss rates:
+`m_absolute` against the exact affine-4 argmax, kill above 3.0e-3, and
+`m_incremental` against the SHIPPED pipeline output, whose worst-domain net miss
+rate is 2.266e-4 today. **Price on the incremental one.**
+
+**Report the achieved per-window yield after the FIRST TWO windows, before
+committing the remaining fourteen.**
+
+Everything else in the E133 brief stands: the four E132 corrections;
+`MISS_TO_SCORE_PCT` 206.6 to 203 at `research/e87_decide.py:33` and
+`research/e87_head.py:58`; the 120-cell sweep; scope `research/` plus
+`Tests/MLXFastTests/E133*.swift`; zero submitted-surface bytes; no submission.
+
+---
+
+### 283.15 — WHAT MOVED ON THE STOP LIST
+
+- **NEW CLOSED, by proof rather than by null: the DEPTH-PRICE axis.** 283.1. The
+  shipped price vector is the ranked cost curve to four significant figures.
+  Reopen only if the ranked cost curve itself changes shape, which a pass-count
+  change would do — so recheck the identity after receipt 1 lands.
+- **Rule 59's ranked bar is superseded within a classified state** by 283.2:
+  about 0.053 % for a two-run comparison and about 0.037 % against a cluster
+  mean, on the 8-prompt candidate-leg mean, never on the published median.
+- **Advisor error 116 recorded** at 283.11, self-corrected inside the same
+  ruling and rescued by alphonse's plutarch zero-dose control.
+- **Advisor error 89 corrected** at 283.14: the E87 corpus was never lost.
+- **The E65 unroll hazard is falsified** at 283.7, empirically, by an eight-leg
+  bit-exact width gate validated against MLX's own `quantizedMM`.
+
+### 283.16 — IMMEDIATE STATE
+
+No Yukon submission is in flight; the FACT 10 slot is free and thorfinn holds
+it. Board at the last refresh, 12:50Z rows, 1,104 total: crown `48423d09`
+noskillcoding 3.51845338; `cf79f7df` Lieisyourlie 3.51661724; `d3c491b5`
+morganmcg1 3.49065044 promoted. Eight rows validating. Our `0c6191b7` at
+3.51270586 remains rejected and remains, on the F154 instrument, the
+**second-fastest candidate leg in the frontier cluster and faster than the
+crown by +0.1027 % at z = +3.88**.
+
+Next four things, in order: read receipt 1 with the F154 instrument after
+classifying its state; take edward's rung-0 `f` reconciliation; take alphonse's
+10a positive control and the admission probe of 283.13; take askeladd's
+first-two-window yield report. C2, the precision-island quantization at +0.38 to
++0.45 %, is reopened and unowned and goes to the next free student.
