@@ -107,7 +107,34 @@ RUNGS = {
             "python3 research/e136_analyse.py --label r2 "
             "--json research/e136-rung2.json",
     },
+    "5a": {
+        "run_name": "e136-5a-probe-fraction-acceptance-replay",
+        "file": "research/e136-probe-grid-priced.json",
+        "companion": "research/e136-probe-grid.json",
+        "job_type": "corpus-replay",
+        "question":
+            "where is the probe-fraction argmax on the shipped readout and "
+            "on the C1 sketch readout, once the acceptance side is replayed "
+            "on the corpus instead of assumed",
+        "command":
+            "research/await-lock-then-run.sh 1200 research/e133_job.sh "
+            "python3 research/e133_screen.py screen "
+            "--families exact0,lowrank256 --widths 4096 "
+            "--probes 0.10,0.125,0.15,0.175,0.20,0.25,0.35 "
+            "--stage-a sketch --out research/e136-probe-grid.json && "
+            "python3 research/e136_probe_grid.py "
+            "--screen research/e136-probe-grid.json "
+            "--json research/e136-probe-grid-priced.json --self-check",
+    },
 }
+
+LADDER_COLUMNS = [
+    "family", "arm", "p", "anchor_p", "probes", "coarse_rows", "recall_wg",
+    "acc_loss_wg", "d_acc_loss_pp", "gross_pct", "d_gross_pct",
+    "d_gross_pct_scaled", "d_net_pct", "d_net_pct_scaled",
+    "board_scale_applied", "predicted_pct_gating", "predicted_pct_absolute",
+    "bytes_per_row", "n_gating", "passes_t0", "passes_t0b",
+]
 
 # F5 resolved ADVISOR ERROR 136: the PR body section D bars govern, and the
 # F4 section 8 restatement is retracted. Advancing also needs the headline to
@@ -480,6 +507,52 @@ def rung1_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
     return summary, {"rung1_basis_choice": table(BASIS_COLUMNS, BASIS_ROWS)}
 
 
+def rung5a_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
+    shipped = payload["argmax"]["exact"]
+    c1 = payload["argmax"]["lowrank"]
+    floor = payload["null_floors"]["perfect_readout:corpus"]
+    rows = payload["ladders"]["exact"] + payload["ladders"]["lowrank"]
+    low = {r["family"]: r for r in rows if r["p"] == 0.10}
+
+    summary = {
+        "e136_5a_shipped_argmax_p": shipped["p"],
+        "e136_5a_shipped_argmax_anchor_p": shipped["anchor_p"],
+        "e136_5a_shipped_argmax_d_net_pct": shipped["d_net_pct"],
+        "e136_5a_shipped_argmax_d_net_pct_scaled":
+            shipped["d_net_pct_scaled"],
+        "e136_5a_shipped_beats_pooled_2sigma_clustered":
+            shipped["beats_pooled_2sigma_clustered"],
+        "e136_5a_shipped_beats_pooled_2sigma_clustered_scaled":
+            shipped["beats_pooled_2sigma_clustered_scaled"],
+        "e136_5a_c1_argmax_p": c1["p"],
+        "e136_5a_c1_argmax_d_net_pct": c1["d_net_pct"],
+        "e136_5a_c1_beats_pooled_2sigma_clustered":
+            c1["beats_pooled_2sigma_clustered"],
+        "e136_5a_pooled_2sigma_clustered_floor_pct":
+            floor["two_sigma_clustered_pct"],
+        "e136_5a_marginal_pct_per_0.01p_shipped":
+            payload["marginal_pct_per_0.01_p_shipped"],
+        "e136_5a_marginal_pct_per_0.01p_c1":
+            payload["marginal_pct_per_0.01_p_c1"],
+        # Pre-registration scoring. The outcome held and the stated mechanism
+        # did not: recall never falls on the shipped ladder, so the measured
+        # argmax is set by the lowest probe fraction sampled, not by
+        # acceptance. The true shipped argmax lies below this grid.
+        "e136_5a_prediction_5a_argmax_below_0.15": shipped["p"] < 0.15,
+        "e136_5a_prediction_5a_mechanism_held":
+            low["exact"]["recall_wg"] < 1.0,
+        "e136_5a_prediction_5b_no_c1_argmax":
+            c1["p"] == c1["anchor_p"] and c1["d_net_pct"] == 0.0,
+        # The named falsifier: the sketch ordering must not be materially
+        # BETTER than the exact ordering at low probe fractions.
+        "e136_5a_falsifier_fired":
+            low["lowrank"]["recall_wg"] > low["exact"]["recall_wg"],
+        "e136_5a_recall_at_p010_shipped": low["exact"]["recall_wg"],
+        "e136_5a_recall_at_p010_c1": low["lowrank"]["recall_wg"],
+    }
+    return summary, {"probe_ladder": table(LADDER_COLUMNS, rows)}
+
+
 def table(columns: list[str], rows: list[dict]) -> wandb.Table:
     t = wandb.Table(columns=columns)
     for row in rows:
@@ -488,6 +561,7 @@ def table(columns: list[str], rows: list[dict]) -> wandb.Table:
 
 
 BUILDERS = {"0": rung0_summary, "0b": rung0b_summary,
+            "5a": rung5a_summary,
             "1": rung1_summary, "2": rung2_summary}
 
 
