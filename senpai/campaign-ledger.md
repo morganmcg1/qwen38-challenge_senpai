@@ -49127,3 +49127,195 @@ per-k-block activation chunk sums into a table consumed at verify width M>=4", a
 that it is candidate-asymmetric because the serial denominator never runs those widths. Three
 independent accounts now build on it. That is the correct reading of the ranked causal
 boundary and it is worth noting that rivals have converged on it independently.
+
+### 291.16 — askeladd E136 rung 0b closes, and the correction inside it is worth more than the arm
+
+**The arm.** Remove the single narrowing store in the affine-4 rerank kernel so that the draft
+readout's tiebreak sees fp32 scores instead of bfloat16 scores. Source read first, per Rule
+109 discipline. `qwen35DraftSelectedAffine4RerankKernel` starts at `Qwen35.swift:4056`:
+
+```
+:4075  float result[4] = {0.0f, ...};              fp32 accumulator
+:4110  result[r] += scale * accum + sum * bias;    fp32 accumulation
+:4113  threadgroup float exact_scores[TOPK];       destination is ALREADY fp32
+:4115  float reduced = simd_sum(result[r]);        fp32 cross-lane reduction
+:4117  exact_scores[candidate_base + r] = float(InT(reduced));   THE ONE NARROWING POINT
+:4143  typedef bfloat16_t InT;
+:4144  qwen_draft_selected_rerank_better(...)      equal scores go to the lower compact id
+```
+
+It is a store-type change, not an accumulation change. Rule 92 does not apply: this is the
+draft path and the target answer is untouched. Because rounding to nearest is monotone, the
+two arms can only disagree where the shipped bfloat16 scores are exactly equal.
+
+**The decision.** Arm F against arm S, realised acceptance, Rule 107, paired sign test,
+`MISS_TO_SCORE_PCT = 203.0`:
+
+```
+stratum         n      b    c    D   ranked %   floor %  2sd null %   p       null survives
+beagle        5,079   13    7   20   +0.2398    0.446    0.357      0.263     yes
+min_carriers  4,592    7    2    9   +0.2210    0.368    0.265      0.180     yes
+zero_weight   1,573    3    2    5   +0.1291    0.890    0.577      1.000     yes
+essays_bacon    569    2    0    2   +0.7135    1.949    1.009      0.500     yes
+pool:gating   9,671   20    9   29   +0.2309    0.272    0.226      0.061     no
+pool:corpus  11,244   23   11   34   +0.2166    0.250    0.211      0.058     no
+```
+
+Bars from ADVISOR ERROR 133's correction: advance at `>= +0.40 %`, close at `< +0.25 %`,
+beagle alone needs `>= +0.50 %`. Measured `+0.2166 %`. **CLOSED.** The 1-sigma is `0.1053 %`
+and the advance bar sits `1.74 sigma` above the point estimate, so extra corpus narrows the
+interval and cannot move the point.
+
+The counters settle the mechanism exactly as the advisor's warning predicted:
+
+```
+cause                                                              count
+change lands on a row the shipped chain missed on a real gap         0
+change lands on a row where the shipped bf16 scores tie at the max  69
+rows tied at the maximum under shipped arithmetic (population)     154
+```
+
+`fp32_changed_on_a_base_miss = 0` in every stratum. The arm never recovers a genuine miss; it
+only re-decides ties. `23:11` out of 34 is two sigma from a coin flip, which is a weak real
+signal worth `+0.2166 %`, below the bar.
+
+**RULING: HELD RIDER, NOT ON THE NEXT RECEIPT.** The edit is one token, deletes work, costs
+zero bytes, zero dispatches and zero residency, and carries no fidelity risk. FINDING 178
+established that our next ranked receipt is already a clean isolated A/B against the frontier
+tree, and `pb6` will take that slot. A `+0.22 %` rider inside a `+2.39 %` receipt is invisible
+in the result and costs us the isolation. The edit is therefore recorded as a held rider to be
+composed onto the submission **after** `pb6`.
+
+**🔴 FACT 35 — MLX's bfloat16 `quantized_matmul` is not the bfloat16 rounding of its own fp32
+result.** Measured, not assumed:
+
+```
+mx.quantized_matmul, fp32 in with fp32 scales and biases
+    == exact fp32 dequantize-and-matmul                 max|diff| = 0.0
+mx.quantized_matmul, bfloat16
+    != bfloat16(fp32 quantized_matmul)
+    28.8 % of elements disagree on a 16-row batch
+    bit-distance histogram 0..3 = 1,120,466 / 348,262 / 43,590 / 17,792
+    max|ref_f32 - qmm_bf16| = 0.0597
+```
+
+Our shipped Swift kernel is fp32 accumulate with one narrowing store. MLX's bf16 path is a
+different function. The interim-2 claim that `quantized_matmul` "rounds only its output" was
+false, and askeladd found and published his own error before it reached a gate.
+
+**🔴 CAMPAIGN RULE 113.** An offline replay that stands in for a Swift Metal kernel must
+reproduce that kernel's own arithmetic — accumulator type, reduction shape, and the exact
+point of narrowing — and must prove it with a bit-comparison against the kernel, not assume it
+from an API's documented dtype. A framework op used in the kernel's output dtype is not a
+stand-in until that comparison is run.
+
+**The three-arm replay pattern is adopted as campaign standard.** Arm P, the legacy replay
+preserved byte-for-byte for audit. Arm S, the shipped kernel's own arithmetic. Arm F, the
+treatment. The treatment is measured against S and never against P.
+
+**E133 survives the correction.** Arm S against arm P sits inside its own null band in every
+stratum (`pool:corpus -0.1264 %` against a floor of `0.270 %`), and a recursive comparison of
+`research/e136-attrib-fp32.json` against the committed `research/e136-attrib-perseed.json`
+returns zero differing fields across all strata, `k_curve`, `k_curve_sketch`, `probe_curve`,
+`k_price` and `raw_counters`. The `+0.678 %` E133 selection stands without a re-run.
+
+W&B `5lrc8qbl`. Local commit `4a0548a2`. Artifacts `research/e136-attrib-fp32.json`,
+`research/e136-fp32-floor.json`. `harness=local`, `timing_valid=false`, no GPU timing claimed.
+
+### 291.17 — alphonse E130 rung 12: the ladder passes its own false-positive test, and FINDING 181
+
+**The null control.** Rung 12's two arms differ only in an environment variable that the
+shipped 96 GiB guard never reads on a 48 GiB host. Provably identical machine code, true
+effect zero by construction.
+
+```
+fit            n   df    effect      se       CI95                   t      verdict
+all 12 legs   12    9   +0.0853 %  0.0631  [-0.0574, +0.2280]      1.352    ns
+drop leg 07   11    8   +0.0329 %  0.0340  [-0.0455, +0.1112]      0.967    ns
+```
+
+Both null. The ladder design, the fit code and the leg harness do not manufacture an effect
+where none can exist. This retro-validates FINDING 173's six null contrasts.
+
+The warmup leg works. Entry spread over the twelve fitted legs is `1.758 C` (58.694 to
+60.452) and exit spread `1.738 C`, against rung 11's `23.27 C` inside the fit. The artifact's
+`entry_temp_spread_c = 23.157` includes the discarded warmup leg and is being corrected. Carry
+the warmup leg forward as standard for every future ladder.
+
+Leg 07 sits `+0.3145 %` above its fitted value, `5.6 sigma` against the drop-07 residual sd of
+`0.0561 %`. Not thermal: entry 60.14 C, exit 63.44 C, inside its neighbours' range. Every
+safety counter clean, tokens matched. Recorded as an unexplained single-leg excursion with
+both fits reported.
+
+`safety.all_clear = false` from `wiring_inactive_legs` on all twelve legs is correct and
+expected — case B of the guard answer — and it is the demonstrated failing polarity Rule 109
+demands. The `MLX_E130_RESIDENCY_PROBE_PATH` sink fires on every rung-11 leg and on both
+rung-10a `none` legs and is absent on all twelve rung-12 legs.
+
+**The level.** `0.032298 s/token` pooled over 12 legs on the `35d8cf58` tree, robust variant
+`0.032289`, 512 decode tokens, untraced, base `42cdd52d` with a submitted surface
+byte-identical to `35d8cf58`, worker `e3bfdf90...`, `all_tokens_matched=true` on all thirteen
+legs. Session trend `+0.0026 %` per leg. This is the campaign's current same-host absolute
+anchor.
+
+**🔴🔴 FINDING 181 — the local g16s absolute-candidate instrument inverts in sign against the
+ranked frame for any mechanism that changes the wide-QMV register budget.**
+
+```
+base        s/token       512 tokens, untraced, same host
+cbf87ee8    0.03195577    pre one-pass-table
+35d8cf58    0.03229839    pooled 12 legs
+local absolute candidate change   +1.07 %  SLOWER
+ranked receipt for the same arm   -0.20 %  FASTER   (623e77af, F83-weighted)
+```
+
+The dominant scored-surface change between those bases is E129: the one-pass table `{6:6,7:7}`
+plus `ipg` tiering. The two frames disagree by about `1.27` percentage points **and in sign**.
+The mechanism is thorfinn's own F25 item 2 register table: the one-pass table asks for 105 and
+118 registers at NA=6 and NA=7; g17s has a ceiling of 126 and grants them, g16s has a ceiling
+of 96, clamps both, and spills 32 bytes at NA=7. On the student host the promoted mechanism is
+a spill generator; on the ranked host it is a pass-count reduction.
+
+Stated as suggestive and mechanistically supported, not as a matched contrast: the bases differ
+by more than E129, the sessions are hours apart, and one prior leg was traced. Against that,
+`1.07 %` is nineteen times the drop-07 residual sd, and the direction and rough magnitude are
+what the register table predicts. This is FINDING 99 with a concrete instance on our own
+promoted arm.
+
+**The operational rule.** Before using absolute local g16s candidate seconds per token to
+screen a mechanism, state whether the mechanism changes the per-cell register count of any
+routed wide-QMV entry point. If it does, the local instrument is not merely noisy, it can be
+sign-inverted, and the mechanism must be screened on a register census plus a ranked receipt
+instead.
+
+Applied immediately: thorfinn's E135 tight grid changes only `columns` inside `launch(m:n:)`
+at `Qwen35.swift:1956-1960` and touches no template parameter or kernel body, so a register
+census showing zero delta at every routed cell clears his local instrument. He has been asked
+to run that census and state the result.
+
+W&B `e130r12`. Artifact `research/e130-artifacts/rung12-fresh-base.json`, commit `bafcb5e7`.
+
+### 291.18 — an open question the templating tax raises, parked with its own instrument
+
+FINDING 167.1 measured the E129 arm as a `+0.35 %` tax at widths 3 to 5 and a `-0.67 %` benefit
+where widths 6 and 7 run. The tax is strange, because the width-3, width-4 and width-5 plans
+are **identical** in both tables: `shipped` has `(3,3,4),(4,4,4),(5,5,4)` and `onePass67` has
+the same three entries. The kernel at those widths is byte-identical.
+
+What changed at those widths is the number of distinct pipelines resident in the process.
+`tier(m) = plan(m).ipg` at `Qwen35.swift:1927-1929` gives tiers `{3,4,5}` under `shipped` and
+`{3,4,5,6,7}` under `onePass67`. Thorfinn counted seven `qmv_specializations` on the current
+tree against five before.
+
+That is a falsifiable hypothesis with a cheap local instrument: `MLX_E120_QMV_TABLE` is an env
+override at `:1873`, so `shipped` against `onePass67` is a one-variable local A/B, and at
+widths 3 to 5 the register counts are identical, so FINDING 181's inversion hazard does not
+apply **at those widths**. A width-stratified local contrast restricted to widths 3, 4 and 5
+would measure a pure "more resident pipelines" effect on byte-identical code.
+
+Parked, not assigned. The recoverable ranked value is small: beagle carries F83 weight `0.4862`
+and runs perhaps a third of its rounds at width 5 or below, so removing a `+0.35 %` narrow-width
+tax is worth roughly `+0.06 %` F83-weighted, below the Rule 112 single-receipt bar. It becomes
+interesting only if the effect is larger than modelled, or if it changes the answer for
+`onePass678`, which would add a sixth tier. Reopen it if thorfinn's E135 per-width fit shows an
+unexplained width-3-to-5 offset between arms.
