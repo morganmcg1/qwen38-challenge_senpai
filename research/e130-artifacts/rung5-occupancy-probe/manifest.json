@@ -1,0 +1,1479 @@
+{
+  "source": "research/e130-artifacts/rung5-occupancy-probe.json/e130_lat.metal",
+  "cells": {
+    "0": {
+      "applegpu_g16s": {
+        "registers": 3,
+        "spill_bytes": 0,
+        "text_bytes": 198,
+        "resident_simdgroups_derived": 1024
+      },
+      "applegpu_g17s": {
+        "registers": 3,
+        "spill_bytes": 0,
+        "text_bytes": 192,
+        "resident_simdgroups_derived": 1322
+      }
+    },
+    "1": {
+      "applegpu_g16s": {
+        "registers": 7,
+        "spill_bytes": 0,
+        "text_bytes": 260,
+        "resident_simdgroups_derived": 438
+      },
+      "applegpu_g17s": {
+        "registers": 7,
+        "spill_bytes": 0,
+        "text_bytes": 250,
+        "resident_simdgroups_derived": 566
+      }
+    },
+    "10": {
+      "applegpu_g16s": {
+        "registers": 25,
+        "spill_bytes": 0,
+        "text_bytes": 732,
+        "resident_simdgroups_derived": 122
+      },
+      "applegpu_g17s": {
+        "registers": 24,
+        "spill_bytes": 0,
+        "text_bytes": 692,
+        "resident_simdgroups_derived": 165
+      }
+    },
+    "100": {
+      "applegpu_g16s": {
+        "registers": 27,
+        "spill_bytes": 432,
+        "text_bytes": 1742,
+        "resident_simdgroups_derived": 113
+      },
+      "applegpu_g17s": {
+        "registers": 27,
+        "spill_bytes": 432,
+        "text_bytes": 1714,
+        "resident_simdgroups_derived": 146
+      }
+    },
+    "101": {
+      "applegpu_g16s": {
+        "registers": 7,
+        "spill_bytes": 432,
+        "text_bytes": 484,
+        "resident_simdgroups_derived": 438
+      },
+      "applegpu_g17s": {
+        "registers": 7,
+        "spill_bytes": 432,
+        "text_bytes": 482,
+        "resident_simdgroups_derived": 566
+      }
+    },
+    "102": {
+      "applegpu_g16s": {
+        "registers": 23,
+        "spill_bytes": 432,
+        "text_bytes": 1574,
+        "resident_simdgroups_derived": 133
+      },
+      "applegpu_g17s": {
+        "registers": 23,
+        "spill_bytes": 432,
+        "text_bytes": 1536,
+        "resident_simdgroups_derived": 172
+      }
+    },
+    "103": {
+      "applegpu_g16s": {
+        "registers": 7,
+        "spill_bytes": 432,
+        "text_bytes": 484,
+        "resident_simdgroups_derived": 438
+      },
+      "applegpu_g17s": {
+        "registers": 7,
+        "spill_bytes": 432,
+        "text_bytes": 482,
+        "resident_simdgroups_derived": 566
+      }
+    },
+    "104": {
+      "applegpu_g16s": {
+        "registers": 18,
+        "spill_bytes": 432,
+        "text_bytes": 1302,
+        "resident_simdgroups_derived": 170
+      },
+      "applegpu_g17s": {
+        "registers": 18,
+        "spill_bytes": 432,
+        "text_bytes": 1270,
+        "resident_simdgroups_derived": 220
+      }
+    },
+    "11": {
+      "applegpu_g16s": {
+        "registers": 27,
+        "spill_bytes": 0,
+        "text_bytes": 784,
+        "resident_simdgroups_derived": 113
+      },
+      "applegpu_g17s": {
+        "registers": 26,
+        "spill_bytes": 0,
+        "text_bytes": 742,
+        "resident_simdgroups_derived": 152
+      }
+    },
+    "12": {
+      "applegpu_g16s": {
+        "registers": 28,
+        "spill_bytes": 0,
+        "text_bytes": 840,
+        "resident_simdgroups_derived": 109
+      },
+      "applegpu_g17s": {
+        "registers": 29,
+        "spill_bytes": 0,
+        "text_bytes": 788,
+        "resident_simdgroups_derived": 136
+      }
+    },
+    "13": {
+      "applegpu_g16s": {
+        "registers": 30,
+        "spill_bytes": 0,
+        "text_bytes": 888,
+        "resident_simdgroups_derived": 102
+      },
+      "applegpu_g17s": {
+        "registers": 30,
+        "spill_bytes": 0,
+        "text_bytes": 836,
+        "resident_simdgroups_derived": 132
+      }
+    },
+    "14": {
+      "applegpu_g16s": {
+        "registers": 33,
+        "spill_bytes": 0,
+        "text_bytes": 940,
+        "resident_simdgroups_derived": 93
+      },
+      "applegpu_g17s": {
+        "registers": 32,
+        "spill_bytes": 0,
+        "text_bytes": 892,
+        "resident_simdgroups_derived": 124
+      }
+    },
+    "15": {
+      "applegpu_g16s": {
+        "registers": 34,
+        "spill_bytes": 0,
+        "text_bytes": 994,
+        "resident_simdgroups_derived": 90
+      },
+      "applegpu_g17s": {
+        "registers": 35,
+        "spill_bytes": 0,
+        "text_bytes": 942,
+        "resident_simdgroups_derived": 113
+      }
+    },
+    "16": {
+      "applegpu_g16s": {
+        "registers": 36,
+        "spill_bytes": 0,
+        "text_bytes": 1044,
+        "resident_simdgroups_derived": 85
+      },
+      "applegpu_g17s": {
+        "registers": 36,
+        "spill_bytes": 0,
+        "text_bytes": 986,
+        "resident_simdgroups_derived": 110
+      }
+    },
+    "17": {
+      "applegpu_g16s": {
+        "registers": 39,
+        "spill_bytes": 0,
+        "text_bytes": 1096,
+        "resident_simdgroups_derived": 78
+      },
+      "applegpu_g17s": {
+        "registers": 38,
+        "spill_bytes": 0,
+        "text_bytes": 1036,
+        "resident_simdgroups_derived": 104
+      }
+    },
+    "18": {
+      "applegpu_g16s": {
+        "registers": 40,
+        "spill_bytes": 0,
+        "text_bytes": 1150,
+        "resident_simdgroups_derived": 76
+      },
+      "applegpu_g17s": {
+        "registers": 41,
+        "spill_bytes": 0,
+        "text_bytes": 1082,
+        "resident_simdgroups_derived": 96
+      }
+    },
+    "19": {
+      "applegpu_g16s": {
+        "registers": 42,
+        "spill_bytes": 0,
+        "text_bytes": 1200,
+        "resident_simdgroups_derived": 73
+      },
+      "applegpu_g17s": {
+        "registers": 42,
+        "spill_bytes": 0,
+        "text_bytes": 1130,
+        "resident_simdgroups_derived": 94
+      }
+    },
+    "2": {
+      "applegpu_g16s": {
+        "registers": 8,
+        "spill_bytes": 0,
+        "text_bytes": 312,
+        "resident_simdgroups_derived": 384
+      },
+      "applegpu_g17s": {
+        "registers": 8,
+        "spill_bytes": 0,
+        "text_bytes": 298,
+        "resident_simdgroups_derived": 496
+      }
+    },
+    "20": {
+      "applegpu_g16s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "text_bytes": 1252,
+        "resident_simdgroups_derived": 68
+      },
+      "applegpu_g17s": {
+        "registers": 44,
+        "spill_bytes": 0,
+        "text_bytes": 1180,
+        "resident_simdgroups_derived": 90
+      }
+    },
+    "21": {
+      "applegpu_g16s": {
+        "registers": 46,
+        "spill_bytes": 0,
+        "text_bytes": 1306,
+        "resident_simdgroups_derived": 66
+      },
+      "applegpu_g17s": {
+        "registers": 47,
+        "spill_bytes": 0,
+        "text_bytes": 1232,
+        "resident_simdgroups_derived": 84
+      }
+    },
+    "22": {
+      "applegpu_g16s": {
+        "registers": 48,
+        "spill_bytes": 0,
+        "text_bytes": 1356,
+        "resident_simdgroups_derived": 64
+      },
+      "applegpu_g17s": {
+        "registers": 48,
+        "spill_bytes": 0,
+        "text_bytes": 1284,
+        "resident_simdgroups_derived": 82
+      }
+    },
+    "23": {
+      "applegpu_g16s": {
+        "registers": 50,
+        "spill_bytes": 0,
+        "text_bytes": 1412,
+        "resident_simdgroups_derived": 61
+      },
+      "applegpu_g17s": {
+        "registers": 50,
+        "spill_bytes": 0,
+        "text_bytes": 1330,
+        "resident_simdgroups_derived": 79
+      }
+    },
+    "24": {
+      "applegpu_g16s": {
+        "registers": 52,
+        "spill_bytes": 0,
+        "text_bytes": 1462,
+        "resident_simdgroups_derived": 59
+      },
+      "applegpu_g17s": {
+        "registers": 52,
+        "spill_bytes": 0,
+        "text_bytes": 1376,
+        "resident_simdgroups_derived": 76
+      }
+    },
+    "25": {
+      "applegpu_g16s": {
+        "registers": 54,
+        "spill_bytes": 0,
+        "text_bytes": 1512,
+        "resident_simdgroups_derived": 56
+      },
+      "applegpu_g17s": {
+        "registers": 54,
+        "spill_bytes": 0,
+        "text_bytes": 1424,
+        "resident_simdgroups_derived": 73
+      }
+    },
+    "26": {
+      "applegpu_g16s": {
+        "registers": 56,
+        "spill_bytes": 0,
+        "text_bytes": 1564,
+        "resident_simdgroups_derived": 54
+      },
+      "applegpu_g17s": {
+        "registers": 56,
+        "spill_bytes": 0,
+        "text_bytes": 1474,
+        "resident_simdgroups_derived": 70
+      }
+    },
+    "27": {
+      "applegpu_g16s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 1618,
+        "resident_simdgroups_derived": 52
+      },
+      "applegpu_g17s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 1520,
+        "resident_simdgroups_derived": 68
+      }
+    },
+    "28": {
+      "applegpu_g16s": {
+        "registers": 60,
+        "spill_bytes": 0,
+        "text_bytes": 1668,
+        "resident_simdgroups_derived": 51
+      },
+      "applegpu_g17s": {
+        "registers": 60,
+        "spill_bytes": 0,
+        "text_bytes": 1574,
+        "resident_simdgroups_derived": 66
+      }
+    },
+    "29": {
+      "applegpu_g16s": {
+        "registers": 62,
+        "spill_bytes": 0,
+        "text_bytes": 1720,
+        "resident_simdgroups_derived": 49
+      },
+      "applegpu_g17s": {
+        "registers": 62,
+        "spill_bytes": 0,
+        "text_bytes": 1628,
+        "resident_simdgroups_derived": 64
+      }
+    },
+    "3": {
+      "applegpu_g16s": {
+        "registers": 10,
+        "spill_bytes": 0,
+        "text_bytes": 364,
+        "resident_simdgroups_derived": 307
+      },
+      "applegpu_g17s": {
+        "registers": 10,
+        "spill_bytes": 0,
+        "text_bytes": 346,
+        "resident_simdgroups_derived": 396
+      }
+    },
+    "30": {
+      "applegpu_g16s": {
+        "registers": 64,
+        "spill_bytes": 0,
+        "text_bytes": 1774,
+        "resident_simdgroups_derived": 48
+      },
+      "applegpu_g17s": {
+        "registers": 64,
+        "spill_bytes": 0,
+        "text_bytes": 1670,
+        "resident_simdgroups_derived": 62
+      }
+    },
+    "31": {
+      "applegpu_g16s": {
+        "registers": 66,
+        "spill_bytes": 0,
+        "text_bytes": 1828,
+        "resident_simdgroups_derived": 46
+      },
+      "applegpu_g17s": {
+        "registers": 66,
+        "spill_bytes": 0,
+        "text_bytes": 1722,
+        "resident_simdgroups_derived": 60
+      }
+    },
+    "32": {
+      "applegpu_g16s": {
+        "registers": 39,
+        "spill_bytes": 0,
+        "text_bytes": 1650,
+        "resident_simdgroups_derived": 78
+      },
+      "applegpu_g17s": {
+        "registers": 37,
+        "spill_bytes": 0,
+        "text_bytes": 1540,
+        "resident_simdgroups_derived": 107
+      }
+    },
+    "33": {
+      "applegpu_g16s": {
+        "registers": 40,
+        "spill_bytes": 0,
+        "text_bytes": 1696,
+        "resident_simdgroups_derived": 76
+      },
+      "applegpu_g17s": {
+        "registers": 38,
+        "spill_bytes": 0,
+        "text_bytes": 1578,
+        "resident_simdgroups_derived": 104
+      }
+    },
+    "34": {
+      "applegpu_g16s": {
+        "registers": 41,
+        "spill_bytes": 0,
+        "text_bytes": 1742,
+        "resident_simdgroups_derived": 74
+      },
+      "applegpu_g17s": {
+        "registers": 39,
+        "spill_bytes": 0,
+        "text_bytes": 1618,
+        "resident_simdgroups_derived": 101
+      }
+    },
+    "35": {
+      "applegpu_g16s": {
+        "registers": 42,
+        "spill_bytes": 0,
+        "text_bytes": 1782,
+        "resident_simdgroups_derived": 73
+      },
+      "applegpu_g17s": {
+        "registers": 42,
+        "spill_bytes": 0,
+        "text_bytes": 1666,
+        "resident_simdgroups_derived": 94
+      }
+    },
+    "36": {
+      "applegpu_g16s": {
+        "registers": 43,
+        "spill_bytes": 0,
+        "text_bytes": 1828,
+        "resident_simdgroups_derived": 71
+      },
+      "applegpu_g17s": {
+        "registers": 41,
+        "spill_bytes": 0,
+        "text_bytes": 1708,
+        "resident_simdgroups_derived": 96
+      }
+    },
+    "37": {
+      "applegpu_g16s": {
+        "registers": 44,
+        "spill_bytes": 0,
+        "text_bytes": 1870,
+        "resident_simdgroups_derived": 69
+      },
+      "applegpu_g17s": {
+        "registers": 42,
+        "spill_bytes": 0,
+        "text_bytes": 1744,
+        "resident_simdgroups_derived": 94
+      }
+    },
+    "38": {
+      "applegpu_g16s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "text_bytes": 1914,
+        "resident_simdgroups_derived": 68
+      },
+      "applegpu_g17s": {
+        "registers": 43,
+        "spill_bytes": 0,
+        "text_bytes": 1786,
+        "resident_simdgroups_derived": 92
+      }
+    },
+    "39": {
+      "applegpu_g16s": {
+        "registers": 46,
+        "spill_bytes": 0,
+        "text_bytes": 1960,
+        "resident_simdgroups_derived": 66
+      },
+      "applegpu_g17s": {
+        "registers": 44,
+        "spill_bytes": 0,
+        "text_bytes": 1824,
+        "resident_simdgroups_derived": 90
+      }
+    },
+    "4": {
+      "applegpu_g16s": {
+        "registers": 13,
+        "spill_bytes": 0,
+        "text_bytes": 416,
+        "resident_simdgroups_derived": 236
+      },
+      "applegpu_g17s": {
+        "registers": 13,
+        "spill_bytes": 0,
+        "text_bytes": 394,
+        "resident_simdgroups_derived": 305
+      }
+    },
+    "40": {
+      "applegpu_g16s": {
+        "registers": 47,
+        "spill_bytes": 0,
+        "text_bytes": 2002,
+        "resident_simdgroups_derived": 65
+      },
+      "applegpu_g17s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "text_bytes": 1864,
+        "resident_simdgroups_derived": 88
+      }
+    },
+    "41": {
+      "applegpu_g16s": {
+        "registers": 48,
+        "spill_bytes": 0,
+        "text_bytes": 2046,
+        "resident_simdgroups_derived": 64
+      },
+      "applegpu_g17s": {
+        "registers": 46,
+        "spill_bytes": 0,
+        "text_bytes": 1906,
+        "resident_simdgroups_derived": 86
+      }
+    },
+    "42": {
+      "applegpu_g16s": {
+        "registers": 48,
+        "spill_bytes": 0,
+        "text_bytes": 2092,
+        "resident_simdgroups_derived": 64
+      },
+      "applegpu_g17s": {
+        "registers": 47,
+        "spill_bytes": 0,
+        "text_bytes": 1950,
+        "resident_simdgroups_derived": 84
+      }
+    },
+    "43": {
+      "applegpu_g16s": {
+        "registers": 49,
+        "spill_bytes": 0,
+        "text_bytes": 2134,
+        "resident_simdgroups_derived": 62
+      },
+      "applegpu_g17s": {
+        "registers": 48,
+        "spill_bytes": 0,
+        "text_bytes": 1994,
+        "resident_simdgroups_derived": 82
+      }
+    },
+    "44": {
+      "applegpu_g16s": {
+        "registers": 50,
+        "spill_bytes": 0,
+        "text_bytes": 2178,
+        "resident_simdgroups_derived": 61
+      },
+      "applegpu_g17s": {
+        "registers": 48,
+        "spill_bytes": 0,
+        "text_bytes": 2032,
+        "resident_simdgroups_derived": 82
+      }
+    },
+    "45": {
+      "applegpu_g16s": {
+        "registers": 49,
+        "spill_bytes": 0,
+        "text_bytes": 2228,
+        "resident_simdgroups_derived": 62
+      },
+      "applegpu_g17s": {
+        "registers": 49,
+        "spill_bytes": 0,
+        "text_bytes": 2070,
+        "resident_simdgroups_derived": 80
+      }
+    },
+    "46": {
+      "applegpu_g16s": {
+        "registers": 50,
+        "spill_bytes": 0,
+        "text_bytes": 2266,
+        "resident_simdgroups_derived": 61
+      },
+      "applegpu_g17s": {
+        "registers": 50,
+        "spill_bytes": 0,
+        "text_bytes": 2110,
+        "resident_simdgroups_derived": 79
+      }
+    },
+    "47": {
+      "applegpu_g16s": {
+        "registers": 51,
+        "spill_bytes": 0,
+        "text_bytes": 2310,
+        "resident_simdgroups_derived": 60
+      },
+      "applegpu_g17s": {
+        "registers": 51,
+        "spill_bytes": 0,
+        "text_bytes": 2152,
+        "resident_simdgroups_derived": 77
+      }
+    },
+    "48": {
+      "applegpu_g16s": {
+        "registers": 52,
+        "spill_bytes": 0,
+        "text_bytes": 2356,
+        "resident_simdgroups_derived": 59
+      },
+      "applegpu_g17s": {
+        "registers": 52,
+        "spill_bytes": 0,
+        "text_bytes": 2190,
+        "resident_simdgroups_derived": 76
+      }
+    },
+    "49": {
+      "applegpu_g16s": {
+        "registers": 53,
+        "spill_bytes": 0,
+        "text_bytes": 2398,
+        "resident_simdgroups_derived": 57
+      },
+      "applegpu_g17s": {
+        "registers": 53,
+        "spill_bytes": 0,
+        "text_bytes": 2236,
+        "resident_simdgroups_derived": 74
+      }
+    },
+    "5": {
+      "applegpu_g16s": {
+        "registers": 14,
+        "spill_bytes": 0,
+        "text_bytes": 472,
+        "resident_simdgroups_derived": 219
+      },
+      "applegpu_g17s": {
+        "registers": 14,
+        "spill_bytes": 0,
+        "text_bytes": 446,
+        "resident_simdgroups_derived": 283
+      }
+    },
+    "50": {
+      "applegpu_g16s": {
+        "registers": 54,
+        "spill_bytes": 0,
+        "text_bytes": 2442,
+        "resident_simdgroups_derived": 56
+      },
+      "applegpu_g17s": {
+        "registers": 54,
+        "spill_bytes": 0,
+        "text_bytes": 2282,
+        "resident_simdgroups_derived": 73
+      }
+    },
+    "51": {
+      "applegpu_g16s": {
+        "registers": 55,
+        "spill_bytes": 0,
+        "text_bytes": 2488,
+        "resident_simdgroups_derived": 55
+      },
+      "applegpu_g17s": {
+        "registers": 55,
+        "spill_bytes": 0,
+        "text_bytes": 2316,
+        "resident_simdgroups_derived": 72
+      }
+    },
+    "52": {
+      "applegpu_g16s": {
+        "registers": 56,
+        "spill_bytes": 0,
+        "text_bytes": 2530,
+        "resident_simdgroups_derived": 54
+      },
+      "applegpu_g17s": {
+        "registers": 56,
+        "spill_bytes": 0,
+        "text_bytes": 2356,
+        "resident_simdgroups_derived": 70
+      }
+    },
+    "53": {
+      "applegpu_g16s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 2574,
+        "resident_simdgroups_derived": 53
+      },
+      "applegpu_g17s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 2398,
+        "resident_simdgroups_derived": 69
+      }
+    },
+    "54": {
+      "applegpu_g16s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 2620,
+        "resident_simdgroups_derived": 52
+      },
+      "applegpu_g17s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 2436,
+        "resident_simdgroups_derived": 68
+      }
+    },
+    "55": {
+      "applegpu_g16s": {
+        "registers": 59,
+        "spill_bytes": 0,
+        "text_bytes": 2662,
+        "resident_simdgroups_derived": 52
+      },
+      "applegpu_g17s": {
+        "registers": 59,
+        "spill_bytes": 0,
+        "text_bytes": 2476,
+        "resident_simdgroups_derived": 67
+      }
+    },
+    "56": {
+      "applegpu_g16s": {
+        "registers": 60,
+        "spill_bytes": 0,
+        "text_bytes": 2710,
+        "resident_simdgroups_derived": 51
+      },
+      "applegpu_g17s": {
+        "registers": 60,
+        "spill_bytes": 0,
+        "text_bytes": 2524,
+        "resident_simdgroups_derived": 66
+      }
+    },
+    "57": {
+      "applegpu_g16s": {
+        "registers": 61,
+        "spill_bytes": 0,
+        "text_bytes": 2752,
+        "resident_simdgroups_derived": 50
+      },
+      "applegpu_g17s": {
+        "registers": 61,
+        "spill_bytes": 0,
+        "text_bytes": 2566,
+        "resident_simdgroups_derived": 65
+      }
+    },
+    "58": {
+      "applegpu_g16s": {
+        "registers": 62,
+        "spill_bytes": 0,
+        "text_bytes": 2794,
+        "resident_simdgroups_derived": 49
+      },
+      "applegpu_g17s": {
+        "registers": 62,
+        "spill_bytes": 0,
+        "text_bytes": 2602,
+        "resident_simdgroups_derived": 64
+      }
+    },
+    "59": {
+      "applegpu_g16s": {
+        "registers": 63,
+        "spill_bytes": 0,
+        "text_bytes": 2838,
+        "resident_simdgroups_derived": 48
+      },
+      "applegpu_g17s": {
+        "registers": 63,
+        "spill_bytes": 0,
+        "text_bytes": 2644,
+        "resident_simdgroups_derived": 62
+      }
+    },
+    "6": {
+      "applegpu_g16s": {
+        "registers": 16,
+        "spill_bytes": 0,
+        "text_bytes": 524,
+        "resident_simdgroups_derived": 192
+      },
+      "applegpu_g17s": {
+        "registers": 16,
+        "spill_bytes": 0,
+        "text_bytes": 494,
+        "resident_simdgroups_derived": 248
+      }
+    },
+    "60": {
+      "applegpu_g16s": {
+        "registers": 64,
+        "spill_bytes": 0,
+        "text_bytes": 2884,
+        "resident_simdgroups_derived": 48
+      },
+      "applegpu_g17s": {
+        "registers": 64,
+        "spill_bytes": 0,
+        "text_bytes": 2682,
+        "resident_simdgroups_derived": 62
+      }
+    },
+    "61": {
+      "applegpu_g16s": {
+        "registers": 65,
+        "spill_bytes": 0,
+        "text_bytes": 2932,
+        "resident_simdgroups_derived": 47
+      },
+      "applegpu_g17s": {
+        "registers": 65,
+        "spill_bytes": 0,
+        "text_bytes": 2726,
+        "resident_simdgroups_derived": 61
+      }
+    },
+    "62": {
+      "applegpu_g16s": {
+        "registers": 66,
+        "spill_bytes": 0,
+        "text_bytes": 2980,
+        "resident_simdgroups_derived": 46
+      },
+      "applegpu_g17s": {
+        "registers": 66,
+        "spill_bytes": 0,
+        "text_bytes": 2772,
+        "resident_simdgroups_derived": 60
+      }
+    },
+    "63": {
+      "applegpu_g16s": {
+        "registers": 67,
+        "spill_bytes": 0,
+        "text_bytes": 3030,
+        "resident_simdgroups_derived": 45
+      },
+      "applegpu_g17s": {
+        "registers": 67,
+        "spill_bytes": 0,
+        "text_bytes": 2820,
+        "resident_simdgroups_derived": 59
+      }
+    },
+    "64": {
+      "applegpu_g16s": {
+        "registers": 68,
+        "spill_bytes": 0,
+        "text_bytes": 3076,
+        "resident_simdgroups_derived": 45
+      },
+      "applegpu_g17s": {
+        "registers": 68,
+        "spill_bytes": 0,
+        "text_bytes": 2868,
+        "resident_simdgroups_derived": 58
+      }
+    },
+    "65": {
+      "applegpu_g16s": {
+        "registers": 69,
+        "spill_bytes": 0,
+        "text_bytes": 3124,
+        "resident_simdgroups_derived": 44
+      },
+      "applegpu_g17s": {
+        "registers": 69,
+        "spill_bytes": 0,
+        "text_bytes": 2910,
+        "resident_simdgroups_derived": 57
+      }
+    },
+    "66": {
+      "applegpu_g16s": {
+        "registers": 71,
+        "spill_bytes": 0,
+        "text_bytes": 3182,
+        "resident_simdgroups_derived": 43
+      },
+      "applegpu_g17s": {
+        "registers": 71,
+        "spill_bytes": 0,
+        "text_bytes": 2956,
+        "resident_simdgroups_derived": 55
+      }
+    },
+    "67": {
+      "applegpu_g16s": {
+        "registers": 72,
+        "spill_bytes": 0,
+        "text_bytes": 3232,
+        "resident_simdgroups_derived": 42
+      },
+      "applegpu_g17s": {
+        "registers": 72,
+        "spill_bytes": 0,
+        "text_bytes": 3000,
+        "resident_simdgroups_derived": 55
+      }
+    },
+    "68": {
+      "applegpu_g16s": {
+        "registers": 73,
+        "spill_bytes": 0,
+        "text_bytes": 3284,
+        "resident_simdgroups_derived": 42
+      },
+      "applegpu_g17s": {
+        "registers": 73,
+        "spill_bytes": 0,
+        "text_bytes": 3176,
+        "resident_simdgroups_derived": 54
+      }
+    },
+    "69": {
+      "applegpu_g16s": {
+        "registers": 74,
+        "spill_bytes": 0,
+        "text_bytes": 3342,
+        "resident_simdgroups_derived": 41
+      },
+      "applegpu_g17s": {
+        "registers": 74,
+        "spill_bytes": 0,
+        "text_bytes": 3226,
+        "resident_simdgroups_derived": 53
+      }
+    },
+    "7": {
+      "applegpu_g16s": {
+        "registers": 19,
+        "spill_bytes": 0,
+        "text_bytes": 576,
+        "resident_simdgroups_derived": 161
+      },
+      "applegpu_g17s": {
+        "registers": 18,
+        "spill_bytes": 0,
+        "text_bytes": 548,
+        "resident_simdgroups_derived": 220
+      }
+    },
+    "70": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 3388,
+        "resident_simdgroups_derived": 40
+      },
+      "applegpu_g17s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 3276,
+        "resident_simdgroups_derived": 52
+      }
+    },
+    "71": {
+      "applegpu_g16s": {
+        "registers": 76,
+        "spill_bytes": 0,
+        "text_bytes": 3436,
+        "resident_simdgroups_derived": 40
+      },
+      "applegpu_g17s": {
+        "registers": 76,
+        "spill_bytes": 0,
+        "text_bytes": 3330,
+        "resident_simdgroups_derived": 52
+      }
+    },
+    "72": {
+      "applegpu_g16s": {
+        "registers": 77,
+        "spill_bytes": 0,
+        "text_bytes": 3624,
+        "resident_simdgroups_derived": 39
+      },
+      "applegpu_g17s": {
+        "registers": 77,
+        "spill_bytes": 0,
+        "text_bytes": 3372,
+        "resident_simdgroups_derived": 51
+      }
+    },
+    "73": {
+      "applegpu_g16s": {
+        "registers": 78,
+        "spill_bytes": 0,
+        "text_bytes": 3678,
+        "resident_simdgroups_derived": 39
+      },
+      "applegpu_g17s": {
+        "registers": 78,
+        "spill_bytes": 0,
+        "text_bytes": 3424,
+        "resident_simdgroups_derived": 50
+      }
+    },
+    "74": {
+      "applegpu_g16s": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "text_bytes": 3726,
+        "resident_simdgroups_derived": 38
+      },
+      "applegpu_g17s": {
+        "registers": 79,
+        "spill_bytes": 0,
+        "text_bytes": 3478,
+        "resident_simdgroups_derived": 50
+      }
+    },
+    "75": {
+      "applegpu_g16s": {
+        "registers": 80,
+        "spill_bytes": 0,
+        "text_bytes": 3768,
+        "resident_simdgroups_derived": 38
+      },
+      "applegpu_g17s": {
+        "registers": 80,
+        "spill_bytes": 0,
+        "text_bytes": 3520,
+        "resident_simdgroups_derived": 49
+      }
+    },
+    "76": {
+      "applegpu_g16s": {
+        "registers": 81,
+        "spill_bytes": 0,
+        "text_bytes": 3822,
+        "resident_simdgroups_derived": 37
+      },
+      "applegpu_g17s": {
+        "registers": 81,
+        "spill_bytes": 0,
+        "text_bytes": 3564,
+        "resident_simdgroups_derived": 48
+      }
+    },
+    "77": {
+      "applegpu_g16s": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "text_bytes": 3878,
+        "resident_simdgroups_derived": 37
+      },
+      "applegpu_g17s": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "text_bytes": 3624,
+        "resident_simdgroups_derived": 48
+      }
+    },
+    "78": {
+      "applegpu_g16s": {
+        "registers": 83,
+        "spill_bytes": 0,
+        "text_bytes": 3932,
+        "resident_simdgroups_derived": 37
+      },
+      "applegpu_g17s": {
+        "registers": 83,
+        "spill_bytes": 0,
+        "text_bytes": 3670,
+        "resident_simdgroups_derived": 47
+      }
+    },
+    "79": {
+      "applegpu_g16s": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "text_bytes": 3982,
+        "resident_simdgroups_derived": 36
+      },
+      "applegpu_g17s": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "text_bytes": 3718,
+        "resident_simdgroups_derived": 47
+      }
+    },
+    "8": {
+      "applegpu_g16s": {
+        "registers": 20,
+        "spill_bytes": 0,
+        "text_bytes": 628,
+        "resident_simdgroups_derived": 153
+      },
+      "applegpu_g17s": {
+        "registers": 20,
+        "spill_bytes": 0,
+        "text_bytes": 600,
+        "resident_simdgroups_derived": 198
+      }
+    },
+    "80": {
+      "applegpu_g16s": {
+        "registers": 85,
+        "spill_bytes": 0,
+        "text_bytes": 4038,
+        "resident_simdgroups_derived": 36
+      },
+      "applegpu_g17s": {
+        "registers": 85,
+        "spill_bytes": 0,
+        "text_bytes": 3772,
+        "resident_simdgroups_derived": 46
+      }
+    },
+    "81": {
+      "applegpu_g16s": {
+        "registers": 86,
+        "spill_bytes": 0,
+        "text_bytes": 4088,
+        "resident_simdgroups_derived": 35
+      },
+      "applegpu_g17s": {
+        "registers": 86,
+        "spill_bytes": 0,
+        "text_bytes": 3822,
+        "resident_simdgroups_derived": 46
+      }
+    },
+    "82": {
+      "applegpu_g16s": {
+        "registers": 87,
+        "spill_bytes": 0,
+        "text_bytes": 4142,
+        "resident_simdgroups_derived": 35
+      },
+      "applegpu_g17s": {
+        "registers": 87,
+        "spill_bytes": 0,
+        "text_bytes": 3866,
+        "resident_simdgroups_derived": 45
+      }
+    },
+    "83": {
+      "applegpu_g16s": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "text_bytes": 4198,
+        "resident_simdgroups_derived": 34
+      },
+      "applegpu_g17s": {
+        "registers": 88,
+        "spill_bytes": 0,
+        "text_bytes": 3926,
+        "resident_simdgroups_derived": 45
+      }
+    },
+    "84": {
+      "applegpu_g16s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 4248,
+        "resident_simdgroups_derived": 34
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 3976,
+        "resident_simdgroups_derived": 44
+      }
+    },
+    "85": {
+      "applegpu_g16s": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "text_bytes": 4294,
+        "resident_simdgroups_derived": 34
+      },
+      "applegpu_g17s": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "text_bytes": 4024,
+        "resident_simdgroups_derived": 44
+      }
+    },
+    "86": {
+      "applegpu_g16s": {
+        "registers": 91,
+        "spill_bytes": 0,
+        "text_bytes": 4350,
+        "resident_simdgroups_derived": 33
+      },
+      "applegpu_g17s": {
+        "registers": 91,
+        "spill_bytes": 0,
+        "text_bytes": 4074,
+        "resident_simdgroups_derived": 43
+      }
+    },
+    "87": {
+      "applegpu_g16s": {
+        "registers": 92,
+        "spill_bytes": 0,
+        "text_bytes": 4400,
+        "resident_simdgroups_derived": 33
+      },
+      "applegpu_g17s": {
+        "registers": 92,
+        "spill_bytes": 0,
+        "text_bytes": 4108,
+        "resident_simdgroups_derived": 43
+      }
+    },
+    "88": {
+      "applegpu_g16s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 4466,
+        "resident_simdgroups_derived": 33
+      },
+      "applegpu_g17s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 4176,
+        "resident_simdgroups_derived": 42
+      }
+    },
+    "89": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 4502,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 4212,
+        "resident_simdgroups_derived": 42
+      }
+    },
+    "9": {
+      "applegpu_g16s": {
+        "registers": 22,
+        "spill_bytes": 0,
+        "text_bytes": 680,
+        "resident_simdgroups_derived": 139
+      },
+      "applegpu_g17s": {
+        "registers": 23,
+        "spill_bytes": 0,
+        "text_bytes": 644,
+        "resident_simdgroups_derived": 172
+      }
+    },
+    "90": {
+      "applegpu_g16s": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "text_bytes": 4586,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 95,
+        "spill_bytes": 0,
+        "text_bytes": 4264,
+        "resident_simdgroups_derived": 41
+      }
+    },
+    "91": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4642,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4316,
+        "resident_simdgroups_derived": 41
+      }
+    },
+    "92": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "text_bytes": 4712,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 97,
+        "spill_bytes": 0,
+        "text_bytes": 4370,
+        "resident_simdgroups_derived": 40
+      }
+    },
+    "93": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "text_bytes": 4782,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 98,
+        "spill_bytes": 0,
+        "text_bytes": 4420,
+        "resident_simdgroups_derived": 40
+      }
+    },
+    "94": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "text_bytes": 4724,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 99,
+        "spill_bytes": 0,
+        "text_bytes": 4472,
+        "resident_simdgroups_derived": 40
+      }
+    },
+    "95": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 16,
+        "text_bytes": 4792,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 100,
+        "spill_bytes": 0,
+        "text_bytes": 4518,
+        "resident_simdgroups_derived": 39
+      }
+    },
+    "96": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 32,
+        "text_bytes": 4980,
+        "resident_simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 4560,
+        "resident_simdgroups_derived": 39
+      }
+    },
+    "97": {
+      "applegpu_g16s": {
+        "registers": 7,
+        "spill_bytes": 432,
+        "text_bytes": 484,
+        "resident_simdgroups_derived": 438
+      },
+      "applegpu_g17s": {
+        "registers": 7,
+        "spill_bytes": 432,
+        "text_bytes": 482,
+        "resident_simdgroups_derived": 566
+      }
+    },
+    "98": {
+      "applegpu_g16s": {
+        "registers": 19,
+        "spill_bytes": 432,
+        "text_bytes": 1358,
+        "resident_simdgroups_derived": 161
+      },
+      "applegpu_g17s": {
+        "registers": 19,
+        "spill_bytes": 432,
+        "text_bytes": 1334,
+        "resident_simdgroups_derived": 208
+      }
+    },
+    "99": {
+      "applegpu_g16s": {
+        "registers": 17,
+        "spill_bytes": 432,
+        "text_bytes": 1142,
+        "resident_simdgroups_derived": 180
+      },
+      "applegpu_g17s": {
+        "registers": 17,
+        "spill_bytes": 432,
+        "text_bytes": 1118,
+        "resident_simdgroups_derived": 233
+      }
+    }
+  },
+  "register_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  }
+}

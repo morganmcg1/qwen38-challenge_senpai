@@ -1,0 +1,3152 @@
+{
+ "cells": [
+  {
+   "function": "e130_occ_b0",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 214,
+   "peak_concurrent_threads": 54784,
+   "seconds_min": 0.010885041672736406,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b1",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 156,
+   "peak_concurrent_threads": 39936,
+   "seconds_min": 0.012005374999716878,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b2",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 147,
+   "peak_concurrent_threads": 37632,
+   "seconds_min": 0.013931625057011843,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b3",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 149,
+   "peak_concurrent_threads": 38144,
+   "seconds_min": 0.016710749827325344,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b4",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 149,
+   "peak_concurrent_threads": 38144,
+   "seconds_min": 0.021641124971210957,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b5",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 154,
+   "peak_concurrent_threads": 39424,
+   "seconds_min": 0.026727375108748674,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b6",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 156,
+   "peak_concurrent_threads": 39936,
+   "seconds_min": 0.03221512516029179,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b7",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 155,
+   "peak_concurrent_threads": 39680,
+   "seconds_min": 0.037921500159427524,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b104",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 127,
+   "peak_concurrent_threads": 32512,
+   "seconds_min": 0.019586375216022134,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b8",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 159,
+   "peak_concurrent_threads": 40704,
+   "seconds_min": 0.04542633332312107,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b9",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 153,
+   "peak_concurrent_threads": 39168,
+   "seconds_min": 0.05081287492066622,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b10",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 160,
+   "peak_concurrent_threads": 40960,
+   "seconds_min": 0.053802208276465535,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b11",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 160,
+   "peak_concurrent_threads": 40960,
+   "seconds_min": 0.05897466652095318,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b12",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 156,
+   "peak_concurrent_threads": 39936,
+   "seconds_min": 0.0646453748922795,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b13",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 154,
+   "peak_concurrent_threads": 39424,
+   "seconds_min": 0.0700288750231266,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b14",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 143,
+   "peak_concurrent_threads": 36608,
+   "seconds_min": 0.0751217498909682,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b15",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 160,
+   "peak_concurrent_threads": 40960,
+   "seconds_min": 0.08087350009009242,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b16",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 157,
+   "peak_concurrent_threads": 40192,
+   "seconds_min": 0.0883944584056735,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b32",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 92,
+   "peak_concurrent_threads": 23552,
+   "seconds_min": 0.023861249908804893,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b17",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 153,
+   "peak_concurrent_threads": 39168,
+   "seconds_min": 0.09319425001740456,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b34",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 90,
+   "peak_concurrent_threads": 23040,
+   "seconds_min": 0.022930791834369302,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b35",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 84,
+   "peak_concurrent_threads": 21504,
+   "seconds_min": 0.022528916597366333,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b18",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 155,
+   "peak_concurrent_threads": 39680,
+   "seconds_min": 0.09765750006772578,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b19",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 153,
+   "peak_concurrent_threads": 39168,
+   "seconds_min": 0.10400583338923752,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b38",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 88,
+   "peak_concurrent_threads": 22528,
+   "seconds_min": 0.022376208333298564,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b20",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 150,
+   "peak_concurrent_threads": 38400,
+   "seconds_min": 0.10811212519183755,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b40",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 83,
+   "peak_concurrent_threads": 21248,
+   "seconds_min": 0.02313808328472078,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b41",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 81,
+   "peak_concurrent_threads": 20736,
+   "seconds_min": 0.02217016671784222,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b21",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 146,
+   "peak_concurrent_threads": 37376,
+   "seconds_min": 0.1148065417073667,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b22",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 154,
+   "peak_concurrent_threads": 39424,
+   "seconds_min": 0.12158516654744744,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b44",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 77,
+   "peak_concurrent_threads": 19712,
+   "seconds_min": 0.02282924996688962,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b23",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 154,
+   "peak_concurrent_threads": 39424,
+   "seconds_min": 0.12552487500943244,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b46",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 76,
+   "peak_concurrent_threads": 19456,
+   "seconds_min": 0.02251837495714426,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b24",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 143,
+   "peak_concurrent_threads": 36608,
+   "seconds_min": 0.13331300020217896,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b48",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02418525004759431,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b25",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 143,
+   "peak_concurrent_threads": 36608,
+   "seconds_min": 0.1413676249794662,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b50",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022736875107511878,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b26",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 149,
+   "peak_concurrent_threads": 38144,
+   "seconds_min": 0.14247954147867858,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b52",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.023697291733697057,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b27",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 152,
+   "peak_concurrent_threads": 38912,
+   "seconds_min": 0.14918395830318332,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b54",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.021719583310186863,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b28",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 140,
+   "peak_concurrent_threads": 35840,
+   "seconds_min": 0.16093387501314282,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b56",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022240124875679612,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b29",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 142,
+   "peak_concurrent_threads": 36352,
+   "seconds_min": 0.16010787500999868,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b58",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.021870583528652787,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b30",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 132,
+   "peak_concurrent_threads": 33792,
+   "seconds_min": 0.16654912498779595,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b60",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02220333321020007,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b31",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 145,
+   "peak_concurrent_threads": 37120,
+   "seconds_min": 0.18411274999380112,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b62",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022235124837607145,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b63",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02396220830269158,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b64",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02237475011497736,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b65",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 82,
+   "peak_concurrent_threads": 20992,
+   "seconds_min": 0.023027750197798014,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b66",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022171250078827143,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b67",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02194550004787743,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b68",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022707958472892642,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b69",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022972541628405452,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b70",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.0241287499666214,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b71",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02287512505427003,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b72",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022936208173632622,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b73",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02317949989810586,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b74",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02279987488873303,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b75",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02306024986319244,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b76",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.023669749964028597,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b77",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02292695827782154,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b78",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02205575001426041,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b79",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 79,
+   "peak_concurrent_threads": 20224,
+   "seconds_min": 0.02427716669626534,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b80",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.023460208205506206,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b81",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.0231432500295341,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b82",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.021978750126436353,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b83",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022980374982580543,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b84",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02308812504634261,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b85",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022695499937981367,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b86",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.022718500113114715,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b87",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.023689916590228677,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b88",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.023826333228498697,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b89",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 75,
+   "peak_concurrent_threads": 19200,
+   "seconds_min": 0.023105124942958355,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b90",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.02284887502901256,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b91",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 80,
+   "peak_concurrent_threads": 20480,
+   "seconds_min": 0.021987624932080507,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  },
+  {
+   "function": "e130_occ_b92",
+   "max_total_threads_per_threadgroup": 1024,
+   "peak_concurrent_threadgroups": 77,
+   "peak_concurrent_threads": 19712,
+   "seconds_min": 0.023530749836936593,
+   "static_threadgroup_memory_bytes": 16,
+   "thread_execution_width": 32
+  }
+ ],
+ "census": {
+  "0": {
+   "applegpu_g16s": {
+    "registers": 4,
+    "resident_simdgroups_derived": 768,
+    "spill_bytes": 16,
+    "text_bytes": 468
+   },
+   "applegpu_g17s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 661,
+    "spill_bytes": 0,
+    "text_bytes": 460
+   }
+  },
+  "1": {
+   "applegpu_g16s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 512,
+    "spill_bytes": 16,
+    "text_bytes": 528
+   },
+   "applegpu_g17s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 661,
+    "spill_bytes": 0,
+    "text_bytes": 520
+   }
+  },
+  "2": {
+   "applegpu_g16s": {
+    "registers": 8,
+    "resident_simdgroups_derived": 384,
+    "spill_bytes": 16,
+    "text_bytes": 590
+   },
+   "applegpu_g17s": {
+    "registers": 8,
+    "resident_simdgroups_derived": 496,
+    "spill_bytes": 0,
+    "text_bytes": 572
+   }
+  },
+  "3": {
+   "applegpu_g16s": {
+    "registers": 9,
+    "resident_simdgroups_derived": 341,
+    "spill_bytes": 16,
+    "text_bytes": 638
+   },
+   "applegpu_g17s": {
+    "registers": 9,
+    "resident_simdgroups_derived": 440,
+    "spill_bytes": 0,
+    "text_bytes": 616
+   }
+  },
+  "4": {
+   "applegpu_g16s": {
+    "registers": 11,
+    "resident_simdgroups_derived": 279,
+    "spill_bytes": 16,
+    "text_bytes": 690
+   },
+   "applegpu_g17s": {
+    "registers": 11,
+    "resident_simdgroups_derived": 360,
+    "spill_bytes": 0,
+    "text_bytes": 664
+   }
+  },
+  "5": {
+   "applegpu_g16s": {
+    "registers": 14,
+    "resident_simdgroups_derived": 219,
+    "spill_bytes": 16,
+    "text_bytes": 746
+   },
+   "applegpu_g17s": {
+    "registers": 14,
+    "resident_simdgroups_derived": 283,
+    "spill_bytes": 0,
+    "text_bytes": 716
+   }
+  },
+  "6": {
+   "applegpu_g16s": {
+    "registers": 15,
+    "resident_simdgroups_derived": 204,
+    "spill_bytes": 16,
+    "text_bytes": 798
+   },
+   "applegpu_g17s": {
+    "registers": 15,
+    "resident_simdgroups_derived": 264,
+    "spill_bytes": 0,
+    "text_bytes": 764
+   }
+  },
+  "7": {
+   "applegpu_g16s": {
+    "registers": 17,
+    "resident_simdgroups_derived": 180,
+    "spill_bytes": 16,
+    "text_bytes": 850
+   },
+   "applegpu_g17s": {
+    "registers": 17,
+    "resident_simdgroups_derived": 233,
+    "spill_bytes": 0,
+    "text_bytes": 812
+   }
+  },
+  "8": {
+   "applegpu_g16s": {
+    "registers": 20,
+    "resident_simdgroups_derived": 153,
+    "spill_bytes": 16,
+    "text_bytes": 902
+   },
+   "applegpu_g17s": {
+    "registers": 19,
+    "resident_simdgroups_derived": 208,
+    "spill_bytes": 0,
+    "text_bytes": 866
+   }
+  },
+  "9": {
+   "applegpu_g16s": {
+    "registers": 21,
+    "resident_simdgroups_derived": 146,
+    "spill_bytes": 16,
+    "text_bytes": 954
+   },
+   "applegpu_g17s": {
+    "registers": 22,
+    "resident_simdgroups_derived": 180,
+    "spill_bytes": 0,
+    "text_bytes": 918
+   }
+  },
+  "10": {
+   "applegpu_g16s": {
+    "registers": 23,
+    "resident_simdgroups_derived": 133,
+    "spill_bytes": 16,
+    "text_bytes": 1006
+   },
+   "applegpu_g17s": {
+    "registers": 23,
+    "resident_simdgroups_derived": 172,
+    "spill_bytes": 0,
+    "text_bytes": 962
+   }
+  },
+  "11": {
+   "applegpu_g16s": {
+    "registers": 26,
+    "resident_simdgroups_derived": 118,
+    "spill_bytes": 16,
+    "text_bytes": 1058
+   },
+   "applegpu_g17s": {
+    "registers": 25,
+    "resident_simdgroups_derived": 158,
+    "spill_bytes": 0,
+    "text_bytes": 1010
+   }
+  },
+  "12": {
+   "applegpu_g16s": {
+    "registers": 27,
+    "resident_simdgroups_derived": 113,
+    "spill_bytes": 16,
+    "text_bytes": 1110
+   },
+   "applegpu_g17s": {
+    "registers": 27,
+    "resident_simdgroups_derived": 146,
+    "spill_bytes": 0,
+    "text_bytes": 1060
+   }
+  },
+  "13": {
+   "applegpu_g16s": {
+    "registers": 29,
+    "resident_simdgroups_derived": 105,
+    "spill_bytes": 16,
+    "text_bytes": 1166
+   },
+   "applegpu_g17s": {
+    "registers": 30,
+    "resident_simdgroups_derived": 132,
+    "spill_bytes": 0,
+    "text_bytes": 1108
+   }
+  },
+  "14": {
+   "applegpu_g16s": {
+    "registers": 31,
+    "resident_simdgroups_derived": 99,
+    "spill_bytes": 16,
+    "text_bytes": 1214
+   },
+   "applegpu_g17s": {
+    "registers": 31,
+    "resident_simdgroups_derived": 128,
+    "spill_bytes": 0,
+    "text_bytes": 1156
+   }
+  },
+  "15": {
+   "applegpu_g16s": {
+    "registers": 34,
+    "resident_simdgroups_derived": 90,
+    "spill_bytes": 16,
+    "text_bytes": 1266
+   },
+   "applegpu_g17s": {
+    "registers": 33,
+    "resident_simdgroups_derived": 120,
+    "spill_bytes": 0,
+    "text_bytes": 1210
+   }
+  },
+  "16": {
+   "applegpu_g16s": {
+    "registers": 35,
+    "resident_simdgroups_derived": 87,
+    "spill_bytes": 16,
+    "text_bytes": 1318
+   },
+   "applegpu_g17s": {
+    "registers": 36,
+    "resident_simdgroups_derived": 110,
+    "spill_bytes": 0,
+    "text_bytes": 1262
+   }
+  },
+  "17": {
+   "applegpu_g16s": {
+    "registers": 37,
+    "resident_simdgroups_derived": 83,
+    "spill_bytes": 16,
+    "text_bytes": 1370
+   },
+   "applegpu_g17s": {
+    "registers": 37,
+    "resident_simdgroups_derived": 107,
+    "spill_bytes": 0,
+    "text_bytes": 1306
+   }
+  },
+  "18": {
+   "applegpu_g16s": {
+    "registers": 40,
+    "resident_simdgroups_derived": 76,
+    "spill_bytes": 16,
+    "text_bytes": 1422
+   },
+   "applegpu_g17s": {
+    "registers": 39,
+    "resident_simdgroups_derived": 101,
+    "spill_bytes": 0,
+    "text_bytes": 1354
+   }
+  },
+  "19": {
+   "applegpu_g16s": {
+    "registers": 41,
+    "resident_simdgroups_derived": 74,
+    "spill_bytes": 16,
+    "text_bytes": 1474
+   },
+   "applegpu_g17s": {
+    "registers": 42,
+    "resident_simdgroups_derived": 94,
+    "spill_bytes": 0,
+    "text_bytes": 1402
+   }
+  },
+  "20": {
+   "applegpu_g16s": {
+    "registers": 43,
+    "resident_simdgroups_derived": 71,
+    "spill_bytes": 16,
+    "text_bytes": 1526
+   },
+   "applegpu_g17s": {
+    "registers": 43,
+    "resident_simdgroups_derived": 92,
+    "spill_bytes": 0,
+    "text_bytes": 1450
+   }
+  },
+  "21": {
+   "applegpu_g16s": {
+    "registers": 46,
+    "resident_simdgroups_derived": 66,
+    "spill_bytes": 16,
+    "text_bytes": 1578
+   },
+   "applegpu_g17s": {
+    "registers": 45,
+    "resident_simdgroups_derived": 88,
+    "spill_bytes": 0,
+    "text_bytes": 1498
+   }
+  },
+  "22": {
+   "applegpu_g16s": {
+    "registers": 47,
+    "resident_simdgroups_derived": 65,
+    "spill_bytes": 16,
+    "text_bytes": 1630
+   },
+   "applegpu_g17s": {
+    "registers": 48,
+    "resident_simdgroups_derived": 82,
+    "spill_bytes": 0,
+    "text_bytes": 1552
+   }
+  },
+  "23": {
+   "applegpu_g16s": {
+    "registers": 49,
+    "resident_simdgroups_derived": 62,
+    "spill_bytes": 16,
+    "text_bytes": 1682
+   },
+   "applegpu_g17s": {
+    "registers": 49,
+    "resident_simdgroups_derived": 80,
+    "spill_bytes": 0,
+    "text_bytes": 1604
+   }
+  },
+  "24": {
+   "applegpu_g16s": {
+    "registers": 51,
+    "resident_simdgroups_derived": 60,
+    "spill_bytes": 16,
+    "text_bytes": 1738
+   },
+   "applegpu_g17s": {
+    "registers": 51,
+    "resident_simdgroups_derived": 77,
+    "spill_bytes": 0,
+    "text_bytes": 1648
+   }
+  },
+  "25": {
+   "applegpu_g16s": {
+    "registers": 53,
+    "resident_simdgroups_derived": 57,
+    "spill_bytes": 16,
+    "text_bytes": 1786
+   },
+   "applegpu_g17s": {
+    "registers": 53,
+    "resident_simdgroups_derived": 74,
+    "spill_bytes": 0,
+    "text_bytes": 1692
+   }
+  },
+  "26": {
+   "applegpu_g16s": {
+    "registers": 55,
+    "resident_simdgroups_derived": 55,
+    "spill_bytes": 16,
+    "text_bytes": 1838
+   },
+   "applegpu_g17s": {
+    "registers": 55,
+    "resident_simdgroups_derived": 72,
+    "spill_bytes": 0,
+    "text_bytes": 1740
+   }
+  },
+  "27": {
+   "applegpu_g16s": {
+    "registers": 57,
+    "resident_simdgroups_derived": 53,
+    "spill_bytes": 16,
+    "text_bytes": 1890
+   },
+   "applegpu_g17s": {
+    "registers": 57,
+    "resident_simdgroups_derived": 69,
+    "spill_bytes": 0,
+    "text_bytes": 1788
+   }
+  },
+  "28": {
+   "applegpu_g16s": {
+    "registers": 59,
+    "resident_simdgroups_derived": 52,
+    "spill_bytes": 16,
+    "text_bytes": 1942
+   },
+   "applegpu_g17s": {
+    "registers": 59,
+    "resident_simdgroups_derived": 67,
+    "spill_bytes": 0,
+    "text_bytes": 1836
+   }
+  },
+  "29": {
+   "applegpu_g16s": {
+    "registers": 61,
+    "resident_simdgroups_derived": 50,
+    "spill_bytes": 16,
+    "text_bytes": 1994
+   },
+   "applegpu_g17s": {
+    "registers": 61,
+    "resident_simdgroups_derived": 65,
+    "spill_bytes": 0,
+    "text_bytes": 1890
+   }
+  },
+  "30": {
+   "applegpu_g16s": {
+    "registers": 63,
+    "resident_simdgroups_derived": 48,
+    "spill_bytes": 16,
+    "text_bytes": 2046
+   },
+   "applegpu_g17s": {
+    "registers": 63,
+    "resident_simdgroups_derived": 62,
+    "spill_bytes": 0,
+    "text_bytes": 1942
+   }
+  },
+  "31": {
+   "applegpu_g16s": {
+    "registers": 65,
+    "resident_simdgroups_derived": 47,
+    "spill_bytes": 16,
+    "text_bytes": 2100
+   },
+   "applegpu_g17s": {
+    "registers": 65,
+    "resident_simdgroups_derived": 61,
+    "spill_bytes": 0,
+    "text_bytes": 1988
+   }
+  },
+  "32": {
+   "applegpu_g16s": {
+    "registers": 36,
+    "resident_simdgroups_derived": 85,
+    "spill_bytes": 16,
+    "text_bytes": 1924
+   },
+   "applegpu_g17s": {
+    "registers": 36,
+    "resident_simdgroups_derived": 110,
+    "spill_bytes": 0,
+    "text_bytes": 1806
+   }
+  },
+  "33": {
+   "applegpu_g16s": {
+    "registers": 37,
+    "resident_simdgroups_derived": 83,
+    "spill_bytes": 16,
+    "text_bytes": 1968
+   },
+   "applegpu_g17s": {
+    "registers": 37,
+    "resident_simdgroups_derived": 107,
+    "spill_bytes": 0,
+    "text_bytes": 1852
+   }
+  },
+  "34": {
+   "applegpu_g16s": {
+    "registers": 38,
+    "resident_simdgroups_derived": 80,
+    "spill_bytes": 16,
+    "text_bytes": 2012
+   },
+   "applegpu_g17s": {
+    "registers": 38,
+    "resident_simdgroups_derived": 104,
+    "spill_bytes": 0,
+    "text_bytes": 1894
+   }
+  },
+  "35": {
+   "applegpu_g16s": {
+    "registers": 39,
+    "resident_simdgroups_derived": 78,
+    "spill_bytes": 16,
+    "text_bytes": 2058
+   },
+   "applegpu_g17s": {
+    "registers": 39,
+    "resident_simdgroups_derived": 101,
+    "spill_bytes": 0,
+    "text_bytes": 1934
+   }
+  },
+  "36": {
+   "applegpu_g16s": {
+    "registers": 40,
+    "resident_simdgroups_derived": 76,
+    "spill_bytes": 16,
+    "text_bytes": 2098
+   },
+   "applegpu_g17s": {
+    "registers": 40,
+    "resident_simdgroups_derived": 99,
+    "spill_bytes": 0,
+    "text_bytes": 1980
+   }
+  },
+  "37": {
+   "applegpu_g16s": {
+    "registers": 41,
+    "resident_simdgroups_derived": 74,
+    "spill_bytes": 16,
+    "text_bytes": 2142
+   },
+   "applegpu_g17s": {
+    "registers": 41,
+    "resident_simdgroups_derived": 96,
+    "spill_bytes": 0,
+    "text_bytes": 2024
+   }
+  },
+  "38": {
+   "applegpu_g16s": {
+    "registers": 42,
+    "resident_simdgroups_derived": 73,
+    "spill_bytes": 16,
+    "text_bytes": 2186
+   },
+   "applegpu_g17s": {
+    "registers": 42,
+    "resident_simdgroups_derived": 94,
+    "spill_bytes": 0,
+    "text_bytes": 2060
+   }
+  },
+  "39": {
+   "applegpu_g16s": {
+    "registers": 43,
+    "resident_simdgroups_derived": 71,
+    "spill_bytes": 16,
+    "text_bytes": 2230
+   },
+   "applegpu_g17s": {
+    "registers": 43,
+    "resident_simdgroups_derived": 92,
+    "spill_bytes": 0,
+    "text_bytes": 2100
+   }
+  },
+  "40": {
+   "applegpu_g16s": {
+    "registers": 44,
+    "resident_simdgroups_derived": 69,
+    "spill_bytes": 16,
+    "text_bytes": 2274
+   },
+   "applegpu_g17s": {
+    "registers": 44,
+    "resident_simdgroups_derived": 90,
+    "spill_bytes": 0,
+    "text_bytes": 2140
+   }
+  },
+  "41": {
+   "applegpu_g16s": {
+    "registers": 45,
+    "resident_simdgroups_derived": 68,
+    "spill_bytes": 16,
+    "text_bytes": 2318
+   },
+   "applegpu_g17s": {
+    "registers": 45,
+    "resident_simdgroups_derived": 88,
+    "spill_bytes": 0,
+    "text_bytes": 2180
+   }
+  },
+  "42": {
+   "applegpu_g16s": {
+    "registers": 46,
+    "resident_simdgroups_derived": 66,
+    "spill_bytes": 16,
+    "text_bytes": 2362
+   },
+   "applegpu_g17s": {
+    "registers": 46,
+    "resident_simdgroups_derived": 86,
+    "spill_bytes": 0,
+    "text_bytes": 2220
+   }
+  },
+  "43": {
+   "applegpu_g16s": {
+    "registers": 47,
+    "resident_simdgroups_derived": 65,
+    "spill_bytes": 16,
+    "text_bytes": 2406
+   },
+   "applegpu_g17s": {
+    "registers": 47,
+    "resident_simdgroups_derived": 84,
+    "spill_bytes": 0,
+    "text_bytes": 2266
+   }
+  },
+  "44": {
+   "applegpu_g16s": {
+    "registers": 48,
+    "resident_simdgroups_derived": 64,
+    "spill_bytes": 16,
+    "text_bytes": 2450
+   },
+   "applegpu_g17s": {
+    "registers": 48,
+    "resident_simdgroups_derived": 82,
+    "spill_bytes": 0,
+    "text_bytes": 2310
+   }
+  },
+  "45": {
+   "applegpu_g16s": {
+    "registers": 49,
+    "resident_simdgroups_derived": 62,
+    "spill_bytes": 16,
+    "text_bytes": 2494
+   },
+   "applegpu_g17s": {
+    "registers": 49,
+    "resident_simdgroups_derived": 80,
+    "spill_bytes": 0,
+    "text_bytes": 2346
+   }
+  },
+  "46": {
+   "applegpu_g16s": {
+    "registers": 50,
+    "resident_simdgroups_derived": 61,
+    "spill_bytes": 16,
+    "text_bytes": 2542
+   },
+   "applegpu_g17s": {
+    "registers": 50,
+    "resident_simdgroups_derived": 79,
+    "spill_bytes": 0,
+    "text_bytes": 2386
+   }
+  },
+  "47": {
+   "applegpu_g16s": {
+    "registers": 51,
+    "resident_simdgroups_derived": 60,
+    "spill_bytes": 16,
+    "text_bytes": 2582
+   },
+   "applegpu_g17s": {
+    "registers": 51,
+    "resident_simdgroups_derived": 77,
+    "spill_bytes": 0,
+    "text_bytes": 2426
+   }
+  },
+  "48": {
+   "applegpu_g16s": {
+    "registers": 52,
+    "resident_simdgroups_derived": 59,
+    "spill_bytes": 16,
+    "text_bytes": 2626
+   },
+   "applegpu_g17s": {
+    "registers": 52,
+    "resident_simdgroups_derived": 76,
+    "spill_bytes": 0,
+    "text_bytes": 2466
+   }
+  },
+  "49": {
+   "applegpu_g16s": {
+    "registers": 53,
+    "resident_simdgroups_derived": 57,
+    "spill_bytes": 16,
+    "text_bytes": 2670
+   },
+   "applegpu_g17s": {
+    "registers": 53,
+    "resident_simdgroups_derived": 74,
+    "spill_bytes": 0,
+    "text_bytes": 2506
+   }
+  },
+  "50": {
+   "applegpu_g16s": {
+    "registers": 54,
+    "resident_simdgroups_derived": 56,
+    "spill_bytes": 16,
+    "text_bytes": 2714
+   },
+   "applegpu_g17s": {
+    "registers": 54,
+    "resident_simdgroups_derived": 73,
+    "spill_bytes": 0,
+    "text_bytes": 2552
+   }
+  },
+  "51": {
+   "applegpu_g16s": {
+    "registers": 55,
+    "resident_simdgroups_derived": 55,
+    "spill_bytes": 16,
+    "text_bytes": 2758
+   },
+   "applegpu_g17s": {
+    "registers": 55,
+    "resident_simdgroups_derived": 72,
+    "spill_bytes": 0,
+    "text_bytes": 2596
+   }
+  },
+  "52": {
+   "applegpu_g16s": {
+    "registers": 56,
+    "resident_simdgroups_derived": 54,
+    "spill_bytes": 16,
+    "text_bytes": 2802
+   },
+   "applegpu_g17s": {
+    "registers": 56,
+    "resident_simdgroups_derived": 70,
+    "spill_bytes": 0,
+    "text_bytes": 2632
+   }
+  },
+  "53": {
+   "applegpu_g16s": {
+    "registers": 57,
+    "resident_simdgroups_derived": 53,
+    "spill_bytes": 16,
+    "text_bytes": 2846
+   },
+   "applegpu_g17s": {
+    "registers": 57,
+    "resident_simdgroups_derived": 69,
+    "spill_bytes": 0,
+    "text_bytes": 2672
+   }
+  },
+  "54": {
+   "applegpu_g16s": {
+    "registers": 58,
+    "resident_simdgroups_derived": 52,
+    "spill_bytes": 16,
+    "text_bytes": 2890
+   },
+   "applegpu_g17s": {
+    "registers": 58,
+    "resident_simdgroups_derived": 68,
+    "spill_bytes": 0,
+    "text_bytes": 2712
+   }
+  },
+  "55": {
+   "applegpu_g16s": {
+    "registers": 59,
+    "resident_simdgroups_derived": 52,
+    "spill_bytes": 16,
+    "text_bytes": 2934
+   },
+   "applegpu_g17s": {
+    "registers": 59,
+    "resident_simdgroups_derived": 67,
+    "spill_bytes": 0,
+    "text_bytes": 2752
+   }
+  },
+  "56": {
+   "applegpu_g16s": {
+    "registers": 60,
+    "resident_simdgroups_derived": 51,
+    "spill_bytes": 16,
+    "text_bytes": 2978
+   },
+   "applegpu_g17s": {
+    "registers": 60,
+    "resident_simdgroups_derived": 66,
+    "spill_bytes": 0,
+    "text_bytes": 2792
+   }
+  },
+  "57": {
+   "applegpu_g16s": {
+    "registers": 61,
+    "resident_simdgroups_derived": 50,
+    "spill_bytes": 16,
+    "text_bytes": 3026
+   },
+   "applegpu_g17s": {
+    "registers": 61,
+    "resident_simdgroups_derived": 65,
+    "spill_bytes": 0,
+    "text_bytes": 2838
+   }
+  },
+  "58": {
+   "applegpu_g16s": {
+    "registers": 62,
+    "resident_simdgroups_derived": 49,
+    "spill_bytes": 16,
+    "text_bytes": 3066
+   },
+   "applegpu_g17s": {
+    "registers": 62,
+    "resident_simdgroups_derived": 64,
+    "spill_bytes": 0,
+    "text_bytes": 2882
+   }
+  },
+  "59": {
+   "applegpu_g16s": {
+    "registers": 63,
+    "resident_simdgroups_derived": 48,
+    "spill_bytes": 16,
+    "text_bytes": 3110
+   },
+   "applegpu_g17s": {
+    "registers": 63,
+    "resident_simdgroups_derived": 62,
+    "spill_bytes": 0,
+    "text_bytes": 2918
+   }
+  },
+  "60": {
+   "applegpu_g16s": {
+    "registers": 64,
+    "resident_simdgroups_derived": 48,
+    "spill_bytes": 16,
+    "text_bytes": 3154
+   },
+   "applegpu_g17s": {
+    "registers": 64,
+    "resident_simdgroups_derived": 62,
+    "spill_bytes": 0,
+    "text_bytes": 2958
+   }
+  },
+  "61": {
+   "applegpu_g16s": {
+    "registers": 65,
+    "resident_simdgroups_derived": 47,
+    "spill_bytes": 16,
+    "text_bytes": 3198
+   },
+   "applegpu_g17s": {
+    "registers": 65,
+    "resident_simdgroups_derived": 61,
+    "spill_bytes": 0,
+    "text_bytes": 2998
+   }
+  },
+  "62": {
+   "applegpu_g16s": {
+    "registers": 66,
+    "resident_simdgroups_derived": 46,
+    "spill_bytes": 16,
+    "text_bytes": 3256
+   },
+   "applegpu_g17s": {
+    "registers": 66,
+    "resident_simdgroups_derived": 60,
+    "spill_bytes": 0,
+    "text_bytes": 3050
+   }
+  },
+  "63": {
+   "applegpu_g16s": {
+    "registers": 67,
+    "resident_simdgroups_derived": 45,
+    "spill_bytes": 16,
+    "text_bytes": 3442
+   },
+   "applegpu_g17s": {
+    "registers": 67,
+    "resident_simdgroups_derived": 59,
+    "spill_bytes": 0,
+    "text_bytes": 3226
+   }
+  },
+  "64": {
+   "applegpu_g16s": {
+    "registers": 68,
+    "resident_simdgroups_derived": 45,
+    "spill_bytes": 16,
+    "text_bytes": 3490
+   },
+   "applegpu_g17s": {
+    "registers": 68,
+    "resident_simdgroups_derived": 58,
+    "spill_bytes": 0,
+    "text_bytes": 3276
+   }
+  },
+  "65": {
+   "applegpu_g16s": {
+    "registers": 69,
+    "resident_simdgroups_derived": 44,
+    "spill_bytes": 16,
+    "text_bytes": 3538
+   },
+   "applegpu_g17s": {
+    "registers": 69,
+    "resident_simdgroups_derived": 57,
+    "spill_bytes": 0,
+    "text_bytes": 3324
+   }
+  },
+  "66": {
+   "applegpu_g16s": {
+    "registers": 70,
+    "resident_simdgroups_derived": 43,
+    "spill_bytes": 16,
+    "text_bytes": 3594
+   },
+   "applegpu_g17s": {
+    "registers": 70,
+    "resident_simdgroups_derived": 56,
+    "spill_bytes": 0,
+    "text_bytes": 3368
+   }
+  },
+  "67": {
+   "applegpu_g16s": {
+    "registers": 71,
+    "resident_simdgroups_derived": 43,
+    "spill_bytes": 16,
+    "text_bytes": 3642
+   },
+   "applegpu_g17s": {
+    "registers": 71,
+    "resident_simdgroups_derived": 55,
+    "spill_bytes": 0,
+    "text_bytes": 3412
+   }
+  },
+  "68": {
+   "applegpu_g16s": {
+    "registers": 72,
+    "resident_simdgroups_derived": 42,
+    "spill_bytes": 16,
+    "text_bytes": 3702
+   },
+   "applegpu_g17s": {
+    "registers": 72,
+    "resident_simdgroups_derived": 55,
+    "spill_bytes": 0,
+    "text_bytes": 3464
+   }
+  },
+  "69": {
+   "applegpu_g16s": {
+    "registers": 73,
+    "resident_simdgroups_derived": 42,
+    "spill_bytes": 16,
+    "text_bytes": 3754
+   },
+   "applegpu_g17s": {
+    "registers": 73,
+    "resident_simdgroups_derived": 54,
+    "spill_bytes": 0,
+    "text_bytes": 3516
+   }
+  },
+  "70": {
+   "applegpu_g16s": {
+    "registers": 74,
+    "resident_simdgroups_derived": 41,
+    "spill_bytes": 16,
+    "text_bytes": 3802
+   },
+   "applegpu_g17s": {
+    "registers": 74,
+    "resident_simdgroups_derived": 53,
+    "spill_bytes": 0,
+    "text_bytes": 3560
+   }
+  },
+  "71": {
+   "applegpu_g16s": {
+    "registers": 75,
+    "resident_simdgroups_derived": 40,
+    "spill_bytes": 16,
+    "text_bytes": 3850
+   },
+   "applegpu_g17s": {
+    "registers": 75,
+    "resident_simdgroups_derived": 52,
+    "spill_bytes": 0,
+    "text_bytes": 3610
+   }
+  },
+  "72": {
+   "applegpu_g16s": {
+    "registers": 76,
+    "resident_simdgroups_derived": 40,
+    "spill_bytes": 16,
+    "text_bytes": 3914
+   },
+   "applegpu_g17s": {
+    "registers": 76,
+    "resident_simdgroups_derived": 52,
+    "spill_bytes": 0,
+    "text_bytes": 3666
+   }
+  },
+  "73": {
+   "applegpu_g16s": {
+    "registers": 77,
+    "resident_simdgroups_derived": 39,
+    "spill_bytes": 16,
+    "text_bytes": 3962
+   },
+   "applegpu_g17s": {
+    "registers": 77,
+    "resident_simdgroups_derived": 51,
+    "spill_bytes": 0,
+    "text_bytes": 3714
+   }
+  },
+  "74": {
+   "applegpu_g16s": {
+    "registers": 78,
+    "resident_simdgroups_derived": 39,
+    "spill_bytes": 16,
+    "text_bytes": 4010
+   },
+   "applegpu_g17s": {
+    "registers": 78,
+    "resident_simdgroups_derived": 50,
+    "spill_bytes": 0,
+    "text_bytes": 3758
+   }
+  },
+  "75": {
+   "applegpu_g16s": {
+    "registers": 79,
+    "resident_simdgroups_derived": 38,
+    "spill_bytes": 16,
+    "text_bytes": 4066
+   },
+   "applegpu_g17s": {
+    "registers": 79,
+    "resident_simdgroups_derived": 50,
+    "spill_bytes": 0,
+    "text_bytes": 3802
+   }
+  },
+  "76": {
+   "applegpu_g16s": {
+    "registers": 80,
+    "resident_simdgroups_derived": 38,
+    "spill_bytes": 16,
+    "text_bytes": 4114
+   },
+   "applegpu_g17s": {
+    "registers": 80,
+    "resident_simdgroups_derived": 49,
+    "spill_bytes": 0,
+    "text_bytes": 3862
+   }
+  },
+  "77": {
+   "applegpu_g16s": {
+    "registers": 81,
+    "resident_simdgroups_derived": 37,
+    "spill_bytes": 16,
+    "text_bytes": 4170
+   },
+   "applegpu_g17s": {
+    "registers": 81,
+    "resident_simdgroups_derived": 48,
+    "spill_bytes": 0,
+    "text_bytes": 3914
+   }
+  },
+  "78": {
+   "applegpu_g16s": {
+    "registers": 82,
+    "resident_simdgroups_derived": 37,
+    "spill_bytes": 16,
+    "text_bytes": 4218
+   },
+   "applegpu_g17s": {
+    "registers": 82,
+    "resident_simdgroups_derived": 48,
+    "spill_bytes": 0,
+    "text_bytes": 3964
+   }
+  },
+  "79": {
+   "applegpu_g16s": {
+    "registers": 83,
+    "resident_simdgroups_derived": 37,
+    "spill_bytes": 16,
+    "text_bytes": 4270
+   },
+   "applegpu_g17s": {
+    "registers": 83,
+    "resident_simdgroups_derived": 47,
+    "spill_bytes": 0,
+    "text_bytes": 4016
+   }
+  },
+  "80": {
+   "applegpu_g16s": {
+    "registers": 84,
+    "resident_simdgroups_derived": 36,
+    "spill_bytes": 16,
+    "text_bytes": 4330
+   },
+   "applegpu_g17s": {
+    "registers": 84,
+    "resident_simdgroups_derived": 47,
+    "spill_bytes": 0,
+    "text_bytes": 4068
+   }
+  },
+  "81": {
+   "applegpu_g16s": {
+    "registers": 85,
+    "resident_simdgroups_derived": 36,
+    "spill_bytes": 16,
+    "text_bytes": 4386
+   },
+   "applegpu_g17s": {
+    "registers": 85,
+    "resident_simdgroups_derived": 46,
+    "spill_bytes": 0,
+    "text_bytes": 4104
+   }
+  },
+  "82": {
+   "applegpu_g16s": {
+    "registers": 86,
+    "resident_simdgroups_derived": 35,
+    "spill_bytes": 16,
+    "text_bytes": 4434
+   },
+   "applegpu_g17s": {
+    "registers": 86,
+    "resident_simdgroups_derived": 46,
+    "spill_bytes": 0,
+    "text_bytes": 4156
+   }
+  },
+  "83": {
+   "applegpu_g16s": {
+    "registers": 87,
+    "resident_simdgroups_derived": 35,
+    "spill_bytes": 16,
+    "text_bytes": 4482
+   },
+   "applegpu_g17s": {
+    "registers": 87,
+    "resident_simdgroups_derived": 45,
+    "spill_bytes": 0,
+    "text_bytes": 4208
+   }
+  },
+  "84": {
+   "applegpu_g16s": {
+    "registers": 88,
+    "resident_simdgroups_derived": 34,
+    "spill_bytes": 16,
+    "text_bytes": 4538
+   },
+   "applegpu_g17s": {
+    "registers": 88,
+    "resident_simdgroups_derived": 45,
+    "spill_bytes": 0,
+    "text_bytes": 4252
+   }
+  },
+  "85": {
+   "applegpu_g16s": {
+    "registers": 89,
+    "resident_simdgroups_derived": 34,
+    "spill_bytes": 16,
+    "text_bytes": 4594
+   },
+   "applegpu_g17s": {
+    "registers": 89,
+    "resident_simdgroups_derived": 44,
+    "spill_bytes": 0,
+    "text_bytes": 4302
+   }
+  },
+  "86": {
+   "applegpu_g16s": {
+    "registers": 90,
+    "resident_simdgroups_derived": 34,
+    "spill_bytes": 16,
+    "text_bytes": 4642
+   },
+   "applegpu_g17s": {
+    "registers": 90,
+    "resident_simdgroups_derived": 44,
+    "spill_bytes": 0,
+    "text_bytes": 4354
+   }
+  },
+  "87": {
+   "applegpu_g16s": {
+    "registers": 91,
+    "resident_simdgroups_derived": 33,
+    "spill_bytes": 16,
+    "text_bytes": 4690
+   },
+   "applegpu_g17s": {
+    "registers": 91,
+    "resident_simdgroups_derived": 43,
+    "spill_bytes": 0,
+    "text_bytes": 4404
+   }
+  },
+  "88": {
+   "applegpu_g16s": {
+    "registers": 92,
+    "resident_simdgroups_derived": 33,
+    "spill_bytes": 16,
+    "text_bytes": 4766
+   },
+   "applegpu_g17s": {
+    "registers": 92,
+    "resident_simdgroups_derived": 43,
+    "spill_bytes": 0,
+    "text_bytes": 4448
+   }
+  },
+  "89": {
+   "applegpu_g16s": {
+    "registers": 93,
+    "resident_simdgroups_derived": 33,
+    "spill_bytes": 16,
+    "text_bytes": 4794
+   },
+   "applegpu_g17s": {
+    "registers": 93,
+    "resident_simdgroups_derived": 42,
+    "spill_bytes": 0,
+    "text_bytes": 4500
+   }
+  },
+  "90": {
+   "applegpu_g16s": {
+    "registers": 94,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 16,
+    "text_bytes": 4858
+   },
+   "applegpu_g17s": {
+    "registers": 94,
+    "resident_simdgroups_derived": 42,
+    "spill_bytes": 0,
+    "text_bytes": 4552
+   }
+  },
+  "91": {
+   "applegpu_g16s": {
+    "registers": 95,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 16,
+    "text_bytes": 4900
+   },
+   "applegpu_g17s": {
+    "registers": 95,
+    "resident_simdgroups_derived": 41,
+    "spill_bytes": 0,
+    "text_bytes": 4604
+   }
+  },
+  "92": {
+   "applegpu_g16s": {
+    "registers": 96,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 16,
+    "text_bytes": 4956
+   },
+   "applegpu_g17s": {
+    "registers": 96,
+    "resident_simdgroups_derived": 41,
+    "spill_bytes": 0,
+    "text_bytes": 4656
+   }
+  },
+  "93": {
+   "applegpu_g16s": {
+    "registers": 96,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 16,
+    "text_bytes": 5026
+   },
+   "applegpu_g17s": {
+    "registers": 97,
+    "resident_simdgroups_derived": 40,
+    "spill_bytes": 0,
+    "text_bytes": 4708
+   }
+  },
+  "94": {
+   "applegpu_g16s": {
+    "registers": 96,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 16,
+    "text_bytes": 5088
+   },
+   "applegpu_g17s": {
+    "registers": 98,
+    "resident_simdgroups_derived": 40,
+    "spill_bytes": 0,
+    "text_bytes": 4758
+   }
+  },
+  "95": {
+   "applegpu_g16s": {
+    "registers": 96,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 16,
+    "text_bytes": 5034
+   },
+   "applegpu_g17s": {
+    "registers": 99,
+    "resident_simdgroups_derived": 40,
+    "spill_bytes": 0,
+    "text_bytes": 4802
+   }
+  },
+  "96": {
+   "applegpu_g16s": {
+    "registers": 96,
+    "resident_simdgroups_derived": 32,
+    "spill_bytes": 32,
+    "text_bytes": 5096
+   },
+   "applegpu_g17s": {
+    "registers": 100,
+    "resident_simdgroups_derived": 39,
+    "spill_bytes": 0,
+    "text_bytes": 4846
+   }
+  },
+  "97": {
+   "applegpu_g16s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 512,
+    "spill_bytes": 432,
+    "text_bytes": 754
+   },
+   "applegpu_g17s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 661,
+    "spill_bytes": 432,
+    "text_bytes": 748
+   }
+  },
+  "98": {
+   "applegpu_g16s": {
+    "registers": 20,
+    "resident_simdgroups_derived": 153,
+    "spill_bytes": 432,
+    "text_bytes": 1626
+   },
+   "applegpu_g17s": {
+    "registers": 20,
+    "resident_simdgroups_derived": 198,
+    "spill_bytes": 432,
+    "text_bytes": 1598
+   }
+  },
+  "99": {
+   "applegpu_g16s": {
+    "registers": 17,
+    "resident_simdgroups_derived": 180,
+    "spill_bytes": 432,
+    "text_bytes": 1410
+   },
+   "applegpu_g17s": {
+    "registers": 17,
+    "resident_simdgroups_derived": 233,
+    "spill_bytes": 432,
+    "text_bytes": 1382
+   }
+  },
+  "100": {
+   "applegpu_g16s": {
+    "registers": 27,
+    "resident_simdgroups_derived": 113,
+    "spill_bytes": 432,
+    "text_bytes": 2010
+   },
+   "applegpu_g17s": {
+    "registers": 27,
+    "resident_simdgroups_derived": 146,
+    "spill_bytes": 432,
+    "text_bytes": 1978
+   }
+  },
+  "101": {
+   "applegpu_g16s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 512,
+    "spill_bytes": 432,
+    "text_bytes": 754
+   },
+   "applegpu_g17s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 661,
+    "spill_bytes": 432,
+    "text_bytes": 748
+   }
+  },
+  "102": {
+   "applegpu_g16s": {
+    "registers": 23,
+    "resident_simdgroups_derived": 133,
+    "spill_bytes": 432,
+    "text_bytes": 1842
+   },
+   "applegpu_g17s": {
+    "registers": 23,
+    "resident_simdgroups_derived": 172,
+    "spill_bytes": 432,
+    "text_bytes": 1800
+   }
+  },
+  "103": {
+   "applegpu_g16s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 512,
+    "spill_bytes": 432,
+    "text_bytes": 754
+   },
+   "applegpu_g17s": {
+    "registers": 6,
+    "resident_simdgroups_derived": 661,
+    "spill_bytes": 432,
+    "text_bytes": 748
+   }
+  },
+  "104": {
+   "applegpu_g16s": {
+    "registers": 18,
+    "resident_simdgroups_derived": 170,
+    "spill_bytes": 432,
+    "text_bytes": 1570
+   },
+   "applegpu_g17s": {
+    "registers": 18,
+    "resident_simdgroups_derived": 220,
+    "spill_bytes": 432,
+    "text_bytes": 1534
+   }
+  }
+ },
+ "device": "Apple M4 Pro",
+ "floor_law_test": {
+  "concurrency_moved": true,
+  "max_abs_ratio_error": 0.641269957165109,
+  "reference_registers": 4,
+  "rows": [
+   {
+    "ballast": 0,
+    "floor_law_predicted_ratio": 1.0,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 1.0,
+    "peak_concurrent_threadgroups": 214,
+    "ratio_error": 0.0,
+    "registers": 4,
+    "resident_simdgroups_derived": 768,
+    "seconds_min": 0.010885041672736406,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 1,
+    "floor_law_predicted_ratio": 0.6666666666666666,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7289719626168224,
+    "peak_concurrent_threadgroups": 156,
+    "ratio_error": 0.06230529595015577,
+    "registers": 6,
+    "resident_simdgroups_derived": 512,
+    "seconds_min": 0.012005374999716878,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 2,
+    "floor_law_predicted_ratio": 0.5,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6869158878504673,
+    "peak_concurrent_threadgroups": 147,
+    "ratio_error": 0.1869158878504673,
+    "registers": 8,
+    "resident_simdgroups_derived": 384,
+    "seconds_min": 0.013931625057011843,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 3,
+    "floor_law_predicted_ratio": 0.4440104166666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6962616822429907,
+    "peak_concurrent_threadgroups": 149,
+    "ratio_error": 0.252251265576324,
+    "registers": 9,
+    "resident_simdgroups_derived": 341,
+    "seconds_min": 0.016710749827325344,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 4,
+    "floor_law_predicted_ratio": 0.36328125,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6962616822429907,
+    "peak_concurrent_threadgroups": 149,
+    "ratio_error": 0.3329804322429907,
+    "registers": 11,
+    "resident_simdgroups_derived": 279,
+    "seconds_min": 0.021641124971210957,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 5,
+    "floor_law_predicted_ratio": 0.28515625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.719626168224299,
+    "peak_concurrent_threadgroups": 154,
+    "ratio_error": 0.43446991822429903,
+    "registers": 14,
+    "resident_simdgroups_derived": 219,
+    "seconds_min": 0.026727375108748674,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 6,
+    "floor_law_predicted_ratio": 0.265625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7289719626168224,
+    "peak_concurrent_threadgroups": 156,
+    "ratio_error": 0.4633469626168224,
+    "registers": 15,
+    "resident_simdgroups_derived": 204,
+    "seconds_min": 0.03221512516029179,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 7,
+    "floor_law_predicted_ratio": 0.234375,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7242990654205608,
+    "peak_concurrent_threadgroups": 155,
+    "ratio_error": 0.4899240654205608,
+    "registers": 17,
+    "resident_simdgroups_derived": 180,
+    "seconds_min": 0.037921500159427524,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 104,
+    "floor_law_predicted_ratio": 0.22135416666666666,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.5934579439252337,
+    "peak_concurrent_threadgroups": 127,
+    "ratio_error": 0.372103777258567,
+    "registers": 18,
+    "resident_simdgroups_derived": 170,
+    "seconds_min": 0.019586375216022134,
+    "spill_bytes": 432
+   },
+   {
+    "ballast": 8,
+    "floor_law_predicted_ratio": 0.19921875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7429906542056075,
+    "peak_concurrent_threadgroups": 159,
+    "ratio_error": 0.5437719042056075,
+    "registers": 20,
+    "resident_simdgroups_derived": 153,
+    "seconds_min": 0.04542633332312107,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 9,
+    "floor_law_predicted_ratio": 0.19010416666666666,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7149532710280374,
+    "peak_concurrent_threadgroups": 153,
+    "ratio_error": 0.5248491043613708,
+    "registers": 21,
+    "resident_simdgroups_derived": 146,
+    "seconds_min": 0.05081287492066622,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 10,
+    "floor_law_predicted_ratio": 0.17317708333333334,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7476635514018691,
+    "peak_concurrent_threadgroups": 160,
+    "ratio_error": 0.5744864680685358,
+    "registers": 23,
+    "resident_simdgroups_derived": 133,
+    "seconds_min": 0.053802208276465535,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 11,
+    "floor_law_predicted_ratio": 0.15364583333333334,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7476635514018691,
+    "peak_concurrent_threadgroups": 160,
+    "ratio_error": 0.5940177180685358,
+    "registers": 26,
+    "resident_simdgroups_derived": 118,
+    "seconds_min": 0.05897466652095318,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 12,
+    "floor_law_predicted_ratio": 0.14713541666666666,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7289719626168224,
+    "peak_concurrent_threadgroups": 156,
+    "ratio_error": 0.5818365459501558,
+    "registers": 27,
+    "resident_simdgroups_derived": 113,
+    "seconds_min": 0.0646453748922795,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 13,
+    "floor_law_predicted_ratio": 0.13671875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.719626168224299,
+    "peak_concurrent_threadgroups": 154,
+    "ratio_error": 0.582907418224299,
+    "registers": 29,
+    "resident_simdgroups_derived": 105,
+    "seconds_min": 0.0700288750231266,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 14,
+    "floor_law_predicted_ratio": 0.12890625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6682242990654206,
+    "peak_concurrent_threadgroups": 143,
+    "ratio_error": 0.5393180490654206,
+    "registers": 31,
+    "resident_simdgroups_derived": 99,
+    "seconds_min": 0.0751217498909682,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 15,
+    "floor_law_predicted_ratio": 0.1171875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7476635514018691,
+    "peak_concurrent_threadgroups": 160,
+    "ratio_error": 0.6304760514018691,
+    "registers": 34,
+    "resident_simdgroups_derived": 90,
+    "seconds_min": 0.08087350009009242,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 16,
+    "floor_law_predicted_ratio": 0.11328125,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7336448598130841,
+    "peak_concurrent_threadgroups": 157,
+    "ratio_error": 0.6203636098130841,
+    "registers": 35,
+    "resident_simdgroups_derived": 87,
+    "seconds_min": 0.0883944584056735,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 32,
+    "floor_law_predicted_ratio": 0.11067708333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.42990654205607476,
+    "peak_concurrent_threadgroups": 92,
+    "ratio_error": 0.31922945872274144,
+    "registers": 36,
+    "resident_simdgroups_derived": 85,
+    "seconds_min": 0.023861249908804893,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 17,
+    "floor_law_predicted_ratio": 0.10807291666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7149532710280374,
+    "peak_concurrent_threadgroups": 153,
+    "ratio_error": 0.6068803543613708,
+    "registers": 37,
+    "resident_simdgroups_derived": 83,
+    "seconds_min": 0.09319425001740456,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 34,
+    "floor_law_predicted_ratio": 0.10416666666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.4205607476635514,
+    "peak_concurrent_threadgroups": 90,
+    "ratio_error": 0.3163940809968847,
+    "registers": 38,
+    "resident_simdgroups_derived": 80,
+    "seconds_min": 0.022930791834369302,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 35,
+    "floor_law_predicted_ratio": 0.1015625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.3925233644859813,
+    "peak_concurrent_threadgroups": 84,
+    "ratio_error": 0.2909608644859813,
+    "registers": 39,
+    "resident_simdgroups_derived": 78,
+    "seconds_min": 0.022528916597366333,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 18,
+    "floor_law_predicted_ratio": 0.09895833333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7242990654205608,
+    "peak_concurrent_threadgroups": 155,
+    "ratio_error": 0.6253407320872274,
+    "registers": 40,
+    "resident_simdgroups_derived": 76,
+    "seconds_min": 0.09765750006772578,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 19,
+    "floor_law_predicted_ratio": 0.09635416666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7149532710280374,
+    "peak_concurrent_threadgroups": 153,
+    "ratio_error": 0.6185991043613708,
+    "registers": 41,
+    "resident_simdgroups_derived": 74,
+    "seconds_min": 0.10400583338923752,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 38,
+    "floor_law_predicted_ratio": 0.09505208333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.411214953271028,
+    "peak_concurrent_threadgroups": 88,
+    "ratio_error": 0.3161628699376947,
+    "registers": 42,
+    "resident_simdgroups_derived": 73,
+    "seconds_min": 0.022376208333298564,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 20,
+    "floor_law_predicted_ratio": 0.09244791666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7009345794392523,
+    "peak_concurrent_threadgroups": 150,
+    "ratio_error": 0.6084866627725857,
+    "registers": 43,
+    "resident_simdgroups_derived": 71,
+    "seconds_min": 0.10811212519183755,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 40,
+    "floor_law_predicted_ratio": 0.08984375,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.3878504672897196,
+    "peak_concurrent_threadgroups": 83,
+    "ratio_error": 0.2980067172897196,
+    "registers": 44,
+    "resident_simdgroups_derived": 69,
+    "seconds_min": 0.02313808328472078,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 41,
+    "floor_law_predicted_ratio": 0.08854166666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37850467289719625,
+    "peak_concurrent_threadgroups": 81,
+    "ratio_error": 0.28996300623052956,
+    "registers": 45,
+    "resident_simdgroups_derived": 68,
+    "seconds_min": 0.02217016671784222,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 21,
+    "floor_law_predicted_ratio": 0.0859375,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6822429906542056,
+    "peak_concurrent_threadgroups": 146,
+    "ratio_error": 0.5963054906542056,
+    "registers": 46,
+    "resident_simdgroups_derived": 66,
+    "seconds_min": 0.1148065417073667,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 22,
+    "floor_law_predicted_ratio": 0.08463541666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.719626168224299,
+    "peak_concurrent_threadgroups": 154,
+    "ratio_error": 0.6349907515576324,
+    "registers": 47,
+    "resident_simdgroups_derived": 65,
+    "seconds_min": 0.12158516654744744,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 44,
+    "floor_law_predicted_ratio": 0.08333333333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.3598130841121495,
+    "peak_concurrent_threadgroups": 77,
+    "ratio_error": 0.2764797507788162,
+    "registers": 48,
+    "resident_simdgroups_derived": 64,
+    "seconds_min": 0.02282924996688962,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 23,
+    "floor_law_predicted_ratio": 0.08072916666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.719626168224299,
+    "peak_concurrent_threadgroups": 154,
+    "ratio_error": 0.6388970015576324,
+    "registers": 49,
+    "resident_simdgroups_derived": 62,
+    "seconds_min": 0.12552487500943244,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 46,
+    "floor_law_predicted_ratio": 0.07942708333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.35514018691588783,
+    "peak_concurrent_threadgroups": 76,
+    "ratio_error": 0.2757131035825545,
+    "registers": 50,
+    "resident_simdgroups_derived": 61,
+    "seconds_min": 0.02251837495714426,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 24,
+    "floor_law_predicted_ratio": 0.078125,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6682242990654206,
+    "peak_concurrent_threadgroups": 143,
+    "ratio_error": 0.5900992990654206,
+    "registers": 51,
+    "resident_simdgroups_derived": 60,
+    "seconds_min": 0.13331300020217896,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 48,
+    "floor_law_predicted_ratio": 0.07682291666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.2970088590342679,
+    "registers": 52,
+    "resident_simdgroups_derived": 59,
+    "seconds_min": 0.02418525004759431,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 25,
+    "floor_law_predicted_ratio": 0.07421875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6682242990654206,
+    "peak_concurrent_threadgroups": 143,
+    "ratio_error": 0.5940055490654206,
+    "registers": 53,
+    "resident_simdgroups_derived": 57,
+    "seconds_min": 0.1413676249794662,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 50,
+    "floor_law_predicted_ratio": 0.07291666666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3009151090342679,
+    "registers": 54,
+    "resident_simdgroups_derived": 56,
+    "seconds_min": 0.022736875107511878,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 26,
+    "floor_law_predicted_ratio": 0.07161458333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6962616822429907,
+    "peak_concurrent_threadgroups": 149,
+    "ratio_error": 0.6246470989096573,
+    "registers": 55,
+    "resident_simdgroups_derived": 55,
+    "seconds_min": 0.14247954147867858,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 52,
+    "floor_law_predicted_ratio": 0.0703125,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.30351927570093457,
+    "registers": 56,
+    "resident_simdgroups_derived": 54,
+    "seconds_min": 0.023697291733697057,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 27,
+    "floor_law_predicted_ratio": 0.06901041666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.7102803738317757,
+    "peak_concurrent_threadgroups": 152,
+    "ratio_error": 0.641269957165109,
+    "registers": 57,
+    "resident_simdgroups_derived": 53,
+    "seconds_min": 0.14918395830318332,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 54,
+    "floor_law_predicted_ratio": 0.06770833333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.30612344236760125,
+    "registers": 58,
+    "resident_simdgroups_derived": 52,
+    "seconds_min": 0.021719583310186863,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 28,
+    "floor_law_predicted_ratio": 0.06770833333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6542056074766355,
+    "peak_concurrent_threadgroups": 140,
+    "ratio_error": 0.5864972741433021,
+    "registers": 59,
+    "resident_simdgroups_derived": 52,
+    "seconds_min": 0.16093387501314282,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 56,
+    "floor_law_predicted_ratio": 0.06640625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.30742552570093457,
+    "registers": 60,
+    "resident_simdgroups_derived": 51,
+    "seconds_min": 0.022240124875679612,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 29,
+    "floor_law_predicted_ratio": 0.06510416666666667,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.6635514018691588,
+    "peak_concurrent_threadgroups": 142,
+    "ratio_error": 0.5984472352024922,
+    "registers": 61,
+    "resident_simdgroups_derived": 50,
+    "seconds_min": 0.16010787500999868,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 58,
+    "floor_law_predicted_ratio": 0.06380208333333333,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31002969236760125,
+    "registers": 62,
+    "resident_simdgroups_derived": 49,
+    "seconds_min": 0.021870583528652787,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 30,
+    "floor_law_predicted_ratio": 0.0625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.616822429906542,
+    "peak_concurrent_threadgroups": 132,
+    "ratio_error": 0.554322429906542,
+    "registers": 63,
+    "resident_simdgroups_derived": 48,
+    "seconds_min": 0.16654912498779595,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 60,
+    "floor_law_predicted_ratio": 0.0625,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31133177570093457,
+    "registers": 64,
+    "resident_simdgroups_derived": 48,
+    "seconds_min": 0.02220333321020007,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 31,
+    "floor_law_predicted_ratio": 0.061197916666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.677570093457944,
+    "peak_concurrent_threadgroups": 145,
+    "ratio_error": 0.6163721767912773,
+    "registers": 65,
+    "resident_simdgroups_derived": 47,
+    "seconds_min": 0.18411274999380112,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 62,
+    "floor_law_predicted_ratio": 0.059895833333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31393594236760125,
+    "registers": 66,
+    "resident_simdgroups_derived": 46,
+    "seconds_min": 0.022235124837607145,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 63,
+    "floor_law_predicted_ratio": 0.05859375,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31523802570093457,
+    "registers": 67,
+    "resident_simdgroups_derived": 45,
+    "seconds_min": 0.02396220830269158,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 64,
+    "floor_law_predicted_ratio": 0.05859375,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31523802570093457,
+    "registers": 68,
+    "resident_simdgroups_derived": 45,
+    "seconds_min": 0.02237475011497736,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 65,
+    "floor_law_predicted_ratio": 0.057291666666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.38317757009345793,
+    "peak_concurrent_threadgroups": 82,
+    "ratio_error": 0.32588590342679125,
+    "registers": 69,
+    "resident_simdgroups_derived": 44,
+    "seconds_min": 0.023027750197798014,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 66,
+    "floor_law_predicted_ratio": 0.055989583333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31784219236760125,
+    "registers": 70,
+    "resident_simdgroups_derived": 43,
+    "seconds_min": 0.022171250078827143,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 67,
+    "floor_law_predicted_ratio": 0.055989583333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31784219236760125,
+    "registers": 71,
+    "resident_simdgroups_derived": 43,
+    "seconds_min": 0.02194550004787743,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 68,
+    "floor_law_predicted_ratio": 0.0546875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31914427570093457,
+    "registers": 72,
+    "resident_simdgroups_derived": 42,
+    "seconds_min": 0.022707958472892642,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 69,
+    "floor_law_predicted_ratio": 0.0546875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.31914427570093457,
+    "registers": 73,
+    "resident_simdgroups_derived": 42,
+    "seconds_min": 0.022972541628405452,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 70,
+    "floor_law_predicted_ratio": 0.053385416666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3204463590342679,
+    "registers": 74,
+    "resident_simdgroups_derived": 41,
+    "seconds_min": 0.0241287499666214,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 71,
+    "floor_law_predicted_ratio": 0.052083333333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32174844236760125,
+    "registers": 75,
+    "resident_simdgroups_derived": 40,
+    "seconds_min": 0.02287512505427003,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 72,
+    "floor_law_predicted_ratio": 0.052083333333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32174844236760125,
+    "registers": 76,
+    "resident_simdgroups_derived": 40,
+    "seconds_min": 0.022936208173632622,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 73,
+    "floor_law_predicted_ratio": 0.05078125,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32305052570093457,
+    "registers": 77,
+    "resident_simdgroups_derived": 39,
+    "seconds_min": 0.02317949989810586,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 74,
+    "floor_law_predicted_ratio": 0.05078125,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32305052570093457,
+    "registers": 78,
+    "resident_simdgroups_derived": 39,
+    "seconds_min": 0.02279987488873303,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 75,
+    "floor_law_predicted_ratio": 0.049479166666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3243526090342679,
+    "registers": 79,
+    "resident_simdgroups_derived": 38,
+    "seconds_min": 0.02306024986319244,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 76,
+    "floor_law_predicted_ratio": 0.049479166666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3243526090342679,
+    "registers": 80,
+    "resident_simdgroups_derived": 38,
+    "seconds_min": 0.023669749964028597,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 77,
+    "floor_law_predicted_ratio": 0.048177083333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32565469236760125,
+    "registers": 81,
+    "resident_simdgroups_derived": 37,
+    "seconds_min": 0.02292695827782154,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 78,
+    "floor_law_predicted_ratio": 0.048177083333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32565469236760125,
+    "registers": 82,
+    "resident_simdgroups_derived": 37,
+    "seconds_min": 0.02205575001426041,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 79,
+    "floor_law_predicted_ratio": 0.048177083333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.3691588785046729,
+    "peak_concurrent_threadgroups": 79,
+    "ratio_error": 0.32098179517133957,
+    "registers": 83,
+    "resident_simdgroups_derived": 37,
+    "seconds_min": 0.02427716669626534,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 80,
+    "floor_law_predicted_ratio": 0.046875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32695677570093457,
+    "registers": 84,
+    "resident_simdgroups_derived": 36,
+    "seconds_min": 0.023460208205506206,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 81,
+    "floor_law_predicted_ratio": 0.046875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32695677570093457,
+    "registers": 85,
+    "resident_simdgroups_derived": 36,
+    "seconds_min": 0.0231432500295341,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 82,
+    "floor_law_predicted_ratio": 0.045572916666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3282588590342679,
+    "registers": 86,
+    "resident_simdgroups_derived": 35,
+    "seconds_min": 0.021978750126436353,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 83,
+    "floor_law_predicted_ratio": 0.045572916666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3282588590342679,
+    "registers": 87,
+    "resident_simdgroups_derived": 35,
+    "seconds_min": 0.022980374982580543,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 84,
+    "floor_law_predicted_ratio": 0.044270833333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32956094236760125,
+    "registers": 88,
+    "resident_simdgroups_derived": 34,
+    "seconds_min": 0.02308812504634261,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 85,
+    "floor_law_predicted_ratio": 0.044270833333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32956094236760125,
+    "registers": 89,
+    "resident_simdgroups_derived": 34,
+    "seconds_min": 0.022695499937981367,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 86,
+    "floor_law_predicted_ratio": 0.044270833333333336,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.32956094236760125,
+    "registers": 90,
+    "resident_simdgroups_derived": 34,
+    "seconds_min": 0.022718500113114715,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 87,
+    "floor_law_predicted_ratio": 0.04296875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.33086302570093457,
+    "registers": 91,
+    "resident_simdgroups_derived": 33,
+    "seconds_min": 0.023689916590228677,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 88,
+    "floor_law_predicted_ratio": 0.04296875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.33086302570093457,
+    "registers": 92,
+    "resident_simdgroups_derived": 33,
+    "seconds_min": 0.023826333228498697,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 89,
+    "floor_law_predicted_ratio": 0.04296875,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.35046728971962615,
+    "peak_concurrent_threadgroups": 75,
+    "ratio_error": 0.30749853971962615,
+    "registers": 93,
+    "resident_simdgroups_derived": 33,
+    "seconds_min": 0.023105124942958355,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 90,
+    "floor_law_predicted_ratio": 0.041666666666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3321651090342679,
+    "registers": 94,
+    "resident_simdgroups_derived": 32,
+    "seconds_min": 0.02284887502901256,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 91,
+    "floor_law_predicted_ratio": 0.041666666666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.37383177570093457,
+    "peak_concurrent_threadgroups": 80,
+    "ratio_error": 0.3321651090342679,
+    "registers": 95,
+    "resident_simdgroups_derived": 32,
+    "seconds_min": 0.021987624932080507,
+    "spill_bytes": 16
+   },
+   {
+    "ballast": 92,
+    "floor_law_predicted_ratio": 0.041666666666666664,
+    "max_total_threads_per_threadgroup": 1024,
+    "measured_ratio": 0.3598130841121495,
+    "peak_concurrent_threadgroups": 77,
+    "ratio_error": 0.31814641744548283,
+    "registers": 96,
+    "resident_simdgroups_derived": 32,
+    "seconds_min": 0.023530749836936593,
+    "spill_bytes": 16
+   }
+  ]
+ },
+ "iters": 4000,
+ "probe": "e130_occupancy_probe",
+ "register_budget": {
+  "applegpu_g16s": 3072,
+  "applegpu_g17s": 3968
+ },
+ "replicates": 3,
+ "threadgroups_dispatched": 8192,
+ "threads_per_threadgroup": 256
+}
