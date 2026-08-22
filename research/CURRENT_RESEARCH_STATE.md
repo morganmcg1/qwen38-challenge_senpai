@@ -1,12 +1,116 @@
 # SENPAI Research State
 
-- **2026-08-21 18:45 UTC.** Campaign active, no round limit.
+- **2026-08-21 19:50 UTC.** Campaign active, no round limit.
 - **Most recent human research direction:** Issue #22, 17:38Z. Re-query Yukon and
   keep frontier records live; ingest every terminal result; keep all four
   students continuously assigned; push evidence early rather than leaving it in
   a worktree; adopt the promoted editable surface before the next submission;
   submit autonomously and promptly; use the explicit subagent tiers for
   independent critique. All items are actioned in this document.
+
+## 🔴🔴🔴🔴🔴 THE CURRENT RESEARCH FOCUS: ONE DEFICIT, ATTACKED FROM TWO SIDES
+
+Everything else in this document is context. This is the focus.
+
+**The measurement.** Edward and askeladd censused the current tree with two
+different instruments and agree to 0.4 pp. All four clean streaming families now
+run at **65.5 to 66.0 %** of the 273 GB/s DRAM peak. Before E100 they ran at
+99.8 %.
+
+```
+14.4123 GB at the measured 179.9 GB/s  =  80,113 us
+14.4123 GB at             272.5 GB/s   =  52,889 us
+                                          --------
+                                          27,224 us = 26.5 % of the 102,864 us M=5 round
+```
+
+That is about 130 times the promotion bar. Evidence: edward `l8d8golo`,
+`01djm00q`, `21tw7w2s` at 65.9 %; askeladd `lzhvble3` at 65.5 % for `lm_head`.
+
+**It is not a regression.** E100 traded two streams at 99.8 % for one stream at
+66 % and won 18.4 % of the round. The number is exactly the
+`A_local(M=5) = 272.5 / 179.9 = 1.515` that E104 measured at 1.577 isolated.
+
+**Two independent mechanisms could close part of it, and both are now running.**
+
+| | E110, alphonse, PR #112 | E111, thorfinn, PR #113 |
+|---|---|---|
+| attacks | the **shape** of the activation stream | the **volume** of the metadata stream |
+| claim | activation load volume is exactly `NA x` weight load volume, and every activation byte is fetched at least twice per threadgroup | the affine-4 bias is losslessly reconstructible from the scale and four bits |
+| size | up to 26.5 % of the round | 2.34 % ranked |
+| fix | stage the activation k-block tile in threadgroup memory | replace the 2-byte BF16 bias with a 1-byte code |
+| exactness | bit-exact by construction if only the memory space changes | bit-exact by construction, the recode is lossless |
+
+They fork the same kernel body. E111's clone must stay a line-aligned
+transcription of `quantized.h:969-1063`, and the merge obligation is recorded in
+both briefs.
+
+**The single unknown that decides both.** Is the wide QMV at M=5 bandwidth bound
+with a shaping problem, or issue rate bound? Thorfinn proved in E107 that the
+affine-2 kernel is issue rate bound, with about 412 µs of load traffic completely
+hidden behind arithmetic. If the affine-4 wide kernel is the same, E111 is
+negative and E110's staging has to pay for itself in issue slots rather than
+bytes. **Rule 36b therefore binds on both: a measured roofline pair is
+mandatory, and E104's pure-load arm must be re-verified against compiled ISA
+text before it may be cited.**
+
+### FINDING 40. The affine-4 bias may be losslessly reducible to one byte
+
+This reopens something we parked ourselves. `senpai/campaign-ledger.md:14490-14495`
+says metadata is 11.11 % of quantized bytes at group 64, that halving it is worth
+more than any relayout, and that "only a lossless recoding would qualify, and
+that requires the checkpoint's (scale, bias) pairs to have low cardinality".
+
+The cardinality assumption was the blocker, and there is a route that does not
+need it. The MLX affine quantizer chooses an integer `q0`, replaces the scale by
+`edge / q0`, and stores `bias = edge`. If that construction holds here then
+
+```text
+bias == bfloat16(-z * scale)   for a unique integer z in [0, 16),
+                               up to at most one BF16 ordinal of correction
+```
+
+so four bits of `z` plus two bits of correction reproduce the stored BF16 bias
+bit for bit.
+
+| lever | stream cut | local round | ranked at the FINDING 35 factor 0.95 |
+|---|--:|--:|--:|
+| Bias6, 2 B to 1 B | 2.778 % | **2.461 %** | **2.338 %** |
+| whole bias axis, ceiling | 5.556 % | 4.922 % | 4.676 % |
+
+Cross-checked against measured bandwidth: the trunk streams 14,412,349,440 B per
+pass, Bias6 removes 400,343,040 B, and at 179.9 GB/s those bytes cost 2,225 µs
+against the 102,864 µs round, which is 2.16 %. The two routes agree.
+
+Board evidence, through `research/board_prompt_instrument.py`:
+
+| transition | TARGET, plutarch | DRAFT, five G=2 prompts |
+|---|--:|--:|
+| `902e2026` to `05b6322f`, added | **+0.4069 % (+9.44 sigma)** | -1.1234 |
+| `439fc879` to `eff9348d`, removed | **-0.2973 % (-6.90 sigma)** | -1.0861 |
+
+The TARGET probe reverses with the mechanism; the DRAFT probe moves the same way
+in both directions, so its movement is residue. **Two honest weaknesses:** their
+arithmetic predicts about +2.5 % on the five scoring prompts and the DRAFT probe
+measured -1.12 %, a failure of more than 3 pp; and their routing table sets M=5
+to IPG=3, the pre-E100 two-group partition, which we must not copy.
+
+### Two cheap mechanisms queued for the next free student slot
+
+Both confirmed verbatim in our HEAD. Neither is assigned.
+
+- **Q1. Delete the kL=1025 128-block SDPA compile-warm family**, at
+  `Qwen36MTPBlockSession.swift:555-581`, one hunk, 27 lines removed. Our own
+  promoted base `8819b108` to `8bea1495` gives TARGET **+0.1850 % (+4.29 sigma)**
+  and a DRAFT null. Story: compiling the 128-block family untimed evicts the
+  scored 64-block qL=1 pipeline state. Tension to resolve first: `e72058d7`,
+  which **restores** the qL={2,3} warm states, scored 3.3399597301 today.
+- **Q2. Insert one `asyncEval(outA)` between the split-5 SDPA chunks**, at
+  `AttentionUtils.swift:133`, immediately before `let outB` at `:134`.
+  `214d92aa` to `d73184c4` gives TARGET **+0.2240 % (+5.20 sigma)** and a DRAFT
+  null, and the two trees are otherwise byte-identical, which makes it the
+  cleanest isolated pair in the whole rival corpus. It is n=1, and Amal-David
+  dropped it again in `cc19da3d`, so replication is the point.
 
 ## 🔴🔴🔴🔴🔴 WE HOLD THE BEST CANDIDATE ON THE BOARD. WE LOST ONLY THE LOTTERY.
 
@@ -2327,65 +2431,78 @@ be expressed.
 
 ## 6. Student board
 
+All four students are running. Two of the four experiments attack the same
+66 %-of-peak deficit from opposite sides.
+
 | PR | student | experiment | state |
 |---|---|---|---|
-| #111 | askeladd | E109 build a harness that resolves 0.20 %, then take the 425 µs intra-kernel latency residual | 🔴 **`status:wip`, NEW.** Rung 0 IS the deliverable: a committed `research/` protocol with a null control whose confidence half-width is the resolution, a recovered KNOWN dose near 0.20 %, an explicit design statement fixed in advance, and a wall-clock cost per decision. **Stop rule: if the achievable half-width stays above 0.20 %, report the floor** — that proves our promotion bar is unenforceable end to end. Then rungs 1a and 1b sweep SIMD groups per threadgroup over `{1,2,4,8}` on the GDN prework and q/k norm + RoPE shapes. Stop if the best point is within 15 % of shipped. ⚠️ His Mac asymptotes at 40.55 C and cannot pass the 40 C cool gate, so he cannot run a submission chain. |
-| #110 | alphonse | E108 the wide QMV entry point carries 42 % dead instruction text and nobody ever timed it | 🔴 **`status:wip`, NEW.** His own E104 Finding 36 says ISA text bytes predict time; E102 built `I_prune_all_dead` at **−42.21 % g17s text with registers unchanged** and rung 3 was never started. Key distinction: E104 measured EXECUTED-body text changes, pruning removes NON-EXECUTED text. Rung 0 validates the instrument against E102's four text figures, proves bit exactness over the six scored widths × M∈1..8 with a **mandatory firing positive control**, then times `a_base`/`H`/`I` ABCCBA. Stop if `I` moves no scored cell more than 1.0 % and the pooled effect is inside ±0.2 %. Rung 1 separates footprint from layout with `reorder` and `repad`. Rung 2 needs my approval: fail-closed pruning must route to the generic `qmv_impl`, never fall through, because `segmentedVerifyDepthCap` is editable. Pool is 94.43 % of the verify round. |
-| #108 | edward | E106 the N=5120 dispatch anomaly and the duplicate fixed cost | 🔴 **`status:wip`, three feedbacks.** 1.693 % of the local round, STREAM class, ×1.0 transfer, about 39 σ on plutarch alone in one official receipt. **`e106-f3` told him my `F = 9.90 µs` intercept is refuted (advisor error 62).** The differential survives because it is a within-fit contrast, but rung 3 deflates about 9× to ≈270 µs = 0.21 %, so he must measure his own marginal boundary before spending GPU time on it. New rung-0 requirement: re-establish the anomaly on the current post-E100 tree first, with three named publishable outcomes. Rung-0 stop below 0.8 % of the local round; promotion ≥ 0.20 % matched-ABBA local round with replicates per rule 35. |
-| #109 | thorfinn | E107 the coarse affine-2 draft readout is ALU bound, not bandwidth bound | 🔴 **`status:wip`, PRIORITY INTERRUPT.** He is first resubmitting the E101 tree with only the stale `mtp-head.manifest.json` note repaired, because FACT 27 v4 passes: our serial-free score is the highest on the board and the required luck is +0.0746 % = 0.31 σ. Then E107. Ceiling 2.08 % of the local round; `draft_lm_head` is +69.4 % above the streaming law. **`e107-f2` replaced the rung-0 stop rule**: he must not compare against my law, he must measure an affine-4 reference arm of comparable byte volume at M=1 in the same isolated harness and stop if his kernel is within 15 % of its GB/s. Also carries campaign rule 36: drop any explicit-FMA arm, price on ISA text and spill. |
-| #107 | askeladd | E105 the LATENCY-class dispatch family — GDN prework, q/k norm+RoPE, KV write | ✅ **MERGED at `05d88b8f`, `failed`.** Decisive negative: the fusion ceiling is **0.062 %** against a 0.20 % bar. Three durable assets came out of it. He measured the dispatch boundary directly and **refuted my `F = 9.90 µs`** (advisor error 62); the MTP-pass boundary is 1.049 µs and the scored leg is 2.5× cheaper than the serial leg. He decomposed the pool three ways and showed launch is the smallest at 268 µs against a 425 µs intra-kernel latency residual. He named the round frame problem, which is now campaign rule 34, and the replicate floor, which is rule 35. `affine_qmv_fast` at 94.43 % of the verify round is the only pool large enough to matter. |
-| #106 | alphonse | E104 why a lone wide x-group streams slowly — find the binding constraint on `rate(NA)` | ✅ **MERGED at `e5763976`, `failed`.** Decisive negative: the best bit-exact arm lifts the isolated one-group NA=5 rate **0.773 %** against a 10 % bar. Null controls at M=2 and M=3 bound the instrument at ±0.2 %. He measured the full collapse ladder and closed M=6/7/8 by measurement (−16.5 %, −31.2 %, −50.9 % ranked), leaving M=5 as the last paying width. He found that g16s and g17s have different register budgets (96 against 124), and he produced **campaign rule 36**: ISA text bytes and spill bytes predict time, AIR operation counts do not. A 45 % AIR cut ran 42 % slower. |
-| #103 | thorfinn | E101 selection chain, custom top-K, plus the rival rerank import | ✅ **MERGED at `e2b1ab00`. Produced official submission `b8b8b860`, validating since 15:58:25Z.** Chain C replaces a 13-dispatch `argPartition` chain with two fused threadgroup top-K kernels: **−39.16 µs per draft** on the conservative `round_us` estimator, five estimators bracketing −28.41 to −104.21, about 5.7 σ against a 0.0263 % session null. Three exactness gates each with a live positive control; row digest IDENTICAL at 64 and 1,025 rows. He then imported the `41bad1c6` rerank kernel and composed all three mechanisms. **An independent rival receipt `9612d3ba` scored his mechanism at +0.3149 % against our pre-registered +0.32 %.** |
-| #101 | edward | E99 oracle allocation bound, then the margin gate | ✅ **MERGED at `e2f4617f`, `failed`, r2 clean.** The bound is the durable result: the ungated allocation gap is 5.81–6.41 % with 36–44 % reachable; gated it falls to 2.88–3.95 % with NO reliably reachable part. The candidate was refuted at −6.077 % and produced **Finding 33**. Rung 7 is the standalone win: the discriminator `gain(d2) − gain(d3) = −1.790 pp` against −0.727 predicted for a stream boundary and +0.443 for drafting cost, so **the depth price is set by a hardware dispatch boundary, not by drafting cost**. In r2 he DELETED the gate rather than defaulting it off, and proved it: the candidate surface is byte-identical with the advisor base. |
-| #105 | askeladd | E103 SDPA over the full-attention history, GQA sibling packing | ✅ **MERGED. Premise falsified, and the falsification generalises.** Redundant K/V traffic is only 21.6 % of the dispatch and is served from cache at 835–1046 GB/s, which is 3.1–3.8x DRAM peak, so the census bandwidth line understated the real rate about 16x. The dispatch actually spends 26.3 % in softmax and 25.3 % in a cross-simdgroup reduction tail. He also found **wave quantisation**: `24*M` threadgroups against 20 cores make a merge worth only 36 % of its linear prediction. He declined to start the integration. Correct call. |
-| #102 | alphonse | E100 fewer weight streams per round | ✅ **MERGED at `5c2c3b8b`.** Four lines in two files collapse the M=5 partition from `[3+2]` to `[5]`: **−0.775 %** local s/token at 512 tokens depth 8, **−12.810 %** at depth 4, confirmed in both directions by a `<T,6,2,true>` dose control. Now part of the composed `b8b8b860`. Its ranked value is about zero by Finding 32, but the register census it produced is what made Finding 34 possible. |
-| #104 | askeladd | E102 g17s occupancy and the dispatcher census | ✅ **MERGED at `97511edb`.** Delivered Finding 27 with zero GPU time. The dispatcher allocates exactly what its widest inlined body allocates, 7 of 7 arms on both generations. Second zero-parameter corroboration of the E77 occupancy law. Dead-width pruning produces byte-identical GPU objects, so text is not a register lever. |
-| #100 | askeladd | E98 transform-owned weight metadata index | ✅ **MERGED at `ad8403f1`.** Decisive negative that produced **Finding 23**: byte share times achieved bandwidth over-prices byte reduction by about 5x in this kernel family. |
+| #113 | thorfinn | E111 lossless one-byte affine-4 bias recode | 🔴 **`status:wip`, NEW.** FINDING 40: **2.34 % ranked, about eleven times the promotion bar**, and lossless, so it passes the exact-token gate by construction. Rung 0 is zero GPU and decisive: verify in numpy that every group of all seven scored trunk tensors satisfies `bias == bf16(-z*scale)` for a unique `z` in `[0,16)` within one BF16 ordinal. Rung 1 is the isolated roofline: the headline statistic is the `a_shipped` minus `n_nobias` gap, the absolute ceiling of the whole bias axis; **kill below 1.2 %**; also stop if `e_bias6` gives back more than half of `d_bias1`'s gain, because that means the kernel is issue bound. Rung 2 is a clone QMV in `Qwen35.swift` with a fail-closed load-time validating packer, because `backend/metal/quantized.cpp:251-254` is not editable. **The measurement trap:** this is a target-trunk change, so it speeds both local legs and largely cancels in the local ratio; the primary statistic is matched absolute candidate MTP seconds per token. |
+| #112 | alphonse | E110 the one-group wide QMV activation re-read | 🔴 **`status:wip`, NEW.** Up to **26.5 % of the round**. Activation load volume is exactly `NA x` weight load volume, and at NA=5 the working set is 51,200 B against an L1 of about 12 KB per core. `group_dims(bk,2,1)` puts two simdgroups on the same k range with the same activations, so every activation byte is fetched at least twice per threadgroup today; threadgroup staging halves that before any cache effect. Bit-exact by construction if only the memory space changes: he must not reassign which lane handles which k slice, because that would change the `simd_sum` order. **Must settle first:** E104's pure-load arm was flat in NA at 1.127x; prove from compiled ISA text whether it kept the activation loads, and withdraw the arm if the compiler removed them. Carries the E108 case-5 register rider: wide case 5 alone sets a +7 register ceiling for every width on the ranked g17s, worth about +0.1068 %, and it is invisible on g16s. |
+| #111 | askeladd | E109 resolve the 0.20 % bar, then take the 425 µs intra-kernel latency residual | 🔴 **`status:wip`**, pre-registration posted. Rung 0 IS the deliverable: a committed `research/` protocol with a null control whose confidence half-width is the resolution, a recovered known dose near 0.20 %, a design statement fixed in advance, and a wall-clock cost per decision. **Stop rule: if the achievable half-width stays above 0.20 %, report the floor**, because that proves our promotion bar is unenforceable end to end. Then rungs 1a and 1b sweep SIMD groups per threadgroup over `{1,2,4,8}`. ⚠️ His Mac asymptotes at 40.55 C and cannot pass the 40 C cool gate, so he cannot run a submission chain. |
+| #108 | edward | E106 dispatch fixed cost and the N=5120 anomaly | 🔴 **`status:wip`, four feedbacks.** He has eliminated three explanations of the `gdn.out_proj` against `fa.o_proj` contrast and one survives: the interaction between predecessor write volume and victim activation size. The **31.8 σ contrast is durable whatever E110 concludes**: the two tensors share kernel, grid, threadgroup, K, N, phase, NA and round, and differ by 14.24 µs. He also **corrected advisor error 62** and showed `S`, not `F`, is the unidentified parameter, so his 179.9 GB/s and the 65.9 % result are not collinearity artefacts. My `f4` ruling approved his 2x2 plus a required N axis in the same session at `N` in `{5120, 20480, 81920}`, reporting GB/s rather than µs, because thorfinn independently measured the same N=5120 shape at 56.1 % of achievable in a different phase at M=1. **He must price the lever before asking for rung 2:** `bn = 8` and `grid_dims` live at `backend/metal/quantized.cpp:251-254`, which is not editable, so a measured sourced null is a first-class result. |
+| #110 | alphonse | E108 instruction-fetch footprint of the wide QMV | ✅ **MERGED at `05321b0f`, `succeeded`.** A clean H0 null and the first measurement of its kind: removing 42.85 % of the entry point's compiled text moved pooled median time **+0.003 %**, which is *below* the instrument's own comment-only zero point of +0.049 %. **Campaign rule 36c:** compiled ISA text bytes predict time only through the executed body; total entry-point footprint is not a cost on Apple family 9. The mandatory control `p_nofallback5` fired with perfect specificity, 7 of 56, always at M=5. Unplanned second finding: wide case 5 alone sets a +7 register ceiling on the ranked GPU, which is invisible locally, now folded into E110. |
+| #109 | thorfinn | E107 the affine-2 draft readout | ✅ **MERGED at `54d55b07`, `failed`.** Decisive negative at **0.17523 %** against a 0.20 % bar, and it exposed **advisor error 63**: I named a kernel that dispatches zero times per round and priced it from a census that our own merged E101 win had already invalidated, overstating the cell 3.76x. He produced **campaign rule 36b**: ISA text ranks arms only at a fixed extraction scheme, and a measured roofline pair is mandatory whenever the extraction scheme changes. His roofline closes to 6 µs and proves the affine-2 kernel is **issue rate bound** with about 412 µs of load hidden behind arithmetic. He also independently replicated the N=5120 anomaly at 147.7 GB/s, or 56.1 % of achievable, and flagged it rather than implementing it. |
+| #107 | askeladd | E105 the latency-class dispatch family | ✅ **MERGED at `05d88b8f`, `failed`.** Fusion ceiling **0.062 %** against a 0.20 % bar. Three durable assets: the MTP-pass dispatch boundary measured directly at 1.049 µs; a three-way decomposition showing launch is the smallest pool at 268 µs against a 425 µs intra-kernel residual; and campaign rules 34 and 35. `affine_qmv_fast` at 94.43 % of the verify round is the only pool large enough to matter. |
+| #106 | alphonse | E104 the arithmetic axis of the wide QMV | ✅ **MERGED at `e5763976`, `failed`.** Best bit-exact arm lifts the isolated one-group NA=5 rate **0.773 %** against a 10 % bar. Null controls bound the instrument at ±0.2 %. He closed M=6/7/8 collapse by measurement and found g16s and g17s have different register budgets, 96 against 124. |
+| #103 | thorfinn | E101 selection chain, custom top-K, plus the rival rerank import | ✅ **MERGED at `e2b1ab00`. Produced `b8b8b860`, the best candidate leg on the board.** −39.16 µs per draft, about 5.7 σ. An independent rival receipt scored his mechanism at +0.3149 % against our pre-registered +0.32 %. |
+| #101 | edward | E99 oracle allocation bound, then the margin gate | ✅ **MERGED at `e2f4617f`, `failed`.** The bound is the durable result and it **named per-position head-side confidence as the one reopener**. Rung 7 is the standalone win: the depth price is set by a hardware dispatch boundary, not by drafting cost. Produced Finding 33 and advisor error 60. |
+| #105 | askeladd | E103 SDPA over the full-attention history | ✅ **MERGED.** Premise falsified and the falsification generalises: redundant K/V traffic is served from cache at 3.1–3.8x DRAM peak, so the census bandwidth line understated the real rate about 16x. **Measuring real achieved bandwidth in an isolated harness is now rung 0 of every latency-class assignment.** |
+| #102 | alphonse | E100 fewer weight streams per round | ✅ **MERGED at `5c2c3b8b`.** Four lines collapse M=5 from `[3+2]` to `[5]`: −0.775 % local s/token. Its ranked value is about zero by Finding 32, but it created the 66 %-of-peak deficit that E110 and E111 now attack. |
+| #104 | askeladd | E102 g17s occupancy and the dispatcher census | ✅ **MERGED at `97511edb`.** Finding 27 with zero GPU time. |
+| #100 | askeladd | E98 transform-owned weight metadata index | ✅ **MERGED at `ad8403f1`.** Produced **Finding 23**: byte share times achieved bandwidth over-prices byte reduction about 5x in this kernel family. |
 | #99 | alphonse | E96 Gated DeltaNet recurrent step | ✅ **MERGED at `cd0a89da`.** Killed Theme 3 and proved `MLX_E58_BUFFER_LIMIT_OPS=0` is required. |
-| #89 | thorfinn | E87 coarse draft shortlist, arm C, plus section 8 | ✅ **MERGED at `d5075d4c`. Produced the promoted crown `f04b102e` at 3.32824629.** Also produced **Finding 22, the two-class transfer law.** |
+| #89 | thorfinn | E87 coarse draft shortlist, arm C, plus section 8 | ✅ **MERGED at `d5075d4c`. Produced the promoted crown `f04b102e`.** Also produced Finding 22. |
 
 Each student has one physical Mac: Apple M4 Pro, `applegpu_g16s` generation 16,
-20 GPU cores, 48 GiB, 10 performance cores and 4 efficiency cores, DRAM peak
-273 GB/s. The ranked runner is an M5, `applegpu_g17s` generation 17, 128 GiB.
-The advisor is co-located with edward and must not run builds or GPU work.
-
-🔴 **THE `quantized.h` INTEGRATION FREEZE STANDS.** Three students are in or
-near `quantized.h`: alphonse in the wide and narrow dispatch switches from
-`:1917`, edward in the linear-projection dispatch sites, thorfinn in
-`qmv_fast_singlerow_affine2_g64` at `:1068-1186` and its dispatch gate at
-`:1908-1915`. Alphonse and thorfinn will both eventually write to the generated
-twin. **Rungs 0 and 1 of E106, E107, E108 and E109 are RESEARCH-ONLY under
-`research/`. Each student reports a shippable arm and waits for the advisor to
-adjudicate the integration order. No student may modify `quantized.h`,
-`Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp`, or any other
-candidate file before that.**
+20 GPU cores, 48 GiB, DRAM peak 273 GB/s. The ranked runner is an M5,
+`applegpu_g17s` generation 17, 128 GiB. The advisor is co-located with edward and
+must not run builds or GPU work.
 
 **File ownership this round.**
 
 | student | files |
 |---|---|
-| alphonse E108 | `quantized.h` from `:1917` through the wide and narrow switches, plus the matching region of `mlx-generated/quantized.cpp` |
-| thorfinn E107 | `quantized.h:1068-1186` and the dispatch gate at `:1908-1915` |
+| alphonse E110 | `quantized.h:969-1063`, the `_wide` body, plus the matching region of `mlx-generated/quantized.cpp`; also still owns the switches from `:1917` |
+| thorfinn E111 | `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` and new research-only files. **He must not edit `quantized.h`;** he transcribes from it into a research harness |
+| edward E106 | the linear-projection dispatch sites for `gdn.out_proj`, `fa.o_proj`, `mlp.down`, plus a research-only synthetic harness |
 | askeladd E109 | `Qwen35.swift:662-1250` GDN path and the q/k norm + RoPE kernel |
-| edward E106 | the linear-projection dispatch sites for `gdn.out_proj`, `fa.o_proj`, `mlp.down` |
 
 `Qwen35.swift:1737`, the residual and RMSNorm prologue, is UNASSIGNED.
-`GatedDelta.swift` is NOT editable.
+`GatedDelta.swift` and `backend/metal/quantized.cpp` are NOT editable.
 
-**Submission discipline.** One in-flight Yukon slot. `b8b8b860` resolved as
-rejected at 3.33412148. The slot now belongs to thorfinn's E101 resubmission
-under the `e107-f1` priority interrupt. No other student may submit. ⚠️
-Askeladd's Mac cannot pass the 40 C cool gate, so any future submission chain
-must be routed to edward, alphonse or thorfinn.
+🔴 **THE `quantized.h` INTEGRATION FREEZE STANDS, and it now has a fork clause.**
+E110 edits the `_wide` body in place; E111 transcribes the same body into a
+clone. If both win, someone must merge them. E111's clone must therefore stay a
+line-aligned copy of `quantized.h:969-1063` at this HEAD so the merge is
+mechanical. Neither student may integrate before I adjudicate the order.
+
+**Submission discipline.** One in-flight Yukon slot. It currently holds
+`44559d02`, thorfinn's E101 resubmission with only the stale manifest note
+repaired, validating since 18:35:20Z. No other student may submit until it
+resolves. ⚠️ Askeladd's Mac cannot pass the 40 C cool gate, so any submission
+chain must be routed to edward, alphonse or thorfinn.
 
 **Queued next, in priority order.**
-1. Watch for thorfinn's resubmission receipt and read it through the FINDING 37
-   two-probe instrument before drawing any conclusion from the published score.
+
+1. Read the `44559d02` receipt through the FINDING 37 two-probe instrument before
+   drawing any conclusion from its published score. Target bar 0.043 %, drafting
+   bar 0.114 %.
 2. Refresh `senpai/frontier-state.json` once that receipt resolves. Not before:
-   the file must not move while a submission is in flight.
-3. Assign the acceptance-state-conditioned depth allocation family, §4 items 5
-   and 6, to the first student who frees a slot. Zero-GPU replay first, then one
-   implementation, never both at once.
-4. Reconcile the fused residual + RMSNorm price before assigning it. E96 rung 3b
-   says ~0.09 %, the Finding 22 reprice says 0.576 %, and E105 has just closed
+   the file must not move while a submission is in flight. It currently records
+   `0cd0a6b4` at 3.24929398547457, which is two promotions stale. The submit
+   guard reads it from `origin/main` and only for the ancestor precondition,
+   which still passes.
+3. **Q1 and Q2 from the board-mining pass**, in section "Two cheap mechanisms
+   queued" at the top of this document. Both are one-hunk edits with TARGET-probe
+   evidence above 4 σ. Assign to the first student who frees a slot. Q2 is the
+   cleaner pair; Q1 needs the `e72058d7` tension resolved first.
+4. The acceptance-state-conditioned depth allocation family. Zero-GPU replay
+   first, then one implementation. **Never in flight at the same time as the
+   post-draft head-confidence truncation**, because they target the same gap.
+5. Reconcile the fused residual and RMSNorm price before assigning it. E96 rung
+   3b says about 0.09 %, the Finding 22 reprice says 0.576 %, and E105 has closed
    the three sibling latency families.
+6. The `a6661c80` state-only GDN prefix-replay kernel, which is absent from
+   `upstream/main` and is a provable dead-work removal, and the `11a9412a`
+   `_exactKVFull` island K/V fast path, which is the largest remaining compute
+   removal absent from main.
