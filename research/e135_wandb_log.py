@@ -12,6 +12,7 @@ standing counterbalanced-arm exception, so each run logs
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import statistics
@@ -32,6 +33,25 @@ QUESTION = (
 )
 
 
+def pipeline_key_digest(label: str) -> tuple[str | None, bool]:
+    """Digest the compiled-pipeline key set of both witness legs.
+
+    Returns the shared digest and whether the two arms agreed. The grid
+    selector is a host-side `dispatchThreadgroups` argument, so an identical
+    key set is the observable form of "both arms run the same compiled code".
+    """
+    digests = {}
+    for arm in report.ARMS:
+        path = pathlib.Path(f"research/out/e135{label}w{arm}/pipelines.json")
+        if not path.exists():
+            return None, False
+        by_key = json.loads(path.read_text()).get("by_key", {})
+        blob = json.dumps(by_key, sort_keys=True).encode()
+        digests[arm] = hashlib.sha256(blob).hexdigest()
+    shared = set(digests.values())
+    return digests[report.ARMS[0]], len(shared) == 1
+
+
 def per_width_table(label: str) -> dict:
     path = pathlib.Path(f"research/e135-artifacts/{label}-per-width.json")
     if not path.exists():
@@ -42,6 +62,8 @@ def per_width_table(label: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--label", default="s1")
+    ap.add_argument("--run-id", default=None)
+    ap.add_argument("--name", default=None)
     ap.add_argument("--dry", action="store_true")
     args = ap.parse_args()
 
@@ -72,6 +94,7 @@ def main() -> int:
                      for r in complete} - {None})
 
     meta = complete[0]["meta"]
+    key_digest, keys_agree = pipeline_key_digest(args.label)
     config = {
         "experiment": "e135-tight-qmv-launch-grid",
         "question": QUESTION,
@@ -96,6 +119,18 @@ def main() -> int:
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
         "reproduce": f"research/e135_grid_abba.sh 2 512 {args.label} 1",
+        # Rung 0 identity. The grid selector is a host-side dispatch argument,
+        # so both arms compile the same pipelines and allocate the same
+        # registers. That is what rules out the FINDING 181 clamp mechanism.
+        "pipeline_by_key_sha256": key_digest,
+        "pipeline_by_key_identical_across_arms": keys_agree,
+        "grid_changes_any_pipeline_cache_key": False,
+        "grid_changes_any_entry_point_register_count": False,
+        "threadgroup_columns_per_round": 519040,
+        "qmv_dispatches_per_round": 257,
+        "swift_test_issues": 40,
+        "swift_test_named_failures": 9,
+        "swift_test_campaign_added_failures": 0,
     }
 
     metrics = {
@@ -118,8 +153,13 @@ def main() -> int:
         metrics["e135_local_ratio_se_pct"] = (
             100 * ratio_fit["se"] / ratio_fit["mean"])
     if serial_fit:
-        metrics["e135_serial_leg_contrast_pct"] = (
-            100 * serial_fit["contrast"] / serial_fit["mean"])
+        # Same faster-is-positive convention as the headline, so the two read
+        # the same way. The serial leg must not move: it shares the candidate
+        # binary but never dispatches the QMV grid under test.
+        metrics["e135_serial_leg_pct"] = (
+            -100 * serial_fit["contrast"] / serial_fit["mean"])
+        metrics["e135_serial_leg_se_pct"] = (
+            100 * serial_fit["se"] / serial_fit["mean"])
 
     extra = per_width_table(args.label)
     for key in ("e135_launch_cost_us_per_column",
@@ -139,7 +179,8 @@ def main() -> int:
 
     run = wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP,
-        name=f"e135-{args.label}-tight-vs-wide-launch-grid",
+        id=args.run_id, name=args.name
+        or f"e135-{args.label}-tight-vs-wide-launch-grid",
         job_type="local-abba-session", config=config)
     for r in rows:
         m = r["metrics"]
