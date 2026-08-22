@@ -90,11 +90,17 @@ else
 fi
 
 step twin-audit python3 research/twin_audit.py
-step scope senpai/validate-assignment-scope.sh
+# Both gates exit 2 when invoked bare, and a gate that did not run is not
+# evidence. `base` is the composition base; the only submitted path this
+# experiment changes is the Qwen runtime file.
+base="c6e32050f5a6b715df63aec7790a851ce1d9163c"
+step scope senpai/validate-assignment-scope.sh "${base}" \
+  Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
 step budget senpai/check-editable-budget.sh \
   770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf
 step score-boundary senpai/verify-ranked-score-boundary.sh
-step cliff-census senpai/entry-point-cliff-census.sh
+step cliff-census senpai/entry-point-cliff-census.sh --base "${base}" \
+  --json "${log_dir}/cliff-census.json"
 
 if [[ "${rc}" -ne 0 ]]; then
   echo
