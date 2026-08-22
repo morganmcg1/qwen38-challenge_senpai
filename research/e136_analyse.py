@@ -181,7 +181,27 @@ def summarise(legs, key):
         out["se_delta"] = se
         out["se_delta_pct"] = 100.0 * se / base if base else None
         out["two_sigma_pct"] = 2.0 * out["se_delta_pct"] if base else None
+        out["session_null_2sigma_pct"] = session_null_2sigma_pct(out)
     return out
+
+
+def session_null_2sigma_pct(block):
+    """The session's own 2 sigma null, built from within-arm spread only.
+
+    F5 section 4 asks the separation test to use this session's measured
+    leg-to-leg spread rather than an imported constant. Pooling the two
+    within-arm variances gives one estimate of leg noise that no between-arm
+    effect can inflate, so a real effect cannot widen the null that is
+    supposed to reject it.
+    """
+    off, on = block["off"], block["on"]
+    dof = off["n"] + on["n"] - 2
+    if dof <= 0 or not block["off"]["mean"]:
+        return None
+    pooled_var = ((off["n"] - 1) * off["sd"] ** 2
+                  + (on["n"] - 1) * on["sd"] ** 2) / dof
+    se = math.sqrt(pooled_var) * math.sqrt(1.0 / off["n"] + 1.0 / on["n"])
+    return 100.0 * 2.0 * se / block["off"]["mean"]
 
 
 def session_identity(legs):
@@ -317,29 +337,36 @@ def main():
             report["e136_realised_acceptance_delta_pp"] = 100.0 * acc["delta"]
         headline = report["e136_c1_candidate_leg_pct"]
         band = mtp.get("two_sigma_pct") or 0.0
+        null = mtp.get("session_null_2sigma_pct") or 0.0
         report["e136_c1_candidate_leg_pct_two_sigma"] = band
+        report["e136_session_null_2sigma_pct"] = null
         print(f"\ne136_c1_candidate_leg_pct = {headline:+.4f} "
               f"+/- {band:.4f} (2 sigma) "
               f"(positive means the C1 candidate leg is faster)")
-        # F4 section 8 states the advance bar as +0.6 %; the PR body section D
-        # states it as +0.30 %. The contradiction is unresolved, so the verdict
-        # is reported against both and the experiment advances on neither
-        # without a ruling.
-        report["stop_rule_verdict"] = {
-            key: {"bar": bar, "action": action,
-                  "point_clears": headline >= bar,
-                  "lower_2sigma_clears": headline - band >= bar}
-            for key, bar, action in (
-                ("advance_pr_body_0.30", 0.30, "advance if clears"),
-                ("advance_f4_0.60", 0.60, "advance if clears"),
-                ("close_below_0.25", 0.25, "CLOSE if it does NOT clear"))
+        print(f"session 2 sigma null (pooled within-arm) = {null:.4f} %")
+        # F5 resolved ADVISOR ERROR 136: the PR body governs, and these three
+        # bands are now the only stop rule. Separation is tested against the
+        # session's own within-arm null, not against an imported constant.
+        separated = abs(headline) > null
+        if headline >= 0.30 and separated:
+            verdict = "ADVANCE"
+        elif headline >= 0.10:
+            verdict = "HOLD"
+        else:
+            verdict = "CLOSE"
+        report["stop_rule"] = {
+            "ruling": "F5 comment 5382294331: PR body section D governs",
+            "headline_pct": headline,
+            "session_null_2sigma_pct": null,
+            "separated_from_session_null": separated,
+            "verdict": verdict,
+            "advance_needs": ">= +0.30 % AND separated from the session null",
+            "hold_band": "+0.10 % to +0.30 %",
+            "close_needs": "< +0.10 % OR not separated from the session null",
         }
-        print("\n-- stop rules, reported against both stated bars --")
-        for key, verdict in report["stop_rule_verdict"].items():
-            print(f"{key:<24} bar={verdict['bar']:.2f} "
-                  f"clears={'yes' if verdict['point_clears'] else 'no':<4} "
-                  f"lower2sigma={'yes' if verdict['lower_2sigma_clears'] else 'no':<4} "
-                  f"[{verdict['action']}]")
+        print(f"\nstop rule verdict = {verdict} "
+              f"(separated from session null: "
+              f"{'yes' if separated else 'no'})")
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as handle:
