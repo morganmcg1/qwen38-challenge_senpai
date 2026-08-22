@@ -64,7 +64,15 @@ LADDER = (
     ("alu", "k_alu8", "k_alu16", 8, 16),
 )
 # The one real deletion in the arm set: the whole activation add tree.
-DELETION = ("n_nosums", "a_base")
+#
+# The reference is `q_scaffold`, not `a_base`. `n_nosums` is built from the
+# scaffold source with the add tree removed, so the scaffold is the arm it
+# differs from by exactly the deletion. `a_base` is the shipped function
+# verbatim, and it keeps a compile-time branch the scaffold resolves, so an
+# `a_base` reference would charge the deletion for a codegen difference as
+# well. E123 could use `a_base` because the two were within 0.3 % there; this
+# session reports both so the choice is visible.
+DELETION = ("n_nosums", "q_scaffold", "a_base")
 
 
 def timing_rows(rate: dict, keep_warmup: bool = False) -> list[dict]:
@@ -138,25 +146,113 @@ def prices(cell: dict) -> dict:
             "us_per_instruction_per_k_block": d_us / d_n / kb,
             "pct_per_instruction": 100.0 * d_us / d_n / cell["base_us"],
         }
-    dele, ref = DELETION
-    d, r = cell["stats"].get(dele), cell["stats"].get(ref)
-    if d is not None and r is not None:
+    dele, ref, alt = DELETION
+    d = cell["stats"].get(dele)
+    for name, ref_arm in (("deletion", ref), ("deletion_vs_a_base", alt)):
+        r = cell["stats"].get(ref_arm)
+        if d is None or r is None:
+            continue
         gain_us = r["median"] - d["median"]
-        out["deletion"] = {
-            "arm": dele, "reference": ref,
+        out[name] = {
+            "arm": dele, "reference": ref_arm,
             "gain_us": gain_us,
             "gain_us_sem": sem_of_difference(d, r),
             "gain_us_per_k_block": gain_us / kb,
             "gain_pct": 100.0 * gain_us / r["median"],
         }
-    scaffold = cell["stats"].get("q_scaffold")
-    if scaffold is not None and r is not None:
+    scaffold, base = cell["stats"].get("q_scaffold"), cell["stats"].get("a_base")
+    if scaffold is not None and base is not None:
         out["null_scaffold"] = {
-            "cost_us": scaffold["median"] - r["median"],
-            "cost_pct": 100.0 * (scaffold["median"] - r["median"])
-            / r["median"],
-            "cost_us_per_k_block": (scaffold["median"] - r["median"]) / kb,
+            "cost_us": scaffold["median"] - base["median"],
+            "cost_pct": 100.0 * (scaffold["median"] - base["median"])
+            / base["median"],
+            "cost_us_per_k_block": (scaffold["median"] - base["median"]) / kb,
         }
+    return out
+
+
+def ramp_residual(rate: dict) -> dict:
+    """Harness defect 16 residual, per frame, by arm position.
+
+    A convex fall over the slot sequence does not cancel in the palindrome. It
+    shows as a forward-minus-reverse gap that is largest on arm 0 and falls
+    monotonically toward the middle arm. A flat profile near zero means the
+    discarded warm palindrome paid the ramp before timing started.
+    """
+    arms = rate["arms"]
+    n = len(arms)
+    per: dict[str, dict[str, list[float]]] = {}
+    for row in timing_rows(rate):
+        bucket = per.setdefault(row["frame"], {a: [] for a in arms})
+        slots = row["slots"]
+        for i, arm in enumerate(arms):
+            fwd, rev = slots[i], slots[2 * n - 1 - i]
+            bucket[arm].append(100.0 * (fwd - rev) / rev)
+    out = {}
+    for frame, bucket in per.items():
+        gaps = {a: statistics.median(v) for a, v in bucket.items() if v}
+        out[frame] = {
+            "forward_minus_reverse_pct_by_arm": gaps,
+            "arm0_pct": gaps.get(arms[0]),
+            "worst_abs_pct": max(abs(v) for v in gaps.values()) if gaps else None,
+        }
+    return out
+
+
+def segments(cell_map: dict) -> list[dict]:
+    """Marginal cost of one k-block, between adjacent stream lengths.
+
+    Only the k-frames and the base frame vary the stream length, and they share
+    the launched grid, the pipeline state and the fixed prologue. Differencing
+    two adjacent lengths therefore cancels the fixed dispatch cost exactly and
+    leaves the marginal cost of a k-block in ONE memory regime:
+
+        c1 = (t_hi - t_lo) / (kb_hi - kb_lo)
+        marginal GB/s = (bytes_hi - bytes_lo) / (kb_hi - kb_lo) / c1
+
+    The marginal rate is the regime label this experiment needs. The naive
+    whole-kernel rate is not: a two-block frame spends most of its time in the
+    fixed prologue, so its naive rate falls even though its weights are
+    cache resident.
+    """
+    by_cell: dict[tuple, list[dict]] = {}
+    for (shape, m, frame), cell in cell_map.items():
+        if frame in ("cycle", "consumer"):
+            continue
+        by_cell.setdefault((shape, m), []).append(cell)
+    out = []
+    for (shape, m), group in sorted(by_cell.items()):
+        group.sort(key=lambda c: c["k_blocks"])
+        for lo, hi in zip(group, group[1:]):
+            d_kb = hi["k_blocks"] - lo["k_blocks"]
+            d_bytes = hi["read_bytes"] - lo["read_bytes"]
+            row = {"shape": shape, "m": m,
+                   "from_frame": lo["frame"], "to_frame": hi["frame"],
+                   "k_blocks_from": lo["k_blocks"], "k_blocks_to": hi["k_blocks"],
+                   "bytes_per_k_block": d_bytes / d_kb, "arms": {}}
+            for arm in lo["stats"]:
+                if arm not in hi["stats"]:
+                    continue
+                c1_us = (hi["stats"][arm]["median"]
+                         - lo["stats"][arm]["median"]) / d_kb
+                row["arms"][arm] = {
+                    "marginal_us_per_k_block": c1_us,
+                    "marginal_gb_s": (d_bytes / d_kb) / (c1_us * 1e-6) / 1e9
+                    if c1_us > 0 else None,
+                    "fixed_us": lo["stats"][arm]["median"]
+                    - c1_us * lo["k_blocks"],
+                }
+            ref = row["arms"].get("a_base")
+            row["marginal_gb_s"] = ref["marginal_gb_s"] if ref else None
+            row["phi_marginal"] = (ref["marginal_gb_s"] / PEAK_BANDWIDTH_GB_S
+                                   if ref and ref["marginal_gb_s"] else None)
+            for klass, lo_arm, hi_arm, lo_n, hi_n in LADDER:
+                a, b = row["arms"].get(lo_arm), row["arms"].get(hi_arm)
+                if a and b:
+                    row["%s_us_per_instruction_per_k_block" % klass] = (
+                        (b["marginal_us_per_k_block"]
+                         - a["marginal_us_per_k_block"]) / (hi_n - lo_n))
+            out.append(row)
     return out
 
 
@@ -317,9 +413,12 @@ def main() -> int:
         "inner_max": rate.get("inner_max"),
         "target_ms": rate["target_ms"],
         "peak_bandwidth_gb_s": PEAK_BANDWIDTH_GB_S,
+        "warm_sweep_reps": rate.get("warm_sweep_reps"),
         "cells": [],
         "gates": None,
         "frame_law": None,
+        "segments": None,
+        "ramp_residual": None,
     }
     for key in sorted(cell_map):
         cell = cell_map[key]
@@ -342,6 +441,8 @@ def main() -> int:
         })
     report["gates"] = gates(rate, cell_map)
     report["frame_law"] = frame_law(cell_map)
+    report["segments"] = segments(cell_map)
+    report["ramp_residual"] = ramp_residual(rate)
 
     print("e125 frame analysis  %s  %s  harness=local"
           % (report["device"], report["architecture"]))
@@ -359,6 +460,25 @@ def main() -> int:
                  p.get("ld", {}).get("us_per_instruction_per_k_block", float("nan")),
                  p.get("alu", {}).get("us_per_instruction_per_k_block", float("nan")),
                  p.get("deletion", {}).get("gain_us_per_k_block", float("nan"))))
+    print()
+    print("marginal cost of one k-block between adjacent stream lengths")
+    print("%-26s %2s %-18s %8s %7s %10s %10s"
+          % ("shape", "M", "segment", "GB/s", "phi", "ld/instr", "alu/instr"))
+    for s in report["segments"]:
+        print("%-26s %2d %-18s %8.1f %7.3f %10.5f %10.5f"
+              % (s["shape"][:26], s["m"],
+                 "%s->%s" % (s["from_frame"], s["to_frame"]),
+                 s["marginal_gb_s"] or float("nan"),
+                 s["phi_marginal"] or float("nan"),
+                 s.get("ld_us_per_instruction_per_k_block", float("nan")),
+                 s.get("alu_us_per_instruction_per_k_block", float("nan"))))
+
+    print()
+    print("harness defect 16 residual, forward minus reverse, median per arm")
+    for frame, v in sorted(report["ramp_residual"].items()):
+        print("    %-9s arm0=%+6.2f%%  worst=%.2f%%"
+              % (frame, v["arm0_pct"], v["worst_abs_pct"]))
+
     print()
     for klass, law in report["frame_law"].items():
         print("%s: ratio of the per-k-block price to the base frame" % klass)
