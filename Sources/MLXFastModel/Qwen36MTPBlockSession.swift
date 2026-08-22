@@ -1646,6 +1646,9 @@ public final class Qwen36MTPBlockSession {
         var bundle: [MLXArray] = [top2IDs, top2Values]
         bundle.append(contentsOf: draftIdArrays)
         eval(cache.flatMap { $0.state } + bundle)
+        E142VerifyDump.record(
+            verifyTokens: verifyTokens, normed: verifyNormed,
+            top2IDs: top2IDs, top2Values: top2Values)
         if Self.traceRounds { tEvalDone = DispatchTime.now().uptimeNanoseconds }
 
         let drafts = draftIdArrays.map { Int($0.item(Int32.self)) }
