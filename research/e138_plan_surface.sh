@@ -66,13 +66,22 @@ import json, pathlib, subprocess, sys
 out, entry, exit_temp, start, end, status, resident = sys.argv[1:8]
 side = pathlib.Path(out).with_suffix(".session.json")
 
+# What the measurement is actually built from: the compiled sources, the
+# instrument, and this driver, which sets the replicate counts and the
+# environment. An offline analysis script cannot change a recorded number, so
+# it is reported separately instead of poisoning the flag.
+MEASURED = ("Sources/", "Tests/", "Package.swift",
+            "research/e138_plan_surface.sh")
+
 artifacts = pathlib.PurePath(out).parent.as_posix()
-paths = sorted(
+changed = sorted(
     line[3:]
     for line in subprocess.run(["git", "status", "--porcelain"],
                                capture_output=True, text=True).stdout.splitlines()
     if not line[3:].startswith(artifacts)
 )
+paths = [p for p in changed if p.startswith(MEASURED)]
+other = [p for p in changed if not p.startswith(MEASURED)]
 dirty = bool(paths)
 side.write_text(json.dumps({
     "artifact": out,
@@ -91,11 +100,12 @@ side.write_text(json.dumps({
                              capture_output=True, text=True).stdout.strip(),
     # The block writes its own artifact and this sidecar, so a plain
     # `git status` is dirty by construction and the flag could never be
-    # false. RULE 101: a flag that cannot fail reports nothing. What matters
-    # is whether the MEASURED source was clean, so the artifact directory is
-    # excluded and everything else still counts.
+    # false. RULE 101: a flag that cannot fail reports nothing, and a flag that
+    # fires on anything reports nothing either. This one fires exactly when the
+    # compiled measurement path is dirty.
     "measured_source_dirty": dirty,
     "measured_source_dirty_paths": paths,
+    "other_dirty_paths": other,
 }, indent=2, sort_keys=True) + "\n")
 print("wrote %s" % side)
 PY

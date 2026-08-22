@@ -247,6 +247,70 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
     out["interaction_resolved_above_replicate_spread"] = (
         out["max_abs_interaction_pp"] > out["max_session_spread_pct"]
     )
+
+    # Null control. When a plan launches the identical grid under both arms,
+    # the two arms run the same pipeline over the same dispatch, so the true
+    # interaction is exactly zero. Anything the estimator reports for such a
+    # plan is its own resolution floor, measured rather than assumed.
+    out["null_control_rows"] = [
+        {
+            "shape": s["name"],
+            "n": s["n"],
+            "plan": r["plan"],
+            "launched_threadgroups": r["launched_threadgroups_wide"],
+            "interaction_pp": r["interaction_pp"],
+            "tight_minus_wide_pct": r["tight_minus_wide_pct"],
+        }
+        for s in shapes
+        for r in s["rows"]
+        if "interaction_pp" in r
+        and r["launched_threadgroups_wide"] == r["launched_threadgroups_tight"]
+        and r["plan"] != baseline
+    ]
+    # A second, weaker null: two plans that share a grid pair must share an
+    # interaction, so the difference between their interactions is also zero
+    # by construction.
+    matched = {}
+    for s in shapes:
+        for r in s["rows"]:
+            if "interaction_pp" not in r or r["plan"] == baseline:
+                continue
+            key = (s["name"], r["launched_threadgroups_wide"],
+                   r["launched_threadgroups_tight"])
+            matched.setdefault(key, []).append(r)
+    out["matched_geometry_pairs"] = [
+        {
+            "shape": shape,
+            "plans": [r["plan"] for r in rows],
+            "launched_threadgroups_wide": lw,
+            "launched_threadgroups_tight": lt,
+            "interaction_spread_pp": (
+                max(r["interaction_pp"] for r in rows)
+                - min(r["interaction_pp"] for r in rows)
+            ),
+        }
+        for (shape, lw, lt), rows in matched.items()
+        if len(rows) > 1
+    ]
+    floors = [abs(r["interaction_pp"]) for r in out["null_control_rows"]]
+    floors += [p["interaction_spread_pp"]
+               for p in out["matched_geometry_pairs"]]
+    out["interaction_resolution_floor_pp"] = max(floors) if floors else None
+    if floors:
+        real = [
+            abs(r["interaction_pp"])
+            for s in shapes
+            for r in s["rows"]
+            if "interaction_pp" in r
+            and r["plan"] != baseline
+            and r["launched_threadgroups_wide"]
+            != r["launched_threadgroups_tight"]
+        ]
+        out["max_abs_interaction_pp_grid_differs"] = max(real) if real else 0.0
+        out["interaction_resolved_above_null_control"] = (
+            out["max_abs_interaction_pp_grid_differs"]
+            > out["interaction_resolution_floor_pp"]
+        )
     if "5:5:4" in plans and "6:6:4" in plans:
         sw = tot[("6:6:4", "wide")] - tot[("5:5:4", "wide")]
         st = tot[("6:6:4", "tight")] - tot[("5:5:4", "tight")]
@@ -341,6 +405,30 @@ def main() -> int:
     else:
         print("per-shape plan order is identical under both grids for every shape:")
         print("    the plan axis and the grid axis are separable on this evidence")
+
+    if r.get("null_control_rows") or r.get("matched_geometry_pairs"):
+        print()
+        print("null control: plans whose two arms dispatch the same grid")
+        print("a same-grid plan runs one pipeline over one dispatch twice, so")
+        print("its true interaction is 0.00 pp and the reading below is floor")
+        print("%-34s %8s %6s %10s %11s"
+              % ("shape", "plan", "tgs", "inter pp", "T-W %"))
+        for row in r["null_control_rows"]:
+            print("%-34s %8s %6d %+10.2f %10.2f %%"
+                  % (row["shape"], row["plan"], row["launched_threadgroups"],
+                     row["interaction_pp"], row["tight_minus_wide_pct"]))
+        for pair in r["matched_geometry_pairs"]:
+            print("%-34s %8s   pair  %+10.2f  (spread of equal interactions)"
+                  % (pair["shape"], "/".join(pair["plans"]),
+                     pair["interaction_spread_pp"]))
+        print()
+        print("measured interaction resolution floor: %.2f pp"
+              % r["interaction_resolution_floor_pp"])
+        print("largest interaction where the grid really differs: %.2f pp"
+              % r["max_abs_interaction_pp_grid_differs"])
+        print("interaction resolved above the null control: %s"
+              % ("YES" if r["interaction_resolved_above_null_control"]
+                 else "NO -- the plan x grid interaction is not resolved"))
 
     if "step_wide_us" in r:
         print()
