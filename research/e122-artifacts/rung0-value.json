@@ -1,0 +1,501 @@
+{
+  "censored_rounds": 78,
+  "experiment": "e122-target-margin-conditioned-draft-depth",
+  "harness": "local",
+  "model": "shipped cost model, not a measurement",
+  "official_or_ranked_score": false,
+  "pooled": {
+    "best_constant_cost_per_token": 0.6469367909238248,
+    "best_constant_depth": 2,
+    "bins": 5,
+    "captured_share_of_oracle_pool_pct": 2.5159162497090817,
+    "dmax": 7,
+    "head_step_cost_ratio": 0.18,
+    "held_out_bin_depths": [
+      2,
+      2,
+      2,
+      2,
+      3
+    ],
+    "held_out_constant_cost_per_token": 0.6525627044711014,
+    "held_out_margin_cost_per_token": 0.6478567667193259,
+    "margin_bin_depths": [
+      2,
+      2,
+      2,
+      2,
+      3
+    ],
+    "margin_bin_edges": [
+      0.25,
+      0.625,
+      1.125,
+      2.0
+    ],
+    "margin_cost_per_token": 0.641904263667277,
+    "margin_mean_depth": 2.1862578080636004,
+    "margin_pool_pct_held_out": 0.7263855212326975,
+    "margin_pool_pct_in_sample": 0.7839996618493217,
+    "mean_run_length": 1.6178307779670642,
+    "oracle_cost_per_token": 0.4932364425162689,
+    "oracle_mean_depth": 1.6178307779670642,
+    "oracle_pool_pct": 31.161596175547434,
+    "rounds": 1761,
+    "run_length_hist": {
+      "0": 541,
+      "1": 499,
+      "2": 313,
+      "3": 191,
+      "4": 93,
+      "5": 35,
+      "6": 19,
+      "7": 70
+    }
+  },
+  "prompts": {
+    "benchfixture": {
+      "best_constant_cost_per_token": 0.3222265625,
+      "best_constant_depth": 7,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 23.33025608445868,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        6,
+        7,
+        7,
+        7,
+        7
+      ],
+      "held_out_constant_cost_per_token": 0.3293927125506072,
+      "held_out_margin_cost_per_token": 0.326204081632653,
+      "margin_bin_depths": [
+        3,
+        7,
+        7,
+        7,
+        7
+      ],
+      "margin_bin_edges": [
+        4.075000000000001,
+        13.6,
+        14.974999999999998,
+        15.95
+      ],
+      "margin_cost_per_token": 0.31594262295081965,
+      "margin_mean_depth": 6.178082191780822,
+      "margin_pool_pct_held_out": 0.977495714337806,
+      "margin_pool_pct_in_sample": 1.9889496043585364,
+      "mean_run_length": 6.013698630136986,
+      "oracle_cost_per_token": 0.29691406249999996,
+      "oracle_mean_depth": 6.013698630136986,
+      "oracle_pool_pct": 8.525194053414031,
+      "rounds": 73,
+      "run_length_hist": {
+        "0": 3,
+        "1": 3,
+        "2": 3,
+        "3": 2,
+        "4": 2,
+        "5": 1,
+        "6": 2,
+        "7": 57
+      }
+    },
+    "dramatic": {
+      "best_constant_cost_per_token": 0.6449140049140049,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 4.242840281267655,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        2,
+        3,
+        1,
+        4
+      ],
+      "held_out_constant_cost_per_token": 0.6337864077669904,
+      "held_out_margin_cost_per_token": 0.6448571428571428,
+      "margin_bin_depths": [
+        2,
+        2,
+        3,
+        2,
+        3
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.625,
+        1.125,
+        2.075000000000003
+      ],
+      "margin_cost_per_token": 0.6363133640552995,
+      "margin_mean_depth": 2.393782383419689,
+      "margin_pool_pct_held_out": -1.716773274946104,
+      "margin_pool_pct_in_sample": 1.351636056155181,
+      "mean_run_length": 1.6528497409326426,
+      "oracle_cost_per_token": 0.4891015625,
+      "oracle_mean_depth": 1.6528497409326426,
+      "oracle_pool_pct": 31.856868667027594,
+      "rounds": 193,
+      "run_length_hist": {
+        "0": 58,
+        "1": 56,
+        "2": 26,
+        "3": 26,
+        "4": 12,
+        "5": 9,
+        "6": 2,
+        "7": 4
+      }
+    },
+    "english": {
+      "best_constant_cost_per_token": 0.6722902494331064,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 0.0,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        1,
+        2,
+        1,
+        2,
+        2
+      ],
+      "held_out_constant_cost_per_token": 0.6617857142857142,
+      "held_out_margin_cost_per_token": 0.6694230769230768,
+      "margin_bin_depths": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.7375000000000007,
+        1.0249999999999986,
+        1.875
+      ],
+      "margin_cost_per_token": 0.6722902494331064,
+      "margin_mean_depth": 2.0,
+      "margin_pool_pct_held_out": -1.1408872655640723,
+      "margin_pool_pct_in_sample": 0.0,
+      "mean_run_length": 1.348623853211009,
+      "oracle_cost_per_token": 0.529140625,
+      "oracle_mean_depth": 1.348623853211009,
+      "oracle_pool_pct": 27.053228890355264,
+      "rounds": 218,
+      "run_length_hist": {
+        "0": 70,
+        "1": 73,
+        "2": 39,
+        "3": 16,
+        "4": 13,
+        "5": 2,
+        "6": 2,
+        "7": 3
+      }
+    },
+    "medicine": {
+      "best_constant_cost_per_token": 0.6601941747572816,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 5.3998145124249115,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        1,
+        2,
+        2,
+        3
+      ],
+      "held_out_constant_cost_per_token": 0.7010309278350515,
+      "held_out_margin_cost_per_token": 0.6941414141414142,
+      "margin_bin_depths": [
+        2,
+        1,
+        2,
+        2,
+        3
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.625,
+        1.0,
+        1.7750000000000021
+      ],
+      "margin_cost_per_token": 0.6489952153110047,
+      "margin_mean_depth": 1.98,
+      "margin_pool_pct_held_out": 0.9925230728610179,
+      "margin_pool_pct_in_sample": 1.725584285072168,
+      "mean_run_length": 1.56,
+      "oracle_cost_per_token": 0.5003124999999999,
+      "oracle_mean_depth": 1.56,
+      "oracle_pool_pct": 31.95636222506566,
+      "rounds": 200,
+      "run_length_hist": {
+        "0": 66,
+        "1": 56,
+        "2": 25,
+        "3": 26,
+        "4": 15,
+        "5": 6,
+        "6": 4,
+        "7": 2
+      }
+    },
+    "narrative": {
+      "best_constant_cost_per_token": 0.6544812362030904,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 0.0,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        3,
+        2,
+        2,
+        2
+      ],
+      "held_out_constant_cost_per_token": 0.6530396475770924,
+      "held_out_margin_cost_per_token": 0.6551965065502183,
+      "margin_bin_depths": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.4875000000000007,
+        0.75,
+        1.5750000000000028
+      ],
+      "margin_cost_per_token": 0.6544812362030904,
+      "margin_mean_depth": 2.0,
+      "margin_pool_pct_held_out": -0.32919268518116773,
+      "margin_pool_pct_in_sample": 0.0,
+      "mean_run_length": 1.353211009174312,
+      "oracle_cost_per_token": 0.5284600389863547,
+      "oracle_mean_depth": 1.353211009174312,
+      "oracle_pool_pct": 23.846873541934865,
+      "rounds": 218,
+      "run_length_hist": {
+        "0": 67,
+        "1": 67,
+        "2": 45,
+        "3": 26,
+        "4": 8,
+        "5": 3,
+        "6": 1,
+        "7": 1
+      }
+    },
+    "natural_history": {
+      "best_constant_cost_per_token": 0.6948471615720523,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 0.0,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "held_out_constant_cost_per_token": 0.7199999999999999,
+      "held_out_margin_cost_per_token": 0.7199999999999999,
+      "margin_bin_depths": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.5,
+        0.875,
+        1.5
+      ],
+      "margin_cost_per_token": 0.6948471615720523,
+      "margin_mean_depth": 2.0,
+      "margin_pool_pct_held_out": 0.0,
+      "margin_pool_pct_in_sample": 0.0,
+      "mean_run_length": 1.188034188034188,
+      "oracle_cost_per_token": 0.5547656249999999,
+      "oracle_mean_depth": 1.188034188034188,
+      "oracle_pool_pct": 25.25057975105296,
+      "rounds": 234,
+      "run_length_hist": {
+        "0": 87,
+        "1": 70,
+        "2": 40,
+        "3": 24,
+        "4": 10,
+        "5": 2,
+        "6": 1,
+        "7": 0
+      }
+    },
+    "philosophy": {
+      "best_constant_cost_per_token": 0.6460737527114967,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 0.0,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "held_out_constant_cost_per_token": 0.6417316017316016,
+      "held_out_margin_cost_per_token": 0.6507207207207206,
+      "margin_bin_depths": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "margin_bin_edges": [
+        0.375,
+        0.625,
+        1.125,
+        1.8000000000000007
+      ],
+      "margin_cost_per_token": 0.6460737527114967,
+      "margin_mean_depth": 2.0,
+      "margin_pool_pct_held_out": -1.3814096743627435,
+      "margin_pool_pct_in_sample": 0.0,
+      "mean_run_length": 1.3378995433789955,
+      "oracle_cost_per_token": 0.5307421875,
+      "oracle_mean_depth": 1.3378995433789955,
+      "oracle_pool_pct": 21.730242654112875,
+      "rounds": 219,
+      "run_length_hist": {
+        "0": 69,
+        "1": 58,
+        "2": 58,
+        "3": 22,
+        "4": 9,
+        "5": 2,
+        "6": 0,
+        "7": 1
+      }
+    },
+    "technical": {
+      "best_constant_cost_per_token": 0.6411428571428571,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 4.992905530861124,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "held_out_constant_cost_per_token": 0.6473076923076923,
+      "held_out_margin_cost_per_token": 0.6353917050691245,
+      "margin_bin_depths": [
+        3,
+        2,
+        2,
+        2,
+        3
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.625,
+        1.0,
+        1.8250000000000028
+      ],
+      "margin_cost_per_token": 0.6319999999999999,
+      "margin_mean_depth": 2.4242424242424243,
+      "margin_pool_pct_held_out": 1.8753765816428958,
+      "margin_pool_pct_in_sample": 1.4466546112115841,
+      "mean_run_length": 1.5858585858585859,
+      "oracle_cost_per_token": 0.49710937499999996,
+      "oracle_mean_depth": 1.5858585858585859,
+      "oracle_pool_pct": 28.974203542803266,
+      "rounds": 198,
+      "run_length_hist": {
+        "0": 62,
+        "1": 50,
+        "2": 36,
+        "3": 26,
+        "4": 12,
+        "5": 7,
+        "6": 4,
+        "7": 1
+      }
+    },
+    "travel": {
+      "best_constant_cost_per_token": 0.6429090909090909,
+      "best_constant_depth": 2,
+      "bins": 5,
+      "captured_share_of_oracle_pool_pct": 0.035830005822938826,
+      "dmax": 7,
+      "head_step_cost_ratio": 0.18,
+      "held_out_bin_depths": [
+        2,
+        2,
+        3,
+        2,
+        2
+      ],
+      "held_out_constant_cost_per_token": 0.6488073394495413,
+      "held_out_margin_cost_per_token": 0.6534222222222221,
+      "margin_bin_depths": [
+        2,
+        1,
+        2,
+        2,
+        2
+      ],
+      "margin_bin_edges": [
+        0.25,
+        0.625,
+        1.125,
+        1.7000000000000028
+      ],
+      "margin_cost_per_token": 0.6428504672897196,
+      "margin_mean_depth": 1.7932692307692308,
+      "margin_pool_pct_held_out": -0.7062635177888632,
+      "margin_pool_pct_in_sample": 0.009119324377016014,
+      "mean_run_length": 1.4663461538461537,
+      "oracle_cost_per_token": 0.5124756335282651,
+      "oracle_mean_depth": 1.4663461538461537,
+      "oracle_pool_pct": 25.451640789792187,
+      "rounds": 208,
+      "run_length_hist": {
+        "0": 59,
+        "1": 66,
+        "2": 41,
+        "3": 23,
+        "4": 12,
+        "5": 3,
+        "6": 3,
+        "7": 1
+      }
+    }
+  },
+  "rung": 0,
+  "timing_valid": false
+}

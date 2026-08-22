@@ -103,6 +103,18 @@ the class-by-time-gap split and the stratified variance-ratio tests.
 
     published median floor, for comparison:   0.2770 %
 
+These constants were fitted on a 746-submission board. They were re-measured on
+a later 764-submission board, 711 groups and 79 code-identical pairs, and every
+one reproduced: TARGET 0.0916 against 0.0945, DRAFT 0.0931 against 0.0952,
+TARGET-all 0.1047 against 0.1100, DRAFT-all 0.6393 against 0.6687. All four
+agree within 5 %.
+
+The `--noise` table prints four measurement columns, `T same`, `D same`,
+`T all` and `D all`. Only the two `same` columns are resolutions. `D all` is
+about 0.64 % because it CONTAINS the mode, and quoting it as a resolution
+inflates the DRAFT floor about sevenfold. Read the `same` columns, and do not
+transpose the two probes.
+
 The widest class differs between the probes, so the conservative floor is taken
 per probe: TARGET 0.1281 % per run and 0.1812 % per pair, DRAFT 0.1139 % per run
 and 0.1611 % per pair. Use the conservative floor when a claim is about to spend
@@ -140,6 +152,115 @@ The predicted plutarch mode shift is 38 drafting rounds x 0.601 ms over a
 0.1244 %. That agreement, from an entirely independent direction, is the
 strongest confirmation of FACT 2 the campaign has.
 
+Why the TARGET mode cut is 0.30 and not 0.15
+--------------------------------------------
+The mode classifier is a conjunction: a pair is a mode flip when the DRAFT
+probe exceeds `MODE_DRAFT_SHIFT` AND the TARGET probe stays under
+`MODE_TARGET_SHIFT`. The DRAFT half is safe, because the same-mode and
+cross-mode DRAFT populations are separated by an empty 0.41 % band. The TARGET
+half was not.
+
+The same-mode TARGET sd is 0.0945 % per run, so a PAIR of runs carries
+0.0945 x sqrt(2) = 0.1336 %. A 0.15 cut therefore sat at 1.12 pair sd from
+zero. A two-sided normal at 1.12 sd leaves about 26 % of genuine same-mode mass
+outside the cut, so roughly one mode flip in four was silently reclassified as
+"mode flip plus a target mechanism" purely from TARGET noise. The `xv4` receipt
+landed at 1.20 and 1.28 pair sd against its two references and was misread on
+exactly this margin.
+
+The cut is now `MODE_TARGET_SHIFT = 0.30`, which is 2.25 pair sd and leaves
+about 2.5 % of same-mode mass outside. The band between the two values is not
+discarded: `MODE_TARGET_AMBIGUOUS = 0.15` marks it, and a pair that lands there
+is reported as `mode_ambiguous`. An ambiguous pair is not evidence of a target
+mechanism and it is not evidence against one. It needs a second receipt or the
+decomposition below.
+
+The decomposition (CAMPAIGN RULE 60)
+------------------------------------
+A single mode-flipped receipt cannot separate a small target mechanism from the
+mode, because both land on the same eight numbers. What CAN separate them is
+that the two effects have different SHAPES across the prompts. The mode is paid
+per drafting round, so it scales with `drafting_rounds_p / leg_p`. A mechanism
+inside the target path is paid on every round, so to first order it is a flat
+percentage. That gives a two-parameter ordinary least squares fit:
+
+    slower_p (%) = 100 * m * drafting_rounds_p / leg_p + c
+
+`m` is milliseconds per drafting round and should land near the FACT-2 value of
+0.601 ms when a mode flip is present. `c` is the flat, prompt-independent
+component, which is the only part attributable to a mechanism.
+
+`mode_decompose()` returns `m, se_m, c, se_c, r2, rms` and the per-prompt
+residuals. `--read` prints it for every pair.
+
+Read `c` against ZERO, with a +/- 0.2335 % systematic band.
+
+An earlier version of this file told you to read `c` against a single
+calibration pair, `51b9bf85` / `097991a0`, whose fit returns `c = +0.2255`. That
+instruction was wrong and is withdrawn. Over the 26 byte-identical cross-mode
+pairs on the board, where the true `c` is exactly 0 by construction, the fitted
+mean is `c = -0.0576 +/- 0.0444 %`, which is consistent with zero. The 0.2255
+figure was one draw from a zero-mean distribution, not a bias.
+
+What IS real is the scatter. Across those 26 pairs the fitted `c` has an rms of
+0.2335 % (sd 0.2263, range -0.53 to +0.38). So:
+
+    score c against 0, and treat |c| under about 0.47 % (2 sigma) as
+    consistent with no mechanism at all
+
+The corresponding code-identical cross-mode class gives `c = -0.1285 +/- 0.0400`
+with rms 0.2808 %, so a 2 sigma band of about 0.56 % is the conservative read.
+
+Two robustness results that fix the fit's form:
+
+* The regressor MUST be drafting rounds. Using total ranked rounds instead
+  returns `c = +1.998 +/- 0.100 %` on a null population, which would make every
+  mode-flipped pair look like a two-percent mechanism.
+* Weighted least squares tightens the scatter to 0.2123 % but introduces a
+  -0.139 +/- 0.032 % bias. Keep ordinary least squares.
+
+KNOWN MISSPECIFICATION AT PLUTARCH. The linear-in-drafting-rounds model predicts
+a cross-mode plutarch shift of +0.147 % at `m = 0.601` and +0.215 % at the
+fitted `m`. The measured shift is +0.0056 +/- 0.0263 %, which rejects those
+predictions at 5.6 and 8 sigma. The other seven prompts shift by +1.19 to
++2.17 % as the model expects. Plutarch has high leverage in this regressor, so
+its unmodelled near-immunity is the mechanical origin of the 0.2335 % scatter
+above. Until a better regressor is fitted, prefer plutarch ALONE as the
+mode-immune probe wherever the mechanism reaches the target path: its cross-mode
+pair sd is 0.1643 % against the decomposition's 0.2808 %, and its bias is
++0.006 % against -0.129 %. Plutarch is target-path only, so a drafting-side
+mechanism still needs the DRAFT probe or this decomposition.
+
+The regressor needs a per-prompt drafting-round count. The board's `per_prompt`
+block does NOT carry one: it has `non_drafting_round_count` and
+`effective_mean_draft_len` but no total round count. `RANKED_ROUNDS` below
+supplies the Finding 12 counts. Those counts were measured on one ranked run,
+so they set the SHAPE of the regressor and not its absolute level; `m` is
+correspondingly a relative quantity and should not be quoted as a hardware
+constant. On the byte-identical cross-mode population it fits to
++0.8769 +/- 0.0482 ms per drafting round, above the FACT-2 value of 0.601 ms,
+which is the same misspecification seen from the other side.
+
+Measured resolution of one receipt (2 sigma, conservative replicate class)
+--------------------------------------------------------------------------
+These replace the campaign's earlier guessed 0.5 % submission bar. A uniform
+x % candidate speedup moves every candidate leg, every `raw_p` and the median
+by x %, so all estimators share one scale.
+
+    mode SHARED, read on the candidate mean of 8 legs      0.216 %
+    mode SHARED, read on the published median              0.698 %
+    mode UNKNOWN, read on plutarch alone                   0.387 %
+    mode UNKNOWN, read on the published median             2.104 %
+    mode REMOVED by this decomposition                     0.702 %
+    mode FLIPPED, read on plutarch alone                   0.450 %
+
+Empirical false-positive rates at a 0.5 % decision threshold, measured on null
+pairs: the published median exceeds 0.5 % on 9.8 % of same-mode nulls and on
+53.8 % of unknown-mode nulls. The candidate mean-of-8 under a shared mode, and
+plutarch alone under an unknown mode, exceed 0.5 % on 0 % of null pairs.
+
+Never decide a mechanism from the published median.
+
 Sign convention
 ---------------
 A POSITIVE percentage means B is FASTER than A, matching
@@ -165,7 +286,9 @@ Usage
 
     python3 research/board_prompt_instrument.py --read <a_prefix> <b_prefix>
         Read one pair through the instrument: mode classification, target-path
-        effect, drafting-path effect, and each in resolution units.
+        effect, drafting-path effect, each in resolution units, and the
+        two-parameter mode/mechanism decomposition required by CAMPAIGN
+        RULE 60.
 
     python3 research/board_prompt_instrument.py --rank --min-score 3.30
         Rank the largest schedule-matched cohort on each probe separately.
@@ -222,7 +345,24 @@ CONSERVATIVE = {
 # A mode flip moves the drafting probe by about this much and plutarch by far
 # less. Anything above the first number is a flip, not a mechanism.
 MODE_DRAFT_SHIFT = 0.60
-MODE_TARGET_SHIFT = 0.15
+# MODE_TARGET_SHIFT was 0.15 and misclassified the `7bef7d4c` receipt.
+# The same-mode TARGET floor is 0.0945 % per RUN, so a PAIR difference carries
+# sqrt(2) times that, 0.1336 %. A threshold of 0.15 therefore sat at 1.12 pair
+# sigma, and any true mode flip whose plutarch reading landed beyond 1.1 sigma
+# of zero was silently reported as "no flip". `7bef7d4c` landed at 1.20 and
+# 1.28 sigma against its two references and was missed by 0.01 and 0.02
+# percentage points. The threshold is now 2.25 pair sigma, and readings between
+# the two constants are reported as AMBIGUOUS rather than as a clean negative.
+MODE_TARGET_SHIFT = 0.30
+MODE_TARGET_AMBIGUOUS = 0.15
+
+# Ranked round count per prompt, from FINDING 12's M5 cost curve. Used only to
+# weight the two regressors in `mode_decompose` relative to each other. Two
+# rows with a bit-identical schedule signature share these counts exactly, so
+# an error in the absolute value shifts the units of `m` without disturbing the
+# separation of `m` from `c`. `report_read` warns when the schedules differ.
+RANKED_ROUNDS = {"plutarch": 487, "drama": 252, "travel": 212, "beagle": 110,
+                 "republic": 93, "essays": 92, "medicine": 90, "botany": 81}
 
 # Comment stripping applies only to languages that have `//` or `/* */`.
 # A JSON manifest has neither, and a `//` inside a declared proposal-head URL
@@ -829,6 +969,51 @@ def find_row(rows, prefix):
     return hits[0]
 
 
+def mode_decompose(pmap_a, pmap_b):
+    """Separate the FACT-2 measurement mode from a uniform mechanism.
+
+        slower_p (%) = 100 * m * drafting_rounds_p / leg_p  +  c
+
+    `m` is the FACT-2 cost per drafting round in seconds; `c` is a uniform
+    percentage that scales with leg time, which is what a kernel mechanism
+    looks like. The two regressors separate because their shapes differ across
+    the eight prompts: plutarch runs about 38 drafting rounds in a 15.5 s leg
+    while botany runs 81 in a 5.6 s leg.
+
+    The `c` estimate carries a systematic offset of roughly +0.22 % whenever a
+    mode flip is present, measured on the byte-identical `51b9bf85`/`097991a0`
+    pair whose true `c` is exactly zero. Read `c` against that offset, not
+    against zero.
+    """
+    xs, ys = [], []
+    for name in PROMPT_ORDER:
+        pa, pb = pmap_a[name], pmap_b[name]
+        ta = pa["mtp_seconds_per_token_mean"]
+        tb = pb["mtp_seconds_per_token_mean"]
+        drafting = RANKED_ROUNDS[name] - (pa.get("non_drafting_round_count") or 0)
+        xs.append(100.0 * drafting / (tb * 512.0))
+        ys.append(100.0 * (ta / tb - 1.0))
+
+    n = len(xs)
+    mean_x, mean_y = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mean_x) ** 2 for x in xs)
+    if sxx == 0:
+        return None
+    m = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / sxx
+    c = mean_y - m * mean_x
+    resid = [y - (m * x + c) for x, y in zip(xs, ys)]
+    sse = sum(r * r for r in resid)
+    sst = sum((y - mean_y) ** 2 for y in ys)
+    s2 = sse / (n - 2)
+    return {
+        "m": m, "se_m": (s2 / sxx) ** 0.5,
+        "c": c, "se_c": (s2 * (1.0 / n + mean_x ** 2 / sxx)) ** 0.5,
+        "r2": 1.0 - sse / sst if sst else float("nan"),
+        "rms": (sse / n) ** 0.5,
+        "resid": dict(zip(PROMPT_ORDER, resid)),
+    }
+
+
 def report_read(rows, prefix_a, prefix_b):
     row_a, row_b = find_row(rows, prefix_a), find_row(rows, prefix_b)
     pmap_a, pmap_b = prompt_map(row_a), prompt_map(row_b)
@@ -837,7 +1022,11 @@ def report_read(rows, prefix_a, prefix_b):
 
     same_schedule = schedule_signature(pmap_a) == schedule_signature(pmap_b)
     target, draft = probes(pmap_a, pmap_b)
-    mode_flip = abs(draft) > MODE_DRAFT_SHIFT and abs(target) < MODE_TARGET_SHIFT
+    draft_moved = abs(draft) > MODE_DRAFT_SHIFT
+    mode_flip = draft_moved and abs(target) < MODE_TARGET_AMBIGUOUS
+    mode_ambiguous = (draft_moved
+                      and MODE_TARGET_AMBIGUOUS <= abs(target)
+                      < MODE_TARGET_SHIFT)
 
     print(f"A {(row_a.get('id') or '')[:8]}  {row_a.get('solverUsername')}  "
           f"published {row_a.get('officialScore')}")
@@ -856,17 +1045,30 @@ def report_read(rows, prefix_a, prefix_b):
               f"{pmap_b[name]['mtp_seconds_per_token_mean']:12.8f} "
               f"{cand_pct(pmap_a, pmap_b, name):+11.4f}")
 
-    key = "same_mode" if not mode_flip else "all"
+    key = "same_mode" if not (mode_flip or mode_ambiguous) else "all"
     t_res = RESOLUTION[f"target_{key}"]
     d_res = RESOLUTION[f"draft_{key}"]
-    print(f"\nFACT-2 measurement mode: "
-          f"{'FLIPPED between the two runs' if mode_flip else 'no flip detected'}")
+    if mode_flip:
+        verdict = "FLIPPED between the two runs"
+    elif mode_ambiguous:
+        verdict = "AMBIGUOUS, a flip and a mechanism both fit"
+    else:
+        verdict = "no flip detected"
+    print(f"\nFACT-2 measurement mode: {verdict}")
     if mode_flip:
         print("  The drafting probe moved more than "
               f"{MODE_DRAFT_SHIFT} % while plutarch stayed under "
-              f"{MODE_TARGET_SHIFT} %.\n"
+              f"{MODE_TARGET_AMBIGUOUS} %.\n"
               "  Treat the drafting probe as uninformative and read plutarch "
               "only.")
+    if mode_ambiguous:
+        print("  AMBIGUOUS. The drafting probe moved more than "
+              f"{MODE_DRAFT_SHIFT} % and plutarch landed between "
+              f"{MODE_TARGET_AMBIGUOUS} % and {MODE_TARGET_SHIFT} %, which is "
+              "1.1 to 2.25\n  pair sigma of the measured TARGET floor. A mode "
+              "flip and a mechanism both fit. Read the decomposition below "
+              "and do not\n  attribute the drafting move to a mechanism on "
+              "the strength of this pair alone.")
 
     print(f"\n{'probe':>8} {'effect %':>10} {'resolution':>11} {'sigma':>8}")
     print(f"{'TARGET':>8} {target:+10.4f} {t_res:11.4f} {target / t_res:+8.2f}")
@@ -874,6 +1076,28 @@ def report_read(rows, prefix_a, prefix_b):
     print("\nTARGET is plutarch alone: target runtime, kernels, weight "
           "streaming.\nDRAFT is the five G=2 prompts: proposal head, selection "
           "chain, schedule.")
+
+    fit = mode_decompose(pmap_a, pmap_b)
+    if fit is not None:
+        print("\n--- mode and mechanism decomposition (CAMPAIGN RULE 60)")
+        if not same_schedule:
+            print("  Schedules differ, so the ranked round table is only "
+                  "approximate here.")
+        print(f"  FACT-2 mode cost m = {fit['m'] * 1000:+.4f} ms per drafting "
+              f"round (se {fit['se_m'] * 1000:.4f})")
+        print(f"  uniform mechanism c = {fit['c']:+.4f} %  "
+              f"(se {fit['se_c']:.4f});  positive means A is slower")
+        print(f"  R2 = {fit['r2']:.4f}   rms residual {fit['rms']:.4f} %")
+        print("  Judge c against ZERO. Over 26 byte-identical cross-mode pairs, "
+              "where true c is\n  exactly zero, the fitted mean is "
+              "-0.0576 (se 0.0444) with rms scatter 0.2335 %.\n"
+              "  |c| under 0.47 % is not a mechanism; under 0.56 % is not a "
+              "mechanism on the\n  conservative code-identical class.")
+        print("  The model is MISSPECIFIED at plutarch: it predicts a "
+              "+0.147 to +0.215 % cross-mode\n  shift there and the measured "
+              "shift is +0.0056 (se 0.0263). Plutarch alone is the\n  better "
+              "mode-immune probe for a target-path mechanism: pair sd 0.1643 % "
+              "against\n  0.2808 % here, 2 sigma MDE 0.450 % against 0.702 %.")
 
 
 def report_rank(rows, min_score, min_members):

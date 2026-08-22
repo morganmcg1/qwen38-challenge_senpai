@@ -1,0 +1,88 @@
+{
+  "id": "b8b8b860-18cd-42b3-a828-2c223aaa2173",
+  "prompts": {
+    "beagle": {
+      "mean_draft_len": 4.381818181818182,
+      "mean_width": 5.381818181818182,
+      "mtp_us_per_token": 11837.2208,
+      "p_width1": 0.0,
+      "raw": 3.1983221856,
+      "round_us": 55096.88226909091,
+      "rounds": 110,
+      "zero_draft_rounds": 0
+    },
+    "botany": {
+      "mean_draft_len": 6.148148148148148,
+      "mean_width": 7.148148148148148,
+      "mtp_us_per_token": 10713.398500000001,
+      "p_width1": 0.0,
+      "raw": 3.5383580663,
+      "round_us": 67719.259654321,
+      "rounds": 81,
+      "zero_draft_rounds": 0
+    },
+    "drama": {
+      "mean_draft_len": 2.2976190476190474,
+      "mean_width": 3.2976190476190474,
+      "mtp_us_per_token": 19560.0176,
+      "p_width1": 0.0,
+      "raw": 1.9370914574,
+      "round_us": 39740.988139682544,
+      "rounds": 252,
+      "zero_draft_rounds": 0
+    },
+    "essays": {
+      "mean_draft_len": 5.086956521739131,
+      "mean_width": 6.086956521739131,
+      "mtp_us_per_token": 10899.5959,
+      "p_width1": 0.0,
+      "raw": 3.4699207794,
+      "round_us": 60658.620660869565,
+      "rounds": 92,
+      "zero_draft_rounds": 0
+    },
+    "medicine": {
+      "mean_draft_len": 5.2555555555555555,
+      "mean_width": 6.2555555555555555,
+      "mtp_us_per_token": 10789.624899999999,
+      "p_width1": 0.0,
+      "raw": 3.5116219657,
+      "round_us": 61380.97720888888,
+      "rounds": 90,
+      "zero_draft_rounds": 0
+    },
+    "plutarch": {
+      "mean_draft_len": 0.1540041067761807,
+      "mean_width": 1.1540041067761808,
+      "mtp_us_per_token": 30250.619199999997,
+      "p_width1": 0.9219712525667351,
+      "raw": 1.2556308666,
+      "round_us": 31803.52572977413,
+      "rounds": 487,
+      "zero_draft_rounds": 449
+    },
+    "republic": {
+      "mean_draft_len": 4.989247311827957,
+      "mean_width": 5.989247311827957,
+      "mtp_us_per_token": 10795.0761,
+      "p_width1": 0.0,
+      "raw": 3.5232936061,
+      "round_us": 59430.95659354839,
+      "rounds": 93,
+      "zero_draft_rounds": 0
+    },
+    "travel": {
+      "mean_draft_len": 2.6556603773584904,
+      "mean_width": 3.6556603773584904,
+      "mtp_us_per_token": 17193.4238,
+      "p_width1": 0.0,
+      "raw": 2.2056047034,
+      "round_us": 41523.740498113206,
+      "rounds": 212,
+      "zero_draft_rounds": 0
+    }
+  },
+  "published": 3.334121482457781,
+  "source_board": "/tmp/yukon-board/full.json",
+  "status": "rejected"
+}

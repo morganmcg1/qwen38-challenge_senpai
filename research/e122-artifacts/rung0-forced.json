@@ -1,0 +1,4062 @@
+{
+  "experiment": "e122-target-margin-conditioned-draft-depth",
+  "gate": {
+    "auc": 0.5109054173070613,
+    "cells": 36,
+    "ci": [
+      0.48498780088124976,
+      0.5363774706063515
+    ],
+    "concordant": 28113,
+    "discordant": 26850,
+    "pairs": 57907,
+    "per_prompt": {
+      "benchfixture": {
+        "auc": 0.7998266897746967,
+        "cells": 4,
+        "concordant": 460,
+        "discordant": 114,
+        "pairs": 577,
+        "somers_d": 0.5996533795493935,
+        "somers_d_runlength": 0.21983089930822444,
+        "spearman_margin_accepted": 0.44741707607527964,
+        "tied": 3,
+        "verdict": "licensed: at or above 0.65"
+      },
+      "dramatic": {
+        "auc": 0.5638425717290071,
+        "cells": 4,
+        "concordant": 3604,
+        "discordant": 2754,
+        "pairs": 6657,
+        "somers_d": 0.12768514345801413,
+        "somers_d_runlength": 0.06573671429378213,
+        "spearman_margin_accepted": 0.09637144721238722,
+        "tied": 299,
+        "verdict": "ask the advisor: between 0.55 and 0.65"
+      },
+      "english": {
+        "auc": 0.5243936243936244,
+        "cells": 4,
+        "concordant": 3594,
+        "discordant": 3242,
+        "pairs": 7215,
+        "somers_d": 0.048787248787248785,
+        "somers_d_runlength": 0.008487380021329542,
+        "spearman_margin_accepted": 0.010093670773939108,
+        "tied": 379,
+        "verdict": "kill: at or below 0.55"
+      },
+      "medicine": {
+        "auc": 0.5170959828273536,
+        "cells": 4,
+        "concordant": 3229,
+        "discordant": 3006,
+        "pairs": 6522,
+        "somers_d": 0.03419196565470715,
+        "somers_d_runlength": 0.048646362098138746,
+        "spearman_margin_accepted": 0.07111114433988966,
+        "tied": 287,
+        "verdict": "kill: at or below 0.55"
+      },
+      "narrative": {
+        "auc": 0.4835873388042204,
+        "cells": 4,
+        "concordant": 3484,
+        "discordant": 3736,
+        "pairs": 7677,
+        "somers_d": -0.032825322391559206,
+        "somers_d_runlength": 0.00864942787638526,
+        "spearman_margin_accepted": 0.011936801874398825,
+        "tied": 457,
+        "verdict": "kill: at or below 0.55"
+      },
+      "natural_history": {
+        "auc": 0.5203826955074875,
+        "cells": 4,
+        "concordant": 3556,
+        "discordant": 3262,
+        "pairs": 7212,
+        "somers_d": 0.04076539101497504,
+        "somers_d_runlength": -0.0032597306841553805,
+        "spearman_margin_accepted": -0.00656705293663723,
+        "tied": 394,
+        "verdict": "kill: at or below 0.55"
+      },
+      "philosophy": {
+        "auc": 0.491606080634501,
+        "cells": 4,
+        "concordant": 3539,
+        "discordant": 3666,
+        "pairs": 7565,
+        "somers_d": -0.01678783873099802,
+        "somers_d_runlength": -0.008982826948480845,
+        "spearman_margin_accepted": -0.012354334473359777,
+        "tied": 360,
+        "verdict": "kill: at or below 0.55"
+      },
+      "technical": {
+        "auc": 0.4976621858562244,
+        "cells": 4,
+        "concordant": 3224,
+        "discordant": 3256,
+        "pairs": 6844,
+        "somers_d": -0.004675628287551139,
+        "somers_d_runlength": 0.027738649907899014,
+        "spearman_margin_accepted": 0.03769677699794326,
+        "tied": 364,
+        "verdict": "kill: at or below 0.55"
+      },
+      "travel": {
+        "auc": 0.4744042943178843,
+        "cells": 4,
+        "concordant": 3423,
+        "discordant": 3814,
+        "pairs": 7638,
+        "somers_d": -0.05119141136423148,
+        "somers_d_runlength": 0.024248350036665853,
+        "spearman_margin_accepted": 0.036218074753062934,
+        "tied": 401,
+        "verdict": "kill: at or below 0.55"
+      }
+    },
+    "positions": [
+      2,
+      5
+    ],
+    "somers_d": 0.021810834614122646,
+    "somers_d_runlength_within_prompt": 0.028396269992680717,
+    "tied": 2944,
+    "verdict": "kill: at or below 0.55"
+  },
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "pooled": {
+    "positions": {
+      "1": {
+        "accept_rate": 0.6927881885292447,
+        "accepted": 1220,
+        "auc_raw_ci": [
+          0.5114220802688603,
+          0.5695385034690745
+        ],
+        "auc_raw_margin": 0.5404048362170844,
+        "auc_stratified": 0.516610269804305,
+        "auc_stratified_ci": [
+          0.48499277761443965,
+          0.5466282643110857
+        ],
+        "auc_within_prompt_z": 0.5242954758946698,
+        "auc_z_ci": [
+          0.4965865909063665,
+          0.5545082961749629
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.6420454545454546,
+            "bin": 1,
+            "margin_hi": 0.25,
+            "margin_lo": 0.0,
+            "n": 352
+          },
+          {
+            "accept_rate": 0.7102272727272727,
+            "bin": 2,
+            "margin_hi": 0.625,
+            "margin_lo": 0.25,
+            "n": 352
+          },
+          {
+            "accept_rate": 0.7053824362606232,
+            "bin": 3,
+            "margin_hi": 1.125,
+            "margin_lo": 0.625,
+            "n": 353
+          },
+          {
+            "accept_rate": 0.6420454545454546,
+            "bin": 4,
+            "margin_hi": 2.0,
+            "margin_lo": 1.125,
+            "n": 352
+          },
+          {
+            "accept_rate": 0.7642045454545454,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 2.0,
+            "n": 352
+          }
+        ],
+        "informative_prompts": 9,
+        "not_drafted": 0,
+        "observed": 1761,
+        "rejected": 541,
+        "stratified_accepted": 1220,
+        "stratified_rejected": 541
+      },
+      "2": {
+        "accept_rate": 0.5924404272801972,
+        "accepted": 721,
+        "auc_raw_ci": [
+          0.5141494632535095,
+          0.5772057378659855
+        ],
+        "auc_raw_margin": 0.5465359491745336,
+        "auc_stratified": 0.5091679468754646,
+        "auc_stratified_ci": [
+          0.47466839533260197,
+          0.5415031199677939
+        ],
+        "auc_within_prompt_z": 0.5241040669321283,
+        "auc_z_ci": [
+          0.4916664798897269,
+          0.5573023632115236
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.6090534979423868,
+            "bin": 1,
+            "margin_hi": 0.25,
+            "margin_lo": 0.0,
+            "n": 243
+          },
+          {
+            "accept_rate": 0.5040983606557377,
+            "bin": 2,
+            "margin_hi": 0.625,
+            "margin_lo": 0.25,
+            "n": 244
+          },
+          {
+            "accept_rate": 0.588477366255144,
+            "bin": 3,
+            "margin_hi": 1.125,
+            "margin_lo": 0.625,
+            "n": 243
+          },
+          {
+            "accept_rate": 0.569672131147541,
+            "bin": 4,
+            "margin_hi": 2.125,
+            "margin_lo": 1.125,
+            "n": 244
+          },
+          {
+            "accept_rate": 0.691358024691358,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 2.125,
+            "n": 243
+          }
+        ],
+        "informative_prompts": 9,
+        "not_drafted": 4,
+        "observed": 1217,
+        "rejected": 496,
+        "stratified_accepted": 721,
+        "stratified_rejected": 496
+      },
+      "3": {
+        "accept_rate": 0.5674547983310153,
+        "accepted": 408,
+        "auc_raw_ci": [
+          0.5431700621985276,
+          0.6263308763308764
+        ],
+        "auc_raw_margin": 0.5852523485278356,
+        "auc_stratified": 0.5153774824202149,
+        "auc_stratified_ci": [
+          0.47033172403052487,
+          0.5599154135338346
+        ],
+        "auc_within_prompt_z": 0.544113706575878,
+        "auc_z_ci": [
+          0.5024371632354315,
+          0.5855091487669053
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.5416666666666666,
+            "bin": 1,
+            "margin_hi": 0.25,
+            "margin_lo": 0.0,
+            "n": 144
+          },
+          {
+            "accept_rate": 0.4930555555555556,
+            "bin": 2,
+            "margin_hi": 0.625,
+            "margin_lo": 0.25,
+            "n": 144
+          },
+          {
+            "accept_rate": 0.48951048951048953,
+            "bin": 3,
+            "margin_hi": 1.25,
+            "margin_lo": 0.625,
+            "n": 143
+          },
+          {
+            "accept_rate": 0.5625,
+            "bin": 4,
+            "margin_hi": 2.375,
+            "margin_lo": 1.25,
+            "n": 144
+          },
+          {
+            "accept_rate": 0.75,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 2.5,
+            "n": 144
+          }
+        ],
+        "informative_prompts": 9,
+        "not_drafted": 6,
+        "observed": 719,
+        "rejected": 311,
+        "stratified_accepted": 408,
+        "stratified_rejected": 311
+      },
+      "4": {
+        "accept_rate": 0.5344827586206896,
+        "accepted": 217,
+        "auc_raw_ci": [
+          0.5632289748311847,
+          0.6713587487781036
+        ],
+        "auc_raw_margin": 0.6184990125082291,
+        "auc_stratified": 0.4968186638388123,
+        "auc_stratified_ci": [
+          0.43168400337362944,
+          0.5588686972101357
+        ],
+        "auc_within_prompt_z": 0.5431448565089118,
+        "auc_z_ci": [
+          0.4890465338528266,
+          0.5988348050305285
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.5061728395061729,
+            "bin": 1,
+            "margin_hi": 0.25,
+            "margin_lo": 0.0,
+            "n": 81
+          },
+          {
+            "accept_rate": 0.4444444444444444,
+            "bin": 2,
+            "margin_hi": 0.75,
+            "margin_lo": 0.25,
+            "n": 81
+          },
+          {
+            "accept_rate": 0.4024390243902439,
+            "bin": 3,
+            "margin_hi": 1.5,
+            "margin_lo": 0.75,
+            "n": 82
+          },
+          {
+            "accept_rate": 0.49382716049382713,
+            "bin": 4,
+            "margin_hi": 4.1875,
+            "margin_lo": 1.5,
+            "n": 81
+          },
+          {
+            "accept_rate": 0.8271604938271605,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 4.25,
+            "n": 81
+          }
+        ],
+        "informative_prompts": 9,
+        "not_drafted": 12,
+        "observed": 406,
+        "rejected": 189,
+        "stratified_accepted": 217,
+        "stratified_rejected": 189
+      },
+      "5": {
+        "accept_rate": 0.5740740740740741,
+        "accepted": 124,
+        "auc_raw_ci": [
+          0.6874355005159959,
+          0.8143529822113708
+        ],
+        "auc_raw_margin": 0.75179698457223,
+        "auc_stratified": 0.5891148325358851,
+        "auc_stratified_ci": [
+          0.47911227154047004,
+          0.6905298759864712
+        ],
+        "auc_within_prompt_z": 0.6149631837307152,
+        "auc_z_ci": [
+          0.5384615384615384,
+          0.692609859276526
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.32558139534883723,
+            "bin": 1,
+            "margin_hi": 0.25,
+            "margin_lo": 0.0,
+            "n": 43
+          },
+          {
+            "accept_rate": 0.5348837209302325,
+            "bin": 2,
+            "margin_hi": 0.875,
+            "margin_lo": 0.375,
+            "n": 43
+          },
+          {
+            "accept_rate": 0.3409090909090909,
+            "bin": 3,
+            "margin_hi": 2.0,
+            "margin_lo": 0.875,
+            "n": 44
+          },
+          {
+            "accept_rate": 0.6744186046511628,
+            "bin": 4,
+            "margin_hi": 13.4375,
+            "margin_lo": 2.125,
+            "n": 43
+          },
+          {
+            "accept_rate": 1.0,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 13.5,
+            "n": 43
+          }
+        ],
+        "informative_prompts": 9,
+        "not_drafted": 15,
+        "observed": 216,
+        "rejected": 92,
+        "stratified_accepted": 124,
+        "stratified_rejected": 92
+      },
+      "6": {
+        "accept_rate": 0.717741935483871,
+        "accepted": 89,
+        "auc_raw_ci": [
+          0.6976744186046512,
+          0.8586413586413586
+        ],
+        "auc_raw_margin": 0.7845906902086678,
+        "auc_stratified": 0.5208333333333334,
+        "auc_stratified_ci": [
+          0.38958333333333334,
+          0.6789473684210526
+        ],
+        "auc_within_prompt_z": 0.5821829855537721,
+        "auc_z_ci": [
+          0.46452648475120384,
+          0.6949183303085299
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.52,
+            "bin": 1,
+            "margin_hi": 0.625,
+            "margin_lo": 0.0,
+            "n": 25
+          },
+          {
+            "accept_rate": 0.52,
+            "bin": 2,
+            "margin_hi": 1.75,
+            "margin_lo": 0.625,
+            "n": 25
+          },
+          {
+            "accept_rate": 0.5833333333333334,
+            "bin": 3,
+            "margin_hi": 11.25,
+            "margin_lo": 1.75,
+            "n": 24
+          },
+          {
+            "accept_rate": 0.96,
+            "bin": 4,
+            "margin_hi": 15.25,
+            "margin_lo": 12.0,
+            "n": 25
+          },
+          {
+            "accept_rate": 1.0,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 15.375,
+            "n": 25
+          }
+        ],
+        "informative_prompts": 9,
+        "not_drafted": 18,
+        "observed": 124,
+        "rejected": 35,
+        "stratified_accepted": 89,
+        "stratified_rejected": 35
+      },
+      "7": {
+        "accept_rate": 0.7865168539325843,
+        "accepted": 70,
+        "auc_raw_ci": [
+          0.7360360360360361,
+          0.9148648648648648
+        ],
+        "auc_raw_margin": 0.8327067669172933,
+        "auc_stratified": 0.6354166666666666,
+        "auc_stratified_ci": [
+          0.25,
+          0.9065040650406504
+        ],
+        "auc_within_prompt_z": 0.562781954887218,
+        "auc_z_ci": [
+          0.3676691729323308,
+          0.7445652173913043
+        ],
+        "bins": [
+          {
+            "accept_rate": 0.5,
+            "bin": 1,
+            "margin_hi": 0.75,
+            "margin_lo": 0.0,
+            "n": 18
+          },
+          {
+            "accept_rate": 0.5555555555555556,
+            "bin": 2,
+            "margin_hi": 7.375,
+            "margin_lo": 0.875,
+            "n": 18
+          },
+          {
+            "accept_rate": 0.9411764705882353,
+            "bin": 3,
+            "margin_hi": 14.125,
+            "margin_lo": 7.5,
+            "n": 17
+          },
+          {
+            "accept_rate": 0.9444444444444444,
+            "bin": 4,
+            "margin_hi": 15.75,
+            "margin_lo": 14.125,
+            "n": 18
+          },
+          {
+            "accept_rate": 1.0,
+            "bin": 5,
+            "margin_hi": 19.25,
+            "margin_lo": 15.875,
+            "n": 18
+          }
+        ],
+        "informative_prompts": 7,
+        "not_drafted": 20,
+        "observed": 89,
+        "rejected": 19,
+        "stratified_accepted": 69,
+        "stratified_rejected": 18
+      },
+      "8": {
+        "accept_rate": null,
+        "accepted": 0,
+        "auc_raw_ci": [
+          null,
+          null
+        ],
+        "auc_raw_margin": null,
+        "auc_stratified": null,
+        "auc_stratified_ci": [
+          null,
+          null
+        ],
+        "auc_within_prompt_z": null,
+        "auc_z_ci": [
+          null,
+          null
+        ],
+        "bins": [],
+        "informative_prompts": 0,
+        "not_drafted": 1761,
+        "observed": 0,
+        "rejected": 0,
+        "stratified_accepted": 0,
+        "stratified_rejected": 0
+      }
+    },
+    "rounds": 1761,
+    "spearman_margin_accepted": 0.04601989751742914
+  },
+  "prompts": {
+    "benchfixture": {
+      "accept_rate_of_drafted": 0.8641732283464567,
+      "depth_hist": {
+        "4": 1,
+        "7": 72
+      },
+      "margin": {
+        "max": 19.25,
+        "mean": 11.815068493150685,
+        "min": 0.375,
+        "p10": 1.25,
+        "p25": 9.625,
+        "p50": 14.25,
+        "p75": 15.875,
+        "p90": 16.6,
+        "sd": 5.794408972257174
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 53,
+        "distinct_below": 8,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 73,
+        "n_below": 10,
+        "smallest_values": [
+          0.375,
+          0.4375,
+          0.5,
+          0.625,
+          0.75,
+          1.125,
+          1.25,
+          1.5,
+          2.375,
+          2.5,
+          2.875,
+          3.25
+        ]
+      },
+      "mean_accepted": 6.013698630136986,
+      "mean_depth": 6.958904109589041,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "66858d9561663b62e58a97191428da0a3816cdb00f67a93f724c7b2d0cf2301e",
+        "gpu_temp_entry_c": "36.33871841430664",
+        "gpu_temp_exit_c": "56.84878921508789",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "correctness_prompts/public_longcopy_gate_english_512_256.json",
+        "prompt_sha256": "3d922b1a0ada04d9827b905c881232bf50fb697d4be9ab3ee21346f7e0b8ae9c",
+        "tokens": "512",
+        "trace_rounds": "73",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.958904109589041,
+          "accepted": 70,
+          "auc": 0.9261904761904762,
+          "auc_ci": [
+            0.8405797101449275,
+            1.0
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.8,
+              "bin": 1,
+              "margin_hi": 3.25,
+              "margin_lo": 0.375,
+              "n": 15
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 2,
+              "margin_hi": 13.5,
+              "margin_lo": 5.3125,
+              "n": 14
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 3,
+              "margin_hi": 14.9375,
+              "margin_lo": 13.625,
+              "n": 15
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 15.875,
+              "margin_lo": 15.125,
+              "n": 14
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.0,
+              "n": 15
+            }
+          ],
+          "margin_mean_accept": 12.263392857142858,
+          "margin_mean_reject": 1.3541666666666667,
+          "not_drafted": 0,
+          "observed": 73,
+          "rejected": 3
+        },
+        "2": {
+          "accept_rate": 0.9571428571428572,
+          "accepted": 67,
+          "auc": 0.7985074626865671,
+          "auc_ci": [
+            0.676923076923077,
+            0.8980099502487562
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.8571428571428571,
+              "bin": 1,
+              "margin_hi": 5.875,
+              "margin_lo": 0.375,
+              "n": 14
+            },
+            {
+              "accept_rate": 0.9285714285714286,
+              "bin": 2,
+              "margin_hi": 13.625,
+              "margin_lo": 6.5,
+              "n": 14
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 3,
+              "margin_hi": 15.125,
+              "margin_lo": 13.75,
+              "n": 14
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 16.0,
+              "margin_lo": 15.125,
+              "n": 14
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.125,
+              "n": 14
+            }
+          ],
+          "margin_mean_accept": 12.489738805970148,
+          "margin_mean_reject": 7.208333333333333,
+          "not_drafted": 0,
+          "observed": 70,
+          "rejected": 3
+        },
+        "3": {
+          "accept_rate": 0.9552238805970149,
+          "accepted": 64,
+          "auc": 0.6953125,
+          "auc_ci": [
+            0.125,
+            1.0
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.8461538461538461,
+              "bin": 1,
+              "margin_hi": 6.5,
+              "margin_lo": 0.375,
+              "n": 13
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 2,
+              "margin_hi": 13.75,
+              "margin_lo": 9.625,
+              "n": 14
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 3,
+              "margin_hi": 15.125,
+              "margin_lo": 14.125,
+              "n": 13
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 16.125,
+              "margin_lo": 15.25,
+              "n": 14
+            },
+            {
+              "accept_rate": 0.9230769230769231,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.1875,
+              "n": 13
+            }
+          ],
+          "margin_mean_accept": 12.7958984375,
+          "margin_mean_reject": 5.958333333333333,
+          "not_drafted": 0,
+          "observed": 67,
+          "rejected": 3
+        },
+        "4": {
+          "accept_rate": 0.96875,
+          "accepted": 62,
+          "auc": 0.8870967741935484,
+          "auc_ci": [
+            0.8032786885245902,
+            0.9655172413793104
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.8461538461538461,
+              "bin": 1,
+              "margin_hi": 10.5,
+              "margin_lo": 0.5,
+              "n": 13
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 2,
+              "margin_hi": 14.125,
+              "margin_lo": 12.0,
+              "n": 13
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 3,
+              "margin_hi": 15.125,
+              "margin_lo": 14.125,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 16.0,
+              "margin_lo": 15.25,
+              "n": 13
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.125,
+              "n": 13
+            }
+          ],
+          "margin_mean_accept": 13.109879032258064,
+          "margin_mean_reject": 3.0625,
+          "not_drafted": 0,
+          "observed": 64,
+          "rejected": 2
+        },
+        "5": {
+          "accept_rate": 0.9836065573770492,
+          "accepted": 60,
+          "auc": 0.9583333333333334,
+          "auc_ci": [
+            0.9035087719298246,
+            1.0
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.9166666666666666,
+              "bin": 1,
+              "margin_hi": 12.0,
+              "margin_lo": 0.5,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 2,
+              "margin_hi": 14.125,
+              "margin_lo": 12.125,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 3,
+              "margin_hi": 15.375,
+              "margin_lo": 14.125,
+              "n": 13
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 16.125,
+              "margin_lo": 15.5,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.1875,
+              "n": 12
+            }
+          ],
+          "margin_mean_accept": 13.294791666666667,
+          "margin_mean_reject": 0.75,
+          "not_drafted": 1,
+          "observed": 61,
+          "rejected": 1
+        },
+        "6": {
+          "accept_rate": 0.9833333333333333,
+          "accepted": 59,
+          "auc": 0.4745762711864407,
+          "auc_ci": [
+            0.3508771929824561,
+            0.6071428571428571
+          ],
+          "bins": [
+            {
+              "accept_rate": 1.0,
+              "bin": 1,
+              "margin_hi": 12.125,
+              "margin_lo": 0.5,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 2,
+              "margin_hi": 14.125,
+              "margin_lo": 12.125,
+              "n": 12
+            },
+            {
+              "accept_rate": 0.9166666666666666,
+              "bin": 3,
+              "margin_hi": 15.375,
+              "margin_lo": 14.125,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 16.125,
+              "margin_lo": 15.5,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.1875,
+              "n": 12
+            }
+          ],
+          "margin_mean_accept": 13.266949152542374,
+          "margin_mean_reject": 14.9375,
+          "not_drafted": 1,
+          "observed": 60,
+          "rejected": 1
+        },
+        "7": {
+          "accept_rate": 0.9661016949152542,
+          "accepted": 57,
+          "auc": 0.7017543859649122,
+          "auc_ci": [
+            0.3275862068965517,
+            1.0
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.9166666666666666,
+              "bin": 1,
+              "margin_hi": 12.125,
+              "margin_lo": 0.5,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 2,
+              "margin_hi": 14.125,
+              "margin_lo": 12.125,
+              "n": 12
+            },
+            {
+              "accept_rate": 0.9090909090909091,
+              "bin": 3,
+              "margin_hi": 15.375,
+              "margin_lo": 14.125,
+              "n": 11
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 4,
+              "margin_hi": 16.125,
+              "margin_lo": 15.5,
+              "n": 12
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 19.25,
+              "margin_lo": 16.1875,
+              "n": 12
+            }
+          ],
+          "margin_mean_accept": 13.451754385964913,
+          "margin_mean_reject": 8.0,
+          "not_drafted": 1,
+          "observed": 59,
+          "rejected": 2
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 73,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 73,
+      "run_dir": ".mlxfast-private/e122/runs-forced/benchfixture",
+      "spearman_margin_accepted": 0.44741707607527964
+    },
+    "dramatic": {
+      "accept_rate_of_drafted": 0.23735119047619047,
+      "depth_hist": {
+        "3": 1,
+        "4": 1,
+        "7": 191
+      },
+      "margin": {
+        "max": 11.25,
+        "mean": 1.39669689119171,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.375,
+        "p50": 0.875,
+        "p75": 1.75,
+        "p90": 2.75,
+        "sd": 1.749454838132128
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 40,
+        "distinct_below": 18,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 193,
+        "n_below": 150,
+        "smallest_values": [
+          0.0,
+          0.0625,
+          0.125,
+          0.25,
+          0.375,
+          0.5,
+          0.5625,
+          0.625,
+          0.75,
+          0.875,
+          1.0,
+          1.125
+        ]
+      },
+      "mean_accepted": 1.6528497409326426,
+      "mean_depth": 6.963730569948186,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "213cff9a6958f85ff06db563a9a9883cda38e3f226dfe3aa6cef717f58ca8d85",
+        "gpu_temp_entry_c": "62.464473724365234",
+        "gpu_temp_exit_c": "62.956912994384766",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_dramatic_512.txt",
+        "prompt_sha256": "58d2c351bf85356dcf8350c1d0778d5af6b43d8ab268cee9bd03e039174ffa8e",
+        "tokens": "512",
+        "trace_rounds": "193",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.6994818652849741,
+          "accepted": 135,
+          "auc": 0.5194125159642401,
+          "auc_ci": [
+            0.4226017441860465,
+            0.6149543378995433
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6153846153846154,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 39
+            },
+            {
+              "accept_rate": 0.7631578947368421,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 38
+            },
+            {
+              "accept_rate": 0.7948717948717948,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.625,
+              "n": 39
+            },
+            {
+              "accept_rate": 0.631578947368421,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 1.125,
+              "n": 38
+            },
+            {
+              "accept_rate": 0.6923076923076923,
+              "bin": 5,
+              "margin_hi": 11.25,
+              "margin_lo": 2.125,
+              "n": 39
+            }
+          ],
+          "margin_mean_accept": 1.4430555555555555,
+          "margin_mean_reject": 1.2887931034482758,
+          "not_drafted": 0,
+          "observed": 193,
+          "rejected": 58
+        },
+        "2": {
+          "accept_rate": 0.5851851851851851,
+          "accepted": 79,
+          "auc": 0.5834086799276673,
+          "auc_ci": [
+            0.4874833850243686,
+            0.6774193548387096
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5925925925925926,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.48148148148148145,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.375,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.5555555555555556,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.625,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.5925925925925926,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 1.0,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.7037037037037037,
+              "bin": 5,
+              "margin_hi": 11.25,
+              "margin_lo": 2.125,
+              "n": 27
+            }
+          ],
+          "margin_mean_accept": 1.7658227848101267,
+          "margin_mean_reject": 0.9877232142857143,
+          "not_drafted": 0,
+          "observed": 135,
+          "rejected": 56
+        },
+        "3": {
+          "accept_rate": 0.6708860759493671,
+          "accepted": 53,
+          "auc": 0.5264876632801161,
+          "auc_ci": [
+            0.39751552795031053,
+            0.6589655172413793
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.75,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.625,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.375,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.875,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.4375,
+              "bin": 4,
+              "margin_hi": 2.375,
+              "margin_lo": 1.25,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.875,
+              "bin": 5,
+              "margin_hi": 11.25,
+              "margin_lo": 2.375,
+              "n": 16
+            }
+          ],
+          "margin_mean_accept": 2.0754716981132075,
+          "margin_mean_reject": 1.1346153846153846,
+          "not_drafted": 0,
+          "observed": 79,
+          "rejected": 26
+        },
+        "4": {
+          "accept_rate": 0.5192307692307693,
+          "accepted": 27,
+          "auc": 0.5,
+          "auc_ci": [
+            0.3430059523809524,
+            0.6696428571428571
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.36363636363636365,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.25,
+              "n": 11
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.875,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.6363636363636364,
+              "bin": 4,
+              "margin_hi": 2.75,
+              "margin_lo": 1.375,
+              "n": 11
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 5,
+              "margin_hi": 11.25,
+              "margin_lo": 4.25,
+              "n": 10
+            }
+          ],
+          "margin_mean_accept": 2.1319444444444446,
+          "margin_mean_reject": 2.0675,
+          "not_drafted": 1,
+          "observed": 52,
+          "rejected": 25
+        },
+        "5": {
+          "accept_rate": 0.5555555555555556,
+          "accepted": 15,
+          "auc": 0.6083333333333333,
+          "auc_ci": [
+            0.3888888888888889,
+            0.8194444444444444
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.2,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 5
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 2,
+              "margin_hi": 0.875,
+              "margin_lo": 0.25,
+              "n": 6
+            },
+            {
+              "accept_rate": 0.8,
+              "bin": 3,
+              "margin_hi": 1.375,
+              "margin_lo": 0.875,
+              "n": 5
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 2.75,
+              "margin_lo": 1.75,
+              "n": 6
+            },
+            {
+              "accept_rate": 0.6,
+              "bin": 5,
+              "margin_hi": 11.25,
+              "margin_lo": 4.25,
+              "n": 5
+            }
+          ],
+          "margin_mean_accept": 2.6041666666666665,
+          "margin_mean_reject": 1.5416666666666667,
+          "not_drafted": 2,
+          "observed": 27,
+          "rejected": 12
+        },
+        "6": {
+          "accept_rate": 0.4,
+          "accepted": 6,
+          "auc": 0.5648148148148148,
+          "auc_ci": [
+            0.22321428571428573,
+            0.88
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.125,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 2,
+              "margin_hi": 0.875,
+              "margin_lo": 0.625,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 3,
+              "margin_hi": 1.375,
+              "margin_lo": 0.875,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 4,
+              "margin_hi": 2.375,
+              "margin_lo": 2.0,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 5,
+              "margin_hi": 11.25,
+              "margin_lo": 7.4375,
+              "n": 3
+            }
+          ],
+          "margin_mean_accept": 3.75,
+          "margin_mean_reject": 1.8402777777777777,
+          "not_drafted": 2,
+          "observed": 15,
+          "rejected": 9
+        },
+        "7": {
+          "accept_rate": 0.6666666666666666,
+          "accepted": 4,
+          "auc": 0.25,
+          "auc_ci": [
+            0.0,
+            0.8
+          ],
+          "bins": [],
+          "margin_mean_accept": 2.59375,
+          "margin_mean_reject": 6.0625,
+          "not_drafted": 2,
+          "observed": 6,
+          "rejected": 2
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 193,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 193,
+      "run_dir": ".mlxfast-private/e122/runs-forced/dramatic",
+      "spearman_margin_accepted": 0.09637144721238722
+    },
+    "english": {
+      "accept_rate_of_drafted": 0.19367588932806323,
+      "depth_hist": {
+        "1": 1,
+        "5": 1,
+        "7": 216
+      },
+      "margin": {
+        "max": 7.625,
+        "mean": 1.2597477064220184,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.375,
+        "p50": 0.875,
+        "p75": 1.625,
+        "p90": 2.7687500000000007,
+        "sd": 1.3650383074637003
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 48,
+        "distinct_below": 23,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 218,
+        "n_below": 176,
+        "smallest_values": [
+          0.0,
+          0.0625,
+          0.125,
+          0.1875,
+          0.25,
+          0.375,
+          0.5,
+          0.5625,
+          0.625,
+          0.6875,
+          0.75,
+          0.8125
+        ]
+      },
+      "mean_accepted": 1.348623853211009,
+      "mean_depth": 6.963302752293578,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "e9a7cb04923581203cd855f72b6ad1043d744b14629ffed7eb3b65d427307295",
+        "gpu_temp_entry_c": "59.70553970336914",
+        "gpu_temp_exit_c": "62.70261001586914",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e11_prose_gate_english_512.txt",
+        "prompt_sha256": "a75aece96c68a8664c87abfb8625ffdcd39901349f40d3f379224ce72548a00c",
+        "tokens": "512",
+        "trace_rounds": "218",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.6788990825688074,
+          "accepted": 148,
+          "auc": 0.4948359073359073,
+          "auc_ci": [
+            0.41203831629363546,
+            0.5831563706563706
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5681818181818182,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.8372093023255814,
+              "bin": 2,
+              "margin_hi": 0.6875,
+              "margin_lo": 0.25,
+              "n": 43
+            },
+            {
+              "accept_rate": 0.6590909090909091,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.75,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.7209302325581395,
+              "bin": 4,
+              "margin_hi": 1.875,
+              "margin_lo": 1.125,
+              "n": 43
+            },
+            {
+              "accept_rate": 0.6136363636363636,
+              "bin": 5,
+              "margin_hi": 7.625,
+              "margin_lo": 1.875,
+              "n": 44
+            }
+          ],
+          "margin_mean_accept": 1.2077702702702702,
+          "margin_mean_reject": 1.3696428571428572,
+          "not_drafted": 0,
+          "observed": 218,
+          "rejected": 70
+        },
+        "2": {
+          "accept_rate": 0.5102040816326531,
+          "accepted": 75,
+          "auc": 0.5530555555555555,
+          "auc_ci": [
+            0.45949461166852473,
+            0.6469713861018209
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5172413793103449,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 29
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.4827586206896552,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.625,
+              "n": 29
+            },
+            {
+              "accept_rate": 0.5333333333333333,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.0,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.6206896551724138,
+              "bin": 5,
+              "margin_hi": 7.625,
+              "margin_lo": 1.75,
+              "n": 29
+            }
+          ],
+          "margin_mean_accept": 1.3491666666666666,
+          "margin_mean_reject": 1.0442708333333333,
+          "not_drafted": 1,
+          "observed": 147,
+          "rejected": 72
+        },
+        "3": {
+          "accept_rate": 0.48,
+          "accepted": 36,
+          "auc": 0.41773504273504275,
+          "auc_ci": [
+            0.28774928774928776,
+            0.5448717948717948
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.5333333333333333,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.25,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.26666666666666666,
+              "bin": 3,
+              "margin_hi": 1.25,
+              "margin_lo": 0.75,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.4666666666666667,
+              "bin": 4,
+              "margin_hi": 1.875,
+              "margin_lo": 1.25,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.4666666666666667,
+              "bin": 5,
+              "margin_hi": 7.625,
+              "margin_lo": 1.875,
+              "n": 15
+            }
+          ],
+          "margin_mean_accept": 1.1996527777777777,
+          "margin_mean_reject": 1.4871794871794872,
+          "not_drafted": 1,
+          "observed": 75,
+          "rejected": 39
+        },
+        "4": {
+          "accept_rate": 0.5555555555555556,
+          "accepted": 20,
+          "auc": 0.55625,
+          "auc_ci": [
+            0.3683127572016461,
+            0.7538699690402477
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5714285714285714,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.42857142857142855,
+              "bin": 2,
+              "margin_hi": 0.375,
+              "margin_lo": 0.25,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.5,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.7142857142857143,
+              "bin": 4,
+              "margin_hi": 1.875,
+              "margin_lo": 1.375,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.5714285714285714,
+              "bin": 5,
+              "margin_hi": 7.625,
+              "margin_lo": 1.875,
+              "n": 7
+            }
+          ],
+          "margin_mean_accept": 1.0875,
+          "margin_mean_reject": 1.33984375,
+          "not_drafted": 1,
+          "observed": 36,
+          "rejected": 16
+        },
+        "5": {
+          "accept_rate": 0.35,
+          "accepted": 7,
+          "auc": 0.35714285714285715,
+          "auc_ci": [
+            0.13095238095238096,
+            0.6369047619047619
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.25,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 3,
+              "margin_hi": 1.375,
+              "margin_lo": 0.75,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 1.875,
+              "margin_lo": 1.5,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 5,
+              "margin_hi": 2.625,
+              "margin_lo": 1.875,
+              "n": 4
+            }
+          ],
+          "margin_mean_accept": 0.8214285714285714,
+          "margin_mean_reject": 1.2307692307692308,
+          "not_drafted": 1,
+          "observed": 20,
+          "rejected": 13
+        },
+        "6": {
+          "accept_rate": 0.7142857142857143,
+          "accepted": 5,
+          "auc": 0.6,
+          "auc_ci": [
+            0.16666666666666666,
+            1.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.925,
+          "margin_mean_reject": 0.5625,
+          "not_drafted": 2,
+          "observed": 7,
+          "rejected": 2
+        },
+        "7": {
+          "accept_rate": 0.6,
+          "accepted": 3,
+          "auc": 0.5,
+          "auc_ci": [
+            0.0,
+            1.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.9583333333333334,
+          "margin_mean_reject": 0.875,
+          "not_drafted": 2,
+          "observed": 5,
+          "rejected": 2
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 218,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 218,
+      "run_dir": ".mlxfast-private/e122/runs-forced/english",
+      "spearman_margin_accepted": 0.010093670773939108
+    },
+    "medicine": {
+      "accept_rate_of_drafted": 0.22429906542056074,
+      "depth_hist": {
+        "2": 1,
+        "3": 1,
+        "7": 198
+      },
+      "margin": {
+        "max": 7.375,
+        "mean": 1.1909375,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.375,
+        "p50": 0.875,
+        "p75": 1.625,
+        "p90": 2.6374999999999993,
+        "sd": 1.2058159436015723
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 36,
+        "distinct_below": 18,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 200,
+        "n_below": 163,
+        "smallest_values": [
+          0.0,
+          0.125,
+          0.1875,
+          0.25,
+          0.375,
+          0.5,
+          0.625,
+          0.6875,
+          0.75,
+          0.875,
+          1.0,
+          1.125
+        ]
+      },
+      "mean_accepted": 1.56,
+      "mean_depth": 6.955,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "d0114d7e9debd51dc7a6fdbdd1e69121465c8af80a71e900b75d4cc52a5db726",
+        "gpu_temp_entry_c": "59.44802474975586",
+        "gpu_temp_exit_c": "62.864383697509766",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_medicine_512.txt",
+        "prompt_sha256": "9015ef47ed7fa4823133086b012ca034c7d6c099e761aeee2b4adea3a9783c36",
+        "tokens": "512",
+        "trace_rounds": "200",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.67,
+          "accepted": 134,
+          "auc": 0.5393487109905021,
+          "auc_ci": [
+            0.4582790798611111,
+            0.6194278492647058
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.675,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 40
+            },
+            {
+              "accept_rate": 0.65,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 40
+            },
+            {
+              "accept_rate": 0.575,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.625,
+              "n": 40
+            },
+            {
+              "accept_rate": 0.7,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.0,
+              "n": 40
+            },
+            {
+              "accept_rate": 0.75,
+              "bin": 5,
+              "margin_hi": 7.375,
+              "margin_lo": 1.875,
+              "n": 40
+            }
+          ],
+          "margin_mean_accept": 1.2611940298507462,
+          "margin_mean_reject": 1.0482954545454546,
+          "not_drafted": 0,
+          "observed": 200,
+          "rejected": 66
+        },
+        "2": {
+          "accept_rate": 0.582089552238806,
+          "accepted": 78,
+          "auc": 0.47710622710622713,
+          "auc_ci": [
+            0.38180580762250454,
+            0.5747335271317829
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.7407407407407407,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.37037037037037035,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.7307692307692307,
+              "bin": 3,
+              "margin_hi": 1.25,
+              "margin_lo": 0.625,
+              "n": 26
+            },
+            {
+              "accept_rate": 0.48148148148148145,
+              "bin": 4,
+              "margin_hi": 1.875,
+              "margin_lo": 1.25,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.5925925925925926,
+              "bin": 5,
+              "margin_hi": 7.375,
+              "margin_lo": 2.125,
+              "n": 27
+            }
+          ],
+          "margin_mean_accept": 1.314102564102564,
+          "margin_mean_reject": 1.1875,
+          "not_drafted": 0,
+          "observed": 134,
+          "rejected": 56
+        },
+        "3": {
+          "accept_rate": 0.6883116883116883,
+          "accepted": 53,
+          "auc": 0.6434748427672956,
+          "auc_ci": [
+            0.5020661157024794,
+            0.7797619047619048
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5333333333333333,
+              "bin": 1,
+              "margin_hi": 0.1875,
+              "margin_lo": 0.0,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.6875,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.6,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.75,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.75,
+              "bin": 4,
+              "margin_hi": 2.125,
+              "margin_lo": 1.125,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.8666666666666667,
+              "bin": 5,
+              "margin_hi": 7.375,
+              "margin_lo": 2.125,
+              "n": 15
+            }
+          ],
+          "margin_mean_accept": 1.5,
+          "margin_mean_reject": 0.9166666666666666,
+          "not_drafted": 1,
+          "observed": 77,
+          "rejected": 24
+        },
+        "4": {
+          "accept_rate": 0.5094339622641509,
+          "accepted": 27,
+          "auc": 0.5078347578347578,
+          "auc_ci": [
+            0.34967320261437906,
+            0.6696428571428571
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6363636363636364,
+              "bin": 1,
+              "margin_hi": 0.375,
+              "margin_lo": 0.0,
+              "n": 11
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.375,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.36363636363636365,
+              "bin": 3,
+              "margin_hi": 1.25,
+              "margin_lo": 0.75,
+              "n": 11
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 2.5,
+              "margin_lo": 1.375,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.6363636363636364,
+              "bin": 5,
+              "margin_hi": 7.375,
+              "margin_lo": 2.5,
+              "n": 11
+            }
+          ],
+          "margin_mean_accept": 1.7592592592592593,
+          "margin_mean_reject": 1.2307692307692308,
+          "not_drafted": 2,
+          "observed": 53,
+          "rejected": 26
+        },
+        "5": {
+          "accept_rate": 0.4444444444444444,
+          "accepted": 12,
+          "auc": 0.6305555555555555,
+          "auc_ci": [
+            0.4065934065934066,
+            0.8380681818181818
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.2,
+              "bin": 1,
+              "margin_hi": 0.125,
+              "margin_lo": 0.0,
+              "n": 5
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.25,
+              "n": 6
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 3,
+              "margin_hi": 1.5,
+              "margin_lo": 0.75,
+              "n": 5
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 4,
+              "margin_hi": 2.5,
+              "margin_lo": 1.625,
+              "n": 6
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 5,
+              "margin_hi": 7.375,
+              "margin_lo": 2.75,
+              "n": 5
+            }
+          ],
+          "margin_mean_accept": 2.09375,
+          "margin_mean_reject": 1.4916666666666667,
+          "not_drafted": 2,
+          "observed": 27,
+          "rejected": 15
+        },
+        "6": {
+          "accept_rate": 0.5,
+          "accepted": 6,
+          "auc": 0.6111111111111112,
+          "auc_ci": [
+            0.234375,
+            0.95
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.125,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.5,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 3,
+              "margin_hi": 2.125,
+              "margin_lo": 1.0,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 4,
+              "margin_hi": 2.5,
+              "margin_lo": 2.5,
+              "n": 3
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 7.375,
+              "margin_lo": 4.75,
+              "n": 2
+            }
+          ],
+          "margin_mean_accept": 2.7291666666666665,
+          "margin_mean_reject": 1.4583333333333333,
+          "not_drafted": 2,
+          "observed": 12,
+          "rejected": 6
+        },
+        "7": {
+          "accept_rate": 0.3333333333333333,
+          "accepted": 2,
+          "auc": 0.0625,
+          "auc_ci": [
+            0.0,
+            0.3
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.5,
+          "margin_mean_reject": 3.84375,
+          "not_drafted": 2,
+          "observed": 6,
+          "rejected": 4
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 200,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 200,
+      "run_dir": ".mlxfast-private/e122/runs-forced/medicine",
+      "spearman_margin_accepted": 0.07111114433988966
+    },
+    "narrative": {
+      "accept_rate_of_drafted": 0.19484808454425362,
+      "depth_hist": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "7": 215
+      },
+      "margin": {
+        "max": 9.25,
+        "mean": 1.0349770642201834,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.25,
+        "p50": 0.625,
+        "p75": 1.34375,
+        "p90": 2.5,
+        "sd": 1.2930358628410954
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 40,
+        "distinct_below": 22,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 218,
+        "n_below": 188,
+        "smallest_values": [
+          0.0,
+          0.0625,
+          0.125,
+          0.1875,
+          0.25,
+          0.375,
+          0.4375,
+          0.5,
+          0.625,
+          0.75,
+          0.875,
+          1.0
+        ]
+      },
+      "mean_accepted": 1.353211009174312,
+      "mean_depth": 6.944954128440367,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "7a94df2b3561615e304ed1ac5f23209634311e702332feb68adf9e66dbd35ba1",
+        "gpu_temp_entry_c": "59.766361236572266",
+        "gpu_temp_exit_c": "62.855838775634766",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_narrative_512.txt",
+        "prompt_sha256": "651d635ada51fc5662e150a585c7377dbe4ca84a89014a65281c0ab10ad81cbb",
+        "tokens": "512",
+        "trace_rounds": "218",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.6926605504587156,
+          "accepted": 151,
+          "auc": 0.5222397944054562,
+          "auc_ci": [
+            0.4355722402597403,
+            0.6032327586206897
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6590909090909091,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.6744186046511628,
+              "bin": 2,
+              "margin_hi": 0.4375,
+              "margin_lo": 0.25,
+              "n": 43
+            },
+            {
+              "accept_rate": 0.6818181818181818,
+              "bin": 3,
+              "margin_hi": 0.75,
+              "margin_lo": 0.5,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.7906976744186046,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.75,
+              "n": 43
+            },
+            {
+              "accept_rate": 0.6590909090909091,
+              "bin": 5,
+              "margin_hi": 9.25,
+              "margin_lo": 1.625,
+              "n": 44
+            }
+          ],
+          "margin_mean_accept": 1.0095198675496688,
+          "margin_mean_reject": 1.0923507462686568,
+          "not_drafted": 0,
+          "observed": 218,
+          "rejected": 67
+        },
+        "2": {
+          "accept_rate": 0.56,
+          "accepted": 84,
+          "auc": 0.4777236652236652,
+          "auc_ci": [
+            0.38419642857142855,
+            0.5723637015781923
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5666666666666667,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.6333333333333333,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5333333333333333,
+              "bin": 3,
+              "margin_hi": 0.875,
+              "margin_lo": 0.5,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.875,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5666666666666667,
+              "bin": 5,
+              "margin_hi": 6.375,
+              "margin_lo": 1.5,
+              "n": 30
+            }
+          ],
+          "margin_mean_accept": 1.0052083333333333,
+          "margin_mean_reject": 1.018939393939394,
+          "not_drafted": 1,
+          "observed": 150,
+          "rejected": 66
+        },
+        "3": {
+          "accept_rate": 0.4642857142857143,
+          "accepted": 39,
+          "auc": 0.5245014245014245,
+          "auc_ci": [
+            0.3978015448603684,
+            0.6547482837528604
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5294117647058824,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.35294117647058826,
+              "bin": 2,
+              "margin_hi": 0.4375,
+              "margin_lo": 0.25,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.375,
+              "bin": 3,
+              "margin_hi": 0.75,
+              "margin_lo": 0.4375,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.5294117647058824,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.875,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.5294117647058824,
+              "bin": 5,
+              "margin_hi": 6.375,
+              "margin_lo": 1.5,
+              "n": 17
+            }
+          ],
+          "margin_mean_accept": 1.0288461538461537,
+          "margin_mean_reject": 0.9847222222222223,
+          "not_drafted": 1,
+          "observed": 84,
+          "rejected": 45
+        },
+        "4": {
+          "accept_rate": 0.3333333333333333,
+          "accepted": 13,
+          "auc": 0.38461538461538464,
+          "auc_ci": [
+            0.2026315789473684,
+            0.5777777777777777
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5,
+              "bin": 1,
+              "margin_hi": 0.125,
+              "margin_lo": 0.0,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.375,
+              "bin": 2,
+              "margin_hi": 0.4375,
+              "margin_lo": 0.125,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.2857142857142857,
+              "bin": 3,
+              "margin_hi": 0.875,
+              "margin_lo": 0.5,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.25,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.875,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.25,
+              "bin": 5,
+              "margin_hi": 6.0,
+              "margin_lo": 1.625,
+              "n": 8
+            }
+          ],
+          "margin_mean_accept": 0.7211538461538461,
+          "margin_mean_reject": 1.1826923076923077,
+          "not_drafted": 2,
+          "observed": 39,
+          "rejected": 26
+        },
+        "5": {
+          "accept_rate": 0.38461538461538464,
+          "accepted": 5,
+          "auc": 0.3375,
+          "auc_ci": [
+            0.05,
+            0.6818181818181818
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 1,
+              "margin_hi": 0.125,
+              "margin_lo": 0.0,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 2,
+              "margin_hi": 0.375,
+              "margin_lo": 0.125,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 3,
+              "margin_hi": 0.625,
+              "margin_lo": 0.375,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 0.875,
+              "margin_lo": 0.875,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 5,
+              "margin_hi": 2.5,
+              "margin_lo": 1.25,
+              "n": 3
+            }
+          ],
+          "margin_mean_accept": 0.4,
+          "margin_mean_reject": 0.921875,
+          "not_drafted": 2,
+          "observed": 13,
+          "rejected": 8
+        },
+        "6": {
+          "accept_rate": 0.4,
+          "accepted": 2,
+          "auc": 0.8333333333333334,
+          "auc_ci": [
+            0.5,
+            1.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.625,
+          "margin_mean_reject": 0.25,
+          "not_drafted": 3,
+          "observed": 5,
+          "rejected": 3
+        },
+        "7": {
+          "accept_rate": 0.5,
+          "accepted": 1,
+          "auc": 1.0,
+          "auc_ci": [
+            1.0,
+            1.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.875,
+          "margin_mean_reject": 0.375,
+          "not_drafted": 3,
+          "observed": 2,
+          "rejected": 1
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 218,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 218,
+      "run_dir": ".mlxfast-private/e122/runs-forced/narrative",
+      "spearman_margin_accepted": 0.011936801874398825
+    },
+    "natural_history": {
+      "accept_rate_of_drafted": 0.17065684468999387,
+      "depth_hist": {
+        "1": 1,
+        "5": 1,
+        "6": 1,
+        "7": 231
+      },
+      "margin": {
+        "max": 6.625,
+        "mean": 0.9919871794871795,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.25,
+        "p50": 0.625,
+        "p75": 1.375,
+        "p90": 2.25,
+        "sd": 1.0431252116120058
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 41,
+        "distinct_below": 23,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 234,
+        "n_below": 205,
+        "smallest_values": [
+          0.0,
+          0.125,
+          0.1875,
+          0.25,
+          0.3125,
+          0.375,
+          0.4375,
+          0.5,
+          0.625,
+          0.75,
+          0.8125,
+          0.875
+        ]
+      },
+      "mean_accepted": 1.188034188034188,
+      "mean_depth": 6.961538461538462,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "80e893da40e5b4d275daf4193f18970a578d66a388ab1fd328e80d097a6f2163",
+        "gpu_temp_entry_c": "54.1630973815918",
+        "gpu_temp_exit_c": "62.7030029296875",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_natural_history_512.txt",
+        "prompt_sha256": "10251cd46b6c6d4bc768900fd8a9db51b9a0aad522c3eb96d8c758f43456a567",
+        "tokens": "512",
+        "trace_rounds": "234",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.6282051282051282,
+          "accepted": 147,
+          "auc": 0.4852998670732661,
+          "auc_ci": [
+            0.41117001135933356,
+            0.5603566529492455
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6170212765957447,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 47
+            },
+            {
+              "accept_rate": 0.6595744680851063,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 47
+            },
+            {
+              "accept_rate": 0.6739130434782609,
+              "bin": 3,
+              "margin_hi": 0.875,
+              "margin_lo": 0.5,
+              "n": 46
+            },
+            {
+              "accept_rate": 0.6170212765957447,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.875,
+              "n": 47
+            },
+            {
+              "accept_rate": 0.574468085106383,
+              "bin": 5,
+              "margin_hi": 6.625,
+              "margin_lo": 1.5,
+              "n": 47
+            }
+          ],
+          "margin_mean_accept": 0.983843537414966,
+          "margin_mean_reject": 1.0057471264367817,
+          "not_drafted": 0,
+          "observed": 234,
+          "rejected": 87
+        },
+        "2": {
+          "accept_rate": 0.5238095238095238,
+          "accepted": 77,
+          "auc": 0.512152133580705,
+          "auc_ci": [
+            0.41838649155722324,
+            0.6050536838208072
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.41379310344827586,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 29
+            },
+            {
+              "accept_rate": 0.6,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5862068965517241,
+              "bin": 3,
+              "margin_hi": 0.8125,
+              "margin_lo": 0.5,
+              "n": 29
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.8125,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5172413793103449,
+              "bin": 5,
+              "margin_hi": 6.625,
+              "margin_lo": 1.5,
+              "n": 29
+            }
+          ],
+          "margin_mean_accept": 0.9748376623376623,
+          "margin_mean_reject": 0.99375,
+          "not_drafted": 1,
+          "observed": 147,
+          "rejected": 70
+        },
+        "3": {
+          "accept_rate": 0.4805194805194805,
+          "accepted": 37,
+          "auc": 0.5402027027027027,
+          "auc_ci": [
+            0.4159891598915989,
+            0.6641586867305062
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.4666666666666667,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.4375,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 3,
+              "margin_hi": 0.75,
+              "margin_lo": 0.5,
+              "n": 15
+            },
+            {
+              "accept_rate": 0.5625,
+              "bin": 4,
+              "margin_hi": 1.375,
+              "margin_lo": 0.75,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.5333333333333333,
+              "bin": 5,
+              "margin_hi": 5.375,
+              "margin_lo": 1.5,
+              "n": 15
+            }
+          ],
+          "margin_mean_accept": 0.9712837837837838,
+          "margin_mean_reject": 0.978125,
+          "not_drafted": 1,
+          "observed": 77,
+          "rejected": 40
+        },
+        "4": {
+          "accept_rate": 0.35135135135135137,
+          "accepted": 13,
+          "auc": 0.5817307692307693,
+          "auc_ci": [
+            0.38354037267080743,
+            0.7797619047619048
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.2857142857142857,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.25,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.14285714285714285,
+              "bin": 3,
+              "margin_hi": 0.875,
+              "margin_lo": 0.625,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.625,
+              "bin": 4,
+              "margin_hi": 1.5,
+              "margin_lo": 0.875,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.42857142857142855,
+              "bin": 5,
+              "margin_hi": 5.375,
+              "margin_lo": 1.5,
+              "n": 7
+            }
+          ],
+          "margin_mean_accept": 0.9519230769230769,
+          "margin_mean_reject": 0.9817708333333334,
+          "not_drafted": 1,
+          "observed": 37,
+          "rejected": 24
+        },
+        "5": {
+          "accept_rate": 0.23076923076923078,
+          "accepted": 3,
+          "auc": 0.38333333333333336,
+          "auc_ci": [
+            0.05555555555555555,
+            0.7380952380952381
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 1,
+              "margin_hi": 0.375,
+              "margin_lo": 0.125,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.375,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.875,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 4,
+              "margin_hi": 1.25,
+              "margin_lo": 1.125,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 5,
+              "margin_hi": 2.0,
+              "margin_lo": 1.5,
+              "n": 3
+            }
+          ],
+          "margin_mean_accept": 0.7916666666666666,
+          "margin_mean_reject": 1.0,
+          "not_drafted": 1,
+          "observed": 13,
+          "rejected": 10
+        },
+        "6": {
+          "accept_rate": 0.3333333333333333,
+          "accepted": 1,
+          "auc": 0.0,
+          "auc_ci": [
+            0.0,
+            0.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.25,
+          "margin_mean_reject": 1.0625,
+          "not_drafted": 2,
+          "observed": 3,
+          "rejected": 2
+        },
+        "7": {
+          "accept_rate": 0.0,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": 0.25,
+          "not_drafted": 3,
+          "observed": 1,
+          "rejected": 1
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 234,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 234,
+      "run_dir": ".mlxfast-private/e122/runs-forced/natural_history",
+      "spearman_margin_accepted": -0.00656705293663723
+    },
+    "philosophy": {
+      "accept_rate_of_drafted": 0.19276315789473683,
+      "depth_hist": {
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "6": 1,
+        "7": 215
+      },
+      "margin": {
+        "max": 8.125,
+        "mean": 1.2380136986301369,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.375,
+        "p50": 0.875,
+        "p75": 1.625,
+        "p90": 2.75,
+        "sd": 1.2793636241965654
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 40,
+        "distinct_below": 16,
+        "grid": 0.125,
+        "min_gap": 0.125,
+        "n": 219,
+        "n_below": 180,
+        "smallest_values": [
+          0.0,
+          0.125,
+          0.25,
+          0.375,
+          0.5,
+          0.625,
+          0.75,
+          0.875,
+          1.0,
+          1.125,
+          1.25,
+          1.375
+        ]
+      },
+      "mean_accepted": 1.3378995433789955,
+      "mean_depth": 6.940639269406392,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "69f4ce9bdb33477502e939cfeaf59e8ef6923fe51fe75dc6b1f2739abfe8bca9",
+        "gpu_temp_entry_c": "60.13780212402344",
+        "gpu_temp_exit_c": "63.61534118652344",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_philosophy_512.txt",
+        "prompt_sha256": "224dca39f6f38eca286a8a9099e91cead61cd22c3547f60c87ca98f47f50539d",
+        "tokens": "512",
+        "trace_rounds": "219",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.684931506849315,
+          "accepted": 150,
+          "auc": 0.49782608695652175,
+          "auc_ci": [
+            0.4170866935483871,
+            0.5801534036433366
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6818181818181818,
+              "bin": 1,
+              "margin_hi": 0.375,
+              "margin_lo": 0.0,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.6818181818181818,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.375,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.6511627906976745,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.625,
+              "n": 43
+            },
+            {
+              "accept_rate": 0.7272727272727273,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.125,
+              "n": 44
+            },
+            {
+              "accept_rate": 0.6818181818181818,
+              "bin": 5,
+              "margin_hi": 8.125,
+              "margin_lo": 1.875,
+              "n": 44
+            }
+          ],
+          "margin_mean_accept": 1.2508333333333332,
+          "margin_mean_reject": 1.210144927536232,
+          "not_drafted": 0,
+          "observed": 219,
+          "rejected": 69
+        },
+        "2": {
+          "accept_rate": 0.6133333333333333,
+          "accepted": 92,
+          "auc": 0.4943778110944528,
+          "auc_ci": [
+            0.40021585557299844,
+            0.5919165580182529
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.7333333333333333,
+              "bin": 1,
+              "margin_hi": 0.375,
+              "margin_lo": 0.0,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5333333333333333,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.375,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.6333333333333333,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.625,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.43333333333333335,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.125,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.7333333333333333,
+              "bin": 5,
+              "margin_hi": 8.125,
+              "margin_lo": 1.875,
+              "n": 30
+            }
+          ],
+          "margin_mean_accept": 1.3342391304347827,
+          "margin_mean_reject": 1.1185344827586208,
+          "not_drafted": 0,
+          "observed": 150,
+          "rejected": 58
+        },
+        "3": {
+          "accept_rate": 0.37362637362637363,
+          "accepted": 34,
+          "auc": 0.47007223942208465,
+          "auc_ci": [
+            0.34459459459459457,
+            0.5992424242424242
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.4444444444444444,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 18
+            },
+            {
+              "accept_rate": 0.3888888888888889,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 18
+            },
+            {
+              "accept_rate": 0.3157894736842105,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.625,
+              "n": 19
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 1.125,
+              "n": 18
+            },
+            {
+              "accept_rate": 0.2222222222222222,
+              "bin": 5,
+              "margin_hi": 8.125,
+              "margin_lo": 2.0,
+              "n": 18
+            }
+          ],
+          "margin_mean_accept": 1.161764705882353,
+          "margin_mean_reject": 1.3969298245614035,
+          "not_drafted": 1,
+          "observed": 91,
+          "rejected": 57
+        },
+        "4": {
+          "accept_rate": 0.35294117647058826,
+          "accepted": 12,
+          "auc": 0.6003787878787878,
+          "auc_ci": [
+            0.39285714285714285,
+            0.8035714285714286
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.2857142857142857,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.2857142857142857,
+              "bin": 2,
+              "margin_hi": 0.375,
+              "margin_lo": 0.25,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.5,
+              "n": 6
+            },
+            {
+              "accept_rate": 0.42857142857142855,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.125,
+              "n": 7
+            },
+            {
+              "accept_rate": 0.42857142857142855,
+              "bin": 5,
+              "margin_hi": 4.75,
+              "margin_lo": 1.875,
+              "n": 7
+            }
+          ],
+          "margin_mean_accept": 1.4166666666666667,
+          "margin_mean_reject": 1.0227272727272727,
+          "not_drafted": 2,
+          "observed": 34,
+          "rejected": 22
+        },
+        "5": {
+          "accept_rate": 0.25,
+          "accepted": 3,
+          "auc": 0.42592592592592593,
+          "auc_ci": [
+            0.1,
+            0.8
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.0,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 2,
+              "margin_hi": 0.75,
+              "margin_lo": 0.375,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 1.125,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 1.625,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 5,
+              "margin_hi": 4.375,
+              "margin_lo": 3.25,
+              "n": 2
+            }
+          ],
+          "margin_mean_accept": 0.9583333333333334,
+          "margin_mean_reject": 1.5694444444444444,
+          "not_drafted": 3,
+          "observed": 12,
+          "rejected": 9
+        },
+        "6": {
+          "accept_rate": 0.3333333333333333,
+          "accepted": 1,
+          "auc": 0.0,
+          "auc_ci": [
+            0.0,
+            0.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.375,
+          "margin_mean_reject": 1.25,
+          "not_drafted": 3,
+          "observed": 3,
+          "rejected": 2
+        },
+        "7": {
+          "accept_rate": 1.0,
+          "accepted": 1,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.375,
+          "margin_mean_reject": null,
+          "not_drafted": 4,
+          "observed": 1,
+          "rejected": 0
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 219,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 219,
+      "run_dir": ".mlxfast-private/e122/runs-forced/philosophy",
+      "spearman_margin_accepted": -0.012354334473359777
+    },
+    "technical": {
+      "accept_rate_of_drafted": 0.2272069464544139,
+      "depth_hist": {
+        "3": 1,
+        "7": 197
+      },
+      "margin": {
+        "max": 7.4375,
+        "mean": 1.2130681818181819,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.375,
+        "p50": 0.75,
+        "p75": 1.5,
+        "p90": 2.5,
+        "sd": 1.343385577466566
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 37,
+        "distinct_below": 16,
+        "grid": 0.0625,
+        "min_gap": 0.125,
+        "n": 198,
+        "n_below": 160,
+        "smallest_values": [
+          0.0,
+          0.125,
+          0.25,
+          0.375,
+          0.5,
+          0.625,
+          0.75,
+          0.875,
+          1.0,
+          1.125,
+          1.25,
+          1.375
+        ]
+      },
+      "mean_accepted": 1.5858585858585859,
+      "mean_depth": 6.97979797979798,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "acca9d8aa3f39528db964f7220ab60f92986b3ac6d863321d9940beebd473902",
+        "gpu_temp_entry_c": "59.735958099365234",
+        "gpu_temp_exit_c": "66.16923522949219",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_technical_512.txt",
+        "prompt_sha256": "c135cec61e796f2cfaf6b43ea0cfc8d7a21578de94e9acd60962f990ba774ee6",
+        "tokens": "512",
+        "trace_rounds": "198",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.6868686868686869,
+          "accepted": 136,
+          "auc": 0.5336812144212524,
+          "auc_ci": [
+            0.44575090207788975,
+            0.6162746344564526
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.7,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 40
+            },
+            {
+              "accept_rate": 0.6923076923076923,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 39
+            },
+            {
+              "accept_rate": 0.575,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.625,
+              "n": 40
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.0,
+              "n": 39
+            },
+            {
+              "accept_rate": 0.8,
+              "bin": 5,
+              "margin_hi": 7.4375,
+              "margin_lo": 1.875,
+              "n": 40
+            }
+          ],
+          "margin_mean_accept": 1.3249080882352942,
+          "margin_mean_reject": 0.967741935483871,
+          "not_drafted": 0,
+          "observed": 198,
+          "rejected": 62
+        },
+        "2": {
+          "accept_rate": 0.6323529411764706,
+          "accepted": 86,
+          "auc": 0.4990697674418605,
+          "auc_ci": [
+            0.403242147922999,
+            0.6001162790697674
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.7037037037037037,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.5555555555555556,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.6428571428571429,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.625,
+              "n": 28
+            },
+            {
+              "accept_rate": 0.6296296296296297,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 1.0,
+              "n": 27
+            },
+            {
+              "accept_rate": 0.6296296296296297,
+              "bin": 5,
+              "margin_hi": 7.4375,
+              "margin_lo": 2.125,
+              "n": 27
+            }
+          ],
+          "margin_mean_accept": 1.4469476744186047,
+          "margin_mean_reject": 1.115,
+          "not_drafted": 0,
+          "observed": 136,
+          "rejected": 50
+        },
+        "3": {
+          "accept_rate": 0.5813953488372093,
+          "accepted": 50,
+          "auc": 0.5266666666666666,
+          "auc_ci": [
+            0.40129799891833423,
+            0.6469907407407407
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6470588235294118,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.6470588235294118,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.3888888888888889,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.625,
+              "n": 18
+            },
+            {
+              "accept_rate": 0.47058823529411764,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 1.125,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.7647058823529411,
+              "bin": 5,
+              "margin_hi": 7.4375,
+              "margin_lo": 2.125,
+              "n": 17
+            }
+          ],
+          "margin_mean_accept": 1.61,
+          "margin_mean_reject": 1.2204861111111112,
+          "not_drafted": 0,
+          "observed": 86,
+          "rejected": 36
+        },
+        "4": {
+          "accept_rate": 0.4897959183673469,
+          "accepted": 24,
+          "auc": 0.37166666666666665,
+          "auc_ci": [
+            0.2165551839464883,
+            0.5340136054421769
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.7,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.6,
+              "bin": 2,
+              "margin_hi": 0.5,
+              "margin_lo": 0.25,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.5,
+              "n": 9
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 4,
+              "margin_hi": 2.375,
+              "margin_lo": 1.375,
+              "n": 10
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 5,
+              "margin_hi": 6.75,
+              "margin_lo": 2.375,
+              "n": 10
+            }
+          ],
+          "margin_mean_accept": 1.265625,
+          "margin_mean_reject": 1.73,
+          "not_drafted": 1,
+          "observed": 49,
+          "rejected": 25
+        },
+        "5": {
+          "accept_rate": 0.5,
+          "accepted": 12,
+          "auc": 0.6180555555555556,
+          "auc_ci": [
+            0.37142857142857144,
+            0.8368055555555556
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.4,
+              "bin": 1,
+              "margin_hi": 0.125,
+              "margin_lo": 0.0,
+              "n": 5
+            },
+            {
+              "accept_rate": 0.4,
+              "bin": 2,
+              "margin_hi": 0.375,
+              "margin_lo": 0.25,
+              "n": 5
+            },
+            {
+              "accept_rate": 0.75,
+              "bin": 3,
+              "margin_hi": 0.5,
+              "margin_lo": 0.375,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.0,
+              "bin": 4,
+              "margin_hi": 2.0,
+              "margin_lo": 0.625,
+              "n": 5
+            },
+            {
+              "accept_rate": 1.0,
+              "bin": 5,
+              "margin_hi": 6.75,
+              "margin_lo": 2.125,
+              "n": 5
+            }
+          ],
+          "margin_mean_accept": 1.84375,
+          "margin_mean_reject": 0.6875,
+          "not_drafted": 1,
+          "observed": 24,
+          "rejected": 12
+        },
+        "6": {
+          "accept_rate": 0.4166666666666667,
+          "accepted": 5,
+          "auc": 0.5,
+          "auc_ci": [
+            0.125,
+            0.875
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.5,
+              "bin": 1,
+              "margin_hi": 0.125,
+              "margin_lo": 0.0,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 2,
+              "margin_hi": 0.375,
+              "margin_lo": 0.25,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 3,
+              "margin_hi": 0.5,
+              "margin_lo": 0.5,
+              "n": 2
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 4,
+              "margin_hi": 3.625,
+              "margin_lo": 2.125,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 5,
+              "margin_hi": 6.75,
+              "margin_lo": 5.0,
+              "n": 2
+            }
+          ],
+          "margin_mean_accept": 1.95,
+          "margin_mean_reject": 1.7678571428571428,
+          "not_drafted": 1,
+          "observed": 12,
+          "rejected": 7
+        },
+        "7": {
+          "accept_rate": 0.2,
+          "accepted": 1,
+          "auc": 0.5,
+          "auc_ci": [
+            0.0,
+            1.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.5,
+          "margin_mean_reject": 2.3125,
+          "not_drafted": 1,
+          "observed": 5,
+          "rejected": 4
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 198,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 198,
+      "run_dir": ".mlxfast-private/e122/runs-forced/technical",
+      "spearman_margin_accepted": 0.03769677699794326
+    },
+    "travel": {
+      "accept_rate_of_drafted": 0.21092669432918396,
+      "depth_hist": {
+        "1": 1,
+        "3": 1,
+        "7": 206
+      },
+      "margin": {
+        "max": 8.1875,
+        "mean": 1.1724759615384615,
+        "min": 0.0,
+        "p10": 0.125,
+        "p25": 0.375,
+        "p50": 0.75,
+        "p75": 1.53125,
+        "p90": 2.325000000000003,
+        "sd": 1.2635085934683254
+      },
+      "margin_quantisation": {
+        "below": 2.0,
+        "distinct": 37,
+        "distinct_below": 19,
+        "grid": 0.0625,
+        "min_gap": 0.0625,
+        "n": 208,
+        "n_below": 174,
+        "smallest_values": [
+          0.0,
+          0.125,
+          0.25,
+          0.375,
+          0.4375,
+          0.5,
+          0.625,
+          0.6875,
+          0.75,
+          0.875,
+          1.0,
+          1.125
+        ]
+      },
+      "mean_accepted": 1.4663461538461537,
+      "mean_depth": 6.951923076923077,
+      "meta": {
+        "base_sha": "9b1de4df75c7b4955b8a978db540161c3bb3aaac",
+        "forced_depth": "8",
+        "golden_sha256": "e6359fc0521582a3d2c12fe4e974744d3d9cdd89794db6df523224c3ba9d5708",
+        "gpu_temp_entry_c": "60.086429595947266",
+        "gpu_temp_exit_c": "63.05562973022461",
+        "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+        "leg_kind": "e122-rung0-traced-signal",
+        "offered_depth": "8",
+        "prompt_file": "research/e17_prose_travel_512.txt",
+        "prompt_sha256": "e9a2cc41d064bd4e28177095d05e4b9a6f7e53b6a837a6ed197d6372a2756aca",
+        "tokens": "512",
+        "trace_rounds": "208",
+        "worker_sha256": "1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54"
+      },
+      "positions": {
+        "1": {
+          "accept_rate": 0.7163461538461539,
+          "accepted": 149,
+          "auc": 0.551928108292572,
+          "auc_ci": [
+            0.46287279367011563,
+            0.6404430379746835
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.7142857142857143,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 42
+            },
+            {
+              "accept_rate": 0.6585365853658537,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 41
+            },
+            {
+              "accept_rate": 0.7142857142857143,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.625,
+              "n": 42
+            },
+            {
+              "accept_rate": 0.7073170731707317,
+              "bin": 4,
+              "margin_hi": 1.625,
+              "margin_lo": 1.125,
+              "n": 41
+            },
+            {
+              "accept_rate": 0.7857142857142857,
+              "bin": 5,
+              "margin_hi": 8.1875,
+              "margin_lo": 1.75,
+              "n": 42
+            }
+          ],
+          "margin_mean_accept": 1.225251677852349,
+          "margin_mean_reject": 1.0391949152542372,
+          "not_drafted": 0,
+          "observed": 208,
+          "rejected": 59
+        },
+        "2": {
+          "accept_rate": 0.5608108108108109,
+          "accepted": 83,
+          "auc": 0.4715477293790547,
+          "auc_ci": [
+            0.380064066327492,
+            0.5713352007469654
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.6333333333333333,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.4482758620689655,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 29
+            },
+            {
+              "accept_rate": 0.6666666666666666,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.625,
+              "n": 30
+            },
+            {
+              "accept_rate": 0.5517241379310345,
+              "bin": 4,
+              "margin_hi": 1.875,
+              "margin_lo": 1.125,
+              "n": 29
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 5,
+              "margin_hi": 8.1875,
+              "margin_lo": 1.875,
+              "n": 30
+            }
+          ],
+          "margin_mean_accept": 1.1867469879518073,
+          "margin_mean_reject": 1.2740384615384615,
+          "not_drafted": 1,
+          "observed": 148,
+          "rejected": 65
+        },
+        "3": {
+          "accept_rate": 0.5060240963855421,
+          "accepted": 42,
+          "auc": 0.4799651567944251,
+          "auc_ci": [
+            0.34767441860465115,
+            0.6055232558139535
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.47058823529411764,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.5625,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.47058823529411764,
+              "bin": 3,
+              "margin_hi": 1.125,
+              "margin_lo": 0.75,
+              "n": 17
+            },
+            {
+              "accept_rate": 0.5625,
+              "bin": 4,
+              "margin_hi": 1.75,
+              "margin_lo": 1.125,
+              "n": 16
+            },
+            {
+              "accept_rate": 0.47058823529411764,
+              "bin": 5,
+              "margin_hi": 6.0,
+              "margin_lo": 1.75,
+              "n": 17
+            }
+          ],
+          "margin_mean_accept": 1.1428571428571428,
+          "margin_mean_reject": 1.2317073170731707,
+          "not_drafted": 1,
+          "observed": 83,
+          "rejected": 41
+        },
+        "4": {
+          "accept_rate": 0.4523809523809524,
+          "accepted": 19,
+          "auc": 0.45537757437070936,
+          "auc_ci": [
+            0.26944444444444443,
+            0.6431818181818182
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.625,
+              "bin": 1,
+              "margin_hi": 0.25,
+              "margin_lo": 0.0,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.4444444444444444,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 9
+            },
+            {
+              "accept_rate": 0.25,
+              "bin": 3,
+              "margin_hi": 1.0,
+              "margin_lo": 0.75,
+              "n": 8
+            },
+            {
+              "accept_rate": 0.4444444444444444,
+              "bin": 4,
+              "margin_hi": 1.625,
+              "margin_lo": 1.125,
+              "n": 9
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 5,
+              "margin_hi": 6.0,
+              "margin_lo": 1.75,
+              "n": 8
+            }
+          ],
+          "margin_mean_accept": 0.9539473684210527,
+          "margin_mean_reject": 1.298913043478261,
+          "not_drafted": 2,
+          "observed": 42,
+          "rejected": 23
+        },
+        "5": {
+          "accept_rate": 0.3684210526315789,
+          "accepted": 7,
+          "auc": 0.6428571428571429,
+          "auc_ci": [
+            0.3977272727272727,
+            0.875
+          ],
+          "bins": [
+            {
+              "accept_rate": 0.0,
+              "bin": 1,
+              "margin_hi": 0.125,
+              "margin_lo": 0.0,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 2,
+              "margin_hi": 0.625,
+              "margin_lo": 0.25,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.3333333333333333,
+              "bin": 3,
+              "margin_hi": 0.75,
+              "margin_lo": 0.625,
+              "n": 3
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 4,
+              "margin_hi": 1.625,
+              "margin_lo": 1.125,
+              "n": 4
+            },
+            {
+              "accept_rate": 0.5,
+              "bin": 5,
+              "margin_hi": 2.875,
+              "margin_lo": 1.75,
+              "n": 4
+            }
+          ],
+          "margin_mean_accept": 1.1071428571428572,
+          "margin_mean_reject": 0.8645833333333334,
+          "not_drafted": 2,
+          "observed": 19,
+          "rejected": 12
+        },
+        "6": {
+          "accept_rate": 0.5714285714285714,
+          "accepted": 4,
+          "auc": 0.2916666666666667,
+          "auc_ci": [
+            0.0,
+            0.8
+          ],
+          "bins": [],
+          "margin_mean_accept": 0.9375,
+          "margin_mean_reject": 1.3333333333333333,
+          "not_drafted": 2,
+          "observed": 7,
+          "rejected": 3
+        },
+        "7": {
+          "accept_rate": 0.25,
+          "accepted": 1,
+          "auc": 1.0,
+          "auc_ci": [
+            1.0,
+            1.0
+          ],
+          "bins": [],
+          "margin_mean_accept": 1.75,
+          "margin_mean_reject": 0.6666666666666666,
+          "not_drafted": 2,
+          "observed": 4,
+          "rejected": 3
+        },
+        "8": {
+          "accept_rate": null,
+          "accepted": 0,
+          "auc": null,
+          "auc_ci": [
+            null,
+            null
+          ],
+          "bins": [],
+          "margin_mean_accept": null,
+          "margin_mean_reject": null,
+          "not_drafted": 208,
+          "observed": 0,
+          "rejected": 0
+        }
+      },
+      "rounds": 208,
+      "run_dir": ".mlxfast-private/e122/runs-forced/travel",
+      "spearman_margin_accepted": 0.036218074753062934
+    }
+  },
+  "rung": 0,
+  "timing_valid": false
+}

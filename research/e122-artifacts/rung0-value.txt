@@ -1,0 +1,21 @@
+E122 rung 0 -- modelled value of a margin-conditioned depth schedule
+harness=local  timing_valid=false  official_or_ranked_score=false
+cost/token is modelled in units of one verify forward, not seconds
+
+scope                  n   meanL  d*    const   margin   oracle   pool%  margin%   held%  share%
+pooled              1761   1.618   2   0.6469   0.6419   0.4932   31.16     0.78    0.73     2.5
+benchfixture          73   6.014   7   0.3222   0.3159   0.2969    8.53     1.99    0.98    23.3
+dramatic             193   1.653   2   0.6449   0.6363   0.4891   31.86     1.35   -1.72     4.2
+english              218   1.349   2   0.6723   0.6723   0.5291   27.05     0.00   -1.14     0.0
+medicine             200   1.560   2   0.6602   0.6490   0.5003   31.96     1.73    0.99     5.4
+narrative            218   1.353   2   0.6545   0.6545   0.5285   23.85     0.00   -0.33     0.0
+natural_history      234   1.188   2   0.6948   0.6948   0.5548   25.25     0.00    0.00     0.0
+philosophy           219   1.338   2   0.6461   0.6461   0.5307   21.73     0.00   -1.38     0.0
+technical            198   1.586   2   0.6411   0.6320   0.4971   28.97     1.45    1.88     5.0
+travel               208   1.466   2   0.6429   0.6429   0.5125   25.45     0.01   -0.71     0.0
+
+pooled margin bin edges  ['0.2500', '0.6250', '1.1250', '2.0000']
+pooled bin depths        [2, 2, 2, 2, 3]
+held-out bin depths      [2, 2, 2, 2, 3]
+run length histogram     {'0': 541, '1': 499, '2': 313, '3': 191, '4': 93, '5': 35, '6': 19, '7': 70}
+right-censored rounds    78

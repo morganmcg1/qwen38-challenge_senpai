@@ -1,0 +1,198 @@
+{
+ "arm": "g_split_pred",
+ "explained_fraction": 0.46860224643707016,
+ "explained_pp": 0.21285489028820992,
+ "harness": "local",
+ "leg_transfer": 0.607,
+ "measured_leg_pct": -0.436,
+ "measured_leg_sd": 0.093,
+ "pinned_zero": [
+  2,
+  5
+ ],
+ "ranked_transfer": 0.95,
+ "roofline": {
+  "bytes_per_weight": 0.5625,
+  "counterfactual_kernel_pct": 0.898641608062247,
+  "counterfactual_leg_pct": -0.5454754560937839,
+  "counterfactual_sd_from_measured": 1.177155441868644,
+  "dram_peak_gbs": 273.0,
+  "pearson_r_gbs_vs_gain": -0.9375412139424776,
+  "per_shape": {
+   "fa_qkv_k5120_n14336": {
+    "base_microseconds": 216.7181713,
+    "gain_pct": {
+     "3": 0.4274582614915423,
+     "4": 1.3906781520577116
+    },
+    "implied_gbs": 190.5132354722855,
+    "k": 5120,
+    "megabytes": 41.28768,
+    "n": 14336,
+    "percent_of_dram_peak": 69.78506793856612
+   },
+   "gdn_in_proj_k5120_n16480": {
+    "base_microseconds": 245.91699739999999,
+    "gain_pct": {
+     "3": 0.025058260515975483,
+     "4": 1.1884283027879472
+    },
+    "implied_gbs": 193.00170586744485,
+    "k": 5120,
+    "megabytes": 47.4624,
+    "n": 16480,
+    "percent_of_dram_peak": 70.69659555584062
+   },
+   "gdn_out_proj_k6144_n5120": {
+    "base_microseconds": 109.1823938,
+    "gain_pct": {
+     "3": 1.675625124697011,
+     "4": 3.333239783472264
+    },
+    "implied_gbs": 162.06569011862058,
+    "k": 6144,
+    "megabytes": 17.69472,
+    "n": 5120,
+    "percent_of_dram_peak": 59.364721655172374
+   },
+   "mlp_down_k17408_n5120": {
+    "base_microseconds": 295.82275130000005,
+    "gain_pct": {
+     "3": 1.388689523667097,
+     "4": 3.3990802662823283
+    },
+    "implied_gbs": 169.47661996814102,
+    "k": 17408,
+    "megabytes": 50.13504,
+    "n": 5120,
+    "percent_of_dram_peak": 62.07934797367803
+   },
+   "mlp_gate_up_k5120_n34816": {
+    "base_microseconds": 494.0753968,
+    "gain_pct": {
+     "3": 0.2944022354332665,
+     "4": 1.1548098358447834
+    },
+    "implied_gbs": 202.9448959600572,
+    "k": 5120,
+    "megabytes": 100.27008,
+    "n": 34816,
+    "percent_of_dram_peak": 74.33878972895869
+   }
+  },
+  "strata": {
+   "issue-bound": {
+    "gbs_range": [
+     162.06569011862058,
+     169.47661996814102
+    ],
+    "mean_pct": {
+     "3": 1.532157324182054,
+     "4": 3.366160024877296
+    },
+    "shapes": [
+     "gdn_out_proj_k6144_n5120",
+     "mlp_down_k17408_n5120"
+    ]
+   },
+   "near-roofline": {
+    "gbs_range": [
+     190.5132354722855,
+     202.9448959600572
+    ],
+    "mean_pct": {
+     "3": 0.2489729191469281,
+     "4": 1.2446387635634808
+    },
+    "shapes": [
+     "fa_qkv_k5120_n14336",
+     "gdn_in_proj_k5120_n16480",
+     "mlp_gate_up_k5120_n34816"
+    ]
+   }
+  },
+  "stratum_split_gbs": 175.0
+ },
+ "round_weights": {
+  "2": 0.024,
+  "3": 0.275,
+  "4": 0.667,
+  "5": 0.034
+ },
+ "schemes": {
+  "cost, all widths": {
+   "kernel_pct": 1.482129790399028,
+   "leg_pct": -0.89965278277221,
+   "over_prediction_ratio": 2.0634238136977294,
+   "per_width_pct": {
+    "2": 0.7848879632149408,
+    "3": 0.659903857120771,
+    "4": 1.926744599244657,
+    "5": -0.09763909183908805
+   },
+   "ranked_pct": -0.8546701436335994
+  },
+  "cost, shipped frame": {
+   "kernel_pct": 1.4666122084043984,
+   "leg_pct": -0.8902336105014699,
+   "over_prediction_ratio": 2.0418202075721785,
+   "per_width_pct": {
+    "2": 0.0,
+    "3": 0.659903857120771,
+    "4": 1.926744599244657,
+    "5": 0.0
+   },
+   "ranked_pct": -0.8457219299763964
+  },
+  "pooled median, all widths": {
+   "kernel_pct": 1.1283943680314235,
+   "leg_pct": -0.684935381395074,
+   "over_prediction_ratio": 1.5709527096217295,
+   "per_width_pct": {
+    "2": 0.6865614402021714,
+    "3": 0.4630960050168387,
+    "4": 1.4821495831388032,
+    "5": -0.11847881960709294
+   },
+   "ranked_pct": -0.6506886123253203
+  },
+  "pooled median, shipped frame": {
+   "kernel_pct": 1.1159451733332124,
+   "leg_pct": -0.67737872021326,
+   "over_prediction_ratio": 1.553620917920321,
+   "per_width_pct": {
+    "2": 0.0,
+    "3": 0.4630960050168387,
+    "4": 1.4821495831388032,
+    "5": 0.0
+   },
+   "ranked_pct": -0.643509784202597
+  },
+  "uniform mean, all widths": {
+   "kernel_pct": 1.624787213233171,
+   "leg_pct": -0.9862458384325349,
+   "over_prediction_ratio": 2.2620317395241627,
+   "per_width_pct": {
+    "2": 0.9596798725797306,
+    "3": 0.7622466811609785,
+    "4": 2.093247268089007,
+    "5": -0.11937849539350953
+   },
+   "ranked_pct": -0.9369335465109081
+  },
+  "uniform mean, shipped frame": {
+   "kernel_pct": 1.605813765134637,
+   "leg_pct": -0.9747289554367246,
+   "over_prediction_ratio": 2.235616870267717,
+   "per_width_pct": {
+    "2": 0.0,
+    "3": 0.7622466811609785,
+    "4": 2.093247268089007,
+    "5": 0.0
+   },
+   "ranked_pct": -0.9259925076648883
+  }
+ },
+ "shortfall_pp": 0.4542336105014699,
+ "verdict": "MIXED, AND THE WEIGHTING IS NOT THE ROOT CAUSE. Re-weighting closes 47 % of the shortfall and cuts the over-prediction from 2.04x to 1.55x, but 2.6 sd of gap remains. The cells are ordered by achieved bandwidth at r=-0.938, and pricing every shape at the near-roofline rate lands 1.2 sd from the measurement. The isolated probe reports its own issue-bound operating point, not a wrong average."
+}
