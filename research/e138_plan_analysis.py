@@ -79,6 +79,23 @@ def load(paths: list[pathlib.Path]) -> list[dict]:
 def corrected_table(artifacts: list[dict]) -> tuple[dict, dict, list[str]]:
     """(shape, cell) -> corrected microseconds per call, plus the shape table."""
     problems: list[str] = []
+    # Drift correction divides by the block reference and multiplies by one
+    # anchor per shape. Pooling two artifacts that used different reference
+    # cells would silently mix two anchors, so refuse instead.
+    references = {art["reference_cell"] for art in artifacts}
+    if len(references) > 1:
+        raise SystemExit(
+            "refusing to pool artifacts with different reference cells: "
+            + ", ".join(sorted(references))
+        )
+    grids = {art["grid"] for art in artifacts}
+    if len(grids) > 1 and references != {"6:stock"}:
+        raise SystemExit(
+            "refusing to pool two launch grids unless the reference cell is "
+            "grid-independent (`m:stock`); got reference "
+            + ", ".join(sorted(references))
+        )
+
     ref_samples: dict[str, list[float]] = {}
     for art in artifacts:
         for shape in art["shapes"]:
@@ -113,12 +130,19 @@ def corrected_table(artifacts: list[dict]) -> tuple[dict, dict, list[str]]:
                 block_ref = median(row["reference_samples"])
                 raw = median(row["samples"])
                 ratio = raw / block_ref
-                key = (shape["name"], row["cell"])
+                # Two grids in one analysis would collide on the cell label,
+                # so the grid becomes part of the identity.
+                label = row["cell"]
+                if len(grids) > 1 and not row["cell"].endswith(":stock"):
+                    label = f"{row['cell']}@{art['grid']}"
+                key = (shape["name"], label)
                 entry = table.setdefault(
                     key,
                     {
                         "shape": shape["name"],
-                        "cell": row["cell"],
+                        "cell": label,
+                        "plan": row["cell"],
+                        "grid": art["grid"],
                         "m": row["m"],
                         "ipg": row["ipg"],
                         "rps": row["rps"],
@@ -161,10 +185,11 @@ def weighted_total(table: dict, shapes: dict, choice: dict[str, str]) -> float:
 
 
 def sort_key(label: str) -> tuple:
-    parts = label.split(":")
+    plan, _, grid = label.partition("@")
+    parts = plan.split(":")
     if parts[-1] == "stock":
-        return (int(parts[0]), 99, 99)
-    return tuple(int(p) for p in parts)
+        return (int(parts[0]), 99, 99, grid)
+    return tuple(int(p) for p in parts) + (grid,)
 
 
 def cells_at_width(table: dict, m: int) -> list[str]:
