@@ -49,6 +49,7 @@ MLXFAST_E120_SHAPES="${shapes}" \
 MLXFAST_E120_WIDTHS="${widths}" \
 MLXFAST_E120_BLOCKS="${blocks}" \
 MLXFAST_E120_OUT="${PWD}/${out_dir}/cells.json" \
+MLXFAST_E120_FILL_OUT="${PWD}/${out_dir}/fill.json" \
 swift test -c "${config}" --force-resolved-versions \
   --filter "${filter}" 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
@@ -61,6 +62,7 @@ exit_c="$(gpu_temp)"
   echo "shapes=${shapes}"
   echo "widths=${widths}"
   echo "blocks=${blocks}"
+  echo "layers=${MLXFAST_E120_LAYERS:-32}"
   echo "filter=${filter}"
   echo "target_us=${MLXFAST_E120_TARGET_US:-100000}"
   echo "ramp_s=${MLXFAST_E120_RAMP_S:-0.30}"

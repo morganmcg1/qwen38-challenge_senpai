@@ -1413,178 +1413,238 @@ private let qwen35CompiledFusedSwiGLU:
 /// compiler then produces a wrong answer at NA = 5 with K = 5120 (E120 rung 1,
 /// 174,072 of 174,080 outputs differ, `max_abs_diff` 4501.3125), so one
 /// pipeline serves every shape and every width.
+///
+/// `USE_TABLE` selects where the per-k-block chunk sums come from. False
+/// recomputes them in the loop, which is the incumbent. True reads them from a
+/// table produced once per activation tensor by
+/// `qwen35CustomAffine4XSumsKernel`. The table entry is the same float
+/// accumulation of the same BF16 expression tree, in the same `i` order, so the
+/// two paths agree bit for bit.
+private let qwen35E120QMVHeader = """
+    template <int NA, bool USE_TABLE>
+    inline void qwen_e120_qmv_wide(
+        const device uint32_t* w,
+        const device bfloat16_t* scales,
+        const device bfloat16_t* biases,
+        const device bfloat16_t* x,
+        const device float* xsums,
+        device bfloat16_t* y,
+        const int in_vec_size,
+        const int out_vec_size,
+        const int sums_stride,
+        int first_m,
+        int out_row,
+        uint simd_lid
+    ) {
+        typedef vec<float, NA> VF;
+        constexpr int rows_per_simd = 4;
+        constexpr int values_per_thread = 16;
+        constexpr int block_size = values_per_thread * 32;
+        constexpr int bytes_per_lane = 8;
+        const int in_vec_size_w = in_vec_size / 2;
+        const int in_vec_size_g = in_vec_size / 64;
+
+        VF acc[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            acc[r] = VF(0.0f);
+        }
+
+        for (int k = 0; k < in_vec_size; k += block_size) {
+            thread uint16_t packed[rows_per_simd][4];
+            thread float scale_local[rows_per_simd];
+            thread float bias_local[rows_per_simd];
+            for (int r = 0; r < rows_per_simd; r++) {
+                const int row = out_row + r;
+                const device uint16_t* ws =
+                    reinterpret_cast<const device uint16_t*>(
+                        reinterpret_cast<const device uint8_t*>(w) +
+                        row * in_vec_size_w + k / 2 +
+                        simd_lid * bytes_per_lane);
+                for (int i = 0; i < 4; i++) {
+                    packed[r][i] = ws[i];
+                }
+                const int group_index =
+                    row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
+                scale_local[r] = scales[group_index];
+                bias_local[r] = biases[group_index];
+            }
+
+            VF sums = VF(0.0f);
+            if (USE_TABLE) {
+                const device float* st =
+                    xsums + ((k / block_size) * 32 + int(simd_lid)) *
+                    sums_stride + first_m;
+                for (int m = 0; m < NA; m++) {
+                    sums[m] = st[m];
+                }
+            }
+            VF partial[rows_per_simd];
+            for (int r = 0; r < rows_per_simd; r++) {
+                partial[r] = VF(0.0f);
+            }
+            for (int i = 0; i < 4; i++) {
+                VF a0, a1, a2, a3;
+                for (int m = 0; m < NA; m++) {
+                    const device bfloat16_t* xm =
+                        x + (first_m + m) * in_vec_size + k +
+                        simd_lid * values_per_thread + 4 * i;
+                    const vec<bfloat16_t, 4> xv =
+                        *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
+                            xm);
+                    a0[m] = static_cast<float>(xv[0]);
+                    a1[m] = static_cast<float>(xv[1]);
+                    a2[m] = static_cast<float>(xv[2]);
+                    a3[m] = static_cast<float>(xv[3]);
+                    if (!USE_TABLE) {
+                        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                    }
+                }
+                for (int r = 0; r < rows_per_simd; r++) {
+                    partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                                   a1 * ((packed[r][i] >> 4) & 0x000f) +
+                                   a2 * ((packed[r][i] >> 8) & 0x000f) +
+                                   a3 * ((packed[r][i] >> 12) & 0x000f));
+                }
+            }
+            for (int r = 0; r < rows_per_simd; r++) {
+                acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+            }
+        }
+
+        for (int r = 0; r < rows_per_simd; r++) {
+            for (int m = 0; m < NA; m++) {
+                const float reduced = simd_sum(acc[r][m]);
+                if (simd_lid == 0) {
+                    y[(first_m + m) * out_vec_size + out_row + r] =
+                        static_cast<bfloat16_t>(reduced);
+                }
+            }
+        }
+    }
+
+    template <int M, int IPG, bool USE_TABLE>
+    inline void qwen_e120_qmv_m(
+        const device uint32_t* w,
+        const device bfloat16_t* scales,
+        const device bfloat16_t* biases,
+        const device bfloat16_t* x,
+        const device float* xsums,
+        device bfloat16_t* y,
+        const int in_vec_size,
+        const int out_vec_size,
+        const int sums_stride,
+        int group_x,
+        int out_row,
+        uint simd_lid
+    ) {
+        static_assert(M % IPG != 1, "a one-input tail group is not built");
+        constexpr int TAIL = M % IPG;
+        const int first_m = group_x * IPG;
+        if (first_m >= M) {
+            return;
+        }
+        if (TAIL == 0 || M - first_m >= IPG) {
+            qwen_e120_qmv_wide<IPG, USE_TABLE>(
+                w, scales, biases, x, xsums, y, in_vec_size, out_vec_size,
+                sums_stride, first_m, out_row, simd_lid);
+        } else {
+            qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE>(
+                w, scales, biases, x, xsums, y, in_vec_size, out_vec_size,
+                sums_stride, first_m, out_row, simd_lid);
+        }
+    }
+    """
+
+/// Geometry and width switch shared by both QMV pipelines. `table` decides
+/// whether the chunk-sum table is a bound buffer at all: the four-input
+/// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
+/// false` never reads.
+private func qwen35E120QMVSource(table: Bool) -> String {
+    let sums = table ? "xsums" : "qmv_null_sums"
+    let flag = table ? "USE_TABLE" : "false"
+    let cases = [(3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+        .map { m, ipg in
+            """
+                    case \(m):
+                        qwen_e120_qmv_m<\(m), \(ipg), \(flag)>(
+                            w, scales, biases, x, \(sums), y,
+                            qmv_k, qmv_n, qmv_stride,
+                            qmv_gx, qmv_out_row, qmv_lid);
+                        break;
+            """
+        }
+        .joined(separator: "\n")
+    let nullDecl = table ? "" : "\n        const device float* qmv_null_sums = nullptr;"
+    return """
+            const int qmv_m = x_shape[x_ndim - 2];
+            const int qmv_k = x_shape[x_ndim - 1];
+            const int qmv_n = w_shape[0];
+            const int qmv_stride = qmv_m <= 8 ? 8 : 16;
+            const uint3 qmv_tid = threadgroup_position_in_grid;
+            const uint qmv_lid = thread_index_in_simdgroup;
+            const uint qmv_sgid = simdgroup_index_in_threadgroup;
+            const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
+            const int qmv_gx = int(qmv_tid.x);\(nullDecl)
+            switch (qmv_m) {
+        \(cases)
+                default:
+                    break;
+            }
+        """
+}
+
 private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
     name: "qwen35_custom_affine4_g64_qmv_wide_v1",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernel = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+/// Produces the activation chunk-sum table consumed by
+/// `qwen35CustomAffine4QMVTableKernel`.
+///
+/// One entry per `(k_block, lane, m)`. The offset never mentions the output
+/// row, `N`, or the weight matrix, so one table serves every wide QMV that
+/// consumes the same activation tensor at the same K, and it serves every width
+/// at once. Lane stride is padded to 8 floats (16 at M = 9) so a lane's entries
+/// stay in one cache line; at K = 5120 and M <= 8 the table is 10,240 bytes.
+///
+/// The value is the incumbent expression at `quantized.h:1029` and nothing
+/// else: three BF16 adds per group of four activations, accumulated into a
+/// float across the four groups a lane owns, in ascending `i`. Filling this
+/// table from host float32 would change the arithmetic and break exactness.
+private let qwen35CustomAffine4XSumsKernel = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_xsums_v1",
+    inputNames: ["x"],
+    outputNames: ["xsums"],
     source: """
-        const int qmv_m = x_shape[x_ndim - 2];
-        const int qmv_k = x_shape[x_ndim - 1];
-        const int qmv_n = w_shape[0];
-        const uint3 qmv_tid = threadgroup_position_in_grid;
-        const uint qmv_lid = thread_index_in_simdgroup;
-        const uint qmv_sgid = simdgroup_index_in_threadgroup;
-        const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
-        const int qmv_gx = int(qmv_tid.x);
-        switch (qmv_m) {
-            case 3:
-                qwen_e120_qmv_m<3, 3>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            case 4:
-                qwen_e120_qmv_m<4, 4>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            case 5:
-                qwen_e120_qmv_m<5, 5>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            case 6:
-                qwen_e120_qmv_m<6, 3>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            case 7:
-                qwen_e120_qmv_m<7, 4>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            case 8:
-                qwen_e120_qmv_m<8, 4>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            case 9:
-                qwen_e120_qmv_m<9, 3>(
-                    w, scales, biases, x, y, qmv_k, qmv_n,
-                    qmv_gx, qmv_out_row, qmv_lid);
-                break;
-            default:
-                break;
+        const int xs_m = x_shape[x_ndim - 2];
+        const int xs_k = x_shape[x_ndim - 1];
+        const int xs_stride = xs_m <= 8 ? 8 : 16;
+        const uint3 xs_gid = thread_position_in_grid;
+        const int xs_lane = int(xs_gid.x);
+        const int xs_kb = int(xs_gid.y);
+        const int xs_row = int(xs_gid.z);
+        const device bfloat16_t* xm =
+            x + xs_row * xs_k + xs_kb * 512 + xs_lane * 16;
+        float s = 0.0f;
+        for (int i = 0; i < 4; i++) {
+            const vec<bfloat16_t, 4> xv =
+                *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm + 4 * i);
+            s += xv[0] + xv[1] + xv[2] + xv[3];
         }
-        """,
-    header: """
-        template <int NA>
-        inline void qwen_e120_qmv_wide(
-            const device uint32_t* w,
-            const device bfloat16_t* scales,
-            const device bfloat16_t* biases,
-            const device bfloat16_t* x,
-            device bfloat16_t* y,
-            const int in_vec_size,
-            const int out_vec_size,
-            int first_m,
-            int out_row,
-            uint simd_lid
-        ) {
-            typedef vec<float, NA> VF;
-            constexpr int rows_per_simd = 4;
-            constexpr int values_per_thread = 16;
-            constexpr int block_size = values_per_thread * 32;
-            constexpr int bytes_per_lane = 8;
-            const int in_vec_size_w = in_vec_size / 2;
-            const int in_vec_size_g = in_vec_size / 64;
-
-            VF acc[rows_per_simd];
-            for (int r = 0; r < rows_per_simd; r++) {
-                acc[r] = VF(0.0f);
-            }
-
-            for (int k = 0; k < in_vec_size; k += block_size) {
-                thread uint16_t packed[rows_per_simd][4];
-                thread float scale_local[rows_per_simd];
-                thread float bias_local[rows_per_simd];
-                for (int r = 0; r < rows_per_simd; r++) {
-                    const int row = out_row + r;
-                    const device uint16_t* ws =
-                        reinterpret_cast<const device uint16_t*>(
-                            reinterpret_cast<const device uint8_t*>(w) +
-                            row * in_vec_size_w + k / 2 +
-                            simd_lid * bytes_per_lane);
-                    for (int i = 0; i < 4; i++) {
-                        packed[r][i] = ws[i];
-                    }
-                    const int group_index =
-                        row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
-                    scale_local[r] = scales[group_index];
-                    bias_local[r] = biases[group_index];
-                }
-
-                VF sums = VF(0.0f);
-                VF partial[rows_per_simd];
-                for (int r = 0; r < rows_per_simd; r++) {
-                    partial[r] = VF(0.0f);
-                }
-                for (int i = 0; i < 4; i++) {
-                    VF a0, a1, a2, a3;
-                    for (int m = 0; m < NA; m++) {
-                        const device bfloat16_t* xm =
-                            x + (first_m + m) * in_vec_size + k +
-                            simd_lid * values_per_thread + 4 * i;
-                        const vec<bfloat16_t, 4> xv =
-                            *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
-                                xm);
-                        a0[m] = static_cast<float>(xv[0]);
-                        a1[m] = static_cast<float>(xv[1]);
-                        a2[m] = static_cast<float>(xv[2]);
-                        a3[m] = static_cast<float>(xv[3]);
-                        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
-                    }
-                    for (int r = 0; r < rows_per_simd; r++) {
-                        partial[r] += (a0 * (packed[r][i] & 0x000f) +
-                                       a1 * ((packed[r][i] >> 4) & 0x000f) +
-                                       a2 * ((packed[r][i] >> 8) & 0x000f) +
-                                       a3 * ((packed[r][i] >> 12) & 0x000f));
-                    }
-                }
-                for (int r = 0; r < rows_per_simd; r++) {
-                    acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
-                }
-            }
-
-            for (int r = 0; r < rows_per_simd; r++) {
-                for (int m = 0; m < NA; m++) {
-                    const float reduced = simd_sum(acc[r][m]);
-                    if (simd_lid == 0) {
-                        y[(first_m + m) * out_vec_size + out_row + r] =
-                            static_cast<bfloat16_t>(reduced);
-                    }
-                }
-            }
-        }
-
-        template <int M, int IPG>
-        inline void qwen_e120_qmv_m(
-            const device uint32_t* w,
-            const device bfloat16_t* scales,
-            const device bfloat16_t* biases,
-            const device bfloat16_t* x,
-            device bfloat16_t* y,
-            const int in_vec_size,
-            const int out_vec_size,
-            int group_x,
-            int out_row,
-            uint simd_lid
-        ) {
-            static_assert(M % IPG != 1, "a one-input tail group is not built");
-            constexpr int TAIL = M % IPG;
-            const int first_m = group_x * IPG;
-            if (first_m >= M) {
-                return;
-            }
-            if (TAIL == 0 || M - first_m >= IPG) {
-                qwen_e120_qmv_wide<IPG>(
-                    w, scales, biases, x, y, in_vec_size, out_vec_size,
-                    first_m, out_row, simd_lid);
-            } else {
-                qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2)>(
-                    w, scales, biases, x, y, in_vec_size, out_vec_size,
-                    first_m, out_row, simd_lid);
-            }
-        }
+        xsums[(xs_kb * 32 + xs_lane) * xs_stride + xs_row] = s;
         """,
     ensureRowContiguous: true
 )
@@ -1600,6 +1660,13 @@ public enum Qwen35CustomQMV {
         case off
         /// Bit-exact replica of the incumbent wide kernel, our dispatch.
         case replica
+        /// Replica plus a live chunk-sum table that the kernel does not read.
+        /// The table is still a bound input, so the fill dispatch really runs
+        /// in the stream. This arm exists to price the fill on its own.
+        case fillNoConsume = "fill_noconsume"
+        /// Replica reading the chunk sums from the table instead of
+        /// recomputing them once per output-row block.
+        case sumTable = "sumtable"
     }
 
     public static let arm: Arm = {
@@ -1612,17 +1679,14 @@ public enum Qwen35CustomQMV {
     /// and M=2 reach different kernels and are left to MLX.
     static let widths = 3 ... 9
 
-    public static func matmul(
-        _ x: MLXArray,
-        _ w: MLXArray,
-        scales: MLXArray,
-        biases: MLXArray,
-        groupSize: Int,
-        bits: Int,
-        mode: QuantizationMode,
-        arm: Arm = Qwen35CustomQMV.arm
-    ) -> MLXArray? {
-        guard arm != .off else { return nil }
+    /// Lane stride of the chunk-sum table, in floats.
+    public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
+
+    /// Cells the replica may take from MLX. Returns `(m, k, n)` or `nil`.
+    static func routable(
+        _ x: MLXArray, _ w: MLXArray, scales: MLXArray, biases: MLXArray,
+        groupSize: Int, bits: Int, mode: QuantizationMode
+    ) -> (m: Int, k: Int, n: Int)? {
         guard bits == 4, groupSize == 64, mode == .affine else { return nil }
         guard x.dtype == .bfloat16, scales.dtype == .bfloat16,
             biases.dtype == .bfloat16, w.dtype == .uint32
@@ -1637,12 +1701,84 @@ public enum Qwen35CustomQMV {
         }
         let m = x.size / k
         guard Self.widths.contains(m), x.dim(-2) == m else { return nil }
+        return (m, k, n)
+    }
+
+    /// The chunk-sum table for one activation tensor. One table per distinct
+    /// `x`: handing a matvec the table of a different tensor is silently wrong.
+    public static func xsumsTable(_ x: MLXArray) -> MLXArray {
+        let k = x.dim(-1)
+        let m = x.size / k
+        let kBlocks = k / 512
+        return qwen35CustomAffine4XSumsKernel(
+            [x],
+            grid: (32, kBlocks, m),
+            threadGroup: (32, 1, 1),
+            outputShapes: [[kBlocks * 32 * sumsStride(m)]],
+            outputDTypes: [.float32]
+        )[0]
+    }
+
+    /// The wide QMV against a caller-supplied chunk-sum table. Exposed so the
+    /// exactness instrument can perturb one table entry and prove the load is
+    /// live.
+    public static func matmulWithTable(
+        _ x: MLXArray,
+        _ w: MLXArray,
+        scales: MLXArray,
+        biases: MLXArray,
+        xsums: MLXArray,
+        groupSize: Int,
+        bits: Int,
+        mode: QuantizationMode,
+        consume: Bool = true
+    ) -> MLXArray? {
+        guard
+            let cell = routable(
+                x, w, scales: scales, biases: biases,
+                groupSize: groupSize, bits: bits, mode: mode)
+        else { return nil }
+        var outShape = x.shape
+        outShape[outShape.count - 1] = cell.n
+        return qwen35CustomAffine4QMVTableKernel(
+            [w, scales, biases, x, xsums],
+            template: [("USE_TABLE", consume)],
+            grid: (cell.m * 32, (cell.n / 8) * 2, 1),
+            threadGroup: (32, 2, 1),
+            outputShapes: [outShape],
+            outputDTypes: [.bfloat16]
+        )[0]
+    }
+
+    public static func matmul(
+        _ x: MLXArray,
+        _ w: MLXArray,
+        scales: MLXArray,
+        biases: MLXArray,
+        groupSize: Int,
+        bits: Int,
+        mode: QuantizationMode,
+        arm: Arm = Qwen35CustomQMV.arm
+    ) -> MLXArray? {
+        guard arm != .off else { return nil }
+        guard
+            let cell = routable(
+                x, w, scales: scales, biases: biases,
+                groupSize: groupSize, bits: bits, mode: mode)
+        else { return nil }
+
+        if arm == .fillNoConsume || arm == .sumTable {
+            return matmulWithTable(
+                x, w, scales: scales, biases: biases, xsums: xsumsTable(x),
+                groupSize: groupSize, bits: bits, mode: mode,
+                consume: arm == .sumTable)
+        }
 
         var outShape = x.shape
-        outShape[outShape.count - 1] = n
+        outShape[outShape.count - 1] = cell.n
         return qwen35CustomAffine4QMVKernel(
             [w, scales, biases, x],
-            grid: (m * 32, (n / 8) * 2, 1),
+            grid: (cell.m * 32, (cell.n / 8) * 2, 1),
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]

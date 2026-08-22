@@ -68,6 +68,12 @@ struct E120CustomQMVProbeTests {
         "lm_head": (5120, 248_320),
         "gdn.in_proj": (5120, 16480),
         "fa.qkv": (5120, 14336),
+        "mlp.down": (17408, 5120),
+        // Smallest wide-eligible output width at the shipped K. The fill cost
+        // does not depend on N, so a cheap consumer resolves it better.
+        "stream.small": (5120, 4096),
+        // One k-block, so the fill has almost no work left and what remains is
+        // the dispatch boundary itself.
         "control.small": (512, 4096),
     ]
 
@@ -95,6 +101,15 @@ struct E120CustomQMVProbeTests {
     static var blocks: Int {
         Int(ProcessInfo.processInfo.environment["MLXFAST_E120_BLOCKS"] ?? "") ?? 6
     }
+
+    /// Dependent QMV dispatches per chain in the fill-cost probe. A chain makes
+    /// the fill an in-stream dispatch with a real barrier in front of it, which
+    /// is what a standalone probe cannot measure.
+    static var layers: Int {
+        Int(ProcessInfo.processInfo.environment["MLXFAST_E120_LAYERS"] ?? "") ?? 32
+    }
+
+    static let exactnessArms: [Qwen35CustomQMV.Arm] = [.replica, .fillNoConsume, .sumTable]
 
     static var rampSeconds: Double {
         Double(ProcessInfo.processInfo.environment["MLXFAST_E120_RAMP_S"] ?? "") ?? 0.30
@@ -192,45 +207,101 @@ struct E120CustomQMVProbeTests {
             let block = MLXRandom.normal([9, shape.hidden]).asType(.bfloat16)
             eval(block)
 
+            // `meta_hit` control: metadata moved by one step. Proves the
+            // scale/bias reads are live and not folded away.
+            let wBumped = E120Weights(
+                packed: w.packed,
+                scales: (w.scales.asType(.float32) + Float(0.001)).asType(.bfloat16),
+                biases: w.biases)
+            eval(wBumped.scales)
+
             for width in 3 ... 9 {
                 let x = contiguous(block[0 ..< width])
                 eval(x)
                 let reference = Self.mlx(x, w)
-                guard let replica = Self.custom(x, w, .replica) else {
-                    Issue.record("\(shape.name) M=\(width): replica declined a routed cell")
-                    continue
-                }
-                eval(reference, replica)
+                eval(reference)
 
-                // Positive control: one activation moved by one BF16 step must
-                // change the replica's output, or the comparison cannot fail.
+                // `x_hit` control: one activation moved by half a unit must
+                // change the output, or the comparison cannot fail.
                 let bumped = x + MLXArray(Float(0.5)).asType(.bfloat16)
                 eval(bumped)
-                guard let perturbed = Self.custom(bumped, w, .replica) else {
-                    Issue.record("\(shape.name) M=\(width): control declined")
-                    continue
-                }
-                eval(perturbed)
 
-                let differing = Self.mismatches(reference, replica)
-                let controlDiffering = Self.mismatches(reference, perturbed)
-                let record: [String: Any] = [
-                    "shape": shape.name,
-                    "outputs": shape.outputs,
-                    "hidden": shape.hidden,
-                    "width": width,
-                    "elements": reference.size,
-                    "differing_elements": differing,
-                    "max_abs_diff": Self.maxAbsDiff(reference, replica),
-                    "bit_exact": differing == 0,
-                    "positive_control_differing": controlDiffering,
-                    "positive_control_can_fail": controlDiffering > 0,
-                ]
-                records.append(record)
-                print("E120 exactness \(record)")
-                fflush(stdout)
-                #expect(differing == 0)
-                #expect(controlDiffering > 0)
+                let table = Qwen35CustomQMV.xsumsTable(x)
+                eval(table)
+                // `table_hit` control: one table entry moved must change the
+                // output of the consuming arm, and restoring it must return the
+                // output to bit equality. Entry 0 is (k_block 0, lane 0, m 0),
+                // which every width reads.
+                var oneHot = [Float](repeating: 0, count: table.size)
+                oneHot[0] = 1024
+                let badTable = table + MLXArray(oneHot)
+                eval(badTable)
+
+                for arm in Self.exactnessArms {
+                    guard let candidate = Self.custom(x, w, arm) else {
+                        Issue.record(
+                            "\(shape.name) M=\(width) \(arm.rawValue): declined a routed cell")
+                        continue
+                    }
+                    guard let xHit = Self.custom(bumped, w, arm),
+                        let metaHit = Self.custom(x, wBumped, arm)
+                    else {
+                        Issue.record("\(shape.name) M=\(width) \(arm.rawValue): control declined")
+                        continue
+                    }
+                    eval(candidate, xHit, metaHit)
+
+                    var tableHit = -1
+                    var restoredDiff = -1
+                    if arm == .sumTable {
+                        guard
+                            let perturbed = Qwen35CustomQMV.matmulWithTable(
+                                x, w.packed, scales: w.scales, biases: w.biases,
+                                xsums: badTable, groupSize: Self.groupSize,
+                                bits: Self.bits, mode: .affine),
+                            let restored = Qwen35CustomQMV.matmulWithTable(
+                                x, w.packed, scales: w.scales, biases: w.biases,
+                                xsums: table, groupSize: Self.groupSize,
+                                bits: Self.bits, mode: .affine)
+                        else {
+                            Issue.record("\(shape.name) M=\(width): table control declined")
+                            continue
+                        }
+                        eval(perturbed, restored)
+                        tableHit = Self.mismatches(reference, perturbed)
+                        restoredDiff = Self.mismatches(reference, restored)
+                    }
+
+                    let differing = Self.mismatches(reference, candidate)
+                    let xHitDiffering = Self.mismatches(reference, xHit)
+                    let metaHitDiffering = Self.mismatches(reference, metaHit)
+                    var record: [String: Any] = [
+                        "shape": shape.name,
+                        "outputs": shape.outputs,
+                        "hidden": shape.hidden,
+                        "width": width,
+                        "arm": arm.rawValue,
+                        "elements": reference.size,
+                        "differing_elements": differing,
+                        "max_abs_diff": Self.maxAbsDiff(reference, candidate),
+                        "bit_exact": differing == 0,
+                        "x_hit": xHitDiffering,
+                        "meta_hit": metaHitDiffering,
+                        "positive_control_can_fail": xHitDiffering > 0 && metaHitDiffering > 0,
+                    ]
+                    if arm == .sumTable {
+                        record["table_hit"] = tableHit
+                        record["restored_diff"] = restoredDiff
+                        #expect(tableHit > 0)
+                        #expect(restoredDiff == 0)
+                    }
+                    records.append(record)
+                    print("E120 exactness \(record)")
+                    fflush(stdout)
+                    #expect(differing == 0)
+                    #expect(xHitDiffering > 0)
+                    #expect(metaHitDiffering > 0)
+                }
             }
 
             // The guard must decline every width the incumbent owns.
@@ -387,6 +458,141 @@ struct E120CustomQMVProbeTests {
             let payload: [String: Any] = [
                 "group_size": Self.groupSize,
                 "bits": Self.bits,
+                "ramp_seconds": Self.rampSeconds,
+                "target_us": Self.targetMicroseconds,
+                "cool_gate_passed_real_gate": false,
+                "gate_qualified_for_timing": false,
+                "blocks": Self.blocks,
+                "widths": Self.widths,
+                "cells": cells,
+            ]
+            let data = try JSONSerialization.data(
+                withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: URL(fileURLWithPath: path))
+        }
+
+        #expect(!cells.isEmpty)
+    }
+
+    // MARK: rung 2 in-stream fill cost
+
+    /// The marginal cost of one chunk-sum fill dispatch, measured inside a
+    /// dependent stream rather than on its own.
+    ///
+    /// A standalone probe charges a fill one whole command-buffer round trip,
+    /// which is why askeladd's E118 read 117 to 452 microseconds for a fill
+    /// whose real work is about 0.3. Here each chain is `layers` QMV dispatches
+    /// that depend on one another, so a fill is one extra dispatch and one
+    /// extra barrier inside a stream that is already running, exactly as it
+    /// would be in a decode round.
+    ///
+    /// Three arms separate the two numbers the advisor asked to keep apart:
+    ///
+    /// - `a_replica`      no table at all
+    /// - `b_fill_noconsume` table produced and bound, kernel does not read it
+    /// - `c_sumtable`     table produced, bound and read
+    ///
+    /// `b - a` is the fill cost. `b - c` is the consumer gain. `a - c` is the
+    /// net.
+    @Test(
+        "marginal cost of one in-stream chunk-sum fill dispatch",
+        .enabled(if: E120CustomQMVProbeTests.timingEnabled))
+    func fillCost() throws {
+        var cells: [[String: Any]] = []
+        let layers = Self.layers
+        let zero = MLXArray(Float(0)).asType(.bfloat16)
+        eval(zero)
+
+        for shape in Self.shapes {
+            let w = Self.makeWeights(
+                hidden: shape.hidden, outputs: shape.outputs,
+                seed: UInt64(0xE120) &+ UInt64(shape.outputs))
+            let maxWidth = Self.widths.max() ?? 9
+            MLXRandom.seed(UInt64(0xB1F5) &+ UInt64(shape.outputs))
+            let block = MLXRandom.normal([maxWidth, shape.hidden]).asType(.bfloat16)
+            eval(block)
+
+            for width in Self.widths {
+                let x0 = contiguous(block[0 ..< width])
+                eval(x0)
+                guard Self.custom(x0, w, .replica) != nil else { continue }
+
+                // The tail of each layer feeds the next one so the whole chain
+                // serialises. The dependency carries no signal: the slice is
+                // multiplied by zero, so `x` is bit identical to `x0` at every
+                // layer and every arm sees the same activations.
+                func chain(_ arm: Qwen35CustomQMV.Arm) -> [MLXArray] {
+                    var x = x0
+                    for _ in 0 ..< layers {
+                        let y = Self.custom(x, w, arm)!
+                        x = x0 + y[0 ..< 1, 0 ..< 1] * zero
+                    }
+                    return [x]
+                }
+
+                let arms: [E120Arm] = [
+                    E120Arm(name: "a_replica", body: { chain(.replica) }),
+                    E120Arm(name: "b_fill_noconsume", body: { chain(.fillNoConsume) }),
+                    E120Arm(name: "c_sumtable", body: { chain(.sumTable) }),
+                ]
+
+                Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                let probeUs = Self.timed(3, arms[0].body)
+                let count = max(4, min(400, Int(Self.targetMicroseconds / max(probeUs, 1.0))))
+                for arm in arms { _ = Self.timed(2, arm.body) }
+
+                for blockIndex in 0 ..< Self.blocks {
+                    let entryTemp = e120GPUTemperature()
+                    Self.rampBurst(arms[0].body, seconds: Self.rampSeconds)
+                    let forward = arms.map { Self.timed(count, $0.body) }
+                    let reverse = Array(
+                        arms.reversed().map { Self.timed(count, $0.body) }.reversed())
+                    let exitTemp = e120GPUTemperature()
+
+                    let mean = (0 ..< arms.count).map { 0.5 * (forward[$0] + reverse[$0]) }
+                    var record: [String: Any] = [
+                        "shape": shape.name,
+                        "outputs": shape.outputs,
+                        "hidden": shape.hidden,
+                        "width": width,
+                        "block": blockIndex,
+                        "layers": layers,
+                        "replicates": count,
+                        "k_blocks": shape.hidden / 512,
+                        "table_bytes": (shape.hidden / 512) * 32
+                            * Qwen35CustomQMV.sumsStride(width) * 4,
+                        "fill_us_per_dispatch": (mean[1] - mean[0]) / Double(layers),
+                        "consumer_gain_us_per_matvec": (mean[1] - mean[2]) / Double(layers),
+                        "net_us_per_matvec": (mean[0] - mean[2]) / Double(layers),
+                        "arms": arms.enumerated().map { index, arm in
+                            [
+                                "arm": arm.name,
+                                "forward_us": forward[index],
+                                "reverse_us": reverse[index],
+                            ] as [String: Any]
+                        },
+                    ]
+                    if let entryTemp { record["gpu_temp_entry_c"] = entryTemp }
+                    if let exitTemp { record["gpu_temp_exit_c"] = exitTemp }
+                    cells.append(record)
+                    print(
+                        "E120_FILL "
+                            + (String(
+                                data: (try? JSONSerialization.data(
+                                    withJSONObject: record, options: [.sortedKeys])) ?? Data(),
+                                encoding: .utf8) ?? "{}"))
+                    fflush(stdout)
+                }
+                eval(MLXArray(0))
+            }
+            Memory.clearCache()
+        }
+
+        if let path = ProcessInfo.processInfo.environment["MLXFAST_E120_FILL_OUT"], !path.isEmpty {
+            let payload: [String: Any] = [
+                "group_size": Self.groupSize,
+                "bits": Self.bits,
+                "layers": layers,
                 "ramp_seconds": Self.rampSeconds,
                 "target_us": Self.targetMicroseconds,
                 "cool_gate_passed_real_gate": false,
