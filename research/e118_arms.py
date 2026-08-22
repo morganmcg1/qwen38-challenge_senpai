@@ -308,6 +308,61 @@ BODY_SUMSHARE_OWNER = (SUMSHARE_HEAD_NOH +
                        "    } else {\n" + sumshare_half("false") +
                        "    }\n" + SUMSHARE_XCHG_OWNER + SUMSHARE_TAIL)
 
+# --- rung 2b, the de-confounded ceiling ---------------------------------------
+#
+# `n_halfsums` above conflates two things: the mechanism (half the add tree is
+# not issued) and the scaffolding the mechanism needs (a uniform branch with the
+# whole `i` loop duplicated behind it). The census says the scaffolding is not
+# free -- at NA=4 on g16s the duplicated body is 11760 bytes of machine text
+# against `a_base`'s 6920 and it forces a 48-byte spill where `a_base` has none
+# -- so `n_halfsums` is not the zero-cost upper bound it was registered as.
+#
+# A ceiling arm does not have to be a legal program. Both simdgroups may drop
+# the SAME half at compile time: the executed instruction count per simdgroup is
+# identical to `n_halfsums`, the answer is equally wrong, and there is no branch,
+# no duplication and no `simd_gid`. This is the mechanism with zero scaffolding.
+BODY_HALFSUMS_FREE = (SUMSHARE_HEAD + sumshare_half("m < H") + SUMSHARE_TAIL)
+
+# x_sumshare_min: bit exact, and the same exchange as `x_sumshare_split`, but
+# only the add tree is duplicated behind the branch instead of the whole `i`
+# loop. The four activation values are held in a thread-local array so the
+# duplicated arm of the branch reloads nothing and adds the identical bfloat
+# values in the identical order, which is what keeps it bit exact.
+SUMSHARE_MIN_LOOP = """      for (int i = 0; i < 4; i++) {
+        VF a0, a1, a2, a3;
+        T xv[NA][4];
+        for (int m = 0; m < NA; m++) {
+          const device T* xm = x + (first_m + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          xv[m][0] = xm[0];
+          xv[m][1] = xm[1];
+          xv[m][2] = xm[2];
+          xv[m][3] = xm[3];
+          a0[m] = static_cast<float>(xv[m][0]);
+          a1[m] = static_cast<float>(xv[m][1]);
+          a2[m] = static_cast<float>(xv[m][2]);
+          a3[m] = static_cast<float>(xv[m][3]);
+        }
+        if (simd_gid == 0) {
+          for (int m = 0; m < H; m++) {
+            sums[m] += xv[m][0] + xv[m][1] + xv[m][2] + xv[m][3];
+          }
+        } else {
+          for (int m = H; m < NA; m++) {
+            sums[m] += xv[m][0] + xv[m][1] + xv[m][2] + xv[m][3];
+          }
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        }
+      }
+"""
+BODY_SUMSHARE_MIN = (SUMSHARE_HEAD + SUMSHARE_MIN_LOOP + SUMSHARE_XCHG +
+                     SUMSHARE_TAIL)
+
 # --- prologue surgery ---------------------------------------------------------
 
 SIG_TAIL = "    uint simd_lid) {\n"
@@ -741,7 +796,10 @@ ISO_KERNEL = """
 # both simdgroups write, `NA` for the owner arm because only simdgroup 0 does.
 ENTRY_DECL = {
     "n_halfsums": "",
+    "n_halfsums_free": "",
     "x_sumshare_split":
+        "  threadgroup float sums_xchg[2 * %(na)d * 32];\n",
+    "x_sumshare_min":
         "  threadgroup float sums_xchg[2 * %(na)d * 32];\n",
     "x_sumshare_owner":
         "  threadgroup float sums_xchg[%(na)d * 32];\n",
@@ -751,6 +809,7 @@ ENTRY_DECL = {
 # above so the two cannot drift.
 THREADGROUP_BYTES = {
     "x_sumshare_split": {na: 2 * na * 32 * 4 for na in WIDTHS},
+    "x_sumshare_min": {na: 2 * na * 32 * 4 for na in WIDTHS},
     "x_sumshare_owner": {na: na * 32 * 4 for na in WIDTHS},
 }
 THREADGROUP_BUDGET_BYTES = 32768
@@ -830,13 +889,21 @@ PLANS = {
     "x_sumshare_owner": ((prologue_with(extra="simd_gid, sums_xchg"),
                           BODY_SUMSHARE_OWNER, EPILOGUE),
                          "simd_gid, sums_xchg"),
+    # rung 2b, the de-confounded pair. `n_halfsums_free` needs no simdgroup
+    # index at all, which is the whole point of it.
+    "n_halfsums_free": ((PROLOGUE, BODY_HALFSUMS_FREE, EPILOGUE), ""),
+    "x_sumshare_min": ((prologue_with(extra="simd_gid, sums_xchg"),
+                        BODY_SUMSHARE_MIN, EPILOGUE),
+                       "simd_gid, sums_xchg"),
 }
 
 # Arms that are NOT required to reproduce `a_base` bit for bit.
 DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
-                   "y_algebra", "y_hsum_tree", "n_halfsums")
+                   "y_algebra", "y_hsum_tree", "n_halfsums",
+                   "n_halfsums_free")
 # Rung 2, run as its own session on one cell first under its own kill rule.
-RUNG2_ARMS = ("n_halfsums", "x_sumshare_split", "x_sumshare_owner")
+RUNG2_ARMS = ("n_halfsums", "x_sumshare_split", "x_sumshare_owner",
+              "n_halfsums_free", "x_sumshare_min")
 
 # The calibration ladder, by injected instruction class, as
 # (arm, injected instructions per k-block iteration, independent chains).
