@@ -29,8 +29,29 @@ for needle in "${old_table}" "${old_witness}"; do
   fi
 done
 
-perl -0pi -e "s/\Q${old_table}\E/${new_table}/" "${src}"
-perl -0pi -e "s/\Q${old_witness}\E/${new_witness}/" "${src}"
+# The witness contains slashes, so a `s/.../.../` substitution silently
+# becomes a syntax error and the edit is skipped while the script reports
+# success. Do the replacement in Python on literal strings, then verify.
+python3 - "${src}" "${old_table}" "${new_table}" "${old_witness}" "${new_witness}" <<'PY'
+import sys
+path, old_table, new_table, old_witness, new_witness = sys.argv[1:6]
+with open(path) as handle:
+    text = handle.read()
+for old, new in ((old_table, new_table), (old_witness, new_witness)):
+    if text.count(old) != 1:
+        raise SystemExit("refusing: %r appears %d times" % (old, text.count(old)))
+    text = text.replace(old, new)
+with open(path, "w") as handle:
+    handle.write(text)
+PY
+
+for needle in "${new_table}" "${new_witness}"; do
+  n="$(grep -c -F -- "${needle}" "${src}")"
+  if [[ "${n}" -ne 1 ]]; then
+    echo "FAIL: '${needle}' appears ${n} times after the edit; expected 1" >&2
+    exit 1
+  fi
+done
 
 grep -n "compiledDefault = Table\.\|defaultRouteWitness = " "${src}"
 echo

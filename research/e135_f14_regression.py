@@ -52,7 +52,12 @@ from fractions import Fraction
 BASE = "https://api.yukon.org/api"
 BENCHMARK_ID = "5d1ee4d7-80bd-4555-b182-6505f26ef495"
 CACHE = pathlib.Path("research/out/receipts")
-ACCEPTANCE_BAND = (0.60, 1.0)
+# Acceptance cannot exceed 1, and that is the only hard constraint. The
+# smallest feasible round count is the maximum-acceptance solution; every
+# larger multiple implies a lower rate. Prompt `c1ec5866` shows why a tighter
+# band is wrong: it drafts in 38 of 487 rounds and accepts a third of what it
+# proposes, so a 0.60 floor would have silently dropped it.
+ACCEPTANCE_BAND = (0.0, 1.0)
 
 
 def board(token: str) -> list[dict]:
@@ -83,7 +88,7 @@ def recover_rounds(mean_draft_len: float, tokens: int) -> tuple[int | None, list
     while rounds < tokens:
         if rounds >= floor:
             acceptance = (tokens - rounds) / (rounds * mean_draft_len)
-            if ACCEPTANCE_BAND[0] <= acceptance <= ACCEPTANCE_BAND[1]:
+            if ACCEPTANCE_BAND[0] < acceptance <= ACCEPTANCE_BAND[1]:
                 feasible.append(rounds)
         rounds += denominator
     return (feasible[0] if feasible else None), feasible
@@ -216,8 +221,39 @@ def main() -> int:
             print("           sensitivity: other feasible round counts %s"
                   % feasible[1:3])
 
-    analyse("recovered round counts", savings_recovered, widths)
-    analyse("naive round counts (sensitivity)", savings_naive, widths)
+    analyse("all prompts, recovered round counts", savings_recovered, widths)
+    analyse("all prompts, naive round counts (sensitivity)",
+            savings_naive, widths)
+
+    # A prompt that declines to draft in most of its rounds spends most of its
+    # time on the serial path, where the launch grid cannot act. It is a real
+    # data point for the cost model, but it carries enormous leverage at the
+    # low end of the width axis, so the fit is reported without it as well.
+    keep = [i for i, p in enumerate(before["officialMetrics"]["per_prompt"])
+            if by_hash[p["prompt_sha256"]]["non_drafting_round_count"] == 0]
+    if len(keep) < len(widths):
+        dropped = len(widths) - len(keep)
+        analyse("drafting prompts only (%d dropped)" % dropped,
+                [savings_recovered[i] for i in keep], [widths[i] for i in keep])
+
+    # Dropping the prompt is blunt. The launch grid acts on the multi-row
+    # verification matvec, and a non-drafting round never dispatches one, so
+    # its expected saving is zero by construction. Dividing by the drafting
+    # fraction puts every prompt on a per-DRAFTING-round axis and keeps all
+    # eight. If the all-prompt slope was leverage from an idle prompt, it
+    # disappears here.
+    print("\n=== per-drafting-round saving, all prompts ===")
+    print("%-10s %8s %10s %12s" % ("prompt", "Mbar", "drafting", "us/round"))
+    corrected = []
+    for i, old in enumerate(before["officialMetrics"]["per_prompt"]):
+        new = by_hash[old["prompt_sha256"]]
+        rounds, _ = recover_rounds(new["effective_mean_draft_len"], tokens)
+        fraction = (rounds - new["non_drafting_round_count"]) / rounds
+        corrected.append(savings_recovered[i] / fraction)
+        print("%-10s %8.3f %10.3f %12.1f"
+              % (old["prompt_sha256"][:8], widths[i], fraction, corrected[i]))
+    analyse("per-drafting-round saving", corrected, widths)
+
     print("\nMbar range %.2fx over %d prompts"
           % (max(widths) / min(widths), len(widths)))
     return 0

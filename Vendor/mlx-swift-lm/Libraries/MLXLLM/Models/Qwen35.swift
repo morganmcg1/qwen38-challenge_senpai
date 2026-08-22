@@ -1808,7 +1808,7 @@ public enum Qwen35CustomQMV {
         /// next four carry it at 5.99 to 7.15. M=8 is left on tier 4 here and
         /// moves in its own receipt, because its ranked mass is small even
         /// though it dominates the local fixture.
-        public static let compiledDefault = Table.onePass67
+        public static let compiledDefault = Table.shipped
 
         /// `(m, ipg, rps)` for every routable width.
         ///
@@ -1884,7 +1884,7 @@ public enum Qwen35CustomQMV {
     /// the pair actually selected, which makes it a `strings` witness that can
     /// fail. `defaultRouteWitnessNamesTheCompiledDefaults` pins it against the
     /// two `compiledDefault` constants.
-    public static let defaultRouteWitness = "e120_default_route/tiered_switch/onepass67"
+    public static let defaultRouteWitness = "e120_default_route/tiered_switch/shipped"
 
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
         precondition(

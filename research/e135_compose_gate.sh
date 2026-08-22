@@ -45,12 +45,22 @@ git status --porcelain -- Sources Vendor Package.swift mtp-head.manifest.json \
 # here. `noteLaunch` is a Swift identifier and lives in the symbol table, not
 # the string table. Every string needle is at least 16 bytes (HARNESS DEFECT
 # 38): `strings` splits shorter runs and a short needle can match by accident.
+#
+# The width-plan literal is NOT a discriminator, whatever the source comment
+# claims. All four `Table.witness` literals survive into the built worker at
+# exactly one copy each, so requiring one of them passes for a worker built
+# from any table. It is asserted only to prove the witness table is intact.
+# The route witness IS a discriminator: it is a single literal that names both
+# compiled defaults, `defaultRouteWitnessNamesTheCompiledDefaults` fails if it
+# drifts from them, and no other literal contains it. The table a leg actually
+# ran is read off the run's own `plan` trace field (CAMPAIGN RULE 114).
 step rebuild senpai/rebuild-and-assert-worker.sh \
   --require 'e135_default_grid/tight' \
-  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4' \
-  --require 'e120_default_route/tiered_switch/onepass67' \
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4' \
+  --require 'e120_default_route/tiered_switch/shipped' \
   --require 'columns_by_width' \
   --forbid 'e135_default_grid/wide' \
+  --forbid 'e120_default_route/tiered_switch/onepass67' \
   --require-symbol 'noteLaunch'
 echo "worker_sha256 $(digest)"
 
@@ -119,6 +129,32 @@ unset MLX_E120_QMV_PIPELINE_LOG
 echo "EXIT bare-512=${b}"
 echo "worker_after_leg $(digest)"
 [[ "${b}" -eq 0 ]] || rc=3
+
+echo
+echo "--- witness: the leg's own plan and route trace ---"
+# `e135_columns_check.py` derives its expectation FROM the recorded plan, so it
+# is self-consistent and cannot notice the wrong table. This names the table.
+python3 - "${out}/pipelines.json" <<'PY'
+import json
+import sys
+
+WANT_PLAN = "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
+WANT_ROUTE = "e120_default_route/tiered_switch/shipped"
+WANT_GRID = "e135_default_grid/tight"
+
+trace = json.load(open(sys.argv[1]))
+ok = True
+for key, want in (("plan", WANT_PLAN), ("default_route", WANT_ROUTE),
+                  ("default_grid", WANT_GRID)):
+    got = trace.get(key)
+    print("%-14s %s" % (key, got))
+    if got != want:
+        print("FAIL %s is %r, expected %r" % (key, got, want))
+        ok = False
+print("PASS table and grid witness" if ok else "FAIL table and grid witness")
+sys.exit(0 if ok else 1)
+PY
+[[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=8
 
 echo
 echo "--- witness: columns_by_width must be tight ---"
