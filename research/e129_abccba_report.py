@@ -18,9 +18,25 @@ import argparse
 import json
 import pathlib
 import statistics
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+import e129_entry_point_census as census  # noqa: E402
+import e129_local_to_ranked as transfer  # noqa: E402
 
 ARMS = ("shipped", "onepass67", "onepass678")
 OUT = pathlib.Path("research/out")
+
+# The realised local width histogram, and the exact mean draft length it
+# implies. A leg whose `effective_mean_draft_len` equals this to the last bit
+# ran the same schedule, so the arms differ in kernel only. The equality is
+# exact, not statistical: the metric is a ratio of two integers the parent
+# counted.
+LOCAL_HISTOGRAM = census.LOCAL_HISTOGRAM
+LOCAL_ROUNDS = sum(LOCAL_HISTOGRAM.values())
+LOCAL_MEAN_WIDTH = sum(w * n for w, n in LOCAL_HISTOGRAM.items()) / LOCAL_ROUNDS
+LOCAL_MEAN_DRAFT_LEN = LOCAL_MEAN_WIDTH - 1.0
 
 
 def read_meta(path: pathlib.Path) -> dict[str, str]:
@@ -83,6 +99,23 @@ def main() -> int:
     print(f"worker_sha256 across the session: "
           f"{'one build' if len(workers) == 1 else sorted(workers)} "
           f"{list(workers)[0][:16] if len(workers) == 1 else ''}")
+    print()
+
+    print("realised local width histogram, `harness=local`")
+    print("  " + "  ".join(f"M={w}:{n}" for w, n in
+                           sorted(LOCAL_HISTOGRAM.items()))
+          + f"   rounds {LOCAL_ROUNDS}")
+    print(f"  mean width {LOCAL_MEAN_WIDTH:.9f}, "
+          f"implied effective_mean_draft_len {LOCAL_MEAN_DRAFT_LEN:.15f}")
+    seen = {fnum(r["metrics"].get("effective_mean_draft_len"))
+            for r in complete}
+    seen.discard(None)
+    identical = len(seen) == 1
+    matches = seen == {LOCAL_MEAN_DRAFT_LEN}
+    print(f"  schedule identical across every scored leg: "
+          f"{'yes' if identical else 'NO, THE ARMS ARE CONFOUNDED: ' + str(sorted(seen))}")
+    print(f"  and equal to the recorded histogram: "
+          f"{'yes' if matches else 'no, the histogram is stale: ' + str(sorted(seen))}")
     print()
 
     print("per leg")
@@ -161,17 +194,55 @@ def main() -> int:
                     line += f"   {arm} {per[arm]:.6f} ({pct:+.3f} %)"
             print(line)
         print()
+        paired_pct = {}
         for arm, vals in pairs.items():
             if not vals:
                 continue
             sd = statistics.stdev(vals) if len(vals) > 1 else float("nan")
+            paired_pct[arm] = statistics.fmean(vals)
             print(f"  {arm:11s} mean {statistics.fmean(vals):+.3f} % "
                   f"over {len(vals)} replicate(s), sd {sd:.3f}")
+        print()
+        ranked_frame(paired_pct)
     print()
     print("This session is ungated and counterbalanced. It is directional "
           "causal evidence inside itself, not a gate-qualified reading and "
           "not any kind of official score.")
     return 0
+
+
+def ranked_frame(paired_pct: dict[str, float]) -> None:
+    """Re-weight each local effect into the ranked width mix.
+
+    A local effect is priced against a histogram whose mass sits at M=8. The
+    ranked mix is much flatter, so a pair whose differing widths are rare
+    locally and common on the runner is scaled UP, and the reverse is scaled
+    down. This is a first-order transfer: it assumes the per-width saving is
+    the same fraction of per-width QMV time on both generations, which the
+    measured spill difference between g16s and g17s specifically contradicts
+    for the one-pass bodies. It is a re-frame, never a ranked prediction.
+    """
+    local = transfer.local_histogram()
+    ranked = transfer.ranked_histogram()
+    print("re-weighted into the ranked width mix (first order, NOT a "
+          "ranked prediction)")
+    print(f"  {'pair':28s} {'widths':12s} {'local %':>9s} "
+          f"{'x rounds':>9s} {'ranked %':>9s}")
+    named = {"onepass67": ("shipped", "onepass67"),
+             "onepass678": ("shipped", "onepass678")}
+    for arm, pct in paired_pct.items():
+        if arm not in named:
+            continue
+        a, b = named[arm]
+        widths = transfer.differing_widths(a, b)
+        factor = (transfer.mass(ranked, widths, None)
+                  / transfer.mass(local, widths, None))
+        print(f"  {a + ' -> ' + b:28s} {str(list(widths)):12s} "
+              f"{pct:+9.3f} {factor:9.3f} {pct * factor:+9.3f}")
+    print("  The pre-registered table is stated in the ranked frame on the "
+          "eight-prompt candidate-leg mean. Neither the local column nor the "
+          "re-weighted column may be read against it as though it were a "
+          "receipt.")
 
 
 if __name__ == "__main__":
