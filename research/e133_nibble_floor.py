@@ -396,6 +396,58 @@ variant(
     sites=("w1", "a1"))
 
 
+# --------------------------------------------------------------------------
+# per-cell composition
+# --------------------------------------------------------------------------
+#
+# Each routed cell is its own instantiation of `qwen_e120_qmv_wide<NA, ...>`,
+# so in principle each can carry the idiom its register allocator prefers.
+# `NA` is a non-type template parameter, so a plain `if (NA == k)` chain is
+# folded at compile time and the dead arms are eliminated. Every arm compiles
+# for every `NA` because no arm mentions `NA`.
+#
+# Reading the per-cell minima out of a census is an upper bound, not a result.
+# Composition puts every idiom in one translation unit, and the allocator is
+# free to reallocate the whole body. This variant is what turns the bound into
+# a measurement.
+
+BEST_PER_CELL = {3: "bfe", 4: "magic_bf16_pair_novec",
+                 6: "magic_bf16_pair", 7: "magic_bf16_pair"}
+
+
+def _deconst(body: str) -> str:
+    """Turn the per-variant `const float nK = ...` into an assignment.
+
+    The composed form declares `n0..n3` once, outside the branch, so each arm
+    must assign rather than declare.
+    """
+    return re.sub(r"^const float (n[0-3]) = ", r"\1 = ", body, flags=re.M)
+
+
+def composed_body(mapping: dict, fallback: str) -> str:
+    out = ["float n0, n1, n2, n3;"]
+    for index, na in enumerate(sorted(mapping)):
+        out.append("%s (NA == %d) {" % ("if" if index == 0 else "else if", na))
+        out += ["    " + line
+                for line in _deconst(VARIANTS[mapping[na]]["body"]).splitlines()]
+        out.append("}")
+    out.append("else {")
+    out += ["    " + line
+            for line in _deconst(VARIANTS[fallback]["body"]).splitlines()]
+    out.append("}")
+    return "\n".join(out)
+
+
+variant(
+    "per_cell_best",
+    "The best bit-exact idiom at each routed cell, selected on the register "
+    "count the census measured for that cell alone, with the shipped hoisted "
+    "form as the fallback. Every arm is exact, so the composition is exact.",
+    _sim_mask,
+    composed_body(BEST_PER_CELL, "shipped_lifted"))
+
+
+
 def patched_header(header: str, name: str) -> str:
     if name == "shipped":
         return header
