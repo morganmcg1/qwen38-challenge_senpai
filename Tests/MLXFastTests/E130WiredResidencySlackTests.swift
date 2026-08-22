@@ -99,8 +99,23 @@ private let measuredResidencySetBytesAtGreedyFill = 26_147_726_336.0
 private let measuredResourceCountAtSizing = 4454
 private let measuredResidencySetAllocationCount = 2157
 
+/// E130 rung 10 admission session, complete read. Greedy-fill draws in total,
+/// 18 per arm, and how many of them left ANY buffer out of the residency set.
+/// MEASURED.
+/// Nothing that exists at the sizing instant is ever excluded, so the shipped
+/// allowance is not protecting the weights from eviction.
+private let measuredGreedyFillDraws = 36
+private let measuredGreedyFillDrawsWithExclusion = 0
+
+/// Steady-state draws in the same session, and how many of them saw a wired
+/// size class lose a member relative to that same process at the fill. A
+/// weight dropped after the fill would have to leave its class short, so zero
+/// events is the exact form of "no eviction after admission". MEASURED.
+private let measuredSteadyDraws = 109
+private let measuredWiredClassShrinkEvents = 0
+
 /// E130 rung 10 admission session, `s64` and `s512` arms, three worker roles,
-/// four to five process draws each. All MEASURED at steady state.
+/// six process draws each. All MEASURED at steady state.
 ///
 /// These three numbers are why bound A is necessary but NOT sufficient. The
 /// allowance is a first-come-first-served pool that persistent state and
@@ -116,15 +131,15 @@ private let measuredResidencySetAllocationCount = 2157
 private let measuredMaxHeadroomAtSaturationBytes = 132_596.0
 
 /// Change in admitted bytes for the 448 MiB change in allowance, in the two
-/// roles that reported no dispersion across four draws each. MEASURED, and
-/// equal to the change in allowance.
+/// roles that reported no dispersion across six draws each: 447.98 MiB and
+/// 448.00 MiB. MEASURED, and equal to the change in allowance.
 private let measuredSlackDeltaMB = 448.0
 private let measuredAdmittedDeltaMB = 448.0
 
-/// Smallest steady-state unwired total observed in the `s512` arm. Residency
-/// demand therefore exceeds the shipped allowance by at least this much.
-/// MEASURED.
-private let measuredMinUnwiredAtS512MB = 2442.7
+/// Smallest steady-state unwired total observed in the `s512` arm, over all
+/// 18 draws of that arm. Residency demand therefore exceeds the shipped
+/// allowance by at least this much. MEASURED.
+private let measuredMinUnwiredAtS512MB = 2423.1
 
 /// Live scratch peaks near this during the scored window. The allowance must
 /// stay structurally below it: scratch that fails the fit test takes the
@@ -285,6 +300,34 @@ struct E130WiredResidencySlackTests {
         let reservationDeltaMB = measuredPersistentGrowthMaxOverRolesMB - 64.0
         let reservationSlope = reservationDeltaMB / measuredSlackDeltaMB
         #expect((abs(reservationSlope - 1.0) < 0.005) == false)
+    }
+
+    /// The shipped comment claims the greedy fill excludes nothing. Pin it.
+    ///
+    /// This is the fact that kills the eviction story for the allowance. If
+    /// the fill left the head or part of the backbone out at some rate, the
+    /// allowance would be buying protection for weights. It does not. It buys
+    /// admission for post-sizing runtime state, and the weights were never at
+    /// risk.
+    @Test
+    func theGreedyFillNeverExcludesAnythingThatExistsAtSizing() throws {
+        #expect(measuredGreedyFillDraws == 36)
+        #expect(measuredSteadyDraws == 109)
+        #expect(measuredWiredClassShrinkEvents == 0)
+
+        func detectsExclusion(_ withExclusion: Int, of draws: Int) -> Bool {
+            Double(withExclusion) / Double(draws) >= 0.001
+        }
+        #expect(
+            detectsExclusion(
+                measuredGreedyFillDrawsWithExclusion,
+                of: measuredGreedyFillDraws) == false)
+
+        // POSITIVE CONTROL: the review named 2.4-2.6 % and 33 % as the two
+        // outcomes that would discriminate backbone from head. The same
+        // predicate must detect both, or it cannot fail at all.
+        #expect(detectsExclusion(1, of: measuredGreedyFillDraws))
+        #expect(detectsExclusion(12, of: measuredGreedyFillDraws))
     }
 
     /// The retracted model must not come back. A page charge per live resource
