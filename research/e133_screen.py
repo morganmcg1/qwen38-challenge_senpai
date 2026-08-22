@@ -1605,6 +1605,22 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
     base_vocab = np.asarray(H.compact_to_vocab(out32))
     miss = np.asarray(out32 != argmax).astype(bool)
 
+    # `H.scores` is a plain slice of `H.scores_all`, so the rerank reads the
+    # SAME float32 values that define `argmax_row`. A shortlisted row can then
+    # only be lost to an exact tie, and this measures the tie directly instead
+    # of assuming it. `exact_scores` is indexed by compact id.
+    exact_scores = H.scores(screen.exact, x)
+    s_true = mx.take_along_axis(exact_scores, argmax[:, None].astype(mx.int32),
+                                axis=1)[:, 0]
+    s_out = mx.take_along_axis(exact_scores, out32[:, None].astype(mx.int32),
+                               axis=1)[:, 0]
+    n_at_max = mx.sum((exact_scores >= s_true[:, None]).astype(mx.int32), axis=1)
+    mx.eval(s_true, s_out, n_at_max)
+    s_true_np = np.asarray(s_true).astype(np.float64)
+    gap = s_true_np - np.asarray(s_out).astype(np.float64)
+    n_at_max_np = np.asarray(n_at_max)
+    scale = np.maximum(np.abs(s_true_np), 1e-12)
+
     # The exact-centroid counterfactual chain, run end to end at the shipped
     # probe fraction and the shipped shortlist.
     out_ex = screen.compact(screen.output_row(f, pos_ex, co_ex, SHORTLIST))
@@ -1705,6 +1721,14 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
         # every row rather than only the missed ones.
         tally.count(record, "e87_strict_rank_miss",
                     (~in_a2 | (rank_np >= SHORTLIST)).sum())
+        # How large is the exact affine-4 score gap the readout gives away?
+        tally.count(record, "miss_exact_score_tie", (miss & (gap == 0.0)).sum())
+        tally.count(record, "miss_gap_below_1e6_relative",
+                    (miss & (gap <= 1e-6 * scale)).sum())
+        tally.count(record, "miss_gap_below_1e4_relative",
+                    (miss & (gap <= 1e-4 * scale)).sum())
+        tally.count(record, "argmax_tied_rows", n_at_max_np[miss].sum())
+        tally.count(record, "rows_with_a_tied_argmax", (n_at_max_np > 1).sum())
         # What a PERFECT readout would buy, measured rather than assumed. On a
         # live missed row the shipped token was accepted exactly when it
         # matched the reference; the true argmax token would be accepted
@@ -1783,6 +1807,16 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
                 + tally.get(s, "cause_R_rerank") == tally.get(s, "cause_R"),
             "e87_strict_rank_miss": tally.get(s, "e87_strict_rank_miss"),
             "e87_strict_rank_miss_rate": tally.rate(s, "e87_strict_rank_miss"),
+            "miss_exact_score_tie": tally.get(s, "miss_exact_score_tie"),
+            "miss_gap_below_1e6_relative":
+                tally.get(s, "miss_gap_below_1e6_relative"),
+            "miss_gap_below_1e4_relative":
+                tally.get(s, "miss_gap_below_1e4_relative"),
+            "mean_tied_rows_at_argmax_on_miss":
+                tally.get(s, "argmax_tied_rows") / max(base, 1),
+            "rows_with_a_tied_argmax": tally.get(s, "rows_with_a_tied_argmax"),
+            "rows_with_a_tied_argmax_rate":
+                tally.rate(s, "rows_with_a_tied_argmax"),
             # The measured ranked value of a PERFECT readout on this stratum.
             "base_miss_live": live_missed,
             "live_rate": tally.rate(s, "live"),
@@ -1928,6 +1962,18 @@ def cmd_attrib(args) -> None:
               f"{e87:19.4e}"
               f"{(r['m_absolute'] / e87 if e87 else float('inf')):17.1f}")
 
+    print("\n=== is the lost row an exact affine-4 tie? gaps on missed rows only")
+    print(f"{'stratum':22s}{'misses':>8s}{'gap == 0':>10s}{'gap<1e-6':>10s}"
+          f"{'gap<1e-4':>10s}{'tiedRowsAtMax':>15s}{'rowsTiedMax':>13s}"
+          f"{'tiedRate':>10s}")
+    for s, r in out["by_stratum"].items():
+        print(f"{s:22s}{r['base_misses']:8d}{r['miss_exact_score_tie']:10d}"
+              f"{r['miss_gap_below_1e6_relative']:10d}"
+              f"{r['miss_gap_below_1e4_relative']:10d}"
+              f"{r['mean_tied_rows_at_argmax_on_miss']:15.3f}"
+              f"{r['rows_with_a_tied_argmax']:13d}"
+              f"{r['rows_with_a_tied_argmax_rate']:10.5f}")
+
     print("\n=== what a perfect readout is actually worth (measured, not assumed)")
     print(f"{'stratum':22s}{'m_abs':>11s}{'x203 pct':>10s}{'liveMissed':>12s}"
           f"{'realisedGain':>14s}{'realised pct':>14s}")
@@ -2057,7 +2103,7 @@ def probe_ladder(out: dict, stages) -> dict:
                 "best_bytes_per_row": best["bytes_per_row"] if best else None,
                 "best_predicted_pct":
                     best["predicted_pct_absolute"] if best else None,
-                "best_predicted_pct_realised":
+                "best_predicted_pct_incremental":
                     best["predicted_pct_gating"] if best else None,
                 "best_gross_pct": best["pct_head_share_7"] if best else None,
                 "best_net_miss": best["net_miss_worst_gating"] if best else None,
@@ -2099,7 +2145,7 @@ def byte_ladder(out: dict, stages) -> dict:
                 "best_family": best["family"] if best else None,
                 "best_predicted_pct":
                     best["predicted_pct_absolute"] if best else None,
-                "best_predicted_pct_realised":
+                "best_predicted_pct_incremental":
                     best["predicted_pct_gating"] if best else None,
                 "best_predicted_pct_pooled":
                     best["predicted_pct_pooled"] if best else None,
@@ -2369,7 +2415,7 @@ def cmd_screen(args) -> None:
             "cells_passing_both": len(ok),
             "best_arm": best["arm"] if best else None,
             "best_predicted_pct": best["predicted_pct_absolute"] if best else 0.0,
-            "best_predicted_pct_realised":
+            "best_predicted_pct_incremental":
                 best["predicted_pct_gating"] if best else 0.0,
             "best_predicted_pct_pooled": best["predicted_pct_pooled"] if best else 0.0,
             "best_predicted_pct_raw_miss":
@@ -2413,7 +2459,7 @@ def cmd_screen(args) -> None:
                   f"{fmt_opt(row['best_bytes_per_row'], 'd'):>11s}"
                   f"{fmt_opt(row['best_gross_pct'], '.3f'):>12s}"
                   f"{fmt_opt(row['best_predicted_pct'], '.3f'):>13s}"
-                  f"{fmt_opt(row['best_predicted_pct_realised'], '.3f'):>11s}"
+                  f"{fmt_opt(row['best_predicted_pct_incremental'], '.3f'):>11s}"
                   f"   {row['best_arm']}")
     out["byte_ladder"] = byte_ladder(out, stages)
     for stage_a, rows in out["byte_ladder"].items():
@@ -2426,7 +2472,7 @@ def cmd_screen(args) -> None:
                   f"{row['max_byte_rate_gain_pct']:10.3f}"
                   f"{row['min_net_miss_worst_gating']:11.3e}"
                   f"{fmt_opt(row['best_predicted_pct'], '.3f'):>13s}"
-                  f"{fmt_opt(row['best_predicted_pct_realised'], '.3f'):>11s}"
+                  f"{fmt_opt(row['best_predicted_pct_incremental'], '.3f'):>11s}"
                   f"{fmt_opt(row['best_predicted_pct_pooled'], '.3f'):>11s}"
                   f"{fmt_opt(row['best_predicted_pct_raw_miss'], '.3f'):>11s}"
                   f"   {row['best_arm']}")

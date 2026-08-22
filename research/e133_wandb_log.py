@@ -36,7 +36,8 @@ WATCH_STRATA = ("essays_bacon", "essays_bacon_holdout")
 SAMPLE_FLOOR = 4000
 # F2.1. `hybridA` is a second candidate, not a control, so each stage_a is
 # gated and selected on its own.
-STAGE_A_LABEL = {"sketch": "full_c1", "affine2": "hybrid_a"}
+STAGE_A_LABEL = {"sketch": "full_c1", "affine2": "hybrid_a",
+                 "nocentroid": "full_c1_no_centroid"}
 
 RUNGS = {
     "1": {
@@ -69,6 +70,16 @@ RUNGS = {
             "itself on the ranked score",
         "command": "python3 research/e133_screen.py screen",
     },
+    "4": {
+        "run_name": "e133-rung4-base-miss-attribution",
+        "file": "research/e133-attrib.json",
+        "question":
+            "which stage of the shipped readout chain causes the base miss, "
+            "does that reconcile the E133 replay with the E87 arm C ledger "
+            "number, and does widening the affine-4 shortlist buy more "
+            "ranked value per byte than any sketch",
+        "command": "python3 research/e133_screen.py attrib",
+    },
 }
 
 CELL_COLUMNS = [
@@ -83,9 +94,40 @@ CELL_COLUMNS = [
     "m_absolute_essays_bacon_holdout", "recall_essays_bacon_holdout",
     "arm_stage_bytes", "shipped_stage_bytes", "removed_bytes",
     "removed_step_fraction", "pct_byte_rate", "pct_head_share_7",
-    "pct_head_share_9", "predicted_pct_gating", "predicted_pct_pooled",
+    "pct_head_share_9", "predicted_pct_absolute", "predicted_pct_absolute_9",
+    "predicted_pct_gating", "predicted_pct_pooled",
     "predicted_pct_raw_miss", "acceptance_loss_pooled_worst_gating",
     "substitutions_live_gating", "passes_t0", "passes_t0b",
+]
+
+ATTRIB_STRATUM_COLUMNS = [
+    "stratum", "gating", "watch", "n", "base_misses", "m_absolute",
+    "m_absolute_lo", "m_absolute_hi", "cause_P", "cause_C", "cause_R",
+    "cause_P_rate", "cause_C_rate", "cause_R_rate",
+    "causes_sum_to_base_miss", "cause_R_rank", "cause_R_tie",
+    "cause_R_rerank", "cause_R_rank_rate", "cause_R_tie_rate",
+    "cause_R_rerank_rate", "cause_R_splits_exactly",
+    "e87_strict_rank_miss", "e87_strict_rank_miss_rate",
+    "probe_hit_rate_affine2", "probe_hit_rate_exact_centroid",
+    "m_absolute_exact_centroid_chain", "base_miss_live", "live_rate",
+    "perfect_readout_acceptance_gain", "perfect_readout_pct_realised",
+    "perfect_readout_pct_full_rate",
+]
+
+ATTRIB_K_COLUMNS = [
+    "chain", "shortlist", "rerank_bytes", "extra_bytes",
+    "cost_pct_head_share_7", "cost_pct_head_share_9", "cost_pct_byte_rate",
+    "step_fraction", "recovered_worst_gating", "net_pct_full_rate",
+    "net_pct_realised", "stratum", "m_absolute", "m_absolute_lo",
+    "m_absolute_hi", "misses", "rank_predicted_misses",
+    "ge_predicted_misses", "m_absolute_strict_rank", "m_absolute_non_strict",
+    "recovered_vs_k32", "swapped_live", "acceptance_gain_realised",
+    "pct_full_rate", "pct_realised",
+]
+
+ATTRIB_PROBE_COLUMNS = [
+    "probe_fraction", "clusters", "rows_scored", "stratum", "m_absolute",
+    "m_absolute_lo", "m_absolute_hi", "misses", "probe_hit_rate",
 ]
 
 # `qlowrank` and `wlowrank` fit their basis on captured hidden states. F3.1
@@ -102,8 +144,19 @@ SPECTRUM_COLUMNS = [
 LADDER_COLUMNS = [
     "stage_a", "bytes_per_row", "cells", "cells_passing_both",
     "max_byte_rate_gain_pct", "min_net_miss_worst_gating", "best_arm",
-    "best_family", "best_predicted_pct", "best_predicted_pct_pooled",
+    "best_family", "best_predicted_pct", "best_predicted_pct_incremental",
+    "best_predicted_pct_pooled",
     "best_predicted_pct_raw_miss", "best_net_miss", "best_recall",
+]
+
+# F4.4. The probe fraction moves `P` and `C` without moving a cell's bytes per
+# row, so the byte ladder cannot show it.
+PROBE_LADDER_COLUMNS = [
+    "stage_a", "probe_fraction", "cells", "cells_passing_both",
+    "max_byte_rate_gain_pct", "min_net_miss_worst_gating", "best_arm",
+    "best_bytes_per_row", "best_gross_pct", "best_predicted_pct",
+    "best_predicted_pct_incremental", "best_net_miss", "best_m_absolute",
+    "best_m_incremental", "best_recall",
 ]
 
 WHITENING_COLUMNS = [
@@ -321,8 +374,10 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
     ladder = [{"stage_a": stage_a, "bytes_per_row": int(size), **row}
               for stage_a, rows in payload.get("byte_ladder", {}).items()
               for size, row in rows.items()]
-    # F3.2 asks for the cheapest clearing cell. The ladder shows the gain is
-    # not monotone in size, so the best-priced rung is published beside it.
+    # F4 error 123 withdrew the cheapest-clearing-cell rule: selection is on
+    # predicted ranked value, and bytes are an input to that price rather than
+    # a selection statistic. The cheapest rung stays published only to show
+    # what the withdrawn rule would have cost.
     for stage_a, rows in payload.get("byte_ladder", {}).items():
         tag = STAGE_A_LABEL.get(stage_a, stage_a)
         clearing = [(int(s), r) for s, r in rows.items()
@@ -341,8 +396,25 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
             summary["%s/ladder/best_priced_arm" % tag] = top["best_arm"]
             summary["%s/ladder/best_priced_predicted_pct" % tag] = \
                 top["best_predicted_pct"]
-            summary["%s/ladder/cheapest_rule_costs_pct" % tag] = \
+            summary["%s/ladder/withdrawn_cheapest_rule_costs_pct" % tag] = \
                 top["best_predicted_pct"] - cheap["best_predicted_pct"]
+    probe_rows = [{"stage_a": stage_a, "probe_fraction": float(p), **row}
+                  for stage_a, rows in payload.get("probe_ladder", {}).items()
+                  for p, row in rows.items()]
+    for stage_a, rows in payload.get("probe_ladder", {}).items():
+        tag = STAGE_A_LABEL.get(stage_a, stage_a)
+        clearing = [(float(p), r) for p, r in rows.items()
+                    if r["cells_passing_both"]]
+        summary["%s/probe_ladder/fractions" % tag] = len(rows)
+        summary["%s/probe_ladder/fractions_with_a_clearing_cell" % tag] = \
+            len(clearing)
+        if clearing:
+            best_p, top = max(clearing,
+                              key=lambda kv: kv[1]["best_predicted_pct"])
+            summary["%s/probe_ladder/best_probe_fraction" % tag] = best_p
+            summary["%s/probe_ladder/best_arm" % tag] = top["best_arm"]
+            summary["%s/probe_ladder/best_predicted_pct" % tag] = \
+                top["best_predicted_pct"]
     whitening = payload.get("whitening_paired", {})
     white_rows = [{"field": field, **row}
                   for field, row in whitening.get("fields", {}).items()]
@@ -361,10 +433,74 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
                      "screen_survival": table(SURVIVAL_COLUMNS, survival),
                      "screen_spectrum": table(SPECTRUM_COLUMNS, spectrum),
                      "screen_byte_ladder": table(LADDER_COLUMNS, ladder),
+                     "screen_probe_ladder": table(PROBE_LADDER_COLUMNS,
+                                                  probe_rows),
                      "screen_whitening": table(WHITENING_COLUMNS, white_rows)}
 
 
-BUILDERS = {"1": corpus_summary, "2": validate_summary, "3": screen_summary}
+def attrib_summary(payload: dict) -> tuple[dict, dict]:
+    """F4.1-F4.3 and F5.1-F5.4: where the base miss comes from, and what the
+    one-integer shortlist lever buys against it."""
+    summary: dict = {
+        "attrib_samples": payload["samples"],
+        "attrib_sketch_cell": payload.get("sketch_cell"),
+        "shortlist_shipped": payload["shortlist_shipped"],
+        "probe_fraction_shipped": payload["probe_fraction_shipped"],
+    }
+    strata = []
+    for name, row in payload["by_stratum"].items():
+        strata.append({"stratum": name, **row})
+        flatten("attrib/%s" % name, row, summary)
+    summary["all_causes_sum_to_base_miss"] = all(
+        r["causes_sum_to_base_miss"] for r in payload["by_stratum"].values())
+    summary["all_cause_R_splits_exactly"] = all(
+        r["cause_R_splits_exactly"] for r in payload["by_stratum"].values())
+    gating = [r for n, r in payload["by_stratum"].items() if r["gating"]]
+    summary["worst_gating_m_absolute"] = max(
+        r["m_absolute"] for r in gating)
+    summary["worst_gating_e87_strict_rank_miss_rate"] = max(
+        r["e87_strict_rank_miss_rate"] for r in gating)
+
+    k_rows = []
+    for chain, key in (("shipped", "k_curve"), ("sketch", "k_curve_sketch")):
+        for k, row in payload.get(key, {}).items():
+            head = {c: row.get(c) for c in ATTRIB_K_COLUMNS if c in row}
+            for name, sub in row["by_stratum"].items():
+                k_rows.append({"chain": chain, **head, "stratum": name, **sub})
+            if chain == "shipped":
+                flatten("k_curve/%s" % k,
+                        {c: row.get(c) for c in
+                         ("extra_bytes", "cost_pct_head_share_7",
+                          "recovered_worst_gating", "net_pct_full_rate",
+                          "net_pct_realised")}, summary)
+    shipped_k = payload.get("k_curve", {})
+    if shipped_k:
+        best_k, best = max(shipped_k.items(),
+                           key=lambda kv: kv[1]["net_pct_full_rate"])
+        summary["k_curve/argmax_shortlist"] = int(best_k)
+        summary["k_curve/argmax_net_pct_full_rate"] = best["net_pct_full_rate"]
+        summary["k_curve/argmax_net_pct_realised"] = best["net_pct_realised"]
+        summary["k_curve/argmax_recovered_worst_gating"] = \
+            best["recovered_worst_gating"]
+
+    probe_rows = []
+    for p, row in payload.get("probe_curve", {}).items():
+        head = {"probe_fraction": float(p), "clusters": row["clusters"],
+                "rows_scored": row["rows_scored"]}
+        for name, sub in row["by_stratum"].items():
+            probe_rows.append({**head, "stratum": name, **sub})
+        flatten("probe_curve/%s" % p,
+                {n: s["m_absolute"] for n, s in row["by_stratum"].items()},
+                summary)
+    return summary, {
+        "attrib_by_stratum": table(ATTRIB_STRATUM_COLUMNS, strata),
+        "attrib_k_curve": table(ATTRIB_K_COLUMNS, k_rows),
+        "attrib_probe_curve": table(ATTRIB_PROBE_COLUMNS, probe_rows),
+    }
+
+
+BUILDERS = {"1": corpus_summary, "2": validate_summary, "3": screen_summary,
+            "4": attrib_summary}
 
 
 def main() -> int:
