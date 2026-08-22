@@ -363,6 +363,58 @@ SUMSHARE_MIN_LOOP = """      for (int i = 0; i < 4; i++) {
 BODY_SUMSHARE_MIN = (SUMSHARE_HEAD + SUMSHARE_MIN_LOOP + SUMSHARE_XCHG +
                      SUMSHARE_TAIL)
 
+# --- rung 2, feedback 3: the redundancy is 8704x, not 2x -----------------------
+#
+# The activation pointer carries no `out_row`, no `simd_gid` and no `tid.y`, so
+# every one of the `(N + 7) / 8` threadgroups in the y dimension recomputes the
+# same `sums` table. At `mlp.gate_up` N=34816 that is 4352 threadgroups times 2
+# simdgroups = 8704 identical computations of a table that is
+# (K / block_size) * SIMD_SIZE * NA floats -- 10,240 bytes at K=5120, M=8.
+#
+# `x_sumshoist` replaces the computation with a load from a precomputed table
+# bound as a tenth buffer. It is a CEILING MEASUREMENT in this harness, not a
+# shippable arm: delivering the table to the shipped kernel needs a host-side
+# binding in `quantized.cpp`, which is not editable. It is bit exact because the
+# fill kernel writes the identical expression tree in the identical order and
+# the identical two precisions -- three adds in T, then one widening add into
+# float -- and because the epilogue and the bias loads are untouched.
+#
+# Layout is [k_block][lane][m] with `m` fastest and the per-lane stride padded
+# to 8 floats, so the slab is 32-byte aligned and the layout does not move with
+# NA. At NA <= 4 that is one `vec<float,4>` load. At NA=5, `vec<float,5>` has
+# sizeof 32 and alignof 32 and cannot overlay a packed 5-float slab, so the
+# fifth component is one extra scalar load: 2 load instructions, not 1.
+SUMSHOIST_LOAD = """    VF sums;
+    {
+      const device float* slab = sums_table +
+          ((k / block_size) * SIMD_SIZE + int(simd_lid)) * 8;
+      const vec<float, 4> hoisted =
+          *reinterpret_cast<const device vec<float, 4>*>(slab);
+      for (int m = 0; m < (NA < 4 ? NA : 4); m++) {
+        sums[m] = hoisted[m];
+      }
+      for (int m = 4; m < NA; m++) {
+        sums[m] = slab[m];
+      }
+    }
+"""
+
+def _sumshoist_body() -> str:
+    """`BODY_BASE` with the add tree deleted and `sums` loaded instead.
+
+    Both edits are asserted to fire exactly once, so a change to `BODY_BASE`
+    that silently stops matching fails the emit rather than producing an arm
+    that quietly still computes its own `sums`.
+    """
+    decl = "    VF sums = VF(0.0f);\n"
+    tree = "        sums[m] += xm[0] + xm[1] + xm[2] + xm[3];\n"
+    if BODY_BASE.count(decl) != 1 or BODY_BASE.count(tree) != 1:
+        raise SystemExit("e118_arms: x_sumshoist cannot find its edit sites")
+    return BODY_BASE.replace(decl, SUMSHOIST_LOAD).replace(tree, "")
+
+
+BODY_SUMSHOIST = _sumshoist_body()
+
 # --- prologue surgery ---------------------------------------------------------
 
 SIG_TAIL = "    uint simd_lid) {\n"
@@ -381,6 +433,8 @@ SIG_TAIL_GID = ("    uint simd_lid,\n"
 SIG_TAIL_XCHG = ("    uint simd_lid,\n"
                  "    uint simd_gid = 0,\n"
                  "    threadgroup float* sums_xchg = nullptr) {\n")
+SIG_TAIL_TABLE = ("    uint simd_lid,\n"
+                  "    const device float* sums_table = nullptr) {\n")
 
 # E111's one-byte bias code. The low four bits are an integer multiple of the
 # group scale and the high two bits are a BF16 ULP correction, so the whole
@@ -670,7 +724,8 @@ def prologue_with(meta: str | None = None, loop: str | None = None,
     if extra:
         tail = {"packed_sb": SIG_TAIL_SB, "bias_codes": SIG_TAIL_CODES,
                 "simd_gid": SIG_TAIL_GID,
-                "simd_gid, sums_xchg": SIG_TAIL_XCHG}[extra]
+                "simd_gid, sums_xchg": SIG_TAIL_XCHG,
+                "sums_table": SIG_TAIL_TABLE}[extra]
         expect(text, SIG_TAIL, 1, "prologue signature tail")
         text = text.replace(SIG_TAIL, tail)
     return helper + text
@@ -776,7 +831,7 @@ ISO_KERNEL = """
     const constant int& out_vec_size [[buffer(6)]],
     const device uint32_t* packed_sb [[buffer(7)]],
     const device uint8_t* bias_codes [[buffer(8)]],
-    uint3 tid [[threadgroup_position_in_grid]],
+%(buf9)s    uint3 tid [[threadgroup_position_in_grid]],
     uint simd_gid [[simdgroup_index_in_threadgroup]],
     uint simd_lid [[thread_index_in_simdgroup]]) {
   const int first_m = int(tid.x) * %(na)d;
@@ -789,6 +844,14 @@ ISO_KERNEL = """
       simd_lid%(extra)s);
 }
 """
+
+# Buffer declarations an arm's entry point adds beyond the shipped eight. Every
+# other arm formats `%(buf9)s` to the empty string, so its emitted source is
+# byte-identical to what it was before this buffer existed and the census the
+# earlier readings published stays comparable.
+ENTRY_BUFFER = {
+    "x_sumshoist": "    const device float* sums_table [[buffer(9)]],\n",
+}
 
 # Threadgroup staging the entry point owns, for the rung-2 arms only. The
 # budget is 32768 bytes per threadgroup; the largest of these is 1280 at NA=5,
@@ -813,6 +876,89 @@ THREADGROUP_BYTES = {
     "x_sumshare_owner": {na: na * 32 * 4 for na in WIDTHS},
 }
 THREADGROUP_BUDGET_BYTES = 32768
+
+# --- feedback 3 ask 4: the `rows_per_simd = 8` compile-only census -------------
+#
+# The activation side -- 16 loads, 64 conversions and the add tree -- is paid
+# once per simdgroup and amortised over `rows_per_simd` output rows. Doubling
+# the rows halves that cost per output row. The axis is stop-listed as a local
+# negative, but the stop-list entry was recorded against OCCUPANCY, and this
+# experiment's own first reading killed occupancy as the binding resource. The
+# only live question is whether the register file holds it, so this is a census
+# and never a timing.
+#
+# Geometry: the grid is unchanged, odd `tid.y` early-returns, and the even ones
+# cover 16 rows each, so the body is CORRECT as written and could become a
+# timing arm later once the dispatch is halved. It is not timed here because
+# half the launched threadgroups would do nothing, which prices the dispatch
+# and not the mechanism.
+ISO_KERNEL_RPS = """
+[[kernel]] void e118_iso_na%(na)d(
+    const device uint32_t* w [[buffer(0)]],
+    const device bfloat16_t* scales [[buffer(1)]],
+    const device bfloat16_t* biases [[buffer(2)]],
+    const device bfloat16_t* x [[buffer(3)]],
+    device bfloat16_t* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    const device uint32_t* packed_sb [[buffer(7)]],
+    const device uint8_t* bias_codes [[buffer(8)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  const int first_m = int(tid.x) * %(na)d;
+  if (first_m >= %(na)d || (tid.y & 1u) != 0u) {
+    return;
+  }
+  const int out_row = (int(tid.y) / 2) * %(span)d + int(simd_gid) * %(rows)d;
+  qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
+      w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
+      simd_lid);
+}
+"""
+
+# The all-widths inlined form. `e118_iso_na0` is not a width; the `0` is how the
+# census keys "every live width inlined into one entry point", which is the form
+# the shipped `switch (ntg.x)` at quantized.h:1918-1979 produces and the form
+# E102 says allocates for the widest inlined body.
+ALLWIDTH_CASE = """    case %(na)d:
+      qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
+          w, scales, biases, x, y, in_vec_size, out_vec_size,
+          int(tid.x) * %(na)d, out_row, simd_lid);
+      break;
+"""
+ALLWIDTH_KERNEL = """
+[[kernel]] void e118_iso_na0(
+    const device uint32_t* w [[buffer(0)]],
+    const device bfloat16_t* scales [[buffer(1)]],
+    const device bfloat16_t* biases [[buffer(2)]],
+    const device bfloat16_t* x [[buffer(3)]],
+    device bfloat16_t* y [[buffer(4)]],
+    const constant int& in_vec_size [[buffer(5)]],
+    const constant int& out_vec_size [[buffer(6)]],
+    const constant int& na_sel [[buffer(7)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  if ((tid.y & 1u) != 0u) {
+    return;
+  }
+  const int out_row = (int(tid.y) / 2) * %(span)d + int(simd_gid) * %(rows)d;
+  switch (na_sel) {
+%(calls)s    default:
+      break;
+  }
+}
+"""
+
+
+def rps_prologue(rows: int) -> str:
+    """The shared prologue with `rows_per_simd` retargeted."""
+    site = "  constexpr int rows_per_simd = 4;\n"
+    expect(PROLOGUE, site, 1, "rows_per_simd declaration")
+    return PROLOGUE.replace(site, "  constexpr int rows_per_simd = %d;\n"
+                            % rows)
+
 
 # Census-only control: the same arm reached through the shipped dispatcher
 # wrapper, to prove the direct call above is not itself a change.
@@ -895,7 +1041,20 @@ PLANS = {
     "x_sumshare_min": ((prologue_with(extra="simd_gid, sums_xchg"),
                         BODY_SUMSHARE_MIN, EPILOGUE),
                        "simd_gid, sums_xchg"),
+    # feedback 3: the whole-table hoist. Bit exact, load-paying, and a ceiling
+    # measurement in this harness only -- the delivery route is not editable.
+    "x_sumshoist": ((prologue_with(extra="sums_table"), BODY_SUMSHOIST,
+                     EPILOGUE), "sums_table"),
 }
+
+# Compile-only arms. They are censused and never timed, so they are kept out of
+# `ARMS` and therefore out of the probe's `--arms` list.
+CENSUS_PLANS = {
+    "c_rps4": ((rps_prologue(4), BODY_BASE, EPILOGUE), ""),
+    "c_rps8": ((rps_prologue(8), BODY_BASE, EPILOGUE), ""),
+}
+ROWS_PER_SIMD = {"c_rps4": 4, "c_rps8": 8}
+ALL_PLANS = dict(PLANS, **CENSUS_PLANS)
 
 # Arms that are NOT required to reproduce `a_base` bit for bit.
 DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
@@ -920,22 +1079,37 @@ PROMOTION_ARMS = ("s_bcast", "s_bcast_all", "s_bcast_scale", "p_split_meta",
                   "g_pack32", "s_bcast_pack32")
 
 ARMS = tuple(PLANS)
+CENSUS_ARMS = tuple(CENSUS_PLANS)
 
 
 def arm_source(base: str, arm: str, via_m: bool = False) -> str:
-    plan, extra = PLANS[arm]
+    plan, extra = ALL_PLANS[arm]
     text = base
     if plan is not None:
         prologue, body, epilogue = plan
         start, end = wide_fn_span(base)
         text = base[:start] + prologue + body + epilogue + base[end:]
-    template = ISO_KERNEL_VIA_M if via_m else ISO_KERNEL
     decl = ENTRY_DECL.get(arm, "")
     if via_m:
-        return text + "".join(template % {"na": na} for na in WIDTHS)
+        return text + "".join(ISO_KERNEL_VIA_M % {"na": na} for na in WIDTHS)
+    if arm in ROWS_PER_SIMD:
+        rows = ROWS_PER_SIMD[arm]
+        text += "".join(ISO_KERNEL_RPS % {"na": na, "rows": rows,
+                                          "span": 2 * rows}
+                        for na in WIDTHS)
+        # E102's trap: `_wide` is a METAL_FUNC, the shipped kernel inlines every
+        # live width into one entry point, and that entry point allocates for
+        # the widest inlined body. The per-width entry points above are the form
+        # this campaign has always published; `e118_iso_na0` is the same body
+        # censused in the all-widths inlined form, which is what the shipped
+        # `switch (ntg.x)` actually produces. Both are reported.
+        return text + ALLWIDTH_KERNEL % {
+            "rows": rows, "span": 2 * rows,
+            "calls": "".join(ALLWIDTH_CASE % {"na": na} for na in WIDTHS)}
+    fields = {"extra": ", " + extra if extra else "",
+              "buf9": ENTRY_BUFFER.get(arm, "")}
     return text + "".join(
-        template % {"na": na, "extra": ", " + extra if extra else "",
-                    "decl": decl % {"na": na} if decl else ""}
+        ISO_KERNEL % dict(fields, na=na, decl=decl % {"na": na} if decl else "")
         for na in WIDTHS)
 
 
@@ -944,7 +1118,7 @@ def emit(outdir: pathlib.Path) -> None:
     base = widen_asserts(emit_base(outdir / "base_raw.metal"))
     (outdir / "base_lone.metal").write_text(base)
     seen: dict[str, str] = {}
-    for arm in ARMS:
+    for arm in ARMS + CENSUS_ARMS:
         text = arm_source(base, arm)
         digest = hashlib.sha256(text.encode()).hexdigest()[:12]
         if digest in seen:
@@ -952,9 +1126,10 @@ def emit(outdir: pathlib.Path) -> None:
                 "e118_arms: %s and %s are byte-identical" % (arm, seen[digest]))
         seen[digest] = arm
         (outdir / ("arm_%s.metal" % arm)).write_text(text)
-        print("%-15s %8d bytes  sha=%s  exact=%-5s  extra=%s"
+        print("%-15s %8d bytes  sha=%s  exact=%-5s  extra=%s%s"
               % (arm, len(text), digest, arm not in DIAGNOSTIC_ARMS,
-                 PLANS[arm][1] or "-"))
+                 ALL_PLANS[arm][1] or "-",
+                 "  [census only]" if arm in CENSUS_ARMS else ""))
     (outdir / "ctl_a_base_via_m.metal").write_text(
         arm_source(base, "a_base", via_m=True))
     names = ",".join(a + (":diag" if a in DIAGNOSTIC_ARMS else "") for a in ARMS)
@@ -1135,7 +1310,7 @@ def census(directory: pathlib.Path, out: pathlib.Path | None) -> int:
     rows = {}
     with tempfile.TemporaryDirectory() as tmp:
         workdir = pathlib.Path(tmp)
-        for arm in ARMS:
+        for arm in ARMS + CENSUS_ARMS:
             rows[arm] = census_one(directory / ("arm_%s.metal" % arm), workdir,
                                    arm)
             print("censused %s" % arm)
@@ -1153,6 +1328,21 @@ def census(directory: pathlib.Path, out: pathlib.Path | None) -> int:
             cells.append("%4s%s" % (cell.get("device_loads", "?"),
                                     "+%dsh" % shuffles if shuffles else "    "))
         print("  %-15s %s" % (arm, " ".join(cells)))
+
+    print("\nrows_per_simd census (compile only), R/spill/text; "
+          "NA0 is the all-widths inlined entry point")
+    for arch in (LOCAL_ARCH, RANKED_ARCH):
+        for arm in CENSUS_ARMS:
+            cells = []
+            for na in (0,) + WIDTHS:
+                value = rows[arm].get(arch, {}).get(str(na))
+                cells.append("NA%d=%s" % (na, "?" if value is None else
+                                          "%s%s/%s" % (
+                                              value["registers"],
+                                              "s%d" % value["spill_bytes"]
+                                              if value["spill_bytes"] else "",
+                                              value["text_bytes"])))
+            print("  %-14s %-8s %s" % (arch, arm, "  ".join(cells)))
 
     for arch in (LOCAL_ARCH, RANKED_ARCH):
         print("\n%s registers / spill / machine text bytes" % arch)
@@ -1189,7 +1379,8 @@ def census(directory: pathlib.Path, out: pathlib.Path | None) -> int:
         out.write_text(json.dumps(
             {"widths": list(WIDTHS), "local_arch": LOCAL_ARCH,
              "ranked_arch": RANKED_ARCH, "diagnostic_arms": DIAGNOSTIC_ARMS,
-             "promotion_arms": PROMOTION_ARMS, "arms": rows},
+             "promotion_arms": PROMOTION_ARMS, "census_arms": CENSUS_ARMS,
+             "rows_per_simd": ROWS_PER_SIMD, "arms": rows},
             indent=2) + "\n")
         print("\nwrote %s" % out)
     return 0
