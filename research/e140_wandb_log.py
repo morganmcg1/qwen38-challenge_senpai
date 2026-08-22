@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -52,6 +53,16 @@ def table(columns, rows):
     return wandb.Table(columns=list(columns), data=[list(r) for r in rows])
 
 
+def finite(value):
+    """`None` rather than an infinity, which W&B cannot plot or aggregate.
+
+    Item D can legitimately produce an infinite bound: if the receipt needs
+    more width-2 mass than the whole replayed tree holds above width 2, no
+    shallow-end bias can explain the saving at all.
+    """
+    return value if math.isfinite(value) else None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", default="e140-lookahead-depth-argmax")
@@ -64,6 +75,7 @@ def main() -> int:
     perturb = load("perturb.json")
     oracle = load("oracle-state.json")
     posttight = load("posttight.json")
+    itemab = load("itemab.json")
     if gate is None or cells is None:
         raise SystemExit("the cell C gate and the 2x2 must both be present")
 
@@ -421,6 +433,92 @@ def main() -> int:
             "argmax_worth_with_perfect_estimator_pp"]
         for name, entry in oracle["cells"].items():
             summary["e140_oracle_%s_pct" % name] = entry["in_sample_mean"]
+
+    if itemab is not None:
+        # Item A, the shallow end of the tree under both live policies.
+        run.log({"itemab_width_histogram": table(
+            ["cell", "prompt", "p_width2", "shallow_mass_width_1_to_4",
+             "mean_width", "mean_width_sd", "rounds_per_window"]
+            + ["width_share_%d" % w for w in range(1, 10)],
+            [[cell, prompt, e["p_width2"], e["shallow_mass_width_1_to_4"],
+              e["mean_width"], e["mean_width_sd"], e["rounds_per_window"]]
+             + [e["width_share"].get(str(w), 0.0) for w in range(1, 10)]
+             for cell, hist in sorted(itemab["item_a"]["histograms"].items())
+             for prompt, e in sorted(hist.items())])})
+        summary["e140_medpair_p_width2_ship"] = itemab["item_a"][
+            "medpair_p_width2_ship"]
+        summary["e140_medpair_p_width2_pb6"] = itemab["item_a"][
+            "medpair_p_width2_pb6"]
+
+        # Item D, the width-2 launch receipt inverted against that histogram.
+        d = itemab["item_d"]
+        run.log({"itemab_width2_receipt": table(
+            ["prompt", "receipt_mbar", "replay_mean_width", "receipt_rounds",
+             "replay_rounds", "receipt_delta_us", "replay_p_width2",
+             "implied_round_cost_us", "implied_over_law", "required_p_width2",
+             "min_forced_mbar_shift", "observed_mbar_error", "seed_sd"],
+            [[prompt,
+              d["receipt"][prompt]["mbar"],
+              itemab["item_a"]["histograms"]["A_ship"][prompt]["mean_width"],
+              d["receipt"][prompt]["rounds"],
+              itemab["item_a"]["histograms"]["A_ship"][prompt][
+                  "rounds_per_window"],
+              d["receipt"][prompt]["delta_us"],
+              b["replayed_p_width2"],
+              finite(d["implied_cost_us"][prompt]),
+              finite(d["implied_cost_us"][prompt]
+                     / itemab["law_cost_width2_us"]),
+              b["required_p_width2"],
+              finite(b["min_forced_mbar_shift"]),
+              b["observed_mbar_error"], b["seed_sd"]]
+             for prompt, b in sorted(d["shallow_bias_bound"].items())])})
+        run.log({"itemab_saving_regressions": table(
+            ["regressor", "slope", "intercept_us", "r2"],
+            [[name, f["slope"], f["intercept"], f["r2"]]
+             for name, f in sorted(d["fits"].items())])})
+        summary["e140_law_cost_width2_us"] = itemab["law_cost_width2_us"]
+        summary["e140_width2_implied_cost_cv"] = d["spread"]["cv"]
+        summary["e140_width2_implied_over_law_mean"] = (
+            d["spread"]["mean"] / itemab["law_cost_width2_us"])
+        summary["e140_width2_mbar_error_mean"] = d["mbar_error_mean"]
+        summary["e140_width2_mbar_error_sd"] = d["mbar_error_sd"]
+        summary["e140_width2_rounds_error_mean"] = d["rounds_error_mean"]
+        summary["e140_width2_saving_r2_on_p_width2"] = d["fits"][
+            "on_p_width2"]["r2"]
+        summary["e140_width2_max_forced_mbar_shift"] = finite(max(
+            b["min_forced_mbar_shift"]
+            for b in d["shallow_bias_bound"].values()))
+
+        # Item B, pb6's tier re-fitted on each launch table. `log_shipped` is
+        # the table the next ranked receipt walks, so it is the one to ship.
+        run.log({"itemab_tier_grid": table(
+            ["curve_variant", "tier", "curve_lopo_pct"],
+            [[variant, float(tier), value]
+             for variant, entry in sorted(itemab["item_b"]["tiers"].items())
+             for tier, value in sorted(entry["held_out"].items())])})
+        run.log({"itemab_tier_best": table(
+            ["curve_variant", "best_tier", "best_pct", "at_shipped_1_45_pct",
+             "gain_over_shipped_pp", "plateau_low", "plateau_high",
+             "sd_at_best"],
+            [[variant, e["best_tier"], e["best"], e["at_shipped"],
+              e["gain_over_shipped"], e["plateau"][0], e["plateau"][1],
+              e["sd_at_best"]]
+             for variant, e in sorted(itemab["item_b"]["tiers"].items())])})
+        run.log({"itemab_tier_depth": table(
+            ["curve_variant", "tier", "mean_depth"]
+            + ["width_share_%d" % w for w in range(1, 10)],
+            [[key.split("|")[0], float(key.split("|")[1]), e["mean_depth"]]
+             + [e["width_share"].get(str(w), 0.0) for w in range(1, 10)]
+             for key, e in sorted(itemab["item_b"]["depth"].items())])})
+        for variant, e in itemab["item_b"]["tiers"].items():
+            summary["e140_tierfit_%s_best_tier" % variant] = e["best_tier"]
+            summary["e140_tierfit_%s_best_pct" % variant] = e["best"]
+            summary["e140_tierfit_%s_gain_pp" % variant] = e[
+                "gain_over_shipped"]
+        shipped = itemab["item_b"]["tiers"]["log_shipped"]
+        summary["e140_tierfit_shipped_best_tier"] = shipped["best_tier"]
+        summary["e140_tierfit_shipped_gain_over_1_45_pp"] = shipped[
+            "gain_over_shipped"]
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
