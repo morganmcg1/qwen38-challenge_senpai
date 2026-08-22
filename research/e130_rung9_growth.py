@@ -181,7 +181,14 @@ def summarize(process: dict) -> dict:
             # so the residency set must hold at least this much beyond the
             # ticket. Everything above it may be scratch, which the doc comment
             # intends to fail the fit test.
+            #
+            # It is conservative twice over. KV and recurrent state accumulate
+            # with the token window, so the whole-run minimum is taken early
+            # and understates the end-of-window requirement. The minimum over
+            # the last third of the series estimates that end state with the
+            # same minimal-scratch argument.
             "growth_min_mib": min(growths),
+            "growth_min_last_third_mib": min(growths[len(growths) * 2 // 3 :]),
             "pool_growth_max_mib": max(pool_growths),
             # Peak is cumulative from process start and is never reset by the
             # worker, so it already contains the pre-sizing warm transient.
@@ -222,17 +229,22 @@ def main() -> None:
         processes = parse(path)
         summaries = [summarize(p) for p in processes.values()]
         summaries.sort(key=lambda s: s["appearance_index"])
-        # The leg runs reference generation, then the serial control, then the
-        # MTP decode, each in its own worker process. Name them from the END of
-        # the appearance order: the reference session is a different class and
-        # may never reach the residency path, so counting forward would mislabel
-        # the two legs that matter.
+        # `benchmark-qwen-mtp.sh` runs four phases, each in its own worker
+        # process: the public drift tripwire, reference row generation, the
+        # serial control and the MTP decode. Name them from the END of the
+        # appearance order so a missing early phase cannot mislabel the two
+        # legs that matter.
+        phases_from_end = {
+            0: "mtp_decode",
+            1: "serial_control",
+            2: "reference",
+            3: "drift_tripwire",
+        }
         for index, summary in enumerate(summaries):
             from_end = len(summaries) - 1 - index
-            summary["role_by_appearance"] = {
-                0: "mtp_decode",
-                1: "serial_control",
-            }.get(from_end, f"earlier_{from_end}")
+            summary["role_by_appearance"] = phases_from_end.get(
+                from_end, f"earlier_{from_end}"
+            )
         leg = {
             "decode_tokens": tokens,
             "log": str(path),
@@ -275,7 +287,7 @@ def main() -> None:
         print()
         print(
             f"  {'role':<15}{'pid':>7}{'n':>4}{'at sizing':>11}"
-            f"{'min':>9}{'p10':>9}{'median':>9}{'max':>10}{'pool max':>10}"
+            f"{'min':>9}{'min L3':>9}{'median':>9}{'max':>10}{'pool max':>10}"
         )
         for summary in summaries:
             print(
@@ -283,7 +295,7 @@ def main() -> None:
                 f"{summary['sample_count']:>4}"
                 f"{summary['active_at_sizing_mib']:>11.0f}"
                 f"{summary.get('growth_min_mib', float('nan')):>9.1f}"
-                f"{summary.get('growth_p10_mib', float('nan')):>9.1f}"
+                f"{summary.get('growth_min_last_third_mib', float('nan')):>9.1f}"
                 f"{summary.get('growth_median_mib', float('nan')):>9.1f}"
                 f"{summary.get('growth_max_mib', float('nan')):>10.1f}"
                 f"{summary.get('pool_growth_max_mib', float('nan')):>10.1f}"
@@ -314,8 +326,11 @@ def main() -> None:
             points = {}
             for tokens, leg in by_tokens.items():
                 for process in leg["processes"]:
-                    if process["role_by_appearance"] == role and "growth_min_mib" in process:
-                        points[tokens] = process["growth_min_mib"]
+                    if (
+                        process["role_by_appearance"] == role
+                        and "growth_min_last_third_mib" in process
+                    ):
+                        points[tokens] = process["growth_min_last_third_mib"]
             if len(points) != 2:
                 continue
             (t_lo, g_lo), (t_hi, g_hi) = sorted(points.items())
@@ -339,11 +354,14 @@ def main() -> None:
     verdicts = []
     for leg in report["legs"]:
         for process in leg["processes"]:
-            if process["role_by_appearance"] == "mtp_decode" and "growth_min_mib" in process:
+            if (
+                process["role_by_appearance"] == "mtp_decode"
+                and "growth_min_last_third_mib" in process
+            ):
                 verdicts.append(
                     (
                         leg["decode_tokens"],
-                        process["growth_min_mib"],
+                        process["growth_min_last_third_mib"],
                         process["growth_max_mib"],
                     )
                 )
@@ -408,6 +426,7 @@ def main() -> None:
                 for key in (
                     "active_at_sizing_mib",
                     "growth_min_mib",
+                    "growth_min_last_third_mib",
                     "growth_median_mib",
                     "growth_max_mib",
                     "growth_final_mib",
