@@ -29,6 +29,7 @@ e116_wide_qmv_pct_to_leg_pct_transfer = 0.6070   95 % CI [0.5843, 0.6297]
 | `rung4-qmv-share-512.json` | the 512-token realised-width census | `frames.mtp_round.wide_qmv_us_per_round` |
 | `rung4-reprice.json` | every standing kernel arm at the measured transfer | `arms`, `xv4_cross_check` |
 | `cleanup-selector-defect-witness.json` | the dispatch entry-point defect and its witness | `dispatches_by_entry` |
+| `swift-test-baseline-comparison.json` | the same 40 `swift test` issues on the base and on the cleaned tree | `per_test_issue_counts` |
 | `instruments.patch` | restores every deleted research instrument | see below |
 
 ## Reproduction
@@ -49,6 +50,23 @@ python3 research/e116_reprice.py --transfer 0.6070 \
   --transfer-lo 0.5843 --transfer-hi 0.6297 \
   --json research/e116-artifacts/rung4-reprice.json
 ```
+
+### The `swift test` base comparison
+
+`swift test` is red on the maintained base. Reproduce the comparison with:
+
+```bash
+swift test --force-resolved-versions            # cleaned tree: 40 issues
+
+git worktree add --detach research/out/e116-base-check \
+  67fedb4adb4cb0ec757f870ec8093617ca1e5620
+( cd research/out/e116-base-check && swift test --force-resolved-versions )
+git worktree remove --force research/out/e116-base-check
+```
+
+`research/out/` is gitignored, so the worktree does not dirty the checkout. The
+base run aborts on `Failed to load the default metallib` after recording all 40
+issues, because `mlx.metallib` is a build product of the main checkout only.
 
 ## `instruments.patch`
 

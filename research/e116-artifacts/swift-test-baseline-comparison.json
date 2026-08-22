@@ -1,0 +1,61 @@
+{
+  "artifact": "swift-test-baseline-comparison",
+  "experiment": "e116",
+  "harness": "local",
+  "question": "Does the E116 cleanup deletion introduce any new swift test failure?",
+  "answer": "No. The unmodified assignment base produces the identical failure profile: the same 9 tests, the same 40 issues, and the same per-test issue counts.",
+  "command": "swift test --force-resolved-versions",
+  "candidate": {
+    "tree": "qwen-edward/e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+    "commit": "482118b2",
+    "path": "workspace/target",
+    "tests": 731,
+    "suites": 64,
+    "issues": 40,
+    "exit_code": 1,
+    "completed": true
+  },
+  "base": {
+    "tree": "detached worktree at the assignment base",
+    "commit": "67fedb4adb4cb0ec757f870ec8093617ca1e5620",
+    "path": "workspace/target/research/out/e116-base-check (gitignored, removed after the run)",
+    "issues": 40,
+    "exit_code": 1,
+    "completed": false,
+    "abort_reason": "MLX error: Failed to load the default metallib. library not found (Vendor/mlx-swift/.../random.cpp:143). A fresh worktree has no built mlx.metallib. The abort happens after every one of the 40 issues is already recorded.",
+    "note": "The abort is a worktree artefact, not a source difference. tools/build-mlx-metallib.sh writes mlx.metallib into the main checkout only."
+  },
+  "per_test_issue_counts": {
+    "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen": {"candidate": 1, "base": 1},
+    "participantDocsExposeDefaultCLIInstallDirectory": {"candidate": 2, "base": 2},
+    "qwen36ConfigContractDigestMatchesTheReferenceManifest": {"candidate": 2, "base": 2},
+    "startupMemoryPolicyKeepsRanked128GiBProfile": {"candidate": 2, "base": 2},
+    "submissionStaticReviewPromptCoversMeasurementStructureExploitation": {"candidate": 11, "base": 11},
+    "theCheckedInDeclarationSelectsThePinnedHead": {"candidate": 6, "base": 6},
+    "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues": {"candidate": 3, "base": 3},
+    "theQwenMTPTrackIsArmedOnQwen38": {"candidate": 11, "base": 11},
+    "theSeededCalibrationExpectationMatchesItsRecordedProvenance": {"candidate": 2, "base": 2}
+  },
+  "the_one_test_that_touches_a_file_i_edited": {
+    "test": "startupMemoryPolicyKeepsRanked128GiBProfile",
+    "file_i_edited": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+    "my_only_edit": "deleted the 4-line E58DispatchCensus.installIfRequested() hook and its comment",
+    "test_file_diff_vs_base": "none, byte identical",
+    "expected": {"maxMegabytesPerCommandBuffer": 320, "maxOperationsPerCommandBuffer": 128},
+    "observed": {"maxMegabytesPerCommandBuffer": 512, "maxOperationsPerCommandBuffer": 50},
+    "base_source_literals": {
+      "file": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "lines": "149-150 at 67fedb4a",
+      "maxMegabytesPerCommandBuffer": 512,
+      "maxOperationsPerCommandBuffer": 50
+    },
+    "conclusion": "The observed values equal the base source literals exactly. A stale test expectation that was not updated when the 512 MiB referenced-byte budget was promoted. No environment variable is involved; the run environment holds no MLX_* variables."
+  },
+  "changed_source_files_vs_base": [
+    "Sources/MLXFastModel/E58DispatchCensus.swift (deleted)",
+    "Sources/MLXFastModel/Qwen36MTPBlockSession.swift (38 lines)",
+    "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift (4 lines deleted)",
+    "Tests/MLXFastTests/E71WidthTaxCensusTests.swift (deleted, added by this experiment)"
+  ],
+  "unchanged_inputs_vs_base": "No docs, fixtures, manifests, workflow files, benchmark.json, setup or benchmark scripts changed. Every failing test other than startupMemoryPolicyKeepsRanked128GiBProfile reads only those unchanged inputs."
+}

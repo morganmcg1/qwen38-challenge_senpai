@@ -61,6 +61,10 @@ Two campaign defects are resolved below and neither is the primary metric.
 Read them first if you are short of time: the **E109 round-alignment defect**
 and the **width-histogram harness defect**.
 
+I also withdraw one inference from my own rung-2 comment. `alpha >= 1` does not
+make Finding 44's roofline gap a modelling artefact. It closes only the overlap
+class. See "What `alpha >= 1` says about Finding 44".
+
 ## Method
 
 A per-round GPU dose, gated by the integer environment variable
@@ -445,6 +449,48 @@ live round than the static census credits it with.
 Artifacts: `research/e116-artifacts/rung4-qmv-share-512.json`,
 `research/e116-artifacts/rung4-reprice.json`.
 
+## What `alpha >= 1` says about Finding 44. I correct my own rung-2 inference
+
+In my rung-2 comment I wrote that if the kernel-level probe also landed on
+null, then Finding 44's `+17.3 %` round-weighted roofline gap "has to be an
+artefact of the roofline model rather than reclaimable headroom".
+
+**That inference is too strong and I withdraw it.** The antecedent is now
+satisfied: thorfinn's E115 has landed on null, with H2 dead and H1 real but
+exactly worthless. The conclusion does not follow.
+
+`alpha >= 1` is a statement about **one** claiming mechanism. It says the round
+runs at least perfectly serially, so no restructuring can pay by hiding one
+piece of work behind another. It says nothing about whether the work itself can
+be removed.
+
+Four independent readings say the gap is real and is being claimed by the other
+mechanism:
+
+1. **Finding 49 makes the residue a stall class, not a modelling error.** It
+   measures the residue against the *serial sum* of the load-only and ALU-only
+   arms and finds the residue **exceeds that sum by 18.7 % at NA=5**. No
+   throughput mechanism can exceed the serial sum of its own components. A
+   model error would leave the residue inside that sum.
+2. **`xv4` has already claimed part of it.** It removes three of four
+   activation load instructions per `(m, i)` and changes nothing else. It pays
+   **-0.7498 %** end to end on a properly powered ABBA.
+3. **Askeladd's discriminator on PR #120 selects total instruction issue as the
+   binding resource.** `s_bcast` loses 15.53 %, `p_split_meta` is null, and only
+   `n_nosums` wins. That is the signature of an issue-count limit, not a
+   capacity limit.
+4. **Alphonse's register-relief arm on PR #112 is a compile-time null**, which
+   kills the competing register-pressure explanation.
+
+**The correct joint reading is: the gap is not claimable by overlapping work,
+and it is claimable by deleting issued instructions.**
+
+My `alpha = 1.177` makes that reading better, not worse. In a round with no
+slack, a microsecond of issued work that you delete returns at least a
+microsecond of round time; none of it is absorbed by work that was waiting
+anyway. The instruction-deletion class is therefore the class this measurement
+supports funding, and the overlap class is the class it closes.
+
 ## Cleanup
 
 `Sources/MLXFastModel/` now contains **zero** research instrumentation. Every
@@ -457,7 +503,7 @@ item is deleted, not gated.
 | 3 | `beginRound`, the `endRound` defer, `fireTax()`, `censusAccepted` | `Qwen36MTPBlockSession.swift` |
 | 4 | the `forcedDrafts` override of `draftCount` | `Qwen36MTPBlockSession.swift` |
 | 5 | the census implementation itself | `Sources/MLXFastModel/E58DispatchCensus.swift`, deleted |
-| 6 | `MLX_E112_SKIP_1025_WARM` | `Qwen35.swift`, done in the first commit of this branch |
+| 6 | `MLX_E112_SKIP_1025_WARM`, its trace line and its comment block; `if extK.dim(2) == 1024 {` restored | `Qwen36MTPBlockSession.swift`, done as rung 0a in the first commit of this branch |
 | 7 | the whole E116 round dose: arm switch, allocation, `quantizedMM` dose, both trace lines | `Qwen36MTPBlockSession.swift` |
 | 8 | my rung 0b per-round arm switch, which is part of item 7 | `Qwen36MTPBlockSession.swift` |
 | 9 | the test that exercised the census API | `Tests/MLXFastTests/E71WidthTaxCensusTests.swift`, deleted |
@@ -491,6 +537,60 @@ cleanup commit exactly.
 Precedent for taking this seriously: `research/e95-artifacts/e95-census-instrument.patch`
 no longer applies, because it references an `E90GPUIntervals` type that was
 later removed. A preserved patch that is never checked is not preserved.
+
+### The cleanup adds no test failure. The 40 issues are already on the base
+
+`swift build -c release --force-resolved-versions` returns **Build complete!**
+on the cleaned tree.
+
+`swift test --force-resolved-versions` on the cleaned tree reports **731 tests
+in 64 suites, 40 issues, exit 1**. I did not accept that at face value. I
+checked out the assignment base `67fedb4a` into a detached worktree and ran the
+same command there.
+
+**The base produces the identical failure profile.** Same nine tests, same 40
+issues, same per-test issue counts:
+
+| test | issues, candidate | issues, base `67fedb4a` |
+|---|--:|--:|
+| `contestantDocsCommandBlocksKeepTheDependencyGraphFrozen` | 1 | 1 |
+| `participantDocsExposeDefaultCLIInstallDirectory` | 2 | 2 |
+| `qwen36ConfigContractDigestMatchesTheReferenceManifest` | 2 | 2 |
+| `startupMemoryPolicyKeepsRanked128GiBProfile` | 2 | 2 |
+| `submissionStaticReviewPromptCoversMeasurementStructureExploitation` | 11 | 11 |
+| `theCheckedInDeclarationSelectsThePinnedHead` | 6 | 6 |
+| `theEvenMedianRuleIsTheMeanOfTheTwoCentralValues` | 3 | 3 |
+| `theQwenMTPTrackIsArmedOnQwen38` | 11 | 11 |
+| `theSeededCalibrationExpectationMatchesItsRecordedProvenance` | 2 | 2 |
+| **total** | **40** | **40** |
+
+The base run then aborted with `Failed to load the default metallib`, because a
+fresh worktree has no built `mlx.metallib`. Every one of the 40 issues is
+already recorded before that abort, so the comparison is complete. The abort is
+a worktree artefact and not a source difference.
+
+**One of the nine touches a file I edited, so I checked it separately.**
+`startupMemoryPolicyKeepsRanked128GiBProfile` expects
+`maxMegabytesPerCommandBuffer == 320` and `maxOperationsPerCommandBuffer == 128`
+and observes 512 and 50. My only edit to `RuntimeStartupMemoryPolicy.swift` is
+the deletion of the four-line census hook. The test file is byte identical to
+base. The base source returns the literals `512` and `50` at lines 149 and 150.
+**The observed values equal the base source literals exactly**, so my deletion
+cannot have produced them. This is a stale test expectation that was not updated
+when the 512 MiB referenced-byte budget was promoted. No environment variable is
+involved: the run environment holds no `MLX_*` variables.
+
+The other eight read documents, fixtures and manifests. I changed none of those
+files, so their outcome is the base outcome by construction, and the run
+confirms it.
+
+Artifact: `research/e116-artifacts/swift-test-baseline-comparison.json`.
+
+**Harness gap.** Nine pre-existing red tests on the maintained base make
+`swift test` unusable as a regression gate. A future student cannot tell a new
+failure from an old one without doing the base comparison I just did. Either
+repair the nine expectations or record the expected-failure list somewhere a
+script can read.
 
 ### A defect fixed inside the patch, not in `Sources/`
 
@@ -584,3 +684,18 @@ Reducer: `research/e116_entry_witness.py`.
 3. **Rules 39 and 40 are absent from `senpai/campaign-ledger.md` in this
    checkout**, and rule 34 at offset 33182 lists six frames, not nine. The
    assignment cites all of them. I followed the assignment text.
+
+4. **`swift test` is red on the maintained base: nine tests, 40 issues.** It
+   therefore cannot act as a regression gate, because a student cannot separate
+   a new failure from an old one without checking the base out into a second
+   worktree and running the whole suite again. I did that and the profile
+   matches exactly. Either repair the nine expectations or publish the
+   expected-failure list in a form a script can read. The cheapest single
+   repair is `startupMemoryPolicyKeepsRanked128GiBProfile`, whose expectations
+   of 320 and 128 were never updated when the source moved to 512 and 50.
+
+5. **A fresh `git worktree` cannot run the full suite.** `mlx.metallib` is a
+   build product of the main checkout, so the suite aborts at the first MLX
+   random call with `Failed to load the default metallib`. This is only a
+   nuisance for base comparisons, but it is the reason my base run stops after
+   the 40 issues rather than reaching the end.
