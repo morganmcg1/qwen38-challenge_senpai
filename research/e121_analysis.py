@@ -29,6 +29,20 @@ import statistics
 # Share of the streaming term spent in a one-group pass of each width.
 ROUND_WEIGHTS = {2: 0.024, 3: 0.275, 4: 0.667, 5: 0.034}
 
+# Dispatches of each probe shape in one decode round, from E71's `FAMILY_SHAPE`,
+# which reconciles against the ledger's 14,412,349,440 B of quantized weight.
+# `fa_o_proj` shares `gdn_out_proj`'s shape exactly, so its 16 calls join that
+# row. `lm_head` (k=5120, n=248320, one call) has no probe shape; the nearest
+# measured shape is `mlp_gate_up`, same k and also large n, so it is carried as
+# 248320/34816 equivalent calls of that shape.
+FAMILY_CALLS = {
+    "mlp_gate_up_k5120_n34816": 64 + 248320 / 34816,
+    "mlp_down_k17408_n5120": 64,
+    "gdn_out_proj_k6144_n5120": 48 + 16,
+    "gdn_in_proj_k5120_n16480": 48,
+    "fa_qkv_k5120_n14336": 16,
+}
+
 # M4 Pro DRAM peak. Every shape here streams tens of megabytes of weights once,
 # far past any cache, so an implied rate above this is not a fast kernel: it is
 # a dispatch that did no work. A faulted command buffer retires immediately and
@@ -97,6 +111,36 @@ def ladder(cells: dict, shapes: list[str], widths: list[int],
         if pooled:
             out[width] = pooled
     return out
+
+
+def cost_ladder(cells: dict, shapes: list[str], widths: list[int],
+                arm: str) -> tuple[dict[int, float], dict]:
+    """Per width, the shape effects combined by their share of round cost.
+
+    Pooling blocks across shapes weights every shape equally, which is what
+    E118 reported and so is the frame the +1.0 % bar was set in. It is not the
+    shipped frame: `program.md` requires nonuniform per-cell effects to be
+    weighted by current-tree cost before they are summed. One dispatch of a
+    shape costs its measured `a_base` time, and a round issues `FAMILY_CALLS`
+    of them, so that product is the weight.
+    """
+    per_width: dict[int, float] = {}
+    share: dict = {}
+    for width in widths:
+        num = den = 0.0
+        for shape in shapes:
+            cell = cells.get((shape, width))
+            if cell is None or shape not in FAMILY_CALLS:
+                continue
+            base = med([b["a_base"] for b in cell["blocks"] if b.get("a_base")])
+            weight = FAMILY_CALLS[shape] * base
+            num += weight * med(gains(cell, arm))
+            den += weight
+            share.setdefault(width, {})[shape] = weight
+        if den:
+            per_width[width] = num / den
+            share[width] = {s: w / den for s, w in share[width].items()}
+    return per_width, share
 
 
 def weighted(per_width: dict[int, float], drop: tuple[int, ...] = ()) -> tuple:
@@ -293,14 +337,36 @@ def main() -> int:
                        for w in widths)
         row += "   %+.3f  %+.3f  %.3f" % (allw, ex5, cov_ex5)
         print(row)
+        cost_width, cost_share = cost_ladder(cells, shapes, widths, arm)
+        cost_all, _ = weighted(cost_width)
         summary["arms"][arm] = {
             "per_width_pct": per_width,
             "round_weighted_pct": allw,
             "round_weighted_ex_na5_pct": ex5,
             "coverage_ex_na5": cov_ex5,
             "ci95_ex_na5": [lo, hi],
+            "cost_weighted_per_width_pct": cost_width,
+            "cost_weighted_round_pct": cost_all,
             "blocks_per_width": {w: len(v) for w, v in samples.items()},
         }
+        summary["cost_share"] = cost_share
+    print()
+
+    print("=== the same effects, shapes weighted by round cost ===")
+    print(header + "     all   vs pooled")
+    for arm in arms:
+        info = summary["arms"][arm]
+        cost_width = info["cost_weighted_per_width_pct"]
+        cost_all = info["cost_weighted_round_pct"]
+        row = "  %-17s" % arm
+        row += "".join("  %+.3f" % cost_width.get(w, float("nan"))
+                       for w in widths)
+        row += "   %+.3f   %+.3f" % (
+            cost_all, cost_all - info["round_weighted_pct"])
+        print(row)
+    print("  cost share at NA4: %s" % ", ".join(
+        "%s %.3f" % (s.split("_k")[0], v)
+        for s, v in sorted(summary["cost_share"].get(4, {}).items())))
     print()
 
     print("=== headline cells and the shipped frame ===")
@@ -309,15 +375,19 @@ def main() -> int:
         na4 = info["per_width_pct"].get(4, float("nan"))
         ex5 = info["round_weighted_ex_na5_pct"]
         lo, hi = info["ci95_ex_na5"]
-        leg = ex5 * info["coverage_ex_na5"] * LEG_TRANSFER
+        # The gate leaves NA=5 byte-identical to the base, so the all-width
+        # number already carries NA=5 at its true zero and needs no coverage
+        # rescale. `ex5` is kept only to compare against E118's frame.
+        kernel = info["cost_weighted_round_pct"]
+        leg = kernel * LEG_TRANSFER
         ranked = leg * RANKED_TRANSFER
         clears = ranked >= SUBMISSION_BAR_PCT and not valid["void"]
         info["predicted_leg_pct"] = leg
         info["predicted_ranked_pct"] = ranked
         info["clears_submission_bar"] = clears
         print("  %-17s NA4 %+.3f   ex-NA5 %+.3f [%+.3f, %+.3f]   "
-              "leg %+.3f   ranked %+.3f%s"
-              % (arm, na4, ex5, lo, hi, leg, ranked,
+              "kernel %+.3f   leg %+.3f   ranked %+.3f%s"
+              % (arm, na4, ex5, lo, hi, kernel, leg, ranked,
                  "  CLEARS RULE 59" if clears else ""))
     if valid["void"]:
         print("  none of the above may be read: the session is void")
@@ -346,18 +416,21 @@ def main() -> int:
     if args.census and args.census.exists():
         cen = json.loads(args.census.read_text())["arms"]
         print("=== rung 0 census, carried forward ===")
+        print("  shipped entry point affine_qmv_fast, and the NA=5 body")
         for arm in ["a_base"] + arms:
             if arm not in cen:
                 continue
-            entry = cen[arm].get("entry", {})
             line = "  %-17s" % arm
             for arch in ("applegpu_g16s", "applegpu_g17s"):
-                got = entry.get(arch)
-                if got:
-                    line += "  %s R=%d%s sg=%d" % (
-                        arch[-4:], got["registers"],
-                        "s%d" % got["spill_bytes"] if got["spill_bytes"]
-                        else "", got["simdgroups"])
+                got = cen[arm].get(arch, {})
+                entry, na5 = got.get("entry"), got.get("5")
+                if entry:
+                    line += "  %s entry R=%d%s" % (
+                        arch[-4:], entry["registers"],
+                        "s%d" % entry["spill_bytes"] if entry["spill_bytes"]
+                        else "")
+                if na5:
+                    line += " na5=%s" % na5["text_sha8"]
             print(line)
         print()
 
