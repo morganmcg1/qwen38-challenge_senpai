@@ -1,0 +1,686 @@
+{
+  "harness": "local-microbenchmark",
+  "timing_valid": true,
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "host": {
+    "machine": "Mac16,11",
+    "chip": "Apple M4 Pro",
+    "memory_bytes": "51539607552",
+    "os": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "mlx_version": "0.32.0",
+    "commit": "0469b01cf89cedef134b1ad1896072fe2610c00d",
+    "worktree_clean": true
+  },
+  "shape": {
+    "clusters": 12292,
+    "rows_per_cluster": 8,
+    "probe_fraction_shipped": 0.25,
+    "probe_fraction_c1": 0.35,
+    "probed_clusters_shipped": 3073,
+    "probed_clusters_c1": 4303,
+    "probed_rows_shipped": 24584,
+    "probed_rows_c1": 34424,
+    "hist_bins": 65536,
+    "hist_tiles": 64,
+    "shipped_top32_tiles": 32,
+    "stage2_tiles_policy": "auto"
+  },
+  "swift_anchor": {
+    "arg_partition_chain_us": 912.6698970794678,
+    "clusters": 12292,
+    "entry_point": "qwen35BenchRowTop32",
+    "fused_kernel_us": 557.8060150146484,
+    "iters": 500,
+    "probes": 3073,
+    "rows_per_cluster": 8,
+    "saved_us": 354.86388206481934,
+    "schema": "e101.row_top32_bench.v1",
+    "speedup": 1.6361779409200174,
+    "source": "research/e136-anchor/bench.json"
+  },
+  "conversion": {
+    "pct_per_mb": 0.02167,
+    "byte_ceiling_gb_s": 265.0,
+    "us_per_ranked_pct": 174.13866662022969
+  },
+  "arms": {
+    "null_dispatch": {
+      "label": "null_dispatch",
+      "dispatches_per_call": 1,
+      "us_per_call": 98.26385241467506,
+      "us_per_call_min": 95.2979177236557,
+      "us_per_call_max": 159.41291756462306,
+      "us_per_call_trials": [
+        95.2979177236557,
+        96.19437507353723,
+        96.57322720158845,
+        97.46604249812663,
+        98.26385241467506,
+        98.34697702899575,
+        98.48072775639594,
+        102.25322970654815,
+        159.41291756462306
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "shipped": {
+      "label": "shipped",
+      "dispatches_per_call": 2,
+      "us_per_call": 140.7376048155129,
+      "us_per_call_min": 139.59874981082976,
+      "us_per_call_max": 141.47593756206334,
+      "us_per_call_trials": [
+        139.59874981082976,
+        139.98552050907165,
+        140.25333221070468,
+        140.58812521398067,
+        140.7376048155129,
+        140.80447959713638,
+        140.81312518101186,
+        140.8843754325062,
+        141.47593756206334
+      ],
+      "iters": 400,
+      "trials": 9,
+      "plan": {
+        "real_count": 24584,
+        "tiles": 32,
+        "stride": 8192,
+        "per_thread": 4,
+        "cands": 1024,
+        "fin_per_thread": 4
+      }
+    },
+    "shipped.partial": {
+      "label": "shipped.partial",
+      "dispatches_per_call": 1,
+      "us_per_call": 108.70093712583184,
+      "us_per_call_min": 108.5395849077031,
+      "us_per_call_max": 122.18437506817281,
+      "us_per_call_trials": [
+        108.5395849077031,
+        108.54729043785483,
+        108.59864472877234,
+        108.67708537261933,
+        108.70093712583184,
+        108.89197990763932,
+        109.03396003413945,
+        109.13322970736772,
+        122.18437506817281
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "shipped.finalize": {
+      "label": "shipped.finalize",
+      "dispatches_per_call": 1,
+      "us_per_call": 121.42677034717053,
+      "us_per_call_min": 121.21260515414178,
+      "us_per_call_max": 121.78552220575511,
+      "us_per_call_trials": [
+        121.21260515414178,
+        121.25708220992237,
+        121.28646019846201,
+        121.30708550103009,
+        121.42677034717053,
+        121.52281240560114,
+        121.64708285126835,
+        121.70156289357692,
+        121.78552220575511
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N1024": {
+      "label": "N1024",
+      "dispatches_per_call": 6,
+      "us_per_call": 171.11614521127194,
+      "us_per_call_min": 169.97073020320386,
+      "us_per_call_max": 207.1195823373273,
+      "us_per_call_trials": [
+        169.97073020320386,
+        170.34624994266778,
+        170.72021029889584,
+        171.08187486883253,
+        171.11614521127194,
+        177.34781256876886,
+        190.97947981208563,
+        205.57437499519438,
+        207.1195823373273
+      ],
+      "iters": 400,
+      "trials": 9,
+      "plan": {
+        "real_count": 1024,
+        "tiles": 8,
+        "stride": 2048,
+        "per_thread": 1,
+        "cands": 256,
+        "fin_per_thread": 1
+      },
+      "added_us_per_step": 30.378540395759046,
+      "added_ranked_pct": 0.17445028714966612,
+      "parts_us_above_floor": {
+        "hist": -2.46260198764503,
+        "thresh": 17.088439781218767,
+        "compact": -0.7518724305555224,
+        "rescore": -2.6628095656633377,
+        "partial": 3.2303150510415435,
+        "finalize": 20.70864720735699
+      },
+      "shipped_parts_us_above_floor": {
+        "partial": 10.437084711156785,
+        "finalize": 23.162917932495475
+      },
+      "added_us_from_parts": 1.5501154121011496
+    },
+    "N1024.hist": {
+      "label": "N1024.hist",
+      "dispatches_per_call": 1,
+      "us_per_call": 95.80125042703003,
+      "us_per_call_min": 95.23145738057792,
+      "us_per_call_max": 96.74906206782907,
+      "us_per_call_trials": [
+        95.23145738057792,
+        95.28229013085365,
+        95.43635533191264,
+        95.5022923881188,
+        95.80125042703003,
+        95.83729261066765,
+        95.8675000583753,
+        96.16833529435098,
+        96.74906206782907
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N1024.thresh": {
+      "label": "N1024.thresh",
+      "dispatches_per_call": 1,
+      "us_per_call": 115.35229219589382,
+      "us_per_call_min": 115.16291473526508,
+      "us_per_call_max": 115.828852285631,
+      "us_per_call_trials": [
+        115.16291473526508,
+        115.20822998136282,
+        115.2481249300763,
+        115.2819802518934,
+        115.35229219589382,
+        115.3609377797693,
+        115.54239492397755,
+        115.60604209080338,
+        115.828852285631
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N1024.compact": {
+      "label": "N1024.compact",
+      "dispatches_per_call": 1,
+      "us_per_call": 97.51197998411953,
+      "us_per_call_min": 97.37281245179474,
+      "us_per_call_max": 98.14281249418855,
+      "us_per_call_trials": [
+        97.37281245179474,
+        97.41520800162107,
+        97.42374997586012,
+        97.49333490617573,
+        97.51197998411953,
+        97.5967722479254,
+        97.75156271643937,
+        97.78166771866381,
+        98.14281249418855
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N1024.rescore": {
+      "label": "N1024.rescore",
+      "dispatches_per_call": 1,
+      "us_per_call": 95.60104284901172,
+      "us_per_call_min": 95.33135511446744,
+      "us_per_call_max": 96.14166745450348,
+      "us_per_call_trials": [
+        95.33135511446744,
+        95.43885535094887,
+        95.44822736643255,
+        95.45448003336787,
+        95.60104284901172,
+        95.7126053981483,
+        95.73322779033333,
+        95.73437506332994,
+        96.14166745450348
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N1024.partial": {
+      "label": "N1024.partial",
+      "dispatches_per_call": 1,
+      "us_per_call": 101.4941674657166,
+      "us_per_call_min": 101.2755197007209,
+      "us_per_call_max": 101.85687511693686,
+      "us_per_call_trials": [
+        101.2755197007209,
+        101.31947754416615,
+        101.38291516341269,
+        101.40572732780129,
+        101.4941674657166,
+        101.67739761527628,
+        101.71218775212765,
+        101.73864779062569,
+        101.85687511693686
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N1024.finalize": {
+      "label": "N1024.finalize",
+      "dispatches_per_call": 1,
+      "us_per_call": 118.97249962203205,
+      "us_per_call_min": 118.7799999024719,
+      "us_per_call_max": 119.26375038456172,
+      "us_per_call_trials": [
+        118.7799999024719,
+        118.79948026034981,
+        118.9042697660625,
+        118.94062510691583,
+        118.97249962203205,
+        118.99312492460012,
+        119.09947963431478,
+        119.21896017156541,
+        119.26375038456172
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N4096": {
+      "label": "N4096",
+      "dispatches_per_call": 6,
+      "us_per_call": 178.2022905535996,
+      "us_per_call_min": 177.9321872163564,
+      "us_per_call_max": 209.4021876109764,
+      "us_per_call_trials": [
+        177.9321872163564,
+        178.04072762373835,
+        178.04312519729137,
+        178.06864459998906,
+        178.2022905535996,
+        178.28218755312264,
+        178.30270749982446,
+        178.4573949407786,
+        209.4021876109764
+      ],
+      "iters": 400,
+      "trials": 9,
+      "plan": {
+        "real_count": 4096,
+        "tiles": 16,
+        "stride": 4096,
+        "per_thread": 1,
+        "cands": 512,
+        "fin_per_thread": 2
+      },
+      "added_us_per_step": 37.4646857380867,
+      "added_ranked_pct": 0.21514283108524979,
+      "parts_us_above_floor": {
+        "hist": -2.17083259485662,
+        "thresh": 21.251667640171945,
+        "compact": -0.4542700480669737,
+        "rescore": -2.4214549921453,
+        "partial": 5.197917344048619,
+        "finalize": 21.900624851696193
+      },
+      "shipped_parts_us_above_floor": {
+        "partial": 10.437084711156785,
+        "finalize": 23.162917932495475
+      },
+      "added_us_from_parts": 9.703649557195604
+    },
+    "N4096.hist": {
+      "label": "N4096.hist",
+      "dispatches_per_call": 1,
+      "us_per_call": 96.09301981981844,
+      "us_per_call_min": 95.56718752719462,
+      "us_per_call_max": 96.48562467191368,
+      "us_per_call_trials": [
+        95.56718752719462,
+        95.84426996298134,
+        96.03270736988634,
+        96.04947990737855,
+        96.09301981981844,
+        96.11802233848721,
+        96.12812486011535,
+        96.21125005651265,
+        96.48562467191368
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N4096.thresh": {
+      "label": "N4096.thresh",
+      "dispatches_per_call": 1,
+      "us_per_call": 119.515520054847,
+      "us_per_call_min": 119.05229010153562,
+      "us_per_call_max": 119.75989793427289,
+      "us_per_call_trials": [
+        119.05229010153562,
+        119.40177239011973,
+        119.42145763896406,
+        119.43489487748593,
+        119.515520054847,
+        119.55854250118136,
+        119.64281264226884,
+        119.69083512667567,
+        119.75989793427289
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N4096.compact": {
+      "label": "N4096.compact",
+      "dispatches_per_call": 1,
+      "us_per_call": 97.80958236660808,
+      "us_per_call_min": 97.47676958795637,
+      "us_per_call_max": 98.39250007644296,
+      "us_per_call_trials": [
+        97.47676958795637,
+        97.59312495589256,
+        97.61499997694045,
+        97.7385399164632,
+        97.80958236660808,
+        97.8635426145047,
+        97.95718709938228,
+        98.32854208070785,
+        98.39250007644296
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N4096.rescore": {
+      "label": "N4096.rescore",
+      "dispatches_per_call": 1,
+      "us_per_call": 95.84239742252976,
+      "us_per_call_min": 95.39677237626165,
+      "us_per_call_max": 96.33333247620612,
+      "us_per_call_trials": [
+        95.39677237626165,
+        95.59072961565107,
+        95.6492725526914,
+        95.799999544397,
+        95.84239742252976,
+        96.03375045116991,
+        96.03385522495955,
+        96.12781286705285,
+        96.33333247620612
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N4096.partial": {
+      "label": "N4096.partial",
+      "dispatches_per_call": 1,
+      "us_per_call": 103.46176975872368,
+      "us_per_call_min": 100.94916739035398,
+      "us_per_call_max": 104.37802004162222,
+      "us_per_call_trials": [
+        100.94916739035398,
+        101.66458261664957,
+        102.49853949062526,
+        103.04479219485074,
+        103.46176975872368,
+        103.51823002565652,
+        104.0026027476415,
+        104.30999973323196,
+        104.37802004162222
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N4096.finalize": {
+      "label": "N4096.finalize",
+      "dispatches_per_call": 1,
+      "us_per_call": 120.16447726637125,
+      "us_per_call_min": 119.75062487181276,
+      "us_per_call_max": 126.20489520486444,
+      "us_per_call_trials": [
+        119.75062487181276,
+        119.86124969553202,
+        119.91625011432916,
+        119.99781301710755,
+        120.16447726637125,
+        123.8701050169766,
+        124.03781234752387,
+        124.59697725716978,
+        126.20489520486444
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N8192": {
+      "label": "N8192",
+      "dispatches_per_call": 6,
+      "us_per_call": 187.14093777816743,
+      "us_per_call_min": 185.8819799963385,
+      "us_per_call_max": 190.9890625393018,
+      "us_per_call_trials": [
+        185.8819799963385,
+        186.3802073057741,
+        187.07041745074093,
+        187.11916753090918,
+        187.14093777816743,
+        187.46624991763383,
+        188.50927241146564,
+        190.19072991795838,
+        190.9890625393018
+      ],
+      "iters": 400,
+      "trials": 9,
+      "plan": {
+        "real_count": 8192,
+        "tiles": 32,
+        "stride": 8192,
+        "per_thread": 1,
+        "cands": 1024,
+        "fin_per_thread": 4
+      },
+      "added_us_per_step": 46.40333296265453,
+      "added_ranked_pct": 0.2664734597046918,
+      "parts_us_above_floor": {
+        "hist": -1.9001023611053824,
+        "thresh": 15.104792546480894,
+        "compact": -0.5886424332857132,
+        "rescore": -2.584477770142257,
+        "partial": 6.988542736507952,
+        "finalize": 23.801355273462832
+      },
+      "shipped_parts_us_above_floor": {
+        "partial": 10.437084711156785,
+        "finalize": 23.162917932495475
+      },
+      "added_us_from_parts": 7.221465348266065
+    },
+    "N8192.hist": {
+      "label": "N8192.hist",
+      "dispatches_per_call": 1,
+      "us_per_call": 96.36375005356967,
+      "us_per_call_min": 95.4446877585724,
+      "us_per_call_max": 102.29374980553985,
+      "us_per_call_trials": [
+        95.4446877585724,
+        95.74458294082433,
+        95.76385491527617,
+        95.91864480171353,
+        96.36375005356967,
+        96.41364740673453,
+        100.26510513853282,
+        101.74510476645082,
+        102.29374980553985
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N8192.thresh": {
+      "label": "N8192.thresh",
+      "dispatches_per_call": 1,
+      "us_per_call": 113.36864496115595,
+      "us_per_call_min": 113.19937533698976,
+      "us_per_call_max": 114.00458228308707,
+      "us_per_call_trials": [
+        113.19937533698976,
+        113.22656238917261,
+        113.2369798142463,
+        113.2778124883771,
+        113.36864496115595,
+        113.37697738781571,
+        113.70312538929284,
+        113.82614495232701,
+        114.00458228308707
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N8192.compact": {
+      "label": "N8192.compact",
+      "dispatches_per_call": 1,
+      "us_per_call": 97.67520998138934,
+      "us_per_call_min": 97.5130224833265,
+      "us_per_call_max": 98.09593728277832,
+      "us_per_call_trials": [
+        97.5130224833265,
+        97.53073041792959,
+        97.5464575458318,
+        97.6337498286739,
+        97.67520998138934,
+        97.70052274689078,
+        97.79843734577298,
+        98.03676977753639,
+        98.09593728277832
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N8192.rescore": {
+      "label": "N8192.rescore",
+      "dispatches_per_call": 1,
+      "us_per_call": 95.6793746445328,
+      "us_per_call_min": 95.30625015031546,
+      "us_per_call_max": 96.25864506233484,
+      "us_per_call_trials": [
+        95.30625015031546,
+        95.51583498250693,
+        95.54198011755943,
+        95.66697757691145,
+        95.6793746445328,
+        95.75760283041745,
+        95.86135449353606,
+        96.25770791899413,
+        96.25864506233484
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N8192.partial": {
+      "label": "N8192.partial",
+      "dispatches_per_call": 1,
+      "us_per_call": 105.25239515118301,
+      "us_per_call_min": 104.46093743667006,
+      "us_per_call_max": 105.4032304091379,
+      "us_per_call_trials": [
+        104.46093743667006,
+        104.59395998623222,
+        104.73104252014309,
+        104.85791543032974,
+        105.25239515118301,
+        105.26728990953416,
+        105.27354257646948,
+        105.39770766627043,
+        105.4032304091379
+      ],
+      "iters": 400,
+      "trials": 9
+    },
+    "N8192.finalize": {
+      "label": "N8192.finalize",
+      "dispatches_per_call": 1,
+      "us_per_call": 122.06520768813789,
+      "us_per_call_min": 121.81166792288423,
+      "us_per_call_max": 122.2407299792394,
+      "us_per_call_trials": [
+        121.81166792288423,
+        121.99135555420071,
+        122.00427008792758,
+        122.00927245430648,
+        122.06520768813789,
+        122.08020722027868,
+        122.12979258038104,
+        122.21218785271049,
+        122.2407299792394
+      ],
+      "iters": 400,
+      "trials": 9
+    }
+  },
+  "correctness": {
+    "N1024": {
+      "positive_control_worst_row": 10067,
+      "positive_control_detects_the_change": true,
+      "survivors_requested": 1024,
+      "rows_that_passed_the_threshold": 1036,
+      "distinct_rows_kept": 1024,
+      "true_top32_kept": 32,
+      "recall_of_true_top32": 1.0,
+      "histogram_total": 34424,
+      "histogram_covers_every_row": true,
+      "tau_bin": 49134,
+      "rows_strictly_above_tau": 1019
+    },
+    "N4096": {
+      "positive_control_worst_row": 10067,
+      "positive_control_detects_the_change": true,
+      "survivors_requested": 4096,
+      "rows_that_passed_the_threshold": 4158,
+      "distinct_rows_kept": 4096,
+      "true_top32_kept": 32,
+      "recall_of_true_top32": 1.0,
+      "histogram_total": 34424,
+      "histogram_covers_every_row": true,
+      "tau_bin": 49046,
+      "rows_strictly_above_tau": 4089
+    },
+    "N8192": {
+      "positive_control_worst_row": 10067,
+      "positive_control_detects_the_change": true,
+      "survivors_requested": 8192,
+      "rows_that_passed_the_threshold": 8220,
+      "distinct_rows_kept": 8192,
+      "true_top32_kept": 32,
+      "recall_of_true_top32": 1.0,
+      "histogram_total": 34424,
+      "histogram_covers_every_row": true,
+      "tau_bin": 48946,
+      "rows_strictly_above_tau": 8182
+    }
+  },
+  "verdict": {
+    "selected_cell": "qlowrank256-N4096-p0.35",
+    "added_us_per_draft_step": 37.4646857380867,
+    "added_us_per_draft_step_from_parts": 9.703649557195604,
+    "added_ranked_pct_at_265gbs": 0.21514283108524979,
+    "added_ranked_pct_at_measured_186_7gbs": 0.15157421344760805,
+    "predicted_c1_gross_pct": 0.678,
+    "net_pct_after_selection_cost": 0.46285716891475026,
+    "stop_rule": "fallback"
+  },
+  "anchor_check": {
+    "swift_fused_kernel_us": 557.8060150146484,
+    "python_shipped_us_per_call": 140.7376048155129,
+    "ratio_python_over_swift": 0.25230564215378176,
+    "submit_and_sync_floor_us": 98.26385241467506,
+    "swift_minus_floor_us": 459.5421625999734,
+    "python_minus_floor_us": 42.47375240083784
+  }
+}

@@ -61,6 +61,15 @@ HIST_BINS = 65_536
 HIST_GROUPS = 256
 HIST_TILES = 64
 
+# The ledger entry that supersedes FACT 8, measured on a student M4 Pro by
+# subtracting three shapes under ABBA: one more dispatch on the scored MTP
+# pass costs 1.049 to 1.053 us. The serial pass pays 2.057 to 2.613 us for the
+# same dispatch, because the five-row MTP forward hides CPU encode behind GPU
+# work. The scored leg is the MTP pass, so the MTP value is the right one and
+# the serial value is the pessimistic alternative.
+LEDGER_F_MTP_US = 1.053
+LEDGER_F_SERIAL_US = 2.613
+
 # FACT 33, edward E92: the read-only bandwidth ceiling on this host family.
 BYTE_CEILING_GB_S = 265.0
 PCT_PER_MB = 0.02167          # ledger 289, the C1 byte price
@@ -673,6 +682,53 @@ def time_calls(arm, iters: int, trials: int) -> dict:
     }
 
 
+def time_batch(arm, m_grid, trials: int) -> dict:
+    """Marginal cost of one more selection inside a busy command buffer.
+
+    `time_calls` puts one selection in a command buffer of its own, so every
+    dispatch boundary is exposed and nothing hides the CPU encode. Ledger
+    FINDING 17 names that an upper bound on the round contribution.
+
+    Here `m` independent selections are placed in ONE eval and the slope in
+    `m` is taken. The encode of copy i+1 overlaps the execution of copy i, so
+    the slope carries execution plus whatever encode does not hide, which is
+    what a draft step actually pays. The copies do not overlap on the GPU:
+    each selection is an internal dependency chain, and `device.cpp:363-374`
+    raises an encoder-wide buffer barrier, which also stops the next copy.
+    """
+    dep = arm.seed()
+    mx.eval([arm.step(dep) for _ in range(2)])
+    mx.synchronize()
+    med = {}
+    for m in m_grid:
+        s = []
+        for _ in range(trials):
+            outs = [arm.step(dep) for _ in range(m)]
+            mx.synchronize()
+            t0 = time.perf_counter()
+            mx.eval(outs)
+            mx.synchronize()
+            s.append((time.perf_counter() - t0) * 1e6)
+        s.sort()
+        med[m] = s[len(s) // 2]
+    xs = [float(m) for m in m_grid]
+    ys = [med[m] for m in m_grid]
+    n = len(xs)
+    mean_x = sum(xs) / n
+    mean_y = sum(ys) / n
+    sxx = sum((x - mean_x) ** 2 for x in xs)
+    slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / sxx
+    intercept = mean_y - slope * mean_x
+    ss_res = sum((y - (intercept + slope * x)) ** 2 for x, y in zip(xs, ys))
+    ss_tot = sum((y - mean_y) ** 2 for y in ys)
+    return {
+        "us_per_selection": slope,
+        "intercept_us": intercept,
+        "r_squared": 1.0 - ss_res / ss_tot if ss_tot else float("nan"),
+        "median_eval_us": med,
+    }
+
+
 def chain(arm, reps: int):
     dep = arm.seed()
     for _ in range(reps):
@@ -843,6 +899,7 @@ def main() -> None:
     ap.add_argument("--trials", type=int, default=9)
     ap.add_argument("--iters", type=int, default=500)
     ap.add_argument("--reps", default="1,2,4,8,16,32")
+    ap.add_argument("--batch", default="1,2,4,8,16,32")
     ap.add_argument("--survivors", default="1024,4096,8192")
     ap.add_argument("--tiles", default="auto")
     ap.add_argument("--chain", action="store_true",
@@ -853,6 +910,7 @@ def main() -> None:
         return stage2_tiles(n) if args.tiles == "auto" else int(args.tiles)
 
     reps_grid = [int(v) for v in args.reps.split(",")]
+    m_grid = [int(v) for v in args.batch.split(",")]
     probes_ship = math.ceil(PROBE_SHIPPED * CLUSTERS)
     probes_c1 = math.ceil(PROBE_C1 * CLUSTERS)
     rows_ship = probes_ship * ROWS_PER_CLUSTER
@@ -891,15 +949,19 @@ def main() -> None:
 
     def run(arm) -> dict:
         row = time_calls(arm, args.iters, args.trials)
+        row["batch"] = time_batch(arm, m_grid, args.trials)
         if args.chain:
             row["chain"] = time_arm(arm, reps_grid, args.trials)
         out["arms"][arm.label] = row
-        print(f"  {arm.label:22s} {row['us_per_call']:9.3f} us/call "
-              f"[{row['us_per_call_min']:9.3f}, {row['us_per_call_max']:9.3f}]")
+        print(f"  {arm.label:22s} isolated {row['us_per_call']:8.2f} "
+              f"(min {row['us_per_call_min']:8.2f})  "
+              f"batched {row['batch']['us_per_selection']:8.3f} "
+              f"r2 {row['batch']['r_squared']:.4f}")
         return row
 
     null = run(NullArm())
     floor = null["us_per_call"]
+    floor_min = null["us_per_call_min"]
 
     ship = ShippedArm(rows_ship, probes_ship)
     ship_row = run(ship)
@@ -908,12 +970,20 @@ def main() -> None:
         run(part)
     out["anchor_check"] = {
         "swift_fused_kernel_us": ANCHOR["fused_kernel_us"],
+        "swift_arg_partition_chain_us": ANCHOR["arg_partition_chain_us"],
         "python_shipped_us_per_call": ship_row["us_per_call"],
         "ratio_python_over_swift":
             ship_row["us_per_call"] / ANCHOR["fused_kernel_us"],
         "submit_and_sync_floor_us": floor,
+        "submit_and_sync_floor_us_min": floor_min,
         "swift_minus_floor_us": ANCHOR["fused_kernel_us"] - floor,
         "python_minus_floor_us": ship_row["us_per_call"] - floor,
+        "python_shipped_batched_us_per_selection":
+            ship_row["batch"]["us_per_selection"],
+        "null_batched_us_per_dispatch":
+            null["batch"]["us_per_selection"],
+        "ledger_f_mtp_us": LEDGER_F_MTP_US,
+        "ledger_f_serial_us": LEDGER_F_SERIAL_US,
     }
 
     for n in [int(v) for v in args.survivors.split(",")]:
@@ -921,15 +991,18 @@ def main() -> None:
                           with_rescore=True)
         row = run(arm)
         row["plan"] = arm.plan.as_dict()
-        row["added_us_per_step"] = (row["us_per_call"]
+        row["added_us_per_step"] = (row["batch"]["us_per_selection"]
+                                    - ship_row["batch"]["us_per_selection"])
+        row["added_us_isolated"] = (row["us_per_call"]
                                     - ship_row["us_per_call"])
         row["added_ranked_pct"] = row["added_us_per_step"] / US_PER_RANKED_PCT
-        parts = {p.label.split(".", 1)[1]: run(p)["us_per_call"] - floor
+        parts = {p.label.split(".", 1)[1]: run(p)["us_per_call_min"] - floor_min
                  for p in arm.parts()}
-        ship_parts = {"partial":
-                      out["arms"]["shipped.partial"]["us_per_call"] - floor,
-                      "finalize":
-                      out["arms"]["shipped.finalize"]["us_per_call"] - floor}
+        ship_parts = {
+            "partial":
+                out["arms"]["shipped.partial"]["us_per_call_min"] - floor_min,
+            "finalize":
+                out["arms"]["shipped.finalize"]["us_per_call_min"] - floor_min}
         row["parts_us_above_floor"] = parts
         row["shipped_parts_us_above_floor"] = ship_parts
         # Independent estimate of the same difference: sum the priced
@@ -940,20 +1013,34 @@ def main() -> None:
         # so the two estimates bracket the true added cost.
         row["added_us_from_parts"] = (
             sum(parts.values()) - sum(ship_parts.values()))
+        # The ledger entry that supersedes FACT 8 prices one more dispatch on
+        # the scored MTP pass at 1.049-1.053 us on a student M4 Pro, because
+        # the five-row forward hides CPU encode behind GPU work. The isolated
+        # arms here hide nothing, so the parts sum plus that marginal is the
+        # transfer estimate, and the isolated whole-arm difference is a bound.
+        row["added_us_from_parts_plus_ledger_f"] = (
+            row["added_us_from_parts"]
+            + LEDGER_F_MTP_US * (arm.dispatches - ship.dispatches))
         out["correctness"][arm.label] = correctness(arm, ship)
-        print(f"  -> {arm.label} added {row['added_us_per_step']:8.3f} us "
-              f"(parts {row['added_us_from_parts']:8.3f} us) "
-              f"= {row['added_ranked_pct']:6.3f} % ranked, "
-              f"recall {out['correctness'][arm.label]['recall_of_true_top32']}")
+        print(f"  -> {arm.label} added: batched {row['added_us_per_step']:7.2f}"
+              f"  isolated {row['added_us_isolated']:7.2f}"
+              f"  parts+F {row['added_us_from_parts_plus_ledger_f']:7.2f} us"
+              f"  = {row['added_ranked_pct']:6.3f} % ranked,"
+              f" recall {out['correctness'][arm.label]['recall_of_true_top32']}")
 
     selected = out["arms"].get("N4096")
     if selected:
         added = selected["added_us_per_step"]
+        estimates = [added, selected["added_us_isolated"],
+                     selected["added_us_from_parts_plus_ledger_f"]]
         out["verdict"] = {
             "selected_cell": "qlowrank256-N4096-p0.35",
             "added_us_per_draft_step": added,
-            "added_us_per_draft_step_from_parts":
-                selected["added_us_from_parts"],
+            "added_us_per_draft_step_isolated_bound":
+                selected["added_us_isolated"],
+            "added_us_per_draft_step_parts_plus_ledger_f":
+                selected["added_us_from_parts_plus_ledger_f"],
+            "added_us_span": [min(estimates), max(estimates)],
             "added_ranked_pct_at_265gbs": added / US_PER_RANKED_PCT,
             "added_ranked_pct_at_measured_186_7gbs":
                 added / ((1.0 / PCT_PER_MB) * 1e6 / (186.7 * 1e3)),
@@ -961,6 +1048,9 @@ def main() -> None:
             "net_pct_after_selection_cost": 0.678 - added / US_PER_RANKED_PCT,
             "stop_rule": ("proceed" if added < 25.0 else
                           "fallback" if added <= 70.0 else "stop"),
+            "stop_rule_on_worst_estimate":
+                ("proceed" if max(estimates) < 25.0 else
+                 "fallback" if max(estimates) <= 70.0 else "stop"),
         }
     with open(args.out, "w") as f:
         json.dump(out, f, indent=2)
