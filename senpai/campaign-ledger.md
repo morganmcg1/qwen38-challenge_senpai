@@ -50746,3 +50746,112 @@ prefill                                ZERO, not scored             CLOSED by F1
 ```
 
 Predicted composed score tonight, if `572b2cc4` lands near 3.69: `3.69 x 1.0247 x 1.0051`, about **3.80**.
+
+## 295 — FINDING 196: the median is an identity in two prompts, F83 is stale, and every uniform mechanism was understated by 8.79 percent
+
+Advisor analysis, 2026-08-22 about 21:55Z, from published board metrics only. No GPU time. Reproduce with `_advisor_scratch/f196.py` and `_advisor_scratch/f196b.py`.
+
+### 295.1 — the median pair is structurally beagle and essays
+
+The published score is the median of eight per-prompt raw ratios, so it is the mean of the fourth and fifth sorted values. Across eight trees from six independent solvers, spanning published scores 3.52 to 3.69 and three distinct lineages, the sorted order never changes:
+
+```
+plutarch  <  drama  <  travel  <  BEAGLE  <  ESSAYS  <  {republic, medicine, botany}
+```
+
+The fourth and fifth values are beagle and essays on every tree examined: `623e77af` ours, `b6cb0fea` ofou, `dacf7005` newjordan, `0b8602e1` nagaral, `02742bf0` scarletbright, `ed608e64` and `08b67f12` jungjipdo, and `0b2f0014` Amal-David.
+
+**The published median is therefore an identity, not a statistic:**
+
+```
+published score = (beagle_raw + essays_raw) / 2
+```
+
+Verified on the live crown `08b67f12`: `(3.53015 + 3.85129) / 2 = 3.69071883`, which is the published value to all eight digits.
+
+### 295.2 — the exact marginal weights, and they sum to one
+
+Differentiating the identity gives the marginal weight of a relative improvement in each prompt:
+
+```
+tree      solver         w_beagle  w_essays     sum
+623e77af  morganmcg1       0.4785    0.5215  1.0000
+b6cb0fea  ofou             0.4791    0.5209  1.0000
+dacf7005  newjordan        0.4788    0.5212  1.0000
+0b8602e1  nagaral          0.4771    0.5229  1.0000
+02742bf0  scarletbright    0.4791    0.5209  1.0000
+ed608e64  jungjipdo        0.4807    0.5193  1.0000
+08b67f12  jungjipdo        0.4782    0.5218  1.0000
+0b2f0014  Amal-David       0.4790    0.5210  1.0000
+```
+
+**Use `w_beagle = 0.478`, `w_essays = 0.522`, and exactly `0.000` for plutarch, drama, travel, republic, medicine and botany.** The weights are stable to the third decimal across every tree and they sum to exactly one, which is the correct behaviour: a uniform relative improvement of x percent on every prompt must move the median by exactly x percent.
+
+### 295.3 — F83 is stale and its error exceeds our noise floor
+
+F83 assigned beagle 0.4862, medicine 0.2508, essays 0.1598, botany 0.0124, republic 0.0100. Tested against every one of the 28 ordered pairs available among the eight trees:
+
+```
+model                       mean |error|   max |error|
+median-pair identity          0.0000 pp     0.0000 pp
+F83 raw weights               0.1915 pp     0.4675 pp
+```
+
+Our single-receipt 2 sigma bar is 0.133 percent within a known mode and 0.216 percent when the mode is unknown. **F83's systematic error is of the same size as, and at worst twice, our entire measurement noise floor.** Every decision made on an F83-weighted margin under about 0.5 pp needs re-reading.
+
+Two specific defects:
+
+1. **F83 gives medicine 0.2508 and republic 0.0100 and botany 0.0124. The truth is 0.000 for all three.** They sit above the median pair on every tree and cannot move the median without first crossing essays, which requires 1.37 percent on the live crown, roughly three sigma on a single prompt's raw ratio.
+2. **F83's weights sum to 0.9192, not 1.0.** Any mechanism that improves all prompts by a similar relative amount was therefore understated by `1/0.9192 - 1 = 8.79 percent relative`.
+
+The second defect explains a discrepancy already in the ledger. F189 recorded an F83-weighted round-time delta of -4.1414 percent and an F83-weighted candidate delta of -3.8067 percent for the tight grid. Under the correct weights the candidate delta is -4.0462 percent, and `-3.8067 / 0.9192 = -4.141`, which is the round-time figure. The two numbers were never in conflict; one had been divided by the weight sum and the other had not.
+
+### 295.4 — the queue repriced
+
+Candidate-leg deltas, positive meaning slower:
+
+```
+mechanism                             F83 cand   medpair   shift pp
+tight launch grid, F189                -3.8067   -4.0462     -0.2395
+probe 0.25 -> 0.15, wide base           -0.3836   -0.3866     -0.0029
+probe 0.25 -> 0.15, tight base          -0.2786   -0.2603     +0.0183
+one-pass table under tight, F194        +0.2187   +0.2649     +0.0462
+```
+
+The probe fraction is essentially unchanged, so FINDING 192 stands at about +0.33 percent pooled. The tight grid gains 0.24 pp. **The one-pass table penalty is 21 percent larger than reported to thorfinn and alphonse: it costs +0.2649 percent, not +0.2187 percent.**
+
+Any student figure named `replayed_ranked_median_pct` that was computed with F83 weights needs the same treatment. For a mechanism concentrated on a subset of prompts the correction is not a single scalar and must be recomputed per prompt.
+
+### 295.5 — the beagle prize, now exact
+
+Beagle is the fourth value and sits far below a tight cluster of four prompts.
+
+```
+live crown 08b67f12
+  beagle    3.53015   4th, median carrier
+  essays    3.85129   5th, median carrier
+  republic  3.90424
+  medicine  3.91621
+  botany    3.91838
+
+headroom before the ordering changes
+  beagle must rise 9.10 %  to reach essays
+  essays must rise 1.37 %  to reach republic
+```
+
+```
+raise beagle to equal essays          median -> 3.85129   +4.35 %
+raise beagle without limit            median -> 3.87776   +5.07 %   hard ceiling
+```
+
+**The asymmetry is the actionable part.** Beagle pays 0.478 per unit for the next 9.10 percent of improvement. Essays pays 0.522 per unit for only the next 1.37 percent, after which republic becomes the fifth value and further essays gains pay nothing. Effort aimed at essays saturates almost immediately; effort aimed at beagle has an order of magnitude more room.
+
+Beagle is also the weakest of the five high-acceptance prompts. F92 records its realised acceptance at 0.834 and an implied per-step p of 0.9341, against 0.892 to 0.903 and 0.9639 to 0.9661 for medicine, essays, republic and botany. It has the most decode rounds of the five at 110, and the shortest effective draft length at 4.3818.
+
+**A mechanism that raises beagle's acceptance to the level the other four already reach is worth about +4.35 percent of published median, which is larger than anything currently in flight except the tight grid.** This remains unowned and it is the strongest candidate for the next free student slot.
+
+### 295.6 — CAMPAIGN RULE 116
+
+**Weight per-prompt evidence by the median-pair identity, never by F83.** Identify the fourth and fifth sorted raw ratios on the reference tree, use `0.5 * v_i / median` as the weight for each, and use exactly zero for the other six prompts. Report the identified pair alongside the weighted figure, because the weighting is only valid while the ordering holds. Restate the headroom to the next crossing whenever the weighted figure is used to justify a submission.
+
+F83 is retained in the ledger as history. It is withdrawn as an instrument.
