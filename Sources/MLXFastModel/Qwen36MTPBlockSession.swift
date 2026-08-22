@@ -243,12 +243,17 @@ public final class Qwen36MTPBlockSession {
         let peak = Memory.peakMemory
         let physical = ProcessInfo.processInfo.physicalMemory
         let recommended = GPU.maxRecommendedWorkingSetBytes() ?? -1
-        var line = "e130-residency phase=sizing active=\(active) peak=\(peak)"
+        e130ProbeSizingCount += 1
+        var line = "e130-residency phase=sizing event=\(e130ProbeSizingCount)"
+        line += " active=\(active) peak=\(peak)"
         line += " cache=\(Memory.cacheMemory) slack_mb=\(wiredZHDefaultSlackMB)"
         line += " maxrec=\(recommended) physmem=\(physical)"
         line += " wired_gate_passed=\(!clearsWarmCache)\n"
         FileHandle.standardError.write(Data(line.utf8))
 
+        // One sampler per process. A local leg builds a session per depth
+        // policy, so an unguarded sampler would multiply with each session.
+        guard e130ProbeSizingCount == 1 else { return }
         let started = Date()
         let sampler = Thread {
             var index = 0
@@ -268,6 +273,8 @@ public final class Qwen36MTPBlockSession {
         sampler.stackSize = 64 << 10
         sampler.start()
     }
+
+    nonisolated(unsafe) private static var e130ProbeSizingCount = 0
 
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
