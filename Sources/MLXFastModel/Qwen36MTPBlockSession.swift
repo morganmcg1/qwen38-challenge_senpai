@@ -275,6 +275,24 @@ public final class Qwen36MTPBlockSession {
         FileHandle.standardError.write(Data(line.utf8))
     }
 
+    private static var warmRefillEnabled: Bool {
+        ProcessInfo.processInfo.environment[
+            "DARKBLOOM_QWEN_MTP_WARM_REFILL"] != "0"
+    }
+
+    /// Research-only, default off, and never read on the ranked runner.
+    ///
+    /// Residency sizing is gated on `physicalMemory >= 96 GiB`, so on a 48 GiB
+    /// development host `wireResidentWeightsIfEnabled()` returns before its
+    /// `Memory.clearCache()` and the refill below has nothing to repair. This
+    /// switch reproduces that one allocator side effect — not the wired ticket,
+    /// which has no local instrument — so the refill can be measured off the
+    /// ranked runner. It runs in the untimed warm and touches no tensor value.
+    private static var emulatesResidencyAllocatorClear: Bool {
+        ProcessInfo.processInfo.environment[
+            "DARKBLOOM_QWEN_MTP_EMULATE_RESIDENCY_CLEAR"] == "1"
+    }
+
     /// Input-independent shape warm, run OUTSIDE every scored window.
     ///
     /// Warms the two forward shapes a round dispatches — the batched verify at
@@ -283,8 +301,34 @@ public final class Qwen36MTPBlockSession {
     public func warmAllDepths(maxDepth: Int) throws {
         // Keep the large shape-warm object graph in a separate call frame so
         // every throwaway cache and tensor is released before residency sizing.
+        let tWarmStart = DispatchTime.now().uptimeNanoseconds
         try warmAllDepthShapes(maxDepth: maxDepth)
+        let tShapesDone = DispatchTime.now().uptimeNanoseconds
         Self.wireResidentWeightsIfEnabled()
+        if Self.emulatesResidencyAllocatorClear { Memory.clearCache() }
+        let cacheAfterSizing = Memory.cacheMemory
+        // WARM REFILL. Residency sizing calls `Memory.clearCache()`, which
+        // returns every buffer the pass above left in the allocator pool. The
+        // seed forward and the first scored round then first-touch fresh
+        // allocations INSIDE the timed window; E134 rung 5 measured that first
+        // round 15 to 33 ms slower than the width-matched tail on 15 of 15
+        // legs, GPU-side on every one, while its host CPU time fell 15 to
+        // 21 ms. Repeating the same input-independent shapes repopulates the
+        // pool before timing starts. Sizing has already run and the ticket is
+        // retained, so this pass cannot change the wired limit, and its
+        // scratch fails the fit test and stays unwired.
+        if Self.warmRefillEnabled {
+            try warmAllDepthShapes(maxDepth: maxDepth)
+        }
+        let tDone = DispatchTime.now().uptimeNanoseconds
+        var line = "mlxfast: qwen-mtp warm"
+        line += " shapes_ms=\((tShapesDone - tWarmStart) / 1_000_000)"
+        line += " refill=\(Self.warmRefillEnabled ? 1 : 0)"
+        line += " refill_ms=\((tDone - tShapesDone) / 1_000_000)"
+        line += " emulated_clear=\(Self.emulatesResidencyAllocatorClear ? 1 : 0)"
+        line += " cache_after_sizing=\(cacheAfterSizing)"
+        line += " cache_end=\(Memory.cacheMemory) active_end=\(Memory.activeMemory)\n"
+        FileHandle.standardError.write(Data(line.utf8))
     }
 
     private func warmAllDepthShapes(maxDepth: Int) throws {
