@@ -1,0 +1,33 @@
+{
+  "rule": "advisor F19 rule 101 - every --require string must have a demonstrated failing polarity on a real commit",
+  "witness_under_test": "e120_default_route/tiered_switch/onepass67",
+  "harness": "local",
+  "method": "Build a throwaway commit that ships the wrong default, then run the unmodified witness set against it. The throwaway sets Table.compiledDefault = .shipped and updates defaultRouteWitness to match, which is exactly the commit a careless change would produce, because defaultRouteWitnessNamesTheCompiledDefaults keeps the two in step.",
+  "control_commit": {
+    "sha": "d9d8eb4d",
+    "branch": "tmp/e129-polarity-proof",
+    "subject": "THROWAWAY: ship the shipped table as the compiled default (Rule 101 polarity control)",
+    "disposition": "branch deleted after the proof; it is not an ancestor of the submitted tree"
+  },
+  "control_worker": {
+    "sha256": "6bb1ea4995f806a6b129fec0c6bbf920007f4ac17f1f3336a94ba1fa8bff5168",
+    "mtime": "2026-08-22T13:43:13Z",
+    "strings_extracted": 81077,
+    "symbols_extracted": 576425
+  },
+  "shipped_worker": {
+    "sha256": "80fa00c9a107081c981c8f086754dfb6f5d401dceb40a7a335ced40501f68ab7",
+    "mtime": "2026-08-22T13:13:41Z"
+  },
+  "result": {
+    "exit_status": "FAIL",
+    "assertions_that_fired": [
+      "FAIL require 'e120_default_route/tiered_switch/onepass67': found 0 copies, expected at least 1",
+      "FAIL forbid  'e120_default_route/tiered_switch/shipped': found 1 copies, expected 0"
+    ],
+    "assertions_that_passed": 40,
+    "extraction_checks_that_passed": 2
+  },
+  "reading": "The route witness is a real discriminator. It reports 1 copy on the shipped tree and 0 copies on a tree whose only difference is the compiled-in table, and its paired forbid reports the complement. Every other assertion in the set held on both trees, so neither result comes from a broad build difference. Both polarities are therefore demonstrated on real commits, which is what rule 101 requires.",
+  "residual_limit": "The witness proves which literal the binary carries. It cannot by itself prove that the literal names the constants the dispatcher reads, because a literal is not an expression over those constants. defaultRouteWitnessNamesTheCompiledDefaults closes that gap in the test suite, and the 512-token default leg closes it end to end by selecting tiered_switch with onepass67 and 7 QMV specializations with no environment set."
+}
