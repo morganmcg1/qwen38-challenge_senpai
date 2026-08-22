@@ -221,26 +221,36 @@ def ranked_frame(paired_pct: dict[str, float]) -> None:
     the same fraction of per-width QMV time on both generations, which the
     measured spill difference between g16s and g17s specifically contradicts
     for the one-pass bodies. It is a re-frame, never a ranked prediction.
+
+    Four readings are carried, not one, because the candidate ranked frames
+    agree on the mean verification width and disagree on the shape of the top
+    of the distribution by 22 to 42 per cent. Reporting the band keeps that
+    open question visible instead of hiding it behind one chosen frame.
     """
-    local = transfer.local_histogram()
-    ranked = transfer.ranked_histogram()
+    rows = {(r["from"], r["to"]): r for r in transfer.pair_factors()}
     print("re-weighted into the ranked width mix (first order, NOT a "
           "ranked prediction)")
-    print(f"  {'pair':28s} {'widths':12s} {'local %':>9s} "
-          f"{'x rounds':>9s} {'ranked %':>9s}")
+    transfer.frame_comparison(list(rows.values()))
+    print()
+    print("  measured local effect carried through each frame, "
+          "positive is slower")
+    print(f"  {'pair':26s} {'local %':>9s} "
+          + " ".join(f"{h:>11s}" for h in transfer.FRAME_HEADS))
     named = {"onepass67": ("shipped", "onepass67"),
              "onepass678": ("shipped", "onepass678")}
     for arm, pct in paired_pct.items():
         if arm not in named:
             continue
-        a, b = named[arm]
-        widths = transfer.differing_widths(a, b)
-        factor = (transfer.mass(ranked, widths, None)
-                  / transfer.mass(local, widths, None))
-        print(f"  {a + ' -> ' + b:28s} {str(list(widths)):12s} "
-              f"{pct:+9.3f} {factor:9.3f} {pct * factor:+9.3f}")
+        row = rows[named[arm]]
+        carried = [pct * row["factors"][k] for k in transfer.FRAME_ORDER]
+        print(f"  {row['from'] + ' -> ' + row['to']:26s} {pct:+9.3f} "
+              + " ".join(f"{c:>+11.3f}" for c in carried))
+        lo, hi = min(carried), max(carried)
+        agree = "same sign under every frame" if lo * hi > 0 else \
+            "SIGN DEPENDS ON THE FRAME"
+        print(f"  {'':26s} {'band':>9s} {lo:+.3f} to {hi:+.3f}, {agree}")
     print("  The pre-registered table is stated in the ranked frame on the "
-          "eight-prompt candidate-leg mean. Neither the local column nor the "
+          "eight-prompt candidate-leg mean. Neither the local column nor any "
           "re-weighted column may be read against it as though it were a "
           "receipt.")
 

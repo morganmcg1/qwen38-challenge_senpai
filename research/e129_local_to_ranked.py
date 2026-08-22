@@ -131,21 +131,23 @@ def mass(hist: dict[int, float], widths: tuple[int, ...],
     return num / den
 
 
-def frame_comparison() -> list[dict]:
-    """Price every pair under each candidate ranked frame.
+FRAME_ORDER = ("maxent_untruncated", "maxent_routed", "f83_as_stated",
+               "f83_renormalised")
+FRAME_HEADS = ("maxent unt", "maxent rtd", "F83 as-is", "F83 renorm")
 
-    The three frames agree on the mean verification width to four significant
-    figures and disagree on the shape of the top of the distribution. A table
-    change is priced by the shape, so agreement on the mean is not agreement on
-    the answer.
+
+def pair_factors() -> list[dict]:
+    """Transfer factor for every pair under each candidate ranked frame.
+
+    The frames agree on the mean verification width to four significant figures
+    and disagree on the shape of the top of the distribution. A table change is
+    priced by the shape, so agreement on the mean is not agreement on the
+    answer.
     """
     loc = local_histogram()
     routed, untrunc = ranked_histogram(), untruncated_histogram()
     mass_2 = untrunc[2]
     rows = []
-    print("transfer factor by ranked frame, rounds weighting")
-    print(f"  {'pair':26s} {'widths':10s} {'maxent unt':>11s} "
-          f"{'maxent rtd':>11s} {'F83 as-is':>10s} {'F83 renorm':>11s}")
     for a, b in PAIRS:
         w = differing_widths(a, b)
         lr = mass(loc, w, None)
@@ -155,17 +157,27 @@ def frame_comparison() -> list[dict]:
             "f83_as_stated": f83_mass(w, 0.0) / lr,
             "f83_renormalised": f83_mass(w, mass_2) / lr,
         }
-        print(f"  {a + ' -> ' + b:26s} {str(list(w)):10s} "
-              + " ".join(f"{cells[k]:>11.3f}" for k in
-                         ("maxent_untruncated", "maxent_routed",
-                          "f83_as_stated", "f83_renormalised")))
         rows.append({"from": a, "to": b, "widths": list(w),
                      "local_mass_rounds": lr, "factors": cells,
                      "spread_pct": 100.0 * (max(cells.values())
                                             / min(cells.values()) - 1.0)})
-    print(f"  unstated F83 mass at M=2 bracketed by 0 and {mass_2:.4f}")
+    return rows
+
+
+def frame_comparison(rows: list[dict] | None = None,
+                     indent: str = "  ") -> list[dict]:
+    rows = pair_factors() if rows is None else rows
+    print(f"{indent}transfer factor by ranked frame, rounds weighting")
+    print(f"{indent}{'pair':26s} {'widths':10s} "
+          + " ".join(f"{h:>11s}" for h in FRAME_HEADS))
+    for r in rows:
+        print(f"{indent}{r['from'] + ' -> ' + r['to']:26s} "
+              f"{str(r['widths']):10s} "
+              + " ".join(f"{r['factors'][k]:>11.3f}" for k in FRAME_ORDER))
+    print(f"{indent}unstated F83 mass at M=2 bracketed by 0 and "
+          f"{untruncated_histogram()[2]:.4f}")
     worst = max(rows, key=lambda r: r["spread_pct"])
-    print(f"  widest frame disagreement {worst['spread_pct']:.1f} % on "
+    print(f"{indent}widest frame disagreement {worst['spread_pct']:.1f} % on "
           f"{worst['from']} -> {worst['to']}")
     return rows
 
