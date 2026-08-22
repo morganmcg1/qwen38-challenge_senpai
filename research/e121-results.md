@@ -8,8 +8,18 @@ official or ranked score.
 Does `x_sumshare_min`, gated off at `NA = 5` by `if constexpr`, ship a bit-exact
 round-weighted win above +1.0 %?
 
-Answer: **yes at the kernel level (+1.463 % round-weighted, CI95 excluding NA=5
-[+1.042, +2.243])**, and the shipped arm is `g_split_pred`.
+Answer: **yes at the kernel level, not yet demonstrated end to end.**
+
+- Kernel frame: **+1.463 %** round-weighted, CI95 excluding NA=5
+  [+1.042, +2.243]. The shipped arm is `g_split_pred`.
+- Leg frame: **−0.436 %** (negative = faster), n = 2, CI95 [−1.268, +0.395].
+  The point estimate clears the promotion bar; the interval does not exclude
+  zero.
+- The end-to-end effect is **2.04× smaller** than the pre-registered −0.888 %,
+  which trips the advisor's factor-of-two stop rule. **Halted and reported. No
+  submission was made.**
+- Correctness is unaffected: full 512-token exactness passes and all eight
+  timed legs match.
 
 ## Identity tuple
 
@@ -268,9 +278,148 @@ The analyser also asserts `schedule_invariant`: `effective_mean_draft_len` and
 `accepted_draft_rate` must not move by more than 0.05 % between arms. If the
 schedule moved, the timing comparison would not be measuring the kernel.
 
-### End-to-end ABBA result
+### End-to-end ABBA result — the stop rule fired
 
-<!-- E121-RUNG3-E2E -->
+Session 04:06:30–04:51:40Z, 8 legs, 2 replicates, order base/share/share/base
+per replicate, 512 decode tokens per leg, ungated
+(`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`).
+
+The driver was launched with 3 replicates before advisor feedback 3 arrived and
+was cancelled after replicate 2, which is a pre-declared truncation rather than
+a peek-and-stop: the leg count was fixed before any effect was visible. The
+unwind trap survived the cancellation — HEAD restored, transient base commit
+removed, no orphaned worker.
+
+| replicate | mtp s/token | serial s/token | local ratio | base-pair drift |
+| --- | --- | --- | --- | --- |
+| k1 | **−0.502 %** | +0.704 % | +1.214 % | +0.020 % |
+| k2 | **−0.371 %** | +0.042 % | +0.414 % | +0.470 % |
+
+```
+POOLED absolute candidate MTP s/token  -0.436 %  (sd 0.093, n = 2)
+  95 % CI                              [-1.268, +0.395] %
+  base 0.030646 -> share 0.030512 s/token
+  local ratio 2.39536 -> 2.41481        (+0.814 %)
+  schedule invariant                    True (draftlen +0.0000 %, accept +0.0000 %)
+  ranked frame                          -0.415 %
+  prediction -0.888 %, band [-1.36, -0.44]  -> MISS
+  exactness                             PASS (4/4, all 8 legs matched)
+```
+
+**Sign convention: negative = faster.**
+
+#### Why this is a halt and not a result
+
+The advisor's stop rule is: halt and report if the leg effect disagrees with
+rung 2 by more than a factor of two. It does, by a hair.
+
+```
+predicted / measured = 0.888 / 0.436 = 2.04x
+```
+
+I stopped. I have not debugged, not changed the arm, and not run the submission
+chain.
+
+#### What the data does and does not support
+
+Supported:
+
+- The sign is consistent. Both replicates are negative and the pooled point
+  estimate of −0.436 % leg / −0.415 % ranked clears the +0.20 % promotion bar on
+  the point estimate alone.
+- The measurement is measuring the kernel and nothing else. `draftlen` and
+  `accepted_draft_rate` are identical to six decimal places on all eight legs,
+  so no schedule change is contaminating the timing.
+- Correctness is untouched: 4/4 exactness checks pass and all eight timed legs
+  report `all_tokens_matched=true`.
+
+Not supported:
+
+- Any claim of a win. `clears_promotion_bar` is false because the clearance rule
+  needs the CI to exclude zero, and with n = 2 the 95 % CI is
+  [−1.268, +0.395] %. The CI comfortably contains the predicted −0.888 % as
+  well, so this session does **not** falsify rung 2 either. It simply cannot
+  separate the two.
+
+The width comes almost entirely from `df = 1`, not from noisy data. The
+replicate-to-replicate spread is small (sd 0.093 pp) and `t(0.975, 1) = 12.706`
+inflates it by an order of magnitude. If that spread holds, `n = 3` gives
+`±4.303 × 0.093 / sqrt(3) = ±0.231`, that is [−0.667, −0.205], which excludes
+zero and clears. One more ABBA quad, four legs, about 22 minutes, is the
+cheapest action that converts this into a decision either way.
+
+#### Leading hypothesis for the shortfall — stated as a hypothesis, not a finding
+
+The implied kernel-to-leg transfer is
+
+```
+0.436 / 1.463 = 0.298   measured
+0.607                   E116 constant used for the prediction
+```
+
+The mechanism here is an **occupancy** win (F1: entry-point resident
+simdgroups), and E116's 0.607 was calibrated on an **ALU/bandwidth** win. Those
+two classes should not share a transfer constant. In an isolated rate probe the
+kernel is the only work resident, so occupancy sets throughput almost directly.
+In a real round the wide QMV dispatches are interleaved with recurrence, norms,
+and head work, and the machine can be filled by neighbouring dispatches, so a
+recovered simdgroup slot converts to wall clock at well under 1:1.
+
+Thorfinn's Route B supports the contrast: his hoist is a flat 5.85 % of base at
+NA = 4 across seven shapes spanning 148–214 GB/s, which is the signature of an
+ALU/bandwidth term, and that is the class E116 measured.
+
+This predicts that **any** future occupancy-class arm on this tree will
+over-predict at 0.607 by roughly a factor of two, and that the campaign needs a
+separate occupancy-class transfer constant near 0.30. That is a falsifiable
+claim and it is the most reusable thing this session produced.
+
+I have not tested it. Testing it is not in scope for this assignment.
+
+#### Provenance note on the mid-session commit
+
+Legs 1–3 record `branch_commit=25525156`; legs 4–8 record
+`branch_commit=551a0e4c`. I committed the results write-up and tooling between
+legs 3 and 4, during a `share` leg, which creates no transient commit and so
+cannot orphan one. `git diff 25525156 551a0e4c -- Sources Vendor Package.swift`
+is empty: the two commits are byte-identical over the scored surface, no rebuild
+was triggered, and every leg measured the same candidate bytes.
+
+Worker digests differ between legs because a Swift/Metal relink is not
+byte-reproducible. Consecutive same-arm legs share a digest because the rebuild
+is a no-op; each arm switch produces a fresh digest. What the harness asserts is
+the needle set and pre-run/post-run digest equality **within** a leg, and that
+held on all eight.
+
+#### Thermal record
+
+Entry 40.18–52.99 °C, exit 59.67–61.36 °C. Position 3 always enters hottest
+(~53 °C) because positions 2→3 need no rebuild and so get no cooling gap, while
+1→2 and 3→4 each sit behind a rebuild. This is a known asymmetry of the ABBA
+schedule that position-balancing does not remove. It does not explain the
+result: in k1 the hot leg was the slower share leg and in k2 the hot leg was the
+faster share leg, so the effect does not track entry temperature.
+
+Artifact: `research/e121-artifacts/rung3-e2e.json`.
+
+## W&B runs
+
+Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
+`e121-cross-simdgroup-activation-sum-sharing`.
+
+| run | id | state | contents |
+| --- | --- | --- | --- |
+| `e121-rung0-census` | `3inupzgh` | finished | static instruments for every arm on both GPU generations, plus the gate-exactness census |
+| `e121-rung2-isolated` | `q3oflj3p` | finished | isolated rate sweep, validity gates, cost-weighted shipped frame, pre-registered prediction scores |
+| `e121-rung3-insitu` | `qmr3mgl8` | finished | 512-token exactness, the eight ABBA legs, and the pooled leg effect |
+| `e121-rung2-isolated` | `m9ykrn93` | **failed** | crashed on a `wandb.Table` column-type error; superseded by `q3oflj3p`, kept only so the run list is honest |
+
+`e121-rung3-presubmit` was not created. The pre-submit chain did not run,
+because the stop rule fired first.
+
+The `m9ykrn93` crash was a logging defect, not a measurement defect: a boolean
+was written into a numeric table column. Fixed in
+`research/e121_wandb_log.py`.
 
 ## Fallback if the shipped arm is ever withdrawn
 
@@ -307,11 +456,19 @@ two belongs in any single candidate. Do not later try to stack them.
   bound. Now a campaign requirement.
 - **Implied-bandwidth validity gate.** Reject any rate-harness row whose implied
   bandwidth exceeds 1.2 × 273 GB/s before pooling. Now a campaign requirement.
-- **`MLX_E58_BUFFER_LIMIT_OPS` resolved.** `0` isolates one dispatch per command
-  buffer, which is correct for an isolated kernel census and wrong for an
-  in-situ leg. The rung-3 timed legs and the pre-submit leg both leave it unset,
-  which matches the command-buffer concurrency of a real round and matches the
-  ranked runner. `research/e121_presubmit.sh` was corrected to `unset` it.
+- **Harness defect 7, corrected form.** `MLX_E58_BUFFER_LIMIT_OPS=0` is a
+  **census-only** override. It isolates one dispatch per command buffer, which
+  is the whole point for a census leg and is fatal for a timed leg, because it
+  destroys the command-buffer concurrency a real round has. It must never be set
+  on a timed leg, and never on a pre-submit leg. A pre-submit leg that sets an
+  override the ranked runner does not set is not rehearsing the ranked
+  configuration. `research/e121_presubmit.sh` now carries an explicit `unset`
+  plus the reason, rather than a deleted line, so the next reader sees the
+  decision instead of an absence. The older assignment text listing this
+  variable as required is superseded. Ruling confirmed by the advisor.
+- **Transfer constants are class-specific.** The 0.607 kernel-to-leg constant
+  was calibrated on an ALU/bandwidth change and over-predicts an occupancy
+  change by about 2×. See the rung-3 shortfall hypothesis above.
 - **Cross-reference.** Thorfinn found that NA=5 exactness failures come from
   making `K`/`N` compile-time template arguments: full unroll of the
   10-iteration k-loop at `K = 5120` miscompiles at `NA = 5` only. If an NA=5

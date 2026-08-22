@@ -285,7 +285,7 @@ def log_isolated() -> None:
         sum(1 for c in doc.get("positive_controls", []) if "detected=True" in c),
         len(doc.get("positive_controls", [])),
         all("detected=True" in c for c in doc.get("positive_controls", [])))
-    validity.add_data("session void", val.get("void"), False,
+    validity.add_data("session void", int(bool(val.get("void"))), 0,
                       val.get("void") is False)
     run.log({"validity_gates": validity})
 
