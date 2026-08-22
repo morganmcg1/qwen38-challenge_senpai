@@ -22,26 +22,49 @@ consumes the same biased estimate twice with opposite effect, the reach side is
 about twice the size of the expected side, and the net correction pushes rounds
 deeper than the ranked optimum. Every arm that corrects the level is negative
 on every fixture, and the gain is monotone decreasing in the size of the
-correction, so the shipped `gamma = 1` is the optimum. **The estimator-level
-axis is closed.** The scheduler axis is not: a per-round oracle is +11.0 %,
-and the remaining headroom is per-round *discrimination*, not level.
+correction, so the shipped `gamma = 1` is the optimum.
+
+**Primary metric: `e128_recoverable_ranked_median_pct` = -0.2171 %.** That is
+the best implementable arm — a 5 % lift of the estimator level — priced on our
+own fitted ranked cost curve under the depth anchor. It is negative, and the
+value sits in the narrow band -0.2037 % to -0.2353 % across every cost curve our
+data supports. **The estimator-level axis is closed.**
+
+Three independent lines of evidence say the same thing. The R-free replay in
+section 4 gives a negative sign on 12 of 12 fixtures. The ranked repricing in
+section 6 gives a negative sign on every curve. And the board itself, in section
+7, shows the shipped depth holding the record on all five weighted prompts
+across 145 depths tried by other teams.
+
+The scheduler axis is **not** closed. A per-round oracle is **+8.52 %** of ranked
+median on our curve, and positive at every R in the band. The remaining headroom
+is per-round *discrimination*, not level.
 
 ## Sign flip, before any headline percentage
 
 The advisor asked to lead with the R value at which the sign flips and where it
 sits inside the pinned band.
 
-**The estimator arms do not flip anywhere in the band, because they are R-free.**
-The section 4 result is measured by replaying the recorded rounds and pricing
+**The estimator arms do not flip anywhere in the band, because the headline pass
+is R-free.** The section 4 result replays the recorded rounds and prices
 `sum(round cost) / sum(tokens)` directly. A per-token cost does not need a
-ranked round count, so `R` never enters. `reachonly`, `expectedonly`, `levelfix`,
-`jensen` and `jensen_both` carry the same sign at every `R` in
+ranked round count, so `R` never enters. The section 6 headline uses the depth
+anchor, which fits one level parameter per prompt against published depth; the
+round count cancels out of that ratio too. `reachonly`, `expectedonly`,
+`levelfix`, `jensen` and `jensen_both` carry the same sign at every `R` in
 `beagle = 112.5 [105.2, 120.8]` and outside it.
 
-The R-dependent statements are in rung 2 only, where the transfer to the hidden
-ranked prompts is anchored on the R-derived accept rate. Those are reported as a
-curve over four R values per prompt in section 5, and any arm that flips inside
-the band is labelled sign indeterminate there.
+R enters only through the alternative accept-rate anchor, and there almost
+everything flips. `marginfull` flips at R(beagle) 104.9 and 106.8, `rankedprice`
+at 109.9 and 123.7, `levelfix` four times between 109.9 and 122.1, `reachonly` at
+107.1 — all within a few tokens of the pinned R(beagle) = 110. Section 6 shows
+why those flips are not usable: that anchor reproduces the published acceptance
+rate but misses the published *depth* by up to 2.172 tokens, so it prices
+counterfactuals against a shipped baseline that never existed. Only two arms hold
+their sign across the whole band under either anchor: `oracle`, positive from
++6.89 % to +17.56 %, and `rankedprice_marginup`, positive from +2.16 % to
++5.17 % under the accept-rate anchor and negative at -3.40 % under the depth
+anchor.
 
 ---
 

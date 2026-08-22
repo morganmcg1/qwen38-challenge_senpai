@@ -297,6 +297,18 @@ CURVE_RUNS = {
 }
 
 
+def _implementable(gains: dict) -> dict:
+    """Counterfactual arms only.
+
+    `oracle` needs the acceptance outcome before the draft is proposed, so it
+    is not implementable. `ship` and `price0.18` are the shipped policy itself
+    and always score exactly 0.0, so including them would make the recoverable
+    gain trivially non-negative.
+    """
+    excluded = {"oracle", "ship", "price0.18"}
+    return {a: v for a, v in gains.items() if a not in excluded}
+
+
 def log_rung2(curve: str = "ours") -> None:
     spec = CURVE_RUNS[curve]
     pre, suf = spec["prefix"], spec["suffix"]
@@ -317,7 +329,7 @@ def log_rung2(curve: str = "ours") -> None:
         "simulation_windows": data["windows"],
     })
     gains = data["median_gain_pct_vs_ship"]
-    implementable = {a: v for a, v in gains.items() if a != "oracle"}
+    implementable = _implementable(gains)
     best_arm = max(implementable, key=implementable.get)
     run.summary.update({
         "e128_recoverable_ranked_median_pct" + suf: implementable[best_arm],
@@ -385,7 +397,7 @@ def log_rung2(curve: str = "ours") -> None:
                     entry["R"]["medicine"], entry["R"]["essays"])
         payload["r_band"] = table
         spans = r_band["spans"]
-        implementable = [a for a in spans if a != "oracle"]
+        implementable = list(_implementable(spans))
         run.summary.update({
             "r_band_oracle_span_pct": spans["oracle"]["span"],
             "r_band_oracle_min_pct": spans["oracle"]["min"],
@@ -426,8 +438,7 @@ def log_rung2(curve: str = "ours") -> None:
         payload["curve_round_cost"] = cost
         best = {}
         for key, entry in sweep["curves"].items():
-            imp = {a: v for a, v in entry["median_gain_pct_vs_ship"].items()
-                   if a != "oracle"}
+            imp = _implementable(entry["median_gain_pct_vs_ship"])
             best[key] = max(imp.values())
         run.summary.update({
             "curve_sweep_best_implementable_pct_%s" % k: v
