@@ -84,6 +84,40 @@ def main() -> int:
     for index, part in enumerate(np.array_split(ranked3, 5)):
         print("    q%d  n %3d  rate %.4f" % (index + 1, len(part),
                                              part.mean()))
+
+    shipped_dir = RUNS.parent / "runs-shipped"
+    if not shipped_dir.is_dir():
+        return 0
+    print("\n## which rounds does the SHIPPED scheduler actually ask at d=4?")
+    print("   Rung 1 measured forced-depth-7 traces, where every round is")
+    print("   asked. The shipped scheduler chooses its own depth first, so it")
+    print("   only reaches a deep boundary in rounds it already likes. Only")
+    print("   these fixtures have an archived shipped leg.")
+    print("%-18s %7s %9s %9s %9s %9s" % (
+        "fixture", "rounds", "d>4", "reach d4", "P(acc>4)", "margin auc"))
+    for directory in sorted(shipped_dir.iterdir()):
+        path = directory / "trace.txt"
+        if not path.is_file():
+            continue
+        rounds, _ = parse_trace(path)
+        if not rounds:
+            continue
+        deep = [r for r in rounds if r["depth"] > 4]
+        asked = [r for r in deep if r["acc"] >= 4]
+        if len(asked) < 10:
+            print("%-18s %7d %9d %9d %9s %9s" % (
+                directory.name, len(rounds), len(deep), len(asked), "-", "-"))
+            continue
+        labels = np.array([1.0 if r["acc"] > 4 else 0.0 for r in asked])
+        scores = np.array([r["margin"] for r in asked])
+        value = ("-" if labels.min() == labels.max()
+                 else "%.4f" % auc(scores, labels)[0])
+        print("%-18s %7d %9d %9d %9.3f %9s" % (
+            directory.name, len(rounds), len(deep), len(asked),
+            labels.mean(), value))
+    print("\n   `reach d4` is the population rung 1 scored. If it is a small")
+    print("   share of decoding, then a perfect depth-4 rule moves few rounds")
+    print("   however good its AUC is.")
     return 0
 
 
