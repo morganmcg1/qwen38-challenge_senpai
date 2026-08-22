@@ -13,6 +13,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 291
       },
       "3": {
@@ -27,6 +29,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 293
       },
       "4": {
@@ -41,6 +45,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 293
       },
       "5": {
@@ -55,6 +61,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 293
       }
     },
@@ -71,6 +79,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 291
       },
       "3": {
@@ -85,6 +95,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 293
       },
       "4": {
@@ -99,6 +111,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 293
       },
       "5": {
@@ -113,6 +127,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 293
       }
     },
@@ -129,6 +145,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 2,
+        "fmul": 1,
         "air_lines": 281
       },
       "3": {
@@ -143,6 +161,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 2,
+        "fmul": 1,
         "air_lines": 283
       },
       "4": {
@@ -157,6 +177,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 2,
+        "fmul": 1,
         "air_lines": 283
       },
       "5": {
@@ -171,7 +193,75 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 2,
+        "fmul": 1,
         "air_lines": 283
+      }
+    },
+    "n_halfsums_free": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
+        "air_lines": 291
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
+        "air_lines": 295
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
+        "air_lines": 295
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
+        "air_lines": 295
       }
     },
     "k_alu8": {
@@ -187,6 +277,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 12,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 345
       },
       "3": {
@@ -201,6 +293,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 12,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 347
       },
       "4": {
@@ -215,6 +309,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 12,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 347
       },
       "5": {
@@ -229,6 +325,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 12,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 347
       }
     },
@@ -245,6 +343,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 20,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 353
       },
       "3": {
@@ -259,6 +359,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 20,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 355
       },
       "4": {
@@ -273,6 +375,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 20,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 355
       },
       "5": {
@@ -287,6 +391,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 20,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 355
       }
     },
@@ -303,6 +409,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 17,
+        "fmul": 2,
         "air_lines": 403
       },
       "3": {
@@ -317,6 +425,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 17,
+        "fmul": 2,
         "air_lines": 405
       },
       "4": {
@@ -331,6 +441,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 17,
+        "fmul": 2,
         "air_lines": 405
       },
       "5": {
@@ -345,6 +457,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 17,
+        "fmul": 2,
         "air_lines": 405
       }
     },
@@ -361,6 +475,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 25,
+        "fmul": 2,
         "air_lines": 452
       },
       "3": {
@@ -375,6 +491,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 25,
+        "fmul": 2,
         "air_lines": 454
       },
       "4": {
@@ -389,6 +507,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 25,
+        "fmul": 2,
         "air_lines": 454
       },
       "5": {
@@ -403,6 +523,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 25,
+        "fmul": 2,
         "air_lines": 454
       }
     },
@@ -419,6 +541,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 367
       },
       "3": {
@@ -433,6 +557,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 369
       },
       "4": {
@@ -447,6 +573,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 369
       },
       "5": {
@@ -461,6 +589,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 369
       }
     },
@@ -477,6 +607,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 399
       },
       "3": {
@@ -491,6 +623,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 401
       },
       "4": {
@@ -505,6 +639,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 401
       },
       "5": {
@@ -519,7 +655,207 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 401
+      }
+    },
+    "k_cal0": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 324
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 326
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 326
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 326
+      }
+    },
+    "k_ld4": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 8,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
+        "air_lines": 371
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 8,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
+        "air_lines": 373
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 8,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
+        "air_lines": 373
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 8,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
+        "air_lines": 373
+      }
+    },
+    "k_shuf4": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 351
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 353
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 353
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
+        "air_lines": 353
       }
     },
     "k_tg0": {
@@ -535,6 +871,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 381
       },
       "3": {
@@ -549,6 +887,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 383
       },
       "4": {
@@ -563,6 +903,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 383
       },
       "5": {
@@ -577,6 +919,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 383
       }
     },
@@ -593,6 +937,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 418
       },
       "3": {
@@ -607,6 +953,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 420
       },
       "4": {
@@ -621,6 +969,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 420
       },
       "5": {
@@ -635,6 +985,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 420
       }
     },
@@ -651,6 +1003,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 442
       },
       "3": {
@@ -665,6 +1019,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 444
       },
       "4": {
@@ -679,6 +1035,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 444
       },
       "5": {
@@ -693,6 +1051,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 444
       }
     },
@@ -709,6 +1069,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 490
       },
       "3": {
@@ -723,6 +1085,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 492
       },
       "4": {
@@ -737,6 +1101,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 492
       },
       "5": {
@@ -751,6 +1117,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 492
       }
     },
@@ -767,6 +1135,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 415
       },
       "3": {
@@ -781,6 +1151,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 417
       },
       "4": {
@@ -795,6 +1167,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 417
       },
       "5": {
@@ -809,6 +1183,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 417
       }
     },
@@ -825,6 +1201,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 439
       },
       "3": {
@@ -839,6 +1217,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 441
       },
       "4": {
@@ -853,6 +1233,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 441
       },
       "5": {
@@ -867,6 +1249,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 441
       }
     },
@@ -883,6 +1267,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 487
       },
       "3": {
@@ -897,6 +1283,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 489
       },
       "4": {
@@ -911,6 +1299,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 489
       },
       "5": {
@@ -925,6 +1315,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 489
       }
     },
@@ -941,6 +1333,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 404
       },
       "3": {
@@ -955,6 +1349,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 406
       },
       "4": {
@@ -969,6 +1365,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 406
       },
       "5": {
@@ -983,6 +1381,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 406
       }
     },
@@ -999,6 +1399,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 424
       },
       "3": {
@@ -1013,6 +1415,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 426
       },
       "4": {
@@ -1027,6 +1431,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 426
       },
       "5": {
@@ -1041,6 +1447,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 426
       }
     },
@@ -1057,6 +1465,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 464
       },
       "3": {
@@ -1071,6 +1481,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 466
       },
       "4": {
@@ -1085,6 +1497,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 466
       },
       "5": {
@@ -1099,6 +1513,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 466
       }
     },
@@ -1115,6 +1531,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 423
       },
       "3": {
@@ -1129,6 +1547,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 425
       },
       "4": {
@@ -1143,6 +1563,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 425
       },
       "5": {
@@ -1157,6 +1579,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 16,
+        "fmul": 3,
         "air_lines": 425
       }
     },
@@ -1173,6 +1597,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 451
       },
       "3": {
@@ -1187,6 +1613,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 453
       },
       "4": {
@@ -1201,6 +1629,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 453
       },
       "5": {
@@ -1215,6 +1645,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 453
       }
     },
@@ -1231,6 +1663,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 507
       },
       "3": {
@@ -1245,6 +1679,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 509
       },
       "4": {
@@ -1259,6 +1695,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 509
       },
       "5": {
@@ -1273,6 +1711,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 28,
+        "fmul": 3,
         "air_lines": 509
       }
     },
@@ -1289,6 +1729,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 432
       },
       "3": {
@@ -1303,6 +1745,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 434
       },
       "4": {
@@ -1317,6 +1761,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 434
       },
       "5": {
@@ -1331,6 +1777,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 434
       }
     },
@@ -1347,6 +1795,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 480
       },
       "3": {
@@ -1361,6 +1811,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 482
       },
       "4": {
@@ -1375,6 +1827,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 482
       },
       "5": {
@@ -1389,6 +1843,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 482
       }
     },
@@ -1405,6 +1861,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 432
       },
       "3": {
@@ -1419,6 +1877,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 434
       },
       "4": {
@@ -1433,6 +1893,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 434
       },
       "5": {
@@ -1447,6 +1909,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 12,
+        "fmul": 3,
         "air_lines": 434
       }
     },
@@ -1463,6 +1927,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 299
       },
       "3": {
@@ -1477,6 +1943,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 301
       },
       "4": {
@@ -1491,6 +1959,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 301
       },
       "5": {
@@ -1505,6 +1975,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 301
       }
     },
@@ -1521,6 +1993,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 337
       },
       "3": {
@@ -1535,6 +2009,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 339
       },
       "4": {
@@ -1549,6 +2025,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 339
       },
       "5": {
@@ -1563,6 +2041,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 339
       }
     },
@@ -1579,6 +2059,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 339
       },
       "3": {
@@ -1593,6 +2075,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 341
       },
       "4": {
@@ -1607,6 +2091,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 341
       },
       "5": {
@@ -1621,6 +2107,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 341
       }
     },
@@ -1637,6 +2125,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 8,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 487
       },
       "3": {
@@ -1651,6 +2141,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 8,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 489
       },
       "4": {
@@ -1665,6 +2157,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 8,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 489
       },
       "5": {
@@ -1679,6 +2173,8 @@
         "fptrunc": 4,
         "sitofp": 0,
         "fma": 8,
+        "fadd": 20,
+        "fmul": 3,
         "air_lines": 489
       }
     },
@@ -1695,6 +2191,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 16,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 349
       },
       "3": {
@@ -1709,6 +2207,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 16,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 351
       },
       "4": {
@@ -1723,6 +2223,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 16,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 351
       },
       "5": {
@@ -1737,6 +2239,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 16,
+        "fadd": 9,
+        "fmul": 2,
         "air_lines": 351
       }
     },
@@ -1753,6 +2257,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
         "air_lines": 388
       },
       "3": {
@@ -1767,6 +2273,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
         "air_lines": 390
       },
       "4": {
@@ -1781,6 +2289,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
         "air_lines": 390
       },
       "5": {
@@ -1795,6 +2305,8 @@
         "fptrunc": 2,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 13,
+        "fmul": 2,
         "air_lines": 390
       }
     },
@@ -1811,6 +2323,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 303
       },
       "3": {
@@ -1825,6 +2339,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 305
       },
       "4": {
@@ -1839,6 +2355,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 305
       },
       "5": {
@@ -1853,6 +2371,8 @@
         "fptrunc": 1,
         "sitofp": 0,
         "fma": 4,
+        "fadd": 6,
+        "fmul": 2,
         "air_lines": 305
       }
     }
@@ -1878,6 +2398,13 @@
     },
     "k_shuf16": {
       "shuf": 16
+    },
+    "k_cal0": {},
+    "k_ld4": {
+      "ld": 4
+    },
+    "k_shuf4": {
+      "shuf": 4
     },
     "k_tg0": {
       "tgscaffold": 1
@@ -1969,7 +2496,8 @@
       "ld": 4
     },
     "x_cvtshift": {},
-    "n_nosums": {}
+    "n_nosums": {},
+    "n_halfsums_free": {}
   },
   "ladder": {
     "alu": [
@@ -2098,5 +2626,59 @@
         4
       ]
     ]
-  }
+  },
+  "deletion_alu_keys": [
+    "fadd",
+    "fmul",
+    "fma",
+    "fpext",
+    "fptrunc"
+  ],
+  "deletion_ladder": [
+    {
+      "arm": "a_base",
+      "kept_m": {
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5
+      },
+      "air_fp_ops": {
+        "2": 20,
+        "3": 20,
+        "4": 20,
+        "5": 20
+      }
+    },
+    {
+      "arm": "n_halfsums_free",
+      "kept_m": {
+        "2": 1,
+        "3": 2,
+        "4": 2,
+        "5": 3
+      },
+      "air_fp_ops": {
+        "2": 20,
+        "3": 20,
+        "4": 20,
+        "5": 20
+      }
+    },
+    {
+      "arm": "n_nosums",
+      "kept_m": {
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "air_fp_ops": {
+        "2": 14,
+        "3": 14,
+        "4": 14,
+        "5": 14
+      }
+    }
+  ]
 }

@@ -1,8 +1,11 @@
 # E123 pre-registration
 
 Written and committed **before** any timing measurement of this experiment.
-Nothing below may be edited after the first `rate.json` exists; the result
-report scores this file as written.
+Sections 0 to 8 below are frozen as committed in `63604656`; the result report
+scores them exactly as written. Sections 9 and 10 are disclosed amendments,
+both added before the measurement session and after that commit. They add
+arms, predictions and validity gates. They change no existing prediction, no
+formula, no band and no kill rule.
 
 Everything here is `harness=local`. The local Mac cannot reach the 40 C cool
 gate, so no number produced by this experiment is gate qualified and no number
@@ -212,3 +215,291 @@ round weighted.
 - A class whose measured price is inside its band is confirmed. A class outside
   its band is reported as a miss with the physical reason, and its band is not
   widened after the fact.
+
+## 9. Amendment 1: what the harness smoke run showed
+
+Added after the harness smoke run `research/out/e123-smoke` (1 shape, NA=4,
+2 pairs, 4 samples, at commit `63604656`) and before the measurement session.
+**Sections 0 to 8 are unchanged.** No prediction, band, formula, primary
+metric, kill rule or exclusion rule in them is modified.
+
+### 9.1 Two facts the smoke run made visible
+
+1. `k_tgld16` and `k_tgldc16` fail exactness at NA=4 on `applegpu_g16s`
+   (139148 and 139185 of 139264 elements differ) and their positive controls
+   fail with `restored_diff` equal to the whole output. These are exactly the
+   two arms the census says spill 128 and 144 bytes. The pre-registered spill
+   exclusion in section 5 already removes them. `k_cvt16` spills 16 bytes and
+   stays exact.
+2. On that one cell, `pred(k_hold_alu12)` missed by 0.01 pp and
+   `pred(k_hold_mix)` by 0.45 pp, both inside the gate, while
+   `pred(k_hold_sl)` missed by 3.63 pp.
+
+### 9.2 The `k_hold_sl` formula does not extrapolate
+
+Substituting section 4 collapses the formula completely:
+
+```text
+pred(k_hold_sl) = S_sl + 4 * p_shuf + 4 * p_ld
+                = 0.5 * ( cost(k_shuf8) + cost(k_ld8) )
+```
+
+Both slopes cancel and no scaffold term survives. That expression is exactly
+the additive prediction for any cost of the form `S + a * n_shuf + b * n_ld`,
+whatever the shared scaffold `S` is. So a miss here cannot be blamed on the
+`shuf` price, on the `ld` price, or on extrapolating below the rung range. It
+means the two classes are not additive with each other.
+
+The static census says the miss is not an instruction-count effect either. At
+NA=4 on `applegpu_g16s`:
+
+```text
+a_base   6934 B      k_cal0   7000 B      k_ld4    7260 B     k_shuf4  7516 B
+k_ld8    7492 B      k_shuf8  8056 B      k_hold_sl 7782 B
+
+additive text prediction  = 7260 + 7516 - 7000 = 7776 B   (+6 B against 7782)
+formula text prediction   = 0.5 * (8056 + 7492) = 7774 B   (+8 B against 7782)
+```
+
+Both agree with the measured machine text to within 8 bytes, or one
+instruction. `k_hold_sl` therefore issues the predicted instruction count. If
+its TIME is not additive, the excess is dynamic, not a miscount.
+
+### 9.3 Three diagnostic arms, and one pre-registered dynamic hypothesis
+
+`k_cal0`, `k_ld4` and `k_shuf4` are added. They are not rungs of any ladder, so
+every price and every prediction in sections 3 to 6 is computed and scored
+exactly as written, and the primary metric is untouched. `k_cal0` is the
+non-threadgroup injection scaffold at zero injected operations, the direct
+analogue of `k_tg0`. With it the additivity test needs no slope at all:
+
+```text
+additive:      cost(k_hold_sl) == cost(k_shuf4) + cost(k_ld4) - cost(k_cal0)
+superadditive: cost(k_hold_sl) >  that
+```
+
+**Pre-registered dynamic hypothesis.** If `k_hold_sl` is superadditive, the
+cause is register residency. At NA=4 on `applegpu_g16s` the census gives
+`k_ld8` 92 registers, `k_shuf8` 94, `a_base` 94 and `k_hold_sl` 96, and the
+fitted residency model gives 33 concurrent simdgroups at 92 registers and 32
+at 94 and above. Mixing the classes costs one residency step that neither
+single-class arm pays.
+
+- **Prediction:** `k_hold_sl` is superadditive by more than 1.0 pp at NA=4, and
+  the arms at 92 registers are the ones the ladder under-prices.
+- **Falsified if** the additivity test above is satisfied within 1.0 pp, in
+  which case the smoke-run miss was single-cell noise, or if the superadditive
+  gap appears at widths where no residency step separates the arms.
+
+## 10. Amendment 2: the advisor feedback of 2026-08-22T04:08:25Z
+
+Added before the measurement session. Sections 0 to 8 are unchanged. This
+section adds pre-registered predictions and gates; it removes none.
+
+### 10.1 Injection price against deletion price, in one session
+
+The ladder is calibrated by injection and the campaign uses it to price
+deletions. Alphonse's cross-session accounting says these differ by 1.66x: the
+Finding 59 ALU price predicts +3.760 % for `n_halfsums_free` at NA=4 against
++2.266 % measured, an implied deletion price of 0.0567 %/instruction/k-block.
+Those two numbers come from two different sessions, so the ratio is confounded
+with everything that differs between them.
+
+`n_halfsums_free` is added to this session, so the deletion side becomes a
+two-rung ladder measured beside the injection ladder in the same
+counterbalanced run:
+
+```text
+p_alu_inject = ( cost(k_alu16) - cost(k_alu8) ) / 8
+p_alu_delete = ( cost(n_nosums) - cost(n_halfsums_free) ) / D
+R            = p_alu_inject / p_alu_delete
+```
+
+Both contrasts cancel their own zero point, so `R` carries no scaffold term.
+`D` is the instruction count the second arm issues and the first does not.
+
+**The count is not assumed.** AIR keeps the `m` loop rolled and cannot see the
+deletion, so `D` is read from the machine-text census at 8.25 bytes per AGX
+instruction. Measured before the session on `applegpu_g16s`:
+
+| contrast | NA2 | NA3 | NA4 | NA5 |
+| --- | ---: | ---: | ---: | ---: |
+| `a_base` -> `n_nosums`, bytes | 314 | 468 | 634 | 816 |
+| implied instructions | 38.1 | 56.7 | 76.8 | 98.9 |
+| source accounting, `20 * NA` | 40 | 60 | 80 | 100 |
+| `n_halfsums_free` -> `n_nosums`, bytes | 192 | 338 | 354 | 514 |
+| implied instructions | 23.3 | 41.0 | 42.9 | 62.3 |
+| source accounting | 20 | 20 | 40 | 40 |
+
+The whole-tree deletion agrees with the source accounting to within 5 % at
+every width, so the count behind the 1.66x is right and a miscount cannot
+explain the ratio. The half-tree rows do not agree as well, so **`D` is taken
+from the machine text and the source-accounting value is reported beside it.**
+
+**Point prediction: `R` = 1.35, band [1.05, 1.90].** Reasoning: two live
+mechanisms pull in opposite directions. E118's Finding 60 says this loop is
+issue-throughput bound, and a pure issue-bound machine gives `R` = 1.00.
+Against that, the injected operations run on two independent accumulator
+chains and have no consumer, so they are the cheapest possible instructions to
+schedule, while the deleted add tree is loop carried through `sums`. The
+advisor's cross-session 1.66 is the only measurement available and is taken as
+the upper half of the band.
+
+**Consequence, pre-registered.** If `R` lands above 1.15, every rung-1 deletion
+price is divided by the measured `R` before it is compared with the +1.0 %
+build bar, and the ranking reports both the undivided and the divided value. If
+`R` is inside [0.90, 1.15], injection price is deletion price on this class,
+the divisor is 1, and the report says the cross-session 1.66 was a
+between-session artifact.
+
+### 10.2 The free threadgroup-access prediction
+
+From two arms E118 already measured:
+
+```text
+n_halfsums_free  +2.266 %   at NA=4     the saving with no exchange
+x_sumshare_min   +1.465 %   at NA=4     the same saving, paid for by sharing
+exchange cost     0.801 pp  at NA=4     2 barriers + 4 threadgroup accesses
+```
+
+If barriers cost about 2 cycles, almost all of the 0.801 pp is the four
+accesses, giving **0.20 %/instruction/k-block at NA=4** for one threadgroup
+access.
+
+This is scored as a fourth held-out prediction, against the mean of the
+measured `p_tgld` and `p_tgst` at NA=4, which is what "one threadgroup access"
+means in the exchange arm's mix of two reads and two writes:
+
+```text
+p_tgaccess_measured = 0.5 * ( p_tgld + p_tgst )      at NA=4
+err_tgaccess        = | 0.20 - p_tgaccess_measured |  in pp
+```
+
+The exchange cost is also decomposed with the measured barrier price and
+scored as a whole:
+
+```text
+pred(exchange cost) = 2 * p_bar + 2 * p_tgld + 2 * p_tgst
+err_exchange        = | pred - 0.801 |               in pp
+```
+
+Both are reported against the same 1.0 pp gate as the three section-4
+holdouts. They are **additional** to the primary metric, which stays the
+median over `k_hold_mix`, `k_hold_alu12` and `k_hold_sl` exactly as section 5
+defines it, because those three are measured in this session and the 0.801 pp
+is not.
+
+**Interpretation, fixed in advance.** A measured access price near 0.20
+confirms the class from a completely independent arm. Near 0.05 means barriers
+are NOT cheap on this part and carry most of the 0.801 pp, which would falsify
+the Apple two-cycle claim the same way E118's `simd_shuffle` result falsified
+its neighbour. The measured `p_bar` decides between them directly.
+
+### 10.3 Three mandatory validity gates
+
+Adopted from Alphonse's `research/e121_analysis.py`. Any one of them voids the
+session before a speedup number is printed:
+
+1. implied bandwidth above `1.2 * 273` GB/s;
+2. the null scaffold arm moving more than 0.50 % at any width;
+3. any positive control reporting `detected=False`.
+
+Gate 2 is stricter here than section 8's 0.3 pp NA=4 noise rule, and both
+apply: `q_scaffold` must stay inside 0.3 pp at NA=4 and inside 0.50 % at every
+width.
+
+Gate 3 needs one exception, declared now rather than after the fact. The smoke
+run already showed that `k_tgld16` and `k_tgldc16` fail their positive control
+at NA=4, and section 5 already excludes those cells for spill. A positive
+control failure **on a cell that the pre-registered spill rule excludes** voids
+that cell, not the session. A positive control failure on any retained cell
+voids the session.
+
+### 10.4 Harness defect 22
+
+`research/e118_qmv_probe.m` dispatches `MTLSizeMake(m, n/8, 1)` with `m = NA`,
+so an entry point without a row-bounds guard writes rows up to `NA^2 - 1`,
+faults the command buffer, and lets every later dispatch retire in 1 to 3
+microseconds while the harness still exits 0.
+
+Checked before this session: every entry point this experiment emits already
+carries
+
+```c
+const int first_m = int(tid.x) * NA;
+if (first_m >= NA) { return; }
+```
+
+at all four widths, in `arm_*.metal` and in the `ep_*.metal` entry-point
+sources. Gate 1 of section 10.3 is the runtime check that this stays true.
+
+### 10.5 Rung 1 prices the entry point, not only the body
+
+`qmv_fast_crossrow_affine4_g64_wide` is a `METAL_FUNC`, so the shipped
+`switch (ntg.x)` inlines every live width into one entry point that allocates
+registers for the widest inlined body. A per-width body census cannot see a
+change that costs registers at one width only, and every per-cell probe this
+campaign has run measures the body alone.
+
+`research/e123_arms.py --entrypoint-census` is added. It compiles the
+all-widths inlined form and reports registers, spill, machine text and
+concurrent simdgroups on both architectures. Residency is
+`floor(budget / registers)` with `budget` = 3072 on `applegpu_g16s` and 3968 on
+`applegpu_g17s`. Those two constants are fitted, and they are the unique values
+that reproduce all twelve cells of Alphonse's E121 table.
+
+The fit is confirmed out of sample by this experiment's own entry-point census:
+`a_base` reports 101 registers and 39 simdgroups on `applegpu_g17s`, which is
+his row for the same arm, produced by a different generator.
+
+Every rung-1 arm that would be built is reported with body census AND
+entry-point registers, spill and simdgroups on `applegpu_g17s`, and the
++1.0 % build bar is applied to the arm including its entry-point cost.
+
+Already measured before the session, so recorded here rather than presented as
+a result later:
+
+| entry point | g16s R/spill/sg | g17s R/spill/sg |
+| --- | --- | --- |
+| `a_base` | 94 / 0 / 32 | 101 / 0 / 39 |
+| `n_nosums` | 95 / 0 / 32 | 99 / 0 / 40 |
+| `n_halfsums_free` | 95 / 0 / 32 | 101 / 0 / 39 |
+| `x_cvtshift` | 96 / 192 / 32 | 114 / 0 / 34 |
+
+`x_cvtshift` costs the ranked entry point 5 of 39 simdgroups, about -13 %, and
+spills 192 bytes locally. **Pre-registered verdict: the hand-written shift form
+of the bf16 widening is rejected on the entry-point census alone, whatever its
+per-cell time turns out to be.**
+
+Also recorded: on `applegpu_g17s` neither ungated `x_sumshare` form spills, at
+120 and 121 registers. E118's -31 % NA=5 collapse is a `g16s` artifact and does
+not transfer to ranked hardware.
+
+### 10.6 Rung 2 build discipline for NA=5
+
+Thorfinn traced 45 NA=5 exactness failures to compile-time `K` and `N`
+template arguments, which fully unroll the ten-iteration k-loop. At NA=5 only,
+the output is wrong: 174,072 of 174,080 elements differ, `max_abs_diff`
+4501.3125, and the positive control fires normally. Runtime `K` and `N` fix it.
+NA=5 is the only width holding `vec<float,5>` in `acc[4]`, `partial[4]`,
+`a0..a3` and `sums` at once.
+
+For any rung-2 build: suspect a compile-time `in_vec_size` or a `#pragma
+unroll` on the k-loop at NA=5 before suspecting the arithmetic, and separate
+the two by holding the arm fixed and changing only whether `K` is a
+compile-time constant, at K=5120 and at K=512.
+
+This also explains E118's retraction that a clean spill census is not an
+exactness proof. The census reads the compiled function; the fault is in what
+the compiler keeps live across the unrolled copies, so the census cannot see it
+by construction.
+
+### 10.7 Arms and artifacts after both amendments
+
+36 arms, from 32 in section 0. Added: `n_halfsums_free` (deletion rung),
+`k_cal0`, `k_ld4`, `k_shuf4` (additivity diagnostics). Static artifacts
+regenerated before the session: `census.json`, `aircheck.json` and the new
+`entrypoint-census.json`. Every rung contrast in the AIR check still matches
+its injected count, and `q_scaffold` and `ctl_a_base_via_m` are still
+byte-identical to `a_base` at every width on both architectures.
+

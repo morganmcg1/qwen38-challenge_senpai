@@ -170,6 +170,48 @@ BODY_NOSUMS = BODY_BASE.replace(
     "acc[r] += scale_local[r] * partial[r] + bias_local[r];").replace(
     "    VF sums = VF(0.0f);\n", "")
 
+# --- the deletion side of the ladder ------------------------------------------
+#
+# The ladder is calibrated by INJECTION and the campaign then uses it to price
+# DELETIONS. Those need not be the same number. An injected operation has no
+# consumer, so it can fill an issue slot that was idle; a deleted operation was
+# feeding a dependence chain and may have been partly hidden behind memory.
+# Alphonse's accounting of the shipped body makes the gap concrete -- the E118
+# ALU price predicts +3.760 % for `n_halfsums_free` against +2.266 % measured,
+# a ratio of 1.66 -- but those two numbers came from two different sessions, so
+# the ratio is confounded with everything that differs between them.
+#
+# `n_halfsums_free` is E111's ceiling arm rebuilt on this body. `H` is
+# `constexpr` and `m` is a fully unrolled loop index, so `m < H` folds at
+# compile time and the upper components of the add tree are simply not emitted.
+# There is no branch, no duplicated loop and no scaffolding, so the arm is the
+# mechanism alone. With `n_nosums` deleting the whole tree, the session then
+# holds a two-rung DELETION ladder next to the two-rung INJECTION ladder:
+#
+#   injection price = (cost(k_alu16)  - cost(k_alu8))          / 8
+#   deletion price  = (cost(n_nosums) - cost(n_halfsums_free)) / D
+#
+# where `D` is the ALU count the second arm still issues and the first does
+# not, read from AIR rather than assumed. Both contrasts cancel their own zero
+# point, so their ratio carries no scaffold term.
+#
+# Neither arm is bit exact. `n_halfsums_free` leaves the upper `sums`
+# components at zero on purpose, exactly as E118 registered it.
+BODY_HALFSUMS_FREE = BODY_BASE.replace(
+    "    VF sums = VF(0.0f);\n",
+    "    VF sums = VF(0.0f);\n    constexpr int H = (NA + 1) / 2;\n").replace(
+    "        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];\n",
+    "        if (m < H) {\n"
+    "          sums[m] += xv[0] + xv[1] + xv[2] + xv[3];\n"
+    "        }\n")
+expect(BODY_HALFSUMS_FREE, "constexpr int H", 1, "half-tree bound")
+expect(BODY_HALFSUMS_FREE, "if (m < H) {", 1, "half-tree gate")
+
+
+def halfsums_kept(na: int) -> int:
+    """`m` components whose add tree survives in `n_halfsums_free` at width NA."""
+    return (na + 1) // 2
+
 # --- the threadgroup staging every threadgroup-class arm shares ---------------
 #
 # One float array and one bf16 array, the same size in every arm that uses
@@ -424,6 +466,8 @@ PLANS = {
     "a_base": (None, ""),
     "q_scaffold": ((PROLOGUE, BODY_BASE, EPILOGUE), ""),
     "n_nosums": ((PROLOGUE, BODY_NOSUMS, EPILOGUE), ""),
+    # the deletion rung between `a_base` and `n_nosums`
+    "n_halfsums_free": ((PROLOGUE, BODY_HALFSUMS_FREE, EPILOGUE), ""),
     # the three E118 classes, re-measured in this session
     "k_alu8": plan("alu", 2, 4),
     "k_alu16": plan("alu", 2, 8),
@@ -431,6 +475,28 @@ PLANS = {
     "k_ld16": plan("ld", 2, 8),
     "k_shuf8": plan("shuf", 2, 4),
     "k_shuf16": plan("shuf", 2, 8),
+    # Three diagnostics added after the harness smoke run. They are NOT rungs
+    # of any ladder, so every pre-registered price and every pre-registered
+    # prediction is computed exactly as section 4 of the pre-registration
+    # states, and the primary metric is unaffected.
+    #
+    # `pred(k_hold_sl)` reduces algebraically to `0.5 * (cost(k_shuf8) +
+    # cost(k_ld8))`: the slopes cancel and no scaffold term survives. That IS
+    # the additive prediction whenever cost is `S + a * n_shuf + b * n_ld` for
+    # any shared scaffold `S`. So if the holdout misses, the ladder is not
+    # extrapolating badly -- the two classes are not additive with each other,
+    # and no per-class price can be blamed. These arms separate the two
+    # explanations. `k_cal0` measures `S` for the non-threadgroup classes the
+    # way `k_tg0` already measures it for the threadgroup ones, and the 4 rungs
+    # give the single-class cost at the holdout's own operation count, so
+    #
+    #   additive:      cost(k_hold_sl) == cost(k_shuf4) + cost(k_ld4) - S
+    #   superadditive: cost(k_hold_sl) >  that
+    #
+    # is a direct test that needs no slope at all.
+    "k_cal0": plan("alu", 2, 0),
+    "k_ld4": plan("ld", 2, 2),
+    "k_shuf4": plan("shuf", 2, 2),
     # the threadgroup scaffold at zero injected instructions
     "k_tg0": plan("tgld", 2, 0),
     # the four new classes, three rungs each. The 4 rung exists because the
@@ -474,6 +540,7 @@ ARM_INJECTION = {
     "k_alu8": {"alu": 8}, "k_alu16": {"alu": 16},
     "k_ld8": {"ld": 8}, "k_ld16": {"ld": 16},
     "k_shuf8": {"shuf": 8}, "k_shuf16": {"shuf": 16},
+    "k_cal0": {}, "k_ld4": {"ld": 4}, "k_shuf4": {"shuf": 4},
     "k_tg0": {"tgscaffold": 1},
     "k_tgld4": {"tgscaffold": 1, "tgld": 4},
     "k_tgld8": {"tgscaffold": 1, "tgld": 8},
@@ -497,7 +564,15 @@ ARM_INJECTION = {
     "k_hold_sl": {"shuf": 4, "ld": 4},
     "x_cvtshift": {},
     "n_nosums": {},
+    "n_halfsums_free": {},
 }
+
+# The deletion ladder, in the same shape as `CAL_LADDER`: (arm, add-tree `m`
+# components still issued at width NA). The deleted instruction count per rung
+# is read from AIR by `--aircheck`, not assumed here.
+DELETION_LADDER = (("a_base", lambda na: na),
+                   ("n_halfsums_free", halfsums_kept),
+                   ("n_nosums", lambda na: 0))
 
 # class -> ((arm, injected count), ...). The price is the contrast between the
 # two extreme rungs; the intermediate rungs test linearity.
@@ -524,7 +599,7 @@ TG_CLASSES = ("tgld", "tgldc", "tgst", "cvt")
 PAIRED_CLASSES = ("bar", "bar_hi", "sbar")
 HOLDOUT_ARMS = ("k_hold_mix", "k_hold_alu12", "k_hold_sl")
 # Not required to reproduce `a_base` bit for bit.
-DIAGNOSTIC_ARMS = ("n_nosums",)
+DIAGNOSTIC_ARMS = ("n_nosums", "n_halfsums_free")
 
 ARMS = tuple(PLANS)
 
@@ -569,7 +644,13 @@ COUNTERS = {
     "fptrunc": re.compile(r"=\s*fptrunc\s"),
     "sitofp": re.compile(r"=\s*(?:sitofp|uitofp)\s"),
     "fma": re.compile(r"llvm\.fmuladd|air\.fma"),
+    "fadd": re.compile(r"=\s*fadd\s"),
+    "fmul": re.compile(r"=\s*fmul\s"),
 }
+# Everything the deleted add tree can turn into: the bf16 adds themselves, the
+# widening each one needs and any fused form the front end chooses. Summing the
+# class is what makes the deleted count independent of which form it picked.
+DELETED_ALU_KEYS = ("fadd", "fmul", "fma", "fpext", "fptrunc")
 
 
 def air_counts(source: pathlib.Path, workdir: pathlib.Path) -> dict:
@@ -655,6 +736,40 @@ def aircheck(directory: pathlib.Path, out: pathlib.Path | None) -> int:
                 failures.append("cvt: fpext delta %d, injected %d"
                                 % (widen, want))
 
+    # The deletion ladder. The injected ladder knows its own instruction count
+    # from the source; a deletion arm does not, because the front end chooses
+    # how to spell the add tree. Read the count instead of asserting it.
+    #
+    # AIR keeps the `m` loop ROLLED, so `n_halfsums_free`'s `m < H` is still a
+    # predicate here and its AIR delta against `a_base` is zero by
+    # construction. The deletion happens in the backend, when the loop is
+    # unrolled at the fixed template width. This table therefore bounds the
+    # per-iteration cost only; the deleted instruction count comes from the
+    # machine-text census.
+    print("\nDeletion ladder, AIR floating-point operations per entry point")
+    print("  (AIR keeps the `m` loop rolled: this cannot see the deletion)")
+    print("  %-18s %s" % ("arm", " ".join("%4s->%-9s" % ("NA", na)
+                                          for na in WIDTHS)))
+    deleted: dict[str, dict[str, int]] = {}
+    for arm, kept in DELETION_LADDER:
+        cells = []
+        for na in WIDTHS:
+            cell = rows[arm].get(str(na), {})
+            total = sum(cell.get(k, 0) for k in DELETED_ALU_KEYS)
+            deleted.setdefault(arm, {})[str(na)] = total
+            cells.append("%4d/%-9s" % (kept(na), total))
+        print("  %-18s %s" % (arm, " ".join(cells)))
+    base_counts = deleted.get("a_base", {})
+    print("  deleted against a_base, and per dropped `m` component")
+    for arm, kept in DELETION_LADDER[1:]:
+        cells = []
+        for na in WIDTHS:
+            gone = base_counts.get(str(na), 0) - deleted[arm].get(str(na), 0)
+            dropped = na - kept(na)
+            cells.append("%4d/%-9s" % (gone, "%.1f" % (gone / dropped)
+                                       if dropped else "-"))
+        print("  %-18s %s" % (arm, " ".join(cells)))
+
     if failures:
         print("\nAIRCHECK FAILURES")
         for line in failures:
@@ -664,19 +779,102 @@ def aircheck(directory: pathlib.Path, out: pathlib.Path | None) -> int:
 
     if out is not None:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps({"arms": rows, "failures": failures,
-                                   "injection": ARM_INJECTION,
-                                   "ladder": {k: list(v) for k, v
-                                              in CAL_LADDER.items()}},
-                                  indent=2) + "\n")
+        out.write_text(json.dumps(
+            {"arms": rows, "failures": failures, "injection": ARM_INJECTION,
+             "ladder": {k: list(v) for k, v in CAL_LADDER.items()},
+             "deletion_alu_keys": list(DELETED_ALU_KEYS),
+             "deletion_ladder": [
+                 {"arm": arm,
+                  "kept_m": {str(na): kept(na) for na in WIDTHS},
+                  "air_fp_ops": deleted.get(arm, {})}
+                 for arm, kept in DELETION_LADDER]},
+            indent=2) + "\n")
         print("\nwrote %s" % out)
     return 1 if failures else 0
+
+
+# --- the entry-point census ---------------------------------------------------
+#
+# `qmv_fast_crossrow_affine4_g64_wide` is a `METAL_FUNC`, so the shipped
+# `switch (ntg.x)` at `quantized.h:1918-1979` inlines EVERY live width into ONE
+# entry point and that entry point allocates registers for the widest inlined
+# body. A per-width body census cannot see that: a change that costs registers
+# only at NA=5 leaves the NA=2, 3 and 4 bodies byte identical and still taxes
+# every one of them through the shared allocation. Alphonse measured the effect
+# on the ranked architecture -- an ungated arm takes the g17s entry point from
+# 39 concurrent simdgroups to 32 or 33, about -15 %, while a gated one costs
+# 39 to 38 -- so any arm this experiment would recommend building must be
+# priced with its entry-point cost included.
+#
+# `e118_iso_na0` is that form. The `0` is not a width; it keys "every live
+# width inlined into one entry point".
+ENTRYPOINT_ARMS = ("a_base", "n_nosums", "n_halfsums_free", "x_cvtshift")
+
+# Concurrent simdgroups per core as `floor(budget / registers)`, with one
+# budget constant per architecture. The constants are FITTED, not documented:
+# they are the unique values that reproduce all twelve cells of Alphonse's E121
+# residency table (g16s 93 -> 33, 94 -> 32, 96 -> 32; g17s 101 -> 39,
+# 102 -> 38, 107 -> 37, 120 -> 33, 121 -> 32). Treat the ratio between two arms
+# as the finding and the absolute count as a fitted quantity.
+SIMDGROUP_BUDGET = {"applegpu_g16s": 3072, "applegpu_g17s": 3968}
+
+
+def simdgroups(registers: int | None, arch: str) -> int | None:
+    return None if not registers else SIMDGROUP_BUDGET[arch] // registers
+
+
+def emit_entrypoints(directory: pathlib.Path) -> None:
+    base = (directory / "base_lone.metal").read_text()
+    saved = e118.ROWS_PER_SIMD
+    e118.ROWS_PER_SIMD = {arm: 4 for arm in ENTRYPOINT_ARMS}
+    try:
+        for arm in ENTRYPOINT_ARMS:
+            (directory / ("ep_%s.metal" % arm)).write_text(
+                e118.arm_source(base, arm))
+            print("entry-point source ep_%s.metal" % arm)
+    finally:
+        e118.ROWS_PER_SIMD = saved
+
+
+def entrypoint_census(directory: pathlib.Path,
+                      out: pathlib.Path | None) -> int:
+    rows = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        workdir = pathlib.Path(tmp)
+        for arm in ENTRYPOINT_ARMS:
+            rows[arm] = e118.census_one(directory / ("ep_%s.metal" % arm),
+                                        workdir, "ep_" + arm)
+            print("entry-point censused %s" % arm)
+
+    for arch in ("applegpu_g16s", "applegpu_g17s"):
+        print("\n%s all-widths entry point: registers / spill / text / "
+              "simdgroups" % arch)
+        for arm in ENTRYPOINT_ARMS:
+            cell = rows[arm].get(arch, {}).get("0", {})
+            regs = cell.get("registers")
+            print("  %-18s %4s / s%-4s / %6s / %s"
+                  % (arm, regs, cell.get("spill_bytes"), cell.get("text_bytes"),
+                     simdgroups(regs, arch)))
+
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(
+            {"arms": rows, "simdgroup_budget": SIMDGROUP_BUDGET,
+             "simdgroups": {
+                 arch: {arm: simdgroups(
+                     rows[arm].get(arch, {}).get("0", {}).get("registers"),
+                     arch) for arm in ENTRYPOINT_ARMS}
+                 for arch in ("applegpu_g16s", "applegpu_g17s")}},
+            indent=2) + "\n")
+        print("\nwrote %s" % out)
+    return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--emit", type=pathlib.Path)
     ap.add_argument("--census", type=pathlib.Path)
+    ap.add_argument("--entrypoint-census", type=pathlib.Path)
     ap.add_argument("--aircheck", type=pathlib.Path)
     ap.add_argument("--out", type=pathlib.Path)
     ap.add_argument("--arm-list", action="store_true")
@@ -688,8 +886,11 @@ def main() -> int:
         return 0
     if args.emit is not None:
         e118.emit(args.emit)
+        emit_entrypoints(args.emit)
     if args.aircheck is not None:
         return aircheck(args.aircheck, args.out)
+    if args.entrypoint_census is not None:
+        return entrypoint_census(args.entrypoint_census, args.out)
     if args.census is not None:
         return e118.census(args.census, args.out)
     return 0

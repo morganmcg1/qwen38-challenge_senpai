@@ -8,7 +8,8 @@
   "local_arch": "applegpu_g16s",
   "ranked_arch": "applegpu_g17s",
   "diagnostic_arms": [
-    "n_nosums"
+    "n_nosums",
+    "n_halfsums_free"
   ],
   "promotion_arms": [],
   "census_arms": [],
@@ -548,6 +549,185 @@
           "spill_bytes": 0,
           "text_bytes": 7640,
           "text_sha8": "67025c55"
+        }
+      }
+    },
+    "n_halfsums_free": {
+      "air": {
+        "2": {
+          "device_loads": 4,
+          "device_stores": 1,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 12,
+          "int_alu": 50,
+          "convert": 30,
+          "address": 23,
+          "free": 102,
+          "other": 16,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 1,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 20,
+          "int_alu_lanes": 50,
+          "convert_lanes": 30,
+          "address_lanes": 29,
+          "free_lanes": 0,
+          "other_lanes": 24,
+          "total_instructions": 239,
+          "arithmetic": 62,
+          "arithmetic_lanes": 70,
+          "issue_lanes": 162,
+          "air_lines": 291
+        },
+        "3": {
+          "device_loads": 4,
+          "device_stores": 1,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 12,
+          "int_alu": 56,
+          "convert": 30,
+          "address": 23,
+          "free": 100,
+          "other": 16,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 1,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 28,
+          "int_alu_lanes": 58,
+          "convert_lanes": 30,
+          "address_lanes": 35,
+          "free_lanes": 0,
+          "other_lanes": 32,
+          "total_instructions": 243,
+          "arithmetic": 68,
+          "arithmetic_lanes": 86,
+          "issue_lanes": 192,
+          "air_lines": 295
+        },
+        "4": {
+          "device_loads": 4,
+          "device_stores": 1,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 12,
+          "int_alu": 56,
+          "convert": 30,
+          "address": 23,
+          "free": 100,
+          "other": 16,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 1,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 36,
+          "int_alu_lanes": 59,
+          "convert_lanes": 30,
+          "address_lanes": 41,
+          "free_lanes": 0,
+          "other_lanes": 40,
+          "total_instructions": 243,
+          "arithmetic": 68,
+          "arithmetic_lanes": 95,
+          "issue_lanes": 215,
+          "air_lines": 295
+        },
+        "5": {
+          "device_loads": 4,
+          "device_stores": 1,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 12,
+          "int_alu": 56,
+          "convert": 30,
+          "address": 23,
+          "free": 100,
+          "other": 16,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 1,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 44,
+          "int_alu_lanes": 60,
+          "convert_lanes": 30,
+          "address_lanes": 47,
+          "free_lanes": 0,
+          "other_lanes": 48,
+          "total_instructions": 243,
+          "arithmetic": 68,
+          "arithmetic_lanes": 104,
+          "issue_lanes": 238,
+          "air_lines": 295
+        }
+      },
+      "threadgroup_bytes": {
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "threadgroup_budget_bytes": 32768,
+      "applegpu_g16s": {
+        "2": {
+          "registers": 70,
+          "spill_bytes": 0,
+          "text_bytes": 4308,
+          "text_sha8": "224ecb3e"
+        },
+        "3": {
+          "registers": 83,
+          "spill_bytes": 0,
+          "text_bytes": 5540,
+          "text_sha8": "45b4deb0"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6654,
+          "text_sha8": "5caa25d3"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 7932,
+          "text_sha8": "bad789b6"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 4516,
+          "text_sha8": "b82f3c50"
+        },
+        "3": {
+          "registers": 92,
+          "spill_bytes": 0,
+          "text_bytes": 5780,
+          "text_sha8": "fb2c4f62"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6912,
+          "text_sha8": "60e711de"
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8176,
+          "text_sha8": "ee731ae9"
         }
       }
     },
@@ -1622,6 +1802,543 @@
           "spill_bytes": 288,
           "text_bytes": 12040,
           "text_sha8": "189b87e9"
+        }
+      }
+    },
+    "k_cal0": {
+      "air": {
+        "2": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 51,
+          "convert": 33,
+          "address": 26,
+          "free": 113,
+          "other": 19,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 23,
+          "int_alu_lanes": 51,
+          "convert_lanes": 33,
+          "address_lanes": 32,
+          "free_lanes": 0,
+          "other_lanes": 27,
+          "total_instructions": 264,
+          "arithmetic": 66,
+          "arithmetic_lanes": 74,
+          "issue_lanes": 176,
+          "air_lines": 324
+        },
+        "3": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 55,
+          "convert": 33,
+          "address": 26,
+          "free": 111,
+          "other": 19,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 31,
+          "int_alu_lanes": 55,
+          "convert_lanes": 33,
+          "address_lanes": 38,
+          "free_lanes": 0,
+          "other_lanes": 35,
+          "total_instructions": 266,
+          "arithmetic": 70,
+          "arithmetic_lanes": 86,
+          "issue_lanes": 202,
+          "air_lines": 326
+        },
+        "4": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 55,
+          "convert": 33,
+          "address": 26,
+          "free": 111,
+          "other": 19,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 39,
+          "int_alu_lanes": 55,
+          "convert_lanes": 33,
+          "address_lanes": 44,
+          "free_lanes": 0,
+          "other_lanes": 43,
+          "total_instructions": 266,
+          "arithmetic": 70,
+          "arithmetic_lanes": 94,
+          "issue_lanes": 224,
+          "air_lines": 326
+        },
+        "5": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 55,
+          "convert": 33,
+          "address": 26,
+          "free": 111,
+          "other": 19,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 47,
+          "int_alu_lanes": 55,
+          "convert_lanes": 33,
+          "address_lanes": 50,
+          "free_lanes": 0,
+          "other_lanes": 51,
+          "total_instructions": 266,
+          "arithmetic": 70,
+          "arithmetic_lanes": 102,
+          "issue_lanes": 246,
+          "air_lines": 326
+        }
+      },
+      "threadgroup_bytes": {
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "threadgroup_budget_bytes": 32768,
+      "applegpu_g16s": {
+        "2": {
+          "registers": 66,
+          "spill_bytes": 0,
+          "text_bytes": 4496,
+          "text_sha8": "76be8c8c"
+        },
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5736,
+          "text_sha8": "005752c6"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 7000,
+          "text_sha8": "08e8f638"
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8300,
+          "text_sha8": "451c8fe8"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 4730,
+          "text_sha8": "3d154647"
+        },
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5960,
+          "text_sha8": "de8f2f62"
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7278,
+          "text_sha8": "c31c3aa0"
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8512,
+          "text_sha8": "70b2d3a1"
+        }
+      }
+    },
+    "k_ld4": {
+      "air": {
+        "2": {
+          "device_loads": 8,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 19,
+          "int_alu": 64,
+          "convert": 41,
+          "address": 32,
+          "free": 117,
+          "other": 23,
+          "device_loads_lanes": 11,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 27,
+          "int_alu_lanes": 64,
+          "convert_lanes": 41,
+          "address_lanes": 38,
+          "free_lanes": 0,
+          "other_lanes": 31,
+          "total_instructions": 307,
+          "arithmetic": 83,
+          "arithmetic_lanes": 91,
+          "issue_lanes": 215,
+          "air_lines": 371
+        },
+        "3": {
+          "device_loads": 8,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 19,
+          "int_alu": 68,
+          "convert": 41,
+          "address": 32,
+          "free": 115,
+          "other": 23,
+          "device_loads_lanes": 11,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 35,
+          "int_alu_lanes": 68,
+          "convert_lanes": 41,
+          "address_lanes": 44,
+          "free_lanes": 0,
+          "other_lanes": 39,
+          "total_instructions": 309,
+          "arithmetic": 87,
+          "arithmetic_lanes": 103,
+          "issue_lanes": 241,
+          "air_lines": 373
+        },
+        "4": {
+          "device_loads": 8,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 19,
+          "int_alu": 68,
+          "convert": 41,
+          "address": 32,
+          "free": 115,
+          "other": 23,
+          "device_loads_lanes": 11,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 43,
+          "int_alu_lanes": 68,
+          "convert_lanes": 41,
+          "address_lanes": 50,
+          "free_lanes": 0,
+          "other_lanes": 47,
+          "total_instructions": 309,
+          "arithmetic": 87,
+          "arithmetic_lanes": 111,
+          "issue_lanes": 263,
+          "air_lines": 373
+        },
+        "5": {
+          "device_loads": 8,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 0,
+          "simd_reduce": 1,
+          "float_alu": 19,
+          "int_alu": 68,
+          "convert": 41,
+          "address": 32,
+          "free": 115,
+          "other": 23,
+          "device_loads_lanes": 11,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 0,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 51,
+          "int_alu_lanes": 68,
+          "convert_lanes": 41,
+          "address_lanes": 56,
+          "free_lanes": 0,
+          "other_lanes": 55,
+          "total_instructions": 309,
+          "arithmetic": 87,
+          "arithmetic_lanes": 119,
+          "issue_lanes": 285,
+          "air_lines": 373
+        }
+      },
+      "threadgroup_bytes": {
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "threadgroup_budget_bytes": 32768,
+      "applegpu_g16s": {
+        "2": {
+          "registers": 76,
+          "spill_bytes": 0,
+          "text_bytes": 4716,
+          "text_sha8": "e3744056"
+        },
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5956,
+          "text_sha8": "d719b2a1"
+        },
+        "4": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 7260,
+          "text_sha8": "446f6ef4"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 208,
+          "text_bytes": 8884,
+          "text_sha8": "208e1ad8"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 4926,
+          "text_sha8": "b1b15341"
+        },
+        "3": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 6216,
+          "text_sha8": "3a504539"
+        },
+        "4": {
+          "registers": 97,
+          "spill_bytes": 0,
+          "text_bytes": 7460,
+          "text_sha8": "26ca0cb3"
+        },
+        "5": {
+          "registers": 106,
+          "spill_bytes": 0,
+          "text_bytes": 8726,
+          "text_sha8": "fb35f785"
+        }
+      }
+    },
+    "k_shuf4": {
+      "air": {
+        "2": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 4,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 58,
+          "convert": 34,
+          "address": 28,
+          "free": 116,
+          "other": 27,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 4,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 23,
+          "int_alu_lanes": 58,
+          "convert_lanes": 34,
+          "address_lanes": 34,
+          "free_lanes": 0,
+          "other_lanes": 35,
+          "total_instructions": 289,
+          "arithmetic": 73,
+          "arithmetic_lanes": 81,
+          "issue_lanes": 198,
+          "air_lines": 351
+        },
+        "3": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 4,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 62,
+          "convert": 34,
+          "address": 28,
+          "free": 114,
+          "other": 27,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 4,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 31,
+          "int_alu_lanes": 62,
+          "convert_lanes": 34,
+          "address_lanes": 40,
+          "free_lanes": 0,
+          "other_lanes": 43,
+          "total_instructions": 291,
+          "arithmetic": 77,
+          "arithmetic_lanes": 93,
+          "issue_lanes": 224,
+          "air_lines": 353
+        },
+        "4": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 4,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 62,
+          "convert": 34,
+          "address": 28,
+          "free": 114,
+          "other": 27,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 4,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 39,
+          "int_alu_lanes": 62,
+          "convert_lanes": 34,
+          "address_lanes": 46,
+          "free_lanes": 0,
+          "other_lanes": 51,
+          "total_instructions": 291,
+          "arithmetic": 77,
+          "arithmetic_lanes": 101,
+          "issue_lanes": 246,
+          "air_lines": 353
+        },
+        "5": {
+          "device_loads": 4,
+          "device_stores": 2,
+          "threadgroup": 0,
+          "shuffles": 4,
+          "simd_reduce": 1,
+          "float_alu": 15,
+          "int_alu": 62,
+          "convert": 34,
+          "address": 28,
+          "free": 114,
+          "other": 27,
+          "device_loads_lanes": 7,
+          "device_stores_lanes": 2,
+          "threadgroup_lanes": 0,
+          "shuffles_lanes": 4,
+          "simd_reduce_lanes": 1,
+          "float_alu_lanes": 47,
+          "int_alu_lanes": 62,
+          "convert_lanes": 34,
+          "address_lanes": 52,
+          "free_lanes": 0,
+          "other_lanes": 59,
+          "total_instructions": 291,
+          "arithmetic": 77,
+          "arithmetic_lanes": 109,
+          "issue_lanes": 268,
+          "air_lines": 353
+        }
+      },
+      "threadgroup_bytes": {
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "threadgroup_budget_bytes": 32768,
+      "applegpu_g16s": {
+        "2": {
+          "registers": 74,
+          "spill_bytes": 0,
+          "text_bytes": 4994,
+          "text_sha8": "fa4d71dc"
+        },
+        "3": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 6238,
+          "text_sha8": "0080eefd"
+        },
+        "4": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 7516,
+          "text_sha8": "9d637e3a"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 192,
+          "text_bytes": 9102,
+          "text_sha8": "f6be3c82"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 5264,
+          "text_sha8": "5313200c"
+        },
+        "3": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 6556,
+          "text_sha8": "c37bb76d"
+        },
+        "4": {
+          "registers": 100,
+          "spill_bytes": 0,
+          "text_bytes": 7790,
+          "text_sha8": "4cce6e14"
+        },
+        "5": {
+          "registers": 112,
+          "spill_bytes": 0,
+          "text_bytes": 9064,
+          "text_sha8": "9d21ebc5"
         }
       }
     },
