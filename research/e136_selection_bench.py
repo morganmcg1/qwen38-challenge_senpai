@@ -409,12 +409,12 @@ class ShippedArm:
         self.dispatches = 2
 
     def step(self, dep):
-        c = self.partial([self.score, dep],
+        c = self.partial(inputs=[self.score, dep],
                          grid=(self.plan.tiles * TG, 1, 1),
                          threadgroup=(TG, 1, 1),
                          output_shapes=[[self.plan.cands], [self.plan.cands]],
                          output_dtypes=[mx.uint32, mx.uint32])
-        return self.finalize([c[0], c[1], self.probed, self.perm, dep],
+        return self.finalize(inputs=[c[0], c[1], self.probed, self.perm, dep],
                              grid=(TG, 1, 1), threadgroup=(TG, 1, 1),
                              output_shapes=[[TOPK]],
                              output_dtypes=[mx.uint32])[0]
@@ -461,15 +461,15 @@ class TwoStageArm:
         self.dispatches = 5 + (1 if with_rescore else 0)
 
     def step(self, dep):
-        bins = self.hist([self.score, dep],
+        bins = self.hist(inputs=[self.score, dep],
                          grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
                          output_shapes=[[HIST_BINS]],
                          output_dtypes=[mx.uint32], init_value=0)[0]
-        ctl = self.thresh([bins, dep], grid=(HIST_BINS, 1, 1),
+        ctl = self.thresh(inputs=[bins, dep], grid=(HIST_BINS, 1, 1),
                           threadgroup=(HIST_BINS, 1, 1),
                           output_shapes=[[4]], output_dtypes=[mx.uint32],
                           init_value=0)[0]
-        surv = self.compact([self.score, ctl, dep],
+        surv = self.compact(inputs=[self.score, ctl, dep],
                             grid=(HIST_TILES * TG, 1, 1),
                             threadgroup=(TG, 1, 1),
                             output_shapes=[[self.survivors],
@@ -479,18 +479,18 @@ class TwoStageArm:
         surv_ord, surv_row = surv[0], surv[1]
         if self.with_rescore:
             score = self.rescore(
-                [self.exact, surv_row, dep],
+                inputs=[self.exact, surv_row, dep],
                 grid=(self.survivors, 1, 1), threadgroup=(TG, 1, 1),
                 output_shapes=[[self.survivors]],
                 output_dtypes=[mx.bfloat16], init_value=0)[0]
         else:
             score = surv_ord
-        c = self.partial([score, surv_row, dep],
+        c = self.partial(inputs=[score, surv_row, dep],
                          grid=(self.plan.tiles * TG, 1, 1),
                          threadgroup=(TG, 1, 1),
                          output_shapes=[[self.plan.cands], [self.plan.cands]],
                          output_dtypes=[mx.uint32, mx.uint32])
-        return self.finalize([c[0], c[1], self.probed, self.perm, dep],
+        return self.finalize(inputs=[c[0], c[1], self.probed, self.perm, dep],
                              grid=(TG, 1, 1), threadgroup=(TG, 1, 1),
                              output_shapes=[[TOPK]],
                              output_dtypes=[mx.uint32])[0]
@@ -513,7 +513,7 @@ class NullArm:
         """)
 
     def step(self, dep):
-        return self.k([dep], grid=(TG, 1, 1), threadgroup=(TG, 1, 1),
+        return self.k(inputs=[dep], grid=(TG, 1, 1), threadgroup=(TG, 1, 1),
                       output_shapes=[[TOPK]], output_dtypes=[mx.uint32])[0]
 
     def seed(self):
@@ -589,13 +589,13 @@ def correctness(arm_two, arm_ship) -> dict:
     order = mx.argsort(host)
     true_top = set(order[-TOPK:].tolist())
     # Replay stage 1 alone to read the survivor set back.
-    bins = arm_two.hist([arm_two.score, dep], grid=(HIST_TILES * TG, 1, 1),
+    bins = arm_two.hist(inputs=[arm_two.score, dep], grid=(HIST_TILES * TG, 1, 1),
                         threadgroup=(TG, 1, 1), output_shapes=[[HIST_BINS]],
                         output_dtypes=[mx.uint32], init_value=0)[0]
-    ctl = arm_two.thresh([bins, dep], grid=(HIST_BINS, 1, 1),
+    ctl = arm_two.thresh(inputs=[bins, dep], grid=(HIST_BINS, 1, 1),
                          threadgroup=(HIST_BINS, 1, 1), output_shapes=[[4]],
                          output_dtypes=[mx.uint32], init_value=0)[0]
-    surv = arm_two.compact([arm_two.score, ctl, dep],
+    surv = arm_two.compact(inputs=[arm_two.score, ctl, dep],
                            grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
                            output_shapes=[[arm_two.survivors],
                                           [arm_two.survivors], [1]],
