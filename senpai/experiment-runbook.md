@@ -85,6 +85,67 @@ senpai/verify-ranked-score-boundary.sh
 before pricing official value. A failure means the enforcing workflow changed;
 re-derive the model instead of editing the check to pass.
 
+## Check the occupancy cliffs before you submit
+
+Run this after `senpai/verify-ranked-score-boundary.sh` and before
+`./benchmark-qwen-mtp.sh --local-submit`:
+
+```bash
+senpai/entry-point-cliff-census.sh --base "$BASE_SHA"
+```
+
+The gate compiles every scored quantized-matvec entry point for both
+`applegpu_g16s` and `applegpu_g17s` at the base and at the candidate, then
+compares register counts. It exits `1` when the candidate loses a resident
+simdgroup on the ranked architecture, `2` on a gate error, and `0` otherwise. It
+warns on a residency gain, on new spill, and on a cell it could not find. It
+needs no GPU, no model, and no thermal gate, and it runs in about four seconds.
+
+Coverage is the three `affine_qmv_fast` JIT-twin cells that the scored worker
+reaches plus the three Route B `MLXFast.metalKernel` pipelines, each extracted
+read-only at the requested revision and compiled from scratch. Add a cell to
+`SCORED_CELLS` or `ROUTE_B_KERNELS` in `research/e131_cliff_gate.py` when a new
+entry point joins the scored path.
+
+Every simdgroup figure the gate prints is `derived` under Rule 89:
+`floor(3072 / registers)` on `applegpu_g16s` and `floor(3968 / registers)` on
+`applegpu_g17s`. It is a model output computed from the register count, never a
+measurement. A failure is a register regression, not a measured slowdown, so
+read the register delta first.
+
+### Exit 1 is stop-and-justify, and only a price discharges it
+
+A candidate may legitimately spend a register to remove more work than the lost
+simdgroup costs, and this gate cannot price that trade. When your candidate
+trips exit 1, the required response is a **written price for the work you
+removed against `c x Δresidency` in a named frame under Rule 87** — the
+entry-point leg frame is `c = 0.445 [0.139, 0.819]` and the F47-weighted
+isolated-body frame is `c = 0.164 [0.089, 0.199]`. A waiver, a re-run, or an
+assertion that the change is obviously faster does not discharge exit 1. The
+console prints the register delta before the derived simdgroup delta so you
+price the measured quantity first; keep that ordering.
+
+### Censusing a candidate you may not commit
+
+Use `--candidate` for a landed ref. When the change belongs to a file another
+student owns, or has not landed yet, rewrite the extracted source in memory
+instead of editing the tracked file:
+
+```bash
+python3 research/e131_thorfinn_dryrun.py --width 5 --inner 3
+```
+
+`e131_cliff_gate.side_sources(rev, swift_patch=...)` applies the rewrite to the
+read-only extraction, so the census never touches the working tree.
+
+E121 raised the wide-QMV entry point from 101 to 102 registers on
+`applegpu_g17s` and cost one derived resident simdgroup. This gate reproduces
+that failure and its revert:
+
+```bash
+python3 research/e131_rung3_receipt.py --outdir research/e131-artifacts
+```
+
 ## Prove the built worker carries your edit
 
 Do this before every timed leg of every arm. It is mandatory for any kernel

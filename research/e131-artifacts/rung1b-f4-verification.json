@@ -1,0 +1,322 @@
+{
+  "experiment": "E131",
+  "rung": "1b",
+  "harness": "local",
+  "timing_valid": false,
+  "gpu_used": false,
+  "model_loaded": false,
+  "official_or_ranked_score": false,
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "base_sha": "eec6ca8020153e3640675368cc6ce73352cb6a73",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "f4_rows_1_2_5_6_7_routing": {
+    "mtp_swift_routed_call_sites": 0,
+    "mtp_swift_uses_backbone_classes": {
+      "Qwen35Attention": true,
+      "Qwen35FusedMLP": true
+    },
+    "fc_declaration": "@ModuleInfo(key: \"fc\") var fc: Linear",
+    "fc_call_lines": [
+      195,
+      229
+    ],
+    "fc_enters_a_routed_wrapper": false,
+    "wrapper_of": {
+      "q_proj": "qwen35RoutedQuantizedMM, Qwen35.swift:2870 island fast path and :2890 otherwise",
+      "o_proj": "qwen35RoutedLinear, Qwen35.swift:1322",
+      "mlp gate+up fused": "qwen35RoutedQuantizedMM, Qwen35.swift:1907 through Qwen35FusedMLP.fusedGateUp",
+      "mlp down_proj": "qwen35RoutedLinear, Qwen35.swift:1944 and :1946",
+      "fc": "none"
+    },
+    "routable_guards": {
+      "source": "Qwen35CustomQMV.routable, Qwen35.swift:1740-1766",
+      "bits": 4,
+      "group_size": 64,
+      "mode": "affine",
+      "n_mod_8": 0,
+      "k_mod_512": 0,
+      "n_min": 4096,
+      "widths": "3...9"
+    },
+    "why_each_head_projection_is_rejected": {
+      "q_proj": "m == 1 only; K=5120, N=12288 clear every other guard",
+      "o_proj": "m == 1 only; K=6144, N=5120 clear every other guard",
+      "gate_up": "m == 1 only; K=5120, N=34816 clear every other guard",
+      "down_proj": "m == 1 only; K=17408, N=5120 clear every other guard"
+    },
+    "verdict": "AGREE with F4's correction of F121, with one refinement. `Qwen35MTP.swift` has zero `qwen35Routed*` call sites, but the head's attention and MLP ARE the backbone classes, so four of the five quantized head projections do enter a routed wrapper and are rejected for `m == 1` alone. The wrapper is `qwen35RoutedQuantizedMM` for q_proj and the fused gate+up, not `qwen35RoutedLinear`. My rung 1 comment endorsed the F121 framing and was wrong in the same way; the dispatched kernel and the `ntg.x == 1` finding are unchanged."
+  },
+  "f4_rows_3_4_precision_islands": {
+    "tensors": {
+      "precision_islands.q.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024,
+          5120
+        ]
+      },
+      "precision_islands.q.indices": {
+        "dtype": "I32",
+        "shape": [
+          1024
+        ]
+      },
+      "precision_islands.k.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024,
+          5120
+        ]
+      },
+      "precision_islands.k.indices": {
+        "dtype": "I32",
+        "shape": [
+          1024
+        ]
+      },
+      "precision_islands.v.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024,
+          5120
+        ]
+      },
+      "precision_islands.v.indices": {
+        "dtype": "I32",
+        "shape": [
+          1024
+        ]
+      }
+    },
+    "checks": {
+      "q": {
+        "output_count": 12288,
+        "index_count": 1024,
+        "distinct": 1024,
+        "min": 3,
+        "max": 12239,
+        "is_complete_permutation": false
+      },
+      "k": {
+        "output_count": 1024,
+        "index_count": 1024,
+        "distinct": 1024,
+        "min": 0,
+        "max": 1023,
+        "is_complete_permutation": true
+      },
+      "v": {
+        "output_count": 1024,
+        "index_count": 1024,
+        "distinct": 1024,
+        "min": 0,
+        "max": 1023,
+        "is_complete_permutation": true
+      }
+    },
+    "bytes_per_draft_step_megabytes": {
+      "kv_dense_bf16_actually_streamed": 20.972,
+      "kv_affine4_if_the_pack_ran": 5.898,
+      "delta": 15.073
+    },
+    "verdict": "AGREE with F4 rows 3 and 4. K and V index sets are complete permutations of 0...1023, so `installExactQKVRows` takes the `_exactKVDenseW` branch and K/V are one dense BF16 matmul. Q's index set is 1024 rows of a 12288-row output, so it is NOT a permutation and q_proj keeps the affine-4 path."
+  },
+  "f4_rows_8_9_draft_readout": {
+    "fast_rule": "bool fast = N % bn == 0 && K % 512 == 0, mlx/backend/metal/quantized.cpp:259, bn = 8",
+    "singlerow_affine2_guard": "group_size == 64 && bits == 2 && out_vec_size == 98336 && ntg.x == 1, quantized.h:1909-1917",
+    "centroid_score": {
+      "K": 5120,
+      "N": 12292,
+      "n_mod_8": 4,
+      "fast": false,
+      "entry_point": "affine_qmv<bfloat16_t, 64, 2, false>",
+      "f4_claim": "qmv_fast_singlerow_affine2_g64",
+      "verdict": "DISAGREE with F4 row 8 on the kernel reached. 12292 % 8 == 4, so the dispatch is NOT fast and takes the non-fast `affine_qmv`. The singlerow body is also gated on out_vec_size == 98336, which 12292 is not, so it could not be reached even if the dispatch were fast."
+    },
+    "leaf_row_score": {
+      "K": 5120,
+      "rows": 24584,
+      "leaves": 3073,
+      "entry_point": "affine_gather_qmv_fast<bfloat16_t, 64, 2>",
+      "verdict": "AGREE with F4 row 9. The gather primitive is a separate entry point; it is fast because the gathered N per leaf is 8 and K is 5120."
+    },
+    "compact_readout_98336": {
+      "entry_point": "affine_qmv_fast<bfloat16_t, 64, 2, false>",
+      "live": false,
+      "verdict": "The 98336 affine-2 entry point is the DENSE FALLBACK only. mtp-head.manifest.json states the shipped path derives a two-level index and scores 12292 centroids then 24584 gathered rows, so the fallback is dead in the shipped configuration. The affine-2 TENSORS are live; the 98336 ENTRY POINT is not."
+    },
+    "megabytes_per_draft_step": {
+      "centroid_score": 19.667,
+      "leaf_row_score": 39.334,
+      "rerank_32_rows_affine4": 0.092
+    }
+  },
+  "f4_row_1_s_distribution": {
+    "source": "research/e116-artifacts/rung4-qmv-share-512.json, rounds_by_width, local 512-token public fixture",
+    "harness": "local",
+    "mtp_round_width_histogram": {
+      "2": 1,
+      "4": 4,
+      "5": 5,
+      "6": 5,
+      "7": 3,
+      "8": 60
+    },
+    "mtp_rounds": 78,
+    "mean_width": 7.359,
+    "rounds_clearing_route_b_widths": 77,
+    "share_clearing": 0.9872,
+    "verdict": "AGREE with F4 row 1 that the flush dispatch clears the guard on most rounds: S = 1 + accepted_prev equals the next round's verify width, and 77 of 78 MTP rounds land in 3...9 on this fixture. Two ambiguities I will not paper over: this is the LOCAL fixture, not the ranked prompt pool, and `fc` also runs once per SEQUENTIAL draft at S == 1, so the per-round dispatch mix is one flush dispatch at S plus d dispatches at 1. No committed trace carries a per-projection ntg.x ledger, so the split between the two forms is read from the call sites, not measured."
+  },
+  "qmv_fast_impl_first_class_cell": {
+    "applegpu_g16s": {
+      "registers": 57,
+      "spill_bytes": 0,
+      "text_bytes": 2940,
+      "text_sha8": "859d6120",
+      "simdgroups_derived": 53
+    },
+    "applegpu_g17s": {
+      "registers": 57,
+      "spill_bytes": 0,
+      "text_bytes": 3030,
+      "text_sha8": "2b139877",
+      "simdgroups_derived": 69
+    },
+    "cell": "qmv_fast_impl<bfloat16_t, 64, 4>",
+    "inlined_bodies": [
+      "qmv_fast_impl only: it is a leaf, it calls no other body and it carries no width switch"
+    ],
+    "reached_from": "`default: break` at quantized.h:2022, taken by every dispatch with ntg.x == 1, which is every steady-state MTP head projection",
+    "standalone_note": "This is what a narrow entry point containing only this body would allocate. Inside the shipped shared function the body's own register count is NOT what runs: the function allocates the maximum over all inlined bodies, so these dispatches run at the entry point's count."
+  },
+  "metrics": {
+    "draft_depth": 4,
+    "affine4_qmv_frame_megabytes": 15343.84,
+    "plus_affine2_readout_and_kv_island_megabytes": 15664.1,
+    "class_b_split_published_in_rung1": {
+      "applegpu_g16s": 3.9855,
+      "applegpu_g17s": 4.6716
+    },
+    "class_b_split_on_the_wider_denominator": {
+      "applegpu_g16s": 3.904,
+      "applegpu_g17s": 4.5761
+    },
+    "class_a_literal_definition": {
+      "applegpu_g16s": {
+        "cells": [
+          {
+            "cell": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+            "byte_share": 0.059489,
+            "registers": 94,
+            "simdgroups_derived": 32,
+            "registers_for_one_more_simdgroup": 93,
+            "distance_registers": 1,
+            "reachable_within_2": true,
+            "gain_pct_derived": 3.125,
+            "contribution_pct": 0.1859,
+            "owned_by_alphonse": true
+          },
+          {
+            "cell": "affine_qmv<bfloat16_t, 64, 2, false>",
+            "byte_share": 0.005022,
+            "registers": 59,
+            "simdgroups_derived": 52,
+            "registers_for_one_more_simdgroup": 57,
+            "distance_registers": 2,
+            "reachable_within_2": true,
+            "gain_pct_derived": 1.923,
+            "contribution_pct": 0.00966,
+            "owned_by_alphonse": false
+          },
+          {
+            "cell": "affine_gather_qmv_fast<bfloat16_t, 64, 2>",
+            "byte_share": 0.010044,
+            "registers": 58,
+            "simdgroups_derived": 52,
+            "registers_for_one_more_simdgroup": 57,
+            "distance_registers": 1,
+            "reachable_within_2": true,
+            "gain_pct_derived": 1.923,
+            "contribution_pct": 0.01932,
+            "owned_by_alphonse": false
+          }
+        ],
+        "metric_pct_derived": 0.2149,
+        "metric_excluding_wide_qmv_pct_derived": 0.029
+      },
+      "applegpu_g17s": {
+        "cells": [
+          {
+            "cell": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+            "byte_share": 0.059489,
+            "registers": 101,
+            "simdgroups_derived": 39,
+            "registers_for_one_more_simdgroup": 99,
+            "distance_registers": 2,
+            "reachable_within_2": true,
+            "gain_pct_derived": 2.564,
+            "contribution_pct": 0.15254,
+            "owned_by_alphonse": true
+          },
+          {
+            "cell": "affine_qmv<bfloat16_t, 64, 2, false>",
+            "byte_share": 0.005022,
+            "registers": 61,
+            "simdgroups_derived": 65,
+            "registers_for_one_more_simdgroup": 60,
+            "distance_registers": 1,
+            "reachable_within_2": true,
+            "gain_pct_derived": 1.538,
+            "contribution_pct": 0.00773,
+            "owned_by_alphonse": false
+          },
+          {
+            "cell": "affine_gather_qmv_fast<bfloat16_t, 64, 2>",
+            "byte_share": 0.010044,
+            "registers": 58,
+            "simdgroups_derived": 68,
+            "registers_for_one_more_simdgroup": 57,
+            "distance_registers": 1,
+            "reachable_within_2": true,
+            "gain_pct_derived": 1.471,
+            "contribution_pct": 0.01477,
+            "owned_by_alphonse": false
+          }
+        ],
+        "metric_pct_derived": 0.175,
+        "metric_excluding_wide_qmv_pct_derived": 0.0225
+      }
+    },
+    "stop_rule": {
+      "threshold_registers": 2,
+      "excluding_wide_qmv_pct_derived": 0.0225,
+      "fires": true,
+      "correction_to_rung_1": "Rung 1 reported the excluded-cell metric as exactly 0.0 on the ground that every remaining entry point is single-body. That is the class B reading. Under the assignment's LITERAL class A definition the two affine-2 readout cells ARE within one register of a step, so the correct figure is small but not zero. The stop rule fires either way."
+    }
+  },
+  "saturation_bound": {
+    "applegpu_g16s": {
+      "achieved_gb_s_at_m1_target_shapes": [
+        240.0,
+        250.0
+      ],
+      "measured_stream_ceiling_gb_s": 227.0,
+      "reading": "at or above the measured streaming ceiling, so the path is bandwidth-saturated and extra residency cannot pay there"
+    },
+    "applegpu_g17s": {
+      "measured_stream_ceiling_gb_s": 542.8,
+      "fraction_of_ceiling_at_the_same_achieved_bandwidth": 0.45,
+      "reading": "roughly 45 % of ceiling, so residency has room to pay"
+    },
+    "label": "saturation bound",
+    "not_f114": "F114 killed achieved bandwidth as a PREDICTOR of gain. This uses the same quantity only as a BOUND on how much residency can pay, which is a different claim and does not reopen F114.",
+    "rule_83": "the two architectures disagree in direction; never pool"
+  },
+  "wall_seconds": 1.63
+}

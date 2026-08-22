@@ -1,0 +1,1772 @@
+{
+  "experiment": "E131",
+  "rung": 1,
+  "harness": "compile-only census (xcrun metal-tt), not ranked and not local timing",
+  "timing_valid": false,
+  "gpu_used": false,
+  "model_loaded": false,
+  "official_or_ranked_score": false,
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89: simdgroups = floor(BUDGET / registers) is a model output computed from the register count, not a measurement",
+  "base_sha": "4b5e75b370990f933d39039d9338bbf68f1a509d",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "entry_point_roles": {
+    "affine_qmv_fast<bfloat16_t, 64, 4, false>": "every unrouted affine-4/g64 projection: the whole MTP head at ntg.x=1, and the whole target verify forward on rounds of width 1 or 2",
+    "affine_qmv_fast<bfloat16_t, 64, 4, true>": "batched affine-4 matvec",
+    "affine_qmv_fast<bfloat16_t, 64, 2, false>": "affine-2 coarse draft readout, out_vec_size 98336; NOT live in the shipped config, the derived cluster index bypasses it",
+    "affine_qmv<bfloat16_t, 64, 2, false>": "draft centroid score, N=12292; non-fast because 12292 % 8 != 0",
+    "affine_gather_qmv_fast<bfloat16_t, 64, 2>": "probed row score, N=8 over B=3073 gathered leaves"
+  },
+  "cells": {
+    "affine_qmv_fast<bfloat16_t, 64, 4, false>": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 119344,
+        "text_sha8": "09020534",
+        "simdgroups": 32
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 125092,
+        "text_sha8": "02cc58e3",
+        "simdgroups": 39
+      }
+    },
+    "affine_qmv_fast<bfloat16_t, 64, 4, true>": {
+      "applegpu_g16s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 4818,
+        "text_sha8": "1e11531e",
+        "simdgroups": 53
+      },
+      "applegpu_g17s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 5000,
+        "text_sha8": "2f005b0e",
+        "simdgroups": 69
+      }
+    },
+    "affine_qmv_fast<bfloat16_t, 64, 2, false>": {
+      "applegpu_g16s": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "text_bytes": 6646,
+        "text_sha8": "6b987bfc",
+        "simdgroups": 36
+      },
+      "applegpu_g17s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 6958,
+        "text_sha8": "6d2e5d90",
+        "simdgroups": 42
+      }
+    },
+    "affine_qmv<bfloat16_t, 64, 2, false>": {
+      "applegpu_g16s": {
+        "registers": 59,
+        "spill_bytes": 0,
+        "text_bytes": 8562,
+        "text_sha8": "bfc89c43",
+        "simdgroups": 52
+      },
+      "applegpu_g17s": {
+        "registers": 61,
+        "spill_bytes": 0,
+        "text_bytes": 8762,
+        "text_sha8": "2403c74c",
+        "simdgroups": 65
+      }
+    },
+    "affine_gather_qmv_fast<bfloat16_t, 64, 2>": {
+      "applegpu_g16s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 5920,
+        "text_sha8": "75b8b4c8",
+        "simdgroups": 52
+      },
+      "applegpu_g17s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 6162,
+        "text_sha8": "26cd8854",
+        "simdgroups": 68
+      }
+    }
+  },
+  "bodies": {
+    "adjust": {
+      "applegpu_g16s": {
+        "registers": 30,
+        "spill_bytes": 0,
+        "text_bytes": 2156,
+        "text_sha8": "fb0c49d8",
+        "simdgroups": 102
+      },
+      "applegpu_g17s": {
+        "registers": 30,
+        "spill_bytes": 0,
+        "text_bytes": 2186,
+        "text_sha8": "88ed64b3",
+        "simdgroups": 132
+      }
+    },
+    "impl2": {
+      "applegpu_g16s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 3104,
+        "text_sha8": "24291455",
+        "simdgroups": 52
+      },
+      "applegpu_g17s": {
+        "registers": 58,
+        "spill_bytes": 0,
+        "text_bytes": 3206,
+        "text_sha8": "4e0706c7",
+        "simdgroups": 68
+      }
+    },
+    "impl4": {
+      "applegpu_g16s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 2940,
+        "text_sha8": "859d6120",
+        "simdgroups": 53
+      },
+      "applegpu_g17s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 3030,
+        "text_sha8": "2b139877",
+        "simdgroups": 69
+      }
+    },
+    "m3": {
+      "applegpu_g16s": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "text_bytes": 5670,
+        "text_sha8": "cdc2fcae",
+        "simdgroups": 37
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 5900,
+        "text_sha8": "af1bb43b",
+        "simdgroups": 44
+      }
+    },
+    "m4": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 6934,
+        "text_sha8": "70d38665",
+        "simdgroups": 32
+      },
+      "applegpu_g17s": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "text_bytes": 7218,
+        "text_sha8": "19623880",
+        "simdgroups": 44
+      }
+    },
+    "m5": {
+      "applegpu_g16s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 8234,
+        "text_sha8": "f1976deb",
+        "simdgroups": 33
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 8452,
+        "text_sha8": "0c7553fe",
+        "simdgroups": 39
+      }
+    },
+    "m6": {
+      "applegpu_g16s": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "text_bytes": 5670,
+        "text_sha8": "6e08c2a2",
+        "simdgroups": 37
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 5900,
+        "text_sha8": "7d96c61a",
+        "simdgroups": 44
+      }
+    },
+    "m7": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 12452,
+        "text_sha8": "f24905de",
+        "simdgroups": 32
+      },
+      "applegpu_g17s": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "text_bytes": 12958,
+        "text_sha8": "2659e202",
+        "simdgroups": 44
+      }
+    },
+    "m8": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 6934,
+        "text_sha8": "85406dcc",
+        "simdgroups": 32
+      },
+      "applegpu_g17s": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "text_bytes": 7218,
+        "text_sha8": "71281a9f",
+        "simdgroups": 44
+      }
+    },
+    "m9": {
+      "applegpu_g16s": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "text_bytes": 5670,
+        "text_sha8": "fa5e74e6",
+        "simdgroups": 37
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 5900,
+        "text_sha8": "48b1d414",
+        "simdgroups": 44
+      }
+    },
+    "single2": {
+      "applegpu_g16s": {
+        "registers": 84,
+        "spill_bytes": 0,
+        "text_bytes": 3496,
+        "text_sha8": "749ef88a",
+        "simdgroups": 36
+      },
+      "applegpu_g17s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 3698,
+        "text_sha8": "a4742d69",
+        "simdgroups": 42
+      }
+    },
+    "wide2": {
+      "applegpu_g16s": {
+        "registers": 66,
+        "spill_bytes": 0,
+        "text_bytes": 4410,
+        "text_sha8": "b9d05ea1",
+        "simdgroups": 46
+      },
+      "applegpu_g17s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 4650,
+        "text_sha8": "fa90602f",
+        "simdgroups": 42
+      }
+    },
+    "wide3": {
+      "applegpu_g16s": {
+        "registers": 82,
+        "spill_bytes": 0,
+        "text_bytes": 5650,
+        "text_sha8": "5b6fe0c7",
+        "simdgroups": 37
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 5880,
+        "text_sha8": "d291efe7",
+        "simdgroups": 44
+      }
+    },
+    "wide4": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 6914,
+        "text_sha8": "fb9cef3b",
+        "simdgroups": 32
+      },
+      "applegpu_g17s": {
+        "registers": 90,
+        "spill_bytes": 0,
+        "text_bytes": 7198,
+        "text_sha8": "307d4ca7",
+        "simdgroups": 44
+      }
+    },
+    "wide5": {
+      "applegpu_g16s": {
+        "registers": 93,
+        "spill_bytes": 0,
+        "text_bytes": 8214,
+        "text_sha8": "fc2f170e",
+        "simdgroups": 33
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 8432,
+        "text_sha8": "893da3fb",
+        "simdgroups": 39
+      }
+    },
+    "xr2": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "3304f7c2",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "d1c2b723",
+        "simdgroups": 44
+      }
+    },
+    "xr3": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "6531731a",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "9fd0af3c",
+        "simdgroups": 44
+      }
+    },
+    "xr4": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "a58db863",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "83c93f49",
+        "simdgroups": 44
+      }
+    },
+    "xr5": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "1b3aa271",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "86a1fccd",
+        "simdgroups": 44
+      }
+    },
+    "xr6": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "82dc86c7",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "8879bfa1",
+        "simdgroups": 44
+      }
+    },
+    "xr7": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "58af1323",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "dd06171b",
+        "simdgroups": 44
+      }
+    },
+    "xr8": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "049f7a93",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "e63db5db",
+        "simdgroups": 44
+      }
+    },
+    "xr9": {
+      "applegpu_g16s": {
+        "registers": 75,
+        "spill_bytes": 0,
+        "text_bytes": 6158,
+        "text_sha8": "840e723c",
+        "simdgroups": 40
+      },
+      "applegpu_g17s": {
+        "registers": 89,
+        "spill_bytes": 0,
+        "text_bytes": 6528,
+        "text_sha8": "c4059964",
+        "simdgroups": 44
+      }
+    }
+  },
+  "cost_model": {
+    "class": "modelled, not measured",
+    "rule": "time is proportional to quantized weight bytes within the affine-4 matvec family",
+    "justification": "Finding 22 measures every affine-4 projection family at 87.2 to 99.6 percent of the 273 GB/s DRAM peak, so within this family the dispatch is bandwidth bound and byte share is a first-order time share",
+    "backbone_qmv_megabytes_per_round": 14412.0,
+    "head_qmv_megabytes_per_draft_step": 232.96,
+    "head_megabytes_by_projection": {
+      "mtp.fc": 29.49,
+      "mtp.self_attn.q_proj": 35.39,
+      "mtp.self_attn.o_proj": 17.69,
+      "mtp.mlp.gate_up": 100.26,
+      "mtp.mlp.down_proj": 50.13
+    },
+    "excluded": "latency-class work (SDPA, norms, KV writes, sorts, top-2) is outside the affine-4 matvec family and is not priced here"
+  },
+  "by_depth": [
+    {
+      "draft_depth": 0,
+      "verify_width": 1,
+      "round_megabytes": 14412.0,
+      "unrouted_byte_share": 1.0,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 65.625,
+        "applegpu_g17s": 76.923
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 14412.0,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 1.0,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 1,
+      "verify_width": 2,
+      "round_megabytes": 14644.96,
+      "unrouted_byte_share": 1.000001,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 25.6463,
+        "applegpu_g17s": 13.8407
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 2,
+          "megabytes": 14412.0,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.984093,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "xr2",
+            "body_registers": 75,
+            "body_simdgroups_derived": 40,
+            "recoverable_pct_derived": 25.0
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "xr2",
+            "body_registers": 89,
+            "body_simdgroups_derived": 44,
+            "recoverable_pct_derived": 12.821
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 29.49,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.002014,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 35.39,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.002417,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 17.69,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.001208,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 100.26,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.006846,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 50.13,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.003423,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 2,
+      "verify_width": 3,
+      "round_megabytes": 14877.92,
+      "unrouted_byte_share": 0.031316,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 2.0551,
+        "applegpu_g17s": 2.4089
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": null,
+          "ntg_x": 3,
+          "megabytes": 14412.0,
+          "owner": "thorfinn, Route B (E129)",
+          "routed_to_route_b": true,
+          "byte_share": 0.968684,
+          "applegpu_g16s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          },
+          "applegpu_g17s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 58.98,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.003964,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 70.78,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.004757,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 35.38,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.002378,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 200.52,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.013478,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 100.26,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.006739,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 3,
+      "verify_width": 4,
+      "round_megabytes": 15110.88,
+      "unrouted_byte_share": 0.04625,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 3.0352,
+        "applegpu_g17s": 3.5577
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": null,
+          "ntg_x": 4,
+          "megabytes": 14412.0,
+          "owner": "thorfinn, Route B (E129)",
+          "routed_to_route_b": true,
+          "byte_share": 0.95375,
+          "applegpu_g16s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          },
+          "applegpu_g17s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 88.47,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.005855,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 106.17,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.007026,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 53.07000000000001,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.003512,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 300.78000000000003,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.019905,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 150.39000000000001,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.009952,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 4,
+      "verify_width": 5,
+      "round_megabytes": 15343.84,
+      "unrouted_byte_share": 0.060731,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 3.9855,
+        "applegpu_g17s": 4.6716
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": null,
+          "ntg_x": 5,
+          "megabytes": 14412.0,
+          "owner": "thorfinn, Route B (E129)",
+          "routed_to_route_b": true,
+          "byte_share": 0.939269,
+          "applegpu_g16s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          },
+          "applegpu_g17s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 117.96,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.007688,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 141.56,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.009226,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 70.76,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.004612,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 401.04,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.026137,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 200.52,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.013068,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 5,
+      "verify_width": 6,
+      "round_megabytes": 15576.8,
+      "unrouted_byte_share": 0.074777,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 4.9072,
+        "applegpu_g17s": 5.7521
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": null,
+          "ntg_x": 6,
+          "megabytes": 14412.0,
+          "owner": "thorfinn, Route B (E129)",
+          "routed_to_route_b": true,
+          "byte_share": 0.925222,
+          "applegpu_g16s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          },
+          "applegpu_g17s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 147.45,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.009466,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 176.95,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.01136,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 88.45,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.005678,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 501.3,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.032182,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 250.65,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.016091,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 6,
+      "verify_width": 7,
+      "round_megabytes": 15809.76,
+      "unrouted_byte_share": 0.088412,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 5.802,
+        "applegpu_g17s": 6.8009
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": null,
+          "ntg_x": 7,
+          "megabytes": 14412.0,
+          "owner": "thorfinn, Route B (E129)",
+          "routed_to_route_b": true,
+          "byte_share": 0.911589,
+          "applegpu_g16s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          },
+          "applegpu_g17s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 176.94,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.011192,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 212.34,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.013431,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 106.14000000000001,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.006714,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 601.5600000000001,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.03805,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 300.78000000000003,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.019025,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    },
+    {
+      "draft_depth": 7,
+      "verify_width": 8,
+      "round_megabytes": 16042.72,
+      "unrouted_byte_share": 0.101649,
+      "class_b_recoverable_residency_pct_derived": {
+        "applegpu_g16s": 6.6707,
+        "applegpu_g17s": 7.8191
+      },
+      "dispatches": [
+        {
+          "dispatch": "target verify forward, all 257 affine-4 projections",
+          "entry_point": null,
+          "ntg_x": 8,
+          "megabytes": 14412.0,
+          "owner": "thorfinn, Route B (E129)",
+          "routed_to_route_b": true,
+          "byte_share": 0.898351,
+          "applegpu_g16s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          },
+          "applegpu_g17s": {
+            "recoverable_pct_derived": 0.0,
+            "note": "Route B, cited not censused"
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.fc",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 206.42999999999998,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.012868,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.q_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 247.73000000000002,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.015442,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.self_attn.o_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 123.83000000000001,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.007719,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.gate_up",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 701.82,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.043747,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        },
+        {
+          "dispatch": "MTP head mtp.mlp.down_proj",
+          "entry_point": "affine_qmv_fast<bfloat16_t, 64, 4, false>",
+          "ntg_x": 1,
+          "megabytes": 350.91,
+          "owner": "this census",
+          "routed_to_route_b": false,
+          "byte_share": 0.021873,
+          "applegpu_g16s": {
+            "entry_registers": 94,
+            "entry_simdgroups_derived": 32,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 53,
+            "recoverable_pct_derived": 65.625
+          },
+          "applegpu_g17s": {
+            "entry_registers": 101,
+            "entry_simdgroups_derived": 39,
+            "body": "impl4",
+            "body_registers": 57,
+            "body_simdgroups_derived": 69,
+            "recoverable_pct_derived": 76.923
+          }
+        }
+      ]
+    }
+  ],
+  "reference_depth": 4,
+  "ranked": [
+    {
+      "dispatch": "MTP head mtp.mlp.gate_up",
+      "ntg_x": 1,
+      "byte_share_pct": 2.614,
+      "g17s_entry_registers": 101,
+      "g17s_entry_simdgroups_derived": 39,
+      "g17s_body": "impl4",
+      "g17s_body_registers": 57,
+      "g17s_body_simdgroups_derived": 69,
+      "g17s_recoverable_pct_derived": 76.923,
+      "g16s_recoverable_pct_derived": 65.625,
+      "weighted_contribution_pct_derived": 2.0105
+    },
+    {
+      "dispatch": "MTP head mtp.mlp.down_proj",
+      "ntg_x": 1,
+      "byte_share_pct": 1.307,
+      "g17s_entry_registers": 101,
+      "g17s_entry_simdgroups_derived": 39,
+      "g17s_body": "impl4",
+      "g17s_body_registers": 57,
+      "g17s_body_simdgroups_derived": 69,
+      "g17s_recoverable_pct_derived": 76.923,
+      "g16s_recoverable_pct_derived": 65.625,
+      "weighted_contribution_pct_derived": 1.0052
+    },
+    {
+      "dispatch": "MTP head mtp.self_attn.q_proj",
+      "ntg_x": 1,
+      "byte_share_pct": 0.923,
+      "g17s_entry_registers": 101,
+      "g17s_entry_simdgroups_derived": 39,
+      "g17s_body": "impl4",
+      "g17s_body_registers": 57,
+      "g17s_body_simdgroups_derived": 69,
+      "g17s_recoverable_pct_derived": 76.923,
+      "g16s_recoverable_pct_derived": 65.625,
+      "weighted_contribution_pct_derived": 0.7097
+    },
+    {
+      "dispatch": "MTP head mtp.fc",
+      "ntg_x": 1,
+      "byte_share_pct": 0.769,
+      "g17s_entry_registers": 101,
+      "g17s_entry_simdgroups_derived": 39,
+      "g17s_body": "impl4",
+      "g17s_body_registers": 57,
+      "g17s_body_simdgroups_derived": 69,
+      "g17s_recoverable_pct_derived": 76.923,
+      "g16s_recoverable_pct_derived": 65.625,
+      "weighted_contribution_pct_derived": 0.5914
+    },
+    {
+      "dispatch": "MTP head mtp.self_attn.o_proj",
+      "ntg_x": 1,
+      "byte_share_pct": 0.461,
+      "g17s_entry_registers": 101,
+      "g17s_entry_simdgroups_derived": 39,
+      "g17s_body": "impl4",
+      "g17s_body_registers": 57,
+      "g17s_body_simdgroups_derived": 69,
+      "g17s_recoverable_pct_derived": 76.923,
+      "g16s_recoverable_pct_derived": 65.625,
+      "weighted_contribution_pct_derived": 0.3548
+    }
+  ],
+  "class_a_register_diet": [
+    {
+      "registers_removed": 1,
+      "applegpu_g16s": {
+        "registers_before": 94,
+        "registers_after": 93,
+        "simdgroups_before_derived": 32,
+        "simdgroups_after_derived": 33,
+        "residency_gain_pct_derived": 3.125
+      },
+      "applegpu_g17s": {
+        "registers_before": 101,
+        "registers_after": 100,
+        "simdgroups_before_derived": 39,
+        "simdgroups_after_derived": 39,
+        "residency_gain_pct_derived": 0.0
+      }
+    },
+    {
+      "registers_removed": 2,
+      "applegpu_g16s": {
+        "registers_before": 94,
+        "registers_after": 92,
+        "simdgroups_before_derived": 32,
+        "simdgroups_after_derived": 33,
+        "residency_gain_pct_derived": 3.125
+      },
+      "applegpu_g17s": {
+        "registers_before": 101,
+        "registers_after": 99,
+        "simdgroups_before_derived": 39,
+        "simdgroups_after_derived": 40,
+        "residency_gain_pct_derived": 2.564
+      }
+    },
+    {
+      "registers_removed": 4,
+      "applegpu_g16s": {
+        "registers_before": 94,
+        "registers_after": 90,
+        "simdgroups_before_derived": 32,
+        "simdgroups_after_derived": 34,
+        "residency_gain_pct_derived": 6.25
+      },
+      "applegpu_g17s": {
+        "registers_before": 101,
+        "registers_after": 97,
+        "simdgroups_before_derived": 39,
+        "simdgroups_after_derived": 40,
+        "residency_gain_pct_derived": 2.564
+      }
+    },
+    {
+      "registers_removed": 8,
+      "applegpu_g16s": {
+        "registers_before": 94,
+        "registers_after": 86,
+        "simdgroups_before_derived": 32,
+        "simdgroups_after_derived": 35,
+        "residency_gain_pct_derived": 9.375
+      },
+      "applegpu_g17s": {
+        "registers_before": 101,
+        "registers_after": 93,
+        "simdgroups_before_derived": 39,
+        "simdgroups_after_derived": 42,
+        "residency_gain_pct_derived": 7.692
+      }
+    }
+  ],
+  "stop_rule": {
+    "rule": "run rung 2 only when the metric reaches 1.0 percent at a two-register threshold once the wide-QMV cells are excluded",
+    "metric_excluding_wide_qmv_pct_derived": 0,
+    "threshold_pct": 1.0,
+    "fires": true,
+    "decision": "skip rung 2",
+    "reason": "every other scored entry point is a single-body kernel with no shared width switch, so it has no split to recover and its registers already sit well inside a step: affine_qmv 61, affine_gather_qmv_fast 58 and the batched affine_qmv_fast 57 on applegpu_g17s. All recoverable residency is on the one shared wide entry point, and the mechanism that recovers it is a split, not a register diet, so ISA scouting for marginal registers cannot change the decision",
+    "class_a_two_register_gain_pct_derived": 2.564
+  },
+  "conversion_caveat": "derived residency is not time. A larger resident simdgroup count converts to time only where the dispatch is occupancy limited. Finding 22 measures the affine-4 families at 87.2 to 99.6 percent of the 273 GB/s DRAM peak at width 5, which would leave little to win; ledger 242.8 reports the same round reading as 526 GB/s, which is 1.99 times that ceiling and implies a large system-level-cache-served share that IS latency bound. The two readings disagree, and this census cannot settle which holds at the head's width-1 operating point",
+  "metric": {
+    "e131_ranked_recoverable_residency_pct": 4.6716,
+    "arch": "applegpu_g17s",
+    "mechanism": "class B, entry-point split, zero register work",
+    "at_draft_depth": 4,
+    "g16s_companion_pct": 3.9855
+  },
+  "wall_seconds": 1.39
+}

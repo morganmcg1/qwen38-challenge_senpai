@@ -1,0 +1,225 @@
+{
+  "tool": "research/e131_thorfinn_dryrun.py",
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "base_ref": "3e0ecfddfb91ea9d359e31912d08b9480dcb95a2",
+  "base_sha": "3e0ecfddfb91ea9d359e31912d08b9480dcb95a2",
+  "candidate": "base + Route B dispatch table (5, 5) -> (5, 3), applied in memory to the extracted Swift text",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "cells": [
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_2_false",
+      "source_form": "jit_twin",
+      "role": "affine-2 coarse draft readout, out_vec_size 98336",
+      "applegpu_g16s": {
+        "base_registers": 84,
+        "candidate_registers": 84,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 36,
+        "candidate_simdgroups_derived": 36,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 6646,
+        "candidate_text_bytes": 6646,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 93,
+        "candidate_registers": 93,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 42,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 6958,
+        "candidate_text_bytes": 6958,
+        "unchanged": true
+      }
+    },
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_4_false",
+      "source_form": "jit_twin",
+      "role": "wide QMV: every affine-4 g64 target projection MLX still launches",
+      "applegpu_g16s": {
+        "base_registers": 94,
+        "candidate_registers": 94,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 32,
+        "candidate_simdgroups_derived": 32,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 119344,
+        "candidate_text_bytes": 119344,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 101,
+        "candidate_registers": 101,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 39,
+        "candidate_simdgroups_derived": 39,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 125092,
+        "candidate_text_bytes": 125092,
+        "unchanged": true
+      }
+    },
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_4_true",
+      "source_form": "jit_twin",
+      "role": "batched affine-4 g64 QMV",
+      "applegpu_g16s": {
+        "base_registers": 57,
+        "candidate_registers": 57,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 53,
+        "candidate_simdgroups_derived": 53,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 4818,
+        "candidate_text_bytes": 4818,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 57,
+        "candidate_registers": 57,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 69,
+        "candidate_simdgroups_derived": 69,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 5000,
+        "candidate_text_bytes": 5000,
+        "unchanged": true
+      }
+    },
+    {
+      "kernel": "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
+      "source_form": "swift_metal_kernel",
+      "role": "Route B shipped wide QMV, USE_TABLE=true (the .sumtable arm)",
+      "applegpu_g16s": {
+        "base_registers": 96,
+        "candidate_registers": 93,
+        "registers_delta": -3,
+        "base_simdgroups_derived": 32,
+        "candidate_simdgroups_derived": 33,
+        "simdgroups_delta_derived": 1,
+        "residency_change_pct_derived": 3.125,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 47862,
+        "candidate_text_bytes": 49614,
+        "unchanged": false
+      },
+      "applegpu_g17s": {
+        "base_registers": 102,
+        "candidate_registers": 94,
+        "registers_delta": -8,
+        "base_simdgroups_derived": 38,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 4,
+        "residency_change_pct_derived": 10.526,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 49718,
+        "candidate_text_bytes": 51732,
+        "unchanged": false
+      }
+    },
+    {
+      "kernel": "qwen35_custom_affine4_g64_qmv_wide_v1",
+      "source_form": "swift_metal_kernel",
+      "role": "Route B replica wide QMV, no chunk-sum table",
+      "applegpu_g16s": {
+        "base_registers": 94,
+        "candidate_registers": 94,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 32,
+        "candidate_simdgroups_derived": 32,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 50980,
+        "candidate_text_bytes": 52690,
+        "unchanged": false
+      },
+      "applegpu_g17s": {
+        "base_registers": 101,
+        "candidate_registers": 93,
+        "registers_delta": -8,
+        "base_simdgroups_derived": 39,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 3,
+        "residency_change_pct_derived": 7.692,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 52914,
+        "candidate_text_bytes": 54868,
+        "unchanged": false
+      }
+    },
+    {
+      "kernel": "qwen35_custom_affine4_g64_xsums_v1",
+      "source_form": "swift_metal_kernel",
+      "role": "Route B activation chunk-sum table fill",
+      "applegpu_g16s": {
+        "base_registers": 12,
+        "candidate_registers": 12,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 256,
+        "candidate_simdgroups_derived": 256,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 432,
+        "candidate_text_bytes": 432,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 12,
+        "candidate_registers": 12,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 330,
+        "candidate_simdgroups_derived": 330,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 432,
+        "candidate_text_bytes": 432,
+        "unchanged": true
+      }
+    }
+  ],
+  "failures": [],
+  "warnings": [
+    "qwen35_custom_affine4_g64_qmv_wide_sums_v1 applegpu_g17s: 102 -> 94 registers GAINS 4 resident simdgroup(s) (38 -> 42, +10.53 % residency, derived)",
+    "qwen35_custom_affine4_g64_qmv_wide_v1 applegpu_g17s: 101 -> 93 registers GAINS 3 resident simdgroup(s) (39 -> 42, +7.69 % residency, derived)"
+  ],
+  "verdict": "pass",
+  "runtime_seconds": 3.92
+}
