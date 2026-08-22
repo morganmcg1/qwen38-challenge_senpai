@@ -62,8 +62,13 @@ case "${var}" in
   MLX_E120_QMV_GRID) legal="wide tight" ;;
   # The deliverable moves the entry point and the table together, so an
   # entry-only or table-only sweep prices half of it. This pseudo-variable
-  # names the two complete configurations instead.
-  MLX_E120_QMV_COMBO) legal="incumbent deliverable" ;;
+  # names the three complete configurations instead. `templated` is the middle
+  # arm: it changes no statement in the kernel body, only how many entry points
+  # carry the width switch, so `incumbent -> templated` isolates the register
+  # and residency channel and `templated -> deliverable` isolates the width
+  # table. The E129 statement census predicts the second contrast is near zero
+  # or adverse, so pricing them together would hide which half paid.
+  MLX_E120_QMV_COMBO) legal="incumbent templated deliverable" ;;
   *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
 esac
 
@@ -75,6 +80,8 @@ set_leg_env () {
       case "$1" in
         incumbent)
           leg_env=(MLX_E120_QMV_ENTRY=shared_switch MLX_E120_QMV_TABLE=shipped) ;;
+        templated)
+          leg_env=(MLX_E120_QMV_ENTRY=tiered_switch MLX_E120_QMV_TABLE=shipped) ;;
         deliverable)
           leg_env=(MLX_E120_QMV_ENTRY=tiered_switch MLX_E120_QMV_TABLE=onepass) ;;
       esac
