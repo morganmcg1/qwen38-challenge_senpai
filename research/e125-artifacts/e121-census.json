@@ -1,0 +1,745 @@
+{
+  "note": "Compile-only census through xcrun metal-tt. No GPU work, no timing claim.",
+  "arches": [
+    "applegpu_g16s",
+    "applegpu_g17s"
+  ],
+  "widths": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "arms": {
+    "share_on": {
+      "applegpu_g16s": {
+        "entry": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 120842,
+          "text_sha8": "73598e2f"
+        },
+        "2": {
+          "registers": 68,
+          "spill_bytes": 0,
+          "text_bytes": 4546,
+          "text_sha8": "2b62723f"
+        },
+        "3": {
+          "registers": 79,
+          "spill_bytes": 0,
+          "text_bytes": 5838,
+          "text_sha8": "9c9afa08"
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7158,
+          "text_sha8": "e1b94353"
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8214,
+          "text_sha8": "fc2f170e"
+        }
+      },
+      "applegpu_g17s": {
+        "entry": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "text_bytes": 126028,
+          "text_sha8": "b40e6ba7"
+        },
+        "2": {
+          "registers": 80,
+          "spill_bytes": 0,
+          "text_bytes": 4730,
+          "text_sha8": "4ec42d7b"
+        },
+        "3": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 6026,
+          "text_sha8": "818ed594"
+        },
+        "4": {
+          "registers": 102,
+          "spill_bytes": 0,
+          "text_bytes": 7316,
+          "text_sha8": "f5e5dcd9"
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8432,
+          "text_sha8": "893da3fb"
+        }
+      }
+    },
+    "share_off": {
+      "applegpu_g16s": {
+        "entry": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 119344,
+          "text_sha8": "09020534"
+        },
+        "2": {
+          "registers": 66,
+          "spill_bytes": 0,
+          "text_bytes": 4410,
+          "text_sha8": "b9d05ea1"
+        },
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5650,
+          "text_sha8": "5b6fe0c7"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6914,
+          "text_sha8": "fb9cef3b"
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8214,
+          "text_sha8": "fc2f170e"
+        }
+      },
+      "applegpu_g17s": {
+        "entry": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 125092,
+          "text_sha8": "02cc58e3"
+        },
+        "2": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 4650,
+          "text_sha8": "fa90602f"
+        },
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5880,
+          "text_sha8": "d291efe7"
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7198,
+          "text_sha8": "307d4ca7"
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8432,
+          "text_sha8": "893da3fb"
+        }
+      }
+    },
+    "share_noalloc": {
+      "applegpu_g16s": {
+        "entry": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 119344,
+          "text_sha8": "09020534"
+        },
+        "2": {
+          "registers": 66,
+          "spill_bytes": 0,
+          "text_bytes": 4410,
+          "text_sha8": "b9d05ea1"
+        },
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5650,
+          "text_sha8": "5b6fe0c7"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6914,
+          "text_sha8": "fb9cef3b"
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8214,
+          "text_sha8": "fc2f170e"
+        }
+      },
+      "applegpu_g17s": {
+        "entry": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 125092,
+          "text_sha8": "02cc58e3"
+        },
+        "2": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 4650,
+          "text_sha8": "fa90602f"
+        },
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5880,
+          "text_sha8": "d291efe7"
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7198,
+          "text_sha8": "307d4ca7"
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8432,
+          "text_sha8": "893da3fb"
+        }
+      }
+    },
+    "pre_e121": {
+      "applegpu_g16s": {
+        "entry": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 119344,
+          "text_sha8": "09020534"
+        },
+        "2": {
+          "registers": 66,
+          "spill_bytes": 0,
+          "text_bytes": 4410,
+          "text_sha8": "b9d05ea1"
+        },
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 5650,
+          "text_sha8": "5b6fe0c7"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6914,
+          "text_sha8": "fb9cef3b"
+        },
+        "5": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 8214,
+          "text_sha8": "fc2f170e"
+        }
+      },
+      "applegpu_g17s": {
+        "entry": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 125092,
+          "text_sha8": "02cc58e3"
+        },
+        "2": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 4650,
+          "text_sha8": "fa90602f"
+        },
+        "3": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 5880,
+          "text_sha8": "d291efe7"
+        },
+        "4": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 7198,
+          "text_sha8": "307d4ca7"
+        },
+        "5": {
+          "registers": 101,
+          "spill_bytes": 0,
+          "text_bytes": 8432,
+          "text_sha8": "893da3fb"
+        }
+      }
+    }
+  },
+  "arm_definitions": {
+    "share_on": "shipped E121: SHARE_SUMS = NA <= 4, param, 512 B",
+    "share_off": "SHARE_SUMS = false; param and 512 B allocation stay",
+    "share_noalloc": "share_off with the allocation cut to one float",
+    "pre_e121": "share_noalloc with the parameter removed everywhere"
+  },
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "simdgroup_budget_is_fitted": true,
+  "measured_registers": {
+    "applegpu_g16s": [
+      93,
+      94,
+      96
+    ],
+    "applegpu_g17s": [
+      101,
+      102,
+      107,
+      120,
+      121
+    ]
+  },
+  "extrapolated_cells": {
+    "applegpu_g16s": {
+      "share_on": [
+        "2",
+        "3",
+        "4"
+      ],
+      "share_off": [
+        "2",
+        "3"
+      ],
+      "share_noalloc": [
+        "2",
+        "3"
+      ],
+      "pre_e121": [
+        "2",
+        "3"
+      ]
+    },
+    "applegpu_g17s": {
+      "share_on": [
+        "2",
+        "3"
+      ],
+      "share_off": [
+        "2",
+        "3",
+        "4"
+      ],
+      "share_noalloc": [
+        "2",
+        "3",
+        "4"
+      ],
+      "pre_e121": [
+        "2",
+        "3",
+        "4"
+      ]
+    }
+  },
+  "f47_weights": {
+    "2": 0.024,
+    "3": 0.275,
+    "4": 0.667,
+    "5": 0.034
+  },
+  "live_dispatch": {
+    "2": {
+      "kernel": "pair",
+      "na": []
+    },
+    "3": {
+      "kernel": "_m<3,3>",
+      "na": [
+        3
+      ]
+    },
+    "4": {
+      "kernel": "_m<4,4>",
+      "na": [
+        4
+      ]
+    },
+    "5": {
+      "kernel": "_m<5,5>",
+      "na": [
+        5
+      ]
+    },
+    "6": {
+      "kernel": "_m<6,3>",
+      "na": [
+        3
+      ]
+    },
+    "7": {
+      "kernel": "_m<7,4>",
+      "na": [
+        4,
+        3
+      ]
+    },
+    "8": {
+      "kernel": "_m<8,4>",
+      "na": [
+        4
+      ]
+    },
+    "9": {
+      "kernel": "_m<9,3>",
+      "na": [
+        3
+      ]
+    }
+  },
+  "ladder": {
+    "split_and_exchange": {
+      "rich": "share_on",
+      "poor": "share_off",
+      "applegpu_g16s": {
+        "entry_from": 32,
+        "entry_to": 33,
+        "entry_fraction": 0.03125,
+        "body_f47_weighted_fraction": 0.048598193301997654,
+        "body_by_width": {
+          "2": {
+            "from": 46,
+            "to": 45
+          },
+          "3": {
+            "from": 37,
+            "to": 38
+          },
+          "4": {
+            "from": 32,
+            "to": 34
+          },
+          "5": {
+            "from": 33,
+            "to": 33
+          }
+        }
+      },
+      "applegpu_g17s": {
+        "entry_from": 39,
+        "entry_to": 38,
+        "entry_fraction": -0.02564102564102564,
+        "body_f47_weighted_fraction": -0.10570454545454547,
+        "body_by_width": {
+          "2": {
+            "from": 42,
+            "to": 49
+          },
+          "3": {
+            "from": 44,
+            "to": 41
+          },
+          "4": {
+            "from": 44,
+            "to": 38
+          },
+          "5": {
+            "from": 39,
+            "to": 39
+          }
+        }
+      }
+    },
+    "threadgroup_allocation": {
+      "rich": "share_off",
+      "poor": "share_noalloc",
+      "applegpu_g16s": {
+        "entry_from": 32,
+        "entry_to": 32,
+        "entry_fraction": 0.0,
+        "body_f47_weighted_fraction": 0.0,
+        "body_by_width": {
+          "2": {
+            "from": 46,
+            "to": 46
+          },
+          "3": {
+            "from": 37,
+            "to": 37
+          },
+          "4": {
+            "from": 32,
+            "to": 32
+          },
+          "5": {
+            "from": 33,
+            "to": 33
+          }
+        }
+      },
+      "applegpu_g17s": {
+        "entry_from": 39,
+        "entry_to": 39,
+        "entry_fraction": 0.0,
+        "body_f47_weighted_fraction": 0.0,
+        "body_by_width": {
+          "2": {
+            "from": 42,
+            "to": 42
+          },
+          "3": {
+            "from": 44,
+            "to": 44
+          },
+          "4": {
+            "from": 44,
+            "to": 44
+          },
+          "5": {
+            "from": 39,
+            "to": 39
+          }
+        }
+      }
+    },
+    "parameter": {
+      "rich": "share_noalloc",
+      "poor": "pre_e121",
+      "applegpu_g16s": {
+        "entry_from": 32,
+        "entry_to": 32,
+        "entry_fraction": 0.0,
+        "body_f47_weighted_fraction": 0.0,
+        "body_by_width": {
+          "2": {
+            "from": 46,
+            "to": 46
+          },
+          "3": {
+            "from": 37,
+            "to": 37
+          },
+          "4": {
+            "from": 32,
+            "to": 32
+          },
+          "5": {
+            "from": 33,
+            "to": 33
+          }
+        }
+      },
+      "applegpu_g17s": {
+        "entry_from": 39,
+        "entry_to": 39,
+        "entry_fraction": 0.0,
+        "body_f47_weighted_fraction": 0.0,
+        "body_by_width": {
+          "2": {
+            "from": 42,
+            "to": 42
+          },
+          "3": {
+            "from": 44,
+            "to": 44
+          },
+          "4": {
+            "from": 44,
+            "to": 44
+          },
+          "5": {
+            "from": 39,
+            "to": 39
+          }
+        }
+      }
+    },
+    "whole_e121_change": {
+      "rich": "share_on",
+      "poor": "pre_e121",
+      "applegpu_g16s": {
+        "entry_from": 32,
+        "entry_to": 33,
+        "entry_fraction": 0.03125,
+        "body_f47_weighted_fraction": 0.048598193301997654,
+        "body_by_width": {
+          "2": {
+            "from": 46,
+            "to": 45
+          },
+          "3": {
+            "from": 37,
+            "to": 38
+          },
+          "4": {
+            "from": 32,
+            "to": 34
+          },
+          "5": {
+            "from": 33,
+            "to": 33
+          }
+        }
+      },
+      "applegpu_g17s": {
+        "entry_from": 39,
+        "entry_to": 38,
+        "entry_fraction": -0.02564102564102564,
+        "body_f47_weighted_fraction": -0.10570454545454547,
+        "body_by_width": {
+          "2": {
+            "from": 42,
+            "to": 49
+          },
+          "3": {
+            "from": 44,
+            "to": 41
+          },
+          "4": {
+            "from": 44,
+            "to": 38
+          },
+          "5": {
+            "from": 39,
+            "to": 39
+          }
+        }
+      }
+    }
+  },
+  "inlining_law": {
+    "applegpu_g16s/share_on": {
+      "entry_registers": 93,
+      "widest_body_registers": 93,
+      "widest_body_width": 5,
+      "holds": true
+    },
+    "applegpu_g16s/share_off": {
+      "entry_registers": 94,
+      "widest_body_registers": 94,
+      "widest_body_width": 4,
+      "holds": true
+    },
+    "applegpu_g16s/share_noalloc": {
+      "entry_registers": 94,
+      "widest_body_registers": 94,
+      "widest_body_width": 4,
+      "holds": true
+    },
+    "applegpu_g16s/pre_e121": {
+      "entry_registers": 94,
+      "widest_body_registers": 94,
+      "widest_body_width": 4,
+      "holds": true
+    },
+    "applegpu_g17s/share_on": {
+      "entry_registers": 102,
+      "widest_body_registers": 102,
+      "widest_body_width": 4,
+      "holds": true
+    },
+    "applegpu_g17s/share_off": {
+      "entry_registers": 101,
+      "widest_body_registers": 101,
+      "widest_body_width": 5,
+      "holds": true
+    },
+    "applegpu_g17s/share_noalloc": {
+      "entry_registers": 101,
+      "widest_body_registers": 101,
+      "widest_body_width": 5,
+      "holds": true
+    },
+    "applegpu_g17s/pre_e121": {
+      "entry_registers": 101,
+      "widest_body_registers": 101,
+      "widest_body_width": 5,
+      "holds": true
+    }
+  },
+  "alphonse_a_base_replication": {
+    "cells": {
+      "applegpu_g16s/NA2": {
+        "census": 46,
+        "alphonse_a_base": 46,
+        "agree": true
+      },
+      "applegpu_g16s/NA3": {
+        "census": 37,
+        "alphonse_a_base": 37,
+        "agree": true
+      },
+      "applegpu_g16s/NA4": {
+        "census": 32,
+        "alphonse_a_base": 32,
+        "agree": true
+      },
+      "applegpu_g16s/NA5": {
+        "census": 33,
+        "alphonse_a_base": 33,
+        "agree": true
+      },
+      "applegpu_g17s/NA2": {
+        "census": 42,
+        "alphonse_a_base": 42,
+        "agree": true
+      },
+      "applegpu_g17s/NA3": {
+        "census": 44,
+        "alphonse_a_base": 44,
+        "agree": true
+      },
+      "applegpu_g17s/NA4": {
+        "census": 44,
+        "alphonse_a_base": 44,
+        "agree": true
+      },
+      "applegpu_g17s/NA5": {
+        "census": 39,
+        "alphonse_a_base": 39,
+        "agree": true
+      }
+    },
+    "agree": 8,
+    "of": 8
+  },
+  "cliffs": {
+    "applegpu_g16s/pre_e121": {
+      "registers": 94,
+      "resident": 32,
+      "registers_to_lose_one": 3,
+      "registers_to_gain_one": 1
+    },
+    "applegpu_g16s/share_on": {
+      "registers": 93,
+      "resident": 33,
+      "registers_to_lose_one": 1,
+      "registers_to_gain_one": 3
+    },
+    "applegpu_g17s/pre_e121": {
+      "registers": 101,
+      "resident": 39,
+      "registers_to_lose_one": 1,
+      "registers_to_gain_one": 2
+    },
+    "applegpu_g17s/share_on": {
+      "registers": 102,
+      "resident": 38,
+      "registers_to_lose_one": 3,
+      "registers_to_gain_one": 1
+    }
+  },
+  "f100_test": {
+    "isolated_na5_body_unchanged": {
+      "applegpu_g16s": true,
+      "applegpu_g17s": true
+    },
+    "entry_point_registers": {
+      "applegpu_g16s": 93,
+      "applegpu_g17s": 102
+    },
+    "entry_point_is_shared_by_every_width": true,
+    "verdict": "The occupancy component cannot be absent at M=5: the shipped switch inlines every live width into one entry point, so one register allocation serves every dispatch. The instruction component IS exactly zero at M=5, because SHARE_SUMS is false there. A cost measured at M=5 therefore does not falsify the register hypothesis; it is what the register hypothesis predicts."
+  }
+}
