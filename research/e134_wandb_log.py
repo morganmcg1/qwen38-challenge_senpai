@@ -691,6 +691,31 @@ def log_item5() -> None:
                 row["row_count_bad"], row["mean_offered_depth"],
                 row["mean_accepted"])
         run.log({"item5/exactness_legs": legs})
+
+    submit = load("item5-local-submit.json")
+    if submit is not None:
+        metrics = submit["metrics"]
+        summary.update({
+            "local_submit_score": submit["score"],
+            "local_submit_passed": submit["passed"],
+            "local_submit_decode_tokens": metrics["decode_tokens"],
+            "local_submit_all_tokens_matched": metrics["all_tokens_matched"],
+            "local_submit_residual_divergence_count":
+                metrics["residual_divergence_count"],
+            "local_submit_serial_seconds_per_token":
+                metrics["serial_seconds_per_token"],
+            "local_submit_mtp_seconds_per_token":
+                metrics["mtp_seconds_per_token"],
+            "local_submit_accepted_draft_rate":
+                metrics["accepted_draft_rate"],
+            "local_submit_effective_mean_draft_len":
+                metrics["effective_mean_draft_len"],
+            "local_submit_uses_pinned_mtp_head":
+                metrics["uses_pinned_mtp_head"],
+            "local_submit_public_drift_tripwire_passed":
+                metrics["public_drift_tripwire_passed"],
+            "local_submit_rankable": metrics["rankable"],
+        })
     run.summary.update(summary)
     run.finish()
 
@@ -728,9 +753,13 @@ def log_item1() -> None:
         "sched_max_abs_error"])
     for name, row in fm1["per_leg"].items():
         gate = fm1["legs"][name]
+        # A cell is null when that leg has no round in the class at all;
+        # essays_montaigne keeps no eligible round under pb6.
+        flip = row["flipped"] or {}
+        kept = row["kept"] or {}
         per_leg.add_data(
-            name, row["k"], row["flipped"]["n"], row["flipped"]["rate"],
-            row["kept"]["n"], row["kept"]["rate"], gate["rounds"],
+            name, row["k"], flip.get("n"), flip.get("rate"),
+            kept.get("n"), kept.get("rate"), gate["rounds"],
             gate["row_count_bad"], gate["margin_identity_bad"],
             gate["sched_max_abs_error"])
     run.log({"item1/per_leg": per_leg})

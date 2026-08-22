@@ -6,21 +6,21 @@
       "accepted_draft_rate": 0.8040816326530612,
       "accepted_draft_total": 394,
       "all_tokens_matched": true,
-      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
       "declared_rows_total": 608,
       "decode_token_count": 512,
       "effective_max_draft_len": 7,
       "effective_mean_draft_len": 4.1525423728813555,
       "emitted_token_total": 512,
       "fixture": "beagle_a",
-      "gpu_temp_entry_c": 58.959312438964844,
-      "gpu_temp_exit_c": 61.49234390258789,
+      "gpu_temp_entry_c": 39.788448333740234,
+      "gpu_temp_exit_c": 58.68514633178711,
       "margin_identity_bad": 0,
       "max_rejected_tail_logit_delta": 0,
       "mean_accepted": 3.3389830508474576,
       "mean_offered_depth": 4.1525423728813555,
       "meta": {
-        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
         "chip": "Apple M4 Pro",
         "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
         "dirty_candidate_paths": "0",
@@ -31,7 +31,7 @@
         "host": "ip-10-231-2-12.ec2.internal",
         "official_or_ranked_score": "false",
         "timing_valid": "false",
-        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+        "worker_sha256": "9e9899a16b0c76fed5ecf91da63bbe319ddce230f9b5b685edb180547d9a0e84"
       },
       "mtp_head_attached": true,
       "non_drafting_round_count": 0,
@@ -63,21 +63,21 @@
       "accepted_draft_rate": 0.8958333333333334,
       "accepted_draft_total": 430,
       "all_tokens_matched": true,
-      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
       "declared_rows_total": 562,
       "decode_token_count": 512,
       "effective_max_draft_len": 7,
       "effective_mean_draft_len": 5.853658536585366,
       "emitted_token_total": 512,
       "fixture": "benchfixture",
-      "gpu_temp_entry_c": 41.93320083618164,
-      "gpu_temp_exit_c": 62.337093353271484,
+      "gpu_temp_entry_c": 56.14341735839844,
+      "gpu_temp_exit_c": 60.113037109375,
       "margin_identity_bad": 0,
       "max_rejected_tail_logit_delta": 0,
       "mean_accepted": 5.2439024390243905,
       "mean_offered_depth": 5.853658536585366,
       "meta": {
-        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
         "chip": "Apple M4 Pro",
         "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
         "dirty_candidate_paths": "0",
@@ -88,7 +88,7 @@
         "host": "ip-10-231-2-12.ec2.internal",
         "official_or_ranked_score": "false",
         "timing_valid": "false",
-        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+        "worker_sha256": "9e9899a16b0c76fed5ecf91da63bbe319ddce230f9b5b685edb180547d9a0e84"
       },
       "mtp_head_attached": true,
       "non_drafting_round_count": 0,
@@ -120,21 +120,21 @@
       "accepted_draft_rate": 0.696911196911197,
       "accepted_draft_total": 361,
       "all_tokens_matched": true,
-      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
       "declared_rows_total": 669,
       "decode_token_count": 512,
       "effective_max_draft_len": 6,
       "effective_mean_draft_len": 3.4304635761589406,
       "emitted_token_total": 512,
       "fixture": "essays_montaigne",
-      "gpu_temp_entry_c": 58.537349700927734,
-      "gpu_temp_exit_c": 60.90754318237305,
+      "gpu_temp_entry_c": 57.543922424316406,
+      "gpu_temp_exit_c": 60.638668060302734,
       "margin_identity_bad": 0,
       "max_rejected_tail_logit_delta": 0,
       "mean_accepted": 2.390728476821192,
       "mean_offered_depth": 3.4304635761589406,
       "meta": {
-        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
         "chip": "Apple M4 Pro",
         "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
         "dirty_candidate_paths": "0",
@@ -145,7 +145,7 @@
         "host": "ip-10-231-2-12.ec2.internal",
         "official_or_ranked_score": "false",
         "timing_valid": "false",
-        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+        "worker_sha256": "9e9899a16b0c76fed5ecf91da63bbe319ddce230f9b5b685edb180547d9a0e84"
       },
       "mtp_head_attached": true,
       "non_drafting_round_count": 0,
@@ -177,21 +177,21 @@
       "accepted_draft_rate": 0.655831739961759,
       "accepted_draft_total": 343,
       "all_tokens_matched": true,
-      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
       "declared_rows_total": 692,
       "decode_token_count": 512,
       "effective_max_draft_len": 4,
       "effective_mean_draft_len": 3.094674556213018,
       "emitted_token_total": 512,
       "fixture": "medicine_hist",
-      "gpu_temp_entry_c": 60.76042556762695,
-      "gpu_temp_exit_c": 62.02607727050781,
+      "gpu_temp_entry_c": 58.92402267456055,
+      "gpu_temp_exit_c": 61.9997673034668,
       "margin_identity_bad": 0,
       "max_rejected_tail_logit_delta": 0,
       "mean_accepted": 2.029585798816568,
       "mean_offered_depth": 3.094674556213018,
       "meta": {
-        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "base_sha": "2ab28a930fda1e1862e46236f917ce30edbeafd8",
         "chip": "Apple M4 Pro",
         "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
         "dirty_candidate_paths": "0",
@@ -202,7 +202,7 @@
         "host": "ip-10-231-2-12.ec2.internal",
         "official_or_ranked_score": "false",
         "timing_valid": "false",
-        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+        "worker_sha256": "9e9899a16b0c76fed5ecf91da63bbe319ddce230f9b5b685edb180547d9a0e84"
       },
       "mtp_head_attached": true,
       "non_drafting_round_count": 0,
@@ -235,7 +235,7 @@
     "base_sha": {
       "single_valued": true,
       "values": [
-        "a9714610a4d346bd7ff51dd35346785731efbe10"
+        "2ab28a930fda1e1862e46236f917ce30edbeafd8"
       ]
     },
     "chip": {
@@ -301,7 +301,7 @@
     "worker_sha256": {
       "single_valued": true,
       "values": [
-        "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+        "9e9899a16b0c76fed5ecf91da63bbe319ddce230f9b5b685edb180547d9a0e84"
       ]
     }
   },

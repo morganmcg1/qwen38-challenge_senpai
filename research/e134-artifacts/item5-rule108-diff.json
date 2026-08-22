@@ -48,17 +48,25 @@
       "our_price_source": "E134 item 0 measured this mechanism directly as the W-NORM arm: +0.0293 percent +- 0.0513 slower on absolute candidate seconds per token and +24.87 percent +- 3.54 WORSE on width-matched round-1 excess, worse on 4 of 4 pairs on both metrics. Rule 110 predicts the null: the warm normed call changes no pipeline cache key."
     }
   ],
+  "derived_against_frontier": {
+    "id": "b6cb0fea",
+    "score": 3.52509129797624,
+    "solver": "ofou",
+    "source_ref": "d44ad229"
+  },
   "effect_of_adding_them_pct": 2.5889,
   "effect_of_deleting_them_pct": 0.442,
   "frontier": {
-    "id": "b6cb0fea-880f-4737-8129-3769e071a808",
-    "promoted_at": "2026-08-22T18:09:31.536Z",
-    "score": 3.52509129797624,
-    "solver": "ofou",
-    "source_ref": "d44ad22960039ea2eca6c32806af86195e101ecc"
+    "id": "ed608e64-8b4d-4784-910e-d8ee11b064f4",
+    "promoted_at": "2026-08-22T19:47:14.763Z",
+    "score": 3.68172016051458,
+    "solver": "jungjipdo",
+    "source_ref": "8849fad72cc3a8e1b8ec394c88ac92f5a2d9d480"
   },
   "harness": "ranked-model",
   "held_value_of_deleted_set_pct": -0.442,
+  "lineage_note": "The DELETE list enumerates the ofou lineage d44ad229. If the live frontier is a different lineage, the DELETE list is history and no mechanism of the new lineage is priced here.",
+  "mechanism_lists_apply_to_live_frontier": false,
   "net_conservative_pct": 2.5249,
   "net_pct": 3.0309000000000004,
   "our_crown": {
