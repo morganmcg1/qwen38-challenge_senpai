@@ -79,6 +79,7 @@ PEAK_BANDWIDTH_GB_S = 273.0
 RUN_IDS = {
     "e125-frame-axis": "e125frame1",
     "e125-frame-axis-sync": "e125sync01",
+    "e125-register-census": "e125cens01",
     "e125-correction": "e125corr01",
 }
 
@@ -87,11 +88,14 @@ RUN_IDS = {
 EXPECTED_SUMMARY_KEYS = {
     "e125frame1": (
         "primary_metric_name",
-        "e125_ld_price_ratio_k1024_over_base",
-        "e125_ld_price_ratio_consumer_over_base",
-        "e125_alu_price_ratio_k1024_over_base",
-        "e125_alu_price_ratio_consumer_over_base",
+        "e125_ld_ratio_k1024_over_base",
+        "e125_ld_ratio_consumer_over_base",
+        "e125_ld_transfer_k1024",
+        "e125_alu_ratio_k1024_over_base",
+        "e125_alu_ratio_consumer_over_base",
+        "e125_alu_transfer_k1024",
         "e125_deletion_ratio_k1024_over_base",
+        "e125_deletion_transfer_k1024",
         "e125_worst_ramp_residual_pct",
         "e125_entry_temp_spread_c",
         "session_valid",
@@ -111,6 +115,23 @@ EXPECTED_SUMMARY_KEYS = {
         "gate_qualified_for_timing",
         "official_or_ranked_score",
     ),
+    "e125cens01": (
+        "primary_metric_name",
+        "e125_entry_registers_local_pre_e121",
+        "e125_entry_registers_local_share_on",
+        "e125_entry_registers_ranked_pre_e121",
+        "e125_entry_registers_ranked_share_on",
+        "e125_entry_resident_change_pct_local",
+        "e125_entry_resident_change_pct_ranked",
+        "e125_alphonse_a_base_cells_agree",
+        "e125_inlining_law_holds",
+        "e125_allocation_register_cost",
+        "e125_parameter_register_cost",
+        "e125_ranked_registers_to_gain_one_simdgroup",
+        "cool_gate_passed_real_gate",
+        "gate_qualified_for_timing",
+        "official_or_ranked_score",
+    ),
     "e125corr01": (
         "e125_correction_form",
         "e125_anchors_reproduced",
@@ -121,6 +142,12 @@ EXPECTED_SUMMARY_KEYS = {
         "e125_route_b_parity_line_pct",
         "e125_route_b_mode_proof_line_pct",
         "e116_share_term_untouched",
+        "e125_arch_anchor_factor",
+        "e125_arch_sign_reproduced",
+        "e125_arch_magnitude_reproduced",
+        "e125_arch_predicted_factor_entry_point",
+        "e125_session_valid_after_exclusions",
+        "e125_class_widths_lost_to_fidelity",
     ),
 }
 
@@ -306,6 +333,138 @@ def log_frame_axis(dry: bool = False, session: str = "work") -> None:
     run.finish()
 
 
+def log_register_census(dry: bool = False) -> None:
+    """The zero-GPU register and residency census of the shipped E121 arm.
+
+    This run holds no model, dispatches nothing and reads no clock. It runs
+    the real AGX backend for both architectures through `xcrun metal-tt`, so
+    it is not a timing measurement at all and cannot be compared with one.
+    """
+    cen = json.loads((ART / "e121-census.json").read_text())
+    local, ranked = cen["arches"]
+    whole = cen["ladder"]["whole_e121_change"]
+    cfg = {
+        "question": (
+            "the shipped E121 arm SPLITS the cross-simdgroup sums and "
+            "exchanges the halves; the earlier residency table censused "
+            "`n_nosums`, which DELETES them. What does the real arm cost in "
+            "registers, per width and at the shipped entry point, on the "
+            "local and the ranked architecture"),
+        "command": (
+            "python3 research/e125_e121_census.py --emit /tmp/e125cen "
+            "--out research/e125-artifacts/e121-census.json"),
+        "arms": list(cen["arm_definitions"]),
+        "arm_definitions": cen["arm_definitions"],
+        "widths": cen["widths"],
+        "simdgroup_budget": cen["simdgroup_budget"],
+        "simdgroup_budget_is_fitted": cen["simdgroup_budget_is_fitted"],
+        "f47_weights": cen["f47_weights"],
+        "live_dispatch": cen["live_dispatch"],
+        **identity(),
+        **gate_flags("compile-only census through xcrun metal-tt, no GPU",
+                     False),
+    }
+    if dry:
+        print(json.dumps({"run": "e125-register-census", "config": cfg},
+                         indent=2))
+        return
+    run = start(job_type="analysis", name="e125-register-census", config=cfg)
+
+    cells = wandb.Table(columns=[
+        "arm", "arch", "frame", "width", "registers", "spill_bytes",
+        "text_bytes", "resident_simdgroups", "resident_is_extrapolated"])
+    for arm, per_arch in cen["arms"].items():
+        for arch, keys in per_arch.items():
+            budget = cen["simdgroup_budget"][arch]
+            measured = cen["measured_registers"][arch]
+            for key, cell in sorted(keys.items()):
+                r = cell["registers"]
+                cells.add_data(
+                    arm, arch,
+                    "entry point" if key == "entry" else "isolated body",
+                    0 if key == "entry" else int(key), r, cell["spill_bytes"],
+                    cell["text_bytes"], budget // r if r else None,
+                    r not in measured)
+    run.log({"census": cells})
+
+    ladder = wandb.Table(columns=[
+        "component", "richer_arm", "poorer_arm", "arch", "entry_from",
+        "entry_to", "entry_change_pct", "body_f47_weighted_change_pct"])
+    for name, rec in cen["ladder"].items():
+        for arch in cen["arches"]:
+            v = rec[arch]
+            ladder.add_data(
+                name, rec["rich"], rec["poor"], arch, v["entry_from"],
+                v["entry_to"],
+                None if v["entry_fraction"] is None
+                else 100 * v["entry_fraction"],
+                None if v["body_f47_weighted_fraction"] is None
+                else 100 * v["body_f47_weighted_fraction"])
+    run.log({"ladder": ladder})
+
+    rep = wandb.Table(columns=["cell", "census", "alphonse_a_base", "agree"])
+    for cell, v in cen["alphonse_a_base_replication"]["cells"].items():
+        rep.add_data(cell, v["census"], v["alphonse_a_base"], v["agree"])
+    run.log({"alphonse_a_base_replication": rep})
+
+    cliffs = wandb.Table(columns=[
+        "arch_arm", "registers", "resident", "registers_to_lose_one",
+        "registers_to_gain_one"])
+    for key, v in cen["cliffs"].items():
+        cliffs.add_data(key, v["registers"], v["resident"],
+                        v["registers_to_lose_one"], v["registers_to_gain_one"])
+    run.log({"occupancy_cliffs": cliffs})
+
+    alloc = cen["ladder"]["threadgroup_allocation"]
+    param = cen["ladder"]["parameter"]
+    run.summary.update({
+        "primary_metric_name":
+            "resident simdgroups at the shipped entry point, per architecture",
+        "e125_entry_registers_local_pre_e121":
+            cen["arms"]["pre_e121"][local]["entry"]["registers"],
+        "e125_entry_registers_local_share_on":
+            cen["arms"]["share_on"][local]["entry"]["registers"],
+        "e125_entry_registers_ranked_pre_e121":
+            cen["arms"]["pre_e121"][ranked]["entry"]["registers"],
+        "e125_entry_registers_ranked_share_on":
+            cen["arms"]["share_on"][ranked]["entry"]["registers"],
+        "e125_entry_resident_local_pre_e121": whole[local]["entry_from"],
+        "e125_entry_resident_local_share_on": whole[local]["entry_to"],
+        "e125_entry_resident_ranked_pre_e121": whole[ranked]["entry_from"],
+        "e125_entry_resident_ranked_share_on": whole[ranked]["entry_to"],
+        "e125_entry_resident_change_pct_local":
+            100 * whole[local]["entry_fraction"],
+        "e125_entry_resident_change_pct_ranked":
+            100 * whole[ranked]["entry_fraction"],
+        "e125_body_f47_change_pct_local":
+            100 * whole[local]["body_f47_weighted_fraction"],
+        "e125_body_f47_change_pct_ranked":
+            100 * whole[ranked]["body_f47_weighted_fraction"],
+        "e125_allocation_register_cost":
+            alloc[local]["entry_fraction"] + alloc[ranked]["entry_fraction"],
+        "e125_parameter_register_cost":
+            param[local]["entry_fraction"] + param[ranked]["entry_fraction"],
+        "e125_alphonse_a_base_cells_agree":
+            cen["alphonse_a_base_replication"]["agree"],
+        "e125_alphonse_a_base_cells_total":
+            cen["alphonse_a_base_replication"]["of"],
+        "e125_inlining_law_holds":
+            all(v["holds"] for v in cen["inlining_law"].values()),
+        "e125_isolated_na5_unchanged_both_arches":
+            all(cen["f100_test"]["isolated_na5_body_unchanged"].values()),
+        "e125_ranked_registers_to_gain_one_simdgroup":
+            cen["cliffs"]["%s/share_on" % ranked]["registers_to_gain_one"],
+        "e125_ranked_registers_to_lose_one_simdgroup_pre_e121":
+            cen["cliffs"]["%s/pre_e121" % ranked]["registers_to_lose_one"],
+        "e125_any_spill": any(
+            cell["spill_bytes"] for arm in cen["arms"].values()
+            for keys in arm.values() for cell in keys.values()),
+        **gate_flags("compile-only census through xcrun metal-tt, no GPU",
+                     False),
+    })
+    run.finish()
+
+
 CORRECTION_FORM = (
     "isolated per-cell effect x table(mechanism class, memory regime); the "
     "leg share is never multiplied, and the width term is 1.000 locally and "
@@ -376,6 +535,32 @@ def log_correction(dry: bool = False) -> None:
                      o["base"], o["value"])
     run.log({"observations": obs})
 
+    arch = corr["architecture_axis"]
+    fp = wandb.Table(columns=[
+        "frame_pair", "instrument_axis", "host_changes", "mechanism_class",
+        "component_classes", "anchor_factor", "anchor_ci_low",
+        "anchor_ci_high", "instrument"])
+    for row in corr["frame_pair_table"]["rows"].values():
+        lo, hi = row["anchor_interval"]
+        fp.add_data(row["frame_pair"], row["axis"], row["host_changes"],
+                    row["mechanism_class"],
+                    ",".join(row["component_classes"]), row["anchor_factor"],
+                    lo, hi, row["instrument"])
+    run.log({"frame_pair_table": fp})
+
+    ax = wandb.Table(columns=[
+        "census_frame", "physically_correct", "local_occupancy_change_pct",
+        "ranked_occupancy_change_pct", "predicted_factor", "sign_correct",
+        "inside_anchor_interval", "magnitude_shortfall"])
+    for frame, cell in arch["by_frame"].items():
+        ax.add_data(frame, frame == "entry_point",
+                    cell["local_occupancy_change_pct"],
+                    cell["ranked_occupancy_change_pct"],
+                    cell["predicted_factor"], cell["sign_correct"],
+                    cell["inside_anchor_interval"],
+                    cell["magnitude_shortfall"])
+    run.log({"architecture_axis": ax})
+
     rb = corr["route_b"]
     summary = {
         "e125_correction_form": CORRECTION_FORM,
@@ -400,8 +585,43 @@ def log_correction(dry: bool = False) -> None:
         "e116_share_term_untouched": not corr["null_control"][
             "share_term_corrected"],
         "e116_alpha_times_beta": corr["null_control"]["e116_alpha_times_beta"],
+        "e125_arch_anchor_factor": arch["anchor"]["factor"],
+        "e125_arch_sign_reproduced": arch["verdict"]["sign_reproduced"],
+        "e125_arch_magnitude_reproduced":
+            arch["verdict"]["magnitude_reproduced"],
+        "e125_arch_predicted_factor_entry_point":
+            arch["by_frame"]["entry_point"]["predicted_factor"],
+        "e125_arch_predicted_factor_isolated_bodies":
+            arch["by_frame"]["isolated_bodies_f47_weighted"][
+                "predicted_factor"],
+        "e125_arch_ranked_registers_to_gain_one":
+            arch["actionable_gate"]["current_shipped_state"][
+                "registers_to_gain_one"],
+        "e125_f_floor_1p43_status":
+            corr["falsified_stage0_terms"]["F_floor_1p43"]["status"],
+        "e125_bandwidth_law_status":
+            corr["falsified_stage0_terms"]["bandwidth_regime_law"]["status"],
         **gate_flags("analysis of measured arms, no new GPU work", False),
     }
+    # The per-(arm, width) fidelity exclusions, pooled over both sessions. Only
+    # the sync session has any: `k_tgld16` spills at NA=4 on this architecture,
+    # which E123 already recorded, and a spilling rung may not be priced.
+    lost: list[str] = []
+    excluded: list[str] = []
+    valid = True
+    for spec in SESSIONS.values():
+        gates = law(spec["law"])["gates"]
+        excl = gates.get("exclusions")
+        if excl is not None:
+            lost += ["%s@m%d" % (v["class"], v["m"])
+                     for v in excl["class_widths_lost"]]
+            excluded += ["%s@m%d" % (v["arm"], v["m"])
+                         for v in excl["excluded_arm_widths"]]
+        valid = valid and gates.get("session_valid_after_exclusions",
+                                    gates["session_valid"])
+    summary["e125_session_valid_after_exclusions"] = valid
+    summary["e125_class_widths_lost_to_fidelity"] = ",".join(lost) or "none"
+    summary["e125_excluded_arm_widths"] = ",".join(excluded) or "none"
     env = rb.get("envelope_across_regimes")
     if env:
         summary["e125_route_b_envelope_low_pct"] = env[0]
@@ -414,8 +634,9 @@ def log_correction(dry: bool = False) -> None:
 
 
 RUNS = {
-    "e125-frame-axis": lambda dry: log_frame_axis(dry, "work"),
-    "e125-frame-axis-sync": lambda dry: log_frame_axis(dry, "sync"),
+    "e125-frame-axis": lambda dry=False: log_frame_axis(dry, "work"),
+    "e125-frame-axis-sync": lambda dry=False: log_frame_axis(dry, "sync"),
+    "e125-register-census": log_register_census,
     "e125-correction": log_correction,
 }
 
