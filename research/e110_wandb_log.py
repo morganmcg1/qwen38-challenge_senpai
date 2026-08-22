@@ -691,8 +691,99 @@ def log_rung3() -> None:
     run.finish()
 
 
+def log_rung4() -> None:
+    """The official ranked receipt, and the prediction it falsifies."""
+    path = OUT / "e110/rung4-receipt.json"
+    if not path.exists():
+        print(f"[wandb] no {path}; run research/e110_rung4_receipt.py first")
+        return
+    doc = json.loads(path.read_text())
+    official = doc["official_metrics"]
+
+    run = start(
+        "e110-rung4-official-receipt", "validation",
+        "Does the advanced arm improve the official ranked score on M5?",
+        5, {"rung": 4, "arm": doc["arm"],
+            "submission_id": doc["submission_id"],
+            "yukon_commit": doc["yukon_commit"],
+            "harness": "ranked",
+            "token_window": official["decode_tokens"],
+            "pairs_per_prompt": official["pairs_per_prompt"],
+            "mtp_max_draft_depth": official["mtp_max_draft_depth"]},
+        meta_dir="e110-rung2")
+
+    # The ranked runner owns its own thermal gate and reference stream, so this
+    # is the only E110 run whose timing is officially qualified.
+    run.config.update({"cool_gate_passed_real_gate": True,
+                       "gate_qualified_for_timing": True,
+                       "timing_valid": True,
+                       "official_or_ranked_score": True}, allow_val_change=True)
+
+    prompts = wandb.Table(columns=[
+        "prompt", "effective_mean_draft_len", "non_drafting_round_count",
+        "candidate_s_per_token", "serial_s_per_token", "raw_ratio_of_means",
+        "vs_b8b8b860_logpct", "vs_44559d02_logpct", "parity_ok"])
+    for rec in doc["per_prompt"]:
+        prompts.add_data(
+            rec["prompt"], rec["effective_mean_draft_len"],
+            rec["non_drafting_round_count"],
+            rec["candidate_seconds_per_token"],
+            rec["serial_seconds_per_token"], rec["raw_ratio_of_means"],
+            rec["vs_b8b8b860_logpct"], rec["vs_44559d02_logpct"],
+            rec["parity_ok"])
+    run.log({"per_prompt": prompts})
+
+    probes = wandb.Table(columns=[
+        "probe", "effect_logpct", "floor_measured_pct", "floor_in_use_pct",
+        "sigma_vs_measured_floor", "sigma_vs_floor_in_use"])
+    for name, rec in sorted(doc["probes"].items()):
+        probes.add_data(name, rec["effect_logpct"], rec["floor_measured_pct"],
+                        rec["floor_in_use_pct"],
+                        rec["sigma_vs_measured_floor"],
+                        rec["sigma_vs_floor_in_use"])
+    run.log({"probes": probes})
+
+    # The edited kernel is the wide multi-row path, so only drafting prompts
+    # reach it. This split is the causal attribution.
+    census = wandb.Table(columns=[
+        "width", "round_weight", "registers_local_base", "registers_local_arm",
+        "registers_ranked_base", "registers_ranked_arm", "spill_ranked_arm",
+        "device_loads_base", "device_loads_arm", "air_lines_base",
+        "air_lines_arm", "d_omega_ranked_pct", "d_omega_local_pct"])
+    for cell in doc["census_grade"]["per_width"]:
+        census.add_data(*(cell[k] for k in census.columns))
+    run.log({"census_grade": census})
+
+    weighted = doc["census_grade"]["weighted"]
+    run.summary.update({
+        "official_score": doc["official_score"],
+        "improved": doc["improved"],
+        "rejection_reason": doc["rejection_reason"],
+        "parity_all_ok": official["parity_all_ok"],
+        "candidate_mtp_seconds_per_token_mean":
+            official["candidate_mtp_seconds_per_token_mean"],
+        "baseline_serial_seconds_per_token_mean":
+            official["baseline_serial_seconds_per_token_mean"],
+        **{f"aggregate/{k}": v for k, v in doc["aggregate"].items()},
+        "drafting_prompts_mean_logpct":
+            doc["groups"]["drafting"]["mean_logpct_vs_b8b8b860"],
+        "non_drafting_prompts_mean_logpct":
+            doc["groups"]["non_drafting"]["mean_logpct_vs_b8b8b860"],
+        "local_abba_pct": doc["local_abba_pct"],
+        "local_to_ranked_swing_pp": doc["local_to_ranked_swing_pp"],
+        **{f"census_weighted/{k}": v for k, v in weighted.items()},
+        "prediction_falsified": True,
+        "cool_gate_passed_real_gate": True,
+        "gate_qualified_for_timing": True,
+        "timing_valid": True,
+        "official_or_ranked_score": True,
+    })
+    attach(run, path)
+    run.finish()
+
+
 RUNS = {"census": log_census, "timing": log_timing, "rung2": log_rung2,
-        "rung3": log_rung3}
+        "rung3": log_rung3, "rung4": log_rung4}
 
 
 def main() -> int:
