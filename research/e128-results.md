@@ -690,44 +690,73 @@ best implementable arm is 0.20 %, and `beagle_a` is one of 12 fixtures feeding
 five weighted prompts — but a follow-up that wants to price a sub-0.2 % effect
 would need a tighter transfer map first.
 
-### Sensitivity, including the moved crown
+### Sensitivity, including the crown that actually moved
 
-Ten variants. The headline conclusion holds in nine of them:
+Eleven variants. Seven are negative and four are positive, and the four
+positives are the interesting part of this section rather than something to
+explain away.
 
 ```
-variant             marginfull   levelfix  reachonly     oracle
-headline               -0.3561    -0.9673    -1.8542    +8.5248
-constant_p             -0.0253    +0.2467    -0.2462   +12.2410
-shuffle_margins        -3.2060    +0.3434    -0.0654   +11.5990
-drop_zero_weight       -0.3561    -0.9673    -1.8542    +8.5248
-seed_777               -0.2851    -0.8657    -1.8106    +8.6394
-single_fixture_a       -0.6477    -0.9280    -1.8689    +8.5540
-single_fixture_b       +0.1247    -0.9599    -1.8024    +8.7489
-benchfixture_only      -1.9715    -0.4679    -1.6349   +25.9863
-receipt_crown          -0.3965    -1.1473    -2.0326    +8.4976
-receipt_ec778a91       -0.3548    -1.0830    -1.9689    +8.5680
+variant                     receipt  marginfull  lvlfix1.05  rankedprice     oracle   best implementable
+headline                   44559d02     -0.3561     -0.2171      -2.8508    +8.5248   levelfix1.05        -0.2171
+constant_p                 44559d02     -0.0253     +0.2433      +1.8662   +12.2410   rankedprice_nomargin +1.9735
+shuffle_margins            44559d02     -3.2060     +0.2702      +1.5126   +11.5990   rankedprice          +1.5126
+hold_zero_weight_at_shipped 44559d02    -0.3561     -0.2171      -2.8508    +8.5248   levelfix1.05        -0.2171
+seed_777                   44559d02     -0.2851     -0.1169      -2.6538    +8.6394   levelfix1.05        -0.1169
+single_fixture_a           44559d02     -0.6477     -0.0942      -2.4866    +8.5540   levelfix1.05        -0.0942
+single_fixture_b           44559d02     +0.1247     -0.2089      -3.4480    +8.7489   marginfull           +0.1247
+benchfixture_only          44559d02     -1.9715     -0.1554      +9.6995   +25.9863   rankedprice_recal    +9.7164
+receipt_crown              d3c491b5     -0.3784     -0.2427      -2.8711    +8.4300   levelfix1.05        -0.2427
+receipt_prev_crown         bc070b7b     -0.3965     -0.3990      -3.0292    +8.4976   marginfull          -0.3965
+receipt_ec778a91           ec778a91     -0.3548     -0.3331      -2.9621    +8.5680   levelfix1.05        -0.3331
 ```
 
-Three of these deserve comment.
+**`receipt_crown` now re-anchors the whole pass on `d3c491b5` = `3.49065044`,
+the receipt that actually holds the crown.** My earlier report of this row was
+wrong: the variant had been pointed at `bc070b7b`, which is the *previous*
+crown, and I described it as the current one. Both are in the table now. The
+answer is the same on either: on the true crown the best implementable arm is
+`levelfix1.05` at **-0.2427 %**, slightly *more* negative than the headline
+-0.2171 %, and every implementable arm stays negative. **The moved frontier does
+not reopen the axis.**
 
-**`receipt_crown` re-anchors the whole pass on `d3c491b5` = `3.49065044`,** the
-receipt that took the crown. This is the direct answer to the F3 question of
-whether the moved frontier changes the conclusion. It does not: `marginfull`
-goes from -0.3561 to -0.3965 and every other implementable arm moves further
-negative, not less.
+Three receipts spanning `3.3435`, `3.3592` and `3.4907` give best implementable
+arms of -0.2171 %, -0.3990 % and -0.2427 %. The conclusion is stable across a
+4.4 % spread in the anchoring score.
 
-**`constant_p` and `shuffle_margins` are the only variants that turn `levelfix`
-positive,** at +0.2467 and +0.3434. Both are the deliberate controls that
-destroy the margin signal — the first replaces the per-round acceptance
-probability with a constant, the second permutes the margins across rounds.
-Correcting the estimator level helps only once the margin override has been
-stripped of its information. That is a confirmation that the override is doing
-real work, not an escape route for the hypothesis.
+#### The four positive variants, and why none of them is a result
 
-**`single_fixture_b` is the one variant with a positive `marginfull`,** at
-+0.1247. It is a single-fixture median, so it is one prompt's arithmetic rather
-than a ranked estimate, and it is a quarter the size of the +0.20 % threshold
-the assignment set.
+**`constant_p` (+1.97 %) and `shuffle_margins` (+1.51 %) are deliberate controls
+that destroy the margin signal.** The first replaces the per-round acceptance
+probability with a constant; the second permutes the margins across rounds. In
+both, the arm that turns positive is a `rankedprice` variant — pricing draft
+rows against the true cost curve instead of the shipped flat `0.18`.
+
+That is a clean and slightly surprising causal statement, and it is worth
+stating in the positive direction: **ranked-cost pricing of draft rows is worth
+about +1.5 to +2.0 % of ranked median, but only in a world where the margin
+override is not already capturing that value.** The shipped scheduler gets there
+first by a different route. This is the mechanism behind section 3's finding
+that a large positive EMA term nearly cancels a negative selection term — the
+override is doing the work that correct pricing would otherwise do, and the two
+are not additive.
+
+**`single_fixture_b` (+0.1247 %) and `benchfixture_only` (+9.7164 %) are
+single-fixture medians, not ranked estimates.** `single_fixture_b` replaces each
+pooled two-fixture prompt with one fixture and lands at a quarter of the
++0.20 % threshold the assignment set. `benchfixture_only` replaces *all eight*
+prompts with `benchfixture`, whose uncensored acceptance is 0.959 to 0.984 — a
+completely different acceptance regime from any ranked prompt, three of which
+sit below 0.55. Its oracle of +25.99 % is the tell: that is not the ranked
+prompt pool, it is a stress test of the machinery at near-perfect acceptance.
+
+**`hold_zero_weight_at_shipped` is bit-identical to the headline.** This is the
+variant I previously mislabelled `drop_zero_weight`. It holds `drama`, `travel`
+and `plutarch` at the shipped ratio instead of repricing them; it does not
+remove them from the eight-prompt median. Bit-identical output is a genuine
+invariance — the median is set entirely by the five weighted prompts — but it is
+a weaker claim than the name implied, and section 7 verifies the same fact
+directly against the crown receipt.
 
 ## Section 7 — the strongest independent check, from the board itself
 
@@ -834,3 +863,44 @@ Section 4 already showed the per-position margin AUC ranges from 0.78 to 0.99 on
 stratified by position and the shipped code pools it. That is a concrete,
 falsifiable next step, and it is listed under suggested follow-ups rather than
 implemented here.
+
+---
+
+## Suggested follow-ups, not implemented here
+
+1. **Per-position margin scale.** The strongest lead in this experiment.
+   Per-position margin AUC ranges 0.78 to 0.99 on `beagle_a` and 0.47 to 0.96 on
+   `benchfixture`, against a pooled E122 figure of 0.5109 — pooling destroys a
+   strongly stratified signal. The shipped code uses two constants, `2.0` at
+   position 0 and `3.0` elsewhere. The offline logistic fit in
+   `research/e128_price.py` already produces a per-position scale and a
+   log-likelihood against those shipped constants, so the fit cost is already
+   paid. This is the only lead that attacks the +8.52 % oracle directly.
+
+2. **Ranked-cost pricing combined with a better margin signal.** The sensitivity
+   pass shows `rankedprice` is worth +1.5 to +2.0 % of ranked median *when the
+   margin override is disabled*, and -2.85 % when it is not. The two mechanisms
+   are strongly non-additive. The open question is whether a sharper margin
+   signal changes that interaction, or whether the override will always claim
+   the value first. Worth one bounded pass before assuming either.
+
+3. **A tighter transfer map.** The 12-fixture validation gate passes on means
+   but two fixtures exceed the per-fixture tolerances: `beagle_a` at 0.506 depth
+   error and `drama_dollhouse` at 0.057 accept error. Any future experiment
+   pricing a sub-0.2 % effect needs this fixed first. The cheapest route is more
+   `beagle`-like fixtures, since `beagle` carries 0.4862 of the F83 weight and
+   is the worst-fitted prompt.
+
+4. **The `plutarch` miss.** The shipped scheduler drafts 0.154 tokens per round
+   on `plutarch` while other teams reach 2.36 and are 44.7 % faster there.
+   It is worth nothing today because `plutarch` is the lowest of eight values
+   and F83 gives it weight zero. It becomes worth something only if the ranked
+   prompt pool changes or if the four low prompts rise enough to enter the
+   median. Recording it so nobody re-derives it from scratch.
+
+5. **The parent tail-offer defect.** `QwenRuntimeMTPDriver.swift:141-150`
+   narrows the parent tail offer to `max(1, min(depth, 8, remaining - 1))`,
+   which censors the final rounds of every leg. This experiment worked around it
+   with forced-depth legs. It is a real correctness-adjacent wart in the driver
+   and is worth a separate look, though it is outside the E128 scope and I did
+   not touch it.
