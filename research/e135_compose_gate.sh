@@ -94,10 +94,15 @@ echo "EXIT swift-test=${PIPESTATUS[0]} (exit code is not the verdict)"
 grep -oE '✘ Test ([A-Za-z0-9_]+\(\)|"[^"]*") failed' "${log_dir}/swift-test.log" \
   | sed -E 's/^✘ Test //; s/ failed$//' | sort -u > "${log_dir}/failing-tests.txt"
 
-# Failures present on the unchanged base. Nine are the long-documented
-# organizer contract and documentation tests; the tenth is inherited from the
-# composed base, whose `Qwen36MTPBlockSession.swift` and
+# Failures present on the unchanged base. Most are the long-documented
+# organizer contract and documentation tests.
+# `theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax` is inherited from
+# the composed base, whose `Qwen36MTPBlockSession.swift` and
 # `E130WiredResidencySlackTests.swift` are byte-identical here.
+# `theSubmissionTemplateNamesTheLocalSubmitCommand` is advisor F19's tenth name,
+# reported pre-existing on `BASE_SHA`; it is listed so a base that carries it
+# does not stop the chain, and the printed failing set below states whether
+# this tree actually reaches it.
 cat > "${log_dir}/inherited-tests.txt" <<'INHERITED'
 contestantDocsCommandBlocksKeepTheDependencyGraphFrozen()
 participantDocsExposeDefaultCLIInstallDirectory()
@@ -108,6 +113,7 @@ theCheckedInDeclarationSelectsThePinnedHead()
 theEvenMedianRuleIsTheMeanOfTheTwoCentralValues()
 theQwenMTPTrackIsArmedOnQwen38()
 theSeededCalibrationExpectationMatchesItsRecordedProvenance()
+theSubmissionTemplateNamesTheLocalSubmitCommand()
 theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax()
 INHERITED
 
@@ -159,7 +165,13 @@ step twin-audit python3 research/twin_audit.py
 # Both gates exit 2 when invoked bare, and a gate that did not run is not
 # evidence. `base` is the composition base; the only submitted path this
 # experiment changes is the Qwen runtime file.
-base="bdba19f66e84e7e2aa1f8162eeaa0a82579edc94"
+# The live advisor head. It is NOT merged into this branch: askeladd's tip and
+# this branch both add a file at `research/e136_wandb_log.py`, and F19 states
+# his tip changes zero candidate bytes. `git diff bdba19f6 5800f88e` over
+# `Sources`, `Vendor`, `Package.swift`, `Package.resolved`,
+# `mtp-head.manifest.json` and `mtp-head/` is empty, so the scope check gives
+# the same answer against either commit and is run against the newer one.
+base="5800f88e1666f1a01895ef03ab5dfacfbbb729e8"
 step scope senpai/validate-assignment-scope.sh "${base}" \
   Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
 step budget senpai/check-editable-budget.sh \
@@ -217,6 +229,32 @@ echo
 echo "--- witness: columns_by_width must be tight ---"
 python3 research/e135_columns_check.py "${out}/pipelines.json" --want tight
 [[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=4
+
+# Advisor F19 item 5. `e135_columns_check.py` derives its expectation from the
+# recorded plan, so it cannot notice a plan that is itself wrong. This states
+# the map the leg must show under `.shipped` + tight + width 2 as a literal.
+# It is computed from `.shipped`, not copied from F18, which was written
+# against `onePass67` and is wrong at widths 6 and 7 (advisor error 143).
+echo "--- witness: the launched column map, stated as a literal ---"
+python3 - "${out}/pipelines.json" <<'PY'
+import json
+import sys
+
+WANT = {2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3}
+trace = json.load(open(sys.argv[1]))
+seen = {int(k): int(v) for k, v in trace.get("columns_by_width", {}).items()}
+print("columns_by_width %s" % dict(sorted(seen.items())))
+print("expected         %s" % dict(sorted(WANT.items())))
+missing = sorted(set(WANT) - set(seen))
+wrong = sorted(m for m in seen if WANT.get(m) != seen[m])
+if missing:
+    print("FAIL the leg never launched widths %s" % missing)
+if wrong:
+    print("FAIL wrong column count at widths %s" % wrong)
+print("PASS launched column map" if not missing and not wrong else "FAIL")
+sys.exit(0 if not missing and not wrong else 1)
+PY
+[[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=9
 echo "--- Rule 101 control: the same check must FAIL against wide ---"
 python3 research/e135_columns_check.py "${out}/pipelines.json" --want wide
 [[ "${PIPESTATUS[0]}" -ne 0 ]] || rc=5
