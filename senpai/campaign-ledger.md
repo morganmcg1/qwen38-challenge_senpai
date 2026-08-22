@@ -38139,3 +38139,786 @@ legality clauses, and build the acceptance-rate exchange model: how much
 acceptance rate may be traded per percent of round time saved, per prompt. That
 model has never existed, because the campaign has always treated the proposal
 path as exactness-critical when only the target path is.
+
+## 267 — 2026-08-22 04:15Z — Route B lands the largest measured mechanism of the campaign, the NA=5 miscompile is finally explained, and my own draft-path byte accounting was wrong by a factor of 1.667
+
+This is the round in which the campaign stopped being a bet on the ranked
+measurement mode. Every candidate we have held for the last three rounds beat
+the crown on a good draw and lost on a bad one. Thorfinn's E120 rung 2 produced
+the first candidate that wins on both.
+
+Four students reported in the same hour, two research agents returned, and
+three of the results correct something I had written down as settled.
+
+### 267.1 — E120 rung 1: Route A is real. A candidate-owned QMV replica is bit exact and is not slower.
+
+Thorfinn built the custom Metal kernel that replaces `affine_qmv_fast` on the
+scored path, dispatched from `Qwen35.swift` through `MLXFast.metalKernel`, and
+put it through the three-part gate.
+
+Gate 1, bit exactness against `quantizedMM`. Fourteen cells over
+`mlp.gate_up` (5120x34816) and `control.small` (512x4096) at M = 3..9,
+1,633,536 elements. `differing_elements` 0 and `max_abs_diff` 0.0 in every
+cell, with a positive control that perturbs the activation and moves every
+element in every cell. Weights are full-32-bit SplitMix64 packed nibbles, so
+no nibble value is untested. The guard declines M in {1, 2, 10, 12} and returns
+`nil`, so the routed set is a strict subset of the incumbent wide dispatch.
+
+Gate 2, end-to-end within 1 % of MLX. Six ABBA blocks, 182 replicates per
+phase, median over 12 per-arm samples:
+
+```
+  M   IPG   MLX us   replica us   delta %
+  3    3    548.58     547.58     -0.183
+  4    4    683.98     686.72     +0.401
+  5    5    749.67     750.18     +0.069
+  6    3    987.56     985.62     -0.196
+  7    4   1059.21    1055.30     -0.369
+  8    4   1125.12    1116.20     -0.793
+  9    3   1373.79    1370.48     -0.241
+                      mean        -0.188
+```
+
+The replica is on average slightly *faster* than the MLX path it replaces. He
+pre-registered "within 0.5 % at M=8" with a falsifier at a 1 % deficit; the
+observed M=8 value is -0.793 %, the falsifier did not fire, and he reported the
+untrimmed M=7 outlier (-3.55 %, one first-touch block-0 sample) on the record
+rather than claiming it.
+
+Gate 3, per-dispatch host cost, isolated by constructing the op 4000 times with
+no `eval` at all:
+
+```
+  MLX quantizedMM graph build     0.363 us
+  custom kernel graph build       2.038 us
+  custom minus MLX               +1.674 us per dispatch
+  source-length term              0.00393 us per KiB
+  replica source size             6.745 KiB
+  length share of added cost      0.027 us  =  1.6 %
+```
+
+So 98.4 % of the added host cost is fixed path cost of `MLXFast.metalKernel`,
+not the per-dispatch full source-string compare at `custom_kernel.cpp:57-71`
+that I flagged as the main risk. **Making a custom kernel's source longer is
+close to free; issuing the dispatch at all costs 1.67 us of CPU.** Against a
+548-1374 us GPU dispatch that is 0.12-0.30 %, and gate 2 shows it is fully
+absorbed.
+
+My rung-1 brief named the source-string compare as the term that would decide
+Route A. It was 1.6 % of the answer. The estimate was not wrong in kind, only
+in which of the three named terms dominated, and he measured all three rather
+than the one I pointed at. That is the right response to a brief.
+
+### 267.2 — E120 rung 2: the fill costs 4.85 us, my 22.7 us break-even holds with 4.7x of margin, and Route B ships on its own
+
+He pre-registered 25-40 us with a falsifier below 22.7 us. **Measured 4.85 us
+median, range 1.87-5.78 us.** His own prediction is falsified by a factor of
+five and he led his report with that sentence.
+
+```
+  shape          M    K      N       kb   fill us  gain us  net us   net %
+  control.small  4    512    4096     1    2.499    0.470   -2.029   -8.71
+  control.small  8    512    4096     1    3.239    1.088   -2.151   -6.87
+  stream.small   4   5120    4096    10    1.873    4.623   +2.750   +3.16
+  stream.small   8   5120    4096    10    4.951    8.887   +3.936   +2.79
+  mlp.down       4  17408    5120    34    4.918   15.892  +10.974   +3.68
+  mlp.down       8  17408    5120    34    4.775   33.430  +28.654   +5.45
+  mlp.gate_up    4   5120   34816    10    4.945   30.248  +25.302   +5.09
+  mlp.gate_up    8   5120   34816    10    5.781   65.078  +59.297   +6.22
+```
+
+Arms: `a_replica` recomputes the sums in the QMV, `b_fill_noconsume` adds an
+unread fill dispatch, `c_sumtable` adds the fill and reads the table. So
+`fill = b - a`, `gain = b - c`, `net = a - c`. Each arm chains 32 dependent
+dispatches so the fill is genuinely serialised in stream order.
+
+Two independent confirmations that these are the same numbers askeladd
+measured in E118. On `mlp.gate_up` M=4 thorfinn reads 497.4 -> 467.2 us against
+askeladd's 500.3 -> 465.2, and on `mlp.down` 298.1 -> 282.2 against 297.1 ->
+279.0. **The baselines agree to within 1 % across two students, two harnesses
+and two sessions.** Thorfinn's gains are 10-14 % smaller in exactly the
+direction the table read predicts.
+
+The K=17408 table (34,816 B) costs 4.918 us and the K=5120 table (10,240 B)
+costs 4.945 us. **A 3.4x larger table is not slower**, so the fill cost is
+dispatch and barrier overhead, not bandwidth: 0.43 us of real work, 1.674 us of
+host graph build from rung 1, and about 2.7 us of launch and barrier residue.
+
+The round census reproduces the 257 figure structurally and then says something
+I had not seen: **every activation tensor in this architecture has exactly one
+wide-QMV consumer**, because q/k/v are fused into `fa.qkv` and gate/up are
+fused into `mlp.gate_up`. There is no second consumer to amortise a standalone
+fill against, so Route B buys 257 matvec savings with 257 extra dispatches,
+one for one. That is exactly the case the 22.7 us break-even prices.
+
+```
+  tensor        K       N       kb  count  src        gain us  fill us  round net us
+  mlp.gate_up   5120    34816   10   64    measured    30.25    4.95    1619.4
+  mlp.down     17408     5120   34   64    measured    15.89    4.92     702.3
+  gdn.in_proj   5120    16480   10   48    modelled    14.69    4.85     472.2
+  gdn.out_proj  6144     5120   12   48    modelled     5.48    4.85      30.0
+  fa.qkv        5120    14336   10   16    modelled    12.78    4.85     126.8
+  fa.o_proj     6144     5120   12   16    modelled     5.48    4.85      10.0
+  lm_head       5120   248320   10    1    modelled   221.30    4.85     216.5
+  TOTAL                              257              4434.1   1256.9    3177.2
+```
+
+```
+  width   wide-QMV round   Route B net        Route C ceiling
+  M=4        76.8 ms       3177 us = 4.14 %   4434 us = 5.77 %
+  M=8       149.6 ms       8111 us = 5.42 %   9412 us = 6.29 %
+```
+
+Route C's ceiling of 5.77-6.29 % reproduces askeladd's E118 `x_sumshoist`
+round-weighted +5.376 % from a completely different measurement, which is the
+strongest cross-check either result has.
+
+Exactness: 42 cells, 4,902,912 elements, zero differing, three positive
+controls each proving a distinct buffer is consumed. `table_hit` perturbs the
+chunk-sum table and restores it, fires only on the `sumtable` arm, and
+`restored_diff = 0` afterwards. That is the direct proof that the consumer
+reads the table instead of recomputing.
+
+Census on both architectures: `replica` and `fill_noconsume` compile to
+identical registers and identical text at every width, which is the proof that
+the unread buffer adds zero instructions and that `b - a` isolates the fill
+dispatch alone. `sumtable` removes 6.2 % of text on g16s and 6.5 % on g17s,
+matching askeladd's ~6.4 %. No spill on either architecture at any width. The
+fill kernel is 12 registers and 368 bytes of text.
+
+### 267.3 — FINDING 64: Route B is the campaign's first mode-proof candidate
+
+Priced with the two measured transfer constants, E116's wide-QMV share of leg
+0.6068 and round-to-leg 1.000, and Finding 35's `ranked % = 0.95 x local %`:
+
+```
+  M      Route B net    leg %    ranked %
+  4        4.14 %       2.512     2.387
+  5.4      4.58 %       2.781     2.641    <- beagle ranked mean M
+  6.0      4.78 %       2.898     2.753    <- republic ranked mean M
+  8        5.42 %       3.289     3.124
+```
+
+Finding 16 makes beagle and the minimum of {essays, medicine, republic,
+botany} the score-setting prompts, whose ranked mean widths are 5.382 and
+5.989. **Route B is therefore worth +2.64 % to +2.75 % ranked; carry +2.70 %.**
+
+I had predicted +2.84 % ranked for the same mechanism in ledger 265, after
+ruling askeladd's 117-452 us fill cost a roughly thousand-fold overstatement
+and putting the real in-stream fill near 2.1 us. The measurement came in at
+4.85 us and +2.70 %. **Two estimates from unrelated measurements agree to 5 %.**
+The 22.7 us break-even was the right instrument and the ruling that overturned
+askeladd's fill table was correct.
+
+Projected from our serial-free rank-1 receipt (3.34790, `b8b8b860`) plus `xv4`:
+
+```
+  candidate                 mode A draw       mode B draw     crown 3.35922
+  xv4 only                  3.3616 (+0.07%)   3.3078 (-1.53%)
+  xv4 + E121 g_split_pred   3.3904 (+0.93%)   3.3361 (-0.69%)
+  xv4 + Route B             3.4524 (+2.77%)   3.3972 (+1.13%)
+```
+
+**Every other candidate we own is a bet on the draw. Route B wins on a bad draw
+by 1.13 %.** That is the whole strategic content of this round.
+
+Decision recorded: rung 3 (Route C) is deferred, thorfinn goes straight to
+rung 5, and Route C returns later as a +1.63 pp increment worth 1257 us of
+recovered dispatch overhead, not as the prize.
+
+Rung 5 requirements I added: bit-exactness cells on every routed shape rather
+than two, because K=6144 (12 k-blocks), K=17408 (34 k-blocks) and
+`lm_head` at grid.y = 31040 are all untested chunk counts and geometries; a
+build-time-only routing gate with no clock or counter input; a host-side
+row-stride precondition because `ensureRowContiguous: false` makes a
+non-contiguous input silently wrong; direct measurement of the three modelled
+rows, which carry 815 us of the 3177 us total; the full 512-token exactness
+check with post-EOS continuation and row-ledger closure; and absolute candidate
+seconds per token as the headline.
+
+### 267.4 — FINDING 65: the NA=5 exactness failures are a K-loop unroll miscompile, not spill and not arithmetic
+
+This closes a question that has been open since E118 and that I recorded as an
+unexplained retraction.
+
+Thorfinn hit askeladd's exact failure signature while building the replica,
+then removed it. Passing `K` and `N` as compile-time `metal_kernel` template
+arguments fully unrolls the ten-iteration k-loop at K=5120. **At NA=5 only**:
+
+```
+  differing_elements   174,072 of 174,080
+  max_abs_diff         4501.3125
+  positive_control     fires normally
+```
+
+K=512 is a single k-block, unrolls to one iteration, and is unaffected.
+Changing K and N back to runtime values, and changing nothing else, made all
+fourteen cells bit exact.
+
+NA=5 is the only width holding `vec<float,5>` in `acc[4]`, `partial[4]`,
+`a0..a3` and `sums` at once, so it is the width where unrolling multiplies live
+state past what the compiler handles correctly.
+
+**This explains the E118 retraction.** I recorded that "spill separates exact
+from wrong" was false, with a largest still-exact spill of 160 B and a smallest
+wrong spill of 80 B, and that a clean register census is therefore not an
+exactness proof. The reason is now named: the census reads the compiled
+function, and the fault is in what the compiler chose to keep live across the
+unrolled copies. The census cannot see it by construction.
+
+Two operational rules follow, now issued to alphonse and askeladd:
+
+- Suspect any arm that makes `in_vec_size` a compile-time constant, or that
+  adds `#pragma unroll` to the k-loop, at NA=5 **before** suspecting its
+  arithmetic.
+- The separating test is two runs: hold the arm fixed, change only whether K is
+  a compile-time constant, and compare actual output values at K=5120 and
+  K=512.
+
+### 267.5 — E121 rung 2: `g_split_pred` clears Rule 59 at +0.855 % ranked
+
+Alphonse's session `e121-rung2b`, five shapes x NA 2,3,4,5, eight palindrome
+blocks with the first discarded, entry 34.0 C exit 40.9 C,
+`cool_gate_passed_real_gate=false` and `gate_qualified_for_timing=false`
+preserved verbatim.
+
+```
+  arm                 NA2     NA3     NA4     NA5     round-weighted
+  a_scaffold        -0.099  -0.122  -0.011  -0.057       -0.045
+  x_split_pred      +0.634  +0.431  +1.506 -30.048       +0.117
+  x_min_ask         +0.626  +0.065  +0.568 -36.040       -0.814
+  g_min_ask         +0.626  +0.081  +0.666  -0.006       +0.481
+  g_split_pred_pp   +0.581  +0.329  -1.567  -0.019       -0.941
+  g_split_pred      +0.687  +0.463  +1.482  -0.118       +1.128
+```
+
+Cost weighting by the E121 shape shares moves `g_split_pred` from 1.128 to
+**+1.482 %** in the kernel frame and moves the null `a_scaffold` to -0.032 %,
+so the weighting invented no signal.
+
+```
+  arm               kernel     leg     ranked
+  g_split_pred      +1.482   +0.900   +0.855   CLEARS RULE 59
+  g_min_ask         +0.908   +0.551   +0.523   CLEARS RULE 59
+  x_split_pred      +0.543   +0.330   +0.313
+  g_split_pred_pp   -0.536   -0.325   -0.309
+  x_min_ask         -0.264   -0.160   -0.152
+```
+
+I predicted +0.628 % ranked; measured +0.855 %. No coverage rescale is needed
+because the gate leaves NA=5 byte identical, so the all-width number already
+carries NA=5 at true zero.
+
+Four pre-registered predictions, scored: the ALU-only ladder at NA=4 predicted
++3.76 % and was expected to over-predict by about 2.3 pp, and it over-predicted
+by **+2.278 pp**; the NA=4 branch fork predicted [1.3, 1.6] if predicate
+branches were skipped and [0.0, 0.3] if only masked, and read **+1.482**, so
+the compiler really skips issue slots; the round-weighted band [1.0, 1.2] read
+**+1.128**; and the ping-pong band [+0.1, +0.4] pp read **-3.05 pp** and is
+falsified. **The ladder calibration held to 0.02 pp.** Barrier ping-pong is
+dropped and goes on the stop list.
+
+### 267.6 — FINDING 66: the entry point allocates for the widest inlined body, and the tax is invisible to every per-cell probe we have run
+
+E102 established that `_wideN` is a `METAL_FUNC` and is therefore inlined.
+Alphonse censused the entry point itself, on the ranked g17s as well as g16s:
+
+```
+  arm                        g16s R/spill  g16s sg   g17s R/spill  g17s sg
+  a_base                        94 / 0       32        101 / 0        39
+  x_split_pred   ungated        96 / s144    32        120 / 0        33
+  x_min_ask      ungated        96 / s160    32        121 / 0        32
+  g_split_pred   gated          93 / 0       33        102 / 0        38
+  g_min_ask      gated          93 / 0       33        102 / 0        38
+  g_split_pred_pp gated         96 / 0       32        107 / 0        37
+```
+
+An ungated arm costs the ranked entry point 39 to 32-33 concurrent
+simdgroups, about **-15 % occupancy**. A gated arm costs 39 to 38, about
+-2.6 %. The bodies at the unaffected widths are byte identical: at NA=5 the
+gated arms hash `fc2f170e` on g16s and `893da3fb` on g17s, equal to `a_base`,
+with zero threadgroup allocation and 286 AIR lines.
+
+Two consequences, and the second one is uncomfortable:
+
+- **A register-hungry arm at any single width taxes every width.** An arm that
+  wins at NA=4 and is gated off at NA=5 is not free at NA=5 unless the entry
+  point is also unchanged there.
+- **Every per-cell standalone timing number in this campaign measures the body
+  alone and misses this tax.** All of them may be optimistic by whatever the
+  entry-point cost would have been in the shipped kernel.
+
+This is also an additional, previously unpriced argument for Route A: owning
+the dispatch lets us instantiate one kernel per width and stop paying for the
+widest body at every width.
+
+Rule 56 is extended: a register-channel arm must be censused on g17s at the
+**entry point** as well as the body, and the build threshold must be applied to
+the arm including its entry-point cost.
+
+### 267.7 — FINDING 67: the NA=5 spill is a g16s artifact and does not transfer to the ranked host
+
+On g17s neither ungated form spills at NA=5: `x_split_pred` reads 120 registers
+with zero spill and `x_min_ask` 121 with zero spill. **Askeladd's -31 %
+collapse at NA=5, and the E118 conclusion that `x_sumshare_min` loses 31 % at
+NA=5, are local-only.**
+
+Two consequences. The +1.127 % round-weighted figure computed with NA=5
+excluded may understate the ranked result. And the gate is still correct, but
+for the entry-point occupancy reason in 267.6 rather than the NA=5 body reason
+it was built for. That reclassification makes the gate the **largest
+local-to-M5 transfer risk in E121**, and the submission note must disclose it.
+
+Any conclusion drawn about ranked NA=5 register pressure from a g16s spill is
+unsupported and should be re-derived.
+
+### 267.8 — FINDING 68: form must match the base, and the penalty is a factor of 2.2
+
+`x_min_ask` is askeladd's E118 arm ported unchanged onto the `xv4` base. It
+reads **+0.568 %** at NA=4 where he measured **+1.465 %**. Alphonse's
+re-derived `x_split_pred`, the same mechanism written for the current base,
+reads **+1.506 %**.
+
+The cause is concrete: his form carries a `vec<T,4> xvs[NA]` cache that the
+pre-`xv4` scalar base needs and the `xv4` base does not.
+
+**The mechanism transfers; the implementation does not.** New campaign rule:
+re-derive an arm on the current base. Never cherry-pick the diff. A ported arm
+that under-reads is not evidence against the mechanism.
+
+A second number from the same session: the gate is worth **+1.01 pp on its
+own**, moving `x_split_pred` from +0.117 round-weighted ungated to +1.128
+gated.
+
+### 267.9 — Alphonse derived two ladder calibration points for free, and one of them says the ladder is wrong by 1.66x
+
+He worked out the instruction accounting of the shipped body: the activation
+add tree issues 5 ALU per `(i, m)` pair, so the base issues `20 x NA` ALU per
+k-block. Askeladd's `n_halfsums_free` removes half of them, 40 at NA=4.
+
+```
+  Finding 59 ALU price at NA=4     0.0940 %/instruction/k-block
+  40 removed instructions          predicted  +3.760 %
+  measured n_halfsums_free         measured   +2.266 %
+  out-of-sample error                         +1.494 pp
+  implied deletion price           0.0567 %/instruction/k-block
+  ladder / deletion ratio          1.66x
+```
+
+Askeladd's E123 primary metric is out-of-sample ladder prediction error with a
+baseline of 0.66 pp. **This is a held-out error of 1.494 pp on the class the
+ladder is best calibrated for, and it was already sitting inside his own E118
+results.**
+
+Hypothesis issued to him, as a hypothesis: **the ladder is calibrated by
+injection, and injection price is not deletion price.** Injected instructions
+are independent work with no consumers, so they fill idle issue slots and price
+near issue throughput. Deleted instructions were feeding a dependence chain and
+were partly hidden behind memory, so removing them returns less. Finding 60
+already showed the kernel is issue-throughput bound rather than latency bound,
+which points the same way. If the ratio is really near 1.66, **every deletion
+price in the E123 rung-1 audit must be divided by it before the +1.0 % build
+threshold is applied**, and roughly half the candidate arms will not clear it.
+The test is one arm run in both directions on the same class at the same width
+in the same session.
+
+The second free point prices the two classes E123 rung 0 exists to measure:
+
+```
+  n_halfsums_free   +2.266 %  at NA=4   free ceiling, compile time, no barrier
+  x_sumshare_min    +1.465 %  at NA=4   same saving, paid for with real sharing
+  exchange cost      0.801 pp at NA=4   for 2 barriers + 4 threadgroup accesses
+```
+
+If Apple's claim that barriers cost about two cycles holds, almost all of the
+0.801 pp is the four threadgroup accesses, putting a single threadgroup access
+near **0.20 %/instruction/k-block at NA=4**, about **0.34 device loads** against
+the Finding 59 device-load price of 0.583 at the same width. That is now a
+pre-registered out-of-sample target for E123 rung 0. A measurement near 0.05
+instead would mean barriers are not cheap on this hardware and would falsify
+the Apple claim the same way E118 falsified its `simd_shuffle` claim.
+
+### 267.10 — HARNESS DEFECT 22: an out-of-bounds device write faults the command buffer and the harness still exits 0
+
+Alphonse voided a complete rung-2 session and root-caused it rather than
+publishing it. The isolated entry points used with `research/e104_rate_probe.m`
+were missing a row bounds guard:
+
+```c
+const int first_m = int(tid.x) * NA;
+if (first_m >= NA) { return; }
+```
+
+`e104_rate_probe.m` dispatches `MTLSizeMake(m, n/8, 1)` with `m = NA`, so an
+unguarded `first_m` reaches `NA(NA-1)` and writes rows up to `NA^2 - 1 = 24`
+while `makeOperands` sizes for `max_m = 5`. **The out-of-bounds device write
+faults the command buffer. Every later dispatch then retires in 1-3 us and the
+harness still exits 0.** Only the first measured cell is real; the rest of the
+table reads as an enormous speedup.
+
+He caught it because the implied read rate was 17-32 TB/s against a 273 GB/s
+peak, and he disbelieved the number.
+
+Three validity gates are now standard, any one of which voids a session before
+a speedup number is printed: implied bandwidth above `1.2 x 273` GB/s; the null
+scaffold arm moving more than 0.50 % at any width; any positive control
+reporting `detected=False`. They live in `research/e121_analysis.py`.
+
+### 267.11 — E122 rung 0: edward found range restriction in my own gate before spending a leg on it
+
+The rung-0 AUC gate as I wrote it is measured on a sample the shipped policy
+already selected on the predictor. `costModelDepth` applies
+`p = min(p, sigmoid(margin/2))` at depth index 0 and `sigmoid(margin/3)` at
+index 1, so a trace of the shipped policy reaches deep positions only in rounds
+whose margin the policy already judged large. Range restriction attenuates AUC
+toward 0.5, and a low value cannot separate "no signal" from "the policy
+already removed the rounds that would show it".
+
+His evidence, on one completed leg:
+
+```
+  pos   n   acc_rate     AUC   [95% CI]           not_drafted
+    1   78   0.9615   0.9378 [0.8571, 0.9870]         0
+    2   74   0.9595   0.8192 [0.7277, 0.9178]         1
+    3   71   0.9437   0.7500 [0.1812, 1.0000]         1
+    4   65   0.9846   0.9219 [0.8438, 0.9688]         5
+    5   60   0.9500   0.5234 [0.1695, 1.0000]        10
+```
+
+`not_drafted` rises 0 to 10 as the position deepens; those are exactly the
+low-margin rounds. A second defect is visible in the same table: conditional
+acceptance of 0.94-0.98 means each position rests on three to five rejections,
+and the position-5 interval spans [0.1695, 1.0000]. Reporting 0.5234 as a null
+against a 0.55 threshold would be unsound.
+
+Approved: a second forced-depth arm at `MLX_E122_FORCE_DEPTH=8`, shipped as a
+reverse-appliable `research/e122-patches/forced-depth.patch` following the E116
+pattern, with the `matched=true` golden check as the arm's own positive
+control.
+
+I changed the primary statistic. Four thin per-position statistics against one
+threshold produce an arbitrary verdict, so the gate is now **one prompt-
+stratified concordance statistic pooled over positions 2 to 5**, counting
+concordant and discordant pairs inside each `(prompt, position)` cell and
+aggregating counts before forming the ratio. Thresholds unchanged: at or below
+0.55 kills, at or above 0.65 licenses rung 1, between stop and ask. His rank
+correlation of margin against accepted count is required beside it with a
+pre-registered band, under `D = 2 x AUC - 1`; a disagreement above 0.10 in `D`
+means one of the two estimators is broken and must be reported rather than
+resolved by preference.
+
+Two contract answers recorded. **`MLX_E58_BUFFER_LIMIT_OPS=0` is a census-only
+isolation mode and must never be set on a timed leg** — his reading was right
+and my earlier wording was too loose. And his local proxy set is approved with
+two conditions: never label a local proxy with a ranked prompt's name, and
+never average the beagle-like `natural_history` proxy away, because Finding 16
+makes beagle worth 12.5 times essays and Fact 11 makes it the hardest prompt in
+178 of 178 board runs above 3.2. If the pooled statistic and the
+`natural_history` statistic disagree in direction, `natural_history` wins.
+
+One addition: if rung 0 licenses rung 1, the fit must recover the shipped
+`/2.0` and `/3.0` divisors as special cases and report what the data says they
+should have been. Those two constants have never been checked against data.
+
+### 267.12 — ADVISOR ERROR 83: my draft-path byte accounting was wrong by a factor of 1.667
+
+In ledger 265 I priced the untaken draft-gather prize at 23.6 MB for the
+gathered rows and 11.8 MB for the centroids, 35.4 MB per draft step, and called
+it fifteen times the crown's prize.
+
+The row is **1,600 B, not 960 B**: 5,120 weights at 2 bits is 1,280 B, plus 80
+groups of bf16 scales at 160 B, plus 80 groups of bf16 biases at 160 B. The
+arithmetic is elementary and I did not do it.
+
+```
+  centroid pass   12,292 rows x 1,600 B = 19.67 MB   (I wrote 11.8)
+  gather pass     24,584 rows x 1,600 B = 39.33 MB   (I wrote 23.6)
+  total                                   59.00 MB   (I wrote 35.4)
+```
+
+Confirmed three independent ways: direct arithmetic; the source comment at
+`Qwen35.swift:3639-3648` stating that probe 0.25 removes 23.0 % of the declared
+head's per-draft bytes, which the corrected numbers reproduce at 22.990 %; and
+**the campaign's own measured census already in this ledger at lines
+33446-33447**, which records `19.67 MB / 94.06 us / 209.1 GB/s` and
+`39.33 MB / 170.74 us / 230.4 GB/s` verbatim. **The correct numbers were
+already written down in this file and I re-derived worse ones from scratch.**
+
+Two further corrections in the same block. The measured selection matmuls cost
+**264.8 us per draft step**, not the 21-41 us I quoted; my figure was for the
+argsort chain alone. And the "fifteen times the crown's prize" comparison is
+wrong: the whole readout at about 1.0 % ranked is roughly **3.7x** the crown
+probe-select's observed +0.2675 %, which is still the largest untaken item on
+the draft path but is not fifteen times anything.
+
+The rule this teaches is narrow and I am writing it down because I keep
+relearning it: **before pricing a mechanism from a byte count, grep this ledger
+for a measured census of the same cell.** The campaign has measured more than I
+remember.
+
+### 267.13 — FINDING 69: the acceptance exchange law is exactly one to one, and the campaign's own penalty coefficient understates by 15 %
+
+`raw_p = S_p x A_p / T_p` where `A` is accepted tokens per round and `T` is
+round time. Break-even is `dA/A = dT/T`. **You may trade exactly one percent of
+accepted tokens per round for one percent of round time.**
+
+Converting to per-draft acceptance uses `A = sum(alpha^i, i=0..d)` and its
+elasticity `E`. The tolerable acceptance loss is `1/E` percent per percent of
+round time, and the score penalty of a proposal-miss rate `m` is `100 x E x m`.
+
+```
+  prompt      d       A      alpha     E     1/E    break-even m   100E
+  plutarch  0.154   1.051   0.182   0.035  28.88     2.9e-1         3.5
+  drama     2.298   2.032   0.598   0.747   1.339    1.3e-2        74.7
+  travel    2.656   2.415   0.696   0.966   1.035    1.0e-2        96.6
+  beagle    4.382   4.655   0.934   2.031   0.492    4.9e-3       203.1
+  republic  4.989   5.505   0.966   2.395   0.418    4.2e-3       239.5
+  essays    5.087   5.565   0.965   2.435   0.411    4.1e-3       243.5
+  medicine  5.256   5.689   0.964   2.510   0.398    4.0e-3       251.0
+  botany    6.148   6.321   0.960   2.903   0.345    3.5e-3       290.3
+```
+
+The model reproduces the campaign's own constant from first principles before
+correcting it. `research/e87_head.py:55-58` builds 206.6 as 2.21 %
+per acceptance point times 93.5 points lost per missed argmax. The beagle row
+of this table gives 2.18 % per point and alpha = 0.9335, reproducing both
+factors. **So 206.6 is not arbitrary; it is a beagle-calibrated first-order
+elasticity, and `research/CURRENT_RESEARCH_STATE.md` was wrong to call it the
+least trustworthy number in the campaign.**
+
+The correction is that the published score is a **median over prompts**, so the
+penalty must be applied per prompt before the median is taken, not as one
+scalar. Across the five prompts that can set the median the coefficient runs
+203 to 290 with a mean of 245. **Use 240. Every past decision that turned on
+`gain - 206.6 x m` should be re-ranked, which costs zero GPU time because all
+37 cells are already computed.**
+
+The asymmetry that decides every draft-path trade: bytes saved scale with `d`,
+but the penalty scales with `E`, which grows faster in `d`. Break-even `m`
+therefore *falls* as prompts get deeper, from 2.9e-1 on plutarch to **3.5e-3 on
+botany**. The binding constraint is the deepest median-eligible prompt.
+
+**Today's measured miss rate is 2.266e-4 against a budget of 3.5e-3. There is
+roughly 15x of unspent acceptance headroom on the draft path and no mechanism
+in the tree is spending it.**
+
+One flagged contradiction I am not resolving by preference: ranking candidate
+seconds per token puts beagle and essays as the two median-setting prompts,
+which requires the serial numerator to vary substantially across prompts to be
+consistent with Fact 11's "beagle lowest in 178 of 178 runs". The robust part
+survives either way: **plutarch can never set the median**, so the value of any
+draft-path change is its value on the `d >= 2.3` prompts.
+
+### 267.14 — FINDING 70: plutarch is the *worst* instrument for a wide-QMV mechanism, and Rule 59 needs a second qualification
+
+Ledger 266 established plutarch as nearly mode-immune and made it the
+recommended read when the mode is unknown. That is correct for a *uniform*
+mechanism. It is close to the worst possible choice for a *wide-QMV*
+mechanism, and Finding 56 already contained the reason without my drawing it
+out: plutarch reaches the wide QMV on only about 9.6 % of its leg.
+
+With `phi` the fraction of the candidate leg a mechanism can reach — 0.0564 for
+plutarch against 0.6068 for the other seven — the 2-sigma MDE **on the
+mechanism** is:
+
+```
+  scenario        estimator                        MDE on wide-QMV mechanism
+  mode shared     wide-optimal, mode matched            0.30 %
+  mode shared     candidate mean of 8                   0.35 %
+  mode shared     DRAFT probe                           0.43 %
+  mode flipped    wide-optimal, mode orthogonal         1.95 %
+  mode flipped    gated 2-parameter decomposition       2.42 %
+  mode flipped    generic mode-orthogonal contrast      2.91 %
+  mode flipped    plutarch alone                        5.82 %   <- worst
+```
+
+**Mode robustness and mechanism sensitivity are anti-correlated.** A
+mode-matched reference is worth about 6x in resolving power for this class of
+mechanism, which makes finding one far more valuable than improving the
+estimator.
+
+Rule 59 stands as written for a mechanism that touches the whole leg. It is
+extended: **an MDE is a property of the estimator and the mechanism together.
+Divide the leg-frame MDE by the mechanism's reachable fraction `phi` before
+comparing it with a predicted gain.** Reading a wide-QMV mechanism on plutarch
+divides by 0.0564.
+
+### 267.15 — FINDING 71: no fixed linear contrast can remove the mode, because the mode's magnitude is itself random
+
+The min-variance mode-orthogonal contrast over the eight prompt ratios turns
+out to be 88-91 % plutarch:
+
+```
+  a = [+0.880 plutarch, -0.002 drama, -0.159 travel, +0.031 beagle,
+       +0.061 medicine, +0.056 republic, +0.083 essays, +0.050 botany]
+```
+
+```
+  estimator                same-mode rms   cross-mode rms
+  mean of 8                   0.0929 %     mode contaminated
+  plutarch alone              0.1295 %        0.1643 %
+  fitted contrast             0.1225 %        0.1775 %  (LOO 0.1846 %)
+  2-parameter decomposition        —           0.2769 %
+```
+
+The contrast is unbiased (leave-one-out leak +0.0025 +/- 0.0296) and beats the
+gated decomposition by 1.6x, but it **does not beat plutarch alone**, because it
+essentially is plutarch.
+
+The reason no contrast can do better is structural: **the mode's magnitude
+varies from run to run** (`k` standard deviation 0.166, range 0.684 to 1.427),
+inflating variance 2.1x across a flip at p = 0.022. That is a multiplicative
+nuisance, and a fixed linear contrast can only remove an additive one. This
+closes the search for a better mode-orthogonal estimator from board data alone.
+
+For a wide-QMV mechanism specifically, if a flip cannot be avoided, the
+recommended contrast is
+`a = [+1.012, -0.019, -2.022, +0.393, +0.787, +0.719, +1.058, +0.638]`, which
+buys 1.95 % against plutarch's 5.82 %.
+
+### 267.16 — FINDING 72: the mode is not a wide-dispatch cost, and the best regressor is gated drafting duty
+
+Testing every candidate regressor for the cross-mode shift:
+
+```
+  regressor        LOPO error   r^2
+  gated_rounds       0.185 %    0.9364     <- drafting rounds per second of
+                                              leg, gated off below duty 0.5
+  g2_rounds             —       0.0005     <- G=2 rounds
+  total rounds, drafted tokens, accepted tokens: all fail
+```
+
+Fitted at **0.803 +/- 0.025 ms per drafting round** against the incumbent
+0.890. **`g2_rounds` has r-squared 0.0005, so the mode is not a cost attached to
+the wide dispatch.** That rules out a whole family of explanations, including
+every one that would have made the mode a property of the kernel we keep
+optimising.
+
+No model fits within errors (chi-squared about 27.4 on 6 df), so a residual
+per-prompt term persists.
+
+The plutarch anomaly survives every ungated model at 3.7 to 5.5 sigma with
+cluster-robust errors. The best physical account with **no free parameter** is
+that the cost is charged only when the *previous* round also drafted, i.e. lost
+pipeline or state-reuse overlap, which predicts +0.015 % for plutarch against a
+measured +0.0056 +/- 0.0377. A residency or DVFS hysteresis story fits equally
+well and cannot be separated, because no prompt sits at intermediate drafting
+duty. The cheapest resolving experiment is a synthetic schedule at duty near
+0.5.
+
+Method note worth keeping: exact per-prompt round counts `R` are recoverable by
+continued-fraction reconstruction of `effective_mean_draft_len` plus round-time
+curve selection of the integer multiple, and all eight Finding 12 values
+reproduce exactly. Also **`accepted_pair_count` is always 1** — it counts timing
+pairs, not tokens — and must never be used as an acceptance statistic.
+
+### 267.17 — The draft-path mechanism queue, priced and legality-checked
+
+With the corrected 59.00 MB and the corrected penalty coefficient, the ranked
+queue on the draft selection path:
+
+**C1, sign-sketch or low-rank first pass over gathered rows and centroids.**
+Build an S-bit sketch of every compact row and every leaf centroid at warm from
+the already-pinned tensors, score the shortlist by popcount, rescore only the
+top ~256 at affine-2, hand the existing 32 to the unchanged affine-4 rerank. At
+S = 1024 bits the row falls from 1,600 B to 132 B: rows 39.33 -> 3.25 MB,
+centroids 19.67 -> 1.62 MB, plus 0.41 MB of affine-2 rescore, **removing 54.13
+MB per draft step, worth +0.92 % to +1.08 % ranked** at the optimistic transfer
+coefficient and roughly a third of that at the conservative one. Break-even
+worst-domain `m` is 3.8e-3 against today's 2.266e-4, so it has 17x of
+acceptance headroom. **It has a free offline falsifier**: the 18,092-sample
+hidden-state corpus and `research/e87_decide.py` already score cells this way,
+so shortlist recall can be measured with zero GPU time before a line of Metal
+is written. This is the "SlimSpec-style low-rank factorisation of the readout"
+that this ledger called the durable answer at line 20309 and that was never
+assigned. Counter-evidence to respect: a static prefix trim to 49,152 rows
+regressed acceptance 1.00 to 0.877, so coverage destruction is the failure mode
+to measure.
+
+**C2, quantize the MTP head's bf16 precision islands.** The Q island and the
+exact K/V dense rows are 31.46 MB per draft step of bf16 on the proposal path
+only; at affine-4/g64 that becomes 8.85 MB, removing 22.61 MB, worth +0.38 % to
++0.45 % ranked with break-even `m` of 1.6e-3. The env gate already exists. This
+is the cleanest application of "only the target must be exact" in the tree,
+because the head KV cache never reaches the target. **Blocked pending
+reconciliation** of E82 route (c), which measured `declared 0.031432` against
+`noislands 0.031547` at ledger 22881-22883, a sign that reads as slower without
+the islands and that nobody has explained.
+
+**C5, pad the centroid table 12,292 to 12,296.** `12292 % 8 == 4`, so the `fast`
+gate at `quantized.cpp:259` is false and the centroid pass runs on the slow
+`affine_qmv` at 209.1 GB/s instead of 230.4. Four pad rows duplicating real
+rows the way the existing six already do flips it, worth about **+0.03 % ranked
+for three lines, bit exact on proposals**. A free rider on any draft-path PR.
+
+**C4, probe fraction 0.25 to 0.15.** One constant. Measured local ABBA -0.3806 %
+round time with effect over standard error 15.8; at the corrected penalty
+coefficient of 240 the net is +0.05 % to +0.20 % ranked. It was modelled as the
+interior optimum, accepted, then withdrawn as sign-unknown, and never
+submitted. Ship as a rider, not standalone.
+
+**C6, reuse the probed leaf set across drafts within one round. Legality
+ambiguous and flagged, not guessed.** It is arguably normal within-request cache
+reuse like the KV cache, and it uses no token identity and no cross-request
+state, but it is the only proposal here whose output depends on when in the
+round it is called. Get an explicit second reading before assigning.
+
+Rejected and not to be re-proposed: killing the eight-dispatch argsort of the
+centroid scores (already priced at +0.061 % ranked and on the stop list);
+`rowsPerLeaf` 8 to 32, which is *more* dead at coefficient 240, not less; and
+coarser group size, which measured +0.034 % against +0.253 % modelled because
+achieved bandwidth fell from 191.8 to 179.1 GB/s.
+
+Two structural facts recorded for later: `sortedIndices: true` at the gather
+buys nothing because `gather_qmm_rhs` is skipped when `B/E = 3073/12292 < 4`;
+and after the derived index is built, the original `_draftHeadW/S/Z` at 157.34
+MB appear never to be read again, which is dead residency rather than dead
+traffic.
+
+### 267.18 — HARNESS DEFECT 23: `rg` is not installed on the advisor host
+
+The Senpai harness documentation instructs agents to search the event log with
+`rg`. **`command -v rg` returns nothing on this host.** An `rg` invocation whose
+stderr is discarded or whose exit code is unchecked looks exactly like "no
+matches found".
+
+**Every negative conclusion in this campaign that rests on an `rg` search may be
+a silent false negative and must be re-run with `grep`.** This is one plausible
+contributing cause of Advisor Error 83: the measured census at ledger
+33446-33447 was in this file the whole time.
+
+### 267.19 — Rules and errors from this round
+
+**RULE 65 (NEW):** re-derive a mechanism on the current base before measuring
+it. Never port an arm's diff from an older base. Finding 68 measured the
+penalty at 2.2x.
+
+**RULE 66 (NEW):** an MDE is a property of the estimator and the mechanism
+together. Divide the leg-frame MDE by the mechanism's reachable leg fraction
+`phi` before comparing it with a predicted gain. Finding 70.
+
+**RULE 67 (NEW):** apply the acceptance penalty per prompt and then take the
+median. Use coefficient 240, not 206.6. Finding 69.
+
+**RULE 68 (NEW):** before pricing a mechanism from a byte count, `grep` this
+ledger for an existing measured census of the same cell. Advisor Error 83.
+
+**RULE 56 (EXTENDED):** a register-channel arm must be censused on
+`applegpu_g17s` at the entry point as well as the body, and the build threshold
+applies to the arm including its entry-point cost. Finding 66.
+
+**ADVISOR ERROR 83:** priced the draft-gather prize from a 960 B row when the
+row is 1,600 B, understating the traffic by a factor of 1.667, quoting 21-41 us
+for a chain that measures 264.8 us, and calling the result fifteen times the
+crown's prize when it is 3.7x — with the correct measured census already
+present in this ledger.
+
+**ADVISOR ERROR 84:** wrote the E122 rung-0 gate as a per-position AUC on a
+sample that the shipped policy had already selected on the predictor, and did
+not notice that the shipped `costModelDepth` is already margin-conditioned at
+the two shallowest positions. Edward found both before spending a leg.
+
+**ADVISOR ERROR 85:** recommended plutarch as the default read when the mode is
+unknown, one round after establishing in Finding 56 that plutarch reaches the
+wide QMV on only 9.6 % of its leg. The two facts were in adjacent ledger
+sections and I did not multiply them together. Finding 70.

@@ -1,8 +1,8 @@
 # SENPAI Research State
 
-- 2026-08-22 03:25 UTC
+- 2026-08-22 04:20 UTC
 - Track `qwen3.8-27b-mtp-v1`. Advisor branch `senpai/qwen38-mtp-r1` at
-  `61ed64fe`. Campaign base `origin/main` at `770a3ff2`. Organizer
+  `84ad34a8`. Campaign base `origin/main` at `770a3ff2`. Organizer
   `upstream/main` at `fac135f2`.
 
 ## Most recent research direction from the human researcher team
@@ -10,192 +10,235 @@
 No new direction since the standing instruction: keep every Mac productive,
 compose mechanisms rather than resampling, and submit autonomously.
 
-## 🔴🔴🔴🔴🔴 CURRENT RESEARCH FOCUS — COMPOSE A CROSSING CANDIDATE
+## 🔴🔴🔴🔴🔴 CURRENT RESEARCH FOCUS — SHIP THE FIRST MODE-PROOF CANDIDATE
 
-We hold **serial-free rank 1 of 764**. The crown holds the published record. The
-whole difference is the measurement draw, and the answer to a bad draw is not a
-better draw, it is more real speed.
-
-```
-serial-free 3.34789703   b8b8b860   OURS, rank 1     published 3.33412148 rejected
-serial-free 3.34767209   bc070b7b   crown, rank 2    published 3.35922017 PROMOTED
-```
-
-Rule 59 says submit only above about +0.5 % predicted ranked effect, or compose.
-Four mechanisms are converging on one composed candidate:
-
-| mechanism | owner | predicted ranked | state |
-|---|---|--:|---|
-| `xv4` vectorised activation load | merged | **+0.41 %** | already on base, exact on the hidden set |
-| `x_sumshare_min` gated off at NA=5 | alphonse E121 | **+0.628 %** | measured at NA=4, needs the gate and the ship frame |
-| `x_sumshoist` hoisted activation sums | thorfinn E120 | **+2.84 %** | measured bit exact, needs a dispatch it can bind a buffer to |
-| crown probe-select adoption | queued | **+0.074 %** | read at source, three hunks, no exactness risk |
-
-If all four land the composed candidate is about **+3.95 % ranked** over the
-current base, which is far past anything the draw can take away.
-
-### 🔴 The mode is bigger than every mechanism we own. Price against both draws.
-
-`7bef7d4c` carried `xv4` and landed at serial-free 3.29427 in mode B, against
-`b8b8b860` at 3.34790 in mode A. That is **−1.60 % of serial-free score** from
-FACT-2 alone, with P(fast) about 0.67. We have never found its cause and we
-cannot choose it.
-
-Starting from `b8b8b860`'s engineering at serial-free 3.34790, needing to clear
-the crown at published 3.35922:
-
-| composed candidate | ranked gain | serial-free, mode A | serial-free, mode B |
-|---|--:|--:|--:|
-| `xv4` alone | +0.41 % | 3.3616 | 3.3078 |
-| `xv4` + `x_sumshare_min` | +1.04 % | 3.3827 | 3.3286 |
-| the above + crown probe-select | +1.12 % | 3.3854 | 3.3312 |
-| the above + `x_sumshoist` | **+3.95 %** | **3.4801** | **3.4244** |
-
-**Read the last column.** Everything except the full composition loses to the
-crown on a mode-B draw. Only `x_sumshoist` makes us mode-proof. That is why E120
-is the main line and why nothing else in the campaign is worth 2.84 % ranked.
-
-It does not argue for waiting. Submit `xv4` + `x_sumshare_min` as soon as E121
-terminates cleanly: it takes the crown on a two-in-three draw, and the only cost
-of losing is 94 minutes of a submission queue with nothing else in it. Campaign
-Rule 64 requires that such a candidate be labelled a draw-dependent bet, so a
-mode-B rejection is never misread as a mechanism failure.
-
-### 🔴 What one receipt can actually resolve — now measured, not guessed
-
-| what you know | best estimator | 2σ conservative |
-|---|---|--:|
-| mode is shared | candidate mean of 8 legs | **0.216 %** |
-| mode unknown | plutarch alone | **0.387 %** |
-| mode flipped | plutarch alone | **0.450 %** |
-| mode removed by the 2-parameter fit | decomposition `c` | 0.702 % |
-| any mode | published median | 0.698 % to 2.104 % |
-
-At a 0.5 % decision threshold the published median is a false positive on 9.8 %
-of same-mode null pairs and **53.8 %** of unknown-mode null pairs. Plutarch alone
-and the candidate mean-of-8 are false positives on **0 %**. **Never decide a
-mechanism from the published median.** Extra reference receipts scale as
-`sqrt(1 + 1/k)`, so resampling to resolve a mechanism is asymptotically bounded
-at 0.131 %.
-
-Rule 60 is amended: score the decomposition's `c` against **zero** with a ±0.47 %
-2σ band. The `+0.2255 %` calibration offset written into
-`research/board_prompt_instrument.py` in ledger 264 was one draw from a zero-mean
-distribution; over 26 byte-identical cross-mode pairs the mean is
-−0.0576 ± 0.0444 %. Advisor error 82.
-
-### The one number that reorganises the programme
+For three rounds every candidate we held beat the crown on a good measurement
+draw and lost on a bad one. **That ended at 03:57Z.** Thorfinn's E120 rung 2
+passed and produced a candidate that wins on both draws.
 
 ```
-x_sumshoist   +5.376 %  round-weighted across five shapes, NA 2 to 5
-              BIT EXACT at all 20 cells over 4,467,008 outputs
-              differing = 0, max ULP = 0, including NA=5
-              91.7 % of the free n_nosums ceiling
-              registers FALL, text falls, zero spill on g16s and g17s
+  candidate                 mode A draw       mode B draw     crown 3.35922
+  xv4 only                  3.3616 (+0.07%)   3.3078 (-1.53%)
+  xv4 + E121 g_split_pred   3.3904 (+0.93%)   3.3361 (-0.69%)
+  xv4 + Route B             3.4524 (+2.77%)   3.3972 (+1.13%)   <- mode proof
 ```
 
-The earlier +7.13 % headline was a two-block partial and is **withdrawn**. The
-five-shape round-weighted figure is +5.376 %. Priced with E116's measured
-transfer of 0.6068 and the standing 0.95 ranked factor:
+Two submissions are queued behind this, in this order, because Yukon allows one
+in flight at a time and validation takes 56 to 130 minutes:
+
+1. **E121 `g_split_pred`, +0.855 % ranked.** Alphonse runs the chain as soon as
+   his compressed rung 3 lands. It is an explicit two-in-three bet on the draw,
+   labelled as such in the note under Rule 64, and it costs nothing because the
+   slot is free and returns before Route B is ready.
+2. **E120 Route B, +2.70 % ranked.** Thorfinn skips Route C and goes straight to
+   the rung 5 rollout. This is the candidate that does not need luck.
+
+### Route B, and why it is the largest thing we have measured
+
+Thorfinn built a candidate-owned QMV replica dispatched from `Qwen35.swift`
+through `MLXFast.metalKernel`, then added a standalone in-stream dispatch that
+precomputes the activation chunk sums the wide kernel currently recomputes
+4,352 times.
+
+- **Rung 1.** Bit exact against `quantizedMM` over 1,633,536 elements, 14 cells,
+  positive control fires on every cell. End to end the replica is **faster on
+  average, -0.188 %**, worst width +0.401 %. Per-dispatch host cost is
+  **+1.674 us**, of which the per-dispatch source-string compare I flagged as
+  the main risk is **1.6 %**. Making a custom kernel's source longer is nearly
+  free; issuing the dispatch at all costs 1.67 us of CPU.
+- **Rung 2.** He pre-registered 25-40 us for the fill with a falsifier below
+  22.7 us and **measured 4.85 us**, falsifying his own prediction by five. My
+  22.7 us break-even, derived after ruling askeladd's 117-452 us fill table a
+  thousand-fold overstatement, holds with **4.7x of margin**. A 3.4x larger
+  table is not slower, so the fill is dispatch and barrier overhead, not
+  bandwidth.
 
 ```
-gain   5.376 % kernel x 0.6068 transfer            = +3.262 % of the leg
-cost   257 fills/round x ~2.1 us                   = -0.270 % of the leg
-net                                                = +2.99 % of the leg
-                                     x 0.95 ranked = +2.84 % RANKED
+  width   wide-QMV round   Route B net        Route C ceiling
+  M=4        76.8 ms       3177 us = 4.14 %   4434 us = 5.77 %
+  M=8       149.6 ms       8111 us = 5.42 %   9412 us = 6.29 %
 ```
 
-**The fill cost is the whole argument, and the reported fill cost is a ~1000x
-overstatement.** E118 measured the sums-table fill standalone as one command
-buffer with `encode, commit, waitUntilCompleted`, giving 117 to 452 us. Two
-independent checks say the real in-stream cost is about 2.1 us:
+Route C's ceiling reproduces askeladd's independent E118 `x_sumshoist` figure of
++5.376 %. Thorfinn's consumer gains reproduce askeladd's on both shared shapes
+with baselines agreeing to within 1 %. My own ledger-265 prediction for this
+mechanism was **+2.84 % ranked** against the measured **+2.70 %**. Four
+independent routes to the same number.
 
-- traffic is 51.2 KB read and 10 KB written, which is 0.22 to 0.34 us at
-  273 GB/s, plus one ~1.80 us dispatch boundary from E106;
-- `offset(kb, l)` depends only on k-block, lane and `m` — **not** on `out_row`,
-  **not** on `N`, and not on the weight matrix — so at fixed K the fill cannot
-  depend on N, yet the three measured K=5120 fills span 117 to 452 us, a 3.9x
-  spread that can only be harness overhead.
+**Every activation tensor has exactly one wide-QMV consumer**, because q/k/v and
+gate/up are fused. So Route B buys 257 matvec savings with 257 extra dispatches,
+one for one, which is exactly what the 22.7 us break-even prices. Route C is now
+a +1.63 pp increment that recovers 1257 us of dispatch overhead, not the prize.
 
-The break-even follows directly:
+### What is left to prove before Route B ships
 
-```
-saved per round  = 48 GDN layers x ~88 us + 16 attn layers x ~85 us + 246 us lm_head
-                 = ~5,830 us
-fills per round  = 4 x 64 + 1 = 257
-BREAK-EVEN COST PER FILL = 5,830 / 257 = 22.7 us
-real in-stream cost      = ~2.1 us       -> about 11x under break-even
-```
+Bit exactness on **every routed shape**, not the two tested: K=6144 is 12
+k-blocks, K=17408 is 34, and `lm_head` runs grid.y = 31040, seven times anything
+tested. A build-time-only routing gate. A host-side row-stride precondition,
+because `ensureRowContiguous: false` makes a non-contiguous input silently
+wrong. Direct measurement of the three modelled rows, which carry 815 of the
+3177 us. Then 512-token exactness with post-EOS continuation and row-ledger
+closure, and absolute candidate seconds per token as the headline.
 
-At M=8 the saving roughly doubles while the fill count does not, so the margin
-widens with width.
+### The NA=5 mystery is solved, and it was never spill
 
-It is not shippable yet. It binds a tenth buffer, and the host binding for
-`affine_qmv_fast` lives in `backend/metal/quantized.cpp`, which is not in
-`editablePaths`. That binding is a single blob `5bdea16c0e13` across all 1014
-rival submission branches, ours, and `upstream/main`. Nobody has moved it.
+Thorfinn hit askeladd's exact failure signature and removed it. Passing `K` and
+`N` as compile-time template arguments fully unrolls the ten-iteration k-loop at
+K=5120, and **at NA=5 only** the output is wrong: 174,072 of 174,080 elements
+differ, positive control still fires. K=512 is one k-block and is unaffected.
 
-**Everything in flight this cycle exists to get around that wall, or to buy the
-same win without crossing it.**
+This explains the E118 retraction. A clean register census is not an exactness
+proof **because the census reads the compiled function and the fault is in what
+the compiler kept live across the unrolled copies**. Suspect compile-time
+`in_vec_size` and `#pragma unroll` at NA=5 before suspecting arithmetic.
 
-- **E120 (thorfinn, PR #121)** crosses it by owning the dispatch. Rung 1 is a
-  hard gate: a bare `affine_qmv_fast` replica launched from `Qwen35.swift`, bit
-  exact and within about 1 % end to end, or the route is dead. Rung 2 prices one
-  **in-stream** fill against the 22.7 us break-even. Rung 3 is Route C, which
-  emits the sums table as a second output of
-  `qwen35_dual_rms_norm_concat_bf16_v1` and covers **59.977 %** of the round for
-  free.
-- **E121 (alphonse, PR #122)** was redirected off the ceiling arms that askeladd
-  had already measured, onto the single shippable question: does
-  `x_sumshare_min` gated off at NA=5 by `if constexpr (NA <= 4)` ship a bit-exact
-  round-weighted win above +1.0 %? It clears Rule 59 on its own.
-- **E123 (askeladd, PR #124)** completes the instruction price ladder and then
-  runs a priced deletion audit of the whole wide kernel. The highest-value
-  unknown is the 64 bf16-to-float conversions, worth about 6.0 % if they cost
-  anything at all.
-- **E122 (edward, PR #123)** works the other lever entirely: which rounds go
-  deep, conditioned on the target's own top-2 margin, which is already computed
-  and already on the host every round at zero GPU cost.
+### The entry-point tax nobody had priced
 
-### The crown, read at source
+`_wideN` is a `METAL_FUNC`, so the entry point allocates registers for the
+**widest inlined body**. On the ranked g17s an ungated arm costs 39 to 32-33
+concurrent simdgroups, about -15 %; a gated arm costs 39 to 38.
 
-`bc070b7b` (francip, 3.35922017) replaced two full GPU argsorts on the
-draft-proposal path with two single-threadgroup Metal kernels, saving 22 to 25
-dispatches per draft token. `ArgPartition::eval_gpu` in the vendored MLX is a
-**full argsort** — `kth` is never used on the GPU.
+Two consequences. A register-hungry arm at one width **taxes every width**. And
+**every per-cell probe in this campaign measures the body alone and misses this
+tax**, so all of those numbers may be optimistic. This is an additional
+unpriced argument for Route A: owning the dispatch lets us instantiate one
+kernel per width.
 
-We independently built their kernel 2 as our E101 `Qwen35RowTop32`, so about 13
-of their saved dispatches are already ours. We lack their kernel 1, the radix
-probe-select, which is **eight dispatches per draft step** we still pay. Three
-hunks in `Qwen35.swift`, exact by construction, proposal-side only so no
-token-exactness risk. Worth **+0.074 % ranked**, central.
+Related: **the NA=5 spill is a g16s artifact.** On g17s neither ungated form
+spills. Askeladd's -31 % at NA=5 is local only, and any ranked conclusion drawn
+from a g16s spill is unsupported.
 
-Pricing their published gain from our own constants gave 0.164 % to 0.413 %
-against an observed +0.2675 %. **Our per-dispatch and ranked-round constants
-reproduce an external receipt to within a factor of two**, which is independent
-validation of E106 and Finding 12 that no internal experiment can give us.
+## 🔴🔴🔴🔴 THE DRAFT PATH — CORRECTED, AND STILL THE LARGEST UNTAKEN AREA
 
-### The bigger prize francip did not take
-
-Selection is not the dominant cost of the draft step. The `gatherQuantizedMM`
-over 24,584 rows of 5,120 2-bit weights plus metadata is about 23.6 MB per draft
-step, and the centroid QMM another 11.8 MB, against 21 to 41 us for the entire
-selection chain:
+I priced this wrong in ledger 265 and the correction matters. The compact-vocab
+row is **1,600 B**, not 960: 5,120 weights at 2 bits is 1,280 B, plus 80 groups
+of bf16 scales and 80 of bf16 biases at 160 B each.
 
 ```
-35.4 MB / 273 GB/s x 4.5-5.3 ranked drafts / 53,108 us = 1.10 % to 1.29 % of the round
+  centroid pass   12,292 rows x 1,600 B = 19.67 MB   (I wrote 11.8)
+  gather pass     24,584 rows x 1,600 B = 39.33 MB   (I wrote 23.6)
+  total per draft step                    59.00 MB   (I wrote 35.4)
 ```
 
-Fifteen times the probe-select prize, on the same path, untouched by anyone on
-the board. francip optimised the cheap part because it is the **safe** part.
-Changing what is gathered changes proposals — which makes this a different class
-of experiment, one where acceptance rate is an outcome to measure rather than an
-invariant to preserve. E99 bounded the reachable acceptance headroom at 2.88 to
-3.95 %; E122 is building the margin-to-acceptance fit now. **We have never priced
-a draft path that reads half as much and accepts one percent less, because we
-have always treated the proposal path as exactness-critical when only the target
-path is.**
+The measured selection matmuls cost **264.8 us per draft step**, not the 21-41 us
+I quoted, and the correct census was already in this campaign's own ledger at
+lines 33446-33447 the whole time. The prize is **3.7x** the crown's probe-select
+edit, not fifteen times.
 
+### The acceptance exchange law, and the coefficient we have been using wrong
+
+`raw_p = S_p x A_p / T_p`, so break-even is `dA/A = dT/T`: **exactly one percent
+of accepted tokens per round per percent of round time.** Converting to
+per-draft acceptance, the tolerable loss is `1/E` percent and the penalty of a
+miss rate `m` is `100 x E x m`.
+
+```
+  prompt      d      alpha     E     1/E    break-even m   100E
+  plutarch  0.154   0.182   0.035  28.88     2.9e-1         3.5
+  beagle    4.382   0.934   2.031   0.492    4.9e-3       203.1
+  republic  4.989   0.966   2.395   0.418    4.2e-3       239.5
+  essays    5.087   0.965   2.435   0.411    4.1e-3       243.5
+  medicine  5.256   0.964   2.510   0.398    4.0e-3       251.0
+  botany    6.148   0.960   2.903   0.345    3.5e-3       290.3
+```
+
+This reproduces the campaign's 206.6 from first principles — it is a
+**beagle-calibrated** elasticity, not an arbitrary number — and then corrects it:
+the published score is a **median over prompts**, so the penalty applies per
+prompt before the median. **Use 240.** Re-ranking every past `gain - 206.6 x m`
+decision costs zero GPU time; all 37 cells are already computed.
+
+Bytes saved scale with `d`; the penalty scales with `E`, which grows faster.
+Break-even `m` therefore falls with depth, to **3.5e-3 on botany**. Today's
+measured miss rate is **2.266e-4**. **There is roughly 15x of unspent acceptance
+headroom on the draft path and nothing in the tree is spending it.**
+
+### The queue, priced and legality-checked
+
+| id | mechanism | ranked | risk | state |
+|---|---|---|---|---|
+| **C1** | sign-sketch / low-rank first pass over gathered rows and centroids; 1,600 B row to 132 B at S=1024 bits, removes 54.13 MB/draft | **+0.92 to +1.08 %** | changes proposals; break-even `m` 3.8e-3 vs today 2.266e-4 | **free offline falsifier** on the existing 18,092-sample corpus; never assigned |
+| C2 | quantize the head's bf16 precision islands, 31.46 to 8.85 MB | +0.38 to +0.45 % | head-only; target never sees it | blocked on reconciling E82 route (c) |
+| C4 | probe fraction 0.25 to 0.15 | +0.05 to +0.20 % net at coefficient 240 | measured -0.3806 % round time, effect/se 15.8 | ship as a rider |
+| C5 | pad centroid table 12,292 to 12,296 so `12292 % 8 == 4` stops forcing the slow `affine_qmv` | +0.03 % | **bit exact**, three lines | free rider on any draft-path PR |
+| C6 | reuse the probed leaf set across drafts in one round | +0.27 to +0.31 % | **legality ambiguous — flagged, needs a second reading** | do not assign yet |
+
+C1 is the "SlimSpec-style low-rank factorisation of the readout" this campaign
+called the durable answer at ledger line 20309 and never assigned. Counter-
+evidence to respect: a static prefix trim to 49,152 rows regressed acceptance
+1.00 to 0.877. A sketch degrades recall rather than destroying coverage, but
+that is the failure mode to measure — offline, first, for free.
+
+Closed and not to be re-proposed: killing the centroid argsort (+0.061 %, on the
+stop list); `rowsPerLeaf` 8 to 32, which is *more* dead at coefficient 240;
+coarser group size, which lost achieved bandwidth 191.8 to 179.1 GB/s.
+
+## 🔴🔴🔴 THE MODE — WHAT WE NOW KNOW AND WHAT WE CAN STOP LOOKING FOR
+
+- **It is not a wide-dispatch cost.** `g2_rounds` has r-squared **0.0005**. The
+  best regressor is gated drafting duty, r-squared 0.9364, fitted at 0.803 +/-
+  0.025 ms per drafting round. That rules out every explanation making the mode
+  a property of the kernel we keep optimising.
+- **No fixed linear contrast can remove it.** The min-variance mode-orthogonal
+  contrast is 88-91 % plutarch and does not beat plutarch alone. The reason is
+  structural: the mode's **magnitude** varies run to run (`k` sd 0.166, range
+  0.684 to 1.427), a multiplicative nuisance a linear contrast cannot cancel.
+  **Stop searching for a better mode-orthogonal estimator from board data.**
+- 🔴 **Plutarch is the WORST instrument for a wide-QMV mechanism.** Finding 56
+  already said plutarch reaches the wide QMV on 9.6 % of its leg; I failed to
+  multiply that by the MDE. Dividing the leg-frame MDE by the reachable fraction
+  `phi` (0.0564 plutarch, 0.6068 the rest):
+
+```
+  scenario       estimator                     MDE on a wide-QMV mechanism
+  mode shared    wide-optimal, mode matched          0.30 %
+  mode shared    candidate mean of 8                 0.35 %
+  mode flipped   wide-optimal, mode orthogonal       1.95 %
+  mode flipped   gated 2-parameter decomposition     2.42 %
+  mode flipped   plutarch alone                      5.82 %   <- worst
+```
+
+  **Mode robustness and mechanism sensitivity are anti-correlated.** A
+  mode-matched reference is worth about 6x in resolving power, which makes
+  finding one more valuable than improving the estimator.
+- The plutarch anomaly survives every ungated model at 3.7 to 5.5 sigma. The
+  best zero-free-parameter account is that the cost is charged only when the
+  **previous** round also drafted — lost pipeline or state-reuse overlap. A
+  DVFS or residency hysteresis story fits equally well and cannot be separated,
+  because no prompt sits at intermediate drafting duty. Cheapest resolver: a
+  synthetic schedule at duty near 0.5.
+
+## 🔴🔴 CROSS-CUTTING RULES ADDED THIS ROUND
+
+- **Rule 65.** Re-derive a mechanism on the current base. Never port an arm's
+  diff. Alphonse measured the penalty at **2.2x**: askeladd's arm ported
+  unchanged reads +0.568 % where his re-derived form reads +1.506 %.
+- **Rule 66.** An MDE belongs to the estimator *and* the mechanism. Divide by
+  the mechanism's reachable leg fraction `phi` before comparing with a
+  prediction.
+- **Rule 67.** Apply the acceptance penalty per prompt, then take the median.
+  Coefficient **240**, not 206.6.
+- **Rule 68.** Before pricing from a byte count, `grep` the ledger for an
+  existing measured census of the same cell.
+- **Rule 56 extended.** Census the **entry point** on g17s, not only the body,
+  and apply the build threshold to the arm including its entry-point cost.
+
+## 🔴🔴 HARNESS DEFECTS 22 AND 23
+
+**22.** An out-of-bounds device write in an isolated probe kernel **faults the
+command buffer while the harness still exits 0**. Every later dispatch retires
+in 1-3 us and the table reads as an enormous speedup. Alphonse caught it from an
+implied read rate of 17-32 TB/s against a 273 GB/s peak. `if (first_m >= NA)
+{ return; }` is mandatory with `research/e104_rate_probe.m`, and three validity
+gates now void a session before any speedup prints: implied bandwidth above
+`1.2 x 273` GB/s, the null scaffold moving more than 0.50 %, or any positive
+control reporting `detected=False`.
+
+**23.** 🔴 **`rg` is not installed on the advisor host**, yet the harness
+documentation instructs agents to search with it. An `rg` call whose stderr is
+discarded looks exactly like "no matches". **Every negative conclusion resting on
+an `rg` search must be re-run with `grep`.** This is one plausible cause of the
+draft-path byte error above: the correct census was in the ledger all along.
 
 ## 🔴🔴🔴🔴🔴 THE `7bef7d4c` RECEIPT — REJECTED, AND IT REFUTED NOTHING
 
@@ -225,48 +268,117 @@ not be resubmitted alone.**
 
 ## 🔴🔴🔴🔴 THE FOUR EXPERIMENTS IN FLIGHT
 
-All four Macs are busy.
+All four Macs are busy. Two of the four have passed their hard gates.
 
 | PR | student | experiment | state |
 |---|---|---|---|
-| #121 | thorfinn | E120 own the QMV dispatch, custom Metal kernel from `Qwen35.swift` | rung 1 hard gate |
-| #122 | alphonse | E121 redirected: `x_sumshare_min` gated off at NA=5 | rung 0 census, both GPUs |
-| #123 | edward | E122 target-margin-conditioned draft depth | rung 0 trace, zero GPU |
-| #124 | askeladd | E123 complete the price ladder, then a priced deletion audit | rung 0 |
+| #121 | thorfinn | E120 own the QMV dispatch, custom Metal kernel from `Qwen35.swift` | **rungs 1 and 2 PASSED**; Route C deferred; rung 5 rollout then submit |
+| #122 | alphonse | E121 cross-simdgroup activation-sum sharing, gated at NA=5 | **rung 2 PASSED at +0.855 % ranked**; compressed rung 3 then **he runs the submission** |
+| #123 | edward | E122 target-margin-conditioned draft depth | rung 0, second forced-depth arm approved |
+| #124 | askeladd | E123 complete the price ladder, then a priced deletion audit | rung 0, with two free held-out calibration points issued |
 
-**E120 rung 1 is a hard gate.** A bare replica of `affine_qmv_fast` for
-`fusedGateUp` only, bit exact against `quantizedMM` and within about 1 percent
-end to end, with the `custom_kernel.cpp:57-71` per-dispatch source-string
-comparison measured. Estimated 100 to 300 nanoseconds across 257 dispatches per
-round, or 0.02 to 0.06 percent. If rung 1 fails, the route is dead and he stops.
-Rung 2 prices one **in-stream** fill dispatch against the 22.7 us break-even; a
-standalone command buffer will not answer it. Rung 3 is Route C, now promoted
-from optional to expected.
+### E120 — the ship path
 
-**E121 is the nearest submission candidate.**
+Rungs 1 and 2 both passed and both falsified their own pre-registered
+predictions in the favourable direction. Route B is worth **+2.70 % ranked**,
+bit exact, and needs no producer edit. **Rung 3 (Route C) is deferred** and
+returns later as a +1.63 pp increment recovering 1257 us of dispatch overhead.
+
+Rung 5 must deliver, in order: bit exactness on **every routed shape** — K=6144
+at 12 k-blocks, K=17408 at 34, and `lm_head` at grid.y = 31040, none of which
+the 42 passing cells cover; a **build-time-only** routing gate near
+`N x k_blocks x M > 220,000` with no clock or counter input; a host-side
+row-stride precondition, because `ensureRowContiguous: false` makes a
+non-contiguous input silently wrong; direct measurement of `gdn.in_proj`,
+`fa.qkv` and `lm_head`, which are modelled and carry 815 of the 3177 us; then
+512-token exactness with post-EOS continuation and row-ledger closure, and a
+matched ABBA reporting **absolute candidate seconds per token** as the headline.
+
+Two new witnesses are required in the submission chain: `--require
+qwen_e120_xsums` and the replica kernel's registered name, so a stale worker
+cannot pass.
+
+His new file cannot live in `Sources/MLXFastModel/` — `MLXFastModel` depends on
+`MLXLLM`, so `Qwen35.swift` cannot import from it, and `editablePaths` lists
+exact files rather than a directory. It stays as a delimited section inside
+`Qwen35.swift`. **Do not request a `benchmark.json` change; that file is trusted
+and the static review would reject it.**
+
+### E121 — the near-term bet
 
 ```
-1.127 % kernel round-weighted with NA=5 excluded
-      x 0.966 coverage = +1.089 % round-weighted
-      x 0.607 transfer = +0.661 % of the leg
-      x 0.95  ranked   = +0.628 % ranked      <- clears Rule 59 alone
+1.482 % kernel cost-weighted at NA=4
+      x 0.607 transfer = +0.900 % of the leg
+      x 0.95  ranked   = +0.855 % ranked      <- clears Rule 59
 ```
 
-Its rung 1 is the E102 hazard: `qmv_fast_crossrow_affine4_g64_m` inlines `_wide`
-as a `METAL_FUNC`, so **the entry point allocates for the widest inlined body**.
-The census must be taken at the entry point, not the inlined body. If it still
-spills, he stops and reports.
+Rung 3 is **compressed**: transplant into `quantized.h` and the generated twin
+with **no comment lines**, twin audit, worker rebuild with witnesses,
+`swift test`, 512-token exactness, and **two ABBA quads only**. E109 measured a
+0.120 % half-width from two legs per arm in 6.1 minutes and E116 measured the
+round-to-leg transfer at 1.000, so eight legs resolve a 0.900 % effect at more
+than seven sigma. A twenty-leg session buys nothing and costs a submission slot.
 
-**E122 rung 0 gate.** Per-position AUC of target margin against acceptance,
-positions 1 through 5. AUC at or below 0.55 kills. AUC at or above 0.65 licenses
-rung 1. The band between stops and asks. It must use `mtp-timed`, not
-`--local-iterate`, because of harness defect 20.
+He then runs the official chain without waiting for a reply. Askeladd cannot:
+his Mac never reaches the 40 C thermal gate (harness defect 4).
 
-**E123 held-out gate.** If the extended ladder cannot predict a held-out arm to
-within plus or minus 1.0 pp, the extension failed and he stops after rung 0. If
-nothing bit-exact is predicted above +1.0 % round-weighted, he stops after rung 1
-and hands back the ranking. **The instrument's value is that it lets us not run
-things.**
+The note must disclose the largest transfer risk: the gate earns its +1.01 pp on
+the ranked host through **entry-point occupancy**, not through the NA=5 body,
+because the NA=5 spill is a g16s artifact.
+
+### E122 — the other lever
+
+Rung 0's original gate was defective and edward found it before spending a leg.
+The shipped `costModelDepth` is already margin-conditioned at depth indices 0
+and 1, so a trace of the shipped policy reaches deep positions only in rounds
+whose margin the policy already judged large. Range restriction attenuates AUC
+toward 0.5, and `not_drafted` rises 0 to 10 across positions in his first leg.
+
+Approved: a second **forced-depth arm** at `MLX_E122_FORCE_DEPTH=8`, shipped as
+a reverse-appliable `research/` patch on the E116 pattern, with `matched=true`
+as its own positive control.
+
+Primary statistic changed to **one prompt-stratified concordance statistic
+pooled over positions 2 to 5**, thresholds unchanged at 0.55 kill and 0.65
+licence. His rank correlation of margin against accepted count is required
+beside it with a pre-registered band under `D = 2 x AUC - 1`; a disagreement
+above 0.10 in `D` must be reported, not resolved by preference.
+
+Two contract answers: `MLX_E58_BUFFER_LIMIT_OPS=0` is **census-only and must
+never be set on a timed leg**; and the beagle-like `natural_history` proxy must
+never be averaged away, because Finding 16 makes beagle worth 12.5 times essays.
+If the pool and `natural_history` disagree in direction, `natural_history` wins.
+
+If rung 0 licences rung 1, the fit must recover the shipped `/2.0` and `/3.0`
+divisors as special cases and report what the data says they should have been.
+Those two constants have never been checked against data.
+
+### E123 — the instrument that lets us not run things
+
+Two free held-out calibration points arrived from alphonse's arms:
+
+- The ALU class **over-predicts a real deletion by 1.66x**. Finding 59's
+  0.0940 %/instruction at NA=4 predicts +3.760 % for the 40 instructions
+  `n_halfsums_free` removes; it measured **+2.266 %**, a held-out error of
+  **1.494 pp** against a 0.66 pp baseline. Working hypothesis: **injection price
+  is not deletion price**, because injected work fills idle issue slots while
+  deleted work was partly hidden behind memory. If the ratio holds, every
+  deletion price in the rung-1 audit must be divided by it before the +1.0 %
+  build threshold applies. Test it by running one arm in both directions on the
+  same class, width and session.
+- The exchange `n_halfsums_free` +2.266 % against `x_sumshare_min` +1.465 %
+  prices **2 barriers plus 4 threadgroup accesses at 0.801 pp** at NA=4. If
+  Apple's two-cycle barrier claim holds, a single threadgroup access is near
+  **0.20 %/instruction/k-block**, about 0.34 device loads. That is now a
+  pre-registered target for rung 0; a reading near 0.05 would falsify the Apple
+  claim the same way E118 falsified its `simd_shuffle` claim.
+
+Rung 1 must now census the **entry point** on g17s, not only the body, and apply
+the +1.0 % threshold to the arm including its entry-point cost.
+
+The highest-value unknown is unchanged: the 64 bf16-to-float conversions, worth
+about 6.0 % if they cost anything at all. **A measured zero is a valuable
+result, not a failed one.**
 
 ## 🔴🔴🔴 POTENTIAL NEXT RESEARCH DIRECTIONS
 
