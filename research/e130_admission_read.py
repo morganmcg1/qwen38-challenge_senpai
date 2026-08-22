@@ -66,12 +66,23 @@ def read_leg(out: Path) -> dict:
             active_by_pid[fields["pid"]] = int(fields["active"])
             resources_by_pid[fields["pid"]] = int(fields["resources"])
 
-    draws = []
+    # One local leg starts several model-holding workers with DIFFERENT jobs:
+    # reference, serial control and MTP. They are not repeated draws of one
+    # quantity, so they are never pooled. Worker start order is stable and pids
+    # increase with it, so the rank of a pid inside its leg is a usable role
+    # label without touching the trusted parent.
     admission = out / "admission.log"
-    if admission.exists():
-        for line in admission.read_text().splitlines():
-            if not line.startswith("e130-admission"):
-                continue
+    admission_lines = (
+        [l for l in admission.read_text().splitlines()
+         if l.startswith("e130-admission")]
+        if admission.exists() else [])
+    pids_in_order = sorted({parse_kv(l)["pid"] for l in admission_lines},
+                           key=int)
+    worker_index = {pid: i + 1 for i, pid in enumerate(pids_in_order)}
+
+    draws = []
+    if admission_lines:
+        for line in admission_lines:
             fields = parse_kv(line)
             unwired_top = parse_sizes(fields.get("unwired_top", ""))
             wired_top = parse_sizes(fields.get("wired_top", ""))
@@ -80,6 +91,8 @@ def read_leg(out: Path) -> dict:
             active = active_by_pid.get(pid)
             draws.append({
                 "pid": pid,
+                "worker_index": worker_index[pid],
+                "leg": out.name,
                 "phase": fields["phase"],
                 "arm": meta.get("arm"),
                 "slack_mb": int(meta.get("slack_mb", -1)),
@@ -101,33 +114,79 @@ def read_leg(out: Path) -> dict:
     return {"tag": out.name, "meta": meta, "draws": draws}
 
 
-def verdicts(resize_draws: list[dict]) -> dict:
+def spread(values: list[float]) -> dict:
+    if not values:
+        return {"n": 0}
+    return {
+        "n": len(values),
+        "min": min(values),
+        "max": max(values),
+        "mean": sum(values) / len(values),
+        "distinct": len(set(values)),
+        "values": sorted(values),
+    }
+
+
+def resize_verdict(draws: list[dict]) -> dict:
+    """The greedy fill. This is where the tower lottery was supposed to live."""
     by_arm: dict[str, list[dict]] = {}
-    for draw in resize_draws:
+    for draw in draws:
         by_arm.setdefault(draw["arm"], []).append(draw)
 
-    result = {"preregistered": PREREGISTERED, "by_arm": {}}
-    for arm, draws in sorted(by_arm.items()):
-        unwired = [d["unwired_bytes"] for d in draws]
-        clean = [u for u in unwired if u == 0]
-        # A draw that leaves at least a tenth of the head unwired is "slow".
-        slow = [u for u in unwired if u >= HEAD_BYTES // 10]
-        taxes = [d["page_tax_bytes"] for d in draws
+    out = {}
+    for arm, arm_draws in sorted(by_arm.items()):
+        unwired = [d["unwired_bytes"] for d in arm_draws]
+        taxes = [d["page_tax_bytes"] for d in arm_draws
                  if d["page_tax_bytes"] is not None]
-        result["by_arm"][arm] = {
-            "draws": len(draws),
-            "fully_admitted": len(clean),
-            "slow_draws": len(slow),
-            "slow_rate": len(slow) / len(draws) if draws else None,
-            "unwired_bytes_min": min(unwired) if unwired else None,
-            "unwired_bytes_max": max(unwired) if unwired else None,
-            "unwired_bytes_values": sorted(unwired),
-            "page_tax_bytes_min": min(taxes) if taxes else None,
-            "page_tax_bytes_max": max(taxes) if taxes else None,
+        out[arm] = {
+            "draws": len(arm_draws),
+            "fully_admitted": sum(1 for u in unwired if u == 0),
+            # A draw leaving a tenth of the head out would be a "slow" draw.
+            "slow_draws": sum(1 for u in unwired if u >= HEAD_BYTES // 10),
+            "unwired_bytes": spread(unwired),
+            "wired_bytes": spread([d["wired_bytes"] for d in arm_draws]),
+            "wired_count": spread([d["wired_count"] for d in arm_draws]),
+            "page_tax_bytes": spread(taxes),
             "page_tax_mib_mean": (
                 sum(taxes) / len(taxes) / MIB if taxes else None),
         }
-    return result
+    return out
+
+
+def steady_verdict(draws: list[dict], resize_draws: list[dict]) -> dict:
+    """Steady state, grouped by worker role. Roles are never pooled.
+
+    `slack_used` is how much of the allowance the post-sizing growth actually
+    took. It is the quantity the shipped literal controls.
+    """
+    resize_by_pid = {d["pid"]: d for d in resize_draws}
+    last: dict[str, dict] = {}
+    for draw in draws:
+        last[draw["pid"]] = draw
+
+    grouped: dict[str, list[dict]] = {}
+    for draw in last.values():
+        key = f"{draw['arm']}/w{draw['worker_index']}"
+        grouped.setdefault(key, []).append(draw)
+
+    out = {}
+    for key, group in sorted(grouped.items()):
+        used = []
+        for draw in group:
+            base = resize_by_pid.get(draw["pid"])
+            if base is not None:
+                used.append(draw["wired_bytes"] - base["wired_bytes"])
+        out[key] = {
+            "draws": len(group),
+            "slack_used_bytes": spread(used),
+            "slack_used_mib_mean": (
+                sum(used) / len(used) / MIB if used else None),
+            "unwired_bytes": spread([d["unwired_bytes"] for d in group]),
+            "unwired_count": spread([d["unwired_count"] for d in group]),
+            "headroom_bytes": spread(
+                [d["capacity"] - d["wired_bytes"] for d in group]),
+        }
+    return out
 
 
 def main() -> int:
@@ -143,38 +202,51 @@ def main() -> int:
     all_draws = [d for leg in legs for d in leg["draws"]]
     resize_draws = [d for d in all_draws if d["phase"] == "resize"]
 
+    steady_draws = [d for d in all_draws if d["phase"] == "steady"]
     result = {
         "experiment": "e130-admission",
         "timed": False,
         "question": "what does the greedy fill admit, and what is the page "
                     "rounding tax in measured bytes",
+        "preregistered": PREREGISTERED,
         "legs": [leg["tag"] for leg in legs],
         "resize_draws": resize_draws,
-        "steady_draws": [d for d in all_draws if d["phase"] == "steady"],
-        "verdicts": verdicts(resize_draws),
+        "steady_draws": steady_draws,
+        "resize_verdict": resize_verdict(resize_draws),
+        "steady_verdict": steady_verdict(steady_draws, resize_draws),
     }
 
     if args.out is not None:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
 
-    print("=== E130 admission probe, resize-time draws ===")
-    for arm, v in result["verdicts"]["by_arm"].items():
-        print(f"  {arm:5s} draws={v['draws']} fully_admitted="
-              f"{v['fully_admitted']} slow={v['slow_draws']} "
-              f"rate={v['slow_rate']}")
-        print(f"        unwired MiB min={v['unwired_bytes_min'] / MIB:.2f} "
-              f"max={v['unwired_bytes_max'] / MIB:.2f}")
+    print("=== resize: the greedy fill ===")
+    for arm, v in result["resize_verdict"].items():
+        print(f"  {arm:5s} draws={v['draws']} "
+              f"fully_admitted={v['fully_admitted']} "
+              f"slow={v['slow_draws']} "
+              f"distinct_wired_bytes={v['wired_bytes']['distinct']}")
+        print(f"        unwired MiB  min={v['unwired_bytes']['min'] / MIB:.3f} "
+              f"max={v['unwired_bytes']['max'] / MIB:.3f}")
         if v["page_tax_mib_mean"] is not None:
-            print(f"        page tax MiB mean={v['page_tax_mib_mean']:.2f} "
-                  f"min={v['page_tax_bytes_min'] / MIB:.2f} "
-                  f"max={v['page_tax_bytes_max'] / MIB:.2f}")
+            print(f"        page tax MiB min="
+                  f"{v['page_tax_bytes']['min'] / MIB:.3f} "
+                  f"max={v['page_tax_bytes']['max'] / MIB:.3f} "
+                  f"mean={v['page_tax_mib_mean']:.3f}")
+
     print()
-    for draw in resize_draws:
-        top = ",".join(str(s) for s in draw["unwired_top"][:6])
-        print(f"  pid={draw['pid']} arm={draw['arm']} "
-              f"unwired={draw['unwired_bytes'] / MIB:8.2f} MiB "
-              f"n={draw['unwired_count']:5d} top=[{top}]")
+    print("=== steady state, by arm and worker role ===")
+    for key, v in result["steady_verdict"].items():
+        used = v["slack_used_bytes"]
+        print(f"  {key:12s} draws={v['draws']} "
+              f"slack_used MiB {used.get('min', 0) / MIB:8.2f}..."
+              f"{used.get('max', 0) / MIB:8.2f} "
+              f"distinct={used.get('distinct')}")
+        print(f"               unwired MiB "
+              f"{v['unwired_bytes']['min'] / MIB:8.1f}..."
+              f"{v['unwired_bytes']['max'] / MIB:8.1f}  "
+              f"headroom B {v['headroom_bytes']['min']}..."
+              f"{v['headroom_bytes']['max']}")
 
     if args.wandb:
         import wandb
@@ -190,12 +262,19 @@ def main() -> int:
             save_code=True,
         )
         payload = {}
-        for arm, v in result["verdicts"]["by_arm"].items():
-            payload[f"e130_adm_{arm}_draws"] = v["draws"]
-            payload[f"e130_adm_{arm}_slow_rate"] = v["slow_rate"]
-            payload[f"e130_adm_{arm}_unwired_max_mib"] = (
-                v["unwired_bytes_max"] / MIB)
+        for arm, v in result["resize_verdict"].items():
+            payload[f"e130_adm_{arm}_resize_draws"] = v["draws"]
+            payload[f"e130_adm_{arm}_resize_fully_admitted"] = (
+                v["fully_admitted"])
+            payload[f"e130_adm_{arm}_resize_slow_draws"] = v["slow_draws"]
+            payload[f"e130_adm_{arm}_resize_unwired_max_mib"] = (
+                v["unwired_bytes"]["max"] / MIB)
             payload[f"e130_adm_{arm}_page_tax_mib"] = v["page_tax_mib_mean"]
+        for key, v in result["steady_verdict"].items():
+            tag = key.replace("/", "_")
+            payload[f"e130_adm_{tag}_slack_used_mib"] = v["slack_used_mib_mean"]
+            payload[f"e130_adm_{tag}_unwired_max_mib"] = (
+                v["unwired_bytes"]["max"] / MIB)
         run.log(payload)
         run.summary.update(payload)
         run.finish()
