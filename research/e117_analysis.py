@@ -214,6 +214,7 @@ def main() -> int:
                         "arm_raw_us": statistics.median(other.values()),
                         "arm_net_us": statistics.median(other.values()) - arm_ctrl,
                     }
+            print(row)
         out["shapes"][shape] = shape_out
 
         # The rung-0 discriminator.
@@ -243,23 +244,43 @@ def main() -> int:
     print("harness defect 16 residual: forward-versus-reverse gap per arm, "
           "percent of the reverse reading")
     print("=" * 96)
+    # The median is the campaign convention for this statistic. The mean is
+    # reported beside it because a handful of whole cells in the two small
+    # tensors are interrupted by something external and read three to four times
+    # the reverse value, which is a different phenomenon from the systematic
+    # first-position ramp bias this fix targets.
     gaps: dict[str, list[float]] = {}
+    per_shape: dict[tuple[str, str], list[float]] = {}
     for cell in cells:
         if cell["shape"] == CONTROL_SHAPE:
             continue
         rev = cell["reverse_us"]
         if rev > 0:
-            gaps.setdefault(cell["arm"], []).append(
-                (cell["forward_us"] - rev) / rev * 100.0)
-    print(f"{'arm':>18} {'mean %':>9} {'sem':>7} {'min %':>9} {'max %':>9} {'n':>4}")
+            gap = (cell["forward_us"] - rev) / rev * 100.0
+            gaps.setdefault(cell["arm"], []).append(gap)
+            per_shape.setdefault((cell["shape"], cell["arm"]), []).append(gap)
+    print(f"{'arm':>18} {'median %':>9} {'mean %':>9} {'sem':>7} "
+          f"{'min %':>9} {'max %':>9} {'n':>4}")
     out["defect16_residual"] = {}
     for arm, values in gaps.items():
-        print(f"{arm:>18} {statistics.mean(values):>9.3f} {sem(values):>7.3f} "
+        print(f"{arm:>18} {statistics.median(values):>9.3f} "
+              f"{statistics.mean(values):>9.3f} {sem(values):>7.3f} "
               f"{min(values):>9.3f} {max(values):>9.3f} {len(values):>4}")
         out["defect16_residual"][arm] = {
+            "median_pct": statistics.median(values),
             "mean_pct": statistics.mean(values),
             "sem_pct": sem(values),
             "min_pct": min(values),
+            "max_pct": max(values),
+            "n": len(values),
+        }
+    print(f"\n{'shape':>16} {'arm':>18} {'median %':>9} {'max %':>9} {'n':>4}")
+    out["defect16_residual_by_shape"] = {}
+    for (shape, arm), values in sorted(per_shape.items()):
+        print(f"{shape:>16} {arm:>18} {statistics.median(values):>9.3f} "
+              f"{max(values):>9.3f} {len(values):>4}")
+        out["defect16_residual_by_shape"][f"{shape}|{arm}"] = {
+            "median_pct": statistics.median(values),
             "max_pct": max(values),
             "n": len(values),
         }
