@@ -868,8 +868,13 @@
     142,
     0
    ],
+   "changed_censored": 0,
+   "changed_censored_share": NaN,
+   "changed_extra_is_lower_bound": 0,
+   "changed_shipped_depth_mean": NaN,
    "deeper": 0,
    "disagreements": 0,
+   "extra_accepted_per_changed_round": NaN,
    "greedy_depths": [
     0,
     20,
@@ -882,7 +887,11 @@
     0
    ],
    "non_quasiconcave": 0,
+   "p_first_declined_draft_accepted_changed": NaN,
    "pairs": {},
+   "recorded_acc_changed": NaN,
+   "recorded_acc_population": 3.124797406807131,
+   "recorded_acc_unchanged": 3.124797406807131,
    "rounds": 617,
    "shallower": 0
   },
@@ -898,8 +907,13 @@
     35,
     0
    ],
+   "changed_censored": 35,
+   "changed_censored_share": 1.0,
+   "changed_extra_is_lower_bound": 0,
+   "changed_shipped_depth_mean": 7.0,
    "deeper": 35,
    "disagreements": 35,
+   "extra_accepted_per_changed_round": 3.0,
    "greedy_depths": [
     0,
     0,
@@ -912,9 +926,13 @@
     0
    ],
    "non_quasiconcave": 617,
+   "p_first_declined_draft_accepted_changed": 1.0,
    "pairs": {
     "4->7": 35
    },
+   "recorded_acc_changed": 7.0,
+   "recorded_acc_population": 3.124797406807131,
+   "recorded_acc_unchanged": 2.8917525773195876,
    "rounds": 617,
    "shallower": 0
   },
@@ -930,8 +948,13 @@
     36,
     0
    ],
+   "changed_censored": 35,
+   "changed_censored_share": 0.9722222222222222,
+   "changed_extra_is_lower_bound": 0,
+   "changed_shipped_depth_mean": 7.0,
    "deeper": 36,
    "disagreements": 36,
+   "extra_accepted_per_changed_round": 2.9444444444444446,
    "greedy_depths": [
     0,
     0,
@@ -944,9 +967,13 @@
     0
    ],
    "non_quasiconcave": 617,
+   "p_first_declined_draft_accepted_changed": 1.0,
    "pairs": {
     "4->7": 36
    },
+   "recorded_acc_changed": 6.944444444444445,
+   "recorded_acc_population": 3.124797406807131,
+   "recorded_acc_unchanged": 2.8881239242685024,
    "rounds": 617,
    "shallower": 0
   },
@@ -962,8 +989,13 @@
     36,
     0
    ],
+   "changed_censored": 35,
+   "changed_censored_share": 0.9722222222222222,
+   "changed_extra_is_lower_bound": 0,
+   "changed_shipped_depth_mean": 7.0,
    "deeper": 36,
    "disagreements": 36,
+   "extra_accepted_per_changed_round": 2.9444444444444446,
    "greedy_depths": [
     0,
     0,
@@ -976,9 +1008,13 @@
     0
    ],
    "non_quasiconcave": 207,
+   "p_first_declined_draft_accepted_changed": 1.0,
    "pairs": {
     "4->7": 36
    },
+   "recorded_acc_changed": 6.944444444444445,
+   "recorded_acc_population": 3.124797406807131,
+   "recorded_acc_unchanged": 2.8881239242685024,
    "rounds": 617,
    "shallower": 0
   },
@@ -994,8 +1030,13 @@
     36,
     0
    ],
+   "changed_censored": 35,
+   "changed_censored_share": 0.9722222222222222,
+   "changed_extra_is_lower_bound": 0,
+   "changed_shipped_depth_mean": 7.0,
    "deeper": 36,
    "disagreements": 36,
+   "extra_accepted_per_changed_round": 2.9444444444444446,
    "greedy_depths": [
     0,
     0,
@@ -1008,9 +1049,13 @@
     0
    ],
    "non_quasiconcave": 617,
+   "p_first_declined_draft_accepted_changed": 1.0,
    "pairs": {
     "4->7": 36
    },
+   "recorded_acc_changed": 6.944444444444445,
+   "recorded_acc_population": 3.124797406807131,
+   "recorded_acc_unchanged": 2.8881239242685024,
    "rounds": 617,
    "shallower": 0
   },
@@ -1026,8 +1071,13 @@
     156,
     0
    ],
+   "changed_censored": 13,
+   "changed_censored_share": 0.6190476190476191,
+   "changed_extra_is_lower_bound": 2,
+   "changed_shipped_depth_mean": 6.428571428571429,
    "deeper": 21,
    "disagreements": 21,
+   "extra_accepted_per_changed_round": 1.5714285714285714,
    "greedy_depths": [
     0,
     14,
@@ -1040,10 +1090,14 @@
     0
    ],
    "non_quasiconcave": 52,
+   "p_first_declined_draft_accepted_changed": 0.7142857142857143,
    "pairs": {
     "4->6": 8,
     "4->7": 13
    },
+   "recorded_acc_changed": 4.619047619047619,
+   "recorded_acc_population": 3.124797406807131,
+   "recorded_acc_unchanged": 3.0721476510067114,
    "rounds": 617,
    "shallower": 0
   }

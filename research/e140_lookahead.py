@@ -32,6 +32,7 @@ import argparse
 import json
 import math
 import pathlib
+import statistics
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -228,6 +229,22 @@ def compare_walks(records, price) -> dict:
            "greedy_depths": [0] * (MAX_DEPTH + 1),
            "argmax_depths": [0] * (MAX_DEPTH + 1),
            "examples": []}
+    # Item 2's FM1-style audit, on the recorded acceptance of the affected
+    # rounds rather than on a resampled one. `changed_extra_accepted` is the
+    # number of tokens the deeper choice actually harvested on that round,
+    # which is capped by what the target really accepted.
+    #
+    # `acc` is right-censored at the depth the shipped run actually drafted:
+    # a round that accepted every draft it made would have accepted more had
+    # it drafted deeper, and the trace cannot say how many more. So the audit
+    # also reports how much of the changed set is censored and how much of the
+    # harvest is therefore only a lower bound.
+    changed_acc, unchanged_acc = [], []
+    changed_hits = 0
+    changed_extra = 0
+    changed_censored = 0
+    changed_extra_censored = 0
+    changed_ship_depth = []
     for record in records:
         offer = record["cap"]
         greedy = walk(record["ema"], record["margin"], offer, price=price)
@@ -238,8 +255,19 @@ def compare_walks(records, price) -> dict:
                                price=price)
         if not is_quasiconcave(values):
             out["non_quasiconcave"] += 1
+        acc = record["acc"]
         if greedy == best:
+            unchanged_acc.append(acc)
             continue
+        changed_acc.append(acc)
+        changed_ship_depth.append(record["depth"])
+        if acc > greedy:
+            changed_hits += 1
+        changed_extra += min(acc, best) - min(acc, greedy)
+        if acc >= record["depth"]:
+            changed_censored += 1
+            if best > record["depth"]:
+                changed_extra_censored += 1
         out["disagreements"] += 1
         if best > greedy:
             out["deeper"] += 1
@@ -251,8 +279,24 @@ def compare_walks(records, price) -> dict:
             out["examples"].append({
                 "leg": record["leg"], "round": record["round"],
                 "offer": offer, "greedy": greedy, "argmax": best,
-                "acc": record["acc"],
-                "value_profile": values})
+                "acc": acc, "value_profile": values})
+
+    def mean(values):
+        return statistics.fmean(values) if values else float("nan")
+
+    population = changed_acc + unchanged_acc
+    out["recorded_acc_changed"] = mean(changed_acc)
+    out["recorded_acc_unchanged"] = mean(unchanged_acc)
+    out["recorded_acc_population"] = mean(population)
+    out["p_first_declined_draft_accepted_changed"] = (
+        changed_hits / len(changed_acc) if changed_acc else float("nan"))
+    out["extra_accepted_per_changed_round"] = (
+        changed_extra / len(changed_acc) if changed_acc else float("nan"))
+    out["changed_shipped_depth_mean"] = mean(changed_ship_depth)
+    out["changed_censored"] = changed_censored
+    out["changed_censored_share"] = (
+        changed_censored / len(changed_acc) if changed_acc else float("nan"))
+    out["changed_extra_is_lower_bound"] = changed_extra_censored
     return out
 
 
@@ -271,6 +315,24 @@ def report(label, result) -> None:
     if result["pairs"]:
         print("transitions              %s" % " ".join(
             "%s x%d" % (k, v) for k, v in sorted(result["pairs"].items())))
+        print("item 2 audit on RECORDED acceptance:")
+        print("  mean acc, rounds lookahead changed   %.4f"
+              % result["recorded_acc_changed"])
+        print("  mean acc, rounds it left alone       %.4f"
+              % result["recorded_acc_unchanged"])
+        print("  mean acc, population                 %.4f"
+              % result["recorded_acc_population"])
+        print("  P(first declined draft was accepted) %.4f"
+              % result["p_first_declined_draft_accepted_changed"])
+        print("  extra tokens harvested per changed round %.4f"
+              % result["extra_accepted_per_changed_round"])
+        print("  mean shipped drafted depth on changed rounds %.4f"
+              % result["changed_shipped_depth_mean"])
+        print("  changed rounds whose acc is right-censored  %d (%.4f)"
+              % (result["changed_censored"],
+                 result["changed_censored_share"]))
+        print("  changed rounds whose harvest is a lower bound only %d"
+              % result["changed_extra_is_lower_bound"])
     for case in result["examples"]:
         print("   %s round %d offer %d  greedy %d -> argmax %d  acc %d"
               % (case["leg"], case["round"], case["offer"], case["greedy"],
