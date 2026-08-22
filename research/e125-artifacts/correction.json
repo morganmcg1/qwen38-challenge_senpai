@@ -4,7 +4,8 @@
   "gate_qualified_for_timing": false,
   "official_or_ranked_score": false,
   "sessions": [
-    "work"
+    "work",
+    "sync"
   ],
   "confound_audit": {
     "source": "research/e123-artifacts/rate.json",
@@ -194,13 +195,14 @@
           "reference": {
             "measured": true,
             "identified": true,
+            "definitional": true,
             "factor": 1.0,
             "ci95": [
               1.0,
               1.0
             ],
             "n_cells": null,
-            "note": "unit by construction: the reference regime is what the isolated price was measured in"
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
           },
           "resident": {
             "measured": true,
@@ -223,38 +225,38 @@
           "latency_bound": {
             "measured": true,
             "identified": true,
-            "n_cells": 18,
-            "factor": 0.978275903762857,
-            "slope": 1.022206512655155,
+            "n_cells": 36,
+            "factor": 0.9644583992013723,
+            "slope": 1.036851357018673,
             "slope_ci95": [
-              0.6878905448771543,
-              1.1425507752836046
+              0.9048060896790778,
+              1.117380483047405
             ],
             "ci95": [
-              0.8752346255699485,
-              1.4537196468932179
+              0.8949503013268354,
+              1.105209183942038
             ],
             "unidentified_reason": null,
-            "factor_ratio_of_sums": 0.6982309233407327,
-            "base_positive_frac": 0.6666666666666666
+            "factor_ratio_of_sums": 0.6916820070679758,
+            "base_positive_frac": 0.7777777777777778
           },
           "bandwidth_contended": {
             "measured": true,
             "identified": false,
-            "n_cells": 6,
-            "factor": 1.759179639860324,
-            "slope": 0.5684467790221801,
+            "n_cells": 15,
+            "factor": 1.6945645245351846,
+            "slope": 0.5901221142784739,
             "slope_ci95": [
-              -0.3819070434530773,
-              1.2899866891204892
+              -0.09372758002713363,
+              0.7463317214023223
             ],
             "ci95": [
               null,
               null
             ],
             "unidentified_reason": "the bootstrap slope band reaches zero, so the reciprocal is unbounded. The point estimate stands; the interval does not.",
-            "factor_ratio_of_sums": 3.6104915696346445,
-            "base_positive_frac": 0.6666666666666666
+            "factor_ratio_of_sums": -2.003684471047026,
+            "base_positive_frac": 0.8
           }
         }
       },
@@ -267,13 +269,14 @@
           "reference": {
             "measured": true,
             "identified": true,
+            "definitional": true,
             "factor": 1.0,
             "ci95": [
               1.0,
               1.0
             ],
             "n_cells": null,
-            "note": "unit by construction: the reference regime is what the isolated price was measured in"
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
           },
           "resident": {
             "measured": true,
@@ -340,13 +343,14 @@
           "reference": {
             "measured": true,
             "identified": true,
+            "definitional": true,
             "factor": 1.0,
             "ci95": [
               1.0,
               1.0
             ],
             "n_cells": null,
-            "note": "unit by construction: the reference regime is what the isolated price was measured in"
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
           },
           "resident": {
             "measured": true,
@@ -369,56 +373,286 @@
           "latency_bound": {
             "measured": true,
             "identified": true,
-            "n_cells": 18,
-            "factor": 0.9166030746845932,
-            "slope": 1.0909847758737925,
+            "n_cells": 36,
+            "factor": 0.9073203788279636,
+            "slope": 1.1021465221488311,
             "slope_ci95": [
-              1.0509141947868312,
-              1.6422453294211425
+              1.0672882801359531,
+              1.1925465043786019
             ],
             "ci95": [
-              0.6089224198631025,
-              0.951552472086307
+              0.8385417225478081,
+              0.9369539782378368
             ],
             "unidentified_reason": null,
-            "factor_ratio_of_sums": 0.7680646950623049,
+            "factor_ratio_of_sums": 0.7452856169472758,
             "base_positive_frac": 1.0
           },
           "bandwidth_contended": {
             "measured": true,
             "identified": false,
-            "n_cells": 6,
-            "factor": 2.644652856014992,
-            "slope": 0.378121460336695,
+            "n_cells": 15,
+            "factor": 2.430888874271083,
+            "slope": 0.4113721571496583,
             "slope_ci95": [
-              -0.14576831043262783,
-              0.39650057561720836
+              -0.04951452696815753,
+              0.4694955678568037
             ],
             "ci95": [
               null,
               null
             ],
             "unidentified_reason": "the bootstrap slope band reaches zero, so the reciprocal is unbounded. The point estimate stands; the interval does not.",
-            "factor_ratio_of_sums": 3.6527786413222016,
+            "factor_ratio_of_sums": 2.7380538172478825,
             "base_positive_frac": 1.0
           }
         }
       },
       "tg_scaffold": {
-        "measured": false,
-        "note": "not measured: no session carried this class"
+        "measured": true,
+        "members": [
+          "tg_scaffold"
+        ],
+        "by_regime": {
+          "reference": {
+            "measured": true,
+            "identified": true,
+            "definitional": true,
+            "factor": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n_cells": null,
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
+          },
+          "resident": {
+            "measured": false,
+            "n_cells": 0,
+            "note": "not measured: fewer than 2 cells in this table cell"
+          },
+          "latency_bound": {
+            "measured": true,
+            "identified": true,
+            "n_cells": 18,
+            "factor": 0.24924818680276709,
+            "slope": 4.0120652945464,
+            "slope_ci95": [
+              1.231941617152378,
+              6.427582954947053
+            ],
+            "ci95": [
+              0.15557947785494392,
+              0.8117267783448139
+            ],
+            "unidentified_reason": null,
+            "factor_ratio_of_sums": 0.1042126397778947,
+            "base_positive_frac": 0.7777777777777778
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "identified": false,
+            "n_cells": 9,
+            "factor": 0.1914858082835795,
+            "slope": 5.222319131447367,
+            "slope_ci95": [
+              -0.1588130751570424,
+              9.521865268321147
+            ],
+            "ci95": [
+              null,
+              null
+            ],
+            "unidentified_reason": "the bootstrap slope band reaches zero, so the reciprocal is unbounded. The point estimate stands; the interval does not.",
+            "factor_ratio_of_sums": 0.10401047236100464,
+            "base_positive_frac": 0.7777777777777778
+          }
+        }
       },
       "tgld": {
-        "measured": false,
-        "note": "not measured: no session carried this class"
+        "measured": true,
+        "members": [
+          "tgld"
+        ],
+        "by_regime": {
+          "reference": {
+            "measured": true,
+            "identified": true,
+            "definitional": true,
+            "factor": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n_cells": null,
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
+          },
+          "resident": {
+            "measured": false,
+            "n_cells": 0,
+            "note": "not measured: fewer than 2 cells in this table cell"
+          },
+          "latency_bound": {
+            "measured": true,
+            "identified": false,
+            "n_cells": 12,
+            "factor": -1.2040857625137746,
+            "slope": -0.8305056260380457,
+            "slope_ci95": [
+              -3.117802102810567,
+              0.8492505559285412
+            ],
+            "ci95": [
+              null,
+              null
+            ],
+            "unidentified_reason": "the bootstrap slope band reaches zero, so the reciprocal is unbounded. The point estimate stands; the interval does not.",
+            "factor_ratio_of_sums": -0.43230973472066925,
+            "base_positive_frac": 0.3333333333333333
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "identified": false,
+            "n_cells": 6,
+            "factor": 0.19907202100916555,
+            "slope": 5.023307619677798,
+            "slope_ci95": [
+              -1.930341555631679,
+              11.415144531979589
+            ],
+            "ci95": [
+              null,
+              null
+            ],
+            "unidentified_reason": "the bootstrap slope band reaches zero, so the reciprocal is unbounded. The point estimate stands; the interval does not.",
+            "factor_ratio_of_sums": 0.35790085169389124,
+            "base_positive_frac": 0.3333333333333333
+          }
+        }
       },
       "bar": {
-        "measured": false,
-        "note": "not measured: no session carried this class"
+        "measured": true,
+        "members": [
+          "bar"
+        ],
+        "by_regime": {
+          "reference": {
+            "measured": true,
+            "identified": true,
+            "definitional": true,
+            "factor": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n_cells": null,
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
+          },
+          "resident": {
+            "measured": false,
+            "n_cells": 0,
+            "note": "not measured: fewer than 2 cells in this table cell"
+          },
+          "latency_bound": {
+            "measured": true,
+            "identified": true,
+            "n_cells": 18,
+            "factor": 0.8252807115760078,
+            "slope": 1.2117089203385565,
+            "slope_ci95": [
+              0.9015690257703474,
+              1.547439996351748
+            ],
+            "ci95": [
+              0.6462286113565662,
+              1.1091774133938863
+            ],
+            "unidentified_reason": null,
+            "factor_ratio_of_sums": 0.6385259124705726,
+            "base_positive_frac": 0.8888888888888888
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "identified": true,
+            "n_cells": 9,
+            "factor": 0.05206322059163506,
+            "slope": 19.20741722536982,
+            "slope_ci95": [
+              11.507514235608648,
+              34.44312839438025
+            ],
+            "ci95": [
+              0.029033367368660978,
+              0.08689974042401075
+            ],
+            "unidentified_reason": null,
+            "factor_ratio_of_sums": 0.0374614819800568,
+            "base_positive_frac": 0.8888888888888888
+          }
+        }
       },
       "sync": {
-        "measured": false,
-        "note": "not measured: no session carried this class"
+        "measured": true,
+        "members": [
+          "tg_scaffold",
+          "tgld",
+          "bar"
+        ],
+        "by_regime": {
+          "reference": {
+            "measured": true,
+            "identified": true,
+            "definitional": true,
+            "factor": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n_cells": null,
+            "note": "unit by construction: the reference regime is what the isolated price was measured in. It is never evidence for or against an anchor"
+          },
+          "resident": {
+            "measured": false,
+            "n_cells": 0,
+            "note": "not measured: fewer than 2 cells in this table cell"
+          },
+          "latency_bound": {
+            "measured": true,
+            "identified": true,
+            "n_cells": 48,
+            "factor": 0.2504698390550883,
+            "slope": 3.9924966765362124,
+            "slope_ci95": [
+              1.2267442808451379,
+              6.481791417731628
+            ],
+            "ci95": [
+              0.15427833689069256,
+              0.8151658137840043
+            ],
+            "unidentified_reason": null,
+            "factor_ratio_of_sums": 0.11007347720999888,
+            "base_positive_frac": 0.7083333333333334
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "identified": true,
+            "n_cells": 24,
+            "factor": 0.1888072634972157,
+            "slope": 5.29640640660388,
+            "slope_ci95": [
+              0.31388460364445425,
+              9.771309657512736
+            ],
+            "ci95": [
+              0.10234042672377529,
+              3.185884201993952
+            ],
+            "unidentified_reason": null,
+            "factor_ratio_of_sums": 0.08526494125308381,
+            "base_positive_frac": 0.7083333333333334
+          }
+        }
       }
     },
     "reading": "a factor above 1 means the regime hides the mechanism, so an isolated price over-predicts the in-situ effect. A factor below 1 means the regime charges more for the mechanism than the isolated cell predicted."
@@ -427,6 +661,9 @@
     "by_anchor": {
       "e120_rung5e_sumtable": {
         "class": "deletion",
+        "anchor_frame_as_published": "local",
+        "anchor_frame_note": "already local: the 3.240 % prediction was weighted by the realised local width histogram, so the width term in it is E[f(M)] and W = 1.000 exactly. No frame conversion is applied.",
+        "published_factor": 0.763,
         "anchor_factor": 0.763,
         "anchor_interval": [
           0.76,
@@ -435,31 +672,37 @@
         "alternative_reading_factor": 1.0,
         "prediction_side_quantified": false,
         "prediction_side_note": "the 3.240 % prediction multiplies the isolated grid by the realised width histogram and then by the E116 leg share 0.6070. F95 applies: that share was not published with the width it was measured at, and reading it at width 7.359 instead moves the factor to 1.000. This file validates against the point estimate and reports the alternative reading beside it.",
-        "regimes_that_reproduce_anchor": [
-          "latency_bound"
-        ],
-        "resolved": true,
+        "regimes_that_reproduce_anchor": [],
+        "resolved": false,
         "by_regime": {
           "reference": {
             "measured": true,
             "identified": true,
+            "definitional": true,
             "table_factor": 1.0,
             "table_ci95": [
               1.0,
               1.0
             ],
+            "band_ratio": 1.0,
+            "resolving": false,
+            "contains_anchor": false,
             "covers_anchor": false,
-            "covers_alternative_reading": true,
-            "note": null
+            "covers_alternative_reading": false,
+            "note": "consistent but non-resolving: the band spans a factor of 1.0, so containing the anchor is not evidence"
           },
           "resident": {
             "measured": true,
             "identified": true,
+            "definitional": false,
             "table_factor": 0.9909950560058156,
             "table_ci95": [
               0.9673474016775598,
               1.3302513080240428
             ],
+            "band_ratio": 1.3751536477145028,
+            "resolving": true,
+            "contains_anchor": false,
             "covers_anchor": false,
             "covers_alternative_reading": true,
             "note": null
@@ -467,23 +710,31 @@
           "latency_bound": {
             "measured": true,
             "identified": true,
-            "table_factor": 0.9166030746845932,
+            "definitional": false,
+            "table_factor": 0.9073203788279636,
             "table_ci95": [
-              0.6089224198631025,
-              0.951552472086307
+              0.8385417225478081,
+              0.9369539782378368
             ],
-            "covers_anchor": true,
+            "band_ratio": 1.1173611915111568,
+            "resolving": true,
+            "contains_anchor": false,
+            "covers_anchor": false,
             "covers_alternative_reading": false,
             "note": null
           },
           "bandwidth_contended": {
             "measured": true,
             "identified": false,
-            "table_factor": 2.644652856014992,
+            "definitional": false,
+            "table_factor": 2.430888874271083,
             "table_ci95": [
               null,
               null
             ],
+            "band_ratio": null,
+            "resolving": false,
+            "contains_anchor": false,
             "covers_anchor": false,
             "covers_alternative_reading": false,
             "note": "the bootstrap slope band reaches zero, so the reciprocal is unbounded. The point estimate stands; the interval does not."
@@ -492,44 +743,210 @@
       },
       "e121_rung2_to_rung3_share": {
         "class": "sync",
+        "anchor_frame_as_published": "ranked",
+        "anchor_frame_note": "the published 2.041 carries the ranked width term: 2.041 / 1.33 = 1.535, and 1.33 is exactly W_RANKED_CENTRAL. This table is a local table, so the anchor is converted to the local frame before it is used. Placing a ranked-frame anchor on a local-frame table would charge the frame axis for a width term.",
+        "published_factor": 2.041,
+        "anchor_factor": 1.535,
+        "anchor_interval": [
+          1.268,
+          1.946
+        ],
+        "alternative_reading_factor": 1.25,
+        "prediction_side_quantified": false,
+        "prediction_side_note": "1.535 is the published 2.041 with the ranked width term removed. The NA re-weighting in E121 run 5zms9ntd moves it further to 1.250. All three readings are reported; the local-frame 1.535 is the one this table is tested against.",
+        "regimes_that_reproduce_anchor": [],
         "resolved": false,
-        "note": "not measured: the anchor's class is absent from every session"
+        "by_regime": {
+          "reference": {
+            "measured": true,
+            "identified": true,
+            "definitional": true,
+            "table_factor": 1.0,
+            "table_ci95": [
+              1.0,
+              1.0
+            ],
+            "band_ratio": 1.0,
+            "resolving": false,
+            "contains_anchor": false,
+            "covers_anchor": false,
+            "covers_alternative_reading": false,
+            "note": "consistent but non-resolving: the band spans a factor of 1.0, so containing the anchor is not evidence"
+          },
+          "resident": {
+            "measured": false
+          },
+          "latency_bound": {
+            "measured": true,
+            "identified": true,
+            "definitional": false,
+            "table_factor": 0.2504698390550883,
+            "table_ci95": [
+              0.15427833689069256,
+              0.8151658137840043
+            ],
+            "band_ratio": 5.283734775813378,
+            "resolving": false,
+            "contains_anchor": false,
+            "covers_anchor": false,
+            "covers_alternative_reading": false,
+            "note": "consistent but non-resolving: the band spans a factor of 5.3, so containing the anchor is not evidence"
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "identified": true,
+            "definitional": false,
+            "table_factor": 0.1888072634972157,
+            "table_ci95": [
+              0.10234042672377529,
+              3.185884201993952
+            ],
+            "band_ratio": 31.13026107066076,
+            "resolving": false,
+            "contains_anchor": true,
+            "covers_anchor": false,
+            "covers_alternative_reading": false,
+            "note": "consistent but non-resolving: the band spans a factor of 31.1, so containing the anchor is not evidence"
+          }
+        }
       }
     },
     "n_anchors": 2,
-    "n_anchors_reproduced": 1,
+    "n_anchors_reproduced": 0,
     "shared_regime": [],
     "both_anchors_reproduced": false,
     "single_regime_explains_both": false,
     "kill_rule": "the table must reproduce BOTH anchors. A table that reproduces one and misses the other has picked a side.",
-    "verdict": "FAILS the kill rule: 1 of 2 anchors reproduced"
+    "verdict": "FAILS the kill rule: 0 of 2 anchors reproduced"
+  },
+  "composite_diagnostic": {
+    "available": true,
+    "by_anchor": {
+      "e120_rung5e_sumtable": {
+        "available": true,
+        "class_as_labelled": "deletion",
+        "component_classes": [
+          "deletion",
+          "ld"
+        ],
+        "anchor_factor": 0.763,
+        "by_regime": {
+          "resident": {
+            "measured": true,
+            "gain_class": "deletion",
+            "gain_factor": 0.9909950560058156,
+            "cost_class": "ld",
+            "cost_factor": 1.016369066958709,
+            "gain_share_of_isolated_net": 12.969147184178413,
+            "admissible": true,
+            "admissibility_rule": "w >= 1 is required: the gain half must exceed the net because the cost half opposes it",
+            "cancellation_warning": true,
+            "both_identified": true
+          },
+          "latency_bound": {
+            "measured": true,
+            "gain_class": "deletion",
+            "gain_factor": 0.9073203788279636,
+            "cost_class": "ld",
+            "cost_factor": 0.9644583992013723,
+            "gain_share_of_isolated_net": 4.192724406940115,
+            "admissible": true,
+            "admissibility_rule": "w >= 1 is required: the gain half must exceed the net because the cost half opposes it",
+            "cancellation_warning": true,
+            "both_identified": true
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "gain_class": "deletion",
+            "gain_factor": 2.430888874271083,
+            "cost_class": "ld",
+            "cost_factor": 1.6945645245351846,
+            "gain_share_of_isolated_net": -4.0307359330854355,
+            "admissible": false,
+            "admissibility_rule": "w >= 1 is required: the gain half must exceed the net because the cost half opposes it",
+            "cancellation_warning": false,
+            "both_identified": false
+          }
+        },
+        "admissible_in": [
+          "resident",
+          "latency_bound"
+        ]
+      },
+      "e121_rung2_to_rung3_share": {
+        "available": true,
+        "class_as_labelled": "sync",
+        "component_classes": [
+          "deletion",
+          "sync"
+        ],
+        "anchor_factor": 1.535,
+        "by_regime": {
+          "resident": {
+            "measured": false
+          },
+          "latency_bound": {
+            "measured": true,
+            "gain_class": "deletion",
+            "gain_factor": 0.9073203788279636,
+            "cost_class": "sync",
+            "cost_factor": 0.2504698390550883,
+            "gain_share_of_isolated_net": 1.1559259951321545,
+            "admissible": true,
+            "admissibility_rule": "w >= 1 is required: the gain half must exceed the net because the cost half opposes it",
+            "cancellation_warning": false,
+            "both_identified": true
+          },
+          "bandwidth_contended": {
+            "measured": true,
+            "gain_class": "deletion",
+            "gain_factor": 2.430888874271083,
+            "cost_class": "sync",
+            "cost_factor": 0.1888072634972157,
+            "gain_share_of_isolated_net": 0.9508511857572404,
+            "admissible": false,
+            "admissibility_rule": "w >= 1 is required: the gain half must exceed the net because the cost half opposes it",
+            "cancellation_warning": false,
+            "both_identified": false
+          }
+        },
+        "admissible_in": [
+          "latency_bound"
+        ]
+      }
+    },
+    "model": "1 / F(w) = w / F_gain + (1 - w) / F_cost",
+    "w_meaning": "the gain half's share of the isolated net effect",
+    "shared_admissible_regime": [
+      "latency_bound"
+    ]
   },
   "marginal_summary": {
-    "n_observations": 90,
+    "n_observations": 216,
     "residual_sum_of_squares": {
       "one_factor_for_everything": {
-        "rss": 34.19621117119729,
+        "rss": 5977.0929264656315,
         "parameters": 1
       },
       "class_only": {
-        "rss": 34.19260663429122,
-        "parameters": 3
+        "rss": 4908.938425334295,
+        "parameters": 6
       },
       "regime_only": {
-        "rss": 24.775859221094578,
+        "rss": 5538.706668237177,
         "parameters": 3
       },
       "class_by_regime": {
-        "rss": 22.93608702657453,
-        "parameters": 9
+        "rss": 2804.960919908429,
+        "parameters": 15
       }
     },
     "variance_explained_vs_flat": {
-      "class_only": 0.00010540749348020295,
-      "regime_only": 0.2754794062693491,
-      "class_by_regime": 0.32927987513736356
+      "class_only": 0.17870802985205658,
+      "regime_only": 0.07334439394230408,
+      "class_by_regime": 0.5307148551282345
     },
-    "regime_axis_dominates_class_axis": true,
+    "regime_axis_dominates_class_axis": false,
     "mu_note": "mu is reported per observation as a covariate, not as the regime label. Stage 1 falsified the achieved-rate labelling: at mlp_gate_up M=4 the k1024 frame reaches phi 0.675 and the consumer frame phi 0.623, a similar achieved rate, and the two move the price in opposite directions.",
     "observations": [
       {
@@ -544,7 +961,7 @@
         "mu": 0.8904466414481373,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.0022438382903631204,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -558,7 +975,7 @@
         "mu": 0.9137988476530049,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.025596044495230674,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -572,7 +989,7 @@
         "mu": 0.9016504952528285,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.013447692095054253,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -586,7 +1003,7 @@
         "mu": 0.8938649392483788,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.005662136090604619,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -600,7 +1017,7 @@
         "mu": 0.9205629734296163,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.032360170271842126,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -614,7 +1031,7 @@
         "mu": 0.8782556675212205,
         "mu_base": 0.8664589879300391,
         "d_mu": 0.01179667959118147,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -628,7 +1045,7 @@
         "mu": 0.9107146902644232,
         "mu_base": 0.8664589879300391,
         "d_mu": 0.04425570233438414,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -642,7 +1059,7 @@
         "mu": 0.8033243415133413,
         "mu_base": 0.8664589879300391,
         "d_mu": -0.06313464641669775,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -656,7 +1073,7 @@
         "mu": 0.8383378901684921,
         "mu_base": 0.8664589879300391,
         "d_mu": -0.02812109776154692,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -670,7 +1087,7 @@
         "mu": 0.885417208948916,
         "mu_base": 0.8664589879300391,
         "d_mu": 0.018958221018876897,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -684,7 +1101,7 @@
         "mu": 0.7581945024097692,
         "mu_base": 0.7513098184056792,
         "d_mu": 0.006884684004089925,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -698,7 +1115,7 @@
         "mu": 0.88583135445525,
         "mu_base": 0.7513098184056792,
         "d_mu": 0.13452153604957073,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -712,7 +1129,7 @@
         "mu": 0.6750338638142462,
         "mu_base": 0.7513098184056792,
         "d_mu": -0.07627595459143299,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -726,7 +1143,7 @@
         "mu": 0.7237797338366296,
         "mu_base": 0.7513098184056792,
         "d_mu": -0.027530084569049595,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -740,7 +1157,7 @@
         "mu": 0.7542621918975067,
         "mu_base": 0.7513098184056792,
         "d_mu": 0.0029523734918274203,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -754,7 +1171,7 @@
         "mu": 0.7613583983525435,
         "mu_base": 0.7574748979007498,
         "d_mu": 0.0038835004517936422,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -768,7 +1185,7 @@
         "mu": 0.9053640576508539,
         "mu_base": 0.7574748979007498,
         "d_mu": 0.14788915975010408,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -782,7 +1199,7 @@
         "mu": 0.6374845608071825,
         "mu_base": 0.7574748979007498,
         "d_mu": -0.11999033709356732,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -796,7 +1213,7 @@
         "mu": 0.6581847354369726,
         "mu_base": 0.7574748979007498,
         "d_mu": -0.0992901624637772,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -810,7 +1227,7 @@
         "mu": 0.6901329366735718,
         "mu_base": 0.7574748979007498,
         "d_mu": -0.06734196122717806,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -824,7 +1241,7 @@
         "mu": 0.7296538849771063,
         "mu_base": 0.7205173421705732,
         "d_mu": 0.009136542806533088,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -838,7 +1255,7 @@
         "mu": 0.9238016102620509,
         "mu_base": 0.7205173421705732,
         "d_mu": 0.2032842680914777,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -852,7 +1269,7 @@
         "mu": 0.5564205913394832,
         "mu_base": 0.7205173421705732,
         "d_mu": -0.16409675083109,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -866,7 +1283,7 @@
         "mu": 0.620395150415271,
         "mu_base": 0.7205173421705732,
         "d_mu": -0.10012219175530213,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -880,7 +1297,7 @@
         "mu": 0.6793115615139174,
         "mu_base": 0.7205173421705732,
         "d_mu": -0.04120578065665581,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -894,7 +1311,7 @@
         "mu": 0.6341114892266905,
         "mu_base": 0.6320840078157841,
         "d_mu": 0.002027481410906362,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -908,7 +1325,7 @@
         "mu": 0.804293419647478,
         "mu_base": 0.6320840078157841,
         "d_mu": 0.17220941183169391,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -922,7 +1339,7 @@
         "mu": 0.49069497274269386,
         "mu_base": 0.6320840078157841,
         "d_mu": -0.14138903507309025,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -936,7 +1353,7 @@
         "mu": 0.5536130527743699,
         "mu_base": 0.6320840078157841,
         "d_mu": -0.07847095504141421,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "ld",
@@ -950,7 +1367,7 @@
         "mu": 0.6265454027152614,
         "mu_base": 0.6320840078157841,
         "d_mu": -0.005538605100522731,
-        "w": 8.867378921991047
+        "w": 9.415410301623107
       },
       {
         "klass": "alu",
@@ -1384,7 +1801,7 @@
         "mu": 0.8904466414481373,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.0022438382903631204,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1398,7 +1815,7 @@
         "mu": 0.9137988476530049,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.025596044495230674,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1412,7 +1829,7 @@
         "mu": 0.9016504952528285,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.013447692095054253,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1426,7 +1843,7 @@
         "mu": 0.8938649392483788,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.005662136090604619,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1440,7 +1857,7 @@
         "mu": 0.9205629734296163,
         "mu_base": 0.8882028031577742,
         "d_mu": 0.032360170271842126,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1454,7 +1871,7 @@
         "mu": 0.8782556675212205,
         "mu_base": 0.8664589879300391,
         "d_mu": 0.01179667959118147,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1468,7 +1885,7 @@
         "mu": 0.9107146902644232,
         "mu_base": 0.8664589879300391,
         "d_mu": 0.04425570233438414,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1482,7 +1899,7 @@
         "mu": 0.8033243415133413,
         "mu_base": 0.8664589879300391,
         "d_mu": -0.06313464641669775,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1496,7 +1913,7 @@
         "mu": 0.8383378901684921,
         "mu_base": 0.8664589879300391,
         "d_mu": -0.02812109776154692,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1510,7 +1927,7 @@
         "mu": 0.885417208948916,
         "mu_base": 0.8664589879300391,
         "d_mu": 0.018958221018876897,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1524,7 +1941,7 @@
         "mu": 0.7581945024097692,
         "mu_base": 0.7513098184056792,
         "d_mu": 0.006884684004089925,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1538,7 +1955,7 @@
         "mu": 0.88583135445525,
         "mu_base": 0.7513098184056792,
         "d_mu": 0.13452153604957073,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1552,7 +1969,7 @@
         "mu": 0.6750338638142462,
         "mu_base": 0.7513098184056792,
         "d_mu": -0.07627595459143299,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1566,7 +1983,7 @@
         "mu": 0.7237797338366296,
         "mu_base": 0.7513098184056792,
         "d_mu": -0.027530084569049595,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1580,7 +1997,7 @@
         "mu": 0.7542621918975067,
         "mu_base": 0.7513098184056792,
         "d_mu": 0.0029523734918274203,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1594,7 +2011,7 @@
         "mu": 0.7613583983525435,
         "mu_base": 0.7574748979007498,
         "d_mu": 0.0038835004517936422,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1608,7 +2025,7 @@
         "mu": 0.9053640576508539,
         "mu_base": 0.7574748979007498,
         "d_mu": 0.14788915975010408,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1622,7 +2039,7 @@
         "mu": 0.6374845608071825,
         "mu_base": 0.7574748979007498,
         "d_mu": -0.11999033709356732,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1636,7 +2053,7 @@
         "mu": 0.6581847354369726,
         "mu_base": 0.7574748979007498,
         "d_mu": -0.0992901624637772,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1650,7 +2067,7 @@
         "mu": 0.6901329366735718,
         "mu_base": 0.7574748979007498,
         "d_mu": -0.06734196122717806,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1664,7 +2081,7 @@
         "mu": 0.7296538849771063,
         "mu_base": 0.7205173421705732,
         "d_mu": 0.009136542806533088,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1678,7 +2095,7 @@
         "mu": 0.9238016102620509,
         "mu_base": 0.7205173421705732,
         "d_mu": 0.2032842680914777,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1692,7 +2109,7 @@
         "mu": 0.5564205913394832,
         "mu_base": 0.7205173421705732,
         "d_mu": -0.16409675083109,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1706,7 +2123,7 @@
         "mu": 0.620395150415271,
         "mu_base": 0.7205173421705732,
         "d_mu": -0.10012219175530213,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1720,7 +2137,7 @@
         "mu": 0.6793115615139174,
         "mu_base": 0.7205173421705732,
         "d_mu": -0.04120578065665581,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1734,7 +2151,7 @@
         "mu": 0.6341114892266905,
         "mu_base": 0.6320840078157841,
         "d_mu": 0.002027481410906362,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1748,7 +2165,7 @@
         "mu": 0.804293419647478,
         "mu_base": 0.6320840078157841,
         "d_mu": 0.17220941183169391,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1762,7 +2179,7 @@
         "mu": 0.49069497274269386,
         "mu_base": 0.6320840078157841,
         "d_mu": -0.14138903507309025,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1776,7 +2193,7 @@
         "mu": 0.5536130527743699,
         "mu_base": 0.6320840078157841,
         "d_mu": -0.07847095504141421,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
       },
       {
         "klass": "deletion",
@@ -1790,7 +2207,1771 @@
         "mu": 0.6265454027152614,
         "mu_base": 0.6320840078157841,
         "d_mu": -0.005538605100522731,
-        "w": 0.6695451711619091
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": -0.05007108000000073,
+        "base": 0.007256530625000579,
+        "mu": 0.9517760350615074,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.0638089008758661,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.13703899812499998,
+        "base": 0.007256530625000579,
+        "mu": 0.8962994324662968,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.008332298280655515,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.009354318749998924,
+        "base": 0.007256530625000579,
+        "mu": 0.9230151899242238,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.035048055738582495,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": -0.00031147937500008993,
+        "base": 0.07262544812500096,
+        "mu": 0.9601608610169046,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.08910072801347091,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 0.09471252062500035,
+        "base": 0.07262544812500096,
+        "mu": 0.8020947556904883,
+        "mu_base": 0.8710601330034337,
+        "d_mu": -0.06896537731294539,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 0.08169701015625108,
+        "base": 0.07262544812500096,
+        "mu": 0.8864723505807633,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.01541221757732969,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.19605829437499978,
+        "base": 0.2552933306249997,
+        "mu": 0.9361039407797477,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.18604273243305958,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.301349315625,
+        "base": 0.2552933306249997,
+        "mu": 0.6750842662076402,
+        "mu_base": 0.7500612083466881,
+        "d_mu": -0.07497694213904793,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.25234856015625073,
+        "base": 0.2552933306249997,
+        "mu": 0.7537614263398537,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.0037002179931655554,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": -0.5019493093749994,
+        "base": 0.005481853125000313,
+        "mu": 0.9738124923932315,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.14055264695110115,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.04761718187499975,
+        "base": 0.005481853125000313,
+        "mu": 0.8487899747828646,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.015530129340734167,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.007868554687499696,
+        "base": 0.005481853125000313,
+        "mu": 0.8692084769219681,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.035948631479837734,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": -0.2308941875000002,
+        "base": 0.030600931249999873,
+        "mu": 0.9744963113739858,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.16511226969277693,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.04868960562499991,
+        "base": 0.030600931249999873,
+        "mu": 0.7298075625894426,
+        "mu_base": 0.8093840416812089,
+        "d_mu": -0.07957647909176635,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.03507182968749989,
+        "base": 0.030600931249999873,
+        "mu": 0.8280460267578065,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.018661985076597554,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.05418204374999931,
+        "base": 0.10580039187500034,
+        "mu": 0.9140355425843307,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.20919534966929598,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.12073776499999989,
+        "base": 0.10580039187500034,
+        "mu": 0.6186739926343068,
+        "mu_base": 0.7048401929150347,
+        "d_mu": -0.08616620028072797,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.10804217265625038,
+        "base": 0.10580039187500034,
+        "mu": 0.7110742979016264,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.006234104986591604,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": -0.08790067665441181,
+        "base": -0.046266155330882255,
+        "mu": 0.9675427264483349,
+        "mu_base": 0.7515138820315176,
+        "d_mu": 0.21602884441681736,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.03820865031249987,
+        "base": -0.046266155330882255,
+        "mu": 0.649940279972215,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.10157360205930255,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.031979697343749836,
+        "base": -0.046266155330882255,
+        "mu": 0.7043044220798416,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.047209459951676025,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.02408951672794109,
+        "base": 0.03236946544117646,
+        "mu": 0.9561371723118728,
+        "mu_base": 0.7226506251901588,
+        "d_mu": 0.23348654712171402,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.021862030624999917,
+        "base": 0.03236946544117646,
+        "mu": 0.545444310194054,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.17720631499610473,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.015501396406250034,
+        "base": 0.03236946544117646,
+        "mu": 0.6796249925298474,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.04302563266031134,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.07365423033088259,
+        "base": 0.03603513694852952,
+        "mu": 0.8837339898743557,
+        "mu_base": 0.6235606327919124,
+        "d_mu": 0.26017335708244327,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.06167773624999984,
+        "base": 0.03603513694852952,
+        "mu": 0.47405908278202014,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.1495015500098923,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "ld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.0440348239062498,
+        "base": 0.03603513694852952,
+        "mu": 0.6168680605774459,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.006692572214466508,
+        "w": 9.415410301623107
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.8847121599999923,
+        "base": 0.018584655000000793,
+        "mu": 0.9517760350615074,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.0638089008758661,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 3.8325119,
+        "base": 0.018584655000000793,
+        "mu": 0.8962994324662968,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.008332298280655515,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": -0.18086716249999313,
+        "base": 0.018584655000000793,
+        "mu": 0.9230151899242238,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.035048055738582495,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 1.266110089999995,
+        "base": 0.5614023350000025,
+        "mu": 0.9601608610169046,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.08910072801347091,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 4.668607017500001,
+        "base": 0.5614023350000025,
+        "mu": 0.8020947556904883,
+        "mu_base": 0.8710601330034337,
+        "d_mu": -0.06896537731294539,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 1.0571017812499974,
+        "base": 0.5614023350000025,
+        "mu": 0.8864723505807633,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.01541221757732969,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 6.062680944999999,
+        "base": 0.5722656250000057,
+        "mu": 0.9361039407797477,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.18604273243305958,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 3.9593375500000008,
+        "base": 0.5722656250000057,
+        "mu": 0.6750842662076402,
+        "mu_base": 0.7500612083466881,
+        "d_mu": -0.07497694213904793,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.6980240499999937,
+        "base": 0.5722656250000057,
+        "mu": 0.7537614263398537,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.0037002179931655554,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.7565800499999966,
+        "base": 0.030398324999998748,
+        "mu": 0.9738124923932315,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.14055264695110115,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 2.570037965000001,
+        "base": 0.030398324999998748,
+        "mu": 0.8487899747828646,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.015530129340734167,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.04850845625000133,
+        "base": 0.030398324999998748,
+        "mu": 0.8692084769219681,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.035948631479837734,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 1.0278790499999957,
+        "base": 0.27110953500000506,
+        "mu": 0.9744963113739858,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.16511226969277693,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 2.284239559999996,
+        "base": 0.27110953500000506,
+        "mu": 0.7298075625894426,
+        "mu_base": 0.8093840416812089,
+        "d_mu": -0.07957647909176635,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.44330325000000315,
+        "base": 0.27110953500000506,
+        "mu": 0.8280460267578065,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.018661985076597554,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.7645376999999997,
+        "base": 0.21541132500000232,
+        "mu": 0.9140355425843307,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.20919534966929598,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 1.760570014999999,
+        "base": 0.21541132500000232,
+        "mu": 0.6186739926343068,
+        "mu_base": 0.7048401929150347,
+        "d_mu": -0.08616620028072797,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.28661126875000065,
+        "base": 0.21541132500000232,
+        "mu": 0.7110742979016264,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.006234104986591604,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.3788155838235291,
+        "base": -0.07858739558823533,
+        "mu": 0.9675427264483349,
+        "mu_base": 0.7515138820315176,
+        "d_mu": 0.21602884441681736,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 1.8074501749999996,
+        "base": -0.07858739558823533,
+        "mu": 0.649940279972215,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.10157360205930255,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": -0.09915734187500025,
+        "base": -0.07858739558823533,
+        "mu": 0.7043044220798416,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.047209459951676025,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.8051094720588243,
+        "base": 0.011460602941175365,
+        "mu": 0.9561371723118728,
+        "mu_base": 0.7226506251901588,
+        "d_mu": 0.23348654712171402,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 1.1531167474999986,
+        "base": 0.011460602941175365,
+        "mu": 0.545444310194054,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.17720631499610473,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.08568840625000007,
+        "base": 0.011460602941175365,
+        "mu": 0.6796249925298474,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.04302563266031134,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.791165772058824,
+        "base": -0.27720216911764756,
+        "mu": 0.8837339898743557,
+        "mu_base": 0.6235606327919124,
+        "d_mu": 0.26017335708244327,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.9325004949999993,
+        "base": -0.27720216911764756,
+        "mu": 0.47405908278202014,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.1495015500098923,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tg_scaffold",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.11817690812500103,
+        "base": -0.27720216911764756,
+        "mu": 0.6168680605774459,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.006692572214466508,
+        "w": 3.259751411730194
+      },
+      {
+        "klass": "tgld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.0763190668749985,
+        "base": -0.014393876874999023,
+        "mu": 0.9517760350615074,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.0638089008758661,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.11214678343749984,
+        "base": -0.014393876874999023,
+        "mu": 0.8962994324662968,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.008332298280655515,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.03303016249999935,
+        "base": -0.014393876874999023,
+        "mu": 0.9230151899242238,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.035048055738582495,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": -0.09889386750000143,
+        "base": -0.01646505374999947,
+        "mu": 0.9601608610169046,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.08910072801347091,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 0.010031787499999112,
+        "base": -0.01646505374999947,
+        "mu": 0.8020947556904883,
+        "mu_base": 0.8710601330034337,
+        "d_mu": -0.06896537731294539,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": -0.018494137500000285,
+        "base": -0.01646505374999947,
+        "mu": 0.8864723505807633,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.01541221757732969,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.17519435875000014,
+        "base": 0.0003087331250000602,
+        "mu": 0.9738124923932315,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.14055264695110115,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.05011714875000006,
+        "base": 0.0003087331250000602,
+        "mu": 0.8487899747828646,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.015530129340734167,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.007804621093749908,
+        "base": 0.0003087331250000602,
+        "mu": 0.8692084769219681,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.035948631479837734,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": -0.16313612187499943,
+        "base": -0.015005524375000334,
+        "mu": 0.9744963113739858,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.16511226969277693,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.005086436250000048,
+        "base": -0.015005524375000334,
+        "mu": 0.7298075625894426,
+        "mu_base": 0.8093840416812089,
+        "d_mu": -0.07957647909176635,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": -0.015433475781250205,
+        "base": -0.015005524375000334,
+        "mu": 0.8280460267578065,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.018661985076597554,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.011017651286764534,
+        "base": 0.00763591011029414,
+        "mu": 0.9675427264483349,
+        "mu_base": 0.7515138820315176,
+        "d_mu": 0.21602884441681736,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.020640992499999955,
+        "base": 0.00763591011029414,
+        "mu": 0.649940279972215,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.10157360205930255,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.01968832437500012,
+        "base": 0.00763591011029414,
+        "mu": 0.7043044220798416,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.047209459951676025,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": -0.12888869742647055,
+        "base": -0.008030223161765009,
+        "mu": 0.9561371723118728,
+        "mu_base": 0.7226506251901588,
+        "d_mu": 0.23348654712171402,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": -0.004443810625000211,
+        "base": -0.008030223161765009,
+        "mu": 0.545444310194054,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.17720631499610473,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "tgld",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": -0.007595604062499817,
+        "base": -0.008030223161765009,
+        "mu": 0.6796249925298474,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.04302563266031134,
+        "w": 85.21140306365766
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.20650035249999946,
+        "base": -0.0023926643750002085,
+        "mu": 0.9517760350615074,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.0638089008758661,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.06504644437499962,
+        "base": -0.0023926643750002085,
+        "mu": 0.8962994324662968,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.008332298280655515,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.002842046875000115,
+        "base": -0.0023926643750002085,
+        "mu": 0.9230151899242238,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.035048055738582495,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 0.9477564587500013,
+        "base": 0.028784442500000295,
+        "mu": 0.9601608610169046,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.08910072801347091,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 0.06260723125000034,
+        "base": 0.028784442500000295,
+        "mu": 0.8020947556904883,
+        "mu_base": 0.8710601330034337,
+        "d_mu": -0.06896537731294539,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 0.041113959375000064,
+        "base": 0.028784442500000295,
+        "mu": 0.8864723505807633,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.01541221757732969,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.37219838124999993,
+        "base": 0.045466218750000564,
+        "mu": 0.9361039407797477,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.18604273243305958,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.05200744999999962,
+        "base": 0.045466218750000564,
+        "mu": 0.6750842662076402,
+        "mu_base": 0.7500612083466881,
+        "d_mu": -0.07497694213904793,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 0.05005637890625003,
+        "base": 0.045466218750000564,
+        "mu": 0.7537614263398537,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.0037002179931655554,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.32710694250000005,
+        "base": 0.006318788749999982,
+        "mu": 0.9738124923932315,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.14055264695110115,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.03455355718750042,
+        "base": 0.006318788749999982,
+        "mu": 0.8487899747828646,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.015530129340734167,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": -0.004438654687500154,
+        "base": 0.006318788749999982,
+        "mu": 0.8692084769219681,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.035948631479837734,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.5683724856249995,
+        "base": 0.016698233125000073,
+        "mu": 0.9744963113739858,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.16511226969277693,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.026387657812499743,
+        "base": 0.016698233125000073,
+        "mu": 0.7298075625894426,
+        "mu_base": 0.8093840416812089,
+        "d_mu": -0.07957647909176635,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.021551724218749957,
+        "base": 0.016698233125000073,
+        "mu": 0.8280460267578065,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.018661985076597554,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.5567787706250001,
+        "base": 0.029103231250000406,
+        "mu": 0.9140355425843307,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.20919534966929598,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.0364997509374998,
+        "base": 0.029103231250000406,
+        "mu": 0.6186739926343068,
+        "mu_base": 0.7048401929150347,
+        "d_mu": -0.08616620028072797,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.029473585937500157,
+        "base": 0.029103231250000406,
+        "mu": 0.7110742979016264,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.006234104986591604,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.45390419963235284,
+        "base": 0.01671574283088241,
+        "mu": 0.9675427264483349,
+        "mu_base": 0.7515138820315176,
+        "d_mu": 0.21602884441681736,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.003633720624999892,
+        "base": 0.01671574283088241,
+        "mu": 0.649940279972215,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.10157360205930255,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": -0.028871257734374933,
+        "base": 0.01671574283088241,
+        "mu": 0.7043044220798416,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.047209459951676025,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.4427340419117646,
+        "base": 0.009736902389705945,
+        "mu": 0.9561371723118728,
+        "mu_base": 0.7226506251901588,
+        "d_mu": 0.23348654712171402,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.025052945625000156,
+        "base": 0.009736902389705945,
+        "mu": 0.545444310194054,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.17720631499610473,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.019882128359375084,
+        "base": 0.009736902389705945,
+        "mu": 0.6796249925298474,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.04302563266031134,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.3873070784926469,
+        "base": 0.009254617279411799,
+        "mu": 0.8837339898743557,
+        "mu_base": 0.6235606327919124,
+        "d_mu": 0.26017335708244327,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.03677865531250002,
+        "base": 0.009254617279411799,
+        "mu": 0.47405908278202014,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.1495015500098923,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "bar",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.025991922890624908,
+        "base": 0.009254617279411799,
+        "mu": 0.6168680605774459,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.006692572214466508,
+        "w": 44.587434555841135
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 1.4350946000000022,
+        "base": 0.020701060000004646,
+        "mu": 0.9517760350615074,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.0638089008758661,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.1878374525000055,
+        "base": 0.020701060000004646,
+        "mu": 0.8962994324662968,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.008332298280655515,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 2,
+        "session": "sync",
+        "value": 0.1742936812499991,
+        "base": 0.020701060000004646,
+        "mu": 0.9230151899242238,
+        "mu_base": 0.8879671341856413,
+        "d_mu": 0.035048055738582495,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": -0.4116217300000017,
+        "base": 0.4491151450000018,
+        "mu": 0.9601608610169046,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.08910072801347091,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 1.4546160124999972,
+        "base": 0.4491151450000018,
+        "mu": 0.8020947556904883,
+        "mu_base": 0.8710601330034337,
+        "d_mu": -0.06896537731294539,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 3,
+        "session": "sync",
+        "value": 1.0829845625000019,
+        "base": 0.4491151450000018,
+        "mu": 0.8864723505807633,
+        "mu_base": 0.8710601330034337,
+        "d_mu": 0.01541221757732969,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 1.7132629099999916,
+        "base": 3.488888885,
+        "mu": 0.9361039407797477,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.18604273243305958,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 3.8917710499999956,
+        "base": 3.488888885,
+        "mu": 0.6750842662076402,
+        "mu_base": 0.7500612083466881,
+        "d_mu": -0.07497694213904793,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_gate_up_k5120_n34816",
+        "m": 4,
+        "session": "sync",
+        "value": 3.6438466500000075,
+        "base": 3.488888885,
+        "mu": 0.7537614263398537,
+        "mu_base": 0.7500612083466881,
+        "d_mu": 0.0037002179931655554,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": -0.02919909999999959,
+        "base": 0.06734800499999664,
+        "mu": 0.9738124923932315,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.14055264695110115,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.5312966825000025,
+        "base": 0.06734800499999664,
+        "mu": 0.8487899747828646,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.015530129340734167,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 2,
+        "session": "sync",
+        "value": 0.134798943749999,
+        "base": 0.06734800499999664,
+        "mu": 0.8692084769219681,
+        "mu_base": 0.8332598454421304,
+        "d_mu": 0.035948631479837734,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": -0.010154439999996611,
+        "base": 0.25041823999999907,
+        "mu": 0.9744963113739858,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.16511226969277693,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.689615345,
+        "base": 0.25041823999999907,
+        "mu": 0.7298075625894426,
+        "mu_base": 0.8093840416812089,
+        "d_mu": -0.07957647909176635,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 3,
+        "session": "sync",
+        "value": 0.47070125624999903,
+        "base": 0.25041823999999907,
+        "mu": 0.8280460267578065,
+        "mu_base": 0.8093840416812089,
+        "d_mu": 0.018661985076597554,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 0.6304325349999942,
+        "base": 1.5221509899999943,
+        "mu": 0.9140355425843307,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.20919534966929598,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 1.789120005000001,
+        "base": 1.5221509899999943,
+        "mu": 0.6186739926343068,
+        "mu_base": 0.7048401929150347,
+        "d_mu": -0.08616620028072797,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "fa_qkv_k5120_n14336",
+        "m": 4,
+        "session": "sync",
+        "value": 1.5381799812500034,
+        "base": 1.5221509899999943,
+        "mu": 0.7110742979016264,
+        "mu_base": 0.7048401929150347,
+        "d_mu": 0.006234104986591604,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": -0.17334976764705765,
+        "base": 0.07155217500000036,
+        "mu": 0.9675427264483349,
+        "mu_base": 0.7515138820315176,
+        "d_mu": 0.21602884441681736,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.17162826500000072,
+        "base": 0.07155217500000036,
+        "mu": 0.649940279972215,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.10157360205930255,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 2,
+        "session": "sync",
+        "value": 0.2283497850000007,
+        "base": 0.07155217500000036,
+        "mu": 0.7043044220798416,
+        "mu_base": 0.7515138820315176,
+        "d_mu": -0.047209459951676025,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": -0.20057189558823674,
+        "base": 0.09439962205882282,
+        "mu": 0.9561371723118728,
+        "mu_base": 0.7226506251901588,
+        "d_mu": 0.23348654712171402,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.5802221850000002,
+        "base": 0.09439962205882282,
+        "mu": 0.545444310194054,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.17720631499610473,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 3,
+        "session": "sync",
+        "value": 0.23597807187499953,
+        "base": 0.09439962205882282,
+        "mu": 0.6796249925298474,
+        "mu_base": 0.7226506251901588,
+        "d_mu": -0.04302563266031134,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "bandwidth_contended",
+        "frame": "consumer",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": -0.08387799558823705,
+        "base": 0.6427850808823538,
+        "mu": 0.8837339898743557,
+        "mu_base": 0.6235606327919124,
+        "d_mu": 0.26017335708244327,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k1024",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.8611075724999999,
+        "base": 0.6427850808823538,
+        "mu": 0.47405908278202014,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.1495015500098923,
+        "w": 0.7118733407233884
+      },
+      {
+        "klass": "deletion",
+        "regime": "latency_bound",
+        "frame": "k4096",
+        "shape": "mlp_down_k17408_n5120",
+        "m": 4,
+        "session": "sync",
+        "value": 0.6610680368749975,
+        "base": 0.6427850808823538,
+        "mu": 0.6168680605774459,
+        "mu_base": 0.6235606327919124,
+        "d_mu": -0.006692572214466508,
+        "w": 0.7118733407233884
       }
     ]
   },
@@ -1820,17 +4001,17 @@
       },
       "latency_bound": {
         "measured": true,
-        "table_factor": 0.9166030746845932,
-        "ranked_pct": 1.6061743069946335,
+        "table_factor": 0.9073203788279636,
+        "ranked_pct": 1.622606901183495,
         "ranked_pct_ci95": [
-          1.5471814234718777,
-          2.4177534941177914
+          1.5712877499485538,
+          1.7556959524894007
         ]
       },
       "bandwidth_contended": {
         "measured": true,
-        "table_factor": 2.644652856014992,
-        "ranked_pct": 0.556679605386489,
+        "table_factor": 2.430888874271083,
+        "ranked_pct": 0.6056320895014718,
         "ranked_pct_ci95": [
           null,
           null
@@ -1838,13 +4019,41 @@
       }
     },
     "envelope_across_regimes": [
-      0.556679605386489,
-      2.4177534941177914
+      0.6056320895014718,
+      1.7556959524894007
     ],
     "decision_lines": {
       "parity": 0.53,
       "mode_proof": 1.86
     },
+    "stage0_registered_primary_pct": 1.0295274883011727,
+    "stage0_band_80pct": [
+      0.7252067888888889,
+      1.5061987153846155
+    ],
+    "decision": {
+      "parity": {
+        "line_pct": 0.53,
+        "clears_in_every_regime": true,
+        "clears_in_no_regime": false,
+        "verdict": "clears"
+      },
+      "mode_proof": {
+        "line_pct": 1.86,
+        "clears_in_every_regime": false,
+        "clears_in_no_regime": true,
+        "verdict": "fails"
+      }
+    },
     "resolution_note": "F96: a byte-identical resample of the crown content published two medians 0.374 % apart, so a ranked prediction that moves by less than that cannot be validated against a single ranked run. The local leg resolves to about 0.08 %, so this table is aimed at local-leg decisions."
+  },
+  "e124_noislands": {
+    "correction_applied": false,
+    "ranked_pct_unchanged": [
+      0.41,
+      0.45
+    ],
+    "reason": "the ledger prices `noislands` through the Finding 85 class coefficients 0.24 for draft-path head bytes and 0.95 for draft-path dispatch deletions. Those are already measured isolated-to-in-situ transfers. Every row of this table is a per-cell instruction-price transfer for the same step, so multiplying the two would count the step twice. Rule 69 forbids mixing the classes as well.",
+    "where_the_uncertainty_is": "the ledger marks the 0.304 % dispatch residual [INFERRED]. That component, not the frame, carries E124's risk, and nothing measured in Stage 1 or Stage 2 speaks to it."
   }
 }

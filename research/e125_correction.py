@@ -93,8 +93,17 @@ ANCHORS = {
         "mechanism": "hoisted activation sum table",
         "effect_on_kernel": "deletes per-round arithmetic, adds one table read",
         "mechanism_class": "deletion",
+        # (gain half, cost half). The rung is not class pure: the deleted
+        # arithmetic is the gain and the table read it is replaced by is a
+        # load, so a deletion-only row cannot price it.
+        "component_classes": ("deletion", "ld"),
         "isolated_prediction_pct": 3.240,
         "in_situ_measurement_pct": 4.249,
+        "frame": "local",
+        "frame_note":
+            "already local: the 3.240 % prediction was weighted by the "
+            "realised local width histogram, so the width term in it is "
+            "E[f(M)] and W = 1.000 exactly. No frame conversion is applied.",
         "factor": 0.763,
         # The in-situ leg medians are 0.030754 and 0.029447 s/token at CV
         # 0.080 %, so the measured delta is tight and the measurement side of
@@ -117,20 +126,55 @@ ANCHORS = {
         "effect_on_kernel":
             "adds a threadgroup exchange and two barriers per k-block",
         "mechanism_class": "sync",
+        # Sharing the chunk sums deletes the redundant per-simdgroup sums;
+        # the exchange and the barriers are what pays for that deletion.
+        "component_classes": ("deletion", "sync"),
         "isolated_prediction_pct": 0.890,
         "in_situ_measurement_pct": 0.436,
         "in_situ_sd_pct": 0.093,
-        "factor": 2.041,
-        # +-1 sd on the in-situ arm alone, propagated through the ratio.
-        "measurement_interval": (1.686, 2.588),
+        "frame": "ranked",
+        "frame_note":
+            "the published 2.041 carries the ranked width term: 2.041 / 1.33 "
+            "= 1.535, and 1.33 is exactly W_RANKED_CENTRAL. This table is a "
+            "local table, so the anchor is converted to the local frame "
+            "before it is used. Placing a ranked-frame anchor on a "
+            "local-frame table would charge the frame axis for a width term.",
+        "published_factor": 2.041,
+        "published_interval": (1.686, 2.588),
+        "factor": 1.535,
+        "measurement_interval": (1.268, 1.946),
         "isolated_cell": "fa_qkv_k5120_n14336|m4",
         "prediction_side_quantified": False,
         "prediction_side_note":
-            "the NA re-weighting in E121 run 5zms9ntd moves this to 1.535 "
-            "after the width term is removed, and to 1.250 on the reweighted "
-            "reading. All three readings are reported.",
-        "alternative_reading_factor": 1.535,
+            "1.535 is the published 2.041 with the ranked width term removed. "
+            "The NA re-weighting in E121 run 5zms9ntd moves it further to "
+            "1.250. All three readings are reported; the local-frame 1.535 is "
+            "the one this table is tested against.",
+        "alternative_reading_factor": 1.250,
     },
+}
+# hi/lo of a factor band. A band wider than this spans more than a factor of
+# two either side of its own centre, so "the anchor lies inside it" is not
+# evidence that the cell reproduces the anchor. Such a cell is reported as
+# consistent but non-resolving and does not satisfy the kill rule.
+RESOLVING_BAND_RATIO = 4.0
+
+# Stage 0 answered "no correction" for edward's E124. Stage 2 does not change
+# that answer, and the reason is now stronger rather than weaker.
+E124_STATEMENT = {
+    "correction_applied": False,
+    "ranked_pct_unchanged": [0.41, 0.45],
+    "reason":
+        "the ledger prices `noislands` through the Finding 85 class "
+        "coefficients 0.24 for draft-path head bytes and 0.95 for draft-path "
+        "dispatch deletions. Those are already measured isolated-to-in-situ "
+        "transfers. Every row of this table is a per-cell instruction-price "
+        "transfer for the same step, so multiplying the two would count the "
+        "step twice. Rule 69 forbids mixing the classes as well.",
+    "where_the_uncertainty_is":
+        "the ledger marks the 0.304 % dispatch residual [INFERRED]. That "
+        "component, not the frame, carries E124's risk, and nothing measured "
+        "in Stage 1 or Stage 2 speaks to it.",
 }
 
 # Local versus ranked width aggregation. The distinction is the Stage 0 defect.
@@ -351,10 +395,12 @@ def class_regime_table(pts: dict) -> dict:
         for regime, spec in REGIMES.items():
             if regime == REFERENCE_REGIME:
                 cells[regime] = {
-                    "measured": True, "identified": True, "factor": 1.0,
+                    "measured": True, "identified": True, "definitional": True,
+                    "factor": 1.0,
                     "ci95": [1.0, 1.0], "n_cells": None,
                     "note": "unit by construction: the reference regime is "
-                            "what the isolated price was measured in"}
+                            "what the isolated price was measured in. It is "
+                            "never evidence for or against an anchor"}
                 continue
             cells[regime] = cell_factor(pts, members, spec["frames"])
         rows[klass] = {"measured": True, "members": list(members),
@@ -403,22 +449,38 @@ def anchor_test(table: dict) -> dict:
                 continue
             lo, hi = cell["ci95"]
             ident = cell.get("identified", False)
-            covered = ident and lo <= anchor["factor"] <= hi
+            definitional = cell.get("definitional", False)
+            width = (hi / lo) if ident and lo and lo > 0 else None
+            resolving = (width is not None and width <= RESOLVING_BAND_RATIO
+                         and not definitional)
+            contains = ident and not definitional and lo <= anchor["factor"] <= hi
+            covered = contains and resolving
             alt = anchor.get("alternative_reading_factor")
             detail[regime] = {
                 "measured": True,
                 "identified": ident,
+                "definitional": definitional,
                 "table_factor": cell["factor"],
                 "table_ci95": cell["ci95"],
+                "band_ratio": width,
+                "resolving": resolving,
+                "contains_anchor": contains,
                 "covers_anchor": covered,
                 "covers_alternative_reading":
-                    ident and alt is not None and lo <= alt <= hi,
-                "note": None if ident else cell.get("unidentified_reason"),
+                    ident and resolving and alt is not None and lo <= alt <= hi,
+                "note": (None if ident else cell.get("unidentified_reason"))
+                if resolving or not ident else
+                "consistent but non-resolving: the band spans a factor of "
+                "%.1f, so containing the anchor is not evidence" % width,
             }
             if covered:
                 hits.append(regime)
         out[name] = {
             "class": anchor["mechanism_class"],
+            "anchor_frame_as_published": anchor["frame"],
+            "anchor_frame_note": anchor["frame_note"],
+            "published_factor": anchor.get("published_factor",
+                                           anchor["factor"]),
             "anchor_factor": anchor["factor"],
             "anchor_interval": list(anchor["measurement_interval"]),
             "alternative_reading_factor":
@@ -445,6 +507,90 @@ def anchor_test(table: dict) -> dict:
             "the table must reproduce BOTH anchors. A table that reproduces "
             "one and misses the other has picked a side.",
         "verdict": _anchor_verdict(len(resolved), len(ANCHORS), bool(shared)),
+    }
+
+
+def composite_diagnostic(table: dict) -> dict:
+    """Can a mixed rung explain an anchor that a class-pure row cannot?
+
+    Neither anchor rung is one class. Each deletes work and adds something
+    back: E120 rung 5e deletes per-round arithmetic and adds one table read,
+    so its halves are `deletion` and `ld`. E121 rung 2 -> 3 deletes the
+    redundant per-simdgroup sums and adds an exchange plus two barriers, so
+    its halves are `deletion` and `sync`. A two-part rung transfers as a
+    harmonic mixture of its two class factors, weighted by each half's share
+    of the isolated net effect:
+
+        1 / F(w) = w / F_gain + (1 - w) / F_cost
+
+    That map is a Mobius transform of w, so an unconstrained w reaches almost
+    any target and "reachable" carries no information on its own. The physics
+    supplies the constraint. Both rungs are a gain half plus a cost half whose
+    signs oppose, so the gain half must exceed the net and w must be at least
+    1. A w below 1 would require the added read or the added barriers to be a
+    speedup, and a w below 0 would require the deletion itself to be a cost.
+    The reported quantity is therefore w together with its admissibility, and
+    a large admissible w is itself a warning: it means the mixture only works
+    by cancelling two much larger opposed terms.
+    """
+    out: dict[str, dict] = {}
+    for name, anchor in ANCHORS.items():
+        gain_k, cost_k = anchor["component_classes"]
+        g_row = table["rows"].get(gain_k, {})
+        c_row = table["rows"].get(cost_k, {})
+        if not (g_row.get("measured") and c_row.get("measured")):
+            out[name] = {"available": False,
+                         "note": "not measured: this session lacks the %s or "
+                                 "%s row" % (gain_k, cost_k)}
+            continue
+        target = anchor["factor"]
+        per_regime = {}
+        for regime in REGIMES:
+            if regime == REFERENCE_REGIME:
+                continue
+            g = g_row["by_regime"].get(regime, {})
+            c = c_row["by_regime"].get(regime, {})
+            if not (g.get("measured") and c.get("measured")):
+                per_regime[regime] = {"measured": False}
+                continue
+            fg, fc = g.get("factor"), c.get("factor")
+            if not fg or not fc or fg == fc:
+                per_regime[regime] = {
+                    "measured": True, "admissible": False,
+                    "note": "no mixture: a class factor is missing or the two "
+                            "classes coincide"}
+                continue
+            w = (1.0 / target - 1.0 / fc) / (1.0 / fg - 1.0 / fc)
+            per_regime[regime] = {
+                "measured": True,
+                "gain_class": gain_k, "gain_factor": fg,
+                "cost_class": cost_k, "cost_factor": fc,
+                "gain_share_of_isolated_net": w,
+                "admissible": w >= 1.0,
+                "admissibility_rule":
+                    "w >= 1 is required: the gain half must exceed the net "
+                    "because the cost half opposes it",
+                "cancellation_warning": w >= 3.0,
+                "both_identified": bool(g.get("identified")
+                                        and c.get("identified")),
+            }
+        out[name] = {
+            "available": True,
+            "class_as_labelled": anchor["mechanism_class"],
+            "component_classes": [gain_k, cost_k],
+            "anchor_factor": target,
+            "by_regime": per_regime,
+            "admissible_in": [r for r, v in per_regime.items()
+                              if v.get("admissible")],
+        }
+    shared = [set(v["admissible_in"]) for v in out.values() if v.get("available")]
+    return {
+        "available": True,
+        "by_anchor": out,
+        "model": "1 / F(w) = w / F_gain + (1 - w) / F_cost",
+        "w_meaning": "the gain half's share of the isolated net effect",
+        "shared_admissible_regime":
+            sorted(set.intersection(*shared)) if shared else [],
     }
 
 
@@ -626,6 +772,21 @@ def route_b(pre: dict, table: dict) -> dict:
             span.extend(band)
     out["envelope_across_regimes"] = [min(span), max(span)] if span else None
     out["decision_lines"] = DECISION_LINES
+    out["stage0_registered_primary_pct"] = pre["predictions"]["primary"][
+        "ranked_pct"]
+    out["stage0_band_80pct"] = pre["band_80pct"]
+    # A decision is safe only when EVERY measured regime column falls on the
+    # same side of the line, because this experiment does not identify which
+    # column the in-situ round sits in.
+    lo, hi = out["envelope_across_regimes"] or (None, None)
+    out["decision"] = {
+        line: {"line_pct": v,
+               "clears_in_every_regime": lo is not None and lo > v,
+               "clears_in_no_regime": hi is not None and hi < v,
+               "verdict": "clears" if lo is not None and lo > v
+               else "fails" if hi is not None and hi < v
+               else "regime dependent: the answer changes with the column"}
+        for line, v in DECISION_LINES.items()}
     out["resolution_note"] = (
         "F96: a byte-identical resample of the crown content published two "
         "medians %.3f %% apart, so a ranked prediction that moves by less "
@@ -664,8 +825,10 @@ def main() -> int:
         "null_control": null_control(),
         "class_regime_table": table,
         "anchor_test": anchor_test(table),
+        "composite_diagnostic": composite_diagnostic(table),
         "marginal_summary": marginal_summary(laws, pts),
         "route_b": route_b(load(args.prereg), table),
+        "e124_noislands": E124_STATEMENT,
     }
     (ART / args.out).write_text(json.dumps(result, indent=2) + "\n")
 
@@ -695,10 +858,72 @@ def main() -> int:
         if not v.get("resolved") and "note" in v:
             print("  %-28s %s" % (name, v["note"]))
             continue
-        print("  %-28s class=%-9s factor=%.3f  reproduced by: %s"
+        print("  %-28s class=%-9s factor=%.3f (%s frame, published %.3f)"
               % (name, v["class"], v["anchor_factor"],
-                 ", ".join(v["regimes_that_reproduce_anchor"]) or "no regime"))
+                 v["anchor_frame_as_published"], v["published_factor"]))
+        print("  %-28s   reproduced by: %s"
+              % ("", ", ".join(v["regimes_that_reproduce_anchor"])
+                 or "no regime"))
+        for regime, d in v["by_regime"].items():
+            if not d.get("measured"):
+                continue
+            print("  %-28s   %-20s %6.3f %s%s"
+                  % ("", regime, d["table_factor"],
+                     "reproduces" if d["covers_anchor"] else
+                     "contains but non-resolving (band x%.1f)" % d["band_ratio"]
+                     if d.get("contains_anchor") else
+                     "unit by construction" if d.get("definitional") else
+                     "unidentified" if not d["identified"] else "misses",
+                     "  [covers the alternative reading %.3f]"
+                     % v["alternative_reading_factor"]
+                     if d.get("covers_alternative_reading") else ""))
     print("  verdict: %s" % at["verdict"])
+
+    cd = result["composite_diagnostic"]
+    if cd.get("available"):
+        print("\ncomposite check: neither rung is class pure. %s" % cd["model"])
+        print("  w is %s; w >= 1 is required" % cd["w_meaning"])
+        for name, v in cd["by_anchor"].items():
+            if not v.get("available"):
+                print("  %-28s %s" % (name, v["note"]))
+                continue
+            print("  %-28s gain=%s cost=%s"
+                  % (name, *v["component_classes"]))
+            for regime, d in v["by_regime"].items():
+                if "gain_share_of_isolated_net" not in d:
+                    continue
+                print("  %-28s   %-20s w=%+7.3f  %s"
+                      % ("", regime, d["gain_share_of_isolated_net"],
+                         ("admissible, but only by cancelling two much larger "
+                          "opposed terms" if d["cancellation_warning"]
+                          else "admissible") if d["admissible"]
+                         else "inadmissible: the cost half would have to be a "
+                              "speedup"))
+        print("  shared admissible regime: %s"
+              % (", ".join(cd["shared_admissible_regime"]) or "none"))
+
+    rb = result["route_b"]
+    print("\nRoute B ranked prediction, deletion row, W_ranked=%.2f"
+          % rb["W_ranked"])
+    print("  isolated %.3f %%  ->  stage 0 registered %.3f %% [%.3f, %.3f]"
+          % (rb["isolated_ranked_pct"], rb["stage0_registered_primary_pct"],
+             *rb["stage0_band_80pct"]))
+    for regime, v in rb["by_regime"].items():
+        if not v.get("measured"):
+            continue
+        band = v["ranked_pct_ci95"]
+        print("  %-20s %.3f %%%s"
+              % (regime, v["ranked_pct"],
+                 "  [%.3f, %.3f]" % tuple(band) if band[0] is not None
+                 else "  band unidentified"))
+    print("  envelope across regimes [%.3f, %.3f] %%"
+          % tuple(rb["envelope_across_regimes"]))
+    for line, v in rb["decision"].items():
+        print("  vs %-11s %.2f %%  %s" % (line, v["line_pct"], v["verdict"]))
+
+    print("\nE124 noislands: correction applied = %s, ranked stays %.2f to "
+          "%.2f %%" % (result["e124_noislands"]["correction_applied"],
+                       *result["e124_noislands"]["ranked_pct_unchanged"]))
 
     print("\nvariance explained against one factor for everything")
     for k, v in result["marginal_summary"][
