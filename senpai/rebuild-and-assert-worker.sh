@@ -56,8 +56,36 @@
 # `--self-test` for the positive control that a bracketed `--forbid` needle
 # fires.
 #
+# A STRING NEEDLE SHORTER THAN 16 BYTES IS REFUSED (HARNESS DEFECT 38).
+#
+# Swift stores a string literal of 15 UTF-8 bytes or fewer in its small-string
+# form, inline in the instruction stream. Such a literal never reaches the
+# string table that `strings` reads. So a short `--require` needle fails on a
+# correct binary, and a short `--forbid` needle passes on every binary. The
+# `--forbid` half is the dangerous one: it fails in the safe-looking
+# direction, so it is not a weak gate, it is no gate at all. Measured on this
+# campaign's worker (qwen-askeladd, PR #139): the kernel-name suffix
+# `_e139fp32`, 9 bytes, reported 0 copies on a worker that certainly carries
+# it.
+#
+# The 15-byte limit applies to a WHOLE literal, not to a substring of one. A
+# short needle is still findable when it lies inside a large literal, which is
+# the normal case for a Metal JIT arm: `<T, 5, 5, true>` is 15 bytes but it
+# sits inside the multi-kilobyte JIT source string. That case is legitimate,
+# so it is allowed through `--allow-short-needle` rather than blocked.
+#
+# `--allow-short-needle` is itself gated. It is accepted only when the same
+# invocation also carries a `--require` needle of at least 16 bytes, because
+# that long needle is the positive control which proves the string table was
+# extracted and contains the surrounding source. Without such an anchor, the
+# absence of a short `--forbid` needle carries no information.
+#
+# Symbol needles are exempt. `nm -a` reports a short symbol name normally, so
+# the small-string form cannot hide one.
+#
 # USAGE
-#   senpai/rebuild-and-assert-worker.sh \
+#   senpai/rebuild-and-assert-worker.sh --allow-short-needle \
+#       --require 'template [[host_name("qwen_quantized_gemv")]]' \
 #       --require '<T, 5, 5, true>' --require '<T, 6, 6, true>' \
 #       --forbid  '<T, 5, 3, true>' --forbid  '<T, 6, 3, true>'
 #
@@ -78,6 +106,10 @@ cd "$REPO_ROOT" || exit 1
 WORKER=".build-worker/release/mlxfast-runtime-worker"
 SKIP_BUILD=0
 SELF_TEST=0
+ALLOW_SHORT=0
+# Swift's small-string form holds 15 UTF-8 bytes inline, so a whole literal of
+# that size or smaller never reaches the string table (HARNESS DEFECT 38).
+MIN_STRING_NEEDLE_BYTES=16
 FIXED=(-F)
 REQUIRE=()
 FORBID=()
@@ -91,6 +123,7 @@ while [ $# -gt 0 ]; do
     --require-symbol) REQUIRE_SYM+=("$2"); shift 2 ;;
     --forbid-symbol)  FORBID_SYM+=("$2");  shift 2 ;;
     --regex)   FIXED=(); shift ;;
+    --allow-short-needle) ALLOW_SHORT=1; shift ;;
     --self-test) SELF_TEST=1; shift ;;
     --no-build) SKIP_BUILD=1; shift ;;
     --worker)  WORKER="$2"; shift 2 ;;
@@ -100,6 +133,21 @@ done
 
 count_strings() {
   strings -a "$1" | grep -c "${FIXED[@]+"${FIXED[@]}"}" -- "$2"
+}
+
+needle_bytes() {
+  printf '%s' "$1" | wc -c | tr -d ' '
+}
+
+# HARNESS DEFECT 38. Refuse a string needle that the small-string form can
+# hide, so the guard cannot be mis-configured into passing unconditionally.
+short_string_needles() {
+  local needle
+  for needle in "$@"; do
+    if [ "$(needle_bytes "$needle")" -lt "$MIN_STRING_NEEDLE_BYTES" ]; then
+      printf '%s\n' "$needle"
+    fi
+  done
 }
 
 count_symbols() {
@@ -122,6 +170,24 @@ if [ "$SELF_TEST" -eq 1 ]; then
   [ "$N_FIXED" -eq 1 ] || { echo "FAIL self-test: fixed matching missed the bracketed needle"; STATUS=1; }
   [ "$N_BRE" -eq 0 ] || { echo "FAIL self-test: basic regex matched, so this control proves nothing"; STATUS=1; }
   [ "$N_SHIPPED" -eq 1 ] || { echo "FAIL self-test: the default matcher missed the bracketed needle"; STATUS=1; }
+
+  # HARNESS DEFECT 38 control. The length gate must reject at 15 bytes and
+  # accept at 16, and rejection must be reported as a refusal to run rather
+  # than as a pass.
+  SHORT_NEEDLE='_e139fp32_15byt'
+  LONG_NEEDLE='_e139fp32_16byte'
+  echo "self-test short needle  $(needle_bytes "$SHORT_NEEDLE") bytes (expected 15)"
+  echo "self-test long needle   $(needle_bytes "$LONG_NEEDLE") bytes (expected 16)"
+  [ "$(needle_bytes "$SHORT_NEEDLE")" -eq 15 ] || { echo "FAIL self-test: short control is not 15 bytes"; STATUS=1; }
+  [ "$(needle_bytes "$LONG_NEEDLE")" -eq 16 ] || { echo "FAIL self-test: long control is not 16 bytes"; STATUS=1; }
+  N_REJECTED="$(short_string_needles "$SHORT_NEEDLE" "$LONG_NEEDLE" | wc -l | tr -d ' ')"
+  echo "self-test length gate   rejected $N_REJECTED of 2 (expected 1)"
+  [ "$N_REJECTED" -eq 1 ] || { echo "FAIL self-test: the length gate did not reject exactly the short needle"; STATUS=1; }
+  "$0" --no-build --forbid "$SHORT_NEEDLE" >/dev/null 2>&1
+  RC_SHORT=$?
+  echo "self-test short --forbid exit $RC_SHORT (expected 2, refused)"
+  [ "$RC_SHORT" -eq 2 ] || { echo "FAIL self-test: a short --forbid needle was not refused; the gate can pass unconditionally"; STATUS=1; }
+
   if [ "$STATUS" -eq 0 ]; then
     echo "rebuild-and-assert-worker: self-test PASS"
   else
@@ -136,6 +202,35 @@ then
   echo "rebuild-and-assert-worker: refusing to run with no assertion." >&2
   echo "A guard that asserts nothing is not a guard." >&2
   exit 2
+fi
+
+SHORT="$(short_string_needles \
+  "${REQUIRE[@]+"${REQUIRE[@]}"}" "${FORBID[@]+"${FORBID[@]}"}")"
+if [ -n "$SHORT" ]; then
+  ANCHORS="$(for n in "${REQUIRE[@]+"${REQUIRE[@]}"}"; do
+    [ "$(needle_bytes "$n")" -ge "$MIN_STRING_NEEDLE_BYTES" ] && printf 'x'
+  done)"
+  if [ "$ALLOW_SHORT" -ne 1 ] || [ -z "$ANCHORS" ]; then
+    echo "rebuild-and-assert-worker: refusing a string needle shorter than" \
+         "$MIN_STRING_NEEDLE_BYTES bytes (HARNESS DEFECT 38):" >&2
+    printf '%s\n' "$SHORT" | while IFS= read -r n; do
+      printf "  %s bytes: '%s'\n" "$(needle_bytes "$n")" "$n" >&2
+    done
+    echo "Swift keeps a literal of 15 UTF-8 bytes or fewer inline, so it never" >&2
+    echo "reaches the string table. A short --require then fails on a correct" >&2
+    echo "binary and a short --forbid passes on every binary." >&2
+    if [ "$ALLOW_SHORT" -ne 1 ]; then
+      echo "If the needle is a substring of a LARGER literal, such as a Metal" >&2
+      echo "JIT source, pass --allow-short-needle together with a --require" >&2
+      echo "needle of at least $MIN_STRING_NEEDLE_BYTES bytes as the anchor." >&2
+    else
+      echo "--allow-short-needle needs a --require needle of at least" >&2
+      echo "$MIN_STRING_NEEDLE_BYTES bytes as its positive control; none given." >&2
+    fi
+    exit 2
+  fi
+  echo "note short string needles allowed by --allow-short-needle, anchored" \
+       "by a long --require"
 fi
 
 if [ "$SKIP_BUILD" -eq 0 ]; then
