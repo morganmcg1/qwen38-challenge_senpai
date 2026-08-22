@@ -427,13 +427,17 @@ def invert_published(fit: dict, scan: dict) -> dict:
 # --------------------------------------------------------------------------
 
 def apply_to_route_b(pre: dict, table: dict, fit: dict, inv: dict) -> dict:
+    """Price rung 5e with the measured frame term.
+
+    The frame axis fits the *shape* of the exposure law. It does not locate the
+    in-situ point, because no frame in this session is a decode round. The
+    published transfer pairs locate that point. Pooling a resident frame with a
+    contended frame would average two opposite directions, so the frame axis
+    enters only as a labelled sensitivity, never inside the point.
+    """
     isolated = pre["isolated_ranked_recomputed_on_7x7"]
 
-    measured = table.get("deletion", {})
     f_points = []
-    if measured.get("measured"):
-        f_points.append(("frame_axis_median",
-                         measured["median_transfer_factor"]))
     if inv.get("identified") and inv.get("in_situ_mu_point") is not None \
             and fit.get("identified"):
         mu_situ = inv["in_situ_mu_point"]
@@ -443,6 +447,15 @@ def apply_to_route_b(pre: dict, table: dict, fit: dict, inv: dict) -> dict:
             f_points.append(("published_inversion",
                              exposure(mu_iso, fit["p"])
                              / exposure(mu_situ, fit["p"])))
+
+    sensitivity = {}
+    for klass, entry in table.items():
+        for row in entry["rows"]:
+            sensitivity.setdefault("%s|%s" % (klass, row["frame"]), []).append(
+                row["transfer_factor"])
+    sensitivity = {k: {"median": statistics.median(v), "n": len(v),
+                       "measured": len(v) >= 2}
+                   for k, v in sorted(sensitivity.items())}
 
     if not f_points:
         reg = pre["predictions"]["primary"]
@@ -460,13 +473,23 @@ def apply_to_route_b(pre: dict, table: dict, fit: dict, inv: dict) -> dict:
             "registered_point": reg["ranked_pct"],
             "parity_line_pct": pre["decision_lines"]["parity"],
             "mode_proof_line_pct": pre["decision_lines"]["mode_proof"],
+            "frame_axis_sensitivity": sensitivity,
         }
 
-    vals = [v for _, v in f_points]
-    f_point = math.exp(statistics.fmean([math.log(v) for v in vals]))
-    f_lo, f_hi = min(vals), max(vals)
-    if f_lo == f_hi:
-        f_lo, f_hi = f_lo / 1.2, f_hi * 1.2
+    f_point = math.exp(statistics.fmean(
+        [math.log(v) for _, v in f_points]))
+
+    # The band comes from the exposure exponent's own profile interval and
+    # from the spread between the published pairs, not from an arbitrary
+    # widening factor.
+    mu_iso = inv["pairs"]["alphonse_threadgroup_exchange"]["isolated_mu"]
+    f_alt = []
+    for p_alt in fit.get("p_band", [fit["p"], fit["p"]]):
+        for mu_alt in inv.get("in_situ_mu_band") or [inv["in_situ_mu_point"]]:
+            e_hi = exposure(mu_alt, p_alt)
+            if e_hi > 0:
+                f_alt.append(exposure(mu_iso, p_alt) / e_hi)
+    f_lo, f_hi = (min(f_alt), max(f_alt)) if f_alt else (f_point, f_point)
 
     c_point = W_CENTRAL * f_point
     c_lo = W_BAND[0] * f_lo
@@ -484,6 +507,7 @@ def apply_to_route_b(pre: dict, table: dict, fit: dict, inv: dict) -> dict:
         "registered_point": pre["predictions"]["primary"]["ranked_pct"],
         "parity_line_pct": pre["decision_lines"]["parity"],
         "mode_proof_line_pct": pre["decision_lines"]["mode_proof"],
+        "frame_axis_sensitivity": sensitivity,
     }
 
 
@@ -528,22 +552,33 @@ def main() -> int:
     route_b = apply_to_route_b(pre, table, best, inv)
     bc = back_check(route_b)
 
+    # One row per mechanism class per destination frame. The frames move the
+    # regime in opposite directions, so a row that pooled them would report the
+    # average of a resident effect and a contended effect and mean nothing.
     class_rows = []
     for klass in CLASSES:
-        t = table[klass]
-        class_rows.append({
-            "mechanism_class": klass,
-            "factor": t["median_transfer_factor"],
-            "low": t["transfer_factor_range"][0] if t["transfer_factor_range"]
-                   else None,
-            "high": t["transfer_factor_range"][1] if t["transfer_factor_range"]
-                    else None,
-            "n_independent_points": t["n_independent_points"],
-            "measured": t["measured"],
-            "evidence": ("Stage 1 frame axis, base frame against every other "
-                         "frame at a fixed shape and a fixed width")
-                        if t["measured"] else t["note"],
-        })
+        by_frame: dict[str, list[float]] = {}
+        for row in table[klass]["rows"]:
+            by_frame.setdefault(row["frame"], []).append(row["transfer_factor"])
+        if not by_frame:
+            class_rows.append({
+                "mechanism_class": klass, "factor": None, "low": None,
+                "high": None, "n_independent_points": 0, "measured": False,
+                "evidence": table[klass]["note"]})
+            continue
+        for frame, vals in sorted(by_frame.items()):
+            ok = len(vals) >= 2
+            class_rows.append({
+                "mechanism_class": "%s @ %s" % (klass, frame),
+                "factor": statistics.median(vals),
+                "low": min(vals), "high": max(vals),
+                "n_independent_points": len(vals),
+                "measured": ok,
+                "evidence": ("Stage 1 frame axis, isolated base frame against "
+                             "the %s frame at a fixed shape and a fixed width"
+                             % frame) if ok else
+                            "not measured: fewer than two independent points",
+            })
 
     out = {
         "experiment": "e125",
