@@ -27,8 +27,19 @@
 #
 # DOSE_UNIT_US is the measured M=1 rate for one dose unit and it must come from
 # rung 1, not from the E107 ledger row. Rung 1 measured this exact cell in this
-# exact build and disagreed with the ledger's 410.93 us by more than 10 %, so
-# the ledger number is not usable as the denominator here.
+# exact build at 411.86 us isolated, which is +0.23 % against E107's 410.93 us,
+# so the two agree; the rung 1 number is still the one used, because it is the
+# rate of the binary that ran.
+#
+# BOTH ARMS ARE TRACED, ON PURPOSE. `MLX_QWEN_MTP_TRACE=1` makes the worker
+# write one `mtp-trace: e116 dose` line per round, which is the in-process
+# witness that the dose really alternated in the leg that was timed rather than
+# in a census leg run separately. Tracing costs a few hundred bytes of host
+# work per round against a round near 160,000 us, and BOTH arms pay it, so it
+# cancels in the contrast. The round frame this session reports is therefore a
+# TRACED round frame and must not be compared with an untraced one. The rung 3
+# ladder is deliberately untraced, because its endpoint is an absolute leg
+# time and has no second arm to cancel against.
 #
 # THERMAL. Ungated, counterbalanced within one session, entry and exit GPU
 # temperature per leg, honesty flags preserved verbatim. Not gate qualified and

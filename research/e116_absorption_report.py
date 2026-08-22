@@ -177,6 +177,11 @@ def analyse(leg_dir: pathlib.Path) -> dict:
         "round_count": rounds,
         "seconds_per_token": report.get("parent_measured_seconds_per_token"),
         "width_histogram": histogram([k + 1 for k in widths]),
+        # Rule 40: the per-round series a committed reducer reads travels with
+        # the result, rounded to 0.1 us so the file stays compact.
+        "round_us": [round(value, 1) for value in us],
+        "round_width": [k + 1 for k in widths],
+        "round_dosed": [int(flag) for flag in dosed],
         "dose_alignment": alignment,
         "pairs": pair_stats["n"],
         "pairs_by_width": histogram([p["width"] for p in pairs]),

@@ -87,6 +87,9 @@ def leg_record(leg_dir: pathlib.Path) -> dict:
         "control_round_us": statistics.fmean(us[1:]) if len(us) > 1 else
         float("nan"),
         "width_histogram": histogram([k + 1 for k in widths]),
+        # Rule 40: the per-round series travels with the result.
+        "round_us": [round(value, 1) for value in us],
+        "round_width": [k + 1 for k in widths],
         "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
         "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
         "worker_sha256": meta.get("worker_sha256"),
@@ -199,6 +202,16 @@ def main() -> int:
                         if base_legs else float("nan"))
     rounds = statistics.fmean(leg["round_count"] for leg in legs)
     tokens = statistics.fmean(leg["decode_token_count"] for leg in legs)
+    # RULE 34, THE TENTH FRAME. `e116_leg_amortised_round_us` is the leg's
+    # whole cost divided by its round count: it carries the seed prefill and
+    # every between-round cost the parent pays, and it is the only frame in
+    # which a percent of the leg endpoint is also a percent of a round. The
+    # parent's own `block_request_seconds` mean is the ninth frame's
+    # descendant and is reported beside it, so the gap between them is the
+    # per-round share of everything that is not inside a block request.
+    leg_amortised_round_us = (
+        statistics.fmean(leg["leg_us_per_token"] for leg in base_legs)
+        * tokens / rounds if base_legs else float("nan"))
 
     fit = ols([float(leg["dose_units"]) for leg in legs],
               [leg["leg_us_per_token"] for leg in legs])
@@ -256,6 +269,10 @@ def main() -> int:
         "round_frame": "e116 rung 3 = mean parent block_request_seconds over "
                        "rounds 1..R-1 of the k=0 legs of this ladder",
         "e116_rung3_control_round_us": control_round_us,
+        "e116_leg_amortised_round_us": leg_amortised_round_us,
+        "block_request_share_of_leg_amortised_round":
+            control_round_us / leg_amortised_round_us
+            if leg_amortised_round_us else float("nan"),
         "mean_round_count": rounds,
         "mean_decode_token_count": tokens,
         "dose_unit_us_m1_census": args.dose_unit_us,
@@ -299,6 +316,11 @@ def main() -> int:
     print(f"  endpoint: {out['endpoint']}")
     print(f"  round frame: {out['round_frame']}"
           f"  = {control_round_us:,.0f} us")
+    print(f"  tenth frame: e116 leg-amortised round"
+          f" = {leg_amortised_round_us:,.0f} us"
+          f"  (block requests are"
+          f" {100.0 * out['block_request_share_of_leg_amortised_round']:.1f} %"
+          " of it)")
     print(f"  mean rounds per leg {rounds:.2f} over {tokens:.0f} tokens;"
           f" dose unit {args.dose_unit_us:.2f} us at M=1; alpha {args.alpha:.3f}")
     print()
