@@ -121,6 +121,13 @@ status=0
 for id in "$@"; do
   prompt="$(prompt_file_for "${id}")"
   out="${runs_root}/${id}"
+  # Resumable: a leg that already produced a report is kept, so a session that
+  # failed on prompt three does not re-run prompt one and discard its trace.
+  if [[ -s "${out}/report.json" ]] && grep -qx 'exit=0' "${out}/meta.txt" 2>/dev/null \
+     && [[ "${E122_FORCE:-0}" != "1" ]]; then
+    echo "=== e122 rung 0: ${id} already collected, keeping it ==="
+    continue
+  fi
   rm -rf "${out}"; mkdir -p "${out}"
   golden="${goldens_dir}/${id}-rows-$((tokens + 1)).json"
 
@@ -135,14 +142,16 @@ for id in "$@"; do
       jq -c '{seed_tokens: .cases[0].prompt_tokens, emitted: []}' \
         "${bench_fixture}" > "${out}/plan.json"
     else
-      # One serial step, used only to reach the trusted tokenizer: the
-      # prompt's token ids come back as `cases[0].prompt_tokens`.
+      # Used only to reach the trusted tokenizer: the prompt's token ids come
+      # back as `cases[0].prompt_tokens`. `generate-golden` refuses fewer than
+      # `correctnessSteps` (64) steps, so 64 is the cheapest legal pass; the
+      # emitted tokens are discarded.
       MLXFAST_NO_SANDBOX=1 "${swift_bin}" generate-golden \
         --prompt-file "${prompt}" \
         --weights "${weights}" \
         --output "${out}/seed.json" \
         --name "e122_${id}" \
-        --steps 1 > "${out}/seed.log" 2>&1 || {
+        --steps 64 > "${out}/seed.log" 2>&1 || {
           echo "e122_rung0_session: ${id}: tokenizer pass failed" >&2
           tail -5 "${out}/seed.log" >&2; status=1; continue; }
       jq -c '{seed_tokens: .cases[0].prompt_tokens, emitted: []}' \
