@@ -157,6 +157,7 @@ def main() -> None:
             "unproposable_ascii_pct": 100.0 * ascii_mass / total,
             "unproposable_nonascii_pct": 100.0 * (unprop_total - ascii_mass) / total,
             "cumulative_curve": curve,
+            "share_prefix": share_prefix,
             "top_unproposable": top,
         }
 

@@ -77,6 +77,28 @@
           "padded_count": 248320
         }
       ],
+      "share_prefix": {
+        "0.50": {
+          "prefix": 203128,
+          "padded_count": 203160
+        },
+        "0.80": {
+          "prefix": 230124,
+          "padded_count": 230152
+        },
+        "0.90": {
+          "prefix": 239154,
+          "padded_count": 239184
+        },
+        "0.95": {
+          "prefix": 242101,
+          "padded_count": 242128
+        },
+        "1.00": {
+          "prefix": 246670,
+          "padded_count": 246696
+        }
+      },
       "top_unproposable": [
         {
           "id": 193271,
@@ -462,6 +484,28 @@
           "padded_count": 248320
         }
       ],
+      "share_prefix": {
+        "0.50": {
+          "prefix": 187741,
+          "padded_count": 187768
+        },
+        "0.80": {
+          "prefix": 219966,
+          "padded_count": 219992
+        },
+        "0.90": {
+          "prefix": 227756,
+          "padded_count": 227784
+        },
+        "0.95": {
+          "prefix": 236388,
+          "padded_count": 236416
+        },
+        "1.00": {
+          "prefix": 246705,
+          "padded_count": 246736
+        }
+      },
       "top_unproposable": [
         {
           "id": 187652,
