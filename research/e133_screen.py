@@ -38,9 +38,14 @@ WHAT F1 CHANGED, AND WHY EACH CHANGE IS HERE.
         carries the kill. `m_incremental` is against the SHIPPED chain output
         and carries the price, because the shipped chain is already
         approximate and its own misses are already in the baseline score.
-  F1.5  A miss costs `m * (p - q)`, not `m`. `p` is the head's per-step
-        accuracy and `q` is the chance the substituted row is itself the
-        target's argmax. Both are measured here against the serial golden.
+  F1.5  A miss costs `m * (p - q)`, not `m`. `p` is the shipped chain's
+        per-step acceptance and `q` is the chance the substituted row is
+        itself the target's argmax. Both come from the trusted parent's
+        `row_ledger`, which records, per draft row, the token the runtime
+        proposed and the token the fixed target produced there. The dumped
+        rows are aligned to that ledger and the alignment is CHECKED token by
+        token, because the instrument fires once per draft-head call, not once
+        per emitted token.
 
 Sub-commands:
   corpus     inventory the captured hidden states, with per-seed acceptance
@@ -507,18 +512,27 @@ class Sketch:
             self.proj = mx.array(proj)
             self.row_codes, self.row_scale = self._simhash(rows, mu)
             self.cent_codes, self.cent_scale = self._simhash(centroids, mu)
-            self.bytes_per_row = size // 8 + 4          # packed bits + norm
+            # packed bits + fp32 norm + fp32 mean offset
+            self.bytes_per_row = size // 8 + 8
             self.proj_bytes = H.HIDDEN * size // 8      # 1-bit +-1 R
         elif family == "lowrank":
             assert basis is not None
             self.proj = basis[:, :size]
             self.row_codes, self.row_scale = self._lowrank(rows, mu)
             self.cent_codes, self.cent_scale = self._lowrank(centroids, mu)
-            self.bytes_per_row = size + 4               # int8 codes + fp32 scale
+            # int8 codes + fp32 scale + fp32 mean offset
+            self.bytes_per_row = size + 8
             self.proj_bytes = H.HIDDEN * size * 2       # bf16 basis
         else:
             raise SystemExit(f"unknown sketch family {family}")
-        mx.eval(self.row_codes, self.row_scale, self.cent_codes, self.cent_scale)
+        # Both families sketch the CENTRED row, but the exact score is
+        # `row . x`, and `row . x = (row - mu).(x - mu) + row.mu + c(x)`.
+        # Dropping `row.mu` would rank by the wrong quantity, so it is stored
+        # per row as one fp32 and added back at score time.
+        self.row_offset = mx.matmul(rows.astype(mx.float32), mu)
+        self.cent_offset = mx.matmul(centroids.astype(mx.float32), mu)
+        mx.eval(self.row_codes, self.row_scale, self.cent_codes, self.cent_scale,
+                self.row_offset, self.cent_offset)
 
     def _simhash(self, table: mx.array, mu: mx.array):
         parts_c, parts_s = [], []
@@ -549,17 +563,24 @@ class Sketch:
             return mx.where(mx.matmul(centred, self.proj) >= 0.0, 1.0, -1.0)
         return mx.matmul(centred, self.proj)
 
-    def score_rows(self, q: mx.array) -> mx.array:
-        dot = mx.matmul(q, self.row_codes.T)
+    def _combine(self, dot, scale, offset, x_norm) -> mx.array:
         if self.family == "simhash":
-            return self.row_scale[None, :] * mx.sin(0.5 * math.pi * dot / self.size)
-        return self.row_scale[None, :] * dot
+            # `dot / size = 1 - 2 theta / pi`, so `cos(theta)` is
+            # `sin(pi dot / 2 size)`, and `||row - mu|| ||x - mu|| cos(theta)`
+            # estimates the centred inner product.
+            centred = (scale[None, :] * x_norm[:, None]
+                       * mx.sin(0.5 * math.pi * dot / self.size))
+        else:
+            centred = scale[None, :] * dot
+        return centred + offset[None, :]
 
-    def score_centroids(self, q: mx.array) -> mx.array:
-        dot = mx.matmul(q, self.cent_codes.T)
-        if self.family == "simhash":
-            return self.cent_scale[None, :] * mx.sin(0.5 * math.pi * dot / self.size)
-        return self.cent_scale[None, :] * dot
+    def score_rows(self, q: mx.array, x_norm: mx.array) -> mx.array:
+        return self._combine(mx.matmul(q, self.row_codes.T), self.row_scale,
+                             self.row_offset, x_norm)
+
+    def score_centroids(self, q: mx.array, x_norm: mx.array) -> mx.array:
+        return self._combine(mx.matmul(q, self.cent_codes.T), self.cent_scale,
+                             self.cent_offset, x_norm)
 
 
 # --------------------------------------------------------------------------
@@ -687,7 +708,12 @@ class Screen:
         b = x.shape[0]
         exact_scores = H.scores(self.exact, x)
         argmax_row = mx.argmax(exact_scores, axis=1)
-        exact_perm = mx.take(exact_scores, self.index.order_mx, axis=1)
+        # The permuted view must cover all 98,336 padded positions, because
+        # `order` indexes the padded table. Taking from the 98,330-column
+        # reachable view would clamp the six padding positions to the last
+        # real column and hand the rerank a score that belongs to another row.
+        exact_perm = mx.take(H.scores_all(self.exact, x), self.index.order_mx,
+                             axis=1)
         coarse_all = H.scores_all(self.coarse, x)
         coarse_perm = mx.take(coarse_all, self.index.order_mx, axis=1)
         at = mx.take_along_axis(
@@ -737,12 +763,22 @@ class Screen:
         return mx.take_along_axis(
             chosen, mx.argmax(exact, axis=1)[:, None].astype(mx.int32), axis=1)[:, 0]
 
+    def compact(self, positions: mx.array) -> mx.array:
+        """Permuted position -> compact id, folding the six padding rows back
+        onto the rows they copy, exactly as `clusterPerm` does."""
+        return mx.take(self.index.perm_mx, positions, axis=0)
+
     def shipped(self, f):
-        """The live chain: affine-2 centroids, 25 % probe, affine-2 top-32."""
+        """The live chain: affine-2 centroids, 25 % probe, affine-2 top-32.
+
+        Returns the COMPACT id, not the permuted position, so a padding
+        position and the real row it copies never read as two different
+        answers (D5 hazard 1).
+        """
         clusters = max(1, math.ceil(SHIPPED_PROBE_FRACTION * LEAVES))
         positions = self.probe_positions(f["order_a2"], clusters, f["b"])
         keys = mx.take_along_axis(f["coarse_perm"], positions, axis=1)
-        out = self.output_row(f, positions, keys)
+        out = self.compact(self.output_row(f, positions, keys))
         cum_gt = mx.cumsum(
             mx.take_along_axis(f["gt_leaf"], f["order_a2"], axis=1), axis=1)
         miss = mx.logical_or(mx.logical_not(f["crank_a2"] < clusters),
@@ -751,8 +787,25 @@ class Screen:
         return np.asarray(miss).astype(bool), out
 
 
-def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
-            survivor_widths, base_miss: np.ndarray, base_out: mx.array,
+def sketch_state(screen: Screen, sketch: Sketch, f, x: mx.array) -> dict:
+    """The per-batch work that both `stage_a` variants of a cell family share.
+
+    Scoring all 98,336 rows is the dominant cost of the sweep, so it happens
+    once per (sketch, batch) rather than once per arm.
+    """
+    q = sketch.query(x, screen.mu)
+    x_norm = mx.linalg.norm(x.astype(mx.float32) - screen.mu, axis=1)
+    cent = sketch.score_centroids(q, x_norm)
+    order_c = mx.argsort(-cent, axis=1)
+    crank_r = mx.take_along_axis(
+        mx.argsort(order_c, axis=1), f["leaf_r"][:, None], axis=1)[:, 0]
+    row_perm = mx.take(sketch.score_rows(q, x_norm), screen.index.order_mx, axis=1)
+    mx.eval(order_c, crank_r, row_perm)
+    return {"order_c": order_c, "crank_r": crank_r, "row_perm": row_perm}
+
+
+def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
+            survivor_widths, base_miss: np.ndarray, base_compact: mx.array,
             stratum: str, reference: np.ndarray, base_vocab: np.ndarray,
             cells: dict[tuple, Cell], stage_a: str = "sketch") -> None:
     """One sketch cell family. `stage_a` chooses who orders the leaves.
@@ -762,24 +815,23 @@ def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
     stage-A failure and a stage-B failure can be told apart and priced apart.
     """
     b = f["b"]
-    q = sketch.query(x, screen.mu)
     if stage_a == "sketch":
-        cent = sketch.score_centroids(q)
-        order_c = mx.argsort(-cent, axis=1)
-        crank_r = mx.take_along_axis(
-            mx.argsort(order_c, axis=1), f["leaf_r"][:, None], axis=1)[:, 0]
+        order_c = state["order_c"]
+        crank_r = state["crank_r"]
     else:
         order_c = f["order_a2"]
         crank_r = f["crank_a2"]
-    mx.eval(order_c, crank_r)
 
-    row_perm = mx.take(sketch.score_rows(q), screen.index.order_mx, axis=1)
+    row_perm = state["row_perm"]
     max_clusters = max(max(1, math.ceil(p * LEAVES)) for p in probe_fractions)
     positions_full = screen.probe_positions(order_c, max_clusters, b)
+    # Compare compact ids, never permuted positions: the padded table repeats
+    # six rows, so two positions can name the same answer (D5 hazard 1).
+    comp_full = screen.compact(positions_full)
     sk_full = mx.take_along_axis(row_perm, positions_full, axis=1)
     co_full = mx.take_along_axis(f["coarse_perm"], positions_full, axis=1)
-    is_r_full = positions_full == f["pos_r"][:, None]
-    mx.eval(sk_full, co_full, is_r_full)
+    is_r_full = comp_full == f["argmax_row"][:, None]
+    mx.eval(sk_full, co_full, is_r_full, comp_full)
 
     max_width = max(survivor_widths)
     for p in probe_fractions:
@@ -788,6 +840,7 @@ def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
         sk = sk_full[:, :width]
         co = co_full[:, :width]
         is_r = is_r_full[:, :width]
+        comp = comp_full[:, :width]
         positions = positions_full[:, :width]
         probe_hit = crank_r < clusters
 
@@ -805,19 +858,22 @@ def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
         top = mx.argpartition(-sk, kth=max_width - 1, axis=1)[:, :max_width]
         top = mx.take_along_axis(
             top, mx.argsort(-mx.take_along_axis(sk, top, axis=1), axis=1), axis=1)
-        exact_top1 = mx.argmax(co, axis=1).astype(mx.int32)
+        exact_top1 = mx.take_along_axis(
+            comp, mx.argmax(co, axis=1)[:, None].astype(mx.int32), axis=1)
         mx.eval(top, exact_top1)
 
         for n_keep in survivor_widths:
             sel = top[:, :n_keep]
-            out = screen.output_row(f, mx.take_along_axis(positions, sel, axis=1),
-                                    mx.take_along_axis(co, sel, axis=1))
+            out = screen.compact(
+                screen.output_row(f, mx.take_along_axis(positions, sel, axis=1),
+                                  mx.take_along_axis(co, sel, axis=1)))
             survivor = mx.any(mx.take_along_axis(is_r, sel, axis=1), axis=1)
-            recall = mx.any(sel == exact_top1[:, None], axis=1)
+            recall = mx.any(
+                mx.take_along_axis(comp, sel, axis=1) == exact_top1, axis=1)
             mx.eval(out, survivor, recall)
 
-            miss_abs = np.asarray(out != f["pos_r"]).astype(bool)
-            miss_inc = np.asarray(out != base_out).astype(bool)
+            miss_abs = np.asarray(out != f["argmax_row"]).astype(bool)
+            miss_inc = np.asarray(out != base_compact).astype(bool)
             # F1.5. A substituted row costs `p - q`: the shipped token might
             # have been accepted, and the substitute might be accepted too.
             # Both sides are counted on the SAME substituted rows, so the
@@ -826,8 +882,7 @@ def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
             swapped = miss_inc
             hit = shipped_hit = 0
             if swapped.any():
-                out_vocab = np.asarray(H.compact_to_vocab(
-                    mx.take(screen.index.perm_mx, out, axis=0)))
+                out_vocab = np.asarray(H.compact_to_vocab(out))
                 hit = int((out_vocab[swapped] == reference[swapped]).sum())
                 shipped_hit = int((base_vocab[swapped] == reference[swapped]).sum())
             cell = cells.setdefault((sketch.key, stage_a, n_keep, p), Cell())
@@ -840,8 +895,8 @@ def run_arm(screen: Screen, sketch: Sketch, f, x: mx.array, probe_fractions,
             if n_keep == max_width:
                 cell.add_ranks(stratum, rank_np)
             del sel, out, survivor, recall
-        del sk, co, is_r, positions, top, exact_top1
-    del row_perm, sk_full, co_full, is_r_full, positions_full
+        del sk, co, is_r, comp, positions, top, exact_top1
+    del sk_full, co_full, is_r_full, comp_full, positions_full
 
 
 # --------------------------------------------------------------------------
@@ -985,14 +1040,14 @@ def cmd_validate(args) -> None:
         # ledger does not mean what the price model assumes it means.
         verdict_ok += int(((proposal == reference) == accepted).sum())
 
-        base_miss, base_out = screen.shipped(f)
-        base_vocab = np.asarray(H.compact_to_vocab(
-            mx.take(screen.index.perm_mx, base_out, axis=0)))
+        base_miss, base_compact = screen.shipped(f)
+        base_vocab = np.asarray(H.compact_to_vocab(base_compact))
         shipped_reproduces += int((base_vocab == proposal).sum())
         shipped_miss += int(base_miss.sum())
         cells: dict[tuple, Cell] = {}
-        run_arm(screen, damaged, f, x, [SHIPPED_PROBE_FRACTION], [256],
-                base_miss, base_out, stratum, reference, base_vocab, cells)
+        run_arm(screen, damaged, f, sketch_state(screen, damaged, f, x),
+                [SHIPPED_PROBE_FRACTION], [256],
+                base_miss, base_compact, stratum, reference, base_vocab, cells)
         damaged_miss += cells[
             (damaged.key, "sketch", 256, SHIPPED_PROBE_FRACTION)].pooled("miss_abs")
         n += f["b"]
@@ -1036,9 +1091,8 @@ def cmd_screen(args) -> None:
     t0 = time.time()
     for _, stratum, x, proposal, reference, accepted in chunks(args.batch, args.limit):
         f = screen.front(x)
-        base_miss, base_out = screen.shipped(f)
-        base_vocab = np.asarray(H.compact_to_vocab(
-            mx.take(screen.index.perm_mx, base_out, axis=0)))
+        base_miss, base_compact = screen.shipped(f)
+        base_vocab = np.asarray(H.compact_to_vocab(base_compact))
         falses = np.zeros_like(base_miss)
         base_cell.add(stratum, base_miss, base_miss, falses, ~falses, ~falses, ~falses)
         slot = accept.setdefault(stratum, [0, 0, 0])
@@ -1046,9 +1100,12 @@ def cmd_screen(args) -> None:
         slot[1] += int((base_vocab == reference).sum())
         slot[2] += int((base_vocab == proposal).sum())
         for sketch in sketches:
+            state = sketch_state(screen, sketch, f, x)
             for stage_a in stages:
-                run_arm(screen, sketch, f, x, fractions, widths, base_miss,
-                        base_out, stratum, reference, base_vocab, cells, stage_a)
+                run_arm(screen, sketch, f, state, fractions, widths, base_miss,
+                        base_compact, stratum, reference, base_vocab, cells,
+                        stage_a)
+            del state
         n += f["b"]
         if n % (args.batch * 10) == 0:
             print(f"  {n} samples  {time.time() - t0:.0f}s", flush=True)

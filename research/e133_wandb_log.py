@@ -205,7 +205,11 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
         "gate_recomputation_disagreements": disagreements,
         "e133_best_cell_ranked_pct":
             best["predicted_pct_gating"] if best else 0.0,
+        # The selected cell's own worst gating stratum when a compliant cell
+        # exists. With no compliant cell there is nothing to select, so the
+        # closest any cell came to T0 is reported instead.
         "e133_worst_domain_net_miss_rate":
+            best["net_miss_worst_gating"] if best else
             min((c["net_miss_worst_gating"] for c in cells),
                 default=float("nan")),
         "best_cell_arm": best["arm"] if best else None,
