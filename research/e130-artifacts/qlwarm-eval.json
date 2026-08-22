@@ -1,0 +1,138 @@
+{
+  "cold_total_pct_of_leg": {
+    "ci95_us": [
+      -0.023445430449201,
+      -0.017611195982044914
+    ],
+    "df": 11,
+    "mean_us": -0.020528313215622956,
+    "n": 12,
+    "sd_us": 0.00459118151766646,
+    "se_us": 0.0013253599425615827,
+    "significant": true,
+    "t": -15.488858955512843
+  },
+  "legs": 12,
+  "mean_leg_total_us": 6523618.0,
+  "metric": "eval_wall_us",
+  "note": "Round 1 excluded from every excess. Widths 6 and 5 are warmed-shape controls at the same point in the depth ramp.",
+  "per_width": {
+    "3": {
+      "cold_shapes": [
+        3
+      ],
+      "excess": {
+        "n": 0
+      },
+      "median_first_round": null,
+      "round_share_pct": 1.2987012987012987,
+      "rounds_all_legs": 12,
+      "warmed": false
+    },
+    "4": {
+      "cold_shapes": [],
+      "excess": {
+        "n": 0
+      },
+      "median_first_round": null,
+      "round_share_pct": 2.5974025974025974,
+      "rounds_all_legs": 24,
+      "warmed": true
+    },
+    "5": {
+      "cold_shapes": [],
+      "excess": {
+        "ci95_us": [
+          -38.65923525071457,
+          94.82590191738123
+        ],
+        "df": 11,
+        "mean_us": 28.083333333333332,
+        "n": 12,
+        "sd_us": 105.0445432214642,
+        "se_us": 30.323747652906818,
+        "significant": false,
+        "t": 0.9261168393426226
+      },
+      "median_first_round": 50.0,
+      "round_share_pct": 7.792207792207792,
+      "rounds_all_legs": 72,
+      "warmed": true
+    },
+    "6": {
+      "cold_shapes": [],
+      "excess": {
+        "ci95_us": [
+          -781.8856339234143,
+          -473.53103274325247
+        ],
+        "df": 11,
+        "mean_us": -627.7083333333334,
+        "n": 12,
+        "sd_us": 242.6559909094404,
+        "se_us": 70.0487508360204,
+        "significant": true,
+        "t": -8.961021086625198
+      },
+      "median_first_round": 2.0,
+      "round_share_pct": 6.4935064935064934,
+      "rounds_all_legs": 60,
+      "warmed": true
+    },
+    "7": {
+      "cold_shapes": [
+        2
+      ],
+      "excess": {
+        "ci95_us": [
+          -1036.4947547557779,
+          -842.3385785775554
+        ],
+        "df": 11,
+        "mean_us": -939.4166666666666,
+        "n": 12,
+        "sd_us": 152.78889674873946,
+        "se_us": 44.10635533353533,
+        "significant": true,
+        "t": -21.2988958068
+      },
+      "median_first_round": 4.0,
+      "round_share_pct": 9.090909090909092,
+      "rounds_all_legs": 84,
+      "warmed": false
+    },
+    "8": {
+      "cold_shapes": [
+        3
+      ],
+      "excess": {
+        "ci95_us": [
+          -521.4161975678664,
+          -278.08380243213355
+        ],
+        "df": 11,
+        "mean_us": -399.75,
+        "n": 12,
+        "sd_us": 191.48753816561347,
+        "se_us": 55.27769085318784,
+        "significant": true,
+        "t": -7.231669663295036
+      },
+      "median_first_round": 7.0,
+      "round_share_pct": 72.72727272727273,
+      "rounds_all_legs": 672,
+      "warmed": false
+    }
+  },
+  "rounds_total": 924,
+  "schema": "e130-qlwarm-1",
+  "source": {
+    "split": "AttentionUtils.swift:125 -> split=5 for 6 <= qL <= 9",
+    "warm_loop": "Qwen36MTPBlockSession.swift:541,567 -> [1, 5, 4]",
+    "warmed_ql": [
+      1,
+      4,
+      5
+    ]
+  }
+}
