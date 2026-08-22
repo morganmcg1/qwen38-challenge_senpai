@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXARM 16
+#define MAXARM 40
 enum { kMetaProbeRows = 8 };
 static int g_narm = 0;
 static const char *kArmName[MAXARM];
@@ -442,14 +442,29 @@ int main(int argc, char **argv) {
     {
       char buf[1024];
       snprintf(buf, sizeof(buf), "%s", arms_arg);
-      int n = 0;
-      for (char *tok = strtok(buf, ","); tok && n < MAXARM;
-           tok = strtok(NULL, ",")) {
+      if (strlen(arms_arg) >= sizeof(buf) - 1) {
+        fprintf(stderr,
+                "e118_qmv_probe: --arms is %zu bytes and the buffer holds "
+                "%zu; it would be truncated\n",
+                strlen(arms_arg), sizeof(buf) - 1);
+        return 2;
+      }
+      int n = 0, overflow = 0;
+      for (char *tok = strtok(buf, ","); tok; tok = strtok(NULL, ",")) {
+        if (n >= MAXARM) { overflow++; continue; }
         char *mark = strstr(tok, ":diag");
         if (mark) *mark = '\0';
         kArmName[n] = strdup(tok);
         kArmExactVsBase[n] = mark ? 0 : 1;
         n++;
+      }
+      /* Silently dropping arms past MAXARM would delete a measurement and
+         leave the report reading as if the arm had never been asked for. */
+      if (overflow) {
+        fprintf(stderr,
+                "e118_qmv_probe: --arms names %d arms and MAXARM is %d\n",
+                n + overflow, MAXARM);
+        return 2;
       }
       if (n < 2) {
         fprintf(stderr, "e118_qmv_probe: --arms needs 2 to %d names\n", MAXARM);

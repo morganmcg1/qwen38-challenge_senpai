@@ -14,7 +14,8 @@ shift
 out_dir="research/out/${tag}"
 arms_dir="/tmp/e118-arms"
 bin="/tmp/e118_qmv_probe"
-arms="a_base,q_scaffold,s_bcast,s_bcast_all,s_bcast_scale,p_split_meta,g_pack32,s_bcast_pack32,p_prefetch_w,n_nosums:diag,l_loadonly:diag,n_nobias:diag,d_bias1:diag,e_bias6,z_ballast"
+arms="$(python3 research/e118_arms.py --arm-list)"
+[[ -n "${arms}" ]] || { echo "e118_probe: empty arm list" >&2; exit 1; }
 mkdir -p "${out_dir}"
 
 macmon_bin=""

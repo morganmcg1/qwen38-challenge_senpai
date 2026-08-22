@@ -858,7 +858,14 @@ def main() -> int:
     ap.add_argument("--emit", type=pathlib.Path)
     ap.add_argument("--census", type=pathlib.Path)
     ap.add_argument("--out", type=pathlib.Path)
+    ap.add_argument("--arm-list", action="store_true",
+                    help="print the probe --arms string and exit, so the "
+                         "runner cannot drift out of step with PLANS")
     args = ap.parse_args()
+    if args.arm_list:
+        print(",".join(a + (":diag" if a in DIAGNOSTIC_ARMS else "")
+                       for a in ARMS))
+        return 0
     if args.emit is not None:
         emit(args.emit)
     if args.census is not None:
