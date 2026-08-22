@@ -292,8 +292,10 @@ def hist_source(rows: int) -> str:
     go straight to device memory. Contention stays low because a 34,424 row
     population spreads over roughly a thousand live bins.
 
-    A second 256-bin coarse level over the top 8 bits costs one more atomic per
-    row and lets the threshold scan read 512 words instead of 65,536.
+    Writing a 256-bin coarse level here as well was measured and rejected.
+    34,424 device atomics over only 256 bins contend hard and took this kernel
+    from 4.86 to 10.52 us, which more than cancelled the 6.2 us it saved in the
+    threshold scan. The threshold kernel builds its own coarse level instead.
     """
     return DEP_GUARD + f"""
         constexpr uint ROWS  = {rows};
@@ -304,8 +306,6 @@ def hist_source(rows: int) -> str:
             uint b = qwen_top32_ordinal(float(score[i])) >> 16;
             atomic_fetch_add_explicit(
                 (device atomic_uint *)&bins[b], 1u, memory_order_relaxed);
-            atomic_fetch_add_explicit(
-                (device atomic_uint *)&coarse[b >> 8], 1u, memory_order_relaxed);
         }}
         """
 
@@ -315,13 +315,15 @@ def thresh_source(survivors: int) -> str:
 
     `ctl` is [tau, count_strictly_above_tau, capacity_left_in_tau, 0].
 
-    The scan is two level. Each of the 256 threads loads one coarse bin, one
-    thread walks those down from the top to the group that straddles `WANT`,
-    then each thread loads one fine bin of that group and one thread walks
-    those. That reads 512 words. Summing the fine histogram directly would
-    read all 65,536 words, and one threadgroup holds one GPU core, so that
-    scan runs at a twentieth of machine bandwidth and dominated the added
-    cost when it was measured: 12.2 us of a 21.7 us candidate selection.
+    The scan is two level and builds its own coarse level. Each of the 256
+    threads sums the 256 fine bins of one group, one thread walks those group
+    sums down from the top to the group that straddles `WANT`, then each
+    thread loads one fine bin of that group and one thread walks those.
+
+    The reduce is what makes this cheap. One thread walking all 65,536 bins is
+    a chain of 65,536 dependent loads and measured 12.2 us of a 21.7 us
+    candidate selection. The same words read by 256 threads in parallel leave
+    only two 256-element walks on the critical path.
     """
     return DEP_GUARD + f"""
         constexpr uint GROUPS = {HIST_GROUPS};
@@ -332,7 +334,9 @@ def thresh_source(survivors: int) -> str:
         threadgroup uint g[GROUPS];
         threadgroup uint sh[2];
 
-        g[tid] = coarse[tid];
+        uint acc0 = 0u;
+        for (uint j = 0; j < PER; ++j) {{ acc0 += bins[tid * PER + j]; }}
+        g[tid] = acc0;
         threadgroup_barrier(mem_flags::mem_threadgroup);
         if (tid == 0) {{
             uint acc = 0u, above_groups = 0u, gsel = 0u;
@@ -451,15 +455,14 @@ def host_ordinals(score) -> "np.ndarray":
 
 
 def host_sketch(score, survivors: int):
-    """The exact `bins`, `coarse`, `tau` and `above` stage 1 would produce."""
+    """The exact `bins`, `tau` and `above` stage 1 would produce."""
     keys = (host_ordinals(score) >> 16).astype(np.int64)
     bins = np.bincount(keys, minlength=HIST_BINS).astype(np.uint32)
-    coarse = bins.reshape(HIST_GROUPS, -1).sum(axis=1).astype(np.uint32)
     tail = np.cumsum(bins[::-1])[::-1]          # rows at or above each bin
     hits = np.nonzero(tail >= survivors)[0]
     tau = int(hits[-1]) if hits.size else 0
     above = int(tail[tau + 1]) if tau + 1 < HIST_BINS else 0
-    return bins, coarse, tau, above
+    return bins, tau, above
 
 
 _DEP_SEED = None
@@ -581,9 +584,9 @@ class TwoStageArm:
         self.plan = Plan(survivors, tiles)
         self.plan.check()
         self.hist = kernel("e136_sketch_hist", ["score", "dep"],
-                           ["bins", "coarse"], hist_source(rows),
+                           ["bins"], hist_source(rows),
                            ORDINAL_HEADER)
-        self.thresh = kernel("e136_sketch_thresh", ["bins", "coarse", "dep"],
+        self.thresh = kernel("e136_sketch_thresh", ["bins", "dep"],
                              ["ctl"], thresh_source(survivors))
         self.compact = kernel("e136_sketch_compact", ["score", "ctl", "dep"],
                               ["surv_ord", "surv_row", "cursor"],
@@ -612,9 +615,9 @@ class TwoStageArm:
         """Histogram, threshold and compaction. Returns bins, ctl, survivors."""
         h = self.hist(inputs=[score, dep],
                       grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
-                      output_shapes=[[HIST_BINS], [HIST_GROUPS]],
-                      output_dtypes=[mx.uint32, mx.uint32], init_value=0)
-        ctl = self.thresh(inputs=[h[0], h[1], dep], grid=(HIST_GROUPS, 1, 1),
+                      output_shapes=[[HIST_BINS]],
+                      output_dtypes=[mx.uint32], init_value=0)
+        ctl = self.thresh(inputs=[h[0], dep], grid=(HIST_GROUPS, 1, 1),
                           threadgroup=(HIST_GROUPS, 1, 1),
                           output_shapes=[[4]], output_dtypes=[mx.uint32],
                           init_value=0)[0]
@@ -662,9 +665,8 @@ class TwoStageArm:
         surv_score = mx.random.normal([self.survivors]).astype(mx.bfloat16)
         surv_row = mx.random.randint(
             0, self.rows, [self.survivors]).astype(mx.uint32)
-        bins_h, coarse_h, tau, above = host_sketch(self.score, self.survivors)
+        bins_h, tau, above = host_sketch(self.score, self.survivors)
         bins = mx.array(bins_h, dtype=mx.uint32)
-        coarse = mx.array(coarse_h, dtype=mx.uint32)
         ctl = mx.array([tau, above, max(0, self.survivors - above), 0],
                        dtype=mx.uint32)
         cand = mx.random.randint(
@@ -674,9 +676,9 @@ class TwoStageArm:
         out = [
             PartArm(f"{self.label}.hist", self.hist, [self.score],
                     (HIST_TILES * TG, 1, 1), (TG, 1, 1),
-                    [[HIST_BINS], [HIST_GROUPS]], [mx.uint32, mx.uint32],
+                    [[HIST_BINS]], [mx.uint32],
                     init_value=0),
-            PartArm(f"{self.label}.thresh", self.thresh, [bins, coarse],
+            PartArm(f"{self.label}.thresh", self.thresh, [bins],
                     (HIST_GROUPS, 1, 1), (HIST_GROUPS, 1, 1), [[4]],
                     [mx.uint32], init_value=0),
             PartArm(f"{self.label}.compact", self.compact, [self.score, ctl],
