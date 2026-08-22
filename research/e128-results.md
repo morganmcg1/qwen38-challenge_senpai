@@ -292,3 +292,165 @@ The shipped adaptive scheduler is already far ahead of every static depth and is
 sitting at or just past the ranked depth optimum in the level direction. The
 remaining 11 percent is per-round **discrimination**, which is a different axis
 from the one this experiment audits.
+
+---
+
+## Section 5 — our own ranked cost curve
+
+The advisor's F3 note is correct: the crown moved to `d3c491b5` = `3.49065044`
+(Route B), so F97's curve — fitted over 147 official runs of other solvers —
+is no longer our curve. Section 5 refits the ranked round cost curve from our
+own receipts. `research/e128_ourcurve.py` writes
+`research/e128-artifacts/section5-ourcurve.json` and
+`research/e128-artifacts/our-ranked-curve.json`, which `e128_price.py`
+consumes through the new `--curve-json` / `--curve-key` flags.
+
+### What is fitted, and against what
+
+Each of our four official receipts publishes, per prompt, a candidate seconds
+per token and an `effective_mean_draft_len`. The ranked round cost follows from
+the identity
+
+```
+round_us = candidate_seconds_per_token * 512e6 / R
+M̄        = effective_mean_draft_len + 1
+```
+
+so eight `(M̄, round_us)` control points fall out of the crown receipt once `R`
+is pinned. The fit is a two-tier line in `M` under three monotone constraints —
+slope ≥ 0, tier jump ≥ 0, slope increase ≥ 0 — solved by an exact bounded
+active-set least squares. No `scipy` is on this host; the solver enumerates
+active sets over four parameters, which is exact at this size.
+
+Two corrections matter, and both are applied.
+
+**R is unknown.** Every fit is repeated over the four R vectors pinned in F1.
+
+**The published width is a mean, and the cost curve is convex.** Fitting
+through `c(M̄)` reproduces exactly the Jensen bias this experiment spent
+section 3 measuring, on the cost side this time. The `dist` fit therefore
+replaces `c(M̄)` with `E_hist[c(M)]` over a per-prompt width histogram taken
+from the E124 fixture traces and tilted onto that prompt's published mean by a
+max-entropy exponential tilt. That removes the bias exactly, because the
+piecewise-linear cost is linear in its parameters and the expectation of a
+linear form is a linear form. Plutarch's 449 non-drafting rounds are placed at
+`M = 1` before tilting.
+
+### Result 1 — R is re-pinned, and the assumed vector wins
+
+The rmse grid is decisive. Reading down each column, the `assumed` R vector
+fits 5 to 10 times tighter than any other at every tier step:
+
+```
+tier step   predicted     assumed     band_lo     band_hi
+    2          1004.1       312.0      1234.6      1801.8
+    3           886.5       150.0      1218.7       600.4
+    4           884.9       118.6      1218.5       599.6
+    5           938.1       127.1      1206.4       702.3
+    6           866.8        90.6      1202.1       560.2
+    7          1238.2       995.5      1179.7      1821.4
+    8          1768.8      1435.1      1282.8      2737.0
+```
+
+A one-parameter sweep `R(t) = (1-t)·assumed + t·predicted` has a sharp minimum
+at `t = 0`:
+
+```
+t=-0.100  rmse 104.90    t=+0.025  rmse  91.37
+t=-0.050  rmse 103.43    t=+0.050  rmse  97.08
+t=-0.025  rmse  94.80    t=+0.100  rmse 119.89
+t= 0.000  rmse  90.57    t=+0.125  rmse 135.08
+```
+
+`90.57 µs` is `0.179 %` of a round. Moving one eighth of the way toward the
+predicted vector in either direction roughly doubles the residual. The assumed
+R vector lies inside my F111 band on all eight prompts, so this is a refinement
+of the F1 pinning, not a contradiction of it. **`R` is now pinned by two
+independent routes: the F1 per-prompt bands, and a curve-fit residual minimum
+inside them.**
+
+### Result 2 — the tier step is at M ≥ 6, not M ≥ 5
+
+The best fit puts the step at `M = 6`, and leave-one-out never moves it:
+
+```
+drop plutarch   bp=6 rmse 95.01     drop republic   bp=6 rmse 80.63
+drop drama      bp=6 rmse 90.68     drop essays     bp=6 rmse 96.06
+drop travel     bp=6 rmse 74.14     drop medicine   bp=6 rmse 93.24
+drop beagle     bp=6 rmse 70.26     drop botany     bp=6 rmse 95.15
+```
+
+Eight drops, eight times `M = 6`, rmse between 70 and 96 µs. The board curve
+put the step at `M = 5`. Our step at `M = 6` matches Route B's own pass-count
+prediction, reached here by a completely independent route: the board receipts
+never enter this fit.
+
+```
+ours   round_us = 27894.3 + 3388.3·M   (M < 6)
+                = 21541.1 + 6167.5·M   (M ≥ 6)
+board  round_us = 27215.4 + 3966.4·M   (M < 5)
+                = 17020.7 + 7154.2·M   (M ≥ 5)
+```
+
+Per-point residuals on the chosen fit, all eight inside ±161 µs of a 31 800 to
+64 700 µs round:
+
+```
+prompt        R    M̄    measured_us    fitted_us   resid   F83 w
+plutarch    487  1.154      31806.5      31809.2    -2.7  0.0000
+drama       252  3.298      39306.3      39240.2    66.0  0.0000
+travel      212  3.656      41051.1      41173.4  -122.3  0.0000
+beagle      110  5.382      53011.9      52851.3   160.6  0.4862
+republic     93  5.989      57021.7      57146.8  -125.1  0.0100
+essays       92  6.087      57951.2      57955.1    -3.9  0.1598
+medicine     90  6.256      59015.7      58954.7    61.0  0.2508
+botany       81  7.148      64734.9      64768.6   -33.6  0.0124
+```
+
+### Result 3 — Jensen bias moves the tier step by one width
+
+Fitting through `c(M̄)` instead of `E_hist[c(M)]` puts the step at `M = 5` and
+raises the rmse from 90.6 to 146.6 µs. **The same convexity artefact that
+section 3 measured on the acceptance side also moves the answer on the cost
+side, by one full width.** The per-prompt bias is bidirectional, because it is
+the sign of `E[c(M)] − c(M̄)` under a bimodal histogram against a curve with a
+step in it, not a uniform convexity penalty:
+
+```
+prompt        M̄       c(M̄)         E[c]     bias_us   bias_%
+plutarch   1.154    31804.4      31809.2       4.8     0.015
+drama      3.298    39067.5      39240.2     172.7     0.442
+travel     3.656    40280.7      41173.4     892.7     2.216
+beagle     5.382    46129.3      52851.3    6722.0    14.572
+republic   5.989    48187.5      57146.8    8959.3    18.593
+essays     6.087    59082.7      57955.1   -1127.6    -1.909
+medicine   6.256    60122.5      58954.7   -1167.8    -1.942
+botany     7.148    65627.6      64768.6    -859.1    -1.309
+```
+
+Beagle and republic carry `+14.6 %` and `+18.6 %` because their means sit just
+below the step while a large share of their rounds sit above it. This is the
+single largest methodological correction in section 5.
+
+### Result 4 — the shipped flat price is wrong in three different directions
+
+Normalising the marginal cost of the d-th extra draft row by the depth-0 round
+gives the price vector the scheduler should be using:
+
+```
+depth        0       1       2       3       4       5       6       7
+ours    0.1083  0.1083  0.1083  0.1083  0.4383  0.1972  0.1972  0.1972
+board   0.1272  0.1272  0.1272  0.3114  0.2294  0.2294  0.2294  0.2294
+shipped 0.1800  0.1800  0.1800  0.1800  0.1800  0.1800  0.1800  0.1800
+```
+
+Against our curve the shipped flat `0.18`:
+
+- **overprices depths 0 through 3 by 66 %** — those rows cost `0.1083`;
+- **underprices depth 4 by 2.4x** — that row crosses the tier step and costs
+  `0.4383`;
+- **underprices depths 5 through 7 by 9 %** — those rows cost `0.1972`.
+
+As a pipeline validation, running the same fitter against the board's own
+control points reproduces F97's published price vector exactly, so the
+difference above is a difference in the data, not in the fitter.

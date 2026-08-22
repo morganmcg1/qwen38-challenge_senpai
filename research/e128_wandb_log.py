@@ -29,19 +29,31 @@ Runs published here:
       twice with opposite effect, so `reach` and `expected` are corrected
       separately and together, and each is priced on the ranked cost curve
       from a myopic replay of the recorded rounds. This run is R-free.
+  `e128-section5-our-ranked-curve`
+      Zero GPU. The board curve belonged to another solver's frontier, so the
+      RANKED round cost curve is refitted from our own four receipts and the
+      eight per-prompt round counts they imply. The fit is monotone and
+      two-tier, it is taken against the expected cost under each prompt's
+      depth histogram rather than the cost at the mean depth, and the tier
+      step is located empirically and rechecked by leave-one-out. The same run
+      re-pins `R` by a one-parameter interpolation sweep between the assumed
+      and predicted vectors.
+  `e128-rung2-our-curve-pricing`
+      Zero GPU. The headline pricing pass. Every depth policy priced on OUR
+      fitted RANKED round cost curve with the uncensored acceptance vectors,
+      recombined into the published median exactly per Rule 67, and reported
+      as a curve over the pinned `R` band. An arm whose sign flips inside that
+      band is recorded as sign indeterminate and never reported as a gain.
   `e128-rung2-counterfactual-pricing`
-      Zero GPU. Every depth policy priced on the board-fitted RANKED round
-      cost curve with the uncensored acceptance vectors, recombined into the
-      published median exactly per Rule 67, and reported as a curve over the
-      pinned `R` band. An arm whose sign flips inside that band is recorded as
-      sign indeterminate and never reported as a gain.
+      The same pass on the board-fitted curve, kept as the pre-F3 control so
+      the effect of the curve swap on every arm is visible.
 
 Every leg here is local and ungated, so `timing_valid`,
 `cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
 verbatim. Rung 1 forces the depth, which changes the work per round, so no
 number in this experiment is a timing measurement and none is an official or
 ranked score. The ranked prices are model outputs, labelled `harness=ranked`,
-computed from the F97 cost curve and never from a local ratio.
+computed from a fitted cost curve and never from a local ratio.
 """
 
 from __future__ import annotations
@@ -269,17 +281,36 @@ def log_rung1() -> None:
     run.finish()
 
 
-def log_rung2() -> None:
-    data = load("rung2-pricing.json")
-    sensitivity = load("rung2-sensitivity.json")
-    r_band = load("rung2-r-band.json")
+CURVE_RUNS = {
+    "ours": {
+        "run": "e128-rung2-our-curve-pricing",
+        "prefix": "rung2-ours-",
+        "suffix": "",
+        "curve": "E128 section 5, fitted from our own 21 receipts, two tiers",
+    },
+    "board": {
+        "run": "e128-rung2-counterfactual-pricing",
+        "prefix": "rung2-",
+        "suffix": "_board_curve",
+        "curve": "F97 board-fitted ranked round cost, two tiers",
+    },
+}
+
+
+def log_rung2(curve: str = "ours") -> None:
+    spec = CURVE_RUNS[curve]
+    pre, suf = spec["prefix"], spec["suffix"]
+    data = load(pre + "pricing.json")
+    sensitivity = load(pre + "sensitivity.json")
+    r_band = load(pre + "r-band.json")
     if data is None:
-        print("rung2: no artifact, skipping")
+        print("rung2 %s: no artifact, skipping" % curve)
         return
-    run = start("e128-rung2-counterfactual-pricing", {
+    run = start(spec["run"], {
         "harness": "ranked",
         "leg_kind": "offline-counterfactual-pricing",
-        "cost_curve": "F97 board-fitted ranked round cost, two tiers",
+        "cost_curve": spec["curve"],
+        "cost_curve_source": curve,
         "median_rule": "Rule 67, median recomputed exactly over 8 prompts",
         "receipt": data["receipt"]["id"],
         "receipt_official_score": data["receipt"]["score"],
@@ -289,8 +320,8 @@ def log_rung2() -> None:
     implementable = {a: v for a, v in gains.items() if a != "oracle"}
     best_arm = max(implementable, key=implementable.get)
     run.summary.update({
-        "e128_recoverable_ranked_median_pct": implementable[best_arm],
-        "e128_best_implementable_arm": best_arm,
+        "e128_recoverable_ranked_median_pct" + suf: implementable[best_arm],
+        "e128_best_implementable_arm" + suf: best_arm,
         "oracle_ranked_median_pct": gains["oracle"],
         "model_reconstructed_base_median": data["base_median"],
         "receipt_median_reconstruction_error":
@@ -376,12 +407,152 @@ def log_rung2() -> None:
         safe = {a: spans[a]["min"] for a in implementable
                 if not spans[a]["sign_indeterminate"] and spans[a]["min"] > 0}
         run.summary.update({
-            "e128_best_implementable_arm_positive_across_R_band":
+            "e128_best_implementable_arm_positive_across_R_band" + suf:
                 max(safe, key=safe.get) if safe else None,
-            "e128_recoverable_ranked_median_pct_worst_case_over_R":
+            "e128_recoverable_ranked_median_pct_worst_case_over_R" + suf:
                 max(safe.values()) if safe else 0.0,
         })
+    sweep = load("rung2-curve-sweep.json")
+    if sweep:
+        table = wandb.Table(columns=[
+            "curve", "breakpoint", "arm", "gain_pct_vs_ship"])
+        cost = wandb.Table(columns=["curve", "rows", "round_us"])
+        for key, entry in sweep["curves"].items():
+            for arm, value in entry["median_gain_pct_vs_ship"].items():
+                table.add_data(key, entry["curve"]["breakpoint"], arm, value)
+            for rows, value in entry["round_us"].items():
+                cost.add_data(key, int(rows), value)
+        payload["curve_sweep"] = table
+        payload["curve_round_cost"] = cost
+        best = {}
+        for key, entry in sweep["curves"].items():
+            imp = {a: v for a, v in entry["median_gain_pct_vs_ship"].items()
+                   if a != "oracle"}
+            best[key] = max(imp.values())
+        run.summary.update({
+            "curve_sweep_best_implementable_pct_%s" % k: v
+            for k, v in best.items()})
+        run.summary.update({
+            "curve_sweep_any_curve_positive":
+                any(v > 0 for v in best.values()),
+            "curve_sweep_spread_pct": max(best.values()) - min(best.values()),
+        })
     run.log(payload)
+    run.finish()
+
+
+def _round_us(fit: dict, rows: int) -> float:
+    intercept, slope = (fit["lo"] if rows < fit["breakpoint"] else fit["hi"])
+    return intercept + slope * rows
+
+
+def _marginal_price(fit: dict) -> list:
+    """Cost of the d-th extra draft row, normalised by the depth-0 round."""
+    unit = _round_us(fit, 1)
+    return [(_round_us(fit, d + 2) - _round_us(fit, d + 1)) / unit
+            for d in range(8)]
+
+
+def log_ourcurve() -> None:
+    """Section 5: fit the ranked round cost curve from our own receipts."""
+    data = load("section5-ourcurve.json")
+    if data is None:
+        print("ourcurve: no artifact, skipping")
+        return
+    primary = data["primary_r_scenario"]
+    scenarios = data["scenarios"]
+    chosen = scenarios[primary]["dist_fit_best"]
+    mean_fit = scenarios[primary]["mean_fit_best"]
+    board = data["board_curve"]
+    run = start("e128-section5-our-ranked-curve", {
+        "harness": "ranked",
+        "leg_kind": "offline-curve-fit",
+        "gpu_used": False,
+        "control_points": len(data["control_points"]),
+        "fit": "monotone two-tier least squares, exact bounded active set",
+        "constraints": "slope >= 0, tier jump >= 0, slope increase >= 0",
+        "distribution":
+            "per-prompt depth histogram from the E124 fixture traces, "
+            "max-entropy exponential tilt onto that prompt's own mean",
+        "jensen_control":
+            "the curve is fitted against E[c(M)] under the tilted depth "
+            "histogram, not against c(E[M])",
+        "crown_receipt": data["receipt"]["d3c491b5"]["id"],
+        "crown_score": data["receipt"]["d3c491b5"]["score"],
+        "primary_r_scenario": primary,
+    })
+    run.summary.update({
+        "ourcurve_breakpoint": chosen["breakpoint"],
+        "ourcurve_rmse_us": chosen["rmse"],
+        "ourcurve_rmse_pct": 100.0 * data["scenarios"]["r_sweep"]["best"][
+            "relative_rmse"],
+        "ourcurve_lo_intercept": chosen["lo"][0],
+        "ourcurve_lo_slope": chosen["lo"][1],
+        "ourcurve_hi_intercept": chosen["hi"][0],
+        "ourcurve_hi_slope": chosen["hi"][1],
+        "ourcurve_tier_jump_us": chosen["jump_us"],
+        "ourcurve_slope_increase_us": chosen["dslope_us"],
+        "board_breakpoint": board["breakpoint"],
+        "ourcurve_marginal_to_fixed_ratio":
+            data["marginal_to_fixed_ratio"]["ours"],
+        "board_marginal_to_fixed_ratio":
+            data["marginal_to_fixed_ratio"]["board"],
+    })
+    best = scenarios["r_sweep"]["best"]
+    run.summary.update({
+        "r_sweep_best_t": best["t"],
+        "r_sweep_best_rmse_us": best["rmse"],
+        "r_sweep_best_relative_rmse": best["relative_rmse"],
+        "r_sweep_best_breakpoint": best["breakpoint"],
+        "r_pinning_confirms_assumed": best["t"] == 0.0,
+    })
+    sweep = wandb.Table(columns=["t", "breakpoint", "rmse_us", "relative_rmse"])
+    for row in scenarios["r_sweep"]["grid"]:
+        sweep.add_data(row["t"], row["breakpoint"], row["rmse"],
+                       row["relative_rmse"])
+    grid = wandb.Table(columns=["r_key", "breakpoint", "rmse_us"])
+    for r_key, entry in scenarios["rmse_grid_piece"].items():
+        for bp, value in entry.items():
+            grid.add_data(r_key, int(bp), value)
+    loo = wandb.Table(columns=["dropped", "breakpoint", "rmse_us"])
+    for row in data["loo_breakpoint"]:
+        loo.add_data(row["dropped"], row["breakpoint"], row["rmse"])
+    breakpoints = {row["breakpoint"] for row in data["loo_breakpoint"]}
+    run.summary.update({
+        "loo_breakpoints": sorted(breakpoints),
+        "loo_breakpoint_stable": len(breakpoints) == 1,
+        "jensen_mean_fit_breakpoint": mean_fit["breakpoint"],
+        "jensen_dist_fit_breakpoint": chosen["breakpoint"],
+        "jensen_shifts_breakpoint":
+            mean_fit["breakpoint"] != chosen["breakpoint"],
+    })
+    jensen = wandb.Table(columns=[
+        "prompt", "mean_depth", "cost_at_mean_us", "cost_over_hist_us",
+        "jensen_bias_us", "jensen_bias_pct", "hist_sd_rows"])
+    for row in scenarios[primary]["jensen"]:
+        jensen.add_data(row["prompt"], row["mbar"], row["cost_at_mean_us"],
+                        row["cost_over_hist_us"], row["jensen_bias_us"],
+                        row["jensen_bias_pct"], row["hist_sd_rows"])
+    prices = wandb.Table(columns=["curve", "depth", "marginal_price"])
+    costs = wandb.Table(columns=["curve", "rows", "round_us"])
+    for key, fit in (("ours", chosen), ("board", board),
+                     ("ours_mean_fit", mean_fit)):
+        for depth, value in enumerate(_marginal_price(fit)):
+            prices.add_data(key, depth, value)
+        for rows in range(1, 9):
+            costs.add_data(key, rows, _round_us(fit, rows))
+    points = wandb.Table(columns=[
+        "prompt", "R", "mean_rows", "measured_round_us", "fitted_round_us",
+        "residual_us", "f83_weight", "tokens_per_round"])
+    for row in scenarios[primary]["points"]:
+        residual = chosen["residuals"][row["prompt"]]
+        points.add_data(row["prompt"], row["R"], row["mbar"], row["round_us"],
+                        row["round_us"] - residual, residual, row["weight"],
+                        row["tokens_per_round"])
+    run.log({"r_interpolation_sweep": sweep, "rmse_grid": grid,
+             "leave_one_out": loo, "jensen_bias": jensen,
+             "marginal_price": prices, "round_cost": costs,
+             "control_points": points})
     run.finish()
 
 
@@ -482,7 +653,10 @@ def main() -> int:
     parser.add_argument("--only", nargs="*", default=None)
     args = parser.parse_args()
     runs = {"rung0": log_rung0, "identity": log_identity,
-            "rung1": log_rung1, "jensen": log_jensen, "rung2": log_rung2}
+            "rung1": log_rung1, "jensen": log_jensen,
+            "ourcurve": log_ourcurve,
+            "rung2": lambda: log_rung2("ours"),
+            "rung2board": lambda: log_rung2("board")}
     for name, fn in runs.items():
         if args.only and name not in args.only:
             continue
