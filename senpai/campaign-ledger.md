@@ -50855,3 +50855,236 @@ Beagle is also the weakest of the five high-acceptance prompts. F92 records its 
 **Weight per-prompt evidence by the median-pair identity, never by F83.** Identify the fourth and fifth sorted raw ratios on the reference tree, use `0.5 * v_i / median` as the weight for each, and use exactly zero for the other six prompts. Report the identified pair alongside the weighted figure, because the weighting is only valid while the ordering holds. Restate the headroom to the next crossing whenever the weighted figure is used to justify a submission.
 
 F83 is retained in the ledger as history. It is withdrawn as an instrument.
+
+## 296 — FINDINGS 197, 198 and 199: a decode-null ranked pair, a second confirmation that our one-pass table costs under a tight grid, and the crown tree read at source
+
+Recorded 2026-08-22 ~22:30Z. `572b2cc4` is still validating at about 100 minutes. Advisor base `c6e32050`. Campaign base `origin/main` `770a3ff2`. Board crown `08b67f12` at `3.69071883`.
+
+### 296.0 — the median-pair identity now holds on TEN trees from SEVEN solvers
+
+Rule 116 was written from eight trees. Two more complete trees appeared tonight. The sorted order is unchanged on all ten, and the identity reproduces the published score to eight digits on every one:
+
+```
+id        solver          sorted order                             identity     published
+623e77af  morganmcg1      plut dram trav beag essa repu medi bota  3.52085227   3.52085227
+b6cb0fea  ofou            plut dram trav beag essa repu medi bota  3.52509130   3.52509130
+dacf7005  newjordan       plut dram trav beag essa repu medi bota  3.52326653   3.52326653
+0b8602e1  nagaral         plut dram trav beag essa medi repu bota  3.51925374   3.51925374
+02742bf0  scarletbright   plut dram trav beag essa repu medi bota  3.52686512   3.52686512
+ed608e64  jungjipdo       plut dram trav beag essa medi repu bota  3.68172016   3.68172016
+08b67f12  jungjipdo       plut dram trav beag essa repu medi bota  3.69071883   3.69071883
+0b2f0014  Amal-David      plut dram trav beag essa repu bota medi  3.66184136   3.66184136
+115c5c50  nagaral         plut dram trav beag essa repu medi bota  3.67966899   3.67966899
+c24f1755  vibecodooor     plut dram trav beag essa repu bota medi  3.64018018   3.64018018
+```
+
+The first five positions are identical on every tree. Only the ordering of the three prompts ABOVE the median moves. `w_beagle = 0.478`, `w_essays = 0.522`, all others exactly `0.000`.
+
+### 296.1 — FINDING 197: a provably decode-null ranked pair, and prefill is confirmed unscored by a rival's own failed prediction
+
+Board row `115c5c50` (nagaral, `3.67966899`, rejected only for `score did not improve current best`) is based on the tight-grid crown `8849fad` and changes **one mechanism in two JIT kernel bodies**: a threadgroup-id transpose swizzle inside `qmm_t_impl` and `qmm_t_nax_tgp_impl`. Nothing else. The remap is a bijection over the same grid, so it is bit-exact by construction, and their own local run confirmed `all_tokens_matched` with zero residual divergence.
+
+**The changed kernel is unreachable from decode.** `backend/metal/quantized.cpp:84-124 get_qmv_batch_limit` returns 10 for `K = 5120` on `arch_gen 17`, so every decode width `M = 1 ... 9` takes the matvec path. `qmm_t` is reached only by the 512-row seed prefill. The decode kernels in this pair are byte-identical.
+
+Measured against `ed608e64`:
+
+```
+prompt      cand d%   serial d%    raw d%
+beagle      +0.1826    -0.2641    -0.4459
+medicine    +0.2223    -0.0164    -0.2381
+essays      +0.0953    +0.4010    +0.3054
+botany      +0.0480    +0.2722    +0.2241
+republic    +1.1248    +0.0809    -1.0322
+plutarch    +0.2109    -0.5816    -0.7908
+drama       +0.3378    +0.0920    -0.2450
+travel      -0.1442    -0.0033    +0.1412
+candidate 8-prompt mean  +0.2597 %   sd 0.3778
+medpair-weighted         +0.1372 %
+published median delta   -0.0557 %
+```
+
+`effective_mean_draft_len` and `non_drafting_round_count` are digit-identical on all eight prompts.
+
+**Two results.**
+
+First, an independent refutation of the prefill-is-scored model. Their note prices the change through `R = (P + S) / (P + M)` and cites a rival sizing note claiming `x = P/S` of 0.05 to 0.10 with halving prefill worth `+5.6` to `+10.7 %`. They predicted `+0.5` to `+2.5 %`. The measured published-median delta is `-0.0557 %`. **Finding 193 predicted exactly zero and is confirmed by a stranger's expensive failed prediction.** The enforcing source remains `.github/workflows/qwen-mtp-ranked-benchmark.yml:3164 mode: "qwen-mtp-paired-decode-only"` and the comment at `:3153-3160` that the scoring path never reads the prefill rates. Prefill stays off the target list.
+
+Second, and more useful going forward, this is **the tightest null pair the campaign has**. F165 measured an exact-replicate ranked pair at `-0.39 %` on the published median. This decode-null pair measures `-0.0557 %` on the published median and `+0.1372 %` medpair-weighted on the candidate leg. Two independent null measurements now bracket the published-median draw noise, and the candidate-leg medpair null of `0.137 %` is consistent with the Rule 112 two-sigma single-receipt bar of `0.133 %`.
+
+**Use `115c5c50` as the campaign's reference null pair.** It is better than an exact replicate for this purpose because it also absorbs any thermal or memory-residency carry-over from a genuinely different prefill phase, so it is a conservative null rather than an optimistic one.
+
+### 296.2 — FINDING 198: a second, larger, independent confirmation that our one-pass table costs under a tight launch grid
+
+Board row `c24f1755` (vibecodooor, `3.64018018`, rejected only for `score did not improve current best`) rebased on the tight-grid crown `8849fad` and composed three things: our tiered E120 entry points with one-pass M=6 and M=7, the `0.15` probe fraction, and an E122b M=2 table route capped at `N <= 65,535`.
+
+```
+prompt      cand d%
+beagle      +1.1339
+medicine    +0.4708
+essays      +1.3360
+botany      +1.5146
+republic    +1.7094
+plutarch    +0.3381
+drama       +2.7138
+travel      +2.7899
+candidate 8-prompt mean  +1.5008 %   sd 0.9064
+medpair-weighted         +1.2389 %
+published median delta   -1.1283 %
+```
+
+Positive is slower. **Eight of eight prompts slower**, sign-test `p = 0.0039`. `effective_mean_draft_len` is digit-identical on six of eight and moves in the fourth decimal on the other two, so this is close to a pure time contrast.
+
+Subtracting the two components measured in isolation on the same base — the one-pass table at `+0.2649 %` (`0b2f0014`) and the probe fraction at `-0.2603 %` (`08b67f12`) — leaves a residual of about `+1.23 %` that I attribute to the E122b M=2 table route. That attribution is not isolated and must not be quoted as a measurement of E122b. What IS established is the direction and the replication:
+
+**Two independent solvers, two different code paths, two different lineages, both composed our tiered one-pass QMV entry points onto the tight-grid crown, and both lost.** `0b2f0014` lost `0.5399 %` of published median. `c24f1755` lost `1.1283 %`. Finding 194 is confirmed.
+
+Their note also contains a useful negative that the campaign should not repeat: their own same-process M5 shape sweep found the E122b M=2 table route wins at every shape from `N = 4096` to `N = 34816` and loses at `N = 98336` and `N = 248320`. They shipped the capped predicate and the composition still cost over a percent. **An isolated per-shape win with a correctly measured crossover did not survive composition.** That is the same lesson as F87's isolated-to-in-situ table and the same lesson as our own F167.
+
+### 296.3 — FINDING 199: `upstream/main` is now the crown's exact tree, and the crown tree is largely our own promoted code
+
+`upstream/main` moved from `c0dbec05` to **`1d66bb36`**, which is the promoted source of `08b67f12` (`3.69071883`). Every promoted source ref is now fetchable as `upstream/submissions/<submission-id>`.
+
+Diffed against advisor base `c6e32050` over `Sources/`, `Vendor/`, `mtp-head.manifest.json`, `Package.swift` and `Package.resolved`, **exactly two files differ**:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift    284 changed
+Vendor/.../MLXLLM/Models/Qwen35.swift              1030 changed
+364 insertions, 950 deletions
+```
+
+Our tree is 950 lines LARGER. The crown is a simpler tree.
+
+**What the crown carries.**
+
+Its width plan, at `activeInputGroups(_:)`, is our `Table.shipped` verbatim:
+
+```swift
+case 3: inputsPerGroup = 3
+case 4: inputsPerGroup = 4
+case 5: inputsPerGroup = 5
+case 6: inputsPerGroup = 3
+case 7: inputsPerGroup = 4
+case 8: inputsPerGroup = 4
+case 9: inputsPerGroup = 3
+return (m + inputsPerGroup - 1) / inputsPerGroup
+```
+
+It runs that plan on ONE shared entry point, `qwen_e120_qmv_wide<IPG, USE_TABLE>`, with no per-width tiering, no `enum Table`, no `enum Grid`, and no `e120_default_route` witness. Its probe fraction is `0.15`. It carries `minimumTableWidth = 4` and `tablePays(m:)`, which we also have.
+
+**Its scheduler is our code.** The comments cite E56, E68 and E75 by name. `boundaryTierFactor = 2.0301`, `headStepCostRatio = 0.18`, `makeUniformDepthPrice`, `makeBoundaryDepthPrice`, `makeMeasuredDepthPrice`, `measuredRawDepthPrice`, `prefixCosts`, `costModelDepth`, `segmentedVerifyDepthCap` and `sdpaWidthWallDepthCap` are all present and unchanged.
+
+```swift
+internal enum DepthPriceArm: String {
+    case ship, pb5, pb7, pbfit
+}
+internal static let depthPriceArm: DepthPriceArm = .ship
+```
+
+**`pb6` does not exist anywhere in the board lineage, and nobody ships a non-uniform depth price.** Edward's mechanism is unclaimed and unpublished.
+
+**A free gift in their source.** They carry an E120 rung-5d measured grid, `harness=local`, Apple M4 Pro, median of six ABBA blocks per cell, of net microseconds saved per matvec by the chunk-sum table:
+
+```
+shape         M=3     M=4     M=5     M=6     M=7     M=8     M=9
+mlp.gate_up  -0.55  +24.76  +35.42  +23.41  +40.74  +58.76  +34.81
+mlp.down     +0.01  +11.21  +10.47   +9.26  +18.85  +28.49  +14.57
+gdn.in_proj  -1.91   +9.69  +14.71   +9.28  +17.29  +26.59  +14.26
+gdn.out_proj +0.86   +1.62   +3.24   +0.82   +4.00   +7.49   +2.69
+fa.qkv       -1.62   +7.67  +12.56   +0.46  +13.90  +22.58  +12.16
+fa.o_proj    +0.23   +1.11   +3.05   +1.47   +4.05   +7.20   +2.31
+lm_head     +17.10 +199.03 +274.69 +189.66 +314.22 +439.75 +264.88
+```
+
+Every row dips at M=6 and recovers at M=7. `fa.qkv` collapses from `+12.56` at M=5 to `+0.46` at M=6 then rises to `+13.90` at M=7. That is a second, independent fingerprint of the M=6 anomaly, measured by a stranger on a different axis from ours, on the same seven shapes and the same chip family. Relayed to alphonse as corroboration.
+
+### 296.4 — CAMPAIGN RULE 117: name the dispatch-table state behind every fitted scheduler constant
+
+Verbatim from `1d66bb36`:
+
+> The shipped default is `ship` (uniform). `pbfit` wins by -3.5 % on this host's kernel dispatch table and loses that win entirely on the crown table (E75 rung B/D: **+0.33 % on crown, a +3.8 pp interaction**). The shape is fitted to one dispatch table, so it is a research arm, not a shipped constant. Refit and re-price on the live table before shipping any non-uniform shape.
+
+and
+
+> The shape is fitted to the CURRENT kernel dispatch table, whose step into verify width 6 costs 27.308 ms against 13.405 ms for the step into width 5. **A change to that table invalidates the fit, not only its magnitude.**
+
+A prior fitted depth-price shape lost its entire win to a dispatch-table change, and the interaction was `3.8 pp`. `pb6` is a fitted constant: verify width 6, tier 1.45, fitted to the measured curve under the WIDE launch grid on the pre-tight base.
+
+**CAMPAIGN RULE 117.** Every fitted scheduler constant must name, in source, the dispatch-table state it was fitted to and the measured step it prices. Any experiment that changes the launched geometry, the pass plan, the entry-point set, or the routed cell must re-price every fitted constant that depends on those steps, or must state why the change is a uniform shift that leaves all steps intact. A parameter-free rule that reads the live price vector is preferred to a fitted constant whenever the two are within measurement of each other, because it prices the interaction at zero.
+
+This rule elevates E140. Edward's argmax reads `price.cumulative[d]` at every depth and takes the maximum. It has no fitted constant, so it survives any dispatch-table change by construction. Alphonse's N-keyed plan table and thorfinn's launch grid are both dispatch-table changes.
+
+### 296.5 — revised forecast for `572b2cc4`, and tonight's composition ladder
+
+Our tree carries two deficits against the crown lineage, both now measured in isolation on the same base:
+
+```
+mechanism                            pair                 medpair cand   pub median
+one-pass table + tiered under tight  ed608e64 -> 0b2f0014      +0.2649      -0.5399
+probe 0.25 versus 0.15 under tight   ed608e64 -> 08b67f12      -0.2603      +0.2444
+```
+
+Two independent routes to the forecast:
+
+```
+route 1, from our own tree
+  tight grid on a no-table tree                -4.0462 %
+  add our table penalty under tight            +0.2649 %
+  remove our table benefit under wide          +0.2032 %   our own F167 receipt
+  net candidate-leg delta on our tree          -3.5781 %
+  3.52085227 x 1.037109                       = 3.65151
+
+route 2, from the crown, adding back our two deficits
+  3.68172016 / 1.005252                       = 3.66248
+```
+
+The two routes agree to `0.3 %`, inside the published-median null. **Forecast `3.66`. The gate is `3.69071883` and rising, so `572b2cc4` is expected to be rejected.**
+
+Per Finding 195 that costs the campaign nothing. `572b2cc4` buys four things nothing else can: our own tight-grid receipt on our own tree with one word of difference from `623e77af`; the third and cleanest measurement of the table-by-grid interaction; separation of the three F189 launch-saving models at higher leverage than the rival pair had, because `onePass67` launches exactly one column at every width from 3 to 7 while `wide` launched `M`; and a free replication of F194.
+
+Composition ladder for tonight, from the forecast base:
+
+```
+572b2cc4 forecast                            3.6600
+  x pb6 tier 1.45        +2.4683 %       ->  3.7503
+  x probe 0.25 -> 0.10   +0.4848 %       ->  3.7685
+  x Table .onePass67 -> .shipped, held    ->  3.7785
+crown now                                    3.6907
+```
+
+The table revert is a two-line change, `Table.compiledDefault` and `defaultRouteWitness`, pinned together by the existing test `defaultRouteWitnessNamesTheCompiledDefaults`. It drops `qmv_wide_sums_na6_v2` (105 g17s registers) and `qmv_wide_sums_na7_v2` (118) from the compiled set, routing widths 6 and 7 to `na3` (94) and `na4` (96), so derived simdgroups rise 37 to 42 and 33 to 41, and the compiled entry-point set SHRINKS from five bodies to three. Under the tight grid it doubles the launched columns at widths 6 and 7, from one to two.
+
+It is held behind a pre-registered rule keyed on the `572b2cc4` receipt: at or above `3.680` ship without it; at or below `3.670` include it and re-census; between the two, ship without it.
+
+**Do not blanket-revert as a strategy.** Alphonse's isolated column shows `mlp.gate_up` (`N = 34816`) and `lm_head` (`N = 248320`) genuinely prefer one pass by `11.1 %` and `16.9 %`, while `mlp.down`, `gdn.out_proj` and `fa.o_proj` (all `N = 5120`) prefer more passes by `6.9` to `11.8 %`. `Table.shipped` is the crude form that takes the loss on the two wide shapes to win on the three narrow ones, worth about `+0.2 %`. The N-keyed form is worth about `+2.9 %` and is a different experiment.
+
+### 296.6 — pre-registered interaction term for E138, derived from the two frames
+
+Alphonse's fallback column was measured under `wide`. Amal-David's receipt was measured under `tight`. They point in opposite directions, which is the finding.
+
+```
+under wide, alphonse isolated M4 Pro, M=6, dispatch weighted
+  mlp.down      -67.3 x 64 = -4307.2
+  gdn.out_proj  -16.0 x 48 =  -768.0
+  fa.o_proj     -17.0 x 16 =  -272.0
+  mlp.gate_up   +86.5 x 64 = +5536.0
+  lm_head      +816.5 x  1 =  +816.5
+  net                       = +1005.3 us   fallback DEARER
+
+under tight, from the ranked receipt
+  medpair-weighted ranked round time, F189 arm B      52,726 us
+  one-pass cost under tight, 0.2649 %                    139.7 us per round
+  medpair width mass at 6 or 7                            0.2183
+                                                    ->    640 us per width-6-or-7 round
+  M5 -> M4 Pro in-situ, / 0.646                     ->    991 us
+  in-situ -> isolated,  / 0.7858                    ->  1,261 us   fallback CHEAPER
+```
+
+**Pre-registered `(plan x grid)` interaction at M=6, isolated M4 Pro frame: `+2,266 us`, acceptance band `+1,200` to `+3,400 us`,** with the one-pass plan losing that much when the grid tightens. That is `7.4 %` of the measured `30,761 us` M=5-to-M=6 isolated step and `28 %` of the tight grid's own per-round saving at those widths. A result near zero refutes the occupancy mechanism and would mean Amal-David's receipt measures something else. A negative interaction refutes both rival receipts.
+
+Also requested from alphonse: `fa.qkv` (`N = 14336`, 16 dispatches) and `gdn.in_proj` (`N = 16480`, 48 dispatches) at M=6 and M=7 in both plans and both grids. They are the two unresolved points on the N axis and they decide where the threshold goes.
+
+### 296.7 — the strategic position, stated plainly
+
+Our tree is structurally behind the crown tree by about `0.83` to `1.10 %`, and the deficit is entirely our own tiered one-pass QMV entry points plus our probe fraction. Both are repairable. Our edge is `pb6`, which nobody on the board has, plus the probe-fraction knee, the N-keyed plan table and the depth argmax, none of which anybody on the board has.
+
+Importing `1d66bb36` as the campaign base is now attractive on the numbers: it would start from a measured `3.69071883` instead of a forecast `3.66`, and porting `pb6` into it is roughly six lines because `makeBoundaryDepthPrice`, `prefixCosts` and the arm enum are already there. **It is refused for tonight** because it rewrites `Qwen35.swift`, which three of four students are editing in flight. It is the first action of the next generation, after tonight's submission resolves.
