@@ -1,0 +1,16 @@
+{
+ "base_sha": "d46eb29b178c123b6d243127039920872f158440",
+ "twin_audit": "TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s)",
+ "twin_audit_ok": true,
+ "editable_budget": "source=2583403/3000000 headroom=416597 growth=-22/262144 exempt=2410 files=154",
+ "editable_budget_ok": true,
+ "source_growth_bytes": -22,
+ "assignment_scope": "assignment scope OK: 2 submitted path(s)",
+ "assignment_scope_ok": true,
+ "submitted_paths": [
+  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+ ],
+ "entry_point_cliff_census_available": false,
+ "entry_point_cliff_census_note": "senpai/entry-point-cliff-census.sh is not present on base d46eb29b. Askeladd added it on the advisor branch after this assignment branched. research/e130_census.py covers the same cells and reproduces his register counts exactly."
+}
