@@ -1,0 +1,128 @@
+{
+  "tool": "senpai/entry-point-cliff-census.sh",
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89: simdgroups = floor(BUDGET / registers) is a model output computed from the register count, not a measurement",
+  "ranked_arch": "applegpu_g17s",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "base_ref": "da025231",
+  "base_sha": "da025231305056efb4c5a898b52d86256724dad3",
+  "candidate_ref": "04171655",
+  "candidate_sha": "041716551dd9a7e243ae10989f293427490d0e7b",
+  "cells": [
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_2_false",
+      "source_form": "jit_twin",
+      "role": "affine-2 coarse draft readout, out_vec_size 98336",
+      "applegpu_g16s": {
+        "base_registers": 84,
+        "candidate_registers": 84,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 36,
+        "candidate_simdgroups_derived": 36,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 6646,
+        "candidate_text_bytes": 6646,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 93,
+        "candidate_registers": 93,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 42,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 6958,
+        "candidate_text_bytes": 6958,
+        "unchanged": true
+      }
+    },
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_4_false",
+      "source_form": "jit_twin",
+      "role": "wide QMV: every affine-4 g64 target projection MLX still launches",
+      "applegpu_g16s": {
+        "base_registers": 94,
+        "candidate_registers": 94,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 32,
+        "candidate_simdgroups_derived": 32,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 119344,
+        "candidate_text_bytes": 119344,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 101,
+        "candidate_registers": 101,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 39,
+        "candidate_simdgroups_derived": 39,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 125092,
+        "candidate_text_bytes": 125092,
+        "unchanged": true
+      }
+    },
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_4_true",
+      "source_form": "jit_twin",
+      "role": "batched affine-4 g64 QMV",
+      "applegpu_g16s": {
+        "base_registers": 57,
+        "candidate_registers": 57,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 53,
+        "candidate_simdgroups_derived": 53,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 4818,
+        "candidate_text_bytes": 4818,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 57,
+        "candidate_registers": 57,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 69,
+        "candidate_simdgroups_derived": 69,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "base_text_bytes": 5000,
+        "candidate_text_bytes": 5000,
+        "unchanged": true
+      }
+    }
+  ],
+  "failures": [],
+  "warnings": [
+    "base: no multi-line literal named qwen35E120QMVHeader",
+    "candidate: no multi-line literal named qwen35E120QMVHeader"
+  ],
+  "verdict": "pass",
+  "runtime_seconds": 2.23
+}

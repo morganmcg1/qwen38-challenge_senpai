@@ -85,6 +85,42 @@ senpai/verify-ranked-score-boundary.sh
 before pricing official value. A failure means the enforcing workflow changed;
 re-derive the model instead of editing the check to pass.
 
+## Check the occupancy cliffs before you submit
+
+Run this after `senpai/verify-ranked-score-boundary.sh` and before
+`./benchmark-qwen-mtp.sh --local-submit`:
+
+```bash
+senpai/entry-point-cliff-census.sh --base "$BASE_SHA"
+```
+
+The gate compiles every scored quantized-matvec entry point for both
+`applegpu_g16s` and `applegpu_g17s` at the base and at the candidate, then
+compares register counts. It exits `1` when the candidate loses a resident
+simdgroup on the ranked architecture, `2` on a gate error, and `0` otherwise. It
+warns on a residency gain, on new spill, and on a cell it could not find. It
+needs no GPU, no model, and no thermal gate, and it runs in about four seconds.
+
+Coverage is the three `affine_qmv_fast` JIT-twin cells that the scored worker
+reaches plus the three Route B `MLXFast.metalKernel` pipelines, each extracted
+read-only at the requested revision and compiled from scratch. Add a cell to
+`SCORED_CELLS` or `ROUTE_B_KERNELS` in `research/e131_cliff_gate.py` when a new
+entry point joins the scored path.
+
+Every simdgroup figure the gate prints is `derived` under Rule 89:
+`floor(3072 / registers)` on `applegpu_g16s` and `floor(3968 / registers)` on
+`applegpu_g17s`. It is a model output computed from the register count, never a
+measurement. A failure is a register regression, not a measured slowdown, so
+read the register delta first.
+
+E121 raised the wide-QMV entry point from 101 to 102 registers on
+`applegpu_g17s` and cost one derived resident simdgroup. This gate reproduces
+that failure and its revert:
+
+```bash
+python3 research/e131_rung3_receipt.py --outdir research/e131-artifacts
+```
+
 ## Prove the built worker carries your edit
 
 Do this before every timed leg of every arm. It is mandatory for any kernel
