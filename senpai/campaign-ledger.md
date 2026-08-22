@@ -43549,3 +43549,404 @@ what we own that is not in a0f8588:
 
 Their mechanism is the 2-bit proposal path; ours is the 4-bit target-verify
 pass count. Disjoint instruction and byte sets under Rule 75.
+
+## 280. 2026-08-22 12:20 UTC — the proposal head is four times larger than F13 says, the one-pass arm has three ranked receipts against it and one ranked instrument for it, and FINDING 32's model is the retracted 542.8 artefact
+
+Two delegated agents returned together: a frontier red team against the one-pass
+bracket, and a byte reconciliation of the draft path. Both changed campaign
+pricing. I then verified every load-bearing claim of each at source. This
+section records what survived, what I am retracting, and how the four student
+slots are now pointed.
+
+### 280.1 FINDING 143 — the ranked proposal-head share is 7 % to 9 %, not 1.82 %. F13 is retracted
+
+F13 has priced the proposal head at 1,019 microseconds per round, 1.82 % of the
+ranked round, since ledger 28597-28610. **That number was never measured.** It
+is FINDING 9's local model `head_us(d) = 2560 + 2226.5 (d - 1)`, fitted on M4
+Pro, evaluated at beagle's ranked draft length 4.3818 to give 10,090 us local,
+then multiplied by a transfer coefficient of 0.237. The same fit emits a ranked
+marginal head cost of **-527.5 us per draft step**, which is physically
+impossible, and E128 independently reported that the slope decomposition is
+"absorbing something" and "ill-conditioned in the slopes".
+
+Four independent lines now put the ranked head share between 5.5 % and 10.1 %,
+clustering at 7 % to 9 %:
+
+| line | frame | head share | note |
+|---|---|--:|---|
+| byte and rate accounting at the ranked M=1 rate 462.2 GB/s | ranked | 5.49 % | 1,417.9 MB per beagle round / 462.2 GB/s = 3,068 us of 55,870 |
+| byte and rate at the self-consistent whole-round rate 297.5 GB/s | ranked | 8.53 % | |
+| rung-0b GPU-time attribution, `draft_head` | local | 7.5 % | F35 maps to about 7.1 % ranked |
+| thorfinn's M=1 head cells, 8,372.6 / 127,533 | local | 6.57 % | |
+| E82 `draft_build` | local | 10.06 % | six legs, `--sync-head` |
+| E79 anchor, 0.0844 % of score per 1 % of head cost | ranked | 8.44 % | implied, independent of all the above |
+
+The sanity anchor is decisive. Using only the reconciled byte budget and F134's
+measured ranked rates:
+
+```
+target stream  14,412 MB / 273.0 GB/s  = 52,791 us
+head           1,417.9 MB / 462.2 GB/s =  3,068 us
+                                  total = 55,859 us
+F13's own frame for the beagle ranked round = 55,870 us     agreement 0.02 %
+```
+
+F13's 1,019 us requires the head to stream 1,417.9 MB in 1,019 us, which is
+**1,391 GB/s**: 2.5 times the fastest ranked cell ever observed and 2.9 times
+the fastest rate observed on any in-scope Apple part.
+
+**ADVISOR ERROR 112.** I carried a modelled, unmeasured head-time term for the
+whole campaign, propagated it into F85's transfer class table as the 0.24
+draft-path-bytes coefficient, and then into advisor error 87's pricing rule
+`ranked% = 0.0815 x bytes% x 0.24`. The 0.24 multiplier should be approximately
+1.0. **Every head-byte price this campaign has recorded is understated about
+four times.** The E79 anchor of 0.0844 %/% was consistent with the truth the
+whole time and I never reconciled it against F13.
+
+Note the coincidence that hid the error: 1,019 us happens to equal the
+**readout alone** at the M=5 rate (258.5 MB per round / 273 GB/s = 947 us). I
+had previously read that agreement as confirmation. It is not; it is the size of
+the omission.
+
+### 280.2 FINDING 144 — the reconciled per-draft-step byte budget of the proposal head
+
+One steady-state MTP draft step is M = 1. Live-path traffic, every row either
+measured or derived from shapes with a proved live call path:
+
+| group | bytes | MB | provenance |
+|---|--:|--:|---|
+| affine-4 trunk QMVs: fc, q_proj, o_proj, gate_up, down_proj | 232,980,480 | 232.98 | derived from shapes; live path at `Qwen35MTP.swift:195`, `Qwen35.swift:2870, 3190, 1907, 1944` |
+| of which enter `qwen35RoutedQuantizedMM` | 203,489,280 | 203.49 | derived |
+| of which `fc`, a bare call that bypasses the wrapper | 29,491,200 | 29.49 | `Qwen35MTP.swift:195` |
+| `_exactKVDenseW` [2048, 5120] bf16 | 20,971,520 | 20.97 | F131, `Qwen35.swift:3061-3070` |
+| q precision island [1024, 5120] bf16 plus indices | 10,489,856 | 10.49 | `Qwen35.swift:2873, 2985-3002` |
+| 7 RMSNorm vectors | 52,224 | 0.05 | derived |
+| embedding row gather | ~2,880 | 0.003 | inferred |
+| readout pass A, 12,292 centroid rows, affine-2 | 19,667,200 | 19.67 | measured, 94.06 us at 209.1 GB/s, ledger 33446 |
+| readout pass B, 3,073 x 8 probed rows, affine-2 | 39,334,400 | 39.33 | measured, 170.74 us at 230.4 GB/s, ledger 33447 |
+| readout pass C, 32 exact rerank rows, affine-4 | 92,160 | 0.09 | `Qwen35.swift:5720-5732` |
+| **total per M=1 draft step** | **323,590,720** | **323.59** | |
+
+Row bytes for the affine-2 passes: g64 over K = 5120 gives 1280 weight bytes
+plus 160 scale plus 160 bias = **1,600 B per row**. 12,292 and 24,584 rows give
+19.6672 MB and 39.3344 MB exactly, and the readout total 59.00 MB is confirmed
+three independent ways.
+
+Not streamed in the steady state, and this is where the earlier contamination
+lived: the `k_proj` and `v_proj` affine-4 packs at 5,898,240 B are dead because
+the island branch pre-empts at `Qwen35.swift:2868`; the shipped
+`draft_lm_head` affine-2 table at 157,337,600 B is dead because
+`buildDerivedClusterIndex` reads a permuted copy at `Qwen35.swift:5526-5531`.
+
+**Corrections to circulating figures.** My 273.3 MB "MTP head block" and 332.6
+MB "whole draft step" from earlier today are both unsourced and wrong; the
+correct values are 264.50 MB and 323.59 MB. My 232.96 MB is right as scoped and
+should read 232.98. The 59.00 MB readout is right.
+`research/e82-head-bytes.json` sets `arms.declared.traffic_bytes_per_draft =
+427,738,112`, which is literally `tensor_bytes`, the naive whole-artifact model;
+it overstates live traffic by 104,147,392 B, or 32.2 %. **Do not price from
+that field.**
+
+### 280.3 FINDING 145 — three ranked receipts stand against the pass-count mechanism, and the label on the largest of them was wrong for two days
+
+I told thorfinn in F135 that the receipt behind the NA-widening stop list was
+submission `9b241879`, candidate `c1207a0d`, which "reverted our collapsed table
+and was faster on 8 of 8 prompts, mean -0.383 %". **That reading is retracted.**
+Ledger 23962-23990 already establishes that `9b241879`'s archive touches only
+`Qwen36MTPBlockSession.swift`, `Qwen35.swift` and `mtp-head.manifest.json`, and
+carries **no kernel change at all**. Two agents were reading a submission that
+did not contain the mechanism.
+
+The clean isolated pair is `9b241879` against `ff73cbbd` (commit `f5d13183`).
+`ff73cbbd` carries `static_assert(NA >= 2 && NA <= 6)`, `case 5: <T,5,5>`,
+`case 6: <T,6,6>`, `case 9: <T,9,5>`. The two runs have **identical
+`effective_mean_draft_len` on all eight hidden prompts to seven significant
+figures** (4.533, 5.425, 5.270, 4.768, 5.776, 2.656, 2.298, 0.154) and identical
+`non_drafting_round_count`, so the schedule is provably held constant and the
+only live difference is the QMV dispatch table.
+
+| prompt | `9b241879` s/tok | `ff73cbbd` s/tok | collapsed arm |
+|---|--:|--:|--:|
+| beagle | 0.01211040 | 0.01229274 | +1.506 % slower |
+| essays | 0.01117439 | 0.01130417 | +1.161 % |
+| republic | 0.01109991 | 0.01123963 | +1.259 % |
+| medicine | 0.01133499 | 0.01175286 | +3.687 % |
+| botany | 0.01103197 | 0.01143983 | +3.697 % |
+| travel | 0.01737674 | 0.01777165 | +2.273 % |
+| drama | 0.01974890 | 0.02005796 | +1.565 % |
+| plutarch | 0.03027270 | 0.03028929 | +0.055 % |
+
+**mean over the seven drafting prompts +2.164 %, 0 of 7 faster.** The full
+ranked record against the mechanism:
+
+| receipt | collapsed | ranked result |
+|---|---|---|
+| `ff73cbbd` vs `9b241879` | `case 5`, `case 6`, `case 9` | **+2.164 % slower, 0 of 7 faster** |
+| `ca9251b8`, `3ff80e86` (rivals) | M=5 only | M=5 round gain **-0.29 % +/- 1.50 %** |
+| E100 (ours) | M=5 only | **-0.03 % +/- 0.40 %** published |
+
+**ADVISOR ERROR 111.** I priced the one-pass arm at 11.12 % of the leg from the
+E123 census and headlined a composed 3.9566, while three ranked receipts of the
+same mechanism class sat in the ledger reading zero or negative. Rule 68 says
+grep the ledger for an existing census before pricing from a byte count; the
+same discipline applies to an existing **receipt** before pricing from a census.
+
+**The mitigating fact, and it is a real one.** Every one of those three
+receipts collapsed a width in a body that either spilled or paid a register tax.
+The old `<T,6,6>` in `quantized.h` is **144 registers with peak live 140**, and
+E63 fitted a step of `s = 21.25 ms` on exactly that boundary, which is -17.4 %
+at NA=6. `<T,5,5>` moved the `affine_qmv_fast` entry point 91 to 98. Route B's
+`qwen_e120_qmv_wide<6>` is **111 registers with zero spill** on g17s and
+`wide<7>` is **125 with zero spill**. The whole negative record is consistent
+with one story: the pass mechanism pays, and every previous attempt to collect
+it spent more on spill than it saved. That story is not proved. It is the reason
+the arm is not closed.
+
+### 280.4 FINDING 146 — FINDING 32's model is the retracted 542.8 GB/s artefact, but its empirical core survives
+
+Ledger 251.2 reads the M=5 nulls as a group-scaling factor `A_ranked = 1.994`,
+concluding that two x-groups reach exactly twice the aggregate rate of one so a
+collapse is worth nothing, and that "the fewer-streams theme dies on the
+official runner". Its own arithmetic line reads:
+
+```
+implied one-group rate at NA=5 = 272.2 GB/s = 50 % of the two-group 542.8
+```
+
+F134 retracted `542.8`. `research/finding22_reprice.py:21` computed it when M=5
+was `<T,5,3>`, by dividing **two passes of algorithmic bytes** by a round that
+streams the weights once. `542.8 = 2 x 271.4` by construction, so
+`A_ranked ~ 2` is in part an identity of the arithmetic rather than a
+measurement. FINDING 32's consequence 4, "the ranked box has at least twice the
+outstanding-load capacity that one wide x-group uses", is the same claim I
+already retracted as advisor error 107.
+
+What survives is the empirical core: two rival receipts collapsing M=5 measure
+`dW = -0.070 +/- 0.360 pp`, a null. What does not survive is the inference that
+the null is explained by linear group scaling on the ranked box.
+
+### 280.5 FINDING 147 — the tier break follows the pass table across two independent ranked populations
+
+Against the three nulls stands one ranked instrument pointing the other way.
+F130.1: F97 fitted the **board** cost curve over 147 official runs and found the
+tier break at **M=5**. Edward fitted **our** curve from our own receipts and
+found it at **M=6**. The board mostly ships the organizer's `<T,5,3>`, which
+goes to two passes at M=5. We ship E100's `<T,5,5>`, which stays at one pass
+until M=6. Board M=5 costs 52,792 us; our M=5 costs 44,836 us.
+
+**The break point moves with the pass table, by exactly one width, across two
+independent ranked populations.** If passes were free the board curve would
+break where ours does.
+
+Two models fit every observation and disagree about the counterfactual.
+
+**Model P, the pass term.** `T = a + b M + f ceil(M / IPG)`. Weight streaming
+and nibble unpack scale with the pass count; activations and FMAs scale with M.
+The E123 census supports it numerically: the NA-independent classes sum to
+`F = 30.486` against a body cost of `F + 15.8332 NA`, and that 30.486 matches
+the independently recorded "per-pass-scaling classes ~ 30.5 %" to three digits.
+Model P predicts a collapse wins 19.55 % of QMV time at M=6 and 17.74 % at M=7.
+On its own it does not reproduce the observed 1.82x in-segment slope ratio.
+
+**Model R, the regime change.** The kernel is memory-bound at low M and
+issue-bound at high M, so the slope steps up at the crossover with **no pass
+term**. F132 measured exactly that split on g16s: `mlp_gate_up` reaches 237.1
+GB/s at M=3, 122.0 at M=6 and 82.1 at M=9. Under Model R two concurrent x-groups
+double the outstanding loads and reach the wall one width earlier, which
+reproduces F130.1 as well as Model P does. Model R predicts a collapse is worth
+about zero.
+
+Model P and Model R make the same prediction about where the break sits and
+opposite predictions about what happens if we remove a pass. **This is the
+largest unresolved question in the campaign and it is worth between 0 % and
+11 % of the leg.**
+
+### 280.6 The red team's SDPA argument is refuted at source; the chunk is already shipped
+
+The red team proposed a third model: that the M=6 break is the SDPA vector path
+falling over. The gate is real. At
+`scaled_dot_product_attention.cpp:633-637`, `supports_sdpa_vector` requires
+`query_sequence_length <= 8` **and** `query_sequence_length * gqa_factor <= 32`.
+With 24 query heads over 4 KV heads the gqa factor is 6, so the vector path
+holds only to `qL <= 5`. `supports_sdpa_full` requires head dim in {64, 80, 128}
+and the Qwen 3.8 head dim is 256, so the full path is **never** available. At
+`qL >= 6` the op would fall back to composed matmul and softmax — and the break
+would sit at exactly M=6.
+
+**We already handle it.** `Qwen36MTPBlockSession.swift:995-1001` documents the
+shipped chunk: the verify feeds the target in segments of at most
+`sdpaWidthWallDepthCap = 5` rows, "the chunk lives at the sdpa only", widths 6
+to 8 measured bit-exact per position on the hexfloat row gate, and segmenting
+the whole forward instead was measured bit-exact but pays a second full weight
+pass of about 25 ms and loses on net. The warm ladder at `:541` compiles exactly
+`qL in {1, 5, 4}` for kL 1024 and 1025, which is the chunk's shape set.
+
+The residual cost of the chunk is one extra full KV-cache read per full-attention
+layer at M >= 6: 16 layers x 4.19 MB = **67.1 MB per round**, about 170 us at
+ranked rates. That is a real step at M=6 but it is two orders of magnitude
+below the 10,322 us excess, so it does not explain the break.
+
+### 280.7 FINDING 148 — the one-pass table is bit-exact by construction, confirmed independently
+
+`qwen_e120_qmv_m<M, IPG, USE_TABLE>` carries
+`static_assert(M % IPG != 1, "a one-input tail group is not built")` and
+dispatches `qwen_e120_qmv_wide<IPG>` on full groups and
+`qwen_e120_qmv_wide<TAIL>` on the tail. **Passes partition the m range and never
+combine.** M=6, IPG=3 gives pass 0 over m{0,1,2} and pass 1 over m{3,4,5}; M=7,
+IPG=4 gives {0..3} and {4,5,6}; M=8, IPG=4 gives {0..3} and {4..7}. No output
+element is written twice and no accumulator is shared.
+
+Inside the body every `VF` operation is elementwise over m and m lanes never
+interact: `a0[m]` reads row `first_m + m`;
+`partial[r] += (a0*n0 + a1*n1 + a2*n2 + a3*n3)`;
+`acc[r] += scale_local[r]*partial[r] + sums*bias_local[r]`;
+`sums[m] += xv[0]+xv[1]+xv[2]+xv[3]`; the table index
+`st = xsums + ((k/block_size)*32 + lid)*sums_stride + first_m` uses the global m
+and `sums_stride = qmv_m <= 8 ? 8 : 16` keys off M, not IPG. Each output element
+is reduced by one simdgroup over the full k range.
+
+**For a fixed output element the scalar floating-point operation sequence is
+invariant to NA. Rule 92 does not bite.** The red team verified this
+independently at source and reached the same conclusion, including that the
+xsums stride is unchanged for M <= 8.
+
+The residual risk is compiler-only, and it is not small. FP contraction may fuse
+`a*b + c` at one vector width and not another, and `setFastMathEnabled(false)`
+at F17 does not guarantee `-ffp-contract=off`. F65 is the precedent: the NA=5
+exactness failures were a k-loop unroll miscompile, in this kernel, at a width
+we were widening. The gate is unchanged — a full 512-token per-position
+row-evidence digest with a positive control that fires — but a failure now means
+"codegen bug at a new width", not "design error".
+
+The red team also checked the warmup objection I gave thorfinn as blocking in
+F12 and found it **not supported**: `warmAllDepthShapes` covers all widths
+outside the timed window. That gate is downgraded from blocking to a reported
+check.
+
+### 280.8 FINDING 149 — c is approximately zero because the kernel is issue-saturated, and Route C therefore does not earn a slot
+
+F60 established that this kernel family is bound by instruction **issue
+throughput**, not dependency latency. F114 measured the correlation between gain
+and deleted instruction count at **+0.949**, with instructions alone giving
+`r^2 = 0.9014` and bandwidth adding nothing. If the issue unit is saturated
+rather than stalling, extra resident simdgroups cannot add throughput. So
+`c ~ 0` is predicted, and F131's two independent measurements agree: -0.0014
+with 2 sigma [-0.0124, +0.0095] and +0.0105 with 2 sigma [-0.174, +0.195].
+
+**Only deleted instructions convert to time.** Register-only changes convert at
+about zero. Spill is not an occupancy problem: spill fills and restores are real
+load and store instructions in the hot loop, which is why E63's `s = 21.25 ms`
+is a **step** rather than a gradient.
+
+Applying Rule 94 to Route C, the narrow head entry point: the executed body is
+`qmv_fast_impl<bfloat16_t, 64, 4>` in both arms, byte-identical, 57 registers,
+3,030 B, ISA hash `2b139877` on g17s. The only work removed is two
+`switch (ntg.x)` range tests falling to `default: break`, about 2 to 6 scalar
+instructions per threadgroup against about 123,000 at K = 5120, under
+5e-5 of the issue stream. **Instructions removed per output element: zero.**
+
+Priced as `dleg% = c x 76.92 x share`, with the beneficiary share corrected to
+3.5 % to 5.7 % of the round using FINDING 143:
+
+| c | provenance | dleg central |
+|---|---|--:|
+| -0.0014 | measured, g16s | -0.005 % |
+| +0.0105 | measured, g16s | +0.037 % |
+| 0.05 | kill gate | +0.18 % |
+| 0.199 to 0.301 | inferred, g17s, from the E121 rival receipt | +0.70 to +1.05 % |
+
+**Route C does not earn a student slot.** It earns one line in whichever PR next
+touches `Qwen35CustomQMV.widths`: the precedent kernel
+`qwen35CustomAffine4QMVKernel` is already shipped and the only blocker is the
+`3 ... 9` width range enforced at `Qwen35.swift:1756-1757`. Conditions if it
+rides: the narrow kernel must hold only `qmv_fast_impl` so the body is
+byte-identical; warmup must be gated and reported; the E131 cliff gate must be
+discharged. `fc` needs a separate routing edit for 0.8 pp of share — skip it.
+
+**The honest weakness in this kill.** F132 says the local host cannot test the
+hypothesis at any width, so both measurements of `c` were taken where `c` cannot
+be non-zero. The same weakness applies to per-width templating and to
+`prune_na5_pair`. Only an official submission can measure `c` on g17s. That is
+now the declared purpose of alphonse's submission.
+
+### 280.9 The draft-path mechanism queue, repriced at the corrected head share
+
+With the head at 7 % to 9 % of the ranked round rather than 1.82 %, every
+head-byte mechanism is worth about four times what the campaign carried.
+
+| id | mechanism | bytes removed per step | ranked value | status |
+|---|---|--:|--:|---|
+| **C1** | sign-sketch first pass, S=1024 bits, row 1,600 B to 132 B | **54.13 MB of 323.59** | **+0.92 % to +1.08 %** | designed, **unowned**, free offline falsifier |
+| C2 | quantize the bf16 precision islands to affine-4 g64 | 22.61 MB | +0.38 % to +0.45 % | stop list, **reopened**, see below |
+| C4 | probe fraction 0.25 to 0.15 | 0 | +0.05 % to +0.20 % | rider only |
+| C5 | pad the centroid table 12,292 to 12,296 | 0 | — | **subsumed** by the frontier import |
+| C6 | reuse the probed leaf set across drafts | — | +0.27 % to +0.31 % | legality ambiguous |
+| — | sweep metadata g64 to g256 | 23.6 MB | +0.466 % | needs an externally published head |
+| — | head trunk metadata g64 to g128 | 11.6 MB | +0.229 % | needs an externally published head |
+
+C1 is the best unowned arm in the campaign. It builds an S-bit sketch of every
+compact row and leaf centroid at warm from already-pinned tensors, scores the
+shortlist by popcount, rescores only the top ~256 at affine-2, and hands the
+existing 32 to the unchanged affine-4 rerank. Break-even worst-domain `m` is
+3.8e-3 against today's 2.266e-4, which is 17x of acceptance headroom. **It has a
+free offline falsifier**: the 18,092-sample hidden-state corpus and
+`research/e87_decide.py` already score cells this way, so shortlist recall is
+measurable with zero GPU time before a line of Metal is written. Counter-evidence
+to respect: a static prefix trim to 49,152 rows regressed acceptance from 1.00
+to 0.877, so coverage destruction is the failure mode to measure. Two mandatory
+fixes before use: `MISS_TO_SCORE_PCT` 206.6 to **203** in `e87_decide.py:33` and
+`e87_head.py:58`, and the four edits to `e87_screen.py` including the required
+price branch at `:611`.
+
+C2 is reopened. It was blocked pending reconciliation of E82 route (c), where
+`declared 0.031432` measured against `noislands 0.031547`, a sign that reads as
+slower without the islands. **The reconciliation is a power calculation.** The
+predicted effect of removing 15.07 MB of the 323.59 MB step is 0.37 % of the
+round; E112's pooled per-leg standard deviation is 0.3647 % and the measurement
+ran at n = 78 and 79 rounds. The experiment had power equal to its effect size.
+It was a false negative, not a refutation.
+
+### 280.10 Rule 97 and the standing orders at 12:20Z
+
+**RULE 97 — A CENSUS THAT CONTRADICTS A RANKED RECEIPT LOSES UNTIL THE
+DIFFERENCE IS NAMED.** Before pricing a mechanism from an instruction or byte
+census, search the ledger for every ranked receipt of the same mechanism class
+and quote it. If a receipt disagrees with the census, the census may only be
+used after the specific physical difference between the receipt's build and the
+proposed build is stated and is checkable. "It was a different register
+profile" counts only when both register profiles are censused and quoted.
+
+Slots as of 12:20Z. The submission slot is free and alphonse holds it next.
+
+- **alphonse, PR #130 r2.** Submit `frontier + prune_na5_pair`. Declared purpose
+  changed from a score attempt to **the only available measurement of `c` on
+  g17s**. Expect a score near the frontier and a rejection. Must return the
+  receipt ID immediately, the eight-prompt seconds-per-token vector, his F76
+  index labelled unusable per F137, and his derived g17s `c` with its band.
+  Two hours, so the slot clears.
+- **thorfinn, PR #128.** Scope cut. `{8:8}` removed. Ship per-width templating
+  plus `{6:6, 7:7}` as the ranked instrument that separates Model P from Model
+  R. Both widths are spill-free on g17s, which no previous test of this
+  mechanism has been. His g16s host spills 16 B at NA=6 and 64 B at NA=7, so
+  local timing cannot veto the arm. Warmup downgraded from blocking.
+- **askeladd, PR #132.** Unchanged and now explicitly on the critical path:
+  `wide<8>` is 126 registers with 48 B spill on g17s and M=8 carries about 92 %
+  of the one-pass prize. Candidate G first, D second, B only after computing the
+  net instruction delta. Also census NA=9 — no observed histogram in this
+  campaign has ever contained an M=9 round, so `case 9` may be dead code.
+- **edward, PR #129.** Post the per-prompt width histograms first; they block
+  thorfinn's pricing. Then the natural experiment: **stratify the 456 resolvable
+  board submissions by their QMV dispatch table and fit the cost curve inside
+  each stratum.** Under Model P the break moves with the stratum's table and a
+  single `(a, b, f)` fits jointly with `b` constant, which estimates the ranked
+  price of one pass at n in the hundreds with zero GPU. Under Model R no single
+  `b` fits across strata. Also re-derive any cost-curve term carrying a head
+  component at the corrected 7 % to 9 % share.
+
+Ledger corrections queued for the next pass: mark F13 superseded at 28597-28610
+and flag its impossible -527.5 us marginal; re-derive advisor error 87's
+`x 0.24` head transfer at 39418-39428; annotate
+`research/e82-head-bytes.json:traffic_bytes_per_draft` as artifact bytes, not
+traffic; retire the six surviving `542.8 GB/s` citations at 39353, 39921, 42441,
+31912, 30127 and 31839, of which 42441 is used to argue that residency has
+leverage on g17s; and disambiguate the two mechanisms both named "Route C".
