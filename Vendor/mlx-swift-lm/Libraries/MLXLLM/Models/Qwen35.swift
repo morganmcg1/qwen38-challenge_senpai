@@ -1319,7 +1319,7 @@ final class Qwen35GatedDeltaNet: Module {
         } else {
             normedOut = norm(out, gate: z)
         }
-        return outProj(normedOut.reshaped(B, S, -1))
+        return qwen35RoutedLinear(outProj, normedOut.reshaped(B, S, -1))
     }
 }
 
@@ -1656,7 +1656,8 @@ private let qwen35CustomAffine4XSumsKernel = MLXFast.metalKernel(
 /// same partition, same arithmetic.
 public enum Qwen35CustomQMV {
     public enum Arm: String, Sendable {
-        /// MLX's own launcher. The shipped default until the replica is proven.
+        /// MLX's own launcher. The comparison arm, and the fallback whenever a
+        /// cell fails `routable`.
         case off
         /// Bit-exact replica of the incumbent wide kernel, our dispatch.
         case replica
@@ -1669,10 +1670,16 @@ public enum Qwen35CustomQMV {
         case sumTable = "sumtable"
     }
 
+    /// The shipped arm. `sumtable` routes the wide affine-4/group-64 cells the
+    /// decode round reaches and hoists the per-block activation sums out of the
+    /// output-row loop. The environment override exists so the research
+    /// instrument can time the other arms in the same build; it is read once at
+    /// process start and never varies with the request, the prompt or the
+    /// benchmark phase.
     public static let arm: Arm = {
-        let raw =
-            ProcessInfo.processInfo.environment["MLXFAST_QWEN_E120_QMV"] ?? "off"
-        return Arm(rawValue: raw) ?? .off
+        let raw = ProcessInfo.processInfo.environment["MLXFAST_QWEN_E120_QMV"]
+        guard let raw, !raw.isEmpty else { return .sumTable }
+        return Arm(rawValue: raw) ?? .sumTable
     }()
 
     /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
@@ -1847,6 +1854,17 @@ func qwen35RoutedQuantizedMM(
         groupSize: groupSize, bits: bits, mode: mode)
 }
 
+/// A projection layer with the candidate-owned wide QMV dispatch in front of
+/// it. Only an affine `QuantizedLinear` without an additive bias reaches the
+/// replica; anything else keeps its original `Linear` call.
+func qwen35RoutedLinear(_ layer: Linear, _ x: MLXArray) -> MLXArray {
+    guard let q = layer as? QuantizedLinear, q.bias == nil, let z = q.biases
+    else { return layer(x) }
+    return qwen35RoutedQuantizedMM(
+        x, q.weight, scales: q.scales, biases: z,
+        groupSize: q.groupSize, bits: q.bits, mode: q.mode)
+}
+
 final class Qwen35FusedMLP: Module, UnaryLayer {
     @ModuleInfo(key: "gate_proj") var gateProj: Linear
     @ModuleInfo(key: "down_proj") var downProj: Linear
@@ -1906,9 +1924,9 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
         // to the exact two-projection expression, preserving the original
         // slicing semantics in every case.
         if x.dim(-2) <= 16, let y = fusedGateUp(x), _gateOut * 2 == y.dim(-1) {
-            return downProj(qwen35CompiledFusedSwiGLU(y))
+            return qwen35RoutedLinear(downProj, qwen35CompiledFusedSwiGLU(y))
         }
-        return downProj(silu(gateProj(x)) * upProj(x))
+        return qwen35RoutedLinear(downProj, silu(gateProj(x)) * upProj(x))
     }
 
 }
@@ -3067,8 +3085,8 @@ final class Qwen35Attention: Module {
         )
         .transposed(0, 2, 1, 3)
 
-        return oProj(
-            qwen35CompiledSigmoidMultiply(output, gate).reshaped(B, L, -1))
+        return qwen35RoutedLinear(
+            oProj, qwen35CompiledSigmoidMultiply(output, gate).reshaped(B, L, -1))
     }
 }
 
@@ -5023,11 +5041,7 @@ extension Qwen35TextModel: MTPCapable {
     /// vocabulary projection is the widest single matvec in the round, so it is
     /// the largest beneficiary of the hoisted activation chunk sums.
     func routedLMHead(_ head: Linear, _ x: MLXArray) -> MLXArray {
-        guard let q = head as? QuantizedLinear, q.bias == nil, let z = q.biases
-        else { return head(x) }
-        return qwen35RoutedQuantizedMM(
-            x, q.weight, scales: q.scales, biases: z,
-            groupSize: q.groupSize, bits: q.bits, mode: q.mode)
+        qwen35RoutedLinear(head, x)
     }
 
     /// Draft-only vocabulary projection: the declared head's coarser lm_head
