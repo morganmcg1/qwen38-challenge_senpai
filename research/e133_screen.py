@@ -601,6 +601,17 @@ class Sketch:
         self.family = family
         self.size = size
         self.key = f"{family}{size}"
+        if family == "exact":
+            # Not a sketch. It scores with the shipped affine-2 values, so an
+            # arm that keeps every probed row must reproduce the shipped chain
+            # exactly. That is the control for the base itself.
+            self.proj = None
+            self.row_codes = self.row_scale = None
+            self.cent_codes = self.cent_scale = None
+            self.row_offset = self.cent_offset = None
+            self.bytes_per_row = AFFINE2_ROW_BYTES
+            self.proj_bytes = 0
+            return
         if family == "simhash":
             rng = np.random.default_rng(SKETCH_SEED)
             proj = np.where(
@@ -914,6 +925,14 @@ class Screen:
         Returns the COMPACT id, not the permuted position, so a padding
         position and the real row it copies never read as two different
         answers (D5 hazard 1).
+
+        The miss it returns is the SAME comparison every arm reports, namely
+        `output != exact affine-4 argmax`. An earlier version returned a
+        structural proxy built from `crank_a2` and the top-32 cut instead. The
+        proxy counted 1 miss in 11,244 while the true rate is about a hundred
+        times larger, so subtracting it from an arm's true miss inflated every
+        net figure by the shipped chain's own approximation error. The
+        structural flag is still returned, but only as a diagnostic.
         """
         clusters = max(1, math.ceil(SHIPPED_PROBE_FRACTION * LEAVES))
         positions = self.probe_positions(f["order_a2"], clusters, f["b"])
@@ -921,10 +940,12 @@ class Screen:
         out = self.compact(self.output_row(f, positions, keys))
         cum_gt = mx.cumsum(
             mx.take_along_axis(f["gt_leaf"], f["order_a2"], axis=1), axis=1)
-        miss = mx.logical_or(mx.logical_not(f["crank_a2"] < clusters),
-                             cum_gt[:, clusters - 1] >= SHORTLIST)
-        mx.eval(miss, out)
-        return np.asarray(miss).astype(bool), out
+        structural = mx.logical_or(mx.logical_not(f["crank_a2"] < clusters),
+                                   cum_gt[:, clusters - 1] >= SHORTLIST)
+        miss = out != f["argmax_row"]
+        mx.eval(miss, structural, out)
+        return (np.asarray(miss).astype(bool), out,
+                np.asarray(structural).astype(bool))
 
 
 def sketch_state(screen: Screen, sketch: Sketch, f, x: mx.array) -> dict:
@@ -933,6 +954,8 @@ def sketch_state(screen: Screen, sketch: Sketch, f, x: mx.array) -> dict:
     Scoring all 98,336 rows is the dominant cost of the sweep, so it happens
     once per (sketch, batch) rather than once per arm.
     """
+    if sketch.family == "exact":
+        return {"order_c": f["order_a2"], "row_perm": f["coarse_perm"]}
     q = sketch.query(x, screen.mu)
     x_norm = mx.linalg.norm(x.astype(mx.float32) - screen.mu, axis=1)
     order_c = mx.argsort(-sketch.score_centroids(q, x_norm), axis=1)
@@ -1199,8 +1222,8 @@ def parse_families(spec: str) -> list[tuple[str, int]]:
         token = token.strip()
         if not token:
             continue
-        family = next(f for f in ("simhash", "qlowrank", "lowrank", "sign")
-                      if token.startswith(f))
+        family = next(f for f in ("simhash", "qlowrank", "lowrank", "sign",
+                                  "exact") if token.startswith(f))
         families.append((family, int(token[len(family):])))
     return families
 
@@ -1214,6 +1237,7 @@ def cmd_validate(args) -> None:
 
     n = tok_ok = shipped_miss = damaged_miss = 0
     accept_hits = verdict_ok = shipped_reproduces = live_rows = accepted_rows = 0
+    structural_miss = structural_agree = 0
     ranks: list[int] = []
     for _, stratum, x, proposal, reference, accepted, live in chunks(args.batch,
                                                                      args.limit):
@@ -1236,10 +1260,12 @@ def cmd_validate(args) -> None:
         live_rows += int(live.sum())
         accepted_rows += int(accepted.sum())
 
-        base_miss, base_compact = screen.shipped(f)
+        base_miss, base_compact, structural = screen.shipped(f)
         base_vocab = np.asarray(H.compact_to_vocab(base_compact))
         shipped_reproduces += int((base_vocab == proposal).sum())
         shipped_miss += int(base_miss.sum())
+        structural_miss += int(structural.sum())
+        structural_agree += int((structural == base_miss).sum())
         cells: dict[tuple, Cell] = {}
         run_arm(screen, damaged, f, sketch_state(screen, damaged, f, x),
                 [SHIPPED_PROBE_FRACTION], [256],
@@ -1264,6 +1290,15 @@ def cmd_validate(args) -> None:
         "m_shipped_live_chain": {
             "misses": shipped_miss, "p": shipped_miss / n if n else float("nan"),
             "lo": lo, "hi": hi},
+        # The shipped chain is an approximate readout: it probes a quarter of
+        # the leaves and reranks only 32 rows, so it loses the exact affine-4
+        # argmax at a rate that must be subtracted from every arm. The
+        # structural flag underestimates that rate badly, which is why it is
+        # reported here and no longer used as the base of any net figure.
+        "m_shipped_structural_proxy": {
+            "misses": structural_miss,
+            "p": structural_miss / n if n else float("nan"),
+            "agrees_with_true_miss": structural_agree / n if n else float("nan")},
         "m_damaged_simhash8_control": {
             "misses": damaged_miss, "p": damaged_miss / n if n else float("nan")},
     }
@@ -1286,6 +1321,7 @@ def cmd_screen(args) -> None:
 
     cells: dict[tuple, Cell] = {}
     base_cell = Cell()
+    structural_cell = Cell()
     accept: dict[str, list[int]] = {}
     n = 0
     t0 = time.time()
@@ -1293,11 +1329,13 @@ def cmd_screen(args) -> None:
             args.batch, args.limit):
         watch = seed if seed in WATCH_STRATA else None
         f = screen.front(x)
-        base_miss, base_compact = screen.shipped(f)
+        base_miss, base_compact, structural = screen.shipped(f)
         base_vocab = np.asarray(H.compact_to_vocab(base_compact))
         falses = np.zeros_like(base_miss)
         base_cell.add(stratum, base_miss, base_miss, falses, ~falses, ~falses,
                       ~falses, watch=watch)
+        structural_cell.add(stratum, structural, structural, falses, ~falses,
+                            ~falses, ~falses, watch=watch)
         for key in (stratum, watch) if watch else (stratum,):
             slot = accept.setdefault(key, [0, 0, 0, 0])
             slot[0] += int(proposal.size)
@@ -1338,6 +1376,8 @@ def cmd_screen(args) -> None:
             (sum(v[2] for v in real.values()) / aligned
              if aligned else float("nan")),
         "shipped": summarize("shipped", base_cell, price(0), {}, p_by_stratum),
+        "shipped_structural_proxy": summarize(
+            "shipped-structural", structural_cell, price(0), {}, p_by_stratum),
         "query_basis": query_report,
         "cells": [],
     }
