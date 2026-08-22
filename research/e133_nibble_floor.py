@@ -911,10 +911,93 @@ def log_wandb(result: dict) -> str | None:
     return url
 
 
+# --------------------------------------------------------------------------
+# residency pricing
+# --------------------------------------------------------------------------
+
+# `Table.onePass67.plan` at Qwen35.swift:1833-1835, the submitted table.
+# Seven routed widths land on five distinct (ipg, rps) cells.
+WIDTH_TO_IPG = {3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 4, 9: 3}
+
+# Finding 83 as the advisor stated it. Only these are given, so the widths
+# below 6 carry the remaining mass and are not resolved here.
+F83_MASS = {6: 0.188, 7: 0.211, 8: 0.1871}
+
+# %% candidate time per %% resident simdgroups. Two campaign anchors, both
+# single points, and the first is contaminated by a work change.
+ELASTICITY = {"E121 g17s residency vs ranked": 2.10 / 10.57,
+              "F66 entry-point occupancy tax": 2.6 / 7.69}
+
+QMV_SHARE = 0.8735  # Finding 139
+
+
+def residency(result: dict, variant: str) -> int:
+    """Price a form through the residency channel, controlled and weighted.
+
+    A cell is only priced where the `shipped_lifted` neutrality control reads
+    exactly zero. Where the control moves, register allocation is responding
+    to source formatting rather than to work, and no delta at that cell can be
+    attributed to the idiom.
+    """
+    V = result["variants"]
+    if variant not in V or not V[variant].get("compiled"):
+        print("no compiled census row for %s" % variant)
+        return 1
+    print("residency pricing for %s, %s" % (variant, RANKED))
+    print("  a cell is priced only where the neutrality control reads zero")
+    print()
+    print("  %5s %7s %9s %8s %8s %9s %9s"
+          % ("cell", "widths", "control", "shipped", variant, "d_sg", "d_sg %"))
+    priced, blocked = {}, []
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        ship = V["shipped"]["cells"][key][RANKED]
+        ctrl = V["shipped_lifted"]["cells"][key][RANKED]
+        cand = V[variant]["cells"][key][RANKED]
+        widths = [w for w, i in WIDTH_TO_IPG.items() if i == na]
+        drift = ctrl["registers"] - ship["registers"]
+        dsg = cand["simdgroups_derived"] - ship["simdgroups_derived"]
+        pct = 100.0 * dsg / ship["simdgroups_derived"]
+        if drift:
+            blocked.append((na, widths, drift))
+            print("  %5s %7s %9s %8d %8d %9s %9s   INDETERMINATE, control "
+                  "moves %+d registers"
+                  % ("ipg%d" % na, ",".join(map(str, widths)), "%+d" % drift,
+                     ship["registers"], cand["registers"], "-", "-", drift))
+            continue
+        priced[na] = (widths, dsg, pct)
+        print("  %5s %7s %9d %8d %8d %+9d %+9.3f"
+              % ("ipg%d" % na, ",".join(map(str, widths)), 0,
+                 ship["registers"], cand["registers"], dsg, pct))
+
+    covered = sum(F83_MASS.get(w, 0.0)
+                  for widths, _, _ in priced.values() for w in widths)
+    weighted = sum(F83_MASS.get(w, 0.0) * pct
+                   for widths, _, pct in priced.values() for w in widths)
+    print()
+    print("  ranked mass on priced cells, Finding 83:  %.4f" % covered)
+    print("  mass-weighted resident-simdgroup change:  %+.4f %%" % weighted)
+    if blocked:
+        lost = sum(F83_MASS.get(w, 0.0)
+                   for _, widths, _ in blocked for w in widths)
+        print("  ranked mass on indeterminate cells:       %.4f  (widths %s)"
+              % (lost, ", ".join(str(w) for _, ws, _ in blocked for w in ws)))
+    print()
+    print("  candidate-leg time, weighted change x elasticity x QMV share "
+          "%.4f" % QMV_SHARE)
+    for name, e in ELASTICITY.items():
+        print("    %-34s elasticity %.3f  ->  %+.3f %% leg"
+              % (name, e, -weighted * e * QMV_SHARE))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("exactness")
+    price = sub.add_parser("residency")
+    price.add_argument("--census", type=pathlib.Path, required=True)
+    price.add_argument("--variant", default="magic_bf16_pair")
     show = sub.add_parser("sources")
     show.add_argument("--variant", required=True)
     run = sub.add_parser("census")
@@ -927,6 +1010,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "exactness":
         return exactness()
+    if args.command == "residency":
+        return residency(json.loads(args.census.read_text()), args.variant)
     if args.command == "sources":
         print(patched_header(shipped_header(), args.variant))
         return 0
