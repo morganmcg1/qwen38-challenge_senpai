@@ -10,6 +10,8 @@ round-weighted win above +1.0 %?
 
 Answer: **yes at the kernel level, not yet demonstrated end to end.**
 
+Final label: **local winner, not submitted, superseded by Route B.**
+
 - Kernel frame: **+1.463 %** round-weighted, CI95 excluding NA=5
   [+1.042, +2.243]. The shipped arm is `g_split_pred`.
 - Leg frame: **−0.436 %** (negative = faster), n = 2, CI95 [−1.268, +0.395].
@@ -20,6 +22,17 @@ Answer: **yes at the kernel level, not yet demonstrated end to end.**
   submission was made.**
 - Correctness is unaffected: full 512-token exactness passes and all eight
   timed legs match.
+
+The advisor closed the experiment without submitting. The submission slot is
+worth more to E120 Route B, whose point estimate clears the crown by 1.9 % even
+on a slow draw, than to this arm, whose in-situ point estimate lands 0.12 %
+*under* the crown. Two independent corrections put our board row `b8b8b860` at a
+true 3.3414 rather than 3.2979, so parity with the crown now needs +0.53 %
+ranked and this arm measured +0.415 %. The two arms do not compose: Route B
+supersedes E121 and they must never be stacked.
+
+After the halt this assignment spent **no GPU time**. The three remaining tasks
+were the matched-idle-gap fix, the NA re-weighting, and this report.
 
 ## Identity tuple
 
@@ -373,37 +386,151 @@ is more likely near −0.49 % than −0.436 %.
 
 This does not rescue the interval and it is far too small to close the 2.04×
 gap, but the direction matters: the measured effect is, if anything, a slight
-**under**statement of the candidate's advantage, not an overstatement. A future
-ABBA design should insert a matched idle gap wherever a rebuild does not occur,
-so that every position has the same thermal history.
+**under**statement of the candidate's advantage, not an overstatement.
 
-#### Leading hypothesis for the shortfall — stated as a hypothesis, not a finding
+##### Root cause, measured
 
-The implied kernel-to-leg transfer is
+`swift build` decides what to compile from file stat, so a leg only pays a
+rebuild when its sources look newer than the last build. Reading `started` and
+`finished` out of the eight leg metadata files gives the prep time in front of
+each timed run:
+
+| position | arm | prep before the timed run | entry °C |
+| --- | --- | --- | --- |
+| 1 | base | 53 s | 40.18, 44.78 |
+| 2 | share | 50 s | 44.81, 45.09 |
+| 3 | share | **11 s** | **53.00, 52.95** |
+| 4 | base | 52 s | 44.87, 44.76 |
+
+Position 3 is the only position whose arm repeats its predecessor's, so it is
+the only one that finds both sources untouched and skips the compile. It reached
+its timed run after 11 s instead of 50 s and entered 8 °C hotter. A second term
+runs the same way: only a rebuilt worker pays the first-use Metal JIT compile,
+which is worth another ~48 s of leg wall time (266 s at position 3 against
+313 s elsewhere).
+
+Counterbalancing cannot remove this. ABBA removes confounds that are a function
+of **position**; under this order the short position is always `share`, so the
+confound is a function of the **arm**.
+
+##### Fix, implemented in this branch
+
+`research/e121_e2e_leg.sh` now `touch`es both sources before the build, so every
+leg performs the same compile and the same JIT. That reproduces the thermal
+history rather than approximating it — an equal-length idle sleep would cool
+*further*, because it omits the CPU heat the compile puts into the package.
+`E121_PREP_FLOOR_SECONDS`, set to 60 s by the driver, pads any residual, and
+each leg records `e121_prep_build_seconds`, `e121_prep_idle_seconds` and
+`e121_prep_seconds`.
+
+`research/e121_e2e_abba.sh` then prints a per-arm balance report, because a
+matched design has to be checked rather than asserted. Run against the eight
+legs of the 04:06Z session it correctly reports the imbalance it was written to
+prevent:
 
 ```
-0.436 / 1.463 = 0.298   measured
-0.607                   E116 constant used for the prediction
+arm     n   entry_C mean  entry_C range
+base    4   43.65         40.18-44.87
+share   4   48.96         44.81-53.00
+share minus base: entry +5.31 C
+IMBALANCED: the arms did not start from the same thermal state
 ```
 
-The mechanism here is an **occupancy** win (F1: entry-point resident
-simdgroups), and E116's 0.607 was calibrated on an **ALU/bandwidth** win. Those
-two classes should not share a transfer constant. In an isolated rate probe the
-kernel is the only work resident, so occupancy sets throughput almost directly.
-In a real round the wide QMV dispatches are interleaved with recurrence, norms,
-and head work, and the machine can be filled by neighbouring dispatches, so a
-recovered simdgroup slot converts to wall clock at well under 1:1.
+That is the positive control: the reporter fires on the known-bad session. It
+reports and does not fail the session, because by the time it runs the legs are
+already measured and the analysis needs the number to price the imbalance.
 
-Thorfinn's Route B supports the contrast: his hoist is a flat 5.85 % of base at
-NA = 4 across seven shapes spanning 148–214 GB/s, which is the signature of an
-ALU/bandwidth term, and that is the class E116 measured.
+Neither change has been exercised on a fresh session. No GPU time was spent on
+this assignment after the halt.
 
-This predicts that **any** future occupancy-class arm on this tree will
-over-predict at 0.607 by roughly a factor of two, and that the campaign needs a
-separate occupancy-class transfer constant near 0.30. That is a falsifiable
-claim and it is the most reusable thing this session produced.
+#### Why the prediction was 2x too large — a roofline knee in the probe
 
-I have not tested it. Testing it is not in scope for this assignment.
+**Retracted.** My first explanation was that this is an *occupancy-class* arm
+and that occupancy wins need their own kernel-to-leg constant near 0.30. The
+advisor rejected it and was right. Occupancy is what this arm **pays**, not what
+it wins: the ungated form costs ranked occupancy 39 → 32 simdgroups (about
+15 %), the gate exists to hold that loss to 39 → 38 (about 2.6 %), and the gain
+is arithmetic — a deleted duplicate chunk sum. An arm cannot be in the
+occupancy-win class when occupancy is on its cost side.
+
+Re-analysis, zero GPU, from the rung-2 cells already in
+`research/e121-artifacts/rung2-rate.json`. Reproduce with
+`research/e121_na_reweight.py`; output in `rung3-na-reweight.json`.
+
+**First, the weighting the advisor asked me to check.** Two weights turn the
+isolated cells into one leg number, and only the width weight had ever been
+looked at. Across widths the analysis already used the realised NA histogram
+`{2: 0.024, 3: 0.275, 4: 0.667, 5: 0.034}`. Within a width it used each shape's
+share of round cost. Re-combining the same cells under each within-width rule,
+all in the shipped frame that pins NA = 2 and NA = 5 to zero:
+
+| within-width rule | NA3 | NA4 | kernel % | leg % | vs measured |
+| --- | --- | --- | --- | --- | --- |
+| shape cost (shipped prediction) | +0.660 | +1.927 | +1.467 | **−0.890** | 2.04x |
+| pooled median | +0.463 | +1.482 | +1.116 | **−0.677** | 1.55x |
+| uniform mean | +0.762 | +2.093 | +1.606 | −0.975 | 2.24x |
+| measured in situ | | | | **−0.436** | 1.00x |
+
+So the answer to the direct question is **it moves, but only part of the way**:
+re-weighting closes 0.213 pp of the 0.454 pp shortfall, or 47 %, and cuts the
+over-prediction from 2.04x to 1.55x. A 2.6 sd gap remains. The shortfall is
+therefore *partly* a weighting error and not *only* a weighting error.
+
+Note also that shape-uniform is **not** the more principled weight. A leg is a
+sum over dispatches, so cost weighting is what `program.md` asks for. Dropping
+it is not a correction; it is a different arbitrary choice that happens to sit
+closer to the measurement.
+
+**Second, what the three rules are actually disagreeing about.** They disagree
+because the five cells are bimodal rather than noisy, and they are ordered by
+how close each shape runs to the memory roofline. Achieved rate is weight bytes
+over base time, at 0.5 B per 4-bit weight plus fp16 scale and bias per group of
+64, against the M4 Pro 273 GB/s peak:
+
+| shape | k | n | GB/s | % peak | NA3 | NA4 |
+| --- | --- | --- | --- | --- | --- | --- |
+| gdn_out_proj | 6144 | 5120 | 162 | 59 | +1.676 | +3.333 |
+| mlp_down | 17408 | 5120 | 169 | 62 | +1.389 | +3.399 |
+| fa_qkv | 5120 | 14336 | 191 | 70 | +0.427 | +1.391 |
+| gdn_in_proj | 5120 | 16480 | 193 | 71 | +0.025 | +1.188 |
+| mlp_gate_up | 5120 | 34816 | 203 | 74 | +0.294 | +1.155 |
+
+Pearson r between achieved GB/s and percent gain is **−0.938** over the ten
+live cells. The two shapes furthest from the roofline gain 2.7x what the three
+nearest it gain, with **no overlap at either width**. That is the expected
+signature of deleting arithmetic: it pays where issue, not bandwidth, is the
+limit, and it is hidden where the kernel is already streaming near peak.
+
+**Third, the counterfactual that closes the gap.** My isolated probe chains 32
+dependent dispatches of one kernel, which is the most issue-bound configuration
+on offer. A real decode round interleaves these dispatches with recurrence,
+norms and head work, so the same kernels should sit nearer the roofline. Price
+every live width at the near-roofline stratum mean instead of its own:
+
+```
+near-roofline means      NA3 +0.249   NA4 +1.245
+shipped-frame kernel     +0.899  ->  leg -0.545
+measured                             leg -0.436  (sd 0.093)
+```
+
+That lands **1.2 sd** from the measurement. The shipped prediction is 4.9 sd
+away. One assumption — that in situ every shape behaves like the shapes already
+near the roofline — takes the prediction from decisively wrong to consistent.
+
+**The reusable rule.** It is not a new transfer constant. It is that a scalar
+kernel-to-leg constant is the wrong object when per-cell gains span 2.7x and are
+ordered by operating point. Report the achieved bandwidth of every probe cell,
+and transfer a gain to a leg only across cells at the same distance from the
+roofline. This applies to every isolated probe on this tree, including Route
+B's, and it is testable without new hardware.
+
+Route B is the useful contrast and the reason I flag this rather than assert it:
+Thorfinn measures a flat 5.85 % of base at NA = 4 across seven shapes spanning
+148–214 GB/s. Flat across that range is exactly what my fit says an
+arithmetic-deletion gain should **not** be. Either Route B's mechanism is not
+bandwidth-sensitive in the way mine is, or one of the two harnesses is not
+measuring what it reports. Resolving that disagreement is worth more than either
+number alone, and I have not resolved it.
 
 #### Provenance note on the mid-session commit
 
@@ -442,6 +569,7 @@ Project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`, group
 | `e121-rung0-census` | `3inupzgh` | finished | static instruments for every arm on both GPU generations, plus the gate-exactness census |
 | `e121-rung2-isolated` | `q3oflj3p` | finished | isolated rate sweep, validity gates, cost-weighted shipped frame, pre-registered prediction scores |
 | `e121-rung3-insitu` | `qmr3mgl8` | finished | 512-token exactness, the eight ABBA legs, and the pooled leg effect |
+| `e121-rung3-reweight` | `5zms9ntd` | finished | post-hoc re-analysis of the rung-2 cells: three within-width weighting rules, and achieved bandwidth against gain for every probe cell. No new measurement, no GPU time |
 | `e121-rung2-isolated` | `m9ykrn93` | **failed** | crashed on a `wandb.Table` column-type error; superseded by `q3oflj3p`, kept only so the run list is honest |
 
 `e121-rung3-presubmit` was not created. The pre-submit chain did not run,
@@ -534,6 +662,10 @@ python3 research/e121_e2e_analyse.py --replicates 2 --tokens 512 --label r3
 
 # pre-submit chain on the exact tree that would be submitted
 research/e121_presubmit.sh 512
+
+# post-hoc, zero GPU: re-weighting and the roofline fit
+python3 research/e121_na_reweight.py
+python3 research/e121_wandb_log.py --only reweight
 ```
 
 Do not copy the usage line printed by `rebuild-and-assert-worker.sh`: it forbids
@@ -551,3 +683,14 @@ Do not copy the usage line printed by `rebuild-and-assert-worker.sh`: it forbids
 3. **Apply the same ownership split to the `M = 2` cross-row function.** It is a
    separate function today and carries round weight 0.024, so the payoff is
    small, but the mechanism transfers unchanged.
+4. **Settle the roofline-knee rule against Route B, zero new mechanism.** My ten
+   cells put achieved bandwidth against gain at r = −0.938; Thorfinn reports a
+   flat 5.85 % across 148–214 GB/s. Both cannot describe the same machine.
+   Re-analysing the two existing probe datasets under one bandwidth-stratified
+   estimator needs no GPU and would either give the campaign a validated
+   correction rule for every isolated probe or identify which harness is wrong.
+   This is the cheapest high-value item on the list.
+5. **Measure the achieved bandwidth of these five shapes in situ.** The
+   counterfactual that reconciles my prediction with my measurement assumes the
+   whole-model pipeline moves every shape toward the roofline. That assumption
+   is currently untested and one instrumented decode round would test it.

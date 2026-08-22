@@ -15,7 +15,7 @@ collapses by 30 %. The gate also matters on the ranked `applegpu_g17s`, where
 it recovers entry-point occupancy: 120 registers with no gate against 102 with
 it, which is 33 against 38 simdgroups per core.
 
-FOUR RUNS:
+FIVE RUNS:
 
   `e121-rung0-census`
       Static instruments for every arm on both GPU generations: AIR load,
@@ -32,6 +32,11 @@ FOUR RUNS:
       a fresh unchanged base in the same session.
   `e121-rung3-presubmit`
       The pre-submit chain on the exact tree that would be submitted.
+  `e121-rung3-reweight`
+      Post-hoc re-analysis of the rung-2 cells against the measured in-situ
+      leg. No new measurement and no GPU time. It recombines the same cells
+      under three within-width rules, and reports the achieved bandwidth of
+      every probe cell against its gain, which is what actually orders them.
 
 Every timed leg here ran with no thermal gate, so `timing_valid`,
 `cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
@@ -495,8 +500,70 @@ def log_presubmit() -> None:
     run.finish()
 
 
+def log_reweight() -> None:
+    """Post-hoc re-analysis of the rung-2 cells. No new measurement."""
+    path = ART / "rung3-na-reweight.json"
+    if not path.exists():
+        print(f"[wandb] no {path}; run research/e121_na_reweight.py first")
+        return
+    doc = json.loads(path.read_text())
+    roof = doc["roofline"]
+
+    run = start(
+        "e121-rung3-reweight", "analysis",
+        "Is the 2x isolated-to-in-situ shortfall a weighting error, or does "
+        "the probe measure the arm at the wrong point on the roofline?",
+        3, {"arm": doc["arm"], "reanalysis_of": "rung2-rate.json",
+            "measured_leg_pct": doc["measured_leg_pct"],
+            "measured_leg_sd": doc["measured_leg_sd"],
+            "pinned_zero_widths": doc["pinned_zero"],
+            "dram_peak_gbs": roof["dram_peak_gbs"],
+            "gpu_seconds_spent": 0})
+
+    schemes = wandb.Table(columns=["rule", "kernel_pct", "leg_pct",
+                                   "ranked_pct", "over_prediction_ratio"])
+    for name, rec in sorted(doc["schemes"].items()):
+        schemes.add_data(name, rec["kernel_pct"], rec["leg_pct"],
+                         rec["ranked_pct"], rec["over_prediction_ratio"])
+    run.log({"weighting_schemes": schemes})
+
+    cells = wandb.Table(columns=["shape", "k", "n", "megabytes",
+                                 "base_microseconds", "implied_gbs",
+                                 "percent_of_dram_peak", "gain_na3_pct",
+                                 "gain_na4_pct"])
+    for shape, rec in sorted(roof["per_shape"].items(),
+                             key=lambda kv: kv[1]["implied_gbs"]):
+        cells.add_data(shape, rec["k"], rec["n"], rec["megabytes"],
+                       rec["base_microseconds"], rec["implied_gbs"],
+                       rec["percent_of_dram_peak"], rec["gain_pct"]["3"],
+                       rec["gain_pct"]["4"])
+    run.log({"roofline_cells": cells})
+
+    shipped = doc["schemes"]["cost, shipped frame"]
+    pooled = doc["schemes"]["pooled median, shipped frame"]
+    run.summary.update({
+        "shipped_prediction_leg_pct": shipped["leg_pct"],
+        "reweighted_prediction_leg_pct": pooled["leg_pct"],
+        "measured_leg_pct": doc["measured_leg_pct"],
+        "shortfall_pp": doc["shortfall_pp"],
+        "explained_pp": doc["explained_pp"],
+        "explained_fraction": doc["explained_fraction"],
+        "over_prediction_ratio_before": shipped["over_prediction_ratio"],
+        "over_prediction_ratio_after": pooled["over_prediction_ratio"],
+        "pearson_r_gbs_vs_gain": roof["pearson_r_gbs_vs_gain"],
+        "counterfactual_leg_pct": roof["counterfactual_leg_pct"],
+        "counterfactual_sd_from_measured":
+            roof["counterfactual_sd_from_measured"],
+        "timing_valid": False,
+        "official_or_ranked_score": False,
+        "verdict": doc["verdict"],
+    })
+    attach(run, path, ART / "rung2-rate.json", ART / "rung3-e2e.json")
+    run.finish()
+
+
 RUNS = {"census": log_census, "isolated": log_isolated, "insitu": log_insitu,
-        "presubmit": log_presubmit}
+        "presubmit": log_presubmit, "reweight": log_reweight}
 
 
 def main() -> int:

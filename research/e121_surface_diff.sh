@@ -18,17 +18,30 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 submit_base="${1:?usage: research/e121_surface_diff.sh SUBMIT_BASE_SHA}"
 out="research/e121-artifacts/rung3-surface-diff.txt"
 
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "e121_surface_diff: worktree is dirty; packed bytes would not be measured bytes" >&2
-  git status --porcelain >&2
+# `mapfile` is bash 4 and macOS ships bash 3.2, and this git has neither
+# `git status --pathspec-from-file` nor `git diff --pathspec-from-file`, so the
+# path list goes through a NUL-delimited file and `xargs -0` expands it onto
+# each command line.
+spec="$(mktemp)"
+trap 'rm -f "${spec}"' EXIT
+count="$(python3 -c "
+import json, sys
+paths = json.load(open('benchmark.json'))['editablePaths']
+sys.stderr.write('\0'.join(paths))
+print(len(paths))
+" 2> "${spec}")"
+[[ "${count}" -gt 0 ]] || { echo "e121_surface_diff: no editablePaths" >&2; exit 2; }
+
+git_over_paths() { xargs -0 git "$@" -- < "${spec}"; }
+
+# Only a dirty SCORED path breaks the guarantee. Research files are never
+# packed, so a dirty write-up must not block the check.
+dirty="$(git_over_paths status --porcelain)"
+if [[ -n "${dirty}" ]]; then
+  echo "e121_surface_diff: a scored path is dirty; packed bytes would not be measured bytes" >&2
+  echo "${dirty}" >&2
   exit 1
 fi
-
-mapfile -t paths < <(python3 -c "
-import json
-print('\n'.join(json.load(open('benchmark.json'))['editablePaths']))
-")
-[[ "${#paths[@]}" -gt 0 ]] || { echo "e121_surface_diff: no editablePaths" >&2; exit 2; }
 
 merge_base="$(git merge-base HEAD "${submit_base}")" || exit 3
 head_sha="$(git rev-parse HEAD)"
@@ -37,13 +50,13 @@ head_sha="$(git rev-parse HEAD)"
   echo "submit_base=${submit_base}"
   echo "merge_base=${merge_base}"
   echo "head=${head_sha}"
-  echo "editable_path_count=${#paths[@]}"
+  echo "editable_path_count=${count}"
   echo "=== git diff --stat over editablePaths only ==="
-  git diff --stat "${merge_base}" "${head_sha}" -- "${paths[@]}"
+  git_over_paths diff --stat "${merge_base}" "${head_sha}"
   echo "=== changed scored paths ==="
-  git diff --name-only "${merge_base}" "${head_sha}" -- "${paths[@]}"
+  git_over_paths diff --name-only "${merge_base}" "${head_sha}"
   echo "=== full diff ==="
-  git diff "${merge_base}" "${head_sha}" -- "${paths[@]}"
+  git_over_paths diff "${merge_base}" "${head_sha}"
 } > "${out}" 2>&1
 
 echo "wrote ${out}"

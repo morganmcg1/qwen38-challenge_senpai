@@ -106,12 +106,40 @@ fi
 out="research/out/${tag}"
 mkdir -p "${out}"
 
+# MATCHED PREPARATION PHASE. `swift build` is driven by file stat, so a leg
+# whose arm repeats the previous leg's arm used to find both sources untouched,
+# skip the compile, and reach the timed run with far less GPU idle than a leg
+# that rebuilt. Under the base/share/share/base order that short leg is always
+# position 3 and always `share`, so the deficit was not a position effect that
+# counterbalancing removes; it was attached to the candidate arm. Measured over
+# the 2026-08-22T04:06Z session it was 50-53 s of prep for positions 1, 2 and 4
+# against 11-12 s for position 3, worth 8 C of entry temperature, plus a further
+# ~48 s because only a rebuilt worker pays the first-use Metal JIT compile.
+#
+# Touching both sources forces every leg through the same compile and the same
+# JIT, which reproduces the thermal history rather than approximating it: an
+# equal-length idle sleep would cool further, because it omits the CPU heat the
+# compile puts into the package. `E121_PREP_FLOOR_SECONDS` then pads any
+# residual so every leg reaches its timed run after the same wall time.
+prep_started="$(date +%s)"
+touch -- "${HEADER}" "${TWIN}"
+
 senpai/rebuild-and-assert-worker.sh "${assert_args[@]}" \
   > "${out}/worker-assert-pre.txt" 2>&1 || {
   echo "e121_e2e_leg: worker assert failed before ${tag}" >&2
   tail -30 "${out}/worker-assert-pre.txt" >&2
   exit 5
 }
+
+prep_build_seconds=$(( $(date +%s) - prep_started ))
+prep_floor="${E121_PREP_FLOOR_SECONDS:-0}"
+prep_idle_seconds=0
+if ((prep_build_seconds < prep_floor)); then
+  prep_idle_seconds=$((prep_floor - prep_build_seconds))
+  echo "e121_e2e_leg: ${tag} padding prep ${prep_build_seconds}s -> ${prep_floor}s"
+  sleep "${prep_idle_seconds}"
+fi
+prep_seconds=$((prep_build_seconds + prep_idle_seconds))
 pre_worker="$(awk '/^worker_sha256 /{print $2}' "${out}/worker-assert-pre.txt" | tail -1)"
 cp "${out}/worker-assert-pre.txt" "/tmp/e121-assert-pre.txt"
 
@@ -139,6 +167,10 @@ post_worker="$(awk '/^worker_sha256 /{print $2}' "${out}/worker-assert-post.txt"
   echo "worker_sha256_pre=${pre_worker}"
   echo "worker_sha256_post=${post_worker}"
   echo "worker_assert_post_exit=${post_rc}"
+  echo "e121_prep_build_seconds=${prep_build_seconds}"
+  echo "e121_prep_idle_seconds=${prep_idle_seconds}"
+  echo "e121_prep_seconds=${prep_seconds}"
+  echo "e121_prep_floor_seconds=${prep_floor}"
 } >> "${out}/meta.txt"
 
 if ((post_rc != 0)) || [[ "${post_worker}" != "${pre_worker}" ]]; then
