@@ -1,87 +1,82 @@
 # SENPAI Research State
 
-- 2026-08-22 08:30Z
-- Most recent human research direction: none received this generation. The campaign is
-  running autonomously under `senpai/program.md`.
+- **2026-08-22 09:05Z.** Advisor base `6724db07`. Campaign base `origin/main` `770a3ff2`.
+  Live crown `bc070b7b` francip `3.35922017`, unmoved for over seven hours. Our submission
+  `d3c491b5-902f-4f80-8d33-b7938f980d2d` is **validating**, queued 08:27:51Z: Route B alone on the
+  post-revert base.
 
-## Where the campaign stands
-
-The base is clean again. E121 was a +2.10 % ranked regression and alphonse's revert is
-merged, so the advisor branch at `d46eb29b178c123b6d243127039920872f158440` is the exact
-pre-E121 kernel tree plus Route B and the E124 selector. Over the submitted surface that
-base differs from `2127858b` by one file, which means the shipping candidate is literally
-the `sumtable` arm of thorfinn's own measured pair.
-
-The board has saturated. The crown `bc070b7b` at 3.35922017 has not moved in six hours,
-zero submissions are validating, and 53 consecutive submissions have been rejected since
-19:00Z. Nobody, including its author, has reproduced the crown: a byte-identical resample
-published 0.374 % lower. Our own per-prompt floor envelope is 3.34784 and the absolute
-all-solver floor is 3.36504, so pure recomposition of known work buys at most +0.173 %.
-Progress now has to come from mechanisms nobody has run.
+- **Most recent research direction from the human researcher team:** none received this round. The
+  campaign is running autonomously under `senpai/program.md`.
 
 ## Current research focus
 
-**1. Ship the clean candidate and get a ranked receipt.** Route B measured +4.249 % leg and
-+4.036 % ranked against a tree whose corrected score we know (3.34136). The submission slot
-is free. This is the critical path and everything else is scheduled around it.
+The round found that the largest unexploited lever on the board is **GPU occupancy at the wide-QMV
+entry point on the ranked architecture**, and that it was invisible for 273 ledger entries because
+it does not exist on the hardware we develop on.
 
-**2. Read the ranked architecture directly instead of inferring it.** This is the dominant
-methodological shift of the last two generations. E121 was validated on `applegpu_g16s`,
-looked like a win, and cost 2.10 % ranked on `applegpu_g17s`. The census that followed
-produced an exact instrument:
+1. **The entry-point occupancy tax (F102, F107, F108).** The wide QMV compiles every width into one
+   Metal function, so its register allocation is the maximum over all inlined width bodies and every
+   dispatch runs at that occupancy. On `applegpu_g17s` the maximum is **M=5 at 101 registers, giving
+   39 resident simdgroups**, while every other width compiles at 89 or 90 and would run at 44. M=5
+   carries 3.4 % of the work and taxes the other 96.6 %. On `applegpu_g16s` the maximum is NA=4,
+   which is M4, M7 and M8 — the dominant widths — so the lever reads as an exact null locally. The
+   crown ships `<T,5,3>` at 90 registers; we adopted `<T,5,5>` across E27, E55, t55 and E100, every
+   time on local evidence where the change is free.
 
-```
-resident simdgroups = floor(REGISTER_BUDGET / registers_per_thread)
-REGISTER_BUDGET = 3072 on applegpu_g16s,  3968 on applegpu_g17s
-```
+2. **The residency coefficient (F110).** `c = 0.445 % leg gain per 1 % entry-point residency`,
+   bracket `[0.139, 0.819]`, instruction channel `I = -0.958 %` for E121. The solve has zero degrees
+   of freedom and needs an identifying design. Saturation above 39 simdgroups is the single
+   unmodelled risk and is the reason the bracket is wide.
 
-Eight of eight cells, both architectures. It converts a compile into an exact ranked
-occupancy reading with no GPU and no thermal gate. The same census showed the E121 register
-delta inverting sign across generations, -4 on g16s against +12 on g17s at the dominant
-cell, with the `SHARE_SUMS`-false width as an exact null on both. Every register-channel
-closure previously decided on g16s is therefore void as evidence about the ranked machine.
+3. **Two independent routes to the same tax, running in parallel and not colliding.** Alphonse holds
+   `quantized.h` and attacks the incumbent kernel by removing the NA=5 body or shrinking it.
+   Thorfinn holds `Qwen35.swift` and attacks Route B's replica kernel, where per-width templating is
+   fully reachable through `MLXFast.metalKernel`'s template parameters and carries an **instruction
+   channel of exactly zero** (F109).
 
-**3. Stop trusting numbers derived from the ranked round count.** The round count R is not
-published and not pinned. Under a flat acceptance profile the vector we have been using is
-arithmetically infeasible on all five median-carrying prompts and feasible on exactly the
-two that carry zero weight. R decides the sign of the draft-depth correction, and it also
-scales the fitted ranked cost curve that prices most of our work.
+4. **The scheduler is measurably mis-calibrated (F111, F112).** The ranked round count R is now
+   pinned out of sample to within 3 % on all seven drafting prompts, and the shipped reach estimator
+   is **biased low by 9 to 24 % with slope ~1.0 and correlation 0.86 to 0.95** — a level defect, not
+   a discrimination defect. Hypothesis J attributes it to Jensen's inequality over per-round
+   acceptance heterogeneity, which predicts the slope, the depth scaling and the one unbiased
+   fixture from a single mechanism.
 
-## Live experiments
+5. **Two instruments were downgraded (F113, F114).** Fifteen of twenty E123 price-ladder cells carry
+   an occupancy term rather than a pure instruction cost. The bandwidth axis is dead; the deleted
+   instruction count alone explains 90 % of the variance and the pooled correlations were width
+   effects.
 
-| PR | student | experiment | question |
+## In flight
+
+| PR | student | experiment | state |
 |---|---|---|---|
-| #128 | thorfinn | E129 | Ship the clean Route B candidate and bring back a ranked receipt. |
-| #130 | alphonse | E130 | Remove the wide-QMV entry-point occupancy tax, worth +12.26 % weighted residency on the ranked machine and 0 on ours. |
-| #129 | edward | E128 | Pin R from the scheduler's own `expected` variable, and audit the reach estimator against the ranked depth optimum. |
-| #126 | askeladd | E125 | Replace "no scalar fits" with a two-channel transfer law: instruction count at 1:1, residency computed from the floor law. |
+| #128 | thorfinn | E129 — Route B submitted (`d3c491b5`); rung 2 restored: per-width templating of the Route B replica kernel | wip, awaiting receipt |
+| #130 | alphonse | E130 — remove the `applegpu_g17s` entry-point occupancy tax; rung 2 is the identifying design for `c` | wip |
+| #129 | edward | E128 — reach-estimator calibration; hypothesis J, the sign decomposition, and the joint price sweep | wip, rung 1 running |
+| — | askeladd | E125 merged. Free for the next assignment. | available |
 
 ## Potential next research directions
 
-**Register pressure as a first-class ranked lever.** Every g17s cell sits one or two
-registers from the next occupancy step. If E130 rung 2 shows residency is causally worth
-anything, a systematic offline register-reduction search across the whole wide-QMV family
-becomes cheap and high-yield. If it shows residency buys nothing, a large search space
-closes permanently and the pricing model I am currently using has to be rebuilt.
-
-**The candidate's own serial-equivalent round.** Plutarch shows the candidate's M=1 round is
-already 9 to 22 % faster than the pinned baseline serial round, before any speculation.
-That share of our score comes from accumulated kernel work on the singlerow path, which
-Route B does not touch and which no current experiment targets. It deserves its own arm.
-
-**Draft-path bytes.** C1, the sign-sketch or low-rank first pass that cuts the 1,600-byte
-compact row to about 130 bytes, is designed and priced at +0.23 to +0.34 % ranked. The
-amended regime rule may unblock its kill rule through `benchfixture`, the only fixture we
-have inside the ranked acceptance band. C5, padding the centroid table, is bit-exact and
-three lines.
-
-**The crown's probe-select kernel.** We already own its shortlist kernel as E101 but not its
-probe-select kernel, which is 8 dispatches per draft step. Our increment is worth about
-+0.074 % ranked. It is single-threadgroup, so expect worse transfer to M5, and it is low
-priority against the occupancy work.
-
-**What a skeptical reviewer would say.** Two of our last three merged scored-surface changes
-were validated on the wrong architecture or against an unpinned constant. The campaign's
-real bottleneck has not been ideas; it has been the fidelity of the instruments used to
-price them. Both fixes landed this generation, and the next few results will show whether
-that was the binding constraint.
+- **Compose the two occupancy arms.** If Route B is promoted and templating passes, the incumbent
+  `quantized.h` kernel still serves every wide QMV that Route B declines. The two arms are disjoint
+  by construction and should be shown so under Rule 75 before composing.
+- **A pre-submission entry-point cliff census as a standing gate.** Askeladd's 7.5 s zero-GPU census
+  would have caught the E121 ranked regression before it cost a submission slot. Make it a
+  mandatory pre-submit step alongside `twin_audit.py` and the scope and budget checks.
+- **Re-audit every historical register-channel decision against `applegpu_g17s`.** E27, E55, t55 and
+  E100 were all decided on `applegpu_g16s`. F107 says at least one of them inverted on the ranked
+  host. There may be more.
+- **Resolve the 26x disagreement between E27's `-20.1 %` and E100's `-0.775 %`** on the identical
+  M=5 cell contrast. One of them is measuring something other than what it claims.
+- **Ship a mechanism-based calibration of the reach estimator**, not a fitted scalar, if hypothesis J
+  survives. A variance correction computed from measured per-round heterogeneity has a first-
+  principles justification that a gamma does not.
+- **Rebuild the E123 price ladder under Rule 86**, with the register delta of both rungs on every
+  cell. Five of twenty cells survive today, and several campaign decisions rest on the other fifteen.
+- **Free re-ranking of the 37 E87 decision cells** at the corrected coefficient 203 rather than the
+  206.6 hardcoded at `research/e87_decide.py:74`.
+- **The C1 sign-sketch draft-path arm** remains designed and unassigned at `+0.23 to +0.34 %` ranked.
+  It is now the largest queued arm that does not touch the occupancy axis.
+- **Post-promotion cleanup.** Delete the dead `qkv(_:)` fast path at `Qwen35.swift:2281-2300`, the
+  reverted E121 remnants, and the research-only `Qwen35IslandArm` selector, so the winning behaviour
+  is the only path.

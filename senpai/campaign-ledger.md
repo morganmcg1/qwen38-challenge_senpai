@@ -41540,3 +41540,314 @@ is the only distinct mechanism in flight.
 
 Cleanup still owed after the submission lands: delete the dead `qkv(_:)` fast path at
 `Qwen35.swift:2281-2300`, the dead E121 code, and the research-only `Qwen35IslandArm` selector.
+
+## 274 — 2026-08-22 09:00Z — The entry-point register maximum is one cell, templating is reachable in Swift, R is pinned, and the reach estimator is biased low
+
+Base moved `5baf0202` -> `d46eb29b` was already recorded; this round merged PR #126 (askeladd,
+E125, `research/` only) and the base is now **`6724db07f16ff0311080602d666be8026fe05e52`**.
+
+Submission **`d3c491b5-902f-4f80-8d33-b7938f980d2d`** queued 2026-08-22T08:27:51Z, status
+`validating`. Candidate commit `b1dd5697`, advisor head `d46eb29b`, worker sha256
+`59b83674e6c7bf63`, note 10.9 KiB, model attribution `senpai`. It carries Route B alone on the
+post-revert base. Nine pre-submit gates green, Rule 55 scored-surface diff **empty**, 512-token
+`--local-submit` `all_tokens_matched=true`, `residual_divergence_count=0`, real 40 C gate passed
+at 38.4 / 39.0 / 39.5 C. Board had zero in-flight submissions at queue time and
+`frontier-state.json` agreed exactly with the live crown on id, sourceRef and score.
+
+---
+
+### F107 — THE `applegpu_g17s` ENTRY-POINT REGISTER MAXIMUM IS SET BY A SINGLE CELL WORTH 3.4 % OF THE WORK
+
+From alphonse's E126 rung-4 census, `dispatched_width` table, which ledger 273 did not use.
+W&B `e126rng40`, artifact `research/e126-artifacts/rung4-census.json`.
+
+```
+applegpu_g17s   compiled registers per dispatched width, incumbent quantized.h kernel
+  M3  89 -> 44 sg | M4  90 -> 44 | M5 101 -> 39 | M6  89 -> 44
+  M7  90 -> 44    | M8  90 -> 44 | M9  89 -> 44
+  entry point 101 regs -> floor(3968/101) = 39 simdgroups AT EVERY WIDTH
+applegpu_g16s
+  M3  82 | M4  94 | M5  93 | M6  82 | M7  94 | M8  94 | M9  82
+  entry point  94 regs -> floor(3072/94) = 32 simdgroups
+```
+
+**M5 is the sole maximum on the ranked architecture.** Every other width compiles at 89 or 90 and
+would run at 44 simdgroups alone. M=5 carries F47 weight 0.034 and 20 of 312 realised rounds;
+M=8 carries 240 of 312 and is taxed at every one of them.
+
+**On `applegpu_g16s` the maximum is NA=4, which is M4, M7 and M8 — the dominant widths.** Retiring
+the NA=5 body changes the local entry point by exactly zero. The lever is structurally invisible on
+the hardware the campaign develops on. That is why it survived 273 ledger entries.
+
+`applegpu_g17s` staircase, `floor(3968/regs)`:
+```
+102..100 -> 38,39 | 99..97 -> 40 | 96,95 -> 41 | 94,93 -> 42
+ 92,91 -> 43 | 90,89 -> 44 | 88,87 -> 45 | 86,85 -> 46
+```
+
+### F108 — THE CROWN'S ENTRY POINT RUNS AT 42 SIMDGROUPS AND OURS RUNS AT 39, AND WE DID IT TO OURSELVES
+
+Ledger 258 already held the independent census:
+
+```
+cell        applegpu_g16s   applegpu_g17s
+<T,5,5>       95 / 0 spill     98 / 0      <- ours
+<T,5,3>       93 / 0 spill     90 / 0      <- the crown's
+```
+
+The crown `bc070b7b` ships `<T,3,3> <T,4,4> <T,5,3> <T,6,3> <T,7,4> <T,8,4>`. We moved to
+`<T,5,5>` across E27, E55, t55 and E100. Every one of those decisions was taken on `applegpu_g16s`
+evidence, where the change is free, and none censused the ranked entry point. This is Rule 83 in
+its purest form, committed four times before the rule existed.
+
+Cost of reverting the cell, both measured and bounded: E27 gives `<T,5,3>` -> `<T,5,5>` at
+**-20.1 %** on the M=5 cell (`ceil(5/3)=2` weight passes against 1); E100 gives **-0.775 %** on the
+same pair on the same cell. Weighted by 0.034 and carried to the leg by 0.6070 the loss is
+**-0.016 % to -0.41 % ranked**. The 26x gap between the two measurements is unresolved and E130
+must resolve it.
+
+### F109 — PER-WIDTH TEMPLATING IS UNREACHABLE IN `quantized.h` AND FULLY REACHABLE IN `Qwen35.swift`
+
+The incumbent width switch is **inside the kernel** at `quantized.h:1923`, on `ntg.x`. The host
+dispatcher that would have to build a per-width kernel name is
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp`, which is **not** among
+`benchmark.json`'s 89 `editablePaths`. All widths therefore compile into one Metal function, one
+pipeline state, one register allocation. That is the mechanism behind F102.
+
+**Route B is different and the difference is decisive.** It builds its own Metal source as a Swift
+string and creates its own named kernels:
+
+```
+Qwen35.swift:1562  qwen35E120QMVSource(table:)              builds the source
+Qwen35.swift:1565  cases = [(3,3),(4,4),(5,5),(6,3),(7,4),(8,4),(9,3)]
+Qwen35.swift:1588  switch (qmv_m) { ... }                   a RUNTIME switch we own
+Qwen35.swift:1596  MLXFast.metalKernel(name: "qwen35_custom_affine4_g64_qmv_wide_v1", ...)
+Qwen35.swift:1605  MLXFast.metalKernel(name: "..._qmv_wide_sums_v1", ...)
+Qwen35.swift:1806  template: [("USE_TABLE", consume)]       <- MLX emits one pipeline per tuple
+Qwen35.swift:1814  Qwen35CustomQMV.matmul                   the Swift-side dispatcher
+```
+
+Adding `("QMV_M", cell.m)` to the template list and replacing the runtime switch with a
+compile-time dispatch gives every width its own Metal function, its own register allocation and its
+own occupancy, with **an instruction channel of exactly zero** — the emitted code per width is
+identical, only the pipeline boundary moves. No other arm on the board reads the residency channel
+clean.
+
+Hard gate on that arm: seven widths times two `USE_TABLE` values is up to fourteen pipelines against
+one today. Seed processing and decoding are both inside the timed leg, so a first-use JIT compile at
+a rare width is paid inside the measurement and on all eight ranked prompts. Zero in-leg pipeline
+creations must be **proved**, not assumed.
+
+### F110 — THE RESIDENCY COEFFICIENT, ENTRY-POINT LEG FRAME: `c = 0.445`, BRACKET `[0.139, 0.819]`
+
+Askeladd's exactly-determined two-channel solve, `research/e125-artifacts/residency-law.json`,
+script `research/e125_residency_law.py`, W&B `e125resl01`.
+
+```
+g16s   entry  94 ->  93 regs, 32 -> 33 sg = +3.125 % residency; in-situ LEG gain +0.433 %
+g17s   entry 101 -> 102 regs, 39 -> 38 sg = -2.564 % residency; ranked LEG gain  -2.100 %
+  c = 2.533 / 5.689 = 0.4452 % leg gain per 1 % entry residency
+  I = 0.433 - 3.125 x 0.4452 = -0.958 %    E121's split and exchange, a real instruction cost
+one-sided bounds, valid because the source demands I < 0:
+  lower 0.433 / 3.125 = 0.139     upper 2.100 / 2.564 = 0.819
+```
+
+Askeladd also publishes `c = 0.164 [0.089, 0.199]`. **That figure is in the isolated-body
+F47-weighted residency frame, a different denominator, and must never be substituted for the
+entry-point figure.** Every quoted coefficient carries its frame.
+
+The solve has zero degrees of freedom and is therefore not a test. What is testable is the value and
+the sign of `I`, and the model recovered a negative `I` without being told that E121 adds two
+barriers and 2*NA threadgroup round trips per k-block. **Alphonse's E130 rung-2 regression
+discontinuity is the only identifying design for `c` in the campaign**; askeladd deferred to it
+explicitly and it is promoted accordingly.
+
+Repriced arms, entry-point leg frame:
+```
+arm                             Delta res   c=0.139   c=0.445   c=0.819   instruction channel
+E130 C-A  case 5 -> <T,5,3>      +7.69 %    +1.07 %   +3.42 %   +6.30 %   -0.016 to -0.41 %
+E130 C-B  C-A plus NA=2 retired +12.82 %    +1.78 %   +5.71 %  +10.50 %   plus the M=2 fallback
+E130 C-C  NA=5 body shrunk      >=+7.69 %      as C-A or better           zero if arithmetic-neutral
+E129 rung 2 per-width templating +7 to +15 % +0.97 to +2.09  +3.12 to +6.68  +5.73 to +12.29   ZERO
+```
+
+**Saturation is the single unmodelled risk.** The wide QMV is DRAM-streaming bound, so returns must
+flatten somewhere above 39 simdgroups, and every figure above is a linear extrapolation of three to
+five staircase steps from one anchor. E130 rung 2 must report the response *shape*, not only a slope.
+
+### F111 — THE RANKED ROUND COUNT R IS PINNED. F104 IS WITHDRAWN.
+
+Edward, `research/e128_identity.py`, artifact `research/e128-artifacts/rung0-identity.json`,
+commit `4be1cc00`, zero GPU.
+
+- **The identity closes exactly on all 12 shipped legs.** `eff = drafted / R` and
+  `accept_rate = A / drafted` reproduce the reported values with zero residual, and
+  `declared_rows_total = R + drafted` exactly.
+- The exact relation is **`R + A = 512 + [final tail draft accepted]`**. `R + A = 512` on 10 legs and
+  513 on two, because `QwenRuntimeMTPDriver.swift:141-150` computes
+  `offer = max(1, min(depth, 8, remaining - 1))` and the `max(1, ...)` floor still asks for one draft
+  when one token remains; if accepted it is counted and then discarded.
+- **Thorfinn's 312 rounds is a pooled count**: `4 x 78` over four 512-token windows, with
+  `eff` and `rate` identical to a single benchfixture leg to 16 digits. Nothing was wrong with either
+  published field.
+- **R predicted out of sample from a leave-one-out manifold over 12 legs spanning `eff` 1.996 to
+  6.359**: beagle 112.5 [105.2, 120.8] against 110 assumed; medicine 88.4 against 90; essays 91.8
+  against 92; botany 78.6 against 81; republic 93.9 against 93; drama 246.7 against 252; travel 212.7
+  against 212. **Every assumed R lands inside the band and the point estimate is within 3 % on all
+  seven.** Three are within 1 %.
+- plutarch needs no manifold: `449*7/(7-0.154) <= R <= 449/(1-0.154)` gives `460 <= R <= 512`, and 487
+  is inside. That bound **proves `effective_mean_draft_len` averages over all rounds, not over
+  drafting rounds**, because `eff = 0.154 < 1` is impossible under the other reading. F78 confirmed.
+
+F97, F92, F12 and the fitted ranked cost curve all stand. Rule 84 is relaxed: an R-dependent quantity
+must still be labelled, but the label is the pinned band, not "assumed".
+
+### F112 — THE REACH ESTIMATOR IS BIASED LOW BY 9 TO 24 %, AND IT IS A LEVEL DEFECT, NOT A DISCRIMINATION DEFECT
+
+Read from the recorded `sched=` walk per round against the realised accepted count, 12 fixtures:
+
+```
+fixture           rounds  mean expected  mean accepted   bias %   slope     r
+beagle_a             119      2.868          3.303       -13.2    1.037   0.889
+beagle_b             126      2.712          3.063       -11.5    1.085   0.909
+benchfixture          78      5.067          5.577        -9.2    0.851   0.708
+botany_andrews       143      2.149          2.587       -17.0    1.050   0.860
+drama_dollhouse       92      3.933          4.565       -13.8    1.019   0.952
+essays_bacon         285      0.836          0.797        +5.0    0.512   0.195
+essays_montaigne     146      1.906          2.507       -24.0    0.655   0.515
+medicine_hippoc       80      4.552          5.400       -15.7    1.018   0.937
+medicine_hist        153      2.088          2.346       -11.0    1.060   0.840
+plutarch_lives       180      1.533          1.844       -16.9    1.257   0.790
+republic_jowett      104      3.377          3.923       -13.9    1.056   0.930
+travel_eothen        172      1.786          1.977        -9.7    0.834   0.640
+```
+
+Biased low on 11 of 12, slope ~1.0 and `r` 0.86 to 0.95 on every median-regime fixture. **The
+estimator ranks rounds correctly and sets its level too low.** The single unbiased fixture,
+`essays_bacon`, is also the only one with no discrimination at all.
+
+**HYPOTHESIS J, assigned to E128.** The walk computes `reach = prod_j pbar_j` from global position
+EMAs, while the realised count has expectation `E_round[prod_j p_j(round)]`. A product is convex, so
+`E[prod] >= prod E[.]` with equality only at zero per-round variance. That predicts a level bias with
+slope 1, no loss of ranking, a gap that grows with depth, and its own exception: `essays_bacon` has
+mean `expected` 0.836, almost no product to be convex over, and it is exactly where the bias vanishes
+and `r` collapses. One mechanism, four predictions.
+
+**The sign of the correction is NOT settled and must not be asserted.** Both biased quantities enter
+`guard reach > marginal[d]*(1+expected)/cumulative[d]` on opposite sides: `reach` low drafts
+shallower, `expected` low lowers the threshold and drafts deeper, and at `expected ~ 3` the two are
+the same order. E128 replays `reach`-only, `expected`-only and both.
+
+Edward's correct objection to my framing: **F97's price optimality was established against the
+biased estimator**, and price and estimator enter the same comparison, so they are not separable by
+observing depth. Rung 2 sweeps them jointly.
+
+### F113 — THE E123 PRICE LADDER IS CONTAMINATED BY OCCUPANCY IN 15 OF 20 CELLS
+
+Askeladd's free instrument audit. A priced contrast is a clean instruction reading only when its two
+rungs allocate the same registers, and that is checkable offline.
+
+```
+class          clean   contaminated at widths
+ld             2 of 4   4, 5
+alu            2 of 4   2, 4
+tg_scaffold    1 of 4   2, 4, 5
+tgld           0 of 4   2, 3, 4, 5
+deletion       0 of 4   2, 3, 4, 5
+```
+
+Worst cell: **`k_alu8 -> k_alu16` at NA=2 moves `applegpu_g16s` from 70 to 91 registers, -23.26 %
+residency — 21 registers for 8 injected ALU instructions.** The published ALU price of
+0.07097 % per instruction per k-block is therefore mostly an occupancy loss wearing an instruction
+label. `tgld` carries residency content at every width on both architectures, a second reason beyond
+the `k_tgld16@m4` spill to distrust that ladder. F58 and the E123 priced census are downgraded
+accordingly: use them for ordering, not for absolute prices, until each cell carries its register
+delta.
+
+### F114 — THE BANDWIDTH AXIS IS DEAD, AND THE DELETED INSTRUCTION COUNT KILLED IT
+
+Recomputed on the 20 E123 cells:
+```
+pooled r(gain, bandwidth)                       -0.872
+pooled r(gain, residency)                       +0.817
+partial r(gain, bandwidth | residency)          -0.787   survives
+pooled r(gain, deleted instruction count)       +0.949   <- the strongest correlate
+nested r2: instructions alone 0.9014 | + bandwidth +0.011 | + residency +0.006 | both +0.021
+width-demeaned r(gain, bandwidth) = -0.485, sign flips -0.972 at NA=3 to +0.874 at NA=5
+```
+Residency is constant inside every width and cannot explain a within-width correlation. The deleted
+instruction count alone explains 90 % of the variance. **This reconciles askeladd's pooled -0.862
+with thorfinn's in-situ `r = -0.067, p = 0.855` without either being wrong**: the headline was a
+width effect. Thorfinn's refutation stands and is now explained.
+
+Askeladd's Stage 2 class-by-regime correction table **fails its own kill rule at 0 of 2 frame
+anchors** and the two-channel law cannot rescue it, because a register count is fixed at compile time
+and is therefore identical in the kernel and leg frames on one host — the residency channel is
+structurally zero across any within-host frame pair. The composition that survives is
+`effect(class, frame, arch) = F(class, frame pair) x [ I(class) + c * R(class, arch) ]`, and `F` must
+still be measured. Route B kernel-to-leg is 0.763; E121 kernel-to-leg on g16s is `0.433/1.463 = 0.296`.
+**F is class-dependent, not a constant.** F85 and F87 stand.
+
+---
+
+### NEW RULES
+
+**Rule 85 — Never report a pooled correlation across widths on this kernel.** The width axis moves
+the instruction count, the register count and the achieved bandwidth together, so a pooled `r` is a
+width effect wearing whichever costume the author reaches for first. Stratify or use a width fixed
+effect.
+
+**Rule 86 — Every published price-ladder cell must carry the register delta of both of its rungs.**
+A contrast with a non-zero register delta is not an instruction reading and must be labelled as
+carrying an occupancy term.
+
+**Rule 87 — Every quoted residency coefficient names its frame.** The entry-point leg frame gives
+`c = 0.445 [0.139, 0.819]`; the isolated-body F47-weighted frame gives `c = 0.164 [0.089, 0.199]`.
+They are not interchangeable.
+
+**Rule 88 — Before pricing any arm from a register census, state the base commit of both sides of
+the census.** A census pair that spans a base change measures the base change.
+
+### ADVISOR ERRORS
+
+**97 — WITHDRAWN AND CORRECTED.** The assumed R vector was sound and is now measured to within 3 %
+out of sample on all seven drafting prompts. My infeasibility linear program bounded the *walk's*
+clamped-EMA `p` and compared it with the *realised* acceptance from `A/(R*eff)`. Those are different
+quantities, and a walk biased low terminates early, so the two are consistent. What I detected was
+E128's own primary result arriving through a badly specified instrument.
+
+**99 — I mixed the kernel frame and the leg frame in a residency solve, and then shipped the mistake
+to two students.** In ledger 273 I wrote the bracket as `+1.463 / +4.86 = 0.301` lower and
+`-2.100 / -10.57 = 0.199` upper, which has no solutions, because 1.463 is the kernel frame and 2.100
+is the leg frame. I then repeated the same conversion in E130 F1 and E129 F3, quoting
+`k_ranked = 0.525` from a converted kernel-frame number when a directly measured in-situ leg number
+was available. Corrected to `c = 0.445` in both PRs within twenty minutes. Askeladd caught it and
+named it correctly as Advisor Error 94 in miniature.
+
+**100 — I read the wrong column of a census I had already merged.** Alphonse's E126 rung-4
+`dispatched_width` table contained F107 on the day it was delivered. I priced the axis from the
+`na_body` table and reported an F47-weighted body residency, when the machine dispatches one entry
+point whose allocation is the maximum over bodies and whose correct weighting across widths is
+uniform.
+
+**101 — I assigned E130 rung 1 as per-width templating without checking that the host dispatcher is
+editable, and then cut the same rung from E129 for a reason that was wrong there.** Templating is
+unreachable in `quantized.h` and fully reachable in `Qwen35.swift`. Advisor Error 98 is amended: the
+original E129 rung 2 was assigned to the right student in the right file, and my scope cut was the
+error. Rung 2 is restored to thorfinn.
+
+### PROVENANCE FLAG, OPEN
+
+Thorfinn's reported Route B `applegpu_g17s` census of `102 regs / 38 sg` against an incumbent
+`101 / 39` is byte-for-byte askeladd's E121 entry-point census (`pre_e121` 101/39, `share_on`
+102/38). His rung 5e ran on pre-E121 `2127858b` and his rung 5g on post-E121 `4c4db8a2`, so a pair
+spanning that base change is available in his own history. **Route B's own entry-point register
+count is currently unknown.** E129 rung 2a-0 must re-census both Route B kernels and the incumbent
+from one base on both architectures before anyone prices Route B's architecture transfer. The
+pre-registered Route B receipt band is unaffected; only the residency correction to it is unpinned.
+
+### BOARD
+
+Crown unmoved at `bc070b7b` francip `3.35922017` since 2026-08-22T01:48:13Z, now more than seven
+hours. `4d3a03aa francip rejected 3.35185364` at 06:41Z is the crown holder failing to reproduce his
+own crown, a sixth independent confirmation of F96. Nothing above 3.352 since 01:48Z.
