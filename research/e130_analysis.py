@@ -168,7 +168,8 @@ def main() -> int:
     }
 
     # --- the occupancy response function --------------------------------------
-    strata, per_width: dict = [], {}
+    strata: list = []
+    per_width: dict = {}
     for (shape, m), arms in sorted(cells.items()):
         if m not in CLEAN_WIDTHS or REFERENCE not in arms:
             continue
