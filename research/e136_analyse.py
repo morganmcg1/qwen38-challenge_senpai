@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import statistics
@@ -107,7 +108,10 @@ def load_leg(directory):
         "entry_c": float(meta.get("gpu_temp_entry_c") or "nan"),
         "exit_c": float(meta.get("gpu_temp_exit_c") or "nan"),
         "worker_sha256": meta.get("worker_sha256"),
+        "worker_sha256_after_leg": meta.get("worker_sha256_after_leg"),
         "session_commit": meta.get("session_commit"),
+        "base_sha": meta.get("base_sha"),
+        "dirty_candidate_paths": meta.get("dirty_candidate_paths"),
         "cool_gate_passed_real_gate":
             meta.get("cool_gate_passed_real_gate") == "true",
         "gate_qualified_for_timing":
@@ -162,11 +166,80 @@ def summarise(legs, key):
             "sd": statistics.stdev(values) if len(values) > 1 else 0.0,
             "values": values,
         }
+    for arm in out:
+        block = out[arm]
+        block["se"] = block["sd"] / math.sqrt(block["n"]) if block["n"] else 0.0
     if "off" in out and "on" in out:
         base = out["off"]["mean"]
         cand = out["on"]["mean"]
         out["delta"] = cand - base
         out["delta_pct"] = 100.0 * (cand - base) / base if base else None
+        # Two independent arm means, so the variances add. The ABBA order
+        # counterbalances drift in the MEAN; it does not pair the legs, so a
+        # paired statistic would overstate the precision.
+        se = math.hypot(out["off"]["se"], out["on"]["se"])
+        out["se_delta"] = se
+        out["se_delta_pct"] = 100.0 * se / base if base else None
+        out["two_sigma_pct"] = 2.0 * out["se_delta_pct"] if base else None
+    return out
+
+
+def session_identity(legs):
+    """Assert the fields that must not move across a comparable session.
+
+    The stale-worker defect of 2026-08-22 got past a whole session because the
+    only thing checked was the source tree. `worker_sha256` is the fingerprint
+    of the binary that actually decoded the tokens, and it is the one field
+    that can witness a `Qwen35.swift` edit: `.build/release/mlxfast-swift`
+    carries no model code and does not relink for one.
+
+    `base_sha` is allowed to move when the session spans a research-tooling
+    commit, because `research/*.py` is not linked into the worker. That is
+    reported and must be justified by a diff, never assumed.
+    """
+    def distinct(key):
+        return sorted({leg.get(key) for leg in legs if leg.get(key)})
+
+    workers = distinct("worker_sha256")
+    after = distinct("worker_sha256_after_leg")
+    commits = distinct("session_commit")
+    bases = distinct("base_sha")
+    dirty = sorted({leg.get("dirty_candidate_paths") for leg in legs})
+
+    out = {
+        "worker_sha256": workers,
+        "worker_sha256_after_leg": after,
+        "session_commit": commits,
+        "base_sha": bases,
+        "dirty_candidate_paths": dirty,
+        "worker_uniform": len(workers) == 1 and len(set(workers + after)) == 1,
+        "session_commit_uniform": len(commits) == 1,
+        "base_sha_uniform": len(bases) == 1,
+        "no_dirty_candidate_paths": dirty == ["0"],
+    }
+    notes = []
+    notes.append(
+        f"worker_sha256 uniform across legs and unchanged by every leg: "
+        f"{out['worker_uniform']} ({workers[0][:16] if workers else 'none'}...)")
+    notes.append(f"session_commit uniform: {out['session_commit_uniform']} "
+                 f"({commits[0][:12] if commits else 'none'})")
+    notes.append(f"dirty candidate paths on every leg: 0 -> "
+                 f"{out['no_dirty_candidate_paths']}")
+    if out["base_sha_uniform"]:
+        notes.append(f"base_sha uniform: True ({bases[0][:12]})")
+    else:
+        notes.append(
+            f"base_sha MOVED mid-session across {len(bases)} commits "
+            f"({', '.join(b[:12] for b in bases)}). This is only acceptable if "
+            f"the intervening commits touch no candidate path; the identical "
+            f"worker_sha256 above is the evidence that the timed binary did "
+            f"not change. Verify with: git diff --name-only "
+            f"{bases[0][:12]}..{bases[-1][:12]}")
+    out["notes"] = notes
+    # The timed binary changing mid-session invalidates every comparison, so
+    # this one is fatal rather than reported.
+    assert out["worker_uniform"], (
+        f"the timed worker binary changed during the session: {workers} / {after}")
     return out
 
 
@@ -200,9 +273,14 @@ def main():
     keys = ("mtp_s_per_tok", "serial_s_per_tok", "speedup", "mean_draft_len",
             "realised_acceptance", "median_round_us", "median_draft_build_us",
             "entry_c")
+    identity = session_identity(legs)
+    print("\n-- session identity --")
+    for line in identity["notes"]:
+        print(f"  {line}")
     report = {
         "legs": legs,
         "label": args.label,
+        "identity": identity,
         "all_arms_witnessed": all(leg["arm_witnessed"] for leg in legs),
         "all_tokens_matched": all(leg["all_tokens_matched"] for leg in legs),
         "accepted_stream_divergences": sum(
@@ -237,9 +315,31 @@ def main():
         acc = report["realised_acceptance"]
         if "delta" in acc:
             report["e136_realised_acceptance_delta_pp"] = 100.0 * acc["delta"]
-        print(f"\ne136_c1_candidate_leg_pct = "
-              f"{report['e136_c1_candidate_leg_pct']:+.4f} "
+        headline = report["e136_c1_candidate_leg_pct"]
+        band = mtp.get("two_sigma_pct") or 0.0
+        report["e136_c1_candidate_leg_pct_two_sigma"] = band
+        print(f"\ne136_c1_candidate_leg_pct = {headline:+.4f} "
+              f"+/- {band:.4f} (2 sigma) "
               f"(positive means the C1 candidate leg is faster)")
+        # F4 section 8 states the advance bar as +0.6 %; the PR body section D
+        # states it as +0.30 %. The contradiction is unresolved, so the verdict
+        # is reported against both and the experiment advances on neither
+        # without a ruling.
+        report["stop_rule_verdict"] = {
+            key: {"bar": bar, "action": action,
+                  "point_clears": headline >= bar,
+                  "lower_2sigma_clears": headline - band >= bar}
+            for key, bar, action in (
+                ("advance_pr_body_0.30", 0.30, "advance if clears"),
+                ("advance_f4_0.60", 0.60, "advance if clears"),
+                ("close_below_0.25", 0.25, "CLOSE if it does NOT clear"))
+        }
+        print("\n-- stop rules, reported against both stated bars --")
+        for key, verdict in report["stop_rule_verdict"].items():
+            print(f"{key:<24} bar={verdict['bar']:.2f} "
+                  f"clears={'yes' if verdict['point_clears'] else 'no':<4} "
+                  f"lower2sigma={'yes' if verdict['lower_2sigma_clears'] else 'no':<4} "
+                  f"[{verdict['action']}]")
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as handle:

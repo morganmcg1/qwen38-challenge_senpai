@@ -1,0 +1,276 @@
+{
+ "grid": [
+  0.1,
+  0.125,
+  0.15,
+  0.175,
+  0.2,
+  0.25,
+  0.3,
+  0.35,
+  0.4,
+  0.5
+ ],
+ "rows": [
+  {
+   "cost_model": "shipped",
+   "p": 0.1,
+   "probes": 1230,
+   "coarse_rows": 9840,
+   "row_bytes": 1600,
+   "stage_bytes": 35503360,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": 23590400,
+   "gross_pct_vs_anchor": 0.5103149046633086
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.125,
+   "probes": 1537,
+   "coarse_rows": 12296,
+   "row_bytes": 1600,
+   "stage_bytes": 39432960,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": 19660800,
+   "gross_pct_vs_anchor": 0.42530856948607815
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.15,
+   "probes": 1844,
+   "coarse_rows": 14752,
+   "row_bytes": 1600,
+   "stage_bytes": 43362560,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": 15731200,
+   "gross_pct_vs_anchor": 0.34030223430884765
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.175,
+   "probes": 2152,
+   "coarse_rows": 17216,
+   "row_bytes": 1600,
+   "stage_bytes": 47304960,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": 11788800,
+   "gross_pct_vs_anchor": 0.2550190055316914
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.2,
+   "probes": 2459,
+   "coarse_rows": 19672,
+   "row_bytes": 1600,
+   "stage_bytes": 51234560,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": 7859200,
+   "gross_pct_vs_anchor": 0.1700126703544609
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.25,
+   "probes": 3073,
+   "coarse_rows": 24584,
+   "row_bytes": 1600,
+   "stage_bytes": 59093760,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": 0,
+   "gross_pct_vs_anchor": 0.0
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.3,
+   "probes": 3688,
+   "coarse_rows": 29504,
+   "row_bytes": 1600,
+   "stage_bytes": 66965760,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": -7872000,
+   "gross_pct_vs_anchor": -0.17028956395438674
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.35,
+   "probes": 4303,
+   "coarse_rows": 34424,
+   "row_bytes": 1600,
+   "stage_bytes": 74837760,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": -15744000,
+   "gross_pct_vs_anchor": -0.3405791279087735
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.4,
+   "probes": 4917,
+   "coarse_rows": 39336,
+   "row_bytes": 1600,
+   "stage_bytes": 82696960,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": -23603200,
+   "gross_pct_vs_anchor": -0.5105917982632344
+  },
+  {
+   "cost_model": "shipped",
+   "p": 0.5,
+   "probes": 6146,
+   "coarse_rows": 49168,
+   "row_bytes": 1600,
+   "stage_bytes": 98428160,
+   "anchor_p": 0.25,
+   "removed_vs_anchor_bytes": -39334400,
+   "gross_pct_vs_anchor": -0.8508940325720822
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.1,
+   "probes": 1230,
+   "coarse_rows": 9840,
+   "row_bytes": 264,
+   "stage_bytes": 15120288,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 6490176,
+   "gross_pct_vs_anchor": 0.14039751537439354
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.125,
+   "probes": 1537,
+   "coarse_rows": 12296,
+   "row_bytes": 264,
+   "stage_bytes": 15768672,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 5841792,
+   "gross_pct_vs_anchor": 0.1263714700701505
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.15,
+   "probes": 1844,
+   "coarse_rows": 14752,
+   "row_bytes": 264,
+   "stage_bytes": 16417056,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 5193408,
+   "gross_pct_vs_anchor": 0.1123454247659075
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.175,
+   "probes": 2152,
+   "coarse_rows": 17216,
+   "row_bytes": 264,
+   "stage_bytes": 17067552,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 4542912,
+   "gross_pct_vs_anchor": 0.0982736920176767
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.2,
+   "probes": 2459,
+   "coarse_rows": 19672,
+   "row_bytes": 264,
+   "stage_bytes": 17715936,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 3894528,
+   "gross_pct_vs_anchor": 0.08424764671343368
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.25,
+   "probes": 3073,
+   "coarse_rows": 24584,
+   "row_bytes": 264,
+   "stage_bytes": 19012704,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 2597760,
+   "gross_pct_vs_anchor": 0.05619555610494763
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.3,
+   "probes": 3688,
+   "coarse_rows": 29504,
+   "row_bytes": 264,
+   "stage_bytes": 20311584,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 1298880,
+   "gross_pct_vs_anchor": 0.028097778052473814
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.35,
+   "probes": 4303,
+   "coarse_rows": 34424,
+   "row_bytes": 264,
+   "stage_bytes": 21610464,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": 0,
+   "gross_pct_vs_anchor": 0.0
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.4,
+   "probes": 4917,
+   "coarse_rows": 39336,
+   "row_bytes": 264,
+   "stage_bytes": 22907232,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": -1296768,
+   "gross_pct_vs_anchor": -0.02805209060848605
+  },
+  {
+   "cost_model": "c1",
+   "p": 0.5,
+   "probes": 6146,
+   "coarse_rows": 49168,
+   "row_bytes": 264,
+   "stage_bytes": 25502880,
+   "anchor_p": 0.35,
+   "removed_vs_anchor_bytes": -3892416,
+   "gross_pct_vs_anchor": -0.08420195926944592
+  }
+ ],
+ "harness": "local",
+ "official_or_ranked_score": false,
+ "timing_valid": false,
+ "preregistered_prediction": {
+  "written_before_screen_ran": true,
+  "5a_shipped_argmax": "the shipped ladder keeps falling below p=0.15, because gross rises linearly at 0.0340 %/0.01p while recall is already 1.000 at the probe stage; the argmax is set by where acc_loss finally turns up, not by where gross stops paying",
+  "5b_c1_argmax": "under C1 the WHOLE probe lever from p=0.35 to p=0.10 is worth +0.1404 % gross, which is below the pooled 2-sigma clustered null floor of 0.1462 % that the acceptance side is measured against. So there is no argmax worth acting on under C1: the C1 sketch already removed the bytes the probe fraction was buying. C1 and the probe-fraction rider are substitutes, not complements.",
+  "5b_direction_check": "the advisor predicted the C1 argmax moves UP. The cost side agrees in direction, and adds that the move is too small to measure or to ship.",
+  "risk": "C1 orders leaves with the sketch, not with the affine-2 centroid readout. If the sketch ordering is worse, recall at a given p falls faster under C1 and the acceptance loss of lowering p is LARGER under C1 than under the shipped chain. That would strengthen this conclusion, not weaken it. The falsifier is the opposite: recall_wg under lowrank256 at low p must not be materially BETTER than under exact0."
+ },
+ "marginal_bytes_per_0.01_p_shipped": 1573376.0,
+ "marginal_pct_per_0.01_p_shipped": 0.034035761302883286,
+ "marginal_bytes_per_0.01_p_c1": 259607.04,
+ "marginal_pct_per_0.01_p_c1": 0.005615900614975741,
+ "null_floors": {
+  "perfect_readout:gating": {
+   "n": 9671,
+   "two_sigma_null_pct": 0.2587893790926899,
+   "two_sigma_clustered_pct": 0.16625750597654518,
+   "floor_pure_gain_pct": 0.304153571228389
+  },
+  "perfect_readout:corpus": {
+   "n": 11244,
+   "two_sigma_null_pct": 0.23677695133996907,
+   "two_sigma_clustered_pct": 0.14615109820321256,
+   "floor_pure_gain_pct": 0.2756224946432395
+  },
+  "sketch_arm_incremental:gating": {
+   "n": 9671,
+   "two_sigma_null_pct": 0.10283247188191191,
+   "two_sigma_clustered_pct": 0.08626312636422999,
+   "floor_pure_gain_pct": 0.15305294512379525
+  },
+  "sketch_arm_incremental:corpus": {
+   "n": 11244,
+   "two_sigma_null_pct": 0.08844653464692015,
+   "two_sigma_clustered_pct": 0.07391573254428264,
+   "floor_pure_gain_pct": 0.13164132268696405
+  }
+ }
+}
