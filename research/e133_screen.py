@@ -252,11 +252,23 @@ def draft_ledger(seed: str) -> dict[str, np.ndarray] | None:
             if r["kind"] == "draft"]
     if not rows:
         return None
+    accepted = np.asarray([bool(r["accepted"]) for r in rows], dtype=bool)
+    rnd = np.asarray([r["round"] for r in rows], dtype=np.int64)
+    # Speculative acceptance is prefix-monotone: a round keeps its longest
+    # correct prefix and discards every later row. So a row is LIVE only when
+    # every earlier row of its round was accepted, and `accepted` factors
+    # exactly as `prefix_live AND (token == reference_token)`. A substitution
+    # on a dead row cannot change acceptance, because the round already threw
+    # that row away. `cmd_validate` asserts the factorisation.
+    first = np.concatenate([[True], rnd[1:] != rnd[:-1]])
+    prefix_live = np.where(first, True,
+                           np.concatenate([[True], accepted[:-1]]))
     return {
         "token": np.asarray([r["token"] for r in rows], dtype=np.int64),
         "reference": np.asarray([r["reference_token"] for r in rows], dtype=np.int64),
-        "accepted": np.asarray([bool(r["accepted"]) for r in rows], dtype=bool),
-        "round": np.asarray([r["round"] for r in rows], dtype=np.int64),
+        "accepted": accepted,
+        "prefix_live": prefix_live,
+        "round": rnd,
         "draft_index": np.asarray([r["draft_index"] for r in rows], dtype=np.int64),
     }
 
@@ -288,11 +300,12 @@ def align_shard(seed: str, shards, ledger) -> tuple[Path, Path, int]:
 
 
 def chunks(batch: int, limit: int = 0, only_seeds: set[str] | None = None):
-    """Yield `(seed, stratum, x_bf16, proposal, reference, accepted)`.
+    """Yield `(seed, stratum, x_bf16, proposal, reference, accepted, live)`.
 
     Every yielded sample is one verified draft row: the hidden state that
     reached the readout, the token the shipped chain returned for it, the
-    target's own token at that row, and the parent's accept verdict.
+    target's own token at that row, the parent's accept verdict, and whether
+    the row's round still had an unbroken accepted prefix when it ran.
     """
     meta = seed_meta()
     total = 0
@@ -319,7 +332,8 @@ def chunks(batch: int, limit: int = 0, only_seeds: set[str] | None = None):
             yield (seed, stratum, xb,
                    ledger["token"][start:stop],
                    ledger["reference"][start:stop],
-                   ledger["accepted"][start:stop])
+                   ledger["accepted"][start:stop],
+                   ledger["prefix_live"][start:stop])
             total += stop - start
 
 
@@ -636,13 +650,13 @@ class Stratum:
 
     __slots__ = ("n", "miss_abs", "miss_inc", "worse", "better", "recall",
                  "probe_hit", "survivor_hit", "subst_is_target", "subst_total",
-                 "subst_shipped_is_target")
+                 "subst_live", "subst_shipped_is_target")
 
     def __init__(self) -> None:
         self.n = self.miss_abs = self.miss_inc = 0
         self.worse = self.better = self.recall = 0
         self.probe_hit = self.survivor_hit = 0
-        self.subst_is_target = self.subst_total = 0
+        self.subst_is_target = self.subst_total = self.subst_live = 0
         self.subst_shipped_is_target = 0
 
 
@@ -662,11 +676,13 @@ class Cell:
         return self.by_stratum[stratum]
 
     def add(self, stratum: str, miss_abs, base_abs, miss_inc, recall, probe,
-            survivor, subst_total: int = 0, subst_hit: int = 0,
-            subst_shipped_hit: int = 0, watch: str | None = None) -> None:
+            survivor, subst_total: int = 0, subst_live: int = 0,
+            subst_hit: int = 0, subst_shipped_hit: int = 0,
+            watch: str | None = None) -> None:
         if watch:
             self.add(watch, miss_abs, base_abs, miss_inc, recall, probe,
-                     survivor, subst_total, subst_hit, subst_shipped_hit)
+                     survivor, subst_total, subst_live, subst_hit,
+                     subst_shipped_hit)
         s = self.slot(stratum)
         s.n += int(miss_abs.size)
         s.miss_abs += int(miss_abs.sum())
@@ -677,6 +693,7 @@ class Cell:
         s.probe_hit += int(probe.sum())
         s.survivor_hit += int(survivor.sum())
         s.subst_total += subst_total
+        s.subst_live += subst_live
         s.subst_is_target += subst_hit
         s.subst_shipped_is_target += subst_shipped_hit
 
@@ -815,8 +832,8 @@ def sketch_state(screen: Screen, sketch: Sketch, f, x: mx.array) -> dict:
 def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
             survivor_widths, base_miss: np.ndarray, base_compact: mx.array,
             stratum: str, reference: np.ndarray, base_vocab: np.ndarray,
-            cells: dict[tuple, Cell], stage_a: str = "sketch",
-            watch: str | None = None) -> None:
+            live: np.ndarray, cells: dict[tuple, Cell],
+            stage_a: str = "sketch", watch: str | None = None) -> None:
     """One sketch cell family. `stage_a` chooses who orders the leaves.
 
     `sketch` sketches both stages, which is C1 as designed. `affine2` keeps
@@ -880,12 +897,14 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
 
             miss_abs = np.asarray(out != f["argmax_row"]).astype(bool)
             miss_inc = np.asarray(out != base_compact).astype(bool)
-            # F1.5. A substituted row costs `p - q`: the shipped token might
-            # have been accepted, and the substitute might be accepted too.
-            # Both sides are counted on the SAME substituted rows, so the
-            # difference is the exact net acceptance loss, not a mix of a
-            # conditional rate and a pooled one.
-            swapped = miss_inc
+            # F1.5, corrected for prefix-monotone acceptance. A substitution
+            # can only cost acceptance on a LIVE row, because a round discards
+            # every row after its first rejection. On a live row the shipped
+            # token was accepted exactly when it matched the reference, and
+            # the substitute is accepted exactly when it matches instead.
+            # Both sides are counted on the SAME live substituted rows, so the
+            # difference is the exact net acceptance loss.
+            swapped = miss_inc & live
             hit = shipped_hit = 0
             if swapped.any():
                 out_vocab = np.asarray(H.compact_to_vocab(out))
@@ -896,7 +915,8 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
                      np.asarray(recall).astype(bool),
                      np.asarray(probe_hit).astype(bool),
                      np.asarray(survivor).astype(bool),
-                     subst_total=int(swapped.sum()), subst_hit=hit,
+                     subst_total=int(miss_inc.sum()),
+                     subst_live=int(swapped.sum()), subst_hit=hit,
                      subst_shipped_hit=shipped_hit, watch=watch)
             if n_keep == max_width:
                 cell.add_ranks(stratum, rank_np, watch)
@@ -918,12 +938,12 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         net = (s.worse - s.better) / s.n if s.n else float("nan")
         disc = s.worse + s.better
         _, dlo, dhi = wilson(s.worse, disc)
-        q = (s.subst_is_target / s.subst_total) if s.subst_total else 0.0
-        # `p` in F1.5, measured on the substituted rows themselves. The pooled
-        # per-step acceptance is reported too, but pricing a conditional event
-        # with a pooled rate would mix two different populations.
-        p_sub = ((s.subst_shipped_is_target / s.subst_total)
-                 if s.subst_total else 0.0)
+        q = (s.subst_is_target / s.subst_live) if s.subst_live else 0.0
+        # `p` in F1.5, measured on the LIVE substituted rows themselves. The
+        # pooled per-step acceptance is reported too, but pricing a
+        # conditional event with a pooled rate would mix two populations.
+        p_sub = ((s.subst_shipped_is_target / s.subst_live)
+                 if s.subst_live else 0.0)
         p_step = p_by_stratum.get(name, float("nan"))
         loss = (s.subst_shipped_is_target - s.subst_is_target) / s.n if s.n else 0.0
         by_stratum[name] = {
@@ -943,11 +963,12 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
             "probe_hit_rate": s.probe_hit / s.n if s.n else float("nan"),
             "survivor_hit_rate": s.survivor_hit / s.n if s.n else float("nan"),
             "p_head_step_accuracy": p_step,
-            "p_shipped_is_target_on_substituted": p_sub,
+            "p_shipped_is_target_on_live_substituted": p_sub,
             "q_substitute_is_target": q,
             "substitutions": s.subst_total,
-            # F1.5: the realised acceptance loss, not the raw miss rate.
-            # Identical to m_incremental * (p_sub - q) by construction.
+            "substitutions_live": s.subst_live,
+            # F1.5: the realised acceptance loss, not the raw miss rate. It is
+            # `(live substitutions / n) * (p_sub - q)` by construction.
             "acceptance_loss": loss,
             "acceptance_loss_pooled_p": m_inc * (p_step - q) if p_step == p_step
                                         else None,
@@ -1035,9 +1056,10 @@ def cmd_validate(args) -> None:
     damaged = Sketch("simhash", 8, screen.rows, screen.centroids, screen.mu, None)
 
     n = tok_ok = shipped_miss = damaged_miss = 0
-    accept_hits = verdict_ok = shipped_reproduces = 0
+    accept_hits = verdict_ok = shipped_reproduces = live_rows = accepted_rows = 0
     ranks: list[int] = []
-    for _, stratum, x, proposal, reference, accepted in chunks(args.batch, args.limit):
+    for _, stratum, x, proposal, reference, accepted, live in chunks(args.batch,
+                                                                     args.limit):
         f = screen.front(x)
         vocab = np.asarray(H.compact_to_vocab(f["argmax_row"]))
         tok_ok += int(np.sum(vocab == proposal))
@@ -1048,11 +1070,14 @@ def cmd_validate(args) -> None:
             got = mx.array(H.vocab_to_compact(proposal[bad]).astype(np.int32))
             mine = mx.take_along_axis(sub, got[:, None], axis=1)[:, 0]
             ranks += [int(v) for v in np.asarray(mx.sum(sub > mine[:, None], axis=1))]
-        # F1.5: `p`, the shipped chain's per-step acceptance at this row.
+        # F1.5: `p`, the shipped chain's per-row match with the target.
         accept_hits += int((proposal == reference).sum())
-        # The parent's own verdict must agree with that comparison, or the
-        # ledger does not mean what the price model assumes it means.
-        verdict_ok += int(((proposal == reference) == accepted).sum())
+        # Acceptance is prefix-monotone, so the parent's verdict must factor
+        # EXACTLY as `prefix_live AND match`. If it does not, the price model's
+        # notion of a live row is wrong and every cell would be mispriced.
+        verdict_ok += int((((proposal == reference) & live) == accepted).sum())
+        live_rows += int(live.sum())
+        accepted_rows += int(accepted.sum())
 
         base_miss, base_compact = screen.shipped(f)
         base_vocab = np.asarray(H.compact_to_vocab(base_compact))
@@ -1062,7 +1087,7 @@ def cmd_validate(args) -> None:
         run_arm(screen, damaged, f, sketch_state(screen, damaged, f, x),
                 [SHIPPED_PROBE_FRACTION], [256],
                 base_miss, base_compact, stratum, reference, base_vocab,
-                cells)
+                live, cells)
         damaged_miss += cells[
             (damaged.key, "sketch", 256, SHIPPED_PROBE_FRACTION)].pooled("miss_abs")
         n += f["b"]
@@ -1072,10 +1097,13 @@ def cmd_validate(args) -> None:
         "samples": n,
         "offline_argmax_matches_runtime_proposal": tok_ok / n if n else float("nan"),
         "proposal_mismatch": {"count": len(ranks), "rank_max": max(ranks, default=0)},
-        "ledger_verdict_consistent": verdict_ok / n if n else float("nan"),
+        "ledger_verdict_factors_as_live_and_match":
+            verdict_ok / n if n else float("nan"),
         "offline_shipped_chain_reproduces_runtime":
             shipped_reproduces / n if n else float("nan"),
-        "p_head_step_accuracy": accept_hits / n if n else float("nan"),
+        "p_row_matches_reference": accept_hits / n if n else float("nan"),
+        "p_row_accepted": accepted_rows / n if n else float("nan"),
+        "prefix_live_rate": live_rows / n if n else float("nan"),
         "m_shipped_live_chain": {
             "misses": shipped_miss, "p": shipped_miss / n if n else float("nan"),
             "lo": lo, "hi": hi},
@@ -1104,8 +1132,8 @@ def cmd_screen(args) -> None:
     accept: dict[str, list[int]] = {}
     n = 0
     t0 = time.time()
-    for seed, stratum, x, proposal, reference, accepted in chunks(args.batch,
-                                                                  args.limit):
+    for seed, stratum, x, proposal, reference, accepted, live in chunks(
+            args.batch, args.limit):
         watch = seed if seed in WATCH_STRATA else None
         f = screen.front(x)
         base_miss, base_compact = screen.shipped(f)
@@ -1114,16 +1142,17 @@ def cmd_screen(args) -> None:
         base_cell.add(stratum, base_miss, base_miss, falses, ~falses, ~falses,
                       ~falses, watch=watch)
         for key in (stratum, watch) if watch else (stratum,):
-            slot = accept.setdefault(key, [0, 0, 0])
+            slot = accept.setdefault(key, [0, 0, 0, 0])
             slot[0] += int(proposal.size)
             slot[1] += int((base_vocab == reference).sum())
             slot[2] += int((base_vocab == proposal).sum())
+            slot[3] += int(accepted.sum())
         for sketch in sketches:
             state = sketch_state(screen, sketch, f, x)
             for stage_a in stages:
                 run_arm(screen, sketch, f, state, fractions, widths, base_miss,
-                        base_compact, stratum, reference, base_vocab, cells,
-                        stage_a, watch)
+                        base_compact, stratum, reference, base_vocab, live,
+                        cells, stage_a, watch)
             del state
         n += f["b"]
         if n % (args.batch * 10) == 0:
@@ -1140,6 +1169,13 @@ def cmd_screen(args) -> None:
         "p_head_step_accuracy": (sum(v[1] for v in real.values()) / aligned
                                  if aligned else float("nan")),
         "p_head_step_accuracy_by_stratum": p_by_stratum,
+        # The emitted-token rate, which is strictly below the row match rate
+        # because a round discards every row after its first rejection.
+        "p_row_accepted": (sum(v[3] for v in real.values()) / aligned
+                           if aligned else float("nan")),
+        "p_row_accepted_by_stratum": {
+            k: (v[3] / v[0] if v[0] else float("nan"))
+            for k, v in accept.items()},
         "offline_shipped_chain_reproduces_runtime":
             (sum(v[2] for v in real.values()) / aligned
              if aligned else float("nan")),

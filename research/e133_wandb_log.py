@@ -92,8 +92,8 @@ STRATUM_COLUMNS = [
     "m_incremental_hi",
     "net_miss", "net_miss_lo", "net_miss_hi", "discordant",
     "recall", "probe_hit_rate", "survivor_hit_rate",
-    "p_head_step_accuracy", "p_shipped_is_target_on_substituted",
-    "q_substitute_is_target", "substitutions",
+    "p_head_step_accuracy", "p_shipped_is_target_on_live_substituted",
+    "q_substitute_is_target", "substitutions", "substitutions_live",
     "acceptance_loss", "acceptance_loss_pooled_p",
     "tail_fit_usable", "tail_fit_p", "tail_fit_lo", "tail_fit_hi",
 ]
@@ -154,9 +154,10 @@ def corpus_summary(payload: dict) -> tuple[dict, dict]:
 def validate_summary(payload: dict) -> tuple[dict, dict]:
     summary: dict = {"validate_samples": payload["samples"]}
     for key in ("offline_argmax_matches_runtime_proposal",
-                "ledger_verdict_consistent",
+                "ledger_verdict_factors_as_live_and_match",
+                "p_row_accepted", "prefix_live_rate", "p_row_matches_reference",
                 "offline_shipped_chain_reproduces_runtime",
-                "p_head_step_accuracy"):
+                ):
         summary[key] = payload.get(key)
     for section in ("proposal_mismatch", "m_shipped_live_chain",
                     "m_damaged_simhash8_control"):
@@ -222,6 +223,7 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
                 default=float("nan")),
         "best_cell_arm": best["arm"] if best else None,
         "p_head_step_accuracy": payload.get("p_head_step_accuracy"),
+        "p_row_accepted": payload.get("p_row_accepted"),
         "offline_shipped_chain_reproduces_runtime":
             payload.get("offline_shipped_chain_reproduces_runtime"),
         "t0_threshold": T0_NET_MISS,
