@@ -20,7 +20,9 @@ shift
 out_dir="research/out/${tag}"
 arms_dir="/tmp/e125-arms"
 bin="/tmp/e125_frame_probe"
-arms="${E125_ARMS:-a_base,q_scaffold,n_nosums:diag,k_ld8,k_ld16,k_alu8,k_alu16}"
+arm_rev="${E125_ARM_REV:-5d97175c~1}"
+arms="$(python3 research/e125_arms.py --arm-list)"
+[[ -n "${arms}" ]] || { echo "e125_probe: empty arm list" >&2; exit 1; }
 mkdir -p "${out_dir}"
 
 macmon_bin=""
@@ -38,7 +40,7 @@ gpu_temp() {
 }
 
 rm -rf "${arms_dir}"
-python3 research/e123_arms.py --emit "${arms_dir}" 2>&1 \
+python3 research/e125_arms.py --emit "${arms_dir}" --rev "${arm_rev}" 2>&1 \
   | tee "${out_dir}/arms.log" || exit 1
 
 clang -fobjc-arc -O2 -Wno-format-nonliteral -framework Metal \
@@ -64,6 +66,8 @@ exit_c="$(gpu_temp)"
   echo "harness=local"
   echo "instrument=research/e125_frame_probe.m (E118 probe plus the frame axis)"
   echo "arms=${arms}"
+  echo "arm_twin_rev=${arm_rev}"
+  echo "arm_twin_sha=$(git rev-parse "${arm_rev}")"
   echo "args=$*"
   echo "started_utc=${start_iso}"
   echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
