@@ -1,0 +1,892 @@
+{
+ "cluster0": [
+  "3b376ba2",
+  "c63eaa21",
+  "48423d09"
+ ],
+ "cluster1": [
+  "1986338b",
+  "d3c491b5",
+  "2d02ef0b"
+ ],
+ "defect19_live_observation": {
+  "blocks_hit": 4,
+  "blocks_total": 8,
+  "clean_us": 300.0,
+  "inflated_us": 1254.7,
+  "inflation_ratio": 4.182333333333333,
+  "source": "campaign-ledger.md, Harness defect 19 observed live",
+  "tensor": "fa.qkv at M=3"
+ },
+ "harness": "ranked",
+ "legs": {
+  "candidate": {
+   "anova": {
+    "df_between": 5,
+    "df_within": 36,
+    "f_ratio": 33.81466773705318,
+    "icc": 0.8241853970443784,
+    "ms_between": 1583374.0647561583,
+    "ms_within": 46825.06647909897,
+    "sd_between_receipt_means": 475.60098293124406,
+    "sd_within_receipt": 216.39100369261882
+   },
+   "cluster1_two_way": {
+    "df_prompt": 6,
+    "df_residual": 12,
+    "f_prompt": 3.6136812052499936,
+    "grand_mean_us": 864.1107191006681,
+    "prompt_means_us": [
+     1044.7702432539684,
+     1052.3971147798713,
+     950.5736824242473,
+     557.6160939068101,
+     522.7865797101414,
+     795.6943640740748,
+     1124.9369555555636
+    ],
+    "prompt_share_of_total": 0.6350295487695992,
+    "residual_sd_us": 222.78528368138555,
+    "ss_prompt": 1076153.1634608423,
+    "ss_receipt": 22897.978303281336,
+    "ss_residual": 595599.3914999452
+   },
+   "cluster_means": {
+    "cluster0": -0.922528957271228,
+    "cluster1": 864.1107191006681
+   },
+   "defect19_null": {
+    "hit_rate": 0.5,
+    "null_icc_max": 0.8305514814712059,
+    "null_icc_median": 0.22891087576975935,
+    "null_icc_p95": 0.4639291545366273,
+    "observed_icc": 0.8241853970443784,
+    "p_value_icc_ge_observed": 5e-05,
+    "seed": 130,
+    "trials": 20000
+   },
+   "per_receipt": {
+    "1986338b": {
+     "cluster": 1,
+     "mean_us_per_drafting_round": 838.0333524552962,
+     "prompts": [
+      {
+       "delta_us": -22817.945599999945,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 160699.03360000026,
+       "delta_us_per_drafting_round": 1035.0081916666682,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": 134420.01920000024,
+       "delta_us_per_drafting_round": 959.7537853773601,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 97548.95360000049,
+       "delta_us_per_drafting_round": 1025.372523636369,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 46463.02719999973,
+       "delta_us_per_drafting_round": 543.5128139784914,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 33682.12479999944,
+       "delta_us_per_drafting_round": 400.4328695652107,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 63520.05120000026,
+       "delta_us_per_drafting_round": 776.0804866666699,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 80657.15200000057,
+       "delta_us_per_drafting_round": 1126.0727962963042,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.047413475819397,
+     "residual_skewness": -0.6030229903976655,
+     "sd_over_step": 0.29541379802761,
+     "sd_us_per_drafting_round": 275.0007045839021
+    },
+    "2d02ef0b": {
+     "cluster": 1,
+     "mean_us_per_drafting_round": 910.6985915407969,
+     "prompts": [
+      {
+       "delta_us": -20490.035199999922,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 181831.11679999976,
+       "delta_us_per_drafting_round": 1171.1128011904746,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": 119417.03679999983,
+       "delta_us_per_drafting_round": 852.6330660377346,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 123500.95360000068,
+       "delta_us_per_drafting_round": 1298.16343272728,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 36968.960000000276,
+       "delta_us_per_drafting_round": 432.45360215054086,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 63853.158399999724,
+       "delta_us_per_drafting_round": 759.1238260869533,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 56567.091199999806,
+       "delta_us_per_drafting_round": 691.1300422222199,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 83823.10400000037,
+       "delta_us_per_drafting_round": 1170.2733703703755,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.2370813325484913,
+     "residual_skewness": -0.1776861105800613,
+     "sd_over_step": 0.33645812213370746,
+     "sd_us_per_drafting_round": 313.2088658942683
+    },
+    "3b376ba2": {
+     "cluster": 0,
+     "mean_us_per_drafting_round": -60.239285744614484,
+     "prompts": [
+      {
+       "delta_us": 4745.983999999481,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": -6988.851199999146,
+       "delta_us_per_drafting_round": -45.012829761899255,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -4918.937600001172,
+       "delta_us_per_drafting_round": -35.12102594340459,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": -6999.039999999291,
+       "delta_us_per_drafting_round": -73.56945454544709,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": -5902.02879999957,
+       "delta_us_per_drafting_round": -69.04044946236056,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": -9094.963200000806,
+       "delta_us_per_drafting_round": -108.12626086957479,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": -4940.031999999484,
+       "delta_us_per_drafting_round": -60.35672777777147,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": -2180.9151999994115,
+       "delta_us_per_drafting_round": -30.448251851843636,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.1130054595122398,
+     "residual_skewness": -0.629398971172019,
+     "sd_over_step": 0.028753138126527487,
+     "sd_us_per_drafting_round": 26.766296281984438
+    },
+    "48423d09": {
+     "cluster": 0,
+     "mean_us_per_drafting_round": 26.633678408645157,
+     "prompts": [
+      {
+       "delta_us": -21349.990399999188,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 6756.1983999997465,
+       "delta_us_per_drafting_round": 43.51439166666503,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -2110.9760000008746,
+       "delta_us_per_drafting_round": -15.072287735855301,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 3427.020800000236,
+       "delta_us_per_drafting_round": 36.0226618181843,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 1119.027199999678,
+       "delta_us_per_drafting_round": 13.090098924727418,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 2789.0175999996104,
+       "delta_us_per_drafting_round": 33.157478260864934,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 2291.91679999996,
+       "delta_us_per_drafting_round": 28.0023688888884,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 3418.112000000306,
+       "delta_us_per_drafting_round": 47.72103703704131,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 0.9787736665725166,
+     "residual_skewness": -1.0752478481211227,
+     "sd_over_step": 0.02314391775912681,
+     "sd_us_per_drafting_round": 21.544673041971148
+    },
+    "c63eaa21": {
+     "cluster": 0,
+     "mean_us_per_drafting_round": 30.838020464155644,
+     "prompts": [
+      {
+       "delta_us": -23414.93760000013,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 6336.102400000598,
+       "delta_us_per_drafting_round": 40.808695238099084,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -4403.968000000092,
+       "delta_us_per_drafting_round": -31.44416273584971,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 4866.969600000104,
+       "delta_us_per_drafting_round": 51.15848727272837,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 581.9903999997323,
+       "delta_us_per_drafting_round": 6.807977419351707,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 3884.083199999999,
+       "delta_us_per_drafting_round": 46.176260869565205,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 2516.9920000003285,
+       "delta_us_per_drafting_round": 30.752311111115127,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 5128.960000000405,
+       "delta_us_per_drafting_round": 71.60657407407973,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.2051550546878766,
+     "residual_skewness": -0.8124989191982925,
+     "sd_over_step": 0.03633953341616037,
+     "sd_us_per_drafting_round": 33.82847165710369
+    },
+    "d3c491b5": {
+     "cluster": 1,
+     "mean_us_per_drafting_round": 843.6002133059113,
+     "prompts": [
+      {
+       "delta_us": -4943.923199999034,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 144114.02240000016,
+       "delta_us_per_drafting_round": 928.1897369047629,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": 188348.9791999988,
+       "delta_us_per_drafting_round": 1344.8044929245198,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 50248.96000000023,
+       "delta_us_per_drafting_round": 528.1850909090933,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 59574.01600000001,
+       "delta_us_per_drafting_round": 696.881865591398,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 34386.175999999934,
+       "delta_us_per_drafting_round": 408.80304347826007,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 75289.0368000001,
+       "delta_us_per_drafting_round": 919.8725633333346,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 77247.1296000008,
+       "delta_us_per_drafting_round": 1078.4647000000111,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.5474852569528776,
+     "residual_skewness": 0.1227892858396287,
+     "sd_over_step": 0.3479246669530176,
+     "sd_us_per_drafting_round": 323.8830724665641
+    }
+   },
+   "pooled_within_receipt_sd": 216.39100369261882,
+   "step_over_pooled_within_sd": 4.301934849945674,
+   "zero_drafting_control": {
+    "cluster0_mean_delta_us": -13339.647999999945,
+    "cluster1_mean_delta_us": -16083.967999999635,
+    "per_receipt": {
+     "1986338b": [
+      {
+       "delta_us": -22817.945599999945,
+       "prompt": "plutarch"
+      }
+     ],
+     "2d02ef0b": [
+      {
+       "delta_us": -20490.035199999922,
+       "prompt": "plutarch"
+      }
+     ],
+     "3b376ba2": [
+      {
+       "delta_us": 4745.983999999481,
+       "prompt": "plutarch"
+      }
+     ],
+     "48423d09": [
+      {
+       "delta_us": -21349.990399999188,
+       "prompt": "plutarch"
+      }
+     ],
+     "c63eaa21": [
+      {
+       "delta_us": -23414.93760000013,
+       "prompt": "plutarch"
+      }
+     ],
+     "d3c491b5": [
+      {
+       "delta_us": -4943.923199999034,
+       "prompt": "plutarch"
+      }
+     ]
+    }
+   }
+  },
+  "serial": {
+   "anova": {
+    "df_between": 5,
+    "df_within": 36,
+    "f_ratio": 0.3418758802132134,
+    "icc": -0.10377436143778021,
+    "ms_between": 81485.64491763047,
+    "ms_within": 238348.62192328792,
+    "sd_between_receipt_means": 107.89256886738934,
+    "sd_within_receipt": 488.20960859377595
+   },
+   "cluster_means": {
+    "cluster0": 44.39523129455426,
+    "cluster1": 149.88357378585587
+   },
+   "per_receipt": {
+    "1986338b": {
+     "cluster": 1,
+     "mean_us_per_drafting_round": 238.3488723269762,
+     "prompts": [
+      {
+       "delta_us": -28420.09599999784,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 59570.07359999977,
+       "delta_us_per_drafting_round": 383.6707214285699,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -41766.09279999966,
+       "delta_us_per_drafting_round": -298.20830188678997,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": -44850.94400000023,
+       "delta_us_per_drafting_round": -471.44458181818425,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 75762.02239999929,
+       "delta_us_per_drafting_round": 886.2450956989164,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 2899.8655999998846,
+       "delta_us_per_drafting_round": 34.47530434782472,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 52359.935999998444,
+       "delta_us_per_drafting_round": 639.7275166666477,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 35382.01599999979,
+       "delta_us_per_drafting_round": 493.97635185184896,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.2955320878090184,
+     "residual_skewness": -0.23624590827394673,
+     "sd_over_step": 0.5372225624651359,
+     "sd_us_per_drafting_round": 500.100483398795
+    },
+    "2d02ef0b": {
+     "cluster": 1,
+     "mean_us_per_drafting_round": 4.394129086722854,
+     "prompts": [
+      {
+       "delta_us": -20339.0975999973,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 49176.21759999946,
+       "delta_us_per_drafting_round": 316.7274059523774,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -132694.9887999973,
+       "delta_us_per_drafting_round": -947.437134433943,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 38589.13280000209,
+       "delta_us_per_drafting_round": 405.62440727274924,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 20724.992000001665,
+       "delta_us_per_drafting_round": 242.43574731184742,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": -38289.100800000146,
+       "delta_us_per_drafting_round": -455.20330434782784,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 13739.980800000496,
+       "delta_us_per_drafting_round": 167.8734633333394,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 21540.966399999917,
+       "delta_us_per_drafting_round": 300.73831851851736,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 0.7901869356432943,
+     "residual_skewness": -1.128232370723674,
+     "sd_over_step": 0.5454573817504139,
+     "sd_us_per_drafting_round": 507.7662766714603
+    },
+    "3b376ba2": {
+     "cluster": 0,
+     "mean_us_per_drafting_round": 92.04844493567778,
+     "prompts": [
+      {
+       "delta_us": 7988.940800000677,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 36507.136000000886,
+       "delta_us_per_drafting_round": 235.13013095238662,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -19471.052799996614,
+       "delta_us_per_drafting_round": -139.0225707546928,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": -11458.047999997945,
+       "delta_us_per_drafting_round": -120.4397090908875,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 39516.92800000117,
+       "delta_us_per_drafting_round": 462.2590913978632,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": -33112.98559999898,
+       "delta_us_per_drafting_round": -393.6666086956401,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": -26304.921600001308,
+       "delta_us_per_drafting_round": -321.39042666668263,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 66002.0223999993,
+       "delta_us_per_drafting_round": 921.4692074073977,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.7480139119419202,
+     "residual_skewness": 0.702812290789095,
+     "sd_over_step": 0.5097144992122113,
+     "sd_us_per_drafting_round": 474.4932273166475
+    },
+    "48423d09": {
+     "cluster": 0,
+     "mean_us_per_drafting_round": -33.56575700537177,
+     "prompts": [
+      {
+       "delta_us": -20928.972800000167,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": -12243.967999999939,
+       "delta_us_per_drafting_round": -78.8592619047615,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -108178.02239999708,
+       "delta_us_per_drafting_round": -772.3869339622432,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": 13905.049600001717,
+       "delta_us_per_drafting_round": 146.16103272729077,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": -721.1007999998742,
+       "delta_us_per_drafting_round": -8.435255913977024,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 27518.054399997993,
+       "delta_us_per_drafting_round": 327.1507826086718,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 31935.948800001057,
+       "delta_us_per_drafting_round": 390.18965222223517,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": -17103.104000000258,
+       "delta_us_per_drafting_round": -238.7803148148184,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.074815595869825,
+     "residual_skewness": -0.8318300865419009,
+     "sd_over_step": 0.4235242335243481,
+     "sd_us_per_drafting_round": 394.2587089878156
+    },
+    "c63eaa21": {
+     "cluster": 0,
+     "mean_us_per_drafting_round": 74.70300595335675,
+     "prompts": [
+      {
+       "delta_us": -43462.96319999965,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": 47326.105599999835,
+       "delta_us_per_drafting_round": 304.8114595238084,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -25511.98719999803,
+       "delta_us_per_drafting_round": -182.15461084904254,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": -6958.028799999738,
+       "delta_us_per_drafting_round": -73.13837090908817,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 36608.92159999918,
+       "delta_us_per_drafting_round": 428.2419634408506,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": -58418.99520000027,
+       "delta_us_per_drafting_round": -694.5193043478292,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 12740.96639999911,
+       "delta_us_per_drafting_round": 155.66762333332247,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 41831.014399999585,
+       "delta_us_per_drafting_round": 584.0122814814757,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.1770226656240483,
+     "residual_skewness": -0.6361683244214309,
+     "sd_over_step": 0.4648295502026287,
+     "sd_us_per_drafting_round": 432.7098282836271
+    },
+    "d3c491b5": {
+     "cluster": 1,
+     "mean_us_per_drafting_round": 206.90771994386859,
+     "prompts": [
+      {
+       "delta_us": 78144.92159999986,
+       "delta_us_per_drafting_round": null,
+       "drafting_rounds": 0.0,
+       "prompt": "plutarch"
+      },
+      {
+       "delta_us": -747.929599999253,
+       "delta_us_per_drafting_round": -4.817161904757093,
+       "drafting_rounds": 155.2635379061372,
+       "prompt": "drama"
+      },
+      {
+       "delta_us": -84446.10559999789,
+       "delta_us_per_drafting_round": -602.9419575471547,
+       "drafting_rounds": 140.0567741935484,
+       "prompt": "travel"
+      },
+      {
+       "delta_us": -37100.90239999886,
+       "delta_us_per_drafting_round": -389.98107636362437,
+       "drafting_rounds": 95.13513513513513,
+       "prompt": "beagle"
+      },
+      {
+       "delta_us": 80960.97279999981,
+       "delta_us_per_drafting_round": 947.061110752686,
+       "drafting_rounds": 85.48653500897666,
+       "prompt": "republic"
+      },
+      {
+       "delta_us": 40931.94240000031,
+       "delta_us_per_drafting_round": 486.6229565217429,
+       "drafting_rounds": 84.11428571428571,
+       "prompt": "essays"
+      },
+      {
+       "delta_us": 11702.067200001664,
+       "delta_us_per_drafting_round": 142.97447555557588,
+       "drafting_rounds": 81.84724689165186,
+       "prompt": "medicine"
+      },
+      {
+       "delta_us": 62275.02080000136,
+       "delta_us_per_drafting_round": 869.4356925926115,
+       "drafting_rounds": 71.62694300518135,
+       "prompt": "botany"
+      }
+     ],
+     "residual_max_over_sd": 1.2433967958236685,
+     "residual_skewness": -0.03019691721640825,
+     "sd_over_step": 0.6394534854419558,
+     "sd_us_per_drafting_round": 595.2672495979166
+    }
+   },
+   "pooled_within_receipt_sd": 488.20960859377595,
+   "step_over_pooled_within_sd": 1.9067629633126966,
+   "zero_drafting_control": {
+    "cluster0_mean_delta_us": -18800.998399999713,
+    "cluster1_mean_delta_us": 9795.242666668239,
+    "per_receipt": {
+     "1986338b": [
+      {
+       "delta_us": -28420.09599999784,
+       "prompt": "plutarch"
+      }
+     ],
+     "2d02ef0b": [
+      {
+       "delta_us": -20339.0975999973,
+       "prompt": "plutarch"
+      }
+     ],
+     "3b376ba2": [
+      {
+       "delta_us": 7988.940800000677,
+       "prompt": "plutarch"
+      }
+     ],
+     "48423d09": [
+      {
+       "delta_us": -20928.972800000167,
+       "prompt": "plutarch"
+      }
+     ],
+     "c63eaa21": [
+      {
+       "delta_us": -43462.96319999965,
+       "prompt": "plutarch"
+      }
+     ],
+     "d3c491b5": [
+      {
+       "delta_us": 78144.92159999986,
+       "prompt": "plutarch"
+      }
+     ]
+    }
+   }
+  }
+ },
+ "question": "Is the FINDING 150 runner state the same phenomenon as harness defect 19, external interruption of a timed region?",
+ "reference": "cf79f7df",
+ "step_us_per_drafting_round": 930.9,
+ "verdict": {
+  "candidate_icc": 0.8241853970443784,
+  "candidate_step_us_per_drafting_round": 865.0332480579393,
+  "p_value_defect19_null": 5e-05,
+  "per_round_rejection": {
+   "largest_single_plutarch_delta_us": 23414.93760000013,
+   "note": "plutarch is the only prompt with drafting rounds != rounds, so it alone separates the per-round law from the per-drafting-round law",
+   "observed_over_predicted": -0.007150548289567401,
+   "observed_step_us": -2744.3199999996905,
+   "plutarch_rounds": 443.67259786476865,
+   "predicted_step_us_if_per_round": 383791.5484052648
+  },
+  "serial_step_over_candidate_step": 0.12194715374019482,
+  "serial_step_us_per_drafting_round": 105.48834249130161
+ }
+}

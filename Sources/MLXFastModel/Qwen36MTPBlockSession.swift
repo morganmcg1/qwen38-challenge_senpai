@@ -219,11 +219,64 @@ public final class Qwen36MTPBlockSession {
         var value: Int = 0
     }
 
+    /// E130 rung 9, research only, opt-in through `MLX_E130_RESIDENCY_PROBE=1`.
+    ///
+    /// The wired ticket is sized from the allocator's active count at one
+    /// instant, then never resized. Everything the scored window allocates
+    /// afterwards — target KV, Gated DeltaNet recurrent and convolution state,
+    /// and head history KV — must fit inside the slack allowance or the driver
+    /// drops something from the residency set. This probe records the counters
+    /// at that sizing instant and then samples them until the process ends, so
+    /// the post-sizing growth is measurable. The growth is fixed by layer
+    /// counts, head dimensions and the token window, so it transfers to the
+    /// ranked host exactly.
+    ///
+    /// The probe runs on both sides of the 96 GiB gate. Below the gate no
+    /// ticket exists, so it reproduces the sizing instant itself by clearing
+    /// the warm cache the same way the wired path does.
+    private static func e130ResidencyProbe(clearsWarmCache: Bool) {
+        guard ProcessInfo.processInfo.environment["MLX_E130_RESIDENCY_PROBE"] == "1"
+        else { return }
+        if clearsWarmCache { Memory.clearCache() }
+
+        let active = Memory.activeMemory
+        let peak = Memory.peakMemory
+        let physical = ProcessInfo.processInfo.physicalMemory
+        let recommended = GPU.maxRecommendedWorkingSetBytes() ?? -1
+        var line = "e130-residency phase=sizing active=\(active) peak=\(peak)"
+        line += " cache=\(Memory.cacheMemory) slack_mb=\(wiredZHDefaultSlackMB)"
+        line += " maxrec=\(recommended) physmem=\(physical)"
+        line += " wired_gate_passed=\(!clearsWarmCache)\n"
+        FileHandle.standardError.write(Data(line.utf8))
+
+        let started = Date()
+        let sampler = Thread {
+            var index = 0
+            while true {
+                Thread.sleep(forTimeInterval: 1.0)
+                index += 1
+                let now = Memory.activeMemory
+                var sample = "e130-residency phase=sample index=\(index)"
+                sample += " elapsed_s=\(String(format: "%.1f", -started.timeIntervalSinceNow))"
+                sample += " active=\(now) peak=\(Memory.peakMemory)"
+                sample += " cache=\(Memory.cacheMemory)"
+                sample += " growth=\(now - active)\n"
+                FileHandle.standardError.write(Data(sample.utf8))
+            }
+        }
+        sampler.name = "e130-residency-probe"
+        sampler.stackSize = 64 << 10
+        sampler.start()
+    }
+
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
         guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else { return }
         guard ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
-        else { return }
+        else {
+            e130ResidencyProbe(clearsWarmCache: true)
+            return
+        }
 
         wiredTicketLock.lock()
         defer { wiredTicketLock.unlock() }
@@ -234,6 +287,7 @@ public final class Qwen36MTPBlockSession {
         // backbone, head, and persistent runtime tensors rather than scratch.
         Memory.clearCache()
         let active = Memory.activeMemory
+        e130ResidencyProbe(clearsWarmCache: false)
         guard active > 0 else { return }
 
         let fraction = environment["DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION"]
