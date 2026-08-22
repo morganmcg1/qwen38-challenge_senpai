@@ -65,6 +65,15 @@ import json, pathlib, subprocess, sys
 
 out, entry, exit_temp, start, end, status, resident = sys.argv[1:8]
 side = pathlib.Path(out).with_suffix(".session.json")
+
+artifacts = pathlib.PurePath(out).parent.as_posix()
+paths = sorted(
+    line[3:]
+    for line in subprocess.run(["git", "status", "--porcelain"],
+                               capture_output=True, text=True).stdout.splitlines()
+    if not line[3:].startswith(artifacts)
+)
+dirty = bool(paths)
 side.write_text(json.dumps({
     "artifact": out,
     "started_utc": start,
@@ -80,8 +89,13 @@ side.write_text(json.dumps({
     "resident_worker_pids": resident.split(),
     "commit": subprocess.run(["git", "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip(),
-    "dirty": bool(subprocess.run(["git", "status", "--porcelain"],
-                                 capture_output=True, text=True).stdout.strip()),
+    # The block writes its own artifact and this sidecar, so a plain
+    # `git status` is dirty by construction and the flag could never be
+    # false. RULE 101: a flag that cannot fail reports nothing. What matters
+    # is whether the MEASURED source was clean, so the artifact directory is
+    # excluded and everything else still counts.
+    "measured_source_dirty": dirty,
+    "measured_source_dirty_paths": paths,
 }, indent=2, sort_keys=True) + "\n")
 print("wrote %s" % side)
 PY

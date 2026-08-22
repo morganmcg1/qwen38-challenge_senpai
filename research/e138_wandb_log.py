@@ -25,6 +25,9 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import wandb
 
@@ -35,7 +38,7 @@ PROJECT = "qwen38-mlx-challenge-senpai"
 GROUP = "e138-plan-surface-at-the-width-6-cliff"
 HOST = "apple-m4-pro-applegpu_g16s-20core-48gib"
 BASE_SHA = "328c4b9eac1b386f0c0913afcf0c7a64c232e5c0"
-ART = pathlib.Path("research/e138-artifacts")
+ART = pathlib.Path(__file__).resolve().parent / "e138-artifacts"
 
 SHIPPED = {5: "5:5:4", 6: "6:6:4", 7: "7:7:4", 8: "8:4:4", 9: "9:3:4"}
 
