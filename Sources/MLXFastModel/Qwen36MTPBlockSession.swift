@@ -595,6 +595,7 @@ public final class Qwen36MTPBlockSession {
         let cpuBegin0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
         E58DispatchCensus.phase("seed_prefill")
         defer { E58DispatchCensus.phase("outside") }
+        e116AllocateDoseWeight()
         cache = model.newCache(parameters: nil)
         let (seedLogits, hidden) = model.callWithHidden(
             input: LMInput.Text(
@@ -711,6 +712,112 @@ public final class Qwen36MTPBlockSession {
     /// `MLXFAST_OFFICIAL_BENCHMARK_RUN=1`, so this stays local-only.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+
+    // MARK: - E116 round dose (RESEARCH INSTRUMENT, reverted before submission)
+    //
+    // Injects a KNOWN quantity of GPU work into a decode round and measures
+    // what the round and the leg do with it, so the campaign's composed
+    // "kernel percent -> leg percent" coefficient stops being an assumption.
+    //
+    // The dose is `k` extra affine 4-bit group-64 `quantizedMM` passes at
+    // M = 1 against a synthetic weight with the `mlp.gate_up` scored shape
+    // (K = 5120 -> N = 34816). It runs from a `defer` in `generateRound`,
+    // which fires after the round's tokens, row evidence, draft decisions and
+    // cache state are all fixed, and it reads and writes no model, head or
+    // cache state. The emitted stream is therefore bit exact by construction,
+    // and a full 512-token row-evidence digest proves it rather than asserting
+    // it.
+    //
+    // The dose runs at M = 1 BY DESIGN, because that fixes the byte count of
+    // one dose unit exactly at 100,270,080 B. Campaign rule 37: this is not a
+    // scored-width rate and must never be read as one.
+
+    /// PRESENCE arms the instrument; the integer value is the dose. `=0` still
+    /// allocates the 100.27 MB weight, so the null arm carries the identical
+    /// resident memory and the only difference between arms is the number of
+    /// extra dispatches. Unset leaves the instrument fully inert.
+    private static let e116DoseArmed =
+        ProcessInfo.processInfo.environment["MLX_E116_DOSE"] != nil
+    private static let e116DoseUnits =
+        Int(ProcessInfo.processInfo.environment["MLX_E116_DOSE"] ?? "") ?? 0
+    /// Alternate the dose round by round, which is what askeladd's E109 v2
+    /// within-leg estimator needs. Round index `i = roundCount - 1` is dosed
+    /// when `i` is odd, matching `research/e109_v2_report.py`.
+    private static let e116DoseAlternate =
+        ProcessInfo.processInfo.environment["MLX_E116_DOSE_ALTERNATE"] == "1"
+
+    private static let e116DoseK = 5120
+    private static let e116DoseN = 34816
+
+    private var e116DoseWeight: MLXArray?
+    private var e116DoseScales: MLXArray?
+    private var e116DoseBiases: MLXArray?
+    private var e116DoseInputs: [MLXArray] = []
+
+    /// Allocated once from `begin(seedTokens:)`, before the first round, so no
+    /// round pays for the allocation and every armed leg pays the same one.
+    private func e116AllocateDoseWeight() {
+        guard Self.e116DoseArmed, e116DoseWeight == nil else { return }
+        let n = Self.e116DoseN
+        let k = Self.e116DoseK
+        // Packed nibbles, scales and biases are generated directly rather than
+        // quantising a dense random matrix, which would need a 356 MB bf16
+        // transient for contents that are never read for their values.
+        let weight = MLXRandom.randInt(UInt32(0) ..< UInt32.max, [n, k / 8])
+        let scales = MLXRandom.uniform(
+            low: 0.001, high: 0.01, [n, k / 64], dtype: .bfloat16)
+        let biases = MLXRandom.normal(
+            [n, k / 64], dtype: .bfloat16, scale: 0.01)
+        var inputs: [MLXArray] = []
+        // One distinct input per pass, so no pass can be served from another
+        // pass's result and every unit is a real dispatch.
+        for _ in 0 ..< Swift.max(Self.e116DoseUnits, 0) {
+            inputs.append(MLXRandom.normal([1, 1, k], dtype: .bfloat16))
+        }
+        eval([weight, scales, biases] + inputs)
+        e116DoseWeight = weight
+        e116DoseScales = scales
+        e116DoseBiases = biases
+        e116DoseInputs = inputs
+        if Self.traceRounds {
+            Self.traceWrite(
+                "mtp-trace: e116 dose_alloc units=\(Self.e116DoseUnits) "
+                    + "alternate=\(Self.e116DoseAlternate ? 1 : 0) "
+                    + "k=\(k) n=\(n) group_size=64 bits=4 "
+                    + "weight_bytes=\(n * (k / 8) * 4) "
+                    + "scale_bias_bytes=\(2 * n * (k / 64) * 2)\n")
+        }
+    }
+
+    /// The dose itself. `width` is the round's declared row count, which the
+    /// offline estimator uses as the fingerprint that maps a witness line to a
+    /// parent-measured round.
+    private func e116ApplyRoundDose(width: Int) {
+        guard Self.e116DoseArmed, let weight = e116DoseWeight,
+              let scales = e116DoseScales, let biases = e116DoseBiases
+        else { return }
+        let dosed = !Self.e116DoseAlternate || roundCount % 2 == 0
+        let units = dosed ? Self.e116DoseUnits : 0
+        if Self.traceRounds {
+            Self.traceWrite(
+                "mtp-trace: e116 dose round=\(roundCount) "
+                    + "dosed=\(dosed ? 1 : 0) units=\(units) width=\(width) "
+                    + "alternate=\(Self.e116DoseAlternate ? 1 : 0)\n")
+        }
+        guard units > 0 else { return }
+        E58DispatchCensus.phase("e116_dose")
+        var outs: [MLXArray] = []
+        outs.reserveCapacity(units)
+        for index in 0 ..< units {
+            outs.append(
+                quantizedMM(
+                    e116DoseInputs[index], weight,
+                    scales: scales, biases: biases, transpose: true,
+                    groupSize: 64, bits: 4, mode: .affine))
+        }
+        eval(outs)
+    }
+
     /// Attribution probe only. `verify_build_us` measures the window in which
     /// the host builds the verify graph WHILE the asynchronously submitted head
     /// chain runs on the GPU, so a head-chain stall is indistinguishable from
@@ -1256,6 +1363,11 @@ public final class Qwen36MTPBlockSession {
         E58DispatchCensus.beginRound(
             round: roundCount, width: draftCount + 1, depth: depth)
         defer { E58DispatchCensus.endRound(accepted: censusAccepted) }
+        // E116 research instrument. Registered AFTER the census defer so it
+        // runs BEFORE it and its dispatches are attributed to this round. It
+        // is the LAST work the round does, so nothing it computes can reach a
+        // token, a row-ledger entry, a draft decision or a cache.
+        defer { e116ApplyRoundDose(width: draftCount + 1) }
         E58DispatchCensus.fireTax()
 
         // A STOP TOKEN IS COMMITTED LIKE ANY OTHER TOKEN, and this round keeps
