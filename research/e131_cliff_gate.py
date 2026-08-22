@@ -126,11 +126,21 @@ def side_sources(rev: str | None, swift_patch=None) -> dict[str, dict]:
     swift = ks.swift_text(ks.QWEN35, rev)
     if swift_patch is not None:
         swift = swift_patch(swift)
-    for library, build, roles in (
-            ("route_b", ks.route_b_library, ks.ROUTE_B_ROLES),
-            ("cluster_qmv", ks.cluster_qmv_library, ks.CLUSTER_QMV_ROLES)):
+    if ks.route_b_present(swift):
         try:
-            source = build(swift)
+            cells["__route_b_serving__"] = {
+                "serving": ks.route_b_serving(swift)}
+        except ks.SourceUnavailable as error:
+            cells["__route_b_serving_unavailable__"] = {"error": str(error)}
+    for library, present, build in (
+            ("route_b", ks.route_b_present, ks.route_b_library),
+            ("cluster_qmv", ks.cluster_qmv_present, ks.cluster_qmv_library)):
+        if not present(swift):
+            cells["__%s_absent__" % library] = {
+                "absent": "the %s family is not in this revision" % library}
+            continue
+        try:
+            source, roles = build(swift)
         except ks.SourceUnavailable as error:
             cells["__%s_unavailable__" % library] = {"error": str(error)}
             continue
@@ -154,7 +164,7 @@ def census(cells: dict[str, dict], workdir: pathlib.Path,
     rows: dict[str, dict] = {}
     plans: dict[str, dict] = {}
     for name, spec in cells.items():
-        if "error" in spec:
+        if "error" in spec or "absent" in spec or "serving" in spec:
             rows[name] = spec
             continue
         plan = plans.setdefault(spec["library"], {
@@ -201,11 +211,15 @@ def census(cells: dict[str, dict], workdir: pathlib.Path,
 def route_b_pipelines(rows: dict) -> dict[str, str]:
     """Route B QMV entry point serving each routed width.
 
-    The shipped build has one entry point behind `switch (qmv_m)`, so every
-    width maps to it and the weighted figure equals that entry point's own.
-    A per-width templated build has one entry point per width, and each claims
-    its width by name.
+    The dispatch plan read out of Swift is authoritative when it is available,
+    because a tiered build names its entry points after the `ipg` they carry
+    and not after the widths they serve. The name heuristic below is the
+    fallback for a side whose plan could not be read.
     """
+    declared = rows.get("__route_b_serving__", {}).get("serving")
+    if declared:
+        return {str(width): name for width, name in declared.items()
+                if int(width) in WIDTH_HISTOGRAM}
     qmv = [name for name, row in rows.items()
            if not name.startswith("__")
            and row.get("library") == "route_b" and "xsums" not in name]
@@ -271,13 +285,25 @@ def route_b_surface(base: dict, candidate: dict) -> dict:
 
 
 def compare(base: dict, candidate: dict) -> tuple[list[dict], list[str], list[str]]:
-    """One row per scored entry point, plus the failures and the warnings."""
+    """One row per scored entry point, plus the failures and the warnings.
+
+    A gate that cannot see its subject must not pass, so anything that hides a
+    scored entry point from the census is a failure and not a warning: an
+    unreadable Swift source literal, an entry point the library did not emit,
+    and a missing record on the ranked architecture.
+    """
     rows, failures, warnings = [], [], []
     for name in sorted(set(base) | set(candidate)):
         if name.startswith("__"):
             for side, table in (("base", base), ("candidate", candidate)):
-                if name in table:
-                    warnings.append("%s: %s" % (side, table[name]["error"]))
+                if name not in table:
+                    continue
+                if "error" in table[name]:
+                    failures.append(
+                        "%s: the census could not read a scored surface: %s"
+                        % (side, table[name]["error"]))
+                elif "absent" in table[name]:
+                    warnings.append("%s: %s" % (side, table[name]["absent"]))
             continue
         if name not in base:
             warnings.append("%s: new entry point, absent from the base" % name)
@@ -289,10 +315,17 @@ def compare(base: dict, candidate: dict) -> tuple[list[dict], list[str], list[st
                      "source_form": candidate[name].get("source_form"),
                      "role": candidate[name].get("role"),
                      "library": candidate[name].get("library")}
+        for side, table in (("base", base), ("candidate", candidate)):
+            if "error" in table[name]:
+                failures.append("%s %s: %s" % (name, side, table[name]["error"]))
         for arch in ARCHES:
             b, c = base[name].get(arch), candidate[name].get(arch)
             if b is None or c is None:
-                warnings.append("%s: no %s record" % (name, arch))
+                missing = "%s: no %s record" % (name, arch)
+                if arch == RANKED:
+                    failures.append(missing)
+                else:
+                    warnings.append(missing)
                 continue
             change = 100.0 * c["simdgroups_derived"] / b["simdgroups_derived"] - 100.0
             text_delta = c["text_bytes"] - b["text_bytes"]
@@ -407,32 +440,25 @@ def print_surface(surface: dict) -> None:
                  cell["candidate_pipelines"]))
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(
-        description="fail when a candidate loses an applegpu_g17s resident "
-                    "simdgroup at any scored Metal entry point")
-    ap.add_argument("--base", required=True,
-                    help="git ref the candidate must not regress against")
-    ap.add_argument("--candidate", default=None,
-                    help="git ref to censo instead of the working tree")
-    ap.add_argument("--json", default="",
-                    help="write the JSON receipt here")
-    args = ap.parse_args()
-
-    started = time.time()
-    base_sha = git_sha(args.base)
-    candidate_sha = git_sha(args.candidate) if args.candidate else None
-
-    with tempfile.TemporaryDirectory() as tmp:
-        workdir = pathlib.Path(tmp)
-        base_rows = census(side_sources(args.base), workdir, "base")
-        candidate_rows = census(side_sources(args.candidate), workdir, "cand")
+def evaluate(base_rows: dict, candidate_rows: dict, base_ref: str,
+             candidate_ref: str, base_sha: str, candidate_sha: str | None,
+             started: float) -> dict:
+    """The receipt and the verdict, from two censused sides."""
     rows, failures, warnings = compare(base_rows, candidate_rows)
 
     surface = route_b_surface(base_rows, candidate_rows)
     ranked = surface.get(RANKED, {})
-    if "error" in ranked:
-        warnings.append("Route B QMV surface: %s" % ranked["error"])
+    absent = tuple("__route_b_absent__" in side
+                   for side in (base_rows, candidate_rows))
+    if "error" in ranked and all(absent):
+        warnings.append(
+            "Route B QMV surface %s: %s, and neither revision carries the "
+            "family, so there is nothing to compare"
+            % (RANKED, ranked["error"]))
+    elif "error" in ranked:
+        failures.append(
+            "Route B QMV surface %s: %s, so the gate cannot see the QMV "
+            "family it exists to check" % (RANKED, ranked["error"]))
     elif ranked["delta_derived"] < 0:
         failures.append(
             "Route B QMV surface %s: width-weighted derived residency "
@@ -463,9 +489,9 @@ def main() -> int:
         "ranked_arch": RANKED,
         "simdgroup_budget": SIMDGROUP_BUDGET,
         "toolchain": toolchain(),
-        "base_ref": args.base,
+        "base_ref": base_ref,
         "base_sha": base_sha,
-        "candidate_ref": args.candidate or "worktree",
+        "candidate_ref": candidate_ref,
         "candidate_sha": candidate_sha,
         "cells": rows,
         "route_b_surface": surface,
@@ -476,30 +502,60 @@ def main() -> int:
         "verdict": "fail" if failures else "pass",
         "runtime_seconds": round(time.time() - started, 2),
     }
-    if args.json:
-        path = pathlib.Path(args.json)
+    return receipt
+
+
+def report(receipt: dict, json_path: str = "") -> int:
+    """Print the receipt and return the process status it carries."""
+    if json_path:
+        path = pathlib.Path(json_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(receipt, indent=2) + "\n")
 
     print("entry-point cliff census   base %s (%s)   candidate %s"
-          % (args.base, base_sha[:8], candidate_sha[:8] if candidate_sha
+          % (receipt["base_ref"], receipt["base_sha"][:8],
+             receipt["candidate_sha"][:8] if receipt["candidate_sha"]
              else "working tree"))
     print("simdgroup counts are DERIVED from registers (Rule 89): "
           "floor(3072/regs) on applegpu_g16s, floor(3968/regs) on applegpu_g17s")
     print()
-    print_table(rows)
+    print_table(receipt["cells"])
     print()
-    print_surface(surface)
+    print_surface(receipt["route_b_surface"])
     print()
-    for line in warnings:
+    for line in receipt["warnings"]:
         print("WARNING %s" % line)
-    for line in failures:
+    for line in receipt["failures"]:
         print("FAIL    %s" % line)
     print("\n%s" % textwrap.fill(INSTRUMENT_NOTE, 78))
     print("\nverdict: %s   %.2f s   %s"
           % (receipt["verdict"].upper(), receipt["runtime_seconds"],
-             args.json or "no receipt requested"))
-    return 1 if failures else 0
+             json_path or "no receipt requested"))
+    return 1 if receipt["failures"] else 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="fail when a candidate loses an applegpu_g17s resident "
+                    "simdgroup at any scored Metal entry point")
+    ap.add_argument("--base", required=True,
+                    help="git ref the candidate must not regress against")
+    ap.add_argument("--candidate", default=None,
+                    help="git ref to census instead of the working tree")
+    ap.add_argument("--json", default="",
+                    help="write the JSON receipt here")
+    args = ap.parse_args()
+
+    started = time.time()
+    with tempfile.TemporaryDirectory() as tmp:
+        workdir = pathlib.Path(tmp)
+        base_rows = census(side_sources(args.base), workdir, "base")
+        candidate_rows = census(side_sources(args.candidate), workdir, "cand")
+    receipt = evaluate(
+        base_rows, candidate_rows, args.base, args.candidate or "worktree",
+        git_sha(args.base),
+        git_sha(args.candidate) if args.candidate else None, started)
+    return report(receipt, args.json)
 
 
 if __name__ == "__main__":

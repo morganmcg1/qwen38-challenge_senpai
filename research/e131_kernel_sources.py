@@ -29,14 +29,11 @@ QWEN35 = "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
 
 # `metal_kernel.cpp:19`, max_constant_array_size == 8 elements: every array in
 # these kernels is far larger, so every one binds as `device`.
-ROUTE_B_ROLES = {
-    "qwen35_custom_affine4_g64_qmv_wide_v1":
-        "Route B replica wide QMV, no chunk-sum table",
-    "qwen35_custom_affine4_g64_qmv_wide_sums_v1":
-        "Route B shipped wide QMV, USE_TABLE=true (the .sumtable arm)",
-    "qwen35_custom_affine4_g64_xsums_v1":
-        "Route B activation chunk-sum table fill",
-}
+#
+# E129 replaced the two fixed Route B QMV entry points with one entry point per
+# distinct `ipg`, so the shipped name set is no longer a constant. It is read
+# out of `qwen35E120QMVName` and the dispatch plan instead, by `route_b_route`.
+XSUMS_ROLE = "Route B activation chunk-sum table fill"
 
 # The two custom affine-2 cluster kernels the frontier import added. They share
 # `qwen35ClusterAffine2QMVHeader` and both run on every draft step, so the gate
@@ -113,29 +110,212 @@ def ternary(text: str, name: str) -> tuple[str, str]:
             match.group(2)[1:-1].encode().decode("unicode_escape"))
 
 
-def e120_qmv_body(text: str, table: bool) -> str:
-    """Rebuild `qwen35E120QMVSource(table:)` from the Swift text.
+def qmv_source_func(text: str) -> str:
+    """The text of `qwen35E120QMVSource`, whose signature this module pins.
 
-    Only the interpolation semantics are known here. The dispatch width list,
-    the per-case template and the body itself are all read out of Swift, so a
-    change to any of them reaches the census.
+    An unknown parameter list raises. E129 added `tier:` and the reader that
+    matched only `(table:)` reported the generator as gone, which made the
+    census blind to every Route B QMV entry point.
     """
-    at = text.find("func qwen35E120QMVSource(table: Bool) -> String {")
-    if at < 0:
+    match = re.search(
+        r"func qwen35E120QMVSource\(([^)]*)\) -> String \{", text)
+    if not match:
         raise SourceUnavailable("qwen35E120QMVSource is gone")
-    end = text.index("\n}\n", at)
-    func = text[at:end]
+    params = [p.strip() for p in match.group(1).split(",")]
+    if params != ["table: Bool", "tier: Int?"]:
+        raise SourceUnavailable(
+            "qwen35E120QMVSource has an unknown signature (%s)"
+            % match.group(1))
+    return text[match.start():text.index("\n}\n", match.start())]
 
+
+def _env_default(text: str, decl: str, what: str) -> str:
+    """The case a `ProcessInfo`-backed selector falls back to when unset.
+
+    The ranked runner sets no `MLX_E120_*` environment, so the guard's `else`
+    branch is the route it takes.
+    """
+    at = text.find(decl)
+    if at < 0:
+        raise SourceUnavailable("no %s selector" % what)
+    block = text[at:text.index("\n    }()", at)]
+    match = re.search(r"else \{ return \.(\w+) \}", block)
+    if not match:
+        raise SourceUnavailable("no unset-environment default for %s" % what)
+    return match.group(1)
+
+
+def _compiled_default(text: str, kind: str) -> str:
+    match = re.search(
+        r"public static let compiledDefault = %s\.(\w+)" % kind, text)
+    if not match:
+        raise SourceUnavailable("no %s.compiledDefault" % kind)
+    return match.group(1)
+
+
+def default_entry(text: str) -> str:
+    """`shared` or `tiered`: the entry-point layout an unset environment takes."""
+    entry = _env_default(text, "public static let entry: Entry = {", "entry")
+    return _compiled_default(text, "Entry") if entry == "compiledDefault" \
+        else entry
+
+
+def default_table(text: str) -> str:
+    """The `Table` case an unset environment takes."""
+    table = _env_default(text, "public static let table: Table = {", "table")
+    return _compiled_default(text, "Table") if table == "compiledDefault" \
+        else table
+
+
+def default_arm(text: str) -> str:
+    return _env_default(text, "public static let arm: Arm = {", "arm")
+
+
+def width_plan(text: str, case_name: str) -> list[tuple[int, int, int]]:
+    """`(m, ipg, rps)` for every routed width of one `Table` case.
+
+    The plan is checked against that case's own `witness` literal, which is
+    the string the built worker carries, so a plan and its witness cannot
+    drift apart inside this reader.
+    """
+    at = text.find("public var plan: [(m: Int, ipg: Int, rps: Int)] {")
+    if at < 0:
+        raise SourceUnavailable("no QMV width-plan table")
+    region = text[at:text.index("public var witness: String {", at)]
+    case_at = region.find("case .%s:" % case_name)
+    if case_at < 0:
+        raise SourceUnavailable("no width plan for table .%s" % case_name)
+    literal = region[region.index("[", case_at):region.index("]", case_at) + 1]
+    plan = [(int(m), int(ipg), int(rps))
+            for m, ipg, rps in re.findall(
+                r"\((\d+),\s*(\d+),\s*(\d+)\)", literal)]
+    if not plan:
+        raise SourceUnavailable("empty width plan for table .%s" % case_name)
+    if render_plan(plan) != plan_witness(text, case_name):
+        raise SourceUnavailable(
+            "the .%s width plan and its witness literal disagree" % case_name)
+    return plan
+
+
+def plan_witness(text: str, case_name: str) -> str:
+    at = text.find("public var witness: String {")
+    if at < 0:
+        raise SourceUnavailable("no QMV width-plan witness table")
+    region = text[at:text.index("\n    }\n", at)]
+    case_at = region.find("case .%s:" % case_name)
+    if case_at < 0:
+        raise SourceUnavailable("no witness literal for table .%s" % case_name)
+    match = re.search(r'return "([^"]+)"', region[case_at:])
+    if not match:
+        raise SourceUnavailable("no witness string for table .%s" % case_name)
+    return match.group(1)
+
+
+def render_plan(plan: list[tuple[int, int, int]]) -> str:
+    """`Qwen35CustomQMV.renderPlan`."""
+    return "e120_width_plan/" + ",".join(
+        "%d:%d:%d" % entry for entry in plan)
+
+
+def qmv_names(text: str) -> dict[tuple[bool, int | None], str]:
+    """`(table, tier)` to pipeline name, from `qwen35E120QMVName`."""
+    at = text.find("func qwen35E120QMVName(table: Bool, tier: Int?) -> String {")
+    if at < 0:
+        raise SourceUnavailable("qwen35E120QMVName is gone")
+    body = text[at:text.index("\n}\n", at)]
+    names = {
+        (flag == "true", None if tier == "nil" else int(tier)): name
+        for flag, tier, name in re.findall(
+            r'case \((true|false), (nil|\d+)\): return "([^"]+)"', body)}
+    if not names:
+        raise SourceUnavailable("no pipeline names in qwen35E120QMVName")
+    return names
+
+
+def route_b_route(text: str) -> dict:
+    """The Route B QMV entry point the default route dispatches per width.
+
+    This reproduces `Qwen35CustomQMV.matmul` and `.matmulWithTable` on an
+    unset environment: the sum-table arm takes every width at or above
+    `minimumTableWidth`, and the tiered layout sends a width to the entry
+    point of its own `ipg`.
+    """
+    entry = default_entry(text)
+    if entry not in ("shared", "tiered"):
+        raise SourceUnavailable("unknown QMV entry layout %s" % entry)
+    table_case = default_table(text)
+    if table_case != "shipped" and entry != "tiered":
+        raise SourceUnavailable(
+            "a one-pass table is only legal on tiered entry points")
+    arm = default_arm(text)
+    plan = width_plan(text, table_case)
+    names = qmv_names(text)
+
+    minimum = re.search(r"public static let minimumTableWidth = (\d+)", text)
+    if not minimum:
+        raise SourceUnavailable("no minimumTableWidth")
+    minimum = int(minimum.group(1))
+    routed = re.search(r"public static let widths = (\d+) \.\.\. (\d+)", text)
+    if not routed:
+        raise SourceUnavailable("no routed width range")
+    widths = range(int(routed.group(1)), int(routed.group(2)) + 1)
+    if sorted(m for m, _, _ in plan) != list(widths):
+        raise SourceUnavailable(
+            "the .%s width plan does not cover the routed widths %s"
+            % (table_case, list(widths)))
+
+    serving: dict[int, dict] = {}
+    for m, ipg, rps in plan:
+        use_table = arm == "sumTable" and m >= minimum
+        tier = ipg if entry == "tiered" else None
+        if (use_table, tier) not in names:
+            raise SourceUnavailable(
+                "no pipeline name for (table=%s, tier=%s)" % (use_table, tier))
+        serving[m] = {"name": names[(use_table, tier)], "table": use_table,
+                      "tier": tier, "ipg": ipg, "rps": rps}
+    return {"entry": entry, "table": table_case, "arm": arm,
+            "witness": plan_witness(text, table_case), "serving": serving}
+
+
+def route_b_serving(text: str) -> dict[int, str]:
+    """Routed width to the name of the entry point that serves it."""
+    return {m: cell["name"]
+            for m, cell in route_b_route(text)["serving"].items()}
+
+
+def route_b_present(text: str) -> bool:
+    """Does this revision carry the Route B custom QMV family at all?
+
+    A revision from before the family landed has nothing for the census to
+    read, which is a different fact from a revision whose family is there but
+    unreadable. The caller must fail on the second and may skip the first.
+    """
+    return "Qwen35CustomQMV" in text or "qwen35E120QMV" in text
+
+
+def cluster_qmv_present(text: str) -> bool:
+    return "qwen35ClusterAffine2QMVHeader" in text
+
+
+def e120_qmv_body(text: str, table: bool, tier: int | None = None) -> str:
+    """Rebuild `qwen35E120QMVSource(table:tier:)` from the Swift text.
+
+    Only the interpolation semantics are known here. The dispatch width plan,
+    the per-case template and the body itself are all read out of Swift, so a
+    change to any of them reaches the census. `tier` keeps only the widths
+    whose `ipg` equals it, exactly as the Swift `filter` does.
+    """
+    func = qmv_source_func(text)
     sums = ternary(func, "sums")[0 if table else 1]
     flag = ternary(func, "flag")[0 if table else 1]
     null_decl = ternary(func, "nullDecl")[0 if table else 1]
 
-    widths = re.search(r"let cases = \[(.*?)\]\n", func, re.DOTALL)
-    if not widths:
-        raise SourceUnavailable("no dispatch width list in qwen35E120QMVSource")
-    pairs = re.findall(r"\((\d+),\s*(\d+)\)", widths.group(1))
-    if not pairs:
-        raise SourceUnavailable("empty dispatch width list")
+    table_case = default_table(text)
+    plan = [entry for entry in width_plan(text, table_case)
+            if tier is None or entry[1] == tier]
+    if not plan:
+        raise SourceUnavailable(
+            "no width in the .%s plan has ipg %s" % (table_case, tier))
 
     case_at = func.index(".map {")
     case_template, _ = multiline_literal(func, case_at)
@@ -143,10 +323,16 @@ def e120_qmv_body(text: str, table: bool) -> str:
     body_template, _ = multiline_literal(func, return_at)
 
     cases = "\n".join(
-        case_template.replace("\\(m)", m).replace("\\(ipg)", ipg)
+        case_template.replace("\\(plan.m)", str(m))
+        .replace("\\(plan.ipg)", str(ipg))
+        .replace("\\(2 * plan.rps)", str(2 * rps))
+        .replace("\\(plan.rps)", str(rps))
         .replace("\\(flag)", flag).replace("\\(sums)", sums)
-        for m, ipg in pairs)
-    body = (body_template.replace("\\(nullDecl)", null_decl)
+        for m, ipg, rps in plan)
+    body = (body_template
+            .replace("\\(Qwen35CustomQMV.planWitness)",
+                     plan_witness(text, table_case))
+            .replace("\\(nullDecl)", null_decl)
             .replace("\\(cases)", cases))
     if "\\(" in body:
         raise SourceUnavailable(
@@ -155,10 +341,15 @@ def e120_qmv_body(text: str, table: bool) -> str:
     return body
 
 
-def route_b_library(text: str) -> str:
-    """One Metal source holding all three shipped Route B kernels."""
+def route_b_library(text: str) -> tuple[str, dict[str, str]]:
+    """The Metal library holding every Route B kernel the default route runs.
+
+    Returns the source and the role of each entry point in it. The set is the
+    dispatch plan's own, so a table or layout change moves the census with it.
+    """
     import e120_g17s_census as e120
 
+    route = route_b_route(text)
     header = named_literal(text, "qwen35E120QMVHeader")
     xsums_at = text.find("name: \"qwen35_custom_affine4_g64_xsums_v1\"")
     if xsums_at < 0:
@@ -166,18 +357,34 @@ def route_b_library(text: str) -> str:
     xsums_body = multiline_literal(text, text.index("source:", xsums_at))[0]
 
     parts = [e120.PRELUDE, header, ""]
-    parts.append(e120.generate(
-        "qwen35_custom_affine4_g64_qmv_wide_v1", QMV_INPUTS, QMV_OUTPUTS,
-        e120_qmv_body(text, table=False)))
-    parts.append(e120.generate(
-        "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
-        QMV_INPUTS + [("xsums", "float")], QMV_OUTPUTS,
-        e120_qmv_body(text, table=True),
-        template=[("bool", "USE_TABLE", "true")]))
+    roles: dict[str, str] = {}
+    emitted: dict[str, tuple[bool, int | None]] = {}
+    for width in sorted(route["serving"]):
+        cell = route["serving"][width]
+        key = (cell["table"], cell["tier"])
+        if cell["name"] in emitted:
+            continue
+        emitted[cell["name"]] = key
+        parts.append(e120.generate(
+            cell["name"],
+            QMV_INPUTS + ([("xsums", "float")] if cell["table"] else []),
+            QMV_OUTPUTS,
+            e120_qmv_body(text, table=cell["table"], tier=cell["tier"]),
+            template=[("bool", "USE_TABLE", "true")] if cell["table"]
+            else None))
+    for name, (use_table, tier) in emitted.items():
+        served = sorted(w for w, c in route["serving"].items()
+                        if c["name"] == name)
+        roles[name] = (
+            "Route B %s QMV, %s, widths %s"
+            % ("sum-table" if use_table else "no-table",
+               "ipg %d" % tier if tier is not None else "shared switch",
+               ",".join(str(w) for w in served)))
     parts.append(e120.generate(
         "qwen35_custom_affine4_g64_xsums_v1", XSUMS_INPUTS, XSUMS_OUTPUTS,
         xsums_body))
-    return "\n".join(parts) + "\n"
+    roles["qwen35_custom_affine4_g64_xsums_v1"] = XSUMS_ROLE
+    return "\n".join(parts) + "\n", roles
 
 
 def kernel_body(text: str, name: str) -> str:
@@ -188,7 +395,7 @@ def kernel_body(text: str, name: str) -> str:
     return multiline_literal(text, text.index("source:", at))[0]
 
 
-def cluster_qmv_library(text: str) -> str:
+def cluster_qmv_library(text: str) -> tuple[str, dict[str, str]]:
     """One Metal source holding both shipped affine-2 cluster QMV kernels."""
     import e120_g17s_census as e120
 
@@ -200,4 +407,4 @@ def cluster_qmv_library(text: str) -> str:
             ("qwen_mtp_cluster_row_qmv_a2g64_v1", CLUSTER_ROW_INPUTS)):
         parts.append(e120.generate(name, inputs, CLUSTER_OUTPUTS,
                                    kernel_body(text, name)))
-    return "\n".join(parts) + "\n"
+    return "\n".join(parts) + "\n", dict(CLUSTER_QMV_ROLES)
