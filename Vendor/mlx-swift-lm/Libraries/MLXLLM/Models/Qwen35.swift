@@ -1371,6 +1371,267 @@ private let qwen35CompiledFusedSwiGLU:
     return body
 }()
 
+// MARK: - Candidate-owned affine-4/group-64 QMV dispatch
+//
+// MLX's `quantized.cpp` host launcher is outside the editable surface, so the
+// shipped wide cross-row QMV can never receive a buffer the launcher does not
+// already bind, and can never be launched on a grid the launcher does not
+// already choose. This section owns the dispatch instead of trying to pass an
+// argument through it: the same arithmetic, the same group indexing and the
+// same `simd_sum` reduction, launched from Swift through the custom-kernel
+// API, which binds exactly the buffers named here and dispatches exactly the
+// grid named here.
+//
+// The replica exists to answer one question before anything is built on it:
+// can a Swift-dispatched custom kernel match MLX's own launcher on identical
+// arithmetic and identical geometry? Everything downstream -- a precomputed
+// activation chunk-sum table, a launched grid volume that matches the working
+// group count -- depends on that answer and on nothing else.
+//
+// Geometry. `quantized.cpp:253-254` launches `grid_dims(M, (N+7)/8, B)`
+// threadgroups of `(32, 2, 1)` threads. `custom_kernel.cpp:113-117` calls
+// `dispatch_threads`, which counts the grid in THREADS, so the identical
+// geometry is `grid: (M*32, (N/8)*2, 1)` with `threadGroup: (32, 2, 1)`.
+// `threadgroup_position_in_grid` and `simdgroup_index_in_threadgroup` then
+// carry the same values the incumbent reads.
+//
+// M is read from `x_shape` rather than from `threadgroups_per_grid.x`, because
+// the launched x-extent stops being M as soon as the dispatch is ours to
+// choose.
+
+/// The wide cross-row affine-4/group-64 QMV, replicated exactly from
+/// `quantized.h:969-1065` at `DIRECT_NIBBLES = true`, plus the `IPG` group
+/// partition from `quantized.h:1156-1187` and the width switch from
+/// `quantized.h:1922-1979`.
+///
+/// Every floating-point operation, its order, and its type are the incumbent's:
+/// the four activations per lane are read as one `vec<T,4>`, the chunk sum is
+/// three BF16 adds accumulated into a float lane, the nibble products are
+/// summed into a `vec<float,NA>` per output row, and the K reduction closes
+/// with `simd_sum`. `K` and `N` are template arguments here and runtime
+/// `constant int&` there; that changes loop-bound materialization only.
+private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: """
+        const int qmv_m = x_shape[x_ndim - 2];
+        const uint3 qmv_tid = threadgroup_position_in_grid;
+        const uint qmv_lid = thread_index_in_simdgroup;
+        const uint qmv_sgid = simdgroup_index_in_threadgroup;
+        const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
+        const int qmv_gx = int(qmv_tid.x);
+        switch (qmv_m) {
+            case 3:
+                qwen_e120_qmv_m<3, 3, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            case 4:
+                qwen_e120_qmv_m<4, 4, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            case 5:
+                qwen_e120_qmv_m<5, 5, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            case 6:
+                qwen_e120_qmv_m<6, 3, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            case 7:
+                qwen_e120_qmv_m<7, 4, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            case 8:
+                qwen_e120_qmv_m<8, 4, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            case 9:
+                qwen_e120_qmv_m<9, 3, QK, QN>(
+                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                break;
+            default:
+                break;
+        }
+        """,
+    header: """
+        template <int NA, int QK, int QN>
+        inline void qwen_e120_qmv_wide(
+            const device uint32_t* w,
+            const device bfloat16_t* scales,
+            const device bfloat16_t* biases,
+            const device bfloat16_t* x,
+            device bfloat16_t* y,
+            int first_m,
+            int out_row,
+            uint simd_lid
+        ) {
+            typedef vec<float, NA> VF;
+            constexpr int rows_per_simd = 4;
+            constexpr int values_per_thread = 16;
+            constexpr int block_size = values_per_thread * 32;
+            constexpr int bytes_per_lane = 8;
+            constexpr int in_vec_size_w = QK / 2;
+            constexpr int in_vec_size_g = QK / 64;
+
+            VF acc[rows_per_simd];
+            for (int r = 0; r < rows_per_simd; r++) {
+                acc[r] = VF(0.0f);
+            }
+
+            for (int k = 0; k < QK; k += block_size) {
+                thread uint16_t packed[rows_per_simd][4];
+                thread float scale_local[rows_per_simd];
+                thread float bias_local[rows_per_simd];
+                for (int r = 0; r < rows_per_simd; r++) {
+                    const int row = out_row + r;
+                    const device uint16_t* ws =
+                        reinterpret_cast<const device uint16_t*>(
+                            reinterpret_cast<const device uint8_t*>(w) +
+                            row * in_vec_size_w + k / 2 +
+                            simd_lid * bytes_per_lane);
+                    for (int i = 0; i < 4; i++) {
+                        packed[r][i] = ws[i];
+                    }
+                    const int group_index =
+                        row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
+                    scale_local[r] = scales[group_index];
+                    bias_local[r] = biases[group_index];
+                }
+
+                VF sums = VF(0.0f);
+                VF partial[rows_per_simd];
+                for (int r = 0; r < rows_per_simd; r++) {
+                    partial[r] = VF(0.0f);
+                }
+                for (int i = 0; i < 4; i++) {
+                    VF a0, a1, a2, a3;
+                    for (int m = 0; m < NA; m++) {
+                        const device bfloat16_t* xm = x + (first_m + m) * QK +
+                            k + simd_lid * values_per_thread + 4 * i;
+                        const vec<bfloat16_t, 4> xv =
+                            *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
+                                xm);
+                        a0[m] = static_cast<float>(xv[0]);
+                        a1[m] = static_cast<float>(xv[1]);
+                        a2[m] = static_cast<float>(xv[2]);
+                        a3[m] = static_cast<float>(xv[3]);
+                        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                    }
+                    for (int r = 0; r < rows_per_simd; r++) {
+                        partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                                       a1 * ((packed[r][i] >> 4) & 0x000f) +
+                                       a2 * ((packed[r][i] >> 8) & 0x000f) +
+                                       a3 * ((packed[r][i] >> 12) & 0x000f));
+                    }
+                }
+                for (int r = 0; r < rows_per_simd; r++) {
+                    acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+                }
+            }
+
+            for (int r = 0; r < rows_per_simd; r++) {
+                for (int m = 0; m < NA; m++) {
+                    const float reduced = simd_sum(acc[r][m]);
+                    if (simd_lid == 0) {
+                        y[(first_m + m) * QN + out_row + r] =
+                            static_cast<bfloat16_t>(reduced);
+                    }
+                }
+            }
+        }
+
+        template <int M, int IPG, int QK, int QN>
+        inline void qwen_e120_qmv_m(
+            const device uint32_t* w,
+            const device bfloat16_t* scales,
+            const device bfloat16_t* biases,
+            const device bfloat16_t* x,
+            device bfloat16_t* y,
+            int group_x,
+            int out_row,
+            uint simd_lid
+        ) {
+            static_assert(M % IPG != 1, "a one-input tail group is not built");
+            constexpr int TAIL = M % IPG;
+            const int first_m = group_x * IPG;
+            if (first_m >= M) {
+                return;
+            }
+            if (TAIL == 0 || M - first_m >= IPG) {
+                qwen_e120_qmv_wide<IPG, QK, QN>(
+                    w, scales, biases, x, y, first_m, out_row, simd_lid);
+            } else {
+                qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), QK, QN>(
+                    w, scales, biases, x, y, first_m, out_row, simd_lid);
+            }
+        }
+        """,
+    ensureRowContiguous: true
+)
+
+/// Candidate-owned entry point for the wide affine-4/group-64 QMV.
+///
+/// `matmul` returns `nil` for every cell the incumbent must keep, so a routed
+/// call site is a strict subset of the shipped dispatch: same kernel family,
+/// same partition, same arithmetic.
+public enum Qwen35CustomQMV {
+    public enum Arm: String, Sendable {
+        /// MLX's own launcher. The shipped default until the replica is proven.
+        case off
+        /// Bit-exact replica of the incumbent wide kernel, our dispatch.
+        case replica
+    }
+
+    public static let arm: Arm = {
+        let raw =
+            ProcessInfo.processInfo.environment["MLXFAST_QWEN_E120_QMV"] ?? "off"
+        return Arm(rawValue: raw) ?? .off
+    }()
+
+    /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
+    /// and M=2 reach different kernels and are left to MLX.
+    static let widths = 3 ... 9
+
+    public static func matmul(
+        _ x: MLXArray,
+        _ w: MLXArray,
+        scales: MLXArray,
+        biases: MLXArray,
+        groupSize: Int,
+        bits: Int,
+        mode: QuantizationMode,
+        arm: Arm = Qwen35CustomQMV.arm
+    ) -> MLXArray? {
+        guard arm != .off else { return nil }
+        guard bits == 4, groupSize == 64, mode == .affine else { return nil }
+        guard x.dtype == .bfloat16, scales.dtype == .bfloat16,
+            biases.dtype == .bfloat16, w.dtype == .uint32
+        else { return nil }
+        guard w.ndim == 2, x.ndim >= 2 else { return nil }
+        let k = x.dim(-1)
+        let n = w.dim(0)
+        // `fast = N % 8 == 0 && K % 512 == 0` (quantized.cpp:260) and the wide
+        // branch needs `out_vec_size >= 4096` (quantized.h:1917).
+        guard w.dim(1) == k / 8, k % 512 == 0, n % 8 == 0, n >= 4096 else {
+            return nil
+        }
+        let m = x.size / k
+        guard Self.widths.contains(m), x.dim(-2) == m else { return nil }
+
+        var outShape = x.shape
+        outShape[outShape.count - 1] = n
+        return qwen35CustomAffine4QMVKernel(
+            [w, scales, biases, x],
+            template: [("QK", k), ("QN", n)],
+            grid: (m * 32, (n / 8) * 2, 1),
+            threadGroup: (32, 2, 1),
+            outputShapes: [outShape],
+            outputDTypes: [.bfloat16]
+        )[0]
+    }
+}
+
 final class Qwen35FusedMLP: Module, UnaryLayer {
     @ModuleInfo(key: "gate_proj") var gateProj: Linear
     @ModuleInfo(key: "down_proj") var downProj: Linear
@@ -1393,6 +1654,12 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
 
     private func fusedGateUp(_ x: MLXArray) -> MLXArray? {
         if let w = _fqW, let s = _fqS, let z = _fqZ {
+            if let y = Qwen35CustomQMV.matmul(
+                x, w, scales: s, biases: z,
+                groupSize: _fqGS, bits: _fqBits, mode: _fqMode)
+            {
+                return y
+            }
             return quantizedMM(
                 x, w, scales: s, biases: z, transpose: true,
                 groupSize: _fqGS, bits: _fqBits, mode: _fqMode)
