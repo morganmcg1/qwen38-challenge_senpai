@@ -875,7 +875,10 @@ def main() -> int:
             "headline": {},
             "constant_p": {"constant_p": True},
             "shuffle_margins": {"shuffle_margins": True},
-            "drop_zero_weight": {"hold_zero_weight": True},
+            # Holds the three zero-weight prompts at the shipped ratio 1.0
+            # instead of repricing them; it does not remove them from the
+            # eight-prompt median.
+            "hold_zero_weight_at_shipped": {"hold_zero_weight": True},
             "seed_777": {"seed": 777},
             "single_fixture_a": {"fixture_override": {
                 "beagle": ["beagle_a"], "medicine": ["medicine_hist"],
@@ -885,7 +888,8 @@ def main() -> int:
                 "essays": ["essays_montaigne"]}},
             "benchfixture_only": {"fixture_override": {
                 p: ["benchfixture"] for p in RANKED_PROMPTS}},
-            "receipt_crown": {"receipt": "bc070b7b"},
+            "receipt_crown": {"receipt": "d3c491b5"},
+            "receipt_prev_crown": {"receipt": "bc070b7b"},
             "receipt_ec778a91": {"receipt": "ec778a91"},
         }
         rows = {}
