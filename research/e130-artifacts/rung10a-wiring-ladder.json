@@ -1,0 +1,322 @@
+{
+  "all_tokens_matched": true,
+  "any_leg_swapped": false,
+  "arms_candidate": {
+    "none": {
+      "arm": "none",
+      "half_1": 0.03217896679416299,
+      "half_2": 0.03203922836109996,
+      "half_spread": 0.00013973843306303024,
+      "half_spread_pct": 0.43519888008430924,
+      "mean": 0.032109097577631474,
+      "n": 2,
+      "values": [
+        0.03217896679416299,
+        0.03203922836109996
+      ]
+    },
+    "s512": {
+      "arm": "s512",
+      "half_1": 0.031969197327271104,
+      "half_2": 0.03193823643960059,
+      "half_spread": 3.096088767051697e-05,
+      "half_spread_pct": 0.09689291478502915,
+      "mean": 0.031953716883435845,
+      "n": 2,
+      "values": [
+        0.031969197327271104,
+        0.03193823643960059
+      ]
+    },
+    "s64": {
+      "arm": "s64",
+      "half_1": 0.0320772638078779,
+      "half_2": 0.031956209102645516,
+      "half_spread": 0.00012105470523238182,
+      "half_spread_pct": 0.37809820311178965,
+      "mean": 0.03201673645526171,
+      "n": 2,
+      "values": [
+        0.0320772638078779,
+        0.031956209102645516
+      ]
+    }
+  },
+  "arms_serial": {
+    "none": {
+      "arm": "none",
+      "half_1": 0.07360368967056274,
+      "half_2": 0.07365254685282707,
+      "half_spread": 4.8857182264328e-05,
+      "half_spread_pct": 0.06635669010401152,
+      "mean": 0.07362811826169491,
+      "n": 2,
+      "values": [
+        0.07360368967056274,
+        0.07365254685282707
+      ]
+    },
+    "s512": {
+      "arm": "s512",
+      "half_1": 0.07270044717006385,
+      "half_2": 0.07327989838086069,
+      "half_spread": 0.000579451210796833,
+      "half_spread_pct": 0.7938756530682335,
+      "mean": 0.07299017277546227,
+      "n": 2,
+      "values": [
+        0.07270044717006385,
+        0.07327989838086069
+      ]
+    },
+    "s64": {
+      "arm": "s64",
+      "half_1": 0.07306390441954136,
+      "half_2": 0.07266826764680445,
+      "half_spread": 0.000395636772736907,
+      "half_spread_pct": 0.542964215968441,
+      "mean": 0.0728660860331729,
+      "n": 2,
+      "values": [
+        0.07306390441954136,
+        0.07266826764680445
+      ]
+    }
+  },
+  "binary_identity": {
+    "base_sha_moved_mid_session": true,
+    "base_sha_values": [
+      "0bcfc5d7b3cc351135cfe1c80cfeeb917c6df48c",
+      "ec300cfb93db3a24410696cb43d729fec6634046"
+    ],
+    "one_binary_served_every_arm": true,
+    "worker_sha256_values": [
+      "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    ]
+  },
+  "cool_gate_passed_real_gate": "false",
+  "counterbalancing": "palindrome, one observation per arm per half",
+  "entry_temperature_spread_c": 24.643115997314453,
+  "experiment": "e130-rung10a",
+  "gate_qualified_for_timing": "false",
+  "headline_is_absolute_not_a_ratio": true,
+  "headline_metric": "mtp_seconds_per_token",
+  "legs": [
+    {
+      "all_tokens_matched": true,
+      "arm": "none",
+      "base_sha": "0bcfc5d7b3cc351135cfe1c80cfeeb917c6df48c",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "exit": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": 35.84714126586914,
+      "gpu_temp_exit_c": 61.72859191894531,
+      "half": 1,
+      "index": 1,
+      "mtp_decode_speedup": 2.287322962896182,
+      "mtp_seconds_per_token": 0.03217896679416299,
+      "serial_seconds_per_token": 0.07360368967056274,
+      "swap_delta": {
+        "compressor_pages": -13,
+        "swapins": 0,
+        "swapouts": 0
+      },
+      "swapped": false,
+      "tag": "e130-r10a-1-none",
+      "wired_gate_gib": "<shipped-96>",
+      "wired_outcome_line": null,
+      "wired_residency_active": "false",
+      "wired_slack_mb": "<shipped-default>",
+      "worker_sha256": "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    },
+    {
+      "all_tokens_matched": true,
+      "arm": "s64",
+      "base_sha": "0bcfc5d7b3cc351135cfe1c80cfeeb917c6df48c",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "exit": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": 58.08355712890625,
+      "gpu_temp_exit_c": 62.0214729309082,
+      "half": 1,
+      "index": 2,
+      "mtp_decode_speedup": 2.277747405674841,
+      "mtp_seconds_per_token": 0.0320772638078779,
+      "serial_seconds_per_token": 0.07306390441954136,
+      "swap_delta": {
+        "compressor_pages": -2,
+        "swapins": 0,
+        "swapouts": 0
+      },
+      "swapped": false,
+      "tag": "e130-r10a-2-s64",
+      "wired_gate_gib": "32",
+      "wired_outcome_line": "mlxfast: qwen-mtp wired-zh request=26213813236 applied=26213813236 active=26146704372 slack_mb=64 fraction=1.0 maxrec=40200896512",
+      "wired_residency_active": "true",
+      "wired_slack_mb": "64",
+      "worker_sha256": "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    },
+    {
+      "all_tokens_matched": true,
+      "arm": "s512",
+      "base_sha": "ec300cfb93db3a24410696cb43d729fec6634046",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "exit": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": 59.38654708862305,
+      "gpu_temp_exit_c": 62.87844467163086,
+      "half": 1,
+      "index": 3,
+      "mtp_decode_speedup": 2.274077964042195,
+      "mtp_seconds_per_token": 0.031969197327271104,
+      "serial_seconds_per_token": 0.07270044717006385,
+      "swap_delta": {
+        "compressor_pages": 0,
+        "swapins": 0,
+        "swapouts": 0
+      },
+      "swapped": false,
+      "tag": "e130-r10a-3-s512",
+      "wired_gate_gib": "32",
+      "wired_outcome_line": "mlxfast: qwen-mtp wired-zh request=26683575284 applied=26683575284 active=26146704372 slack_mb=512 fraction=1.0 maxrec=40200896512",
+      "wired_residency_active": "true",
+      "wired_slack_mb": "512",
+      "worker_sha256": "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    },
+    {
+      "all_tokens_matched": true,
+      "arm": "s512",
+      "base_sha": "ec300cfb93db3a24410696cb43d729fec6634046",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "exit": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": 59.300537109375,
+      "gpu_temp_exit_c": 63.72768783569336,
+      "half": 2,
+      "index": 4,
+      "mtp_decode_speedup": 2.294425320554021,
+      "mtp_seconds_per_token": 0.03193823643960059,
+      "serial_seconds_per_token": 0.07327989838086069,
+      "swap_delta": {
+        "compressor_pages": 0,
+        "swapins": 0,
+        "swapouts": 0
+      },
+      "swapped": false,
+      "tag": "e130-r10a-4-s512",
+      "wired_gate_gib": "32",
+      "wired_outcome_line": "mlxfast: qwen-mtp wired-zh request=26683575284 applied=26683575284 active=26146704372 slack_mb=512 fraction=1.0 maxrec=40200896512",
+      "wired_residency_active": "true",
+      "wired_slack_mb": "512",
+      "worker_sha256": "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    },
+    {
+      "all_tokens_matched": true,
+      "arm": "s64",
+      "base_sha": "ec300cfb93db3a24410696cb43d729fec6634046",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "exit": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": 59.97055435180664,
+      "gpu_temp_exit_c": 63.018211364746094,
+      "half": 2,
+      "index": 5,
+      "mtp_decode_speedup": 2.273995248103085,
+      "mtp_seconds_per_token": 0.031956209102645516,
+      "serial_seconds_per_token": 0.07266826764680445,
+      "swap_delta": {
+        "compressor_pages": 0,
+        "swapins": 0,
+        "swapouts": 0
+      },
+      "swapped": false,
+      "tag": "e130-r10a-5-s64",
+      "wired_gate_gib": "32",
+      "wired_outcome_line": "mlxfast: qwen-mtp wired-zh request=26213813236 applied=26213813236 active=26146704372 slack_mb=64 fraction=1.0 maxrec=40200896512",
+      "wired_residency_active": "true",
+      "wired_slack_mb": "64",
+      "worker_sha256": "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    },
+    {
+      "all_tokens_matched": true,
+      "arm": "none",
+      "base_sha": "ec300cfb93db3a24410696cb43d729fec6634046",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "exit": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": 60.490257263183594,
+      "gpu_temp_exit_c": 63.24143981933594,
+      "half": 2,
+      "index": 6,
+      "mtp_decode_speedup": 2.298823992348437,
+      "mtp_seconds_per_token": 0.03203922836109996,
+      "serial_seconds_per_token": 0.07365254685282707,
+      "swap_delta": {
+        "compressor_pages": -1,
+        "swapins": 0,
+        "swapouts": 0
+      },
+      "swapped": false,
+      "tag": "e130-r10a-6-none",
+      "wired_gate_gib": "<shipped-96>",
+      "wired_outcome_line": null,
+      "wired_residency_active": "false",
+      "wired_slack_mb": "<shipped-default>",
+      "worker_sha256": "75ed21a7acd7f84455bcf8dd29819c9329262de021bcbd6f7bbba1bf7aaa57b8"
+    }
+  ],
+  "order": [
+    "none",
+    "s64",
+    "s512",
+    "s512",
+    "s64",
+    "none"
+  ],
+  "positive_control": {
+    "baseline_arm": "none",
+    "baseline_mean": 0.032109097577631474,
+    "candidate_arm": "s512",
+    "candidate_is_faster": true,
+    "candidate_mean": 0.031953716883435845,
+    "delta_pct": -0.48391485877159246,
+    "exceeds_half_spread": true,
+    "largest_half_spread_pct": 0.43519888008430924,
+    "name": "positive control: no wiring vs 512 MiB",
+    "note": "if this does not fire, the instrument cannot see wiring on this host and the treatment contrast carries no information",
+    "usable": true
+  },
+  "question": "does raising the wired residency slack lower absolute candidate seconds per token",
+  "serial_co_timed_control": {
+    "baseline_arm": "s64",
+    "baseline_mean": 0.0728660860331729,
+    "candidate_arm": "s512",
+    "candidate_is_faster": false,
+    "candidate_mean": 0.07299017277546227,
+    "delta_pct": 0.17029423294792148,
+    "exceeds_half_spread": false,
+    "largest_half_spread_pct": 0.7938756530682335,
+    "name": "serial co-timed control: 64 MiB vs 512 MiB",
+    "note": "the serial worker wires too, so this is not a denominator",
+    "usable": true
+  },
+  "treatment": {
+    "baseline_arm": "s64",
+    "baseline_mean": 0.03201673645526171,
+    "candidate_arm": "s512",
+    "candidate_is_faster": true,
+    "candidate_mean": 0.031953716883435845,
+    "delta_pct": -0.19683321538384074,
+    "exceeds_half_spread": false,
+    "largest_half_spread_pct": 0.37809820311178965,
+    "name": "treatment: 64 MiB vs 512 MiB",
+    "note": "the exact change rung 10b ships, measured causally on GPU",
+    "usable": true
+  }
+}
