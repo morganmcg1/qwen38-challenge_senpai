@@ -1562,7 +1562,7 @@ private let qwen35E120QMVHeader = """
 private func qwen35E120QMVSource(table: Bool) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
-    let cases = [(3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+    let cases = [(3, 3), (4, 4), (5, 3), (6, 3), (7, 4), (8, 4), (9, 3)]
         .map { m, ipg in
             """
                     case \(m):
@@ -1698,6 +1698,65 @@ public enum Qwen35CustomQMV {
     /// and M=2 reach different kernels and are left to MLX.
     static let widths = 3 ... 9
 
+    /// Rung 2b instrument. Set `MLX_E120_QMV_PIPELINE_LOG` to a writable path
+    /// and the entry point records every distinct JIT specialization it asks
+    /// for, together with the widths that reached it.
+    ///
+    /// The width switch lives inside the Metal kernel and `IPG` is chosen
+    /// there, so the host key is `(kernel, USE_TABLE)` and never mentions `M`
+    /// or `IPG`. Changing an `IPG` literal therefore cannot add a pipeline: a
+    /// leg that reaches all seven routed widths must still report the same two
+    /// QMV specializations. The name must carry the `MLX_` prefix to survive
+    /// `sanitizedRuntimeWorkerEnvironment`. It is unset in every timed run, so
+    /// the dispatch path pays one optional test.
+    static let pipelineLogPath: String? = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_PIPELINE_LOG"]
+        guard let raw, !raw.isEmpty else { return nil }
+        atexit { Qwen35CustomQMV.flushPipelineLog() }
+        return raw
+    }()
+
+    public nonisolated(unsafe) static var pipelineKeys: [String: Int] = [:]
+    public nonisolated(unsafe) static var pipelineWidths: [Int: Int] = [:]
+
+    /// `width` is nil for the chunk-sum fill, which is not a QMV dispatch.
+    static func notePipeline(_ key: String, width: Int?) {
+        guard pipelineLogPath != nil else { return }
+        var isNew = pipelineKeys[key] == nil
+        pipelineKeys[key, default: 0] += 1
+        if let width {
+            isNew = isNew || pipelineWidths[width] == nil
+            pipelineWidths[width, default: 0] += 1
+        }
+        if isNew { flushPipelineLog() }
+    }
+
+    static func flushPipelineLog() {
+        guard let path = pipelineLogPath else { return }
+        let keys = pipelineKeys.keys.sorted()
+            .map { "    \"\($0)\": \(pipelineKeys[$0]!)" }
+            .joined(separator: ",\n")
+        let widths = pipelineWidths.keys.sorted()
+            .map { "    \"\($0)\": \(pipelineWidths[$0]!)" }
+            .joined(separator: ",\n")
+        let total = pipelineKeys.values.reduce(0, +)
+        let json = """
+            {
+              "arm": "\(arm.rawValue)",
+              "qmv_specializations": \(pipelineKeys.count),
+              "dispatches": \(total),
+              "by_key": {
+            \(keys)
+              },
+              "by_width": {
+            \(widths)
+              }
+            }
+
+            """
+        try? json.write(toFile: path, atomically: true, encoding: .utf8)
+    }
+
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
@@ -1771,6 +1830,7 @@ public enum Qwen35CustomQMV {
         let k = x.dim(-1)
         let m = x.size / k
         let kBlocks = k / 512
+        notePipeline("xsums_v1", width: nil)
         return qwen35CustomAffine4XSumsKernel(
             [x],
             grid: (32, kBlocks, m),
@@ -1801,6 +1861,7 @@ public enum Qwen35CustomQMV {
         else { return nil }
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
+        notePipeline("qmv_sums_v1/USE_TABLE=\(consume)", width: cell.m)
         return qwen35CustomAffine4QMVTableKernel(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
@@ -1837,6 +1898,7 @@ public enum Qwen35CustomQMV {
 
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
+        notePipeline("qmv_wide_v1", width: cell.m)
         return qwen35CustomAffine4QMVKernel(
             [w, scales, biases, x],
             grid: (cell.m * 32, (cell.n / 8) * 2, 1),

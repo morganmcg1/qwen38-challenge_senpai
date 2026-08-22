@@ -59,6 +59,14 @@ import e120_g17s_census as e120  # noqa: E402
 ARCHS = e120.ARCHS
 SIMDGROUP_BUDGET = e120.SIMDGROUP_BUDGET
 WIDTH_CASES = e120.WIDTH_CASES
+# Rung 2-lite. `qwen_e120_qmv_m` asserts `M % IPG != 1`, so M=5 has exactly two
+# legal forms: (5,5) instantiates `wide<5>` alone, and (5,3) instantiates
+# `wide<3>` and `wide<2>` and retires `wide<5>` from the whole function.
+WIDTH_CASES_5_3 = tuple((5, 3) if m == 5 else (m, ipg) for m, ipg in WIDTH_CASES)
+# The non-M=5 half of a two-pipeline split, where a single boolean template
+# parameter keeps M=5 on (5,5) in its own function and pays no extra pass.
+WIDTH_CASES_NO_M5 = tuple((m, ipg) for m, ipg in WIDTH_CASES if m != 5)
+WIDTH_CASES_M5_ONLY = ((5, 5),)
 # `Qwen35CustomQMV.widths` is 3...9; M=1 and M=2 reach other MLX kernels and
 # are not part of this entry point at all.
 ROUTED_WIDTHS = tuple(m for m, _ in WIDTH_CASES)
@@ -82,6 +90,10 @@ RANKED_WIDTH_MIX = {
 }
 # The local fixture for contrast: mean width 7.359, 76.9 % of rounds at M=8.
 LOCAL_MEAN_WIDTH = 7.359
+
+# Realised verification widths over the 312 rounds of the rung 5e session. M=2
+# is below `Qwen35CustomQMV.widths`, so it never reaches either pipeline.
+REALISED_HISTOGRAM = {2: 4, 4: 16, 5: 20, 6: 20, 7: 12, 8: 240}
 
 # The advisor's rung-1 gate: below this ranked-weighted resident-simdgroup
 # gain, close the axis and report the census as the result.
@@ -149,6 +161,12 @@ def arm_source(header: str, table: bool) -> str:
 
     parts.append(e120.generate(base, inputs, e120.QMV_OUTPUTS,
                                e120.qmv_body(table), use_table or None))
+    for suffix, cases in (("switch53", WIDTH_CASES_5_3),
+                          ("switchnom5", WIDTH_CASES_NO_M5),
+                          ("switchm5only", WIDTH_CASES_M5_ONLY)):
+        parts.append(e120.generate(
+            "%s_%s" % (base, suffix), inputs, e120.QMV_OUTPUTS,
+            e120.qmv_body(table, cases), use_table or None))
     for m, ipg in WIDTH_CASES:
         parts.append(e120.generate(
             "%s_tmpl_m%d" % (base, m), inputs, e120.QMV_OUTPUTS,
@@ -162,12 +180,33 @@ def arm_source(header: str, table: bool) -> str:
     return "\n".join(parts) + "\n"
 
 
+def xsums_source() -> str:
+    """`qwen35CustomAffine4XSumsKernel`, the chunk-sum fill, lifted verbatim."""
+    text = e120.QWEN35.read_text()
+    start = text.index('name: "qwen35_custom_affine4_g64_xsums_v1"')
+    start = text.index('source: """', start)
+    start = text.index("\n", start) + 1
+    end = text.index('        """', start)
+    body = "\n".join(line[4:] if line.startswith("    ") else line
+                     for line in text[start:end].splitlines())
+    return e120.PRELUDE + e120.generate(
+        "qwen35_custom_affine4_g64_xsums_v1",
+        [("x", "bfloat16_t")], [("xsums", "float")], body)
+
+
 def classify(kernel: str) -> tuple[str, int | None]:
     """`(variant, width)` for a censused kernel name."""
     if "_tmpl_m" in kernel:
         return "templated", int(kernel.rsplit("_tmpl_m", 1)[1])
     if "_body_na" in kernel:
         return "body", int(kernel.rsplit("_body_na", 1)[1])
+    for suffix, variant in (("_switch53", "switch_5_3"),
+                            ("_switchnom5", "switch_no_m5"),
+                            ("_switchm5only", "switch_m5_only")):
+        if kernel.endswith(suffix):
+            return variant, None
+    if kernel.endswith("xsums_v1"):
+        return "xsums", None
     return "switch", None
 
 
@@ -281,6 +320,66 @@ def gate(table: list[dict]) -> dict:
     return verdict
 
 
+def designs(table: list[dict]) -> dict:
+    """Price rung 2-lite and its alternatives on the realised width histogram.
+
+    Every candidate keeps the same emitted body code at a given width, so the
+    instruction channel is zero and the only channel is the entry point's
+    register maximum. `shipped` is one function per `USE_TABLE` arm holding all
+    seven widths; `lite_5_3` is the same function with M=5 rebuilt from
+    `wide<3>` and `wide<2>`; `split_m5` adds one boolean template parameter so
+    M=5 keeps its own function and pays no extra weight pass; `templated` gives
+    every width its own function.
+
+    Residency is `budget // registers`, a DERIVATION inside the census helper
+    and not a measurement (Rule 89).
+    """
+    routed = {m: n for m, n in REALISED_HISTOGRAM.items() if m in ROUTED_WIDTHS}
+    rounds = sum(routed.values())
+    out = {"realised_routed_rounds": rounds,
+           "realised_histogram": REALISED_HISTOGRAM,
+           "residency_is_derived": True}
+    for arch in ("g16s", "g17s"):
+        per_design = {}
+        for design in ("shipped", "lite_5_3", "split_m5", "templated"):
+            weighted = 0.0
+            per_width = {}
+            for m, count in sorted(routed.items()):
+                arm = shipped_arm(m)
+                if design == "shipped":
+                    sg = residency(table, arm, arch, "switch", None)
+                elif design == "lite_5_3":
+                    sg = residency(table, arm, arch, "switch_5_3", None)
+                elif design == "split_m5":
+                    sg = residency(table, arm, arch,
+                                   "switch_m5_only" if m == 5 else "switch_no_m5",
+                                   None)
+                else:
+                    sg = residency(table, arm, arch, "templated", m)
+                per_width[m] = sg
+                weighted += count * sg
+            per_design[design] = {
+                "per_width_resident_simdgroups": per_width,
+                "realised_weighted_resident_simdgroups": weighted / rounds,
+            }
+        shipped = per_design["shipped"]["realised_weighted_resident_simdgroups"]
+        for design, cell in per_design.items():
+            cell["gain_fraction_vs_shipped"] = (
+                cell["realised_weighted_resident_simdgroups"] / shipped - 1.0)
+        out[arch] = {
+            "designs": per_design,
+            "entry_points": {
+                arm: {
+                    variant: residency(table, arm, arch, variant, None)
+                    for variant in ("switch", "switch_5_3",
+                                    "switch_no_m5", "switch_m5_only")
+                }
+                for arm in ("replica_no_table", "sumtable")
+            },
+        }
+    return out
+
+
 def text_summary(table: list[dict]) -> dict:
     """Per-pipeline machine-text bytes, which is the second claimed channel."""
     out = {}
@@ -307,7 +406,7 @@ def log_wandb(result: dict) -> str | None:
     table = result["rows"]
     run = wandb.init(
         entity=ENTITY, project=PROJECT, group=GROUP, job_type="census",
-        name="e129-rung1-entry-point-census",
+        name="e129-rung2a0-entry-point-census",
         config={
             "experiment": GROUP,
             "rung": 1,
@@ -341,8 +440,17 @@ def log_wandb(result: dict) -> str | None:
                       "local_fixture_gain_fraction",
                       "passes_gate", "passes_gate_on_adverse_corner"):
             summary["rung1/%s/%s" % (arch, field)] = cell[field]
+    for arch in ("g16s", "g17s"):
+        for design, cell in result["designs"][arch]["designs"].items():
+            summary["rung2a0/%s/%s/weighted_resident_simdgroups" % (arch, design)] = (
+                cell["realised_weighted_resident_simdgroups"])
+            summary["rung2a0/%s/%s/gain_pct_vs_shipped" % (arch, design)] = (
+                100 * cell["gain_fraction_vs_shipped"])
     run.summary.update(summary)
-    run.summary.update({"rung1/text": result["text"]})
+    run.summary.update({"rung1/text": result["text"],
+                        "rung2a0/entry_points": {
+                            arch: result["designs"][arch]["entry_points"]
+                            for arch in ("g16s", "g17s")}})
     url = run.url
     run.finish()
     return url
@@ -367,6 +475,7 @@ def main() -> int:
     arms = {
         "replica_no_table": arm_source(header, table=False),
         "sumtable": arm_source(header, table=True),
+        "xsums_fill": xsums_source(),
     }
 
     census: dict = {}
@@ -394,6 +503,7 @@ def main() -> int:
                              for k, (w, g) in RANKED_WIDTH_MIX.items()},
         "rows": table,
         "gate": gate(table),
+        "designs": designs(table),
         "text": text_summary(table),
     }
 
@@ -432,6 +542,23 @@ def main() -> int:
               "%+.2f %%, favourable %+.2f %%"
               % (100 * cell["adverse_all_floor_gain_fraction"],
                  100 * cell["favourable_all_ceiling_gain_fraction"]))
+
+    print("\nentry points, resident simdgroups (DERIVED, budget // registers)")
+    print("%-6s %-17s %8s %8s %9s %10s"
+          % ("arch", "arm", "shipped", "(5,3)", "no M=5", "M=5 only"))
+    for arch in ("g16s", "g17s"):
+        for arm, cell in result["designs"][arch]["entry_points"].items():
+            print("%-6s %-17s %8d %8d %9d %10d"
+                  % (arch, arm, cell["switch"], cell["switch_5_3"],
+                     cell["switch_no_m5"], cell["switch_m5_only"]))
+
+    print("\nrealised-histogram weighted residency over %d routed rounds"
+          % result["designs"]["realised_routed_rounds"])
+    for arch in ("g16s", "g17s"):
+        for design, cell in result["designs"][arch]["designs"].items():
+            print("  %-5s %-10s %6.3f sg  %+7.3f %%"
+                  % (arch, design, cell["realised_weighted_resident_simdgroups"],
+                     100 * cell["gain_fraction_vs_shipped"]))
 
     if args.wandb:
         url = log_wandb(result)
