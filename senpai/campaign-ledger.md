@@ -41851,3 +41851,358 @@ pre-registered Route B receipt band is unaffected; only the residency correction
 Crown unmoved at `bc070b7b` francip `3.35922017` since 2026-08-22T01:48:13Z, now more than seven
 hours. `4d3a03aa francip rejected 3.35185364` at 06:41Z is the crown holder failing to reproduce his
 own crown, a sixth independent confirmation of F96. Nothing above 3.352 since 01:48Z.
+
+## 275 — 2026-08-22 09:20Z — THE CAMPAIGN TAKES THE CROWN AT 3.49065044, AND ROUTE B TURNS OUT TO HAVE RETIRED THE ENTRY POINT WE WERE OPTIMISING
+
+### THE PROMOTION
+
+```
+id                   d3c491b5-902f-4f80-8d33-b7938f980d2d
+status               accepted        promotionStatus  promoted
+createdAt            2026-08-22T08:27:51.327Z
+promotionFinishedAt  2026-08-22T09:08:38.998Z          (41.8 min queue)
+officialScore        3.49065043561149
+promotedSourceRef    6f1cd66fc214d4281b37da335e21077c7e9d7ad5
+submissionCommitSha  6f1cd66fc214d4281b37da335e21077c7e9d7ad5
+improved             true
+previous crown       bc070b7b francip 3.35922017       +3.913 %
+F76 mode index       -13.3603 fast    old crown -13.4103 fast    MODE MATCHED
+```
+
+Candidate: thorfinn's E129 rung 0, the reverted Route B build. Candidate commit `b1dd5697`, advisor
+head `d46eb29b`, worker sha256 `59b83674e6c7bf63`. Thorfinn's pre-registered fast band was
+`3.4763 / 3.4054 / 3.3855`; the measurement beat his own most optimistic model by `+0.42 %`.
+
+`senpai/frontier-state.json` updated: `observedAt` 2026-08-22T09:12Z, `promotedSubmission.id`
+`d3c491b5-902f-4f80-8d33-b7938f980d2d`, `sourceRef` `6f1cd66fc214d4281b37da335e21077c7e9d7ad5`,
+score 3.49065043561149. `organizer.syncedCommit` stays `fac135f2...`; the submit guard requires it
+to be an ancestor of live upstream and reads the file from `origin/main`, not from this branch.
+
+The advisor branch already contains the promoted scored surface. `d46eb29b` is an ancestor of the
+current head, and everything merged since is research-only. No sync or replay is needed.
+
+### F119 — ROUTE B'S RANKED PER-PROMPT EFFECT, AND IT IS A TEXTBOOK WIDTH SIGNATURE
+
+Candidate MTP seconds per token, `44559d02` (our best prior fast-mode receipt, 3.34351272, mode
+index -13.4917) against `d3c491b5`. Both fast, so no mode correction applies.
+
+```
+prompt      44559d02      d3c491b5      delta      M̄      R    tok/round  round us before  after
+plutarch    0.03035123    0.03025346   -0.322 %   1.154   487    1.05133      31909        31806
+drama       0.01956146    0.01934606   -1.101 %   3.298   252    2.03175      39743        39305
+travel      0.01719175    0.01699774   -1.128 %   3.656   212    2.41509      41521        41053
+beagle      0.01184191    0.01138928   -3.822 %   5.382   110    4.65455      55120        53013
+republic    0.01079123    0.01035745   -4.020 %   5.989    93    5.50538      59409        57021
+essays      0.01089981    0.01041310   -4.465 %   6.087    92    5.56522      60661        57952
+medicine    0.01079165    0.01037385   -3.872 %   6.256    90    5.68889      61392        59016
+botany      0.01070838    0.01024127   -4.362 %   7.148    81    6.32099      67687        64735
+```
+
+`Qwen35CustomQMV.widths` is `3 ... 9`, so a round only reaches Route B at M >= 3. plutarch runs 449
+of 487 rounds at M = 1 and gained `-0.322 %`. drama and travel at M̄ 3.3 to 3.7 gained about
+`-1.1 %`. The five deep prompts gained `-3.8 %` to `-4.5 %`. The gain tracks realised width exactly.
+
+This is the first time a local wide-QMV reading transferred cleanly to M5. Thorfinn's same-build
+local ratio said `+4.249 %` at rung 5e and `+3.813 %` at rung 5g; the ranked deep prompts landed
+between them.
+
+Inverting against the largest observed gain gives a lower bound on each prompt's unrouted cost
+share, `1 - delta_p / g` with `g = -4.465 %`:
+
+```
+beagle 14.4 % | medicine 13.3 % | republic 10.0 % | botany 2.3 % | essays 0.0 %
+plutarch 92.8 % | drama 75.3 % | travel 74.7 %
+```
+
+A BOUND, NOT A MEASUREMENT. Route B's per-width gain is strongly non-monotonic (`M=3 0.02, M=4 4.09,
+M=5 4.82, M=6 2.29, M=7 4.11, M=8 5.68, M=9 2.50`), so the width mix contaminates the inversion.
+
+### F120 — WE HOLD SIX OF THE EIGHT PER-PROMPT FLOORS AND THE BOARD'S COMPOSITION CEILING IS OURS
+
+`floorenv.py` over 793 scored rows:
+
+```
+prompt      board best    holder     our best      board 5th    board 10th
+beagle      0.01138928    OURS       0.01138928    0.01183959   0.01184385
+botany      0.01024127    OURS       0.01024127    0.01070507   0.01070990
+essays      0.01041310    OURS       0.01041310    0.01082882   0.01089271
+medicine    0.01037385    OURS       0.01037385    0.01079165   0.01079508
+republic    0.01035745    OURS       0.01035745    0.01079508   0.01079955
+travel      0.01699774    OURS       0.01699774    0.01719175   0.01719763
+drama       0.01897597    pysunn14   0.01934606    0.01943930   0.01955919
+plutarch    0.01655614    pysunn14   0.01659771    0.01708738   0.01723745
+```
+
+Best-of-every-solver envelope publishes at **3.492374**. We are at 3.49065.
+
+**Headroom over the entire board's per-prompt best is +0.049 %.** No combination of any public
+receipt can beat us. The two prompts we do not hold, drama and plutarch, carry exactly zero F83
+weight, so they cannot help anyone. Every further point must come from new mechanism. The board's
+5th-best envelope publishes at 3.358893 and the 10th at 3.348025, both now behind the old crown.
+
+### F121 — ROUTE B INTERCEPTS EVERY SCORED TARGET LINEAR AT M IN 3…9, SO `affine_qmv_fast` IS A RESIDUAL PATH
+
+`Qwen35CustomQMV.routable` (`Qwen35.swift:1740-1766`) accepts a cell when `bits == 4`,
+`groupSize == 64`, `mode == .affine`, x/scales/biases bfloat16, w uint32, `w.dim(1) == k/8`,
+`k % 512 == 0`, `n % 8 == 0`, `n >= 4096`, `m` in `Qwen35CustomQMV.widths = 3 ... 9` (`:1738`), and
+all four operands row contiguous. Every scored target linear passes:
+
+```
+gdn.in_proj 5120->16480 | fa.qkv 5120->14336 | mlp.gate_up 5120->34816 | lm_head 5120->248320
+gdn.out_proj 6144->5120 | fa.o_proj 6144->5120 | mlp.down 17408->5120
+```
+
+Call sites, all through the routed wrapper: `:809` fused GDN in-projections, `:1322` GDN out_proj,
+`:1907` fused gate_up, `:1944` and `:1946` down_proj, `:2870` `:2890` `:2947` attention q/k/v,
+`:3190` attention o_proj, `:5155` lm_head. Shipped arm `.sumTable` (`:1691`).
+
+Thorfinn's realised width histogram is `{2:4, 4:16, 5:20, 6:20, 7:12, 8:240}` over 312 rounds, so
+**308 of 312 target rounds stream entirely through Route B.** `quantized.h`'s `switch (ntg.x)` cases
+3 through 9 at `:1923` are never entered on the scored target path.
+
+What remains at `affine_qmv_fast`: target rounds at M = 1 and M = 2; the affine-2 readout branch at
+`:1909-1917`; cells failing row contiguity or `n >= 4096`; and **every MTP head projection**.
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift` contains ZERO `qwen35Routed*` call
+sites. E82 measured `draft_build` at 10.06 % of round time. F119's unrouted-share bound and this
+source fact are two independent routes to the same block.
+
+The occupancy tax is still real for those dispatches, because a Metal function's register allocation
+is the maximum over every inlined body whatever the launch executes. A launch at `ntg.x == 1` falls
+to `default: break` and still pays 101 registers and 39 derived simdgroups on `applegpu_g17s`.
+
+### F122 — ROUTE B CARRIES THE SAME ENTRY-POINT TAX, ON THE DOMINANT PATH, AND THERE IS A ONE-LITERAL FIX
+
+`qwen35E120QMVSource` (`Qwen35.swift:1562-1594`) emits ONE Metal function inlining all seven bodies
+behind `switch (qmv_m)`:
+
+```
+cases = [(3,3), (4,4), (5,5), (6,3), (7,4), (8,4), (9,3)]        Qwen35.swift:1565
+```
+
+`qwen_e120_qmv_m<M, IPG, USE_TABLE>` (`:1526-1554`) carries
+`static_assert(M % IPG != 1, "a one-input tail group is not built")` and dispatches
+`qwen_e120_qmv_wide<IPG>` for full groups, `qwen_e120_qmv_wide<TAIL>` for the tail. So M = 5 has
+exactly two legal forms:
+
+```
+(5,5) -> TAIL 0 -> instantiates wide<5> only            1 weight pass
+(5,3) -> TAIL 2 -> instantiates wide<3> and wide<2>     2 weight passes
+```
+
+Alphonse's measured `quantized.h` analogue, same `typedef vec<float, NA>`, same `rows_per_simd = 4`:
+`applegpu_g17s` wide2 93, wide3 89, wide4 90, **wide5 101**. One body sets the whole allocation.
+
+**Rung 2-lite: change `(5, 5)` to `(5, 3)` at `Qwen35.swift:1565`.** `wide<5>` loses its only caller
+and disappears. Maximum body becomes 93, which is 42 derived simdgroups against 39, or `+7.69 %`
+entry residency on every routed width. One literal. No new Metal function, no new pipeline, no
+template parameter, no JIT surface. Executed instructions are bit-identical at M = 3, 4, 6, 7, 8, 9,
+which is 288 of 308 routed rounds. M = 5 pays one extra weight pass; it carries F47 weight 0.034 and
+20 of 312 rounds, priced `-0.04 %` to `-0.68 %` across the unresolved E27-against-E100 range.
+
+Full templating with `("QMV_M", cell.m)` gives each width its own allocation:
+
+```
+M=3 wide<3>  89 -> 44 sg  +12.82 % | M=4 wide<4>  90 -> 44 sg  +12.82 %
+M=5 wide<5> 101 -> 39 sg    0.00 % | M=6 wide<3>  89 -> 44 sg  +12.82 %
+M=7 wide<4>  90 -> 44 sg  +12.82 % | M=8 wide<4>  90 -> 44 sg  +12.82 %
+M=9 wide<3>  89 -> 44 sg  +12.82 %
+```
+
+Histogram-weighted over 308 routed rounds with `(5,3)` retained at M = 5: `+12.49 %`. Priced forward
+from 3.49065 in the entry-point leg frame:
+
+```
+arm                              d res     c=0.139   c=0.445   projected score at c=0.445
+rung 2-lite   (5,5) -> (5,3)     +7.69 %   +1.07 %   +3.42 %      3.6142
+full templating + (5,3) at M=5  +12.49 %   +1.74 %   +5.56 %      3.6963
+```
+
+The templating gate is unchanged and hard: `:1806` already passes `template: [("USE_TABLE", consume)]`,
+so adding `QMV_M` takes the table kernel to up to 14 pipelines and the non-table kernel to 7. A
+first-use JIT compile inside a timed leg is paid on all eight ranked prompts. Zero in-leg pipeline
+creations must be proved with a counter, not argued.
+
+### F123 — OUR RANKED COST CURVE MOVED, AND THE DEPTH-PRICE AXIS IS REOPENED ON OUR CURVE ONLY
+
+F97's ranked cost curve was fitted from 147 official runs of OTHER solvers. Route B changed our
+candidate and not theirs. Against that board curve at the same M̄, our post-Route-B points sit
+`0.0 %` low at M̄ 1.15, `2.5 %` low at M̄ 3.30, `4.5 %` low at M̄ 5.38 and `5.0 %` low at M̄ 7.15.
+The intercept did not move and the slope fell. Marginal-to-fixed ratio `0.1973` board against about
+`0.1832` ours. The shipped `headStepCostRatio = 0.18` did not break; Route B moved the truth toward
+it.
+
+The tier boundary is the part that reopens the axis. Route B does one weight pass per active input
+group, so passes by M are `3:1, 4:1, 5:1, 6:2, 7:2, 8:2, 9:3`. **Our tier boundary is now between
+M = 5 and M = 6; the board's is between M = 4 and M = 5.** Depth 4, which takes M from 4 to 5, is
+now inside the cheap tier and carries no extra weight pass. F97's marginal vector
+`0.1272 0.1272 0.1272 0.3114 0.2294 0.2294 0.2294 0.2294` has its spike at depth 4, and
+`measuredRawDepthPrice[4] = 0.63287276451077956` is the largest entry in the shipped table. Both are
+stale for our build.
+
+This is E113's FINDING 48 resolving the other way: E113 saw the dispatch group boundary move to
+M = 6 while the ranked cost tier stayed at M = 5. Route B moved the ranked cost tier to follow it.
+
+**E127 closed the depth-price axis against the board curve. That closure does not bind our current
+build.** Removed from the ranked stop list: the depth-PRICE refit, for our own fitted curve only.
+The board-curve refit stays closed. Assigned to edward as E128 section 5.
+
+### F115 — THE `affine_qmv_fast` ENTRY POINT HAS A HARD FLOOR AT 89 REGISTERS
+
+Alphonse, `research/e130_census.py`, base `d46eb29b`, both architectures, one instrument, 6 s per
+variant, spill 0 in every cell of every arm.
+
+```
+applegpu_g17s live bodies   wide3 89 | wide4 90 | wide5 101 | pair2..pair9 89 | impl 57
+applegpu_g16s live bodies   wide3 82 | wide4 94 | wide5  93 | pair2..pair9 75 | impl 57
+entry g17s 101 -> 39 sg (derived)     entry g16s 94 -> 32 sg (derived)
+register file g16s 393216 B = 3072 slots     g17s 507904 B = 3968 slots
+```
+
+The live body set is larger than the list the campaign had been pricing, because the `< 4096` branch
+is inside the same Metal function. `pair` at 89 registers on `applegpu_g17s` caps the whole axis at
+44 simdgroups and `+12.82 %`. `wide2` is not live in the base; no dispatched width produces
+`TAIL == 2`.
+
+### F116 — `prune_na5_pair` REACHES THE CEILING IN ONE LINE
+
+Six counterfactuals censused on both architectures. `d res g17s` is entry residency against base.
+
+```
+arm               g16s entry/sg   g17s entry/sg   d res g17s   source bytes   g17s entry text
+base                  94 / 32        101 / 39         --          206494          125092
+prune_na5_pair        94 / 32         90 / 44      +12.82 %       206483          123168
+prune_na5_ipg3        94 / 32         93 / 42       +7.69 %       206494          127046
+ca_scalar_tail2       94 / 32         90 / 44      +12.82 %       211464          125684
+cc_late_meta          96 / 32         98 / 40       +2.56 %       206566          125136
+cc_both               90 / 34         98 / 40       +2.56 %       206921           99724
+```
+
+`prune_na5_pair` routes `case 5:` to `qmv_fast_crossrow_affine4_g64<T, 5>`, the pair kernel the
+`< 4096` branch already instantiates. `wide<5>` loses its caller and disappears; no new body appears.
+It SHRINKS the source by 11 bytes and the g17s entry text by 1924 bytes, adds no arithmetic, and the
+precedent is in the shipped tree because `case 2:` already routes to the pair kernel. Every arm that
+touches only the NA=5 route leaves `applegpu_g16s` at 94 / 32, an exact local null, as pre-registered.
+
+`prune_na5_ipg3` IS the C-A of the assignment. `ca_scalar_tail2` reaches the same ceiling with two
+weight passes at M = 5 instead of three, but costs 4970 source bytes and a new arithmetic body.
+
+Priced against F119's unrouted-share bound rather than the streaming subtotal, `prune_na5_pair` is
+worth roughly `+0.58 %` published at `c = 0.445` and `+0.18 %` at `c = 0.139`:
+
+```
+beagle    +5.71 % of 14.4 % of leg = +0.82 %  x F83 0.4862 = +0.40 %
+medicine  +5.71 % of 13.3 %        = +0.76 %  x F83 0.2508 = +0.19 %
+republic  +5.71 % of 10.0 %        = +0.57 %  x F83 0.0100 = +0.006 %
+botany    +5.71 % of  2.3 %        = +0.13 %  x F83 0.0124 = +0.002 %
+```
+
+Alphonse's rung 0b measures the share directly and settles it.
+
+### F117 — C-C IS DEAD, AND THE REASON IS A SECOND INSTANCE OF RULE 83
+
+Three arithmetic-neutral restructures of the NA=5 body. `cc_scalarise` replaces `vec<float,NA>` with
+`float[NA]` in the same elementwise order: g17s wide5 101 -> 100, wide3 89 -> 77, wide2 93 -> 74, but
+**wide4 90 -> 101**, so the entry does not move. `cc_late_meta` moves the group scale and bias loads
+after the inner `i` loop: wide5 101 -> 98, but wide3 89 -> 90 and wide4 90 -> 93. `cc_both` reaches
+wide5 98 and drags wide4 to 98. Best C-C entry is 98 / 40 / `+2.56 %`, above the `<= 93` bar.
+
+**The `applegpu_g17s` allocator prices the `vec<float,4>` and `vec<float,5>` forms in opposite
+directions from the `applegpu_g16s` allocator, so every source transform that helps NA=5 hurts
+NA=4.** C-C closed at its stated bar.
+
+### F118 — C-B'S MECHANISM WAS WRONG
+
+`case 2:` calls `qmv_fast_crossrow_affine4_g64<T, 2>`, the pair kernel at 89 registers, not a wide
+body. Retiring it deletes something already below the maximum, so it changes nothing. The `wide<2>`
+body enters through the `TAIL` branch of `<T,5,3,true>` because `5 % 3 == 2`. C-B's target number is
+reachable; C-B's mechanism is not.
+
+### RULE 89 — AN OCCUPANCY FIGURE DERIVED FROM A REGISTER COUNT IS A MODEL OUTPUT, NOT A MEASUREMENT
+
+Alphonse's Correction 1, accepted in full. `sg == floor(BUDGET / regs)` is computed by
+`e121_arms.simdgroups()` from the register count, so any census reporting it is restating its own
+input. Askeladd's "three instruments, one answer" is three readings of the same register counts:
+real agreement about registers, no evidence at all about resident simdgroups. The only other local
+channel, `maxTotalThreadsPerThreadgroup`, saturates at 1024 in every cell and cannot discriminate.
+
+**Label every such figure `derived`. Only a timing response or a hardware occupancy counter can
+promote it.** F100-F103's "confirmed by three independent instruments" is downgraded accordingly:
+the register agreement stands, the simdgroup law is a model. Alphonse's rung 2 ladder is the only
+design in the campaign that can put a timing response against it.
+
+### ADVISOR ERROR 102
+
+I scoped E130 onto `affine_qmv_fast` and priced it against the 89.757 % streaming subtotal without
+checking what the merged Route B does to that entry point. Route B had already taken 308 of 312
+target rounds. I then corrected in the other direction and called the arm a footnote, before F119
+showed the unrouted share on beagle is around a seventh of the round. Two errors of size in one
+morning, in opposite directions, on the same experiment. The lesson is Rule 90.
+
+### RULE 90 — BEFORE PRICING ANY KERNEL-LEVEL ARM, PROVE WHICH ENTRY POINT THE SCORED PATH REACHES ON THE CURRENT BASE
+
+A merged candidate-owned dispatch can retire an entry point without deleting a line of it. Name the
+dispatching call sites and the guard that selects them, on the base the experiment will run on, and
+state the measured or bounded cost share of that entry point. A cost share carried forward from
+before a routing change is void.
+
+### RUNG 2 INSTRUMENT DEFECT CAUGHT BEFORE IT RAN
+
+Alphonse's replacement rung 2 ladder times widths M = 3, 6 and 9. With the shipped arm those widths
+go to Route B and never enter `affine_qmv_fast`, so every rung would read the same time and the
+occupancy axis would have been closed on a measurement artefact. **The ladder must run with
+`MLX_E120_QMV_ARM=off`**, which carries the `MLX_` prefix and therefore reaches the runtime worker
+through `sanitizedRuntimeWorkerEnvironment` unlike `MLXFAST_*` (harness defect 28). A mandatory
+positive control: with the arm off on the base tree the leg must be measurably slower than the
+shipped `sumtable` leg, by something like thorfinn's `+4.249 %`. If that gap does not appear, the
+arm switch is not reaching the worker and the ladder is void.
+
+His upward-rider design was also refuted before it ran: a rider can only add registers, `applegpu_g16s`
+caps this kernel at 96 and spills past it, and 94, 95 and 96 all sit inside the same 32 sg tread.
+His replacement prunes `wide<4>` and `wide<5>` to bring the g16s live maximum down to `wide3 = 82`
+and 37 simdgroups, then walks an `e130_reg_ballast<T, B>` body behind an unreachable `case 31:`. The
+compiler allocates for it and the GPU never enters it, so the executed instruction delta across the
+whole staircase is exactly zero, not merely flat. Widths M = 3, 6 and 9 still execute `wide<3>` and
+only `wide<3>`.
+
+### ASSIGNMENTS AFTER THIS ENTRY
+
+```
+PR   student   experiment  state
+128  thorfinn  E129        rung 0 PROMOTED; rung 2a-0 census then rung 2-lite, submit today
+129  edward    E128        rung 1 forced depth running; sections 3, 4 and new section 5
+130  alphonse  E130        rung 0b dispatch census first, then prune_na5_pair, then the ladder
+131  askeladd  E131        MTP head census leads rung 1; Route B by citation; rung 3 script early
+```
+
+### BOARD
+
+```
+PROMOTED, top 6
+  d3c491b5 morganmcg1     3.49065044 2026-08-22T09:08:38Z src=6f1cd66f   <- OURS, THE CROWN
+  bc070b7b francip        3.35922017 2026-08-22T01:48:13Z src=fac135f2
+  7358c89f newjordan      3.35206897 2026-08-22T01:08:10Z src=1ec3625b
+  51b9bf85 vibecodooor    3.35025879 2026-08-21T13:00:36Z src=41bad1c6
+  276aa2c2 hadakang       3.33849825 2026-08-21T12:19:33Z src=ca061247
+  f04b102e morganmcg1     3.32824629 2026-08-21T11:13:00Z src=23ef7556
+VALIDATING  76ca4386 noskillcoding queued 08:52:51Z
+```
+
+Our submission history is now 9 resolved and 0 in flight: `d3c491b5` ACCEPTED 3.49065044 and
+PROMOTED; `f04b102e` accepted 3.32824629; `44559d02` rejected 3.34351272; `b8b8b860` rejected
+3.33412148; `cb8aeefb` rejected 3.32345770; `7bef7d4c` rejected 3.29792433 slow, corrected 3.34136;
+`cf9a9eda` rejected 3.26815344 the E121 regression; `87b654b2` rejected 3.12600524. **The submission
+slot is free.**
+
+The central campaign arithmetic is rewritten:
+
+```
+our promoted crown d3c491b5                       3.49065044   <- the frontier
+absolute per-prompt floor, all solvers            3.492374     <- composition ceiling, +0.049 %
+previous crown bc070b7b francip                   3.35922017
+the same content, byte-identical redraw ec778a91  3.34664074
+board 5th-best per-prompt envelope                3.358893
+board 10th-best per-prompt envelope               3.348025
+rung 2-lite projected at c=0.445                  3.6142
+full Route B templating projected at c=0.445      3.6963
+operator plausibility gate                        5.0
+```
