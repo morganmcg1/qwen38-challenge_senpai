@@ -140,6 +140,12 @@ struct E117WidthFrameProbeTests {
         Int(ProcessInfo.processInfo.environment["MLXFAST_E117_BLOCKS"] ?? "") ?? 6
     }
 
+    /// Rung 1: the four in-graph serialisation routes. Off by default so a
+    /// rung-0 session times exactly the arms rung 0 timed.
+    static var rung1: Bool {
+        ProcessInfo.processInfo.environment["MLXFAST_E117_RUNG1"] == "1"
+    }
+
     /// Fixed wall-clock seconds of discarded work after every temperature
     /// sample. Must exceed the 30 to 80 ms DVFS ramp with margin.
     static var rampSeconds: Double {
@@ -175,6 +181,66 @@ struct E117WidthFrameProbeTests {
         quantizedMM(
             x, w.packed, scales: w.scales, biases: w.biases, transpose: true,
             groupSize: groupSize, bits: bits, mode: .affine)
+    }
+
+    // Rung 1. Four routes that try to serialise the two half-N dispatches
+    // inside one command buffer, without the ~96 us blocking host `eval` that
+    // `e_nsplit_serial` pays.
+    //
+    // `device.cpp:545-548` opens every encoder with `MTL::DispatchTypeConcurrent`,
+    // so encode order alone does not serialise anything. `:316-328`
+    // `set_input_array` raises `needs_barrier_` when an op reads a buffer that
+    // `prev_outputs_` already holds, and `:379-385` `dispatch_threadgroups`
+    // calls `maybeInsertBarrier()`, which emits
+    // `memoryBarrier(MTL::BarrierScopeBuffers)` at `:363-374`. A read-after-write
+    // edge between the two halves is therefore the only lever the candidate has.
+    //
+    // The predicted barrier count per route follows from those lines alone:
+    //
+    //   d_depends     0   `Depends::eval_gpu` at gpu/primitives.cpp:76-81 only
+    //                     shares a buffer. It never touches the encoder, so it
+    //                     orders the graph without any barrier. This is the
+    //                     negative control: ordering is not serialisation.
+    //   f_dep_which   2   half 1 -> `which` -> half 2
+    //   g_dep_add     3   half 1 -> multiply -> add -> half 2
+    //   h_async_eval  -   a command-buffer boundary instead of a barrier
+    //
+    /// Graph ordering with no barrier. Must behave like `c_nsplit`.
+    private static func dependsRoute(
+        _ x: MLXArray, _ top: E117Weights, _ bottom: E117Weights
+    ) -> [MLXArray] {
+        let first = call(x, top)
+        let gated = depends(input: x, dependencies: [first])
+        return [first, call(gated, bottom)]
+    }
+
+    /// One extra dispatch. `which(true, x, anything)` is `x` bit for bit, but it
+    /// reads the first half's output buffer, so the second half must wait.
+    private static func whichRoute(
+        _ x: MLXArray, _ top: E117Weights, _ bottom: E117Weights, _ maskTrue: MLXArray
+    ) -> [MLXArray] {
+        let first = call(x, top)
+        let gated = which(maskTrue, x, first[0 ..< 1, 0 ..< 1])
+        return [first, call(gated, bottom)]
+    }
+
+    /// Two extra dispatches, to price the gradient of chain length.
+    private static func addRoute(
+        _ x: MLXArray, _ top: E117Weights, _ bottom: E117Weights, _ zero: MLXArray
+    ) -> [MLXArray] {
+        let first = call(x, top)
+        let gated = x + first[0 ..< 1, 0 ..< 1] * zero
+        return [first, call(gated, bottom)]
+    }
+
+    /// No barrier and no dependency: a second command buffer. Buffers on one
+    /// queue run in order, so this serialises without blocking the host.
+    private static func asyncEvalRoute(
+        _ x: MLXArray, _ top: E117Weights, _ bottom: E117Weights
+    ) -> [MLXArray] {
+        let first = call(x, top)
+        asyncEval(first)
+        return [first, call(x, bottom)]
     }
 
     private static func timed(_ count: Int, _ bodies: [() -> [MLXArray]]) -> Double {
@@ -250,6 +316,11 @@ struct E117WidthFrameProbeTests {
                 hidden: shape.hidden, outputs: shape.outputs,
                 seed: UInt64(0xE117) &+ UInt64(shape.outputs))
 
+            // Rung 0b read negative deltas here because the allocator was
+            // releasing cached blocks while the check ran. Pin the cache to zero
+            // so `activeMemory` moves only when a slice actually copies.
+            let savedCacheLimit = Memory.cacheLimit
+            Memory.cacheLimit = 0
             eval(MLXArray(0))
             Memory.clearCache()
             let activeSettle = Memory.activeMemory
@@ -280,6 +351,7 @@ struct E117WidthFrameProbeTests {
                     + "delta_bytes=\(activeAfter - activeBefore) "
                     + "full_tensor_bytes=\(fullBytes)")
             fflush(stdout)
+            Memory.cacheLimit = savedCacheLimit
 
             let maxWidth = Self.widths.max() ?? 9
             MLXRandom.seed(UInt64(0xBEEF) &+ UInt64(shape.outputs))
@@ -290,7 +362,12 @@ struct E117WidthFrameProbeTests {
                 let x = contiguous(block[0 ..< width])
                 eval(x)
 
-                let arms: [E117Arm] = [
+                // Hoisted so the routes below add only their own dispatch.
+                let maskTrue = MLXArray.ones([width, shape.hidden], type: Bool.self)
+                let zeroBF = MLXArray(Float(0)).asType(.bfloat16)
+                eval(maskTrue, zeroBF)
+
+                var arms: [E117Arm] = [
                     E117Arm(
                         name: "a_one", dispatches: 1, evalsPerReplicate: 1,
                         bodies: [{ [Self.call(x, w)] }]),
@@ -304,6 +381,22 @@ struct E117WidthFrameProbeTests {
                             { [Self.call(x, bottomPre)] },
                         ]),
                 ]
+                if Self.rung1 {
+                    arms.append(contentsOf: [
+                        E117Arm(
+                            name: "d_depends", dispatches: 2, evalsPerReplicate: 1,
+                            bodies: [{ Self.dependsRoute(x, topPre, bottomPre) }]),
+                        E117Arm(
+                            name: "f_dep_which", dispatches: 3, evalsPerReplicate: 1,
+                            bodies: [{ Self.whichRoute(x, topPre, bottomPre, maskTrue) }]),
+                        E117Arm(
+                            name: "g_dep_add", dispatches: 4, evalsPerReplicate: 1,
+                            bodies: [{ Self.addRoute(x, topPre, bottomPre, zeroBF) }]),
+                        E117Arm(
+                            name: "h_async_eval", dispatches: 2, evalsPerReplicate: 1,
+                            bodies: [{ Self.asyncEvalRoute(x, topPre, bottomPre) }]),
+                    ])
+                }
 
                 // Calibrate the replicate count from a measured `a_one`, not
                 // from a byte estimate: the working group count varies with M,
@@ -366,7 +459,7 @@ struct E117WidthFrameProbeTests {
                 let oneDigest = Self.digest(one)
                 let splitDigest = Self.digest(concatenated([top, bottom], axis: 1))
                 let wrongDigest = Self.digest(concatenated([bottom, top], axis: 1))
-                let record: [String: Any] = [
+                var record: [String: Any] = [
                     "shape": shape.name,
                     "outputs": shape.outputs,
                     "width": width,
@@ -376,6 +469,26 @@ struct E117WidthFrameProbeTests {
                     "nsplit_bit_exact": splitDigest == oneDigest,
                     "positive_control_differs": wrongDigest != oneDigest,
                 ]
+                if Self.rung1 {
+                    // Every route gates the second half's activation. Each gate
+                    // must be the identity on `x`, bit for bit, or the route is
+                    // not a candidate whatever it costs.
+                    for (name, produced) in [
+                        ("d_depends", Self.dependsRoute(x, topPre, bottomPre)),
+                        ("f_dep_which", Self.whichRoute(x, topPre, bottomPre, maskTrue)),
+                        ("g_dep_add", Self.addRoute(x, topPre, bottomPre, zeroBF)),
+                        ("h_async_eval", Self.asyncEvalRoute(x, topPre, bottomPre)),
+                    ] {
+                        eval(produced)
+                        let d = Self.digest(concatenated(produced, axis: 1))
+                        record["\(name)_digest"] = String(d)
+                        record["\(name)_bit_exact"] = d == oneDigest
+                        if d != oneDigest {
+                            failures.append(
+                                "\(shape.name) M=\(width): \(name) is not bit exact")
+                        }
+                    }
+                }
                 exactness.append(record)
                 print("E117 exactness \(record)")
                 fflush(stdout)
@@ -426,6 +539,11 @@ struct E117WidthFrameProbeTests {
         #expect(!cells.isEmpty)
         #expect(exactness.allSatisfy { ($0["nsplit_bit_exact"] as? Bool) == true })
         #expect(exactness.allSatisfy { ($0["positive_control_differs"] as? Bool) == true })
+        if Self.rung1 {
+            for route in ["d_depends", "f_dep_which", "g_dep_add", "h_async_eval"] {
+                #expect(exactness.allSatisfy { ($0["\(route)_bit_exact"] as? Bool) == true })
+            }
+        }
     }
 }
 
