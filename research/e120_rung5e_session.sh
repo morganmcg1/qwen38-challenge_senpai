@@ -54,6 +54,10 @@ var="${5:-MLX_E120_QMV_ARM}"
 case "${var}" in
   MLX_E120_QMV_ARM) legal="off replica fill_noconsume sumtable" ;;
   MLX_E120_QMV_ENTRY) legal="shared_switch tiered_switch" ;;
+  # The one-pass table is only legal on tiered entry points, and
+  # `Qwen35CustomQMV.widthPlan` asserts that, so a table sweep runs every leg
+  # with MLX_E120_QMV_ENTRY=tiered_switch.
+  MLX_E120_QMV_TABLE) legal="shipped onepass"; export MLX_E120_QMV_ENTRY=tiered_switch ;;
   *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
 esac
 for arm in ${order//,/ }; do
@@ -255,6 +259,8 @@ worker_sha256_end="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
   echo "offered_draft_depth=${depth}"
   echo "order=${order}"
   echo "sweep_variable=${var}"
+  echo "entry=${MLX_E120_QMV_ENTRY:-tiered_switch (default)}"
+  echo "table=${MLX_E120_QMV_TABLE:-shipped (default)}"
   echo "head_dir=${head_dir}"
   echo "head_safetensors_sha256=${head_sha256}"
   echo "worker_sha256_start=${worker_sha256_start}"
