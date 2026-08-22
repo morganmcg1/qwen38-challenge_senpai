@@ -70,6 +70,14 @@ STATISTICS = {
         "sk_net_miss_live_shipped_is_target",
         "sk_net_miss_live",
     ),
+    # F1.5 rung 0b. Same estimator, different intervention: the rerank keeps
+    # its float32 accumulation instead of rounding the score to bfloat16, so
+    # the emitted token can only move on a row where the bfloat16 scores tie.
+    "fp32_rerank": (
+        "fp32_changed_live_new_is_target",
+        "fp32_changed_live_old_is_target",
+        "fp32_changed_live",
+    ),
 }
 
 GATING = ("beagle", "min_carriers")

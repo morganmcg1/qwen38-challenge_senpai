@@ -120,6 +120,21 @@ def scores(head: dict[str, mx.array], x: mx.array) -> mx.array:
     return scores_all(head, x)[:, :REAL_COUNT]
 
 
+def as_float32(head: dict[str, mx.array]) -> dict[str, mx.array]:
+    """The same quantized table with float32 scales and biases.
+
+    Widening bfloat16 to float32 is exact, and `quantized_matmul` already
+    accumulates in float32 and rounds only its OUTPUT to the dtype of `x`.
+    Feeding this table a float32 `x` therefore returns the identical
+    accumulation with the output rounding removed, which
+    `E136_FP32_ROUNDTRIP` in `e133_screen.py` verifies row by row.
+    """
+    out = dict(head)
+    out["scales"] = head["scales"].astype(mx.float32)
+    out["biases"] = head["biases"].astype(mx.float32)
+    return out
+
+
 def dequantized(head: dict[str, mx.array]) -> mx.array:
     return mx.dequantize(
         head["weight"],

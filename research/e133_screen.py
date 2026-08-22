@@ -988,6 +988,7 @@ class Screen:
     def __init__(self, index: Index):
         self.index = index
         self.exact = H.load_exact()
+        self.exact_f32 = H.as_float32(self.exact)
         self.coarse = H.load_coarse()
         rows = H.dequantized(self.exact)
         mx.eval(rows)
@@ -1048,7 +1049,8 @@ class Screen:
         return positions.reshape(b, clusters * IX.ROWS_PER_LEAF).astype(mx.int32)
 
     def output_row(self, f, positions: mx.array, order_key: mx.array,
-                   shortlist: int = SHORTLIST) -> mx.array:
+                   shortlist: int = SHORTLIST,
+                   exact_key: mx.array | None = None) -> mx.array:
         """Stage C then D: affine-2 top-K of `positions`, then affine-4 argmax.
 
         `order_key` ranks the candidates for the top-K cut, so the shipped
@@ -1056,13 +1058,20 @@ class Screen:
         scores restricted to its survivors. Returns the PERMUTED position, the
         only form `clusterPerm` accepts (D5 hazard 1).
 
-        `shortlist` is `qwen35Top32K` at `Qwen35.swift:3799`. F5 asks for the
+        `shortlist` is `qwen35Top32K` at `Qwen35.swift:4197`. F5 asks for the
         miss as a function of that one integer, so it is a parameter here.
+
+        `exact_key` replaces the rerank score the final argmax reads. It
+        defaults to the shipped bfloat16 `exact_perm`, so every existing caller
+        is unchanged; the F1.5 rung-0b arm passes the float32 form of the same
+        scores. Only the argmax key moves. The shortlist cut, the tiebreak rule
+        and the returned position space are identical.
         """
         keep = min(shortlist, order_key.shape[1])
         top = mx.argpartition(-order_key, kth=keep - 1, axis=1)[:, :keep]
         chosen = mx.take_along_axis(positions, top, axis=1)
-        exact = mx.take_along_axis(f["exact_perm"], chosen, axis=1)
+        key = f["exact_perm"] if exact_key is None else exact_key
+        exact = mx.take_along_axis(key, chosen, axis=1)
         return mx.take_along_axis(
             chosen, mx.argmax(exact, axis=1)[:, None].astype(mx.int32), axis=1)[:, 0]
 
@@ -1545,6 +1554,7 @@ class Tally:
         self.c: dict[str, dict[str, int]] = {}
         self.seed_of: dict[str, str] = {}
         self.score_dtype = "unknown"
+        self.fp32_roundtrip_exact = True
 
     def count(self, stratum: str, name: str, value) -> None:
         self.c.setdefault(stratum, {})
@@ -1626,6 +1636,30 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
     gap = s_true_np - np.asarray(s_out).astype(np.float64)
     n_at_max_np = np.asarray(n_at_max)
     scale = np.maximum(np.abs(s_true_np), 1e-12)
+
+    # F1.5 rung 0b: the same rerank with the OUTPUT ROUNDING REMOVED.
+    #
+    # F170 measured that 82 of the 84 base misses are an exact bfloat16 tie at
+    # the rerank score, so the shipped chain resolves them by argmax index
+    # order rather than by value. `quantized_matmul` accumulates in float32 and
+    # rounds only its output to the dtype of `x`, and `roundtrip` below asserts
+    # that on every element of every batch: rounding the float32 output back to
+    # bfloat16 reproduces the shipped score exactly. The arm is therefore
+    # literally "do not round the rerank score", not a reassociation, so it
+    # does not touch Rule 92. Rounding to nearest is monotone, so the two arms
+    # can only disagree where the bfloat16 scores tie.
+    all32 = H.scores_all(screen.exact_f32, x.astype(mx.float32))
+    exact_perm32 = mx.take(all32, screen.index.order_mx, axis=1)
+    roundtrip = mx.all(all32.astype(mx.bfloat16) == H.scores_all(screen.exact, x))
+    out_f32 = screen.compact(screen.output_row(f, pos_a2, co_a2, SHORTLIST,
+                                               exact_key=exact_perm32))
+    argmax_f32 = mx.argmax(all32[:, :H.REAL_COUNT], axis=1)
+    mx.eval(out_f32, roundtrip, argmax_f32)
+    tally.fp32_roundtrip_exact &= bool(roundtrip.item())
+    f32_vocab = np.asarray(H.compact_to_vocab(out_f32))
+    f32_changed = np.asarray(out_f32 != out32).astype(bool)
+    f32_miss = np.asarray(out_f32 != argmax).astype(bool)
+    f32_true_argmax_moved = np.asarray(argmax_f32 != argmax).astype(bool)
 
     # The exact-centroid counterfactual chain, run end to end at the shipped
     # probe fraction and the shipped shortlist.
@@ -1768,6 +1802,23 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
                     (base_vocab[m_live] == reference[m_live]).sum())
         tally.count(record, "base_miss_live_true_is_target",
                     (true_vocab[m_live] == reference[m_live]).sum())
+        # F1.5 rung 0b, priced under campaign rule 107. The delta is a paired
+        # sign test over the rows whose EMITTED TOKEN moves, so a row the
+        # float32 tiebreak leaves alone contributes exactly zero.
+        ch = f32_changed & live
+        tally.count(record, "fp32_miss", f32_miss.sum())
+        tally.count(record, "fp32_changed", f32_changed.sum())
+        tally.count(record, "fp32_changed_on_a_base_miss",
+                    (f32_changed & miss).sum())
+        tally.count(record, "fp32_changed_on_a_tied_row",
+                    (f32_changed & (n_at_max_np > 1)).sum())
+        tally.count(record, "fp32_true_argmax_moved",
+                    f32_true_argmax_moved.sum())
+        tally.count(record, "fp32_changed_live", ch.sum())
+        tally.count(record, "fp32_changed_live_new_is_target",
+                    (f32_vocab[ch] == reference[ch]).sum())
+        tally.count(record, "fp32_changed_live_old_is_target",
+                    (base_vocab[ch] == reference[ch]).sum())
         for k in K_GRID:
             tally.count(record, f"k{k}_miss", k_miss[k].sum())
             tally.count(record, f"k{k}_rank_miss", (rank_np >= k).sum())
@@ -1799,6 +1850,7 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
                  "probe_fraction_shipped": ATTRIB_PROBE,
                  "miss_to_score_pct": MISS_TO_SCORE_PCT,
                  "exact_score_dtype": tally.score_dtype,
+                 "fp32_roundtrip_exact": tally.fp32_roundtrip_exact,
                  "by_stratum": {}, "k_curve": {}, "k_curve_sketch": {},
                  "probe_curve": {}, "k_price": {}}
     for s in strata:
@@ -1808,6 +1860,8 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
         live_missed = tally.get(s, "base_miss_live")
         recover = (tally.get(s, "base_miss_live_true_is_target")
                    - tally.get(s, "base_miss_live_shipped_is_target")) / n
+        fp32_recover = (tally.get(s, "fp32_changed_live_new_is_target")
+                        - tally.get(s, "fp32_changed_live_old_is_target")) / n
         out["by_stratum"][s] = {
             "gating": s in GATING_STRATA, "watch": s in WATCH_STRATA, "n": n,
             "base_misses": base, "m_absolute": m,
@@ -1865,6 +1919,24 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
             "base_miss_live_shipped_is_target":
                 tally.get(s, "base_miss_live_shipped_is_target"),
             "live_rate": tally.rate(s, "live"),
+            # F1.5 rung 0b: the float32 rerank tiebreak.
+            "fp32_m_absolute": tally.rate(s, "fp32_miss"),
+            "fp32_misses": tally.get(s, "fp32_miss"),
+            "fp32_changed": tally.get(s, "fp32_changed"),
+            "fp32_changed_on_a_base_miss":
+                tally.get(s, "fp32_changed_on_a_base_miss"),
+            "fp32_changed_on_a_tied_row":
+                tally.get(s, "fp32_changed_on_a_tied_row"),
+            "fp32_true_argmax_moved": tally.get(s, "fp32_true_argmax_moved"),
+            "fp32_changed_live": tally.get(s, "fp32_changed_live"),
+            "fp32_changed_live_new_is_target":
+                tally.get(s, "fp32_changed_live_new_is_target"),
+            "fp32_changed_live_old_is_target":
+                tally.get(s, "fp32_changed_live_old_is_target"),
+            "fp32_acceptance_delta": fp32_recover,
+            "fp32_pct_realised": MISS_TO_SCORE_PCT * fp32_recover,
+            "fp32_max_attainable_ranked_pct":
+                MISS_TO_SCORE_PCT * tally.get(s, "fp32_changed_live") / n,
             "perfect_readout_acceptance_gain": recover,
             "perfect_readout_pct_realised": MISS_TO_SCORE_PCT * recover,
             "perfect_readout_pct_full_rate": MISS_TO_SCORE_PCT * m,
@@ -2104,6 +2176,23 @@ def cmd_attrib(args) -> None:
             r = row["by_stratum"][s]
             print(f"{r['m_absolute']:12.4e}{r['probe_hit_rate']:10.5f}", end="")
         print()
+
+    print("\n=== F1.5 rung 0b: the float32 rerank tiebreak, priced on rule 107")
+    print(f"roundtrip bf16(float32 score) == shipped score on every element: "
+          f"{'yes' if out['fp32_roundtrip_exact'] else 'NO'}")
+    print(f"{'stratum':22s}{'n':>7s}{'m_abs':>11s}{'fp32 m_abs':>12s}"
+          f"{'moved':>7s}{'onMiss':>7s}{'onTie':>7s}{'live':>6s}"
+          f"{'b':>4s}{'c':>4s}{'delta':>11s}{'rankedPct':>11s}")
+    for s, r in out["by_stratum"].items():
+        print(f"{s:22s}{r['n']:7d}{r['m_absolute']:11.4e}"
+              f"{r['fp32_m_absolute']:12.4e}{r['fp32_changed']:7d}"
+              f"{r['fp32_changed_on_a_base_miss']:7d}"
+              f"{r['fp32_changed_on_a_tied_row']:7d}"
+              f"{r['fp32_changed_live']:6d}"
+              f"{r['fp32_changed_live_new_is_target']:4d}"
+              f"{r['fp32_changed_live_old_is_target']:4d}"
+              f"{r['fp32_acceptance_delta']:11.4e}"
+              f"{r['fp32_pct_realised']:11.4f}")
 
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=2))
