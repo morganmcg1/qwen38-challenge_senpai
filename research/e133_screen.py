@@ -1619,8 +1619,17 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
     rank = mx.where(mx.any(hit_a2, axis=1),
                     mx.sum((co_a2 > at_r[:, None]).astype(mx.int32), axis=1),
                     co_a2.shape[1])
-    mx.eval(rank)
+    # Companion non-strict count. `argpartition` keeps exactly `K` positions,
+    # so a row is admitted for certain only when at most `K` probed positions
+    # score at or above it. Between `rank` and `ge` sits the tie group that
+    # straddles the cut, which is what separates E87's tie-optimistic
+    # strict-rank statistic from the chain's realised output.
+    ge = mx.where(mx.any(hit_a2, axis=1),
+                  mx.sum((co_a2 >= at_r[:, None]).astype(mx.int32), axis=1),
+                  co_a2.shape[1])
+    mx.eval(rank, ge)
     rank_np = np.asarray(rank)
+    ge_np = np.asarray(ge)
 
     k_out: dict[int, np.ndarray] = {}
     k_miss: dict[int, np.ndarray] = {}
@@ -1677,10 +1686,25 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
         tally.count(record, "probe_hit_a2", in_a2.sum())
         tally.count(record, "probe_hit_exact_centroid", in_ex.sum())
         tally.count(record, "miss_exact_centroid_chain", miss_ex.sum())
-        # F5.2's load-bearing check on real trajectories: once the true argmax
-        # reaches the exact affine-4 rerank, does the rerank ever lose it?
-        tally.count(record, "rerank_disagreements",
-                    (miss & in_a2 & (rank_np < SHORTLIST)).sum())
+        # F4.1. `cause_R` splits three ways, disjoint and exhaustive, and this
+        # is the whole reconciliation with E87 arm C:
+        #   R_rank   32 or more probed rows STRICTLY outscore the argmax under
+        #            affine-2. This alone is E87's tie-optimistic statistic.
+        #   R_tie    fewer than 32 strictly outscore it, but the tie group at
+        #            its score straddles the cut, so `argpartition` may drop it.
+        #   R_rerank at most 32 probed rows score at or above it, so it WAS
+        #            shortlisted, and the exact affine-4 rerank still lost it.
+        tally.count(record, "cause_R_rank",
+                    (miss & in_a2 & (rank_np >= SHORTLIST)).sum())
+        tally.count(record, "cause_R_tie",
+                    (miss & in_a2 & (rank_np < SHORTLIST)
+                     & (ge_np > SHORTLIST)).sum())
+        tally.count(record, "cause_R_rerank",
+                    (miss & in_a2 & (ge_np <= SHORTLIST)).sum())
+        # E87's strict-rank survival statistic replayed on this corpus, for
+        # every row rather than only the missed ones.
+        tally.count(record, "e87_strict_rank_miss",
+                    (~in_a2 | (rank_np >= SHORTLIST)).sum())
         # What a PERFECT readout would buy, measured rather than assumed. On a
         # live missed row the shipped token was accepted exactly when it
         # matched the reference; the true argmax token would be accepted
@@ -1694,6 +1718,7 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
         for k in K_GRID:
             tally.count(record, f"k{k}_miss", k_miss[k].sum())
             tally.count(record, f"k{k}_rank_miss", (rank_np >= k).sum())
+            tally.count(record, f"k{k}_ge_miss", (ge_np > k).sum())
             swap = (k_out[k] != base_vocab) & live
             tally.count(record, f"k{k}_swapped_live", swap.sum())
             tally.count(record, f"k{k}_swapped_new_is_target",
@@ -1747,7 +1772,17 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
                 tally.rate(s, "probe_hit_exact_centroid"),
             "m_absolute_exact_centroid_chain":
                 tally.rate(s, "miss_exact_centroid_chain"),
-            "rerank_disagreements": tally.get(s, "rerank_disagreements"),
+            "cause_R_rank": tally.get(s, "cause_R_rank"),
+            "cause_R_tie": tally.get(s, "cause_R_tie"),
+            "cause_R_rerank": tally.get(s, "cause_R_rerank"),
+            "cause_R_rank_rate": tally.rate(s, "cause_R_rank"),
+            "cause_R_tie_rate": tally.rate(s, "cause_R_tie"),
+            "cause_R_rerank_rate": tally.rate(s, "cause_R_rerank"),
+            "cause_R_splits_exactly":
+                tally.get(s, "cause_R_rank") + tally.get(s, "cause_R_tie")
+                + tally.get(s, "cause_R_rerank") == tally.get(s, "cause_R"),
+            "e87_strict_rank_miss": tally.get(s, "e87_strict_rank_miss"),
+            "e87_strict_rank_miss_rate": tally.rate(s, "e87_strict_rank_miss"),
             # The measured ranked value of a PERFECT readout on this stratum.
             "base_miss_live": live_missed,
             "live_rate": tally.rate(s, "live"),
@@ -1769,6 +1804,9 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
                 "m_absolute": mk, "m_absolute_lo": klo, "m_absolute_hi": khi,
                 "misses": tally.get(s, f"k{k}_miss"),
                 "rank_predicted_misses": tally.get(s, f"k{k}_rank_miss"),
+                "ge_predicted_misses": tally.get(s, f"k{k}_ge_miss"),
+                "m_absolute_strict_rank": tally.rate(s, f"k{k}_rank_miss"),
+                "m_absolute_non_strict": tally.rate(s, f"k{k}_ge_miss"),
                 "recovered_vs_k32": base_m - mk,
                 "swapped_live": swap,
                 "acceptance_gain_realised": gain,
@@ -1875,7 +1913,21 @@ def cmd_attrib(args) -> None:
               f"{100 * r['cause_P'] / tot:7.1f}{100 * r['cause_C'] / tot:7.1f}"
               f"{100 * r['cause_R'] / tot:7.1f}"
               f"{'ok' if r['causes_sum_to_base_miss'] else 'NO':>6s}"
-              f"{r['rerank_disagreements']:11d}")
+              f"{r['cause_R_rerank']:11d}")
+
+    print("\n=== F4.1 reconciliation with E87 arm C: the R column split by cause")
+    print(f"{'stratum':22s}{'n':>7s}{'m_abs':>11s}{'R_rank':>8s}{'R_tie':>7s}"
+          f"{'R_rrnk':>8s}{'split':>7s}{'E87 strict-rank m':>19s}"
+          f"{'ratio m_abs/E87':>17s}")
+    for s, r in out["by_stratum"].items():
+        e87 = r["e87_strict_rank_miss_rate"]
+        print(f"{s:22s}{r['n']:7d}{r['m_absolute']:11.4e}"
+              f"{r['cause_R_rank']:8d}{r['cause_R_tie']:7d}"
+              f"{r['cause_R_rerank']:8d}"
+              f"{'ok' if r['cause_R_splits_exactly'] else 'NO':>7s}"
+              f"{e87:19.4e}"
+              f"{(r['m_absolute'] / e87 if e87 else float('inf')):17.1f}")
+
     print("\n=== what a perfect readout is actually worth (measured, not assumed)")
     print(f"{'stratum':22s}{'m_abs':>11s}{'x203 pct':>10s}{'liveMissed':>12s}"
           f"{'realisedGain':>14s}{'realised pct':>14s}")
@@ -1886,34 +1938,40 @@ def cmd_attrib(args) -> None:
               f"{r['perfect_readout_acceptance_gain']:14.4e}"
               f"{r['perfect_readout_pct_realised']:14.3f}")
 
+    # A short `--limit` smoke run can miss a whole stratum; print what exists.
+    gate_present = [s for s in GATING_STRATA if s in out["by_stratum"]]
+
     print("\n=== F5.1 m_absolute(K), shipped chain, p = 0.25")
     print(f"{'K':>6s}{'extraB':>9s}{'cost%':>8s}", end="")
-    for s in GATING_STRATA:
+    for s in gate_present:
         print(f"{s[:10]:>12s}", end="")
-    print(f"{'recovered':>12s}{'net%full':>10s}{'net%real':>10s}{'rankOK':>8s}")
+    print(f"{'recovered':>12s}{'net%full':>10s}{'net%real':>10s}"
+          f"{'strictLo':>11s}{'nstrictHi':>11s}")
     for k in K_GRID:
         row = out["k_curve"][str(k)]
         print(f"{k:6d}{row['extra_bytes']:9d}{row['cost_pct_head_share_7']:8.4f}",
               end="")
-        agree = True
-        for s in GATING_STRATA:
+        strict, nstrict = 0.0, 0.0
+        for s in gate_present:
             r = row["by_stratum"][s]
             print(f"{r['m_absolute']:12.4e}", end="")
-            agree = agree and r["misses"] == r["rank_predicted_misses"]
+            strict = max(strict, r["m_absolute_strict_rank"])
+            nstrict = max(nstrict, r["m_absolute_non_strict"])
         print(f"{row['recovered_worst_gating']:12.4e}"
               f"{row['net_pct_full_rate']:10.3f}"
-              f"{row['net_pct_realised']:10.3f}{'ok' if agree else 'NO':>8s}")
+              f"{row['net_pct_realised']:10.3f}"
+              f"{strict:11.4e}{nstrict:11.4e}")
 
     if out["k_curve_sketch"]:
         print(f"\n=== F5.2 m_absolute(K) on {out['sketch_cell']}")
         print(f"{'K':>6s}", end="")
-        for s in GATING_STRATA:
+        for s in gate_present:
             print(f"{s[:10]:>12s}{'net':>12s}", end="")
         print()
         for k in K_GRID:
             row = out["k_curve_sketch"][str(k)]
             print(f"{k:6d}", end="")
-            for s in GATING_STRATA:
+            for s in gate_present:
                 r = row["by_stratum"][s]
                 print(f"{r['m_absolute']:12.4e}{r['net_miss_vs_shipped']:12.4e}",
                       end="")
@@ -1921,13 +1979,13 @@ def cmd_attrib(args) -> None:
 
     print("\n=== F4.3 exact0 m_absolute(p), shipped chain, K = 32")
     print(f"{'p':>6s}{'clusters':>10s}{'rows':>8s}", end="")
-    for s in GATING_STRATA:
+    for s in gate_present:
         print(f"{s[:10]:>12s}{'probeHit':>10s}", end="")
     print()
     for p in PROBE_GRID:
         row = out["probe_curve"][f"{p:g}"]
         print(f"{p:6.2f}{row['clusters']:10d}{row['rows_scored']:8d}", end="")
-        for s in GATING_STRATA:
+        for s in gate_present:
             r = row["by_stratum"][s]
             print(f"{r['m_absolute']:12.4e}{r['probe_hit_rate']:10.5f}", end="")
         print()
