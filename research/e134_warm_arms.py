@@ -1,23 +1,29 @@
-"""E134 item 1 -- score the warm-refill arms collected by e134_warm_session.sh.
+"""E134 item 0 -- score the warm-parity arms collected by e134_warm_session.sh.
 
-Zero GPU. Reads .mlxfast-private/e134/runs-<arm>/<leg>/ and reports, per leg:
+Zero GPU. Reads .mlxfast-private/e134/runs-<arm>[-r<rep>]/<leg>/ and reports,
+per leg and repeat:
 
+  parent_measured_seconds_per_token   the F8 item 4 gate, in per cent
   seed_prefill_seconds   the first timed forward after warm
   first_block_seconds    the first scored round, as the parent timed it
   E@1 width-matched      round 1 minus the median of the tail rounds that
-                         dispatch the same width, from trace.txt
+                         dispatch the same width, from trace.txt (Rule 106)
   a mid-leg control that must return approximately zero
   warm shapes_ms and refill_ms, from the untimed warm telemetry line
 
 and then the arm contrasts that answer the mechanism question:
 
-  clear - base           what the residency Memory.clearCache() costs
-  clearrefill - clear    what the refill returns of that cost
-  refill - base          the shipped-default change on a host whose residency
-                         path never runs, which must be approximately zero
+  wnorm - base       does warming the scored verify entry point delete the
+                     round-1 excess?
+  wprefetch - base   does submitting the restored recurrent boundary help?
+  all - base         the bundle the advance rule is written against
+
+Every contrast is paired inside one (leg, repeat) cell, so the forward and
+mirrored ABBA passes each contribute their own pair and a monotone thermal
+trend across the session cancels to first order.
 
 Usage:
-  python3 e134_warm_arms.py --json e134-artifacts/item1-warm-arms.json
+  python3 e134_warm_arms.py --json e134-artifacts/item0-warm-arms.json
 """
 
 import argparse
@@ -31,12 +37,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PRIV = os.path.join(ROOT, ".mlxfast-private", "e134")
 
-ARMS = ["base", "refill", "clear", "clearrefill"]
+ARMS = ["base", "wnorm", "wprefetch", "all", "clear", "refill", "clearrefill"]
 CONTRASTS = [
-    ("clear", "base", "cost of the residency allocator clear"),
-    ("clearrefill", "clear", "what the refill returns of that cost"),
-    ("clearrefill", "base", "ranked-like state with the fix, against shipped"),
-    ("refill", "base", "shipped default on a host with no residency clear"),
+    ("wnorm", "base", "warming the scored verify entry point"),
+    ("wprefetch", "base", "submitting the restored recurrent boundary"),
+    ("all", "base", "the bundle the advance rule is written against"),
+    ("all", "wnorm", "what W-PREFETCH adds on top of W-NORM"),
+    ("clear", "base", "cost of the emulated residency allocator clear"),
+    ("refill", "base", "F8 negative control, no residency clear on this host"),
+    ("clearrefill", "clear", "F8 negative control on the emulated clear"),
 ]
 
 
@@ -97,18 +106,21 @@ def leg_record(arm, leg, directory):
 
 
 def collect():
+    """Key every cell by (leg, repeat) so a contrast never crosses ABBA passes."""
     legs = {}
     for arm in ARMS:
-        arm_root = os.path.join(PRIV, f"runs-{arm}")
-        if not os.path.isdir(arm_root):
-            continue
-        for leg in sorted(os.listdir(arm_root)):
-            directory = os.path.join(arm_root, leg)
-            if not os.path.isdir(directory):
+        for rep in ["", "-r1", "-r2", "-r3", "-r4"]:
+            arm_root = os.path.join(PRIV, f"runs-{arm}{rep}")
+            if not os.path.isdir(arm_root):
                 continue
-            record = leg_record(arm, leg, directory)
-            if record:
-                legs.setdefault(leg, {})[arm] = record
+            for leg in sorted(os.listdir(arm_root)):
+                directory = os.path.join(arm_root, leg)
+                if not os.path.isdir(directory):
+                    continue
+                record = leg_record(arm, leg, directory)
+                if record:
+                    record["rep"] = rep.lstrip("-") or "r0"
+                    legs.setdefault(f"{leg}#{record['rep']}", {})[arm] = record
     return legs
 
 
@@ -121,11 +133,15 @@ def contrast(legs, arm_a, arm_b, field):
             vb = arms[arm_b].get(field)
             if va is None or vb is None:
                 continue
-            pairs.append({"leg": leg, "a": va, "b": vb, "delta": va - vb})
+            pair = {"leg": leg, "a": va, "b": vb, "delta": va - vb}
+            if vb:
+                pair["pct"] = 100.0 * (va - vb) / vb
+            pairs.append(pair)
     if not pairs:
         return None
     deltas = [p["delta"] for p in pairs]
-    return {
+    pcts = [p["pct"] for p in pairs if "pct" in p]
+    out = {
         "n": len(pairs),
         "mean_delta": statistics.mean(deltas),
         "median_delta": statistics.median(deltas),
@@ -133,6 +149,12 @@ def contrast(legs, arm_a, arm_b, field):
         "all_same_sign": all(d > 0 for d in deltas) or all(d < 0 for d in deltas),
         "pairs": pairs,
     }
+    if pcts:
+        out["mean_pct"] = statistics.mean(pcts)
+        out["sd_pct"] = statistics.stdev(pcts) if len(pcts) > 1 else 0.0
+        # The advance rule is written at 2 sigma on the paired mean.
+        out["se_pct"] = out["sd_pct"] / (len(pcts) ** 0.5) if len(pcts) > 1 else 0.0
+    return out
 
 
 def main():
@@ -146,7 +168,7 @@ def main():
 
     print("=== per leg ===")
     header = (
-        f"{'leg':18s} {'arm':12s} {'prefill_s':>9s} {'block1_s':>9s} "
+        f"{'leg':22s} {'arm':12s} {'prefill_s':>9s} {'block1_s':>9s} "
         f"{'E1_wm_ms':>9s} {'ctrl_ms':>8s} {'nbase':>5s} {'d1':>3s} "
         f"{'spt':>9s} {'warm_ms':>8s} {'refill_ms':>9s} {'match':>6s}"
     )
@@ -159,7 +181,7 @@ def main():
             e1 = record.get("E1_width_matched_us")
             ctrl = record.get("control_us")
             print(
-                f"{leg:18s} {arm:12s} {record['seed_prefill_s']:9.4f} "
+                f"{leg:22s} {arm:12s} {record['seed_prefill_s']:9.4f} "
                 f"{record['first_block_s']:9.4f} "
                 f"{(e1 / 1000.0 if e1 is not None else float('nan')):9.2f} "
                 f"{(ctrl / 1000.0 if ctrl is not None else float('nan')):8.2f} "
@@ -187,10 +209,16 @@ def main():
             results["contrasts"].setdefault(f"{arm_a}-{arm_b}", {})[field] = value
             if not value:
                 continue
+            pct = ""
+            if "mean_pct" in value:
+                pct = (
+                    f" mean_pct={value['mean_pct']:+.4f}"
+                    f" se_pct={value['se_pct']:.4f}"
+                )
             print(
                 f"  {label:34s} n={value['n']} mean={value['mean_delta']:+.6g} "
                 f"median={value['median_delta']:+.6g} sd={value['sd_delta']:.6g} "
-                f"same_sign={value['all_same_sign']}"
+                f"same_sign={value['all_same_sign']}{pct}"
             )
 
     unmatched = [

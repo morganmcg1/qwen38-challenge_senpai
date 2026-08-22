@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
-# E134 item 1 -- warm-refill arms, measured on the local 48 GiB host.
+# E134 item 0 -- warm-parity arms, measured on the local 48 GiB host.
 #
 #   usage: research/e134_warm_session.sh ARM PROMPT_ID [PROMPT_ID ...]
 #
-# ARMS. Each arm is the SAME binary; only two DARKBLOOM_ switches differ.
+# ARMS. Each arm is the SAME binary; only DARKBLOOM_ switches differ.
 #
-#   base         refill off, no emulated clear   -- the shipped local path
-#   refill       refill ON,  no emulated clear   -- the new default, locally
-#   clear        refill off, emulated clear ON   -- the ranked allocator state
-#   clearrefill  refill ON,  emulated clear ON   -- ranked state plus the fix
+#   base         all three off                   -- the shipped local path
+#   wnorm        W-NORM only                     -- warm the scored verify
+#                                                   entry point
+#   wprefetch    W-PREFETCH only                 -- submit the restored
+#                                                   recurrent boundary
+#   all          W-NORM + W-PREFETCH             -- the bundle under test
+#   refill       W-REFILL only                   -- F8 negative control
+#   clearrefill  W-REFILL + emulated clear       -- F8 negative control on the
+#                                                   emulated ranked allocator
+#
+# W-REFILL IS A NEGATIVE CONTROL, NOT A CANDIDATE. Advisor F8 priced rival
+# submission `775a26e3` at +5.28 % F83-weighted SLOWER on a ranked receipt.
 #
 # WHY THE EMULATION EXISTS. `wireResidentWeightsIfEnabled()` is gated on
 # `physicalMemory >= 96 GiB` and calls `Memory.clearCache()` after the shape
@@ -16,7 +24,8 @@
 # nothing to repair here. `DARKBLOOM_QWEN_MTP_EMULATE_RESIDENCY_CLEAR=1`
 # reproduces only the allocator side effect, never the wired ticket, which the
 # campaign has established has no local instrument (ledger items 140, 141,
-# 200(H)).
+# 200(H)). Every leg records `wired_gate_fired` so no reader can mistake a
+# local warm-arm number for a statement about the ranked runner.
 #
 # NOT A TIMING SESSION for score purposes: every leg runs the per-round phase
 # trace and no cool gate. `timing_valid=false` is recorded verbatim. The
@@ -36,12 +45,21 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
   echo "usage: research/e134_warm_session.sh ARM PROMPT_ID [...]" >&2; exit 2; }
 
 arm="$1"; shift
+arm_base=(DARKBLOOM_QWEN_MTP_WARM_NORMED=0
+          DARKBLOOM_QWEN_MTP_PREFETCH_RESTORE=0
+          DARKBLOOM_QWEN_MTP_WARM_REFILL=0
+          DARKBLOOM_QWEN_MTP_EMULATE_RESIDENCY_CLEAR=0)
 case "${arm}" in
-  base)        arm_env=(DARKBLOOM_QWEN_MTP_WARM_REFILL=0) ;;
-  refill)      arm_env=(DARKBLOOM_QWEN_MTP_WARM_REFILL=1) ;;
-  clear)       arm_env=(DARKBLOOM_QWEN_MTP_WARM_REFILL=0
+  base)        arm_env=("${arm_base[@]}") ;;
+  wnorm)       arm_env=("${arm_base[@]}" DARKBLOOM_QWEN_MTP_WARM_NORMED=1) ;;
+  wprefetch)   arm_env=("${arm_base[@]}"
+                        DARKBLOOM_QWEN_MTP_PREFETCH_RESTORE=1) ;;
+  all)         arm_env=("${arm_base[@]}" DARKBLOOM_QWEN_MTP_WARM_NORMED=1
+                        DARKBLOOM_QWEN_MTP_PREFETCH_RESTORE=1) ;;
+  refill)      arm_env=("${arm_base[@]}" DARKBLOOM_QWEN_MTP_WARM_REFILL=1) ;;
+  clear)       arm_env=("${arm_base[@]}"
                         DARKBLOOM_QWEN_MTP_EMULATE_RESIDENCY_CLEAR=1) ;;
-  clearrefill) arm_env=(DARKBLOOM_QWEN_MTP_WARM_REFILL=1
+  clearrefill) arm_env=("${arm_base[@]}" DARKBLOOM_QWEN_MTP_WARM_REFILL=1
                         DARKBLOOM_QWEN_MTP_EMULATE_RESIDENCY_CLEAR=1) ;;
   *) echo "e134_warm_session: unknown arm ${arm}" >&2; exit 2 ;;
 esac
@@ -52,7 +70,10 @@ weights="${MLXFAST_WEIGHTS_PATH:-weights}"
 swift_bin="${MLXFAST_SWIFT_BIN:-.build/release/mlxfast-swift}"
 root="${E134_ROOT:-.mlxfast-private/e134}"
 goldens_dir="${E134_GOLDENS_DIR:-.mlxfast-private/e128/goldens}"
-runs_root="${root}/runs-${arm}"
+# ABBA repeats write to distinct trees so an earlier pass is never reused as a
+# later one. `E134_REP` is the pass index inside one counterbalanced session.
+rep="${E134_REP:-}"
+runs_root="${root}/runs-${arm}${rep:+-r${rep}}"
 bench_fixture="correctness_prompts/public_longcopy_gate_english_512_256.json"
 
 prompt_file_for() {
@@ -164,8 +185,9 @@ for id in "$@"; do
 
   {
     echo "experiment=e134-oracle-discrimination-at-the-m6-cliff"
-    echo "leg_kind=e134-item1-warm-refill-${arm}"
+    echo "leg_kind=e134-item0-warm-parity-${arm}"
     echo "arm=${arm}"
+    echo "rep=${rep:-0}"
     echo "arm_env=${arm_env[*]}"
     echo "harness=local"
     echo "prompt_id=${id}"
@@ -198,7 +220,7 @@ for id in "$@"; do
     grep -m1 '^mlxfast: qwen-mtp warm ' "${out}/stderr.log" \
       | sed 's/^mlxfast: qwen-mtp warm /warm_/' \
       | tr ' ' '\n' | sed '/^$/d' | sed 's/^shapes_ms/warm_shapes_ms/' \
-      | grep -E '^(warm_|refill|emulated_clear|cache_|active_)' || true
+      | grep -E '^(warm_|wnorm|wprefetch|refill|emulated_clear|cache_|active_|wired_gate_fired|physmem)' || true
     if [[ -s "${out}/report.json" ]]; then
       jq -r '"all_tokens_matched=\(.all_tokens_matched)",
              "residual_divergence_count=\(.residual_divergence_count)",

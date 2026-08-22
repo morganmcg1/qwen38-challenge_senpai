@@ -275,9 +275,41 @@ public final class Qwen36MTPBlockSession {
         FileHandle.standardError.write(Data(line.utf8))
     }
 
+    /// Read-only mirror of the two entry guards in
+    /// `wireResidentWeightsIfEnabled()`, for warm telemetry only.
+    ///
+    /// A 48 GiB development host fails the 96 GiB guard, so residency sizing
+    /// and its `Memory.clearCache()` never run there. Any warm-arm result read
+    /// off a host reporting `wired_gate_fired=0` says nothing about the ranked
+    /// M5-Max runner, where the gate does fire.
+    private static var residencySizingGateFires: Bool {
+        ProcessInfo.processInfo.environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0"
+            && ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
+    }
+
+    /// Warm the verify entry point the scored round actually calls.
+    ///
+    /// The width loop warms `callWithHidden`; every scored verify calls
+    /// `callWithHiddenAndNormed` and retains the normed block across the eval.
+    private static var warmNormedVerifyEnabled: Bool {
+        ProcessInfo.processInfo.environment[
+            "DARKBLOOM_QWEN_MTP_WARM_NORMED"] == "1"
+    }
+
+    /// Submit the restored recurrent boundary before returning from a prefix
+    /// reject, so the next round's draft chain does not open by building it.
+    private static var prefetchRestoredStateEnabled: Bool {
+        ProcessInfo.processInfo.environment[
+            "DARKBLOOM_QWEN_MTP_PREFETCH_RESTORE"] == "1"
+    }
+
+    /// Default OFF. A ranked receipt on rival submission `775a26e3` measured a
+    /// second post-wiring warm at +5.28 % F83-weighted SLOWER (z +7.02) with a
+    /// flat serial leg, which FINDING 172 attributes to warm scratch consuming
+    /// the 64 MiB wired slack that decode state then cannot be admitted into.
     private static var warmRefillEnabled: Bool {
         ProcessInfo.processInfo.environment[
-            "DARKBLOOM_QWEN_MTP_WARM_REFILL"] != "0"
+            "DARKBLOOM_QWEN_MTP_WARM_REFILL"] == "1"
     }
 
     /// Research-only, default off, and never read on the ranked runner.
@@ -307,27 +339,29 @@ public final class Qwen36MTPBlockSession {
         Self.wireResidentWeightsIfEnabled()
         if Self.emulatesResidencyAllocatorClear { Memory.clearCache() }
         let cacheAfterSizing = Memory.cacheMemory
-        // WARM REFILL. Residency sizing calls `Memory.clearCache()`, which
-        // returns every buffer the pass above left in the allocator pool. The
-        // seed forward and the first scored round then first-touch fresh
-        // allocations INSIDE the timed window; E134 rung 5 measured that first
-        // round 15 to 33 ms slower than the width-matched tail on 15 of 15
-        // legs, GPU-side on every one, while its host CPU time fell 15 to
-        // 21 ms. Repeating the same input-independent shapes repopulates the
-        // pool before timing starts. Sizing has already run and the ticket is
-        // retained, so this pass cannot change the wired limit, and its
-        // scratch fails the fit test and stays unwired.
+        // WARM REFILL, research arm, default OFF. Residency sizing calls
+        // `Memory.clearCache()`, so the seed forward and the first scored round
+        // first-touch fresh allocations INSIDE the timed window. Repeating the
+        // input-independent shapes would repopulate the pool before timing.
+        // The ranked receipt on `775a26e3` says that trade loses badly: the
+        // refilled scratch is admitted into the 64 MiB wired slack ahead of the
+        // decode state, and nothing is ever evicted. Kept behind a flag as the
+        // measured negative control for FINDING 172, not as a candidate.
         if Self.warmRefillEnabled {
             try warmAllDepthShapes(maxDepth: maxDepth)
         }
         let tDone = DispatchTime.now().uptimeNanoseconds
         var line = "mlxfast: qwen-mtp warm"
         line += " shapes_ms=\((tShapesDone - tWarmStart) / 1_000_000)"
+        line += " wnorm=\(Self.warmNormedVerifyEnabled ? 1 : 0)"
+        line += " wprefetch=\(Self.prefetchRestoredStateEnabled ? 1 : 0)"
         line += " refill=\(Self.warmRefillEnabled ? 1 : 0)"
         line += " refill_ms=\((tDone - tShapesDone) / 1_000_000)"
         line += " emulated_clear=\(Self.emulatesResidencyAllocatorClear ? 1 : 0)"
         line += " cache_after_sizing=\(cacheAfterSizing)"
-        line += " cache_end=\(Memory.cacheMemory) active_end=\(Memory.activeMemory)\n"
+        line += " cache_end=\(Memory.cacheMemory) active_end=\(Memory.activeMemory)"
+        line += " wired_gate_fired=\(Self.residencySizingGateFires ? 1 : 0)"
+        line += " physmem=\(ProcessInfo.processInfo.physicalMemory)\n"
         FileHandle.standardError.write(Data(line.utf8))
     }
 
@@ -462,13 +496,32 @@ public final class Qwen36MTPBlockSession {
             // Every drafting width verifies with nConfirmed: 1. Width two uses
             // the eager boundary checkpoint; wider blocks retain a replay
             // tape. Warm the same shapes the scored rounds dispatch.
-            let (verifyLogits, _) = model.callWithHidden(
-                input: LMInput.Text(tokens: MLXArray(block).reshaped([1, width])),
-                cache: warmCache, nConfirmed: width >= 2 ? 1 : 0)
+            let warmInput = LMInput.Text(
+                tokens: MLXArray(block).reshaped([1, width]))
+            let nConfirmed = width >= 2 ? 1 : 0
+            // W-NORM. Every scored verify enters through
+            // `callWithHiddenAndNormed` and holds the normed block live across
+            // the round's single eval; this loop enters through
+            // `callWithHidden` and drops both extra outputs. Same primitives,
+            // different retained set, so the warm eval frees buffers the
+            // scored eval keeps. Warming the scored entry point removes that
+            // asymmetry at zero allocation cost outside the timed window.
+            var warmBundle: [MLXArray] = []
+            let verifyLogits: MLXArray
+            if Self.warmNormedVerifyEnabled, width >= 2 {
+                let (logits, hidden, normed) = model.callWithHiddenAndNormed(
+                    input: warmInput, cache: warmCache, nConfirmed: nConfirmed)
+                verifyLogits = logits
+                warmBundle.append(hidden)
+                if let normed { warmBundle.append(normed) }
+            } else {
+                (verifyLogits, _) = model.callWithHidden(
+                    input: warmInput, cache: warmCache, nConfirmed: nConfirmed)
+            }
             // Compile the two top-2 reduction kernels outside the scored window
             // at every row count a round can dispatch.
             let (warmTop2IDs, warmTop2Values) = Self.linearTopTwoRows(verifyLogits)
-            eval(verifyLogits, warmTop2IDs, warmTop2Values)
+            eval([verifyLogits, warmTop2IDs, warmTop2Values] + warmBundle)
             eval(warmCache.flatMap { $0.state })
             if width >= 3 {
                 // Warm arbitrary-prefix replay T=2...8. Restore all but the
@@ -1860,6 +1913,7 @@ public final class Qwen36MTPBlockSession {
                     _ = entry.trim(entry.offset - committedOffset)
                 }
             }
+            prefetchRecurrentBoundary(cache)
             return true
         }
 
@@ -1887,7 +1941,20 @@ public final class Qwen36MTPBlockSession {
                 _ = entry.trim(entry.offset - committedOffset)
             }
         }
+        prefetchRecurrentBoundary(cache)
         return true
+    }
+
+    /// W-PREFETCH (E020). Submit the restored recurrent boundary as soon as the
+    /// reject path defines it, instead of leaving the next round's opening
+    /// draft step to build it inside the charged window. `asyncEval` is a
+    /// scheduling hint on already-defined arrays: it changes no value, so
+    /// exactness is unchanged by construction.
+    private static func prefetchRecurrentBoundary(_ cache: [any KVCache]) {
+        guard prefetchRestoredStateEnabled else { return }
+        let state = cache.compactMap { $0 as? ArraysCache }
+            .flatMap { $0.state }
+        if !state.isEmpty { asyncEval(state) }
     }
 
     private static func clearRecurrentRollback(_ cache: [any KVCache]) {
