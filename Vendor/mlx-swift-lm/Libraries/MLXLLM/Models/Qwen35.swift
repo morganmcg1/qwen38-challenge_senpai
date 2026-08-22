@@ -1954,9 +1954,15 @@ public enum Qwen35CustomQMV {
     }()
 
     /// Launch geometry for one routed cell.
-    static func launch(m: Int, n: Int) -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int)) {
+    ///
+    /// `using` is a parameter rather than a read of the static so one process
+    /// can time and diff both settings; the scored path always takes the
+    /// default.
+    public static func launch(m: Int, n: Int, using: Grid = Qwen35CustomQMV.grid)
+        -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int))
+    {
         let entry = plan(m: m)
-        let columns = grid == .tight ? (m + entry.ipg - 1) / entry.ipg : m
+        let columns = using == .tight ? (m + entry.ipg - 1) / entry.ipg : m
         return ((columns * 32, n / entry.rps, 1), (32, 2, 1))
     }
 
@@ -1995,6 +2001,22 @@ public enum Qwen35CustomQMV {
     public nonisolated(unsafe) static var pipelineWidthFirstIndex: [Int: Int] = [:]
     public nonisolated(unsafe) static var pipelineDispatches = 0
 
+    /// The `x` column count each width actually handed to Metal.
+    ///
+    /// `grid` in this log is the parsed enum, so it witnesses only that the
+    /// environment reached the worker. This map is read back off the dispatch
+    /// argument itself, so it also witnesses that `launch(m:n:)` honoured the
+    /// setting. A `wide` leg records `columns == m` and a `tight` leg records
+    /// `ceil(m / ipg)`, and the two disagree at every routed width.
+    public nonisolated(unsafe) static var pipelineColumns: [Int: Int] = [:]
+
+    static func noteLaunch(width: Int, columns: Int) {
+        guard pipelineLogPath != nil else { return }
+        if pipelineColumns.updateValue(columns, forKey: width) != columns {
+            flushPipelineLog()
+        }
+    }
+
     /// `width` is nil for the chunk-sum fill, which is not a QMV dispatch.
     static func notePipeline(_ key: String, width: Int?) {
         guard pipelineLogPath != nil else { return }
@@ -2027,6 +2049,9 @@ public enum Qwen35CustomQMV {
         let widthFirst = pipelineWidthFirstIndex.keys.sorted()
             .map { "    \"\($0)\": \(pipelineWidthFirstIndex[$0]!)" }
             .joined(separator: ",\n")
+        let columns = pipelineColumns.keys.sorted()
+            .map { "    \"\($0)\": \(pipelineColumns[$0]!)" }
+            .joined(separator: ",\n")
         let json = """
             {
               "arm": "\(arm.rawValue)",
@@ -2048,6 +2073,9 @@ public enum Qwen35CustomQMV {
               },
               "first_index_by_width": {
             \(widthFirst)
+              },
+              "columns_by_width": {
+            \(columns)
               }
             }
 
@@ -2162,7 +2190,8 @@ public enum Qwen35CustomQMV {
         groupSize: Int,
         bits: Int,
         mode: QuantizationMode,
-        consume: Bool = true
+        consume: Bool = true,
+        using: Grid = Qwen35CustomQMV.grid
     ) -> MLXArray? {
         guard
             let cell = routable(
@@ -2184,7 +2213,8 @@ public enum Qwen35CustomQMV {
             kernel = tiered
             notePipeline("qmv_sums_na\(tier)_v2/USE_TABLE=\(consume)", width: cell.m)
         }
-        let launch = Self.launch(m: cell.m, n: cell.n)
+        let launch = Self.launch(m: cell.m, n: cell.n, using: using)
+        noteLaunch(width: cell.m, columns: launch.grid.0 / 32)
         return kernel(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
@@ -2203,7 +2233,8 @@ public enum Qwen35CustomQMV {
         groupSize: Int,
         bits: Int,
         mode: QuantizationMode,
-        arm: Arm = Qwen35CustomQMV.arm
+        arm: Arm = Qwen35CustomQMV.arm,
+        using: Grid = Qwen35CustomQMV.grid
     ) -> MLXArray? {
         guard arm != .off else { return nil }
         guard
@@ -2216,7 +2247,7 @@ public enum Qwen35CustomQMV {
             return matmulWithTable(
                 x, w, scales: scales, biases: biases, xsums: xsumsTable(x),
                 groupSize: groupSize, bits: bits, mode: mode,
-                consume: arm == .sumTable)
+                consume: arm == .sumTable, using: using)
         }
 
         var outShape = x.shape
@@ -2234,7 +2265,8 @@ public enum Qwen35CustomQMV {
             kernel = tiered
             notePipeline("qmv_wide_na\(tier)_v2", width: cell.m)
         }
-        let launch = Self.launch(m: cell.m, n: cell.n)
+        let launch = Self.launch(m: cell.m, n: cell.n, using: using)
+        noteLaunch(width: cell.m, columns: launch.grid.0 / 32)
         return kernel(
             [w, scales, biases, x],
             grid: launch.grid,
