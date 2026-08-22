@@ -1,21 +1,6 @@
 {
-  "breakpoint": 5,
+  "breakpoint": 6,
   "curves": {
-    "affine_b3": {
-      "aicc": 94.42974264973077,
-      "breakpoint": 3,
-      "hi": [
-        15124.250880187523,
-        6979.95195268422
-      ],
-      "lo": [
-        24277.400149253095,
-        6979.951952684223
-      ],
-      "model": "passcount_affine",
-      "name": "passcount_affine@M>=3",
-      "rmse_us": 172.75232401454045
-    },
     "freeslope_b6": {
       "aicc": 93.43140895492094,
       "breakpoint": 6,
@@ -61,34 +46,64 @@
       "name": "passcount_scaled_affine@M>=5",
       "rmse_us": 129.3831669514299
     },
-    "scaled_affine_b6": {
-      "aicc": 93.50185818629734,
-      "breakpoint": 6,
+    "slopeonly_b4": {
+      "aicc": 116.18700156364912,
+      "breakpoint": 4,
       "hi": [
-        19414.822154644397,
-        6469.945922914412
+        29416.222613632533,
+        4939.083909002406
       ],
       "lo": [
-        28281.721884704668,
-        3234.972961457206
+        29416.222613632533,
+        1444.9380687165249
       ],
-      "model": "passcount_scaled_affine",
-      "name": "passcount_scaled_affine@M>=6",
-      "rmse_us": 163.01889863689541
+      "model": "passcount_slopeonly",
+      "name": "passcount_slopeonly@M>=4",
+      "rmse_us": 672.9611475416136
+    },
+    "slopeonly_b5": {
+      "aicc": 111.26871465351216,
+      "breakpoint": 5,
+      "hi": [
+        27644.48917896216,
+        5219.514349524456
+      ],
+      "lo": [
+        27644.489178962147,
+        3347.919234074954
+      ],
+      "model": "passcount_slopeonly",
+      "name": "passcount_slopeonly@M>=5",
+      "rmse_us": 494.8697842519503
+    },
+    "slopeonly_b6": {
+      "aicc": 102.45444699960726,
+      "breakpoint": 6,
+      "hi": [
+        27725.396919580293,
+        5323.531364694667
+      ],
+      "lo": [
+        27725.39691958033,
+        3446.0718068476417
+      ],
+      "model": "passcount_slopeonly",
+      "name": "passcount_slopeonly@M>=6",
+      "rmse_us": 285.26053982088024
     }
   },
   "harness": "ranked",
   "hi": [
-    18539.833242177614,
-    6499.324819760979
+    27725.396919580293,
+    5323.531364694667
   ],
   "lo": [
-    28003.741121497143,
-    3249.662409880486
+    27725.39691958033,
+    3446.0718068476417
   ],
-  "model": "passcount_scaled_affine",
+  "model": "passcount_slopeonly",
   "r_scenario": "assumed",
   "receipt": "d3c491b5",
-  "rmse_us": 129.3831669514299,
+  "rmse_us": 285.26053982088024,
   "source": "e128_slopes.py"
 }

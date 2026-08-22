@@ -220,6 +220,58 @@
   "breakpoint": 6,
   "candidate_curves": [
     {
+      "admissible": true,
+      "aicc": 102.45444699960726,
+      "breakpoint": 6,
+      "family": "passcount_slopeonly",
+      "hi": [
+        27725.396919580293,
+        5323.531364694667
+      ],
+      "lo": [
+        27725.39691958033,
+        3446.0718068476417
+      ],
+      "name": "passcount_slopeonly@M>=6",
+      "params": 3,
+      "rmse_us": 285.26053982088024
+    },
+    {
+      "admissible": true,
+      "aicc": 111.26871465351216,
+      "breakpoint": 5,
+      "family": "passcount_slopeonly",
+      "hi": [
+        27644.48917896216,
+        5219.514349524456
+      ],
+      "lo": [
+        27644.489178962147,
+        3347.919234074954
+      ],
+      "name": "passcount_slopeonly@M>=5",
+      "params": 3,
+      "rmse_us": 494.8697842519503
+    },
+    {
+      "admissible": true,
+      "aicc": 116.18700156364912,
+      "breakpoint": 4,
+      "family": "passcount_slopeonly",
+      "hi": [
+        29416.222613632533,
+        4939.083909002406
+      ],
+      "lo": [
+        29416.222613632533,
+        1444.9380687165249
+      ],
+      "name": "passcount_slopeonly@M>=4",
+      "params": 3,
+      "rmse_us": 672.9611475416136
+    },
+    {
+      "admissible": false,
       "aicc": 89.80445261155019,
       "breakpoint": 5,
       "family": "passcount_scaled_affine",
@@ -236,6 +288,7 @@
       "rmse_us": 129.3831669514299
     },
     {
+      "admissible": false,
       "aicc": 91.91127960505472,
       "breakpoint": 3,
       "family": "passcount_scaled_affine",
@@ -252,6 +305,7 @@
       "rmse_us": 147.59248191234877
     },
     {
+      "admissible": false,
       "aicc": 93.43140895492094,
       "breakpoint": 6,
       "family": "passcount_freeslope",
@@ -266,38 +320,6 @@
       "name": "passcount_freeslope@M>=6",
       "params": 4,
       "rmse_us": 90.5706062742009
-    },
-    {
-      "aicc": 93.50185818629734,
-      "breakpoint": 6,
-      "family": "passcount_scaled_affine",
-      "hi": [
-        19414.822154644397,
-        6469.945922914412
-      ],
-      "lo": [
-        28281.721884704668,
-        3234.972961457206
-      ],
-      "name": "passcount_scaled_affine@M>=6",
-      "params": 3,
-      "rmse_us": 163.01889863689541
-    },
-    {
-      "aicc": 94.42974264973077,
-      "breakpoint": 3,
-      "family": "passcount_affine",
-      "hi": [
-        15124.250880187523,
-        6979.95195268422
-      ],
-      "lo": [
-        24277.400149253095,
-        6979.951952684223
-      ],
-      "name": "passcount_affine@M>=3",
-      "params": 3,
-      "rmse_us": 172.75232401454045
     }
   ],
   "f_tests": {

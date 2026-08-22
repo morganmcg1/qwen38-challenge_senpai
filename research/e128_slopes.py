@@ -386,39 +386,48 @@ def tier_decomposition(points: list[dict]) -> list:
     return out
 
 
-def candidate_curves(points: list[dict]) -> list:
-    """Every (family, boundary) pair within 5 aicc of the winner.
+def candidate_curves(points: list[dict], decomp: list) -> list:
+    """The curves a price should be checked against, in `e128_price` shape.
 
-    Each is re-expressed as an ordinary two-segment linear curve over the
-    reachable widths M = 1..8, which is the shape `e128_price.py` consumes.
-    The shipped cap keeps the draft depth at or below 7, so M never reaches
-    the third pass and a two-segment form is exact over the scored range.
+    Two sets are kept, because they answer different questions. The
+    ADMISSIBLE set obeys every physical constraint, including a non-negative
+    per-pass overhead, and is what a price should actually use. The
+    unconstrained aicc leaders are kept as well, because they fit better and
+    a decision that flips between the two sets is not safe to act on.
+
+    Each entry is re-expressed as an ordinary two-segment linear curve over
+    M = 1..8. The shipped cap keeps the draft depth at or below 7, so M never
+    reaches the third pass and the two-segment form is exact over the scored
+    range.
     """
     y = np.array([p["round_us"] for p in points])
     grid = []
-    for name in ("passcount_affine", "passcount_scaled_affine",
-                 "passcount_freeslope"):
-        for boundary in range(3, 9):
-            passes = passes_with_boundary(boundary)
-            cols = basis(name, passes)
-            got = ols(design(points, cols), y)
-            vals = cols @ got["beta"]
-            lo_i = boundary - 2  # index of M = boundary - 1
-            slope_lo = float(vals[1] - vals[0])
-            slope_hi = float(vals[min(7, len(vals) - 1)] - vals[lo_i + 1]) \
-                / max(min(8, MAX_ROWS) - boundary, 1)
-            grid.append({
-                "name": "%s@M>=%d" % (name, boundary),
-                "family": name, "breakpoint": boundary,
-                "aicc": got["aicc"], "rmse_us": got["rmse"],
-                "params": got["params"],
-                "lo": [float(vals[0]) - slope_lo, slope_lo],
-                "hi": [float(vals[boundary - 1]) - slope_hi * boundary,
-                       slope_hi],
-            })
-    best = min(row["aicc"] for row in grid)
-    keep = [row for row in grid if row["aicc"] - best <= 5.0]
-    keep.sort(key=lambda row: row["aicc"])
+    for row in decomp:
+        passes = passes_with_boundary(row["boundary_M"])
+        cols = basis(row["family"], passes)
+        got = ols(design(points, cols), y)
+        vals = cols @ got["beta"]
+        boundary = row["boundary_M"]
+        slope_lo = float(vals[1] - vals[0])
+        slope_hi = float(vals[7] - vals[boundary - 1]) \
+            / max(8 - boundary, 1)
+        admissible = (row["monotone"] and row["step_nonnegative"]
+                      and row["pass_overhead_nonnegative"])
+        grid.append({
+            "name": row["name"], "family": row["family"],
+            "breakpoint": boundary, "aicc": row["aicc"],
+            "rmse_us": row["rmse_us"], "params": row["params"],
+            "admissible": admissible,
+            "lo": [float(vals[0]) - slope_lo, slope_lo],
+            "hi": [float(vals[boundary - 1]) - slope_hi * boundary,
+                   slope_hi],
+        })
+    ok = [r for r in grid if r["admissible"]]
+    ok.sort(key=lambda row: row["aicc"])
+    rest = [r for r in grid if not r["admissible"]]
+    rest.sort(key=lambda row: row["aicc"])
+    keep = ok[:3] + rest[:3]
+    keep.sort(key=lambda row: (not row["admissible"], row["aicc"]))
     return keep
 
 
@@ -721,16 +730,20 @@ def main() -> None:
         print("best with a>=0: %s rmse %.0f aicc %.2f"
               % (with_a[0]["name"], with_a[0]["rmse_us"], with_a[0]["aicc"]))
 
-    candidates = candidate_curves(points)
-    print("\n## 2d. the curves that survive, in price-tool shape")
-    print("%-26s %6s %11s %11s %11s %11s  " % (
-        "curve", "break", "lo int", "lo slope", "hi int", "hi slope")
+    candidates = candidate_curves(points, decomp)
+    print("\n## 2d. the curves a price must be checked against")
+    print("%-32s %5s %6s %9s  " % (
+        "curve", "adm", "break", "rmse")
         + " ".join("%7s" % ("M=%d" % m) for m in range(1, 9)))
     for row in candidates:
-        print("%-26s %6d %11.1f %11.1f %11.1f %11.1f  " % (
-            row["name"], row["breakpoint"], row["lo"][0], row["lo"][1],
-            row["hi"][0], row["hi"][1])
+        print("%-32s %5s %6d %9.0f  " % (
+            row["name"], "yes" if row["admissible"] else "no",
+            row["breakpoint"], row["rmse_us"])
             + " ".join("%7.0f" % curve_us(row, m) for m in range(1, 9)))
+    span = [max(curve_us(r, m) for r in candidates)
+            - min(curve_us(r, m) for r in candidates) for m in range(1, 9)]
+    print("%-32s %5s %6s %9s  " % ("SPREAD across candidates", "", "", "")
+          + " ".join("%7.0f" % v for v in span))
 
     payload = {
         "harness": "ranked",
