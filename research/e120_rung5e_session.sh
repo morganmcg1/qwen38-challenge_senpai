@@ -8,8 +8,9 @@
 #   depth   offered draft ceiling, default 8 (the ranked workflow's value)
 #   order   sequence of `var` values, default
 #           `off,sumtable,sumtable,off,off,sumtable,sumtable,off`
-#   var     the runtime switch the legs sweep, `MLX_E120_QMV_ARM` (default) or
-#           `MLX_E120_QMV_ENTRY`. Reference rows always come from the `off`
+#   var     the runtime switch the legs sweep: `MLX_E120_QMV_ARM` (default),
+#           `MLX_E120_QMV_ENTRY`, `MLX_E120_QMV_TABLE` or `MLX_E120_QMV_GRID`.
+#           Reference rows always come from the `off`
 #           arm, whichever switch the legs sweep.
 #
 # WHAT IS MEASURED. The headline is ABSOLUTE candidate seconds per token on
@@ -58,6 +59,7 @@ case "${var}" in
   # `Qwen35CustomQMV.widthPlan` asserts that, so a table sweep runs every leg
   # with MLX_E120_QMV_ENTRY=tiered_switch.
   MLX_E120_QMV_TABLE) legal="shipped onepass"; export MLX_E120_QMV_ENTRY=tiered_switch ;;
+  MLX_E120_QMV_GRID) legal="wide tight" ;;
   *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
 esac
 for arm in ${order//,/ }; do
@@ -261,6 +263,7 @@ worker_sha256_end="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
   echo "sweep_variable=${var}"
   echo "entry=${MLX_E120_QMV_ENTRY:-tiered_switch (default)}"
   echo "table=${MLX_E120_QMV_TABLE:-shipped (default)}"
+  echo "grid=${MLX_E120_QMV_GRID:-wide (default)}"
   echo "head_dir=${head_dir}"
   echo "head_safetensors_sha256=${head_sha256}"
   echo "worker_sha256_start=${worker_sha256_start}"

@@ -1483,7 +1483,7 @@ private let qwen35E120QMVHeader = """
                 partial[r] = VF(0.0f);
             }
             for (int i = 0; i < 4; i++) {
-                VF a0, a1, a2, a3;
+                VF a0, a1, a2, a3, chunk;
                 for (int m = 0; m < NA; m++) {
                     const device bfloat16_t* xm =
                         x + (first_m + m) * in_vec_size + k +
@@ -1496,8 +1496,12 @@ private let qwen35E120QMVHeader = """
                     a2[m] = static_cast<float>(xv[2]);
                     a3[m] = static_cast<float>(xv[3]);
                     if (!USE_TABLE) {
-                        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                        chunk[m] = static_cast<float>(
+                            xv[0] + xv[1] + xv[2] + xv[3]);
                     }
+                }
+                if (!USE_TABLE) {
+                    sums += chunk;
                 }
                 for (int r = 0; r < rows_per_simd; r++) {
                     partial[r] += (a0 * (packed[r][i] & 0x000f) +
