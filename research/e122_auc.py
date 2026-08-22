@@ -168,6 +168,55 @@ def bootstrap_auc(pairs: list[tuple[float, int]], reps: int, rng: random.Random)
     return lo, hi
 
 
+def rank(values: list[float]) -> list[float]:
+    order = sorted(range(len(values)), key=lambda i: values[i])
+    ranks = [0.0] * len(values)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and values[order[j + 1]] == values[order[i]]:
+            j += 1
+        avg = (i + j) / 2.0 + 1.0
+        for k in range(i, j + 1):
+            ranks[order[k]] = avg
+        i = j + 1
+    return ranks
+
+
+def spearman(xs: list[float], ys: list[float]) -> float | None:
+    """Rank correlation of the margin against the round's accepted count.
+
+    Uses every round instead of only the rare rejections, so it is far less
+    noisy than a per-position AUC on this data. It is only interpretable on a
+    FORCED-DEPTH arm: under the shipped policy the accepted count is capped by
+    a depth the margin already chose, which manufactures the correlation.
+    """
+    if len(xs) < 3:
+        return None
+    rx, ry = rank(xs), rank(ys)
+    mx, my = statistics.fmean(rx), statistics.fmean(ry)
+    num = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
+    dx = math.sqrt(sum((a - mx) ** 2 for a in rx))
+    dy = math.sqrt(sum((b - my) ** 2 for b in ry))
+    if dx == 0.0 or dy == 0.0:
+        return None
+    return num / (dx * dy)
+
+
+def spearman_pooled(rounds: list[dict], prompts: list[str]) -> float | None:
+    """Sample-weighted mean of the within-prompt rank correlations."""
+    total, weight = 0.0, 0
+    for prompt in prompts:
+        subset = [r for r in rounds if r["prompt"] == prompt]
+        value = spearman([r["margin"] for r in subset],
+                         [float(r["accepted"]) for r in subset])
+        if value is None:
+            continue
+        total += value * len(subset)
+        weight += len(subset)
+    return total / weight if weight else None
+
+
 def quantile(sorted_values: list[float], q: float) -> float:
     if not sorted_values:
         return float("nan")
@@ -267,6 +316,9 @@ def main() -> int:
             "depth_hist": dict(sorted(depth_hist.items())),
             "mean_depth": statistics.fmean([r["depth"] for r in rounds]),
             "mean_accepted": statistics.fmean([r["accepted"] for r in rounds]),
+            "spearman_margin_accepted": spearman(
+                [r["margin"] for r in rounds],
+                [float(r["accepted"]) for r in rounds]),
             "accept_rate_of_drafted": (
                 sum(r["accepted"] for r in rounds)
                 / max(1, sum(r["depth"] for r in rounds))),
@@ -308,7 +360,12 @@ def main() -> int:
         by_prompt_tables = {
             prompt: position_table([r for r in pooled if r["prompt"] == prompt])
             for prompt in per_prompt}
-        result["pooled"] = {"rounds": len(pooled), "positions": {}}
+        result["pooled"] = {
+            "rounds": len(pooled),
+            "spearman_margin_accepted": spearman_pooled(
+                pooled, list(per_prompt)),
+            "positions": {},
+        }
         for position in pooled_raw:
             lo, hi = bootstrap_auc(pooled_raw[position]["pairs"], args.boot, rng)
             zlo, zhi = bootstrap_auc(pooled_z[position]["pairs"], args.boot, rng)
@@ -349,6 +406,10 @@ def main() -> int:
         text.append(f"   margin mean {m['mean']:.4f} sd {m['sd']:.4f} "
                     f"p10 {m['p10']:.4f} p50 {m['p50']:.4f} p90 {m['p90']:.4f}")
         text.append(f"   depth histogram {block['depth_hist']}")
+        rho = block["spearman_margin_accepted"]
+        text.append(f"   spearman(margin, accepted) "
+                    f"{(rho if rho is not None else float('nan')):.4f}  "
+                    f"forced_depth={block['meta'].get('forced_depth')}")
         text.append("   pos   n   acc_rate      AUC   [95% CI]        not_drafted")
         for position in range(1, 6):
             cell = block["positions"][position]
@@ -363,7 +424,10 @@ def main() -> int:
                 f"{cell['not_drafted']:>8}")
     if pooled:
         text.append("")
-        text.append("## pooled over prompts")
+        text.append(f"## pooled over prompts  ({result['pooled']['rounds']} rounds)")
+        prho = result["pooled"]["spearman_margin_accepted"]
+        text.append("   within-prompt spearman(margin, accepted) "
+                    f"{(prho if prho is not None else float('nan')):.4f}")
         text.append("   AUC(raw)   one nat-valued threshold across every prompt")
         text.append("   AUC(strat) discordant pairs counted only inside one prompt")
         text.append("   AUC(z)     within-prompt standardised margin, diagnostic only")
