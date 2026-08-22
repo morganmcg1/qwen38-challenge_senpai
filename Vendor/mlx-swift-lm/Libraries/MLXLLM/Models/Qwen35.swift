@@ -4921,7 +4921,17 @@ private let qwen35DerivedClusterProbeFraction: Double = 0.25
 // nothing else.
 //
 // BASIS PROVENANCE. The sketch basis is the top-256 eigenvector set of the
-// second moment of the head's own coarse rows about their mean.
+// second moment, about their mean, of the head's own dequantized affine-4
+// rows -- the same rows the derived cluster index already partitions.
+//
+// The E133 screen fitted this basis to a corpus of QUERIES instead, which is
+// a better basis: it keeps 0.825 of query energy on beagle against 0.187 for
+// this one, and prices 0.116 ranked percent higher. It cannot ship. A fitted
+// basis is data, and 5,120 x 256 bf16 is 2,621,440 bytes against about
+// 103,000 bytes of editable source growth left at the time this was written.
+// A checkpoint-derived basis costs no source bytes at all.
+//
+// What that provenance buys:
 //   * Fit corpus: the loaded checkpoint, and nothing else. No prompt, no
 //     hidden state, no request, no file, no network, no benchmark phase.
 //   * Cross-fitted: by construction, because no evaluation datum enters the
