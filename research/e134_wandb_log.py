@@ -27,12 +27,25 @@ Runs published here:
   `e134-rung4-pass-boundary-price`
       Zero GPU. The headline. The `pb6` arm, its controls, its placebos, and
       the pre-registered prediction for a ranked receipt.
+  `e134-item0-warm-parity-arms`
+      GPU. The one arm matrix in this experiment that is a real timing
+      measurement. Four warm-phase arms on two prompts under ABBA. Every arm
+      is SLOWER than the base, so item 0 closes as a regression.
+  `e134-item2-measured-curve-refit`
+      Zero GPU. The pass-boundary cliff refitted against the advisor's ranked
+      pair for the one-pass QMV table now on the base. It CONFIRMS the cliff
+      and makes it slightly steeper, so the rung-4 headline survives.
 
-Every number here is a model output from an offline replayer. No leg in this
-experiment is a timing measurement, so `timing_valid`,
-`cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
-verbatim, and nothing here is an official or ranked score. Rule 79 applies:
-only a ranked receipt can validate a depth-price change.
+Except for `e134-item0-warm-parity-arms`, every number here is a model output
+from an offline replayer. Those runs log `timing_valid`,
+`cool_gate_passed_real_gate` and `gate_qualified_for_timing` false verbatim,
+and nothing here is an official or ranked score. Rule 79 applies: only a
+ranked receipt can validate a depth-price change.
+
+`e134-item0-warm-parity-arms` IS a timing measurement, but it ran under the
+standing counterbalanced ungated mode. It logs `timing_valid` true and both
+gate fields false verbatim. It is directional causal evidence inside one ABBA
+session and is not comparable with a gated historical run.
 """
 
 from __future__ import annotations
@@ -49,7 +62,7 @@ GROUP = "e134-oracle-discrimination-at-the-m6-cliff"
 HOST = "apple-m4-pro-applegpu_g16s-48gib"
 ART = pathlib.Path("research/e134-artifacts")
 
-BASE_SHA = "83e07638b78b562112843b3fbc2325a345bd6232"
+BASE_SHA = "35d8cf586b8671dc3d01faf3cdbd724ec603801b"
 ADVISOR_BRANCH = "senpai/qwen38-mtp-r1"
 PR_NUMBER = 134
 
@@ -265,8 +278,230 @@ def log_rung4() -> None:
     run.finish()
 
 
+def log_item0() -> None:
+    data = load("item0-warm-arms.json")
+    if data is None:
+        print("item0: no artifact, skipping")
+        return
+    legs = data["legs"]
+    records = [rec for arms in legs.values() for rec in arms.values()]
+    entry = [float(r["gpu_temp_entry_c"]) for r in records]
+    exit_ = [float(r["gpu_temp_exit_c"]) for r in records]
+    run = start("e134-item0-warm-parity-arms", {
+        "scored_surface_changed": True,
+        "timing_valid": True,
+        "harness": "local",
+        "arms": "base, wnorm, wprefetch, all",
+        "prompts": "beagle_a, plutarch_lives",
+        "reps": 2,
+        "counterbalancing": "ABBA within one session",
+        "cool_gate_mode": "MLXFAST_LOCAL_COOL_GATE=0, standing permitted mode",
+        "gpu_temp_entry_c_min": min(entry),
+        "gpu_temp_entry_c_max": max(entry),
+        "gpu_temp_entry_c_spread": max(entry) - min(entry),
+        "gpu_temp_exit_c_min": min(exit_),
+        "gpu_temp_exit_c_max": max(exit_),
+        "legs": len(records),
+    })
+
+    metrics = ("spt", "E1_width_matched_us", "first_block_s", "p50_block_s",
+               "seed_prefill_s")
+    contrasts = wandb.Table(columns=[
+        "contrast", "metric", "mean_delta", "mean_pct", "sd_pct", "se_pct",
+        "pairs", "all_same_sign"])
+    for name in ("wnorm-base", "wprefetch-base", "all-base", "all-wnorm"):
+        block = data["contrasts"].get(name)
+        if block is None:
+            continue
+        for metric in metrics:
+            row = block.get(metric)
+            if row is None:
+                continue
+            contrasts.add_data(name, metric, row["mean_delta"],
+                               row["mean_pct"], row["sd_pct"], row["se_pct"],
+                               row["n"], row["all_same_sign"])
+    run.log({"item0/contrasts": contrasts})
+
+    per_leg = wandb.Table(columns=[
+        "leg", "rep", "arm", "seconds_per_token", "round1_excess_us",
+        "first_block_s", "p50_block_s", "mean_draft", "rounds",
+        "gpu_temp_entry_c", "gpu_temp_exit_c", "all_tokens_matched",
+        "residual_divergence_count"])
+    for key in sorted(legs):
+        for arm in sorted(legs[key]):
+            rec = legs[key][arm]
+            per_leg.add_data(
+                rec["leg"], rec["rep"], arm, rec["spt"],
+                rec["E1_width_matched_us"], rec["first_block_s"],
+                rec["p50_block_s"], rec["mean_draft"], rec["round_count"],
+                float(rec["gpu_temp_entry_c"]), float(rec["gpu_temp_exit_c"]),
+                rec["all_tokens_matched"], rec["residual_divergence_count"])
+    run.log({"item0/legs": per_leg})
+
+    spt = {k: v["spt"] for k, v in data["contrasts"].items()
+           if "spt" in v}
+    run.summary.update({
+        "wnorm_minus_base_spt_pct": spt["wnorm-base"]["mean_pct"],
+        "wnorm_minus_base_spt_sd_pct": spt["wnorm-base"]["sd_pct"],
+        "wprefetch_minus_base_spt_pct": spt["wprefetch-base"]["mean_pct"],
+        "wprefetch_minus_base_spt_sd_pct": spt["wprefetch-base"]["sd_pct"],
+        "all_minus_base_spt_pct": spt["all-base"]["mean_pct"],
+        "all_minus_base_spt_sd_pct": spt["all-base"]["sd_pct"],
+        "wnorm_minus_base_round1_excess_pct":
+            data["contrasts"]["wnorm-base"]["E1_width_matched_us"]["mean_pct"],
+        "wprefetch_minus_base_round1_excess_pct":
+            data["contrasts"]["wprefetch-base"]["E1_width_matched_us"]
+            ["mean_pct"],
+        "exactness_failures": len(data["exactness_failures"]),
+        "f8_item4_regression_gate_pct": 0.30,
+        "f8_item4_regression_gate_fired": True,
+        "verdict": "CLOSE ITEM 0 AS A REGRESSION. Every warm-parity arm is "
+                   "slower than the base on absolute candidate seconds per "
+                   "token, and W-NORM makes round 1 WORSE by +24.9 percent, "
+                   "which is the opposite sign to the hypothesis. The "
+                   "W-PREFETCH regression of +0.48 percent fires the item-4 "
+                   "gate. The regression is not drafting-scaled: it is larger "
+                   "on plutarch_lives, which barely drafts, so it is not "
+                   "confined to the prefix-reject restore path.",
+    })
+    run.finish()
+
+
+def log_item2() -> None:
+    curve = load("item2-measured-curve.json")
+    tier = load("item2-tier4-measured-per_drafting_round.json")
+    predict = load("item2-prediction-measured.json")
+    if curve is None or tier is None or predict is None:
+        print("item2: no artifact, skipping")
+        return
+    best = curve["best_form"]
+    run = start("e134-item2-measured-curve-refit", {
+        "scored_surface_changed": False,
+        "receipt": curve["receipt"],
+        "receipt_note": curve["receipt_note"],
+        "best_form": best,
+        "arm": "pb6",
+        "verify_width": predict["width"],
+        "tier": predict["tier"],
+        "validation": "leave-one-prompt-out tier selection, 6 seeds; "
+                      "leave-one-prompt-out and bootstrap refits",
+        "attachment_gate": curve["attachment_gate"],
+    })
+
+    fits = wandb.Table(columns=[
+        "form", "uniform_us", "uniform_se", "delta_round_us_6",
+        "delta_round_us_6_se", "delta_round_us_7", "delta_round_us_7_se",
+        "rms_residual_us", "residual_sigma_us", "r2"])
+    for name, fit in sorted(curve["fits"].items()):
+        beta, se = fit["beta"], fit["se"]
+        fits.add_data(name, beta[0], se[0], beta[1], se[1], beta[2], se[2],
+                      fit["rms_residual_us"], fit["residual_sigma_us"],
+                      fit["r2"])
+    run.log({"item2/inversion": fits})
+
+    shapes = wandb.Table(columns=[
+        "form", "rows", "round_us", "step_us", "step_ratio_to_shallow"])
+    for name in sorted(curve["curves"]):
+        shape = curve["curves"][name]["shape"]
+        rows = shape["rows"]
+        steps = shape["steps"]
+        ratios = shape["ratios"]
+        for index, row in enumerate(rows):
+            shapes.add_data(
+                name, row, shape["round_us"][index],
+                steps[index - 1] if index else None,
+                ratios[index - 1] if index else None)
+    run.log({"item2/curves": shapes})
+
+    masses = wandb.Table(columns=["prompt", "rounds", "drafting_share",
+                                  "mass_5", "mass_6", "mass_7", "mass_8"])
+    for name, block in sorted(curve["width_masses"].items()):
+        mass = block["by_width"]
+        masses.add_data(name, block["rounds"], block["drafting_share"],
+                        mass.get("5"), mass.get("6"), mass.get("7"),
+                        mass.get("8"))
+    run.log({"item2/replayed_width_mass": masses})
+
+    lopo_table = wandb.Table(columns=[
+        "form", "held_out_prompt", "argmax_boundary", "ratio_at_4",
+        "uniform_us", "delta_round_us_6", "delta_round_us_7"])
+    for name, block in sorted(curve["leave_one_prompt_out"].items()):
+        for refit in block:
+            lopo_table.add_data(
+                name, refit["held_out"], refit["argmax_boundary"],
+                refit["ratio_at_4"], refit["uniform"],
+                refit["delta_round_us_6"], refit["delta_round_us_7"])
+    run.log({"item2/leave_one_prompt_out_refits": lopo_table})
+
+    grid = wandb.Table(columns=["tier", "median_pct", "sd"])
+    for name, arm in sorted(tier["arms"].items()):
+        if name.startswith("tierprice@"):
+            grid.add_data(float(name.split("@")[1]), arm["mean"], arm["sd"])
+    run.log({"item2/tier_grid": grid})
+
+    prompts = wandb.Table(columns=["prompt", "candidate_time_ratio", "sd",
+                                   "median_pct_if_this_prompt_fails"])
+    for name, entry in sorted(predict["per_prompt"].items()):
+        prompts.add_data(name, entry["ratio"], entry["sd"],
+                         predict["jackknife_median_pct"].get(name))
+    run.log({"item2/per_prompt_prediction": prompts})
+
+    robust = wandb.Table(columns=["form", "noise", "p_argmax_is_4",
+                                  "ratio_at_4_p2.5", "ratio_at_4_p50",
+                                  "ratio_at_4_p97.5"])
+    for name, block in sorted(curve["bootstrap"].items()):
+        for noise in ("leg_noise", "residual_noise"):
+            draw = block.get(noise)
+            if draw is None:
+                continue
+            ratio = draw["ratio_at_4"]
+            robust.add_data(name, noise, draw["p_argmax_is_4"],
+                            ratio["p2.5"], ratio["p50"], ratio["p97.5"])
+    run.log({"item2/argmax_robustness": robust})
+
+    lofo = tier["cliff_lofo"]
+    shape = curve["curves"][best]["shape"]
+    pre = curve["curves"]["pre_arm"]["shape"]
+    run.summary.update({
+        "e134_replayed_ranked_median_pct": lofo["held_out"],
+        "e134_replayed_ranked_median_pct_in_sample": lofo["in_sample"],
+        "e134_replayed_ranked_median_pct_sd": lofo["sd"],
+        "pre_arm_replayed_ranked_median_pct": 2.3422,
+        "argmax_boundary": shape["argmax_boundary"],
+        "pre_arm_argmax_boundary": pre["argmax_boundary"],
+        "step_ratio_at_boundary4": shape["ratios"][3],
+        "pre_arm_step_ratio_at_boundary4": pre["ratios"][3],
+        "leave_one_prompt_out_refits_keeping_boundary4": 24,
+        "leave_one_prompt_out_refits": 24,
+        "predicted_receipt_score": predict["arm_median_raw"],
+        "shipped_receipt_score": predict["ship_median_raw"],
+        "predicted_published_median_pct":
+            predict["published_median_pct"]["mean"],
+        "predicted_published_median_z": predict["published_median_pct"]["z"],
+        "predicted_unweighted_mean_pct":
+            predict["unweighted_mean_pct"]["mean"],
+        "predicted_unweighted_mean_z": predict["unweighted_mean_pct"]["z"],
+        "worst_single_prompt_jackknife_pct":
+            min(predict["jackknife_median_pct"].values()),
+        "flat_level_control_pct": -0.2987,
+        "placebo_boundary3_held_out_pct": 0.0,
+        "placebo_boundary5_held_out_pct": 0.0,
+        "board_curve_at_tier_pct": -1.6469,
+        "verdict": "CONFIRM. The boundary-4 cliff kept 110 to 114 percent of "
+                   "its pre-arm magnitude, because width 7 became cheaper "
+                   "while width 6 did not. Boundary 4 is the argmax in 24 of "
+                   "24 leave-one-prompt-out refits and in 5997 of 6000 "
+                   "bootstrap draws. Tier stays 1.45. Two honest limits: the "
+                   "individual width-6 and width-7 coefficients are NOT "
+                   "resolved, only their difference, and the fitted residual "
+                   "sigma of 133 us exceeds the 40 to 58 us leg noise, so the "
+                   "three-parameter model is misspecified.",
+    })
+    run.finish()
+
+
 RUNS = {"rung1": log_rung1, "rung2": log_rung2, "rung3": log_rung3,
-        "rung4": log_rung4}
+        "rung4": log_rung4, "item0": log_item0, "item2": log_item2}
 
 
 def main() -> int:
