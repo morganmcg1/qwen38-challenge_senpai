@@ -220,10 +220,30 @@ TG_FENCE = """    const int tgk = (int(simd_lid) * 4 + k / 512) & 127;
     threadgroup_barrier(mem_flags::mem_threadgroup);
 """
 
-# Keeps the staged values live without letting them reach `y`: `in_vec_size` is
-# a positive dispatch parameter, and the backend cannot prove the branch dead.
-TG_SINK = """  if (in_vec_size < 0) {
+# Keeps the staged values and the accumulators live without letting either reach
+# `y`: `in_vec_size` is a positive dispatch parameter, and the backend cannot
+# prove the branch dead.
+#
+# ONE sink per arm, and one guarded store to `y[0]` inside it. E118's `cal`
+# sink and a separate threadgroup sink both write `y[0]` under the same
+# condition, so the second store kills the first: `cal` becomes dead, and the
+# backend deletes every injected load and every add that feeds it. That is
+# exactly what this experiment's second census found -- `k_tg0`, `k_tgld8`,
+# `k_tgld16`, `k_tgldc8`, `k_tgldc16`, `k_cvt8` and `k_cvt16` all translated to
+# byte-identical machine text on both architectures, while the store arms, whose
+# side effect cannot be killed, all differed. Summing both sources into one
+# expression keeps every class live.
+TG_SINK_ONLY = """  if (in_vec_size < 0) {
     y[0] = static_cast<T>(tgf[simd_lid] + float(tgb[simd_lid]));
+  }
+
+"""
+TG_SINK_WITH_CAL = """  float cal_sum = 0.0f;
+  for (int i = 0; i < %d; i++) {
+    cal_sum += cal[i];
+  }
+  if (in_vec_size < 0) {
+    y[0] = static_cast<T>(cal_sum + tgf[simd_lid] + float(tgb[simd_lid]));
   }
 
 """
@@ -349,7 +369,10 @@ def build_prologue(step: str, lanes: int, threadgroup: bool) -> str:
 def build_epilogue(lanes: int, threadgroup: bool) -> str:
     head = "  for (int r = 0; r < rows_per_simd; r++) {\n"
     expect(EPILOGUE, head, 1, "epilogue store loop")
-    sink = (cal_sink(lanes) if lanes else "") + (TG_SINK if threadgroup else "")
+    if threadgroup:
+        sink = TG_SINK_WITH_CAL % lanes if lanes else TG_SINK_ONLY
+    else:
+        sink = cal_sink(lanes) if lanes else ""
     return EPILOGUE.replace(head, sink + head)
 
 
