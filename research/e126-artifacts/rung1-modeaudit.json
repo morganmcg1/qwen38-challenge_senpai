@@ -1,0 +1,127 @@
+{
+  "anchor_leg_correlation": -0.12444280984053288,
+  "anchor_mtp_index_sd": 0.26485690374566606,
+  "anchor_serial_index_sd": 0.11412875589909835,
+  "anchors": [
+    {
+      "id": "bc070b7b",
+      "mtp_index": -13.410327580881516,
+      "published": 3.35922017047244,
+      "serial_index": 0.20913359344842974,
+      "solver": "francip"
+    },
+    {
+      "id": "7358c89f",
+      "mtp_index": -13.34211384458931,
+      "published": 3.35206896702495,
+      "serial_index": 0.013421670143439979,
+      "solver": "newjordan"
+    },
+    {
+      "id": "51b9bf85",
+      "mtp_index": -13.34967504114617,
+      "published": 3.35025879204714,
+      "serial_index": 0.14421302570245542,
+      "solver": "vibecodooor"
+    },
+    {
+      "id": "44559d02",
+      "mtp_index": -13.49174846817795,
+      "published": 3.34351272161741,
+      "serial_index": -0.0378088289374956,
+      "solver": "morganmcg1"
+    },
+    {
+      "id": "b8b8b860",
+      "mtp_index": -13.372251773345864,
+      "published": 3.33412148245778,
+      "serial_index": -0.07567740712353621,
+      "solver": "morganmcg1"
+    },
+    {
+      "id": "276aa2c2",
+      "mtp_index": -13.358837912467804,
+      "published": 3.33849825332807,
+      "serial_index": 0.028170121851133212,
+      "solver": "hadakang"
+    },
+    {
+      "id": "f04b102e",
+      "mtp_index": -13.290633131452587,
+      "published": 3.32824628683457,
+      "serial_index": -0.2369685599924103,
+      "solver": "morganmcg1"
+    },
+    {
+      "id": "8819b108",
+      "mtp_index": -13.142720698264462,
+      "published": 3.32794960796967,
+      "serial_index": -0.07600714132197517,
+      "solver": "audreyt"
+    },
+    {
+      "id": "7bef7d4c",
+      "mtp_index": -12.520197479424297,
+      "published": 3.29792432850592,
+      "serial_index": 0.01593041980590182,
+      "solver": "morganmcg1"
+    },
+    {
+      "id": "ec778a91",
+      "mtp_index": -13.423951037794255,
+      "published": 3.34664074470005,
+      "serial_index": 0.09201187981939674,
+      "solver": "Amal-David"
+    },
+    {
+      "id": "cf9a9eda",
+      "mtp_index": -12.992062603953181,
+      "published": 3.26815343821373,
+      "serial_index": -0.016896789439521998,
+      "solver": "morganmcg1"
+    }
+  ],
+  "drafting_weight_sum": 0.3851,
+  "harness": "ranked",
+  "index_histogram": {
+    "counts": [
+      3,
+      1,
+      7,
+      9,
+      49,
+      77,
+      19,
+      18,
+      40,
+      26,
+      19,
+      26,
+      17,
+      9,
+      22,
+      16,
+      12,
+      16,
+      14,
+      20,
+      22,
+      15,
+      12,
+      11
+    ],
+    "lo": -14.2,
+    "width": 0.1
+  },
+  "index_window_rows": 479,
+  "mtp_index_sd": 7.258368266402616,
+  "pct_per_1pct_drafting_speedup": -0.3851,
+  "repeat_commits": 0,
+  "repeat_index_spread_max": null,
+  "repeat_index_spread_median": null,
+  "repeat_index_spread_over_half_flip": 0,
+  "scored_rows": 787,
+  "serial_index_sd": 0.14555854885882688,
+  "serial_sum_spread_pct": 0.5685701405470978,
+  "threshold": -12.9
+}

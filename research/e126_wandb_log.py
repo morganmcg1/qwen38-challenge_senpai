@@ -12,11 +12,27 @@
                         once E121 already ships, the bandwidth covariate on
                         that remaining prize, and the re-priced thorfinn
                         rung 5e leg.
+  `e126-rung2-insitu`   the end-to-end ABBA session: absolute candidate
+                        seconds per token for the shipped body against a fresh
+                        `share_off` control, the prediction error against
+                        rung 1, per-arm entry temperature, and the three
+                        isolated-to-in-situ transfer models.
+  `e126-receipt-cf9a9eda`
+                        the ranked receipt for the shipped base, read prompt
+                        by prompt against the serial null, with the audit that
+                        shows why the F76 mode index cannot read it.
 
-Every timed leg here is a standalone Metal microbenchmark. It holds no model
-and runs no benchmark wrapper, so it passes no thermal gate. Each run logs
-`cool_gate_passed_real_gate`, `gate_qualified_for_timing` and
-`official_or_ranked_score` verbatim as false, and no leg here is a score.
+Rungs 0 and 1 are standalone Metal microbenchmarks. They hold no model and run
+no benchmark wrapper. Rung 2 runs the real end-to-end wrapper but takes the
+standing ungated measurement mode, with ABBA counterbalancing inside one
+session and entry and exit temperature recorded for every leg. None of the
+three passes the real cool gate, so each logs `cool_gate_passed_real_gate`,
+`gate_qualified_for_timing` and `official_or_ranked_score` verbatim as false,
+and no leg in them is a score.
+
+`e126-receipt-cf9a9eda` is the exception and is labelled `harness=ranked`. It
+carries an official M5 result, so it sets `official_or_ranked_score` true. Do
+not compare its numbers with the local rungs.
 """
 
 from __future__ import annotations
@@ -47,6 +63,8 @@ ARMS = ("share_off", "n_sums_free", "n_nosums_e123", "n_sums_loaded",
 RUN_IDS = {
     "e126-rung0-model": "e126rng00",
     "e126-rung1-isolated": "e126rng10",
+    "e126-rung2-insitu": "e126rng20",
+    "e126-receipt-cf9a9eda": "e126rcpt0",
 }
 
 
@@ -409,9 +427,133 @@ def log_rung1() -> None:
     run.finish()
 
 
+def log_rung2() -> None:
+    doc = json.loads((ART / "rung2-insitu.json").read_text())
+    core, pred = doc["core"], doc["prediction"]
+    measured, thermal = doc["measured"], doc["thermal_per_arm"]
+    secondary = doc["secondary_metric"]
+
+    run = start(
+        job_type="in-situ-abba", name="e126-rung2-insitu",
+        config={
+            **identity(),
+            **gate_flags("end-to-end benchmark wrapper, 512 tokens", True),
+            "rung": 2,
+            "arms": doc["arms"],
+            "g_min_ask_dropped_because": doc["g_min_ask_dropped_because"],
+            "order": core["order"],
+            "replicates": core["replicates"],
+            "token_window": core["token_window"],
+            "leg_commit": core["candidate_commit"],
+            "base_commit_transient": core["base_commit"],
+            "worker_fingerprint": core["worker_fingerprint"],
+            "reproduction": core["reproduction"],
+            "predicted_leg_pct_faster": pred["predicted_leg_pct_faster"],
+            "wide_qmv_to_leg": pred["wide_qmv_to_leg"],
+            "wide_qmv_to_leg_width_mix": pred["wide_qmv_to_leg_width_mix"],
+        })
+
+    for row in core["per_replicate"]:
+        run.log({"replicate": row["replicate"],
+                 "mtp_spt_pct": row["mtp_spt_pct"],
+                 "serial_spt_pct": row["serial_spt_pct"],
+                 "ratio_pct": row["ratio_pct"],
+                 "base_pair_drift_pct": row["base_pair_drift_pct"]})
+    run.log({"legs": core["legs"], "thermal_per_arm": thermal,
+             "transfer_models": doc["transfer_models"]})
+
+    run.summary.update({
+        "e126_rung2_leg_pct_faster": measured["leg_pct_faster"],
+        "e126_rung2_leg_ci95_lower": measured["ci95_pct_faster"][0],
+        "e126_rung2_leg_ci95_upper": measured["ci95_pct_faster"][1],
+        "e126_rung2_leg_stdev_pct": measured["stdev_pct"],
+        "e126_rung2_mtp_spt_base_s": measured["mtp_spt_base_mean_s"],
+        "e126_rung2_mtp_spt_share_s": measured["mtp_spt_share_mean_s"],
+        "e126_rung2_local_ratio_pct": measured["local_ratio_pct_mean"],
+        "e126_rung2_ranked_frame_pct": measured["ranked_frame_pct_faster"],
+        "e126_rung2_n_replicates": measured["n_replicates"],
+        "e126_rung2_n_legs": measured["n_legs"],
+        "e126_in_situ_prediction_error_pp": secondary["candidate"],
+        "e126_in_situ_prediction_error_baseline_pp": secondary["baseline"],
+        "e126_in_situ_prediction_error_beat_baseline":
+            secondary["beat_baseline"],
+        "e126_rung2_entry_c_base": thermal["base"]["entry_c_mean"],
+        "e126_rung2_entry_c_share": thermal["share"]["entry_c_mean"],
+        "e126_rung2_entry_c_imbalance": thermal["share_minus_base_entry_c"],
+        "e126_rung2_thermal_report_fired": thermal["balance_report_fired"],
+        "schedule_invariant": measured["schedule_invariant"],
+        "exactness_passed": measured["exactness_passed"],
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+    })
+    run.finish()
+
+
+def log_receipt() -> None:
+    """The ranked receipt for `cf9a9eda`, read without the mode weighting.
+
+    This is the one run in this experiment whose evidence is `harness=ranked`.
+    It carries the mode-index audit, because the audit is what decides how the
+    receipt may be read.
+    """
+    audit = json.loads((ART / "rung1-modeaudit.json").read_text())
+    pair = json.loads((ART / "rung1-receipt-pair.json").read_text())
+
+    run = start(
+        job_type="ranked-receipt", name="e126-receipt-cf9a9eda",
+        config={
+            "experiment": GROUP,
+            "pr": PR,
+            "harness": "ranked",
+            "instrument": "official M5 runner, m5-qwen38-27b-mtp",
+            "submitted_base_sha": SHIPPED_BASE_SHA,
+            "submission_id": pair["new"],
+            "compared_with": pair["old"],
+            "official_or_ranked_score": True,
+            "reproduction":
+                "python3 research/board_per_prompt.py fetch && "
+                "python3 research/e126_modeindex.py --anchor-check && "
+                "python3 research/e126_modeindex.py --board cf9a9ed && "
+                "python3 research/e126_modeaudit.py && "
+                "python3 research/e126_receipt_pair.py cf9a9ed 7bef7d4c",
+        })
+
+    run.log({"per_prompt_candidate_pct": pair["candidate_pct"],
+             "per_prompt_serial_pct": pair["serial_pct"],
+             "mode_index_histogram": audit["index_histogram"],
+             "anchors": audit["anchors"]})
+
+    run.summary.update({
+        "published_median": pair["new_score"],
+        "compared_published_median": pair["old_score"],
+        "mode_index": -12.9921,
+        "mode_index_threshold": audit["threshold"],
+        "mode_corrected": pair["new_score"],
+        "preregistered_reading": "refuted",
+        "candidate_drafting_mean_pct_slower":
+            pair["candidate_drafting_mean_pct"],
+        "serial_null_mean_pct": pair["serial_mean_pct"],
+        "tree_attributable_pct_slower":
+            pair["candidate_drafting_mean_pct"] - pair["serial_mean_pct"],
+        "predicted_ranked_pct_faster": 0.415,
+        "f76_index_delta": pair["f76_index_delta"],
+        "modeindex_anchor_check_passed": True,
+        "modeindex_leg_correlation_r": audit["anchor_leg_correlation"],
+        "modeindex_mtp_index_sd": audit["anchor_mtp_index_sd"],
+        "modeindex_serial_index_sd": audit["anchor_serial_index_sd"],
+        "modeindex_units_per_1pct_drafting_speedup":
+            audit["pct_per_1pct_drafting_speedup"],
+        "modeindex_repeat_commits_on_board": audit["repeat_commits"],
+        "board_scored_rows": audit["scored_rows"],
+    })
+    run.finish()
+
+
 RUNS = {
     "e126-rung0-model": log_rung0,
     "e126-rung1-isolated": log_rung1,
+    "e126-rung2-insitu": log_rung2,
+    "e126-receipt-cf9a9eda": log_receipt,
 }
 
 
