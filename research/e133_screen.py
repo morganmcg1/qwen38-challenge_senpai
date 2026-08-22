@@ -478,6 +478,29 @@ def cmd_selftest(args) -> None:
         print(f"bytes/row {fam}{size} = {got} "
               f"{'ok' if good else f'MISMATCH: expected {bytes_per_row}'}")
 
+    # F4.3. The byte model must reproduce the advisor's three stage totals for
+    # `b = 264, N = 4096, r = 256` before the ladder built on it means anything.
+    for p, stage_a, want_bytes in ((0.25, "sketch", 19_012_704),
+                                   (0.50, "sketch", 25_502_880),
+                                   (1.00, "sketch", 38_483_232),
+                                   (1.00, "nocentroid", 35_238_144)):
+        got = arm_stage_bytes(264, H.HIDDEN * 256 * 2, 4096, p, stage_a)
+        good = got == want_bytes
+        ok &= good
+        print(f"stage bytes b=264 N=4096 p={p:g} {stage_a} = {got} "
+              f"{'ok' if good else f'MISMATCH: expected {want_bytes}'}")
+
+    # F5.3. The `K` rung price table, reproduced from the same `price` model.
+    for k, want_extra, want_pct in ((64, 92_160, 0.00199), (128, 276_480, 0.00598),
+                                    (256, 645_120, 0.01395)):
+        model = k_price(k)
+        got_extra = (k - SHORTLIST) * AFFINE4_ROW_BYTES
+        good = (got_extra == want_extra
+                and abs(-model["pct_head_share_7"] - want_pct) < 5e-5)
+        ok &= good
+        print(f"K={k} extra {got_extra} B, cost {-model['pct_head_share_7']:.5f} % "
+              f"{'ok' if good else f'MISMATCH: expected {want_extra} B, {want_pct} %'}")
+
     print("SELFTEST", "PASS" if ok else "FAIL")
     if not ok:
         raise SystemExit(1)
@@ -851,17 +874,28 @@ def shipped_stage_bytes(probe_fraction: float = SHIPPED_PROBE_FRACTION) -> int:
 
 
 def arm_stage_bytes(bytes_per_row: int, proj_bytes: int, survivors: int,
-                    probe_fraction: float, stage_a: str) -> int:
+                    probe_fraction: float, stage_a: str,
+                    shortlist: int = SHORTLIST) -> int:
     """`stage_a` selects who orders the leaves: the sketch, or today's affine-2
     centroid readout. The hybrid keeps stage A exact and sketches only the
-    24,584-row stage, which is 39.33 MB of the 59.09 MB stage."""
+    24,584-row stage, which is 39.33 MB of the 59.09 MB stage.
+
+    F4.3 adds `nocentroid`, which is only legal at `probe_fraction = 1`. When
+    every leaf is probed the leaf ordering cannot change which rows are scored,
+    so the whole centroid table, the probe sort and the `argPartition` at
+    `Qwen35.swift:5613` are dead code and their bytes leave the step.
+    """
     clusters = max(1, math.ceil(probe_fraction * LEAVES))
-    centroid = bytes_per_row if stage_a == "sketch" else AFFINE2_ROW_BYTES
+    if stage_a == "nocentroid":
+        assert probe_fraction >= 1.0, probe_fraction
+        centroid = 0
+    else:
+        centroid = bytes_per_row if stage_a == "sketch" else AFFINE2_ROW_BYTES
     return (LEAVES * centroid
             + clusters * IX.ROWS_PER_LEAF * bytes_per_row
             + survivors * AFFINE2_ROW_BYTES
             + proj_bytes + MU_BYTES
-            + SHORTLIST * AFFINE4_ROW_BYTES)
+            + shortlist * AFFINE4_ROW_BYTES)
 
 
 def price(removed_bytes: int) -> dict:
@@ -1013,15 +1047,19 @@ class Screen:
                      + mx.arange(IX.ROWS_PER_LEAF, dtype=mx.int32)[None, None, :])
         return positions.reshape(b, clusters * IX.ROWS_PER_LEAF).astype(mx.int32)
 
-    def output_row(self, f, positions: mx.array, order_key: mx.array) -> mx.array:
-        """Stage C then D: affine-2 top-32 of `positions`, then affine-4 argmax.
+    def output_row(self, f, positions: mx.array, order_key: mx.array,
+                   shortlist: int = SHORTLIST) -> mx.array:
+        """Stage C then D: affine-2 top-K of `positions`, then affine-4 argmax.
 
-        `order_key` ranks the candidates for the top-32 cut, so the shipped
+        `order_key` ranks the candidates for the top-K cut, so the shipped
         chain passes its affine-2 scores and an arm passes the same affine-2
         scores restricted to its survivors. Returns the PERMUTED position, the
         only form `clusterPerm` accepts (D5 hazard 1).
+
+        `shortlist` is `qwen35Top32K` at `Qwen35.swift:3799`. F5 asks for the
+        miss as a function of that one integer, so it is a parameter here.
         """
-        keep = min(SHORTLIST, order_key.shape[1])
+        keep = min(shortlist, order_key.shape[1])
         top = mx.argpartition(-order_key, kth=keep - 1, axis=1)[:, :keep]
         chosen = mx.take_along_axis(positions, top, axis=1)
         exact = mx.take_along_axis(f["exact_perm"], chosen, axis=1)
@@ -1279,7 +1317,20 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
             holdout["m_absolute"] if holdout else None,
         "recall_essays_bacon_holdout": holdout["recall"] if holdout else None,
         **model,
-        # F1.5: price on the realised acceptance loss, kill on absolute miss.
+        # F4 advisor error 125. `net_miss` IS `m_absolute(arm) -
+        # m_absolute(shipped)`, because `worse - better` is exactly the
+        # difference of the two absolute miss counts. So this line is the
+        # ranked value of the arm priced on the absolute miss against the exact
+        # affine-4 global argmax, at the full `p - q = 1` exchange rate. It is
+        # the headline and the selection statistic from F4 onward.
+        "predicted_pct_absolute":
+            model["pct_head_share_7"] - MISS_TO_SCORE_PCT * net_worst,
+        "predicted_pct_absolute_9":
+            model["pct_head_share_9"] - MISS_TO_SCORE_PCT * net_worst,
+        # F1.5: the realised acceptance loss, kept beside the headline. It
+        # discounts a miss by the measured `p - q` on the live substituted
+        # rows, so it is an upper bound on the arm's value and rests on few
+        # rows per cell.
         "predicted_pct_gating": model["pct_head_share_7"] - MISS_TO_SCORE_PCT * loss,
         "predicted_pct_pooled":
             model["pct_head_share_7"] - MISS_TO_SCORE_PCT * loss_pooled,
@@ -1463,6 +1514,430 @@ def cmd_validate(args) -> None:
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=2))
 
+# --------------------------------------------------------------------------
+# F4/F5: where the SHIPPED chain's own miss comes from, and what it is worth
+
+
+K_GRID = (32, 64, 128, 256, 512, 1024, 2048)
+PROBE_GRID = (0.25, 0.35, 0.50, 0.75, 1.00)
+# F5.2. The selected C1 cell, replayed on the same axis so the advisor can see
+# whether a wider shortlist and the sketch are substitutes or complements.
+ATTRIB_SKETCH = ("qlowrank", 256)
+ATTRIB_SURVIVORS = 4096
+ATTRIB_PROBE = 0.25
+
+
+def k_price(k: int) -> dict:
+    """The ranked cost of raising `qwen35Top32K` from 32 to `k`.
+
+    Only stage D changes: the exact affine-4 rerank reads `k` rows of
+    `AFFINE4_ROW_BYTES` instead of 32. Nothing else in the step moves, so the
+    cost is a pure byte addition and `price` prices it with the sign flipped.
+    """
+    return price(-(k - SHORTLIST) * AFFINE4_ROW_BYTES)
+
+
+class Tally:
+    """Named integer counters per stratum, with an `n` per stratum."""
+
+    def __init__(self) -> None:
+        self.n: dict[str, int] = {}
+        self.c: dict[str, dict[str, int]] = {}
+
+    def count(self, stratum: str, name: str, value) -> None:
+        self.c.setdefault(stratum, {})
+        self.c[stratum][name] = self.c[stratum].get(name, 0) + int(value)
+
+    def size(self, stratum: str, value: int) -> None:
+        self.n[stratum] = self.n.get(stratum, 0) + int(value)
+
+    def get(self, stratum: str, name: str) -> int:
+        return self.c.get(stratum, {}).get(name, 0)
+
+    def rate(self, stratum: str, name: str) -> float:
+        n = self.n.get(stratum, 0)
+        return self.get(stratum, name) / n if n else float("nan")
+
+    def strata(self):
+        return [s for s in ALL_STRATA if s in self.n] + [
+            s for s in WATCH_STRATA if s in self.n]
+
+
+def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
+                 reference: np.ndarray, live: np.ndarray,
+                 tally: Tally, records: list[str]) -> None:
+    """One batch of the F4 decomposition, the F5 `K` curves and the `p` curve.
+
+    Every quantity here is measured by REPLAYING the chain, not inferred from a
+    structural flag. The F1 base-miss defect came from trusting a flag.
+    """
+    b = f["b"]
+    argmax = f["argmax_row"]
+    true_vocab = np.asarray(H.compact_to_vocab(argmax))
+    clusters = max(1, math.ceil(ATTRIB_PROBE * LEAVES))
+
+    def probe(order_c, n_clusters):
+        pos = screen.probe_positions(order_c, n_clusters, b)
+        comp = screen.compact(pos)
+        key = mx.take_along_axis(f["coarse_perm"], pos, axis=1)
+        hit = comp == argmax[:, None]
+        mx.eval(pos, comp, key, hit)
+        return pos, comp, key, hit
+
+    pos_a2, _, co_a2, hit_a2 = probe(f["order_a2"], clusters)
+    in_a2 = np.asarray(mx.any(hit_a2, axis=1)).astype(bool)
+
+    # The `P` / `C` counterfactual needs a centroid ordering that is not
+    # affine-2. `screen.centroids` is the float32 mean of the eight exact rows
+    # of each leaf, i.e. the value `e133_index.py:157-163` quantizes to build
+    # the shipped table. Ordering by it is therefore strictly more exact than
+    # any quantized centroid readout, so `P` measured this way is a LOWER bound
+    # on the irreducible probe-fraction loss and `C` an UPPER bound on the
+    # centroid-precision loss.
+    order_exact_c = mx.argsort(
+        -mx.matmul(x.astype(mx.float32), screen.centroids.T), axis=1)
+    mx.eval(order_exact_c)
+    pos_ex, _, co_ex, hit_ex = probe(order_exact_c, clusters)
+    in_ex = np.asarray(mx.any(hit_ex, axis=1)).astype(bool)
+
+    out32 = screen.compact(screen.output_row(f, pos_a2, co_a2, SHORTLIST))
+    mx.eval(out32)
+    base_vocab = np.asarray(H.compact_to_vocab(out32))
+    miss = np.asarray(out32 != argmax).astype(bool)
+
+    # The exact-centroid counterfactual chain, run end to end at the shipped
+    # probe fraction and the shipped shortlist.
+    out_ex = screen.compact(screen.output_row(f, pos_ex, co_ex, SHORTLIST))
+    mx.eval(out_ex)
+    miss_ex = np.asarray(out_ex != argmax).astype(bool)
+
+    # F1.4c-style rank of the true argmax inside the probed set, by the SAME
+    # affine-2 row score the chain uses. Parked at the probe width when the row
+    # was never probed, so `rank >= K` is the complete miss predicate.
+    neg = mx.full(co_a2.shape, -3.4e38, mx.float32)
+    at_r = mx.max(mx.where(hit_a2, co_a2, neg), axis=1)
+    rank = mx.where(mx.any(hit_a2, axis=1),
+                    mx.sum((co_a2 > at_r[:, None]).astype(mx.int32), axis=1),
+                    co_a2.shape[1])
+    mx.eval(rank)
+    rank_np = np.asarray(rank)
+
+    k_out: dict[int, np.ndarray] = {}
+    k_miss: dict[int, np.ndarray] = {}
+    for k in K_GRID:
+        o = screen.compact(screen.output_row(f, pos_a2, co_a2, k))
+        mx.eval(o)
+        k_out[k] = np.asarray(H.compact_to_vocab(o))
+        k_miss[k] = np.asarray(o != argmax).astype(bool)
+        del o
+
+    p_miss: dict[float, np.ndarray] = {}
+    p_in: dict[float, np.ndarray] = {}
+    for p in PROBE_GRID:
+        cl = max(1, math.ceil(p * LEAVES))
+        pos_p, _, co_p, hit_p = probe(f["order_a2"], cl)
+        o = screen.compact(screen.output_row(f, pos_p, co_p, SHORTLIST))
+        mx.eval(o)
+        p_miss[p] = np.asarray(o != argmax).astype(bool)
+        p_in[p] = np.asarray(mx.any(hit_p, axis=1)).astype(bool)
+        del pos_p, co_p, hit_p, o
+
+    s_miss: dict[int, np.ndarray] = {}
+    s_out: dict[int, np.ndarray] = {}
+    if sketch is not None:
+        state = sketch_state(screen, sketch, f, x)
+        pos_s, _, co_s, _ = probe(state["order_c"], clusters)
+        sk = mx.take_along_axis(state["row_perm"], pos_s, axis=1)
+        top = mx.argpartition(-sk, kth=ATTRIB_SURVIVORS - 1,
+                              axis=1)[:, :ATTRIB_SURVIVORS]
+        pos_n = mx.take_along_axis(pos_s, top, axis=1)
+        co_n = mx.take_along_axis(co_s, top, axis=1)
+        mx.eval(pos_n, co_n)
+        for k in K_GRID:
+            o = screen.compact(screen.output_row(f, pos_n, co_n, k))
+            mx.eval(o)
+            s_out[k] = np.asarray(H.compact_to_vocab(o))
+            s_miss[k] = np.asarray(o != argmax).astype(bool)
+            del o
+        del state, pos_s, co_s, sk, top, pos_n, co_n
+
+    for record in records:
+        tally.size(record, b)
+        tally.count(record, "live", live.sum())
+        tally.count(record, "base_miss", miss.sum())
+        # F4.3, disjoint by construction and exhaustive:
+        #   R  the row WAS probed and the affine-2 row score dropped it;
+        #   P  the row was not probed and an exact centroid order would not
+        #      have probed it either, so the probe fraction is binding;
+        #   C  the row was not probed but an exact centroid order WOULD have
+        #      probed it, so centroid precision is binding.
+        tally.count(record, "cause_R", (miss & in_a2).sum())
+        tally.count(record, "cause_P", (miss & ~in_a2 & ~in_ex).sum())
+        tally.count(record, "cause_C", (miss & ~in_a2 & in_ex).sum())
+        tally.count(record, "probe_hit_a2", in_a2.sum())
+        tally.count(record, "probe_hit_exact_centroid", in_ex.sum())
+        tally.count(record, "miss_exact_centroid_chain", miss_ex.sum())
+        # F5.2's load-bearing check on real trajectories: once the true argmax
+        # reaches the exact affine-4 rerank, does the rerank ever lose it?
+        tally.count(record, "rerank_disagreements",
+                    (miss & in_a2 & (rank_np < SHORTLIST)).sum())
+        # What a PERFECT readout would buy, measured rather than assumed. On a
+        # live missed row the shipped token was accepted exactly when it
+        # matched the reference; the true argmax token would be accepted
+        # exactly when it matches instead.
+        m_live = miss & live
+        tally.count(record, "base_miss_live", m_live.sum())
+        tally.count(record, "base_miss_live_shipped_is_target",
+                    (base_vocab[m_live] == reference[m_live]).sum())
+        tally.count(record, "base_miss_live_true_is_target",
+                    (true_vocab[m_live] == reference[m_live]).sum())
+        for k in K_GRID:
+            tally.count(record, f"k{k}_miss", k_miss[k].sum())
+            tally.count(record, f"k{k}_rank_miss", (rank_np >= k).sum())
+            swap = (k_out[k] != base_vocab) & live
+            tally.count(record, f"k{k}_swapped_live", swap.sum())
+            tally.count(record, f"k{k}_swapped_new_is_target",
+                        (k_out[k][swap] == reference[swap]).sum())
+            tally.count(record, f"k{k}_swapped_old_is_target",
+                        (base_vocab[swap] == reference[swap]).sum())
+            if sketch is not None:
+                tally.count(record, f"sk{k}_miss", s_miss[k].sum())
+                sswap = (s_out[k] != base_vocab) & live
+                tally.count(record, f"sk{k}_swapped_live", sswap.sum())
+                tally.count(record, f"sk{k}_swapped_new_is_target",
+                            (s_out[k][sswap] == reference[sswap]).sum())
+                tally.count(record, f"sk{k}_swapped_old_is_target",
+                            (base_vocab[sswap] == reference[sswap]).sum())
+        for p in PROBE_GRID:
+            tally.count(record, f"p{p:g}_miss", p_miss[p].sum())
+            tally.count(record, f"p{p:g}_probe_hit", p_in[p].sum())
+
+
+def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
+    """Turn the counters into the four F4/F5 tables."""
+    strata = tally.strata()
+    out: dict = {"samples": samples, "base_sha": base_sha,
+                 "shortlist_shipped": SHORTLIST,
+                 "probe_fraction_shipped": ATTRIB_PROBE,
+                 "miss_to_score_pct": MISS_TO_SCORE_PCT,
+                 "by_stratum": {}, "k_curve": {}, "k_curve_sketch": {},
+                 "probe_curve": {}, "k_price": {}}
+    for s in strata:
+        n = tally.n[s]
+        base = tally.get(s, "base_miss")
+        m, lo, hi = clopper_pearson(base, n)
+        live_missed = tally.get(s, "base_miss_live")
+        recover = (tally.get(s, "base_miss_live_true_is_target")
+                   - tally.get(s, "base_miss_live_shipped_is_target")) / n
+        out["by_stratum"][s] = {
+            "gating": s in GATING_STRATA, "watch": s in WATCH_STRATA, "n": n,
+            "base_misses": base, "m_absolute": m,
+            "m_absolute_lo": lo, "m_absolute_hi": hi,
+            "cause_P": tally.get(s, "cause_P"),
+            "cause_C": tally.get(s, "cause_C"),
+            "cause_R": tally.get(s, "cause_R"),
+            "cause_P_rate": tally.rate(s, "cause_P"),
+            "cause_C_rate": tally.rate(s, "cause_C"),
+            "cause_R_rate": tally.rate(s, "cause_R"),
+            "causes_sum_to_base_miss":
+                tally.get(s, "cause_P") + tally.get(s, "cause_C")
+                + tally.get(s, "cause_R") == base,
+            "probe_hit_rate_affine2": tally.rate(s, "probe_hit_a2"),
+            "probe_hit_rate_exact_centroid":
+                tally.rate(s, "probe_hit_exact_centroid"),
+            "m_absolute_exact_centroid_chain":
+                tally.rate(s, "miss_exact_centroid_chain"),
+            "rerank_disagreements": tally.get(s, "rerank_disagreements"),
+            # The measured ranked value of a PERFECT readout on this stratum.
+            "base_miss_live": live_missed,
+            "live_rate": tally.rate(s, "live"),
+            "perfect_readout_acceptance_gain": recover,
+            "perfect_readout_pct_realised": MISS_TO_SCORE_PCT * recover,
+            "perfect_readout_pct_full_rate": MISS_TO_SCORE_PCT * m,
+        }
+    for k in K_GRID:
+        model = k_price(k)
+        rows = {}
+        for s in strata:
+            n = tally.n[s]
+            mk, klo, khi = clopper_pearson(tally.get(s, f"k{k}_miss"), n)
+            base_m = tally.rate(s, "base_miss")
+            swap = tally.get(s, f"k{k}_swapped_live")
+            gain = (tally.get(s, f"k{k}_swapped_new_is_target")
+                    - tally.get(s, f"k{k}_swapped_old_is_target")) / n
+            rows[s] = {
+                "m_absolute": mk, "m_absolute_lo": klo, "m_absolute_hi": khi,
+                "misses": tally.get(s, f"k{k}_miss"),
+                "rank_predicted_misses": tally.get(s, f"k{k}_rank_miss"),
+                "recovered_vs_k32": base_m - mk,
+                "swapped_live": swap,
+                "acceptance_gain_realised": gain,
+                "pct_full_rate": MISS_TO_SCORE_PCT * (base_m - mk),
+                "pct_realised": MISS_TO_SCORE_PCT * gain,
+            }
+        gate = [rows[s] for s in GATING_STRATA if s in rows]
+        cost = model["pct_head_share_7"]
+        conservative = min((r["recovered_vs_k32"] for r in gate), default=0.0)
+        conservative_realised = min((r["acceptance_gain_realised"]
+                                     for r in gate), default=0.0)
+        out["k_curve"][str(k)] = {
+            "shortlist": k, "rerank_bytes": k * AFFINE4_ROW_BYTES,
+            "extra_bytes": (k - SHORTLIST) * AFFINE4_ROW_BYTES,
+            "cost_pct_head_share_7": cost,
+            "cost_pct_head_share_9": model["pct_head_share_9"],
+            "cost_pct_byte_rate": model["pct_byte_rate"],
+            "step_fraction": -model["removed_step_fraction"],
+            "recovered_worst_gating": conservative,
+            "net_pct_full_rate": cost + MISS_TO_SCORE_PCT * conservative,
+            "net_pct_realised": cost + MISS_TO_SCORE_PCT * conservative_realised,
+            "by_stratum": rows,
+        }
+        out["k_price"][str(k)] = {
+            "extra_bytes": (k - SHORTLIST) * AFFINE4_ROW_BYTES,
+            "cost_pct_head_share_7": cost,
+            "break_even_miss_recovery": -cost / MISS_TO_SCORE_PCT,
+        }
+        if any(f"sk{k}_miss" in tally.c.get(s, {}) for s in strata):
+            srows = {}
+            for s in strata:
+                n = tally.n[s]
+                mk, klo, khi = clopper_pearson(tally.get(s, f"sk{k}_miss"), n)
+                gain = (tally.get(s, f"sk{k}_swapped_new_is_target")
+                        - tally.get(s, f"sk{k}_swapped_old_is_target")) / n
+                srows[s] = {
+                    "m_absolute": mk, "m_absolute_lo": klo,
+                    "m_absolute_hi": khi,
+                    "misses": tally.get(s, f"sk{k}_miss"),
+                    "net_miss_vs_shipped": mk - tally.rate(s, "base_miss"),
+                    "acceptance_gain_realised": gain,
+                }
+            out["k_curve_sketch"][str(k)] = {
+                "shortlist": k, "cost_pct_head_share_7": cost,
+                "by_stratum": srows}
+    for p in PROBE_GRID:
+        rows = {}
+        for s in strata:
+            n = tally.n[s]
+            mp, plo, phi = clopper_pearson(tally.get(s, f"p{p:g}_miss"), n)
+            rows[s] = {
+                "m_absolute": mp, "m_absolute_lo": plo, "m_absolute_hi": phi,
+                "misses": tally.get(s, f"p{p:g}_miss"),
+                "probe_hit_rate": tally.rate(s, f"p{p:g}_probe_hit"),
+                "recovered_vs_p025":
+                    tally.rate(s, "p0.25_miss") - mp,
+            }
+        out["probe_curve"][f"{p:g}"] = {
+            "probe_fraction": p,
+            "clusters": max(1, math.ceil(p * LEAVES)),
+            "rows_scored": max(1, math.ceil(p * LEAVES)) * IX.ROWS_PER_LEAF,
+            "by_stratum": rows,
+        }
+    return out
+
+
+def cmd_attrib(args) -> None:
+    index = Index(Path(args.index))
+    screen = Screen(index)
+    sketch_set = None
+    if args.sketch:
+        sets, _ = build_sketches(screen, [ATTRIB_SKETCH])
+        sketch_set = sets[0]
+
+    tally = Tally()
+    n = 0
+    t0 = time.time()
+    for seed, stratum, x, _proposal, reference, _accepted, live in chunks(
+            args.batch, args.limit):
+        records = [stratum] + ([seed] if seed in WATCH_STRATA else [])
+        f = screen.front(x)
+        sketch = sketch_set.pick(stratum) if sketch_set else None
+        attrib_batch(screen, sketch, f, x, reference, live, tally, records)
+        n += f["b"]
+        del f
+        if n % (args.batch * 20) == 0:
+            print(f"    {n} samples  {time.time() - t0:.0f}s", flush=True)
+
+    out = attrib_report(tally, n, args.base_sha)
+    out["wall_seconds"] = time.time() - t0
+    out["sketch_cell"] = (f"{ATTRIB_SKETCH[0]}{ATTRIB_SKETCH[1]}"
+                          f"-N{ATTRIB_SURVIVORS}-p{ATTRIB_PROBE:g}"
+                          if sketch_set else None)
+
+    print("\n=== F4.3 base-miss decomposition, shipped chain, p = 0.25, K = 32")
+    print(f"{'stratum':22s}{'n':>7s}{'m_abs':>11s}{'P':>11s}{'C':>11s}"
+          f"{'R':>11s}{'P%':>7s}{'C%':>7s}{'R%':>7s}{'sums':>6s}"
+          f"{'rerankBad':>11s}")
+    for s, r in out["by_stratum"].items():
+        tot = r["base_misses"] or 1
+        print(f"{s:22s}{r['n']:7d}{r['m_absolute']:11.4e}"
+              f"{r['cause_P_rate']:11.4e}{r['cause_C_rate']:11.4e}"
+              f"{r['cause_R_rate']:11.4e}"
+              f"{100 * r['cause_P'] / tot:7.1f}{100 * r['cause_C'] / tot:7.1f}"
+              f"{100 * r['cause_R'] / tot:7.1f}"
+              f"{'ok' if r['causes_sum_to_base_miss'] else 'NO':>6s}"
+              f"{r['rerank_disagreements']:11d}")
+    print("\n=== what a perfect readout is actually worth (measured, not assumed)")
+    print(f"{'stratum':22s}{'m_abs':>11s}{'x203 pct':>10s}{'liveMissed':>12s}"
+          f"{'realisedGain':>14s}{'realised pct':>14s}")
+    for s, r in out["by_stratum"].items():
+        print(f"{s:22s}{r['m_absolute']:11.4e}"
+              f"{r['perfect_readout_pct_full_rate']:10.3f}"
+              f"{r['base_miss_live']:12d}"
+              f"{r['perfect_readout_acceptance_gain']:14.4e}"
+              f"{r['perfect_readout_pct_realised']:14.3f}")
+
+    print("\n=== F5.1 m_absolute(K), shipped chain, p = 0.25")
+    print(f"{'K':>6s}{'extraB':>9s}{'cost%':>8s}", end="")
+    for s in GATING_STRATA:
+        print(f"{s[:10]:>12s}", end="")
+    print(f"{'recovered':>12s}{'net%full':>10s}{'net%real':>10s}{'rankOK':>8s}")
+    for k in K_GRID:
+        row = out["k_curve"][str(k)]
+        print(f"{k:6d}{row['extra_bytes']:9d}{row['cost_pct_head_share_7']:8.4f}",
+              end="")
+        agree = True
+        for s in GATING_STRATA:
+            r = row["by_stratum"][s]
+            print(f"{r['m_absolute']:12.4e}", end="")
+            agree = agree and r["misses"] == r["rank_predicted_misses"]
+        print(f"{row['recovered_worst_gating']:12.4e}"
+              f"{row['net_pct_full_rate']:10.3f}"
+              f"{row['net_pct_realised']:10.3f}{'ok' if agree else 'NO':>8s}")
+
+    if out["k_curve_sketch"]:
+        print(f"\n=== F5.2 m_absolute(K) on {out['sketch_cell']}")
+        print(f"{'K':>6s}", end="")
+        for s in GATING_STRATA:
+            print(f"{s[:10]:>12s}{'net':>12s}", end="")
+        print()
+        for k in K_GRID:
+            row = out["k_curve_sketch"][str(k)]
+            print(f"{k:6d}", end="")
+            for s in GATING_STRATA:
+                r = row["by_stratum"][s]
+                print(f"{r['m_absolute']:12.4e}{r['net_miss_vs_shipped']:12.4e}",
+                      end="")
+            print()
+
+    print("\n=== F4.3 exact0 m_absolute(p), shipped chain, K = 32")
+    print(f"{'p':>6s}{'clusters':>10s}{'rows':>8s}", end="")
+    for s in GATING_STRATA:
+        print(f"{s[:10]:>12s}{'probeHit':>10s}", end="")
+    print()
+    for p in PROBE_GRID:
+        row = out["probe_curve"][f"{p:g}"]
+        print(f"{p:6.2f}{row['clusters']:10d}{row['rows_scored']:8d}", end="")
+        for s in GATING_STRATA:
+            r = row["by_stratum"][s]
+            print(f"{r['m_absolute']:12.4e}{r['probe_hit_rate']:10.5f}", end="")
+        print()
+
+    if args.out:
+        Path(args.out).write_text(json.dumps(out, indent=2))
+        print(f"\nwrote {args.out}")
+
+
+
 
 def fmt_opt(value, spec: str = ".4f") -> str:
     return "-" if value is None else format(value, spec)
@@ -1474,21 +1949,67 @@ def fmt_cell(cell: dict) -> str:
     def opt(value):
         return float("nan") if value is None else value
 
-    return (f"{cell['arm']:34s}{cell['bytes_per_row']:7d}"
+    return (f"{cell['arm']:40s}{cell['bytes_per_row']:7d}"
             f"{cell['net_miss_worst_gating']:11.3e}"
             f"{cell['m_absolute_worst_gating']:11.3e}"
             f"{cell['m_incremental_worst_gating']:11.3e}"
-            f"{cell['acceptance_loss_worst_gating']:11.3e}"
             f"{cell['recall_worst_gating']:9.5f}"
             f"{opt(cell['net_miss_essays_bacon']):11.3e}"
-            f"{opt(cell['net_miss_essays_bacon_holdout']):11.3e}"
             f"{cell['pct_head_share_7']:8.3f}"
+            f"{cell['predicted_pct_absolute']:9.3f}"
             f"{cell['predicted_pct_gating']:8.3f}"
             f"{cell['predicted_pct_pooled']:8.3f}"
             f"{cell['predicted_pct_raw_miss']:8.3f}"
             f"{cell['substitutions_live_gating']:7d}"
             f"{'ok' if cell['passes_t0'] else 'NO':>4s}"
             f"{'ok' if cell['passes_t0b'] else 'NO':>5s}")
+
+
+CELL_HEADER = (f"{'arm':40s}{'B/row':>7s}{'netWorst':>11s}{'mAbsWorst':>11s}"
+               f"{'mInc':>11s}{'recall':>9s}{'baconNet':>11s}{'gain%':>8s}"
+               f"{'predABS':>9s}{'predF':>8s}{'predP':>8s}{'predR':>8s}"
+               f"{'subsL':>7s}{'T0':>4s}{'T0b':>5s}")
+
+
+def probe_ladder(out: dict, stages) -> dict:
+    """F4.4. Best clearing cell at every probe fraction, per stage.
+
+    The probe fraction is the lever on the `P` component of the base miss, and
+    the byte ladder hides it because a cell's bytes barely move with `p` while
+    its stage-B byte count moves a lot. This table puts the two on one axis.
+    """
+    table: dict = {}
+    for stage_a in stages:
+        rows: dict = {}
+        fractions = sorted({c["probe_fraction"] for c in out["cells"]
+                            if c["stage_a"] == stage_a})
+        for p in fractions:
+            arms = [c for c in out["cells"] if c["stage_a"] == stage_a
+                    and c["probe_fraction"] == p]
+            ok = [c for c in arms if c["passes_t0"] and c["passes_t0b"]]
+            best = max(ok, key=lambda c: c["predicted_pct_absolute"],
+                       default=None)
+            rows[f"{p:g}"] = {
+                "cells": len(arms),
+                "cells_passing_both": len(ok),
+                "max_byte_rate_gain_pct": max(c["pct_head_share_7"] for c in arms),
+                "min_net_miss_worst_gating":
+                    min(c["net_miss_worst_gating"] for c in arms),
+                "best_arm": best["arm"] if best else None,
+                "best_bytes_per_row": best["bytes_per_row"] if best else None,
+                "best_predicted_pct":
+                    best["predicted_pct_absolute"] if best else None,
+                "best_predicted_pct_realised":
+                    best["predicted_pct_gating"] if best else None,
+                "best_gross_pct": best["pct_head_share_7"] if best else None,
+                "best_net_miss": best["net_miss_worst_gating"] if best else None,
+                "best_m_absolute": best["m_absolute_worst_gating"] if best else None,
+                "best_m_incremental":
+                    best["m_incremental_worst_gating"] if best else None,
+                "best_recall": best["recall_worst_gating"] if best else None,
+            }
+        table[stage_a] = rows
+    return table
 
 
 def byte_ladder(out: dict, stages) -> dict:
@@ -1509,7 +2030,7 @@ def byte_ladder(out: dict, stages) -> dict:
             arms = [c for c in out["cells"] if c["stage_a"] == stage_a
                     and c["bytes_per_row"] == size]
             ok = [c for c in arms if c["passes_t0"] and c["passes_t0b"]]
-            best = max(ok, key=lambda c: c["predicted_pct_gating"], default=None)
+            best = max(ok, key=lambda c: c["predicted_pct_absolute"], default=None)
             rows[str(size)] = {
                 "cells": len(arms),
                 "cells_passing_both": len(ok),
@@ -1518,7 +2039,10 @@ def byte_ladder(out: dict, stages) -> dict:
                     min(c["net_miss_worst_gating"] for c in arms),
                 "best_arm": best["arm"] if best else None,
                 "best_family": best["family"] if best else None,
-                "best_predicted_pct": best["predicted_pct_gating"] if best else None,
+                "best_predicted_pct":
+                    best["predicted_pct_absolute"] if best else None,
+                "best_predicted_pct_realised":
+                    best["predicted_pct_gating"] if best else None,
                 "best_predicted_pct_pooled":
                     best["predicted_pct_pooled"] if best else None,
                 "best_predicted_pct_raw_miss":
@@ -1558,6 +2082,7 @@ def whitening_paired(out: dict) -> dict:
     for field, better in (("net_miss_worst_gating", "lower"),
                           ("m_incremental_worst_gating", "lower"),
                           ("recall_worst_gating", "higher"),
+                          ("predicted_pct_absolute", "higher"),
                           ("predicted_pct_gating", "higher")):
         wins = ties = losses = 0
         total = 0.0
@@ -1737,19 +2262,32 @@ def cmd_screen(args) -> None:
         "cells": [],
     }
     shipped_bytes = shipped_stage_bytes()
+    tags = {"sketch": "", "affine2": "-hybridA", "nocentroid": "-nocentroid"}
     for (key, stage_a, n_keep, p), cell in cells.items():
         sketch = meta[key]
-        arm_bytes = arm_stage_bytes(sketch.bytes_per_row, sketch.proj_bytes,
-                                    n_keep, p, stage_a)
-        tag = "" if stage_a == "sketch" else "-hybridA"
-        out["cells"].append(summarize(
-            f"{key}{tag}-N{n_keep}-p{p:g}", cell, price(shipped_bytes - arm_bytes),
-            {"family": sketch.family, "size": sketch.size, "stage_a": stage_a,
-             "bytes_per_row": sketch.bytes_per_row, "proj_bytes": sketch.proj_bytes,
-             "survivors": n_keep, "probe_fraction": p, "cross_fit": sketch.cross_fit,
-             "arm_stage_bytes": arm_bytes, "shipped_stage_bytes": shipped_bytes},
-            p_by_stratum))
-    out["cells"].sort(key=lambda c: -c["predicted_pct_gating"])
+        # F4.3. At `p = 1` the leaf ordering cannot change which rows are
+        # scored, so the sketch arm and the no-centroid arm have IDENTICAL
+        # accuracy and differ only in bytes. The twin is a re-price of the same
+        # measurement, never a second measurement.
+        variants = [stage_a]
+        if stage_a == "sketch" and p >= 1.0:
+            variants.append("nocentroid")
+        for variant in variants:
+            arm_bytes = arm_stage_bytes(sketch.bytes_per_row, sketch.proj_bytes,
+                                        n_keep, p, variant)
+            out["cells"].append(summarize(
+                f"{key}{tags[variant]}-N{n_keep}-p{p:g}", cell,
+                price(shipped_bytes - arm_bytes),
+                {"family": sketch.family, "size": sketch.size,
+                 "stage_a": variant, "bytes_per_row": sketch.bytes_per_row,
+                 "proj_bytes": sketch.proj_bytes, "survivors": n_keep,
+                 "probe_fraction": p, "cross_fit": sketch.cross_fit,
+                 "arm_stage_bytes": arm_bytes,
+                 "shipped_stage_bytes": shipped_bytes},
+                p_by_stratum))
+    stages = [s for s in ("sketch", "affine2", "nocentroid")
+              if any(c["stage_a"] == s for c in out["cells"])]
+    out["cells"].sort(key=lambda c: -c["predicted_pct_absolute"])
     # F2.1. `hybridA` is a candidate, not a control. A stage-A kill must not
     # take it down with full C1, so each stage_a gets its own gate table and
     # its own selected cell.
@@ -1757,29 +2295,34 @@ def cmd_screen(args) -> None:
     for stage_a in stages:
         arms = [c for c in out["cells"] if c["stage_a"] == stage_a]
         ok = [c for c in arms if c["passes_t0"] and c["passes_t0b"]]
-        best = max(ok, key=lambda c: c["predicted_pct_gating"], default=None)
-        # F3.2 (advisor error 121). The decision is not "does the best cell
-        # win", it is "does ANY cell up to the byte ceiling clear the gates".
-        # The per-row byte size is the design choice; the survivor width and
-        # probe fraction are tuning, so the cheapest cell is the smallest
-        # clearing code implemented as well as that code allows.
+        # F4 advisor error 123. Select on predicted ranked value, priced on the
+        # absolute miss. Bytes are an input to that price, never the selection
+        # statistic. The cheapest clearing cell is still reported, because the
+        # gap between the two is the cost of the rule that was withdrawn.
+        best = max(ok, key=lambda c: c["predicted_pct_absolute"], default=None)
         cheap = min(ok, key=lambda c: (c["bytes_per_row"],
-                                       -c["predicted_pct_gating"]), default=None)
+                                       -c["predicted_pct_absolute"]), default=None)
         out["by_stage_a"][stage_a] = {
-            "label": "full C1" if stage_a == "sketch" else "hybridA",
+            "label": {"sketch": "full C1", "affine2": "hybridA",
+                      "nocentroid": "full C1, no centroid stage"}[stage_a],
             "cells": len(arms),
             "cells_passing_t0": sum(1 for c in arms if c["passes_t0"]),
             "cells_passing_t0b": sum(1 for c in arms if c["passes_t0b"]),
             "cells_passing_both": len(ok),
             "best_arm": best["arm"] if best else None,
-            "best_predicted_pct": best["predicted_pct_gating"] if best else 0.0,
+            "best_predicted_pct": best["predicted_pct_absolute"] if best else 0.0,
+            "best_predicted_pct_realised":
+                best["predicted_pct_gating"] if best else 0.0,
             "best_predicted_pct_pooled": best["predicted_pct_pooled"] if best else 0.0,
             "best_predicted_pct_raw_miss":
                 best["predicted_pct_raw_miss"] if best else 0.0,
             "best_cell": best,
             "cheapest_arm": cheap["arm"] if cheap else None,
             "cheapest_bytes_per_row": cheap["bytes_per_row"] if cheap else None,
-            "cheapest_predicted_pct": cheap["predicted_pct_gating"] if cheap else 0.0,
+            "cheapest_predicted_pct":
+                cheap["predicted_pct_absolute"] if cheap else 0.0,
+            "cheapest_predicted_pct_realised":
+                cheap["predicted_pct_gating"] if cheap else 0.0,
             "cheapest_predicted_pct_pooled":
                 cheap["predicted_pct_pooled"] if cheap else 0.0,
             "cheapest_predicted_pct_raw_miss":
@@ -1790,10 +2333,7 @@ def cmd_screen(args) -> None:
         }
         print(f"\n=== {stage_a}  ({out['by_stage_a'][stage_a]['label']})  "
               f"{len(ok)}/{len(arms)} cells clear T0 and T0b")
-        print(f"{'arm':34s}{'B/row':>7s}{'netWorst':>11s}{'mAbsWorst':>11s}"
-              f"{'mInc':>11s}{'loss':>11s}{'recall':>9s}{'baconNet':>11s}"
-              f"{'baconHO':>11s}{'gain%':>8s}{'predF':>8s}{'predP':>8s}"
-              f"{'predR':>8s}{'subsL':>7s}{'T0':>4s}{'T0b':>5s}")
+        print(CELL_HEADER)
         for cell in arms[: args.top]:
             print(fmt_cell(cell))
         if cheap:
@@ -1802,17 +2342,33 @@ def cmd_screen(args) -> None:
         else:
             print(f"  NO cell clears T0 and T0b up to "
                   f"{out['by_stage_a'][stage_a]['byte_ceiling_searched']} B/row")
+    out["probe_ladder"] = probe_ladder(out, stages)
+    for stage_a, rows in out["probe_ladder"].items():
+        print(f"\n=== probe ladder  ({out['by_stage_a'][stage_a]['label']})")
+        print(f"{'p':>6s}{'cells':>7s}{'clear':>7s}{'maxGain%':>10s}"
+              f"{'minNet':>11s}{'bestB/row':>11s}{'bestGross%':>12s}"
+              f"{'bestPredABS':>13s}{'bestPredF':>11s}   best clearing arm")
+        for p, row in sorted(rows.items(), key=lambda kv: float(kv[0])):
+            print(f"{p:>6s}{row['cells']:7d}{row['cells_passing_both']:7d}"
+                  f"{row['max_byte_rate_gain_pct']:10.3f}"
+                  f"{row['min_net_miss_worst_gating']:11.3e}"
+                  f"{fmt_opt(row['best_bytes_per_row'], 'd'):>11s}"
+                  f"{fmt_opt(row['best_gross_pct'], '.3f'):>12s}"
+                  f"{fmt_opt(row['best_predicted_pct'], '.3f'):>13s}"
+                  f"{fmt_opt(row['best_predicted_pct_realised'], '.3f'):>11s}"
+                  f"   {row['best_arm']}")
     out["byte_ladder"] = byte_ladder(out, stages)
     for stage_a, rows in out["byte_ladder"].items():
         print(f"\n=== byte ladder  ({out['by_stage_a'][stage_a]['label']})")
         print(f"{'B/row':>7s}{'cells':>7s}{'clear':>7s}{'maxGain%':>10s}"
-              f"{'minNet':>11s}{'bestPredF':>11s}{'bestPredP':>11s}"
-              f"{'bestPredR':>11s}   best clearing arm")
+              f"{'minNet':>11s}{'bestPredABS':>13s}{'bestPredF':>11s}"
+              f"{'bestPredP':>11s}{'bestPredR':>11s}   best clearing arm")
         for size, row in sorted(rows.items(), key=lambda kv: int(kv[0])):
             print(f"{size:>7s}{row['cells']:7d}{row['cells_passing_both']:7d}"
                   f"{row['max_byte_rate_gain_pct']:10.3f}"
                   f"{row['min_net_miss_worst_gating']:11.3e}"
-                  f"{fmt_opt(row['best_predicted_pct'], '.3f'):>11s}"
+                  f"{fmt_opt(row['best_predicted_pct'], '.3f'):>13s}"
+                  f"{fmt_opt(row['best_predicted_pct_realised'], '.3f'):>11s}"
                   f"{fmt_opt(row['best_predicted_pct_pooled'], '.3f'):>11s}"
                   f"{fmt_opt(row['best_predicted_pct_raw_miss'], '.3f'):>11s}"
                   f"   {row['best_arm']}")
@@ -1866,7 +2422,7 @@ def slim(out: dict, top: int) -> dict:
         keep.update((block["best_arm"], block["cheapest_arm"]))
         arms = [c for c in out["cells"] if c["stage_a"] == stage]
         keep.update(c["arm"] for c in arms[:top])
-    for block in ("spectrum_vs_miss", "byte_ladder"):
+    for block in ("spectrum_vs_miss", "byte_ladder", "probe_ladder"):
         for rows in out.get(block, {}).values():
             keep.update(row["best_arm"] for row in rows.values())
     trimmed = [c if c["arm"] in keep
@@ -1894,6 +2450,16 @@ def main() -> None:
     v.add_argument("--out", default="research/e133-validate.json")
     v.set_defaults(func=cmd_validate)
 
+    a = sub.add_parser("attrib")
+    a.add_argument("--limit", type=int, default=0)
+    a.add_argument("--batch", type=int, default=32)
+    a.add_argument("--index", default=str(IX.DEFAULT_OUT))
+    a.add_argument("--no-sketch", dest="sketch", action="store_false",
+                   help="skip the F5.2 curve for the selected C1 cell")
+    a.add_argument("--base-sha", default="197e0550ab46842b639a4ff4fe3f4889ca3b01ec")
+    a.add_argument("--out", default="research/e133-attrib.json")
+    a.set_defaults(func=cmd_attrib, sketch=True)
+
     s = sub.add_parser("screen")
     s.add_argument("--limit", type=int, default=0)
     s.add_argument("--batch", type=int, default=64)
@@ -1914,7 +2480,9 @@ def main() -> None:
     s.add_argument("--group-size", type=int, default=4,
                    help="families built and swept at once; 0 = all")
     s.add_argument("--widths", default="64,256,1024,4096,8192,16384,24584")
-    s.add_argument("--probes", default="0.25,0.35,0.50")
+    # F4.3 extends the grid to 1.0. At `p = 1` the leaf ordering is irrelevant,
+    # so each sketch cell there is also priced as a `nocentroid` twin.
+    s.add_argument("--probes", default="0.25,0.35,0.50,0.75,1.00")
     s.add_argument("--stage-a", default="sketch,affine2",
                    help="sketch = C1 as assigned; affine2 = keep the exact "
                         "centroid readout and sketch only the row stage")
