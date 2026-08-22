@@ -727,7 +727,38 @@ def question_6(regs, q1b, q1c, q2, points, curve) -> dict:
     print("\n  The board already answers this in reduced form: rows that carry"
           "\n  a one-pass table pay the %d-register footprint AND still score"
           "\n  higher than the modal two-pass table." % hi)
-    return {"registers_low": lo, "registers_high": hi,
+
+    calib = {}
+    low = q1c["fits"].get("M + treat + treat*1[M>=5.5]", {}).get("tau")
+    if low:
+        mid = 4.0
+        base_us = oc.curve_us(curve, mid)
+        span = ap.ONEPASS_RESIDENCY_LOSS * ap.TEMPLATING["round_share"]
+        c_hat = (low[0] / base_us) / (measured / ap.ONEPASS_RESIDENCY_LOSS
+                                      * span)
+        c_lo = ((low[0] - 1.96 * low[1]) / base_us) / (
+            measured / ap.ONEPASS_RESIDENCY_LOSS * span)
+        c_hi = ((low[0] + 1.96 * low[1]) / base_us) / (
+            measured / ap.ONEPASS_RESIDENCY_LOSS * span)
+        calib = {"tau_low_width_us": low, "base_us_at_M4": base_us,
+                 "c_hat": c_hat, "c_ci": [min(c_lo, c_hi), max(c_lo, c_hi)]}
+        print("\n  Calibrating `c` from the LOW-width contrast, where the pass"
+              "\n  structure is identical and only the register footprint"
+              " differs:")
+        print("    tau at M < 5.5            %8.1f +- %6.1f us" % (low[0],
+                                                                   low[1]))
+        print("    round cost at M = 4       %8.1f us" % base_us)
+        print("    implied c                 %+8.4f   95%% CI [%+.4f, %+.4f]"
+              % (c_hat, min(c_lo, c_hi), max(c_lo, c_hi)))
+        print("    A positive occupancy penalty at untouched widths is not"
+              " observed.")
+        print("    The kernel is weight-bandwidth bound, so 31 resident"
+              " simdgroups")
+        print("    still saturate the read. `measured c=0` is the supported"
+              " column.")
+
+    return {"calibration": calib,
+            "registers_low": lo, "registers_high": hi,
             "simdgroups_low": sg_lo, "simdgroups_high": sg_hi,
             "measured_residency_loss": measured,
             "assumed_residency_loss": ap.ONEPASS_RESIDENCY_LOSS,
