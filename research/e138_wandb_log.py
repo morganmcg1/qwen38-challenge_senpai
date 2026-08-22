@@ -31,6 +31,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import wandb
 
+import e138_f5_report as f5
 import e138_grid_control as grid_control
 import e138_plan_analysis as analysis
 
@@ -111,6 +112,25 @@ RUNGS = {
         ],
         "uses_gpu": True,
         "factorial": True,
+    },
+    "e": {
+        "run_name": "e138-runge-crown-table-shipped-against-onepass67",
+        "job_type": "isolated-kernel-timing",
+        "question":
+            "advisor feedback F5: is the (plan x grid) interaction between "
+            "the crown's Table.shipped and our onePass67 inside the "
+            "pre-registered +1200 to +3400 us band, and which plan is "
+            "cheaper at width 6 and width 7 under the shipped tight grid",
+        "command":
+            "research/e138_plan_surface.sh OUT 'PLAN@wide,PLAN@tight,...' "
+            "'' 31 12 tight 6:stock",
+        "artifacts": [
+            "item8-shipped-vs-onepass-rep1.json",
+            "item8-shipped-vs-onepass-rep2.json",
+            "item8-shipped-vs-onepass-rep3.json",
+        ],
+        "uses_gpu": True,
+        "crown_contrast": True,
     },
 }
 
@@ -381,6 +401,91 @@ def rung_factorial(files: list[str]) -> tuple[dict, dict]:
     }
 
 
+def rung_crown_contrast(files: list[str]) -> tuple[dict, dict]:
+    """F5: the crown's `Table.shipped` against our promoted `onePass67`.
+
+    The two plans differ only at widths 6 and 7, so each width is its own
+    contrast with its own baseline. The band verdict is published next to the
+    resolution floor, because a band narrower than the floor is not tested by
+    the comparison it appears to fail.
+    """
+    paths = [ART / f for f in files if (ART / f).exists()]
+    pooled = grid_control.load(paths)
+    singles = [grid_control.load([p]) for p in paths]
+
+    summary = {"crown_contrast_artifacts": len(paths)}
+    rows, effects = [], []
+    for width, one_pass, shipped in f5.ARMS:
+        report = grid_control.factorial(paths, one_pass)
+        verdict = grid_control.band_verdict(report, shipped, *f5.BAND_US)
+        for key, value in verdict.items():
+            if isinstance(value, (int, float, bool)):
+                summary["interaction/m%d/%s" % (width, key)] = value
+        for grid in ("wide", "tight"):
+            a = f5.weighted(pooled, one_pass, grid)
+            b = f5.weighted(pooled, shipped, grid)
+            per_replicate = [
+                f5.weighted(s, one_pass, grid) - f5.weighted(s, shipped, grid)
+                for s in singles
+            ]
+            effects.append({
+                "width": width, "grid": grid,
+                "one_pass_plan": one_pass, "table_shipped_plan": shipped,
+                "one_pass_us": a, "table_shipped_us": b,
+                "one_pass_wins_us": a - b,
+                "one_pass_wins_us_in_situ": (a - b) * analysis.IN_SITU_TRANSFER,
+                "one_pass_wins_us_ranked_host":
+                    (a - b) * analysis.IN_SITU_TRANSFER
+                    * analysis.HOST_TRANSFER,
+                "replicates": len(per_replicate),
+                "sign_stable_across_replicates":
+                    min(per_replicate) * max(per_replicate) > 0,
+            })
+            summary["main_effect/m%d/%s/one_pass_wins_us" % (width, grid)] = (
+                a - b
+            )
+            summary["main_effect/m%d/%s/sign_stable" % (width, grid)] = (
+                min(per_replicate) * max(per_replicate) > 0
+            )
+        for name in pooled["dispatch"]:
+            calls = pooled["dispatch"][name]
+            per_replicate = [
+                (s["us"][(name, shipped, "tight")]
+                 - s["us"][(name, one_pass, "tight")]) * calls
+                for s in singles
+            ]
+            rows.append({
+                "shape": name, "n": pooled["n"][name], "k": pooled["k"][name],
+                "calls_per_verify": calls, "width": width,
+                "one_pass_us_per_round":
+                    pooled["us"][(name, one_pass, "tight")] * calls,
+                "table_shipped_us_per_round":
+                    pooled["us"][(name, shipped, "tight")] * calls,
+                "table_shipped_costs_us_per_round":
+                    pooled["us"][(name, shipped, "tight")] * calls
+                    - pooled["us"][(name, one_pass, "tight")] * calls,
+                "sign_stable_across_replicates":
+                    min(per_replicate) * max(per_replicate) > 0,
+            })
+
+    summary.update({
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+        "official_or_ranked_score": False,
+        "arms_abba_counterbalanced_within_block": True,
+        "both_grids_inside_one_session": True,
+        "uses_gpu": True,
+        "crown_source_ref": "1d66bb36",
+        "crown_submission": "08b67f12",
+        "table_shipped_is_the_crown_width_plan": True,
+        "best_table_is_a_mix_of_both_plans": True,
+    })
+    return summary, {
+        "crown_contrast_per_shape": table(sorted(rows[0]), rows),
+        "crown_contrast_main_effect": table(sorted(effects[0]), effects),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rung", required=True, choices=sorted(RUNGS))
@@ -390,6 +495,8 @@ def main() -> int:
     spec = RUNGS[args.rung]
     if args.rung == "a":
         summary, tables = rung_a()
+    elif spec.get("crown_contrast"):
+        summary, tables = rung_crown_contrast(spec["artifacts"])
     elif spec.get("factorial"):
         summary, tables = rung_factorial(spec["artifacts"])
     else:

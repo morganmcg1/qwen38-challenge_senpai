@@ -4,10 +4,10 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 
 - **Student / branch:** `qwen-alphonse` / `qwen-alphonse/e138-plan-surface-at-the-width-6-cliff`
 - **Hypothesis and target cost:** E137 measured a 39,134.9 us in-situ M=5 -> M=6 verify step and found no single dispatch family owns it. E138 asks whether the step is an artefact of the *shipped plan choice*. If some other legal `(M, IPG, RPS)` cell were cheaper at width 6, the cliff would be a tuning defect rather than a hardware boundary.
-- **Decision:** **negative on the stated hypothesis, positive as a plan-surface map.** The cliff is plan-invariant: no legal cell flattens the 5 -> 6 step, and the best available reduction is **2.46 %** of the isolated step. The sweep did find one clean, unrelated win one width up, and it found that the plan surface is exhausted exactly where the ranked mass sits.
+- **Decision:** **negative on the stated hypothesis, positive as a plan-surface map.** The cliff is plan-invariant: no legal cell flattens the 5 -> 6 step, and the best available reduction is **2.46 %** of the isolated step. The sweep did find one clean, unrelated win one width up, it found that the plan surface is exhausted exactly where the ranked mass sits, and it found a width table that beats both our promoted plan and the live crown's.
 - **`BASE_SHA`:** `328c4b9eac1b386f0c0913afcf0c7a64c232e5c0`
 - **`UPSTREAM_SHA`:** unchanged this experiment; no organizer sync performed.
-- **Candidate commit:** `645dedf2` (see the terminal submission for the exact head).
+- **Candidate commit:** see the terminal submission for the exact head; the crown contrast was measured at `4f346354`, `4cf59477` and `7b82f34f`.
 - **Yukon promoted submission / frontier:** live crown `08b67f1` (`jungjipdo`) at `3.69071882618532`, previous `ed608e6` at `3.68172016051458`. Checked at the end of this experiment. Neither is affected by this work, and **this experiment proposes no submission.**
 - **Candidate build fingerprint:** not applicable. No worker was built and no decode leg was run. The instrument is a Swift test that dispatches Metal kernels directly.
 - **Submitted-surface / generated-twin / metallib digests:** not applicable. **No submitted path changed.** The complete non-research diff against base is one new test file, `Tests/MLXFastTests/E138PlanSurfaceTests.swift`. `python3 research/twin_audit.py` -> `TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s)`. No Metal source and no generated twin was touched.
@@ -16,9 +16,9 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   - `Tests/MLXFastTests/E138PlanSurfaceTests.swift` (new instrument)
   - `research/e138_plan_census.py`, `research/e138_plan_surface.sh` (new)
   - `research/e138_plan_analysis.py`, `research/e138_grid_control.py` (new)
-  - `research/e138_wandb_log.py` (new)
+  - `research/e138_f5_report.py`, `research/e138_wandb_log.py` (new)
   - `research/e131_kernel_sources.py` (reused, minor repair)
-  - `research/e138-artifacts/*.json` (evidence, 11 timing sessions plus the offline census)
+  - `research/e138-artifacts/*.json` (evidence, 14 timing sessions plus the offline census)
 - **MTP head provenance, digest, and draft policy:** not applicable. The sweep loads no checkpoint and attaches no proposal head. It builds synthetic operands at the seven scored shapes and times the quantized matvec directly.
 - **Token window, fixture, reference source, harness:** not applicable in the decode sense. This is an **isolated kernel sweep**, not an end-to-end decode. `harness = local` throughout. **No ranked measurement was taken by me**, and no number in this report is a score.
 - **Exact cell:** the 257 linear cells of one target verify forward - `linear_attn.in_proj_fused_qkvzba` x48, `linear_attn.out_proj` x48, `full_attn.qkv_proj_fused` x16, `full_attn.o_proj` x16, `mlp.gate_up_fused` x64, `mlp.down` x64, `head.lm_head` x1 - at widths M = 5..9. Dispatch family: affine 4-bit group-64 quantized matvec via `Qwen35CustomQMV.generatedSource(table:true, tier:nil)`. Source form: JIT from the generator string. M5 `_nax` variant: **not measured**, see transfer risk.
@@ -48,8 +48,13 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   | `item7-interleaved-factorial-rep1` | 38.16 | 64.94 |
   | `item7-interleaved-factorial-rep2` | 42.55 | 65.01 |
   | `item7-interleaved-factorial-rep3` | 45.18 | 66.50 |
+  | `item8-shipped-vs-onepass-rep1` | 36.51 | 67.56 |
+  | `item8-shipped-vs-onepass-rep2` | 46.25 | 68.33 |
+  | `item8-shipped-vs-onepass-rep3` | 42.50 | 68.24 |
 
-  Entry spread across the three pooled headline sessions (`item1`, `item1a`, `item5`) is **1.03 degC**. Across the three factorial replicates it is **7.02 degC**; those three are interleaved within each session, so the drift cancels to first order inside each replicate, and the residual is reported as replicate spread rather than hidden.
+  Entry spread across the three pooled headline sessions (`item1`, `item1a`, `item5`) is **1.03 degC**. Across the three factorial replicates it is **7.02 degC**, and across the three `item8` crown-contrast replicates it is **9.74 degC**; all six are interleaved within each session, so the drift cancels to first order inside each replicate, and the residual is reported as replicate spread rather than hidden.
+
+  All three `item8` sessions recorded `measured_source_dirty=false` with an empty `other_dirty_paths`, so the crown contrast was measured on a fully committed tree.
 
 - **Exact commands:**
 
@@ -71,6 +76,13 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
       research/e138-artifacts/item1a-m5-m7-rows.json \
       research/e138-artifacts/item5-m8-m9-and-m7-replicate.json
   python3 research/e138_grid_control.py research/e138-artifacts/item7-interleaved-factorial-rep{1,2,3}.json
+
+  # the crown contrast: Table.shipped against onePass67, both widths, both grids
+  research/e138_plan_surface.sh research/e138-artifacts/item8-shipped-vs-onepass-rep1.json \
+      "6:1:4@wide,6:1:4@tight,6:3:4@wide,6:3:4@tight,6:4:4@wide,6:4:4@tight,\
+6:6:4@wide,6:6:4@tight,7:4:4@wide,7:4:4@tight,7:5:4@wide,7:5:4@tight,\
+7:7:4@wide,7:7:4@tight" "" 31 12 tight 6:stock
+  python3 research/e138_f5_report.py research/e138-artifacts/item8-shipped-vs-onepass-rep{1,2,3}.json
   ```
 
 - **W&B runs:**
@@ -81,10 +93,11 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   | b | pooled widths 5-9, primary metric, RULE 116 ladder | [`mm4p2t99`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/mm4p2t99) |
   | c | M=7 spill dose-response and the stock reference arm | [`yd64ass7`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/yd64ass7) |
   | d | interleaved plan x grid factorial and its null control | [`4pu920le`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/4pu920le) |
+  | e | the crown's `Table.shipped` against our `onePass67` | [`cwtt7jcn`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cwtt7jcn) |
 
   Group `e138-plan-surface-at-the-width-6-cliff`, project `wandb-applied-ai-team/qwen38-mlx-challenge-senpai`.
 
-- **Exactness:** every timed cell is compared bitwise against the incumbent kernel on the same operands. **161 rows in the pooled headline set, `matches_incumbent_bitwise = true` on all of them, `max_abs_delta_vs_incumbent = 0`.** Every shape also carries a positive control that perturbs one operand and must fail the comparison; `exactness_positive_control_rejects` is true everywhere, and the analysis refuses to load an artifact where any positive control passed.
+- **Exactness:** every timed cell is compared bitwise against the incumbent kernel on the same operands. **161 rows in the pooled headline set and 294 more across the three `item8` replicates, `matches_incumbent_bitwise = true` on all of them, `max_abs_delta_vs_incumbent = 0`.** Every shape also carries a positive control that perturbs one operand and must fail the comparison; `exactness_positive_control_rejects` is true everywhere, and the analysis refuses to load an artifact where any positive control passed.
 
 ---
 
@@ -192,17 +205,61 @@ Rebuilt for the only two prompts that can move the published median, using their
 
 Width 8 is the largest single width mass on both scoring prompts, and the plan surface yields exactly zero there. Width 8 alone is 60.1 % of beagle's covered mass. Beagle pays 0.478 per unit across 9.10 % of headroom and is concentrated where nothing is available; essays, which saturates after 1.37 %, is where the gain lands.
 
+## Item 6 - the crown's `Table.shipped` against our `onePass67` (advisor F5)
+
+F5 established that `upstream/main` moved to `1d66bb36`, the promoted source of the live crown `08b67f12`, and that its width plan is our `Table.shipped` verbatim: `[(3,3,4),(4,4,4),(5,5,4),(6,3,4),(7,4,4),(8,4,4),(9,3,4)]`. The two plans differ from `onePass67` only at widths 6 and 7, so those two cells are the complete contrast. Evidence: `item8-shipped-vs-onepass-rep{1,2,3}`, 14 cells plus the `6:stock` anchor, `REPS=31 INNER=12`.
+
+### The `(plan x grid)` interaction is not testable by this instrument
+
+Sign convention: `interaction = advantage(tight) - advantage(wide)`, `advantage = us(onePass67) - us(Table.shipped)`. Positive means `Table.shipped` buys more once the grid tightens, the direction F5 pre-registered at `+2,266 us`.
+
+| width | contrast | interaction | band | inside | floor | over floor |
+|---|---|--:|---|---|--:|---|
+| 6 | `6:3:4` vs `6:6:4` | −1759.4 us | +1200 to +3400 | no | 3966.7 us | no |
+| 7 | `7:4:4` vs `7:7:4` | −1286.0 us | +1200 to +3400 | no | 6831.9 us | no |
+
+The floors come from cells whose true interaction is zero by construction: `6:1:4`, where `ceil(6/1) == 6` makes the tight grid identical to the wide one (measured `−3966.7 us`), and the matched-geometry pairs `6:3:4`/`6:4:4` (`+3264.0 us`) and `7:4:4`/`7:5:4` (`+6831.9 us`), which must share an interaction exactly. **The floor exceeds the whole band at both widths**, so this is `Unclear`, not a refutation of F5's mechanism.
+
+### The main effect is much larger, and it splits between the two plans
+
+| width | grid | onePass67 us | Table.shipped us | onePass wins | in-situ | ranked-host |
+|---|---|--:|--:|--:|--:|--:|
+| 6 | tight | 131453.9 | 139859.1 | −8405.2 | −6604.5 | −4292.9 |
+| 6 | wide | 136127.4 | 142773.2 | −6645.8 | −5222.0 | −3394.3 |
+| 7 | tight | 154679.3 | 148456.3 | +6223.0 | +4889.8 | +3178.4 |
+| 7 | wide | 158343.6 | 150834.6 | +7509.0 | +5900.3 | +3835.2 |
+
+The sign is stable across all three replicates under both grids, so the plan ranking is grid-invariant at both widths. **The best table is neither published plan.** It is `onePass67`'s width-6 cell with `Table.shipped`'s width-7 cell: `6 -> (6,6,4)`, which we already ship, and `7 -> (7,4,4)`, which the crown ships and we do not. The width-7 figure reproduces the independent `item1`/`item1a`/`item5` measurement of 5916.4 us to within 5 %.
+
+### The N threshold moves with width, and the mechanism is register spill
+
+`us/round` that `Table.shipped` costs over `onePass67`, tight grid, per replicate:
+
+| shape | N | width | rep1 | rep2 | rep3 | sign agrees |
+|---|--:|--:|--:|--:|--:|---|
+| `full_attn.qkv_proj_fused` | 14336 | 6 | +545.5 | +445.2 | +573.8 | yes |
+| `full_attn.qkv_proj_fused` | 14336 | 7 | −130.2 | −647.1 | −43.8 | yes |
+| `linear_attn.in_proj_fused_qkvzba` | 16480 | 6 | +1789.7 | +2096.4 | +1881.2 | yes |
+| `linear_attn.in_proj_fused_qkvzba` | 16480 | 7 | −156.9 | −464.0 | −314.0 | yes |
+| `mlp.down` | 5120 | 6 | −753.9 | −666.8 | −1472.9 | yes |
+| `mlp.down` | 5120 | 7 | −5781.2 | −5703.4 | −6283.2 | yes |
+
+Both shapes F5 named flip sign between the two widths, and every replicate agrees. The threshold is therefore not a fixed N: it is above N=16480 at M=6 and below N=14336 at M=7. The register census explains why, and it tracks the spill boundary rather than N. `6:6:4` is 96 registers with zero spill on g16s; `7:7:4` is 96 registers with **32 bytes of spill**. So the rule is not "large N prefers one pass" but **"one pass wins while its body fits in registers and loses once it spills."** At M=6 one pass wins on every shape except the most K-heavy one; at M=7 it loses on everything that is not noise, and `mlp.down` alone carries 92 % of the effect.
+
+Per-replicate sign agreement is used here rather than the pooled session spread, because the pooled spread mixes between-session drift into a contrast that is paired inside each session.
+
 ## Conclusion
 
 The width-6 cliff is **not** a plan-tuning defect. It survives the whole legal `(M, IPG, RPS)` surface, and the best any plan choice can do is remove 2.46 % of the step. E137's conclusion stands unchanged: the step is a property of the dispatch, not of the schedule that reaches it.
 
-The sweep produced three things worth keeping:
+The sweep produced four things worth keeping:
 
-1. `(7,7,4) -> (7,4,4)`, a one-pipeline win worth 5916.4 isolated / 4648.9 in-situ / 3021.8 ranked-host us per round at width 7, mechanistically explained by a 32 B register spill on the largest-K shape, and carrying a RULE 83 transfer risk because the spill does not occur on g17s.
+1. `(7,7,4) -> (7,4,4)`, a one-pipeline win worth 5916.4 isolated / 4648.9 in-situ / 3021.8 ranked-host us per round at width 7, mechanistically explained by a 32 B register spill on the largest-K shape, and carrying a RULE 83 transfer risk because the spill does not occur on g17s. The crown already ships this cell, which is independent corroboration that it is the right choice at that width.
 2. An N-keyed split at width 9, currently unpayable.
-3. A negative that closes a line of enquiry: the plan x launch-grid interaction is below a 23.18 pp instrument floor, so it cannot explain the `0b2f0014` sign reversal.
+3. A negative that closes a line of enquiry: the plan x launch-grid interaction is below a 23.18 pp / 3966.7 us instrument floor, so it cannot explain the `0b2f0014` sign reversal, and it cannot test F5's pre-registered band either.
+4. **A shippable table that beats both published plans.** Our `onePass67` is right at width 6 by 8405.2 us per round; the crown's `Table.shipped` is right at width 7 by 6223.0 us per round. Taking the better cell at each width beats the crown's plan and our own. The governing variable is register spill, not N: one pass wins while its body fits and loses once it spills, and the spill boundary falls between M=6 and M=7 on g16s.
 
-The most useful output may be the fourth thing, which is not a gain at all: **the plan surface is exhausted at width 8, which is where the ranked mass actually is.**
+The most useful output may be the fifth thing, which is not a gain at all: **the plan surface is exhausted at width 8, which is where the ranked mass actually is.**
 
 ## Risks and honest limits
 
@@ -211,7 +268,9 @@ The most useful output may be the fourth thing, which is not a gain at all: **th
 - **g16s, not g17s.** The `7:4:4` mechanism depends on a spill that the offline census says does not occur on g17s. Nine of 120 cells disagree between the two GPUs. This needs an M5 replay before anyone ships it.
 - **`_nax` not measured.** The ranked M5 runs `_nax` variants. This sweep measured the non-`_nax` generator path.
 - **Session noise is large on four shapes.** `mlp.down`, `qkv_proj_fused`, `in_proj` and `o_proj` show 6-17 % replicate spread. The two per-shape plan-order changes in the factorial both sit inside that spread.
-- **Driver dirty on replicate 3.** `item7-interleaved-factorial-rep3` recorded `measured_source_dirty=true` for `research/e138_plan_surface.sh`. The edit was confined to the post-measurement sidecar writer and cannot affect a recorded time; the three replicates agree to 0.02 % on the most stable shape. Replicates 1 and 2 were dirty only in offline analysis files, which the flag now classifies separately.
+- **Driver dirty on replicate 3.** `item7-interleaved-factorial-rep3` recorded `measured_source_dirty=true` for `research/e138_plan_surface.sh`. The edit was confined to the post-measurement sidecar writer and cannot affect a recorded time; the three replicates agree to 0.02 % on the most stable shape. Replicates 1 and 2 were dirty only in offline analysis files, which the flag now classifies separately. The three `item8` sessions are clean on both fields.
+- **F5's band was not tested.** The pre-registered `+1200` to `+3400 us` interaction band is entirely below this instrument's measured resolution floor of 3966.7 us at M=6 and 6831.9 us at M=7. Both measured interactions are negative and both are smaller than their own floor, so the result neither confirms F5's occupancy mechanism nor refutes the two rival receipts. Reading the negative sign as a refutation would over-claim.
+- **The mixed table is measured in isolation only.** The 8405.2 us and 6223.0 us figures are dispatch-weighted kernel time, not decode time. They carry the same 0.7858 in-situ and 0.65 host transfers as everything else here, and the same g16s-to-g17s spill risk: the whole M=7 mechanism rests on a spill that the offline census says does not occur on g17s.
 - **Full test suite.** `swift test --force-resolved-versions` reports 41 issues across 10 tests, all pre-existing on this checkout and unrelated to this work: campaign documentation blocks, the artifact contract digest, the 128 GiB startup memory profile on a 48 GiB host, and the remote MTP head declaration. **`E138PlanSurfaceTests` passed.** My only non-research change is that new test file.
 
 ## Suggested follow-ups, not implemented
@@ -219,4 +278,6 @@ The most useful output may be the fourth thing, which is not a gain at all: **th
 1. **Attack width 8 with something other than plan selection.** It carries the largest mass on both scoring prompts and the plan surface is provably exhausted there: shipped `8:4:4` wins on all seven shapes. This is the highest-value open question in this area.
 2. **Replay `(7,4,4)` on g17s.** The mechanism is a g16s spill that the census says is absent on g17s. Either it transfers, in which case it is free, or it does not, in which case the census has told us something important about RULE 83.
 3. **Give me each prompt's baseline round time** and I will finish the FINDING 196 rebuild properly, sort the eight ratios, and name the two central prompts instead of reporting microseconds.
-4. **Tighten the interaction floor** if the plan x grid question is worth reopening. The 23.18 pp floor is dominated by `qkv_proj_fused`, which has the lowest dispatch count of the noisy shapes. More replicates or a lower-variance tap would help; a different analysis would not.
+4. **Tighten the interaction floor** if the plan x grid question is worth reopening. The 23.18 pp / 3966.7 us floor is dominated by `qkv_proj_fused`, which has the lowest dispatch count of the noisy shapes. Going from three replicates to three more barely moved it, so more replicates will not settle F5's band; a lower-variance tap is needed.
+5. **Ship the mixed table** `6 -> (6,6,4)`, `7 -> (7,4,4)`. I do not own the Route B shipping region of `Qwen35.swift`, so this is handed over rather than implemented. It changes one width cell, adds no pipeline, and is bit-exact by construction because both cells are already-legal template instantiations.
+6. **Test whether the crown's M=6 chunk-sum dip is caused by its pass plan.** Their table shows M=6 anomalously low in every row while they run `6:3:4` there, and I measure `6:3:4` as 8405.2 us per round dearer than `6:6:4` on the QMV axis. A dearer matvec would make a fixed-cost table save proportionally less. This is a conjecture, it needs the chunk-sum axis crossed with the pass plan, and it is not my instrument.
