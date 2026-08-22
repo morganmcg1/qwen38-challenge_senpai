@@ -902,6 +902,10 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
         print("   %-16s" % arm
               + "".join("  %10.1f" % us[(shape, m)][arm] for m in widths))
 
+    census_data = (json.loads(census_path.read_text())
+                   if census_path is not None and census_path.exists()
+                   else None)
+
     # --- Finding 44 placement -------------------------------------------------
     print("\n-- Finding 44 placement on %s: a_base against its own load "
           "ceiling" % shape)
@@ -994,6 +998,39 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
                      "bar_pct": RUNG2_BAR_PCT,
                      "cleared": bool(r2value >= RUNG2_BAR_PCT),
                      "in_primary_metric": False}
+    # A width where the arm spills on THIS host but not on the ranked one is a
+    # host artefact, not a property of the mechanism. Report the same number
+    # again over the widths whose local measurement is not spill-confounded,
+    # with the round-weight coverage stated, and never instead of the number
+    # above.
+    if r2best in rows and census_data is not None:
+        crow = census_data["arms"].get(r2best, {})
+        loc = crow.get(census_data["local_arch"], {})
+        rnk = crow.get(census_data["ranked_arch"], {})
+        clean = [m for m in widths
+                 if (loc.get(str(m), {}).get("spill_bytes") or 0) == 0]
+        cov = sum(weights.get(m, 0.0) for m in clean)
+        if clean and cov > 0:
+            val = (sum(weights.get(m, 0.0) * per_arm_na[r2best][m]
+                       for m in clean) / cov)
+            dropped = {m: {"local_spill_bytes":
+                           loc.get(str(m), {}).get("spill_bytes"),
+                           "ranked_spill_bytes":
+                           rnk.get(str(m), {}).get("spill_bytes"),
+                           "pct": per_arm_na[r2best][m]}
+                       for m in widths if m not in clean}
+            rung2_verdict["standing_pct_excluding_local_spill"] = val
+            rung2_verdict["excluding_local_spill_coverage"] = cov
+            rung2_verdict["dropped_widths"] = dropped
+            print("   over the %d widths whose LOCAL build does not spill "
+                  "(round-weight coverage %.3f) the same arm is %+.4f %%"
+                  % (len(clean), cov, val))
+            for m, d in dropped.items():
+                print("   NA%d dropped: %s spills %s B locally and %s B on %s, "
+                      "measured %+.3f %%"
+                      % (m, r2best, d["local_spill_bytes"],
+                         d["ranked_spill_bytes"], census_data["ranked_arch"],
+                         d["pct"]))
 
     bias = bias_axis(per_arm_na, weights, widths)
     if bias is not None:
@@ -1058,10 +1095,6 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     print("   s_bcast %+.3f   s_bcast_all %+.3f   p_split_meta %+.3f   "
           "n_nosums %+.3f" % (s_b, s_ba, p_sm, n_ns))
     print("   binding resource selected by the data: %s" % verdict)
-
-    census_data = (json.loads(census_path.read_text())
-                   if census_path is not None and census_path.exists()
-                   else None)
 
     # --- harness defect 19, the low-clock tail --------------------------------
     disp = block_dispersion(rate, cells)
