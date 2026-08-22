@@ -217,13 +217,15 @@ struct E134PassBoundaryPriceTests {
         #expect(best.argmaxBoundary + 2
             == Qwen36MTPBlockSession.passBoundaryVerifyWidth)
 
-        // Positive control. Flatten the width-6 step by replacing the width-6
-        // round cost with the midpoint of its neighbours; the same selection
-        // rule must then choose another boundary. Without this the argmax
-        // assertion would also pass on a curve with no step at all.
+        // Positive control. Cut the priced step down to the shallow step and
+        // shift the rest of the curve with it, which removes the cliff and
+        // leaves every other step untouched. The same selection rule must
+        // then choose another boundary. Without this the argmax assertion
+        // would also pass on a curve that has no cliff at all.
         var flattened = best.roundUs
         let priced = Qwen36MTPBlockSession.passBoundaryVerifyWidth - 1
-        flattened[priced] = 0.5 * (flattened[priced - 1] + flattened[priced + 1])
+        let excess = (flattened[priced] - flattened[priced - 1]) - best.steps[0]
+        for row in priced ..< flattened.count { flattened[row] -= excess }
         #expect(argmaxBoundary(flattened) != best.argmaxBoundary)
     }
 
