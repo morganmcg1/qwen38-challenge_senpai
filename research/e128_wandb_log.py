@@ -187,17 +187,21 @@ def log_rung2() -> None:
         "simulation_windows": data["windows"],
     })
     gains = data["median_gain_pct_vs_ship"]
+    implementable = {a: v for a, v in gains.items() if a != "oracle"}
+    best_arm = max(implementable, key=implementable.get)
     run.summary.update({
-        "e128_recoverable_ranked_median_pct": max(
-            gains[arm] for arm in gains if arm != "oracle"),
+        "e128_recoverable_ranked_median_pct": implementable[best_arm],
+        "e128_best_implementable_arm": best_arm,
         "oracle_ranked_median_pct": gains["oracle"],
-        "static7_ranked_median_pct": gains["static7"],
-        "nomargin_ranked_median_pct": gains["nomargin"],
-        "nomargin0_ranked_median_pct": gains["nomargin0"],
-        "nomargin1_ranked_median_pct": gains["nomargin1"],
-        "recal_ranked_median_pct": gains["recal"],
         "model_reconstructed_base_median": data["base_median"],
+        "receipt_median_reconstruction_error":
+            data["base_median"] - data["receipt"]["score"],
     })
+    run.summary.update({
+        "%s_ranked_median_pct" % arm: gains[arm]
+        for arm in ("static7", "nomargin", "nomargin0", "nomargin1", "recal",
+                    "rankedprice", "rankedprice_nomargin")
+        if arm in gains})
     arms = wandb.Table(columns=[
         "arm", "ranked_median", "gain_pct_vs_ship"])
     for arm, median in data["medians"].items():

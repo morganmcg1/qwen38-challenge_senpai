@@ -1,0 +1,1103 @@
+{
+  "harness": "local",
+  "window": 512,
+  "identity": [
+    {
+      "leg": "beagle_a",
+      "forced_depth": "none",
+      "base_sha": "8d928252c33519dc06aebd5ecc0c6aa5dec6dcb8",
+      "rounds": 119,
+      "accepted": 393,
+      "rejected": 112,
+      "drafted": 505,
+      "emitted": 512,
+      "declared_rows": 624,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 4.243697478991597,
+      "eff_recomputed": 4.243697478991597,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.7782178217821782,
+      "accept_rate_recomputed": 0.7782178217821782,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 119.0,
+      "R_counted": 119,
+      "mean_accepted": 3.302521008403361
+    },
+    {
+      "leg": "beagle_b",
+      "forced_depth": "none",
+      "base_sha": "4b66f77348ac155520966be17628e0edaf2dd66d",
+      "rounds": 126,
+      "accepted": 386,
+      "rejected": 118,
+      "drafted": 504,
+      "emitted": 512,
+      "declared_rows": 630,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 4,
+      "eff_recomputed": 4.0,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.7658730158730159,
+      "accept_rate_recomputed": 0.7658730158730159,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 126.0,
+      "R_counted": 126,
+      "mean_accepted": 3.0634920634920637
+    },
+    {
+      "leg": "benchfixture",
+      "forced_depth": "none",
+      "base_sha": "8d928252c33519dc06aebd5ecc0c6aa5dec6dcb8",
+      "rounds": 78,
+      "accepted": 435,
+      "rejected": 61,
+      "drafted": 496,
+      "emitted": 512,
+      "declared_rows": 574,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 513,
+      "window_residual": 1,
+      "eff_reported": 6.358974358974359,
+      "eff_recomputed": 6.358974358974359,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.8770161290322581,
+      "accept_rate_recomputed": 0.8770161290322581,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 77.84795321637428,
+      "R_counted": 78,
+      "mean_accepted": 5.576923076923077
+    },
+    {
+      "leg": "botany_andrews",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 143,
+      "accepted": 370,
+      "rejected": 136,
+      "drafted": 506,
+      "emitted": 512,
+      "declared_rows": 649,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 513,
+      "window_residual": 1,
+      "eff_reported": 3.5384615384615383,
+      "eff_recomputed": 3.5384615384615383,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.7312252964426877,
+      "accept_rate_recomputed": 0.7312252964426877,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 142.72124756335282,
+      "R_counted": 143,
+      "mean_accepted": 2.5874125874125875
+    },
+    {
+      "leg": "drama_dollhouse",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 92,
+      "accepted": 420,
+      "rejected": 47,
+      "drafted": 467,
+      "emitted": 512,
+      "declared_rows": 559,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 5.076086956521739,
+      "eff_recomputed": 5.076086956521739,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.8993576017130621,
+      "accept_rate_recomputed": 0.8993576017130621,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 92.0,
+      "R_counted": 92,
+      "mean_accepted": 4.565217391304348
+    },
+    {
+      "leg": "essays_bacon",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 285,
+      "accepted": 227,
+      "rejected": 342,
+      "drafted": 569,
+      "emitted": 512,
+      "declared_rows": 854,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 1.9964912280701754,
+      "eff_recomputed": 1.9964912280701754,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.3989455184534271,
+      "accept_rate_recomputed": 0.3989455184534271,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 285.0,
+      "R_counted": 285,
+      "mean_accepted": 0.7964912280701755
+    },
+    {
+      "leg": "essays_montaigne",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 146,
+      "accepted": 366,
+      "rejected": 136,
+      "drafted": 502,
+      "emitted": 512,
+      "declared_rows": 648,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 3.4383561643835616,
+      "eff_recomputed": 3.4383561643835616,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.7290836653386454,
+      "accept_rate_recomputed": 0.7290836653386454,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 146.0,
+      "R_counted": 146,
+      "mean_accepted": 2.506849315068493
+    },
+    {
+      "leg": "medicine_hippoc",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 80,
+      "accepted": 432,
+      "rejected": 27,
+      "drafted": 459,
+      "emitted": 512,
+      "declared_rows": 539,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 5.7375,
+      "eff_recomputed": 5.7375,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.9411764705882353,
+      "accept_rate_recomputed": 0.9411764705882353,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 80.0,
+      "R_counted": 80,
+      "mean_accepted": 5.4
+    },
+    {
+      "leg": "medicine_hist",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 153,
+      "accepted": 359,
+      "rejected": 177,
+      "drafted": 536,
+      "emitted": 512,
+      "declared_rows": 689,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 3.503267973856209,
+      "eff_recomputed": 3.503267973856209,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.6697761194029851,
+      "accept_rate_recomputed": 0.6697761194029851,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 153.0,
+      "R_counted": 153,
+      "mean_accepted": 2.34640522875817
+    },
+    {
+      "leg": "plutarch_lives",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 180,
+      "accepted": 332,
+      "rejected": 231,
+      "drafted": 563,
+      "emitted": 512,
+      "declared_rows": 743,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 3.1277777777777778,
+      "eff_recomputed": 3.1277777777777778,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.5896980461811723,
+      "accept_rate_recomputed": 0.5896980461811723,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 180.0,
+      "R_counted": 180,
+      "mean_accepted": 1.8444444444444446
+    },
+    {
+      "leg": "republic_jowett",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 104,
+      "accepted": 408,
+      "rejected": 69,
+      "drafted": 477,
+      "emitted": 512,
+      "declared_rows": 581,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 4.586538461538462,
+      "eff_recomputed": 4.586538461538462,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.8553459119496856,
+      "accept_rate_recomputed": 0.8553459119496856,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 104.0,
+      "R_counted": 104,
+      "mean_accepted": 3.923076923076923
+    },
+    {
+      "leg": "travel_eothen",
+      "forced_depth": "none",
+      "base_sha": "113eca25b32a99bb98a85de6ff3dbf0de58b75b3",
+      "rounds": 172,
+      "accepted": 340,
+      "rejected": 203,
+      "drafted": 543,
+      "emitted": 512,
+      "declared_rows": 715,
+      "non_drafting_rounds": 0,
+      "rounds_plus_accepted": 512,
+      "window_residual": 0,
+      "eff_reported": 3.1569767441860463,
+      "eff_recomputed": 3.1569767441860463,
+      "eff_residual": 0.0,
+      "accept_rate_reported": 0.6261510128913443,
+      "accept_rate_recomputed": 0.6261510128913443,
+      "accept_rate_residual": 0.0,
+      "declared_rows_residual": 0,
+      "R_implied": 172.0,
+      "R_counted": 172,
+      "mean_accepted": 1.9767441860465116
+    }
+  ],
+  "calibration": [
+    {
+      "leg": "beagle_a",
+      "rounds": 119,
+      "mean_expected": 2.867822268907563,
+      "mean_accepted": 3.302521008403361,
+      "bias": -0.43469873949579796,
+      "bias_pct": -13.162633587786248,
+      "slope": 1.0367150362957176,
+      "pearson_r": 0.8886724899718218,
+      "bins": {
+        "0": {
+          "rounds": 36,
+          "mean_accepted": 1.0
+        },
+        "1": {
+          "rounds": 31,
+          "mean_accepted": 2.161290322580645
+        },
+        "2": {
+          "rounds": 13,
+          "mean_accepted": 2.230769230769231
+        },
+        "3": {
+          "rounds": 4,
+          "mean_accepted": 4.5
+        },
+        "4": {
+          "rounds": 3,
+          "mean_accepted": 6.333333333333333
+        },
+        "5": {
+          "rounds": 5,
+          "mean_accepted": 7.0
+        },
+        "6": {
+          "rounds": 27,
+          "mean_accepted": 7.0
+        }
+      }
+    },
+    {
+      "leg": "beagle_b",
+      "rounds": 126,
+      "mean_expected": 2.712138357142857,
+      "mean_accepted": 3.0634920634920637,
+      "bias": -0.3513537063492067,
+      "bias_pct": -11.469058808290166,
+      "slope": 1.0854070921712586,
+      "pearson_r": 0.9087702638565689,
+      "bins": {
+        "0": {
+          "rounds": 52,
+          "mean_accepted": 0.7692307692307693
+        },
+        "1": {
+          "rounds": 22,
+          "mean_accepted": 1.5454545454545454
+        },
+        "2": {
+          "rounds": 4,
+          "mean_accepted": 4.75
+        },
+        "3": {
+          "rounds": 5,
+          "mean_accepted": 4.6
+        },
+        "4": {
+          "rounds": 9,
+          "mean_accepted": 5.111111111111111
+        },
+        "5": {
+          "rounds": 14,
+          "mean_accepted": 6.142857142857143
+        },
+        "6": {
+          "rounds": 20,
+          "mean_accepted": 6.9
+        }
+      }
+    },
+    {
+      "leg": "benchfixture",
+      "rounds": 78,
+      "mean_expected": 5.0665878205128205,
+      "mean_accepted": 5.576923076923077,
+      "bias": -0.5103352564102561,
+      "bias_pct": -9.150839080459765,
+      "slope": 0.8514095253488575,
+      "pearson_r": 0.707794561692236,
+      "bins": {
+        "0": {
+          "rounds": 1,
+          "mean_accepted": 1.0
+        },
+        "1": {
+          "rounds": 6,
+          "mean_accepted": 3.0
+        },
+        "2": {
+          "rounds": 7,
+          "mean_accepted": 2.857142857142857
+        },
+        "3": {
+          "rounds": 7,
+          "mean_accepted": 3.4285714285714284
+        },
+        "4": {
+          "rounds": 9,
+          "mean_accepted": 6.333333333333333
+        },
+        "5": {
+          "rounds": 13,
+          "mean_accepted": 5.615384615384615
+        },
+        "6": {
+          "rounds": 35,
+          "mean_accepted": 6.914285714285715
+        }
+      }
+    },
+    {
+      "leg": "botany_andrews",
+      "rounds": 143,
+      "mean_expected": 2.148949874125874,
+      "mean_accepted": 2.5874125874125875,
+      "bias": -0.4384627132867136,
+      "bias_pct": -16.945991351351363,
+      "slope": 1.0504008272046776,
+      "pearson_r": 0.8599562124553046,
+      "bins": {
+        "0": {
+          "rounds": 51,
+          "mean_accepted": 1.3137254901960784
+        },
+        "1": {
+          "rounds": 44,
+          "mean_accepted": 1.6363636363636365
+        },
+        "2": {
+          "rounds": 16,
+          "mean_accepted": 2.6875
+        },
+        "3": {
+          "rounds": 6,
+          "mean_accepted": 4.0
+        },
+        "4": {
+          "rounds": 6,
+          "mean_accepted": 5.166666666666667
+        },
+        "5": {
+          "rounds": 9,
+          "mean_accepted": 6.222222222222222
+        },
+        "6": {
+          "rounds": 11,
+          "mean_accepted": 7.0
+        }
+      }
+    },
+    {
+      "leg": "drama_dollhouse",
+      "rounds": 92,
+      "mean_expected": 3.9333984891304348,
+      "mean_accepted": 4.565217391304348,
+      "bias": -0.6318189021739129,
+      "bias_pct": -13.839842619047618,
+      "slope": 1.0188323297330546,
+      "pearson_r": 0.9516432278815136,
+      "bins": {
+        "0": {
+          "rounds": 16,
+          "mean_accepted": 1.3125
+        },
+        "1": {
+          "rounds": 21,
+          "mean_accepted": 1.8095238095238095
+        },
+        "2": {
+          "rounds": 4,
+          "mean_accepted": 3.0
+        },
+        "3": {
+          "rounds": 2,
+          "mean_accepted": 5.0
+        },
+        "4": {
+          "rounds": 3,
+          "mean_accepted": 6.0
+        },
+        "5": {
+          "rounds": 8,
+          "mean_accepted": 6.875
+        },
+        "6": {
+          "rounds": 38,
+          "mean_accepted": 7.0
+        }
+      }
+    },
+    {
+      "leg": "essays_bacon",
+      "rounds": 285,
+      "mean_expected": 0.8360441438596491,
+      "mean_accepted": 0.7964912280701755,
+      "bias": 0.03955291578947362,
+      "bias_pct": 4.965894713656379,
+      "slope": 0.5117165569370931,
+      "pearson_r": 0.194949085469652,
+      "bins": {
+        "0": {
+          "rounds": 215,
+          "mean_accepted": 0.7395348837209302
+        },
+        "1": {
+          "rounds": 67,
+          "mean_accepted": 0.9552238805970149
+        },
+        "2": {
+          "rounds": 3,
+          "mean_accepted": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "leg": "essays_montaigne",
+      "rounds": 146,
+      "mean_expected": 1.905591479452055,
+      "mean_accepted": 2.506849315068493,
+      "bias": -0.601257835616438,
+      "bias_pct": -23.984602185792337,
+      "slope": 0.6550366755105403,
+      "pearson_r": 0.5152745083977694,
+      "bins": {
+        "0": {
+          "rounds": 36,
+          "mean_accepted": 1.6388888888888888
+        },
+        "1": {
+          "rounds": 61,
+          "mean_accepted": 2.3114754098360657
+        },
+        "2": {
+          "rounds": 19,
+          "mean_accepted": 2.736842105263158
+        },
+        "3": {
+          "rounds": 20,
+          "mean_accepted": 3.75
+        },
+        "4": {
+          "rounds": 9,
+          "mean_accepted": 4.333333333333333
+        },
+        "5": {
+          "rounds": 1,
+          "mean_accepted": 0.0
+        }
+      }
+    },
+    {
+      "leg": "medicine_hippoc",
+      "rounds": 80,
+      "mean_expected": 4.5515081875,
+      "mean_accepted": 5.4,
+      "bias": -0.8484918125000007,
+      "bias_pct": -15.712811342592605,
+      "slope": 1.0179596207898218,
+      "pearson_r": 0.9366700250687472,
+      "bins": {
+        "0": {
+          "rounds": 6,
+          "mean_accepted": 1.1666666666666667
+        },
+        "1": {
+          "rounds": 13,
+          "mean_accepted": 1.6923076923076923
+        },
+        "2": {
+          "rounds": 5,
+          "mean_accepted": 3.8
+        },
+        "3": {
+          "rounds": 4,
+          "mean_accepted": 5.5
+        },
+        "4": {
+          "rounds": 6,
+          "mean_accepted": 6.666666666666667
+        },
+        "5": {
+          "rounds": 10,
+          "mean_accepted": 7.0
+        },
+        "6": {
+          "rounds": 36,
+          "mean_accepted": 7.0
+        }
+      }
+    },
+    {
+      "leg": "medicine_hist",
+      "rounds": 153,
+      "mean_expected": 2.0880554705882353,
+      "mean_accepted": 2.34640522875817,
+      "bias": -0.2583497581699348,
+      "bias_pct": -11.010449303621176,
+      "slope": 1.0602213046592903,
+      "pearson_r": 0.8395788683682304,
+      "bins": {
+        "0": {
+          "rounds": 68,
+          "mean_accepted": 1.0
+        },
+        "1": {
+          "rounds": 33,
+          "mean_accepted": 1.4242424242424243
+        },
+        "2": {
+          "rounds": 9,
+          "mean_accepted": 3.3333333333333335
+        },
+        "3": {
+          "rounds": 12,
+          "mean_accepted": 3.5833333333333335
+        },
+        "4": {
+          "rounds": 15,
+          "mean_accepted": 5.733333333333333
+        },
+        "5": {
+          "rounds": 16,
+          "mean_accepted": 5.3125
+        }
+      }
+    },
+    {
+      "leg": "plutarch_lives",
+      "rounds": 180,
+      "mean_expected": 1.5324926888888888,
+      "mean_accepted": 1.8444444444444446,
+      "bias": -0.31195175555555577,
+      "bias_pct": -16.913046987951816,
+      "slope": 1.25694150485884,
+      "pearson_r": 0.7904873246871775,
+      "bins": {
+        "0": {
+          "rounds": 72,
+          "mean_accepted": 1.0555555555555556
+        },
+        "1": {
+          "rounds": 75,
+          "mean_accepted": 1.3066666666666666
+        },
+        "2": {
+          "rounds": 14,
+          "mean_accepted": 3.0714285714285716
+        },
+        "3": {
+          "rounds": 6,
+          "mean_accepted": 4.833333333333333
+        },
+        "4": {
+          "rounds": 6,
+          "mean_accepted": 6.333333333333333
+        },
+        "5": {
+          "rounds": 6,
+          "mean_accepted": 6.833333333333333
+        },
+        "6": {
+          "rounds": 1,
+          "mean_accepted": 7.0
+        }
+      }
+    },
+    {
+      "leg": "republic_jowett",
+      "rounds": 104,
+      "mean_expected": 3.376482576923077,
+      "mean_accepted": 3.923076923076923,
+      "bias": -0.5465943461538458,
+      "bias_pct": -13.932797058823521,
+      "slope": 1.0559752766710213,
+      "pearson_r": 0.9303647558050591,
+      "bins": {
+        "0": {
+          "rounds": 32,
+          "mean_accepted": 1.03125
+        },
+        "1": {
+          "rounds": 17,
+          "mean_accepted": 1.8823529411764706
+        },
+        "2": {
+          "rounds": 5,
+          "mean_accepted": 3.2
+        },
+        "3": {
+          "rounds": 5,
+          "mean_accepted": 5.4
+        },
+        "4": {
+          "rounds": 4,
+          "mean_accepted": 5.75
+        },
+        "5": {
+          "rounds": 10,
+          "mean_accepted": 6.4
+        },
+        "6": {
+          "rounds": 31,
+          "mean_accepted": 6.870967741935484
+        }
+      }
+    },
+    {
+      "leg": "travel_eothen",
+      "rounds": 172,
+      "mean_expected": 1.7857409825581394,
+      "mean_accepted": 1.9767441860465116,
+      "bias": -0.1910032034883722,
+      "bias_pct": -9.662515000000004,
+      "slope": 0.8339755095414222,
+      "pearson_r": 0.640202142375462,
+      "bins": {
+        "0": {
+          "rounds": 65,
+          "mean_accepted": 1.0
+        },
+        "1": {
+          "rounds": 50,
+          "mean_accepted": 1.62
+        },
+        "2": {
+          "rounds": 29,
+          "mean_accepted": 2.9310344827586206
+        },
+        "3": {
+          "rounds": 14,
+          "mean_accepted": 3.5
+        },
+        "4": {
+          "rounds": 9,
+          "mean_accepted": 4.111111111111111
+        },
+        "5": {
+          "rounds": 5,
+          "mean_accepted": 4.6
+        }
+      }
+    }
+  ],
+  "manifold": {
+    "harness": "ranked-prediction",
+    "local_points": [
+      {
+        "leg": "beagle_a",
+        "eff": 4.243697478991597,
+        "mean_accepted": 3.302521008403361,
+        "R": 119
+      },
+      {
+        "leg": "beagle_b",
+        "eff": 4,
+        "mean_accepted": 3.0634920634920637,
+        "R": 126
+      },
+      {
+        "leg": "benchfixture",
+        "eff": 6.358974358974359,
+        "mean_accepted": 5.576923076923077,
+        "R": 78
+      },
+      {
+        "leg": "botany_andrews",
+        "eff": 3.5384615384615383,
+        "mean_accepted": 2.5874125874125875,
+        "R": 143
+      },
+      {
+        "leg": "drama_dollhouse",
+        "eff": 5.076086956521739,
+        "mean_accepted": 4.565217391304348,
+        "R": 92
+      },
+      {
+        "leg": "essays_bacon",
+        "eff": 1.9964912280701754,
+        "mean_accepted": 0.7964912280701755,
+        "R": 285
+      },
+      {
+        "leg": "essays_montaigne",
+        "eff": 3.4383561643835616,
+        "mean_accepted": 2.506849315068493,
+        "R": 146
+      },
+      {
+        "leg": "medicine_hippoc",
+        "eff": 5.7375,
+        "mean_accepted": 5.4,
+        "R": 80
+      },
+      {
+        "leg": "medicine_hist",
+        "eff": 3.503267973856209,
+        "mean_accepted": 2.34640522875817,
+        "R": 153
+      },
+      {
+        "leg": "plutarch_lives",
+        "eff": 3.1277777777777778,
+        "mean_accepted": 1.8444444444444446,
+        "R": 180
+      },
+      {
+        "leg": "republic_jowett",
+        "eff": 4.586538461538462,
+        "mean_accepted": 3.923076923076923,
+        "R": 104
+      },
+      {
+        "leg": "travel_eothen",
+        "eff": 3.1569767441860463,
+        "mean_accepted": 1.9767441860465116,
+        "R": 172
+      }
+    ],
+    "leave_one_out": [
+      {
+        "leg": "essays_bacon",
+        "eff": 1.9964912280701754,
+        "interior": false,
+        "measured_mean_accepted": 0.7964912280701755,
+        "loo_predicted": 1.8444444444444446,
+        "residual": 1.047953216374269,
+        "R_loo": 180.0
+      },
+      {
+        "leg": "plutarch_lives",
+        "eff": 3.1277777777777778,
+        "interior": true,
+        "measured_mean_accepted": 1.8444444444444446,
+        "loo_predicted": 1.9470478511981844,
+        "residual": 0.1026034067537398,
+        "R_loo": 173.73318176419687
+      },
+      {
+        "leg": "travel_eothen",
+        "eff": 3.1569767441860463,
+        "interior": true,
+        "measured_mean_accepted": 1.9767441860465116,
+        "loo_predicted": 1.906720309089769,
+        "residual": -0.0700238769567425,
+        "R_loo": 176.14353826850694
+      },
+      {
+        "leg": "essays_montaigne",
+        "eff": 3.4383561643835616,
+        "interior": true,
+        "measured_mean_accepted": 2.506849315068493,
+        "loo_predicted": 2.277112780327366,
+        "residual": -0.22973653474112687,
+        "R_loo": 156.235086895256
+      },
+      {
+        "leg": "medicine_hist",
+        "eff": 3.503267973856209,
+        "interior": true,
+        "measured_mean_accepted": 2.34640522875817,
+        "loo_predicted": 2.5590893454670547,
+        "residual": 0.21268411670888465,
+        "R_loo": 143.8570236097321
+      },
+      {
+        "leg": "botany_andrews",
+        "eff": 3.5384615384615383,
+        "interior": true,
+        "measured_mean_accepted": 2.5874125874125875,
+        "loo_predicted": 2.3972109761583447,
+        "residual": -0.19020161125424284,
+        "R_loo": 150.71186440677965
+      },
+      {
+        "leg": "beagle_b",
+        "eff": 4,
+        "interior": true,
+        "measured_mean_accepted": 3.0634920634920637,
+        "loo_predicted": 3.055412048995917,
+        "residual": -0.008080014496146593,
+        "R_loo": 126.25104275822392
+      },
+      {
+        "leg": "beagle_a",
+        "eff": 4.243697478991597,
+        "interior": true,
+        "measured_mean_accepted": 3.302521008403361,
+        "loo_predicted": 3.420636013968429,
+        "residual": 0.11811500556506793,
+        "R_loo": 115.82043814106622
+      },
+      {
+        "leg": "republic_jowett",
+        "eff": 4.586538461538462,
+        "interior": true,
+        "measured_mean_accepted": 3.923076923076923,
+        "loo_predicted": 3.822594940448556,
+        "residual": -0.10048198262836694,
+        "R_loo": 106.16690937605019
+      },
+      {
+        "leg": "drama_dollhouse",
+        "eff": 5.076086956521739,
+        "interior": true,
+        "measured_mean_accepted": 4.565217391304348,
+        "loo_predicted": 4.551269478042934,
+        "residual": -0.01394791326141398,
+        "R_loo": 92.23115577889446
+      },
+      {
+        "leg": "medicine_hippoc",
+        "eff": 5.7375,
+        "interior": true,
+        "measured_mean_accepted": 5.4,
+        "loo_predicted": 5.086818379317836,
+        "residual": -0.3131816206821645,
+        "R_loo": 84.1161947167185
+      },
+      {
+        "leg": "benchfixture",
+        "eff": 6.358974358974359,
+        "interior": false,
+        "measured_mean_accepted": 5.576923076923077,
+        "loo_predicted": 5.4,
+        "residual": -0.1769230769230763,
+        "R_loo": 80.0
+      }
+    ],
+    "loo_residual_pstdev_interior": 0.15741032332855256,
+    "loo_residual_max_abs_interior": 0.3131816206821645,
+    "loo_residual_pstdev_all": 0.34028943441893145,
+    "predictions": {
+      "beagle": {
+        "eff": 4.3818,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 3.5524921046429414,
+        "predicted_mean_accepted_band": [
+          3.239310483960777,
+          3.865673725325106
+        ],
+        "R_predicted": 112.46587324727649,
+        "R_band": [
+          105.22694880569496,
+          120.77435751335668
+        ],
+        "R_assumed": 110,
+        "R_floor": 96,
+        "R_ratio_predicted_over_assumed": 1.0224170295206954,
+        "accept_rate_predicted": 0.8107380767362594,
+        "accept_rate_at_assumed_R": 0.8340283569641368
+      },
+      "medicine": {
+        "eff": 5.2556,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 4.791784387838948,
+        "predicted_mean_accepted_band": [
+          4.478602767156784,
+          5.104966008521113
+        ],
+        "R_predicted": 88.40108086120232,
+        "R_band": [
+          83.86615081646107,
+          93.45448497732777
+        ],
+        "R_assumed": 90,
+        "R_floor": 82,
+        "R_ratio_predicted_over_assumed": 0.9822342317911369,
+        "accept_rate_predicted": 0.9117483042543093,
+        "accept_rate_at_assumed_R": 0.8921700450736145
+      },
+      "essays": {
+        "eff": 5.087,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 4.578990961380443,
+        "predicted_mean_accepted_band": [
+          4.265809340698278,
+          4.892172582062607
+        ],
+        "R_predicted": 91.77286780785764,
+        "R_band": [
+          86.89494288722443,
+          97.23101747016645
+        ],
+        "R_assumed": 92,
+        "R_floor": 85,
+        "R_ratio_predicted_over_assumed": 0.9975311718245395,
+        "accept_rate_predicted": 0.9001358288540285,
+        "accept_rate_at_assumed_R": 0.89742822710917
+      },
+      "botany": {
+        "eff": 6.1481,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 5.516890768437339,
+        "predicted_mean_accepted_band": [
+          5.203709147755174,
+          5.830072389119503
+        ],
+        "R_predicted": 78.56507316030564,
+        "R_band": [
+          74.96260227280027,
+          82.53127085838129
+        ],
+        "R_assumed": 81,
+        "R_floor": 72,
+        "R_ratio_predicted_over_assumed": 0.9699391748185882,
+        "accept_rate_predicted": 0.8973326342182688,
+        "accept_rate_at_assumed_R": 0.8654686251558998
+      },
+      "republic": {
+        "eff": 4.9892,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 4.4512478223740395,
+        "predicted_mean_accepted_band": [
+          4.138066201691875,
+          4.764429443056204
+        ],
+        "R_predicted": 93.92344958131477,
+        "R_band": [
+          88.82058581127262,
+          99.64838519040634
+        ],
+        "R_assumed": 93,
+        "R_floor": 86,
+        "R_ratio_predicted_over_assumed": 1.0099295653904814,
+        "accept_rate_predicted": 0.8921766660735266,
+        "accept_rate_at_assumed_R": 0.9030258045550431
+      },
+      "drama": {
+        "eff": 2.2976,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 1.0754195916257432,
+        "predicted_mean_accepted_band": [
+          0.7622379709435787,
+          1.3886012123079077
+        ],
+        "R_predicted": 246.69710263211587,
+        "R_band": [
+          214.3513941807376,
+          290.53964813041284
+        ],
+        "R_assumed": 252,
+        "R_floor": 156,
+        "R_ratio_predicted_over_assumed": 0.9789567564766503,
+        "accept_rate_predicted": 0.46806214816580044,
+        "accept_rate_at_assumed_R": 0.4490538090816642
+      },
+      "travel": {
+        "eff": 2.6557,
+        "inside_local_eff_range": true,
+        "R_bound_from_non_drafting_rounds": null,
+        "predicted_mean_accepted": 1.407141070043939,
+        "predicted_mean_accepted_band": [
+          1.0939594493617746,
+          1.7203226907261036
+        ],
+        "R_predicted": 212.70045464790903,
+        "R_band": [
+          188.21296522852512,
+          244.51285346335354
+        ],
+        "R_assumed": 212,
+        "R_floor": 141,
+        "R_ratio_predicted_over_assumed": 1.0033040313580615,
+        "accept_rate_predicted": 0.5298569379236884,
+        "accept_rate_at_assumed_R": 0.5328517300985208
+      },
+      "plutarch": {
+        "eff": 0.154,
+        "inside_local_eff_range": false,
+        "R_bound_from_non_drafting_rounds": [
+          460,
+          512
+        ],
+        "predicted_mean_accepted": NaN,
+        "predicted_mean_accepted_band": [
+          NaN,
+          NaN
+        ],
+        "R_predicted": NaN,
+        "R_band": [
+          NaN,
+          NaN
+        ],
+        "R_assumed": 487,
+        "R_floor": 458,
+        "R_ratio_predicted_over_assumed": NaN,
+        "accept_rate_predicted": NaN,
+        "accept_rate_at_assumed_R": 0.33334222245926554
+      }
+    }
+  }
+}
