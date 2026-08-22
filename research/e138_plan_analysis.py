@@ -235,12 +235,16 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
             globals_[cell] = weighted_total(
                 table, shapes, {name: cell for name in shapes}
             )
-        keyed_choice = {}
-        for name in shapes:
-            keyed_choice[name] = min(
-                cells, key=lambda c: table[(name, c)]["us_per_call"]
-            )
-        keyed_total = weighted_total(table, shapes, keyed_choice)
+        # A width may be measured with the stock kernel alone, as a reference
+        # arm. That width has no plan to choose between, so it carries its
+        # stock timings and no plan optimum.
+        keyed_choice = {
+            name: min(cells, key=lambda c: table[(name, c)]["us_per_call"])
+            for name in shapes
+        } if cells else {}
+        keyed_total = (
+            weighted_total(table, shapes, keyed_choice) if cells else None
+        )
         best_global = min(cells, key=lambda c: globals_[c]) if cells else None
         ship = shipped.get(m)
         per_width[m] = {
@@ -248,7 +252,9 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
             "stock_cells": stock,
             "global_totals_us": globals_,
             "best_global_cell": best_global,
-            "best_global_total_us": globals_[best_global],
+            "best_global_total_us": (
+                globals_[best_global] if best_global else None
+            ),
             "shipped_cell": ship,
             "shipped_total_us": globals_.get(ship) if ship else None,
             "shape_keyed_choice": keyed_choice,
