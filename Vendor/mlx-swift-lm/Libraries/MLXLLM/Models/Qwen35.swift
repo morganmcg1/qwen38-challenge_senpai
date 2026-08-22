@@ -4969,12 +4969,14 @@ private func qwen35ClusterRowQMV(
 /// declared head's per-draft bytes at a worst-domain argmax miss rate of
 /// 2.3e-4, 13x inside the accepted gate.
 ///
-/// 0.15 screens better under the fitted acceptance penalty (+2.02 % against
-/// +1.83 %), but the whole difference lives inside that fitted coefficient,
-/// and no local leg can resolve it: at these miss rates a 512-token leg
-/// expects under one changed proposal. 0.25 is the low-variance choice and it
-/// is the byte point the r1 arm-C and r2 balanced sessions both measured.
-private let qwen35DerivedClusterProbeFraction: Double = 0.25
+/// 0.15 is now carried by two independent ranked receipts on two different
+/// bases, read on the candidate leg alone rather than on the raw ratio, whose
+/// serial half is pinned hardware measured about 9.6x noisier:
+/// `b6cb0fea -> 02742bf0` gives -0.3836 % on a wide-grid base and
+/// `ed608e64 -> 08b67f12` gives -0.2786 % on a tight-grid base, pooling to
+/// -0.3311 % with 2 sigma of 0.0948 %. Acceptance is unchanged: the tight-grid
+/// pair reports digit-identical draft lengths on seven of eight prompts.
+public let qwen35DerivedClusterProbeFraction: Double = 0.15
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
