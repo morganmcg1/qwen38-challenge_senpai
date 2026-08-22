@@ -29,7 +29,7 @@ first="${4:-1}"
 # so prep is the same length and the same kind of work for every position. Set
 # the floor a little above the natural rebuild so padding, not luck, closes the
 # gap; the balance report below proves it worked.
-export E121_EXPERIMENT="e121-rung3"
+export E121_EXPERIMENT="${E121_EXPERIMENT:-e121-rung3}"
 export E121_PREP_FLOOR_SECONDS="${E121_PREP_FLOOR_SECONDS:-60}"
 
 failures=0

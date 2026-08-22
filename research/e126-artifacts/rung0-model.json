@@ -1,0 +1,330 @@
+{
+  "gate_folds_off": {
+    "2": true,
+    "3": false,
+    "4": false,
+    "5": true
+  },
+  "harness": "local",
+  "kind": "prediction",
+  "model_a_e123_prices": {
+    "2": {
+      "n_nosums_e123_vs_share_off_pct": 0.15933,
+      "n_sums_free_vs_share_off_pct": 0.19693,
+      "n_sums_loaded_vs_share_off_pct": 0.12733000000000003,
+      "share_off_alu_per_kblock": 64
+    },
+    "3": {
+      "n_nosums_e123_vs_share_off_pct": 0.92547,
+      "n_sums_free_vs_share_off_pct": 1.14387,
+      "n_sums_loaded_vs_share_off_pct": 0.22636999999999996,
+      "share_off_alu_per_kblock": 96
+    },
+    "4": {
+      "n_nosums_e123_vs_share_off_pct": 6.44778,
+      "n_sums_free_vs_share_off_pct": 7.96938,
+      "n_sums_loaded_vs_share_off_pct": 3.1183799999999997,
+      "share_off_alu_per_kblock": 128
+    },
+    "5": {
+      "n_nosums_e123_vs_share_off_pct": 7.551224999999999,
+      "n_sums_free_vs_share_off_pct": 9.333224999999999,
+      "n_sums_loaded_vs_share_off_pct": 3.569024999999999,
+      "share_off_alu_per_kblock": 160
+    }
+  },
+  "model_b_thorfinn_grid": {
+    "2": {
+      "fitted": null,
+      "n_sums_free_vs_share_off_pct": null
+    },
+    "3": {
+      "fitted": 3.63,
+      "n_sums_free_vs_share_off_pct": 2.2
+    },
+    "4": {
+      "fitted": 5.88,
+      "n_sums_free_vs_share_off_pct": 5.88
+    },
+    "5": {
+      "fitted": 6.52,
+      "n_sums_free_vs_share_off_pct": 6.52
+    }
+  },
+  "per_width": {
+    "2": {
+      "counts": {
+        "n_nosums_e123": {
+          "alu": 24,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_free": {
+          "alu": 16,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_loaded": {
+          "alu": 34,
+          "barrier": 0,
+          "tg_load": 2,
+          "tg_store": 0
+        },
+        "share_off": {
+          "alu": 64,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "share_on": {
+          "alu": 64,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        }
+      },
+      "gate_folds_off": true,
+      "nominal_price_pct": {
+        "n_nosums_e123": 0.9792000000000001,
+        "n_sums_free": 0.6528,
+        "n_sums_loaded": 1.3722,
+        "share_off": 2.6112,
+        "share_on": 2.6112
+      },
+      "reachable": false,
+      "round_weight": 0.024
+    },
+    "3": {
+      "counts": {
+        "n_nosums_e123": {
+          "alu": 36,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_free": {
+          "alu": 24,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_loaded": {
+          "alu": 50,
+          "barrier": 0,
+          "tg_load": 3,
+          "tg_store": 0
+        },
+        "share_off": {
+          "alu": 96,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "share_on": {
+          "alu": 80,
+          "barrier": 2,
+          "tg_load": 2,
+          "tg_store": 2
+        }
+      },
+      "gate_folds_off": false,
+      "nominal_price_pct": {
+        "n_nosums_e123": 2.6928,
+        "n_sums_free": 1.7952000000000001,
+        "n_sums_loaded": 4.1843,
+        "share_off": 7.1808000000000005,
+        "share_on": 6.6242
+      },
+      "reachable": true,
+      "round_weight": 0.275
+    },
+    "4": {
+      "counts": {
+        "n_nosums_e123": {
+          "alu": 48,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_free": {
+          "alu": 32,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_loaded": {
+          "alu": 66,
+          "barrier": 0,
+          "tg_load": 4,
+          "tg_store": 0
+        },
+        "share_off": {
+          "alu": 128,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "share_on": {
+          "alu": 96,
+          "barrier": 2,
+          "tg_load": 2,
+          "tg_store": 2
+        }
+      },
+      "gate_folds_off": false,
+      "nominal_price_pct": {
+        "n_nosums_e123": 6.48,
+        "n_sums_free": 4.32,
+        "n_sums_loaded": 10.5276,
+        "share_off": 17.28,
+        "share_on": 14.1228
+      },
+      "reachable": true,
+      "round_weight": 0.667
+    },
+    "5": {
+      "counts": {
+        "n_nosums_e123": {
+          "alu": 60,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_free": {
+          "alu": 40,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "n_sums_loaded": {
+          "alu": 82,
+          "barrier": 0,
+          "tg_load": 5,
+          "tg_store": 0
+        },
+        "share_off": {
+          "alu": 160,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        },
+        "share_on": {
+          "alu": 160,
+          "barrier": 0,
+          "tg_load": 0,
+          "tg_store": 0
+        }
+      },
+      "gate_folds_off": true,
+      "nominal_price_pct": {
+        "n_nosums_e123": null,
+        "n_sums_free": null,
+        "n_sums_loaded": null,
+        "share_off": null,
+        "share_on": null
+      },
+      "reachable": true,
+      "round_weight": 0.034
+    }
+  },
+  "primary_predictions": {
+    "2": {
+      "model_a_faithful_primary_pct": 0.12733000000000003,
+      "model_a_primary_pct": 0.19693,
+      "overlap_O_model_a": 0.0,
+      "share_on_cost_weighted_pct": 0.0,
+      "share_on_vs_share_off_pct": 0.0
+    },
+    "3": {
+      "model_a_faithful_primary_pct": -0.23773069310909517,
+      "model_a_primary_pct": 0.6840370917347317,
+      "model_b_primary_pct": 1.7450797190994305,
+      "model_b_primary_pct_cost_weighted": 1.5502315280853636,
+      "overlap_O_model_a": 0.4047662758879943,
+      "overlap_O_model_b": 0.21045454545454545,
+      "overlap_O_model_b_cost_weighted": 0.3,
+      "share_on_cost_weighted_pct": 0.66,
+      "share_on_vs_share_off_pct": 0.463
+    },
+    "4": {
+      "model_a_faithful_primary_pct": 1.6609959601291133,
+      "model_a_primary_pct": 6.58496924419903,
+      "model_b_primary_pct": 4.464158833918675,
+      "model_b_primary_pct_cost_weighted": 4.030671030762799,
+      "overlap_O_model_a": 0.18596176866958283,
+      "overlap_O_model_b": 0.25204081632653064,
+      "overlap_O_model_b_cost_weighted": 0.3277210884353742,
+      "share_on_cost_weighted_pct": 1.927,
+      "share_on_vs_share_off_pct": 1.482
+    },
+    "5": {
+      "model_a_faithful_primary_pct": 3.569024999999999,
+      "model_a_primary_pct": 9.333224999999999,
+      "model_b_primary_pct": 6.52,
+      "model_b_primary_pct_cost_weighted": 6.52,
+      "overlap_O_model_a": 0.0,
+      "overlap_O_model_b": 0.0,
+      "overlap_O_model_b_cost_weighted": 0.0,
+      "share_on_cost_weighted_pct": 0.0,
+      "share_on_vs_share_off_pct": 0.0
+    }
+  },
+  "primary_round_weighted_faithful": 1.1638552148011174,
+  "primary_round_weighted_model_a": 4.897614336107804,
+  "primary_round_weighted_model_b": 3.6791708649761,
+  "primary_round_weighted_model_b_cost_weighted": 3.336451247742262,
+  "reachable": {
+    "2": false,
+    "3": true,
+    "4": true,
+    "5": true
+  },
+  "round_weight": {
+    "2": 0.024,
+    "3": 0.275,
+    "4": 0.667,
+    "5": 0.034
+  },
+  "task4_thorfinn_rung5e": {
+    "e121_base_leg_pct": 0.8372024848674973,
+    "e121_base_leg_pct_fitted_na3": 1.0769365536057554,
+    "e121_base_ranked_pct": 0.7953423606241223,
+    "e121_base_round_net_pct": 1.3797008649760996,
+    "fraction_of_route_b_leg_value_removed_by_e121": 0.4366659460241227,
+    "kernel_to_leg": 0.6068,
+    "leg_to_ranked": 0.95,
+    "per_width": {
+      "3": {
+        "marginal_gain_pct": 1.7450797190994305,
+        "marginal_gain_pct_fitted": 3.1817314164582013,
+        "marginal_net_pct": -0.4849202809005695,
+        "marginal_net_pct_fitted": 0.9517314164582014,
+        "replica_cost_pp": 2.23
+      },
+      "4": {
+        "marginal_gain_pct": 4.464158833918675,
+        "marginal_gain_pct_fitted": 4.464158833918675,
+        "marginal_net_pct": 2.044158833918675,
+        "marginal_net_pct_fitted": 2.044158833918675,
+        "replica_cost_pp": 2.42
+      },
+      "5": {
+        "marginal_gain_pct": 6.52,
+        "marginal_gain_pct_fitted": 6.52,
+        "marginal_net_pct": 4.4,
+        "marginal_net_pct_fitted": 4.4,
+        "replica_cost_pp": 2.119999999999999
+      }
+    },
+    "share_off_base_leg_pct": 1.486156356,
+    "share_off_base_round_net_pct": 2.44917
+  },
+  "widths": [
+    2,
+    3,
+    4,
+    5
+  ]
+}
