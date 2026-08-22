@@ -65,7 +65,7 @@ RUNGS = {
         "job_type": "attribution-replay",
         "question":
             "is the one narrowing store in the affine-4 rerank kernel "
-            "(Qwen35.swift:4118, typedef bfloat16_t InT at :4143) worth "
+            "(Qwen35.swift:4117, typedef bfloat16_t InT at :4143) worth "
             "removing, priced on realised acceptance against a replay "
             "baseline remodelled on that same kernel's arithmetic",
         "command":

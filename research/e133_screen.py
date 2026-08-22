@@ -1658,13 +1658,15 @@ def attrib_batch(screen: Screen, sketch: Sketch | None, f, x: mx.array,
     # removing its one narrowing store would be worth.
     #
     # SOURCE READ FIRST, as F2.4 orders. `qwen35DraftSelectedAffine4RerankKernel`
-    # holds `float result[4]` and accumulates the affine-4 dot in float32
-    # (`Qwen35.swift:4074`, `:4111`). It narrows exactly once, at the store
-    # `exact_scores[candidate_base + r] = float(InT(reduced))` on `:4118` with
-    # `typedef bfloat16_t InT` on `:4143`. The reducer below it then compares
-    # those already-narrowed float values. So the shipped arm is a STORE-TYPE
-    # change, not an accumulation change, and dropping `InT` is a one-token
-    # edit that keeps the accumulator it already has.
+    # (`Qwen35.swift:4056`) declares `float result[4]` on `:4075`, accumulates
+    # the affine-4 dot into it in float32 on `:4110`, and reduces it in float32
+    # with `simd_sum` on `:4115`. Its destination `exact_scores` is already
+    # `threadgroup float` on `:4113`. The value narrows exactly once, at the
+    # store `exact_scores[candidate_base + r] = float(InT(reduced))` on `:4117`,
+    # with `typedef bfloat16_t InT` on `:4143`. The reducer on `:4144` then
+    # compares those already-narrowed float values. So the arm is a STORE-TYPE
+    # change, not an accumulation change: dropping `InT` deletes one round trip
+    # and keeps the accumulator, the reduction and the buffer type unchanged.
     #
     # THE REPLAY'S OWN BASELINE WAS WRONG AND THIS FIXES IT. `H.scores` uses
     # `mx.quantized_matmul` at bfloat16, and that is NOT "accumulate in float32
