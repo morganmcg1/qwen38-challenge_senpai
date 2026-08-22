@@ -62,6 +62,7 @@ def main() -> int:
     cells = load("cells.json")
     rule116 = load("rule116.json")
     perturb = load("perturb.json")
+    oracle = load("oracle-state.json")
     if gate is None or cells is None:
         raise SystemExit("the cell C gate and the 2x2 must both be present")
 
@@ -236,13 +237,21 @@ def main() -> int:
                       "E_pb6", "F_pb6look")]
         + [["EMA_PRIOR"] + [0.85 * 0.98 ** i for i in range(8)]])})
 
+    audit_keys = ("recorded_acc_changed", "recorded_acc_unchanged",
+                  "recorded_acc_population",
+                  "p_first_declined_draft_accepted_changed",
+                  "extra_accepted_per_changed_round",
+                  "changed_shipped_depth_mean", "changed_censored",
+                  "changed_censored_share", "changed_extra_is_lower_bound")
     run.log({"gate_walk_comparison": table(
         ["price", "rounds", "disagreements", "deeper", "shallower",
          "non_quasiconcave", "transitions"]
+        + list(audit_keys)
         + ["greedy_d%d" % d for d in range(9)]
         + ["argmax_d%d" % d for d in range(9)],
         [[name, row["rounds"], row["disagreements"], row["deeper"],
           row["shallower"], row["non_quasiconcave"], json.dumps(row["pairs"])]
+         + [row.get(k) for k in audit_keys]
          + list(row["greedy_depths"]) + list(row["argmax_depths"])
          for name, row in sorted(gate["walk_comparison"].items())])})
 
@@ -258,6 +267,22 @@ def main() -> int:
         "non_quasiconcave"]
     summary["e140_recorded_trace_disagreements_measured_price"] = measured[
         "disagreements"]
+    # Item 2 on the recorded traces. Every round the argmax changes under the
+    # measured price is a round the shipped flat price already drafted to the
+    # cap and had fully accepted, so the argmax repairs the measured price
+    # rather than finding value the shipped walk misses.
+    summary["e140_recorded_changed_acc_mean"] = measured[
+        "recorded_acc_changed"]
+    summary["e140_recorded_population_acc_mean"] = measured[
+        "recorded_acc_population"]
+    summary["e140_recorded_changed_shipped_depth_mean"] = measured[
+        "changed_shipped_depth_mean"]
+    summary["e140_recorded_changed_censored_share"] = measured[
+        "changed_censored_share"]
+    summary["e140_recorded_changed_extra_is_lower_bound"] = measured[
+        "changed_extra_is_lower_bound"]
+    summary["e140_recorded_extra_tokens_per_changed_round"] = measured[
+        "extra_accepted_per_changed_round"]
 
     if perturb is not None:
         summary["e140_cliff_step_us"] = perturb["step_us"]
@@ -289,6 +314,27 @@ def main() -> int:
             summary["e140_pb6look_degradation_at_max_cut_pp"] = (
                 perturb["tier_sweep"][worst]["argmax"]["at_shipped"]
                 - perturb["tier_sweep"]["0.000000"]["argmax"]["at_shipped"])
+
+    if oracle is not None:
+        # Replaces the EMA with the true per-position acceptance vector, so a
+        # perfect stationary estimator is priced separately from the argmax.
+        run.log({"oracle_state": table(
+            ["cell", "in_sample_pct", "in_sample_sd", "curve_lopo_pct",
+             "unweighted_mean_depth"]
+            + ["depth_share_%d" % d for d in range(9)],
+            [[name, entry["in_sample_mean"], entry["in_sample_sd"],
+              entry["curve_lopo_mean"], entry["unweighted_mean_depth"]]
+             + list(entry["depth_share"])
+             for name, entry in sorted(oracle["cells"].items())])})
+        run.log({"oracle_p_target": table(
+            ["prompt"] + ["p%d" % i for i in range(8)],
+            [[p] + list(v) for p, v in sorted(oracle["p_target"].items())])})
+        summary["e140_oracle_estimator_worth_pp"] = oracle[
+            "estimator_worth_pp"]
+        summary["e140_oracle_argmax_worth_pp"] = oracle[
+            "argmax_worth_with_perfect_estimator_pp"]
+        for name, entry in oracle["cells"].items():
+            summary["e140_oracle_%s_pct" % name] = entry["in_sample_mean"]
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
