@@ -78,6 +78,10 @@ LEDGER_F_SERIAL_US = 2.613
 BYTE_CEILING_GB_S = 265.0
 PCT_PER_MB = 0.02167          # ledger 289, the C1 byte price
 US_PER_RANKED_PCT = (1.0 / PCT_PER_MB) * 1e6 / (BYTE_CEILING_GB_S * 1e3)
+# E93 measured the head pass itself at 186.7 GB/s, 70 % of that ceiling. F1
+# adopts dual reporting, so the same bytes are also priced at that rate.
+E93_HEAD_PASS_GB_S = 186.7
+US_PER_RANKED_PCT_E93 = (1.0 / PCT_PER_MB) * 1e6 / (E93_HEAD_PASS_GB_S * 1e3)
 
 ORDINAL_HEADER = """
     inline uint qwen_top32_ordinal(float v) {
@@ -1006,6 +1010,7 @@ def main() -> None:
     ap.add_argument("--reps", default="1,2,4,8,16,32")
     ap.add_argument("--batch", default="1,2,4,8,16,32")
     ap.add_argument("--survivors", default="1024,4096,8192")
+    ap.add_argument("--replicates", type=int, default=3)
     ap.add_argument("--tiles", default="auto")
     ap.add_argument("--chain", action="store_true",
                     help="also run the serialised chain-slope harness")
@@ -1091,6 +1096,58 @@ def main() -> None:
         "ledger_f_serial_us": LEDGER_F_SERIAL_US,
     }
 
+    out["replicates"] = []
+    for rep in range(args.replicates):
+        out["replicates"].append(sweep(args, out, ship, ship_row, null, floor,
+                                       floor_min, rows_c1, probes_c1, rep))
+
+    selected = out["arms"].get("N4096")
+    if selected:
+        added_reps = [r["N4096"] for r in out["replicates"]]
+        added = sum(added_reps) / len(added_reps)
+        estimates = [added, selected["added_us_isolated"],
+                     selected["added_us_from_parts_plus_ledger_f"]]
+        out["verdict"] = {
+            "selected_cell": "qlowrank256-N4096-p0.35",
+            "added_us_per_draft_step": added,
+            "added_us_per_draft_step_replicates": added_reps,
+            "added_us_per_draft_step_spread":
+                max(added_reps) - min(added_reps),
+            "added_us_per_draft_step_isolated_bound":
+                selected["added_us_isolated"],
+            "added_us_per_draft_step_parts_plus_ledger_f":
+                selected["added_us_from_parts_plus_ledger_f"],
+            "added_us_span": [min(estimates), max(estimates)],
+            "added_ranked_pct_at_265gbs": added / US_PER_RANKED_PCT,
+            "added_ranked_pct_at_measured_186_7gbs":
+                added / US_PER_RANKED_PCT_E93,
+            "predicted_c1_gross_pct": 0.678,
+            "net_pct_after_selection_cost": 0.678 - added / US_PER_RANKED_PCT,
+            "net_pct_after_selection_cost_at_e93_rate":
+                0.678 - added / US_PER_RANKED_PCT_E93,
+            "stop_rule": ("proceed" if added < 25.0 else
+                          "fallback" if added <= 70.0 else "stop"),
+            "stop_rule_on_worst_estimate":
+                ("proceed" if max(estimates) < 25.0 else
+                 "fallback" if max(estimates) <= 70.0 else "stop"),
+        }
+    with open(args.out, "w") as f:
+        json.dump(out, f, indent=2)
+    print(json.dumps(out["verdict"], indent=2))
+    print(json.dumps(out["anchor_check"], indent=2))
+    print(f"wrote {args.out}")
+
+
+def sweep(args, out, ship, ship_row, null, floor, floor_min, rows_c1,
+          probes_c1, rep: int) -> dict:
+    """One pass of the survivor ladder. Returns `added_us_per_step` per arm.
+
+    Repeating the whole ladder is the only replicate that means anything
+    here. The part arms are far noisier than the whole-arm slope -- the
+    histogram arm read 6.19 and 19.97 us on two passes whose whole-arm slopes
+    agreed to 0.4 percent -- so a decision must rest on the slope.
+    """
+    added = {}
     for n in [int(v) for v in args.survivors.split(",")]:
         arm = TwoStageArm(rows_c1, probes_c1, n, tiles_for(n),
                           with_rescore=True)
@@ -1127,41 +1184,14 @@ def main() -> None:
             row["added_us_from_parts"]
             + LEDGER_F_MTP_US * (arm.dispatches - ship.dispatches))
         out["correctness"][arm.label] = correctness(arm, ship)
-        print(f"  -> {arm.label} added: batched {row['added_us_per_step']:7.2f}"
+        added[arm.label] = row["added_us_per_step"]
+        print(f"  -> r{rep} {arm.label} added:"
+              f" batched {row['added_us_per_step']:7.2f}"
               f"  isolated {row['added_us_isolated']:7.2f}"
               f"  parts+F {row['added_us_from_parts_plus_ledger_f']:7.2f} us"
               f"  = {row['added_ranked_pct']:6.3f} % ranked,"
               f" recall {out['correctness'][arm.label]['recall_of_true_top32']}")
-
-    selected = out["arms"].get("N4096")
-    if selected:
-        added = selected["added_us_per_step"]
-        estimates = [added, selected["added_us_isolated"],
-                     selected["added_us_from_parts_plus_ledger_f"]]
-        out["verdict"] = {
-            "selected_cell": "qlowrank256-N4096-p0.35",
-            "added_us_per_draft_step": added,
-            "added_us_per_draft_step_isolated_bound":
-                selected["added_us_isolated"],
-            "added_us_per_draft_step_parts_plus_ledger_f":
-                selected["added_us_from_parts_plus_ledger_f"],
-            "added_us_span": [min(estimates), max(estimates)],
-            "added_ranked_pct_at_265gbs": added / US_PER_RANKED_PCT,
-            "added_ranked_pct_at_measured_186_7gbs":
-                added / ((1.0 / PCT_PER_MB) * 1e6 / (186.7 * 1e3)),
-            "predicted_c1_gross_pct": 0.678,
-            "net_pct_after_selection_cost": 0.678 - added / US_PER_RANKED_PCT,
-            "stop_rule": ("proceed" if added < 25.0 else
-                          "fallback" if added <= 70.0 else "stop"),
-            "stop_rule_on_worst_estimate":
-                ("proceed" if max(estimates) < 25.0 else
-                 "fallback" if max(estimates) <= 70.0 else "stop"),
-        }
-    with open(args.out, "w") as f:
-        json.dump(out, f, indent=2)
-    print(json.dumps(out["verdict"], indent=2))
-    print(json.dumps(out["anchor_check"], indent=2))
-    print(f"wrote {args.out}")
+    return added
 
 
 if __name__ == "__main__":
