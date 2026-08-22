@@ -205,35 +205,13 @@ public final class Qwen36MTPBlockSession {
     /// without this one-time resize the driver must re-establish residency for
     /// the whole tower on later command buffers.
     ///
-    /// Capacity is the live post-warm footprint plus an allowance for what the
-    /// scored window allocates and then keeps live: target KV, Gated DeltaNet
-    /// recurrent and convolution state, and head history KV. E130 rung 9
-    /// measured that persistent growth at 218.71 MiB over a 1024-token window,
-    /// so the previous 64 MiB allowance could not wire it.
-    ///
-    /// `ResidencySet::insert` admits one buffer at a time while
-    /// `allocatedSize() + buf <= capacity`, so the allowance is spent in
-    /// allocation order and every increase buys more admitted state. E130
-    /// rung 10 measured the response directly: raising the allowance by
-    /// 448 MiB moved exactly 448 MiB from the unwired set into the residency
-    /// set, one for one, in all three worker roles. The allowance is fully
-    /// spent at 64 MiB and at 512 MiB alike, with under 133 KiB of headroom
-    /// left in every draw, so there is no threshold to clear and no size that
-    /// is "enough". 512 MiB is the largest value this campaign has timed.
-    ///
-    /// Page rounding is charged against the allowance, because the set counts
-    /// page-rounded allocation sizes while the sizing input counts buffer
-    /// lengths, but the measured difference is only 1,021,964 B. It is not a
-    /// reason to choose one allowance over another.
-    ///
-    /// Live scratch peaks near 2.9 GB, far above any allowance the recommended
-    /// working set permits, so its bulk stays on the commit-free unwired path.
-    /// Nothing that exists at the sizing instant is ever left out: the greedy
-    /// fill admitted every buffer in 36 of 36 measured draws, and no wired
-    /// size class lost a member afterwards. The ticket is never ended because
-    /// shrinking the limit would evict the resident weights.
+    /// Capacity is deliberately the live post-warm footprint plus only a small
+    /// page-rounding allowance. After cached warm temporaries are cleared,
+    /// persistent weights fit in the one resize while later scratch fails the
+    /// fit test and stays on the commit-free unwired path. The ticket is never
+    /// ended because shrinking the limit would evict the resident weights.
     private static let wiredZHDefaultFraction = 1.0
-    private static let wiredZHDefaultSlackMB = 512
+    private static let wiredZHDefaultSlackMB = 64
     private static let wiredTicketLock = NSLock()
     nonisolated(unsafe) private static var wiredTicketRetainer: WiredMemoryTicket?
 
@@ -241,88 +219,11 @@ public final class Qwen36MTPBlockSession {
         var value: Int = 0
     }
 
-    /// E130 rung 11, research only, opt-in through `MLX_E130_RESIDENCY_PROBE=1`.
-    ///
-    /// Records the allocator counters at the instant the wired ticket is sized,
-    /// then samples them once a second until the process ends, so post-sizing
-    /// growth is measurable. Below the 96 GiB gate no ticket exists, so the
-    /// probe reproduces the sizing instant by clearing the warm cache the same
-    /// way the wired path does.
-    ///
-    /// Output goes to `MLX_E130_RESIDENCY_PROBE_PATH`, not to stderr, because
-    /// harness defect 32 makes the `mtp-timed` parent discard every worker
-    /// stderr line. A file sink needs `MLXFAST_NO_SANDBOX=1`.
-    private static func e130ResidencyProbe(clearsWarmCache: Bool) {
-        guard ProcessInfo.processInfo.environment["MLX_E130_RESIDENCY_PROBE"] == "1"
-        else { return }
-        if clearsWarmCache { Memory.clearCache() }
-
-        let active = Memory.activeMemory
-        let peak = Memory.peakMemory
-        let physical = ProcessInfo.processInfo.physicalMemory
-        let recommended = GPU.maxRecommendedWorkingSetBytes() ?? -1
-        e130ProbeSizingCount += 1
-        var line = "e130-residency pid=\(getpid()) phase=sizing event=\(e130ProbeSizingCount)"
-        line += " active=\(active) peak=\(peak)"
-        line += " cache=\(Memory.cacheMemory) slack_mb=\(wiredZHDefaultSlackMB)"
-        line += " maxrec=\(recommended) physmem=\(physical)"
-        line += " resources=\(Memory.numResources)"
-        line += " reslimit=\(Memory.resourceLimit)"
-        line += " wired_gate_passed=\(!clearsWarmCache)\n"
-        e130ProbeSink.write(Data(line.utf8))
-
-        // One sampler per process. A local leg builds a session per depth
-        // policy, so an unguarded sampler would multiply with each session.
-        guard e130ProbeSizingCount == 1 else { return }
-        let started = Date()
-        let sampler = Thread {
-            var index = 0
-            while true {
-                Thread.sleep(forTimeInterval: 1.0)
-                index += 1
-                let now = Memory.activeMemory
-                var sample = "e130-residency pid=\(getpid()) phase=sample index=\(index)"
-                sample += " elapsed_s=\(String(format: "%.1f", -started.timeIntervalSinceNow))"
-                sample += " active=\(now) peak=\(Memory.peakMemory)"
-                sample += " cache=\(Memory.cacheMemory)"
-                sample += " resources=\(Memory.numResources)"
-                sample += " growth=\(now - active)\n"
-                e130ProbeSink.write(Data(sample.utf8))
-            }
-        }
-        sampler.name = "e130-residency-probe"
-        sampler.stackSize = 64 << 10
-        sampler.start()
-    }
-
-    nonisolated(unsafe) private static var e130ProbeSizingCount = 0
-
-    /// O_APPEND so the reference, serial and MTP workers of one leg each add
-    /// their own sizing events to the same file instead of truncating it.
-    private static let e130ProbeSink: FileHandle = {
-        guard let path = ProcessInfo.processInfo
-            .environment["MLX_E130_RESIDENCY_PROBE_PATH"], !path.isEmpty
-        else { return FileHandle.standardError }
-        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
-        guard fd >= 0 else { return FileHandle.standardError }
-        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
-    }()
-
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
         guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else { return }
-        // E130 rung 11, research only, removed before submission. The shipped
-        // gate is 96 GiB, so the wired path never runs on a development host
-        // and the slack cannot be measured causally. Lowering the gate lets one
-        // binary serve every rung of the slack ladder, so the arms differ only
-        // by environment.
-        let gateGiB = environment["MLX_E130_WIRED_GATE_GIB"]
-            .flatMap(UInt64.init) ?? 96
-        guard ProcessInfo.processInfo.physicalMemory >= (gateGiB << 30)
-        else {
-            e130ResidencyProbe(clearsWarmCache: true)
-            return
-        }
+        guard ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
+        else { return }
 
         wiredTicketLock.lock()
         defer { wiredTicketLock.unlock() }
@@ -333,7 +234,6 @@ public final class Qwen36MTPBlockSession {
         // backbone, head, and persistent runtime tensors rather than scratch.
         Memory.clearCache()
         let active = Memory.activeMemory
-        e130ResidencyProbe(clearsWarmCache: false)
         guard active > 0 else { return }
 
         let fraction = environment["DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION"]
@@ -342,10 +242,6 @@ public final class Qwen36MTPBlockSession {
             .flatMap(Int.init) ?? wiredZHDefaultSlackMB
         var target = Int(Double(active) * min(max(fraction, 0.0), 1.0))
         target += max(0, slackMB) << 20
-        // E130 rung 11 bound-C safety, research only. Reported so the reader can
-        // decide whether the recommended-working-set clamp bound on this host
-        // rather than inferring it from the post-clamp request.
-        let preClampTarget = target
 
         // The MLX backend rejects a wired limit above the recommended working
         // set. Keep a 256 MiB margin for system bookkeeping and fail closed on
@@ -375,13 +271,8 @@ public final class Qwen36MTPBlockSession {
         var line = "mlxfast: qwen-mtp wired-zh request=\(target)"
         line += " applied=\(applied) active=\(active)"
         line += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
-        line += " maxrec=\(recommended)"
-        line += " preclamp=\(preClampTarget)"
-        line += " clamped=\(target < preClampTarget)\n"
-        // Harness defect 32: the `mtp-timed` parent builds its worker without
-        // `forwardsWorkerStderr`, so a stderr line from here is discarded. The
-        // sink falls back to stderr when no path is configured.
-        e130ProbeSink.write(Data(line.utf8))
+        line += " maxrec=\(recommended)\n"
+        FileHandle.standardError.write(Data(line.utf8))
     }
 
     /// Input-independent shape warm, run OUTSIDE every scored window.
