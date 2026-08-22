@@ -32,7 +32,7 @@ T0_NET_MISS = 3.0e-3
 T0B_RECALL = 0.997
 GATING_STRATA = ("beagle", "min_carriers")
 # F2.3. A watch line repeats rows a real stratum already counted.
-WATCH_STRATA = ("essays_bacon",)
+WATCH_STRATA = ("essays_bacon", "essays_bacon_holdout")
 SAMPLE_FLOOR = 4000
 # F2.1. `hybridA` is a second candidate, not a control, so each stage_a is
 # gated and selected on its own.
@@ -79,10 +79,24 @@ CELL_COLUMNS = [
     "m_incremental_worst_gating", "recall_worst_gating",
     "acceptance_loss_worst_gating",
     "net_miss_essays_bacon", "m_absolute_essays_bacon", "recall_essays_bacon",
+    "net_miss_essays_bacon_holdout", "net_miss_essays_bacon_holdout_hi",
+    "m_absolute_essays_bacon_holdout", "recall_essays_bacon_holdout",
     "arm_stage_bytes", "shipped_stage_bytes", "removed_bytes",
     "removed_step_fraction", "pct_byte_rate", "pct_head_share_7",
-    "pct_head_share_9", "predicted_pct_gating", "predicted_pct_raw_miss",
-    "passes_t0", "passes_t0b",
+    "pct_head_share_9", "predicted_pct_gating", "predicted_pct_pooled",
+    "predicted_pct_raw_miss", "acceptance_loss_pooled_worst_gating",
+    "substitutions_live_gating", "passes_t0", "passes_t0b",
+]
+
+# `qlowrank` and `wlowrank` fit their basis on captured hidden states. F3.1
+# rules that legal under four conditions, but a basis-free column is still
+# published so the two answers can be compared side by side.
+BASIS_FREE_FAMILIES = ("simhash", "lowrank", "sign")
+
+SPECTRUM_COLUMNS = [
+    "stage_a", "rank", "captured_beagle", "captured_min_carriers",
+    "captured_essays_bacon", "cells", "best_arm", "best_net_miss",
+    "best_recall", "best_bytes_per_row",
 ]
 
 STRATUM_COLUMNS = [
@@ -181,7 +195,7 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
         row["passes_t0"] = t0
         row["passes_t0b"] = t0b
         cells.append(row)
-        for stratum, stats in cell["by_stratum"].items():
+        for stratum, stats in cell.get("by_stratum", {}).items():
             fit = stats.get("tail_fit_at_survivors") or {}
             strata.append({
                 "arm": cell["arm"], "stage_a": cell["stage_a"],
@@ -221,6 +235,10 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
             best["net_miss_worst_gating"] if best else
             min((c["net_miss_worst_gating"] for c in cells),
                 default=float("nan")),
+        "e133_best_cell_ranked_pct_pooled":
+            best["predicted_pct_pooled"] if best else 0.0,
+        "e133_best_cell_ranked_pct_raw_miss":
+            best["predicted_pct_raw_miss"] if best else 0.0,
         "best_cell_arm": best["arm"] if best else None,
         "p_head_step_accuracy": payload.get("p_head_step_accuracy"),
         "p_row_accepted": payload.get("p_row_accepted"),
@@ -238,26 +256,60 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
             "m_absolute_worst_gating", "m_incremental_worst_gating",
             "acceptance_loss_worst_gating", "recall_worst_gating",
             "net_miss_essays_bacon", "recall_essays_bacon",
-            "predicted_pct_gating", "predicted_pct_raw_miss")
+            "net_miss_essays_bacon_holdout", "recall_essays_bacon_holdout",
+            "acceptance_loss_pooled_worst_gating", "substitutions_live_gating",
+            "predicted_pct_gating", "predicted_pct_pooled",
+            "predicted_pct_raw_miss")
     if best:
         for key in keys:
             summary["best_cell/%s" % key] = best[key]
+    basis_free = [c for c in survivors if c["family"] in BASIS_FREE_FAMILIES]
+    chosen = max(basis_free, key=lambda c: c["predicted_pct_gating"],
+                 default=None)
+    summary["basis_free/cells_passing_both"] = len(basis_free)
+    summary["basis_free/best_arm"] = chosen["arm"] if chosen else None
+    summary["basis_free/best_predicted_pct"] = (
+        chosen["predicted_pct_gating"] if chosen else 0.0)
+    if chosen:
+        for key in keys:
+            summary["basis_free/best_cell/%s" % key] = chosen[key]
     # F2.1. Full C1 and hybridA are gated and selected independently, so a
     # stage-A kill cannot silently take hybridA down with it.
     for stage_a, block in payload.get("by_stage_a", {}).items():
         tag = STAGE_A_LABEL.get(stage_a, stage_a)
         for field in ("cells", "cells_passing_t0", "cells_passing_t0b",
-                      "cells_passing_both", "best_arm", "best_predicted_pct"):
+                      "cells_passing_both", "best_arm", "best_predicted_pct",
+                      "best_predicted_pct_pooled",
+                      "best_predicted_pct_raw_miss", "byte_ceiling_searched",
+                      "cheapest_arm", "cheapest_bytes_per_row",
+                      "cheapest_predicted_pct", "cheapest_predicted_pct_pooled",
+                      "cheapest_predicted_pct_raw_miss"):
             summary["%s/%s" % (tag, field)] = block.get(field)
-        chosen = block.get("best_cell")
-        if chosen:
-            for key in keys:
-                summary["%s/best_cell/%s" % (tag, key)] = chosen[key]
+        for label, picked in (("best_cell", block.get("best_cell")),
+                              ("cheapest_cell", block.get("cheapest_cell"))):
+            if picked:
+                for key in keys:
+                    summary["%s/%s/%s" % (tag, label, key)] = picked[key]
     flatten("shipped", {k: v for k, v in payload["shipped"].items()
                         if k != "by_stratum"}, summary)
+    flatten("shipped_by_stratum",
+            {s: {k: v for k, v in stats.items()
+                 if k in ("n", "misses_absolute", "m_absolute",
+                          "m_absolute_lo", "m_absolute_hi",
+                          "p_head_step_accuracy")}
+             for s, stats in payload["shipped"]["by_stratum"].items()}, summary)
+    flatten("shipped_structural_proxy",
+            {k: v for k, v in payload["shipped_structural_proxy"].items()
+             if k != "by_stratum"}, summary)
+    spectrum = [{"stage_a": stage_a, "rank": int(rank), **row}
+                for stage_a, rows in payload.get("spectrum_vs_miss", {}).items()
+                for rank, row in rows.items()]
+    flatten("query_energy",
+            payload.get("query_basis", {}).get("energy_kept", {}), summary)
     return summary, {"screen_cells": table(CELL_COLUMNS, cells),
                      "screen_by_stratum": table(STRATUM_COLUMNS, strata),
-                     "screen_survival": table(SURVIVAL_COLUMNS, survival)}
+                     "screen_survival": table(SURVIVAL_COLUMNS, survival),
+                     "screen_spectrum": table(SPECTRUM_COLUMNS, spectrum)}
 
 
 BUILDERS = {"1": corpus_summary, "2": validate_summary, "3": screen_summary}

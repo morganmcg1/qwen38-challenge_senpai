@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 
 RANK_GRID = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384)
-STRATA = ("beagle", "min_carriers", "zero_weight", "essays_bacon")
+STRATA = ("beagle", "min_carriers", "zero_weight", "essays_bacon",
+          "essays_bacon_holdout")
 
 
 def show_cell(cell: dict, survival: bool = False) -> None:
