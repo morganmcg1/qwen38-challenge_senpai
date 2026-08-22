@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """E138: the launch-grid x plan factorial.
 
-    usage: research/e138_grid_control.py WIDE.json TIGHT.json [--baseline=PLAN]
+    usage: research/e138_grid_control.py ARTIFACT... [--baseline=PLAN]
 
 Advisor feedback F2 section 4 asks for the sweep to run as a two-by-plan
 factorial: every plan cell under both `wide` and `tight`, the plan ranking
@@ -35,49 +35,90 @@ import statistics
 import sys
 
 
-def corrected(path: pathlib.Path, expect_grid: str) -> dict:
-    payload = json.loads(path.read_text())
-    if payload["grid"] != expect_grid:
-        raise SystemExit(f"{path} is grid={payload['grid']}, expected {expect_grid}")
-    if payload["reference_cell"] != "6:stock":
-        raise SystemExit(
-            f"{path} anchors on {payload['reference_cell']}; the factorial "
-            "requires the grid-independent 6:stock anchor"
-        )
-    values, dispatch, launch = {}, {}, {}
-    for shape in payload["shapes"]:
-        if not shape["exactness_positive_control_rejects"]:
-            raise SystemExit(f"{path}: {shape['name']} positive control passed")
-        dispatch[shape["name"]] = shape["calls_per_verify"]
-        anchor = statistics.median(
-            [v for row in shape["rows"] for v in row["reference_samples"]]
-        )
-        for row in shape["rows"]:
-            if not row["matches_incumbent_bitwise"]:
-                raise SystemExit(f"{path}: {shape['name']} {row['cell']} not exact")
-            ratio = statistics.median(row["samples"]) / statistics.median(
-                row["reference_samples"]
+def load(paths: list[pathlib.Path]) -> dict:
+    """Drift-corrected microseconds keyed by (shape, plan, grid).
+
+    A cell label may name its own grid as `plan@grid`. When it does not, the
+    session-level grid applies. Every artifact must anchor on `6:stock`, and a
+    plan measured in several sessions contributes several samples so the
+    session-to-session spread can be reported next to the effect.
+    """
+    us: dict[tuple[str, str, str], list[float]] = {}
+    launch: dict[tuple[str, str, str], int] = {}
+    dispatch, n_of, k_of = {}, {}, {}
+    for path in paths:
+        payload = json.loads(path.read_text())
+        session_grid = payload["grid"]
+        if payload["reference_cell"].split("@")[0] != "6:stock":
+            raise SystemExit(
+                f"{path} anchors on {payload['reference_cell']}; the factorial "
+                "requires the grid-independent 6:stock anchor"
             )
-            values[(shape["name"], row["cell"])] = ratio * anchor * 1e6
-            launch[(shape["name"], row["cell"])] = (
-                row["launched_columns"] * row["threadgroups_per_column"]
+        for shape in payload["shapes"]:
+            name = shape["name"]
+            if not shape["exactness_positive_control_rejects"]:
+                raise SystemExit(f"{path}: {name} positive control passed")
+            dispatch[name] = shape["calls_per_verify"]
+            n_of[name], k_of[name] = shape["n"], shape["k"]
+            anchor = statistics.median(
+                [v for row in shape["rows"] for v in row["reference_samples"]]
             )
+            for row in shape["rows"]:
+                if not row["matches_incumbent_bitwise"]:
+                    raise SystemExit(
+                        f"{path}: {name} {row['cell']} not exact")
+                plan = row["cell"].split("@")[0]
+                grid = row.get("grid") or (
+                    row["cell"].split("@")[1] if "@" in row["cell"]
+                    else session_grid
+                )
+                ratio = statistics.median(row["samples"]) / statistics.median(
+                    row["reference_samples"]
+                )
+                us.setdefault((name, plan, grid), []).append(ratio * anchor * 1e6)
+                launch[(name, plan, grid)] = (
+                    row["launched_columns"] * row["threadgroups_per_column"]
+                )
     return {
-        "us": values,
+        "samples": us,
+        "us": {key: statistics.median(v) for key, v in us.items()},
+        "spread_pct": {
+            key: (100.0 * (max(v) - min(v)) / statistics.median(v))
+            if len(v) > 1 else 0.0
+            for key, v in us.items()
+        },
+        "sessions": {key: len(v) for key, v in us.items()},
         "dispatch": dispatch,
         "launch": launch,
-        "n": {s["name"]: s["n"] for s in payload["shapes"]},
-        "k": {s["name"]: s["k"] for s in payload["shapes"]},
+        "n": n_of,
+        "k": k_of,
     }
 
 
-def factorial(wide_path: pathlib.Path, tight_path: pathlib.Path,
-              baseline: str | None = None) -> dict:
-    wide = corrected(wide_path, "wide")
-    tight = corrected(tight_path, "tight")
+def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
+    data = load(paths)
+    both = {(s, p) for s, p, g in data["us"] if g == "wide"} & {
+        (s, p) for s, p, g in data["us"] if g == "tight"
+    }
+    if not both:
+        raise SystemExit("no plan is present under both grids")
+    wide = {
+        "us": {(s, p): data["us"][(s, p, "wide")] for s, p in both},
+        "launch": {(s, p): data["launch"][(s, p, "wide")] for s, p in both},
+        "n": data["n"],
+        "k": data["k"],
+        "dispatch": data["dispatch"],
+    }
+    tight = {
+        "us": {(s, p): data["us"][(s, p, "tight")] for s, p in both},
+        "launch": {(s, p): data["launch"][(s, p, "tight")] for s, p in both},
+        "n": data["n"],
+        "k": data["k"],
+        "dispatch": data["dispatch"],
+    }
 
     cells = sorted(
-        {c for _, c in wide["us"]} & {c for _, c in tight["us"]},
+        {c for _, c in wide["us"]},
         key=lambda c: (c.split(":")[1] == "stock", c),
     )
     plans = [c for c in cells if not c.endswith(":stock")]
@@ -87,7 +128,10 @@ def factorial(wide_path: pathlib.Path, tight_path: pathlib.Path,
     if baseline not in plans:
         raise SystemExit(f"baseline {baseline} is not in both artifacts")
     dispatch = wide["dispatch"]
-    names = sorted(dispatch, key=lambda s: (wide["n"][s], s))
+    names = sorted(
+        {s for s, _ in both if all((s, p) in wide["us"] for p in cells)},
+        key=lambda s: (wide["n"][s], s),
+    )
 
     shapes = []
     for name in names:
@@ -105,6 +149,12 @@ def factorial(wide_path: pathlib.Path, tight_path: pathlib.Path,
                 "tight_minus_wide_pct": 100.0 * (t - w) / w,
                 "launched_threadgroups_wide": wide["launch"][(name, cell)],
                 "launched_threadgroups_tight": tight["launch"][(name, cell)],
+                "sessions_wide": data["sessions"][(name, cell, "wide")],
+                "sessions_tight": data["sessions"][(name, cell, "tight")],
+                "session_spread_wide_pct":
+                    data["spread_pct"][(name, cell, "wide")],
+                "session_spread_tight_pct":
+                    data["spread_pct"][(name, cell, "tight")],
             }
             if not cell.endswith(":stock"):
                 row["advantage_wide_pct"] = 100.0 * (bw - w) / bw
@@ -174,6 +224,16 @@ def factorial(wide_path: pathlib.Path, tight_path: pathlib.Path,
         for r in s["rows"]
         if "interaction_pp" in r
     )
+    # An interaction below the replicate spread of the two cells it is built
+    # from is not resolved by this evidence, whatever its sign.
+    out["max_session_spread_pct"] = max(
+        max(r["session_spread_wide_pct"], r["session_spread_tight_pct"])
+        for s in shapes
+        for r in s["rows"]
+    )
+    out["interaction_resolved_above_replicate_spread"] = (
+        out["max_abs_interaction_pp"] > out["max_session_spread_pct"]
+    )
     if "5:5:4" in plans and "6:6:4" in plans:
         sw = tot[("6:6:4", "wide")] - tot[("5:5:4", "wide")]
         st = tot[("6:6:4", "tight")] - tot[("5:5:4", "tight")]
@@ -188,10 +248,9 @@ def main() -> int:
     flags = dict(
         a.split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a
     )
-    if len(argv) != 2:
+    if not argv:
         raise SystemExit(__doc__)
-    r = factorial(pathlib.Path(argv[0]), pathlib.Path(argv[1]),
-                  flags.get("--baseline"))
+    r = factorial([pathlib.Path(a) for a in argv], flags.get("--baseline"))
 
     print("E138 launch-grid x plan factorial   harness=local")
     print("baseline plan for every advantage and interaction: %s"
@@ -213,19 +272,23 @@ def main() -> int:
     for shape in r["shapes"]:
         print("%s   N=%d   dispatched %dx per verify"
               % (shape["name"], shape["n"], shape["dispatch"]))
-        print("    %6s %10s %10s %8s %10s %10s %9s"
+        print("    %6s %10s %10s %8s %10s %10s %9s %9s"
               % ("plan", "wide", "tight", "T-W %", "advW %", "advT %",
-                 "inter pp"))
+                 "inter pp", "spread %"))
         for row in shape["rows"]:
+            spread = max(row["session_spread_wide_pct"],
+                         row["session_spread_tight_pct"])
             if "interaction_pp" not in row:
-                print("    %6s %10.1f %10.1f %7.1f %%%10s %10s %9s"
+                print("    %6s %10.1f %10.1f %7.1f %%%10s %10s %9s %9.2f"
                       % (row["plan"], row["wide_us"], row["tight_us"],
-                         row["tight_minus_wide_pct"], "-", "-", "-"))
+                         row["tight_minus_wide_pct"], "-", "-", "-", spread))
                 continue
-            print("    %6s %10.1f %10.1f %7.1f %% %9.2f %9.2f %+8.2f"
+            flag = "" if abs(row["interaction_pp"]) > spread else "  unresolved"
+            print("    %6s %10.1f %10.1f %7.1f %% %9.2f %9.2f %+8.2f %9.2f%s"
                   % (row["plan"], row["wide_us"], row["tight_us"],
                      row["tight_minus_wide_pct"], row["advantage_wide_pct"],
-                     row["advantage_tight_pct"], row["interaction_pp"]))
+                     row["advantage_tight_pct"], row["interaction_pp"],
+                     spread, flag))
         print("    rank wide  %s" % " < ".join(shape["rank_wide"]))
         print("    rank tight %s%s"
               % (" < ".join(shape["rank_tight"]),

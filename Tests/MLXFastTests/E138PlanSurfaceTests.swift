@@ -71,6 +71,33 @@ struct E138PlanSurfaceTests {
         #expect(!E138Cell(m: 6, ipg: 6, rps: 4).isStock)
     }
 
+    /// An unparsed `@grid` suffix would silently fall back to the session
+    /// default and make both arms of the factorial the same measurement, so
+    /// the parse and the launch decision are checked rather than assumed.
+    @Test
+    func perCellGridSuffixSelectsTheLaunchColumnCount() {
+        let cells = e138ParseCells("6:3:4@wide,6:3:4@tight,6:6:4,6:stock@wide")
+        #expect(cells.map(\.label) == [
+            "6:3:4@wide", "6:3:4@tight", "6:6:4", "6:stock@wide",
+        ])
+        #expect(cells[0].grid == .wide)
+        #expect(cells[1].grid == .tight)
+        #expect(cells[2].grid == nil)
+        #expect(cells[3].isStock)
+
+        // wide launches `m` columns, tight launches `passes`, and an unsuffixed
+        // cell follows the session default in both directions.
+        #expect(!cells[0].tight(default: true))
+        #expect(cells[1].tight(default: false))
+        #expect(cells[2].tight(default: true))
+        #expect(!cells[2].tight(default: false))
+
+        // The kernel identity must not carry the grid, or the two arms would
+        // compile two pipelines and confound the contrast they exist to make.
+        #expect(cells[0].name == cells[1].name)
+        #expect(cells[0].name == E138Cell(m: 6, ipg: 3, rps: 4).name)
+    }
+
     @Test(.enabled(if: E138PlanSurfaceTests.enabled))
     func sweepPlanSurface() throws {
         let env = ProcessInfo.processInfo.environment
@@ -122,10 +149,26 @@ struct E138PlanSurfaceTests {
 
 // MARK: - cells
 
+/// Which launch grid one cell is dispatched under. `nil` takes the session
+/// default. Naming the grid per cell puts both grids of one plan inside the
+/// same ABBA block. That is the only way to keep between-session drift off the
+/// grid axis: an identical `6:6:4` cell moved by up to 10.4 % between two
+/// sessions that were matched in every other respect.
+enum E138Grid: String {
+    case wide
+    case tight
+}
+
 struct E138Cell: Hashable {
     let m: Int
     let ipg: Int
     let rps: Int
+    var grid: E138Grid? = nil
+
+    func tight(default sessionTight: Bool) -> Bool {
+        guard let grid else { return sessionTight }
+        return grid == .tight
+    }
 
     /// `ipg == 0` is not a plan. It selects the stock MLX quantized matmul at
     /// this width, so the surface can separate a plan effect from a
@@ -137,21 +180,31 @@ struct E138Cell: Hashable {
     /// `Qwen35.swift:1556` and read and write one row past `M`.
     var legal: Bool { isStock || (ipg >= 1 && ipg <= m && m % ipg != 1) }
     var passes: Int { isStock ? 0 : (m + ipg - 1) / ipg }
-    var label: String { isStock ? "\(m):stock" : "\(m):\(ipg):\(rps)" }
+    var label: String {
+        let plan = isStock ? "\(m):stock" : "\(m):\(ipg):\(rps)"
+        return grid.map { "\(plan)@\($0.rawValue)" } ?? plan
+    }
     var name: String { "e138_qmv_m\(m)_ipg\(ipg)_rps\(rps)_v1" }
 }
 
 private func e138ParseCells(_ raw: String) -> [E138Cell] {
     raw.split(separator: ",").compactMap { entry in
-        let fields = entry.split(separator: ":").map {
+        let split = entry.split(separator: "@", maxSplits: 1)
+        let grid =
+            split.count == 2
+            ? E138Grid(
+                rawValue: split[1].trimmingCharacters(in: .whitespaces))
+            : nil
+        let fields = split[0].split(separator: ":").map {
             $0.trimmingCharacters(in: .whitespaces)
         }
         if fields.count == 2, fields[1] == "stock", let m = Int(fields[0]) {
-            return E138Cell(m: m, ipg: 0, rps: 0)
+            return E138Cell(m: m, ipg: 0, rps: 0, grid: grid)
         }
         let parts = fields.compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
-        return E138Cell(m: parts[0], ipg: parts[1], rps: parts[2])
+        return E138Cell(
+            m: parts[0], ipg: parts[1], rps: parts[2], grid: grid)
     }
 }
 
@@ -221,7 +274,7 @@ private func e138Matmul(
     }
     var outShape = x.shape
     outShape[outShape.count - 1] = weight.n
-    let columns = tight ? cell.passes : cell.m
+    let columns = cell.tight(default: tight) ? cell.passes : cell.m
     return e138Kernel(cell)(
         [weight.w, weight.scales, weight.biases, x,
          Qwen35CustomQMV.xsumsTable(x)],
@@ -307,12 +360,14 @@ private func e138Sweep(
             launchedColumns = 0
             threadgroupsPerColumn = 0
         } else {
-            launchedColumns = tight ? cell.passes : cell.m
+            launchedColumns = cell.tight(default: tight)
+                ? cell.passes : cell.m
             threadgroupsPerColumn = shape.n / (2 * cell.rps)
         }
 
         rows.append([
             "cell": cell.label,
+            "grid": cell.tight(default: tight) ? "tight" : "wide",
             "m": cell.m,
             "ipg": cell.ipg,
             "rps": cell.rps,
