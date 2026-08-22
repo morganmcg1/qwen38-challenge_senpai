@@ -60,6 +60,18 @@ static inline float bf16_to_f32(uint16_t h) {
   return f;
 }
 
+// E111's Bias6 packer, the CPU half of `e118_bias_from_code`. Every operation
+// after the single FP32 multiply is integer, so the two halves agree bit for
+// bit and `e_bias6` can be required to match `a_base` exactly.
+static inline uint16_t bias_bf16_from_code(float scale, uint32_t code) {
+  float prod = -(float)(code & 0xFu) * scale;
+  uint32_t u;
+  memcpy(&u, &prod, 4);
+  u += 0x7fffu + ((u >> 16) & 1u);
+  u += ((code & 0x30u) << 12) - 0x10000u;
+  return (uint16_t)(u >> 16);
+}
+
 static inline uint32_t xorshift32(uint32_t *s) {
   uint32_t x = *s;
   x ^= x << 13;
@@ -87,6 +99,7 @@ typedef struct {
   id<MTLBuffer> scales;
   id<MTLBuffer> biases;
   id<MTLBuffer> packed_sb;
+  id<MTLBuffer> bias_codes;
   id<MTLBuffer> y[MAXARM];
   int n;
   int k;
@@ -214,6 +227,8 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int max_m) {
                                  options:MTLResourceStorageModeShared];
   o.packed_sb = [device newBufferWithLength:groups * 4
                                     options:MTLResourceStorageModeShared];
+  o.bias_codes = [device newBufferWithLength:groups
+                                     options:MTLResourceStorageModeShared];
   for (int a = 0; a < g_narm; a++) {
     o.y[a] = [device newBufferWithLength:(size_t)max_m * shape.n * 2
                                  options:MTLResourceStorageModeShared];
@@ -228,10 +243,13 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int max_m) {
   uint16_t *sp = (uint16_t *)o.scales.contents;
   uint16_t *bp = (uint16_t *)o.biases.contents;
   uint32_t *sbp = (uint32_t *)o.packed_sb.contents;
+  uint8_t *cp = (uint8_t *)o.bias_codes.contents;
   for (size_t g = 0; g < groups; g++) {
     float s = 0.004f + 0.004f * unit(&seed);
     sp[g] = f32_to_bf16(s);
-    bp[g] = f32_to_bf16(-7.5f * s);
+    uint32_t code = xorshift32(&seed) & 0x3fu;
+    cp[g] = (uint8_t)code;
+    bp[g] = bias_bf16_from_code(bf16_to_f32(sp[g]), code);
     sbp[g] = (uint32_t)sp[g] | ((uint32_t)bp[g] << 16);
   }
   uint16_t *xp = (uint16_t *)o.x.contents;
@@ -255,6 +273,7 @@ static void encodeDispatch(id<MTLComputeCommandEncoder> enc,
   [enc setBuffer:o->in_vec offset:0 atIndex:5];
   [enc setBuffer:o->out_vec offset:0 atIndex:6];
   [enc setBuffer:o->packed_sb offset:0 atIndex:7];
+  [enc setBuffer:o->bias_codes offset:0 atIndex:8];
   [enc dispatchThreadgroups:MTLSizeMake((NSUInteger)m, (NSUInteger)(o->n / 8), 1)
       threadsPerThreadgroup:MTLSizeMake(32, 2, 1)];
 }
@@ -328,23 +347,51 @@ static double referenceElement(Operands *o, int m, int row) {
   return acc;
 }
 
-static size_t countDiffering(Operands *o, int arm, int m, int *first_m,
-                             int *first_n) {
+typedef struct {
+  size_t differing;
+  int first_m;
+  int first_n;
+  int max_ulp;
+  double max_rel;
+} DiffReport;
+
+// bf16 ordered index, so an ULP distance is a plain integer subtraction.
+static int bf16_order(uint16_t bits) {
+  return (bits & 0x8000u) ? (int)(0x8000u - (bits & 0x7fffu))
+                          : (int)(0x8000u + bits);
+}
+
+static DiffReport countDiffering(Operands *o, int arm, int m) {
   const uint16_t *ya = (const uint16_t *)o->y[0].contents;
   const uint16_t *yb = (const uint16_t *)o->y[arm].contents;
-  size_t differing = 0, total = (size_t)m * o->n;
-  *first_m = -1;
-  *first_n = -1;
+  DiffReport r = (DiffReport){0, -1, -1, 0, 0.0};
+  size_t total = (size_t)m * o->n;
   for (size_t i = 0; i < total; i++) {
-    if (ya[i] != yb[i]) {
-      if (!differing) {
-        *first_m = (int)(i / o->n);
-        *first_n = (int)(i % o->n);
+    if (ya[i] == yb[i]) {
+      continue;
+    }
+    if (!r.differing) {
+      r.first_m = (int)(i / o->n);
+      r.first_n = (int)(i % o->n);
+    }
+    r.differing++;
+    int ulp = bf16_order(ya[i]) - bf16_order(yb[i]);
+    if (ulp < 0) {
+      ulp = -ulp;
+    }
+    if (ulp > r.max_ulp) {
+      r.max_ulp = ulp;
+    }
+    double fa = (double)bf16_to_f32(ya[i]), fb = (double)bf16_to_f32(yb[i]);
+    double den = fabs(fa) > fabs(fb) ? fabs(fa) : fabs(fb);
+    if (den > 0.0) {
+      double rel = fabs(fa - fb) / den;
+      if (rel > r.max_rel) {
+        r.max_rel = rel;
       }
-      differing++;
     }
   }
-  return differing;
+  return r;
 }
 
 int main(int argc, char **argv) {
@@ -528,29 +575,31 @@ int main(int argc, char **argv) {
                 "e118_qmv_probe:   fidelity M=%d  base_vs_double max_rel=%.3e "
                 "rms=%.3e\n", m, max_rel, rms);
         for (int a = 1; a < g_narm; a++) {
-          int fm = -1, fn_ = -1;
-          size_t differing = countDiffering(&o, a, m, &fm, &fn_);
+          DiffReport d = countDiffering(&o, a, m);
           size_t total = (size_t)m * o.n;
           fprintf(out,
                   "%s{\"arm\":\"%s\",\"exact_required\":%s,\"differing\":%zu,"
                   "\"total\":%zu,\"bit_identical\":%s,\"first_bad_m\":%d,"
-                  "\"first_bad_n\":%d}",
+                  "\"first_bad_n\":%d,\"max_ulp\":%d,\"max_rel\":%.6e}",
                   a > 1 ? "," : "", kArmName[a],
-                  kArmExactVsBase[a] ? "true" : "false", differing, total,
-                  differing ? "false" : "true", fm, fn_);
+                  kArmExactVsBase[a] ? "true" : "false", d.differing, total,
+                  d.differing ? "false" : "true", d.first_m, d.first_n,
+                  d.max_ulp, d.max_rel);
           fprintf(stderr,
-                  "e118_qmv_probe:     %-15s vs base differing=%zu/%zu%s\n",
-                  kArmName[a], differing, total,
+                  "e118_qmv_probe:     %-15s vs base differing=%zu/%zu "
+                  "max_ulp=%d max_rel=%.3e%s\n",
+                  kArmName[a], d.differing, total, d.max_ulp, d.max_rel,
                   kArmExactVsBase[a]
-                      ? (differing ? "   *** EXACTNESS FAILURE ***" : "   exact")
+                      ? (d.differing ? "   *** EXACTNESS FAILURE ***" : "   exact")
                       : "   (diagnostic arm, difference expected)");
-          if (kArmExactVsBase[a] && differing) {
+          if (kArmExactVsBase[a] && d.differing) {
             const uint16_t *yb = (const uint16_t *)o.y[a].contents;
             fprintf(stderr,
                     "e118_qmv_probe:       FIRST MISMATCH m=%d n=%d "
                     "base=0x%04x arm=0x%04x\n",
-                    fm, fn_, ya[(size_t)fm * o.n + fn_],
-                    yb[(size_t)fm * o.n + fn_]);
+                    d.first_m, d.first_n,
+                    ya[(size_t)d.first_m * o.n + d.first_n],
+                    yb[(size_t)d.first_m * o.n + d.first_n]);
           }
         }
         fprintf(out, "]}");
@@ -561,7 +610,8 @@ int main(int argc, char **argv) {
       // change, applied to every arm whose output must match `a_base`. Only the
       // candidate arm is re-dispatched, so a comparison that cannot fail is
       // visible immediately. The metadata perturbation moves `scales`,
-      // `biases` and `packed_sb` together, so it reaches the pack32 arms too.
+      // `biases`, `packed_sb` and `bias_codes` together, so it reaches the
+      // pack32 and Bias6 arms too.
       {
         const int m = widths[0];
         const size_t groups = (size_t)o.n * (size_t)o.k / 64;
@@ -570,30 +620,33 @@ int main(int argc, char **argv) {
         uint16_t *sp = (uint16_t *)o.scales.contents;
         uint16_t *bp = (uint16_t *)o.biases.contents;
         uint32_t *sbp = (uint32_t *)o.packed_sb.contents;
+        uint8_t *cp = (uint8_t *)o.bias_codes.contents;
         for (int a = 1; a < g_narm; a++) {
           if (!kArmExactVsBase[a]) continue;
           size_t hit_x = 0, hit_meta = 0;
-          int fm = -1, fn_ = -1;
 
           uint16_t saved_x = xp[0];
           xp[0] = f32_to_bf16(bf16_to_f32(saved_x) * 1.5f + 0.25f);
           dispatchOnce(queue, pso[a][0], &o, a, m);
-          hit_x = countDiffering(&o, a, m, &fm, &fn_);
+          hit_x = countDiffering(&o, a, m).differing;
           xp[0] = saved_x;
 
           uint16_t saved_s = sp[gbad], saved_b = bp[gbad];
           uint32_t saved_sb = sbp[gbad];
+          uint8_t saved_c = cp[gbad];
           sp[gbad] = f32_to_bf16(bf16_to_f32(saved_s) * 1.25f + 1e-3f);
-          bp[gbad] = f32_to_bf16(bf16_to_f32(saved_b) * 1.25f - 1e-3f);
+          cp[gbad] = (uint8_t)((saved_c + 9u) & 0x3fu);
+          bp[gbad] = bias_bf16_from_code(bf16_to_f32(sp[gbad]), cp[gbad]);
           sbp[gbad] = (uint32_t)sp[gbad] | ((uint32_t)bp[gbad] << 16);
           dispatchOnce(queue, pso[a][0], &o, a, m);
-          hit_meta = countDiffering(&o, a, m, &fm, &fn_);
+          hit_meta = countDiffering(&o, a, m).differing;
           sp[gbad] = saved_s;
           bp[gbad] = saved_b;
           sbp[gbad] = saved_sb;
+          cp[gbad] = saved_c;
 
           dispatchOnce(queue, pso[a][0], &o, a, m);
-          size_t clean = countDiffering(&o, a, m, &fm, &fn_);
+          size_t clean = countDiffering(&o, a, m).differing;
           fprintf(stderr,
                   "e118_qmv_probe:   control %-15s x_hit=%zu meta_hit=%zu "
                   "restored_diff=%zu%s\n",

@@ -48,8 +48,21 @@ the backend allocates registers for one width instead of a max over branches:
                   E111 (+6.132 %) / E104 (-4.47 %) contradiction.
   l_loadonly      DIAGNOSTIC. E104's load-only arm, reproduced byte for byte, as
                   the Finding 44 load-ceiling anchor.
+  n_nobias        DIAGNOSTIC. E111's arm: the bias load AND the x-sum chain are
+                  both removed, 34 B per group. The ceiling of the whole bias
+                  axis.
+  d_bias1         DIAGNOSTIC. E111's arm: the bias is read from a one-byte
+                  array and used raw, so the value is deliberately wrong.
+                  35 B per group with no reconstruction cost, so this is the
+                  ceiling of Bias6 itself.
+  e_bias6         E111's arm: the bias is reconstructed from (scale, 6-bit code)
+                  with integer arithmetic. Must be bit-identical to `a_base`.
 
-Every arm except the two marked DIAGNOSTIC keeps every floating-point value and
+E111 measured its bias arms at NA = 5 only, which carries 0.034 of the standing
+round weight. The last three arms above repeat them at NA = 2, 3, 4 and 5 so the
+bias axis gets a round-weighted number instead of a corner one.
+
+Every arm except those marked DIAGNOSTIC keeps every floating-point value and
 every accumulation order of `a_base`, so all of them must be bit-identical to it
 at every cell. The probe checks that with a positive control that fires.
 
@@ -169,6 +182,13 @@ BODY_NOSUMS = """
     }
 """
 
+# E111's `n_nobias`: `n_nosums` with the bias load deleted as well, 34 B per
+# group. `bias_local` is left declared and never written, so the backend drops
+# it and the arm prices the whole bias axis, traffic and arithmetic together.
+BODY_NOBIAS = BODY_NOSUMS.replace(
+    "acc[r] += scale_local[r] * partial[r] + bias_local[r];",
+    "acc[r] += scale_local[r] * partial[r];")
+
 # --- prologue surgery ---------------------------------------------------------
 
 SIG_TAIL = "    uint simd_lid) {\n"
@@ -177,6 +197,22 @@ SIG_TAIL = "    uint simd_lid) {\n"
 # reaches `_wide` directly, so the null pointer is never dereferenced.
 SIG_TAIL_SB = ("    uint simd_lid,\n"
                "    const device uint32_t* packed_sb = nullptr) {\n")
+SIG_TAIL_CODES = ("    uint simd_lid,\n"
+                  "    const device uint8_t* bias_codes = nullptr) {\n")
+
+# E111's one-byte bias code. The low four bits are an integer multiple of the
+# group scale and the high two bits are a BF16 ULP correction, so the whole
+# reconstruction is integer arithmetic on the product's bit pattern and the CPU
+# packer and the GPU agree with no dependence on a rounding mode.
+BIAS6_HELPER = """static inline float e118_bias_from_code(float scale, uint code) {
+  const float prod = -float(code & 0xFu) * scale;
+  uint u = as_type<uint>(prod);
+  u += 0x7FFFu + ((u >> 16) & 1u);
+  u += ((code & 0x30u) << 12) - 0x10000u;
+  return as_type<float>(u & 0xFFFF0000u);
+}
+
+"""
 
 WEIGHT_LOAD = """      const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
           reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
@@ -221,6 +257,21 @@ META_PACK32 = """      const int group_index = row * in_vec_size_g + k / 64 + si
       const uint32_t sb = packed_sb[group_index];
       scale_local[r] = float(as_type<T>(uint16_t(sb & 0xFFFFu)));
       bias_local[r] = float(as_type<T>(uint16_t(sb >> 16)));
+"""
+
+META_NOBIAS = """      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+"""
+
+META_CODE1 = """      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      scale_local[r] = scales[group_index];
+      bias_local[r] = float(bias_codes[group_index]);
+"""
+
+META_BIAS6 = """      const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+      const float scale = scales[group_index];
+      scale_local[r] = scale;
+      bias_local[r] = e118_bias_from_code(scale, uint(bias_codes[group_index]));
 """
 
 META_BCAST_PACK32 = """      const int group_base = row * in_vec_size_g + k / 64;
@@ -270,7 +321,7 @@ def expect(text: str, needle: str, count: int, label: str) -> None:
 
 
 def prologue_with(meta: str | None = None, loop: str | None = None,
-                  wants_sb: bool = False) -> str:
+                  extra: str = "", helper: str = "") -> str:
     """The shared prologue with the metadata load or the whole loop replaced."""
     text = PROLOGUE
     if meta is not None:
@@ -279,10 +330,11 @@ def prologue_with(meta: str | None = None, loop: str | None = None,
     if loop is not None:
         expect(text, WEIGHT_META_LOOP, 1, "prologue weight+metadata loop")
         text = text.replace(WEIGHT_META_LOOP, loop)
-    if wants_sb:
+    if extra:
+        tail = {"packed_sb": SIG_TAIL_SB, "bias_codes": SIG_TAIL_CODES}[extra]
         expect(text, SIG_TAIL, 1, "prologue signature tail")
-        text = text.replace(SIG_TAIL, SIG_TAIL_SB)
-    return text
+        text = text.replace(SIG_TAIL, tail)
+    return helper + text
 
 
 # --- p_prefetch_w -------------------------------------------------------------
@@ -370,6 +422,7 @@ ISO_KERNEL = """
     const constant int& in_vec_size [[buffer(5)]],
     const constant int& out_vec_size [[buffer(6)]],
     const device uint32_t* packed_sb [[buffer(7)]],
+    const device uint8_t* bias_codes [[buffer(8)]],
     uint3 tid [[threadgroup_position_in_grid]],
     uint simd_gid [[simdgroup_index_in_threadgroup]],
     uint simd_lid [[thread_index_in_simdgroup]]) {
@@ -380,7 +433,7 @@ ISO_KERNEL = """
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
   qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
       w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
-      simd_lid%(sb)s);
+      simd_lid%(extra)s);
 }
 """
 
@@ -396,6 +449,7 @@ ISO_KERNEL_VIA_M = """
     const constant int& in_vec_size [[buffer(5)]],
     const constant int& out_vec_size [[buffer(6)]],
     const device uint32_t* packed_sb [[buffer(7)]],
+    const device uint8_t* bias_codes [[buffer(8)]],
     uint3 tid [[threadgroup_position_in_grid]],
     uint simd_gid [[simdgroup_index_in_threadgroup]],
     uint simd_lid [[thread_index_in_simdgroup]]) {
@@ -406,28 +460,35 @@ ISO_KERNEL_VIA_M = """
 """
 
 # arm -> (prologue, body, epilogue) applied to the wide template, or None for
-# the unmodified shipped template. `sb` marks an arm that reads buffer 7.
+# the unmodified shipped template, plus the extra buffer the arm reads.
 PLANS = {
-    "a_base": (None, False),
-    "q_scaffold": ((PROLOGUE, BODY_BASE, EPILOGUE), False),
-    "s_bcast": ((prologue_with(meta=META_BCAST), BODY_BASE, EPILOGUE), False),
+    "a_base": (None, ""),
+    "q_scaffold": ((PROLOGUE, BODY_BASE, EPILOGUE), ""),
+    "s_bcast": ((prologue_with(meta=META_BCAST), BODY_BASE, EPILOGUE), ""),
     "s_bcast_all": ((prologue_with(loop=WEIGHT_META_LOOP_BCAST_ALL), BODY_BASE,
-                     EPILOGUE), False),
+                     EPILOGUE), ""),
     "s_bcast_scale": ((prologue_with(meta=META_BCAST_SCALE), BODY_BASE,
-                       EPILOGUE), False),
+                       EPILOGUE), ""),
     "p_split_meta": ((prologue_with(loop=WEIGHT_META_LOOP_SPLIT), BODY_BASE,
-                      EPILOGUE), False),
-    "g_pack32": ((prologue_with(meta=META_PACK32, wants_sb=True), BODY_BASE,
-                  EPILOGUE), True),
-    "s_bcast_pack32": ((prologue_with(meta=META_BCAST_PACK32, wants_sb=True),
-                        BODY_BASE, EPILOGUE), True),
-    "p_prefetch_w": ((PREFETCH_PROLOGUE, BODY_BASE, EPILOGUE), False),
-    "n_nosums": ((PROLOGUE, BODY_NOSUMS, EPILOGUE), False),
-    "l_loadonly": ((PROLOGUE, BODY_LOADONLY, EPILOGUE), False),
+                      EPILOGUE), ""),
+    "g_pack32": ((prologue_with(meta=META_PACK32, extra="packed_sb"), BODY_BASE,
+                  EPILOGUE), "packed_sb"),
+    "s_bcast_pack32": ((prologue_with(meta=META_BCAST_PACK32,
+                                      extra="packed_sb"),
+                        BODY_BASE, EPILOGUE), "packed_sb"),
+    "p_prefetch_w": ((PREFETCH_PROLOGUE, BODY_BASE, EPILOGUE), ""),
+    "n_nosums": ((PROLOGUE, BODY_NOSUMS, EPILOGUE), ""),
+    "l_loadonly": ((PROLOGUE, BODY_LOADONLY, EPILOGUE), ""),
+    "n_nobias": ((prologue_with(meta=META_NOBIAS), BODY_NOBIAS, EPILOGUE), ""),
+    "d_bias1": ((prologue_with(meta=META_CODE1, extra="bias_codes"), BODY_BASE,
+                 EPILOGUE), "bias_codes"),
+    "e_bias6": ((prologue_with(meta=META_BIAS6, extra="bias_codes",
+                               helper=BIAS6_HELPER),
+                 BODY_BASE, EPILOGUE), "bias_codes"),
 }
 
-# Arms that must reproduce `a_base` bit for bit.
-DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly")
+# Arms that are NOT required to reproduce `a_base` bit for bit.
+DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1")
 # Arms the primary metric may rank: bit exact AND not register-confounded on
 # this host. `p_prefetch_w` is bit exact but spills on g16s at the widths that
 # matter, so it is reported separately.
@@ -438,7 +499,7 @@ ARMS = tuple(PLANS)
 
 
 def arm_source(base: str, arm: str, via_m: bool = False) -> str:
-    plan, wants_sb = PLANS[arm]
+    plan, extra = PLANS[arm]
     text = base
     if plan is not None:
         prologue, body, epilogue = plan
@@ -446,7 +507,7 @@ def arm_source(base: str, arm: str, via_m: bool = False) -> str:
         text = base[:start] + prologue + body + epilogue + base[end:]
     template = ISO_KERNEL_VIA_M if via_m else ISO_KERNEL
     return text + "".join(
-        template % {"na": na, "sb": ", packed_sb" if wants_sb else ""}
+        template % {"na": na, "extra": ", " + extra if extra else ""}
         for na in WIDTHS)
 
 
@@ -463,9 +524,9 @@ def emit(outdir: pathlib.Path) -> None:
                 "e118_arms: %s and %s are byte-identical" % (arm, seen[digest]))
         seen[digest] = arm
         (outdir / ("arm_%s.metal" % arm)).write_text(text)
-        print("%-15s %8d bytes  sha=%s  exact=%s  buffer7=%s"
+        print("%-15s %8d bytes  sha=%s  exact=%-5s  extra=%s"
               % (arm, len(text), digest, arm not in DIAGNOSTIC_ARMS,
-                 PLANS[arm][1]))
+                 PLANS[arm][1] or "-"))
     (outdir / "ctl_a_base_via_m.metal").write_text(
         arm_source(base, "a_base", via_m=True))
     names = ",".join(a + (":diag" if a in DIAGNOSTIC_ARMS else "") for a in ARMS)

@@ -1,0 +1,936 @@
+{
+  "widths": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "local_arch": "applegpu_g16s",
+  "ranked_arch": "applegpu_g17s",
+  "diagnostic_arms": [
+    "n_nosums",
+    "l_loadonly"
+  ],
+  "promotion_arms": [
+    "s_bcast",
+    "s_bcast_all",
+    "s_bcast_scale",
+    "p_split_meta",
+    "g_pack32",
+    "s_bcast_pack32"
+  ],
+  "arms": {
+    "a_base": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 292
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 70,
+          "spill_bytes": 0,
+          "text_bytes": 4430,
+          "text_sha8": "b9c8b4ab"
+        },
+        "3": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 5682,
+          "text_sha8": "d4b0194b"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6920,
+          "text_sha8": "b9ada90f"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 8228,
+          "text_sha8": "bccbefab"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 83,
+          "spill_bytes": 0,
+          "text_bytes": 4644,
+          "text_sha8": "96664ca5"
+        },
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5900,
+          "text_sha8": "cc2c8d64"
+        },
+        "4": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 7206,
+          "text_sha8": "db7e32ab"
+        },
+        "5": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 8492,
+          "text_sha8": "ce9331fb"
+        }
+      }
+    },
+    "q_scaffold": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 292
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 70,
+          "spill_bytes": 0,
+          "text_bytes": 4430,
+          "text_sha8": "b9c8b4ab"
+        },
+        "3": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 5682,
+          "text_sha8": "d4b0194b"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6920,
+          "text_sha8": "b9ada90f"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 8228,
+          "text_sha8": "bccbefab"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 83,
+          "spill_bytes": 0,
+          "text_bytes": 4644,
+          "text_sha8": "96664ca5"
+        },
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5900,
+          "text_sha8": "cc2c8d64"
+        },
+        "4": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 7206,
+          "text_sha8": "db7e32ab"
+        },
+        "5": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 8492,
+          "text_sha8": "ce9331fb"
+        }
+      }
+    },
+    "s_bcast": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 314
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 316
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 316
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 316
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 5194,
+          "text_sha8": "a6d4c17b"
+        },
+        "3": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 6428,
+          "text_sha8": "8b21429b"
+        },
+        "4": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "text_bytes": 7662,
+          "text_sha8": "b6f2f11c"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 208,
+          "text_bytes": 9490,
+          "text_sha8": "be82b411"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 104,
+          "spill_bytes": 0,
+          "text_bytes": 5466,
+          "text_sha8": "11aa1e99"
+        },
+        "3": {
+          "registers": 111,
+          "spill_bytes": 0,
+          "text_bytes": 6696,
+          "text_sha8": "5ab81356"
+        },
+        "4": {
+          "registers": 117,
+          "spill_bytes": 0,
+          "text_bytes": 7982,
+          "text_sha8": "b89f18b0"
+        },
+        "5": {
+          "registers": 126,
+          "spill_bytes": 16,
+          "text_bytes": 9280,
+          "text_sha8": "64a75a5b"
+        }
+      }
+    },
+    "s_bcast_all": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 312
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 314
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 314
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 2,
+          "air_lines": 314
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5052,
+          "text_sha8": "d7808ad8"
+        },
+        "3": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 6258,
+          "text_sha8": "98768630"
+        },
+        "4": {
+          "registers": 92,
+          "spill_bytes": 0,
+          "text_bytes": 7504,
+          "text_sha8": "87d2c842"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 80,
+          "text_bytes": 8948,
+          "text_sha8": "79622842"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 92,
+          "spill_bytes": 0,
+          "text_bytes": 5332,
+          "text_sha8": "afc34450"
+        },
+        "3": {
+          "registers": 105,
+          "spill_bytes": 0,
+          "text_bytes": 6596,
+          "text_sha8": "4924abdd"
+        },
+        "4": {
+          "registers": 99,
+          "spill_bytes": 0,
+          "text_bytes": 7866,
+          "text_sha8": "2bb1c0ed"
+        },
+        "5": {
+          "registers": 107,
+          "spill_bytes": 0,
+          "text_bytes": 9114,
+          "text_sha8": "c8bc2eca"
+        }
+      }
+    },
+    "s_bcast_scale": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 1,
+          "air_lines": 305
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 1,
+          "air_lines": 307
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 1,
+          "air_lines": 307
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 1,
+          "air_lines": 307
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 88,
+          "spill_bytes": 0,
+          "text_bytes": 4862,
+          "text_sha8": "3474bdef"
+        },
+        "3": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 6266,
+          "text_sha8": "d00a1cc9"
+        },
+        "4": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 7560,
+          "text_sha8": "f91d74a9"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 8676,
+          "text_sha8": "83002dbd"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "text_bytes": 5118,
+          "text_sha8": "d8fd7a62"
+        },
+        "3": {
+          "registers": 108,
+          "spill_bytes": 0,
+          "text_bytes": 6414,
+          "text_sha8": "ab3c2d7c"
+        },
+        "4": {
+          "registers": 106,
+          "spill_bytes": 0,
+          "text_bytes": 7634,
+          "text_sha8": "50a5897d"
+        },
+        "5": {
+          "registers": 107,
+          "spill_bytes": 0,
+          "text_bytes": 8940,
+          "text_sha8": "58e25e4a"
+        }
+      }
+    },
+    "p_split_meta": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 303
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 305
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 305
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 305
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 70,
+          "spill_bytes": 0,
+          "text_bytes": 4430,
+          "text_sha8": "ed594ca6"
+        },
+        "3": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 5682,
+          "text_sha8": "971afd28"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6920,
+          "text_sha8": "b9ada90f"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 8228,
+          "text_sha8": "bccbefab"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 83,
+          "spill_bytes": 0,
+          "text_bytes": 4644,
+          "text_sha8": "96664ca5"
+        },
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5900,
+          "text_sha8": "cc2c8d64"
+        },
+        "4": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 7206,
+          "text_sha8": "db7e32ab"
+        },
+        "5": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 8492,
+          "text_sha8": "ce9331fb"
+        }
+      }
+    },
+    "g_pack32": {
+      "air": {
+        "2": {
+          "device_loads": 6,
+          "shuffles": 0,
+          "air_lines": 295
+        },
+        "3": {
+          "device_loads": 6,
+          "shuffles": 0,
+          "air_lines": 297
+        },
+        "4": {
+          "device_loads": 6,
+          "shuffles": 0,
+          "air_lines": 297
+        },
+        "5": {
+          "device_loads": 6,
+          "shuffles": 0,
+          "air_lines": 297
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 76,
+          "spill_bytes": 0,
+          "text_bytes": 4374,
+          "text_sha8": "32341805"
+        },
+        "3": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 5636,
+          "text_sha8": "40014514"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6870,
+          "text_sha8": "6edb8bbe"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 8180,
+          "text_sha8": "7013abda"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 85,
+          "spill_bytes": 0,
+          "text_bytes": 4604,
+          "text_sha8": "ee49d6d3"
+        },
+        "3": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 5862,
+          "text_sha8": "7629a643"
+        },
+        "4": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 7160,
+          "text_sha8": "d57ba0e8"
+        },
+        "5": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 8444,
+          "text_sha8": "bb1cb810"
+        }
+      }
+    },
+    "s_bcast_pack32": {
+      "air": {
+        "2": {
+          "device_loads": 6,
+          "shuffles": 1,
+          "air_lines": 306
+        },
+        "3": {
+          "device_loads": 6,
+          "shuffles": 1,
+          "air_lines": 308
+        },
+        "4": {
+          "device_loads": 6,
+          "shuffles": 1,
+          "air_lines": 308
+        },
+        "5": {
+          "device_loads": 6,
+          "shuffles": 1,
+          "air_lines": 308
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 84,
+          "spill_bytes": 0,
+          "text_bytes": 4770,
+          "text_sha8": "47a7dcf0"
+        },
+        "3": {
+          "registers": 96,
+          "spill_bytes": 16,
+          "text_bytes": 6036,
+          "text_sha8": "79c78191"
+        },
+        "4": {
+          "registers": 96,
+          "spill_bytes": 0,
+          "text_bytes": 7304,
+          "text_sha8": "764501fe"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 144,
+          "text_bytes": 9052,
+          "text_sha8": "ba6fad73"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 4994,
+          "text_sha8": "b7d3bcf8"
+        },
+        "3": {
+          "registers": 103,
+          "spill_bytes": 0,
+          "text_bytes": 6274,
+          "text_sha8": "215896a9"
+        },
+        "4": {
+          "registers": 115,
+          "spill_bytes": 0,
+          "text_bytes": 7564,
+          "text_sha8": "d9fddb37"
+        },
+        "5": {
+          "registers": 125,
+          "spill_bytes": 0,
+          "text_bytes": 8844,
+          "text_sha8": "39df4c36"
+        }
+      }
+    },
+    "p_prefetch_w": {
+      "air": {
+        "2": {
+          "device_loads": 8,
+          "shuffles": 0,
+          "air_lines": 363
+        },
+        "3": {
+          "device_loads": 8,
+          "shuffles": 0,
+          "air_lines": 365
+        },
+        "4": {
+          "device_loads": 8,
+          "shuffles": 0,
+          "air_lines": 365
+        },
+        "5": {
+          "device_loads": 8,
+          "shuffles": 0,
+          "air_lines": 365
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 4404,
+          "text_sha8": "a3b0909c"
+        },
+        "3": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 5662,
+          "text_sha8": "a0be42f8"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6948,
+          "text_sha8": "eaaa4ceb"
+        },
+        "5": {
+          "registers": 96,
+          "spill_bytes": 192,
+          "text_bytes": 8502,
+          "text_sha8": "05a1bcee"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 83,
+          "spill_bytes": 0,
+          "text_bytes": 4672,
+          "text_sha8": "3501148e"
+        },
+        "3": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 5978,
+          "text_sha8": "7648d63c"
+        },
+        "4": {
+          "registers": 92,
+          "spill_bytes": 0,
+          "text_bytes": 7244,
+          "text_sha8": "3d5adbca"
+        },
+        "5": {
+          "registers": 100,
+          "spill_bytes": 0,
+          "text_bytes": 8506,
+          "text_sha8": "e24d5d9c"
+        }
+      }
+    },
+    "n_nosums": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 282
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 284
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 284
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 284
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 74,
+          "spill_bytes": 0,
+          "text_bytes": 4120,
+          "text_sha8": "bf74f25b"
+        },
+        "3": {
+          "registers": 78,
+          "spill_bytes": 0,
+          "text_bytes": 5194,
+          "text_sha8": "882be43a"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6292,
+          "text_sha8": "f274d31d"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 7422,
+          "text_sha8": "15c4a459"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 89,
+          "spill_bytes": 0,
+          "text_bytes": 4320,
+          "text_sha8": "f1ade04b"
+        },
+        "3": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 5426,
+          "text_sha8": "e3f1edbb"
+        },
+        "4": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 6570,
+          "text_sha8": "43436417"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 7664,
+          "text_sha8": "2fe02636"
+        }
+      }
+    },
+    "l_loadonly": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 259
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 261
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 261
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 261
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 51,
+          "spill_bytes": 0,
+          "text_bytes": 2430,
+          "text_sha8": "014ef80a"
+        },
+        "3": {
+          "registers": 66,
+          "spill_bytes": 0,
+          "text_bytes": 3148,
+          "text_sha8": "9cc27847"
+        },
+        "4": {
+          "registers": 81,
+          "spill_bytes": 0,
+          "text_bytes": 3866,
+          "text_sha8": "59579858"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 4592,
+          "text_sha8": "3b3a0178"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 65,
+          "spill_bytes": 0,
+          "text_bytes": 2452,
+          "text_sha8": "c1522370"
+        },
+        "3": {
+          "registers": 82,
+          "spill_bytes": 0,
+          "text_bytes": 3156,
+          "text_sha8": "489c6caf"
+        },
+        "4": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 3890,
+          "text_sha8": "51e39f00"
+        },
+        "5": {
+          "registers": 99,
+          "spill_bytes": 0,
+          "text_bytes": 4610,
+          "text_sha8": "bf8001cc"
+        }
+      }
+    },
+    "ctl_a_base_via_m": {
+      "air": {
+        "2": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 292
+        },
+        "3": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        },
+        "4": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        },
+        "5": {
+          "device_loads": 7,
+          "shuffles": 0,
+          "air_lines": 294
+        }
+      },
+      "applegpu_g16s": {
+        "2": {
+          "registers": 70,
+          "spill_bytes": 0,
+          "text_bytes": 4430,
+          "text_sha8": "b9c8b4ab"
+        },
+        "3": {
+          "registers": 93,
+          "spill_bytes": 0,
+          "text_bytes": 5682,
+          "text_sha8": "d4b0194b"
+        },
+        "4": {
+          "registers": 94,
+          "spill_bytes": 0,
+          "text_bytes": 6920,
+          "text_sha8": "b9ada90f"
+        },
+        "5": {
+          "registers": 95,
+          "spill_bytes": 0,
+          "text_bytes": 8228,
+          "text_sha8": "bccbefab"
+        }
+      },
+      "applegpu_g17s": {
+        "2": {
+          "registers": 83,
+          "spill_bytes": 0,
+          "text_bytes": 4644,
+          "text_sha8": "96664ca5"
+        },
+        "3": {
+          "registers": 90,
+          "spill_bytes": 0,
+          "text_bytes": 5900,
+          "text_sha8": "cc2c8d64"
+        },
+        "4": {
+          "registers": 91,
+          "spill_bytes": 0,
+          "text_bytes": 7206,
+          "text_sha8": "db7e32ab"
+        },
+        "5": {
+          "registers": 98,
+          "spill_bytes": 0,
+          "text_bytes": 8492,
+          "text_sha8": "ce9331fb"
+        }
+      }
+    }
+  }
+}
