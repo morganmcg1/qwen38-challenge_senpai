@@ -315,28 +315,35 @@ def thresh_source(survivors: int) -> str:
 
     `ctl` is [tau, count_strictly_above_tau, capacity_left_in_tau, 0].
 
-    The scan is two level and builds its own coarse level. Each of the 256
-    threads sums the 256 fine bins of one group, one thread walks those group
-    sums down from the top to the group that straddles `WANT`, then each
+    The scan is two level and builds its own coarse level. Each simdgroup
+    reduces the 256 fine bins of one group at a time, one thread walks the 256
+    group sums down from the top to the group that straddles `WANT`, then each
     thread loads one fine bin of that group and one thread walks those.
 
     The reduce is what makes this cheap. One thread walking all 65,536 bins is
     a chain of 65,536 dependent loads and measured 12.2 us of a 21.7 us
-    candidate selection. The same words read by 256 threads in parallel leave
-    only two 256-element walks on the critical path.
+    candidate selection. Reading the same words with the 32 lanes of a
+    simdgroup keeps every load coalesced and leaves only two 256-element walks
+    on the critical path.
     """
     return DEP_GUARD + f"""
         constexpr uint GROUPS = {HIST_GROUPS};
         constexpr uint PER    = {HIST_BINS // HIST_GROUPS};
         constexpr uint WANT   = {survivors};
+        constexpr uint NSIMD  = {HIST_GROUPS} / 32;
 
-        uint tid = thread_position_in_threadgroup.x;
+        uint tid  = thread_position_in_threadgroup.x;
+        uint lane = thread_index_in_simdgroup;
+        uint sg   = simdgroup_index_in_threadgroup;
         threadgroup uint g[GROUPS];
         threadgroup uint sh[2];
 
-        uint acc0 = 0u;
-        for (uint j = 0; j < PER; ++j) {{ acc0 += bins[tid * PER + j]; }}
-        g[tid] = acc0;
+        for (uint q = sg; q < GROUPS; q += NSIMD) {{
+            uint s = 0u;
+            for (uint j = lane; j < PER; j += 32u) {{ s += bins[q * PER + j]; }}
+            s = simd_sum(s);
+            if (lane == 0) {{ g[q] = s; }}
+        }}
         threadgroup_barrier(mem_flags::mem_threadgroup);
         if (tid == 0) {{
             uint acc = 0u, above_groups = 0u, gsel = 0u;
@@ -882,7 +889,7 @@ def correctness(arm_two, arm_ship) -> dict:
     mx.eval(dsurv[1])
     control_ok = worst in set(dsurv[1].tolist()) and worst not in kept
     # The device threshold must agree with the host model of the same scan.
-    _, _, host_tau, host_above = host_sketch(arm_two.score, arm_two.survivors)
+    _, host_tau, host_above = host_sketch(arm_two.score, arm_two.survivors)
     return {
         "positive_control_worst_row": worst,
         "positive_control_detects_the_change": control_ok,
