@@ -161,6 +161,57 @@ def provenance(legs: list[dict], warmup: dict) -> dict:
     }
 
 
+def robust_refit(legs: list[dict], model: dict) -> dict:
+    """Refit without the single largest-residual leg.
+
+    Reported beside the full fit, never instead of it. It exists so a reader
+    can see whether one leg carries the level or the contrast, not so the
+    preferred number can be chosen after the fact.
+    """
+    residuals = model["residuals"]
+    dropped = max(residuals, key=lambda tag: abs(residuals[tag]))
+    kept = [leg for leg in legs if leg["tag"] != dropped]
+    refit = ladder.fit(kept, "mtp_seconds_per_token")
+    if refit is None:
+        return {"usable": False, "dropped_leg": dropped}
+
+    # The leave-one-out residual, not the full-fit residual. The full fit is
+    # pulled toward the outlier, so dividing its residual by the refit's sd
+    # mixes two frames and understates the excursion.
+    left_out = next(leg for leg in legs if leg["tag"] == dropped)
+    predicted = (refit["arm_means_adjusted"][left_out["arm"]]
+                 + refit["slope_per_leg"] * (left_out["index"] - refit["centre"]))
+    loo = left_out["mtp_seconds_per_token"] - predicted
+    return {
+        "usable": True,
+        "dropped_leg": dropped,
+        "dropped_leg_leave_one_out_residual": loo,
+        "dropped_leg_leave_one_out_residual_pct":
+            100.0 * loo / refit["grand_mean"],
+        "dropped_leg_residual_sd_multiples": abs(loo) / refit["residual_sd"],
+        "seconds_per_token": refit["grand_mean"],
+        "n": refit["n"],
+        "df": refit["df"],
+        "residual_sd": refit["residual_sd"],
+        "residual_sd_pct": refit["residual_sd_pct"],
+        "contrast_none_to_s512": ladder.contrast(refit, "none", "s512"),
+    }
+
+
+def thermal(legs: list[dict], warmup: dict) -> dict:
+    """Thermal record over the fitted legs, with the warmup leg beside it.
+
+    The warmup leg enters cold on purpose. Folding it into the spread reports
+    a 23 C excursion that no fitted leg ever saw, which reads as a gate failure
+    instead of as the fix that prevented one.
+    """
+    out = ladder.thermal(legs)
+    out["warmup_leg_excluded_from_spread"] = True
+    out["warmup_entry_temp_c"] = warmup.get("gpu_temp_entry_c")
+    out["warmup_exit_temp_c"] = warmup.get("gpu_temp_exit_c")
+    return out
+
+
 def build(legs: list[dict], warmup: dict) -> dict:
     saved_arms, saved_order, saved_slack = ladder.ARMS, ladder.ORDER, ladder.SLACK_MB
     ladder.ARMS = ARMS
@@ -185,7 +236,7 @@ def build(legs: list[dict], warmup: dict) -> dict:
             "trace_tax_se_pct_from_rung11": TRACE_TAX_SE_PCT,
             "exactness": exactness(legs, warmup),
             "provenance": provenance(legs, warmup),
-            "thermal": ladder.thermal(legs + [warmup]),
+            "thermal": thermal(legs, warmup),
             "safety": ladder.safety(legs, model),
             "channels": {},
         }
@@ -202,9 +253,20 @@ def build(legs: list[dict], warmup: dict) -> dict:
             }
             out["channels"][name] = block
         if model is not None:
-            level = arm_level(model, "none")
-            out["fresh_base_seconds_per_token"] = level.get("seconds_per_token")
-            out["fresh_base_level"] = level
+            # Both arms are the same machine code, so the level is the pooled
+            # mean over every fitted leg. Quoting one arm throws away half the
+            # legs and reports a difference that cannot exist as if it were a
+            # choice between two numbers.
+            out["fresh_base_seconds_per_token"] = model["grand_mean"]
+            out["fresh_base_level"] = {
+                "pooled_all_legs": model["grand_mean"],
+                "why_pooled": "the two arms differ only in an environment "
+                              "variable the shipped 96 GiB guard never reads "
+                              "on this host, so they are identical code",
+                "per_arm_for_reference": {arm: arm_level(model, arm)
+                                          for arm in ARMS},
+            }
+            out["robust_drop_outlier"] = robust_refit(legs, model)
         return out
     finally:
         ladder.ARMS, ladder.ORDER, ladder.SLACK_MB = saved_arms, saved_order, saved_slack
@@ -279,6 +341,17 @@ def selftest() -> int:
         # Positive control: the warmup leg must never enter the fit.
         if WARMUP_ARM in ARMS or WARMUP_INDEX in range(1, len(ORDER) + 1):
             failures.append("the warmup leg can reach the fit")
+
+        # Positive control: the warmup leg must not reach the thermal spread
+        # either. A cold leg 20 C below the others is the exact input that
+        # would make this check pass for the wrong reason if it did.
+        cold = {"gpu_temp_entry_c": 37.0, "gpu_temp_exit_c": 45.0}
+        warm = [{"gpu_temp_entry_c": 59.0 + i, "gpu_temp_exit_c": 62.0 + i}
+                for i in range(2)]
+        spread = thermal(warm, cold)["entry_temp_spread_c"]
+        if abs(spread - 1.0) > 1e-9:
+            failures.append(
+                f"the warmup leg reached the entry spread: {spread} C")
     finally:
         ladder.ARMS, ladder.ORDER, ladder.SLACK_MB = saved_arms, saved_order, saved_slack
 
@@ -311,6 +384,15 @@ def report(out: dict) -> None:
           f"{channel['residual_sd_pct']:.4f} %   df {channel['df']}")
     print()
     print("LEVEL")
+    print(f"  POOLED {out['fresh_base_seconds_per_token']:.8f} s/token   "
+          "headline: both arms are identical machine code")
+    robust = out.get("robust_drop_outlier", {})
+    if robust.get("usable"):
+        print(f"  robust {robust['seconds_per_token']:.8f} s/token   "
+              f"drop {robust['dropped_leg']} at "
+              f"{robust['dropped_leg_leave_one_out_residual_pct']:+.4f} % = "
+              f"{robust['dropped_leg_residual_sd_multiples']:.1f} sd   "
+              f"residual sd {robust['residual_sd_pct']:.4f} %")
     for arm in ARMS:
         lvl = channel["levels"][arm]
         if not lvl.get("usable"):
@@ -371,6 +453,10 @@ def main() -> int:
             "e130_rung12_all_legs_matched": out["exactness"]["all_legs_matched"],
             "e130_rung12_safety_all_clear": out["safety"]["all_clear"],
             "e130_rung12_entry_temp_spread_c": out["thermal"]["entry_temp_spread_c"],
+            "e130_rung12_fresh_base_seconds_per_token_robust":
+                out.get("robust_drop_outlier", {}).get("seconds_per_token"),
+            "e130_rung12_residual_sd_pct_robust":
+                out.get("robust_drop_outlier", {}).get("residual_sd_pct"),
         }
         if channel and channel.get("usable") is not False:
             summary["e130_rung12_residual_sd_pct"] = channel["residual_sd_pct"]

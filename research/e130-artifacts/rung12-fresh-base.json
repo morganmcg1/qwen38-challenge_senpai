@@ -202,19 +202,38 @@
  },
  "experiment": "e130-rung12-fresh-base",
  "fresh_base_level": {
-  "arm": "none",
-  "ci95_abs": [
-   0.032252046698615214,
-   0.03231719606564913
-  ],
-  "df": 9,
-  "se_abs": 1.4399833219780168e-05,
-  "se_pct_of_level": 0.04460276318355622,
-  "seconds_per_token": 0.03228462138213217,
-  "t_crit_95": 2.262157,
-  "usable": true
+  "per_arm_for_reference": {
+   "none": {
+    "arm": "none",
+    "ci95_abs": [
+     0.032252046698615214,
+     0.03231719606564913
+    ],
+    "df": 9,
+    "se_abs": 1.4399833219780168e-05,
+    "se_pct_of_level": 0.04460276318355622,
+    "seconds_per_token": 0.03228462138213217,
+    "t_crit_95": 2.262157,
+    "usable": true
+   },
+   "s512": {
+    "arm": "s512",
+    "ci95_abs": [
+     0.03227957729241278,
+     0.032344726659446696
+    ],
+    "df": 9,
+    "se_abs": 1.4399833219780168e-05,
+    "se_pct_of_level": 0.04456476074545274,
+    "seconds_per_token": 0.03231215197592974,
+    "t_crit_95": 2.262157,
+    "usable": true
+   }
+  },
+  "pooled_all_legs": 0.032298386679030955,
+  "why_pooled": "the two arms differ only in an environment variable the shipped 96 GiB guard never reads on this host, so they are identical code"
  },
- "fresh_base_seconds_per_token": 0.03228462138213217,
+ "fresh_base_seconds_per_token": 0.032298386679030955,
  "harness": "local",
  "headline_channel": "candidate_mtp_seconds_per_token",
  "legs": [
@@ -703,6 +722,38 @@
   ]
  },
  "question": "what is the candidate leg time on an unchanged 35d8cf58 tree, and does the wired-slack arm still read null there",
+ "robust_drop_outlier": {
+  "contrast_none_to_s512": {
+   "ci95_abs": [
+    -1.4682428113749383e-05,
+    3.589794070004722e-05
+   ],
+   "ci95_pct": [
+    -0.04547811767784329,
+    0.11119215152295989
+   ],
+   "delta": 1.0607756293148918e-05,
+   "from": "none",
+   "pct": 0.0328570169225583,
+   "se_abs": 1.0967103442534488e-05,
+   "se_pct": 0.03397007750220797,
+   "significant": false,
+   "t": 0.9672340877180123,
+   "t_crit_95": 2.306004,
+   "to": "s512",
+   "usable": true
+  },
+  "df": 8,
+  "dropped_leg": "e130-r12base-07-s512",
+  "dropped_leg_leave_one_out_residual": 0.00010153702502651435,
+  "dropped_leg_leave_one_out_residual_pct": 0.3144591061009359,
+  "dropped_leg_residual_sd_multiples": 5.606730834648829,
+  "n": 11,
+  "residual_sd": 1.8109844759985524e-05,
+  "residual_sd_pct": 0.05608600009075194,
+  "seconds_per_token": 0.03228942112235183,
+  "usable": true
+ },
  "safety": {
   "all_clear": false,
   "apply_failure_legs": [],
@@ -740,10 +791,9 @@
    59.6600227355957,
    59.9175910949707,
    60.07770919799805,
-   60.01164245605469,
-   37.294227600097656
+   60.01164245605469
   ],
-  "entry_temp_spread_c": 23.15743637084961,
+  "entry_temp_spread_c": 1.7572708129882812,
   "exit_temp_c": [
    61.97270202636719,
    62.85823059082031,
@@ -756,11 +806,13 @@
    63.51606369018555,
    63.71025466918945,
    63.708980560302734,
-   63.19428634643555,
-   61.239356994628906
+   63.19428634643555
   ],
-  "exit_temp_spread_c": 2.470897674560547,
-  "gate_qualified_for_timing": false
+  "exit_temp_spread_c": 1.7375526428222656,
+  "gate_qualified_for_timing": false,
+  "warmup_entry_temp_c": 37.294227600097656,
+  "warmup_exit_temp_c": 61.239356994628906,
+  "warmup_leg_excluded_from_spread": true
  },
  "trace_tax_pct_from_rung11": 0.041,
  "trace_tax_se_pct_from_rung11": 0.0835,
