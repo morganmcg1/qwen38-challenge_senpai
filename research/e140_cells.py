@@ -57,8 +57,8 @@ from e134_rung2 import (  # noqa: E402
     VectorSampler, build_legs, fit_transfer, median_pct, simulate, walk,
 )
 from e140_lookahead import (  # noqa: E402
-    CURVE_FORMS, SHIPPED_CLIFF, SHIPPED_TIER, curve_price, flat_price,
-    load_curves, pb6_price, walk_argmax,
+    CURVE_FORMS, SHIPPED_CLIFF, SHIPPED_CLIFF8, SHIPPED_TIER, curve_price,
+    flat_price, load_curves, pb68_price, pb6_price, walk_argmax,
 )
 from e134_rung3 import boundary_price  # noqa: E402
 
@@ -229,7 +229,19 @@ CELLS = {
     "D_curvelook": {"price": "curve", "walk": "argmax"},
     "E_pb6": {"price": "pb6", "walk": "greedy"},
     "F_pb6look": {"price": "pb6", "walk": "argmax"},
+    # F4 item 8. The post-tight curve grows a second cliff into verify width
+    # 8, so the strongest fitted-constant rival to the argmax is two priced
+    # boundaries rather than one. `e140_posttight.py` fits `PB68_TIERS[1]`.
+    "G_pb68": {"price": "pb68", "walk": "greedy"},
+    "H_pb68look": {"price": "pb68", "walk": "argmax"},
 }
+
+PB68_TIERS = (SHIPPED_TIER, 1.0)
+
+
+def install_pb68(tier6: float, tier8: float) -> None:
+    global PB68_TIERS
+    PB68_TIERS = (tier6, tier8)
 
 
 def price_for(kind, curve):
@@ -237,6 +249,9 @@ def price_for(kind, curve):
         return flat_price()
     if kind == "pb6":
         return pb6_price(SHIPPED_TIER, SHIPPED_CLIFF)
+    if kind == "pb68":
+        return pb68_price(PB68_TIERS[0], PB68_TIERS[1],
+                          SHIPPED_CLIFF, SHIPPED_CLIFF8)
     return curve_price(curve)
 
 

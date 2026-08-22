@@ -56,6 +56,7 @@ CURVE_FORMS = ("pre_arm", "per_round", "per_drafting_round", "proportional")
 
 SHIPPED_TIER = 1.45
 SHIPPED_CLIFF = 4  # `marginal[4]` prices the step into verify width 6
+SHIPPED_CLIFF8 = 6  # `marginal[6]` prices the step into verify width 8
 
 
 def load_curves(path: pathlib.Path = MEASURED_CURVE_PATH) -> dict:
@@ -68,7 +69,8 @@ def load_curves(path: pathlib.Path = MEASURED_CURVE_PATH) -> dict:
     return curves, blob["best_form"]
 
 
-def walk_argmax(ema, margin, offer, price=None):
+def walk_argmax(ema, margin, offer, price=None,
+                cap_limit: int = SEGMENTED_VERIFY_DEPTH_CAP):
     """The shipped walk's objective, maximised over every feasible depth.
 
     Every input to the per-step probability is the shipped input: the same
@@ -81,9 +83,13 @@ def walk_argmax(ema, margin, offer, price=None):
     expected emitted tokens and `C_d = cumulative[d]` the round cost. The
     comparison is strict, so a tie keeps the shallower depth, which is the
     same tie-break the shipped `guard reach > threshold` makes.
+
+    `cap_limit` is the shipped `segmentedVerifyDepthCap` and stays there for
+    every scored arm. Raising it is a read-only diagnostic that answers
+    whether the rule wants a depth the cap forbids; it never scores a round.
     """
     _, cumulative = price or (PRICE_MARGINAL, PRICE_CUMULATIVE)
-    cap = min(min(offer, MAX_DEPTH), SEGMENTED_VERIFY_DEPTH_CAP)
+    cap = min(min(offer, MAX_DEPTH), cap_limit)
     if cap <= 0:
         return 0
     best, best_value = 0, 1.0 / cumulative[0]
@@ -154,6 +160,28 @@ def pb6_price(tier: float = SHIPPED_TIER, cliff: int = SHIPPED_CLIFF):
     """`makeBoundaryDepthPrice(enteringVerifyWidth: 6, tier: 1.45)`."""
     marginal, cumulative, _ = boundary_price(tier, cliff)
     return list(marginal), list(cumulative)
+
+
+def pb68_price(tier6: float = SHIPPED_TIER, tier8: float = 1.0,
+               cliff6: int = SHIPPED_CLIFF, cliff8: int = SHIPPED_CLIFF8):
+    """Two priced boundaries, at verify width 6 and at verify width 8.
+
+    F4 raises this as the strongest fitted-constant rival to the argmax,
+    because the post-tight curve grows a second cliff into width 8. It keeps
+    `makeBoundaryDepthPrice`'s convention of holding the total at
+    `maxDepth * headStepCostRatio`, so `tier8 = 1` reproduces `pb6_price`
+    exactly and the two arms differ in one fitted scalar only.
+    """
+    count = len(PRICE_MARGINAL)
+    total = count * 0.18
+    within = total / (count - 2 + tier6 + tier8)
+    marginal = [within] * count
+    marginal[cliff6] = within * tier6
+    marginal[cliff8] = within * tier8
+    cumulative = [1.0]
+    for value in marginal:
+        cumulative.append(cumulative[-1] + value)
+    return marginal, cumulative[:len(PRICE_CUMULATIVE)]
 
 
 def prefix_consistency(price) -> float:
