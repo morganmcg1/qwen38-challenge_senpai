@@ -63,12 +63,19 @@ def cost_model_depth(
     margin_scale_1: float | None = 3.0,
     marginal: list[float] | None = None,
     cumulative: list[float] | None = None,
+    margin_mode: str = "min",
 ) -> tuple[int, str, list[float]]:
     """The shipped walk. Returns (depth, trace string, per-step p).
 
     `margin_scale_0` / `margin_scale_1` of None delete that override, which is
     how the `nomargin*` arms are expressed. A NaN margin also disables both,
     matching `pendingTop2` being nil or shorter than two entries.
+
+    `margin_mode` selects how the margin confidence combines with the EMA.
+    `"min"` is the shipped strictly-downward override. `"replace"` trusts the
+    margin outright and `"max"` lets it raise the EMA, so the two of them
+    together measure whether the downward-only restriction is what holds depth
+    below the ranked optimum. Neither is shipped behaviour.
     """
     marginal = PRICE_MARGINAL if marginal is None else marginal
     cumulative = PRICE_CUMULATIVE if cumulative is None else cumulative
@@ -83,12 +90,15 @@ def cost_model_depth(
     have_margin = not math.isnan(margin)
     while depth < cap:
         p = ema[depth]
+        scale = None
         if depth == 0 and have_margin and margin_scale_0 is not None:
-            conf = 1.0 / (1.0 + math.exp(-margin / margin_scale_0))
-            p = min(p, conf)
+            scale = margin_scale_0
         elif depth == 1 and have_margin and margin_scale_1 is not None:
-            conf2 = 1.0 / (1.0 + math.exp(-margin / margin_scale_1))
-            p = min(p, conf2)
+            scale = margin_scale_1
+        if scale is not None:
+            conf = 1.0 / (1.0 + math.exp(-margin / scale))
+            p = {"min": min(p, conf), "replace": conf,
+                 "max": max(p, conf)}[margin_mode]
         reach *= p
         threshold = marginal[depth] * (1.0 + expected) / cumulative[depth]
         steps.append("%d:%.6f/%.6f/%.6f;" % (depth, p, reach, threshold))

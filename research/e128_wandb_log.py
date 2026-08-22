@@ -308,9 +308,7 @@ def log_rung2() -> None:
         run.log({"zero_parameter_validation": table})
     run.summary.update({
         "%s_ranked_median_pct" % arm: gains[arm]
-        for arm in ("static7", "nomargin", "nomargin0", "nomargin1", "recal",
-                    "rankedprice", "rankedprice_nomargin")
-        if arm in gains})
+        for arm in gains})
     arms = wandb.Table(columns=[
         "arm", "ranked_median", "gain_pct_vs_ship"])
     for arm, median in data["medians"].items():

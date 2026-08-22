@@ -245,13 +245,28 @@ def make_policy(arm: str, recal: tuple = (2.0, 3.0)):
         return lambda ema, m, offer, cap: cost_model_depth(
             ema, m, offered_depth=offer,
             margin_scale_0=s0, margin_scale_1=s1)[0]
-    if arm in ("rankedprice", "rankedprice_nomargin"):
+    if arm in ("marginup", "marginfull"):
+        # The assignment asks whether the strictly-downward override is what
+        # holds depth below the ranked optimum. These two lift that
+        # restriction while keeping everything else shipped.
+        mode = "max" if arm == "marginup" else "replace"
+        return lambda ema, m, offer, cap: cost_model_depth(
+            ema, m, offered_depth=offer, margin_mode=mode)[0]
+    if arm.startswith("rankedprice"):
         marginal, cumulative = ranked_price_table()
-        keep = arm == "rankedprice"
+        suffix = arm[len("rankedprice"):].lstrip("_")
+        s0, s1, mode = 2.0, 3.0, "min"
+        if suffix == "nomargin":
+            s0 = s1 = None
+        elif suffix == "recal":
+            s0, s1 = recal
+        elif suffix == "marginup":
+            mode = "max"
+        elif suffix:
+            raise SystemExit("unknown rankedprice arm %r" % arm)
         return lambda ema, m, offer, cap: cost_model_depth(
             ema, m, offered_depth=offer,
-            margin_scale_0=2.0 if keep else None,
-            margin_scale_1=3.0 if keep else None,
+            margin_scale_0=s0, margin_scale_1=s1, margin_mode=mode,
             marginal=marginal, cumulative=cumulative)[0]
     if arm.startswith("price"):
         constant = float(arm[5:])
@@ -461,7 +476,9 @@ def median_of(values: list[float]) -> float:
 # ----------------------------------------------------------------------- main
 
 ARMS = ["ship", "nomargin", "nomargin0", "nomargin1", "recal",
-        "rankedprice", "rankedprice_nomargin", "static7", "oracle"]
+        "marginup", "marginfull",
+        "rankedprice", "rankedprice_nomargin", "rankedprice_recal",
+        "rankedprice_marginup", "static7", "oracle"]
 
 # Uniform price constants swept as a one-number implementable alternative to
 # the shipped 0.18. The winner has to win on the median, not per prompt, so the
