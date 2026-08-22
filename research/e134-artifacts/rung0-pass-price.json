@@ -523,12 +523,12 @@
       "one-pass at 6": {
         "n": 37,
         "mean": 3.0330130421451633,
-        "sd": 0.1314811761140323,
+        "sd": 0.13148117611403232,
         "max": 3.1390636976761
       },
       "modal table": {
         "n": 121,
-        "mean": 2.8246112441893856,
+        "mean": 2.824611244189385,
         "sd": 0.23785373699202422,
         "max": 2.94818587527148
       }
@@ -1138,5 +1138,123 @@
       "9": 14779.821499999955
     },
     "e68_width6_excess_us": 13902.920700000013
+  },
+  "q6": {
+    "calibration": {
+      "tau_low_width_us": [
+        -1395.2715950165218,
+        648.3887880565737
+      ],
+      "base_us_at_M4": 41509.684146970896,
+      "c_hat": -0.14584221689348922,
+      "c_ci": [
+        -0.2786783033226335,
+        -0.013006130464344911
+      ]
+    },
+    "registers_low": 94,
+    "registers_high": 126,
+    "simdgroups_low": 42,
+    "simdgroups_high": 31,
+    "measured_residency_loss": 0.26190476190476186,
+    "assumed_residency_loss": 0.15000000000000002,
+    "prices": [
+      {
+        "table": "{6:6}",
+        "estimator": "board, hinge in the model",
+        "f": 3152.38360146228,
+        "assumed_c1": -11.285991989470245,
+        "measured_c1": -18.385859194028107,
+        "measured_c0": 0.42425706791968665
+      },
+      {
+        "table": "{6:6}",
+        "estimator": "one-pass rows, matched contrast",
+        "f": 3439.914748050905,
+        "assumed_c1": -11.251647844232071,
+        "measured_c1": -18.354263643695223,
+        "measured_c0": 0.4631346403292991
+      },
+      {
+        "table": "{6:6}",
+        "estimator": "board, regs controlled",
+        "f": 1512.9768148599956,
+        "assumed_c1": -11.481299730629601,
+        "measured_c1": -18.56553626921541,
+        "measured_c0": 0.20316870492731454
+      },
+      {
+        "table": "{6:6}",
+        "estimator": "our own curve, the M=6 jump",
+        "f": 10322.5,
+        "assumed_c1": -10.421475844980488,
+        "measured_c1": -17.590531106303242,
+        "measured_c0": 1.4028893434820944
+      },
+      {
+        "table": "{6:6,7:7}",
+        "estimator": "board, hinge in the model",
+        "f": 3152.38360146228,
+        "assumed_c1": -10.847919696057296,
+        "measured_c1": -17.982846246697903,
+        "measured_c0": 0.920154904063164
+      },
+      {
+        "table": "{6:6,7:7}",
+        "estimator": "one-pass rows, matched contrast",
+        "f": 3439.914748050905,
+        "assumed_c1": -10.794138656624973,
+        "measured_c1": -17.933369355467843,
+        "measured_c0": 0.9810350407005286
+      },
+      {
+        "table": "{6:6,7:7}",
+        "estimator": "board, regs controlled",
+        "f": 1512.9768148599956,
+        "assumed_c1": -11.245895742875467,
+        "measured_c1": -18.348971888530798,
+        "measured_c0": 0.46964601906498427
+      },
+      {
+        "table": "{6:6,7:7}",
+        "estimator": "our own curve, the M=6 jump",
+        "f": 10322.5,
+        "assumed_c1": -9.487046388309416,
+        "measured_c1": -16.730884935870392,
+        "measured_c0": 2.4606634884337675
+      },
+      {
+        "table": "{6:6,7:7,8:8}",
+        "estimator": "board, hinge in the model",
+        "f": 3152.38360146228,
+        "assumed_c1": -8.74671855151693,
+        "measured_c1": -16.0498062463878,
+        "measured_c0": 3.298714599682828
+      },
+      {
+        "table": "{6:6,7:7,8:8}",
+        "estimator": "one-pass rows, matched contrast",
+        "f": 3439.914748050905,
+        "assumed_c1": -8.471123615533493,
+        "measured_c1": -15.796267437633983,
+        "measured_c0": 3.6106880672160946
+      },
+      {
+        "table": "{6:6,7:7,8:8}",
+        "estimator": "board, regs controlled",
+        "f": 1512.9768148599956,
+        "assumed_c1": -10.286256864044862,
+        "measured_c1": -17.466133830188625,
+        "measured_c0": 1.5559572299012503
+      },
+      {
+        "table": "{6:6,7:7,8:8}",
+        "estimator": "our own curve, the M=6 jump",
+        "f": 10322.5,
+        "assumed_c1": -1.698609868766554,
+        "measured_c1": -9.565764465956594,
+        "measured_c0": 11.27717362855627
+      }
+    ]
   }
 }
