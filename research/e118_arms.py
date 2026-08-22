@@ -312,6 +312,36 @@ WEIGHT_META_LOOP_SPLIT = (
     "    for (int r = 0; r < rows_per_simd; r++) {\n"
     "      const int row = out_row + r;\n" + META_LOAD + "    }\n")
 
+# z_ballast: register pressure with NO arithmetic change. `ballast` is
+# loop-carried and data-dependent, so it cannot be hoisted, and it is consumed
+# only inside a branch the backend cannot prove dead, so nothing it holds ever
+# reaches `y`. Every value and every accumulation order that produces an output
+# is the shipped one, which makes this the control for the question "does
+# spilling alone change the answer?".
+BALLAST_N = 12
+BALLAST_DECL = """  thread float ballast[%d];
+  for (int i = 0; i < %d; i++) {
+    ballast[i] = float(i) + float(simd_lid);
+  }
+
+  VF acc[rows_per_simd];
+""" % (BALLAST_N, BALLAST_N)
+
+BALLAST_STEP = ("    for (int i = 0; i < %d; i++) {\n"
+                "      ballast[i] = fma(ballast[i], 1.0000001f,\n"
+                "                       scale_local[i %% rows_per_simd]);\n"
+                "    }\n") % BALLAST_N
+
+BALLAST_SINK = """  float ballast_sum = 0.0f;
+  for (int i = 0; i < %d; i++) {
+    ballast_sum += ballast[i];
+  }
+  if (in_vec_size < 0) {
+    y[0] = static_cast<T>(ballast_sum);
+  }
+
+""" % BALLAST_N
+
 
 def expect(text: str, needle: str, count: int, label: str) -> None:
     seen = text.count(needle)
@@ -335,6 +365,20 @@ def prologue_with(meta: str | None = None, loop: str | None = None,
         expect(text, SIG_TAIL, 1, "prologue signature tail")
         text = text.replace(SIG_TAIL, tail)
     return helper + text
+
+
+def ballast_prologue() -> str:
+    text = PROLOGUE
+    expect(text, "  VF acc[rows_per_simd];\n", 1, "accumulator declaration")
+    text = text.replace("  VF acc[rows_per_simd];\n", BALLAST_DECL)
+    expect(text, WEIGHT_META_LOOP, 1, "prologue weight+metadata loop")
+    return text.replace(WEIGHT_META_LOOP, WEIGHT_META_LOOP + BALLAST_STEP)
+
+
+def ballast_epilogue() -> str:
+    head = "  for (int r = 0; r < rows_per_simd; r++) {\n"
+    expect(EPILOGUE, head, 1, "epilogue store loop")
+    return EPILOGUE.replace(head, BALLAST_SINK + head)
 
 
 # --- p_prefetch_w -------------------------------------------------------------
@@ -485,6 +529,7 @@ PLANS = {
     "e_bias6": ((prologue_with(meta=META_BIAS6, extra="bias_codes",
                                helper=BIAS6_HELPER),
                  BODY_BASE, EPILOGUE), "bias_codes"),
+    "z_ballast": ((ballast_prologue(), BODY_BASE, ballast_epilogue()), ""),
 }
 
 # Arms that are NOT required to reproduce `a_base` bit for bit.

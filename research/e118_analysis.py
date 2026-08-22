@@ -45,7 +45,11 @@ KILL_RULE_PCT = 0.5
 # it is reported beside them and never inside the headline.
 PROMOTION_ARMS = ("s_bcast", "s_bcast_all", "s_bcast_scale", "p_split_meta",
                   "g_pack32", "s_bcast_pack32")
-DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly")
+DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1")
+# E111's bias arms, folded in at every width. `e_bias6` is bit exact but is not
+# part of the metadata-load screen: it needs a repacked metadata array that this
+# experiment does not build, so it is reported beside the primary metric.
+BIAS_ARMS = ("n_nobias", "n_nosums", "d_bias1", "e_bias6")
 
 
 # --- the committed receipt slice ----------------------------------------------
@@ -172,6 +176,36 @@ def identified_range(delta: dict[int, float], slice_path: pathlib.Path,
     return lo, hi
 
 
+def bias_axis(per_arm_na: dict[str, dict[int, float]],
+              weights: dict[int, float], widths: list[int]) -> dict | None:
+    """E111's bias arms, decomposed and reduced at every width.
+
+    E111 ran these at NA 5 only. Two of the four are deliberately wrong and
+    price a ceiling; `e_bias6` is the real, bit-exact recoding. Two differences
+    are also reported, because `n_nobias - n_nosums` isolates the bias LOAD from
+    its arithmetic and `d_bias1 - e_bias6` isolates the reconstruction from the
+    one-byte read.
+    """
+    if any(arm not in per_arm_na for arm in BIAS_ARMS):
+        return None
+    if set(widths) != set(sw.NA_CELLS):
+        return None
+
+    def row(table: dict[int, float]) -> dict:
+        return {"na": table, "weighted": sw.weighted(table, weights)}
+
+    diff = {m: per_arm_na["n_nobias"][m] - per_arm_na["n_nosums"][m]
+            for m in widths}
+    recon = {m: per_arm_na["d_bias1"][m] - per_arm_na["e_bias6"][m]
+             for m in widths}
+    return {"whole_bias_axis": row(per_arm_na["n_nobias"]),
+            "bias_arithmetic": row(per_arm_na["n_nosums"]),
+            "bias_load": row(diff),
+            "bias6_ceiling": row(per_arm_na["d_bias1"]),
+            "bias6_real": row(per_arm_na["e_bias6"]),
+            "bias6_reconstruction": row(recon)}
+
+
 def point_shapes(delta: dict[int, float]) -> dict[str, float]:
     """The four E114 candidate shapes. Every one FAILED its own rung-0 gate."""
     table = json.loads(
@@ -213,6 +247,11 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     print("   positive-control failures: %d" % len(fid["control_failures"]))
     print("   diagnostic arms (difference expected): %s"
           % ", ".join(fid["diagnostic_arms_seen"]))
+    for row in fid["exact_failures"]:
+        print("   FAILED %-16s %s NA%d  %d/%d cells  max_ulp=%s max_rel=%s"
+              % (row["arm"], row["shape"], row["m"], row["differing"],
+                 row["total"], row.get("max_ulp", "?"),
+                 ("%.3e" % row["max_rel"]) if "max_rel" in row else "?"))
 
     gaps = forward_reverse_gap(rate)
     print("\n-- harness defect 16 residual, forward slot against reverse slot")
@@ -318,6 +357,33 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     print("   kill rule %+.2f %% -> %s"
           % (KILL_RULE_PCT,
              "CLEARED" if best_value >= KILL_RULE_PCT else "NOT CLEARED, null"))
+    print("   the metric ranks the metadata-load arms only. `p_prefetch_w` and")
+    print("   `e_bias6` are bit exact but carry other mechanisms, so they are")
+    print("   reported beside it and never inside it.")
+
+    bias = bias_axis(per_arm_na, weights, widths)
+    if bias is not None:
+        print("\n-- E111 bias axis, folded in at every width, %s" % shape)
+        print("   E111 measured these at NA 5 only, which carries %.3f of the "
+              "standing weight." % sw.STANDING_WEIGHTS[5])
+        print("   %-26s" % "quantity"
+              + "".join("  %9s" % ("NA%d" % m) for m in widths)
+              + "  %11s" % "weighted")
+        for key, label in (
+                ("whole_bias_axis", "n_nobias, whole axis"),
+                ("bias_arithmetic", "n_nosums, arithmetic"),
+                ("bias_load", "difference, the load"),
+                ("bias6_ceiling", "d_bias1, Bias6 ceiling"),
+                ("bias6_real", "e_bias6, real, bit exact"),
+                ("bias6_reconstruction", "difference, reconstruct")):
+            row = bias[key]
+            print("   %-26s" % label
+                  + "".join("  %+9.3f" % row["na"][m] for m in widths)
+                  + "  %+11.3f" % row["weighted"])
+        print("   e_bias6 is bit exact at every cell reported above; the two "
+              "diagnostic")
+        print("   rows above it are deliberately wrong and price ceilings "
+              "only.")
 
     # --- every other shape ----------------------------------------------------
     print("\n-- every shape, round-weighted percent faster than a_base, "
@@ -371,7 +437,7 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
         "per_arm_na_stats": stats,
         "absolute_us": {"%s|NA%d" % k: v for k, v in us.items()},
         "finding44": {"per_na": f44, "round_weighted_gap_pct": f44_weighted},
-        "weighted": rows, "per_shape": per_shape,
+        "weighted": rows, "per_shape": per_shape, "bias_axis": bias,
         "primary_metric": {
             "name": "e118_best_bit_exact_arm_round_weighted_pct_faster_vs_"
                     "a_base",

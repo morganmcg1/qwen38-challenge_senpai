@@ -634,7 +634,11 @@ int main(int argc, char **argv) {
           uint16_t saved_s = sp[gbad], saved_b = bp[gbad];
           uint32_t saved_sb = sbp[gbad];
           uint8_t saved_c = cp[gbad];
-          sp[gbad] = f32_to_bf16(bf16_to_f32(saved_s) * 1.25f + 1e-3f);
+          // One group out of `in_vec_size / 64` contributes to an output that
+          // is rounded to BF16, so a small perturbation can round away. The
+          // factor has to dominate the whole row for the control to be a real
+          // detector rather than a coincidence.
+          sp[gbad] = f32_to_bf16(bf16_to_f32(saved_s) * 512.0f + 1e-3f);
           cp[gbad] = (uint8_t)((saved_c + 9u) & 0x3fu);
           bp[gbad] = bias_bf16_from_code(bf16_to_f32(sp[gbad]), cp[gbad]);
           sbp[gbad] = (uint32_t)sp[gbad] | ((uint32_t)bp[gbad] << 16);
