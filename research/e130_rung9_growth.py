@@ -88,7 +88,7 @@ def predicted_growth_mib(tokens: int, seed: int = 512) -> dict:
     }
 
 
-FIELD = re.compile(r"([a-z_0-9]+)=(-?[0-9]+|true|false|[0-9.]+)")
+FIELD = re.compile(r"([a-z_0-9]+)=([A-Za-z0-9_.+-]+)")
 
 
 def parse(path: Path) -> dict[int, dict]:
@@ -98,6 +98,9 @@ def parse(path: Path) -> dict[int, dict]:
         if "e130-residency" not in raw:
             continue
         fields = dict(FIELD.findall(raw))
+        # Several processes append to one file, so a torn last line is possible.
+        if "pid" not in fields or "phase" not in fields:
+            continue
         pid = int(fields["pid"])
         if pid not in processes:
             processes[pid] = {"pid": pid, "sizing": [], "samples": []}
@@ -143,24 +146,49 @@ def summarize(process: dict) -> dict:
     }
     if not samples:
         return out
-    final_active = actives[-1]
-    max_active = max(actives)
-    max_peak = max(peaks)
+
+    growths = [(a - active_at_sizing) / MIB for a in actives]
+    # `active` counts live arrays; a freed buffer moves into `cache`, so the
+    # series falls back once the allocator absorbs a forward pass's scratch.
+    # Their sum is the pool the allocator has demanded since sizing.
+    pool_growths = [
+        (s["active"] + s["cache"] - active_at_sizing) / MIB for s in samples
+    ]
+    ordered = sorted(growths)
+
+    def quantile(values: list[float], q: float) -> float:
+        if len(values) == 1:
+            return values[0]
+        position = q * (len(values) - 1)
+        low = int(position)
+        high = min(low + 1, len(values) - 1)
+        return values[low] + (values[high] - values[low]) * (position - low)
+
     out.update(
         {
             "elapsed_s_last": samples[-1]["elapsed_s"],
-            "active_final_mib": final_active / MIB,
-            "active_max_mib": max_active / MIB,
-            "peak_max_mib": max_peak / MIB,
-            "growth_final_mib": (final_active - active_at_sizing) / MIB,
-            "growth_max_mib": (max_active - active_at_sizing) / MIB,
+            "active_final_mib": actives[-1] / MIB,
+            "active_max_mib": max(actives) / MIB,
+            "peak_max_mib": max(peaks) / MIB,
+            "growth_series_mib": [round(g, 2) for g in growths],
+            "pool_growth_series_mib": [round(g, 2) for g in pool_growths],
+            "growth_final_mib": growths[-1],
+            "growth_max_mib": max(growths),
+            "growth_median_mib": statistics.median(growths),
+            "growth_p10_mib": quantile(ordered, 0.10),
+            # The tightest defensible reading of the PERSISTENT addition: no
+            # instant after sizing ever showed less new live memory than this,
+            # so the residency set must hold at least this much beyond the
+            # ticket. Everything above it may be scratch, which the doc comment
+            # intends to fail the fit test.
+            "growth_min_mib": min(growths),
+            "pool_growth_max_mib": max(pool_growths),
             # Peak is cumulative from process start and is never reset by the
             # worker, so it already contains the pre-sizing warm transient.
             # Report both readings and never quote the literal difference alone.
-            "peak_minus_active_at_sizing_mib": (max_peak - active_at_sizing) / MIB,
-            "peak_growth_after_sizing_mib": (max_peak - peak_at_sizing) / MIB,
-            "exceeds_shipped_slack": (max_active - active_at_sizing) / MIB
-            > SHIPPED_SLACK_MIB,
+            "peak_minus_active_at_sizing_mib": (max(peaks) - active_at_sizing) / MIB,
+            "peak_growth_after_sizing_mib": (max(peaks) - peak_at_sizing) / MIB,
+            "exceeds_shipped_slack_at_minimum": min(growths) > SHIPPED_SLACK_MIB,
         }
     )
     return out
@@ -195,13 +223,16 @@ def main() -> None:
         summaries = [summarize(p) for p in processes.values()]
         summaries.sort(key=lambda s: s["appearance_index"])
         # The leg runs reference generation, then the serial control, then the
-        # MTP decode, each in its own worker process, so first appearance order
-        # names them.
-        roles = ["reference", "serial_control", "mtp_decode"]
+        # MTP decode, each in its own worker process. Name them from the END of
+        # the appearance order: the reference session is a different class and
+        # may never reach the residency path, so counting forward would mislabel
+        # the two legs that matter.
         for index, summary in enumerate(summaries):
-            summary["role_by_appearance"] = (
-                roles[index] if index < len(roles) else f"extra_{index}"
-            )
+            from_end = len(summaries) - 1 - index
+            summary["role_by_appearance"] = {
+                0: "mtp_decode",
+                1: "serial_control",
+            }.get(from_end, f"earlier_{from_end}")
         leg = {
             "decode_tokens": tokens,
             "log": str(path),
@@ -233,35 +264,44 @@ def main() -> None:
         print(f"    expected, mamba_ssm_dtype=float32  {pred['expected_mib']:8.2f} MiB")
         print(f"    shipped slack                  {SHIPPED_SLACK_MIB:8.2f} MiB")
         print()
-        header = (
-            f"  {'role':<15}{'pid':>7}{'events':>7}{'sizing MiB':>12}"
-            f"{'final MiB':>11}{'max MiB':>10}{'growth MiB':>12}"
-            f"{'peak-size MiB':>15}"
+        print(
+            "  post-sizing growth of live memory, MiB. `min` is the tightest"
+            " reading of the"
         )
-        print(header)
+        print(
+            "  PERSISTENT addition; `max` and `pool` also contain per-forward"
+            " scratch."
+        )
+        print()
+        print(
+            f"  {'role':<15}{'pid':>7}{'n':>4}{'at sizing':>11}"
+            f"{'min':>9}{'p10':>9}{'median':>9}{'max':>10}{'pool max':>10}"
+        )
         for summary in summaries:
             print(
                 f"  {summary['role_by_appearance']:<15}{summary['pid']:>7}"
-                f"{summary['sizing_events']:>7}"
-                f"{summary['active_at_sizing_mib']:>12.2f}"
-                f"{summary.get('active_final_mib', float('nan')):>11.2f}"
-                f"{summary.get('active_max_mib', float('nan')):>10.2f}"
-                f"{summary.get('growth_max_mib', float('nan')):>12.2f}"
-                f"{summary.get('peak_growth_after_sizing_mib', float('nan')):>15.2f}"
+                f"{summary['sample_count']:>4}"
+                f"{summary['active_at_sizing_mib']:>11.0f}"
+                f"{summary.get('growth_min_mib', float('nan')):>9.1f}"
+                f"{summary.get('growth_p10_mib', float('nan')):>9.1f}"
+                f"{summary.get('growth_median_mib', float('nan')):>9.1f}"
+                f"{summary.get('growth_max_mib', float('nan')):>10.1f}"
+                f"{summary.get('pool_growth_max_mib', float('nan')):>10.1f}"
             )
         print()
         for summary in summaries:
-            growth = summary.get("growth_max_mib")
+            growth = summary.get("growth_min_mib")
             if growth is None:
                 continue
             verdict = (
-                "EXCEEDS the 64 MiB slack"
+                f"EXCEEDS the {SHIPPED_SLACK_MIB} MiB slack by "
+                f"{growth / SHIPPED_SLACK_MIB:.2f}x"
                 if growth > SHIPPED_SLACK_MIB
-                else "fits inside the 64 MiB slack"
+                else f"fits inside the {SHIPPED_SLACK_MIB} MiB slack"
             )
             print(
-                f"  {summary['role_by_appearance']:<15} growth {growth:8.2f} MiB "
-                f"-> {verdict}"
+                f"  {summary['role_by_appearance']:<15} persistent growth "
+                f"{growth:8.2f} MiB -> {verdict}"
             )
         print()
 
@@ -274,8 +314,8 @@ def main() -> None:
             points = {}
             for tokens, leg in by_tokens.items():
                 for process in leg["processes"]:
-                    if process["role_by_appearance"] == role and "growth_max_mib" in process:
-                        points[tokens] = process["growth_max_mib"]
+                    if process["role_by_appearance"] == role and "growth_min_mib" in process:
+                        points[tokens] = process["growth_min_mib"]
             if len(points) != 2:
                 continue
             (t_lo, g_lo), (t_hi, g_hi) = sorted(points.items())
@@ -299,28 +339,45 @@ def main() -> None:
     verdicts = []
     for leg in report["legs"]:
         for process in leg["processes"]:
-            if process["role_by_appearance"] == "mtp_decode" and "growth_max_mib" in process:
-                verdicts.append((leg["decode_tokens"], process["growth_max_mib"]))
+            if process["role_by_appearance"] == "mtp_decode" and "growth_min_mib" in process:
+                verdicts.append(
+                    (
+                        leg["decode_tokens"],
+                        process["growth_min_mib"],
+                        process["growth_max_mib"],
+                    )
+                )
     if verdicts:
         print("=" * 78)
         print("RUNG 9 VERDICT")
         print("=" * 78)
-        for tokens, growth in sorted(verdicts):
+        for tokens, low, high in sorted(verdicts):
             band = predicted_growth_mib(tokens)
-            inside = band["total_fp16_mib"] <= growth <= band["total_fp32_mib"]
+            inside = band["total_fp16_mib"] <= low <= band["total_fp32_mib"]
             print(
-                f"  {tokens:>4} tokens: MTP-leg post-sizing growth {growth:8.2f} MiB "
-                f"against a {SHIPPED_SLACK_MIB} MiB slack, "
-                f"{growth / SHIPPED_SLACK_MIB:.2f}x the allowance; "
-                f"F10 band [{band['total_fp16_mib']:.2f}, {band['total_fp32_mib']:.2f}] "
-                f"MiB {'CONTAINS' if inside else 'does NOT contain'} it"
+                f"  {tokens:>4} tokens: MTP-leg persistent post-sizing growth "
+                f"{low:8.2f} MiB, scratch-inclusive peak {high:8.2f} MiB."
+            )
+            print(
+                f"  {'':>4}         against a {SHIPPED_SLACK_MIB} MiB slack that is "
+                f"{low / SHIPPED_SLACK_MIB:.2f}x too small at the persistent "
+                f"reading alone."
+            )
+            print(
+                f"  {'':>4}         F10 band "
+                f"[{band['total_fp16_mib']:.2f}, {band['total_fp32_mib']:.2f}] MiB "
+                f"{'CONTAINS' if inside else 'does NOT contain'} the persistent "
+                f"reading."
             )
         report["verdict"] = {
-            "mtp_growth_mib_by_tokens": {str(t): g for t, g in sorted(verdicts)},
+            "mtp_persistent_growth_mib_by_tokens": {
+                str(t): low for t, low, _ in sorted(verdicts)
+            },
+            "mtp_peak_growth_mib_by_tokens": {
+                str(t): high for t, _, high in sorted(verdicts)
+            },
             "shipped_slack_mib": SHIPPED_SLACK_MIB,
-            "slack_is_too_small": all(
-                g > SHIPPED_SLACK_MIB for _, g in verdicts
-            ),
+            "slack_is_too_small": all(low > SHIPPED_SLACK_MIB for _, low, _ in verdicts),
         }
 
     if args.out:
@@ -350,8 +407,11 @@ def main() -> None:
                 role = process["role_by_appearance"]
                 for key in (
                     "active_at_sizing_mib",
+                    "growth_min_mib",
+                    "growth_median_mib",
                     "growth_max_mib",
                     "growth_final_mib",
+                    "pool_growth_max_mib",
                     "peak_growth_after_sizing_mib",
                 ):
                     if key in process:
