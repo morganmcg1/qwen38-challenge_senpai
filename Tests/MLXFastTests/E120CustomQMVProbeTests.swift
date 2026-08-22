@@ -215,6 +215,87 @@ struct E120CustomQMVProbeTests {
         return Double(DispatchTime.now().uptimeNanoseconds - start) / 1e3 / Double(count)
     }
 
+    // MARK: rung 0 dispatch table
+
+    /// The dispatch table reaches the built worker only through interpolation
+    /// into the Metal source, so `strings` cannot witness it and
+    /// `rebuild-and-assert-worker.sh --require` silently passes on a table that
+    /// is not there. `planWitness` is the literal that closes that hole, and it
+    /// is only a witness while it renders the plan it claims to describe.
+    @Test("every dispatch table matches its literal witness")
+    func planWitnessMatchesWidthPlan() throws {
+        #expect(
+            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.shippedPlan)
+                == Qwen35CustomQMV.shippedPlanWitness)
+        #expect(
+            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.onePass67Plan)
+                == Qwen35CustomQMV.onePass67PlanWitness)
+        #expect(
+            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.widthPlan)
+                == Qwen35CustomQMV.planWitness)
+        for tier in [nil] + Qwen35CustomQMV.tiers.map(Optional.init) {
+            for useTable in [true, false] {
+                #expect(
+                    Qwen35CustomQMV.pipelineSource(useTable: useTable, tier: tier)
+                        .contains(Qwen35CustomQMV.planWitness),
+                    "witness missing from tier \(tier as Any) table \(useTable)")
+            }
+        }
+    }
+
+    /// A table that breaks either kernel precondition compiles into a body the
+    /// generator never validated, so check both here rather than at dispatch.
+    @Test("every dispatch table routes each width to a legal case body")
+    func widthPlansAreWellFormed() throws {
+        let plans: [(String, [(m: Int, ipg: Int, rps: Int)])] = [
+            ("shipped", Qwen35CustomQMV.shippedPlan),
+            ("onepass67", Qwen35CustomQMV.onePass67Plan),
+        ]
+        for (name, plan) in plans {
+            #expect(plan.map(\.m) == Array(Qwen35CustomQMV.widths), "\(name) width coverage")
+            for cell in plan {
+                #expect(cell.ipg >= 1 && cell.ipg <= cell.m, "\(name) M=\(cell.m) ipg range")
+                // The kernel asserts `M % IPG != 1`: a one-row tail group would
+                // read past the block.
+                #expect(cell.m % cell.ipg != 1, "\(name) M=\(cell.m) tail group")
+                #expect(cell.rps >= 1, "\(name) M=\(cell.m) rps range")
+            }
+        }
+    }
+
+    /// The one-pass arm is a two-cell edit. Anything wider is a different
+    /// experiment, and M=8 stays at two passes until `wide<8>` is spill free.
+    @Test("the one-pass table differs from shipped only at M=6 and M=7")
+    func onePassTableIsATwoCellEdit() throws {
+        let shipped = Dictionary(
+            uniqueKeysWithValues: Qwen35CustomQMV.shippedPlan.map { ($0.m, ($0.ipg, $0.rps)) })
+        let onePass = Dictionary(
+            uniqueKeysWithValues: Qwen35CustomQMV.onePass67Plan.map { ($0.m, ($0.ipg, $0.rps)) })
+        let moved = shipped.keys.filter { shipped[$0]! != onePass[$0]! }.sorted()
+        #expect(moved == [6, 7])
+        #expect(onePass[6]!.0 == 6)
+        #expect(onePass[7]!.0 == 7)
+        #expect(onePass[8]!.0 == shipped[8]!.0)
+    }
+
+    @Test("every tier of every table has its own entry-point name")
+    func everyTierHasADistinctEntryPoint() throws {
+        #expect(Set(Qwen35CustomQMV.shippedPlan.map(\.ipg)).sorted() == [3, 4, 5])
+        #expect(Set(Qwen35CustomQMV.onePass67Plan.map(\.ipg)).sorted() == [3, 4, 5, 6, 7])
+
+        // MLX keys its library cache by name and recompiles when one name is
+        // seen with a different source, so two tiers sharing a name would
+        // thrash the cache instead of specializing.
+        var names: Set<String> = []
+        for tier in [nil] + [3, 4, 5, 6, 7, 8].map(Optional.init) {
+            for useTable in [true, false] {
+                let name = Qwen35CustomQMV.pipelineName(useTable: useTable, tier: tier)
+                #expect(!names.contains(name), "duplicate entry point \(name)")
+                names.insert(name)
+            }
+        }
+    }
+
     // MARK: rung 1 exactness
 
     @Test(

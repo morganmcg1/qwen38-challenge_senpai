@@ -1620,9 +1620,15 @@ private func qwen35E120QMVName(table: Bool, tier: Int?) -> String {
     case (false, 3): return "qwen35_custom_affine4_g64_qmv_wide_na3_v2"
     case (false, 4): return "qwen35_custom_affine4_g64_qmv_wide_na4_v2"
     case (false, 5): return "qwen35_custom_affine4_g64_qmv_wide_na5_v2"
+    case (false, 6): return "qwen35_custom_affine4_g64_qmv_wide_na6_v2"
+    case (false, 7): return "qwen35_custom_affine4_g64_qmv_wide_na7_v2"
+    case (false, 8): return "qwen35_custom_affine4_g64_qmv_wide_na8_v2"
     case (true, 3): return "qwen35_custom_affine4_g64_qmv_wide_sums_na3_v2"
     case (true, 4): return "qwen35_custom_affine4_g64_qmv_wide_sums_na4_v2"
     case (true, 5): return "qwen35_custom_affine4_g64_qmv_wide_sums_na5_v2"
+    case (true, 6): return "qwen35_custom_affine4_g64_qmv_wide_sums_na6_v2"
+    case (true, 7): return "qwen35_custom_affine4_g64_qmv_wide_sums_na7_v2"
+    case (true, 8): return "qwen35_custom_affine4_g64_qmv_wide_sums_na8_v2"
     default: preconditionFailure("no pipeline name for tier \(tier as Any)")
     }
 }
@@ -1776,9 +1782,45 @@ public enum Qwen35CustomQMV {
     /// is allocated the maximum over every case body, so `rps` is the lever
     /// that keeps a wide single-pass body inside the budget. Lowering it costs
     /// proportionally more activation re-reads, which stay in cache.
-    public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = [
+    public enum Table: String, Sendable {
+        /// Two verify passes at M=6, M=7 and M=8.
+        case shipped
+        /// One pass at M=6 and M=7. `IPG = M` satisfies `M % IPG != 1`.
+        case onePass67 = "onepass67"
+    }
+
+    /// Which dispatch table the entry points are built from.
+    ///
+    /// Changing the table inside the shared switch charges every routed width
+    /// the widest inlined body's registers and spill, which is how E104 lost
+    /// 0.383 % ranked. This selector is therefore only legal together with
+    /// `Entry.tiered`, and `plans` enforces that.
+    public static let table: Table = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_TABLE"]
+        guard let raw, !raw.isEmpty else { return .shipped }
+        return Table(rawValue: raw) ?? .shipped
+    }()
+
+    public static let shippedPlan: [(m: Int, ipg: Int, rps: Int)] = [
         (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
     ]
+
+    /// M=6 and M=7 in one pass. M=8 stays at two passes until a spill-free
+    /// `wide<8>` exists; adding `(8, 8, 4)` here is the whole change.
+    public static let onePass67Plan: [(m: Int, ipg: Int, rps: Int)] = [
+        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4),
+    ]
+
+    public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
+        switch table {
+        case .shipped: return shippedPlan
+        case .onePass67:
+            precondition(
+                entry == .tiered,
+                "the one-pass table is only legal on tiered entry points")
+            return onePass67Plan
+        }
+    }()
 
     /// `widthPlan` as one literal the worker's string table can carry.
     ///
@@ -1788,13 +1830,35 @@ public enum Qwen35CustomQMV {
     /// timed binary holds. This literal is the witness. `qwen35E120QMVSource`
     /// emits it as a comment so the optimizer cannot strip it, and
     /// `planWitnessMatchesWidthPlan` fails the build if the two ever diverge.
-    public static let planWitness =
+    public static let shippedPlanWitness =
         "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
 
-    /// `planWitness` rendered from `widthPlan`. Equality is asserted by test.
-    public static var renderedPlan: String {
+    public static let onePass67PlanWitness =
+        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
+
+    public static var planWitness: String {
+        switch table {
+        case .shipped: return shippedPlanWitness
+        case .onePass67: return onePass67PlanWitness
+        }
+    }
+
+    /// A plan rendered in the witness form. Equality against the two literals
+    /// is asserted by test, so neither table can drift from its witness.
+    public static func renderPlan(_ plan: [(m: Int, ipg: Int, rps: Int)]) -> String {
         "e120_width_plan/"
-            + widthPlan.map { "\($0.m):\($0.ipg):\($0.rps)" }.joined(separator: ",")
+            + plan.map { "\($0.m):\($0.ipg):\($0.rps)" }.joined(separator: ",")
+    }
+
+    /// The entry-point name and JIT source a dispatch would ask for. Exposed so
+    /// a test can assert what the built worker instantiates without giving the
+    /// generator itself a public symbol.
+    public static func pipelineName(useTable: Bool, tier: Int?) -> String {
+        qwen35E120QMVName(table: useTable, tier: tier)
+    }
+
+    public static func pipelineSource(useTable: Bool, tier: Int?) -> String {
+        qwen35E120QMVSource(table: useTable, tier: tier)
     }
 
     static func plan(m: Int) -> (m: Int, ipg: Int, rps: Int) {

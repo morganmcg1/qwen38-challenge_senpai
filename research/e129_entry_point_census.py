@@ -65,12 +65,19 @@ import e120_g17s_census as e120  # noqa: E402
 
 ARCHS = e120.ARCHS
 SIMDGROUP_BUDGET = e120.SIMDGROUP_BUDGET
-WIDTH_CASES = e120.WIDTH_CASES
-ROUTED_WIDTHS = tuple(m for m, _, _ in WIDTH_CASES)
+# `Qwen35CustomQMV.shippedPlan` and `Qwen35CustomQMV.onePass67Plan`. Keep these
+# in step with the Swift literals; `--table` selects which one is censused.
+PLANS = {
+    "shipped": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4)),
+    "onepass67": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4)),
+}
+
+WIDTH_CASES = ()
+ROUTED_WIDTHS = ()
 # `Qwen35CustomQMV.tier(m:)` is the case's IPG, and `Qwen35CustomQMV.tiers` is
 # the sorted set of those values.
-TIER_OF = {m: ipg for m, ipg, _ in WIDTH_CASES}
-TIERS = tuple(sorted(set(TIER_OF.values())))
+TIER_OF: dict[int, int] = {}
+TIERS = ()
 
 # `Qwen35CustomQMV.minimumTableWidth`. M=3 runs the no-table replica pipeline,
 # M>=4 runs the chunk-sum pipeline.
@@ -79,7 +86,20 @@ ARMS = ("replica_no_table", "sumtable")
 
 # The ranked verify-width cap is 8 (`segmentedVerifyDepthCap = 7`), so M=9 is
 # unreachable on the board even though the entry point can serve it.
-RANKED_WIDTHS = tuple(m for m in ROUTED_WIDTHS if m <= 8)
+RANKED_WIDTHS = ()
+
+
+def set_plan(name: str) -> None:
+    """Rebind the plan-derived globals to one of `PLANS`."""
+    global WIDTH_CASES, ROUTED_WIDTHS, TIER_OF, TIERS, RANKED_WIDTHS
+    WIDTH_CASES = PLANS[name]
+    ROUTED_WIDTHS = tuple(m for m, _, _ in WIDTH_CASES)
+    TIER_OF = {m: ipg for m, ipg, _ in WIDTH_CASES}
+    TIERS = tuple(sorted(set(TIER_OF.values())))
+    RANKED_WIDTHS = tuple(m for m in ROUTED_WIDTHS if m <= 8)
+
+
+set_plan("shipped")
 
 # F83 ranked weights: mean verify width and median-sensitivity weight per
 # scored prompt. The weights do not sum to one; this module normalises them.
@@ -382,7 +402,9 @@ def main() -> int:
     parser.add_argument("--keep", type=pathlib.Path,
                         help="write the reproduced Metal sources here")
     parser.add_argument("--wandb", action="store_true")
+    parser.add_argument("--table", choices=sorted(PLANS), default="shipped")
     args = parser.parse_args()
+    set_plan(args.table)
 
     header = e120.swift_literal("qwen35E120QMVHeader")
     arms = {
