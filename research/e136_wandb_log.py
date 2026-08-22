@@ -58,7 +58,7 @@ def rung0_summary(payload: dict) -> tuple[dict, dict]:
             "arm": label,
             "survivors": plan.get("real_count"),
             "tiles": plan.get("tiles"),
-            "dispatches": row.get("dispatches_per_step"),
+            "dispatches": row.get("dispatches_per_call"),
             "added_us_batched": row["added_us_per_step"],
             "added_us_isolated": row["added_us_isolated"],
             "added_us_parts_plus_ledger_f":
@@ -98,7 +98,7 @@ def rung0_summary(payload: dict) -> tuple[dict, dict]:
             all(c["positive_control_detects_the_change"]
                 for c in payload["correctness"].values()),
         "e136_rung0_device_threshold_matches_host":
-            all(c["device_tau_matches_host"]
+            all(c["device_threshold_matches_host"]
                 for c in payload["correctness"].values()),
     }
     for key, value in verdict.items():
