@@ -2,7 +2,9 @@
 """Classify the draw mode of a ranked receipt, then read it mode corrected.
 
     usage: research/e126_modeindex.py RECEIPT.json [--label ID]
+           research/e126_modeindex.py --board PREFIX [PREFIX ...]
            research/e126_modeindex.py --selftest
+           research/e126_modeindex.py --anchor-check
 
 The published median of one ranked run is not comparable with another run's
 published median, because the hidden prompt pool draws in two modes (Rule 63).
@@ -138,6 +140,79 @@ def per_prompt_from(doc: dict) -> tuple[dict[str, float], float | None]:
         % ", ".join(sorted(doc)))
 
 
+BOARD_CACHE = pathlib.Path("/tmp/yukon-board/full.json")
+
+PROMPT_NAMES = {
+    "919318e1": "beagle",
+    "192fb621": "botany",
+    "4b9e88cd": "drama",
+    "a2ea8b60": "essays",
+    "00142a44": "medicine",
+    "c1ec5866": "plutarch",
+    "ea82dcb5": "republic",
+    "3b10cb4d": "travel",
+}
+
+
+def board_rows() -> list[dict]:
+    if not BOARD_CACHE.exists():
+        raise SystemExit("run `python3 research/board_per_prompt.py fetch` "
+                         "first; %s is absent" % BOARD_CACHE)
+    return json.loads(BOARD_CACHE.read_text())
+
+
+def board_receipt(prefix: str) -> dict:
+    """Restate one Yukon board row in the receipt shape this tool reads."""
+    hits = [r for r in board_rows() if str(r.get("id", "")).startswith(prefix)]
+    if len(hits) != 1:
+        raise SystemExit("%r matched %d board rows" % (prefix, len(hits)))
+    row = hits[0]
+    metrics = row.get("officialMetrics") or {}
+    per_prompt = []
+    for entry in metrics.get("per_prompt") or []:
+        name = PROMPT_NAMES.get(str(entry.get("prompt_sha256", ""))[:8])
+        if name:
+            per_prompt.append(dict(entry, prompt=name))
+    return {
+        "submission_id": row.get("id"),
+        "solver": row.get("solverUsername"),
+        "status": row.get("promotionStatus") or row.get("status"),
+        "score": row.get("officialScore"),
+        "per_prompt": per_prompt,
+    }
+
+
+def anchor_check() -> int:
+    """Recompute every advisor anchor index from its own board row.
+
+    The advisor relayed ten anchor indices but not the per-prompt vectors
+    behind them. The Yukon list endpoint carries those vectors, so the weight
+    vector and the formula can be checked numerically rather than only at the
+    decision layer.
+    """
+    bad = []
+    print("  %-9s %-12s %11s %9s %9s %8s" % ("id", "solver", "published",
+                                             "advisor", "recomputed", "delta"))
+    for key, (solver, published, index, _status) in ANCHORS.items():
+        try:
+            doc = board_receipt(key[:8])
+        except SystemExit as exc:
+            bad.append("%s: %s" % (key, exc))
+            continue
+        got, _ = per_prompt_from(doc)
+        mine = index_of(got)
+        delta = mine - index
+        print("  %-9s %-12s %11.8f %+9.4f %+10.4f %+8.4f"
+              % (key[:8], solver, published, index, mine, delta))
+        if abs(delta) > 0.5 * SAME_MODE_SD:
+            bad.append("%s recomputed %+.4f against the advisor's %+.4f"
+                       % (key, mine, index))
+    for line in bad:
+        print("  FAIL", line)
+    print("  anchor check %s" % ("FAILED" if bad else "passed"))
+    return 1 if bad else 0
+
+
 def selftest() -> int:
     """Reproduce the advisor's anchor arithmetic, and prove it can fail.
 
@@ -199,24 +274,38 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("receipt", nargs="?", type=pathlib.Path)
     ap.add_argument("--label", default="receipt")
+    ap.add_argument("--board", nargs="+", metavar="PREFIX")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--anchor-check", action="store_true")
     args = ap.parse_args()
 
+    if args.anchor_check:
+        return anchor_check()
+    if args.board:
+        rc = 0
+        for prefix in args.board:
+            doc = board_receipt(prefix)
+            rc |= report(doc, "%s (%s, %s)" % (doc["submission_id"][:8],
+                                               doc["solver"], doc["status"]))
+        return rc
     if args.selftest or args.receipt is None:
         return selftest()
 
-    doc = json.loads(args.receipt.read_text())
+    return report(json.loads(args.receipt.read_text()), args.label)
+
+
+def report(doc: dict, label: str) -> int:
     per_prompt, published = per_prompt_from(doc)
     index = index_of(per_prompt)
-    label, sd = classify(index)
+    mode, sd = classify(index)
 
-    print("harness=ranked. %s, %d prompts" % (args.label, len(per_prompt)))
+    print("harness=ranked. %s, %d prompts" % (label, len(per_prompt)))
     for prompt, weight in sorted(WEIGHTS.items(), key=lambda kv: -abs(kv[1])):
         value = per_prompt[prompt]
         print("  %-10s w %+7.4f  s/tok %.8f  contribution %+8.4f"
               % (prompt, weight, value, weight * 100.0 * math.log(value)))
     print("\nindex %+8.4f  -> %s, %.1f same-mode sd from the -12.9 threshold"
-          % (index, label.upper(), sd))
+          % (index, mode.upper(), sd))
     print("fast anchor %.1f, slow anchor %.1f, one flip %.3f units"
           % (FAST_ANCHOR, SLOW_ANCHOR, MODE_FLIP_UNITS))
 
