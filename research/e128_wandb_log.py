@@ -424,6 +424,32 @@ def log_rung2(curve: str = "ours") -> None:
             "e128_recoverable_ranked_median_pct_worst_case_over_R" + suf:
                 max(safe.values()) if safe else 0.0,
         })
+        # The R band uses the accept-rate anchor. That anchor reproduces the
+        # published acceptance rate but not the published depth, so its
+        # positive arms price against a shipped baseline that was never run.
+        # Record both anchors' fidelity so the number above is not read as a
+        # gain.
+        primary = data["transfer"]
+        alt = r_band["scenarios"][r_band.get("primary_scenario", "assumed")]
+        depth_err_primary = max(
+            abs(e["simulated_depth_ship"] - e["target_depth_f92"])
+            for e in primary.values())
+        depth_err_alt = max(
+            abs(alt["simulated_depth_ship"][p] - e["target_depth_f92"])
+            for p, e in primary.items())
+        run.summary.update({
+            "transfer_depth_anchor_max_abs_depth_error": depth_err_primary,
+            "transfer_accept_anchor_max_abs_depth_error": depth_err_alt,
+            "transfer_headline_anchor": "depth",
+            "r_band_positive_arms_are_credible": False,
+            "r_band_credibility_note": (
+                "The R band uses the accept-rate anchor, which misses the "
+                "published F92 depth by up to %.3f tokens against %.3f for "
+                "the depth anchor used by the headline. Its positive arms "
+                "price counterfactuals against a shipped baseline that the "
+                "published depths rule out." % (depth_err_alt,
+                                                depth_err_primary)),
+        })
     sweep = load("rung2-curve-sweep.json") if curve == "ours" else None
     if sweep:
         table = wandb.Table(columns=[
@@ -443,10 +469,20 @@ def log_rung2(curve: str = "ours") -> None:
         run.summary.update({
             "curve_sweep_best_implementable_pct_%s" % k: v
             for k, v in best.items()})
+        positive = sorted(k for k, v in best.items() if v > 0)
+        well_fitted = {k: v for k, v in best.items() if k != "predicted"}
         run.summary.update({
-            "curve_sweep_any_curve_positive":
-                any(v > 0 for v in best.values()),
+            "curve_sweep_any_curve_positive": bool(positive),
+            "curve_sweep_positive_curves": positive,
             "curve_sweep_spread_pct": max(best.values()) - min(best.values()),
+            # `predicted` is the R vector section 5 rejects: it fits the
+            # measured round cost at 867 us RMSE against 91 us for `assumed`,
+            # and its fitted curve degenerates to a single slope with no tier
+            # step. Report the sweep over the curves the data supports too.
+            "curve_sweep_best_implementable_pct_well_fitted_max":
+                max(well_fitted.values()),
+            "curve_sweep_any_well_fitted_curve_positive":
+                any(v > 0 for v in well_fitted.values()),
         })
     scan = load("board-depth-scan.json") if curve == "ours" else None
     if scan:
