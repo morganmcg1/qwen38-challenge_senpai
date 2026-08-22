@@ -288,9 +288,11 @@ struct E134PassBoundaryPriceTests {
         }
     }
 
-    @Test("the shipped arm is still ship")
-    func shippedArmIsStillShip() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
+    @Test("the shipped arm is pb6 at the measured width and tier")
+    func shippedArmIsPB6() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
+        #expect(Qwen36MTPBlockSession.passBoundaryVerifyWidth == 6)
+        #expect(Qwen36MTPBlockSession.passBoundaryTierFactor == 1.45)
     }
 
     // The mechanism, in two halves. Holding the total means every step below

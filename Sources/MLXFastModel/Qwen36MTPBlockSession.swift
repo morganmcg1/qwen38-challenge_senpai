@@ -986,8 +986,15 @@ public final class Qwen36MTPBlockSession {
     /// from `1.35` to `1.60`, worth `+2.34 %` leave-one-prompt-out, and this
     /// value sits in the middle of it.
     ///
+    /// The E134 item 2 refit against the ranked `623e77af` pair reopened the
+    /// same plateau on the post-arm curve, from `1.35` to `1.60`, and moved
+    /// the held-out value to `+2.4683 %`. The measured argmax is `1.40`, worth
+    /// `+0.0137 pp` more than `1.45` against a leave-one-prompt-out spread of
+    /// `0.0751 pp`, so the constant does not move.
+    ///
     /// Rule 79: no local timing leg can validate this. Only a ranked receipt
-    /// can, which is why `depthPriceArm` still ships `ship`.
+    /// can, so the local pre-submit run is an exactness gate and never
+    /// evidence for the effect size.
     internal static let passBoundaryTierFactor = 1.45
 
     /// The shipped flat price. `cumulative` repeats the tip's closed form
@@ -1076,13 +1083,27 @@ public final class Qwen36MTPBlockSession {
     /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
     /// shipped value so a leg session cannot leave another arm behind.
     ///
-    /// The shipped default is `ship` (uniform). `pbfit` wins by -3.5 % on this
-    /// host's kernel dispatch table and loses that win entirely on the crown
-    /// table (E75 rung B/D: +0.33 % on crown, a +3.8 pp interaction). The
-    /// shape is fitted to one dispatch table, so it is a research arm, not a
-    /// shipped constant. Refit and re-price on the live table before shipping
-    /// any non-uniform shape.
-    internal static let depthPriceArm: DepthPriceArm = .ship
+    /// The shipped arm is `pb6`: one priced step at the width-6 pass boundary,
+    /// tier `1.45`, with the total held so every shallower step gets cheaper.
+    /// E134 rung 4 scored it at `+2.3422 %` held out on the pre-arm curve, and
+    /// the E134 item 2 refit of the ranked `623e77af` pair raised that to
+    /// `+2.4683 %` because the one-pass QMV arm made width 7 cheaper while
+    /// width 6 stayed dear. Boundary 4 is the argmax in 24 of 24 leave-one-
+    /// prompt-out refits and 5997 of 6000 bootstrap draws.
+    ///
+    /// `pbfit` is NOT shipped. It wins by -3.5 % on this host's kernel
+    /// dispatch table and loses that win entirely on the crown table (E75
+    /// rung B/D: +0.33 % on crown, a +3.8 pp interaction). Its shape is
+    /// fitted to one host's timings at every width.
+    ///
+    /// `pb6` differs in two ways. It fits one step, not a whole vector, so
+    /// there are far fewer ways for it to overfit. And its step is placed by
+    /// a curve measured on the RANKED runner, not on this host, which is the
+    /// exact transfer that beat `pbfit`. Note that the one-pass QMV arm moved
+    /// the structural pass boundary off width 6 to width 8, so the pass-count
+    /// law no longer justifies this width; `E134PassBoundaryPriceTests` pins
+    /// that move and pins the measured ranked curve that does justify it.
+    internal static let depthPriceArm: DepthPriceArm = .pb6
 
     /// Built once. A computed property here would allocate two arrays on
     /// every round, inside the timed path.

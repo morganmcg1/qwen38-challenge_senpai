@@ -234,16 +234,19 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    @Test("the shipped arm is ship")
-    func shippedArmIsShip() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
+    @Test("the shipped arm is pb6")
+    func shippedArmIsPB6() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
         let shipped = Qwen36MTPBlockSession.depthPrice
-        let uniform = Qwen36MTPBlockSession.makeUniformDepthPrice()
+        let pb6 = Qwen36MTPBlockSession.makeBoundaryDepthPrice(
+            enteringVerifyWidth: Qwen36MTPBlockSession
+                .passBoundaryVerifyWidth,
+            tier: Qwen36MTPBlockSession.passBoundaryTierFactor)
         for depth in 0 ..< maxDepth {
-            #expect(shipped.marginal[depth] == uniform.marginal[depth])
+            #expect(shipped.marginal[depth] == pb6.marginal[depth])
         }
         for depth in 0 ... maxDepth {
-            #expect(shipped.cumulative[depth] == uniform.cumulative[depth])
+            #expect(shipped.cumulative[depth] == pb6.cumulative[depth])
         }
     }
 
