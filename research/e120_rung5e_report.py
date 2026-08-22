@@ -43,6 +43,25 @@ def read_json(path: pathlib.Path):
         return json.load(handle)
 
 
+def read_concatenated_json(path: pathlib.Path) -> list[dict]:
+    """Read a stream of JSON objects.
+
+    The session script appends whatever `jq` emits, which is pretty-printed, so
+    one record spans many lines. Decode by position instead of by line.
+    """
+    text = path.read_text()
+    decoder = json.JSONDecoder()
+    records: list[dict] = []
+    index = 0
+    while True:
+        while index < len(text) and text[index].isspace():
+            index += 1
+        if index >= len(text):
+            return records
+        record, index = decoder.raw_decode(text, index)
+        records.append(record)
+
+
 def read_meta(path: pathlib.Path) -> dict[str, str]:
     meta: dict[str, str] = {}
     if not path.exists():
@@ -126,11 +145,7 @@ def main() -> int:
 
     out_dir = args.out_dir
     meta = read_meta(out_dir / "meta.txt")
-    legs = [
-        json.loads(line)
-        for line in (out_dir / "legs.jsonl").read_text().splitlines()
-        if line.strip()
-    ]
+    legs = read_concatenated_json(out_dir / "legs.jsonl")
 
     by_arm: dict[str, list[dict]] = {}
     entry_temps: dict[str, list[float]] = {}
