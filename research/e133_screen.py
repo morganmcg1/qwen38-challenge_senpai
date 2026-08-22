@@ -81,6 +81,8 @@ VERIFY_DIR = CACHE / "screen/verify"
 REFERENCE_DIR = CACHE / "screen/reference"
 MANIFEST = Path(__file__).resolve().parent / "e133-corpus-manifest.json"
 PCA_CACHE = CACHE / "pca-basis.npy"
+QCOV_CACHE = CACHE / "query-second-moment.npz"
+QBASIS_RANK = 512
 
 LEAVES = H.PADDED_COUNT // IX.ROWS_PER_LEAF          # 12,292
 SHIPPED_PROBE_FRACTION = IX.PROBE_FRACTION           # 0.25
@@ -516,6 +518,80 @@ def pca_basis(rows: mx.array, mu: mx.array, rank: int) -> mx.array:
     return mx.array(basis[:, :rank])
 
 
+def query_second_moments(mu: mx.array, batch: int = 64) -> dict[str, np.ndarray]:
+    """`E[(x - mu)(x - mu)^T]` per stratum, cached on disk.
+
+    Row PCA is the wrong basis for this problem. The sketch error on a rank-`k`
+    projection `P` is `row . (I - P)(x - mu)`, so the residual is governed by
+    the QUERY distribution, not by the row covariance. A basis that spans the
+    hidden states makes every row exact at once.
+    """
+    if QCOV_CACHE.exists():
+        cached = np.load(QCOV_CACHE)
+        return {k: cached[k] for k in cached.files}
+    t0 = time.time()
+    acc: dict[str, mx.array] = {}
+    counts: dict[str, int] = {}
+    for _, stratum, x, *_ in chunks(batch):
+        d = x.astype(mx.float32) - mu
+        block = mx.matmul(d.T, d)
+        acc[stratum] = acc.get(stratum, mx.zeros((H.HIDDEN, H.HIDDEN),
+                                                 mx.float32)) + block
+        counts[stratum] = counts.get(stratum, 0) + d.shape[0]
+        mx.eval(acc[stratum])
+    out = {k: np.asarray(v, dtype=np.float64) / counts[k] for k, v in acc.items()}
+    QCOV_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(QCOV_CACHE, **out)
+    print(f"  query second moments in {time.time() - t0:.1f}s: "
+          + ", ".join(f"{k} n={v}" for k, v in sorted(counts.items())), flush=True)
+    return out
+
+
+def query_bases(mu: mx.array, rank: int) -> tuple[dict[str, mx.array], dict]:
+    """One held-out query basis per gating stratum, plus its energy report.
+
+    Cross-fit, not in-fit. `beagle` is always scored by the basis fitted on
+    `min_carriers` and the reverse, so no gating stratum is ever measured with
+    a basis that saw it. The energy table then shows directly whether the
+    hidden-state subspace transfers across domains, which is both the accuracy
+    question and the compliance question.
+    """
+    moments = query_second_moments(mu)
+    cache = QCOV_CACHE.with_name("query-basis.npz")
+    if cache.exists():
+        raw = {k: v for k, v in np.load(cache).items()}
+    else:
+        raw = {}
+        for fit in GATING_STRATA:
+            t0 = time.time()
+            vectors = np.linalg.eigh(moments[fit])[1]
+            raw[fit] = np.ascontiguousarray(
+                vectors[:, ::-1][:, :QBASIS_RANK]).astype(np.float32)
+            print(f"  query eigh {fit} in {time.time() - t0:.1f}s", flush=True)
+        np.savez(cache, **raw)
+    bases: dict[str, mx.array] = {}
+    report: dict = {"fit_samples_note": "cross-fit; see e133-corpus.json for n",
+                    "energy_kept": {}}
+    grid = [k for k in (16, 32, 64, 128, 256, 512) if k <= QBASIS_RANK]
+    for fit in GATING_STRATA:
+        basis = raw[fit]
+        bases[fit] = mx.array(basis)
+        for test, cov in sorted(moments.items()):
+            total = float(np.trace(cov))
+            kept = np.cumsum(np.sum(basis * (cov @ basis), axis=0))
+            report["energy_kept"][f"fit_{fit}/test_{test}"] = {
+                str(k): float(kept[k - 1] / total) for k in grid}
+        own = report["energy_kept"][f"fit_{fit}/test_{fit}"]
+        print(f"  query basis fit on {fit}: keeps "
+              + " ".join(f"k{k}={own[str(k)]:.4f}" for k in grid), flush=True)
+    for fit in GATING_STRATA:
+        other = [s for s in GATING_STRATA if s != fit][0]
+        held = report["energy_kept"][f"fit_{fit}/test_{other}"]
+        print(f"  query basis fit on {fit}, held-out on {other}: "
+              + " ".join(f"k{k}={held[str(k)]:.4f}" for k in grid), flush=True)
+    return {k: v[:, :rank] for k, v in bases.items()}, report
+
+
 class Sketch:
     """One (family, size) cell: row codes, centroid codes and the query rule."""
 
@@ -534,7 +610,7 @@ class Sketch:
             # packed bits + fp32 norm + fp32 mean offset
             self.bytes_per_row = size // 8 + 8
             self.proj_bytes = H.HIDDEN * size // 8      # 1-bit +-1 R
-        elif family == "lowrank":
+        elif family in ("lowrank", "qlowrank"):
             assert basis is not None
             self.proj = basis[:, :size]
             self.row_codes, self.row_scale = self._lowrank(rows, mu)
@@ -1025,16 +1101,58 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
 # commands
 
 
-def build_sketches(screen: Screen, families: list[tuple[str, int]]) -> list[Sketch]:
-    need_basis = max([s for f, s in families if f == "lowrank"], default=0)
-    basis = pca_basis(screen.rows, screen.mu, need_basis) if need_basis else None
+class SketchSet:
+    """One screen cell, held as one sketch or as a cross-fitted pair.
+
+    Every fold shares the family, the size and the byte cost, so the cells they
+    feed stay comparable. Only the basis differs, and `pick` guarantees that a
+    gating stratum is never scored by the fold fitted on itself.
+    """
+
+    def __init__(self, folds: dict[str, Sketch], route: dict[str, str]) -> None:
+        self.folds = folds
+        self.route = route
+        head = next(iter(folds.values()))
+        self.key = head.key
+        self.family = head.family
+        self.size = head.size
+        self.bytes_per_row = head.bytes_per_row
+        self.proj_bytes = head.proj_bytes
+        self.cross_fit = len(folds) > 1
+
+    def pick(self, stratum: str) -> Sketch:
+        return self.folds[self.route.get(stratum, self.route["*"])]
+
+
+def build_sketches(screen: Screen,
+                   families: list[tuple[str, int]]) -> tuple[list[SketchSet], dict]:
+    need_row = max([s for f, s in families if f == "lowrank"], default=0)
+    need_query = max([s for f, s in families if f == "qlowrank"], default=0)
+    row_basis = pca_basis(screen.rows, screen.mu, need_row) if need_row else None
+    query_report: dict = {}
+    query_bases_by_fit: dict[str, mx.array] = {}
+    if need_query:
+        query_bases_by_fit, query_report = query_bases(screen.mu, need_query)
+    # Score the held-out fold: `beagle` reads the `min_carriers` basis and the
+    # reverse. `zero_weight` never gates, so it reads the `beagle` fold.
+    route = {"beagle": "min_carriers", "min_carriers": "beagle",
+             "zero_weight": "beagle", "*": "beagle"}
     out = []
     for family, size in families:
         t0 = time.time()
-        out.append(Sketch(family, size, screen.rows, screen.centroids, screen.mu, basis))
+        if family == "qlowrank":
+            folds = {fit: Sketch(family, size, screen.rows, screen.centroids,
+                                 screen.mu, basis)
+                     for fit, basis in query_bases_by_fit.items()}
+            out.append(SketchSet(folds, route))
+        else:
+            sketch = Sketch(family, size, screen.rows, screen.centroids,
+                            screen.mu, row_basis)
+            out.append(SketchSet({"*": sketch}, {"*": "*"}))
         print(f"  sketch {family}{size}: {out[-1].bytes_per_row} B/row, "
-              f"R {out[-1].proj_bytes} B, built in {time.time() - t0:.1f}s", flush=True)
-    return out
+              f"R {out[-1].proj_bytes} B, {len(out[-1].folds)} fold(s), "
+              f"built in {time.time() - t0:.1f}s", flush=True)
+    return out, query_report
 
 
 def parse_families(spec: str) -> list[tuple[str, int]]:
@@ -1043,7 +1161,8 @@ def parse_families(spec: str) -> list[tuple[str, int]]:
         token = token.strip()
         if not token:
             continue
-        family = "simhash" if token.startswith("simhash") else "lowrank"
+        family = next(f for f in ("simhash", "qlowrank", "lowrank")
+                      if token.startswith(f))
         families.append((family, int(token[len(family):])))
     return families
 
@@ -1125,7 +1244,7 @@ def cmd_screen(args) -> None:
     widths = [int(v) for v in args.widths.split(",")]
     fractions = [float(v) for v in args.probes.split(",")]
     stages = [v for v in args.stage_a.split(",") if v]
-    sketches = build_sketches(screen, families)
+    sketches, query_report = build_sketches(screen, families)
 
     cells: dict[tuple, Cell] = {}
     base_cell = Cell()
@@ -1147,7 +1266,8 @@ def cmd_screen(args) -> None:
             slot[1] += int((base_vocab == reference).sum())
             slot[2] += int((base_vocab == proposal).sum())
             slot[3] += int(accepted.sum())
-        for sketch in sketches:
+        for entry in sketches:
+            sketch = entry.pick(stratum)
             state = sketch_state(screen, sketch, f, x)
             for stage_a in stages:
                 run_arm(screen, sketch, f, state, fractions, widths, base_miss,
@@ -1180,6 +1300,7 @@ def cmd_screen(args) -> None:
             (sum(v[2] for v in real.values()) / aligned
              if aligned else float("nan")),
         "shipped": summarize("shipped", base_cell, price(0), {}, p_by_stratum),
+        "query_basis": query_report,
         "cells": [],
     }
     shipped_bytes = shipped_stage_bytes()
@@ -1192,7 +1313,7 @@ def cmd_screen(args) -> None:
             f"{key}{tag}-N{n_keep}-p{p:g}", cell, price(shipped_bytes - arm_bytes),
             {"family": sketch.family, "size": sketch.size, "stage_a": stage_a,
              "bytes_per_row": sketch.bytes_per_row, "proj_bytes": sketch.proj_bytes,
-             "survivors": n_keep, "probe_fraction": p,
+             "survivors": n_keep, "probe_fraction": p, "cross_fit": sketch.cross_fit,
              "arm_stage_bytes": arm_bytes, "shipped_stage_bytes": shipped_bytes},
             p_by_stratum))
     out["cells"].sort(key=lambda c: -c["predicted_pct_gating"])
@@ -1261,7 +1382,8 @@ def main() -> None:
     s.add_argument("--index", default=str(IX.DEFAULT_OUT))
     s.add_argument("--families",
                    default="simhash256,simhash512,simhash1024,simhash2048,"
-                           "lowrank32,lowrank64,lowrank128,lowrank256")
+                           "lowrank32,lowrank64,lowrank128,lowrank256,"
+                           "qlowrank32,qlowrank64,qlowrank128,qlowrank256")
     s.add_argument("--widths", default="64,128,256,512,1024")
     s.add_argument("--probes", default="0.25,0.35,0.50")
     s.add_argument("--stage-a", default="sketch,affine2",

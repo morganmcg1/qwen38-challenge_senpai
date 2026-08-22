@@ -73,7 +73,7 @@ RUNGS = {
 
 CELL_COLUMNS = [
     "arm", "family", "size", "stage_a", "bytes_per_row", "proj_bytes",
-    "survivors", "probe_fraction", "n", "n_gating",
+    "survivors", "probe_fraction", "cross_fit", "n", "n_gating",
     "net_miss_worst_gating", "net_miss_worst_gating_hi",
     "m_absolute_worst_gating", "m_absolute_worst_gating_hi",
     "m_incremental_worst_gating", "recall_worst_gating",
