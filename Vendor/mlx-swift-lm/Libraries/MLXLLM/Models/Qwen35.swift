@@ -1689,29 +1689,37 @@ public enum Qwen35CustomQMV {
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
-    /// The chunk-sum table only pays for itself when the recomputation it
-    /// removes is worth more than one fill dispatch. The consumer gain is
-    /// `c * N * kBlocks * M` with `c` about 0.0223 us per (column, k-block,
-    /// row) at M=4 and 0.0234 at M=8, and the measured in-stream fill costs
-    /// 4.85 us. Break-even is therefore near `N * kBlocks * M = 220,000`.
+    /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
+    /// close to flat in the table size, and repays it with recomputation the
+    /// wide kernel no longer does. Both conditions below are pure functions of
+    /// shape and width: no clock, no counter, no state that survives a request.
     ///
-    /// Two measured endpoints bracket the constant, both `harness=local` on
-    /// Apple M4 Pro at the E120 rung-2 session:
-    ///   `control.small`, N=4096, kBlocks=1,  M=8 -> volume    32,768, net -2.15 us
-    ///   `stream.small`,  N=4096, kBlocks=10, M=4 -> volume   163,840, net +2.75 us
-    /// The gate sits above the negative endpoint and just under the positive
-    /// one, so it never routes a shape measured to lose.
+    /// All endpoints are `harness=local`, Apple M4 Pro, E120 rung-2 and rung-5d.
     ///
-    /// This is a pure function of shape and width. It reads no clock, no
-    /// counter and no state that survives a request.
-    public static let tableBreakEvenVolume = 220_000
+    /// `minimumTableWidth` — the gain grows with M while the fill does not, so
+    /// the narrowest legal width does not clear it. Measured round net over all
+    /// 257 wide QMV calls: **-90.5 us at M=3**, **+3184.9 us at M=4**. At M=3
+    /// five of the seven round shapes are negative or zero; at M=4 and above
+    /// every shape measured is positive.
+    ///
+    /// `tableBreakEvenVolume` — a shape with few k-blocks cannot amortise the
+    /// fill at any width:
+    ///   `control.small`, N=4096, kBlocks=1,  M=8 -> volume  32,768, net -2.15 us
+    ///   `stream.small`,  N=4096, kBlocks=10, M=4 -> volume 163,840, net +2.75 us
+    /// The literal lies between two measured cells of opposite sign.
+    ///
+    /// An earlier version gated on volume alone. Rung 5d falsified it: at M=3
+    /// the net is not monotone in volume, so the volume rule routed two cells
+    /// that lose and declined two that win.
+    public static let minimumTableWidth = 4
+    public static let tableBreakEvenVolume = 100_000
 
     public static func tablePays(n: Int, kBlocks: Int, m: Int) -> Bool {
-        n * kBlocks * m > tableBreakEvenVolume
+        m >= minimumTableWidth && n * kBlocks * m > tableBreakEvenVolume
     }
 
-    /// True when the last two dimensions are densely packed, so a kernel with
-    /// `ensureRowContiguous: false` may index the buffer as `row * k + col`.
+    /// True when the last two dimensions are densely packed, so the kernel's
+    /// `row * rowStride + col` indexing reads the buffer as it stands.
     public static func rowContiguous(_ a: MLXArray, rowStride: Int) -> Bool {
         let s = a.strides
         return s.count >= 2 && s[s.count - 1] == 1 && s[s.count - 2] == rowStride
@@ -1736,8 +1744,9 @@ public enum Qwen35CustomQMV {
         }
         let m = x.size / k
         guard Self.widths.contains(m), x.dim(-2) == m else { return nil }
-        // `ensureRowContiguous: false` makes a strided input silently wrong,
-        // and a shape-fixed probe cannot catch it. Fall back to MLX instead.
+        // `ensureRowContiguous: true` would keep a strided input correct by
+        // copying it first. `quantizedMM` reads the stride directly, so hand
+        // the cell back rather than pay for a copy the incumbent avoids.
         guard rowContiguous(x, rowStride: k), rowContiguous(w, rowStride: k / 8),
             rowContiguous(scales, rowStride: k / groupSize),
             rowContiguous(biases, rowStride: k / groupSize)

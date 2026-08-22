@@ -328,10 +328,12 @@ struct E120CustomQMVProbeTests {
                 #expect(Self.custom(x, w, .replica) == nil)
             }
 
-            // 5c: `ensureRowContiguous: false` makes a strided activation
-            // silently wrong, and a shape-fixed probe cannot catch it. The left
-            // half of a [6, 2K] block keeps row stride 2K, so the guard must
-            // decline it and MLX must own the cell.
+            // 5c: the left half of a [6, 2K] block keeps row stride 2K. The
+            // kernels declare `ensureRowContiguous: true`, so MLX would copy
+            // it and the answer would still be right; the guard exists so the
+            // cell goes back to `quantizedMM`, which reads the stride without
+            // a copy. This asserts the guard fires and that the dense copy of
+            // the same values is still routed and bit exact.
             let wide = MLXRandom.normal([6, 2 * shape.hidden]).asType(.bfloat16)
             eval(wide)
             let leftHalf = wide[0 ..< 6, 0 ..< shape.hidden]
