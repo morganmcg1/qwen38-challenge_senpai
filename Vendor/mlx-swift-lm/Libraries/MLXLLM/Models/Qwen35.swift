@@ -1483,7 +1483,7 @@ private let qwen35E120QMVHeader = """
                 partial[r] = VF(0.0f);
             }
             for (int i = 0; i < 4; i++) {
-                VF a0, a1, a2, a3, chunk;
+                VF a0, a1, a2, a3;
                 for (int m = 0; m < NA; m++) {
                     const device bfloat16_t* xm =
                         x + (first_m + m) * in_vec_size + k +
@@ -1496,12 +1496,8 @@ private let qwen35E120QMVHeader = """
                     a2[m] = static_cast<float>(xv[2]);
                     a3[m] = static_cast<float>(xv[3]);
                     if (!USE_TABLE) {
-                        chunk[m] = static_cast<float>(
-                            xv[0] + xv[1] + xv[2] + xv[3]);
+                        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
                     }
-                }
-                if (!USE_TABLE) {
-                    sums += chunk;
                 }
                 for (int r = 0; r < rows_per_simd; r++) {
                     partial[r] += (a0 * (packed[r][i] & 0x000f) +
@@ -1809,16 +1805,20 @@ public enum Qwen35CustomQMV {
         (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
     ]
 
-    /// One pass over the weight matrix at every width the board can reach.
+    /// One pass over the weight matrix at M=6 and M=7.
     ///
     /// `ipg = m` alone does not fit: at `rps = 4` the g17s sum-table entry
     /// point needs 114 registers at M=6, and 126 with 16 bytes of spill at
-    /// M=7. Halving `rps` at exactly those widths brings them to 92, 96 and
-    /// 105 registers with no spill, which is why this table carries `rps` per
-    /// width instead of one constant. M=9 is above the ranked verify cap, so it
-    /// stays on tier 3 and adds no pipeline.
+    /// M=7. Halving `rps` at exactly those widths brings them to 92 and 96
+    /// registers with no spill, which is why this table carries `rps` per
+    /// width instead of one constant.
+    ///
+    /// M=8 stays on tier 4. `wide<8>` is spill-free on g17s only at `rps = 2`,
+    /// which doubles the launched threadgroup count at that width, and askeladd
+    /// owns the M=8 register question in E132. M=9 is above the ranked verify
+    /// cap, so it stays on tier 3 and adds no pipeline.
     public static let onePassPlan: [(m: Int, ipg: Int, rps: Int)] = [
-        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 8, 2), (9, 3, 4),
+        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 4, 4), (9, 3, 4),
     ]
 
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
@@ -1844,7 +1844,7 @@ public enum Qwen35CustomQMV {
         "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
 
     public static let onePassPlanWitness =
-        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:8:2,9:3:4"
+        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:4:4,9:3:4"
 
     public static var planWitness: String {
         switch table {

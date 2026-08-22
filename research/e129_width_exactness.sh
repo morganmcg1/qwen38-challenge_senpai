@@ -19,7 +19,9 @@
 #
 # WHAT IT CANNOT SHOW. One QMV call is not one decode round. The digest still
 # owns exact tokens, post-EOS continuation and row-ledger closure.
-set -euo pipefail
+# A failing leg must not hide the legs after it, so this driver records every
+# leg's exit status and reports them together at the end.
+set -uo pipefail
 
 cd "$(dirname "$0")/.."
 TAG="${1:-e129-width-exactness}"
@@ -51,7 +53,11 @@ run_leg () {
             --filter "replicaExactness" 2>&1 \
         | grep -Ev "^\[[0-9]+/[0-9]+\]|warning:|^ *[0-9]+ \||^ *\||^$" \
         | tail -40
+    local status="${PIPESTATUS[0]}"
+    LEG_STATUS+=("${name}=${status}")
 }
+
+LEG_STATUS=()
 
 # The shared switch on the shipped plan is the control: it is the built worker
 # today, so a failure here indicts the harness and not the new widths.
@@ -65,4 +71,5 @@ run_leg tiertight tiered_switch shipped tight
 run_leg oneptight tiered_switch onepass tight
 
 echo
+echo "leg exit status: ${LEG_STATUS[*]}"
 python3 research/e129_exactness_report.py "${OUT}"

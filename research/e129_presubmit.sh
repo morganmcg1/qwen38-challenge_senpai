@@ -62,13 +62,11 @@ readonly WITNESS=(
   --require 'qwen35_custom_affine4_g64_qmv_wide_na5_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_na6_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_na7_v2'
-  --require 'qwen35_custom_affine4_g64_qmv_wide_na8_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na3_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na4_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na5_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na6_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na7_v2'
-  --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na8_v2'
   # The dispatch table itself is interpolated into the Metal source, so no
   # `qwen_e120_qmv_m<...>` instantiation can ever be witnessed here. The plan
   # witness is the literal that carries it. Both tables are compiled in, so
@@ -76,7 +74,7 @@ readonly WITNESS=(
   # pipeline log proves the selection at run time. `renderPlan` equality with
   # each literal is asserted by `planWitnessMatchesWidthPlan`.
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4'
-  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:8:2,9:3:4'
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:4:4,9:3:4'
 )
 
 if [[ -n "$(git status --porcelain)" ]]; then
