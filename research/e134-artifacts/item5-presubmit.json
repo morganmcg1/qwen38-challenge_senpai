@@ -1,0 +1,565 @@
+{
+  "arm": "pb6",
+  "harness": "local",
+  "legs": [
+    {
+      "accepted_draft_rate": 0.8040816326530612,
+      "accepted_draft_total": 394,
+      "all_tokens_matched": true,
+      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "declared_rows_total": 608,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 7,
+      "effective_mean_draft_len": 4.1525423728813555,
+      "emitted_token_total": 512,
+      "fixture": "beagle_a",
+      "gpu_temp_entry_c": 58.959312438964844,
+      "gpu_temp_exit_c": 61.49234390258789,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 3.3389830508474576,
+      "mean_offered_depth": 4.1525423728813555,
+      "meta": {
+        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 1,
+        "2": 33,
+        "3": 19,
+        "4": 29,
+        "5": 0,
+        "6": 2,
+        "7": 34,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 608,
+      "rejected_draft_total": 96,
+      "rejected_rows_reference_checked": 96,
+      "residual_divergence_count": 0,
+      "rounds": 118,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 0.2098056526176083,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 118,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    },
+    {
+      "accepted_draft_rate": 0.8958333333333334,
+      "accepted_draft_total": 430,
+      "all_tokens_matched": true,
+      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "declared_rows_total": 562,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 7,
+      "effective_mean_draft_len": 5.853658536585366,
+      "emitted_token_total": 512,
+      "fixture": "benchfixture",
+      "gpu_temp_entry_c": 41.93320083618164,
+      "gpu_temp_exit_c": 62.337093353271484,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 5.2439024390243905,
+      "mean_offered_depth": 5.853658536585366,
+      "meta": {
+        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 3,
+        "4": 25,
+        "5": 0,
+        "6": 2,
+        "7": 51,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 562,
+      "rejected_draft_total": 50,
+      "rejected_rows_reference_checked": 50,
+      "residual_divergence_count": 0,
+      "rounds": 82,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 0.21091584838569277,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 82,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    },
+    {
+      "accepted_draft_rate": 0.696911196911197,
+      "accepted_draft_total": 361,
+      "all_tokens_matched": true,
+      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "declared_rows_total": 669,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 6,
+      "effective_mean_draft_len": 3.4304635761589406,
+      "emitted_token_total": 512,
+      "fixture": "essays_montaigne",
+      "gpu_temp_entry_c": 58.537349700927734,
+      "gpu_temp_exit_c": 60.90754318237305,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 2.390728476821192,
+      "mean_offered_depth": 3.4304635761589406,
+      "meta": {
+        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 2,
+        "2": 28,
+        "3": 46,
+        "4": 63,
+        "5": 2,
+        "6": 10,
+        "7": 0,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 669,
+      "rejected_draft_total": 157,
+      "rejected_rows_reference_checked": 157,
+      "residual_divergence_count": 0,
+      "rounds": 151,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 0.20462105287630816,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 151,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    },
+    {
+      "accepted_draft_rate": 0.655831739961759,
+      "accepted_draft_total": 343,
+      "all_tokens_matched": true,
+      "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+      "declared_rows_total": 692,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 4,
+      "effective_mean_draft_len": 3.094674556213018,
+      "emitted_token_total": 512,
+      "fixture": "medicine_hist",
+      "gpu_temp_entry_c": 60.76042556762695,
+      "gpu_temp_exit_c": 62.02607727050781,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 2.029585798816568,
+      "mean_offered_depth": 3.094674556213018,
+      "meta": {
+        "base_sha": "a9714610a4d346bd7ff51dd35346785731efbe10",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 1,
+        "2": 59,
+        "3": 32,
+        "4": 77,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 692,
+      "rejected_draft_total": 180,
+      "rejected_rows_reference_checked": 180,
+      "residual_divergence_count": 0,
+      "rounds": 169,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 0.17481833964110277,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 169,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    }
+  ],
+  "provenance": {
+    "base_sha": {
+      "single_valued": true,
+      "values": [
+        "a9714610a4d346bd7ff51dd35346785731efbe10"
+      ]
+    },
+    "chip": {
+      "single_valued": true,
+      "values": [
+        "Apple M4 Pro"
+      ]
+    },
+    "cli_sha256": {
+      "single_valued": true,
+      "values": [
+        "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739"
+      ]
+    },
+    "dirty_candidate_paths": {
+      "single_valued": true,
+      "values": [
+        "0"
+      ]
+    },
+    "gate_qualified_for_timing": {
+      "single_valued": true,
+      "values": [
+        "false"
+      ]
+    },
+    "harness": {
+      "single_valued": true,
+      "values": [
+        "local"
+      ]
+    },
+    "head_manifest_tree_sha256": {
+      "single_valued": true,
+      "values": [
+        "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71"
+      ]
+    },
+    "head_provenance_sha256": {
+      "single_valued": true,
+      "values": [
+        "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9"
+      ]
+    },
+    "host": {
+      "single_valued": true,
+      "values": [
+        "ip-10-231-2-12.ec2.internal"
+      ]
+    },
+    "official_or_ranked_score": {
+      "single_valued": true,
+      "values": [
+        "false"
+      ]
+    },
+    "timing_valid": {
+      "single_valued": true,
+      "values": [
+        "false"
+      ]
+    },
+    "worker_sha256": {
+      "single_valued": true,
+      "values": [
+        "73b59ab041e906a26525b50b40f129542cc051e1ea0e816ac4fc1b6d8595f8e1"
+      ]
+    }
+  },
+  "ship_reference": {
+    "beagle_a": {
+      "accepted_draft_rate": 0.7782178217821782,
+      "accepted_draft_total": 393,
+      "all_tokens_matched": true,
+      "base_sha": "1f1a8fc119a7e32db00700f888fee28b63e1016a",
+      "declared_rows_total": 624,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 7,
+      "effective_mean_draft_len": 4.243697478991597,
+      "emitted_token_total": 512,
+      "fixture": "beagle_a",
+      "gpu_temp_entry_c": 60.61685562133789,
+      "gpu_temp_exit_c": 58.958595275878906,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 3.302521008403361,
+      "mean_offered_depth": 4.243697478991597,
+      "meta": {
+        "base_sha": "1f1a8fc119a7e32db00700f888fee28b63e1016a",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "b7360021b568ba6db1cb8899d8c96d25b9d36c99d9552baa5a5d1ae66ae38945"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 2,
+        "2": 35,
+        "3": 13,
+        "4": 22,
+        "5": 10,
+        "6": 3,
+        "7": 34,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 624,
+      "rejected_draft_total": 112,
+      "rejected_rows_reference_checked": 112,
+      "residual_divergence_count": 0,
+      "rounds": 119,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 1.4926097517964365e-06,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 119,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    },
+    "benchfixture": {
+      "accepted_draft_rate": 0.8770161290322581,
+      "accepted_draft_total": 435,
+      "all_tokens_matched": true,
+      "base_sha": "1f1a8fc119a7e32db00700f888fee28b63e1016a",
+      "declared_rows_total": 574,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 7,
+      "effective_mean_draft_len": 6.358974358974359,
+      "emitted_token_total": 512,
+      "fixture": "benchfixture",
+      "gpu_temp_entry_c": 53.91330337524414,
+      "gpu_temp_exit_c": 57.339256286621094,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 5.576923076923077,
+      "mean_offered_depth": 6.358974358974359,
+      "meta": {
+        "base_sha": "1f1a8fc119a7e32db00700f888fee28b63e1016a",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "b7360021b568ba6db1cb8899d8c96d25b9d36c99d9552baa5a5d1ae66ae38945"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 4,
+        "4": 5,
+        "5": 5,
+        "6": 3,
+        "7": 60,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 574,
+      "rejected_draft_total": 61,
+      "rejected_rows_reference_checked": 61,
+      "residual_divergence_count": 0,
+      "rounds": 78,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 1.759772053744335e-06,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 78,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    },
+    "essays_montaigne": {
+      "accepted_draft_rate": 0.7290836653386454,
+      "accepted_draft_total": 366,
+      "all_tokens_matched": true,
+      "base_sha": "c102b021101e6773b5c2fc69c9ce6338c9e12e39",
+      "declared_rows_total": 648,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 6,
+      "effective_mean_draft_len": 3.4383561643835616,
+      "emitted_token_total": 512,
+      "fixture": "essays_montaigne",
+      "gpu_temp_entry_c": 55.762081146240234,
+      "gpu_temp_exit_c": 60.49649429321289,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 2.506849315068493,
+      "mean_offered_depth": 3.4383561643835616,
+      "meta": {
+        "base_sha": "c102b021101e6773b5c2fc69c9ce6338c9e12e39",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "fd8cb9127eaa407a951de734ec464c83d2b3d10d96364b98e7c991531e1a2cf9"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 4,
+        "2": 32,
+        "3": 40,
+        "4": 39,
+        "5": 28,
+        "6": 3,
+        "7": 0,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 648,
+      "rejected_draft_total": 136,
+      "rejected_rows_reference_checked": 136,
+      "residual_divergence_count": 0,
+      "rounds": 146,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 9.32405416098625e-07,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 146,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    },
+    "medicine_hist": {
+      "accepted_draft_rate": 0.6697761194029851,
+      "accepted_draft_total": 359,
+      "all_tokens_matched": true,
+      "base_sha": "c102b021101e6773b5c2fc69c9ce6338c9e12e39",
+      "declared_rows_total": 689,
+      "decode_token_count": 512,
+      "effective_max_draft_len": 7,
+      "effective_mean_draft_len": 3.503267973856209,
+      "emitted_token_total": 512,
+      "fixture": "medicine_hist",
+      "gpu_temp_entry_c": 39.92422866821289,
+      "gpu_temp_exit_c": 58.36532974243164,
+      "margin_identity_bad": 0,
+      "max_rejected_tail_logit_delta": 0,
+      "mean_accepted": 2.34640522875817,
+      "mean_offered_depth": 3.503267973856209,
+      "meta": {
+        "base_sha": "c102b021101e6773b5c2fc69c9ce6338c9e12e39",
+        "chip": "Apple M4 Pro",
+        "cli_sha256": "b71be40f865cb034237d2d5ee65f34838560319115de2f889705e392707cf739",
+        "dirty_candidate_paths": "0",
+        "gate_qualified_for_timing": "false",
+        "harness": "local",
+        "head_manifest_tree_sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+        "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+        "host": "ip-10-231-2-12.ec2.internal",
+        "official_or_ranked_score": "false",
+        "timing_valid": "false",
+        "worker_sha256": "fd8cb9127eaa407a951de734ec464c83d2b3d10d96364b98e7c991531e1a2cf9"
+      },
+      "mtp_head_attached": true,
+      "non_drafting_round_count": 0,
+      "offered_depth_histogram": {
+        "0": 0,
+        "1": 5,
+        "2": 64,
+        "3": 27,
+        "4": 8,
+        "5": 16,
+        "6": 21,
+        "7": 12,
+        "8": 0
+      },
+      "parity_all_ok": true,
+      "reference_checked_row_total": 689,
+      "rejected_draft_total": 177,
+      "rejected_rows_reference_checked": 177,
+      "residual_divergence_count": 0,
+      "rounds": 153,
+      "row_count_bad": 0,
+      "sched_max_abs_error": 1.279770961648552e-06,
+      "target_cache_offset_final": 1024,
+      "target_tail_total": 153,
+      "tokens": 512,
+      "uses_pinned_mtp_head": true
+    }
+  },
+  "summary": {
+    "all_tokens_matched_every_leg": true,
+    "declared_rows_all_reference_checked": true,
+    "deep_round_share_delta_vs_ship": {
+      "beagle_a": -0.08987323743056541,
+      "benchfixture": -0.22545340838023764,
+      "essays_montaigne": -0.13285856844779098,
+      "medicine_hist": -0.3202614379084967
+    },
+    "exactness_legs": 4,
+    "exactness_tokens": [
+      512
+    ],
+    "mean_offered_depth_delta_vs_ship": {
+      "beagle_a": -0.09115510611024114,
+      "benchfixture": -0.5053158223889929,
+      "essays_montaigne": -0.007892588224621022,
+      "medicine_hist": -0.40859341764319135
+    },
+    "parity_all_ok_every_leg": true,
+    "pinned_head_every_leg": true,
+    "post_eos_continuation_exercised": false,
+    "post_eos_note": "No local fixture emits an EOS or other special id inside its 512-token window, so these legs cannot exercise post-EOS continuation. pb6 changes only the depth price constant and touches no continuation code.",
+    "provenance_single_valued": true,
+    "residual_divergence_total": 0,
+    "trace_row_ledger_bad_rounds": 0
+  }
+}
