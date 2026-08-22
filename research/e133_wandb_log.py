@@ -31,7 +31,12 @@ BASE_SHA = "197e0550ab46842b639a4ff4fe3f4889ca3b01ec"
 T0_NET_MISS = 3.0e-3
 T0B_RECALL = 0.997
 GATING_STRATA = ("beagle", "min_carriers")
+# F2.3. A watch line repeats rows a real stratum already counted.
+WATCH_STRATA = ("essays_bacon",)
 SAMPLE_FLOOR = 4000
+# F2.1. `hybridA` is a second candidate, not a control, so each stage_a is
+# gated and selected on its own.
+STAGE_A_LABEL = {"sketch": "full_c1", "affine2": "hybrid_a"}
 
 RUNGS = {
     "1": {
@@ -73,6 +78,7 @@ CELL_COLUMNS = [
     "m_absolute_worst_gating", "m_absolute_worst_gating_hi",
     "m_incremental_worst_gating", "recall_worst_gating",
     "acceptance_loss_worst_gating",
+    "net_miss_essays_bacon", "m_absolute_essays_bacon", "recall_essays_bacon",
     "arm_stage_bytes", "shipped_stage_bytes", "removed_bytes",
     "removed_step_fraction", "pct_byte_rate", "pct_head_share_7",
     "pct_head_share_9", "predicted_pct_gating", "predicted_pct_raw_miss",
@@ -80,7 +86,7 @@ CELL_COLUMNS = [
 ]
 
 STRATUM_COLUMNS = [
-    "arm", "stratum", "gating", "n",
+    "arm", "stage_a", "stratum", "gating", "watch", "n",
     "misses_absolute", "m_absolute", "m_absolute_lo", "m_absolute_hi",
     "misses_incremental", "m_incremental", "m_incremental_lo",
     "m_incremental_hi",
@@ -177,8 +183,10 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
         for stratum, stats in cell["by_stratum"].items():
             fit = stats.get("tail_fit_at_survivors") or {}
             strata.append({
-                "arm": cell["arm"], "stratum": stratum,
+                "arm": cell["arm"], "stage_a": cell["stage_a"],
+                "stratum": stratum,
                 "gating": stratum in GATING_STRATA,
+                "watch": stratum in WATCH_STRATA,
                 "tail_fit_usable": fit.get("usable", False),
                 "tail_fit_p": fit.get("p"), "tail_fit_lo": fit.get("lo"),
                 "tail_fit_hi": fit.get("hi"),
@@ -222,14 +230,27 @@ def screen_summary(payload: dict) -> tuple[dict, dict]:
     }
     flatten("p_by_stratum", payload.get("p_head_step_accuracy_by_stratum", {}),
             summary)
+    keys = ("family", "size", "stage_a", "survivors", "probe_fraction",
+            "bytes_per_row", "proj_bytes", "removed_bytes", "pct_byte_rate",
+            "pct_head_share_7", "pct_head_share_9", "net_miss_worst_gating",
+            "m_absolute_worst_gating", "m_incremental_worst_gating",
+            "acceptance_loss_worst_gating", "recall_worst_gating",
+            "net_miss_essays_bacon", "recall_essays_bacon",
+            "predicted_pct_gating", "predicted_pct_raw_miss")
     if best:
-        for key in ("family", "size", "stage_a", "survivors", "probe_fraction",
-                    "bytes_per_row", "proj_bytes", "removed_bytes",
-                    "pct_byte_rate", "pct_head_share_7", "pct_head_share_9",
-                    "net_miss_worst_gating", "m_absolute_worst_gating",
-                    "m_incremental_worst_gating", "acceptance_loss_worst_gating",
-                    "recall_worst_gating", "predicted_pct_raw_miss"):
+        for key in keys:
             summary["best_cell/%s" % key] = best[key]
+    # F2.1. Full C1 and hybridA are gated and selected independently, so a
+    # stage-A kill cannot silently take hybridA down with it.
+    for stage_a, block in payload.get("by_stage_a", {}).items():
+        tag = STAGE_A_LABEL.get(stage_a, stage_a)
+        for field in ("cells", "cells_passing_t0", "cells_passing_t0b",
+                      "cells_passing_both", "best_arm", "best_predicted_pct"):
+            summary["%s/%s" % (tag, field)] = block.get(field)
+        chosen = block.get("best_cell")
+        if chosen:
+            for key in keys:
+                summary["%s/best_cell/%s" % (tag, key)] = chosen[key]
     flatten("shipped", {k: v for k, v in payload["shipped"].items()
                         if k != "by_stratum"}, summary)
     return summary, {"screen_cells": table(CELL_COLUMNS, cells),

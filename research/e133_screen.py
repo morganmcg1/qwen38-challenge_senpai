@@ -90,6 +90,11 @@ Z = 1.959963984540054
 # F1.3. `zero_weight` is reported and never gates.
 GATING_STRATA = ("beagle", "min_carriers")
 ALL_STRATA = ("beagle", "min_carriers", "zero_weight")
+# F2.3. `essays_bacon` is the hardest carrier in the corpus: acceptance 0.3989
+# at mean draft 1.996. It gates inside `min_carriers` and is ALSO reported on
+# its own line. A watch line duplicates rows that a real stratum already
+# counts, so it never enters a total and never gates.
+WATCH_STRATA = ("essays_bacon",)
 
 # F1.4c. The survival curve is read at these widths from one stored rank.
 RANK_GRID = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
@@ -658,7 +663,10 @@ class Cell:
 
     def add(self, stratum: str, miss_abs, base_abs, miss_inc, recall, probe,
             survivor, subst_total: int = 0, subst_hit: int = 0,
-            subst_shipped_hit: int = 0) -> None:
+            subst_shipped_hit: int = 0, watch: str | None = None) -> None:
+        if watch:
+            self.add(watch, miss_abs, base_abs, miss_inc, recall, probe,
+                     survivor, subst_total, subst_hit, subst_shipped_hit)
         s = self.slot(stratum)
         s.n += int(miss_abs.size)
         s.miss_abs += int(miss_abs.sum())
@@ -672,13 +680,16 @@ class Cell:
         s.subst_is_target += subst_hit
         s.subst_shipped_is_target += subst_shipped_hit
 
-    def add_ranks(self, stratum: str, rank: np.ndarray) -> None:
-        self.slot(stratum)
-        for g in RANK_GRID:
-            self.ranks[stratum][g] += int((rank >= g).sum())
+    def add_ranks(self, stratum: str, rank: np.ndarray,
+                  watch: str | None = None) -> None:
+        for name in ((stratum, watch) if watch else (stratum,)):
+            self.slot(name)
+            for g in RANK_GRID:
+                self.ranks[name][g] += int((rank >= g).sum())
 
     def pooled(self, field: str) -> int:
-        return sum(getattr(s, field) for s in self.by_stratum.values())
+        return sum(getattr(s, field) for name, s in self.by_stratum.items()
+                   if name not in WATCH_STRATA)
 
 
 # --------------------------------------------------------------------------
@@ -804,7 +815,8 @@ def sketch_state(screen: Screen, sketch: Sketch, f, x: mx.array) -> dict:
 def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
             survivor_widths, base_miss: np.ndarray, base_compact: mx.array,
             stratum: str, reference: np.ndarray, base_vocab: np.ndarray,
-            cells: dict[tuple, Cell], stage_a: str = "sketch") -> None:
+            cells: dict[tuple, Cell], stage_a: str = "sketch",
+            watch: str | None = None) -> None:
     """One sketch cell family. `stage_a` chooses who orders the leaves.
 
     `sketch` sketches both stages, which is C1 as designed. `affine2` keeps
@@ -885,9 +897,9 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
                      np.asarray(probe_hit).astype(bool),
                      np.asarray(survivor).astype(bool),
                      subst_total=int(swapped.sum()), subst_hit=hit,
-                     subst_shipped_hit=shipped_hit)
+                     subst_shipped_hit=shipped_hit, watch=watch)
             if n_keep == max_width:
-                cell.add_ranks(stratum, rank_np)
+                cell.add_ranks(stratum, rank_np, watch)
             del sel, out, survivor, recall
         del sk, co, is_r, comp, positions, top, exact_top1
     del sk_full, co_full, is_r_full, comp_full, positions_full
@@ -915,6 +927,8 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         p_step = p_by_stratum.get(name, float("nan"))
         loss = (s.subst_shipped_is_target - s.subst_is_target) / s.n if s.n else 0.0
         by_stratum[name] = {
+            "gating": name in GATING_STRATA,
+            "watch": name in WATCH_STRATA,
             "n": s.n,
             "misses_absolute": s.miss_abs,
             "m_absolute": m_abs, "m_absolute_lo": abs_lo, "m_absolute_hi": abs_hi,
@@ -957,10 +971,12 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
     net_worst = worst("net_miss")
     loss = max((v["acceptance_loss"] for v in gating.values()
                 if v["acceptance_loss"] is not None), default=0.0)
+    watched = by_stratum.get("essays_bacon")
     return {
         "arm": arm,
         **extra,
-        "n": sum(v["n"] for v in by_stratum.values()),
+        # A watch line repeats rows a real stratum already counted.
+        "n": sum(v["n"] for k, v in by_stratum.items() if k in ALL_STRATA),
         "n_gating": sum(v["n"] for v in gating.values()),
         "net_miss_worst_gating": net_worst,
         "net_miss_worst_gating_hi": worst("net_miss_hi"),
@@ -969,6 +985,10 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         "m_incremental_worst_gating": worst("m_incremental"),
         "recall_worst_gating": lowest("recall"),
         "acceptance_loss_worst_gating": loss,
+        # F2.3. The hardest carrier, on its own line, never gating.
+        "net_miss_essays_bacon": watched["net_miss"] if watched else None,
+        "m_absolute_essays_bacon": watched["m_absolute"] if watched else None,
+        "recall_essays_bacon": watched["recall"] if watched else None,
         **model,
         # F1.5: price on the realised acceptance loss, kill on absolute miss.
         "predicted_pct_gating": model["pct_head_share_7"] - MISS_TO_SCORE_PCT * loss,
@@ -1041,7 +1061,8 @@ def cmd_validate(args) -> None:
         cells: dict[tuple, Cell] = {}
         run_arm(screen, damaged, f, sketch_state(screen, damaged, f, x),
                 [SHIPPED_PROBE_FRACTION], [256],
-                base_miss, base_compact, stratum, reference, base_vocab, cells)
+                base_miss, base_compact, stratum, reference, base_vocab,
+                cells)
         damaged_miss += cells[
             (damaged.key, "sketch", 256, SHIPPED_PROBE_FRACTION)].pooled("miss_abs")
         n += f["b"]
@@ -1083,22 +1104,26 @@ def cmd_screen(args) -> None:
     accept: dict[str, list[int]] = {}
     n = 0
     t0 = time.time()
-    for _, stratum, x, proposal, reference, accepted in chunks(args.batch, args.limit):
+    for seed, stratum, x, proposal, reference, accepted in chunks(args.batch,
+                                                                  args.limit):
+        watch = seed if seed in WATCH_STRATA else None
         f = screen.front(x)
         base_miss, base_compact = screen.shipped(f)
         base_vocab = np.asarray(H.compact_to_vocab(base_compact))
         falses = np.zeros_like(base_miss)
-        base_cell.add(stratum, base_miss, base_miss, falses, ~falses, ~falses, ~falses)
-        slot = accept.setdefault(stratum, [0, 0, 0])
-        slot[0] += int(proposal.size)
-        slot[1] += int((base_vocab == reference).sum())
-        slot[2] += int((base_vocab == proposal).sum())
+        base_cell.add(stratum, base_miss, base_miss, falses, ~falses, ~falses,
+                      ~falses, watch=watch)
+        for key in (stratum, watch) if watch else (stratum,):
+            slot = accept.setdefault(key, [0, 0, 0])
+            slot[0] += int(proposal.size)
+            slot[1] += int((base_vocab == reference).sum())
+            slot[2] += int((base_vocab == proposal).sum())
         for sketch in sketches:
             state = sketch_state(screen, sketch, f, x)
             for stage_a in stages:
                 run_arm(screen, sketch, f, state, fractions, widths, base_miss,
                         base_compact, stratum, reference, base_vocab, cells,
-                        stage_a)
+                        stage_a, watch)
             del state
         n += f["b"]
         if n % (args.batch * 10) == 0:
@@ -1106,16 +1131,17 @@ def cmd_screen(args) -> None:
 
     p_by_stratum = {k: (v[1] / v[0] if v[0] else float("nan"))
                     for k, v in accept.items()}
-    aligned = sum(v[0] for v in accept.values())
+    real = {k: v for k, v in accept.items() if k in ALL_STRATA}
+    aligned = sum(v[0] for v in real.values())
     out = {
         "samples": n,
         "base_sha": args.base_sha,
         "wall_seconds": time.time() - t0,
-        "p_head_step_accuracy": (sum(v[1] for v in accept.values()) / aligned
+        "p_head_step_accuracy": (sum(v[1] for v in real.values()) / aligned
                                  if aligned else float("nan")),
         "p_head_step_accuracy_by_stratum": p_by_stratum,
         "offline_shipped_chain_reproduces_runtime":
-            (sum(v[2] for v in accept.values()) / aligned
+            (sum(v[2] for v in real.values()) / aligned
              if aligned else float("nan")),
         "shipped": summarize("shipped", base_cell, price(0), {}, p_by_stratum),
         "cells": [],
@@ -1134,20 +1160,42 @@ def cmd_screen(args) -> None:
              "arm_stage_bytes": arm_bytes, "shipped_stage_bytes": shipped_bytes},
             p_by_stratum))
     out["cells"].sort(key=lambda c: -c["predicted_pct_gating"])
-
-    print(f"\n{'arm':30s}{'B/row':>7s}{'netWorst':>11s}{'mAbsWorst':>11s}"
-          f"{'mInc':>11s}{'loss':>11s}{'recall':>9s}{'gain%':>8s}{'pred%':>8s}"
-          f"{'T0':>4s}{'T0b':>5s}")
-    for cell in out["cells"][: args.top]:
-        print(f"{cell['arm']:30s}{cell['bytes_per_row']:7d}"
-              f"{cell['net_miss_worst_gating']:11.3e}"
-              f"{cell['m_absolute_worst_gating']:11.3e}"
-              f"{cell['m_incremental_worst_gating']:11.3e}"
-              f"{cell['acceptance_loss_worst_gating']:11.3e}"
-              f"{cell['recall_worst_gating']:9.5f}{cell['pct_head_share_7']:8.3f}"
-              f"{cell['predicted_pct_gating']:8.3f}"
-              f"{'ok' if cell['passes_t0'] else 'NO':>4s}"
-              f"{'ok' if cell['passes_t0b'] else 'NO':>5s}")
+    # F2.1. `hybridA` is a candidate, not a control. A stage-A kill must not
+    # take it down with full C1, so each stage_a gets its own gate table and
+    # its own selected cell.
+    out["by_stage_a"] = {}
+    for stage_a in stages:
+        arms = [c for c in out["cells"] if c["stage_a"] == stage_a]
+        ok = [c for c in arms if c["passes_t0"] and c["passes_t0b"]]
+        best = max(ok, key=lambda c: c["predicted_pct_gating"], default=None)
+        out["by_stage_a"][stage_a] = {
+            "label": "full C1" if stage_a == "sketch" else "hybridA",
+            "cells": len(arms),
+            "cells_passing_t0": sum(1 for c in arms if c["passes_t0"]),
+            "cells_passing_t0b": sum(1 for c in arms if c["passes_t0b"]),
+            "cells_passing_both": len(ok),
+            "best_arm": best["arm"] if best else None,
+            "best_predicted_pct": best["predicted_pct_gating"] if best else 0.0,
+            "best_cell": best,
+        }
+        print(f"\n=== {stage_a}  ({out['by_stage_a'][stage_a]['label']})  "
+              f"{len(ok)}/{len(arms)} cells clear T0 and T0b")
+        print(f"{'arm':30s}{'B/row':>7s}{'netWorst':>11s}{'mAbsWorst':>11s}"
+              f"{'mInc':>11s}{'loss':>11s}{'recall':>9s}{'bacon_net':>11s}"
+              f"{'gain%':>8s}{'pred%':>8s}{'T0':>4s}{'T0b':>5s}")
+        for cell in arms[: args.top]:
+            bacon = cell["net_miss_essays_bacon"]
+            print(f"{cell['arm']:30s}{cell['bytes_per_row']:7d}"
+                  f"{cell['net_miss_worst_gating']:11.3e}"
+                  f"{cell['m_absolute_worst_gating']:11.3e}"
+                  f"{cell['m_incremental_worst_gating']:11.3e}"
+                  f"{cell['acceptance_loss_worst_gating']:11.3e}"
+                  f"{cell['recall_worst_gating']:9.5f}"
+                  f"{bacon if bacon is not None else float('nan'):11.3e}"
+                  f"{cell['pct_head_share_7']:8.3f}"
+                  f"{cell['predicted_pct_gating']:8.3f}"
+                  f"{'ok' if cell['passes_t0'] else 'NO':>4s}"
+                  f"{'ok' if cell['passes_t0b'] else 'NO':>5s}")
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=2))
         print(f"wrote {args.out}")
