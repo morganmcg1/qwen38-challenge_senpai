@@ -1,0 +1,173 @@
+{
+  "tool": "senpai/entry-point-cliff-census.sh",
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89: simdgroups = floor(BUDGET / registers) is a model output computed from the register count, not a measurement",
+  "ranked_arch": "applegpu_g17s",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "base_ref": "da025231",
+  "base_sha": "da025231305056efb4c5a898b52d86256724dad3",
+  "candidate_ref": "5d97175c",
+  "candidate_sha": "5d97175c9959a5bde7b6974889efc23c2cd3765b",
+  "cells": [
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_2_false",
+      "source_form": "jit_twin",
+      "role": "affine-2 coarse draft readout, out_vec_size 98336",
+      "library": "jit",
+      "applegpu_g16s": {
+        "base_registers": 84,
+        "candidate_registers": 84,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 36,
+        "candidate_simdgroups_derived": 36,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "spill_bytes_delta": 0,
+        "base_text_bytes": 6646,
+        "candidate_text_bytes": 6646,
+        "text_bytes_delta": 0,
+        "instructions_delta_upper_bound": 0.0,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 93,
+        "candidate_registers": 93,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 42,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "spill_bytes_delta": 0,
+        "base_text_bytes": 6958,
+        "candidate_text_bytes": 6958,
+        "text_bytes_delta": 0,
+        "instructions_delta_upper_bound": 0.0,
+        "unchanged": true
+      }
+    },
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_4_false",
+      "source_form": "jit_twin",
+      "role": "wide QMV: every affine-4 g64 target projection MLX still launches",
+      "library": "jit",
+      "applegpu_g16s": {
+        "base_registers": 94,
+        "candidate_registers": 93,
+        "registers_delta": -1,
+        "base_simdgroups_derived": 32,
+        "candidate_simdgroups_derived": 33,
+        "simdgroups_delta_derived": 1,
+        "residency_change_pct_derived": 3.125,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "spill_bytes_delta": 0,
+        "base_text_bytes": 119344,
+        "candidate_text_bytes": 120842,
+        "text_bytes_delta": 1498,
+        "instructions_delta_upper_bound": 374.5,
+        "unchanged": false
+      },
+      "applegpu_g17s": {
+        "base_registers": 101,
+        "candidate_registers": 102,
+        "registers_delta": 1,
+        "base_simdgroups_derived": 39,
+        "candidate_simdgroups_derived": 38,
+        "simdgroups_delta_derived": -1,
+        "residency_change_pct_derived": -2.564,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "spill_bytes_delta": 0,
+        "base_text_bytes": 125092,
+        "candidate_text_bytes": 126028,
+        "text_bytes_delta": 936,
+        "instructions_delta_upper_bound": 234.0,
+        "unchanged": false
+      }
+    },
+    {
+      "kernel": "affine_qmv_fast_bfloat16_t_64_4_true",
+      "source_form": "jit_twin",
+      "role": "batched affine-4 g64 QMV",
+      "library": "jit",
+      "applegpu_g16s": {
+        "base_registers": 57,
+        "candidate_registers": 57,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 53,
+        "candidate_simdgroups_derived": 53,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "spill_bytes_delta": 0,
+        "base_text_bytes": 4818,
+        "candidate_text_bytes": 4818,
+        "text_bytes_delta": 0,
+        "instructions_delta_upper_bound": 0.0,
+        "unchanged": true
+      },
+      "applegpu_g17s": {
+        "base_registers": 57,
+        "candidate_registers": 57,
+        "registers_delta": 0,
+        "base_simdgroups_derived": 69,
+        "candidate_simdgroups_derived": 69,
+        "simdgroups_delta_derived": 0,
+        "residency_change_pct_derived": 0.0,
+        "base_spill_bytes": 0,
+        "candidate_spill_bytes": 0,
+        "spill_bytes_delta": 0,
+        "base_text_bytes": 5000,
+        "candidate_text_bytes": 5000,
+        "text_bytes_delta": 0,
+        "instructions_delta_upper_bound": 0.0,
+        "unchanged": true
+      }
+    }
+  ],
+  "route_b_surface": {
+    "base_serving": {},
+    "candidate_serving": {},
+    "note": "width-weighted derived residency over {4: 16, 5: 20, 6: 20, 7: 12, 8: 240}; the shipped shared-switch build maps every width to its single entry point, so this reproduces the single-entry-point figure",
+    "applegpu_g16s": {
+      "error": "no complete Route B QMV surface"
+    },
+    "applegpu_g17s": {
+      "error": "no complete Route B QMV surface"
+    }
+  },
+  "width_histogram": {
+    "4": 16,
+    "5": 20,
+    "6": 20,
+    "7": 12,
+    "8": 240
+  },
+  "instrument_note": "This gate is a REGISTER instrument and is accurate as one. It is NOT a time instrument. F131 measured the residency-to-time coefficient at -0.0014 and +0.0105 on two independent designs, both far inside the 0.05 %/% kill gate, and F114 puts deleted instruction count at r = +0.949 against measured gain. An exit 1 that comes with real deleted work should usually be discharged by pricing under Rule 87, not obeyed.",
+  "failures": [
+    "affine_qmv_fast_bfloat16_t_64_4_false applegpu_g17s: 101 -> 102 registers loses 1 resident simdgroup(s) (39 -> 38, -2.56 % residency, derived); spill +0 bytes, machine code +936 bytes (at most +234.0 instructions)"
+  ],
+  "warnings": [
+    "base: the cluster_qmv family is not in this revision",
+    "candidate: the cluster_qmv family is not in this revision",
+    "base: the route_b family is not in this revision",
+    "candidate: the route_b family is not in this revision",
+    "Route B QMV surface applegpu_g17s: no complete Route B QMV surface, and neither revision carries the family, so there is nothing to compare"
+  ],
+  "verdict": "fail",
+  "runtime_seconds": 2.37
+}
