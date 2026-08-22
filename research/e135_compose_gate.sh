@@ -7,16 +7,18 @@
 # schedule (about 82 rounds, mean draft about 5.854). If it shows the pre-pb6
 # schedule (78 rounds, 6.359) the rebase dropped pb6 and the chain fails.
 #
-# The leg exports no MLX_E120_QMV_GRID and no MLX_E120_QMV_TABLE, so it takes
-# the route the ranked runner takes, and every arm witness is read back off the
-# run's own trace (CAMPAIGN RULE 114), never off an environment variable.
+# The leg exports no MLX_E120_QMV_GRID, no MLX_E120_QMV_TABLE and no
+# MLX_E135_PROBE_ARM, so it takes the route the ranked runner takes, and every
+# arm witness is read back off the run's own trace (CAMPAIGN RULE 114), never
+# off an environment variable. Advisor F17 orders probe rung p10, whose derived
+# integer 1230 the leg must report.
 set -u
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
-tag="e135c512"
+tag="e135p10"
 out="research/out/${tag}"
-log_dir="research/out/e135compose"
+log_dir="research/out/e135p10gate"
 mkdir -p "${log_dir}"
 rc=0
 
@@ -106,7 +108,7 @@ step twin-audit python3 research/twin_audit.py
 # Both gates exit 2 when invoked bare, and a gate that did not run is not
 # evidence. `base` is the composition base; the only submitted path this
 # experiment changes is the Qwen runtime file.
-base="c6e32050f5a6b715df63aec7790a851ce1d9163c"
+base="bdba19f66e84e7e2aa1f8162eeaa0a82579edc94"
 step scope senpai/validate-assignment-scope.sh "${base}" \
   Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
 step budget senpai/check-editable-budget.sh \
@@ -123,7 +125,7 @@ fi
 
 echo
 echo "################ bare 512-token exactness leg ################"
-unset MLX_E120_QMV_GRID MLX_E120_QMV_TABLE
+unset MLX_E120_QMV_GRID MLX_E120_QMV_TABLE MLX_E135_PROBE_ARM
 mkdir -p "${out}"
 export MLX_E120_QMV_PIPELINE_LOG="${PWD}/${out}/pipelines.json"
 research/e79_trace_leg.sh "${tag}" 512 2>&1 | tee "${log_dir}/bare-512.log"
