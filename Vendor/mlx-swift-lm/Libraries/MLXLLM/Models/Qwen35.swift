@@ -1565,10 +1565,10 @@ private let qwen35E120QMVHeader = """
 /// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
 /// false` never reads.
 ///
-/// `tier` selects the widths this entry point carries. `nil` emits all seven,
-/// which is the shared switch. A value emits only the widths whose `ipg`
-/// equals it, so the compiler allocates that entry point for its own widest
-/// body instead of for the union of all of them.
+/// `tier` selects the widths this entry point carries. `nil` emits every
+/// routed width, which is the shared switch. A value emits only the widths
+/// whose `ipg` equals it, so the compiler allocates that entry point for its
+/// own widest body instead of for the union of all of them.
 private func qwen35E120QMVSource(table: Bool, tier: Int?) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
@@ -1622,12 +1622,14 @@ private func qwen35E120QMVName(table: Bool, tier: Int?) -> String {
     switch (table, tier) {
     case (false, nil): return "qwen35_custom_affine4_g64_qmv_wide_v2"
     case (true, nil): return "qwen35_custom_affine4_g64_qmv_wide_sums_v2"
+    case (false, 2): return "qwen35_custom_affine4_g64_qmv_wide_na2_v2"
     case (false, 3): return "qwen35_custom_affine4_g64_qmv_wide_na3_v2"
     case (false, 4): return "qwen35_custom_affine4_g64_qmv_wide_na4_v2"
     case (false, 5): return "qwen35_custom_affine4_g64_qmv_wide_na5_v2"
     case (false, 6): return "qwen35_custom_affine4_g64_qmv_wide_na6_v2"
     case (false, 7): return "qwen35_custom_affine4_g64_qmv_wide_na7_v2"
     case (false, 8): return "qwen35_custom_affine4_g64_qmv_wide_na8_v2"
+    case (true, 2): return "qwen35_custom_affine4_g64_qmv_wide_sums_na2_v2"
     case (true, 3): return "qwen35_custom_affine4_g64_qmv_wide_sums_na3_v2"
     case (true, 4): return "qwen35_custom_affine4_g64_qmv_wide_sums_na4_v2"
     case (true, 5): return "qwen35_custom_affine4_g64_qmv_wide_sums_na5_v2"
@@ -1656,8 +1658,10 @@ private let qwen35CustomAffine4QMVKernel = qwen35E120QMVKernel(table: false, tie
 private let qwen35CustomAffine4QMVTableKernel = qwen35E120QMVKernel(table: true, tier: nil)
 
 /// One entry point per distinct `ipg`. Building the descriptor is free; a
-/// pipeline is compiled only when a dispatch first reaches it, and the shipped
-/// arm reaches four of these six.
+/// pipeline is compiled only when a dispatch first reaches it. The shipped arm
+/// has four tiers and so eight descriptors, of which it reaches five: the
+/// replica arm at tiers 2 and 3 for M = 2 and 3, and the table arm at tiers 3,
+/// 4 and 5 for M = 4 ... 9.
 private let qwen35CustomAffine4QMVTierKernels: [Int: MLXFast.MLXFastKernel] =
     Dictionary(
         uniqueKeysWithValues: Qwen35CustomQMV.tiers.map {
@@ -1754,7 +1758,7 @@ public enum Qwen35CustomQMV {
     }()
 
     public enum Entry: String, Sendable {
-        /// One switch over all seven routed widths.
+        /// One switch over every routed width.
         case shared = "shared_switch"
         /// One entry point per distinct `ipg`.
         case tiered = "tiered_switch"
@@ -1775,8 +1779,16 @@ public enum Qwen35CustomQMV {
     }()
 
     /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
-    /// and M=2 reach different kernels and are left to MLX.
-    public static let widths = 3 ... 9
+    /// reaches a different kernel and is left to MLX.
+    ///
+    /// M=2 was left to MLX until F18. The library pair kernel takes it with
+    /// `inputs_per_group = 2` and the same `first_m >= M` early return, but the
+    /// library host still launches `M = 2` x-groups, so one of the two groups
+    /// is a no-op on every M=2 cell. Routing the width gives `Grid.launch` the
+    /// `ceil(2 / 2) = 1` column with no launcher edit, and a rival's ranked
+    /// isolation of exactly this move measured -0.4742 % on the candidate
+    /// medpair with digit-identical draft lengths on all eight prompts.
+    public static let widths = 2 ... 9
 
     /// How the shared entry point is specialized for each routed width.
     ///
@@ -1820,22 +1832,22 @@ public enum Qwen35CustomQMV {
         /// M=9 stays on tier 3 in every plan. It is above the ranked verify
         /// cap of 8, so one pass there would add a pipeline and buy nothing.
         /// It cannot be dropped from the table either: the dispatch switch
-        /// routes `3 ... 9` with `default: break`, so a missing case is a
-        /// silent no-op round rather than a compile error.
+        /// routes `Qwen35CustomQMV.widths` with `default: break`, so a missing
+        /// case is a silent no-op round rather than a compile error.
         public var plan: [(m: Int, ipg: Int, rps: Int)] {
             switch self {
             case .shipped:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4),
-                        (8, 4, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4),
+                        (7, 4, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass6:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 4, 4),
-                        (8, 4, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
+                        (7, 4, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass67:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4),
-                        (8, 4, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
+                        (7, 7, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass678:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4),
-                        (8, 8, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
+                        (7, 7, 4), (8, 8, 4), (9, 3, 4)]
             }
         }
 
@@ -1852,13 +1864,13 @@ public enum Qwen35CustomQMV {
         public var witness: String {
             switch self {
             case .shipped:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
             case .onePass6:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4"
             case .onePass67:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
             case .onePass678:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4"
             }
         }
     }
@@ -1918,12 +1930,12 @@ public enum Qwen35CustomQMV {
     /// The entry point a width is dispatched to.
     ///
     /// A Metal entry point is allocated the maximum register count over every
-    /// branch inlined into it, so one switch over all seven widths charges
+    /// branch inlined into it, so one switch over every routed width charges
     /// `M = 3` for the `M = 5` body. A width's own maximum is exactly its
     /// `ipg`: the tail group of a partial pass carries `m % ipg` rows, which is
     /// fewer than a full group, so the full-group body always dominates.
     /// Widths that share an `ipg` therefore share an entry point with no
-    /// register cost, and the shipped table has only three distinct values.
+    /// register cost, and the shipped table has only four distinct values.
     public static func tier(m: Int) -> Int { plan(m: m).ipg }
 
     public static let tiers: [Int] = Set(widthPlan.map(\.ipg)).sorted()
@@ -2096,7 +2108,7 @@ public enum Qwen35CustomQMV {
     /// The width switch lives inside the Metal kernel and `IPG` is chosen
     /// there, so the host key is `(kernel, USE_TABLE)` and never mentions `M`
     /// or `IPG`. Changing an `IPG` literal therefore cannot add a pipeline: a
-    /// leg that reaches all seven routed widths must still report the same two
+    /// leg that reaches every routed width must still report the same two
     /// QMV specializations. The name must carry the `MLX_` prefix to survive
     /// `sanitizedRuntimeWorkerEnvironment`. It is unset in every timed run, so
     /// the dispatch path pays one optional test.

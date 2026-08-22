@@ -403,25 +403,7 @@ struct E135TightLaunchGridTests {
         #expect(controlFired)
     }
 
-    /// The composed tree lowers the derived-cluster probe fraction. The
-    /// literal is not the contract: the scored path sends `probes` to the
-    /// kernel, so a fraction that moves without moving that integer changes
-    /// nothing at all. This pins the integer and proves it actually moved.
-    @Test("the derived probe count at the shipped leaf count is 1844")
-    func derivedProbeCountIsTheAssertedInteger() throws {
-        // `leaves = compactDraftPaddedCount / rowsPerLeaf` at the shipped
-        // compact-draft geometry, the same value the consumer reaches.
-        let leaves = 12_292.0
-        func derived(_ fraction: Double) -> Int {
-            max(1, Int((fraction * leaves).rounded(.up)))
-        }
-
-        #expect(derived(qwen35DerivedClusterProbeFraction) == 1844)
-
-        // Positive control: the fraction this composition replaced derives a
-        // different integer, so the assertion above can fail.
-        #expect(derived(0.25) == 3073)
-        #expect(derived(qwen35DerivedClusterProbeFraction) != derived(0.25))
-    }
-
+    // The derived-cluster probe count moved from this suite to
+    // `E135ProbeArmTests`, which pins every rung of `Qwen35CustomQMV.ProbeArm`
+    // instead of one hard-coded integer.
 }
