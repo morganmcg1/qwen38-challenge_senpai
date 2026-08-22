@@ -45910,3 +45910,445 @@ identical, the round would cost 31,182 us and the published ratio would be about
 
 That is the campaign's central thesis from here, and it is the frame in which
 every future assignment on this axis should be priced.
+
+## 285 — RECEIPT 1 IS IN FLIGHT; ADVISOR ERROR 117 STRIKES FINDING 155; THE PALINDROME ARTEFACT; AND THE FIRST OPPOSITE-SIGN LOCAL RATIO
+
+2026-08-22, ~14:35 UTC. Advisor base `0eed7b40` (ledger 284 + research state).
+Campaign contract base `770a3ff2`. Organizer `upstream/main` `c0dbec05`.
+
+### 285.0 — Receipt 1 is on the board
+
+`623e77af-7a6a-41f0-afab-478037aafbb8`, morganmcg1, queued 2026-08-22
+14:12:57Z, `validating`. Thorfinn's E129 arm: per-width templated Route B entry
+points plus one-pass accumulation at widths 6 and 7 on Askeladd's D_S body.
+Candidate commit `bbce0deb`, timed commit `ebed7498`, one submitted path,
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`. Growth base
+`770a3ff2`. Crown at submit time `48423d09` at 3.51845338, sourceRef
+`c0dbec05`, matching `frontier-state.json` exactly.
+
+Five pre-registered predictions against reference `0c6191b7`, whose unweighted
+eight-prompt candidate-leg mean is 0.014758 s/token:
+
+```
+reading                            change    candidate-leg mean
+one-pass line, parameter-free      -7.59 %   0.013638
+pass count alone                   -8.60 %   0.013489
+instruction count                  -2.56 %   0.014380
+schedule model                     -2.60 %   0.014374
+cross-sectional fit                +0.05 %   0.014765
+```
+
+Advisor band -3 % to -9 %, central -5 % (0.014020). Refuted if worse than
+-1 % (0.014610). Two validity conditions pre-registered before the number
+exists: `effective_mean_draft_len` and `non_drafting_round_count` within noise
+on all eight prompts against `0c6191b7`, or the arm is confounded.
+
+Board otherwise unchanged for four and a half hours. Crown `48423d09` since
+10:04Z. Eight rows validating.
+
+---
+
+### 285.1 — ADVISOR ERROR 117. FINDING 155 IS REFUTED. THE SHIPPED DEPTH PRICE IS FLAT 0.18
+
+Edward checked F155 at source and he is right. Verified independently at
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`:
+
+```swift
+internal static let depthPriceArm: DepthPriceArm = .ship
+case .ship: return makeUniformDepthPrice()
+
+internal static func makeUniformDepthPrice() -> DepthPrice {
+    DepthPrice(marginal: [Double](repeating: headStepCostRatio, count: maxDepth),   // 0.18
+               cumulative: (0 ... maxDepth).map { 1.0 + Double($0) * headStepCostRatio })
+}
+```
+
+**The shipped `price.marginal` is flat `0.18` at every depth.** The vector
+published as FINDING 155, `0.1083 x4, 0.4383, 0.1972 x3`, is our fitted ranked
+curve normalised by `round_us(1) = 31282.6`. It is the `rankedprice` **arm**,
+not the ship default.
+
+**The contradiction was already in the advisor's own arm table.** If the
+shipped price equalled the ranked curve, E128's `rankedprice` arm would have
+been a no-op scoring `0.0000`. It scored **-2.8508 %**. Both statements were
+published in the same document.
+
+Consequences:
+
+- FINDING 155 is struck.
+- Ledger 284.2, "the shipped price vector has an expiry date", is void as
+  written.
+- Edward's rung 0b, the price refit, is CANCELLED.
+- The contingent reopening of the depth-PRICE axis in the stop list is
+  WITHDRAWN. The axis is closed.
+
+**What survives, and it is a different and better statement.** The shipped
+flat `0.18` is about **1.67x too expensive** at depths 0-3 and about **2.9x
+too cheap** at depth 4. Index 4 prices the step into verify width 6, which is
+exactly the cliff Thorfinn's arm removes. After the arm the depth-4 true
+marginal collapses from 0.4383 to 0.1083 and the cliff reappears at depth 6,
+where much less ranked mass sits. **So the arm makes the shipped flat price
+accidentally MORE accurate at the widths that pay.** Receipt 1 may therefore
+carry a small incidental scheduling gain rather than a stale-price penalty.
+That is the opposite sign to the F20 instruction given to Thorfinn.
+
+Thorfinn's public submission note contains the false sentence "Shipped
+`price.marginal` equals the previous ranked cost curve to four significant
+figures." The note is immutable and Yukon does not score notes. Correction
+posted on PR #128 (F21) and on PR #134 (F2); Thorfinn instructed to post his
+own correction and never to repeat the sentence.
+
+**Index convention, also corrected.** `marginal[d]` prices the step into
+verify width `d + 2`. Today's cliff at index 4 is the step into width 6, which
+is the **M=5 to M=6** boundary, not M=6 to M=7.
+
+**Why the price axis stays closed, in Edward's words:** *a correct price only
+helps if the quantity it multiplies is trustworthy. Sharpening the price on
+top of a 0.70-AUC reach signal moves more rounds across a boundary that is now
+2.9x more expensive to get wrong. The price is not the bottleneck. The
+information is.* Empirical record: 19 of 19 E128 price arms lost;
+`rankedprice`, the exactly correct shape, lost by -2.8508 %; `levelfix`, which
+corrects the level, lost by -0.9673 %; and `h = 0.32` scored 2.84585, a clean
+-3 %, per the source comment at `:845`.
+
+`cumulative` carries no independent degree of freedom: `prefixCosts` is a
+prefix sum starting at 1.0, so `cumulative[d] == round_us(d+1)/round_us(1)`
+for any curve, max abs error 4.44e-16. The scheduler sees only the ratio
+`marginal[d] * (1 + expected) / cumulative[d]`.
+
+---
+
+### 285.2 — FINDING 158. THE PALINDROME DESTROYS DISPERSION INTO ARM IDENTITY. ALPHONSE'S RUNG 10a, RE-ANALYSED
+
+Rung 10a, six legs, `none s64 s512 s512 s64 none`, 512 tokens each, one
+binary `worker_sha256 75ed21a7`, arms differ only by environment,
+`MLXFAST_LOCAL_COOL_GATE=0` counterbalanced, `effective_mean_draft_len`
+6.37662 and `accepted_draft_rate` 0.88595 bit-identical in all six legs.
+Absolute candidate `mtp_seconds_per_token`:
+
+```
+leg 1 none  0.03217897     leg 4 s512  0.03193824
+leg 2 s64   0.03207726     leg 5 s64   0.03195621
+leg 3 s512  0.03196920     leg 6 none  0.03203923
+```
+
+Alphonse read `s64` as a two-state arm whose 893.0 us per-drafting-round gap
+reproduces the campaign's 930.9 us runner-state step, and claimed the
+dispersion asymmetry as corroboration of partial residency admission.
+
+**That is an artefact of his own design.** A palindrome assigns arms by
+`|position - 3.5|`: `none` at separation 5 legs, `s64` at 3, `s512` at 1. Fit
+arm means plus ONE linear session trend (`_advisor_scratch/pal10a.py`):
+
+```
+slope  -3.1223e-05 s/token per leg  =  -0.0975 % per leg
+residuals  -8.19e-06  +1.37e-05  -1.32e-07  +1.32e-07  -1.37e-05  +8.19e-06
+variance of the arm-mean-only residual explained by that one slope:  97.10 %
+
+arm     separation   observed spread   trend predicts   ratio
+s512      1 leg        3.096e-05        3.122e-05       0.992
+s64       3 legs       1.211e-04        9.367e-05       1.292
+none      5 legs       1.397e-04        1.561e-04       0.895
+```
+
+One slope, three separations, three spreads. The "893.0 us slow versus fast
+draw" is three legs of drift. The "228.4 us `s512` stability" is one leg of
+the same drift and matches to 0.8 %. The 3.9x asymmetry is 3:1, the design.
+
+**NEW CAMPAIGN RULE 102. A counterbalanced palindrome cancels drift in the ARM
+MEANS and destroys it into the WITHIN-ARM SPREADS, because arm identity is
+collinear with distance from the centre. Never read a within-arm spread from a
+palindrome as a variance, dispersion or bimodality instrument. To measure
+dispersion, use repeated randomised starts.** The advisor requested the
+dispersion asymmetry in F13 and was wrong to request it from this design.
+
+**The arm means survive and get much stronger.** All three arms are centred at
+`t = 3.5`, so the trend cancels exactly in the means. Residual sd collapses
+from 5.4e-05 to **1.5952e-05 = 0.0498 %** on 2 df.
+
+```
+contrast                    effect      t (2 df, crit 4.303)   95 % CI
+control  none -> s512      -0.4839 %          -9.74            -0.698 to -0.270
+         none -> s64       -0.2877 %          -5.79            -0.501 to -0.074
+treatment s64 -> s512      -0.1968 %          -3.95            -0.411 to +0.018
+```
+
+**64 MiB already buys 59 % of the full wiring benefit; the fix buys the
+remaining 41 %.** Both steps monotone, the intermediate step significant.
+
+**The value is a DETERMINISTIC MEAN, not a lottery.** Alphonse priced it as
+`p x 0.386 %`, giving +0.13 % at `p = 1/3`; that framing came from the
+withdrawn §2. The measured quantity is a mean absolute candidate-leg
+improvement of **-0.1968 %**, `harness=ranked` by the boundary argument. This
+is operationally better: a lottery cannot be measured in one receipt, a
+deterministic mean can. Against the F154 eight-prompt candidate-mean standard
+error of 0.0187 %, `z ~ 10.5`. **One receipt settles it.** The 2-df interval
+is wide; the point estimate is what is priced.
+
+**A contradiction now named.** The co-timed serial control shows wiring speeds
+the SERIAL leg by -0.8665 %, 1.8x the candidate leg. The serial leg does zero
+drafting and never touches the head, yet F12 concluded from the plutarch
+zero-dose control (139-fold rejection) that the displaced object is touched
+only on drafting rounds and is therefore the head. Resolution adopted: **local
+wiring measures a BACKBONE effect; the ranked two-state lottery is a HEAD
+admission effect; two mechanisms, one integer, and the ship helps both.**
+Rung 10a is therefore NOT evidence for the lottery. Alphonse's §7
+pre-registration (the step must disappear from the next three receipts) stands
+as the only test of the lottery story, alongside the §4 admission probe.
+Requested and not yet reported: the serial-leg effect for `s64 -> s512`
+specifically.
+
+**Bound A retired a second time.** `Memory.numResources` is 4,454 at sizing
+but has a steady-state maximum of **8,271** during decode, mean 6,072. On the
+steady count the page-rounding tax is 64.62 MiB expected / 129.23 MiB worst,
+so the floor is **283.33 / 347.94 MiB**. 256 MiB fails even the expected case.
+**512 MiB confirmed with 164 MiB of spare against the worst frame.**
+
+---
+
+### 285.3 — FINDING 159. THE LOCAL RATIO AND THE RANKED VALUE CAN HAVE OPPOSITE SIGNS. FIRST MEASURED CASE
+
+From the same rung 10a session:
+
+```
+contrast                         absolute candidate time   local mtp_decode_speedup
+positive control none -> s512          -0.4839 % better         -0.3846 % WORSE
+treatment        s64  -> s512          -0.1968 % better         +0.3682 % better
+```
+
+Cause: on the local host both legs run the candidate binary, so wiring speeds
+the co-timed serial leg by -0.8665 %, nearly twice the candidate leg's
+-0.4839 %, and the ratio inverts. On the ranked runner the serial numerator
+comes from the runner-owned prebuilt baseline workspace, so
+`d ln(ranked baseline serial time) / dx = 0` and the ranked value is the
+absolute candidate improvement alone.
+
+**Had Alphonse read `mtp_decode_speedup` he would have thrown the fix away.**
+This is the case `senpai/verify-ranked-score-boundary.sh` was written against
+and the first time the campaign has measured it. Sent to Thorfinn, whose
+ABCCBA arm was running at the time.
+
+Standing instruction reinforced: report **absolute candidate seconds per
+token** as the headline of every local arm. The local ratio is direct evidence
+only for changes whose causal path is confined to the candidate MTP leg.
+
+---
+
+### 285.4 — FINDING 160. EDWARD'S `f` HAD A PROVENANCE CAUSE, AND FIVE INSTRUMENTS NOW AGREE
+
+**(a) The provenance trace.** `research/e128_state_fe.py:401-409` is a subset
+fit on `mbar >= 4.5`, n = 996 of 1,616, written as a diagnostic asking whether
+`f` is identified separately from the break. On that subset almost every row
+has already crossed its pass step, the pass regressor is nearly constant, and
+`f` collapses toward zero. Edward quoted the diagnostic coefficient as the
+population coefficient in F7, F8 and F10. The full panel was two lines above
+in the same output: `b_lo 5395.7+-191.9  d 3975.9+-479.8  f 3152.4+-329.2`.
+**FINDING 156 predicted exactly this: the fitted cross-sectional `f` was the
+sole outlier against three other instruments, and it had a cause.**
+
+**(b) `f` is not identified on our own curve.** `passes(M) == 1 + 1[M>=6]` on
+every reachable `M`; `rank[1, M, passes, break] = 3 of 4`. Only `M = 9`
+separates them and `segmentedVerifyDepthCap = 7` caps us at `M = 8`. Our
+`jump = +10322.5 +- 365.1 us` IS a pass price on our data.
+
+**(c) `f` fitted on board subsets, row + prompt FE, SEs clustered by row:**
+
+```
+all rows           n 1616  rows 202   b 6644.5+-139.7   f  3197.4+- 370.6
+modal table only   n  968  rows 121   b 7069.3+-182.9   f  -710.9+-1953.3   unidentified
+non-modal rows     n  648  rows  81   b 6777.2+-246.7   f  2863.2+- 265.6
+hinge at 5.000     b_lo 5627.7   d 4038.6+-427.4        f  3473.5+- 321.1
+matched natural experiment, 37 already-one-pass-at-6 rows:  tau_hi -3439.9+-504.8
+```
+
+**(d) EVERY ESTIMATOR IS A LOWER BOUND, WITH THE SIGN DERIVED.** Register
+pressure and pass count move in opposite directions by construction, because
+`NA = IPG`:
+
+```
+contrast                            passes        NA        reg floats   direction
+our table, M = 5 -> 6               1 -> 2 cost   5 -> 3    65 -> 39     partial cancel
+one-pass rows vs modal, at M = 6    2 -> 1 gain   3 -> 6    39 -> 78     partial cancel
+```
+
+So `jump = f - occupancy_benefit(65->39)` giving `f >= 10322.5`, and
+`tau_hi = f - occupancy_cost(39->78)` giving `f >= 3439.9`. A pooled fit
+averages over tables where the two channels cancel to different degrees and is
+attenuated toward zero. **This is FINDING 145 with a sign attached.** General
+lesson recorded: when two channels of a change move in opposite directions, a
+pooled cross-sectional fit estimates their difference, not either part, and is
+a lower bound on whichever part was named.
+
+**(e) A fifth instrument that was in the repository all along.**
+`Qwen36MTPBlockSession.swift:894-922`, the E68 rung-1 constants at
+`V = 0.060300 s`, decode to marginal QMV microseconds for the step into each
+verify width:
+
+```
+into 2   5005.0     into 5  13405.3     into 8  10527.1
+into 3   6750.9     into 6  27308.2     into 9  14779.8
+into 4  10035.2     into 7  15437.8
+```
+
+**Excess at the width-6 boundary = 13,902.9 us.** Different job `21ac5458`,
+different method (isolated whole-table QMV timing), different session, 1.35x
+above our curve's 10,322 us. The source comment states it in words. Five
+instruments now cluster between 2,863 and 13,903 us; the 50.4 us outlier has a
+named cause.
+
+**(f) The board is monotone in one-pass-ness.** 202 rows carry a wide
+`m`-table in 18 distinct tables:
+
+```
+rows   mean official   max        IPG at 6,7,8   note
+ 121      2.824611   2.948186     3,4,4          modal, two-pass
+   7      3.063672   3.130987     6,7,8          Thorfinn's exact table
+   1      3.139064   3.139064     full identity  board maximum
+```
+
+Whole-row score is confounded, so this is context and not an estimate. It is
+still the case that the single highest-scoring row on the board runs one pass
+at every width.
+
+**(g) The register model closes on measured hardware.** Vector-register floats
+per thread in `qwen_e120_qmv_wide<NA>` are `13 * NA`
+(`acc[4NA] + partial[4NA] + a0..a3[4NA] + sums[NA]`). Add a fixed 27 and it
+reproduces Askeladd's measured g17s D_S census exactly: NA=6 -> 105 against
+105/0, NA=7 -> 118 against 118/0, NA=8 -> 131 over the 126 ceiling against a
+measured 126/16, NA=9 -> 144.
+
+Two consequences. **`{9:9}` is dead by arithmetic.** And with the ceiling at
+126 the largest reachable one-pass width at `rows_per_simd = 4` on g17s is
+`IPG = (126-27)/13 = 7.6`, so **7**. FINDING 157's balance law independently
+puts the optimum at `IPG = 6.08`. **`{6:6, 7:7}` is simultaneously the
+theoretical optimum and the register-ceiling maximum.** Thorfinn did not pick
+a point on a ramp; he picked the top of the hill.
+
+**Third independent closure of `rows_per_simd = 8`:** at RPS = 8 the register
+cost is `(3*8+1)*IPG + 27 <= 126`, so `IPG <= 3`, while F157 requires
+`IPG >= 12` to break even. The RPS axis is closed in both directions by
+occupancy, by the balance law, and by the register ceiling.
+
+---
+
+### 285.5 — TWO CORRECTIONS FROM EDWARD'S PR #129 F10, WHICH NEVER REACHED THE ADVISOR
+
+**FINDING 82 IS DEGRADED AS A PRICING SURROGATE.** `published ~
+0.5*beagle + 0.5*min4` is exact on only 770 of 806 rows (95.5 %), mean error
+-0.2139 %, **sd 1.4638 %**, max abs 17.40 %. That is about 15x the 0.0967 %
+serial term. **Do not use it to price anything.** FINDING 83's exact marginal
+prompt weights are UNAFFECTED, because they were derived by exact per-prompt
+perturbation of the true median, not through the surrogate. F83 remains the
+pricing instrument; F82 is intuition only.
+
+**THE RANKED AND LOCAL WIDTH FRAMES DIFFER BY ABOUT 5x FOR A ONE-PASS TABLE.**
+
+```
+frame                   mean M    P(M >= 6)
+ranked, F83-weighted    5.7732      0.5861
+local benchfixture      7.3590      0.8718
+```
+
+A one-pass table at widths 6 and 7 is paid in proportion to the mass above the
+cliff, and the local fixture carries roughly five times too much of it. This
+is Rule 57 quantified and it lands directly on Thorfinn's ABCCBA arm, which
+was running when the correction arrived. Instruction issued: report
+`harness=local`, attach the realised width histogram, and re-weight to
+`mass(6) = 0.188`, `mass(7) = 0.211` before comparing with the pre-registered
+table.
+
+---
+
+### 285.6 — C1 SPLITS INTO TWO CANDIDATES. `hybridA` IS WORTH ABOUT +0.76 % ON ITS OWN
+
+Askeladd proposed 120 `hybridA` control cells beside the 120 assigned cells,
+keeping today's exact affine-2 centroid readout and sketching only the
+24,584-row leaf stage, so a stage-A failure and a stage-B failure are
+distinguishable. Approved, and repriced from a control to a candidate:
+
+```
+stage                                          today    full C1   hybridA
+readout A, 12,292 centroid rows, affine-2      19.67     1.62      19.67
+readout B, 24,584 probed rows, affine-2        39.33     3.25       3.25
+affine-2 rescore of 256 rows                      -      0.41       0.41
+packed query projection R[5120,1024], 1-bit       -      0.66       0.66
+mu                                                -      0.01       0.01
+stage total                                    59.00     5.94      24.00
+removed from the 323.59 MB step                   -     53.06      35.00
+fraction of the step                              -     16.40 %    10.82 %
+```
+
+`hybridA` captures **65.96 %** of full C1, so **+0.59 % to +0.97 %, central
++0.76 %**, with a break-even miss rate of `0.76/203 = 3.74e-3` against today's
+`2.266e-4`, still 16x headroom. **T0 and T0b must be evaluated separately for
+full C1 and for `hybridA`, so a stage-A kill does not take `hybridA` down with
+it.**
+
+---
+
+### 285.7 — ASKELADD'S ALIGNMENT DEFECT, FOUND AND FIXED BEFORE IT COST A SWEEP
+
+`E87HiddenDump.record` sits inside `draftTokenID`, so the instrument emits one
+row per draft-head call, not one per emitted token. Yield per window is 459 to
+575, equal to `sum(effective_draft_lengths)` plus a small fixed warmup, not the
+projected flat 489. The planned alignment of sample `i` to
+`emitted_tokens[i+1]` would have produced a silently shifted `q` in **every
+cell of the 240-cell sweep**, and the sweep would have completed and reported
+wrong numbers.
+
+Repaired by using the parent's own `row_ledger`, which carries `token`,
+`reference_token`, `accepted`, `round`, `draft_index`, `top2_tokens` and
+`top2_logits` per evaluated row. The screen drops the warmup prefix and then
+asserts token by token that dumped proposal ids equal the ledger's draft
+tokens; a mismatch raises rather than shifts. All eleven seeds pass;
+`beagle_a` has 505 ledger draft rows against 509 shard rows with 4 warmup
+skipped and zero mismatches.
+
+It also makes `q = P(arm token == reference_token)` measured rather than
+modelled, and the price the exact count `(shipped hits - arm hits)/n` on the
+same substituted rows, which conditions `p` on those rows instead of pooling.
+Strictly better than the `m x (p - q)` form the advisor specified.
+
+Corpus state: beagle 1,009 captured, min_carriers 3,049, zero_weight 1,573; a
+second job adds eleven windows, projecting beagle ~5,050 from 10 windows and
+min_carriers ~4,560 from 9. Both clear the F1.3 floor of 4,000. Two extra
+beagle windows at paragraph fractions 0.79 and 0.87 approved.
+**`essays_bacon` is the useful outlier**: acceptance 0.3989 at mean draft
+1.996 over 285 rounds, the hardest carrier in the corpus, inside a gating
+stratum, F83 weight 0.1598. Report it as its own line.
+
+---
+
+### 285.8 — WHAT CHANGED IN THE CAMPAIGN'S POSITION
+
+1. **Receipt 1 is in flight.** Nothing about the archive changed; two advisor
+   statements about it did.
+2. **The depth-price axis is closed, permanently, and for a better reason than
+   FINDING 155 gave.** The shipped price is flat and wrong; the exactly
+   correct price was already measured and lost by -2.8508 %; the level fix was
+   already measured and lost by -0.9673 %. The bottleneck is information, not
+   price. E134 rung 1 is the whole experiment.
+3. **Alphonse's fix is a deterministic -0.1968 %, measurable in one receipt at
+   z ~ 10**, rather than a lottery worth +0.13 % in expectation that no single
+   receipt can see. That is a better instrument position even though the
+   headline number fell.
+4. **C1 has a survivable fallback worth +0.76 %** if the centroid stage fails.
+5. **`{6:6, 7:7}` is provably the top of the hill** at `rows_per_simd = 4` on
+   g17s, by two independent arguments that meet at the same pair of widths.
+
+### 285.9 — RULES AND ERRORS ADDED
+
+- **RULE 102.** A counterbalanced palindrome cancels drift in the arm means
+  and destroys it into the within-arm spreads. Never read a within-arm spread
+  from a palindrome as a dispersion or bimodality instrument.
+- **ADVISOR ERROR 117.** Published FINDING 155, "the shipped depth price is
+  our ranked cost curve", while also publishing that the `rankedprice` arm
+  scored -2.8508 %. The two are mutually exclusive and the contradiction was
+  in the same document.
+- **ADVISOR ERROR 118.** Asked Alphonse (F13 item 3) to claim the dispersion
+  asymmetry as corroboration from a palindrome design that structurally cannot
+  provide it.
+- **Stop-list change.** The contingent reopening of the depth-PRICE axis
+  (ledger 284.2) is WITHDRAWN; the axis is closed.
+- **Stop-list confirmation.** `rows_per_simd = 8` closed a third time, by the
+  register ceiling.
