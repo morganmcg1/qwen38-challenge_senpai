@@ -795,13 +795,10 @@ def sketch_state(screen: Screen, sketch: Sketch, f, x: mx.array) -> dict:
     """
     q = sketch.query(x, screen.mu)
     x_norm = mx.linalg.norm(x.astype(mx.float32) - screen.mu, axis=1)
-    cent = sketch.score_centroids(q, x_norm)
-    order_c = mx.argsort(-cent, axis=1)
-    crank_r = mx.take_along_axis(
-        mx.argsort(order_c, axis=1), f["leaf_r"][:, None], axis=1)[:, 0]
+    order_c = mx.argsort(-sketch.score_centroids(q, x_norm), axis=1)
     row_perm = mx.take(sketch.score_rows(q, x_norm), screen.index.order_mx, axis=1)
-    mx.eval(order_c, crank_r, row_perm)
-    return {"order_c": order_c, "crank_r": crank_r, "row_perm": row_perm}
+    mx.eval(order_c, row_perm)
+    return {"order_c": order_c, "row_perm": row_perm}
 
 
 def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
@@ -815,13 +812,7 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
     stage-A failure and a stage-B failure can be told apart and priced apart.
     """
     b = f["b"]
-    if stage_a == "sketch":
-        order_c = state["order_c"]
-        crank_r = state["crank_r"]
-    else:
-        order_c = f["order_a2"]
-        crank_r = f["crank_a2"]
-
+    order_c = state["order_c"] if stage_a == "sketch" else f["order_a2"]
     row_perm = state["row_perm"]
     max_clusters = max(max(1, math.ceil(p * LEAVES)) for p in probe_fractions)
     positions_full = screen.probe_positions(order_c, max_clusters, b)
@@ -842,7 +833,10 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
         is_r = is_r_full[:, :width]
         comp = comp_full[:, :width]
         positions = positions_full[:, :width]
-        probe_hit = crank_r < clusters
+        # Read the probe hit off the probed set itself rather than off the
+        # canonical leaf of the argmax row: a padding copy can sit in another
+        # leaf, and then `crank_r < clusters` and `is_r` would disagree.
+        probe_hit = mx.any(is_r, axis=1)
 
         # F1.4c. The rank of the exact argmax in the sketch ordering. A sample
         # whose leaf was never probed is beyond every width, so it is parked at
