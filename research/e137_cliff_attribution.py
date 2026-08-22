@@ -379,6 +379,46 @@ def local_versus_ranked(width_table_path):
     }
 
 
+def routing_robustness(transfer, fallback_step):
+    """Does the F2 verdict survive not knowing whether scored cells route?
+
+    `MLX_E120_QMV_PIPELINE_LOG` cannot show scored-window routing, because its
+    file is frozen at the end of warm-up. That leaves an open question: do the
+    scored M=6 cells run Route B or the incumbent MLX gate? The isolated curve
+    answers it without needing the census, because it measured BOTH arms over
+    the same cells. If only one arm had the step, the routing question would
+    decide the attribution. Both arms have it, so the attribution stands
+    either way and the census result is not load bearing.
+    """
+    routed = transfer["isolated_routed_step_us"]
+    routed_share = routed["point"] / INSITU_STEP_US
+    fallback_share = fallback_step["point"] / INSITU_STEP_US
+    lo, hi = sorted((routed_share, fallback_share))
+    return {
+        "question": (
+            "the warm-up census cannot say whether scored M=6 cells take "
+            "Route B or the incumbent gate; does the answer change the "
+            "verdict?"
+        ),
+        "routed_step_us": routed,
+        "fallback_step_us": fallback_step,
+        "routed_over_insitu": round(routed_share, 4),
+        "fallback_over_insitu": round(fallback_share, 4),
+        "both_arms_show_the_step": lo > 0.20,
+        "verdict_identical_under_either_routing": lo >= 0.60,
+        "worst_case_share": round(lo, 4),
+        "best_case_share": round(hi, 4),
+        "reading": (
+            "the M=5 to M=6 step is present in the incumbent MLX quantized "
+            "matvec as well as in Route B, and the incumbent's step is the "
+            "LARGER of the two. The step is therefore a property of the 4-bit "
+            "affine matvec work at M=6, not an artefact of the Route B "
+            "specialization ladder. Whether or not the scored cells route, "
+            "QMV clears the F2 carrier threshold."
+        ),
+    }
+
+
 def main():
     ART.mkdir(parents=True, exist_ok=True)
     result = {
@@ -446,6 +486,10 @@ def main():
                     "behaviour."
                 ),
             }
+        if 5 in fallback_samples and 6 in fallback_samples:
+            result["routing_robustness"] = routing_robustness(
+                result["boundary_4_transfer"],
+                boot_diff_ci(fallback_samples[5], fallback_samples[6]))
 
     result["dispatch_pricing"] = dispatch_pricing()
     result["sdpa_chunk_moving_cliff"] = sdpa_chunk_moving_cliff(

@@ -1,0 +1,185 @@
+{
+ "answer_status": "unobservable_with_this_instrument",
+ "experiment": "e137-f2-step1-route-b-coverage",
+ "instrument_limit": "flushPipelineLog runs only on a first-seen key or width plus an atexit handler; QwenRuntimeWorker.swift:1905 SIGTERMs the worker and :1911 SIGKILLs it, so atexit never runs and the on-disk file is frozen at the first dispatch of the last new width.",
+ "leg": {
+  "base_sha": "c090754fe5fe9b0f94d9193675913665b13757e9",
+  "chip": "Apple M4 Pro",
+  "cool_gate": "0",
+  "cool_gate_passed_real_gate": "false",
+  "dirty": null,
+  "gate_qualified_for_timing": "false",
+  "gpu_temp_entry_c": "37.55898666381836",
+  "gpu_temp_exit_c": "61.486061096191406",
+  "head_dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+  "local_mode": "--local-iterate",
+  "scored_rounds": 78,
+  "scored_tokens": 513,
+  "tokens": "512",
+  "width_histogram": {
+   "2": 1,
+   "4": 4,
+   "5": 5,
+   "6": 5,
+   "7": 3,
+   "8": 60
+  },
+  "worker_sha256": "e3bfdf904fc9eeed1a078f7dd55011fa14d3634e641ce304e49aeff11e47b3c9"
+ },
+ "linear_cells_per_forward": 257,
+ "not_a_timing_leg": "MLX_E120_QMV_PIPELINE_LOG adds a host dictionary update to every routed dispatch; this leg's seconds per token are not comparable with any timed arm.",
+ "per_width": [
+  {
+   "dispatches_at_snapshot": 0,
+   "equals_one_forward": false,
+   "first_dispatch_ordinal": null,
+   "m": 2,
+   "scored_linear_cells_unobservable": 257,
+   "scored_rounds_at_this_width": 1,
+   "warmed_before_any_scored_token": false
+  },
+  {
+   "dispatches_at_snapshot": 257,
+   "equals_one_forward": true,
+   "first_dispatch_ordinal": 0,
+   "m": 3,
+   "scored_linear_cells_unobservable": 0,
+   "scored_rounds_at_this_width": 0,
+   "warmed_before_any_scored_token": true
+  },
+  {
+   "dispatches_at_snapshot": 257,
+   "equals_one_forward": true,
+   "first_dispatch_ordinal": 257,
+   "m": 4,
+   "scored_linear_cells_unobservable": 1028,
+   "scored_rounds_at_this_width": 4,
+   "warmed_before_any_scored_token": true
+  },
+  {
+   "dispatches_at_snapshot": 257,
+   "equals_one_forward": true,
+   "first_dispatch_ordinal": 514,
+   "m": 5,
+   "scored_linear_cells_unobservable": 1285,
+   "scored_rounds_at_this_width": 5,
+   "warmed_before_any_scored_token": true
+  },
+  {
+   "dispatches_at_snapshot": 257,
+   "equals_one_forward": true,
+   "first_dispatch_ordinal": 771,
+   "m": 6,
+   "scored_linear_cells_unobservable": 1285,
+   "scored_rounds_at_this_width": 5,
+   "warmed_before_any_scored_token": true
+  },
+  {
+   "dispatches_at_snapshot": 257,
+   "equals_one_forward": true,
+   "first_dispatch_ordinal": 1028,
+   "m": 7,
+   "scored_linear_cells_unobservable": 771,
+   "scored_rounds_at_this_width": 3,
+   "warmed_before_any_scored_token": true
+  },
+  {
+   "dispatches_at_snapshot": 257,
+   "equals_one_forward": true,
+   "first_dispatch_ordinal": 1285,
+   "m": 8,
+   "scored_linear_cells_unobservable": 15420,
+   "scored_rounds_at_this_width": 60,
+   "warmed_before_any_scored_token": true
+  },
+  {
+   "dispatches_at_snapshot": 1,
+   "equals_one_forward": false,
+   "first_dispatch_ordinal": 1542,
+   "m": 9,
+   "scored_linear_cells_unobservable": 0,
+   "scored_rounds_at_this_width": 0,
+   "warmed_before_any_scored_token": true
+  }
+ ],
+ "question": "does every scored linear cell reach Route B at every realised verify width, or do some decline `routable` at M >= 6?",
+ "route": {
+  "arm": "sumtable",
+  "by_key": {
+   "qmv_sums_na3_v2/USE_TABLE=true": 1,
+   "qmv_sums_na4_v2/USE_TABLE=true": 514,
+   "qmv_sums_na5_v2/USE_TABLE=true": 257,
+   "qmv_sums_na6_v2/USE_TABLE=true": 257,
+   "qmv_sums_na7_v2/USE_TABLE=true": 257,
+   "qmv_wide_na3_v2": 257,
+   "xsums_v1": 1286
+  },
+  "default_route": "e120_default_route/tiered_switch/onepass67",
+  "entry": "tiered_switch",
+  "first_index_by_key": {
+   "qmv_sums_na3_v2/USE_TABLE=true": 1542,
+   "qmv_sums_na4_v2/USE_TABLE=true": 257,
+   "qmv_sums_na5_v2/USE_TABLE=true": 514,
+   "qmv_sums_na6_v2/USE_TABLE=true": 771,
+   "qmv_sums_na7_v2/USE_TABLE=true": 1028,
+   "qmv_wide_na3_v2": 0,
+   "xsums_v1": 257
+  },
+  "grid": "wide",
+  "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4",
+  "qmv_specializations": 7,
+  "table": "onepass67",
+  "total_key_increments": 2829
+ },
+ "shape_cell_counts": {
+  "full_attn.o_proj": 16,
+  "full_attn.qkv_proj_fused": 16,
+  "head.lm_head": 1,
+  "linear_attn.in_proj_fused_qkvzba": 48,
+  "linear_attn.out_proj": 48,
+  "mlp.down": 64,
+  "mlp.gate_up_fused": 64
+ },
+ "tag": "e137pipe512",
+ "verdict": {
+  "f2_stop_condition": "width 6 shows fewer than 257 dispatches",
+  "f2_stop_condition_fired": false,
+  "hypothesis_scored_cells_decline_routable_at_m6": "not_testable_with_this_instrument",
+  "width_6_dispatches_at_snapshot": 257,
+  "width_6_identical_to_every_other_fully_warmed_width": true
+ },
+ "warmup_gate": {
+  "every_routed_width_warmed_before_scored_window": true,
+  "first_dispatch_ordinals": [
+   0,
+   257,
+   514,
+   771,
+   1028,
+   1285,
+   1542
+  ],
+  "gaps_equal_one_forward": true,
+  "no_pipeline_first_compiled_in_timed_window": true,
+  "ordinal_gaps": [
+   257,
+   257,
+   257,
+   257,
+   257,
+   257
+  ],
+  "routed_widths": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "snapshot_is_end_of_warmup": true,
+  "snapshot_ordinal": 1543,
+  "warmup_only_prediction": 1543
+ }
+}
