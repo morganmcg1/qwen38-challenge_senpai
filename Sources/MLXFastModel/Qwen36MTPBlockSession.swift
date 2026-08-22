@@ -864,6 +864,35 @@ public final class Qwen36MTPBlockSession {
     /// reproduce that experiment's published arithmetic exactly.
     internal static let boundaryTierFactor = 2.0301
 
+    /// E134: the verify width at which the QMV entry point stops covering the
+    /// rows in one group and reads the whole projection weight set a second
+    /// time.
+    ///
+    /// The dispatch table at `Qwen35.swift:1565` is
+    /// `[(3,3), (4,4), (5,5), (6,3), (7,4), (8,4), (9,3)]`, so
+    /// `passes(M) = ceil(M / IPG(M))` is 1 up to width 5 and 2 from width 6.
+    /// `E134PassBoundaryPriceTests` parses that literal and fails if the table
+    /// moves the boundary, because this constant and the tier below are fitted
+    /// to one dispatch table and to nothing else.
+    internal static let passBoundaryVerifyWidth = 6
+
+    /// E134: the tier factor for the pass boundary.
+    ///
+    /// E56 fitted `boundaryTierFactor` for widths 5 and 7 and this stack never
+    /// priced width 6. Our own ranked round-cost curve puts a `+14,711 us`
+    /// step at that width against a `3,446 us` local slope, a true cost ratio
+    /// of `4.27`. Pricing the true ratio loses: the replayed ranked median
+    /// reads `-2.78 %` at `4.2689` and `-2.23 %` at E56's `2.0301`. The
+    /// decision threshold is not the cost ratio, because the reach estimator
+    /// it multiplies is itself censored and biased low, so the paying tier is
+    /// far below the physical one. The replayed optimum is a broad plateau
+    /// from `1.35` to `1.60`, worth `+2.34 %` leave-one-prompt-out, and this
+    /// value sits in the middle of it.
+    ///
+    /// Rule 79: no local timing leg can validate this. Only a ranked receipt
+    /// can, which is why `depthPriceArm` still ships `ship`.
+    internal static let passBoundaryTierFactor = 1.45
+
     /// The shipped flat price. `cumulative` repeats the tip's closed form
     /// instead of accumulating: `1.0 + 0.18 + 0.18 + 0.18` and
     /// `1.0 + 3.0 * 0.18` differ by one ulp, and a control arm that is not
@@ -880,13 +909,14 @@ public final class Qwen36MTPBlockSession {
     /// One priced boundary, holding the total. `width` is the verify width
     /// the priced step ENTERS, so it selects index `width - 2`.
     internal static func makeBoundaryDepthPrice(
-        enteringVerifyWidth width: Int
+        enteringVerifyWidth width: Int,
+        tier: Double = boundaryTierFactor
     ) -> DepthPrice {
         let count = Qwen36MTPLimits.maxDepth
         let within = Double(count) * headStepCostRatio
-            / (Double(count - 1) + boundaryTierFactor)
+            / (Double(count - 1) + tier)
         var marginal = [Double](repeating: within, count: count)
-        marginal[width - 2] = within * boundaryTierFactor
+        marginal[width - 2] = within * tier
         return DepthPrice(marginal: marginal,
                           cumulative: prefixCosts(marginal))
     }
@@ -943,7 +973,7 @@ public final class Qwen36MTPBlockSession {
     }
 
     internal enum DepthPriceArm: String {
-        case ship, pb5, pb7, pbfit
+        case ship, pb5, pb6, pb7, pbfit
     }
 
     /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
@@ -963,6 +993,9 @@ public final class Qwen36MTPBlockSession {
         switch depthPriceArm {
         case .ship: return makeUniformDepthPrice()
         case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
+        case .pb6: return makeBoundaryDepthPrice(
+            enteringVerifyWidth: passBoundaryVerifyWidth,
+            tier: passBoundaryTierFactor)
         case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
         case .pbfit: return makeMeasuredDepthPrice()
         }
