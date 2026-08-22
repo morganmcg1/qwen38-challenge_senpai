@@ -20,15 +20,18 @@ Runs published here:
       test that decides which branch of `installExactQKVRows` is live, the
       exact MLX op list per arm, and the four-arm repricing under campaign
       rule 69 class coefficients.
+  `e124-stage05-median-regime-corpus`
+      Twelve single-arm 512-token legs that ask whether any local prose seed
+      reproduces the hidden median acceptance regime. Carries the corpus
+      manifest, the per-seed acceptance and depth, the pre-registered corpus
+      criterion verdict, and the two degeneration diagnostics.
   `e124-stage1-acceptance`
-      The acceptance exchange at 512 decode tokens, one leg per arm in one
-      session with no rebuild between legs. Cluster-bootstrap intervals,
-      per-position conditionals, the 0.21 pt kill decision per arm, and the
-      cross-arm emitted-token exactness check.
+      Closed unrun by Advisor Error 93. E82 had already measured this exact
+      mechanism end to end, so Stage 1, Stage 2 and Stage 3 were stopped
+      before any GPU allocation. `research/e124_accept.py` and
+      `research/e124_stage1_session.sh` exist and were never executed.
   `e124-stage2-timing`
-      Published only when Stage 1 leaves a surviving arm. ABBA-counterbalanced
-      absolute candidate seconds per token against a fresh unchanged base in
-      the same session.
+      Closed unrun by Advisor Error 93 for the same reason.
 
 Every timed leg here is local and ungated unless its own record says
 otherwise, so `timing_valid`, `cool_gate_passed_real_gate` and
@@ -74,8 +77,17 @@ ARM_NOTE = {
 
 CENSUS = OUT / "e124-head-census.json"
 PRICE = OUT / "e124-price.json"
+REGIME = OUT / "e124-regime.json"
+MANIFEST = pathlib.Path("research/e124-corpus-manifest.json")
 ACCEPT = OUT / "e124-acceptance.json"
 TIMING = OUT / "e124-timing.json"
+
+ANCHOR_SEED = "benchfixture"
+SEED_CAVEAT = {
+    "medicine_hippoc": (
+        "the 512-token window landed in Adams' critical introduction, so the "
+        "text is medical scholarly commentary, not a Hippocratic treatise"),
+}
 
 
 def gate_flags(valid: bool = False) -> dict[str, object]:
@@ -218,6 +230,100 @@ def log_stage0() -> None:
     run.finish()
 
 
+def log_stage05() -> None:
+    regime, manifest = load(REGIME), load(MANIFEST)
+    if regime is None:
+        print("stage05: regime artifact missing, skipped")
+        return
+
+    criterion = regime["corpus_criterion"]
+    source = {s["id"]: s for s in (manifest or {}).get("seeds", [])}
+    run = start(
+        "e124-stage05-median-regime-corpus", "measurement",
+        "Does any local prose seed reproduce the hidden median acceptance "
+        "regime for the right reason, or only by late-window greedy-decode "
+        "degeneration?",
+        {
+            "stage": 0.5,
+            "decode_tokens": 512,
+            "island_arm": "all",
+            "head": "declared",
+            "legs": len(regime["seeds"]),
+            "anchor_seed": ANCHOR_SEED,
+            "split_tokens": regime["split_tokens"],
+            "criterion_accept_rate_of_drafted_min":
+                criterion["accept_rate_of_drafted_min"],
+            "criterion_mean_depth_min": criterion["mean_depth_min"],
+            "criterion_seeds_min": criterion["seeds_min"],
+            "criterion_required_domains": criterion["required_domains"],
+            "corpus_tokenizer_sha256": (manifest or {}).get("tokenizer_sha256"),
+            "corpus_mirror": (manifest or {}).get("mirror"),
+            "seed_caveat": SEED_CAVEAT,
+        })
+
+    seeds = wandb.Table(
+        columns=["seed", "domain", "role", "gutenberg_id", "seed_sha256",
+                 "rounds", "mean_depth", "accepted_per_round",
+                 "accept_rate_of_drafted", "accept_rate_first_128",
+                 "accept_rate_last_128", "longest_repeated_ngram_tokens",
+                 "longest_repeated_ngram_gap_tokens",
+                 "longest_immediate_repeat_tokens",
+                 "distinct_token_ratio_first_128",
+                 "distinct_token_ratio_last_128", "meets_criterion_accept",
+                 "meets_criterion_depth", "in_median_regime",
+                 "all_tokens_matched", "residual_divergence_count",
+                 "caveat"])
+    for seed in regime["seeds"]:
+        sid = seed["seed_id"]
+        anchor = sid == ANCHOR_SEED
+        src = source.get(sid, {})
+        seeds.add_data(
+            sid, seed["domain"], "anchor" if anchor else "corpus candidate",
+            src.get("gutenberg_id"), src.get("sha256"),
+            seed["rounds"], seed["mean_depth"], seed["mean_accepted"],
+            seed["accept_rate_of_drafted"], seed["accept_rate_first_128"],
+            seed["accept_rate_last_128"],
+            seed["longest_repeated_ngram_tokens"],
+            seed["longest_repeated_ngram_gap_tokens"],
+            seed["longest_immediate_repeat_tokens"],
+            seed["distinct_token_ratio_first_128"],
+            seed["distinct_token_ratio_last_128"],
+            None if anchor else seed["meets_criterion_accept"],
+            None if anchor else seed["meets_criterion_depth"],
+            None if anchor else seed["in_median_regime"],
+            seed["all_tokens_matched"], seed["residual_divergence_count"],
+            SEED_CAVEAT.get(sid, ""))
+        run.summary[f"accept_rate_of_drafted/{sid}"] = (
+            seed["accept_rate_of_drafted"])
+        run.summary[f"mean_depth/{sid}"] = seed["mean_depth"]
+        run.summary[f"accept_rate_first_128/{sid}"] = (
+            seed["accept_rate_first_128"])
+    run.log({"seeds": seeds})
+
+    rejections = wandb.Table(columns=["seed", "position", "count"])
+    for seed in regime["seeds"]:
+        for pos, count in seed["first_rejection_position_histogram"].items():
+            rejections.add_data(seed["seed_id"], pos, count)
+    run.log({"first_rejection_position": rejections})
+
+    run.summary["corpus_usable"] = criterion["corpus_usable"]
+    run.summary["passing_seed_count"] = criterion["passing_seed_count"]
+    run.summary["passing_seeds"] = criterion["passing_seeds"]
+    run.summary["missing_required_domains"] = (
+        criterion["missing_required_domains"])
+    prose = [s for s in regime["seeds"] if s["seed_id"] != ANCHOR_SEED]
+    run.summary["prose_seeds_over_criterion_on_first_128"] = sum(
+        1 for s in prose
+        if s["accept_rate_first_128"] >= criterion["accept_rate_of_drafted_min"])
+    run.summary["passers_reaching_last_128_saturation"] = sum(
+        1 for s in prose
+        if s["in_median_regime"] and s["accept_rate_last_128"] >= 0.999)
+    run.summary["all_legs_matched"] = all(
+        s["all_tokens_matched"] for s in regime["seeds"])
+    attach(run, REGIME, MANIFEST)
+    run.finish()
+
+
 def log_stage1() -> None:
     accept = load(ACCEPT)
     if accept is None or len(accept["legs"]) < 2:
@@ -356,6 +462,7 @@ def log_stage2() -> None:
 
 RUNS = {
     "stage0": log_stage0,
+    "stage05": log_stage05,
     "stage1": log_stage1,
     "stage2": log_stage2,
 }
