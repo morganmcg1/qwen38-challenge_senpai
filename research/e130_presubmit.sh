@@ -8,16 +8,19 @@
 # then the one expensive gated `--local-submit` leg.
 #
 # THE WITNESS SET IS NOT E121'S. Three needles in the E121 set describe the
-# E121 arm, which the campaign reverted, and one more describes a Qwen35.swift
-# state that Route B superseded. Carrying them forward would fail a correct
-# build, so each is inverted here against the current base and the inversion is
-# the guard that catches a stale worker:
+# E121 arm, which the campaign reverted. Carrying them forward would fail a
+# correct build, so each is inverted here against the current base:
 #
 #   E121 set                                    here            why
 #   require 'constexpr bool SHARE_SUMS ...'     forbid          arm reverted
 #   require 'threadgroup float sums_xchg[...]'  forbid          arm reverted
 #   forbid  'sums[m] += load_vector'            require         base bytes back
-#   forbid  'qwen35_dual_rms_norm_bf16_v1'      require         live on this base
+#
+# `forbid 'qwen35_dual_rms_norm_bf16_v1'` stays as the standing set has it. The
+# name is a live Swift literal in the current Qwen35.swift, so a source grep
+# argues for `require`, but the literal does not survive into the worker's
+# string table and `require` fails a correct build. Witness the binary, not the
+# source.
 #
 # THE DISCRIMINATING WITNESS FOR THIS ARM IS AN ABSENCE. `prune_na5_pair`
 # removes the `<T, 5, 5, true>` instantiation, so `--require` on it fails a
@@ -41,7 +44,7 @@ readonly WITNESS=(
   --require 'qmv_fast_crossrow_affine4_g64_m<T, 4, 4, true>'
   --require 'qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>'
   --require 'qwen35_dual_rms_norm_concat_bf16_v1'
-  --require 'qwen35_dual_rms_norm_bf16_v1'
+  --forbid  'qwen35_dual_rms_norm_bf16_v1'
   --require 'qwen_mtp_draft_selected_affine4_rerank_g64_v1'
   --require 'qwen_mtp_row_top32_partial'
   --require 'sums[m] += load_vector'
