@@ -50462,3 +50462,287 @@ C2 precision islands to affine-4 g64             +0.38 % to +0.45 %        REOPE
 ```
 
 Every research slot is occupied with a distinct falsifiable question, one submission is in flight, and the second and third submission candidates are named.
+
+## 294 — pb6 merged, the probe fraction repriced 3.3x upward, prefill closed, and a rival receipt reversed the sign of our own one-pass table
+
+Session of 2026-08-22, roughly 20:30Z to 21:45Z. Advisor base moved `328c4b9e` -> `7a427dfa` (merge of PR #134, pb6) -> `6115a8ad` (ledger 293). Campaign base for every submit call is unchanged at `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
+
+### 294.1 — E134 merged: the pass-boundary depth price is worth +2.4683 percent held out
+
+Edward's E134 r2 terminal result was accepted and merged at `7a427dfa`. Primary metric `e134_replayed_ranked_median_pct` 0.0 -> **+2.4683**, sd 0.0751, held out. W&B `0ei0glho`, `mqmj1vld`, `o3f61xzq`, `tdo9xtyp`, `gtz3tx3w`, `cd0mnqpy`.
+
+The mechanism is one boundary in the depth price table: `marginal[4]`, which prices the step into verify width 6, multiplied by tier 1.45. Everything else in the table stays flat at 0.18.
+
+Three results make this a merge rather than a maybe.
+
+**FM1 was refuted in edward's favour.** He replayed the shipped policy over the recorded round-start state of archived shipped legs and compared the ship price against the pb6 price on 617 scored rounds, with replayed ship depth equal to recorded depth on every one of them.
+
+```
+P(acc >= 5 | flipped by pb6)        0.5057   (44 of 87)
+P(acc >= 5 | kept, d_ship >= 5)     0.9304   (158 rounds)
+P(acc >= 5 | eligible population)   0.7796
+two-proportion z, flipped - kept   -7.67
+```
+
+pb6 declines the rounds that were going to fail anyway, so the replayed price is a lower bound rather than an optimistic one.
+
+**The tier grid closed FM4 on the upper side.** LOPO picks tier 1.45 in 48 of 48 folds, gap +0.0000, sd 0.0365, and the decline above the plateau is monotone with no second lobe.
+
+```
+tier      median_pct   mean depth   accept
+1.0000      +0.0000       4.384      0.749
+1.4500      +2.4880       4.052      0.763   SHIPPED
+1.7000      +2.0969       3.867      0.759
+1.7400      +1.9173       3.815      0.758
+1.8500      +0.6588       3.622      0.747
+```
+
+**The same-binary ABBA holds under Rule 114.** One worker binary `9e9899a1`, one commit `9f307b52`, twelve legs, arm changed only through `MLX_E134_DEPTH_PRICE_ARM`, every `ship` leg 78 rounds at 6.359 and every `pb6` leg 82 rounds at 5.854. Primary decode basis +2.2467 percent, sd 0.1541. `cool_gate_passed_real_gate false` and `gate_qualified_for_timing false` are preserved verbatim. Under Rules 79 and 115 this is a falsifier only, and it did not falsify.
+
+The mechanism table shows what pb6 does to the depth histogram:
+
+```
+fixture           d pb6  d ship   delta  R pb6  R ship
+beagle_a          4.153   4.244  -0.091    118     119
+benchfixture      5.854   6.359  -0.505     82      78
+essays_montaigne  3.430   3.438  -0.008    151     146
+medicine_hist     3.095   3.503  -0.409    169     153
+```
+
+pb6 evacuates verify width 6. Mass at depth 5 goes to zero on every fixture and moves either down to 4 or up past the boundary. The histogram becomes bimodal.
+
+### 294.2 — HARNESS DEFECT 37 is host-specific, and edward's Mac runs the full chain
+
+Edward completed `--local-submit` at phase 3 with score 1.7940401531940935, `passed true`, `all_tokens_matched true`, divergence 0. Thorfinn's and askeladd's Macs both fail the same command inside the MTP reference pass with `exit_status=15`. DEFECT 37 is therefore host-specific and not a universal blocker. The 512-token bare exactness leg remains the campaign substitute where it fails.
+
+Edward's four 512-token exactness legs all closed their row ledgers, declared equal to checked at 608, 562, 669 and 692, tail 118, 82, 151 and 169, rowbad 0, emitted 512, max rejected-tail logit delta 0.000e+00.
+
+### 294.3 — edward's correction to my composition arithmetic, which runs in his favour
+
+I had estimated the post-tight-grid value of pb6 as a point estimate. He showed it is a lower bound:
+
+```
+T'_ship - T'_pb6 = (T_ship - T_pb6) + D * (R_pb6 - R_ship)
+T'_ship          =  T_ship - D * R_ship
+```
+
+pb6 trades depth for rounds, and `R_pb6 > R_ship` on almost every leg, so pb6 collects more of any flat per-round saving. The tight grid is exactly such a flat per-round saving under FINDING 189. The composed value is therefore at least +2.5711 percent, not exactly that.
+
+### 294.4 — FINDING 192: the probe fraction is worth +0.3311 percent, not +0.0992 percent, and askeladd's byte model was right
+
+This is ADVISOR ERROR 139. I priced the probe fraction by reading the raw ratio `serial / candidate`. The serial leg is pinned hardware and carries residual sd 0.4788 percent against the candidate leg's 0.0498 percent, so it is 9.6 times noisier and it swamps a sub-percent candidate effect.
+
+Read on the candidate leg alone, across two independent ranked receipts:
+
+```
+b6cb0fea -> 02742bf0   19:06Z  wide-grid base   F83-weighted candidate delta  -0.3836 %
+ed608e64 -> 08b67f12   21:02Z  tight-grid base  F83-weighted candidate delta  -0.2786 %
+pooled                                                                        -0.3311 %
+2 sigma on the pooled mean, Rule 112 over sqrt 2                               0.0948 %
+askeladd's UNSCALED gross byte model, p 0.25 -> 0.15                          +0.3403 %
+measured / model                                                               0.973
+```
+
+The consequence is a rule change. **The 1.3x local-to-ranked haircut is deleted for the draft-path byte family. The unscaled byte model is the model.** I had made askeladd apply that haircut to a correct model, which cost 23 percent of every draft-path byte estimate.
+
+`08b67f12` also reports `effective_mean_draft_len` digit-identical to `ed608e64` on seven of eight prompts, with the two exceptions both zero-weight and both showing more drafting. Live acceptance cost at p = 0.15 is zero, confirmed on the ranked runner rather than only in an offline screen.
+
+Rescaled ladder, gross linear in p at 3.40 percent per unit p:
+
+```
+p       probes  coarse rows   recall     acc pp    gross %
+0.250     3073       24584   1.000000    0.0000    0.0000
+0.200     2459       19672   1.000000    0.0000    0.1700
+0.150     1844       14752   1.000000    0.0000    0.3403
+0.125     1537       12296   1.000000   +0.0197    0.4253
+0.100     1230        9840   1.000000   -0.0197    0.5103
+```
+
+Extrapolation: p = 0.05 gives +0.68 percent, p = 0.02 gives +0.78 percent, and the limit is +0.85 percent. Recall must break somewhere below 0.10 and finding that knee is the cheapest large lever left.
+
+**Boundary on the screen's validity.** The offline corpus screen was accurate to 0.973 for a change that removes bytes without changing the retrieved set. It was 18.4 times wrong for C1, which replaced the scoring arithmetic. That is the discriminator, and it also kills askeladd's own frame-haircut explanation, which predicted 0.77 against the measured 0.973.
+
+### 294.5 — askeladd measured p = 0.10 at exactly zero acceptance cost on two regimes
+
+512 tokens, one leg per arm per fixture, reference rows generated on this base.
+
+```
+arm    fixture           probes  rounds  eff_draft_len        accepted_draft_rate    acc/rej
+ship   benchfixture        3073      78  6.3589743589743586   0.87701612903225812   435/61
+p010   benchfixture        1230      78  6.3589743589743586   0.87701612903225812   435/61
+ship   natural_history     3073     260  2.203846153846154    0.43979057591623039   252/321
+p010   natural_history     1230     260  2.203846153846154    0.43979057591623039   252/321
+```
+
+Every digit identical, round delta 0 on both fixtures, declared rows identical at 574 and 833, all parent reference-checked. The two fixtures sit at realised rates 0.877 and 0.440, so this is not one regime measured twice.
+
+The arm is witnessed from the run's own trace under Rule 114, as the derived integer `1230 = ceil(0.10 * 12292)` against the shipped `3073`, so the gate provably reached `buildDerivedClusterIndex`.
+
+Two limits he stated and I am recording rather than discounting. The negative-polarity control was still running when he posted, and he treats the result as withdrawn if it fails. The channel quantises at one round, so an exact zero bounds the acceptance cost below 0.3846 percent and does not prove a population zero.
+
+**Ruling: thorfinn takes 0.10, conditional on that control, with 0.15 as the floor that ships if the control has not landed.**
+
+### 294.6 — FINDING 193: prefill is not scored, and round-side gains land undiluted
+
+Edward's suggested follow-up claimed `seed_prefill_seconds` is 23.4 percent of the timed leg and dilutes every round-side gain by about 1.265. Refuted at the enforcing source. `.github/workflows/qwen-mtp-ranked-benchmark.yml` around lines 3140 to 3230:
+
+```
+mode: "qwen-mtp-paired-decode-only"
+aggregation: "median_of_per_prompt_raw_serial_relative_speedup"
+# Candidate seed-prefill rates ... Observability only -- the scoring path above never reads these.
+```
+
+`prefill_seconds_per_token` is a sealed sub-interval published per prompt for observability. The scored `mtp_seconds_per_token_mean` is decode only. Confirmed arithmetically: `ed608e64` moved F83-weighted round time -4.14 percent and F83-weighted candidate seconds per token -4.00 percent, which cannot both hold under a 1.265 dilution.
+
+**Prefill is removed from the target list.** Round-side gains land undiluted.
+
+The same workflow read also found a `MLXFAST_QWEN_MTP_DECODE_SPEEDUP_CEILING` branch that emits a non-attributable error, so a submission is not charged if it exceeds the plausibility ceiling.
+
+### 294.7 — HARNESS DEFECT 38: a needle shorter than 16 bytes proves nothing, and the `--forbid` half fails silently in the safe-looking direction
+
+Swift stores a string literal of 15 UTF-8 bytes or fewer inline in the instruction stream, so it never reaches the string table that `strings` reads. A `--require` needle shorter than 16 bytes can report zero copies on a correct binary. A `--forbid` needle shorter than 16 bytes passes unconditionally. The second is a Rule 101 violation that fails silently in the direction that looks safe.
+
+Askeladd fixed it at commit `4ab839d3` and improved on the remedy I specified. A flat 16-byte refusal would reject legitimate needles such as `<T, 5, 5, true>`, which is 15 bytes but is a substring of the multi-kilobyte Metal JIT source string. His design instead refuses short needles with exit 2 unless the same invocation carries a `--require` needle of at least 16 bytes as an anchor proving the string table was extracted. Symbol needles under `nm -a` are exempt. `--self-test` fails if the gate does not fire, which applies Rule 101 to the gate itself.
+
+Relayed to thorfinn, alphonse and edward.
+
+### 294.8 — the frontier moved 4.4 percent on our own mechanism, then again on our own constant
+
+```
+08b67f12 jungjipdo      3.69071883 21:02:29Z   tight grid + probe fraction 0.15
+ed608e64 jungjipdo      3.68172016 19:47:14Z   tight grid alone = THORFINN'S MECHANISM
+02742bf0 scarletbright  3.52686512 19:06:44Z   probe fraction 0.25 -> 0.15 alone
+b6cb0fea ofou           3.52509130 18:09:31Z
+dacf7005 newjordan      3.52326653 17:29:33Z
+623e77af morganmcg1     3.52085227 16:05:35Z   OURS, now sixth
+```
+
+Both crowns are built from mechanisms this campaign generated. `ed608e64` publishes thorfinn's `active_groups = ceil(M / INPUTS_PER_TG)` launch geometry, identical in substance to `Qwen35.swift:1956-1960`, and shipped with no local benchmark. `08b67f12` is openly declared as `ed608e64` plus one `Double` literal, the probe fraction 0.25 -> 0.15, which is our `qwen35DerivedClusterProbeFraction`.
+
+This is the cost of publication under Rule 96. It is not a reason to slow down; it is confirmation that the mechanisms are real and that our pricing of them was too conservative by 2.4x and 3.3x respectively.
+
+### 294.9 — FINDING 194: our one-pass QMV table reverses sign under a tight grid, and the separator is N, not K
+
+Board row `0b2f0014`, Amal-David, rejected only for not beating the live crown. Its note states that it restores previously promoted tiered one-pass affine-4 group-64 QMV entry points and composes them with the promoted tight-grid launch, retaining inherited E87 probe-select. Read against `ed608e64`, which is the tight grid without that table:
+
+```
+prompt      cand d%   F83 weight
+beagle      +0.3242     0.4862
+medicine    +0.1059     0.2508
+essays      +0.2100     0.1598
+botany      +0.0373     0.0124
+republic    +0.0448     0.0100
+plutarch    +0.1932     0
+drama       +1.0772     0
+travel      +0.6317     0
+candidate 8-prompt mean  +0.3280 %  sd 0.3585
+candidate F83-weighted   +0.2187 %  SLOWER
+```
+
+Positive is slower. Eight prompts of eight the same sign, p = 0.0039 under a null. `effective_mean_draft_len` and `non_drafting_round_count` are digit-identical on all eight prompts, so acceptance and scheduling did not move and this is a pure time contrast.
+
+Our own F167 measured the same family at **-0.2032 percent, faster**, under the **wide** grid. It now reads **+0.22 percent, slower**, under the **tight** grid. That is a sign reversal of about 0.42 pp with the grid as the only change.
+
+**Alphonse's independent isolated measurement agrees, and it separates on N without exception.** Launched threadgroups per column are `n / (2 * RPS)`, which is `n/8` at RPS 4, from `Qwen35.swift:1957-1961`.
+
+```
+shape              K       N  disp   tg/column   E137 Route B fallback column
+mlp.down       17408    5120    64         640   11.8 % CHEAPER
+gdn.out_proj    6144    5120    48         640    6.9 % CHEAPER
+fa.o_proj       6144    5120    16         640    7.3 % CHEAPER
+fa.qkv          5120   14336    16        1792   not reported
+gdn.in_proj     5120   16480    48        2060   not reported
+mlp.gate_up     5120   34816    64        4352   11.1 % DEARER
+lm_head         5120  248320     1       31040   16.9 % DEARER
+```
+
+Every shape that prefers more passes has N = 5120 and 640 threadgroups per column. Every shape that prefers one pass has N of 34816 or more. **K does not separate the table.** `mlp.down` carries the largest K at 17408 and prefers more passes, while `gdn.out_proj` at K 6144 and `fa.qkv` at K 5120 are adjacent in K and land on opposite sides.
+
+**Mechanism.** Under `wide`, launched columns are `m` for every plan, so both plans launch the same columns and the surplus ones return at `Qwen35.swift:1546-1550`. Occupancy is equal, the comparison is body cost plus weight stream, and one pass wins because it streams the weights once. Under `tight`, launched columns are `ceil(m/ipg)`, so at M = 6 the one-pass plan launches 1 column of 640 threadgroups on the N = 5120 shapes while a two-pass plan launches 2 columns of 1280. On a 20-core part 640 is at the occupancy floor. The tight grid strips away the padding that was hiding the deficit.
+
+**Consequences.**
+
+1. The plan axis and the grid axis are not separable. A plan sweep run under `wide` cannot decide what should ship, because `tight` is what ships. Alphonse's E138 was redirected to a 2 x plan factorial with the interaction term reported explicitly.
+2. The shape-keyed plan table should be keyed on **N**, or on the derived launched threadgroup count, not on `(K, N, M)`. That is a single threshold rather than a cross product, which bounds the F133 pipeline count and the F167.1 templating tax.
+3. Bit-exactness is already established. E137 proved Route B bitwise identical to the fallback on every cell M = 3 to 9 with max abs delta 0, and that includes the ipg change.
+
+Value, using alphonse's wide-grid per-call savings at M = 6, the E137 isolated-to-in-situ factor 0.7858, and the Rule 115 absolute M4 Pro to M5 transfer 0.646:
+
+```
+mlp.down      67.3 us x 64 = 4307 us
+gdn.out_proj  16.0 us x 48 =  768 us
+fa.o_proj     17.0 us x 16 =  272 us
+isolated total               5347 us
+in-situ,  x 0.7858           4202 us
+ranked,   x 0.646            2715 us per M=6 round
+against a tight-grid ranked M=6 round of about 58,900 us      4.6 %
+x P(M>=6) = 0.5861                                            about 2.7 % ranked
+```
+
+That is a floor, because the tight grid should widen the gap.
+
+**This was not acted on in tonight's composition.** Thorfinn was told to refuse it: it changes the compiled pipeline set and would break his own F181 instrument on the night he needs it, it rests on one rival receipt from a different lineage, and `572b2cc4` replicates the measurement for free because our tree carries the one-pass table and `ed608e64` does not.
+
+### 294.10 — FINDING 195: a rejected row still publishes full per-prompt evidence
+
+Four high-scoring rejected rows all carry `rejectionReason = "score did not improve current best"`, including `0b2f0014` at 3.66184. That row still exposes `officialScore` and eight complete `officialMetrics.per_prompt` entries with every field.
+
+Two operational consequences.
+
+1. The acceptance gate is a moving target set by the crown that is live when a run finishes, not when it starts. `572b2cc4` was submitted at 20:29Z into a board whose crown became 3.69071883 at 21:02Z, so it may be rejected on a technicality rather than on merit.
+2. **A rejection costs the campaign nothing scientifically.** Every measurement survives. This removes any reason to hold a candidate back for fear of a rejected row, and it means an in-flight run that will probably be rejected should still be allowed to finish when it discriminates between live hypotheses, as `572b2cc4` does for FINDING 189 and now for FINDING 194.
+
+### 294.11 — E140 assigned: the greedy depth walk cannot see past a non-convex cliff
+
+Edward's next question, PR #140, base `6115a8ad`.
+
+`costModelDepth` at `Qwen36MTPBlockSession.swift:1039-1112` walks depth upward and breaks at the first failing step. With `E_d = 1 + sum of reach_i for i < d`:
+
+```
+reach > marginal[d] * E_d / C_d   <=>   (E_d + reach)/(C_d + marginal[d]) > E_d / C_d
+```
+
+That is the textbook greedy for a ratio objective, and it returns the global argmax only when the ratio is quasiconcave in depth. Edward's own measured curve violates that:
+
+```
+form         into 2   into 3   into 4   into 5   into 6   into 7   into 8   into 9
+per_round      3446     3446     3446     3446    16241     1626     7490     5324
+per_draft      3397     3446     3446     3446    16567     1469     7323     5324
+proportional   3444     3444     3444     3444    16383     1700     7259     5320
+```
+
+The step into width 7 is one tenth of the step into width 6 and half the shallow step. The ratio dips at the cliff and recovers immediately after, so a first-break walk stops in the dip. This explains the standing anomaly that feeding the walk the true price makes things worse: `ship` 0.0000, `rankedprice` -2.8508, `pbfit` -3.5000. pb6 is the same accident, tuned deliberately, at one boundary.
+
+The fix is parameter-free: evaluate `(1 + expected) / price.cumulative[d]` at every `d` in `0...cap` and take the argmax, keeping the depth-0 and depth-1 margin clamps as shipped.
+
+Cell C is the hard gate. A flat price makes `C_d` linear, so with non-increasing reach the ratio is quasiconcave and greedy must equal argmax on all 617 rounds. Any disagreement stops the experiment.
+
+Advisor pre-registered prediction: cell D lands +3.0 to +6.0 percent held out; below +2.4683 percent refutes. The named mechanism that would make me wrong is F161 Berkson bias in the reach estimator, since argmax queries it to `cap` on every round rather than only up to where greedy stops.
+
+### 294.12 — state of the board and the slate
+
+```
+PR   student   question                                              state
+135  thorfinn  tight launch grid, then compose pb6 and probe 0.10    submitted 572b2cc4; composing
+138  alphonse  plan surface, now a grid x plan factorial keyed on N  sweeping
+139  askeladd  probe knee below p=0.10, then the fp32 tiebreak       laddering
+140  edward    lookahead depth argmax against the greedy walk        starting
+```
+
+```
+mechanism                              ranked value                 owner
+tight QMV launch grid                  rival receipt +4.39 %        submitted, validating
+pb6 marginal[4] tier 1.45              +2.4683 %, lower bound       MERGED at 7a427dfa
+probe fraction 0.25 -> 0.10            +0.5103 %, zero cost         thorfinn, tonight
+shape-keyed plan table keyed on N      about 2.7 % floor            alphonse E138
+lookahead depth argmax                 predicted +3 % to +6 %       edward E140
+probe knee below p = 0.10              up to +0.85 %                askeladd E139
+fp32 tiebreak at Qwen35.swift:4117     +0.2166 %                    askeladd, queued
+column-count ladder, widths 8 and 9    unknown                      thorfinn, after tonight
+beagle acceptance deficit              +4.1 % median prize          UNOWNED
+P4 GDN S=2 mid-state write             0.2 % to 0.6 %               UNOWNED
+C2 precision islands to affine-4 g64   +0.38 % to +0.45 %           REOPENED, UNOWNED
+prefill                                ZERO, not scored             CLOSED by F193
+```
+
+Predicted composed score tonight, if `572b2cc4` lands near 3.69: `3.69 x 1.0247 x 1.0051`, about **3.80**.

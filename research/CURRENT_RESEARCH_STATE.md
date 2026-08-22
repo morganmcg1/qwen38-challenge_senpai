@@ -1,86 +1,69 @@
 # SENPAI Research State
 
-- 2026-08-22 ~21:15 UTC. Advisor base moves to the merge of PR #134 (edward, `pb6`).
-  The campaign `BASE_SHA` passed to every submit call is unchanged at `770a3ff2`,
-  because `senpai/submit-official.sh` reads `SOURCE_BRANCH="main"`.
-- Most recent research direction from the human researcher team: none received this round.
-  The standing direction is `senpai/program.md`: move the official frontier, submit
-  autonomously, and treat a promoted rival row as an interrupt.
+- 2026-08-22 21:50 UTC
+- Most recent human research direction: none received this session. The campaign runs autonomously under `senpai/program.md`.
 
-## Where the board stands
+## Where the campaign stands
 
-The frontier moved twice in ninety minutes and both moves were built out of mechanisms
-this campaign already owns.
+Our promoted row `623e77af` at 3.52085227 is now sixth. The frontier moved to **3.69071883** in about three hours, and both leading rows are built from mechanisms this campaign generated and published: the tight QMV launch grid, and the derived cluster probe fraction. Publication is promotion under Rule 96, and the cost of that is now measured rather than theoretical.
+
+The correct response is not to slow publication. It is to notice that we priced both mechanisms far too conservatively, by 2.4x and 3.3x, and to fix the pricing instrument.
+
+One submission is in flight: `572b2cc4`, the tight launch grid on our own tree. A composed tree carrying three mechanisms is being built behind it.
+
+## The current research focus
+
+**Composition is the near-term theme.** Four mechanisms are independently measured and mutually disjoint in the source, and none of them has ever been run together:
 
 ```
-08b67f12 jungjipdo 3.69071883 21:02:29Z   tight launch grid + probe fraction 0.15
-ed608e64 jungjipdo 3.68172016 19:47:14Z   tight launch grid alone
-02742bf0 scarlet   3.52686512 19:06:44Z   probe fraction 0.15 alone
-623e77af morganmcg1 3.52085227 16:05:35Z  ours
+tight launch grid          rival ranked receipt   +4.39 %
+pb6 depth price, tier 1.45 held out, lower bound  +2.4683 %
+probe fraction -> 0.10     measured zero cost     +0.5103 %
+one-pass table under tight rival ranked receipt   -0.2187 %   (a cost we currently pay)
 ```
 
-`ed608e64` published the same active-group launch arithmetic that thorfinn measured
-independently and shipped in `572b2cc4`. `08b67f12` then added one constant we have
-held unshipped since E133. We are behind on the board and ahead on inventory: we hold
-both of those mechanisms plus a third, `pb6`, that nobody on the board has.
+**Measurement fidelity is the deeper theme, and it has repaid more than any single mechanism this session.** Three pricing errors were found and corrected:
 
-Our submission `572b2cc4` is validating. One slot, one in-flight submission.
+- The raw ratio hides sub-percent candidate effects, because the pinned serial leg is 9.6 times noisier than the candidate leg. Read the candidate leg. This alone repriced the probe fraction from +0.0992 to +0.3311 percent.
+- A per-round absolute mechanism must be converted through absolute microseconds, never through a local percentage. The local round is about 3.6 times longer than the ranked round.
+- Prefill is published but not scored, so round-side gains land undiluted. There is no 1.265 dilution factor.
 
-## Current research focus
+## What is running now
 
-1. **Compose, do not iterate.** The three mechanisms are in disjoint files and disjoint
-   line ranges, so composition is mechanical rather than scientific:
-   `Qwen35.swift` Route B launch geometry (thorfinn), `Qwen36MTPBlockSession.swift`
-   depth price (edward), and one `Double` literal at `Qwen35.swift:4880` (askeladd).
-   The composed tree is the next official submission the moment the slot frees.
-
-2. **The pass-boundary depth price is ready.** `pb6` reads +2.4683 % held out on
-   edward's own measured round-cost curve, with the FM1 audit refuted in its favour:
-   the rounds it suppresses accept at 0.5057 against a population 0.7796, so the
-   replayed price is a lower bound. A same-binary twelve-leg ABBA reads +2.2467 % on
-   the decode basis as a falsifier only. Merged.
-
-3. **The probe fraction is worth three times what we recorded.** Two independent ranked
-   receipts on two different bases now price the same one-constant change. Read on the
-   candidate leg alone, which is the only leg our source can move, it is +0.33 %, not
-   the +0.0992 % we recorded from the raw ratio. The offline screen says recall stays
-   exactly 1.0 down to p=0.10, so the true argmax lies below where anyone has sampled.
-
-4. **The width-6 cost cliff is still the largest unexplained quantity.** E137 closed the
-   attribution question: QMV carries 0.7858 of the step and no single shape carries it,
-   all seven step 24.9 % to 47.5 %. Alphonse now sweeps the (IPG, RPS) plan surface to
-   find out whether any plan flattens it.
+```
+PR   student   question
+135  thorfinn  compose tight grid + pb6 + probe 0.10, gate, and submit when the slot frees
+138  alphonse  grid x plan factorial; is the plan table keyed on N rather than (K, N, M)?
+139  askeladd  where is the recall knee below p = 0.10, found from the margin distribution?
+140  edward    does depth argmax beat the greedy walk on a non-convex cost curve?
+```
 
 ## Potential next research directions
 
-- **The column-count ladder.** Widths 8 and 9 still launch 2 and 3 columns under
-  `onePass67`. Their one-pass plans were closed on a register basis under a wide launch
-  where both arms launched `M` columns, so that closure measured only half the trade.
-  The ladder also separates the three surviving models of the launch-geometry law:
-  flat per round, linear in columns, or logarithmic in the column ratio.
+**Ranked now, by expected value.**
 
-- **Prefill is not scored, and that is now established.** The ranked scorer runs in mode
-  `qwen-mtp-paired-decode-only` and the workflow states that the scoring path never
-  reads `prefill_seconds_per_token`. Seed processing is a sealed sub-interval published
-  for observability. Round-side gains therefore land undiluted, and prefill is not a
-  target.
+1. **The shape-keyed plan table keyed on N.** A ranked receipt and an isolated measurement agree that our one-pass table reverses sign under the tight grid, and the separator is the launched threadgroup count, not K. Floor estimate 2.7 percent, bit-exact by E137, and a single threshold rather than a cross product so the pipeline count stays bounded.
 
-- **C2 precision-island quantization.** Reopened and unowned, +0.38 % to +0.45 %.
+2. **Depth scheduling as an optimisation problem rather than a walk.** pb6 works because it accidentally repairs a greedy walk on a non-convex curve. If that reading is right, the parameter-free argmax should beat a hand-tuned barrier, and the whole depth-price tuning axis collapses into one correct decision rule.
 
-- **P4, the Gated DeltaNet S=2 mid-state write.** Gates about 151 MB per round on
-  rejection, unowned, 0.2 % to 0.6 %.
+3. **The probe knee.** One `Double`, zero bytes, zero dispatches, asymptote +0.85 percent. The live acceptance channel cannot find the knee because it quantises at one round; the recall margin distribution can.
 
-- **Cleanup.** After the composition ships, prune the E120 arm flags, the dead Route B
-  table paths, and the E128 price arms so the winning behaviour is the only path.
+4. **Beagle's acceptance deficit, still unowned.** Beagle carries F83 weight 0.4862 and is the median carrier at 98 percent, yet its realised acceptance is 0.834 against 0.85 to 0.90 for the other high-weight prompts. Closing that gap moves the median about 4.1 percent. This is the largest single untapped prize on the board and nobody is working on it.
 
-## Standing methodological state
+5. **Widths 8 and 9 under a tight grid.** The `{8:8}` and `{9:9}` one-pass plans were closed on a register basis, but that measurement was taken under a wide launch where the column count was `M` in both arms, so it saw only half the trade. The closure should be reopened and re-measured.
 
-Rule 115 is the newest and the most expensive lesson of the round: convert a per-round
-absolute mechanism to a ranked percentage through absolute microseconds per round, never
-through a local percentage. The local benchfixture round is about 3.6 times longer than
-the F83-weighted ranked round, so the measured ranked-to-local ratio for launch geometry
-is about 2.3, not the 0.95 the old transfer table predicted. Prices are read on the
-candidate leg, whose pair-difference null is 0.067 % (Rule 112), never on the published
-median. Every offline replay standing in for a Metal kernel must reproduce that kernel's
-arithmetic and prove it with a bit comparison (Rule 113). Every same-binary A/B must
-witness its arm from the run's own trace (Rule 114).
+**Held or unowned.**
+
+- The fp32 tiebreak at the one narrowing point in the rerank kernel, +0.2166 percent, zero bytes.
+- P4, the Gated DeltaNet S=2 mid-state write on rejection, 0.2 to 0.6 percent.
+- C2, precision islands to affine-4 group-64, 0.38 to 0.45 percent.
+- The head-history fold warm gap, unpriced, and it must clear Rule 110 before it is worth a slot.
+
+**Closed this session.** Prefill as a target, refuted at the enforcing workflow source. The offline corpus acceptance screen is now bounded rather than discarded: it is accurate to 0.973 for byte removal at a constant retrieved set, and it was 18.4 times wrong for a change that replaced the scoring arithmetic.
+
+## Standing method notes
+
+- Read the candidate leg, not the published median and not the raw ratio.
+- Convert per-round absolute mechanisms through microseconds.
+- A rejected submission still publishes complete per-prompt evidence, so a probable rejection is not a reason to withhold or cancel a run that discriminates between live hypotheses.
+- The acceptance gate is set by the crown that is live when a run finishes, not when it starts.
