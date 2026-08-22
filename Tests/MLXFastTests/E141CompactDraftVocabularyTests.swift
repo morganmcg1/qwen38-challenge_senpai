@@ -34,6 +34,15 @@ struct E141CompactDraftVocabularyTests {
             .environment["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
+    /// `FileManager.homeDirectoryForCurrentUser` reads the passwd database, so
+    /// it misses the role-scoped `HOME` this campaign's caches live under.
+    private static var home: URL {
+        guard let path = ProcessInfo.processInfo.environment["HOME"] else {
+            return FileManager.default.homeDirectoryForCurrentUser
+        }
+        return URL(fileURLWithPath: path)
+    }
+
     /// The test bundle's working directory is not the checkout, so resolve the
     /// weights against this source file instead.
     private static var repositoryRoot: URL {
@@ -135,10 +144,9 @@ struct E141CompactDraftVocabularyTests {
             .appendingPathComponent("weights/model-00003-of-00003.safetensors").path
         let headPath = ProcessInfo.processInfo
             .environment["MLXFAST_E141_DECLARED_HEAD"]
-            ?? FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(
-                    ".cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors"
-                ).path
+            ?? Self.home.appendingPathComponent(
+                ".cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors"
+            ).path
         // A silently skipped licensing gate reads exactly like a passing one,
         // so demand the artifacts once the runtime flag asks for the check.
         try #require(FileManager.default.fileExists(atPath: targetPath),
