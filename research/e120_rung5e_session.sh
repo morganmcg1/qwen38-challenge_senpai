@@ -60,8 +60,28 @@ case "${var}" in
   # with MLX_E120_QMV_ENTRY=tiered_switch.
   MLX_E120_QMV_TABLE) legal="shipped onepass"; export MLX_E120_QMV_ENTRY=tiered_switch ;;
   MLX_E120_QMV_GRID) legal="wide tight" ;;
+  # The deliverable moves the entry point and the table together, so an
+  # entry-only or table-only sweep prices half of it. This pseudo-variable
+  # names the two complete configurations instead.
+  MLX_E120_QMV_COMBO) legal="incumbent deliverable" ;;
   *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
 esac
+
+# Environment assignments for one leg, into the global `leg_env`.
+leg_env=()
+set_leg_env () {
+  case "${var}" in
+    MLX_E120_QMV_COMBO)
+      case "$1" in
+        incumbent)
+          leg_env=(MLX_E120_QMV_ENTRY=shared_switch MLX_E120_QMV_TABLE=shipped) ;;
+        deliverable)
+          leg_env=(MLX_E120_QMV_ENTRY=tiered_switch MLX_E120_QMV_TABLE=onepass) ;;
+      esac
+      ;;
+    *) leg_env=("${var}=$1") ;;
+  esac
+}
 for arm in ${order//,/ }; do
   case " ${legal} " in
     *" ${arm} "*) ;;
@@ -191,7 +211,8 @@ for arm in ${serial_arms}; do
   [[ -s "${serial_path}" ]] && continue
   cool_gate "the serial control (${arm})"
   echo "=== serial control (${tokens} tokens, depth=0, ${var}=${arm})"
-  env "${var}=${arm}" \
+  set_leg_env "${arm}"
+  env "${leg_env[@]}" \
   "${swift_bin}" mtp-timed "${common_args[@]}" \
     --golden "${golden_path}" \
     --tokens "${tokens}" \
@@ -224,7 +245,8 @@ for arm in "${arms[@]}"; do
   # records the dispatch ordinal at which each QMV specialization and each
   # verify width was first reached, so a pipeline that first compiled inside
   # the timed window is visible after the fact.
-  env "${var}=${arm}" \
+  set_leg_env "${arm}"
+  env "${leg_env[@]}" \
       "MLX_E120_QMV_PIPELINE_LOG=${PWD}/${out_dir}/pipelines.${label}.json" \
   "${swift_bin}" mtp-timed "${common_args[@]}" \
     --golden "${golden_path}" \

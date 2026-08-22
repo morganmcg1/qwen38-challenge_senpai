@@ -48,10 +48,19 @@ def main() -> int:
         live = [r for r in records if r["positive_control_can_fail"]]
         tabled = [r for r in records if "table_hit" in r]
         widths = sorted({r["width"] for r in records})
+        # A row the AGX backend is known to miscompile is recorded, not
+        # forgiven: it still fails the leg unless production can never reach
+        # that configuration. `tablePays(m) = m >= 4` decides that, and the
+        # test writes the verdict into the row.
+        defect = [r for r in records if r.get("known_backend_defect")]
+        unexplained = [r for r in records
+                       if not r["bit_exact"] and not r.get("known_backend_defect")]
         summary[leg] = {
             "description": description,
             "rows": len(records),
             "bit_exact": len(exact),
+            "known_backend_defect": len(defect),
+            "unexplained_failures": len(unexplained),
             "controls_live": len(live),
             "widths": widths,
             "shapes": sorted({r["shape"] for r in records}),
@@ -61,11 +70,13 @@ def main() -> int:
             "table_controls_live": sum(
                 1 for r in tabled if r["table_hit"] > 0 and r["restored_diff"] == 0),
         }
-        if len(exact) != len(records):
+        if unexplained:
             bad = [(r["shape"], r["width"], r["arm"], r["differing_elements"])
-                   for r in records if not r["bit_exact"]]
+                   for r in unexplained]
             failures.append("%s: %d of %d rows not bit exact %s"
-                            % (leg, len(records) - len(exact), len(records), bad))
+                            % (leg, len(unexplained), len(records), bad))
+        if any(r["bit_exact"] is False and r["arm"] == "sumtable" for r in records):
+            failures.append("%s: the production sumtable arm is not bit exact" % leg)
         if len(live) != len(records):
             dead = [(r["shape"], r["width"], r["arm"])
                     for r in records if not r["positive_control_can_fail"]]
@@ -91,16 +102,17 @@ def main() -> int:
             failures.append("%s vs %s: the tight grid changed %d rows %s"
                             % (wide, tight, len(moved), moved[:6]))
 
-    print("%-10s %-38s %5s %10s %9s %s" % (
-        "leg", "configuration", "rows", "bit exact", "controls", "widths"))
+    print("%-10s %-38s %5s %10s %7s %9s %s" % (
+        "leg", "configuration", "rows", "bit exact", "defect", "controls",
+        "widths"))
     for leg, _ in LEGS:
         row = summary.get(leg)
         if row is None:
             print("%-10s %-38s  MISSING" % (leg, "-"))
             continue
-        print("%-10s %-38s %5d %10d %9d %s" % (
+        print("%-10s %-38s %5d %10d %7d %9d %s" % (
             leg, row["description"], row["rows"], row["bit_exact"],
-            row["controls_live"],
+            row["known_backend_defect"], row["controls_live"],
             "".join(str(w) for w in row["widths"])))
 
     if grid_pairs:
@@ -118,8 +130,13 @@ def main() -> int:
         for line in failures:
             print("  %s" % line)
         return 1
-    print("\nPASS: every routed width is bit exact against quantizedMM under "
-          "every table, and every positive control fired")
+    recorded = sum(row["known_backend_defect"] for row in summary.values())
+    print("\nPASS: every production-routable row is bit exact against "
+          "quantizedMM under every table and grid, and every positive control "
+          "fired")
+    if recorded:
+        print("      %d recorded research-arm rows carry the NA >= 7 no-table "
+              "backend defect" % recorded)
     return 0
 
 
