@@ -350,6 +350,131 @@ def expect(text: str, needle: str, count: int, label: str) -> None:
             "e118_arms: %s matched %d times, expected %d" % (label, seen, count))
 
 
+# --- the instruction-price calibration ladder ---------------------------------
+# The screen arms answer "is this mechanism worth anything". They cannot answer
+# "what does one instruction cost", because every screen arm changes several
+# things at once. These arms change exactly one thing: the number of injected
+# instructions of ONE class, per k-block iteration, holding the register
+# footprint fixed across the whole ladder.
+#
+# `lanes` independent accumulators are carried across the k loop and `depth`
+# rounds of `lanes` operations are injected per iteration, so the arm issues
+# exactly `lanes * depth` extra instructions of the named class per iteration
+# while allocating exactly `lanes` extra registers. Two rungs of a class plus
+# `a_base` at zero give the slope in microseconds per instruction directly,
+# with no fitted intermediary and no cross-arm confound.
+#
+# Holding registers fixed across rungs is the point. E118's own spill defect
+# shows that register pressure, not instruction count, is what breaks the wide
+# kernel at NA=5, so a ladder that changed both would measure neither.
+CAL_KINDS = {
+    # one fused multiply-add reading a live value, so it cannot be folded.
+    "alu": "      cal[%(j)d] = fma(cal[%(j)d], 1.0000001f, "
+           "scale_local[%(jr)d]);\n",
+    # one simdgroup shuffle, the primitive `s_bcast` substitutes for a load.
+    "shuf": "      cal[%(j)d] = simd_shuffle(cal[%(j)d], "
+            "ushort((simd_lid + %(rot)d) & 31));\n",
+    # one device load from the metadata block this k-block already touched, so
+    # the rung prices the load INSTRUCTION and not a cache miss. Every injected
+    # load gets a DISTINCT address: the eight groups of this k-block, then the
+    # next row's eight. Without that the optimiser common-subexpression folds
+    # the repeats and the upper rung silently collapses onto the lower one.
+    "ld": "      cal[%(j)d] += float(scales[cal_base + %(row)d * in_vec_size_g"
+          " + ((simd_lid + %(rot)d) & 7)]);\n",
+}
+
+
+def cal_decl(lanes: int) -> str:
+    return ("  thread float cal[%d];\n"
+            "  for (int i = 0; i < %d; i++) {\n"
+            "    cal[i] = float(i) + float(simd_lid);\n"
+            "  }\n"
+            "\n"
+            "  VF acc[rows_per_simd];\n") % (lanes, lanes)
+
+
+def cal_step(kind: str, lanes: int, depth: int) -> str:
+    """Exactly `lanes * depth` injected instructions, fully unrolled in source.
+
+    Lanes alternate inside each round so consecutive injected operations are
+    independent of one another; only operations `lanes` apart share a chain.
+    """
+    template = CAL_KINDS[kind]
+    out = []
+    if kind == "ld":
+        out.append("    const int cal_base = out_row * in_vec_size_g + k / 64;\n")
+    out.append("    {\n")
+    for d in range(depth):
+        for j in range(lanes):
+            n = d * lanes + j
+            out.append(template % {"j": j, "jr": j % 4,
+                                   "rot": n % 8, "row": n // 8})
+    out.append("    }\n")
+    return "".join(out)
+
+
+def cal_sink(lanes: int) -> str:
+    return ("  float cal_sum = 0.0f;\n"
+            "  for (int i = 0; i < %d; i++) {\n"
+            "    cal_sum += cal[i];\n"
+            "  }\n"
+            "  if (in_vec_size < 0) {\n"
+            "    y[0] = static_cast<T>(cal_sum);\n"
+            "  }\n"
+            "\n") % lanes
+
+
+def cal_prologue(kind: str, lanes: int, depth: int) -> str:
+    text = PROLOGUE
+    expect(text, "  VF acc[rows_per_simd];\n", 1, "accumulator declaration")
+    text = text.replace("  VF acc[rows_per_simd];\n", cal_decl(lanes))
+    expect(text, WEIGHT_META_LOOP, 1, "prologue weight+metadata loop")
+    return text.replace(WEIGHT_META_LOOP,
+                        WEIGHT_META_LOOP + cal_step(kind, lanes, depth))
+
+
+def cal_epilogue(lanes: int) -> str:
+    head = "  for (int r = 0; r < rows_per_simd; r++) {\n"
+    expect(EPILOGUE, head, 1, "epilogue store loop")
+    return EPILOGUE.replace(head, cal_sink(lanes) + head)
+
+
+def cal_plan(kind: str, lanes: int, depth: int):
+    return ((cal_prologue(kind, lanes, depth), BODY_BASE, cal_epilogue(lanes)),
+            "")
+
+
+# --- the two arithmetic-axis ceilings the advisor asked for -------------------
+# DIAGNOSTIC, both of them. Neither is promotable and neither is bit exact.
+#
+# `y_algebra` prices Finding 40's algebraic route. Over all 400,343,040 scored
+# groups `bias == q0 * scale` exactly, so
+#     scale*partial + sums*bias  ==  scale*(partial + sums*q0)
+# in exact arithmetic, one multiply per row per k-block cheaper. In floating
+# point it reassociates, so it can never ship. This arm keeps every load of
+# `a_base` and changes ONLY the shape of the accumulate expression, so it
+# isolates the arithmetic saving with no load-side confound. Its output values
+# are deliberately not `a_base`'s.
+expect(BODY_BASE, "acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];",
+       1, "base accumulate expression")
+BODY_ALGEBRA = BODY_BASE.replace(
+    "acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];",
+    "acc[r] += scale_local[r] * (partial[r] + sums * bias_local[r]);")
+
+# `y_hsum_tree` prices the DEPENDENCY DEPTH of the activation sum chain. The
+# shipped source writes `xm[0] + xm[1] + xm[2] + xm[3]`, and the front end emits
+# three strictly left-associated scalar bfloat adds, a serial chain of depth 3.
+# The tree form is the same three adds at depth 2. Same instruction count, same
+# class, shorter chain, so it separates "issue bound" from "latency bound"
+# inside the single largest term on the table. It reassociates, so it is a
+# ceiling and not a candidate.
+expect(BODY_BASE, "sums[m] += xm[0] + xm[1] + xm[2] + xm[3];", 1,
+       "base activation sum chain")
+BODY_HSUM_TREE = BODY_BASE.replace(
+    "sums[m] += xm[0] + xm[1] + xm[2] + xm[3];",
+    "sums[m] += (xm[0] + xm[1]) + (xm[2] + xm[3]);")
+
+
 def prologue_with(meta: str | None = None, loop: str | None = None,
                   extra: str = "", helper: str = "") -> str:
     """The shared prologue with the metadata load or the whole loop replaced."""
@@ -530,10 +655,36 @@ PLANS = {
                                helper=BIAS6_HELPER),
                  BODY_BASE, EPILOGUE), "bias_codes"),
     "z_ballast": ((ballast_prologue(), BODY_BASE, ballast_epilogue()), ""),
+    # the instruction-price ladder: two rungs per class, `a_base` is the zero
+    # rung, and every rung of every class allocates the same two extra
+    # registers so only the instruction count varies.
+    "k_alu8": cal_plan("alu", 2, 4),
+    "k_alu16": cal_plan("alu", 2, 8),
+    "k_ld8": cal_plan("ld", 2, 4),
+    "k_ld16": cal_plan("ld", 2, 8),
+    "k_shuf8": cal_plan("shuf", 2, 4),
+    "k_shuf16": cal_plan("shuf", 2, 8),
+    # the ILP control for the ladder: the same 16 injected ALU instructions as
+    # `k_alu16` spread over four independent chains instead of two. If the two
+    # agree, the ladder is measuring issue throughput and not chain latency.
+    "k_alu16w": cal_plan("alu", 4, 4),
+    # the two arithmetic-axis ceilings, both deliberately not bit exact.
+    "y_algebra": ((PROLOGUE, BODY_ALGEBRA, EPILOGUE), ""),
+    "y_hsum_tree": ((PROLOGUE, BODY_HSUM_TREE, EPILOGUE), ""),
 }
 
 # Arms that are NOT required to reproduce `a_base` bit for bit.
-DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1")
+DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
+                   "y_algebra", "y_hsum_tree")
+
+# The calibration ladder, by injected instruction class, as
+# (arm, injected instructions per k-block iteration, independent chains).
+CAL_LADDER = {
+    "alu": (("k_alu8", 8, 2), ("k_alu16", 16, 2), ("k_alu16w", 16, 4)),
+    "ld": (("k_ld8", 8, 2), ("k_ld16", 16, 2)),
+    "shuf": (("k_shuf8", 8, 2), ("k_shuf16", 16, 2)),
+}
+CAL_ARMS = tuple(a for rungs in CAL_LADDER.values() for a, _, _ in rungs)
 # Arms the primary metric may rank: bit exact AND not register-confounded on
 # this host. `p_prefetch_w` is bit exact but spills on g16s at the widths that
 # matter, so it is reported separately.
