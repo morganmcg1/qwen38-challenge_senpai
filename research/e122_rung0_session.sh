@@ -55,7 +55,14 @@ prompt_file_for() {
   case "$1" in
     benchfixture) echo "${bench_fixture}" ;;
     english) echo "research/e11_prose_gate_english_512.txt" ;;
-    *) echo "research/e17_prose_$1_512.txt" ;;
+    # E124 stage 0.5 median-regime candidates, cut in the organizer's eight
+    # published domain labels. Checked before the e17 default so no existing
+    # prompt id changes meaning.
+    *) if [[ -s "research/e124_prose_hi_$1_512.txt" ]]; then
+         echo "research/e124_prose_hi_$1_512.txt"
+       else
+         echo "research/e17_prose_$1_512.txt"
+       fi ;;
   esac
 }
 
