@@ -109,7 +109,7 @@ struct E120CustomQMVProbeTests {
     /// Full 32-bit packed nibbles, so every nibble position sees the whole
     /// 0...15 range. `MLXRandom.randInt` tops out below 2^31 and would leave the
     /// high nibble permanently small.
-    static func makeWeights(hidden: Int, outputs: Int, seed: UInt64) -> E120Weights {
+    fileprivate static func makeWeights(hidden: Int, outputs: Int, seed: UInt64) -> E120Weights {
         let words = outputs * hidden / 8
         var rng = SplitMix64(state: seed)
         var raw = [UInt32]()
@@ -127,13 +127,13 @@ struct E120CustomQMVProbeTests {
         return E120Weights(packed: packed, scales: scales, biases: biases)
     }
 
-    static func mlx(_ x: MLXArray, _ w: E120Weights) -> MLXArray {
+    fileprivate static func mlx(_ x: MLXArray, _ w: E120Weights) -> MLXArray {
         quantizedMM(
             x, w.packed, scales: w.scales, biases: w.biases, transpose: true,
             groupSize: groupSize, bits: bits, mode: .affine)
     }
 
-    static func custom(_ x: MLXArray, _ w: E120Weights, _ arm: Qwen35CustomQMV.Arm)
+    fileprivate static func custom(_ x: MLXArray, _ w: E120Weights, _ arm: Qwen35CustomQMV.Arm)
         -> MLXArray?
     {
         Qwen35CustomQMV.matmul(
