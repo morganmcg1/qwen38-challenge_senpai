@@ -412,7 +412,7 @@ def log_rung2(curve: str = "ours") -> None:
             "e128_recoverable_ranked_median_pct_worst_case_over_R" + suf:
                 max(safe.values()) if safe else 0.0,
         })
-    sweep = load("rung2-curve-sweep.json")
+    sweep = load("rung2-curve-sweep.json") if curve == "ours" else None
     if sweep:
         table = wandb.Table(columns=[
             "curve", "breakpoint", "arm", "gain_pct_vs_ship"])
