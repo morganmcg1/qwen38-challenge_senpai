@@ -1,0 +1,12 @@
+{
+  "arg_partition_chain_us" : 912.66989707946777,
+  "clusters" : 12292,
+  "entry_point" : "qwen35BenchRowTop32",
+  "fused_kernel_us" : 557.80601501464844,
+  "iters" : 500,
+  "probes" : 3073,
+  "rows_per_cluster" : 8,
+  "saved_us" : 354.86388206481934,
+  "schema" : "e101.row_top32_bench.v1",
+  "speedup" : 1.6361779409200174
+}

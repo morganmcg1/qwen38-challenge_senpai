@@ -1,0 +1,12 @@
+{
+  "control_changed" : 14,
+  "entry_point" : "qwen35VerifySelectedRerankOrderInvariance",
+  "first_bad_trial" : -1,
+  "kernel" : "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+  "mismatches" : 0,
+  "rows" : 1024,
+  "schema" : "e101.selected_rerank_order_invariance.v1",
+  "seed" : 1,
+  "set_mismatches" : 0,
+  "trials" : 256
+}

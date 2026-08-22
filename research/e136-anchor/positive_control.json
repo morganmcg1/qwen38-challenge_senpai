@@ -1,0 +1,9 @@
+{
+  "clusters" : 12292,
+  "damage" : "raise the lowest row score above every other row",
+  "detected" : true,
+  "entry_point" : "qwen35RowTop32PositiveControl",
+  "probes" : 3073,
+  "rows_per_cluster" : 8,
+  "schema" : "e101.row_top32_positive_control.v1"
+}

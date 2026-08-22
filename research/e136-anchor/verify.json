@@ -1,0 +1,14 @@
+{
+  "all_equal_trials" : 64,
+  "clusters" : 12292,
+  "entry_point" : "qwen35VerifyRowTop32",
+  "first_bad_trial" : -1,
+  "mismatches" : 0,
+  "probes" : 3073,
+  "rows" : 24584,
+  "rows_per_cluster" : 8,
+  "schema" : "e101.row_top32_verify.v1",
+  "seed" : 1,
+  "tied_trials" : 64,
+  "trials" : 256
+}

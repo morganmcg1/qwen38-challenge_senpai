@@ -397,6 +397,61 @@ def kernel(name, inputs, outputs, source, header=""):
         source=source, header=header, ensure_row_contiguous=False)
 
 
+_DEP_SEED = None
+
+
+def dep_seed():
+    """One materialised guard word, shared by every arm.
+
+    Building it once matters: a fresh `mx.zeros` per call would add a real op
+    to the graph under test and would be charged to the arm.
+    """
+    global _DEP_SEED
+    if _DEP_SEED is None:
+        _DEP_SEED = mx.zeros([TOPK], dtype=mx.uint32)
+        mx.eval(_DEP_SEED)
+    return _DEP_SEED
+
+
+def stage2_tiles(survivors: int) -> int:
+    """Stage-2 tile count for `survivors` keys, under the shipped plan rules.
+
+    `finPerThread = tiles * 32 / 256` must be at least 1, so `tiles >= 8`, and
+    the selection bitmask caps it at the shipped 32. Between those bounds one
+    key per thread is the cheapest legal choice. Holding `tiles` at the shipped
+    32 for every `N` would make stage 2 cost the same at every width and the
+    sweep would measure nothing.
+    """
+    return max(8, min(ROW_TOP32_TILES, -(-survivors // TG)))
+
+
+class PartArm:
+    """One dispatch in isolation. Every input except the guard is resident."""
+
+    def __init__(self, label, kern, const_inputs, grid, threadgroup,
+                 shapes, dtypes, init_value=None, out_index=0):
+        self.label = label
+        self.k = kern
+        self.const = list(const_inputs)
+        self.grid = grid
+        self.tg = threadgroup
+        self.shapes = shapes
+        self.dtypes = dtypes
+        self.init_value = init_value
+        self.out_index = out_index
+        self.dispatches = 1
+        mx.eval(*self.const)
+
+    def step(self, dep):
+        kw = {} if self.init_value is None else {"init_value": self.init_value}
+        return self.k(inputs=self.const + [dep], grid=self.grid,
+                      threadgroup=self.tg, output_shapes=self.shapes,
+                      output_dtypes=self.dtypes, **kw)[self.out_index]
+
+    def seed(self):
+        return dep_seed()
+
+
 class ShippedArm:
     """The two dispatches the scored worker runs today."""
 
@@ -432,7 +487,22 @@ class ShippedArm:
                              output_dtypes=[mx.uint32])[0]
 
     def seed(self):
-        return mx.zeros([TOPK], dtype=mx.uint32)
+        return dep_seed()
+
+    def parts(self) -> list:
+        cand = mx.random.randint(
+            0, 2 ** 31 - 1, [self.plan.cands]).astype(mx.uint32)
+        cidx = mx.random.randint(
+            0, self.rows, [self.plan.cands]).astype(mx.uint32)
+        return [
+            PartArm("shipped.partial", self.partial, [self.score],
+                    (self.plan.tiles * TG, 1, 1), (TG, 1, 1),
+                    [[self.plan.cands], [self.plan.cands]],
+                    [mx.uint32, mx.uint32]),
+            PartArm("shipped.finalize", self.finalize,
+                    [cand, cidx, self.probed, self.perm], (TG, 1, 1),
+                    (TG, 1, 1), [[TOPK]], [mx.uint32]),
+        ]
 
 
 class TwoStageArm:
@@ -508,7 +578,44 @@ class TwoStageArm:
                              output_dtypes=[mx.uint32])[0]
 
     def seed(self):
-        return mx.zeros([TOPK], dtype=mx.uint32)
+        return dep_seed()
+
+    def parts(self) -> list:
+        """The same dispatches, each priced on its own."""
+        surv_score = mx.random.normal([self.survivors]).astype(mx.bfloat16)
+        surv_row = mx.random.randint(
+            0, self.rows, [self.survivors]).astype(mx.uint32)
+        bins = mx.random.randint(0, 4, [HIST_BINS]).astype(mx.uint32)
+        ctl = mx.array([0, 0, 0, 0], dtype=mx.uint32)
+        cand = mx.random.randint(
+            0, 2 ** 31 - 1, [self.plan.cands]).astype(mx.uint32)
+        cidx = mx.random.randint(
+            0, self.rows, [self.plan.cands]).astype(mx.uint32)
+        out = [
+            PartArm(f"{self.label}.hist", self.hist, [self.score],
+                    (HIST_TILES * TG, 1, 1), (TG, 1, 1), [[HIST_BINS]],
+                    [mx.uint32], init_value=0),
+            PartArm(f"{self.label}.thresh", self.thresh, [bins],
+                    (HIST_GROUPS, 1, 1), (HIST_GROUPS, 1, 1), [[4]],
+                    [mx.uint32], init_value=0),
+            PartArm(f"{self.label}.compact", self.compact, [self.score, ctl],
+                    (HIST_TILES * TG, 1, 1), (TG, 1, 1),
+                    [[self.survivors], [self.survivors], [1]],
+                    [mx.uint32, mx.uint32, mx.uint32], init_value=0),
+            PartArm(f"{self.label}.partial", self.partial,
+                    [surv_score, surv_row], (self.plan.tiles * TG, 1, 1),
+                    (TG, 1, 1), [[self.plan.cands], [self.plan.cands]],
+                    [mx.uint32, mx.uint32]),
+            PartArm(f"{self.label}.finalize", self.finalize,
+                    [cand, cidx, self.probed, self.perm], (TG, 1, 1),
+                    (TG, 1, 1), [[TOPK]], [mx.uint32]),
+        ]
+        if self.with_rescore:
+            out.insert(3, PartArm(
+                f"{self.label}.rescore", self.rescore, [self.exact, surv_row],
+                (self.survivors, 1, 1), (TG, 1, 1), [[self.survivors]],
+                [mx.bfloat16], init_value=0))
+        return out
 
 
 class NullArm:
@@ -529,7 +636,41 @@ class NullArm:
                       output_shapes=[[TOPK]], output_dtypes=[mx.uint32])[0]
 
     def seed(self):
-        return mx.zeros([TOPK], dtype=mx.uint32)
+        return dep_seed()
+
+
+def time_calls(arm, iters: int, trials: int) -> dict:
+    """Per-call cost, measured exactly as `qwen35BenchRowTop32` measures it.
+
+    The Swift entry point times `iters` independent `eval(selector(...))`
+    calls and divides. Copying that shape is the point: it makes the shipped
+    arm here directly comparable with a number produced by the real runtime,
+    so the port can be checked before any candidate number is believed. Each
+    call carries one submit-and-sync overhead, which cancels in an arm-to-arm
+    difference and is reported separately through the null arm.
+    """
+    dep = arm.seed()
+    for _ in range(4):
+        mx.eval(arm.step(dep))
+    mx.synchronize()
+    per = []
+    for _ in range(trials):
+        t0 = time.perf_counter()
+        for _ in range(iters):
+            mx.eval(arm.step(dep))
+        mx.synchronize()
+        per.append((time.perf_counter() - t0) * 1e6 / iters)
+    per.sort()
+    return {
+        "label": arm.label,
+        "dispatches_per_call": arm.dispatches,
+        "us_per_call": per[len(per) // 2],
+        "us_per_call_min": per[0],
+        "us_per_call_max": per[-1],
+        "us_per_call_trials": per,
+        "iters": iters,
+        "trials": trials,
+    }
 
 
 def chain(arm, reps: int):
@@ -652,6 +793,30 @@ def correctness(arm_two, arm_ship) -> dict:
     }
 
 
+ANCHOR_PATH = "research/e136-anchor/bench.json"
+
+
+def load_anchor() -> dict:
+    """The shipped selection as the real runtime measures it.
+
+    The suite `QwenRowTop32SelectionTests` times the live `Qwen35RowTop32`
+    with the same per-call shape used here. Without that number, a Python
+    port of the kernels prices a candidate against a baseline nobody checked.
+    Regenerate it with:
+
+      MLXFAST_RUN_MLX_RUNTIME_TESTS=1 \\
+      MLXFAST_ROW_TOP32_OUT_DIR=$PWD/research/e136-anchor \\
+      swift test --force-resolved-versions --filter QwenRowTop32SelectionTests
+    """
+    with open(ANCHOR_PATH) as f:
+        a = json.load(f)
+    a["source"] = ANCHOR_PATH
+    return a
+
+
+ANCHOR = None
+
+
 def host_facts() -> dict:
     def sh(*cmd):
         try:
@@ -671,13 +836,21 @@ def host_facts() -> dict:
 
 
 def main() -> None:
+    global ANCHOR
+    ANCHOR = load_anchor()
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e136-selection-bench.json")
     ap.add_argument("--trials", type=int, default=9)
+    ap.add_argument("--iters", type=int, default=500)
     ap.add_argument("--reps", default="1,2,4,8,16,32")
     ap.add_argument("--survivors", default="1024,4096,8192")
-    ap.add_argument("--tiles", type=int, default=ROW_TOP32_TILES)
+    ap.add_argument("--tiles", default="auto")
+    ap.add_argument("--chain", action="store_true",
+                    help="also run the serialised chain-slope harness")
     args = ap.parse_args()
+
+    def tiles_for(n: int) -> int:
+        return stage2_tiles(n) if args.tiles == "auto" else int(args.tiles)
 
     reps_grid = [int(v) for v in args.reps.split(",")]
     probes_ship = math.ceil(PROBE_SHIPPED * CLUSTERS)
@@ -701,8 +874,13 @@ def main() -> None:
             "probed_rows_shipped": rows_ship,
             "probed_rows_c1": rows_c1,
             "hist_bins": HIST_BINS, "hist_tiles": HIST_TILES,
-            "top32_tiles": args.tiles,
+            "shipped_top32_tiles": ROW_TOP32_TILES,
+            "stage2_tiles_policy": args.tiles,
         },
+        # The same quantity measured by the real runtime, `swift test --filter
+        # QwenRowTop32SelectionTests` on this host and commit. The shipped arm
+        # below must land near it or the port is not the shipped kernel.
+        "swift_anchor": ANCHOR,
         "conversion": {
             "pct_per_mb": PCT_PER_MB,
             "byte_ceiling_gb_s": BYTE_CEILING_GB_S,
@@ -711,27 +889,61 @@ def main() -> None:
         "arms": {}, "correctness": {}, "verdict": {},
     }
 
-    null = NullArm()
-    out["arms"]["null_dispatch"] = time_arm(null, reps_grid, args.trials)
-    print(f"null dispatch  {out['arms']['null_dispatch']['us_per_step']:8.3f} us")
+    def run(arm) -> dict:
+        row = time_calls(arm, args.iters, args.trials)
+        if args.chain:
+            row["chain"] = time_arm(arm, reps_grid, args.trials)
+        out["arms"][arm.label] = row
+        print(f"  {arm.label:22s} {row['us_per_call']:9.3f} us/call "
+              f"[{row['us_per_call_min']:9.3f}, {row['us_per_call_max']:9.3f}]")
+        return row
+
+    null = run(NullArm())
+    floor = null["us_per_call"]
 
     ship = ShippedArm(rows_ship, probes_ship)
-    out["arms"]["shipped"] = time_arm(ship, reps_grid, args.trials)
-    out["arms"]["shipped"]["plan"] = ship.plan.as_dict()
-    print(f"shipped N=32   {out['arms']['shipped']['us_per_step']:8.3f} us")
+    ship_row = run(ship)
+    ship_row["plan"] = ship.plan.as_dict()
+    for part in ship.parts():
+        run(part)
+    out["anchor_check"] = {
+        "swift_fused_kernel_us": ANCHOR["fused_kernel_us"],
+        "python_shipped_us_per_call": ship_row["us_per_call"],
+        "ratio_python_over_swift":
+            ship_row["us_per_call"] / ANCHOR["fused_kernel_us"],
+        "submit_and_sync_floor_us": floor,
+        "swift_minus_floor_us": ANCHOR["fused_kernel_us"] - floor,
+        "python_minus_floor_us": ship_row["us_per_call"] - floor,
+    }
 
     for n in [int(v) for v in args.survivors.split(",")]:
-        arm = TwoStageArm(rows_c1, probes_c1, n, args.tiles, with_rescore=True)
-        row = time_arm(arm, reps_grid, args.trials)
+        arm = TwoStageArm(rows_c1, probes_c1, n, tiles_for(n),
+                          with_rescore=True)
+        row = run(arm)
         row["plan"] = arm.plan.as_dict()
-        row["added_us_per_step"] = (row["us_per_step"]
-                                    - out["arms"]["shipped"]["us_per_step"])
+        row["added_us_per_step"] = (row["us_per_call"]
+                                    - ship_row["us_per_call"])
         row["added_ranked_pct"] = row["added_us_per_step"] / US_PER_RANKED_PCT
-        out["arms"][arm.label] = row
+        parts = {p.label.split(".", 1)[1]: run(p)["us_per_call"] - floor
+                 for p in arm.parts()}
+        ship_parts = {"partial":
+                      out["arms"]["shipped.partial"]["us_per_call"] - floor,
+                      "finalize":
+                      out["arms"]["shipped.finalize"]["us_per_call"] - floor}
+        row["parts_us_above_floor"] = parts
+        row["shipped_parts_us_above_floor"] = ship_parts
+        # Independent estimate of the same difference: sum the priced
+        # dispatches instead of trusting one whole-arm subtraction. Both arms
+        # pay exactly one submit-and-sync per call, so the floor cancels and
+        # is not added back. What this sum omits is the in-buffer cost of
+        # having more dispatches at all, which the whole-arm number carries,
+        # so the two estimates bracket the true added cost.
+        row["added_us_from_parts"] = (
+            sum(parts.values()) - sum(ship_parts.values()))
         out["correctness"][arm.label] = correctness(arm, ship)
-        print(f"two-stage {arm.label:6s} {row['us_per_step']:8.3f} us  "
-              f"added {row['added_us_per_step']:7.3f} us  "
-              f"= {row['added_ranked_pct']:6.3f} % ranked  "
+        print(f"  -> {arm.label} added {row['added_us_per_step']:8.3f} us "
+              f"(parts {row['added_us_from_parts']:8.3f} us) "
+              f"= {row['added_ranked_pct']:6.3f} % ranked, "
               f"recall {out['correctness'][arm.label]['recall_of_true_top32']}")
 
     selected = out["arms"].get("N4096")
@@ -740,6 +952,8 @@ def main() -> None:
         out["verdict"] = {
             "selected_cell": "qlowrank256-N4096-p0.35",
             "added_us_per_draft_step": added,
+            "added_us_per_draft_step_from_parts":
+                selected["added_us_from_parts"],
             "added_ranked_pct_at_265gbs": added / US_PER_RANKED_PCT,
             "added_ranked_pct_at_measured_186_7gbs":
                 added / ((1.0 / PCT_PER_MB) * 1e6 / (186.7 * 1e3)),
@@ -751,6 +965,7 @@ def main() -> None:
     with open(args.out, "w") as f:
         json.dump(out, f, indent=2)
     print(json.dumps(out["verdict"], indent=2))
+    print(json.dumps(out["anchor_check"], indent=2))
     print(f"wrote {args.out}")
 
 
