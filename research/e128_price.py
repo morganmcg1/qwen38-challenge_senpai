@@ -104,6 +104,21 @@ def ranked_round_us(rows: int) -> float:
     return intercept + slope * rows
 
 
+def ranked_price_table() -> tuple[list[float], list[float]]:
+    """The shipped uniform 0.18 price replaced by the measured ranked curve.
+
+    The walk compares `reach` with `marginal[d] * (1 + expected) / cumulative[d]`,
+    so `cumulative[d]` only has to be the cost of a round that drafts `d`
+    tokens up to a common factor. Normalising by the `d = 0` cost keeps the
+    same units as the shipped table, which makes this a pure two-vector
+    substitution rather than a change of the walk.
+    """
+    base = ranked_round_us(1)
+    cumulative = [ranked_round_us(d + 1) / base for d in range(MAX_DEPTH + 1)]
+    marginal = [cumulative[d + 1] - cumulative[d] for d in range(MAX_DEPTH)]
+    return marginal, cumulative
+
+
 def expected_accepted(p_vec: list[float], depth: int) -> float:
     """E[accepted] for a chain of independent per-position conditionals."""
     total = 0.0
@@ -225,6 +240,21 @@ def make_policy(arm: str, recal: tuple = (2.0, 3.0)):
         return lambda ema, m, offer, cap: cost_model_depth(
             ema, m, offered_depth=offer,
             margin_scale_0=s0, margin_scale_1=s1)[0]
+    if arm in ("rankedprice", "rankedprice_nomargin"):
+        marginal, cumulative = ranked_price_table()
+        keep = arm == "rankedprice"
+        return lambda ema, m, offer, cap: cost_model_depth(
+            ema, m, offered_depth=offer,
+            margin_scale_0=2.0 if keep else None,
+            margin_scale_1=3.0 if keep else None,
+            marginal=marginal, cumulative=cumulative)[0]
+    if arm.startswith("price"):
+        constant = float(arm[5:])
+        marginal = [constant] * MAX_DEPTH
+        cumulative = [1.0 + i * constant for i in range(MAX_DEPTH + 1)]
+        return lambda ema, m, offer, cap: cost_model_depth(
+            ema, m, offered_depth=offer,
+            marginal=marginal, cumulative=cumulative)[0]
     if arm == "static7":
         return lambda ema, m, offer, cap: min(
             offer, MAX_DEPTH, SEGMENTED_VERIFY_DEPTH_CAP)
@@ -288,17 +318,26 @@ def simulate(policy, sampler: RoundSampler, windows: int,
 
 def fit_delta(sampler_factory, p_fixture: list[float], target_depth: float,
               windows: int) -> tuple:
-    """One level parameter, fitted so the SHIPPED arm reproduces F92 depth."""
+    """One level parameter, fitted so the SHIPPED arm reproduces F92 depth.
+
+    The reachable depth range is bounded from above by the shipped estimator
+    itself: the margin override can hold depth down however good acceptance
+    becomes. A target outside the reachable range is CLAMPED to the nearest
+    endpoint and the residual is reported, because silently dropping the
+    prompt would quietly change which eight values the median is taken over.
+    """
     policy = make_policy("ship")
-    low, high = -4.0, 6.0
+    low, high = -8.0, 12.0
 
     def depth_at(delta: float) -> float:
         p_target = shift_p_vector(p_fixture, delta)
         return simulate(policy, sampler_factory(p_target), windows)["mean_depth"]
 
     d_low, d_high = depth_at(low), depth_at(high)
-    if not (d_low <= target_depth <= d_high):
-        return None, d_low, d_high
+    if target_depth <= d_low:
+        return low, d_low, d_high
+    if target_depth >= d_high:
+        return high, d_low, d_high
     for _ in range(40):
         mid = 0.5 * (low + high)
         if depth_at(mid) < target_depth:
@@ -306,6 +345,34 @@ def fit_delta(sampler_factory, p_fixture: list[float], target_depth: float,
         else:
             high = mid
     return 0.5 * (low + high), d_low, d_high
+
+
+def validate_simulator(forced: dict, shipped: dict, windows: int,
+                       seed: int = 128) -> list[dict]:
+    """Held-out check with NO fitted parameter anywhere.
+
+    Feed the simulator the uncensored acceptance of a fixture and run the
+    shipped policy on it at `delta = 0`. The answer must reproduce the same
+    fixture's separately measured shipped depth and accept rate. Neither
+    measured value is used to build the input, so this can fail. If it does,
+    no counterfactual arm on the same machinery is believable.
+    """
+    rows = []
+    for name, leg in sorted(forced.items()):
+        if name not in shipped:
+            continue
+        p_vec = pooled_positions([leg])
+        sampler = RoundSampler(leg["rounds_detail"], p_vec, p_vec, seed=seed)
+        out = simulate(make_policy("ship"), sampler, windows)
+        rows.append({
+            "fixture": name,
+            "measured_depth": shipped[name]["mean_depth"],
+            "simulated_depth": out["mean_depth"],
+            "measured_accept": shipped[name]["accept_rate"],
+            "simulated_accept": out["accept_rate"],
+            "forced_uncensored_p": p_vec,
+        })
+    return rows
 
 
 def fit_margin_scale(rounds: list[dict], position: int) -> dict:
@@ -380,7 +447,15 @@ def median_of(values: list[float]) -> float:
 # ----------------------------------------------------------------------- main
 
 ARMS = ["ship", "nomargin", "nomargin0", "nomargin1", "recal",
-        "static7", "oracle"]
+        "rankedprice", "rankedprice_nomargin", "static7", "oracle"]
+
+# Uniform price constants swept as a one-number implementable alternative to
+# the shipped 0.18. The winner has to win on the median, not per prompt, so the
+# grid is priced whole and the constant is chosen once for all eight prompts.
+PRICE_GRID = [0.06, 0.09, 0.12, 0.14, 0.16, 0.18, 0.20, 0.23, 0.26, 0.30, 0.36]
+PRICE_ARMS = ["price%0.2f" % c for c in PRICE_GRID]
+HEADLINE_ARMS = list(ARMS)
+ARMS += PRICE_ARMS
 
 
 def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
@@ -420,10 +495,6 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
         else:
             delta, d_low, d_high = fit_delta(
                 factory, p_fixture, spec["depth"], fit_windows)
-            if delta is None:
-                print("skip %s: shipped depth %.3f outside simulator range "
-                      "[%.3f, %.3f]" % (prompt, spec["depth"], d_low, d_high))
-                continue
             p_target = shift_p_vector(p_fixture, delta)
 
         recal_fit = (
@@ -504,6 +575,9 @@ def main() -> int:
     parser.add_argument("--receipt", default="44559d02")
     parser.add_argument("--windows", type=int, default=200)
     parser.add_argument("--fit-windows", type=int, default=60)
+    parser.add_argument("--shipped", type=Path,
+                        help="shipped-policy acceptance JSON, held out for "
+                             "the zero-parameter simulator validation")
     parser.add_argument("--json", type=Path)
     parser.add_argument("--sensitivity-json", type=Path)
     args = parser.parse_args()
@@ -512,6 +586,26 @@ def main() -> int:
     for path in [args.accept] + args.extra_accept:
         for leg in json.loads(path.read_text())["legs"]:
             legs[leg["prompt_id"]] = leg
+
+    validation = []
+    if args.shipped:
+        shipped = {leg["prompt_id"]: leg
+                   for leg in json.loads(args.shipped.read_text())["legs"]}
+        validation = validate_simulator(legs, shipped, args.windows)
+        print("\nzero-parameter simulator validation "
+              "(uncensored acceptance in, measured shipped leg out):")
+        print("%-20s %9s %9s %9s %9s %9s" % (
+            "fixture", "depth*", "depth~", "d err", "accept*", "accept~"))
+        for row in validation:
+            print("%-20s %9.3f %9.3f %+9.3f %9.4f %9.4f" % (
+                row["fixture"], row["measured_depth"], row["simulated_depth"],
+                row["simulated_depth"] - row["measured_depth"],
+                row["measured_accept"], row["simulated_accept"]))
+        errs = [r["simulated_depth"] - r["measured_depth"] for r in validation]
+        if errs:
+            print("depth error: mean %+0.3f, max |err| %0.3f over %d fixtures"
+                  % (sum(errs) / len(errs), max(abs(e) for e in errs),
+                     len(errs)))
 
     receipt = load_board_receipt(args.board, args.receipt)
     data = price(legs, receipt, args.windows, args.fit_windows)
@@ -536,22 +630,29 @@ def main() -> int:
             entry["target_accept_f92"], entry["simulated_accept_ship"]))
 
     print("\nranked median per arm (Rule 67, median recomputed over 8 prompts):")
-    print("%-10s %14s %12s %12s" % ("arm", "median", "vs ship %", "vs base %"))
-    for arm in arms:
-        print("%-10s %14.8f %12.4f %12.4f" % (
+    print("%-20s %14s %12s %12s" % ("arm", "median", "vs ship %", "vs base %"))
+    for arm in HEADLINE_ARMS:
+        print("%-20s %14.8f %12.4f %12.4f" % (
             arm, medians[arm],
             (medians[arm] / ship_median - 1.0) * 100.0,
             (medians[arm] / base_median - 1.0) * 100.0))
 
     print("\nper-prompt candidate speedup (%) by arm:")
-    header = "%-10s" % "prompt" + "".join("%11s" % a for a in arms)
-    print(header)
+    print("%-10s" % "prompt" + "".join("%11s" % a for a in HEADLINE_ARMS))
     for prompt in board_prompts:
         print("%-10s" % prompt + "".join(
-            "%11.3f" % per_prompt_delta[arm][prompt] for arm in arms))
+            "%11.3f" % per_prompt_delta[arm][prompt] for arm in HEADLINE_ARMS))
+
+    print("\nuniform price constant sweep (shipped is 0.18):")
+    print("%-10s %14s %12s" % ("constant", "median", "vs ship %"))
+    for arm in PRICE_ARMS:
+        print("%-10s %14.8f %12.4f" % (
+            arm[5:], medians[arm],
+            (medians[arm] / ship_median - 1.0) * 100.0))
 
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
+        data["validation"] = validation
         args.json.write_text(json.dumps(data, indent=2) + "\n")
 
     if args.sensitivity_json:
