@@ -43950,3 +43950,206 @@ and flag its impossible -527.5 us marginal; re-derive advisor error 87's
 traffic; retire the six surviving `542.8 GB/s` citations at 39353, 39921, 42441,
 31912, 30127 and 31839, of which 42441 is used to argue that residency has
 leverage on g17s; and disambiguate the two mechanisms both named "Route C".
+
+## 281 — 2026-08-22 12:20Z — FINDING 150: the whole 2026-08-22 board jump is a THIRD RUNNER STATE, not a mechanism. We still hold the mechanism frontier.
+
+### 281.1 What the board looked like, and what I almost did
+
+At 12:00Z the promoted board read:
+
+```
+48423d09  noskillcoding  3.51845338  src c0dbec05   <- crown
+cf79f7df  Lieisyourlie   3.51661724  src a0f85886
+d3c491b5  morganmcg1     3.49065044  src 6f1cd66f   <- ours
+```
+
+I had already imported `a0f85886`'s 278-line affine-2 cluster QMV kernels into
+the advisor base, priced at `+0.744 %` from the published gap. I was one step
+away from also importing `c0dbec05`'s four-line SDPA warm change and calling the
+composition `3.5445`. Both prices were wrong. Both mechanisms are worth zero.
+
+### 281.2 The three trees, read at source
+
+```
+T1 = 6f1cd66f   our promoted source                       published 3.49065044
+T2 = a0f85886   T1 + 278 lines of affine-2 cluster QMV    published 3.51661724
+T3 = c0dbec05   T1 + 10 lines of SDPA warm list           published 3.51845338
+```
+
+`git diff --stat 6f1cd66f c0dbec05` is one file, 10 insertions, 2 deletions.
+The whole of it is `for qL in [1, 5, 4]` becoming `for qL in [1, 2, 3, 4, 5]` at
+the two `warmAllDepthShapes` SDPA loops, plus two four-line provenance comments.
+`git diff --stat a0f85886 c0dbec05` is 21 insertions and 269 deletions: T3 does
+not contain T2's kernels, and T2 does not contain T3's warm list. Verified by
+symbol grep: `cluster_centroid_qmv`, `cluster_row_qmv`, `a2g64` and `MLX_E121`
+all return 0 in `upstream/main:Qwen35.swift` and non-zero in ours.
+
+### 281.3 The falsifying measurement
+
+`_advisor_scratch/cluster3.py`, pairwise mean and max absolute per-prompt
+percentage difference of `mtp_seconds_per_token_mean` over all eight hidden
+prompts. Schedule is identical on all eight prompts for every pair listed
+(`effective_mean_draft_len` bit-identical), so these are clean candidate-leg
+contrasts.
+
+```
+                    score   mean pairwise diff vs the other four in its band
+cf79f7df  T2       3.5166   0.059  0.088  0.069  0.073
+48423d09  T3       3.5185   0.059  0.141  0.036  0.017
+3b376ba2  ?        3.5177   0.088  0.141  0.151  0.148
+390ec878  ?        3.5159   0.069  0.036  0.151  0.038
+c63eaa21  ?        3.5077   0.073  0.017  0.148  0.038
+--- across the band boundary ---
+d3c491b5  T1       3.4907   1.15   1.12   1.23   1.10   1.12
+1986338b  ?        3.4736   1.15   1.10   1.24   1.09   1.09
+2d02ef0b  ?        3.4593   1.25   1.20   1.34   1.19   1.19
+```
+
+Maximum single-prompt difference inside the fast band is `0.277 %`; between
+`48423d09` and `c63eaa21` it is `0.033 %`. Between the bands the maximum is
+`1.6 %` to `2.3 %`.
+
+**Five submissions, from three different solver accounts, carrying at least
+three different source trees, produced per-prompt candidate times that agree to
+better than three parts in ten thousand on all eight prompts.** No pair of
+distinct mechanisms can do that. The band is a property of the run.
+
+### 281.4 The band is the known measurement mode, with a third level
+
+`_advisor_scratch/modetest.py` converts the per-prompt contrast into a per-round
+saving using `R = 512 / (Mbar + 1)` and the reported
+`non_drafting_round_count`.
+
+```
+d3c491b5 -> 48423d09        d3c491b5 -> cf79f7df
+prompt     saving per drafting round      saving per drafting round
+plutarch          n/a (38 drafting rounds of 487; +37 us/round total)
+drama                     884.7                       928.2
+travel                   1359.9                      1344.8
+beagle                    492.2                       528.2
+republic                  683.8                       696.9
+essays                    375.6                       408.8
+medicine                  891.9                       919.9
+botany                   1030.7                      1078.5
+mean                      817.0                       843.6
+```
+
+Finding 78 measured the ranked measurement mode at **0.803 +/- 0.025 ms per
+drafting round**, drafting path only, null on plutarch. Both contrasts land on
+that constant. The serial leg moves by `+0.152 % +/- 0.254` and `+0.055 % +/-
+0.212`, that is, not at all, exactly as FACT 2 requires.
+
+The Finding 76 mode index over the recent board shows three bands, not two:
+
+```
+band   index range        example rows
+S1     -12.0 to -12.7     15ae6952, ea8867f9, 5d351688, 79a80e8a
+S2     -13.2 to -13.5     d3c491b5 (-13.3603), 1986338b, 2d02ef0b, 730b635d
+S3     -14.17 to -14.25   cf79f7df, c63eaa21, 48423d09, 3b376ba2, 390ec878
+```
+
+S3 has no row before `2026-08-22T09:28Z` and five rows after it, interleaved
+with S1 and S2 rows in the same hour. Finding 75 already described the ranked
+mode as a **three-slot round robin with P(fast) = 2/3**. That is now literal:
+there are three slots with three different drafting-path speeds, and the third
+one either joined the pool or was repaired at about 09:28Z on 2026-08-22.
+
+### 281.5 FINDING 150
+
+**The ranked runner pool has at least three drafting-path speed states. The
+state is drawn per run, it moves the candidate leg by about 1.15 % per step, it
+does not move the serial leg, and it is null on plutarch. The published board
+move from 3.4907 to 3.5185 on 2026-08-22 contains no mechanism at all.**
+
+Corollaries:
+
+1. `6f1cd66f` is still the mechanism frontier of the whole competition. Our own
+   `d3c491b5` is the fastest row in the S2 band by `0.28 %` over `1986338b` and
+   `0.50 %` over `2d02ef0b`.
+2. Our `d3c491b5` tree, drawn in S3, publishes about **3.5153 to 3.5185**.
+3. The 278-line affine-2 cluster QMV import from `a0f85886` is worth **zero**.
+4. The four-line SDPA warm list change in `c0dbec05` is worth **zero**, which
+   independently reconfirms the schedule-matched isolation already in this
+   ledger at line 35781 (`51b9bf85 -> 73cb7dfe`, candidate leg `+0.0057 %`,
+   sd `0.0875`) and the E112 Q1 structural argument that `qL` reaches SDPA
+   pipeline identity only through `do_causal = do_causal_ && q.shape(2) > 1`.
+5. Every published score on this board since 09:28Z carries an unlabelled
+   `+/- 1.15 %` state term, which is larger than every mechanism increment we
+   have ever measured except Route B.
+
+### 281.6 RETRACTIONS
+
+**FINDING 137 IS RETRACTED.** F137 saw `cf79f7df` and `c63eaa21` sitting 6 to 8
+sigma below the historical fast cluster and concluded that the mode index was
+confounded with the draft-path mechanism. The index was not confounded. It was
+correctly reporting a third state that F137 had no prior for. The index remains
+a valid state instrument.
+
+**FINDING 138 IS RETRACTED.** F138 called the `d3c491b5` to `cf79f7df` contrast
+"the first clean ranked-frame isolation of the draft path" and reported savings
+of 374 to 954 us per round with an unresolved 4.6x spread in implied saving per
+draft step. It was isolating the state, not the draft path. The 4.6x spread was
+the tell: a per-drafting-round constant divided by a varying draft depth.
+
+**ADVISOR ERROR 113.** I priced two rival frontier moves from published medians
+inside a nine-hour window, against my own Rule 63 (never decide from the
+published median), Rule 71 (classify and correct the mode before calling a run a
+regression) and Rule 93. I then imported 278 lines of foreign kernel code into
+the campaign base on the strength of that price, and was about to import a
+second mechanism and multiply the two. The check that would have caught it costs
+one script and no GPU: compare the per-prompt candidate vectors of the two rival
+rows against each other first.
+
+### 281.7 RULE 98
+
+**BEFORE PRICING ANY RIVAL ROW, COMPARE ITS PER-PROMPT CANDIDATE VECTOR AGAINST
+EVERY OTHER RECENT ROW, NOT ONLY AGAINST OURS.** If two rows with different
+source trees agree to better than `0.3 %` on all eight prompts, they are the
+same measurement and their common offset is a run state, not a mechanism. A
+published gap may only be attributed to a source difference after the row has
+been matched to at least one same-state row from a different tree.
+
+### 281.8 What this changes about strategy
+
+The state term is `+/- 1.15 %` per step over at least three levels, so the full
+spread between the slowest and fastest state is about `2.3 %` on the candidate
+leg. Every mechanism we currently hold in the queue is smaller than one state
+step. Consequences:
+
+- **Do not chase the published crown.** Chase the S2-band and S3-band internal
+  ranking, which is mechanism.
+- **Do not import rival source on the strength of a published gap.** Rule 98.
+- **Keep the mechanism pipeline full.** Each genuinely new mechanism submission
+  is also a fresh state draw, so expected published score rises with submission
+  rate at constant mechanism, but only new mechanisms may be submitted; program
+  policy forbids duplicate submissions and this campaign forbids re-rolling.
+- **The 278-line cluster QMV import should come back out of the base** once
+  `0c6191b7` resolves. It is measured zero, it costs source bytes and 278 lines
+  of foreign kernel surface, and our own E121 implementation of the same idea
+  measured a ranked regression of `+2.10 %`. Keeping it violates the cleanup
+  standard.
+- **The state asymmetry is a research lead.** The state moves the drafting path
+  and only the drafting path, by a per-round constant of about `820 us`, with no
+  effect on the serial path and no effect on plutarch, whose rounds are 92 %
+  non-drafting. A per-drafting-round constant that the serial path never pays
+  points at something the draft step touches once per round: the proposal-head
+  artifact residency, the head command buffer, or a per-round allocation on the
+  draft path. F143 puts the ranked proposal-head share at 7 to 9 % of the round,
+  which is 3,850 to 4,950 us, so `820 us` is 17 to 21 % of the head path. If any
+  candidate-side change can pin the fast state, it is worth more than every item
+  in the current queue combined.
+
+### 281.9 The state-classification instrument
+
+`_advisor_scratch/cluster3.py <id8> <id8> ...` prints the eight per-prompt
+candidate times and the pairwise mean and max absolute percentage differences.
+`_advisor_scratch/modetest.py <A> <B>` converts a pair into per-round and
+per-drafting-round savings and prints the `820 us` comparison.
+`_advisor_scratch/crown3.py <A> <B>` prints the full candidate-leg, serial-leg,
+schedule-identity and serial-free decomposition. `_advisor_scratch/modehist.py`
+prints the mode index for every board row that has full per-prompt metrics and
+the recent-window table used above.
+
+Standing procedure for every new rival row: run `cluster3.py` with the new row
+and the four nearest recent rows before writing a single word about its
+mechanism.
