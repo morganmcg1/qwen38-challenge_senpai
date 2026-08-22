@@ -153,6 +153,11 @@ def pooled_positions(legs: list[dict]) -> list[float]:
 
     Counts are pooled, not the ratios, so a fixture that reached position `j`
     on more rounds carries proportionally more weight there.
+
+    A Jeffreys prior (half a success and half a failure) keeps every entry
+    strictly inside `(0, 1)`. A raw `0` or `1` has infinite logit, which would
+    make the one-parameter transfer either impossible or unbounded, and both
+    endpoints occur at the deep positions that only a few rounds reach.
     """
     p_vec = []
     for j in range(MAX_DEPTH):
@@ -164,7 +169,7 @@ def pooled_positions(legs: list[dict]) -> list[float]:
         if reached == 0:
             p_vec.append(p_vec[-1] if p_vec else 0.5)
         else:
-            p_vec.append(accepted / reached)
+            p_vec.append((accepted + 0.5) / (reached + 1.0))
     return p_vec
 
 
@@ -425,6 +430,8 @@ def fit_margin_scale(rounds: list[dict], position: int) -> dict:
 
 def load_board_receipt(path: Path, prefix: str) -> dict:
     rows = json.loads(path.read_text())
+    if isinstance(rows, dict):
+        rows = rows["submissions"]
     for row in rows:
         if row["id"].startswith(prefix):
             metrics = row["officialMetrics"]
@@ -598,7 +605,15 @@ FALSIFIERS = {
 }
 
 
-def evaluate_falsifiers(legs: dict) -> dict:
+def evaluate_falsifiers(legs: dict, transfer: dict | None = None) -> dict:
+    """Test the pre-registered conditions on one acceptance vector per prompt.
+
+    The conditions describe the HIDDEN ranked prompt, so the honest input is
+    the transferred vector `p_target`, which is fitted to that prompt's
+    published `effective_mean_draft_len`. Passing `transfer=None` instead
+    tests the raw local fixture, which is a different population and is
+    reported only for transparency.
+    """
     rows = {}
     for prompt, spec in FALSIFIERS.items():
         fixture = RANKED_PROMPTS[prompt]["fixture"]
@@ -607,7 +622,13 @@ def evaluate_falsifiers(legs: dict) -> dict:
             rows[prompt] = {"status": "no data", "missing": [
                 n for n in fixture if n not in legs]}
             continue
-        p_vec = pooled_positions(chosen)
+        if transfer is not None:
+            if prompt not in transfer:
+                rows[prompt] = {"status": "not priced"}
+                continue
+            p_vec = transfer[prompt]["p_target"]
+        else:
+            p_vec = pooled_positions(chosen)
         lead = p_vec[:spec["lead"]]
         geo = math.exp(sum(math.log(max(p, 1e-12)) for p in lead) / len(lead))
         tail = p_vec[spec["tail_position"]]
@@ -711,23 +732,28 @@ def main() -> int:
                   % (sum(errs) / len(errs), max(abs(e) for e in errs),
                      len(errs)))
 
-    falsifiers = evaluate_falsifiers(legs)
-    print("\nadvisor F1 pre-registered falsifiers on uncensored acceptance:")
-    print("%-10s %5s %10s %10s %8s %8s %8s %10s" % (
-        "prompt", "R", "geo", "geo min", "geo ok", "tail p", "tail max",
-        "survives"))
-    for prompt, row in falsifiers.items():
-        if "survives" not in row:
-            print("%-10s %s" % (prompt, row))
-            continue
-        print("%-10s %5d %10.4f %10.4f %8s %8.4f %8.4f %10s" % (
-            prompt, row["R_under_test"], row["geo_mean_lead"],
-            row["geo_mean_required"], row["geo_mean_passes"], row["tail_p"],
-            row["tail_max_allowed"], row["survives"]))
-
     receipt = load_board_receipt(args.board, args.receipt)
     data = price(legs, receipt, args.windows, args.fit_windows)
+    falsifiers = {
+        "transferred_to_ranked_prompt": evaluate_falsifiers(
+            legs, data["transfer"]),
+        "local_fixture_uncensored": evaluate_falsifiers(legs),
+    }
     data["falsifiers"] = falsifiers
+    for label, rows in falsifiers.items():
+        print("\nadvisor F1 pre-registered falsifiers, input = %s:" % label)
+        print("%-10s %5s %10s %10s %8s %8s %8s %10s" % (
+            "prompt", "R", "geo", "geo min", "geo ok", "tail p", "tail max",
+            "survives"))
+        for prompt, row in rows.items():
+            if "survives" not in row:
+                print("%-10s %s" % (prompt, row))
+                continue
+            print("%-10s %5d %10.4f %10.4f %8s %8.4f %8.4f %10s" % (
+                prompt, row["R_under_test"], row["geo_mean_lead"],
+                row["geo_mean_required"], row["geo_mean_passes"],
+                row["tail_p"], row["tail_max_allowed"], row["survives"]))
+
     arms = ARMS
     medians = data["medians"]
     transfer = data["transfer"]
