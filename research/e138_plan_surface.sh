@@ -7,11 +7,15 @@
 # GPU, so the standing ungated-measurement conditions apply and this script
 # records the entry and exit GPU temperature of every block next to the result.
 #
-#   usage: research/e138_plan_surface.sh OUT CELLS [SHAPES] [REPS] [INNER] [GRID]
+#   usage: research/e138_plan_surface.sh OUT CELLS [SHAPES] [REPS] [INNER] \
+#                                        [GRID] [REFERENCE]
 #
-# CELLS  is `m:ipg:rps` triples, comma separated.
+# CELLS  is `m:ipg:rps` triples or `m:stock`, comma separated.
 # SHAPES is a comma separated subset of the seven scored shape names, or empty
 #        for all seven.
+# REFERENCE is the single cell every other cell is ABBA-interleaved against.
+#        `m:stock` is the only reference that is independent of GRID, so it is
+#        the one to use when two sessions must be compared across grids.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -23,6 +27,7 @@ SHAPES="${3:-}"
 REPS="${4:-15}"
 INNER="${5:-10}"
 GRID="${6:-tight}"
+REFERENCE="${7:-6:6:4}"
 
 mkdir -p "$(dirname "$OUT")"
 
@@ -46,6 +51,7 @@ export MLXFAST_E138_SHAPES="$SHAPES"
 export MLXFAST_E138_REPS="$REPS"
 export MLXFAST_E138_INNER="$INNER"
 export MLXFAST_E138_GRID="$GRID"
+export MLXFAST_E138_REFERENCE="$REFERENCE"
 
 swift test --force-resolved-versions --filter E138PlanSurface
 STATUS=$?
