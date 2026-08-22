@@ -43119,3 +43119,155 @@ operator plausibility gate                           5.0
 The plausibility gate is not a target, not a reason to stop, and not a reason to hold a
 candidate. If the one-pass table lands at the top of its bracket we submit it and let the
 operator adjudicate the ceiling.
+
+## 278 — WE LOST THE CROWN AFTER 20 MINUTES, AND THE FRONTIER IS IMPORTED
+
+2026-08-22 10:55 UTC, advisor.
+
+### THE RECEIPT
+
+```
+cf79f7df-305e-4ffd-b78f-4f65f5c3b0dd   Lieisyourlie   3.51661723756985
+  status                accepted
+  promotionStatus       promoted
+  promotedSourceRef     a0f8588668c603864deffe407f5895b31858414e
+  createdAt             2026-08-22T09:28:33Z
+  model label           Grok 4.6, effort xhigh
+  title                 E121: 32-value/lane affine-2 cluster QMV on live #1063
+```
+
+Our crown `d3c491b5` at 3.49065043561149 was promoted at 09:08:38Z. Their submission was created
+at 09:28:33Z and promoted before 10:20Z. We held first place for about twenty minutes. Their
+margin over us is +0.744 %.
+
+I recorded `cf79f7df` as "validating" in ledger 277's board snapshot and did not price it. That
+is a process failure, not an analysis failure: a validating rival row is a forecast that must be
+priced from its note the moment it appears, not after it lands. RECORD THIS AS ADVISOR ERROR 108.
+
+### WHAT THEY DID, IN THEIR OWN WORDS AND CONFIRMED AT SOURCE
+
+Their note is an unusually complete disclosure and it is accurate. They parented on OUR promoted
+`6f1cd66f`, kept Route B intact, copied nothing else, and changed ONE file.
+
+The mechanism attacks the DRAFT PROPOSAL path, which Route B does not touch:
+
+1. The 2-bit centroid `quantizedMM` over 12,292 leaves.
+2. The 2-bit `gatherQuantizedMM` of 3,073 probed leaves times 8 rows = 24,584 row scores.
+
+They replaced both generic MLX launches with two custom Metal kernels dispatched through
+`MLXFast.metalKernel`, sharing a body `qwen_e121_a2_qmv4` that clones
+`qmv_fast_singlerow_affine2_g64`: 32 values per lane, one `ulong` load of 8 bytes carrying 32
+packed 2-bit values per row per k-block, and FIVE k-blocks at K=5120 instead of ten. Same
+dispatch geometry as Route B documents, `threadGroup (32, 2, 1)`.
+
+Their causal argument is the same one this campaign uses and it is correct: the serial leg runs
+no 2-bit matmul, so speeding a 2-bit operation cannot inflate the ranked denominator. It is a
+pure candidate-side removal.
+
+THEY DIAGNOSED EXACTLY WHAT ASKELADD DIAGNOSED, ON THE SAME DAY, AND SHIPPED IT FIRST.
+Askeladd's E131 rung 1b proved at tensor level that `12292 % 8 == 4` fails the `fast` gate at
+`quantized.cpp:259`, so the centroid score runs non-fast `affine_qmv`, and that the 32-value
+`qmv_fast_singlerow_affine2_g64` sits on the tree gated on `out_vec_size == 98336` and is DEAD
+CODE on the live head. Ledger 277 records that finding and records mechanism C5, padding
+12,292 to 12,296, as its cheap unlock, priced at +0.03 %.
+
+The lesson is not that the diagnosis was wrong. The diagnosis was right and was ours
+independently. THE LESSON IS THAT I PRICED THE UNLOCK AT +0.03 % AND SHELVED IT AS A RIDER WHEN
+THE REAL MECHANISM WAS WORTH +0.744 %. My price assumed the fix was a bandwidth move from
+209.1 to 230.4 GB/s. The real mechanism halves the k-block count from ten to five on an
+instruction-issue-bound kernel, which F44, F49 and F114 all say is the binding resource on this
+family. I priced a bandwidth effect on a kernel the campaign has repeatedly proved is not
+bandwidth bound. RECORD THIS AS ADVISOR ERROR 109.
+
+### THE IMPORT
+
+`upstream/main` now points at `a0f8588668c603864deffe407f5895b31858414e`, the promoted frontier.
+Verified against the live contract before importing:
+
+```
+required editable paths                                        89
+optional editable paths                                         2
+required paths absent from the promoted frontier             none
+editable paths differing between our advisor head and it        1
+  Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift   +267 / -11
+```
+
+ONE FILE. The eleven deleted lines are exactly the two generic MLX 2-bit launches named above and
+nothing else. `a0f8588` already contains our Route B, because they parented on it. Nothing of
+ours is removed by taking their snapshot.
+
+Imported with `git restore --source=a0f8588... --worktree` on that single path, then proved
+byte-parity with the frontier on it. Gates run on the imported tree:
+
+```
+senpai/check-editable-budget.sh 770a3ff2   OK  source=2594084/3000000  growth=139249/262144
+research/twin_audit.py                     OK  29 runtime-effective twins
+senpai/verify-ranked-score-boundary.sh     PASS
+senpai/entry-point-cliff-census.sh         FAIL, pre-existing and expected, see below
+```
+
+The cliff gate FAIL is `affine_qmv_fast<bf16,64,4,false>` on g17s at 91 -> 101 registers,
+43 -> 39 derived simdgroups. That is the standing E100 entry point measured against the OLD
+campaign base `770a3ff2`, not a regression introduced by the import. It is exactly the condition
+alphonse's `prune_na5_pair` removes, taking the entry point to 90 registers and 44 simdgroups.
+This is the gate's first live use on a real base change and it behaved correctly.
+
+BUDGET WARNING. Editable growth is now 139,249 of 262,144 bytes, 53 % consumed, leaving 122,895
+bytes. Per-width templating and the one-pass table must fit inside that.
+
+### WHY WE DO NOT SUBMIT A REDRAW
+
+The imported frontier alone reproduces their candidate. F96 measured a byte-identical redraw of a
+crown losing 0.374 %, and F80 puts the mode penalty for a slow run at 1.317 % with P(fast) = 2/3.
+A pure redraw therefore has an expected published score BELOW 3.5166 and would consume our only
+submission slot to arrive, at best, in a tie. We do not submit a redraw. We submit the frontier
+plus a mechanism they do not have.
+
+### THE STRATEGIC POSITION IS BETTER THAN THE SCOREBOARD
+
+```
+their promoted crown cf79f7df                        3.51661724   <- THE FRONTIER
+our promoted best d3c491b5                           3.49065044
+gap                                                     -0.744 %
+
+what we own that is not in a0f8588
+  prune_na5_pair (alphonse, complete, -22 bytes)     +0.007 % to +0.86 %   depending on c
+  per-width templating (thorfinn, in progress)       +0.09 % to +3.99 %    depending on c
+  one-pass table {6:6,7:7}, spill-free on g17s       +1.4 % to +1.8 %
+  one-pass table {6:6,7:7,8:8}                       +7.6 % to +15.4 % of the leg
+  Route C narrow head entry point (askeladd)         +0.0 % to +0.6 %      depending on c
+```
+
+The one-pass table alone, composed on their 3.51662, publishes between 3.78 and 4.06. Their
+mechanism and ours are disjoint under Rule 75: theirs removes 2-bit proposal work on the draft
+path, ours removes a weight pass on the 4-bit target verify path. Neither touches the other's
+instruction or byte set.
+
+They took our Route B and beat us by 0.744 %. We take their cluster QMV and answer with a lever
+worth ten to twenty times that. That is the correct response and it is already assigned.
+
+### ACTIONS TAKEN
+
+1. Imported `a0f8588` into the advisor branch on the single differing editable path.
+2. Updated `senpai/frontier-state.json`: `organizer.syncedCommit` and
+   `promotedSubmission.sourceRef` to `a0f8588668c603864deffe407f5895b31858414e`,
+   `promotedSubmission.id` to `cf79f7df-305e-4ffd-b78f-4f65f5c3b0dd`, score 3.51661723756985.
+3. All four students must rebase onto the new advisor head. Thorfinn's templating work and their
+   cluster QMV touch different regions of `Qwen35.swift`, the Route B block around lines 1423 to
+   1848 against the draft path around lines 3300 to 4800, so the rebase should be clean.
+
+### RULE 93 — PRICE A VALIDATING RIVAL ROW WHEN IT APPEARS, NOT WHEN IT LANDS
+
+A rival row in `validating` state carries a public note that usually names its mechanism. Read
+the note, identify the mechanism, price it from OUR constants under Rule 62, and check whether we
+already hold the diagnosis. A rival row that names a mechanism we have already diagnosed and
+shelved is the strongest possible signal that our price for it was wrong.
+
+### RULE 94 — NEVER PRICE A BANDWIDTH EFFECT ON THE QMV FAMILY
+
+F44, F49 and F114 all establish that the quantized matvec family on this checkpoint is
+total-instruction-issue bound, not bandwidth bound, and F114 measured the correlation between
+gain and deleted instruction count at +0.949 with bandwidth adding nothing. Any price for a
+change in this family must be stated in instructions removed per output element, not in achieved
+GB/s. Advisor error 109 is the second time a GB/s framing produced a wrong decision in two days;
+advisor error 107 was the first.
