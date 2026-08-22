@@ -1,10 +1,10 @@
 # SENPAI Research State
 
-- **2026-08-22, ~14:00 UTC.** Advisor base
-  `83e07638b78b562112843b3fbc2325a345bd6232` (Merge PR #129, edward E128).
+- **2026-08-22, ~14:20 UTC.** Advisor base
+  `b28900c808aa5c9c6c02b3d40b978bd7599a18e4` (ledger 283 + research state).
   Campaign contract base `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`. Organizer
   `upstream/main` `c0dbec051c58bccf5435ee1e1e5b01271dc7e179`. Ledger through
-  `## 283`.
+  `## 284`.
 
 - **Most recent human research direction.** None new this generation. The
   standing direction remains the one in `senpai/program.md`: maximise the
@@ -50,10 +50,51 @@ the old noise floor.**
 `{6:6, 7:7}` at `rows_per_simd = 4`, on askeladd's D_S body, behind per-width
 templating. Thorfinn, PR #128, **authorised to submit and minutes away**.
 Bit-exact by F148 and confirmed by an eight-leg width gate at 84 rows per leg
-with `max_abs_diff = 0`. Four pre-registered predictions span **-8.6 % to
-+0.05 %**; my band is **-3 % to -9 %, central -5 %**. Two students' censuses and
-one ranked cross-sectional fit are about 25 sigma apart on this question, so the
-receipt discriminates whatever it says.
+with `max_abs_diff = 0`. Five pre-registered predictions span **-8.6 % to
++0.05 %**; my band is **-3 % to -9 %, central -5 %**.
+
+- **FINDING 156 removes the 25 sigma conflict.** The predicted one-pass round
+  time at M = 6, 7, 8 sits 17.63 %, 20.25 % and 22.40 % below the measured
+  ranked curve, against a census that claims 29.25 %, 22.58 % and 26.34 %.
+  The three ratios are 1.659, 1.115 and 1.176, all inside or just below the F87
+  isolated-to-in-situ over-prediction band of 1.66x to 2.16x. The census and the
+  ranked curve agree. Only edward's fitted cross-sectional `f` is the outlier.
+  That yields a third, parameter-free prediction: **-7.59 %**.
+- **The shipped depth price expires with this receipt.** F155's identity holds
+  only while the cost curve holds, and this arm moves the curve. After the
+  receipt the depth-4 marginal is over-charged **4.05x** and the depth-6
+  marginal is under-charged **3.12x**, exactly where beagle's mean width of 5.38
+  sits while carrying 97.9 % of the ranked median. Thorfinn's receipt is
+  therefore a **lower bound on its own mechanism**, and the depth-price axis
+  reopens as a constant-vector change with zero kernel work and zero bytes.
+
+### 1b. FINDING 157 — the wide-QMV cost law, and what bounds this axis
+`statements per output element = 38 / IPG + 25 / RPS` reproduces every entry of
+thorfinn's F151 table to three decimals. The `38` is the weight side (4 halfword
+loads, 1 address, 2 metadata loads, 1 group index, 2 widenings, **28 nibble
+ops**); the `25` is the activation side (1 sum-table load, 4 vec4 loads, 16
+widenings, 4 addresses).
+
+- **Balance law.** Registers scale with `IPG x RPS`; minimising `38/I + 25/R`
+  subject to `I x R = C` gives `I / R = 1.52`, so at `R = 4` the optimum is
+  `I = 6.08`. Thorfinn's `{6:6}` sits on the theoretical optimum.
+- **The `rows_per_simd` axis is now closed in both directions.** Askeladd's E132
+  closed `RPS = 2`; the balance law closes `RPS = 8` at every equal-slot
+  comparison. Reopen only if the 38 or the 25 changes.
+- **What is left.** At `(6,4)` the 28 nibble ops are 73.7 % of the weight
+  constant and 37 % of the cell. Free dequant would take 12.583 to 7.917, a
+  **-37 %** bound on the whole axis. Honest negative already recorded: the
+  tinygemm/any4 magic-constant form is op-neutral or adverse in float, and
+  bit-plane decomposition violates Rule 92. The narrow open question is whether
+  any bit-exact form extracts 8 four-bit values and converts to float in fewer
+  than about 24 ops on g17s. Compile-only, no GPU.
+- **The central thesis this produces.** A ranked M = 1 round is 31,182 us for
+  14.41 GB, which is 462.2 GB/s and already at the DRAM bound. A beagle round at
+  mean width 5.38 costs 55,870 us for 4.38 tokens. If wide verification cost
+  what M = 1 costs, for the identical weight bytes, the published ratio would be
+  about **5.34**; today it is about 3.34. **The entire remaining gap is the tax
+  wide verification pays for zero extra weight bytes.** Every other axis on the
+  board is worth 0.4 % to 1.5 %. This one is worth the rest.
 
 ### 2. The wired residency ticket — eliminate the runner-state lottery
 `wiredZHDefaultSlackMB` 64 to 512. Alphonse, PR #130. Measured post-sizing
@@ -103,6 +144,20 @@ rate. Kill line is a worst-stratum net miss rate above 3.0e-3.
    the ranked mass that pays sits at M = 5-7.
 
 **Themes worth opening once a slot frees.**
+
+3b. **The nibble-dequant residual, the last big number on the QMV axis.** At
+   `(IPG = 6, RPS = 4)` the 28 nibble operations are 37 % of the cell and 73.7 %
+   of the weight constant. A free dequant would cut the cell by 37 %, which
+   bounds the axis. The question is narrow and compile-only: is there a
+   bit-exact form that extracts 8 four-bit values and converts them to float in
+   fewer than about 24 operations on g17s? The magic-constant and any4 forms are
+   already refuted in float, and bit-plane decomposition violates Rule 92.
+
+3c. **Refit the depth price onto the post-receipt-1 cost curve.** Assigned to
+   edward as rung 0b. Constant-vector change, zero kernel work, zero submitted
+   bytes, zero correctness risk, and the already-validated zero-GPU replayer
+   prices it before the receipt lands. It becomes the next submission if the
+   stale-price loss clears +0.30 % F83-weighted on the central curve.
 
 4. **Shortlist-score entropy as a scheduler input.** Already resident in
    threadgroup memory at `Qwen35.swift:3716` at approximately zero cost. Edward's

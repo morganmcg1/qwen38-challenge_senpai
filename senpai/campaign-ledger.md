@@ -45653,3 +45653,260 @@ classifying its state; take edward's rung-0 `f` reconciliation; take alphonse's
 10a positive control and the admission probe of 283.13; take askeladd's
 first-two-window yield report. C2, the precision-island quantization at +0.38 to
 +0.45 %, is reopened and unowned and goes to the next free student.
+
+## 284 — FINDING 156, FINDING 157, THE PRICE VECTOR'S EXPIRY DATE, AND A FLATTENED BOARD
+
+Date: 2026-08-22, ~14:15 UTC. Advisor base `b28900c8` at time of writing.
+No Yukon submission in flight; thorfinn holds the slot.
+
+---
+
+### 284.1 — FINDING 156: THE CENSUS AND THE RANKED CURVE WERE NEVER 25 SIGMA APART
+
+Section 283.5 recorded a roughly 25-sigma conflict between thorfinn's F151
+instruction census and edward's E128 ranked fit, and my ruling for thorfinn was
+built from five qualitative arguments. The conflict is now resolved
+quantitatively, and it resolves in thorfinn's favour.
+
+**The right comparison.** If `{6:6, 7:7}` works, widths 6 and 7 should land ON
+edward's low-M one-pass line, `27894.3 + 3388.3 M`. That target is parameter
+free. Compare it against thorfinn's deleted statements per output element at
+each width, times the 87.35 % QMV share of the leg:
+
+```
+M   measured   one-pass line   excess    excess %   census %   ratio
+6     58,546        48,224.1   10,321.9     17.63      29.25    1.659
+7     64,714        51,612.4   13,101.6     20.25      22.58    1.115
+8     70,881        55,000.7   15,880.3     22.40      26.34    1.176
+```
+
+**1.659, 1.115, 1.176.** Every ratio sits inside or just below the F87 in-situ
+over-prediction band of 1.66x to 2.16x, which the campaign measured four
+separate times before either student looked at this question.
+
+> **The instruction census and the ranked cost curve AGREE, in the same frame,
+> to within the haircut the campaign already knew about. The 25-sigma conflict
+> is not census-versus-curve. It is edward's fitted cross-sectional `f` against
+> everything else, including edward's own curve.**
+
+Thorfinn's own 2x haircut is therefore slightly conservative; the data supports
+1.1x to 1.7x.
+
+**The third, parameter-free prediction.** Weighting the two per-width excesses
+by `mass(6) = 0.188` and `mass(7) = 0.211`:
+
+```
+predicted delta candidate s/token for {6:6, 7:7} = -7.59 %
+```
+
+Added to the receipt-1 pre-registration alongside the two censuses and the null.
+My band is unchanged at -3 % to -9 %, central -5 %, but `-7.59 %` is the line
+with no fitted parameter and no transfer coefficient, and it is the one I would
+bet on.
+
+---
+
+### 284.2 — THE SHIPPED PRICE VECTOR HAS AN EXPIRY DATE, AND IT IS RECEIPT 1
+
+FINDING 155 proved the shipped `price.marginal` vector equals our ranked cost
+curve, normalised, to four significant figures. **That closure was conditional
+on the curve, and thorfinn's arm changes the curve.** If widths 6 and 7 move
+onto the one-pass line:
+
+```
+                shipped    post-receipt-1    shipped becomes
+d = 0            0.1083            0.1083    correct
+d = 1            0.1083            0.1083    correct
+d = 2            0.1083            0.1083    correct
+d = 3            0.1083            0.1083    correct
+d = 4            0.4383            0.1083    4.05x TOO EXPENSIVE
+d = 5            0.1972            0.1083    1.82x too expensive
+d = 6            0.1972            0.6159    3.12x too cheap
+d = 7            0.1972            0.1972    correct
+```
+
+**The cliff moves from depth 4 to depth 6.** The depth-4 boundary is
+`M = 5 -> M = 6`, and beagle's mean realised width is **5.38**, sitting directly
+on it, carrying **97.9 %** of the ranked median at the lowest per-step
+acceptance on the board. The shipped scheduler will refuse to draft into M=6
+precisely when M=6 stops being expensive.
+
+Two consequences, both recorded before the receipt exists.
+
+1. **Receipt 1 is a LOWER BOUND on its own mechanism.** Whatever it reads, the
+   arm is worth more. Nobody may read a smaller-than-predicted receipt as a
+   refutation of the pass-count mechanism without accounting for this.
+2. **The depth-price axis reopens, contingently, and the follow-up is a
+   constant-vector change with zero kernel work, zero bytes and zero correctness
+   risk.** Assigned to edward as a new rung 0b ahead of his rungs 1 through 4,
+   with the instruction he already validated: the zero-GPU replayer, 1.000000
+   depth agreement over 3,634 rounds, exact reconstruction of `44559d02`.
+
+Edward's rung 0b, as briefed in PR #134 feedback `5380795729`: confirm the F155
+identity from source constants and state whether `price.cumulative` shares it;
+build the predicted post-arm curve three ways, being exact landing on the
+one-pass line, landing after a 1.66x census haircut, and improving by only the
+census figure over 2.0; replay the SHIPPED vector against each to give
+`e134_stale_price_loss_pct` per boundary and F83-weighted; replay a REFITTED
+vector against each; and say whether the sign is robust across all three
+variants. **If the stale-price loss clears +0.30 % F83-weighted on the central
+curve it becomes the campaign's next submission after alphonse's residency
+fix.**
+
+**Validity check added to receipt 1.** Because the price vector does not move,
+the depth decisions should not move either. Pre-registered:
+`effective_mean_draft_len` and `non_drafting_round_count` are within noise on
+all eight prompts against `0c6191b7`. This is the same check that made the F145
+`9b241879 -> ff73cbbd` pair interpretable. If either moves, the receipt is
+confounded and we say so before we price it.
+
+---
+
+### 284.3 — FINDING 157: THE WIDE-QMV COST LAW, AND WHY `rows_per_simd = 4` IS OPTIMAL
+
+Thorfinn's F151 table is generated exactly by a two-term law:
+
+```
+statements per output element  =  38 / IPG  +  25 / RPS
+```
+
+where `IPG` is items per group, the number of m lanes handled in one pass, and
+`RPS` is `rows_per_simd`. Verified against every entry of his table:
+
+```
+  M=3 IPG=3  18.917   M=4 IPG=4  15.750   M=5 IPG=5  13.850
+  M=6 IPG=3  18.917   M=7 IPG=4  15.750   M=8 IPG=4  15.750
+  one-pass:  M=6 IPG=6  12.583   M=7 IPG=7  11.679   M=8 IPG=8  11.000
+```
+
+All nine reproduce to three decimals. The `38` is the row-keyed weight-side
+constant, being 4 weight halfword loads, 1 weight address, 2 metadata loads, 1
+group index, 2 bf16 widenings and **28 nibble operations**. The `25` is the
+m-keyed activation-side constant, being 1 sum-table load, 4 `vec<bf16,4>`
+activation loads, **16 bf16 widenings** and 4 addresses.
+
+**The balance law.** Register pressure is approximately proportional to the
+accumulator block, `IPG x RPS`. Minimising `38/I + 25/R` subject to `I x R = C`
+gives:
+
+```
+optimum at  38/I = 25/R   ->   I / R = 1.52
+at R = 4 the optimum is  I = 6.08
+```
+
+**Thorfinn's `{6:6}` sits exactly on the theoretical balance point of the
+two-dimensional grid at his register class.** He reached it from a census; the
+law confirms it from first principles.
+
+**`rows_per_simd = 8` is closed by the same law.** Comparing at equal
+accumulator slots, which is the fair comparison because that is what the
+register file buys:
+
+```
+  24 slots:  (IPG 6, RPS 4) = 12.58     (IPG 3, RPS 8) = 15.79
+  32 slots:  (IPG 8, RPS 4) = 11.00     (IPG 4, RPS 8) = 12.62
+```
+
+`RPS = 4` wins every equal-slot comparison, because `I / R = 1.52 > 1` means
+slots must be spent on IPG, not on RPS. `RPS = 8` would need `IPG >= 12` to
+balance, and `IPG <= M <= 9`.
+
+> **RULE: `rows_per_simd = 4` is optimal for every reachable width on this
+> kernel. The `rows_per_simd` axis is CLOSED IN BOTH DIRECTIONS — downward by
+> askeladd's E132 spill census, upward by the balance law. Do not reopen it
+> without a change to the 38 or the 25.**
+
+**The residual, and an honest negative on the obvious trick.** At `(IPG 6,
+RPS 4)` the 28 nibble operations are 4.667 of the 6.333 weight-side statements,
+that is **73.7 % of the weight constant and 37 % of the total**. A hypothetical
+free dequantisation would take the cell from 12.583 to 7.917, or **-37 %**. That
+bounds the axis.
+
+The obvious literature trick does NOT collect it. The tinygemm and any4
+magic-constant dequantisation (2507.04610) replaces `shift, and, convert`, which
+is three operations, with `shift, and, or, subtract`, which is four, when the
+destination is `float`. The two-at-a-time `half2` form produces 8 half values in
+about 16 operations but then needs 8 half-to-float widenings, landing back at
+about 24 against the current 24. **The magic-constant dequantisation is
+op-neutral or adverse on this kernel in float, and it is recorded here so nobody
+spends a slot rediscovering that.** Bit-plane decomposition is exact-arithmetic
+illegal under Rule 92, and threadgroup staging of dequantised activations is
+already on the stop list.
+
+What remains open is narrower and should be stated that way: **is there any
+bit-exact form that extracts 8 four-bit values and converts them to float in
+fewer than about 24 operations on `applegpu_g17s`?** That is a compile-only
+question, answerable with `xcrun metal-tt` and no GPU, and it is the correct
+next question on this axis after receipt 1. It is thorfinn's file and it is
+exactly the right thing for him to run during the 42 to 130 minute validation
+window.
+
+A conflict to name under Rule 97 before anyone prices it: E123's measured price
+ladder puts nibble integer operations at 12.497 % and nibble int-to-float at
+7.141 % of QMV, totalling 19.6 %, while F157's static count puts the nibble
+block at 37 % of the cell at `(6,4)` and about 45 % at the shipped `(8,4)`. That
+is a factor of two. E123's ladder is occupancy-contaminated in 15 of 20 cells
+per F113 and is ordering-only, so F157's static count is the better instrument,
+but the difference must be named in any brief that uses either number.
+
+---
+
+### 284.4 — THE BOARD HAS FLATTENED, AND THAT IS AN OPPORTUNITY
+
+Refresh at ~14:05Z. Crown unchanged at `48423d09` noskillcoding **3.51845338**,
+set at 10:04Z. Nine rows are now inside 0.30 % of the crown's candidate leg, and
+nine more submissions are validating. Nobody has crossed 3.5185 in four hours.
+
+Common-denominator leaderboard, serial vector pinned to `48423d09`,
+`research/common_denominator.py --anchor 48423d09 --cluster 0.30`:
+
+```
+  rank  common-den  published  id         solver           status
+     1    3.525618   3.517689  3b376ba2   Lieisyourlie     rejected
+     2    3.521408   3.512706  0c6191b7   morganmcg1       rejected  <== OURS
+     3    3.520417   3.516617  cf79f7df   Lieisyourlie     accepted
+     4    3.519378   3.515898  60dbaee7   noskillcoding    rejected
+     5    3.518785   3.516266  a67f242d   hadakang         rejected
+     6    3.518779   3.512449  dd3c1ff7   Lieisyourlie     rejected
+     7    3.518453   3.518453  48423d09   noskillcoding    accepted  <== CROWN
+     8    3.518057   3.515941  390ec878   newjordan        rejected
+     9    3.517655   3.507747  c63eaa21   newjordan        rejected
+    10    3.494066   3.490650  d3c491b5   morganmcg1       accepted  <== OURS
+```
+
+Cluster statistics: published median sd **0.0896 %**, span 0.305 %;
+serial-vector-only sd 0.0906 %; candidate-vector-only sd 0.0660 %. **The pinned
+serial numerator still contributes more published-median variance than every
+real candidate difference in the cluster combined.**
+
+The two newest near-top rows, `60dbaee7` from noskillcoding and `a67f242d` from
+hadakang, land at ranks 4 and 5 inside the same cluster. **Neither is a
+mechanism move.** Under Rule 98 they are the same measurement as the rest of the
+cluster.
+
+**Strategic read.** The entire field is bunched inside 0.23 % on merit and has
+been for four hours, which means every rival is drawing lottery tickets on the
+serial numerator rather than moving a mechanism. A real candidate-leg move of
+several percent would not merely take the crown; it would leave the cluster
+entirely. On our common-denominator position of 3.521408, thorfinn's central
+prediction of -5 % candidate time publishes near **3.706**, and his -7.59 %
+parameter-free prediction publishes near **3.811**. Even edward's null leaves us
+at rank 2.
+
+**The physics of the remaining headroom, for orientation.** The M=1 ranked round
+is 31,182 us for 14.41 GB of weight traffic, which is 462.2 GB/s and therefore
+already at the DRAM bound. A round at beagle's mean width of 5.38 costs 55,870
+us and yields 4.38 tokens. If wide verification cost the same as M=1, which is
+what a perfectly amortised kernel would achieve because the weight bytes are
+identical, the round would cost 31,182 us and the published ratio would be about
+**5.34**. Today it is about 3.34.
+
+> **The entire remaining gap between 3.34 and the neighbourhood of 5 is the tax
+> that wide verification pays for zero extra weight bytes. FINDING 157 names
+> that tax exactly: `38/IPG + 25/RPS` statements per output element against a
+> load-only floor near 0.83 + 2.25. Every other axis in the campaign, the head
+> bytes, the draft readout, the residency ticket and the depth schedule, is
+> worth between 0.4 % and 1.5 %. This one is worth the rest.**
+
+That is the campaign's central thesis from here, and it is the frame in which
+every future assignment on this axis should be priced.
