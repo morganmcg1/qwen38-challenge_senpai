@@ -40866,3 +40866,391 @@ every prompt beats the crown by 0.173 %, which is inside single-receipt noise. T
 nothing left to compose. Every remaining gain has to be manufactured, and the two places
 it can come from are the kernel, where Route B is working, and the schedule, where
 nobody has worked since the organizer.
+
+## 272 — 2026-08-22 07:40Z — E121 IS A +2.10 % RANKED REGRESSION; ROUTE B AND E124 MERGE; THE SCHEDULE AXIS SPLITS INTO PRICE AND ESTIMATOR
+
+### The receipt that dominates this round
+
+`cf9a9eda-fdb6-4d94-b090-5451db4ff9ea` resolved. Published **3.26815344**, rejected.
+Candidate commit `6d515e2582104d114387ddd5e291d17651653aaf`. F76 mode index **-12.9921**,
+between our fast cluster (-13.29 to -13.49) and our one slow run (-12.52), so the median
+alone could not settle it. The per-prompt diagnosis did.
+
+Candidate-leg change against our best fast receipt `44559d02` (3.34351272):
+
+| prompt | ranked depth | candidate leg | serial leg |
+| --- | --: | --: | --: |
+| plutarch | 0.154 | **+0.002 %** | -0.054 % |
+| drama | 2.298 | +1.357 % | -0.063 % |
+| travel | 2.656 | +1.650 % | +0.205 % |
+| beagle | 4.382 | +2.021 % | -0.163 % |
+| medicine | 5.256 | +2.223 % | +0.002 % |
+| essays | 5.087 | +2.134 % | -0.274 % |
+| republic | 4.989 | +2.169 % | +0.370 % |
+| botany | 6.148 | +2.377 % | +0.353 % |
+
+F83-weighted: **+2.102 %** against `44559d02`, **+2.128 %** against `b8b8b860`,
+**+2.100 %** against the crown `bc070b7b`, **+1.805 %** against `f04b102e`.
+
+Four independent proofs it is not a mode draw:
+
+1. **Empirical same-content null.** The crown `bc070b7b` and its declared byte-identical
+   resample `ec778a91` differ per prompt by `+0.236, -0.013, +0.068, +0.126, -0.076,
+   -0.067, +0.018, -0.081` %. Mixed sign, all inside +-0.24 %. Our table is single-signed
+   and up to ten times larger.
+2. **The serial leg did not move** (+-0.4 %, mixed sign). A host or thermal effect cannot
+   slow only the candidate leg.
+3. **Plutarch did not move** (+0.002 %). A mode flip must cost plutarch about +0.20 %
+   under F78. Plutarch is 449 of 487 non-drafting rounds and is the mode instrument.
+4. **The shape identifies the mechanism.**
+
+```
+observed ~ cost per drafting round   intercept +0.769  slope +0.591  R2 0.268
+observed ~ cost per VERIFIED ROW     intercept -0.154  slope +0.227  R2 0.9492
+observed ~ the mode-flip shape       intercept +0.769  slope +0.721  R2 0.268
+```
+
+The verified-row fit passes through the origin and implies **0.2274 ms per verified row**,
+which is +3.2 % on the ranked marginal per-row cost of 7.154 ms. Arithmetic check:
+`3.34136 x (1 - 0.0210) = 3.2712` against the observed 3.26815.
+
+Isolation is exact. `git diff --stat d8fed942 6d515e25 -- Sources/ Vendor/
+mtp-head.manifest.json Package.swift` returns only `Qwen36MTPBlockSession.swift` (one
+blank line) and `quantized.cpp` / `quantized.h` (53 lines each). Between the `7bef7d4c`
+candidate tree, which corrects to 3.34136, and this one there is exactly one mechanism on
+the scored surface: E121.
+
+Blob table, verified:
+
+```
+origin/main    h=12e2f73d5561  cpp=cbff344a5d76
+2127858b       h=8c56e0e4e272  cpp=f3d264775a05   thorfinn 5e control
+d8fed942       h=8c56e0e4e272  cpp=f3d264775a05   7bef7d4c candidate
+3f40d9b0^1     h=8c56e0e4e272  cpp=f3d264775a05   E121 merge parent = REVERT TARGET
+3f40d9b0       h=70d3b2de4d45  cpp=e4709f8f7613   E121 merged
+6d515e25       h=70d3b2de4d45  cpp=e4709f8f7613   cf9a9eda candidate
+```
+
+`git diff 2127858b HEAD` over `Sources/ Vendor/ mtp-head.manifest.json mtp-head/
+Package.swift`, excluding the two E121 kernel files, is **EMPTY**. The post-revert base is
+therefore scored-surface-identical to thorfinn's rung 5e control and to `d8fed942`, which
+already carries a ranked receipt. No timed confirmation of the revert is needed.
+
+Alphonse is reverting on PR #127. He is sole owner of both files.
+
+### F99 — THE LOCAL LEG FRAME CAN INVERT IN SIGN ON M5
+
+E121's readings in order: local kernel frame **+1.463 %** gain round-weighted; local leg
+frame **-0.436 %** gain, n=2, sd 0.093; in situ inside thorfinn's rung 5g **0.433 %** gain;
+ranked **+2.10 % loss**. Transfer coefficient from the local leg frame to ranked is
+**approximately -4.8**. Not attenuated. Inverted.
+
+The **shape** transferred perfectly: the ranked cost appeared as a per-verified-row cost,
+the kernel's own unit, at R2 0.9492. Only sign and magnitude failed. The mechanism is
+real; the frame mis-priced it.
+
+### F100 — THE REGIME VARIABLE IS WHETHER THE REGISTER BUDGET BINDS
+
+F33 and F34 record host register budgets **g16s 96, g17s 124**. F91 records `a_base` at
+**94 registers on g16s** and **101 on g17s**, both zero spill.
+
+On g16s the kernel sits 2 registers under a 96-register budget, on the cliff edge, so any
+register relief buys occupancy. On g17s the same kernel sits 101 against 124, with 23
+registers of slack, so register relief buys nothing and a barrier is pure cost.
+
+**Pre-registered.** E121's local gain is an occupancy gain that exists only where the
+register budget binds. On g16s the `SHARE_SUMS` work split relieved pressure at a binding
+budget and paid for its two `threadgroup_barrier` per k-block. On g17s there was no
+pressure to relieve, so only the barrier and `sums_xchg` exchange cost remained.
+
+**Falsifier.** At NA=5 `SHARE_SUMS` is false, so M=5 pays the extra parameters and the
+threadgroup allocation but never the split or the exchange. If F100 holds, the g17s cost is
+present at M=6, 7, 8 and absent at M=5. If it is present at M=5, the cause is the
+parameters or the allocation instead.
+
+This replaces roofline `phi` as the regime axis for the E125 correction table. It is
+testable by census, with no GPU time.
+
+### ADVISOR ERROR 96 — ASKELADD'S RESIDENCY CENSUS PREDICTED THE SIGN AND I DID NOT USE IT
+
+His Stage 0 residency axis, `a_base -> n_nosums`, resident simdgroups:
+
+| NA | F47 weight | g16s | g17s |
+| --: | --: | --- | --- |
+| 2 | 0.024 | 46 -> 42 (-8.70 %) | 42 -> 45 (+7.14 %) |
+| 3 | 0.275 | 37 -> 35 (-5.41 %) | 44 -> 40 (-9.09 %) |
+| 4 | **0.667** | 32 -> 32 (0.00 %) | **44 -> 41 (-6.82 %)** |
+| 5 | 0.034 | 33 -> 32 (-3.03 %) | 39 -> 40 (+2.56 %) |
+
+Weighted by the standing NA distribution: **g16s -1.80 %, g17s -6.79 %**. Both negative,
+g17s 3.8 times worse, and the g17s loss concentrated at NA=4 and NA=3 which carry 0.942 of
+the weight. The dominant NA=4 cell is exactly flat on g16s, so the local instrument had
+almost nothing to see.
+
+Caveat carried forward: `n_nosums` removes the sums entirely while E121 splits them, so the
+census must be redone on the shipped arm before this counts as validated rather than
+suggestive. Alphonse owns that census now.
+
+### E120 ROUTE B — MERGED
+
+PR #121, head `270e9a88`, merged as `ecefbf01`. Primary
+`candidate_mtp_seconds_per_token` 0.030629 -> 0.029461.
+
+Two gate-qualified ABBA sessions bracket the shipped tree exactly:
+
+| rung | base | off median | sumtable median | leg | resolution |
+| --- | --- | --: | --: | --: | --- |
+| 5e | `2127858b`, pre-E121 | 0.030754 | 0.029447 | **+4.249 %** | CV 0.080 %, effect 37x |
+| 5g | `4c4db8a2`, post-E121 | 0.030629 | 0.029461 | **+3.813 %** | CV 0.061 %, effect 44x |
+
+The 0.436 pp difference between them is exactly the independently measured in-situ cost of
+E121 (alphonse 0.436 %, thorfinn 0.433 %). Under F90 the two mechanisms remove partly the
+same activation-sum work, so Route B must gain less on top of E121. The sessions are
+internally consistent.
+
+**Rung 5e is the measurement of the tree we will ship**, because the post-revert base is
+scored-surface-identical to `2127858b`.
+
+Correctness: rung 1 replica bit exact over 14 cells and 1,633,536 elements, 0 differing.
+Rung 5a passed twice over 210 cells and 43,041,600 elements, 0 differing,
+`positive_control_can_fail` true on all 210, `restored_diff` 0 on all 70 table cells.
+Rung 5f `--local-submit` 574/574 rows, `all_tokens_matched` true,
+`residual_divergence_count` 0. `swift test` 737 tests, exactly the 9 documented organizer
+names summing to exactly 40, zero campaign-added failures. Scope one submitted path;
+budget source 2,580,913/3,000,000, growth 126,078/262,144; ranked-score-boundary PASS;
+twin audit OK.
+
+Ranked repricing. Local fixture mean verify width 7.359 with 76.9 % of rounds at M=8;
+ranked F83-weighted mean width **5.308**. Model B **+1.918 %**, model C adverse bracket
+**+1.321 %**, B/C 1.452. Uniform-attenuation cross-check brackets B [1.82, 1.92] and
+C [1.29, 1.32]. Route B per-width gain: M=3 0.02, M=4 4.09, M=5 4.82, M=6 2.29, M=7 4.11,
+M=8 5.68, M=9 2.50. Beagle at 5.382 straddles the M=5 / M=6 boundary where the gain drops
+by 2.1x, and beagle carries 0.4862 of the marginal weight. That is the whole reason model B
+sits well below the +4.036 % that rung 5e's leg reading implies.
+
+Two clean negatives inside the result. Route B does **not** gain g17s residency: 102
+registers and 38 resident simdgroups against the incumbent's 101 and 39, and the sumtable
+arm costs more registers than the replica at every width. Text falls, registers do not.
+And **the bandwidth law does not replicate**: on alphonse's own window r = -0.067,
+permutation p = 0.855, against his -0.938; only M=3 has a negative slope.
+
+Harness defect 31, resolved inside the result: `mlx.metallib` staleness was host-wide and
+predates the branch, so 5e and 5g both ran on a stale metallib. Rung 5f re-ran the shipped
+arm on the rebuilt metallib with a byte-identical worker and landed at 0.029452, inside the
+5g sumtable range at -0.86 sigma, -0.037 % against an 0.080 % stop rule.
+
+Top follow-up he named and did not implement: a switch entry point's register count is the
+maximum over its inlined branches, and the M=5 branch alone reads 102 registers and costs
+4 resident simdgroups at every other width. **Templating the entry point on M** would put
+M=8 at 94 registers and 42 simdgroups and cut text from about 50 KB to 6 to 12 KB per
+pipeline. Assigned as E129 rung 1, gated on a g17s census, because F99 has now shown this
+exact channel inverting.
+
+### E124 — MERGED AS A NEGATIVE
+
+PR #125, head `bb0b7819`, merged as `526d3973`. Primary
+`median_regime_corpus_seeds_passing_criterion` 4.0 -> 3.0.
+
+The mechanism is dead. Best arm `none` reprices to **+0.140 to +0.196 % ranked**, below the
++0.20 % stop line. Closure is by direct measurement, not model: E82 declared 0.031432 at 78
+rounds, `noislands` 0.031547 at 79 rounds is **+0.366 % SLOWER**, `qonly` 0.031998 at 80 is
+**+1.801 % SLOWER**. His corrected model gives -0.415 % against E82's measured +0.366 %, so
+|model - measurement| = 0.049 pp, the best model validation of the campaign. The islands buy
+about 1.8 times more acceptance than they cost in bytes. Arm `kv` was never measured;
+ceiling +0.048 to +0.065 % ranked.
+
+Harness defect 28 confirmed and fixed by renaming to `DARKBLOOM_QWEN_MTP_ISLAND_ARM`.
+`MLXFAST_*` never reaches a runtime-worker leg, so the three model-side gates
+`MLXFAST_QWEN_MTP_EXACT_QKV_ROWS`, `MLXFAST_QWEN_MTP_TOP32` and `MLXFAST_QWEN_MTP_TRACE`
+have never had any effect.
+
+Honesty record: `research/e124_accept.py` and `research/e124_stage1_session.sh` were written
+and never run, and are committed as reusable tooling. An earlier SwiftPM incremental-build
+defect claim is withdrawn in commit `113eca25`.
+
+The merged branch adds a research-only `Qwen35IslandArm` selector in `Qwen35.swift`, read
+once inside `sanitize` at model load. Default `all` reproduces the shipped install exactly.
+Load-time host Swift, no kernel, no timed round. **Scheduled for deletion in the cleanup PR.**
+
+### F98 — NO LOCAL FIXTURE REPRODUCES THE MEDIAN-CARRYING REGIME FOR THE RIGHT REASON
+
+On the first 128 decoded tokens no prose seed in any of the eight published domains reaches
+accept 0.83; the highest is 0.791. Only three seeds clear 0.83 over the full window
+(`medicine_hippoc` 0.9412/5.737, `drama_dollhouse` 0.8994/5.076, `republic_jowett`
+0.8553/4.587) and **no beagle seed passes** (best `beagle_a` 0.7782/4.244). All three
+passers climb from first-128 accept of 0.791, 0.649 and 0.581 to last-128 accept of 1.000,
+all three hit the 64-token repeated-n-gram cap at gaps of 36, 23 and 53 tokens, and all
+three collapse in distinct-token ratio. Only `benchfixture` clears the bar at 0.975 and it
+is a long-copy gate.
+
+### RULE 76, AMENDED — THE REGIME VARIABLE IS PER-STEP p, NOT ACCEPT RATE
+
+Rule 80 requires inverting `E[accepted] = p(1-p^d)/(1-p)` before any acceptance number
+enters a depth model. Applying it changes F98's practical consequence:
+
+| fixture or prompt | rate | depth | **per-step p** |
+| --- | --: | --: | --: |
+| beagle | 0.834 | 4.382 | **0.9341** |
+| medicine | 0.892 | 5.256 | **0.9639** |
+| essays | 0.897 | 5.087 | **0.9647** |
+| botany | 0.865 | 6.148 | **0.9598** |
+| republic | 0.903 | 4.989 | **0.9661** |
+| `benchfixture` | 0.877 | 6.359 | **0.9645** |
+| `beagle_a` | 0.7782 | 4.244 | **~0.907** |
+
+The median-carrying band is **p in [0.934, 0.966]**. `benchfixture` is inside it and stands
+for medicine, essays, botany and republic, which carry 0.4330 of the marginal weight
+between them. `beagle_a` is 0.027 below the band and is a usable labelled lower-side proxy
+for beagle, not the 0.056 gap the rate comparison suggested. F98 stands as written about
+rate and corpus degeneration, and it still voids every experiment that used rate as the
+regime test, but the campaign is not left without an instrument.
+
+### F97 — THE SHIPPED UNIFORM DEPTH PRICE IS RANKED-OPTIMAL, SO E127 IS CLOSED BEFORE ASSIGNMENT
+
+`_advisor_scratch/rankedcurve.py` fits the round cost over 147 official runs on the
+reference schedule:
+
+```
+ranked  G=1, M=1..4 : round_us = 27215.4 + 3966.4 M
+        G=2, M=5..8 : round_us = 17020.7 + 7154.2 M
+
+  M        1        2        3        4        5        6        7        8
+ranked  31181.8  35148.2  39114.6  43080.9  52791.9  59946.2  67100.4  74254.6
+local   64445.4  69775.5  74778.4  86237.4 126103.1 137842.6 150431.4 163957.1
+ratio    2.067    1.985    1.912    2.002    2.389    2.299    2.242    2.208
+ranked marginal 0.1272 0.1272 0.1272 0.3114 0.2294 0.2294 0.2294 0.2294
+local  marginal 0.0827 0.0776 0.1778 0.6186 0.1822 0.1953 0.2099 0.2294
+ship uniform    0.1800 x8   (cumulative 1 + 0.18d, total 1.440)
+```
+
+The M=4 -> M=5 boundary step is **ranked 9,711.0 us = 22.54 %** and **local 39,865.7 us =
+46.23 %**. Findings:
+
+1. With a uniform price the objective is unimodal, and greedy equals argmax in **1240/1240**
+   cells. The argmax policy change alone is a **no-op** unless the price is refitted.
+2. At the inverted per-step acceptances above, the shipped uniform 0.18 price lands on the
+   **ranked optimum d=7, the cap**, under every non-degenerate acceptance shape. F83-weighted
+   ranked loss: flat 0.000 %, rise 0.000 %, e92 0.000 %.
+3. Ranked loss is 0.00 % for every p >= 0.935 and only appears below p = 0.921, while the
+   **local** loss over the same range is 0.84 to 7.20 %.
+4. The ranked and local optima disagree in **219/1200 = 18.2 %** of the plausible acceptance
+   space, and chasing the local optimum costs up to **8.66 %** ranked in the worst case.
+5. The model reproduces both E68 (`pbfit` -3.5 % local) and E75 (`pbfit` +0.33 % on the crown
+   table) without being fitted to them; a local-shape price loses 5.64 % mean on the ranked curve.
+6. Board confirmation across 316 fast-mode rows: all 12 fastest beagle rows sit at depth
+   exactly 4.382 and all 12 fastest medicine rows at 5.256. Every strong solver ships the
+   organizer's calibrated schedule. Bin comparisons are fully confounded by solver quality.
+
+**E127, the depth-price refit, is closed before assignment.** The price axis is dead.
+
+### 🔴 BUT THE ESTIMATOR AXIS IS NOT, AND NOBODY HAS LOOKED AT IT
+
+F97 closes the **price**. It does not close the **reach estimator** that decides how far to
+walk under that price. Pricing our realised ranked depths on the fitted curve:
+
+| prompt | p | realised d | us/token realised | us/token at d=7 | gap | x F83 weight |
+| --- | --: | --: | --: | --: | --: | --: |
+| beagle | 0.9341 | 4.382 | ~11941 | 11640 | **2.52 %** | **+1.23 %** |
+| medicine | 0.9639 | 5.256 | ~10868 | 10520 | **3.20 %** | **+0.80 %** |
+| essays | 0.9647 | 5.087 | — | — | ~3.4 % | **+0.54 %** |
+
+**A constant-p reading of the gap is worth about +2.6 % on the published median**, larger
+than Route B's central ranked estimate, with no kernel work.
+
+The suspect is at `Qwen36MTPBlockSession.swift:1091-1099`. `p = Swift.min(p, conf)` with
+`conf = sigmoid(margin/2.0)` at depth 0 and `sigmoid(margin/3.0)` at depth 1 is a **strictly
+downward** override that can only shorten a round, and it binds whenever the margin is below
+about 5.2. E122 measured the margin's pooled AUC at **0.5109 [0.4850, 0.5364]** over 57,907
+pairs, indistinguishable from random — but it measured `benchfixture`, the one in-regime
+fixture, at **0.7998**. Pooling destroyed the stratification, so this must be settled per
+regime.
+
+The +2.6 % is an **upper bound** under constant p. The real number depends on the uncensored
+per-position decline, which the shipped adaptive policy cannot observe because it is
+selection biased. E92's per-position conditionals are survivor biased upward and unusable.
+A forced-depth-7 arm measures it directly.
+
+Assigned as **E128** to edward, with `oracle` — the per-round clairvoyant depth — as the
+number that bounds every possible estimator improvement and can retire the whole area.
+
+**Stop-list reopener, recorded.** "Forcing deeper drafting on prose" is reopened. The
+recorded reason has changed twice over: the closure measured local prose at accept rate
+0.449 to 0.533, near p of 0.6 to 0.7 and far outside the median-carrying band; and the
+board-fitted ranked cost curve did not exist when the closure priced the extra depth on
+local time, which Rule 79 now forbids.
+
+### NEW RULES
+
+**Rule 79** — A local timing measurement cannot validate a draft-depth or schedule change.
+The ranked cost tier breaks entering width 5 while the post-E100 local dispatch group
+boundary breaks entering width 6; the optima disagree in 18.2 % of the plausible acceptance
+space and chasing the local optimum costs up to 8.66 % ranked. Price schedule policy on the
+board-fitted ranked curve, never on a local ratio.
+
+**Rule 80** — An accept "rate" is not a per-step conditional acceptance probability. Invert
+`E[accepted] = p(1-p^d)/(1-p)` before feeding any acceptance number into a depth or schedule
+model.
+
+**Rule 81** — Before merging any scored-surface change on a local read, name the ranked
+receipt that will confirm it, and do not compose a second mechanism on top until that
+receipt lands.
+
+**Rule 76, amended** — The regime variable is the per-step conditional p, not the accept
+rate. The median-carrying band is p in [0.934, 0.966]. Stratify, never pool.
+
+### NEW ADVISOR ERRORS
+
+**94.** I merged E121 into the campaign base on an inconclusive local read (-0.436 % leg,
+n=2, sd 0.093) plus a positive-sign kernel-frame model, with no ranked confirmation, and
+then let three students build on that base. The ranked cost was +2.10 %. Rule 81 exists
+because of this.
+
+**95.** I designed E127 from an F94 *reconstruction* of the local cost curve without first
+checking E113's ledger record, the measured E92 local curve, or the board-fitted ranked
+curve, all three of which were already in the repository. Rule 68 again. Caught before
+assignment.
+
+**96.** Askeladd delivered a g17s residency census before the submission that predicted the
+sign and concentration of the E121 ranked regression, and I did not carry it into the merge
+decision.
+
+**F94 is superseded** as a cost curve and retained only as a cautionary record. The
+reconstruction put the biggest local step into width 6 (0.4727); the measured E92 curve puts
+it into width 5 (0.6186). Use `rankedcurve.py`, never the reconstruction.
+
+### THE ARITHMETIC AFTER THIS ROUND
+
+```
+crown bc070b7b, published                     3.35922017
+the same content, byte-identical redraw       3.34664074   the reproducible level
+our own per-prompt floor envelope             3.34784
+our best full fast-mode receipt 44559d02      3.34351272
+absolute per-prompt floor, all solvers        3.36504      the composition ceiling
+post-revert base (== 7bef7d4c tree), fast     ~3.34136
+current base WITH E121                        3.26815      -2.10 %
+Route B, model A (5e leg, uniform transfer)   +4.036 %  -> 3.4763
+Route B, model B (ranked width mix)           +1.918 %  -> 3.4054
+Route B, model C (adverse bracket)            +1.321 %  -> 3.3855
+the same three in slow mode (-1.3170 %)          3.4305 / 3.3606 / 3.3409
+```
+
+Model C in slow mode is the only cell that misses the crown. Every other cell takes the
+frontier.
+
+### ASSIGNMENTS OPEN AFTER THIS ROUND
+
+| PR | student | id | work |
+| --- | --- | --- | --- |
+| #126 | askeladd | E125 | two-axis transfer table; F100 register-budget regime; three anchors 2.04, 0.763, **-4.8** |
+| #127 | alphonse | E126 | **revert E121**, then the per-width entry-point census on g16s AND g17s with the M=5 falsifier |
+| #128 | thorfinn | E129 | **ship the reverted Route B candidate**, then template the entry point on M behind a g17s census gate |
+| #129 | edward | E128 | audit the reach estimator against the ranked depth optimum; `oracle` bounds the whole area |
+
+The Yukon slot is free, 8 used and 0 in flight. The next submission is the post-revert base
+plus Route B, and its attribution is clean because the bare post-revert tree is
+scored-surface-identical to `d8fed942`, which already carries the `7bef7d4c` receipt at a
+mode-corrected 3.34136. That receipt is the Rule 81 confirmation Route B is entitled to.
+
+Cleanup owed after the submission lands: delete the dead `qkv(_:)` fast path at
+`Qwen35.swift:2281-2300`, the dead E121 code, and the research-only `Qwen35IslandArm`
+selector.

@@ -1,161 +1,173 @@
 # SENPAI Research State
 
-- 2026-08-22 07:00 UTC
-- Track `qwen3.8-27b-mtp-v1`. Advisor branch `senpai/qwen38-mtp-r1` at `3f40d9b0`.
-  Campaign base `origin/main` at `770a3ff2`. Organizer `upstream/main` at `fac135f2`.
-  Crown `bc070b7b` at 3.35922017, unchanged since 01:48Z.
-- One official submission in flight: `cf9a9eda`, sent 06:20:41Z, `validating`.
-
-## Most recent research direction from the human researcher team
-
-No new direction. The standing instruction holds: keep every Mac productive, compose
-mechanisms rather than resample, and submit autonomously.
+- **2026-08-22 07:40Z** — track `qwen3.8-27b-mtp-v1`, advisor branch `senpai/qwen38-mtp-r1`, base `770a3ff2`.
+- **Most recent human research direction:** none received this round. The campaign is
+  running autonomously under `senpai/program.md`.
 
 ---
 
-## The number to beat, and what it really is
+## Where the score stands
 
 ```
-crown bc070b7b, published                     3.35922017
+crown bc070b7b (francip), published           3.35922017
 the same content, byte-identical redraw       3.34664074   <- the reproducible level
-our own per-prompt floor envelope             3.34784
-our best full fast-mode receipt, 44559d02     3.34351272
-absolute per-prompt floor over all solvers    3.36504      <- the composition ceiling
+absolute per-prompt floor, all solvers        3.36504      <- the composition ceiling
+our best full fast-mode receipt 44559d02      3.34351272
+post-revert base (== 7bef7d4c tree), fast     ~3.34136
+current base WITH E121                        3.26815      <- a -2.10 % regression, being reverted
 ```
 
-**Finding 96, this cycle.** A declared byte-identical resample of the crown content
-published 3.34664 with a mode index of -13.4240, against the crown's -13.4103. Same
-content, same measurement mode, **0.374 % apart**. Twelve rows now descend from that
-frontier and every one is below the crown. The crown is a favourable draw of content
-whose reproducible level is about 3.347, and our own per-prompt floors already sit
-0.036 % above that level.
+The board has **saturated**. Composing every solver's best published per-prompt time beats
+the crown by only 0.173 %, which is inside single-receipt noise. Nothing is left to compose.
+Every remaining gain has to be manufactured, and there are only two places it can come from:
+the kernel, and the schedule.
 
-**Finding 93, this cycle.** Taking every solver's best published time on every prompt
-gives 3.36504, only 0.173 % above the crown, which is inside single-receipt noise.
-**Composition is exhausted.** Every remaining gain has to be manufactured.
+The Yukon slot is free: 8 submissions used, 0 in flight.
 
-Two places can manufacture it: the **kernel**, where Route B is working, and the
-**schedule**, where nobody has worked since the organizer.
+---
+
+## The dominant fact of this round
+
+**E121 published 3.26815344, a +2.10 % ranked regression, after reading −0.436 % in the
+local leg frame.** The transfer coefficient from the local leg frame to the ranked runner
+was approximately **−4.8**. Not attenuated — inverted.
+
+The *shape* transferred perfectly. Regressing the per-prompt ranked change on candidate
+shapes gives R2 0.9492 for cost per verified row, through the origin, at 0.2274 ms per row.
+The mechanism was real; our frame mis-priced it.
+
+This reframes the campaign. The binding constraint is no longer "find a faster kernel". It
+is **"can any local measurement price a ranked kernel change at all, and under what
+conditions"**. Two of the four students are now on that question directly.
 
 ---
 
 ## Current research focus
 
-### 1. Land Route B (thorfinn, PR #121) — the strongest measurement in the campaign
+### 1. Ship Route B and take the frontier — the critical path
 
-Rung 5e, W&B [`zkcfcaxr`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zkcfcaxr).
-Eight gated legs at 512 tokens, ABBA, control pre-E121:
+Route B (thorfinn's custom cross-row QMV kernel with a hoisted activation-sum table) is
+merged. It measured **+4.249 % leg** against the pre-E121 control in a gate-qualified ABBA
+with an effect 37 times the resolution, and **+3.813 %** against the post-E121 base at 44
+times the resolution. The 0.436 pp difference between the two sessions is exactly the
+independently measured in-situ cost of E121, which is the overlap F90 predicts.
 
-```
-off       n=4  median 0.030754 s/tok  sd 0.000024
-sumtable  n=4  median 0.029447 s/tok  sd 0.000028   = +4.249 % leg
-```
+Ranked repricing matters here. Local mean verify width was 7.359; the ranked F83-weighted
+mean width is **5.308**. Route B's per-width gain drops by a factor of 2.1 across the
+M=5 / M=6 boundary, and beagle sits on that boundary carrying 0.4862 of the marginal weight.
+So model B lands at **+1.918 %** and the adverse bracket C at **+1.321 %**, not at the
++4.036 % the leg reading implies. Only model C on a slow draw misses the crown.
 
-Arms do not overlap; the effect is 37 times the two-sigma resolution; the candidate arm
-ran colder, so drift works against it; every leg exact with a closed row ledger.
+Sequence: alphonse reverts E121 → I merge → thorfinn rebases, runs the proven pre-submit
+chain, and submits. That receipt is also the Rule 81 confirmation Route B is entitled to,
+and its attribution is clean because the bare post-revert tree is scored-surface-identical
+to a tree that already has a receipt at a mode-corrected 3.34136.
 
-Remaining path: merge `3f40d9b0`, then rung 5g against the E121 control, then rung 5f
-`--local-submit`, then submit. Pre-registered 5g prediction **+3.83 % leg**; below
-+3.5 % means the F90 overlap with E121 is larger than priced.
+### 2. The schedule splits into price and estimator, and only the price is dead
 
-Ranked estimate is +1.8 to +2.2 %, and it is the open question. Beagle's mean width
-5.382 straddles the best width above 4 (M=5, 4.82 %) and the worst (M=6, 2.29 %), a
-factor of 2.1, and beagle alone carries 0.4862 of the marginal weight. Thorfinn owes
-three labelled models: A measured local histogram, B ranked mean-width point estimate,
-C adverse bracket.
+A cost curve fitted over **147 official runs** settles the price question. At the inverted
+per-step acceptance of the median-carrying prompts (p in 0.934 to 0.966), the shipped
+uniform 0.18 depth price already lands on the ranked optimum, the cap at d=7, under every
+non-degenerate acceptance shape. F83-weighted ranked loss is **0.000 %**. The refit axis is
+closed and E127 was cancelled before assignment.
 
-### 2. E127, the depth-price refit — the largest unassigned lever (edward, next)
+But our realised ranked depth is beagle 4.382, medicine 5.256, essays 5.087 — well short of
+the cap. The price is right and the walk still stops early, so the gap is in the **reach
+estimator**. Pricing that gap on the fitted ranked curve gives about **+2.6 % on the
+published median** under a constant-p reading, with no kernel work at all.
 
-**Finding 94, this cycle.** `Qwen36MTPBlockSession.costModelDepth` prices every draft
-step at a uniform `headStepCostRatio = 0.18`. The `.pbfit` arm beside it was fitted in
-E68 to a dispatch table whose width-5 step cost 13.4 ms and whose width-6 step cost
-27.3 ms. The code comment demands a refit whenever the QMV group shapes move. **They
-have moved three times since:** E100, E110, E121.
+The suspect is a strictly-downward `min(p, conf)` margin override at depths 0 and 1, driven
+by a signal E122 measured at pooled AUC 0.5109 — indistinguishable from random — but at
+0.7998 on the one in-regime fixture. Pooling destroyed the stratification.
 
-Reconstructed live marginal steps `0.004 0.045 0.266 0.143 0.447 0.139 0.126 0.499`
-against the shipped flat `0.180`. Simulated against the oracle depth over the acceptance
-range that carries the median, the shipped arm is **3.9 % to 19.1 % of candidate time**
-away from optimal, because it over-drafts past a width-6 cliff that costs a full extra
-weight-stream pass.
+The +2.6 % is an upper bound. How much survives depends on the uncensored per-position
+acceptance decline, which the shipped adaptive policy is structurally unable to observe.
+A forced-depth-7 arm measures it directly, and the clairvoyant per-round `oracle` bounds
+every possible estimator improvement, so this experiment retires the area either way.
 
-Two independent supports. E68 measured a correctly fitted shape at **-3.500 %**
-end to end over nine legs. And the only pure schedule change ever made at the board
-frontier, the organizer's P1 to P2 move, was worth 1.8 to 4.3 % of candidate time on
-exactly the five prompts that carry the median, while moving plutarch only 0.076 %.
+### 3. Can a local frame price a ranked change? The transfer table
 
-About ten lines of diff. Bit-exactness is structural: the schedule changes only how many
-drafts are proposed, and the target verifies every emitted token.
-`Qwen36MTPBlockSession.swift` is unowned.
+Five anchors now exist and no scalar fits them:
 
-### 3. Settle the transfer law (askeladd PR #126, alphonse PR #127)
+| anchor | from | to | host change | value |
+| --- | --- | --- | --- | --: |
+| E116 | share term | share term | none | 1.000 [0.963, 1.038] |
+| E118 | isolated | in situ | none | 1.66x |
+| E121 | isolated | in situ | none | 2.04x |
+| Route B 5e | kernel frame | leg frame | none | 0.763 |
+| **E121 ranked** | local leg, g16s | ranked leg, g17s | **architecture** | **−4.8** |
 
-The two in-situ anchors now **bracket unity from both sides** on the same host, fixture,
-window and width histogram, for two mechanisms that touch the same activation add tree:
+The first four are within-host **frame** transfers. The last is a cross-architecture
+**regime** transfer. Collapsing the two axes is what produced the merge error.
 
-| anchor | mechanism | isolated-to-in-situ |
-| --- | --- | --: |
-| E121 rung 2 to rung 3 | **adds** a threadgroup exchange | **2.04** (1.55 re-weighted) |
-| E120 rung 5e | **deletes** per-round arithmetic | **0.763** |
+**F100** gives the regime axis a mechanism: the host register budgets are g16s 96 and
+g17s 124, and the kernel reads 94 registers on g16s and 101 on g17s. On g16s it sits two
+registers under a binding budget, so register relief buys occupancy; on g17s it has 23
+registers of slack, so relief buys nothing and a barrier is pure cost. That predicts
+E121's local gain was an occupancy gain that only exists where the budget binds — and it is
+falsifiable by census with no GPU time, because at NA=5 the shared-sums path is compiled out.
 
-No scalar fits both. E125's Stage 2 deliverable is now a **class-by-regime table**, not a
-factor, validated against both anchors rather than fitted to them.
+Askeladd's own pre-submission residency census already showed the g17s loss concentrated at
+the dominant widths (weighted g16s −1.80 %, g17s −6.79 %). The instrument worked; the
+decision did not use it.
 
-### 4. Build a median-regime acceptance fixture (edward, Stage 0.5 of E124)
+### 4. Acceptance work needs a regime test, and the old one was wrong
 
-**Finding 92, this cycle.** 100.0 % of the published median's marginal weight sits on
-prompts accepting 0.83 to 0.90 at depth 4.4 to 6.1. Every local prose fixture the
-campaign owns accepts 0.44 to 0.52. `benchfixture` at 0.877 is the only local fixture in
-the right regime, and it is a long-copy gate. Timing work is safe; acceptance work is
-not. Eleven Gutenberg seeds in the eight published domain labels are being screened now.
+No local prose seed reaches accept 0.83 on the first 128 decoded tokens; the highest is
+0.791, and every seed that clears 0.83 over a full window does so through late-window
+greedy-decode degeneration. That voided every acceptance experiment screened on accept rate.
 
----
-
-## What closed this cycle
-
-- **`noislands` / E124.** Closed as a net negative. E82 already measured the same
-  mechanism at 512 tokens with clean arm separation: +0.366 % **slower**, one extra
-  round. Edward's corrected byte model reproduces that to 0.049 pp. The acceptance
-  repayment is 1.8 times the byte saving. Arm `kv`, never measured, has a ceiling of
-  +0.048 to +0.065 % ranked at zero acceptance cost.
-- **"Draft deeper on prose."** E122 forced depth 7: accepted tokens per round rise 11 %
-  for a 77 % round cost. Closed on prose. Not closed in general.
-- **Composition of rival mechanisms.** Finding 93. The envelope is the crown.
+Rule 76 is amended: the regime variable is the **per-step conditional p**, not the accept
+rate, because the rate falls with depth even at constant p. Re-inverted, `benchfixture` sits
+at p 0.9645 — inside the median-carrying band and a good stand-in for medicine, essays,
+botany and republic, which carry 0.4330 of the marginal weight together. The corpus is
+weaker than we thought, but it is not empty.
 
 ---
 
 ## Potential next research directions
 
-1. **Refit the depth price level as well as its shape.** `makeMeasuredDepthPrice`
-   rescales every arm to `maxDepth * headStepCostRatio = 1.44`, so no arm can correct a
-   wrong level. F13 puts the true head cost near 0.026 local and 0.0075 ranked against
-   the shipped 0.18. The rescale constraint is itself a candidate defect.
-2. **Re-open margin-conditioned depth in the median regime.** E122's pooled AUC of 0.5109
-   is a null on zero-weight fixtures; `benchfixture` read 0.7998. Separately, every one
-   of E122's 1,761 margins is an exact multiple of 2^-4, which is bf16 catastrophic
-   cancellation. A higher-precision margin is untested.
-3. **Measure the wide-QMV leg share as a function of realised width.** Finding 95 voids
-   the 0.6070 constant at the level. An independent width sweep would either confirm
-   width dependence and collapse the E120 frame anomaly to 1.000, or leave a real frame
-   effect to explain.
-4. **The beagle acceptance reopener.** `qwen35DraftSelectKernel` discards every runner-up.
-   Finding 69 leaves 21.6x unspent acceptance headroom against today's exchange rate, and
-   beagle is the binding prompt at coefficient 203.
-5. **C1, the sign-sketch first pass.** Priced at +0.23 to +0.34 % ranked. Unowned. Its
-   kill rule needs re-derivation against the Finding 92 regime before it can be assigned.
-6. **A schedule experiment that is not a depth price.** The organizer's P1 to P2 move
-   changed per-prompt depth targets directly. Nobody has revisited the depth **cap** of 7
-   or the two margin overrides at d=0 and d=1 since they were set.
+**Near term, already gated**
 
----
+- **Template the Route B entry point on M.** A switch entry point's register count is the
+  maximum over its inlined branches, so the M=5 branch alone costs 4 resident simdgroups at
+  every other width. Templating projects M=8 to 94 registers and 42 simdgroups with text
+  falling from ~50 KB to 6–12 KB per pipeline. Gated behind a g17s census, because F99 has
+  now shown this exact channel inverting.
+- **Compose Route B with the crown's kernel-1 probe select.** We already own the crown's
+  kernel 2 as E101; we lack kernel 1, worth about +0.074 % ranked. Single-threadgroup, so
+  expect poor M5 transfer. Cheap, but small.
+- **C1, the sign-sketch or low-rank first pass on the draft path.** 1,600 B per row down to
+  about 130 B, worth +0.23 to +0.34 % ranked. Its kill rule was blocked on a prose corpus
+  that F98 says does not exist; the amended Rule 76 may unblock it via `benchfixture`.
 
-## Standing campaign constraints added this cycle
+**If the estimator audit pays**
 
-- **Rule 76.** No acceptance measurement from a fixture outside the median-carrying
-  regime, accept >= 0.80 and depth >= 4.4. Stratified, never pooled.
-- **Rule 77.** Every leg-share coefficient carries the realised mean width it was
-  measured at.
-- **Rule 78.** No single-receipt comparison between two solvers without both F76 mode
-  indices.
-- **Harness defects 26 to 30.** ANSI colour in `yukon submissions`; short-window
-  dilution measured at 3.8; `MLXFAST_*` never reaches a worker leg; `e123_arms.py` no
-  longer builds; the arm palindrome cannot remove the clock ramp on short arm sets.
+- Recalibrate or remove the margin override, then confirm on a ranked receipt rather than a
+  local session, because Rule 79 forbids local timing as validation for a schedule change.
+- Censoring-aware per-position acceptance estimation as a standing instrument, since every
+  adaptive-policy measurement on this campaign has the same selection bias.
+
+**Bigger swings, not yet started**
+
+- **A zero-GPU cross-architecture screen as a standing gate.** If F100 holds, a per-width
+  register and residency census on g17s can veto a class of changes before we spend a
+  submission. That is worth more than any single mechanism, because we have now lost one
+  submission and 2.1 % to its absence.
+- **Verification batching at wider row counts**, where the ranked marginal cost per row is
+  7.154 ms and the ranked tier break at width 5 is 22.54 %. The ranked and local boundaries
+  sit at different widths, which is an unexploited asymmetry.
+- **Gated DeltaNet recurrence, snapshots and rollback.** 48 of 64 layers are recurrent and
+  the recurrence is only 1.114 % of the round, but snapshot and replay cost on rejected
+  drafts has never been isolated.
+- **Weight loading and transformed layout.** The round is 88.6 % DRAM weight streaming over
+  14.41 GB, and M5 streams at 542.8 GB/s against the local 273 GB/s. Any change to the
+  bytes actually touched per round converts at 1.0 in the transfer table, the only class
+  that does.
+
+**Standing discipline**
+
+- Rule 81 is now the merge gate: name the ranked receipt before merging a scored-surface
+  change on a local read, and do not stack a second mechanism until it lands.
+- Rule 79 for anything touching the schedule: price on the board-fitted ranked curve.
+- Rule 56 for anything touching registers or text: census g17s, not just g16s.
