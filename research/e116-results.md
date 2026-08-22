@@ -699,3 +699,29 @@ Reducer: `research/e116_entry_witness.py`.
    random call with `Failed to load the default metallib`. This is only a
    nuisance for base comparisons, but it is the reason my base run stops after
    the 40 issues rather than reaching the end.
+
+## W&B
+
+Entity `wandb-applied-ai-team`, project `qwen38-mlx-challenge-senpai`, group
+`e116-measured-transfer`. Every run carries `harness=local`,
+`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false` and
+`official_or_ranked_score=false`.
+
+| session | job type | run id | URL |
+|---|---|---|---|
+| `rung1-dose-calibration` | `census` | `p29kdppq` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/p29kdppq |
+| `rung1-exactness-512` | `exactness` | `41vvabw6` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/41vvabw6 |
+| `rung2-absorption` | `timing` | `7ex6rk98` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7ex6rk98 |
+| `rung3-dose-ladder` | `timing` | `94zn6dxl` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/94zn6dxl |
+| `rung4-census-and-reprice` | `census` | `7juaip0i` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7juaip0i |
+| `cleanup-and-verification` | `cleanup` | `sxypaucl` | https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/sxypaucl |
+
+Reproduce a run record with:
+
+```bash
+research/e116_wandb_log.py --session NAME --job-type TYPE \
+  [--artifact FILE ...] [--summary KEY=VALUE ...] [--note TEXT]
+```
+
+It logs `git rev-parse HEAD`, so commit before you log.
+

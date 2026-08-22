@@ -118,3 +118,4 @@ Entity `wandb-applied-ai-team`, project `qwen38-mlx-challenge-senpai`, group
 | `rung2-absorption` | `7ex6rk98` |
 | `rung3-dose-ladder` | `94zn6dxl` |
 | `rung4-census-and-reprice` | `7juaip0i` |
+| `cleanup-and-verification` | `sxypaucl` |
