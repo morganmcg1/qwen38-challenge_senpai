@@ -1,96 +1,92 @@
 # SENPAI Research State
 
-- 2026-08-22 18:25 UTC — campaign round 291.
+- 2026-08-22 ~19:35 UTC. Advisor base `33ce6a3f` (Merge PR #130, alphonse E130).
+  Campaign `BASE_SHA` for every submit call is unchanged at `770a3ff2`.
 - Most recent research direction from the human researcher team: none received this round.
-  The last standing human instruction remains "keep the frontier moving and submit the
-  strongest legitimate candidate"; the advisor decides all experiment selection autonomously.
+  The standing direction is the one in `senpai/program.md`: move the official frontier,
+  submit autonomously, and treat a promoted rival row as an interrupt.
 
-## Where the campaign stands
+## Where the board stands
 
-The published crown is `dacf7005` (newjordan, `3.52326653`, source `166e0cad`). Our
-`623e77af` sits second at `3.52085227`, a gap of 0.0686 %. That ordering is a serial-leg
-lottery result, not a merit ordering.
+Our promoted row `623e77af` at 3.52085227 is now fourth. The crown is `02742bf0`
+(scarletbright) at 3.52686512, promoted 19:06:44Z. Three rows passed us in five hours.
+On the common-denominator scale (`research/common_denominator.py --anchor 623e77af`)
+our candidate leg is still the fastest tree measured on the board; the published
+ordering above us is mostly serial-leg lottery plus one real constant.
 
-Two measurements this round settle the competitive question:
-
-1. **FINDING 176.** Under the common-denominator instrument (827 rows, 18 in the 0.30 %
-   cluster) our candidate is the *fastest candidate on the board*. The crown holder's
-   candidate is 0.034 % slower than ours. Candidate-vector-only spread inside the cluster is
-   0.1049 %; serial-vector-only spread is 0.0987 %. A candidate gain must be large compared
-   with 0.1 % before it is visible in a published median.
-2. **FINDING 177/178.** The crown tree `166e0cad` is our own `60d5b34a` plus one change: an
-   SDPA warm loop widened from `qL in [1,5,4]` to `[1,2,3,4,5]`. That change is *provably
-   inert*: the SDPA pipeline cache key holds dtype, two head dims, five booleans and
-   `blocks`, and no `qL`. The ranked A/B measures `+0.0039 %` candidate mean, `z = +0.33`.
-   We therefore delete nothing of value when we submit over the crown, and our next receipt
-   is already an isolated A/B.
-
-The consequence is that the campaign's job is now purely to find real candidate time, and to
-find enough of it that a ~0.1 % publication noise floor cannot hide it.
+The one in-flight submission slot is FREE. It is allocated to thorfinn's tight
+launch grid, with edward's `pb6` depth price second in the queue.
 
 ## Current research focus
 
-**Theme A — the M=5→6 verify cost cliff.** This is the largest open prize. The shipped
-price table is wrong at exactly one boundary (FINDING 164); replaying the correct boundary
-price is worth `+2.34 %` held out (edward's `pb6`). Three levers that should have moved the
-cliff — instruction issue, weight passes, resident occupancy — all measured at or near zero,
-and FINDING 174 closed the occupancy axis with a ranked receipt. The surviving explanation is
-that the step is carried by some *other* dispatch family (SDPA split-5, the GDN packed mixer
-at S=6, or host-side round bookkeeping), and that has never been attributed by direct time
-measurement.
+1. **The launched threadgroup count.** F182. `grid = .tight` deletes the empty
+   columns that the wide grid launches for every routed wide-QMV dispatch.
+   Measured +1.806 % faster absolute candidate seconds per token at 27 sigma over
+   twelve 512-token legs, with a serial null predicted from source before the
+   measurement and confirmed to 0.004 pp. Honest ranked bracket +0.5 % to +1.8 %.
+   Ship commit is built and gated; one transient `--local-submit` failure is being
+   retried.
 
-**Theme B — schedule and price, not kernels.** `pb6` is the campaign's strongest single
-candidate and holds the free submission slot. It is a two-constant change to the depth-price
-table, gated by a measured-curve refit that is the current critical path.
+2. **The pass-boundary depth price.** Edward's `pb6` raises `marginal[4]`, the entry
+   into verify width 6, by a 1.45 tier factor. A refit on his own measured round-cost
+   curve holds the argmax at boundary 4 in 24 of 24 leave-one-prompt-out refits and
+   in 5,997 of 6,000 bootstrap draws, and reads +2.4683 % held out. The open gate is
+   FM1: the replayer draws realised capability independently of round-start state, so
+   it cannot price the rounds `pb6` actually stops early. The archived traces can, and
+   that audit costs zero GPU.
 
-**Theme C — draft-path byte removal.** The C1 low-rank sketch readout
-(`qlowrank256-N4096-p0.35`, net `+0.573 %` after E136 rung 0 priced the widened selection at
-`18.24 µs/draft step`) removes 37.5 MB of the 323.6 MB per-draft-step budget.
+3. **The C1 sketch readout.** Askeladd's rank-256 checkpoint-derived row PCA replaces
+   the affine-2 probe scan. Rule 107 net +0.546 %, 1.8x the bar. The rung-1 risk gate
+   is the best in the campaign: eleven boundaries, each with a positive control that
+   was shown to fail. Rung 2 ABBA timing is running.
 
-**Theme D — launched threadgroups.** The shipped QMV grid launches `m` columns at every
-routed width while only `ceil(m/ipg)` load a weight. The tight grid removes 5.68 empty
-columns per round, bit-exactly, in one word. Rung 1 is running.
+4. **The M=5 to M=6 cost cliff.** F185. The one mechanism that was supposed to explain
+   it - a second QMV pass - is dead by construction on the current base, because
+   `onePass67` makes both `plan(5)` and `plan(6)` single-pass. The step is still
+   11.3 to 13.1 ms above the shallow slope, 25 to 29 % of an M=5 round, and the slope
+   after the boundary is 5,324 us per row instead of 3,446. This is the largest
+   unexplained quantity in the campaign and it prices the whole depth-schedule family.
+   Alphonse owns the attribution (E137).
 
-**Theme E — measurement discipline.** Three new rules this round. Rule 110: a warm-phase
-change is worth zero unless it changes a pipeline cache key. Rule 111: a part table finds
-where the time went; it never decides a gate. Rule 109 (last round): prove the guard passes
-at runtime on the measuring host before pricing anything.
-
-## In flight
-
-| PR | student | experiment | state |
-|---|---|---|---|
-| #134 | edward | E134 depth-price cliff, `pb6` | Gate A passed; measured-curve refit is the critical path; holds the submission slot |
-| #135 | thorfinn | E135 tight QMV launch grid | rung 1 running, 12 counterbalanced 512-token legs |
-| #136 | askeladd | E136 C1 sketch readout + fp32 rerank tiebreak | rung 0 cleared (+0.573 %); C1 build behind a gate |
-| #130 | alphonse | E130 entry-point occupancy tax | closing as a clean negative; F175 resolved the guard question |
+5. **Held riders, composed in order after the queue clears.** The fp32 tiebreak at
+   `Qwen35.swift:4117` at +0.2166 %, then the cluster probe fraction argmax at
+   +0.0992 %. Both are one-token or one-constant edits with zero bytes and zero
+   dispatches.
 
 ## Potential next research directions
 
-1. **P1 — cliff family attribution (next assignment, alphonse).** Re-key 12 archived traced
-   512-token legs by realized verify width using the eleven-way per-round segment split, then
-   run the never-executed `sweepGatedDelta(widths:1...12)` cost curve (<5 s GPU). Stop rule:
-   ≥30 % non-QMV redirects the whole theme; <10 % closes it.
-2. **P2 — the 254,279,680-byte permanently unwired scratch buffer.** Present in every
-   residency draw. The resize path skips oversized entries and never evicts, so it can never
-   be wired at any slack rung. Admission-side only. Bracket 0.3–1.5 % if decode touches it.
-3. **P3 — serialized host-side round bookkeeping.** Sum `readout_us + commit_us + upkeep_us`
-   width-matched and decide whether the tail can overlap the next round's submit.
-4. **P4 — the GDN S=2 mid-state write.** An unconditional 151 MB per-round write whose
-   break-even needs `P(reject | M=2) < 0.49`, never measured.
-5. **H179 — the `query_transposed` warm gap.** The scored SDPA path passes slices; the warm
-   path passes contiguous zeros. If the boolean differs, up to three pipeline
-   specialisations compile inside the timed window. Zero-GPU gate, edward rung 6.
-6. **C2 — precision-island quantization to affine-4 g64.** Reopened, unowned, +0.38–0.45 %.
-7. **The head-history fold warm gap.** Widths 1..9 are flushed but only width 2 is warmed.
-   Must be re-checked under Rule 110 before it is priced at all.
+- **Attribute the cliff to a dispatch family.** F184 found that the exactness chunk in
+  `AttentionUtils.swift` engages at exactly `qL >= 6` and adds two SDPA dispatches, one
+  concat, and two hidden contiguous query copies per full-attention layer - 64 extra
+  dispatches per drafting round, 32 of them uncounted. That matches the recorded
+  +109 dispatch step at M=5 to M=6. It has never been priced as time. If the whole
+  family moves less than 1 ms it is eliminated and the cliff is elsewhere, most likely
+  in Gated DeltaNet at S=6.
 
-## Closed this round
+- **Gated DeltaNet at the same boundary.** P4, the S=2 mid-state write, gates about
+  151 MB per round on rejection and is unowned. If the cliff is not SDPA it is the
+  strongest remaining structural candidate.
 
-- The qL warm ladders, closed at source as well as by three receipts.
-- The `_nax` / MPP tensor path: no `qmv_nax` exists, `get_qmv_batch_limit` keeps M ≤ 9 on
-  matvec, and every M ≥ 4 quantized matmul on the critical path is the bit-exact target
-  verify. Two named reopeners recorded.
-- The wired-slack ladder above 64 MiB (null at 512 tokens, FINDING 173) and the warm refill
-  after wiring (a measured −5.3 % ranked, FINDING 172).
-- Occupancy and residency as a pricing axis (FINDING 174, closed by a ranked receipt).
+- **Head-history fold warm gap.** The scored flush concatenates widths 1 through 9 and
+  only width 2 is warmed. Predicted signature is a latency spike at the first round that
+  reaches each new width. Must clear Rule 110 first: name the pipeline cache key field
+  the change moves.
+
+- **C2 precision-island quantization.** Reopened and unowned, +0.38 % to +0.45 %.
+
+- **Host bookkeeping overlap (P3).** Bracketed at 0.12 % to 0.32 % with a prior
+  retraction against it. Not assigned; the ceiling for all in-round overlap is the
+  measured GPU idle of 1,493 us at M=6.
+
+- **Cleanup.** After the queue settles, prune the stale E120 arm flags, the dead Route B
+  table paths, and the E128 price arms so the winning behaviour is the only path.
+
+## Standing methodological state
+
+The campaign now prices every ranked claim through the candidate 8-prompt mean, whose
+pair-difference null is 0.067 % (Rule 112), never through the published median. Every
+offline replay that stands in for a Metal kernel must reproduce that kernel's own
+arithmetic and prove it with a bit comparison (Rule 113). Every `--require` witness must
+have a demonstrated failing polarity (Rule 101); edward's own self-caught violation this
+round is the worked example. The pre-submit occupancy gate fails open (HARNESS DEFECT 35)
+and is excluded from the submission chain until alphonse repairs it.
