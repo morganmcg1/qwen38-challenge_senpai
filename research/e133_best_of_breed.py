@@ -80,6 +80,40 @@ def main(path: str) -> int:
     for name, e in ELASTICITY.items():
         print("    %-34s elasticity %.3f -> %+.3f %% leg"
               % (name, e, -total * e * QMV_SHARE))
+
+    if "per_cell_best" not in V or not V["per_cell_best"].get("compiled"):
+        print()
+        print("  no composed row; the total above is an upper bound")
+        return 0
+
+    print()
+    print("  composed source against the per-cell bound")
+    composed_total, held = 0.0, True
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        ship = V["shipped"]["cells"][key][RANKED]
+        bound = min(V[n]["cells"][key][RANKED]["registers"]
+                    for n in EXACT if V[n].get("compiled"))
+        got = V["per_cell_best"]["cells"][key][RANKED]
+        held = held and got["registers"] <= bound
+        print("    %6s bound %3d  composed %3d  %s"
+              % ("ipg%d" % na, bound, got["registers"],
+                 "holds" if got["registers"] <= bound else "GIVES BACK"))
+    for width in sorted(F83_MASS):
+        key = "cell_na%d_rps4" % WIDTH_TO_IPG[width]
+        ship = V["shipped"]["cells"][key][RANKED]
+        got = V["per_cell_best"]["cells"][key][RANKED]
+        composed_total += F83_MASS[width] * 100.0 * (
+            got["simdgroups_derived"] - ship["simdgroups_derived"]
+        ) / ship["simdgroups_derived"]
+    print()
+    print("    composition %s" % ("HOLDS at every cell" if held
+                                  else "does not hold"))
+    print("    composed mass-weighted residency change  %+.4f %%"
+          % composed_total)
+    for name, e in ELASTICITY.items():
+        print("      %-32s elasticity %.3f -> %+.3f %% leg"
+              % (name, e, -composed_total * e * QMV_SHARE))
     return 0
 
 
