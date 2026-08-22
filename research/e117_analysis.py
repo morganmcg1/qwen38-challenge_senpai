@@ -321,6 +321,59 @@ def main() -> int:
         print("\nnote: at fixed K, grid.y = N/8 and weight bytes are both "
               "proportional to N, so this sweep cannot separate them.")
 
+    # Rung 1: price each in-graph serialisation route against the blocking-eval
+    # ceiling, in microseconds per occurrence rather than in percent.
+    routes = [a for a in arms if a not in (A_ONE, "c_nsplit", "e_nsplit_serial")]
+    if routes:
+        print("\n" + "=" * 96)
+        print("rung 1: cost of causing the barrier, microseconds per occurrence")
+        print("=" * 96)
+        print("price = (ceiling % - route %) / 100 x a_one net us, where the "
+              "ceiling is e_nsplit_serial,")
+        print("whose blocking host eval is removed by the two-eval control.")
+        out["rung1"] = {}
+        for shape in shapes:
+            w = out["shapes"][shape]["widths"]
+            for width in widths:
+                entry = w.get(width)
+                if not entry:
+                    continue
+                ceiling = entry["arms"].get("e_nsplit_serial")
+                if not ceiling:
+                    continue
+                base_us = entry["a_one_net_us"]
+                ceil_pct = ceiling["net_pct_faster_mean"]
+                print(f"\n## {shape} M={width} {entry['partition']}   "
+                      f"a_one net {base_us:.2f} us   "
+                      f"ceiling {ceil_pct:+.3f} %")
+                header = (f"{'route':>18} {'net us':>10} {'net %':>9} {'se':>6} "
+                          f"{'price us':>9} {'round us @48':>13}")
+                print(header)
+                print("-" * len(header))
+                rows = {}
+                for arm in ["c_nsplit", "e_nsplit_serial"] + routes:
+                    got = entry["arms"].get(arm)
+                    if not got:
+                        continue
+                    price = (ceil_pct - got["net_pct_faster_mean"]) / 100.0 * base_us
+                    gain_round = got["net_pct_faster_mean"] / 100.0 * base_us * 48
+                    print(f"{arm:>18} {got['arm_net_us']:>10.2f} "
+                          f"{got['net_pct_faster_mean']:>9.3f} "
+                          f"{got['net_pct_faster_sem']:>6.3f} {price:>9.2f} "
+                          f"{gain_round:>13.1f}")
+                    rows[arm] = {
+                        "net_us": got["arm_net_us"],
+                        "net_pct_faster": got["net_pct_faster_mean"],
+                        "net_pct_faster_sem": got["net_pct_faster_sem"],
+                        "price_us_vs_ceiling": price,
+                        "round_gain_us_at_48_layers": gain_round,
+                    }
+                out["rung1"][f"{shape}|M{width}"] = {
+                    "a_one_net_us": base_us,
+                    "ceiling_pct": ceil_pct,
+                    "routes": rows,
+                }
+
     # Harness defect 19: per-block dispersion for every cell.
     print("\n" + "=" * 96)
     print(f"harness defect 19: blocks above {DEFECT19_FACTOR} x the cell median")
