@@ -513,10 +513,23 @@ def reclassify(lines: list[str]) -> dict:
     return counts
 
 
+def kernel_symbol(na: int, rps: int) -> str:
+    """The Itanium-mangled fragment for `qwen_e120_qmv_wide<NA, RPS, true>`.
+
+    The wrapper entry point is not inlined at AIR emission, so counting the
+    function named after the cell counts the wrapper's twenty-odd setup
+    statements and none of the kernel. The template instantiation carries the
+    arguments in its mangled name, which is what identifies the right body.
+    """
+    return "qwen_e120_qmv_wideILi%dELi%dELb1EE" % (na, rps)
+
+
 def hot_region(text: str, kernel: str) -> tuple[str, dict]:
     """The outermost loop of `kernel`, or the whole body when it is unrolled."""
     functions = probe.air_functions(text)
-    match = [n for n in functions if n == kernel or n.endswith(kernel)]
+    match = [n for n in functions if kernel in n]
+    if len(match) > 1:
+        raise Refused("%d AIR functions match %s" % (len(match), kernel))
     if not match:
         raise Refused("no AIR function named %s" % kernel)
     blocks = functions[match[0]]
@@ -547,7 +560,7 @@ def census(header: str, cells, workdir: pathlib.Path, tag: str,
     air = probe.emit_air(source, workdir / tag)
     rows: dict[str, dict] = {}
     for (na, rps), name in zip(cells, names):
-        where, counts = hot_region(air, name)
+        where, counts = hot_region(air, kernel_symbol(na, rps))
         rows[name] = {
             "na": na, "rps": rps, "region": where, "air": counts,
             "air_per_output_element": round(
