@@ -1,0 +1,107 @@
+{
+  "experiment": "E132",
+  "pr": 132,
+  "branch": "qwen-askeladd/e132-spill-free-wide-matvec-at-na8",
+  "base_sha": "f17daf34d4d50adcd8a47cf84c8730e3dc7e6ad3",
+  "note_on_base": "The PR body quotes the pre-submit commands against 770a3ff2. That base is stale: the advisor later ordered a rebase onto f17daf34. Every gate below was run against f17daf34.",
+  "host": "aws-mac, Apple GPU family applegpu_g16s",
+  "cross_compiled_ranked_arch": "applegpu_g17s",
+  "submitted_surface_delta_bytes": 0,
+  "gates": [
+    {
+      "gate": "twin audit",
+      "command": "python3 research/twin_audit.py",
+      "verdict": "OK",
+      "detail": "29 runtime-effective twins, 1 allowlisted comment-only waiver (non-comment lines byte-identical, both comment streams sha256-pinned)"
+    },
+    {
+      "gate": "assignment scope",
+      "command": "senpai/validate-assignment-scope.sh BASE_SHA SUBMITTED_PATH...",
+      "verdict": "OK, proved directly",
+      "detail": "The script requires at least one submitted path. This experiment submits nothing, so the property was proved directly instead: the contract declares 89 editable paths, this branch changes 24 paths, and the intersection is empty.",
+      "editable_paths_in_contract": 89,
+      "changed_paths": 24,
+      "changed_paths_inside_submitted_surface": 0
+    },
+    {
+      "gate": "editable budget",
+      "command": "senpai/check-editable-budget.sh f17daf34d4d50adcd8a47cf84c8730e3dc7e6ad3",
+      "verdict": "OK",
+      "source_bytes": 2594084,
+      "source_limit": 3000000,
+      "headroom_bytes": 405916,
+      "growth_bytes": 0,
+      "growth_limit": 262144,
+      "exempt_bytes": 2410,
+      "files": 154
+    },
+    {
+      "gate": "ranked score boundary",
+      "command": "senpai/verify-ranked-score-boundary.sh",
+      "verdict": "PASS",
+      "detail": "ranked numerator is pinned baseline; candidate edits affect the MTP denominator only"
+    },
+    {
+      "gate": "entry-point cliff census",
+      "command": "senpai/entry-point-cliff-census.sh --base f17daf34d4d50adcd8a47cf84c8730e3dc7e6ad3",
+      "verdict": "PASS",
+      "runtime_seconds": 4.61,
+      "entry_points": 8,
+      "entry_point_groups": {
+        "jit_twins": 3,
+        "route_b": 3,
+        "cluster_qmv": 2
+      },
+      "route_b_surface_g16s": "32.000 -> 32.000 derived simdgroups (+0.00 %), 1 -> 1 pipeline",
+      "route_b_surface_g17s": "38.000 -> 38.000 derived simdgroups (+0.00 %), 1 -> 1 pipeline"
+    },
+    {
+      "gate": "rung 2 acceptance suite",
+      "command": "python3 research/e132_gate_proofs.py",
+      "verdict": "exit 0, all five proofs hold",
+      "slowest_proof_seconds": 2.34,
+      "suite_seconds": 10.19,
+      "budget_seconds": 30,
+      "determinism": "Re-running the suite at the same commit reproduced every register count, pipeline count, derived-simdgroup figure and verdict byte-for-byte. Only the wall-clock fields moved (slowest proof 2.23 s then 2.34 s, suite 10.15 s then 10.19 s)."
+    },
+    {
+      "gate": "swift test",
+      "command": "swift test --force-resolved-versions",
+      "verdict": "AT THE DOCUMENTED FLOOR, ZERO ADDED",
+      "exit_code": 1,
+      "tests": 737,
+      "suites": 67,
+      "issues": 40,
+      "failing_names": 9,
+      "allowlist_source": "senpai/known-test-failures.md",
+      "why_exit_1_is_expected": "senpai/known-test-failures.md records a standing organizer floor of exactly 9 failing test functions and exactly 40 issues on this campaign tree. The run reproduces that floor exactly, name for name and count for count.",
+      "cannot_be_caused_by_this_branch": "The branch changes 24 paths, all under research/ and senpai/experiment-runbook.md. No test source, Package.swift resource, fixture, manifest or doc read by these tests is touched. Every occurrence of 'research/' or 'senpai/' inside Sources/ and Tests/ is a prose comment, with one unrelated env-var default path in E98MetadataByteProbeTests.swift:264.",
+      "per_name": [
+        {"test": "theCheckedInDeclarationSelectsThePinnedHead", "allowlisted_issues": 6, "observed_issues": 6, "match": true},
+        {"test": "startupMemoryPolicyKeepsRanked128GiBProfile", "allowlisted_issues": 2, "observed_issues": 2, "match": true},
+        {"test": "qwen36ConfigContractDigestMatchesTheReferenceManifest", "allowlisted_issues": 2, "observed_issues": 2, "match": true},
+        {"test": "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues", "allowlisted_issues": 3, "observed_issues": 3, "match": true},
+        {"test": "theSeededCalibrationExpectationMatchesItsRecordedProvenance", "allowlisted_issues": 2, "observed_issues": 2, "match": true},
+        {"test": "theQwenMTPTrackIsArmedOnQwen38", "allowlisted_issues": 11, "observed_issues": 11, "match": true},
+        {"test": "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen", "allowlisted_issues": 1, "observed_issues": 1, "match": true},
+        {"test": "participantDocsExposeDefaultCLIInstallDirectory", "allowlisted_issues": 2, "observed_issues": 2, "match": true},
+        {"test": "submissionStaticReviewPromptCoversMeasurementStructureExploitation", "allowlisted_issues": 11, "observed_issues": 11, "match": true}
+      ],
+      "note_on_totals": "senpai/known-test-failures.md last recorded 703 tests across 52 suites. This run sees 737 tests across 67 suites because the campaign tree has added test coverage since that record. The organizer failure decomposition is unchanged: still 9 names and still 40 issues."
+    }
+  ],
+  "not_run_and_why": [
+    {
+      "command": "./benchmark-qwen-mtp.sh --local-submit",
+      "reason": "The experiment changes zero submitted-surface bytes, so there is no candidate to time and no ranked-relevant behaviour to check. Rule 83 also forbids timing on this g16s host."
+    },
+    {
+      "command": "senpai/submit-official.sh",
+      "reason": "Nothing to submit. This is a compile-only census and design experiment."
+    },
+    {
+      "command": "tools/build-mlx-metallib.sh",
+      "reason": "No .metal or .h source in a metallib-loaded family was changed."
+    }
+  ]
+}
