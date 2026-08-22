@@ -1676,8 +1676,13 @@ public enum Qwen35CustomQMV {
     /// instrument can time the other arms in the same build; it is read once at
     /// process start and never varies with the request, the prompt or the
     /// benchmark phase.
+    ///
+    /// The name must carry the `MLX_` prefix. `sanitizedRuntimeWorkerEnvironment`
+    /// is a strict allowlist and drops every `MLXFAST_*` name, so an
+    /// `MLXFAST_`-prefixed override would never reach the runtime worker and
+    /// every arm of an end-to-end A/B would silently time `sumtable`.
     public static let arm: Arm = {
-        let raw = ProcessInfo.processInfo.environment["MLXFAST_QWEN_E120_QMV"]
+        let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV"]
         guard let raw, !raw.isEmpty else { return .sumTable }
         return Arm(rawValue: raw) ?? .sumTable
     }()

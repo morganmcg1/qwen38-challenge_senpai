@@ -39,6 +39,21 @@ done
 out_dir="research/out/${tag}"
 mkdir -p "${out_dir}"
 
+# The wrapper defaults MLXFAST_QWEN_MTP_HEAD_DIR to setup-qwen-mtp.sh's
+# organizer-pinned bf16 cache. The current base declares the promoted remote
+# head in mtp-head.manifest.json, and the promoted attachment code cannot load
+# the pinned tree: the worker dies with
+# `keyNotFound(["mtp","pre_fc_norm_hidden","weight"])` before it answers the
+# parent's first request. Point the wrapper at the declared head every other
+# campaign leg uses.
+head_dir="${E120_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
+if [[ ! -s "${head_dir}/config.json" ]]; then
+  echo "e120_rung5e.sh: no head at ${head_dir}; run research/fetch-declared-head.sh" >&2
+  exit 1
+fi
+export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+head_sha256="$(shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
+
 gpu_temp() {
   local macmon
   for macmon in "${MLXFAST_MACMON_BIN:-}" "${HOME}/bin/macmon" \
@@ -62,9 +77,9 @@ for arm in "${arms[@]}"; do
   label="$(printf '%02d-%s' "${index}" "${arm}")"
   entry_c="$(gpu_temp)"
   arm_start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "=== rung 5e arm ${label}: MLXFAST_QWEN_E120_QMV=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
+  echo "=== rung 5e arm ${label}: MLX_E120_QMV=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
 
-  MLXFAST_QWEN_E120_QMV="${arm}" \
+  MLX_E120_QMV="${arm}" \
   MLXFAST_QWEN_MTP_DEPTH="${depth}" \
   MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}" \
   MLXFAST_SCORE_PATH="${PWD}/${out_dir}/score.${label}.json" \
@@ -91,6 +106,8 @@ done
   echo "tokens=${tokens}"
   echo "offered_draft_depth=${depth}"
   echo "order=${order}"
+  echo "head_dir=${head_dir}"
+  echo "head_safetensors_sha256=${head_sha256}"
   echo "started_utc=${start_iso}"
   echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "git_head=${head_sha}"
