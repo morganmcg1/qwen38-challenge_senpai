@@ -618,6 +618,16 @@ class Sketch:
             # int8 codes + fp32 scale + fp32 mean offset
             self.bytes_per_row = size + 8
             self.proj_bytes = H.HIDDEN * size * 2       # bf16 basis
+        elif family == "sign":
+            # `size` is the scale GROUP, not a projected width: this family
+            # keeps all 5,120 dimensions at one bit and never projects.
+            assert H.HIDDEN % size == 0
+            self.proj = None
+            self.row_codes, self.row_scale = self._sign(rows, mu)
+            self.cent_codes, self.cent_scale = self._sign(centroids, mu)
+            # one bit plane + fp16 group scales + fp32 mean offset
+            self.bytes_per_row = H.HIDDEN // 8 + 2 * (H.HIDDEN // size) + 4
+            self.proj_bytes = 0
         else:
             raise SystemExit(f"unknown sketch family {family}")
         # Both families sketch the CENTRED row, but the exact score is
@@ -652,8 +662,33 @@ class Sketch:
             mx.eval(parts_c[-1], parts_s[-1])
         return mx.concatenate(parts_c, axis=0), mx.concatenate(parts_s, axis=0)
 
+    def _sign(self, table: mx.array, mu: mx.array):
+        """One bit per dimension with an fp16 scale per group of `size`.
+
+        The group scale that minimizes `||d - s sign(d)||` is `mean|d|`. It is
+        divided out by the row's mean scale so the stored code stays O(1) and
+        fp16 accumulation cannot dominate the one-bit error, and the row gain
+        is handed back through the usual per-row scale.
+        """
+        parts_c, parts_s = [], []
+        step = 8192
+        groups = H.HIDDEN // self.size
+        for a in range(0, table.shape[0], step):
+            block = (table[a: a + step].astype(mx.float32) - mu).reshape(
+                -1, groups, self.size)
+            scale = mx.mean(mx.abs(block), axis=2)
+            gain = mx.maximum(mx.mean(scale, axis=1), 1e-12)
+            code = (mx.where(block >= 0.0, 1.0, -1.0)
+                    * (scale / gain[:, None])[:, :, None])
+            parts_c.append(code.reshape(-1, H.HIDDEN).astype(mx.float16))
+            parts_s.append(gain)
+            mx.eval(parts_c[-1], parts_s[-1])
+        return mx.concatenate(parts_c, axis=0), mx.concatenate(parts_s, axis=0)
+
     def query(self, x: mx.array, mu: mx.array) -> mx.array:
         centred = x.astype(mx.float32) - mu
+        if self.family == "sign":
+            return centred.astype(mx.float16)
         if self.family == "simhash":
             return mx.where(mx.matmul(centred, self.proj) >= 0.0, 1.0, -1.0)
         return mx.matmul(centred, self.proj)
@@ -1161,7 +1196,7 @@ def parse_families(spec: str) -> list[tuple[str, int]]:
         token = token.strip()
         if not token:
             continue
-        family = next(f for f in ("simhash", "qlowrank", "lowrank")
+        family = next(f for f in ("simhash", "qlowrank", "lowrank", "sign")
                       if token.startswith(f))
         families.append((family, int(token[len(family):])))
     return families
