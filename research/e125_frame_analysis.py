@@ -134,7 +134,34 @@ def sem_of_difference(a: dict, b: dict) -> float:
     return math.sqrt(a["sem"] ** 2 + b["sem"] ** 2)
 
 
-def prices(cell: dict) -> dict:
+def fidelity_exclusions(rate: dict) -> dict:
+    """(arm, width) keys whose output was not bit identical at any k.
+
+    A rung that fails exact comparison at one stream length is not trustworthy
+    at that width in any frame, because the frames only change how long the
+    stream is and who else is on the bus, never what the arithmetic is. The
+    exclusion is per (arm, width) and not per session: E123 recorded that
+    `k_tgld16`, `k_tgldc16` and `k_cvt16` spill at NA=4 on this architecture,
+    which makes a spilling rung unpriceable at that one width while leaving
+    every other width of the same arm sound.
+    """
+    failures: list[dict] = []
+    for r in rate["measurements"]:
+        if r.get("kind") != "fidelity":
+            continue
+        for a in r["arms"]:
+            if a["exact_required"] and not a["bit_identical"]:
+                failures.append({"arm": a["arm"], "k": r["k"], "m": r["m"],
+                                 "shape": r.get("shape"),
+                                 "differing": a["differing"],
+                                 "max_rel": a.get("max_rel")})
+    keys = sorted({(f["arm"], f["m"]) for f in failures})
+    return {"failures": failures,
+            "excluded_arm_widths": [{"arm": a, "m": m} for a, m in keys],
+            "keys": set(keys)}
+
+
+def prices(cell: dict, excluded: set | None = None) -> dict:
     """Per class: the rung contrast, absolute and percent.
 
     The contrast subtracts two arms that carry the same injection scaffold and
@@ -142,8 +169,16 @@ def prices(cell: dict) -> dict:
     here carries a share of the scaffold.
     """
     out = {}
+    excluded = excluded or set()
     kb = cell["k_blocks"]
+    m = cell["m"]
+    skipped = []
     for klass, lo_arm, hi_arm, lo_n, hi_n in LADDER:
+        bad = [a for a in (lo_arm, hi_arm) if (a, m) in excluded]
+        if bad:
+            skipped.append({"class": klass, "reason": "fidelity",
+                            "excluded_rungs": bad, "m": m})
+            continue
         lo, hi = cell["stats"].get(lo_arm), cell["stats"].get(hi_arm)
         if lo is None or hi is None:
             continue
@@ -164,6 +199,11 @@ def prices(cell: dict) -> dict:
         r = cell["stats"].get(ref_arm)
         if d is None or r is None:
             continue
+        bad = [a for a in (dele, ref_arm) if (a, m) in excluded]
+        if bad:
+            skipped.append({"class": name, "reason": "fidelity",
+                            "excluded_rungs": bad, "m": m})
+            continue
         gain_us = r["median"] - d["median"]
         out[name] = {
             "arm": dele, "reference": ref_arm,
@@ -180,6 +220,8 @@ def prices(cell: dict) -> dict:
             / base["median"],
             "cost_us_per_k_block": (scaffold["median"] - base["median"]) / kb,
         }
+    if skipped:
+        out["skipped_by_fidelity"] = skipped
     return out
 
 
@@ -268,7 +310,7 @@ def segments(cell_map: dict) -> list[dict]:
     return out
 
 
-def gates(rate: dict, cell_map: dict) -> dict:
+def gates(rate: dict, cell_map: dict, excl: dict) -> dict:
     """Defect 22 per frame, the null scaffold per frame, positive controls."""
     limit = BANDWIDTH_GATE_FACTOR * PEAK_BANDWIDTH_GB_S
     by_frame: dict[str, dict] = {}
@@ -307,15 +349,19 @@ def gates(rate: dict, cell_map: dict) -> dict:
     controls = [r for r in rate["measurements"]
                 if r.get("kind") == "positive_control"]
     control_failures = [r for r in controls if not r["detected"]]
-    fidelity_failures = []
-    for r in rate["measurements"]:
-        if r.get("kind") != "fidelity":
-            continue
-        for a in r["arms"]:
-            if a["exact_required"] and not a["bit_identical"]:
-                fidelity_failures.append({"arm": a["arm"], "k": r["k"],
-                                          "m": r["m"],
-                                          "differing": a["differing"]})
+    fidelity_failures = excl["failures"]
+
+    n_exact = sum(1 for r in rate["measurements"]
+                  if r.get("kind") == "fidelity"
+                  for a in r["arms"] if a["exact_required"])
+    priced = tuple(k for k, *_ in LADDER) + ("deletion",)
+    surviving = sorted({(klass, cell["m"])
+                        for cell in cell_map.values()
+                        for klass in cell.get("prices", {})
+                        if klass in priced})
+    lost = sorted({(s["class"], s["m"])
+                   for cell in cell_map.values()
+                   for s in cell.get("prices", {}).get("skipped_by_fidelity", [])})
 
     streaming_bw_ok = all(v["passed"] for v in bandwidth.values())
     return {
@@ -337,9 +383,26 @@ def gates(rate: dict, cell_map: dict) -> dict:
                               "failures": control_failures,
                               "passed": not control_failures},
         "fidelity": {"failures": fidelity_failures,
+                     "n_exact_required_checks": n_exact,
                      "passed": not fidelity_failures},
         "session_valid": streaming_bw_ok and not control_failures
         and not fidelity_failures,
+        "exclusions": {
+            "excluded_arm_widths": excl["excluded_arm_widths"],
+            "class_widths_lost": [{"class": c, "m": m} for c, m in lost],
+            "class_widths_surviving": [{"class": c, "m": m}
+                                       for c, m in surviving],
+            "rule":
+                "a (arm, width) key that failed one exact check is dropped at "
+                "that width in every frame; a class is priced only where both "
+                "of its rungs survive",
+            "note":
+                "the raw session_valid above is left false on purpose. This "
+                "field states which cells remain sound, it does not overturn "
+                "the gate",
+        },
+        "session_valid_after_exclusions":
+            streaming_bw_ok and not control_failures and bool(surviving),
     }
 
 
@@ -476,8 +539,9 @@ def main() -> int:
 
     rate = json.loads(args.rate.read_text())
     cell_map = cells(rate)
+    excl = fidelity_exclusions(rate)
     for cell in cell_map.values():
-        cell["prices"] = prices(cell)
+        cell["prices"] = prices(cell, excl["keys"])
 
     report = {
         "harness": "local",
@@ -519,7 +583,7 @@ def main() -> int:
             "arm_sem": {a: s["sem"] for a, s in cell["stats"].items()},
             "prices": cell["prices"],
         })
-    report["gates"] = gates(rate, cell_map)
+    report["gates"] = gates(rate, cell_map, excl)
     report["frame_law"] = frame_law(cell_map)
     report["segments"] = segments(cell_map)
     report["ramp_residual"] = ramp_residual(rate)
@@ -568,9 +632,21 @@ def main() -> int:
                      "" if v["measured"] else "   NOT MEASURED"))
     print()
     g = report["gates"]
-    print("gates: session_valid=%s  controls=%s  fidelity=%s"
+    print("gates: session_valid=%s  controls=%s  fidelity=%s (%d checks)"
           % (g["session_valid"], g["positive_controls"]["passed"],
-             g["fidelity"]["passed"]))
+             g["fidelity"]["passed"],
+             g["fidelity"]["n_exact_required_checks"]))
+    ex = g["exclusions"]
+    if ex["excluded_arm_widths"]:
+        print("    excluded (arm, width): %s"
+              % ", ".join("%s@m%d" % (e["arm"], e["m"])
+                          for e in ex["excluded_arm_widths"]))
+        print("    class-widths lost: %s"
+              % ", ".join("%s@m%d" % (e["class"], e["m"])
+                          for e in ex["class_widths_lost"]))
+        print("    session_valid_after_exclusions=%s over %d class-widths"
+              % (g["session_valid_after_exclusions"],
+                 len(ex["class_widths_surviving"])))
     for f, v in sorted(g["bandwidth_by_frame"].items()):
         print("    bandwidth %-9s max=%8.1f GB/s  %s"
               % (f, v["max_implied_gb_s"],

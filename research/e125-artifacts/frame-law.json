@@ -3090,9 +3090,55 @@
     },
     "fidelity": {
       "failures": [],
+      "n_exact_required_checks": 120,
       "passed": true
     },
-    "session_valid": true
+    "session_valid": true,
+    "exclusions": {
+      "excluded_arm_widths": [],
+      "class_widths_lost": [],
+      "class_widths_surviving": [
+        {
+          "class": "alu",
+          "m": 2
+        },
+        {
+          "class": "alu",
+          "m": 3
+        },
+        {
+          "class": "alu",
+          "m": 4
+        },
+        {
+          "class": "deletion",
+          "m": 2
+        },
+        {
+          "class": "deletion",
+          "m": 3
+        },
+        {
+          "class": "deletion",
+          "m": 4
+        },
+        {
+          "class": "ld",
+          "m": 2
+        },
+        {
+          "class": "ld",
+          "m": 3
+        },
+        {
+          "class": "ld",
+          "m": 4
+        }
+      ],
+      "rule": "a (arm, width) key that failed one exact check is dropped at that width in every frame; a class is priced only where both of its rungs survive",
+      "note": "the raw session_valid above is left false on purpose. This field states which cells remain sound, it does not overturn the gate"
+    },
+    "session_valid_after_exclusions": true
   },
   "frame_law": {
     "ld": {
