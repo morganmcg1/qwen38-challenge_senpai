@@ -49,11 +49,23 @@ readonly WITNESS=(
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na7_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_na8_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na8_v2'
-  # D_S, askeladd's E132 code motion. The metadata loads must sit inside the
-  # accumulate loop and the table read must sit below the product loop, or the
-  # timed binary is the pre-D_S body and the g17s spill at NA=7 is back.
+  # D_S, askeladd's E132 code motion. The metadata loads must sit in the
+  # epilogue loop, or the timed binary is the pre-D_S body and the g17s spill
+  # at NA=7 is back.
+  #
+  # The discriminator has to be unique to the E120 wide kernel.
+  # `thread float scale_local[rows_per_simd];` is NOT: MLX's own `quantized.h`
+  # and `quantized.cpp` carry three copies each, and the environment-gated E121
+  # cluster kernel carries one more, so forbidding it fails a correct build.
+  # The `group_index` expression is unique, because D_S is exactly what changed
+  # its subject from `row` to `out_row + r`. Verified 0 copies of the forbidden
+  # form and 1 of the required form across `Sources/` and `Vendor/`.
   --require 'const float scale_local_r = scales[group_index];'
-  --forbid  'thread float scale_local[rows_per_simd];'
+  --require '(out_row + r) * in_vec_size_g + k / 64 + int(simd_lid) / 4;'
+  --forbid  'row * in_vec_size_g + k / 64 + int(simd_lid) / 4;'
+  # The `sink_sums` half of D_S moves the `xsums` read below the product loop
+  # without changing one character of it, so no string can witness it. The
+  # register census and `planWitnessMatchesWidthPlan` cover that half.
   # THE WITNESS THAT DECIDES THE RECEIPT. The ranked runner sets no
   # environment, so the shipped route is whatever `entry` and `table` fall back
   # to. This literal is built only for the selected pair, so it can fail.
