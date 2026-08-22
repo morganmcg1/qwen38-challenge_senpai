@@ -49,8 +49,15 @@ fi
 # `e136_c1_draft_steps=0 e136_shipped_selection_draft_steps=31`. The trace
 # witness caught it, but only after two legs of GPU time. Assert the gate string
 # is inside the binary before spending any.
+#
+# `grep -c`, not `grep -q`. Under `set -o pipefail` a `grep -q` that matches
+# closes the pipe, `strings` dies of SIGPIPE with status 141, and pipefail
+# reports the pipeline as failed. That inverts the guard: it then rejects
+# exactly the fresh worker it is supposed to accept. `grep -c` drains its
+# input, so the pipeline status is grep's own.
 worker_bin=".build-worker/release/mlxfast-runtime-worker"
-if ! strings -a "${worker_bin}" | grep -qF -- 'MLX_E136_C1_SKETCH'; then
+gate_copies="$(strings -a "${worker_bin}" | grep -cF -- 'MLX_E136_C1_SKETCH')"
+if ((gate_copies == 0)); then
   echo "e136_abba: ${worker_bin} carries no MLX_E136_C1_SKETCH gate." >&2
   echo "e136_abba: run senpai/rebuild-and-assert-worker.sh first." >&2
   exit 1
