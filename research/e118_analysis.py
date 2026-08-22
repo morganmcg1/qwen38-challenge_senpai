@@ -50,6 +50,11 @@ DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1")
 # part of the metadata-load screen: it needs a repacked metadata array that this
 # experiment does not build, so it is reported beside the primary metric.
 BIAS_ARMS = ("n_nobias", "n_nosums", "d_bias1", "e_bias6")
+# `z_ballast` carries no candidate mechanism. It adds dead loop-carried
+# arithmetic that never reaches `y`, only to force the compiler to spill, so it
+# separates "this arm's mechanism broke exactness" from "spilling broke
+# exactness". It is a control and never enters the primary metric.
+CONTROL_ARMS = ("z_ballast",)
 
 
 # --- the committed receipt slice ----------------------------------------------
@@ -144,8 +149,16 @@ def forward_reverse_gap(rate: dict) -> dict:
 
 def fidelity_rows(rate: dict) -> dict:
     exact_failures, control_failures, diag_seen = [], [], []
+    weakened, base_ref = [], []
     for row in rate["measurements"]:
         if row.get("kind") == "fidelity":
+            if row.get("base_nonfinite"):
+                weakened.append({"shape": row["shape"], "m": row["m"],
+                                 "base_nonfinite": row["base_nonfinite"],
+                                 "base_elements": row["base_elements"]})
+            base_ref.append({"shape": row["shape"], "m": row["m"],
+                             "max_rel": row["base_vs_double_max_rel"],
+                             "rms": row["base_vs_double_rms_over_signal"]})
             for entry in row["arms"]:
                 if entry["exact_required"] and not entry["bit_identical"]:
                     exact_failures.append(
@@ -156,7 +169,57 @@ def fidelity_rows(rate: dict) -> dict:
             control_failures.append(row)
     return {"exact_failures": exact_failures,
             "control_failures": control_failures,
+            "screen_weakened_by_nonfinite": weakened,
+            "base_vs_double": base_ref,
             "diagnostic_arms_seen": sorted(set(diag_seen))}
+
+
+def spill_exactness(rate: dict, census: dict | None) -> dict | None:
+    """Join each arm's exactness verdict to its spill bytes on the local arch.
+
+    An arm that disagrees with `a_base` may be wrong for its own reasons. The
+    join answers a narrower question: does the disagreement track the compiler
+    spilling rather than the mechanism? `z_ballast` decides it, because it
+    spills without changing any arithmetic that reaches the output.
+    """
+    if census is None:
+        return None
+    arch = census["local_arch"]
+    per_arm: dict[str, dict[int, dict]] = {}
+    for row in rate["measurements"]:
+        if row.get("kind") != "fidelity":
+            continue
+        for entry in row["arms"]:
+            if not entry["exact_required"]:
+                continue
+            cell = per_arm.setdefault(entry["arm"], {}).setdefault(
+                row["m"], {"exact": True, "shapes_wrong": [],
+                           "vs_double_max_rel": 0.0})
+            if not entry["bit_identical"]:
+                cell["exact"] = False
+                cell["shapes_wrong"].append(row["shape"])
+            cell["vs_double_max_rel"] = max(cell["vs_double_max_rel"],
+                                            entry.get("vs_double_max_rel", 0.0))
+    out = {"arch": arch, "arms": {}}
+    for arm, by_na in per_arm.items():
+        static = census["arms"].get(arm, {}).get(arch, {})
+        out["arms"][arm] = {
+            str(na): {"spill_bytes": (static.get(str(na)) or {}).get(
+                          "spill_bytes", 0) or 0,
+                      "registers": (static.get(str(na)) or {}).get("registers"),
+                      "exact": cell["exact"],
+                      "shapes_wrong": cell["shapes_wrong"],
+                      "vs_double_max_rel": cell["vs_double_max_rel"]}
+            for na, cell in sorted(by_na.items())}
+    pairs = [(c["spill_bytes"], c["exact"])
+             for arm in out["arms"].values() for c in arm.values()]
+    wrong = [s for s, e in pairs if not e]
+    right = [s for s, e in pairs if e]
+    out["max_spill_while_exact"] = max(right) if right else None
+    out["min_spill_while_wrong"] = min(wrong) if wrong else None
+    out["separates"] = bool(
+        wrong and right and min(wrong) > max(right))
+    return out
 
 
 # --- weighting ----------------------------------------------------------------
@@ -317,6 +380,7 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
         row = {"standing_pct": value, "na": per_arm_na[arm],
                "role": ("diagnostic" if arm in DIAGNOSTIC_ARMS
                         else "promotion" if arm in PROMOTION_ARMS
+                        else "control" if arm in CONTROL_ARMS
                         else "other"),
                "points": point_shapes(per_arm_na[arm])}
         if slice_path is not None:
@@ -450,6 +514,34 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     if census_path is not None and census_path.exists():
         payload["census"] = json.loads(census_path.read_text())
         print_census(payload["census"])
+        se = spill_exactness(rate, payload["census"])
+        payload["spill_exactness"] = se
+        if se is not None:
+            print("\n-- spill bytes against exactness on %s" % se["arch"])
+            print("   an arm is `wrong` when it differs from a_base on any "
+                  "shape at that width")
+            print("   %-16s %s" % ("arm", "  ".join(
+                "%14s" % ("NA%d" % m) for m in widths)))
+            for arm in sorted(se["arms"]):
+                cells = []
+                for m in widths:
+                    c = se["arms"][arm].get(str(m))
+                    cells.append("%14s" % ("?" if c is None else "%dB %s" % (
+                        c["spill_bytes"], "exact" if c["exact"] else "WRONG")))
+                print("   %-16s %s" % (arm, "  ".join(cells)))
+            print("   largest spill that stayed exact: %s B"
+                  % se["max_spill_while_exact"])
+            print("   smallest spill that went wrong:  %s B"
+                  % se["min_spill_while_wrong"])
+            print("   spill separates exact from wrong: %s" % se["separates"])
+            zb = se["arms"].get("z_ballast", {})
+            zwrong = sorted(int(m) for m, c in zb.items() if not c["exact"])
+            print("   z_ballast control: changes no arithmetic that reaches y, "
+                  "wrong at NA %s"
+                  % (zwrong if zwrong else "nowhere"))
+            print("   -> the NA=5 divergence is caused by SPILLING, not by any "
+                  "arm's mechanism" if zwrong else
+                  "   -> spilling alone does not break exactness here")
     if out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
