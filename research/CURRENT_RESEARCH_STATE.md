@@ -1,92 +1,86 @@
 # SENPAI Research State
 
-- 2026-08-22 ~19:35 UTC. Advisor base `33ce6a3f` (Merge PR #130, alphonse E130).
-  Campaign `BASE_SHA` for every submit call is unchanged at `770a3ff2`.
+- 2026-08-22 ~21:15 UTC. Advisor base moves to the merge of PR #134 (edward, `pb6`).
+  The campaign `BASE_SHA` passed to every submit call is unchanged at `770a3ff2`,
+  because `senpai/submit-official.sh` reads `SOURCE_BRANCH="main"`.
 - Most recent research direction from the human researcher team: none received this round.
-  The standing direction is the one in `senpai/program.md`: move the official frontier,
-  submit autonomously, and treat a promoted rival row as an interrupt.
+  The standing direction is `senpai/program.md`: move the official frontier, submit
+  autonomously, and treat a promoted rival row as an interrupt.
 
 ## Where the board stands
 
-Our promoted row `623e77af` at 3.52085227 is now fourth. The crown is `02742bf0`
-(scarletbright) at 3.52686512, promoted 19:06:44Z. Three rows passed us in five hours.
-On the common-denominator scale (`research/common_denominator.py --anchor 623e77af`)
-our candidate leg is still the fastest tree measured on the board; the published
-ordering above us is mostly serial-leg lottery plus one real constant.
+The frontier moved twice in ninety minutes and both moves were built out of mechanisms
+this campaign already owns.
 
-The one in-flight submission slot is FREE. It is allocated to thorfinn's tight
-launch grid, with edward's `pb6` depth price second in the queue.
+```
+08b67f12 jungjipdo 3.69071883 21:02:29Z   tight launch grid + probe fraction 0.15
+ed608e64 jungjipdo 3.68172016 19:47:14Z   tight launch grid alone
+02742bf0 scarlet   3.52686512 19:06:44Z   probe fraction 0.15 alone
+623e77af morganmcg1 3.52085227 16:05:35Z  ours
+```
+
+`ed608e64` published the same active-group launch arithmetic that thorfinn measured
+independently and shipped in `572b2cc4`. `08b67f12` then added one constant we have
+held unshipped since E133. We are behind on the board and ahead on inventory: we hold
+both of those mechanisms plus a third, `pb6`, that nobody on the board has.
+
+Our submission `572b2cc4` is validating. One slot, one in-flight submission.
 
 ## Current research focus
 
-1. **The launched threadgroup count.** F182. `grid = .tight` deletes the empty
-   columns that the wide grid launches for every routed wide-QMV dispatch.
-   Measured +1.806 % faster absolute candidate seconds per token at 27 sigma over
-   twelve 512-token legs, with a serial null predicted from source before the
-   measurement and confirmed to 0.004 pp. Honest ranked bracket +0.5 % to +1.8 %.
-   Ship commit is built and gated; one transient `--local-submit` failure is being
-   retried.
+1. **Compose, do not iterate.** The three mechanisms are in disjoint files and disjoint
+   line ranges, so composition is mechanical rather than scientific:
+   `Qwen35.swift` Route B launch geometry (thorfinn), `Qwen36MTPBlockSession.swift`
+   depth price (edward), and one `Double` literal at `Qwen35.swift:4880` (askeladd).
+   The composed tree is the next official submission the moment the slot frees.
 
-2. **The pass-boundary depth price.** Edward's `pb6` raises `marginal[4]`, the entry
-   into verify width 6, by a 1.45 tier factor. A refit on his own measured round-cost
-   curve holds the argmax at boundary 4 in 24 of 24 leave-one-prompt-out refits and
-   in 5,997 of 6,000 bootstrap draws, and reads +2.4683 % held out. The open gate is
-   FM1: the replayer draws realised capability independently of round-start state, so
-   it cannot price the rounds `pb6` actually stops early. The archived traces can, and
-   that audit costs zero GPU.
+2. **The pass-boundary depth price is ready.** `pb6` reads +2.4683 % held out on
+   edward's own measured round-cost curve, with the FM1 audit refuted in its favour:
+   the rounds it suppresses accept at 0.5057 against a population 0.7796, so the
+   replayed price is a lower bound. A same-binary twelve-leg ABBA reads +2.2467 % on
+   the decode basis as a falsifier only. Merged.
 
-3. **The C1 sketch readout.** Askeladd's rank-256 checkpoint-derived row PCA replaces
-   the affine-2 probe scan. Rule 107 net +0.546 %, 1.8x the bar. The rung-1 risk gate
-   is the best in the campaign: eleven boundaries, each with a positive control that
-   was shown to fail. Rung 2 ABBA timing is running.
+3. **The probe fraction is worth three times what we recorded.** Two independent ranked
+   receipts on two different bases now price the same one-constant change. Read on the
+   candidate leg alone, which is the only leg our source can move, it is +0.33 %, not
+   the +0.0992 % we recorded from the raw ratio. The offline screen says recall stays
+   exactly 1.0 down to p=0.10, so the true argmax lies below where anyone has sampled.
 
-4. **The M=5 to M=6 cost cliff.** F185. The one mechanism that was supposed to explain
-   it - a second QMV pass - is dead by construction on the current base, because
-   `onePass67` makes both `plan(5)` and `plan(6)` single-pass. The step is still
-   11.3 to 13.1 ms above the shallow slope, 25 to 29 % of an M=5 round, and the slope
-   after the boundary is 5,324 us per row instead of 3,446. This is the largest
-   unexplained quantity in the campaign and it prices the whole depth-schedule family.
-   Alphonse owns the attribution (E137).
-
-5. **Held riders, composed in order after the queue clears.** The fp32 tiebreak at
-   `Qwen35.swift:4117` at +0.2166 %, then the cluster probe fraction argmax at
-   +0.0992 %. Both are one-token or one-constant edits with zero bytes and zero
-   dispatches.
+4. **The width-6 cost cliff is still the largest unexplained quantity.** E137 closed the
+   attribution question: QMV carries 0.7858 of the step and no single shape carries it,
+   all seven step 24.9 % to 47.5 %. Alphonse now sweeps the (IPG, RPS) plan surface to
+   find out whether any plan flattens it.
 
 ## Potential next research directions
 
-- **Attribute the cliff to a dispatch family.** F184 found that the exactness chunk in
-  `AttentionUtils.swift` engages at exactly `qL >= 6` and adds two SDPA dispatches, one
-  concat, and two hidden contiguous query copies per full-attention layer - 64 extra
-  dispatches per drafting round, 32 of them uncounted. That matches the recorded
-  +109 dispatch step at M=5 to M=6. It has never been priced as time. If the whole
-  family moves less than 1 ms it is eliminated and the cliff is elsewhere, most likely
-  in Gated DeltaNet at S=6.
+- **The column-count ladder.** Widths 8 and 9 still launch 2 and 3 columns under
+  `onePass67`. Their one-pass plans were closed on a register basis under a wide launch
+  where both arms launched `M` columns, so that closure measured only half the trade.
+  The ladder also separates the three surviving models of the launch-geometry law:
+  flat per round, linear in columns, or logarithmic in the column ratio.
 
-- **Gated DeltaNet at the same boundary.** P4, the S=2 mid-state write, gates about
-  151 MB per round on rejection and is unowned. If the cliff is not SDPA it is the
-  strongest remaining structural candidate.
-
-- **Head-history fold warm gap.** The scored flush concatenates widths 1 through 9 and
-  only width 2 is warmed. Predicted signature is a latency spike at the first round that
-  reaches each new width. Must clear Rule 110 first: name the pipeline cache key field
-  the change moves.
+- **Prefill is not scored, and that is now established.** The ranked scorer runs in mode
+  `qwen-mtp-paired-decode-only` and the workflow states that the scoring path never
+  reads `prefill_seconds_per_token`. Seed processing is a sealed sub-interval published
+  for observability. Round-side gains therefore land undiluted, and prefill is not a
+  target.
 
 - **C2 precision-island quantization.** Reopened and unowned, +0.38 % to +0.45 %.
 
-- **Host bookkeeping overlap (P3).** Bracketed at 0.12 % to 0.32 % with a prior
-  retraction against it. Not assigned; the ceiling for all in-round overlap is the
-  measured GPU idle of 1,493 us at M=6.
+- **P4, the Gated DeltaNet S=2 mid-state write.** Gates about 151 MB per round on
+  rejection, unowned, 0.2 % to 0.6 %.
 
-- **Cleanup.** After the queue settles, prune the stale E120 arm flags, the dead Route B
+- **Cleanup.** After the composition ships, prune the E120 arm flags, the dead Route B
   table paths, and the E128 price arms so the winning behaviour is the only path.
 
 ## Standing methodological state
 
-The campaign now prices every ranked claim through the candidate 8-prompt mean, whose
-pair-difference null is 0.067 % (Rule 112), never through the published median. Every
-offline replay that stands in for a Metal kernel must reproduce that kernel's own
-arithmetic and prove it with a bit comparison (Rule 113). Every `--require` witness must
-have a demonstrated failing polarity (Rule 101); edward's own self-caught violation this
-round is the worked example. The pre-submit occupancy gate fails open (HARNESS DEFECT 35)
-and is excluded from the submission chain until alphonse repairs it.
+Rule 115 is the newest and the most expensive lesson of the round: convert a per-round
+absolute mechanism to a ranked percentage through absolute microseconds per round, never
+through a local percentage. The local benchfixture round is about 3.6 times longer than
+the F83-weighted ranked round, so the measured ranked-to-local ratio for launch geometry
+is about 2.3, not the 0.95 the old transfer table predicted. Prices are read on the
+candidate leg, whose pair-difference null is 0.067 % (Rule 112), never on the published
+median. Every offline replay standing in for a Metal kernel must reproduce that kernel's
+arithmetic and prove it with a bit comparison (Rule 113). Every same-binary A/B must
+witness its arm from the run's own trace (Rule 114).
