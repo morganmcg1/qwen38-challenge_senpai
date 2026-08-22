@@ -70,9 +70,21 @@ STATISTICS = {
         "sk_net_miss_live_shipped_is_target",
         "sk_net_miss_live",
     ),
-    # F1.5 rung 0b. Same estimator, different intervention: the rerank keeps
-    # its float32 accumulation instead of rounding the score to bfloat16, so
-    # the emitted token can only move on a row where the bfloat16 scores tie.
+    # F2.4 rung 0b. Same estimator, two further interventions.
+    #
+    # `shipped_arithmetic_model` is not a proposal. It measures what the replay
+    # itself was worth getting wrong: the emitted token moves when the replay
+    # models the shipped kernel's single narrowing store instead of calling
+    # MLX's bfloat16 `quantized_matmul`, which is a coarser arithmetic.
+    #
+    # `fp32_rerank` is the rung-0b question against that corrected baseline:
+    # drop the narrowing store at `Qwen35.swift:4118`. The emitted token can
+    # then only move on a row where the bfloat16 scores tie.
+    "shipped_arithmetic_model": (
+        "sarith_changed_live_new_is_target",
+        "sarith_changed_live_old_is_target",
+        "sarith_changed_live",
+    ),
     "fp32_rerank": (
         "fp32_changed_live_new_is_target",
         "fp32_changed_live_old_is_target",
