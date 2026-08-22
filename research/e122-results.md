@@ -509,21 +509,50 @@ read `README.md`, `TASK.md`, `AGENTS.md`, `CLAUDE.md`, the fixture pins and the
 artifact manifest, and none of them reads `research/`. The compiled test binary
 is identical to the one `BASE_SHA` produces.
 
-The failures fall into four groups, all base-level drift:
+The 40 issues come from **9 test functions in 6 files**, and the counts below
+were extracted from the run log rather than remembered. They sum to 40, which
+is the check that the enumeration is complete:
 
-1. `BenchmarkScriptTests` / `SetupScriptTests` — the campaign fork's
+1. `BenchmarkScriptTests` (13) + `SetupScriptTests` (1) — the campaign fork's
    `<!-- SENPAI-CAMPAIGN-BEGIN -->` documentation block.
-2. `QwenMTPTrackNamingTests` — fixture pins now carry real digests where the
-   test still expects the `QWEN38-PENDING-RELEASE` placeholder.
-3. `Qwen35ArtifactContractTests` — `config.json` digest in the reference
+2. `QwenMTPTrackNamingTests` (16) — fixture pins now carry real digests where
+   the test still expects the `QWEN38-PENDING-RELEASE` placeholder, plus a
+   calibration-provenance string and an even-median expectation.
+3. `QwenMTPOpenSurfaceTests` (6) — `theCheckedInDeclarationSelectsThePinnedHead`.
+4. `Qwen35ArtifactContractTests` (2) — `config.json` digest in the reference
    manifest.
-4. `RuntimeStartupMemoryPolicyTests` — asserts
+5. `RuntimeStartupMemoryPolicyTests` (2) — asserts
    `maxMegabytesPerCommandBuffer == 320` and
    `maxOperationsPerCommandBuffer == 128`; the promoted base runs 512 and 50.
 
-Group 4 is the one worth the advisor's attention: it is a stale assertion
-against a promoted runtime change, not a documentation mismatch. It is listed
-as a follow-up and was not touched here.
+**Correction to my own first pass.** I originally wrote this as four groups and
+omitted group 3. I found the omission by counting issues out of the test log
+after I had already published the report, and I am recording it here rather
+than quietly renumbering, because group 3 is the one that touches this
+experiment's identity claims.
+
+Two groups deserve the advisor's attention, and both are stale assertions
+against promoted state rather than documentation drift:
+
+- **Group 5** asserts a startup memory policy the promoted base no longer runs.
+- **Group 3 asserts a different proposal head than the campaign actually uses.**
+  `theCheckedInDeclarationSelectsThePinnedHead` expects
+  `declaration.source == .pinned` at `EigenLabs/Qwen3.8-27B-MTP-bf16`, revision
+  `26a328e0…`, sha256 `8fceddc6…`, 849,400,347 bytes. The checked-in
+  `mtp-head.manifest.json` declares `source: remote` at
+  `hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae628274…`, sha256
+  `559b24eb…`, 427,742,600 bytes — the organizer-declared head, which is what
+  all 18 of my legs verified at load time. So the red test is asserting the
+  *old* head, not catching a wrong one. I am flagging it because a future
+  reader who sees a red head-declaration test next to a report full of head
+  digests could reasonably conclude my identity tuple is wrong, and it is not.
+  The failure is `BASE_SHA`'s, by construction: the test reads
+  `mtp-head.manifest.json` and its own source file, this branch's entire diff
+  against `BASE_SHA` is `research/`, so every input the test touches is
+  byte-identical to base. I did not re-run the suite at base to confirm it
+  empirically, and I am saying so rather than implying I did.
+
+Neither was touched here; both are listed as follow-ups.
 
 The exactness suites all passed, including
 `E84ReplayStateKernelExactnessTests`, `E84IslandDeadWorkExactnessTests`,
@@ -634,9 +663,16 @@ collect it; it says nothing about whether some other observable does.
    `D_runlen` for the margin is +0.0284 pooled. A one-round lagged run length,
    or a short EMA of it, costs nothing to maintain and is worth a cheap
    concordance check on the traces already recorded. No new GPU time needed.
-4. **Fix `RuntimeStartupMemoryPolicyTests`.** It asserts 320/128 against a
-   promoted base running 512/50. A stale assertion in the maintained branch is
-   a live hazard for anyone reading a red suite as noise.
+4. **Fix the two stale assertions in the maintained branch.**
+   `RuntimeStartupMemoryPolicyTests` asserts 320/128 against a promoted base
+   running 512/50, and `QwenMTPOpenSurfaceTests`
+   `theCheckedInDeclarationSelectsThePinnedHead` asserts the superseded
+   `EigenLabs/Qwen3.8-27B-MTP-bf16` head against a manifest that declares the
+   organizer's `559b24eb…` head. Both are red for the same reason: the
+   assertion was not moved when the thing it guards was promoted. The head one
+   is the more dangerous of the two, because a red test with `sha256` and
+   `bytes` in its failure output reads like a provenance violation and is not
+   one.
 5. **Consider whether the top-2 margin should be float32 anywhere it is used
    for control flow.** Not for this experiment, which is dead either way, but
    the reducer already produces float32 and the coarseness is inherited from
