@@ -14,12 +14,15 @@ only the candidate arm would use.
 
   shipped arm   `Qwen35RowTop32(rows: 24_584, rowsPerCluster: 8)`, the two
                 dispatches at `:4448-4496`, selecting 32 of 24,584 probed rows.
-  candidate arm three added dispatches -- a 256-bin ordinal histogram, a
-                single-threadgroup threshold scan and a compaction -- then the
-                SAME two dispatches over the `N` survivors.
+  candidate arm four added dispatches -- a 65,536-bin ordinal histogram, a
+                cross-core fold of that histogram to 256 coarse bins, a
+                single-threadgroup threshold scan and a compaction -- then a
+                rescore and the SAME two dispatches over the `N` survivors.
 
 `added_us = candidate - shipped`, and `ranked cost % = added_us / 174.1` at the
-265 GB/s read-only ceiling of FACT 33.
+265 GB/s read-only ceiling of FACT 33. The advisor's F1 also asks for the
+`247.2 us` reading beside it, which is the same bytes at the 186.7 GB/s E93
+measured for the head pass.
 
 TIMING PROTOCOL. Each arm is a dependent chain, exactly as the real readout is:
 every kernel reads `dep[0]` in a guard that never fires, so MLX cannot reorder
@@ -310,40 +313,68 @@ def hist_source(rows: int) -> str:
         """
 
 
+def reduce_source() -> str:
+    """Stage 1(ii): 256 threadgroups fold the fine histogram to 256 coarse bins.
+
+    Threadgroup `q` owns fine bins `[q*256, q*256+256)`, one word per thread,
+    and reduces them with two simd steps. The whole 256 KiB array is read once
+    across every core instead of once inside a single core, which is the only
+    reason the coarse level is affordable at all.
+
+    Building the same level with device atomics in the histogram kernel was
+    measured and rejected: 34,424 atomics over only 256 bins contend hard and
+    took that kernel from 4.86 to 10.52 us.
+    """
+    return DEP_GUARD + f"""
+        constexpr uint PER   = {HIST_BINS // HIST_GROUPS};
+        constexpr uint NSIMD = PER / 32;
+
+        uint q    = threadgroup_position_in_grid.x;
+        uint tid  = thread_position_in_threadgroup.x;
+        uint lane = thread_index_in_simdgroup;
+        uint sg   = simdgroup_index_in_threadgroup;
+
+        threadgroup uint p[NSIMD];
+        uint v = simd_sum(bins[q * PER + tid]);
+        if (lane == 0) {{ p[sg] = v; }}
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (tid == 0) {{
+            uint s = 0u;
+            for (uint i = 0; i < NSIMD; ++i) {{ s += p[i]; }}
+            coarse[q] = s;
+        }}
+        """
+
+
 def thresh_source(survivors: int) -> str:
-    """Stage 1(ii): one threadgroup finds the exact boundary bin.
+    """Stage 1(iii): one threadgroup finds the exact boundary bin.
 
     `ctl` is [tau, count_strictly_above_tau, capacity_left_in_tau, 0].
 
-    The scan is two level and builds its own coarse level. Each simdgroup
-    reduces the 256 fine bins of one group at a time, one thread walks the 256
-    group sums down from the top to the group that straddles `WANT`, then each
-    thread loads one fine bin of that group and one thread walks those.
+    The scan is two level. Each of the 256 threads loads one coarse bin, one
+    thread walks those down from the top to the group that straddles `WANT`,
+    then each thread loads one fine bin of that group and one thread walks
+    those. This kernel therefore reads 512 words, not 65,536.
 
-    The reduce is what makes this cheap. One thread walking all 65,536 bins is
-    a chain of 65,536 dependent loads and measured 12.2 us of a 21.7 us
-    candidate selection. Reading the same words with the 32 lanes of a
-    simdgroup keeps every load coalesced and leaves only two 256-element walks
-    on the critical path.
+    Reading all 65,536 words here was measured three ways and every one of
+    them is bad, because one threadgroup occupies one GPU core and that core
+    reaches about 21 GB/s, a twentieth of the machine. One thread walking the
+    whole array took 12.20 us; 256 threads each walking a private 256-word
+    block took 11.08 us, which shows the cost is core bandwidth and not load
+    latency; 8 simdgroups reducing one group at a time took 38.64 us because
+    the 32 serialised `simd_sum` calls dominate. The reduce belongs in its own
+    dispatch across 256 threadgroups, where it uses the whole machine.
     """
     return DEP_GUARD + f"""
         constexpr uint GROUPS = {HIST_GROUPS};
         constexpr uint PER    = {HIST_BINS // HIST_GROUPS};
         constexpr uint WANT   = {survivors};
-        constexpr uint NSIMD  = {HIST_GROUPS} / 32;
 
-        uint tid  = thread_position_in_threadgroup.x;
-        uint lane = thread_index_in_simdgroup;
-        uint sg   = simdgroup_index_in_threadgroup;
+        uint tid = thread_position_in_threadgroup.x;
         threadgroup uint g[GROUPS];
         threadgroup uint sh[2];
 
-        for (uint q = sg; q < GROUPS; q += NSIMD) {{
-            uint s = 0u;
-            for (uint j = lane; j < PER; j += 32u) {{ s += bins[q * PER + j]; }}
-            s = simd_sum(s);
-            if (lane == 0) {{ g[q] = s; }}
-        }}
+        g[tid] = coarse[tid];
         threadgroup_barrier(mem_flags::mem_threadgroup);
         if (tid == 0) {{
             uint acc = 0u, above_groups = 0u, gsel = 0u;
@@ -384,7 +415,7 @@ def thresh_source(survivors: int) -> str:
 
 
 def compact_source(rows: int, capacity: int) -> str:
-    """Stage 1(iii): emit the survivors into a fixed-capacity buffer.
+    """Stage 1(iv): emit the survivors into a fixed-capacity buffer.
 
     The buffer has two regions and two cursors. Rows STRICTLY above the
     boundary bin take slots [0, above) and cannot overflow, because the
@@ -462,14 +493,15 @@ def host_ordinals(score) -> "np.ndarray":
 
 
 def host_sketch(score, survivors: int):
-    """The exact `bins`, `tau` and `above` stage 1 would produce."""
+    """The exact `bins`, `coarse`, `tau` and `above` stage 1 would produce."""
     keys = (host_ordinals(score) >> 16).astype(np.int64)
     bins = np.bincount(keys, minlength=HIST_BINS).astype(np.uint32)
+    coarse = bins.reshape(HIST_GROUPS, -1).sum(axis=1).astype(np.uint32)
     tail = np.cumsum(bins[::-1])[::-1]          # rows at or above each bin
     hits = np.nonzero(tail >= survivors)[0]
     tau = int(hits[-1]) if hits.size else 0
     above = int(tail[tau + 1]) if tau + 1 < HIST_BINS else 0
-    return bins, tau, above
+    return bins, coarse, tau, above
 
 
 _DEP_SEED = None
@@ -593,7 +625,9 @@ class TwoStageArm:
         self.hist = kernel("e136_sketch_hist", ["score", "dep"],
                            ["bins"], hist_source(rows),
                            ORDINAL_HEADER)
-        self.thresh = kernel("e136_sketch_thresh", ["bins", "dep"],
+        self.reduce = kernel("e136_sketch_reduce", ["bins", "dep"],
+                             ["coarse"], reduce_source())
+        self.thresh = kernel("e136_sketch_thresh", ["bins", "coarse", "dep"],
                              ["ctl"], thresh_source(survivors))
         self.compact = kernel("e136_sketch_compact", ["score", "ctl", "dep"],
                               ["surv_ord", "surv_row", "cursor"],
@@ -616,15 +650,21 @@ class TwoStageArm:
         self.probed = mx.arange(probes, dtype=mx.uint32)
         self.perm = mx.arange(CLUSTERS * ROWS_PER_CLUSTER, dtype=mx.int32)
         self.with_rescore = with_rescore
-        self.dispatches = 5 + (1 if with_rescore else 0)
+        self.dispatches = 6 + (1 if with_rescore else 0)
 
     def stage1(self, score, dep):
-        """Histogram, threshold and compaction. Returns bins, ctl, survivors."""
+        """Histogram, reduce, threshold, compaction. Returns bins, ctl, surv."""
         h = self.hist(inputs=[score, dep],
                       grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
                       output_shapes=[[HIST_BINS]],
                       output_dtypes=[mx.uint32], init_value=0)
-        ctl = self.thresh(inputs=[h[0], dep], grid=(HIST_GROUPS, 1, 1),
+        coarse = self.reduce(
+            inputs=[h[0], dep],
+            grid=(HIST_GROUPS * (HIST_BINS // HIST_GROUPS), 1, 1),
+            threadgroup=(HIST_BINS // HIST_GROUPS, 1, 1),
+            output_shapes=[[HIST_GROUPS]], output_dtypes=[mx.uint32],
+            init_value=0)[0]
+        ctl = self.thresh(inputs=[h[0], coarse, dep], grid=(HIST_GROUPS, 1, 1),
                           threadgroup=(HIST_GROUPS, 1, 1),
                           output_shapes=[[4]], output_dtypes=[mx.uint32],
                           init_value=0)[0]
@@ -672,8 +712,9 @@ class TwoStageArm:
         surv_score = mx.random.normal([self.survivors]).astype(mx.bfloat16)
         surv_row = mx.random.randint(
             0, self.rows, [self.survivors]).astype(mx.uint32)
-        bins_h, tau, above = host_sketch(self.score, self.survivors)
+        bins_h, coarse_h, tau, above = host_sketch(self.score, self.survivors)
         bins = mx.array(bins_h, dtype=mx.uint32)
+        coarse = mx.array(coarse_h, dtype=mx.uint32)
         ctl = mx.array([tau, above, max(0, self.survivors - above), 0],
                        dtype=mx.uint32)
         cand = mx.random.randint(
@@ -685,7 +726,10 @@ class TwoStageArm:
                     (HIST_TILES * TG, 1, 1), (TG, 1, 1),
                     [[HIST_BINS]], [mx.uint32],
                     init_value=0),
-            PartArm(f"{self.label}.thresh", self.thresh, [bins],
+            PartArm(f"{self.label}.reduce", self.reduce, [bins],
+                    (HIST_BINS, 1, 1), (HIST_BINS // HIST_GROUPS, 1, 1),
+                    [[HIST_GROUPS]], [mx.uint32], init_value=0),
+            PartArm(f"{self.label}.thresh", self.thresh, [bins, coarse],
                     (HIST_GROUPS, 1, 1), (HIST_GROUPS, 1, 1), [[4]],
                     [mx.uint32], init_value=0),
             PartArm(f"{self.label}.compact", self.compact, [self.score, ctl],
@@ -701,7 +745,7 @@ class TwoStageArm:
                     (TG, 1, 1), [[TOPK]], [mx.uint32]),
         ]
         if self.with_rescore:
-            out.insert(3, PartArm(
+            out.insert(4, PartArm(
                 f"{self.label}.rescore", self.rescore, [self.exact, surv_row],
                 (self.survivors, 1, 1), (TG, 1, 1), [[self.survivors]],
                 [mx.bfloat16], init_value=0))
@@ -889,7 +933,7 @@ def correctness(arm_two, arm_ship) -> dict:
     mx.eval(dsurv[1])
     control_ok = worst in set(dsurv[1].tolist()) and worst not in kept
     # The device threshold must agree with the host model of the same scan.
-    _, host_tau, host_above = host_sketch(arm_two.score, arm_two.survivors)
+    _, _, host_tau, host_above = host_sketch(arm_two.score, arm_two.survivors)
     return {
         "positive_control_worst_row": worst,
         "positive_control_detects_the_change": control_ok,
