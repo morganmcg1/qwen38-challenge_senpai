@@ -193,8 +193,39 @@ public final class Qwen36MTPBlockSession {
         // ladder's cap of 4 left committed tokens on the table.
         draftPolicy = { [weak self] offeredDepth, _ in
             guard let self else { return Swift.min(offeredDepth, 1) }
+            if let forced = Qwen36MTPBlockSession.e122ForcedDepth {
+                return self.e122ClampedForcedDepth(
+                    offeredDepth: offeredDepth, forced: forced)
+            }
             return self.costModelDepth(offeredDepth: offeredDepth)
         }
+    }
+
+    /// E122 rung-0 instrument, research only, never on a timed leg.
+    ///
+    /// The shipped cost model already suppresses depth when the target's top-2
+    /// margin is small, so a trace of the shipped policy observes deep draft
+    /// positions ONLY in rounds the margin already selected. Measuring the
+    /// margin's discrimination on that sample is range restricted and biased
+    /// toward the null. Pinning the depth removes the selection and exposes
+    /// every position in every round.
+    private static let e122ForcedDepth: Int? = {
+        guard let raw = ProcessInfo.processInfo.environment["MLX_E122_FORCE_DEPTH"],
+              let value = Int(raw) else { return nil }
+        return value
+    }()
+
+    /// Keeps the forced arm inside the caps the shipped policy already
+    /// respects. Only the margin and EMA conditioning is removed; the verify
+    /// width envelope proved exact for the shipped schedule is unchanged, so
+    /// the arm cannot reach an unproven width. The schedule signal is still
+    /// snapshotted, because the trace is the arm's whole purpose.
+    private func e122ClampedForcedDepth(offeredDepth: Int, forced: Int) -> Int {
+        let widthCap = Self.segmentedVerifyDepthCap
+        if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
+        return Swift.max(0, Swift.min(
+            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth),
+            Swift.min(widthCap, forced)))
     }
 
     // MARK: - warm
