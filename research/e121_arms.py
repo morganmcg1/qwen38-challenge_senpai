@@ -446,9 +446,13 @@ BASE_KERNEL = """
     uint3 tid [[threadgroup_position_in_grid]],
     uint simd_gid [[simdgroup_index_in_threadgroup]],
     uint simd_lid [[thread_index_in_simdgroup]]) {
+  const int first_m = int(tid.x) * %(na)d;
+  if (first_m >= %(na)d) {
+    return;
+  }
   qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
       w, scales, biases, x, y, in_vec_size, out_vec_size,
-      int(tid.x) * %(na)d, int(tid.y) * 8 + int(simd_gid) * 4, simd_lid);
+      first_m, int(tid.y) * 8 + int(simd_gid) * 4, simd_lid);
 }
 """
 
@@ -465,9 +469,13 @@ ARM_KERNEL = """
     uint simd_gid [[simdgroup_index_in_threadgroup]],
     uint simd_lid [[thread_index_in_simdgroup]]) {
   threadgroup float sums_xchg[%(slots)d * 32];
+  const int first_m = int(tid.x) * %(na)d;
+  if (first_m >= %(na)d) {
+    return;
+  }
   qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
       w, scales, biases, x, y, in_vec_size, out_vec_size,
-      int(tid.x) * %(na)d, int(tid.y) * 8 + int(simd_gid) * 4, simd_gid,
+      first_m, int(tid.y) * 8 + int(simd_gid) * 4, simd_gid,
       simd_lid, sums_xchg);
 }
 """

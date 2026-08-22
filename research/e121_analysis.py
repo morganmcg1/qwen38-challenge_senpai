@@ -29,6 +29,20 @@ import statistics
 # Share of the streaming term spent in a one-group pass of each width.
 ROUND_WEIGHTS = {2: 0.024, 3: 0.275, 4: 0.667, 5: 0.034}
 
+# M4 Pro DRAM peak. Every shape here streams tens of megabytes of weights once,
+# far past any cache, so an implied rate above this is not a fast kernel: it is
+# a dispatch that did no work. A faulted command buffer retires immediately and
+# reports microseconds, which is how a silent out-of-bounds write in the probe's
+# own entry point looked like a 23 TB/s result.
+DRAM_PEAK_GBS = 273.0
+IMPLAUSIBLE_GBS = 1.2 * DRAM_PEAK_GBS
+
+# `a_scaffold` is byte-identical machine text to `a_base` on both architectures
+# at every width, proved by digest in the rung-0 census. It therefore has to
+# read zero. A larger reading means the estimator, not the arm, is moving.
+CONTROL_ARM = "a_scaffold"
+CONTROL_TOLERANCE_PCT = 0.50
+
 # E116's measured kernel-to-leg transfer, then rule 34's local-to-ranked factor.
 LEG_TRANSFER = 0.6070
 RANKED_TRANSFER = 0.95
@@ -134,6 +148,55 @@ def fidelity(doc: dict) -> tuple[list[str], list[str], int]:
     return failures, controls, checked
 
 
+def validity(doc: dict, cells: dict, shapes: list[str], widths: list[int],
+             controls: list[str]) -> dict:
+    """Three independent ways this instrument can lie, checked before reading it.
+
+    The first attempt at this rung passed exit 0 and produced a clean-looking
+    table that was entirely fictional: a bounds bug wrote past the operand
+    buffers, faulted the command buffer, and every later dispatch retired
+    without running. These checks turn that class of failure into a loud void
+    instead of a plausible number.
+    """
+    verdicts: list[str] = []
+
+    fast = []
+    for row in doc["measurements"]:
+        if row["kind"] != "timing":
+            continue
+        for arm, secs in row["seconds"].items():
+            rate = row["read_bytes"] / secs / 1e9
+            if rate > IMPLAUSIBLE_GBS:
+                fast.append("%s M=%d %s block %d: %.0f GB/s" % (
+                    row["shape"], row["m"], arm, row["block"], rate))
+    if fast:
+        verdicts.append("implied bandwidth above %.0f GB/s in %d rows"
+                        % (IMPLAUSIBLE_GBS, len(fast)))
+
+    ctrl = ladder(cells, shapes, widths, CONTROL_ARM)
+    ctrl_width = {w: med(v) for w, v in ctrl.items()}
+    ctrl_off = {w: v for w, v in ctrl_width.items()
+                if abs(v) > CONTROL_TOLERANCE_PCT}
+    if ctrl_off:
+        verdicts.append("%s, which is byte-identical text, reads %s"
+                        % (CONTROL_ARM,
+                           ", ".join("NA%d %+.3f %%" % (w, v)
+                                     for w, v in sorted(ctrl_off.items()))))
+
+    undetected = [c for c in controls if "detected=False" in c]
+    if undetected:
+        verdicts.append("%d of %d positive controls did not fire"
+                        % (len(undetected), len(controls)))
+
+    return {"void": bool(verdicts), "reasons": verdicts,
+            "implausible_rows": fast[:20],
+            "implausible_row_count": len(fast),
+            "control_arm": CONTROL_ARM,
+            "control_per_width_pct": ctrl_width,
+            "control_tolerance_pct": CONTROL_TOLERANCE_PCT,
+            "dram_peak_gbs": DRAM_PEAK_GBS}
+
+
 def thermal(doc: dict) -> dict:
     entry = [r["gpu_temp_entry_c"] for r in doc["measurements"]
              if r["kind"] == "thermal"]
@@ -180,9 +243,23 @@ def main() -> int:
         print("    FAIL %s" % line)
     for line in controls:
         print("  positive control %s" % line)
-    undetected = [c for c in controls if "detected=False" in c]
-    if undetected:
-        print("  *** POSITIVE CONTROL DID NOT FIRE, session is void ***")
+    print()
+
+    valid = validity(doc, cells, shapes, widths, controls)
+    print("=== instrument validity, checked before the numbers are read ===")
+    print("  implied bandwidth over %.0f GB/s: %d timing rows"
+          % (IMPLAUSIBLE_GBS, valid["implausible_row_count"]))
+    for line in valid["implausible_rows"]:
+        print("    %s" % line)
+    print("  %s per width: %s" % (CONTROL_ARM, ", ".join(
+        "NA%d %+.3f" % (w, v)
+        for w, v in sorted(valid["control_per_width_pct"].items()))))
+    if valid["void"]:
+        print("  *** SESSION IS VOID ***")
+        for reason in valid["reasons"]:
+            print("    %s" % reason)
+    else:
+        print("  all three validity checks PASS")
     print()
 
     heat = thermal(doc)
@@ -198,7 +275,7 @@ def main() -> int:
 
     summary = {"shapes": shapes, "widths": widths, "arms": {},
                "thermal": heat, "exactness_failures": failures,
-               "positive_controls": controls,
+               "positive_controls": controls, "validity": valid,
                "preregistered": PREREGISTERED,
                "warmup_blocks_discarded": args.warmup_blocks}
 
@@ -234,13 +311,16 @@ def main() -> int:
         lo, hi = info["ci95_ex_na5"]
         leg = ex5 * info["coverage_ex_na5"] * LEG_TRANSFER
         ranked = leg * RANKED_TRANSFER
+        clears = ranked >= SUBMISSION_BAR_PCT and not valid["void"]
         info["predicted_leg_pct"] = leg
         info["predicted_ranked_pct"] = ranked
-        info["clears_submission_bar"] = ranked >= SUBMISSION_BAR_PCT
+        info["clears_submission_bar"] = clears
         print("  %-17s NA4 %+.3f   ex-NA5 %+.3f [%+.3f, %+.3f]   "
               "leg %+.3f   ranked %+.3f%s"
               % (arm, na4, ex5, lo, hi, leg, ranked,
-                 "  CLEARS RULE 59" if ranked >= SUBMISSION_BAR_PCT else ""))
+                 "  CLEARS RULE 59" if clears else ""))
+    if valid["void"]:
+        print("  none of the above may be read: the session is void")
     print()
 
     print("=== pre-registered predictions, written before timing ===")
@@ -286,7 +366,7 @@ def main() -> int:
         args.out.write_text(json.dumps(summary, indent=2, sort_keys=True))
         print("wrote %s" % args.out)
 
-    return 1 if failures or undetected else 0
+    return 1 if failures or valid["void"] else 0
 
 
 if __name__ == "__main__":
