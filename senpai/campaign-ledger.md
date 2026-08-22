@@ -47080,3 +47080,387 @@ reach 88 to gain one**. If it does not reach 88 it is worth nothing and I drop i
 ```
 
 Every student has a CPU track and a GPU track, and no two students share a file.
+
+## 288 — Findings 164, 165 and 166; advisor error 122; the receipt-2 substitution structure
+
+Recorded 2026-08-22 ~15:45Z. Advisor branch head at time of writing
+`9ef01234`. Campaign base `origin/main` unchanged at
+`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`. Receipt 1 `623e77af` still
+`validating` at 92 minutes.
+
+### 288.1 — 🔴🔴 FINDING 164: THE SHIPPED PRICE TABLE IS WRONG AT EXACTLY ONE BOUNDARY, AND A ONE-SCALAR FIX REPLAYS AT +2.16 % HELD OUT
+
+Edward, E134 rungs 2 and 3, `harness=local` replay, zero GPU, local HEAD
+`87372369`, scripts `research/e134_rung2.py` and `research/e134_rung3.py`.
+Attachment gate: 12 legs, 1,494 rounds attached by printed round number,
+zero accept mismatches, zero margin mismatches, zero unmatched.
+
+**Rung 2 — every implementable per-position estimator arm fails held out.**
+Leave-one-prompt-out, 6 seeds, 200 windows, arms acting only at depth 4+:
+
+```
+arm             in-sample     held-out        sd        gap
+shrinkdeep        +0.0912      -0.1023    0.1576    -0.1935
+slopedeep         -0.0166      -0.1472    0.0954    -0.1306
+kmdeep            +0.0400      -0.0019    0.1438    -0.0419
+capdeep           -0.7324      -0.7324    0.0395    +0.0000
+```
+
+Labelled **Unclear**, not Not useful, and I accept that label. The replayer
+draws each round's capability from a fitted survival curve, so it destroys
+the correlation between round-start state and realised capability, which
+biases any per-round discriminator toward zero by construction. Edward's
+second limit is sharper: rung 1 measured discrimination on forced-depth-7
+traces where every round is asked the depth-4 question, but the shipped
+policy only reaches a deep boundary in rounds it already likes. On the three
+archived shipped legs `P(acc > 4)` is 0.950 to 0.978, so a perfect
+discriminator can reject about one round in forty. Rung 1's 0.5686 accept
+rate on `medicine_hist` belongs to a population the shipped policy never
+visits.
+
+**Rung 3 — the oracle gap decomposed by boundary.** Perfect knowledge at one
+boundary, shipped everywhere else, marginal value given all later boundaries
+already perfect. Full oracle replays at **+9.1617 %** (sd 0.0841) against
+F10.1's published +8.5248 %; the `ship` arm returns exactly +0.0000.
+
+```
+boundary   board curve   share      our curve   share
+0            +0.9007     0.098       +0.8133    0.092
+1            +1.5756     0.172       +1.4521    0.164
+2            +1.2779     0.139       +1.3019    0.147
+3            +1.5283     0.167       +0.8984    0.101
+4            +1.7695     0.193       +2.3220    0.262
+5            +1.1765     0.128       +1.1964    0.135
+6            +0.9334     0.102       +0.8940    0.101
+```
+
+Under the board curve the gap is almost evenly spread and the rung-3 stop
+rule fires. Under **our own measured curve** boundary 4 carries 26.2 %,
+nearly twice an even split.
+
+**The arm.** `cliffprice@w` raises only `marginal[4]` to
+`0.18 * (1 + w * 3.2689)` and leaves every other entry at the shipped 0.18.
+`w = 0` is the shipped table exactly. Same leave-one-prompt-out protocol:
+
+```
+curve   boundary  step ratio   in-sample    held-out       sd
+ours    4          4.2689       +2.1770     +2.1608    0.0330
+ours    3          1.0000       +0.0000     +0.0000    0.0000   exact null, no step there
+ours    5          1.5448       +0.0000     -0.1635    0.1796
+ours    flat       -            +0.0008     -0.1338    0.0753
+board   4          1.8037       +0.0931     -0.0993    0.1423
+board   3          2.4482       +0.5359     -0.0832    0.5936
+```
+
+Grid, held out, stable at 0.10 to 0.15 for all eight prompts at all six
+seeds:
+
+```
+weight       median % mean depth     accept
+0.00          +0.0000      4.384      0.749
+0.05          +1.4167      4.235      0.759
+0.10          +2.1770      4.075      0.766
+0.15          +2.1694      3.928      0.769
+0.20          +1.6598      3.731      0.765
+0.25          -2.2819      3.134      0.740
+```
+
+**The control that makes it believable** is the matched-depth flat price:
+
+```
+flat  0.20   mean depth 4.146    -0.5959
+cliff 0.10   mean depth 4.075    +2.1770
+```
+
+Almost the same mean depth, opposite sign. Edward's sentence: *"It is not how
+much you draft, it is where you stop."* A uniform price rise loses
+immediately, which reproduces F10.1's `price0.20` at -0.4856 and
+`rankedprice` at -2.8508. Replacing every entry over-corrects; replacing the
+one entry that is wrong does not.
+
+**Internal consistency.** `+2.1608 / +9.1617 = 23.6 %` against a rung-3
+boundary-4 share of 26.2 %. One scalar with no per-round information captures
+about 90 % of the perfect-information value at that boundary.
+
+**Mechanism, from our own source, not from a fit.** `IPG_OURS =
+{2:2,3:3,4:4,5:5,6:3,7:4,8:4}` gives `passes(M) = 1 + 1[M >= 6]`, confirmed by
+rung 0 on every reachable `M`. A pass is a full re-read of the projection
+weights. `marginal[4]` prices the `M = 5 -> M = 6` decision, our measured step
+there is 4.2689 shallow steps, and `makeUniformDepthPrice()` at
+`Qwen36MTPBlockSession.swift:871-878` charges a flat 0.18 for it exactly as
+for every other step.
+
+**Second, independent reason the same edit should help.** F161's Berkson
+inversion is concentrated at depth 4: round-start optimism is
+anti-informative there, so the scheduler is systematically over-confident at
+precisely the one boundary with a real cost step. The replayer does not model
+that effect, so it is not double counting; it is unmodelled upside.
+
+**Why the prior is against it.** The move raises `marginal[4]` toward the
+measured 0.4383, and every previous move toward the measured cost curve lost
+at rank: `a1326b4b` changed `headStepCostRatio` 0.18 -> 0.16 with everything
+else byte-identical and scored 3.15370 against base `036fd9ca` at 3.19088, a
+clean isolated **-1.164 %**; the full measured marginal vector is exactly
+`rankedprice` and replays at **-2.8508 %**. The hypothesis survives only in
+one shape: the flat 0.18 is a compensated threshold that is right on average
+and wrong at the single boundary with a real step. Note also `w* = 0.10` is
+only **10 % of the way** to the true cost ratio, which is consistent with
+286.4's reading that `headStepCostRatio` is a threshold absorbing a
+compensation and not a price.
+
+**Two mandatory zero-GPU gates issued as F5 before any Swift.**
+
+- **Gate A.** Replay the flat-h family at `h in {0.14, 0.15, 0.16, 0.18, 0.20,
+  0.22, 0.26, 0.32}` on the same legs and protocol. Pass requires the argmax
+  at `h = 0.18` **and** `h = 0.16` scoring negative in the band -0.4 % to
+  -2.5 %, against the ranked target -1.164 %. The decisive contrast is the
+  pair: the replayer must score `h = 0.16` negative **while** scoring
+  `cliffprice@0.10` positive. If it scores both positive it carries a uniform
+  deeper-is-better bias and +2.18 % is an artefact. This also discharges the
+  last open task on the depth-price level axis from 286.4.
+- **Gate B.** Re-score under the post-`{6:6,7:7}` curve. Thorfinn's arm makes
+  `passes(6) = passes(7) = 1` and leaves `passes(8) = 2`, so:
+
+```
+M          1      2      3      4      5        6        7        8
+measured  31283  34671  38059  41447  44836    58546    64714    70881
+post-arm  31283  34671  38059  41447  44836    48224.1  51612.4  70881
+
+boundary  pre-arm ratio   post-arm ratio
+   4         4.047           1.000    the current cliff, gone
+   5         1.820           1.000
+   6         1.820           5.687    the cliff moves here and gets steeper
+```
+
+Ship decision if gate A passes: add `w = 0.125` to the grid and ship the
+centre of the plateau rather than the grid argmax. `0.10` and `0.15` are
+indistinguishable at sd 0.0330 and `0.25` costs -2.28, so 0.125 sits
+equidistant from the zero edge and the harm edge. That is
+`marginal[4] = 0.253550`.
+
+Ruled: **hard-code the scalar, do not derive it from the IPG table at build
+time.** `w = 0.10` is not a cost ratio, the derivation would silently retune
+the scheduler as a side effect of a kernel change (Rule 95), and it breaks
+one-hypothesis-per-PR while Thorfinn's receipt is in flight. Implement the
+coupling as a **tripwire** instead: a test that reads the live shipped
+`Qwen35CustomQMV` table and asserts both directions — `passes(6) == 2`
+implies a non-zero surcharge, `passes(6) == 1` implies zero surcharge at
+index 4 — with both polarities demonstrated per Rule 101.
+
+Rung 1c mechanism 3 (a GPU trace on `medicine_hist` and `essays_montaigne` to
+close the rung-2 population question) is **declined for now**; it refines a
+negative and costs a leg.
+
+### 288.2 — 🔴🔴 FINDING 165: AN EXACT-REPLICATE RANKED PAIR. A BYTE-IDENTICAL CANDIDATE MOVED THE PUBLISHED MEDIAN BY -0.39 %
+
+`bed5081a` (nijaru, 3.50473090, rejected) is a declared **same-content
+redraw** of `48423d09` (noskillcoding, 3.51845338, accepted). Their note
+states the `git diff` of `Vendor/` plus `Sources/` against the promoted tree
+is empty at line count 0, and the head artifact is unchanged in remote,
+revision, digest and bytes. Two independent ranked draws of one candidate.
+Instrument `_advisor_scratch/nullpair.py`.
+
+```
+prompt       cand d%  serial d%    raw d%
+beagle       +0.0528    -0.3310   -0.3836
+medicine     -0.0064    -0.0801   -0.0737
+essays       +0.0077    -0.3883   -0.3959
+botany       +0.0651    -0.0357   -0.1007
+republic     -0.0134    +0.1966   +0.2100
+plutarch     -0.0482    -0.1279   -0.0797
+drama        -0.0378    +0.4082   +0.4461
+travel       +0.0772    +0.0127   -0.0644
+
+candidate 8-prompt mean delta  +0.0121 %   sd 0.0476   se of mean 0.0168
+serial    8-prompt mean delta  -0.0432 %   sd 0.2604   se of mean 0.0921
+published median  3.51845338 -> 3.50473090  =  -0.3900 %
+median carriers   beagle and essays in BOTH rows
+```
+
+Four consequences.
+
+1. **F154's candidate instrument is empirically validated on a null.** The
+   measured se of the 8-prompt candidate mean is **0.0168 %** against F154's
+   0.0187 %, which I labelled an upper bound. It is.
+2. **F154 understates the serial leg.** Within-run per-prompt serial sd here
+   is **0.2604 %** against F154's 0.1509 %, a factor of 1.73. Use 0.26 % when
+   sizing anything that touches the serial leg.
+3. **The published-median null has a spread of at least +/- 0.4 %.** Both
+   median carriers fell only because their serial draws fell 0.33 % and
+   0.39 %, while the candidate legs moved by at most 0.08 %. The raw ratio
+   tracks the serial draw one for one.
+4. 🔴 **The entire visible top of the board is inside the null.** Published
+   spread from `0b8602e1` at 3.51925374 to `1d3f0589` at 3.51209966 is
+   **0.204 %**, which is half of this single observed null draw. Rule 100 is
+   now proven with a replicate rather than argued from a decomposition. Our
+   `0c6191b7` rejection at -0.186 % against the crown was never a merit gap.
+
+Corollary for planning: a candidate that improves the candidate leg by 0.4 %
+or more is close to certain to take the crown on a single draw. Thorfinn's
+predicted -5 % candidate improvement is roughly twelve null standard
+deviations. If `623e77af` is correct it cannot fail to take the crown; if it
+does not, the mechanism is wrong, not unlucky.
+
+### 288.3 — 🔴🔴 FINDING 166: WE END THE UNTIMED WARM PHASE WITH AN EMPTY BUFFER POOL, BY CONSTRUCTION, AND THEN START THE CLOCK
+
+Named by rival receipt `775a26e3` (noskillcoding, entered validation
+15:21Z). Every ordering fact verified against **our** source this session
+(Rule 103):
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift
+  :283-288  warmAllDepths  =  try warmAllDepthShapes(maxDepth:)
+                              Self.wireResidentWeightsIfEnabled()
+  :284-285  "Keep the large shape-warm object graph in a separate call frame so
+             every throwaway cache and tensor is released before residency sizing."
+  :222      private static func wireResidentWeightsIfEnabled()
+  :235      Memory.clearCache()
+  :237      Memory.activeMemory
+Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift
+  :282      mtp_warm          -> resetRuntimeWorkerAllocatorForPhaseStart(); warmAllDepths
+  :307-311  mtp_decode_begin  -> if !state.warmed { reset; warm }   <- NO reset when warmed
+```
+
+`mtp_warm` empties the allocator, runs the full shape warm, and returns.
+`warmAllDepthShapes` drops its frame, so every warm tensor is freed into the
+MLX buffer pool. `wireResidentWeightsIfEnabled` then calls
+`Memory.clearCache()`, which returns the whole pool to the OS. Nothing
+repopulates it, and `mtp_decode_begin` does not reset the allocator again
+when `state.warmed` is already true. **The timed window therefore starts with
+an empty buffer pool and round 1 re-allocates every intermediate from the
+OS.** `RuntimeStartupMemoryPolicy.swift:111/:142` sets the allocator cache at
+6/32 GiB, so nothing but the explicit clear would have emptied it.
+
+The clear is deliberate and correct for its stated purpose:
+`Memory.activeMemory` at `:237` must see the live backbone or the wired
+ticket is mis-sized. The rival's claim is that intent and side effect are
+separable — size the ticket against an empty pool, then refill the pool,
+still untimed. Their fix is to call `warmAllDepthShapes(maxDepth:)` a second
+time after `wireResidentWeightsIfEnabled()`. Fourteen lines, one file. Their
+own honest bracket is +0.3 % to +0.9 % ranked.
+
+**The instrument is already in our tree and nobody has read it.**
+`Qwen36MTPBlockSession.swift:1617-1636` prints an eleven-way split of every
+round — `d_pre_us`, `d_flush_us`, `d_head1_us`, `d_submit1_us`, `d_chain_us`,
+`d_submit2_us`, `draft_build_us`, `verify_build_us`, `eval_wall_us`,
+`readout_us`, `commit_us`, `upkeep_us`, `round_us` — and `:1621-1622` says in
+the source itself *"Complete split of draft_build, so a first-round cold cost
+names the statement that pays it instead of the section."*
+
+**Price model.** The excess is a one-time absolute deletion inside the
+candidate leg, and `d ln(ranked serial)/dx = 0`, so ranked percent is
+`E / (512 * candidate_seconds_per_token)`:
+
+```
+prompt      cand s/tok    leg = 512 x s     F83 weight
+beagle      0.01138928       5.831 s          0.4862
+medicine    0.01037385       5.311 s          0.2508
+essays      0.01041310       5.332 s          0.1598
+botany      0.01024127       5.243 s          0.0124
+republic    0.01035745       5.303 s          0.0100
+F83-weighted leg  5.589 s
+```
+
+**Every 56 ms of round-1 excess deleted is worth about 1 % ranked.** The
+fraction transfers at 1.0; the size of the excess measured on an M4 Pro does
+not transfer to M5 and is probably smaller there.
+
+Assigned to edward as E134 F6, ahead of gates A and B, on archived traces
+with zero GPU: `round_us[1] - median(round_us[2..N])` per leg, the same
+excess for all eleven segments, rounds 2 and 3 as well, a random mid-leg
+round as a control that must return zero, and forced-depth-7 versus shipped
+legs compared. Bar: implement above 30 ms F83-weighted, drop below 10 ms.
+
+**E65 is the precedent that decides implementation.** E65 pre-built the first
+round's expression through the live path, measured neutral, and carries a
+do-not-retry comment — but it moved **host graph build** time. If our
+round-1 excess sits in `d_pre_us` and the host build segments, E65 already
+condemned this and we stop. If it sits in `eval_wall_us` and the submit
+segments, it is a different cost. **The segment split decides, before any
+code.**
+
+Alphonse informed as E130 F18 because `Memory.clearCache()` is his line and
+he is mid-ladder on the constant beside it. He must state, before seeing
+Edward's number, whether he expects a pool populated at clock start to help,
+hurt, or be neutral for the first `resize()` over `unwired_set_`.
+
+**A second reason the rival note matters:** it says their base already
+carries a `callWithHiddenAndNormed` warm-coverage restore. That is rung 1c
+mechanism 2 from ledger 287.2 — a promoted mechanism our file lacks. The
+frontier has it and we do not, so our round-1 `verify_build_us` excess may
+carry a cold compile on top of the pool growth. Edward's segment split will
+show whether we are paying twice for one defect.
+
+### 288.4 — 🔴 ADVISOR ERROR 122: MY RUNG-1C STOP THRESHOLD WAS WRONG BY ORDERS OF MAGNITUDE
+
+F4 told edward to bound the normed-verify warm by
+`round_1_verify_us - median(round_2..N verify_us)` and to **stop below 3 ms**.
+That threshold was sized for one cold expression compile. The quantity the
+instrument returns is the whole round-1 excess: cold compile, buffer-pool
+growth, and the first wired-residency crossing together. The rival's public
+trace evidence puts the total at an order of magnitude above my stop rule.
+Withdrawn and replaced by the 30 ms / 10 ms bar in 288.3.
+
+General lesson, and the third time this campaign has hit it: **a stop rule
+written for one named mechanism must not be attached to an instrument that
+measures a superset.** Compare advisor error 104 (an upper bound on a
+superset used as a point estimate) and advisor error 121 (a kill rule capped
+where the payout is maximal instead of where it reaches zero).
+
+### 288.5 — THE RECEIPT-2 SUBSTITUTION STRUCTURE
+
+Four mechanisms are now competing for one submission slot, and two pairs of
+them are substitutes rather than complements:
+
+```
+mechanism                       owner      predicted        evidence class
+{6:6,7:7} one-pass table        thorfinn   -5 % candidate   IN FLIGHT, 623e77af
+cliffprice@0.125 marginal[4]    edward     +2.16 % held out replay under our own curve
+warm-refill after wiring        edward?    +0.3 to +0.9 %   rival receipt in flight, unmeasured here
+wired slack ladder 512 -> argmax alphonse  +0.20 to +0.68 % measured, z = 10.5 on the candidate leg
+```
+
+- **thorfinn and edward are substitutes at boundary 4.** Thorfinn removes the
+  cost of the second pass; edward prices it. Post-arm the cliff moves to
+  boundary 6 at a steeper ratio but a rarer crossing, so `cliffprice`
+  survives at reduced value rather than dying. Gate B measures which.
+- **the warm-refill and the slack ladder may be substitutes in round 1.**
+  Both touch the first wired-residency crossing. Alphonse's quantity `C`
+  (`round_us[1] - median(round_us[2..N])` per arm) tells us whether the
+  ladder's effect is steady-state or one-time, and whether the round-1 excess
+  falls with slack.
+
+Queue rule for this generation: rank by expected ranked value, not by
+readiness. Alphonse's archive at `5846b986` is gate-complete and waiting;
+it does not get the slot merely for being first if a larger measured
+mechanism is ready. Edward's `cliffprice` and the warm-refill are both in
+`Qwen36MTPBlockSession.swift` outside lines 200-275 and alphonse's constant
+is at `:212-213`, so a composite archive carrying two disjoint line ranges of
+one file is available if throughput beats attribution.
+
+### 288.6 — BOARD AND RIVAL STATE AT 15:45Z
+
+```
+PROMOTED top 6
+  0b8602e1 nagaral        3.51925374 14:47:00Z src=c2e43231   CROWN
+  48423d09 noskillcoding  3.51845338 11:18:03Z src=c0dbec05
+  cf79f7df Lieisyourlie   3.51661724 10:10:38Z src=a0f85886
+  d3c491b5 morganmcg1     3.49065044 09:08:38Z src=6f1cd66f   OURS
+  bc070b7b francip        3.35922017 | 7358c89f newjordan 3.35206897
+VALIDATING 8
+  623e77af morganmcg1 14:12  OURS, 92 min
+  a67df0cc ofou 14:32 | 48f182c6 Carme99 14:33 | 05341264 newjordan 14:51
+  e44c0ba5 vibecodooor 15:12 | 775a26e3 noskillcoding 15:21 | 72d1d8be scarletbright 15:27
+  cefa0ac6 jonathan308 15:38
+RESOLVED SINCE LAST LEDGER
+  bed5081a nijaru rejected 3.50473090   <- the F165 null replicate
+  19677283 scarletbright CANCELLED      <- their probe-fraction 0.15 test never ran
+```
+
+Rule 93 rows still to price when they resolve: `48f182c6` Carme99 batched
+draft-id readout (our unassigned direction 6); `05341264` newjordan;
+`775a26e3` noskillcoding warm-phase allocator pre-materialization (F166,
+already priced above); `a67df0cc`, `e44c0ba5`, `72d1d8be`, `cefa0ac6`
+unread.
+
+New tool: `_advisor_scratch/nullpair.py`, the F165 replicate instrument.
