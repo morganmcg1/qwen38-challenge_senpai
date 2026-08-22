@@ -56,7 +56,11 @@ C1_SURVIVORS = 4_096
 
 SHIPPED_P = 0.25
 C1_P = 0.35
-GRID = (0.10, 0.125, 0.15, 0.175, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50)
+# E139 F2 section 2 extends the ladder below 0.10. Recall was still exactly
+# 1.000000 at the old bottom of the grid, so the measured argmax was set by
+# where the sampling stopped, not by where the mechanism breaks.
+GRID = (0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09,
+        0.10, 0.125, 0.15, 0.175, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50)
 
 
 def clusters(p: float) -> int:
@@ -117,18 +121,29 @@ def marginal(rows):
     return 0.01 * LEAVES * ROWS_PER_LEAF * row_bytes
 
 
-# F4 section 4. The advisor's instrument priced the real board move from
-# p=0.25 to p=0.15 at +0.0992 % F83-weighted. The byte model above prices the
-# same edit at +0.3403 %.
+# RETIRED by E139 F2 / FINDING 192. Do not reinstate without a new receipt.
 #
-# F5 section 3 corrected my first reading of that gap. It is NOT a bias in the
-# byte model. It is the acceptance cost of that specific edit: probing 1,229
-# fewer leaves loses real shortlist quality, and the gross byte column does
-# not carry the loss. So the factor belongs to the shipped ladder alone, where
-# lowering `p` throws probed rows away. C1 keeps the probe fraction and lowers
-# the cost per probed row, and its own acceptance loss is already measured and
-# subtracted, so applying this factor to C1 would charge it twice.
-BOARD_SCALE = 0.0992 / 0.3403
+# This factor was `0.0992 / 0.3403 = 0.2915`. The numerator was read off the
+# RAW ranked ratio, which is `serial / candidate`. The pinned serial leg is
+# hardware the candidate cannot touch and its residual standard deviation is
+# 0.4788 % against the candidate leg's 0.0498 %, so reading a candidate-side
+# mechanism off the raw ratio imports 9.6 times the noise for nothing
+# (Rule 112). Re-read off the CANDIDATE leg, the same p=0.25 -> 0.15 edit has
+# two independent ranked receipts on two different bases:
+#
+#   b6cb0fea -> 02742bf0   wide-grid base    +0.3836 %
+#   ed608e64 -> 08b67f12   tight-grid base   +0.2786 %
+#   pooled                                   +0.3311 %  +/- 0.0948 (2 sigma)
+#
+# against this file's unscaled byte model of +0.3403 %, a ratio of 0.973. The
+# byte model was never biased, so there is nothing to scale. E139 then
+# measured the acceptance term directly on the zero-noise channel and found
+# it exactly zero at p=0.15 and p=0.10 on two fixtures in different
+# acceptance regimes, which is the same conclusion from the other side.
+#
+# The `*_scaled` columns are kept at unity rather than deleted so that older
+# E136 artefacts still load and so the retraction stays visible here.
+BOARD_SCALE = 1.0
 
 # `e133_screen` names the ARM `exact0-N4096-p0.25` but the FAMILY `exact`, and
 # an unrecognised family here silently anchors the shipped ladder on C1's
@@ -144,6 +159,10 @@ NULL_FLOOR = "research/e136-null-floor.json"
 # asserts every source key is present on the first cell it sees.
 SCREEN_FIELDS = {
     "recall_wg": "recall_worst_gating",
+    # E139: the probe-stage margin. Recall can hold at 1.000 while this is
+    # already falling, so it is the column that shows the knee approaching.
+    "probe_hit_wg": "probe_hit_rate_worst_gating",
+    "survivor_hit_wg": "survivor_hit_rate_worst_gating",
     "acc_loss_wg": "acceptance_loss_worst_gating",
     "acc_loss_pooled_wg": "acceptance_loss_pooled_worst_gating",
     "net_miss_wg": "net_miss_worst_gating",
@@ -341,14 +360,16 @@ def main() -> int:
                   f"{rows[0]['bytes_per_row']} B per probed row, "
                   f"anchor p={rows[0]['anchor_p']}, n_gating={rows[0]['n_gating']} --")
             print(f"{'p':>7}{'probes':>8}{'rows':>8}{'recall':>10}"
-                  f"{'accLoss':>11}{'dAcc pp':>10}{'dGross%':>10}"
-                  f"{'dGrossS%':>10}{'dNet%':>9}{'dNetS%':>9}{'t0':>4}{'t0b':>5}")
+                  f"{'probeHit':>10}{'mAbs':>11}{'accLoss':>11}"
+                  f"{'dAcc pp':>10}{'dGross%':>10}{'dNet%':>9}"
+                  f"{'t0':>4}{'t0b':>5}")
             for row in rows:
                 print(f"{row['p']:>7.3f}{row['probes']:>8}{row['coarse_rows']:>8}"
-                      f"{row['recall_wg']:>10.6f}{row['acc_loss_wg']:>11.3e}"
+                      f"{row['recall_wg']:>10.6f}{row['probe_hit_wg']:>10.6f}"
+                      f"{row['m_absolute_wg']:>11.3e}"
+                      f"{row['acc_loss_wg']:>11.3e}"
                       f"{row['d_acc_loss_pp']:>10.4f}{row['d_gross_pct']:>10.4f}"
-                      f"{row['d_gross_pct_scaled']:>10.4f}"
-                      f"{row['d_net_pct']:>9.4f}{row['d_net_pct_scaled']:>9.4f}"
+                      f"{row['d_net_pct']:>9.4f}"
                       f"{str(row['passes_t0'])[0]:>4}{str(row['passes_t0b'])[0]:>5}")
             arg = report["argmax"][family]
             print(f"argmax p={arg['p']:g}  dNet={arg['d_net_pct']:+.4f} %  "

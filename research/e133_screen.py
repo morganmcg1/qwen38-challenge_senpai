@@ -1301,6 +1301,14 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         "m_absolute_worst_gating_hi": worst("m_absolute_hi"),
         "m_incremental_worst_gating": worst("m_incremental"),
         "recall_worst_gating": lowest("recall"),
+        # E139 F2 section 2. On the probe-fraction ladder the binding margin
+        # is not the shortlist threshold but whether the leaf that owns the
+        # true argmax row was probed at all. `probe_hit_rate` at probe count
+        # P is exactly P(leaf rank of the argmax < P), so reading it across
+        # the ladder traces the whole CDF of that rank and shows the margin
+        # collapsing before recall breaks rather than after.
+        "probe_hit_rate_worst_gating": lowest("probe_hit_rate"),
+        "survivor_hit_rate_worst_gating": lowest("survivor_hit_rate"),
         "acceptance_loss_worst_gating": loss,
         "acceptance_loss_pooled_worst_gating": loss_pooled,
         "substitutions_live_gating": subs_live,
