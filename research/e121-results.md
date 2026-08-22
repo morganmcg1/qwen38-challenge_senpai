@@ -343,10 +343,39 @@ Not supported:
 
 The width comes almost entirely from `df = 1`, not from noisy data. The
 replicate-to-replicate spread is small (sd 0.093 pp) and `t(0.975, 1) = 12.706`
-inflates it by an order of magnitude. If that spread holds, `n = 3` gives
+inflates it by an order of magnitude. If that spread held, `n = 3` would give
 `±4.303 × 0.093 / sqrt(3) = ±0.231`, that is [−0.667, −0.205], which excludes
-zero and clears. One more ABBA quad, four legs, about 22 minutes, is the
-cheapest action that converts this into a decision either way.
+zero.
+
+**But simply appending a third quad now would be optional stopping.** The
+truncation to two quads was valid because it was instructed before any effect
+was visible. A decision to resume that is taken *because* `n = 2` failed to
+clear is data-dependent, so the resulting `n = 3` interval would be optimistic
+and could not honestly be quoted as an exact 95 % CI. The clean way to settle it
+is a fresh session with a pre-declared leg count, analysed on its own and not
+pooled with this one.
+
+#### The thermal asymmetry biases against the candidate
+
+The rebuild-gap defect is not symmetric between arms. In the order
+base/share/share/base, positions 2 and 3 are both `share`, and position 3 is the
+only position with no rebuild in front of it.
+
+| arm | entry temps (°C) | mean |
+| --- | --- | --- |
+| base | 40.18, 44.87, 44.78, 44.76 | 43.65 |
+| share | 44.81, 53.00, 45.09, 52.95 | **48.96** |
+
+The share arm ran **5.31 °C hotter on average**. Within the share arm, the two
+hot legs were 0.072 % slower than the two cool legs. Scaling that crudely gives
+a penalty of roughly 0.05 pp carried by the candidate only, so the true effect
+is more likely near −0.49 % than −0.436 %.
+
+This does not rescue the interval and it is far too small to close the 2.04×
+gap, but the direction matters: the measured effect is, if anything, a slight
+**under**statement of the candidate's advantage, not an overstatement. A future
+ABBA design should insert a matched idle gap wherever a rebuild does not occur,
+so that every position has the same thermal history.
 
 #### Leading hypothesis for the shortfall — stated as a hypothesis, not a finding
 
@@ -396,7 +425,8 @@ held on all eight.
 Entry 40.18–52.99 °C, exit 59.67–61.36 °C. Position 3 always enters hottest
 (~53 °C) because positions 2→3 need no rebuild and so get no cooling gap, while
 1→2 and 3→4 each sit behind a rebuild. This is a known asymmetry of the ABBA
-schedule that position-balancing does not remove. It does not explain the
+schedule that position-balancing does not remove, and it is not symmetric
+between arms; see the thermal-asymmetry section above. It does not explain the
 result: in k1 the hot leg was the slower share leg and in k2 the hot leg was the
 faster share leg, so the effect does not track entry temperature.
 
