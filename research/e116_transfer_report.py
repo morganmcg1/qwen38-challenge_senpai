@@ -31,13 +31,30 @@ ESTIMATORS, NAMED, WITH THEIR SE (campaign rule 39).
 
 A nonlinear response is itself a result, so the OLS residuals are printed.
 
-RUNG 4. `--wide-qmv-share` is the MEASURED wide-QMV share of the round from the
-same legs' census, not the standing 0.7786 assumption. The composition is
+RUNG 4. The composition the campaign uses is
 
     predicted leg %  =  arm % of wide-QMV kernel time
-                        x measured wide-QMV share of round
+                        x wide-QMV share of round
                         x alpha
                         x beta
+
+That form is only correct when the share divides the LEG-AMORTISED round,
+`leg us/token x tokens / R`, because that is the only frame in which a percent
+of the round and a percent of the leg are the same number. Dividing by the
+parent `block_request` frame instead inflates the coefficient by 1/0.768.
+
+Pass `--wide-qmv-us-per-round`, the absolute measured microseconds, and this
+file forms the share against the leg-amortised frame itself. `--wide-qmv-share`
+remains available for a share that is already in that frame; passing a share
+measured against any other frame is the exact defect this experiment exists to
+remove.
+
+Prefer `--wide-qmv-us-per-leg`, the census total over the whole 512-token
+window. The leg endpoint carries no round count, so a census taken under a
+harness that segments the same window into a different number of rounds still
+divides correctly. `--local-iterate` reports 78 MTP rounds for the window that
+`mtp-timed` reports as 77, so the per-round forms are NOT interchangeable
+between the two harnesses.
 
 RULE 34. Two round frames appear here and they are named separately:
 `e116_rung3_control_round_us` is the mean parent-measured
@@ -185,7 +202,21 @@ def main() -> int:
                     help="rung 2 absorption coefficient")
     ap.add_argument("--alpha-half-width", type=float, default=float("nan"))
     ap.add_argument("--wide-qmv-share", type=float, default=float("nan"),
-                    help="rung 4 measured wide-QMV share of the round")
+                    help="rung 4 wide-QMV share, already in the "
+                         "leg-amortised round frame")
+    ap.add_argument("--wide-qmv-us-per-round", type=float,
+                    default=float("nan"),
+                    help="rung 4 absolute measured wide-QMV microseconds per "
+                         "round; the share is formed here against the "
+                         "leg-amortised frame")
+    ap.add_argument("--wide-qmv-us-per-leg", type=float,
+                    default=float("nan"),
+                    help="rung 4 absolute measured wide-QMV microseconds "
+                         "summed over the whole 512-token leg; the share is "
+                         "formed against the leg endpoint and no round count "
+                         "enters, so a census taken under a harness that "
+                         "segments the same window into a different number "
+                         "of rounds stays comparable")
     ap.add_argument("--tokens", type=int, default=512)
     ap.add_argument("--json")
     args = ap.parse_args()
@@ -257,7 +288,23 @@ def main() -> int:
                      if not math.isnan(
                          fit.get("slope_half_width", float("nan")))
                      else float("nan"))
-    composed_with_share = composed * args.wide_qmv_share
+    leg_total_us = (statistics.fmean(leg["leg_us_per_token"]
+                                     for leg in base_legs) * tokens
+                    if base_legs else float("nan"))
+    given = [n for n, v in (("--wide-qmv-share", args.wide_qmv_share),
+                            ("--wide-qmv-us-per-round",
+                             args.wide_qmv_us_per_round),
+                            ("--wide-qmv-us-per-leg",
+                             args.wide_qmv_us_per_leg))
+             if not math.isnan(v)]
+    if len(given) > 1:
+        raise SystemExit("pass exactly one of " + ", ".join(given))
+    share = args.wide_qmv_share
+    if not math.isnan(args.wide_qmv_us_per_round):
+        share = args.wide_qmv_us_per_round / leg_amortised_round_us
+    elif not math.isnan(args.wide_qmv_us_per_leg):
+        share = args.wide_qmv_us_per_leg / leg_total_us
+    composed_with_share = composed * share
 
     out = {
         "harness": "local",
@@ -298,11 +345,17 @@ def main() -> int:
         "round_to_leg_alpha_times_beta_ci95": [composed - composed_half,
                                                composed + composed_half],
         "alpha_cancels_in_the_product": True,
-        "wide_qmv_share_of_round_measured": args.wide_qmv_share,
+        "wide_qmv_share_of_leg_amortised_round_measured": share,
+        "wide_qmv_us_per_round_measured": args.wide_qmv_us_per_round,
+        "wide_qmv_us_per_leg_measured": args.wide_qmv_us_per_leg,
+        "e116_leg_total_us": leg_total_us,
+        "share_frame": "wide-QMV microseconds divided by the e116 tenth "
+                       "frame: the leg-amortised round, or equivalently the "
+                       "whole leg when the census total is supplied",
         "composed_kernel_percent_to_leg_percent": composed_with_share,
         "composed_kernel_percent_to_leg_percent_ci95": [
-            (composed - composed_half) * args.wide_qmv_share,
-            (composed + composed_half) * args.wide_qmv_share],
+            (composed - composed_half) * share,
+            (composed + composed_half) * share],
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
@@ -365,12 +418,13 @@ def main() -> int:
           f"  95% CI [{composed - composed_half:.3f},"
           f" {composed + composed_half:.3f}]"
           f"   (alpha cancels; this is slope / (dose_unit_us x R / tokens))")
-    if not math.isnan(args.wide_qmv_share):
-        print(f"  measured wide-QMV share of round = {args.wide_qmv_share:.4f}")
+    if not math.isnan(share):
+        print(f"  measured wide-QMV share of the leg-amortised round"
+              f" = {share:.4f}")
         print(f"  composed kernel% -> leg% transfer ="
               f" {composed_with_share:.4f}"
-              f"  95% CI [{(composed - composed_half) * args.wide_qmv_share:.4f},"
-              f" {(composed + composed_half) * args.wide_qmv_share:.4f}]")
+              f"  95% CI [{(composed - composed_half) * share:.4f},"
+              f" {(composed + composed_half) * share:.4f}]")
 
     if args.json:
         path = pathlib.Path(args.json)

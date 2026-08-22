@@ -1,7 +1,7 @@
 {
   "alpha": 1.177260429936175,
   "alpha_cancels_in_the_product": true,
-  "alpha_half_width": NaN,
+  "alpha_half_width": 0.06345,
   "beta": 0.849690894780832,
   "beta_ci95": [
     0.8178855961997743,
@@ -9,10 +9,10 @@
   ],
   "beta_half_width": 0.03180529858105773,
   "block_request_share_of_leg_amortised_round": 0.7677222048841349,
-  "composed_kernel_percent_to_leg_percent": NaN,
+  "composed_kernel_percent_to_leg_percent": 0.6070132922264425,
   "composed_kernel_percent_to_leg_percent_ci95": [
-    NaN,
-    NaN
+    0.5842918071304858,
+    0.6297347773223992
   ],
   "cool_gate_passed_real_gate": false,
   "dose_unit_us_m1_census": 411.86,
@@ -23,6 +23,7 @@
     12
   ],
   "e116_leg_amortised_round_us": 222581.64923944513,
+  "e116_leg_total_us": 17138786.991437275,
   "e116_rung3_control_round_us": 170880.87452085395,
   "endpoint": "absolute candidate MTP microseconds per token, trusted parent measured (parent_measured_seconds_per_token)",
   "estimator_arm_means": {
@@ -2453,5 +2454,8 @@
   ],
   "round_to_leg_alpha_times_beta_half_width": 0.03744311948178444,
   "rung": 3,
-  "wide_qmv_share_of_round_measured": NaN
+  "share_frame": "wide-QMV microseconds divided by the e116 tenth frame: the leg-amortised round, or equivalently the whole leg when the census total is supplied",
+  "wide_qmv_share_of_leg_amortised_round_measured": 0.6068267123686227,
+  "wide_qmv_us_per_leg_measured": 10400273.764,
+  "wide_qmv_us_per_round_measured": NaN
 }

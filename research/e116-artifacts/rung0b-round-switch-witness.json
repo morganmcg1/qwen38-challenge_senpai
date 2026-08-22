@@ -92,6 +92,50 @@
       },
       "width_one_lines": 512,
       "witness_lines": 590
+    },
+    {
+      "alternating": false,
+      "assignment_is_exact_round_parity": true,
+      "distinct_widths": 7,
+      "dosed_lines": 590,
+      "mtp_trace_round_lines": 78,
+      "one_line_per_round": false,
+      "sessions": [
+        {
+          "dosed": 512,
+          "rounds": 512,
+          "width_histogram": {
+            "1": 512
+          }
+        },
+        {
+          "dosed": 78,
+          "rounds": 78,
+          "width_histogram": {
+            "2": 1,
+            "4": 4,
+            "5": 5,
+            "6": 5,
+            "7": 3,
+            "8": 60
+          }
+        }
+      ],
+      "tag": "e116r4-realised-512",
+      "units_when_dosed": [
+        0
+      ],
+      "width_histogram": {
+        "1": 512,
+        "2": 1,
+        "4": 4,
+        "5": 5,
+        "6": 5,
+        "7": 3,
+        "8": 60
+      },
+      "width_one_lines": 512,
+      "witness_lines": 590
     }
   ],
   "rung": "0b"

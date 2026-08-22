@@ -47,10 +47,21 @@ ARMS = [
      "note": "measured at mlp.gate_up NA=4"},
 ]
 
-# alphonse's independent end-to-end reading of the same xv4 arm.
-XV4_ABBA = {"pooled_percent": -0.737, "sd": 0.396,
-            "ci95": [-1.720, 0.246], "replicates": 3,
-            "source": "alphonse PR #112, 3-replicate ABBA, pooled"}
+# alphonse's independent end-to-end readings of the same xv4 arm. The advisor
+# reports the powered figure as -0.7498 % without a published interval, so the
+# n=3 interval below is the only one available for an overlap test and it is
+# the wider of the two.
+XV4_ABBA = {"pooled_percent": -0.7498,
+            "ci95": [-1.720, 0.246],
+            "ci95_source": "the earlier n=3 pooled interval, reused because "
+                           "the powered reading has no published interval",
+            "source": "alphonse PR #112, properly powered ABBA, as reported "
+                      "by the advisor on PR #118"}
+
+XV4_ABBA_N3 = {"pooled_percent": -0.737, "sd": 0.396,
+               "ci95": [-1.720, 0.246], "replicates": 3,
+               "source": "alphonse PR #112, 3-replicate ABBA, pooled; "
+                         "superseded by the powered reading"}
 
 PROMOTION_BAR_PERCENT = 0.20
 
@@ -114,6 +125,9 @@ def main() -> int:
             "e116_predicted_leg_percent": predicted,
             "e116_predicted_ci95": xv4["leg_percent_ci95"],
             "alphonse_measured": XV4_ABBA,
+            "alphonse_measured_n3_superseded": XV4_ABBA_N3,
+            "advisor_prediction_at_baseline_transfer":
+                xv4["leg_percent_at_baseline_transfer"],
             "prediction_inside_alphonse_ci": inside,
             "intervals_overlap": overlap,
             "prediction_over_measurement":
@@ -144,9 +158,12 @@ def main() -> int:
     print(f"    E116 prediction   {predicted:+.3f} %"
           f"  CI [{xv4['leg_percent_ci95'][0]:+.3f},"
           f" {xv4['leg_percent_ci95'][1]:+.3f}]")
-    print(f"    alphonse ABBA     {measured:+.3f} %"
+    print(f"    advisor at 0.615  "
+          f"{xv4['leg_percent_at_baseline_transfer']:+.3f} %"
+          "  the standing composed prediction")
+    print(f"    alphonse ABBA     {measured:+.4f} %"
           f"  CI [{XV4_ABBA['ci95'][0]:+.3f}, {XV4_ABBA['ci95'][1]:+.3f}]"
-          f"  (n={XV4_ABBA['replicates']}, sd {XV4_ABBA['sd']:.3f})")
+          "  (powered; interval carried over from his n=3 pooled reading)")
     print(f"    prediction inside his CI: {inside};"
           f" intervals overlap: {overlap};"
           f" measured / predicted ="

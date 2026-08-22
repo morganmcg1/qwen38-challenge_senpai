@@ -1,0 +1,104 @@
+{
+  "arms": [
+    {
+      "arm": "xv4",
+      "kernel_percent": -0.673,
+      "leg_percent": -0.408511,
+      "leg_percent_at_baseline_transfer": -0.413895,
+      "leg_percent_ci95": [
+        -0.42378810000000006,
+        -0.3932339000000001
+      ],
+      "note": "live arm; alphonse is extending to n=4 replicates on PR #112",
+      "ratio_to_baseline_price": 0.9869918699186991,
+      "source": "alphonse E110 r2",
+      "verdict": "crosses the bar"
+    },
+    {
+      "arm": "xs_stage",
+      "kernel_percent": -1.458,
+      "leg_percent": -0.885006,
+      "leg_percent_at_baseline_transfer": -0.89667,
+      "leg_percent_ci95": [
+        -0.9181026,
+        -0.8519094
+      ],
+      "note": "dead by construction; priced for the record only",
+      "ratio_to_baseline_price": 0.9869918699186991,
+      "source": "alphonse E110 r2",
+      "verdict": "crosses the bar"
+    },
+    {
+      "arm": "b_barrier",
+      "kernel_percent": 0.274,
+      "leg_percent": 0.16631800000000002,
+      "leg_percent_at_baseline_transfer": 0.16851000000000002,
+      "leg_percent_ci95": [
+        0.16009820000000002,
+        0.17253780000000002
+      ],
+      "note": "positive kernel percent, so a slowdown if it transfers",
+      "ratio_to_baseline_price": 0.9869918699186991,
+      "source": "alphonse E110 r2",
+      "verdict": "below the bar"
+    },
+    {
+      "arm": "g_pack32",
+      "kernel_percent": 0.334,
+      "leg_percent": 0.202738,
+      "leg_percent_at_baseline_transfer": 0.20541,
+      "leg_percent_ci95": [
+        0.19515620000000003,
+        0.21031980000000003
+      ],
+      "note": "measured at mlp.gate_up NA=4",
+      "ratio_to_baseline_price": 0.9869918699186991,
+      "source": "thorfinn E111 rung 1",
+      "verdict": "below the bar"
+    }
+  ],
+  "baseline_transfer": 0.615,
+  "cool_gate_passed_real_gate": false,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "measured_transfer": 0.607,
+  "measured_transfer_ci95": [
+    0.5843,
+    0.6297
+  ],
+  "official_or_ranked_score": false,
+  "promotion_bar_percent": 0.2,
+  "rung": 4,
+  "transfer_ratio_to_baseline": 0.9869918699186991,
+  "xv4_cross_check": {
+    "advisor_prediction_at_baseline_transfer": -0.413895,
+    "alphonse_measured": {
+      "ci95": [
+        -1.72,
+        0.246
+      ],
+      "ci95_source": "the earlier n=3 pooled interval, reused because the powered reading has no published interval",
+      "pooled_percent": -0.7498,
+      "source": "alphonse PR #112, properly powered ABBA, as reported by the advisor on PR #118"
+    },
+    "alphonse_measured_n3_superseded": {
+      "ci95": [
+        -1.72,
+        0.246
+      ],
+      "pooled_percent": -0.737,
+      "replicates": 3,
+      "sd": 0.396,
+      "source": "alphonse PR #112, 3-replicate ABBA, pooled; superseded by the powered reading"
+    },
+    "e116_predicted_ci95": [
+      -0.42378810000000006,
+      -0.3932339000000001
+    ],
+    "e116_predicted_leg_percent": -0.408511,
+    "intervals_overlap": true,
+    "prediction_inside_alphonse_ci": true,
+    "prediction_over_measurement": 0.5448266204321153
+  }
+}

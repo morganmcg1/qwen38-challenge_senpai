@@ -1,0 +1,148 @@
+{
+  "cool_gate_passed_real_gate": false,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "frames": {
+    "all_decode": {
+      "all_qmv_share": 0.8945005755897929,
+      "dose_us_per_round": 0.0,
+      "gather_qmv_us_per_round": 143.21050677966102,
+      "narrow_qmv_us_per_round": 41079.87353050848,
+      "round_busy_us_per_round": 65791.64764576271,
+      "rounds": 590,
+      "wide_qmv_share": 0.2679304027428892,
+      "wide_qmv_us_per_round": 17627.58265084746,
+      "widths": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "mtp_round": {
+      "all_qmv_share": 0.9487569570843577,
+      "dose_us_per_round": 0.0,
+      "gather_qmv_us_per_round": 1083.2589615384616,
+      "narrow_qmv_us_per_round": 5336.009038461539,
+      "round_busy_us_per_round": 147304.43880769232,
+      "rounds": 78,
+      "wide_qmv_share": 0.9051787183567358,
+      "wide_qmv_us_per_round": 133336.84312820516,
+      "widths": [
+        2,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "serial_round": {
+      "all_qmv_share": 0.8716885354650459,
+      "dose_us_per_round": 0.0,
+      "gather_qmv_us_per_round": 0.0,
+      "narrow_qmv_us_per_round": 46525.22788671875,
+      "round_busy_us_per_round": 53373.6833671875,
+      "rounds": 512,
+      "wide_qmv_share": 0.0,
+      "wide_qmv_us_per_round": 0.0,
+      "widths": [
+        1
+      ]
+    }
+  },
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "isolated_command_buffers": true,
+  "min_mtp_width": 2,
+  "official_or_ranked_score": false,
+  "per_width_us_per_round": {
+    "w0": {
+      "dose": 0.0,
+      "gather_qmv": 694.583,
+      "narrow_qmv": 190016.399,
+      "other": 31668109.511000056,
+      "rounds": 2,
+      "total": 33738767.38150006,
+      "wide_qmv": 1879946.8885000001
+    },
+    "w1": {
+      "dose": 0.0,
+      "gather_qmv": 0.0,
+      "narrow_qmv": 46525.22788671875,
+      "other": 6848.455480468751,
+      "rounds": 512,
+      "total": 53373.6833671875,
+      "wide_qmv": 0.0
+    },
+    "w2": {
+      "dose": 0.0,
+      "gather_qmv": 170.583,
+      "narrow_qmv": 732.9159999999999,
+      "other": 2992.169000000001,
+      "rounds": 1,
+      "total": 69096.537,
+      "wide_qmv": 65200.869
+    },
+    "w4": {
+      "dose": 0.0,
+      "gather_qmv": 516.9895,
+      "narrow_qmv": 2472.1357500000004,
+      "other": 8479.85,
+      "rounds": 4,
+      "total": 88975.93575000002,
+      "wide_qmv": 77506.96050000002
+    },
+    "w5": {
+      "dose": 0.0,
+      "gather_qmv": 684.5917999999999,
+      "narrow_qmv": 3319.5498,
+      "other": 11143.967399999998,
+      "rounds": 5,
+      "total": 105751.39979999998,
+      "wide_qmv": 90603.29079999999
+    },
+    "w6": {
+      "dose": 0.0,
+      "gather_qmv": 851.7416,
+      "narrow_qmv": 4175.358,
+      "other": 6338.031199999999,
+      "rounds": 5,
+      "total": 133275.3994,
+      "wide_qmv": 121910.2686
+    },
+    "w7": {
+      "dose": 0.0,
+      "gather_qmv": 1022.93,
+      "narrow_qmv": 5025.180666666667,
+      "other": 6022.749666666667,
+      "rounds": 3,
+      "total": 144131.21933333334,
+      "wide_qmv": 132060.359
+    },
+    "w8": {
+      "dose": 0.0,
+      "gather_qmv": 1191.75335,
+      "narrow_qmv": 5883.9527499999995,
+      "other": 7439.662466666666,
+      "rounds": 60,
+      "total": 157286.97155000002,
+      "wide_qmv": 142771.60298333335
+    }
+  },
+  "rounds_by_width": {
+    "w0": 2,
+    "w1": 512,
+    "w2": 1,
+    "w4": 4,
+    "w5": 5,
+    "w6": 5,
+    "w7": 3,
+    "w8": 60
+  },
+  "rung": 4,
+  "tag": "e116r4-realised-512",
+  "timing_valid": false
+}
