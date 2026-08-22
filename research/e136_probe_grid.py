@@ -119,10 +119,22 @@ def marginal(rows):
 
 # F4 section 4. The advisor's instrument priced the real board move from
 # p=0.25 to p=0.15 at +0.0992 % F83-weighted. The byte model above prices the
-# same edit at +0.3403 %. The byte model therefore runs hot by this factor on
-# this exact edit, and the grid reports both columns rather than pretending the
-# discrepancy is not there.
+# same edit at +0.3403 %.
+#
+# F5 section 3 corrected my first reading of that gap. It is NOT a bias in the
+# byte model. It is the acceptance cost of that specific edit: probing 1,229
+# fewer leaves loses real shortlist quality, and the gross byte column does
+# not carry the loss. So the factor belongs to the shipped ladder alone, where
+# lowering `p` throws probed rows away. C1 keeps the probe fraction and lowers
+# the cost per probed row, and its own acceptance loss is already measured and
+# subtracted, so applying this factor to C1 would charge it twice.
 BOARD_SCALE = 0.0992 / 0.3403
+
+# `e133_screen` names the ARM `exact0-N4096-p0.25` but the FAMILY `exact`, and
+# an unrecognised family here silently anchors the shipped ladder on C1's
+# probe fraction, so the names are asserted rather than compared inline.
+SHIPPED_FAMILY = "exact"
+C1_FAMILY = "lowrank"
 
 NULL_FLOOR = "research/e136-null-floor.json"
 
@@ -223,15 +235,20 @@ def merge_screen(path):
                 prior["predicted_pct_absolute"] or -1e9):
             ladders[family][row["p"]] = row
 
+    unknown = set(ladders) - {SHIPPED_FAMILY, C1_FAMILY}
+    assert not unknown, f"unrecognised screen family: {sorted(unknown)}"
     for family, by_p in ladders.items():
-        anchor = C1_P if family != "exact0" else SHIPPED_P
+        shipped = family == SHIPPED_FAMILY
+        anchor = SHIPPED_P if shipped else C1_P
         if anchor not in by_p:
             anchor = max(by_p)
         base = by_p[anchor]
+        scale = BOARD_SCALE if shipped else 1.0
         for row in by_p.values():
             row["anchor_p"] = anchor
+            row["board_scale_applied"] = scale
             row["d_gross_pct"] = row["gross_pct"] - base["gross_pct"]
-            row["d_gross_pct_scaled"] = row["d_gross_pct"] * BOARD_SCALE
+            row["d_gross_pct_scaled"] = row["d_gross_pct"] * scale
             row["d_acc_loss_pp"] = 100.0 * (
                 row["acc_loss_wg"] - base["acc_loss_wg"])
             row["d_net_pct"] = (row["predicted_pct_gating"]
