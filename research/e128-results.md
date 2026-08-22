@@ -454,3 +454,94 @@ Against our curve the shipped flat `0.18`:
 As a pipeline validation, running the same fitter against the board's own
 control points reproduces F97's published price vector exactly, so the
 difference above is a difference in the data, not in the fitter.
+
+---
+
+## Section 6 — every arm repriced on our curve
+
+### The sign does not change
+
+Every implementable arm is negative on our curve, exactly as it was on the
+board curve. The E128 conclusion survives the curve swap.
+
+```
+arm            board curve   our curve    change
+ship                0.0000      0.0000
+marginfull         -0.3300     -0.3561     -0.03
+expectedonly       -0.7600     -0.6772     +0.08
+levelfix           -1.0200     -0.9673     +0.05
+recal              -1.3300     -1.2092     +0.12
+reachonly          -1.9700     -1.8542     +0.12
+nomargin1          -2.1800     -1.9507     +0.23
+nomargin0          -2.4400     -2.1716     +0.27
+nomargin           -4.0300     -3.7049     +0.33
+marginup           -4.5400     -4.2494     +0.29
+rankedprice        -5.6300     -2.8508     +2.78
+jensen_both        -7.6200     -7.8260     -0.21
+jensen            -11.0700    -11.1665     -0.10
+static7           -16.5900    -16.5209     +0.07
+oracle             +9.0800     +8.5248     -0.56
+```
+
+Best implementable arm is `marginfull` at **-0.356 %**. Oracle is **+8.52 %**.
+
+The only arm that moves materially is `rankedprice`, from -5.63 % to -2.85 %.
+That is a check on the fit rather than a new result: `rankedprice` is the arm
+that prices draft rows from the ranked cost curve itself, so a curve closer to
+our own hardware makes it less wrong. It is still 2.85 % worse than the shipped
+flat price.
+
+### Why nothing is recovered, stated plainly
+
+Section 5 shows the shipped flat `0.18` is wrong in three directions at once
+against our curve. Section 6 shows that repricing with the correct curve
+recovers nothing. Both are true, and the reason is that the three errors cancel
+under the realised depth distribution. The price-constant sweep repeated on our
+curve still peaks exactly at the shipped value:
+
+```
+0.06  -9.99    0.14  -2.24    0.18   0.00    0.23  -4.12    0.30 -15.62
+0.09  -5.70    0.16  -1.06    0.20  -0.49    0.26  -8.28    0.36 -31.52
+```
+
+**The shipped price is not right for the reason the code implies, but it is
+right where it lands.**
+
+### Sensitivity, including the moved crown
+
+Ten variants. The headline conclusion holds in nine of them:
+
+```
+variant             marginfull   levelfix  reachonly     oracle
+headline               -0.3561    -0.9673    -1.8542    +8.5248
+constant_p             -0.0253    +0.2467    -0.2462   +12.2410
+shuffle_margins        -3.2060    +0.3434    -0.0654   +11.5990
+drop_zero_weight       -0.3561    -0.9673    -1.8542    +8.5248
+seed_777               -0.2851    -0.8657    -1.8106    +8.6394
+single_fixture_a       -0.6477    -0.9280    -1.8689    +8.5540
+single_fixture_b       +0.1247    -0.9599    -1.8024    +8.7489
+benchfixture_only      -1.9715    -0.4679    -1.6349   +25.9863
+receipt_crown          -0.3965    -1.1473    -2.0326    +8.4976
+receipt_ec778a91       -0.3548    -1.0830    -1.9689    +8.5680
+```
+
+Three of these deserve comment.
+
+**`receipt_crown` re-anchors the whole pass on `d3c491b5` = `3.49065044`,** the
+receipt that took the crown. This is the direct answer to the F3 question of
+whether the moved frontier changes the conclusion. It does not: `marginfull`
+goes from -0.3561 to -0.3965 and every other implementable arm moves further
+negative, not less.
+
+**`constant_p` and `shuffle_margins` are the only variants that turn `levelfix`
+positive,** at +0.2467 and +0.3434. Both are the deliberate controls that
+destroy the margin signal — the first replaces the per-round acceptance
+probability with a constant, the second permutes the margins across rounds.
+Correcting the estimator level helps only once the margin override has been
+stripped of its information. That is a confirmation that the override is doing
+real work, not an escape route for the hypothesis.
+
+**`single_fixture_b` is the one variant with a positive `marginfull`,** at
++0.1247. It is a single-fixture median, so it is one prompt's arithmetic rather
+than a ranked estimate, and it is a quarter the size of the +0.20 % threshold
+the assignment set.
