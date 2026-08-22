@@ -26,9 +26,16 @@ hot block become comparable, and the reference cell itself is exactly `anchor`.
 Ranked pricing
 --------------
 CAMPAIGN RULE 115: convert through absolute microseconds, never through a
-local ratio. An isolated saving is priced as
+local ratio.
 
-    ranked_pct = saving_us * IN_SITU_TRANSFER * HOST_TRANSFER * mass / RANKED_ROUND_US
+CAMPAIGN RULE 116 supersedes the single-number form of that conversion. The
+published score is `median(raw_1 .. raw_8)`, and FINDING 196 shows the sorted
+order of the eight prompts is stable, so the median is always the mean of the
+beagle and essays ratios. A mass-weighted sum cannot represent that, because
+the saturation cap is a property of sorting rather than of a linear
+combination. This script therefore reports the saving as absolute microseconds
+per round at each verify width, per shape, with the dispatch count it
+multiplied by, and stops short of forming a headline ranked percentage.
 
 `harness=local` for every number this script produces.
 """
@@ -46,17 +53,19 @@ import sys
 # so an isolated microsecond is worth 0.7858 in-situ microseconds.
 IN_SITU_TRANSFER = 30750.8 / 39134.9
 HOST_TRANSFER = 0.65  # RULE 115, M4 Pro g16s -> ranked M5 g17s
-RANKED_ROUND_US = 54000.0  # RULE 115, F83-weighted ranked round
 LOCAL_ROUND_US = 196000.0  # RULE 115, local round
 
-# F83 ranked width masses.
-RANKED_WIDTH_MASS = {
-    4: 0.1017,
-    5: 0.1251,
-    6: 0.188,
-    7: 0.211,
-    8: 0.1871,
+# FINDING 196. The sorted order of the eight hidden prompts is stable, so the
+# published median is always the mean of the beagle and essays ratios. Only
+# these two prompts carry marginal weight, and only their own width masses can
+# convert a per-round microsecond saving into a score movement. The earlier
+# F83 campaign-wide width table is withdrawn as an instrument: its weights sum
+# to 0.9192, so it understated every broad mechanism by 8.79 % relative.
+F196_PROMPT_WIDTH_MASS = {
+    "beagle": {5: 0.0920, 6: 0.0739, 7: 0.0589, 8: 0.3388},
+    "essays": {5: 0.1995, 6: 0.1558, 7: 0.1408, 8: 0.2958},
 }
+F196_MEDIAN_WEIGHT = {"beagle": 0.478, "essays": 0.522}
 
 
 def median(values: list[float]) -> float:
@@ -378,46 +387,99 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
         "pipelines if the plan saving clears that tax.",
     }
 
-    # RULE 115 ranked pricing of every width where a plan beats the shipped one.
-    pricing = {}
-    for m, block in per_width.items():
-        ship = block["shipped_total_us"]
-        if ship is None:
+    # CAMPAIGN RULE 116. Report the saving as absolute microseconds per round
+    # at each verify width, per shape and in total, with the dispatch count
+    # that produced the weighting. No mass is applied and no percentage of a
+    # ranked round is formed here: the published score is the mean of the two
+    # central sorted prompts, and a weighted sum cannot represent that.
+    ladder = {}
+    for m, block in sorted(per_width.items()):
+        ship = block["shipped_cell"]
+        if ship is None or ship not in block["global_totals_us"]:
             continue
-        for label, total in (
-            ("best_global", block["best_global_total_us"]),
-            ("shape_keyed", block["shape_keyed_total_us"]),
+        arms = {}
+        for label, cell_of in (
+            ("best_global", {n: block["best_global_cell"] for n in shapes}),
+            ("shape_keyed", block["shape_keyed_choice"]),
         ):
-            saving = ship - total
-            mass = RANKED_WIDTH_MASS.get(m, 0.0)
-            pricing[f"m{m}_{label}"] = {
-                "saving_us_isolated": saving,
-                "in_situ_us": saving * IN_SITU_TRANSFER,
-                "ranked_us_at_this_width": saving
-                * IN_SITU_TRANSFER
+            per_shape = {}
+            for name in shapes:
+                calls = shapes[name]["calls_per_verify"]
+                one = (
+                    table[(name, ship)]["us_per_call"]
+                    - table[(name, cell_of[name])]["us_per_call"]
+                )
+                per_shape[name] = {
+                    "plan": cell_of[name],
+                    "calls_per_round": calls,
+                    "saving_us_per_call_isolated": one,
+                    "saving_us_per_round_isolated": one * calls,
+                    "saving_us_per_round_in_situ": one * calls
+                    * IN_SITU_TRANSFER,
+                    "saving_us_per_round_ranked_host": one * calls
+                    * IN_SITU_TRANSFER * HOST_TRANSFER,
+                }
+            total = sum(
+                s["saving_us_per_round_isolated"] for s in per_shape.values()
+            )
+            arms[label] = {
+                "per_shape": per_shape,
+                "distinct_plans": sorted({s["plan"] for s in
+                                          per_shape.values()}),
+                "total_us_per_round_isolated": total,
+                "total_us_per_round_in_situ": total * IN_SITU_TRANSFER,
+                "total_us_per_round_ranked_host": total * IN_SITU_TRANSFER
                 * HOST_TRANSFER,
-                "ranked_mass": mass,
-                "ranked_round_pct": 100.0
-                * saving
-                * IN_SITU_TRANSFER
-                * HOST_TRANSFER
-                * mass
-                / RANKED_ROUND_US,
             }
-    out["ranked_pricing"] = pricing
-    out["ranked_pricing_constants"] = {
+        ladder[m] = {"shipped_cell": ship, "arms": arms}
+    out["width_ladder"] = ladder
+    out["width_ladder_constants"] = {
         "in_situ_transfer": IN_SITU_TRANSFER,
+        "in_situ_transfer_source": "E137, 30750.8 isolated / 39134.9 in-situ",
         "host_transfer": HOST_TRANSFER,
-        "ranked_round_us": RANKED_ROUND_US,
-        "local_round_us": LOCAL_ROUND_US,
-        "rule": "CAMPAIGN RULE 115",
+        "host_transfer_source": "RULE 115, M4 Pro g16s -> ranked M5 g17s",
+        "rule": "CAMPAIGN RULE 116",
+        "note": "absolute microseconds per round at each verify width; "
+        "no width mass and no ranked percentage are applied here",
     }
-    if pricing:
-        out["ranked_pricing_total_pct"] = sum(
-            block["ranked_round_pct"]
-            for name, block in pricing.items()
-            if name.endswith("_shape_keyed")
-        )
+
+    # FINDING 196 rebuild. Only beagle and essays can move the published
+    # score, so the round saving is rebuilt for those two prompts from their
+    # own width masses. This is a per-prompt round time, not a median, and it
+    # is deliberately not summed into one ranked number.
+    rebuild = {}
+    for prompt, mass in F196_PROMPT_WIDTH_MASS.items():
+        arms = {}
+        for label in ("best_global", "shape_keyed"):
+            covered = {m: mass[m] for m in mass if m in ladder}
+            arms[label] = {
+                "per_width_us": {
+                    m: mass[m]
+                    * ladder[m]["arms"][label]["total_us_per_round_in_situ"]
+                    for m in covered
+                },
+                "saving_us_per_round_in_situ": sum(
+                    mass[m]
+                    * ladder[m]["arms"][label]["total_us_per_round_in_situ"]
+                    for m in covered
+                ),
+                "saving_us_per_round_ranked_host": sum(
+                    mass[m]
+                    * ladder[m]["arms"][label][
+                        "total_us_per_round_ranked_host"]
+                    for m in covered
+                ),
+                "width_mass_covered": sum(covered.values()),
+                "width_mass_total": sum(mass.values()),
+            }
+        rebuild[prompt] = {"width_mass": mass, "arms": arms}
+    out["finding_196_prompt_rebuild"] = rebuild
+    out["finding_196_note"] = (
+        "published score = (beagle_raw + essays_raw) / 2. These are per-prompt "
+        "round savings in microseconds. Converting them to a score needs each "
+        "prompt's own baseline round time and the essays saturation cap, so "
+        "this script does not form a headline ranked percentage."
+    )
     return out
 
 
@@ -534,14 +596,77 @@ def report(result: dict) -> str:
         "",
     ]
 
-    if result["ranked_pricing"]:
-        lines.append("RULE 115 ranked pricing (absolute microseconds)")
-        for name, block in sorted(result["ranked_pricing"].items()):
+    if result["width_ladder"]:
+        lines.append(
+            "RULE 116 width ladder: microseconds saved per round, by width"
+        )
+        lines.append(
+            "  in-situ applies %.4f (E137). ranked-host also applies %.2f."
+            % (IN_SITU_TRANSFER, HOST_TRANSFER)
+        )
+        lines.append("  no width mass and no ranked percentage are applied")
+        for m, block in sorted(result["width_ladder"].items()):
+            lines.append("")
             lines.append(
-                f"    {name:<24} saving {block['saving_us_isolated']:9.1f} us"
-                f"  mass {block['ranked_mass']:.4f}"
-                f"  ranked {block['ranked_round_pct']:+6.3f} %"
+                f"  M={m}   shipped {block['shipped_cell']}"
             )
+            for label, arm in sorted(block["arms"].items()):
+                lines.append(
+                    f"    {label}  plans {','.join(arm['distinct_plans'])}"
+                )
+                lines.append(
+                    "      %-34s %5s %11s %11s"
+                    % ("shape", "calls", "us/call", "us/round")
+                )
+                for name, s in sorted(
+                    arm["per_shape"].items(),
+                    key=lambda kv: -abs(kv[1]["saving_us_per_round_isolated"]),
+                ):
+                    lines.append(
+                        "      %-34s %5d %11.3f %11.1f"
+                        % (name, s["calls_per_round"],
+                           s["saving_us_per_call_isolated"],
+                           s["saving_us_per_round_isolated"])
+                    )
+                lines.append(
+                    "      %-34s %5s %11s %11.1f isolated"
+                    % ("TOTAL", "", "", arm["total_us_per_round_isolated"])
+                )
+                lines.append(
+                    "      %-34s %5s %11s %11.1f in-situ"
+                    % ("", "", "", arm["total_us_per_round_in_situ"])
+                )
+                lines.append(
+                    "      %-34s %5s %11s %11.1f ranked-host"
+                    % ("", "", "", arm["total_us_per_round_ranked_host"])
+                )
+        lines.append("")
+        lines.append(
+            "FINDING 196 rebuild: only beagle and essays move the median"
+        )
+        for prompt, block in sorted(result["finding_196_prompt_rebuild"]
+                                    .items()):
+            arm = block["arms"]["shape_keyed"]
+            best = block["arms"]["best_global"]
+            masses = " ".join(
+                f"m{m}={v:.4f}" for m, v in sorted(block["width_mass"].items())
+            )
+            lines.append(f"  {prompt}   {masses}")
+            lines.append(
+                "    per-round saving in-situ  best_global %8.1f us"
+                "   shape_keyed %8.1f us"
+                % (best["saving_us_per_round_in_situ"],
+                   arm["saving_us_per_round_in_situ"])
+            )
+            lines.append(
+                "    width mass covered by this sweep: %.4f of %.4f"
+                % (arm["width_mass_covered"], arm["width_mass_total"])
+            )
+        lines.append("")
+        lines.append(
+            "  a headline ranked percentage is deliberately NOT formed here; "
+            "see finding_196_note"
+        )
         lines.append("")
 
     if result["problems"]:

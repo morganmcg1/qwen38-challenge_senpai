@@ -250,7 +250,29 @@ def rung_timing(files: list[str]) -> tuple[dict, dict]:
         for m, block in result["per_width"].items()
     }, summary)
     flatten("step", result.get("step", {}), summary)
-    flatten("ranked_pricing", result["ranked_pricing"], summary)
+    flatten("width_ladder", {
+        f"m{m}_{label}": {
+            "total_us_per_round_isolated":
+                arm["total_us_per_round_isolated"],
+            "total_us_per_round_in_situ":
+                arm["total_us_per_round_in_situ"],
+            "total_us_per_round_ranked_host":
+                arm["total_us_per_round_ranked_host"],
+        }
+        for m, block in result["width_ladder"].items()
+        for label, arm in block["arms"].items()
+    }, summary)
+    flatten("f196", {
+        f"{prompt}_{label}": {
+            "saving_us_per_round_in_situ":
+                arm["saving_us_per_round_in_situ"],
+            "saving_us_per_round_ranked_host":
+                arm["saving_us_per_round_ranked_host"],
+            "width_mass_covered": arm["width_mass_covered"],
+        }
+        for prompt, block in result["finding_196_prompt_rebuild"].items()
+        for label, arm in block["arms"].items()
+    }, summary)
     flatten("pipeline_count", {
         k: v
         for k, v in result["pipeline_count"].items()
@@ -389,7 +411,10 @@ def main() -> int:
         "dispatch_weights": "48/48/16/16/64/64/1 = 257 per verify forward",
         "rule_115_in_situ_transfer": analysis.IN_SITU_TRANSFER,
         "rule_115_host_transfer": analysis.HOST_TRANSFER,
-        "rule_115_ranked_round_us": analysis.RANKED_ROUND_US,
+        "rule_116_reporting": "absolute us per round per verify width; "
+        "no width mass and no ranked percentage in the headline",
+        "finding_196_median_weights": analysis.F196_MEDIAN_WEIGHT,
+        "finding_83_withdrawn": True,
     }
 
     if args.dry:
