@@ -713,6 +713,7 @@ def main() -> int:
             legs[leg["prompt_id"]] = leg
 
     validation = []
+    validation_gate = None
     if args.shipped:
         shipped = {leg["prompt_id"]: leg
                    for leg in json.loads(args.shipped.read_text())["legs"]}
@@ -727,10 +728,33 @@ def main() -> int:
                 row["simulated_depth"] - row["measured_depth"],
                 row["measured_accept"], row["simulated_accept"]))
         errs = [r["simulated_depth"] - r["measured_depth"] for r in validation]
+        aerrs = [r["simulated_accept"] - r["measured_accept"]
+                 for r in validation]
         if errs:
-            print("depth error: mean %+0.3f, max |err| %0.3f over %d fixtures"
+            print("depth error:  mean %+0.3f, max |err| %0.3f over %d fixtures"
                   % (sum(errs) / len(errs), max(abs(e) for e in errs),
                      len(errs)))
+            print("accept error: mean %+0.4f, max |err| %0.4f"
+                  % (sum(aerrs) / len(aerrs), max(abs(e) for e in aerrs)))
+            # Pre-registered gate. The simulator has one free level parameter
+            # per prompt and it is fitted on depth, so a depth bias here is a
+            # bias the fit absorbs, while an accept bias is not corrected
+            # anywhere. Both have to be small for a counterfactual to mean
+            # anything.
+            validation_gate = {
+                "mean_depth_error": sum(errs) / len(errs),
+                "max_abs_depth_error": max(abs(e) for e in errs),
+                "mean_accept_error": sum(aerrs) / len(aerrs),
+                "max_abs_accept_error": max(abs(e) for e in aerrs),
+                "fixtures": len(errs),
+                "depth_tolerance": 0.25,
+                "accept_tolerance": 0.05,
+                "passed": (abs(sum(errs) / len(errs)) <= 0.25
+                           and abs(sum(aerrs) / len(aerrs)) <= 0.05),
+            }
+            print("zero-parameter validation gate: %s "
+                  "(|mean depth err| <= 0.25 and |mean accept err| <= 0.05)"
+                  % ("PASS" if validation_gate["passed"] else "FAIL"))
 
     receipt = load_board_receipt(args.board, args.receipt)
     data = price(legs, receipt, args.windows, args.fit_windows)
@@ -798,6 +822,7 @@ def main() -> int:
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         data["validation"] = validation
+        data["validation_gate"] = validation_gate
         args.json.write_text(json.dumps(data, indent=2) + "\n")
 
     if args.sensitivity_json:

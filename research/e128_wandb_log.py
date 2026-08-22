@@ -285,6 +285,27 @@ def log_rung2() -> None:
         "receipt_median_reconstruction_error":
             data["base_median"] - data["receipt"]["score"],
     })
+    gate = data.get("validation_gate")
+    if gate:
+        run.summary.update({
+            "validation_gate_passed": gate["passed"],
+            "validation_mean_depth_error": gate["mean_depth_error"],
+            "validation_max_abs_depth_error": gate["max_abs_depth_error"],
+            "validation_mean_accept_error": gate["mean_accept_error"],
+            "validation_max_abs_accept_error": gate["max_abs_accept_error"],
+            "validation_fixtures": gate["fixtures"],
+        })
+    if data.get("validation"):
+        table = wandb.Table(columns=[
+            "fixture", "measured_depth", "simulated_depth", "depth_error",
+            "measured_accept", "simulated_accept", "accept_error"])
+        for row in data["validation"]:
+            table.add_data(
+                row["fixture"], row["measured_depth"], row["simulated_depth"],
+                row["simulated_depth"] - row["measured_depth"],
+                row["measured_accept"], row["simulated_accept"],
+                row["simulated_accept"] - row["measured_accept"])
+        run.log({"zero_parameter_validation": table})
     run.summary.update({
         "%s_ranked_median_pct" % arm: gains[arm]
         for arm in ("static7", "nomargin", "nomargin0", "nomargin1", "recal",
