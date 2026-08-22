@@ -1,0 +1,103 @@
+{
+  "f_hat": 50.4,
+  "f_se": 253.0,
+  "curve_unit": 10187.2,
+  "tables": {
+    "{6:6}": {
+      "measured f = 50.4|c=0.0": {
+        "touched_only": 0.006754536710840142,
+        "residency_everywhere": 0.006754536710840142,
+        "f83_weighted": 0.011647508782325993
+      },
+      "measured f = 50.4|c=0.445": {
+        "touched_only": -1.6593938248733897,
+        "residency_everywhere": -5.541724562488581,
+        "f83_weighted": -0.7829636379336857
+      },
+      "upper 95 % f = 546.2|c=0.0": {
+        "touched_only": 0.07326078193348184,
+        "residency_everywhere": 0.07326078193348184,
+        "f83_weighted": 0.12658498203337884
+      },
+      "upper 95 % f = 546.2|c=0.445": {
+        "touched_only": -1.411122475636517,
+        "residency_everywhere": -5.478908153150474,
+        "f83_weighted": -0.6656891020382104
+      },
+      "curve tier unit = 10187.2|c=0.0": {
+        "touched_only": 1.3842444649097896,
+        "residency_everywhere": 1.3842444649097896,
+        "f83_weighted": 2.49388989167405
+      },
+      "curve tier unit = 10187.2|c=0.445": {
+        "touched_only": 0.9853919677969447,
+        "residency_everywhere": -4.240659212923104,
+        "f83_weighted": 1.7520762347162886
+      }
+    },
+    "{6:6,7:7}": {
+      "measured f = 50.4|c=0.0": {
+        "touched_only": 0.015569103488011216,
+        "residency_everywhere": 0.015569103488011216,
+        "f83_weighted": 0.021951184619333777
+      },
+      "measured f = 50.4|c=0.445": {
+        "touched_only": -2.8792128932863204,
+        "residency_everywhere": -5.533399037074249,
+        "f83_weighted": -1.5197693692539536
+      },
+      "upper 95 % f = 546.2|c=0.0": {
+        "touched_only": 0.16902887209320205,
+        "residency_everywhere": 0.16902887209320205,
+        "f83_weighted": 0.23896060178806472
+      },
+      "upper 95 % f = 546.2|c=0.445": {
+        "touched_only": -2.4712745568090444,
+        "residency_everywhere": -5.388453376567237,
+        "f83_weighted": -1.3036721387349337
+      },
+      "curve tier unit = 10187.2|c=0.0": {
+        "touched_only": 2.431156775619958,
+        "residency_everywhere": 2.431156775619958,
+        "f83_weighted": 4.885328469392929
+      },
+      "curve tier unit = 10187.2|c=0.445": {
+        "touched_only": 1.7730527377041394,
+        "residency_everywhere": -3.251830689668911,
+        "f83_weighted": 3.3181514302478323
+      }
+    },
+    "{6:6,7:7,8:8}": {
+      "measured f = 50.4|c=0.0": {
+        "touched_only": 0.05104835630811433,
+        "residency_everywhere": 0.05104835630811433,
+        "f83_weighted": 0.04833980676333454
+      },
+      "measured f = 50.4|c=0.445": {
+        "touched_only": -4.070400720246925,
+        "residency_everywhere": -5.49988821022337,
+        "f83_weighted": -3.5527881054717616
+      },
+      "upper 95 % f = 546.2|c=0.0": {
+        "touched_only": 0.5561569075508865,
+        "residency_everywhere": 0.5561569075508865,
+        "f83_weighted": 0.5267867066341603
+      },
+      "upper 95 % f = 546.2|c=0.445": {
+        "touched_only": -3.514841124922119,
+        "residency_everywhere": -5.022803608486626,
+        "f83_weighted": -3.0863063402264563
+      },
+      "curve tier unit = 10187.2|c=0.0": {
+        "touched_only": 11.116916473690996,
+        "residency_everywhere": 11.116916473690996,
+        "f83_weighted": 10.98606220072213
+      },
+      "curve tier unit = 10187.2|c=0.445": {
+        "touched_only": 7.210307383633463,
+        "residency_everywhere": 4.9520339967234595,
+        "f83_weighted": 7.126253596341138
+      }
+    }
+  }
+}

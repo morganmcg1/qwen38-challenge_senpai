@@ -1,0 +1,65 @@
+{
+  "F13 retracted": {
+    "share": 0.0182,
+    "us_per_round": 1012.7462800000001,
+    "h_us_per_step": 231.12466970954358,
+    "implied_rate_gbs": 1400.0669007192455,
+    "target_k_lo": 3214.9471371380982,
+    "target_k_hi": 5092.406694985123,
+    "target_ratio": 1.5839783603777429
+  },
+  "byte/rate at 462.2 GB/s": {
+    "share": 0.0551,
+    "us_per_round": 3066.06154,
+    "h_us_per_step": 699.723587966805,
+    "implied_rate_gbs": 462.4540398020013,
+    "target_k_lo": 2746.3482188808366,
+    "target_k_hi": 4623.807776727862,
+    "target_ratio": 1.6836203599163795
+  },
+  "corrected low 7 %": {
+    "share": 0.07,
+    "us_per_round": 3895.1780000000003,
+    "h_us_per_step": 888.9410373443984,
+    "implied_rate_gbs": 364.0173941870039,
+    "target_k_lo": 2557.1307695032433,
+    "target_k_hi": 4434.590327350268,
+    "target_ratio": 1.7342055323247103
+  },
+  "rung-0b via F35": {
+    "share": 0.071,
+    "us_per_round": 3950.8233999999998,
+    "h_us_per_step": 901.6401950207469,
+    "implied_rate_gbs": 358.89038863507426,
+    "target_k_lo": 2544.431611826895,
+    "target_k_hi": 4421.89116967392,
+    "target_ratio": 1.7378699231373778
+  },
+  "E79 anchor": {
+    "share": 0.084,
+    "us_per_round": 4674.2136,
+    "h_us_per_step": 1066.729244813278,
+    "implied_rate_gbs": 303.3478284891699,
+    "target_k_lo": 2379.3425620343637,
+    "target_k_hi": 4256.802119881389,
+    "target_ratio": 1.7890665210652885
+  },
+  "corrected high 9 %": {
+    "share": 0.09,
+    "us_per_round": 5008.086,
+    "h_us_per_step": 1142.9241908713693,
+    "implied_rate_gbs": 283.1246399232253,
+    "target_k_lo": 2303.1476159762724,
+    "target_k_hi": 4180.607173823298,
+    "target_ratio": 1.8151711791392042
+  },
+  "E82 draft_build local": {
+    "share": 0.1006,
+    "us_per_round": 5597.92724,
+    "h_us_per_step": 1277.535262240664,
+    "implied_rate_gbs": 253.2924214024878,
+    "target_k_lo": 2168.5365446069777,
+    "target_k_hi": 4045.996102454003,
+    "target_ratio": 1.8657726163371129
+  }
+}
