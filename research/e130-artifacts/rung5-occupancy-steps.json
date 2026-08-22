@@ -1,0 +1,305 @@
+{
+  "harness": "local",
+  "device": "Apple M4 Pro",
+  "threadgroups_dispatched": 8192,
+  "threads_per_threadgroup": 256,
+  "replicates": 3,
+  "median_peak_by_registers": {
+    "4": 214.0,
+    "6": 156.0,
+    "8": 147.0,
+    "9": 149.0,
+    "11": 149.0,
+    "14": 154.0,
+    "15": 156.0,
+    "17": 155.0,
+    "18": 127.0,
+    "20": 159.0,
+    "21": 153.0,
+    "23": 160.0,
+    "26": 160.0,
+    "27": 156.0,
+    "29": 154.0,
+    "31": 143.0,
+    "34": 160.0,
+    "35": 157.0,
+    "36": 92.0,
+    "37": 153.0,
+    "38": 90.0,
+    "39": 84.0,
+    "40": 155.0,
+    "41": 153.0,
+    "42": 88.0,
+    "43": 150.0,
+    "44": 83.0,
+    "45": 81.0,
+    "46": 146.0,
+    "47": 154.0,
+    "48": 77.0,
+    "49": 154.0,
+    "50": 76.0,
+    "51": 143.0,
+    "52": 80.0,
+    "53": 143.0,
+    "54": 80.0,
+    "55": 149.0,
+    "56": 80.0,
+    "57": 152.0,
+    "58": 80.0,
+    "59": 140.0,
+    "60": 80.0,
+    "61": 142.0,
+    "62": 80.0,
+    "63": 132.0,
+    "64": 80.0,
+    "65": 145.0,
+    "66": 80.0,
+    "67": 80.0,
+    "68": 80.0,
+    "69": 82.0,
+    "70": 80.0,
+    "71": 80.0,
+    "72": 80.0,
+    "73": 80.0,
+    "74": 80.0,
+    "75": 80.0,
+    "76": 80.0,
+    "77": 80.0,
+    "78": 80.0,
+    "79": 80.0,
+    "80": 80.0,
+    "81": 80.0,
+    "82": 80.0,
+    "83": 79.0,
+    "84": 80.0,
+    "85": 80.0,
+    "86": 80.0,
+    "87": 80.0,
+    "88": 80.0,
+    "89": 80.0,
+    "90": 80.0,
+    "91": 80.0,
+    "92": 80.0,
+    "93": 75.0,
+    "94": 80.0,
+    "95": 80.0,
+    "96": 77.0
+  },
+  "steps": [
+    {
+      "from_registers": 4,
+      "to_registers": 6,
+      "from_peak": 214.0,
+      "to_peak": 156.0,
+      "relative_change": -0.27102803738317754
+    },
+    {
+      "from_registers": 17,
+      "to_registers": 18,
+      "from_peak": 155.0,
+      "to_peak": 127.0,
+      "relative_change": -0.18064516129032257
+    },
+    {
+      "from_registers": 18,
+      "to_registers": 20,
+      "from_peak": 127.0,
+      "to_peak": 159.0,
+      "relative_change": 0.25196850393700787
+    },
+    {
+      "from_registers": 35,
+      "to_registers": 36,
+      "from_peak": 157.0,
+      "to_peak": 92.0,
+      "relative_change": -0.4140127388535032
+    },
+    {
+      "from_registers": 36,
+      "to_registers": 37,
+      "from_peak": 92.0,
+      "to_peak": 153.0,
+      "relative_change": 0.6630434782608695
+    },
+    {
+      "from_registers": 37,
+      "to_registers": 38,
+      "from_peak": 153.0,
+      "to_peak": 90.0,
+      "relative_change": -0.4117647058823529
+    },
+    {
+      "from_registers": 39,
+      "to_registers": 40,
+      "from_peak": 84.0,
+      "to_peak": 155.0,
+      "relative_change": 0.8452380952380952
+    },
+    {
+      "from_registers": 41,
+      "to_registers": 42,
+      "from_peak": 153.0,
+      "to_peak": 88.0,
+      "relative_change": -0.42483660130718953
+    },
+    {
+      "from_registers": 42,
+      "to_registers": 43,
+      "from_peak": 88.0,
+      "to_peak": 150.0,
+      "relative_change": 0.7045454545454546
+    },
+    {
+      "from_registers": 43,
+      "to_registers": 44,
+      "from_peak": 150.0,
+      "to_peak": 83.0,
+      "relative_change": -0.44666666666666666
+    },
+    {
+      "from_registers": 45,
+      "to_registers": 46,
+      "from_peak": 81.0,
+      "to_peak": 146.0,
+      "relative_change": 0.8024691358024691
+    },
+    {
+      "from_registers": 47,
+      "to_registers": 48,
+      "from_peak": 154.0,
+      "to_peak": 77.0,
+      "relative_change": -0.5
+    },
+    {
+      "from_registers": 48,
+      "to_registers": 49,
+      "from_peak": 77.0,
+      "to_peak": 154.0,
+      "relative_change": 1.0
+    },
+    {
+      "from_registers": 49,
+      "to_registers": 50,
+      "from_peak": 154.0,
+      "to_peak": 76.0,
+      "relative_change": -0.5064935064935064
+    },
+    {
+      "from_registers": 50,
+      "to_registers": 51,
+      "from_peak": 76.0,
+      "to_peak": 143.0,
+      "relative_change": 0.881578947368421
+    },
+    {
+      "from_registers": 51,
+      "to_registers": 52,
+      "from_peak": 143.0,
+      "to_peak": 80.0,
+      "relative_change": -0.4405594405594406
+    },
+    {
+      "from_registers": 52,
+      "to_registers": 53,
+      "from_peak": 80.0,
+      "to_peak": 143.0,
+      "relative_change": 0.7875
+    },
+    {
+      "from_registers": 53,
+      "to_registers": 54,
+      "from_peak": 143.0,
+      "to_peak": 80.0,
+      "relative_change": -0.4405594405594406
+    },
+    {
+      "from_registers": 54,
+      "to_registers": 55,
+      "from_peak": 80.0,
+      "to_peak": 149.0,
+      "relative_change": 0.8625
+    },
+    {
+      "from_registers": 55,
+      "to_registers": 56,
+      "from_peak": 149.0,
+      "to_peak": 80.0,
+      "relative_change": -0.46308724832214765
+    },
+    {
+      "from_registers": 56,
+      "to_registers": 57,
+      "from_peak": 80.0,
+      "to_peak": 152.0,
+      "relative_change": 0.9
+    },
+    {
+      "from_registers": 57,
+      "to_registers": 58,
+      "from_peak": 152.0,
+      "to_peak": 80.0,
+      "relative_change": -0.47368421052631576
+    },
+    {
+      "from_registers": 58,
+      "to_registers": 59,
+      "from_peak": 80.0,
+      "to_peak": 140.0,
+      "relative_change": 0.75
+    },
+    {
+      "from_registers": 59,
+      "to_registers": 60,
+      "from_peak": 140.0,
+      "to_peak": 80.0,
+      "relative_change": -0.42857142857142855
+    },
+    {
+      "from_registers": 60,
+      "to_registers": 61,
+      "from_peak": 80.0,
+      "to_peak": 142.0,
+      "relative_change": 0.775
+    },
+    {
+      "from_registers": 61,
+      "to_registers": 62,
+      "from_peak": 142.0,
+      "to_peak": 80.0,
+      "relative_change": -0.43661971830985913
+    },
+    {
+      "from_registers": 62,
+      "to_registers": 63,
+      "from_peak": 80.0,
+      "to_peak": 132.0,
+      "relative_change": 0.65
+    },
+    {
+      "from_registers": 63,
+      "to_registers": 64,
+      "from_peak": 132.0,
+      "to_peak": 80.0,
+      "relative_change": -0.3939393939393939
+    },
+    {
+      "from_registers": 64,
+      "to_registers": 65,
+      "from_peak": 80.0,
+      "to_peak": 145.0,
+      "relative_change": 0.8125
+    },
+    {
+      "from_registers": 65,
+      "to_registers": 66,
+      "from_peak": 145.0,
+      "to_peak": 80.0,
+      "relative_change": -0.4482758620689655
+    }
+  ],
+  "arm_registers_before": 101,
+  "arm_registers_after": 90,
+  "arm_interval_covered_by_sweep": false,
+  "steps_inside_arm_interval": [],
+  "verdict": "UNANSWERED. the sweep does not reach 101 registers, so this measurement cannot say whether the arm crosses a step."
+}
