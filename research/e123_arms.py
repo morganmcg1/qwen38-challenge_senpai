@@ -433,13 +433,20 @@ PLANS = {
     "k_shuf16": plan("shuf", 2, 8),
     # the threadgroup scaffold at zero injected instructions
     "k_tg0": plan("tgld", 2, 0),
-    # the four new classes
+    # the four new classes, three rungs each. The 4 rung exists because the
+    # census showed `k_tgld16`, `k_tgldc16` and `k_cvt16` spill at NA=4 on the
+    # timed architecture, and a spilling rung may not be priced. 4 against 8
+    # keeps every class priceable at the width that carries 0.667 of the round.
+    "k_tgld4": plan("tgld", 2, 2),
     "k_tgld8": plan("tgld", 2, 4),
     "k_tgld16": plan("tgld", 2, 8),
+    "k_tgldc4": plan("tgldc", 2, 2),
     "k_tgldc8": plan("tgldc", 2, 4),
     "k_tgldc16": plan("tgldc", 2, 8),
+    "k_tgst4": plan("tgst", 2, 2),
     "k_tgst8": plan("tgst", 2, 4),
     "k_tgst16": plan("tgst", 2, 8),
+    "k_cvt4": plan("cvt", 2, 2),
     "k_cvt8": plan("cvt", 2, 4),
     "k_cvt16": plan("cvt", 2, 8),
     "k_barst8": plan("barst", 2, 4),
@@ -468,12 +475,16 @@ ARM_INJECTION = {
     "k_ld8": {"ld": 8}, "k_ld16": {"ld": 16},
     "k_shuf8": {"shuf": 8}, "k_shuf16": {"shuf": 16},
     "k_tg0": {"tgscaffold": 1},
+    "k_tgld4": {"tgscaffold": 1, "tgld": 4},
     "k_tgld8": {"tgscaffold": 1, "tgld": 8},
     "k_tgld16": {"tgscaffold": 1, "tgld": 16},
+    "k_tgldc4": {"tgscaffold": 1, "tgldc": 4},
     "k_tgldc8": {"tgscaffold": 1, "tgldc": 8},
     "k_tgldc16": {"tgscaffold": 1, "tgldc": 16},
+    "k_tgst4": {"tgscaffold": 1, "tgst": 4},
     "k_tgst8": {"tgscaffold": 1, "tgst": 8},
     "k_tgst16": {"tgscaffold": 1, "tgst": 16},
+    "k_cvt4": {"tgscaffold": 1, "cvt": 4},
     "k_cvt8": {"tgscaffold": 1, "cvt": 8},
     "k_cvt16": {"tgscaffold": 1, "cvt": 16},
     "k_barst8": {"tgscaffold": 1, "tgst": 8, "bar": 8},
@@ -494,10 +505,10 @@ CAL_LADDER = {
     "alu": (("k_alu8", 8), ("k_alu16", 16)),
     "ld": (("k_ld8", 8), ("k_ld16", 16)),
     "shuf": (("k_shuf8", 8), ("k_shuf16", 16)),
-    "tgld": (("k_tgld8", 8), ("k_tgld16", 16)),
-    "tgldc": (("k_tgldc8", 8), ("k_tgldc16", 16)),
-    "tgst": (("k_tgst8", 8), ("k_tgst16", 16)),
-    "cvt": (("k_cvt8", 8), ("k_cvt16", 16)),
+    "tgld": (("k_tgld4", 4), ("k_tgld8", 8), ("k_tgld16", 16)),
+    "tgldc": (("k_tgldc4", 4), ("k_tgldc8", 8), ("k_tgldc16", 16)),
+    "tgst": (("k_tgst4", 4), ("k_tgst8", 8), ("k_tgst16", 16)),
+    "cvt": (("k_cvt4", 4), ("k_cvt8", 8), ("k_cvt16", 16)),
     # a barrier rung's zero point is the matching store rung, so the store, the
     # scaffold and the fence all cancel and the contrast is barriers alone.
     "bar": (("k_tgst8", 0), ("k_barst8", 8)),
