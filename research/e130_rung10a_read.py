@@ -154,6 +154,25 @@ def contrast(a: dict, b: dict, name: str, note: str) -> dict:
     }
 
 
+def binary_identity(legs: list[dict]) -> dict:
+    """One binary must serve every arm, or the arms are not comparable.
+
+    `worker_sha256` is the causal identity here, not `base_sha`. A commit that
+    touches only `Tests/` or `research/` between legs moves the recorded commit
+    without rebuilding the worker, so the commit set is reported for audit while
+    only the binary hash is allowed to gate the read.
+    """
+    workers = sorted({leg["worker_sha256"] for leg in legs
+                      if leg.get("worker_sha256")})
+    bases = sorted({leg["base_sha"] for leg in legs if leg.get("base_sha")})
+    return {
+        "one_binary_served_every_arm": len(workers) == 1,
+        "worker_sha256_values": workers,
+        "base_sha_values": bases,
+        "base_sha_moved_mid_session": len(bases) > 1,
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--prefix", default="e130-r10a")
@@ -197,6 +216,7 @@ def main() -> int:
         "cool_gate_passed_real_gate": "false",
         "gate_qualified_for_timing": "false",
         "legs": legs,
+        "binary_identity": binary_identity(legs),
         "arms_candidate": arms,
         "arms_serial": serial,
         "positive_control": control,
@@ -236,6 +256,10 @@ def main() -> int:
               f"(spread scale {item['largest_half_spread_pct']:.4f} %, "
               f"exceeds spread {item['exceeds_half_spread']})")
     print()
+    identity = result["binary_identity"]
+    print(f"  one binary        {identity['one_binary_served_every_arm']} "
+          f"({len(identity['worker_sha256_values'])} worker hash, "
+          f"{len(identity['base_sha_values'])} commit)")
     print(f"  any leg swapped   {result['any_leg_swapped']}")
     print(f"  tokens matched    {result['all_tokens_matched']}")
     print(f"  entry temp spread {result['entry_temperature_spread_c']} C")
