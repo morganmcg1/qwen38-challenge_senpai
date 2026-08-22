@@ -230,7 +230,20 @@ def main() -> int:
                  if not math.isnan(fit.get("slope_half_width", float("nan")))
                  else float("nan"))
 
-    composed = args.alpha * beta
+    # alpha CANCELS in the product. beta divides by alpha and the composition
+    # multiplies by it, so `alpha x beta` is
+    #     slope / (dose_unit_us x R / tokens)
+    # which depends only on the ladder slope and the M=1 dose rate. The rung 2
+    # coefficient therefore decides how the transfer SPLITS between round
+    # absorption and round-to-leg flow; it cannot move the composed number, and
+    # an error in alpha cannot propagate into the headline. The composed CI is
+    # taken straight from the ladder slope for that reason.
+    per_unit_at_unit_transfer = args.dose_unit_us * rounds / tokens
+    composed = fit["slope"] / per_unit_at_unit_transfer
+    composed_half = (fit["slope_half_width"] / per_unit_at_unit_transfer
+                     if not math.isnan(
+                         fit.get("slope_half_width", float("nan")))
+                     else float("nan"))
     composed_with_share = composed * args.wide_qmv_share
 
     out = {
@@ -264,8 +277,15 @@ def main() -> int:
         "beta_half_width": beta_half,
         "beta_ci95": [beta - beta_half, beta + beta_half],
         "round_to_leg_alpha_times_beta": composed,
+        "round_to_leg_alpha_times_beta_half_width": composed_half,
+        "round_to_leg_alpha_times_beta_ci95": [composed - composed_half,
+                                               composed + composed_half],
+        "alpha_cancels_in_the_product": True,
         "wide_qmv_share_of_round_measured": args.wide_qmv_share,
         "composed_kernel_percent_to_leg_percent": composed_with_share,
+        "composed_kernel_percent_to_leg_percent_ci95": [
+            (composed - composed_half) * args.wide_qmv_share,
+            (composed + composed_half) * args.wide_qmv_share],
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
@@ -319,11 +339,16 @@ def main() -> int:
           f" {predicted_leg_us_per_token_per_unit:+.2f} us/token")
     print(f"  beta = {beta:.3f}  95% CI [{out['beta_ci95'][0]:.3f},"
           f" {out['beta_ci95'][1]:.3f}]")
-    print(f"  alpha x beta = {composed:.3f}")
+    print(f"  alpha x beta = {composed:.3f}"
+          f"  95% CI [{composed - composed_half:.3f},"
+          f" {composed + composed_half:.3f}]"
+          f"   (alpha cancels; this is slope / (dose_unit_us x R / tokens))")
     if not math.isnan(args.wide_qmv_share):
         print(f"  measured wide-QMV share of round = {args.wide_qmv_share:.4f}")
         print(f"  composed kernel% -> leg% transfer ="
-              f" {composed_with_share:.4f}")
+              f" {composed_with_share:.4f}"
+              f"  95% CI [{(composed - composed_half) * args.wide_qmv_share:.4f},"
+              f" {(composed + composed_half) * args.wide_qmv_share:.4f}]")
 
     if args.json:
         path = pathlib.Path(args.json)

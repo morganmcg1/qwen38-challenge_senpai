@@ -9,13 +9,27 @@ check can fail.
 an arm-relative claim. This adds the absolute claim: every named leg must
 reproduce a digest that was pinned before this experiment existed.
 
-THE COMPARATOR CONTROL. A digest that always matches is not evidence. This
-script flips one hexadecimal digit inside one `mtp-row:` value of the first
-leg and re-digests. The perturbed digest must differ and the reported first
-mismatch must be the perturbed line. That proves the comparison is sensitive
-to a single changed bit of a single row value, which is the property the
-exactness claim needs. `--negative-control` adds the end-to-end version: a leg
-that really did behave differently, whose digest must not match.
+THE CONTROLS. A digest that always matches is not evidence, so this script
+runs three checks that must fail on purpose.
+
+  1. VALUE. One hexadecimal digit inside one `mtp-row:` value is flipped and
+     the rows are re-digested. The digest must move. This proves the check is
+     sensitive to a single changed bit of a single top-two score.
+  2. ORDER. Two adjacent rows are swapped. The digest must move. This proves
+     the check is over an ORDERED ledger and not over a set.
+  3. RUNTIME. `--negative-control TAG` names a leg that really did produce
+     different rows, and its digest must not match the pin.
+
+WHAT IS NOT A RUNTIME NEGATIVE CONTROL. `MLX_E80_FORCE_DRAFTS` pins the verify
+width, and the E116 rung 1 leg `e116r1-neg-force1` confirmed at the trace level
+that it worked: its rounds report `d=1` where the unforced leg reports `d=4`
+and `d=5`. Its row digest did NOT move, and that is the correct result. A
+`mtp-row:` line is emitted once per EMITTED TOKEN POSITION, twice per leg
+(once for the wrapper's serial pass and once for the MTP pass), so a 64-token
+leg carries 128 rows and a 512-token leg carries 1025. The exactness contract
+requires those rows to be invariant to any legal scheduling choice, so no
+compliant candidate knob can move this digest. The runtime control therefore
+has to change the decode window, which changes the rows that exist.
 """
 
 from __future__ import annotations
@@ -63,6 +77,9 @@ def main() -> int:
     ap.add_argument("--pin", required=True)
     ap.add_argument("--expect-rows", type=int)
     ap.add_argument("--negative-control")
+    ap.add_argument("--negative-control-reason",
+                    default="a leg run over a different decode window emits a "
+                            "different set of mtp-row positions")
     ap.add_argument("--json")
     args = ap.parse_args()
 
@@ -92,20 +109,36 @@ def main() -> int:
         print(f"{tag}: rows {len(lines)} sha256 {actual[:16]} "
               f"{'MATCHES PIN' if ok else 'DOES NOT MATCH PIN'}")
 
-    perturbed, changed_line = perturb(first_rows, len(first_rows) // 2)
+    middle = len(first_rows) // 2
+    perturbed, changed_line = perturb(first_rows, middle)
     perturbed_digest = digest(perturbed)
     control_ok = perturbed_digest != args.pin
     failures += not control_ok
-    report["comparator_control"] = {
+    report["value_control"] = {
         "kind": "single hex digit flipped in one row value",
-        "row_index": len(first_rows) // 2,
+        "row_index": middle,
         "perturbed_line": changed_line,
         "perturbed_sha256": perturbed_digest,
         "digest_moved": control_ok,
     }
-    print(f"comparator control: one hex digit flipped in row "
-          f"{len(first_rows) // 2} -> sha256 {perturbed_digest[:16]} "
+    print(f"value control: one hex digit flipped in row {middle} -> sha256 "
+          f"{perturbed_digest[:16]} "
           f"{'MOVED (check can fail)' if control_ok else 'DID NOT MOVE'}")
+
+    swapped = list(first_rows)
+    swapped[middle], swapped[middle + 1] = swapped[middle + 1], swapped[middle]
+    swapped_digest = digest(swapped)
+    order_ok = swapped_digest != args.pin and swapped[middle] != first_rows[middle]
+    failures += not order_ok
+    report["order_control"] = {
+        "kind": "two adjacent rows swapped",
+        "row_index": middle,
+        "swapped_sha256": swapped_digest,
+        "digest_moved": order_ok,
+    }
+    print(f"order control: rows {middle} and {middle + 1} swapped -> sha256 "
+          f"{swapped_digest[:16]} "
+          f"{'MOVED (ordered comparison)' if order_ok else 'DID NOT MOVE'}")
 
     if args.negative_control:
         lines = rows(args.negative_control)
@@ -115,6 +148,7 @@ def main() -> int:
         report["runtime_negative_control"] = {
             "tag": args.negative_control, "rows": len(lines),
             "sha256": actual, "digest_moved": moved,
+            "reason": args.negative_control_reason,
         }
         print(f"runtime negative control {args.negative_control}: "
               f"rows {len(lines)} sha256 {actual[:16]} "
