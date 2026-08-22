@@ -197,7 +197,10 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
             "tight_us": t,
             "tight_minus_wide_pct": 100.0 * (t - w) / w,
         }
-        if not cell.endswith(":stock"):
+        # Same guard as the per-shape rows: a cell at another width differs
+        # from the baseline by the width step, not by a plan choice, so it
+        # carries no advantage and no plan x grid interaction.
+        if not cell.endswith(":stock") and cell.split(":")[0] == base_m:
             entry["advantage_wide_us"] = tot[(baseline, "wide")] - w
             entry["advantage_tight_us"] = tot[(baseline, "tight")] - t
             entry["interaction_us"] = (
@@ -317,7 +320,88 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
         out["step_wide_us"] = sw
         out["step_tight_us"] = st
         out["step_tight_vs_wide_pct"] = 100.0 * (st - sw) / sw
+
+    # CAMPAIGN RULE 116 asks for absolute microseconds per round. An
+    # interaction quoted in percentage points cannot be compared with a band
+    # quoted in microseconds, so the same two null controls are also carried
+    # here as a dispatch-weighted resolution floor in microseconds per round.
+    interaction_us = {
+        e["plan"]: e["interaction_us"]
+        for e in totals
+        if "interaction_us" in e and e["plan"] != baseline
+    }
+    same_grid_plans = [
+        p for p in interaction_us
+        if all(wide["launch"][(n, p)] == tight["launch"][(n, p)] for n in names)
+    ]
+    geometry = {}
+    for plan in interaction_us:
+        key = tuple(
+            (wide["launch"][(n, plan)], tight["launch"][(n, plan)])
+            for n in names
+        )
+        geometry.setdefault(key, []).append(plan)
+    out["null_control_total_us"] = [
+        {"plan": p, "true_interaction_us": 0.0,
+         "measured_interaction_us": interaction_us[p]}
+        for p in sorted(same_grid_plans)
+    ]
+    out["matched_geometry_total_us"] = [
+        {"plans": sorted(group),
+         "true_interaction_spread_us": 0.0,
+         "measured_interaction_spread_us": (
+             max(interaction_us[p] for p in group)
+             - min(interaction_us[p] for p in group)
+         )}
+        for group in geometry.values()
+        if len(group) > 1
+    ]
+    floors_us = [abs(r["measured_interaction_us"])
+                 for r in out["null_control_total_us"]]
+    floors_us += [r["measured_interaction_spread_us"]
+                  for r in out["matched_geometry_total_us"]]
+    out["interaction_resolution_floor_us"] = (
+        max(floors_us) if floors_us else None
+    )
+    real_us = {p: v for p, v in interaction_us.items()
+               if p not in same_grid_plans}
+    out["interaction_us_where_grid_differs"] = dict(sorted(real_us.items()))
+    out["max_abs_interaction_us_grid_differs"] = (
+        max((abs(v) for v in real_us.values()), default=0.0)
+    )
+    if floors_us:
+        out["interaction_resolved_above_null_control_us"] = (
+            out["max_abs_interaction_us_grid_differs"]
+            > out["interaction_resolution_floor_us"]
+        )
     return out
+
+
+def band_verdict(report: dict, plan: str, low: float, high: float) -> dict:
+    """Score one plan's interaction against a pre-registered microsecond band.
+
+    A band verdict is only meaningful when the estimator can resolve an effect
+    of that size, so the floor decides whether the comparison may be read at
+    all. Reporting `inside` or `outside` without the floor would present an
+    unresolved measurement as a test of the band.
+    """
+    value = report["interaction_us_where_grid_differs"].get(plan)
+    if value is None:
+        raise SystemExit(f"{plan} carries no interaction against the grid")
+    floor = report["interaction_resolution_floor_us"]
+    return {
+        "plan": plan,
+        "baseline_plan": report["baseline_plan"],
+        "interaction_us": value,
+        "band_low_us": low,
+        "band_high_us": high,
+        "inside_band": low <= value <= high,
+        "resolution_floor_us": floor,
+        "band_width_us": high - low,
+        "floor_exceeds_band_low": floor is not None and floor >= low,
+        "floor_exceeds_band_width": floor is not None and floor >= high - low,
+        "band_is_testable": floor is not None and floor < low,
+    }
 
 
 def main() -> int:
@@ -429,6 +513,50 @@ def main() -> int:
         print("interaction resolved above the null control: %s"
               % ("YES" if r["interaction_resolved_above_null_control"]
                  else "NO -- the plan x grid interaction is not resolved"))
+
+    if r.get("interaction_resolution_floor_us") is not None:
+        print()
+        print("CAMPAIGN RULE 116: the same controls in absolute microseconds "
+              "per round")
+        print("%-46s %12s" % ("null control (true interaction 0 us)",
+                              "measured us"))
+        for row in r["null_control_total_us"]:
+            print("%-46s %+12.1f" % ("  plan %s, same grid under both arms"
+                                     % row["plan"],
+                                     row["measured_interaction_us"]))
+        for row in r["matched_geometry_total_us"]:
+            print("%-46s %+12.1f" % ("  pair %s, equal interactions required"
+                                     % "/".join(row["plans"]),
+                                     row["measured_interaction_spread_us"]))
+        print()
+        print("%-46s %12.1f" % ("interaction resolution floor",
+                                r["interaction_resolution_floor_us"]))
+        for plan, value in r["interaction_us_where_grid_differs"].items():
+            print("%-46s %+12.1f" % ("interaction, %s against %s"
+                                     % (plan, r["baseline_plan"]), value))
+        print("%-46s %12s"
+              % ("resolved above the null control",
+                 "YES" if r["interaction_resolved_above_null_control_us"]
+                 else "NO"))
+        band = flags.get("--band")
+        if band:
+            low, high = (float(v) for v in band.split(","))
+            for plan in r["interaction_us_where_grid_differs"]:
+                v = band_verdict(r, plan, low, high)
+                print()
+                print("band verdict for %s against %s"
+                      % (plan, v["baseline_plan"]))
+                print("    interaction        %+10.1f us" % v["interaction_us"])
+                print("    band               %+10.1f to %+.1f us"
+                      % (v["band_low_us"], v["band_high_us"]))
+                print("    inside band        %s"
+                      % ("YES" if v["inside_band"] else "NO"))
+                print("    resolution floor   %10.1f us"
+                      % v["resolution_floor_us"])
+                print("    band is testable   %s"
+                      % ("YES" if v["band_is_testable"] else
+                         "NO -- the floor is at or above the band floor, so "
+                         "this comparison cannot test the band"))
 
     if "step_wide_us" in r:
         print()
