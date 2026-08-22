@@ -92,7 +92,11 @@ head_dir="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
 [[ -s "${head_dir}/config.json" ]] && export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 export MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}"
-export MLX_E58_BUFFER_LIMIT_OPS=0
+# MLX_E58_BUFFER_LIMIT_OPS stays unset. `0` isolates one dispatch per command
+# buffer, which is right for an isolated kernel census and wrong here: this leg
+# must reproduce the command-buffer concurrency of a real round, match the
+# rung-3 timed legs, and match the ranked runner, which sets no such override.
+unset MLX_E58_BUFFER_LIMIT_OPS
 export MLXFAST_SCORE_PATH="${PWD}/${out}/submit-score.json"
 unset MLXFAST_LOCAL_COOL_GATE
 ./benchmark-qwen-mtp.sh --local-submit > "${out}/local-submit.log" 2>&1
