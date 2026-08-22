@@ -1,0 +1,80 @@
+{
+ "ranked_at_beagle_mean_width": 2.2222800000000005,
+ "second_median_candidates_ranked": {
+  "republic": 1.3360600000000002,
+  "essays": 1.4113499999999999,
+  "medicine": 1.5888000000000004,
+  "botany": 2.5046799999999996
+ },
+ "isolated_ranked_recomputed_on_7x7": 1.95805833,
+ "isolated_ranked_band": [
+  1.7649904800000003,
+  2.3679984
+ ],
+ "carried_headline": 2.47,
+ "grid_reread_factor": 1.2614537382040096,
+ "jensen": {
+  "0.834": {
+   "mean_m": 4.848153124363929,
+   "E_f": 1.1623314719487594,
+   "factor": 1.9119158808236831
+  },
+  "0.87": {
+   "mean_m": 5.495814198130542,
+   "E_f": 1.2626734007358449,
+   "factor": 1.7599800539909434
+  }
+ },
+ "W": {
+  "central": 1.33,
+  "band": [
+   1.0,
+   1.76
+  ]
+ },
+ "frame_transfers_published": {
+  "rule58_launched_volume": 1.7339939024390245,
+  "alphonse_raw": 2.041284403669725,
+  "alphonse_reweighted": 1.25
+ },
+ "predictions": {
+  "primary": {
+   "F": 1.43,
+   "C": 1.9019,
+   "ranked_pct": 1.0295274883011727
+  },
+  "T_flat_reading": {
+   "F": 1.25,
+   "C": 1.6625,
+   "ranked_pct": 1.1777794466165414
+  },
+  "A_roofline_law": {
+   "F": 2.041284403669725,
+   "C": 2.7149082568807343,
+   "ranked_pct": 0.721224492591028
+  },
+  "N_no_frame_term": {
+   "F": 1.0,
+   "C": 1.33,
+   "ranked_pct": 1.4722243082706767
+  }
+ },
+ "band_80pct": [
+  0.7252067888888889,
+  1.5061987153846155
+ ],
+ "envelope": [
+  0.4915860294117647,
+  2.3679984
+ ],
+ "alphonse_backcheck": {
+  "predicted": 0.46795309953204695,
+  "measured": 0.436,
+  "sd": 0.093,
+  "error_in_sd": 0.34358171539835425
+ },
+ "decision_lines": {
+  "parity": 0.53,
+  "mode_proof": 1.86
+ }
+}
