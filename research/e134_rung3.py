@@ -456,6 +456,7 @@ def main() -> int:
             prompt, " ".join("%.4f" % w for w in picks)))
     print("\n%-10s %10s %10s %10s" % (
         "weight", "median %", "mean depth", "accept"))
+    grid_rows = []
     for weight in grid:
         mean, sd = summarise(per_seed[tag % weight])
         sample = cliff_by_seed[seeds[0]][weight]
@@ -464,6 +465,8 @@ def main() -> int:
         accept = sum(RANKED_PROMPTS[p]["weight"] * v["accept_rate"]
                      for p, v in sample.items())
         print("%-10.4f %+10.4f %10.3f %10.3f" % (weight, mean, depth, accept))
+        grid_rows.append({"weight": weight, "median_pct": mean, "sd": sd,
+                          "mean_depth": depth, "accept_rate": accept})
 
     print("\n## the price arms that already exist in the Swift tree")
     print("   `pbfit` is the external anchor: E68 rung 3 measured it end to")
@@ -497,6 +500,7 @@ def main() -> int:
         "costaware_differs": differ,
         "increments": increments,
         "census": census,
+        "grid": grid_rows,
         "arms": {name: {"per_seed": values,
                         "mean": summarise(values)[0],
                         "sd": summarise(values)[1]}
