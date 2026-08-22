@@ -1,0 +1,197 @@
+{
+  "steps": 512,
+  "arms": {
+    "shipped": {
+      "seeds": {
+        "beagle_a": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/beagle_a_shipped_512.json",
+          "round_count": 118,
+          "tokens": 512,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 608,
+          "reference_checked_row_total": 608,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 394,
+          "rejected_draft_total": 96,
+          "target_tail_total": 118,
+          "accepted_draft_rate": 0.8040816326530612,
+          "mean_accepted_drafts_per_round": 3.3389830508474576,
+          "mean_tokens_per_round": 4.338983050847458,
+          "declared_rows_per_token": 1.1875,
+          "widened_draft_rows": 0,
+          "widened_draft_rows_accepted": 0,
+          "widened_distinct_tokens": 0,
+          "arm_witnessed": "shipped-compatible",
+          "rounds_with_draft_rows": 118,
+          "rounds_truncated_by_unproposable_token": 5,
+          "truncation_share_of_rounds_pct": 4.237288135593221,
+          "top_truncating_tokens": [
+            [
+              206385,
+              1
+            ],
+            [
+              165208,
+              1
+            ],
+            [
+              192915,
+              1
+            ],
+            [
+              212524,
+              1
+            ],
+            [
+              231581,
+              1
+            ]
+          ]
+        },
+        "essays_montaigne": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/essays_montaigne_shipped_512.json",
+          "round_count": 151,
+          "tokens": 512,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 669,
+          "reference_checked_row_total": 669,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 361,
+          "rejected_draft_total": 157,
+          "target_tail_total": 151,
+          "accepted_draft_rate": 0.696911196911197,
+          "mean_accepted_drafts_per_round": 2.390728476821192,
+          "mean_tokens_per_round": 3.390728476821192,
+          "declared_rows_per_token": 1.306640625,
+          "widened_draft_rows": 0,
+          "widened_draft_rows_accepted": 0,
+          "widened_distinct_tokens": 0,
+          "arm_witnessed": "shipped-compatible",
+          "rounds_with_draft_rows": 151,
+          "rounds_truncated_by_unproposable_token": 0,
+          "truncation_share_of_rounds_pct": 0.0,
+          "top_truncating_tokens": []
+        }
+      },
+      "medpair": {
+        "mean_accepted_drafts_per_round": 2.843994163205747,
+        "mean_tokens_per_round": 3.843994163205747,
+        "declared_rows_per_token": 1.24969140625,
+        "accepted_draft_rate": 0.7481386651958081,
+        "truncation_share_of_rounds_pct": 2.0254237288135593
+      }
+    },
+    "full": {
+      "seeds": {
+        "beagle_a": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/beagle_a_full_512.json",
+          "round_count": 117,
+          "tokens": 512,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 609,
+          "reference_checked_row_total": 609,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 395,
+          "rejected_draft_total": 97,
+          "target_tail_total": 117,
+          "accepted_draft_rate": 0.8028455284552846,
+          "mean_accepted_drafts_per_round": 3.376068376068376,
+          "mean_tokens_per_round": 4.3760683760683765,
+          "declared_rows_per_token": 1.189453125,
+          "widened_draft_rows": 3,
+          "widened_draft_rows_accepted": 2,
+          "widened_distinct_tokens": 2,
+          "arm_witnessed": "widened",
+          "rounds_with_draft_rows": 117,
+          "rounds_truncated_by_unproposable_token": 3,
+          "truncation_share_of_rounds_pct": 2.5641025641025643,
+          "top_truncating_tokens": [
+            [
+              206385,
+              1
+            ],
+            [
+              192915,
+              1
+            ],
+            [
+              231581,
+              1
+            ]
+          ]
+        },
+        "essays_montaigne": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/essays_montaigne_full_512.json",
+          "round_count": 151,
+          "tokens": 512,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 669,
+          "reference_checked_row_total": 669,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 361,
+          "rejected_draft_total": 157,
+          "target_tail_total": 151,
+          "accepted_draft_rate": 0.696911196911197,
+          "mean_accepted_drafts_per_round": 2.390728476821192,
+          "mean_tokens_per_round": 3.390728476821192,
+          "declared_rows_per_token": 1.306640625,
+          "widened_draft_rows": 0,
+          "widened_draft_rows_accepted": 0,
+          "widened_distinct_tokens": 0,
+          "arm_witnessed": "shipped-compatible",
+          "rounds_with_draft_rows": 151,
+          "rounds_truncated_by_unproposable_token": 0,
+          "truncation_share_of_rounds_pct": 0.0,
+          "top_truncating_tokens": []
+        }
+      },
+      "medpair": {
+        "mean_accepted_drafts_per_round": 2.861720948661346,
+        "mean_tokens_per_round": 3.861720948661346,
+        "declared_rows_per_token": 1.2506249999999999,
+        "accepted_draft_rate": 0.7475478073892707,
+        "truncation_share_of_rounds_pct": 1.2256410256410257
+      }
+    }
+  },
+  "delta": {
+    "accept_rate_delta_pp": -0.05908578065373371,
+    "mean_tokens_per_round_shipped": 3.843994163205747,
+    "mean_tokens_per_round_full": 3.861720948661346,
+    "rounds_saved_pct": 0.4590384880539866,
+    "declared_rows_per_token_shipped": 1.24969140625,
+    "declared_rows_per_token_full": 1.2506249999999999,
+    "target_rows_saved_pct": -0.0747059430296737
+  },
+  "attribution": {
+    "seeds": {
+      "beagle_a": {
+        "accepted_shipped": 394,
+        "accepted_full": 395,
+        "accepted_gain": 1,
+        "accepted_gain_from_high_ids": 2,
+        "accepted_gain_from_repartition": -1,
+        "shipped_rounds_truncated_by_unproposable": 5
+      },
+      "essays_montaigne": {
+        "accepted_shipped": 361,
+        "accepted_full": 361,
+        "accepted_gain": 0,
+        "accepted_gain_from_high_ids": 0,
+        "accepted_gain_from_repartition": 0,
+        "shipped_rounds_truncated_by_unproposable": 0
+      }
+    },
+    "medpair_accepted_gain": 0.478,
+    "medpair_accepted_gain_from_high_ids": 0.956,
+    "medpair_accepted_gain_from_repartition": -0.478
+  }
+}
