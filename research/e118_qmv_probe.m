@@ -557,23 +557,38 @@ int main(int argc, char **argv) {
           dispatchOnce(queue, pso[a][wi], &o, a, m);
         }
 
-        double max_rel = 0.0, sq_err = 0.0, sq_want = 0.0;
-        int count = 0;
+        // The double reference is independent of the arm, so it is built once
+        // per width and every arm is then scored against it. That is what
+        // decides which side of a disagreement is the wrong one.
         const int stride = o.n / samples > 0 ? o.n / samples : 1;
-        const uint16_t *ya = (const uint16_t *)o.y[0].contents;
+        const int n_rows = (o.n + stride - 1) / stride;
+        double *want = malloc((size_t)m * n_rows * sizeof(double));
         for (int mm = 0; mm < m; mm++) {
-          for (int row = 0; row < o.n; row += stride) {
-            double want = referenceElement(&o, mm, row);
-            double got = (double)bf16_to_f32(ya[mm * o.n + row]);
-            double scale = fabs(want) > 1e-6 ? fabs(want) : 1e-6;
-            double rel = fabs(got - want) / scale;
-            if (rel > max_rel) max_rel = rel;
-            sq_err += (got - want) * (got - want);
-            sq_want += want * want;
-            count++;
+          for (int r = 0; r < n_rows; r++) {
+            want[mm * n_rows + r] = referenceElement(&o, mm, r * stride);
           }
         }
-        double rms = count && sq_want > 0.0 ? sqrt(sq_err / sq_want) : 0.0;
+        double arm_rel[MAXARM], arm_rms[MAXARM];
+        for (int a = 0; a < g_narm; a++) {
+          const uint16_t *yv = (const uint16_t *)o.y[a].contents;
+          double mr = 0.0, sq_err = 0.0, sq_want = 0.0;
+          for (int mm = 0; mm < m; mm++) {
+            for (int r = 0; r < n_rows; r++) {
+              double wv = want[mm * n_rows + r];
+              double got = (double)bf16_to_f32(yv[mm * o.n + r * stride]);
+              double sc = fabs(wv) > 1e-6 ? fabs(wv) : 1e-6;
+              double rel = fabs(got - wv) / sc;
+              if (rel > mr) mr = rel;
+              sq_err += (got - wv) * (got - wv);
+              sq_want += wv * wv;
+            }
+          }
+          arm_rel[a] = mr;
+          arm_rms[a] = sq_want > 0.0 ? sqrt(sq_err / sq_want) : 0.0;
+        }
+        free(want);
+        const double max_rel = arm_rel[0], rms = arm_rms[0];
+        const uint16_t *ya = (const uint16_t *)o.y[0].contents;
 
         // A non-finite baseline element compares bit-equal to the same
         // non-finite arm element, so it would hide a real difference. The
@@ -602,15 +617,18 @@ int main(int argc, char **argv) {
           fprintf(out,
                   "%s{\"arm\":\"%s\",\"exact_required\":%s,\"differing\":%zu,"
                   "\"total\":%zu,\"bit_identical\":%s,\"first_bad_m\":%d,"
-                  "\"first_bad_n\":%d,\"max_ulp\":%d,\"max_rel\":%.6e}",
+                  "\"first_bad_n\":%d,\"max_ulp\":%d,\"max_rel\":%.6e,"
+                  "\"vs_double_max_rel\":%.6e,"
+                  "\"vs_double_rms_over_signal\":%.6e}",
                   a > 1 ? "," : "", kArmName[a],
                   kArmExactVsBase[a] ? "true" : "false", d.differing, total,
                   d.differing ? "false" : "true", d.first_m, d.first_n,
-                  d.max_ulp, d.max_rel);
+                  d.max_ulp, d.max_rel, arm_rel[a], arm_rms[a]);
           fprintf(stderr,
                   "e118_qmv_probe:     %-15s vs base differing=%zu/%zu "
-                  "max_ulp=%d max_rel=%.3e%s\n",
+                  "max_ulp=%d max_rel=%.3e  vs_double rel=%.3e rms=%.3e%s\n",
                   kArmName[a], d.differing, total, d.max_ulp, d.max_rel,
+                  arm_rel[a], arm_rms[a],
                   kArmExactVsBase[a]
                       ? (d.differing ? "   *** EXACTNESS FAILURE ***" : "   exact")
                       : "   (diagnostic arm, difference expected)");
