@@ -313,6 +313,41 @@ def analyse(artifacts: list[dict], shipped: dict[int, str]) -> dict:
             # it. The pre-registered threshold for "useful" is 3 %.
             out["e138_cliff_is_plan_invariant"] = 1.0 if best < 3.0 else 0.0
 
+    # Advisor feedback F3: edward's curve-perturbation arm consumes the step
+    # into each width as an absolute in-situ figure, before and after the plan
+    # change, plus the fraction of that step the plan removes. The E137
+    # isolated-to-in-situ factor 0.7858 is applied here and named as applied.
+    # The host transfer and the ranked round are deliberately NOT applied:
+    # every figure below is g16s in-situ microseconds, harness=local.
+    ladder = []
+    for m in sorted(per_width):
+        lo, hi = per_width.get(m - 1), per_width[m]
+        if lo is None or lo["shipped_total_us"] is None:
+            continue
+        if hi["shipped_total_us"] is None:
+            continue
+        entry = {"into_width": m, "from_width": m - 1}
+        for label, key in (
+            ("shipped", "shipped_total_us"),
+            ("best_global", "best_global_total_us"),
+            ("shape_keyed", "shape_keyed_total_us"),
+        ):
+            step_us = hi[key] - lo[key]
+            entry[f"{label}_isolated_step_us"] = step_us
+            entry[f"{label}_in_situ_step_us"] = step_us * IN_SITU_TRANSFER
+        base = entry["shipped_in_situ_step_us"]
+        for label in ("best_global", "shape_keyed"):
+            entry[f"{label}_step_reduction_fraction"] = (
+                (base - entry[f"{label}_in_situ_step_us"]) / base
+                if base else None
+            )
+        ladder.append(entry)
+    if ladder:
+        out["step_ladder"] = ladder
+        out["step_ladder_transfer_applied"] = "e137_isolated_to_in_situ"
+        out["step_ladder_transfer_value"] = IN_SITU_TRANSFER
+        out["step_ladder_host_transfer_applied"] = False
+
     # Item 2: a shape-keyed table multiplies compiled entry points. Count the
     # distinct plans the table needs across every measured width.
     keyed_plans = sorted(
@@ -461,6 +496,32 @@ def report(result: dict) -> str:
             f"{result['e138_cliff_is_plan_invariant']:.1f}",
             "",
         ]
+
+    if "step_ladder" in result:
+        lines += [
+            "F3 step ladder, in-situ g16s microseconds  harness=local",
+            "    transfer applied: E137 isolated -> in-situ "
+            f"{result['step_ladder_transfer_value']:.4f}",
+            "    host transfer and ranked round NOT applied; edward converts",
+            "    %-11s %12s %12s %12s %9s %9s"
+            % ("step", "shipped", "best global", "shape-keyed",
+               "red glob", "red keyed"),
+        ]
+        for e in result["step_ladder"]:
+            keyed = e["shape_keyed_step_reduction_fraction"]
+            glob = e["best_global_step_reduction_fraction"]
+            lines.append(
+                "    %-11s %12.1f %12.1f %12.1f %8.4f %9.4f"
+                % (
+                    "%d -> %d" % (e["from_width"], e["into_width"]),
+                    e["shipped_in_situ_step_us"],
+                    e["best_global_in_situ_step_us"],
+                    e["shape_keyed_in_situ_step_us"],
+                    glob if glob is not None else float("nan"),
+                    keyed if keyed is not None else float("nan"),
+                )
+            )
+        lines.append("")
 
     pipes = result["pipeline_count"]
     lines += [
