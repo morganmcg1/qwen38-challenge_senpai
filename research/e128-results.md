@@ -483,7 +483,21 @@ static7           -16.5900    -16.5209     +0.07
 oracle             +9.0800     +8.5248     -0.56
 ```
 
-Best implementable arm is `marginfull` at **-0.356 %**. Oracle is **+8.52 %**.
+The best implementable arm on our curve is not in that table, because it is a
+level-scale arm rather than a named policy: `levelfix1.05`, which multiplies the
+reach estimator by 1.05 and leaves everything else alone, reaches **-0.2171 %**.
+`marginfull` is second at **-0.3561 %**. Oracle is **+8.5248 %**.
+
+The full level-scale ladder is monotone away from 1.05, which is what a real
+optimum looks like rather than a numerical accident:
+
+```
+scale   1.00     1.05     1.10     1.15     1.20     1.25     1.30     1.40
+gain  -0.9673  -0.2171  -0.4012  -0.9242  -1.1252  -1.3446  -1.7132  -1.7134
+```
+
+So the best single knob on the reach estimator is a 5 % level lift, and it is
+still 0.22 % *worse* than shipping the estimator untouched.
 
 The only arm that moves materially is `rankedprice`, from -5.63 % to -2.85 %.
 That is a check on the fit rather than a new result: `rankedprice` is the arm
@@ -506,6 +520,144 @@ curve still peaks exactly at the shipped value:
 
 **The shipped price is not right for the reason the code implies, but it is
 right where it lands.**
+
+### The curve sweep — no curve we can defend reopens the depth-price axis
+
+The tier breakpoint and the R vector are the two structural choices in the cost
+curve. If the E128 conclusion depended on either of them, the conclusion would
+be a statement about our fit and not about the scheduler. So every arm was
+repriced on six curves. `research/e128-artifacts/rung2-curve-sweep.json`.
+
+```
+curve           marginfull  levelfix1.05    levelfix   rankedprice     oracle   best implementable
+board (bp5)        -0.3253       -0.2353     -1.0247       -5.6317    +9.0770   levelfix1.05 -0.2353
+assumed (bp6)      -0.3561       -0.2171     -0.9673       -2.8508    +8.5248   levelfix1.05 -0.2171
+ours_b4            -0.3518       -0.2134     -1.2231       -5.2598    +8.7758   levelfix1.05 -0.2134
+ours_b5            -0.2680       -0.2343     -0.9699      -10.3930    +8.8071   levelfix1.05 -0.2343
+ours_meanfit       -0.2785       -0.2037     -0.9279       -3.8151    +8.9917   levelfix1.05 -0.2037
+predicted (bp7)    -0.3891       -0.1971     -0.9474       +1.0435   +11.1488   rankedprice  +1.0435
+```
+
+Five of the six curves agree closely. The best implementable arm sits in the
+narrow band **-0.2037 % to -0.2353 %** whether the breakpoint is at 4, 5 or 6,
+and whether the curve is fitted to the round distribution or to the round mean.
+The conclusion is not a property of the breakpoint.
+
+The sixth curve, `predicted`, is the one exception, and it is the one curve our
+own fit rejects. Section 5 pinned R by residual RMSE and the `predicted` R
+vector fitted **867 µs** against the `assumed` vector's **91 µs** — an order of
+magnitude worse at every tier step. Its fitted curve degenerates: the low and
+high slopes come out identical at 4204.8 µs per draft row with the breakpoint
+pushed to 7, which is a straight line with no tier structure at all. On that
+straight line `rankedprice` becomes worth +1.04 %, because a linear price is
+exactly what `rankedprice` assumes.
+
+That is a coherent story, not a loophole: **if** the real hardware had no tier
+step, **then** pricing draft rows linearly would beat the shipped flat constant
+by about 1 %. Our measurements say the tier step exists, at M ≥ 6, and they say
+so 10× more strongly than they say anything else about R. So the depth-price
+axis is not reopened.
+
+### The R band, and why the two transfer anchors disagree
+
+The board publishes accepted-tokens-per-round and acceptance rate per prompt,
+not round counts. The pricing model therefore needs a transfer map from our
+12 local legs onto the 8 board prompts, and there are exactly two natural
+anchors for it:
+
+- the **depth anchor**, which fits one level parameter per prompt so the
+  simulated shipped depth reproduces the published depth. It is R-free: the
+  round count cancels out of the ratio.
+- the **accept-rate anchor**, which fits the level parameter so the simulated
+  acceptance rate reproduces the published acceptance rate. It needs R, because
+  acceptance rate is accepted tokens divided by drafted tokens and both depend
+  on how many rounds the prompt ran.
+
+The headline pass uses the depth anchor. The R band pass rebuilds the whole
+pricing under the accept-rate anchor at eight R scenarios, from
+`predicted × 0.90` to `predicted × 1.10` plus the two band edges and the pinned
+`assumed` vector. `research/e128-artifacts/rung2-ours-r-band.json`.
+
+```
+scenario         R(beagle)  marginfull   levelfix   reachonly  rankedprice_marginup   oracle
+predicted_x0.90     101.22     +0.0792    +0.3691     +0.7076              +3.7687   +6.8943
+predicted_x0.95     106.84     -0.0033    +0.2747     +0.0474              +4.3393   +9.1839
+band_low            105.23     -0.0081    +0.3173     +0.3095              +2.1606   +9.0180
+assumed  (pinned)   110.00     +2.2468    -0.0133     -0.6709              +5.1659  +13.7084
+predicted           112.47     +1.3070    +0.0119     -0.6753              +3.5094  +13.2730
+predicted_x1.05     118.09     +2.4417    -0.5891     -1.5225              +2.9327  +15.6982
+band_high           120.77     +1.5100    -0.5649     -1.4765              +2.5028  +15.9824
+predicted_x1.10     123.71     +2.3512    +0.6457     -0.6949              +2.5932  +17.5584
+```
+
+Two arms keep their sign across the whole band. `oracle` is positive
+everywhere, from +6.89 % to +17.56 %. `rankedprice_marginup` is positive
+everywhere, from +2.16 % to +5.17 %. Everything else flips sign inside the
+band, most of them within a few tokens of the pinned R(beagle) = 110:
+`marginfull` flips at 104.9 and again at 106.8, `rankedprice` at 109.9 and
+123.7, `levelfix` four times (109.9, 111.3, 112.6, 122.1), `reachonly` at 107.1,
+`static7` at 104.9, `nomargin` at 103.9.
+
+**The accept-rate anchor's positive arms are not credible, and the reason is
+measurable.** The two anchors do not just weight the prompts differently; they
+disagree about what the shipped scheduler was doing. Compare each anchor's
+simulated shipped state with the published F92 state:
+
+```
+             published    depth anchor          accept-rate anchor
+prompt      depth accept  depth   err   accept   depth    err   accept
+beagle      4.382 0.8340  4.383 +0.001  0.7579   5.135 +0.753  0.8346
+medicine    5.256 0.8920  5.269 +0.013  0.8813   5.369 +0.113  0.8909
+essays      5.087 0.8970  5.054 -0.033  0.8751   5.363 +0.276  0.9015
+botany      6.148 0.8650  6.168 +0.020  0.9932   4.711 -1.437  0.8655
+republic    4.989 0.9030  5.000 +0.011  0.8220   5.310 +0.321  0.9043
+drama       2.298 0.4490  2.492 +0.194  0.6397   0.126 -2.172  0.4030
+travel      2.656 0.5330  2.704 +0.048  0.5713   2.154 -0.502  0.5337
+plutarch    0.154 0.3330  0.156 +0.002  0.3020   0.186 +0.032  0.3342
+```
+
+The depth anchor reproduces published depth to within **0.194** on every prompt
+and misses acceptance rate by up to 0.191. The accept-rate anchor reproduces
+acceptance rate to within **0.005** on seven prompts, and misses published depth
+by up to **2.172**. On `drama` it simulates a shipped scheduler that drafts
+0.126 tokens per round against a published 2.298 — effectively no drafting at
+all — and it still misses drama's acceptance target by 0.046. On `botany` it is
+1.44 low, on `beagle` 0.75 high.
+
+A baseline simulated at the wrong depth prices every counterfactual against the
+wrong reference. `rankedprice_marginup` looks like +5 % under that anchor
+because the anchor's `drama` and `botany` baselines are drafting at depths the
+shipped scheduler never used, which leaves a large amount of fictitious
+headroom for a deeper policy to claim. **The depth anchor is the defensible
+transfer map for this question**, because depth is the quantity the scheduler
+directly controls and the quantity the cost curve is priced in. Under it, every
+implementable arm is negative.
+
+This is worth stating without hedging: I ran the sensitivity analysis the
+assignment asked for, and it produced positive numbers on one anchor. Those
+numbers are an artifact, and the artifact is identified rather than assumed.
+The R band is reported in full anyway, so the advisor can check that reasoning
+against the same artifact.
+
+### Where the transfer map is weakest, reported honestly
+
+The 12-fixture validation gate passes on means — mean depth error +0.136
+against a 0.25 tolerance, mean acceptance error -0.0155 against 0.05 — but two
+individual fixtures exceed those tolerances:
+
+```
+max |depth error|    0.5060   beagle_a          (tolerance 0.25)
+max |accept error|   0.0570   drama_dollhouse   (tolerance 0.05)
+```
+
+The gate is written on means and so it returns `passed: true`. That is the gate
+I wrote before seeing the numbers, and I am not going to reinterpret it after
+the fact, but the per-fixture failures are real and they are the honest upper
+bound on how precisely this model reproduces a single leg. They do not change
+the sign of any headline arm — the smallest gap between the shipped arm and the
+best implementable arm is 0.20 %, and `beagle_a` is one of 12 fixtures feeding
+five weighted prompts — but a follow-up that wants to price a sub-0.2 % effect
+would need a tighter transfer map first.
 
 ### Sensitivity, including the moved crown
 
@@ -545,3 +697,109 @@ real work, not an escape route for the hypothesis.
 +0.1247. It is a single-fixture median, so it is one prompt's arithmetic rather
 than a ranked estimate, and it is a quarter the size of the +0.20 % threshold
 the assignment set.
+
+## Section 7 — the strongest independent check, from the board itself
+
+Everything above is our model. The board is not. If the shipped reach estimator
+sits at the depth optimum, then across the 793 public board rows per prompt the
+fastest rows should sit at the shipped depth, and rows at other depths should be
+slower. That is a prediction our model did not make and cannot influence.
+
+`research/e128_board_depth_scan.py` groups every public per-prompt row by its
+`effective_mean_draft_len` and reports the best raw ratio reached at each depth.
+`research/e128-artifacts/board-depth-scan.json`.
+
+```
+prompt     F83 wt  depths  shipped   best@shipped  best elsewhere    lead
+beagle     0.4862     145    4.382         3.3263          3.1838   +4.48%
+medicine   0.2508     136    5.256         3.6550          3.5415   +3.20%
+essays     0.1598     122    5.087         3.6556          3.6118   +1.21%
+botany     0.0124     143    6.148         3.7144          3.6218   +2.56%
+republic   0.0100     123    4.989         3.6730          3.4960   +5.06%
+drama      0.0000     124    2.298         1.9596          2.0030   -2.17%
+plutarch   0.0000      98    0.154         1.2718          2.2980  -44.66%
+```
+
+**On all five prompts that carry weight in the ranked median, the shipped depth
+holds the board record, and it holds it by 1.2 % to 5.1 %.** Together those five
+carry 0.9192 of the F83 weight. On `beagle` the leading 71 rows of the entire
+793-row ranking sit at draft length 4.382, and on `republic` the leading 63 do.
+The board has searched 145 distinct beagle depths across many independent teams
+and none of them beat the shipped one.
+
+Two caveats, both of which matter.
+
+**This is observational, not a controlled depth sweep.** Rows at other depths
+come from other solvers with other code, so depth co-varies with everything else
+in the submission. It is adversarial many-team evidence that no one found a
+better depth, not proof that no better depth exists.
+
+**Two zero-weight prompts go the other way, and one goes badly.** On `drama` two
+single rows beat the shipped depth by 2.2 %; both come from rejected submissions
+scoring 3.2409 and 3.2250 against the crown's 3.4907, and both are much slower
+on `beagle`. On `plutarch` the shipped depth of 0.154 — essentially no drafting
+at all — is beaten by 44.7 %, by rows that draft at 2.36. That is a real and
+large miss, and it is worth saying plainly rather than hiding behind the weight.
+
+The reason it does not change the E128 answer is arithmetic, and it is checkable
+directly against the crown receipt. `d3c491b5` sorts to:
+
+```
+plutarch  1.2607   drama   1.9596   travel   2.2306   beagle   3.3263
+medicine  3.6550   essays  3.6556   republic 3.6730   botany   3.7144
+median = (3.3263 + 3.6550) / 2 = 3.49065044 = the official score
+```
+
+The median is set by `beagle` and `medicine`. Lifting `plutarch` from 1.2607 to
+the board-best 2.2980 moves it from first to second in that sorted list and
+leaves the fourth and fifth values untouched: the recomputed median is
+`3.4906504356`, bit-identical to the official score. That is exactly why F83
+assigns `plutarch` weight zero, and it is why a real 44 % per-prompt win there
+is worth nothing to the score under the current distribution.
+
+### Why the oracle is still +8.52 %, and why that is not a contradiction
+
+The oracle arm knows, for each round, whether each draft token will be accepted,
+and drafts exactly the accepted prefix. Its gain is **per-round discrimination**,
+not a depth level. It says: *the shipped mean depth is right, and there is 8.5 %
+available to whoever can tell the good rounds from the bad ones.*
+
+Those two statements are consistent, and the arms separate them cleanly. Every
+arm that only moves the level — `levelfix`, the whole `levelfix1.05..1.40`
+ladder, `static7`, the price-constant sweep — is negative or zero. The only
+positive arm is the one that cannot be implemented, because it needs the
+acceptance outcome before the draft is proposed.
+
+So the honest statement of the E128 result is narrower and sharper than "the
+scheduler is fine":
+
+- **Closed:** you cannot recover ranked median by correcting the reach
+  estimator's level, by repricing draft rows against the true cost curve, or by
+  choosing a better fixed depth. Best implementable arm is -0.20 %, and the
+  board's own 793-row depth scan agrees.
+- **Open:** per-round discrimination is worth up to +8.52 % of ranked median,
+  and no arm we can currently implement captures any of it. That is where the
+  next scheduler experiment should go, and it is a question about the *margin
+  signal*, not about the reach estimator.
+
+### What the next experiment would have to beat
+
+Any follow-up on this axis has to clear a specific bar, which this experiment
+now sets:
+
+1. it must be evaluated under the depth anchor, not the accept-rate anchor,
+   because the accept-rate anchor mis-simulates the shipped baseline by up to
+   2.17 tokens of depth;
+2. it must beat `levelfix1.05` at -0.2171 %, which is the best implementable
+   arm on every well-fitted curve;
+3. it must not be a level change, because the board has already searched 145
+   depths on `beagle` and the shipped depth wins by 4.5 %;
+4. it must improve per-round ranking, since that is the only place the +8.52 %
+   lives.
+
+The cheapest such experiment is a better margin feature, not a better estimator.
+Section 4 already showed the per-position margin AUC ranges from 0.78 to 0.99 on
+`beagle_a` and 0.47 to 0.96 on `benchfixture`, so the margin signal is strongly
+stratified by position and the shipped code pools it. That is a concrete,
+falsifiable next step, and it is listed under suggested follow-ups rather than
+implemented here.

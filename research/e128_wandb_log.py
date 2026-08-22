@@ -437,6 +437,35 @@ def log_rung2(curve: str = "ours") -> None:
                 any(v > 0 for v in best.values()),
             "curve_sweep_spread_pct": max(best.values()) - min(best.values()),
         })
+    scan = load("board-depth-scan.json") if curve == "ours" else None
+    if scan:
+        table = wandb.Table(columns=[
+            "prompt", "f83_weight", "distinct_draft_lens", "shipped_draft_len",
+            "best_raw_at_shipped", "best_raw_elsewhere", "shipped_lead_pct",
+            "top_row_run_at_shipped"])
+        depths = wandb.Table(columns=[
+            "prompt", "draft_len", "rows", "best_raw", "median_raw"])
+        for prompt, entry in scan["prompts"].items():
+            table.add_data(
+                prompt, entry["f83_weight"], entry["distinct_draft_lens"],
+                entry["shipped_draft_len"], entry["best_raw_at_shipped"],
+                entry["best_raw_at_any_other_depth"], entry["shipped_lead_pct"],
+                entry["top_row_run_at_shipped_draft_len"])
+            for row in entry["by_draft_len"]:
+                depths.add_data(prompt, row["draft_len"], row["rows"],
+                                row["best_raw"], row["median_raw"])
+            run.summary["board_shipped_depth_lead_pct_%s" % prompt] = \
+                entry["shipped_lead_pct"]
+        payload["board_depth_scan"] = table
+        payload["board_depth_detail"] = depths
+        weighted = [e for e in scan["prompts"].values() if e["f83_weight"] > 0]
+        run.summary.update({
+            "board_weighted_prompts_where_shipped_depth_wins":
+                sum(1 for e in weighted if e["shipped_lead_pct"] > 0),
+            "board_weighted_prompts_scanned": len(weighted),
+            "board_min_shipped_lead_pct_weighted":
+                min(e["shipped_lead_pct"] for e in weighted),
+        })
     run.log(payload)
     run.finish()
 
