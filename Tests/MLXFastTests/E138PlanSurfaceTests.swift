@@ -301,6 +301,16 @@ private func e138Sweep(
         let mineValues = mine.asType(.float32).asArray(Float.self)
         let stockValues = stock.asType(.float32).asArray(Float.self)
 
+        let launchedColumns: Int
+        let threadgroupsPerColumn: Int
+        if cell.isStock {
+            launchedColumns = 0
+            threadgroupsPerColumn = 0
+        } else {
+            launchedColumns = tight ? cell.passes : cell.m
+            threadgroupsPerColumn = shape.n / (2 * cell.rps)
+        }
+
         rows.append([
             "cell": cell.label,
             "m": cell.m,
@@ -308,10 +318,8 @@ private func e138Sweep(
             "rps": cell.rps,
             "passes": cell.passes,
             "is_stock": cell.isStock,
-            "launched_columns": cell.isStock
-                ? 0 : (tight ? cell.passes : cell.m),
-            "threadgroups_per_column": cell.isStock
-                ? 0 : shape.n / (2 * cell.rps),
+            "launched_columns": launchedColumns,
+            "threadgroups_per_column": threadgroupsPerColumn,
             "seconds_per_call": cellSamples[cellSamples.count / 2],
             "samples": cellSamples,
             "reference_seconds_per_call": refSamples[refSamples.count / 2],
