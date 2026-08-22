@@ -699,7 +699,7 @@ int main(int argc, char **argv) {
     const char *shapes_arg = "0,1,2,3,4";
     const char *arms_arg = NULL;
     const char *frames_arg = "base";
-    int pairs = 5, samples = 48, n_cycle = 4;
+    int pairs = 5, samples = 48, n_cycle = 4, inner_max = 64, warm_pairs = 1;
     double target_ms = 40.0, ramp_ms = 150.0, consumer_mb = 512.0;
 
     for (int i = 1; i < argc; i++) {
@@ -717,6 +717,8 @@ int main(int argc, char **argv) {
       else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames_arg = argv[++i];
       else if (!strcmp(argv[i], "--cycle") && i + 1 < argc) n_cycle = atoi(argv[++i]);
       else if (!strcmp(argv[i], "--consumer-mb") && i + 1 < argc) consumer_mb = atof(argv[++i]);
+      else if (!strcmp(argv[i], "--inner-max") && i + 1 < argc) inner_max = atoi(argv[++i]);
+      else if (!strcmp(argv[i], "--warm-pairs") && i + 1 < argc) warm_pairs = atoi(argv[++i]);
       else {
         fprintf(stderr, "e125_frame_probe: unknown argument %s\n", argv[i]);
         return 2;
@@ -727,7 +729,8 @@ int main(int argc, char **argv) {
               "usage: e125_frame_probe --out JSON --arms LIST [--dir ARMS] "
               "[--fn NAME] [--widths L] [--shapes L] [--pairs N] "
               "[--samples N] [--macmon PATH] [--target-ms MS] [--ramp-ms MS] "
-              "[--frames LIST] [--cycle N] [--consumer-mb MB]\n"
+              "[--frames LIST] [--cycle N] [--consumer-mb MB] "
+              "[--inner-max N] [--warm-pairs N]\n"
               "  --frames takes comma separated frame names:\n"
               "    base        one weight allocation, E118's frame\n"
               "    cycle       --cycle N bit-identical allocations, advanced\n"
@@ -739,6 +742,14 @@ int main(int argc, char **argv) {
     }
     if (n_cycle < 1 || n_cycle > MAXCYCLE) {
       fprintf(stderr, "e125_frame_probe: --cycle must be 1 to %d\n", MAXCYCLE);
+      return 2;
+    }
+    if (inner_max < 1) {
+      fprintf(stderr, "e125_frame_probe: --inner-max must be at least 1\n");
+      return 2;
+    }
+    if (warm_pairs < 0) {
+      fprintf(stderr, "e125_frame_probe: --warm-pairs must not be negative\n");
       return 2;
     }
 
@@ -921,6 +932,8 @@ int main(int argc, char **argv) {
     fprintf(out, "  \"order\": \"palindrome\",\n  \"arm_count\": %d,\n", g_narm);
     fprintf(out, "  \"ramp_ms\": %.1f,\n  \"target_ms\": %.1f,\n", ramp_ms,
             target_ms);
+    fprintf(out, "  \"inner_max\": %d,\n  \"warm_pairs\": %d,\n", inner_max,
+            warm_pairs);
     fprintf(out, "  \"harness\": \"local\",\n");
     fprintf(out, "  \"defect16_fix\": \"temperature sampled before warm-up, "
                  "then a discarded ramp burst, then timing\",\n");
@@ -1233,7 +1246,7 @@ int main(int argc, char **argv) {
           if (frames[f].consumer) consumerStop();
           inner[f] = (int)(target_ms * 1e-3 / probe);
           if (inner[f] < 1) inner[f] = 1;
-          if (inner[f] > 64) inner[f] = 64;
+          if (inner[f] > inner_max) inner[f] = inner_max;
           for (int a = 0; a < g_narm; a++) {
             runArm(queue, pso[a][wi], fo, a, m, 1, inner[f], frames[f].cycle);
           }
@@ -1246,7 +1259,13 @@ int main(int argc, char **argv) {
 
         const int slots = 2 * g_narm;
         double first_entry_c = NAN, last_entry_c = NAN;
-        for (int p = 0; p < pairs; p++) {
+        // The first `2 * warm_pairs` blocks are marked `warmup` and are dropped
+        // by the analysis. Two blocks make one complete forward-plus-reverse
+        // frame pair, so both the dropped set and the kept set stay
+        // counterbalanced over frame order.
+        const int warm_blocks = 2 * warm_pairs;
+        for (int p = 0; p < warm_blocks + pairs; p++) {
+          const bool warmup = p < warm_blocks;
           for (int fi = 0; fi < n_frames; fi++) {
             const int f = (p % 2 == 0) ? fi : n_frames - 1 - fi;
             Operands *fo = &ops[frame_kidx[f]];
@@ -1287,8 +1306,9 @@ int main(int argc, char **argv) {
                     : 0.0;
 
             fprintf(stderr,
-                    "e125_frame_probe:   %s M=%d %-10s block %d",
-                    shapes[s].name, m, frames[f].name, p);
+                    "e125_frame_probe:   %s M=%d %-10s block %d%s",
+                    shapes[s].name, m, frames[f].name, p,
+                    warmup ? " [warm]" : "");
             for (int a = 0; a < g_narm; a++) {
               fprintf(stderr, "  %s=%.1fus", kArmName[a], sec[a] * 1e6);
             }
@@ -1299,7 +1319,7 @@ int main(int argc, char **argv) {
                     ",\n    {\"kind\":\"timing\",\"shape\":\"%s\","
                     "\"frame\":\"%s\",\"k\":%d,\"k_blocks\":%d,"
                     "\"cycle_allocations\":%d,\"consumer\":%s,"
-                    "\"consumer_gbps\":%.4f,\"m\":%d,"
+                    "\"consumer_gbps\":%.4f,\"m\":%d,\"warmup\":%s,"
                     "\"block\":%d,\"frame_slot\":%d,\"inner\":%d,\"reps\":%d,"
                     "\"read_bytes\":%.0f,\"flops\":%.0f,"
                     "\"threadgroups_x\":%d,\"threadgroups_y\":%d,"
@@ -1310,7 +1330,8 @@ int main(int argc, char **argv) {
                     "\"seconds\":{",
                     shapes[s].name, frames[f].name, fo->k, fo->k / 512,
                     frames[f].cycle ? fo->n_cycle : 0,
-                    frames[f].consumer ? "true" : "false", consumer_gbps, m, p,
+                    frames[f].consumer ? "true" : "false", consumer_gbps, m,
+                    warmup ? "true" : "false", p,
                     fi, inner[f], reps, bytes, fl, m, fo->n / 8,
                     (double)m * (double)(fo->n / 8) * 64.0, at, window_s,
                     entry_c);

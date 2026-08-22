@@ -4,9 +4,10 @@
 #   usage: research/e125_probe.sh TAG [extra probe args...]
 #
 # The instrument is research/e125_frame_probe.m, which is E118's probe plus a
-# frame axis and nothing else. The arms come from research/e123_arms.py
-# unchanged, so an E125 frame effect is measured on exactly the arms E123
-# priced and the two sessions are comparable arm for arm.
+# frame axis and nothing else. The arms come from research/e125_arms.py, which
+# emits E123's arm set from twins pinned at E125_ARM_REV, so an E125 frame
+# effect is measured on exactly the arms E123 priced and the two sessions are
+# comparable arm for arm.
 #
 # The comparison is within-session and counterbalanced, so it runs under no
 # thermal gate and reports no score. Entry temperature is recorded per
