@@ -64,23 +64,29 @@ RANKED_TIER = {
 }
 
 # F92 realised behaviour per ranked prompt, and F83 marginal weights.
+#
+# `fixture` names the E124 prose fixtures written to imitate that ranked
+# prompt. The two-fixture prompts are POOLED rather than picked, because
+# picking the fixture whose realised depth is nearest the ranked prompt would
+# fit the transfer on the quantity the transfer is supposed to predict. Single
+# fixtures are priced again as a sensitivity variant.
 RANKED_PROMPTS = {
     "beagle":   {"weight": 0.4862, "depth": 4.382, "accept": 0.834,
-                 "fixture": "beagle_a"},
+                 "fixture": ["beagle_a", "beagle_b"]},
     "medicine": {"weight": 0.2508, "depth": 5.256, "accept": 0.892,
-                 "fixture": "benchfixture"},
+                 "fixture": ["medicine_hist", "medicine_hippoc"]},
     "essays":   {"weight": 0.1598, "depth": 5.087, "accept": 0.897,
-                 "fixture": "benchfixture"},
+                 "fixture": ["essays_bacon", "essays_montaigne"]},
     "botany":   {"weight": 0.0124, "depth": 6.148, "accept": 0.865,
-                 "fixture": "benchfixture"},
+                 "fixture": ["botany_andrews"]},
     "republic": {"weight": 0.0100, "depth": 4.989, "accept": 0.903,
-                 "fixture": "benchfixture"},
+                 "fixture": ["republic_jowett"]},
     "drama":    {"weight": 0.0000, "depth": 2.298, "accept": 0.449,
-                 "fixture": "dramatic"},
+                 "fixture": ["drama_dollhouse"]},
     "travel":   {"weight": 0.0000, "depth": 2.656, "accept": 0.533,
-                 "fixture": "travel"},
+                 "fixture": ["travel_eothen"]},
     "plutarch": {"weight": 0.0000, "depth": 0.154, "accept": 0.333,
-                 "fixture": "philosophy"},
+                 "fixture": ["plutarch_lives"]},
 }
 
 PROMPT_NAMES = {
@@ -125,6 +131,26 @@ def sigmoid(x: float) -> float:
 
 def shift_p_vector(p_vec: list[float], delta: float) -> list[float]:
     return [sigmoid(logit(p) + delta) for p in p_vec]
+
+
+def pooled_positions(legs: list[dict]) -> list[float]:
+    """Pools per-position acceptance counts across fixtures for one prompt.
+
+    Counts are pooled, not the ratios, so a fixture that reached position `j`
+    on more rounds carries proportionally more weight there.
+    """
+    p_vec = []
+    for j in range(MAX_DEPTH):
+        reached = accepted = 0
+        for leg in legs:
+            if j < len(leg["positions"]):
+                reached += leg["positions"][j]["reached"]
+                accepted += leg["positions"][j]["accepted"]
+        if reached == 0:
+            p_vec.append(p_vec[-1] if p_vec else 0.5)
+        else:
+            p_vec.append(accepted / reached)
+    return p_vec
 
 
 def survival(p_vec: list[float]) -> list[float]:
@@ -370,14 +396,15 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
         if hold_zero_weight and spec["weight"] == 0.0:
             continue
         fixture = (fixture_override or {}).get(prompt, spec["fixture"])
-        leg = legs.get(fixture)
-        if leg is None:
-            print("skip %s: no fixture leg %r" % (prompt, fixture))
+        if isinstance(fixture, str):
+            fixture = [fixture]
+        chosen = [legs[name] for name in fixture if name in legs]
+        if len(chosen) != len(fixture):
+            print("skip %s: missing fixture legs %r" % (
+                prompt, [n for n in fixture if n not in legs]))
             continue
-        p_fixture = [row["p"] for row in leg["positions"]]
-        while len(p_fixture) < MAX_DEPTH:
-            p_fixture.append(p_fixture[-1] if p_fixture else 0.5)
-        rounds = leg["rounds_detail"]
+        p_fixture = pooled_positions(chosen)
+        rounds = [r for leg in chosen for r in leg["rounds_detail"]]
 
         def factory(p_target, rounds=rounds, p_fixture=p_fixture):
             return RoundSampler(rounds, p_fixture, p_target, seed=seed,
@@ -408,7 +435,7 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
             prompt_arms[arm] = simulate(
                 make_policy(arm, recal=recal_fit), factory(p_target), windows)
         transfer[prompt] = {
-            "fixture": fixture,
+            "fixture": "+".join(fixture),
             "delta": delta,
             "p_fixture": p_fixture,
             "p_target": p_target,
@@ -500,10 +527,10 @@ def main() -> int:
         receipt["id"][:8], receipt["solver"], receipt["status"],
         receipt["score"], base_median))
     print("\ntransfer fit (one level parameter per prompt, fitted on depth):")
-    print("%-10s %-13s %7s %9s %9s %9s %9s" % (
+    print("%-10s %-33s %7s %9s %9s %9s %9s" % (
         "prompt", "fixture", "delta", "depth*", "depth~", "accept*", "accept~"))
     for prompt, entry in transfer.items():
-        print("%-10s %-13s %7.3f %9.3f %9.3f %9.4f %9.4f" % (
+        print("%-10s %-33s %7.3f %9.3f %9.3f %9.4f %9.4f" % (
             prompt, entry["fixture"], entry["delta"],
             entry["target_depth_f92"], entry["simulated_depth_ship"],
             entry["target_accept_f92"], entry["simulated_accept_ship"]))
@@ -534,7 +561,14 @@ def main() -> int:
             "shuffle_margins": {"shuffle_margins": True},
             "drop_zero_weight": {"hold_zero_weight": True},
             "seed_777": {"seed": 777},
-            "beagle_replicate": {"fixture_override": {"beagle": "beagle_b"}},
+            "single_fixture_a": {"fixture_override": {
+                "beagle": ["beagle_a"], "medicine": ["medicine_hist"],
+                "essays": ["essays_bacon"]}},
+            "single_fixture_b": {"fixture_override": {
+                "beagle": ["beagle_b"], "medicine": ["medicine_hippoc"],
+                "essays": ["essays_montaigne"]}},
+            "benchfixture_only": {"fixture_override": {
+                p: ["benchfixture"] for p in RANKED_PROMPTS}},
             "receipt_crown": {"receipt": "bc070b7b"},
             "receipt_ec778a91": {"receipt": "ec778a91"},
         }
@@ -546,8 +580,8 @@ def main() -> int:
             if rid is not None:
                 rec = load_board_receipt(args.board, rid)
             if "fixture_override" in kwargs:
-                missing = [f for f in kwargs["fixture_override"].values()
-                           if f not in legs]
+                missing = [f for names in kwargs["fixture_override"].values()
+                           for f in names if f not in legs]
                 if missing:
                     print("skip sensitivity %s: no legs %s" % (name, missing))
                     continue
