@@ -31,7 +31,9 @@ it with a cost model; it does not measure seconds.
 | host profile | `apple-m4-pro-applegpu_g16s-20core-48gib` |
 | worker, shipped arm | sha256 `d6dbb3d42ae97da7aa49b3e90d66b81f0ddb7c02c8967053498330e6d4b2367b` |
 | worker, forced arm | sha256 `1f792c5131c3ad51733e6a945bc8914b65a5228f30c83793a8719b66540e7c54` |
-| proposal head | organizer-pinned declared head, 427,742,600 bytes, tree sha256 `559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71` |
+| proposal head, as the legs report it | `head_provenance_sha256 dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9`, 427,746,170 bytes, 2 files — **identical on all 18 legs of both arms**, checked programmatically, not copied forward |
+| proposal head, as `mtp-head.manifest.json` pins it | sha256 `559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71`, 427,742,600 bytes |
+| the two digests agree on the artifact | both carry origin `hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8` — the same repo at the same revision. They differ because they digest different objects: the manifest hashes a one-file tree, the runtime hashes the two-file directory it loaded. Same convention as E93 and the scored `score.json` rows. |
 | token window | 512 decode tokens, every leg, both arms |
 | offered depth | 8 |
 | reference source | per-prompt golden replay, `.mlxfast-private/e122/goldens/<id>-rows-513.json` |
@@ -53,13 +55,50 @@ proposes **no candidate change**: the branch adds files under `research/` only.
 `meta.base_sha` inside each run record is the branch HEAD at run time, not the
 campaign base. The table above is the mapping.
 
-Gates, all PASS:
+Every identity claim above was re-derived from the 18 run records at submission
+time rather than carried forward in prose:
 
-- `senpai/verify-ranked-score-boundary.sh`
-- `senpai/validate-assignment-scope.sh`
-- `senpai/check-editable-budget.sh` — source 2,556,068 / 3,000,000 bytes,
-  candidate growth 101,233 / 262,144 bytes
-- `senpai/rebuild-and-assert-worker.sh --self-test`
+```
+legs                                                  18
+worker_sha256 d6dbb3d4… (shipped) / 1f792c51… (forced)  9 / 9
+head_verification asserts the manifest digest         18 / 18   <- fetch-declared-head.sh:
+                                                                   "declared head verified …
+                                                                   427742600 bytes, sha256 559b24eb…"
+head_manifest_tree_sha256 == mtp-head.manifest.json   18 / 18
+head_provenance_sha256 identical across legs          18 / 18   (dadbfb80…)
+timing_valid=false                                    18 / 18
+dirty_candidate_paths=0                               18 / 18
+one non-empty trace.txt per leg (harness defect 20)   18 / 18
+rebuild-and-assert-worker.sh --self-test                 PASS   (needle 1/0/1 as required)
+```
+
+Gates, re-verified on the result tree `07ba3869` immediately before submission:
+
+```
+verify-ranked-score-boundary.sh   PASS: ranked numerator is pinned baseline;
+                                  candidate edits affect the MTP denominator only
+check-editable-budget.sh <BASE>   editable budget OK: source=2556068/3000000
+                                  headroom=443932  growth=0/262144  files=154
+rebuild-and-assert-worker.sh --self-test    PASS (section 8, symbol-table block)
+```
+
+`validate-assignment-scope.sh` takes the paths a run would *submit to Yukon*.
+This branch submits none: `git diff BASE..HEAD` touches `research/` only, and
+`git diff BASE..HEAD -- Sources Vendor Tests docs fixtures benchmark.json
+benchmark.qwen-mtp.json mtp-head.manifest.json Package.swift tools` is empty.
+Handed the branch diff, the gate correctly reports each `research/…` path as
+outside `editablePaths` — research notes are not submission surface. There is
+no submittable path here to pass or fail the gate on, and I am not quoting it
+as a PASS.
+
+`senpai/run-all-gates.sh` on the result tree: **26 run, 11 failures, 2
+did-not-run.** The identical suite on `BASE_SHA` in a clean worktree gives the
+**same 11 failures and the same 2 did-not-run**, name for name (diff of the two
+outcome lists is empty). The failures are base-level state — `base-drift`
+(recorded base advanced by 1 commit), `campaign-invariants` (an overlay-reverted
+`sums[m] += …` line), the surface and self-test gates — and none of them is
+caused by this branch, which cannot be otherwise since the candidate surface is
+byte-identical to the base. I am not quoting a clean bill of health.
 
 ---
 
@@ -87,6 +126,19 @@ The instrument lives in the tree as a reverse-appliable patch,
 `research/e122-patches/forced-depth.patch`, plus its commit `7a64da39`. Commit
 `8ea4b33f` reverse-applies it, which is why the result tree's `Sources/` is
 byte-identical to `BASE_SHA`.
+
+The E116 patch discipline, checked on the result tree at submission time:
+
+```
+git apply --check    research/e122-patches/forced-depth.patch   exit 0
+git apply --check -R research/e122-patches/forced-depth.patch   exit 1
+```
+
+Both directions are the correct answers and the pair is the assertion. Exit 0
+forward says the instrument re-applies cleanly, so the arm is reproducible from
+the committed tree. Exit 1 reverse says there is nothing to remove, so the
+instrument is genuinely absent from what I am handing over. A tree that passed
+*both* checks would be one where the patch was a no-op.
 
 ### The gate statistic
 
@@ -165,15 +217,37 @@ the pool.
 ## 4. Per-position table, forced arm
 
 ```
-   pos    n  rej  acc_rate   AUC(raw)   [95% CI]         AUC(strat)   [95% CI]         AUC(z)  prompts
-     1  1761  541    0.6928    0.5404 [0.5114, 0.5695]      0.5166 [0.4850, 0.5466]   0.5243      9
-     2  1217  496    0.5924    0.5465 [0.5141, 0.5772]      0.5092 [0.4747, 0.5415]   0.5241      9
-     3   719  311    0.5675    0.5853 [0.5432, 0.6263]      0.5154 [0.4703, 0.5599]   0.5441      9
-     4   406  189    0.5345    0.6185 [0.5632, 0.6714]      0.4968 [0.4317, 0.5589]   0.5431      9
-     5   216   92    0.5741    0.7518 [0.6874, 0.8144]      0.5891 [0.4791, 0.6905]   0.6150      9
-     6   124   35    0.7177    0.7846 [0.6977, 0.8586]      0.5208 [0.3896, 0.6789]   0.5822      9
-     7    89   19    0.7865    0.8327 [0.7360, 0.9149]      0.6354 [0.2500, 0.9065]   0.5628      7
+   pos    n  rej  not_drafted  acc_rate   AUC(raw)   [95% CI]         AUC(strat)   [95% CI]         AUC(z)  prompts
+     1  1761  541            0    0.6928    0.5404 [0.5114, 0.5695]      0.5166 [0.4850, 0.5466]   0.5243      9
+     2  1217  496            4    0.5924    0.5465 [0.5141, 0.5772]      0.5092 [0.4747, 0.5415]   0.5241      9
+     3   719  311            6    0.5675    0.5853 [0.5432, 0.6263]      0.5154 [0.4703, 0.5599]   0.5441      9
+     4   406  189           12    0.5345    0.6185 [0.5632, 0.6714]      0.4968 [0.4317, 0.5589]   0.5431      9
+     5   216   92           15    0.5741    0.7518 [0.6874, 0.8144]      0.5891 [0.4791, 0.6905]   0.6150      9
+     6   124   35           18    0.7177    0.7846 [0.6977, 0.8586]      0.5208 [0.3896, 0.6789]   0.5822      9
+     7    89   19           20    0.7865    0.8327 [0.7360, 0.9149]      0.6354 [0.2500, 0.9065]   0.5628      7
 ```
+
+`not_drafted` is the column that motivated the arm, and on this arm it is dead.
+The drafted-depth histogram over all 1761 forced rounds is
+
+```
+d=1: 4   d=2: 2   d=3: 6   d=4: 3   d=5: 3   d=6: 2   d=7: 1741
+```
+
+so 1741 of 1761 rounds (98.9 %) draft the full 7. I checked what the other 20
+are instead of assuming: **all 20 sit in the last one to four rounds of their
+leg** — `benchfixture` round 73 of 73, `philosophy` rounds 216-219 of 219, and
+so on. They are the 512-token budget closing the window, not the margin
+selecting the sample. There is no round anywhere in the arm where a *low margin*
+shortened the draft, which is exactly the property the shipped arm lacked.
+
+`n` still falls from 1217 to 216 across positions 2 to 5, for the ordinary
+reason: a round reaches position *k* only if positions 1 to *k*-1 were accepted.
+That attrition is conditioning on the *outcome*, not on the predictor, so it
+costs power but does not restrict the margin's range. And the rejection counts
+at the four gated positions are now 496, 311, 189 and 92, against the three to
+five the shipped arm offered. That is what makes the pooled statistic decidable
+where the original per-position gate was not.
 
 within-prompt spearman(margin, accepted) = **0.0460**
 
