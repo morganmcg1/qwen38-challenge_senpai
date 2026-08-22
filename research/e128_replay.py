@@ -64,6 +64,9 @@ def cost_model_depth(
     marginal: list[float] | None = None,
     cumulative: list[float] | None = None,
     margin_mode: str = "min",
+    reach_gain: float = 1.0,
+    expected_gain: float = 1.0,
+    reach_gain_by_step: list[float] | None = None,
 ) -> tuple[int, str, list[float]]:
     """The shipped walk. Returns (depth, trace string, per-step p).
 
@@ -76,6 +79,17 @@ def cost_model_depth(
     margin outright and `"max"` lets it raise the EMA, so the two of them
     together measure whether the downward-only restriction is what holds depth
     below the ranked optimum. Neither is shipped behaviour.
+
+    `reach_gain` and `expected_gain` scale the two separate consumers of the
+    same estimate. `reach` is the survival probability the guard compares with
+    the threshold; `expected` is the running accepted count that raises the
+    threshold. A level bias in the estimate therefore pushes depth in OPPOSITE
+    directions through the two of them, so they are exposed separately and the
+    net sign has to be measured, not assumed. `reach_gain_by_step` supplies a
+    depth-dependent gain (index `k` applies to a chain of `k + 1` factors) and
+    overrides the scalar; it is how a measured Jensen correction enters without
+    a fitted parameter. All defaults multiply by exactly 1.0, which is bit
+    identical in IEEE-754, so the shipped trace string is unchanged.
     """
     marginal = PRICE_MARGINAL if marginal is None else marginal
     cumulative = PRICE_CUMULATIVE if cumulative is None else cumulative
@@ -100,10 +114,15 @@ def cost_model_depth(
             p = {"min": min(p, conf), "replace": conf,
                  "max": max(p, conf)}[margin_mode]
         reach *= p
-        threshold = marginal[depth] * (1.0 + expected) / cumulative[depth]
-        steps.append("%d:%.6f/%.6f/%.6f;" % (depth, p, reach, threshold))
+        step_gain = (reach_gain if reach_gain_by_step is None
+                     else reach_gain_by_step[min(depth,
+                                                 len(reach_gain_by_step) - 1)])
+        guard_reach = reach * step_gain
+        threshold = marginal[depth] * (1.0 + expected * expected_gain) \
+            / cumulative[depth]
+        steps.append("%d:%.6f/%.6f/%.6f;" % (depth, p, guard_reach, threshold))
         walked_p.append(p)
-        if not reach > threshold:
+        if not guard_reach > threshold:
             break
         expected += reach
         depth += 1
