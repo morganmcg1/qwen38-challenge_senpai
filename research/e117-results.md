@@ -27,7 +27,21 @@ rate deficit. The answer moves the whole question onto firmer ground.
    from opposite directions.
 5. The N-split is therefore **not a mechanism**. It is a way of moving grid
    volume off the trough, and it pays exactly when the halved volume lands on a
-   faster point of the same curve.
+   faster point of the same curve. The same zero-parameter curve predicts both
+   the `gdn.in_proj` gain and the `mlp.gate_up` loss: splitting `mlp.gate_up`
+   moves 34,816 launched threadgroups to 17,408, straight **into** the trough.
+6. **The live cell has no affordable trigger, so it is closed too.** The
+   serialisation is worth 36.11 µs per boundary. Of four routes tried, the only
+   one that reproduced it, `depends()`, costs **92 µs of host time** and is
+   indistinguishable from the blocking `eval` it was meant to replace. The two
+   genuinely in-graph routes did not serialise at all, and a command-buffer
+   boundary costs 292 µs. The cheapest total price is 40.83 µs against a 10 µs
+   kill line.
+7. **The cheapest fix is out of scope.** If launched threadgroups carry the
+   effect, `quantized.cpp` launches `M` groups in x when only `ceil(M / IPG)`
+   can work, so 6 of 8 are empty at M=8. Removing them would cut launched
+   volume 4x with no extra dispatch and no barrier. That file belongs to
+   another agent this round, so it is reported, not implemented.
 
 ## Experiment identity tuple
 
@@ -438,6 +452,188 @@ the allocator releasing cached blocks during the check. No shape read a positive
 delta, so no slice copied. The rung-1 probe pins `Memory.cacheLimit = 0` around
 the check so the delta reads zero rather than negative.
 
+## Rung 1 — can the barrier be caused cheaply? No
+
+`gdn.in_proj`, `mlp.gate_up`, `control.small`. M in {2,4,5,6,7,8}. 8 blocks.
+`harness=local`. W&B `6j30woyk`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6j30woyk
+
+`e_nsplit_serial` pays a blocking host `eval` to serialise the two halves. Rung
+1 asked whether the same GPU-side serialisation can be caused inside the graph
+for less. Four routes were added, all bit-exact:
+
+| route | dispatches | evals | mechanism |
+| --- | --- | --- | --- |
+| `d_depends` | 2 | 1 | `depends(input: x, dependencies: [first])` |
+| `f_dep_which` | 3 | 1 | `which(maskTrue, x, first[0..<1, 0..<1])` |
+| `g_dep_add` | 4 | 1 | `x + first[0..<1, 0..<1] * zeroBF` |
+| `h_async_eval` | 2 | 1 | `asyncEval(first)`, a command-buffer boundary |
+
+### My predictions were inverted
+
+From `device.cpp` alone I predicted that `d_depends` inserts **no** barrier and
+must behave like `c_nsplit`, and that `f_dep_which` and `g_dep_add` insert two
+and three barriers and must serialise. `Depends::eval_gpu` at
+`gpu/primitives.cpp:76-81` calls the member `eval(inputs, outputs)`, which
+shares buffers and never touches the encoder, so the source reading itself
+still looks right.
+
+The measurement says the opposite. `d_depends` reproduced the ceiling in all
+twelve cells; `f_dep_which` and `g_dep_add` tracked `c_nsplit` and did not
+serialise at all.
+
+### The host-cost control explains it
+
+`control.small` runs each arm structure on a tensor whose GPU work is about
+1.5 µs, so its cell time is that structure's host cost. Median over blocks,
+mean over the six widths:
+
+| arm | dispatches | evals | host µs | vs `a_one` |
+| --- | --- | --- | --- | --- |
+| `a_one` | 1 | 1 | 100.75 | 0.00 |
+| `c_nsplit` | 2 | 1 | 100.30 | **−0.45** |
+| `e_nsplit_serial` | 2 | 2 | 192.58 | **+91.83** |
+| `d_depends` | 2 | **1** | 192.91 | **+92.16** |
+| `f_dep_which` | 3 | 1 | 117.68 | +16.93 |
+| `g_dep_add` | 4 | 1 | 118.13 | +17.38 |
+| `h_async_eval` | 2 | 1 | 107.58 | +6.82 |
+
+An extra dispatch is free: `c_nsplit` adds one and costs −0.45 µs. Two extra
+small ops cost about 17 µs. But `depends()` costs **+92.16 µs while issuing
+only one `eval`**, matching the two-eval arm's +91.83 µs to 0.4 % across six
+independent widths.
+
+**In this MLX build `depends()` behaves as a synchronisation, not as a graph
+ordering hint.** Both its host cost and its GPU-side effect are
+indistinguishable from a blocking `eval`. `d_depends` is not an in-graph route.
+It is `e_nsplit_serial` under another name, which is why the two agree
+everywhere.
+
+I could not attribute this to a source line. `Depends::eval_gpu` has no
+encoder path and `gpu/eval.cpp` has no `Depends` special case. **This is a
+measured host cost, not a traced synchronisation.**
+
+I checked whether this already costs the campaign anything. `depends(` appears
+nowhere in `Sources/` or `Vendor/mlx-swift-lm/`, only in the MLX wrapper at
+`Vendor/mlx-swift/Source/MLX/Ops.swift:1057`. No candidate code is affected
+today.
+
+### No GPU trace was captured
+
+The barrier account in the probe comments is derived from
+`device.cpp:316-328`, `:363-374`, `:379-385` and `:545-548` plus the matched
+`control.small` structure. **I did not capture a Metal trace.** Two readings of
+the `f_dep_which` and `g_dep_add` null survive that evidence:
+
+1. the read-after-write edge through a 1x1 slice does not raise
+   `needs_barrier_` at all; or
+2. `memoryBarrier(MTL::BarrierScopeBuffers)` inside a concurrent encoder does
+   not drain the launched grid the way a command-buffer completion does.
+
+Nothing here distinguishes them, and the decision does not depend on which is
+true.
+
+### The price, at the load-bearing cell
+
+`gdn.in_proj` M=8 `[4+4]`, `a_one` net 551.09 µs. GPU price is the paired
+per-block contrast against `e_nsplit_serial`. Host price is the arm's own
+`control.small` excess over `a_one`.
+
+| route | route % ± se | GPU price µs ± se | host price µs | total µs | vs 10 µs kill |
+| --- | --- | --- | --- | --- | --- |
+| `c_nsplit` | +1.177 ± 1.075 | 39.65 ± 1.03 | +1.18 | 40.83 | fail |
+| `e_nsplit_serial` | +8.372 ± 2.748 | 0 by definition | +86.00 | 86.00 | fail |
+| `d_depends` | +7.927 ± 2.737 | **2.56 ± 0.82** | **+87.19** | **89.75** | **fail, 9.0x** |
+| `f_dep_which` | −0.786 ± 3.020 | 51.96 ± 0.70 | +12.86 | 64.82 | fail |
+| `g_dep_add` | −1.009 ± 3.068 | 53.18 ± 0.63 | +13.87 | 67.05 | fail |
+| `h_async_eval` | −43.204 ± 4.404 | 292.61 ± 4.63 | +1.40 | 294.01 | fail |
+
+GPU price is the paired per-block contrast of net times, which carries its own
+standard error. `research/e117_analysis.py` derives the same quantity from the
+difference of two separately estimated percentages and reports 2.45, 50.46,
+51.70 and 284.23 µs; those are the values in the W&B `price_us/*` summary. The
+two estimators agree to within 3 % and neither changes any verdict.
+
+The gain to beat is 36.11 µs per boundary. **Every route fails the 10 µs kill
+line.** The one route whose GPU price clears it, 2.56 µs, is the one that is a
+blocking `eval`, and its 87.19 µs host cost is 2.4x the gain it buys. The
+routes that are genuinely in-graph, at 13 to 17 µs of host cost, do not
+serialise.
+
+Per round at 48 GDN layers, all at M=8:
+
+```
+d_depends  GPU gain +1,365.0 us   host cost -4,185.1 us   net -2,820.1 us
+```
+
+`h_async_eval` is worth recording as a hazard: a command-buffer boundary costs
+292.61 µs of GPU time per occurrence at this cell, −60.4 % at `mlp.gate_up`
+M=8, and −82.3 % at `gdn.in_proj` M=7.
+
+**Rung 1 kill rule fires. The serialised N-split has no affordable in-scope
+trigger, and rung 2 is not run.**
+
+### A third confirmation of the grid-volume model
+
+Rung 0b could not separate launched from working threadgroups because they are
+4:1 collinear inside one IPG family. M=7 and M=8 break that. Both use IPG=4,
+both have exactly two working threadgroups, and both run at the same `grid.y`,
+so working volume is identical. Only launched volume differs.
+
+| shape | `grid.y` | M=7 launched | M=8 launched | in the 16384–18432 trough? | µs per row, M=7 → M=8 |
+| --- | --- | --- | --- | --- | --- |
+| `gdn.in_proj` | 2060 | 14,420 | **16,480** | M=8 only | 64.31 → 68.89, **+7.1 % worse** |
+| `mlp.gate_up` | 4352 | 30,464 | 34,816 | neither | 137.72 → 128.20, −6.9 % better |
+
+The per-row penalty appears exactly where M=8's launched volume falls inside
+the rung-0b trough band and reverses where it does not. Working volume is
+constant across that sign flip. This favours launched threadgroups as the
+carrier, though IPG is still confounded with M at the widths the kernel selects.
+
+The same curve predicts both split results with no free parameters, using
+rung-0b `a_one` rates at M=8:
+
+| shape | volume | halved | rate | rate halved | predicted split | measured |
+| --- | --- | --- | --- | --- | --- | --- |
+| `gdn.in_proj` | 16,480 | 8,240 | 172.7 | 185.0 | **+6.6 %** | +5.270, +6.560, +8.372 |
+| `mlp.gate_up` | 34,816 | 17,408 | 195.2 | ~175 | **−11.5 %** | −14.276, −15.222 |
+
+Splitting `mlp.gate_up` fails because it moves the kernel **into** the trough:
+34,816 halves to 17,408, which is inside the band. Splitting `gdn.in_proj`
+succeeds because 16,480 halves to 8,240, which is outside it. The two results
+that looked contradictory are one curve.
+
+### Instrument state, rung 1
+
+- Exactness: 18 cells, 0 not bit-exact, 0 positive-control failures. All four
+  routes produce the same digest as `a_one`, and the swapped-order control
+  differs.
+- Defect 19: 126 cells, **1 flagged cell**, `gdn.in_proj` M=2 `a_one`, blocks 5
+  and 7 at 2.07x the cell median. That row's large standard errors and its
+  apparent +12 to +17 % route gains are that contamination, not signal. No
+  load-bearing cell is flagged.
+- Defect 16 residual, median forward-versus-reverse gap: 0.010 % to 0.34 % per
+  arm, except `gdn.in_proj` `a_one` at 1.130 %, which is the same two blocks.
+- Slice aliasing now reads `delta_bytes=0` at `gdn.in_proj` after pinning
+  `Memory.cacheLimit = 0`. It still reads negative at `mlp.gate_up` and
+  `control.small`, where the allocator releases cache during the check.
+- Cross-session `a_one` replication at M=8: `gdn.in_proj` 550.41 → 551.09 µs
+  (0.12 %), `mlp.gate_up` 1026.43 → 1025.61 µs (0.08 %).
+
+### Primary metric across three sessions
+
+`e117_serial_nsplit_pct_faster_vs_one_dispatch_gdn_in_proj_m8`:
+
+| session | W&B | blocks | value | se |
+| --- | --- | --- | --- | --- |
+| rung 0 | `zbe3jt4y` | 8 | +5.270 | 0.196 |
+| rung 0b | `93mrc16r` | 6 | +6.560 | 0.803 |
+| rung 1 | `6j30woyk` | 8 | +8.372 | 2.748 |
+
+Mean of the three session means is **+6.73 %**, standard error 0.90. All three
+clear the +3.0 % replication gate. The effect is real. It has no affordable
+trigger.
+
 ## Reproduction
 
 ```bash
@@ -452,14 +648,20 @@ n16480:16480:5120,n20480:20480:5120,n24576:24576:5120,n32768:32768:5120,\
 n33792:33792:5120,n34816:34816:5120,n35840:35840:5120,n36864:36864:5120,\
 n40960:40960:5120,control.small' 2,3,4,5,8 6
 
+# rung 1, the serialisation routes
+MLXFAST_E117_RUNG1=1 research/e117_probe.sh e117-rung1-routes \
+  'gdn.in_proj,mlp.gate_up,control.small' 2,4,5,6,7,8 8
+
 python3 research/e117_analysis.py research/out/TAG/cells.json --json OUT.json
+python3 research/e117_rung1_price.py research/out/TAG/cells.json
 python3 research/e117_wandb_log.py research/out/TAG --name NAME --rung N
 python3 research/e117_reconcile.py
 ```
 
 Artifacts under `research/e117-artifacts/`, committed per CAMPAIGN RULE 40:
 `rung0-mframe-summary.json`, `rung0-mframe-meta.txt`, `rung0-pricing.txt`,
-`rung0b-nsweep-summary.json`, `rung0b-nsweep-meta.txt`.
+`rung0b-nsweep-summary.json`, `rung0b-nsweep-meta.txt`,
+`rung1-routes-summary.json`, `rung1-routes-meta.txt`, `rung1-price.txt`.
 
 ## Suggested follow-ups, not implemented
 
@@ -467,11 +669,14 @@ Artifacts under `research/e117-artifacts/`, committed per CAMPAIGN RULE 40:
    on where the grid-volume trough sits on M5. A one-session N sweep on the
    official runner would settle it. Nothing else in this report transfers
    without it.
-2. **Separate launched from working threadgroups.** Within one IPG family the
-   two are exactly proportional. A kernel-side experiment that varies the early
-   return without changing `ntg.x` would separate them, but that is inside
-   `quantized.h`, which I do not own this round. **Reporting, not implementing,
-   per the assignment.**
+2. **Separate launched from working threadgroups.** Rung 1 made a start: M=7
+   and M=8 hold IPG, working-group count and `grid.y` constant while launched
+   volume differs, and the per-row cost flips sign exactly where M=8's launched
+   volume enters the trough band. That favours launched threadgroups. It is not
+   conclusive, because IPG is still tied to M at the widths the kernel selects.
+   A kernel-side experiment that varies the early return without changing
+   `ntg.x` would settle it, but that is inside `quantized.h`, which I do not own
+   this round. **Reporting, not implementing, per the assignment.**
 3. **The trough may be reachable without any split.** If the carrier is launched
    threadgroups, then `M x ceil(N/8)` empty-group launches are the cost, and a
    dispatch-shape change in `quantized.cpp` that stops launching `M` groups in x
@@ -481,3 +686,18 @@ Artifacts under `research/e117-artifacts/`, committed per CAMPAIGN RULE 40:
 4. **`mlp.gate_up` at M=4 is in the trough on this host.** It is only 1.9 % of
    `gate_up` streaming time locally, so it does not pay. If the realised width
    histogram ever shifts toward M=4, revisit.
+5. **Treat the trough as a hazard for any dispatch-shape change.** Any future
+   work that changes `M`, `N` or the fused projection layout moves the kernel
+   along this curve. A change that looks free can lose 10 % by landing at
+   16,384 to 18,432 launched threadgroups. It is cheap to check: compute
+   `M x ceil(N / 8)` before and after.
+6. **`depends()` is not a free ordering primitive in this MLX build.** It cost
+   92 µs of host time per call here, the same as a blocking `eval`, while the
+   source shows no encoder path. Any campaign code that uses `depends()` to
+   order work without synchronising should be measured, not assumed. I could
+   not find the source line responsible and did not chase it further.
+7. **Capture a Metal trace for the barrier question.** Whether a
+   read-after-write edge through a 1x1 slice raises `needs_barrier_`, and
+   whether a buffer-scope memory barrier drains the launched grid, are both
+   unresolved here. A single GPU capture would answer both. I did not have one
+   this round and did not want to claim a mechanism without it.

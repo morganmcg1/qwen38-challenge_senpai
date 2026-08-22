@@ -20,6 +20,7 @@ import argparse
 import datetime
 import json
 import pathlib
+import statistics
 
 import wandb
 
@@ -44,6 +45,25 @@ ARM_ROLE = {
     "control.small": (
         "same arm structures on a tensor with about 1.5 us of GPU work: the "
         "host cost of each structure"
+    ),
+    "d_depends": (
+        "rung 1. depends(input: x, dependencies: [first]). Predicted to insert "
+        "no barrier and behave like c_nsplit. It instead reproduced the "
+        "blocking-eval ceiling in every cell AND cost the same host time as a "
+        "blocking eval, so depends() is a synchronisation in this MLX build."
+    ),
+    "f_dep_which": (
+        "rung 1. which(maskTrue, x, first[0..<1, 0..<1]). One extra dispatch, "
+        "a genuine read-after-write edge on the first half. Did not serialise."
+    ),
+    "g_dep_add": (
+        "rung 1. x + first[0..<1, 0..<1] * zeroBF. Two extra dispatches, to "
+        "price the gradient of chain length. Did not serialise."
+    ),
+    "h_async_eval": (
+        "rung 1. asyncEval(first) between the halves: a command-buffer "
+        "boundary rather than a barrier. Serialises, but costs 292 us of GPU "
+        "time per occurrence at gdn.in_proj M=8."
     ),
 }
 
@@ -75,6 +95,18 @@ def session_seconds(meta: dict[str, str]) -> float:
         return 0.0
     return (datetime.datetime.strptime(end, fmt)
             - datetime.datetime.strptime(start, fmt)).total_seconds()
+
+
+def host_prices(cells: dict) -> dict[tuple[str, int], float]:
+    """Median `control.small` cell time per arm and width: the host cost."""
+    per: dict[tuple[str, int], list[float]] = {}
+    for cell in cells["cells"]:
+        if cell["shape"] != "control.small":
+            continue
+        key = (cell["arm"], cell["width"])
+        per.setdefault(key, []).append(
+            (cell["forward_us"] + cell["reverse_us"]) / 2.0)
+    return {key: statistics.median(values) for key, values in per.items()}
 
 
 def read_meta(path: pathlib.Path) -> dict[str, str]:
@@ -245,12 +277,49 @@ def main() -> int:
             run.summary[f"{tag}/e_nsplit_serial_net_pct_m8_sem"] = (
                 m8["arms"]["e_nsplit_serial"]["net_pct_faster_sem"])
 
-    gate_up = summary["shapes"].get("mlp.gate_up")
-    if gate_up:
-        m8 = gate_up["widths"].get("8") or gate_up["widths"].get(8)
+    for shape, metric in [("mlp.gate_up", "gate_up"), ("gdn.in_proj", "gdn_in_proj")]:
+        entry = summary["shapes"].get(shape)
+        if not entry:
+            continue
+        m8 = entry["widths"].get("8") or entry["widths"].get(8)
         if m8 and "e_nsplit_serial" in m8["arms"]:
-            run.summary["e117_serial_nsplit_pct_faster_vs_one_dispatch_gate_up_m8"] = (
-                m8["arms"]["e_nsplit_serial"]["net_pct_faster_mean"])
+            key = f"e117_serial_nsplit_pct_faster_vs_one_dispatch_{metric}_m8"
+            run.summary[key] = m8["arms"]["e_nsplit_serial"]["net_pct_faster_mean"]
+            run.summary[key + "_sem"] = (
+                m8["arms"]["e_nsplit_serial"]["net_pct_faster_sem"])
+
+    # Rung 1. The price of causing the barrier has a GPU half and a host half.
+    # The M-frame analysis subtracts each arm's own control, which hides the
+    # host half, so log it separately rather than only in percent.
+    if summary.get("rung1"):
+        table = wandb.Table(
+            columns=[
+                "shape", "m", "route", "a_one_net_us", "ceiling_pct",
+                "route_pct", "gpu_price_us", "host_price_us", "total_price_us",
+                "round_gain_us_at_48_layers", "clears_10us_kill",
+            ])
+        host = host_prices(cells)
+        for key, entry in summary["rung1"].items():
+            shape, m = key.split("|M")
+            for route, row in entry["routes"].items():
+                gpu = row["price_us_vs_ceiling"]
+                hp = host.get((route, int(m)), float("nan")) - host.get(
+                    ("a_one", int(m)), float("nan"))
+                table.add_data(
+                    shape, int(m), route, entry["a_one_net_us"],
+                    entry["ceiling_pct"], row["net_pct_faster"], gpu, hp,
+                    gpu + hp, row["round_gain_us_at_48_layers"],
+                    bool(gpu + hp < 10.0))
+        run.log({f"rung{args.rung}/price": table})
+
+        gdn8 = summary["rung1"].get("gdn.in_proj|M8")
+        if gdn8:
+            for route, row in gdn8["routes"].items():
+                hp = host[(route, 8)] - host[("a_one", 8)]
+                run.summary[f"price_us/{route}_gpu"] = row["price_us_vs_ceiling"]
+                run.summary[f"price_us/{route}_host"] = hp
+                run.summary[f"price_us/{route}_total"] = (
+                    row["price_us_vs_ceiling"] + hp)
 
     run.summary["exactness_cells"] = summary["exactness"]["cells"]
     run.summary["exactness_not_bit_exact"] = summary["exactness"]["not_bit_exact"]
