@@ -281,7 +281,10 @@ def main() -> int:
         print(f"e122_value: mixed forced depths {sorted(forced_seen)}",
               file=sys.stderr)
         return 2
-    dmax = int(next(iter(forced_seen)))
+    # The realised cap, not the requested one. The session clamps the forced
+    # depth by the shipped verify-width cap, so a policy is only priced over
+    # depths the arm actually observed.
+    dmax = max(r["depth"] for r in pooled)
 
     result = {
         "experiment": "e122-target-margin-conditioned-draft-depth",

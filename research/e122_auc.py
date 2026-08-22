@@ -25,6 +25,7 @@ round accepted at least i.
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import math
 import random
@@ -251,6 +252,142 @@ def position_table(rounds: list[dict], key: str = "margin") -> dict:
     return table
 
 
+def concordance_counts(pairs: list[tuple[float, int]]) -> tuple[int, int, int]:
+    """Concordant, discordant and tied pair counts for margin against accept.
+
+    A pair takes one accepted and one rejected draft. It is concordant when the
+    accepted draft carried the larger margin.
+    """
+    accepted = sorted(m for m, y in pairs if y == 1)
+    rejected = [m for m, y in pairs if y == 0]
+    concordant = discordant = tied = 0
+    for margin in rejected:
+        low = bisect.bisect_left(accepted, margin)
+        high = bisect.bisect_right(accepted, margin)
+        concordant += len(accepted) - high
+        discordant += low
+        tied += high - low
+    return concordant, discordant, tied
+
+
+def pooled_concordance(cells: list[list[tuple[float, int]]]) -> dict:
+    """THE PRIMARY GATE STATISTIC.
+
+    Counts are aggregated across every `(prompt, position)` cell BEFORE the
+    ratio is formed, so a cell contributes in proportion to the pairs it
+    actually carries. Averaging per-cell ratios instead would give a cell with
+    three rejections the same weight as one with three hundred.
+
+    A pair never crosses a cell boundary, so neither a between-prompt
+    difference in margin scale nor a between-position difference in acceptance
+    rate can enter the statistic.
+    """
+    total_c = total_d = total_t = 0
+    informative = 0
+    for pairs in cells:
+        c, d, t = concordance_counts(pairs)
+        if c + d + t == 0:
+            continue
+        informative += 1
+        total_c += c
+        total_d += d
+        total_t += t
+    total = total_c + total_d + total_t
+    return {
+        "concordant": total_c,
+        "discordant": total_d,
+        "tied": total_t,
+        "pairs": total,
+        "cells": informative,
+        "auc": ((total_c + 0.5 * total_t) / total) if total else None,
+        "somers_d": ((total_c - total_d) / total) if total else None,
+    }
+
+
+def gate_cells(rounds_by_prompt: dict, positions: range) -> list[list[tuple[float, int]]]:
+    cells = []
+    for rounds in rounds_by_prompt.values():
+        table = position_table(rounds)
+        for position in positions:
+            if position in table:
+                cells.append(table[position]["pairs"])
+    return cells
+
+
+def bootstrap_pooled_concordance(rounds_by_prompt: dict, positions: range,
+                                 reps: int, rng: random.Random):
+    """Cluster bootstrap over ROUNDS within prompt.
+
+    One round supplies a correlated observation at several positions, so the
+    round is the resampling unit. Resampling the position observations
+    independently would understate the interval.
+    """
+    if reps <= 0:
+        return None, None
+    values = []
+    for _ in range(reps):
+        resampled = {}
+        for prompt, rounds in rounds_by_prompt.items():
+            n = len(rounds)
+            if not n:
+                continue
+            resampled[prompt] = [rounds[rng.randrange(n)] for _ in range(n)]
+        block = pooled_concordance(gate_cells(resampled, positions))
+        if block["auc"] is not None:
+            values.append(block["auc"])
+    if len(values) < reps // 4:
+        return None, None
+    values.sort()
+    return (values[int(0.025 * len(values))],
+            values[min(len(values) - 1, int(0.975 * len(values)))])
+
+
+def somers_d_runlength(rounds: list[dict]) -> float | None:
+    """Somers' D of the accept run length given the margin, within one prompt.
+
+    This is the quantity that is algebraically comparable with `2 * AUC - 1`.
+    Pairs tied on the margin are excluded; pairs tied on the run length sit in
+    the denominator, which is what makes it a `D(Y|X)` rather than a gamma.
+    """
+    data = [(r["margin"], r["accepted"]) for r in rounds]
+    concordant = discordant = tied_y = 0
+    for i in range(len(data)):
+        xi, yi = data[i]
+        for j in range(i + 1, len(data)):
+            xj, yj = data[j]
+            if xi == xj:
+                continue
+            if yi == yj:
+                tied_y += 1
+            elif (xi < xj) == (yi < yj):
+                concordant += 1
+            else:
+                discordant += 1
+    total = concordant + discordant + tied_y
+    return ((concordant - discordant) / total) if total else None
+
+
+def weighted_mean(items: list[tuple[float | None, int]]) -> float | None:
+    total, weight = 0.0, 0
+    for value, count in items:
+        if value is None:
+            continue
+        total += value * count
+        weight += count
+    return total / weight if weight else None
+
+
+def verdict_for(value: float | None) -> str:
+    """The pre-registered thresholds, applied without discretion."""
+    if value is None:
+        return "no data"
+    if value <= 0.55:
+        return "kill: at or below 0.55"
+    if value >= 0.65:
+        return "licensed: at or above 0.65"
+    return "ask the advisor: between 0.55 and 0.65"
+
+
 def margin_bins(pairs: list[tuple[float, int]], bins: int = 5) -> list[dict]:
     if len(pairs) < bins * 2:
         return []
@@ -273,12 +410,42 @@ def margin_bins(pairs: list[tuple[float, int]], bins: int = 5) -> list[dict]:
     return out
 
 
+def quantisation_summary(margins: list[float], below: float = 2.0) -> dict:
+    """How many distinct values the margin actually takes, and the coarsest
+    power-of-two grid that reproduces every observed value exactly.
+
+    The trace prints six decimals, so a coarse grid here cannot be a printing
+    artifact: it is the resolution the decision variable arrives with.
+    """
+    distinct = sorted(set(margins))
+    small = [m for m in distinct if m < below]
+    gaps = [b - a for a, b in zip(distinct, distinct[1:]) if b > a]
+    grid = None
+    for k in range(0, 13):
+        step = 2.0 ** (-k)
+        if all(abs(m / step - round(m / step)) < 1e-6 for m in distinct):
+            grid = step
+            break
+    return {
+        "n": len(margins),
+        "distinct": len(distinct),
+        "distinct_below": len(small),
+        "n_below": sum(1 for m in margins if m < below),
+        "below": below,
+        "min_gap": min(gaps) if gaps else None,
+        "grid": grid,
+        "smallest_values": distinct[:12],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("run_dirs", nargs="+", type=Path)
     parser.add_argument("--json", type=Path, default=None)
     parser.add_argument("--boot", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=122)
+    parser.add_argument("--gate-low", type=int, default=2)
+    parser.add_argument("--gate-high", type=int, default=5)
     args = parser.parse_args()
 
     rng = random.Random(args.seed)
@@ -333,6 +500,7 @@ def main() -> int:
                 "p90": quantile(margins, 0.90),
                 "max": margins[-1],
             },
+            "margin_quantisation": quantisation_summary(margins),
             "positions": {},
         }
         table = position_table(rounds)
@@ -360,6 +528,29 @@ def main() -> int:
         by_prompt_tables = {
             prompt: position_table([r for r in pooled if r["prompt"] == prompt])
             for prompt in per_prompt}
+        rounds_by_prompt = {
+            prompt: [r for r in pooled if r["prompt"] == prompt]
+            for prompt in per_prompt}
+        positions = range(args.gate_low, args.gate_high + 1)
+        gate = pooled_concordance(gate_cells(rounds_by_prompt, positions))
+        gate_lo, gate_hi = bootstrap_pooled_concordance(
+            rounds_by_prompt, positions, args.boot, rng)
+        gate["ci"] = [gate_lo, gate_hi]
+        gate["positions"] = [positions.start, positions.stop - 1]
+        gate["somers_d_runlength_within_prompt"] = weighted_mean(
+            [(somers_d_runlength(rs), len(rs))
+             for rs in rounds_by_prompt.values()])
+        gate["verdict"] = verdict_for(gate["auc"])
+        gate["per_prompt"] = {}
+        for prompt, rounds in rounds_by_prompt.items():
+            block = pooled_concordance(gate_cells({prompt: rounds}, positions))
+            block["somers_d_runlength"] = somers_d_runlength(rounds)
+            block["spearman_margin_accepted"] = (
+                per_prompt[prompt]["spearman_margin_accepted"])
+            block["verdict"] = verdict_for(block["auc"])
+            gate["per_prompt"][prompt] = block
+        result["gate"] = gate
+
         result["pooled"] = {
             "rounds": len(pooled),
             "spearman_margin_accepted": spearman_pooled(
@@ -397,6 +588,43 @@ def main() -> int:
     text = []
     text.append("E122 rung 0 -- target top-2 margin against draft acceptance")
     text.append("harness=local  timing_valid=false  official_or_ranked_score=false")
+    if "gate" in result:
+        g = result["gate"]
+        lo, hi = g["ci"]
+        text.append("")
+        text.append(f"## PRIMARY GATE -- prompt-stratified concordance, "
+                    f"positions {g['positions'][0]} to {g['positions'][1]}")
+        text.append(f"   pooled AUC {g['auc']:.4f} "
+                    f"[{(lo if lo is not None else float('nan')):.4f}, "
+                    f"{(hi if hi is not None else float('nan')):.4f}]   "
+                    f"pairs {g['pairs']}  cells {g['cells']}")
+        text.append(f"   concordant {g['concordant']}  discordant {g['discordant']}"
+                    f"  tied {g['tied']}")
+        sd_gate = g["somers_d"]
+        sd_run = g["somers_d_runlength_within_prompt"]
+        text.append(f"   Somers D from the gate pairs      {sd_gate:+.4f}"
+                    f"   (= 2 x AUC - 1)")
+        text.append(f"   Somers D of margin vs run length  "
+                    f"{(sd_run if sd_run is not None else float('nan')):+.4f}"
+                    f"   (the agreement check)")
+        if sd_gate is not None and sd_run is not None:
+            delta = abs(sd_gate - sd_run)
+            text.append(f"   agreement |delta D| {delta:.4f}  "
+                        f"{'OK' if delta <= 0.10 else 'DISAGREE, report it'}")
+        text.append(f"   VERDICT  {g['verdict']}")
+        text.append("")
+        text.append("   per prompt (natural_history can overrule the pool)")
+        text.append(f"   {'prompt':<18}{'pairs':>7}{'AUC':>9}{'D_gate':>9}"
+                    f"{'D_runlen':>10}{'spearman':>10}  verdict")
+        for prompt in sorted(g["per_prompt"]):
+            b = g["per_prompt"][prompt]
+            text.append(
+                f"   {prompt:<18}{b['pairs']:>7}"
+                f"{(b['auc'] if b['auc'] is not None else float('nan')):>9.4f}"
+                f"{(b['somers_d'] if b['somers_d'] is not None else float('nan')):>+9.4f}"
+                f"{(b['somers_d_runlength'] if b['somers_d_runlength'] is not None else float('nan')):>+10.4f}"
+                f"{(b['spearman_margin_accepted'] if b['spearman_margin_accepted'] is not None else float('nan')):>+10.4f}"
+                f"  {b['verdict']}")
     for prompt, block in per_prompt.items():
         text.append("")
         text.append(f"## {prompt}  ({block['rounds']} rounds, "
@@ -405,13 +633,22 @@ def main() -> int:
         m = block["margin"]
         text.append(f"   margin mean {m['mean']:.4f} sd {m['sd']:.4f} "
                     f"p10 {m['p10']:.4f} p50 {m['p50']:.4f} p90 {m['p90']:.4f}")
+        q = block["margin_quantisation"]
+        text.append(
+            f"   margin resolution: {q['distinct']} distinct in {q['n']} rounds, "
+            f"{q['distinct_below']} distinct in the {q['n_below']} rounds "
+            f"below {q['below']:.1f}, min gap "
+            f"{(q['min_gap'] if q['min_gap'] is not None else float('nan')):.6f}, "
+            f"exact grid {q['grid']}")
+        text.append("   smallest margin values "
+                    + ", ".join(f"{v:g}" for v in q["smallest_values"]))
         text.append(f"   depth histogram {block['depth_hist']}")
         rho = block["spearman_margin_accepted"]
         text.append(f"   spearman(margin, accepted) "
                     f"{(rho if rho is not None else float('nan')):.4f}  "
                     f"forced_depth={block['meta'].get('forced_depth')}")
         text.append("   pos   n   acc_rate      AUC   [95% CI]        not_drafted")
-        for position in range(1, 6):
+        for position in range(1, MAX_POSITION + 1):
             cell = block["positions"][position]
             a = cell["auc"]
             ci = cell["auc_ci"]
@@ -433,7 +670,7 @@ def main() -> int:
         text.append("   AUC(z)     within-prompt standardised margin, diagnostic only")
         text.append("   pos    n  rej  acc_rate   AUC(raw)   [95% CI]         "
                     "AUC(strat)   [95% CI]         AUC(z)  prompts")
-        for position in range(1, 6):
+        for position in range(1, MAX_POSITION + 1):
             cell = result["pooled"]["positions"][position]
             a = cell["auc_raw_margin"]
             ci = cell["auc_raw_ci"]
