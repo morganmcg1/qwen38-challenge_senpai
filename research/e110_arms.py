@@ -32,6 +32,13 @@ the backend allocates registers for one width instead of a max over branches:
               streams, and the four staged conversions become scalars instead
               of `vec<float, NA>`, which is `4 * NA` fewer live registers.
   mo_stage    `mo_swap` and `xs_stage` together: additive or the same effect?
+  xr_split2   the four rows of the k-block are processed as two sequential
+              half-passes of two rows, each with its own weight loads, its own
+              `i` loop and its own re-read of `x`. Live weight-side state
+              halves; activation loads and `sums` arithmetic double.
+  xr_split2u  `xr_split2` with both half-passes written out instead of driven by
+              a trip-2 loop, so `acc` keeps constant indices whatever the
+              backend decides about unrolling.
 
 `b_constw` and `l_loadonly` change the arithmetic on purpose and are
 timing-only diagnostics. `b_barrier`, `xs_stage`, `mo_swap` and `mo_stage` must
@@ -404,6 +411,88 @@ def prologue_barrier() -> str:
     return PROLOGUE.replace(K_LOOP_OPEN, K_LOOP_OPEN + BARRIERS)
 
 
+def prologue_nows() -> str:
+    """The shared prologue truncated at the k-loop header.
+
+    The row-split arms own the weight-side loads themselves, one half-pass at a
+    time, so they cannot inherit the prologue's four-row `packed`, `scale_local`
+    and `bias_local` declarations.
+    """
+    expect(PROLOGUE, K_LOOP_OPEN, 1, "k loop open")
+    expect(PROLOGUE, WEIGHT_LOADS, 1, "prologue weight loads")
+    return PROLOGUE[:PROLOGUE.index(K_LOOP_OPEN)] + K_LOOP_OPEN
+
+
+# --- the row-split arms -------------------------------------------------------
+# One half-pass over two of the four rows: its own weight loads, its own `i`
+# loop, its own re-read of `x` and its own recomputation of `sums`.
+#
+# Bit exact by construction. `sums` does not depend on `r`, and each half-pass
+# rebuilds it from the same values, over i = 0..3 outer and m = 0..NA-1 inner,
+# with the same four-term addition tree, so both copies equal the single `sums`
+# of `a_base` bit for bit. `partial[r]` still accumulates over i in order, and
+# each `acc[r]` still takes exactly one increment per k-block, in the same
+# order over k. Nothing in the arithmetic is reassociated.
+#
+# The trade the arm tests: live `packed`, `scale_local`, `bias_local` and
+# `partial` halve, while the activation loads and the `sums` arithmetic double.
+SPLIT_HALF = """      thread uint16_t packed[2][4];
+      thread float scale_local[2];
+      thread float bias_local[2];
+      for (int r = 0; r < 2; r++) {
+        const int row = out_row + %(base)s + r;
+        const device uint16_t* ws = reinterpret_cast<const device uint16_t*>(
+            reinterpret_cast<const device uint8_t*>(w) + row * in_vec_size_w +
+            k / 2 + simd_lid * bytes_per_lane);
+        for (int i = 0; i < 4; i++) {
+          packed[r][i] = ws[i];
+        }
+        const int group_index = row * in_vec_size_g + k / 64 + simd_lid / 4;
+        scale_local[r] = scales[group_index];
+        bias_local[r] = biases[group_index];
+      }
+      VF sums = VF(0.0f);
+      VF partial[2];
+      for (int r = 0; r < 2; r++) {
+        partial[r] = VF(0.0f);
+      }
+      for (int i = 0; i < 4; i++) {
+        VF a0, a1, a2, a3;
+        for (int m = 0; m < NA; m++) {
+          const device T* xm = x + (first_m + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          a0[m] = static_cast<float>(xm[0]);
+          a1[m] = static_cast<float>(xm[1]);
+          a2[m] = static_cast<float>(xm[2]);
+          a3[m] = static_cast<float>(xm[3]);
+        }
+        for (int r = 0; r < 2; r++) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        }
+      }
+      for (int r = 0; r < 2; r++) {
+        acc[%(base)s + r] += scale_local[r] * partial[r] + sums * bias_local[r];
+      }
+"""
+
+# The half-pass driven by a trip-2 loop. If the backend declines to unroll it,
+# `acc[2 * h + r]` stops being a constant index and the whole `acc` array moves
+# to the stack, which would cost far more than the arm can win.
+BODY_XR_SPLIT2 = ("    for (int h = 0; h < 2; h++) {\n"
+                  + SPLIT_HALF % {"base": "2 * h"}
+                  + "    }\n")
+
+# The same two half-passes written out, so every `acc` index is a literal. This
+# separates the register question from the unroll question: if the loop form
+# spills and this one does not, the cause is the unroll and not the liveness.
+BODY_XR_SPLIT2U = ("    {\n" + SPLIT_HALF % {"base": "0"} + "    }\n"
+                   + "    {\n" + SPLIT_HALF % {"base": "2"} + "    }\n")
+
+
 # --- the staged arm ----------------------------------------------------------
 # The tile is `NA * block_size` bf16 values, 5,120 B at NA = 5, against a 32 KB
 # threadgroup budget. All 64 threads of the threadgroup cooperate on a coalesced
@@ -627,6 +716,7 @@ STAGED_KERNEL = """
 # body the arm appends instead.
 BODIES = {
     "a_base": None,
+    "a_scaffold": (PROLOGUE, BODY_BASE, EPILOGUE),
     "l_loadonly": (PROLOGUE, BODY_LOADONLY, EPILOGUE),
     "b_constw": (prologue_constw(), BODY_WONLY, EPILOGUE),
     "b_barrier": (prologue_barrier(), BODY_BASE, EPILOGUE),
@@ -638,6 +728,8 @@ BODIES = {
     "mo_swap": (PROLOGUE, BODY_MOSWAP, EPILOGUE),
     "mu_swap": (PROLOGUE, BODY_MUSWAP, EPILOGUE),
     "mo_hoist": (PROLOGUE, BODY_MOHOIST, EPILOGUE),
+    "xr_split2": (prologue_nows(), BODY_XR_SPLIT2, EPILOGUE),
+    "xr_split2u": (prologue_nows(), BODY_XR_SPLIT2U, EPILOGUE),
 }
 
 STAGED = {"xs_stage": ("_xs", STAGED_BODY_XS),
@@ -646,15 +738,16 @@ STAGED = {"xs_stage": ("_xs", STAGED_BODY_XS),
 
 # Arms that must reproduce `a_base` bit for bit. The rest change the arithmetic
 # on purpose and are timing-only.
-EXACT_ARMS = ("b_barrier", "xs_stage", "mo_stage", "xv4", "xv8", "xv4_stage",
-              "mo_swap", "mu_swap", "mo_hoist")
+EXACT_ARMS = ("a_scaffold", "b_barrier", "xs_stage", "mo_stage", "xv4", "xv8",
+              "xv4_stage", "mo_swap", "mu_swap", "mo_hoist", "xr_split2",
+              "xr_split2u")
 
 # Every arm the census covers. The harness admits eight per timed session and
 # runs its positive control on the LAST one, so `research/e110_probe.sh` names
 # the timing subset and always ends it with an exact arm.
-ARMS = ("a_base", "l_loadonly", "b_constw", "b_barrier", "xs_stage",
-        "mo_stage", "xv4", "xv8", "xv4_stage", "mo_swap", "mu_swap",
-        "mo_hoist")
+ARMS = ("a_base", "a_scaffold", "l_loadonly", "b_constw", "b_barrier",
+        "xs_stage", "mo_stage", "xv4", "xv8", "xv4_stage", "mo_swap",
+        "mu_swap", "mo_hoist", "xr_split2", "xr_split2u")
 
 
 def arm_source(base: str, arm: str) -> str:
