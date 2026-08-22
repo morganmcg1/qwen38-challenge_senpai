@@ -1,0 +1,21 @@
+{
+  "above_is_exact" : true,
+  "centroid_sketch_rel_error" : 2.7429152282820723e-07,
+  "clusters" : 2048,
+  "cursor_is_exact" : true,
+  "entry_point" : "qwen35VerifyC1Selection",
+  "hidden" : 5120,
+  "positive_control_rel_error" : 1.2454812526702881,
+  "project_rel_error" : 2.5232998268620577e-07,
+  "rescore_contiguous_mismatches" : 0,
+  "rescore_gathered_mismatches" : 0,
+  "row_sketch_rel_error" : 3.058902109387418e-07,
+  "schema" : "e136.c1_selection_verify.v1",
+  "seed" : 1136,
+  "shortlist_mismatches" : 0,
+  "sketch_top32_recall" : 1,
+  "survivor_capacity" : 4096,
+  "survivors_below_tau" : 0,
+  "survivors_distinct" : 4096,
+  "tau_is_exact" : true
+}

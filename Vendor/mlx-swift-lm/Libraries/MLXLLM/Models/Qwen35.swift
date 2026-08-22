@@ -4544,7 +4544,19 @@ public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
 public nonisolated(unsafe) var qwen35C1SketchDrafts: Int = 0
 
 /// `unset`, `0` or `1`, for the same trace line.
-public var qwen35RowTop32GateSource: String { qwen35RowTop32Resolved.source }
+///
+/// The E136 C1 shortlist bypasses the row selection entirely, so a C1 leg
+/// would otherwise be indistinguishable from a leg that drafted nothing:
+/// `sel_fused` and `sel_argpart` both stay at zero. When and only when the C1
+/// gate is on, this appends `+c1:<draft steps>` so one trace line still names
+/// the shortlist that ran. With the C1 environment variable unset the string
+/// is unchanged, so the bare-leg reading of `sel_env=unset sel_argpart=0`
+/// keeps its meaning.
+public var qwen35RowTop32GateSource: String {
+    qwen35C1SketchEnabled
+        ? "\(qwen35RowTop32Resolved.source)+c1:\(qwen35C1SketchDrafts)"
+        : qwen35RowTop32Resolved.source
+}
 
 // `MLXFAST_QWEN_MTP_TOP32=0` restores the argPartition path bit-for-bit.
 private let qwen35Top32Enabled: Bool =
