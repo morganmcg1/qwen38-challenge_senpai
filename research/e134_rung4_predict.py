@@ -176,7 +176,7 @@ def main() -> int:
     }
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps(payload, indent=1, sort_keys=True) + "\n")
-    print("\nwrote %s" % args.json.relative_to(here))
+    print("\nwrote %s" % args.json)
     return 0
 
 

@@ -32,6 +32,7 @@ Usage:
 import argparse
 import json
 import pathlib
+import random
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -86,28 +87,38 @@ def solve(matrix, rhs):
     return [aug[i][n] / aug[i][i] for i in range(n)]
 
 
+def invert(matrix):
+    """Explicit inverse, by solving the system against each identity column."""
+    n = len(matrix)
+    columns = [solve(matrix, [1.0 if r == c else 0.0 for r in range(n)])
+               for c in range(n)]
+    return [[columns[c][r] for c in range(n)] for r in range(n)]
+
+
 def least_squares(design, observed, weights):
     """Weighted normal equations, returned with residuals and fit quality."""
     k = len(design[0])
-    ata = [[sum(weights[i] * design[i][a] * design[i][b]
-                for i in range(len(observed)))
+    n = len(observed)
+    ata = [[sum(weights[i] * design[i][a] * design[i][b] for i in range(n))
             for b in range(k)] for a in range(k)]
-    atb = [sum(weights[i] * design[i][a] * observed[i]
-               for i in range(len(observed))) for a in range(k)]
+    atb = [sum(weights[i] * design[i][a] * observed[i] for i in range(n))
+           for a in range(k)]
     beta = solve(ata, atb)
     fitted = [sum(beta[a] * row[a] for a in range(k)) for row in design]
-    residual = [observed[i] - fitted[i] for i in range(len(observed))]
-    mean = sum(observed) / len(observed)
-    ss_res = sum(weights[i] * residual[i] ** 2 for i in range(len(observed)))
-    ss_tot = sum(weights[i] * (observed[i] - mean) ** 2
-                 for i in range(len(observed)))
+    residual = [observed[i] - fitted[i] for i in range(n)]
+    mean = sum(observed) / n
+    ss_res = sum(weights[i] * residual[i] ** 2 for i in range(n))
+    ss_tot = sum(weights[i] * (observed[i] - mean) ** 2 for i in range(n))
+    sigma2 = ss_res / (n - k) if n > k else float("nan")
+    cov = invert(ata)
     return {
         "beta": beta,
+        "se": [(sigma2 * cov[a][a]) ** 0.5 for a in range(k)],
         "fitted": fitted,
         "residual": residual,
-        "rms_residual_us": (sum(r * r for r in residual)
-                            / len(residual)) ** 0.5,
+        "rms_residual_us": (sum(r * r for r in residual) / n) ** 0.5,
         "max_abs_residual_us": max(abs(r) for r in residual),
+        "residual_sigma_us": sigma2 ** 0.5,
         "r2": 1.0 - ss_res / ss_tot if ss_tot else float("nan"),
     }
 
@@ -142,25 +153,39 @@ def width_masses(args):
     return masses, gate
 
 
+FORMS = ("per_round", "per_drafting_round", "proportional")
+
+
+def uniform_column(masses, prompts, form):
+    if form == "per_round":
+        return [1.0 for _ in prompts]
+    if form == "per_drafting_round":
+        return [masses[p]["drafting_share"] for p in prompts]
+    return [MEASURED[p]["before"] / 1000.0 for p in prompts]
+
+
+def build_design(masses, prompts, form):
+    column = uniform_column(masses, prompts, form)
+    return [[column[i],
+             masses[p]["by_width"].get(6, 0.0),
+             masses[p]["by_width"].get(7, 0.0)]
+            for i, p in enumerate(prompts)]
+
+
+def fit_one(masses, prompts, observed, form):
+    fit = least_squares(build_design(masses, prompts, form), observed,
+                        [1.0] * len(prompts))
+    fit["prompts"] = list(prompts)
+    fit["form"] = form
+    return fit
+
+
 def fit_all(masses):
     prompts = [p for p in MEASURED if p in masses]
     observed = [MEASURED[p]["delta_us"] for p in prompts]
     m6 = [masses[p]["by_width"].get(6, 0.0) for p in prompts]
     m7 = [masses[p]["by_width"].get(7, 0.0) for p in prompts]
-    forms = {
-        "per_round": [1.0 for _ in prompts],
-        "per_drafting_round": [masses[p]["drafting_share"] for p in prompts],
-        "proportional": [MEASURED[p]["before"] / 1000.0 for p in prompts],
-    }
-    weights = [1.0] * len(prompts)
-    out = {}
-    for name, column in forms.items():
-        design = [[column[i], m6[i], m7[i]] for i in range(len(prompts))]
-        fit = least_squares(design, observed, weights)
-        fit["prompts"] = prompts
-        fit["form"] = name
-        fit["column"] = column
-        out[name] = fit
+    out = {form: fit_one(masses, prompts, observed, form) for form in FORMS}
     return prompts, observed, m6, m7, out
 
 
@@ -206,27 +231,119 @@ def measured_curve(fit, form):
     return curve
 
 
-def report_curve(curve, label):
+def curve_shape(curve):
     saved = e128_price.CURVE
     e128_price.CURVE = curve
     rows = list(range(1, MAX_DEPTH + 2))
     values = [e128_price.ranked_round_us(m) for m in rows]
-    print("\n## %s" % label)
-    print("rows      " + " ".join("%9d" % m for m in rows))
-    print("round us  " + " ".join("%9.1f" % v for v in values))
+    e128_price.CURVE = saved
     steps = [values[i + 1] - values[i] for i in range(len(values) - 1)]
     shallow = steps[0]
-    print("step us   " + " " * 9 + " ".join("%9.1f" % s for s in steps))
-    print("ratio     " + " " * 9 + " ".join(
-        "%9.3f" % (s / shallow if shallow else float("nan")) for s in steps))
-    boundary = max(range(len(steps)), key=lambda i: steps[i])
-    print("largest step is boundary %d (M %d -> %d), ratio %.3f"
-          % (boundary, boundary + 1, boundary + 2,
-             steps[boundary] / shallow if shallow else float("nan")))
-    e128_price.CURVE = saved
     return {"rows": rows, "round_us": values, "steps": steps,
             "ratios": [s / shallow if shallow else None for s in steps],
-            "argmax_boundary": boundary}
+            "argmax_boundary": max(range(len(steps)), key=lambda i: steps[i])}
+
+
+def report_curve(curve, label):
+    shape = curve_shape(curve)
+    steps, boundary = shape["steps"], shape["argmax_boundary"]
+    print("\n## %s" % label)
+    print("rows      " + " ".join("%9d" % m for m in shape["rows"]))
+    print("round us  " + " ".join("%9.1f" % v for v in shape["round_us"]))
+    print("step us   " + " " * 9 + " ".join("%9.1f" % s for s in steps))
+    print("ratio     " + " " * 9 + " ".join(
+        "%9.3f" % r for r in shape["ratios"]))
+    print("largest step is boundary %d (M %d -> %d), ratio %.3f"
+          % (boundary, boundary + 1, boundary + 2, shape["ratios"][boundary]))
+    return shape
+
+
+def leave_one_prompt_out(masses):
+    """Refit the inversion eight times, dropping one ranked prompt each time.
+
+    The selection rule the arm rests on is the argmax boundary of the rebuilt
+    curve, so that is what has to survive, not the coefficients.
+    """
+    prompts = [p for p in MEASURED if p in masses]
+    out = {}
+    for form in FORMS:
+        rows = []
+        for held in prompts:
+            kept = [p for p in prompts if p != held]
+            fit = fit_one(masses, kept,
+                          [MEASURED[p]["delta_us"] for p in kept], form)
+            shape = curve_shape(measured_curve(fit, form))
+            rows.append({
+                "held_out": held,
+                "uniform": fit["beta"][0],
+                "delta_round_us_6": fit["beta"][1],
+                "delta_round_us_7": fit["beta"][2],
+                "argmax_boundary": shape["argmax_boundary"],
+                "ratio_at_argmax": shape["ratios"][shape["argmax_boundary"]],
+                "ratio_at_4": shape["ratios"][4],
+            })
+        out[form] = rows
+    return out
+
+
+def bootstrap_once(masses, prompts, form, sigma, draws, seed):
+    rng = random.Random(seed)
+    centre = [MEASURED[p]["delta_us"] for p in prompts]
+    record = {"delta_round_us_6": [], "delta_round_us_7": [],
+              "ratio_at_4": [], "argmax_boundary": []}
+    for _ in range(draws):
+        drawn = [rng.gauss(centre[i], sigma[i]) for i in range(len(prompts))]
+        fit = fit_one(masses, prompts, drawn, form)
+        shape = curve_shape(measured_curve(fit, form))
+        record["delta_round_us_6"].append(fit["beta"][1])
+        record["delta_round_us_7"].append(fit["beta"][2])
+        record["ratio_at_4"].append(shape["ratios"][4])
+        record["argmax_boundary"].append(shape["argmax_boundary"])
+    summary = {
+        "draws": draws,
+        "sigma_us": dict(zip(prompts, sigma)),
+        "p_argmax_is_4": sum(1 for b in record["argmax_boundary"]
+                             if b == 4) / draws,
+        "argmax_histogram": {str(b): record["argmax_boundary"].count(b)
+                             for b in sorted(set(record["argmax_boundary"]))},
+    }
+    for key in ("delta_round_us_6", "delta_round_us_7", "ratio_at_4"):
+        values = sorted(record[key])
+        summary[key] = {"mean": sum(values) / draws,
+                        "p2.5": values[int(0.025 * draws)],
+                        "p50": values[draws // 2],
+                        "p97.5": values[min(draws - 1, int(0.975 * draws))]}
+    return summary
+
+
+def bootstrap(masses, fits, draws, sigma_pct, seed):
+    """Resample the eight receipt deltas under two noise models.
+
+    `leg_noise` believes FINDING 154: each observed delta is a difference of
+    two ranked candidate legs, so its own standard deviation is `sqrt(2)`
+    times the per-prompt leg figure. That is the optimistic model, and the
+    inversion's own residual is larger than it, which means the three-term
+    model is misspecified rather than merely noisy.
+
+    `residual_noise` therefore repeats the draw at each form's fitted residual
+    sigma, which absorbs the misspecification into the error bar. Any claim
+    the refit makes has to survive the second model, not the first.
+    """
+    prompts = [p for p in MEASURED if p in masses]
+    leg_sigma = [(2.0 ** 0.5) * sigma_pct / 100.0 * MEASURED[p]["before"]
+                 for p in prompts]
+    out = {}
+    for form in FORMS:
+        residual_sigma = [fits[form]["residual_sigma_us"]] * len(prompts)
+        out[form] = {
+            "leg_noise": bootstrap_once(masses, prompts, form, leg_sigma,
+                                        draws, seed),
+            "residual_noise": bootstrap_once(masses, prompts, form,
+                                             residual_sigma, draws, seed + 1),
+            "sigma_pct_per_leg": sigma_pct,
+            "residual_sigma_us": fits[form]["residual_sigma_us"],
+        }
+    return out
 
 
 def main():
@@ -239,6 +356,9 @@ def main():
     ap.add_argument("--fit-windows", type=int, default=60)
     ap.add_argument("--seed", type=int, default=128)
     ap.add_argument("--seeds", type=int, default=6)
+    ap.add_argument("--draws", type=int, default=2000)
+    ap.add_argument("--sigma-pct", type=float, default=0.0707,
+                    help="FINDING 154 per-prompt candidate-leg sd, per cent")
     ap.add_argument("--json", type=pathlib.Path,
                     default=HERE / "e134-artifacts/item2-measured-curve.json")
     args = ap.parse_args()
@@ -267,12 +387,12 @@ def main():
 
     prompts, observed, m6, m7, fits = fit_all(masses)
     print("\n## inversion, three forms of the uniform templating term")
-    print("%-20s %12s %12s %12s %10s %10s" % (
+    print("%-20s %18s %18s %18s %9s %7s" % (
         "form", "uniform", "d round(6)", "d round(7)", "rms res", "r2"))
     for name, fit in fits.items():
-        print("%-20s %12.2f %12.2f %12.2f %10.2f %10.4f" % (
-            name, fit["beta"][0], fit["beta"][1], fit["beta"][2],
-            fit["rms_residual_us"], fit["r2"]))
+        print("%-20s %9.1f+-%7.1f %9.1f+-%7.1f %9.1f+-%7.1f %9.1f %7.4f" % (
+            name, fit["beta"][0], fit["se"][0], fit["beta"][1], fit["se"][1],
+            fit["beta"][2], fit["se"][2], fit["rms_residual_us"], fit["r2"]))
 
     best = min(fits.values(), key=lambda f: f["rms_residual_us"])
     print("\n## residuals, best form %s" % best["form"])
@@ -283,6 +403,40 @@ def main():
             prompt, m6[index], m7[index], observed[index],
             best["fitted"][index], best["residual"][index]))
 
+    lopo = leave_one_prompt_out(masses)
+    print("\n## leave-one-prompt-out on the inversion itself")
+    print("%-20s %-10s %10s %10s %8s %8s" % (
+        "form", "held out", "d round(6)", "d round(7)", "argmax", "ratio@4"))
+    for name in FORMS:
+        for row in lopo[name]:
+            print("%-20s %-10s %10.1f %10.1f %8d %8.3f" % (
+                name, row["held_out"], row["delta_round_us_6"],
+                row["delta_round_us_7"], row["argmax_boundary"],
+                row["ratio_at_4"]))
+
+    boot = bootstrap(masses, fits, args.draws, args.sigma_pct, args.seed)
+    print("\n## bootstrap, %d draws, two noise models" % args.draws)
+    print("%-20s %-15s %8s %22s %22s %22s" % (
+        "form", "noise", "P(b=4)", "d round(6) 95%", "d round(7) 95%",
+        "ratio@4 95%"))
+    for name in FORMS:
+        for model in ("leg_noise", "residual_noise"):
+            entry = boot[name][model]
+            print("%-20s %-15s %8.4f %9.1f [%6.0f,%6.0f] %9.1f [%6.0f,%6.0f] "
+                  "%7.3f [%5.3f,%5.3f]" % (
+                      name, model, entry["p_argmax_is_4"],
+                      entry["delta_round_us_6"]["p50"],
+                      entry["delta_round_us_6"]["p2.5"],
+                      entry["delta_round_us_6"]["p97.5"],
+                      entry["delta_round_us_7"]["p50"],
+                      entry["delta_round_us_7"]["p2.5"],
+                      entry["delta_round_us_7"]["p97.5"],
+                      entry["ratio_at_4"]["p50"],
+                      entry["ratio_at_4"]["p2.5"],
+                      entry["ratio_at_4"]["p97.5"]))
+            print("%-36s argmax histogram %s"
+                  % ("", entry["argmax_histogram"]))
+
     results = {
         "receipt": RECEIPT,
         "receipt_note": RECEIPT_NOTE,
@@ -292,6 +446,8 @@ def main():
         "attachment_gate": gate,
         "fits": {name: {k: v for k, v in fit.items() if k != "column"}
                  for name, fit in fits.items()},
+        "leave_one_prompt_out": lopo,
+        "bootstrap": boot,
         "best_form": best["form"],
         "curves": {},
     }

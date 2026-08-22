@@ -1,0 +1,722 @@
+{
+  "arms": {
+    "pb5": {
+      "mean": -4.352533932571238,
+      "per_seed": [
+        -4.430072977813637,
+        -4.356785305632149,
+        -4.3842063273554555,
+        -4.3051844098171195,
+        -4.355607422653451,
+        -4.283347152155614
+      ],
+      "sd": 0.053050452461748464
+    },
+    "pb6": {
+      "mean": -2.2702751441149434,
+      "per_seed": [
+        -2.3408000944402096,
+        -2.1291819062705275,
+        -2.224444317553631,
+        -2.337018438390015,
+        -2.22191395931014,
+        -2.3682921487251374
+      ],
+      "sd": 0.09314756010359393
+    },
+    "pb7": {
+      "mean": -10.364484510978082,
+      "per_seed": [
+        -10.472829520346771,
+        -10.308741906379481,
+        -10.280679517312452,
+        -10.39171976169494,
+        -10.350850958391133,
+        -10.382085401743712
+      ],
+      "sd": 0.06798026181080573
+    },
+    "pbfit": {
+      "mean": 0.07784784158108386,
+      "per_seed": [
+        0.07293363053157975,
+        0.0931533730471612,
+        0.03288114729433911,
+        0.053758543939252945,
+        0.10979446409959959,
+        0.10456589057457055
+      ],
+      "sd": 0.03031549917785068
+    },
+    "rankedprice": {
+      "mean": -3.123394074355753,
+      "per_seed": [
+        -3.2325583322160623,
+        -3.0072896199577315,
+        -3.0839709785194347,
+        -3.130678969059575,
+        -3.0625823217504955,
+        -3.2232842246312177
+      ],
+      "sd": 0.09020026727055483
+    },
+    "tierprice@1.0000": {
+      "mean": 0.0,
+      "per_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sd": 0.0
+    },
+    "tierprice@1.2000": {
+      "mean": -1.9209573859523432,
+      "per_seed": [
+        -1.9282066416735577,
+        -1.8426961326637126,
+        -1.9635533021733709,
+        -1.9188694760314484,
+        -1.9937640750958496,
+        -1.8786546880761201
+      ],
+      "sd": 0.05492991744579911
+    },
+    "tierprice@1.3500": {
+      "mean": -3.0163016582968716,
+      "per_seed": [
+        -3.051428963596914,
+        -3.044330249485383,
+        -3.067452411300109,
+        -2.9680991113785637,
+        -3.012430410316558,
+        -2.954068803703702
+      ],
+      "sd": 0.04657752530052362
+    },
+    "tierprice@1.4000": {
+      "mean": -3.4267999238453233,
+      "per_seed": [
+        -3.4031661416488834,
+        -3.3775139116545505,
+        -3.4666108933994355,
+        -3.476758091359222,
+        -3.4685442756807294,
+        -3.368206229329118
+      ],
+      "sd": 0.04948577655039787
+    },
+    "tierprice@1.4500": {
+      "mean": -3.946661458299531,
+      "per_seed": [
+        -4.008202409461992,
+        -3.957524488076458,
+        -3.957926922547639,
+        -3.966022984441897,
+        -3.8965822655175564,
+        -3.8937096797516446
+      ],
+      "sd": 0.04408829746379493
+    },
+    "tierprice@1.6000": {
+      "mean": -5.741874837774301,
+      "per_seed": [
+        -5.763805000029443,
+        -5.766454902622442,
+        -5.823213702100061,
+        -5.714069219720552,
+        -5.654423963983102,
+        -5.729282238190203
+      ],
+      "sd": 0.05706225326914571
+    },
+    "tierprice@1.7500": {
+      "mean": -10.106910599587552,
+      "per_seed": [
+        -10.186839791551549,
+        -10.02526551395595,
+        -10.124911802474667,
+        -10.116815601856889,
+        -10.054364187256803,
+        -10.133266700429456
+      ],
+      "sd": 0.05819367252815243
+    }
+  },
+  "cap": 7,
+  "census": {
+    "beagle": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.781975517095821,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.6229445668757416,
+          "share_asked": 0.9960320810468553
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.5692840127646186,
+          "share_asked": 0.9391726466863656
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.7053167780961477,
+          "share_asked": 0.6629379485014775
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.7202692595362753,
+          "share_asked": 0.5643731532292107
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.7607057363241422,
+          "share_asked": 0.47610806247361753
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.7826316902898244,
+          "share_asked": 0.3990713381173491
+        }
+      ],
+      "rounds": 23690
+    },
+    "botany": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.9988177202865289,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.996859296482412,
+          "share_asked": 0.9964531608595869
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.9933603578417668,
+          "share_asked": 0.995062243549621
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.9910304247990815,
+          "share_asked": 0.9691911815842548
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.9893206089525108,
+          "share_asked": 0.9182140621740038
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.9879696769940672,
+          "share_asked": 0.8440086236873218
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.9882987476003291,
+          "share_asked": 0.7607622226858614
+        }
+      ],
+      "rounds": 14379
+    },
+    "drama": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.7414057312152015,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.5876605601179196,
+          "share_asked": 0.6064514481279052
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.5914310726607961,
+          "share_asked": 0.4959646523982224
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.5476594003857168,
+          "share_asked": 0.43701792920263577
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.5286156746566119,
+          "share_asked": 0.37932267456709406
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.46755076668048073,
+          "share_asked": 0.3081422076927006
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.4440605899548233,
+          "share_asked": 0.1922153547530265
+        }
+      ],
+      "rounds": 39154
+    },
+    "essays": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.9600676103950982,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.9137071981342096,
+          "share_asked": 0.9965138390027467
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.877376526818906,
+          "share_asked": 0.9946122966406085
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.8180547010459198,
+          "share_asked": 0.9443798859074582
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.7702594276544531,
+          "share_asked": 0.7899852102260723
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.7673705107381339,
+          "share_asked": 0.5853581238115361
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.776962582538518,
+          "share_asked": 0.4319670399323896
+        }
+      ],
+      "rounds": 18932
+    },
+    "medicine": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.9162361217983951,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.8748344370860928,
+          "share_asked": 0.9959327250742003
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.8194536606945366,
+          "share_asked": 0.9939540507859734
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.8073251388282273,
+          "share_asked": 0.880894800483676
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.7909484339470403,
+          "share_asked": 0.7493129603165879
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.8708642654202181,
+          "share_asked": 0.5997031988567659
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.898306824012314,
+          "share_asked": 0.535616137188084
+        }
+      ],
+      "rounds": 18194
+    },
+    "plutarch": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.30481720781876176,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.16962025316455695,
+          "share_asked": 0.07672568904882637
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.06438515081206496,
+          "share_asked": 0.052874785311196534
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.02824858757062147,
+          "share_asked": 0.02171423897930809
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.0049382716049382715,
+          "share_asked": 0.00414042692402061
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": NaN,
+          "share_asked": 0.0
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": NaN,
+          "share_asked": 0.0
+        }
+      ],
+      "rounds": 97816
+    },
+    "republic": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.9014225106064387,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.7388362652232747,
+          "share_asked": 0.995907162465685
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.6475121204388875,
+          "share_asked": 0.9780384327427003
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.7923740803621958,
+          "share_asked": 0.7055652607936111
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.7934774188550624,
+          "share_asked": 0.6443224357374594
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.8060189728491985,
+          "share_asked": 0.6103319191415024
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.7758817837980473,
+          "share_asked": 0.5674569503369105
+        }
+      ],
+      "rounds": 20035
+    },
+    "travel": {
+      "boundaries": [
+        {
+          "depth": 0,
+          "p_needed_given_asked": 0.7129083960054248,
+          "share_asked": 1.0
+        },
+        {
+          "depth": 1,
+          "p_needed_given_asked": 0.5079929854880931,
+          "share_asked": 0.9702132905930219
+        },
+        {
+          "depth": 2,
+          "p_needed_given_asked": 0.3228416492124064,
+          "share_asked": 0.8594008137097768
+        },
+        {
+          "depth": 3,
+          "p_needed_given_asked": 0.39548236823574023,
+          "share_asked": 0.45520897546541733
+        },
+        {
+          "depth": 4,
+          "p_needed_given_asked": 0.37857142857142856,
+          "share_asked": 0.2485513500184934
+        },
+        {
+          "depth": 5,
+          "p_needed_given_asked": 0.16939278512211517,
+          "share_asked": 0.11004808285045001
+        },
+        {
+          "depth": 6,
+          "p_needed_given_asked": 0.07551487414187644,
+          "share_asked": 0.02155098015041302
+        }
+      ],
+      "rounds": 40555
+    }
+  },
+  "cliff": 5,
+  "cliff_lofo": {
+    "chosen": {
+      "beagle": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "botany": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "drama": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "essays": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "medicine": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "plutarch": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "republic": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "travel": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "held_out": 0.0,
+    "in_sample": 0.0,
+    "per_seed": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "sd": 0.0
+  },
+  "cliff_ratio": 1.75,
+  "costaware_differs": [
+    {
+      "capability": 5,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 5
+    },
+    {
+      "capability": 6,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 5
+    },
+    {
+      "capability": 7,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 5
+    },
+    {
+      "capability": 8,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 5
+    },
+    {
+      "capability": 9,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 5
+    },
+    {
+      "capability": 5,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 6
+    },
+    {
+      "capability": 6,
+      "costaware": 4,
+      "greedy": 6,
+      "offer": 6
+    },
+    {
+      "capability": 7,
+      "costaware": 4,
+      "greedy": 6,
+      "offer": 6
+    },
+    {
+      "capability": 8,
+      "costaware": 4,
+      "greedy": 6,
+      "offer": 6
+    },
+    {
+      "capability": 9,
+      "costaware": 4,
+      "greedy": 6,
+      "offer": 6
+    },
+    {
+      "capability": 5,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 7
+    },
+    {
+      "capability": 6,
+      "costaware": 4,
+      "greedy": 6,
+      "offer": 7
+    },
+    {
+      "capability": 5,
+      "costaware": 4,
+      "greedy": 5,
+      "offer": 8
+    },
+    {
+      "capability": 6,
+      "costaware": 4,
+      "greedy": 6,
+      "offer": 8
+    }
+  ],
+  "curve": "measured_per_drafting_round",
+  "decode_tokens": 512,
+  "family": "tier",
+  "fit_windows": 60,
+  "gate": {
+    "accept_mismatch": 0,
+    "attached": 1494,
+    "legs": 12,
+    "margin_mismatch": 0,
+    "unmatched": 0
+  },
+  "grid": [
+    {
+      "accept_rate": 0.7494486549601501,
+      "mean_depth": 4.384433641693576,
+      "median_pct": 0.0,
+      "sd": 0.0,
+      "weight": 1.0
+    },
+    {
+      "accept_rate": 0.752701370593851,
+      "mean_depth": 4.268429573016706,
+      "median_pct": -1.9209573859523432,
+      "sd": 0.05492991744579911,
+      "weight": 1.2
+    },
+    {
+      "accept_rate": 0.7533495404745656,
+      "mean_depth": 4.202172035929214,
+      "median_pct": -3.0163016582968716,
+      "sd": 0.04657752530052362,
+      "weight": 1.35
+    },
+    {
+      "accept_rate": 0.7527719407620901,
+      "mean_depth": 4.178116329328418,
+      "median_pct": -3.4267999238453233,
+      "sd": 0.04948577655039787,
+      "weight": 1.4
+    },
+    {
+      "accept_rate": 0.7515331260448921,
+      "mean_depth": 4.153956688060265,
+      "median_pct": -3.946661458299531,
+      "sd": 0.04408829746379493,
+      "weight": 1.45
+    },
+    {
+      "accept_rate": 0.7455226102157636,
+      "mean_depth": 4.040030093729991,
+      "median_pct": -5.741874837774301,
+      "sd": 0.05706225326914571,
+      "weight": 1.6
+    },
+    {
+      "accept_rate": 0.7314649960883567,
+      "mean_depth": 3.7467059469076918,
+      "median_pct": -10.106910599587552,
+      "sd": 0.05819367252815243,
+      "weight": 1.75
+    }
+  ],
+  "increments": {},
+  "receipt": "d3c491b5",
+  "round_us": [
+    31171.46872642797,
+    34568.034677747906,
+    38014.10648459555,
+    41460.17829144319,
+    44906.25009829083,
+    61472.984470091156,
+    62941.50320097771,
+    70264.14198160992,
+    75587.6733463046
+  ],
+  "seeds": [
+    128,
+    129,
+    130,
+    131,
+    132,
+    133
+  ],
+  "windows": 200
+}
