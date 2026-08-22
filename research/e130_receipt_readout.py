@@ -104,13 +104,18 @@ TIER0_CANDIDATE_REL_SD_PCT = 0.0279
 TIER0_SCORE_REL_SD_PCT = 0.1416
 TIER0_N = 4
 
-# Chi-square 95 % interval on an sd estimated from 4 observations, 3 dof.
-SD_CI_LO_FACTOR = 0.566
-SD_CI_HI_FACTOR = 3.73
+# research/e130_instrument_sd.py, identification B: the same quantity pooled
+# over 36 repeat tiers, 70 degrees of freedom, 95 % interval
+# [0.0487, 0.0699]. Pooling includes tiers that may mix near-identical trees,
+# so this is the conservative estimate and tier 0 alone is the optimistic one.
+POOLED_CANDIDATE_REL_SD_PCT = 0.0532
+POOLED_CANDIDATE_REL_SD_CI = (0.0487, 0.0699)
+POOLED_SCORE_REL_SD_PCT = 0.2546
+POOLED_DOF = 70
 
-# research/board_noise_identification.py, section A. The serial leg is a pinned
-# prebuilt binary, so this row is pure instrument noise.
-SERIAL_LEG_REL_SD_PCT = 0.2257
+# research/e130_instrument_sd.py, identification C. The serial leg is a pinned
+# prebuilt binary in the runner-owned workspace, so no candidate edit moves it.
+SERIAL_LEG_REL_SD_PCT = 0.1113
 
 # The bracket F8 asked this receipt to test.
 BRACKET_LO, BRACKET_HI = 0.199, 0.301
@@ -296,28 +301,32 @@ def main() -> int:
     observed_delta_pct = 100.0 * (cand_mean - tier_mean) / tier_mean
     observed_saving_pct = -observed_delta_pct
 
-    # One new draw against a mean of TIER0_N draws.
-    sd_pt = TIER0_CANDIDATE_REL_SD_PCT
-    se_pt = sd_pt * math.sqrt(1.0 + 1.0 / TIER0_N)
-    se_conservative = sd_pt * SD_CI_HI_FACTOR * math.sqrt(1.0 + 1.0 / TIER0_N)
-    se_optimistic = sd_pt * SD_CI_LO_FACTOR * math.sqrt(1.0 + 1.0 / TIER0_N)
+    # One new draw against a mean of TIER0_N draws. The conservative sd is
+    # pooled over 36 tiers and 70 dof; the optimistic one is tier 0 alone.
+    spread = math.sqrt(1.0 + 1.0 / TIER0_N)
+    se_conservative = POOLED_CANDIDATE_REL_SD_PCT * spread
+    se_pt = TIER0_CANDIDATE_REL_SD_PCT * spread
+    se_ci = tuple(x * spread for x in POOLED_CANDIDATE_REL_SD_CI)
 
     print()
     print("TIER TEST. mean candidate decode time, seconds per token.")
     print("  parent tier   %s" % " ".join(TIER0_MEMBERS))
     for prefix, value in zip(TIER0_MEMBERS, tier_means):
         print("    %-9s %.8f" % (prefix, value))
-    print("  tier mean     %.8f   tier rel sd %.4f %%"
+    print("  tier mean     %.8f   tier rel sd %.4f %% on 3 dof"
           % (tier_mean, TIER0_CANDIDATE_REL_SD_PCT))
     print("  this receipt  %.8f" % cand_mean)
     print("  delta         %+.4f %%   saving %+.4f %%"
           % (observed_delta_pct, observed_saving_pct))
-    print("  se of one new draw against a %d-run mean: %.4f %%   "
-          "[%.4f, %.4f] at 95 %% on the sd"
-          % (TIER0_N, se_pt, se_optimistic, se_conservative))
-    print("  z = %+.2f (point sd), %+.2f (conservative sd)"
-          % (observed_saving_pct / se_pt,
-             observed_saving_pct / se_conservative))
+    print("  se of one new draw against the %d-run tier mean:" % TIER0_N)
+    print("    %.4f %%  conservative, pooled sd %.4f %% on %d dof, "
+          "95 %% [%.4f, %.4f]"
+          % (se_conservative, POOLED_CANDIDATE_REL_SD_PCT, POOLED_DOF,
+             se_ci[0], se_ci[1]))
+    print("    %.4f %%  optimistic, tier 0 sd alone" % se_pt)
+    print("  z = %+.2f conservative, %+.2f optimistic"
+          % (observed_saving_pct / se_conservative,
+             observed_saving_pct / se_pt))
 
     print("\nc = saving / (s_head * g),  g = %.4f on g17s, %.4f on g16s"
           % (RESIDENCY_GAIN_G17S, RESIDENCY_GAIN_G16S))
@@ -362,22 +371,19 @@ def main() -> int:
     print()
     print("RESOLUTION OF ONE RECEIPT. smallest separable difference in c at "
           "2 se:")
-    print("  %.3f in c on the point sd, %.3f on the conservative sd."
-          % (sep_pt, sep_cons))
+    print("  %.3f in c conservative, %.3f optimistic." % (sep_cons, sep_pt))
     print("  c = 0.01 against c = 0.15 is a gap of 0.140 in c, or %.3f %% of"
           % gap)
-    print("  candidate decode time, which is %.1f se on the point sd and "
-          "%.1f se" % (gap / se_pt, gap / se_conservative))
-    print("  on the conservative sd.")
+    print("  candidate decode time.")
+    se_median = POOLED_SCORE_REL_SD_PCT * spread
     print("  F8 expected that one receipt could not separate those two values.")
-    print("  Read on the PUBLISHED MEDIAN that is correct: the tier's own")
-    print("  median rel sd is %.4f %%, so the gap is only %.1f se there."
-          % (TIER0_SCORE_REL_SD_PCT,
-             gap / (TIER0_SCORE_REL_SD_PCT * math.sqrt(1.0 + 1.0 / TIER0_N))))
+    print("  Read on the PUBLISHED MEDIAN that is correct: its pooled rel sd")
+    print("  is %.4f %%, so the gap is only %.1f se there."
+          % (POOLED_SCORE_REL_SD_PCT, gap / se_median))
     print("  Read on MEAN CANDIDATE DECODE TIME, which the receipt also")
-    print("  publishes, the same gap is %.1f se. The statistic, not the run"
-          % (gap / se_pt))
-    print("  count, was the limit.")
+    print("  publishes, the same gap is %.1f se conservative and %.1f se"
+          % (gap / se_conservative, gap / se_pt))
+    print("  optimistic. The statistic, not the run count, was the limit.")
     report["coupling"] = {
         "residency_gain_g17s": RESIDENCY_GAIN_G17S,
         "residency_gain_g16s": RESIDENCY_GAIN_G16S,
@@ -389,20 +395,22 @@ def main() -> int:
         "receipt_mean_candidate_spt": cand_mean,
         "observed_delta_pct_vs_tier": observed_delta_pct,
         "observed_saving_pct": observed_saving_pct,
-        "se_point_pct": se_pt,
-        "se_optimistic_pct": se_optimistic,
+        "se_optimistic_pct": se_pt,
         "se_conservative_pct": se_conservative,
-        "z_point": observed_saving_pct / se_pt,
+        "se_conservative_ci95_pct": list(se_ci),
+        "z_optimistic": observed_saving_pct / se_pt,
         "z_conservative": observed_saving_pct / se_conservative,
         "by_head_share": couplings,
         "f8_bracket": [BRACKET_LO, BRACKET_HI],
-        "f8_bracket_bottom_rejected_point": bracket_rejected_pt,
+        "f8_bracket_bottom_rejected_optimistic": bracket_rejected_pt,
         "f8_bracket_bottom_rejected_conservative": bracket_rejected_cons,
-        "smallest_separable_c_at_2se_point": sep_pt,
+        "smallest_separable_c_at_2se_optimistic": sep_pt,
         "smallest_separable_c_at_2se_conservative": sep_cons,
-        "c_0p01_vs_c_0p15_sigma_on_mean_candidate_time": gap / se_pt,
-        "c_0p01_vs_c_0p15_sigma_on_published_median": gap / (
-            TIER0_SCORE_REL_SD_PCT * math.sqrt(1.0 + 1.0 / TIER0_N)),
+        "c_0p01_vs_c_0p15_sigma_on_mean_candidate_time_conservative":
+            gap / se_conservative,
+        "c_0p01_vs_c_0p15_sigma_on_mean_candidate_time_optimistic":
+            gap / se_pt,
+        "c_0p01_vs_c_0p15_sigma_on_published_median": gap / se_median,
     }
 
     # ---- the serial null ----
