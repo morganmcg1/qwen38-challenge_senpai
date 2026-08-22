@@ -695,9 +695,223 @@ def log_item5() -> None:
     run.finish()
 
 
+def log_item1() -> None:
+    fm1 = load("fm1-flipped-round-audit.json")
+    grid = load("tier-grid.json")
+    legs = load("leg-prediction.json")
+    if fm1 is None:
+        print("item1: no artifact, skipping")
+        return
+    run = start("e134-item1-fm1-flipped-round-audit", {
+        "harness": fm1["harness"],
+        "scored_surface_changed": False,
+        "runs": "no new GPU legs; replay over recorded round-start state "
+                "of the archived shipped legs",
+        "validation": "replayed ship depth equals the recorded depth on "
+                      "every scored round, and the tier-1.0 control flips 0",
+        "cliff": fm1["cliff"],
+        "tier": fm1["tier"],
+    })
+
+    decisive = fm1["decisive"]["5"]
+    flipped = wandb.Table(columns=[
+        "leg", "round", "offer", "d_ship", "d_cand", "acc", "tokens_before"])
+    for row in fm1["flipped_rounds"]:
+        flipped.add_data(
+            row["leg"], row["round"], row["offer"], row["d_ship"],
+            row["d_cand"], row["acc"], row["tokens_before"])
+    run.log({"item1/flipped_rounds": flipped})
+
+    per_leg = wandb.Table(columns=[
+        "leg", "k", "flipped_n", "flipped_rate", "kept_n", "kept_rate",
+        "rounds", "row_count_bad", "margin_identity_bad",
+        "sched_max_abs_error"])
+    for name, row in fm1["per_leg"].items():
+        gate = fm1["legs"][name]
+        per_leg.add_data(
+            name, row["k"], row["flipped"]["n"], row["flipped"]["rate"],
+            row["kept"]["n"], row["kept"]["rate"], gate["rounds"],
+            gate["row_count_bad"], gate["margin_identity_bad"],
+            gate["sched_max_abs_error"])
+    run.log({"item1/per_leg": per_leg})
+
+    priced = wandb.Table(columns=[
+        "curve", "component", "pct", "spt_ship_us", "spt_cand_us"])
+    for curve, parts in fm1["priced"].items():
+        for component, row in parts.items():
+            priced.add_data(curve, component, row["pct"], row["spt_ship"],
+                            row["spt_cand"])
+    run.log({"item1/priced_decomposition": priced})
+
+    summary = {
+        "hypothesis": "FM1: the rounds pb6 suppresses accept ABOVE the "
+                      "population rate, so the replayer overpays pb6",
+        "verdict": "REFUTED: the suppressed rounds accept far BELOW the "
+                   "population rate, so the replayed price is a lower bound",
+        "n_flipped": fm1["n_flipped"],
+        "n_deepened": fm1["n_deepened"],
+        "rounds_replayed": fm1["rounds"],
+        "gates_pass": fm1["gates_pass"],
+        "sched_fidelity_bad": fm1["sched_fidelity_bad"],
+        "control_flips": fm1["control_flips"],
+        "control_deepened": fm1["control_deepened"],
+        "p_acc_ge5_given_flipped": decisive["conditional_flipped"]["rate"],
+        "p_acc_ge5_given_kept": decisive["kept"]["rate"],
+        "p_acc_ge5_eligible_population":
+            fm1["replayer_booked"]["_summary"]["recorded_eligible"],
+        "excess_vs_kept": decisive["excess_vs_kept"],
+        "excess_vs_shipped": decisive["excess_vs_shipped"],
+        "z_flipped_minus_kept": decisive["z_flipped_minus_kept"],
+        "replayer_booked_equal_weight":
+            fm1["replayer_booked"]["_summary"]["equal_weight"],
+        "replayer_booked_asked_weight":
+            fm1["replayer_booked"]["_summary"]["asked_weight"],
+        "replayer_booked_like_for_like":
+            fm1["replayer_booked"]["_summary"]["like_for_like"],
+        "max_ship_pb6_booked_drift":
+            fm1["replayer_booked"]["_summary"]["max_ship_pb6_drift"],
+        "trajectory_fixed_suppression_pct":
+            fm1["priced"]["measured"]["suppression_only"]["pct"],
+        "trajectory_fixed_deepening_pct":
+            fm1["priced"]["measured"]["deepening_only"]["pct"],
+        "trajectory_fixed_net_pct": fm1["priced"]["measured"]["both"]["pct"],
+        "f12_discount_limb_triggered": False,
+    }
+
+    if grid is not None:
+        table = wandb.Table(columns=[
+            "tier", "median_pct", "sd", "mean_depth", "accept_rate"])
+        for row in grid["grid"]:
+            table.add_data(row["weight"], row["median_pct"], row["sd"],
+                           row["mean_depth"], row["accept_rate"])
+        run.log({"item1/tier_grid": table})
+        lofo = grid["cliff_lofo"]
+        chosen = sorted({v for picks in lofo["chosen"].values()
+                         for v in picks})
+        summary.update({
+            "tier_grid_points": [row["weight"] for row in grid["grid"]],
+            "tier_grid_median_pct": [row["median_pct"] for row in grid["grid"]],
+            "tier_lofo_chosen_values": chosen,
+            "tier_lofo_unanimous_at_1_45": chosen == [1.45],
+            "tier_lofo_held_out_pct": lofo["held_out"],
+            "tier_lofo_sd": lofo["sd"],
+            "tier_upper_side_monotone_decline": True,
+        })
+
+    if legs is not None:
+        table = wandb.Table(columns=[
+            "leg", "model", "predicted_pct", "observed_pct"])
+        for model, rows in legs["models"].items():
+            for leg, value in rows.items():
+                table.add_data(leg, model, value, legs["observed"][leg])
+        run.log({"item1/leg_model_discrimination": table})
+        measured = legs["models"]["measured"]
+        summary.update({
+            "legs_ranked_weighted_observed_pct":
+                legs["ranked_weighted_observed"],
+            "legs_ranked_weight_held": legs["ranked_weight_held"],
+            "legs_thermally_matched": legs["thermally_matched"],
+            "legs_abba_counterbalanced": legs["abba_counterbalanced"],
+            "legs_rows_only_gets_medicine_sign_wrong": True,
+            "legs_every_width_priced_model_overshoots": all(
+                measured[leg] > legs["observed"][leg]
+                for leg in ("beagle_a", "benchfixture", "essays_montaigne")),
+            "legs_note": legs["note"],
+        })
+
+    run.summary.update(summary)
+    run.finish()
+
+
+def log_item5b() -> None:
+    data = load("abba-s1.json")
+    prereg = load("abba-preregistration.json")
+    if data is None:
+        print("item5b: no artifact, skipping")
+        return
+    run = start("e134-item5b-abba-same-binary-arm", {
+        "harness": data["harness"],
+        "scored_surface_changed": True,
+        "arm_selector": "MLX_E134_DEPTH_PRICE_ARM",
+        "compiled_default_arm": "pb6",
+        "fixture": data["fixture"],
+        "design": "ship pb6 pb6 ship, within-replicate contrast",
+        "runs": "one worker binary and one commit across every leg",
+        "validation": "Rule 114 witness: the arm is read from the run's own "
+                      "round count, never from the environment",
+    })
+
+    legs = wandb.Table(columns=[
+        "slot", "arm", "replicate", "position", "rounds", "mean_draft",
+        "declared_rows", "decode_spt_us", "ranked_spt_us",
+        "seed_prefill_s", "entry_c", "exit_c", "matched", "divergence",
+        "witness"])
+    for row in data["legs"]:
+        legs.add_data(
+            row["slot"], row["arm"], row["replicate"], row["position"],
+            row["round_count"], row["mean_draft"], row["declared_rows"],
+            row["decode_spt"] * 1e6, row["ranked_spt"] * 1e6,
+            row["seed_prefill_seconds"], row["entry_c"], row["exit_c"],
+            row["all_tokens_matched"], row["residual_divergence_count"],
+            row["witness"])
+    run.log({"item5b/legs": legs})
+
+    contrasts = wandb.Table(columns=[
+        "replicate", "ship_decode_us", "pb6_decode_us", "decode_pct",
+        "ranked_pct", "delta_rounds"])
+    for row in data["contrasts"]:
+        contrasts.add_data(
+            row["replicate"], row["ship_decode_spt"] * 1e6,
+            row["pb6_decode_spt"] * 1e6, row["decode_pct"],
+            row["ranked_pct"], row["delta_rounds"])
+    run.log({"item5b/contrasts": contrasts})
+
+    entries = data["entry_temp_c"]
+    summary = {
+        "hypothesis": "pb6 is faster than ship on one worker binary, when "
+                      "the arm is chosen at run time and the order cancels "
+                      "linear thermal drift",
+        "verdict": data["verdict"],
+        "decode_pct_mean": data["decode_pct_mean"],
+        "decode_pct_sd": data["decode_pct_sd"],
+        "ranked_pct_mean": data["ranked_pct_mean"],
+        "ranked_pct_sd": data["ranked_pct_sd"],
+        "replicates": len(data["contrasts"]),
+        "identity_one_binary_one_commit": data["identity_ok"],
+        "exactness_on_every_leg": data["exactness_ok"],
+        "witness_mismatches": data["witness_mismatches"],
+        "session_commit": " ".join(data["session_commit"]),
+        "session_worker_sha256": " ".join(data["session_worker_sha256"]),
+        "entry_temp_min_c": min(entries) if entries else None,
+        "entry_temp_max_c": max(entries) if entries else None,
+        "entry_temp_range_c": (max(entries) - min(entries)) if entries
+                              else None,
+        "timing_valid": True,
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+        "official_or_ranked_score": False,
+        "ruling": "one-sided: a local win proves nothing because this host's "
+                  "width-6 cliff is steeper than the runner's; a local loss "
+                  "blocks",
+    }
+    if prereg is not None:
+        priors = prereg["priors_and_predictions"]
+        summary.update({
+            "prereg_written_before_any_leg_ran":
+                prereg["written_before_any_leg_ran"],
+            "prior_traced_screen_pct":
+                priors["traced_screen_benchfixture_pct"],
+            "prior_expectation": priors["expectation"],
+            "prereg_decision_rule": json.dumps(prereg["decision_rule"]),
+        })
+    run.summary.update(summary)
+    run.finish()
+
+
 RUNS = {"rung1": log_rung1, "rung2": log_rung2, "rung3": log_rung3,
         "rung4": log_rung4, "item0": log_item0, "item2": log_item2,
-        "rung6": log_rung6, "item4": log_item4, "item5": log_item5}
+        "rung6": log_rung6, "item4": log_item4, "item1": log_item1,
+        "item5": log_item5, "item5b": log_item5b}
 
 
 def main() -> int:

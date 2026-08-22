@@ -29,6 +29,17 @@ BOARD = "/tmp/yukon-board/full.json"
 OUR_CROWN = "623e77af"
 OUR_SOURCE = "60d5b34a"
 
+# The two mechanism lists below were enumerated against one specific frontier
+# lineage. The live board can move to an unrelated lineage between runs, and
+# then the lists describe a tree that is no longer on top. main() compares the
+# live frontier against this record and refuses to imply otherwise.
+DERIVED_AGAINST = {
+    "id": "b6cb0fea",
+    "solver": "ofou",
+    "source_ref": "d44ad229",
+    "score": 3.52509129797624,
+}
+
 # Mechanisms the live frontier tree holds and our tree does not. Every price
 # is from this campaign's own instrument, never from a rival's published
 # median (Rule 62, Rule 63).
@@ -166,6 +177,23 @@ def main() -> int:
                  100.0 * (frontier["officialScore"] / ours["officialScore"]
                           - 1.0)))
 
+    lineage_ok = str(frontier.get("promotedSourceRef") or "").startswith(
+        DERIVED_AGAINST["source_ref"])
+    print()
+    print("mechanism lists derived against %s %s %s %.8f"
+          % (DERIVED_AGAINST["id"], DERIVED_AGAINST["solver"],
+             DERIVED_AGAINST["source_ref"], DERIVED_AGAINST["score"]))
+    if lineage_ok:
+        print("the live frontier is that same lineage, so the lists apply")
+    else:
+        print("WARNING: the live frontier is a DIFFERENT lineage. The two")
+        print("lists below still describe the %s tree and are NOT re-derived"
+              % DERIVED_AGAINST["solver"])
+        print("for %s. Rules 62 and 63 forbid reading rival source, and this"
+              % frontier["solverUsername"])
+        print("campaign has no priced evidence about the new lineage yet.")
+        print("Read the DELETE side as history, not as the current archive.")
+
     print()
     print("RULE 108 -- mechanisms a pb6 archive would DELETE")
     print("`held value` is what the mechanism is worth WHILE PRESENT, so a")
@@ -213,6 +241,13 @@ def main() -> int:
                 "id": ours["id"], "score": ours["officialScore"],
                 "source_ref": ours.get("promotedSourceRef"),
             },
+            "derived_against_frontier": DERIVED_AGAINST,
+            "mechanism_lists_apply_to_live_frontier": lineage_ok,
+            "lineage_note":
+                "The DELETE list enumerates the %s lineage %s. If the live "
+                "frontier is a different lineage, the DELETE list is history "
+                "and no mechanism of the new lineage is priced here."
+                % (DERIVED_AGAINST["solver"], DERIVED_AGAINST["source_ref"]),
             "deletes": FRONTIER_ONLY,
             "adds": OURS_ONLY,
             "held_value_of_deleted_set_pct": held,
