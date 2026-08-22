@@ -85,18 +85,36 @@ M_KEYED = {
     "activation_address_arith": 4,
 }
 
-# E123's priced census, as a percentage of QMV time at the shipped table over
-# the ranked mix. `sums_add_tree` is carried under two readings because the
-# routed path uses `USE_TABLE=true`, where the class is the `st[m]` read plus
-# the `sums * bias_local[r]` term. The read is m-keyed; the multiply-add is
-# NA*RPS-keyed and therefore constant per output element.
-E123_SHARE = {
+# E123 rung 1, `research/e123-results.md` section 7, `weighted` column: each
+# class as a percentage of QMV time. Every class is assigned the scaling its
+# own statements have in the source, NOT E123's per-NA prices, which mix count
+# and price and cannot be inverted.
+#
+# `sums_add_tree` at 8.476 % is DELETED. E123's `a_base` is the pre-Route-B
+# `USE_TABLE=false` body, and its `n_nosums` arm is what Route B shipped. The
+# routed path already replaced that add tree with the `st[m]` read, so leaving
+# it in the baseline would price a class the candidate does not execute.
+E123_ROW_KEYED = {
+    "nibble_integer_operations": 12.497,
+    "nibble_integer_to_float": 7.141,
     "weight_element_loads": 6.420,
     "metadata_loads": 3.210,
     "metadata_widenings": 1.218,
+}
+E123_M_KEYED = {
+    "activation_widenings": 8.901,
+    "activation_register_moves": 6.781,
     "activation_vec4_loads": 6.211,
 }
-SUMS_ADD_TREE_SHARE = 8.476
+E123_CONSTANT = {
+    "lane_fmas": 27.124,
+    "final_accumulate": 5.086,
+    "epilogue_simd_sum": 0.754,
+}
+# The class Route B added and E123 never measured: one `st[m]` float read for
+# each m in each k block, against four `vec<bfloat16_t,4>` reads for the same
+# m. Bracketed from free to the same unit price as one activation load.
+TABLE_LOAD_BRACKET = (0.0, 6.211 / 4.0)
 
 
 def plan_map(name: str) -> dict[int, tuple[int, int]]:
@@ -179,42 +197,71 @@ def main() -> int:
             fam, b, c, c - b, 100.0 * (c - b) / b))
     print()
 
-    # 3. Priced with E123's measured shares.
-    print("--- priced with E123 shares, %% of QMV time ---")
-    print("%-24s %8s %10s %10s %9s" % (
-        "class", "share", "unit", "new", "delta"))
+    # 3. Priced with E123's measured shares. The scaling factor of a whole
+    # family is the ranked-weighted ratio of its per-output-element cost, so
+    # each class inherits it directly.
+    row_factor = (sum(mass[m] / cand[m][0] for m in RANKED_WIDTHS)
+                  / sum(mass[m] / base[m][0] for m in RANKED_WIDTHS))
+    m_factor = (sum(mass[m] / cand[m][1] for m in RANKED_WIDTHS)
+                / sum(mass[m] / base[m][1] for m in RANKED_WIDTHS))
+    print("--- priced with the E123 class shares, %% of QMV time ---")
+    print("row-keyed factor 1/IPG  %.5f  (%+.2f %%)" % (
+        row_factor, 100.0 * (row_factor - 1.0)))
+    print("m-keyed   factor 1/RPS  %.5f  (%+.2f %%)" % (
+        m_factor, 100.0 * (m_factor - 1.0)))
+    print()
+    print("%-28s %-9s %8s %9s %9s" % (
+        "class", "scaling", "share", "new", "delta"))
     priced = {}
     total_delta = 0.0
-    for name, share in E123_SHARE.items():
-        agg_base = sum(mass[m] * per_width[m]["base"][name]
-                       for m in RANKED_WIDTHS)
-        agg_cand = sum(mass[m] * per_width[m]["candidate"][name]
-                       for m in RANKED_WIDTHS)
-        unit = share / agg_base
-        new = unit * agg_cand
-        priced[name] = {"share_percent": share, "unit_cost": unit,
+    row_total = m_total = const_total = 0.0
+    for name, share in sorted(E123_ROW_KEYED.items(), key=lambda kv: -kv[1]):
+        new = share * row_factor
+        priced[name] = {"scaling": "1/IPG", "share_percent": share,
                         "new_percent": new, "delta_percent": new - share}
         total_delta += new - share
-        print("%-24s %8.3f %10.4f %10.3f %+9.3f" % (
-            name, share, unit, new, new - share))
-
-    # `sums_add_tree` under both readings.
-    agg_base = sum(mass[m] * per_width[m]["base"]["sums_table_loads"]
-                   for m in RANKED_WIDTHS)
-    agg_cand = sum(mass[m] * per_width[m]["candidate"]["sums_table_loads"]
-                   for m in RANKED_WIDTHS)
-    sums_adverse = SUMS_ADD_TREE_SHARE * (agg_cand / agg_base - 1.0)
-    print("%-24s %8.3f %10s %10s %+9.3f   (m-keyed reading, adverse)" % (
-        "sums_add_tree", SUMS_ADD_TREE_SHARE, "-", "-", sums_adverse))
-    print("%-24s %8.3f %10s %10s %+9.3f   (NA*RPS-keyed reading, neutral)" % (
-        "sums_add_tree", SUMS_ADD_TREE_SHARE, "-", "-", 0.0))
+        row_total += share
+        print("%-28s %-9s %8.3f %9.3f %+9.3f" % (
+            name, "1/IPG", share, new, new - share))
+    for name, share in sorted(E123_M_KEYED.items(), key=lambda kv: -kv[1]):
+        new = share * m_factor
+        priced[name] = {"scaling": "1/RPS", "share_percent": share,
+                        "new_percent": new, "delta_percent": new - share}
+        total_delta += new - share
+        m_total += share
+        print("%-28s %-9s %8.3f %9.3f %+9.3f" % (
+            name, "1/RPS", share, new, new - share))
+    for name, share in sorted(E123_CONSTANT.items(), key=lambda kv: -kv[1]):
+        priced[name] = {"scaling": "constant", "share_percent": share,
+                        "new_percent": share, "delta_percent": 0.0}
+        const_total += share
+        print("%-28s %-9s %8.3f %9.3f %+9.3f" % (
+            name, "NA*RPS", share, share, 0.0))
+    lo, hi = TABLE_LOAD_BRACKET
+    table_lo, table_hi = lo * (m_factor - 1.0), hi * (m_factor - 1.0)
+    print("%-28s %-9s %8s %9s %+9.3f .. %+.3f   (Route B added it; "
+          "E123 never priced it)" % (
+              "sums_table_loads", "1/RPS", "0 .. %.3f" % hi, "-",
+              table_lo, table_hi))
     print()
-    print("TOTAL named classes, sums neutral   %+8.3f %% of QMV time" %
-          total_delta)
-    print("TOTAL named classes, sums adverse   %+8.3f %% of QMV time" %
-          (total_delta + sums_adverse))
+    print("family totals   row-keyed %.3f   m-keyed %.3f   constant %.3f"
+          % (row_total, m_total, const_total))
+    print("EXCLUDED        sums_add_tree 8.476  (Route B deleted it: E123's "
+          "a_base is the USE_TABLE=false body)")
+    print()
+    print("TOTAL  %+8.3f %% of QMV time  (table load free)" % total_delta)
+    print("TOTAL  %+8.3f %% of QMV time  (table load at one activation load)"
+          % (total_delta + table_hi))
 
     payload = {
+        "row_factor": row_factor,
+        "m_factor": m_factor,
+        "family_share_totals": {"row_keyed": row_total, "m_keyed": m_total,
+                                "constant": const_total},
+        "excluded_sums_add_tree_percent": 8.476,
+        "sums_table_load_delta_bracket": [table_lo, table_hi],
+        "total_delta_percent_qmv_table_free": total_delta,
+        "total_delta_percent_qmv_table_priced": total_delta + table_hi,
         "harness": "ranked",
         "official_or_ranked_score": False,
         "timing_valid": False,
@@ -232,11 +279,6 @@ def main() -> int:
                          "delta_percent":
                              100.0 * (raw_cand - raw_base) / raw_base},
         "priced": priced,
-        "sums_add_tree": {"share_percent": SUMS_ADD_TREE_SHARE,
-                          "delta_percent_m_keyed": sums_adverse,
-                          "delta_percent_narps_keyed": 0.0},
-        "total_delta_percent_qmv_sums_neutral": total_delta,
-        "total_delta_percent_qmv_sums_adverse": total_delta + sums_adverse,
     }
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps(payload, indent=1, sort_keys=True) + "\n")
