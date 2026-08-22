@@ -282,35 +282,36 @@ public final class Qwen36MTPBlockSession {
     /// and its `Memory.clearCache()` never run there. Any warm-arm result read
     /// off a host reporting `wired_gate_fired=0` says nothing about the ranked
     /// M5-Max runner, where the gate does fire.
-    private static var residencySizingGateFires: Bool {
+    private static let residencySizingGateFires: Bool =
         ProcessInfo.processInfo.environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0"
             && ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
-    }
 
     /// Warm the verify entry point the scored round actually calls.
     ///
     /// The width loop warms `callWithHidden`; every scored verify calls
     /// `callWithHiddenAndNormed` and retains the normed block across the eval.
-    private static var warmNormedVerifyEnabled: Bool {
+    private static let warmNormedVerifyEnabled: Bool =
         ProcessInfo.processInfo.environment[
             "DARKBLOOM_QWEN_MTP_WARM_NORMED"] == "1"
-    }
 
     /// Submit the restored recurrent boundary before returning from a prefix
     /// reject, so the next round's draft chain does not open by building it.
-    private static var prefetchRestoredStateEnabled: Bool {
+    ///
+    /// A `static let` like the tip's `traceRounds`, not a computed property:
+    /// `ProcessInfo.environment` rebuilds the whole 90-entry dictionary on
+    /// every read, measured here at 46.5 us, and this flag is read on the
+    /// timed reject path.
+    private static let prefetchRestoredStateEnabled: Bool =
         ProcessInfo.processInfo.environment[
             "DARKBLOOM_QWEN_MTP_PREFETCH_RESTORE"] == "1"
-    }
 
     /// Default OFF. A ranked receipt on rival submission `775a26e3` measured a
     /// second post-wiring warm at +5.28 % F83-weighted SLOWER (z +7.02) with a
     /// flat serial leg, which FINDING 172 attributes to warm scratch consuming
     /// the 64 MiB wired slack that decode state then cannot be admitted into.
-    private static var warmRefillEnabled: Bool {
+    private static let warmRefillEnabled: Bool =
         ProcessInfo.processInfo.environment[
             "DARKBLOOM_QWEN_MTP_WARM_REFILL"] == "1"
-    }
 
     /// Research-only, default off, and never read on the ranked runner.
     ///
@@ -320,10 +321,9 @@ public final class Qwen36MTPBlockSession {
     /// switch reproduces that one allocator side effect — not the wired ticket,
     /// which has no local instrument — so the refill can be measured off the
     /// ranked runner. It runs in the untimed warm and touches no tensor value.
-    private static var emulatesResidencyAllocatorClear: Bool {
+    private static let emulatesResidencyAllocatorClear: Bool =
         ProcessInfo.processInfo.environment[
             "DARKBLOOM_QWEN_MTP_EMULATE_RESIDENCY_CLEAR"] == "1"
-    }
 
     /// Input-independent shape warm, run OUTSIDE every scored window.
     ///

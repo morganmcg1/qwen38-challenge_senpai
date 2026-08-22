@@ -500,8 +500,204 @@ def log_item2() -> None:
     run.finish()
 
 
+def log_rung6() -> None:
+    data = load("rung6-query-contiguity.json")
+    if data is None:
+        print("rung6: no artifact, skipping")
+        return
+    run = start("e134-rung6-query-contiguity", {
+        "harness": data["harness"],
+        "scored_surface_changed": False,
+        "runs": "no GPU legs; Swift runtime test reads real MLX strides",
+        "validation": "two positive controls that prove the predicate "
+                      "can fail",
+    })
+    table = wandb.Table(columns=[
+        "site", "qL", "shape", "strides", "row_contiguous",
+        "q_copy_unless", "query_transposed", "kernel"])
+    for row in data["measurements"]:
+        table.add_data(
+            row["site"], str(row["qL"]), str(row["shape"]),
+            str(row["strides"]), row["row_contiguous"],
+            row["q_copy_unless"], row["query_transposed"], row["kernel"])
+    run.log({"rung6/query_contiguity": table})
+    controls = wandb.Table(columns=["control", "detail", "passed"])
+    for row in data["controls"]:
+        controls.add_data(row["name"], row["detail"], row["passed"])
+    run.log({"rung6/controls": controls})
+    follow = data["named_follow_up"]
+    run.summary.update({
+        "hypothesis": data["hypothesis"],
+        "verdict": data["verdict"],
+        "distinct_kernels_observed": 1,
+        "all_widths_compile_qnt": True,
+        "qL23_later_window_warm_value_pct": 0.0,
+        "gpu_legs": 0,
+        "follow_up_hidden_copies_per_round": 32,
+        "follow_up_rough_order_pct_of_round":
+            follow["rough_order_pct_of_round"],
+        "follow_up_priced": follow["priced"],
+        "follow_up_in_scope": follow["in_scope"],
+        "verdict_text": data["conclusion"],
+    })
+    run.finish()
+
+
+def log_item4() -> None:
+    data = load("item4-shipped-population.json")
+    if data is None:
+        print("item4: no artifact, skipping")
+        return
+    run = start("e134-item4-shipped-population", {
+        "harness": "local",
+        "scored_surface_changed": False,
+        "runs": "2 new shipped-policy legs, medicine_hist and "
+                "essays_montaigne, against the 12-fixture forced-depth "
+                "archive",
+        "validation": "fit-free AUC with exact positive and negative counts",
+    })
+    pop = wandb.Table(columns=[
+        "fixture", "prompt", "rounds", "mean_offered_depth",
+        "mean_accepted", "row_count_bad", "sched_max_abs_error"])
+    for name in sorted(data["shipped"]):
+        rec = data["shipped"][name]
+        pop.add_data(
+            name, str(rec["prompt"]), rec["rounds"],
+            rec["mean_offered_depth"], rec["mean_accepted"],
+            rec["gate"]["row_count_bad"], rec["gate"]["sched_max_abs_error"])
+    run.log({"item4/population": pop})
+
+    inputs = data["reported_inputs"]
+    short = ["margin", "ema_d", "reach_shipped", "km_reach", "pm_min",
+             "pm_at_d"]
+    table = wandb.Table(columns=[
+        "population", "fixture", "boundary", "observations", "npos", "nneg",
+        "accept_rate", "resolved"] + short)
+    for pop_name in ("shipped", "forced"):
+        for fixture in data["focus"]:
+            rec = data[pop_name].get(fixture)
+            if rec is None:
+                continue
+            for row in rec["boundaries"]:
+                cells = [row["auc"].get(k) for k in short]
+                first = next((c for c in cells if c is not None), None)
+                table.add_data(
+                    pop_name, fixture, row["depth"], row["obs"],
+                    first["npos"] if first else 0,
+                    first["nneg"] if first else 0,
+                    row["accept_rate"], row["usable"],
+                    *[c["value"] if c else None for c in cells])
+    run.log({"item4/per_boundary_auc": table})
+
+    med_s = {r["depth"]: r for r in data["shipped"]["medicine_hist"]
+             ["boundaries"]}
+    med_f = {r["depth"]: r for r in data["forced"]["medicine_hist"]
+             ["boundaries"]}
+    ess_s = {r["depth"]: r for r in data["shipped"]["essays_montaigne"]
+             ["boundaries"]}
+    run.summary.update({
+        "reported_inputs": inputs,
+        "min_obs_for_resolution": data["min_obs"],
+        "shipped_medicine_b4_nneg":
+            med_s[4]["auc"]["margin"]["nneg"],
+        "shipped_medicine_b4_margin_auc":
+            med_s[4]["auc"]["margin"]["value"],
+        "shipped_medicine_b4_margin_lo":
+            med_s[4]["auc"]["margin"]["lo"],
+        "shipped_medicine_b4_margin_hi":
+            med_s[4]["auc"]["margin"]["hi"],
+        "forced_medicine_b4_margin_auc":
+            med_f[4]["auc"]["margin"]["value"],
+        "forced_medicine_b4_margin_hi":
+            med_f[4]["auc"]["margin"]["hi"],
+        "shipped_essays_rounds_reaching_depth5": ess_s[5]["obs"],
+        "shipped_essays_rounds_reaching_depth6": ess_s[6]["obs"],
+        "verdict": "The shipped population does NOT rescue the information "
+                   "hypothesis; it starves it. Where both populations "
+                   "resolve a boundary they agree. The shipped population "
+                   "cannot resolve the deep boundary at all: "
+                   "essays_montaigne reaches depth 5 once in 146 rounds and "
+                   "never reaches 6, and medicine_hist carries only 2 "
+                   "negatives at boundary 4, so its AUC spans "
+                   "[-0.13, 0.70]. The one boundary-4 cell that IS resolved "
+                   "is the forced medicine_hist cell, and it stays "
+                   "anti-predictive at 0.2281 [0.0934, 0.3627]. Rung 1 "
+                   "stands.",
+    })
+    run.finish()
+
+
+def log_item5() -> None:
+    diff = load("item5-rule108-diff.json")
+    presubmit = load("item5-presubmit.json")
+    if diff is None:
+        print("item5: no artifact, skipping")
+        return
+    run = start("e134-item5-pb6-candidate", {
+        "harness": "ranked-model",
+        "scored_surface_changed": True,
+        "arm": "pb6",
+        "pass_boundary_verify_width": 6,
+        "pass_boundary_tier_factor": 1.45,
+        "runs": "no ranked receipt yet; Rule 79 means only a ranked run "
+                "validates this change",
+        "validation": "static gates plus a 512-token exactness check",
+    })
+    table = wandb.Table(columns=[
+        "direction", "mechanism", "our_price_pct", "confidence", "credited",
+        "our_price_source"])
+    for key in ("deletes", "adds"):
+        for row in diff[key]:
+            table.add_data(
+                key, row["mechanism"], row["our_price_pct"],
+                row.get("confidence", "n/a"), row["credited"],
+                row["our_price_source"])
+    run.log({"item5/rule108_diff": table})
+
+    frontier, crown = diff["frontier"], diff["our_crown"]
+    summary = {
+        "rule108_held_value_of_deleted_set_pct":
+            diff["held_value_of_deleted_set_pct"],
+        "rule108_effect_of_deleting_them_pct":
+            diff["effect_of_deleting_them_pct"],
+        "rule108_effect_of_adding_them_pct":
+            diff["effect_of_adding_them_pct"],
+        "rule108_net_our_instrument_pct": diff["net_pct"],
+        "rule108_net_conservative_pct": diff["net_conservative_pct"],
+        "frontier_submission": frontier["id"],
+        "frontier_solver": frontier["solver"],
+        "frontier_score": frontier["score"],
+        "frontier_source_ref": frontier["source_ref"],
+        "our_crown_submission": crown["id"],
+        "our_crown_score": crown["score"],
+        "gap_to_frontier_pct":
+            100.0 * (frontier["score"] - crown["score"]) / crown["score"],
+        "frontier_contains_our_one_pass_qmv": False,
+        "source_diff_available": diff["source_diff_available"],
+        "predicted_published_median_pct": 2.4683,
+        "predicted_worst_prompt_jackknife_pct": 1.13,
+        "submitted_to_yukon": False,
+    }
+    if presubmit is not None:
+        summary.update(presubmit["summary"])
+        legs = wandb.Table(columns=[
+            "fixture", "tokens", "all_tokens_matched",
+            "residual_divergence_count", "rounds", "row_count_bad",
+            "mean_offered_depth", "mean_accepted"])
+        for row in presubmit["legs"]:
+            legs.add_data(
+                row["fixture"], row["tokens"], row["all_tokens_matched"],
+                row["residual_divergence_count"], row["rounds"],
+                row["row_count_bad"], row["mean_offered_depth"],
+                row["mean_accepted"])
+        run.log({"item5/exactness_legs": legs})
+    run.summary.update(summary)
+    run.finish()
+
+
 RUNS = {"rung1": log_rung1, "rung2": log_rung2, "rung3": log_rung3,
-        "rung4": log_rung4, "item0": log_item0, "item2": log_item2}
+        "rung4": log_rung4, "item0": log_item0, "item2": log_item2,
+        "rung6": log_rung6, "item4": log_item4, "item5": log_item5}
 
 
 def main() -> int:
