@@ -43,7 +43,12 @@ weights="${MLXFAST_WEIGHTS_PATH:-weights}"
 swift_bin="${MLXFAST_SWIFT_BIN:-.build/release/mlxfast-swift}"
 root="${E122_ROOT:-.mlxfast-private/e122}"
 goldens_dir="${root}/goldens"
-runs_root="${root}/runs"
+# Goldens are shared across sessions; the run tree is not, so a forced-depth
+# arm writes beside the shipped-policy arm instead of overwriting it.
+runs_root="${root}/${E122_RUNS_DIR:-runs}"
+# Requires research/e122-patches/forced-depth.patch to be applied and the
+# worker rebuilt. Empty means the shipped cost model chooses the depth.
+force_depth="${E122_FORCE_DEPTH:-}"
 bench_fixture="correctness_prompts/public_longcopy_gate_english_512_256.json"
 
 prompt_file_for() {
@@ -185,10 +190,13 @@ for id in "$@"; do
   entry_c="$(gpu_temp)"
   start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-  echo "=== e122 rung 0: traced leg ${id} (${tokens} tokens, offer ${depth}) ==="
-  env MLXFAST_NO_SANDBOX=1 \
-      MLX_QWEN_MTP_TRACE=1 \
-      MLX_QWEN_MTP_TRACE_PATH="${trace_path}" \
+  leg_env=(MLXFAST_NO_SANDBOX=1
+           MLX_QWEN_MTP_TRACE=1
+           MLX_QWEN_MTP_TRACE_PATH="${trace_path}")
+  [[ -n "${force_depth}" ]] && leg_env+=("MLX_E122_FORCE_DEPTH=${force_depth}")
+
+  echo "=== e122 rung 0: traced leg ${id} (${tokens} tokens, offer ${depth}${force_depth:+, forced depth ${force_depth}}) ==="
+  env "${leg_env[@]}" \
     "${swift_bin}" mtp-timed \
       --weights "${weights}" \
       --mtp-head "${head_dir}" \
@@ -211,6 +219,7 @@ for id in "$@"; do
     echo "golden_sha256=$(shasum -a 256 "${golden}" | cut -d' ' -f1)"
     echo "tokens=${tokens}"
     echo "offered_depth=${depth}"
+    echo "forced_depth=${force_depth:-none}"
     echo "phase_trace=1"
     echo "timing_valid=false"
     echo "cool_gate_passed_real_gate=false"
