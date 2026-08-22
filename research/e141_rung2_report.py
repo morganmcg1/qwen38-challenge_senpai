@@ -16,12 +16,42 @@ and decoding in one window and no draft-vocabulary change touches the seed.
 Reporting only the decode basis overstates the score effect.
 
 WHY NO LOCAL-RATIO CORRECTION. The ranked numerator is the runner's own
-prebuilt serial baseline, which no candidate edit reaches, so
+prebuilt serial baseline, which no candidate edit reaches, so no psi_serial
+share is ever subtracted. Both legs here run the candidate binary, but the arm
+is a run-time selector confined to the candidate MTP leg, so nothing cancels.
 
-  net_ranked_pct = 100 * (1 - full_ranked_spt / shipped_ranked_spt)
+WHY THE LOCAL PERCENTAGE IS STILL NOT THE RANKED PERCENTAGE. CAMPAIGN RULE 115:
+convert a per-round absolute mechanism through absolute microseconds per round,
+never through the local percentage. Split the effect into two terms:
 
-with no coefficient. Both legs here run the candidate binary, but the arm is a
-run-time selector confined to the candidate MTP leg, so nothing cancels.
+  full_spt / shipped_spt = (N_full / N_shipped) * (1 + delta_us / round_us)
+
+  term 1  N_full / N_shipped   a dimensionless round-count ratio. Acceptance is
+          deterministic, so this transfers to the ranked harness unchanged.
+  term 2  delta_us / round_us  a fixed absolute cost over the round length. The
+          local benchfixture round is about 195,000 us; the medpair-weighted
+          ranked round is 52,726 us (F189 arm B). The same absolute cost is a
+          much larger fraction of the shorter ranked round.
+
+So this experiment can and does show a positive local percentage while the
+ranked value is negative. Only term 2 is rescaled:
+
+  net_ranked_pct = 100 * (1 - (N_full / N_shipped) * (1 + f_ranked))
+  f_ranked       = kappa * delta_us_local / ranked_round_us
+
+kappa is the M4 Pro -> M5 absolute-cost transfer and is class-dependent, so
+this reports the bracket rather than one false point estimate:
+
+  kappa = 0.646  Rule 115 per-round overhead class, the unfavourable end.
+  kappa = 0.270  the bandwidth carve-out Rule 115 states for a mechanism such
+                 as C1, where the ranked host moves bytes faster so the
+                 absolute cost shrinks with the round and f is invariant. That
+                 is 52,726 / 195,171 expressed on the same kappa axis, and it
+                 makes f_ranked equal f_local. This mechanism reads 2.53x more
+                 coarse table per draft, so it has real bandwidth character.
+
+If the conclusion is the same at both ends, the host-transfer class does not
+matter and the result is robust.
 
 COST DECOMPOSITION. Per-round cost splits into work proportional to the leaf
 count, which the probe fraction cannot touch, and work proportional to
@@ -44,6 +74,15 @@ ROWS_PER_LEAF = 8
 SHIPPED_PADDED = 98_336
 FULL_PADDED = 248_320
 PROBE_FRACTION = 0.25
+
+# Rule 115 conversion constants, all from senpai/campaign-ledger.md.
+RANKED_ROUND_US = 52_726.0  # medpair-weighted ranked round, F189 arm B
+LOCAL_REFERENCE_ROUND_US = 195_171.0  # benchfixture anchor quoted by Rule 115
+KAPPA_OVERHEAD = 0.646  # absolute M4 Pro -> M5, per-round overhead class
+KAPPA_BANDWIDTH = RANKED_ROUND_US / LOCAL_REFERENCE_ROUND_US  # f invariant
+
+# The advisor's pre-registered price: recoverable mass * coefficient.
+PREREGISTERED_COEFFICIENTS = (65.0, 203.0)
 
 
 def leaves(padded: int) -> int:
@@ -138,6 +177,50 @@ def contrasts(legs: list[dict], prompt: str, basis: str) -> list[float]:
     return out
 
 
+def ranked_conversion(
+    prompts: dict, round_ratio: dict[str, float], kappa: float
+) -> dict:
+    """Rule 115: rescale only the absolute per-round cost term.
+
+    The round-count ratio is deterministic and transfers unchanged; the added
+    microseconds are re-expressed over the ranked round instead of the local
+    one. Returns the medpair-weighted net and the per-prompt terms.
+    """
+    per_prompt: dict[str, dict] = {}
+    for prompt, ratio in round_ratio.items():
+        added = prompts[prompt]["added_us_per_round_at_p025"]
+        if added is None:
+            return {}
+        f_local = added / prompts[prompt]["shipped_us_per_round"]
+        f_ranked = kappa * added / RANKED_ROUND_US
+        per_prompt[prompt] = {
+            "round_count_ratio": ratio,
+            "rounds_term_pct": 100.0 * (1.0 - ratio),
+            "added_us_per_round_local": added,
+            "f_local_pct": 100.0 * f_local,
+            "f_ranked_pct": 100.0 * f_ranked,
+            "net_ranked_pct": 100.0 * (1.0 - ratio * (1.0 + f_ranked)),
+            "net_local_pct": 100.0 * (1.0 - ratio * (1.0 + f_local)),
+        }
+    return {
+        "kappa": kappa,
+        "ranked_round_us": RANKED_ROUND_US,
+        "harness": "ranked",
+        "per_prompt": per_prompt,
+        "net_ranked_pct": sum(
+            MEDPAIR[p] * per_prompt[p]["net_ranked_pct"] for p in MEDPAIR
+        ),
+        "rounds_term_pct": sum(
+            MEDPAIR[p] * per_prompt[p]["rounds_term_pct"] for p in MEDPAIR
+        ),
+        "cost_term_pct": sum(
+            MEDPAIR[p]
+            * (per_prompt[p]["net_ranked_pct"] - per_prompt[p]["rounds_term_pct"])
+            for p in MEDPAIR
+        ),
+    }
+
+
 def mean_by(legs: list[dict], prompt: str, arm: str, key: str) -> float | None:
     vals = [
         leg[key]
@@ -153,6 +236,8 @@ def main() -> None:
     ap.add_argument("--label", default="s1")
     ap.add_argument("--runs", default=".mlxfast-private/e128/runs-e141")
     ap.add_argument("--out", default="research/e141-rung2.json")
+    ap.add_argument("--rung3", default="research/e141-rung3.json")
+    ap.add_argument("--census", default="research/e141-census.json")
     args = ap.parse_args()
 
     legs = collect(Path(args.runs), args.label)
@@ -214,10 +299,74 @@ def main() -> None:
                 return None
             return sum(MEDPAIR[p] * report["prompts"][p][key] for p in MEDPAIR)
 
-        net = medpair("ranked_spt_gain_pct")
-        report["e141_net_ranked_pct"] = net
+        report["e141_net_local_ranked_basis_pct"] = medpair("ranked_spt_gain_pct")
         report["e141_net_decode_pct"] = medpair("decode_spt_gain_pct")
         added = medpair("added_us_per_round_at_p025")
+
+        # Rule 115. The deciding number is the ranked conversion, not the
+        # measured local percentage. Take the round-count ratio from rung 3,
+        # where it is exact and deterministic, and cross-check it against the
+        # timing legs, which must reproduce it if the arm selector worked.
+        rung3 = json.loads(Path(args.rung3).read_text())
+        d3 = rung3["delta"]
+        ratio = {
+            p: d3["round_count_full"][p] / d3["round_count_shipped"][p]
+            for p in MEDPAIR
+        }
+        report["round_count_ratio_source"] = args.rung3
+        report["round_count_ratio"] = ratio
+        report["round_count_ratio_from_timing_legs"] = {
+            p: (
+                report["prompts"][p]["full_round_count"]
+                / report["prompts"][p]["shipped_round_count"]
+            )
+            for p in MEDPAIR
+        }
+        report["round_count_ratio_agrees_with_rung3"] = all(
+            abs(ratio[p] - report["round_count_ratio_from_timing_legs"][p]) < 1e-9
+            for p in MEDPAIR
+        )
+
+        conversions = {
+            "overhead_class": ranked_conversion(
+                report["prompts"], ratio, KAPPA_OVERHEAD
+            ),
+            "bandwidth_class": ranked_conversion(
+                report["prompts"], ratio, KAPPA_BANDWIDTH
+            ),
+        }
+        report["rule115_conversion"] = conversions
+        nets = [c["net_ranked_pct"] for c in conversions.values() if c]
+        if nets:
+            # Primary metric. Report the unfavourable end as the headline and
+            # keep the whole bracket, because the host-transfer class for this
+            # mechanism is not settled by this experiment.
+            report["e141_net_ranked_pct"] = min(nets)
+            report["e141_net_ranked_pct_bracket"] = [min(nets), max(nets)]
+            report["e141_net_ranked_pct_gross_rounds_only"] = conversions[
+                "overhead_class"
+            ]["rounds_term_pct"]
+
+            census = json.loads(Path(args.census).read_text())
+            recoverable_pct = census["medpair"]["recoverable_pct_full_vocabulary"]
+            recoverable = recoverable_pct / 100.0
+            report["e141_medpair_recoverable_fraction_pct"] = recoverable_pct
+            # The advisor priced this as recoverable mass * coefficient. State
+            # which coefficient each side of the ledger actually implies.
+            report["preregistered_price"] = {
+                "coefficients": list(PREREGISTERED_COEFFICIENTS),
+                "predicted_net_ranked_pct": [
+                    recoverable * c for c in PREREGISTERED_COEFFICIENTS
+                ],
+                "implied_coefficient_gross_rounds": (
+                    conversions["overhead_class"]["rounds_term_pct"] / recoverable
+                ),
+                "implied_coefficient_net": {
+                    name: c["net_ranked_pct"] / recoverable
+                    for name, c in conversions.items()
+                    if c
+                },
+            }
         report["e141_added_us_per_round_at_p025"] = added
         report["e141_added_us_per_round_at_p010"] = None
         report["e141_added_us_per_round_at_p010_is_derived"] = True
@@ -293,8 +442,45 @@ def main() -> None:
         )
 
     if "e141_net_ranked_pct" in report:
-        print(f"\ne141_net_ranked_pct = {report['e141_net_ranked_pct']:+.4f} (medpair, ranked basis)")
-        print(f"e141_net_decode_pct = {report['e141_net_decode_pct']:+.4f} (decode basis)")
+        print("\n== harness=local, measured ==")
+        print(
+            "  net on ranked basis "
+            f"{report['e141_net_local_ranked_basis_pct']:+.4f} %   "
+            f"net on decode basis {report['e141_net_decode_pct']:+.4f} %"
+        )
+        print(
+            "\n== harness=ranked, Rule 115 conversion "
+            f"(ranked round {RANKED_ROUND_US:.0f} us) =="
+        )
+        agree = report["round_count_ratio_agrees_with_rung3"]
+        print(
+            f"  round-count ratio from rung 3 reproduced by timing legs: {agree}"
+        )
+        for name, conv in report["rule115_conversion"].items():
+            print(
+                f"  {name:15s} kappa {conv['kappa']:.3f}  "
+                f"rounds {conv['rounds_term_pct']:+.4f} % "
+                f"cost {conv['cost_term_pct']:+.4f} % "
+                f"-> net {conv['net_ranked_pct']:+.4f} %"
+            )
+        lo, hi = report["e141_net_ranked_pct_bracket"]
+        print(
+            f"\ne141_net_ranked_pct = {report['e141_net_ranked_pct']:+.4f} "
+            f"(headline, unfavourable end; bracket {lo:+.4f} to {hi:+.4f})"
+        )
+        pre = report["preregistered_price"]
+        plo, phi = pre["predicted_net_ranked_pct"]
+        print(
+            f"  pre-registered band {plo:+.4f} to {phi:+.4f} % "
+            f"from coefficients {pre['coefficients']}"
+        )
+        print(
+            "  implied coefficient: gross rounds "
+            f"{pre['implied_coefficient_gross_rounds']:.1f}, net "
+            + ", ".join(
+                f"{n} {v:.1f}" for n, v in pre["implied_coefficient_net"].items()
+            )
+        )
         print(
             "e141_added_us_per_round_at_p025 = "
             f"{report['e141_added_us_per_round_at_p025']:+.1f}"

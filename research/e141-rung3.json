@@ -160,16 +160,58 @@
         "accepted_draft_rate": 0.7475478073892707,
         "truncation_share_of_rounds_pct": 1.2256410256410257
       }
+    },
+    "32768": {
+      "seeds": {
+        "essays_montaigne": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/essays_montaigne_32768_512.json",
+          "round_count": 152,
+          "tokens": 512,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 649,
+          "reference_checked_row_total": 649,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 360,
+          "rejected_draft_total": 137,
+          "target_tail_total": 152,
+          "accepted_draft_rate": 0.7243460764587525,
+          "mean_accepted_drafts_per_round": 2.3684210526315788,
+          "mean_tokens_per_round": 3.3684210526315788,
+          "declared_rows_per_token": 1.267578125,
+          "widened_draft_rows": 0,
+          "widened_draft_rows_accepted": 0,
+          "widened_distinct_tokens": 0,
+          "arm_witnessed": "shipped-compatible",
+          "rounds_with_draft_rows": 152,
+          "rounds_truncated_by_unproposable_token": 0,
+          "truncation_share_of_rounds_pct": 0.0,
+          "top_truncating_tokens": []
+        }
+      }
     }
   },
   "delta": {
     "accept_rate_delta_pp": -0.05908578065373371,
     "mean_tokens_per_round_shipped": 3.843994163205747,
     "mean_tokens_per_round_full": 3.861720948661346,
-    "rounds_saved_pct": 0.4590384880539866,
+    "rounds_saved_pct_per_prompt": {
+      "beagle_a": 0.8474576271186418,
+      "essays_montaigne": 0.0
+    },
+    "rounds_saved_pct": 0.40508474576271075,
+    "round_count_shipped": {
+      "beagle_a": 118,
+      "essays_montaigne": 151
+    },
+    "round_count_full": {
+      "beagle_a": 117,
+      "essays_montaigne": 151
+    },
     "declared_rows_per_token_shipped": 1.24969140625,
     "declared_rows_per_token_full": 1.2506249999999999,
-    "target_rows_saved_pct": -0.0747059430296737
+    "target_rows_saved_pct": -0.07861842105263381
   },
   "attribution": {
     "seeds": {
@@ -193,5 +235,30 @@
     "medpair_accepted_gain": 0.478,
     "medpair_accepted_gain_from_high_ids": 0.956,
     "medpair_accepted_gain_from_repartition": -0.478
+  },
+  "selector_positive_control": {
+    "arms": [
+      "32768"
+    ],
+    "seeds": {
+      "essays_montaigne@32768": {
+        "round_count": [
+          151,
+          152
+        ],
+        "accepted": [
+          361,
+          360
+        ],
+        "rejected": [
+          157,
+          137
+        ],
+        "ledger_changed": true,
+        "still_exact": true
+      }
+    },
+    "selector_proven_live": true,
+    "exact_at_narrow_prefix": true
   }
 }

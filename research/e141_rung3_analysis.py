@@ -205,28 +205,84 @@ def main() -> None:
     if "shipped" in report["arms"] and "full" in report["arms"]:
         base = report["arms"]["shipped"].get("medpair")
         cand = report["arms"]["full"].get("medpair")
-        if base and cand:
-            base_tpr = base["mean_tokens_per_round"]
-            cand_tpr = cand["mean_tokens_per_round"]
+        ships = report["arms"]["shipped"]["seeds"]
+        fulls = report["arms"]["full"]["seeds"]
+        if base and cand and set(ships) == set(MEDPAIR) == set(fulls):
+            # The published score is a weighted combination of PER-PROMPT
+            # relative changes, because each prompt contributes its own
+            # raw_p = baseline_spt_p / candidate_spt_p. Weighting the levels
+            # and then taking one ratio is a different, wrong quantity: it
+            # lets a prompt with more rounds per token borrow gain from a
+            # prompt that had none.
+            per_prompt = {
+                seed: 100.0
+                * (1.0 - fulls[seed]["round_count"] / ships[seed]["round_count"])
+                for seed in MEDPAIR
+            }
             report["delta"] = {
                 "accept_rate_delta_pp": 100.0
                 * (cand["accepted_draft_rate"] - base["accepted_draft_rate"]),
-                "mean_tokens_per_round_shipped": base_tpr,
-                "mean_tokens_per_round_full": cand_tpr,
-                # Rounds are the unit of cost; more tokens per round means
-                # fewer rounds for the same 512-token window.
-                "rounds_saved_pct": 100.0 * (1.0 - base_tpr / cand_tpr)
-                if cand_tpr
-                else 0.0,
+                "mean_tokens_per_round_shipped": base["mean_tokens_per_round"],
+                "mean_tokens_per_round_full": cand["mean_tokens_per_round"],
+                "rounds_saved_pct_per_prompt": per_prompt,
+                "rounds_saved_pct": sum(
+                    MEDPAIR[s] * per_prompt[s] for s in MEDPAIR
+                ),
+                "round_count_shipped": {s: ships[s]["round_count"] for s in MEDPAIR},
+                "round_count_full": {s: fulls[s]["round_count"] for s in MEDPAIR},
                 "declared_rows_per_token_shipped": base["declared_rows_per_token"],
                 "declared_rows_per_token_full": cand["declared_rows_per_token"],
-                "target_rows_saved_pct": 100.0
-                * (1.0 - cand["declared_rows_per_token"]
-                   / base["declared_rows_per_token"])
-                if base["declared_rows_per_token"]
-                else 0.0,
+                "target_rows_saved_pct": sum(
+                    MEDPAIR[s]
+                    * 100.0
+                    * (
+                        1.0
+                        - fulls[s]["declared_rows_per_token"]
+                        / ships[s]["declared_rows_per_token"]
+                    )
+                    for s in MEDPAIR
+                ),
             }
         report["attribution"] = attribute(report["arms"])
+
+    # Rule 101 positive control for the arm selector itself. essays produces
+    # zero widened rows, so the widened-row witness cannot prove the selector
+    # reached that prompt's worker. A deliberately narrow prefix must instead
+    # make the ledger WORSE. If it does not, the arm never took effect and the
+    # shipped-equals-full null is a plumbing artefact rather than a result.
+    narrow = [a for a in report["arms"] if a not in ("shipped", "full")]
+    if narrow:
+        control: dict = {"arms": narrow, "seeds": {}}
+        for arm in narrow:
+            for seed, blob in report["arms"][arm]["seeds"].items():
+                ship = report["arms"]["shipped"]["seeds"][seed]
+                control["seeds"][f"{seed}@{arm}"] = {
+                    "round_count": [ship["round_count"], blob["round_count"]],
+                    "accepted": [
+                        ship["accepted_draft_total"],
+                        blob["accepted_draft_total"],
+                    ],
+                    "rejected": [
+                        ship["rejected_draft_total"],
+                        blob["rejected_draft_total"],
+                    ],
+                    "ledger_changed": (
+                        ship["round_count"] != blob["round_count"]
+                        or ship["accepted_draft_total"]
+                        != blob["accepted_draft_total"]
+                    ),
+                    "still_exact": bool(
+                        blob["all_tokens_matched"]
+                        and blob["residual_divergence_count"] == 0
+                    ),
+                }
+        control["selector_proven_live"] = all(
+            v["ledger_changed"] for v in control["seeds"].values()
+        )
+        control["exact_at_narrow_prefix"] = all(
+            v["still_exact"] for v in control["seeds"].values()
+        )
+        report["selector_positive_control"] = control
 
     Path(args.out).write_text(json.dumps(report, indent=2) + "\n")
 
@@ -288,14 +344,37 @@ def main() -> None:
         )
         print(
             f"tokens/round {d['mean_tokens_per_round_shipped']:.4f} -> "
-            f"{d['mean_tokens_per_round_full']:.4f}  "
-            f"rounds saved {d['rounds_saved_pct']:.4f} %"
+            f"{d['mean_tokens_per_round_full']:.4f}"
+        )
+        for seed, pct in d["rounds_saved_pct_per_prompt"].items():
+            print(
+                f"  {seed:18s} rounds {d['round_count_shipped'][seed]:4d} -> "
+                f"{d['round_count_full'][seed]:4d}  saved {pct:+.4f} %"
+            )
+        print(
+            f"  {'medpair':18s} rounds saved {d['rounds_saved_pct']:.4f} % "
+            f"(weight of per-prompt relative changes)"
         )
         print(
             f"target rows/token {d['declared_rows_per_token_shipped']:.4f} -> "
             f"{d['declared_rows_per_token_full']:.4f}  "
             f"rows saved {d['target_rows_saved_pct']:.4f} %"
         )
+    if "selector_positive_control" in report:
+        c = report["selector_positive_control"]
+        print("\n== selector positive control (narrow prefix must hurt) ==")
+        for key, v in c["seeds"].items():
+            print(
+                f"  {key:28s} rounds {v['round_count'][0]} -> "
+                f"{v['round_count'][1]}  accepted {v['accepted'][0]} -> "
+                f"{v['accepted'][1]}  changed={v['ledger_changed']} "
+                f"exact={v['still_exact']}"
+            )
+        print(
+            f"  selector_proven_live={c['selector_proven_live']}  "
+            f"exact_at_narrow_prefix={c['exact_at_narrow_prefix']}"
+        )
+
     print(f"\nwrote {args.out}")
 
 
