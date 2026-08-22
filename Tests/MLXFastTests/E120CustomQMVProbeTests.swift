@@ -297,12 +297,9 @@ struct E120CustomQMVProbeTests {
                     if arm == .sumTable {
                         record["table_hit"] = tableHit
                         record["restored_diff"] = restoredDiff
-                        // 5b: the shipped gate is a pure function of the shape
-                        // and the width, so record what it decided here.
-                        record["table_routed"] = Qwen35CustomQMV.tablePays(
-                            n: shape.outputs, kBlocks: shape.hidden / 512, m: width)
-                        record["gate_volume"] =
-                            shape.outputs * (shape.hidden / 512) * width
+                        // 5b: the shipped gate is a pure function of the width,
+                        // so record what it decided here.
+                        record["table_routed"] = Qwen35CustomQMV.tablePays(m: width)
                         #expect(tableHit > 0)
                         #expect(restoredDiff == 0)
                     }

@@ -1691,32 +1691,31 @@ public enum Qwen35CustomQMV {
 
     /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
     /// close to flat in the table size, and repays it with recomputation the
-    /// wide kernel no longer does. Both conditions below are pure functions of
-    /// shape and width: no clock, no counter, no state that survives a request.
+    /// wide kernel no longer does. The gate is a pure function of the width: no
+    /// clock, no counter, no state that survives a request.
     ///
-    /// All endpoints are `harness=local`, Apple M4 Pro, E120 rung-2 and rung-5d.
+    /// E120 rung 5d measured the complete grid of the seven shapes that make up
+    /// all 257 wide QMV calls of one decode round, at every legal width.
+    /// `harness=local`, Apple M4 Pro, median of 6 ABBA blocks per cell.
+    /// Net microseconds saved per matvec:
     ///
-    /// `minimumTableWidth` — the gain grows with M while the fill does not, so
-    /// the narrowest legal width does not clear it. Measured round net over all
-    /// 257 wide QMV calls: **-90.5 us at M=3**, **+3184.9 us at M=4**. At M=3
-    /// five of the seven round shapes are negative or zero; at M=4 and above
-    /// every shape measured is positive.
+    ///     shape         M=3     M=4     M=5     M=6     M=7     M=8     M=9
+    ///     mlp.gate_up  -0.55  +24.76  +35.42  +23.41  +40.74  +58.76  +34.81
+    ///     mlp.down     +0.01  +11.21  +10.47   +9.26  +18.85  +28.49  +14.57
+    ///     gdn.in_proj  -1.91   +9.69  +14.71   +9.28  +17.29  +26.59  +14.26
+    ///     gdn.out_proj +0.86   +1.62   +3.24   +0.82   +4.00   +7.49   +2.69
+    ///     fa.qkv       -1.62   +7.67  +12.56   +0.46  +13.90  +22.58  +12.16
+    ///     fa.o_proj    +0.23   +1.11   +3.05   +1.47   +4.05   +7.20   +2.31
+    ///     lm_head     +17.10 +199.03 +274.69 +189.66 +314.22 +439.75 +264.88
     ///
-    /// `tableBreakEvenVolume` — a shape with few k-blocks cannot amortise the
-    /// fill at any width:
-    ///   `control.small`, N=4096, kBlocks=1,  M=8 -> volume  32,768, net -2.15 us
-    ///   `stream.small`,  N=4096, kBlocks=10, M=4 -> volume 163,840, net +2.75 us
-    /// The literal lies between two measured cells of opposite sign.
-    ///
-    /// An earlier version gated on volume alone. Rung 5d falsified it: at M=3
-    /// the net is not monotone in volume, so the volume rule routed two cells
-    /// that lose and declined two that win.
+    /// Every cell at M>=4 pays, so no per-shape term can improve on the width
+    /// test there. At M=3 the sign splits and the whole question is worth at
+    /// most +62 us of a 68,410 us round (0.09%), against -90 us for taking
+    /// every M=3 cell. A per-shape M=3 table would buy that 0.09% by hard
+    /// coding one host's timings, so this declines M=3 outright instead.
     public static let minimumTableWidth = 4
-    public static let tableBreakEvenVolume = 100_000
 
-    public static func tablePays(n: Int, kBlocks: Int, m: Int) -> Bool {
-        m >= minimumTableWidth && n * kBlocks * m > tableBreakEvenVolume
-    }
+    public static func tablePays(m: Int) -> Bool { m >= minimumTableWidth }
 
     /// True when the last two dimensions are densely packed, so the kernel's
     /// `row * rowStride + col` indexing reads the buffer as it stands.
@@ -1817,10 +1816,7 @@ public enum Qwen35CustomQMV {
                 groupSize: groupSize, bits: bits, mode: mode)
         else { return nil }
 
-        if arm == .fillNoConsume
-            || (arm == .sumTable
-                && tablePays(n: cell.n, kBlocks: cell.k / 512, m: cell.m))
-        {
+        if arm == .fillNoConsume || (arm == .sumTable && tablePays(m: cell.m)) {
             return matmulWithTable(
                 x, w, scales: scales, biases: biases, xsums: xsumsTable(x),
                 groupSize: groupSize, bits: bits, mode: mode,
