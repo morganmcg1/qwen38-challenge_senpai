@@ -13,8 +13,12 @@ max_seconds="${2:-5100}"
 interval=60
 start="$(date +%s)"
 
+# Yukon colours the status column even when stdout is a pipe or a file, so the
+# raw third field is an ANSI-wrapped string that no plain pattern can match.
+strip_ansi() { sed $'s/\033\\[[0-9;]*[A-Za-z]//g'; }
+
 while :; do
-  row="$(yukon submissions --all 2>/dev/null | grep -E "^${prefix}" | tail -1)"
+  row="$(yukon submissions --all 2>/dev/null | strip_ansi | grep -E "^${prefix}" | tail -1)"
   status="$(printf '%s' "${row}" | awk '{print $3}')"
   printf '%s %s %s\n' "$(date -u +%H:%M:%SZ)" "${prefix}" "${status:-absent}"
 
