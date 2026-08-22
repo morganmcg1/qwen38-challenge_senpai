@@ -447,8 +447,140 @@ Artifacts: `research/e116-artifacts/rung4-qmv-share-512.json`,
 
 ## Cleanup
 
-_pending_
+`Sources/MLXFastModel/` now contains **zero** research instrumentation. Every
+item is deleted, not gated.
+
+| # | item | site |
+|--:|---|---|
+| 1 | `E58DispatchCensus.installIfRequested()` and its comment block | `RuntimeStartupMemoryPolicy.swift` |
+| 2 | all seven `E58DispatchCensus.phase(...)` calls, plus my `e116_dose` phase | `Qwen36MTPBlockSession.swift` |
+| 3 | `beginRound`, the `endRound` defer, `fireTax()`, `censusAccepted` | `Qwen36MTPBlockSession.swift` |
+| 4 | the `forcedDrafts` override of `draftCount` | `Qwen36MTPBlockSession.swift` |
+| 5 | the census implementation itself | `Sources/MLXFastModel/E58DispatchCensus.swift`, deleted |
+| 6 | `MLX_E112_SKIP_1025_WARM` | `Qwen35.swift`, done in the first commit of this branch |
+| 7 | the whole E116 round dose: arm switch, allocation, `quantizedMM` dose, both trace lines | `Qwen36MTPBlockSession.swift` |
+| 8 | my rung 0b per-round arm switch, which is part of item 7 | `Qwen36MTPBlockSession.swift` |
+| 9 | the test that exercised the census API | `Tests/MLXFastTests/E71WidthTaxCensusTests.swift`, deleted |
+
+**Item 4 is the one that mattered most.** `MLX_E80_FORCE_DRAFTS` overrode
+`draftCount` **after** `draftPolicy` returned it, inside the scored draft
+decision. An environment variable could change what the candidate proposes.
+`draftCount` is a `let` again, so no later edit can reintroduce the override
+without changing the declaration.
+
+**Item 2 count.** The assignment feedback says six `phase(...)` calls. There
+were seven, plus my `e116_dose`, so eight in total: `seed_prefill`, `outside`,
+`target_forward`, `round_tail` twice, `draft_head`, `target_verify`, and
+`e116_dose`.
+
+### The preserved patch
+
+```bash
+git apply --check research/e116-artifacts/instruments.patch ; echo "exit=$?"
+exit=0
+```
+
+1,918 lines, 1,822 insertions, 1 deletion, over four files. It restores every
+item in the table onto the cleanup commit.
+
+**It was applied, built and reverted before it was committed**, so it is not a
+patch that has never been run. `swift build -c release --force-resolved-versions`
+completes on the restored tree, and `git apply -R` returns the tree to the
+cleanup commit exactly.
+
+Precedent for taking this seriously: `research/e95-artifacts/e95-census-instrument.patch`
+no longer applies, because it references an `E90GPUIntervals` type that was
+later removed. A preserved patch that is never checked is not preserved.
+
+### A defect fixed inside the patch, not in `Sources/`
+
+`swizzleDispatch(cls, name)` installed the same replacement block on
+`dispatchThreadgroups:threadsPerThreadgroup:` and on
+`dispatchThreads:threadsPerThreadgroup:`. It captured the selector so it could
+call the original, but it never gave the name to `DispatchLedger.dispatch`.
+Both selectors carry an `MTLSize` called `grid`; one counts **threads** and the
+other counts **threadgroups**.
+
+**Every census this campaign has run carries the ambiguity.** The shape key now
+ends with `entry=threads` or `entry=groups`. The token is appended, so a reader
+that keys on the kernel name or the `grid=` prefix is unaffected.
+
+Witness leg `e116-selector-fix-witness2`, 8 tokens, worker
+`5a532d46...` built from the patch:
+
+| entry point | dispatches | share |
+|---|--:|--:|
+| `dispatchThreads:` | 74,292 | 75.75 % |
+| `dispatchThreadgroups:` | 23,788 | 24.25 % |
+
+**Every one of the 13,113 `affine_qmv_fast` dispatches is `entry=groups`.** So
+the row I reported in rung 1,
+
+```
+affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x4352x1 tg=32x2x1
+```
+
+launches 4,352 **threadgroups** of 64 threads, which is 278,528 threads, not
+4,352 threads. `mlp.gate_up` has `N = 34,816` rows, so `34,816 / 4,352` is 8
+rows per threadgroup and 4 rows per 32-lane SIMD group, which is the
+`affine_qmv_fast` layout. The threads reading is not merely wrong, it is not
+realisable: 4,352 threads cannot fill 68 threadgroups of 64.
+
+This changes no number in this report. The dose rate, the ladder slope and the
+census shares are all measured in microseconds and are indifferent to how the
+grid is labelled. It changes how every existing census row should be **read**.
+
+Artifact: `research/e116-artifacts/cleanup-selector-defect-witness.json`.
+Reducer: `research/e116_entry_witness.py`.
 
 ## Suggested follow-ups, not implemented
 
-_pending_
+1. **Measure the transfer for work that has an overlap partner.** The dose runs
+   last in the round and cannot hide behind anything. A second dose site, fired
+   before the target forward instead of after it, would measure whether the
+   round has concurrency slack anywhere. If it does, the 1.000 headline is an
+   upper bound for kernels that sit in that window. `alpha = 1.177` argues it
+   does not, but that is an inference, not the direct measurement.
+
+2. **Publish an interval with the powered `xv4` ABBA reading.** The `1.84x`
+   ratio between the E116 prediction and the end-to-end measurement is
+   currently untestable, because the only published interval is 2 percentage
+   points wide and contains zero. With an interval, the cross-check either
+   validates the pricing chain or localises the missing factor in the kernel
+   percent.
+
+3. **Re-read every published census row through the entry-point token.** Any
+   analysis that inferred a thread count, an occupancy or a grid-to-work ratio
+   from a `grid=` field is off by the threadgroup size wherever the dispatch
+   was a `dispatchThreadgroups:` call, which is 24 % of dispatches and 100 % of
+   wide QMV.
+
+4. **Give every published width histogram a harness label.** Finding 47, E109
+   v2's `{3:1, 4:1, 5:2, 6:1, 7:26}` and the standing NA weights
+   `{2: 0.024, 3: 0.275, 4: 0.667, 5: 0.034}` all sit downstream of an
+   unlabelled choice between `--local-iterate` and `mtp-timed`.
+
+5. **Measure the in-situ inflation factor per kernel family, not once.** The
+   isolation sensitivity above rests on two factors, 1.0363 for the dose and
+   1.0459 for `target_forward`. A per-family table would replace the `-0.9 %`
+   worst case with a real correction.
+
+## Harness gaps found while running this
+
+1. **`swift build -c release --force-resolved-versions` does not rebuild the
+   scored worker.** It writes `.build/release/mlxfast-runtime-worker` and
+   reports `Build complete!`, while every leg script keeps using the stale
+   `.build-worker/release/mlxfast-runtime-worker`. I lost one census leg to
+   this. The leg scripts record `worker_sha256` in `meta.txt`, which is what
+   caught it, but nothing warns. `program.md` states the hazard; the tooling
+   does not enforce it. The rebuild that works is
+   `swift build -c release --force-resolved-versions --scratch-path .build-worker
+   --product mlxfast-runtime-worker`.
+
+2. **`senpai/rebuild-and-assert-worker.sh` on this base has no `--self-test`**
+   and uses bare `grep -c --` at lines 111, 121, 131 and 141, without `-F`. I
+   did not edit it, because `senpai/` is outside the assignment scope.
+
+3. **Rules 39 and 40 are absent from `senpai/campaign-ledger.md` in this
+   checkout**, and rule 34 at offset 33182 lists six frames, not nine. The
+   assignment cites all of them. I followed the assignment text.
