@@ -41,7 +41,8 @@ status=$?
 python3 research/e116_qmv_share.py "${tag}" \
   --json "research/e116-artifacts/rung4-qmv-share-512.json" \
   || status=1
-python3 research/e116_round_switch_witness.py "${tag}" \
+python3 research/e116_round_switch_witness.py \
+  e116x512k0 e116x512k12 "${tag}" \
   --json "research/e116-artifacts/rung0b-round-switch-witness.json" \
   || status=1
 
