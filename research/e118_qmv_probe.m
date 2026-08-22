@@ -64,6 +64,15 @@ static inline float bf16_to_f32(uint16_t h) {
 // E111's Bias6 packer, the CPU half of `e118_bias_from_code`. Every operation
 // after the single FP32 multiply is integer, so the two halves agree bit for
 // bit and `e_bias6` can be required to match `a_base` exactly.
+// A zero low nibble makes `prod` negative zero, and the exponent adjustment
+// then turns 0x8000_0000 into 0x7fff_0000, which is a BF16 NaN. A NaN bias
+// poisons a whole output column, and NaN compares bit-equal to NaN, so it
+// would silently disarm the exactness screen. Synthetic codes exclude it.
+static inline uint32_t sanitize_bias_code(uint32_t code) {
+  code &= 0x3fu;
+  return (code & 0xfu) ? code : (code | 1u);
+}
+
 static inline uint16_t bias_bf16_from_code(float scale, uint32_t code) {
   float prod = -(float)(code & 0xFu) * scale;
   uint32_t u;
@@ -248,7 +257,7 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int max_m) {
   for (size_t g = 0; g < groups; g++) {
     float s = 0.004f + 0.004f * unit(&seed);
     sp[g] = f32_to_bf16(s);
-    uint32_t code = xorshift32(&seed) & 0x3fu;
+    uint32_t code = sanitize_bias_code(xorshift32(&seed));
     cp[g] = (uint8_t)code;
     bp[g] = bias_bf16_from_code(bf16_to_f32(sp[g]), code);
     sbp[g] = (uint32_t)sp[g] | ((uint32_t)bp[g] << 16);
@@ -566,15 +575,27 @@ int main(int argc, char **argv) {
         }
         double rms = count && sq_want > 0.0 ? sqrt(sq_err / sq_want) : 0.0;
 
+        // A non-finite baseline element compares bit-equal to the same
+        // non-finite arm element, so it would hide a real difference. The
+        // screen states how many there are instead of assuming there are none.
+        size_t nonfinite = 0;
+        for (size_t i = 0; i < (size_t)m * o.n; i++) {
+          if ((ya[i] & 0x7f80u) == 0x7f80u) nonfinite++;
+        }
+
         fprintf(out,
                 "%s    {\"kind\":\"fidelity\",\"shape\":\"%s\",\"m\":%d,"
                 "\"base_vs_double_max_rel\":%.6e,"
-                "\"base_vs_double_rms_over_signal\":%.6e,\"arms\":[",
-                first_row ? "" : ",\n", shapes[s].name, m, max_rel, rms);
+                "\"base_vs_double_rms_over_signal\":%.6e,"
+                "\"base_nonfinite\":%zu,\"base_elements\":%zu,\"arms\":[",
+                first_row ? "" : ",\n", shapes[s].name, m, max_rel, rms,
+                nonfinite, (size_t)m * o.n);
         first_row = 0;
         fprintf(stderr,
                 "e118_qmv_probe:   fidelity M=%d  base_vs_double max_rel=%.3e "
-                "rms=%.3e\n", m, max_rel, rms);
+                "rms=%.3e  base_nonfinite=%zu/%zu%s\n", m, max_rel, rms,
+                nonfinite, (size_t)m * o.n,
+                nonfinite ? "   *** SCREEN WEAKENED ***" : "");
         for (int a = 1; a < g_narm; a++) {
           DiffReport d = countDiffering(&o, a, m);
           size_t total = (size_t)m * o.n;
@@ -616,15 +637,6 @@ int main(int argc, char **argv) {
       {
         const int m = widths[0];
         const size_t gpr = (size_t)o.k / 64;
-        {
-          const uint16_t *y0 = (const uint16_t *)o.y[0].contents;
-          size_t zeros = 0;
-          for (size_t i = 0; i < (size_t)m * o.n; i++) {
-            if (y0[i] == 0) zeros++;
-          }
-          fprintf(stderr, "e118_qmv_probe:   DIAG y0 zeros=%zu/%zu gpr=%zu\n",
-                  zeros, (size_t)m * o.n, gpr);
-        }
         uint16_t *xp = (uint16_t *)o.x.contents;
         uint16_t *sp = (uint16_t *)o.scales.contents;
         uint16_t *bp = (uint16_t *)o.biases.contents;
@@ -660,23 +672,13 @@ int main(int argc, char **argv) {
               save_sb[si] = sbp[gi];
               save_c[si] = cp[gi];
               sp[gi] = f32_to_bf16(bf16_to_f32(save_s[si]) * 512.0f + 1e-3f);
-              cp[gi] = (uint8_t)((save_c[si] + 9u) & 0x3fu);
+              cp[gi] = (uint8_t)sanitize_bias_code(save_c[si] + 9u);
               bp[gi] = bias_bf16_from_code(bf16_to_f32(sp[gi]), cp[gi]);
               sbp[gi] = (uint32_t)sp[gi] | ((uint32_t)bp[gi] << 16);
             }
           }
           dispatchOnce(queue, pso[a][0], &o, a, m);
           hit_meta = countDiffering(&o, a, m).differing;
-          if (a == 1) {
-            const uint16_t *y0 = (const uint16_t *)o.y[0].contents;
-            const uint16_t *ya2 = (const uint16_t *)o.y[a].contents;
-            for (int j = 0; j < kMetaProbeRows; j++) {
-              const int col = (int)((size_t)o.n * j / kMetaProbeRows + 1);
-              fprintf(stderr,
-                      "e118_qmv_probe:   DIAG col=%d base=%.4f pert=%.4f\n", col,
-                      bf16_to_f32(y0[col]), bf16_to_f32(ya2[col]));
-            }
-          }
           for (int j = 0; j < kMetaProbeRows; j++) {
             const size_t base = ((size_t)o.n * j / kMetaProbeRows + 1) * gpr;
             for (size_t g = 0; g < gpr; g++) {
