@@ -127,6 +127,8 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
     baseline = baseline or max(plans, key=lambda c: int(c.split(":")[1]))
     if baseline not in plans:
         raise SystemExit(f"baseline {baseline} is not in both artifacts")
+    base_m = baseline.split(":")[0]
+    same_width = [c for c in plans if c.split(":")[0] == base_m]
     dispatch = wide["dispatch"]
     names = sorted(
         {s for s, _ in both if all((s, p) in wide["us"] for p in cells)},
@@ -156,7 +158,10 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
                 "session_spread_tight_pct":
                     data["spread_pct"][(name, cell, "tight")],
             }
-            if not cell.endswith(":stock"):
+            # An advantage is only meaningful against a plan at the same width.
+            # A cell at another width differs by the width step, not by a plan
+            # choice, so it carries timings without an advantage column.
+            if not cell.endswith(":stock") and cell.split(":")[0] == base_m:
                 row["advantage_wide_pct"] = 100.0 * (bw - w) / bw
                 row["advantage_tight_pct"] = 100.0 * (bt - t) / bt
                 row["interaction_pp"] = (
@@ -164,8 +169,8 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
                 )
                 row["interaction_us"] = (bt - t) - (bw - w)
             rows.append(row)
-        rank_w = sorted(plans, key=lambda c: wide["us"][(name, c)])
-        rank_t = sorted(plans, key=lambda c: tight["us"][(name, c)])
+        rank_w = sorted(same_width, key=lambda c: wide["us"][(name, c)])
+        rank_t = sorted(same_width, key=lambda c: tight["us"][(name, c)])
         shapes.append({
             "name": name,
             "n": wide["n"][name],
@@ -207,8 +212,8 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
         "cells": cells,
         "shapes": shapes,
         "totals": totals,
-        "best_plan_wide": min(plans, key=lambda c: tot[(c, "wide")]),
-        "best_plan_tight": min(plans, key=lambda c: tot[(c, "tight")]),
+        "best_plan_wide": min(same_width, key=lambda c: tot[(c, "wide")]),
+        "best_plan_tight": min(same_width, key=lambda c: tot[(c, "tight")]),
         "shapes_with_order_change": [s["name"] for s in shapes
                                      if not s["order_same"]],
     }
@@ -218,11 +223,19 @@ def factorial(paths: list[pathlib.Path], baseline: str | None = None) -> dict:
     out["plan_axis_and_grid_axis_are_separable"] = not out[
         "shapes_with_order_change"
     ]
+    # The baseline plan carries an interaction of exactly zero by construction,
+    # so it is excluded from every summary of interaction size.
     out["max_abs_interaction_pp"] = max(
         abs(r["interaction_pp"])
         for s in shapes
         for r in s["rows"]
-        if "interaction_pp" in r
+        if "interaction_pp" in r and r["plan"] != baseline
+    )
+    out["max_abs_interaction_pp_excluding_6_1_4"] = max(
+        abs(r["interaction_pp"])
+        for s in shapes
+        for r in s["rows"]
+        if "interaction_pp" in r and r["plan"] not in (baseline, "6:1:4")
     )
     # An interaction below the replicate spread of the two cells it is built
     # from is not resolved by this evidence, whatever its sign.
@@ -283,7 +296,12 @@ def main() -> int:
                       % (row["plan"], row["wide_us"], row["tight_us"],
                          row["tight_minus_wide_pct"], "-", "-", "-", spread))
                 continue
-            flag = "" if abs(row["interaction_pp"]) > spread else "  unresolved"
+            flag = (
+                ""
+                if row["plan"] == r["baseline_plan"]
+                or abs(row["interaction_pp"]) > spread
+                else "  unresolved"
+            )
             print("    %6s %10.1f %10.1f %7.1f %% %9.2f %9.2f %+8.2f %9.2f%s"
                   % (row["plan"], row["wide_us"], row["tight_us"],
                      row["tight_minus_wide_pct"], row["advantage_wide_pct"],

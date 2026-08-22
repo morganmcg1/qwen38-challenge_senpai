@@ -31,6 +31,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import wandb
 
+import e138_grid_control as grid_control
 import e138_plan_analysis as analysis
 
 ENTITY = "wandb-applied-ai-team"
@@ -64,17 +65,19 @@ RUNGS = {
         "uses_gpu": False,
     },
     "b": {
-        "run_name": "e138-rungb-isolated-plan-surface-m5-m7",
+        "run_name": "e138-rungb-isolated-plan-surface-m5-m9",
         "job_type": "isolated-kernel-timing",
         "question":
             "at the shipped tight launch, is there an (IPG, RPS) plan for "
-            "widths 5 to 7 that beats the promoted onePass67 plan, and does "
-            "any plan flatten the width-6 step",
+            "widths 5 to 9 that beats the promoted onePass67 plan, does any "
+            "plan flatten the width-6 step, and what does the step into every "
+            "width cost before and after the best plan",
         "command":
-            "research/e138_plan_surface.sh OUT CELLS '' 31 12 tight",
+            "research/e138_plan_surface.sh OUT CELLS '' 31 12 tight 6:6:4",
         "artifacts": [
             "item1-decisive-cells.json",
             "item1a-m5-m7-rows.json",
+            "item5-m8-m9-and-m7-replicate.json",
         ],
         "uses_gpu": True,
     },
@@ -86,9 +89,28 @@ RUNGS = {
             "this host, and was the E137 fallback column a plan effect or a "
             "replica-versus-stock code difference",
         "command":
-            "research/e138_plan_surface.sh OUT CELLS '' 31 12 tight",
+            "research/e138_plan_surface.sh OUT CELLS '' 31 12 tight 6:6:4",
         "artifacts": ["item1c-spill-control-and-stock.json"],
         "uses_gpu": True,
+    },
+    "d": {
+        "run_name": "e138-rungd-launch-grid-by-plan-factorial",
+        "job_type": "isolated-kernel-timing",
+        "question":
+            "advisor feedback F2: does the launch grid change which plan wins "
+            "at width 6, and is the plan-by-grid interaction large enough to "
+            "explain the sign reversal between our F167 wide measurement and "
+            "the 0b2f0014 tight receipt",
+        "command":
+            "research/e138_plan_surface.sh OUT 'PLAN@wide,PLAN@tight,...' "
+            "'' 31 12 tight 6:stock",
+        "artifacts": [
+            "item7-interleaved-factorial-rep1.json",
+            "item7-interleaved-factorial-rep2.json",
+            "item7-interleaved-factorial-rep3.json",
+        ],
+        "uses_gpu": True,
+        "factorial": True,
     },
 }
 
@@ -251,19 +273,89 @@ def rung_timing(files: list[str]) -> tuple[dict, dict]:
         )
         summary["plan_axis_closed"] = best < PLAN_AXIS_CLOSE_PCT
 
+    # Advisor feedback F3: edward's E140 curve-perturbation arm consumes the
+    # in-situ step into each width, before and after the plan change.
+    ladder = result.get("step_ladder", [])
+    for entry in ladder:
+        summary["f3_step_into_%d_shipped_in_situ_us" % entry["into_width"]] = (
+            entry["shipped_in_situ_step_us"]
+        )
+        summary["f3_step_into_%d_reduction_fraction" % entry["into_width"]] = (
+            entry["best_global_step_reduction_fraction"]
+        )
+    if ladder:
+        summary["f3_transfer_applied"] = result["step_ladder_transfer_applied"]
+        summary["f3_transfer_value"] = result["step_ladder_transfer_value"]
+        summary["f3_host_transfer_applied"] = result[
+            "step_ladder_host_transfer_applied"
+        ]
+
+    # Exactness lives on the raw measurement rows, not on the pooled cells,
+    # because pooling several sessions merges rows that each carry their own
+    # verdict. Every row must agree.
+    raw = [
+        row
+        for path in paths
+        for shape in json.loads(path.read_text())["shapes"]
+        for row in shape["rows"]
+    ]
     summary["cells_measured"] = len(cell_rows)
-    summary["cells_bitwise_identical_to_incumbent"] = sum(
-        1 for r in cell_rows if r["matches_incumbent_bitwise"]
+    summary["measurement_rows"] = len(raw)
+    summary["rows_bitwise_identical_to_incumbent"] = sum(
+        1 for r in raw if r["matches_incumbent_bitwise"]
     )
     summary["max_abs_delta_vs_incumbent"] = max(
-        r["max_abs_delta_vs_incumbent"] for r in cell_rows
+        r["max_abs_delta_vs_incumbent"] for r in raw
     )
     summary["problems"] = len(result["problems"])
     summary["uses_gpu"] = True
 
-    return summary, {
+    tables = {
         "plan_cells": table(sorted(cell_rows[0]), cell_rows),
         "weighted_totals": table(sorted(width_rows[0]), width_rows),
+    }
+    if ladder:
+        tables["f3_step_ladder"] = table(sorted(ladder[0]), ladder)
+    return summary, tables
+
+
+def rung_factorial(files: list[str]) -> tuple[dict, dict]:
+    paths = [ART / f for f in files if (ART / f).exists()]
+    r = grid_control.factorial(paths)
+
+    rows = [row for shape in r["shapes"] for row in shape["rows"]]
+    for row in rows:
+        row["order_changes_under_grid"] = next(
+            s["order_same"] for s in r["shapes"] if s["name"] == row["shape"]
+        ) is False
+
+    summary = {
+        key: value
+        for key, value in r.items()
+        if isinstance(value, (int, float, bool, str))
+    }
+    summary["factorial_artifacts"] = len(paths)
+    summary["shapes_with_order_change"] = len(r["shapes_with_order_change"])
+    summary["shapes_with_order_change_names"] = ",".join(
+        r["shapes_with_order_change"]
+    )
+    for entry in r["totals"]:
+        plan = entry["plan"].replace(":", "_")
+        for field in ("wide_us", "tight_us", "interaction_us"):
+            if field in entry:
+                summary["weighted/%s/%s" % (plan, field)] = entry[field]
+    summary.update({
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+        "official_or_ranked_score": False,
+        "arms_abba_counterbalanced_within_block": True,
+        "both_grids_inside_one_session": True,
+        "uses_gpu": True,
+    })
+    return summary, {
+        "factorial_cells": table(sorted(rows[0]), rows),
+        "factorial_weighted_totals": table(
+            sorted(r["totals"][0]), r["totals"]),
     }
 
 
@@ -276,6 +368,8 @@ def main() -> int:
     spec = RUNGS[args.rung]
     if args.rung == "a":
         summary, tables = rung_a()
+    elif spec.get("factorial"):
+        summary, tables = rung_factorial(spec["artifacts"])
     else:
         summary, tables = rung_timing(spec["artifacts"])
 
