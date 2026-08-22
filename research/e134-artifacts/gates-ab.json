@@ -1,0 +1,89 @@
+{
+  "gate_a": {
+    "board": {
+      "A1_pass": true,
+      "A2_pass": true,
+      "abs_error_pp": 0.11196311790313707,
+      "argmax_h": 0.18,
+      "h016_pct": -1.0520368820968629,
+      "h032_pct": -18.42055978228925,
+      "monotone_below_shipped": true,
+      "pass": true,
+      "ranked_h016_pct": -1.164
+    },
+    "matched_depth_contrast": [
+      {
+        "flat_at_same_depth_pct": 0.0,
+        "mean_depth": 4.384433641693576,
+        "median_pct": 0.0,
+        "separation_pp": 0.0,
+        "tier": 1.0
+      },
+      {
+        "flat_at_same_depth_pct": -0.45748606085440296,
+        "mean_depth": 4.201415005679605,
+        "median_pct": 1.7954623295597198,
+        "separation_pp": 2.2529483904141228,
+        "tier": 1.25
+      },
+      {
+        "flat_at_same_depth_pct": -0.7656167340401876,
+        "mean_depth": 4.118893762469035,
+        "median_pct": 2.3201252054244317,
+        "separation_pp": 3.0857419394646195,
+        "tier": 1.35
+      },
+      {
+        "flat_at_same_depth_pct": -1.185617625179878,
+        "mean_depth": 4.051689625586976,
+        "median_pct": 2.3911761498931448,
+        "separation_pp": 3.576793775073023,
+        "tier": 1.45
+      },
+      {
+        "flat_at_same_depth_pct": -1.8186951714659794,
+        "mean_depth": 3.9503911974762143,
+        "median_pct": 2.36587805733944,
+        "separation_pp": 4.184573228805419,
+        "tier": 1.6
+      },
+      {
+        "flat_at_same_depth_pct": -8.54999083004444,
+        "mean_depth": 3.2357533898594046,
+        "median_pct": -2.233828275169875,
+        "separation_pp": 6.316162554874564,
+        "tier": 2.0301
+      }
+    ],
+    "ours": {
+      "A1_pass": true,
+      "A2_pass": true,
+      "abs_error_pp": 0.17975684093836253,
+      "argmax_h": 0.18,
+      "h016_pct": -0.9842431590616374,
+      "h032_pct": -20.218298918433163,
+      "monotone_below_shipped": true,
+      "pass": true,
+      "ranked_h016_pct": -1.164
+    }
+  },
+  "gate_b": {
+    "cliff4": {
+      "argmax_pct": 0.0,
+      "argmax_w": 0.0,
+      "cliff_ratio": 1.0,
+      "held_out_pct": 0.0,
+      "in_sample_pct": 0.0,
+      "sd": 0.0
+    },
+    "cliff6": {
+      "argmax_pct": 6.787392387111198,
+      "argmax_w": 0.15,
+      "cliff_ratio": 5.358492017760853,
+      "held_out_pct": 6.787392387111198,
+      "in_sample_pct": 6.787392387111198,
+      "sd": 0.11910116343814593
+    }
+  },
+  "harness": "ranked"
+}

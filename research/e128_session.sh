@@ -3,9 +3,15 @@
 #
 #   usage: research/e128_session.sh PROMPT_ID [PROMPT_ID ...]
 #
-# NOT A TIMING SESSION. Every leg runs the per-round phase trace, which writes
-# to a file inside the round, and the forced arm changes the work per round.
-# `meta.txt` records `timing_valid=false` verbatim on every leg.
+# NOT A TIMING SESSION BY DEFAULT. Every leg runs the per-round phase trace,
+# which writes to a file inside the round, and the forced arm changes the work
+# per round. `meta.txt` records `timing_valid=false` verbatim on those legs.
+#
+# `E128_NO_TRACE=1` drops the trace and records `timing_valid=true`. Use it
+# ONLY for arm timing, and never together with `E128_FORCE_DEPTH`. A timed leg
+# collects no trace, so it answers a timing question and nothing else. The
+# cool gate is still not taken, so `gate_qualified_for_timing=false` stands and
+# the arms must be counterbalanced within one session.
 #
 # WHAT IT COLLECTS. Each round's trace line carries the schedule's inputs
 # (`m=` target top-2 margin, `ema=` per-position acceptance EMAs, `streak=`,
@@ -37,6 +43,14 @@ root="${E128_ROOT:-.mlxfast-private/e128}"
 goldens_dir="${E128_GOLDENS_DIR:-${root}/goldens}"
 runs_root="${root}/${E128_RUNS_DIR:-runs-shipped}"
 force_depth="${E128_FORCE_DEPTH:-}"
+
+# A forced depth answers a per-round cost question, and it needs the trace to
+# answer it. A timed leg has no trace. Asking for both produces a leg that can
+# support neither reading, so refuse instead of picking one silently.
+if [[ "${E128_NO_TRACE:-0}" == "1" && -n "${force_depth}" ]]; then
+  echo "e128_session: E128_NO_TRACE=1 and E128_FORCE_DEPTH are exclusive" >&2
+  exit 2
+fi
 bench_fixture="correctness_prompts/public_longcopy_gate_english_512_256.json"
 
 prompt_file_for() {
@@ -174,13 +188,23 @@ for id in "$@"; do
   entry_c="$(gpu_temp)"
   start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-  leg_env=(MLXFAST_NO_SANDBOX=1
-           MLX_QWEN_MTP_TRACE=1
-           MLX_QWEN_MTP_TRACE_PATH="${trace_path}")
+  # E134: `E128_NO_TRACE=1` drops the per-round trace so the leg can be TIMED.
+  # The trace writes two lines inside every round, which is why every traced
+  # leg records `timing_valid=false`. An arm comparison cannot use that,
+  # because a price arm changes the round count and the per-round cost then
+  # lands unevenly on the arms.
+  leg_env=(MLXFAST_NO_SANDBOX=1)
+  if [[ "${E128_NO_TRACE:-0}" == "1" ]]; then
+    kind="timed"
+  else
+    kind="traced"
+    leg_env+=(MLX_QWEN_MTP_TRACE=1
+              MLX_QWEN_MTP_TRACE_PATH="${trace_path}")
+  fi
   [[ -n "${force_depth}" ]] && \
     leg_env+=("DARKBLOOM_E128_FORCE_DEPTH=${force_depth}")
 
-  echo "=== e128: traced leg ${id} (${tokens} tokens, offer ${depth}${force_depth:+, forced depth ${force_depth}}) ==="
+  echo "=== e128: ${kind} leg ${id} (${tokens} tokens, offer ${depth}${force_depth:+, forced depth ${force_depth}}) ==="
   env "${leg_env[@]}" \
     "${swift_bin}" mtp-timed \
       --weights "${weights}" \
@@ -205,8 +229,13 @@ for id in "$@"; do
     echo "tokens=${tokens}"
     echo "offered_depth=${depth}"
     echo "forced_depth=${force_depth:-none}"
-    echo "phase_trace=1"
-    echo "timing_valid=false"
+    # REQUESTED, not observed. An unrecognised value falls back to the
+    # compiled default without complaint, so this line records what the leg
+    # ASKED for. `round_count` and `effective_mean_draft_len` below are what it
+    # actually ran, and those are the fields an arm audit must read.
+    echo "depth_price_arm_requested=${MLX_E134_DEPTH_PRICE_ARM:-unset}"
+    echo "phase_trace=$([[ "${kind}" == "timed" ]] && echo 0 || echo 1)"
+    echo "timing_valid=$([[ "${kind}" == "timed" ]] && echo true || echo false)"
     echo "cool_gate_passed_real_gate=false"
     echo "gate_qualified_for_timing=false"
     echo "official_or_ranked_score=false"
