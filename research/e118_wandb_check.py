@@ -11,9 +11,14 @@ network round trip per run.
     --dry     builds every table against the committed summary.json with a
               stub `wandb`, so a schema drift fails in under a second and
               nothing is written to the server.
-    --verify  reads the six runs back from the server and asserts that each
+    --verify  reads the runs back from the server and asserts that each
               reached `finished` and carries the summary keys a reader of
               the report would go looking for.
+
+`--experiment` selects which logger to check. E123 publishes the same way and
+has the same failure mode, so it declares its expected keys in
+`e123_wandb_log.EXPECTED_SUMMARY_KEYS` and reuses this checker rather than
+copying it.
 
 Neither mode is part of the experiment. They exist so that "the numbers are
 in W&B" is a checked claim rather than an assumed one.
@@ -26,9 +31,11 @@ import types
 
 PROJECT = "wandb-applied-ai-team/qwen38-mlx-challenge-senpai"
 
+LOGGERS = {"e118": "e118_wandb_log", "e123": "e123_wandb_log"}
+
 # The keys a reader arrives looking for, per run. Only the load-bearing ones:
 # this is a smoke test, not a mirror of the logger.
-EXPECTED = {
+E118_EXPECTED = {
     "e118arms1": (
         "primary_metric_name",
         "primary_metric_arm",
@@ -67,17 +74,36 @@ EXPECTED = {
 
 
 class _Table:
-    """Stands in for `wandb.Table` and enforces the column contract."""
+    """Stands in for `wandb.Table` and enforces the column contract.
+
+    The real `wandb.Table` also infers a type per column from the first row
+    and rejects a later row that disagrees. E123 hit that on the server after
+    this stub passed, so the stub enforces it too: a column that starts out
+    numeric may not later receive a list, and the reverse.
+    """
 
     def __init__(self, columns):
         self.columns = list(columns)
         self.rows = []
+        self.types: list[type | None] = [None] * len(self.columns)
 
     def add_data(self, *values):
         if len(values) != len(self.columns):
             raise AssertionError(
                 "row has %d values but the table declares %d columns %s"
                 % (len(values), len(self.columns), self.columns))
+        for i, value in enumerate(values):
+            if value is None:
+                continue
+            kind = float if isinstance(value, (int, float)) \
+                and not isinstance(value, bool) else type(value)
+            if self.types[i] is None:
+                self.types[i] = kind
+            elif self.types[i] is not kind:
+                raise AssertionError(
+                    "column %r first held %s and row %d gives %s (%r)"
+                    % (self.columns[i], self.types[i].__name__,
+                       len(self.rows), kind.__name__, value))
         self.rows.append(values)
 
 
@@ -94,7 +120,18 @@ class _Run:
         pass
 
 
-def dry_run() -> int:
+def load_logger(experiment: str):
+    sys.path.insert(0, "research")
+    return __import__(LOGGERS[experiment])
+
+
+def expected_keys(experiment: str) -> dict:
+    if experiment == "e118":
+        return E118_EXPECTED
+    return load_logger(experiment).EXPECTED_SUMMARY_KEYS
+
+
+def dry_run(experiment: str) -> int:
     seen: list[_Run] = []
 
     def _init(**kwargs):
@@ -107,8 +144,7 @@ def dry_run() -> int:
     stub.init = _init
     sys.modules["wandb"] = stub
 
-    sys.path.insert(0, "research")
-    import e118_wandb_log as logger  # noqa: PLC0415
+    logger = load_logger(experiment)
 
     # `start` resolves a deterministic run id and may touch the API; in a dry
     # run the only thing that matters is that it hands back a run object.
@@ -138,12 +174,12 @@ def dry_run() -> int:
     return 1 if failures else 0
 
 
-def verify() -> int:
+def verify(experiment: str) -> int:
     import wandb  # noqa: PLC0415
 
     api = wandb.Api()
     failures = 0
-    for run_id, keys in EXPECTED.items():
+    for run_id, keys in expected_keys(experiment).items():
         try:
             run = api.run("%s/%s" % (PROJECT, run_id))
         except Exception as exc:  # noqa: BLE001
@@ -174,9 +210,11 @@ def main() -> int:
     mode.add_argument("--dry", action="store_true",
                       help="build every table offline against summary.json")
     mode.add_argument("--verify", action="store_true",
-                      help="read the six runs back from W&B")
+                      help="read the published runs back from W&B")
+    ap.add_argument("--experiment", choices=sorted(LOGGERS), default="e118")
     args = ap.parse_args()
-    return dry_run() if args.dry else verify()
+    return (dry_run(args.experiment) if args.dry
+            else verify(args.experiment))
 
 
 if __name__ == "__main__":
