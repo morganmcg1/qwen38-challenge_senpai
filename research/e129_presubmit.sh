@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# E129 rung 0: the pre-submit chain for the reverted Route B candidate.
+#
+#   usage: research/e129_presubmit.sh [TOKENS]
+#
+# WHY THIS IS NOT `research/e121_presubmit.sh`. That script reverse-applies
+# `research/e121-artifacts/e121-share.patch` to build its `swift test` control
+# and asserts the three E121 witnesses in their pre-revert polarity. Alphonse's
+# revert removed that arm from the base, so the patch no longer applies and all
+# three witnesses now read the other way. This chain keeps the same order and
+# the same gates, and changes only those two things.
+#
+# THE `swift test` CONTROL. This branch changes no submitted byte against the
+# advisor head, so there is no candidate-versus-base tree to compare. The gate
+# is `senpai/known-test-failures.md`: the nine organizer names must sum to
+# exactly 40 issues with unchanged per-name counts, and no other failing name
+# may appear that is not a listed campaign-added test.
+#
+# THE WORKER WITNESS. `benchmark-qwen-mtp.sh` does not rebuild the worker
+# (finding 28), so the worker is witnessed before and after the submit leg and
+# both digests are recorded. Equal digests are what prove the timed binary is
+# the witnessed binary.
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+tokens="${1:-512}"
+out="research/out/e129-presubmit"
+mkdir -p "${out}"
+
+# The witness set lives in one sourced file, so the plain rebuild before the
+# digest and this chain can never assert different things.
+source research/e129_witness.sh
+
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "e129_presubmit: worktree is dirty; refusing to certify uncommitted work" >&2
+  git status --porcelain >&2
+  exit 1
+fi
+
+echo "=== swift test on the candidate tree ==="
+swift test --force-resolved-versions > "${out}/swift-test.log" 2>&1
+echo "swift test exit $?"
+
+echo "=== rebuild and witness the candidate worker ==="
+senpai/rebuild-and-assert-worker.sh "${WITNESS[@]}" \
+  > "${out}/worker-assert-pre.txt" 2>&1 || {
+  echo "e129_presubmit: worker assert failed" >&2
+  tail -40 "${out}/worker-assert-pre.txt" >&2
+  exit 5
+}
+worker_sha="$(awk '/^worker_sha256 /{print $2}' "${out}/worker-assert-pre.txt" | tail -1)"
+worker_mtime="$(awk '/^worker_mtime /{print $2}' "${out}/worker-assert-pre.txt" | tail -1)"
+echo "worker ${worker_sha:0:16} mtime ${worker_mtime}"
+
+echo "=== ./benchmark-qwen-mtp.sh --local-submit (real 40 C gate) ==="
+head_dir="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
+if [[ ! -s "${head_dir}/config.json" ]]; then
+  echo "e129_presubmit: declared head missing at ${head_dir}" >&2
+  exit 6
+fi
+export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
+export MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS="${tokens}"
+unset MLX_E58_BUFFER_LIMIT_OPS
+unset MLXFAST_LOCAL_COOL_GATE
+export MLXFAST_SCORE_PATH="${PWD}/${out}/submit-score.json"
+./benchmark-qwen-mtp.sh --local-submit > "${out}/local-submit.log" 2>&1
+echo "local-submit exit $?"
+
+senpai/rebuild-and-assert-worker.sh --no-build "${WITNESS[@]}" \
+  > "${out}/worker-assert-post.txt" 2>&1
+post_worker="$(awk '/^worker_sha256 /{print $2}' "${out}/worker-assert-post.txt" | tail -1)"
+
+python3 research/e129_presubmit_receipt.py \
+  --submit-log "${out}/local-submit.log" \
+  --submit-score "${out}/submit-score.json" \
+  --test-log "${out}/swift-test.log" \
+  --worker-sha256 "${worker_sha}" \
+  --worker-mtime "${worker_mtime}" \
+  --worker-sha256-post "${post_worker}" \
+  --timed-commit "$(git rev-parse HEAD)" \
+  --out "${out}/rung0-presubmit.json"
+exit $?

@@ -1,0 +1,24 @@
+harness=ranked  instrument=F154 unweighted 8-prompt candidate-leg mean
+reference receipt 0c6191b7  solver morganmcg1  published 3.512706  2026-08-22T11:42:38
+reference unweighted mean  0.014758 s/token
+per prompt: plutarch=0.030260  drama=0.019052  travel=0.016605  beagle=0.011286  republic=0.010220  essays=0.010345  medicine=0.010215  botany=0.010083
+instrument se              0.000003 s/token  (0.0187 %)
+
+theory                                 predicted predicted mean
+pass-count break (Edward's M-curve)       -8.60%     0.013489
+instruction census, F87 haircut           -2.56%     0.014381
+askeladd compile-only model               -2.60%     0.014375
+Edward cross-sectional f (null)           +0.05%     0.014766
+
+advisor band, fast edge                   -9.00%     0.013430
+advisor band, central                     -5.00%     0.014020
+advisor band, slow edge                   -3.00%     0.014316
+census refutation threshold               -1.00%     0.014611
+
+F76 host-state classification, threshold -12.90 (below is the fast state)
+receipt   solver            published       mean       F76
+0c6191b7  morganmcg1         3.512706   0.014758  -14.2455 fast
+48423d09  noskillcoding      3.518453   0.014768  -14.1684 fast
+cf79f7df  Lieisyourlie       3.516617   0.014769  -14.2081 fast
+d3c491b5  morganmcg1         3.490650   0.014922  -13.3603 fast
+44559d02  morganmcg1         3.343513   0.015267  -13.4917 fast

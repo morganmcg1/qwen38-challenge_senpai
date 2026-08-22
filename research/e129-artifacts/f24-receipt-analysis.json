@@ -1,0 +1,112 @@
+{
+ "base_sha": "6cead96d40eda4e9a685eec212247c7dacd7f5fd",
+ "dose_response": {
+  "candidate_contrast_pp": -0.4506,
+  "candidate_empirical_p": 0.0425,
+  "candidate_exact_perm_p": 0.0143,
+  "empirical_null_pairs": 400,
+  "empirical_null_sd_pp": 0.2219,
+  "grouping": "acts=beagle,republic,essays,medicine; inert=plutarch,drama,travel; above=botany",
+  "serial_contrast_pp": 0.4886,
+  "serial_exact_perm_p": 0.1357,
+  "verdict": "real at about the 4 percent level against a conservative matched null, from one receipt"
+ },
+ "gpu_used": false,
+ "harness": "ranked+compile_only",
+ "isa_table": {
+  "a1": {
+   "air_delta": -3,
+   "identical_text_digest": true,
+   "predicted_ranked_leg_pct": 0.0,
+   "reaches_isa": false
+  },
+  "arch": "applegpu_g17s",
+  "verdict": "none of the three survives; the premise that they delete instructions at constant registers is false",
+  "w1": {
+   "air_delta": 3,
+   "identical_text_digest": true,
+   "predicted_ranked_leg_pct": 0.0,
+   "reaches_isa": false
+  },
+  "w1_a1": {
+   "air_delta": 0,
+   "identical_text_digest": true,
+   "predicted_ranked_leg_pct": 0.0,
+   "reaches_isa": false
+  },
+  "w2": {
+   "air_delta": 1,
+   "channel": "occupancy, not instruction",
+   "identical_text_digest": false,
+   "qmv_scaled_pct": 0.7972,
+   "reaches_isa": true,
+   "weighted_residency_gain_pct": 0.9127
+  }
+ },
+ "launch_accounting": {
+  "env_switch": "MLX_E120_QMV_GRID",
+  "f83_weighted_launched_tight": 1.3192,
+  "f83_weighted_launched_wide": 6.9985,
+  "source": "Qwen35.swift:1959-1961 and 1546-1550",
+  "tested_in_ledger": false,
+  "tight_reduction_factor": 5.3,
+  "wide_launched_columns_is_independent_of_ipg": true
+ },
+ "leg_decomposition": {
+  "beagle_serial_share": 0.652,
+  "beagle_share_of_score_move": 0.885,
+  "candidate_2se_band": [
+   -0.167,
+   0.214
+  ],
+  "candidate_mean_pct": 0.0235,
+  "candidate_sd_pct": 0.2694,
+  "f83_weighted_candidate_pct": -0.2032,
+  "score_delta": 0.00814641,
+  "serial_null_mean_pct": -0.0014,
+  "serial_null_sd_pct": 0.4173
+ },
+ "model_loaded": false,
+ "official_or_ranked_score": true,
+ "receipt": {
+  "id": "623e77af",
+  "official_score": 3.52085227003175,
+  "previous_crown": {
+   "id": "0b8602e1",
+   "score": 3.51925374
+  },
+  "promoted_source_ref": "60d5b34a5ad62296faa9746dccab71e762e4001c",
+  "promotion": "promoted",
+  "reference": {
+   "id": "0c6191b7",
+   "score": 3.51270586
+  },
+  "status": "accepted"
+ },
+ "schema_version": 1,
+ "three_levers": {
+  "blend_exponent_issue": 0.0065,
+  "blend_exponent_occupancy": -0.0096,
+  "issue_change_pct": -46.4,
+  "observed_round_pct": -0.5,
+  "occupancy_change_pct": -15.7,
+  "shortfall_f151_issue": 21.9,
+  "shortfall_rowkeyed_issue": 81.1,
+  "shortfall_weight_traffic": 87.4,
+  "weight_pass_change_pct": -50.0
+ },
+ "timing_valid": false,
+ "witness_from_submitted_archive": {
+  "e120_width_plan": "3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4",
+  "na6_and_na7_pipelines_created": true,
+  "qwen35_swift_sha256": "937f7de026754b5f5796a137d93f420b8efcc1e6ed3683a661e60a5c25a28081",
+  "reading_a_eliminated": true,
+  "route_literals_in_binary": 1,
+  "route_needle_is_discriminating": true,
+  "runtime_specializations": 7,
+  "width_plan_literals_in_binary": 4,
+  "width_plan_needle_is_discriminating": false,
+  "widths_6_and_7": "6:6:4,7:7:4",
+  "worker_sha256": "d2e841875ee9fa62e7e6421fa3ecfba84452c978f008c4585f105bbb221c6a36"
+ }
+}

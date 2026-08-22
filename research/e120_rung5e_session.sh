@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 # E120 rung 5e -- the headline end-to-end measurement.
 #
-#   usage: research/e120_rung5e_session.sh TAG [tokens] [depth] [order]
+#   usage: research/e120_rung5e_session.sh TAG [tokens] [depth] [order] [var]
 #
 #   TAG     output directory name under research/out/
 #   tokens  decode tokens per timed leg, default 512
 #   depth   offered draft ceiling, default 8 (the ranked workflow's value)
-#   order   arm sequence of Qwen35CustomQMV.Arm raw values, default
+#   order   sequence of `var` values, default
 #           `off,sumtable,sumtable,off,off,sumtable,sumtable,off`
+#   var     the runtime switch the legs sweep: `MLX_E120_QMV_ARM` (default),
+#           `MLX_E120_QMV_ENTRY`, `MLX_E120_QMV_TABLE` or `MLX_E120_QMV_GRID`.
+#           Reference rows always come from the `off`
+#           arm, whichever switch the legs sweep.
 #
 # WHAT IS MEASURED. The headline is ABSOLUTE candidate seconds per token on
 # the native-MTP leg, `parent_measured_seconds_per_token` from the trusted
@@ -43,13 +47,51 @@ tag="${1:?usage: e120_rung5e_session.sh TAG [tokens] [depth] [order]}"
 tokens="${2:-512}"
 depth="${3:-8}"
 order="${4:-off,sumtable,sumtable,off,off,sumtable,sumtable,off}"
+var="${5:-MLX_E120_QMV_ARM}"
 
-# `Qwen35CustomQMV.arm` falls back to `sumtable` for any raw value it does not
-# know, so a typo here would silently time the shipped arm twice.
+# `Qwen35CustomQMV.arm` and `.entry` both fall back to the shipped value for
+# any raw string they do not know, so a typo here would silently time the same
+# configuration twice.
+case "${var}" in
+  MLX_E120_QMV_ARM) legal="off replica fill_noconsume sumtable" ;;
+  MLX_E120_QMV_ENTRY) legal="shared_switch tiered_switch" ;;
+  # The one-pass table is only legal on tiered entry points, and
+  # `Qwen35CustomQMV.widthPlan` asserts that, so a table sweep runs every leg
+  # with MLX_E120_QMV_ENTRY=tiered_switch.
+  MLX_E120_QMV_TABLE) legal="shipped onepass6 onepass67 onepass678"
+    export MLX_E120_QMV_ENTRY=tiered_switch ;;
+  MLX_E120_QMV_GRID) legal="wide tight" ;;
+  # A deliverable moves the entry point and the table together, so an
+  # entry-only or table-only sweep prices half of it. This pseudo-variable
+  # names complete configurations instead. `templated` is the middle arm: it
+  # changes no statement in the kernel body, only how many entry points carry
+  # the width switch, so `incumbent -> templated` isolates the register and
+  # residency channel and `templated -> onepassN` isolates the width table.
+  MLX_E120_QMV_COMBO) legal="incumbent templated onepass6 onepass67 onepass678" ;;
+  *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
+esac
+
+# Environment assignments for one leg, into the global `leg_env`.
+leg_env=()
+set_leg_env () {
+  case "${var}" in
+    MLX_E120_QMV_COMBO)
+      case "$1" in
+        incumbent)
+          leg_env=(MLX_E120_QMV_ENTRY=shared_switch MLX_E120_QMV_TABLE=shipped) ;;
+        templated)
+          leg_env=(MLX_E120_QMV_ENTRY=tiered_switch MLX_E120_QMV_TABLE=shipped) ;;
+        onepass6|onepass67|onepass678)
+          leg_env=(MLX_E120_QMV_ENTRY=tiered_switch "MLX_E120_QMV_TABLE=$1") ;;
+      esac
+      ;;
+    *) leg_env=("${var}=$1") ;;
+  esac
+}
 for arm in ${order//,/ }; do
-  case "${arm}" in
-    off|replica|fill_noconsume|sumtable) ;;
-    *) echo "e120_rung5e_session.sh: unknown arm '${arm}'" >&2; exit 2 ;;
+  case " ${legal} " in
+    *" ${arm} "*) ;;
+    *) echo "e120_rung5e_session.sh: '${arm}' is not a legal ${var} value" >&2; exit 2 ;;
   esac
 done
 
@@ -174,8 +216,9 @@ for arm in ${serial_arms}; do
   serial_path="${out_dir}/serial-control.${arm}.json"
   [[ -s "${serial_path}" ]] && continue
   cool_gate "the serial control (${arm})"
-  echo "=== serial control (${tokens} tokens, depth=0, arm=${arm})"
-  MLX_E120_QMV_ARM="${arm}" \
+  echo "=== serial control (${tokens} tokens, depth=0, ${var}=${arm})"
+  set_leg_env "${arm}"
+  env "${leg_env[@]}" \
   "${swift_bin}" mtp-timed "${common_args[@]}" \
     --golden "${golden_path}" \
     --tokens "${tokens}" \
@@ -195,7 +238,7 @@ for arm in "${arms[@]}"; do
   cool_gate "leg ${label}"
   entry_c="$(gpu_temp)"
   leg_start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "=== leg ${label}: MLX_E120_QMV_ARM=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
+  echo "=== leg ${label}: ${var}=${arm} tokens=${tokens} depth=${depth} entry=${entry_c}C"
 
   # Worker assertion BEFORE the leg. The binary is never rebuilt inside this
   # session, so the certificate that matters per leg is that the bytes did not
@@ -204,7 +247,13 @@ for arm in "${arms[@]}"; do
   # instead.
   worker_before="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
 
-  MLX_E120_QMV_ARM="${arm}" \
+  # The pipeline log is the warmup gate for a multi-pipeline entry point. It
+  # records the dispatch ordinal at which each QMV specialization and each
+  # verify width was first reached, so a pipeline that first compiled inside
+  # the timed window is visible after the fact.
+  set_leg_env "${arm}"
+  env "${leg_env[@]}" \
+      "MLX_E120_QMV_PIPELINE_LOG=${PWD}/${out_dir}/pipelines.${label}.json" \
   "${swift_bin}" mtp-timed "${common_args[@]}" \
     --golden "${golden_path}" \
     --tokens "${tokens}" \
@@ -239,6 +288,10 @@ worker_sha256_end="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
   echo "tokens=${tokens}"
   echo "offered_draft_depth=${depth}"
   echo "order=${order}"
+  echo "sweep_variable=${var}"
+  echo "entry=${MLX_E120_QMV_ENTRY:-tiered_switch (default)}"
+  echo "table=${MLX_E120_QMV_TABLE:-shipped (default)}"
+  echo "grid=${MLX_E120_QMV_GRID:-wide (default)}"
   echo "head_dir=${head_dir}"
   echo "head_safetensors_sha256=${head_sha256}"
   echo "worker_sha256_start=${worker_sha256_start}"

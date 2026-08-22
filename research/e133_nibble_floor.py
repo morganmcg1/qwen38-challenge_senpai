@@ -1,0 +1,1077 @@
+#!/usr/bin/env python3
+"""E133: the nibble-dequantisation floor of the Route B QMV cell.
+
+F157 prices the cell at `statements per output element = 38 / IPG + 25 / RPS`.
+Of the 38 weight-side statements, 28 are nibble operations: three shifts and
+four masks for each of the four `uint16_t` halfwords a lane holds. At
+`(IPG=6, RPS=4)` those 28 are 37 % of the whole cell, so a free dequantisation
+would move the cell from 12.583 to 7.917 statements, a 37 % cut. That is the
+bound on the entire remaining QMV axis, and it is only a bound: nobody has
+measured what the smallest bit-exact extraction actually costs.
+
+This module measures it. It reads `qwen_e120_qmv_wide` out of `Qwen35.swift`
+READ-ONLY, substitutes ONE expression in memory, and censuses the result. It
+writes nothing to a tracked source and it never touches the GPU.
+
+RULE 92. Every variant produces `n0..n3` as the exact float value of the
+nibble, and every variant then sums `a0*n0 + a1*n1 + a2*n2 + a3*n3` in that
+order into the same `partial[r]`. No floating-point operation and no
+accumulation order moves. `exactness` proves the value claim for all sixteen
+nibble values at all four positions by simulating each idiom's bit
+manipulation in Python.
+
+RULE 89. Simdgroup residency is a MODEL OUTPUT computed from the measured
+register count, so it is labelled `derived`. Registers, spill bytes and ISA
+text sizes are measurements read out of the translated binary.
+
+Three numbers are reported per variant:
+
+  air_statements    AIR statements in the hot region, by class. This is the
+                    F151 currency and needs no calibration.
+  registers/spill   `metal-tt` for `applegpu_g17s`, the ranked generation.
+  text_bytes        translated ISA size. AGX is variable length, so bytes are
+                    NOT instructions; `research/e132-artifacts/
+                    instruction-channel.json` measured 4.4 bytes per float ALU
+                    instruction and 12.2 per load on this generation, and a
+                    byte delta is reported only inside that bracket.
+
+  python3 research/e133_nibble_floor.py exactness
+  python3 research/e133_nibble_floor.py sources --variant bfe
+  python3 research/e133_nibble_floor.py census --out research/e133-artifacts/rung0-nibble-floor.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import pathlib
+import re
+import struct
+import subprocess
+import sys
+import tempfile
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+import agx_crossarch as agx  # noqa: E402
+import e120_g17s_census as e120  # noqa: E402
+import e131_kernel_sources as ks  # noqa: E402
+import e132_instruction_probe as probe  # noqa: E402
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+QWEN35 = "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+INCLUDE = ROOT / "Vendor/mlx-swift/Source/Cmlx/mlx"
+RANKED = agx.RANKED_ARCH
+ARCHES = (agx.LOCAL_ARCH, RANKED)
+SIMDGROUP_BUDGET = e120.SIMDGROUP_BUDGET
+
+# The cell the ranked width mix actually pays for. F157 puts the balance-law
+# optimum at IPG 6.08 and the g17s register ceiling at IPG 7, so `{6:6, 7:7}`
+# is both. RPS is 4 everywhere in the shipped table.
+CELLS = ((6, 4), (7, 4), (8, 4), (4, 4))
+
+# `research/e132-artifacts/instruction-channel.json`, verdict field -1 on
+# applegpu_g17s. No channel is an instruction counter, so a text-byte delta is
+# only ever converted into an instruction delta as a bracket.
+BYTES_PER_INSTRUCTION = (4.375, 12.1741)
+
+# F157 as published, for the report. `nibble_int_ops` is the source-level count
+# of three shifts and four masks for each of four halfwords.
+F157_ROW_KEYED = {
+    "weight_element_loads": 4,
+    "weight_address_arith": 1,
+    "metadata_loads": 2,
+    "metadata_index_arith": 1,
+    "metadata_widenings": 2,
+    "nibble_int_ops": 28,
+}
+F157_M_KEYED = {
+    "sums_table_loads": 1,
+    "activation_vec4_loads": 4,
+    "activation_widenings": 16,
+    "activation_address_arith": 4,
+}
+
+
+class Refused(SystemExit):
+    pass
+
+
+# --------------------------------------------------------------------------
+# the shipped expression, read rather than retyped
+# --------------------------------------------------------------------------
+
+PRODUCT = re.compile(
+    r"^(?P<pad>[ ]*)partial\[r\] \+= \(a0 \* .*?\);$",
+    re.M | re.S)
+
+
+def shipped_header() -> str:
+    swift = ks.swift_text(QWEN35, None)
+    return ks.named_literal(swift, "qwen35E120QMVHeader")
+
+
+def product_span(header: str) -> re.Match:
+    hit = PRODUCT.search(header)
+    if hit is None:
+        raise Refused("no `partial[r] += (a0 * ...)` statement in the header")
+    if PRODUCT.search(header, hit.end()) is not None:
+        raise Refused("more than one product statement; the patch is ambiguous")
+    return hit
+
+
+# --------------------------------------------------------------------------
+# variants
+# --------------------------------------------------------------------------
+#
+# Each entry is (statements, exactness argument, python simulator).
+# `statements` defines `n0..n3` as floats from `packed[r][i]`. The product line
+# is appended by `patched_header` and is identical for every variant.
+
+SUM = "partial[r] += (a0 * n0 + a1 * n1 + a2 * n2 + a3 * n3);"
+
+VARIANTS: dict[str, dict] = {}
+
+
+def variant(name: str, note: str, sim, body: str, sites=()) -> None:
+    VARIANTS[name] = {"note": note, "sim": sim,
+                      "body": body.strip("\n") if body else None,
+                      "sites": tuple(sites)}
+
+
+# --------------------------------------------------------------------------
+# load-width sites, F23
+# --------------------------------------------------------------------------
+#
+# These patch the loads rather than the nibble arithmetic, so they carry no
+# nibble simulator. Each one is exact by construction because it moves the same
+# bytes into the same values in the same order; the argument is recorded with
+# the site and the definitive check is the ISA digest plus a real exactness run.
+
+WEIGHT_LOAD = re.compile(
+    r"^(?P<pad>[ ]*)for \(int i = 0; i < 4; i\+\+\) \{\n"
+    r"[ ]*packed\[r\]\[i\] = ws\[i\];\n"
+    r"[ ]*\}$", re.M)
+
+ACT_WIDEN = re.compile(
+    r"^(?P<pad>[ ]*)a0\[m\] = static_cast<float>\(xv\[0\]\);\n"
+    r"[ ]*a1\[m\] = static_cast<float>\(xv\[1\]\);\n"
+    r"[ ]*a2\[m\] = static_cast<float>\(xv\[2\]\);\n"
+    r"[ ]*a3\[m\] = static_cast<float>\(xv\[3\]\);$", re.M)
+
+SITES = {
+    "w1": (WEIGHT_LOAD,
+           "One eight-byte vector load of the same eight contiguous bytes, "
+           "then four register writes. `ws` is eight-byte aligned at every "
+           "scored K, so the vector load is legal. The scalar writeback "
+           "avoids assuming the thread array is eight-byte aligned.",
+           "const vec<uint16_t, 4> wv =\n"
+           "    *reinterpret_cast<const device vec<uint16_t, 4>*>(ws);\n"
+           "packed[r][0] = wv[0];\n"
+           "packed[r][1] = wv[1];\n"
+           "packed[r][2] = wv[2];\n"
+           "packed[r][3] = wv[3];"),
+    "a1": (ACT_WIDEN,
+           "One vector bfloat16 to float widening instead of four scalar "
+           "ones. Widening bfloat16 to float is exact, so every operand of "
+           "every later float operation is unchanged.",
+           "const vec<float, 4> xf = static_cast<vec<float, 4>>(xv);\n"
+           "a0[m] = xf[0];\n"
+           "a1[m] = xf[1];\n"
+           "a2[m] = xf[2];\n"
+           "a3[m] = xf[3];"),
+}
+
+
+def apply_site(header: str, key: str) -> str:
+    pattern, _note, replacement = SITES[key]
+    hits = list(pattern.finditer(header))
+    if len(hits) != 1:
+        raise Refused("site %s matched %d times; the patch is ambiguous"
+                      % (key, len(hits)))
+    hit = hits[0]
+    pad = hit.group("pad")
+    body = "\n".join(pad + line if line else ""
+                     for line in replacement.splitlines())
+    return header[:hit.start()] + body + header[hit.end():]
+
+
+def _sim_mask(p: int) -> list[int]:
+    return [(p >> (4 * j)) & 0xF for j in range(4)]
+
+
+def _sim_magic_f32(p: int) -> list[float]:
+    out = []
+    for j in range(4):
+        bits = 0x4B000000 | ((p >> (4 * j)) & 0xF)
+        out.append(struct.unpack("<f", struct.pack("<I", bits))[0] - 8388608.0)
+    return out
+
+
+def _sim_magic_bf16_pair(p: int) -> list[float]:
+    """Two nibbles per 32-bit word through the bfloat exponent trick."""
+    out = [0.0] * 4
+    for half in range(2):
+        # nibbles 2*half and 2*half+1 lifted into the two bfloat lanes
+        src = (p >> (8 * half)) & 0xFF
+        word = (src & 0xF) | ((src & 0xF0) << 12) | 0x43004300
+        for lane in range(2):
+            bf = (word >> (16 * lane)) & 0xFFFF
+            value = struct.unpack("<f", struct.pack("<I", bf << 16))[0] - 128.0
+            out[2 * half + lane] = value
+    return out
+
+
+variant(
+    "shipped_lifted",
+    "the shipped idiom, written as four named floats. This is the "
+    "harness-neutrality control: it must census exactly like the untouched "
+    "header, otherwise the substitution itself costs something and every "
+    "other row is confounded.",
+    _sim_mask,
+    """
+const uint16_t p = packed[r][i];
+const float n0 = float(p & 0x000f);
+const float n1 = float((p >> 4) & 0x000f);
+const float n2 = float((p >> 8) & 0x000f);
+const float n3 = float((p >> 12) & 0x000f);
+""")
+
+variant(
+    "bfe",
+    "`extract_bits` is the Metal spelling of a bitfield extract. AGX has a "
+    "bitfield-extract instruction, so if the compiler was not already folding "
+    "shift-then-mask into it, this collapses two statements into one for each "
+    "nibble.",
+    _sim_mask,
+    """
+const uint p = uint(packed[r][i]);
+const float n0 = float(extract_bits(p, 0, 4));
+const float n1 = float(extract_bits(p, 4, 4));
+const float n2 = float(extract_bits(p, 8, 4));
+const float n3 = float(extract_bits(p, 12, 4));
+""")
+
+variant(
+    "bfe_narrow",
+    "`extract_bits` kept at sixteen bits. AGX addresses register halves, so a "
+    "ushort bitfield extract may avoid the widening to uint that `bfe` "
+    "forces before it does anything useful.",
+    _sim_mask,
+    """
+const ushort p = ushort(packed[r][i]);
+const float n0 = float(extract_bits(p, ushort(0), ushort(4)));
+const float n1 = float(extract_bits(p, ushort(4), ushort(4)));
+const float n2 = float(extract_bits(p, ushort(8), ushort(4)));
+const float n3 = float(extract_bits(p, ushort(12), ushort(4)));
+""")
+
+variant(
+    "rolling",
+    "One shift feeds the next, so the shift amounts are all 4 and the top "
+    "nibble needs no mask. Fewer distinct constants, one fewer mask, at the "
+    "price of a serial dependence the shipped form does not have.",
+    _sim_mask,
+    """
+uint p = uint(packed[r][i]);
+const float n0 = float(p & 0xfu);
+p >>= 4;
+const float n1 = float(p & 0xfu);
+p >>= 4;
+const float n2 = float(p & 0xfu);
+const float n3 = float(p >> 4);
+""")
+
+variant(
+    "bytes",
+    "`as_type<uchar2>` splits the halfword into two bytes for free if the "
+    "backend has a sub-register addressing mode. Each byte then needs one "
+    "mask and one shift instead of two masks and two shifts.",
+    _sim_mask,
+    """
+const uchar2 b = as_type<uchar2>(packed[r][i]);
+const float n0 = float(b[0] & 0x0f);
+const float n1 = float(b[0] >> 4);
+const float n2 = float(b[1] & 0x0f);
+const float n3 = float(b[1] >> 4);
+""")
+
+variant(
+    "magic_f32",
+    "Build the float bit pattern instead of converting. `0x4b000000 | v` is "
+    "exactly `2^23 + v` for v in 0..15, and subtracting `2^23` is exact "
+    "because both operands share a binade and the result is representable. "
+    "Trades one integer-to-float conversion for one OR and one subtract, so "
+    "it wins only if conversion is more expensive than two ALU statements.",
+    _sim_magic_f32,
+    """
+const uint p = uint(packed[r][i]);
+const float n0 = as_type<float>(0x4b000000u | (p & 0xfu)) - 8388608.0f;
+const float n1 = as_type<float>(0x4b000000u | ((p >> 4) & 0xfu)) - 8388608.0f;
+const float n2 = as_type<float>(0x4b000000u | ((p >> 8) & 0xfu)) - 8388608.0f;
+const float n3 = as_type<float>(0x4b000000u | ((p >> 12) & 0xfu)) - 8388608.0f;
+""")
+
+variant(
+    "magic_bf16_pair",
+    "The same trick two nibbles at a time. A bfloat carries seven mantissa "
+    "bits, so 128..143 are exact and `0x4300 | v` is exactly `128 + v`. Two "
+    "bfloat lanes fit in one 32-bit register, so one AND, one OR and one "
+    "vector subtract serve two nibbles. The bfloat-to-float widening is a "
+    "shift on this hardware. This is the form the advisor priced near 24 "
+    "statements for eight nibbles; here it is measured rather than estimated.",
+    _sim_magic_bf16_pair,
+    """
+const uint p = uint(packed[r][i]);
+const uint lo = (p & 0xfu) | ((p & 0xf0u) << 12) | 0x43004300u;
+const uint hi = ((p >> 8) & 0xfu) | ((p >> 8 & 0xf0u) << 12) | 0x43004300u;
+const bfloat2 bl = as_type<bfloat2>(lo) - bfloat2(128.0bf);
+const bfloat2 bh = as_type<bfloat2>(hi) - bfloat2(128.0bf);
+const float n0 = float(bl[0]);
+const float n1 = float(bl[1]);
+const float n2 = float(bh[0]);
+const float n3 = float(bh[1]);
+""")
+
+variant(
+    "magic_bf16_pair_novec",
+    "`magic_bf16_pair` without the vector subtract, in case the backend "
+    "scalarises `bfloat2` arithmetic and the vector spelling costs a pack.",
+    _sim_magic_bf16_pair,
+    """
+const uint p = uint(packed[r][i]);
+const uint lo = (p & 0xfu) | ((p & 0xf0u) << 12) | 0x43004300u;
+const uint hi = ((p >> 8) & 0xfu) | ((p >> 8 & 0xf0u) << 12) | 0x43004300u;
+const float n0 = float(as_type<bfloat2>(lo)[0]) - 128.0f;
+const float n1 = float(as_type<bfloat2>(lo)[1]) - 128.0f;
+const float n2 = float(as_type<bfloat2>(hi)[0]) - 128.0f;
+const float n3 = float(as_type<bfloat2>(hi)[1]) - 128.0f;
+""")
+
+# The floor of the harness. Not bit-exact and never shippable: it deletes the
+# extraction and keeps the load, so `shipped_lifted` minus `no_extract` is the
+# cost of extraction and nothing else.
+variant(
+    "no_extract",
+    "NOT BIT-EXACT AND NOT A CANDIDATE. The weight load stays live and every "
+    "nibble becomes the whole halfword, so this row is the harness floor: the "
+    "difference between any real variant and this one is the extraction cost "
+    "with the load, the address arithmetic and the four products held fixed.",
+    None,
+    """
+const float p = float(packed[r][i]);
+const float n0 = p;
+const float n1 = p;
+const float n2 = p;
+const float n3 = p;
+""")
+
+
+variant(
+    "w2",
+    "The advisor's vectorised nibble extract. One vector shift by the "
+    "constant vector and one vector mask replace four scalar shift-and-mask "
+    "pairs. The mask on the top nibble is redundant on a sixteen-bit value, "
+    "which this form drops and the census prices.",
+    _sim_mask,
+    """
+const ushort4 pv = ushort4(packed[r][i]) >> ushort4(0, 4, 8, 12);
+const ushort4 nv = pv & ushort4(0x000f);
+const float n0 = float(nv[0]);
+const float n1 = float(nv[1]);
+const float n2 = float(nv[2]);
+const float n3 = float(nv[3]);
+""")
+
+variant("w1", SITES["w1"][1], None, None, sites=("w1",))
+variant("a1", SITES["a1"][1], None, None, sites=("a1",))
+variant("w1_a1", "W1 and A1 together, both load-width sites, no nibble "
+        "change.", None, None, sites=("w1", "a1"))
+variant(
+    "w1_w2_a1",
+    "All three F23 forms at once. This is the row that says whether the "
+    "savings compose or whether the register allocator gives one back.",
+    _sim_mask,
+    VARIANTS["w2"]["body"],
+    sites=("w1", "a1"))
+
+
+# --------------------------------------------------------------------------
+# per-cell composition
+# --------------------------------------------------------------------------
+#
+# Each routed cell is its own instantiation of `qwen_e120_qmv_wide<NA, ...>`,
+# so in principle each can carry the idiom its register allocator prefers.
+# `NA` is a non-type template parameter, so a plain `if (NA == k)` chain is
+# folded at compile time and the dead arms are eliminated. Every arm compiles
+# for every `NA` because no arm mentions `NA`.
+#
+# Reading the per-cell minima out of a census is an upper bound, not a result.
+# Composition puts every idiom in one translation unit, and the allocator is
+# free to reallocate the whole body. This variant is what turns the bound into
+# a measurement.
+
+BEST_PER_CELL = {3: "bfe", 4: "magic_bf16_pair_novec",
+                 6: "magic_bf16_pair", 7: "magic_bf16_pair"}
+
+
+def _deconst(body: str) -> str:
+    """Turn the per-variant `const float nK = ...` into an assignment.
+
+    The composed form declares `n0..n3` once, outside the branch, so each arm
+    must assign rather than declare.
+    """
+    return re.sub(r"^const float (n[0-3]) = ", r"\1 = ", body, flags=re.M)
+
+
+def composed_body(mapping: dict, fallback: str) -> str:
+    out = ["float n0, n1, n2, n3;"]
+    for index, na in enumerate(sorted(mapping)):
+        out.append("%s (NA == %d) {" % ("if" if index == 0 else "else if", na))
+        out += ["    " + line
+                for line in _deconst(VARIANTS[mapping[na]]["body"]).splitlines()]
+        out.append("}")
+    out.append("else {")
+    out += ["    " + line
+            for line in _deconst(VARIANTS[fallback]["body"]).splitlines()]
+    out.append("}")
+    return "\n".join(out)
+
+
+variant(
+    "per_cell_best",
+    "The best bit-exact idiom at each routed cell, selected on the register "
+    "count the census measured for that cell alone, with the shipped hoisted "
+    "form as the fallback. Every arm is exact, so the composition is exact.",
+    _sim_mask,
+    composed_body(BEST_PER_CELL, "shipped_lifted"))
+
+
+
+def patched_header(header: str, name: str) -> str:
+    if name == "shipped":
+        return header
+    spec = VARIANTS[name]
+    for key in spec["sites"]:
+        header = apply_site(header, key)
+    if spec["body"] is None:
+        return header
+    hit = product_span(header)
+    pad = hit.group("pad")
+    lines = [pad + "{"]
+    for line in spec["body"].splitlines():
+        lines.append(pad + "    " + line)
+    lines.append(pad + "    " + SUM)
+    lines.append(pad + "}")
+    return header[:hit.start()] + "\n".join(lines) + header[hit.end():]
+
+
+# --------------------------------------------------------------------------
+# exactness, without a GPU
+# --------------------------------------------------------------------------
+
+def _sim_pair_crosstalk(p: int) -> list[float]:
+    """Synthetic fault: a pair-packer that leaks between the two lanes of a
+    byte. It is correct whenever at most one nibble of a byte is set, so a
+    one-hot sweep cannot see it. It is the control for the exhaustive sweep."""
+    out = _sim_magic_bf16_pair(p)
+    for half in range(2):
+        byte = (p >> (8 * half)) & 0xFF
+        if (byte & 0xF) and (byte >> 4):
+            out[2 * half + 1] += 1.0
+    return out
+
+
+def _sweep(sim, words) -> tuple[float, int | None]:
+    """Worst absolute error of `sim` over `words`, and the first bad word."""
+    worst = 0.0
+    first_bad = None
+    for packed in words:
+        got = sim(packed)
+        for position in range(4):
+            expected = float((packed >> (4 * position)) & 0xF)
+            error = abs(float(got[position]) - expected)
+            if error > worst:
+                worst = error
+            if error and first_bad is None:
+                first_bad = packed
+    return worst, first_bad
+
+
+ONE_HOT = [value << (4 * position)
+           for value in range(16) for position in range(4)]
+EXHAUSTIVE = range(1 << 16)
+
+
+def exactness() -> int:
+    """Every idiom against `float(v)` over the complete 16-bit packed domain.
+
+    The nibbles of a packed word are not independent in the pair-packing
+    idioms, so a one-hot sweep is not a proof for them. `packed` is a
+    `uint16_t`, so the whole input domain is only 65536 words and exhaustion
+    is affordable."""
+    ok = True
+    print("bit-exactness of each idiom")
+    print("  one-hot domain   %d words" % len(ONE_HOT))
+    print("  exhaustive domain %d words, the complete uint16_t input space"
+          % len(EXHAUSTIVE))
+    print()
+    print("  %-22s %-10s %-10s %s" % ("idiom", "one-hot", "exhaustive",
+                                      "verdict"))
+    for name, spec in VARIANTS.items():
+        sim = spec["sim"]
+        if sim is None and spec["sites"]:
+            print("  %-22s %-10s %-10s load width only, no nibble arithmetic"
+                  % (name, "n/a", "n/a"))
+            continue
+        if sim is None:
+            print("  %-22s %-10s %-10s declared not exact"
+                  % (name, "skip", "skip"))
+            continue
+        one_hot, _ = _sweep(sim, ONE_HOT)
+        full, first_bad = _sweep(sim, EXHAUSTIVE)
+        ok = ok and full == 0.0
+        verdict = "EXACT" if full == 0.0 else (
+            "NOT EXACT, max abs %g, first bad word 0x%04x" % (full, first_bad))
+        print("  %-22s %-10s %-10s %s"
+              % (name, "%g" % one_hot, "%g" % full, verdict))
+
+    print()
+    print("  positive controls, the sweep must be able to fail")
+    offset, _ = _sweep(lambda p: [v + 0.5 for v in _sim_mask(p)], ONE_HOT)
+    print("    %-30s one-hot %g   %s"
+          % ("constant offset", offset,
+             "detected" if offset else "NOT DETECTED, the check is inert"))
+    cross_one_hot, _ = _sweep(_sim_pair_crosstalk, ONE_HOT)
+    cross_full, cross_word = _sweep(_sim_pair_crosstalk, EXHAUSTIVE)
+    print("    %-30s one-hot %g   exhaustive %g   %s"
+          % ("pair lane cross-talk", cross_one_hot, cross_full,
+             "detected only by the exhaustive sweep, first bad word 0x%04x"
+             % cross_word if cross_full and not cross_one_hot
+             else "control did not behave as designed"))
+    if cross_one_hot or not cross_full:
+        print("    the cross-talk control is broken, treat the run as invalid")
+        ok = False
+    return 0 if ok else 1
+
+
+# --------------------------------------------------------------------------
+# census
+# --------------------------------------------------------------------------
+
+def wrapper(name: str, na: int, rps: int) -> str:
+    """One entry point holding exactly `qwen_e120_qmv_wide<NA, RPS, true>`.
+
+    `qwen_e120_qmv_m<NA, NA, RPS, true>` has `TAIL == 0`, so it inlines that
+    single body and nothing else.
+    """
+    body = """    const int qmv_m = x_shape[x_ndim - 2];
+    const int qmv_k = x_shape[x_ndim - 1];
+    const int qmv_n = w_shape[0];
+    const int qmv_stride = qmv_m <= 8 ? 8 : 16;
+    const uint3 qmv_tid = threadgroup_position_in_grid;
+    const uint qmv_lid = thread_index_in_simdgroup;
+    const uint qmv_sgid = simdgroup_index_in_threadgroup;
+    const int qmv_out_row = int(qmv_tid.y) * %d + int(qmv_sgid) * %d;
+    const int qmv_gx = int(qmv_tid.x);
+    qwen_e120_qmv_m<%d, %d, %d, true>(
+        w, scales, biases, x, xsums, y,
+        qmv_k, qmv_n, qmv_stride,
+        qmv_gx, qmv_out_row, qmv_lid);""" % (
+        2 * rps, rps, na, na, rps)
+    inputs = [("w", "uint32_t"), ("scales", "bfloat16_t"),
+              ("biases", "bfloat16_t"), ("x", "bfloat16_t"),
+              ("xsums", "float")]
+    return e120.generate(name, inputs, [("y", "bfloat16_t")], body)
+
+
+def library(header: str, cells) -> tuple[str, list[str]]:
+    parts, names = [], []
+    for na, rps in cells:
+        name = "cell_na%d_rps%d" % (na, rps)
+        parts.append(wrapper(name, na, rps))
+        names.append(name)
+    return "\n".join([e120.PRELUDE, header, ""] + parts) + "\n", names
+
+
+CONVERTS = ("uitofp", "sitofp", "fptoui", "fptosi")
+
+
+def reclassify(lines: list[str]) -> dict:
+    """`census_lines` with the conversions split out of `other`.
+
+    F157 counts twenty-eight nibble statements and no conversions. Whether the
+    sixteen integer-to-float conversions a lane needs are real statements or
+    are folded into the multiply is exactly what the weight-side constant
+    depends on, so they are never left inside a residual class here.
+    """
+    counts = probe.census_lines(lines)
+    counts["convert"] = 0
+    counts["bitcast"] = 0
+    for line in lines:
+        head = line.split("=")[-1].strip().split(" ")[0] if "=" in line \
+            else line.split(" ")[0]
+        if head in CONVERTS:
+            counts["convert"] += 1
+            counts["other"] -= 1
+        elif head == "bitcast":
+            counts["bitcast"] += 1
+    return counts
+
+
+def kernel_symbol(na: int, rps: int) -> str:
+    """The Itanium-mangled fragment for `qwen_e120_qmv_wide<NA, RPS, true>`.
+
+    The wrapper entry point is not inlined at AIR emission, so counting the
+    function named after the cell counts the wrapper's twenty-odd setup
+    statements and none of the kernel. The template instantiation carries the
+    arguments in its mangled name, which is what identifies the right body.
+    """
+    return "qwen_e120_qmv_wideILi%dELi%dELb1EE" % (na, rps)
+
+
+def hot_region(text: str, kernel: str) -> tuple[str, dict]:
+    """The outermost loop of `kernel`, or the whole body when it is unrolled."""
+    functions = probe.air_functions(text)
+    match = [n for n in functions if kernel in n]
+    if len(match) > 1:
+        raise Refused("%d AIR functions match %s" % (len(match), kernel))
+    if not match:
+        raise Refused("no AIR function named %s" % kernel)
+    blocks = functions[match[0]]
+    loops = probe.natural_loops(blocks)
+    if loops:
+        outer = loops[0]
+        lines = [line for name in outer["blocks"]
+                 for label, body in blocks if label == name for line in body]
+        return "loop %s" % outer["header"], reclassify(lines)
+    return "whole body (no loop survived unrolling)", reclassify(
+        [line for _, body in blocks for line in body])
+
+
+def per_output_element(counts: dict, na: int, rps: int) -> float:
+    """F157 currency. Statements attributable to one output element.
+
+    The hot region computes `NA * RPS` output elements' worth of one k block,
+    so the whole census divides by `NA * RPS`. F157's split into `38 / IPG` and
+    `25 / RPS` is the same number written by key; this returns the total so
+    variants are comparable without assuming the split still holds.
+    """
+    return counts["machine"] / float(na * rps)
+
+
+def census(header: str, cells, workdir: pathlib.Path, tag: str,
+           translate: bool) -> dict:
+    source, names = library(header, cells)
+    air = probe.emit_air(source, workdir / tag)
+    rows: dict[str, dict] = {}
+    for (na, rps), name in zip(cells, names):
+        where, counts = hot_region(air, kernel_symbol(na, rps))
+        rows[name] = {
+            "na": na, "rps": rps, "region": where, "air": counts,
+            "air_per_output_element": round(
+                per_output_element(counts, na, rps), 4),
+        }
+    if translate:
+        lib = agx.build_metallib(source, workdir / tag, include=INCLUDE)
+        wanted = set(names)
+        for arch in ARCHES:
+            found = agx.translate(lib, arch, workdir / tag,
+                                  select=lambda n: n in wanted)
+            for name in names:
+                record = found[name]
+                registers = record["registers"]
+                rows[name][arch] = {
+                    "registers": registers,
+                    "spill_bytes": record["spill_bytes"],
+                    "text_bytes": record["text_bytes"],
+                    # The machine-code digest is what decides whether a source
+                    # change reached the ISA at all. Apple ships no AGX
+                    # instruction printer, so this equality test replaces
+                    # reading mnemonics.
+                    "text_sha8": record["text_sha8"],
+                    "simdgroups_derived": SIMDGROUP_BUDGET[arch] // registers,
+                }
+    return rows
+
+
+def toolchain() -> str:
+    done = subprocess.run(["xcrun", "metal", "--version"],
+                          capture_output=True, text=True, check=True)
+    return done.stdout.strip().splitlines()[0]
+
+
+def base_sha() -> str:
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(ROOT),
+                          capture_output=True, text=True,
+                          check=True).stdout.strip()
+
+
+def run_census(out: pathlib.Path | None, cells, translate: bool,
+               wandb: bool = False) -> int:
+    header = shipped_header()
+    result = {
+        "schema_version": 1,
+        "gpu_used": False,
+        "model_loaded": False,
+        "timing_valid": False,
+        "official_or_ranked_score": False,
+        "harness": "compile_only",
+        "occupancy_label": "derived",
+        "occupancy_rule": "Rule 89",
+        "exactness_rule": "Rule 92",
+        "tool": "research/e133_nibble_floor.py census",
+        "base_sha": base_sha(),
+        "toolchain": toolchain(),
+        "ranked_arch": RANKED,
+        "bytes_per_instruction_bracket": BYTES_PER_INSTRUCTION,
+        "f157_row_keyed": F157_ROW_KEYED,
+        "f157_m_keyed": F157_M_KEYED,
+        "cells": [list(c) for c in cells],
+        "variants": {},
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        work = pathlib.Path(tmp)
+        for name in ["shipped"] + list(VARIANTS):
+            patched = patched_header(header, name)
+            note = "the untouched header" if name == "shipped" \
+                else VARIANTS[name]["note"]
+            try:
+                rows = census(patched, cells, work, name, translate)
+            except subprocess.CalledProcessError as error:
+                result["variants"][name] = {
+                    "note": note,
+                    "compiled": False,
+                    "error": (error.stderr or b"").decode(
+                        "utf-8", "replace")[-2000:],
+                }
+                continue
+            result["variants"][name] = {
+                "note": note, "compiled": True, "cells": rows}
+    report(result)
+    if wandb:
+        result["wandb_url"] = log_wandb(result)
+        print("\nW&B %s" % result["wandb_url"])
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(result, indent=1) + "\n")
+        print("\nwrote %s" % out)
+    return 0
+
+
+def report(result: dict) -> None:
+    cells = [tuple(c) for c in result["cells"]]
+    print("base %s" % result["base_sha"][:8])
+    print("%s   harness=compile_only, no GPU, no timing"
+          % result["toolchain"])
+    print()
+    header_row = "%-24s" % "variant"
+    for na, rps in cells:
+        header_row += "  NA=%d RPS=%d" % (na, rps)
+    print(header_row + "     (AIR machine statements in the hot region)")
+    base = {}
+    for name, entry in result["variants"].items():
+        if not entry["compiled"]:
+            print("%-24s  DID NOT COMPILE" % name)
+            continue
+        line = "%-24s" % name
+        for na, rps in cells:
+            row = entry["cells"]["cell_na%d_rps%d" % (na, rps)]
+            line += "  %10d" % row["air"]["machine"]
+            base.setdefault((na, rps), {})[name] = row
+        print(line)
+    print()
+    print("per output element, F157 currency")
+    for na, rps in cells:
+        rows = base.get((na, rps), {})
+        if "shipped" not in rows:
+            continue
+        reference = rows["shipped"]["air_per_output_element"]
+        print("  NA=%d RPS=%d   shipped %.4f" % (na, rps, reference))
+        for name, row in rows.items():
+            if name == "shipped":
+                continue
+            value = row["air_per_output_element"]
+            print("      %-22s %8.4f   %+7.2f %%"
+                  % (name, value, 100.0 * (value - reference) / reference))
+    print()
+    print("applegpu_g17s, translated")
+    for na, rps in cells:
+        rows = base.get((na, rps), {})
+        if not rows or RANKED not in next(iter(rows.values())):
+            continue
+        print("  NA=%d RPS=%d" % (na, rps))
+        for name, row in rows.items():
+            cell = row[RANKED]
+            print("      %-22s registers %3d  spill %3d  text %6d  "
+                  "simdgroups(derived) %2d"
+                  % (name, cell["registers"], cell["spill_bytes"],
+                     cell["text_bytes"], cell["simdgroups_derived"]))
+    verdict(result)
+
+
+VERDICT_CLASSES = ("int_alu", "convert", "bitcast", "load", "fma")
+
+
+def classify(same_digest: bool, dbytes: int, dreg: int) -> str:
+    """How much a source change actually moved the machine code.
+
+    A digest difference on its own proves nothing. The neutrality control
+    `shipped_lifted` renames the shipped arithmetic without changing it and
+    still lands on a different digest at the same size and register count, so
+    the backend is free to permute code that costs the same.
+    """
+    if same_digest:
+        return "identical, the compiler already emits this, worth exactly 0"
+    if dbytes == 0 and dreg == 0:
+        return "permutation, same size and registers, no evidence of value"
+    if dbytes == 0:
+        return "permutation plus %+d register(s)" % dreg
+    return "size %+d bytes, %+d register(s)" % (dbytes, dreg)
+
+
+def verdict(result: dict) -> None:
+    """One table per cell: operation counts and register deltas together.
+
+    A form that removes statements but adds registers can lose residency and
+    cost more than it saves, so the two columns are only meaningful side by
+    side. Deltas are against `shipped` in the same cell, never across cells.
+    """
+    print()
+    print("verdict, statements and registers against shipped in the same cell")
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        rows = {n: e["cells"][key] for n, e in result["variants"].items()
+                if e["compiled"] and key in e["cells"]}
+        if "shipped" not in rows:
+            continue
+        ref = rows["shipped"]
+        print()
+        print("  NA=%d RPS=%d, %s" % (na, rps, RANKED))
+        print("      %-22s %8s %7s  %s %5s %5s %6s %6s %4s"
+              % ("variant", "stmt/out", "delta%",
+                 " ".join("%7s" % c for c in VERDICT_CLASSES),
+                 "reg", "dreg", "spill", "dspill", "dsg"))
+        for name, row in rows.items():
+            air, cell = row["air"], row.get(RANKED)
+            d = 100.0 * (row["air_per_output_element"]
+                         - ref["air_per_output_element"]) \
+                / ref["air_per_output_element"]
+            line = ("      %-22s %8.4f %+7.2f  %s"
+                    % (name, row["air_per_output_element"], d,
+                       " ".join("%7d" % air.get(c, 0)
+                                for c in VERDICT_CLASSES)))
+            if cell is None:
+                print(line + "        no metal-tt")
+                continue
+            base = ref[RANKED]
+            print(line + " %5d %+5d %6d %+6d %+4d"
+                  % (cell["registers"], cell["registers"] - base["registers"],
+                     cell["spill_bytes"],
+                     cell["spill_bytes"] - base["spill_bytes"],
+                     cell["simdgroups_derived"]
+                     - base["simdgroups_derived"]))
+        print("      shipped emits %d load(s) and %d convert(s) in the hot "
+              "region. F157 counts 4 weight loads and no conversions."
+              % (ref["air"].get("load", 0), ref["air"].get("convert", 0)))
+        base_sha = ref.get(RANKED, {}).get("text_sha8")
+        if base_sha is None:
+            continue
+        base_text = ref[RANKED]["text_bytes"]
+        print("      machine code against shipped, %s, %d text bytes"
+              % (base_sha, base_text))
+        print("      %-22s %9s %7s %7s  %s"
+              % ("variant", "sha", "bytes", "dbytes", "class"))
+        for name, row in rows.items():
+            if name == "shipped":
+                continue
+            cell = row[RANKED]
+            same = cell["text_sha8"] == base_sha
+            dbytes = cell["text_bytes"] - base_text
+            dreg = cell["registers"] - ref[RANKED]["registers"]
+            print("      %-22s %9s %7d %+7d  %s"
+                  % (name, cell["text_sha8"], cell["text_bytes"], dbytes,
+                     classify(same, dbytes, dreg)))
+        print("      `shipped_lifted` is the neutrality control. It is the "
+              "shipped arithmetic renamed, so any class above `permutation` "
+              "means the digest is reading codegen noise, not work.")
+
+
+ENTITY = "wandb-applied-ai-team"
+PROJECT = "qwen38-mlx-challenge-senpai"
+GROUP = "e133-nibble-floor"
+
+
+def log_wandb(result: dict) -> str | None:
+    import wandb
+
+    run = wandb.init(
+        entity=ENTITY, project=PROJECT, group=GROUP, job_type="census",
+        name="e133-f23-load-width-census",
+        config={
+            "experiment": GROUP,
+            "question": ("does the AGX backend already coalesce the four "
+                         "scalar uint16 weight loads and the four scalar "
+                         "bf16-to-float widenings, and what is the register "
+                         "floor of the nibble extraction?"),
+            "harness": "compile_only",
+            "instrument": "xcrun metal-tt, AGX backend, zero GPU seconds",
+            "timing_valid": False,
+            "gate_qualified_for_timing": False,
+            "official_or_ranked_score": False,
+            "no_agx_instruction_printer": True,
+            "decided_by": "machine-code digest of __TEXT,__text",
+            "simdgroup_budget": SIMDGROUP_BUDGET,
+            "cells": result["cells"],
+            "toolchain": result["toolchain"],
+            "base_sha": result["base_sha"],
+            "pr_number": 128,
+        })
+    columns = ["variant", "arch", "na", "rps", "air_machine",
+               "air_int_alu", "air_load", "air_per_output_element",
+               "registers", "spill_bytes", "text_bytes", "text_sha8",
+               "resident_simdgroups", "identical_to_shipped"]
+    data, summary = [], {}
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        rows = {n: e["cells"][key] for n, e in result["variants"].items()
+                if e["compiled"] and key in e["cells"]}
+        for arch in ARCHES:
+            ref = rows.get("shipped", {}).get(arch, {}).get("text_sha8")
+            for name, row in rows.items():
+                cell = row.get(arch)
+                if cell is None:
+                    continue
+                data.append([name, arch, na, rps, row["air"]["machine"],
+                             row["air"]["int_alu"], row["air"]["load"],
+                             row["air_per_output_element"],
+                             cell["registers"], cell["spill_bytes"],
+                             cell["text_bytes"], cell["text_sha8"],
+                             cell["simdgroups_derived"],
+                             cell["text_sha8"] == ref])
+                if arch == RANKED:
+                    summary["%s/na%d/registers" % (name, na)] = \
+                        cell["registers"]
+                    summary["%s/na%d/resident_simdgroups" % (name, na)] = \
+                        cell["simdgroups_derived"]
+                    summary["%s/na%d/identical_to_shipped" % (name, na)] = \
+                        cell["text_sha8"] == ref
+    run.log({"census/rows": wandb.Table(columns=columns, data=data)})
+    run.summary.update(summary)
+    url = run.url
+    run.finish()
+    return url
+
+
+# --------------------------------------------------------------------------
+# residency pricing
+# --------------------------------------------------------------------------
+
+# `Table.onePass67.plan` at Qwen35.swift:1833-1835, the submitted table.
+# Seven routed widths land on five distinct (ipg, rps) cells.
+WIDTH_TO_IPG = {3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 4, 9: 3}
+
+# Finding 83 as the advisor stated it. Only these are given, so the widths
+# below 6 carry the remaining mass and are not resolved here.
+F83_MASS = {6: 0.188, 7: 0.211, 8: 0.1871}
+
+# %% candidate time per %% resident simdgroups. Two campaign anchors, both
+# single points, and the first is contaminated by a work change.
+ELASTICITY = {"E121 g17s residency vs ranked": 2.10 / 10.57,
+              "F66 entry-point occupancy tax": 2.6 / 7.69}
+
+QMV_SHARE = 0.8735  # Finding 139
+
+
+def residency(result: dict, variant: str) -> int:
+    """Price a form through the residency channel, controlled and weighted.
+
+    A cell is only priced where the `shipped_lifted` neutrality control reads
+    exactly zero. Where the control moves, register allocation is responding
+    to source formatting rather than to work, and no delta at that cell can be
+    attributed to the idiom.
+    """
+    V = result["variants"]
+    if variant not in V or not V[variant].get("compiled"):
+        print("no compiled census row for %s" % variant)
+        return 1
+    print("residency pricing for %s, %s" % (variant, RANKED))
+    print("  a cell is priced only where the neutrality control reads zero")
+    print()
+    print("  %5s %7s %9s %8s %8s %9s %9s"
+          % ("cell", "widths", "control", "shipped", variant, "d_sg", "d_sg %"))
+    priced, blocked = {}, []
+    for na, rps in (tuple(c) for c in result["cells"]):
+        key = "cell_na%d_rps%d" % (na, rps)
+        ship = V["shipped"]["cells"][key][RANKED]
+        ctrl = V["shipped_lifted"]["cells"][key][RANKED]
+        cand = V[variant]["cells"][key][RANKED]
+        widths = [w for w, i in WIDTH_TO_IPG.items() if i == na]
+        drift = ctrl["registers"] - ship["registers"]
+        dsg = cand["simdgroups_derived"] - ship["simdgroups_derived"]
+        pct = 100.0 * dsg / ship["simdgroups_derived"]
+        if drift:
+            blocked.append((na, widths, drift))
+            print("  %5s %7s %9s %8d %8d %9s %9s   INDETERMINATE, control "
+                  "moves %+d registers"
+                  % ("ipg%d" % na, ",".join(map(str, widths)), "%+d" % drift,
+                     ship["registers"], cand["registers"], "-", "-", drift))
+            continue
+        priced[na] = (widths, dsg, pct)
+        print("  %5s %7s %9d %8d %8d %+9d %+9.3f"
+              % ("ipg%d" % na, ",".join(map(str, widths)), 0,
+                 ship["registers"], cand["registers"], dsg, pct))
+
+    covered = sum(F83_MASS.get(w, 0.0)
+                  for widths, _, _ in priced.values() for w in widths)
+    weighted = sum(F83_MASS.get(w, 0.0) * pct
+                   for widths, _, pct in priced.values() for w in widths)
+    print()
+    print("  ranked mass on priced cells, Finding 83:  %.4f" % covered)
+    print("  mass-weighted resident-simdgroup change:  %+.4f %%" % weighted)
+    if blocked:
+        lost = sum(F83_MASS.get(w, 0.0)
+                   for _, widths, _ in blocked for w in widths)
+        print("  ranked mass on indeterminate cells:       %.4f  (widths %s)"
+              % (lost, ", ".join(str(w) for _, ws, _ in blocked for w in ws)))
+    print()
+    print("  candidate-leg time, weighted change x elasticity x QMV share "
+          "%.4f" % QMV_SHARE)
+    for name, e in ELASTICITY.items():
+        print("    %-34s elasticity %.3f  ->  %+.3f %% leg"
+              % (name, e, -weighted * e * QMV_SHARE))
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("exactness")
+    price = sub.add_parser("residency")
+    price.add_argument("--census", type=pathlib.Path, required=True)
+    price.add_argument("--variant", default="magic_bf16_pair")
+    show = sub.add_parser("sources")
+    show.add_argument("--variant", required=True)
+    run = sub.add_parser("census")
+    run.add_argument("--out", type=pathlib.Path)
+    run.add_argument("--air-only", action="store_true",
+                     help="skip metal-tt; AIR statements only")
+    run.add_argument("--wandb", action="store_true")
+    run.add_argument("--cell", action="append",
+                     help="NA,RPS; repeatable, defaults to the ranked set")
+    args = parser.parse_args()
+    if args.command == "exactness":
+        return exactness()
+    if args.command == "residency":
+        return residency(json.loads(args.census.read_text()), args.variant)
+    if args.command == "sources":
+        print(patched_header(shipped_header(), args.variant))
+        return 0
+    cells = CELLS
+    if args.cell:
+        cells = tuple(tuple(int(v) for v in c.split(",")) for c in args.cell)
+    return run_census(args.out, cells, not args.air_only, args.wandb)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

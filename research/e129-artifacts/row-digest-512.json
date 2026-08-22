@@ -1,0 +1,57 @@
+{
+  "expected_rows": 1025,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "failures": 0,
+  "harness": "local",
+  "legs": [
+    {
+      "matches_pin": true,
+      "row_count_ok": true,
+      "rows": 1025,
+      "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+      "tag": "e129x512dflt"
+    },
+    {
+      "matches_pin": true,
+      "row_count_ok": true,
+      "rows": 1025,
+      "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+      "tag": "e129x512base"
+    },
+    {
+      "matches_pin": true,
+      "row_count_ok": true,
+      "rows": 1025,
+      "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+      "tag": "e129x512tier"
+    },
+    {
+      "matches_pin": true,
+      "row_count_ok": true,
+      "rows": 1025,
+      "sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+      "tag": "e129x512one67"
+    }
+  ],
+  "order_control": {
+    "digest_moved": true,
+    "kind": "two adjacent rows swapped",
+    "row_index": 512,
+    "swapped_sha256": "8c5c3f76897ceb9c8dbe5d483440ddbb2c5e5e744164fcd952d508e69f2b21d7"
+  },
+  "pinned_sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+  "runtime_negative_control": {
+    "digest_moved": true,
+    "reason": "a leg run over a different decode window emits a different set of mtp-row positions",
+    "rows": 257,
+    "sha256": "783d3ae1c420f5af37a3ec6c4b1fca7ad005936dac41b847ef685cb5661d6b85",
+    "tag": "e129x128neg"
+  },
+  "value_control": {
+    "digest_moved": true,
+    "kind": "single hex digit flipped in one row value",
+    "perturbed_line": "mtp-row: pos=513 ids=550,248068 v=fx1.8ap+4,0x1.6ap+4",
+    "perturbed_sha256": "c15f45cc975b00ef624cf90fb378a7a58f4f9571ff91585187ae95c73579ccf1",
+    "row_index": 512
+  }
+}

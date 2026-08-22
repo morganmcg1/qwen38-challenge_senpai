@@ -2,7 +2,8 @@
 # E120 -- run one candidate-owned QMV dispatch probe session and record the
 # identity tuple around it.
 #
-#   usage: research/e120_probe.sh TAG [shapes] [widths] [blocks] [filter]
+#   usage: research/e120_probe.sh TAG [shapes] [widths] [blocks] [filter] \
+#                                  [cases] [shipped_cases]
 #
 #   TAG      output directory name under research/out/
 #   shapes   comma list of preset names or `name:N:K` triples,
@@ -10,6 +11,10 @@
 #   widths   comma list of row counts M, default `3,4,5,6,7,8,9`
 #   blocks   palindromic blocks per cell, default 6
 #   filter   swift-testing filter, default `E120CustomQMVProbeTests`
+#   cases    width-table override for the `a_compare` pipeline, `M:IPG:RPS`
+#            triples, default `6:3:4,7:4:4,8:4:4` (the promoted two-pass table)
+#   shipped  width-table override for the `b_shipped` pipeline, same form,
+#            default empty (use the plan in the source under test)
 #
 # Every arm is timed forward and then in reverse inside one block, so monotone
 # thermal drift cancels to first order. Temperature is sampled only at block
@@ -24,6 +29,8 @@ shapes="${2:-mlp.gate_up}"
 widths="${3:-3,4,5,6,7,8,9}"
 blocks="${4:-6}"
 filter="${5:-E120CustomQMVProbeTests}"
+cases="${6:-6:3:4,7:4:4,8:4:4}"
+shipped_cases="${7:-}"
 out_dir="research/out/${tag}"
 mkdir -p "${out_dir}"
 
@@ -51,6 +58,10 @@ MLXFAST_E120_BLOCKS="${blocks}" \
 MLXFAST_E120_OUT="${PWD}/${out_dir}/cells.json" \
 MLXFAST_E120_FILL_OUT="${PWD}/${out_dir}/fill.json" \
 MLXFAST_E120_EXACT_OUT="${PWD}/${out_dir}/exact.json" \
+MLXFAST_E129_CASES="${cases}" \
+MLXFAST_E129_SHIPPED_CASES="${shipped_cases}" \
+MLXFAST_E129_M5IPG_OUT="${PWD}/${out_dir}/m5ipg.json" \
+MLXFAST_E129_M5IPG_EXACT_OUT="${PWD}/${out_dir}/m5ipg-exact.json" \
 swift test -c "${config}" --force-resolved-versions \
   --filter "${filter}" 2>&1 | tee "${out_dir}/probe.log"
 status="${PIPESTATUS[0]}"
@@ -65,6 +76,8 @@ exit_c="$(gpu_temp)"
   echo "blocks=${blocks}"
   echo "layers=${MLXFAST_E120_LAYERS:-32}"
   echo "filter=${filter}"
+  echo "cases=${cases}"
+  echo "shipped_cases=${shipped_cases}"
   echo "target_us=${MLXFAST_E120_TARGET_US:-100000}"
   echo "ramp_s=${MLXFAST_E120_RAMP_S:-0.30}"
   echo "swift_config=${config}"

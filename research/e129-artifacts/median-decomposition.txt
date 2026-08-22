@@ -1,0 +1,40 @@
+harness=ranked
+ours  0c6191b7  morganmcg1     published 3.512706  reconstructed median 3.512706
+      central pair: beagle 3.3552 and essays 3.6702
+crown 48423d09  noskillcoding  published 3.518453  reconstructed median 3.518453
+      central pair: beagle 3.3621 and essays 3.6748
+
+per prompt, ours against the crown, positive means ours is better
+prompt     ratio us  ratio cr   ratio %    cand %  serial %
+plutarch     1.2577    1.2556    +0.160    -0.129    +0.290
+drama        1.9856    1.9860    -0.021    +0.135    -0.156
+travel       2.2939    2.2777    +0.713    +0.122    +0.590
+beagle       3.3552    3.3621    -0.205    +0.104    -0.309
+essays       3.6702    3.6748    -0.125    +0.066    -0.191
+medicine     3.7053    3.7098    -0.121    +0.157    -0.278
+republic     3.7062    3.6983    +0.213    +0.225    -0.012
+botany       3.7627    3.7520    +0.284    +0.142    +0.142
+
+candidate leg, unweighted: ours 0.014758  crown 0.014768  ours is +0.067 % faster
+published:                 ours 3.512706  crown 3.518453  ours is -0.163 %
+
+counterfactual: hold the serial leg and the prompt set fixed and give
+our candidate leg the crown's per-prompt shape.
+  our published median if our leg were the crown's shape: 3.512103
+  actually published:                                     3.512706
+
+spread of the eight per-prompt ratios
+  ours  min 1.2577  median 3.5127  max 3.7627  sd 0.9789
+  crown min 1.2556  median 3.5185  max 3.7520  sd 0.9802
+
+serial leg per-prompt dispersion, 17 receipts since 09:00
+prompt          mean     sd %  range %
+plutarch    0.037967   0.1550   0.4576
+drama       0.037940   0.2177   0.7620
+travel      0.037983   0.2260   0.7678
+beagle      0.037943   0.1955   0.8186
+republic    0.037989   0.3538   1.4940
+essays      0.037970   0.1994   0.6989
+medicine    0.037923   0.1436   0.4791
+botany      0.037948   0.1414   0.4900
+mean per-prompt serial sd 0.2040 %

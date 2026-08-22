@@ -1,0 +1,66 @@
+morganmcg1: 22 receipts with per-prompt data, 7 distinct schedule signatures
+  sig 0: n=  1  span    0.0 h  beagle draftlen 3.770992366  candidate-leg spread inside the class  0.000 %
+         4437d061
+  sig 1: n=  1  span    0.0 h  beagle draftlen 4.198275862  candidate-leg spread inside the class  0.000 %
+         9197ed62
+  sig 2: n=  3  span   34.8 h  beagle draftlen 4.532710280  candidate-leg spread inside the class  1.609 %
+         ca9251b8 ff73cbbd 9b241879
+  sig 3: n=  1  span    0.0 h  beagle draftlen 4.412280702  candidate-leg spread inside the class  0.000 %
+         2c766441
+  sig 4: n=  1  span    0.0 h  beagle draftlen 4.059829060  candidate-leg spread inside the class  0.000 %
+         2da69933
+  sig 5: n= 14  span   40.9 h  beagle draftlen 4.381818182  candidate-leg spread inside the class  5.421 %
+         32c6dc69 8630bc07 83f0b282 55af6534 87e6421b cb8aeefb 84b9ef7b f04b102e b8b8b860 44559d02 7bef7d4c cf9a9eda d3c491b5 0c6191b7
+  sig 6: n=  1  span    0.0 h  beagle draftlen 3.974576271  candidate-leg spread inside the class  0.000 %
+         87b654b2
+
+every solver with at least four scored receipts
+solver             receipts signatures largest class spread in it
+Lieisyourlie             84         21            30       3.703 %
+newjordan                56         15            21       6.295 %
+jonathan308              52         15            21       1.622 %
+scarletbright            48         21            19       7.062 %
+hadakang                 33         13            10       5.436 %
+vibecodooor              32          5            16       5.759 %
+fkiene                   29          4            20       1.639 %
+Amal-David               23          6            11       5.508 %
+morganmcg1               22          7            14       5.421 %
+ivanfioravanti           22          8             8       1.061 %
+audreyt                  22          6            16       1.142 %
+kaarelkaarelson          21          5             9       1.536 %
+mega-dmitriy             20         13             3       2.027 %
+yijunyu                  17         11             4       1.338 %
+xadenryan                17          7             8       3.726 %
+DawgZter                 17         10             4       3.193 %
+Floofy6                  15          5             9       4.046 %
+BitWonka                 13          5             9       5.417 %
+EternaPeptix             12         11             2       0.065 %
+nagaral                  11          1            11       3.551 %
+andreolf                 11          3             8       3.557 %
+polymorf                 10          9             2       1.787 %
+nijaru                   10          4             6       1.040 %
+jungjipdo                10          7             3       0.052 %
+welttowelt                8          2             7       3.118 %
+igneous-prose             8          4             5      24.802 %
+gibavargas                8          8             1       0.000 %
+francip                   8          4             5       0.662 %
+rainbowpuffpuff           6          3             4      30.472 %
+paul-hf                   6          2             5       0.886 %
+ofou                      6          3             3      13.111 %
+machalabs-ai              6          3             4       0.981 %
+claudiodekker             6          2             5       2.906 %
+SSHdotCodes               6          4             3       1.640 %
+Kamciosz                  6          3             4       1.797 %
+noskillcoding             5          3             3       3.357 %
+zeeshan8281               4          2             3       1.352 %
+yzxoi                     4          3             2       1.000 %
+yoits9090                 4          3             2       0.400 %
+alfranli123               4          1             4       1.529 %
+GumbiiDigital             4          2             3       2.440 %
+ArcherHume                4          1             4       1.746 %
+458187375-ship-it         4          4             1       0.000 %
+
+570 receipts sit in a class of two or more, so their schedule fields matched another receipt to the last digit.
+The widest candidate-leg spread inside any one class is 80.5 % (newjordan, n=2).
+
+A class holds receipts whose two schedule fields are equal to the last digit. The candidate-leg spread inside a class shows how much the timed work changed while the schedule did not, which is what makes exact equality a usable validity test rather than a tautology.

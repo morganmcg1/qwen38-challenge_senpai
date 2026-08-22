@@ -1,0 +1,148 @@
+{
+ "advisor_head": "b28900c808aa5c9c6c02b3d40b978bd7599a18e4",
+ "arm": "route_b_sumtable_on_the_reverted_base",
+ "candidate_commit": "8c87e732cd6c92f69e0e626734db2c7b748139a8",
+ "experiment": "e129-rung0-presubmit",
+ "harness": "local",
+ "local_submit": {
+  "cool_gates": [
+   {
+    "passed_at_c": 39.7,
+    "phase": "MTP reference pass",
+    "waited_s": 30
+   },
+   {
+    "passed_at_c": 39.6,
+    "phase": "true serial control",
+    "waited_s": 60
+   },
+   {
+    "passed_at_c": 39.8,
+    "phase": "native-MTP decode",
+    "waited_s": 60
+   }
+  ],
+  "metrics": {
+   "accepted_draft_rate": 0.8770161290322581,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "effective_mean_draft_len": 6.358974358974359,
+   "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+   "mode": "qwen-mtp-local-submit",
+   "mtp_decode_speedup": 2.4726867152584258,
+   "mtp_depth": 8,
+   "mtp_seconds_per_token": 0.029761345824226737,
+   "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+   "official_score": false,
+   "oracle": "candidate-local-mtp-golden-rows",
+   "public_drift_tripwire_passed": true,
+   "rankable": false,
+   "ranked_decode_speedup_floor": 0.9,
+   "residual_divergence_count": 0,
+   "serial_seconds_per_token": 0.07359048444777727,
+   "uses_pinned_mtp_head": true
+  },
+  "passed": true
+ },
+ "passed": true,
+ "scope_base": "2127858ba770ddc06027205d8df89a8db21d80f5",
+ "steps": [
+  {
+   "command": "python3 research/twin_audit.py",
+   "exit": 0,
+   "observation": "TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s) (non-comment lines byte-identical, both comment streams sha256-pinned)",
+   "passed": true,
+   "step": "twin_audit"
+  },
+  {
+   "command": "senpai/validate-assignment-scope.sh 2127858ba770ddc06027205d8df89a8db21d80f5 Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+   "exit": 0,
+   "observation": "assignment scope OK: 1 submitted path(s) against BASE_SHA=2127858ba770ddc06027205d8df89a8db21d80f5",
+   "passed": true,
+   "step": "assignment_scope"
+  },
+  {
+   "command": "senpai/check-editable-budget.sh 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+   "exit": 0,
+   "observation": "editable budget OK: source=2613813/3000000 bytes headroom=386187 growth=158978/262144 exempt=2410/2147483648 files=154 (growth base=770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf; contract=770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf; base source=2454835, exempt=2410, files=154)",
+   "passed": true,
+   "step": "editable_budget"
+  },
+  {
+   "command": "senpai/verify-ranked-score-boundary.sh",
+   "exit": 0,
+   "observation": "PASS: ranked numerator is pinned baseline; candidate edits affect the MTP denominator only",
+   "passed": true,
+   "step": "ranked_score_boundary"
+  },
+  {
+   "command": "senpai/rebuild-and-assert-worker.sh --self-test",
+   "exit": 0,
+   "observation": "rebuild-and-assert-worker: self-test PASS",
+   "passed": true,
+   "step": "harness_self_test"
+  },
+  {
+   "command": "git diff --name-only b28900c808aa HEAD -- <editablePaths>",
+   "exit": 0,
+   "observation": "['Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift'] (owned: ['Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift'])",
+   "passed": true,
+   "step": "surface_touches_only_owned_paths"
+  },
+  {
+   "command": "git diff --stat 197e0550ab46 b28900c808aa -- <editablePaths>",
+   "exit": 0,
+   "observation": "empty; advisor added no submitted byte since 197e0550ab46",
+   "passed": true,
+   "step": "advisor_surface_contained_since_branch_point"
+  },
+  {
+   "command": "git diff --stat ebed7498f1f1 HEAD -- <editablePaths>",
+   "exit": 0,
+   "observation": "empty; ebed7498f1f1 and HEAD carry identical submitted bytes",
+   "passed": true,
+   "step": "submitted_surface_unchanged_since_timed_commit"
+  },
+  {
+   "command": "senpai/rebuild-and-assert-worker.sh --no-build <witness set>, before and after the submit leg",
+   "exit": 0,
+   "observation": "d2e841875ee9fa62 -> d2e841875ee9fa62",
+   "passed": true,
+   "step": "worker_unchanged_across_local_submit"
+  },
+  {
+   "command": "swift test --force-resolved-versions",
+   "exit": 0,
+   "observation": "organizer issues 40, moved [], unexpected []",
+   "passed": true,
+   "step": "swift_test_organizer_decomposition"
+  }
+ ],
+ "submitted_paths": [
+  "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+ ],
+ "swift_test": {
+  "campaign_added_observed": [],
+  "issues": 40,
+  "moved_organizer_names": {},
+  "organizer_issue_total": 40,
+  "organizer_per_name": {
+   "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen": 1,
+   "participantDocsExposeDefaultCLIInstallDirectory": 2,
+   "qwen36ConfigContractDigestMatchesTheReferenceManifest": 2,
+   "startupMemoryPolicyKeepsRanked128GiBProfile": 2,
+   "submissionStaticReviewPromptCoversMeasurementStructureExploitation": 11,
+   "theCheckedInDeclarationSelectsThePinnedHead": 6,
+   "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues": 3,
+   "theQwenMTPTrackIsArmedOnQwen38": 11,
+   "theSeededCalibrationExpectationMatchesItsRecordedProvenance": 2
+  },
+  "suites": 67,
+  "tests": 745,
+  "unexpected_failing_names": []
+ },
+ "worker_mtime": "2026-08-22T13:52:22Z",
+ "worker_sha256": "d2e841875ee9fa62e7e6421fa3ecfba84452c978f008c4585f105bbb221c6a36",
+ "worker_sha256_post": "d2e841875ee9fa62e7e6421fa3ecfba84452c978f008c4585f105bbb221c6a36",
+ "worker_unchanged_across_local_submit": true
+}

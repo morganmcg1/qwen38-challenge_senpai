@@ -1,0 +1,235 @@
+{
+ "harness": "local",
+ "instrument": "MLX_E120_QMV_PIPELINE_LOG first-dispatch ordinals",
+ "legs": [
+  {
+   "arm": "sumtable",
+   "dispatches": 2829,
+   "entry": "tiered_switch",
+   "first_index_by_key": {
+    "qmv_sums_na3_v2/USE_TABLE=true": 771,
+    "qmv_sums_na4_v2/USE_TABLE=true": 257,
+    "qmv_sums_na5_v2/USE_TABLE=true": 514,
+    "qmv_wide_na3_v2": 0,
+    "xsums_v1": 257
+   },
+   "first_index_by_width": {
+    "3": 0,
+    "4": 257,
+    "5": 514,
+    "6": 771,
+    "7": 1028,
+    "8": 1285,
+    "9": 1542
+   },
+   "log": "research/out/e129x128neg-pipelines.json",
+   "ok": true,
+   "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4",
+   "problems": [],
+   "qmv_specializations": 5,
+   "table": "shipped",
+   "warmup_last_dispatch": 1542,
+   "widths_reached": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "arm": "sumtable",
+   "dispatches": 2829,
+   "entry": "shared_switch",
+   "first_index_by_key": {
+    "qmv_sums_v2/USE_TABLE=true": 257,
+    "qmv_wide_v2": 0,
+    "xsums_v1": 257
+   },
+   "first_index_by_width": {
+    "3": 0,
+    "4": 257,
+    "5": 514,
+    "6": 771,
+    "7": 1028,
+    "8": 1285,
+    "9": 1542
+   },
+   "log": "research/out/e129x512base-pipelines.json",
+   "ok": true,
+   "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4",
+   "problems": [],
+   "qmv_specializations": 3,
+   "table": "shipped",
+   "warmup_last_dispatch": 1542,
+   "widths_reached": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "arm": "sumtable",
+   "dispatches": 2829,
+   "entry": "tiered_switch",
+   "first_index_by_key": {
+    "qmv_sums_na3_v2/USE_TABLE=true": 1542,
+    "qmv_sums_na4_v2/USE_TABLE=true": 257,
+    "qmv_sums_na5_v2/USE_TABLE=true": 514,
+    "qmv_sums_na6_v2/USE_TABLE=true": 771,
+    "qmv_sums_na7_v2/USE_TABLE=true": 1028,
+    "qmv_wide_na3_v2": 0,
+    "xsums_v1": 257
+   },
+   "first_index_by_width": {
+    "3": 0,
+    "4": 257,
+    "5": 514,
+    "6": 771,
+    "7": 1028,
+    "8": 1285,
+    "9": 1542
+   },
+   "log": "research/out/e129x512dflt-pipelines.json",
+   "ok": true,
+   "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4",
+   "problems": [],
+   "qmv_specializations": 7,
+   "table": "onepass67",
+   "warmup_last_dispatch": 1542,
+   "widths_reached": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "arm": "sumtable",
+   "dispatches": 2829,
+   "entry": "tiered_switch",
+   "first_index_by_key": {
+    "qmv_sums_na3_v2/USE_TABLE=true": 1542,
+    "qmv_sums_na4_v2/USE_TABLE=true": 257,
+    "qmv_sums_na5_v2/USE_TABLE=true": 514,
+    "qmv_sums_na6_v2/USE_TABLE=true": 771,
+    "qmv_sums_na7_v2/USE_TABLE=true": 1028,
+    "qmv_wide_na3_v2": 0,
+    "xsums_v1": 257
+   },
+   "first_index_by_width": {
+    "3": 0,
+    "4": 257,
+    "5": 514,
+    "6": 771,
+    "7": 1028,
+    "8": 1285,
+    "9": 1542
+   },
+   "log": "research/out/e129x512one67-pipelines.json",
+   "ok": true,
+   "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4",
+   "problems": [],
+   "qmv_specializations": 7,
+   "table": "onepass67",
+   "warmup_last_dispatch": 1542,
+   "widths_reached": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "arm": "sumtable",
+   "dispatches": 2829,
+   "entry": "tiered_switch",
+   "first_index_by_key": {
+    "qmv_sums_na3_v2/USE_TABLE=true": 1542,
+    "qmv_sums_na4_v2/USE_TABLE=true": 257,
+    "qmv_sums_na5_v2/USE_TABLE=true": 514,
+    "qmv_sums_na6_v2/USE_TABLE=true": 771,
+    "qmv_sums_na7_v2/USE_TABLE=true": 1028,
+    "qmv_wide_na3_v2": 0,
+    "xsums_v1": 257
+   },
+   "first_index_by_width": {
+    "3": 0,
+    "4": 257,
+    "5": 514,
+    "6": 771,
+    "7": 1028,
+    "8": 1285,
+    "9": 1542
+   },
+   "log": "research/out/e129x512onep-pipelines.json",
+   "ok": true,
+   "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:4:4,9:3:4",
+   "problems": [],
+   "qmv_specializations": 7,
+   "table": "onepass",
+   "warmup_last_dispatch": 1542,
+   "widths_reached": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "arm": "sumtable",
+   "dispatches": 2829,
+   "entry": "tiered_switch",
+   "first_index_by_key": {
+    "qmv_sums_na3_v2/USE_TABLE=true": 771,
+    "qmv_sums_na4_v2/USE_TABLE=true": 257,
+    "qmv_sums_na5_v2/USE_TABLE=true": 514,
+    "qmv_wide_na3_v2": 0,
+    "xsums_v1": 257
+   },
+   "first_index_by_width": {
+    "3": 0,
+    "4": 257,
+    "5": 514,
+    "6": 771,
+    "7": 1028,
+    "8": 1285,
+    "9": 1542
+   },
+   "log": "research/out/e129x512tier-pipelines.json",
+   "ok": true,
+   "plan": "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4",
+   "problems": [],
+   "qmv_specializations": 5,
+   "table": "shipped",
+   "warmup_last_dispatch": 1542,
+   "widths_reached": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  }
+ ],
+ "official_or_ranked_score": false,
+ "ok": true,
+ "timing_valid": false
+}

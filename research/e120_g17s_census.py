@@ -116,7 +116,8 @@ typedef bfloat bfloat16_t;
 """
 
 # Widths and their input-per-group pairing, from the dispatch switch.
-WIDTH_CASES = ((3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3))
+WIDTH_CASES = ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4),
+               (9, 3, 4))
 
 
 def swift_literal(name: str) -> str:
@@ -142,12 +143,14 @@ def qmv_body(table: bool, widths: tuple = WIDTH_CASES) -> str:
     flag = "USE_TABLE" if table else "false"
     cases = "\n".join(
         """        case %d:
-            qwen_e120_qmv_m<%d, %d, %s>(
+            qwen_e120_qmv_m<%d, %d, %d, %s>(
                 w, scales, biases, x, %s, y,
                 qmv_k, qmv_n, qmv_stride,
-                qmv_gx, qmv_out_row, qmv_lid);
-            break;""" % (m, m, ipg, flag, sums)
-        for m, ipg in widths
+                qmv_gx,
+                int(qmv_tid.y) * %d + int(qmv_sgid) * %d,
+                qmv_lid);
+            break;""" % (m, m, ipg, rps, flag, sums, 2 * rps, rps)
+        for m, ipg, rps in widths
     )
     null_decl = "" if table else (
         "\n    const device float* qmv_null_sums = nullptr;"
@@ -159,7 +162,6 @@ def qmv_body(table: bool, widths: tuple = WIDTH_CASES) -> str:
     const uint3 qmv_tid = threadgroup_position_in_grid;
     const uint qmv_lid = thread_index_in_simdgroup;
     const uint qmv_sgid = simdgroup_index_in_threadgroup;
-    const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
     const int qmv_gx = int(qmv_tid.x);%s
     switch (qmv_m) {
 %s
@@ -238,8 +240,8 @@ QMV_OUTPUTS = [("y", "bfloat16_t")]
 
 def arm_source(header: str, table: bool) -> str:
     """One library holding the shipped switch plus every per-width kernel."""
-    base = ("qwen35_custom_affine4_g64_qmv_wide_sums_v1" if table
-            else "qwen35_custom_affine4_g64_qmv_wide_v1")
+    base = ("qwen35_custom_affine4_g64_qmv_wide_sums_v2" if table
+            else "qwen35_custom_affine4_g64_qmv_wide_v2")
     inputs = QMV_INPUTS + ([("xsums", "float")] if table else [])
     template = [("bool", "USE_TABLE", "true")] if table else None
     parts = [PRELUDE, header, ""]

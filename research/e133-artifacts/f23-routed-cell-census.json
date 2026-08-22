@@ -1,0 +1,2848 @@
+{
+ "schema_version": 1,
+ "gpu_used": false,
+ "model_loaded": false,
+ "timing_valid": false,
+ "official_or_ranked_score": false,
+ "harness": "compile_only",
+ "occupancy_label": "derived",
+ "occupancy_rule": "Rule 89",
+ "exactness_rule": "Rule 92",
+ "tool": "research/e133_nibble_floor.py census",
+ "base_sha": "df98fcbab25f32e7505aac34c067a2c6d6f3edd2",
+ "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+ "ranked_arch": "applegpu_g17s",
+ "bytes_per_instruction_bracket": [
+  4.375,
+  12.1741
+ ],
+ "f157_row_keyed": {
+  "weight_element_loads": 4,
+  "weight_address_arith": 1,
+  "metadata_loads": 2,
+  "metadata_index_arith": 1,
+  "metadata_widenings": 2,
+  "nibble_int_ops": 28
+ },
+ "f157_m_keyed": {
+  "sums_table_loads": 1,
+  "activation_vec4_loads": 4,
+  "activation_widenings": 16,
+  "activation_address_arith": 4
+ },
+ "cells": [
+  [
+   3,
+   4
+  ],
+  [
+   4,
+   4
+  ],
+  [
+   5,
+   4
+  ],
+  [
+   6,
+   4
+  ],
+  [
+   7,
+   4
+  ]
+ ],
+ "variants": {
+  "shipped": {
+   "note": "the untouched header",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.75,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 5446,
+      "text_sha8": "737659c0",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 5670,
+      "text_sha8": "74c77600",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.0625,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 6574,
+      "text_sha8": "6803f17a",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6822,
+      "text_sha8": "2c638b2e",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.45,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 7748,
+      "text_sha8": "2ae2735e",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "80bc2a2a",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.375,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "5b5f795f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "e98e89bc",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.6071,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5672,
+      "text_sha8": "f26e7537",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "0c69657b",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "shipped_lifted": {
+   "note": "the shipped idiom, written as four named floats. This is the harness-neutrality control: it must census exactly like the untouched header, otherwise the substitution itself costs something and every other row is confounded.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.75,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5448,
+      "text_sha8": "f6d70200",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5672,
+      "text_sha8": "5877dc59",
+      "simdgroups_derived": 44
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.0625,
+     "applegpu_g16s": {
+      "registers": 89,
+      "spill_bytes": 0,
+      "text_bytes": 6576,
+      "text_sha8": "992372ff",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 6828,
+      "text_sha8": "6385e6d6",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.45,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 7750,
+      "text_sha8": "8dcc640a",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "c5d7d716",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.375,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "d3bbc214",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "d97e80f2",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.6071,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5658,
+      "text_sha8": "bdfa3d63",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "21c2bc00",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "bfe": {
+   "note": "`extract_bits` is the Metal spelling of a bitfield extract. AGX has a bitfield-extract instruction, so if the compiler was not already folding shift-then-mask into it, this collapses two statements into one for each nibble.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 166,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 70,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 127,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.5833,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5448,
+      "text_sha8": "ae166a81",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5672,
+      "text_sha8": "1d9d52cf",
+      "simdgroups_derived": 44
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 166,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 70,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 127,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 7.9375,
+     "applegpu_g16s": {
+      "registers": 89,
+      "spill_bytes": 0,
+      "text_bytes": 6576,
+      "text_sha8": "e734af53",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 6828,
+      "text_sha8": "22316e5e",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 166,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 70,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 127,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.35,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 7750,
+      "text_sha8": "45f98da6",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "fa6224c4",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 166,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 70,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 127,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.2917,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "adc96616",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "c5d8abda",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 166,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 70,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 127,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.5357,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5658,
+      "text_sha8": "2179c691",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "03cb49a5",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "bfe_narrow": {
+   "note": "`extract_bits` kept at sixteen bits. AGX addresses register halves, so a ushort bitfield extract may avoid the widening to uint that `bfe` forces before it does anything useful.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 69,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.5,
+     "applegpu_g16s": {
+      "registers": 92,
+      "spill_bytes": 0,
+      "text_bytes": 5450,
+      "text_sha8": "031f4191",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 5668,
+      "text_sha8": "2cc4e92b",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 69,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 7.875,
+     "applegpu_g16s": {
+      "registers": 89,
+      "spill_bytes": 0,
+      "text_bytes": 6584,
+      "text_sha8": "a1b02199",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 6824,
+      "text_sha8": "cefde42c",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 69,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.3,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 7750,
+      "text_sha8": "dc45fc8c",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "ed035c62",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 69,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.25,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "5bf93cc2",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "25d2e10e",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 16,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 69,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.5,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5658,
+      "text_sha8": "321e0e29",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 117,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "da16d743",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "rolling": {
+   "note": "One shift feeds the next, so the shift amounts are all 4 and the top nibble needs no mask. Fewer distinct constants, one fewer mask, at the price of a serial dependence the shipped form does not have.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.75,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5448,
+      "text_sha8": "ae166a81",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5672,
+      "text_sha8": "1d9d52cf",
+      "simdgroups_derived": 44
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.0625,
+     "applegpu_g16s": {
+      "registers": 89,
+      "spill_bytes": 0,
+      "text_bytes": 6576,
+      "text_sha8": "e734af53",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 6828,
+      "text_sha8": "22316e5e",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.45,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 7750,
+      "text_sha8": "45f98da6",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "fa6224c4",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.375,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "adc96616",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "c5d8abda",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 129,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.6071,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5658,
+      "text_sha8": "2179c691",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "03cb49a5",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "bytes": {
+   "note": "`as_type<uchar2>` splits the halfword into two bytes for free if the backend has a sub-register addressing mode. Each byte then needs one mask and one shift instead of two masks and two shifts.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 170,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 78,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 131,
+      "convert": 0,
+      "bitcast": 3
+     },
+     "air_per_output_element": 10.9167,
+     "applegpu_g16s": {
+      "registers": 87,
+      "spill_bytes": 0,
+      "text_bytes": 5790,
+      "text_sha8": "48b45144",
+      "simdgroups_derived": 35
+     },
+     "applegpu_g17s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 6046,
+      "text_sha8": "cfc53152",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 170,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 78,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 131,
+      "convert": 0,
+      "bitcast": 3
+     },
+     "air_per_output_element": 8.1875,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 6928,
+      "text_sha8": "ec82ed75",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 7206,
+      "text_sha8": "27d6cbfd",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 170,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 78,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 131,
+      "convert": 0,
+      "bitcast": 3
+     },
+     "air_per_output_element": 6.55,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 176,
+      "text_bytes": 8378,
+      "text_sha8": "e9f716d3",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 102,
+      "spill_bytes": 0,
+      "text_bytes": 8332,
+      "text_sha8": "cca56cd9",
+      "simdgroups_derived": 38
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 170,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 78,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 131,
+      "convert": 0,
+      "bitcast": 3
+     },
+     "air_per_output_element": 5.4583,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 5230,
+      "text_sha8": "575b6019",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5390,
+      "text_sha8": "132d0253",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 170,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 78,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 131,
+      "convert": 0,
+      "bitcast": 3
+     },
+     "air_per_output_element": 4.6786,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 6016,
+      "text_sha8": "b4e39485",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5996,
+      "text_sha8": "d1b2e89b",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "magic_f32": {
+   "note": "Build the float bit pattern instead of converting. `0x4b000000 | v` is exactly `2^23 + v` for v in 0..15, and subtracting `2^23` is exact because both operands share a binade and the result is representable. Trades one integer-to-float conversion for one OR and one subtract, so it wins only if conversion is more expensive than two ALU statements.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 176,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 14,
+      "int_alu": 84,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 137,
+      "convert": 0,
+      "bitcast": 6
+     },
+     "air_per_output_element": 11.4167,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5462,
+      "text_sha8": "8d552980",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 5502,
+      "text_sha8": "d5d1ab0b",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 176,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 14,
+      "int_alu": 84,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 137,
+      "convert": 0,
+      "bitcast": 6
+     },
+     "air_per_output_element": 8.5625,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 6590,
+      "text_sha8": "7ce4f63a",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6664,
+      "text_sha8": "4db73adb",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 176,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 14,
+      "int_alu": 84,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 137,
+      "convert": 0,
+      "bitcast": 6
+     },
+     "air_per_output_element": 6.85,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 7762,
+      "text_sha8": "6eefeefd",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7822,
+      "text_sha8": "9ff14e94",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 176,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 14,
+      "int_alu": 84,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 137,
+      "convert": 0,
+      "bitcast": 6
+     },
+     "air_per_output_element": 5.7083,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 4900,
+      "text_sha8": "cb8d3f0f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 107,
+      "spill_bytes": 0,
+      "text_bytes": 5002,
+      "text_sha8": "68147ec5",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 176,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 14,
+      "int_alu": 84,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 137,
+      "convert": 0,
+      "bitcast": 6
+     },
+     "air_per_output_element": 4.8929,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5684,
+      "text_sha8": "dd495d5c",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5604,
+      "text_sha8": "ff1599e0",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "magic_bf16_pair": {
+   "note": "The same trick two nibbles at a time. A bfloat carries seven mantissa bits, so 128..143 are exact and `0x4300 | v` is exactly `128 + v`. Two bfloat lanes fit in one 32-bit register, so one AND, one OR and one vector subtract serve two nibbles. The bfloat-to-float widening is a shift on this hardware. This is the form the advisor priced near 24 statements for eight nibbles; here it is measured rather than estimated.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 181,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 16,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 142,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 11.8333,
+     "applegpu_g16s": {
+      "registers": 84,
+      "spill_bytes": 0,
+      "text_bytes": 6584,
+      "text_sha8": "31d980f2",
+      "simdgroups_derived": 36
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6860,
+      "text_sha8": "9beef993",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 181,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 16,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 142,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 8.875,
+     "applegpu_g16s": {
+      "registers": 89,
+      "spill_bytes": 0,
+      "text_bytes": 7718,
+      "text_sha8": "8dbb0424",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 8016,
+      "text_sha8": "62710598",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 181,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 16,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 142,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 7.1,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 8908,
+      "text_sha8": "ed188c07",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 9166,
+      "text_sha8": "a32b7b51",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 181,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 16,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 142,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 5.9167,
+     "applegpu_g16s": {
+      "registers": 92,
+      "spill_bytes": 0,
+      "text_bytes": 5180,
+      "text_sha8": "7d471d69",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 103,
+      "spill_bytes": 0,
+      "text_bytes": 5318,
+      "text_sha8": "9a24eb7b",
+      "simdgroups_derived": 38
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 181,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 16,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 142,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 5.0714,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5954,
+      "text_sha8": "fb9e8937",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 116,
+      "spill_bytes": 0,
+      "text_bytes": 5924,
+      "text_sha8": "dc9c731a",
+      "simdgroups_derived": 34
+     }
+    }
+   }
+  },
+  "magic_bf16_pair_novec": {
+   "note": "`magic_bf16_pair` without the vector subtract, in case the backend scalarises `bfloat2` arithmetic and the vector spelling costs a pack.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 183,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 18,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 144,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 12.0,
+     "applegpu_g16s": {
+      "registers": 88,
+      "spill_bytes": 0,
+      "text_bytes": 6602,
+      "text_sha8": "f8ac0741",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 6866,
+      "text_sha8": "af469ed3",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 183,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 18,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 144,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 9.0,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 7728,
+      "text_sha8": "3c9fcf7f",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 92,
+      "spill_bytes": 0,
+      "text_bytes": 8014,
+      "text_sha8": "f115926e",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 183,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 18,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 144,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 7.2,
+     "applegpu_g16s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 8898,
+      "text_sha8": "35e3ba46",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 9166,
+      "text_sha8": "4da9d212",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 183,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 18,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 144,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 6.0,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 5180,
+      "text_sha8": "13c18eba",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5318,
+      "text_sha8": "6e53944a",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 183,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 8,
+      "fma": 0,
+      "float_alu": 18,
+      "int_alu": 87,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 144,
+      "convert": 0,
+      "bitcast": 4
+     },
+     "air_per_output_element": 5.1429,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5950,
+      "text_sha8": "a4ad709f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 117,
+      "spill_bytes": 0,
+      "text_bytes": 5924,
+      "text_sha8": "0b0af150",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "no_extract": {
+   "note": "NOT BIT-EXACT AND NOT A CANDIDATE. The weight load stays live and every nibble becomes the whole halfword, so this row is the harness floor: the difference between any real variant and this one is the extraction cost with the load, the address arithmetic and the four products held fixed.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 152,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 9,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 63,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 113,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 9.4167,
+     "applegpu_g16s": {
+      "registers": 77,
+      "spill_bytes": 0,
+      "text_bytes": 4304,
+      "text_sha8": "00c8f33f",
+      "simdgroups_derived": 39
+     },
+     "applegpu_g17s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 4360,
+      "text_sha8": "48fac7c0",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 152,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 9,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 63,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 113,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 7.0625,
+     "applegpu_g16s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 5440,
+      "text_sha8": "845837e8",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5516,
+      "text_sha8": "cb4b32d0",
+      "simdgroups_derived": 44
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 152,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 9,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 63,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 113,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.65,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6634,
+      "text_sha8": "8894da27",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6666,
+      "text_sha8": "4647a3c7",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 152,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 9,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 63,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 113,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.7083,
+     "applegpu_g16s": {
+      "registers": 92,
+      "spill_bytes": 0,
+      "text_bytes": 4612,
+      "text_sha8": "a379ea75",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 101,
+      "spill_bytes": 0,
+      "text_bytes": 4694,
+      "text_sha8": "2ab1615f",
+      "simdgroups_derived": 39
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 152,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 9,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 63,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 113,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.0357,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 16,
+      "text_bytes": 5224,
+      "text_sha8": "b6f6008b",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 112,
+      "spill_bytes": 0,
+      "text_bytes": 5300,
+      "text_sha8": "4d2502f3",
+      "simdgroups_derived": 35
+     }
+    }
+   }
+  },
+  "w2": {
+   "note": "The advisor's vectorised nibble extract. One vector shift by the constant vector and one vector mask replace four scalar shift-and-mask pairs. The mask on the top nibble is redundant on a sixteen-bit value, which this form drops and the census prices.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 130,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.8333,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5444,
+      "text_sha8": "5eb3185a",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 5674,
+      "text_sha8": "425d1fb0",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 130,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.125,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 6578,
+      "text_sha8": "5377cbca",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 92,
+      "spill_bytes": 0,
+      "text_bytes": 6824,
+      "text_sha8": "18101b6f",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 130,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.5,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 7750,
+      "text_sha8": "43ca0f5f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7974,
+      "text_sha8": "8c54c451",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 130,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.4167,
+     "applegpu_g16s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "2b1c34be",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "a1070efb",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 130,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.6429,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5662,
+      "text_sha8": "84f3416b",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 117,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "6b9ce9af",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "w1": {
+   "note": "One eight-byte vector load of the same eight contiguous bytes, then four register writes. `ws` is eight-byte aligned at every scored K, so the vector load is legal. The scalar writeback avoids assuming the thread array is eight-byte aligned.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 171,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 135,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 11.25,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 5446,
+      "text_sha8": "94a7e7fd",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 5670,
+      "text_sha8": "74c77600",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 171,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 135,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.4375,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 6574,
+      "text_sha8": "c65c5c32",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6822,
+      "text_sha8": "2c638b2e",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 171,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 135,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.75,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 7748,
+      "text_sha8": "9e53b2f1",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "80bc2a2a",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 171,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 135,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.625,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "5b5f795f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "e98e89bc",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 171,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 12,
+      "fma": 0,
+      "float_alu": 10,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 135,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.8214,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5672,
+      "text_sha8": "f26e7537",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "0c69657b",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "a1": {
+   "note": "One vector bfloat16 to float widening instead of four scalar ones. Widening bfloat16 to float is exact, so every operand of every later float operation is unchanged.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 10.5,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 5446,
+      "text_sha8": "737659c0",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 5670,
+      "text_sha8": "74c77600",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 7.875,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 6574,
+      "text_sha8": "6803f17a",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6822,
+      "text_sha8": "2c638b2e",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.3,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 7748,
+      "text_sha8": "2ae2735e",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "80bc2a2a",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.25,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "5b5f795f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "e98e89bc",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 165,
+      "phi": 22,
+      "load": 9,
+      "store": 4,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 76,
+      "gep": 18,
+      "branch": 17,
+      "other": 0,
+      "machine": 126,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.5,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5672,
+      "text_sha8": "f26e7537",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "0c69657b",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "w1_a1": {
+   "note": "W1 and A1 together, both load-width sites, no nibble change.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 132,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 11.0,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 5446,
+      "text_sha8": "94a7e7fd",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 94,
+      "spill_bytes": 0,
+      "text_bytes": 5670,
+      "text_sha8": "74c77600",
+      "simdgroups_derived": 42
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 132,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.25,
+     "applegpu_g16s": {
+      "registers": 95,
+      "spill_bytes": 0,
+      "text_bytes": 6574,
+      "text_sha8": "c65c5c32",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 6822,
+      "text_sha8": "2c638b2e",
+      "simdgroups_derived": 41
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 132,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.6,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 7748,
+      "text_sha8": "9e53b2f1",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7972,
+      "text_sha8": "80bc2a2a",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 132,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.5,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "5b5f795f",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "e98e89bc",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 168,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 77,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 132,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.7143,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5672,
+      "text_sha8": "f26e7537",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 118,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "0c69657b",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  },
+  "w1_w2_a1": {
+   "note": "All three F23 forms at once. This is the row that says whether the savings compose or whether the register allocator gives one back.",
+   "compiled": true,
+   "cells": {
+    "cell_na3_rps4": {
+     "na": 3,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 78,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 133,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 11.0833,
+     "applegpu_g16s": {
+      "registers": 90,
+      "spill_bytes": 0,
+      "text_bytes": 5444,
+      "text_sha8": "1be79ce9",
+      "simdgroups_derived": 34
+     },
+     "applegpu_g17s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 5674,
+      "text_sha8": "425d1fb0",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na4_rps4": {
+     "na": 4,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 78,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 133,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 8.3125,
+     "applegpu_g16s": {
+      "registers": 91,
+      "spill_bytes": 0,
+      "text_bytes": 6578,
+      "text_sha8": "fb6f3b5e",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 92,
+      "spill_bytes": 0,
+      "text_bytes": 6824,
+      "text_sha8": "18101b6f",
+      "simdgroups_derived": 43
+     }
+    },
+    "cell_na5_rps4": {
+     "na": 5,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 78,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 133,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 6.65,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 0,
+      "text_bytes": 7750,
+      "text_sha8": "8fb32f02",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 98,
+      "spill_bytes": 0,
+      "text_bytes": 7974,
+      "text_sha8": "8c54c451",
+      "simdgroups_derived": 40
+     }
+    },
+    "cell_na6_rps4": {
+     "na": 6,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 78,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 133,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 5.5417,
+     "applegpu_g16s": {
+      "registers": 93,
+      "spill_bytes": 0,
+      "text_bytes": 4892,
+      "text_sha8": "2b1c34be",
+      "simdgroups_derived": 33
+     },
+     "applegpu_g17s": {
+      "registers": 105,
+      "spill_bytes": 0,
+      "text_bytes": 5022,
+      "text_sha8": "a1070efb",
+      "simdgroups_derived": 37
+     }
+    },
+    "cell_na7_rps4": {
+     "na": 7,
+     "rps": 4,
+     "region": "loop 40",
+     "air": {
+      "total": 169,
+      "phi": 21,
+      "load": 9,
+      "store": 7,
+      "call": 13,
+      "fma": 0,
+      "float_alu": 6,
+      "int_alu": 78,
+      "gep": 20,
+      "branch": 15,
+      "other": 0,
+      "machine": 133,
+      "convert": 0,
+      "bitcast": 2
+     },
+     "air_per_output_element": 4.75,
+     "applegpu_g16s": {
+      "registers": 96,
+      "spill_bytes": 32,
+      "text_bytes": 5662,
+      "text_sha8": "84f3416b",
+      "simdgroups_derived": 32
+     },
+     "applegpu_g17s": {
+      "registers": 117,
+      "spill_bytes": 0,
+      "text_bytes": 5628,
+      "text_sha8": "6b9ce9af",
+      "simdgroups_derived": 33
+     }
+    }
+   }
+  }
+ },
+ "wandb_url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/1n8zqhkj"
+}
