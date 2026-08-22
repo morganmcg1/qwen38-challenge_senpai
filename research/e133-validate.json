@@ -1,0 +1,29 @@
+{
+  "samples": 11244,
+  "offline_argmax_matches_runtime_proposal": 0.9971540377090004,
+  "proposal_mismatch": {
+    "count": 32,
+    "rank_max": 1
+  },
+  "ledger_verdict_factors_as_live_and_match": 1.0,
+  "offline_shipped_chain_reproduces_runtime": 0.9919957310565635,
+  "p_row_matches_reference": 0.8032728566346496,
+  "p_row_accepted": 0.7280327285663465,
+  "prefix_live_rate": 0.8647278548559232,
+  "m_shipped_live_chain": {
+    "misses": 84,
+    "p": 0.007470651013874066,
+    "lo": 0.005963133266597436,
+    "hi": 0.009240939345071697
+  },
+  "m_shipped_structural_proxy": {
+    "misses": 1,
+    "p": 8.893632159373888e-05,
+    "agrees_with_true_miss": 0.9926182853077197
+  },
+  "m_damaged_simhash8_control": {
+    "misses": 11180,
+    "p": 0.9943080754180007
+  },
+  "control_can_fail": true
+}

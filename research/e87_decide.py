@@ -30,7 +30,9 @@ import json
 import re
 from pathlib import Path
 
-MISS_TO_SCORE_PCT = 206.6
+# Finding 69 exchange rate, superseding the earlier 206.6 from E82 rung 0.
+# Keep this equal to `e87_head.MISS_TO_SCORE_PCT` (E133 feedback F1 section 7).
+MISS_TO_SCORE_PCT = 203.0
 ARM_C = re.compile(r"armC-(?P<rule>\w+)-K(?P<k>\d+)-p(?P<p>[\d.]+)$")
 
 

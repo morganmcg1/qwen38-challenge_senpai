@@ -53,9 +53,10 @@ COARSE_ROW_BYTES = 320 * 4 + 80 * 2 + 80 * 2  # 1600 B/row at 2-bit g64
 COARSE_STAGE_BYTES = PADDED_COUNT * COARSE_ROW_BYTES  # 157,337,600
 # E82 route (c): 1 % of declared-head bytes -> 0.0815 % of candidate s/token.
 BYTES_TO_SCORE_PCT = 0.0815
-# E82 rung 0: 1 point of pooled acceptance -> 2.21 % of score, and a lost
-# argmax costs about 93.5 points of pooled acceptance on the affected draft.
-MISS_TO_SCORE_PCT = 206.6
+# Finding 69 exchange rate: one unit of net argmax miss rate costs 203 % of
+# score, so break-even for a gain of `g` percent is `g / 203`. This supersedes
+# the earlier 206.6 from E82 rung 0 (E133 feedback F1 section 7).
+MISS_TO_SCORE_PCT = 203.0
 
 
 def compact_rows(array: np.ndarray) -> np.ndarray:
