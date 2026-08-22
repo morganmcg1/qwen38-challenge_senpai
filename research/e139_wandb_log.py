@@ -9,6 +9,13 @@ per-round phase trace on, which writes a line per round, so every leg records
 log `cool_gate_passed_real_gate`, `gate_qualified_for_timing` and
 `official_or_ranked_score` verbatim as false, and neither may be quoted as a
 score.
+
+THE LADDER READS THE LEAF TERM, NOT `recall`. `recall` in e133_screen.py is
+survivor retention CONDITIONAL on the probed set, so it is identically 1.0
+whenever the survivor width covers every probed row. It stays 1.0 at p=0.005,
+where the arm never reaches 8.6 % of the true argmax rows. Every recall-like
+quantity logged here is `probe_hit_rate`, and the defective field is logged
+beside it under a name that says so.
 """
 
 from __future__ import annotations
@@ -23,6 +30,20 @@ ENTITY = "wandb-applied-ai-team"
 PROJECT = "qwen38-mlx-challenge-senpai"
 GROUP = "e139-zero-noise-acceptance-channel"
 HOST = "apple-m4-pro-applegpu_g16s-20core-48gib"
+
+# e133_screen.py:160 asserts this value, so a change there fails loudly rather
+# than silently repricing the ladder. e133_screen.py:146-147 for the gates.
+MISS_TO_SCORE_PCT = 203.0
+T0_NET_MISS = 3.0e-3
+T0B_RECALL = 0.997
+# E139 F4 / FINDING 196 and CAMPAIGN RULE 116. The published score is the mean
+# of the 4th and 5th sorted per-prompt raw ratios. A mechanism whose relative
+# effect is uniform across prompts does not change the sorted order, so its
+# median gain is the local gross gain times one measured constant.
+LOCAL_GROSS_TO_MEDIAN_GAIN = 0.95
+RIVAL_MEDIAN_PCT_AT_P015 = 0.3235
+RIVAL_MEDIAN_2SIGMA_AT_P015 = 0.0948 * (0.1263 / 0.1050)
+BYTE_MODEL_PCT_AT_P015 = 0.3403
 
 LEG_COLUMNS = [
     "dir", "arm", "prompt_id", "rep", "tokens", "offered_depth",
@@ -48,19 +69,20 @@ PRICED_COLUMNS = [
     "accept_rate_ship", "accept_rate_arm", "accept_delta_pp",
     "declared_rows_ship", "declared_rows_arm", "row_cost_pct",
     "quantisation_floor_pct", "acceptance_cost_pct",
-    "gross_byte_pct_local", "gross_byte_pct_ranked", "net_ranked_pct",
+    "gross_byte_pct_local", "gross_byte_pct_median", "net_median_pct",
     "probes", "rerank_drafts",
 ]
 
 LADDER_COLUMNS = [
-    "family", "arm", "p", "anchor_p", "probes", "coarse_rows", "recall_wg",
-    "probe_hit_wg", "survivor_hit_wg", "m_absolute_wg", "net_miss_wg",
-    "acc_loss_wg", "d_acc_loss_pp", "d_gross_pct", "d_net_pct",
-    "bytes_per_row", "n_gating", "passes_t0", "passes_t0b",
+    "arm", "p", "bytes_per_row", "n", "n_gating",
+    "gross_pct_local", "gross_pct_median",
+    "probe_hit_wg", "survivor_hit_wg", "recall_wg_defective",
+    "m_absolute_wg", "net_miss_wg", "acc_loss_wg", "acc_loss_pooled_wg",
+    "substitutions_live_gating",
+    "net_pct_gating", "net_pct_gating_median",
+    "net_pct_absolute", "net_pct_pooled", "net_pct_raw_miss",
+    "passes_t0", "passes_t0b", "passes_t0b_leaf",
 ]
-
-COST_COLUMNS = ["cost_model", "p", "probes", "coarse_rows", "stage_bytes",
-                "removed_vs_anchor_bytes", "gross_pct_vs_anchor"]
 
 RUNGS = {
     "channel": {
@@ -76,37 +98,30 @@ RUNGS = {
             "research/e139_session.sh p010 benchfixture natural_history && "
             "research/e139_session.sh p015 benchfixture natural_history && "
             "research/e139_session.sh fp32 benchfixture natural_history && "
+            "research/e139_session.sh p002 benchfixture natural_history && "
             "E139_REP=offer4 E139_DEPTH=4 research/e139_session.sh ship "
             "benchfixture natural_history && "
+            "E139_REP=offer2 E139_DEPTH=2 research/e139_session.sh ship "
+            "natural_history && "
             "python3 research/e139_analyse.py "
             "--json research/e139-acceptance-channel.json",
     },
     "ladder": {
-        "run_name": "e139-probe-fraction-ladder-below-0.10",
+        "run_name": "e139-probe-fraction-ladder",
         "job_type": "corpus-replay",
-        "file": "research/e139-probe-ladder-priced.json",
+        "file": "research/e139-probe-ladder-screen.json",
         "question":
-            "where does recall for the shipped derived-cluster readout "
-            "finally break as the probe fraction falls below 0.10, and what "
-            "is the unscaled net worth of the argmax",
+            "what does the probe fraction cost in leaf recall and in "
+            "realised acceptance at every rung from 0.25 down to 0.005, and "
+            "which rung maximises the published median gain",
         "command":
             "python3 research/e133_screen.py screen --families exact0 "
-            "--widths 4096 --stage-a sketch --probes "
-            "0.01,0.015,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.10,"
-            "0.125,0.15,0.20,0.25 "
-            "--out research/e139-probe-ladder-screen.json && "
-            "python3 research/e136_probe_grid.py "
-            "--screen research/e139-probe-ladder-screen.json "
-            "--json research/e139-probe-ladder-priced.json --self-check",
+            "--widths 24584 --stage-a sketch --probes "
+            "0.005,0.0075,0.01,0.015,0.02,0.03,0.04,0.05,0.06,0.07,0.075,"
+            "0.08,0.09,0.10,0.125,0.15,0.175,0.20,0.25 "
+            "--out research/e139-probe-ladder-screen.json",
     },
 }
-
-# E139 F2 / FINDING 192. Two independent ranked receipts for the same
-# one-constant change, read off the CANDIDATE leg rather than the raw
-# serial/candidate ratio.
-RIVAL_RANKED_PCT_AT_P015 = 0.3311
-RIVAL_RANKED_2SIGMA_AT_P015 = 0.0948
-BYTE_MODEL_PCT_AT_P015 = 0.3403
 
 
 def table(columns, rows):
@@ -114,6 +129,14 @@ def table(columns, rows):
     for row in rows:
         t.add_data(*[row.get(c) for c in columns])
     return t
+
+
+def probe_of(arm: str) -> float | None:
+    """`p015` -> 0.15, `fp32p002` -> 0.02, `ship` and `fp32` -> None."""
+    for prefix in ("fp32p0", "p0"):
+        if arm.startswith(prefix):
+            return float(f"0.{arm[len(prefix):]}")
+    return None
 
 
 def channel_summary(payload: dict) -> tuple[dict, dict]:
@@ -124,20 +147,20 @@ def channel_summary(payload: dict) -> tuple[dict, dict]:
     negative_ok = any(g["distinguished"] for g in det["negative"])
     instrument_ok = positive_ok and negative_ok and not payload["failures"]
 
-    riders = [a for a in ("fp32", "p010", "p015") if a in per_arm]
-    composed = sum(max(0.0, per_arm[a]["net_ranked_pct_worst"])
-                   for a in riders if a in ("fp32",))
-    probe_best = max(
-        ((per_arm[a]["net_ranked_pct_worst"], a) for a in ("p010", "p015")
-         if a in per_arm), default=(0.0, None))
-    composed += max(0.0, probe_best[0])
+    # Only one probe fraction can ship, so the ladder contributes its best arm
+    # rather than the sum of its arms. `fp32` is an independent knob and adds.
+    probe_arms = [a for a in per_arm if probe_of(a) is not None]
+    probe_best = max(((per_arm[a]["net_median_pct_worst"], a)
+                      for a in probe_arms), default=(0.0, None))
+    composed = max(0.0, probe_best[0])
+    if "fp32" in per_arm:
+        composed += max(0.0, per_arm["fp32"]["net_median_pct_worst"])
 
     summary = {
-        # Primary. Sum of each positive rider's gross byte value minus its
-        # MEASURED acceptance cost. Only one probe value can ship, so the
-        # ladder contributes its best arm, not the sum of its arms.
-        "e139_composed_rider_ranked_pct": composed,
-        "e139_probe_argmax_p": ({"p010": 0.10, "p015": 0.15}.get(probe_best[1])
+        # Primary. Each retained rider's gross byte value minus its MEASURED
+        # acceptance cost, converted to published median by one constant.
+        "e139_composed_rider_median_pct": composed,
+        "e139_probe_argmax_p": (probe_of(probe_best[1])
                                 if probe_best[1] else None),
         "e139_fp32_rider_acceptance_delta_pp":
             (min(per_arm["fp32"]["accept_delta_pp"])
@@ -146,7 +169,8 @@ def channel_summary(payload: dict) -> tuple[dict, dict]:
         "e139_instrument_negative_polarity_ok": negative_ok,
         "e139_instrument_ok": instrument_ok,
         "e139_leg_failures": len(payload["failures"]),
-        "e139_local_to_ranked_haircut": payload["local_to_ranked_haircut"],
+        "e139_local_gross_to_median_gain":
+            payload["local_gross_to_median_gain"],
         "e139_acceptance_transfer": payload["acceptance_transfer"],
         # The channel is noiseless but quantised at one round, so a null is a
         # bound, not a proof of a zero population cost.
@@ -160,7 +184,7 @@ def channel_summary(payload: dict) -> tuple[dict, dict]:
         "official_or_ranked_score": False,
     }
     for arm, a in per_arm.items():
-        summary[f"e139_{arm}_net_ranked_pct_worst"] = a["net_ranked_pct_worst"]
+        summary[f"e139_{arm}_net_median_pct_worst"] = a["net_median_pct_worst"]
         summary[f"e139_{arm}_acceptance_null"] = a["acceptance_null"]
         summary[f"e139_{arm}_delta_rounds"] = max(
             abs(d) for d in a["delta_rounds"])
@@ -168,7 +192,7 @@ def channel_summary(payload: dict) -> tuple[dict, dict]:
     rival = payload["rival_reconstruction"]
     if rival.get("available"):
         summary.update({
-            "e139_rival_ranked_pct": rival["rival_ranked_pct"],
+            "e139_rival_median_pct": rival["rival_median_pct"],
             "e139_predicted_net_pct_at_p015": rival["predicted_net_pct"],
             "e139_measured_over_model": rival["measured_over_model"],
             "e139_agrees_within_rival_2sigma":
@@ -182,44 +206,103 @@ def channel_summary(payload: dict) -> tuple[dict, dict]:
     return summary, tables
 
 
-def ladder_summary(payload: dict) -> tuple[dict, dict]:
-    ladders = payload.get("ladders", {})
-    rows = [r for family in ladders.values() for r in family]
-    argmax = payload.get("argmax", {})
-    shipped = argmax.get("exact") or argmax.get("shipped") or {}
+def ladder_rows(payload: dict) -> list[dict]:
+    cells = sorted(payload["cells"], key=lambda c: -c["probe_fraction"])
+    g0 = max(cells, key=lambda c: c["probe_fraction"])["pct_head_share_7"]
+    rows = []
+    for c in cells:
+        gross = c["pct_head_share_7"] - g0
+        # Clamp the realised loss at zero. It is quantised at roughly 2e-4 and
+        # changes sign between neighbouring rungs, so a negative value is one
+        # substitution event of noise, not a measured improvement.
+        loss = max(0.0, c["acceptance_loss_worst_gating"])
+        net_gating = gross - MISS_TO_SCORE_PCT * loss
+        rows.append({
+            "arm": c["arm"],
+            "p": c["probe_fraction"],
+            "bytes_per_row": c["bytes_per_row"],
+            "n": c["n"],
+            "n_gating": c["n_gating"],
+            "gross_pct_local": gross,
+            "gross_pct_median": gross * LOCAL_GROSS_TO_MEDIAN_GAIN,
+            "probe_hit_wg": c["probe_hit_rate_worst_gating"],
+            "survivor_hit_wg": c["survivor_hit_rate_worst_gating"],
+            "recall_wg_defective": c["recall_worst_gating"],
+            "m_absolute_wg": c["m_absolute_worst_gating"],
+            "net_miss_wg": c["net_miss_worst_gating"],
+            "acc_loss_wg": c["acceptance_loss_worst_gating"],
+            "acc_loss_pooled_wg": c["acceptance_loss_pooled_worst_gating"],
+            "substitutions_live_gating": c["substitutions_live_gating"],
+            "net_pct_gating": net_gating,
+            "net_pct_gating_median": net_gating * LOCAL_GROSS_TO_MEDIAN_GAIN,
+            "net_pct_absolute": c["predicted_pct_absolute"] - g0,
+            "net_pct_pooled": c["predicted_pct_pooled"] - g0,
+            "net_pct_raw_miss": c["predicted_pct_raw_miss"] - g0,
+            "passes_t0": c["passes_t0"],
+            "passes_t0b": c["passes_t0b"],
+            "passes_t0b_leaf": c["passes_t0b_leaf"],
+        })
+    return rows
 
-    broke = [r for r in rows if r.get("recall_wg", 1.0) < 1.0]
-    knee = min((r["p"] for r in broke), default=None)
+
+def ladder_summary(payload: dict) -> tuple[dict, dict]:
+    rows = ladder_rows(payload)
+    clearing = [r for r in rows if r["passes_t0"] and r["passes_t0b_leaf"]]
+    best = max(clearing, key=lambda r: r["net_pct_gating_median"],
+               default=None)
+    best_any = max(rows, key=lambda r: r["net_pct_gating_median"])
+    floor = min((r["p"] for r in clearing), default=None)
+    at015 = next((r for r in rows if abs(r["p"] - 0.15) < 1e-12), None)
+
+    def transfer(field: str):
+        if not at015 or not at015[field]:
+            return None
+        return RIVAL_MEDIAN_PCT_AT_P015 / at015[field]
+
     summary = {
-        "e139_ladder_argmax_p": shipped.get("p"),
-        "e139_ladder_argmax_d_net_pct": shipped.get("d_net_pct"),
-        # The lowest sampled p at which worst-domain recall is still exactly
-        # 1.0. If this equals the bottom of the grid, the argmax is again set
-        # by where the sampling stopped.
-        "e139_ladder_lowest_p_with_full_recall":
-            min((r["p"] for r in rows if r.get("recall_wg") == 1.0),
-                default=None),
-        "e139_ladder_recall_knee_p": knee,
-        "e139_ladder_recall_broke": bool(broke),
-        "e139_ladder_min_p_sampled": min((r["p"] for r in rows), default=None),
-        "e139_ladder_n_gating": rows[0]["n_gating"] if rows else None,
+        "e139_ladder_argmax_p": best["p"] if best else None,
+        "e139_ladder_argmax_median_pct":
+            best["net_pct_gating_median"] if best else None,
+        "e139_ladder_argmax_p_ignoring_gates": best_any["p"],
+        "e139_ladder_argmax_median_pct_ignoring_gates":
+            best_any["net_pct_gating_median"],
+        "e139_ladder_lowest_p_clearing_gates": floor,
+        # The shipped T0b reads `recall`, which cannot fall on this ladder, so
+        # it is a gate that cannot fail. The leaf reading of the same 0.997
+        # threshold agrees with T0 at every rung here.
+        "e139_ladder_t0b_shipped_is_vacuous":
+            all(r["passes_t0b"] for r in rows),
+        "e139_ladder_t0_and_t0b_leaf_agree":
+            all(r["passes_t0"] == r["passes_t0b_leaf"] for r in rows),
+        "e139_ladder_min_probe_hit_wg": min(r["probe_hit_wg"] for r in rows),
+        "e139_ladder_min_recall_wg_defective":
+            min(r["recall_wg_defective"] for r in rows),
+        "e139_ladder_min_p_sampled": min(r["p"] for r in rows),
+        "e139_ladder_n_gating": rows[0]["n_gating"],
+        "e139_miss_to_score_pct": MISS_TO_SCORE_PCT,
+        "e139_t0_net_miss": T0_NET_MISS,
+        "e139_t0b_recall": T0B_RECALL,
         "e139_byte_model_pct_at_p015": BYTE_MODEL_PCT_AT_P015,
-        "e139_rival_ranked_pct_at_p015": RIVAL_RANKED_PCT_AT_P015,
+        "e139_rival_median_pct_at_p015": RIVAL_MEDIAN_PCT_AT_P015,
+        "e139_rival_median_2sigma_at_p015": RIVAL_MEDIAN_2SIGMA_AT_P015,
         "e139_byte_model_measured_over_model":
-            RIVAL_RANKED_PCT_AT_P015 / BYTE_MODEL_PCT_AT_P015,
+            RIVAL_MEDIAN_PCT_AT_P015 / BYTE_MODEL_PCT_AT_P015,
+        # Which of the screen's four estimators the ranked receipt selects. A
+        # candidate-leg byte saving cannot be amplified by the ranked harness,
+        # so an implied transfer above 1.0 falsifies that estimator.
+        "e139_transfer_implied_by_gating_estimator":
+            transfer("net_pct_gating"),
+        "e139_transfer_implied_by_pooled_estimator":
+            transfer("net_pct_pooled"),
+        "e139_transfer_implied_by_absolute_estimator":
+            transfer("net_pct_absolute"),
         "harness": "ranked",
         "timing_valid": False,
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
     }
-    tables = {
-        "ladder": table(LADDER_COLUMNS, rows),
-        "cost_model": table(COST_COLUMNS,
-                            [r for m in payload.get("cost_models", {}).values()
-                             for r in m]),
-    }
-    return summary, tables
+    return summary, {"ladder": table(LADDER_COLUMNS, rows)}
 
 
 def main() -> int:
