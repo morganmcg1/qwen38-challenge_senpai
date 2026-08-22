@@ -1165,7 +1165,12 @@ def run_arm(screen: Screen, sketch: Sketch, f, state: dict, probe_fractions,
         mx.eval(rank)
         rank_np = np.asarray(rank)
 
-        top = mx.argpartition(-sk, kth=max_width - 1, axis=1)[:, :max_width]
+        # A probe fraction low enough to gather fewer rows than the requested
+        # survivor width is legal and interesting: at p = 0.01 the chain sees
+        # 984 rows, so keeping 4096 of them means keeping all of them.
+        # `argpartition` rejects that outright, so clamp instead of crashing.
+        keep_width = min(max_width, sk.shape[1])
+        top = mx.argpartition(-sk, kth=keep_width - 1, axis=1)[:, :keep_width]
         top = mx.take_along_axis(
             top, mx.argsort(-mx.take_along_axis(sk, top, axis=1), axis=1), axis=1)
         exact_top1 = mx.take_along_axis(

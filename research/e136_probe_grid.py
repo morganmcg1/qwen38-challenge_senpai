@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import pathlib
 
 # Restated from research/e133_screen.py rather than imported, because that
 # module pulls in MLX and the checkpoint loader at import time and this script
@@ -209,6 +210,13 @@ PREDICTION = {
 
 
 def null_floors(path=NULL_FLOOR):
+    # The floors are a measurement artifact, not tooling, so a checkout that
+    # carries this script need not carry them. Missing floors must disable the
+    # significance verdicts rather than kill the cost model, and never read as
+    # "passed".
+    if not pathlib.Path(path).exists():
+        print(f"note: {path} absent; significance verdicts are withheld")
+        return {}
     payload = json.loads(open(path, encoding="utf-8").read())
     out = {}
     for arm, block in payload["statistics"].items():
@@ -344,7 +352,9 @@ def main() -> int:
         report["ladders"] = {f: [by_p[p] for p in sorted(by_p)]
                              for f, by_p in ladders.items()}
         report["argmax"] = {}
-        floor = report["null_floors"]["perfect_readout:corpus"]
+        floor = report["null_floors"].get(
+            "perfect_readout:corpus",
+            {"two_sigma_clustered_pct": float("nan")})
         for family, rows in report["ladders"].items():
             best = max(rows, key=lambda r: r["d_net_pct"])
             report["argmax"][family] = {
