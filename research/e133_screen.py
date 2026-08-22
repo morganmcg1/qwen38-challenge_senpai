@@ -1543,6 +1543,7 @@ class Tally:
     def __init__(self) -> None:
         self.n: dict[str, int] = {}
         self.c: dict[str, dict[str, int]] = {}
+        self.seed_of: dict[str, str] = {}
         self.score_dtype = "unknown"
 
     def count(self, stratum: str, name: str, value) -> None:
@@ -1857,6 +1858,12 @@ def attrib_report(tally: Tally, samples: int, base_sha: str) -> dict:
                  - tally.get(s, "sk_net_miss_live_shipped_is_target")) / n,
             # The measured ranked value of a PERFECT readout on this stratum.
             "base_miss_live": live_missed,
+            # The two discordant components behind `recover`. They are what an
+            # error bar on the null needs: the statistic is a paired sign test.
+            "base_miss_live_true_is_target":
+                tally.get(s, "base_miss_live_true_is_target"),
+            "base_miss_live_shipped_is_target":
+                tally.get(s, "base_miss_live_shipped_is_target"),
             "live_rate": tally.rate(s, "live"),
             "perfect_readout_acceptance_gain": recover,
             "perfect_readout_pct_realised": MISS_TO_SCORE_PCT * recover,
@@ -1956,9 +1963,15 @@ def cmd_attrib(args) -> None:
     tally = Tally()
     n = 0
     t0 = time.time()
+    per_seed = getattr(args, "per_seed", False)
     for seed, stratum, x, _proposal, reference, _accepted, live in chunks(
             args.batch, args.limit):
-        records = [stratum] + ([seed] if seed in WATCH_STRATA else [])
+        records = [stratum] + [
+            s for s in ([seed] if per_seed or seed in WATCH_STRATA else [])
+            if s != stratum]
+        seed_of = tally.seed_of if per_seed else None
+        if seed_of is not None:
+            seed_of[seed] = stratum
         f = screen.front(x)
         sketch = sketch_set.pick(stratum) if sketch_set else None
         attrib_batch(screen, sketch, f, x, reference, live, tally, records)
@@ -1969,6 +1982,9 @@ def cmd_attrib(args) -> None:
 
     out = attrib_report(tally, n, args.base_sha)
     out["wall_seconds"] = time.time() - t0
+    if per_seed:
+        out["raw_counters"] = {"n": tally.n, "c": tally.c,
+                               "seed_of": tally.seed_of}
     out["sketch_cell"] = (f"{ATTRIB_SKETCH[0]}{ATTRIB_SKETCH[1]}"
                           f"-N{ATTRIB_SURVIVORS}-p{ATTRIB_PROBE:g}"
                           if sketch_set else None)
@@ -2614,6 +2630,9 @@ def main() -> None:
     a.add_argument("--no-sketch", dest="sketch", action="store_false",
                    help="skip the F5.2 curve for the selected C1 cell")
     a.add_argument("--base-sha", default="197e0550ab46842b639a4ff4fe3f4889ca3b01ec")
+    a.add_argument("--per-seed", action="store_true",
+                   help="also tally every counter per seed and dump the raw "
+                        "counters, so E136 can cluster the null's error bar")
     a.add_argument("--out", default="research/e133-attrib.json")
     a.set_defaults(func=cmd_attrib, sketch=True)
 
