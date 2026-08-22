@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publish an E136 rung to W&B.
 
-    usage: research/e136_wandb_log.py --rung 0|0b [--dry]
+    usage: research/e136_wandb_log.py --rung 0|0b|1 [--dry]
 
 Rung 0 times Metal kernels but it is NOT a decode leg, a gated measurement or
 a score. It times the survivor-selection dispatches standing alone, off the
@@ -74,6 +74,22 @@ RUNGS = {
             "python3 research/e136_null_floor.py "
             "--attrib research/e136-attrib-fp32.json "
             "--out research/e136-fp32-floor.json",
+    },
+    "1": {
+        "run_name": "e136-rung1-c1-sketch-readout-risk-gate",
+        "file": "research/e136-c1-gate/verify.json",
+        "companion": "research/e136-basis-probe.json",
+        "job_type": "exactness-gate",
+        "question":
+            "does every dispatch of the C1 sketch shortlist compute what it "
+            "claims, and what did the editable byte budget cost the arm when "
+            "it forced a checkpoint-derived basis in place of the "
+            "query-fitted one",
+        "command":
+            "research/await-lock-then-run.sh 3600 research/e133_job.sh env "
+            "MLXFAST_RUN_MLX_RUNTIME_TESTS=1 "
+            "MLXFAST_C1_OUT_DIR=research/e136-c1-gate "
+            "swift test --force-resolved-versions --filter E136C1SketchTests",
     },
 }
 
@@ -218,6 +234,104 @@ def rung0b_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
     }
 
 
+# Rung 1 ships no timing. It publishes the risk gate the arm needs before it
+# is allowed to spend a matched decode pair, plus the basis-substitution
+# numbers that changed the arm's expected value.
+BASIS_COLUMNS = [
+    "basis", "fitted_on", "cross_fit", "recall_wg", "acc_loss_wg",
+    "predicted_pct_gating", "predicted_pct_absolute", "ships",
+]
+
+# The E133 screen cells, both at 264 B/row and gross pct_head_share_7 0.8109.
+BASIS_ROWS = [
+    {
+        "basis": "qlowrank256", "fitted_on": "e133 query corpus",
+        "cross_fit": True, "recall_wg": 0.999564, "acc_loss_wg": 2.1777e-4,
+        "predicted_pct_gating": 0.767, "predicted_pct_absolute": 0.678,
+        "ships": False,
+    },
+    {
+        "basis": "lowrank256", "fitted_on": "transformed checkpoint rows",
+        "cross_fit": False, "recall_wg": 0.995275, "acc_loss_wg": 7.8756e-4,
+        "predicted_pct_gating": 0.651, "predicted_pct_absolute": -0.028,
+        "ships": True,
+    },
+]
+
+RUNG1_SELECTION_COST_PCT = 0.105
+
+
+def rung1_summary(payload: dict, spec: dict) -> tuple[dict, dict]:
+    probe = json.loads(pathlib.Path(spec["companion"]).read_text())
+    ships = next(r for r in BASIS_ROWS if r["ships"])
+    blocked = next(r for r in BASIS_ROWS if not r["ships"])
+
+    summary = {
+        # Arithmetic. fp32 reassociation only.
+        "e136_rung1_project_rel_error": payload["project_rel_error"],
+        "e136_rung1_centroid_sketch_rel_error":
+            payload["centroid_sketch_rel_error"],
+        "e136_rung1_row_sketch_rel_error": payload["row_sketch_rel_error"],
+        # The gate has to be able to fail.
+        "e136_rung1_positive_control_rel_error":
+            payload["positive_control_rel_error"],
+        "e136_rung1_positive_control_fires":
+            payload["positive_control_rel_error"] > 1e-2,
+        # Exactness of the parts that are exact by construction.
+        "e136_rung1_rescore_contiguous_mismatches":
+            payload["rescore_contiguous_mismatches"],
+        "e136_rung1_rescore_gathered_mismatches":
+            payload["rescore_gathered_mismatches"],
+        "e136_rung1_tau_is_exact": payload["tau_is_exact"],
+        "e136_rung1_above_is_exact": payload["above_is_exact"],
+        "e136_rung1_cursor_is_exact": payload["cursor_is_exact"],
+        "e136_rung1_survivors_distinct": payload["survivors_distinct"],
+        "e136_rung1_survivor_capacity": payload["survivor_capacity"],
+        "e136_rung1_survivors_below_tau": payload["survivors_below_tau"],
+        "e136_rung1_sketch_top32_recall": payload["sketch_top32_recall"],
+        "e136_rung1_shortlist_mismatches": payload["shortlist_mismatches"],
+        "e136_rung1_gate_all_pass": (
+            payload["project_rel_error"] < 1e-5
+            and payload["centroid_sketch_rel_error"] < 1e-5
+            and payload["row_sketch_rel_error"] < 1e-5
+            and payload["positive_control_rel_error"] > 1e-2
+            and payload["rescore_contiguous_mismatches"] == 0
+            and payload["rescore_gathered_mismatches"] == 0
+            and payload["tau_is_exact"] and payload["above_is_exact"]
+            and payload["cursor_is_exact"]
+            and payload["survivors_distinct"] == payload["survivor_capacity"]
+            and payload["survivors_below_tau"] == 0
+            and payload["sketch_top32_recall"] == 1.0
+            and payload["shortlist_mismatches"] == 0),
+        # The forced basis substitution and what it cost in expected value.
+        "e136_rung1_basis_shipped": ships["basis"],
+        "e136_rung1_basis_blocked": blocked["basis"],
+        "e136_rung1_basis_blocked_bytes": 5120 * 256 * 2,
+        "e136_rung1_growth_headroom_bytes_at_decision": 103166,
+        "e136_rung1_predicted_pct_gating": ships["predicted_pct_gating"],
+        "e136_rung1_predicted_pct_gating_forgone":
+            blocked["predicted_pct_gating"] - ships["predicted_pct_gating"],
+        "e136_rung1_predicted_pct_absolute": ships["predicted_pct_absolute"],
+        "e136_rung1_selection_cost_pct": RUNG1_SELECTION_COST_PCT,
+        # Both pricings, because they disagree in sign.
+        "e136_rung1_net_pct_rule107":
+            ships["predicted_pct_gating"] - RUNG1_SELECTION_COST_PCT,
+        "e136_rung1_net_pct_miss_rate_proxy":
+            ships["predicted_pct_absolute"] - RUNG1_SELECTION_COST_PCT,
+        # Why the shipped basis is weaker: it is aligned with row variance,
+        # not with where the queries live.
+        "e136_rung1_row_energy_at_rank256":
+            probe["exact_row_energy"],
+        "e136_rung1_resident_bytes": 31_847_712,
+        "e136_rung1_residency_side": "active_at_sizing",
+        "e136_rung1_slack_consumed_bytes": 0,
+    }
+    for stratum, row in probe.get("query_energy", {}).items():
+        for key, value in row.items():
+            summary["query_energy/%s/%s" % (stratum, key)] = value
+    return summary, {"rung1_basis_choice": table(BASIS_COLUMNS, BASIS_ROWS)}
+
+
 def table(columns: list[str], rows: list[dict]) -> wandb.Table:
     t = wandb.Table(columns=columns)
     for row in rows:
@@ -225,7 +339,8 @@ def table(columns: list[str], rows: list[dict]) -> wandb.Table:
     return t
 
 
-BUILDERS = {"0": rung0_summary, "0b": rung0b_summary}
+BUILDERS = {"0": rung0_summary, "0b": rung0b_summary,
+            "1": rung1_summary}
 
 
 def main() -> int:
