@@ -656,6 +656,84 @@ def question_5() -> dict:
             "e68_width6_excess_us": excess6}
 
 
+# ------------------------------------------------------------- question 6
+# `e123_arms.SIMDGROUP_BUDGET`, the ranked arch is `applegpu_g17s`.
+RANKED_SIMDGROUP_BUDGET = 3968
+
+
+def question_6(regs, q1b, q1c, q2, points, curve) -> dict:
+    """Reprice the one-pass arm with the MEASURED occupancy loss."""
+    bar("Q6  the occupancy cost the E128 repricing never carried")
+
+    import e128_reprice_onepass as rp
+
+    levels = sorted({v["sums"] for v in regs.values() if v.get("sums")})
+    if len(levels) != 2:
+        print("  need exactly two register levels, got %s" % levels)
+        return {}
+    lo, hi = levels
+    sg_lo = RANKED_SIMDGROUP_BUDGET // lo
+    sg_hi = RANKED_SIMDGROUP_BUDGET // hi
+    measured = 1.0 - sg_hi / sg_lo
+
+    print("  the scored QMV entry point is ONE kernel with a runtime")
+    print("  `switch (qmv_m)` at Qwen35.swift:1588, and every case is inlined,")
+    print("  so its register allocation is the max over all instantiated IPG.")
+    print("  Raising IPG at width 8 raises the footprint at width 2 as well.\n")
+    print("  registers, ranked arch applegpu_g17s, budget %d"
+          % RANKED_SIMDGROUP_BUDGET)
+    print("    max IPG <= 5 (our table, the modal table) : %3d -> %2d simdgroups"
+          % (lo, sg_lo))
+    print("    max IPG >= 6 (any one-pass table)         : %3d -> %2d simdgroups"
+          % (hi, sg_hi))
+    print("    measured residency loss                    : %.4f" % measured)
+    print("    E128 assumed ONEPASS_RESIDENCY_LOSS        : %.4f"
+          % ap.ONEPASS_RESIDENCY_LOSS)
+
+    cands = [("board, hinge in the model",
+              q1b["fits"]["with hinge %.3f" % BOARD_BREAK]["f"])]
+    tau = q1c["fits"].get("M + treat + treat*1[M>=5.5]", {}).get("tau_hi")
+    if tau:
+        cands.append(("one-pass rows, matched contrast", -tau[0]))
+    if q2 and "M + passes + regs*M" in q2:
+        cands.append(("board, regs controlled", q2["M + passes + regs*M"]["f"][0]))
+    cands.append(("our own curve, the M=6 jump", OUR_R["jump"]))
+
+    saved = rp.ONEPASS_RESIDENCY_LOSS
+    out = []
+    try:
+        for tag, widths in ap.ONEPASS_TABLES.items():
+            print("\n  %s   loss applied at EVERY width, as the one kernel"
+                  " requires" % tag)
+            print("  %-34s %10s %11s %11s %11s"
+                  % ("estimator", "f us", "assumed c=1", "measured c=1",
+                     "measured c=0"))
+            for label, f in cands:
+                row = {"table": tag, "estimator": label, "f": float(f)}
+                for key, loss, c in (("assumed_c1", saved, 1.0),
+                                     ("measured_c1", measured, 1.0),
+                                     ("measured_c0", measured, 0.0)):
+                    rp.ONEPASS_RESIDENCY_LOSS = loss
+                    mult = rp.onepass_fixed(widths, curve, float(f), c, True)
+                    row[key] = ap.price_arm(points, curve,
+                                            mult)["median_delta_pct"]
+                out.append(row)
+                print("  %-34s %10.1f %+11.4f %+11.4f %+11.4f"
+                      % (label, f, row["assumed_c1"], row["measured_c1"],
+                         row["measured_c0"]))
+    finally:
+        rp.ONEPASS_RESIDENCY_LOSS = saved
+
+    print("\n  The board already answers this in reduced form: rows that carry"
+          "\n  a one-pass table pay the %d-register footprint AND still score"
+          "\n  higher than the modal two-pass table." % hi)
+    return {"registers_low": lo, "registers_high": hi,
+            "simdgroups_low": sg_lo, "simdgroups_high": sg_hi,
+            "measured_residency_loss": measured,
+            "assumed_residency_loss": ap.ONEPASS_RESIDENCY_LOSS,
+            "prices": out}
+
+
 def main() -> int:
     here = pathlib.Path(__file__).resolve().parent
     ap_ = argparse.ArgumentParser()
@@ -674,17 +752,24 @@ def main() -> int:
     q1a = question_1a()
     q1b = question_1b(rows, tables)
     q1c = natural_experiment(rows)
-    regs = register_census(set(r["tkey"] for r in rows)) if args.registers \
-        else {}
+    cache = here / "e134-artifacts/register-census.json"
+    if args.registers:
+        regs = register_census(set(r["tkey"] for r in rows))
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(regs, indent=2) + "\n")
+    else:
+        regs = json.loads(cache.read_text()) if cache.is_file() else {}
     q2 = question_2(rows, regs) if regs else {}
     q3 = question_3()
     points, curve = pricing_points(here, args.board, args.receipt)
     q4 = question_4(q1b, q1c, q2, points, curve)
     q5 = question_5()
+    q6 = question_6(regs, q1b, q1c, q2, points, curve) if regs else {}
 
     art = {"harness": "ranked", "gpu_used": False, "rows": len(sids),
            "observations": len(rows), "q1a": q1a, "q1b": q1b, "q1c": q1c,
-           "registers": regs, "q2": q2, "q3": q3, "q4": q4, "q5": q5}
+           "registers": regs, "q2": q2, "q3": q3, "q4": q4, "q5": q5,
+           "q6": q6}
     path = pathlib.Path(args.json)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(art, indent=2, default=str) + "\n")
