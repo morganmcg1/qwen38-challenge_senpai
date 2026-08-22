@@ -819,11 +819,12 @@ struct E120CustomQMVProbeTests {
     }
 
     /// `a_compare` and `b_shipped`. `MLXFAST_E129_TIERED` names the arms whose
-    /// entry point is templated per `ipg`; the default templates the shipped
-    /// plan and leaves the compare arm on the shared switch, so with no case
-    /// override the two arms differ in the register maximum alone.
+    /// entry point is templated per `ipg`. The default tiers the compare arm
+    /// and leaves the shipped arm on the shared switch, so with no case
+    /// override the two arms run identical bodies and differ in the entry
+    /// point's register maximum alone.
     fileprivate static var armPair: (compare: Arm, shipped: Arm) {
-        let tiered = ProcessInfo.processInfo.environment["MLXFAST_E129_TIERED"] ?? "shipped"
+        let tiered = ProcessInfo.processInfo.environment["MLXFAST_E129_TIERED"] ?? "compare"
         return (
             Arm(compareCases, tiered: tiered.contains("compare"), label: "compare"),
             Arm(shippedCases, tiered: tiered.contains("shipped"), label: "shipped")

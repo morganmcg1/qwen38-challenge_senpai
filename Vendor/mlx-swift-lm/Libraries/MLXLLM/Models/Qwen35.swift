@@ -1800,15 +1800,34 @@ public enum Qwen35CustomQMV {
 
     public nonisolated(unsafe) static var pipelineKeys: [String: Int] = [:]
     public nonisolated(unsafe) static var pipelineWidths: [Int: Int] = [:]
+    /// Dispatch ordinal at which each key and each width was first seen.
+    ///
+    /// This is the warmup gate for a multi-pipeline entry point. A pipeline
+    /// first compiled inside a timed leg reads as a large regression, so the
+    /// gate has to show that every pipeline was already resident. It does,
+    /// because `warmAllDepthShapes` runs exactly one throwaway forward at each
+    /// legal width in ascending order before any scored token: the first
+    /// dispatch index per width is then an ARITHMETIC PROGRESSION whose step
+    /// is the QMV dispatch count of one forward. Any width — and therefore any
+    /// tier pipeline — first reached inside the timed window breaks that
+    /// progression by orders of magnitude.
+    public nonisolated(unsafe) static var pipelineKeyFirstIndex: [String: Int] = [:]
+    public nonisolated(unsafe) static var pipelineWidthFirstIndex: [Int: Int] = [:]
+    public nonisolated(unsafe) static var pipelineDispatches = 0
 
     /// `width` is nil for the chunk-sum fill, which is not a QMV dispatch.
     static func notePipeline(_ key: String, width: Int?) {
         guard pipelineLogPath != nil else { return }
         var isNew = pipelineKeys[key] == nil
+        if isNew { pipelineKeyFirstIndex[key] = pipelineDispatches }
         pipelineKeys[key, default: 0] += 1
         if let width {
-            isNew = isNew || pipelineWidths[width] == nil
+            if pipelineWidths[width] == nil {
+                pipelineWidthFirstIndex[width] = pipelineDispatches
+                isNew = true
+            }
             pipelineWidths[width, default: 0] += 1
+            pipelineDispatches += 1
         }
         if isNew { flushPipelineLog() }
     }
@@ -1822,6 +1841,12 @@ public enum Qwen35CustomQMV {
             .map { "    \"\($0)\": \(pipelineWidths[$0]!)" }
             .joined(separator: ",\n")
         let total = pipelineKeys.values.reduce(0, +)
+        let keyFirst = pipelineKeyFirstIndex.keys.sorted()
+            .map { "    \"\($0)\": \(pipelineKeyFirstIndex[$0]!)" }
+            .joined(separator: ",\n")
+        let widthFirst = pipelineWidthFirstIndex.keys.sorted()
+            .map { "    \"\($0)\": \(pipelineWidthFirstIndex[$0]!)" }
+            .joined(separator: ",\n")
         let json = """
             {
               "arm": "\(arm.rawValue)",
@@ -1833,6 +1858,12 @@ public enum Qwen35CustomQMV {
               },
               "by_width": {
             \(widths)
+              },
+              "first_index_by_key": {
+            \(keyFirst)
+              },
+              "first_index_by_width": {
+            \(widthFirst)
               }
             }
 
