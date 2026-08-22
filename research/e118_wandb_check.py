@@ -31,7 +31,8 @@ import types
 
 PROJECT = "wandb-applied-ai-team/qwen38-mlx-challenge-senpai"
 
-LOGGERS = {"e118": "e118_wandb_log", "e123": "e123_wandb_log"}
+LOGGERS = {"e118": "e118_wandb_log", "e123": "e123_wandb_log",
+           "e125": "e125_wandb_log"}
 
 # The keys a reader arrives looking for, per run. Only the load-bearing ones:
 # this is a smoke test, not a mirror of the logger.

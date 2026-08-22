@@ -138,7 +138,7 @@ def ratio(doc: dict, klass: str, frame: str) -> float | None:
     return None if cell is None else cell["median"]
 
 
-def log_frame_axis(dry: bool) -> None:
+def log_frame_axis(dry: bool = False) -> None:
     doc = law()
     cfg = {
         "question": (
@@ -260,7 +260,7 @@ def log_frame_axis(dry: bool) -> None:
     run.finish()
 
 
-def log_correction(dry: bool) -> None:
+def log_correction(dry: bool = False) -> None:
     doc = law()
     pre = prereg()
     corr = json.loads((ART / "correction.json").read_text())
