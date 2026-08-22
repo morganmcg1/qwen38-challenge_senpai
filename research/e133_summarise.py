@@ -59,13 +59,42 @@ def show_cell(cell: dict, survival: bool = False) -> None:
         print(f"    tail fit: {v['tail_fit_at_survivors']}")
 
 
+CONTROL_ONLY = ("wlowrank",)
+
+
 def clearing(cells):
     return [c for c in cells if c["passes_t0"] and c["passes_t0b"]]
 
 
-def best_abs(cells):
-    return max(clearing(cells), key=lambda c: c["predicted_pct_absolute"],
-               default=None)
+def best_abs(cells, exclude=()):
+    return max((c for c in clearing(cells) if c["family"] not in exclude),
+               key=lambda c: c["predicted_pct_absolute"], default=None)
+
+
+def candidate_ladders(out: dict, stage: str = "sketch") -> None:
+    """Byte and survivor-width ladders over the candidate set only.
+
+    Advisor error 124 retires `wlowrank` to a measured control, so a ladder
+    rung that names a whitened arm does not describe a shippable choice.
+    """
+    rows = [c for c in out["cells"] if c["stage_a"] == stage]
+    for axis, label in (("bytes_per_row", "byte"), ("survivors", "width")):
+        print(f"\n=== candidate-set {label} ladder  (stage_a={stage}, "
+              f"{'/'.join(CONTROL_ONLY)} excluded)")
+        print(f"{axis:>8s}{'clear':>7s}{'predABS':>9s}{'predF':>8s}"
+              f"{'net':>11s}{'recall':>9s}   best clearing candidate")
+        for v in sorted({c[axis] for c in rows}):
+            at = [c for c in rows if c[axis] == v]
+            b = best_abs(at, exclude=CONTROL_ONLY)
+            n = len([c for c in clearing(at)
+                     if c["family"] not in CONTROL_ONLY])
+            if b is None:
+                print(f"{v:8d}{n:7d}{'-':>9s}{'-':>8s}{'-':>11s}{'-':>9s}   None")
+                continue
+            print(f"{v:8d}{n:7d}{b['predicted_pct_absolute']:9.3f}"
+                  f"{b['predicted_pct_gating']:8.3f}"
+                  f"{b['net_miss_worst_gating']:11.3e}"
+                  f"{b['recall_worst_gating']:9.5f}   {b['arm']}")
 
 
 def width_ladder(out: dict) -> None:
@@ -176,6 +205,7 @@ def main() -> None:
               f"abs={c['m_absolute_worst_gating']:.6e}")
 
     width_ladder(out)
+    candidate_ladders(out)
     family_table(out)
     basis_free(out)
 
