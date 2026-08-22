@@ -1,0 +1,1952 @@
+{
+  "arms": {
+    "a_base": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 291
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 293
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 293
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 4,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 293
+      }
+    },
+    "q_scaffold": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 292
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 294
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 294
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 294
+      }
+    },
+    "n_nosums": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 6,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 282
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 6,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 284
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 6,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 284
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 6,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 284
+      }
+    },
+    "k_alu8": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 12,
+        "air_lines": 348
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 12,
+        "air_lines": 350
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 12,
+        "air_lines": 350
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 12,
+        "air_lines": 350
+      }
+    },
+    "k_alu16": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 20,
+        "air_lines": 356
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 20,
+        "air_lines": 358
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 20,
+        "air_lines": 358
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 20,
+        "air_lines": 358
+      }
+    },
+    "k_ld8": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 15,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 15,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 404
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 15,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 15,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 406
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 15,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 15,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 406
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 15,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 15,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 406
+      }
+    },
+    "k_ld16": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 23,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 23,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 453
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 23,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 23,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 455
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 23,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 23,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 455
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 23,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 23,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 455
+      }
+    },
+    "k_shuf8": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 8,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 368
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 8,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 370
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 8,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 370
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 8,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 370
+      }
+    },
+    "k_shuf16": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 16,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 384
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 16,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 386
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 16,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 386
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 16,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 386
+      }
+    },
+    "k_tg0": {
+      "2": {
+        "tg_loads": 2,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 342
+      },
+      "3": {
+        "tg_loads": 2,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 344
+      },
+      "4": {
+        "tg_loads": 2,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 344
+      },
+      "5": {
+        "tg_loads": 2,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 344
+      }
+    },
+    "k_tgld8": {
+      "2": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 414
+      },
+      "3": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 416
+      },
+      "4": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 416
+      },
+      "5": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 416
+      }
+    },
+    "k_tgld16": {
+      "2": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 462
+      },
+      "3": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 464
+      },
+      "4": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 464
+      },
+      "5": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 464
+      }
+    },
+    "k_tgldc8": {
+      "2": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 412
+      },
+      "3": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 414
+      },
+      "4": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 414
+      },
+      "5": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 414
+      }
+    },
+    "k_tgldc16": {
+      "2": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 460
+      },
+      "3": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 462
+      },
+      "4": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 462
+      },
+      "5": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 462
+      }
+    },
+    "k_tgst8": {
+      "2": {
+        "tg_loads": 2,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 396
+      },
+      "3": {
+        "tg_loads": 2,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 398
+      },
+      "4": {
+        "tg_loads": 2,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 398
+      },
+      "5": {
+        "tg_loads": 2,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 398
+      }
+    },
+    "k_tgst16": {
+      "2": {
+        "tg_loads": 2,
+        "tg_stores": 18,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 436
+      },
+      "3": {
+        "tg_loads": 2,
+        "tg_stores": 18,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 438
+      },
+      "4": {
+        "tg_loads": 2,
+        "tg_stores": 18,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 438
+      },
+      "5": {
+        "tg_loads": 2,
+        "tg_stores": 18,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 438
+      }
+    },
+    "k_cvt8": {
+      "2": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 16,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 423
+      },
+      "3": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 16,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 425
+      },
+      "4": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 16,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 425
+      },
+      "5": {
+        "tg_loads": 10,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 16,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 425
+      }
+    },
+    "k_cvt16": {
+      "2": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 24,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 479
+      },
+      "3": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 24,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 481
+      },
+      "4": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 24,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 481
+      },
+      "5": {
+        "tg_loads": 18,
+        "tg_stores": 2,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 24,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 481
+      }
+    },
+    "k_bar1": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 1,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 293
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 1,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 295
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 1,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 295
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 1,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 295
+      }
+    },
+    "k_bar2": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 294
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 2,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      }
+    },
+    "k_bar4": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 298
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 298
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 298
+      }
+    },
+    "k_bar8": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 8,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 300
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 8,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 302
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 8,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 302
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 8,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 302
+      }
+    },
+    "k_sbar2": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 2,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 294
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 2,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 2,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 2,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      }
+    },
+    "k_sbar4": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 4,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 296
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 4,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 298
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 4,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 298
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 4,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 298
+      }
+    },
+    "k_ssum2": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 3,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 338
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 3,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 340
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 3,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 340
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 3,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 340
+      }
+    },
+    "k_ssum4": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 5,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 340
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 5,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 342
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 5,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 342
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 5,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 342
+      }
+    },
+    "k_hold_mix": {
+      "2": {
+        "tg_loads": 10,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 8,
+        "air_lines": 459
+      },
+      "3": {
+        "tg_loads": 10,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 8,
+        "air_lines": 461
+      },
+      "4": {
+        "tg_loads": 10,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 8,
+        "air_lines": 461
+      },
+      "5": {
+        "tg_loads": 10,
+        "tg_stores": 10,
+        "device_loads": 7,
+        "barriers": 4,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 8,
+        "fptrunc": 3,
+        "sitofp": 0,
+        "fma": 8,
+        "air_lines": 461
+      }
+    },
+    "k_hold_alu12": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 16,
+        "air_lines": 352
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 16,
+        "air_lines": 354
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 16,
+        "air_lines": 354
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 7,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 16,
+        "air_lines": 354
+      }
+    },
+    "k_hold_sl": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 11,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 389
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 11,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 391
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 11,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 391
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 11,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 4,
+        "simd_sums": 1,
+        "fpext": 11,
+        "fptrunc": 2,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 391
+      }
+    },
+    "x_cvtshift": {
+      "2": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 3,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 304
+      },
+      "3": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 3,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 306
+      },
+      "4": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 3,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 306
+      },
+      "5": {
+        "tg_loads": 0,
+        "tg_stores": 0,
+        "device_loads": 7,
+        "barriers": 0,
+        "simd_barriers": 0,
+        "shuffles": 0,
+        "simd_sums": 1,
+        "fpext": 3,
+        "fptrunc": 1,
+        "sitofp": 0,
+        "fma": 4,
+        "air_lines": 306
+      }
+    }
+  },
+  "failures": [],
+  "injection": {
+    "a_base": {},
+    "q_scaffold": {},
+    "k_alu8": {
+      "alu": 8
+    },
+    "k_alu16": {
+      "alu": 16
+    },
+    "k_ld8": {
+      "ld": 8
+    },
+    "k_ld16": {
+      "ld": 16
+    },
+    "k_shuf8": {
+      "shuf": 8
+    },
+    "k_shuf16": {
+      "shuf": 16
+    },
+    "k_tg0": {
+      "tgscaffold": 1
+    },
+    "k_tgld8": {
+      "tgscaffold": 1,
+      "tgld": 8
+    },
+    "k_tgld16": {
+      "tgscaffold": 1,
+      "tgld": 16
+    },
+    "k_tgldc8": {
+      "tgscaffold": 1,
+      "tgldc": 8
+    },
+    "k_tgldc16": {
+      "tgscaffold": 1,
+      "tgldc": 16
+    },
+    "k_tgst8": {
+      "tgscaffold": 1,
+      "tgst": 8
+    },
+    "k_tgst16": {
+      "tgscaffold": 1,
+      "tgst": 16
+    },
+    "k_cvt8": {
+      "tgscaffold": 1,
+      "cvt": 8
+    },
+    "k_cvt16": {
+      "tgscaffold": 1,
+      "cvt": 16
+    },
+    "k_bar1": {
+      "bar": 1
+    },
+    "k_bar2": {
+      "bar": 2
+    },
+    "k_bar4": {
+      "bar": 4
+    },
+    "k_bar8": {
+      "bar": 8
+    },
+    "k_sbar2": {
+      "sbar": 2
+    },
+    "k_sbar4": {
+      "sbar": 4
+    },
+    "k_ssum2": {
+      "ssum": 2
+    },
+    "k_ssum4": {
+      "ssum": 4
+    },
+    "k_hold_mix": {
+      "tgscaffold": 1,
+      "tgst": 8,
+      "bar": 2,
+      "tgld": 8,
+      "alu": 4
+    },
+    "k_hold_alu12": {
+      "alu": 12
+    },
+    "k_hold_sl": {
+      "shuf": 4,
+      "ld": 4
+    },
+    "x_cvtshift": {},
+    "n_nosums": {}
+  },
+  "ladder": {
+    "alu": [
+      [
+        "k_alu8",
+        8
+      ],
+      [
+        "k_alu16",
+        16
+      ]
+    ],
+    "ld": [
+      [
+        "k_ld8",
+        8
+      ],
+      [
+        "k_ld16",
+        16
+      ]
+    ],
+    "shuf": [
+      [
+        "k_shuf8",
+        8
+      ],
+      [
+        "k_shuf16",
+        16
+      ]
+    ],
+    "tgld": [
+      [
+        "k_tgld8",
+        8
+      ],
+      [
+        "k_tgld16",
+        16
+      ]
+    ],
+    "tgldc": [
+      [
+        "k_tgldc8",
+        8
+      ],
+      [
+        "k_tgldc16",
+        16
+      ]
+    ],
+    "tgst": [
+      [
+        "k_tgst8",
+        8
+      ],
+      [
+        "k_tgst16",
+        16
+      ]
+    ],
+    "cvt": [
+      [
+        "k_cvt8",
+        8
+      ],
+      [
+        "k_cvt16",
+        16
+      ]
+    ],
+    "bar": [
+      [
+        "k_bar1",
+        1
+      ],
+      [
+        "k_bar2",
+        2
+      ],
+      [
+        "k_bar4",
+        4
+      ],
+      [
+        "k_bar8",
+        8
+      ]
+    ],
+    "sbar": [
+      [
+        "k_sbar2",
+        2
+      ],
+      [
+        "k_sbar4",
+        4
+      ]
+    ],
+    "ssum": [
+      [
+        "k_ssum2",
+        2
+      ],
+      [
+        "k_ssum4",
+        4
+      ]
+    ]
+  }
+}
