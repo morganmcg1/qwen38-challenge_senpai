@@ -1768,7 +1768,7 @@ public enum Qwen35CustomQMV {
 
     /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
     /// and M=2 reach different kernels and are left to MLX.
-    static let widths = 3 ... 9
+    public static let widths = 3 ... 9
 
     /// How the shared entry point is specialized for each routed width.
     ///
@@ -1856,15 +1856,10 @@ public enum Qwen35CustomQMV {
             + plan.map { "\($0.m):\($0.ipg):\($0.rps)" }.joined(separator: ",")
     }
 
-    /// The entry-point name and JIT source a dispatch would ask for. Exposed so
-    /// a test can assert what the built worker instantiates without giving the
-    /// generator itself a public symbol.
+    /// The entry-point name a dispatch would ask for. `generatedSource` is the
+    /// matching accessor for the JIT source.
     public static func pipelineName(useTable: Bool, tier: Int?) -> String {
         qwen35E120QMVName(table: useTable, tier: tier)
-    }
-
-    public static func pipelineSource(useTable: Bool, tier: Int?) -> String {
-        qwen35E120QMVSource(table: useTable, tier: tier)
     }
 
     static func plan(m: Int) -> (m: Int, ipg: Int, rps: Int) {
@@ -1964,6 +1959,8 @@ public enum Qwen35CustomQMV {
             {
               "arm": "\(arm.rawValue)",
               "entry": "\(entry.rawValue)",
+              "table": "\(table.rawValue)",
+              "plan": "\(planWitness)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {

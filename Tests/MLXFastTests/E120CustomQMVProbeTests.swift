@@ -199,7 +199,7 @@ struct E120CustomQMVProbeTests {
     /// Each arm now gets an equal share of the burst, and every arm then takes
     /// a discarded timed run so the reclaim that follows the burst is charged
     /// to no arm in particular.
-    static func settle(_ arms: [E120Arm], seconds: Double) {
+    fileprivate static func settle(_ arms: [E120Arm], seconds: Double) {
         let share = seconds / Double(max(arms.count, 1))
         for arm in arms { rampBurst(arm.body, seconds: share) }
         for arm in arms { _ = timed(2, arm.body) }
@@ -236,7 +236,7 @@ struct E120CustomQMVProbeTests {
         for tier in [nil] + Qwen35CustomQMV.tiers.map(Optional.init) {
             for useTable in [true, false] {
                 #expect(
-                    Qwen35CustomQMV.pipelineSource(useTable: useTable, tier: tier)
+                    Qwen35CustomQMV.generatedSource(table: useTable, tier: tier)
                         .contains(Qwen35CustomQMV.planWitness),
                     "witness missing from tier \(tier as Any) table \(useTable)")
             }
