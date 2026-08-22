@@ -224,12 +224,15 @@ struct E120CustomQMVProbeTests {
     /// is only a witness while it renders the plan it claims to describe.
     @Test("every dispatch table matches its literal witness")
     func planWitnessMatchesWidthPlan() throws {
-        #expect(
-            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.shippedPlan)
-                == Qwen35CustomQMV.shippedPlanWitness)
-        #expect(
-            Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.onePassPlan)
-                == Qwen35CustomQMV.onePassPlanWitness)
+        for table in Qwen35CustomQMV.Table.allCases {
+            #expect(
+                Qwen35CustomQMV.renderPlan(table.plan) == table.witness,
+                "\(table.rawValue) witness")
+        }
+        // Every witness must be distinct, or a receipt cannot name the table
+        // the timed binary was built from.
+        let witnesses = Qwen35CustomQMV.Table.allCases.map(\.witness)
+        #expect(Set(witnesses).count == witnesses.count)
         #expect(
             Qwen35CustomQMV.renderPlan(Qwen35CustomQMV.widthPlan)
                 == Qwen35CustomQMV.planWitness)
@@ -244,58 +247,65 @@ struct E120CustomQMVProbeTests {
     }
 
     /// A table that breaks either kernel precondition compiles into a body the
-    /// generator never validated, so check both here rather than at dispatch.
+    /// generator never validated, so check every table here rather than at
+    /// dispatch.
     @Test("every dispatch table routes each width to a legal case body")
     func widthPlansAreWellFormed() throws {
-        let plans: [(String, [(m: Int, ipg: Int, rps: Int)])] = [
-            ("shipped", Qwen35CustomQMV.shippedPlan),
-            ("onepass", Qwen35CustomQMV.onePassPlan),
-        ]
-        for (name, plan) in plans {
+        for table in Qwen35CustomQMV.Table.allCases {
+            let name = table.rawValue
+            let plan = table.plan
             #expect(plan.map(\.m) == Array(Qwen35CustomQMV.widths), "\(name) width coverage")
             for cell in plan {
                 #expect(cell.ipg >= 1 && cell.ipg <= cell.m, "\(name) M=\(cell.m) ipg range")
                 // The kernel asserts `M % IPG != 1`: a one-row tail group would
                 // read past the block.
                 #expect(cell.m % cell.ipg != 1, "\(name) M=\(cell.m) tail group")
-                #expect(cell.rps >= 1, "\(name) M=\(cell.m) rps range")
+                // Every plan keeps the shipped rows per simdgroup. Lowering it
+                // to fit a wider `ipg` is a measured loss (E129 F16/F17).
+                #expect(cell.rps == 4, "\(name) M=\(cell.m) rows per simdgroup")
+            }
+            // One pipeline serves a whole tier, so two widths in one tier that
+            // asked for different `rps` would compile only one of them.
+            for tier in Set(plan.map(\.ipg)) {
+                #expect(Set(plan.filter { $0.ipg == tier }.map(\.rps)).count == 1,
+                        "\(name) tier \(tier) mixes rps")
             }
         }
     }
 
-    /// The one-pass arm moves exactly the widths that made more than one pass,
-    /// that the board can still reach, and that carry no spill on g17s. M=8
-    /// needs `rps = 2` to be spill-free and is askeladd's question in E132.
-    /// M=9 is above the ranked verify cap.
-    @Test("the one-pass table moves exactly M=6 and M=7")
+    /// Each one-pass table moves exactly the widths its name claims, moves them
+    /// to `ipg = m`, and leaves every other width on its shipped cell.
+    @Test("each one-pass table moves exactly the widths it names")
     func onePassTableMovesOnlyTheMultiPassWidths() throws {
+        let expected: [Qwen35CustomQMV.Table: [Int]] = [
+            .onePass6: [6], .onePass67: [6, 7], .onePass678: [6, 7, 8],
+        ]
         let shipped = Dictionary(
-            uniqueKeysWithValues: Qwen35CustomQMV.shippedPlan.map { ($0.m, ($0.ipg, $0.rps)) })
-        let onePass = Dictionary(
-            uniqueKeysWithValues: Qwen35CustomQMV.onePassPlan.map { ($0.m, ($0.ipg, $0.rps)) })
-        let moved = shipped.keys.filter { shipped[$0]! != onePass[$0]! }.sorted()
-        #expect(moved == [6, 7])
-        for m in moved {
-            #expect(onePass[m]!.0 == m, "M=\(m) makes one pass")
-            // `rps = 4` costs the g17s entry point 114 registers at M=6 and
-            // spills at M=7. Halving it is what makes one pass fit.
-            #expect(onePass[m]!.1 == 2, "M=\(m) halves rows per simdgroup")
+            uniqueKeysWithValues: Qwen35CustomQMV.Table.shipped.plan.map {
+                ($0.m, ($0.ipg, $0.rps))
+            })
+        for (table, widths) in expected {
+            let plan = Dictionary(
+                uniqueKeysWithValues: table.plan.map { ($0.m, ($0.ipg, $0.rps)) })
+            let moved = shipped.keys.filter { shipped[$0]! != plan[$0]! }.sorted()
+            #expect(moved == widths, "\(table.rawValue) moved set")
+            for m in moved {
+                #expect(plan[m]!.0 == m, "\(table.rawValue) M=\(m) makes one pass")
+            }
+            // M=9 is above the ranked verify cap, so no table moves it.
+            #expect(plan[9]! == shipped[9]!, "\(table.rawValue) leaves M=9 alone")
         }
-        // M=8 and M=9 stay on their shipped cells: M=8 is askeladd's register
-        // question in E132, and M=9 is above the ranked verify cap.
-        #expect(onePass[8]! == shipped[8]!)
-        #expect(onePass[9]! == shipped[9]!)
     }
 
     /// The `x` axis launches one threadgroup per column and only
     /// `ceil(m / ipg)` of them reach any work. This asserts the arithmetic on
-    /// both tables, so the empty count that `tight` removes is a recorded
+    /// every table, so the empty count that `tight` removes is a recorded
     /// number and not a claim in a comment.
     @Test("the tight grid launches exactly the threadgroups that do work")
     func tightGridLaunchesOnlyWorkingColumns() throws {
-        for (name, plan) in [("shipped", Qwen35CustomQMV.shippedPlan),
-                             ("onepass", Qwen35CustomQMV.onePassPlan)] {
-            for entry in plan {
+        for table in Qwen35CustomQMV.Table.allCases {
+            let name = table.rawValue
+            for entry in table.plan {
                 let working = (entry.m + entry.ipg - 1) / entry.ipg
                 #expect(
                     working <= entry.m,
@@ -310,8 +320,14 @@ struct E120CustomQMVProbeTests {
 
     @Test("every tier of every table has its own entry-point name")
     func everyTierHasADistinctEntryPoint() throws {
-        #expect(Set(Qwen35CustomQMV.shippedPlan.map(\.ipg)).sorted() == [3, 4, 5])
-        #expect(Set(Qwen35CustomQMV.onePassPlan.map(\.ipg)).sorted() == [3, 4, 5, 6, 7])
+        let tiers: [Qwen35CustomQMV.Table: [Int]] = [
+            .shipped: [3, 4, 5], .onePass6: [3, 4, 5, 6],
+            .onePass67: [3, 4, 5, 6, 7], .onePass678: [3, 4, 5, 6, 7, 8],
+        ]
+        for (table, expected) in tiers {
+            #expect(Set(table.plan.map(\.ipg)).sorted() == expected,
+                    "\(table.rawValue) tiers")
+        }
 
         // MLX keys its library cache by name and recompiles when one name is
         // seen with a different source, so two tiers sharing a name would

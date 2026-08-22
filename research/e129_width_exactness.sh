@@ -3,8 +3,9 @@
 #
 #   usage: research/e129_width_exactness.sh [TAG]
 #
-# THE QUESTION. `onepass` sends M=6, M=7 and M=8 through `wide<6>`, `wide<7>`
-# and `wide<8>`, bodies the shipped table never instantiates. The change is
+# THE QUESTION. The one-pass tables send M=6, M=7 and M=8 through `wide<6>`,
+# `wide<7>` and `wide<8>` at `rps = 4`, bodies the shipped table never
+# instantiates. The change is
 # bit-exact by construction, so the only real risks are compiler-level:
 # contraction at a new vector width, and the loop-unroll miscompile E65 found
 # at NA=5. `research/e129_contraction_check.py` falsifies the first one at the
@@ -63,12 +64,14 @@ LEG_STATUS=()
 # today, so a failure here indicts the harness and not the new widths.
 run_leg base shared_switch shipped wide
 run_leg tier tiered_switch shipped wide
-run_leg onep tiered_switch onepass wide
+run_leg one6 tiered_switch onepass6 wide
+run_leg one67 tiered_switch onepass67 wide
+run_leg one678 tiered_switch onepass678 wide
 # `tight` drops the x threadgroups that return before doing any work. It must
 # leave every row bit identical, on both tables and on the shared switch.
 run_leg basetight shared_switch shipped tight
 run_leg tiertight tiered_switch shipped tight
-run_leg oneptight tiered_switch onepass tight
+run_leg one678tight tiered_switch onepass678 tight
 
 echo
 echo "leg exit status: ${LEG_STATUS[*]}"

@@ -1420,6 +1420,13 @@ private let qwen35CompiledFusedSwiGLU:
 /// `qwen35CustomAffine4XSumsKernel`. The table entry is the same float
 /// accumulation of the same BF16 expression tree, in the same `i` order, so the
 /// two paths agree bit for bit.
+///
+/// The `scales`/`biases` reads and the `xsums` table read sit as late as their
+/// first use allows (askeladd's E132 `late_meta` + `sink_sums`). That is pure
+/// code motion: no floating-point operation, operand or order changes, and the
+/// same `group_index` is read for the same `r`. It only shortens the live range
+/// of `2 * RPS` metadata values and of `NA` table values across the product
+/// loop, which is what keeps `IPG = 7` inside the g17s register frame.
 private let qwen35E120QMVHeader = """
     template <int NA, int RPS, bool USE_TABLE>
     inline void qwen_e120_qmv_wide(
@@ -1451,8 +1458,6 @@ private let qwen35E120QMVHeader = """
 
         for (int k = 0; k < in_vec_size; k += block_size) {
             thread uint16_t packed[rows_per_simd][4];
-            thread float scale_local[rows_per_simd];
-            thread float bias_local[rows_per_simd];
             for (int r = 0; r < rows_per_simd; r++) {
                 const int row = out_row + r;
                 const device uint16_t* ws =
@@ -1463,21 +1468,9 @@ private let qwen35E120QMVHeader = """
                 for (int i = 0; i < 4; i++) {
                     packed[r][i] = ws[i];
                 }
-                const int group_index =
-                    row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
-                scale_local[r] = scales[group_index];
-                bias_local[r] = biases[group_index];
             }
 
             VF sums = VF(0.0f);
-            if (USE_TABLE) {
-                const device float* st =
-                    xsums + ((k / block_size) * 32 + int(simd_lid)) *
-                    sums_stride + first_m;
-                for (int m = 0; m < NA; m++) {
-                    sums[m] = st[m];
-                }
-            }
             VF partial[rows_per_simd];
             for (int r = 0; r < rows_per_simd; r++) {
                 partial[r] = VF(0.0f);
@@ -1506,8 +1499,20 @@ private let qwen35E120QMVHeader = """
                                    a3 * ((packed[r][i] >> 12) & 0x000f));
                 }
             }
+            if (USE_TABLE) {
+                const device float* st =
+                    xsums + ((k / block_size) * 32 + int(simd_lid)) *
+                    sums_stride + first_m;
+                for (int m = 0; m < NA; m++) {
+                    sums[m] = st[m];
+                }
+            }
             for (int r = 0; r < rows_per_simd; r++) {
-                acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+                const int group_index =
+                    (out_row + r) * in_vec_size_g + k / 64 + int(simd_lid) / 4;
+                const float scale_local_r = scales[group_index];
+                const float bias_local_r = biases[group_index];
+                acc[r] += scale_local_r * partial[r] + sums * bias_local_r;
             }
         }
 
@@ -1777,16 +1782,73 @@ public enum Qwen35CustomQMV {
     /// traffic dominates every routed cell, so `ipg = m` and its single pass
     /// is the target wherever the register ceiling allows it.
     ///
-    /// `rps` is how many output rows one simdgroup accumulates. Live vector
-    /// registers scale as roughly `(2 * rps + 5) * na`, and a Metal entry point
-    /// is allocated the maximum over every case body, so `rps` is the lever
-    /// that keeps a wide single-pass body inside the budget. Lowering it costs
-    /// proportionally more activation re-reads, which stay in cache.
-    public enum Table: String, Sendable {
+    /// `rps` is how many output rows one simdgroup accumulates. Every plan
+    /// here keeps the shipped `rps = 4`. Halving it does fit a wider `ipg` in
+    /// fewer registers, but per output element the m-keyed statements cost
+    /// `1 / rps`, so `rps = 2` doubles 21.9 % of measured QMV time to save
+    /// 19.2 % of 30.5 %. That trade is adverse and the plan carrying it was
+    /// deleted rather than kept behind a flag.
+    public enum Table: String, Sendable, CaseIterable {
         /// Two verify passes at M=6, M=7 and M=8.
         case shipped
-        /// One pass at every routed width. `IPG = M` satisfies `M % IPG != 1`.
-        case onePass = "onepass"
+        /// One pass at M=6.
+        case onePass6 = "onepass6"
+        /// One pass at M=6 and M=7.
+        case onePass67 = "onepass67"
+        /// One pass at M=6, M=7 and M=8.
+        case onePass678 = "onepass678"
+
+        /// `(m, ipg, rps)` for every routable width.
+        ///
+        /// `ipg` is how many INPUT rows one threadgroup accumulates, so
+        /// `ceil(m / ipg)` is the number of reads of the whole weight matrix.
+        /// Per output element the row-keyed statements cost `1 / ipg`, which
+        /// is why raising it is the only lever that collapses a pass.
+        ///
+        /// M=9 stays on tier 3 in every plan. It is above the ranked verify
+        /// cap of 8, so one pass there would add a pipeline and buy nothing.
+        /// It cannot be dropped from the table either: the dispatch switch
+        /// routes `3 ... 9` with `default: break`, so a missing case is a
+        /// silent no-op round rather than a compile error.
+        public var plan: [(m: Int, ipg: Int, rps: Int)] {
+            switch self {
+            case .shipped:
+                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4),
+                        (8, 4, 4), (9, 3, 4)]
+            case .onePass6:
+                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 4, 4),
+                        (8, 4, 4), (9, 3, 4)]
+            case .onePass67:
+                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4),
+                        (8, 4, 4), (9, 3, 4)]
+            case .onePass678:
+                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4),
+                        (8, 8, 4), (9, 3, 4)]
+            }
+        }
+
+        /// The plan as one literal the worker's string table can carry.
+        ///
+        /// The dispatch table reaches the built worker only through
+        /// interpolation into the generated Metal source, so no `m:ipg:rps`
+        /// triple is a literal and `senpai/rebuild-and-assert-worker.sh`
+        /// cannot witness which tables the timed binary holds. These literals
+        /// are the witness. `qwen35E120QMVSource` emits the selected one as a
+        /// comment so the optimizer cannot strip it, and
+        /// `planWitnessMatchesWidthPlan` fails the build if any literal ever
+        /// drifts from its plan.
+        public var witness: String {
+            switch self {
+            case .shipped:
+                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
+            case .onePass6:
+                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4"
+            case .onePass67:
+                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
+            case .onePass678:
+                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4"
+            }
+        }
     }
 
     /// Which dispatch table the entry points are built from.
@@ -1801,60 +1863,17 @@ public enum Qwen35CustomQMV {
         return Table(rawValue: raw) ?? .shipped
     }()
 
-    public static let shippedPlan: [(m: Int, ipg: Int, rps: Int)] = [
-        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4),
-    ]
-
-    /// One pass over the weight matrix at M=6 and M=7.
-    ///
-    /// `ipg = m` alone does not fit: at `rps = 4` the g17s sum-table entry
-    /// point needs 114 registers at M=6, and 126 with 16 bytes of spill at
-    /// M=7. Halving `rps` at exactly those widths brings them to 92 and 96
-    /// registers with no spill, which is why this table carries `rps` per
-    /// width instead of one constant.
-    ///
-    /// M=8 stays on tier 4. `wide<8>` is spill-free on g17s only at `rps = 2`,
-    /// which doubles the launched threadgroup count at that width, and askeladd
-    /// owns the M=8 register question in E132. M=9 is above the ranked verify
-    /// cap, so it stays on tier 3 and adds no pipeline.
-    public static let onePassPlan: [(m: Int, ipg: Int, rps: Int)] = [
-        (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 4, 4), (9, 3, 4),
-    ]
-
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
-        switch table {
-        case .shipped: return shippedPlan
-        case .onePass:
-            precondition(
-                entry == .tiered,
-                "the one-pass table is only legal on tiered entry points")
-            return onePassPlan
-        }
+        precondition(
+            table == .shipped || entry == .tiered,
+            "a one-pass table is only legal on tiered entry points")
+        return table.plan
     }()
 
-    /// `widthPlan` as one literal the worker's string table can carry.
-    ///
-    /// The dispatch table reaches the built worker only through interpolation
-    /// into the generated Metal source, so no `m:ipg:rps` triple is a literal
-    /// and `senpai/rebuild-and-assert-worker.sh` cannot witness which table the
-    /// timed binary holds. This literal is the witness. `qwen35E120QMVSource`
-    /// emits it as a comment so the optimizer cannot strip it, and
-    /// `planWitnessMatchesWidthPlan` fails the build if the two ever diverge.
-    public static let shippedPlanWitness =
-        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
+    public static var planWitness: String { table.witness }
 
-    public static let onePassPlanWitness =
-        "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:4:4,9:3:4"
-
-    public static var planWitness: String {
-        switch table {
-        case .shipped: return shippedPlanWitness
-        case .onePass: return onePassPlanWitness
-        }
-    }
-
-    /// A plan rendered in the witness form. Equality against the two literals
-    /// is asserted by test, so neither table can drift from its witness.
+    /// A plan rendered in the witness form. Every `Table` case is checked
+    /// against its own literal by test, so no table can drift from its witness.
     public static func renderPlan(_ plan: [(m: Int, ipg: Int, rps: Int)]) -> String {
         "e120_width_plan/"
             + plan.map { "\($0.m):\($0.ipg):\($0.rps)" }.joined(separator: ",")

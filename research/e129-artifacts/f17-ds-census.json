@@ -1,0 +1,1452 @@
+{
+  "tables": {
+    "onepass6": {
+      "gate_ds": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.006133770776188818,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 32.19628066483804
+        },
+        "g17s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.006942629419283142,
+          "ranked_weighted_shared": 40.0,
+          "ranked_weighted_tiered": 40.27770517677133
+        }
+      },
+      "gate_nods": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.033832839094813716,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 33.08265085103404
+        },
+        "g17s": {
+          "passes_gate": true,
+          "ranked_weighted_gain_fraction": 0.05716286489335043,
+          "ranked_weighted_shared": 38.09814033241903,
+          "ranked_weighted_tiered": 40.275939180929
+        }
+      },
+      "header_after": "61c60671ff1bebd8",
+      "header_after_rev": "worktree",
+      "header_before": "476490eb6f69bc5c",
+      "header_before_rev": "657bf426",
+      "per_prompt_ds": {
+        "g16s": {
+          "beagle": 0.008079683696973872,
+          "botany": 0.0007699062796566736,
+          "essays": 0.004471511937860662,
+          "medicine": 0.003734084927790926,
+          "republic": 0.004921693857615761
+        },
+        "g17s": {
+          "beagle": 0.007059781350933658,
+          "botany": 0.01207188092600342,
+          "essays": 0.006498462272124472,
+          "medicine": 0.006765682673877338,
+          "republic": 0.006422046020473138
+        }
+      },
+      "pipelines": 5,
+      "switch": {
+        "g16s": {
+          "replica_no_table": {
+            "registers_after": 96,
+            "registers_before": 94,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 96,
+            "registers_before": 96,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        },
+        "g17s": {
+          "replica_no_table": {
+            "registers_after": 98,
+            "registers_before": 101,
+            "simdgroups_after": 40,
+            "simdgroups_before": 39,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 98,
+            "registers_before": 102,
+            "simdgroups_after": 40,
+            "simdgroups_before": 38,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        }
+      },
+      "tiers": [
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11238,
+          "text_before": 11218,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 94,
+          "simdgroups_after": 41,
+          "simdgroups_before": 42,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 25628,
+          "text_before": 25588,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 98,
+          "registers_before": 102,
+          "simdgroups_after": 40,
+          "simdgroups_before": 38,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7998,
+          "text_before": 7972,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 105,
+          "registers_before": 114,
+          "simdgroups_after": 37,
+          "simdgroups_before": 34,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5048,
+          "text_before": 5040,
+          "tier": 6
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 89,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11886,
+          "text_before": 11826,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 27302,
+          "text_before": 27302,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 98,
+          "registers_before": 101,
+          "simdgroups_after": 40,
+          "simdgroups_before": 39,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8588,
+          "text_before": 8544,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 108,
+          "registers_before": 111,
+          "simdgroups_after": 36,
+          "simdgroups_before": 35,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5208,
+          "text_before": 5176,
+          "tier": 6
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 91,
+          "registers_before": 84,
+          "simdgroups_after": 33,
+          "simdgroups_before": 36,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 10796,
+          "text_before": 10728,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 95,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 24674,
+          "text_before": 24634,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7782,
+          "text_before": 7774,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 16,
+          "text_after": 4920,
+          "text_before": 4954,
+          "tier": 6
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 89,
+          "registers_before": 82,
+          "simdgroups_after": 34,
+          "simdgroups_before": 37,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11408,
+          "text_before": 11372,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 91,
+          "registers_before": 94,
+          "simdgroups_after": 33,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 26258,
+          "text_before": 26234,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8352,
+          "text_before": 8328,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 16,
+          "spill_before": 16,
+          "text_after": 5086,
+          "text_before": 5068,
+          "tier": 6
+        }
+      ],
+      "width_plan": [
+        [
+          3,
+          3,
+          4
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          4
+        ],
+        [
+          6,
+          6,
+          4
+        ],
+        [
+          7,
+          4,
+          4
+        ],
+        [
+          8,
+          4,
+          4
+        ],
+        [
+          9,
+          3,
+          4
+        ]
+      ]
+    },
+    "onepass67": {
+      "gate_ds": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.006133770776188818,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 32.19628066483804
+        },
+        "g17s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": -0.035161585225088166,
+          "ranked_weighted_shared": 40.0,
+          "ranked_weighted_tiered": 38.59353659099647
+        }
+      },
+      "gate_nods": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.02725405555663052,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 32.87212977781218
+        },
+        "g17s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": -0.003620464298964343,
+          "ranked_weighted_shared": 38.09814033241903,
+          "ranked_weighted_tiered": 37.96020737548857
+        }
+      },
+      "header_after": "61c60671ff1bebd8",
+      "header_after_rev": "worktree",
+      "header_before": "476490eb6f69bc5c",
+      "header_before_rev": "657bf426",
+      "per_prompt_ds": {
+        "g16s": {
+          "beagle": 0.008079683696973872,
+          "botany": 0.0007699062796566736,
+          "essays": 0.004471511937860662,
+          "medicine": 0.003734084927790926,
+          "republic": 0.004921693857615761
+        },
+        "g17s": {
+          "beagle": -0.030934763486663686,
+          "botany": -0.03829636259631086,
+          "essays": -0.03920493032581973,
+          "medicine": -0.04049887518160078,
+          "republic": -0.038310647387962526
+        }
+      },
+      "pipelines": 6,
+      "switch": {
+        "g16s": {
+          "replica_no_table": {
+            "registers_after": 96,
+            "registers_before": 94,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 96,
+            "registers_before": 96,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        },
+        "g17s": {
+          "replica_no_table": {
+            "registers_after": 98,
+            "registers_before": 101,
+            "simdgroups_after": 40,
+            "simdgroups_before": 39,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 98,
+            "registers_before": 102,
+            "simdgroups_after": 40,
+            "simdgroups_before": 38,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        }
+      },
+      "tiers": [
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11238,
+          "text_before": 11218,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 94,
+          "simdgroups_after": 41,
+          "simdgroups_before": 42,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 13518,
+          "text_before": 13498,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 98,
+          "registers_before": 102,
+          "simdgroups_after": 40,
+          "simdgroups_before": 38,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7998,
+          "text_before": 7972,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 105,
+          "registers_before": 114,
+          "simdgroups_after": 37,
+          "simdgroups_before": 34,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5048,
+          "text_before": 5040,
+          "tier": 6
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 118,
+          "registers_before": 126,
+          "simdgroups_after": 33,
+          "simdgroups_before": 31,
+          "spill_after": 0,
+          "spill_before": 16,
+          "text_after": 5654,
+          "text_before": 5784,
+          "tier": 7
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 89,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11886,
+          "text_before": 11826,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 14418,
+          "text_before": 14438,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 98,
+          "registers_before": 101,
+          "simdgroups_after": 40,
+          "simdgroups_before": 39,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8588,
+          "text_before": 8544,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 108,
+          "registers_before": 111,
+          "simdgroups_after": 36,
+          "simdgroups_before": 35,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5208,
+          "text_before": 5176,
+          "tier": 6
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 122,
+          "registers_before": 125,
+          "simdgroups_after": 32,
+          "simdgroups_before": 31,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5854,
+          "text_before": 5822,
+          "tier": 7
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 91,
+          "registers_before": 84,
+          "simdgroups_after": 33,
+          "simdgroups_before": 36,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 10796,
+          "text_before": 10728,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 95,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 13026,
+          "text_before": 13022,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7782,
+          "text_before": 7774,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 16,
+          "text_after": 4920,
+          "text_before": 4954,
+          "tier": 6
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 32,
+          "spill_before": 64,
+          "text_after": 5700,
+          "text_before": 5842,
+          "tier": 7
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 89,
+          "registers_before": 82,
+          "simdgroups_after": 34,
+          "simdgroups_before": 37,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11408,
+          "text_before": 11372,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 91,
+          "registers_before": 94,
+          "simdgroups_after": 33,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 13878,
+          "text_before": 13874,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8352,
+          "text_before": 8328,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 16,
+          "spill_before": 16,
+          "text_after": 5086,
+          "text_before": 5068,
+          "tier": 6
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 48,
+          "spill_before": 48,
+          "text_after": 5972,
+          "text_before": 5954,
+          "tier": 7
+        }
+      ],
+      "width_plan": [
+        [
+          3,
+          3,
+          4
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          4
+        ],
+        [
+          6,
+          6,
+          4
+        ],
+        [
+          7,
+          7,
+          4
+        ],
+        [
+          8,
+          4,
+          4
+        ],
+        [
+          9,
+          3,
+          4
+        ]
+      ]
+    },
+    "onepass678": {
+      "gate_ds": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.009770270665356184,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 32.3126486612914
+        },
+        "g17s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": -0.10142661504101735,
+          "ranked_weighted_shared": 40.0,
+          "ranked_weighted_tiered": 35.9429353983593
+        }
+      },
+      "gate_nods": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.018970926829639634,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 32.60706965854847
+        },
+        "g17s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": -0.08015074337455075,
+          "ranked_weighted_shared": 38.09814033241903,
+          "ranked_weighted_tiered": 35.04454606358769
+        }
+      },
+      "header_after": "61c60671ff1bebd8",
+      "header_after_rev": "worktree",
+      "header_before": "476490eb6f69bc5c",
+      "header_before_rev": "657bf426",
+      "per_prompt_ds": {
+        "g16s": {
+          "beagle": 0.01252762032313881,
+          "botany": 0.0015884655054845265,
+          "essays": 0.007460405265247383,
+          "medicine": 0.00636710732358492,
+          "republic": 0.008116354407576631
+        },
+        "g17s": {
+          "beagle": -0.08322558758195275,
+          "botany": -0.17217431473587264,
+          "essays": -0.11557874251354472,
+          "medicine": -0.12381824376007222,
+          "republic": -0.11090037719424617
+        }
+      },
+      "pipelines": 7,
+      "switch": {
+        "g16s": {
+          "replica_no_table": {
+            "registers_after": 96,
+            "registers_before": 94,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 96,
+            "registers_before": 96,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        },
+        "g17s": {
+          "replica_no_table": {
+            "registers_after": 98,
+            "registers_before": 101,
+            "simdgroups_after": 40,
+            "simdgroups_before": 39,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 98,
+            "registers_before": 102,
+            "simdgroups_after": 40,
+            "simdgroups_before": 38,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        }
+      },
+      "tiers": [
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11238,
+          "text_before": 11218,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 94,
+          "simdgroups_after": 41,
+          "simdgroups_before": 42,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 6834,
+          "text_before": 6824,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 98,
+          "registers_before": 102,
+          "simdgroups_after": 40,
+          "simdgroups_before": 38,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7998,
+          "text_before": 7972,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 105,
+          "registers_before": 114,
+          "simdgroups_after": 37,
+          "simdgroups_before": 34,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5048,
+          "text_before": 5040,
+          "tier": 6
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 118,
+          "registers_before": 126,
+          "simdgroups_after": 33,
+          "simdgroups_before": 31,
+          "spill_after": 0,
+          "spill_before": 16,
+          "text_after": 5654,
+          "text_before": 5784,
+          "tier": 7
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 126,
+          "registers_before": 126,
+          "simdgroups_after": 31,
+          "simdgroups_before": 31,
+          "spill_after": 16,
+          "spill_before": 64,
+          "text_after": 6270,
+          "text_before": 6460,
+          "tier": 8
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 89,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11886,
+          "text_before": 11826,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7286,
+          "text_before": 7296,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 98,
+          "registers_before": 101,
+          "simdgroups_after": 40,
+          "simdgroups_before": 39,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8588,
+          "text_before": 8544,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 108,
+          "registers_before": 111,
+          "simdgroups_after": 36,
+          "simdgroups_before": 35,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5208,
+          "text_before": 5176,
+          "tier": 6
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 122,
+          "registers_before": 125,
+          "simdgroups_after": 32,
+          "simdgroups_before": 31,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 5854,
+          "text_before": 5822,
+          "tier": 7
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 126,
+          "registers_before": 126,
+          "simdgroups_after": 31,
+          "simdgroups_before": 31,
+          "spill_after": 32,
+          "spill_before": 48,
+          "text_after": 6560,
+          "text_before": 6682,
+          "tier": 8
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 91,
+          "registers_before": 84,
+          "simdgroups_after": 33,
+          "simdgroups_before": 36,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 10796,
+          "text_before": 10728,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 92,
+          "registers_before": 93,
+          "simdgroups_after": 33,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 6584,
+          "text_before": 6584,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7782,
+          "text_before": 7774,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 16,
+          "text_after": 4920,
+          "text_before": 4954,
+          "tier": 6
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 32,
+          "spill_before": 64,
+          "text_after": 5700,
+          "text_before": 5842,
+          "tier": 7
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 80,
+          "spill_before": 96,
+          "text_after": 6458,
+          "text_before": 6614,
+          "tier": 8
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 89,
+          "registers_before": 82,
+          "simdgroups_after": 34,
+          "simdgroups_before": 37,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 11408,
+          "text_before": 11372,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 91,
+          "registers_before": 94,
+          "simdgroups_after": 33,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7014,
+          "text_before": 7012,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8352,
+          "text_before": 8328,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 16,
+          "spill_before": 16,
+          "text_after": 5086,
+          "text_before": 5068,
+          "tier": 6
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 48,
+          "spill_before": 48,
+          "text_after": 5972,
+          "text_before": 5954,
+          "tier": 7
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 96,
+          "spill_before": 96,
+          "text_after": 6802,
+          "text_before": 6786,
+          "tier": 8
+        }
+      ],
+      "width_plan": [
+        [
+          3,
+          3,
+          4
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          4
+        ],
+        [
+          6,
+          6,
+          4
+        ],
+        [
+          7,
+          7,
+          4
+        ],
+        [
+          8,
+          8,
+          4
+        ],
+        [
+          9,
+          3,
+          4
+        ]
+      ]
+    },
+    "shipped": {
+      "gate_ds": {
+        "g16s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.011451736161664394,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 32.36645555717326
+        },
+        "g17s": {
+          "passes_gate": false,
+          "ranked_weighted_gain_fraction": 0.028214490961185446,
+          "ranked_weighted_shared": 40.0,
+          "ranked_weighted_tiered": 41.12857963844742
+        }
+      },
+      "gate_nods": {
+        "g16s": {
+          "passes_gate": true,
+          "ranked_weighted_gain_fraction": 0.05510470063671602,
+          "ranked_weighted_shared": 32.0,
+          "ranked_weighted_tiered": 33.76335042037491
+        },
+        "g17s": {
+          "passes_gate": true,
+          "ranked_weighted_gain_fraction": 0.10183037119428384,
+          "ranked_weighted_shared": 38.09814033241903,
+          "ranked_weighted_tiered": 41.97768810428117
+        }
+      },
+      "header_after": "61c60671ff1bebd8",
+      "header_after_rev": "worktree",
+      "header_before": "476490eb6f69bc5c",
+      "header_before_rev": "657bf426",
+      "per_prompt_ds": {
+        "g16s": {
+          "beagle": 0.013471648456059748,
+          "botany": 0.004471038418252471,
+          "essays": 0.009813248285189369,
+          "medicine": 0.008970755667279562,
+          "republic": 0.01030569267522874
+        },
+        "g17s": {
+          "beagle": 0.028627640387276942,
+          "botany": 0.026876409480386387,
+          "essays": 0.027865407661439523,
+          "medicine": 0.02771236563183166,
+          "republic": 0.02795804129092483
+        }
+      },
+      "pipelines": 4,
+      "switch": {
+        "g16s": {
+          "replica_no_table": {
+            "registers_after": 96,
+            "registers_before": 94,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 96,
+            "registers_before": 96,
+            "simdgroups_after": 32,
+            "simdgroups_before": 32,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        },
+        "g17s": {
+          "replica_no_table": {
+            "registers_after": 98,
+            "registers_before": 101,
+            "simdgroups_after": 40,
+            "simdgroups_before": 39,
+            "spill_after": 0,
+            "spill_before": 0
+          },
+          "sumtable": {
+            "registers_after": 98,
+            "registers_before": 102,
+            "simdgroups_after": 40,
+            "simdgroups_before": 38,
+            "spill_after": 0,
+            "spill_before": 0
+          }
+        }
+      },
+      "tiers": [
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 16782,
+          "text_before": 16752,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 94,
+          "simdgroups_after": 41,
+          "simdgroups_before": 42,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 25628,
+          "text_before": 25588,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "sumtable",
+          "registers_after": 98,
+          "registers_before": 102,
+          "simdgroups_after": 40,
+          "simdgroups_before": 38,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7998,
+          "text_before": 7972,
+          "tier": 5
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 89,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 17754,
+          "text_before": 17664,
+          "tier": 3
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 94,
+          "registers_before": 90,
+          "simdgroups_after": 42,
+          "simdgroups_before": 44,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 27302,
+          "text_before": 27302,
+          "tier": 4
+        },
+        {
+          "arch": "g17s",
+          "arm": "replica_no_table",
+          "registers_after": 98,
+          "registers_before": 101,
+          "simdgroups_after": 40,
+          "simdgroups_before": 39,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8588,
+          "text_before": 8544,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 91,
+          "registers_before": 84,
+          "simdgroups_after": 33,
+          "simdgroups_before": 36,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 16122,
+          "text_before": 16020,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 95,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 24674,
+          "text_before": 24634,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "sumtable",
+          "registers_after": 96,
+          "registers_before": 96,
+          "simdgroups_after": 32,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 7782,
+          "text_before": 7774,
+          "tier": 5
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 89,
+          "registers_before": 82,
+          "simdgroups_after": 34,
+          "simdgroups_before": 37,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 17040,
+          "text_before": 16986,
+          "tier": 3
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 91,
+          "registers_before": 94,
+          "simdgroups_after": 33,
+          "simdgroups_before": 32,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 26258,
+          "text_before": 26234,
+          "tier": 4
+        },
+        {
+          "arch": "g16s",
+          "arm": "replica_no_table",
+          "registers_after": 96,
+          "registers_before": 93,
+          "simdgroups_after": 32,
+          "simdgroups_before": 33,
+          "spill_after": 0,
+          "spill_before": 0,
+          "text_after": 8352,
+          "text_before": 8328,
+          "tier": 5
+        }
+      ],
+      "width_plan": [
+        [
+          3,
+          3,
+          4
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          4
+        ],
+        [
+          6,
+          3,
+          4
+        ],
+        [
+          7,
+          4,
+          4
+        ],
+        [
+          8,
+          4,
+          4
+        ],
+        [
+          9,
+          3,
+          4
+        ]
+      ]
+    }
+  }
+}

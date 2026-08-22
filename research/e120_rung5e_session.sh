@@ -58,17 +58,16 @@ case "${var}" in
   # The one-pass table is only legal on tiered entry points, and
   # `Qwen35CustomQMV.widthPlan` asserts that, so a table sweep runs every leg
   # with MLX_E120_QMV_ENTRY=tiered_switch.
-  MLX_E120_QMV_TABLE) legal="shipped onepass"; export MLX_E120_QMV_ENTRY=tiered_switch ;;
+  MLX_E120_QMV_TABLE) legal="shipped onepass6 onepass67 onepass678"
+    export MLX_E120_QMV_ENTRY=tiered_switch ;;
   MLX_E120_QMV_GRID) legal="wide tight" ;;
-  # The deliverable moves the entry point and the table together, so an
+  # A deliverable moves the entry point and the table together, so an
   # entry-only or table-only sweep prices half of it. This pseudo-variable
-  # names the three complete configurations instead. `templated` is the middle
-  # arm: it changes no statement in the kernel body, only how many entry points
-  # carry the width switch, so `incumbent -> templated` isolates the register
-  # and residency channel and `templated -> deliverable` isolates the width
-  # table. The E129 statement census predicts the second contrast is near zero
-  # or adverse, so pricing them together would hide which half paid.
-  MLX_E120_QMV_COMBO) legal="incumbent templated deliverable" ;;
+  # names complete configurations instead. `templated` is the middle arm: it
+  # changes no statement in the kernel body, only how many entry points carry
+  # the width switch, so `incumbent -> templated` isolates the register and
+  # residency channel and `templated -> onepassN` isolates the width table.
+  MLX_E120_QMV_COMBO) legal="incumbent templated onepass6 onepass67 onepass678" ;;
   *) echo "e120_rung5e_session.sh: unknown sweep variable '${var}'" >&2; exit 2 ;;
 esac
 
@@ -82,8 +81,8 @@ set_leg_env () {
           leg_env=(MLX_E120_QMV_ENTRY=shared_switch MLX_E120_QMV_TABLE=shipped) ;;
         templated)
           leg_env=(MLX_E120_QMV_ENTRY=tiered_switch MLX_E120_QMV_TABLE=shipped) ;;
-        deliverable)
-          leg_env=(MLX_E120_QMV_ENTRY=tiered_switch MLX_E120_QMV_TABLE=onepass) ;;
+        onepass6|onepass67|onepass678)
+          leg_env=(MLX_E120_QMV_ENTRY=tiered_switch "MLX_E120_QMV_TABLE=$1") ;;
       esac
       ;;
     *) leg_env=("${var}=$1") ;;

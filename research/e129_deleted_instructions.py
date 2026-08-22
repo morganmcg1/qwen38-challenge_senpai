@@ -144,7 +144,7 @@ def ranked_mass() -> dict[int, float]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--table", default="onepass67r2")
+    ap.add_argument("--table", default="onepass67")
     ap.add_argument("--base", default="shipped")
     ap.add_argument("--json", type=pathlib.Path,
                     default=pathlib.Path("research/out/e129-deleted-ops.json"))

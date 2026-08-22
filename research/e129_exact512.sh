@@ -46,7 +46,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # Re-pin only from a clean build of the recorded BASE_SHA, never from a
 # candidate leg.
 pin=719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e
-legs="base,tier,onepass,neg"
+legs="base,tier,onepass67,neg"
 
 while (($#)); do
   case "$1" in
@@ -89,9 +89,17 @@ case ",${legs}," in *,tier,*)
   run_leg e129x512tier 512 tiered_switch shipped
   exact_tags+=(e129x512tier) ;;
 esac
-case ",${legs}," in *,onepass,*)
-  run_leg e129x512onep 512 tiered_switch onepass
-  exact_tags+=(e129x512onep) ;;
+case ",${legs}," in *,onepass6,*)
+  run_leg e129x512one6 512 tiered_switch onepass6
+  exact_tags+=(e129x512one6) ;;
+esac
+case ",${legs}," in *,onepass67,*)
+  run_leg e129x512one67 512 tiered_switch onepass67
+  exact_tags+=(e129x512one67) ;;
+esac
+case ",${legs}," in *,onepass678,*)
+  run_leg e129x512one678 512 tiered_switch onepass678
+  exact_tags+=(e129x512one678) ;;
 esac
 case ",${legs}," in *,neg,*)
   run_leg e129x128neg 128 tiered_switch shipped ;;

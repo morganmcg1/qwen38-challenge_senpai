@@ -2,7 +2,8 @@
 """E129 — price three-tier templating of the Route B QMV entry point.
 
     usage: research/e129_entry_point_census.py [--out PATH] [--keep DIR]
-                                               [--wandb]
+                                               [--wandb] [--table NAME]
+                                               [--header-rev REV]
 
 THE QUESTION. The shipped wide-QMV entry point is one pipeline holding a
 `switch (qmv_m)` over the seven routed widths. A switch entry point's register
@@ -52,6 +53,7 @@ absolute count.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import subprocess
@@ -65,23 +67,30 @@ import e120_g17s_census as e120  # noqa: E402
 
 ARCHS = e120.ARCHS
 SIMDGROUP_BUDGET = e120.SIMDGROUP_BUDGET
-# `shipped` and `onepass` are `Qwen35CustomQMV.shippedPlan` and
-# `Qwen35CustomQMV.onePassPlan`; keep them in step with the Swift literals. The
-# other entries are measured alternatives, kept as the record of why `onepass`
-# carries `rps` per width. `--table` selects which one is censused.
+# `shipped`, `onepass6`, `onepass67` and `onepass678` are the four
+# `Qwen35CustomQMV.Table` cases; keep them in step with the Swift literals.
+# `--table` selects which one is censused.
 PLANS = {
     "shipped": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4)),
-    "onepass": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 8, 2), (9, 3, 4)),
-    # `ipg = m` at the shipped `rps = 4`. Refuted: the g17s sum-table entry
-    # point needs 114 registers at M=6 and spills 16 bytes at M=7, and the
-    # ranked-weighted residency falls 0.36 %.
-    "onepass67rps4": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4)),
-    # `onepass` without M=8, the fallback if one pass at M=8 disappoints.
+    # One pass at M=6 only. The conservative table: no routed tier spills on
+    # g17s even on the pre-D_S body.
+    "onepass6": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 4, 4), (8, 4, 4), (9, 3, 4)),
+    # F17 receipt 1.
+    "onepass67": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 4, 4), (9, 3, 4)),
+    # F17 receipt 2. M=8 is the largest single lever and the largest register
+    # risk; it is censused here so the two receipts can be priced apart.
+    "onepass678": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4), (8, 8, 4), (9, 3, 4)),
+    # Refuted (F16, F151). Halving `rps` to protect registers doubles every
+    # m-keyed statement, which costs more than the pass collapse saves. Kept
+    # only so the refutation can be re-measured.
     "onepass67r2": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 4, 4), (9, 3, 4)),
-    # M=9 as well. Identical to `onepass` on the ranked mix because the verify
-    # cap is 8, so `onepass` keeps M=9 on tier 3 and saves a pipeline.
-    "onepassr2": ((3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 2), (7, 7, 2), (8, 8, 2), (9, 9, 2)),
 }
+
+# `--header-rev` censuses the `qwen_e120_qmv_wide` template as it stood at a
+# git revision instead of in the worktree. That is how the D_S body is priced
+# against the body it replaced: the comparison point is a committed tree, not a
+# retyped kernel. askeladd's own E132 generator cannot do this here, because it
+# was derived before `RPS` became a template parameter of this kernel.
 
 WIDTH_CASES = ()
 ROUTED_WIDTHS = ()
@@ -108,6 +117,11 @@ def set_plan(name: str) -> None:
     TIER_OF = {m: ipg for m, ipg, _ in WIDTH_CASES}
     TIERS = tuple(sorted(set(TIER_OF.values())))
     RANKED_WIDTHS = tuple(m for m in ROUTED_WIDTHS if m <= 8)
+    # One pipeline serves a whole tier, so two widths in one tier that ask for
+    # different `rps` would silently census only one of them.
+    for tier in TIERS:
+        if len({rps for _, ipg, rps in WIDTH_CASES if ipg == tier}) != 1:
+            raise SystemExit("plan %s: tier %d mixes rps" % (name, tier))
 
 
 set_plan("shipped")
@@ -405,6 +419,16 @@ def git(*args: str) -> str:
                           check=True).stdout.strip()
 
 
+def swift_literal_at(name: str, rev: str) -> str:
+    """`e120.swift_literal`, but reading `Qwen35.swift` at a git revision."""
+    text = git("show", "%s:%s" % (rev, e120.QWEN35))
+    start = text.index('private let %s = """' % name)
+    start = text.index("\n", start) + 1
+    end = text.index('    """', start)
+    return "\n".join(line[4:] if line.startswith("    ") else line
+                     for line in text[start:end].splitlines())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=pathlib.Path,
@@ -414,10 +438,16 @@ def main() -> int:
                         help="write the reproduced Metal sources here")
     parser.add_argument("--wandb", action="store_true")
     parser.add_argument("--table", choices=sorted(PLANS), default="shipped")
+    parser.add_argument("--header-rev",
+                        help="census the QMV template at this git revision")
     args = parser.parse_args()
     set_plan(args.table)
 
-    header = e120.swift_literal("qwen35E120QMVHeader")
+    if args.header_rev:
+        header = swift_literal_at("qwen35E120QMVHeader", args.header_rev)
+    else:
+        header = e120.swift_literal("qwen35E120QMVHeader")
+
     arms = {
         "replica_no_table": arm_source(header, table=False),
         "sumtable": arm_source(header, table=True),
@@ -444,6 +474,9 @@ def main() -> int:
         "git_head": git("rev-parse", "HEAD"),
         "base_sha": git("rev-parse", "HEAD"),
         "simdgroup_budget": SIMDGROUP_BUDGET,
+        "table": args.table,
+        "header_rev": args.header_rev or "worktree",
+        "header_sha256": hashlib.sha256(header.encode()).hexdigest()[:16],
         "width_plan": [list(c) for c in WIDTH_CASES],
         "tier_of_width": TIER_OF,
         "tiers": list(TIERS),

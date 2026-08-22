@@ -67,14 +67,25 @@ readonly WITNESS=(
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na5_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na6_v2'
   --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na7_v2'
+  --require 'qwen35_custom_affine4_g64_qmv_wide_na8_v2'
+  --require 'qwen35_custom_affine4_g64_qmv_wide_sums_na8_v2'
+  # D_S, askeladd's E132 code motion. The metadata loads must sit inside the
+  # accumulate loop and the table read must sit below the product loop, or the
+  # timed binary is the pre-D_S body and the g17s spill at NA=7 is back.
+  --require 'const float scale_local_r = scales[group_index];'
+  --forbid  'thread float scale_local[rows_per_simd];'
   # The dispatch table itself is interpolated into the Metal source, so no
   # `qwen_e120_qmv_m<...>` instantiation can ever be witnessed here. The plan
-  # witness is the literal that carries it. Both tables are compiled in, so
+  # witness is the literal that carries it. Every table is compiled in, so
   # `strings` proves which tables exist, not which one a run selects; the
   # pipeline log proves the selection at run time. `renderPlan` equality with
   # each literal is asserted by `planWitnessMatchesWidthPlan`.
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4'
-  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:4:4,9:3:4'
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4'
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4'
+  --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4'
+  # The refuted `rps = 2` plan is deleted, not parked behind a flag.
+  --forbid  'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:2,7:7:2,8:4:4,9:3:4'
 )
 
 if [[ -n "$(git status --porcelain)" ]]; then
