@@ -1,0 +1,55 @@
+--- qwen35E120QMVHeader (shipped)
++++ qwen35E120QMVHeader (D_S: late_meta + sink_sums)
+@@ -28,8 +28,6 @@
+ 
+     for (int k = 0; k < in_vec_size; k += block_size) {
+         thread uint16_t packed[rows_per_simd][4];
+-        thread float scale_local[rows_per_simd];
+-        thread float bias_local[rows_per_simd];
+         for (int r = 0; r < rows_per_simd; r++) {
+             const int row = out_row + r;
+             const device uint16_t* ws =
+@@ -40,21 +38,9 @@
+             for (int i = 0; i < 4; i++) {
+                 packed[r][i] = ws[i];
+             }
+-            const int group_index =
+-                row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
+-            scale_local[r] = scales[group_index];
+-            bias_local[r] = biases[group_index];
+         }
+ 
+         VF sums = VF(0.0f);
+-        if (USE_TABLE) {
+-            const device float* st =
+-                xsums + ((k / block_size) * 32 + int(simd_lid)) *
+-                sums_stride + first_m;
+-            for (int m = 0; m < NA; m++) {
+-                sums[m] = st[m];
+-            }
+-        }
+         VF partial[rows_per_simd];
+         for (int r = 0; r < rows_per_simd; r++) {
+             partial[r] = VF(0.0f);
+@@ -83,8 +69,20 @@
+                                a3 * ((packed[r][i] >> 12) & 0x000f));
+             }
+         }
++        if (USE_TABLE) {
++            const device float* st =
++                xsums + ((k / block_size) * 32 + int(simd_lid)) *
++                sums_stride + first_m;
++            for (int m = 0; m < NA; m++) {
++                sums[m] = st[m];
++            }
++        }
+         for (int r = 0; r < rows_per_simd; r++) {
+-            acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
++            const int group_index =
++                (out_row + r) * in_vec_size_g + k / 64 + int(simd_lid) / 4;
++            const float scale_local_r = scales[group_index];
++            const float bias_local_r = biases[group_index];
++            acc[r] += scale_local_r * partial[r] + sums * bias_local_r;
+         }
+     }
+ 

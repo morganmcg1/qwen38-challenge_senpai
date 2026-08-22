@@ -1,0 +1,1060 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "timing_valid": false,
+  "harness": "compile_only",
+  "occupancy_label": "derived",
+  "tool": "research/e132_wide_matvec.py f3",
+  "source_receipt": "research/e132-artifacts/f2-instruction-table.json",
+  "frame_law": "16-byte aligned, allocated on demand; slots in [frame/4 - 3, frame/4]; frame 0 means no spill",
+  "frame_law_evidence": "research/e132-artifacts/spill-onset.json, 55-rung ladder stepping by one live value",
+  "m8_decision": {
+    "two_pass_body": "qwen_e120_qmv_wide<4>, run twice at M=8",
+    "two_pass_spill_frame_bytes": 0,
+    "two_pass_ops_per_output_element": 43.25,
+    "one_pass_bodies": {
+      "baseline": {
+        "spill_frame_bytes": 64,
+        "slot_band": [
+          13,
+          16
+        ],
+        "charges": {
+          "2": {
+            "one_pass_best": 36.06,
+            "one_pass_worst": 36.25,
+            "delta_percent_best": -16.62,
+            "delta_percent_worst": -16.18
+          },
+          "4": {
+            "one_pass_best": 36.88,
+            "one_pass_worst": 37.25,
+            "delta_percent_best": -14.74,
+            "delta_percent_worst": -13.87
+          },
+          "8": {
+            "one_pass_best": 38.5,
+            "one_pass_worst": 39.25,
+            "delta_percent_best": -10.98,
+            "delta_percent_worst": -9.25
+          }
+        }
+      },
+      "D_S": {
+        "spill_frame_bytes": 16,
+        "slot_band": [
+          1,
+          4
+        ],
+        "charges": {
+          "2": {
+            "one_pass_best": 35.31,
+            "one_pass_worst": 35.5,
+            "delta_percent_best": -18.35,
+            "delta_percent_worst": -17.92
+          },
+          "4": {
+            "one_pass_best": 35.38,
+            "one_pass_worst": 35.75,
+            "delta_percent_best": -18.21,
+            "delta_percent_worst": -17.34
+          },
+          "8": {
+            "one_pass_best": 35.5,
+            "one_pass_worst": 36.25,
+            "delta_percent_best": -17.92,
+            "delta_percent_worst": -16.18
+          }
+        }
+      },
+      "D_late_meta": {
+        "spill_frame_bytes": 48,
+        "slot_band": [
+          9,
+          12
+        ],
+        "charges": {
+          "2": {
+            "one_pass_best": 35.81,
+            "one_pass_worst": 36.0,
+            "delta_percent_best": -17.2,
+            "delta_percent_worst": -16.76
+          },
+          "4": {
+            "one_pass_best": 36.38,
+            "one_pass_worst": 36.75,
+            "delta_percent_best": -15.9,
+            "delta_percent_worst": -15.03
+          },
+          "8": {
+            "one_pass_best": 37.5,
+            "one_pass_worst": 38.25,
+            "delta_percent_best": -13.29,
+            "delta_percent_worst": -11.56
+          }
+        }
+      },
+      "G4_D": {
+        "spill_frame_bytes": 0,
+        "slot_band": [
+          0,
+          0
+        ],
+        "charges": {
+          "2": {
+            "one_pass_best": 42.0,
+            "one_pass_worst": 42.0,
+            "delta_percent_best": -2.89,
+            "delta_percent_worst": -2.89
+          },
+          "4": {
+            "one_pass_best": 42.0,
+            "one_pass_worst": 42.0,
+            "delta_percent_best": -2.89,
+            "delta_percent_worst": -2.89
+          },
+          "8": {
+            "one_pass_best": 42.0,
+            "one_pass_worst": 42.0,
+            "delta_percent_best": -2.89,
+            "delta_percent_worst": -2.89
+          }
+        }
+      },
+      "B_rows2": {
+        "spill_frame_bytes": 0,
+        "slot_band": [
+          0,
+          0
+        ],
+        "charges": {
+          "2": {
+            "one_pass_best": 43.62,
+            "one_pass_worst": 43.62,
+            "delta_percent_best": 0.87,
+            "delta_percent_worst": 0.87
+          },
+          "4": {
+            "one_pass_best": 43.62,
+            "one_pass_worst": 43.62,
+            "delta_percent_best": 0.87,
+            "delta_percent_worst": 0.87
+          },
+          "8": {
+            "one_pass_best": 43.62,
+            "one_pass_worst": 43.62,
+            "delta_percent_best": 0.87,
+            "delta_percent_worst": 0.87
+          }
+        }
+      }
+    }
+  },
+  "campaign_table_cost_charged": {
+    "2": {
+      "shipped_table_ops_per_output_element": 43.6,
+      "one_pass_67": {
+        "ops_per_output_element": 42.44,
+        "delta_percent": -2.65
+      },
+      "one_pass_678": {
+        "ops_per_output_element": 36.99,
+        "delta_percent": -15.16
+      },
+      "one_pass_678_with_D_S": {
+        "ops_per_output_element": 36.39,
+        "delta_percent": -16.53
+      }
+    },
+    "4": {
+      "shipped_table_ops_per_output_element": 43.6,
+      "one_pass_67": {
+        "ops_per_output_element": 42.45,
+        "delta_percent": -2.63
+      },
+      "one_pass_678": {
+        "ops_per_output_element": 37.78,
+        "delta_percent": -13.35
+      },
+      "one_pass_678_with_D_S": {
+        "ops_per_output_element": 36.58,
+        "delta_percent": -16.08
+      }
+    },
+    "8": {
+      "shipped_table_ops_per_output_element": 43.6,
+      "one_pass_67": {
+        "ops_per_output_element": 42.47,
+        "delta_percent": -2.58
+      },
+      "one_pass_678": {
+        "ops_per_output_element": 39.36,
+        "delta_percent": -9.73
+      },
+      "one_pass_678_with_D_S": {
+        "ops_per_output_element": 36.97,
+        "delta_percent": -15.19
+      }
+    }
+  },
+  "corrected_spill": {
+    "baseline": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 16,
+          "spill_slots_band": [
+            1,
+            4
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 64,
+          "spill_slots_band": [
+            13,
+            16
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 35.25
+        },
+        "na9": {
+          "spill_frame_bytes": 112,
+          "spill_slots_band": [
+            25,
+            28
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 48,
+          "spill_slots_band": [
+            9,
+            12
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.875
+        },
+        "na9": {
+          "spill_frame_bytes": 160,
+          "spill_slots_band": [
+            37,
+            40
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "D_late_meta": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 48,
+          "spill_slots_band": [
+            9,
+            12
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 35.25
+        },
+        "na9": {
+          "spill_frame_bytes": 96,
+          "spill_slots_band": [
+            21,
+            24
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 32,
+          "spill_slots_band": [
+            5,
+            8
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.875
+        },
+        "na9": {
+          "spill_frame_bytes": 144,
+          "spill_slots_band": [
+            33,
+            36
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "S_sink_sums": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 121,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 32,
+          "spill_slots_band": [
+            5,
+            8
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 35.25
+        },
+        "na9": {
+          "spill_frame_bytes": 80,
+          "spill_slots_band": [
+            17,
+            20
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 48,
+          "spill_slots_band": [
+            9,
+            12
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.875
+        },
+        "na9": {
+          "spill_frame_bytes": 160,
+          "spill_slots_band": [
+            37,
+            40
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "D_S": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 118,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 16,
+          "spill_slots_band": [
+            1,
+            4
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 35.25
+        },
+        "na9": {
+          "spill_frame_bytes": 64,
+          "spill_slots_band": [
+            13,
+            16
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 32,
+          "spill_slots_band": [
+            5,
+            8
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.875
+        },
+        "na9": {
+          "spill_frame_bytes": 144,
+          "spill_slots_band": [
+            33,
+            36
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "G4": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 16,
+          "spill_slots_band": [
+            1,
+            4
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 113,
+          "dynamic_ops_per_output_element": 41.375
+        },
+        "na9": {
+          "spill_frame_bytes": 112,
+          "spill_slots_band": [
+            25,
+            28
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 110,
+          "dynamic_ops_per_output_element": 44.875
+        },
+        "na9": {
+          "spill_frame_bytes": 160,
+          "spill_slots_band": [
+            37,
+            40
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "G2": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 16,
+          "spill_slots_band": [
+            1,
+            4
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 464,
+          "spill_slots_band": [
+            113,
+            116
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 53.625
+        },
+        "na9": {
+          "spill_frame_bytes": 112,
+          "spill_slots_band": [
+            25,
+            28
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 464,
+          "spill_slots_band": [
+            113,
+            116
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 56.875
+        },
+        "na9": {
+          "spill_frame_bytes": 160,
+          "spill_slots_band": [
+            37,
+            40
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "G4_D": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 110,
+          "dynamic_ops_per_output_element": 42.0
+        },
+        "na9": {
+          "spill_frame_bytes": 96,
+          "spill_slots_band": [
+            21,
+            24
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 105,
+          "dynamic_ops_per_output_element": 45.5
+        },
+        "na9": {
+          "spill_frame_bytes": 144,
+          "spill_slots_band": [
+            33,
+            36
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "G2_D": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 464,
+          "spill_slots_band": [
+            113,
+            116
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 55.5
+        },
+        "na9": {
+          "spill_frame_bytes": 96,
+          "spill_slots_band": [
+            21,
+            24
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 464,
+          "spill_slots_band": [
+            113,
+            116
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 58.75
+        },
+        "na9": {
+          "spill_frame_bytes": 144,
+          "spill_slots_band": [
+            33,
+            36
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "G4_D_S": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 119,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 80,
+          "spill_slots_band": [
+            17,
+            20
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 42.0
+        },
+        "na9": {
+          "spill_frame_bytes": 64,
+          "spill_slots_band": [
+            13,
+            16
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 105,
+          "dynamic_ops_per_output_element": 45.5
+        },
+        "na9": {
+          "spill_frame_bytes": 144,
+          "spill_slots_band": [
+            33,
+            36
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "G_wide": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 16,
+          "spill_slots_band": [
+            1,
+            4
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 113,
+          "dynamic_ops_per_output_element": 41.375
+        },
+        "na9": {
+          "spill_frame_bytes": 512,
+          "spill_slots_band": [
+            125,
+            128
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 45.25
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 110,
+          "dynamic_ops_per_output_element": 44.875
+        },
+        "na9": {
+          "spill_frame_bytes": 512,
+          "spill_slots_band": [
+            125,
+            128
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 48.667
+        }
+      }
+    },
+    "G_wide_D": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 110,
+          "dynamic_ops_per_output_element": 42.0
+        },
+        "na9": {
+          "spill_frame_bytes": 512,
+          "spill_slots_band": [
+            125,
+            128
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 46.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 105,
+          "dynamic_ops_per_output_element": 45.5
+        },
+        "na9": {
+          "spill_frame_bytes": 512,
+          "spill_slots_band": [
+            125,
+            128
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 49.778
+        }
+      }
+    },
+    "B_rows2": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 16,
+          "spill_slots_band": [
+            1,
+            4
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 105,
+          "dynamic_ops_per_output_element": 43.625
+        },
+        "na9": {
+          "spill_frame_bytes": 112,
+          "spill_slots_band": [
+            25,
+            28
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 102,
+          "dynamic_ops_per_output_element": 50.875
+        },
+        "na9": {
+          "spill_frame_bytes": 160,
+          "spill_slots_band": [
+            37,
+            40
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    },
+    "B_rows2_D": {
+      "sumtable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 125,
+          "dynamic_ops_per_output_element": 36.393
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 103,
+          "dynamic_ops_per_output_element": 43.625
+        },
+        "na9": {
+          "spill_frame_bytes": 96,
+          "spill_slots_band": [
+            21,
+            24
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 34.361
+        }
+      },
+      "notable": {
+        "na7": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 122,
+          "dynamic_ops_per_output_element": 40.0
+        },
+        "na8": {
+          "spill_frame_bytes": 0,
+          "spill_slots_band": [
+            0,
+            0
+          ],
+          "spill_free": true,
+          "registers": 100,
+          "dynamic_ops_per_output_element": 50.875
+        },
+        "na9": {
+          "spill_frame_bytes": 144,
+          "spill_slots_band": [
+            33,
+            36
+          ],
+          "spill_free": false,
+          "registers": 126,
+          "dynamic_ops_per_output_element": 38.0
+        }
+      }
+    }
+  }
+}

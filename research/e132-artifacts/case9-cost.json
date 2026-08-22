@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "harness": "compile_only",
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "base_ref": "HEAD",
+  "base_sha": "14294ae1d20a5cdb8f00bd6ee3493b5d611908a7",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "histogram": {
+    "4": 16,
+    "5": 20,
+    "6": 20,
+    "7": 12,
+    "8": 240
+  },
+  "histogram_total": 308,
+  "tool": "research/e132_wide_matvec.py case9",
+  "question": "is Route B `case 9` dead code that can be deleted?",
+  "router_bound": "Qwen35.swift:1699 `static let widths = 3 ... 9`",
+  "shipped_pair_for_m9": "(9, 3): three passes of qwen_e120_qmv_wide<3>",
+  "correctness_note": "the switch ends in `default: break`, which writes no output, so deleting `case 9` without narrowing the router to `3 ... 8` turns an M=9 round into a silent wrong answer",
+  "rows": {
+    "sw_shipped_t": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 47862,
+        "text_sha8": "4858361e",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 102,
+        "spill_bytes": 0,
+        "text_bytes": 49718,
+        "text_sha8": "1674d9ed",
+        "simdgroups_derived": 38
+      }
+    },
+    "sw_shipped_n": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 50980,
+        "text_sha8": "94c20421",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 52914,
+        "text_sha8": "b12f3840",
+        "simdgroups_derived": 39
+      }
+    },
+    "sw_no_case9_t": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 42620,
+        "text_sha8": "cfa013d2",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 102,
+        "spill_bytes": 0,
+        "text_bytes": 44236,
+        "text_sha8": "18710e57",
+        "simdgroups_derived": 38
+      }
+    },
+    "sw_no_case9_n": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 45416,
+        "text_sha8": "725c10b5",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 47128,
+        "text_sha8": "0f315818",
+        "simdgroups_derived": 39
+      }
+    },
+    "sw_one_pass_678_t": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 112,
+        "text_bytes": 41270,
+        "text_sha8": "78b84f9e",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 126,
+        "spill_bytes": 64,
+        "text_bytes": 41982,
+        "text_sha8": "6f22bbdb",
+        "simdgroups_derived": 31
+      }
+    },
+    "sw_one_pass_678_n": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 96,
+        "text_bytes": 43220,
+        "text_sha8": "9993b6a8",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 126,
+        "spill_bytes": 48,
+        "text_bytes": 44142,
+        "text_sha8": "494ff551",
+        "simdgroups_derived": 31
+      }
+    },
+    "sw_one_pass_678_no9_t": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 112,
+        "text_bytes": 36004,
+        "text_sha8": "674eaade",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 126,
+        "spill_bytes": 48,
+        "text_bytes": 36492,
+        "text_sha8": "e7a4d29f",
+        "simdgroups_derived": 31
+      }
+    },
+    "sw_one_pass_678_no9_n": {
+      "applegpu_g16s": {
+        "registers": 96,
+        "spill_bytes": 96,
+        "text_bytes": 37658,
+        "text_sha8": "408f0a55",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 126,
+        "spill_bytes": 48,
+        "text_bytes": 38354,
+        "text_sha8": "eba1624f",
+        "simdgroups_derived": 31
+      }
+    }
+  },
+  "deltas_ranked": {
+    "shipped/sumtable": {
+      "registers": 0,
+      "spill_frame_bytes": 0,
+      "text_bytes": -5482
+    },
+    "shipped/notable": {
+      "registers": 0,
+      "spill_frame_bytes": 0,
+      "text_bytes": -5786
+    },
+    "one_pass_678/sumtable": {
+      "registers": 0,
+      "spill_frame_bytes": -16,
+      "text_bytes": -5490
+    },
+    "one_pass_678/notable": {
+      "registers": 0,
+      "spill_frame_bytes": 0,
+      "text_bytes": -5788
+    }
+  },
+  "runtime_seconds": 2.42
+}

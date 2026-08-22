@@ -1,0 +1,770 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "timing_valid": false,
+  "harness": "compile_only",
+  "tool": "research/e132_instruction_probe.py onset",
+  "question": "does a 16-byte spill frame mean zero spilled slots, or 1 to 4 slots under 16-byte frame alignment?",
+  "widths": [
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134
+  ],
+  "rows": {
+    "applegpu_g16s": [
+      {
+        "width": 80,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4078
+      },
+      {
+        "width": 81,
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 4130
+      },
+      {
+        "width": 82,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4186
+      },
+      {
+        "width": 83,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4260
+      },
+      {
+        "width": 84,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4300
+      },
+      {
+        "width": 85,
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 4352
+      },
+      {
+        "width": 86,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4406
+      },
+      {
+        "width": 87,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4442
+      },
+      {
+        "width": 88,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4502
+      },
+      {
+        "width": 89,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4572
+      },
+      {
+        "width": 90,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4654
+      },
+      {
+        "width": 91,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4706
+      },
+      {
+        "width": 92,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4750
+      },
+      {
+        "width": 93,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4790
+      },
+      {
+        "width": 94,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4848
+      },
+      {
+        "width": 95,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4894
+      },
+      {
+        "width": 96,
+        "registers": 96,
+        "spill_bytes": 128,
+        "text_bytes": 5202
+      },
+      {
+        "width": 97,
+        "registers": 96,
+        "spill_bytes": 128,
+        "text_bytes": 5264
+      },
+      {
+        "width": 98,
+        "registers": 96,
+        "spill_bytes": 144,
+        "text_bytes": 5346
+      },
+      {
+        "width": 99,
+        "registers": 96,
+        "spill_bytes": 144,
+        "text_bytes": 5420
+      },
+      {
+        "width": 100,
+        "registers": 96,
+        "spill_bytes": 160,
+        "text_bytes": 5534
+      },
+      {
+        "width": 101,
+        "registers": 96,
+        "spill_bytes": 192,
+        "text_bytes": 5722
+      },
+      {
+        "width": 102,
+        "registers": 96,
+        "spill_bytes": 192,
+        "text_bytes": 5812
+      },
+      {
+        "width": 103,
+        "registers": 96,
+        "spill_bytes": 192,
+        "text_bytes": 5872
+      },
+      {
+        "width": 104,
+        "registers": 96,
+        "spill_bytes": 224,
+        "text_bytes": 5986
+      },
+      {
+        "width": 105,
+        "registers": 96,
+        "spill_bytes": 208,
+        "text_bytes": 6058
+      },
+      {
+        "width": 106,
+        "registers": 96,
+        "spill_bytes": 224,
+        "text_bytes": 6138
+      },
+      {
+        "width": 107,
+        "registers": 96,
+        "spill_bytes": 224,
+        "text_bytes": 6178
+      },
+      {
+        "width": 108,
+        "registers": 96,
+        "spill_bytes": 256,
+        "text_bytes": 6368
+      },
+      {
+        "width": 109,
+        "registers": 96,
+        "spill_bytes": 240,
+        "text_bytes": 6348
+      },
+      {
+        "width": 110,
+        "registers": 96,
+        "spill_bytes": 240,
+        "text_bytes": 6422
+      },
+      {
+        "width": 111,
+        "registers": 96,
+        "spill_bytes": 256,
+        "text_bytes": 6536
+      },
+      {
+        "width": 112,
+        "registers": 96,
+        "spill_bytes": 272,
+        "text_bytes": 6566
+      },
+      {
+        "width": 113,
+        "registers": 96,
+        "spill_bytes": 272,
+        "text_bytes": 6704
+      },
+      {
+        "width": 114,
+        "registers": 96,
+        "spill_bytes": 272,
+        "text_bytes": 6764
+      },
+      {
+        "width": 115,
+        "registers": 96,
+        "spill_bytes": 288,
+        "text_bytes": 6832
+      },
+      {
+        "width": 116,
+        "registers": 96,
+        "spill_bytes": 272,
+        "text_bytes": 6930
+      },
+      {
+        "width": 117,
+        "registers": 96,
+        "spill_bytes": 304,
+        "text_bytes": 7010
+      },
+      {
+        "width": 118,
+        "registers": 96,
+        "spill_bytes": 304,
+        "text_bytes": 7088
+      },
+      {
+        "width": 119,
+        "registers": 96,
+        "spill_bytes": 320,
+        "text_bytes": 7194
+      },
+      {
+        "width": 120,
+        "registers": 96,
+        "spill_bytes": 336,
+        "text_bytes": 7298
+      },
+      {
+        "width": 121,
+        "registers": 96,
+        "spill_bytes": 304,
+        "text_bytes": 7344
+      },
+      {
+        "width": 122,
+        "registers": 96,
+        "spill_bytes": 304,
+        "text_bytes": 7448
+      },
+      {
+        "width": 123,
+        "registers": 96,
+        "spill_bytes": 320,
+        "text_bytes": 7474
+      },
+      {
+        "width": 124,
+        "registers": 96,
+        "spill_bytes": 320,
+        "text_bytes": 7596
+      },
+      {
+        "width": 125,
+        "registers": 96,
+        "spill_bytes": 320,
+        "text_bytes": 7674
+      },
+      {
+        "width": 126,
+        "registers": 96,
+        "spill_bytes": 336,
+        "text_bytes": 7664
+      },
+      {
+        "width": 127,
+        "registers": 96,
+        "spill_bytes": 336,
+        "text_bytes": 7778
+      },
+      {
+        "width": 128,
+        "registers": 96,
+        "spill_bytes": 320,
+        "text_bytes": 7806
+      },
+      {
+        "width": 129,
+        "registers": 96,
+        "spill_bytes": 352,
+        "text_bytes": 7942
+      },
+      {
+        "width": 130,
+        "registers": 96,
+        "spill_bytes": 352,
+        "text_bytes": 8082
+      },
+      {
+        "width": 131,
+        "registers": 96,
+        "spill_bytes": 368,
+        "text_bytes": 8142
+      },
+      {
+        "width": 132,
+        "registers": 96,
+        "spill_bytes": 352,
+        "text_bytes": 8236
+      },
+      {
+        "width": 133,
+        "registers": 96,
+        "spill_bytes": 368,
+        "text_bytes": 8312
+      },
+      {
+        "width": 134,
+        "registers": 96,
+        "spill_bytes": 384,
+        "text_bytes": 8414
+      }
+    ],
+    "applegpu_g17s": [
+      {
+        "width": 80,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 3846
+      },
+      {
+        "width": 81,
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 3900
+      },
+      {
+        "width": 82,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 3956
+      },
+      {
+        "width": 83,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4028
+      },
+      {
+        "width": 84,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4070
+      },
+      {
+        "width": 85,
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 4114
+      },
+      {
+        "width": 86,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4182
+      },
+      {
+        "width": 87,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4216
+      },
+      {
+        "width": 88,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4282
+      },
+      {
+        "width": 89,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4346
+      },
+      {
+        "width": 90,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4434
+      },
+      {
+        "width": 91,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4488
+      },
+      {
+        "width": 92,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4528
+      },
+      {
+        "width": 93,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4564
+      },
+      {
+        "width": 94,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4618
+      },
+      {
+        "width": 95,
+        "registers": 96,
+        "spill_bytes": 0,
+        "text_bytes": 4660
+      },
+      {
+        "width": 96,
+        "registers": 97,
+        "spill_bytes": 0,
+        "text_bytes": 4718
+      },
+      {
+        "width": 97,
+        "registers": 98,
+        "spill_bytes": 0,
+        "text_bytes": 4764
+      },
+      {
+        "width": 98,
+        "registers": 99,
+        "spill_bytes": 0,
+        "text_bytes": 4824
+      },
+      {
+        "width": 99,
+        "registers": 100,
+        "spill_bytes": 0,
+        "text_bytes": 4878
+      },
+      {
+        "width": 100,
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 4922
+      },
+      {
+        "width": 101,
+        "registers": 102,
+        "spill_bytes": 0,
+        "text_bytes": 4972
+      },
+      {
+        "width": 102,
+        "registers": 103,
+        "spill_bytes": 0,
+        "text_bytes": 5026
+      },
+      {
+        "width": 103,
+        "registers": 104,
+        "spill_bytes": 0,
+        "text_bytes": 5070
+      },
+      {
+        "width": 104,
+        "registers": 105,
+        "spill_bytes": 0,
+        "text_bytes": 5122
+      },
+      {
+        "width": 105,
+        "registers": 106,
+        "spill_bytes": 0,
+        "text_bytes": 5182
+      },
+      {
+        "width": 106,
+        "registers": 107,
+        "spill_bytes": 0,
+        "text_bytes": 5226
+      },
+      {
+        "width": 107,
+        "registers": 108,
+        "spill_bytes": 0,
+        "text_bytes": 5278
+      },
+      {
+        "width": 108,
+        "registers": 109,
+        "spill_bytes": 0,
+        "text_bytes": 5330
+      },
+      {
+        "width": 109,
+        "registers": 110,
+        "spill_bytes": 0,
+        "text_bytes": 5374
+      },
+      {
+        "width": 110,
+        "registers": 111,
+        "spill_bytes": 0,
+        "text_bytes": 5426
+      },
+      {
+        "width": 111,
+        "registers": 112,
+        "spill_bytes": 0,
+        "text_bytes": 5480
+      },
+      {
+        "width": 112,
+        "registers": 113,
+        "spill_bytes": 0,
+        "text_bytes": 5524
+      },
+      {
+        "width": 113,
+        "registers": 114,
+        "spill_bytes": 0,
+        "text_bytes": 5576
+      },
+      {
+        "width": 114,
+        "registers": 115,
+        "spill_bytes": 0,
+        "text_bytes": 5630
+      },
+      {
+        "width": 115,
+        "registers": 116,
+        "spill_bytes": 0,
+        "text_bytes": 5674
+      },
+      {
+        "width": 116,
+        "registers": 117,
+        "spill_bytes": 0,
+        "text_bytes": 5726
+      },
+      {
+        "width": 117,
+        "registers": 118,
+        "spill_bytes": 0,
+        "text_bytes": 5780
+      },
+      {
+        "width": 118,
+        "registers": 119,
+        "spill_bytes": 0,
+        "text_bytes": 5824
+      },
+      {
+        "width": 119,
+        "registers": 120,
+        "spill_bytes": 0,
+        "text_bytes": 5876
+      },
+      {
+        "width": 120,
+        "registers": 121,
+        "spill_bytes": 0,
+        "text_bytes": 5930
+      },
+      {
+        "width": 121,
+        "registers": 122,
+        "spill_bytes": 0,
+        "text_bytes": 5974
+      },
+      {
+        "width": 122,
+        "registers": 123,
+        "spill_bytes": 0,
+        "text_bytes": 6026
+      },
+      {
+        "width": 123,
+        "registers": 124,
+        "spill_bytes": 0,
+        "text_bytes": 6080
+      },
+      {
+        "width": 124,
+        "registers": 125,
+        "spill_bytes": 0,
+        "text_bytes": 6124
+      },
+      {
+        "width": 125,
+        "registers": 126,
+        "spill_bytes": 0,
+        "text_bytes": 6182
+      },
+      {
+        "width": 126,
+        "registers": 126,
+        "spill_bytes": 144,
+        "text_bytes": 6476
+      },
+      {
+        "width": 127,
+        "registers": 126,
+        "spill_bytes": 144,
+        "text_bytes": 6732
+      },
+      {
+        "width": 128,
+        "registers": 126,
+        "spill_bytes": 144,
+        "text_bytes": 6776
+      },
+      {
+        "width": 129,
+        "registers": 126,
+        "spill_bytes": 144,
+        "text_bytes": 6886
+      },
+      {
+        "width": 130,
+        "registers": 126,
+        "spill_bytes": 160,
+        "text_bytes": 6934
+      },
+      {
+        "width": 131,
+        "registers": 126,
+        "spill_bytes": 208,
+        "text_bytes": 7120
+      },
+      {
+        "width": 132,
+        "registers": 126,
+        "spill_bytes": 208,
+        "text_bytes": 7264
+      },
+      {
+        "width": 133,
+        "registers": 126,
+        "spill_bytes": 224,
+        "text_bytes": 7328
+      },
+      {
+        "width": 134,
+        "registers": 126,
+        "spill_bytes": 240,
+        "text_bytes": 7264
+      }
+    ]
+  },
+  "verdicts": {
+    "applegpu_g16s": {
+      "distinct_frames": [
+        128,
+        144,
+        160,
+        192,
+        208,
+        224,
+        240,
+        256,
+        272,
+        288,
+        304,
+        320
+      ],
+      "smallest_non_zero_frame": 128,
+      "all_frames_16_byte_aligned": true,
+      "law": "16 * ceil(slots / 4), so a 16-byte frame holds 1 to 4 slots",
+      "onset_width": 96,
+      "widest_clean_width": 95,
+      "widest_clean_registers": 96
+    },
+    "applegpu_g17s": {
+      "distinct_frames": [
+        144,
+        160,
+        208,
+        224,
+        240
+      ],
+      "smallest_non_zero_frame": 144,
+      "all_frames_16_byte_aligned": true,
+      "law": "16 * ceil(slots / 4), so a 16-byte frame holds 1 to 4 slots",
+      "onset_width": 126,
+      "widest_clean_width": 125,
+      "widest_clean_registers": 126
+    }
+  }
+}

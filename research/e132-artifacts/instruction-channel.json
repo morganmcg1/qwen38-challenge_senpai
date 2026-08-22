@@ -1,0 +1,498 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "timing_valid": false,
+  "harness": "compile_only",
+  "tool": "research/e132_instruction_probe.py calibrate",
+  "rungs": [
+    0,
+    8,
+    16,
+    24,
+    32,
+    40,
+    48
+  ],
+  "ladders": {
+    "fma": {
+      "applegpu_g16s": {
+        "-1": {
+          "slope": 4.375,
+          "intercept": 115.0,
+          "max_abs_residual": 15.0,
+          "values": [
+            100,
+            160,
+            192,
+            224,
+            256,
+            288,
+            320
+          ]
+        },
+        "0": {
+          "slope": 0.0134,
+          "intercept": 2.54,
+          "max_abs_residual": 0.536,
+          "values": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "15": {
+          "slope": 3.4286,
+          "intercept": 650.14,
+          "max_abs_residual": 137.143,
+          "values": [
+            513,
+            769,
+            769,
+            769,
+            769,
+            769,
+            769
+          ]
+        },
+        "16": {
+          "slope": 877.7143,
+          "intercept": 166437.57,
+          "max_abs_residual": 35108.571,
+          "values": [
+            131329,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865
+          ]
+        }
+      },
+      "applegpu_g17s": {
+        "-1": {
+          "slope": 4.4018,
+          "intercept": 112.07,
+          "max_abs_residual": 16.071,
+          "values": [
+            96,
+            158,
+            190,
+            222,
+            254,
+            286,
+            318
+          ]
+        },
+        "0": {
+          "slope": 0.0134,
+          "intercept": 2.54,
+          "max_abs_residual": 0.536,
+          "values": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "15": {
+          "slope": 3.4286,
+          "intercept": 650.14,
+          "max_abs_residual": 137.143,
+          "values": [
+            513,
+            769,
+            769,
+            769,
+            769,
+            769,
+            769
+          ]
+        },
+        "16": {
+          "slope": 877.7143,
+          "intercept": 166437.57,
+          "max_abs_residual": 35108.571,
+          "values": [
+            131329,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865
+          ]
+        }
+      }
+    },
+    "fmul": {
+      "applegpu_g16s": {
+        "-1": {
+          "slope": 4.3482,
+          "intercept": 113.93,
+          "max_abs_residual": 13.929,
+          "values": [
+            100,
+            158,
+            190,
+            222,
+            254,
+            286,
+            318
+          ]
+        },
+        "0": {
+          "slope": 0.0134,
+          "intercept": 2.54,
+          "max_abs_residual": 0.536,
+          "values": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "15": {
+          "slope": 3.4286,
+          "intercept": 650.14,
+          "max_abs_residual": 137.143,
+          "values": [
+            513,
+            769,
+            769,
+            769,
+            769,
+            769,
+            769
+          ]
+        },
+        "16": {
+          "slope": 877.7143,
+          "intercept": 166437.57,
+          "max_abs_residual": 35108.571,
+          "values": [
+            131329,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865
+          ]
+        }
+      },
+      "applegpu_g17s": {
+        "-1": {
+          "slope": 4.375,
+          "intercept": 111.0,
+          "max_abs_residual": 15.0,
+          "values": [
+            96,
+            156,
+            188,
+            220,
+            252,
+            284,
+            316
+          ]
+        },
+        "0": {
+          "slope": 0.0134,
+          "intercept": 2.54,
+          "max_abs_residual": 0.536,
+          "values": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "15": {
+          "slope": 3.4286,
+          "intercept": 650.14,
+          "max_abs_residual": 137.143,
+          "values": [
+            513,
+            769,
+            769,
+            769,
+            769,
+            769,
+            769
+          ]
+        },
+        "16": {
+          "slope": 877.7143,
+          "intercept": 166437.57,
+          "max_abs_residual": 35108.571,
+          "values": [
+            131329,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865,
+            196865
+          ]
+        }
+      }
+    },
+    "load": {
+      "applegpu_g16s": {
+        "-1": {
+          "slope": 28.1607,
+          "intercept": 106.43,
+          "max_abs_residual": 6.429,
+          "values": [
+            100,
+            336,
+            560,
+            784,
+            1008,
+            1232,
+            1456
+          ]
+        },
+        "0": {
+          "slope": 1.0446,
+          "intercept": 7.21,
+          "max_abs_residual": 7.357,
+          "values": [
+            2,
+            14,
+            26,
+            38,
+            48,
+            48,
+            50
+          ]
+        },
+        "15": {
+          "slope": 267.4286,
+          "intercept": 1847.86,
+          "max_abs_residual": 1883.429,
+          "values": [
+            513,
+            3585,
+            6657,
+            9729,
+            12289,
+            12289,
+            12801
+          ]
+        },
+        "16": {
+          "slope": 68461.7143,
+          "intercept": 473052.43,
+          "max_abs_residual": 482157.714,
+          "values": [
+            131329,
+            917761,
+            1704193,
+            2490625,
+            3145985,
+            3145985,
+            3277057
+          ]
+        }
+      },
+      "applegpu_g17s": {
+        "-1": {
+          "slope": 24.3482,
+          "intercept": 109.93,
+          "max_abs_residual": 13.929,
+          "values": [
+            96,
+            314,
+            506,
+            698,
+            890,
+            1082,
+            1274
+          ]
+        },
+        "0": {
+          "slope": 1.0446,
+          "intercept": 7.21,
+          "max_abs_residual": 7.357,
+          "values": [
+            2,
+            14,
+            26,
+            38,
+            48,
+            48,
+            50
+          ]
+        },
+        "15": {
+          "slope": 267.4286,
+          "intercept": 1847.86,
+          "max_abs_residual": 1883.429,
+          "values": [
+            513,
+            3585,
+            6657,
+            9729,
+            12289,
+            12289,
+            12801
+          ]
+        },
+        "16": {
+          "slope": 68461.7143,
+          "intercept": 473052.43,
+          "max_abs_residual": 482157.714,
+          "values": [
+            131329,
+            917761,
+            1704193,
+            2490625,
+            3145985,
+            3145985,
+            3277057
+          ]
+        }
+      }
+    }
+  },
+  "verdict": {
+    "applegpu_g16s": {
+      "-1": {
+        "slopes_per_ladder": {
+          "fma": 4.375,
+          "fmul": 4.3482,
+          "load": 28.1607
+        },
+        "units_per_instruction": [
+          4.375,
+          4.3482,
+          14.0803
+        ],
+        "unit_spread": 9.7321,
+        "max_abs_residual": 15.0,
+        "instruction_counter": false
+      },
+      "0": {
+        "slopes_per_ladder": {
+          "fma": 0.0134,
+          "fmul": 0.0134,
+          "load": 1.0446
+        },
+        "units_per_instruction": [
+          0.0134,
+          0.0134,
+          0.5223
+        ],
+        "unit_spread": 0.5089,
+        "max_abs_residual": 7.357,
+        "instruction_counter": false
+      },
+      "15": {
+        "slopes_per_ladder": {
+          "fma": 3.4286,
+          "fmul": 3.4286,
+          "load": 267.4286
+        },
+        "units_per_instruction": [
+          3.4286,
+          3.4286,
+          133.7143
+        ],
+        "unit_spread": 130.2857,
+        "max_abs_residual": 1883.429,
+        "instruction_counter": false
+      },
+      "16": {
+        "slopes_per_ladder": {
+          "fma": 877.7143,
+          "fmul": 877.7143,
+          "load": 68461.7143
+        },
+        "units_per_instruction": [
+          877.7143,
+          877.7143,
+          34230.8572
+        ],
+        "unit_spread": 33353.1429,
+        "max_abs_residual": 482157.714,
+        "instruction_counter": false
+      }
+    },
+    "applegpu_g17s": {
+      "-1": {
+        "slopes_per_ladder": {
+          "fma": 4.4018,
+          "fmul": 4.375,
+          "load": 24.3482
+        },
+        "units_per_instruction": [
+          4.4018,
+          4.375,
+          12.1741
+        ],
+        "unit_spread": 7.7991,
+        "max_abs_residual": 16.071,
+        "instruction_counter": false
+      },
+      "0": {
+        "slopes_per_ladder": {
+          "fma": 0.0134,
+          "fmul": 0.0134,
+          "load": 1.0446
+        },
+        "units_per_instruction": [
+          0.0134,
+          0.0134,
+          0.5223
+        ],
+        "unit_spread": 0.5089,
+        "max_abs_residual": 7.357,
+        "instruction_counter": false
+      },
+      "15": {
+        "slopes_per_ladder": {
+          "fma": 3.4286,
+          "fmul": 3.4286,
+          "load": 267.4286
+        },
+        "units_per_instruction": [
+          3.4286,
+          3.4286,
+          133.7143
+        ],
+        "unit_spread": 130.2857,
+        "max_abs_residual": 1883.429,
+        "instruction_counter": false
+      },
+      "16": {
+        "slopes_per_ladder": {
+          "fma": 877.7143,
+          "fmul": 877.7143,
+          "load": 68461.7143
+        },
+        "units_per_instruction": [
+          877.7143,
+          877.7143,
+          34230.8572
+        ],
+        "unit_spread": 33353.1429,
+        "max_abs_residual": 482157.714,
+        "instruction_counter": false
+      }
+    }
+  }
+}

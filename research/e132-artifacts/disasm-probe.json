@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "harness": "compile_only",
+  "tool": "research/e132_disasm_probe.py",
+  "probe_kernel": {
+    "registers": 34,
+    "spill_bytes": 816,
+    "text_bytes": 2024
+  },
+  "attempts": [
+    {
+      "args": [
+        "-d"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--macho"
+      ],
+      "target": "inner.o",
+      "returncode": 0,
+      "body_lines": 1
+    },
+    {
+      "args": [
+        "-D"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--triple=agx3"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--triple=agx2"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 2
+    },
+    {
+      "args": [
+        "-d",
+        "--arch-name=agx3"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--mcpu=applegpu_g17s"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 2
+    },
+    {
+      "args": [
+        "-d",
+        "--disassemble-zeroes"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "--build-table=all"
+      ],
+      "target": "inner.o",
+      "returncode": 0,
+      "body_lines": 1
+    },
+    {
+      "args": [
+        "--all-headers"
+      ],
+      "target": "inner.o",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--macho"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 0,
+      "body_lines": 1
+    },
+    {
+      "args": [
+        "-D"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--triple=agx3"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--triple=agx2"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 2
+    },
+    {
+      "args": [
+        "-d",
+        "--arch-name=agx3"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "-d",
+        "--mcpu=applegpu_g17s"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 2
+    },
+    {
+      "args": [
+        "-d",
+        "--disassemble-zeroes"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 0
+    },
+    {
+      "args": [
+        "--build-table=all"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 0,
+      "body_lines": 23
+    },
+    {
+      "args": [
+        "--all-headers"
+      ],
+      "target": "g17s.mtlp",
+      "returncode": 1,
+      "body_lines": 0
+    }
+  ],
+  "any_attempt_disassembled": true,
+  "conclusion": "This toolchain has no working AGX disassembler. `metal-objdump` reads the container headers and returns rc=1 with no text for every documented disassembly invocation, on both the extracted inner Mach-O and the whole translated object. A spill SITE must therefore be located by source ablation, by watching the frame track the live set, and by counting the live set, not by reading machine code. Do not repeat this probe without a new toolchain."
+}

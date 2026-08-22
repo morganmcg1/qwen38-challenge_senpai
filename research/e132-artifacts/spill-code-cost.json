@@ -1,0 +1,384 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "timing_valid": false,
+  "harness": "compile_only",
+  "tool": "research/e132_instruction_probe.py spillcost",
+  "widths": [
+    16,
+    32,
+    48,
+    64,
+    80,
+    96,
+    112,
+    128,
+    144,
+    160,
+    176,
+    192,
+    208
+  ],
+  "rows": {
+    "applegpu_g16s": [
+      {
+        "width": 16,
+        "registers": 24,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 816,
+        "expected_text_bytes": 752.0,
+        "excess_bytes": 64.0
+      },
+      {
+        "width": 32,
+        "registers": 51,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 1554,
+        "expected_text_bytes": 1565.4,
+        "excess_bytes": -11.4
+      },
+      {
+        "width": 48,
+        "registers": 61,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 2282,
+        "expected_text_bytes": 2378.8,
+        "excess_bytes": -96.8
+      },
+      {
+        "width": 64,
+        "registers": 83,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 3164,
+        "expected_text_bytes": 3192.2,
+        "excess_bytes": -28.2
+      },
+      {
+        "width": 80,
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 4078,
+        "expected_text_bytes": 4005.6,
+        "excess_bytes": 72.4
+      },
+      {
+        "width": 96,
+        "registers": 96,
+        "spill_bytes": 128,
+        "spill_slots_band": [
+          29,
+          32
+        ],
+        "spill_slots": 32,
+        "text_bytes": 5202,
+        "expected_text_bytes": 4819.0,
+        "excess_bytes": 383.0
+      },
+      {
+        "width": 112,
+        "registers": 96,
+        "spill_bytes": 272,
+        "spill_slots_band": [
+          65,
+          68
+        ],
+        "spill_slots": 68,
+        "text_bytes": 6566,
+        "expected_text_bytes": 5632.4,
+        "excess_bytes": 933.6
+      },
+      {
+        "width": 128,
+        "registers": 96,
+        "spill_bytes": 320,
+        "spill_slots_band": [
+          77,
+          80
+        ],
+        "spill_slots": 80,
+        "text_bytes": 7806,
+        "expected_text_bytes": 6445.8,
+        "excess_bytes": 1360.2
+      },
+      {
+        "width": 144,
+        "registers": 96,
+        "spill_bytes": 400,
+        "spill_slots_band": [
+          97,
+          100
+        ],
+        "spill_slots": 100,
+        "text_bytes": 9138,
+        "expected_text_bytes": 7259.2,
+        "excess_bytes": 1878.8
+      },
+      {
+        "width": 160,
+        "registers": 96,
+        "spill_bytes": 464,
+        "spill_slots_band": [
+          113,
+          116
+        ],
+        "spill_slots": 116,
+        "text_bytes": 10456,
+        "expected_text_bytes": 8072.6,
+        "excess_bytes": 2383.4
+      },
+      {
+        "width": 176,
+        "registers": 96,
+        "spill_bytes": 544,
+        "spill_slots_band": [
+          133,
+          136
+        ],
+        "spill_slots": 136,
+        "text_bytes": 11490,
+        "expected_text_bytes": 8886.0,
+        "excess_bytes": 2604.0
+      },
+      {
+        "width": 192,
+        "registers": 96,
+        "spill_bytes": 608,
+        "spill_slots_band": [
+          149,
+          152
+        ],
+        "spill_slots": 152,
+        "text_bytes": 12748,
+        "expected_text_bytes": 9699.4,
+        "excess_bytes": 3048.6
+      },
+      {
+        "width": 208,
+        "registers": 96,
+        "spill_bytes": 656,
+        "spill_slots_band": [
+          161,
+          164
+        ],
+        "spill_slots": 164,
+        "text_bytes": 13940,
+        "expected_text_bytes": 10512.8,
+        "excess_bytes": 3427.2
+      }
+    ],
+    "applegpu_g17s": [
+      {
+        "width": 16,
+        "registers": 24,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 762,
+        "expected_text_bytes": 639.4,
+        "excess_bytes": 122.6
+      },
+      {
+        "width": 32,
+        "registers": 51,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 1458,
+        "expected_text_bytes": 1443.7,
+        "excess_bytes": 14.3
+      },
+      {
+        "width": 48,
+        "registers": 61,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 2132,
+        "expected_text_bytes": 2248.0,
+        "excess_bytes": -116.0
+      },
+      {
+        "width": 64,
+        "registers": 83,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 2926,
+        "expected_text_bytes": 3052.3,
+        "excess_bytes": -126.3
+      },
+      {
+        "width": 80,
+        "registers": 96,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 3846,
+        "expected_text_bytes": 3856.6,
+        "excess_bytes": -10.6
+      },
+      {
+        "width": 96,
+        "registers": 97,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 4718,
+        "expected_text_bytes": 4660.9,
+        "excess_bytes": 57.1
+      },
+      {
+        "width": 112,
+        "registers": 113,
+        "spill_bytes": 0,
+        "spill_slots_band": [
+          0,
+          0
+        ],
+        "spill_slots": 0,
+        "text_bytes": 5524,
+        "expected_text_bytes": 5465.1,
+        "excess_bytes": 58.9
+      },
+      {
+        "width": 128,
+        "registers": 126,
+        "spill_bytes": 144,
+        "spill_slots_band": [
+          33,
+          36
+        ],
+        "spill_slots": 36,
+        "text_bytes": 6776,
+        "expected_text_bytes": 6269.4,
+        "excess_bytes": 506.6
+      },
+      {
+        "width": 144,
+        "registers": 126,
+        "spill_bytes": 320,
+        "spill_slots_band": [
+          77,
+          80
+        ],
+        "spill_slots": 80,
+        "text_bytes": 8568,
+        "expected_text_bytes": 7073.7,
+        "excess_bytes": 1494.3
+      },
+      {
+        "width": 160,
+        "registers": 126,
+        "spill_bytes": 400,
+        "spill_slots_band": [
+          97,
+          100
+        ],
+        "spill_slots": 100,
+        "text_bytes": 9742,
+        "expected_text_bytes": 7878.0,
+        "excess_bytes": 1864.0
+      },
+      {
+        "width": 176,
+        "registers": 126,
+        "spill_bytes": 464,
+        "spill_slots_band": [
+          113,
+          116
+        ],
+        "spill_slots": 116,
+        "text_bytes": 10986,
+        "expected_text_bytes": 8682.3,
+        "excess_bytes": 2303.7
+      },
+      {
+        "width": 192,
+        "registers": 126,
+        "spill_bytes": 544,
+        "spill_slots_band": [
+          133,
+          136
+        ],
+        "spill_slots": 136,
+        "text_bytes": 12118,
+        "expected_text_bytes": 9486.6,
+        "excess_bytes": 2631.4
+      },
+      {
+        "width": 208,
+        "registers": 126,
+        "spill_bytes": 592,
+        "spill_slots_band": [
+          145,
+          148
+        ],
+        "spill_slots": 148,
+        "text_bytes": 13298,
+        "expected_text_bytes": 10290.9,
+        "excess_bytes": 3007.1
+      }
+    ]
+  },
+  "fit": {
+    "applegpu_g16s": {
+      "no_spill_bytes_per_live_value": 50.837,
+      "no_spill_intercept": -61.4,
+      "no_spill_max_abs_residual": 96.8,
+      "bytes_per_spill_slot_mean": 17.77,
+      "bytes_per_spill_slot_min": 11.97,
+      "bytes_per_spill_slot_max": 20.9
+    },
+    "applegpu_g17s": {
+      "no_spill_bytes_per_live_value": 50.268,
+      "no_spill_intercept": -164.9,
+      "no_spill_max_abs_residual": 126.3,
+      "bytes_per_spill_slot_mean": 18.49,
+      "bytes_per_spill_slot_min": 14.07,
+      "bytes_per_spill_slot_max": 20.32
+    }
+  }
+}

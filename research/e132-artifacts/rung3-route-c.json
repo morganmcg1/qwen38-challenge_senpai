@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "harness": "compile_only",
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "status": "DESIGN ONLY, nothing implemented in a shipped file",
+  "tool": "research/e132_route_c.py",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "rev": "working tree",
+  "cells": {
+    "affine_qmv_fast_bfloat16_t_64_4_false": {
+      "applegpu_g16s": {
+        "registers": 94,
+        "spill_bytes": 0,
+        "text_bytes": 119344,
+        "text_sha8": "09020534",
+        "simdgroups_derived": 32
+      },
+      "applegpu_g17s": {
+        "registers": 101,
+        "spill_bytes": 0,
+        "text_bytes": 125092,
+        "text_sha8": "02cc58e3",
+        "simdgroups_derived": 39
+      },
+      "source_form": "jit_twin",
+      "role": "shipped entry point the head reaches at ntg.x == 1",
+      "library": "stock",
+      "declared": true
+    },
+    "qwen35_custom_affine4_g64_qmv_narrow_v1": {
+      "applegpu_g16s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 2940,
+        "text_sha8": "e93cc407",
+        "simdgroups_derived": 53
+      },
+      "applegpu_g17s": {
+        "registers": 57,
+        "spill_bytes": 0,
+        "text_bytes": 3094,
+        "text_sha8": "1271783e",
+        "simdgroups_derived": 69
+      },
+      "source_form": "swift_metal_kernel",
+      "role": "Route C C1: qmv_fast_impl extracted verbatim",
+      "library": "c1",
+      "declared": true
+    },
+    "qwen35_custom_affine4_g64_qmv_wide1_v1": {
+      "applegpu_g16s": {
+        "registers": 52,
+        "spill_bytes": 0,
+        "text_bytes": 3156,
+        "text_sha8": "50fbd3af",
+        "simdgroups_derived": 59
+      },
+      "applegpu_g17s": {
+        "registers": 56,
+        "spill_bytes": 0,
+        "text_bytes": 3354,
+        "text_sha8": "031f72db",
+        "simdgroups_derived": 70
+      },
+      "source_form": "swift_metal_kernel",
+      "role": "Route C C2: shipped Route B header at NA=1",
+      "library": "c2",
+      "declared": true
+    }
+  },
+  "price": {
+    "qwen35_custom_affine4_g64_qmv_narrow_v1": {
+      "base_registers": 101,
+      "candidate_registers": 57,
+      "base_simdgroups_derived": 39,
+      "candidate_simdgroups_derived": 69,
+      "residency_change_pct_derived": 76.92,
+      "head_ranked_share_pct": 1.8238768569894397,
+      "deleted_instructions_per_output_element": 0.0,
+      "ranked_gain_pct_at_c_0": 0.0,
+      "ranked_gain_pct_at_c_measured_low": -0.002,
+      "ranked_gain_pct_at_c_measured_high": 0.0147,
+      "ranked_gain_pct_at_c_modelled_0445": 0.6243,
+      "c_frame": "entry-point leg, runbook c = 0.445 [0.139, 0.819]",
+      "c_measured": "F131, two independent designs: (-0.0014, 0.0105)",
+      "gain_pct_per_point_of_head_share_at_c_0445": 0.3423,
+      "head_share_note": "The price is linear in the head share, so question 3 rescales it directly. The assignment's 1.82 % is used here as instructed; at the 6.35 % the byte law forces at a 546 GB/s ranked host the c = 0.445 figure becomes +2.1737 %."
+    },
+    "qwen35_custom_affine4_g64_qmv_wide1_v1": {
+      "base_registers": 101,
+      "candidate_registers": 56,
+      "base_simdgroups_derived": 39,
+      "candidate_simdgroups_derived": 70,
+      "residency_change_pct_derived": 79.49,
+      "head_ranked_share_pct": 1.8238768569894397,
+      "deleted_instructions_per_output_element": 0.0,
+      "ranked_gain_pct_at_c_0": 0.0,
+      "ranked_gain_pct_at_c_measured_low": -0.002,
+      "ranked_gain_pct_at_c_measured_high": 0.0152,
+      "ranked_gain_pct_at_c_modelled_0445": 0.6451,
+      "c_frame": "entry-point leg, runbook c = 0.445 [0.139, 0.819]",
+      "c_measured": "F131, two independent designs: (-0.0014, 0.0105)",
+      "gain_pct_per_point_of_head_share_at_c_0445": 0.3537,
+      "head_share_note": "The price is linear in the head share, so question 3 rescales it directly. The assignment's 1.82 % is used here as instructed; at the 6.35 % the byte law forces at a 546 GB/s ranked host the c = 0.445 figure becomes +2.2461 %."
+    }
+  },
+  "dispatch": {
+    "source": "quantized.cpp:251-254, qmv()",
+    "host_at_m1": "bn = 8, bk = 32, group_dims(32, 2, 1), grid_dims(1, (N + 7) / 8, B)",
+    "mlxfast_equivalent": "grid: (32, (n / 8) * 2, 1), threadGroup: (32, 2, 1)",
+    "note": "MLXFast.metalKernel takes the grid in THREADS and MLX divides by the threadgroup, so (32, (n/8)*2, 1) over (32, 2, 1) is exactly (1, n/8, 1) threadgroups."
+  },
+  "bit_exactness": {
+    "qwen35_custom_affine4_g64_qmv_narrow_v1": "The three helpers and qmv_fast_impl are sliced verbatim out of quantized.h by anchor. The only edit is the two `const constant int&` parameters becoming `const int`, because an MLXFast body reads shapes into thread space. No arithmetic line is retyped, so exactness is a property of the extraction and this file asserts both substitutions are unique before it compiles.",
+    "qwen35_custom_affine4_g64_qmv_wide1_v1": "qwen_e120_qmv_wide<1, false> inherits the shipped Route B exactness argument unchanged. Per output element: the grouped-by-four x sum matches load_vector's `sum += x[i]+x[i+1]+x[i+2]+x[i+3]`; the four grouped products match qdot's accumulation, with qdot's `(x/2^p) * (2^p * nibble)` equal to `x * nibble` because a power-of-two scaling is exact; the per-k-block update `scale*partial + sums*bias` matches `scale*accum + bias*sum` by the commutativity of IEEE-754 multiplication; and the weight, scale and bias addressing is identical. The m axis is independent, so NA=1 needs no argument the shipped NA>=3 instantiations do not already carry."
+  },
+  "question3": {
+    "flagged_figure_megabytes": 232.98,
+    "flagged_figure_is": "the affine-4 g64 subset that reaches affine_qmv_fast<bfloat16_t, 64, 4, false> at ntg.x == 1, not the whole head",
+    "affine4_projection_bytes": {
+      "mtp.fc": 29491200,
+      "mtp.self_attn.q_proj": 35389440,
+      "mtp.self_attn.o_proj": 17694720,
+      "mtp.mlp.gate_up": 100270080,
+      "mtp.mlp.down_proj": 50135040
+    },
+    "head_declared_bytes": 427738112,
+    "affine4_share_of_head_pct": 54.5,
+    "draft_steps_implied_by_f13_local_law": 4.382,
+    "naive_ratio": {
+      "numerator_megabytes": 232.98,
+      "denominator_us": 232.5,
+      "implied_gigabytes_per_second": 1001.9,
+      "three_errors": [
+        "a per-draft-step byte count divided by a per-ROUND head time; F13's local law gives the marginal draft step as 2226.5 us, not head_us / d",
+        "a subset byte count treated as the whole head",
+        "a local byte count divided by a RANKED time"
+      ]
+    },
+    "local_check": {
+      "head_marginal_us_per_draft_step": 2226.5,
+      "declared_head_gigabytes_per_second": 192.1,
+      "with_cluster_index_gigabytes_per_second": 147.9,
+      "independent_bench_gigabytes_per_second": 191.8,
+      "bench_source": "ledger 24505, dense coarse read 157,337,600 B in 820.3 us",
+      "agreement_pct": 0.16,
+      "verdict": "the byte count is right; the local law and an independent bench agree to better than 1 %"
+    },
+    "residual": {
+      "f13_transfer_column_is_relative": "0.237 = (1019 / 10090) x 2.345. The column is normalised by the machine ratio, so it is not a time multiplier. The absolute head ratio F13 claims is 0.101, meaning M5 does the head 9.9x faster than beagle.",
+      "ranked_marginal_us_per_draft_step": 224.9,
+      "implied_ranked_gigabytes_per_second": 1902.3,
+      "times_beagle_read_ceiling": 7.18,
+      "suspect_quantity": "F13's 1019 us ranked head figure, and therefore the 1.82 % ranked head share",
+      "head_transfer_floor_if_ranked_host_is_at_most_2x_beagle": 0.362,
+      "implied_minimum_ranked_head_share_pct": 6.55,
+      "inversion": [
+        {
+          "ranked_read_gigabytes_per_second": 200.0,
+          "implied_head_absolute_ratio": 0.961,
+          "implied_f13_transfer_column": 2.253,
+          "implied_ranked_head_us_per_round": 9692.0,
+          "implied_ranked_head_share_pct": 17.35
+        },
+        {
+          "ranked_read_gigabytes_per_second": 265.0,
+          "implied_head_absolute_ratio": 0.725,
+          "implied_f13_transfer_column": 1.7,
+          "implied_ranked_head_us_per_round": 7315.0,
+          "implied_ranked_head_share_pct": 13.09
+        },
+        {
+          "ranked_read_gigabytes_per_second": 273.0,
+          "implied_head_absolute_ratio": 0.704,
+          "implied_f13_transfer_column": 1.65,
+          "implied_ranked_head_us_per_round": 7100.0,
+          "implied_ranked_head_share_pct": 12.71
+        },
+        {
+          "ranked_read_gigabytes_per_second": 400.0,
+          "implied_head_absolute_ratio": 0.48,
+          "implied_f13_transfer_column": 1.126,
+          "implied_ranked_head_us_per_round": 4846.0,
+          "implied_ranked_head_share_pct": 8.67
+        },
+        {
+          "ranked_read_gigabytes_per_second": 546.0,
+          "implied_head_absolute_ratio": 0.352,
+          "implied_f13_transfer_column": 0.825,
+          "implied_ranked_head_us_per_round": 3550.0,
+          "implied_ranked_head_share_pct": 6.35
+        },
+        {
+          "ranked_read_gigabytes_per_second": 1902.3,
+          "implied_head_absolute_ratio": 0.101,
+          "implied_f13_transfer_column": 0.237,
+          "implied_ranked_head_us_per_round": 1019.0,
+          "implied_ranked_head_share_pct": 1.82
+        }
+      ],
+      "inversion_note": "The campaign has no measured ranked read bandwidth, so this inverts the law rather than assuming a rate. F13's 1019 us is only reachable if the ranked host sustains 1902 GB/s on this work. The ranked round total is held at 55870 us, so each row also moves work out of the other two classes."
+    },
+    "consequence_for_route_c": "Do not price Route C from bytes at all. Rule 94 forbids a bandwidth price on the QMV family, and Route C removes no bytes and no instructions per output element. Its only mechanism is the register count of the containing entry point."
+  },
+  "runtime_seconds": 1.13
+}

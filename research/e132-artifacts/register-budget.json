@@ -1,0 +1,452 @@
+{
+  "schema_version": 1,
+  "gpu_used": false,
+  "model_loaded": false,
+  "timing_valid": false,
+  "official_or_ranked_score": false,
+  "harness": "compile_only",
+  "occupancy_label": "derived",
+  "occupancy_rule": "Rule 89",
+  "base_ref": "HEAD",
+  "base_sha": "14294ae1d20a5cdb8f00bd6ee3493b5d611908a7",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
+  "simdgroup_budget": {
+    "applegpu_g16s": 3072,
+    "applegpu_g17s": 3968
+  },
+  "histogram": {
+    "4": 16,
+    "5": 20,
+    "6": 20,
+    "7": 12,
+    "8": 240
+  },
+  "histogram_total": 308,
+  "tool": "research/e132_wide_matvec.py budget",
+  "question": "F33/F34 record 96 on g16s and 124 on g17s; qwen_e120_qmv_wide<7> reaches 125 with zero spill on g17s. Which figure survives?",
+  "arches": {
+    "applegpu_g16s": {
+      "sweep": {
+        "40": {
+          "registers": 61,
+          "spill_bytes": 0
+        },
+        "42": {
+          "registers": 66,
+          "spill_bytes": 0
+        },
+        "44": {
+          "registers": 68,
+          "spill_bytes": 0
+        },
+        "46": {
+          "registers": 69,
+          "spill_bytes": 0
+        },
+        "48": {
+          "registers": 76,
+          "spill_bytes": 0
+        },
+        "50": {
+          "registers": 73,
+          "spill_bytes": 0
+        },
+        "52": {
+          "registers": 78,
+          "spill_bytes": 0
+        },
+        "54": {
+          "registers": 76,
+          "spill_bytes": 0
+        },
+        "56": {
+          "registers": 84,
+          "spill_bytes": 0
+        },
+        "58": {
+          "registers": 82,
+          "spill_bytes": 0
+        },
+        "60": {
+          "registers": 87,
+          "spill_bytes": 0
+        },
+        "62": {
+          "registers": 89,
+          "spill_bytes": 0
+        },
+        "64": {
+          "registers": 93,
+          "spill_bytes": 0
+        },
+        "66": {
+          "registers": 94,
+          "spill_bytes": 0
+        },
+        "68": {
+          "registers": 96,
+          "spill_bytes": 0
+        },
+        "70": {
+          "registers": 93,
+          "spill_bytes": 0
+        },
+        "72": {
+          "registers": 96,
+          "spill_bytes": 32
+        },
+        "74": {
+          "registers": 96,
+          "spill_bytes": 48
+        },
+        "76": {
+          "registers": 96,
+          "spill_bytes": 48
+        },
+        "78": {
+          "registers": 96,
+          "spill_bytes": 0
+        },
+        "80": {
+          "registers": 96,
+          "spill_bytes": 48
+        },
+        "82": {
+          "registers": 96,
+          "spill_bytes": 80
+        },
+        "84": {
+          "registers": 96,
+          "spill_bytes": 128
+        },
+        "86": {
+          "registers": 96,
+          "spill_bytes": 80
+        },
+        "88": {
+          "registers": 96,
+          "spill_bytes": 80
+        },
+        "90": {
+          "registers": 96,
+          "spill_bytes": 16
+        },
+        "92": {
+          "registers": 96,
+          "spill_bytes": 208
+        },
+        "94": {
+          "registers": 96,
+          "spill_bytes": 32
+        },
+        "96": {
+          "registers": 96,
+          "spill_bytes": 208
+        },
+        "98": {
+          "registers": 96,
+          "spill_bytes": 128
+        },
+        "100": {
+          "registers": 96,
+          "spill_bytes": 192
+        },
+        "102": {
+          "registers": 96,
+          "spill_bytes": 128
+        },
+        "104": {
+          "registers": 96,
+          "spill_bytes": 240
+        },
+        "106": {
+          "registers": 96,
+          "spill_bytes": 128
+        },
+        "108": {
+          "registers": 96,
+          "spill_bytes": 240
+        },
+        "110": {
+          "registers": 96,
+          "spill_bytes": 144
+        },
+        "112": {
+          "registers": 96,
+          "spill_bytes": 256
+        },
+        "114": {
+          "registers": 96,
+          "spill_bytes": 144
+        },
+        "116": {
+          "registers": 96,
+          "spill_bytes": 272
+        },
+        "118": {
+          "registers": 96,
+          "spill_bytes": 160
+        },
+        "120": {
+          "registers": 96,
+          "spill_bytes": 304
+        },
+        "122": {
+          "registers": 96,
+          "spill_bytes": 176
+        },
+        "124": {
+          "registers": 96,
+          "spill_bytes": 304
+        },
+        "126": {
+          "registers": 96,
+          "spill_bytes": 192
+        },
+        "128": {
+          "registers": 96,
+          "spill_bytes": 352
+        },
+        "130": {
+          "registers": 96,
+          "spill_bytes": 208
+        },
+        "132": {
+          "registers": 96,
+          "spill_bytes": 352
+        },
+        "134": {
+          "registers": 96,
+          "spill_bytes": 224
+        },
+        "136": {
+          "registers": 96,
+          "spill_bytes": 336
+        },
+        "138": {
+          "registers": 96,
+          "spill_bytes": 240
+        },
+        "140": {
+          "registers": 96,
+          "spill_bytes": 368
+        }
+      },
+      "max_registers_without_a_frame": 96,
+      "at_live_floats": 68,
+      "first_live_float_count_with_a_frame": 72
+    },
+    "applegpu_g17s": {
+      "sweep": {
+        "40": {
+          "registers": 61,
+          "spill_bytes": 0
+        },
+        "42": {
+          "registers": 66,
+          "spill_bytes": 0
+        },
+        "44": {
+          "registers": 68,
+          "spill_bytes": 0
+        },
+        "46": {
+          "registers": 69,
+          "spill_bytes": 0
+        },
+        "48": {
+          "registers": 76,
+          "spill_bytes": 0
+        },
+        "50": {
+          "registers": 73,
+          "spill_bytes": 0
+        },
+        "52": {
+          "registers": 78,
+          "spill_bytes": 0
+        },
+        "54": {
+          "registers": 76,
+          "spill_bytes": 0
+        },
+        "56": {
+          "registers": 84,
+          "spill_bytes": 0
+        },
+        "58": {
+          "registers": 82,
+          "spill_bytes": 0
+        },
+        "60": {
+          "registers": 87,
+          "spill_bytes": 0
+        },
+        "62": {
+          "registers": 89,
+          "spill_bytes": 0
+        },
+        "64": {
+          "registers": 93,
+          "spill_bytes": 0
+        },
+        "66": {
+          "registers": 94,
+          "spill_bytes": 0
+        },
+        "68": {
+          "registers": 96,
+          "spill_bytes": 0
+        },
+        "70": {
+          "registers": 93,
+          "spill_bytes": 0
+        },
+        "72": {
+          "registers": 103,
+          "spill_bytes": 0
+        },
+        "74": {
+          "registers": 103,
+          "spill_bytes": 0
+        },
+        "76": {
+          "registers": 107,
+          "spill_bytes": 0
+        },
+        "78": {
+          "registers": 96,
+          "spill_bytes": 0
+        },
+        "80": {
+          "registers": 109,
+          "spill_bytes": 0
+        },
+        "82": {
+          "registers": 111,
+          "spill_bytes": 0
+        },
+        "84": {
+          "registers": 113,
+          "spill_bytes": 0
+        },
+        "86": {
+          "registers": 123,
+          "spill_bytes": 0
+        },
+        "88": {
+          "registers": 112,
+          "spill_bytes": 0
+        },
+        "90": {
+          "registers": 98,
+          "spill_bytes": 0
+        },
+        "92": {
+          "registers": 124,
+          "spill_bytes": 0
+        },
+        "94": {
+          "registers": 102,
+          "spill_bytes": 0
+        },
+        "96": {
+          "registers": 126,
+          "spill_bytes": 32
+        },
+        "98": {
+          "registers": 106,
+          "spill_bytes": 0
+        },
+        "100": {
+          "registers": 126,
+          "spill_bytes": 80
+        },
+        "102": {
+          "registers": 109,
+          "spill_bytes": 0
+        },
+        "104": {
+          "registers": 126,
+          "spill_bytes": 96
+        },
+        "106": {
+          "registers": 113,
+          "spill_bytes": 0
+        },
+        "108": {
+          "registers": 126,
+          "spill_bytes": 176
+        },
+        "110": {
+          "registers": 117,
+          "spill_bytes": 0
+        },
+        "112": {
+          "registers": 126,
+          "spill_bytes": 208
+        },
+        "114": {
+          "registers": 121,
+          "spill_bytes": 0
+        },
+        "116": {
+          "registers": 126,
+          "spill_bytes": 304
+        },
+        "118": {
+          "registers": 125,
+          "spill_bytes": 0
+        },
+        "120": {
+          "registers": 126,
+          "spill_bytes": 272
+        },
+        "122": {
+          "registers": 126,
+          "spill_bytes": 32
+        },
+        "124": {
+          "registers": 126,
+          "spill_bytes": 208
+        },
+        "126": {
+          "registers": 126,
+          "spill_bytes": 144
+        },
+        "128": {
+          "registers": 126,
+          "spill_bytes": 240
+        },
+        "130": {
+          "registers": 126,
+          "spill_bytes": 160
+        },
+        "132": {
+          "registers": 126,
+          "spill_bytes": 240
+        },
+        "134": {
+          "registers": 126,
+          "spill_bytes": 112
+        },
+        "136": {
+          "registers": 126,
+          "spill_bytes": 240
+        },
+        "138": {
+          "registers": 126,
+          "spill_bytes": 128
+        },
+        "140": {
+          "registers": 126,
+          "spill_bytes": 256
+        }
+      },
+      "max_registers_without_a_frame": 125,
+      "at_live_floats": 118,
+      "first_live_float_count_with_a_frame": 96
+    }
+  },
+  "runtime_seconds": 8.23
+}

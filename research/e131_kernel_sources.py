@@ -38,6 +38,16 @@ ROUTE_B_ROLES = {
         "Route B activation chunk-sum table fill",
 }
 
+# The two custom affine-2 cluster kernels the frontier import added. They share
+# `qwen35ClusterAffine2QMVHeader` and both run on every draft step, so the gate
+# has to see them.
+CLUSTER_QMV_ROLES = {
+    "qwen_mtp_cluster_centroid_qmv_a2g64_v1":
+        "dense centroid 2-bit QMV over 12,292 leaves, every draft step",
+    "qwen_mtp_cluster_row_qmv_a2g64_v1":
+        "gathered leaf 2-bit QMV, one threadgroup per probed cluster",
+}
+
 # Binding order and element type at the shipped call sites
 # (`Qwen35.swift` Qwen35CustomQMV.matmul, matmulWithTable and xsumsTable).
 QMV_INPUTS = [("w", "uint32_t"), ("scales", "bfloat16_t"),
@@ -45,6 +55,13 @@ QMV_INPUTS = [("w", "uint32_t"), ("scales", "bfloat16_t"),
 QMV_OUTPUTS = [("y", "bfloat16_t")]
 XSUMS_INPUTS = [("x", "bfloat16_t")]
 XSUMS_OUTPUTS = [("xsums", "float")]
+
+# `qwen35ClusterCentroidQMV` and `qwen35ClusterRowQMV` call sites. `probed` is
+# guarded to `.uint32` at the call site, so the generated signature is fixed.
+CLUSTER_CENTROID_INPUTS = [("x", "bfloat16_t"), ("w", "uint32_t"),
+                           ("scales", "bfloat16_t"), ("biases", "bfloat16_t")]
+CLUSTER_ROW_INPUTS = CLUSTER_CENTROID_INPUTS + [("probed", "uint32_t")]
+CLUSTER_OUTPUTS = [("y", "bfloat16_t")]
 
 
 class SourceUnavailable(RuntimeError):
@@ -160,4 +177,27 @@ def route_b_library(text: str) -> str:
     parts.append(e120.generate(
         "qwen35_custom_affine4_g64_xsums_v1", XSUMS_INPUTS, XSUMS_OUTPUTS,
         xsums_body))
+    return "\n".join(parts) + "\n"
+
+
+def kernel_body(text: str, name: str) -> str:
+    """The `source:` literal of the `MLXFast.metalKernel` called `name`."""
+    at = text.find("name: \"%s\"" % name)
+    if at < 0:
+        raise SourceUnavailable("no MLXFast.metalKernel named %s" % name)
+    return multiline_literal(text, text.index("source:", at))[0]
+
+
+def cluster_qmv_library(text: str) -> str:
+    """One Metal source holding both shipped affine-2 cluster QMV kernels."""
+    import e120_g17s_census as e120
+
+    header = named_literal(text, "qwen35ClusterAffine2QMVHeader")
+    parts = [e120.PRELUDE, header, ""]
+    for name, inputs in (
+            ("qwen_mtp_cluster_centroid_qmv_a2g64_v1",
+             CLUSTER_CENTROID_INPUTS),
+            ("qwen_mtp_cluster_row_qmv_a2g64_v1", CLUSTER_ROW_INPUTS)):
+        parts.append(e120.generate(name, inputs, CLUSTER_OUTPUTS,
+                                   kernel_body(text, name)))
     return "\n".join(parts) + "\n"
