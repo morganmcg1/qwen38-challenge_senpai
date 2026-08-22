@@ -1,0 +1,78 @@
+{
+  "agrees_with_e107_within_10_percent": true,
+  "cool_gate_passed_real_gate": false,
+  "deviation_from_e107_percent": 0.22613504897591533,
+  "dose_cell": "affine 4-bit group-64 quantizedMM, mlp.gate_up shape K=5120 -> N=34816, M=1",
+  "dose_kernel_names": [
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0 grid=1x4352x1 tg=32x2x1"
+  ],
+  "dose_resident_bytes": 100270080,
+  "dosed_leg_dose_phase_dispatches_per_round": 4.0,
+  "dosed_leg_dose_phase_us_per_round": 1620.0157972972975,
+  "e107_reference_us": 410.93,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "insitu_delta_us_per_dosed_round": 1589.5425135135083,
+  "insitu_dosed_leg": "e116r1-insitu-k4",
+  "insitu_null_leg": "e116r1-insitu-k0",
+  "insitu_over_isolated": 0.9648578291226128,
+  "insitu_per_width": [
+    {
+      "delta_us_per_round": 1560.416499999992,
+      "delta_us_per_unit": 390.104124999998,
+      "dosed_rounds": 64,
+      "dosed_us_per_round": 65903.95478125,
+      "null_rounds": 64,
+      "null_us_per_round": 64343.53828125,
+      "width": "w1"
+    },
+    {
+      "delta_us_per_round": 1794.7079999999987,
+      "delta_us_per_unit": 448.6769999999997,
+      "dosed_rounds": 1,
+      "dosed_us_per_round": 111066.959,
+      "null_rounds": 1,
+      "null_us_per_round": 109272.251,
+      "width": "w5"
+    },
+    {
+      "delta_us_per_round": 1629.6962500000081,
+      "delta_us_per_unit": 407.42406250000204,
+      "dosed_rounds": 4,
+      "dosed_us_per_round": 135771.19675,
+      "null_rounds": 4,
+      "null_us_per_round": 134141.5005,
+      "width": "w6"
+    },
+    {
+      "delta_us_per_round": 1868.6242500000226,
+      "delta_us_per_unit": 467.15606250000565,
+      "dosed_rounds": 4,
+      "dosed_us_per_round": 147386.21825,
+      "null_rounds": 4,
+      "null_us_per_round": 145517.59399999998,
+      "width": "w7"
+    },
+    {
+      "delta_us_per_round": 1971.5,
+      "delta_us_per_unit": 492.875,
+      "dosed_rounds": 1,
+      "dosed_us_per_round": 160156.04200000002,
+      "null_rounds": 1,
+      "null_us_per_round": 158184.54200000002,
+      "width": "w8"
+    }
+  ],
+  "insitu_units_per_round": 4,
+  "insitu_us_per_unit": 397.3856283783771,
+  "isolated_dispatches": 74,
+  "isolated_leg": "e116r1-iso-k1",
+  "isolated_max_us": 430.5,
+  "isolated_min_us": 404.75,
+  "isolated_units_per_round": 1,
+  "isolated_us_per_unit": 411.85925675675674,
+  "official_or_ranked_score": false,
+  "rung": 1,
+  "timing_valid": false
+}

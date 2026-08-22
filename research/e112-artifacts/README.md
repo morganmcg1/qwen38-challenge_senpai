@@ -43,6 +43,32 @@ different snapshot changes the row counts and moves every table slightly.
 Reproduce them with `python3 research/e112_wandb_log.py`. Every table in all
 three runs is `harness=local`. Nothing here is a ranked measurement.
 
+## Q1 is closed and its arm switch is deleted from the scored surface
+
+E116 rung 0a deleted `MLX_E112_SKIP_1025_WARM`, its `Self.traceRounds` witness
+line and the E112 comment block from
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift`, and restored the plain
+`if extK.dim(2) == 1024 {` guard on the kL=1025 SDPA compile warm. Deletion is
+the campaign default for a closed arm, so the scored source now carries one
+obvious warm path.
+
+`research/e112_abba.sh` and `research/e112_analyse.py` still name the flag.
+They no longer run against the current source. Reapply the switch first if a
+reopener below ever fires:
+
+```bash
+git show 7d3d44e5:Sources/MLXFastModel/Qwen36MTPBlockSession.swift \
+  > /tmp/e112-flag-source.swift   # read the deleted arm switch
+```
+
+Only two observations reopen Q1. Neither is on the table:
+
+1. A ranked decode window longer than 512 tokens. The seed is 512 tokens, so a
+   shorter window never walks the key length to 1024 and the blocks=64 to
+   blocks=128 boundary is never crossed inside the timed leg.
+2. A schedule change that raises committed context enough that crossing starts
+   many rounds earlier than round 65 of 77.
+
 ## Timing legs are not gate qualified
 
 `rung1-abba.json` was measured with `MLXFAST_LOCAL_COOL_GATE=0` under the

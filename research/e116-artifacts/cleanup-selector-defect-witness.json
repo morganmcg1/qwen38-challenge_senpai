@@ -1,0 +1,29 @@
+{
+ "affine_qmv_fast_dispatches_by_entry": {
+  "groups": 13113
+ },
+ "consequence": "affine_qmv_fast grid=1x4352x1 tg=32x2x1 launches 4,352 THREADGROUPS of 64 threads, which is 278,528 threads, not 4,352 threads. mlp.gate_up has N=34,816 rows, so 34,816/4,352 is 8 rows per threadgroup and 4 rows per 32-lane SIMD group, which is the affine_qmv_fast layout. The threads reading is not merely wrong, it is not realisable: 4,352 threads cannot fill 68 threadgroups of 64.",
+ "cool_gate_passed_real_gate": false,
+ "defect": "swizzleDispatch captured the selector for the original call but never gave it to DispatchLedger.dispatch, so a census row could not say whether grid counted threads or threadgroups",
+ "dispatches_by_entry": {
+  "groups": 23788,
+  "threads": 74292
+ },
+ "dispatches_total": 98080,
+ "dispatches_without_an_entry_token": 0,
+ "every_wide_qmv_dispatch_is_threadgroups": true,
+ "examples": {
+  "groups": "affine_gather_qmv_fast_bfloat16_t_gs_64_b_2 grid=1x1x3073 tg=32x2x1 entry=groups",
+  "threads": "affine_dequantize_bfloat16_t_gs_64_b_4 grid=2560x1x1 tg=1024x1x1 entry=threads"
+ },
+ "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+ "fix_lives_in": "research/e116-artifacts/instruments.patch",
+ "gate_qualified_for_timing": false,
+ "groups_share_of_all_dispatches": 0.24253670473083197,
+ "harness": "local",
+ "official_or_ranked_score": false,
+ "rung": "cleanup",
+ "site": "Sources/MLXFastModel/E58DispatchCensus.swift, swizzleDispatch and DispatchLedger.dispatch",
+ "witness_is_not_a_timing_leg": true,
+ "witness_tag": "e116-selector-fix-witness2"
+}

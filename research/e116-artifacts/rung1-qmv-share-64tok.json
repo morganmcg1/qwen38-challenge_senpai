@@ -1,0 +1,124 @@
+{
+  "cool_gate_passed_real_gate": false,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "frames": {
+    "all_decode": {
+      "all_qmv_share": 0.8927289268697581,
+      "dose_us_per_round": 411.85925675675674,
+      "gather_qmv_us_per_round": 127.75448648648647,
+      "narrow_qmv_us_per_round": 40977.9015945946,
+      "round_busy_us_per_round": 65040.046216216215,
+      "rounds": 74,
+      "wide_qmv_share": 0.2607235936565668,
+      "wide_qmv_us_per_round": 16957.474581081082,
+      "widths": [
+        1,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "mtp_round": {
+      "all_qmv_share": 0.9447046237275247,
+      "dose_us_per_round": 412.38329999999996,
+      "gather_qmv_us_per_round": 945.3831999999999,
+      "narrow_qmv_us_per_round": 4644.9212,
+      "round_busy_us_per_round": 138747.7239,
+      "rounds": 10,
+      "wide_qmv_share": 0.9044134806163836,
+      "wide_qmv_us_per_round": 125485.3119,
+      "widths": [
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "serial_round": {
+      "all_qmv_share": 0.8716764126978097,
+      "dose_us_per_round": 411.777375,
+      "gather_qmv_us_per_round": 0.0,
+      "narrow_qmv_us_per_round": 46654.92978125,
+      "round_busy_us_per_round": 53523.221578125,
+      "rounds": 64,
+      "wide_qmv_share": 0.0,
+      "wide_qmv_us_per_round": 0.0,
+      "widths": [
+        1
+      ]
+    }
+  },
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "isolated_command_buffers": true,
+  "min_mtp_width": 2,
+  "official_or_ranked_score": false,
+  "per_width_us_per_round": {
+    "w0": {
+      "dose": 0.0,
+      "gather_qmv": 698.2495,
+      "narrow_qmv": 189801.5435,
+      "other": 31538129.884999983,
+      "rounds": 2,
+      "total": 33609490.66049998,
+      "wide_qmv": 1880860.9825000002
+    },
+    "w1": {
+      "dose": 411.777375,
+      "gather_qmv": 0.0,
+      "narrow_qmv": 46654.92978125,
+      "other": 6868.291796875001,
+      "rounds": 64,
+      "total": 53934.998953125,
+      "wide_qmv": 0.0
+    },
+    "w5": {
+      "dose": 407.75,
+      "gather_qmv": 692.791,
+      "narrow_qmv": 3354.333,
+      "other": 19536.249999999996,
+      "rounds": 1,
+      "total": 114750.499,
+      "wide_qmv": 90759.375
+    },
+    "w6": {
+      "dose": 413.854,
+      "gather_qmv": 857.79175,
+      "narrow_qmv": 4216.261,
+      "other": 6561.06225,
+      "rounds": 4,
+      "total": 134590.45725,
+      "wide_qmv": 122541.48825
+    },
+    "w7": {
+      "dose": 412.55225,
+      "gather_qmv": 1033.20825,
+      "narrow_qmv": 5079.521,
+      "other": 6087.355000000001,
+      "rounds": 4,
+      "total": 145298.95925,
+      "wide_qmv": 132686.32275000002
+    },
+    "w8": {
+      "dose": 410.458,
+      "gather_qmv": 1197.041,
+      "narrow_qmv": 5911.751,
+      "other": 6591.156999999999,
+      "rounds": 1,
+      "total": 157292.907,
+      "wide_qmv": 143182.5
+    }
+  },
+  "rounds_by_width": {
+    "w0": 2,
+    "w1": 64,
+    "w5": 1,
+    "w6": 4,
+    "w7": 4,
+    "w8": 1
+  },
+  "rung": 4,
+  "tag": "e116r1-iso-k1",
+  "timing_valid": false
+}
