@@ -74,12 +74,20 @@ readonly WITNESS=(
   # timed binary is the pre-D_S body and the g17s spill at NA=7 is back.
   --require 'const float scale_local_r = scales[group_index];'
   --forbid  'thread float scale_local[rows_per_simd];'
+  # THE WITNESS THAT DECIDES THE RECEIPT. The ranked runner sets no
+  # environment, so the shipped route is whatever `entry` and `table` fall back
+  # to. This literal is built only for the selected pair, so it can fail.
+  --require 'e120_default_route/tiered_switch/onepass67'
+  --forbid  'e120_default_route/shared_switch/shipped'
+  --forbid  'e120_default_route/tiered_switch/shipped'
+  --forbid  'e120_default_route/tiered_switch/onepass678'
   # The dispatch table itself is interpolated into the Metal source, so no
   # `qwen_e120_qmv_m<...>` instantiation can ever be witnessed here. The plan
-  # witness is the literal that carries it. Every table is compiled in, so
-  # `strings` proves which tables exist, not which one a run selects; the
-  # pipeline log proves the selection at run time. `renderPlan` equality with
-  # each literal is asserted by `planWitnessMatchesWidthPlan`.
+  # witness is the literal that carries it. Every table's literal is compiled
+  # in whichever table is the default, so these four prove which tables exist
+  # and CANNOT prove which one a run selects. The `e120_default_route` literal
+  # above is the gate; these are inventory. `renderPlan` equality with each
+  # literal is asserted by `planWitnessMatchesWidthPlan`.
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4'
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4'
   --require 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4'

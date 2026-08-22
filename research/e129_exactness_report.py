@@ -16,16 +16,19 @@ import sys
 
 LEGS = (("base", "shared switch, shipped, wide grid"),
         ("tier", "tiered switch, shipped, wide grid"),
-        ("onep", "tiered switch, one-pass, wide grid"),
+        ("one6", "tiered switch, onepass6, wide grid"),
+        ("one67", "tiered switch, onepass67, wide grid"),
+        ("one678", "tiered switch, onepass678, wide grid"),
         ("basetight", "shared switch, shipped, tight grid"),
         ("tiertight", "tiered switch, shipped, tight grid"),
-        ("oneptight", "tiered switch, one-pass, tight grid"))
+        ("one678tight", "tiered switch, onepass678, tight grid"))
 
 # A tight-grid leg must reproduce its wide-grid leg element for element. That
 # is a stronger statement than "both are bit exact against quantizedMM",
 # because it also covers the rows where the one-pass table is already wrong:
 # dropping the empty threadgroups must not change even a wrong answer.
-GRID_PAIRS = (("base", "basetight"), ("tier", "tiertight"), ("onep", "oneptight"))
+GRID_PAIRS = (("base", "basetight"), ("tier", "tiertight"),
+              ("one678", "one678tight"))
 
 
 def read(path: pathlib.Path) -> list[dict]:

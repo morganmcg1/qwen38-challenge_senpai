@@ -246,6 +246,33 @@ struct E120CustomQMVProbeTests {
         }
     }
 
+    /// The one witness that can fail.
+    ///
+    /// Every `Table.witness` literal is compiled into the worker whichever
+    /// table is the default, so `strings --require` on them passes even on a
+    /// worker that ships the wrong plan. `defaultRouteWitness` is built for the
+    /// selected pair only. This test is what stops the literal and the two
+    /// `compiledDefault` constants from drifting apart, which would restore the
+    /// unfailable witness rather than remove it.
+    @Test("the default-route witness names the compiled-in defaults")
+    func defaultRouteWitnessNamesTheCompiledDefaults() throws {
+        let expected = "e120_default_route/"
+            + Qwen35CustomQMV.Entry.compiledDefault.rawValue + "/"
+            + Qwen35CustomQMV.Table.compiledDefault.rawValue
+        #expect(Qwen35CustomQMV.defaultRouteWitness == expected)
+
+        // A one-pass table is only legal on the tiered entry point, so a
+        // default pair that `widthPlan` would trap on must not be shippable.
+        #expect(
+            Qwen35CustomQMV.Table.compiledDefault == .shipped
+                || Qwen35CustomQMV.Entry.compiledDefault == .tiered)
+
+        // The literal must not be reachable by concatenating shorter shipped
+        // strings, or the optimizer could fold it away and `strings` would
+        // still find the pieces.
+        #expect(Qwen35CustomQMV.defaultRouteWitness.utf8.count >= 16)
+    }
+
     /// A table that breaks either kernel precondition compiles into a body the
     /// generator never validated, so check every table here rather than at
     /// dispatch.

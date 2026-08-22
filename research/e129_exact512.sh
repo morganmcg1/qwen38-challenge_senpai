@@ -46,7 +46,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # Re-pin only from a clean build of the recorded BASE_SHA, never from a
 # candidate leg.
 pin=719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e
-legs="base,tier,onepass67,neg"
+legs="default,base,tier,onepass67,neg"
 
 while (($#)); do
   case "$1" in
@@ -68,19 +68,26 @@ mkdir -p "${out}"
 failures=0
 declare -a exact_tags=()
 
+# `-` means "leave the variable unset". That is the ranked runner's own
+# environment, so the `default` leg is the only one that measures the archive
+# as it will actually be scored. Every other leg names its route explicitly.
 run_leg() {
   local tag="$1" tokens="$2" entry="$3" table="$4"
   echo
   echo "=== ${tag}: entry=${entry} table=${table} tokens=${tokens} ==="
   (
-    export MLX_E120_QMV_ENTRY="${entry}"
-    export MLX_E120_QMV_TABLE="${table}"
+    [[ "${entry}" == "-" ]] || export MLX_E120_QMV_ENTRY="${entry}"
+    [[ "${table}" == "-" ]] || export MLX_E120_QMV_TABLE="${table}"
     export MLX_E120_QMV_PIPELINE_LOG="${PWD}/research/out/${tag}-pipelines.json"
     rm -f "${MLX_E120_QMV_PIPELINE_LOG}"
     research/e79_trace_leg.sh "${tag}" "${tokens}"
   ) || { echo "e129_exact512: leg ${tag} failed" >&2; failures=$((failures + 1)); }
 }
 
+case ",${legs}," in *,default,*)
+  run_leg e129x512dflt 512 - -
+  exact_tags+=(e129x512dflt) ;;
+esac
 case ",${legs}," in *,base,*)
   run_leg e129x512base 512 shared_switch shipped
   exact_tags+=(e129x512base) ;;

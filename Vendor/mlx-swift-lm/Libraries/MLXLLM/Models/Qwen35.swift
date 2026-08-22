@@ -1758,6 +1758,9 @@ public enum Qwen35CustomQMV {
         case shared = "shared_switch"
         /// One entry point per distinct `ipg`.
         case tiered = "tiered_switch"
+
+        /// The layout a run with no override selects.
+        public static let compiledDefault = Entry.tiered
     }
 
     /// Which entry-point layout the dispatch uses. Both layouts emit the same
@@ -1767,8 +1770,8 @@ public enum Qwen35CustomQMV {
     /// the prompt or the benchmark phase.
     public static let entry: Entry = {
         let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_ENTRY"]
-        guard let raw, !raw.isEmpty else { return .tiered }
-        return Entry(rawValue: raw) ?? .tiered
+        guard let raw, !raw.isEmpty else { return .compiledDefault }
+        return Entry(rawValue: raw) ?? .compiledDefault
     }()
 
     /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
@@ -1797,6 +1800,15 @@ public enum Qwen35CustomQMV {
         case onePass67 = "onepass67"
         /// One pass at M=6, M=7 and M=8.
         case onePass678 = "onepass678"
+
+        /// The table a run with no override selects, so the table the ranked
+        /// runner uses. `{6:6, 7:7}` sits on the mode of the width
+        /// distribution of the prompts that carry the ranked median: beagle
+        /// carries it in 97.9 % of official runs at mean width 5.38, and the
+        /// next four carry it at 5.99 to 7.15. M=8 is left on tier 4 here and
+        /// moves in its own receipt, because its ranked mass is small even
+        /// though it dominates the local fixture.
+        public static let compiledDefault = Table.onePass67
 
         /// `(m, ipg, rps)` for every routable width.
         ///
@@ -1859,9 +1871,20 @@ public enum Qwen35CustomQMV {
     /// `Entry.tiered`, and `plans` enforces that.
     public static let table: Table = {
         let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_TABLE"]
-        guard let raw, !raw.isEmpty else { return .shipped }
-        return Table(rawValue: raw) ?? .shipped
+        guard let raw, !raw.isEmpty else { return .compiledDefault }
+        return Table(rawValue: raw) ?? .compiledDefault
     }()
+
+    /// The compiled-in route, as one literal the worker's string table carries.
+    ///
+    /// The ranked runner sets no environment, so the route it takes is whatever
+    /// `entry` and `table` fall back to. Every `Table.witness` literal is
+    /// compiled in whichever table is the default, so those literals prove only
+    /// that a plan exists, never that it ships. This literal exists only for
+    /// the pair actually selected, which makes it a `strings` witness that can
+    /// fail. `defaultRouteWitnessNamesTheCompiledDefaults` pins it against the
+    /// two `compiledDefault` constants.
+    public static let defaultRouteWitness = "e120_default_route/tiered_switch/onepass67"
 
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
         precondition(
@@ -2011,6 +2034,7 @@ public enum Qwen35CustomQMV {
               "table": "\(table.rawValue)",
               "grid": "\(grid.rawValue)",
               "plan": "\(planWitness)",
+              "default_route": "\(defaultRouteWitness)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {
