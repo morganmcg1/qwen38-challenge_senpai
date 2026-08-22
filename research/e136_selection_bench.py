@@ -51,7 +51,14 @@ CLUSTERS = 12_292
 ROWS_PER_CLUSTER = 8
 PROBE_SHIPPED = 0.25
 PROBE_C1 = 0.35
-HIST_BINS = 256
+# The bin key is the TOP 16 BITS of the float ordinal. A bf16 score is exactly
+# the top 16 bits of its fp32 value, so the key is a lossless, order preserving
+# image of the score and the selection is the exact top `N` up to bf16 ties.
+# An 8-bit key is not: its low bit is a float exponent bit, so a whole octave
+# lands in one bin and the capacity clamp then throws away real winners. That
+# is measured, not assumed -- the 8-bit key kept 14 of the true top 32.
+HIST_BINS = 65_536
+HIST_GROUPS = 256
 HIST_TILES = 64
 
 # FACT 33, edward E92: the read-only bandwidth ceiling on this host family.
@@ -269,61 +276,66 @@ def finalize_source(plan: Plan) -> str:
 
 
 def hist_source(rows: int) -> str:
-    """Stage 1(i): a 256-bin histogram of the top ordinal byte.
+    """Stage 1(i): a 65,536-bin histogram of the top 16 ordinal bits.
 
-    Threadgroup atomics keep the device traffic at one merged word per bin per
-    threadgroup. The bin key is the top byte of `qwen_top32_ordinal`, which is
-    monotone in the score, so bin order IS score order.
+    A threadgroup-local histogram cannot hold 65,536 bins in 32 KB, so the adds
+    go straight to device memory. Contention stays low because a 34,424 row
+    population spreads over roughly a thousand live bins.
     """
     return DEP_GUARD + f"""
         constexpr uint ROWS  = {rows};
         constexpr uint GRID  = {HIST_TILES * TG};
-        constexpr uint NBINS = {HIST_BINS};
 
-        uint tid = thread_position_in_threadgroup.x;
         uint gid = thread_position_in_grid.x;
-
-        threadgroup atomic_uint local[NBINS];
-        atomic_store_explicit(&local[tid], 0u, memory_order_relaxed);
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-
         for (uint i = gid; i < ROWS; i += GRID) {{
-            uint b = qwen_top32_ordinal(float(score[i])) >> 24;
-            atomic_fetch_add_explicit(&local[b], 1u, memory_order_relaxed);
-        }}
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-
-        uint v = atomic_load_explicit(&local[tid], memory_order_relaxed);
-        if (v != 0u) {{
+            uint b = qwen_top32_ordinal(float(score[i])) >> 16;
             atomic_fetch_add_explicit(
-                (device atomic_uint *)&bins[tid], v, memory_order_relaxed);
+                (device atomic_uint *)&bins[b], 1u, memory_order_relaxed);
         }}
         """
 
 
 def thresh_source(survivors: int) -> str:
-    """Stage 1(ii): one threadgroup finds the boundary bin.
+    """Stage 1(ii): one threadgroup finds the exact boundary bin.
 
     `ctl` is [tau, count_strictly_above_tau, capacity_left_in_tau, cursor].
-    The scan is 256 serial adds in one thread: at this width a parallel scan
-    costs more in barriers than it saves in adds.
+    Each of the 256 threads reduces a contiguous run of 256 bins, then one
+    thread walks the 256 group sums down from the top and re-walks the single
+    group that straddles `WANT`. That is 512 serial adds, cheaper in barriers
+    than a two-level parallel scan at this width.
     """
     return DEP_GUARD + f"""
-        constexpr uint NBINS = {HIST_BINS};
-        constexpr uint WANT  = {survivors};
+        constexpr uint NBINS  = {HIST_BINS};
+        constexpr uint GROUPS = {HIST_GROUPS};
+        constexpr uint PER    = NBINS / GROUPS;
+        constexpr uint WANT   = {survivors};
 
         uint tid = thread_position_in_threadgroup.x;
-        threadgroup uint c[NBINS];
-        c[tid] = bins[tid];
+        uint s = 0u;
+        for (uint i = 0; i < PER; ++i) {{ s += bins[tid * PER + i]; }}
+        threadgroup uint g[GROUPS];
+        g[tid] = s;
         threadgroup_barrier(mem_flags::mem_threadgroup);
 
         if (tid == 0) {{
-            uint acc = 0u, tau = 0u, above = 0u;
-            for (int b = int(NBINS) - 1; b >= 0; --b) {{
+            uint acc = 0u, above_groups = 0u;
+            uint gsel = 0u;
+            for (int q = int(GROUPS) - 1; q >= 0; --q) {{
                 uint prev = acc;
-                acc += c[b];
-                if (acc >= WANT) {{ tau = uint(b); above = prev; break; }}
-                if (b == 0) {{ tau = 0u; above = prev; }}
+                acc += g[q];
+                if (acc >= WANT) {{ gsel = uint(q); above_groups = prev; break; }}
+                if (q == 0) {{ gsel = 0u; above_groups = prev; }}
+            }}
+            uint acc2 = above_groups;
+            uint tau = gsel * PER;
+            uint above = above_groups;
+            for (int b = int(PER) - 1; b >= 0; --b) {{
+                uint prev = acc2;
+                acc2 += bins[gsel * PER + uint(b)];
+                if (acc2 >= WANT) {{
+                    tau = gsel * PER + uint(b); above = prev; break;
+                }}
+                if (b == 0) {{ tau = gsel * PER; above = prev; }}
             }}
             ctl[0] = tau;
             ctl[1] = above;
@@ -351,7 +363,7 @@ def compact_source(rows: int, capacity: int) -> str:
 
         for (uint i = gid; i < ROWS; i += GRID) {{
             uint o = qwen_top32_ordinal(float(score[i]));
-            uint b = o >> 24;
+            uint b = o >> 16;
             if (b < tau) {{ continue; }}
             uint slot = atomic_fetch_add_explicit(
                 (device atomic_uint *)&cursor[0], 1u, memory_order_relaxed);
@@ -465,8 +477,8 @@ class TwoStageArm:
                          grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
                          output_shapes=[[HIST_BINS]],
                          output_dtypes=[mx.uint32], init_value=0)[0]
-        ctl = self.thresh(inputs=[bins, dep], grid=(HIST_BINS, 1, 1),
-                          threadgroup=(HIST_BINS, 1, 1),
+        ctl = self.thresh(inputs=[bins, dep], grid=(HIST_GROUPS, 1, 1),
+                          threadgroup=(HIST_GROUPS, 1, 1),
                           output_shapes=[[4]], output_dtypes=[mx.uint32],
                           init_value=0)[0]
         surv = self.compact(inputs=[self.score, ctl, dep],
@@ -592,8 +604,8 @@ def correctness(arm_two, arm_ship) -> dict:
     bins = arm_two.hist(inputs=[arm_two.score, dep], grid=(HIST_TILES * TG, 1, 1),
                         threadgroup=(TG, 1, 1), output_shapes=[[HIST_BINS]],
                         output_dtypes=[mx.uint32], init_value=0)[0]
-    ctl = arm_two.thresh(inputs=[bins, dep], grid=(HIST_BINS, 1, 1),
-                         threadgroup=(HIST_BINS, 1, 1), output_shapes=[[4]],
+    ctl = arm_two.thresh(inputs=[bins, dep], grid=(HIST_GROUPS, 1, 1),
+                         threadgroup=(HIST_GROUPS, 1, 1), output_shapes=[[4]],
                          output_dtypes=[mx.uint32], init_value=0)[0]
     surv = arm_two.compact(inputs=[arm_two.score, ctl, dep],
                            grid=(HIST_TILES * TG, 1, 1), threadgroup=(TG, 1, 1),
@@ -604,7 +616,30 @@ def correctness(arm_two, arm_ship) -> dict:
     mx.eval(bins, ctl, surv[0], surv[1], surv[2])
     kept = set(surv[1].tolist())
     emitted = int(surv[2].item())
+    # Positive control. Raise the single worst row above every other row: it
+    # must appear in the survivor set. A gate that cannot fail is not a gate.
+    worst = int(mx.argmin(arm_two.score.astype(mx.float32)).item())
+    damaged = mx.array(arm_two.score.astype(mx.float32))
+    damaged[worst] = float(mx.max(arm_two.score.astype(mx.float32)).item()) + 1.0
+    damaged = damaged.astype(mx.bfloat16)
+    dbins = arm_two.hist(inputs=[damaged, dep], grid=(HIST_TILES * TG, 1, 1),
+                         threadgroup=(TG, 1, 1), output_shapes=[[HIST_BINS]],
+                         output_dtypes=[mx.uint32], init_value=0)[0]
+    dctl = arm_two.thresh(inputs=[dbins, dep], grid=(HIST_GROUPS, 1, 1),
+                          threadgroup=(HIST_GROUPS, 1, 1), output_shapes=[[4]],
+                          output_dtypes=[mx.uint32], init_value=0)[0]
+    dsurv = arm_two.compact(inputs=[damaged, dctl, dep],
+                            grid=(HIST_TILES * TG, 1, 1),
+                            threadgroup=(TG, 1, 1),
+                            output_shapes=[[arm_two.survivors],
+                                           [arm_two.survivors], [1]],
+                            output_dtypes=[mx.uint32, mx.uint32, mx.uint32],
+                            init_value=0)
+    mx.eval(dsurv[1])
+    control_ok = worst in set(dsurv[1].tolist()) and worst not in kept
     return {
+        "positive_control_worst_row": worst,
+        "positive_control_detects_the_change": control_ok,
         "survivors_requested": arm_two.survivors,
         "rows_that_passed_the_threshold": emitted,
         "distinct_rows_kept": len(kept),
