@@ -1,0 +1,77 @@
+{
+  "steps": 16,
+  "arms": {
+    "shipped": {
+      "seeds": {
+        "beagle_a": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/beagle_a_shipped_16.json",
+          "round_count": 6,
+          "tokens": 6,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 23,
+          "reference_checked_row_total": 23,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 11,
+          "rejected_draft_total": 6,
+          "target_tail_total": 6,
+          "accepted_draft_rate": 0.6470588235294118,
+          "mean_accepted_drafts_per_round": 1.8333333333333333,
+          "mean_tokens_per_round": 2.8333333333333335,
+          "widened_draft_rows": 0,
+          "widened_draft_rows_accepted": 0,
+          "widened_distinct_tokens": 0,
+          "arm_witnessed": "shipped-compatible",
+          "rounds_with_draft_rows": 6,
+          "rounds_truncated_by_unproposable_token": 2,
+          "truncation_share_of_rounds_pct": 33.333333333333336,
+          "top_truncating_tokens": [
+            [
+              206385,
+              1
+            ],
+            [
+              165208,
+              1
+            ]
+          ]
+        }
+      }
+    },
+    "full": {
+      "seeds": {
+        "beagle_a": {
+          "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/beagle_a_full_16.json",
+          "round_count": 5,
+          "tokens": 5,
+          "all_tokens_matched": true,
+          "parity_all_ok": true,
+          "residual_divergence_count": 0,
+          "declared_rows_total": 20,
+          "reference_checked_row_total": 20,
+          "head_sha256": "dadbfb806d80",
+          "accepted_draft_total": 11,
+          "rejected_draft_total": 4,
+          "target_tail_total": 5,
+          "accepted_draft_rate": 0.7333333333333333,
+          "mean_accepted_drafts_per_round": 2.2,
+          "mean_tokens_per_round": 3.2,
+          "widened_draft_rows": 1,
+          "widened_draft_rows_accepted": 1,
+          "widened_distinct_tokens": 1,
+          "arm_witnessed": "widened",
+          "rounds_with_draft_rows": 5,
+          "rounds_truncated_by_unproposable_token": 1,
+          "truncation_share_of_rounds_pct": 20.0,
+          "top_truncating_tokens": [
+            [
+              206385,
+              1
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
