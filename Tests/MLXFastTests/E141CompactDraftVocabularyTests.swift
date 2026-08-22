@@ -34,6 +34,15 @@ struct E141CompactDraftVocabularyTests {
             .environment["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
+    /// The test bundle's working directory is not the checkout, so resolve the
+    /// weights against this source file instead.
+    private static var repositoryRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
     /// Candidate bounds the census names, plus both corners of the control
     /// block, which are the only places the collapse rule can be wrong.
     private static let bounds = [
@@ -122,16 +131,20 @@ struct E141CompactDraftVocabularyTests {
         guard Self.runtimeEnabled else { return }
         let targetPath = ProcessInfo.processInfo
             .environment["MLXFAST_E141_TARGET_SHARD"]
-            ?? "weights/model-00003-of-00003.safetensors"
+            ?? Self.repositoryRoot
+            .appendingPathComponent("weights/model-00003-of-00003.safetensors").path
         let headPath = ProcessInfo.processInfo
             .environment["MLXFAST_E141_DECLARED_HEAD"]
             ?? FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent(
                     ".cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors"
                 ).path
-        guard FileManager.default.fileExists(atPath: targetPath),
-              FileManager.default.fileExists(atPath: headPath)
-        else { return }
+        // A silently skipped licensing gate reads exactly like a passing one,
+        // so demand the artifacts once the runtime flag asks for the check.
+        try #require(FileManager.default.fileExists(atPath: targetPath),
+                     "missing target shard \(targetPath)")
+        try #require(FileManager.default.fileExists(atPath: headPath),
+                     "missing declared head \(headPath)")
 
         let target = try MLX.loadArrays(url: URL(fileURLWithPath: targetPath))
         let head = try MLX.loadArrays(url: URL(fileURLWithPath: headPath))
