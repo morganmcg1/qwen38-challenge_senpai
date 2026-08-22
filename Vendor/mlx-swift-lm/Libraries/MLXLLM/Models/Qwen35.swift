@@ -1408,14 +1408,19 @@ private let qwen35CompiledFusedSwiGLU:
 /// the four activations per lane are read as one `vec<T,4>`, the chunk sum is
 /// three BF16 adds accumulated into a float lane, the nibble products are
 /// summed into a `vec<float,NA>` per output row, and the K reduction closes
-/// with `simd_sum`. `K` and `N` are template arguments here and runtime
-/// `constant int&` there; that changes loop-bound materialization only.
+/// with `simd_sum`. `K` and `N` stay runtime values, read from `x_shape` and
+/// `w_shape`; making them template arguments unrolls the K loop and the
+/// compiler then produces a wrong answer at NA = 5 with K = 5120 (E120 rung 1,
+/// 174,072 of 174,080 outputs differ, `max_abs_diff` 4501.3125), so one
+/// pipeline serves every shape and every width.
 private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
     name: "qwen35_custom_affine4_g64_qmv_wide_v1",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
     source: """
         const int qmv_m = x_shape[x_ndim - 2];
+        const int qmv_k = x_shape[x_ndim - 1];
+        const int qmv_n = w_shape[0];
         const uint3 qmv_tid = threadgroup_position_in_grid;
         const uint qmv_lid = thread_index_in_simdgroup;
         const uint qmv_sgid = simdgroup_index_in_threadgroup;
@@ -1423,45 +1428,54 @@ private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
         const int qmv_gx = int(qmv_tid.x);
         switch (qmv_m) {
             case 3:
-                qwen_e120_qmv_m<3, 3, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<3, 3>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             case 4:
-                qwen_e120_qmv_m<4, 4, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<4, 4>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             case 5:
-                qwen_e120_qmv_m<5, 5, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<5, 5>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             case 6:
-                qwen_e120_qmv_m<6, 3, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<6, 3>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             case 7:
-                qwen_e120_qmv_m<7, 4, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<7, 4>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             case 8:
-                qwen_e120_qmv_m<8, 4, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<8, 4>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             case 9:
-                qwen_e120_qmv_m<9, 3, QK, QN>(
-                    w, scales, biases, x, y, qmv_gx, qmv_out_row, qmv_lid);
+                qwen_e120_qmv_m<9, 3>(
+                    w, scales, biases, x, y, qmv_k, qmv_n,
+                    qmv_gx, qmv_out_row, qmv_lid);
                 break;
             default:
                 break;
         }
         """,
     header: """
-        template <int NA, int QK, int QN>
+        template <int NA>
         inline void qwen_e120_qmv_wide(
             const device uint32_t* w,
             const device bfloat16_t* scales,
             const device bfloat16_t* biases,
             const device bfloat16_t* x,
             device bfloat16_t* y,
+            const int in_vec_size,
+            const int out_vec_size,
             int first_m,
             int out_row,
             uint simd_lid
@@ -1471,15 +1485,15 @@ private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
             constexpr int values_per_thread = 16;
             constexpr int block_size = values_per_thread * 32;
             constexpr int bytes_per_lane = 8;
-            constexpr int in_vec_size_w = QK / 2;
-            constexpr int in_vec_size_g = QK / 64;
+            const int in_vec_size_w = in_vec_size / 2;
+            const int in_vec_size_g = in_vec_size / 64;
 
             VF acc[rows_per_simd];
             for (int r = 0; r < rows_per_simd; r++) {
                 acc[r] = VF(0.0f);
             }
 
-            for (int k = 0; k < QK; k += block_size) {
+            for (int k = 0; k < in_vec_size; k += block_size) {
                 thread uint16_t packed[rows_per_simd][4];
                 thread float scale_local[rows_per_simd];
                 thread float bias_local[rows_per_simd];
@@ -1507,8 +1521,9 @@ private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
                 for (int i = 0; i < 4; i++) {
                     VF a0, a1, a2, a3;
                     for (int m = 0; m < NA; m++) {
-                        const device bfloat16_t* xm = x + (first_m + m) * QK +
-                            k + simd_lid * values_per_thread + 4 * i;
+                        const device bfloat16_t* xm =
+                            x + (first_m + m) * in_vec_size + k +
+                            simd_lid * values_per_thread + 4 * i;
                         const vec<bfloat16_t, 4> xv =
                             *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
                                 xm);
@@ -1534,20 +1549,22 @@ private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
                 for (int m = 0; m < NA; m++) {
                     const float reduced = simd_sum(acc[r][m]);
                     if (simd_lid == 0) {
-                        y[(first_m + m) * QN + out_row + r] =
+                        y[(first_m + m) * out_vec_size + out_row + r] =
                             static_cast<bfloat16_t>(reduced);
                     }
                 }
             }
         }
 
-        template <int M, int IPG, int QK, int QN>
+        template <int M, int IPG>
         inline void qwen_e120_qmv_m(
             const device uint32_t* w,
             const device bfloat16_t* scales,
             const device bfloat16_t* biases,
             const device bfloat16_t* x,
             device bfloat16_t* y,
+            const int in_vec_size,
+            const int out_vec_size,
             int group_x,
             int out_row,
             uint simd_lid
@@ -1559,11 +1576,13 @@ private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
                 return;
             }
             if (TAIL == 0 || M - first_m >= IPG) {
-                qwen_e120_qmv_wide<IPG, QK, QN>(
-                    w, scales, biases, x, y, first_m, out_row, simd_lid);
+                qwen_e120_qmv_wide<IPG>(
+                    w, scales, biases, x, y, in_vec_size, out_vec_size,
+                    first_m, out_row, simd_lid);
             } else {
-                qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), QK, QN>(
-                    w, scales, biases, x, y, first_m, out_row, simd_lid);
+                qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2)>(
+                    w, scales, biases, x, y, in_vec_size, out_vec_size,
+                    first_m, out_row, simd_lid);
             }
         }
         """,
@@ -1623,7 +1642,6 @@ public enum Qwen35CustomQMV {
         outShape[outShape.count - 1] = n
         return qwen35CustomAffine4QMVKernel(
             [w, scales, biases, x],
-            template: [("QK", k), ("QN", n)],
             grid: (m * 32, (n / 8) * 2, 1),
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
