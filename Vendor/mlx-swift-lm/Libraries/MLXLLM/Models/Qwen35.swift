@@ -4233,8 +4233,16 @@ private let qwen35Top32Header = """
 
 // Stage 1: `tiles` threadgroups partition [0, REAL_COUNT); each emits its top
 // 32 as (ordinal, index) pairs, so stage 2 reduces `tiles * 32` candidates.
-private func qwen35Top32PartialSource(_ plan: Qwen35Top32Plan) -> String {
-    """
+//
+// `indirect` is the E136 C1 form: the keys are survivors emitted by a
+// compaction pass, so slot `i` carries an unrelated `row_id[i]`. Breaking ties
+// on that stable row id instead of on `i` makes the selection independent of
+// the order the atomics happened to hand out slots in.
+private func qwen35Top32PartialSource(
+    _ plan: Qwen35Top32Plan, indirect: Bool = false
+) -> String {
+    let key = indirect ? "row_id[i]" : "i"
+    return """
         constexpr uint REAL_COUNT = \(plan.realCount);
         constexpr uint TG_SIZE    = \(qwen35Top32TG);
         constexpr uint STRIDE     = \(plan.stride);
@@ -4259,7 +4267,7 @@ private func qwen35Top32PartialSource(_ plan: Qwen35Top32Plan) -> String {
         uint n = 0;
         for (uint i = tile * TG_SIZE + tid; i < REAL_COUNT; i += STRIDE) {
             ord[n] = qwen_top32_ordinal(float(logits[i]));
-            idx[n] = i;
+            idx[n] = \(key);
             n++;
         }
 
@@ -4336,14 +4344,20 @@ private let qwen35DraftTop32PartialKernel = MLXFast.metalKernel(
 // the compact-vocabulary id that row carries. Emitting that id here removes the
 // separate divide, remainder, multiply, add and two gathers that MLX would
 // otherwise run as five more command buffers on 32 elements.
+//
+// `permIndex` is the E136 C1 form: the winner already carries its permuted row
+// index, so only the final `perm` gather is left to fuse.
 private func qwen35Top32FinalizeSource(
-    _ plan: Qwen35Top32Plan, rowsPerCluster: Int?
+    _ plan: Qwen35Top32Plan, rowsPerCluster: Int?, permIndex: Bool = false
 ) -> String {
-    let emit = rowsPerCluster.map { rows in
-        "uint cluster = probed[mi / \(rows)u]; "
-            + "token_ids[TOPK - 1u - r] = "
-            + "uint(perm[cluster * \(rows)u + (mi % \(rows)u)]);"
-    } ?? "token_ids[TOPK - 1u - r] = mi;"
+    let emit =
+        permIndex
+        ? "token_ids[TOPK - 1u - r] = uint(perm[mi]);"
+        : rowsPerCluster.map { rows in
+            "uint cluster = probed[mi / \(rows)u]; "
+                + "token_ids[TOPK - 1u - r] = "
+                + "uint(perm[cluster * \(rows)u + (mi % \(rows)u)]);"
+        } ?? "token_ids[TOPK - 1u - r] = mi;"
     return """
         constexpr uint TG_SIZE    = \(qwen35Top32TG);
         constexpr uint PER_THREAD = \(plan.finPerThread);
@@ -4525,6 +4539,9 @@ let qwen35RowTop32Resolved: (enabled: Bool, source: String) = {
 /// the bare-leg proof that the compiled default reaches the fused kernels.
 public nonisolated(unsafe) var qwen35RowTop32FusedDrafts: Int = 0
 public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
+/// Draft steps served by the E136 C1 sketch readout, so a trace can prove
+/// which shortlist a leg actually ran.
+public nonisolated(unsafe) var qwen35C1SketchDrafts: Int = 0
 
 /// `unset`, `0` or `1`, for the same trace line.
 public var qwen35RowTop32GateSource: String { qwen35RowTop32Resolved.source }
@@ -4878,6 +4895,650 @@ private func qwen35ClusterRowQMV(
 /// expects under one changed proposal. 0.25 is the low-variance choice and it
 /// is the byte point the r1 arm-C and r2 balanced sessions both measured.
 private let qwen35DerivedClusterProbeFraction: Double = 0.25
+
+// ---------------------------------------------------------------------------
+// E136 ARM C1 - LOW-RANK SKETCH READOUT
+//
+// The shipped shortlist reads 1,600 affine-2 bytes for every centroid and for
+// every probed row: 12,292 + 24,584 rows at p = 0.25, which is 59.00 MB of the
+// 323.59 MB a draft step moves. C1 keeps the same two-level shape but scans a
+// rank-256 int8 SKETCH of those rows at 264 B/row, widens the probe to
+// p = 0.35, keeps the best 4,096 sketch rows, and pays the shipped affine-2
+// price on those survivors only. The exact affine-4 rerank behind it is
+// untouched, so the mechanism changes which 32 rows reach the reranker and
+// nothing else.
+//
+// BASIS PROVENANCE. The sketch basis is the top-256 eigenvector set of the
+// second moment of the head's own coarse rows about their mean.
+//   * Fit corpus: the loaded checkpoint, and nothing else. No prompt, no
+//     hidden state, no request, no file, no network, no benchmark phase.
+//   * Cross-fitted: by construction, because no evaluation datum enters the
+//     fit. There is no corpus to hold out from.
+//   * Frozen at build time: it is derived once, inside the derived cluster
+//     index, during the untimed warm. There is no run-time update path and no
+//     state that survives a request.
+//   * Shortlist-only: it chooses which rows reach the exact reranker. It never
+//     enters the exact rerank, the target verification, the row ledger or the
+//     top-two evidence, and it never changes the target's answer.
+// It is therefore in the same class as the derived cluster index it extends: a
+// fixed function of weights already in memory.
+//
+// EXACTNESS. This arm is not bit-identical to the shipped shortlist and is not
+// meant to be. A different draft proposal is legal; a different accepted token
+// stream is not. Two rows whose bf16 rerank scores tie can swap, so about one
+// position in seventy can emit a different draft token, and the target still
+// decides every accepted token.
+//
+// RECALL INVARIANT. The threshold pass picks the highest 16-bit ordinal bin
+// `tau` whose tail count is at least `N`, and reports `above`, the number of
+// rows STRICTLY above it. `qwen_top32_ordinal` is monotone in score, so every
+// row above `tau` outranks every row at or below it. When `above >= 32` the
+// true top 32 all sit strictly above `tau`, and the compaction writes that
+// whole region without a capacity clamp, so survivor recall of the true top 32
+// is exactly 1. Only when `above < 32` can the boundary-bin tie break matter.
+private let qwen35C1SketchRank = 256
+private let qwen35C1Survivors = 4_096
+private let qwen35C1ProbeFraction: Double = 0.35
+private let qwen35C1HistBins = 65_536
+private let qwen35C1HistGroups = 256
+private let qwen35C1HistTiles = 64
+private let qwen35C1SurvivorTiles = max(
+    8,
+    min(
+        qwen35RowTop32Tiles,
+        (qwen35C1Survivors + qwen35Top32TG - 1) / qwen35Top32TG))
+
+/// `MLX_E136_C1_SKETCH=1` selects the sketch readout. Unset or `0` keeps the
+/// shipped affine-2 shortlist bit-for-bit; the arm defaults OFF because the
+/// ranked worker exports no environment. Any other value fails closed so a
+/// typo can never time one arm under the other arm's tag. The `MLX_` prefix is
+/// load-bearing: the trusted worker's sanitizer drops `MLXFAST_*`.
+let qwen35C1SketchResolved: (enabled: Bool, source: String) = {
+    guard let raw = ProcessInfo.processInfo.environment["MLX_E136_C1_SKETCH"],
+          !raw.isEmpty
+    else { return (false, "unset") }
+    switch raw {
+    case "1": return (true, "1")
+    case "0": return (false, "0")
+    default:
+        fatalError("MLX_E136_C1_SKETCH must be unset, 0 or 1; got \(raw)")
+    }
+}()
+
+private let qwen35C1SketchEnabled: Bool = qwen35C1SketchResolved.enabled
+
+/// `q = B^T (x - mu)` in fp32, with the basis held transposed so one simdgroup
+/// reads one contiguous 5,120-wide basis row. The centred query is staged in
+/// threadgroup memory once per threadgroup instead of being re-read per output
+/// coordinate.
+private func qwen35C1ProjectSource(hidden: Int) -> String {
+    """
+    constexpr uint HIDDEN     = \(hidden);
+    constexpr uint RANK       = \(qwen35C1SketchRank);
+    constexpr uint TG_SIZE    = \(qwen35Top32TG);
+    constexpr uint SIMD_SIZE  = 32;
+    constexpr uint PER_TG     = TG_SIZE / SIMD_SIZE;
+
+    const uint tid  = thread_position_in_threadgroup.x;
+    const uint lane = thread_index_in_simdgroup;
+    const uint sg   = simdgroup_index_in_threadgroup;
+
+    threadgroup float xc[HIDDEN];
+    for (uint i = tid; i < HIDDEN; i += TG_SIZE) {
+        xc[i] = float(x[i]) - mu[i];
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    const uint j = threadgroup_position_in_grid.x * PER_TG + sg;
+    if (j >= RANK) { return; }
+    const device bfloat16_t *b = basis_t + j * HIDDEN;
+    float acc = 0.0f;
+    for (uint i = lane; i < HIDDEN; i += SIMD_SIZE) {
+        acc += float(b[i]) * xc[i];
+    }
+    const float total = simd_sum(acc);
+    if (lane == 0) { q[j] = total; }
+    """
+}
+
+/// `score[row] = scale[src] * (q . codes[src]) + offset[src]`, one simdgroup
+/// per row, eight rows per threadgroup. `gathered` resolves `src` through the
+/// probe list so the probed leaves are read without materializing a gather.
+private func qwen35C1SketchQMVSource(rows: Int, gathered: Bool) -> String {
+    let src =
+        gathered
+        ? "const uint src = uint(probed[row >> 3u]) * 8u + (row & 7u);"
+        : "const uint src = row;"
+    return """
+        constexpr uint RANK        = \(qwen35C1SketchRank);
+        constexpr uint ROWS        = \(rows);
+        constexpr uint TG_SIZE     = \(qwen35Top32TG);
+        constexpr uint SIMD_SIZE   = 32;
+        constexpr uint ROWS_PER_TG = TG_SIZE / SIMD_SIZE;
+        constexpr uint PER_LANE    = RANK / SIMD_SIZE;
+        static_assert(TG_SIZE == RANK, "one thread stages one coordinate");
+        static_assert(PER_LANE % 4 == 0, "the lane load is char4 shaped");
+
+        const uint tid  = thread_position_in_threadgroup.x;
+        const uint lane = thread_index_in_simdgroup;
+        const uint sg   = simdgroup_index_in_threadgroup;
+
+        threadgroup float qs[RANK];
+        qs[tid] = q[tid];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        const uint row = threadgroup_position_in_grid.x * ROWS_PER_TG + sg;
+        if (row >= ROWS) { return; }
+        \(src)
+
+        const device char4 *c = (const device char4 *)(codes + src * RANK);
+        float acc = 0.0f;
+        for (uint t = 0; t < PER_LANE / 4u; ++t) {
+            const uint w = lane * (PER_LANE / 4u) + t;
+            const char4 v = c[w];
+            const uint b = w * 4u;
+            acc += float(v.x) * qs[b] + float(v.y) * qs[b + 1u]
+                 + float(v.z) * qs[b + 2u] + float(v.w) * qs[b + 3u];
+        }
+        const float total = simd_sum(acc);
+        if (lane == 0) { y[row] = scale[src] * total + offset[src]; }
+        """
+}
+
+/// Stage 1(i): a 65,536-bin histogram of the top 16 ordinal bits.
+///
+/// A threadgroup-local histogram cannot hold 65,536 bins in 32 KB, so the adds
+/// go straight to device memory. Contention stays low because 34,424 rows
+/// spread over roughly a thousand live bins. Folding a 256-bin coarse level in
+/// here was measured and rejected: 34,424 atomics over 256 bins contend hard
+/// and took this kernel from 4.86 to 10.52 us on g16s, which more than
+/// cancelled the 6.2 us it saved in the threshold scan.
+private func qwen35C1HistSource(rows: Int) -> String {
+    """
+    constexpr uint ROWS = \(rows);
+    constexpr uint GRID = \(qwen35C1HistTiles * qwen35Top32TG);
+
+    const uint gid = thread_position_in_grid.x;
+    for (uint i = gid; i < ROWS; i += GRID) {
+        const uint b = qwen_top32_ordinal(float(score[i])) >> 16;
+        atomic_fetch_add_explicit(
+            (device atomic_uint *)&bins[b], 1u, memory_order_relaxed);
+    }
+    """
+}
+
+/// Stage 1(ii): 256 threadgroups fold the fine histogram to 256 coarse bins.
+///
+/// One threadgroup occupies one GPU core and that core reaches about 21 GB/s,
+/// a twentieth of the machine, so the whole 256 KiB array must be read across
+/// every core and not inside one. Reading it from the single-threadgroup
+/// threshold kernel instead was measured three ways on g16s and every one is
+/// worse: 12.20 us for one thread walking the array, 11.08 us for 256 threads
+/// on private blocks, and 38.64 us for 8 simdgroups reducing group by group.
+private func qwen35C1ReduceSource() -> String {
+    """
+    constexpr uint PER   = \(qwen35C1HistBins / qwen35C1HistGroups);
+    constexpr uint NSIMD = PER / 32;
+
+    const uint grp  = threadgroup_position_in_grid.x;
+    const uint tid  = thread_position_in_threadgroup.x;
+    const uint lane = thread_index_in_simdgroup;
+    const uint sg   = simdgroup_index_in_threadgroup;
+
+    threadgroup uint p[NSIMD];
+    const uint v = simd_sum(bins[grp * PER + tid]);
+    if (lane == 0) { p[sg] = v; }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (tid == 0) {
+        uint s = 0u;
+        for (uint i = 0; i < NSIMD; ++i) { s += p[i]; }
+        coarse[grp] = s;
+    }
+    """
+}
+
+/// Stage 1(iii): one threadgroup finds the exact boundary bin.
+///
+/// `ctl` is `[tau, count_strictly_above_tau, capacity_left_in_tau, 0]`. The
+/// scan is two level, so this kernel reads 512 words and not 65,536: each of
+/// 256 threads loads one coarse bin, one thread walks those down to the group
+/// that straddles `WANT`, then each thread loads one fine bin of that group
+/// and one thread walks those.
+private func qwen35C1ThreshSource(survivors: Int) -> String {
+    """
+    constexpr uint GROUPS = \(qwen35C1HistGroups);
+    constexpr uint PER    = \(qwen35C1HistBins / qwen35C1HistGroups);
+    constexpr uint WANT   = \(survivors);
+
+    const uint tid = thread_position_in_threadgroup.x;
+    threadgroup uint g[GROUPS];
+    threadgroup uint sh[2];
+
+    g[tid] = coarse[tid];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (tid == 0) {
+        uint acc = 0u, above_groups = 0u, gsel = 0u;
+        for (int c = int(GROUPS) - 1; c >= 0; --c) {
+            const uint prev = acc;
+            acc += g[c];
+            if (acc >= WANT) { gsel = uint(c); above_groups = prev; break; }
+            if (c == 0) { gsel = 0u; above_groups = prev; }
+        }
+        sh[0] = gsel;
+        sh[1] = above_groups;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    const uint gsel = sh[0];
+    const uint above_groups = sh[1];
+    g[tid] = bins[gsel * PER + tid];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    if (tid == 0) {
+        uint acc = above_groups;
+        uint tau = gsel * PER;
+        uint above = above_groups;
+        for (int b = int(PER) - 1; b >= 0; --b) {
+            const uint prev = acc;
+            acc += g[b];
+            if (acc >= WANT) { tau = gsel * PER + uint(b); above = prev; break; }
+            if (b == 0) { tau = gsel * PER; above = prev; }
+        }
+        ctl[0] = tau;
+        ctl[1] = above;
+        ctl[2] = (WANT > above) ? (WANT - above) : 0u;
+        ctl[3] = 0u;
+    }
+    """
+}
+
+/// Stage 1(iv): emit the survivors into a fixed-capacity buffer.
+///
+/// The buffer has two regions and two cursors. Rows STRICTLY above the
+/// boundary bin take slots `[0, above)` and cannot overflow, because the
+/// threshold scan chose `tau` so that fewer than `WANT` rows sit above it.
+/// Rows inside the boundary bin take slots from `above` upward and compete for
+/// what is left under a hard capacity clamp.
+///
+/// One shared cursor is not enough, and that is measured, not assumed. With a
+/// single cursor the clamp drops whichever rows arrive after slot `CAP`
+/// regardless of their score, so a genuine top-32 row can be discarded while a
+/// boundary-bin row is kept. That cost one of the true top 32 at N = 1,024,
+/// recall 0.96875, in the first run of the E136 rung-0 benchmark.
+///
+/// Unfilled slots keep ordinal 0, the minimum, so they never win stage 2.
+private func qwen35C1CompactSource(rows: Int, capacity: Int) -> String {
+    """
+    constexpr uint ROWS = \(rows);
+    constexpr uint CAP  = \(capacity);
+    constexpr uint GRID = \(qwen35C1HistTiles * qwen35Top32TG);
+
+    const uint gid = thread_position_in_grid.x;
+    const uint tau = ctl[0];
+    const uint above = ctl[1];
+
+    for (uint i = gid; i < ROWS; i += GRID) {
+        const uint o = qwen_top32_ordinal(float(score[i]));
+        const uint b = o >> 16;
+        if (b < tau) { continue; }
+        uint slot;
+        if (b > tau) {
+            slot = atomic_fetch_add_explicit(
+                (device atomic_uint *)&cursor[0], 1u, memory_order_relaxed);
+        } else {
+            slot = above + atomic_fetch_add_explicit(
+                (device atomic_uint *)&cursor[1], 1u, memory_order_relaxed);
+        }
+        if (slot < CAP) {
+            surv_ord[slot] = o;
+            surv_row[slot] = uint(probed[i >> 3u]) * 8u + (i & 7u);
+        }
+    }
+    """
+}
+
+/// Affine-2/g64 QMV over four ARBITRARY rows named by `rows_idx`. Identical
+/// qdot and bias-sum expression to `qwen_e121_a2_qmv4`; only the row address
+/// comes from a buffer instead of from a base plus offset, so the survivors do
+/// not have to be contiguous.
+private let qwen35C1RescoreHeader = """
+    inline void qwen_e136_a2_qmv4_gathered(
+        const device uint32_t* w,
+        const device bfloat16_t* scales,
+        const device bfloat16_t* biases,
+        const device bfloat16_t* x,
+        const device uint32_t* rows_idx,
+        device bfloat16_t* y,
+        const int K,
+        const int y_row,
+        const uint simd_lid
+    ) {
+        constexpr int rows_per_simd = 4;
+        constexpr int values_per_thread = 32;
+        constexpr int block_size = values_per_thread * 32;
+        constexpr int bytes_per_lane = 8;
+        const int in_vec_size_w = K / 4;
+        const int in_vec_size_g = K / 64;
+
+        thread int src[rows_per_simd];
+        thread float result[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            src[r] = int(rows_idx[y_row + r]);
+            result[r] = 0.0f;
+        }
+
+        for (int k = 0; k < K; k += block_size) {
+            thread ulong packed[rows_per_simd];
+            thread float scale_local[rows_per_simd];
+            thread float bias_local[rows_per_simd];
+            for (int r = 0; r < rows_per_simd; r++) {
+                const int row = src[r];
+                const device uint8_t* ws =
+                    reinterpret_cast<const device uint8_t*>(w) +
+                    row * in_vec_size_w + k / 4 + int(simd_lid) * bytes_per_lane;
+                packed[r] = *reinterpret_cast<const device ulong*>(ws);
+                const int group_index =
+                    row * in_vec_size_g + k / 64 +
+                    (int(simd_lid) * values_per_thread) / 64;
+                scale_local[r] = scales[group_index];
+                bias_local[r] = biases[group_index];
+            }
+
+            thread float x0[values_per_thread];
+            const device bfloat16_t* xm = x + k + int(simd_lid) * values_per_thread;
+            float sum = 0.0f;
+            for (int i = 0; i < values_per_thread; i += 4) {
+                x0[i]     = static_cast<float>(xm[i]);
+                x0[i + 1] = static_cast<float>(xm[i + 1]);
+                x0[i + 2] = static_cast<float>(xm[i + 2]);
+                x0[i + 3] = static_cast<float>(xm[i + 3]);
+                sum += xm[i] + xm[i + 1] + xm[i + 2] + xm[i + 3];
+            }
+
+            for (int r = 0; r < rows_per_simd; r++) {
+                float accum = 0.0f;
+                #pragma unroll
+                for (int j = 0; j < 32; j++) {
+                    accum += x0[j] * float((packed[r] >> (2 * j)) & 0x03ul);
+                }
+                result[r] += scale_local[r] * accum + sum * bias_local[r];
+            }
+        }
+
+        for (int r = 0; r < rows_per_simd; r++) {
+            const float reduced = simd_sum(result[r]);
+            if (simd_lid == 0) {
+                y[y_row + r] = static_cast<bfloat16_t>(reduced);
+            }
+        }
+    }
+    """
+
+/// The frozen sketch tables. `centCodes` and `rowCodes` are int8 in the
+/// permuted leaf order the cluster index already uses, so a probed leaf is a
+/// contiguous run of eight rows.
+private struct Qwen35C1Tables {
+    let basisT: MLXArray
+    let mu: MLXArray
+    let centCodes: MLXArray
+    let centScale: MLXArray
+    let centOffset: MLXArray
+    let rowCodes: MLXArray
+    let rowScale: MLXArray
+    let rowOffset: MLXArray
+    let exactW: MLXArray
+    let exactS: MLXArray
+    let exactZ: MLXArray
+    let residentBytes: Int
+}
+
+/// Every dispatch of the C1 shortlist, compiled once for one index shape.
+private struct Qwen35C1Selection {
+    let clusters: Int
+    let probes: Int
+    let rows: Int
+    let hidden: Int
+    let plan: Qwen35Top32Plan
+    let project: MLXFast.MLXFastKernel
+    let centroidQMV: MLXFast.MLXFastKernel
+    let rowQMV: MLXFast.MLXFastKernel
+    let hist: MLXFast.MLXFastKernel
+    let reduce: MLXFast.MLXFastKernel
+    let thresh: MLXFast.MLXFastKernel
+    let compact: MLXFast.MLXFastKernel
+    let rescore: MLXFast.MLXFastKernel
+    let partial: MLXFast.MLXFastKernel
+    let finalize: MLXFast.MLXFastKernel
+
+    init(clusters: Int, probes: Int, rowsPerCluster: Int, hidden: Int) {
+        precondition(rowsPerCluster == 8, "C1 addresses eight rows per leaf")
+        precondition(qwen35C1Survivors % 8 == 0,
+                     "the survivor rescore fills whole threadgroups")
+        self.clusters = clusters
+        self.probes = probes
+        self.rows = probes * rowsPerCluster
+        self.hidden = hidden
+        plan = Qwen35Top32Plan(
+            realCount: qwen35C1Survivors, tiles: qwen35C1SurvivorTiles)
+        precondition(plan.perThread <= 32 && plan.finPerThread <= 32,
+                     "C1 survivor slot count exceeds the selection bitmask")
+        project = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_project",
+            inputNames: ["x", "mu", "basis_t"],
+            outputNames: ["q"],
+            source: qwen35C1ProjectSource(hidden: hidden),
+            header: "",
+            ensureRowContiguous: false)
+        centroidQMV = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_centroid_sketch_qmv",
+            inputNames: ["q", "codes", "scale", "offset"],
+            outputNames: ["y"],
+            source: qwen35C1SketchQMVSource(rows: clusters, gathered: false),
+            header: "",
+            ensureRowContiguous: false)
+        rowQMV = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_row_sketch_qmv",
+            inputNames: ["q", "codes", "scale", "offset", "probed"],
+            outputNames: ["y"],
+            source: qwen35C1SketchQMVSource(
+                rows: probes * rowsPerCluster, gathered: true),
+            header: "",
+            ensureRowContiguous: false)
+        hist = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_hist",
+            inputNames: ["score"],
+            outputNames: ["bins"],
+            source: qwen35C1HistSource(rows: probes * rowsPerCluster),
+            header: qwen35Top32Header,
+            ensureRowContiguous: false)
+        reduce = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_reduce",
+            inputNames: ["bins"],
+            outputNames: ["coarse"],
+            source: qwen35C1ReduceSource(),
+            header: "",
+            ensureRowContiguous: false)
+        thresh = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_thresh",
+            inputNames: ["bins", "coarse"],
+            outputNames: ["ctl"],
+            source: qwen35C1ThreshSource(survivors: qwen35C1Survivors),
+            header: "",
+            ensureRowContiguous: false)
+        compact = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_compact",
+            inputNames: ["score", "ctl", "probed"],
+            outputNames: ["surv_ord", "surv_row", "cursor"],
+            source: qwen35C1CompactSource(
+                rows: probes * rowsPerCluster, capacity: qwen35C1Survivors),
+            header: qwen35Top32Header,
+            ensureRowContiguous: false)
+        rescore = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_rescore_a2g64",
+            inputNames: ["x", "w", "scales", "biases", "surv_row"],
+            outputNames: ["y"],
+            source: """
+                const int K = x_shape[x_ndim - 1];
+                const uint3 tid = threadgroup_position_in_grid;
+                const uint simd_gid = simdgroup_index_in_threadgroup;
+                const uint simd_lid = thread_index_in_simdgroup;
+                const int y_row = int(tid.y) * 8 + int(simd_gid) * 4;
+                qwen_e136_a2_qmv4_gathered(
+                    w, scales, biases, x, surv_row, y, K, y_row, simd_lid);
+                """,
+            header: qwen35C1RescoreHeader,
+            ensureRowContiguous: true)
+        partial = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_surv_top32_partial",
+            inputNames: ["logits", "row_id"],
+            outputNames: ["cand_ord", "cand_idx"],
+            source: qwen35Top32PartialSource(plan, indirect: true),
+            header: qwen35Top32Header,
+            ensureRowContiguous: false)
+        finalize = MLXFast.metalKernel(
+            name: "qwen_mtp_c1_surv_top32_finalize",
+            inputNames: ["cand_ord", "cand_idx", "perm"],
+            outputNames: ["token_ids"],
+            source: qwen35Top32FinalizeSource(
+                plan, rowsPerCluster: nil, permIndex: true),
+            header: "",
+            ensureRowContiguous: false)
+    }
+
+    /// `q = B^T (x - mu)`, fp32.
+    func query(_ x: MLXArray, _ tables: Qwen35C1Tables) -> MLXArray {
+        project(
+            [x.reshaped([hidden]), tables.mu, tables.basisT],
+            grid: (((qwen35C1SketchRank + 7) / 8) * qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [[qwen35C1SketchRank]],
+            outputDTypes: [.float32]
+        )[0]
+    }
+
+    func centroidScore(_ q: MLXArray, _ tables: Qwen35C1Tables) -> MLXArray {
+        centroidQMV(
+            [q, tables.centCodes, tables.centScale, tables.centOffset],
+            grid: (((clusters + 7) / 8) * qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [[clusters]],
+            outputDTypes: [.float32]
+        )[0]
+    }
+
+    func rowScore(_ q: MLXArray, _ probed: MLXArray, _ tables: Qwen35C1Tables)
+        -> MLXArray
+    {
+        rowQMV(
+            [q, tables.rowCodes, tables.rowScale, tables.rowOffset, probed],
+            grid: ((rows / 8) * qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [[rows]],
+            outputDTypes: [.float32]
+        )[0]
+    }
+
+    /// The 32 compact-vocabulary ids the survivors carry, ascending under the
+    /// reference order, plus `ctl` so a caller can witness the recall
+    /// invariant.
+    func shortlist(
+        _ sketch: MLXArray, _ x: MLXArray, _ probed: MLXArray,
+        _ perm: MLXArray, _ tables: Qwen35C1Tables
+    ) -> (ids: MLXArray, ctl: MLXArray) {
+        let bins = hist(
+            [sketch],
+            grid: (qwen35C1HistTiles * qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [[qwen35C1HistBins]],
+            outputDTypes: [.uint32],
+            initValue: 0
+        )[0]
+        let coarse = reduce(
+            [bins],
+            grid: (qwen35C1HistBins, 1, 1),
+            threadGroup: (qwen35C1HistBins / qwen35C1HistGroups, 1, 1),
+            outputShapes: [[qwen35C1HistGroups]],
+            outputDTypes: [.uint32],
+            initValue: 0
+        )[0]
+        let ctl = thresh(
+            [bins, coarse],
+            grid: (qwen35C1HistGroups, 1, 1),
+            threadGroup: (qwen35C1HistGroups, 1, 1),
+            outputShapes: [[4]],
+            outputDTypes: [.uint32],
+            initValue: 0
+        )[0]
+        let survivors = compact(
+            [sketch, ctl, probed],
+            grid: (qwen35C1HistTiles * qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [
+                [qwen35C1Survivors], [qwen35C1Survivors], [2],
+            ],
+            outputDTypes: [.uint32, .uint32, .uint32],
+            initValue: 0)
+        let survivorRow = survivors[1]
+        let exact = rescore(
+            [x.reshaped([hidden]), tables.exactW, tables.exactS, tables.exactZ,
+             survivorRow],
+            grid: (32, (qwen35C1Survivors / 8) * 2, 1),
+            threadGroup: (32, 2, 1),
+            outputShapes: [[qwen35C1Survivors]],
+            outputDTypes: [.bfloat16]
+        )[0]
+        let candidates = partial(
+            [exact, survivorRow],
+            grid: (plan.tiles * qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [[plan.cands], [plan.cands]],
+            outputDTypes: [.uint32, .uint32])
+        let ids = finalize(
+            [candidates[0], candidates[1], perm],
+            grid: (qwen35Top32TG, 1, 1),
+            threadGroup: (qwen35Top32TG, 1, 1),
+            outputShapes: [[qwen35Top32K]],
+            outputDTypes: [.uint32]
+        )[0]
+        return (ids, ctl)
+    }
+}
+
+/// Int8 codes, per-row scale and per-row `row . mu` offset for one table.
+///
+/// `scale = max|B^T (row - mu)| / 127` and `codes = clip(round(v / scale))`,
+/// which is the E133 screen's `lowrank` cell exactly. The offset is stored in
+/// fp32 rather than folded away because `row . x = (row - mu) . (x - mu)
+/// + row . mu + c(x)`, and only `c(x)` is row independent.
+private func qwen35C1EncodeSketch(
+    table: MLXArray, mu: MLXArray, basis: MLXArray, chunk: Int = 8_192
+) -> (codes: MLXArray, scale: MLXArray, offset: MLXArray) {
+    var codeParts: [MLXArray] = []
+    var scaleParts: [MLXArray] = []
+    let count = table.dim(0)
+    var start = 0
+    while start < count {
+        let stop = min(start + chunk, count)
+        let block = table[start ..< stop].asType(.float32) - mu
+        let values = block.matmul(basis)
+        let scale =
+            MLX.maximum(MLX.abs(values).max(axis: 1), MLXArray(Float(1e-12)))
+            / MLXArray(Float(127))
+        let codes = MLX.clip(
+            (values / scale.expandedDimensions(axis: 1)).round(),
+            min: MLXArray(Float(-127)), max: MLXArray(Float(127))
+        ).asType(.int8)
+        eval(codes, scale)
+        codeParts.append(codes.reshaped([-1]))
+        scaleParts.append(scale)
+        start = stop
+    }
+    let offset = table.asType(.float32).matmul(mu)
+    let codes = MLX.concatenated(codeParts, axis: 0)
+    let scale = MLX.concatenated(scaleParts, axis: 0)
+    eval(codes, scale, offset)
+    return (codes, scale, offset)
+}
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
@@ -5295,6 +5956,224 @@ public func qwen35BenchRowTop32(
     return (chainUs, Date().timeIntervalSince(t0) / Double(iters) * 1e6)
 }
 
+/// What one synthetic C1 selection proved. Every boundary reports its own
+/// field so a test can gate each one separately and a bench can print them.
+public struct Qwen35C1VerifyReport: Sendable {
+    public var projectRelError: Float = 1
+    public var centroidSketchRelError: Float = 1
+    public var rowSketchRelError: Float = 1
+    public var positiveControlRelError: Float = 0
+    public var rescoreContiguousMismatches = -1
+    public var rescoreGatheredMismatches = -1
+    public var tauIsExact = false
+    public var aboveIsExact = false
+    public var cursorIsExact = false
+    public var survivorsDistinct = 0
+    public var survivorsBelowTau = -1
+    public var sketchTop32Recall: Double = 0
+    public var shortlistMismatches = -1
+    public var survivorCapacity = 0
+    public var topK = 0
+}
+
+/// `qwen_top32_ordinal` on the host. The kernels order rows by this key, so
+/// every reference here has to use the same one.
+private func qwen35C1HostOrdinal(_ v: Float) -> UInt32 {
+    if v.isNaN { return 0xFFFF_FFFF }
+    if v == 0 { return 0x8000_0000 }
+    let u = v.bitPattern
+    return (u & 0x8000_0000) != 0 ? ~u : (u | 0x8000_0000)
+}
+
+private func qwen35C1RelError(_ a: MLXArray, _ b: MLXArray) -> Float {
+    let diff = MLX.abs(a.asType(.float32) - b.asType(.float32)).max()
+    let scale = MLX.maximum(
+        MLX.abs(b.asType(.float32)).max(), MLXArray(Float(1e-6)))
+    return (diff / scale).item(Float.self)
+}
+
+/// Exercise every C1 dispatch on synthetic tables of the shipped shape family
+/// and compare each one with an independent reference.
+///
+/// This is the risk gate the arm needs before it is timed. The projection, the
+/// dense sketch scan, the gathered sketch scan, the gathered affine-2 rescore,
+/// the histogram threshold, the compaction and the survivor top-32 each carry
+/// their own reference, and the sketch comparison carries a positive control
+/// that must fail. The references are host arithmetic or the shipped dense
+/// affine-2 kernel; they share no code with the C1 kernels.
+public func qwen35VerifyC1Selection(
+    clusters: Int = 2_048, hidden: Int = 5_120, seed: UInt64 = 1_136
+) -> Qwen35C1VerifyReport {
+    var report = Qwen35C1VerifyReport()
+    report.survivorCapacity = qwen35C1Survivors
+    report.topK = qwen35Top32K
+    let rowsPerCluster = 8
+    let padded = clusters * rowsPerCluster
+    let probes = max(1, Int((qwen35C1ProbeFraction * Double(clusters)).rounded(.up)))
+    let rows = probes * rowsPerCluster
+    let n = qwen35C1Survivors
+    precondition(rows > n, "the verifier needs more probed rows than survivors")
+    let rank = qwen35C1SketchRank
+
+    MLXRandom.seed(seed)
+    let basisT = MLXRandom.normal([rank, hidden]).asType(.bfloat16)
+    let mu = MLXRandom.normal([hidden]).asType(.float32)
+    let x = MLXRandom.normal([hidden]).asType(.bfloat16)
+    let centCodes = MLXRandom.randInt(-127 ..< 128, [clusters * rank]).asType(.int8)
+    let centScale = MLXRandom.uniform(0.01 ..< 0.05, [clusters]).asType(.float32)
+    let centOffset = MLXRandom.normal([clusters]).asType(.float32)
+    let rowCodes = MLXRandom.randInt(-127 ..< 128, [padded * rank]).asType(.int8)
+    let rowScale = MLXRandom.uniform(0.01 ..< 0.05, [padded]).asType(.float32)
+    let rowOffset = MLXRandom.normal([padded]).asType(.float32)
+    let exactW = MLXRandom.randInt(0 ..< 65_536, [padded, 320]).asType(.uint32)
+    let exactS = MLXRandom.uniform(0.01 ..< 0.05, [padded, 80]).asType(.bfloat16)
+    let exactZ = MLXRandom.normal([padded, 80]).asType(.bfloat16)
+    let perm = MLX.argSort(MLXRandom.normal([padded])).asType(.int32)
+    let probed = MLX.sorted(
+        MLX.argPartition(MLXRandom.normal([clusters]), kth: clusters - probes)[
+            (clusters - probes)...]
+    ).asType(.uint32)
+    eval(basisT, mu, x, centCodes, centScale, centOffset, rowCodes, rowScale,
+         rowOffset, exactW, exactS, exactZ, perm, probed)
+
+    let tables = Qwen35C1Tables(
+        basisT: basisT, mu: mu, centCodes: centCodes, centScale: centScale,
+        centOffset: centOffset, rowCodes: rowCodes, rowScale: rowScale,
+        rowOffset: rowOffset, exactW: exactW, exactS: exactS, exactZ: exactZ,
+        residentBytes: 0)
+    let c1 = Qwen35C1Selection(
+        clusters: clusters, probes: probes, rowsPerCluster: rowsPerCluster,
+        hidden: hidden)
+
+    // 1. The projection.
+    let q = c1.query(x, tables)
+    let qRef = basisT.asType(.float32).matmul(x.asType(.float32) - mu)
+    eval(q, qRef)
+    report.projectRelError = qwen35C1RelError(q, qRef)
+
+    // 2. The dense sketch scan, plus a positive control that must fail.
+    let centScore = c1.centroidScore(q, tables)
+    let centRef =
+        centScale
+        * centCodes.reshaped([clusters, rank]).asType(.float32).matmul(qRef)
+        + centOffset
+    eval(centScore, centRef)
+    report.centroidSketchRelError = qwen35C1RelError(centScore, centRef)
+    report.positiveControlRelError = qwen35C1RelError(
+        centScore, MLX.roll(centRef, shift: 1, axis: 0))
+
+    // 3. The gathered sketch scan.
+    let src = MLX.take(
+        probed.asType(.int32),
+        MLXArray(Array(0 ..< rows).map { Int32($0 / rowsPerCluster) }), axis: 0
+    ) * MLXArray(Int32(rowsPerCluster))
+        + MLXArray(Array(0 ..< rows).map { Int32($0 % rowsPerCluster) })
+    let sketch = c1.rowScore(q, probed, tables)
+    let sketchRef =
+        MLX.take(rowScale, src, axis: 0)
+        * MLX.take(rowCodes.reshaped([padded, rank]), src, axis: 0)
+            .asType(.float32).matmul(qRef)
+        + MLX.take(rowOffset, src, axis: 0)
+    eval(sketch, sketchRef)
+    report.rowSketchRelError = qwen35C1RelError(sketch, sketchRef)
+
+    // 4. The gathered affine-2 rescore. First against the shipped dense
+    //    affine-2 kernel on the same rows, then against a permutation of its
+    //    own output, which is what the gather has to preserve.
+    func rescore(_ rowsIdx: MLXArray) -> MLXArray {
+        c1.rescore(
+            [x, exactW, exactS, exactZ, rowsIdx],
+            grid: (32, (n / 8) * 2, 1), threadGroup: (32, 2, 1),
+            outputShapes: [[n]], outputDTypes: [.bfloat16])[0]
+    }
+    let identity = MLXArray(Array(0 ..< n).map { UInt32($0) })
+    let mine = rescore(identity)
+    let shippedRef = qwen35ClusterCentroidQMVKernel(
+        [x, exactW[0 ..< n], exactS[0 ..< n], exactZ[0 ..< n]],
+        grid: (32, (n / 8) * 2, 1), threadGroup: (32, 2, 1),
+        outputShapes: [[n]], outputDTypes: [.bfloat16])[0]
+    eval(mine, shippedRef)
+    report.rescoreContiguousMismatches =
+        MLX.notEqual(mine, shippedRef).asType(.int32).sum().item(Int.self)
+    let shuffle = MLX.argSort(MLXRandom.normal([n])).asType(.uint32)
+    let gathered = rescore(shuffle)
+    let gatheredRef = MLX.take(mine, shuffle.asType(.int32), axis: 0)
+    eval(gathered, gatheredRef)
+    report.rescoreGatheredMismatches =
+        MLX.notEqual(gathered, gatheredRef).asType(.int32).sum().item(Int.self)
+
+    // 5. The threshold, the compaction and the emitted shortlist.
+    let (ids, ctl) = c1.shortlist(sketch, x, probed, perm, tables)
+    let survivors = c1.compact(
+        [sketch, ctl, probed],
+        grid: (qwen35C1HistTiles * qwen35Top32TG, 1, 1),
+        threadGroup: (qwen35Top32TG, 1, 1),
+        outputShapes: [[n], [n], [2]],
+        outputDTypes: [.uint32, .uint32, .uint32],
+        initValue: 0)
+    let survivorRow = survivors[1]
+    let cursor = survivors[2]
+    eval(ids, ctl, survivorRow, cursor)
+
+    let ctlHost = ctl.asArray(UInt32.self)
+    let tau = ctlHost[0]
+    let above = ctlHost[1]
+    let sketchHost = sketch.asArray(Float.self)
+    let ordinalHost = sketchHost.map(qwen35C1HostOrdinal)
+    let binHost = ordinalHost.map { $0 >> 16 }
+    let strictlyAbove = binHost.filter { $0 > tau }.count
+    let atOrAbove = binHost.filter { $0 >= tau }.count
+    report.tauIsExact = atOrAbove >= n && strictlyAbove < n
+    report.aboveIsExact = strictlyAbove == Int(above)
+    let cursorHost = cursor.asArray(UInt32.self)
+    report.cursorIsExact =
+        cursorHost[0] == above
+        && Int(above) + Int(cursorHost[1]) >= n
+        && Int(above) + Int(cursorHost[1]) == atOrAbove
+
+    let srcHost = src.asArray(Int32.self)
+    let survivorHost = survivorRow.asArray(UInt32.self)
+    report.survivorsDistinct = Set(survivorHost).count
+    // Every survivor slot must name a probed row whose bin reaches `tau`.
+    let rowOfPadded = Dictionary(
+        uniqueKeysWithValues: srcHost.enumerated().map { (UInt32($1), $0) })
+    report.survivorsBelowTau = survivorHost.filter {
+        guard let i = rowOfPadded[$0] else { return true }
+        return binHost[i] < tau
+    }.count
+
+    // The sketch top 32 must all survive, which is the arm's recall claim.
+    let byOrdinal = (0 ..< rows).sorted {
+        ordinalHost[$0] != ordinalHost[$1]
+            ? ordinalHost[$0] < ordinalHost[$1] : srcHost[$0] < srcHost[$1]
+    }
+    let wanted = Set(byOrdinal.suffix(qwen35Top32K).map { UInt32(srcHost[$0]) })
+    let survivorSet = Set(survivorHost)
+    report.sketchTop32Recall =
+        Double(wanted.filter { survivorSet.contains($0) }.count)
+        / Double(qwen35Top32K)
+
+    // The emitted ids, against a host top-32 of the arm's own exact rescore.
+    let exactSurv = rescore(survivorRow)
+    eval(exactSurv)
+    let exactHost = exactSurv.asType(.float32).asArray(Float.self)
+        .map(qwen35C1HostOrdinal)
+    let permHost = perm.asArray(Int32.self)
+    let bySurv = (0 ..< n).sorted {
+        exactHost[$0] != exactHost[$1]
+            ? exactHost[$0] < exactHost[$1]
+            : survivorHost[$0] < survivorHost[$1]
+    }
+    // Stage 2 writes rank r to slot `TOPK - 1 - r`, so ascending key order is
+    // exactly the emitted order.
+    let expected = bySurv.suffix(qwen35Top32K).map {
+        UInt32(permHost[Int(survivorHost[$0])])
+    }
+    let idsHost = ids.asArray(UInt32.self)
+    report.shortlistMismatches = zip(idsHost, expected).filter { $0 != $1 }.count
+    return report
+}
+
 /// E101 composition gate for the imported `41bad1c6` rerank kernel.
 ///
 /// `qwen35DraftSelectedAffine4RerankKernel` reads `candidate_ids` positionally
@@ -5416,6 +6295,13 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     // One attempt only: a head that cannot support a derived index must keep
     // the dense readout instead of re-deriving on every draft step.
     private var _derivedClusterAttempted = false
+
+    // E136 arm C1. Both are materialised inside `buildDerivedClusterIndex`,
+    // which the first draft proposal of the untimed warm triggers, so every
+    // resident tensor here joins `active_at_sizing` and consumes no wired
+    // slack.
+    private var _draftC1Tables: Qwen35C1Tables?
+    private var _draftC1Selection: Qwen35C1Selection?
 
     // Input-independent compact copy of the loaded exact lm_head, used only
     // for draft proposals when no declared draft_lm_head is present. It is not
@@ -5909,18 +6795,20 @@ extension Qwen35TextModel: MTPCapable {
             .reshaped([leaves * rowsPerLeaf])
         eval(order)
 
-        let centroids = MLX.take(rows, order, axis: 0)
+        let centroidsF32 = MLX.take(rows, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, hidden])
             .asType(.float32)
             .mean(axis: 1)
-            .asType(.bfloat16)
+        let centroids = centroidsF32.asType(.bfloat16)
         let quantizedCentroids = quantized(
             centroids, groupSize: 64, bits: Self.derivedClusterCentroidBits, mode: .affine)
         guard let centroidBiases = quantizedCentroids.biases else { return }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
-        let probes = max(
-            1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
+        let probeFraction =
+            qwen35C1SketchEnabled
+            ? qwen35C1ProbeFraction : qwen35DerivedClusterProbeFraction
+        let probes = max(1, Int((probeFraction * Double(leaves)).rounded(.up)))
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
         let clusterScales = MLX.take(coarseScales, order, axis: 0)
@@ -5941,6 +6829,71 @@ extension Qwen35TextModel: MTPCapable {
         _draftCentroidZ = centroidBiases
         _draftClusterPerm = clusterPerm
         _draftClusterShape = [leaves, rowsPerLeaf, probes]
+
+        if qwen35C1SketchEnabled {
+            buildC1SketchTables(
+                rows: rows, order: order, centroids: centroidsF32,
+                clusterWeight: clusterWeight, clusterScales: clusterScales,
+                clusterBiases: clusterBiases, leaves: leaves,
+                rowsPerLeaf: rowsPerLeaf, hidden: hidden)
+        }
+    }
+
+    /// Derive the E136 C1 sketch from the rows the cluster index just built.
+    ///
+    /// The basis is the top-256 eigenvector set of the second moment of those
+    /// rows about their mean, so the whole table is a fixed function of the
+    /// checkpoint. See the arm C1 header for the provenance conditions this
+    /// satisfies. It runs once, during the untimed warm, beside the index.
+    private func buildC1SketchTables(
+        rows: MLXArray, order: MLXArray, centroids: MLXArray,
+        clusterWeight: MLXArray, clusterScales: MLXArray,
+        clusterBiases: MLXArray, leaves: Int, rowsPerLeaf: Int, hidden: Int
+    ) {
+        let rank = qwen35C1SketchRank
+        let realCount = Self.compactDraftRealCount
+        let mu = rows[0 ..< realCount].asType(.float32).mean(axis: 0)
+        eval(mu)
+
+        var second = MLX.zeros([hidden, hidden], dtype: .float32)
+        let chunk = 8_192
+        var start = 0
+        while start < rows.dim(0) {
+            let stop = min(start + chunk, rows.dim(0))
+            let block = rows[start ..< stop].asType(.float32) - mu
+            second = second + block.transposed(1, 0).matmul(block)
+            eval(second)
+            start = stop
+        }
+        // `eigh` runs on the CPU stream and returns ascending eigenvalues, so
+        // the leading directions are the LAST columns. Taking them in
+        // descending order keeps the table comparable with the offline screen;
+        // the estimator itself is invariant to the column order.
+        let (_, vectors) = MLXLinalg.eigh(second, stream: .cpu)
+        let descending = MLXArray(
+            (0 ..< rank).map { Int32(hidden - 1 - $0) })
+        let basisT = MLX.take(
+            vectors.transposed(1, 0).asType(.bfloat16), descending, axis: 0)
+        let basis = basisT.asType(.float32).transposed(1, 0)
+        eval(basisT)
+
+        let permutedRows = MLX.take(rows, order, axis: 0)
+        let row = qwen35C1EncodeSketch(table: permutedRows, mu: mu, basis: basis)
+        let cent = qwen35C1EncodeSketch(table: centroids, mu: mu, basis: basis)
+
+        let padded = leaves * rowsPerLeaf
+        let tables = Qwen35C1Tables(
+            basisT: basisT, mu: mu,
+            centCodes: cent.codes, centScale: cent.scale,
+            centOffset: cent.offset,
+            rowCodes: row.codes, rowScale: row.scale, rowOffset: row.offset,
+            exactW: clusterWeight.reshaped([padded, 320]),
+            exactS: clusterScales.reshaped([padded, 80]),
+            exactZ: clusterBiases.reshaped([padded, 80]),
+            residentBytes: rank * hidden * 2 + hidden * 4
+                + (leaves + padded) * (rank + 8))
+        eval(tables.exactW, tables.exactS, tables.exactZ)
+        _draftC1Tables = tables
     }
 
     /// The 32 shortlist candidates chosen by the cluster index, or nil when the
@@ -5988,11 +6941,43 @@ extension Qwen35TextModel: MTPCapable {
             _draftProbeSort = makeQwen35ProbeSortKernel(
                 clusters: clusters, probes: probes)
         }
+        let hidden = configuration.hiddenSize
+
+        if qwen35C1SketchEnabled, let tables = _draftC1Tables {
+            if _draftC1Selection == nil {
+                _draftC1Selection = Qwen35C1Selection(
+                    clusters: clusters, probes: probes,
+                    rowsPerCluster: rowsPerCluster, hidden: hidden)
+            }
+            guard let c1 = _draftC1Selection else {
+                fatalError("Qwen MTP C1 sketch selection is incomplete")
+            }
+            let q = c1.query(x, tables)
+            let order = MLX.argPartition(
+                c1.centroidScore(q, tables), kth: clusters - probes)
+            let probed: MLXArray
+            if let sorter = _draftProbeSort {
+                probed = sorter(
+                    [order],
+                    grid: (qwen35ProbeSortTG, 1, 1),
+                    threadGroup: (qwen35ProbeSortTG, 1, 1),
+                    outputShapes: [[probes]],
+                    outputDTypes: [.uint32]
+                )[0]
+            } else {
+                probed = MLX.sorted(order[.ellipsis, (clusters - probes)...])
+                    .asType(.uint32)
+            }
+            qwen35C1SketchDrafts += 1
+            return c1.shortlist(
+                c1.rowScore(q, probed, tables), x, probed, perm, tables
+            ).ids
+        }
+
         if qwen35RowTop32Enabled, _draftRowTop32 == nil {
             _draftRowTop32 = Qwen35RowTop32(
                 rows: probes * rowsPerCluster, rowsPerCluster: rowsPerCluster)
         }
-        let hidden = configuration.hiddenSize
         let centroidScore: MLXArray
         if let y = qwen35ClusterCentroidQMV(
             x, weight: centroidWeight, scales: centroidScales,

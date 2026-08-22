@@ -1,0 +1,44 @@
+{
+ "load_seconds": 0.24200701713562012,
+ "second_moment_seconds": 0.8445348739624023,
+ "eigh_5120_seconds": 4.269319295883179,
+ "rank": 256,
+ "seed": 20260822,
+ "exact_row_energy": 0.1513336156621914,
+ "iterations": {
+  "2": {
+   "seconds": 0.08682584762573242,
+   "row_energy": 0.12623361677824357,
+   "subspace_alignment": 0.4682139456272125,
+   "energy_ratio": 0.8341412859653317
+  },
+  "4": {
+   "seconds": 0.13546538352966309,
+   "row_energy": 0.14285075458473032,
+   "subspace_alignment": 0.6848018169403076,
+   "energy_ratio": 0.9439459564859891
+  },
+  "8": {
+   "seconds": 0.2259962558746338,
+   "row_energy": 0.148938652551356,
+   "subspace_alignment": 0.8306025266647339,
+   "energy_ratio": 0.9841742820961771
+  },
+  "16": {
+   "seconds": 0.430527925491333,
+   "row_energy": 0.15071059771631456,
+   "subspace_alignment": 0.913343071937561,
+   "energy_ratio": 0.9958831490072402
+  }
+ },
+ "query_energy": {
+  "beagle": {
+   "kept_by_row_basis": 0.1868607480248847,
+   "kept_by_query_basis": 0.8253187971684057
+  },
+  "min_carriers": {
+   "kept_by_row_basis": 0.19103903179359458,
+   "kept_by_query_basis": 0.8315412521133033
+  }
+ }
+}
