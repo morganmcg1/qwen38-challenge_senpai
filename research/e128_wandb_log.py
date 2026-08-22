@@ -307,6 +307,20 @@ def log_rung2() -> None:
             entry["target_depth_f92"], entry["simulated_depth_ship"],
             entry["target_accept_f92"], entry["simulated_accept_ship"])
     payload = {"arms": arms, "per_prompt": per_prompt, "transfer": transfer}
+    if data.get("falsifiers"):
+        table = wandb.Table(columns=[
+            "prompt", "R_under_test", "fixture", "geo_mean_lead",
+            "geo_mean_required", "geo_mean_passes", "tail_position", "tail_p",
+            "tail_max_allowed", "tail_passes", "survives"])
+        for prompt, row in data["falsifiers"].items():
+            if "survives" not in row:
+                continue
+            table.add_data(prompt, *[row[k] for k in (
+                "R_under_test", "fixture", "geo_mean_lead",
+                "geo_mean_required", "geo_mean_passes", "tail_position",
+                "tail_p", "tail_max_allowed", "tail_passes", "survives")])
+            run.summary["falsifier_survives_%s" % prompt] = row["survives"]
+        payload["falsifiers"] = table
     if sensitivity:
         table = wandb.Table(columns=["variant", "arm", "gain_pct_vs_ship"])
         for variant, entry in sensitivity["variants"].items():

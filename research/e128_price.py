@@ -583,6 +583,53 @@ def invert_accept_rate(rate: float, depth: float) -> float:
     return 0.5 * (low + high)
 
 
+# Advisor F1 rung 1, pre-registered before the forced legs were measured. Each
+# entry names the prompt, the assumed ranked round count under test, the lead
+# positions whose geometric mean must clear `geo_min`, and the first position
+# after them whose conditional must not exceed `tail_max`. A row is FALSIFIED
+# when either condition fails on the uncensored pooled acceptance vector.
+FALSIFIERS = {
+    "beagle":   {"R": 110, "lead": 4, "geo_min": 0.8995,
+                 "tail_position": 4, "tail_max": 0.7442},
+    "medicine": {"R": 90, "lead": 5, "geo_min": 0.9282,
+                 "tail_position": 5, "tail_max": 0.7823},
+    "essays":   {"R": 92, "lead": 5, "geo_min": 0.8922,
+                 "tail_position": 5, "tail_max": 0.9328},
+}
+
+
+def evaluate_falsifiers(legs: dict) -> dict:
+    rows = {}
+    for prompt, spec in FALSIFIERS.items():
+        fixture = RANKED_PROMPTS[prompt]["fixture"]
+        chosen = [legs[name] for name in fixture if name in legs]
+        if len(chosen) != len(fixture):
+            rows[prompt] = {"status": "no data", "missing": [
+                n for n in fixture if n not in legs]}
+            continue
+        p_vec = pooled_positions(chosen)
+        lead = p_vec[:spec["lead"]]
+        geo = math.exp(sum(math.log(max(p, 1e-12)) for p in lead) / len(lead))
+        tail = p_vec[spec["tail_position"]]
+        geo_ok = geo >= spec["geo_min"]
+        tail_ok = tail <= spec["tail_max"]
+        rows[prompt] = {
+            "R_under_test": spec["R"],
+            "fixture": "+".join(fixture),
+            "p_uncensored": p_vec,
+            "lead_positions": spec["lead"],
+            "geo_mean_lead": geo,
+            "geo_mean_required": spec["geo_min"],
+            "geo_mean_passes": geo_ok,
+            "tail_position": spec["tail_position"],
+            "tail_p": tail,
+            "tail_max_allowed": spec["tail_max"],
+            "tail_passes": tail_ok,
+            "survives": bool(geo_ok and tail_ok),
+        }
+    return rows
+
+
 def accept_rate_at_R(eff: float, rounds: float) -> float:
     """Rule 12 identity, solved for the accept rate at a stated round count.
 
@@ -664,8 +711,23 @@ def main() -> int:
                   % (sum(errs) / len(errs), max(abs(e) for e in errs),
                      len(errs)))
 
+    falsifiers = evaluate_falsifiers(legs)
+    print("\nadvisor F1 pre-registered falsifiers on uncensored acceptance:")
+    print("%-10s %5s %10s %10s %8s %8s %8s %10s" % (
+        "prompt", "R", "geo", "geo min", "geo ok", "tail p", "tail max",
+        "survives"))
+    for prompt, row in falsifiers.items():
+        if "survives" not in row:
+            print("%-10s %s" % (prompt, row))
+            continue
+        print("%-10s %5d %10.4f %10.4f %8s %8.4f %8.4f %10s" % (
+            prompt, row["R_under_test"], row["geo_mean_lead"],
+            row["geo_mean_required"], row["geo_mean_passes"], row["tail_p"],
+            row["tail_max_allowed"], row["survives"]))
+
     receipt = load_board_receipt(args.board, args.receipt)
     data = price(legs, receipt, args.windows, args.fit_windows)
+    data["falsifiers"] = falsifiers
     arms = ARMS
     medians = data["medians"]
     transfer = data["transfer"]
