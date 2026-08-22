@@ -189,6 +189,125 @@ BODY_NOBIAS = BODY_NOSUMS.replace(
     "acc[r] += scale_local[r] * partial[r] + bias_local[r];",
     "acc[r] += scale_local[r] * partial[r];")
 
+# --- rung 2, Finding 53: the two simdgroups compute `sums` twice ---------------
+#
+# The activation pointer inside this loop is
+#     x + (first_m + m) * in_vec_size + k + simd_lid * values_per_thread + 4 * i
+# which contains no `out_row` and no `simd_gid`. Lane L of simdgroup 0 and lane
+# L of simdgroup 1 therefore read byte-identical addresses and compute
+# byte-identical `sums`. The whole activation side is computed twice per
+# threadgroup and only `sums` is a reduction, so only `sums` is worth sharing:
+# NA floats exchanged against 4 * NA * 5 add-tree instructions removed.
+#
+# The split is a UNIFORM branch on `simd_gid` around the whole `i` loop, with
+# the body duplicated. A branch on `simd_gid` is uniform inside a simdgroup so
+# it is free; predicating inside the `m` loop would not be, which is exactly
+# what the `s_bcast` to `s_bcast_all` decomposition measured.
+#
+# `H` splits the components. Simdgroup 0 owns m < H, simdgroup 1 owns m >= H.
+SUMSHARE_HEAD_NOH = """
+    VF sums = VF(0.0f);
+    VF partial[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+      partial[r] = VF(0.0f);
+    }
+"""
+SUMSHARE_HEAD = SUMSHARE_HEAD_NOH + "    constexpr int H = (NA + 1) / 2;\n"
+
+
+def sumshare_half(own: str) -> str:
+    """One duplicated `i` loop whose `sums` add tree is gated by `own`."""
+    return ("""      for (int i = 0; i < 4; i++) {
+        VF a0, a1, a2, a3;
+        for (int m = 0; m < NA; m++) {
+          const device T* xm = x + (first_m + m) * in_vec_size + k +
+              simd_lid * values_per_thread + 4 * i;
+          if (%s) {
+            sums[m] += xm[0] + xm[1] + xm[2] + xm[3];
+          }
+          a0[m] = static_cast<float>(xm[0]);
+          a1[m] = static_cast<float>(xm[1]);
+          a2[m] = static_cast<float>(xm[2]);
+          a3[m] = static_cast<float>(xm[3]);
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+          partial[r] += (a0 * (packed[r][i] & 0x000f) +
+                         a1 * ((packed[r][i] >> 4) & 0x000f) +
+                         a2 * ((packed[r][i] >> 8) & 0x000f) +
+                         a3 * ((packed[r][i] >> 12) & 0x000f));
+        }
+      }
+""" % own)
+
+
+SUMSHARE_TAIL = """    for (int r = 0; r < rows_per_simd; r++) {
+      acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];
+    }
+"""
+
+# n_halfsums: the zero-cost upper bound on the mechanism. Each simdgroup drops
+# the other half's add tree and never gets it back, so half of `sums` stays at
+# zero and the arm MUST fail bit-exactness. Diagnostic, in the same spirit as
+# `n_nosums`.
+BODY_HALFSUMS = (SUMSHARE_HEAD +
+                 "    if (simd_gid == 0) {\n" + sumshare_half("m < H") +
+                 "    } else {\n" + sumshare_half("m >= H") +
+                 "    }\n" + SUMSHARE_TAIL)
+
+# The exchange. Lane index is the FASTEST dimension: with [sg][m][lane]
+# consecutive lanes touch consecutive floats and there is no bank conflict.
+# [sg][lane][m] would stride by NA floats and collide four ways at NA=4.
+SUMSHARE_XCHG = """    for (int m = 0; m < NA; m++) {
+      if ((simd_gid == 0) == (m < H)) {
+        sums_xchg[(int(simd_gid) * NA + m) * SIMD_SIZE + int(simd_lid)] =
+            sums[m];
+      }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (int m = 0; m < NA; m++) {
+      if ((simd_gid == 0) != (m < H)) {
+        sums[m] =
+            sums_xchg[((1 - int(simd_gid)) * NA + m) * SIMD_SIZE +
+                      int(simd_lid)];
+      }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+"""
+
+# x_sumshare_split: bit exact. Each `sums[m]` is still accumulated across `i` in
+# the original order by exactly one simdgroup, and the float written to
+# threadgroup memory is the float read back. The other simdgroup would have
+# computed the identical value from the identical addresses. The epilogue is
+# untouched, so no summation order changes anywhere.
+BODY_SUMSHARE_SPLIT = (SUMSHARE_HEAD +
+                       "    if (simd_gid == 0) {\n" + sumshare_half("m < H") +
+                       "    } else {\n" + sumshare_half("m >= H") +
+                       "    }\n" + SUMSHARE_XCHG + SUMSHARE_TAIL)
+
+# x_sumshare_owner: bit exact. Simdgroup 0 computes every component and writes
+# them; simdgroup 1 computes none and reads them all. Fewer threadgroup
+# operations than the split arm and a worse critical path, at the same total
+# issued instruction count, so the pair is a direct test of whether total issue
+# dominates the critical path in this loop.
+SUMSHARE_XCHG_OWNER = """    if (simd_gid == 0) {
+      for (int m = 0; m < NA; m++) {
+        sums_xchg[m * SIMD_SIZE + int(simd_lid)] = sums[m];
+      }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (simd_gid != 0) {
+      for (int m = 0; m < NA; m++) {
+        sums[m] = sums_xchg[m * SIMD_SIZE + int(simd_lid)];
+      }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+"""
+BODY_SUMSHARE_OWNER = (SUMSHARE_HEAD_NOH +
+                       "    if (simd_gid == 0) {\n" +
+                       sumshare_half("true") +
+                       "    } else {\n" + sumshare_half("false") +
+                       "    }\n" + SUMSHARE_XCHG_OWNER + SUMSHARE_TAIL)
+
 # --- prologue surgery ---------------------------------------------------------
 
 SIG_TAIL = "    uint simd_lid) {\n"
@@ -199,6 +318,14 @@ SIG_TAIL_SB = ("    uint simd_lid,\n"
                "    const device uint32_t* packed_sb = nullptr) {\n")
 SIG_TAIL_CODES = ("    uint simd_lid,\n"
                   "    const device uint8_t* bias_codes = nullptr) {\n")
+# Rung 2 needs the simdgroup index inside the kernel body, and a threadgroup
+# staging buffer the entry point owns. Both default so the shipped
+# `qmv_fast_crossrow_affine4_g64_m` wrapper still compiles untouched.
+SIG_TAIL_GID = ("    uint simd_lid,\n"
+                "    uint simd_gid = 0) {\n")
+SIG_TAIL_XCHG = ("    uint simd_lid,\n"
+                 "    uint simd_gid = 0,\n"
+                 "    threadgroup float* sums_xchg = nullptr) {\n")
 
 # E111's one-byte bias code. The low four bits are an integer multiple of the
 # group scale and the high two bits are a BF16 ULP correction, so the whole
@@ -486,7 +613,9 @@ def prologue_with(meta: str | None = None, loop: str | None = None,
         expect(text, WEIGHT_META_LOOP, 1, "prologue weight+metadata loop")
         text = text.replace(WEIGHT_META_LOOP, loop)
     if extra:
-        tail = {"packed_sb": SIG_TAIL_SB, "bias_codes": SIG_TAIL_CODES}[extra]
+        tail = {"packed_sb": SIG_TAIL_SB, "bias_codes": SIG_TAIL_CODES,
+                "simd_gid": SIG_TAIL_GID,
+                "simd_gid, sums_xchg": SIG_TAIL_XCHG}[extra]
         expect(text, SIG_TAIL, 1, "prologue signature tail")
         text = text.replace(SIG_TAIL, tail)
     return helper + text
@@ -600,11 +729,31 @@ ISO_KERNEL = """
     return;
   }
   const int out_row = int(tid.y) * 8 + int(simd_gid) * 4;
-  qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
+%(decl)s  qmv_fast_crossrow_affine4_g64_wide<bfloat16_t, %(na)d, true>(
       w, scales, biases, x, y, in_vec_size, out_vec_size, first_m, out_row,
       simd_lid%(extra)s);
 }
 """
+
+# Threadgroup staging the entry point owns, for the rung-2 arms only. The
+# budget is 32768 bytes per threadgroup; the largest of these is 1280 at NA=5,
+# so occupancy is not limited by it. `2 * NA` slots for the split arm because
+# both simdgroups write, `NA` for the owner arm because only simdgroup 0 does.
+ENTRY_DECL = {
+    "n_halfsums": "",
+    "x_sumshare_split":
+        "  threadgroup float sums_xchg[2 * %(na)d * 32];\n",
+    "x_sumshare_owner":
+        "  threadgroup float sums_xchg[%(na)d * 32];\n",
+}
+# Threadgroup bytes per arm per width, for the occupancy arithmetic the
+# assignment asks for. Derived from the same expressions as the declarations
+# above so the two cannot drift.
+THREADGROUP_BYTES = {
+    "x_sumshare_split": {na: 2 * na * 32 * 4 for na in WIDTHS},
+    "x_sumshare_owner": {na: na * 32 * 4 for na in WIDTHS},
+}
+THREADGROUP_BUDGET_BYTES = 32768
 
 # Census-only control: the same arm reached through the shipped dispatcher
 # wrapper, to prove the direct call above is not itself a change.
@@ -671,11 +820,23 @@ PLANS = {
     # the two arithmetic-axis ceilings, both deliberately not bit exact.
     "y_algebra": ((PROLOGUE, BODY_ALGEBRA, EPILOGUE), ""),
     "y_hsum_tree": ((PROLOGUE, BODY_HSUM_TREE, EPILOGUE), ""),
+    # rung 2, Finding 53. `n_halfsums` is the ceiling and must fail exactness;
+    # the two `x_sumshare_*` arms are bit exact by construction.
+    "n_halfsums": ((prologue_with(extra="simd_gid"),
+                    BODY_HALFSUMS, EPILOGUE), "simd_gid"),
+    "x_sumshare_split": ((prologue_with(extra="simd_gid, sums_xchg"),
+                          BODY_SUMSHARE_SPLIT, EPILOGUE),
+                         "simd_gid, sums_xchg"),
+    "x_sumshare_owner": ((prologue_with(extra="simd_gid, sums_xchg"),
+                          BODY_SUMSHARE_OWNER, EPILOGUE),
+                         "simd_gid, sums_xchg"),
 }
 
 # Arms that are NOT required to reproduce `a_base` bit for bit.
 DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
-                   "y_algebra", "y_hsum_tree")
+                   "y_algebra", "y_hsum_tree", "n_halfsums")
+# Rung 2, run as its own session on one cell first under its own kill rule.
+RUNG2_ARMS = ("n_halfsums", "x_sumshare_split", "x_sumshare_owner")
 
 # The calibration ladder, by injected instruction class, as
 # (arm, injected instructions per k-block iteration, independent chains).
@@ -702,8 +863,12 @@ def arm_source(base: str, arm: str, via_m: bool = False) -> str:
         start, end = wide_fn_span(base)
         text = base[:start] + prologue + body + epilogue + base[end:]
     template = ISO_KERNEL_VIA_M if via_m else ISO_KERNEL
+    decl = ENTRY_DECL.get(arm, "")
+    if via_m:
+        return text + "".join(template % {"na": na} for na in WIDTHS)
     return text + "".join(
-        template % {"na": na, "extra": ", " + extra if extra else ""}
+        template % {"na": na, "extra": ", " + extra if extra else "",
+                    "decl": decl % {"na": na} if decl else ""}
         for na in WIDTHS)
 
 
@@ -735,6 +900,110 @@ KERNEL_RE = re.compile(r"e118_iso_na(\d+)$")
 DEVICE_LOAD = re.compile(r"=\s*load\s.*addrspace\(1\)")
 SHUFFLE = re.compile(r"simd_shuffle|@air\.simd_shuffle")
 
+# The instruction categories the cost model regresses against.
+#
+# Two things have to be right for an AIR count to mean anything, and both are
+# easy to get wrong:
+#
+#  1. AIR is pre-register-allocation LLVM IR, so a large part of it is SSA
+#     bookkeeping the backend never issues: `phi`, `br`, `insertelement`,
+#     `shufflevector`, `alloca`, `bitcast`, `llvm.lifetime.*`. Counting those
+#     as instructions is most of why Finding 36 says AIR operation counts do
+#     not predict time. They are counted here, into their own bucket, and then
+#     excluded from the issue count rather than silently dropped.
+#  2. AIR is vector-typed and this GPU issues one lane at a time, so a
+#     `<4 x float>` `llvm.fmuladd` is four machine instructions, not one. Every
+#     count is therefore also reported width-weighted as `lanes`.
+TG_ACCESS = re.compile(r"addrspace\(3\)")
+OPCODE = re.compile(r"^\s+(?:%[\w.]+\s*=\s*)?(?:tail\s+)?([a-z][\w.]*)\s")
+CALLEE = re.compile(r"@([\w.$]+)\(")
+VECTOR_WIDTH = re.compile(r"<(\d+) x ")
+
+FREE_OPS = {"br", "phi", "ret", "switch", "unreachable", "alloca",
+            "insertelement", "extractelement", "shufflevector", "bitcast",
+            "fence", "landingpad", "indirectbr"}
+FLOAT_OPS = {"fadd", "fsub", "fmul", "fdiv", "fneg", "frem", "fcmp"}
+INT_OPS = {"add", "sub", "mul", "shl", "lshr", "ashr", "and", "or", "xor",
+           "icmp", "select", "sdiv", "udiv", "srem", "urem"}
+CONVERT_OPS = {"fpext", "fptrunc", "sitofp", "uitofp", "fptosi", "fptoui",
+               "trunc", "zext", "sext", "ptrtoint", "inttoptr"}
+ADDRESS_OPS = {"getelementptr", "addrspacecast"}
+AIR_CLASSES = ("device_loads", "device_stores", "threadgroup", "shuffles",
+               "simd_reduce", "float_alu", "int_alu", "convert", "address",
+               "free", "other")
+
+
+def classify_air(line: str) -> tuple[str, int]:
+    """One AIR line to (class, lane count). Lane count is the vector width."""
+    hit = OPCODE.match(line)
+    if hit is None:
+        return ("", 0)
+    op = hit.group(1)
+    width_hit = VECTOR_WIDTH.search(line)
+    lanes = int(width_hit.group(1)) if width_hit else 1
+    if op == "call":
+        callee = CALLEE.search(line)
+        target = callee.group(1) if callee else ""
+        if target.startswith("llvm.lifetime") or target.startswith("llvm.dbg"):
+            return ("free", 0)
+        if "simd_shuffle" in target:
+            return ("shuffles", lanes)
+        if target.startswith("air.simd_") or "simd_sum" in target:
+            return ("simd_reduce", lanes)
+        if "fmuladd" in target or target.startswith("air.fma"):
+            return ("float_alu", lanes)
+        if target.startswith("air.convert"):
+            return ("convert", lanes)
+        return ("other", lanes)
+    if op in ("load", "store"):
+        if TG_ACCESS.search(line):
+            return ("threadgroup", lanes)
+        if "addrspace(1)" in line:
+            return ("device_loads" if op == "load" else "device_stores", lanes)
+        # addrspace(0) is the stack slot the compiler uses for a spilled or
+        # not-yet-promoted array; it is charged to `other`, never to a device
+        # access, because calling it a device load would fabricate memory
+        # traffic that does not exist.
+        return ("other", lanes)
+    if op in FREE_OPS:
+        return ("free", 0)
+    if op in FLOAT_OPS:
+        return ("float_alu", lanes)
+    if op in CONVERT_OPS:
+        return ("convert", lanes)
+    if op in INT_OPS:
+        return ("int_alu", lanes)
+    if op in ADDRESS_OPS:
+        return ("address", lanes)
+    return ("other", lanes)
+
+
+def air_categories(body: list[str]) -> dict:
+    """Disjoint AIR instruction counts for one entry point.
+
+    `<class>` is the raw line count and `<class>_lanes` is the same count
+    weighted by vector width, which is what the machine actually issues.
+    """
+    counts = {c: 0 for c in AIR_CLASSES}
+    lanes = {c: 0 for c in AIR_CLASSES}
+    total = 0
+    for line in body:
+        klass, width = classify_air(line)
+        if not klass:
+            continue
+        total += 1
+        counts[klass] += 1
+        lanes[klass] += width
+    out: dict = {c: counts[c] for c in AIR_CLASSES}
+    out.update({c + "_lanes": lanes[c] for c in AIR_CLASSES})
+    out["total_instructions"] = total
+    out["arithmetic"] = counts["float_alu"] + counts["int_alu"]
+    out["arithmetic_lanes"] = lanes["float_alu"] + lanes["int_alu"]
+    # What the backend plausibly issues: everything except the SSA bookkeeping
+    # the register allocator dissolves.
+    out["issue_lanes"] = sum(lanes[c] for c in AIR_CLASSES if c != "free")
+    return out
+
 
 def air_stats(source: pathlib.Path, workdir: pathlib.Path) -> dict:
     """Device loads and shuffle calls per entry point, after -O2.
@@ -759,11 +1028,13 @@ def air_stats(source: pathlib.Path, workdir: pathlib.Path) -> dict:
         elif line == "}" and name is not None:
             hit = KERNEL_RE.search(name)
             if hit:
-                found[hit.group(1)] = {
-                    "device_loads": sum(1 for x in body if DEVICE_LOAD.search(x)),
-                    "shuffles": sum(1 for x in body if SHUFFLE.search(x)),
-                    "air_lines": len(body),
-                }
+                cat = air_categories(body)
+                # `device_loads` and `shuffles` keep the meaning they had when
+                # the screen was first reported, so the earlier numbers in this
+                # experiment stay comparable: a shuffle is charged to `shuffles`
+                # and never also to `device_loads`.
+                cat["air_lines"] = len(body)
+                found[hit.group(1)] = cat
             name = None
         elif name is not None:
             body.append(line)
@@ -773,7 +1044,11 @@ def air_stats(source: pathlib.Path, workdir: pathlib.Path) -> dict:
 def census_one(source: pathlib.Path, workdir: pathlib.Path, tag: str) -> dict:
     air_dir = workdir / ("air_" + tag)
     air_dir.mkdir(parents=True, exist_ok=True)
-    row: dict = {"air": air_stats(source, air_dir)}
+    row: dict = {"air": air_stats(source, air_dir),
+                 "threadgroup_bytes": THREADGROUP_BYTES.get(tag, {na: 0
+                                                                  for na
+                                                                  in WIDTHS}),
+                 "threadgroup_budget_bytes": THREADGROUP_BUDGET_BYTES}
     lib = build_metallib(source.read_text(), workdir / tag)
     for arch in (LOCAL_ARCH, RANKED_ARCH):
         for kernel, record in translate(lib, arch, workdir / tag).items():

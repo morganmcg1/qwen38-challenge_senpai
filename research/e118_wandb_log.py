@@ -43,6 +43,7 @@ RUN_IDS = {
     "e118-arms": "e118arms1",
     "e118-static-budget": "e118stat1",
     "e118-spill-defect": "e118spil1",
+    "e118-cost-model": "e118cost1",
 }
 
 
@@ -333,10 +334,84 @@ def log_spill_defect() -> None:
     run.finish()
 
 
+def log_cost_model() -> None:
+    """The instruction price ladder, which is the transferable result here.
+
+    The screen answers one question about one mechanism. This run answers
+    "what does one instruction of this class cost in this kernel", which any
+    later experiment can apply to an arm before spending GPU time on it.
+    """
+    doc = summary()
+    model = doc.get("cost_model")
+    if not model:
+        print("no cost_model in summary.json, skipping")
+        return
+    run = start(
+        job_type="instruction-cost-model", name="e118-cost-model",
+        config={
+            "question": (
+                "what does one device load, one ALU instruction and one "
+                "simd_shuffle cost in the wide affine-4 qmv inner loop"
+            ),
+            "method": (
+                "arms that inject an exactly known count of one instruction "
+                "class per k-block iteration while holding the register "
+                "footprint fixed, so the slope is measured and not fitted"
+            ),
+            "unit": model["unit"],
+            **identity(),
+            **gate_flags("standalone Metal probe, ungated local timing", False),
+        },
+    )
+
+    prices = wandb.Table(columns=[
+        "class", "pct_per_instruction", "sem", "r2_median", "cells"])
+    for klass, c in model["classes"].items():
+        prices.add_data(klass, c["pct_per_instruction_median"], c["sem"],
+                        c["r2_median"], c["cells"])
+
+    percell = wandb.Table(columns=["class", "shape", "na", "slope", "r2"])
+    for klass, fits in model.get("per_cell", {}).items():
+        for f in fits:
+            percell.add_data(klass, f["shape"], f["m"], f["slope"], f["r2"])
+
+    pred = wandb.Table(columns=[
+        "arm", "delta_device_loads", "delta_shuffles",
+        "predicted_pct_faster", "measured_pct_faster", "residual_pp"])
+    for arm, p in model.get("screen_prediction", {}).items():
+        pred.add_data(arm, p["delta_device_loads"], p["delta_shuffles"],
+                      p["predicted_pct_faster"], p["measured_pct_faster"],
+                      p["measured_pct_faster"] - p["predicted_pct_faster"])
+
+    run.log({"instruction_price": prices, "price_per_cell": percell,
+             "screen_prediction": pred})
+
+    classes = model["classes"]
+    updates: dict[str, object] = {}
+    for klass in ("ld", "alu", "shuf"):
+        if klass in classes:
+            updates["pct_per_instruction_" + klass] = \
+                classes[klass]["pct_per_instruction_median"]
+            updates["r2_" + klass] = classes[klass]["r2_median"]
+    ilp = model.get("ilp_control")
+    if ilp:
+        updates["ilp_two_chain_pct_per_instruction"] = \
+            ilp["two_chain_pct_per_instruction"]
+        updates["ilp_four_chain_pct_per_instruction"] = \
+            ilp["four_chain_pct_per_instruction"]
+    if "shuf" in classes and "ld" in classes:
+        updates["shuffle_over_load_price_ratio"] = (
+            classes["shuf"]["pct_per_instruction_median"] /
+            classes["ld"]["pct_per_instruction_median"])
+    run.summary.update(updates)
+    run.finish()
+
+
 RUNS = {
     "e118-arms": log_arms,
     "e118-static-budget": log_static,
     "e118-spill-defect": log_spill_defect,
+    "e118-cost-model": log_cost_model,
 }
 
 

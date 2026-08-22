@@ -45,7 +45,8 @@ KILL_RULE_PCT = 0.5
 # it is reported beside them and never inside the headline.
 PROMOTION_ARMS = ("s_bcast", "s_bcast_all", "s_bcast_scale", "p_split_meta",
                   "g_pack32", "s_bcast_pack32")
-DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1")
+DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
+                   "y_algebra", "y_hsum_tree")
 # E111's bias arms, folded in at every width. `e_bias6` is bit exact but is not
 # part of the metadata-load screen: it needs a repacked metadata array that this
 # experiment does not build, so it is reported beside the primary metric.
@@ -55,6 +56,443 @@ BIAS_ARMS = ("n_nobias", "n_nosums", "d_bias1", "e_bias6")
 # separates "this arm's mechanism broke exactness" from "spilling broke
 # exactness". It is a control and never enters the primary metric.
 CONTROL_ARMS = ("z_ballast",)
+# The instruction-price ladder. Each rung injects an exactly known number of
+# instructions of ONE class per k-block iteration while holding the register
+# footprint fixed, so `a_base` at zero plus the rungs give a measured slope in
+# percent of `a_base` per instruction. `k_alu16w` is the ILP control: the same
+# 16 injected ALU instructions as `k_alu16` over four chains instead of two.
+CAL_LADDER = {
+    "alu": (("k_alu8", 8), ("k_alu16", 16)),
+    "ld": (("k_ld8", 8), ("k_ld16", 16)),
+    "shuf": (("k_shuf8", 8), ("k_shuf16", 16)),
+}
+CAL_ILP_CONTROL = ("k_alu16w", "k_alu16", 16)
+CAL_ARMS = tuple(a for rungs in CAL_LADDER.values() for a, _ in rungs) + \
+    (CAL_ILP_CONTROL[0],)
+# The two arithmetic-axis ceilings. Both reassociate, so neither is promotable.
+CEILING_ARMS = ("y_algebra", "y_hsum_tree")
+
+# Metadata instructions issued per k-block iteration, counted from each arm's
+# own source. `a_base` issues 4 rows x (1 scale + 1 bias) = 8 device loads and
+# no shuffles, and every entry below is the difference from that.
+#
+#   s_bcast         4 x (2 predicated loads + 2 shuffles). Predication masks
+#                   lanes, it does not delete the instruction, so the load
+#                   count is UNCHANGED and only shuffles are added.
+#   s_bcast_all     2 fully active loads hoisted out of the r loop, then
+#                   4 x 2 shuffles. This is the only arm that truly deletes
+#                   metadata load instructions.
+#   s_bcast_scale   scales broadcast, biases loaded as shipped.
+#   g_pack32        4 x 1 interleaved uint32 load, no shuffles.
+#   s_bcast_pack32  4 x (1 predicated uint32 load + 1 shuffle).
+#   p_split_meta    the same instructions in a different order.
+ARM_META_DELTA = {
+    "s_bcast": {"ld": 0, "shuf": 8},
+    "s_bcast_all": {"ld": -6, "shuf": 8},
+    "s_bcast_scale": {"ld": 0, "shuf": 4},
+    "g_pack32": {"ld": -4, "shuf": 0},
+    "s_bcast_pack32": {"ld": -4, "shuf": 4},
+    "p_split_meta": {"ld": 0, "shuf": 0},
+}
+
+
+def mols(rows: list[list[float]], ys: list[float],
+         names: list[str]) -> dict | None:
+    """Multivariate least squares with an intercept, normal equations.
+
+    Written out rather than imported so this script keeps to the standard
+    library and anybody can rerun it on a bare host. Gauss-Jordan on the
+    (p+1)x(p+1) normal matrix is exact enough at this size and refuses rather
+    than guesses when the design is rank deficient.
+    """
+    n, p = len(rows), len(rows[0])
+    if n < p + 2:
+        return None
+    design = [[1.0] + list(r) for r in rows]
+    k = p + 1
+    ata = [[sum(design[i][a] * design[i][b] for i in range(n))
+            for b in range(k)] for a in range(k)]
+    aty = [sum(design[i][a] * ys[i] for i in range(n)) for a in range(k)]
+    # augment with the identity so the same elimination yields the inverse,
+    # which is what the coefficient standard errors need
+    aug = [ata[a][:] + [1.0 if a == b else 0.0 for b in range(k)]
+           for a in range(k)]
+    for col in range(k):
+        pivot = max(range(col, k), key=lambda r: abs(aug[r][col]))
+        if abs(aug[pivot][col]) < 1e-12:
+            return None
+        aug[col], aug[pivot] = aug[pivot], aug[col]
+        scale = aug[col][col]
+        aug[col] = [v / scale for v in aug[col]]
+        for r in range(k):
+            if r == col:
+                continue
+            factor = aug[r][col]
+            if factor:
+                aug[r] = [v - factor * w for v, w in zip(aug[r], aug[col])]
+    inv = [row[k:] for row in aug]
+    beta = [sum(inv[a][b] * aty[b] for b in range(k)) for a in range(k)]
+    fitted = [sum(beta[a] * design[i][a] for a in range(k)) for i in range(n)]
+    resid = [y - f for y, f in zip(ys, fitted)]
+    sse = sum(r * r for r in resid)
+    my = sum(ys) / n
+    sst = sum((y - my) ** 2 for y in ys)
+    dof = n - k
+    sigma2 = sse / dof if dof > 0 else float("nan")
+    return {
+        "intercept": beta[0],
+        "coefficients": {names[a - 1]: beta[a] for a in range(1, k)},
+        "standard_errors": {
+            names[a - 1]: math.sqrt(sigma2 * inv[a][a])
+            if sigma2 == sigma2 and sigma2 * inv[a][a] > 0 else float("nan")
+            for a in range(1, k)},
+        "r2": (1.0 - sse / sst) if sst > 0 else float("nan"),
+        "n": n, "dof": dof,
+        "residuals": resid,
+    }
+
+
+def ols(xs: list[float], ys: list[float]) -> dict | None:
+    """Least squares through an intercept, with the slope standard error."""
+    n = len(xs)
+    if n < 3:
+        return None
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    if sxx <= 0:
+        return None
+    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    intercept = my - slope * mx
+    resid = [y - (intercept + slope * x) for x, y in zip(xs, ys)]
+    sse = sum(r * r for r in resid)
+    sst = sum((y - my) ** 2 for y in ys)
+    se = math.sqrt(sse / (n - 2) / sxx) if n > 2 else float("nan")
+    return {"slope": slope, "intercept": intercept, "se": se,
+            "r2": (1.0 - sse / sst) if sst > 0 else float("nan"), "n": n}
+
+
+def cost_model(rate: dict, cells: dict, census: dict | None,
+               us: dict | None = None) -> dict:
+    """The measured price of one instruction, by class, from the ladder.
+
+    Every screen arm changes several things at once, so no screen arm can price
+    an instruction. The ladder changes exactly one thing per class. The slope is
+    reported in percent of `a_base` per injected instruction per k-block
+    iteration, which is the form another experiment can apply directly.
+
+    A rung is dropped wherever the census says it spills on the timed
+    architecture, because E118's own spill defect shows spilling changes both
+    the time and the correctness of this kernel.
+    """
+    arms = rate["arms"]
+    arch = census["local_arch"] if census else None
+    out: dict = {"unit": "percent of a_base per injected instruction "
+                         "per k-block iteration",
+                 "note": "positive means the instruction COSTS that much",
+                 "classes": {}, "excluded_spilling": [], "per_cell": {}}
+
+    def spills(arm: str, m: int) -> bool:
+        if not census or arm not in census.get("arms", {}):
+            return False
+        rec = census["arms"][arm].get(arch, {}).get(str(m), {})
+        return bool(rec.get("spill_bytes", 0))
+
+    for klass, rungs in CAL_LADDER.items():
+        if not all(a in arms for a, _ in rungs):
+            continue
+        fits: list[dict] = []
+        for (shape, m), by_arm in sorted(cells.items()):
+            xs, ys = [0.0], [0.0]
+            skip = False
+            for arm, count in rungs:
+                if spills(arm, m):
+                    skip = True
+                    out["excluded_spilling"].append(
+                        {"arm": arm, "shape": shape, "m": m})
+                    continue
+                med = statistics.median(by_arm[arm])
+                xs.append(float(count))
+                ys.append(-med)  # cost, not speed-up
+            if skip or len(xs) < 3:
+                continue
+            fit = ols(xs, ys)
+            if fit is None:
+                continue
+            # The price is taken from the DIFFERENCE between the two rungs and
+            # not from the three-point fit. Both rungs carry the same injection
+            # scaffold -- the extra address arithmetic and the sink that stops
+            # the compiler deleting the work -- so differencing them cancels it
+            # exactly, while a fit anchored on `a_base` at x=0 charges 1/16th of
+            # that scaffold to every instruction. `scaffold_pct` publishes the
+            # size of what was cancelled, so the reader can see how far the
+            # ladder is from linear down to zero.
+            lo, hi = ys[1], ys[2]
+            span = xs[2] - xs[1]
+            fit["slope_three_point"] = fit["slope"]
+            fit["slope"] = (hi - lo) / span
+            fit["scaffold_pct"] = lo - xs[1] * fit["slope"]
+            # The same slope in absolute microseconds of whole-dispatch time,
+            # which is the form the advisor asked for. It is cell-specific
+            # because a bigger shape runs more k-block iterations.
+            base_us = (us or {}).get((shape, m), {}).get("a_base")
+            fit["us_per_instruction"] = (fit["slope"] * base_us / 100.0
+                                         if base_us else float("nan"))
+            fit["a_base_us"] = base_us
+            fit.update({"shape": shape, "m": m})
+            fits.append(fit)
+            out["per_cell"].setdefault(klass, []).append(fit)
+        if not fits:
+            continue
+        slopes = [f["slope"] for f in fits]
+        us_slopes = [f["us_per_instruction"] for f in fits
+                     if f["us_per_instruction"] == f["us_per_instruction"]]
+        out["classes"][klass] = {
+            "pct_per_instruction_median": statistics.median(slopes),
+            "pct_per_instruction_mean": statistics.fmean(slopes),
+            "sem": (statistics.stdev(slopes) / math.sqrt(len(slopes))
+                    if len(slopes) > 1 else float("nan")),
+            "us_per_instruction_median": (statistics.median(us_slopes)
+                                          if us_slopes else float("nan")),
+            "r2_median": statistics.median([f["r2"] for f in fits]),
+            "slope_three_point_median": statistics.median(
+                [f["slope_three_point"] for f in fits]),
+            "scaffold_pct_median": statistics.median(
+                [f["scaffold_pct"] for f in fits]),
+            "cells": len(fits),
+            # The price is also resolved per width, because a screen arm has to
+            # be predicted at the width it was measured at: NA changes both the
+            # register pressure and the number of k-block iterations.
+            "per_na": {
+                m: {"pct_per_instruction_median": statistics.median(
+                        [f["slope"] for f in fits if f["m"] == m]),
+                    "us_per_instruction_median": statistics.median(
+                        [f["us_per_instruction"] for f in fits
+                         if f["m"] == m and
+                         f["us_per_instruction"] == f["us_per_instruction"]]
+                        or [float("nan")]),
+                    "r2_median": statistics.median(
+                        [f["r2"] for f in fits if f["m"] == m]),
+                    "cells": len([f for f in fits if f["m"] == m])}
+                for m in sorted({f["m"] for f in fits})
+            },
+        }
+
+    # The ILP control. If two chains and four chains price the same, the ladder
+    # is measuring issue throughput and not dependency-chain latency.
+    wide, narrow, count = CAL_ILP_CONTROL
+    if wide in arms and narrow in arms:
+        pairs = []
+        for (shape, m), by_arm in sorted(cells.items()):
+            if spills(wide, m) or spills(narrow, m):
+                continue
+            pairs.append((-statistics.median(by_arm[narrow]) / count,
+                          -statistics.median(by_arm[wide]) / count))
+        if pairs:
+            two = statistics.median([a * count for a, _ in pairs])
+            four = statistics.median([b * count for _, b in pairs])
+            out["ilp_control"] = {
+                "injected_instructions": count,
+                "two_chain_cost_pct": two,
+                "four_chain_cost_pct": four,
+                "four_minus_two_pct": four - two,
+                "two_chain_pct_per_instruction": two / count,
+                "four_chain_pct_per_instruction": four / count,
+                "reads": ("issue throughput" if four >= two * 0.75
+                          else "dependency-chain latency"),
+                "cells": len(pairs),
+            }
+
+    # Apply the prices to the screen arms. This is the whole point of the
+    # ladder: it turns the metadata screen into a prediction with no free
+    # parameter, so agreement is a real test of the issue model.
+    #
+    # The comparison is made per width and never pooled across widths. Pooling
+    # is the trap: a spilling arm loses different widths from a non-spilling
+    # arm, so a pooled `measured` column would compare two arms over two
+    # different sets of cells and read as a difference in the arm. Each row
+    # below therefore states the width, and the round-weighted column is filled
+    # in only when every standing-weight width survived for that arm.
+    widths_all = sorted({m for _, m in cells})
+    if "ld" in out["classes"] and "shuf" in out["classes"]:
+        ld_na = out["classes"]["ld"]["per_na"]
+        shuf_na = out["classes"]["shuf"]["per_na"]
+        preds = {}
+        for arm, delta in ARM_META_DELTA.items():
+            if arm not in arms:
+                continue
+            per_na: dict[int, dict] = {}
+            for m in widths_all:
+                if m not in ld_na or m not in shuf_na:
+                    per_na[m] = {"status": "no_ladder_price"}
+                    continue
+                if spills(arm, m):
+                    per_na[m] = {"status": "arm_spills"}
+                    continue
+                obs = [statistics.median(by_arm[arm])
+                       for (shape, mm), by_arm in sorted(cells.items())
+                       if mm == m]
+                if not obs:
+                    per_na[m] = {"status": "no_cells"}
+                    continue
+                predicted = -(
+                    delta["ld"] * ld_na[m]["pct_per_instruction_median"] +
+                    delta["shuf"] * shuf_na[m]["pct_per_instruction_median"])
+                per_na[m] = {
+                    "status": "ok",
+                    "predicted_pct_faster": predicted,
+                    "measured_pct_faster": statistics.median(obs),
+                    "residual_pct": statistics.median(obs) - predicted,
+                    "shapes": len(obs),
+                }
+            ok = {m: v for m, v in per_na.items() if v["status"] == "ok"}
+            complete = all(m in ok for m in sw.STANDING_WEIGHTS)
+            wsum = sum(sw.STANDING_WEIGHTS[m] for m in ok
+                       if m in sw.STANDING_WEIGHTS)
+            preds[arm] = {
+                "delta_device_loads": delta["ld"],
+                "delta_shuffles": delta["shuf"],
+                "per_na": per_na,
+                "widths_ok": sorted(ok),
+                "widths_dropped": sorted(m for m in per_na
+                                         if per_na[m]["status"] != "ok"),
+                "complete_over_standing_weights": complete,
+                # Renormalised over the widths that survived, with the covered
+                # standing weight printed next to it so the reader can see how
+                # much of the round the number actually speaks for. It is never
+                # comparable across two arms with different coverage, which is
+                # exactly why the coverage travels with the number.
+                "standing_weight_covered": wsum,
+                "weighted_predicted_over_covered": (
+                    sum(sw.STANDING_WEIGHTS[m] * ok[m]["predicted_pct_faster"]
+                        for m in ok if m in sw.STANDING_WEIGHTS) / wsum
+                    if wsum else None),
+                "weighted_measured_over_covered": (
+                    sum(sw.STANDING_WEIGHTS[m] * ok[m]["measured_pct_faster"]
+                        for m in ok if m in sw.STANDING_WEIGHTS) / wsum
+                    if wsum else None),
+            }
+        out["screen_prediction"] = preds
+    return out
+
+
+AIR_REGRESSORS = ("device_loads", "shuffles", "arithmetic_lanes",
+                  "convert", "address")
+
+
+def air_regression(cells: dict, census: dict | None, us: dict) -> dict | None:
+    """The observational regression: measured microseconds on AIR counts.
+
+    This is the model the assignment asked for in its literal form -- every arm
+    and every cell, time against the static AIR instruction count per entry
+    point. It is reported next to the ladder rather than instead of it, because
+    the two disagree and the disagreement is the point. Every arm here changes
+    several categories at once and changes register pressure as well, so the
+    coefficients are correlational; the ladder holds everything but one class
+    fixed, so its slopes are causal.
+
+    Spilling arm-widths are dropped: a spilled kernel is a different machine and
+    its time is not a function of the AIR count.
+    """
+    if not census:
+        return None
+    arch = census["local_arch"]
+    air = {a: r.get("air", {}) for a, r in census.get("arms", {}).items()}
+    out: dict = {"note": "observational, correlational, not causal; the "
+                         "calibration ladder is the causal instrument",
+                 "regressors": list(AIR_REGRESSORS), "per_cell": {}}
+    uni, multi = [], []
+    for (shape, m), by_arm in sorted(cells.items()):
+        xs_uni, xs_multi, ys, used = [], [], [], []
+        for arm in sorted(by_arm):
+            counts = air.get(arm, {}).get(str(m))
+            base = census.get("arms", {}).get(arm, {}).get(arch, {}).get(str(m))
+            if counts is None or base is None or base.get("spill_bytes"):
+                continue
+            value = us.get((shape, m), {}).get(arm)
+            if value is None:
+                continue
+            xs_uni.append([float(counts.get("issue_lanes", 0))])
+            xs_multi.append([float(counts.get(k, 0)) for k in AIR_REGRESSORS])
+            ys.append(value)
+            used.append(arm)
+        if len(ys) < len(AIR_REGRESSORS) + 3:
+            continue
+        fit_u = mols(xs_uni, ys, ["issue_lanes"])
+        fit_m = mols(xs_multi, ys, list(AIR_REGRESSORS))
+        if fit_u is None or fit_m is None:
+            continue
+        row = {"shape": shape, "m": m, "arms": used,
+               "univariate": {k: fit_u[k] for k in
+                              ("intercept", "coefficients",
+                               "standard_errors", "r2", "n")},
+               "multivariate": {k: fit_m[k] for k in
+                                ("intercept", "coefficients",
+                                 "standard_errors", "r2", "n")},
+               "worst_residuals": sorted(
+                   ({"arm": a, "residual_us": r}
+                    for a, r in zip(used, fit_u["residuals"])),
+                   key=lambda d: -abs(d["residual_us"]))[:5]}
+        out["per_cell"]["%s|NA%d" % (shape, m)] = row
+        uni.append(fit_u)
+        multi.append(fit_m)
+    if not uni:
+        return None
+    out["univariate_summary"] = {
+        "us_per_issue_lane_median": statistics.median(
+            [f["coefficients"]["issue_lanes"] for f in uni]),
+        "se_median": statistics.median(
+            [f["standard_errors"]["issue_lanes"] for f in uni]),
+        "r2_median": statistics.median([f["r2"] for f in uni]),
+        "cells": len(uni),
+    }
+    out["multivariate_summary"] = {
+        k: {"us_per_instruction_median": statistics.median(
+                [f["coefficients"][k] for f in multi]),
+            "se_median": statistics.median([f["standard_errors"][k]
+                                            for f in multi])}
+        for k in AIR_REGRESSORS}
+    out["multivariate_summary"]["r2_median"] = statistics.median(
+        [f["r2"] for f in multi])
+    out["multivariate_summary"]["cells"] = len(multi)
+    return out
+
+
+def block_dispersion(rate: dict, cells: dict) -> dict:
+    """Harness defect 19: a rare low-clock tail that pooling would hide.
+
+    Thorfinn's E115 saw a whole timed region run at about half speed in four
+    blocks of eight. That is external interruption, not first-position ramp
+    bias, so the block-0 discard does not catch it. Any kept block whose time
+    exceeds 1.5x the cell median is flagged here rather than pooled silently.
+    """
+    flagged, cell_rows = [], []
+    per_cell: dict[tuple, dict[str, list[float]]] = {}
+    for row in rate["measurements"]:
+        if row["kind"] != "timing" or row["block"] < WARMUP_BLOCKS:
+            continue
+        key = (row["shape"], row["m"])
+        for arm, sec in row["seconds"].items():
+            per_cell.setdefault(key, {}).setdefault(arm, []).append(sec * 1e6)
+    for (shape, m), by_arm in sorted(per_cell.items()):
+        worst = 0.0
+        for arm, vals in by_arm.items():
+            med = statistics.median(vals)
+            if med <= 0:
+                continue
+            spread = (max(vals) - min(vals)) / med * 100.0
+            worst = max(worst, spread)
+            for i, v in enumerate(vals):
+                if v > 1.5 * med:
+                    flagged.append({"shape": shape, "m": m, "arm": arm,
+                                    "block_index": i, "us": v,
+                                    "cell_median_us": med,
+                                    "ratio": v / med})
+        cell_rows.append({"shape": shape, "m": m,
+                          "worst_arm_spread_pct": worst})
+    return {"threshold_ratio": 1.5, "flagged": flagged,
+            "flagged_count": len(flagged), "per_cell": cell_rows,
+            "max_cell_spread_pct": max((c["worst_arm_spread_pct"]
+                                        for c in cell_rows), default=0.0)}
 
 
 # --- the committed receipt slice ----------------------------------------------
@@ -489,8 +927,133 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
           "n_nosums %+.3f" % (s_b, s_ba, p_sm, n_ns))
     print("   binding resource selected by the data: %s" % verdict)
 
+    census_data = (json.loads(census_path.read_text())
+                   if census_path is not None and census_path.exists()
+                   else None)
+
+    # --- harness defect 19, the low-clock tail --------------------------------
+    disp = block_dispersion(rate, cells)
+    print("\n-- harness defect 19, kept-block dispersion")
+    print("   a block is flagged when it exceeds %.1fx its cell median"
+          % disp["threshold_ratio"])
+    print("   flagged blocks: %d of %d cell-arm series"
+          % (disp["flagged_count"], len(disp["per_cell"]) * len(arms)))
+    print("   worst within-cell spread over any arm: %.2f %%"
+          % disp["max_cell_spread_pct"])
+    for row in disp["flagged"][:12]:
+        print("   FLAGGED %-14s %s NA%d  %.1f us vs median %.1f (%.2fx)"
+              % (row["arm"], row["shape"], row["m"], row["us"],
+                 row["cell_median_us"], row["ratio"]))
+
+    # --- the instruction price ladder -----------------------------------------
+    model = cost_model(rate, cells, census_data, us)
+    print("\n-- instruction price, measured from the calibration ladder")
+    print("   unit: %s" % model["unit"])
+    print("   price is the 8-to-16 rung contrast, which cancels the injection "
+          "scaffold exactly; `scaffold` is what was cancelled and `3pt` is the "
+          "biased fit that anchors on a_base at zero, shown so the bias is "
+          "visible rather than hidden")
+    print("   %-6s %12s %9s %13s %8s %10s %8s %6s" %
+          ("class", "pct/instr", "sem", "us/instr med", "R2 med",
+           "scaffold %", "3pt", "cells"))
+    for klass in ("ld", "alu", "shuf"):
+        c = model["classes"].get(klass)
+        if c:
+            print("   %-6s %12.5f %9.5f %13.4f %8.3f %10.3f %8.5f %6d"
+                  % (klass, c["pct_per_instruction_median"], c["sem"],
+                     c["us_per_instruction_median"], c["r2_median"],
+                     c["scaffold_pct_median"],
+                     c["slope_three_point_median"], c["cells"]))
+    print("   the same price resolved per width, pct/instr "
+          "(`-` where every rung of that class spilled)")
+    print("   %-6s %s" % ("class", "  ".join("%12s" % ("NA%d" % m)
+                                             for m in widths)))
+    for klass in ("ld", "alu", "shuf"):
+        c = model["classes"].get(klass)
+        if not c:
+            continue
+        cells_txt = []
+        for m in widths:
+            v = c["per_na"].get(m)
+            cells_txt.append("%12s" % (
+                "-" if v is None else "%.5f/%.3fus"
+                % (v["pct_per_instruction_median"],
+                   v["us_per_instruction_median"])))
+        print("   %-6s %s" % (klass, "  ".join(cells_txt)))
+    ilp = model.get("ilp_control")
+    if ilp:
+        print("   ILP control, %d injected ALU instructions either way: "
+              "2 chains cost %.3f %%, 4 chains cost %.3f %%, difference "
+              "%+.3f pp over %d cells"
+              % (ilp["injected_instructions"], ilp["two_chain_cost_pct"],
+                 ilp["four_chain_cost_pct"], ilp["four_minus_two_pct"],
+                 ilp["cells"]))
+        print("   halving the dependency depth at constant instruction count "
+              "did not reduce the cost, so the ladder reads %s"
+              % ilp["reads"])
+    pred = model.get("screen_prediction")
+    if pred:
+        print("\n   the ladder applied to the screen arms, no free parameter")
+        print("   compared per width; a width where the arm spills is shown "
+              "as `spill` and never pooled away")
+        hdr = "   %-16s %6s %6s" % ("arm", "d_ld", "d_shuf")
+        for m in widths:
+            hdr += " %17s" % ("NA%d pred/meas" % m)
+        print(hdr + " %19s" % "wtd pred/meas (cov)")
+        for arm in sorted(pred, key=lambda a: (
+                pred[a]["weighted_measured_over_covered"]
+                if pred[a]["weighted_measured_over_covered"] is not None
+                else 1e9)):
+            p = pred[arm]
+            line = "   %-16s %6d %6d" % (
+                arm, p["delta_device_loads"], p["delta_shuffles"])
+            for m in widths:
+                cell = p["per_na"].get(m, {"status": "no_cells"})
+                if cell["status"] != "ok":
+                    line += " %17s" % cell["status"]
+                else:
+                    line += " %8.2f/%8.2f" % (cell["predicted_pct_faster"],
+                                              cell["measured_pct_faster"])
+            wp = p["weighted_predicted_over_covered"]
+            wm = p["weighted_measured_over_covered"]
+            line += (" %19s" % "-" if wm is None else
+                     " %6.2f/%6.2f (%.3f)" % (wp, wm,
+                                              p["standing_weight_covered"]))
+            print(line)
+        print("   `cov` is the share of the standing round weight the two "
+              "weighted columns speak for; they are not comparable between "
+              "two arms with different cov")
+
+    # --- the observational regression, for contrast with the ladder ----------
+    obs = air_regression(cells, census_data, us)
+    if obs:
+        u = obs["univariate_summary"]
+        mv = obs["multivariate_summary"]
+        print("\n-- observational regression, microseconds on AIR counts, "
+              "every arm x every cell")
+        print("   %s" % obs["note"])
+        print("   univariate on issue lanes: %.4f us/instruction "
+              "(se %.4f), R2 median %.3f over %d cells"
+              % (u["us_per_issue_lane_median"], u["se_median"],
+                 u["r2_median"], u["cells"]))
+        print("   multivariate, R2 median %.3f over %d cells"
+              % (mv["r2_median"], mv["cells"]))
+        print("   %-18s %16s %12s" % ("AIR category", "us/instruction", "se"))
+        for k in AIR_REGRESSORS:
+            print("   %-18s %16.4f %12.4f"
+                  % (k, mv[k]["us_per_instruction_median"], mv[k]["se_median"]))
+        head = obs["per_cell"].get("%s|NA4" % shape)
+        if head:
+            print("   worst univariate residuals on %s NA4, the arms that "
+                  "cost more than one slot each" % shape)
+            for r in head["worst_residuals"]:
+                print("      %-16s %+9.1f us" % (r["arm"], r["residual_us"]))
+
     payload = {
         "harness": "local",
+        "block_dispersion": disp,
+        "air_regression": obs,
+        "cost_model": model,
         "device": rate["device"], "architecture": rate["architecture"],
         "shape": shape, "widths": widths, "warmup_blocks": WARMUP_BLOCKS,
         "pairs": rate["pairs"], "ramp_ms": rate.get("ramp_ms"),
@@ -511,8 +1074,8 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
                           "p_split_meta": p_sm, "n_nosums": n_ns,
                           "verdict": verdict},
     }
-    if census_path is not None and census_path.exists():
-        payload["census"] = json.loads(census_path.read_text())
+    if census_data is not None:
+        payload["census"] = census_data
         print_census(payload["census"])
         se = spill_exactness(rate, payload["census"])
         payload["spill_exactness"] = se
