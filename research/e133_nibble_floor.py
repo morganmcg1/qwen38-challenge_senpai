@@ -133,8 +133,67 @@ SUM = "partial[r] += (a0 * n0 + a1 * n1 + a2 * n2 + a3 * n3);"
 VARIANTS: dict[str, dict] = {}
 
 
-def variant(name: str, note: str, sim, body: str) -> None:
-    VARIANTS[name] = {"note": note, "sim": sim, "body": body.strip("\n")}
+def variant(name: str, note: str, sim, body: str, sites=()) -> None:
+    VARIANTS[name] = {"note": note, "sim": sim,
+                      "body": body.strip("\n") if body else None,
+                      "sites": tuple(sites)}
+
+
+# --------------------------------------------------------------------------
+# load-width sites, F23
+# --------------------------------------------------------------------------
+#
+# These patch the loads rather than the nibble arithmetic, so they carry no
+# nibble simulator. Each one is exact by construction because it moves the same
+# bytes into the same values in the same order; the argument is recorded with
+# the site and the definitive check is the ISA digest plus a real exactness run.
+
+WEIGHT_LOAD = re.compile(
+    r"^(?P<pad>[ ]*)for \(int i = 0; i < 4; i\+\+\) \{\n"
+    r"[ ]*packed\[r\]\[i\] = ws\[i\];\n"
+    r"[ ]*\}$", re.M)
+
+ACT_WIDEN = re.compile(
+    r"^(?P<pad>[ ]*)a0\[m\] = static_cast<float>\(xv\[0\]\);\n"
+    r"[ ]*a1\[m\] = static_cast<float>\(xv\[1\]\);\n"
+    r"[ ]*a2\[m\] = static_cast<float>\(xv\[2\]\);\n"
+    r"[ ]*a3\[m\] = static_cast<float>\(xv\[3\]\);$", re.M)
+
+SITES = {
+    "w1": (WEIGHT_LOAD,
+           "One eight-byte vector load of the same eight contiguous bytes, "
+           "then four register writes. `ws` is eight-byte aligned at every "
+           "scored K, so the vector load is legal. The scalar writeback "
+           "avoids assuming the thread array is eight-byte aligned.",
+           "const vec<uint16_t, 4> wv =\n"
+           "    *reinterpret_cast<const device vec<uint16_t, 4>*>(ws);\n"
+           "packed[r][0] = wv[0];\n"
+           "packed[r][1] = wv[1];\n"
+           "packed[r][2] = wv[2];\n"
+           "packed[r][3] = wv[3];"),
+    "a1": (ACT_WIDEN,
+           "One vector bfloat16 to float widening instead of four scalar "
+           "ones. Widening bfloat16 to float is exact, so every operand of "
+           "every later float operation is unchanged.",
+           "const vec<float, 4> xf = static_cast<vec<float, 4>>(xv);\n"
+           "a0[m] = xf[0];\n"
+           "a1[m] = xf[1];\n"
+           "a2[m] = xf[2];\n"
+           "a3[m] = xf[3];"),
+}
+
+
+def apply_site(header: str, key: str) -> str:
+    pattern, _note, replacement = SITES[key]
+    hits = list(pattern.finditer(header))
+    if len(hits) != 1:
+        raise Refused("site %s matched %d times; the patch is ambiguous"
+                      % (key, len(hits)))
+    hit = hits[0]
+    pad = hit.group("pad")
+    body = "\n".join(pad + line if line else ""
+                     for line in replacement.splitlines())
+    return header[:hit.start()] + body + header[hit.end():]
 
 
 def _sim_mask(p: int) -> list[int]:
@@ -308,10 +367,43 @@ const float n3 = p;
 """)
 
 
+variant(
+    "w2",
+    "The advisor's vectorised nibble extract. One vector shift by the "
+    "constant vector and one vector mask replace four scalar shift-and-mask "
+    "pairs. The mask on the top nibble is redundant on a sixteen-bit value, "
+    "which this form drops and the census prices.",
+    _sim_mask,
+    """
+const ushort4 pv = ushort4(packed[r][i]) >> ushort4(0, 4, 8, 12);
+const ushort4 nv = pv & ushort4(0x000f);
+const float n0 = float(nv[0]);
+const float n1 = float(nv[1]);
+const float n2 = float(nv[2]);
+const float n3 = float(nv[3]);
+""")
+
+variant("w1", SITES["w1"][1], None, None, sites=("w1",))
+variant("a1", SITES["a1"][1], None, None, sites=("a1",))
+variant("w1_a1", "W1 and A1 together, both load-width sites, no nibble "
+        "change.", None, None, sites=("w1", "a1"))
+variant(
+    "w1_w2_a1",
+    "All three F23 forms at once. This is the row that says whether the "
+    "savings compose or whether the register allocator gives one back.",
+    _sim_mask,
+    VARIANTS["w2"]["body"],
+    sites=("w1", "a1"))
+
+
 def patched_header(header: str, name: str) -> str:
     if name == "shipped":
         return header
     spec = VARIANTS[name]
+    for key in spec["sites"]:
+        header = apply_site(header, key)
+    if spec["body"] is None:
+        return header
     hit = product_span(header)
     pad = hit.group("pad")
     lines = [pad + "{"]
@@ -332,6 +424,10 @@ def exactness() -> int:
     print("bit-exactness of each idiom, all 16 values at all 4 positions")
     for name, spec in VARIANTS.items():
         sim = spec["sim"]
+        if sim is None and spec["sites"]:
+            print("  %-22s EXACT BY CONSTRUCTION, load width only, no nibble "
+                  "arithmetic to simulate" % name)
+            continue
         if sim is None:
             print("  %-22s SKIPPED, declared not exact" % name)
             continue
@@ -470,6 +566,11 @@ def census(header: str, cells, workdir: pathlib.Path, tag: str,
                     "registers": registers,
                     "spill_bytes": record["spill_bytes"],
                     "text_bytes": record["text_bytes"],
+                    # The machine-code digest is what decides whether a source
+                    # change reached the ISA at all. Apple ships no AGX
+                    # instruction printer, so this equality test replaces
+                    # reading mnemonics.
+                    "text_sha8": record["text_sha8"],
                     "simdgroups_derived": SIMDGROUP_BUDGET[arch] // registers,
                 }
     return rows
@@ -633,6 +734,19 @@ def verdict(result: dict) -> None:
         print("      shipped emits %d load(s) and %d convert(s) in the hot "
               "region. F157 counts 4 weight loads and no conversions."
               % (ref["air"].get("load", 0), ref["air"].get("convert", 0)))
+        base_sha = ref.get(RANKED, {}).get("text_sha8")
+        if base_sha is None:
+            continue
+        print("      machine-code identity against shipped, %s" % base_sha)
+        for name, row in rows.items():
+            if name == "shipped":
+                continue
+            got = row[RANKED]["text_sha8"]
+            same = got == base_sha
+            print("      %-22s %s  %s" % (
+                name, got,
+                "IDENTICAL, the compiler already produced this code"
+                if same else "different, the source change reached the ISA"))
 
 
 def main() -> int:
