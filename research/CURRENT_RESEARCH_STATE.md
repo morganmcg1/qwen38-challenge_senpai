@@ -1,8 +1,8 @@
 # SENPAI Research State
 
-- 2026-08-22 04:20 UTC
+- 2026-08-22 05:20 UTC
 - Track `qwen3.8-27b-mtp-v1`. Advisor branch `senpai/qwen38-mtp-r1` at
-  `84ad34a8`. Campaign base `origin/main` at `770a3ff2`. Organizer
+  `bbd37440`. Campaign base `origin/main` at `770a3ff2`. Organizer
   `upstream/main` at `fac135f2`.
 
 ## Most recent research direction from the human researcher team
@@ -16,12 +16,23 @@ For three rounds every candidate we held beat the crown on a good measurement
 draw and lost on a bad one. **That ended at 03:57Z.** Thorfinn's E120 rung 2
 passed and produced a candidate that wins on both draws.
 
+Route B was repriced in ledger 268 against the realised width mix and the
+corrected acceptance coefficient. It is smaller than first stated but still the
+largest thing this campaign has measured, and it still clears the crown on
+**both** draws.
+
 ```
   candidate                 mode A draw       mode B draw     crown 3.35922
   xv4 only                  3.3616 (+0.07%)   3.3078 (-1.53%)
   xv4 + E121 g_split_pred   3.3904 (+0.93%)   3.3361 (-0.69%)
-  xv4 + Route B             3.4524 (+2.77%)   3.3972 (+1.13%)   <- mode proof
+  xv4 + Route B             3.4446 (+2.54%)   3.3894 (+0.90%)   <- mode proof
 ```
+
+Route B ranked value by width mix, all measured on thorfinn's rung 5d table:
+all M=4 gives +2.46 %, all M=8 gives +3.00 %, the standing NA4-heavy mix gives
+**+2.47 %**, and a pessimistic NA3-heavy mix gives +1.77 %. **The mix is worth
+0.7 pp and the gate design is worth only 0.10 pp**, so rung 5e decides the
+headline, not further gate work.
 
 Two submissions are queued behind this, in this order, because Yukon allows one
 in flight at a time and validation takes 56 to 130 minutes:
@@ -30,8 +41,10 @@ in flight at a time and validation takes 56 to 130 minutes:
    his compressed rung 3 lands. It is an explicit two-in-three bet on the draw,
    labelled as such in the note under Rule 64, and it costs nothing because the
    slot is free and returns before Route B is ready.
-2. **E120 Route B, +2.70 % ranked.** Thorfinn skips Route C and goes straight to
+2. **E120 Route B, +2.47 % ranked.** Thorfinn skips Route C and goes straight to
    the rung 5 rollout. This is the candidate that does not need luck.
+
+🔴 **E121 is superseded by Route B, not composed with it. Never stack them.**
 
 ### Route B, and why it is the largest thing we have measured
 
@@ -155,25 +168,92 @@ headroom on the draft path and nothing in the tree is spending it.**
 
 ### The queue, priced and legality-checked
 
+**Every number in this table was repriced in ledger 268. Two of the old prices
+were overstated by roughly four times because they applied a head-byte law that
+is stated in the LOCAL candidate frame as though it were ranked (advisor error
+87), and the acceptance coefficient was botany's 240 rather than beagle's 203
+(advisor error 88).**
+
 | id | mechanism | ranked | risk | state |
 |---|---|---|---|---|
-| **C1** | sign-sketch / low-rank first pass over gathered rows and centroids; 1,600 B row to 132 B at S=1024 bits, removes 54.13 MB/draft | **+0.92 to +1.08 %** | changes proposals; break-even `m` 3.8e-3 vs today 2.266e-4 | **free offline falsifier** on the existing 18,092-sample corpus; never assigned |
-| C2 | quantize the head's bf16 precision islands, 31.46 to 8.85 MB | +0.38 to +0.45 % | head-only; target never sees it | blocked on reconciling E82 route (c) |
-| C4 | probe fraction 0.25 to 0.15 | +0.05 to +0.20 % net at coefficient 240 | measured -0.3806 % round time, effect/se 15.8 | ship as a rider |
-| C5 | pad centroid table 12,292 to 12,296 so `12292 % 8 == 4` stops forcing the slow `affine_qmv` | +0.03 % | **bit exact**, three lines | free rider on any draft-path PR |
+| **`noislands`** | delete the `installExactQKVRows` call at `Qwen35.swift:4342-4346`; removes 31.47 MB **and two dispatches** per draft step | **+0.43 to +0.49 %** | moves acceptance; must replay, the island region changed since E82's base | **top draft-path candidate. Stage 0 is zero GPU.** |
+| **C1** | sign-sketch or low-rank first pass over gathered rows and centroids; 1,600 B row to about 130 B, removes 53.31 MB/draft | **+0.23 to +0.34 %** | changes proposals; kill rule at `Δm` 1.0e-3 vs today 2.266e-4 | designed end to end, `_advisor_scratch/c1design/REPORT.md`. Offline screen is **cheap but not free and not runnable on the advisor host** |
+| ~~C2~~ | quantize the head's bf16 precision islands | ~~+0.10 to +0.14 %~~ | — | 🔴 **DO NOT ASSIGN. Dominated by `noislands` about four to one; with round-to-nearest it is numerically identical to `noislands` while still paying both dispatches.** |
+| C4 | probe fraction 0.25 to 0.15 | +0.05 to +0.20 % at coefficient 203 | measured -0.3806 % round time, effect/se 15.8 | ship as a rider — **but C1 inverts its sign**, see below |
+| C5 | pad centroid table 12,292 to 12,296 so `12292 % 8 == 4` stops forcing the slow `affine_qmv` | +0.03 % | **bit exact**, three lines | free rider on any draft-path PR; useless if C1b lands, because C1b replaces that pass |
 | C6 | reuse the probed leaf set across drafts in one round | +0.27 to +0.31 % | **legality ambiguous — flagged, needs a second reading** | do not assign yet |
 
 C1 is the "SlimSpec-style low-rank factorisation of the readout" this campaign
-called the durable answer at ledger line 20309 and never assigned. Counter-
-evidence to respect: a static prefix trim to 49,152 rows regressed acceptance
-1.00 to 0.877. A sketch degrades recall rather than destroying coverage, but
-that is the failure mode to measure — offline, first, for free.
+called the durable answer at ledger line 20309 and never assigned. It is now
+designed: build the sketch inside `buildDerivedClusterIndex`
+(`Qwen35.swift:4630-4696`), which already materialises the dequantized 98,336 by
+5,120 matrix at `:4651` and discards it; hand-write the scoring kernel because
+MLX rejects 1-bit quantization at `ops.cpp:4818-4823`; feed survivors into the
+**existing** affine-4 rerank at `:3062-3165` rather than adding an affine-2
+rescore. On paper the best estimator is **low rank k=128 int8 at 130 B/row**,
+because the task is maximum inner product search and a sign sketch estimates the
+cosine instead. Requantization is structurally dominated: its floor is 640 B/row
+because it cuts bits per dimension and keeps D = 5,120, while sketching cuts the
+dimension itself.
+
+🔴 **C1 inverts C4.** Once centroids are sketched, raising the probe fraction
+from 0.25 to 0.40 costs 0.038 pp of local round time and buys back recall. C4's
+downward move is only correct while the centroid pass still streams 1,600 B rows.
+
+Counter-evidence to respect: a static prefix trim to 49,152 rows regressed
+acceptance 1.00 to 0.877. That was **row deletion**, where the miss probability
+is one and unbounded. A sketch is **bit reduction**, bounded and measurable
+offline. Different failure mode.
 
 Closed and not to be re-proposed: killing the centroid argsort (+0.061 %, on the
-stop list); `rowsPerLeaf` 8 to 32, which is *more* dead at coefficient 240;
-coarser group size, which lost achieved bandwidth 191.8 to 179.1 GB/s.
+stop list); `rowsPerLeaf` 8 to 32; coarser group size, which lost achieved
+bandwidth 191.8 to 179.1 GB/s; C2 in every form.
 
-## 🔴🔴🔴 THE MODE — WHAT WE NOW KNOW AND WHAT WE CAN STOP LOOKING FOR
+## 🔴🔴🔴 THE MODE — SOLVED WELL ENOUGH TO STOP PAYING FOR IT
+
+**Ledger 268 changed this from a nuisance into an instrument.** Five things are
+now established, and one lever is established and forbidden.
+
+- 🔴 **The mode is a three-slot round robin, not a coin flip.** 564 absolute
+  labels in completion order give lag-1 **-0.204**, lag-3 **+0.191**, lag-6
+  +0.127, lag-9 +0.127, and a runs test at **z = +4.83**. P(fast) = **2/3**, not
+  1/2. Three artefact controls pass, the strongest being that the **candidate
+  free serial leg over all 770 rows shows the same signature more sharply**
+  (lag-1 -0.236, lag-3 +0.327) — no candidate can cause that. This is runner
+  infrastructure, and a submitter cannot see or choose its completion
+  neighbours: the queue runs 26 to 224 minutes deep with up to 20 rows open.
+- 🔴 **There is an absolute per-row mode classifier, 96.0 % accurate.** A fixed
+  weight vector over the eight per-prompt log candidate times, with weights
+  summing to zero, separates the two modes by **3.39 sd** and agrees with 72 of
+  75 pairwise ground-truth verdicts. Per-run noise is 0.0817 mode units against a
+  step of 1.000. Valid only with head provenance held fixed.
+- 🔴 **This does not contradict the "no linear contrast" result below.** That
+  result says no fixed contrast can *cancel* the mode, because its magnitude
+  varies run to run. Classification only has to *detect* a binary step, then add
+  the mean back. Detection and cancellation are different problems.
+- 🔴 **Nothing at submission time predicts the mode.** 54 tests, permutation p,
+  Benjamini-Hochberg at 5 %: solver, files changed, lines added, surface bytes,
+  schedule stratum, prefill, hour and day are all null. The two survivors are
+  classifier aliasing by one proposal head, not real predictors.
+- 🔴 **The mode costs about 0.82 ms per drafting round and prefill is untouched
+  at 90 sigma.** R-squared through the origin is 0.856 on drafting rounds and
+  **0.000 on non-drafting rounds**. This independently reproduces the 0.803 +/-
+  0.025 ms per drafting round from the pair fit, by a different route.
+- 🔴 **Post-hoc correction is free and worth 5.8x.** A slow run publishes
+  **1.3170 +/- 0.0589 %** below the same candidate run fast. Correction cuts the
+  residual to 0.108 %, a 99.0 % variance reduction. **Operational rule: never
+  conclude a candidate regressed from a drop below 1.4 % in one uncorrected
+  ranked run.**
+- 🔴 **Applied to our own six receipts, `7bef7d4c` is our only slow draw.**
+  Corrected it reads **3.34136**, which beats `b8b8b860` by +0.217 % — and the
+  independent two-parameter pairwise decomposition gave c = +0.217 as well. Two
+  methods with no shared machinery agree to three decimals. **`xv4` was never a
+  regression.**
+- 🔴 **The re-roll lever is real and forbidden.** P(at least one fast in a
+  consecutive triple) is 0.994 against 0.971 under independence. Re-rolling is a
+  duplicate submission and slot timing is measurement-structure exploitation.
+  **The mode is to be measured and corrected for, never steered.** Recorded here
+  so nobody re-derives it and thinks it is an opportunity.
 
 - **It is not a wide-dispatch cost.** `g2_rounds` has r-squared **0.0005**. The
   best regressor is gated drafting duty, r-squared 0.9364, fitted at 0.803 +/-
@@ -216,14 +296,82 @@ coarser group size, which lost achieved bandwidth 191.8 to 179.1 GB/s.
 - **Rule 66.** An MDE belongs to the estimator *and* the mechanism. Divide by
   the mechanism's reachable leg fraction `phi` before comparing with a
   prediction.
-- **Rule 67.** Apply the acceptance penalty per prompt, then take the median.
-  Coefficient **240**, not 206.6.
+- **Rule 67, amended twice.** Apply the acceptance penalty per prompt, then
+  recompute the median **exactly**. If a single coefficient is unavoidable use
+  **beagle's 203**, not botany's 240 and not 206.6. Botany is not median
+  eligible; beagle is the fourth order statistic in 326 of 326 frontier rows.
 - **Rule 68.** Before pricing from a byte count, `grep` the ledger for an
   existing measured census of the same cell.
+- **Rule 69.** Never price a byte, dispatch or acceptance mechanism without
+  naming its transfer **class**. The classes are: draft-path head **bytes** at
+  0.24 (band 0.237 to 0.33); draft-path **dispatch** deletions at 0.95 in per
+  cent and 0.52 in absolute microseconds; general per-round **DRAM streaming** at
+  1.0 in per cent; **acceptance** loss at 1.0 by identity. 🔴 **The coefficient
+  0.87 is void** — it was never measured, and it rests on a bandwidth assumption
+  that is about two times wrong. Never mix classes in one price. State whether a
+  local gain is at local or ranked draft depth before choosing 0.237 (depth
+  corrected) or 0.327 (raw local depth).
+- **Rule 70.** **Plutarch, drama and travel carry exactly zero weight on the
+  published median.** Beagle carries **0.484**, hard and stable. Any single fast
+  prompt is worth about 0.526 but saturates at the fifth-to-sixth gap, typically
+  1.15 %. Never count a gain on a zero-weight prompt toward a ranked prediction.
+  They remain legitimate *instruments*.
+- **Rule 71.** Before calling any single ranked run a regression, classify its
+  mode and correct it. Never conclude a regression from a drop below 1.4 % in one
+  uncorrected ranked run.
+- **Rule 72.** Timing a submission to land on a fast slot, and re-rolling to
+  catch one, are **both forbidden**. Measure the mode; never steer it.
+- **Rule 73.** A register or spill census is a **cost** observation, never
+  correctness evidence. It reads whole-function summaries and cannot see what the
+  compiler keeps live across the unrolled copies of a loop. Correctness comes
+  only from an exactness sweep with positive controls. Thorfinn wrote this rule
+  against his own passing result.
+- **Rule 74.** Before describing an offline screen as free, verify on a **named
+  reachable host** that the interpreter, the corpus and every auxiliary table
+  exist. A screen needing a 370 MB corpus copy, or a GPU re-capture, is not free.
 - **Rule 56 extended.** Census the **entry point** on g17s, not only the body,
   and apply the build threshold to the arm including its entry-point cost.
 
-## 🔴🔴 HARNESS DEFECTS 22 AND 23
+### 🔴 The exact marginal value of each prompt, and why draft work is safe
+
+A one per cent candidate speedup on one prompt, with the median recomputed
+exactly over 326 frontier rows:
+
+```
+  prompt     mean gain   P(gain > 0)
+  beagle      +0.4862 %     1.000     <- the only reliable single lever
+  medicine    +0.2508 %     0.512
+  essays      +0.1598 %     0.411
+  botany      +0.0124 %     0.043
+  republic    +0.0100 %     0.034
+  plutarch     0.0000 %     0.000
+  drama        0.0000 %     0.000
+  travel       0.0000 %     0.000
+  all eight   +1.0101 %     1.000
+```
+
+The published score is exactly `0.5 x raw_beagle + 0.5 x min(essays, medicine,
+republic, botany)` in 326 of 326 frontier rows above 3.2. Single-prompt weights
+are sub-additive: they sum to 0.919 against 1.010 for a uniform change.
+
+🔴 **This does not penalise draft-path work.** The three prompts a draft
+mechanism cannot help are exactly the three worth zero. A draft-scaled one per
+cent saving converts at **0.92 to 0.94** of a uniform one per cent.
+
+🔴 **Beagle sits at ranked mean width M = 5.382 and carries weight 0.484.** Any
+mechanism whose gain varies with width must be priced at M = 5 and M = 6, not at
+the local mean width.
+
+## 🔴🔴 HARNESS DEFECTS 22 TO 24
+
+**24.** 🔴 **A general-purpose subagent that spawns helpers fails on exit** with
+`child agent exited with uncollected descendants`. Two of three general-purpose
+children failed this way in one round. **Both had already written a complete
+report to scratch, so nothing was lost.** Mitigations: prefer leaf agents where
+helpers are unnecessary; instruct general-purpose children explicitly to await or
+cancel every spawned task before returning; require the child to write its report
+to scratch as it goes. 🔴 **Always list a failed agent's scratch directory before
+treating its work as lost.**
 
 **22.** An out-of-bounds device write in an isolated probe kernel **faults the
 command buffer while the harness still exits 0**. Every later dispatch retires
