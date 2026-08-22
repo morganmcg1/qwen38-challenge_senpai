@@ -1,0 +1,2055 @@
+{
+ "attachment_gate": {
+  "accept_mismatch": 0,
+  "attached": 1494,
+  "legs": 12,
+  "margin_mismatch": 0,
+  "unmatched": 0
+ },
+ "best_form": "per_drafting_round",
+ "cells": {
+  "per_drafting_round|A_ship": {
+   "curve_lopo_mean": 0.0,
+   "curve_lopo_sd": 0.0,
+   "curve_lopo_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14695.86984916122
+   }
+  },
+  "per_drafting_round|B_rankedprice": {
+   "curve_lopo_mean": -3.1350139732191877,
+   "curve_lopo_sd": 0.08083144944787764,
+   "curve_lopo_values": [
+    -3.232257846446096,
+    -3.0242150325961337,
+    -3.1204079056189937,
+    -3.1333970380403975,
+    -3.0782213455398,
+    -3.2215846710737073
+   ],
+   "f83_weighted_mean_depth": 3.441136354615253,
+   "in_sample_mean": -3.123394074355753,
+   "in_sample_sd": 0.09020026727055483,
+   "in_sample_values": [
+    -3.2325583322160623,
+    -3.0072896199577315,
+    -3.0839709785194347,
+    -3.130678969059575,
+    -3.0625823217504955,
+    -3.2232842246312177
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0426371245007702,
+    "botany": 0.9959174406853495,
+    "drama": 0.7898798742953711,
+    "essays": 0.9452351509823854,
+    "medicine": 0.999265680220203,
+    "plutarch": 0.9584777105729451,
+    "republic": 1.027992800663556,
+    "travel": 0.9524464536718643
+   },
+   "tally": {
+    "cap_bound_share": 0.006246386610902094,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.304062572377168,
+    "mean_reach": [
+     0.5364952520500519,
+     0.3790547994898438,
+     0.32760570833881475,
+     0.2952927732957637,
+     0.27424005532375456,
+     0.21070759592435717,
+     0.15865566067372217,
+     0.11707307552121678,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250754038096787,
+     0.732999759807773,
+     0.7920787587980801,
+     0.8426237969732504,
+     0.886529473445668,
+     0.7683326772700881,
+     0.7529660237472631,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714111,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714111,
+    "unchanged_us_per_token": 14010.272094145057
+   }
+  },
+  "per_drafting_round|C_flatlook": {
+   "curve_lopo_mean": 0.0,
+   "curve_lopo_sd": 0.0,
+   "curve_lopo_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14695.86984916122
+   }
+  },
+  "per_drafting_round|D_curvelook": {
+   "curve_lopo_mean": -3.1350139732191877,
+   "curve_lopo_sd": 0.08083144944787764,
+   "curve_lopo_values": [
+    -3.232257846446096,
+    -3.0242150325961337,
+    -3.1204079056189937,
+    -3.1333970380403975,
+    -3.0782213455398,
+    -3.2215846710737073
+   ],
+   "f83_weighted_mean_depth": 3.441136354615253,
+   "in_sample_mean": -3.123394074355753,
+   "in_sample_sd": 0.09020026727055483,
+   "in_sample_values": [
+    -3.2325583322160623,
+    -3.0072896199577315,
+    -3.0839709785194347,
+    -3.130678969059575,
+    -3.0625823217504955,
+    -3.2232842246312177
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0426371245007702,
+    "botany": 0.9959174406853495,
+    "drama": 0.7898798742953711,
+    "essays": 0.9452351509823854,
+    "medicine": 0.999265680220203,
+    "plutarch": 0.9584777105729451,
+    "republic": 1.027992800663556,
+    "travel": 0.9524464536718643
+   },
+   "tally": {
+    "cap_bound_share": 0.006246386610902094,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.304062572377168,
+    "mean_reach": [
+     0.5364952520500519,
+     0.3790547994898438,
+     0.32760570833881475,
+     0.2952927732957637,
+     0.27424005532375456,
+     0.21070759592435717,
+     0.15865566067372217,
+     0.11707307552121678,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250754038096787,
+     0.732999759807773,
+     0.7920787587980801,
+     0.8426237969732504,
+     0.886529473445668,
+     0.7683326772700881,
+     0.7529660237472631,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714111,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714111,
+    "unchanged_us_per_token": 14010.272094145057
+   }
+  },
+  "per_drafting_round|E_pb6": {
+   "curve_lopo_mean": 2.488844408608152,
+   "curve_lopo_sd": 0.03689592808269693,
+   "curve_lopo_values": [
+    2.4505715396949457,
+    2.498273453101185,
+    2.4482157295428575,
+    2.481998001664154,
+    2.5449339680517324,
+    2.5090737595940382
+   ],
+   "f83_weighted_mean_depth": 4.051569530143677,
+   "in_sample_mean": 2.488041016941537,
+   "in_sample_sd": 0.03651969198508774,
+   "in_sample_values": [
+    2.44891759686392,
+    2.4981717442080997,
+    2.4486717994542495,
+    2.480725221901614,
+    2.5427344267785257,
+    2.509025312442814
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.9768216380729298,
+    "botany": 0.9905614047632562,
+    "drama": 0.8750342566956212,
+    "essays": 0.955213978400696,
+    "medicine": 0.9717764141663325,
+    "plutarch": 1.0009310283647526,
+    "republic": 0.9649154955229178,
+    "travel": 0.9649460321495069
+   },
+   "tally": {
+    "cap_bound_share": 0.1279661321636586,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.064777929579828,
+    "mean_reach": [
+     0.5003345004834053,
+     0.35239905427342466,
+     0.3071054426604136,
+     0.27560280284675615,
+     0.25583738913334675,
+     0.22372175737540845,
+     0.19513959333150507,
+     0.16624288120747502,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5790967598890909,
+     0.7479859539461152,
+     0.8089051351782263,
+     0.8528976035398198,
+     0.8760789337890763,
+     0.8206824964187275,
+     0.8096158454572256,
+     0.7858164007576962
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1668840,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1668840,
+    "unchanged_us_per_token": 14163.901363096838
+   }
+  },
+  "per_drafting_round|F_pb6look": {
+   "curve_lopo_mean": 1.9415593285327715,
+   "curve_lopo_sd": 0.07656996570439926,
+   "curve_lopo_values": [
+    2.0392843916350545,
+    1.8560429424097968,
+    2.0234347040422707,
+    1.8796610798834434,
+    1.899021912050336,
+    1.9519109411757274
+   ],
+   "f83_weighted_mean_depth": 4.2103021650785095,
+   "in_sample_mean": 1.9714573195900051,
+   "in_sample_sd": 0.07623014992032189,
+   "in_sample_values": [
+    2.068394411891439,
+    1.886864323007642,
+    2.0534588274169874,
+    1.909032081131512,
+    1.9293075273357552,
+    1.9816867467566945
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.9802072225615834,
+    "botany": 0.9878511200833313,
+    "drama": 0.8754178141656065,
+    "essays": 0.9605331314919603,
+    "medicine": 0.9810860523295514,
+    "plutarch": 1.0009310283647526,
+    "republic": 0.975959040691983,
+    "travel": 0.9671550432459225
+   },
+   "tally": {
+    "cap_bound_share": 0.15878137424273273,
+    "changed_us_per_token_greedy": 10019.459776296637,
+    "changed_us_per_token_lookahead": 10795.72412150949,
+    "deeper_round_count": 71643,
+    "disagreements": 71643,
+    "extra_accepted_per_deeper_round": 1.8374300350348254,
+    "mean_capability_deeper": 6.091383666233965,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.879855557928219,
+    "mean_reach": [
+     0.4979669802867039,
+     0.3504657865949528,
+     0.30490772224696294,
+     0.27327542156304635,
+     0.2518187980591449,
+     0.22044605032526782,
+     0.19348371656422836,
+     0.16577752766710957,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5750456507412939,
+     0.7456427022706117,
+     0.8070377937312634,
+     0.8518482143893729,
+     0.8699213892916215,
+     0.8202522553681849,
+     0.8133920441854238,
+     0.7888844054415489
+    ],
+    "p_first_declined_draft_accepted_deeper": 0.7018410730985581,
+    "rounds": 1640438,
+    "shallower_round_count": 0,
+    "transitions": {
+     "4->6": 19982,
+     "4->7": 51661
+    },
+    "unchanged_round_count": 1568795,
+    "unchanged_us_per_token": 14550.743706210926
+   }
+  },
+  "per_round|A_ship": {
+   "curve_lopo_mean": 0.0,
+   "curve_lopo_sd": 0.0,
+   "curve_lopo_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14697.565827681388
+   }
+  },
+  "per_round|B_rankedprice": {
+   "curve_lopo_mean": -3.227815391920963,
+   "curve_lopo_sd": 0.08467100731139768,
+   "curve_lopo_values": [
+    -3.3292178211091206,
+    -3.1152883558134836,
+    -3.192317387729071,
+    -3.2329459672617245,
+    -3.1752337708352063,
+    -3.3218890487771713
+   ],
+   "f83_weighted_mean_depth": 3.441520028518146,
+   "in_sample_mean": -3.212828929012383,
+   "in_sample_sd": 0.08908886621991025,
+   "in_sample_values": [
+    -3.3174951867921743,
+    -3.0901197445629136,
+    -3.176818583165264,
+    -3.21874613168438,
+    -3.162126441500057,
+    -3.3116674863695073
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0435733760334982,
+    "botany": 0.9969393163428898,
+    "drama": 0.7912807304183169,
+    "essays": 0.9466141540071228,
+    "medicine": 1.0000284105930266,
+    "plutarch": 0.9596447112748074,
+    "republic": 1.0289667286800184,
+    "travel": 0.9533809219804166
+   },
+   "tally": {
+    "cap_bound_share": 0.006237521458426631,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.3027364158829675,
+    "mean_reach": [
+     0.5365499218078311,
+     0.37893761498395784,
+     0.32750471350910815,
+     0.29518302057065815,
+     0.27413700131336993,
+     0.2106284161606449,
+     0.1585960410019374,
+     0.11702908176580745,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250396143664849,
+     0.7334553979959604,
+     0.7916960703499916,
+     0.8427165947624788,
+     0.8865759870443032,
+     0.7683326772700516,
+     0.7529660237472638,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714944,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714944,
+    "unchanged_us_per_token": 14028.454321961588
+   }
+  },
+  "per_round|C_flatlook": {
+   "curve_lopo_mean": 0.0,
+   "curve_lopo_sd": 0.0,
+   "curve_lopo_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14697.565827681388
+   }
+  },
+  "per_round|D_curvelook": {
+   "curve_lopo_mean": -3.227815391920963,
+   "curve_lopo_sd": 0.08467100731139768,
+   "curve_lopo_values": [
+    -3.3292178211091206,
+    -3.1152883558134836,
+    -3.192317387729071,
+    -3.2329459672617245,
+    -3.1752337708352063,
+    -3.3218890487771713
+   ],
+   "f83_weighted_mean_depth": 3.441520028518146,
+   "in_sample_mean": -3.212828929012383,
+   "in_sample_sd": 0.08908886621991025,
+   "in_sample_values": [
+    -3.3174951867921743,
+    -3.0901197445629136,
+    -3.176818583165264,
+    -3.21874613168438,
+    -3.162126441500057,
+    -3.3116674863695073
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0435733760334982,
+    "botany": 0.9969393163428898,
+    "drama": 0.7912807304183169,
+    "essays": 0.9466141540071228,
+    "medicine": 1.0000284105930266,
+    "plutarch": 0.9596447112748074,
+    "republic": 1.0289667286800184,
+    "travel": 0.9533809219804166
+   },
+   "tally": {
+    "cap_bound_share": 0.006237521458426631,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.3027364158829675,
+    "mean_reach": [
+     0.5365499218078311,
+     0.37893761498395784,
+     0.32750471350910815,
+     0.29518302057065815,
+     0.27413700131336993,
+     0.2106284161606449,
+     0.1585960410019374,
+     0.11702908176580745,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250396143664849,
+     0.7334553979959604,
+     0.7916960703499916,
+     0.8427165947624788,
+     0.8865759870443032,
+     0.7683326772700516,
+     0.7529660237472638,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714944,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714944,
+    "unchanged_us_per_token": 14028.454321961588
+   }
+  },
+  "per_round|E_pb6": {
+   "curve_lopo_mean": 2.4120058049309687,
+   "curve_lopo_sd": 0.036129575452472446,
+   "curve_lopo_values": [
+    2.374549104494572,
+    2.420648793801927,
+    2.3726717258336416,
+    2.4053306416336184,
+    2.467556474899335,
+    2.431278088922717
+   ],
+   "f83_weighted_mean_depth": 4.051569530143677,
+   "in_sample_mean": 2.417954304840042,
+   "in_sample_sd": 0.036063792717310805,
+   "in_sample_values": [
+    2.3793122877525885,
+    2.427306791892181,
+    2.3793747180475666,
+    2.4109657407092477,
+    2.47246018373648,
+    2.4383061069021883
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.9774137146541136,
+    "botany": 0.9913095863921644,
+    "drama": 0.8761354280006127,
+    "essays": 0.956536897450268,
+    "medicine": 0.9722626429255204,
+    "plutarch": 1.0009361292625447,
+    "republic": 0.9653700388701819,
+    "travel": 0.9656419685107284
+   },
+   "tally": {
+    "cap_bound_share": 0.1279661321636586,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.064777929579828,
+    "mean_reach": [
+     0.5003345004834053,
+     0.35239905427342466,
+     0.3071054426604136,
+     0.27560280284675615,
+     0.25583738913334675,
+     0.22372175737540845,
+     0.19513959333150507,
+     0.16624288120747502,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5790967598890909,
+     0.7479859539461152,
+     0.8089051351782263,
+     0.8528976035398198,
+     0.8760789337890763,
+     0.8206824964187275,
+     0.8096158454572256,
+     0.7858164007576962
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1668840,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1668840,
+    "unchanged_us_per_token": 14174.268211413373
+   }
+  },
+  "per_round|F_pb6look": {
+   "curve_lopo_mean": 1.9098771747911785,
+   "curve_lopo_sd": 0.07646931365056366,
+   "curve_lopo_values": [
+    2.007515869884613,
+    1.823685170963718,
+    1.9912225464446598,
+    1.8487377860927134,
+    1.8674109886283263,
+    1.9206906867330398
+   ],
+   "f83_weighted_mean_depth": 4.2103021650785095,
+   "in_sample_mean": 1.9192699504552415,
+   "in_sample_sd": 0.07631553785982027,
+   "in_sample_values": [
+    2.016425250242504,
+    1.833363192956572,
+    2.0007867194954843,
+    1.8579787440006212,
+    1.8770349917683893,
+    1.9300308042678793
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.9807577222679971,
+    "botany": 0.9885071301971468,
+    "drama": 0.8764241214105323,
+    "essays": 0.9617518181021983,
+    "medicine": 0.981544120913703,
+    "plutarch": 1.0009361292625447,
+    "republic": 0.9763770395858301,
+    "travel": 0.9678146506623532
+   },
+   "tally": {
+    "cap_bound_share": 0.15878137424273273,
+    "changed_us_per_token_greedy": 10030.897355764666,
+    "changed_us_per_token_lookahead": 10796.427066106473,
+    "deeper_round_count": 71643,
+    "disagreements": 71643,
+    "extra_accepted_per_deeper_round": 1.8374300350348254,
+    "mean_capability_deeper": 6.091383666233965,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.879855557928219,
+    "mean_reach": [
+     0.4979669802867039,
+     0.3504657865949528,
+     0.30490772224696294,
+     0.27327542156304635,
+     0.2518187980591449,
+     0.22044605032526782,
+     0.19348371656422836,
+     0.16577752766710957,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5750456507412939,
+     0.7456427022706117,
+     0.8070377937312634,
+     0.8518482143893729,
+     0.8699213892916215,
+     0.8202522553681849,
+     0.8133920441854238,
+     0.7888844054415489
+    ],
+    "p_first_declined_draft_accepted_deeper": 0.7018410730985581,
+    "rounds": 1640438,
+    "shallower_round_count": 0,
+    "transitions": {
+     "4->6": 19982,
+     "4->7": 51661
+    },
+    "unchanged_round_count": 1568795,
+    "unchanged_us_per_token": 14561.361268489043
+   }
+  },
+  "pre_arm|A_ship": {
+   "curve_lopo_mean": null,
+   "curve_lopo_sd": null,
+   "curve_lopo_values": [],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14700.135679585344
+   }
+  },
+  "pre_arm|B_rankedprice": {
+   "curve_lopo_mean": null,
+   "curve_lopo_sd": null,
+   "curve_lopo_values": [],
+   "f83_weighted_mean_depth": 3.441481648435732,
+   "in_sample_mean": -3.0961926244122417,
+   "in_sample_sd": 0.10313152865803793,
+   "in_sample_values": [
+    -3.2228604062496613,
+    -2.9536318232929792,
+    -3.0486804105713916,
+    -3.102717783660769,
+    -3.0443376039793413,
+    -3.204927718719308
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0432686772326878,
+    "botany": 0.9958100719720345,
+    "drama": 0.7907542672848483,
+    "essays": 0.9454925164679256,
+    "medicine": 0.9996403470305815,
+    "plutarch": 0.959648778988693,
+    "republic": 1.0268928648670068,
+    "travel": 0.955578222464442
+   },
+   "tally": {
+    "cap_bound_share": 0.006237521458426631,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.3027364158829675,
+    "mean_reach": [
+     0.5365495914609386,
+     0.37893773842928974,
+     0.32750420894531557,
+     0.2951838786394798,
+     0.27413768377849346,
+     0.21062894052090558,
+     0.15859643582740257,
+     0.11702937311016597,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250394835811585,
+     0.7334575742944637,
+     0.7916944569859,
+     0.8427519456074803,
+     0.8865761447760456,
+     0.7683326772700516,
+     0.7529660237472638,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714944,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714944,
+    "unchanged_us_per_token": 14027.799575496447
+   }
+  },
+  "pre_arm|C_flatlook": {
+   "curve_lopo_mean": null,
+   "curve_lopo_sd": null,
+   "curve_lopo_values": [],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14700.135679585344
+   }
+  },
+  "pre_arm|D_curvelook": {
+   "curve_lopo_mean": null,
+   "curve_lopo_sd": null,
+   "curve_lopo_values": [],
+   "f83_weighted_mean_depth": 3.441481648435732,
+   "in_sample_mean": -3.0961926244122417,
+   "in_sample_sd": 0.10313152865803793,
+   "in_sample_values": [
+    -3.2228604062496613,
+    -2.9536318232929792,
+    -3.0486804105713916,
+    -3.102717783660769,
+    -3.0443376039793413,
+    -3.204927718719308
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0432686772326878,
+    "botany": 0.9958100719720345,
+    "drama": 0.7907542672848483,
+    "essays": 0.9454925164679256,
+    "medicine": 0.9996403470305815,
+    "plutarch": 0.959648778988693,
+    "republic": 1.0268928648670068,
+    "travel": 0.955578222464442
+   },
+   "tally": {
+    "cap_bound_share": 0.006237521458426631,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.3027364158829675,
+    "mean_reach": [
+     0.5365495914609386,
+     0.37893773842928974,
+     0.32750420894531557,
+     0.2951838786394798,
+     0.27413768377849346,
+     0.21062894052090558,
+     0.15859643582740257,
+     0.11702937311016597,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250394835811585,
+     0.7334575742944637,
+     0.7916944569859,
+     0.8427519456074803,
+     0.8865761447760456,
+     0.7683326772700516,
+     0.7529660237472638,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714944,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714944,
+    "unchanged_us_per_token": 14027.799575496447
+   }
+  },
+  "pre_arm|E_pb6": {
+   "curve_lopo_mean": null,
+   "curve_lopo_sd": null,
+   "curve_lopo_values": [],
+   "f83_weighted_mean_depth": 4.051569530143677,
+   "in_sample_mean": 2.3911761498931448,
+   "in_sample_sd": 0.03652959379547417,
+   "in_sample_values": [
+    2.3414132976392166,
+    2.39964462959934,
+    2.3626328255847318,
+    2.3850842196937005,
+    2.443096471165207,
+    2.4151854556766716
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.9781350317054186,
+    "botany": 0.9911402574175905,
+    "drama": 0.8771216741134543,
+    "essays": 0.9565127486395554,
+    "medicine": 0.9727515025814183,
+    "plutarch": 1.0009394727829413,
+    "republic": 0.9643084654143141,
+    "travel": 0.9686732468498779
+   },
+   "tally": {
+    "cap_bound_share": 0.1279661321636586,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.064777929579828,
+    "mean_reach": [
+     0.5003345004834053,
+     0.35239905427342466,
+     0.3071054426604136,
+     0.27560280284675615,
+     0.25583738913334675,
+     0.22372175737540845,
+     0.19513959333150507,
+     0.16624288120747502,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5790967598890909,
+     0.7479859539461152,
+     0.8089051351782263,
+     0.8528976035398198,
+     0.8760789337890763,
+     0.8206824964187275,
+     0.8096158454572256,
+     0.7858164007576962
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1668840,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1668840,
+    "unchanged_us_per_token": 14185.104410935512
+   }
+  },
+  "pre_arm|F_pb6look": {
+   "curve_lopo_mean": null,
+   "curve_lopo_sd": null,
+   "curve_lopo_values": [],
+   "f83_weighted_mean_depth": 4.2103021650785095,
+   "in_sample_mean": 1.835462576178293,
+   "in_sample_sd": 0.07563174124165918,
+   "in_sample_values": [
+    1.9146718872130153,
+    1.7430866485977248,
+    1.927322727544456,
+    1.7780376367288797,
+    1.794568678272812,
+    1.8550878787128688
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.981775103634207,
+    "botany": 0.9886891311063651,
+    "drama": 0.8781126001921217,
+    "essays": 0.9623694810353859,
+    "medicine": 0.9821603178016135,
+    "plutarch": 1.0009394727829413,
+    "republic": 0.9755564973463331,
+    "travel": 0.9712331383848564
+   },
+   "tally": {
+    "cap_bound_share": 0.15878137424273273,
+    "changed_us_per_token_greedy": 10030.505497707753,
+    "changed_us_per_token_lookahead": 10891.790951597888,
+    "deeper_round_count": 71643,
+    "disagreements": 71643,
+    "extra_accepted_per_deeper_round": 1.8374300350348254,
+    "mean_capability_deeper": 6.091383666233965,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.879855557928219,
+    "mean_reach": [
+     0.4979669802867039,
+     0.3504657865949528,
+     0.30490772224696294,
+     0.27327542156304635,
+     0.2518187980591449,
+     0.22044605032526782,
+     0.19348371656422836,
+     0.16577752766710957,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5750456507412939,
+     0.7456427022706117,
+     0.8070377937312634,
+     0.8518482143893729,
+     0.8699213892916215,
+     0.8202522553681849,
+     0.8133920441854238,
+     0.7888844054415489
+    ],
+    "p_first_declined_draft_accepted_deeper": 0.7018410730985581,
+    "rounds": 1640438,
+    "shallower_round_count": 0,
+    "transitions": {
+     "4->6": 19982,
+     "4->7": 51661
+    },
+    "unchanged_round_count": 1568795,
+    "unchanged_us_per_token": 14568.643579642589
+   }
+  },
+  "proportional|A_ship": {
+   "curve_lopo_mean": 0.0,
+   "curve_lopo_sd": 0.0,
+   "curve_lopo_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14694.10926720515
+   }
+  },
+  "proportional|B_rankedprice": {
+   "curve_lopo_mean": -3.1875614086461375,
+   "curve_lopo_sd": 0.08751188169607098,
+   "curve_lopo_values": [
+    -3.290206802387774,
+    -3.06808252252766,
+    -3.1515976504777665,
+    -3.1946802099911853,
+    -3.135925682723917,
+    -3.2848755837685206
+   ],
+   "f83_weighted_mean_depth": 3.441481648435732,
+   "in_sample_mean": -3.1676075635976684,
+   "in_sample_sd": 0.09060637649004236,
+   "in_sample_values": [
+    -3.2740828103197894,
+    -3.042590361667352,
+    -3.1298888230923305,
+    -3.17480310537428,
+    -3.116631450708407,
+    -3.2676488304238527
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0430724416930166,
+    "botany": 0.9963952034001502,
+    "drama": 0.7905896729993427,
+    "essays": 0.9456766790169012,
+    "medicine": 0.9996380591964318,
+    "plutarch": 0.9596454541380028,
+    "republic": 1.0284982478729063,
+    "travel": 0.95298141730746
+   },
+   "tally": {
+    "cap_bound_share": 0.006237521458426631,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.3027364158829675,
+    "mean_reach": [
+     0.5365495914609386,
+     0.37893773842928974,
+     0.32750420894531557,
+     0.2951838786394798,
+     0.27413768377849346,
+     0.21062894052090558,
+     0.15859643582740257,
+     0.11702937311016597,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250394835811585,
+     0.7334575742944637,
+     0.7916944569859,
+     0.8427519456074803,
+     0.8865761447760456,
+     0.7683326772700516,
+     0.7529660237472638,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714944,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714944,
+    "unchanged_us_per_token": 14018.905305599583
+   }
+  },
+  "proportional|C_flatlook": {
+   "curve_lopo_mean": 0.0,
+   "curve_lopo_sd": 0.0,
+   "curve_lopo_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "f83_weighted_mean_depth": 4.382276190024835,
+   "in_sample_mean": 0.0,
+   "in_sample_sd": 0.0,
+   "in_sample_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0,
+    "botany": 1.0,
+    "drama": 1.0,
+    "essays": 1.0,
+    "medicine": 1.0,
+    "plutarch": 1.0,
+    "republic": 1.0,
+    "travel": 1.0
+   },
+   "tally": {
+    "cap_bound_share": 0.1691214240735436,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.979650049010543,
+    "mean_reach": [
+     0.48406915431275915,
+     0.3393769658556875,
+     0.2951052805472971,
+     0.26401723632022966,
+     0.23566409223307044,
+     0.21385809898068034,
+     0.18934434323815919,
+     0.1626786251205811,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5568812395051309,
+     0.742935384779589,
+     0.8083962481614264,
+     0.8493177069514688,
+     0.8437449590942279,
+     0.8449731475712599,
+     0.8179994368730499,
+     0.7900739563961332
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1654746,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1654746,
+    "unchanged_us_per_token": 14694.10926720515
+   }
+  },
+  "proportional|D_curvelook": {
+   "curve_lopo_mean": -3.1875614086461375,
+   "curve_lopo_sd": 0.08751188169607098,
+   "curve_lopo_values": [
+    -3.290206802387774,
+    -3.06808252252766,
+    -3.1515976504777665,
+    -3.1946802099911853,
+    -3.135925682723917,
+    -3.2848755837685206
+   ],
+   "f83_weighted_mean_depth": 3.441481648435732,
+   "in_sample_mean": -3.1676075635976684,
+   "in_sample_sd": 0.09060637649004236,
+   "in_sample_values": [
+    -3.2740828103197894,
+    -3.042590361667352,
+    -3.1298888230923305,
+    -3.17480310537428,
+    -3.116631450708407,
+    -3.2676488304238527
+   ],
+   "per_prompt_ratio": {
+    "beagle": 1.0430724416930166,
+    "botany": 0.9963952034001502,
+    "drama": 0.7905896729993427,
+    "essays": 0.9456766790169012,
+    "medicine": 0.9996380591964318,
+    "plutarch": 0.9596454541380028,
+    "republic": 1.0284982478729063,
+    "travel": 0.95298141730746
+   },
+   "tally": {
+    "cap_bound_share": 0.006237521458426631,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.3027364158829675,
+    "mean_reach": [
+     0.5365495914609386,
+     0.37893773842928974,
+     0.32750420894531557,
+     0.2951838786394798,
+     0.27413768377849346,
+     0.21062894052090558,
+     0.15859643582740257,
+     0.11702937311016597,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.6250394835811585,
+     0.7334575742944637,
+     0.7916944569859,
+     0.8427519456074803,
+     0.8865761447760456,
+     0.7683326772700516,
+     0.7529660237472638,
+     0.7379067032597958
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1714944,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1714944,
+    "unchanged_us_per_token": 14018.905305599583
+   }
+  },
+  "proportional|E_pb6": {
+   "curve_lopo_mean": 2.464661753605609,
+   "curve_lopo_sd": 0.03683257951647031,
+   "curve_lopo_values": [
+    2.4258120289558427,
+    2.4741356406735804,
+    2.42448575336327,
+    2.4579205178167918,
+    2.5203335169663665,
+    2.4852830638578016
+   ],
+   "f83_weighted_mean_depth": 4.051569530143677,
+   "in_sample_mean": 2.458544326609976,
+   "in_sample_sd": 0.03640984256723008,
+   "in_sample_values": [
+    2.4188876485607524,
+    2.468384253358158,
+    2.419870120215606,
+    2.4514810676690812,
+    2.5130412317821538,
+    2.4796016380741026
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.9770671066895721,
+    "botany": 0.9908794902535023,
+    "drama": 0.8755635142643832,
+    "essays": 0.9557112790217598,
+    "medicine": 0.9719820781066572,
+    "plutarch": 1.0009358510242616,
+    "republic": 0.9650333406622801,
+    "travel": 0.9653445853462101
+   },
+   "tally": {
+    "cap_bound_share": 0.1279661321636586,
+    "changed_us_per_token_greedy": NaN,
+    "changed_us_per_token_lookahead": NaN,
+    "deeper_round_count": 0,
+    "disagreements": 0,
+    "extra_accepted_per_deeper_round": NaN,
+    "mean_capability_deeper": NaN,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 3.064777929579828,
+    "mean_reach": [
+     0.5003345004834053,
+     0.35239905427342466,
+     0.3071054426604136,
+     0.27560280284675615,
+     0.25583738913334675,
+     0.22372175737540845,
+     0.19513959333150507,
+     0.16624288120747502,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5790967598890909,
+     0.7479859539461152,
+     0.8089051351782263,
+     0.8528976035398198,
+     0.8760789337890763,
+     0.8206824964187275,
+     0.8096158454572256,
+     0.7858164007576962
+    ],
+    "p_first_declined_draft_accepted_deeper": NaN,
+    "rounds": 1668840,
+    "shallower_round_count": 0,
+    "transitions": {},
+    "unchanged_round_count": 1668840,
+    "unchanged_us_per_token": 14166.005950041323
+   }
+  },
+  "proportional|F_pb6look": {
+   "curve_lopo_mean": 1.9303530060776268,
+   "curve_lopo_sd": 0.0766136271677318,
+   "curve_lopo_values": [
+    2.0282965399202935,
+    1.8446486745445467,
+    2.0122206113840413,
+    1.868660823129531,
+    1.8879112994094172,
+    1.940380088077931
+   ],
+   "f83_weighted_mean_depth": 4.2103021650785095,
+   "in_sample_mean": 1.9495196466681595,
+   "in_sample_sd": 0.07615705969101061,
+   "in_sample_values": [
+    2.045621416167953,
+    1.8642381180976608,
+    2.0318191654799644,
+    1.8876845156109878,
+    1.9073741130676725,
+    1.9603805515847172
+   ],
+   "per_prompt_ratio": {
+    "beagle": 0.980443626349336,
+    "botany": 0.9881152927501778,
+    "drama": 0.8759407982002183,
+    "essays": 0.9609910263282883,
+    "medicine": 0.9812739316805507,
+    "plutarch": 1.0009358510242616,
+    "republic": 0.9760633617427755,
+    "travel": 0.9675593908941672
+   },
+   "tally": {
+    "cap_bound_share": 0.15878137424273273,
+    "changed_us_per_token_greedy": 10024.145695926176,
+    "changed_us_per_token_lookahead": 10799.324057630167,
+    "deeper_round_count": 71643,
+    "disagreements": 71643,
+    "extra_accepted_per_deeper_round": 1.8374300350348254,
+    "mean_capability_deeper": 6.091383666233965,
+    "mean_capability_shallower": NaN,
+    "mean_capability_unchanged": 2.879855557928219,
+    "mean_reach": [
+     0.4979669802867039,
+     0.3504657865949528,
+     0.30490772224696294,
+     0.27327542156304635,
+     0.2518187980591449,
+     0.22044605032526782,
+     0.19348371656422836,
+     0.16577752766710957,
+     0.0
+    ],
+    "mean_round_start_ema": [
+     0.5750456507412939,
+     0.7456427022706117,
+     0.8070377937312634,
+     0.8518482143893729,
+     0.8699213892916215,
+     0.8202522553681849,
+     0.8133920441854238,
+     0.7888844054415489
+    ],
+    "p_first_declined_draft_accepted_deeper": 0.7018410730985581,
+    "rounds": 1640438,
+    "shallower_round_count": 0,
+    "transitions": {
+     "4->6": 19982,
+     "4->7": 51661
+    },
+    "unchanged_round_count": 1568795,
+    "unchanged_us_per_token": 14552.516496852257
+   }
+  }
+ },
+ "e140_cellC_depth_disagreements_replayer": 0,
+ "fit_windows": 60,
+ "gpu_used": false,
+ "harness": "local instrument",
+ "receipt": "d3c491b5-902f-4f80-8d33-b7938f980d2d",
+ "receipt_score": 3.49065043561149,
+ "reference": {
+  "B_rankedprice": -2.8508,
+  "E_pb6": 2.4683,
+  "oracle": 9.1617
+ },
+ "seeds": [
+  128,
+  129,
+  130,
+  131,
+  132,
+  133
+ ],
+ "tier_grid": [
+  1.0,
+  1.25,
+  1.3,
+  1.35,
+  1.4,
+  1.45,
+  1.5,
+  1.55,
+  1.6,
+  1.65,
+  1.7,
+  2.0301,
+  4.2689
+ ],
+ "tier_lopo": {
+  "per_drafting_round": {
+   "chosen": {
+    "beagle": [
+     1.35,
+     1.55,
+     1.6,
+     1.5,
+     1.55,
+     1.4
+    ],
+    "botany": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "drama": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ],
+    "essays": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "medicine": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "plutarch": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ],
+    "republic": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "travel": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ]
+   },
+   "fixed_1.45": [
+    2.488041016941537,
+    0.03651969198508774
+   ],
+   "held_out": 2.4682679567747203,
+   "held_out_sd": 0.07505858713894224,
+   "in_sample": 2.5017232630862307,
+   "per_seed": [
+    2.55173211189188,
+    2.410939380629973,
+    2.3665440890414002,
+    2.457944633504039,
+    2.4677990700837427,
+    2.554648455497288
+   ]
+  },
+  "per_round": {
+   "chosen": {
+    "beagle": [
+     1.35,
+     1.55,
+     1.35,
+     1.5,
+     1.55,
+     1.4
+    ],
+    "botany": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "drama": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ],
+    "essays": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "medicine": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "plutarch": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ],
+    "republic": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "travel": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ]
+   },
+   "fixed_1.45": [
+    2.417954304840042,
+    0.036063792717310805
+   ],
+   "held_out": 2.4149303136672446,
+   "held_out_sd": 0.05920709044099446,
+   "in_sample": 2.4331698769889276,
+   "per_seed": [
+    2.4873941738115635,
+    2.3390581951320266,
+    2.39275183721126,
+    2.387767070772906,
+    2.3971532825608044,
+    2.4854573225149057
+   ]
+  },
+  "pre_arm": {
+   "chosen": {
+    "beagle": [
+     1.55,
+     1.55,
+     1.6,
+     1.6,
+     1.55,
+     1.6
+    ],
+    "botany": [
+     1.35,
+     1.45,
+     1.45,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "drama": [
+     1.35,
+     1.4,
+     1.45,
+     1.6,
+     1.4,
+     1.4
+    ],
+    "essays": [
+     1.35,
+     1.45,
+     1.45,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "medicine": [
+     1.35,
+     1.45,
+     1.45,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "plutarch": [
+     1.35,
+     1.4,
+     1.45,
+     1.6,
+     1.4,
+     1.4
+    ],
+    "republic": [
+     1.35,
+     1.45,
+     1.45,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "travel": [
+     1.35,
+     1.4,
+     1.45,
+     1.6,
+     1.4,
+     1.4
+    ]
+   },
+   "fixed_1.45": [
+    2.3911761498931448,
+    0.03652959379547417
+   ],
+   "held_out": 2.3422255823528415,
+   "held_out_sd": 0.0463364773386525,
+   "in_sample": 2.3967098855724456,
+   "per_seed": [
+    2.306854601270514,
+    2.3174893298615995,
+    2.2876642495674115,
+    2.3597651890711946,
+    2.3699242656253894,
+    2.4116558587209402
+   ]
+  },
+  "proportional": {
+   "chosen": {
+    "beagle": [
+     1.35,
+     1.55,
+     1.35,
+     1.5,
+     1.55,
+     1.4
+    ],
+    "botany": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "drama": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ],
+    "essays": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "medicine": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "plutarch": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ],
+    "republic": [
+     1.35,
+     1.45,
+     1.35,
+     1.45,
+     1.4,
+     1.4
+    ],
+    "travel": [
+     1.35,
+     1.4,
+     1.35,
+     1.5,
+     1.4,
+     1.4
+    ]
+   },
+   "fixed_1.45": [
+    2.458544326609976,
+    0.03640984256723008
+   ],
+   "held_out": 2.453959026809253,
+   "held_out_sd": 0.0577597698828258,
+   "in_sample": 2.4726534609079622,
+   "per_seed": [
+    2.522166401864201,
+    2.3808028375115864,
+    2.42860480361764,
+    2.4285073429787696,
+    2.438064468789247,
+    2.5256083060940737
+   ]
+  }
+ },
+ "windows": 200
+}
