@@ -1,0 +1,1460 @@
+{
+  "harness": "local",
+  "timing_valid": false,
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "official_or_ranked_score": false,
+  "base_sha": "5f7e3db043fafe3bdc1b09efa6fd64287dd4afd7",
+  "register_file_bytes": {
+    "applegpu_g16s": 393216,
+    "applegpu_g17s": 507904
+  },
+  "na_weights": {
+    "2": 0.024,
+    "3": 0.275,
+    "4": 0.667,
+    "5": 0.034
+  },
+  "dispatch_table": {
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 3,
+    "7": 4,
+    "8": 4,
+    "9": 3
+  },
+  "variants": {
+    "base": {
+      "source_bytes": 206494,
+      "probe_bytes": 220145,
+      "live_bodies": [
+        "wide3",
+        "wide4",
+        "wide5",
+        "pair2",
+        "pair3",
+        "pair4",
+        "pair5",
+        "pair6",
+        "pair7",
+        "pair8",
+        "pair9",
+        "impl"
+      ],
+      "cells": {
+        "applegpu_g16s": {
+          "entry": {
+            "registers": 94,
+            "spill_bytes": 0,
+            "text_bytes": 119344,
+            "text_sha8": "09020534",
+            "resident_simdgroups_derived": 32
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 2940,
+            "text_sha8": "859d6120",
+            "resident_simdgroups_derived": 53
+          },
+          "m3": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 5670,
+            "text_sha8": "cdc2fcae",
+            "resident_simdgroups_derived": 37
+          },
+          "m4": {
+            "registers": 94,
+            "spill_bytes": 0,
+            "text_bytes": 6934,
+            "text_sha8": "70d38665",
+            "resident_simdgroups_derived": 32
+          },
+          "m5": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 8234,
+            "text_sha8": "f1976deb",
+            "resident_simdgroups_derived": 33
+          },
+          "m6": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 5670,
+            "text_sha8": "6e08c2a2",
+            "resident_simdgroups_derived": 37
+          },
+          "m7": {
+            "registers": 94,
+            "spill_bytes": 0,
+            "text_bytes": 12452,
+            "text_sha8": "f24905de",
+            "resident_simdgroups_derived": 32
+          },
+          "m8": {
+            "registers": 94,
+            "spill_bytes": 0,
+            "text_bytes": 6934,
+            "text_sha8": "85406dcc",
+            "resident_simdgroups_derived": 32
+          },
+          "m9": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 5670,
+            "text_sha8": "fa5e74e6",
+            "resident_simdgroups_derived": 37
+          },
+          "pair2": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "3304f7c2",
+            "resident_simdgroups_derived": 40
+          },
+          "pair3": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "6531731a",
+            "resident_simdgroups_derived": 40
+          },
+          "pair4": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "a58db863",
+            "resident_simdgroups_derived": 40
+          },
+          "pair5": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "1b3aa271",
+            "resident_simdgroups_derived": 40
+          },
+          "pair6": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "82dc86c7",
+            "resident_simdgroups_derived": 40
+          },
+          "pair7": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "58af1323",
+            "resident_simdgroups_derived": 40
+          },
+          "pair8": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "049f7a93",
+            "resident_simdgroups_derived": 40
+          },
+          "pair9": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "840e723c",
+            "resident_simdgroups_derived": 40
+          },
+          "wide2": {
+            "registers": 66,
+            "spill_bytes": 0,
+            "text_bytes": 4430,
+            "text_sha8": "e2566aca",
+            "resident_simdgroups_derived": 46
+          },
+          "wide3": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 5670,
+            "text_sha8": "cdc2fcae",
+            "resident_simdgroups_derived": 37
+          },
+          "wide4": {
+            "registers": 94,
+            "spill_bytes": 0,
+            "text_bytes": 6934,
+            "text_sha8": "70d38665",
+            "resident_simdgroups_derived": 32
+          },
+          "wide5": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 8234,
+            "text_sha8": "f1976deb",
+            "resident_simdgroups_derived": 33
+          }
+        },
+        "applegpu_g17s": {
+          "entry": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 125092,
+            "text_sha8": "02cc58e3",
+            "resident_simdgroups_derived": 39
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 3030,
+            "text_sha8": "2b139877",
+            "resident_simdgroups_derived": 69
+          },
+          "m3": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 5900,
+            "text_sha8": "af1bb43b",
+            "resident_simdgroups_derived": 44
+          },
+          "m4": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 7218,
+            "text_sha8": "19623880",
+            "resident_simdgroups_derived": 44
+          },
+          "m5": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 8452,
+            "text_sha8": "0c7553fe",
+            "resident_simdgroups_derived": 39
+          },
+          "m6": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 5900,
+            "text_sha8": "7d96c61a",
+            "resident_simdgroups_derived": 44
+          },
+          "m7": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 12958,
+            "text_sha8": "2659e202",
+            "resident_simdgroups_derived": 44
+          },
+          "m8": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 7218,
+            "text_sha8": "71281a9f",
+            "resident_simdgroups_derived": 44
+          },
+          "m9": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 5900,
+            "text_sha8": "48b1d414",
+            "resident_simdgroups_derived": 44
+          },
+          "pair2": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "d1c2b723",
+            "resident_simdgroups_derived": 44
+          },
+          "pair3": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "9fd0af3c",
+            "resident_simdgroups_derived": 44
+          },
+          "pair4": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "83c93f49",
+            "resident_simdgroups_derived": 44
+          },
+          "pair5": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "86a1fccd",
+            "resident_simdgroups_derived": 44
+          },
+          "pair6": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "8879bfa1",
+            "resident_simdgroups_derived": 44
+          },
+          "pair7": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "dd06171b",
+            "resident_simdgroups_derived": 44
+          },
+          "pair8": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "e63db5db",
+            "resident_simdgroups_derived": 44
+          },
+          "pair9": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "c4059964",
+            "resident_simdgroups_derived": 44
+          },
+          "wide2": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 4670,
+            "text_sha8": "f3b8f2ad",
+            "resident_simdgroups_derived": 42
+          },
+          "wide3": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 5900,
+            "text_sha8": "af1bb43b",
+            "resident_simdgroups_derived": 44
+          },
+          "wide4": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 7218,
+            "text_sha8": "19623880",
+            "resident_simdgroups_derived": 44
+          },
+          "wide5": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 8452,
+            "text_sha8": "0c7553fe",
+            "resident_simdgroups_derived": 39
+          }
+        }
+      },
+      "arm_index": 0
+    },
+    "cc_scalarise": {
+      "source_bytes": 206849,
+      "probe_bytes": 220500,
+      "live_bodies": [
+        "wide3",
+        "wide4",
+        "wide5",
+        "pair2",
+        "pair3",
+        "pair4",
+        "pair5",
+        "pair6",
+        "pair7",
+        "pair8",
+        "pair9",
+        "impl"
+      ],
+      "cells": {
+        "applegpu_g16s": {
+          "entry": {
+            "registers": 91,
+            "spill_bytes": 0,
+            "text_bytes": 99026,
+            "text_sha8": "58c759ff",
+            "resident_simdgroups_derived": 33
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 2940,
+            "text_sha8": "859d6120",
+            "resident_simdgroups_derived": 53
+          },
+          "m3": {
+            "registers": 84,
+            "spill_bytes": 0,
+            "text_bytes": 4016,
+            "text_sha8": "69c3f6dd",
+            "resident_simdgroups_derived": 36
+          },
+          "m4": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 3670,
+            "text_sha8": "2811c304",
+            "resident_simdgroups_derived": 34
+          },
+          "m5": {
+            "registers": 91,
+            "spill_bytes": 0,
+            "text_bytes": 4292,
+            "text_sha8": "c7fd4df8",
+            "resident_simdgroups_derived": 33
+          },
+          "m6": {
+            "registers": 84,
+            "spill_bytes": 0,
+            "text_bytes": 4016,
+            "text_sha8": "6f555944",
+            "resident_simdgroups_derived": 36
+          },
+          "m7": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 7534,
+            "text_sha8": "7805ca12",
+            "resident_simdgroups_derived": 34
+          },
+          "m8": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 3670,
+            "text_sha8": "f8c4b9a2",
+            "resident_simdgroups_derived": 34
+          },
+          "m9": {
+            "registers": 84,
+            "spill_bytes": 0,
+            "text_bytes": 4016,
+            "text_sha8": "2bf79785",
+            "resident_simdgroups_derived": 36
+          },
+          "pair2": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "3304f7c2",
+            "resident_simdgroups_derived": 40
+          },
+          "pair3": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "6531731a",
+            "resident_simdgroups_derived": 40
+          },
+          "pair4": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "a58db863",
+            "resident_simdgroups_derived": 40
+          },
+          "pair5": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "1b3aa271",
+            "resident_simdgroups_derived": 40
+          },
+          "pair6": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "82dc86c7",
+            "resident_simdgroups_derived": 40
+          },
+          "pair7": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "58af1323",
+            "resident_simdgroups_derived": 40
+          },
+          "pair8": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "049f7a93",
+            "resident_simdgroups_derived": 40
+          },
+          "pair9": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "840e723c",
+            "resident_simdgroups_derived": 40
+          },
+          "wide2": {
+            "registers": 60,
+            "spill_bytes": 0,
+            "text_bytes": 3178,
+            "text_sha8": "9755c26a",
+            "resident_simdgroups_derived": 51
+          },
+          "wide3": {
+            "registers": 84,
+            "spill_bytes": 0,
+            "text_bytes": 4016,
+            "text_sha8": "69c3f6dd",
+            "resident_simdgroups_derived": 36
+          },
+          "wide4": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 3670,
+            "text_sha8": "2811c304",
+            "resident_simdgroups_derived": 34
+          },
+          "wide5": {
+            "registers": 91,
+            "spill_bytes": 0,
+            "text_bytes": 4292,
+            "text_sha8": "c7fd4df8",
+            "resident_simdgroups_derived": 33
+          }
+        },
+        "applegpu_g17s": {
+          "entry": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 99612,
+            "text_sha8": "e8ca030b",
+            "resident_simdgroups_derived": 39
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 3030,
+            "text_sha8": "2b139877",
+            "resident_simdgroups_derived": 69
+          },
+          "m3": {
+            "registers": 77,
+            "spill_bytes": 0,
+            "text_bytes": 3132,
+            "text_sha8": "df6a4a4b",
+            "resident_simdgroups_derived": 51
+          },
+          "m4": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 3756,
+            "text_sha8": "3d854e7d",
+            "resident_simdgroups_derived": 39
+          },
+          "m5": {
+            "registers": 100,
+            "spill_bytes": 0,
+            "text_bytes": 4418,
+            "text_sha8": "6b519872",
+            "resident_simdgroups_derived": 39
+          },
+          "m6": {
+            "registers": 77,
+            "spill_bytes": 0,
+            "text_bytes": 3132,
+            "text_sha8": "8244156c",
+            "resident_simdgroups_derived": 51
+          },
+          "m7": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 6728,
+            "text_sha8": "192e3761",
+            "resident_simdgroups_derived": 39
+          },
+          "m8": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 3756,
+            "text_sha8": "21d6d9b3",
+            "resident_simdgroups_derived": 39
+          },
+          "m9": {
+            "registers": 77,
+            "spill_bytes": 0,
+            "text_bytes": 3132,
+            "text_sha8": "0e6993c2",
+            "resident_simdgroups_derived": 51
+          },
+          "pair2": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "d1c2b723",
+            "resident_simdgroups_derived": 44
+          },
+          "pair3": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "9fd0af3c",
+            "resident_simdgroups_derived": 44
+          },
+          "pair4": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "83c93f49",
+            "resident_simdgroups_derived": 44
+          },
+          "pair5": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "86a1fccd",
+            "resident_simdgroups_derived": 44
+          },
+          "pair6": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "8879bfa1",
+            "resident_simdgroups_derived": 44
+          },
+          "pair7": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "dd06171b",
+            "resident_simdgroups_derived": 44
+          },
+          "pair8": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "e63db5db",
+            "resident_simdgroups_derived": 44
+          },
+          "pair9": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "c4059964",
+            "resident_simdgroups_derived": 44
+          },
+          "wide2": {
+            "registers": 74,
+            "spill_bytes": 0,
+            "text_bytes": 3308,
+            "text_sha8": "492f61ef",
+            "resident_simdgroups_derived": 53
+          },
+          "wide3": {
+            "registers": 77,
+            "spill_bytes": 0,
+            "text_bytes": 3132,
+            "text_sha8": "df6a4a4b",
+            "resident_simdgroups_derived": 51
+          },
+          "wide4": {
+            "registers": 101,
+            "spill_bytes": 0,
+            "text_bytes": 3756,
+            "text_sha8": "3d854e7d",
+            "resident_simdgroups_derived": 39
+          },
+          "wide5": {
+            "registers": 100,
+            "spill_bytes": 0,
+            "text_bytes": 4418,
+            "text_sha8": "6b519872",
+            "resident_simdgroups_derived": 39
+          }
+        }
+      },
+      "arm_index": 1
+    },
+    "cc_late_meta": {
+      "source_bytes": 206566,
+      "probe_bytes": 220217,
+      "live_bodies": [
+        "wide3",
+        "wide4",
+        "wide5",
+        "pair2",
+        "pair3",
+        "pair4",
+        "pair5",
+        "pair6",
+        "pair7",
+        "pair8",
+        "pair9",
+        "impl"
+      ],
+      "cells": {
+        "applegpu_g16s": {
+          "entry": {
+            "registers": 96,
+            "spill_bytes": 16,
+            "text_bytes": 119358,
+            "text_sha8": "a2c8d354",
+            "resident_simdgroups_derived": 32
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 2940,
+            "text_sha8": "859d6120",
+            "resident_simdgroups_derived": 53
+          },
+          "m3": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 5680,
+            "text_sha8": "2307c265",
+            "resident_simdgroups_derived": 34
+          },
+          "m4": {
+            "registers": 92,
+            "spill_bytes": 0,
+            "text_bytes": 6924,
+            "text_sha8": "12d356d0",
+            "resident_simdgroups_derived": 33
+          },
+          "m5": {
+            "registers": 96,
+            "spill_bytes": 16,
+            "text_bytes": 8238,
+            "text_sha8": "0e7d7c35",
+            "resident_simdgroups_derived": 32
+          },
+          "m6": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 5680,
+            "text_sha8": "e1b3feec",
+            "resident_simdgroups_derived": 34
+          },
+          "m7": {
+            "registers": 92,
+            "spill_bytes": 0,
+            "text_bytes": 12452,
+            "text_sha8": "9d770662",
+            "resident_simdgroups_derived": 33
+          },
+          "m8": {
+            "registers": 92,
+            "spill_bytes": 0,
+            "text_bytes": 6924,
+            "text_sha8": "87b8de62",
+            "resident_simdgroups_derived": 33
+          },
+          "m9": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 5680,
+            "text_sha8": "8406e5e2",
+            "resident_simdgroups_derived": 34
+          },
+          "pair2": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "3304f7c2",
+            "resident_simdgroups_derived": 40
+          },
+          "pair3": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "6531731a",
+            "resident_simdgroups_derived": 40
+          },
+          "pair4": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "a58db863",
+            "resident_simdgroups_derived": 40
+          },
+          "pair5": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "1b3aa271",
+            "resident_simdgroups_derived": 40
+          },
+          "pair6": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "82dc86c7",
+            "resident_simdgroups_derived": 40
+          },
+          "pair7": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "58af1323",
+            "resident_simdgroups_derived": 40
+          },
+          "pair8": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "049f7a93",
+            "resident_simdgroups_derived": 40
+          },
+          "pair9": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "840e723c",
+            "resident_simdgroups_derived": 40
+          },
+          "wide2": {
+            "registers": 67,
+            "spill_bytes": 0,
+            "text_bytes": 4430,
+            "text_sha8": "e681f3d8",
+            "resident_simdgroups_derived": 45
+          },
+          "wide3": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 5680,
+            "text_sha8": "2307c265",
+            "resident_simdgroups_derived": 34
+          },
+          "wide4": {
+            "registers": 92,
+            "spill_bytes": 0,
+            "text_bytes": 6924,
+            "text_sha8": "12d356d0",
+            "resident_simdgroups_derived": 33
+          },
+          "wide5": {
+            "registers": 96,
+            "spill_bytes": 16,
+            "text_bytes": 8238,
+            "text_sha8": "0e7d7c35",
+            "resident_simdgroups_derived": 32
+          }
+        },
+        "applegpu_g17s": {
+          "entry": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 125136,
+            "text_sha8": "c0e14d2a",
+            "resident_simdgroups_derived": 40
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 3030,
+            "text_sha8": "2b139877",
+            "resident_simdgroups_derived": 69
+          },
+          "m3": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 5920,
+            "text_sha8": "6d4f10bd",
+            "resident_simdgroups_derived": 44
+          },
+          "m4": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 7194,
+            "text_sha8": "8d3f25cd",
+            "resident_simdgroups_derived": 42
+          },
+          "m5": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 8488,
+            "text_sha8": "fc7b5817",
+            "resident_simdgroups_derived": 40
+          },
+          "m6": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 5920,
+            "text_sha8": "92d28c27",
+            "resident_simdgroups_derived": 44
+          },
+          "m7": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 12954,
+            "text_sha8": "8f51dbc4",
+            "resident_simdgroups_derived": 42
+          },
+          "m8": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 7194,
+            "text_sha8": "22c40510",
+            "resident_simdgroups_derived": 42
+          },
+          "m9": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 5920,
+            "text_sha8": "a3b69968",
+            "resident_simdgroups_derived": 44
+          },
+          "pair2": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "d1c2b723",
+            "resident_simdgroups_derived": 44
+          },
+          "pair3": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "9fd0af3c",
+            "resident_simdgroups_derived": 44
+          },
+          "pair4": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "83c93f49",
+            "resident_simdgroups_derived": 44
+          },
+          "pair5": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "86a1fccd",
+            "resident_simdgroups_derived": 44
+          },
+          "pair6": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "8879bfa1",
+            "resident_simdgroups_derived": 44
+          },
+          "pair7": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "dd06171b",
+            "resident_simdgroups_derived": 44
+          },
+          "pair8": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "e63db5db",
+            "resident_simdgroups_derived": 44
+          },
+          "pair9": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "c4059964",
+            "resident_simdgroups_derived": 44
+          },
+          "wide2": {
+            "registers": 83,
+            "spill_bytes": 0,
+            "text_bytes": 4644,
+            "text_sha8": "6f8a575b",
+            "resident_simdgroups_derived": 47
+          },
+          "wide3": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 5920,
+            "text_sha8": "6d4f10bd",
+            "resident_simdgroups_derived": 44
+          },
+          "wide4": {
+            "registers": 93,
+            "spill_bytes": 0,
+            "text_bytes": 7194,
+            "text_sha8": "8d3f25cd",
+            "resident_simdgroups_derived": 42
+          },
+          "wide5": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 8488,
+            "text_sha8": "fc7b5817",
+            "resident_simdgroups_derived": 40
+          }
+        }
+      },
+      "arm_index": 2
+    },
+    "cc_both": {
+      "source_bytes": 206921,
+      "probe_bytes": 220572,
+      "live_bodies": [
+        "wide3",
+        "wide4",
+        "wide5",
+        "pair2",
+        "pair3",
+        "pair4",
+        "pair5",
+        "pair6",
+        "pair7",
+        "pair8",
+        "pair9",
+        "impl"
+      ],
+      "cells": {
+        "applegpu_g16s": {
+          "entry": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 99020,
+            "text_sha8": "54be41c4",
+            "resident_simdgroups_derived": 34
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 2940,
+            "text_sha8": "859d6120",
+            "resident_simdgroups_derived": 53
+          },
+          "m3": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 4012,
+            "text_sha8": "0984301d",
+            "resident_simdgroups_derived": 37
+          },
+          "m4": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 3668,
+            "text_sha8": "11a0e156",
+            "resident_simdgroups_derived": 34
+          },
+          "m5": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 4304,
+            "text_sha8": "1a929eb2",
+            "resident_simdgroups_derived": 34
+          },
+          "m6": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 4012,
+            "text_sha8": "f0ae2119",
+            "resident_simdgroups_derived": 37
+          },
+          "m7": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 7528,
+            "text_sha8": "ac122f67",
+            "resident_simdgroups_derived": 34
+          },
+          "m8": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 3668,
+            "text_sha8": "632a5ba9",
+            "resident_simdgroups_derived": 34
+          },
+          "m9": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 4012,
+            "text_sha8": "fdbc1509",
+            "resident_simdgroups_derived": 37
+          },
+          "pair2": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "3304f7c2",
+            "resident_simdgroups_derived": 40
+          },
+          "pair3": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "6531731a",
+            "resident_simdgroups_derived": 40
+          },
+          "pair4": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "a58db863",
+            "resident_simdgroups_derived": 40
+          },
+          "pair5": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "1b3aa271",
+            "resident_simdgroups_derived": 40
+          },
+          "pair6": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "82dc86c7",
+            "resident_simdgroups_derived": 40
+          },
+          "pair7": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "58af1323",
+            "resident_simdgroups_derived": 40
+          },
+          "pair8": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "049f7a93",
+            "resident_simdgroups_derived": 40
+          },
+          "pair9": {
+            "registers": 75,
+            "spill_bytes": 0,
+            "text_bytes": 6158,
+            "text_sha8": "840e723c",
+            "resident_simdgroups_derived": 40
+          },
+          "wide2": {
+            "registers": 61,
+            "spill_bytes": 0,
+            "text_bytes": 3178,
+            "text_sha8": "997ccefd",
+            "resident_simdgroups_derived": 50
+          },
+          "wide3": {
+            "registers": 82,
+            "spill_bytes": 0,
+            "text_bytes": 4012,
+            "text_sha8": "0984301d",
+            "resident_simdgroups_derived": 37
+          },
+          "wide4": {
+            "registers": 88,
+            "spill_bytes": 0,
+            "text_bytes": 3668,
+            "text_sha8": "11a0e156",
+            "resident_simdgroups_derived": 34
+          },
+          "wide5": {
+            "registers": 90,
+            "spill_bytes": 0,
+            "text_bytes": 4304,
+            "text_sha8": "1a929eb2",
+            "resident_simdgroups_derived": 34
+          }
+        },
+        "applegpu_g17s": {
+          "entry": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 99724,
+            "text_sha8": "7cac6325",
+            "resident_simdgroups_derived": 40
+          },
+          "impl": {
+            "registers": 57,
+            "spill_bytes": 0,
+            "text_bytes": 3030,
+            "text_sha8": "2b139877",
+            "resident_simdgroups_derived": 69
+          },
+          "m3": {
+            "registers": 73,
+            "spill_bytes": 0,
+            "text_bytes": 3144,
+            "text_sha8": "e884acb8",
+            "resident_simdgroups_derived": 54
+          },
+          "m4": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 3772,
+            "text_sha8": "4c6b71d2",
+            "resident_simdgroups_derived": 40
+          },
+          "m5": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 4434,
+            "text_sha8": "cd6385bf",
+            "resident_simdgroups_derived": 40
+          },
+          "m6": {
+            "registers": 73,
+            "spill_bytes": 0,
+            "text_bytes": 3144,
+            "text_sha8": "98e629d7",
+            "resident_simdgroups_derived": 54
+          },
+          "m7": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 6756,
+            "text_sha8": "658a6e1a",
+            "resident_simdgroups_derived": 40
+          },
+          "m8": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 3772,
+            "text_sha8": "08bc8bb4",
+            "resident_simdgroups_derived": 40
+          },
+          "m9": {
+            "registers": 73,
+            "spill_bytes": 0,
+            "text_bytes": 3144,
+            "text_sha8": "f3cbff49",
+            "resident_simdgroups_derived": 54
+          },
+          "pair2": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "d1c2b723",
+            "resident_simdgroups_derived": 44
+          },
+          "pair3": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "9fd0af3c",
+            "resident_simdgroups_derived": 44
+          },
+          "pair4": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "83c93f49",
+            "resident_simdgroups_derived": 44
+          },
+          "pair5": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "86a1fccd",
+            "resident_simdgroups_derived": 44
+          },
+          "pair6": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "8879bfa1",
+            "resident_simdgroups_derived": 44
+          },
+          "pair7": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "dd06171b",
+            "resident_simdgroups_derived": 44
+          },
+          "pair8": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "e63db5db",
+            "resident_simdgroups_derived": 44
+          },
+          "pair9": {
+            "registers": 89,
+            "spill_bytes": 0,
+            "text_bytes": 6528,
+            "text_sha8": "c4059964",
+            "resident_simdgroups_derived": 44
+          },
+          "wide2": {
+            "registers": 70,
+            "spill_bytes": 0,
+            "text_bytes": 3318,
+            "text_sha8": "7d483092",
+            "resident_simdgroups_derived": 56
+          },
+          "wide3": {
+            "registers": 73,
+            "spill_bytes": 0,
+            "text_bytes": 3144,
+            "text_sha8": "e884acb8",
+            "resident_simdgroups_derived": 54
+          },
+          "wide4": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 3772,
+            "text_sha8": "4c6b71d2",
+            "resident_simdgroups_derived": 40
+          },
+          "wide5": {
+            "registers": 98,
+            "spill_bytes": 0,
+            "text_bytes": 4434,
+            "text_sha8": "cd6385bf",
+            "resident_simdgroups_derived": 40
+          }
+        }
+      },
+      "arm_index": 3
+    }
+  },
+  "audit": {
+    "per_arch": {
+      "applegpu_g16s": {
+        "entry_registers": 94,
+        "live_body_registers": {
+          "wide3": 82,
+          "wide4": 94,
+          "wide5": 93,
+          "pair2": 75,
+          "pair3": 75,
+          "pair4": 75,
+          "pair5": 75,
+          "pair6": 75,
+          "pair7": 75,
+          "pair8": 75,
+          "pair9": 75,
+          "impl": 57
+        },
+        "max_live_body_registers": 94,
+        "argmax_live_bodies": [
+          "wide4"
+        ],
+        "entry_equals_max_live_body": true,
+        "not_inlined_cells": {
+          "m3": 82,
+          "m4": 94,
+          "m5": 93,
+          "m6": 82,
+          "m7": 94,
+          "m8": 94,
+          "m9": 82,
+          "wide2": 66
+        },
+        "entry_resident_simdgroups": 32,
+        "spill_free": true
+      },
+      "applegpu_g17s": {
+        "entry_registers": 101,
+        "live_body_registers": {
+          "wide3": 89,
+          "wide4": 90,
+          "wide5": 101,
+          "pair2": 89,
+          "pair3": 89,
+          "pair4": 89,
+          "pair5": 89,
+          "pair6": 89,
+          "pair7": 89,
+          "pair8": 89,
+          "pair9": 89,
+          "impl": 57
+        },
+        "max_live_body_registers": 101,
+        "argmax_live_bodies": [
+          "wide5"
+        ],
+        "entry_equals_max_live_body": true,
+        "not_inlined_cells": {
+          "m3": 89,
+          "m4": 90,
+          "m5": 101,
+          "m6": 89,
+          "m7": 90,
+          "m8": 90,
+          "m9": 89,
+          "wide2": 93
+        },
+        "entry_resident_simdgroups": 39,
+        "spill_free": true
+      }
+    },
+    "notes": [
+      "resident_simdgroups_derived is floor(register_file_bytes / (128 * registers)); it is arithmetic on the measured register count, not an independent occupancy measurement"
+    ]
+  },
+  "residency_vs_base": {
+    "cc_scalarise": {
+      "applegpu_g16s": {
+        "entry_sg_before": 32,
+        "entry_sg_after": 33,
+        "per_cell_pct": {
+          "2": 3.125,
+          "3": 3.125,
+          "4": 3.125,
+          "5": 3.125
+        },
+        "weighted_pct": 3.125,
+        "min_cell_pct": 3.125
+      },
+      "applegpu_g17s": {
+        "entry_sg_before": 39,
+        "entry_sg_after": 39,
+        "per_cell_pct": {
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0
+        },
+        "weighted_pct": 0.0,
+        "min_cell_pct": 0.0
+      }
+    },
+    "cc_late_meta": {
+      "applegpu_g16s": {
+        "entry_sg_before": 32,
+        "entry_sg_after": 32,
+        "per_cell_pct": {
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0
+        },
+        "weighted_pct": 0.0,
+        "min_cell_pct": 0.0
+      },
+      "applegpu_g17s": {
+        "entry_sg_before": 39,
+        "entry_sg_after": 40,
+        "per_cell_pct": {
+          "2": 2.5641025641025643,
+          "3": 2.5641025641025643,
+          "4": 2.5641025641025643,
+          "5": 2.5641025641025643
+        },
+        "weighted_pct": 2.5641025641025643,
+        "min_cell_pct": 2.5641025641025643
+      }
+    },
+    "cc_both": {
+      "applegpu_g16s": {
+        "entry_sg_before": 32,
+        "entry_sg_after": 34,
+        "per_cell_pct": {
+          "2": 6.25,
+          "3": 6.25,
+          "4": 6.25,
+          "5": 6.25
+        },
+        "weighted_pct": 6.25,
+        "min_cell_pct": 6.25
+      },
+      "applegpu_g17s": {
+        "entry_sg_before": 39,
+        "entry_sg_after": 40,
+        "per_cell_pct": {
+          "2": 2.5641025641025643,
+          "3": 2.5641025641025643,
+          "4": 2.5641025641025643,
+          "5": 2.5641025641025643
+        },
+        "weighted_pct": 2.5641025641025643,
+        "min_cell_pct": 2.5641025641025643
+      }
+    }
+  }
+}
