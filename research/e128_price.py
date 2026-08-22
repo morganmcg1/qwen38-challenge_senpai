@@ -197,16 +197,28 @@ class RoundSampler:
 
     def __init__(self, rounds: list[dict], p_fixture: list[float],
                  p_target: list[float], seed: int = 128,
-                 shuffle_margins: bool = False):
+                 shuffle_margins: bool = False, serial: bool = True):
         self.rounds = rounds
         self.s_fix = survival(p_fixture)
         self.s_target = survival(p_target)
         self.rng = random.Random(seed)
         self.margins = [r["margin"] for r in rounds]
         self.shuffle_margins = shuffle_margins
+        # Decoding is strongly serially correlated: a leg enters an easy
+        # stretch and accepts everything for dozens of consecutive rounds, then
+        # leaves it. The EMA is a seven-round window, so it tracks that
+        # structure and the shipped depth inherits it. Drawing rounds
+        # independently destroys it and pins the EMA near the global mean, so
+        # the default walks the recorded order from a random offset and wraps.
+        self.serial = serial
+        self.cursor = self.rng.randrange(len(rounds))
 
     def draw(self) -> tuple:
-        record = self.rounds[self.rng.randrange(len(self.rounds))]
+        if self.serial:
+            record = self.rounds[self.cursor]
+            self.cursor = (self.cursor + 1) % len(self.rounds)
+        else:
+            record = self.rounds[self.rng.randrange(len(self.rounds))]
         a, d = record["accepted"], record["depth"]
         high = self.s_fix[min(a, len(self.s_fix) - 1)]
         low = 0.0 if a >= d else self.s_fix[min(a + 1, len(self.s_fix) - 1)]
@@ -225,8 +237,24 @@ class RoundSampler:
 
 # ------------------------------------------------------------------- policies
 
-def make_policy(arm: str, recal: tuple = (2.0, 3.0)):
+def make_policy(arm: str, recal: tuple = (2.0, 3.0), level: dict | None = None):
     """Returns `policy(ema, margin, offer, capability) -> depth`."""
+    if arm in LEVEL_ARMS or arm in LEVEL_GRID_ARMS:
+        if level is None:
+            raise SystemExit("arm %r needs a measured level bias" % arm)
+        gamma = level["gamma"]
+        gains = level["jensen_gain"]
+        if arm.startswith("levelfix") and len(arm) > len("levelfix"):
+            gamma = float(arm[len("levelfix"):])
+        kwargs = {
+            "reachonly": {"reach_gain": gamma},
+            "expectedonly": {"expected_gain": gamma},
+            "jensen": {"reach_gain_by_step": gains},
+            "jensen_both": {"reach_gain_by_step": gains,
+                            "expected_gain": sum(gains[:4]) / 4.0},
+        }.get(arm, {"reach_gain": gamma, "expected_gain": gamma})
+        return lambda ema, m, offer, cap: cost_model_depth(
+            ema, m, offered_depth=offer, **kwargs)[0]
     if arm == "ship":
         return lambda ema, m, offer, cap: cost_model_depth(
             ema, m, offered_depth=offer)[0]
@@ -480,13 +508,47 @@ ARMS = ["ship", "nomargin", "nomargin0", "nomargin1", "recal",
         "rankedprice", "rankedprice_nomargin", "rankedprice_recal",
         "rankedprice_marginup", "static7", "oracle"]
 
+# The three halves of the level correction, with the EMA feedback path that the
+# myopic replay in `e128_jensen.py` deliberately leaves out. `reachonly` and
+# `expectedonly` are the two opposing consumers of the same biased estimate;
+# `levelfix` corrects both, which is the corrected estimator. `jensen` and
+# `jensen_both` use the measured per-round heterogeneity gain instead of a
+# fitted scalar and have no free parameter.
+LEVEL_ARMS = ["reachonly", "expectedonly", "levelfix", "jensen", "jensen_both"]
+
+# One global scalar swept across a grid that brackets the measured -9 to -24
+# percent level bias, so a single best global gamma can be reported alongside
+# the per-prompt fitted one.
+LEVEL_GRID = [1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.40]
+LEVEL_GRID_ARMS = ["levelfix%0.2f" % g for g in LEVEL_GRID]
+
 # Uniform price constants swept as a one-number implementable alternative to
 # the shipped 0.18. The winner has to win on the median, not per prompt, so the
 # grid is priced whole and the constant is chosen once for all eight prompts.
 PRICE_GRID = [0.06, 0.09, 0.12, 0.14, 0.16, 0.18, 0.20, 0.23, 0.26, 0.30, 0.36]
 PRICE_ARMS = ["price%0.2f" % c for c in PRICE_GRID]
-HEADLINE_ARMS = list(ARMS)
-ARMS += PRICE_ARMS
+HEADLINE_ARMS = list(ARMS) + LEVEL_ARMS
+ARMS += LEVEL_ARMS + LEVEL_GRID_ARMS + PRICE_ARMS
+
+
+def pooled_level(rows: dict, fixture: list[str]) -> dict:
+    """Pools the measured level bias and Jensen gain over a prompt's fixtures.
+
+    `gamma` is pooled as a ratio of round-weighted totals rather than a mean of
+    per-fixture ratios, so a fixture with more rounds carries proportionally
+    more weight and the pooled value is the level bias of the pooled leg.
+    """
+    chosen = [rows[name] for name in fixture if name in rows]
+    if len(chosen) != len(fixture):
+        raise SystemExit("no measured level bias for %r" % fixture)
+    weight = [row["rounds"] for row in chosen]
+    total = sum(weight)
+    accepted = sum(w * row["mean_accepted"] for w, row in zip(weight, chosen))
+    expected = sum(w * row["mean_expected"] for w, row in zip(weight, chosen))
+    gains = [sum(w * row["jensen_gain"][k] for w, row in zip(weight, chosen))
+             / total for k in range(1, MAX_DEPTH + 1)]
+    return {"gamma": accepted / expected, "jensen_gain": gains,
+            "fixtures": len(chosen)}
 
 
 def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
@@ -495,6 +557,7 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
           shuffle_margins: bool = False,
           hold_zero_weight: bool = False,
           accept_targets: dict | None = None,
+          level_rows: dict | None = None,
           seed: int = 128) -> dict:
     """One complete pricing pass. Every variant of the model comes through here.
 
@@ -544,13 +607,17 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
             fit_margin_scale(rounds, 0)["scale"] or 2.0,
             fit_margin_scale(rounds, 1)["scale"] or 3.0,
         )
+        level = pooled_level(level_rows, fixture) if level_rows else None
         prompt_arms = {}
         for arm in ARMS:
             prompt_arms[arm] = simulate(
-                make_policy(arm, recal=recal_fit), factory(p_target), windows)
+                make_policy(arm, recal=recal_fit, level=level),
+                factory(p_target), windows)
         transfer[prompt] = {
             "fixture": "+".join(fixture),
             "delta": delta,
+            "level_gamma": level["gamma"] if level else None,
+            "jensen_gain": level["jensen_gain"] if level else None,
             "p_fixture": p_fixture,
             "p_target": p_target,
             "target_depth_f92": spec["depth"],
@@ -607,67 +674,6 @@ def invert_accept_rate(rate: float, depth: float) -> float:
     return 0.5 * (low + high)
 
 
-# Advisor F1 rung 1, pre-registered before the forced legs were measured. Each
-# entry names the prompt, the assumed ranked round count under test, the lead
-# positions whose geometric mean must clear `geo_min`, and the first position
-# after them whose conditional must not exceed `tail_max`. A row is FALSIFIED
-# when either condition fails on the uncensored pooled acceptance vector.
-FALSIFIERS = {
-    "beagle":   {"R": 110, "lead": 4, "geo_min": 0.8995,
-                 "tail_position": 4, "tail_max": 0.7442},
-    "medicine": {"R": 90, "lead": 5, "geo_min": 0.9282,
-                 "tail_position": 5, "tail_max": 0.7823},
-    "essays":   {"R": 92, "lead": 5, "geo_min": 0.8922,
-                 "tail_position": 5, "tail_max": 0.9328},
-}
-
-
-def evaluate_falsifiers(legs: dict, transfer: dict | None = None) -> dict:
-    """Test the pre-registered conditions on one acceptance vector per prompt.
-
-    The conditions describe the HIDDEN ranked prompt, so the honest input is
-    the transferred vector `p_target`, which is fitted to that prompt's
-    published `effective_mean_draft_len`. Passing `transfer=None` instead
-    tests the raw local fixture, which is a different population and is
-    reported only for transparency.
-    """
-    rows = {}
-    for prompt, spec in FALSIFIERS.items():
-        fixture = RANKED_PROMPTS[prompt]["fixture"]
-        chosen = [legs[name] for name in fixture if name in legs]
-        if len(chosen) != len(fixture):
-            rows[prompt] = {"status": "no data", "missing": [
-                n for n in fixture if n not in legs]}
-            continue
-        if transfer is not None:
-            if prompt not in transfer:
-                rows[prompt] = {"status": "not priced"}
-                continue
-            p_vec = transfer[prompt]["p_target"]
-        else:
-            p_vec = pooled_positions(chosen)
-        lead = p_vec[:spec["lead"]]
-        geo = math.exp(sum(math.log(max(p, 1e-12)) for p in lead) / len(lead))
-        tail = p_vec[spec["tail_position"]]
-        geo_ok = geo >= spec["geo_min"]
-        tail_ok = tail <= spec["tail_max"]
-        rows[prompt] = {
-            "R_under_test": spec["R"],
-            "fixture": "+".join(fixture),
-            "p_uncensored": p_vec,
-            "lead_positions": spec["lead"],
-            "geo_mean_lead": geo,
-            "geo_mean_required": spec["geo_min"],
-            "geo_mean_passes": geo_ok,
-            "tail_position": spec["tail_position"],
-            "tail_p": tail,
-            "tail_max_allowed": spec["tail_max"],
-            "tail_passes": tail_ok,
-            "survives": bool(geo_ok and tail_ok),
-        }
-    return rows
-
-
 def accept_rate_at_R(eff: float, rounds: float) -> float:
     """Rule 12 identity, solved for the accept rate at a stated round count.
 
@@ -721,6 +727,9 @@ def main() -> int:
     parser.add_argument("--sensitivity-json", type=Path)
     parser.add_argument("--identity", type=Path,
                         help="rung0-identity.json; enables the R-band report")
+    parser.add_argument("--jensen", type=Path, required=True,
+                        help="jensen-and-sign.json; supplies the measured "
+                             "level bias and Jensen gain per fixture")
     parser.add_argument("--r-band-json", type=Path)
     args = parser.parse_args()
 
@@ -728,6 +737,8 @@ def main() -> int:
     for path in [args.accept] + args.extra_accept:
         for leg in json.loads(path.read_text())["legs"]:
             legs[leg["prompt_id"]] = leg
+    level_rows = {row["prompt_id"]: row for row in
+                  json.loads(args.jensen.read_text())["hypothesis_j"]}
 
     validation = []
     validation_gate = None
@@ -774,26 +785,8 @@ def main() -> int:
                   % ("PASS" if validation_gate["passed"] else "FAIL"))
 
     receipt = load_board_receipt(args.board, args.receipt)
-    data = price(legs, receipt, args.windows, args.fit_windows)
-    falsifiers = {
-        "transferred_to_ranked_prompt": evaluate_falsifiers(
-            legs, data["transfer"]),
-        "local_fixture_uncensored": evaluate_falsifiers(legs),
-    }
-    data["falsifiers"] = falsifiers
-    for label, rows in falsifiers.items():
-        print("\nadvisor F1 pre-registered falsifiers, input = %s:" % label)
-        print("%-10s %5s %10s %10s %8s %8s %8s %10s" % (
-            "prompt", "R", "geo", "geo min", "geo ok", "tail p", "tail max",
-            "survives"))
-        for prompt, row in rows.items():
-            if "survives" not in row:
-                print("%-10s %s" % (prompt, row))
-                continue
-            print("%-10s %5d %10.4f %10.4f %8s %8.4f %8.4f %10s" % (
-                prompt, row["R_under_test"], row["geo_mean_lead"],
-                row["geo_mean_required"], row["geo_mean_passes"],
-                row["tail_p"], row["tail_max_allowed"], row["survives"]))
+    data = price(legs, receipt, args.windows, args.fit_windows,
+                 level_rows=level_rows)
 
     arms = ARMS
     medians = data["medians"]
@@ -873,7 +866,8 @@ def main() -> int:
                 if missing:
                     print("skip sensitivity %s: no legs %s" % (name, missing))
                     continue
-            out = price(legs, rec, args.windows, args.fit_windows, **kwargs)
+            out = price(legs, rec, args.windows, args.fit_windows,
+                        level_rows=level_rows, **kwargs)
             rows[name] = {
                 "receipt": rec["id"][:8],
                 "kwargs": {k: v for k, v in kwargs.items()},
@@ -905,7 +899,7 @@ def main() -> int:
                                            rounds[p])
                        for p in RANKED_PROMPTS if p in rounds}
             out = price(legs, receipt, args.windows, args.fit_windows,
-                        accept_targets=targets)
+                        accept_targets=targets, level_rows=level_rows)
             band[name] = {
                 "R": rounds,
                 "accept_targets": targets,
@@ -928,16 +922,40 @@ def main() -> int:
                 "%11.4f" % row["median_gain_pct_vs_ship"][a]
                 for a in HEADLINE_ARMS))
         implementable = [a for a in HEADLINE_ARMS if a != "oracle"]
+        # Advisor F2 rule: an arm whose sign flips anywhere inside the pinned
+        # band is sign indeterminate. It is never reported as a gain, however
+        # large the favourable end of its range is.
+        ordered = sorted(band.items(), key=lambda kv: kv[1]["R"]["beagle"])
         spans = {}
         for arm in HEADLINE_ARMS:
             values = [row["median_gain_pct_vs_ship"][arm]
                       for row in band.values()]
-            spans[arm] = {"min": min(values), "max": max(values),
-                          "span": max(values) - min(values)}
+            series = [(row["R"]["beagle"], row["median_gain_pct_vs_ship"][arm])
+                      for _, row in ordered]
+            flips = []
+            for (r0, v0), (r1, v1) in zip(series, series[1:]):
+                if (v0 > 0) != (v1 > 0) and v1 != v0:
+                    flips.append(r0 + (r1 - r0) * (0.0 - v0) / (v1 - v0))
+            spans[arm] = {
+                "min": min(values), "max": max(values),
+                "span": max(values) - min(values),
+                "sign_indeterminate": bool(flips),
+                "sign_flip_R_beagle": flips,
+            }
         print("\nR-band span of the median gain (%%): oracle %.4f, "
               "widest implementable %.4f" % (
                   spans["oracle"]["span"],
                   max(spans[a]["span"] for a in implementable)))
+        print("sign of the median gain across the pinned R band:")
+        for arm in HEADLINE_ARMS:
+            entry = spans[arm]
+            verdict = "SIGN INDETERMINATE, flips at R(beagle) = %s" % (
+                ", ".join("%.1f" % r for r in entry["sign_flip_R_beagle"])
+            ) if entry["sign_indeterminate"] else (
+                "positive throughout" if entry["min"] > 0 else
+                "negative throughout" if entry["max"] < 0 else "zero")
+            print("  %-22s [%+8.4f, %+8.4f] %s"
+                  % (arm, entry["min"], entry["max"], verdict))
         if args.r_band_json:
             args.r_band_json.parent.mkdir(parents=True, exist_ok=True)
             args.r_band_json.write_text(json.dumps({
