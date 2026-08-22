@@ -120,7 +120,13 @@ DECODE_TOKENS = 512
 
 def ranked_round_us(rows: int) -> float:
     intercept, slope = CURVE["lo"] if rows < CURVE["breakpoint"] else CURVE["hi"]
-    return intercept + slope * rows
+    value = intercept + slope * rows
+    # Measured corrections, in microseconds, on top of the two-segment fit.
+    # Every curve fitted before E134 item 2 omits both keys, so this is inert
+    # unless a caller installs a curve inverted from a ranked receipt pair.
+    value += CURVE.get("uniform", 0.0)
+    per_width = CURVE.get("per_width") or {}
+    return value + per_width.get(rows, per_width.get(str(rows), 0.0))
 
 
 def ranked_price_table() -> tuple[list[float], list[float]]:

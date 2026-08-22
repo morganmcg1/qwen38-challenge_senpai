@@ -61,7 +61,28 @@ OUR_CURVE = {"breakpoint": 6,
 ONEPASS67_CURVE = {"breakpoint": 8,
                    "lo": (27725.39691958033, 3446.0718068476417),
                    "hi": (27725.396919580293, 5323.531364694667)}
+MEASURED_CURVE_PATH = (pathlib.Path(__file__).resolve().parent
+                       / "e134-artifacts/item2-measured-curve.json")
+
+
+def load_measured_curve(form=None):
+    """The curve inverted from the ranked receipt pair by E134 item 2.
+
+    `ONEPASS67_CURVE` is a prediction of what the promoted one-pass table did
+    to the cost curve. This is the same curve measured instead of predicted, so
+    it replaces the prediction wherever a boundary is selected or priced.
+    """
+    blob = json.loads(MEASURED_CURVE_PATH.read_text())
+    return blob["curves"][form or blob["best_form"]]["curve"]
+
+
 CURVES = {"ours": OUR_CURVE, "onepass67": ONEPASS67_CURVE}
+if MEASURED_CURVE_PATH.exists():
+    _blob = json.loads(MEASURED_CURVE_PATH.read_text())
+    for _form, _entry in _blob["curves"].items():
+        if _form != "pre_arm":
+            CURVES["measured_" + _form] = _entry["curve"]
+    CURVES["measured"] = _blob["curves"][_blob["best_form"]]["curve"]
 CLIFF_WEIGHTS = (0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50, 0.75, 1.00)
 FLAT_LEVELS = (0.18, 0.19, 0.20, 0.22, 0.24, 0.27, 0.30, 0.35, 0.45, 0.60)
 TIER_FACTORS = (1.0, 1.10, 1.20, 1.33, 1.50, 1.75, 2.0301, 2.50, 3.00, 4.2689)
