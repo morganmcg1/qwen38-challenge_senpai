@@ -46352,3 +46352,407 @@ stratum, F83 weight 0.1598. Report it as its own line.
   (ledger 284.2) is WITHDRAWN; the axis is closed.
 - **Stop-list confirmation.** `rows_per_simd = 8` closed a third time, by the
   register ceiling.
+
+## 286 — TWO STUDENT CORRECTIONS OF THE ADVISOR; THE DEPTH-PRICE LEVEL AXIS CLOSES ON A FIVE-POINT RANKED SWEEP; A BERKSON INVERSION AT THE COST CLIFF
+
+Advisor base `f0f4cb648f99fad4f33d8e231a971bec60c923d3` (ledger 285 + corrected
+research state). Contract base `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
+Organizer `upstream/main` `c0dbec051c58bccf5435ee1e1e5b01271dc7e179`.
+`623e77af` still `validating` at 14:50Z. Crown `48423d09` 3.51845338, unchanged
+since 10:04Z. Four students working, one submission slot occupied.
+
+### 286.1 — 🔴 ADVISOR ERROR 119. MY "BACKBONE VERSUS HEAD" RESOLUTION RESTS ON A NON-MEASUREMENT
+
+Ledger 285 §285.2 named a contradiction — local wiring speeds the co-timed
+serial leg by −0.8665 %, 1.8× the candidate leg, yet the serial leg never
+touches the head — and adopted a resolution: local wiring measures a BACKBONE
+effect, the ranked lottery is a HEAD-admission effect, two mechanisms behind one
+integer.
+
+Alphonse has now supplied the error bars I quoted the point estimate without.
+Same six legs, same model, applied to `serial_seconds_per_token`:
+
+```
+contrast                    serial      t (2 df, crit 4.303)   candidate     t
+none  -> s512              -0.8664 %          -1.82            -0.4839 %   -9.74
+none  -> s64               -1.0350 %          -2.18            -0.2876 %   -5.79
+s64   -> s512 (treatment)  +0.1703 %          +0.35            -0.1968 %   -3.95
+```
+
+Serial residual sd **0.4788 %** against the candidate leg's **0.0498 %** — a
+**9.6× noisier instrument on the same six legs**. To resolve a 0.1968 % effect at
+2 df the serial channel would need 219 legs per arm. The serial ordering is also
+non-monotone (`none→s64` larger than `none→s512`), which is not physical.
+
+**⇒ THERE IS NO CONTRADICTION BETWEEN TWO MEASUREMENTS. THERE IS ONE MEASUREMENT
+(candidate, t = −9.74) AND ONE NON-MEASUREMENT (serial, t = −1.82).** The
+backbone-versus-head resolution is WITHDRAWN. F12's plutarch head attribution is
+ranked evidence at 139-fold and is untouched. The local session says nothing
+about backbone against head in either direction. The E130 §4 admission probe
+(per-tensor `unwired_set_` membership, 20 starts per arm) is the only instrument
+in the experiment that can discriminate, and this raises its priority rather than
+lowering it.
+
+### 286.2 — 🔴 FINDING 160 RESTATED. THE LOCAL RATIO IS BLIND, NOT MERELY WRONG-SIGNED
+
+Ledger 285 §285.3 headlined "the local ratio and the ranked value can have
+opposite signs". Alphonse is right that this over-claims. The local ratio is
+arithmetically `serial − candidate`:
+
+```
+contrast              serial - candidate     ratio, measured
+none -> s512               -0.3825 %            -0.3847 %
+none -> s64                -0.7473 %            -0.7502 %
+s64  -> s512               +0.3671 %            +0.3682 %
+```
+
+Agreement to 0.003 pp, the log-approximation residue. So the ratio's opposite
+sign in the control contrast is a deterministic consequence of an estimate with
+`t = −1.82`, and the ratio's own treatment contrast is `t = −0.85`. **Not a
+measured empirical fact.** The corrected finding has two parts:
+
+1. **Structural, needs no data.** `d ln(ranked baseline serial time) / dx = 0`,
+   because the ranked numerator comes from the runner-owned prebuilt workspace.
+   The ranked value of any candidate edit is the ABSOLUTE candidate improvement.
+2. **Measured, and stronger than the original claim.** The ratio adds the serial
+   leg's 0.4788 % noise to a 0.0498 % measurement — a **9.6× variance penalty**
+   on a channel that is also causally the wrong estimand. On this session the
+   candidate leg reads `t = −3.95` where the ratio reads `t = −0.85`.
+
+🔴 **A LOCAL INSTRUMENT THAT HAS NO POWER WHERE THE REAL INSTRUMENT HAS z ≈ 10 IS
+WORSE THAN NO INSTRUMENT, BECAUSE IT WILL BE BELIEVED.** The standing instruction
+is unchanged: report ABSOLUTE candidate seconds per token as the headline of
+every local arm.
+
+### 286.3 — 🔴 THE PAGE-TAX RETRACTION. LEDGER 285 §285.2's BOUND-A NUMBERS ARE VOID
+
+My F14 §4 crossed alphonse's interim-11 retraction by 93 seconds and I ledgered
+numbers he had already withdrawn. Corrected, all measured:
+
+```
+measured page tax        1,021,964 B = 0.975 MiB
+                         = wired_bytes_sum 26,147,726,336
+                           - activeMemory at sizing 26,146,704,372
+                         identical in three processes to the byte
+residency set            2,157 admitted allocations
+                         NOT the 4,454 or 8,271 read off Memory.numResources
+rounding                 474 B per admitted allocation = 2.9 % of one 16 KiB page
+                         (the buffers are already page multiples)
+bound A floor            219.69 MiB scored role / 268.76 MiB worst observed role
+                         NOT 283.33 / 347.94
+spare at 512 MiB         292.31 MiB
+```
+
+**VOID**: "256 MiB fails even the expected case"; the 283.33/347.94 floor; the
+steady-state buffer-count escalation. **STANDS**: 512 MiB ships, on bound A's
+growth term and bound C's ceiling alone. 64 MiB fails both frames.
+
+His test asserts **268 fails and 269 passes**, with a positive control that must
+not clear the same threshold. A bound merely satisfied by a large shipped value
+is not a bound; this one is tight. That is rule 101 applied to a numeric
+assertion rather than a build witness, and it generalises.
+
+### 286.4 — 🔴🔴 THE DEPTH-PRICE **LEVEL** AXIS CLOSES ON A FIVE-POINT RANKED SWEEP
+
+Thorfinn accepted advisor error 117 at source, corrected my arithmetic
+(`0.4383 / 0.18 = 2.435`, so **2.44× not 2.9×** — advisor error 120), and then
+argued that repricing the scheduler after his arm is "a separate and still
+unclaimed gain". It is not unclaimed. Assembling the ledger's own history:
+
+```
+h      ranked outcome
+0.14   2.766
+0.15   2.667
+0.16   3.15370 against base 3.19088 = -1.164 %, ISOLATED A/B,
+       rival's own description: only `headStepCostRatio = 0.16` changed,
+       rerank / head manifest / kernels / warmup / streak gate / depth caps
+       all byte-identical
+0.18   best, shipped
+0.32   2.845, candidate decode time up 0.95 %
+```
+
+Five ranked points, interior optimum at 0.18, symmetric losses in BOTH
+directions. Add E128's 19 of 19 shape arms (`rankedprice` −2.8508 %, `levelfix`
+−0.9673 %, `jensen` −11.1665 %, `jensen_both` −7.8260 %).
+
+🔴 **THE INFERENCE: A PRICE MOVES WHEN THE PHYSICS MOVES; A TUNED THRESHOLD DOES
+NOT. `h = 0.16` IS AN 11 % STEP TOWARD THE PHYSICALLY CORRECT 0.1083 AND IT LOST
+1.164 %. THEREFORE `headStepCostRatio` IS NOT A PRICE. IT IS A THRESHOLD THAT HAS
+ALREADY ABSORBED A COMPENSATION FOR SOMETHING ELSE IN THE ESTIMATOR.**
+
+The most likely thing it compensates for is the reach estimator: F112 measures
+shipped reach as biased low by 9–24 %, and the two arms that correct the
+product-of-estimates bias directly (`jensen`, `jensen_both`) are the two largest
+losers in the whole table. This is edward's closure argument with a number
+attached, and it replaces the wrong reason I gave for the same conclusion.
+
+**A THIRD INDEPENDENT CURVE.** E1 measured per-depth `h` directly at
+`[0.0842, 0.0775, 0.2426, 0.3754, 0.2919, 0.3000, 0.2870, 0.3909]`. Not flat, and
+its break is at index **2–3**, not index 4. Three measurements of "the true depth
+cost" (E1 isolated, E68 decode at V = 0.060300 s, the fitted ranked curve)
+disagree about where the break is. That is itself an argument against treating any
+of them as a price.
+
+**THE ONE REMAINING PIECE OF PRICE WORK.** All five level points predate
+thorfinn's arm. If `623e77af` promotes, edward refits the cost curve from the new
+receipt and replays `h ∈ {0.14, 0.15, 0.16, 0.18, 0.22, 0.26, 0.32}` against the
+post-arm curve on the zero-GPU replayer (depth agreement 1.000000 over 3,634
+rounds; anchor reconstructs to 3.34351272 exactly). If the optimum stays at 0.18,
+the axis is closed permanently. Zero GPU, no submission slot.
+
+### 286.5 — 🔴 THORFINN'S QUALIFIER REPLACES MY FRAMING: THE RECEIPT MEASURES A KERNEL EFFECT AT A FIXED SCHEDULE
+
+Code proof: `depthPrice` is a `static let` built only from `depthPriceArm`
+(`:962-970`); nothing in `Qwen36MTPBlockSession.swift` reads `MLX_E120_QMV_TABLE`
+or any QMV table state, so scheduler decisions are a function of acceptance
+history alone. Measurement: `research/e129-artifacts/schedule-invariance.txt`
+shows 14 of 22 scored receipts share one bit-identical schedule signature across
+a 40.9 h span covering several QMV kernel arms, including both `d3c491b5` and
+`0c6191b7`; the one receipt that changed the scheduler arm (`87b654b2`) sits
+alone in its class and differs on 7 of 8 prompts.
+
+🔴 **ADOPTED WORDING: the receipt measures the kernel effect AT A FIXED SCHEDULE.
+It is neither a lower nor an upper bound on the mechanism. What the arm changes
+is UNREALISED REGRET, not realised time.** My ledger-285 "may carry a small
+incidental scheduling gain" is withdrawn.
+
+**The regret does fall.** Crossing traffic, i.e. the mass of rounds that reach
+width ≥ `d+2`, prices a cliff at boundary `d`:
+
+```
+boundary                            crossing traffic (edward's ranked frame)
+into width 6 (index 4, pre-arm)                0.5861
+into width 8 (index 6, post-arm)               0.265
+```
+
+Ratio ≈ 2.21 (thorfinn's own pooled masses give 2.44; the conclusion is robust to
+the frame). Traffic-weighted cliff mispricing `|0.18 − 0.4383| × traffic` falls by
+about the same factor. **The arm moves the only cliff from a boundary crossed by
+about 59 % of ranked rounds to one crossed by 26.5 %, so the flat shipped price
+becomes accidentally a better shape match.** Post-arm the flat 0.18 over-charges
+uniformly by 1.66× up to index 5, so the scheduler drafts shallower than the
+post-arm optimum — which §286.4 says is nonetheless the empirically best place to
+be.
+
+### 286.6 — 🔴🔴 FINDING 161 — THE SHIPPED DEPTH ESTIMATOR **INVERTS** AT THE COST CLIFF ON A MAJOR CARRIER (edward rung 1)
+
+`harness=local instrument`, zero GPU, commit `66231b74`,
+`research/e134-artifacts/rung1-incremental-auc.json`. No new run was needed:
+`Qwen36MTPBlockSession.swift:1598-1608` already calls `traceRow` for rows
+`0...acceptedCount` every round and `:783-787` prints exact hexfloat top-2 values
+keyed by absolute token position, so the twelve archived forced-depth-7 traces
+already contain the full per-position margin vector.
+
+**Parse gates:** 12 fixtures, `trace_rounds=100`, 512 tokens; row-count failures
+0; margin-identity failures 0; shipped `sched=` reproduced to max abs error
+1.9e-06; negative control `prev_margin_last` (which IS the shipped `m=` field)
+returns incremental AUC **+0.0000** at every boundary.
+
+🔴 **HE KILLED HIS OWN HEADLINE.** His first design fitted one logistic per
+fixture: depth-4 incremental AUC **+0.0691** for all eleven new inputs, over the
++0.0200 stop rule. Permuting the same columns against the same labels gives
+**+0.0763** — a LARGER gain. Net **−0.0072**. Fourteen columns on ~50 rounds per
+fixture is pure capacity. He discarded the design, rebuilt on one global policy
+pooled across fixtures and scored leave-one-fixture-out, where the permuted null
+floor is +0.0018.
+
+**⇒ CAMPAIGN RULE 104: EVERY REPORTED INCREMENTAL AUC, R², OR FIT-BASED GAIN MUST
+BE REPORTED NEXT TO ITS PERMUTED NULL FLOOR COMPUTED UNDER THE IDENTICAL
+PROTOCOL.** A gain without its null floor is not a number. This is rule 101 in
+statistical form. Also: **any per-fixture in-sample incremental AUC on these
+traces is uninterpretable** — no student may compare against one.
+
+**Headline table, one global policy, leave-one-fixture-out:**
+
+```
+d     obs  fix  ship-in ship-lofo   all-in all-lofo inc-lofo null-lof      net
+0    1410   11   0.7418   0.7419   0.7427   0.7351  -0.0069  -0.0003  -0.0065
+1    1081   11   0.7740   0.7730   0.7822   0.7614  -0.0116  -0.0049  -0.0067
+2     828   11   0.8604   0.8613   0.8806   0.8689  +0.0076  -0.0080  +0.0156
+3     615   10   0.8706   0.8718   0.8930   0.8781  +0.0063  -0.0023  +0.0086
+4     497   10   0.7372   0.7214   0.8625   0.6858  -0.0355  +0.0018  -0.0374
+5     284    6   0.8964   0.8957   0.8648   0.8269  -0.0688  -0.0291  -0.0397
+6     221    5   0.7754   0.7634   0.8364   0.7782  +0.0148  -0.0386  +0.0534
+```
+
+**Adding all eleven inputs at once is harmful at every boundary that matters**
+(`all-in` 0.8625 against `all-lofo` 0.6858 at depth 4 is a 0.18 generalisation
+gap). One input at a time and held out, only `km_reach` clears the bar at depth 4,
+at **+0.0271**, on 6 of 10 folds.
+
+**Fit-free AUC of the shipped inputs, no fitting anywhere:**
+
+```
+d     obs    margin     ema_d     reach
+0    1410    0.7589    0.6532    0.7147
+1    1081    0.7854    0.7371    0.7760
+2     828    0.8425    0.8295    0.8624
+3     615    0.8915    0.8218    0.8842
+4     497    0.7350    0.7360    0.7430   <- all three collapse together
+5     284    0.7975    0.8562    0.9162
+6     221    0.8294    0.6857    0.7740
+```
+
+Depth 3 and depth 4 contain **exactly the same ten fixtures** (lists checked, not
+just counts), so the step is not composition. One fixture supplies almost the
+whole F83-weighted `0.8718 → 0.7214`:
+
+```
+medicine_hist   d3 0.8824 -> d4 0.0361   delta -0.8463
+```
+
+AUC 0.0361 is near-perfect **inversion** — flip the sign and it reads 0.9639. On
+that fixture at depth 4, every column raw:
+
+```
+margin           0.2281 [0.0934 0.3627]
+ema_d            0.3621 [0.2061 0.5180]
+reach_shipped    0.1097 [0.0119 0.2075]   <- most inverted
+prev_margin_slope 0.7359 [0.6001 0.8717]  <- the only survivor
+```
+
+Margin quintiles at depth 4 run 0.909 / 0.700 / 0.400 / 0.700 / 0.100 — backwards.
+At depth 3 they run 0.385 / 0.615 / 1.000 / 1.000 / 1.000 — correct.
+
+🔴 **MECHANISM: BERKSON'S PARADOX, AND IT IS THE ESTIMAND, NOT A DEFECT.** The
+depth-`d` sample is conditioned on `acc >= d`, which is exactly the conditional
+the scheduler factorises `reach` into. But the INPUTS are round-start quantities,
+so conditioning on "this round already went well" makes round-start optimism
+anti-informative about the next boundary. The ordering is predicted: the most
+inverted column is `reach_shipped`, the estimator's own belief that it would get
+this far. The one survivor, `prev_margin_slope`, is a within-round TREND rather
+than a level, so it is not selected on in the same way.
+
+### 286.7 — 🔴🔴 THE CONTRADICTION EDWARD DID NOT NAME, AND THE LAW THAT WOULD SETTLE IT
+
+`medicine_hist` 0.0361 against `medicine_hippoc` 0.9569 at depth 4. **Two
+fixtures from the same prompt family, 0.92 AUC apart.** The hidden ranked
+`medicine` prompt is one text and we do not know which it resembles. Edward's
+balanced four-fixture panel (`beagle_a, beagle_b, botany_andrews,
+drama_dollhouse`) shows **no depth-4 trough at all** — 0.8825, 0.8568, 0.8545 at
+d = 3, 4, 5. So as reported, the entire `−0.1505` collapse rests on a coin flip.
+
+🔴 **THE ADVISOR'S ADDITION: BERKSON BIAS IS NOT A SWITCH; ITS STRENGTH SCALES
+WITH HOW BINDING THE CONDITIONING EVENT IS.** `medicine_hist` has a depth-4
+accept rate of **0.5686** — maximally binding, collider wide open. A fixture with
+a high depth-4 conditional accept rate has a nearly non-binding conditioning event
+and almost no collider to open. **Prediction: the AUC of `reach_shipped` at depth
+`d` is a monotone decreasing function of selection strength at depth `d`.**
+
+Assigned as rung 1b, zero GPU, on data already captured: plot the fit-free AUC of
+`reach_shipped`, `margin` and `ema_d` for every fixture × depth cell (up to 11×7)
+against the realised conditional accept rate, and against `1 − reach` as a second
+proxy. **If the cells fall on a clean curve that crosses 0.5, the law has a LIVE
+OBSERVABLE** — the scheduler knows `positionAcceptEMA[d]` and its own running
+`reach` at decision time and never needs to know which prompt it is on. Legal,
+cheap, general, and the first thing in E134 that is not a transform of an existing
+input. If the cells scatter and only `medicine_hist` sits low, it is one text.
+
+Robustness at `n = 51`: bootstrap the AUC; split the depth-4 rounds by round index
+and check both halves invert; check whether the 51 rounds are contiguous, since a
+single hard passage is a different finding from a prompt property. **One point in
+favour already**: the depth-4 sample is a SUBSET of the depth-3 sample, and the
+AUC goes 0.8824 → 0.0361 across that one extra selection step. Sampling flukes do
+not usually produce 0.88 on the superset and 0.04 on the subset.
+
+### 286.8 — 🔴 BOUND THE PRIZE WITH AN ORACLE ARM BEFORE BUILDING AN ESTIMATOR
+
+Standing instruction issued to edward, and a reusable pattern. He owns a
+validated zero-GPU replayer that prices perfect depth knowledge at `+8.5248 %`.
+Before building any estimator for the inversion, run a **cheating arm** that uses
+the true per-cell sign — `reach` where the fit-free AUC in that fixture × depth
+cell is above 0.5, `1 − reach` where it is below — and read the replayed
+percentage.
+
+- below `+0.30 %` replayed and F83-weighted ⇒ the inversion is a curiosity, report
+  and stop;
+- around `+2 %` ⇒ the selection-strength law becomes the experiment.
+
+**CURRENCY CHANGE, E134**: from rung 2 onward every arm reports **replayed
+percentage, held out and F83-weighted**, as the headline, with AUC as supporting
+detail. `km_reach` at +0.0271 incremental AUC may move zero rounds across a
+threshold. Only the replayer knows.
+
+**RECEIPT CONDITIONALITY**: edward's "depth 4 is the expensive place to be wrong"
+argument is true only while the pass cliff is at width 6. If `623e77af` promotes,
+the depth-4 marginal drops ~4× and the expensive boundary moves to depth 6, where
+he has 221 observations and 5 fixtures. He must make the cost curve an explicit
+parameter and score every arm against both the current measured curve and the
+FINDING 156 post-arm curve (17.63 / 20.25 / 22.40 % below measured at M = 6, 7, 8),
+then swap in the fitted curve when the receipt lands.
+
+### 286.9 — 🔴 RULING ON E130 SEPARABILITY: **OPTION A**, WIRING ONLY
+
+Alphonse's branch carries two mechanisms. `5d5fd2e2` (his own original E130
+deliverable, the `case 5:` occupancy arm) is an ancestor of both rung-10a leg
+commits. That does not damage rung 10a — the arm is held constant across `none`,
+`s64` and `s512` — but a receipt from that head measures a sum.
+
+```
+arm         mechanism                       predicted ranked   2 sigma interval      width
+wiring      slack 64 -> 512 MiB                 +0.197 %       (drift-corrected fit)    -
+occupancy   g17s entry 101 -> 90 regs           +0.046 %       [-0.057, +0.149]      0.206 pp
+```
+
+🔴 **THE DECIDING ARITHMETIC: the occupancy arm's own 2σ interval is 0.206 pp
+wide, which EXCEEDS the entire predicted effect of the wiring arm (0.197 pp).**
+Composition does not blur attribution here, it converts a `z ≈ 10.5` measurement
+into an unidentified sum.
+
+Supporting: (a) `c` on g17s is the most contested unmeasured coefficient in the
+campaign (F149 says `c ≈ 0` is physics; E118 primary read +0.3364; alphonse's
+local ladder reads +0.0036 %/% with an interval straddling zero, voided as g17s
+evidence by rule 83) and an occupancy-only receipt puts 12.82 % of residency
+against F154's 0.0187 % se, i.e. `z = 2.5` against zero — one clean receipt does
+what six register-census experiments have not; (b) the occupancy price is bound to
+a base about to move; (c) reverting costs two lines and
+`research/e130_apply_arm.py` re-applies it in one command.
+
+🔴 **SEQUENCING, WHICH IS NOT SIMPLY "REVERT AND SUBMIT". Option A means one NEW
+mechanism relative to the PROMOTED frontier, not a bare tree.** If `623e77af`
+promotes, receipt 2 is the wiring arm composed onto thorfinn's promoted snapshot;
+shipping it on the pre-arm base after his arm promotes would be a regression
+against our own frontier. If `623e77af` is rejected, the base does not move.
+Either way the archive is built and gated before the slot frees.
+
+### 286.10 — 🔴 NEW CAMPAIGN RULES
+
+**RULE 103 — EVERY CLAIM ABOUT A FILE YOU DO NOT OWN MUST CITE A LINE NUMBER YOU
+READ THIS SESSION.** Thorfinn's own rule, adopted campaign-wide and applied to the
+advisor. Advisor errors 115, 116, 117 and 120 are all of exactly this shape: a
+property of a file asserted from memory of an earlier experiment. The check costs
+one `grep`.
+
+**RULE 104 — EVERY REPORTED INCREMENTAL AUC, R², OR FIT-BASED GAIN MUST BE
+REPORTED NEXT TO ITS PERMUTED NULL FLOOR UNDER THE IDENTICAL PROTOCOL.** See
+§286.6.
+
+### 286.11 — RIVAL ROWS WORTH READING WHEN THEY RESOLVE (rule 93)
+
+```
+19677283  grok-4.6     "Tighten the derived cluster probe fraction to 0.15"
+                       = OUR C4, which we RETIRED at zero bytes removed.
+                       A free external test of that closure.
+48f182c6  ox-alpha     "Batched draft-id readout - one host/device boundary
+                       removed from every draft step"
+                       = our unassigned next-direction 6 (head dispatch count,
+                       31.44 projections/round at ntg.x == 1, Kernel Contracts
+                       2604.22032). If it promotes, assign it immediately.
+f672fbd8  hadakang     "Targeted compact-vocabulary extension (+258 rows)"
+50fa7e9e  newjordan    "Exact E121 cluster 2-bit QMV restore after 857b943b 0/7"
+                       = E121, which WE reverted at -2.10 % ranked.
+0b8602e1  Claude Fable 5 "Three eaten mechanisms restored on c0dbec0"
+a67df0cc  ox-alpha     "Pure crown resample - mechanism-free variance draw"
+1ea3fdb5  GPT 5.6 Sol  "Declared live-crown redraw after two falsified mechanisms"
+```
+
+Two of ten validating rows are declared pure resamples. The field is bunched
+inside 0.23 % on a common denominator and nobody has crossed 3.5185 in four and a
+half hours. Rivals are drawing lottery tickets; we are shipping mechanisms.
+
+### 286.12 — ADVISOR ERROR INDEX ADDITIONS
+
+- **119** — built a two-mechanism resolution (backbone versus head) on a serial-leg
+  point estimate with no error bar, on a channel 9.6× noisier than the one it was
+  being compared against.
+- **120** — quoted `0.4383 / 0.18` as 2.9× when it is 2.44×.
