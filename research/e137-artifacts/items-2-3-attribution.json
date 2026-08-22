@@ -1,0 +1,2189 @@
+{
+ "boundary_4_transfer": {
+  "f2_decision_rule": {
+   "measured": 0.7858,
+   "thresholds": ">=0.60 carrier, 0.20-0.60 partial, <0.20 not",
+   "verdict": "QMV is the carrier; attack it"
+  },
+  "implied_non_qmv_share": 0.2142,
+  "implied_non_qmv_share_ci": [
+   0.1885,
+   0.2809
+  ],
+  "insitu_over_isolated": 1.2726,
+  "insitu_round_step_us": 39134.9,
+  "isolated_over_insitu": 0.7858,
+  "isolated_routed_step_us": {
+   "bootstrap_draws": 10000,
+   "ci_hi": 31756.800266666673,
+   "ci_lo": 28142.951799999966,
+   "n_high": 41,
+   "n_low": 41,
+   "point": 30750.80900000001
+  },
+  "share_ci": [
+   0.7191,
+   0.8115
+  ],
+  "transfer_safe": false,
+  "transfer_safety_note": "FINDING 181: this host is applegpu_g16s with a 96-register ceiling; the ranked host is g17s at 126. The routed QMV family's M=5 to M=6 behaviour here is not the ranked behaviour."
+ },
+ "dispatch_pricing": {
+  "boundary_4_bracket_us": {
+   "high": 46.65,
+   "low": 8.39
+  },
+  "boundary_4_share_of_insitu_step_pct": {
+   "high": 0.1192,
+   "low": 0.0214,
+   "step_us": 39134.9
+  },
+  "boundary_4_share_of_ranked_step_pct": {
+   "high": 0.2816,
+   "low": 0.0507,
+   "step_us": 16566.7
+  },
+  "dispatch_census_source": "ledger 198(H), lines 14126-14160",
+  "dispatch_tax_ns_per_dispatch": {
+   "high": 428.0,
+   "low": 77.0,
+   "source": "E58 corrected in-situ"
+  },
+  "sdpa_chunk": {
+   "dispatches": 64,
+   "dispatches_per_layer": "1 extra SDPA + 1 concat + 2 hidden query copies",
+   "full_attention_layers": 16,
+   "guard": "AttentionUtils.swift:120-142, qL >= 6, qL <= 9, kL >= qL, causal",
+   "split": 5
+  },
+  "sdpa_chunk_only_bracket_us": {
+   "high": 27.39,
+   "low": 4.93
+  },
+  "steps": {
+   "5->6": {
+    "dispatches": 109,
+    "us_high": 46.65,
+    "us_low": 8.39
+   },
+   "6->7": {
+    "dispatches": 29,
+    "us_high": 12.41,
+    "us_low": 2.23
+   },
+   "7->8": {
+    "dispatches": 29,
+    "us_high": 12.41,
+    "us_low": 2.23
+   }
+  }
+ },
+ "e92_gpu_interval_ledger": {
+  "base_sha": "b5cff751623d9fed4b6fcce0af39676ccbd39633",
+  "chip": "Apple M4 Pro",
+  "cool_gate": "0",
+  "cool_gate_passed_real_gate": "false",
+  "gate_qualified_for_timing": "false",
+  "gpu_intervals": "1",
+  "harness": "local",
+  "largest_verify_gpu_busy_step": "4->5",
+  "largest_verify_gpu_busy_step_us": 39304.7,
+  "local_mode": "--local-iterate",
+  "note": "widths are PINNED by e92_verify_width, so width and position are not confounded here. Different and older base than the E130 traces; never pooled with them, used only for the shape of the GPU-versus-host split and the location of the cliff.",
+  "official_or_ranked_score": "false",
+  "source": "research/e92-artifacts/rung2-production-widths.json",
+  "steps": {
+   "1->2": {
+    "d_submit2_gpu_busy_us": 0.0,
+    "head_gpu_busy_us": 9.9,
+    "round_gpu_busy_us": 5330.1,
+    "round_gpu_idle_us": 93.0,
+    "round_us": 5479.8,
+    "snapshot_gpu_busy_us": 130.6,
+    "verify_gpu_busy_us": 5163.2
+   },
+   "2->3": {
+    "d_submit2_gpu_busy_us": 468.1,
+    "head_gpu_busy_us": 599.3,
+    "round_gpu_busy_us": 5002.9,
+    "round_gpu_idle_us": 486.6,
+    "round_us": 5484.2,
+    "snapshot_gpu_busy_us": 93.5,
+    "verify_gpu_busy_us": 4312.2
+   },
+   "3->4": {
+    "d_submit2_gpu_busy_us": 361.1,
+    "head_gpu_busy_us": 498.9,
+    "round_gpu_busy_us": 11459.0,
+    "round_gpu_idle_us": 137.0,
+    "round_us": 11548.9,
+    "snapshot_gpu_busy_us": -26.2,
+    "verify_gpu_busy_us": 10936.1
+   },
+   "4->5": {
+    "d_submit2_gpu_busy_us": 425.1,
+    "head_gpu_busy_us": 543.4,
+    "round_gpu_busy_us": 39865.7,
+    "round_gpu_idle_us": 270.4,
+    "round_us": 40152.5,
+    "snapshot_gpu_busy_us": 29.9,
+    "verify_gpu_busy_us": 39304.7
+   },
+   "5->6": {
+    "d_submit2_gpu_busy_us": -316.1,
+    "head_gpu_busy_us": -394.7,
+    "round_gpu_busy_us": 11739.5,
+    "round_gpu_idle_us": -1065.3,
+    "round_us": 10732.6,
+    "snapshot_gpu_busy_us": -88.0,
+    "verify_gpu_busy_us": 12202.3
+   },
+   "6->7": {
+    "d_submit2_gpu_busy_us": 1225.4,
+    "head_gpu_busy_us": 1561.1,
+    "round_gpu_busy_us": 12588.8,
+    "round_gpu_idle_us": 1215.8,
+    "round_us": 13840.1,
+    "snapshot_gpu_busy_us": 78.6,
+    "verify_gpu_busy_us": 10901.8
+   },
+   "7->8": {
+    "d_submit2_gpu_busy_us": 2112.5,
+    "head_gpu_busy_us": 2228.8,
+    "round_gpu_busy_us": 13525.7,
+    "round_gpu_idle_us": -48.1,
+    "round_us": 13413.9,
+    "snapshot_gpu_busy_us": 15.8,
+    "verify_gpu_busy_us": 11447.4
+   },
+   "8->9": {
+    "d_submit2_gpu_busy_us": 2662.7,
+    "head_gpu_busy_us": 2133.2,
+    "round_gpu_busy_us": 40071.4,
+    "round_gpu_idle_us": -2051.8,
+    "round_us": 38170.8,
+    "snapshot_gpu_busy_us": -161.6,
+    "verify_gpu_busy_us": 38125.1
+   }
+  },
+  "table": {
+   "1": {
+    "accepted_mean": 0,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      0.0,
+      0.0
+     ],
+     "mean": 0.0,
+     "spread_frac": null,
+     "spread_us": 0.0
+    },
+    "frac_rounds_host_stuck": [
+     0.0,
+     0.0
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      0.0,
+      0.0
+     ],
+     "mean": 0.0,
+     "spread_frac": null,
+     "spread_us": 0.0
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      64429.6,
+      64461.3
+     ],
+     "mean": 64445.4,
+     "spread_frac": 0.00049,
+     "spread_us": 31.7
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      1576.2,
+      1567.2
+     ],
+     "mean": 1571.7,
+     "spread_frac": 0.00567,
+     "spread_us": 8.9
+    },
+    "round_us": {
+     "legs": [
+      65993.6,
+      66035.9
+     ],
+     "mean": 66014.8,
+     "spread_frac": 0.00064,
+     "spread_us": 42.2
+    },
+    "rounds_analysed": 1006,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      0.0,
+      0.0
+     ],
+     "mean": 0.0,
+     "spread_frac": null,
+     "spread_us": 0.0
+    },
+    "tags": [
+     "e92p1c",
+     "e92p1d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      64429.6,
+      64461.3
+     ],
+     "mean": 64445.4,
+     "spread_frac": 0.00049,
+     "spread_us": 31.7
+    }
+   },
+   "2": {
+    "accepted_mean": 0.98,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      0.0,
+      0.0
+     ],
+     "mean": 0.0,
+     "spread_frac": null,
+     "spread_us": 0.0
+    },
+    "frac_rounds_host_stuck": [
+     0.244,
+     0.424
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      10.0,
+      9.8
+     ],
+     "mean": 9.9,
+     "spread_frac": 0.01893,
+     "spread_us": 0.2
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      69733.3,
+      69817.7
+     ],
+     "mean": 69775.5,
+     "spread_frac": 0.00121,
+     "spread_us": 84.4
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      1622.4,
+      1707.1
+     ],
+     "mean": 1664.7,
+     "spread_frac": 0.0509,
+     "spread_us": 84.7
+    },
+    "round_us": {
+     "legs": [
+      71331.6,
+      71657.7
+     ],
+     "mean": 71494.6,
+     "spread_frac": 0.00456,
+     "spread_us": 326.1
+    },
+    "rounds_analysed": 500,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      104.3,
+      157.0
+     ],
+     "mean": 130.6,
+     "spread_frac": 0.40345,
+     "spread_us": 52.7
+    },
+    "tags": [
+     "e92p2c",
+     "e92p2d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      69571.6,
+      69645.6
+     ],
+     "mean": 69608.6,
+     "spread_frac": 0.00106,
+     "spread_us": 74.0
+    }
+   },
+   "3": {
+    "accepted_mean": 1.904191616766467,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      471.8,
+      464.4
+     ],
+     "mean": 468.1,
+     "spread_frac": 0.01567,
+     "spread_us": 7.3
+    },
+    "frac_rounds_host_stuck": [
+     0.9940119760479041,
+     1.0
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      617.7,
+      600.8
+     ],
+     "mean": 609.2,
+     "spread_frac": 0.02777,
+     "spread_us": 16.9
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      74825.7,
+      74731.0
+     ],
+     "mean": 74778.4,
+     "spread_frac": 0.00127,
+     "spread_us": 94.7
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      2178.0,
+      2124.6
+     ],
+     "mean": 2151.3,
+     "spread_frac": 0.02479,
+     "spread_us": 53.3
+    },
+    "round_us": {
+     "legs": [
+      77064.7,
+      76892.9
+     ],
+     "mean": 76978.8,
+     "spread_frac": 0.00223,
+     "spread_us": 171.8
+    },
+    "rounds_analysed": 334,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      223.4,
+      224.9
+     ],
+     "mean": 224.1,
+     "spread_frac": 0.00669,
+     "spread_us": 1.5
+    },
+    "tags": [
+     "e92p3c",
+     "e92p3d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      73963.0,
+      73878.6
+     ],
+     "mean": 73920.8,
+     "spread_frac": 0.00114,
+     "spread_us": 84.3
+    }
+   },
+   "4": {
+    "accepted_mean": 2.832,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      829.6,
+      828.8
+     ],
+     "mean": 829.2,
+     "spread_frac": 0.00091,
+     "spread_us": 0.8
+    },
+    "frac_rounds_host_stuck": [
+     1.0,
+     0.992
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      1104.4,
+      1111.7
+     ],
+     "mean": 1108.1,
+     "spread_frac": 0.00658,
+     "spread_us": 7.3
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      86217.4,
+      86257.4
+     ],
+     "mean": 86237.4,
+     "spread_frac": 0.00046,
+     "spread_us": 40.0
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      2285.0,
+      2291.5
+     ],
+     "mean": 2288.3,
+     "spread_frac": 0.00282,
+     "spread_us": 6.5
+    },
+    "round_us": {
+     "legs": [
+      88535.2,
+      88520.2
+     ],
+     "mean": 88527.7,
+     "spread_frac": 0.00017,
+     "spread_us": 14.9
+    },
+    "rounds_analysed": 250,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      191.4,
+      204.5
+     ],
+     "mean": 197.9,
+     "spread_frac": 0.06631,
+     "spread_us": 13.1
+    },
+    "tags": [
+     "e92p4c",
+     "e92p4d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      84933.2,
+      84780.5
+     ],
+     "mean": 84856.9,
+     "spread_frac": 0.0018,
+     "spread_us": 152.6
+    }
+   },
+   "5": {
+    "accepted_mean": 3.67,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      1232.0,
+      1276.7
+     ],
+     "mean": 1254.3,
+     "spread_frac": 0.03568,
+     "spread_us": 44.8
+    },
+    "frac_rounds_host_stuck": [
+     1.0,
+     1.0
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      1626.1,
+      1676.9
+     ],
+     "mean": 1651.5,
+     "spread_frac": 0.03073,
+     "spread_us": 50.8
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      126112.1,
+      126094.1
+     ],
+     "mean": 126103.1,
+     "spread_frac": 0.00014,
+     "spread_us": 17.9
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      2523.4,
+      2594.0
+     ],
+     "mean": 2558.7,
+     "spread_frac": 0.02761,
+     "spread_us": 70.6
+    },
+    "round_us": {
+     "legs": [
+      128622.2,
+      128738.2
+     ],
+     "mean": 128680.2,
+     "spread_frac": 0.0009,
+     "spread_us": 116.0
+    },
+    "rounds_analysed": 200,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      224.2,
+      231.4
+     ],
+     "mean": 227.8,
+     "spread_frac": 0.03183,
+     "spread_us": 7.2
+    },
+    "tags": [
+     "e92p5c",
+     "e92p5d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      124143.4,
+      124179.9
+     ],
+     "mean": 124161.6,
+     "spread_frac": 0.00029,
+     "spread_us": 36.5
+    }
+   },
+   "6": {
+    "accepted_mean": 4.2988505747126435,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      1537.2,
+      339.2
+     ],
+     "mean": 938.2,
+     "spread_frac": 1.27685,
+     "spread_us": 1198.0
+    },
+    "frac_rounds_host_stuck": [
+     1.0,
+     0.0
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      2043.7,
+      469.8
+     ],
+     "mean": 1256.8,
+     "spread_frac": 1.25232,
+     "spread_us": 1573.9
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      137394.9,
+      138290.4
+     ],
+     "mean": 137842.6,
+     "spread_frac": 0.0065,
+     "spread_us": 895.5
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      2435.0,
+      551.7
+     ],
+     "mean": 1493.4,
+     "spread_frac": 1.26117,
+     "spread_us": 1883.4
+    },
+    "round_us": {
+     "legs": [
+      139943.8,
+      138881.8
+     ],
+     "mean": 139412.8,
+     "spread_frac": 0.00762,
+     "spread_us": 1061.9
+    },
+    "rounds_analysed": 174,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      215.0,
+      64.5
+     ],
+     "mean": 139.8,
+     "spread_frac": 1.07633,
+     "spread_us": 150.4
+    },
+    "tags": [
+     "e92p6c",
+     "e92p6d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      134974.1,
+      137753.7
+     ],
+     "mean": 136363.9,
+     "spread_frac": 0.02038,
+     "spread_us": 2779.6
+    }
+   },
+   "7": {
+    "accepted_mean": 5.164383561643835,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      2159.6,
+      2167.6
+     ],
+     "mean": 2163.6,
+     "spread_frac": 0.0037,
+     "spread_us": 8.0
+    },
+    "frac_rounds_host_stuck": [
+     1.0,
+     1.0
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      2830.5,
+      2805.2
+     ],
+     "mean": 2817.9,
+     "spread_frac": 0.00899,
+     "spread_us": 25.3
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      150438.4,
+      150424.4
+     ],
+     "mean": 150431.4,
+     "spread_frac": 9e-05,
+     "spread_us": 14.0
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      2757.8,
+      2660.6
+     ],
+     "mean": 2709.2,
+     "spread_frac": 0.03587,
+     "spread_us": 97.2
+    },
+    "round_us": {
+     "legs": [
+      153318.3,
+      153187.4
+     ],
+     "mean": 153252.9,
+     "spread_frac": 0.00085,
+     "spread_us": 131.0
+    },
+    "rounds_analysed": 146,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      217.3,
+      219.5
+     ],
+     "mean": 218.4,
+     "spread_frac": 0.00992,
+     "spread_us": 2.2
+    },
+    "tags": [
+     "e92p7c",
+     "e92p7d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      147273.8,
+      147257.6
+     ],
+     "mean": 147265.7,
+     "spread_frac": 0.00011,
+     "spread_us": 16.2
+    }
+   },
+   "8": {
+    "accepted_mean": 5.921875,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      4281.7,
+      4270.4
+     ],
+     "mean": 4276.1,
+     "spread_frac": 0.00264,
+     "spread_us": 11.3
+    },
+    "frac_rounds_host_stuck": [
+     1.0,
+     1.0
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      5056.1,
+      5037.4
+     ],
+     "mean": 5046.7,
+     "spread_frac": 0.00372,
+     "spread_us": 18.7
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      163923.2,
+      163990.9
+     ],
+     "mean": 163957.1,
+     "spread_frac": 0.00041,
+     "spread_us": 67.6
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      2717.7,
+      2604.4
+     ],
+     "mean": 2661.1,
+     "spread_frac": 0.04257,
+     "spread_us": 113.3
+    },
+    "round_us": {
+     "legs": [
+      166693.0,
+      166640.7
+     ],
+     "mean": 166666.8,
+     "spread_frac": 0.00031,
+     "spread_us": 52.3
+    },
+    "rounds_analysed": 128,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      231.7,
+      236.7
+     ],
+     "mean": 234.2,
+     "spread_frac": 0.02162,
+     "spread_us": 5.1
+    },
+    "tags": [
+     "e92p8c",
+     "e92p8d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      158647.9,
+      158778.3
+     ],
+     "mean": 158713.1,
+     "spread_frac": 0.00082,
+     "spread_us": 130.4
+    }
+   },
+   "9": {
+    "accepted_mean": 6.448275862068965,
+    "d_submit2_gpu_busy_us": {
+     "legs": [
+      6950.8,
+      6926.8
+     ],
+     "mean": 6938.8,
+     "spread_frac": 0.00346,
+     "spread_us": 24.0
+    },
+    "frac_rounds_host_stuck": [
+     0.05172413793103448,
+     0.034482758620689655
+    ],
+    "head_gpu_busy_us": {
+     "legs": [
+      7196.1,
+      7163.6
+     ],
+     "mean": 7179.9,
+     "spread_frac": 0.00452,
+     "spread_us": 32.4
+    },
+    "n_legs": 2,
+    "round_gpu_busy_us": {
+     "legs": [
+      204057.5,
+      203999.5
+     ],
+     "mean": 204028.5,
+     "spread_frac": 0.00028,
+     "spread_us": 57.9
+    },
+    "round_gpu_idle_us": {
+     "legs": [
+      614.1,
+      604.6
+     ],
+     "mean": 609.3,
+     "spread_frac": 0.01559,
+     "spread_us": 9.5
+    },
+    "round_us": {
+     "legs": [
+      204921.4,
+      204753.9
+     ],
+     "mean": 204837.6,
+     "spread_frac": 0.00082,
+     "spread_us": 167.5
+    },
+    "rounds_analysed": 116,
+    "snapshot_gpu_busy_us": {
+     "legs": [
+      76.8,
+      68.4
+     ],
+     "mean": 72.6,
+     "spread_frac": 0.11589,
+     "spread_us": 8.4
+    },
+    "tags": [
+     "e92p9c",
+     "e92p9d"
+    ],
+    "verify_gpu_busy_us": {
+     "legs": [
+      196883.2,
+      196793.3
+     ],
+     "mean": 196838.2,
+     "spread_frac": 0.00046,
+     "spread_us": 89.9
+    }
+   }
+  },
+  "tokens": "512",
+  "width_pinned": true
+ },
+ "experiment": "e137-items-2-and-3",
+ "gpu_used": false,
+ "isolated_fallback": {
+  "arm": "fallback",
+  "curve_us": {
+   "3": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 69756.62046666667,
+    "ci_lo": 65422.69466666666,
+    "n": 41,
+    "point": 68813.87033333333
+   },
+   "4": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 76686.10466666667,
+    "ci_lo": 76238.7222,
+    "n": 41,
+    "point": 76479.72573333334
+   },
+   "5": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 89179.356,
+    "ci_lo": 88671.67793333333,
+    "n": 41,
+    "point": 88925.79626666667
+   },
+   "6": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 126356.10726666666,
+    "ci_lo": 122466.09173333333,
+    "n": 41,
+    "point": 124414.14393333333
+   },
+   "7": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 134720.7377333333,
+    "ci_lo": 132319.17666666667,
+    "n": 41,
+    "point": 134191.05440000002
+   },
+   "8": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 146796.45546666667,
+    "ci_lo": 144098.99593333332,
+    "n": 41,
+    "point": 145068.297
+   },
+   "9": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 179065.98206666668,
+    "ci_lo": 178446.50740000003,
+    "n": 41,
+    "point": 178701.46873333334
+   }
+  },
+  "dispatch_weighting": {
+   "full_attn.o_proj": 16,
+   "full_attn.qkv_proj_fused": 16,
+   "head.lm_head": 1,
+   "linear_attn.in_proj_fused_qkvzba": 48,
+   "linear_attn.out_proj": 48,
+   "mlp.down": 64,
+   "mlp.gate_up_fused": 64
+  },
+  "dispatches_per_round": 257,
+  "per_shape": {
+   "full_attn.o_proj": {
+    "dispatches_per_round": 16,
+    "k": 6144,
+    "n": 5120,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 42.069466666666685,
+     "ci_lo": 40.73053333333333,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 41.39453333333333
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 99.11666666666667,
+      "ci_lo": 97.8222,
+      "n": 41,
+      "point": 98.28613333333334
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 111.90833333333335,
+      "ci_lo": 111.325,
+      "n": 41,
+      "point": 111.58053333333335
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 127.08886666666669,
+      "ci_lo": 126.25280000000001,
+      "n": 41,
+      "point": 126.68053333333333
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 168.57506666666666,
+      "ci_lo": 167.50006666666667,
+      "n": 41,
+      "point": 168.07506666666666
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 179.70273333333336,
+      "ci_lo": 178.77493333333334,
+      "n": 41,
+      "point": 179.1166666666667
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 194.3777333333333,
+      "ci_lo": 193.2860666666667,
+      "n": 41,
+      "point": 194.025
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 238.14999999999998,
+      "ci_lo": 236.27779999999998,
+      "n": 41,
+      "point": 236.6444
+     }
+    },
+    "relative_step_pct": 32.7,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 673.1,
+     "ci_lo": 651.7,
+     "point": 662.3
+    }
+   },
+   "full_attn.qkv_proj_fused": {
+    "dispatches_per_round": 16,
+    "k": 5120,
+    "n": 14336,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 133.50833333333327,
+     "ci_lo": 102.26653333333331,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 128.83886666666672
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 189.38613333333336,
+      "ci_lo": 188.81393333333332,
+      "n": 41,
+      "point": 189.0916666666667
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 221.78059999999996,
+      "ci_lo": 220.3639333333333,
+      "n": 41,
+      "point": 221.27226666666667
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 257.00000000000006,
+      "ci_lo": 255.0166666666667,
+      "n": 41,
+      "point": 256.06666666666666
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 389.29713333333336,
+      "ci_lo": 358.7304666666667,
+      "n": 41,
+      "point": 384.9055333333334
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 419.27779999999996,
+      "ci_lo": 386.7222,
+      "n": 41,
+      "point": 415.41666666666663
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 449.2111333333334,
+      "ci_lo": 417.4778,
+      "n": 41,
+      "point": 442.50553333333335
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 549.2527333333333,
+      "ci_lo": 541.2916666666666,
+      "n": 41,
+      "point": 544.8805333333333
+     }
+    },
+    "relative_step_pct": 50.3,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 2136.1,
+     "ci_lo": 1636.3,
+     "point": 2061.4
+    }
+   },
+   "head.lm_head": {
+    "dispatches_per_round": 1,
+    "k": 5120,
+    "n": 248320,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 1716.8721999999989,
+     "ci_lo": 1715.0193333333327,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 1715.6916666666662
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 2883.4972666666667,
+      "ci_lo": 2881.619466666667,
+      "n": 41,
+      "point": 2882.5722
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 3330.2305333333334,
+      "ci_lo": 3328.1888666666664,
+      "n": 41,
+      "point": 3329.369466666666
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 3889.3528,
+      "ci_lo": 3888.2944666666663,
+      "n": 41,
+      "point": 3888.9472
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 5605.575,
+      "ci_lo": 5604.055466666667,
+      "n": 41,
+      "point": 5604.638866666666
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 6055.0972,
+      "ci_lo": 6052.869466666666,
+      "n": 41,
+      "point": 6053.280533333333
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 6606.5887999999995,
+      "ci_lo": 6601.8332666666665,
+      "n": 41,
+      "point": 6602.747133333333
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 8455.6194,
+      "ci_lo": 8451.525000000001,
+      "n": 41,
+      "point": 8452.666599999999
+     }
+    },
+    "relative_step_pct": 44.1,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 1716.9,
+     "ci_lo": 1715.0,
+     "point": 1715.7
+    }
+   },
+   "linear_attn.in_proj_fused_qkvzba": {
+    "dispatches_per_round": 48,
+    "k": 5120,
+    "n": 16480,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 149.68893333333335,
+     "ci_lo": 116.5166666666666,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 145.0082666666667
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 231.8194666666667,
+      "ci_lo": 189.20286666666664,
+      "n": 41,
+      "point": 219.82506666666663
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 252.03893333333332,
+      "ci_lo": 250.3166666666667,
+      "n": 41,
+      "point": 250.9805333333333
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 291.0333333333333,
+      "ci_lo": 289.4028,
+      "n": 41,
+      "point": 290.1556
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 439.31393333333335,
+      "ci_lo": 406.91666666666663,
+      "n": 41,
+      "point": 435.1638666666667
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 471.3694666666666,
+      "ci_lo": 440.89446666666663,
+      "n": 41,
+      "point": 467.04446666666666
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 507.0361333333333,
+      "ci_lo": 496.00559999999996,
+      "n": 41,
+      "point": 504.4666666666667
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 590.4250666666666,
+      "ci_lo": 586.1139333333333,
+      "n": 41,
+      "point": 587.6333999999999
+     }
+    },
+    "relative_step_pct": 50.0,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 7185.1,
+     "ci_lo": 5592.8,
+     "point": 6960.4
+    }
+   },
+   "linear_attn.out_proj": {
+    "dispatches_per_round": 48,
+    "k": 6144,
+    "n": 5120,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 40.34719999999999,
+     "ci_lo": 38.78333333333333,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 39.50000000000003
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 100.24726666666668,
+      "ci_lo": 99.36113333333334,
+      "n": 41,
+      "point": 99.75833333333335
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 112.03053333333332,
+      "ci_lo": 111.35273333333332,
+      "n": 41,
+      "point": 111.74166666666667
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 128.25273333333334,
+      "ci_lo": 127.81666666666666,
+      "n": 41,
+      "point": 128.13333333333333
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 168.38333333333335,
+      "ci_lo": 166.9694,
+      "n": 41,
+      "point": 167.63333333333335
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 181.4749333333333,
+      "ci_lo": 179.93606666666665,
+      "n": 41,
+      "point": 180.81106666666668
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 195.46393333333336,
+      "ci_lo": 193.7528,
+      "n": 41,
+      "point": 194.55553333333336
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 238.36386666666667,
+      "ci_lo": 236.64726666666667,
+      "n": 41,
+      "point": 237.275
+     }
+    },
+    "relative_step_pct": 30.8,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 1936.7,
+     "ci_lo": 1861.6,
+     "point": 1896.0
+    }
+   },
+   "mlp.down": {
+    "dispatches_per_round": 64,
+    "k": 17408,
+    "n": 5120,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 135.1610666666666,
+     "ci_lo": 108.12773333333331,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 110.68326666666673
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 256.7556,
+      "ci_lo": 254.2528,
+      "n": 41,
+      "point": 255.77506666666667
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 291.9694666666667,
+      "ci_lo": 288.9083333333333,
+      "n": 41,
+      "point": 290.7305333333333
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 342.4000666666667,
+      "ci_lo": 339.3500666666667,
+      "n": 41,
+      "point": 341.24446666666665
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 476.40553333333327,
+      "ci_lo": 450.1222,
+      "n": 41,
+      "point": 451.9277333333334
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 487.6916666666667,
+      "ci_lo": 483.27773333333334,
+      "n": 41,
+      "point": 484.7416666666667
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 545.6610666666667,
+      "ci_lo": 522.0638666666667,
+      "n": 41,
+      "point": 523.4749333333334
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 642.0389333333333,
+      "ci_lo": 640.1861333333334,
+      "n": 41,
+      "point": 641.2333333333333
+     }
+    },
+    "relative_step_pct": 32.4,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 8650.3,
+     "ci_lo": 6920.2,
+     "point": 7083.7
+    }
+   },
+   "mlp.gate_up_fused": {
+    "dispatches_per_round": 64,
+    "k": 5120,
+    "n": 34816,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 237.7027333333333,
+     "ci_lo": 234.26660000000004,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 236.0749333333332
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 466.96119999999996,
+      "ci_lo": 434.86946666666665,
+      "n": 41,
+      "point": 462.86946666666665
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 497.7417333333334,
+      "ci_lo": 496.1444666666668,
+      "n": 41,
+      "point": 496.9889333333334
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 579.7694666666667,
+      "ci_lo": 577.1583333333334,
+      "n": 41,
+      "point": 578.0528
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 815.0805333333333,
+      "ci_lo": 813.8749333333333,
+      "n": 41,
+      "point": 814.1277333333333
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 883.3305333333334,
+      "ci_lo": 882.6361333333333,
+      "n": 41,
+      "point": 882.8860666666667
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 957.0333333333333,
+      "ci_lo": 956.3195333333334,
+      "n": 41,
+      "point": 956.6500000000001
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 1205.3056000000001,
+      "ci_lo": 1204.5222000000003,
+      "n": 41,
+      "point": 1204.841666666667
+     }
+    },
+    "relative_step_pct": 40.8,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 15213.0,
+     "ci_lo": 14993.1,
+     "point": 15108.8
+    }
+   }
+  },
+  "samples": {
+   "3": 41,
+   "4": 41,
+   "5": 41,
+   "6": 41,
+   "7": 41,
+   "8": 41,
+   "9": 41
+  },
+  "steps_us": {
+   "3->4": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 11135.115933333334,
+    "ci_lo": 6644.639066666656,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 7665.855400000015
+   },
+   "4->5": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 12848.422666666665,
+    "ci_lo": 12097.520533333329,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 12446.070533333332
+   },
+   "5->6": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 37497.09806666666,
+    "ci_lo": 33435.93333333332,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 35488.347666666654
+   },
+   "6->7": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 11885.725866666675,
+    "ci_lo": 7369.286200000002,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 9776.910466666697
+   },
+   "7->8": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 13226.505266666674,
+    "ci_lo": 9656.978866666701,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 10877.242599999969
+   },
+   "8->9": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 34845.37239999999,
+    "ci_lo": 31905.013266666676,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 33633.17173333335
+   }
+  },
+  "widths": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ "isolated_routed": {
+  "arm": "routed",
+  "curve_us": {
+   "3": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 72448.6624,
+    "ci_lo": 67829.43853333333,
+    "n": 41,
+    "point": 68011.54079999999
+   },
+   "4": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 80464.2066,
+    "ci_lo": 80016.69980000002,
+    "n": 41,
+    "point": 80211.06706666667
+   },
+   "5": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 92605.03726666667,
+    "ci_lo": 90287.442,
+    "n": 41,
+    "point": 90631.697
+   },
+   "6": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 122298.15026666666,
+    "ci_lo": 118870.15046666664,
+    "n": 41,
+    "point": 121382.50600000001
+   },
+   "7": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 143086.1665333333,
+    "ci_lo": 142333.55053333333,
+    "n": 41,
+    "point": 142755.91033333333
+   },
+   "8": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 145467.9694,
+    "ci_lo": 141974.6808,
+    "n": 41,
+    "point": 144017.41073333332
+   },
+   "9": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 180395.931,
+    "ci_lo": 179952.16659999997,
+    "n": 41,
+    "point": 180180.682
+   }
+  },
+  "dispatch_weighting": {
+   "full_attn.o_proj": 16,
+   "full_attn.qkv_proj_fused": 16,
+   "head.lm_head": 1,
+   "linear_attn.in_proj_fused_qkvzba": 48,
+   "linear_attn.out_proj": 48,
+   "mlp.down": 64,
+   "mlp.gate_up_fused": 64
+  },
+  "dispatches_per_round": 257,
+  "per_shape": {
+   "full_attn.o_proj": {
+    "dispatches_per_round": 16,
+    "k": 6144,
+    "n": 5120,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 40.561133333333345,
+     "ci_lo": 38.33606666666668,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 39.224999999999994
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 108.4472,
+      "ci_lo": 107.78053333333334,
+      "n": 41,
+      "point": 108.00553333333333
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 133.62499999999997,
+      "ci_lo": 132.66113333333334,
+      "n": 41,
+      "point": 133.20000000000002
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 146.19166666666666,
+      "ci_lo": 145.4806,
+      "n": 41,
+      "point": 145.79726666666667
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 186.31946666666667,
+      "ci_lo": 184.31666666666666,
+      "n": 41,
+      "point": 185.02226666666667
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 208.88886666666667,
+      "ci_lo": 206.41386666666668,
+      "n": 41,
+      "point": 207.20273333333333
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 216.42493333333337,
+      "ci_lo": 212.7611333333333,
+      "n": 41,
+      "point": 215.28886666666665
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 261.26946666666663,
+      "ci_lo": 259.2472,
+      "n": 41,
+      "point": 259.9777333333333
+     }
+    },
+    "relative_step_pct": 26.9,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 649.0,
+     "ci_lo": 613.4,
+     "point": 627.6
+    }
+   },
+   "full_attn.qkv_proj_fused": {
+    "dispatches_per_round": 16,
+    "k": 5120,
+    "n": 14336,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 99.59433333333345,
+     "ci_lo": 67.69993333333332,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 71.1054666666667
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 198.13886666666664,
+      "ci_lo": 197.59166666666664,
+      "n": 41,
+      "point": 197.87226666666663
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 242.05006666666665,
+      "ci_lo": 239.14166666666665,
+      "n": 41,
+      "point": 240.62499999999994
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 271.9778,
+      "ci_lo": 267.7306,
+      "n": 41,
+      "point": 269.58893333333333
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 369.0222,
+      "ci_lo": 338.36386666666664,
+      "n": 41,
+      "point": 340.69440000000003
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 421.3555333333333,
+      "ci_lo": 416.775,
+      "n": 41,
+      "point": 420.04166666666663
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 444.08059999999995,
+      "ci_lo": 417.91946666666666,
+      "n": 41,
+      "point": 442.49166666666673
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 553.7110666666666,
+      "ci_lo": 551.8694,
+      "n": 41,
+      "point": 553.1916
+     }
+    },
+    "relative_step_pct": 26.4,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 1593.5,
+     "ci_lo": 1083.2,
+     "point": 1137.7
+    }
+   },
+   "head.lm_head": {
+    "dispatches_per_round": 1,
+    "k": 5120,
+    "n": 248320,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 1146.5332666666663,
+     "ci_lo": 1144.511066666666,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 1145.933266666666
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 2899.3194666666664,
+      "ci_lo": 2896.9361333333336,
+      "n": 41,
+      "point": 2898.0666666666666
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 3170.1639333333333,
+      "ci_lo": 3169.3611333333333,
+      "n": 41,
+      "point": 3169.7305333333334
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 3642.8111333333336,
+      "ci_lo": 3641.9305333333336,
+      "n": 41,
+      "point": 3642.2250000000004
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 4788.730533333333,
+      "ci_lo": 4787.002733333334,
+      "n": 41,
+      "point": 4788.158266666666
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 5659.283333333334,
+      "ci_lo": 5657.736133333332,
+      "n": 41,
+      "point": 5658.625
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 6230.3694,
+      "ci_lo": 6228.5944,
+      "n": 41,
+      "point": 6229.3222
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 8179.969400000001,
+      "ci_lo": 8174.833266666667,
+      "n": 41,
+      "point": 8176.011066666667
+     }
+    },
+    "relative_step_pct": 31.5,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 1146.5,
+     "ci_lo": 1144.5,
+     "point": 1145.9
+    }
+   },
+   "linear_attn.in_proj_fused_qkvzba": {
+    "dispatches_per_round": 48,
+    "k": 5120,
+    "n": 16480,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 108.61106666666666,
+     "ci_lo": 78.55833333333334,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 104.55280000000005
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 243.02779999999998,
+      "ci_lo": 198.0056,
+      "n": 41,
+      "point": 198.44173333333333
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 268.84720000000004,
+      "ci_lo": 266.14726666666667,
+      "n": 41,
+      "point": 267.06946666666664
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 304.58893333333333,
+      "ci_lo": 300.9638666666667,
+      "n": 41,
+      "point": 303.1388666666667
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 410.38053333333335,
+      "ci_lo": 382.175,
+      "n": 41,
+      "point": 407.6916666666667
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 469.2416666666667,
+      "ci_lo": 465.08053333333334,
+      "n": 41,
+      "point": 468.3056
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 498.7944,
+      "ci_lo": 471.1555333333333,
+      "n": 41,
+      "point": 497.9444000000001
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 595.9278666666667,
+      "ci_lo": 594.8806,
+      "n": 41,
+      "point": 595.3167333333333
+     }
+    },
+    "relative_step_pct": 34.5,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 5213.3,
+     "ci_lo": 3770.8,
+     "point": 5018.5
+    }
+   },
+   "linear_attn.out_proj": {
+    "dispatches_per_round": 48,
+    "k": 6144,
+    "n": 5120,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 38.413866666666706,
+     "ci_lo": 34.85833333333332,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 36.57213333333337
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 108.44726666666668,
+      "ci_lo": 107.8084,
+      "n": 41,
+      "point": 108.01113333333333
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 134.1166,
+      "ci_lo": 133.075,
+      "n": 41,
+      "point": 133.56106666666668
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 147.44166666666666,
+      "ci_lo": 146.59166666666664,
+      "n": 41,
+      "point": 147.07226666666665
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 185.4666666666667,
+      "ci_lo": 181.97493333333333,
+      "n": 41,
+      "point": 183.64440000000002
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 211.5444,
+      "ci_lo": 208.6694,
+      "n": 41,
+      "point": 209.7360666666667
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 216.96113333333335,
+      "ci_lo": 212.9610666666667,
+      "n": 41,
+      "point": 215.71393333333333
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 262.3222666666667,
+      "ci_lo": 259.7972,
+      "n": 41,
+      "point": 260.7166666666667
+     }
+    },
+    "relative_step_pct": 24.9,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 1843.9,
+     "ci_lo": 1673.2,
+     "point": 1755.5
+    }
+   },
+   "mlp.down": {
+    "dispatches_per_round": 64,
+    "k": 17408,
+    "n": 5120,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 170.5666666666666,
+     "ci_lo": 137.91113333333334,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 167.2193999999999
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 268.36673333333334,
+      "ci_lo": 265.4250666666667,
+      "n": 41,
+      "point": 266.3389333333333
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 313.68333333333334,
+      "ci_lo": 311.01666666666665,
+      "n": 41,
+      "point": 312.18893333333335
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 380.23893333333336,
+      "ci_lo": 349.9472666666666,
+      "n": 41,
+      "point": 352.0166666666667
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 522.2166666666667,
+      "ci_lo": 501.6472,
+      "n": 41,
+      "point": 519.2360666666666
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 622.7860666666666,
+      "ci_lo": 619.0277333333333,
+      "n": 41,
+      "point": 620.8555333333334
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 546.5944,
+      "ci_lo": 523.7750000000001,
+      "n": 41,
+      "point": 526.4972
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 651.6083333333333,
+      "ci_lo": 649.0583333333334,
+      "n": 41,
+      "point": 650.6444666666667
+     }
+    },
+    "relative_step_pct": 47.5,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 10916.3,
+     "ci_lo": 8826.3,
+     "point": 10702.0
+    }
+   },
+   "mlp.gate_up_fused": {
+    "dispatches_per_round": 64,
+    "k": 5120,
+    "n": 34816,
+    "per_call_step_5_to_6_us": {
+     "bootstrap_draws": 10000,
+     "ci_hi": 162.84720000000016,
+     "ci_lo": 161.20826666666665,
+     "n_high": 41,
+     "n_low": 41,
+     "point": 161.9304666666667
+    },
+    "per_call_us": {
+     "3": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 478.08893333333333,
+      "ci_lo": 443.44173333333333,
+      "n": 41,
+      "point": 444.74999999999994
+     },
+     "4": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 497.8944666666667,
+      "ci_lo": 497.3556000000001,
+      "n": 41,
+      "point": 497.65279999999996
+     },
+     "5": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 566.2305333333334,
+      "ci_lo": 564.9194,
+      "n": 41,
+      "point": 565.6889333333334
+     },
+     "6": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 728.1471999999999,
+      "ci_lo": 727.1193999999999,
+      "n": 41,
+      "point": 727.6194
+     },
+     "7": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 856.3583333333333,
+      "ci_lo": 855.4222000000001,
+      "n": 41,
+      "point": 855.9472
+     },
+     "8": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 927.0500666666668,
+      "ci_lo": 926.5,
+      "n": 41,
+      "point": 926.7528
+     },
+     "9": {
+      "bootstrap_draws": 10000,
+      "ci_hi": 1191.8333333333335,
+      "ci_lo": 1191.175,
+      "n": 41,
+      "point": 1191.6111333333333
+     }
+    },
+    "relative_step_pct": 28.6,
+    "weighted_step_5_to_6_us": {
+     "ci_hi": 10422.2,
+     "ci_lo": 10317.3,
+     "point": 10363.5
+    }
+   }
+  },
+  "samples": {
+   "3": 41,
+   "4": 41,
+   "5": 41,
+   "6": 41,
+   "7": 41,
+   "8": 41,
+   "9": 41
+  },
+  "steps_us": {
+   "3->4": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 12494.558866666674,
+    "ci_lo": 7732.1348,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 12199.526266666682
+   },
+   "4->5": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 12428.563266666679,
+    "ci_lo": 9974.611066666665,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 10420.62993333333
+   },
+   "5->6": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 31756.800266666673,
+    "ci_lo": 28142.951799999966,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 30750.80900000001
+   },
+   "6->7": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 23885.75986666669,
+    "ci_lo": 20397.013133333327,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 21373.404333333325
+   },
+   "7->8": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 2734.631066666654,
+    "ci_lo": -857.1068666666688,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 1261.50039999999
+   },
+   "8->9": {
+    "bootstrap_draws": 10000,
+    "ci_hi": 38262.06773333336,
+    "ci_lo": 34712.7126,
+    "n_high": 41,
+    "n_low": 41,
+    "point": 36163.27126666668
+   }
+  },
+  "widths": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ "local_versus_ranked_relative_steps": {
+  "local_source": "research/e137-artifacts/item1-width-table.json, design `all`, 12 E130 rung-11 legs, Apple M4 Pro (applegpu_g16s)",
+  "normalisation": "step(M -> M+1) divided by round(M)",
+  "ranked_source": "quoted from F2 section 2: edward's per-round refit of the 623e77af and d3c491b5 ranked receipt pair, Apple M5 (applegpu_g17s). Not measured by this experiment.",
+  "reading": "every shallow step disagrees between the two hosts; the cliff agrees. The cliff is a property of the model at verify width 6, not a g16s register artefact.",
+  "steps": {
+   "3->4": {
+    "gap_pp": 3.4,
+    "local_round_us_low_width": 81548.5,
+    "local_step_pct_of_low_width_round": 12.5,
+    "local_step_us": 10168.7,
+    "ranked_step_pct_of_low_width_round": 9.1
+   },
+   "4->5": {
+    "gap_pp": 7.9,
+    "local_round_us_low_width": 91717.2,
+    "local_step_pct_of_low_width_round": 16.2,
+    "local_step_us": 14889.2,
+    "ranked_step_pct_of_low_width_round": 8.3
+   },
+   "5->6": {
+    "gap_pp": 0.6,
+    "local_round_us_low_width": 106606.4,
+    "local_step_pct_of_low_width_round": 36.7,
+    "local_step_us": 39134.9,
+    "ranked_step_pct_of_low_width_round": 36.1
+   },
+   "6->7": {
+    "gap_pp": 6.0,
+    "local_round_us_low_width": 145741.3,
+    "local_step_pct_of_low_width_round": 8.7,
+    "local_step_us": 12698.5,
+    "ranked_step_pct_of_low_width_round": 2.7
+   },
+   "7->8": {
+    "gap_pp": -3.5,
+    "local_round_us_low_width": 158439.8,
+    "local_step_pct_of_low_width_round": 8.4,
+    "local_step_us": 13369.3,
+    "ranked_step_pct_of_low_width_round": 11.9
+   }
+  }
+ },
+ "note": "offline analysis over already-paid-for artifacts",
+ "route_b_config": {
+  "arm": "sumtable",
+  "bitwise_match_vs_fallback": true,
+  "entry": "tiered_switch",
+  "routed_widths": [
+   3,
+   9
+  ],
+  "weight_passes_by_width": {
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1,
+   "8": 2,
+   "9": 3
+  }
+ },
+ "sdpa_chunk_moving_cliff": {
+  "argument": "the guard is byte-identical on both bases and fires only at qL >= 6, so it cannot produce a 39,305 us step at 4->5. On the E92 base the largest verify GPU-busy step IS at 4->5, and the 4->5 step on the current base is 14,889 us. A fixed qL >= 6 guard cannot move a cliff by one width.",
+  "cliff_position": {
+   "current_base_33ce6a3f": "5->6",
+   "current_base_step_us": 39134.9,
+   "e92_base_b5cff751": "4->5",
+   "e92_base_step_us": 39304.7
+  },
+  "conclusion": "chunked SDPA is eliminated as the carrier of the step",
+  "file_identity": {
+   "checked": "git diff b5cff751 33ce6a3f -- <path>, empty, this session",
+   "current_base": "33ce6a3f",
+   "e92_base": "b5cff751",
+   "git_diff_lines_changed": 0,
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift"
+  },
+  "guard": "AttentionUtils.swift:118-142, fires at qL >= 6 with split = 5, so it can only ever add work at the 5 to 6 boundary",
+  "independent_of": "F2 section 4's bandwidth bracket of 270 to 420 us; this line of evidence uses neither a bandwidth constant nor a dispatch tax"
+ }
+}
