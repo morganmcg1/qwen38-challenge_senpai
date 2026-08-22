@@ -1,22 +1,20 @@
 {
-  "tool": "senpai/entry-point-cliff-census.sh",
+  "tool": "research/e131_thorfinn_dryrun.py",
   "schema_version": 1,
   "gpu_used": false,
   "model_loaded": false,
   "timing_valid": false,
   "official_or_ranked_score": false,
   "occupancy_label": "derived",
-  "occupancy_rule": "Rule 89: simdgroups = floor(BUDGET / registers) is a model output computed from the register count, not a measurement",
-  "ranked_arch": "applegpu_g17s",
+  "occupancy_rule": "Rule 89",
+  "base_ref": "3e0ecfddfb91ea9d359e31912d08b9480dcb95a2",
+  "base_sha": "3e0ecfddfb91ea9d359e31912d08b9480dcb95a2",
+  "candidate": "base + Route B dispatch table (5, 5) -> (5, 3), applied in memory to the extracted Swift text",
+  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
   "simdgroup_budget": {
     "applegpu_g16s": 3072,
     "applegpu_g17s": 3968
   },
-  "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
-  "base_ref": "HEAD",
-  "base_sha": "eec6ca8020153e3640675368cc6ce73352cb6a73",
-  "candidate_ref": "worktree",
-  "candidate_sha": null,
   "cells": [
     {
       "kernel": "affine_qmv_fast_bfloat16_t_64_2_false",
@@ -123,31 +121,31 @@
       "role": "Route B shipped wide QMV, USE_TABLE=true (the .sumtable arm)",
       "applegpu_g16s": {
         "base_registers": 96,
-        "candidate_registers": 96,
-        "registers_delta": 0,
+        "candidate_registers": 93,
+        "registers_delta": -3,
         "base_simdgroups_derived": 32,
-        "candidate_simdgroups_derived": 32,
-        "simdgroups_delta_derived": 0,
-        "residency_change_pct_derived": 0.0,
+        "candidate_simdgroups_derived": 33,
+        "simdgroups_delta_derived": 1,
+        "residency_change_pct_derived": 3.125,
         "base_spill_bytes": 0,
         "candidate_spill_bytes": 0,
         "base_text_bytes": 47862,
-        "candidate_text_bytes": 47862,
-        "unchanged": true
+        "candidate_text_bytes": 49614,
+        "unchanged": false
       },
       "applegpu_g17s": {
         "base_registers": 102,
-        "candidate_registers": 102,
-        "registers_delta": 0,
+        "candidate_registers": 94,
+        "registers_delta": -8,
         "base_simdgroups_derived": 38,
-        "candidate_simdgroups_derived": 38,
-        "simdgroups_delta_derived": 0,
-        "residency_change_pct_derived": 0.0,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 4,
+        "residency_change_pct_derived": 10.526,
         "base_spill_bytes": 0,
         "candidate_spill_bytes": 0,
         "base_text_bytes": 49718,
-        "candidate_text_bytes": 49718,
-        "unchanged": true
+        "candidate_text_bytes": 51732,
+        "unchanged": false
       }
     },
     {
@@ -165,22 +163,22 @@
         "base_spill_bytes": 0,
         "candidate_spill_bytes": 0,
         "base_text_bytes": 50980,
-        "candidate_text_bytes": 50980,
-        "unchanged": true
+        "candidate_text_bytes": 52690,
+        "unchanged": false
       },
       "applegpu_g17s": {
         "base_registers": 101,
-        "candidate_registers": 101,
-        "registers_delta": 0,
+        "candidate_registers": 93,
+        "registers_delta": -8,
         "base_simdgroups_derived": 39,
-        "candidate_simdgroups_derived": 39,
-        "simdgroups_delta_derived": 0,
-        "residency_change_pct_derived": 0.0,
+        "candidate_simdgroups_derived": 42,
+        "simdgroups_delta_derived": 3,
+        "residency_change_pct_derived": 7.692,
         "base_spill_bytes": 0,
         "candidate_spill_bytes": 0,
         "base_text_bytes": 52914,
-        "candidate_text_bytes": 52914,
-        "unchanged": true
+        "candidate_text_bytes": 54868,
+        "unchanged": false
       }
     },
     {
@@ -218,7 +216,10 @@
     }
   ],
   "failures": [],
-  "warnings": [],
+  "warnings": [
+    "qwen35_custom_affine4_g64_qmv_wide_sums_v1 applegpu_g17s: 102 -> 94 registers GAINS 4 resident simdgroup(s) (38 -> 42, +10.53 % residency, derived)",
+    "qwen35_custom_affine4_g64_qmv_wide_v1 applegpu_g17s: 101 -> 93 registers GAINS 3 resident simdgroup(s) (39 -> 42, +7.69 % residency, derived)"
+  ],
   "verdict": "pass",
-  "runtime_seconds": 3.93
+  "runtime_seconds": 3.92
 }

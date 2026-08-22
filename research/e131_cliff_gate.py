@@ -76,11 +76,14 @@ def toolchain() -> str:
     return lines[0] if lines else "unknown"
 
 
-def side_sources(rev: str | None) -> dict[str, dict]:
+def side_sources(rev: str | None, swift_patch=None) -> dict[str, dict]:
     """Every scored entry point at one revision, as compilable Metal sources.
 
     `rev is None` means the working tree. Each value carries the library the
     kernel lives in, so kernels that share a library are compiled once.
+    `swift_patch` rewrites the extracted `Qwen35.swift` text before the Route B
+    library is rebuilt, so an unlanded candidate can be censused without an edit
+    to a tracked source another student owns.
     """
     cells: dict[str, dict] = {}
     jit = assemble(tuple(cell for cell, _ in JIT_CELLS), rev)
@@ -90,6 +93,8 @@ def side_sources(rev: str | None) -> dict[str, dict]:
             "role": role, "cell": cell}
 
     swift = ks.swift_text(ks.QWEN35, rev)
+    if swift_patch is not None:
+        swift = swift_patch(swift)
     try:
         route_b = ks.route_b_library(swift)
     except ks.SourceUnavailable as error:

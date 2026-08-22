@@ -45,6 +45,24 @@ RUNGS = {
             "recoverable from small register reductions",
         "command": "python3 research/e131_rung1.py --outdir research/e131-artifacts",
     },
+    "1b": {
+        "run_name": "e131-rung1b-f4-head-routing-verification",
+        "file": "rung1b-f4-verification.json",
+        "question":
+            "does my own instrument agree with E131-F4's ten-row head routing "
+            "table, what does qmv_fast_impl allocate as a first-class cell, "
+            "and what is the metric under the assignment's literal two-register "
+            "definition",
+        "command": "python3 research/e131_rung1b.py",
+    },
+    "3d": {
+        "run_name": "e131-rung3-dryrun-route-b-5-3",
+        "file": "rung3-dryrun-route-b-5-3.json",
+        "question":
+            "does the shipped cliff gate return a gain warning rather than a "
+            "false failure on thorfinn's unlanded Route B (5,5) -> (5,3) change",
+        "command": "python3 research/e131_thorfinn_dryrun.py --width 5 --inner 3",
+    },
     "2": {
         "run_name": "e131-rung2-top-cell-scouting",
         "file": "rung2-scouting.json",
@@ -75,7 +93,8 @@ def flatten(prefix: str, value, out: dict) -> None:
 
 def census_table(payload: dict, section: str) -> wandb.Table | None:
     rows = payload.get(section)
-    if not rows:
+    # A gate receipt keys `cells` by comparison row rather than by census cell.
+    if not isinstance(rows, dict) or not rows:
         return None
     table = wandb.Table(columns=[
         "cell", "arch", "registers", "spill_bytes", "text_bytes", "text_sha8",
@@ -122,7 +141,7 @@ def main() -> int:
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
         "host": HOST,
-        "rung": int(args.rung),
+        "rung": args.rung,
         "question": spec["question"],
         "command": spec["command"],
     })
@@ -136,7 +155,7 @@ def main() -> int:
 
     run = wandb.init(entity=ENTITY, project=PROJECT, group=GROUP,
                      name=spec["run_name"], job_type="census",
-                     config={"experiment": "E131", "rung": int(args.rung),
+                     config={"experiment": "E131", "rung": args.rung,
                              "arches": list(ARCHES),
                              "command": spec["command"],
                              "question": spec["question"],

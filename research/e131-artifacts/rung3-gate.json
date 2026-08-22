@@ -11,7 +11,7 @@
   "occupancy_label": "derived",
   "occupancy_rule": "Rule 89: simdgroups = floor(BUDGET / registers) is a model output computed from the register count, not a measurement",
   "toolchain": "Apple metal version 32023.883 (metalfe-32023.883)",
-  "base_sha": "0648ac7149e294c114780cc43a701ca7df2de3a8",
+  "base_sha": "eec6ca8020153e3640675368cc6ce73352cb6a73",
   "simdgroup_budget": {
     "applegpu_g16s": 3072,
     "applegpu_g17s": 3968
@@ -122,8 +122,8 @@
     "proofs_passed": 3,
     "proofs_total": 3,
     "all_proofs_passed": true,
-    "slowest_single_run_seconds": 3.94,
-    "suite_seconds": 10.82,
+    "slowest_single_run_seconds": 3.93,
+    "suite_seconds": 10.79,
     "budget_seconds": 30,
     "within_budget": true
   },
@@ -141,7 +141,7 @@
       "g17s_simdgroup_deltas_derived": {
         "affine_qmv_fast_bfloat16_t_64_4_false": -1
       },
-      "runtime_seconds": 2.26,
+      "runtime_seconds": 2.25,
       "passed": true
     },
     {
@@ -157,7 +157,7 @@
       "g17s_simdgroup_deltas_derived": {
         "affine_qmv_fast_bfloat16_t_64_4_false": 1
       },
-      "runtime_seconds": 2.27,
+      "runtime_seconds": 2.26,
       "passed": true
     },
     {

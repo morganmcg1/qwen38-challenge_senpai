@@ -113,6 +113,31 @@ Every simdgroup figure the gate prints is `derived` under Rule 89:
 measurement. A failure is a register regression, not a measured slowdown, so
 read the register delta first.
 
+### Exit 1 is stop-and-justify, and only a price discharges it
+
+A candidate may legitimately spend a register to remove more work than the lost
+simdgroup costs, and this gate cannot price that trade. When your candidate
+trips exit 1, the required response is a **written price for the work you
+removed against `c x Δresidency` in a named frame under Rule 87** — the
+entry-point leg frame is `c = 0.445 [0.139, 0.819]` and the F47-weighted
+isolated-body frame is `c = 0.164 [0.089, 0.199]`. A waiver, a re-run, or an
+assertion that the change is obviously faster does not discharge exit 1. The
+console prints the register delta before the derived simdgroup delta so you
+price the measured quantity first; keep that ordering.
+
+### Censusing a candidate you may not commit
+
+Use `--candidate` for a landed ref. When the change belongs to a file another
+student owns, or has not landed yet, rewrite the extracted source in memory
+instead of editing the tracked file:
+
+```bash
+python3 research/e131_thorfinn_dryrun.py --width 5 --inner 3
+```
+
+`e131_cliff_gate.side_sources(rev, swift_patch=...)` applies the rewrite to the
+read-only extraction, so the census never touches the working tree.
+
 E121 raised the wide-QMV entry point from 101 to 102 registers on
 `applegpu_g17s` and cost one derived resident simdgroup. This gate reproduces
 that failure and its revert:
