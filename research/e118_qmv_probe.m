@@ -42,6 +42,7 @@
 #include <string.h>
 
 #define MAXARM 16
+enum { kMetaProbeRows = 8 };
 static int g_narm = 0;
 static const char *kArmName[MAXARM];
 static int kArmExactVsBase[MAXARM];
@@ -614,8 +615,16 @@ int main(int argc, char **argv) {
       // pack32 and Bias6 arms too.
       {
         const int m = widths[0];
-        const size_t groups = (size_t)o.n * (size_t)o.k / 64;
-        const size_t gbad = groups / 2 + 3;
+        const size_t gpr = (size_t)o.k / 64;
+        {
+          const uint16_t *y0 = (const uint16_t *)o.y[0].contents;
+          size_t zeros = 0;
+          for (size_t i = 0; i < (size_t)m * o.n; i++) {
+            if (y0[i] == 0) zeros++;
+          }
+          fprintf(stderr, "e118_qmv_probe:   DIAG y0 zeros=%zu/%zu gpr=%zu\n",
+                  zeros, (size_t)m * o.n, gpr);
+        }
         uint16_t *xp = (uint16_t *)o.x.contents;
         uint16_t *sp = (uint16_t *)o.scales.contents;
         uint16_t *bp = (uint16_t *)o.biases.contents;
@@ -631,23 +640,37 @@ int main(int argc, char **argv) {
           hit_x = countDiffering(&o, a, m).differing;
           xp[0] = saved_x;
 
-          uint16_t saved_s = sp[gbad], saved_b = bp[gbad];
-          uint32_t saved_sb = sbp[gbad];
-          uint8_t saved_c = cp[gbad];
           // One group out of `in_vec_size / 64` contributes to an output that
           // is rounded to BF16, so a small perturbation can round away. The
           // factor has to dominate the whole row for the control to be a real
-          // detector rather than a coincidence.
-          sp[gbad] = f32_to_bf16(bf16_to_f32(saved_s) * 512.0f + 1e-3f);
-          cp[gbad] = (uint8_t)((saved_c + 9u) & 0x3fu);
-          bp[gbad] = bias_bf16_from_code(bf16_to_f32(sp[gbad]), cp[gbad]);
-          sbp[gbad] = (uint32_t)sp[gbad] | ((uint32_t)bp[gbad] << 16);
+          // detector rather than a coincidence. The perturbation is spread over
+          // rows taken from across the output so it cannot land only on rows a
+          // given dispatch geometry leaves untouched.
+          uint16_t saved_s[kMetaProbeRows], saved_b[kMetaProbeRows];
+          uint32_t saved_sb[kMetaProbeRows];
+          uint8_t saved_c[kMetaProbeRows];
+          size_t gidx[kMetaProbeRows];
+          for (int j = 0; j < kMetaProbeRows; j++) {
+            gidx[j] = ((size_t)o.n * j / kMetaProbeRows + 1) * gpr + 3;
+            saved_s[j] = sp[gidx[j]];
+            saved_b[j] = bp[gidx[j]];
+            saved_sb[j] = sbp[gidx[j]];
+            saved_c[j] = cp[gidx[j]];
+            sp[gidx[j]] = f32_to_bf16(bf16_to_f32(saved_s[j]) * 512.0f + 1e-3f);
+            cp[gidx[j]] = (uint8_t)((saved_c[j] + 9u) & 0x3fu);
+            bp[gidx[j]] =
+                bias_bf16_from_code(bf16_to_f32(sp[gidx[j]]), cp[gidx[j]]);
+            sbp[gidx[j]] =
+                (uint32_t)sp[gidx[j]] | ((uint32_t)bp[gidx[j]] << 16);
+          }
           dispatchOnce(queue, pso[a][0], &o, a, m);
           hit_meta = countDiffering(&o, a, m).differing;
-          sp[gbad] = saved_s;
-          bp[gbad] = saved_b;
-          sbp[gbad] = saved_sb;
-          cp[gbad] = saved_c;
+          for (int j = 0; j < kMetaProbeRows; j++) {
+            sp[gidx[j]] = saved_s[j];
+            bp[gidx[j]] = saved_b[j];
+            sbp[gidx[j]] = saved_sb[j];
+            cp[gidx[j]] = saved_c[j];
+          }
 
           dispatchOnce(queue, pso[a][0], &o, a, m);
           size_t clean = countDiffering(&o, a, m).differing;
