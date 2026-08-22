@@ -78,6 +78,6 @@ for arm in "${order[@]}"; do
   index=$((index + 1))
   tag="${prefix}-$(printf '%02d' "${index}")-${arm}"
   echo "--- ${tag} ---"
-  grep -E "^(arm|exit|gpu_temp_entry_c|gpu_temp_exit_c|wired_residency_active|wired_clamped_count|wired_apply_failures)=" \
+  grep -E "^(arm|exit|gpu_temp_entry_c|gpu_temp_exit_c|wired_residency_active|wired_clamped_count|wired_apply_failures|trace_anchor_lines|trace_pids)=" \
     "research/out/${tag}/meta.txt" 2>/dev/null || echo "missing"
 done
