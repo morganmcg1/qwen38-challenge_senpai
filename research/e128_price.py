@@ -316,31 +316,38 @@ def simulate(policy, sampler: RoundSampler, windows: int,
 
 # ------------------------------------------------------------------- transfer
 
-def fit_delta(sampler_factory, p_fixture: list[float], target_depth: float,
-              windows: int) -> tuple:
-    """One level parameter, fitted so the SHIPPED arm reproduces F92 depth.
+def fit_delta(sampler_factory, p_fixture: list[float], target: float,
+              windows: int, key: str = "mean_depth") -> tuple:
+    """One level parameter, fitted so the SHIPPED arm reproduces one target.
 
-    The reachable depth range is bounded from above by the shipped estimator
-    itself: the margin override can hold depth down however good acceptance
-    becomes. A target outside the reachable range is CLAMPED to the nearest
-    endpoint and the residual is reported, because silently dropping the
-    prompt would quietly change which eight values the median is taken over.
+    `key = "mean_depth"` targets the published per-prompt
+    `effective_mean_draft_len`, which the board reports directly and which
+    therefore carries NO assumption about the ranked round count `R`. That is
+    the default and the anchor of the headline result. `key = "accept_rate"`
+    targets the R-derived accept rate instead and is used only to report how
+    the answer moves across the pinned `R` band.
+
+    The reachable range is bounded from above by the shipped estimator itself:
+    the margin override can hold depth down however good acceptance becomes. A
+    target outside the reachable range is CLAMPED to the nearest endpoint and
+    the residual is reported, because silently dropping the prompt would
+    quietly change which eight values the median is taken over.
     """
     policy = make_policy("ship")
     low, high = -8.0, 12.0
 
-    def depth_at(delta: float) -> float:
+    def value_at(delta: float) -> float:
         p_target = shift_p_vector(p_fixture, delta)
-        return simulate(policy, sampler_factory(p_target), windows)["mean_depth"]
+        return simulate(policy, sampler_factory(p_target), windows)[key]
 
-    d_low, d_high = depth_at(low), depth_at(high)
-    if target_depth <= d_low:
+    d_low, d_high = value_at(low), value_at(high)
+    if target <= d_low:
         return low, d_low, d_high
-    if target_depth >= d_high:
+    if target >= d_high:
         return high, d_low, d_high
     for _ in range(40):
         mid = 0.5 * (low + high)
-        if depth_at(mid) < target_depth:
+        if value_at(mid) < target:
             low = mid
         else:
             high = mid
@@ -463,8 +470,15 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
           constant_p: bool = False,
           shuffle_margins: bool = False,
           hold_zero_weight: bool = False,
+          accept_targets: dict | None = None,
           seed: int = 128) -> dict:
-    """One complete pricing pass. Every variant of the model comes through here."""
+    """One complete pricing pass. Every variant of the model comes through here.
+
+    `accept_targets` replaces the depth anchor with an R-derived accept-rate
+    anchor for the named prompts. It exists so the headline can be reported as
+    a function of `R` across the pinned band; the default path never reads it
+    and is therefore R-free.
+    """
     results = {}
     transfer = {}
     for prompt, spec in RANKED_PROMPTS.items():
@@ -492,6 +506,11 @@ def price(legs: dict, receipt: dict, windows: int, fit_windows: int,
             p_const = invert_accept_rate(spec["accept"], spec["depth"])
             p_target = [p_const] * MAX_DEPTH
             delta = float("nan")
+        elif accept_targets is not None:
+            delta, d_low, d_high = fit_delta(
+                factory, p_fixture, accept_targets[prompt], fit_windows,
+                key="accept_rate")
+            p_target = shift_p_vector(p_fixture, delta)
         else:
             delta, d_low, d_high = fit_delta(
                 factory, p_fixture, spec["depth"], fit_windows)
@@ -564,6 +583,41 @@ def invert_accept_rate(rate: float, depth: float) -> float:
     return 0.5 * (low + high)
 
 
+def accept_rate_at_R(eff: float, rounds: float) -> float:
+    """Rule 12 identity, solved for the accept rate at a stated round count.
+
+    `R + accepted = 512` and `accepted = R * eff * accept_rate`, so
+    `accept_rate = (512 - R) / (R * eff)`. This is the ONLY place `R` enters
+    the model.
+    """
+    return min(max((DECODE_TOKENS - rounds) / (rounds * eff), 1e-6), 1.0 - 1e-6)
+
+
+def r_band_scenarios(identity: dict) -> dict:
+    """Named `R` points per prompt, taken from the local identity manifold."""
+    pred = identity["manifold"]["predictions"]
+    scenarios = {}
+    for factor, label in ((0.90, "predicted_x0.90"), (0.95, "predicted_x0.95"),
+                          (1.00, "predicted"), (1.05, "predicted_x1.05"),
+                          (1.10, "predicted_x1.10")):
+        row = {}
+        for prompt, entry in pred.items():
+            base = entry["R_predicted"]
+            if base != base:  # out of local eff range, no point estimate
+                base = entry["R_assumed"]
+            row[prompt] = max(entry["R_floor"],
+                              min(DECODE_TOKENS, base * factor))
+        scenarios[label] = row
+    scenarios["band_low"] = {
+        p: (e["R_band"][0] if e["R_band"][0] == e["R_band"][0]
+            else e["R_assumed"]) for p, e in pred.items()}
+    scenarios["band_high"] = {
+        p: (e["R_band"][1] if e["R_band"][1] == e["R_band"][1]
+            else e["R_assumed"]) for p, e in pred.items()}
+    scenarios["assumed"] = {p: float(e["R_assumed"]) for p, e in pred.items()}
+    return scenarios
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--accept", type=Path, required=True,
@@ -580,6 +634,9 @@ def main() -> int:
                              "the zero-parameter simulator validation")
     parser.add_argument("--json", type=Path)
     parser.add_argument("--sensitivity-json", type=Path)
+    parser.add_argument("--identity", type=Path,
+                        help="rung0-identity.json; enables the R-band report")
+    parser.add_argument("--r-band-json", type=Path)
     args = parser.parse_args()
 
     legs = {}
@@ -708,6 +765,59 @@ def main() -> int:
             "harness": "ranked",
             "variants": rows,
         }, indent=2) + "\n")
+
+    if args.identity:
+        identity = json.loads(args.identity.read_text())
+        scenarios = r_band_scenarios(identity)
+        band = {}
+        for name, rounds in scenarios.items():
+            targets = {p: accept_rate_at_R(RANKED_PROMPTS[p]["depth"],
+                                           rounds[p])
+                       for p in RANKED_PROMPTS if p in rounds}
+            out = price(legs, receipt, args.windows, args.fit_windows,
+                        accept_targets=targets)
+            band[name] = {
+                "R": rounds,
+                "accept_targets": targets,
+                "medians": out["medians"],
+                "median_gain_pct_vs_ship": out["median_gain_pct_vs_ship"],
+                "simulated_depth_ship": {
+                    p: e["simulated_depth_ship"]
+                    for p, e in out["transfer"].items()},
+                "simulated_accept_ship": {
+                    p: e["simulated_accept_ship"]
+                    for p, e in out["transfer"].items()},
+            }
+
+        print("\nheadline as a function of R (accept-rate anchor; the depth "
+              "anchor above is R-free):")
+        print("%-18s %9s" % ("R scenario", "R beagle")
+              + "".join("%11s" % a for a in HEADLINE_ARMS))
+        for name, row in band.items():
+            print("%-18s %9.1f" % (name, row["R"]["beagle"]) + "".join(
+                "%11.4f" % row["median_gain_pct_vs_ship"][a]
+                for a in HEADLINE_ARMS))
+        implementable = [a for a in HEADLINE_ARMS if a != "oracle"]
+        spans = {}
+        for arm in HEADLINE_ARMS:
+            values = [row["median_gain_pct_vs_ship"][arm]
+                      for row in band.values()]
+            spans[arm] = {"min": min(values), "max": max(values),
+                          "span": max(values) - min(values)}
+        print("\nR-band span of the median gain (%%): oracle %.4f, "
+              "widest implementable %.4f" % (
+                  spans["oracle"]["span"],
+                  max(spans[a]["span"] for a in implementable)))
+        if args.r_band_json:
+            args.r_band_json.parent.mkdir(parents=True, exist_ok=True)
+            args.r_band_json.write_text(json.dumps({
+                "harness": "ranked",
+                "anchor": "accept_rate derived from R; depth anchor is R-free",
+                "identity_source": str(args.identity),
+                "scenarios": band,
+                "spans": spans,
+                "depth_anchored_headline": data["median_gain_pct_vs_ship"],
+            }, indent=2) + "\n")
     return 0
 
 

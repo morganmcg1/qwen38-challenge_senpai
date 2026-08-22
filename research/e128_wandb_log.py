@@ -117,6 +117,93 @@ def log_rung0() -> None:
     run.finish()
 
 
+def log_identity() -> None:
+    data = load("rung0-identity.json")
+    if data is None:
+        print("identity: no artifact, skipping")
+        return
+    run = start("e128-f1-identity-and-r-pinning", {
+        "harness": "local",
+        "leg_kind": "offline-identity-audit-and-ranked-R-prediction",
+        "question": "advisor F1: is the ranked round count R an assumption?",
+        "identity": "eff = drafted/R; accept_rate = accepted/drafted; "
+                    "declared_rows = R + drafted; R + accepted = 512 + "
+                    "[final tail draft accepted]",
+    })
+    ident = wandb.Table(columns=[
+        "leg", "forced_depth", "rounds", "accepted", "drafted", "emitted",
+        "declared_rows", "non_drafting_rounds", "rounds_plus_accepted",
+        "window_residual", "eff_reported", "eff_recomputed", "eff_residual",
+        "accept_rate_reported", "accept_rate_recomputed",
+        "accept_rate_residual", "declared_rows_residual", "R_implied",
+        "R_counted"])
+    max_eff_resid = 0.0
+    max_rate_resid = 0.0
+    max_rows_resid = 0
+    max_r_resid = 0.0
+    for leg in data["identity"]:
+        ident.add_data(*[leg[k] for k in (
+            "leg", "forced_depth", "rounds", "accepted", "drafted", "emitted",
+            "declared_rows", "non_drafting_rounds", "rounds_plus_accepted",
+            "window_residual", "eff_reported", "eff_recomputed",
+            "eff_residual", "accept_rate_reported", "accept_rate_recomputed",
+            "accept_rate_residual", "declared_rows_residual", "R_implied",
+            "R_counted")])
+        max_eff_resid = max(max_eff_resid, abs(leg["eff_residual"]))
+        max_rate_resid = max(max_rate_resid, abs(leg["accept_rate_residual"]))
+        max_rows_resid = max(max_rows_resid, abs(leg["declared_rows_residual"]))
+        max_r_resid = max(max_r_resid, abs(leg["R_implied"] - leg["R_counted"]))
+    calib = wandb.Table(columns=[
+        "leg", "rounds", "mean_expected", "mean_accepted", "bias", "bias_pct",
+        "slope", "pearson_r"])
+    worst_bias_pct = 0.0
+    for leg in data["calibration"]:
+        calib.add_data(*[leg[k] for k in (
+            "leg", "rounds", "mean_expected", "mean_accepted", "bias",
+            "bias_pct", "slope", "pearson_r")])
+        run.summary["walk_expected_bias_pct_%s" % leg["leg"]] = leg["bias_pct"]
+        worst_bias_pct = min(worst_bias_pct, leg["bias_pct"])
+    manifold = data["manifold"]
+    pred = wandb.Table(columns=[
+        "prompt", "published_eff", "inside_local_eff_range", "R_predicted",
+        "R_band_low", "R_band_high", "R_assumed", "R_floor",
+        "R_ratio_predicted_over_assumed", "assumed_inside_band",
+        "accept_rate_predicted", "accept_rate_at_assumed_R"])
+    inside = 0
+    total = 0
+    for prompt, entry in manifold["predictions"].items():
+        low, high = entry["R_band"]
+        ok = None
+        if entry["inside_local_eff_range"]:
+            ok = low <= entry["R_assumed"] <= high
+            total += 1
+            inside += bool(ok)
+        pred.add_data(
+            prompt, entry["eff"], entry["inside_local_eff_range"],
+            entry["R_predicted"], low, high, entry["R_assumed"],
+            entry["R_floor"], entry["R_ratio_predicted_over_assumed"], ok,
+            entry["accept_rate_predicted"], entry["accept_rate_at_assumed_R"])
+        run.summary["R_ratio_%s" % prompt] = \
+            entry["R_ratio_predicted_over_assumed"]
+    run.summary.update({
+        "identity_max_abs_eff_residual": max_eff_resid,
+        "identity_max_abs_accept_rate_residual": max_rate_resid,
+        "identity_max_abs_declared_rows_residual": max_rows_resid,
+        "identity_max_abs_R_residual": max_r_resid,
+        "identity_legs": len(data["identity"]),
+        "walk_expected_worst_bias_pct": worst_bias_pct,
+        "R_loo_residual_pstdev_interior":
+            manifold["loo_residual_pstdev_interior"],
+        "R_loo_residual_max_abs_interior":
+            manifold["loo_residual_max_abs_interior"],
+        "R_assumed_inside_band_count": inside,
+        "R_assumed_checked_count": total,
+    })
+    run.log({"identity": ident, "walk_calibration": calib,
+             "ranked_R_predictions": pred})
+    run.finish()
+
+
 def log_rung1() -> None:
     data = load("rung1-forced.json")
     shipped = load("rung1-shipped.json")
@@ -174,6 +261,7 @@ def log_rung1() -> None:
 def log_rung2() -> None:
     data = load("rung2-pricing.json")
     sensitivity = load("rung2-sensitivity.json")
+    r_band = load("rung2-r-band.json")
     if data is None:
         print("rung2: no artifact, skipping")
         return
@@ -221,10 +309,30 @@ def log_rung2() -> None:
     payload = {"arms": arms, "per_prompt": per_prompt, "transfer": transfer}
     if sensitivity:
         table = wandb.Table(columns=["variant", "arm", "gain_pct_vs_ship"])
-        for variant, entries in sensitivity.items():
-            for arm, value in entries.items():
+        for variant, entry in sensitivity["variants"].items():
+            for arm, value in entry["median_gain_pct_vs_ship"].items():
                 table.add_data(variant, arm, value)
         payload["sensitivity"] = table
+    if r_band:
+        table = wandb.Table(columns=[
+            "scenario", "arm", "gain_pct_vs_ship", "R_beagle", "R_medicine",
+            "R_essays"])
+        for name, entry in r_band["scenarios"].items():
+            for arm, value in entry["median_gain_pct_vs_ship"].items():
+                table.add_data(
+                    name, arm, value, entry["R"]["beagle"],
+                    entry["R"]["medicine"], entry["R"]["essays"])
+        payload["r_band"] = table
+        spans = r_band["spans"]
+        implementable = [a for a in spans if a != "oracle"]
+        run.summary.update({
+            "r_band_oracle_span_pct": spans["oracle"]["span"],
+            "r_band_oracle_min_pct": spans["oracle"]["min"],
+            "r_band_oracle_max_pct": spans["oracle"]["max"],
+            "r_band_widest_implementable_span_pct":
+                max(spans[a]["span"] for a in implementable),
+            "r_band_anchor": r_band["anchor"],
+        })
     run.log(payload)
     run.finish()
 
@@ -233,7 +341,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=None)
     args = parser.parse_args()
-    runs = {"rung0": log_rung0, "rung1": log_rung1, "rung2": log_rung2}
+    runs = {"rung0": log_rung0, "identity": log_identity,
+            "rung1": log_rung1, "rung2": log_rung2}
     for name, fn in runs.items():
         if args.only and name not in args.only:
             continue
