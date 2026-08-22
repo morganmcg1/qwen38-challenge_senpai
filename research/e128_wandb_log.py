@@ -20,10 +20,21 @@ Runs published here:
       than only on rounds the estimator already liked. Also carries the margin
       quantization audit and the per-position margin AUC, stratified by
       fixture and never pooled.
+  `e128-hypothesis-j-and-correction-sign`
+      Zero GPU, and no simulator. The measured level bias of the walk's
+      `expected` is split into three terms that sum to it exactly, and
+      hypothesis J's own prediction of the term it owns is formed
+      independently and regressed against the measurement. The same run
+      carries the SIGN decomposition: the walk consumes the biased estimate
+      twice with opposite effect, so `reach` and `expected` are corrected
+      separately and together, and each is priced on the ranked cost curve
+      from a myopic replay of the recorded rounds. This run is R-free.
   `e128-rung2-counterfactual-pricing`
-      Zero GPU. Seven depth policies priced on the board-fitted RANKED round
+      Zero GPU. Every depth policy priced on the board-fitted RANKED round
       cost curve with the uncensored acceptance vectors, recombined into the
-      published median exactly per Rule 67.
+      published median exactly per Rule 67, and reported as a curve over the
+      pinned `R` band. An arm whose sign flips inside that band is recorded as
+      sign indeterminate and never reported as a gain.
 
 Every leg here is local and ungated, so `timing_valid`,
 `cool_gate_passed_real_gate` and `gate_qualified_for_timing` are logged false
@@ -326,23 +337,6 @@ def log_rung2() -> None:
             entry["target_depth_f92"], entry["simulated_depth_ship"],
             entry["target_accept_f92"], entry["simulated_accept_ship"])
     payload = {"arms": arms, "per_prompt": per_prompt, "transfer": transfer}
-    if data.get("falsifiers"):
-        table = wandb.Table(columns=[
-            "input", "prompt", "R_under_test", "fixture", "geo_mean_lead",
-            "geo_mean_required", "geo_mean_passes", "tail_position", "tail_p",
-            "tail_max_allowed", "tail_passes", "survives"])
-        for label, rows in data["falsifiers"].items():
-            for prompt, row in rows.items():
-                if "survives" not in row:
-                    continue
-                table.add_data(label, prompt, *[row[k] for k in (
-                    "R_under_test", "fixture", "geo_mean_lead",
-                    "geo_mean_required", "geo_mean_passes", "tail_position",
-                    "tail_p", "tail_max_allowed", "tail_passes", "survives")])
-                if label == "transferred_to_ranked_prompt":
-                    run.summary["falsifier_survives_%s" % prompt] = \
-                        row["survives"]
-        payload["falsifiers"] = table
     if sensitivity:
         table = wandb.Table(columns=["variant", "arm", "gain_pct_vs_ship"])
         for variant, entry in sensitivity["variants"].items():
@@ -368,9 +362,119 @@ def log_rung2() -> None:
             "r_band_widest_implementable_span_pct":
                 max(spans[a]["span"] for a in implementable),
             "r_band_anchor": r_band["anchor"],
+            "r_band_sign_indeterminate_arms": sorted(
+                a for a, e in spans.items() if e["sign_indeterminate"]),
+        })
+        run.summary.update({
+            "r_band_%s_min_pct" % arm: entry["min"] for arm, entry
+            in spans.items()})
+        run.summary.update({
+            "r_band_%s_max_pct" % arm: entry["max"] for arm, entry
+            in spans.items()})
+        # Advisor F2: an arm is only a gain if it is positive at every R in
+        # the pinned band. The headline metric is reported on that basis.
+        safe = {a: spans[a]["min"] for a in implementable
+                if not spans[a]["sign_indeterminate"] and spans[a]["min"] > 0}
+        run.summary.update({
+            "e128_best_implementable_arm_positive_across_R_band":
+                max(safe, key=safe.get) if safe else None,
+            "e128_recoverable_ranked_median_pct_worst_case_over_R":
+                max(safe.values()) if safe else 0.0,
         })
     run.log(payload)
     run.finish()
+
+
+def log_jensen() -> None:
+    data = load("jensen-and-sign.json")
+    if data is None:
+        print("jensen: no artifact, skipping")
+        return
+    run = start("e128-hypothesis-j-and-correction-sign", {
+        "harness": "local",
+        "leg_kind": "offline-myopic-replay",
+        "gpu_used": False,
+        "acceptance_imputation":
+            "exact when the round rejected, conditioned on the uncensored "
+            "survival curve when the round saturated",
+        "replay_scope":
+            "each round keeps its recorded EMA, margin and parent offer; the "
+            "counterfactual outcome is NOT propagated into later rounds",
+        "cost_curve": "F97 board-fitted ranked round cost, two tiers",
+        "r_free": True,
+    })
+    rows = data["hypothesis_j"]
+    tests = data["hypothesis_j_regression"]
+    run.summary.update({
+        "j_regression_r_measured_on_predicted":
+            tests["jensen_predicted_bias"]["r"],
+        "j_regression_slope_measured_on_predicted":
+            tests["jensen_predicted_bias"]["slope"],
+        "j_internal_validation_r":
+            tests["jensen_predicts_selection"]["r"],
+        "j_internal_validation_slope":
+            tests["jensen_predicts_selection"]["slope"],
+        "median_gamma": _median([r["gamma"] for r in rows]),
+    })
+    run.summary.update({
+        "j_residual_corr_%s" % k: v
+        for k, v in data["hypothesis_j_residual_correlations"].items()})
+    split = wandb.Table(columns=[
+        "fixture", "rounds", "mean_depth", "mean_expected", "mean_accepted",
+        "gamma", "measured_bias", "margin_component", "ema_component",
+        "selection_component", "jensen_predicted_bias", "q_slope",
+        "eta2_margin", "spearman_margin_capability",
+        "serial_corr_capability", "capability_variance"])
+    for row in rows:
+        assoc = row["association"]
+        split.add_data(
+            row["prompt_id"], row["rounds"], row["mean_depth"],
+            row["mean_expected"], row["mean_accepted"], row["gamma"],
+            row["measured_bias"], row["margin_component"],
+            row["ema_component"], row["selection_component"],
+            row["jensen_predicted_bias"], assoc["q_slope_per_position"],
+            assoc["eta2_margin"], assoc["spearman_margin_capability"],
+            assoc["serial_corr_capability"], assoc["capability_variance"])
+    arms = wandb.Table(columns=[
+        "fixture", "arm", "mean_depth", "delta_depth", "us_per_token",
+        "ranked_gain_pct"])
+    for row in data["sign_decomposition"]:
+        arms.add_data(row["prompt_id"], "ship", row["base"]["mean_depth"],
+                      0.0, row["base"]["us_per_token"], 0.0)
+        for name, entry in row["arms"].items():
+            arms.add_data(row["prompt_id"], name, entry["mean_depth"],
+                          entry["delta_depth"], entry["us_per_token"],
+                          entry["ranked_gain_pct"])
+        for name, entry in row["static"].items():
+            arms.add_data(row["prompt_id"], name, entry["mean_depth"],
+                          entry["delta_depth"], entry["us_per_token"],
+                          entry["ranked_gain_pct"])
+    grid = wandb.Table(columns=[
+        "fixture", "gamma", "mean_depth", "ranked_gain_pct"])
+    for row in data["sign_decomposition"]:
+        for gamma, entry in row["gamma_grid"].items():
+            grid.add_data(row["prompt_id"], float(gamma),
+                          entry["mean_depth"], entry["ranked_gain_pct"])
+    for name in ("reachonly", "expectedonly", "levelfix", "jensen",
+                 "jensen_both", "oracle"):
+        gains = [r["arms"][name]["ranked_gain_pct"]
+                 for r in data["sign_decomposition"]]
+        deltas = [r["arms"][name]["delta_depth"]
+                  for r in data["sign_decomposition"]]
+        run.summary.update({
+            "myopic_%s_median_ranked_pct" % name: _median(gains),
+            "myopic_%s_median_delta_depth" % name: _median(deltas),
+            "myopic_%s_fixtures_positive" % name: sum(1 for g in gains if g > 0),
+        })
+    run.log({"bias_split": split, "sign_arms": arms, "gamma_grid": grid})
+    run.finish()
+
+
+def _median(values: list) -> float:
+    ordered = sorted(values)
+    n = len(ordered)
+    return (ordered[n // 2] if n % 2 else
+            0.5 * (ordered[n // 2 - 1] + ordered[n // 2]))
 
 
 def main() -> int:
@@ -378,7 +482,7 @@ def main() -> int:
     parser.add_argument("--only", nargs="*", default=None)
     args = parser.parse_args()
     runs = {"rung0": log_rung0, "identity": log_identity,
-            "rung1": log_rung1, "rung2": log_rung2}
+            "rung1": log_rung1, "jensen": log_jensen, "rung2": log_rung2}
     for name, fn in runs.items():
         if args.only and name not in args.only:
             continue
