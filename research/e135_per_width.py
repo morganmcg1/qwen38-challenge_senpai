@@ -64,7 +64,36 @@ THREADGROUPS_PER_COLUMN = 519_040
 # F83 ranked frame. The local benchfixture runs at mean width 7.359 with
 # P(M>=6) = 0.8718 against the ranked 5.7732 and 0.5861, so a ranked number
 # must never be priced from the local width histogram.
-RANKED_EMPTY_COLUMNS_REMOVED = 5.6793
+RANKED_MEAN_WIDTH = 5.7732
+RANKED_MASS_6 = 0.188
+RANKED_MASS_7 = 0.211
+RANKED_P_GE_6 = 0.5861
+
+
+def ranked_empty_columns_bounds() -> tuple[float, float]:
+    """Bound the F83-weighted empty columns removed per ranked round.
+
+    Under the shipped one-pass table `empty_columns(m)` is exactly `m - 1` for
+    `3 <= m <= 7` and saturates at 6 for m = 8 and m = 9, so
+
+        E[empty] = E[M] - 1 - mass(2) - mass(8) - 2*mass(9)
+
+    holds exactly. F83 pins `E[M]`, `mass(6)`, `mass(7)` and `P(M >= 6)`, which
+    fixes `mass(8) + mass(9)` but not its split, and leaves `mass(2)` free.
+    Both unknowns can only lower the result, so dropping `mass(2)` and putting
+    all the `M >= 8` mass at 8 gives a hard upper bound.
+
+    The published ranked distribution does not resolve the 8-versus-9 split, so
+    this returns an interval rather than pretending to a point estimate.
+    """
+    mass_ge_8 = RANKED_P_GE_6 - RANKED_MASS_6 - RANKED_MASS_7
+    upper = (RANKED_MEAN_WIDTH - 1) - mass_ge_8
+    lower = (RANKED_MEAN_WIDTH - 1) - 2 * mass_ge_8
+    return lower, upper
+
+
+RANKED_EMPTY_LOW, RANKED_EMPTY_HIGH = ranked_empty_columns_bounds()
+RANKED_EMPTY_COLUMNS_REMOVED = (RANKED_EMPTY_LOW + RANKED_EMPTY_HIGH) / 2
 RANKED_ROUNDS = {
     # prompt: (round_us post-arm from F167.2, rounds, F83 weight)
     "beagle": (52_453.2, 110, 0.4862),
@@ -327,23 +356,47 @@ def main() -> int:
     # ---- ranked conversion, in the ranked width frame -------------------
     saving = a * RANKED_EMPTY_COLUMNS_REMOVED
     print("\nranked conversion, F83 frame, NOT the local histogram")
-    print("  F83-weighted empty columns removed per round "
-          f"{RANKED_EMPTY_COLUMNS_REMOVED}")
-    print(f"  ranked saving per round  a * {RANKED_EMPTY_COLUMNS_REMOVED} "
+    print(f"  E[empty] = E[M] - 1 - mass(2) - mass(8) - 2*mass(9), exact under "
+          "the shipped one-pass table")
+    print(f"  ranked empty columns removed per round  {RANKED_EMPTY_LOW:.4f} "
+          f"to {RANKED_EMPTY_HIGH:.4f}, midpoint {RANKED_EMPTY_COLUMNS_REMOVED:.4f}")
+    print(f"  local  empty columns removed per round  {mean_empty:.4f}")
+    print(f"  ranked / local column ratio             "
+          f"{RANKED_EMPTY_COLUMNS_REMOVED / mean_empty:.4f}  "
+          "(the ranked frame removes fewer columns per round)")
+    print(f"  ranked saving per round  a * {RANKED_EMPTY_COLUMNS_REMOVED:.4f} "
           f"= {saving:,.1f} us")
-    print(f"  {'prompt':10s} {'round_us':>10s} {'weight':>7s} {'saving %':>9s}")
+    print(f"  {'prompt':10s} {'round_us':>10s} {'weight':>7s} {'saving %':>9s} "
+          f"{'low %':>8s} {'high %':>8s}")
     wsum = sum(w for _, _, w in RANKED_ROUNDS.values())
-    wpct = upct = 0.0
+    wpct = upct = wlo = whi = 0.0
     for name, (rus, _r, w) in RANKED_ROUNDS.items():
         pct = 100 * saving / rus
+        lo = 100 * a * RANKED_EMPTY_LOW / rus
+        hi = 100 * a * RANKED_EMPTY_HIGH / rus
         wpct += w * pct
+        wlo += w * lo
+        whi += w * hi
         upct += pct / len(RANKED_ROUNDS)
-        print(f"  {name:10s} {rus:10,.0f} {w:7.4f} {pct:9.4f}")
+        print(f"  {name:10s} {rus:10,.0f} {w:7.4f} {pct:9.4f} "
+              f"{lo:8.4f} {hi:8.4f}")
     print(f"  F83-weighted ranked candidate-leg saving {wpct / wsum:+.4f} % "
-          f"(weights renormalised, they sum to {wsum:.4f})")
+          f"(range {wlo / wsum:+.4f} to {whi / wsum:+.4f}; "
+          f"weights renormalised, they sum to {wsum:.4f})")
     print(f"  unweighted eight-prompt mean            {upct:+.4f} % "
           "(approximate: it applies the F83-weighted column count to the "
           "three zero-weight prompts, whose width mix is lower)")
+    print("  Rule 112: the null sd of the candidate 8-prompt mean difference "
+          "between two ranked receipts is 0.067 %, so the 2 sigma "
+          "single-receipt bar is 0.133 %.")
+    if abs(wpct / wsum) >= 0.5:
+        print("  -> at or above 0.5 %, one ranked receipt settles this.")
+    elif abs(wpct / wsum) >= 0.133:
+        print("  -> between the 2 sigma bar and 0.5 %, one receipt is "
+              "suggestive but not decisive.")
+    else:
+        print("  -> below the 2 sigma single-receipt bar, UNCONFIRMABLE from "
+              "one ranked receipt.")
 
     # ---- rung 3, the 2x2 -------------------------------------------------
     if {r["cell"] for r in rows} >= {"A", "B", "C", "D"}:
