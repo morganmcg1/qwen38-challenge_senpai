@@ -1951,18 +1951,51 @@ public enum Qwen35CustomQMV {
     /// all. That is the first lever in this kernel that moved the clock:
     /// instruction issue fell 46.4 %, resident simdgroups fell 15.7 % and
     /// weight passes fell 50.0 %, and none of the three moved it.
-    public enum Grid: String, Sendable {
+    ///
+    /// E136 adds the `tightN` rungs. They launch `N` times the working column
+    /// count, so they buy no arithmetic at all: column `c >= ceil(m / ipg)`
+    /// starts at `first_m = c * ipg >= ceil(m / ipg) * ipg >= m` and takes the
+    /// kernel's existing early return. `tight`, `tight2`, `tight4` and
+    /// `tight8` therefore emit the same bytes and differ only in how many
+    /// threadgroups the driver has to create and retire. That is the one
+    /// dimension E135 could not separate: `wide -> tight` deleted columns and
+    /// changed the column count per width by different factors at once, so it
+    /// could not say whether the launch cost is flat per dispatch, linear in
+    /// the column count, or logarithmic in it. The ladder reads that law off
+    /// the clock.
+    ///
+    /// These rungs are research instruments. `compiledDefault` stays `.tight`,
+    /// so a run that sets nothing -- the ranked run -- never launches a padded
+    /// column.
+    public enum Grid: String, Sendable, CaseIterable {
         case wide
         case tight
+        case tight2
+        case tight4
+        case tight8
 
         /// The grid a run with no override selects, so the grid the ranked
         /// runner uses.
         public static let compiledDefault = Grid.tight
+
+        /// Launched columns per working column.
+        ///
+        /// `wide` asks for `m` columns whatever `ipg` is, which is not a
+        /// multiple of the working count at every width, so it reports 1 and
+        /// `launch` keeps its own rule for it.
+        public var padFactor: Int {
+            switch self {
+            case .wide, .tight: return 1
+            case .tight2: return 2
+            case .tight4: return 4
+            case .tight8: return 8
+            }
+        }
     }
 
     /// The compiled-in grid, as one literal the worker's string table carries.
     ///
-    /// Both `Grid` raw values are short and appear in the binary whichever one
+    /// Every `Grid` raw value is short and appears in the binary whichever one
     /// ships, exactly like the `Table.witness` literals, so neither is a
     /// witness on its own. This whole literal exists only for the case
     /// actually selected, which makes it a `strings` witness that can fail.
@@ -1992,7 +2025,8 @@ public enum Qwen35CustomQMV {
         -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int))
     {
         let entry = plan(m: m)
-        let columns = using == .tight ? (m + entry.ipg - 1) / entry.ipg : m
+        let working = (m + entry.ipg - 1) / entry.ipg
+        let columns = using == .wide ? m : working * using.padFactor
         return ((columns * 32, n / entry.rps, 1), (32, 2, 1))
     }
 

@@ -250,4 +250,156 @@ struct E135TightLaunchGridTests {
         }
         #expect(controlFired)
     }
+
+    // MARK: E136 -- the column-count ladder
+    //
+    // E135 deleted columns and could not say what a column costs, because
+    // `wide -> tight` changed the column count by a different factor at every
+    // width and deleted whole dispatch columns at the same time. Three laws fit
+    // its single point equally well: flat per drafting round, linear in the
+    // launched column count, and logarithmic in the column ratio.
+    //
+    // The ladder adds columns instead of deleting them. `tightN` launches `N`
+    // times the working count, so the arithmetic, the buffers, the pipelines
+    // and the emitted bytes are all held fixed and only the launched
+    // threadgroup count moves, by an exactly known factor. The three laws then
+    // predict three different curves over `N = 1, 2, 4, 8`.
+
+    static let ladder: [Qwen35CustomQMV.Grid] = [.tight, .tight2, .tight4, .tight8]
+
+    /// The exactness argument for the padded columns, mechanized against the
+    /// kernel's own predicate. Every column the ladder adds must start at or
+    /// past `M`, and every column `tight` already launched must not.
+    @Test("every padded column takes the kernel early return")
+    func paddedColumnsAllTakeTheKernelEarlyReturn() throws {
+        for table in Qwen35CustomQMV.Table.allCases {
+            for entry in table.plan {
+                let working = (entry.m + entry.ipg - 1) / entry.ipg
+                for grid in Self.ladder {
+                    let launched = working * grid.padFactor
+                    #expect(launched >= working)
+                    for column in 0 ..< working {
+                        #expect(
+                            column * entry.ipg < entry.m,
+                            "\(grid.rawValue) M=\(entry.m): working column \(column) is a no-op")
+                    }
+                    // `qwen_e120_qmv_m`: `first_m = group_x * IPG; if (first_m >= M) return;`
+                    for column in working ..< launched {
+                        #expect(
+                            column * entry.ipg >= entry.m,
+                            "\(grid.rawValue) M=\(entry.m): padded column \(column) does work")
+                    }
+                }
+            }
+        }
+    }
+
+    /// The ladder must move the launched column count and nothing else, or the
+    /// clock reading is not a launch-cost reading.
+    @Test("the ladder scales only the x column count")
+    func ladderScalesOnlyTheColumnCount() throws {
+        for entry in Qwen35CustomQMV.widthPlan {
+            for n in [5120, 14336, 16480, 34816, 248_320] {
+                let tight = Qwen35CustomQMV.launch(m: entry.m, n: n, using: .tight)
+                let working = (entry.m + entry.ipg - 1) / entry.ipg
+                for grid in Self.ladder {
+                    let rung = Qwen35CustomQMV.launch(m: entry.m, n: n, using: grid)
+                    #expect(rung.grid.0 == working * grid.padFactor * 32)
+                    #expect(rung.grid.0 == tight.grid.0 * grid.padFactor)
+                    #expect(rung.grid.1 == tight.grid.1)
+                    #expect(rung.grid.2 == tight.grid.2)
+                    #expect(rung.threadGroup == tight.threadGroup)
+                }
+            }
+        }
+    }
+
+    /// The rungs are research instruments. An unset selector must still take
+    /// the unpadded default, and the default-grid witness must still name it.
+    @Test("the ladder parses, and the compiled default stays unpadded")
+    func ladderParsesAndLeavesTheCompiledDefaultUnpadded() throws {
+        for (raw, pad) in [("tight", 1), ("tight2", 2), ("tight4", 4), ("tight8", 8)] {
+            let parsed = try #require(Qwen35CustomQMV.Grid(rawValue: raw))
+            #expect(parsed.padFactor == pad)
+        }
+        #expect(Qwen35CustomQMV.Grid.wide.padFactor == 1)
+        #expect(Qwen35CustomQMV.Grid.compiledDefault == .tight)
+        #expect(Qwen35CustomQMV.Grid.compiledDefault.padFactor == 1)
+        #expect(
+            Qwen35CustomQMV.defaultGridWitness
+                == "e135_default_grid/" + Qwen35CustomQMV.Grid.compiledDefault.rawValue)
+        if ProcessInfo.processInfo.environment["MLX_E120_QMV_GRID"] == nil {
+            #expect(Qwen35CustomQMV.grid.padFactor == 1)
+        }
+    }
+
+    /// A rung name in the JIT text would give each rung its own pipeline set
+    /// and charge the ladder a compile it is trying to measure around.
+    @Test("no ladder rung reaches the JIT source or a pipeline name")
+    func noLadderRungReachesAPipelineCacheKey() throws {
+        for grid in Qwen35CustomQMV.Grid.allCases where grid != .wide {
+            for useTable in [true, false] {
+                #expect(
+                    !Qwen35CustomQMV.pipelineName(useTable: useTable, tier: nil)
+                        .contains(grid.rawValue))
+                for tier in Qwen35CustomQMV.tiers {
+                    #expect(
+                        !Qwen35CustomQMV.pipelineName(useTable: useTable, tier: tier)
+                            .contains(grid.rawValue))
+                    let source = Qwen35CustomQMV.generatedSource(table: useTable, tier: tier)
+                    #expect(!source.contains(grid.rawValue))
+                }
+            }
+        }
+    }
+
+    @Test(
+        "every ladder rung is bit identical to tight on the scored shapes",
+        .enabled(if: E135TightLaunchGridTests.runtimeEnabled))
+    func ladderRungsAreBitIdenticalToTight() throws {
+        var controlFired = false
+        for shape in Self.runtimeShapes {
+            let w = Self.makeWeights(k: shape.k, n: shape.n, seed: 0xE136 &+ UInt64(shape.n))
+            for m in Qwen35CustomQMV.widths {
+                MLXRandom.seed(UInt64(m) &+ 0x136)
+                let x = MLXRandom.normal([m, shape.k]).asType(.bfloat16)
+                eval(x)
+                for arm in [Qwen35CustomQMV.Arm.replica, .sumTable] {
+                    let tight = try #require(
+                        Qwen35CustomQMV.matmul(
+                            x, w.packed, scales: w.scales, biases: w.biases,
+                            groupSize: Self.groupSize, bits: Self.bits, mode: .affine,
+                            arm: arm, using: .tight))
+                    for grid in [Qwen35CustomQMV.Grid.tight2, .tight4, .tight8] {
+                        let padded = try #require(
+                            Qwen35CustomQMV.matmul(
+                                x, w.packed, scales: w.scales, biases: w.biases,
+                                groupSize: Self.groupSize, bits: Self.bits, mode: .affine,
+                                arm: arm, using: grid))
+                        eval(tight, padded)
+                        #expect(
+                            Self.mismatches(tight, padded) == 0,
+                            "\(shape.name) M=\(m) arm=\(arm.rawValue) grid=\(grid.rawValue)")
+                    }
+
+                    // Positive control. The same comparison must be able to
+                    // fail, or a padded rung that silently dropped a row would
+                    // pass.
+                    if !controlFired {
+                        let perturbed = x.asType(.float32)
+                        perturbed[m - 1, 0] = MLXArray(Float(1.5)) + perturbed[m - 1, 0]
+                        let other = try #require(
+                            Qwen35CustomQMV.matmul(
+                                perturbed.asType(.bfloat16), w.packed, scales: w.scales,
+                                biases: w.biases, groupSize: Self.groupSize,
+                                bits: Self.bits, mode: .affine, arm: arm, using: .tight8))
+                        eval(other)
+                        #expect(Self.mismatches(tight, other) > 0, "positive control")
+                        controlFired = true
+                    }
+                }
+            }
+        }
+        #expect(controlFired)
+    }
 }

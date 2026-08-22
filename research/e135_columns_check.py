@@ -12,6 +12,10 @@ grid under test AND requires the other grid's map to differ. Run it on a `wide`
 leg with `--want tight` to watch it fail before trusting it on a `tight` leg.
 
   python3 research/e135_columns_check.py LOG.json --want tight
+
+E136 adds the `tightN` rungs, which launch `N` times the working column count.
+Their anti-map is `tight`, because a rung whose selector never arrived falls
+back to the compiled default and runs unpadded.
 """
 
 from __future__ import annotations
@@ -32,16 +36,25 @@ def plan_from(witness: str) -> dict[int, int]:
     return out
 
 
+GRIDS = ("wide", "tight", "tight2", "tight4", "tight8")
+
+
+def pad_factor(grid: str) -> int:
+    """`tight` -> 1, `tightN` -> N. `wide` never scales the working count."""
+    return int(grid[len("tight"):]) if grid.startswith("tight") and grid != "tight" else 1
+
+
 def expected(plan: dict[int, int], grid: str) -> dict[int, int]:
     if grid == "wide":
         return {m: m for m in plan}
-    return {m: -(-m // ipg) for m, ipg in plan.items()}
+    pad = pad_factor(grid)
+    return {m: -(-m // ipg) * pad for m, ipg in plan.items()}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("log")
-    ap.add_argument("--want", required=True, choices=("wide", "tight"))
+    ap.add_argument("--want", required=True, choices=GRIDS)
     args = ap.parse_args()
 
     path = pathlib.Path(args.log)
@@ -56,7 +69,10 @@ def main() -> int:
         print("e135_columns_check: the leg recorded no launched columns")
         return 3
 
-    other = "tight" if args.want == "wide" else "wide"
+    # The realistic failure is that the selector never reached the worker, so
+    # the leg silently fell back to the compiled default. Every padded rung is
+    # therefore checked against the unpadded `tight` map.
+    other = "wide" if args.want == "tight" else "tight"
     want = expected(plan, args.want)
     anti = expected(plan, other)
     want_seen = {m: want[m] for m in seen}
