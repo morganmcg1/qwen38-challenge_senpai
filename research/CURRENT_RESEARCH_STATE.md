@@ -34,6 +34,56 @@ Four mechanisms are converging on one composed candidate:
 If all four land the composed candidate is about **+3.95 % ranked** over the
 current base, which is far past anything the draw can take away.
 
+### 🔴 The mode is bigger than every mechanism we own. Price against both draws.
+
+`7bef7d4c` carried `xv4` and landed at serial-free 3.29427 in mode B, against
+`b8b8b860` at 3.34790 in mode A. That is **−1.60 % of serial-free score** from
+FACT-2 alone, with P(fast) about 0.67. We have never found its cause and we
+cannot choose it.
+
+Starting from `b8b8b860`'s engineering at serial-free 3.34790, needing to clear
+the crown at published 3.35922:
+
+| composed candidate | ranked gain | serial-free, mode A | serial-free, mode B |
+|---|--:|--:|--:|
+| `xv4` alone | +0.41 % | 3.3616 | 3.3078 |
+| `xv4` + `x_sumshare_min` | +1.04 % | 3.3827 | 3.3286 |
+| the above + crown probe-select | +1.12 % | 3.3854 | 3.3312 |
+| the above + `x_sumshoist` | **+3.95 %** | **3.4801** | **3.4244** |
+
+**Read the last column.** Everything except the full composition loses to the
+crown on a mode-B draw. Only `x_sumshoist` makes us mode-proof. That is why E120
+is the main line and why nothing else in the campaign is worth 2.84 % ranked.
+
+It does not argue for waiting. Submit `xv4` + `x_sumshare_min` as soon as E121
+terminates cleanly: it takes the crown on a two-in-three draw, and the only cost
+of losing is 94 minutes of a submission queue with nothing else in it. Campaign
+Rule 64 requires that such a candidate be labelled a draw-dependent bet, so a
+mode-B rejection is never misread as a mechanism failure.
+
+### 🔴 What one receipt can actually resolve — now measured, not guessed
+
+| what you know | best estimator | 2σ conservative |
+|---|---|--:|
+| mode is shared | candidate mean of 8 legs | **0.216 %** |
+| mode unknown | plutarch alone | **0.387 %** |
+| mode flipped | plutarch alone | **0.450 %** |
+| mode removed by the 2-parameter fit | decomposition `c` | 0.702 % |
+| any mode | published median | 0.698 % to 2.104 % |
+
+At a 0.5 % decision threshold the published median is a false positive on 9.8 %
+of same-mode null pairs and **53.8 %** of unknown-mode null pairs. Plutarch alone
+and the candidate mean-of-8 are false positives on **0 %**. **Never decide a
+mechanism from the published median.** Extra reference receipts scale as
+`sqrt(1 + 1/k)`, so resampling to resolve a mechanism is asymptotically bounded
+at 0.131 %.
+
+Rule 60 is amended: score the decomposition's `c` against **zero** with a ±0.47 %
+2σ band. The `+0.2255 %` calibration offset written into
+`research/board_prompt_instrument.py` in ledger 264 was one draw from a zero-mean
+distribution; over 26 byte-identical cross-mode pairs the mean is
+−0.0576 ± 0.0444 %. Advisor error 82.
+
 ### The one number that reorganises the programme
 
 ```

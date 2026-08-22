@@ -193,21 +193,73 @@ component, which is the only part attributable to a mechanism.
 `mode_decompose()` returns `m, se_m, c, se_c, r2, rms` and the per-prompt
 residuals. `--read` prints it for every pair.
 
-Read `c` against the calibration line, never against zero. The pair
-`51b9bf85` / `097991a0` is BYTE IDENTICAL code across a mode flip, so its true
-`c` is exactly 0 by construction, yet the fit returns `c = +0.2255 +/- 0.2171`
-with `m = -0.8086`. That is the systematic offset the fit carries under a mode
-flip, and it is larger than most mechanisms this campaign has shipped. A fitted
-`c` inside +/- 0.25 % on a mode-flipped pair is therefore consistent with no
-mechanism at all.
+Read `c` against ZERO, with a +/- 0.2335 % systematic band.
+
+An earlier version of this file told you to read `c` against a single
+calibration pair, `51b9bf85` / `097991a0`, whose fit returns `c = +0.2255`. That
+instruction was wrong and is withdrawn. Over the 26 byte-identical cross-mode
+pairs on the board, where the true `c` is exactly 0 by construction, the fitted
+mean is `c = -0.0576 +/- 0.0444 %`, which is consistent with zero. The 0.2255
+figure was one draw from a zero-mean distribution, not a bias.
+
+What IS real is the scatter. Across those 26 pairs the fitted `c` has an rms of
+0.2335 % (sd 0.2263, range -0.53 to +0.38). So:
+
+    score c against 0, and treat |c| under about 0.47 % (2 sigma) as
+    consistent with no mechanism at all
+
+The corresponding code-identical cross-mode class gives `c = -0.1285 +/- 0.0400`
+with rms 0.2808 %, so a 2 sigma band of about 0.56 % is the conservative read.
+
+Two robustness results that fix the fit's form:
+
+* The regressor MUST be drafting rounds. Using total ranked rounds instead
+  returns `c = +1.998 +/- 0.100 %` on a null population, which would make every
+  mode-flipped pair look like a two-percent mechanism.
+* Weighted least squares tightens the scatter to 0.2123 % but introduces a
+  -0.139 +/- 0.032 % bias. Keep ordinary least squares.
+
+KNOWN MISSPECIFICATION AT PLUTARCH. The linear-in-drafting-rounds model predicts
+a cross-mode plutarch shift of +0.147 % at `m = 0.601` and +0.215 % at the
+fitted `m`. The measured shift is +0.0056 +/- 0.0263 %, which rejects those
+predictions at 5.6 and 8 sigma. The other seven prompts shift by +1.19 to
++2.17 % as the model expects. Plutarch has high leverage in this regressor, so
+its unmodelled near-immunity is the mechanical origin of the 0.2335 % scatter
+above. Until a better regressor is fitted, prefer plutarch ALONE as the
+mode-immune probe wherever the mechanism reaches the target path: its cross-mode
+pair sd is 0.1643 % against the decomposition's 0.2808 %, and its bias is
++0.006 % against -0.129 %. Plutarch is target-path only, so a drafting-side
+mechanism still needs the DRAFT probe or this decomposition.
 
 The regressor needs a per-prompt drafting-round count. The board's `per_prompt`
 block does NOT carry one: it has `non_drafting_round_count` and
 `effective_mean_draft_len` but no total round count. `RANKED_ROUNDS` below
 supplies the Finding 12 counts. Those counts were measured on one ranked run,
 so they set the SHAPE of the regressor and not its absolute level; `m` is
-correspondingly a relative quantity and should be compared with the
-calibration pair, not quoted as a hardware constant.
+correspondingly a relative quantity and should not be quoted as a hardware
+constant. On the byte-identical cross-mode population it fits to
++0.8769 +/- 0.0482 ms per drafting round, above the FACT-2 value of 0.601 ms,
+which is the same misspecification seen from the other side.
+
+Measured resolution of one receipt (2 sigma, conservative replicate class)
+--------------------------------------------------------------------------
+These replace the campaign's earlier guessed 0.5 % submission bar. A uniform
+x % candidate speedup moves every candidate leg, every `raw_p` and the median
+by x %, so all estimators share one scale.
+
+    mode SHARED, read on the candidate mean of 8 legs      0.216 %
+    mode SHARED, read on the published median              0.698 %
+    mode UNKNOWN, read on plutarch alone                   0.387 %
+    mode UNKNOWN, read on the published median             2.104 %
+    mode REMOVED by this decomposition                     0.702 %
+    mode FLIPPED, read on plutarch alone                   0.450 %
+
+Empirical false-positive rates at a 0.5 % decision threshold, measured on null
+pairs: the published median exceeds 0.5 % on 9.8 % of same-mode nulls and on
+53.8 % of unknown-mode nulls. The candidate mean-of-8 under a shared mode, and
+plutarch alone under an unknown mode, exceed 0.5 % on 0 % of null pairs.
+
+Never decide a mechanism from the published median.
 
 Sign convention
 ---------------
@@ -1036,10 +1088,16 @@ def report_read(rows, prefix_a, prefix_b):
         print(f"  uniform mechanism c = {fit['c']:+.4f} %  "
               f"(se {fit['se_c']:.4f});  positive means A is slower")
         print(f"  R2 = {fit['r2']:.4f}   rms residual {fit['rms']:.4f} %")
-        print("  Calibration: the byte-identical 51b9bf85/097991a0 pair, whose "
-              "true c is exactly zero,\n  returns c = +0.2255 (se 0.2171) and "
-              "m = -0.8086 ms. Judge c against that offset and\n  that spread, "
-              "not against zero. A |c| under about 0.35 % is not a mechanism.")
+        print("  Judge c against ZERO. Over 26 byte-identical cross-mode pairs, "
+              "where true c is\n  exactly zero, the fitted mean is "
+              "-0.0576 (se 0.0444) with rms scatter 0.2335 %.\n"
+              "  |c| under 0.47 % is not a mechanism; under 0.56 % is not a "
+              "mechanism on the\n  conservative code-identical class.")
+        print("  The model is MISSPECIFIED at plutarch: it predicts a "
+              "+0.147 to +0.215 % cross-mode\n  shift there and the measured "
+              "shift is +0.0056 (se 0.0263). Plutarch alone is the\n  better "
+              "mode-immune probe for a target-path mechanism: pair sd 0.1643 % "
+              "against\n  0.2808 % here, 2 sigma MDE 0.450 % against 0.702 %.")
 
 
 def report_rank(rows, min_score, min_members):

@@ -37801,3 +37801,341 @@ within a factor of two, the mechanism has been misread and the incremental
 estimate is worthless. This check cost nothing here and validated the E106
 per-dispatch boundary and the Finding 12 ranked round length against an
 independent external measurement, which no internal experiment can do.
+
+
+## 266 — 2026-08-22 03:45Z — The campaign measures its own instrument, one of my rules turns out to be wrong, and the mode is bigger than every mechanism we own
+
+Ledger 265 closed with two research agents still running. Both returned. The
+crown audit is in 265.13. This entry is the other one, and it is the more
+important of the two, because it corrects the campaign's own measurement rules
+rather than reading a rival's.
+
+The question was the open quantity behind Finding 57 and Rule 59: **how large
+does a mechanism have to be before a single official receipt can resolve it?**
+Rule 59 answered "about 0.5 percent" and I made that number up. It is now
+measured.
+
+### 266.1 The population, and one exclusion that could not be applied
+
+1060 board rows, minus 292 never scored, minus **zero parity failures**, minus
+zero missing refs, gives **768 usable rows**. The agent's independent path
+reproduces `research/board_prompt_instrument.py --noise` exactly: 768 rows, 714
+groups, 37 replicated, 80 pairs, 45 byte and 35 comment classes, TARGET
+0.0916 %, DRAFT 0.0931 %. That is the cross-check that lets me trust the rest.
+
+The pinned-head exclusion **could not be applied**. Only 66 rows run the
+organizer head `157f750e`, giving 5 pairs of which 2 are same-mode. The head is
+instead pinned inside each group by construction, because
+`mtp-head.manifest.json` is itself an editable path: **0 of 80 pairs mix head
+provenances**. Restricting to the dominant head `559b24eb`, which is also ours,
+moves the all-eight pair standard deviation from 0.0929 to 0.0989 %. Conclusion
+unchanged, so the gap is recorded rather than papered over.
+
+### 266.2 The byte-identical rule is not the conservative one, which is the opposite of what I assumed
+
+| grouping rule | groups | >=2 | >=3 | pairs |
+|---|--:|--:|--:|--:|
+| byte digest over `editablePaths` | 733 | 24 | 7 | 50 |
+| byte digest over `BUILD_PATHS` | 737 | 21 | 6 | 45 |
+| **canonical code identity (tool default)** | **714** | **37** | **10** | **80** |
+| canonical scoped to `editablePaths` | 710 | 39 | — | 86 |
+
+I had assumed byte-identical was the stricter and therefore safer null. It is
+not. On the TARGET probe the byte-identical pair standard deviation is
+**0.0650 %** and the comment-only class is **0.1694 %**, an F of 6.79 at
+p = 0.0001. The byte rule discards 35 of 80 pairs **and** understates the noise.
+Since any real mechanism changes source text, the comment-only class is the
+right null and the canonical identity is the honest default.
+
+**Finding 63.** Comment-only differences in submitted source are associated with
+2.6 times the run-to-run scatter of byte-identical source, at p = 0.0001. I do
+not have a mechanism for this and will not invent one; the JIT path in
+`custom_kernel.cpp:57-71` does a full source-string compare, so a comment change
+is a cache miss and a recompile, but a recompile of identical AIR should not
+change time. Treat it as an empirical fact about the null population, not as a
+physical claim. It does independently support the standing instruction that
+alphonse adds **no comment lines** to `quantized.h` or its generated twin — a
+rule I had made for a completely different reason, namely that it de-pins the
+`twin_audit.py` waiver.
+
+Two smaller facts worth keeping. Solver identity does not matter: same-solver
+pair dispersion is 0.0976 / 0.0989 / 0.0571 against different-solver 0.0900 /
+0.0916 / 0.0676. And both of the tool's identity functions hash `BUILD_PATHS`,
+a **superset** of the scored surface, so 5 or 6 pairs are split by differences in
+`Sources/MLXFastTrustedHarness/*`, `Sources/MLXFastCLI/main.swift`, `Tests/*`
+and workflow YAML — none of which are submitted. That makes the tool's grouping
+slightly too strict, which is the safe direction.
+
+### 266.3 Per-prompt dispersion, measured
+
+Per-run standard deviation of `100 * ln(mtp seconds per token)`. Multiply by
+root two for a pair.
+
+| prompt | drafting rounds | leg s | same-mode | cross-mode |
+|---|--:|--:|--:|--:|
+| plutarch | 38 of 487 | 15.52 | **0.0916** | **0.1162** |
+| drama | 252 | 10.31 | 0.1279 | 1.2240 |
+| travel | 212 | 9.12 | 0.1161 | 1.5497 |
+| beagle | 110 | 6.34 | 0.1833 | 1.0697 |
+| medicine | 90 | 5.92 | 0.1879 | 0.8960 |
+| republic | 93 | 5.80 | 0.2022 | 0.9084 |
+| essays | 92 | 5.81 | 0.1610 | 0.8974 |
+| botany | 81 | 5.79 | 0.1926 | 0.9318 |
+| **all eight** | — | — | **0.0657** | 0.9118 |
+
+n = 41 same-mode, 39 cross-mode. The mode classifier's cut is clean: the empty
+band is **0.2831 % wide**, between a largest same-mode DRAFT of 0.4907 and a
+smallest cross-mode DRAFT of 0.7738. That is a strong independent validation of
+the classifier I widened in ledger 264.
+
+Read the plutarch column. **Plutarch's cross-mode dispersion is 0.1162 against
+a same-mode 0.0916.** Every other prompt goes up by a factor of seven to
+thirteen. Plutarch barely moves.
+
+### 266.4 Finding 61 — plutarch is nearly mode-immune, and the campaign's mode model is misspecified
+
+The two-parameter decomposition assumes the mode is paid per drafting round, so
+it predicts a cross-mode plutarch shift of **+0.147 %** at the FACT-2 value
+`m = 0.601 ms`, or **+0.215 %** at the fitted `m`.
+
+**The measured cross-mode plutarch shift is +0.0056 +/- 0.0263 %.** That rejects
+the first prediction at 5.6 sigma and the second at 8 sigma. The other seven
+prompts shift by +1.19 to +2.17 %, exactly as the model expects.
+
+So the mode does not scale linearly down to plutarch's 38 drafting rounds. Its
+mean draft length is 0.154, so most of those 38 rounds propose a single token.
+Either the mode is proportional to drafted tokens rather than to drafting
+rounds, or it is a sustained state that plutarch's scattered drafting never
+engages. I have dispatched a research agent to settle which, because the answer
+changes how every future receipt is read.
+
+Two consequences follow immediately.
+
+**First, this is the mechanical origin of the decomposition's systematic
+error.** Plutarch has high leverage in that regressor. An unmodelled near-zero
+at a high-leverage point drags the intercept, and the intercept is exactly the
+quantity we read as "the mechanism".
+
+**Second, plutarch alone beats the decomposition as a mode-immune probe.** Its
+cross-mode pair standard deviation is **0.1643 %** against the decomposition's
+**0.2808 %**, and its bias is **+0.006 %** against **-0.129 %**. The two-
+parameter fit was built to remove the mode; a single prompt that never had much
+mode in it removes more of it, with less variance and less bias.
+
+The standing caveat stays: **plutarch is target-path only.** A drafting-side
+mechanism still needs the DRAFT probe, at a 2 sigma resolution of 0.26 to
+0.31 % when the mode is matched, or the decomposition at 0.70 % when it flips.
+
+### 266.5 Rule 60 is AMENDED. I had it wrong, and the error was mine.
+
+Ledger 264 created Rule 60 and wrote into
+`research/board_prompt_instrument.py`: *read `c` against the calibration line,
+never against zero*, on the strength of the byte-identical pair
+`51b9bf85` / `097991a0` returning `c = +0.2255 +/- 0.2171` where the true value
+is exactly zero by construction.
+
+**That was one draw from a zero-mean distribution, and I treated it as a bias.**
+
+| null class | n | m, ms per drafting round | c, true value 0 | c rms |
+|---|--:|--:|--:|--:|
+| byte-identical, cross-mode | 26 | +0.8769 +/- 0.0482 | **-0.0576 +/- 0.0444** | **0.2335** |
+| byte-identical, same-mode | 24 | -0.0074 +/- 0.0196 | +0.0790 +/- 0.0263 | 0.1513 |
+| code-identical, cross-mode | 39 | +0.8919 +/- 0.0343 | -0.1285 +/- 0.0400 | 0.2808 |
+
+Over 26 such pairs the mean fitted `c` is **-0.0576 +/- 0.0444 %, consistent
+with zero**. There is no offset. What is real is the **scatter of 0.2335 % rms**.
+
+**Rule 60, amended.** Always run the two-parameter decomposition, and score `c`
+against **zero** with a 2 sigma band of **0.47 %**, or **0.56 %** on the
+conservative code-identical class. Never score it against a single calibration
+pair.
+
+Two robustness results are now pinned into the tool as well, because both would
+have produced a fake mechanism:
+
+* **The regressor must be drafting rounds.** Substituting total ranked rounds
+  returns `c = +1.998 +/- 0.100 %` on a null population. That would have made
+  every mode-flipped pair look like a two-percent win.
+* **Keep ordinary least squares.** Weighted least squares tightens the scatter
+  to 0.2123 % but introduces a `-0.139 +/- 0.032 %` bias.
+
+**Advisor error 82.** I generalised a systematic offset from a single
+calibration pair, wrote it into a committed instrument as an instruction, and
+made it a campaign rule. The correct procedure was available at the time: the
+board holds 26 pairs of the same kind. **A calibration constant taken from one
+observation is an anecdote with a decimal point.** `board_prompt_instrument.py`
+is corrected, and its docstring now records the withdrawal explicitly so nobody
+rediscovers the old rule from an old ledger.
+
+The xv4 arbitration in ledger 264 is **unchanged in verdict and improved in
+reasoning**. Re-read under the corrected rule, `b8b8b860` against `7bef7d4c`
+gives `c = -0.2174 +/- 0.3458`, and `|c| = 0.217` sits well inside the 0.47 %
+band. The receipt shows no mechanism. It could not have shown one: xv4's
+predicted ranked effect is 0.41 %, which is below the decomposition's own
+0.70 % resolution.
+
+### 266.6 Finding 62 — the serial lottery is a per-pair quantity, and it is the floor under everything
+
+| statistic, same-mode pairs | per run |
+|---|--:|
+| published score | 0.2221 % |
+| serial-free median of eight | 0.1027 % |
+
+Cross-mode the same two are 0.9660 % and 0.9865 %. The pooled within-group
+figures of 0.6886 % and 0.6925 % at 54 degrees of freedom are mode-contaminated
+and are not a resolution.
+
+Subtracting in quadrature isolates the serial denominator draw:
+
+```text
+serial lottery = 0.16 to 0.20 % per receipt
+               = 0.23 to 0.28 % per pair
+direct pub - sf   0.2310 % per pair
+quadrature        0.2784 % per pair
+```
+
+This **independently reproduces the campaign's 0.277 % empirical published
+floor**, which was previously derived from our own run-to-run history, and it
+corrects its interpretation: **0.277 % is a per-pair number, not a per-receipt
+number.** Two supports: raw serial legs scatter 0.210 to 0.239 % per run per
+prompt, and the `published minus serial-free` term is 0.2310 % on same-mode
+pairs against 0.2265 % on all pairs, i.e. **mode-independent**, exactly as a
+denominator draw must be.
+
+### 266.7 Rule 59 is REPLACED by measured numbers
+
+A uniform x % candidate speedup moves every candidate leg, every `raw_p` and the
+median by x %, so every estimator shares one scale and the comparison below is
+apples to apples. `sigma_pair = sqrt(2) * sigma_run`; `MDE_k = k * sigma_pair`.
+The conservative column uses the widest replicate class.
+
+| what you know | best estimator | 2 sigma point | 2 sigma cons | 3 sigma cons |
+|---|---|--:|--:|--:|
+| mode is shared | candidate mean of 8 legs | 0.186 | **0.216** | 0.324 |
+| mode is shared | published median | 0.628 | 0.698 | 1.047 |
+| mode unknown | **plutarch alone** | 0.295 | **0.387** | 0.581 |
+| mode unknown | published median | 1.960 | 2.104 | 3.157 |
+| mode removed by the 2-parameter fit | decomposition `c` | 0.562 | 0.702 | 1.054 |
+| mode flipped | **plutarch alone** | 0.329 | **0.450** | 0.675 |
+
+Empirical false-positive rates at a 0.5 % decision threshold, counted on null
+pairs where every exceedance is by definition a false positive:
+
+```text
+published median, mode shared     exceeds 0.5 % on  9.8 % of null pairs
+published median, mode unknown    exceeds 0.5 % on 53.8 % of null pairs
+candidate mean of 8, mode shared  exceeds 0.5 % on  0.0 %
+plutarch alone, mode unknown      exceeds 0.5 % on  0.0 %
+```
+
+**Rule 59, replaced.** The bar for resolving a mechanism from one official
+receipt is **+0.45 % at 2 sigma when the mode is unknown and the receipt is read
+on plutarch**, or +0.22 % when the mode is known to match. If the decision is
+made on the published median instead, the bar is **+0.70 % to +2.10 %**.
+
+**Rule 63, new.** Never decide a mechanism from the published median. Under an
+unknown mode it produces a false positive on more than half of all null pairs.
+Read the per-prompt block.
+
+Extra reference receipts barely help. The scaling is `sqrt(1 + 1/k)`, so the
+0.186 % floor only reaches 0.131 % as k goes to infinity. **Resampling to resolve
+a mechanism is not merely expensive, it is asymptotically bounded.** That closes
+the last argument for a pure resample, which Fact 27 had already priced as a bad
+bet on other grounds.
+
+Every number above is a **lower bound**. All the nulls are byte-identical or
+comment-identical, and those two classes already differ at p = 0.0001, so a real
+code change adds noise that this study cannot see.
+
+### 266.8 The strategic consequence, which is the largest thing in this entry
+
+Put Finding 62 and Rule 59 next to the mode. Our own submission history gives
+the mode's size directly: `7bef7d4c` carried `xv4` and landed at serial-free
+3.29427 in mode B, against `b8b8b860` at 3.34790 in mode A. That is **-1.60 % of
+serial-free score**.
+
+```text
+FACT-2 mode              ~1.60 % of serial-free score, P(fast) ~ 0.67
+serial lottery            0.23 to 0.28 % per pair
+xv4                      +0.41 % ranked
+x_sumshare_min           +0.628 % ranked
+crown probe-select       +0.074 % ranked
+x_sumshoist              +2.84 % ranked
+```
+
+**The mode is larger than every mechanism this campaign has ever shipped, and it
+is larger than all of them except `x_sumshoist` put together.** We have never
+found its cause and we cannot choose it. Each submission is a two-in-three draw.
+
+That reframes the composition plan with real arithmetic. Starting from
+`b8b8b860`'s engineering at serial-free 3.34790, and needing to clear the crown
+at published 3.35922:
+
+| composed candidate | ranked gain | serial-free, mode A | serial-free, mode B |
+|---|--:|--:|--:|
+| `xv4` alone | +0.41 % | 3.3616 | 3.3078 |
+| `xv4` + `x_sumshare_min` | +1.04 % | 3.3827 | 3.3286 |
+| the above + crown probe-select | +1.12 % | 3.3854 | 3.3312 |
+| the above + `x_sumshoist` | **+3.95 %** | **3.4801** | **3.4244** |
+
+**Read the last column.** Everything except the full composition loses to the
+crown if we draw mode B. Only `x_sumshoist` makes us mode-proof.
+
+This does not argue for waiting. It argues for both moves at once:
+
+1. **Submit `xv4` + `x_sumshare_min` as soon as alphonse's E121 terminates
+   cleanly.** It takes the crown on a mode-A draw, which is a two-in-three bet,
+   and the only cost of losing is 94 minutes of a submission queue that has
+   nothing else in it. A rejected mode-B receipt is not a refutation, and we now
+   have the instrument to say so with a measured band rather than an argument.
+2. **`x_sumshoist` remains the main line and the only mode-proof path.** E120
+   rung 1 decides it. Nothing else in the campaign is worth 2.84 % ranked.
+
+**Campaign rule 64.** Price every candidate against BOTH mode outcomes before
+submitting. A candidate that only wins on the good draw is still worth
+submitting when the queue is idle, but it must be labelled as a draw-dependent
+bet in the submission note and in this ledger, so a mode-B rejection is never
+misread as a mechanism failure.
+
+### 266.9 What the study cannot determine
+
+Recorded verbatim, because these are the reopeners:
+
+- the noise a **real** code change adds, so every MDE above is a lower bound;
+- drift beyond the 16.7 hour maximum observed gap;
+- the precision of the precision — about 11 % on each standard deviation, since
+  80 pairs carry only 54 degrees of freedom;
+- the cause or controllability of FACT-2, which remains the largest unexplained
+  quantity in the campaign;
+- the absolute units of `m`, since `RANKED_ROUNDS` comes from one run; the
+  0.877 against 0.601 ms discrepancy is a units and shape question and does not
+  touch `c` or any MDE;
+- anything about schedule-changing mechanisms, which the schedule condition
+  excludes;
+- non-uniform mechanisms that neither probe sees;
+- the ranked serial numerator;
+- the pinned-head exclusion at scale.
+
+### 266.10 Two agents dispatched on the back of this
+
+**Mode shape.** Measure the per-prompt cross-mode shift properly, then find the
+regressor that actually explains it — drafted tokens, drafting rounds, G=2
+rounds, accepted tokens, a two-term model, or a saturating form — with
+leave-one-prompt-out validation. Then the deliverable that matters: derive a
+**fixed, pre-registered, mode-orthogonal linear contrast**. If the mode shifts
+prompt p by `mu * w_p` for a known `w_p`, then any weight vector with
+`sum(a) = 1` and `sum(a * w) = 0` estimates a uniform mechanism with **no fitted
+parameter and no mode contamination, by construction**. Minimum-variance weights
+follow from the per-prompt same-mode standard deviations in 266.3. It must then
+be validated empirically against every null pair, and finally converted into an
+**effective** MDE for a wide-QMV mechanism, dividing by the fraction of each
+prompt's leg that reaches the wide QMV. That last number is the one that says
+whether a given kernel win is resolvable from one receipt at all.
+
+**Draft gather.** Verify or refute the 35.4 MB per draft step figure from source,
+enumerate every dispatch on the draft proposal path with its bytes, establish
+what is editable, rank the ways to make it cheaper, check each against the
+legality clauses, and build the acceptance-rate exchange model: how much
+acceptance rate may be traded per percent of round time saved, per prompt. That
+model has never existed, because the campaign has always treated the proposal
+path as exactness-critical when only the target path is.
