@@ -151,6 +151,7 @@ def main() -> int:
     ap.add_argument("--receipt", required=True)
     ap.add_argument("--reference", required=True)
     ap.add_argument("--out", type=pathlib.Path)
+    ap.add_argument("--wandb", action="store_true")
     args = ap.parse_args()
 
     cand_row = load_receipt(args.receipt)
@@ -437,7 +438,111 @@ def main() -> int:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(report, indent=2) + "\n")
         print("\nwrote %s" % args.out)
+    if args.wandb:
+        publish(report)
     return 0
+
+
+def publish(report: dict) -> None:
+    """Record the ranked reading, its instrument and its retraction in W&B."""
+    import wandb
+
+    coupling = report["coupling"]
+    run = wandb.init(
+        project="qwen38-mlx-challenge-senpai",
+        entity="wandb-applied-ai-team",
+        id="e130rcpt0",
+        name="e130-ranked-receipt-%s" % report["receipt"][:8],
+        resume="allow",
+        config={
+            "experiment": "e130-entry-point-occupancy-tax",
+            "arm": "prune_na5_pair",
+            "pr": 130,
+            "harness": "ranked",
+            "official_or_ranked_score": True,
+            "cool_gate_passed_real_gate": True,
+            "gate_qualified_for_timing": True,
+            "ranked_architecture": "applegpu_g17s",
+            "receipt": report["receipt"],
+            "receipt_status": report["receipt_status"],
+            "reference": report["reference"],
+            "reference_solver": report["reference_solver"],
+            "residency_gain_g17s": coupling["residency_gain_g17s"],
+            "residency_gain_g16s": coupling["residency_gain_g16s"],
+            "residency_gain_is_measured": False,
+            "residency_gain_source": "resident_simdgroups_derived, a static "
+                                     "floor-law quantity from the census",
+            "head_share_range": [HEAD_SHARE_LO, HEAD_SHARE_HI],
+            "instrument_sd_pooled_pct": POOLED_CANDIDATE_REL_SD_PCT,
+            "instrument_sd_pooled_dof": POOLED_DOF,
+            "instrument_sd_tier0_pct": TIER0_CANDIDATE_REL_SD_PCT,
+        })
+
+    run.summary.update({
+        "ranked/official_score": report["receipt_score"],
+        "ranked/reference_score": report["reference_score"],
+        "ranked/score_delta": report["receipt_score"]
+        - report["reference_score"],
+        "ranked/mean_candidate_spt": coupling["receipt_mean_candidate_spt"],
+        "ranked/tier_mean_candidate_spt": coupling["tier_mean_candidate_spt"],
+        "ranked/candidate_saving_pct": coupling["observed_saving_pct"],
+        "ranked/z_conservative": coupling["z_conservative"],
+        "ranked/z_optimistic": coupling["z_optimistic"],
+        "ranked/c_point_head_share_0p08":
+            coupling["by_head_share"]["mid"]["c_point"],
+        "ranked/c_band_low":
+            coupling["by_head_share"]["mid"]["c_band_2se_conservative"][0],
+        "ranked/c_band_high":
+            coupling["by_head_share"]["mid"]["c_band_2se_conservative"][1],
+        "ranked/f8_bracket_rejected":
+            coupling["f8_bracket_bottom_rejected_conservative"],
+        "mode_index/candidate": report["mode_index"]["candidate"],
+        "mode_index/reference": report["mode_index"]["reference"],
+        "mode_index/usable": False,
+        "instrument/median_noise_amplification":
+            POOLED_SCORE_REL_SD_PCT / POOLED_CANDIDATE_REL_SD_PCT,
+        "instrument/serial_null_mean_pct": report["serial_null_pct"]["mean"],
+        "instrument/serial_null_sd_pct": report["serial_null_pct"]["sd"],
+        "retraction/rung5_occupancy_probe_withdrawn": True,
+        "retraction/reason": "peak concurrency is confounded with kernel "
+                             "duration; at equal register pressure the two "
+                             "clusters differ 1.8x while seconds_min differs "
+                             "5.9x",
+    })
+
+    run.log({"per_prompt": wandb.Table(
+        columns=["prompt", "mtp_seconds_per_token_mean",
+                 "serial_seconds_per_token_mean", "raw_p", "reference_raw_p",
+                 "reference_mtp_spt", "effective_mean_draft_len", "parity_ok",
+                 "candidate_delta_pct", "serial_null_pct"],
+        data=[[r["prompt"], r["mtp_seconds_per_token_mean"],
+               r["serial_seconds_per_token_mean"], r["raw_ratio_of_means"],
+               r["reference_raw_ratio_of_means"],
+               r["reference_mtp_seconds_per_token_mean"],
+               r["effective_mean_draft_len"], r["parity_ok"],
+               coupling["per_prompt_delta_pct_vs_reference"][r["prompt"]],
+               report["serial_null_pct"]["per_prompt"][r["prompt"]]]
+              for r in report["per_prompt"]])})
+
+    run.log({"coupling_by_head_share": wandb.Table(
+        columns=["head_share", "percent_worth_of_c_equals_1", "c_point",
+                 "c_low_2se", "c_high_2se"],
+        data=[[v["head_share"], v["percent_worth_of_c_equals_1"],
+               v["c_point"], v["c_band_2se_conservative"][0],
+               v["c_band_2se_conservative"][1]]
+              for v in coupling["by_head_share"].values()])})
+
+    run.log({"parent_tier": wandb.Table(
+        columns=["receipt", "mean_candidate_spt"],
+        data=[[a, b] for a, b in zip(coupling["tier_members"],
+                                     coupling["tier_candidate_means"])])})
+
+    artifact = wandb.Artifact("e130-ranked-receipt", type="analysis")
+    with artifact.new_file("readout.json") as handle:
+        handle.write(json.dumps(report, indent=2))
+    run.log_artifact(artifact)
+    run.finish()
+    print("\nlogged to W&B run e130rcpt0")
 
 
 if __name__ == "__main__":
