@@ -115,6 +115,31 @@ estimator, mean over blocks, standard error of the per-block contrasts. Each
 block times every arm forward and then in reverse, so monotone thermal drift
 cancels to first order.
 
+### Named frames
+
+Every percentage of a round in this report names its frame. Mixing two of them
+in one sum is the arithmetic error corrected in the rung-0 pricing below.
+
+| frame | round | where it comes from |
+| --- | --- | --- |
+| `probe-M8` | 173,168 µs | this probe. `mlp.gate_up` costs 64 x 1026.43 = 65,691 µs here, and Finding 22 puts `mlp.gate_up` at 37.937 % of a round, so the implied round is 65,691 / 0.37937. Cross-check: edward's rung-2 frame is 171,384 µs, 1.0 % away. |
+| `traced-512` | 160,590 µs | E112, traced local MTP round median, 512 tokens (range 160,590–161,800). |
+| `decode-M5` | 102,864 µs | decode-only round at M=5. |
+| `E96-anchor` | 127,533 µs | E96. |
+
+`probe-M8` is an **all-M=8 idealisation**: it counts every layer at the widest
+shipped width, with the GPU otherwise idle and clocks ramped. `traced-512` is
+the closest thing here to a real round. `probe-M8` is 7.8 % larger, which is
+the direction and roughly the size one should expect from that idealisation.
+Where a rung-1 or rung-0 number is quoted as a share of a round, it is given
+in absolute microseconds first and then against both frames, so no conclusion
+depends on the choice.
+
+A per-round absolute figure of the form `L x per-layer µs` also assumes every
+layer runs at M=8. E109 v2's realised histogram puts 88.49 % of `gdn.in_proj`
+and 86.96 % of `mlp.gate_up` streaming time at M=8, so that idealisation is
+close but not exact, and it is stated wherever it is used.
+
 ## Rung 0 — the dip in the shipped M frame
 
 `mlp.gate_up`, N=34816, K=5120. 8 blocks. `harness=local`. W&B `zbe3jt4y`
@@ -168,17 +193,32 @@ over 31 rounds. Weighting each width by `count x a_one_net(M)` gives streaming
 shares `{4: 0.0193, 5: 0.0217, 6: 0.0581, 7: 0.0314, 8: 0.8696}`, so 87 % of
 `mlp.gate_up` streaming time is spent at M=8.
 
+Priced in absolute microseconds per round, in the `probe-M8` frame defined
+above, so that no step of the sum changes frame:
+
 ```
-always split                          -12.527 % of gate_up  =  -4.753 % of round
-split where positive, M in {4,5,6}     +0.284 % of gate_up  =  +0.108 % of round
-minus 64 boundaries x 1.80 us                                  -0.112 % of round
-net                                                            -0.004 % of round
+gate_up streaming time, 64 layers at M=8               65,691 us
+always split           -12.527 % of that              -8,229.1 us
+split only where positive, M in {4,5,6}   +0.284 %      +186.6 us
+minus 64 boundaries x 1.80 us                           -115.2 us
+net                                                      +71.4 us
+                                     = +0.041 % of probe-M8   (173,168 us)
+                                     = +0.044 % of traced-512 (160,590 us)
 ```
 
 Zero, against a 0.20 % bar, and that is before any serialisation is paid. This
-is the corrected version of the +1.11 % and +1.73 % in the assignment. The
-general lesson: **an isolated per-group cell may not be weighted by a realised
-width histogram unless the dispatch grouping is the same in both frames.**
+is the corrected version of the +1.11 % and +1.73 % in the assignment. Two
+general lessons:
+
+1. **An isolated per-group cell may not be weighted by a realised width
+   histogram unless the dispatch grouping is the same in both frames.**
+2. **A gain quoted as a share of one op and a cost quoted in microseconds
+   cannot be added until both are in one named frame.** An earlier interim
+   comment on this PR added `+0.108 %` (gate_up share, implicitly `probe-M8`)
+   to `-0.112 %` (115.2 us over the `decode-M5` round) and reached `-0.004 %`.
+   Both terms were individually right and the sum was wrong by the frame
+   ratio 173,168 / 102,864 = 1.683. The corrected net is `+0.041 %`, still
+   far below the bar, so the rung-0 kill is unchanged.
 
 ## Rung 0b — what causes the deficit
 
