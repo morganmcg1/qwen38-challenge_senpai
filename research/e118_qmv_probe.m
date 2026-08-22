@@ -646,31 +646,41 @@ int main(int argc, char **argv) {
           // detector rather than a coincidence. The perturbation is spread over
           // rows taken from across the output so it cannot land only on rows a
           // given dispatch geometry leaves untouched.
-          uint16_t saved_s[kMetaProbeRows], saved_b[kMetaProbeRows];
-          uint32_t saved_sb[kMetaProbeRows];
-          uint8_t saved_c[kMetaProbeRows];
-          size_t gidx[kMetaProbeRows];
+          const size_t nmeta = (size_t)kMetaProbeRows * gpr;
+          uint16_t *save_s = malloc(nmeta * sizeof(uint16_t));
+          uint16_t *save_b = malloc(nmeta * sizeof(uint16_t));
+          uint32_t *save_sb = malloc(nmeta * sizeof(uint32_t));
+          uint8_t *save_c = malloc(nmeta);
           for (int j = 0; j < kMetaProbeRows; j++) {
-            gidx[j] = ((size_t)o.n * j / kMetaProbeRows + 1) * gpr + 3;
-            saved_s[j] = sp[gidx[j]];
-            saved_b[j] = bp[gidx[j]];
-            saved_sb[j] = sbp[gidx[j]];
-            saved_c[j] = cp[gidx[j]];
-            sp[gidx[j]] = f32_to_bf16(bf16_to_f32(saved_s[j]) * 512.0f + 1e-3f);
-            cp[gidx[j]] = (uint8_t)((saved_c[j] + 9u) & 0x3fu);
-            bp[gidx[j]] =
-                bias_bf16_from_code(bf16_to_f32(sp[gidx[j]]), cp[gidx[j]]);
-            sbp[gidx[j]] =
-                (uint32_t)sp[gidx[j]] | ((uint32_t)bp[gidx[j]] << 16);
+            const size_t base = ((size_t)o.n * j / kMetaProbeRows + 1) * gpr;
+            for (size_t g = 0; g < gpr; g++) {
+              const size_t gi = base + g, si = (size_t)j * gpr + g;
+              save_s[si] = sp[gi];
+              save_b[si] = bp[gi];
+              save_sb[si] = sbp[gi];
+              save_c[si] = cp[gi];
+              sp[gi] = f32_to_bf16(bf16_to_f32(save_s[si]) * 512.0f + 1e-3f);
+              cp[gi] = (uint8_t)((save_c[si] + 9u) & 0x3fu);
+              bp[gi] = bias_bf16_from_code(bf16_to_f32(sp[gi]), cp[gi]);
+              sbp[gi] = (uint32_t)sp[gi] | ((uint32_t)bp[gi] << 16);
+            }
           }
           dispatchOnce(queue, pso[a][0], &o, a, m);
           hit_meta = countDiffering(&o, a, m).differing;
           for (int j = 0; j < kMetaProbeRows; j++) {
-            sp[gidx[j]] = saved_s[j];
-            bp[gidx[j]] = saved_b[j];
-            sbp[gidx[j]] = saved_sb[j];
-            cp[gidx[j]] = saved_c[j];
+            const size_t base = ((size_t)o.n * j / kMetaProbeRows + 1) * gpr;
+            for (size_t g = 0; g < gpr; g++) {
+              const size_t gi = base + g, si = (size_t)j * gpr + g;
+              sp[gi] = save_s[si];
+              bp[gi] = save_b[si];
+              sbp[gi] = save_sb[si];
+              cp[gi] = save_c[si];
+            }
           }
+          free(save_s);
+          free(save_b);
+          free(save_sb);
+          free(save_c);
 
           dispatchOnce(queue, pso[a][0], &o, a, m);
           size_t clean = countDiffering(&o, a, m).differing;
