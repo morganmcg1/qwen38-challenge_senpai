@@ -311,12 +311,146 @@ def family_slopes(board: dict, family_path: str, reference: str) -> dict:
     }
 
 
+def state_timeline(family: dict, since: str, gap_us: float = 400.0) -> dict:
+    """Is the state an epoch the runner entered, or a draw made per run?
+
+    An epoch predicts that every row before the switch sits in the old state and
+    every row after it sits in the new one. A per-run draw predicts that the two
+    states interleave throughout. The test needs the tree mechanism removed
+    first, which is what the per-drafting-round slope does.
+    """
+    rows = [m for m in family["members"] if m["created"] >= since]
+    rows.sort(key=lambda r: r["slope_us_per_drafting_round"])
+    clusters: list[list[dict]] = []
+    for r in rows:
+        if clusters and (
+            r["slope_us_per_drafting_round"]
+            - clusters[-1][-1]["slope_us_per_drafting_round"]
+            < gap_us
+        ):
+            clusters[-1].append(r)
+        else:
+            clusters.append([r])
+
+    out = []
+    for i, cl in enumerate(clusters):
+        vals = [r["slope_us_per_drafting_round"] for r in cl]
+        scores = [r["score"] for r in cl]
+        mean = sum(vals) / len(vals)
+        out.append(
+            {
+                "cluster": i,
+                "n": len(cl),
+                "slope_mean_us": mean,
+                "slope_sd_us": (
+                    math.sqrt(sum((v - mean) ** 2 for v in vals) / (len(vals) - 1))
+                    if len(vals) > 1
+                    else 0.0
+                ),
+                "score_mean": sum(scores) / len(scores),
+                "score_min": min(scores),
+                "score_max": max(scores),
+                "n_solvers": len({r["solver"] for r in cl}),
+                "earliest": min(r["created"] for r in cl),
+                "latest": max(r["created"] for r in cl),
+                "receipts": [r["receipt"] for r in cl],
+            }
+        )
+
+    # A cluster of many different trees carries mechanism spread that can hide a
+    # state step inside it. Split each large cluster at its widest internal gap
+    # and keep the split only when it separates cleanly.
+    for c, cl in zip(out, clusters):
+        if len(cl) < 8:
+            continue
+        vals = [r["slope_us_per_drafting_round"] for r in cl]
+        gap, at = max(
+            (vals[i + 1] - vals[i], i) for i in range(len(vals) - 1)
+        )
+        parts = [cl[: at + 1], cl[at + 1 :]]
+        stats = []
+        for part in parts:
+            pv = [r["slope_us_per_drafting_round"] for r in part]
+            mean = sum(pv) / len(pv)
+            stats.append(
+                {
+                    "n": len(part),
+                    "slope_mean_us": mean,
+                    "slope_sd_us": (
+                        math.sqrt(sum((v - mean) ** 2 for v in pv) / (len(pv) - 1))
+                        if len(pv) > 1
+                        else 0.0
+                    ),
+                    "n_solvers": len({r["solver"] for r in part}),
+                    "receipts": [r["receipt"] for r in part],
+                }
+            )
+        widest_sd = max(s["slope_sd_us"] for s in stats)
+        merged = sorted(
+            [(r["receipt"], "L") for r in parts[0]]
+            + [(r["receipt"], "H") for r in parts[1]],
+            key=lambda t: next(m["created"] for m in rows if m["receipt"] == t[0]),
+        )
+        labels = "".join(t[1] for t in merged)
+        c["internal_split"] = {
+            "gap_us": gap,
+            "gap_over_widest_sd": gap / widest_sd if widest_sd else float("inf"),
+            "clean": bool(widest_sd and gap > 2.0 * widest_sd),
+            "step_us": stats[1]["slope_mean_us"] - stats[0]["slope_mean_us"],
+            "parts": stats,
+            "time_order": labels,
+            "alternations": sum(
+                1 for k in range(len(labels) - 1) if labels[k] != labels[k + 1]
+            ),
+            "max_possible_alternations": len(labels) - 1,
+        }
+
+    # Pair clusters whose score bands overlap: same tree generation, different
+    # state. The slope difference between such a pair is one state step.
+    pairs = []
+    for i in range(len(out)):
+        for j in range(i + 1, len(out)):
+            a, b = out[i], out[j]
+            overlap = not (a["score_min"] > b["score_max"] or b["score_min"] > a["score_max"])
+            near_score = abs(a["score_mean"] - b["score_mean"]) < 0.05
+            if overlap or near_score:
+                merged = sorted(
+                    [(r, "A") for r in a["receipts"]] + [(r, "B") for r in b["receipts"]],
+                    key=lambda t: next(
+                        m["created"] for m in rows if m["receipt"] == t[0]
+                    ),
+                )
+                labels = [t[1] for t in merged]
+                alternations = sum(
+                    1 for k in range(len(labels) - 1) if labels[k] != labels[k + 1]
+                )
+                pairs.append(
+                    {
+                        "clusters": [i, j],
+                        "step_us": b["slope_mean_us"] - a["slope_mean_us"],
+                        "score_gap": a["score_mean"] - b["score_mean"],
+                        "time_order": "".join(labels),
+                        "alternations": alternations,
+                        "max_possible_alternations": len(labels) - 1,
+                        "epoch_would_predict_alternations": 1,
+                    }
+                )
+    return {
+        "since": since,
+        "gap_cut_us": gap_us,
+        "n_rows": len(rows),
+        "clusters": out,
+        "same_generation_pairs": pairs,
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--board", default="/tmp/yukon-board/full.json")
     ap.add_argument("--pair", nargs=2, action="append", required=True)
     ap.add_argument("--family", default=None)
     ap.add_argument("--family-reference", default="cf79f7df")
+    ap.add_argument("--since", default="2026-08-22")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -361,6 +495,9 @@ def main() -> None:
         art["family_quantization"] = family_slopes(
             board, args.family, args.family_reference
         )
+        art["state_timeline"] = state_timeline(
+            art["family_quantization"], args.since
+        )
     with open(args.out, "w") as fh:
         json.dump(art, fh, indent=2)
         fh.write("\n")
@@ -402,6 +539,35 @@ def main() -> None:
             )
         print(f"  gaps between clusters: "
               f"{', '.join('%.1f' % g for g in fq['cluster_gaps_us'])} us")
+    if "state_timeline" in art:
+        tl = art["state_timeline"]
+        print(f"\n=== state timeline since {tl['since']}, {tl['n_rows']} rows, "
+              f"gap cut {tl['gap_cut_us']:.0f} us ===")
+        for c in tl["clusters"]:
+            print(
+                f"  c{c['cluster']}  n={c['n']:3d}  slope {c['slope_mean_us']:8.1f} "
+                f"+/- {c['slope_sd_us']:6.1f}  score {c['score_mean']:.4f} "
+                f"[{c['score_min']:.4f}, {c['score_max']:.4f}]  "
+                f"solvers {c['n_solvers']:2d}  {c['earliest'][11:19]}..{c['latest'][11:19]}"
+            )
+            sp = c.get("internal_split")
+            if sp and sp["clean"]:
+                p0, p1 = sp["parts"]
+                print(
+                    f"      internal split step {sp['step_us']:7.1f} us, gap "
+                    f"{sp['gap_us']:.1f} us = {sp['gap_over_widest_sd']:.1f} sd; "
+                    f"n {p0['n']}/{p1['n']}, solvers {p0['n_solvers']}/{p1['n_solvers']}, "
+                    f"alternations {sp['alternations']}/{sp['max_possible_alternations']}"
+                )
+                print(f"      time order: {sp['time_order']}")
+        for p in tl["same_generation_pairs"]:
+            print(
+                f"  pair {p['clusters']}: step {p['step_us']:7.1f} us  "
+                f"score gap {p['score_gap']:+.4f}  "
+                f"alternations {p['alternations']}/{p['max_possible_alternations']} "
+                f"(an epoch predicts 1)"
+            )
+            print(f"    time order: {p['time_order']}")
     print(f"\nwrote {args.out}")
 
 
