@@ -2170,17 +2170,24 @@ enum Qwen35IslandArm: String {
     var installsQ: Bool { self == .all || self == .q }
     var installsKV: Bool { self == .all || self == .kv }
 
-    /// `MLXFAST_QWEN_MTP_ISLAND_ARM` selects the arm. The older
+    /// `DARKBLOOM_QWEN_MTP_ISLAND_ARM` selects the arm. The older
     /// `MLXFAST_QWEN_MTP_EXACT_QKV_ROWS=0` kill switch keeps its meaning and
     /// wins, so no existing invocation changes behaviour.
+    ///
+    /// The `DARKBLOOM_` prefix is load-bearing, not cosmetic.
+    /// `sanitizedRuntimeWorkerEnvironment` forwards only `DARKBLOOM_`, `DYLD_`,
+    /// `LC_`, `METAL_`, `MLX_` and `MTL_` to the runtime worker, so an
+    /// `MLXFAST_`-spelled selector is dropped and every arm silently runs the
+    /// shipped default. That is why the legacy kill switch below has never had
+    /// any effect on a worker leg.
     static func fromEnvironment(_ env: [String: String]) -> Qwen35IslandArm {
         if env["MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] == "0" { return .none }
-        guard let raw = env["MLXFAST_QWEN_MTP_ISLAND_ARM"], !raw.isEmpty else {
+        guard let raw = env["DARKBLOOM_QWEN_MTP_ISLAND_ARM"], !raw.isEmpty else {
             return .all
         }
         guard let arm = Qwen35IslandArm(rawValue: raw.lowercased()) else {
             fatalError(
-                "MLXFAST_QWEN_MTP_ISLAND_ARM='\(raw)' is not one of "
+                "DARKBLOOM_QWEN_MTP_ISLAND_ARM='\(raw)' is not one of "
                     + "all, none, q, kv")
         }
         return arm
@@ -4387,7 +4394,7 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
             }
             let environment = ProcessInfo.processInfo.environment
             let arm = Qwen35IslandArm.fromEnvironment(environment)
-            if environment["MLXFAST_QWEN_MTP_ISLAND_ARM"] != nil
+            if environment["DARKBLOOM_QWEN_MTP_ISLAND_ARM"] != nil
                 || environment["MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] != nil
             {
                 // Witness that a research leg selected the arm it believes it

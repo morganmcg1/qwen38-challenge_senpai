@@ -3,7 +3,12 @@
 #
 #   usage: research/e124_leg.sh TAG ARM TOKENS [e79_trace_leg.sh flags...]
 #
-#   ARM  all | none | q | kv, passed through MLXFAST_QWEN_MTP_ISLAND_ARM.
+#   ARM  all | none | q | kv, passed through DARKBLOOM_QWEN_MTP_ISLAND_ARM.
+#
+# The DARKBLOOM_ prefix is required, not stylistic.
+# `sanitizedRuntimeWorkerEnvironment` forwards only DARKBLOOM_, DYLD_, LC_,
+# METAL_, MLX_ and MTL_ into the runtime worker. An MLXFAST_-spelled selector
+# never arrives, and every arm then runs the shipped default in silence.
 #
 # Every arm is the SAME worker binary under one environment variable, so no leg
 # of this experiment needs a rebuild. Harness defect 25 attaches a thermal
@@ -28,7 +33,7 @@ case "${arm}" in
   *) echo "e124_leg.sh: unknown arm '${arm}'" >&2; exit 2 ;;
 esac
 
-export MLXFAST_QWEN_MTP_ISLAND_ARM="${arm}"
+export DARKBLOOM_QWEN_MTP_ISLAND_ARM="${arm}"
 research/e79_trace_leg.sh "${tag}" "${tokens}" "$@"
 status=$?
 
@@ -38,7 +43,7 @@ witness="$(grep -h '^qwen-mtp-island-arm: ' "${out}/wrapper.err" 2>/dev/null \
 {
   echo "experiment=e124-noislands-acceptance-exchange"
   echo "e124_arm=${arm}"
-  echo "MLXFAST_QWEN_MTP_ISLAND_ARM=${arm}"
+  echo "DARKBLOOM_QWEN_MTP_ISLAND_ARM=${arm}"
   echo "e124_arm_witness=${witness:-<absent>}"
 } >> "${out}/meta.txt"
 
