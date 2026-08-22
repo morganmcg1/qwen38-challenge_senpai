@@ -637,7 +637,7 @@ def accept_rate_at_R(eff: float, rounds: float) -> float:
     `accept_rate = (512 - R) / (R * eff)`. This is the ONLY place `R` enters
     the model.
     """
-    return min(max((DECODE_TOKENS - rounds) / (rounds * eff), 1e-6), 1.0 - 1e-6)
+    return min(max((DECODE_TOKENS - rounds) / (rounds * eff), 0.01), 0.999)
 
 
 def r_band_scenarios(identity: dict) -> dict:
