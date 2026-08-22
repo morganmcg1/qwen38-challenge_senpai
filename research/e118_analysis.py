@@ -46,7 +46,14 @@ KILL_RULE_PCT = 0.5
 PROMOTION_ARMS = ("s_bcast", "s_bcast_all", "s_bcast_scale", "p_split_meta",
                   "g_pack32", "s_bcast_pack32")
 DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
-                   "y_algebra", "y_hsum_tree")
+                   "y_algebra", "y_hsum_tree", "n_halfsums",
+                   "n_halfsums_free")
+# Rung 2, Finding 53. These are bit exact but they are NOT metadata-load arms,
+# so they are reported beside the primary metric and never inside it. Moving
+# the metric's arm set after seeing their numbers would be goalpost-shifting;
+# they carry their own pre-registered bar of +1.0 % instead.
+RUNG2_EXACT_ARMS = ("x_sumshare_min", "x_sumshare_split", "x_sumshare_owner")
+RUNG2_BAR_PCT = 1.0
 # E111's bias arms, folded in at every width. `e_bias6` is bit exact but is not
 # part of the metadata-load screen: it needs a repacked metadata array that this
 # experiment does not build, so it is reported beside the primary metric.
@@ -495,6 +502,114 @@ def block_dispersion(rate: dict, cells: dict) -> dict:
                                         for c in cell_rows), default=0.0)}
 
 
+def rung2_decomposition(delta_by_arm: dict, census: dict | None,
+                        widths: list[int], shape: str) -> dict:
+    """Finding 53, decomposed into mechanism, scaffolding and exchange.
+
+    The registered ceiling `n_halfsums` puts a uniform branch around a
+    duplicated `i` loop, so it prices the mechanism and the scaffolding
+    together. `n_halfsums_free` drops the same half of the add tree at compile
+    time in both simdgroups: same executed instruction count, no branch and no
+    duplication, so it is the mechanism alone. The three differences below are
+    therefore identified without any fitted parameter.
+    """
+    rows = []
+    for na in widths:
+        def g(arm: str) -> float | None:
+            return delta_by_arm.get(arm, {}).get(na)
+        free, reg = g("n_halfsums_free"), g("n_halfsums")
+        mn, sp, ow = (g("x_sumshare_min"), g("x_sumshare_split"),
+                      g("x_sumshare_owner"))
+        rows.append({
+            "na": na,
+            "mechanism_ceiling_pct": free,
+            "registered_ceiling_pct": reg,
+            "body_duplication_cost_pp": (
+                None if free is None or reg is None else free - reg),
+            "min_exchange_pct": mn,
+            "exchange_cost_pp": (
+                None if free is None or mn is None else free - mn),
+            "split_pct": sp,
+            "owner_pct": ow,
+            "captured_fraction": (
+                None if not free or mn is None else mn / free),
+        })
+    occ = []
+    if census is not None:
+        for arm in ("a_base", "n_halfsums", "n_halfsums_free",
+                    "x_sumshare_min", "x_sumshare_split", "x_sumshare_owner"):
+            row = census["arms"].get(arm)
+            if row is None:
+                continue
+            for na in widths:
+                air = row["air"].get(str(na), {})
+                tgmap = row.get("threadgroup_bytes") or {}
+                tg = tgmap.get(str(na), tgmap.get(na, 0)) or 0
+                budget = row.get("threadgroup_budget_bytes", 32768)
+                cell = {"arm": arm, "na": na,
+                        "threadgroup_bytes": tg,
+                        "threadgroup_budget_bytes": budget,
+                        "threadgroups_allowed_by_shared_memory":
+                            (budget // tg) if tg else None,
+                        "air_threadgroup_ops": air.get("threadgroup"),
+                        "air_total_instructions": air.get(
+                            "total_instructions")}
+                for arch in (census["local_arch"], census["ranked_arch"]):
+                    v = row.get(arch, {}).get(str(na))
+                    if v is None:
+                        continue
+                    cell[arch] = {"registers": v["registers"],
+                                  "spill_bytes": v["spill_bytes"],
+                                  "text_bytes": v["text_bytes"]}
+                occ.append(cell)
+    return {"shape": shape, "rows": rows, "occupancy": occ,
+            "note": "n_halfsums and n_halfsums_free are DIAGNOSTIC and are not "
+                    "bit exact; x_sumshare_min, x_sumshare_split and "
+                    "x_sumshare_owner are bit exact"}
+
+
+def print_rung2(d: dict) -> None:
+    print("\n-- rung 2, Finding 53 decomposed on %s" % d["shape"])
+    print("   `free` drops the same half of the add tree at compile time in "
+          "both simdgroups: the mechanism with no branch and no duplicated "
+          "body. Both ceiling arms are DIAGNOSTIC and wrong by construction; "
+          "the x_sumshare_* arms are bit exact.")
+    print("   %4s %10s %10s %9s %10s %9s %10s %10s %8s"
+          % ("NA", "free", "n_halfsum", "dup cost", "min", "xchg cost",
+             "split", "owner", "capture"))
+    for r in d["rows"]:
+        def f(v, w=10):
+            return ("%*s" % (w, "-")) if v is None else ("%*.3f" % (w, v))
+        print("   %4d %s %s %s %s %s %s %s %s"
+              % (r["na"], f(r["mechanism_ceiling_pct"]),
+                 f(r["registered_ceiling_pct"]),
+                 f(r["body_duplication_cost_pp"], 9),
+                 f(r["min_exchange_pct"]), f(r["exchange_cost_pp"], 9),
+                 f(r["split_pct"]), f(r["owner_pct"]),
+                 f(r["captured_fraction"], 8)))
+    if d["occupancy"]:
+        print("\n   threadgroup bytes against the 32768 budget, and the "
+              "register/spill/text cost of each scaffolding")
+        arch = sorted({k for c in d["occupancy"] for k in c
+                       if k.startswith("applegpu")})
+        print("   %-18s %3s %6s %7s %5s %s"
+              % ("arm", "NA", "tgB", "tg/32768", "tgops",
+                 "  ".join("%-18s" % a for a in arch)))
+        for c in d["occupancy"]:
+            cells = []
+            for a in arch:
+                v = c.get(a)
+                cells.append("%-18s" % ("-" if v is None else "%d/%d/%d"
+                                        % (v["registers"], v["spill_bytes"],
+                                           v["text_bytes"])))
+            print("   %-18s %3d %6d %7s %5s %s"
+                  % (c["arm"], c["na"], c["threadgroup_bytes"],
+                     c["threadgroups_allowed_by_shared_memory"]
+                     if c["threadgroups_allowed_by_shared_memory"]
+                     else "unlim", c["air_threadgroup_ops"],
+                     "  ".join(cells)))
+
+
 # --- the committed receipt slice ----------------------------------------------
 
 def extract_receipt(board: str, prefix: str, out: pathlib.Path) -> int:
@@ -818,6 +933,7 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
         row = {"standing_pct": value, "na": per_arm_na[arm],
                "role": ("diagnostic" if arm in DIAGNOSTIC_ARMS
                         else "promotion" if arm in PROMOTION_ARMS
+                        else "rung2exact" if arm in RUNG2_EXACT_ARMS
                         else "control" if arm in CONTROL_ARMS
                         else "other"),
                "points": point_shapes(per_arm_na[arm])}
@@ -862,6 +978,22 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     print("   the metric ranks the metadata-load arms only. `p_prefetch_w` and")
     print("   `e_bias6` are bit exact but carry other mechanisms, so they are")
     print("   reported beside it and never inside it.")
+
+    r2best, r2value = None, float("-inf")
+    for arm in RUNG2_EXACT_ARMS:
+        if arm in rows and rows[arm]["standing_pct"] > r2value:
+            r2best, r2value = arm, rows[arm]["standing_pct"]
+    print("\n   SEPARATE, NOT THE PRIMARY METRIC: best bit-exact rung-2 "
+          "reduction-sharing arm = %+.4f (%s)" % (r2value, r2best))
+    print("   rung-2 pre-registered bar %+.2f %% -> %s"
+          % (RUNG2_BAR_PCT,
+             "CLEARED" if r2value >= RUNG2_BAR_PCT else "not cleared"))
+    print("   this arm shares a reduction across simdgroups. It is not a")
+    print("   metadata-load arm, so it is NOT folded into the primary metric.")
+    rung2_verdict = {"best_arm": r2best, "standing_pct": r2value,
+                     "bar_pct": RUNG2_BAR_PCT,
+                     "cleared": bool(r2value >= RUNG2_BAR_PCT),
+                     "in_primary_metric": False}
 
     bias = bias_axis(per_arm_na, weights, widths)
     if bias is not None:
@@ -944,6 +1076,10 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
         print("   FLAGGED %-14s %s NA%d  %.1f us vs median %.1f (%.2fx)"
               % (row["arm"], row["shape"], row["m"], row["us"],
                  row["cell_median_us"], row["ratio"]))
+
+    # --- rung 2, Finding 53 ----------------------------------------------------
+    rung2 = rung2_decomposition(per_arm_na, census_data, widths, shape)
+    print_rung2(rung2)
 
     # --- the instruction price ladder -----------------------------------------
     model = cost_model(rate, cells, census_data, us)
@@ -1052,6 +1188,8 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     payload = {
         "harness": "local",
         "block_dispersion": disp,
+        "rung2_finding53": rung2,
+        "rung2_exact_verdict": rung2_verdict,
         "air_regression": obs,
         "cost_model": model,
         "device": rate["device"], "architecture": rate["architecture"],

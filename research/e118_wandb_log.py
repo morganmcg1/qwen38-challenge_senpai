@@ -44,6 +44,7 @@ RUN_IDS = {
     "e118-static-budget": "e118stat1",
     "e118-spill-defect": "e118spil1",
     "e118-cost-model": "e118cost1",
+    "e118-rung2-finding53": "e118rng21",
 }
 
 
@@ -407,11 +408,101 @@ def log_cost_model() -> None:
     run.finish()
 
 
+def log_rung2() -> None:
+    """Finding 53, decomposed into mechanism, scaffolding and exchange.
+
+    The registered ceiling arm wraps a uniform branch around a duplicated `i`
+    loop, so it prices the mechanism together with the scaffolding the
+    mechanism needs. `n_halfsums_free` drops the same half of the add tree at
+    compile time in both simdgroups, which is the mechanism with no branch and
+    no duplication, so the two differences below are identified with no fitted
+    parameter.
+    """
+    doc = summary()
+    d = doc.get("rung2_finding53")
+    if not d:
+        print("no rung2_finding53 in summary.json, skipping")
+        return
+    verdict = doc.get("rung2_exact_verdict", {})
+    run = start(
+        job_type="rung2-reduction-sharing", name="e118-rung2-finding53",
+        config={
+            "question": (
+                "both simdgroups of a threadgroup compute the identical "
+                "`sums` reduction; is sharing it across the two simdgroups "
+                "worth the exchange it costs"
+            ),
+            "method": (
+                "a scaffolding-free ceiling arm, a full-duplication ceiling "
+                "arm, and three bit-exact exchange arms, all in one "
+                "counterbalanced session with the instruction-price ladder"
+            ),
+            "rule": (
+                "the registered rule was: stop unless the registered ceiling "
+                "n_halfsums reaches +2.5 %. It reached -0.378 % and the rule "
+                "fired. Rung 2b is an UNREGISTERED follow-up that first "
+                "de-confounds the ceiling arm from its scaffolding."
+            ),
+            "shape": d["shape"],
+            "note": d["note"],
+            **identity(),
+            **gate_flags("standalone Metal probe, ungated local timing", False),
+        },
+    )
+
+    decomp = wandb.Table(columns=[
+        "na", "mechanism_ceiling_pct", "registered_ceiling_pct",
+        "body_duplication_cost_pp", "min_exchange_pct", "exchange_cost_pp",
+        "split_pct", "owner_pct", "captured_fraction"])
+    for r in d["rows"]:
+        decomp.add_data(r["na"], r["mechanism_ceiling_pct"],
+                        r["registered_ceiling_pct"],
+                        r["body_duplication_cost_pp"], r["min_exchange_pct"],
+                        r["exchange_cost_pp"], r["split_pct"], r["owner_pct"],
+                        r["captured_fraction"])
+
+    occ = wandb.Table(columns=[
+        "arm", "na", "threadgroup_bytes", "threadgroup_budget_bytes",
+        "threadgroups_allowed_by_shared_memory", "air_threadgroup_ops",
+        "air_total_instructions", "g16s_registers", "g16s_spill_bytes",
+        "g16s_text_bytes", "g17s_registers", "g17s_spill_bytes",
+        "g17s_text_bytes"])
+    for c in d["occupancy"]:
+        g16 = c.get("applegpu_g16s", {})
+        g17 = c.get("applegpu_g17s", {})
+        occ.add_data(c["arm"], c["na"], c["threadgroup_bytes"],
+                     c["threadgroup_budget_bytes"],
+                     c["threadgroups_allowed_by_shared_memory"],
+                     c["air_threadgroup_ops"], c["air_total_instructions"],
+                     g16.get("registers"), g16.get("spill_bytes"),
+                     g16.get("text_bytes"), g17.get("registers"),
+                     g17.get("spill_bytes"), g17.get("text_bytes"))
+
+    run.log({"finding53_decomposition": decomp, "occupancy_budget": occ})
+
+    updates: dict[str, object] = {
+        "rung2_best_exact_arm": verdict.get("best_arm"),
+        "rung2_best_exact_round_weighted_pct": verdict.get("standing_pct"),
+        "rung2_bar_pct": verdict.get("bar_pct"),
+        "rung2_bar_cleared": verdict.get("cleared"),
+        "rung2_counts_in_primary_metric": verdict.get("in_primary_metric"),
+    }
+    for r in d["rows"]:
+        for key in ("mechanism_ceiling_pct", "registered_ceiling_pct",
+                    "body_duplication_cost_pp", "min_exchange_pct",
+                    "exchange_cost_pp", "captured_fraction"):
+            if r.get(key) is not None:
+                updates["na%d_%s" % (r["na"], key)] = r[key]
+    run.summary.update(updates)
+    run.finish()
+
+
 RUNS = {
     "e118-arms": log_arms,
     "e118-static-budget": log_static,
     "e118-spill-defect": log_spill_defect,
     "e118-cost-model": log_cost_model,
+    "e118-rung2-finding53": log_rung2,
 }
 
 
