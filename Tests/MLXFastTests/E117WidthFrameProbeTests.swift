@@ -308,8 +308,9 @@ struct E117WidthFrameProbeTests {
                 // Calibrate the replicate count from a measured `a_one`, not
                 // from a byte estimate: the working group count varies with M,
                 // so a fixed formula would integrate very different amounts of
-                // GPU time at M=4 and M=9.
-                _ = Self.timed(3, arms[0].bodies)
+                // GPU time at M=4 and M=9. Ramp first, or the calibration reads
+                // a low-clock time and undercounts the replicates.
+                Self.rampBurst(arms[0].bodies, seconds: Self.rampSeconds)
                 let probeUs = Self.timed(8, arms[0].bodies)
                 let count = max(8, min(600, Int(Self.targetMicroseconds / max(probeUs, 1.0))))
                 for arm in arms { _ = Self.timed(3, arm.bodies) }
