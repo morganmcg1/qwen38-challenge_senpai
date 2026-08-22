@@ -1129,6 +1129,12 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
     net_worst = worst("net_miss")
     loss = max((v["acceptance_loss"] for v in gating.values()
                 if v["acceptance_loss"] is not None), default=0.0)
+    # The realised F1.5 loss rests on the few live substituted rows a cell
+    # actually produces, so it is reported beside a pooled-`p` estimator and a
+    # worst-case `p - q = 1` bound rather than on its own.
+    loss_pooled = max((v["acceptance_loss_pooled_p"] for v in gating.values()
+                       if v["acceptance_loss_pooled_p"] is not None), default=0.0)
+    subs_live = sum(v["substitutions_live"] for v in gating.values())
     watched = by_stratum.get("essays_bacon")
     return {
         "arm": arm,
@@ -1143,6 +1149,8 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         "m_incremental_worst_gating": worst("m_incremental"),
         "recall_worst_gating": lowest("recall"),
         "acceptance_loss_worst_gating": loss,
+        "acceptance_loss_pooled_worst_gating": loss_pooled,
+        "substitutions_live_gating": subs_live,
         # F2.3. The hardest carrier, on its own line, never gating.
         "net_miss_essays_bacon": watched["net_miss"] if watched else None,
         "m_absolute_essays_bacon": watched["m_absolute"] if watched else None,
@@ -1150,6 +1158,8 @@ def summarize(arm: str, cell: Cell, model: dict, extra: dict,
         **model,
         # F1.5: price on the realised acceptance loss, kill on absolute miss.
         "predicted_pct_gating": model["pct_head_share_7"] - MISS_TO_SCORE_PCT * loss,
+        "predicted_pct_pooled":
+            model["pct_head_share_7"] - MISS_TO_SCORE_PCT * loss_pooled,
         "predicted_pct_raw_miss":
             model["pct_head_share_7"] - MISS_TO_SCORE_PCT * worst("m_incremental"),
         "passes_t0": net_worst <= T0_NET_MISS,
@@ -1411,13 +1421,17 @@ def cmd_screen(args) -> None:
             "cells_passing_both": len(ok),
             "best_arm": best["arm"] if best else None,
             "best_predicted_pct": best["predicted_pct_gating"] if best else 0.0,
+            "best_predicted_pct_pooled": best["predicted_pct_pooled"] if best else 0.0,
+            "best_predicted_pct_raw_miss":
+                best["predicted_pct_raw_miss"] if best else 0.0,
             "best_cell": best,
         }
         print(f"\n=== {stage_a}  ({out['by_stage_a'][stage_a]['label']})  "
               f"{len(ok)}/{len(arms)} cells clear T0 and T0b")
         print(f"{'arm':30s}{'B/row':>7s}{'netWorst':>11s}{'mAbsWorst':>11s}"
               f"{'mInc':>11s}{'loss':>11s}{'recall':>9s}{'bacon_net':>11s}"
-              f"{'gain%':>8s}{'pred%':>8s}{'T0':>4s}{'T0b':>5s}")
+              f"{'gain%':>8s}{'predF':>8s}{'predP':>8s}{'predR':>8s}"
+              f"{'subsL':>7s}{'T0':>4s}{'T0b':>5s}")
         for cell in arms[: args.top]:
             bacon = cell["net_miss_essays_bacon"]
             print(f"{cell['arm']:30s}{cell['bytes_per_row']:7d}"
@@ -1429,11 +1443,31 @@ def cmd_screen(args) -> None:
                   f"{bacon if bacon is not None else float('nan'):11.3e}"
                   f"{cell['pct_head_share_7']:8.3f}"
                   f"{cell['predicted_pct_gating']:8.3f}"
+                  f"{cell['predicted_pct_pooled']:8.3f}"
+                  f"{cell['predicted_pct_raw_miss']:8.3f}"
+                  f"{cell['substitutions_live_gating']:7d}"
                   f"{'ok' if cell['passes_t0'] else 'NO':>4s}"
                   f"{'ok' if cell['passes_t0b'] else 'NO':>5s}")
     if args.out:
-        Path(args.out).write_text(json.dumps(out, indent=2))
+        Path(args.out).write_text(json.dumps(slim(out, args.top), indent=2))
         print(f"wrote {args.out}")
+    if args.out_full:
+        Path(args.out_full).write_text(json.dumps(out, indent=2))
+        print(f"wrote {args.out_full}")
+
+
+def slim(out: dict, top: int) -> dict:
+    """Per-stratum detail for every cell is a large measurement artifact, so
+    the committed file keeps it only for the cells the report cites."""
+    keep = {out["by_stage_a"][s]["best_arm"] for s in out["by_stage_a"]}
+    for stage in out["by_stage_a"]:
+        arms = [c for c in out["cells"] if c["stage_a"] == stage]
+        keep.update(c["arm"] for c in arms[:top])
+    trimmed = [c if c["arm"] in keep
+               else {k: v for k, v in c.items() if k != "by_stratum"}
+               for c in out["cells"]]
+    return {**out, "cells": trimmed,
+            "detail_retained_for_arms": sorted(a for a in keep if a)}
 
 
 def main() -> None:
@@ -1471,6 +1505,7 @@ def main() -> None:
     s.add_argument("--top", type=int, default=25)
     s.add_argument("--base-sha", default="197e0550ab46842b639a4ff4fe3f4889ca3b01ec")
     s.add_argument("--out", default="research/e133-screen.json")
+    s.add_argument("--out-full", default="")
     s.set_defaults(func=cmd_screen)
 
     args = ap.parse_args()
