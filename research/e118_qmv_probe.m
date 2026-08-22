@@ -110,10 +110,56 @@ typedef struct {
   id<MTLBuffer> biases;
   id<MTLBuffer> packed_sb;
   id<MTLBuffer> bias_codes;
+  id<MTLBuffer> sums_table;
   id<MTLBuffer> y[MAXARM];
   int n;
   int k;
 } Operands;
+
+// The `x_sumshoist` table. Feedback 3: `sums` carries no `out_row`, no
+// `simd_gid` and no `tid.y`, so it is recomputed once per simdgroup per
+// threadgroup in y -- 8704 times at mlp.gate_up N=34816. The table is what one
+// computation would produce: [k_block][lane][m], `m` fastest, the per-lane
+// stride padded to 8 floats so the layout does not move with NA and every slab
+// is 32-byte aligned.
+enum { kSumsStrideFloats = 8 };
+
+static size_t sumsTableFloats(int k) {
+  return (size_t)(k / 512) * 32 * kSumsStrideFloats;
+}
+
+// Filled on the GPU, not the host. The three inner adds happen in `T`, which is
+// BF16, and only the accumulation into `s` is float. A host fill in float32
+// would produce a different value and the comparator would reject the arm; a
+// host fill that emulates BF16 rounding would be a second implementation of the
+// thing under test. Writing the expression verbatim in Metal removes both
+// risks, and the comparator is still the proof.
+static NSString *const kSumsFillSource =
+    @"#include <metal_stdlib>\n"
+    @"using namespace metal;\n"
+    // The same typedef the arm sources get from
+    // mlx/backend/metal/kernels/bf16.h, so the filler's `T` is the arm's `T`.
+    @"typedef bfloat bfloat16_t;\n"
+    @"[[kernel]] void e118_fill_sums(\n"
+    @"    const device bfloat16_t* x [[buffer(0)]],\n"
+    @"    device float* table [[buffer(1)]],\n"
+    @"    const constant int& in_vec_size [[buffer(2)]],\n"
+    @"    const constant int& max_m [[buffer(3)]],\n"
+    @"    uint3 gid [[thread_position_in_grid]]) {\n"
+    @"  const int kb = int(gid.x);\n"
+    @"  const int lane = int(gid.y);\n"
+    @"  const int m = int(gid.z);\n"
+    @"  float s = 0.0f;\n"
+    @"  if (m < max_m) {\n"
+    @"    const device bfloat16_t* xm =\n"
+    @"        x + m * in_vec_size + kb * 512 + lane * 16;\n"
+    @"    for (int i = 0; i < 4; i++) {\n"
+    @"      s += static_cast<float>(xm[4 * i + 0] + xm[4 * i + 1] +\n"
+    @"                              xm[4 * i + 2] + xm[4 * i + 3]);\n"
+    @"    }\n"
+    @"  }\n"
+    @"  table[(kb * 32 + lane) * 8 + m] = s;\n"
+    @"}\n";
 
 static double g_ns_per_tick = 0.0;
 static uint64_t g_session_start = 0;
@@ -239,6 +285,9 @@ static Operands makeOperands(id<MTLDevice> device, Shape shape, int max_m) {
                                     options:MTLResourceStorageModeShared];
   o.bias_codes = [device newBufferWithLength:groups
                                      options:MTLResourceStorageModeShared];
+  o.sums_table = [device newBufferWithLength:sumsTableFloats(shape.k) * 4
+                                     options:MTLResourceStorageModeShared];
+  memset(o.sums_table.contents, 0, o.sums_table.length);
   for (int a = 0; a < g_narm; a++) {
     o.y[a] = [device newBufferWithLength:(size_t)max_m * shape.n * 2
                                  options:MTLResourceStorageModeShared];
@@ -284,8 +333,34 @@ static void encodeDispatch(id<MTLComputeCommandEncoder> enc,
   [enc setBuffer:o->out_vec offset:0 atIndex:6];
   [enc setBuffer:o->packed_sb offset:0 atIndex:7];
   [enc setBuffer:o->bias_codes offset:0 atIndex:8];
+  [enc setBuffer:o->sums_table offset:0 atIndex:9];
   [enc dispatchThreadgroups:MTLSizeMake((NSUInteger)m, (NSUInteger)(o->n / 8), 1)
       threadsPerThreadgroup:MTLSizeMake(32, 2, 1)];
+}
+
+// One dispatch per shape, before any fidelity check and before any timing, so
+// the table the timed arm reads is the table the comparator validated. It is
+// deliberately NOT refilled inside the positive controls: leaving it stale
+// under a perturbed activation is what makes the table's own control below a
+// real detector rather than a restatement of the activation control.
+static double fillSumsTable(id<MTLCommandQueue> queue,
+                            id<MTLComputePipelineState> pso, Operands *o,
+                            int max_m) {
+  uint64_t t0 = mach_absolute_time();
+  id<MTLCommandBuffer> cb = [queue commandBuffer];
+  id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
+  [enc setComputePipelineState:pso];
+  [enc setBuffer:o->x offset:0 atIndex:0];
+  [enc setBuffer:o->sums_table offset:0 atIndex:1];
+  [enc setBuffer:o->in_vec offset:0 atIndex:2];
+  [enc setBytes:&max_m length:sizeof(int) atIndex:3];
+  [enc dispatchThreads:MTLSizeMake((NSUInteger)(o->k / 512), 32,
+                                   kSumsStrideFloats)
+      threadsPerThreadgroup:MTLSizeMake(1, 32, 1)];
+  [enc endEncoding];
+  [cb commit];
+  [cb waitUntilCompleted];
+  return seconds_since(t0);
 }
 
 static double runArm(id<MTLCommandQueue> queue, id<MTLComputePipelineState> pso,
@@ -534,6 +609,28 @@ int main(int argc, char **argv) {
       }
     }
 
+    // The `x_sumshoist` table filler. Built here so it exists before any
+    // operand set does, and dispatched once per shape below.
+    MTLCompileOptions *fill_opts = [MTLCompileOptions new];
+    if (@available(macOS 26.0, *)) {
+      fill_opts.languageVersion = MTLLanguageVersion4_0;
+    } else {
+      fill_opts.languageVersion = MTLLanguageVersion3_1;
+    }
+    [fill_opts setFastMathEnabled:NO];
+    NSError *fill_err = nil;
+    id<MTLLibrary> fill_lib = [device newLibraryWithSource:kSumsFillSource
+                                                   options:fill_opts
+                                                     error:&fill_err];
+    if (!fill_lib) {
+      fprintf(stderr, "e118_qmv_probe: sums-table filler failed: %s\n",
+              fill_err ? [[fill_err localizedDescription] UTF8String]
+                       : "unknown");
+      return 1;
+    }
+    id<MTLComputePipelineState> fill_pso =
+        psoFor(device, fill_lib, @"e118_fill_sums", "sums_table_fill");
+
     FILE *out = fopen(out_path, "w");
     if (!out) {
       fprintf(stderr, "e118_qmv_probe: cannot write %s\n", out_path);
@@ -562,8 +659,27 @@ int main(int argc, char **argv) {
     int first_row = 1;
     for (int s = 0; s < n_shapes; s++) {
       Operands o = makeOperands(device, shapes[s], max_m);
-      fprintf(stderr, "e118_qmv_probe: shape %s  w=%.1fMB\n", shapes[s].name,
-              (double)o.w.length / 1e6);
+      // Warm, then time. `x_sumshoist`'s timed number below EXCLUDES this
+      // dispatch, because the table is produced once and consumed by every
+      // threadgroup in y. The cost of producing it is measured here so the
+      // ceiling can be quoted with the production charge instead of without.
+      fillSumsTable(queue, fill_pso, &o, max_m);
+      double fill_s = fillSumsTable(queue, fill_pso, &o, max_m);
+      for (int rep = 0; rep < 4; rep++) {
+        double again = fillSumsTable(queue, fill_pso, &o, max_m);
+        if (again < fill_s) fill_s = again;
+      }
+      fprintf(stderr,
+              "e118_qmv_probe: shape %s  w=%.1fMB  sums_table=%zuB  "
+              "fill=%.1fus\n",
+              shapes[s].name, (double)o.w.length / 1e6,
+              (size_t)o.sums_table.length, fill_s * 1e6);
+      fprintf(out,
+              "%s    {\"kind\":\"sums_table\",\"shape\":\"%s\","
+              "\"table_bytes\":%zu,\"fill_us\":%.4f,\"max_m\":%d}",
+              first_row ? "" : ",\n", shapes[s].name,
+              (size_t)o.sums_table.length, fill_s * 1e6, max_m);
+      first_row = 0;
 
       // --- fidelity, before any timing -----------------------------------
       for (int wi = 0; wi < n_widths; wi++) {
@@ -727,20 +843,40 @@ int main(int argc, char **argv) {
           free(save_sb);
           free(save_c);
 
+          // Third path, for arms that read a staged operand this experiment
+          // creates rather than one the shipped kernel already has. The two
+          // controls above do not reach the `x_sumshoist` table: the activation
+          // perturbation leaves the table holding the unperturbed value, so it
+          // cannot prove the table load is live. Perturbing one slab entry can.
+          const int reads_table = strcmp(kArmName[a], "x_sumshoist") == 0;
+          size_t hit_table = 0;
+          if (reads_table) {
+            float *tp = (float *)o.sums_table.contents;
+            const float saved_t = tp[0];
+            tp[0] = saved_t * 8.0f + 1.0f;
+            dispatchOnce(queue, pso[a][0], &o, a, m);
+            hit_table = countDiffering(&o, a, m).differing;
+            tp[0] = saved_t;
+          }
+
           dispatchOnce(queue, pso[a][0], &o, a, m);
           size_t clean = countDiffering(&o, a, m).differing;
+          const int detected =
+              hit_x && hit_meta && (!reads_table || hit_table) && !clean;
           fprintf(stderr,
                   "e118_qmv_probe:   control %-15s x_hit=%zu meta_hit=%zu "
-                  "restored_diff=%zu%s\n",
-                  kArmName[a], hit_x, hit_meta, clean,
-                  (hit_x && hit_meta && !clean) ? "" : "   *** CONTROL FAILED ***");
+                  "table_hit=%zu restored_diff=%zu%s\n",
+                  kArmName[a], hit_x, hit_meta, hit_table, clean,
+                  detected ? "" : "   *** CONTROL FAILED ***");
           fprintf(out,
                   ",\n    {\"kind\":\"positive_control\",\"shape\":\"%s\","
                   "\"m\":%d,\"arm\":\"%s\",\"activation_perturbed_differing\":"
                   "%zu,\"metadata_perturbed_differing\":%zu,"
+                  "\"table_perturbed_differing\":%zu,\"reads_table\":%s,"
                   "\"restored_differing\":%zu,\"detected\":%s}",
-                  shapes[s].name, m, kArmName[a], hit_x, hit_meta, clean,
-                  (hit_x && hit_meta && !clean) ? "true" : "false");
+                  shapes[s].name, m, kArmName[a], hit_x, hit_meta, hit_table,
+                  reads_table ? "true" : "false", clean,
+                  detected ? "true" : "false");
         }
       }
 

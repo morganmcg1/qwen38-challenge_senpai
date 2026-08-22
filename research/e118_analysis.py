@@ -54,6 +54,13 @@ DIAGNOSTIC_ARMS = ("n_nosums", "l_loadonly", "n_nobias", "d_bias1",
 # they carry their own pre-registered bar of +1.0 % instead.
 RUNG2_EXACT_ARMS = ("x_sumshare_min", "x_sumshare_split", "x_sumshare_owner")
 RUNG2_BAR_PCT = 1.0
+# Feedback 3's whole-table hoist. Bit exact, load-paying, and it clears every
+# bar in this experiment -- but it reads a tenth buffer that only THIS harness
+# can bind, so it is reported as a ceiling for a delivery decision and never as
+# a shippable arm. It is kept out of `PROMOTION_ARMS` for the same reason the
+# rung-2 arms are: the metadata-load screen's own verdict must not move because
+# a later, larger, differently-scoped arm landed in the same session.
+HOIST_ARMS = ("x_sumshoist",)
 # E111's bias arms, folded in at every width. `e_bias6` is bit exact but is not
 # part of the metadata-load screen: it needs a repacked metadata array that this
 # experiment does not build, so it is reported beside the primary metric.
@@ -938,6 +945,7 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
                "role": ("diagnostic" if arm in DIAGNOSTIC_ARMS
                         else "promotion" if arm in PROMOTION_ARMS
                         else "rung2exact" if arm in RUNG2_EXACT_ARMS
+                        else "hoist" if arm in HOIST_ARMS
                         else "control" if arm in CONTROL_ARMS
                         else "other"),
                "points": point_shapes(per_arm_na[arm])}
@@ -982,6 +990,53 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
     print("   the metric ranks the metadata-load arms only. `p_prefetch_w` and")
     print("   `e_bias6` are bit exact but carry other mechanisms, so they are")
     print("   reported beside it and never inside it.")
+
+    # --- feedback 3: the whole-table hoist -----------------------------------
+    hoist = {}
+    for arm in HOIST_ARMS:
+        if arm not in rows:
+            continue
+        value = rows[arm]["standing_pct"]
+        print("\n   SEPARATE, NOT THE PRE-REGISTERED SCREEN: %s = %+.4f "
+              "round weighted" % (arm, value))
+        print("   vs a_base and vs n_nosums, per width, %% faster:")
+        print("      %-6s %10s %10s %10s %10s"
+              % ("NA", "hoist", "n_nosums", "capture", "hoist-nosums"))
+        capture = {}
+        for na in sorted(per_arm_na[arm]):
+            h = per_arm_na[arm][na]
+            c = per_arm_na.get("n_nosums", {}).get(na)
+            frac = (h / c) if c not in (None, 0.0) else float("nan")
+            capture[na] = frac
+            print("      %-6d %+10.3f %+10.3f %10.3f %+10.3f"
+                  % (na, h, c if c is not None else float("nan"), frac,
+                     h - (c if c is not None else float("nan"))))
+        nosums_wtd = (sw.weighted(per_arm_na["n_nosums"], weights)
+                      if "n_nosums" in per_arm_na else float("nan"))
+        print("      round weighted: hoist %+.4f, n_nosums ceiling %+.4f, "
+              "capture %.3f" % (value, nosums_wtd,
+                                value / nosums_wtd if nosums_wtd else
+                                float("nan")))
+        print("   `n_nosums` keeps its bias load -- the AIR device-load count "
+              "is 7 at every")
+        print("   width, identical to `a_base`, and `n_nobias` is 6 -- so it "
+              "is NOT crediting")
+        print("   itself with the bias load and neither reading needs "
+              "retro-correction.")
+        print("   THIS ARM IS NOT SHIPPABLE FROM `research/`: it binds a tenth "
+              "buffer, and the")
+        print("   host-side binding lives in quantized.cpp, which is not "
+              "editable. Its timed")
+        print("   number also EXCLUDES table production, which the probe times "
+              "separately.")
+        hoist[arm] = {"standing_pct": value, "na": per_arm_na[arm],
+                      "nosums_na": per_arm_na.get("n_nosums", {}),
+                      "nosums_standing_pct": nosums_wtd,
+                      "capture_of_nosums_na": capture,
+                      "capture_of_nosums_weighted":
+                          value / nosums_wtd if nosums_wtd else None,
+                      "shippable_from_research": False,
+                      "excludes_table_production": True}
 
     r2best, r2value = None, float("-inf")
     for arm in RUNG2_EXACT_ARMS:
@@ -1223,6 +1278,9 @@ def report(rate_path: pathlib.Path, census_path: pathlib.Path | None,
         "block_dispersion": disp,
         "rung2_finding53": rung2,
         "rung2_exact_verdict": rung2_verdict,
+        "hoist_verdict": hoist,
+        "sums_table": [r for r in rate["measurements"]
+                       if r.get("kind") == "sums_table"],
         "air_regression": obs,
         "cost_model": model,
         "device": rate["device"], "architecture": rate["architecture"],
