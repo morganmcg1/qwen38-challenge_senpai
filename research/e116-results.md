@@ -29,6 +29,15 @@ bit-exact wide-QMV dose into the round and reading the leg.
 
 ## Headline
 
+```
+e116_wide_qmv_pct_to_leg_pct_transfer = 0.6070   95 % CI [0.5843, 0.6297]
+                        standing value  0.615
+```
+
+**The standing 0.615 is right to 1.3 %, and both factors it is built from are
+wrong by 20 to 28 % in opposite directions.** Measured: the wide-QMV share of
+the leg is 0.6068, not 0.7786, and the round-to-leg transfer is 1.000, not 0.79.
+
 **One microsecond of isolated wide-QMV kernel time added to a decode round adds
 exactly one microsecond of that round's contribution to the leg.**
 
@@ -38,6 +47,19 @@ alpha x beta = 1.000   95 % CI [0.963, 1.038]
 
 Nothing is absorbed and nothing is amplified. The round has no overlap slack,
 and the leg loses nothing on the way out.
+
+**Caveat on what "one microsecond" means here.** The dose runs from a `defer`
+at the very end of the round, after every token, row, draft decision and cache
+write is fixed. It therefore has no overlap partner. 1.000 is the transfer for
+work that cannot be hidden behind other work. The round's own wide-QMV kernels
+could in principle transfer at less than 1.000 if they overlap something. The
+evidence against that is `alpha = 1.177 > 1`: the round is not absorbing the
+dose into slack, it is paying slightly more than the dose costs in isolation,
+which is what a serial round with no spare concurrency looks like.
+
+Two campaign defects are resolved below and neither is the primary metric.
+Read them first if you are short of time: the **E109 round-alignment defect**
+and the **width-histogram harness defect**.
 
 ## Method
 
@@ -306,7 +328,122 @@ the leg are the same number.
 
 ## Rung 4. The measured share, the composition and the cross-check
 
-_pending_
+Census leg `e116r4-realised-512`: 512 tokens, `--local-iterate`, realised
+widths (`MLX_E80_FORCE_DRAFTS` unset), `MLX_E58_BUFFER_LIMIT_OPS=0` so each
+dispatch owns its command buffer and `exclusive_kernels` is an exact per-kernel
+GPU time. `MLX_E116_DOSE=0`, so the dose weight is resident and dispatches
+nothing. Host wall clock in this leg is invalid by construction, because the
+census swizzle takes a lock on every dispatch; only Metal's GPU clock is read.
+
+| width | rounds | wide QMV us | narrow QMV us | gather us | round busy us | wide share of busy |
+|--:|--:|--:|--:|--:|--:|--:|
+| 2 | 1 | 65,200.9 | 732.9 | 170.6 | 69,096.5 | 0.9436 |
+| 4 | 4 | 77,507.0 | 2,472.1 | 517.0 | 88,975.9 | 0.8711 |
+| 5 | 5 | 90,603.3 | 3,319.5 | 684.6 | 105,751.4 | 0.8568 |
+| 6 | 5 | 121,910.3 | 4,175.4 | 851.7 | 133,275.4 | 0.9147 |
+| 7 | 3 | 132,060.4 | 5,025.2 | 1,022.9 | 144,131.2 | 0.9163 |
+| 8 | 60 | 142,771.6 | 5,884.0 | 1,191.8 | 157,287.0 | 0.9077 |
+| **`mtp_round`** | **78** | **133,336.8** | 5,336.0 | 1,083.3 | **147,304.4** | **0.9052** |
+| `serial_round` | 512 | 0.0 | 46,525.2 | 0.0 | 53,373.7 | 0.0000 |
+
+All-QMV share of GPU busy is 0.9488 in the `mtp_round` frame and 0.8717 in the
+`serial_round` frame. The serial figure reproduces E111's 0.877 independently.
+
+### The share the composition needs is not a share of GPU busy
+
+GPU busy is the sum of kernel durations. The transfer coefficient converts a
+percent of kernel time into a percent of **leg seconds**, so the denominator
+must be the leg, not the busy sum. Over the whole 512-token window the MTP
+rounds dispatch
+
+```
+10,400,273.8 us of wide QMV      = 133,336.8 x 78
+17,138,787.0 us of leg           = 33,474.2 us/token x 512
+wide-QMV share of the leg        = 0.6068
+```
+
+**I divide leg totals, not per-round means, and that is not cosmetic.** The
+census leg is `--local-iterate`, which segments this window into 78 MTP rounds;
+the rung 3 ladder is `mtp-timed`, which segments the same window into 77. A
+per-round mean carried across that boundary would have inflated the share by
+1.3 %. This is the harness defect above, biting a real calculation.
+
+### The composition
+
+```
+transfer = 0.6068 x 1.000 = 0.6070   95 % CI [0.5843, 0.6297]
+```
+
+**The standing 0.615 is correct, and both of the factors it is built from are
+wrong.**
+
+| factor | assumed | measured | error in the assumption |
+|---|--:|--:|---|
+| wide-QMV share of the round | 0.7786 | 0.6068 | 28.3 % too high |
+| round to leg absolute transfer | 0.79 | 1.000 | 21.0 % too low |
+| **product** | **0.615** | **0.6070** | **1.3 %** |
+
+Two errors of 28 % and 21 % in opposite directions. The composite survived by
+cancellation, not by being right. Anyone who used either factor on its own --
+for instance to convert a round percent to a leg percent without the share, or
+a busy-time share to a leg share without the transfer -- was off by a fifth to
+a quarter.
+
+### Isolation sensitivity
+
+The census numerator is measured one dispatch per command buffer, which
+inflates every kernel duration. Measured on `target_forward` at width 1:
+64,343.5 us in situ against 67,296.5 us isolated, `+4.59 %`.
+
+**Most of that inflation cancels.** Written out in full, the transfer is
+
+```
+T = slope x wide_qmv_leg / ( dose_unit_us x R / tokens x leg_total )
+```
+
+`wide_qmv_leg` and `dose_unit_us` are both census quantities measured under the
+same isolation, so a common inflation factor appears once in the numerator and
+once in the denominator and cancels exactly. What does not cancel is the
+difference between the two inflation factors: 1.0363 for the dose itself
+(411.86 us isolated against 397.44 us in situ) and 1.0459 for `target_forward`.
+Pricing the round's own wide QMV at the larger factor gives `T = 0.6014`, a
+shift of `-0.9 %`, well inside the `+-3.7 %` interval.
+
+### Repricing every standing arm
+
+| arm | kernel % | was, at 0.615 | now, at 0.6070 | 95 % CI | verdict |
+|---|--:|--:|--:|---|---|
+| `xv4` | -0.673 | -0.414 | **-0.409** | [-0.424, -0.393] | crosses the 0.20 % bar |
+| `xs_stage` | -1.458 | -0.897 | -0.885 | [-0.918, -0.852] | crosses the bar, dead by construction |
+| `b_barrier` | +0.274 | +0.169 | +0.166 | [+0.160, +0.173] | below the bar |
+| `g_pack32` | +0.334 | +0.205 | +0.203 | [+0.195, +0.210] | below the bar |
+
+Every standing price moves by `-1.3 %`. **No verdict changes.** The CI shown
+carries only the transfer uncertainty; each arm's own kernel-percent error bar
+belongs to the experiment that measured it and is not double counted here.
+
+### The `xv4` cross-check
+
+E116 predicts `xv4` at `-0.409 %` [-0.424, -0.393] of absolute candidate MTP
+seconds per token. Alphonse measures `-0.7498 %` end to end on PR #112. The
+prediction sits inside his interval and the intervals overlap, so the two
+readings do not conflict. The measured effect is `1.84x` the predicted one.
+
+**Honest reading: the chain is not refuted, and the test is weak.** The only
+published interval for an `xv4` end-to-end reading is the earlier n=3 pooled
+[-1.720, +0.246]. That interval is 2 percentage points wide and contains both
+zero and twice the prediction, so it cannot discriminate. What would settle it
+is the interval on the powered ABBA reading, which is reported to me as a point
+estimate only.
+
+If the `1.84x` is real rather than noise, the missing factor is **not** in the
+transfer coefficient. E116 measures the transfer directly and finds unity, with
+a `+-3.7 %` interval that cannot hide a factor of 1.84. It would have to sit in
+the kernel percent itself: `xv4` would be removing more wide-QMV time in the
+live round than the static census credits it with.
+
+Artifacts: `research/e116-artifacts/rung4-qmv-share-512.json`,
+`research/e116-artifacts/rung4-reprice.json`.
 
 ## Cleanup
 
