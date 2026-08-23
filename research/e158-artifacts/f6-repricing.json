@@ -1,0 +1,63 @@
+{
+  "corrected_pct_per_point_max": 1.1015625,
+  "corrected_pct_per_point_mean": 1.00927734375,
+  "corrected_pct_per_point_min": 0.96875,
+  "experiment": "e158-r1-f6-repricing",
+  "fixed_schedule_formula": "pct_per_acceptance_point = q / (1 + a)",
+  "harness": "local",
+  "identity_exact_on_rate_legs": true,
+  "ledger_open_legs": {
+    "depthsweep/1/all/beagle_a": 1,
+    "depthsweep/1/none/beagle_a": 1,
+    "depthsweep/2/all/beagle_a": 1,
+    "depthsweep/2/none/beagle_a": 1
+  },
+  "legs_skipped_missing_counters": [
+    "gated/1/all",
+    "gated/3/none"
+  ],
+  "legs_used": 26,
+  "naive_depth_sweep_r2": 0.8292180739942823,
+  "naive_depth_sweep_slope_pct_per_point": -2.9289661331558707,
+  "overstatement_factor": 2.6455562651185294,
+  "per_prompt_operating_point": {
+    "beagle_a": {
+      "a_accepted_per_round": 3.302521008403361,
+      "alpha_accepted_rate": 0.7782178217821782,
+      "n_legs": 2,
+      "pct_per_acceptance_point": 0.986328125,
+      "q_proposed_per_round": 4.243697478991597
+    },
+    "benchfixture": {
+      "a_accepted_per_round": 5.564102564102564,
+      "alpha_accepted_rate": 0.875,
+      "n_legs": 2,
+      "pct_per_acceptance_point": 0.96875,
+      "q_proposed_per_round": 6.358974358974359
+    },
+    "essays_montaigne": {
+      "a_accepted_per_round": 2.506849315068493,
+      "alpha_accepted_rate": 0.7290836653386454,
+      "n_legs": 2,
+      "pct_per_acceptance_point": 0.98046875,
+      "q_proposed_per_round": 3.4383561643835616
+    },
+    "plutarch_lives": {
+      "a_accepted_per_round": 1.8444444444444446,
+      "alpha_accepted_rate": 0.5886524822695035,
+      "n_legs": 1,
+      "pct_per_acceptance_point": 1.1015625,
+      "q_proposed_per_round": 3.1333333333333333
+    }
+  },
+  "question": "What is the local percent-of-score per acceptance point under the F6 identity R = mtp * (1 + a)?",
+  "ranked_equals_local_for_this_channel": true,
+  "ranked_note": "A head-accuracy change touches only the candidate MTP leg. The local serial leg decodes at depth 0 and never reads the head, so the local ratio moves exactly as the ranked raw_p does. This is one of the cases program.md allows the local ratio to be read causally.",
+  "retracted_pct_per_point": 2.6701,
+  "stress_test_benchfixture": {
+    "minus_one_point": -0.9687500000000071,
+    "plus_one_point": 0.9687500000000071,
+    "q_zero_no_drafting": 0.0,
+    "zero": 0.0
+  }
+}
