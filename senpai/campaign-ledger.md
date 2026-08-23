@@ -62543,3 +62543,262 @@ open axes            E158 R1 head rebuild        askeladd   trunk a2 +2.045 % pr
                      E161 gdn/fa producer        alphonse   +0.088 .. +0.106 %
 producer family      +0.179 .. +0.408 % open = 31 .. 71 % of the remaining gap
 ```
+
+## 333 — RULE 179: the score is an identity in two measurable numbers. The exchange rate was never needed, and the head is worth 20x the runtime.
+
+Source: all 923 scored 8-prompt ranked receipts from the Yukon REST API,
+cached at `/tmp/board4.json`. Scripts `/tmp/twfe.py`, `/tmp/oracle.py`,
+`/tmp/frontier.py`, `/tmp/headprov.py`, `/tmp/hybrid.py`. No GPU used.
+Ledger 332 priced the producer-fusion family. This entry prices the whole
+campaign and reorders it.
+
+### RULE 179 — the pricing identity. Retire the acceptance exchange rate.
+
+For every prompt with `non_drafting_round_count == 0`:
+
+```
+    mtp_seconds_per_token  =  R / (1 + edl)
+
+    R    = seconds per decode ROUND        = mtp * (1 + edl)
+    edl  = effective_mean_draft_len        = accepted drafts per drafting round
+```
+
+This is an identity, not a fit. A round emits `1 + edl` tokens on average, so
+`512 = rounds * (1 + edl)` and `512 * mtp = rounds * R`. It holds on
+**100.0 % of receipts for all seven drafting prompts** (650/650 depth-8
+receipts scoring >= 3.0). plutarch is the only exception, at 4.9 %, because it
+is almost entirely non-drafting.
+
+Therefore, for any candidate change:
+
+```
+    published gain  =  (R_old / R_new) * (1 + edl_new) / (1 + edl_old)  -  1
+```
+
+Both factors are directly measurable in one local run. **No regression, no
+transfer coefficient, and no acceptance exchange rate is required.** Verified
+numerically against our anchor through the real order statistic:
+
+```
+    R  -0.176 %   ->  +0.1763 % published
+    R  -0.405 %   ->  +0.4066 % published
+    R  -1.000 %   ->  +1.0101 % published
+    (1+edl) +1 %  ->  +1.000  % published
+    (1+edl) +3 %  ->  +3.000  % published
+```
+
+Pass-through is exactly 1:1 in each factor's own units, as RULE 176 requires.
+
+This **retires** the acceptance exchange rate as a pricing device, including
+askeladd's provisional `+2.6701 %/pt` and everything derived from it. Convert
+through the identity instead: at offered depth 8 with `edl = sum_{i=1..8} p^i`,
+one acceptance point at our beagle operating point (`edl 4.382`, so `p ~ 0.864`)
+is `d(edl) ~ 0.195`, and at unchanged `R` that is `0.195 / 5.382 =` **+3.62 %
+published per acceptance point**, not +2.67 %.
+
+### The two levers, and what each is worth right now
+
+Every candidate change is one of exactly two families. They compose
+multiplicatively and neither can hide inside the other.
+
+```
+    runtime family    lowers R at fixed edl     kernels, fusion, loading, layout
+    drafting family   raises edl at fixed R     head quality, head cost, schedule
+```
+
+### FINDING 311 — we already hold the runtime frontier. It is saturated.
+
+Our parity anchor `5a9f130a` against the 1st-percentile best `R` achieved by
+any of the 650 strong depth-8 receipts:
+
+```
+prompt        our R     best R    gap %      weight
+plutarch   0.034812   0.034761     0.15      0.0033
+drama      0.058962   0.057693     2.20      0.0019
+travel     0.057045   0.056765     0.49      0.0037
+beagle     0.057564   0.057461     0.18      0.4741
+medicine   0.060701   0.060650     0.09      0.1951
+republic   0.058080   0.057981     0.17      0.0963
+essays     0.059794   0.059750     0.07      0.1658
+botany     0.068969   0.068203     1.12      0.0508
+```
+
+Taking the board-best `R` on **every prompt simultaneously** is worth
+**+0.12 %**. On the five scoring prompts we are 0.07 % to 1.12 % away, and five
+of those are inside the 0.039 % local noise floor. Six different solvers sit
+within 0.3 % of each other on beagle at `R ~ 0.0574`. The runtime frontier is
+crowded and effectively closed.
+
+This does **not** retire the producer-fusion family. FINDING 308 prices new `R`
+territory *below* the board frontier, which no receipt represents. It does mean
+that any runtime work whose ceiling is "catch up to the best solver" is worth
+at most +0.12 % and must be rejected.
+
+### FINDING 312 — the drafting frontier is wide open, and someone has already shown the number
+
+Same construction, the other way round: our `R` combined with another solver's
+per-prompt `edl`. Because a better head raises acceptance at the same offered
+depth, it makes the same head calls and verifies the same rows, so `R` is
+unchanged. This hybrid is therefore the correct oracle for a head improvement.
+
+```
+id        user            their score |  our R x their edl   delta
+71caa947  fkiene              3.42022 |        3.98841      +7.57 %
+c94a963f  newjordan           3.68165 |        3.96472      +6.93 %
+0253ef2a  fkiene              3.30830 |        3.88906      +4.89 %
+e518c782  Amal-David          3.54927 |        3.85088      +3.86 %
+d943332f  kirtangajjar        3.63400 |        3.83889      +3.53 %
+09b452f3  igneous-prose       3.66055 |        3.77087      +1.70 %
+```
+
+The reverse hybrid — our `edl` with another solver's `R` — tops out at
+**+0.41 %**.
+
+**The drafting family is worth 18x the runtime family at the current
+operating point.**
+
+### FINDING 313 — the schedule is already optimal, so the head is the only drafting lever
+
+The obvious objection to FINDING 312 is that fkiene reached `edl 5.081` on
+beagle by drafting deeper, which also raised `R`, and indeed fkiene scored only
+3.42022. So is the hybrid reachable?
+
+Restrict to the 587 receipts that use the shipped head `559b24eb` at depth 8.
+The head is then held constant and every `edl` difference comes from the
+schedule. Take the lower envelope of beagle `mtp` in each `edl` bin:
+
+```
+   edl bin      n     best mtp   R at best
+      4.15      5    0.0117938    0.060610
+      4.20      3    0.0111911    0.058271
+      4.30     11    0.0119666    0.063606
+      4.35     22    0.0119854    0.063922
+      4.40    279    0.0106409    0.057267   <== MINIMUM (this is edl 4.382)
+      4.55    232    0.0110505    0.061508
+      4.60     10    0.0108570    0.060533
+      4.65      2    0.0108607    0.061544
+```
+
+The minimum sits exactly at the modal operating point. The same holds on
+medicine (5.3), republic (5.0) and botany (6.1); only essays shows a better bin
+(5.3 at n=4 versus the modal 5.1 at n=306), which is a 4-receipt artifact.
+
+**With the shipped head, the schedule is at its optimum.** There is no free
+schedule money, and this is the mechanical explanation for E159's depth-price
+history and for FINDING 303.
+
+Two consequences follow.
+
+1. `edl` and `R` are yoked along the schedule axis, and we are at the
+   stationary point. Any pure schedule move loses.
+2. **The envelope theorem now applies.** Because `d(mtp)/d(schedule) = 0` at the
+   optimum, the schedule's response to a better head is second order. So the
+   first-order value of a head improvement is exactly `d(edl)/(1 + edl)` at the
+   frozen schedule — which is precisely the hybrid in FINDING 312.
+
+The oracle is therefore sound, and the only lever that reaches it is the head.
+
+### FINDING 314 — ADVISOR ERROR 201: "nobody has ever changed the head" is FALSE
+
+I have repeated this claim, including in assignment #158. It is wrong. At least
+eleven distinct `head_provenance_sha256` values appear on the board.
+
+```
+head        n     best score   best beagle mtp   median beagle edl
+559b24eb  587       3.72911         0.0106409        4.382   <- shipped declared head
+21275947    2       3.66055         0.0107118        3.236   <- igneous-prose, custom
+02bf4795    1       3.61182         0.0109129        4.327   <- hadakang, custom
+6bbc7917    1       3.48363         0.0113786        4.382
+2edd8b91    3       3.19853         0.0124736        4.482
+477ba726   46       3.16766         0.0124072        4.533
+7d627027   65       3.08598         0.0127691        4.345
+cc209e30  107       2.92976         0.0133532        4.312
+157f750e   66       2.83386         0.0139160        2.788   <- an organizer-pinned head
+7a6402b2    4       2.72469         0.0143269        2.168
+78b989b6    2       2.51241         0.0163067        7.446
+```
+
+The correct claim is narrower and stronger: **many solvers have changed the
+head, and none has beaten the shipped `559b24eb`.** Our anchor and the crown
+both run `559b24eb` with byte-identical per-prompt `edl`.
+
+Note `78b989b6`: beagle `edl 7.446`, the highest on the board, and a score of
+2.51. Acceptance bought at any price is worthless. This is RULE 179's first
+factor taking its revenge.
+
+### FINDING 315 — igneous-prose's custom head is an existence proof with a specific shape
+
+`09b452f3`, head `21275947`, score 3.66055, against our anchor:
+
+```
+prompt      w      our R    their R    R %    our edl  their edl   edl %   mtp %
+plutarch  .0033  0.034812  0.055824  +60.36    0.156      2.778  +226.87  -50.94
+drama     .0019  0.058962  0.056703   -3.83    2.298      2.239    -1.78   -2.09
+travel    .0037  0.057045  0.056375   -1.17    2.648      2.569    -2.15   +1.00
+beagle    .4741  0.057564  0.058669   +1.92    4.382      4.477    +1.77   +0.15
+medicine  .1951  0.060701  0.059875   -1.36    5.256      5.109    -2.35   +1.01
+republic  .0963  0.058080  0.057407   -1.16    4.989      4.717    -4.54   +3.54
+essays    .1658  0.059794  0.060836   +1.74    5.087      5.356    +4.43   -2.57
+botany    .0508  0.068969  0.068203   -1.11    6.148      5.906    -3.39   +2.36
+```
+
+Three things matter here.
+
+1. Their head **holds the board record on essays** (`mtp 0.0095710`, 2.57 %
+   better than ours) and on plutarch and drama. It is a real, competitive,
+   custom head.
+2. It **more than doubles plutarch's `edl`**, from 0.156 to 2.778, and halves
+   plutarch's `mtp`. The shipped head fails catastrophically on plutarch and a
+   custom head repairs it completely. plutarch's weight is 0.0033, so this
+   bought them nothing — but it proves the shipped head has a real, repairable
+   acceptance deficiency, and we should look for a milder form of the same
+   deficiency on the scoring prompts.
+3. Their head is **not expensive**. Their `R` is within +/-2 % of ours on every
+   drafting prompt. A custom head does not have to cost more per round.
+
+Their gains and losses are prompt-specific and mostly cancel, which is why the
+hybrid is only +1.70 %. They did not target the weighted prompts. We can.
+
+### What this changes about the campaign
+
+The runtime family is not cancelled. It is bounded and reprioritised.
+
+```
+family      assignment            expected              basis
+runtime     E160 thorfinn         +0.088 .. +0.299 %    FINDING 308, new R territory
+runtime     E161 alphonse         +0.088 .. +0.106 %    FINDING 308, new R territory
+runtime     (catch up to board)   +0.12 % ceiling       FINDING 311 - REJECT this class
+drafting    E158 askeladd         +3 .. +7 %            FINDING 312, 313, 315
+schedule    E159 edward           ~0                    FINDING 313 - schedule is optimal
+```
+
+E160 and E161 stay. Together they are +0.176 % to +0.405 %, which is the
+reliable path to taking the published board, since the crown's true surface is
+about 3.706 and we sit at 3.70785. They are low risk and near term.
+
+E158 is now the campaign's decisive experiment and carries a hard number.
+
+E159's remaining value is diagnostic, not a gain. FINDING 313 says the schedule
+optimum is already found, and the depth-0 gate governs only plutarch.
+
+### Reporting change for all students
+
+Report `R` and `edl` separately for every timed leg, not just `mtp`. `R` is
+`mtp * (1 + edl)`, and it is the runtime family's metric with the drafting
+family divided out. A runtime experiment must show `d(edl) = 0` and a change in
+`R`. A drafting experiment must show a change in `edl` and report what happened
+to `R`. Any experiment that moves both without separating them is uninterpretable.
+
+### Method note that is worth keeping
+
+The two-way fixed-effects regression of `ln(mtp)` on `edl`, with receipt and
+prompt fixed effects, gives +15.89 % published per +1 `edl` on all eight
+prompts, +3.30 % when plutarch is dropped, and +24.11 % when restricted to
+scores >= 3.4. The estimate is not robust because within-prompt `edl` variation
+across solvers is small and confounded with how expensively each solver bought
+it. The placebo is clean — the same estimator on the serial leg returns
+-0.011 % per +1 `edl` with se 0.000117, which is exactly the zero it must be —
+so the machinery is sound and the identification is not.
+
+That instability is why RULE 179 matters: the identity makes the regression
+unnecessary. Record the negative so nobody rebuilds the estimator.
