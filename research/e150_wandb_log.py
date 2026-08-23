@@ -240,6 +240,43 @@ def log_r2_sequential(run, summary: dict, seq: dict) -> None:
          for r in seq["e150_r2_sequential_demand_curve"]])})
 
 
+def log_curve_bracket(run, summary: dict, cb: dict) -> None:
+    """R0.5b: the 2x2 of which curve chose the policy against which billed it.
+
+    `e150_policy_gain_min_over_curves_pp` is the worst SELF-CONSISTENT cell,
+    which is the number the advisor asked for to decide the submission. The
+    transfer cells sit beside it because they are the real deployment risk:
+    a policy chosen on the wrong curve can score negative on the other.
+    """
+    for key in ("e150_policy_gain_on_measured_pct",
+                "e150_policy_gain_on_replayed_pct",
+                "e150_policy_transfer_to_measured_pp",
+                "e150_policy_transfer_to_replayed_pp",
+                "e150_policy_cross_regret_pp",
+                "e150_policy_cross_regret_on_measured_pp",
+                "e150_policy_cross_regret_on_replayed_pp",
+                "e150_policy_gain_min_over_curves_pp",
+                "e150_policy_gain_min_over_all_cells_pp",
+                "e150_curve_bracket_control_pp",
+                "e150_curve_bracket_control_ok"):
+        if key in cb:
+            summary[key] = cb[key]
+    for curve, value in cb.get("e150_mu_star_by_curve", {}).items():
+        summary["e150_mu_star_%s" % curve] = value
+    for curve, value in cb.get("e150_shipped_by_curve", {}).items():
+        summary["e150_shipped_pct_%s" % curve] = value
+
+    cells = cb.get("e150_curve_bracket_cells", {})
+    run.log({"curve_bracket_cells": table(
+        ["cell", "median_pct", "median_pct_sd", "weighted_mean_depth",
+         "frac_rounds_inadmissible", "weighted_accept_rate"],
+        [[name, row.get("median_pct"), row.get("median_pct_sd"),
+          row.get("weighted_mean_depth"),
+          row.get("frac_rounds_inadmissible"),
+          row.get("weighted_accept_rate")]
+         for name, row in sorted(cells.items())])})
+
+
 def log_r1(run, summary: dict, r1: dict) -> None:
     """R1 and R2: the predictability ceiling and the information ladder."""
     for key in ("e150_capturable_pp_at_measured_sigma",
@@ -359,7 +396,8 @@ def main() -> int:
     r1 = load("r1.json")
     w8 = load("width8.json")
     r2seq = load("r2seq.json")
-    if all(v is None for v in (r0, r05, r1, w8, r2seq)):
+    cb = load("curve_bracket.json")
+    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb)):
         print("no E150 artifacts found under %s" % ARTIFACTS)
         return 1
 
@@ -367,6 +405,7 @@ def main() -> int:
     config = {
         "experiment": "E150",
         "rungs_present": [n for n, v in (("R0", r0), ("R0.5", r05),
+                                         ("R0.5b", cb),
                                          ("R1/R2", r1), ("width8", w8),
                                          ("R2-L5L6", r2seq))
                           if v is not None],
@@ -402,6 +441,8 @@ def main() -> int:
         log_r05(run, summary, r05)
     if w8 is not None:
         log_width8(run, summary, w8)
+    if cb is not None:
+        log_curve_bracket(run, summary, cb)
     if r1 is not None:
         log_r1(run, summary, r1)
     if r2seq is not None:

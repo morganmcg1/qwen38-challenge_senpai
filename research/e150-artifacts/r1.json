@@ -38,6 +38,7 @@
     "L4_ratio_clamped": -3.7135283561040766,
     "L4_ratio_noclamp": 1.840009017814748
   },
+  "e150_capturable_frac_rounds_inadmissible": 0.1554147074440424,
   "e150_capturable_median_pct_sd": 0.07618136088387002,
   "e150_capturable_over_shipped_pp": 1.706186355841825,
   "e150_capturable_per_prompt_ratio": {
@@ -52,6 +53,17 @@
   },
   "e150_capturable_pp_argmax_rule_only": 0.1257825863371235,
   "e150_capturable_pp_at_measured_sigma": 1.840009017814748,
+  "e150_capturable_width_histogram": {
+    "1": 0.0,
+    "2": 0.13807935056901846,
+    "3": 0.30992347399593834,
+    "4": 0.08896011123093008,
+    "5": 0.3076223567600707,
+    "6": 2.7369815472704084e-06,
+    "7": 6.842453868176021e-07,
+    "8": 0.1554112862171083
+  },
+  "e150_capturable_within_admissible_widths": false,
   "e150_constant_lambda_control": [
     {
       "fixed_lambda": 0.3,
@@ -98,6 +110,7 @@
   ],
   "e150_control_checks": {
     "clamp_none_reproduces_r7": true,
+    "e128_ship_equals_env_base": true,
     "shipped_argmax_reproduces_r7": true,
     "shipped_greedy_reproduces_r7": true,
     "truep_reproduces_r7": true,
@@ -3655,6 +3668,82 @@
     "L4": true
   },
   "e150_primary_arm": "L4_ratio_noclamp",
+  "e150_r0_composition_arms": {
+    "e128_expectedonly": {
+      "frac_rounds_inadmissible": 0.2320403793856323,
+      "median_pct": 0.35634397957864755,
+      "median_pct_sd": 0.06328055660263837,
+      "weighted_accept_rate": 0.7652189632217118,
+      "weighted_mean_depth": 4.100892782315286,
+      "width_histogram": {
+        "1": 0.3917725708467514,
+        "2": 0.056749708712066436,
+        "3": 0.15231155052184925,
+        "4": 0.09015581993879132,
+        "5": 0.07696997059490931,
+        "6": 0.06315863111719357,
+        "7": 0.04527572710288725,
+        "8": 0.12360602116555149
+      }
+    },
+    "e128_rankedprice": {
+      "frac_rounds_inadmissible": 0.0,
+      "median_pct": 0.1338226619729229,
+      "median_pct_sd": 0.0536665073529074,
+      "weighted_accept_rate": 0.7350055466397474,
+      "weighted_mean_depth": 3.126906767276651,
+      "width_histogram": {
+        "1": 0.195064071042203,
+        "2": 0.02439212056347806,
+        "3": 0.18486766364872292,
+        "4": 0.258890399467762,
+        "5": 0.336785745277834,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0
+      }
+    },
+    "e128_rankedprice_x_expectedonly": {
+      "frac_rounds_inadmissible": 0.0,
+      "median_pct": -0.09536629121401814,
+      "median_pct_sd": 0.037598554325937804,
+      "weighted_accept_rate": 0.7412950633703824,
+      "weighted_mean_depth": 3.0508951428949587,
+      "width_histogram": {
+        "1": 0.19479203966987604,
+        "2": 0.025344261074077362,
+        "3": 0.20142832179350925,
+        "4": 0.28450875298283207,
+        "5": 0.2939266244797053,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0
+      }
+    },
+    "e128_ship": {
+      "frac_rounds_inadmissible": 0.2674875781539886,
+      "median_pct": 0.0,
+      "median_pct_sd": 0.0,
+      "weighted_accept_rate": 0.7494081857457218,
+      "weighted_mean_depth": 4.382276190024835,
+      "width_histogram": {
+        "1": 0.3962203262615531,
+        "2": 0.05078543776507089,
+        "3": 0.13582990984719104,
+        "4": 0.08008782012465962,
+        "5": 0.06958892784753672,
+        "6": 0.05829172573917689,
+        "7": 0.045504264702860744,
+        "8": 0.16369158771195097
+      }
+    }
+  },
+  "e150_r0_composition_beats_headline": false,
+  "e150_r0_composition_control_passed": true,
+  "e150_r0_composition_control_pp": 0.0,
+  "e150_r0_composition_over_shipped_pp": -0.09536629121401814,
+  "e150_r0_composition_pct": -0.09536629121401814,
+  "e150_r0_composition_super_additive_pp": -0.5855329327655886,
   "e150_r1_gate_cleared": true,
   "e150_r1_gate_cleared_argmax_rule_only": false,
   "e150_r1_gate_pct": 0.43382266197292285,
@@ -3925,46 +4014,120 @@
   "e150_ratio_over_argmax_pp": 1.7142264314776243,
   "e150_ratio_rule_arms": {
     "L4_ratio_clamped": {
+      "frac_rounds_inadmissible": 0.07813484405926027,
       "median_pct": -3.7135283561040766,
       "median_pct_sd": 0.09187617058713943,
+      "weighted_accept_rate": 0.7849026529923858,
       "weighted_mean_depth": 2.999616114229074,
-      "width1_share": 0.0
+      "width1_share": 0.0,
+      "width_histogram": {
+        "1": 0.0,
+        "2": 0.12988815135342746,
+        "3": 0.44273169643825094,
+        "4": 0.1082611887364603,
+        "5": 0.240984119412601,
+        "6": 1.8584654650654954e-06,
+        "7": 0.0,
+        "8": 0.07813298559379521
+      }
     },
     "L4_ratio_noclamp": {
+      "frac_rounds_inadmissible": 0.1554147074440424,
       "median_pct": 1.840009017814748,
       "median_pct_sd": 0.07618136088387002,
+      "weighted_accept_rate": 0.7561422542577669,
       "weighted_mean_depth": 3.7926360065620557,
-      "width1_share": 0.0
+      "width1_share": 0.0,
+      "width_histogram": {
+        "1": 0.0,
+        "2": 0.13807935056901846,
+        "3": 0.30992347399593834,
+        "4": 0.08896011123093008,
+        "5": 0.3076223567600707,
+        "6": 2.7369815472704084e-06,
+        "7": 6.842453868176021e-07,
+        "8": 0.1554112862171083
+      }
     },
     "shipped_ratio_clamped": {
+      "frac_rounds_inadmissible": 0.0026809385980886276,
       "median_pct": -4.379656467745293,
       "median_pct_sd": 0.07755304475969359,
+      "weighted_accept_rate": 0.7695857238456368,
       "weighted_mean_depth": 2.782473667753637,
-      "width1_share": 0.21275033050971942
+      "width1_share": 0.21275033050971942,
+      "width_histogram": {
+        "1": 0.21275033050971942,
+        "2": 0.045764111513401665,
+        "3": 0.3170835701321544,
+        "4": 0.14461553866069704,
+        "5": 0.27710551058593885,
+        "6": 5.501618301023246e-07,
+        "7": 0.0,
+        "8": 0.0026803884362585255
+      }
     },
     "shipped_ratio_noclamp": {
+      "frac_rounds_inadmissible": 0.009582631282107438,
       "median_pct": 0.042377825626592015,
       "median_pct_sd": 0.06053615277749053,
+      "weighted_accept_rate": 0.7219580894984743,
       "weighted_mean_depth": 3.4190070094063683,
-      "width1_share": 0.22067074297919337
+      "width1_share": 0.22067074297919337,
+      "width_histogram": {
+        "1": 0.22067074297919337,
+        "2": 0.039212430987039866,
+        "3": 0.14562750133345578,
+        "4": 0.1288088854664505,
+        "5": 0.45609780795175303,
+        "6": 5.887222020094267e-07,
+        "7": 0.0,
+        "8": 0.009582042559905428
+      }
     },
     "truth_ratio_clamped": {
+      "frac_rounds_inadmissible": 0.09797308945612286,
       "median_pct": -0.13789235380095022,
       "median_pct_sd": 0.19024466263162287,
+      "weighted_accept_rate": 0.9192,
       "weighted_mean_depth": 2.7963648112928396,
-      "width1_share": 0.2812251368914373
+      "width1_share": 0.2812251368914373,
+      "width_histogram": {
+        "1": 0.2812251368914373,
+        "2": 0.15412899184018392,
+        "3": 0.2078518469366048,
+        "4": 0.08960639930469494,
+        "5": 0.16921453557095617,
+        "6": 0.0008014744006344138,
+        "7": 0.0006225738647785179,
+        "8": 0.09654904119070992
+      }
     },
     "truth_ratio_noclamp": {
+      "frac_rounds_inadmissible": 0.19758080049308524,
       "median_pct": 8.526258171721771,
       "median_pct_sd": 0.07332956145187577,
+      "weighted_accept_rate": 0.9192,
       "weighted_mean_depth": 3.7010894458290107,
-      "width1_share": 0.30656775329143293
+      "width1_share": 0.30656775329143293,
+      "width_histogram": {
+        "1": 0.30656775329143293,
+        "2": 0.16106908231027034,
+        "3": 0.09020067147306256,
+        "4": 0.04580521947331147,
+        "5": 0.19877647295883746,
+        "6": 0.005597584356396329,
+        "7": 0.002915099846799835,
+        "8": 0.1890681162898891
+      }
     }
   },
   "e150_ratio_truth_ceiling_pp": 8.526258171721771,
   "e150_ratio_truth_over_argmax_truth_pp": 2.17546370129702,
   "e150_realised_headroom_axis_pp": 6.216971808451828,
   "e150_rule_only_gain_pp": 0.4753378753424816,
+  "e150_shipped_cell_is_price_table_swap": true,
+  "e150_shipped_cell_price_table_swap_pp": 0.1338226619729229,
   "e150_shipped_information_ratio_pp": 0.042377825626592015,
   "e150_temperature_grid": [
     0.6,
