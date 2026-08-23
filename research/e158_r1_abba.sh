@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # E158 R1.C -- price the precision islands on the candidate leg.
 #
-#   usage: research/e158_r1_abba.sh perprompt
-#          research/e158_r1_abba.sh gated
-#          research/e158_r1_abba.sh default-witness
+#   usage: research/e158_r1_abba.sh PHASE [PHASE ...]
+#          PHASE is one of: default-witness, perprompt, canary, gated
 #
 # `perprompt` runs an ABBA palindrome (all, none, none, all) of TIMED
 # `mtp-timed` legs for each prompt, so the candidate-leg seconds per token and
@@ -21,6 +20,14 @@
 # is confined to the candidate MTP leg: the serial control leg never drafts and
 # therefore never reads a precision-island tensor.
 #
+# `canary` runs one leg per arm on `plutarch_lives`. Advisor F5 measured that a
+# head change moves plutarch `edl` about 128x more than it moves beagle `edl`,
+# so plutarch is the highest-gain detector of a head-quality change on the
+# board. It carries median weight 0.0033 and needs +181 % before the published
+# median moves, so it is a canary and never a target. Acceptance is
+# deterministic under greedy decoding, so one leg per arm is enough and no
+# counterbalancing is required.
+#
 # `default-witness` is the Rule 101 control. It runs one short leg with NO
 # selector in the environment and asserts that the shipped default is now
 # `none`, and one short leg with the selector set to `all` and asserts the
@@ -32,9 +39,15 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-phase="${1:-}"
+(($#)) || {
+  echo "usage: research/e158_r1_abba.sh PHASE [PHASE ...]" >&2
+  echo "  PHASE: default-witness | perprompt | canary | gated" >&2
+  exit 2
+}
+
 tokens="${E158_TOKENS:-512}"
 prompts=(beagle_a essays_montaigne benchfixture)
+canary_prompt="${E158_CANARY_PROMPT:-plutarch_lives}"
 arms=(all none none all)
 head_dir="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
 witness_root=".mlxfast-private/e158r1"
@@ -60,6 +73,7 @@ assert_witness() {
   return 0
 }
 
+for phase in "$@"; do
 case "${phase}" in
   default-witness)
     for spec in "unset:none" "all:all"; do
@@ -109,6 +123,26 @@ case "${phase}" in
     done
     ;;
 
+  canary)
+    for arm in all none; do
+      out="${witness_root}/canary-${canary_prompt}-${arm}"
+      rm -rf "${out}"; mkdir -p "${out}"
+      : > "${out}/witness.txt"
+      echo "=== e158r1 canary ${canary_prompt} arm ${arm} ==="
+      env DARKBLOOM_QWEN_MTP_ISLAND_ARM="${arm}" \
+          E128_HEAD_DIR="${head_dir}" \
+          E128_RUNS_DIR="runs-e158r1-canary-${arm}" \
+          E128_TOKENS="${tokens}" \
+          E128_DEPTH=8 \
+          E128_FORCE=1 \
+          E128_NO_TRACE=1 \
+          MLX_QWEN_MTP_TRACE_PATH="${PWD}/${out}/witness.txt" \
+        research/e128_session.sh "${canary_prompt}" || status=1
+      assert_witness "${out}/witness.txt" "${arm}" \
+        "canary ${canary_prompt} ${arm}" || status=1
+    done
+    ;;
+
   gated)
     for i in "${!arms[@]}"; do
       arm="${arms[$i]}"
@@ -127,9 +161,10 @@ case "${phase}" in
     ;;
 
   *)
-    echo "usage: research/e158_r1_abba.sh perprompt|gated|default-witness" >&2
+    echo "e158_r1_abba: unknown phase '${phase}'" >&2
     exit 2
     ;;
 esac
+done
 
 exit "${status}"

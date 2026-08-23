@@ -33,6 +33,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ARMS = ["all", "none", "none", "all"]
 PROMPTS = ["beagle_a", "essays_montaigne", "benchfixture"]
+CANARY_PROMPT = "plutarch_lives"
 
 # Advisor F2, 2026-08-23: score the weighted effect as
 # 0.474 * (beagle) + 0.526 * (a top-four-like prompt). `beagle` is the measured
@@ -86,77 +87,96 @@ def witness(directory: pathlib.Path) -> str | None:
     return lines[0]
 
 
+def timed_leg(
+    session: str,
+    prompt: str,
+    slot: int,
+    arm: str,
+    runs_dir: str,
+    witness_dir: str,
+) -> dict | None:
+    """One `mtp-timed` leg, in RULE 179 form.
+
+    RULE 179 is an identity, not a fit: a decode round emits `1 + edl` tokens, so
+    `R = mtp * (1 + edl)` is seconds per decode round. It holds only while
+    `non_drafting_round_count == 0`, which is recorded per leg so a reader can
+    see when it does not.
+    """
+    run = ROOT / ".mlxfast-private/e128" / runs_dir / prompt
+    report = read_json(run / "report.json")
+    meta = read_meta(run / "meta.txt")
+    if report is None:
+        return None
+    mtp = report["parent_measured_seconds_per_token"]
+    edl = report["effective_mean_draft_len"]
+    return {
+        "session": session,
+        "prompt": prompt,
+        "slot": slot,
+        "arm": arm,
+        "witness": witness(ROOT / ".mlxfast-private/e158r1" / witness_dir),
+        "mtp_seconds_per_token": mtp,
+        "seconds_per_round_R": mtp * (1.0 + edl),
+        "decode_seconds": report["decode_seconds"],
+        "decode_token_count": report["decode_token_count"],
+        "round_count": report["round_count"],
+        "non_drafting_round_count": report.get("non_drafting_round_count"),
+        "effective_mean_draft_len": edl,
+        "accepted_draft_rate": report["accepted_draft_rate"],
+        "accepted_draft_total": report["accepted_draft_total"],
+        "rejected_draft_total": report["rejected_draft_total"],
+        "all_tokens_matched": report["all_tokens_matched"],
+        "residual_divergence_count": report["residual_divergence_count"],
+        "p50_block_request_seconds": report["p50_block_request_seconds"],
+        "head_provenance_sha256": (report.get("head_provenance") or {}).get(
+            "sha256"
+        ),
+        "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
+        "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
+        "timing_valid": meta.get("timing_valid"),
+        "cool_gate_passed_real_gate": meta.get("cool_gate_passed_real_gate"),
+        "gate_qualified_for_timing": meta.get("gate_qualified_for_timing"),
+        "official_or_ranked_score": meta.get("official_or_ranked_score"),
+        "base_sha": meta.get("base_sha"),
+        "worker_sha256": meta.get("worker_sha256"),
+        "cli_sha256": meta.get("cli_sha256"),
+        "golden_sha256": meta.get("golden_sha256"),
+        "prompt_sha256": meta.get("prompt_sha256"),
+        "host": meta.get("host"),
+        "chip": meta.get("chip"),
+    }
+
+
 def perprompt_legs() -> list[dict]:
     legs = []
     for prompt in PROMPTS:
         for slot, arm in enumerate(ARMS, start=1):
-            run = (
-                ROOT
-                / ".mlxfast-private/e128"
-                / f"runs-e158r1-{prompt}-{slot}-{arm}"
-                / prompt
+            leg = timed_leg(
+                "perprompt",
+                prompt,
+                slot,
+                arm,
+                f"runs-e158r1-{prompt}-{slot}-{arm}",
+                f"perprompt-{prompt}-{slot}-{arm}",
             )
-            report = read_json(run / "report.json")
-            meta = read_meta(run / "meta.txt")
-            if report is None:
-                continue
-            legs.append(
-                {
-                    "session": "perprompt",
-                    "prompt": prompt,
-                    "slot": slot,
-                    "arm": arm,
-                    "witness": witness(
-                        ROOT
-                        / ".mlxfast-private/e158r1"
-                        / f"perprompt-{prompt}-{slot}-{arm}"
-                    ),
-                    "mtp_seconds_per_token": report[
-                        "parent_measured_seconds_per_token"
-                    ],
-                    "decode_seconds": report["decode_seconds"],
-                    "decode_token_count": report["decode_token_count"],
-                    "round_count": report["round_count"],
-                    "non_drafting_round_count": report.get(
-                        "non_drafting_round_count"
-                    ),
-                    "effective_mean_draft_len": report[
-                        "effective_mean_draft_len"
-                    ],
-                    "accepted_draft_rate": report["accepted_draft_rate"],
-                    "accepted_draft_total": report["accepted_draft_total"],
-                    "rejected_draft_total": report["rejected_draft_total"],
-                    "all_tokens_matched": report["all_tokens_matched"],
-                    "residual_divergence_count": report[
-                        "residual_divergence_count"
-                    ],
-                    "p50_block_request_seconds": report[
-                        "p50_block_request_seconds"
-                    ],
-                    "head_provenance_sha256": (report.get("head_provenance") or {}).get(
-                        "sha256"
-                    ),
-                    "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
-                    "gpu_temp_exit_c": meta.get("gpu_temp_exit_c"),
-                    "timing_valid": meta.get("timing_valid"),
-                    "cool_gate_passed_real_gate": meta.get(
-                        "cool_gate_passed_real_gate"
-                    ),
-                    "gate_qualified_for_timing": meta.get(
-                        "gate_qualified_for_timing"
-                    ),
-                    "official_or_ranked_score": meta.get(
-                        "official_or_ranked_score"
-                    ),
-                    "base_sha": meta.get("base_sha"),
-                    "worker_sha256": meta.get("worker_sha256"),
-                    "cli_sha256": meta.get("cli_sha256"),
-                    "golden_sha256": meta.get("golden_sha256"),
-                    "prompt_sha256": meta.get("prompt_sha256"),
-                    "host": meta.get("host"),
-                    "chip": meta.get("chip"),
-                }
-            )
+            if leg is not None:
+                legs.append(leg)
+    return legs
+
+
+def canary_legs() -> list[dict]:
+    legs = []
+    for arm in ("all", "none"):
+        leg = timed_leg(
+            "canary",
+            CANARY_PROMPT,
+            1,
+            arm,
+            f"runs-e158r1-canary-{arm}",
+            f"canary-{CANARY_PROMPT}-{arm}",
+        )
+        if leg is not None:
+            legs.append(leg)
     return legs
 
 
@@ -179,6 +199,8 @@ def gated_legs() -> list[dict]:
                     ROOT / ".mlxfast-private/e158r1" / f"gated-{slot}-{arm}"
                 ),
                 "mtp_seconds_per_token": metrics["mtp_seconds_per_token"],
+                "seconds_per_round_R": metrics["mtp_seconds_per_token"]
+                * (1.0 + metrics["effective_mean_draft_len"]),
                 "serial_seconds_per_token": metrics["serial_seconds_per_token"],
                 "mtp_decode_speedup": metrics["mtp_decode_speedup"],
                 "decode_token_count": metrics["decode_tokens"],
@@ -231,6 +253,31 @@ def abba(legs: list[dict], field: str) -> dict | None:
     }
 
 
+def rule179(cell: dict) -> dict | None:
+    """Split the published gain into its round-time and draft-length factors.
+
+    RULE 179: published gain = (R_old / R_new) * (1 + edl_new) / (1 + edl_old) - 1,
+    with `old` = arm `all` and `new` = arm `none`. The product is algebraically
+    the same number as the plain mtp ratio, so the value of the split is that it
+    says WHICH factor moved. An experiment that moves both without separating
+    them is uninterpretable.
+    """
+    r = cell.get("seconds_per_round_R")
+    e = cell.get("effective_mean_draft_len")
+    if not r or not e:
+        return None
+    round_factor = r["mean_all"] / r["mean_none"]
+    draft_factor = (1.0 + e["mean_none"]) / (1.0 + e["mean_all"])
+    return {
+        "identity_holds": cell.get("rule179_identity_holds"),
+        "R_pct_change": 100.0 * (r["mean_none"] / r["mean_all"] - 1.0),
+        "one_plus_edl_pct_change": 100.0 * (draft_factor - 1.0),
+        "published_pct_from_R": 100.0 * (round_factor - 1.0),
+        "published_pct_from_edl": 100.0 * (draft_factor - 1.0),
+        "published_pct_total": 100.0 * (round_factor * draft_factor - 1.0),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -238,7 +285,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    legs = perprompt_legs() + gated_legs()
+    legs = perprompt_legs() + canary_legs() + gated_legs()
     if not legs:
         print("e158_r1_harvest: no legs found", file=sys.stderr)
         return 1
@@ -264,6 +311,10 @@ def main() -> int:
             continue
         summary["per_prompt"][prompt] = {
             "mtp_seconds_per_token": abba(group, "mtp_seconds_per_token"),
+            "seconds_per_round_R": abba(group, "seconds_per_round_R"),
+            "rule179_identity_holds": all(
+                leg["non_drafting_round_count"] == 0 for leg in group
+            ),
             "effective_mean_draft_len": abba(group, "effective_mean_draft_len"),
             "accepted_draft_rate": abba(group, "accepted_draft_rate"),
             "round_count": abba(group, "round_count"),
@@ -277,6 +328,9 @@ def main() -> int:
                 for leg in group
             ),
         }
+        summary["per_prompt"][prompt]["rule179"] = rule179(
+            summary["per_prompt"][prompt]
+        )
 
     summary["median_weighted_candidate_leg"] = {}
     for name, weights in WEIGHTED_PAIRS.items():
@@ -302,6 +356,40 @@ def main() -> int:
             else None,
             "beats_noise_floor": abs(weighted) > NOISE_FLOOR_PCT,
         }
+
+    canary = {
+        leg["arm"]: leg for leg in legs if leg["session"] == "canary"
+    }
+    if canary:
+        summary["canary"] = {
+            "prompt": CANARY_PROMPT,
+            "role": "head-quality detector only; median weight 0.0033 and needs "
+            "+181 % before the published median moves, so it is never a target",
+            "arms": {
+                arm: {
+                    "effective_mean_draft_len": leg["effective_mean_draft_len"],
+                    "non_drafting_round_count": leg["non_drafting_round_count"],
+                    "round_count": leg["round_count"],
+                    "accepted_draft_rate": leg["accepted_draft_rate"],
+                    "mtp_seconds_per_token": leg["mtp_seconds_per_token"],
+                    "all_tokens_matched": leg["all_tokens_matched"],
+                    "witness": leg["witness"],
+                }
+                for arm, leg in canary.items()
+            },
+        }
+        if "all" in canary and "none" in canary:
+            base_edl = canary["all"]["effective_mean_draft_len"]
+            summary["canary"]["edl_pct_change_none_vs_all"] = (
+                100.0
+                * (canary["none"]["effective_mean_draft_len"] / base_edl - 1.0)
+                if base_edl
+                else None
+            )
+            summary["canary"]["non_drafting_delta_none_minus_all"] = (
+                canary["none"]["non_drafting_round_count"]
+                - canary["all"]["non_drafting_round_count"]
+            )
 
     gated = [leg for leg in legs if leg["session"] == "gated"]
     if len(gated) == 4:
@@ -330,7 +418,12 @@ def main() -> int:
     print(json.dumps(
         {
             key: summary[key]
-            for key in ("per_prompt", "gated", "median_weighted_candidate_leg")
+            for key in (
+                "per_prompt",
+                "canary",
+                "gated",
+                "median_weighted_candidate_leg",
+            )
             if key in summary
         },
         indent=2,
