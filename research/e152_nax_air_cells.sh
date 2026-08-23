@@ -35,8 +35,12 @@ echo "  ours:      $(wc -c < "${OUT}/ours/${HEADER}") bytes"
 echo "  frontier:  $(wc -c < "${OUT}/frontier/${HEADER}") bytes  (${FRONTIER:0:8})"
 echo
 
+# The flags are the ones `kernels/CMakeLists.txt:12-35` gives every kernel.
+# It passes no `-std`, so the `_nax` cells compile against the toolchain
+# default; `-std=metal3.1` is older than `mpp::tensor_ops::matmul2d` and fails.
 for arm in ours frontier; do
-  xcrun -sdk macosx metal -std=metal3.1 -S -O2 \
+  xcrun -sdk macosx metal -x metal -Wall -Wextra -fno-fast-math \
+    -Wno-c++17-extensions -Wno-c++20-extensions -S \
     -I "${OUT}/${arm}" -I "${INC}" "${SRC}" -o "${OUT}/${arm}.ll" \
     || { echo "FAIL: ${arm} header did not compile"; exit 1; }
   xcrun -sdk macosx metal-opt -passes='default<O3>' -S \
