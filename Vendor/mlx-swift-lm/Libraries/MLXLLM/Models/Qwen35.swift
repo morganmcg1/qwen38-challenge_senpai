@@ -5110,6 +5110,24 @@ private func qwen35ClusterRowQMV(
 public let qwen35DerivedClusterProbeFraction: Double =
     Qwen35CustomQMV.probeArm.fraction
 
+/// `MLX_E141_ROWS_PER_LEAF` widens or narrows the derived index's leaf without
+/// touching its probe list, so one binary can time two leaf widths. Four rows
+/// are one `qwen_e121_a2_qmv4` call, so the width must stay a multiple of four,
+/// and 32 rows already fill eight simdgroups. Unset takes the compiled default
+/// bit for bit, which is what a ranked host always runs: the runner sets no
+/// `MLX_` variable. The name is 23 UTF-8 bytes so `strings` on the worker can
+/// witness it, and the `MLX_` prefix survives the harness environment filter.
+public let qwen35E141RowsPerLeafOverride: Int? = {
+    guard let raw = ProcessInfo.processInfo.environment["MLX_E141_ROWS_PER_LEAF"],
+          !raw.isEmpty
+    else { return nil }
+    guard let value = Int(raw), value >= 4, value <= 32, value % 4 == 0 else {
+        fatalError(
+            "MLX_E141_ROWS_PER_LEAF must be a multiple of 4 in [4, 32]; got \(raw)")
+    }
+    return value
+}()
+
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
 private func qwen35ClusterSquaredDistance(
@@ -5667,12 +5685,30 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
         compactDraftPrefixCount + compactDraftControlEnd - compactDraftControlStart
     private static let compactDraftPaddedCount = 98_336
     private static let draftRerankCandidateCount = 32
-    // Derived cluster index. Eight rows per leaf and eight refinement passes
-    // are the screened settings; the centroid table stays 2-bit like the rows
-    // it indexes.
-    private static let derivedClusterRowsPerLeaf = 8
+    // Derived cluster index. Sixteen rows per leaf halves the leaf count and
+    // therefore the coarse centroid-pass bytes; the width must divide
+    // `compactDraftPaddedCount` (98,336) exactly, which 16 does. Eight
+    // refinement passes are the screened setting and the centroid table stays
+    // 2-bit like the rows it indexes.
+    private static let derivedClusterRowsPerLeaf = 16
     private static let derivedClusterIterations = 8
     private static let derivedClusterCentroidBits = 2
+
+    /// Leaf width of the derived index for THIS arm. The width must divide the
+    /// padded row count exactly: `qwen35BisectingPartition` splits a node into
+    /// whole leaves and leaves no room for a partial one, so an indivisible
+    /// override must stop the run instead of silently truncating the table.
+    private static var activeClusterRowsPerLeaf: Int {
+        guard let width = qwen35E141RowsPerLeafOverride else {
+            return derivedClusterRowsPerLeaf
+        }
+        guard compactDraftPaddedCount % width == 0 else {
+            fatalError(
+                "MLX_E141_ROWS_PER_LEAF=\(width) does not divide the padded draft "
+                + "row count \(compactDraftPaddedCount)")
+        }
+        return width
+    }
 
     /// MTP head. Non-nil only when `_qwen35MTPEnabled == true` at init time
     /// AND `args.mtpNumHiddenLayers > 0`.
@@ -6124,7 +6160,7 @@ extension Qwen35TextModel: MTPCapable {
               let exactBiases = exact.biases
         else { return }
 
-        let rowsPerLeaf = Self.derivedClusterRowsPerLeaf
+        let rowsPerLeaf = Self.activeClusterRowsPerLeaf
         let leaves = Self.compactDraftPaddedCount / rowsPerLeaf
         let hidden = configuration.hiddenSize
         let rows = dequantized(
