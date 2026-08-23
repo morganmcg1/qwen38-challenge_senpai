@@ -180,6 +180,9 @@ def r0_metrics(doc: dict) -> tuple[dict, dict]:
         "e151_arithmetic_intensity_arm_on": float(
             roof["arithmetic_intensity_arm_on_flop_per_byte"]
         ),
+        "e151_arm_off_legal_everywhere": float(v["e151_arm_off_legal_everywhere"]),
+        "e151_scored_cell_arm_engages": float(v["e151_scored_cell_arm_engages"]),
+        "e151_aot_cells_arm_disarmed": float(v["e151_aot_cells_arm_disarmed"]),
     }
     config = {
         "e151_retile_shape_table": doc["e151_retile_shape_table"],
@@ -195,6 +198,7 @@ def r0_metrics(doc: dict) -> tuple[dict, dict]:
         "r0_8_rule153_jit_library_partition": doc[
             "r0_8_rule153_jit_library_partition"
         ],
+        "r0_9_loader_legality": doc["r0_9_loader_legality"],
     }
     return metrics, config
 
@@ -292,6 +296,18 @@ def main() -> None:
             "graph. Only applyLMHead(pendingHidden) at M=1 runs. Scored "
             "prefill FLOP is therefore 24.935 TFLOP, not ~26.2, and achieved "
             "throughput is 47.37 TFLOP/s, not 49.8"
+        ),
+        "finding_metallib_loader_incompatibility": (
+            "the first arm-on build of mlx.metallib FAILED. "
+            "QuantizedBlockLoader binds BROWS to the tile's BN, so halving BN "
+            "from 64 to 32 halves n_reads and breaks the group_size == 32 "
+            "specialisation's (BCOLS_PACKED / n_reads) == n_groups assert. "
+            "quantized_nax.metal instantiates group sizes 128, 64 and 32 ahead "
+            "of time, so all six group-32 cells stopped the build. E147 "
+            "shipped the arm off, so the retiled path was never instantiated "
+            "and the defect was unreachable. R1 disarms the retile where the "
+            "loader cannot support it; the scored group-64 4-bit cell keeps "
+            "its 28027-byte AIR digest, so the guard is free on the ranked path"
         ),
         "correction_2_shift_dst": (
             "quantized_nax.h contains no shift_dst, no Ws_tile and no double "
