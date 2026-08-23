@@ -1,0 +1,36 @@
+{
+ "columns_per_round": {
+  "base": 8490,
+  "composed": 2573,
+  "composed67": 2059
+ },
+ "rounds_per_leg": 78,
+ "estimates": [
+  {
+   "contrast": "base->composed",
+   "columns_saved": 5917,
+   "round_ms": 194.97893903499994,
+   "pct": 1.9393733060351583,
+   "us_per_column": 0.6390686996848665,
+   "us_per_column_se": 0.008478771592230356
+  },
+  {
+   "contrast": "composed->composed67",
+   "columns_saved": 514,
+   "round_ms": 191.23388482974127,
+   "pct": 0.19116604882141428,
+   "us_per_column": 0.7112339720558567,
+   "us_per_column_se": 0.09419302670685333
+  },
+  {
+   "contrast": "base->composed67",
+   "columns_saved": 6431,
+   "round_ms": 194.97893903499994,
+   "pct": 2.130519608011371,
+   "us_per_column": 0.6459437921992242,
+   "us_per_column_se": 0.006859275886561936
+  }
+ ],
+ "e135_launch_cost_us_per_column": 0.7112339720558567,
+ "e135_launch_cost_us_per_column_se": 0.09419302670685333
+}
