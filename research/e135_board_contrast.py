@@ -276,6 +276,43 @@ def shapes(rows, reference, target, since):
     print("    scale is the candidate-leg gain applied at shape weight 1.0")
 
 
+def round_model(rows, reference, local_depth):
+    """Fit round time against draft depth, so a local per-round saving transfers.
+
+    A drafting round is one target forward pass over `depth` rows plus head
+    work. If the pass were dominated by per-row compute the round time would
+    scale with depth; if it is dominated by streaming the 4-bit backbone it is
+    nearly fixed. The board answers this directly, and the answer sets how a
+    saving measured at one draft depth converts to another.
+    """
+    ref = tw.per_prompt(tw.pick(rows, reference))
+    points = [
+        (1.0 + ref[n]["effective_mean_draft_len"],
+         ref[n]["mtp_seconds_per_token_mean"]
+         * (1.0 + ref[n]["effective_mean_draft_len"]))
+        for n in tw.NAMES.values() if not ref[n]["non_drafting_round_count"]]
+    mx = statistics.fmean(x for x, _ in points)
+    my = statistics.fmean(y for _, y in points)
+    slope = (sum((x - mx) * (y - my) for x, y in points)
+             / sum((x - mx) ** 2 for x, _ in points))
+    intercept = my - slope * mx
+    total = sum((y - my) ** 2 for _, y in points)
+    resid = sum((y - (intercept + slope * x)) ** 2 for x, y in points)
+
+    beagle_depth = 1.0 + ref["beagle"]["effective_mean_draft_len"]
+    at = lambda d: intercept + slope * d
+    print(f"=== round-time model at {reference}, n {len(points)} drafting prompts")
+    print(f"    round_seconds = {intercept * 1e3:.3f} ms"
+          f" + {slope * 1e3:.3f} ms x depth      R2 {1 - resid / total:.4f}")
+    print(f"    fixed share at beagle depth {beagle_depth:.4f}:"
+          f" {100 * intercept / at(beagle_depth):.1f} %")
+    print(f"    a round is therefore mostly weight streaming, not per-row work")
+    print(f"    local fixture depth {local_depth:.4f} -> beagle {beagle_depth:.4f}:"
+          f"  correction x{at(local_depth) / at(beagle_depth):.4f}")
+    print("    multiply a local per-round gain percentage by that correction to"
+          " read it as a beagle gain percentage")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("contrast", nargs="*", help="board pair A:B or ~A:B")
@@ -286,6 +323,8 @@ def main():
     ap.add_argument("--bar", nargs=2, metavar=("REFERENCE", "TARGET"))
     ap.add_argument("--headroom", metavar="REFERENCE")
     ap.add_argument("--shapes", nargs=2, metavar=("REFERENCE", "TARGET"))
+    ap.add_argument("--round-model", metavar="REFERENCE")
+    ap.add_argument("--local-depth", type=float, default=7.358974358974359)
     ap.add_argument("--label", action="append")
     ap.add_argument("--board", default=os.environ.get(
         "YUKON_BOARD", "/tmp/yukon-board/full.json"))
@@ -306,6 +345,9 @@ def main():
         print()
     if args.shapes:
         shapes(rows, args.shapes[0], args.shapes[1], args.since)
+        print()
+    if args.round_model:
+        round_model(rows, args.round_model, args.local_depth)
         print()
     labels = args.label or []
     labels += [f"c{i}" for i in range(len(labels), len(args.contrast))]

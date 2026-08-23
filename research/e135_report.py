@@ -52,23 +52,36 @@ SESSIONS = {
         "arms": ("incumbent", "select"),
         "headline": "e135_e87_select_candidate_leg_pct",
         "invariance": "the arms differ in probe selection only",
+        "per_round": True,
     },
 }
+
+# The local fixture drafts deeper than ranked beagle, so the same fixed
+# per-round saving is a smaller fraction of the local round. Regressing round
+# time on depth over the 7 drafting prompts of `572b2cc4` gives
+# 51.292 ms + 1.757 ms per row, so a round is 84 % fixed cost and the
+# correction is small. `1760479a` gives x1.0630, so the factor is stable.
+# See `research/e135_board_contrast.py --round-model` and `--shapes`.
+BEAGLE_TOKENS_PER_ROUND = 5.3818
+LOCAL_TO_BEAGLE_ROUND = 1.0572
+PER_ROUND_BAR_PCT = 1.4097
 
 ARMS = SESSIONS["grid"]["arms"]
 META_KEY = SESSIONS["grid"]["meta_key"]
 HEADLINE = SESSIONS["grid"]["headline"]
 INVARIANCE = SESSIONS["grid"]["invariance"]
+PER_ROUND = SESSIONS["grid"].get("per_round", False)
 
 
 def configure(kind: str) -> None:
     """Point the module at one session kind. Importers call this first."""
-    global ARMS, META_KEY, HEADLINE, INVARIANCE
+    global ARMS, META_KEY, HEADLINE, INVARIANCE, PER_ROUND
     spec = SESSIONS[kind]
     ARMS = spec["arms"]
     META_KEY = spec["meta_key"]
     HEADLINE = spec["headline"]
     INVARIANCE = spec["invariance"]
+    PER_ROUND = spec.get("per_round", False)
 
 
 def read_meta(path: pathlib.Path) -> dict[str, str]:
@@ -296,6 +309,27 @@ def main() -> int:
         else:
             verdict = "At or above the +0.10 % gate."
         print(f"STOP RULE: {verdict}")
+
+        if PER_ROUND:
+            edl = statistics.fmean(
+                d for d in (fnum(r["metrics"].get("effective_mean_draft_len"))
+                            for r in complete) if d is not None)
+            beagle_pct = headline * LOCAL_TO_BEAGLE_ROUND
+            print()
+            print("reading the local percentage as a beagle percentage")
+            print(f"  local fixture tokens per round     {1.0 + edl:.4f}")
+            print(f"  ranked beagle tokens per round     {BEAGLE_TOKENS_PER_ROUND:.4f}")
+            print(f"  depth correction                   x{LOCAL_TO_BEAGLE_ROUND:.4f}")
+            print(f"  predicted beagle-equivalent gain   {beagle_pct:+.4f} %"
+                  f" (+- {err * LOCAL_TO_BEAGLE_ROUND:.4f})")
+            print(f"  bar for a per-round mechanism      "
+                  f"+{PER_ROUND_BAR_PCT:.4f} %"
+                  f"   -> {100.0 * beagle_pct / PER_ROUND_BAR_PCT:.1f} % of it")
+            print("  the saving is one selection step per drafting round, and a"
+                  " ranked round is 84 % fixed cost, so a shallower beagle round"
+                  " carries the same saving as a slightly larger fraction")
+            print("  this is a depth correction only. It does not cross g16s to"
+                  " g17s, which Rule 83 still governs.")
     print()
     print("This session is ungated and counterbalanced. It is directional "
           "causal evidence inside itself, not a gate-qualified reading and "
