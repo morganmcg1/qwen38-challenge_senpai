@@ -67,6 +67,18 @@ SESSIONS = {
                        " width-2 route together, so a schedule change is"
                        " expected only through the probe fraction"),
     },
+    # F34 has three arms in one six-leg palindrome, so every arm again sits at
+    # mean position 3.5 and each pairwise contrast stays balanced against a
+    # linear drift. Unlike T29-A the arms here DO change the schedule, because
+    # the depth price is one of the axes.
+    "f34": {
+        "meta_key": "e135_arm",
+        "arms": ("c67ship", "c67pb6"),
+        "headline": "e135_pb6_under_tight_pct",
+        "invariance": ("the ship and pb6 arms differ in the depth price only,"
+                       " and the onePass678 arm differs from pb6 in the"
+                       " launched-column table only"),
+    },
 }
 
 # The local fixture drafts deeper than ranked beagle, so the same fixed

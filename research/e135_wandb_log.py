@@ -3,10 +3,12 @@
 
     usage: research/e135_wandb_log.py --label s1 [--dry]
 
-Every leg in an E135 session runs with `MLXFAST_LOCAL_COOL_GATE=0` under the
-standing counterbalanced-arm exception, so each run logs
-`cool_gate_passed_real_gate`, `gate_qualified_for_timing` and
-`official_or_ranked_score` verbatim as false. Nothing here is a ranked score.
+The early E135 sessions ran with `MLXFAST_LOCAL_COOL_GATE=0` under the standing
+counterbalanced-arm exception. The composition and F34 sessions run the real
+40 C gate. Either way, `cool_gate_passed_real_gate` and
+`gate_qualified_for_timing` are copied verbatim from the legs' own `meta.txt`
+and never asserted from the session spec, and `official_or_ranked_score` is
+always false. Nothing here is a ranked score.
 """
 
 from __future__ import annotations
@@ -106,6 +108,49 @@ SESSION_META = {
             "predict_interaction_finding_225_pct": -1.18,
             "predict_thorfinn_pct": 2.2,
             "local_abba_tolerance_pp": 0.238,
+        },
+    },
+    "f34": {
+        "group": "e135-composition",
+        "experiment": "e135-f34-depth-price-and-onepass678",
+        "question": (
+            "does the pb6 depth price hold up under the tight launch grid, "
+            "and does onePass678 buy the working-column saving that the "
+            "T45 column price predicts for width 8"),
+        "arms": ("c67ship (onepass67 + ship) vs c67pb6 (onepass67 + pb6) vs "
+                 "c678pb6 (onepass678 + pb6)"),
+        "script": "research/e135_f34_abba.sh",
+        "name": "pb6-and-onepass678",
+        "arms_all": ("c67ship", "c67pb6", "c678pb6"),
+        "pairs": (
+            ("c67ship", "c67pb6", "e135_pb6_under_tight_pct"),
+            ("c67pb6", "c678pb6", "e135_onepass678_local_pct"),
+            ("c67ship", "c678pb6", "e135_f34_full_move_pct"),
+        ),
+        "gated": True,
+        "config": {
+            "design": ("c67ship c67pb6 c678pb6 c678pb6 c67pb6 c67ship, one"
+                       " six-leg palindrome, every arm at mean position 3.5"),
+            "reproduce": "research/e135_f34_abba.sh 512 f34 1",
+            "qmv_table": "onepass67 in c67ship and c67pb6, onepass678 in"
+                         " c678pb6",
+            "mechanisms": "depth price, launched-column table at width 8",
+            # onePass678 raises the width-8 tier from NA 4 to NA 8, so unlike
+            # the grid selector it DOES compile a different specialization.
+            # That is why F34 requires the register and spill census before
+            # the table can be included.
+            "table_changes_pipeline_cache_key": True,
+            "e135_local_width8_mass_ship": 0.7692,
+            "e135_local_width8_mass_pb6": 0.6220,
+            "e135_local_rounds_ship": 78,
+            "e135_local_rounds_pb6": 82,
+            "e135_pb6_round_inflation": 1.05128,
+            "e135_ranked_width8_mass_weighted": 0.5390,
+            "e135_onepass678_ranked_transfer_upper_bound": 0.8667,
+            "predict_onepass678_local_pct_on_pb6": 1.2466,
+            "predict_onepass678_local_pct_on_ship_t45": 1.434,
+            "working_column_us": 13.8715,
+            "qmv_dispatches_per_forward_pass": 257,
         },
     },
 }
@@ -281,8 +326,16 @@ def main() -> int:
         "head_dir": meta.get("head_dir"),
         "metallib_source_fingerprint": meta.get("metallib_source_fingerprint"),
         "qmv_table": "onepass67",
-        "cool_gate_passed_real_gate": bool(spec.get("gated")),
-        "gate_qualified_for_timing": bool(spec.get("gated")),
+        # Verbatim from the legs, never from the spec. A session that claims a
+        # gate its legs did not pass must read as a disagreement, not as the
+        # claim.
+        "cool_gate_passed_real_gate": sorted(
+            {str(r["meta"].get("cool_gate_passed_real_gate"))
+             for r in complete}),
+        "gate_qualified_for_timing": sorted(
+            {str(r["meta"].get("gate_qualified_for_timing"))
+             for r in complete}),
+        "gate_expected_by_session_spec": bool(spec.get("gated")),
         "official_or_ranked_score": False,
         "reproduce": (
             f"{spec['script']}"
