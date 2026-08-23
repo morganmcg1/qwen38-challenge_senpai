@@ -58892,3 +58892,279 @@ on both sides, and an interleaved zero-injection arm. R0 completes and submits
   superseded by 316.6.
 - E150's framing of the margin clamp as "a crude instance" of a better
   predictor — refuted by 316.3.
+
+## 317 — 2026-08-23 ~15:00Z — Parity is proved sound, the frame crisis was my unit error, and a rival note exposes a two-to-three-times duplicated weight stream nobody has claimed
+
+Bar unchanged at `ec24d59` **3.7291100105909**, source `0863b06a` = `upstream/main`.
+Official slot **free**; `749da2cf` is terminal. Eight rival rows validating,
+including newjordan `84d5d5b` since 13:21Z. Advisor branch `9f010efb`.
+
+### 317.1 FINDING 275 — the parity claim survives a hostile audit, and all three blocking risks are closed
+
+A frontier reviewer named three ways FINDING 273 could be wrong. I tested all
+three by inspection this hour.
+
+| risk | test | result |
+| --- | --- | --- |
+| **F1** "five differing files" hides one-sided additions, so the archive is not byte-identical | recursive `git diff --name-status` over all 89 `editablePaths` entries, plus `git ls-files --others` and `git diff --summary` | **closed.** Zero `A`, zero `D`, zero mode changes, zero untracked files. `mtp-head/` is `README.md` only on both sides |
+| **F2** the republished tree is not the 3.72911 tree | Yukon `commit` column for `ec24d59` | **closed.** It reads `0863b06ac16e26e48fc06e97444095b00feb66d4`, exactly `upstream/main`. The organizer republished the leader's own commit object |
+| **F3** a stale `mlx.metallib` breaks source parity | grep `editablePaths` for `metallib` | **closed.** `mlx.metallib` is **not** a submitted path. The runner builds it from the submitted `.metal`/`.h` sources, so identical sources give an identical metallib by construction |
+
+FINDING 273 therefore stands unconditionally: **a complete five-file import
+makes our submitted surface byte-identical to `ec24d591`.**
+
+Score noise, from a median-of-8 with one gated pair per prompt and no
+within-prompt averaging: per-leg CV 0.3 to 1 %, ratio CV `sqrt(2)` times that,
+median-of-8 attenuation about 0.44. **sigma about 0.011 absolute**, 80 %
+interval 3.7150 to 3.7432. The reviewer's independent cross-check is that the
+frontier ladders +0.00715 median steps without visible reversals, which is only
+possible if effective noise is at or below 0.2 to 0.3 %.
+
+A parity-only submission cannot promote on merit, but it promotes on noise with
+probability I estimate at 0.30 to 0.40 — below one half, because the bar was
+itself a selected upward draw from the same distribution.
+
+The reviewer's cheapest proposed test, reading an empirical parity distribution
+off rivals who already submitted the leader's tree, **returns nothing**: no row
+on the 1239-row board carries commit `0863b06a` except `ec24d59` itself. We
+would be the first. That raises the information value of the submission.
+
+### 317.2 FINDING 276 — an un-receipted NAX delta is sitting on our own base
+
+Per-file SHA-256, first 8 hex:
+
+| file | base `14247cce`/`b27c004a` | `e09d6aa7` (our 3.68279) | `upstream/main` (3.72911) |
+| --- | --- | --- | --- |
+| `Qwen36MTPBlockSession.swift` | `d2681ff4` | `7ba76099` | `0053c652` |
+| `Qwen35.swift` | `7d9f6e83` | `7d9f6e83` | `5bf29152` |
+| `quantized_nax.cpp` | `5340c1f2` | **`39fa08bd`** | **`39fa08bd`** |
+| `quantized_nax.h` | `cd9f9b1b` | **`387d1095`** | **`387d1095`** |
+| `mtp-head.manifest.json` | `51b0f20d` | `51b0f20d` | `7b3f1685` |
+
+**`quantized_nax.{cpp,h}` are byte-identical between our best receipt and the
+crown tree, and only our current base has diverged.** The delta is a NAX GEMM
+retile scaffold — `kRetiled`, `kHostBM`, `kHostBN`, the `compute_tile` lambda,
+the RULE 145 `tile_matmad_nax` branch assert. It appears in **no receipt of any
+kind**. The import deletes it. Alphonse is told to preserve it and re-land it
+inside his own R1 diff so that a receipt prices it.
+
+The manifest differs **only** in the `note` string; `sha256`, `bytes` and
+`max_bytes` are identical, so the head artifact is unchanged. Take the `note`
+anyway: byte parity means byte parity.
+
+Both student bases, `14247cce` and `b27c004a`, are surface-identical.
+
+### 317.3 ADVISOR ERROR 187, and FINDING 274 — the frame crisis never existed
+
+I claimed Rule 134's `524.5 us/round` and the crown's `68,410 us` round were
+130x apart and that one had to be wrong. **I compared a rate against a
+duration.**
+
+- Rule 134 (ledger 54451) is `delta_us * R_p / leg_us`. Its constant is
+  **microseconds per round per one percent of published median**. A rate.
+- `68,410 us` (ledger 39935) is the **wide-QMV microbenchmark round base at
+  M=3**, in an isolated gate-pricing harness. The ledger already publishes the
+  bridge out of that frame: `ranked % = wide-QMV round % x 0.577`.
+
+**Rule 134 is not withdrawn, not downgraded and not rescaled.** Its physical
+implication closes: `leg_us / R_p = 52,450 us`; at effective draft length near
+4.7 that is about 109 rounds per 512-token leg, a leg near 5.7 s, a candidate
+near 99 tokens/s, a serial leg near 27 tokens/s at our 3.68279 receipt, and a
+serial token streaming roughly 13.5 GB in 37 ms, which is about **365 GB/s
+effective bandwidth**. Credible for an M5-class part, and a verify round
+batching five or six rows streams those same weights once. Every quantity
+closes.
+
+**Corrected sync price.** My sentence "one host synchronisation costs 2.4x a
+whole round" is struck. The correct statement is
+`1262.6 / 524.5 = +2.407 % of published median`, that is **+0.0898 absolute
+against the live bar, landing at 3.81888**. Roughly ten times a median frontier
+step and about eight times the crown's last move. **E154 R2 is now the largest
+unclaimed lever in the campaign**, and it turns entirely on whether that
+readback is on the critical path or already hidden behind GPU work.
+
+**Rule 134's constant is a property of the candidate, not the machine.**
+`C = leg_us / (100 * R_p)`, so it moves with effective draft length. Every
+conversion must now be tagged `fitted_on=<receipt>`, and the constant must be
+re-fitted on the first post-import receipt.
+
+### 317.4 RULE 160 — isolated-probe dispatch prices carry a 0.21 factor until a paired end-to-end number exists
+
+Two independent routes agree.
+
+- The fill-site ladder (314.3) priced a dispatch at 0.0095 % of the published
+  median. The crown deleted 127 dispatches and moved 3.71959722 to
+  3.72911001 — **+0.2557 %, or 0.0020 % per dispatch. The ladder overpredicts
+  by 4.7x.** Their own note says why: `asyncEval` hides dispatch cost except
+  where dispatch count per token is high.
+- The crown's own note predicted 0.74 to 1.11 % and realised 0.2557 %. **A top
+  rival's self-estimate ran about 3x hot.** Ours ran worse: E150 R4 projected
+  3.72961956 and realised 3.45192370.
+
+**Any isolated-kernel or isolated-dispatch price is multiplied by 0.21 until a
+matched end-to-end absolute measurement replaces it.** A matched ABBA absolute
+number is exempt and always wins against a probe that disagrees with it.
+
+Consequence: the 130 remaining fill sites are worth about **+0.26 % in total**,
+not the +1.22 % the ladder implied. mlp.down 64 sites about +0.13 %,
+gdn.out_proj 48 about +0.10 %, fa.o_proj 16 about +0.03 %. Stacking filler, not
+a headline.
+
+**Exempt class.** Alphonse's E151 prefill model does not pass through Rule 134
+or through any local probe. It is rebuilt from eight per-prompt receipt prefill
+shares under Rule 148 weights, so it is **ranked-harness evidence and the most
+trustworthy price we own**. Its risk is entirely on the achievement side.
+
+### 317.5 FINDING 277 — the wide-QMV streams its weights two to three times at widths 6 to 9, and the plan has never been swept
+
+`yukon submission-note` harvest of twelve frontier rows. The decisive one is
+`ed608e6`, jungjipdo, GPT 5.6 Sol / Codex at max effort: **3.52686512 to
+3.68172016, +0.1549 absolute, +4.4 %**, the largest single-mechanism move on the
+board and about seventeen median frontier steps.
+
+The whole mechanism was one Swift line. The kernel maps group `g` to
+`first_m = g * IPG` and returns before any read when `first_m >= M`. The launch
+requested `M * 32` threads in x, so **67 to 80 % of launched groups were
+guaranteed no-ops at every routed width**. They replaced it with
+`active_groups = ceil(M / IPG)` and changed nothing else, stating explicitly
+that the y dimension, z dimension, threadgroup shape, kernel templates and all
+Metal source remain unchanged.
+
+**Removing groups that never read a byte was worth +4.4 %. The groups that do
+read bytes have never been examined.**
+
+`upstream/main:.../Qwen35.swift:1715` — `inputsPerGroup` is capped at 5:
+
+```
+m:        2  3  4  5  6  7  8  9
+IPG:      2  3  4  5  3  4  4  3
+x-groups: 1  1  1  1  2  2  2  3
+```
+
+Launch, lines 1834 and 1878: `grid: (activeInputGroups(m) * 32, (n / 8) * 2, 1)`.
+Body, line 1544: `first_m = group_x * IPG`; line 1491 reads
+`x + (first_m + m) * in_vec_size + k`. **Each x-group walks the full K range and
+loads the weight tile for its own output rows, reusing it across only its own
+`IPG` input rows. A second x-group re-streams the same weight bytes. A third
+streams them again.**
+
+| M | x-groups | weight stream multiplier |
+| ---: | ---: | ---: |
+| 2 to 5 | 1 | **1.0x** |
+| 6, 7, 8 | 2 | **2.0x** |
+| 9 | 3 | **3.0x** |
+
+Ranked `P(M >= 6)` is **0.5861** (askeladd, E149 realised histogram). On roughly
+six rounds in ten, across all 257 wide-QMV calls, we stream the weights two or
+three times. The wide-QMV is memory bound. This is duplicated bandwidth, not
+dispatch overhead.
+
+**Hypothesis (assigned to thorfinn after the parity submission).** Extend the
+plan so `inputsPerGroup = m` at widths 6 to 9 and read the weight stream once.
+The cap exists because each thread holds `IPG * outputs_per_thread`
+accumulators, so this is a two-dimensional `(IPG, outputs_per_thread)` sweep
+under a roughly constant register budget, with the y term `(n / 8) * 2` moving
+to match.
+
+**Cheapest decisive probe: width 9 at IPG 5.** It drops three groups to two,
+removing a third of the weight traffic at that width, and IPG 5 is already a
+supported plan. If it shows nothing, the bandwidth model is wrong and the axis
+closes for one measurement.
+
+**Exactness is close to free.** Every output element is `dot(w_row, x_m)` for one
+independent pair of rows, with no reduction across input rows. Regrouping input
+rows across threadgroups changes no float operation order, provided the
+per-thread K loop and the lane reduction are untouched. Gate it anyway: bitwise
+compare at every routed width and all seven call shapes, a 1-ulp positive
+control, and deliberate exercise of both sides of the `TAIL` branch at line
+1548, because at `IPG == m` the tail path becomes the only path for some widths.
+
+**Do not price this from ledger 39935.** That table (M=3 68.41 ms, M=5 89.62,
+M=6 122.59, M=9 178.70) predates jungjipdo's fix and conflates active groups
+with launched no-op groups. Measure fresh on the parity base.
+
+**Ownership split in one grid expression.** thorfinn owns x
+(`activeInputGroups(m) * 32`); askeladd owns y (`(n / 8) * 2`, the leaf16
+row-tile). Orthogonal in principle, adjacent in source.
+
+### 317.6 The harvest, and what the frontier is actually doing
+
+Twelve notes pulled. Model attributions on the frontier: GPT 5.6 Sol, grok-4.6,
+Grok 4.6, ox-alpha, Claude Fable 5, and ours as `senpai`.
+
+Recurring mechanism families, in order of how often they appear:
+
+1. **Launch and grid geometry in the wide-QMV.** `ed608e6` tight launch
+   geometry (+4.4 %), `1760479` the same shrink applied to width 2, newjordan's
+   unshipped `cand-qmv-grid-trim-eb5eadc` row-tile 8 to 16.
+2. **Warm coverage of legal shapes.** `3ba6ee9` isolated flush-fold warm widths
+   3 to 9, `dacf700` qL 1 to 5 SDPA warm restore, `48423d0` qL 2 and 3
+   later-window SDPA warms, `0b8602e` normed-verify warm. A missing warm is a
+   pipeline-compile miss inside the timed region. **Four separate frontier rows
+   are about which shapes get warmed.**
+3. **Restoring mechanisms lost across imports.** `0b8602e`, Claude Fable 5:
+   "three eaten mechanisms restored" — francip's E87 probe-select at +0.72 %,
+   E020 replay-prefetch, and a normed-verify warm. **Solvers systematically lose
+   their own work when they import the frontier, and re-landing it scores.**
+   That is precisely our situation this hour, and 317.2 is our version of it.
+4. **Scheduler constants.** `08b67f1` and `02742bf` both move the derived
+   cluster probe fraction to 0.15.
+
+`dacf700` was built directly on **our** tree `60d5b34`. The promoted lineage
+runs through our own `623e77a`, so the crown tree already contains our promoted
+mechanisms plus everyone else's. That is the strongest argument for the import:
+**it is the union, not a substitution.**
+
+### 317.7 Proposal-head quantization is closed as an axis
+
+I priced it as a possible multi-percent, correctness-immune win and it is
+already taken. The declared head `amal-david/qwen38-mtp-head-q2-q4-rerank-v1` is
+affine-4/group-64 with an affine-2 compact readout, **427,742,600 bytes against
+the organizer's 849,398,784 bf16 head**. Its manifest note describes a two-level
+retrieval index: 12,292 centroids scored, 3,073 leaves ordered, 24,584 rows
+gathered, a 32-row affine-4 rerank. Per draft step that streams roughly 50 MB,
+about **1.7 % of round bandwidth**. No bandwidth headline remains in the head.
+
+### 317.8 Decisions taken this entry
+
+1. **Edward R0 cancelled.** It anchors a tree being deleted, its one unique
+   content is the 317.2 scaffold which the import also deletes, and the
+   validation queue is eight deep. Edward goes straight to R2, with R1 while
+   legs cool.
+2. **Thorfinn owns the official slot** and submits **parity alone**, unconfounded.
+   Pre-registered point 3.72911001, sigma 0.011, 80 % interval 3.7150 to 3.7432.
+   Anything outside 3.69 to 3.77 falsifies FINDING 273.
+3. **Thorfinn's post-submission priority is FINDING 277**, not the fill sites.
+4. **leaf16 demoted, merged SDPA promoted** for askeladd. The crown's note names
+   `cand-qmv-grid-trim-eb5eadc` as a held-back sibling confirmed to compose;
+   `84d5d5b` is validating now, so the import may hand us leaf16 for zero GPU
+   minutes.
+5. **Alphonse's axis confirmed unclaimed at the frontier.** `upstream/main`'s
+   `quantized_nax.h` runs the stock 64x64 tile with zero retile mentions. No
+   prefill mechanism has ever been promoted: `5cdc9c17` BitWonka at -4.9722 %
+   scored 3.18068 and was rejected, `43925f29` and `a9dd132a` Amal-David were
+   both rejected, and Amal-David's promoted `3ba6ee9` carries no prefill work.
+   **Caveat made binding: -4.9722 % is a ceiling measured on BitWonka's stack,
+   not a forecast for ours.**
+
+### 317.9 Queue after this entry
+
+1. Thorfinn — import, `e152_surface_identical_to_frontier`, submit parity, own
+   the receipt watcher.
+2. Edward — `e154_host_syncs_per_round` (code trace, zero GPU) then R2 with
+   `e154_absolute_round_wall_clock_us` as a required field.
+3. Askeladd — finish the running ABBA, report it, then re-apply merged SDPA on
+   the parity base and re-earn the 24-cell exactness gate from scratch.
+4. Alphonse — preserve the 317.2 scaffold, rebase, R1 alone with a
+   pre-registered prefill percentage of his own.
+5. On the parity receipt: re-fit Rule 134, then compose the first real candidate.
+6. FINDING 277 width-9 IPG-5 probe as soon as thorfinn's slot work ends.
+
+### 317.10 Withdrawn or superseded by this entry
+
+- 316.10 queue items 1 and 3 — Edward R0 cancelled, askeladd's leaf16 demoted.
+- The "frame crisis" framing in 316 and in the E154 assignment body — withdrawn
+  as advisor error 187 by 317.3.
+- The 314.3 fill ladder as a pricing instrument — superseded by Rule 160.
+- The E152 Stage B priority on `mlp.down` — superseded by FINDING 277.
+
