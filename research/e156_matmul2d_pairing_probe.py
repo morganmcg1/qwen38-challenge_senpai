@@ -117,45 +117,6 @@ CAPACITY_SOURCE = r"""
 """
 
 # ---------------------------------------------------------------------------
-# Stage 1b: the real per-lane element layout of each operand on this host.
-#
-# `BaseNAXFrag` assumes a fixed lane->coordinate mapping. MPP documents the
-# cooperative tensor layout as implementation defined. This dumps the actual
-# mapping so the assumption can be checked instead of trusted.
-# ---------------------------------------------------------------------------
-LAYOUT_SOURCE = r"""
-  const ushort lane = thread_index_in_simdgroup;
-
-  mpp::tensor_ops::matmul2d<descB, metal::execution_simdgroup> gB;
-  auto la = gB.get_left_input_cooperative_tensor<T, T, float>();
-  auto lb = gB.get_right_input_cooperative_tensor<T, T, float>();
-  auto lc = gB.get_destination_cooperative_tensor<decltype(la), decltype(lb), float>();
-
-  for (int i = 0; i < 16; ++i) {
-    for (int op = 0; op < 3; ++op) {
-      const int base = (((op * 32) + lane) * 16 + i) * 2;
-      int r = -1;
-      int c = -1;
-      if (op == 0 && i < (int)la.get_capacity()) {
-        auto ix = la.get_multidimensional_index<int>(i);
-        r = ix[0];
-        c = ix[1];
-      } else if (op == 1 && i < (int)lb.get_capacity()) {
-        auto ix = lb.get_multidimensional_index<int>(i);
-        r = ix[0];
-        c = ix[1];
-      } else if (op == 2 && i < (int)lc.get_capacity()) {
-        auto ix = lc.get_multidimensional_index<int>(i);
-        r = ix[0];
-        c = ix[1];
-      }
-      idx[base] = r;
-      idx[base + 1] = c;
-    }
-  }
-"""
-
-# ---------------------------------------------------------------------------
 # Stage 2: the two overloads on the same logical 32x32xK GEMM.
 #
 # `a` is row-major 32 x K, `b` is row-major K x 32, both bf16. `arm` selects the
@@ -285,81 +246,6 @@ def run_capacity() -> dict:
     }
 
 
-def nax_coord(lane: int) -> tuple[int, int]:
-    """BaseNAXFrag::get_coord(), returned as (row, col)."""
-    qid = lane >> 2
-    fm = (qid & 4) | ((lane >> 1) & 3)
-    fn = ((qid & 2) | (lane & 1)) * 4
-    return fm, fn
-
-
-def basenaxfrag_expectation(operand: str) -> dict[tuple[int, int], tuple[int, int]]:
-    """The (lane, element) -> (row, col) map `BaseNAXFrag` assumes.
-
-    Left is one 16x16 fragment. Right and destination are two 16x16 fragments
-    side by side along N, which is how MLX splits `ct_b` and `ct_c` into
-    `Bn0`/`Bn1` and `Cn0`/`Cn1`.
-    """
-    frags = 1 if operand == "left" else 2
-    out: dict[tuple[int, int], tuple[int, int]] = {}
-    for lane in range(32):
-        fm, fn = nax_coord(lane)
-        for f in range(frags):
-            for i in range(2):
-                for j in range(4):
-                    e = f * 8 + i * 4 + j
-                    out[(lane, e)] = (fm + i * 8, fn + j + f * 16)
-    return out
-
-
-def run_layout() -> dict:
-    kern = make_kernel("e156_layout", LAYOUT_SOURCE, ["dummy"], ["idx"])
-    (idx,) = kern(
-        inputs=[mx.zeros((1,), dtype=mx.bfloat16)],
-        template=[("T", mx.bfloat16)],
-        grid=(32, 1, 1),
-        threadgroup=(32, 1, 1),
-        output_shapes=[(3 * 32 * 16 * 2,)],
-        output_dtypes=[mx.int32],
-    )
-    mx.eval(idx)
-    arr = np.array(idx).reshape(3, 32, 16, 2)
-    names = ["left", "right", "destination"]
-    rec: dict = {}
-    for op, name in enumerate(names):
-        want = basenaxfrag_expectation(name)
-        agree = 0
-        total = 0
-        first_mismatch = None
-        for lane in range(32):
-            for e in range(16):
-                r, c = int(arr[op, lane, e, 0]), int(arr[op, lane, e, 1])
-                if r < 0:
-                    continue
-                total += 1
-                exp = want.get((lane, e))
-                if exp == (r, c):
-                    agree += 1
-                elif first_mismatch is None:
-                    first_mismatch = {
-                        "lane": lane, "element": e,
-                        "basenaxfrag_expects": list(exp) if exp else None,
-                        "mpp_reports": [r, c],
-                    }
-        rec[name] = {
-            "elements_reported": total,
-            "elements_matching_basenaxfrag": agree,
-            "layout_matches_basenaxfrag": agree == total and total > 0,
-            "first_mismatch": first_mismatch,
-            "lane0_coords": [[int(arr[op, 0, e, 0]), int(arr[op, 0, e, 1])]
-                             for e in range(16)
-                             if int(arr[op, 0, e, 0]) >= 0],
-        }
-    rec["all_operands_match_basenaxfrag"] = all(
-        rec[n]["layout_matches_basenaxfrag"] for n in names)
-    return rec
-
-
 def run_gemm(a: mx.array, b: mx.array, arm: int, kdim: int) -> np.ndarray:
     kern = make_kernel("e156_pairgemm", GEMM_SOURCE, ["a", "b", "kdim", "mode"],
                        ["out"])
@@ -435,6 +321,18 @@ def diagnose() -> dict:
     got_vals = sorted(np.unique(got).tolist())
     want_vals = sorted(np.unique(want).tolist())
     permutation = bool(got_vals == want_vals)
+
+    # `a[r, k] = r * 16 + k + 1`, so a delivered value names exactly which
+    # element of `A` the destination slot actually received. That decodes the
+    # per-lane element layout without needing an accessor MPP does not expose.
+    left = got[:, :16]
+    codes = np.rint(left).astype(np.int64) - 1
+    src_row = np.where(codes >= 0, codes // 16, -1)
+    src_col = np.where(codes >= 0, codes % 16, -1)
+    want_col = np.tile(np.arange(16), (32, 1))
+    want_row = np.tile(np.arange(32).reshape(32, 1), (1, 16))
+    slots_correct = int(np.sum((src_row == want_row) & (src_col == want_col)))
+
     return {
         "identity_b_exact": exact,
         "identity_b_is_a_permutation_of_expected": permutation,
@@ -442,6 +340,11 @@ def diagnose() -> dict:
         "distinct_values_expected": len(want_vals),
         "expected_row0_first8": want[0, :8].tolist(),
         "produced_row0_first8": got[0, :8].tolist(),
+        "destination_slots_holding_the_right_element": slots_correct,
+        "destination_slots_total": 512,
+        "delivered_source_column_row0": src_col[0].tolist(),
+        "delivered_source_column_row1": src_col[1].tolist(),
+        "delivered_source_row_row0": src_row[0].tolist(),
         "verdict": (
             "faithful" if exact
             else "lane_mapping_only" if permutation
@@ -495,7 +398,6 @@ def main() -> int:
         >= cap["descB_16_32_16"]["right"],
     }
 
-    rec["e156_operand_layout_vs_basenaxfrag"] = run_layout()
     rec["e156_matmul2d_instrument_check"] = diagnose()
 
     rng = np.random.default_rng(args.seed)
