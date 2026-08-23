@@ -34,6 +34,33 @@
     "left_write_fits": false,
     "right_operand_fully_initialised": false
   },
+  "e156_matmul2d_instrument_check": {
+    "identity_b_exact": false,
+    "identity_b_is_a_permutation_of_expected": false,
+    "distinct_values_produced": 257,
+    "distinct_values_expected": 513,
+    "expected_row0_first8": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0
+    ],
+    "produced_row0_first8": [
+      1.0,
+      2.0,
+      5.0,
+      6.0,
+      9.0,
+      10.0,
+      13.0,
+      14.0
+    ],
+    "verdict": "matmul2d_not_faithful_on_this_host"
+  },
   "e156_matmul2d_numerical": {
     "kdim": 64,
     "trials": 16,
@@ -145,9 +172,10 @@
       "both_moved": true
     }
   },
-  "e156_matmul2d_descriptor_bitexact": false,
   "e156_matmul2d_paired_a_computes_the_gemm": false,
   "e156_matmul2d_paired_b_computes_the_gemm": false,
   "e156_matmul2d_controls_caught": true,
-  "gate": "FAIL"
+  "e156_matmul2d_instrument_valid_on_this_host": false,
+  "e156_matmul2d_descriptor_bitexact": "not_measurable_on_this_host",
+  "gate": "INCONCLUSIVE_INSTRUMENT_INVALID"
 }
