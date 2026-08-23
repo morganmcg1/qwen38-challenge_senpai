@@ -1,0 +1,208 @@
+{
+  "e150_central_pair_unchanged_by_promotion": false,
+  "e150_gain_min_over_curves_on_current_receipt_pp": 1.2716447984835064,
+  "e150_projected_ranked_score_on_current_receipt": 3.729619558407483,
+  "e150_receipt_reweight_shift_pp": 0.3134779809449574,
+  "frame": "official even median of eight per-prompt serial over candidate raw ratios, replayed",
+  "gpu_used": false,
+  "harness": "local",
+  "mu_star": {
+    "measured": 0.459979248046875,
+    "replayed": 0.513897705078125
+  },
+  "receipts": {
+    "0cf1637e": {
+      "cells": {
+        "measured": {
+          "frac_rounds_inadmissible": 0.153157135488371,
+          "gain_pp": 1.2716447984835064,
+          "policy_pct": 1.7283409619056276,
+          "policy_pct_sd": 0.06939130296474731,
+          "projected_ranked_score": 3.7464387080000283,
+          "projected_ranked_score_at_gain": 3.729619558407483,
+          "shipped_pct": 0.45669616342212116,
+          "weighted_mean_depth": 4.265047582155839
+        },
+        "replayed": {
+          "frac_rounds_inadmissible": 0.17526096393373414,
+          "gain_pp": 2.864524643999529,
+          "policy_pct": 0.1011090303488819,
+          "policy_pct_sd": 0.14200853769098237,
+          "projected_ranked_score": 3.6865112124994313,
+          "projected_ranked_score_at_gain": 3.7882819395493232,
+          "shipped_pct": -2.7634156136506474,
+          "weighted_mean_depth": 4.761518199230569
+        }
+      },
+      "gain_min_over_curves_pp": 1.2716447984835064,
+      "id": "0cf1637e-b722-4544-9806-94927d28e558",
+      "leverage": {
+        "central_pair": [
+          "beagle",
+          "essays"
+        ],
+        "median": 3.6827875816857816,
+        "per_prompt": {
+          "beagle": {
+            "d_median_d_relative_gain": 1.7647220435233617,
+            "in_central_pair": true,
+            "rank": 3,
+            "raw": 3.5294440870467234,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "botany": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 7,
+            "raw": 3.905846473836587,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "drama": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 1,
+            "raw": 2.106280607444376,
+            "relative_gain_to_reach_central": 0.6756761062948404
+          },
+          "essays": {
+            "d_median_d_relative_gain": 1.9180655381624196,
+            "in_central_pair": true,
+            "rank": 4,
+            "raw": 3.8361310763248393,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "medicine": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 5,
+            "raw": 3.882467744920324,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "plutarch": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 0,
+            "raw": 1.258176142258288,
+            "relative_gain_to_reach_central": 1.8052066546992052
+          },
+          "republic": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 6,
+            "raw": 3.8826349062286276,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "travel": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 2,
+            "raw": 2.3989388117470747,
+            "relative_gain_to_reach_central": 0.47125223443124664
+          }
+        }
+      },
+      "projected_ranked_score_min_over_curves": 3.729619558407483,
+      "score": 3.68278758168578,
+      "status": "rejected",
+      "why": "current promoted campaign receipt, the .ship flip"
+    },
+    "d3c491b5": {
+      "cells": {
+        "measured": {
+          "frac_rounds_inadmissible": 0.153157135488371,
+          "gain_pp": 0.958166817538549,
+          "policy_pct": 1.091989479511472,
+          "policy_pct_sd": 0.06895594384133215,
+          "projected_ranked_score": 3.528767971134889,
+          "projected_ranked_score_at_gain": 3.5240966898017843,
+          "shipped_pct": 0.1338226619729229,
+          "weighted_mean_depth": 4.265047582155839
+        },
+        "replayed": {
+          "frac_rounds_inadmissible": 0.17526096393373414,
+          "gain_pp": 3.222316771163153,
+          "policy_pct": 0.09892269680740011,
+          "policy_pct_sd": 0.16150468081522573,
+          "projected_ranked_score": 3.494103481158516,
+          "projected_ranked_score_at_gain": 3.603130250020879,
+          "shipped_pct": -3.123394074355753,
+          "weighted_mean_depth": 4.761518199230569
+        }
+      },
+      "gain_min_over_curves_pp": 0.958166817538549,
+      "id": "d3c491b5-902f-4f80-8d33-b7938f980d2d",
+      "leverage": {
+        "central_pair": [
+          "beagle",
+          "medicine"
+        ],
+        "median": 3.490650435611495,
+        "per_prompt": {
+          "beagle": {
+            "d_median_d_relative_gain": 1.6631607236678176,
+            "in_central_pair": true,
+            "rank": 3,
+            "raw": 3.3263214473356353,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "botany": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 7,
+            "raw": 3.714352833487596,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "drama": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 1,
+            "raw": 1.9596436565767292,
+            "relative_gain_to_reach_central": 0.6974113819990795
+          },
+          "essays": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 5,
+            "raw": 3.6555800511966665,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "medicine": {
+            "d_median_d_relative_gain": 1.8274897119436773,
+            "in_central_pair": true,
+            "rank": 4,
+            "raw": 3.6549794238873545,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "plutarch": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 0,
+            "raw": 1.2607043299472855,
+            "relative_gain_to_reach_central": 1.638462776973821
+          },
+          "republic": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 6,
+            "raw": 3.672955763346097,
+            "relative_gain_to_reach_central": 0.0
+          },
+          "travel": {
+            "d_median_d_relative_gain": 0.0,
+            "in_central_pair": false,
+            "rank": 2,
+            "raw": 2.230571792305496,
+            "relative_gain_to_reach_central": 0.49124159949031876
+          }
+        }
+      },
+      "projected_ranked_score_min_over_curves": 3.5240966898017843,
+      "score": 3.49065043561149,
+      "status": "accepted",
+      "why": "pre-registered E150 receipt"
+    }
+  },
+  "rung": "R0.5c",
+  "seeds": 6,
+  "windows": 200
+}

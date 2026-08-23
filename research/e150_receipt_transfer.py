@@ -130,7 +130,9 @@ def main() -> int:
         for curve in ("measured", "replayed"):
             shipped = price_cell(env, curve, curve, "shipped", "greedy",
                                  None, None)
-            chosen = price_cell(env, curve, curve, "shipped_noclamp", "ratio",
+            # `clamp={}` is NOCLAMP; `clamp=None` restores the shipped
+            # depth-0 and depth-1 sigmoid clamps.
+            chosen = price_cell(env, curve, curve, "shipped", "ratio",
                                 {}, MU_STAR[curve])
             gain = chosen["median_pct_mean"] - shipped["median_pct_mean"]
             cells[curve] = {

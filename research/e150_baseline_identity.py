@@ -56,7 +56,7 @@ def arm(env, belief, clamp, rule="greedy"):
 
 
 def main() -> int:
-    env = build_env(200, 6)
+    env = build_env(windows=200, seeds=6)
     print("E150 baseline identity - what is the +0.1338 cell?")
     print("  harness=local  gpu_used=False")
     print("  reality: the measured curve, for every row below")

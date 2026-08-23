@@ -143,7 +143,7 @@ def score_arm(env: Env, curve_name: str, curve, price, make_walker,
     `make_walker(seed, prompt, entry) -> chooser | None`. A `None` chooser
     runs the shipped walk, which is how an `adjust`-only E128 arm is priced.
     """
-    values, per_prompt = [], {}
+    values, per_prompt, per_prompt_depth = [], {}, {}
     hist = [0] * (MAX_DEPTH + 2)
     cap_hist = [0] * (MAX_DEPTH + 2)
     rounds = 0
@@ -160,6 +160,7 @@ def score_arm(env: Env, curve_name: str, curve, price, make_walker,
             ratio = run["us_per_token"] / base["us_per_token"]
             ratios[prompt] = {"ratio": ratio}
             per_prompt.setdefault(prompt, []).append(ratio)
+            per_prompt_depth.setdefault(prompt, []).append(run["mean_depth"])
             for index, count in enumerate(run["depth_counts"]):
                 hist[index] += count
             for index, count in enumerate(run["cap_counts"]):
@@ -186,6 +187,8 @@ def score_arm(env: Env, curve_name: str, curve, price, make_walker,
             if w not in env.admitted) / rounds,
         "per_prompt_ratio": {p: statistics.fmean(v)
                              for p, v in per_prompt.items()},
+        "per_prompt_mean_depth": {p: statistics.fmean(v)
+                                  for p, v in per_prompt_depth.items()},
     }
 
 

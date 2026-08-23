@@ -57,7 +57,8 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from e128_price import DECODE_TOKENS, RANKED_PROMPTS, ranked_round_us  # noqa: E402,E501
+from e128_price import (  # noqa: E402
+    DECODE_TOKENS, PROMPT_NAMES, RANKED_PROMPTS, ranked_round_us)
 from e128_replay import SEGMENTED_VERIFY_DEPTH_CAP  # noqa: E402
 from e134_rung2 import simulate  # noqa: E402
 from e140_cells import install  # noqa: E402
@@ -68,6 +69,73 @@ from e150_r05 import BISECTION_MAX_STEPS, BISECTION_TOLERANCE, STATES  # noqa: E
 
 # The bisection bracket. R0.5 solved every measured-curve cell inside it.
 MU_LO, MU_HI = 0.20, 0.90
+
+# Advisor F4 section 4.1. The share of board rows scoring >= 3.5 that each
+# prompt family sits in the median pair for. A family with weight 0 never
+# touches the median at the score band this submission lands in, so its
+# per-prompt gain cannot move the published score there.
+RULE_148_WEIGHTS = {
+    "beagle": 0.5000,
+    "essays": 0.4474,
+    "republic": 0.0329,
+    "medicine": 0.0197,
+    "botany": 0.0000,
+    "drama": 0.0000,
+    "travel": 0.0000,
+    "plutarch": 0.0000,
+}
+
+# The cell the advisor named pessimistic: the schedule decides on the measured
+# curve, which is what the candidate compiles, and the ranked host bills it on
+# the replayed curve.
+PESSIMISTIC_CELL = ("measured", "replayed")
+
+# Advisor F4 section 4.2. `effective_mean_draft_len` recorded by the ranked
+# host for submission 0cf1637e, which is the campaign's own most recent ranked
+# row and carries the same schedule this arm replaces. The Rule 114 witness
+# pre-registers the DIRECTION each of these must move if the arm landed.
+RANKED_EDL_0CF1637E = {
+    "plutarch": 0.156,
+    "drama": 2.298,
+    "travel": 2.648,
+    "beagle": 4.382,
+    "republic": 4.989,
+    "essays": 5.087,
+    "medicine": 5.256,
+    "botany": 6.148,
+}
+
+
+def per_prompt_pct(cell: dict) -> dict:
+    """Per-prompt replayed percent gain against that prompt's own base run.
+
+    `median_pct` forms `raw_p = serial_p / (candidate_p * ratio_p)`, so the
+    policy-to-shipped raw ratio for one prompt is exactly `1 / ratio_p` and
+    the per-prompt percent is independent of the receipt.
+    """
+    return {PROMPT_NAMES[p]: (1.0 / r - 1.0) * 100.0
+            for p, r in cell["per_prompt_ratio"].items()}
+
+
+def rule_148_rollup(gain_by_prompt: dict) -> dict:
+    """Weight per-prompt gains by how often each family sets the median."""
+    total = sum(RULE_148_WEIGHTS.values())
+    weighted = sum(RULE_148_WEIGHTS[name] * gain
+                   for name, gain in gain_by_prompt.items())
+    return {
+        "weights": dict(RULE_148_WEIGHTS),
+        "weight_total": total,
+        "e150_policy_gain_rule148_weighted_pp": weighted / total,
+        "e150_policy_gain_rule148_unnormalised_pp": weighted,
+        "e150_policy_gain_unweighted_mean_pp": (
+            sum(gain_by_prompt.values()) / len(gain_by_prompt)),
+        "e150_policy_gain_worst_prompt": min(gain_by_prompt,
+                                             key=gain_by_prompt.get),
+        "e150_policy_gain_worst_prompt_pp": min(gain_by_prompt.values()),
+        "e150_policy_gain_carrying_families_negative": sorted(
+            name for name, gain in gain_by_prompt.items()
+            if RULE_148_WEIGHTS[name] > 0.0 and gain < 0.0),
+    }
 
 
 def believe(inner, decide_price):
@@ -179,7 +247,7 @@ def main() -> int:
     ap.add_argument("--json", type=str, default="curve_bracket.json")
     args = ap.parse_args()
 
-    env = build_env(args.windows, args.seeds)
+    env = build_env(windows=args.windows, seeds=args.seeds)
     print("E150 R0.5b - the linearised rule across both campaign cost curves")
     print("  harness=local  gpu_used=False  rule_79=not_engaged")
     print("  Rule 151: no mass discount. This mechanism makes its own "
@@ -264,6 +332,85 @@ def main() -> int:
     worst_any = min(gain_measured, gain_replayed, transfer_to_replayed,
                     transfer_to_measured)
 
+    # ------------------------------------------- F4 4.1: who carries the gain
+    # The published score is a MEDIAN over eight prompts, so a pooled gain can
+    # hide a loss on the two prompts that actually set that median. Rule 148
+    # weights each family by how often it sits in the median pair across board
+    # rows scoring >= 3.5, which is the band this submission lands in.
+    by_prompt_gain, rollup = {}, {}
+    for decide in ("measured", "replayed"):
+        for evaluate in ("measured", "replayed"):
+            key = "decide_%s_eval_%s" % (decide, evaluate)
+            policy_pct = per_prompt_pct(cells[key])
+            ship_pct = per_prompt_pct(shipped[evaluate])
+            by_prompt_gain[key] = {name: policy_pct[name] - ship_pct[name]
+                                   for name in policy_pct}
+            rollup[key] = rule_148_rollup(by_prompt_gain[key])
+
+    pess_key = "decide_%s_eval_%s" % PESSIMISTIC_CELL
+    pess_gain = by_prompt_gain[pess_key]
+    pess_roll = rollup[pess_key]
+    print("\n## F4 4.1 per-prompt gain, pessimistic cell %s" % pess_key)
+    print("  %-10s %10s %12s %12s %10s"
+          % ("prompt", "rule148 w", "shipped %", "policy %", "gain pp"))
+    ship_pct = per_prompt_pct(shipped[PESSIMISTIC_CELL[1]])
+    policy_pct = per_prompt_pct(cells[pess_key])
+    for name in sorted(pess_gain, key=lambda n: -RULE_148_WEIGHTS[n]):
+        print("  %-10s %10.4f %+12.4f %+12.4f %+10.4f"
+              % (name, RULE_148_WEIGHTS[name], ship_pct[name],
+                 policy_pct[name], pess_gain[name]))
+    print("  %-10s %10s %12s %12s %+10.4f"
+          % ("WEIGHTED", "", "", "",
+             pess_roll["e150_policy_gain_rule148_weighted_pp"]))
+    print("  %-10s %10s %12s %12s %+10.4f"
+          % ("unweighted", "", "", "",
+             pess_roll["e150_policy_gain_unweighted_mean_pp"]))
+    negatives = pess_roll["e150_policy_gain_carrying_families_negative"]
+    print("  carrying families with a negative gain: %s"
+          % (", ".join(negatives) if negatives else "none"))
+    print("  F4 abort rule: submit only if the weighted roll-up is "
+          ">= +0.30 pp -> %s"
+          % ("SUBMIT"
+             if pess_roll["e150_policy_gain_rule148_weighted_pp"] >= 0.30
+             else "ABORT"))
+
+    # ---------------------------------- F4 4.2: the Rule 114 landing witness
+    # The replay cannot predict the ranked host's absolute draft length, only
+    # the sign of the change the schedule forces. That sign is the witness.
+    ship_depth = {PROMPT_NAMES[p]: d for p, d
+                  in shipped[PESSIMISTIC_CELL[1]]["per_prompt_mean_depth"]
+                  .items()}
+    policy_depth = {PROMPT_NAMES[p]: d for p, d
+                    in cells[pess_key]["per_prompt_mean_depth"].items()}
+    witness = {}
+    for name, ranked_edl in RANKED_EDL_0CF1637E.items():
+        delta = policy_depth[name] - ship_depth[name]
+        witness[name] = {
+            "ranked_edl_0cf1637e": ranked_edl,
+            "replay_shipped_mean_depth": ship_depth[name],
+            "replay_policy_mean_depth": policy_depth[name],
+            "replay_delta_depth": delta,
+            "predicted_direction": ("up" if delta > 1e-9
+                                    else "down" if delta < -1e-9
+                                    else "unchanged"),
+        }
+    unchanged = sorted(n for n, w in witness.items()
+                       if w["predicted_direction"] == "unchanged")
+    print("\n## F4 4.2 Rule 114 pre-registration, pessimistic cell")
+    print("  %-10s %12s %12s %12s %10s %s"
+          % ("prompt", "ranked edl", "replay ship", "replay pol",
+             "delta", "predict"))
+    for name in sorted(witness, key=lambda n: RANKED_EDL_0CF1637E[n]):
+        w = witness[name]
+        print("  %-10s %12.3f %12.4f %12.4f %+10.4f %s"
+              % (name, w["ranked_edl_0cf1637e"],
+                 w["replay_shipped_mean_depth"], w["replay_policy_mean_depth"],
+                 w["replay_delta_depth"], w["predicted_direction"]))
+    print("  falsifier: the receipt is void if the ranked edl is unchanged to "
+          "3 dp on >= 6 of 8 prompts")
+    print("  prompts this replay predicts will not move: %s"
+          % (", ".join(unchanged) if unchanged else "none"))
+
     out = {
         "harness": "local",
         "gpu_used": False,
@@ -296,6 +443,24 @@ def main() -> int:
                                            regret_on_measured),
         "e150_policy_gain_min_over_curves_pp": worst_self,
         "e150_policy_gain_min_over_all_cells_pp": worst_any,
+        "e150_pessimistic_cell": pess_key,
+        "e150_policy_gain_by_prompt_pp": by_prompt_gain,
+        "e150_rule148_rollup_by_cell": rollup,
+        "e150_policy_gain_rule148_weighted_pp": (
+            pess_roll["e150_policy_gain_rule148_weighted_pp"]),
+        "e150_f4_abort_rule_threshold_pp": 0.30,
+        "e150_f4_submit_allowed": (
+            pess_roll["e150_policy_gain_rule148_weighted_pp"] >= 0.30),
+        "e150_per_prompt_pct_shipped": {
+            c: per_prompt_pct(shipped[c]) for c in shipped},
+        "e150_per_prompt_pct_cells": {
+            k: per_prompt_pct(v) for k, v in cells.items()},
+        "e150_rule114_preregistration": witness,
+        "e150_rule114_predicted_unchanged": unchanged,
+        "e150_rule114_falsifier": (
+            "the receipt is void if the ranked effective_mean_draft_len is "
+            "unchanged to 3 dp against 0cf1637e on 6 or more of the 8 ranked "
+            "prompts"),
     }
     path = write_artifact(args.json, out)
 

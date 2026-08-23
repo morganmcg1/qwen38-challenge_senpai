@@ -28,7 +28,7 @@ def main() -> int:
     ap.add_argument("--mu", type=float, default=0.45642623901367185)
     args = ap.parse_args()
 
-    env = build_env(args.windows, args.seeds)
+    env = build_env(windows=args.windows, seeds=args.seeds)
     install(env.measured)
 
     print("mu %.9f  windows %d  seeds %d" % (args.mu, args.windows, args.seeds))
