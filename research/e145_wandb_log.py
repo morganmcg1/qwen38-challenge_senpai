@@ -268,6 +268,154 @@ def log_r6_0(run, summary: dict, r6: dict) -> None:
          for e in r6["kv_capacity_walk"]["aligned_walk_events"]])})
 
 
+def log_r7(run, summary: dict, r7: dict) -> None:
+    """R7: which widths can ever be optimal, and what the argmax is worth.
+
+    `harness=local`, zero GPU. The admissibility test is exact: a width can
+    win only when its cost per token is a new running minimum, because the
+    best possible reach vector puts the whole extra width into accepted
+    tokens. The arms then replay the shipped board with each candidate
+    policy so the theorem and the simulation can disagree in public.
+    """
+    for key, value in r7.items():
+        if key.startswith("e145_r7_") and not isinstance(value, (dict, list)):
+            summary[key] = value
+    summary["e145_r7_admissible_set_str"] = ",".join(
+        str(w) for w in r7["e145_r7_admissible_set"])
+    summary["e145_r7_admissible_set_replayed_str"] = ",".join(
+        str(w) for w in r7["e145_r7_admissible_set_replayed"])
+    summary["e145_r7_measured_and_replayed_admissible_sets_agree"] = (
+        r7["e145_r7_admissible_set"] == r7["e145_r7_admissible_set_replayed"])
+    summary["e145_r7_cheapest_width"] = \
+        r7["e145_r7_admissibility"]["cheapest_width"]
+    summary["e145_r7_width1_us"] = r7["width1_us"]
+    summary["e145_r7_width1_anchor"] = r7["width1_anchor"]
+    summary["e145_r7_basis"] = r7["basis"]
+    summary["e145_r7_attachment_legs"] = r7["attachment_gate"]["legs"]
+    summary["e145_r7_attachment_attached"] = r7["attachment_gate"]["attached"]
+    summary["e145_r7_attachment_mismatches"] = (
+        r7["attachment_gate"]["accept_mismatch"]
+        + r7["attachment_gate"]["margin_mismatch"]
+        + r7["attachment_gate"]["unmatched"])
+
+    unc = r7["e145_r7_admissibility_uncertainty"]
+    summary["e145_r7_uncertainty_draws"] = unc["draws"]
+    for width, freq in unc["admissible_frequency"].items():
+        summary["e145_r7_admissible_freq_w%s" % width] = freq
+
+    run.log({"r7_admissibility": table(
+        ["width", "cost_us", "cost_per_token_us", "admissible", "blocked_by",
+         "misses_by_pct", "one_sigma_us", "admissible_frequency"],
+        [[row["width"], row["cost_us"], row["cost_per_token_us"],
+          row["admissible"], row["blocked_by"], row["misses_by_pct"],
+          unc["one_sigma_us"][str(row["width"])],
+          unc["admissible_frequency"][str(row["width"])]]
+         for row in r7["e145_r7_admissibility"]["rows"]])})
+
+    run.log({"r7_domination": table(
+        ["narrow", "wide", "cost_ratio", "max_token_ratio", "wide_can_win",
+         "headroom_pct"],
+        [[p["narrow"], p["wide"], p["cost_ratio"], p["max_token_ratio"],
+          p["wide_can_win"], p["headroom_pct"]]
+         for p in r7["e145_r7_domination_pairs"]])})
+
+    widths = [str(w) for w in range(1, 9)]
+    run.log({"r7_arms": table(
+        ["arm", "median_pct_mean", "median_pct_sd", "weighted_mean_depth",
+         "frac_rounds_selecting_8", "frac_rounds_inadmissible", "rounds"]
+        + ["width_%s_share" % w for w in widths],
+        [[name, arm["median_pct_mean"], arm["median_pct_sd"],
+          arm["weighted_mean_depth"], arm["frac_rounds_selecting_8"],
+          arm["frac_rounds_inadmissible"], arm["rounds"]]
+         + [arm["width_histogram"][w] for w in widths]
+         for name, arm in sorted(r7["e145_r7_arms"].items())])})
+
+    prompts = sorted(r7["e145_r7_arms"]["argmax_full"]["per_prompt_ratio"])
+    run.log({"r7_arm_per_prompt": table(
+        ["arm"] + prompts,
+        [[name] + [arm["per_prompt_ratio"][p] for p in prompts]
+         for name, arm in sorted(r7["e145_r7_arms"].items())])})
+
+    run.log({"r7_admissible_set_frequency": table(
+        ["set", "frequency"],
+        [[key, value] for key, value
+         in sorted(unc["set_frequency"].items(),
+                   key=lambda kv: -kv[1])])})
+
+
+def log_r6_1(run, summary: dict, legs: list) -> None:
+    """R6-1: the wired residency arm measured on this host, not replayed.
+
+    `harness=local`, real 40 C gate, one binary, palindrome order. The
+    wired legs lower the compiled 96 GiB guard through the E130 probe key
+    so the 48 GiB host can wire at all; the unwired legs leave the key
+    unset and are therefore the proof that the shipped default did not
+    move.
+    """
+    r6_legs = [leg for leg in legs if leg["slot"].startswith("r6-")
+               and "warmup" not in leg["slot"]]
+    if not r6_legs:
+        return
+    wired = [l for l in r6_legs if l.get("residency") == "wired"]
+    unwired = [l for l in r6_legs if l.get("residency") == "unwired"]
+    if not wired or not unwired:
+        return
+
+    def spread_pct(values):
+        mean = sum(values) / len(values)
+        return 100.0 * (max(values) - min(values)) / mean
+
+    def sd_pct(values):
+        mean = sum(values) / len(values)
+        if len(values) < 2:
+            return 0.0
+        var = sum((v - mean) ** 2 for v in values) / (len(values) - 1)
+        return 100.0 * math.sqrt(var) / mean
+
+    wired_spt = [l["spt"] for l in wired]
+    unwired_spt = [l["spt"] for l in unwired]
+    for index, value in enumerate(wired_spt, start=1):
+        summary["e145_r6_wired_spt_%d" % index] = value
+    for index, value in enumerate(unwired_spt, start=1):
+        summary["e145_r6_unwired_spt_%d" % index] = value
+    summary["e145_r6_wired_legs"] = len(wired)
+    summary["e145_r6_unwired_legs"] = len(unwired)
+    summary["e145_r6_wired_within_arm_sd_pct"] = sd_pct(wired_spt)
+    summary["e145_r6_unwired_within_arm_sd_pct"] = sd_pct(unwired_spt)
+    summary["e145_r6_wired_max_gap_pct"] = spread_pct(wired_spt)
+    summary["e145_r6_unwired_max_gap_pct"] = spread_pct(unwired_spt)
+    wired_mean = sum(wired_spt) / len(wired_spt)
+    unwired_mean = sum(unwired_spt) / len(unwired_spt)
+    summary["e145_r6_wired_minus_unwired_pct"] = \
+        100.0 * (wired_mean - unwired_mean) / unwired_mean
+    summary["e145_r6_probe_applied_legs"] = \
+        sum(1 for l in r6_legs if l.get("probe_applied"))
+    summary["e145_r6_probe_refused_legs"] = \
+        sum(1 for l in r6_legs if l.get("probe_refused"))
+    summary["e145_r6_all_matched"] = all(l["all_tokens_matched"]
+                                         for l in r6_legs)
+    summary["e145_r6_divergence_total"] = \
+        sum(l["residual_divergence_count"] for l in r6_legs)
+    entries = [l["gate_entry_temp_c"] for l in r6_legs
+               if l["gate_entry_temp_c"] is not None]
+    if entries:
+        summary["e145_r6_entry_temp_spread_c"] = max(entries) - min(entries)
+
+    run.log({"r6_1_legs": table(
+        ["slot", "position", "residency", "wired_gate_gib", "probe_applied",
+         "probe_refused", "rounds", "round_us_from_blocks", "block_us_median",
+         "spt", "mean_draft_len", "accepted_draft_rate", "gate_entry_temp_c",
+         "leg_exit_temp_c", "all_tokens_matched", "residual_divergence_count"],
+        [[l["slot"], l["position"], l.get("residency"),
+          l.get("wired_gate_gib"), l.get("probe_applied"),
+          l.get("probe_refused"), len(l["blocks"]),
+          l["round_us_from_blocks"], l["block_us_median"], l["spt"],
+          l["mean_draft_len"], l["accepted_draft_rate"],
+          l["gate_entry_temp_c"], l["leg_exit_temp_c"],
+          l["all_tokens_matched"], l["residual_divergence_count"]]
+         for l in r6_legs])})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", default="e145-live-width-cost-curve")
@@ -285,6 +433,7 @@ def main() -> int:
     cross = load("r4-cross.json")
     r5 = load("r5.json")
     r6_0 = load("r6-0.json")
+    r7 = load("r7.json")
     if curve is None or legs_blob is None or r1 is None:
         raise SystemExit("the curve, the legs and R1 must all be present")
     legs = legs_blob["legs"]
@@ -601,6 +750,11 @@ def main() -> int:
 
     if r6_0 is not None:
         log_r6_0(run, summary, r6_0)
+
+    log_r6_1(run, summary, legs)
+
+    if r7 is not None:
+        log_r7(run, summary, r7)
 
     run.log({"timed_legs": table(
         ["slot", "fixture", "arm", "pin", "position", "rounds",
