@@ -574,7 +574,7 @@ def main() -> None:
     # C-a comes from R0, which measured it on the same trials with no head at
     # all. Re-deriving it here would duplicate that measurement, so assert the
     # two agree instead.
-    if int(unproposable.sum()) != r0["channel_a"]["events"]:
+    if not args.limit and int(unproposable.sum()) != r0["channel_a"]["events"]:
         raise SystemExit(
             f"e143-r1: {int(unproposable.sum())} unproposable trials against "
             f"R0's {r0['channel_a']['events']}; the two stages disagree")
