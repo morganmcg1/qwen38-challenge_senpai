@@ -79,6 +79,15 @@ def summarise(path: Path) -> dict:
     # deeper.
     first_reject_position = Counter()
     unproposable_position = Counter()
+    # F6 Rule 125: an acceptance gain is spent by the scheduler, not banked. A
+    # round submits its drafts plus one committed tail token to the target in
+    # one verify call, so that row count IS the verify width the width-cost
+    # curve is indexed by. E82 lost 2.7 to 3.4 percent of seconds per token by
+    # converting acceptance into depth, because the curve steps 36 percent into
+    # width 6. Count the widths so the same failure cannot hide here.
+    width_histogram = Counter()
+    for _, rows in sorted(rounds.items()):
+        width_histogram[sum(1 for r in rows if r["kind"] == "draft") + 1] += 1
     for _, rows in sorted(rounds.items()):
         ordered = sorted(
             (r for r in rows if r["kind"] == "draft"),
@@ -169,6 +178,18 @@ def summarise(path: Path) -> dict:
         # probe could reach. draft_index is 0-based, so step 1 is index 0.
         "first_reject_position_histogram": dict(sorted(first_reject_position.items())),
         "unproposable_by_position": dict(sorted(unproposable_position.items())),
+        # F6 Rule 125 columns.
+        "verify_width_histogram": dict(sorted(width_histogram.items())),
+        "verify_width_mass_ge6_pct": 100.0
+        * sum(n for w, n in width_histogram.items() if w >= 6)
+        / round_count
+        if round_count
+        else 0.0,
+        "verify_width_mean": sum(w * n for w, n in width_histogram.items())
+        / round_count
+        if round_count
+        else 0.0,
+        "verify_rows_per_round": declared_rows / round_count if round_count else 0.0,
         "rounds_truncated_at_position1": position1,
         "rounds_truncated_beyond_position1": truncated_rounds - position1,
         "position1_share_of_unproposable_pct": 100.0 * position1 / truncated_rounds
@@ -337,6 +358,35 @@ def main() -> None:
                     }
                     for s in MEDPAIR
                 },
+                # F6 Rule 125. The flag the advisor asked for is a MOVE of mass
+                # into the expensive widths, so it compares against shipped
+                # rather than against an absolute level.
+                "verify_width": {
+                    s: {
+                        "histogram_shipped": ships[s]["verify_width_histogram"],
+                        "histogram_candidate": cands[s]["verify_width_histogram"],
+                        "mass_ge6_pct_shipped": ships[s]["verify_width_mass_ge6_pct"],
+                        "mass_ge6_pct_candidate": cands[s]["verify_width_mass_ge6_pct"],
+                        "mass_ge6_delta_pp": cands[s]["verify_width_mass_ge6_pct"]
+                        - ships[s]["verify_width_mass_ge6_pct"],
+                        "mean_shipped": ships[s]["verify_width_mean"],
+                        "mean_candidate": cands[s]["verify_width_mean"],
+                        "rows_per_round_shipped": ships[s]["verify_rows_per_round"],
+                        "rows_per_round_candidate": cands[s]["verify_rows_per_round"],
+                        "rows_per_round_delta_pct": 100.0
+                        * (
+                            cands[s]["verify_rows_per_round"]
+                            / ships[s]["verify_rows_per_round"]
+                            - 1.0
+                        ),
+                    }
+                    for s in MEDPAIR
+                },
+                "verify_width_mass_moved_to_6plus": any(
+                    cands[s]["verify_width_mass_ge6_pct"]
+                    > ships[s]["verify_width_mass_ge6_pct"]
+                    for s in MEDPAIR
+                ),
                 "f209_gain_argument": "beagle={:.4f},essays={:.4f}".format(
                     recovered["beagle_a"], recovered["essays_montaigne"]
                 ),
@@ -387,12 +437,24 @@ def main() -> None:
 
     # Rule 101 positive control for the arm selector itself. essays produces
     # zero widened rows, so the widened-row witness cannot prove the selector
-    # reached that prompt's worker. A deliberately narrow prefix must instead
-    # make the ledger WORSE. If it does not, the arm never took effect and the
-    # shipped-equals-full null is a plumbing artefact rather than a result.
-    narrow = [a for a in report["arms"] if a not in ("shipped", "full")]
+    # reached that prompt's worker. An arm that changes the proposable set must
+    # instead change the ledger. If it does not, the arm never took effect and
+    # the shipped-equals-full null is a plumbing artefact rather than a result.
+    #
+    # `leaf16` is excluded on purpose. It is the NULL control: it repartitions
+    # the shipped vocabulary and must reproduce shipped exactly, so requiring it
+    # to change would invert its meaning. Its own liveness is witnessed by the
+    # leaf override in the run's arm record, not by a ledger change.
+    NULL_CONTROL_ARMS = {"leaf16"}
+    narrow = [
+        a
+        for a in report["arms"]
+        if a not in ("shipped", "full") and a not in NULL_CONTROL_ARMS
+    ]
     if narrow:
-        control: dict = {"arms": narrow, "seeds": {}}
+        control: dict = {"arms": narrow, "null_control_arms": sorted(
+            set(report["arms"]) & NULL_CONTROL_ARMS
+        ), "seeds": {}}
         for arm in narrow:
             for seed, blob in report["arms"][arm]["seeds"].items():
                 ship = report["arms"]["shipped"]["seeds"][seed]
