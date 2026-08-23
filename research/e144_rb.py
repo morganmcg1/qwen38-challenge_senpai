@@ -199,6 +199,59 @@ def run_bounds(master, samples, out):
     print(json.dumps(report["pooled"], indent=2))
 
 
+def run_group_sweep(master, groups, out):
+    """Price the trunk group size, which trades metadata bytes against error.
+
+    Ledger section J proposes moving the head trunk's scale and bias metadata
+    from group 64 to group 128 to save 11.6 MB, and prices the saving but not the
+    acceptance cost. This measures the cost side with the incumbent's own
+    quantizer, so the lever can be decided on two measured numbers instead of one.
+    """
+    report = {
+        "experiment": "e144",
+        "rung": "R-B group sweep",
+        "harness": "local",
+        "quantizer": "mlx_rtn, the incumbent",
+        "group_sizes": groups,
+        "tensors": {},
+    }
+    error = {group: 0.0 for group in groups}
+    metadata = {group: 0 for group in groups}
+    energy = 0.0
+
+    for name in CORE:
+        weight = master.float32(f"{name}.weight")
+        rows, columns = weight.shape
+        tensor_energy = float((weight.astype(np.float64) ** 2).sum())
+        energy += tensor_energy
+        entry = {"shape": [rows, columns], "rel_l2": {}, "metadata_bytes": {}}
+        for group in groups:
+            _, _, _, group_error = mlx_rtn(weight, group_size=group)
+            error[group] += group_error
+            # one BF16 scale and one BF16 bias per group
+            group_metadata = rows * (columns // group) * 2 * 2
+            metadata[group] += group_metadata
+            entry["rel_l2"][str(group)] = float(np.sqrt(group_error / tensor_energy))
+            entry["metadata_bytes"][str(group)] = group_metadata
+        report["tensors"][name] = entry
+        print(f"{name:32s} " + "  ".join(f"g{g} {entry['rel_l2'][str(g)]:.5e}" for g in groups))
+        del weight
+
+    baseline = 64 if 64 in groups else groups[0]
+    report["pooled"] = {
+        str(group): {
+            "rel_l2": float(np.sqrt(error[group] / energy)),
+            "rel_l2_factor_vs_g64": float(np.sqrt(error[baseline] / error[group])),
+            "trunk_metadata_bytes": metadata[group],
+            "trunk_metadata_bytes_delta_vs_g64": metadata[group] - metadata[baseline],
+        }
+        for group in groups
+    }
+    with open(out, "w") as handle:
+        json.dump(report, handle, indent=2)
+    print(json.dumps(report["pooled"], indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default="e144-rb.json")
@@ -216,6 +269,11 @@ def main():
         help="measure only the affine and codebook ceilings, skipping the quantizers",
     )
     parser.add_argument("--samples", type=int, default=3000, help="sampled groups per tensor")
+    parser.add_argument(
+        "--group-sweep",
+        default=None,
+        help="comma-separated group sizes to price with the incumbent quantizer",
+    )
     arguments = parser.parse_args()
     if arguments.smoke and arguments.emit:
         parser.error("--smoke produces a truncated tensor, so it cannot emit a head")
@@ -223,6 +281,11 @@ def main():
     master = SafeTensors(MASTER)
     if arguments.bounds_only:
         run_bounds(master, arguments.samples, arguments.out)
+        return
+    if arguments.group_sweep:
+        run_group_sweep(
+            master, [int(v) for v in arguments.group_sweep.split(",")], arguments.out
+        )
         return
 
     declared = SafeTensors(DECLARED)
