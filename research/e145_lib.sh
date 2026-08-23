@@ -195,11 +195,13 @@ e145_prepare_session() {
   E145_SESSION_COMMIT="$(git rev-parse HEAD)"
 
   local -a build_args=(--require MLX_E145_PIN_DEPTH
-                       --require MLX_E134_DEPTH_PRICE_ARM)
+                       --require MLX_E134_DEPTH_PRICE_ARM
+                       --require MLX_E145_WIRED_MIN_GIB
+                       --require MLX_E145_WIRED_LOG)
   [[ "${E145_NO_BUILD:-0}" == "1" ]] && build_args+=(--no-build)
   echo "=== e145 phase 0: worker build and selector assertion ==="
   senpai/rebuild-and-assert-worker.sh "${build_args[@]}" || {
-    echo "e145: the worker does not carry both selectors; not timing" >&2
+    echo "e145: the worker does not carry every selector; not timing" >&2
     return 3; }
 
   E145_SESSION_WORKER="$(
