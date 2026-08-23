@@ -124,6 +124,18 @@ if ((warm_status != 0)); then
   exit 5
 fi
 
+# Fail fast. The warmup already ran the payload arm for a full window, so the
+# depth-arm tripwire can be calibrated here for five minutes instead of failing
+# thirty minutes into the gated session.
+echo "--- warmup depth-arm tripwire ---"
+python3 research/e135_arm_check.py "research/out/${warm_tag}/score.json" \
+  --want pb6 | tee "research/out/${warm_tag}/depth-arm-check.txt"
+if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+  echo "e135_f34_abba: the warmup leg did not read as pb6, so the timed legs" \
+       "would fail the same tripwire; not timing" >&2
+  exit 6
+fi
+
 # PHASE 1: prove every selector reaches the worker on every arm.
 witness_tokens="${E135_WITNESS_TOKENS:-16}"
 for arm in c67ship c67pb6 c678pb6; do

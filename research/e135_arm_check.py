@@ -11,8 +11,11 @@ E135 F33 restored the compiled default to `.pb6`. F23 had reverted it to
 `.ship` on ranked receipt `e003a86d`, and the anchor-inversion panel then
 showed that receipt drew the slow decode state (AUC 0.1964, p 0.993), so the
 receipt priced a state draw and not the mechanism. The wanted arm is therefore
-`pb6`, which sits at about 5.854 on this fixture. The `ship` arm signature is
-6.358974358974359.
+`pb6`, which sits at 5.853658536585366 on this fixture: four independent E137
+512-token legs report that value to the last digit. The `ship` arm signature is
+6.358974358974359, which twelve E135 T29-A legs report to the last digit across
+three QMV arms, so the schedule reads the depth price and not the grid, table,
+probe or width-2 route.
 
 RULE 101. The two signatures differ by 0.505, so the band is set to 0.20 to
 keep them disjoint. The check requires the observed schedule to match the
@@ -26,7 +29,7 @@ import sys
 
 SIGNATURES = {
     "ship": 6.358974358974359,
-    "pb6": 5.854,
+    "pb6": 5.853658536585366,
 }
 TOLERANCE = 0.20
 
