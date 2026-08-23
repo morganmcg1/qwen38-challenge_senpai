@@ -34,6 +34,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 ARMS = ["all", "none", "none", "all"]
 PROMPTS = ["beagle_a", "essays_montaigne", "benchfixture"]
 CANARY_PROMPT = "plutarch_lives"
+SWEEP_PROMPT = "beagle_a"
+SWEEP_DEPTHS = [1, 2, 3, 4, 6, 8]
 
 # Advisor F2, 2026-08-23: score the weighted effect as
 # 0.474 * (beagle) + 0.526 * (a top-four-like prompt). `beagle` is the measured
@@ -95,12 +97,22 @@ def timed_leg(
     runs_dir: str,
     witness_dir: str,
 ) -> dict | None:
-    """One `mtp-timed` leg, in RULE 179 form.
+    """One `mtp-timed` leg, in the F6-corrected form.
 
-    RULE 179 is an identity, not a fit: a decode round emits `1 + edl` tokens, so
-    `R = mtp * (1 + edl)` is seconds per decode round. It holds only while
-    `non_drafting_round_count == 0`, which is recorded per leg so a reader can
-    see when it does not.
+    Advisor ERROR 202: `effective_mean_draft_len` is the mean number of drafts
+    PROPOSED per round, which is the schedule's decision, not the accepted
+    length. A round emits `1 + accepted` tokens, so the correct arithmetic is
+
+        rounds = N - acceptedDraftTotal
+        R      = decodeSeconds / rounds
+        a      = acceptedDraftTotal / rounds
+        q      = effective_mean_draft_len
+        mtp    = R / (1 + a)
+
+    `q` and `a` are kept in separately named fields on purpose; conflating them
+    is the error this replaces. `rounds_identity_holds` records the falsifiable
+    check `rounds + acceptedDraftTotal == N` rather than assuming it, because
+    the driver reports `rounds` independently.
     """
     run = ROOT / ".mlxfast-private/e128" / runs_dir / prompt
     report = read_json(run / "report.json")
@@ -108,7 +120,10 @@ def timed_leg(
     if report is None:
         return None
     mtp = report["parent_measured_seconds_per_token"]
-    edl = report["effective_mean_draft_len"]
+    q = report["effective_mean_draft_len"]
+    rounds = report["round_count"]
+    accepted = report["accepted_draft_total"]
+    n_tokens = report["decode_token_count"]
     return {
         "session": session,
         "prompt": prompt,
@@ -116,14 +131,18 @@ def timed_leg(
         "arm": arm,
         "witness": witness(ROOT / ".mlxfast-private/e158r1" / witness_dir),
         "mtp_seconds_per_token": mtp,
-        "seconds_per_round_R": mtp * (1.0 + edl),
+        "seconds_per_round_R": report["decode_seconds"] / rounds,
+        "mean_accepted_per_round_a": accepted / rounds,
+        "mean_proposed_per_round_q": q,
+        "alpha_accept_fraction": report["accepted_draft_rate"],
+        "rounds_identity_holds": rounds + accepted == n_tokens,
         "decode_seconds": report["decode_seconds"],
-        "decode_token_count": report["decode_token_count"],
-        "round_count": report["round_count"],
+        "decode_token_count": n_tokens,
+        "round_count": rounds,
         "non_drafting_round_count": report.get("non_drafting_round_count"),
-        "effective_mean_draft_len": edl,
+        "effective_mean_draft_len": q,
         "accepted_draft_rate": report["accepted_draft_rate"],
-        "accepted_draft_total": report["accepted_draft_total"],
+        "accepted_draft_total": accepted,
         "rejected_draft_total": report["rejected_draft_total"],
         "all_tokens_matched": report["all_tokens_matched"],
         "residual_divergence_count": report["residual_divergence_count"],
@@ -177,6 +196,31 @@ def canary_legs() -> list[dict]:
         )
         if leg is not None:
             legs.append(leg)
+    return legs
+
+
+def sweep_legs() -> list[dict]:
+    """Within-prompt offered-depth sweep, both arms.
+
+    Only rows per round move. The head, prompt, golden and host are fixed, so
+    this is the arm of the experiment that can separate the fixed per-round cost
+    from the per-row cost.
+    """
+    legs = []
+    for depth in SWEEP_DEPTHS:
+        for arm in ("all", "none"):
+            leg = timed_leg(
+                "depthsweep",
+                SWEEP_PROMPT,
+                depth,
+                arm,
+                f"runs-e158r1-sweep-d{depth}-{arm}",
+                f"sweep-d{depth}-{arm}",
+            )
+            if leg is not None:
+                leg["offered_depth"] = depth
+                leg["rows_per_round"] = 1.0 + leg["mean_proposed_per_round_q"]
+                legs.append(leg)
     return legs
 
 
@@ -253,28 +297,79 @@ def abba(legs: list[dict], field: str) -> dict | None:
     }
 
 
-def rule179(cell: dict) -> dict | None:
-    """Split the published gain into its round-time and draft-length factors.
+def published_gain_split(cell: dict) -> dict | None:
+    """Split the published gain into its cost factor and its acceptance factor.
 
-    RULE 179: published gain = (R_old / R_new) * (1 + edl_new) / (1 + edl_old) - 1,
-    with `old` = arm `all` and `new` = arm `none`. The product is algebraically
-    the same number as the plain mtp ratio, so the value of the split is that it
-    says WHICH factor moved. An experiment that moves both without separating
-    them is uninterpretable.
+    Advisor F6:
+
+        published gain = (R_old / R_new) * (1 + a_new) / (1 + a_old) - 1
+
+    with `old` = arm `all` and `new` = arm `none`. Because `1 + a = N / rounds`,
+    the acceptance factor equals `rounds_old / rounds_new`, so the split is
+    reported in both forms. The `rounds` form uses two integers the driver
+    reports directly and needs no derived rate.
+
+    The product is algebraically the plain mtp ratio. The split does not change
+    the number; it says WHICH factor moved, which is the whole point. A cost win
+    and an acceptance win have different transfer risk to a hidden prompt.
     """
     r = cell.get("seconds_per_round_R")
-    e = cell.get("effective_mean_draft_len")
-    if not r or not e:
+    a = cell.get("mean_accepted_per_round_a")
+    rounds = cell.get("round_count")
+    if not r or not a:
         return None
-    round_factor = r["mean_all"] / r["mean_none"]
-    draft_factor = (1.0 + e["mean_none"]) / (1.0 + e["mean_all"])
-    return {
-        "identity_holds": cell.get("rule179_identity_holds"),
+    cost_factor = r["mean_all"] / r["mean_none"]
+    accept_factor = (1.0 + a["mean_none"]) / (1.0 + a["mean_all"])
+    out = {
+        "rounds_identity_holds": cell.get("rounds_identity_holds"),
         "R_pct_change": 100.0 * (r["mean_none"] / r["mean_all"] - 1.0),
-        "one_plus_edl_pct_change": 100.0 * (draft_factor - 1.0),
-        "published_pct_from_R": 100.0 * (round_factor - 1.0),
-        "published_pct_from_edl": 100.0 * (draft_factor - 1.0),
-        "published_pct_total": 100.0 * (round_factor * draft_factor - 1.0),
+        "a_pct_change": 100.0 * (a["mean_none"] / a["mean_all"] - 1.0)
+        if a["mean_all"]
+        else None,
+        "published_pct_from_cost": 100.0 * (cost_factor - 1.0),
+        "published_pct_from_acceptance": 100.0 * (accept_factor - 1.0),
+        "published_pct_total": 100.0 * (cost_factor * accept_factor - 1.0),
+    }
+    if rounds and rounds["mean_none"]:
+        out["accept_factor_from_rounds"] = (
+            rounds["mean_all"] / rounds["mean_none"]
+        )
+        out["published_pct_per_extra_accepted_token"] = (
+            100.0 / rounds["mean_all"]
+        )
+    return out
+
+
+def round_cost_fit(points: list[tuple[float, float]]) -> dict | None:
+    """Least squares `R = s + h * rows`, and `rho = 8h/s`.
+
+    `points` are `(rows_per_round, seconds_per_round)`. Advisor F7 asks for
+    `rho` "if separable". Separability needs the offered depth to move, so this
+    is only meaningful on the depth sweep, where the prompt, head, golden and
+    host are held fixed and only rows per round change. A fit across different
+    prompts is confounded: there `q` moves because the schedule reacted to
+    different text.
+    """
+    if len(points) < 3:
+        return None
+    n = len(points)
+    mean_x = statistics.fmean(x for x, _ in points)
+    mean_y = statistics.fmean(y for _, y in points)
+    sxx = sum((x - mean_x) ** 2 for x, _ in points)
+    if not sxx:
+        return None
+    h = sum((x - mean_x) * (y - mean_y) for x, y in points) / sxx
+    s = mean_y - h * mean_x
+    resid = [y - (s + h * x) for x, y in points]
+    sst = sum((y - mean_y) ** 2 for _, y in points)
+    return {
+        "n_points": n,
+        "fixed_seconds_per_round_s": s,
+        "marginal_seconds_per_row_h": h,
+        "rho_8h_over_s": 8.0 * h / s if s else None,
+        "r_squared": 1.0 - sum(v * v for v in resid) / sst if sst else None,
+        "max_abs_residual": max(abs(v) for v in resid),
+        "rows_range": [min(x for x, _ in points), max(x for x, _ in points)],
     }
 
 
@@ -285,7 +380,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    legs = perprompt_legs() + canary_legs() + gated_legs()
+    legs = perprompt_legs() + canary_legs() + sweep_legs() + gated_legs()
     if not legs:
         print("e158_r1_harvest: no legs found", file=sys.stderr)
         return 1
@@ -312,13 +407,29 @@ def main() -> int:
         summary["per_prompt"][prompt] = {
             "mtp_seconds_per_token": abba(group, "mtp_seconds_per_token"),
             "seconds_per_round_R": abba(group, "seconds_per_round_R"),
-            "rule179_identity_holds": all(
-                leg["non_drafting_round_count"] == 0 for leg in group
+            "mean_accepted_per_round_a": abba(group, "mean_accepted_per_round_a"),
+            "mean_proposed_per_round_q": abba(group, "mean_proposed_per_round_q"),
+            "alpha_accept_fraction": abba(group, "alpha_accept_fraction"),
+            "rounds_identity_holds": all(
+                leg["rounds_identity_holds"] for leg in group
             ),
-            "effective_mean_draft_len": abba(group, "effective_mean_draft_len"),
-            "accepted_draft_rate": abba(group, "accepted_draft_rate"),
+            "non_drafting_round_count": sorted(
+                {leg["non_drafting_round_count"] for leg in group}
+            ),
+            "accepted_draft_total": abba(group, "accepted_draft_total"),
             "round_count": abba(group, "round_count"),
             "rejected_draft_total": abba(group, "rejected_draft_total"),
+            "drafting_bit_identical_across_arms": len(
+                {
+                    (
+                        leg["accepted_draft_total"],
+                        leg["rejected_draft_total"],
+                        leg["round_count"],
+                    )
+                    for leg in group
+                }
+            )
+            == 1,
             "all_tokens_matched": all(leg["all_tokens_matched"] for leg in group),
             "witnesses_ok": all(
                 leg["witness"] is not None
@@ -328,9 +439,93 @@ def main() -> int:
                 for leg in group
             ),
         }
-        summary["per_prompt"][prompt]["rule179"] = rule179(
-            summary["per_prompt"][prompt]
+        summary["per_prompt"][prompt]["published_gain_split"] = (
+            published_gain_split(summary["per_prompt"][prompt])
         )
+
+    sweep = [leg for leg in legs if leg["session"] == "depthsweep"]
+    if sweep:
+        summary["depth_sweep"] = {
+            "prompt": SWEEP_PROMPT,
+            "role": "separates the fixed per-round cost s from the per-row cost "
+            "h by moving only the offered depth inside one prompt",
+            "arms": {},
+        }
+        for arm in ("all", "none"):
+            arm_legs = [leg for leg in sweep if leg["arm"] == arm]
+            if not arm_legs:
+                continue
+            summary["depth_sweep"]["arms"][arm] = {
+                "fit": round_cost_fit(
+                    [
+                        (leg["rows_per_round"], leg["seconds_per_round_R"])
+                        for leg in arm_legs
+                    ]
+                ),
+                "points": [
+                    {
+                        "offered_depth": leg["offered_depth"],
+                        "q": leg["mean_proposed_per_round_q"],
+                        "a": leg["mean_accepted_per_round_a"],
+                        "alpha": leg["alpha_accept_fraction"],
+                        "rows_per_round": leg["rows_per_round"],
+                        "round_count": leg["round_count"],
+                        "accepted_draft_total": leg["accepted_draft_total"],
+                        "non_drafting_round_count": leg[
+                            "non_drafting_round_count"
+                        ],
+                        "seconds_per_round_R": leg["seconds_per_round_R"],
+                        "mtp_seconds_per_token": leg["mtp_seconds_per_token"],
+                        "all_tokens_matched": leg["all_tokens_matched"],
+                        "witness": leg["witness"],
+                    }
+                    for leg in arm_legs
+                ],
+            }
+        fits = {
+            arm: cell["fit"]
+            for arm, cell in summary["depth_sweep"]["arms"].items()
+            if cell.get("fit")
+        }
+        if "all" in fits and "none" in fits:
+            # B1 removes a read that happens once per PROPOSAL SLOT, so it must
+            # land in h. A change that lands in s instead would falsify the
+            # stated mechanism even if the end-to-end number were unchanged.
+            summary["depth_sweep"]["mechanism_check"] = {
+                "h_pct_change_none_vs_all": 100.0
+                * (
+                    fits["none"]["marginal_seconds_per_row_h"]
+                    / fits["all"]["marginal_seconds_per_row_h"]
+                    - 1.0
+                ),
+                "s_pct_change_none_vs_all": 100.0
+                * (
+                    fits["none"]["fixed_seconds_per_round_s"]
+                    / fits["all"]["fixed_seconds_per_round_s"]
+                    - 1.0
+                ),
+                "predicts_saving_in_h_not_s": True,
+            }
+
+    # The cost side transfers to an unseen prompt; the acceptance side is a
+    # numerics perturbation that helped on two local prompts and hurt on the
+    # canary, so it is reported separately and never folded into the headline.
+    clean = [
+        prompt
+        for prompt, cell in summary["per_prompt"].items()
+        if cell.get("drafting_bit_identical_across_arms")
+    ]
+    summary["cost_only_estimate"] = {
+        "clean_cells": clean,
+        "note": "cells where both arms produced identical accepted, rejected "
+        "and round counts, so the arm contrast is pure round cost",
+        "published_pct": {
+            prompt: summary["per_prompt"][prompt]["published_gain_split"][
+                "published_pct_from_cost"
+            ]
+            for prompt in clean
+        },
+    }
 
     summary["median_weighted_candidate_leg"] = {}
     for name, weights in WEIGHTED_PAIRS.items():
@@ -421,7 +616,9 @@ def main() -> int:
             for key in (
                 "per_prompt",
                 "canary",
+                "depth_sweep",
                 "gated",
+                "cost_only_estimate",
                 "median_weighted_candidate_leg",
             )
             if key in summary
