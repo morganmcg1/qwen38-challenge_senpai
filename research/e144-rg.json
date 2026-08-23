@@ -1,0 +1,417 @@
+{
+  "admissible_tensors": [
+    "layers.0.mlp.down_proj",
+    "layers.0.self_attn.o_proj"
+  ],
+  "coupled_pairs": [
+    {
+      "consumed_by": [
+        "layers.0.mlp.down_proj"
+      ],
+      "grouping_changes_on": [
+        "layers.0.mlp.down_proj"
+      ],
+      "note": "gate_proj and up_proj take the same row permutation; the intermediate vector is consumed inside the head and never reaches the frozen target.",
+      "pair": "ffn intermediate",
+      "permutation_freedom": "free",
+      "private_to_head": true,
+      "produced_by": [
+        "layers.0.mlp.gate_proj",
+        "layers.0.mlp.up_proj"
+      ],
+      "reachable_orders_log2": 17408.0,
+      "shapes_agree": true,
+      "size": 17408
+    },
+    {
+      "consumed_by": [
+        "layers.0.self_attn.o_proj"
+      ],
+      "grouping_changes_on": [
+        "layers.0.self_attn.o_proj"
+      ],
+      "head_dim": 256,
+      "kv_head_blocks": 4,
+      "note": "o_proj consumes the grouped-query attention output (6144), not v_proj's raw output (1024). Each key/value head feeds several query heads, so a free column order is not invertible; only one within-head order tiled across every block is.",
+      "pair": "attention value",
+      "permutation_freedom": "constrained to one shared 256-element order, tiled across 24 query-head blocks",
+      "private_to_head": true,
+      "produced_by": [
+        "layers.0.self_attn.v_proj"
+      ],
+      "query_head_blocks": 24,
+      "shapes_agree": false,
+      "size": 6144
+    },
+    {
+      "consumed_by": [
+        "fc"
+      ],
+      "grouping_changes_on": [],
+      "note": "fc consumes the concatenated target embedding and target hidden state. Both are produced by the frozen target, so there is no partner inside the head that can absorb the inverse. fc is the largest error carrier and it is inadmissible.",
+      "pair": "fc input",
+      "permutation_freedom": "none",
+      "private_to_head": false,
+      "produced_by": [
+        "pre_fc_norm_embedding",
+        "pre_fc_norm_hidden"
+      ],
+      "shapes_agree": true,
+      "size": 10240
+    },
+    {
+      "consumed_by": [
+        "layers.0.self_attn.q_proj",
+        "layers.0.self_attn.k_proj",
+        "layers.0.self_attn.v_proj",
+        "layers.0.mlp.gate_proj",
+        "layers.0.mlp.up_proj"
+      ],
+      "grouping_changes_on": [],
+      "note": "the head's residual stream carries a root-mean-square norm and a residual add, and its width matches the target hidden size. A permutation here would have to be undone by the frozen target.",
+      "pair": "residual stream",
+      "permutation_freedom": "none",
+      "private_to_head": false,
+      "produced_by": [
+        "fc",
+        "norm",
+        "pre_fc_norm_*"
+      ],
+      "shapes_agree": true,
+      "size": 5120
+    }
+  ],
+  "data_free": true,
+  "experiment": "e144",
+  "gate": {
+    "high": 0.4,
+    "low": 0.15,
+    "max_measured_permutation_factor_on_admissible_tensors": 1.0288425948819757,
+    "max_measured_permutation_factor_on_any_core_tensor": 1.0652573721583416,
+    "max_spread_on_admissible_tensors": 0.5748409962132938,
+    "max_spread_on_error_carrying_tensors": 1.2301595092477446,
+    "positive_control_detects_a_gain": true,
+    "rg_dead": false,
+    "rg_reopens_axis": true,
+    "statistic": "std(log(per-column max-abs)) on the grouped axis"
+  },
+  "group_size": 64,
+  "grouping_axis": {
+    "axis": "last (input) dimension, blocks of 64",
+    "confirmed_from_scales_shape": true
+  },
+  "harness": "local",
+  "metadata_dtypes": {
+    "fc.biases": {
+      "dtype": "BF16",
+      "shape": [
+        5120,
+        160
+      ]
+    },
+    "fc.scales": {
+      "dtype": "BF16",
+      "shape": [
+        5120,
+        160
+      ]
+    },
+    "layers.0.mlp.down_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        5120,
+        272
+      ]
+    },
+    "layers.0.mlp.down_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        5120,
+        272
+      ]
+    },
+    "layers.0.mlp.gate_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        17408,
+        80
+      ]
+    },
+    "layers.0.mlp.gate_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        17408,
+        80
+      ]
+    },
+    "layers.0.mlp.up_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        17408,
+        80
+      ]
+    },
+    "layers.0.mlp.up_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        17408,
+        80
+      ]
+    },
+    "layers.0.self_attn.k_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        1024,
+        80
+      ]
+    },
+    "layers.0.self_attn.k_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        1024,
+        80
+      ]
+    },
+    "layers.0.self_attn.o_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        5120,
+        96
+      ]
+    },
+    "layers.0.self_attn.o_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        5120,
+        96
+      ]
+    },
+    "layers.0.self_attn.q_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        12288,
+        80
+      ]
+    },
+    "layers.0.self_attn.q_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        12288,
+        80
+      ]
+    },
+    "layers.0.self_attn.v_proj.biases": {
+      "dtype": "BF16",
+      "shape": [
+        1024,
+        80
+      ]
+    },
+    "layers.0.self_attn.v_proj.scales": {
+      "dtype": "BF16",
+      "shape": [
+        1024,
+        80
+      ]
+    }
+  },
+  "pooled": {
+    "e144_rg_pooled_rel_l2_factor": 1.0050980076199538,
+    "note": "only the admissible consumers move; every other tensor keeps its natural order, and o_proj uses the grouped-query tiled order.",
+    "rel_l2_admissible_permutations_only": 0.09405149696371944,
+    "rel_l2_natural_order": 0.09453097221190854
+  },
+  "positive_controls": [
+    {
+      "detects_a_gain": false,
+      "e144_col_scale_log_std": 0.16206627088775305,
+      "e144_permutation_rel_l2_factor": 1.0198678826055232,
+      "rel_l2_natural_order": 0.09132949913288756,
+      "rel_l2_sorted_columns": 0.08955032381210212,
+      "requested_log_std": 0.0,
+      "shape": [
+        64,
+        1024
+      ]
+    },
+    {
+      "detects_a_gain": true,
+      "e144_col_scale_log_std": 0.30058160671958745,
+      "e144_permutation_rel_l2_factor": 1.096774634498841,
+      "rel_l2_natural_order": 0.09886487888311958,
+      "rel_l2_sorted_columns": 0.09014147097620907,
+      "requested_log_std": 0.25,
+      "shape": [
+        64,
+        1024
+      ]
+    },
+    {
+      "detects_a_gain": true,
+      "e144_col_scale_log_std": 0.5230122955922665,
+      "e144_permutation_rel_l2_factor": 1.2693633170721652,
+      "rel_l2_natural_order": 0.11589762297710382,
+      "rel_l2_sorted_columns": 0.0913037437102138,
+      "requested_log_std": 0.5,
+      "shape": [
+        64,
+        1024
+      ]
+    },
+    {
+      "detects_a_gain": true,
+      "e144_col_scale_log_std": 0.7588433039784295,
+      "e144_permutation_rel_l2_factor": 1.3931394941999444,
+      "rel_l2_natural_order": 0.13181559275018115,
+      "rel_l2_sorted_columns": 0.09461765551760525,
+      "requested_log_std": 0.75,
+      "shape": [
+        64,
+        1024
+      ]
+    },
+    {
+      "detects_a_gain": true,
+      "e144_col_scale_log_std": 0.9986256513836624,
+      "e144_permutation_rel_l2_factor": 1.358628610417006,
+      "rel_l2_natural_order": 0.13775941340332964,
+      "rel_l2_sorted_columns": 0.1013959314172303,
+      "requested_log_std": 1.0,
+      "shape": [
+        64,
+        1024
+      ]
+    }
+  ],
+  "rounding": {
+    "clamp": "[0, 15], asymmetric",
+    "grid_anchor": "re-anchored on the larger-magnitude edge so 0.0 stays representable, which makes the stored scale negative on ~49.7 % of groups",
+    "mode": "half away from zero (Metal round()), not half to even",
+    "verified_by": "R-A bit-exact reproduction, e144_declared_reproduction_exact = 1.0"
+  },
+  "rung": "R-G",
+  "tensors": {
+    "fc": {
+      "e144_col_scale_log_std": 1.2301595092477446,
+      "e144_permutation_rel_l2_factor": 1.000694704042999,
+      "frobenius_norm": 93.64749332566673,
+      "group_kurtosis_median": -0.08432935430661215,
+      "group_kurtosis_p99": 5.867077991989838,
+      "groups_per_row": 160,
+      "rel_l2_natural_order": 0.09331502465927648,
+      "rel_l2_sorted_columns": 0.09325024333821877,
+      "shape": [
+        5120,
+        10240
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.mlp.down_proj": {
+      "e144_col_scale_log_std": 0.4073195080425466,
+      "e144_permutation_rel_l2_factor": 1.0288425948819757,
+      "frobenius_norm": 116.12772914825268,
+      "group_kurtosis_median": 0.17749079671655887,
+      "group_kurtosis_p99": 4.006639523093656,
+      "groups_per_row": 272,
+      "rel_l2_natural_order": 0.09810743563709677,
+      "rel_l2_sorted_columns": 0.09535708972892129,
+      "shape": [
+        5120,
+        17408
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.mlp.gate_proj": {
+      "e144_col_scale_log_std": 0.174362825242033,
+      "e144_permutation_rel_l2_factor": 1.0007405981833704,
+      "frobenius_norm": 119.46712803444545,
+      "group_kurtosis_median": -0.15804037209529387,
+      "group_kurtosis_p99": 2.2164616340023793,
+      "groups_per_row": 80,
+      "rel_l2_natural_order": 0.09178893044535877,
+      "rel_l2_sorted_columns": 0.09172100203787262,
+      "shape": [
+        17408,
+        5120
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.mlp.up_proj": {
+      "e144_col_scale_log_std": 0.19390602426297898,
+      "e144_permutation_rel_l2_factor": 0.9996348910499933,
+      "frobenius_norm": 129.95620813069223,
+      "group_kurtosis_median": -0.14999010807515356,
+      "group_kurtosis_p99": 2.024647101107659,
+      "groups_per_row": 80,
+      "rel_l2_natural_order": 0.09175427521072141,
+      "rel_l2_sorted_columns": 0.09178778775353154,
+      "shape": [
+        17408,
+        5120
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.self_attn.k_proj": {
+      "e144_col_scale_log_std": 0.23772097735861392,
+      "e144_permutation_rel_l2_factor": 1.0652573721583416,
+      "frobenius_norm": 36.79769972044748,
+      "group_kurtosis_median": 0.04783208362544644,
+      "group_kurtosis_p99": 6.851744733891131,
+      "groups_per_row": 80,
+      "rel_l2_natural_order": 0.0988340049045491,
+      "rel_l2_sorted_columns": 0.09277946108394382,
+      "shape": [
+        1024,
+        5120
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.self_attn.o_proj": {
+      "e144_col_scale_log_std": 0.5748409962132938,
+      "e144_permutation_rel_l2_factor": 0.9834553048254799,
+      "e144_tiled_permutation_rel_l2_factor": 1.0030447965173273,
+      "frobenius_norm": 110.90081057672919,
+      "group_kurtosis_median": 0.2229590808953612,
+      "group_kurtosis_p99": 5.7260385777674685,
+      "groups_per_row": 96,
+      "rel_l2_natural_order": 0.09969290054375043,
+      "rel_l2_sorted_columns": 0.1013700369041596,
+      "rel_l2_tiled_head_order": 0.09939027737334788,
+      "shape": [
+        5120,
+        6144
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.self_attn.q_proj": {
+      "e144_col_scale_log_std": 0.1893358328905744,
+      "e144_permutation_rel_l2_factor": 1.0064592895971851,
+      "frobenius_norm": 125.78678771362134,
+      "group_kurtosis_median": -0.11987548025574069,
+      "group_kurtosis_p99": 3.4082368646512884,
+      "groups_per_row": 80,
+      "rel_l2_natural_order": 0.09299573176930848,
+      "rel_l2_sorted_columns": 0.09239890051243715,
+      "shape": [
+        12288,
+        5120
+      ],
+      "zero_columns": 0
+    },
+    "layers.0.self_attn.v_proj": {
+      "e144_col_scale_log_std": 0.17316544514138835,
+      "e144_permutation_rel_l2_factor": 1.0055578034923927,
+      "frobenius_norm": 68.27398529328812,
+      "group_kurtosis_median": -0.0416984989496183,
+      "group_kurtosis_p99": 4.094856727592311,
+      "groups_per_row": 80,
+      "rel_l2_natural_order": 0.09434634980725959,
+      "rel_l2_sorted_columns": 0.09382488950867492,
+      "shape": [
+        1024,
+        5120
+      ],
+      "zero_columns": 0
+    }
+  }
+}

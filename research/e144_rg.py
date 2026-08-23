@@ -84,15 +84,68 @@ def positive_control(rows=64, columns=1024, log_std=1.0, seed=0):
     weight = (base * column_scale).astype(np.float32)
     spread, _ = column_scale_spread(weight)
     natural, sorted_error, factor = measured_permutation_gain(weight)
+    oracle = per_row_oracle_rel_l2(weight)
     return {
         "shape": [rows, columns],
         "requested_log_std": log_std,
         "e144_col_scale_log_std": spread,
+        "e144_column_effect_share": column_effect_share(weight),
         "rel_l2_natural_order": natural,
         "rel_l2_sorted_columns": sorted_error,
         "e144_permutation_rel_l2_factor": factor,
+        "rel_l2_per_row_oracle": oracle,
+        "e144_per_row_oracle_rel_l2_factor": natural / oracle,
+        "mse_reduction_pct": 100.0 * (1.0 - (sorted_error / natural) ** 2),
         "detects_a_gain": factor > 1.02,
     }
+
+
+def per_row_oracle_rel_l2(weight):
+    """Strict upper bound on EVERY column-permutation scheme.
+
+    Groups are 64 contiguous entries of one row, so a group's affine error is
+    driven by that row-slice's range. Sorting a row ascending minimises the sum
+    of the ranges of its contiguous blocks. Allowing a DIFFERENT order per row
+    is not implementable -- one weight matrix admits one column order -- but it
+    dominates every shared, tiled or constrained permutation. If this bound is
+    near 1.0 the whole permutation family is dead, whatever the column-scale
+    statistic says.
+    """
+    return incumbent_rel_l2(np.ascontiguousarray(np.sort(weight, axis=1)))
+
+
+def column_effect_share(weight, floor=1e-12):
+    """Fraction of the variance of log|w| that column identity explains.
+
+    This is what a column permutation can actually act on. The advisor's
+    statistic summarises each column by its max over thousands of rows, which
+    is a max-of-N order statistic; this one asks the direct question.
+    """
+    magnitude = np.abs(weight.astype(np.float32))
+    logs = np.log(np.maximum(magnitude, floor)).astype(np.float64)
+    total = logs.var()
+    if total <= 0:
+        return 0.0
+    return float(logs.mean(axis=0).var() / total)
+
+
+def block_scale_profile(weight, boundaries):
+    """Per-block column-scale summary, to show grouping already respects blocks."""
+    magnitude = np.abs(weight.astype(np.float64)).max(axis=0)
+    profile = []
+    for label, start, stop in boundaries:
+        window = magnitude[start:stop]
+        positive = window[window > 0]
+        profile.append(
+            {
+                "block": label,
+                "columns": [int(start), int(stop)],
+                "median_col_max_abs": float(np.median(positive)),
+                "col_scale_log_std_within_block": float(np.log(positive).std()),
+                "aligned_to_group_grid": (start % GROUP == 0) and (stop % GROUP == 0),
+            }
+        )
+    return profile
 
 
 HEAD_DIM = 256
@@ -221,7 +274,13 @@ def main():
         spread, zero_columns = column_scale_spread(weight)
         kurtosis_median, kurtosis_p99 = group_kurtosis(weight)
         natural, sorted_error, factor = measured_permutation_gain(weight)
+        oracle = per_row_oracle_rel_l2(weight)
         tensors[name] = {
+            "e144_column_effect_share": column_effect_share(weight),
+            "rel_l2_per_row_oracle": oracle,
+            "e144_per_row_oracle_rel_l2_factor": natural / oracle,
+            "mse_reduction_pct": 100.0 * (1.0 - (sorted_error / natural) ** 2),
+            "oracle_mse_reduction_pct": 100.0 * (1.0 - (oracle / natural) ** 2),
             "shape": list(weight.shape),
             "e144_col_scale_log_std": spread,
             "zero_columns": zero_columns,
@@ -236,18 +295,32 @@ def main():
         if name in tiled:
             tensors[name]["rel_l2_tiled_head_order"] = tiled[name]
             tensors[name]["e144_tiled_permutation_rel_l2_factor"] = natural / tiled[name]
+        if name == "fc":
+            half = weight.shape[1] // 2
+            tensors[name]["block_profile"] = block_scale_profile(
+                weight, [("target embedding", 0, half), ("target hidden", half, weight.shape[1])]
+            )
+        if name == "layers.0.self_attn.o_proj":
+            tensors[name]["block_profile"] = block_scale_profile(
+                weight,
+                [
+                    ("query head %d" % index, index * HEAD_DIM, (index + 1) * HEAD_DIM)
+                    for index in range(weight.shape[1] // HEAD_DIM)
+                ],
+            )
         print(
-            "%-32s shape %5d x %5d  col_scale_log_std %.4f  kurt %7.3f  "
-            "relL2 %.6e -> %.6e  x%.5f"
+            "%-32s shape %5d x %5d  log_std %.4f  col_effect %.4f  kurt %7.3f  "
+            "relL2 %.6e  sorted x%.5f  oracle x%.5f"
             % (
                 name,
                 weight.shape[0],
                 weight.shape[1],
                 spread,
+                tensors[name]["e144_column_effect_share"],
                 kurtosis_median,
                 natural,
-                sorted_error,
                 factor,
+                natural / oracle,
             )
         )
 
@@ -308,6 +381,14 @@ def main():
             else record["rel_l2_natural_order"]
         )
     )
+    pooled_admissible_oracle = pooled(
+        lambda name, record: (
+            record["rel_l2_per_row_oracle"]
+            if name in admissible
+            else record["rel_l2_natural_order"]
+        )
+    )
+    pooled_all_oracle = pooled(lambda name, record: record["rel_l2_per_row_oracle"])
 
     report = {
         "experiment": "e144",
@@ -335,8 +416,14 @@ def main():
             "rel_l2_natural_order": pooled_natural,
             "rel_l2_admissible_permutations_only": pooled_reachable,
             "e144_rg_pooled_rel_l2_factor": pooled_natural / pooled_reachable,
+            "rel_l2_admissible_per_row_oracle": pooled_admissible_oracle,
+            "e144_rg_pooled_admissible_oracle_factor": pooled_natural / pooled_admissible_oracle,
+            "rel_l2_all_tensors_per_row_oracle": pooled_all_oracle,
+            "e144_rg_pooled_unreachable_oracle_factor": pooled_natural / pooled_all_oracle,
             "note": "only the admissible consumers move; every other tensor keeps "
-            "its natural order, and o_proj uses the grouped-query tiled order.",
+            "its natural order, and o_proj uses the grouped-query tiled order. The "
+            "oracle rows sort every ROW independently, which no single column order "
+            "can reach, so they bound the whole family from above.",
         },
         "gate": {
             "statistic": "std(log(per-column max-abs)) on the grouped axis",
@@ -348,9 +435,17 @@ def main():
             "max_measured_permutation_factor_on_any_core_tensor": max(
                 tensors[name]["e144_permutation_rel_l2_factor"] for name in tensors
             ),
+            "max_per_row_oracle_factor_on_admissible_tensors": max(
+                tensors[name]["e144_per_row_oracle_rel_l2_factor"] for name in admissible
+            ),
             "positive_control_detects_a_gain": any(c["detects_a_gain"] for c in controls),
-            "rg_dead": admissible_spread < arguments.gate_low,
-            "rg_reopens_axis": admissible_spread > arguments.gate_high,
+            "rg_dead_by_statistic": admissible_spread < arguments.gate_low,
+            "rg_reopens_axis_by_statistic": admissible_spread > arguments.gate_high,
+            "rg_dead_by_measurement": pooled_admissible_oracle >= pooled_natural * 0.99,
+            "statistic_and_measurement_agree": (
+                (admissible_spread > arguments.gate_high)
+                == (pooled_admissible_oracle < pooled_natural * 0.99)
+            ),
         },
     }
 
