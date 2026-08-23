@@ -1,0 +1,11 @@
+{
+  "prompt": "beagle_a",
+  "gate_variable": "MLX_E155_RECALL_AUDIT",
+  "gate_variable_set": false,
+  "path_variable": "MLX_E155_RECALL_AUDIT_PATH",
+  "path_variable_set": true,
+  "audit_path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/workspace/target/.mlxfast-private/e155/beagle_a-gate-probe.jsonl",
+  "audit_file_created": false,
+  "audit_rows_written": 0,
+  "leg_exit_code": 0
+}
