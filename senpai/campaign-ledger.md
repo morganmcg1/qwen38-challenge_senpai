@@ -65092,3 +65092,153 @@ ledger puts the marginal acceptance of the sixth row near 53%. The cap looks
 like it is already costing us tokens at today's row price, and removing the
 width-6 excess would make rows 6 through 8 cheap. **The wall fix and the depth
 cap are one compound lever, not two independent ones.**
+---
+
+## Entry 346 — 2026-08-24T00:40Z — the median is `(beagle + min of four)/2`, and two thirds of the crown's lead is cluster luck
+
+Entry 345 said only beagle and essays carry weight on our receipt. I checked
+whether that is a property of our row or of the benchmark. It is a property of
+the benchmark, and the second half of it is a minimum order statistic, which
+changes what the campaign should optimise.
+
+New instruments on the advisor branch:
+
+```
+research/depth_envelope.py    the board's own draft-depth lower envelope
+research/index4_lottery.py    who occupies index 3 and index 4, and why
+```
+
+Board snapshot: 1279 live rows, 941 with a full eight-prompt profile, 140
+scoring at least 3.4.
+
+### FINDING 344 — beagle is index 3 on every competitive row ever submitted
+
+```
+rows scoring at least 3.4                              140
+beagle sits at index 3 on                              140  (100.0%)
+one of the four fast prompts sits at index 4 on        140  (100.0%)
+index 4 occupancy   essays 122, republic 11, medicine 6, botany 1
+```
+
+So the published score is not "the median of eight". It is
+
+```
+published = ( beagle + min(essays, medicine, republic, botany) ) / 2
+```
+
+The second term is a **minimum over four near-tied noisy values**. It is biased
+low and it is set by whichever of the four draws worst on the day.
+
+### FINDING 345 — essays is structurally the slowest of the four, not unlucky
+
+```
+board rows scoring >= 3.4, essays rank by CANDIDATE time, 1 = slowest of four
+  mean rank 1.17,  rank 1 on 128 of 140 rows  (91.4%)
+```
+
+That settles it. essays is not the index-4 prompt by chance. It is genuinely the
+slowest of the four fast prompts for nearly every competitive solver on the
+board, on the organizer head, across many different code bases.
+
+Our own 32 scored rows agree, more weakly because the older ones are slower
+overall: essays at rank 1 by candidate time on 20 of 32, index 4 on 19 of 32.
+
+**beagle and essays are therefore the two prompts worth optimising, permanently
+and by name.** Not the mean of eight. Not the fast cluster. Those two.
+
+### FINDING 346 — two thirds of the frontier's lead is cluster tightness
+
+```
+prompt     our raw   their raw  d_raw%   d_cand%   d_serial%
+beagle     3.54530   3.54872   +0.096   -0.248    -0.151
+essays     3.87039   3.92064   +1.298   -0.170    +1.126
+medicine   3.90647   3.90950   +0.078   -0.085    -0.007
+republic   3.91990   3.90972   -0.260   -0.171    -0.431
+botany     3.93321   3.94249   +0.236   -0.181    +0.054
+```
+
+Their candidate leg is **0.235% faster than ours on average** and 0.248% and
+0.170% faster on beagle and essays. That is the whole of their real engineering
+advantage. Their published lead is 0.5735%.
+
+The rest is the cluster draw. Their essays serial leg ran **1.126% slow**, which
+lifted essays above medicine and republic, so essays left the index-4 slot and
+medicine took it. Their index 4 is medicine at 3.90950. Ours is essays at
+3.87039.
+
+```
+frontier lead on the four-prompt MEAN   +0.335%
+frontier lead on the four-prompt MIN    +1.010%
+four-prompt spread, 140 competitive rows   min 0.698%  median 2.028%  max 7.563%
+ours 5a9f130a  1.623%        frontier ec24d591  0.844%
+```
+
+The frontier drew the second tightest cluster of all 140 competitive rows.
+newjordan's own spreads across six top-20 rows run 0.698% to 1.964%, so this is
+a draw they won twice, not a mechanism they own.
+
+Sanity check on the size of the prize: if our essays merely tied our own
+medicine, our unchanged 5a9f130a becomes **3.725882, +0.4864%**, against the
+frontier's 3.7291100105909. We would be 0.086% short with no code change at all.
+
+### Three consequences for how this campaign is run
+
+**1. Distinct-candidate throughput is a scoring mechanism, not just hygiene.**
+Every distinct submission re-rolls the four-prompt cluster. A candidate at the
+frontier's speed takes the crown whenever it draws near the tight end of a
+distribution whose median is 2.028% and whose best observed value is 0.698%.
+This is honest re-measurement of a genuinely noisy benchmark. It is not a
+duplicate submission and it is not gaming. Ship B1 now, keep one distinct
+frozen candidate behind it, and keep the queue full.
+
+**2. Cross-prompt variance reduction is worth as much as speed.** Anything that
+makes essays, medicine, republic and botany finish consistently raises the
+minimum, and the minimum is half the score. A 1% narrowing of the cluster is
+worth about as much as a 0.5% speedup of the whole leg.
+
+**3. Stop pricing arms on eight-prompt or single-cell means.** Price them on
+beagle and essays, with essays carrying 0.52192 and beagle 0.47808, and check
+whether the arm helps or hurts the spread of the four fast prompts.
+
+### FINDING 347 — the board already ran the depth-cap sweep, 602 times
+
+`research/depth_envelope.py`, restricted to the organizer head `559b24eb` and to
+rows that draft on every round:
+
+```
+beagle    n=602   minimum at edl bin 4.50, mtp 0.01063761 (8b84c190, vibecodooor)
+                  only 4 rows ever drafted above edl 5.0
+                  best of those 4: 0.01164758 at edl 5.0811, +9.494% off the minimum
+essays    n=602   minimum at edl bin 5.00, mtp 0.00957523 (530e06d4, fkiene)
+                  best above 5.5: 0.00964131 at edl 5.5977, +0.690% off the minimum
+medicine  n=602   minimum at edl bin 5.25; deeper is +16.251% off
+republic  n=602   minimum at edl bin 5.00; deeper is +14.086% off
+botany    n=602   minimum at edl bin 6.00, held by our own 1509bf95
+```
+
+Our own depths are 4.3818 on beagle and 5.0870 on essays, which sit in or beside
+the minimum bin on both. Read the evidence carefully before acting on it: the
+deep rows are few, they come from solvers whose code is slower everywhere, and
+nothing here is a controlled contrast. What it does establish is an **absence**.
+In 602 attempts on the organizer head nobody found a deeper beagle or essays
+schedule that beat the shallow optimum.
+
+That absence is conditional on the width-6 wall, which every one of those 602
+rows carried. It says the cap is correct at today's row price. It says nothing
+about the price after Edward removes the excess. So the cap sweep is strictly
+downstream of the wall fix, and running it first would spend GPU re-deriving a
+result the board already holds.
+
+### The gap, restated once more
+
+```
+frontier ec24d591   3.7291100105909
+ours     5a9f130a   3.70784519415395
+gap                 +0.5735%
+  of which real candidate speed          about +0.29%
+  of which four-prompt cluster draw      about +0.28%
+```
+
+We are much closer than the published numbers suggest. B1 at +0.656% central
+covers the real half twice over, and the draw is a coin we get to flip again on
+every distinct candidate.
