@@ -60842,3 +60842,107 @@ in flight            5a9f130a   crown parity, validating
 advisor branch       22cae1b9 + this entry
 ```
 
+
+## 325 — FINDING 294, RULE 168: the decode JIT channel is provably closed for the NAX retile
+
+Date 2026-08-23. Advisor. Zero GPU. Static source proof against the vendored
+MLX tree at `09838bf9`.
+
+### 325.1 The question ledger 324 left open
+
+RULE 167 said the shared failure mode of the prefill graveyard is the
+experiment. Every prefill attempt on record took a decode regression that the
+prefill channel does not explain:
+
+| receipt | author | mechanism | prefill | decode | outcome |
+| --- | --- | --- | ---: | ---: | --- |
+| `5cdc9c17` | BitWonka | 128x32 NAX retile | -4.9721 %, se 0.0404 | regression | scored 3.18068, rejected |
+| `43925f29` | Amal-David | Ws double buffer | -4.1182 % | regression | rejected |
+| `a9dd132a` | Amal-David | Ws double buffer | -4.1429 % | regression | rejected |
+| `7226dc9a` | ours | Ws double buffer, pointer recompute | not isolated | **+2.15 %, ~70 sigma** | abandoned |
+
+Alphonse cannot price E156 R1 until the campaign knows whether a retile confined
+to the NAX stem can reach the decode path at all. The candidate channel was the
+JIT source string: MLX compiles decode QMV from a generated C++ twin at runtime,
+so a header edit can in principle change a kernel the edit never meant to touch.
+
+### 325.2 The proof
+
+Five independent checks, all against the vendored tree:
+
+```
+jit_kernels.cpp:928    decode qmv  <- metal::quantized()
+jit_kernels.cpp:1129   qmm_t_nax   <- metal::quantized_nax()
+CMakeLists.txt:79      make_jit_source(quantized      kernels/quantized_utils.h)
+CMakeLists.txt:95      make_jit_source(quantized_nax  kernels/quantized_utils.h)
+quantized.h / quantized_nax.h: neither includes the other
+  (only <metal_simdgroup>, <metal_stdlib>)
+grep -c '_nax'            mlx-generated/quantized.cpp      -> 0
+grep -c 'kE147NaxRetileOn' mlx-generated/quantized_nax.cpp -> 3
+aedf6e29 file list: quantized_nax.h, quantized_nax.cpp, +2 research files
+```
+
+The two JIT stems are disjoint. The decode QMV source string is assembled from
+`quantized` and `quantized_utils.h` only. The parked retile flag
+`kE147NaxRetileOn` appears three times in the `quantized_nax` twin and zero
+times in the `quantized` twin. The parked commit `aedf6e29` touches no file that
+feeds the decode stem.
+
+> **RULE 168.** An edit confined to the `quantized_nax` stem and its generated
+> twin cannot change the decode JIT source string. An edit that touches
+> `quantized.h` or `quantized_utils.h` can change it, whether or not the edit
+> dispatches a different kernel.
+
+### 325.3 What this explains and what it does not
+
+RULE 168 explains our own `7226dc9a`. Its rung A edited `quantized.h`, which is
+inside the decode stem. The `+2.15 %` decode regression at roughly 70 sigma was
+therefore a real causal effect of the edit, not a mystery.
+
+RULE 168 does **not** explain the three rival receipts. Their source is not
+public at file granularity, so the campaign cannot confirm which stem they
+touched. Leave the rival failure mode open. Do not treat FINDING 294 as a
+clearance for the double-buffer arm.
+
+One physical channel survives the static proof. A retiled prefill kernel changes
+the dispatch shape and the register and threadgroup footprint of the prefill
+phase, so it can leave the GPU in a different cache or power state when decode
+starts. That channel is invisible to source inspection. The measured counter
+`e156_retile_decode_pct` stays a required output of E156 R1.
+
+### 325.4 Consequence for the round
+
+Arm 1, the retile, is cleared to build. `5cdc9c17` published a score, so a
+128x32 NAX retile has already passed exact-token verification on the ranked M5
+in someone else's tree. The remaining exactness risk is the `(TM,TN)` change
+from `(2,2)` to `(4,1)`, which switches `tile_matmad_nax` from paired-B
+`matmul2d(16,32,16)` to paired-A `matmul2d(32,16,16)`
+(`steel/gemm/nax.h:847` and `:864`). Apple documents no internal accumulation
+order for either form. The cheap falsifier is a standalone MPP adversarial
+fragment harness, which runs on M4 Pro today because MPP tensor ops are portable
+back to Apple7.
+
+Composition arithmetic on the crown surface, ranked harness:
+
+```
+crown parity                            3.72911    in flight as 5a9f130a
+  o leaf16                    +0.257 %  3.7387     measured lower bound, thorfinn
+  o E151 R1 NAX retile        +0.505 %  3.7575     registered prior, alphonse
+the bar  ec24d59 newjordan               3.72911
+margin of the composed candidate        +0.0284 absolute, about 4.9x the 2 sigma MDE
+```
+
+Stage B alone, crown plus leaf16, is `+0.0096`, only about 1.7x the MDE. Stage C
+is the target candidate. That is why arm 1 is the priority of the round and why
+the double buffer is second.
+
+### 325.5 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating since 16:29Z board time
+advisor branch       09838bf9 + this entry
+```
+
