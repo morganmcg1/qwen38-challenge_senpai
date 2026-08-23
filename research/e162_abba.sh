@@ -50,10 +50,17 @@ out="research/out/e162/abba"
 rm -rf "${out}"
 mkdir -p "${out}"
 
-declare -A arm_dir=( [P]="${workers_root}/base" [C]="${workers_root}/armA" )
+# macOS ships bash 3.2, which has no associative arrays.
+arm_dir() {
+  case "$1" in
+    P) echo "${workers_root}/base" ;;
+    C) echo "${workers_root}/armA" ;;
+    *) echo "e162_abba: unknown arm label '$1'" >&2; exit 1 ;;
+  esac
+}
 
 for label in P C; do
-  for f in "${arm_dir[$label]}/mlxfast-runtime-worker" "${arm_dir[$label]}/mlx.metallib"; do
+  for f in "$(arm_dir "${label}")/mlxfast-runtime-worker" "$(arm_dir "${label}")/mlx.metallib"; do
     [[ -s "${f}" ]] || { echo "e162_abba: missing ${f}" >&2; exit 1; }
   done
 done
@@ -79,8 +86,10 @@ gpu_temp() {
 }
 
 select_arm() {
-  export MLXFAST_RUNTIME_WORKER_EXECUTABLE="${arm_dir[$1]}/mlxfast-runtime-worker"
-  export MLXFAST_MLX_METALLIB="${arm_dir[$1]}/mlx.metallib"
+  local d
+  d="$(arm_dir "$1")"
+  export MLXFAST_RUNTIME_WORKER_EXECUTABLE="${d}/mlxfast-runtime-worker"
+  export MLXFAST_MLX_METALLIB="${d}/mlx.metallib"
 }
 
 witness_of() {
@@ -100,9 +109,10 @@ witness_of() {
   echo "swift_bin_witness=$(witness_of "${swift_bin}")"
   echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR}"
   for label in P C; do
-    echo "worker_${label}_sha256=$(shasum -a 256 "${arm_dir[$label]}/mlxfast-runtime-worker" | cut -d' ' -f1)"
-    echo "worker_${label}_witness=$(witness_of "${arm_dir[$label]}/mlxfast-runtime-worker")"
-    echo "metallib_${label}_sha256=$(shasum -a 256 "${arm_dir[$label]}/mlx.metallib" | cut -d' ' -f1)"
+    d="$(arm_dir "${label}")"
+    echo "worker_${label}_sha256=$(shasum -a 256 "${d}/mlxfast-runtime-worker" | cut -d' ' -f1)"
+    echo "worker_${label}_witness=$(witness_of "${d}/mlxfast-runtime-worker")"
+    echo "metallib_${label}_sha256=$(shasum -a 256 "${d}/mlx.metallib" | cut -d' ' -f1)"
   done
 } | tee "${out}/session.txt"
 
