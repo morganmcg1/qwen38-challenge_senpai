@@ -59438,3 +59438,194 @@ prices.
 - Any Rule 134 conversion applied across an arm that changes acceptance. See
   318.4.
 
+
+## 319 — 2026-08-23 15:55 — FINDING 283: our tree is 28 organizer commits behind and silently deleted three separately-promoted mechanisms worth +1.075 %, which is 85.5 % of our entire gap to the bar. ADVISOR ERROR 189. RULE 162. The campaign re-founds on the crown surface.
+
+This is the most important entry in the ledger. It was obtained with zero GPU
+time, from source, in under forty minutes, and it invalidates the premise of
+every open assignment.
+
+### 319.1 The observation
+
+`75a21a4` was in flight and all four students were occupied, so I audited the
+question nobody owned: what, exactly, is in our five-file delta against the
+crown, and why is a tree full of individually-positive mechanisms 1.26 % below
+a tree without them?
+
+I diffed our submitted surface against the crown source `0863b06a` at the
+symbol level and at the Metal kernel-name level. The kernel-name diff is the
+load-bearing one, because a kernel name is a runtime-effective string and is
+not sensitive to refactoring.
+
+```
+git merge-base --is-ancestor 0863b06a HEAD   ->  NO
+git rev-list --count HEAD..0863b06a          ->  28
+merge-base(HEAD, crown)                      ->  80021bc0
+```
+
+**Twenty-eight organizer commits.** The crown is not an ancestor of our branch.
+`frontier-state.json` recorded `organizer.syncedCommit = c0dbec05`, itself
+twelve commits stale, and that sync never landed in the tree.
+
+Among the 28: `fac135f2`, `b40c28e9`, `c0dbec05`, `eb5eadc7`, `6f1cd66f` — the
+exact commits carrying the three mechanisms below.
+
+### 319.2 FINDING 283 — the three deletions
+
+Kernel-name diff, `Qwen35.swift` and `Qwen36MTPBlockSession.swift`, crown 20
+kernels versus ours 18, four crown-only:
+
+| # | Crown mechanism | Crown's own recorded value | State in our tree |
+| --- | --- | ---: | --- |
+| 1 | `qwen_mtp_e87_probe_select` (francip) | **+0.72 %** promoted at `fac135f`/`bc070b7` | **absent** — we still run the 9-dispatch `argPartition` merge sort plus probe-sort compaction |
+| 2 | `Qwen35XSumsSidecar` + `qwen35_fused_residual_rms_norm_xsums_v1` | **+0.175 %** (3.71960 -> 3.72612) | **absent** — `xsumsTable(x)` is unconditional, we pay all 257 fills; crown pays about 130 |
+| 3 | qL{2,3} SDPA warm extension (`0dd455f0`) | **+0.18 %** (3.2355 -> 3.2414) | **absent** — we warm `[1, 5, 4]` |
+| — | `qwen35_custom_affine4_g64_qmv_wide_v1` / `_wide_sums_v1` | n/a | **present, renamed.** Our tier kernels are the same two E120 QMV kernels under `table: false` / `table: true`. **Not a regression.** |
+
+```
+sum of the three priced deletions        +1.075 %
+our gap 0cf1637e (3.68278758) -> bar     +1.2578 %  (0.04632 absolute)
+fraction of the gap explained            85.5 %
+```
+
+Verified on every tree we have ever submitted:
+
+```
+e09d6aa7  (the scored 3.68278758 tree)   e87_probe_select=0  fused_xsums=0  sidecar=0
+14247cce  (edward E154 / alphonse E151)  e87_probe_select=0  fused_xsums=0  sidecar=0
+HEAD      (6072476a)                     e87_probe_select=0  fused_xsums=0  sidecar=0
+0863b06a  (crown)                        e87_probe_select=1  fused_xsums=1  sidecar=1
+```
+
+### 319.3 The crown names our own failure mode, in its own source
+
+At the E87 restore site in `0863b06a:Qwen35.swift`:
+
+```
+// E87 probe select (francip, promoted +0.72% at fac135f/bc070b7,
+// then deleted by the 6f1cd66 whole-file overlay whose branch
+// predates fac135f — restored here; the shortlist half stays with
+// the ARM-C row-top32 kernels that superseded it).
+```
+
+A whole-file overlay from a branch predating the promotion. That is exactly
+what we have been doing. FINDING 282 found the identical sentence attached to
+the qL warm set, blaming `b40c28e`. **Three occurrences, none noticed, because
+a deletion of somebody else's mechanism does not appear in our own diff
+review.**
+
+Note also *"the shortlist half stays with the ARM-C row-top32 kernels that
+superseded it."* ARM-C is thorfinn's E87 arm C. **The crown carries our work.
+We are the only participant not carrying theirs.**
+
+### 319.4 ADVISOR ERROR 189
+
+> **ADVISOR ERROR 189.** I ran this campaign for its whole length without once
+> diffing our submitted surface against the organizer's promoted source. I
+> priced the deficit as a mechanism shortfall and commissioned four students to
+> close it with new kernels, when 85.5 % of it was promoted work we had deleted
+> and could have taken for free at any point. I let `frontier-state.json` carry
+> a `syncedCommit` twelve commits stale and never verified that the sync had
+> landed. It had not. Worse, I assigned thorfinn E152 to hand-build the
+> chunk-sum producer fusion — a mechanism already written, already promoted and
+> already sitting in `0863b06a`. That is a full student-round of GPU time spent
+> re-implementing inheritable code.
+
+> **RULE 162.** Before pricing any gap between our best receipt and the bar,
+> diff our submitted surface against the promoted source at the symbol level
+> **and** at the Metal kernel-name level. Enumerate every named kernel the
+> promoted source ships that we do not, and classify each as deletion, rename,
+> or genuine divergence. Do this first, every time the bar moves. A missing
+> promoted mechanism is free score and it is invisible to a self-diff.
+
+### 319.5 The index is the only axis where we genuinely diverge by choice
+
+Our index is exactly the crown's index plus two of our own changes:
+
+```
+crown  clusters 12,292   rowsPerCluster  8   probes 3,073 (0.25)   refined rows 24,584
+ours   clusters  6,146   rowsPerLeaf    16   probes   922 (0.15)   refined rows 14,752
+```
+
+- `p15`, fraction 0.25 -> 0.15. Ranked evidence at `Qwen35.swift:2078-2086`.
+- `leaf16`, rows per leaf 8 -> 16. E153, `+0.2411 %` total-leg, 12-leg gated ABBA.
+
+Refined-row count alone does not separate the geometries: the crown reaches the
+same 14,752 rows by `0.15 * 12,292 = 1,844` probes at 8 rows. The real
+difference is the **coarse pass** — we score 6,146 centroids, the crown scores
+12,292.
+
+**Interaction to watch.** `qwen35ClusterRowQMV` guards `rowsPerCluster == 8` at
+`Qwen35.swift:5081` and returns `nil` otherwise. Under `leaf16` that guard
+fails, so our custom row kernel is bypassed on the shipped default. E153's
+`+0.2411 %` is net of that bypass. On the crown base the row path is
+`gatherQuantizedMM` and there is no custom kernel to bypass, so **`leaf16` on
+the crown is a new measurement, not a transfer.**
+
+### 319.6 Second-order find: we ship research telemetry on the hot path
+
+`notePipeline`, `noteLaunch`, `noteProbe`, `flushPipelineLog` are ours-only and
+live in a submitted file. `Qwen35.swift:2366` calls
+`notePipeline("xsums_v1", width: nil)` inside `xsumsTable`, which fires 257
+times per verify round. Unpriced instrumentation in the scored path. It is
+closed by inheritance rather than by work, but it belongs in the record as the
+second-largest thing RULE 162 caught.
+
+### 319.7 The strategic pivot, and the decisions taken
+
+The organizer's `upstream/main` is the sanctioned base every participant builds
+from, and `sync-organizer-frontier` exists precisely to import it. Continuing to
+patch a divergent tree is strictly dominated.
+
+**Thorfinn's parity candidate `e0650407` is repurposed.** It was built as a
+diagnostic; it is now the foundation. Its surface is byte-identical to
+`0863b06a` across 89 editable paths and it is already gate-green.
+
+| candidate | content | prediction | role |
+| --- | --- | ---: | --- |
+| `e0650407` | pure crown parity | ~3.729 | **frozen fallback**, ties the bar, `+1.26 %` over our best |
+| crown + `p15` + `leaf16` | E152 R2 | ~3.7381 | **lead candidate**, clears the bar |
+
+Pure parity was rejected as the lead because it only ties `3.72911` and carries
+nothing of ours. The port is strictly stronger in the same slot.
+
+**This is a sharp pre-registered test.** If either lands near `3.729` or above,
+FINDING 283 is confirmed and our five files were roughly neutral all along. If
+either lands near `3.683`, FINDING 283 is wrong and our **submission path** is
+defective — a different and far more urgent problem. Both outcomes are
+decisive.
+
+### 319.8 Round re-issued against FINDING 283
+
+| PR | student | before | after |
+| --- | --- | --- | --- |
+| #152 | thorfinn | build the chunk-sum producer fusion by hand | **R2**: found on the crown, port `p15` then `leaf16`, keep `e0650407` frozen as fallback |
+| #155 | askeladd | R0 warm census, then R1 recall audit | **R0 closed by inheritance.** R1 recall audit is the whole assignment |
+| #156 | alphonse | R1 double buffer on our tree, R2 strip scaffold | **R2 closed by inheritance.** R1 re-based and re-measured on the crown surface |
+| #154 | edward | R0 anchor in flight, R2 delay injection | unchanged; anchor re-read against FINDING 283, `host_achievable_read_gbps` promoted to the single most valuable R2 output |
+
+Neither E155 R0 nor E156 R2 is recorded as a negative result. Both are
+**closed by inheritance** — the crown already ships the answer, so Rule 154
+forbids spending a round to confirm it.
+
+### 319.9 What carries forward
+
+- FINDING 258 (fill dispatch ~1.18 us on ranked M5) is unaffected and remains
+  the best zero-GPU transfer result in the campaign.
+- FINDING 279, 280, 281, 282 stand. FINDING 281's acceptance exchange rate is
+  unchanged and still says one acceptance point is worth 0.97 to 1.80 gaps.
+- Rule 134 remains invalid across acceptance changes.
+- The `567 GB/s` roofline constant is still the least-verified number the
+  campaign prices with, and edward's R2 is the only thing that can test it.
+
+### 319.10 Open
+
+- `75a21a4` still validating at 15:55Z. It is the last submission from the old
+  lineage. The slot goes to thorfinn the moment it is terminal.
+- 179(E) versus 182 on warm pipeline keys is **formally unresolved**. The crown's
+  authors sided with 179(E). We inherit their choice without settling the
+  question.
+- Whether `leaf16` transfers to the crown's `gatherQuantizedMM` row path.
+- Whether alphonse's `-4.12 %` prefill effect survives on a base paying ~130
+  fills per round instead of 257.
+

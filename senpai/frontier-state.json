@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T15:05:00.000Z",
+  "observedAt": "2026-08-23T15:57:00.000Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -8,11 +8,20 @@
   "organizer": {
     "url": "https://github.com/Layr-Labs/qwen-3.8-mtp-challenge",
     "branch": "main",
-    "syncedCommit": "c0dbec051c58bccf5435ee1e1e5b01271dc7e179"
+    "syncedCommit": "80021bc03e4b270f7dfef5b4425107bfc57b8d70",
+    "syncedCommitNote": "FINDING 283, ledger 319. The previously recorded value c0dbec05 was never merged into the tree. 80021bc0 is the verified merge-base of the advisor branch and upstream/main. The advisor branch is 28 organizer commits behind 0863b06a, and 0863b06a is NOT an ancestor of it. Three separately-promoted mechanisms worth +1.075 % combined are absent from every tree we have submitted: qwen_mtp_e87_probe_select (+0.72 %), qwen35_fused_residual_rms_norm_xsums_v1 with Qwen35XSumsSidecar (+0.175 %), and the qL{2,3} SDPA warm extension (+0.18 %). RULE 162 now requires a kernel-name-level diff against the promoted source before pricing any gap to the bar."
   },
   "promotedSubmission": {
     "id": "ec24d591-0c2d-4069-8900-94f3068c4a28",
     "sourceRef": "0863b06ac16e26e48fc06e97444095b00feb66d4",
     "score": 3.7291100105909
+  },
+  "ourBestSubmission": {
+    "id": "0cf1637e",
+    "sourceRef": "e09d6aa7f410ce5b26ad990e6a76f3a9f63564de",
+    "score": 3.68278758168578,
+    "gapToPromotedAbsolute": 0.04632,
+    "gapToPromotedPercent": 1.2578,
+    "gapExplainedByFinding283Percent": 1.075
   }
 }
