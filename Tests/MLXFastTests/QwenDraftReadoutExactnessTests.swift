@@ -796,13 +796,17 @@ struct QwenDraftProbeSortTests {
         env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
-    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 16 over 98,336
-    /// compact rows. The probe count is pinned because the promoted frontier
-    /// removed the `ProbeArm` rung surface that used to derive it. The live
-    /// source now computes it from `qwen35DerivedClusterProbeFraction` 0.15,
-    /// which is `private` and unreachable from a test target, so this constant
-    /// restates `ceil(0.15 * 6_146) = 922`. Update both if the fraction or the
-    /// leaf width moves.
+    /// The geometry of the E152 R2 port arm, which is the compiled default
+    /// arm. That arm sets `derivedClusterRowsPerLeaf` to 16 over 98,336
+    /// compact rows. The E152 R2 control arm selects 8 at run time through
+    /// `MLX_E141_ROWS_PER_LEAF`, so it is not the arm under test here.
+    ///
+    /// The probe count is pinned because the promoted frontier removed the
+    /// `ProbeArm` rung surface that used to derive it. The live source now
+    /// computes it from `qwen35DerivedClusterProbeFraction` 0.15, which is
+    /// `private` and unreachable from a test target, so this constant restates
+    /// `ceil(0.15 * 6_146) = 922`. Update both if the fraction or the compiled
+    /// default leaf width moves.
     private static let liveClusters = 6_146
     private static let liveProbes = 922
 
@@ -921,14 +925,19 @@ struct QwenRowTop32SelectionTests {
         env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
-    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 16 over 98,336
-    /// compact rows. The probe count is pinned because the promoted frontier
-    /// removed the `ProbeArm` rung surface that used to derive it. The live
-    /// source now computes it from `qwen35DerivedClusterProbeFraction` 0.15,
-    /// which is `private` and unreachable from a test target, so this constant
-    /// restates `ceil(0.15 * 6_146) = 922`. The selection therefore runs over
-    /// 922 * 16 = 14,752 rows, the same row count the leaf-8 geometry scored.
-    /// Update these if the fraction or the leaf width moves.
+    /// The geometry of the E152 R2 port arm, which is the compiled default
+    /// arm. That arm sets `derivedClusterRowsPerLeaf` to 16 over 98,336
+    /// compact rows. The E152 R2 control arm selects 8 at run time through
+    /// `MLX_E141_ROWS_PER_LEAF`, so it is not the arm under test here.
+    ///
+    /// The probe count is pinned because the promoted frontier removed the
+    /// `ProbeArm` rung surface that used to derive it. The live source now
+    /// computes it from `qwen35DerivedClusterProbeFraction` 0.15, which is
+    /// `private` and unreachable from a test target, so this constant restates
+    /// `ceil(0.15 * 6_146) = 922`. The selection therefore runs over
+    /// 922 * 16 = 14,752 rows. The control arm refines the same 14,752 rows,
+    /// so only the coarse centroid pass differs between the two arms. Update
+    /// these if the fraction or the compiled default leaf width moves.
     private static let liveClusters = 6_146
     private static let liveRowsPerCluster = 16
     private static let liveProbes = 922
