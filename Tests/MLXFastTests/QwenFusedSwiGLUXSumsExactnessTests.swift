@@ -233,20 +233,19 @@ struct QwenFusedSwiGLUXSumsExactnessTests {
                 .reshaped([kBlocks * 32, stride])[0..., ..<rows]
             eval(activation, table, reference, referenceTable)
 
+            let nans = isNaN(reference.asType(.float32)).asType(.int32).sum()
+                .item(Int.self)
+            let activationDiff = differingCells(activation, reference)
+            let tableDiff = differingCells(table, referenceTable)
             #expect(
-                isNaN(reference.asType(.float32)).asType(.int32).sum()
-                    .item(Int.self) == 0,
-                "m=\(rows): the reference activation contains NaN, so a bitwise "
-                    + "comparison would be meaningless")
+                nans == 0,
+                "m=\(rows): the reference activation has \(nans) NaN cells, so a bitwise comparison would be meaningless")
             #expect(
-                differingCells(activation, reference) == 0,
-                "m=\(rows): the fused activation differs from the compiled "
-                    + "silu(a) * b in "
-                    + "\(differingCells(activation, reference)) cells")
+                activationDiff == 0,
+                "m=\(rows): the fused activation differs from the compiled silu(a) * b in \(activationDiff) cells")
             #expect(
-                differingCells(table, referenceTable) == 0,
-                "m=\(rows): the emitted table differs from the standalone fill "
-                    + "in \(differingCells(table, referenceTable)) cells")
+                tableDiff == 0,
+                "m=\(rows): the emitted table differs from the standalone fill in \(tableDiff) cells")
 
             // POSITIVE CONTROL 1. A float32 sum over the same 16 activations
             // is the same value in exact arithmetic and a different value in
@@ -260,8 +259,7 @@ struct QwenFusedSwiGLUXSumsExactnessTests {
             let reassociated = differingCells(table, f32)
             #expect(
                 reassociated > 0,
-                "m=\(rows): a float32 re-association produced the same bits as "
-                    + "the fill, so this comparison cannot detect one")
+                "m=\(rows): a float32 re-association produced the same bits as the fill, so this comparison cannot detect one")
             if reassociated > 0 { controlsFired += 1 }
 
             // POSITIVE CONTROL 2. One perturbed activation element must move
@@ -282,8 +280,7 @@ struct QwenFusedSwiGLUXSumsExactnessTests {
             let moved = differingCells(table, perturbedTable)
             #expect(
                 moved > 0,
-                "m=\(rows): perturbing one activation element left every table "
-                    + "cell unchanged, so this comparison is blind")
+                "m=\(rows): perturbing one activation element left every table cell unchanged, so this comparison is blind")
             if moved > 0 { controlsFired += 1 }
         }
 
