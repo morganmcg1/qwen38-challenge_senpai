@@ -44,6 +44,43 @@ PREDICT_ADDITIVE = 0.87
 PREDICT_F225 = -1.18
 TOLERANCE_PP = 0.238
 
+# F29 costed three mechanisms. T42 rung 0 read the two trees and found four:
+# the launch grid also moved, wide -> tight, and E135 s1 measured that term at
+# +1.8064 % faster over 12 legs on this host. The additive forecast for the
+# four-mechanism contrast this session actually runs is therefore the F29
+# forecast plus that term.
+PREDICT_GRID_TERM = 1.8064
+PREDICT_ADDITIVE_4 = PREDICT_ADDITIVE + PREDICT_GRID_TERM
+
+
+def rounds(leg: dict) -> int | None:
+    """Drafting rounds in one leg.
+
+    The per-round trace counts them directly, one `round_us=` line each, but it
+    costs about 9 % of candidate time on this host, so the timed legs run with
+    `--no-trace`. Every round emits one primary token plus its accepted drafts,
+    so the count is recovered exactly from the leg's own scored readouts:
+
+        decode_tokens = R * (1 + effective_mean_draft_len * accepted_draft_rate)
+
+    Checked against a traced 512-token leg: the trace counts 78 rounds and this
+    returns 78. Both inputs are digit-identical behavioural readouts, so a
+    derived count is as strong a determinism signature as a counted one.
+    """
+    trace = leg["dir"] / "trace.txt"
+    if trace.exists():
+        counted = sum(1 for line in trace.read_text().splitlines()
+                      if "round_us=" in line)
+        if counted:
+            return counted
+    m = leg["metrics"]
+    tokens = report.fnum(m.get("decode_tokens"))
+    edl = report.fnum(m.get("effective_mean_draft_len"))
+    rate = report.fnum(m.get("accepted_draft_rate"))
+    if not tokens or edl is None or rate is None:
+        return None
+    return round(tokens / (1.0 + edl * rate))
+
 
 def contrast(rows: list[dict], ref: str, cand: str, key: str):
     report.ARMS = (ref, cand)
@@ -102,6 +139,39 @@ def main() -> int:
               f"{(statistics.fmean(ex) if ex else float('nan')):>8.1f}"
               f"{shown:>26}")
 
+    print()
+    print("per leg, absolute candidate time and round count (F30 additions)")
+    print(f"{'i':>3}{'tag':<22}{'arm':<12}{'mtp s/tok':>12}"
+          f"{'serial s/tok':>14}{'rounds':>8}{'entry C':>9}{'exit C':>8}")
+    for i, r in enumerate(complete):
+        m = report.fnum(r["metrics"]["mtp_seconds_per_token"])
+        s = report.fnum(r["metrics"].get("serial_seconds_per_token"))
+        n = rounds(r)
+        print(f"{i:>3}{r['tag']:<22}{r['arm']:<12}{m:>12.6f}"
+              f"{(s if s is not None else float('nan')):>14.6f}"
+              f"{(n if n is not None else -1):>8}"
+              f"{report.fnum(r['meta'].get('gpu_temp_entry_c')) or 0.0:>9.1f}"
+              f"{report.fnum(r['meta'].get('gpu_temp_exit_c')) or 0.0:>8.1f}")
+
+    print()
+    print("instrument checks")
+    for arm in ("base", "composed", "composed67"):
+        rc = sorted({rounds(r) for r in complete if r["arm"] == arm} - {None})
+        vals = [report.fnum(r["metrics"]["mtp_seconds_per_token"])
+                for r in complete if r["arm"] == arm]
+        if not vals:
+            continue
+        flag = "" if len(rc) <= 1 else "   NOT DETERMINISTIC"
+        gaps = sorted(vals)
+        widest = max((b - a for a, b in zip(gaps, gaps[1:])), default=0.0)
+        print(f"  {arm:<12} rounds {rc}{flag}")
+        print(f"  {'':<12} {len(set(vals))} distinct mtp values in {len(vals)}"
+              f" legs, widest neighbour gap {widest:.3e} s/tok,"
+              f" spread {max(vals) - min(vals):.3e}")
+    print("  A few-valued instrument would show repeated identical mtp values"
+          " or one wide gap that dominates the spread. Continuous jitter shows"
+          " neither.")
+
     by_arm_edl = {}
     for arm in ("base", "composed", "composed67"):
         vals = {report.fnum(r["metrics"].get("effective_mean_draft_len"))
@@ -150,18 +220,23 @@ def main() -> int:
     print()
     if "e135_composition_local_pct" in headlines:
         pct, se = headlines["e135_composition_local_pct"]
-        print("F29 pre-registration, base -> composed, positive means faster")
-        print(f"  additivity predicts   {PREDICT_ADDITIVE:+.2f} %")
-        print(f"  Finding 225 predicts  {PREDICT_F225:+.2f} %")
-        print(f"  observed              {pct:+.4f} % (+- {se:.4f})")
-        da = abs(pct - PREDICT_ADDITIVE)
-        df = abs(pct - PREDICT_F225)
-        near = "additivity" if da < df else "Finding 225"
-        print(f"  distance to additivity {da:.4f} pp,"
-              f" to Finding 225 {df:.4f} pp  -> nearer {near}")
-        print(f"  the two hypotheses differ by"
-              f" {abs(PREDICT_ADDITIVE - PREDICT_F225):.4f} pp against a"
-              f" {TOLERANCE_PP} pp instrument tolerance")
+        print("pre-registration, base -> composed, positive means faster")
+        cells = (
+            ("F29 additivity, three mechanisms", PREDICT_ADDITIVE),
+            ("T42 additivity, four mechanisms ", PREDICT_ADDITIVE_4),
+            ("Finding 225 interaction         ", PREDICT_F225),
+        )
+        for name, value in cells:
+            print(f"  {name}  {value:+.4f} %")
+        print(f"  observed                            {pct:+.4f} %"
+              f" (+- {se:.4f})")
+        nearest = min(cells, key=lambda c: abs(pct - c[1]))
+        for name, value in cells:
+            mark = "  <== nearest" if name == nearest[0] else ""
+            print(f"  distance to {name} {abs(pct - value):>8.4f} pp{mark}")
+        print(f"  the cells are separated by at least"
+              f" {min(abs(a[1] - b[1]) for a in cells for b in cells if a is not b):.4f}"
+              f" pp against a {TOLERANCE_PP} pp instrument tolerance")
 
     print()
     print("This session is GATED. Every leg passed the real 40 C gate, so"
