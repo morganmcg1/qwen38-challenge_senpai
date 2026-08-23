@@ -11,6 +11,14 @@ Advisor F26 added one amendment: report the candidate leg against both the
 pack rather than the published medians. De-lucking replaces every serial leg
 with the window median, which removes the serial lottery that the candidate
 cannot influence.
+
+Advisor F27 added three more. Print all eight per-prompt candidate seconds per
+token and all eight per-prompt draft lengths as digits, not just the median
+pair. State explicitly whether draft length moved, because F218 measured a
+ranked exchange rate near -9.42 % candidate time for each +1.0 of realised
+draft length, so an unnoticed schedule move would be mistaken for a kernel
+effect. Mark any medpair delta inside the F216 null band as null in both
+directions.
 """
 import argparse
 import json
@@ -35,6 +43,17 @@ MEDPAIR_BAND_PCT = (-0.03, 0.27)
 PLUTARCH_EDL_EXPECTED = 0.155
 PLUTARCH_NONDRAFT_EXPECTED = 449
 EXPECTED_PAIR = ("beagle", "essays")
+
+# F216 measured the diff-of-two floor on an eight-prompt candidate-leg mean at
+# 0.0721 %/leg. Doubling it is the honest two-sided null band for a single pair
+# of receipts, so anything smaller says nothing in either direction.
+NULL_BAND_PCT = 0.15
+# F218 ranked exchange rate, candidate seconds per token per +1.0 draft length.
+EDL_EXCHANGE_PCT = -9.42
+# Receipts `623e77af` and `572b2cc4` ran the same arm on separate ranked days
+# and reproduced all eight draft lengths bit for bit, so the schedule carries no
+# run to run variance at all. Any nonzero delta is a code change.
+EDL_MOVE_EPS = 0.0
 
 
 def fetch():
@@ -90,6 +109,8 @@ def main():
     ap.add_argument("receipt", help="receipt id prefix to read out")
     ap.add_argument("--anchor", default="1760479a")
     ap.add_argument("--bar", default="684821ed")
+    ap.add_argument("--edl-ref", default="572b2cc4",
+                    help="our own last receipt on this arm, the schedule control")
     ap.add_argument("--pool-since", default="2026-08-22T18:00:00Z")
     args = ap.parse_args()
 
@@ -114,6 +135,7 @@ def main():
     anchor = pick(rows, args.anchor)
     bar = pick(rows, args.bar)
     anchor_p, bar_p = per_prompt(anchor), per_prompt(bar)
+    edl_ref_p = per_prompt(pick(rows, args.edl_ref))
 
     ordered = sorted_raw(prompts)
     median = median_of(ordered)
@@ -144,15 +166,21 @@ def main():
           f"{'as pre-registered' if got == EXPECTED_PAIR else 'DIFFERS from pre-registration'}")
 
     print("\n-- TRIPWIRE 3: candidate leg, the headline --")
-    print("  candidate mtp seconds per token, lower is better")
+    print("  all eight candidate mtp seconds per token, lower is better")
     print(f"  {'prompt':<9} {'ours':>12} {args.anchor:>12} {'vs anchor':>10}"
           f" {args.bar:>12} {'vs bar':>10}")
-    for name in EXPECTED_PAIR:
+    for name in NAMES.values():
         ours = prompts[name]["mtp_seconds_per_token_mean"]
         a = anchor_p[name]["mtp_seconds_per_token_mean"]
         b = bar_p[name]["mtp_seconds_per_token_mean"]
+        mark = " <== median pair" if name in EXPECTED_PAIR else ""
         print(f"  {name:<9} {ours:12.7f} {a:12.7f} {(ours/a-1)*100:+9.3f}%"
-              f" {b:12.7f} {(ours/b-1)*100:+9.3f}%")
+              f" {b:12.7f} {(ours/b-1)*100:+9.3f}%{mark}")
+    for label, other in ((args.anchor, anchor_p), (args.bar, bar_p)):
+        eight = statistics.mean(
+            prompts[n]["mtp_seconds_per_token_mean"]
+            / other[n]["mtp_seconds_per_token_mean"] - 1 for n in NAMES.values())
+        print(f"  EIGHT PROMPT MEAN vs {label}   {eight*100:+.3f} %")
     for label, other in ((args.anchor, anchor_p), (args.bar, bar_p)):
         ours_mean = statistics.mean(
             prompts[n]["mtp_seconds_per_token_mean"] for n in EXPECTED_PAIR)
@@ -160,10 +188,12 @@ def main():
             other[n]["mtp_seconds_per_token_mean"] for n in EXPECTED_PAIR)
         delta = (ours_mean / other_mean - 1) * 100
         inside = MEDPAIR_BAND_PCT[0] <= delta <= MEDPAIR_BAND_PCT[1]
+        null = abs(delta) < NULL_BAND_PCT
         print(f"  MEDPAIR MEAN vs {label}   {delta:+.3f} %"
               f"   forecast {MEDPAIR_FORECAST_PCT:+.2f} %"
               f"   band [{MEDPAIR_BAND_PCT[0]:+.2f}, {MEDPAIR_BAND_PCT[1]:+.2f}]"
-              f"   {'INSIDE' if inside else 'OUTSIDE'}")
+              f"   {'INSIDE' if inside else 'OUTSIDE'}"
+              f"   {'F216 NULL, says nothing either way' if null else 'outside the F216 null band'}")
 
     print("\n  serial leg beside it, noise diagnostic only")
     for label, other in ((args.anchor, anchor_p), (args.bar, bar_p)):
@@ -172,6 +202,37 @@ def main():
         other_mean = statistics.mean(
             other[n]["serial_seconds_per_token_mean"] for n in EXPECTED_PAIR)
         print(f"  serial medpair vs {label} {(ours_mean/other_mean-1)*100:+.3f} %")
+
+    print(f"\n-- TRIPWIRE 3b: did draft length move against our own "
+          f"{args.edl_ref} --")
+    print("  a schedule move buys candidate time at about "
+          f"{EDL_EXCHANGE_PCT:+.2f} % per +1.0 draft length, so it must be "
+          "ruled out before any candidate time change is called a kernel "
+          "effect. The reference is our own last receipt on the same arm, not "
+          "a rival row, because only our own schedule is the control.")
+    print(f"  {'prompt':<9} {'ours':>10} {'ref':>10} {'delta':>9}"
+          f" {'predicted':>11} {'observed':>10} {'nondraft':>9}")
+    moved = []
+    for name in NAMES.values():
+        ours = prompts[name]["effective_mean_draft_len"]
+        reference = edl_ref_p[name]["effective_mean_draft_len"]
+        d = ours - reference
+        predicted = d * EDL_EXCHANGE_PCT
+        observed = (prompts[name]["mtp_seconds_per_token_mean"]
+                    / edl_ref_p[name]["mtp_seconds_per_token_mean"] - 1) * 100
+        if abs(d) > EDL_MOVE_EPS:
+            moved.append((name, d))
+        print(f"  {name:<9} {ours:10.4f} {reference:10.4f} {d:+9.4f}"
+              f" {predicted:+10.3f}% {observed:+9.3f}%"
+              f" {prompts[name]['non_drafting_round_count']:9d}")
+    if moved:
+        print("  VERDICT                    DRAFT LENGTH MOVED on "
+              + ", ".join(f"{n} {d:+.4f}" for n, d in moved))
+        print("  any candidate time change on those prompts is confounded "
+              "with the schedule and cannot be read as a kernel effect")
+    else:
+        print("  VERDICT                    draft length is bit identical on "
+              "all eight, the shipped schedule is the reference schedule")
 
     print("\n-- TRIPWIRE 4: published median --")
     inside = FORECAST_BAND[0] <= median <= FORECAST_BAND[1]
