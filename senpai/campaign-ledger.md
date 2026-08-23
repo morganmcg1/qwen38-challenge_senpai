@@ -63000,3 +63000,278 @@ independent measurements, is a definition and not a result.** Treat it as a
 refutation of the assumed definition until the populating code says otherwise.
 `non_drafting_round_count == 0` on beagle in 650 of 650 receipts was the tell,
 and it was in my own printed output for three analyses before I acted on it.
+
+---
+
+## Entry 336 — 2026-08-23
+
+Prefill is a tenth of the scored number and we never looked at it. leaf16 is an
+official loss and is reverted. The exact top-2 contract is weaker than assumed.
+
+### FINDING 321 — what the trusted parent actually checks on the readout
+
+Source: `Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift`, which is
+**not** in `benchmark.json`'s `editablePaths`, so it is organizer-trusted code
+and this read is authoritative.
+
+**Enforced, hard:**
+
+1. `:216-224` — every emitted token must equal `golden.rows[i-1].sequentialArgmax`.
+   Surfaces as `all_tokens_matched`.
+2. `:311-348` `requireStructurallySound` — counts only:
+   `perRowTop2Tokens.count == declaredRows`, same for logits, accepted+rejected
+   == draftTokens.count, `tokens.count == 1 + acceptedDraftCount`, and the
+   committed block equals the accepted draft prefix.
+3. `:498-512` — on **rejected-tail rows only** (rows past the first rejection),
+   the candidate's reported **top-1** must equal the pinned-reference replay's
+   top-1, unless the **reference's** own margin is below `1e-2`
+   (`QwenMTPNearTieTolerance`, `QwenRuntimeMTP.swift:224-232`).
+4. Ranked workflow `.github/workflows/qwen-mtp-ranked-benchmark.yml:2646-2649` —
+   every ledger row must carry a `top2_logits` array of length >= 2. **Presence
+   and length only.**
+5. Row-ledger closure, `:2640-2646`.
+
+**Not enforced anywhere:**
+
+- The **value** of `top2_logits[0]` or `top2_logits[1]`.
+- The identity of `top2_tokens[1]`. **The runner-up token is never compared to
+  anything.**
+- `max_rejected_tail_logit_delta` — computed at `:497-500`, reported, never
+  thresholded in the workflow.
+- `residual_divergence_count` — reported, never thresholded.
+- Candidate top-1 on golden-backed draft rows and on the tail row. The tail row
+  is written with the *reference's* token in both `token` and `referenceToken`
+  (`:534-553`), so it is self-consistent by construction. Exactness at those
+  positions is enforced only, but completely, through `all_tokens_matched`.
+
+**Consequence.** A certified-exact top-1 readout is contract-sufficient; the
+dense 248,320-wide projection is not itself required. But the failure mode is
+asymmetric and brutal:
+
+- A **false accept** commits a wrong token, `all_tokens_matched` goes false, and
+  the entire ranked run fails across all eight prompts.
+- A **false reject** at draft index `i < d-1` creates replay rows whose top-1
+  must match, so it is usually caught. A false reject at the **last** draft
+  index creates no replay rows and passes every gate while silently costing
+  acceptance.
+
+Therefore any shortlisted or approximate target readout must be **certified**,
+with a dense fallback when certification fails — never merely accurate.
+A lossy FR-Spec-style shortlist is safe for a *draft* head and unacceptable for
+the *target* lm_head.
+
+### FINDING 322 — the seed prefill is inside the scored quantity
+
+`QwenRuntimeMTPDriver.swift:91-100`, verbatim:
+
+```
+// The seed prefill IS charged to the decode measurement, the way the
+// paired contract requires: the clock starts immediately before the
+// request so the seed cost cannot be hidden outside the window.
+let started = Date()
+let begin = try client.beginMTPDecode(seedTokens: golden.seedTokens)
+```
+
+`started` at `:94` precedes the seed request. `decodeSeconds` at `:197` measures
+from that same origin. `QwenRuntimeMTP.swift:442`:
+`decodeSecondsPerToken = decodeSeconds / max(decodeTokenCount, 1)`.
+`Sources/MLXFastCLI/main.swift:2008` publishes it as
+`parent_measured_seconds_per_token`, which becomes `mtp_seconds_per_token_mean`.
+`seed_prefill_seconds` and `prefill_seconds_per_token` are published at
+`:2016-2020` as "Observability only -- nothing above subtracts it".
+
+The ranked mode string is `qwen-mtp-paired-decode-only`. That names the paired
+decode measurement; it does not exclude prefill from the window. `program.md`
+agrees: "Both seed processing and decoding are included in the same timed leg,
+even though prefill has no separate score."
+
+**Share, by two independent routes.** FINDING 289's prompt-weighted 10.04 %, and
+an independent reconstruction from anchor `5a9f130a` giving 10.9 % under the
+FINDING 306 median weights. Leg seconds are `mtp_seconds_per_token_mean * 512`:
+
+```
+prompt     q       mtp        leg s    prefill share at P = 0.574 s
+plutarch  0.156  0.0301213    15.42          3.7 %
+drama     2.298  0.0178803     9.16          6.3 %
+travel    2.648  0.0156379     8.01          7.2 %
+beagle    4.382  0.0106961     5.48         10.5 %
+essays    5.087  0.0098233     5.03         11.4 %
+republic  4.989  0.0096975     4.97         11.6 %
+medicine  5.256  0.0097036     4.97         11.6 %
+botany    6.148  0.0096485     4.94         11.6 %
+```
+
+`P` is bracketed by requiring one consistent round cost `R` across plutarch and
+botany: `R` in [0.024, 0.030] s/round forces `P` in [0.06, 3.13] s, and our own
+measured seed cost of 0.5265 s sits at `R = 0.0290`, which puts botany at 150.5
+rounds — comfortably inside FINDING 319's feasible band [76.3, 163.8].
+
+**Prefill's share is largest on exactly the prompts that dominate the median.**
+Successful speculation compresses decode and leaves prefill fixed, so prefill is
+an Amdahl floor that *grows* as drafting improves.
+
+### FINDING 323 — leaf16 is an official loss, and the readout is recall-starved
+
+Receipt `1509bf95`, commit `f95d4bdb`, **rejected**, published **3.68242218**
+against the byte-matched anchor `5a9f130a`, commit `8ba6e738`, **3.70784519**.
+
+```
+5a9f130a -> 1509bf95   negative = B decoded faster   harness=ranked
+prompt          candA       candB   cand d%    ser d%    raw d%  edl==
+botany       0.009648    0.009820   +1.7742   -0.2876   -2.0258  False
+republic     0.009697    0.009709   +0.1182   -0.4013   -0.5189   True
+medicine     0.009704    0.009789   +0.8808   -0.0373   -0.9101   True
+essays       0.009823    0.009854   +0.3096   -0.4752   -0.7823   True
+beagle       0.010696    0.010737   +0.3827   -0.1997   -0.5801   True
+travel       0.015638    0.015733   +0.6075   -0.1307   -0.7338  False
+drama        0.017880    0.017964   +0.4683   -0.2334   -0.6985   True
+plutarch     0.030121    0.030029   -0.3082   -0.2797   +0.0285  False
+
+candidate leg  mean +0.5291 %  sd 0.6122  se 0.2164  7/8 same sign
+published      3.70784519 -> 3.68242218   = -0.686 %
+```
+
+The submitted-surface diff is leaf16 plus the `xs_hit` / `xs_fill` census
+counters and the leaf-geometry trace fields. Nothing else.
+
+**The mechanism is now clear, and it is the opposite of what the price assumed.**
+The probe fraction is a constant `0.15` (`Qwen35.swift:4644`), so:
+
+```
+leaf 8 : 98,336 / 8  = 12,292 leaves,  1,844 probes,  1,844 x  8 = 14,752 refined rows
+leaf 16: 98,336 / 16 =  6,146 leaves,    922 probes,    922 x 16 = 14,752 refined rows
+```
+
+**Refined-row work is identical.** leaf16 only halves the coarse centroid pass,
+so it is strictly cheaper to scan — and it still lost. The only remaining
+channel is **selection quality**: wider leaves pick a worse set of the same
+14,752 rows, draft quality falls, acceptance falls, round count rises.
+`edl` moved on botany, travel and plutarch, confirming behaviour changed.
+
+**leaf16 was priced at +0.257 % in the entry-330.6 composition table. It
+measured -0.529 % on the candidate leg. The price was wrong by 0.79 pp and had
+the wrong sign.**
+
+**Corollary, and it is the useful part.** On the draft-readout axis we sit where
+**selection quality is scarcer than bandwidth**. Two consequences:
+
+1. The untested direction is the *opposite* one: **leaf 4**, or a higher probe
+   fraction, spending bytes to buy recall. Nobody has run it.
+2. It argues **against** the FR-Spec-style vocabulary-shortlist family for the
+   draft head, which trades recall for bytes in exactly this way. Downgrade that
+   item until leaf4 or a probe-fraction arm says otherwise.
+
+**Action taken:** `derivedClusterRowsPerLeaf` reverted 16 -> 8 in the maintained
+base this entry. The census counters are kept; E160 needs them.
+
+### RULE 186 — a composition-table price is a hypothesis until a receipt prices it
+
+Entry 330.6 priced three banked wins on the crown-parity anchor: island arm none
++0.458 %, leaf16 +0.257 %, E151 R1 retile +0.505 %. **The first of the three to
+be measured officially came back at -0.529 %, with the wrong sign.**
+
+Do not compose banked deltas and quote the sum. Each entry needs its own
+receipt, or an explicit label that it is an unmeasured estimate. The remaining
+two prices in that table are now suspect and must not be summed into a claim
+that the gap is closed.
+
+### FINDING 324 — the ranked harness noise floor, from a fixed-work receipt
+
+Zero-draft receipts do the same work on every prompt: `q = 0` on all eight means
+512 rounds each, so the eight legs differ only by prompt content and noise.
+
+```
+receipt   solver         mtp mean     sd         cv
+95611e60  davidtai       0.0380252  0.0000736  0.193 %
+3147d255  0xkydo         0.0380728  0.0000716  0.188 %
+4d1123ce  newjordan      0.0378805  0.0001230  0.325 %
+1f60b3fe  newjordan      0.0378079  0.0000463  0.122 %
+da950333  fabinulleins   0.0313628  0.0000269  0.086 %
+```
+
+**Best case 0.086 %, typical 0.12 % to 0.19 %.** This is the across-prompt
+coefficient of variation for a fixed-work configuration on the ranked host, and
+it is the right yardstick for a uniform mechanism measured on one receipt. Our
+required effect, 0.575 %, is 3x to 6.7x it. The local noise floor (0.039 %
+absolute mtp) remains the yardstick for local arms.
+
+### The prefill pool — verified, unworked, and assigned
+
+`get_qmv_batch_limit` (`Vendor/.../backend/metal/quantized.cpp:84`, used at
+`:1415`) returns 12 or 10 for our shapes (`D = K = 5120 > 4096`) on every
+architecture generation. The dispatch is `if (M >= vector_limit)` -> `qmm`.
+
+```
+decode   S = 1 + d,  d <= 8,  so M <= 9 < 10   -> NEVER enters qmm
+prefill  M = 512                               -> ALWAYS qmm
+```
+
+**The host dispatcher isolates prefill from decode by shape.** A change confined
+to the `qmm` kernel body cannot affect decode.
+
+The affine loader has no software pipelining and the floating-point one does:
+
+```
+kernels/fp_quantized_nax.h:248  shift_dst defined; :366 :380 :1034 :1049 used
+                          :669 :791 :925  threadgroup Wtype Ws[2 * ...]  double-sized
+kernels/quantized_nax.h:575, :703   loaders, grep -c shift_dst = 0
+kernels/quantized.h:572             loader,  grep -c shift_dst = 0
+```
+
+Our 4-bit group-64 backbone runs the affine path. All four target files are
+**pristine versus `upstream/main`** in our tree. All are in `editablePaths`.
+`quantized` is a JIT family (`Vendor/mlx-swift/Package.swift:284` excludes
+`nojit_kernels.cpp` on Apple), so the generated `mlx-generated/*.cpp` twin is
+runtime-effective and must change with the `.h`.
+
+**Local development is possible**, which killed E156 and does not kill this:
+`is_nax_available()` needs architecture generation >= 17 and the M4 Pro is 16,
+so `_nax` never runs locally — but `kernels/quantized.h` has the identical gap
+and *does* run locally. Screen and validate in `quantized.h`, then port to
+`quantized_nax.h` for the ranked M5.
+
+Two rivals have receipt-validated prefill mechanisms in this family at -4.97 %
+(BitWonka `5cdc9c17`) and -4.14 % twice (Amal-David). At a 10.4 % share those
+are +0.52 % and +0.43 % published, against a 0.578 % gap. **Attribution of those
+receipts to specific mechanisms is our ledger's reading, not a verified diff.**
+
+Assigned as **E162** to qwen-alphonse. E161 closed unmerged; see below.
+
+### Queue changes this entry
+
+- **E161 closed unmerged.** The `minimumTableWidth = 4` gate (`Qwen35.swift:1755`,
+  `tablePays :1757`, gate `:1855`) means the chunk-sum fills it targeted exist
+  only at `S >= 4`, i.e. draft depth >= 3. Its +0.088 % to +0.106 % bundle,
+  already only 2.3x the 0.039 % floor, becomes `bundle x P(d >= 3)` and very
+  likely drops under the floor. The deciding histogram is assigned to E160 on
+  the same base build, so no evidence is lost. Its null-control noise floor,
+  FINDING 309 and RULE 179 all stand.
+- **E160 corrected**, same width gate. Required to report the
+  `effective_draft_lengths` histogram and `P(d >= 3)` **before** implementing,
+  with a stop rule at `P(d >= 3) < 0.35`.
+- **E159 pre-registration amended.** My cost-model prediction `rho = 8h/s` in
+  [1.2, 1.6] now competes with a bandwidth-physics estimate of [0.38, 0.8]
+  (head readout 248,320 x 5,120 at ~4.5 bits = 715 MB against a ~15.2 GB target;
+  at `q = 4.382` that is a 17 % drafting share). Both are on the record, the
+  physics one is more mechanistic, and they fall in **different rows** of the
+  decision table. Edward is asked to report his measurement before reading
+  either, and to check whether the cost model's `h` is even denominated in
+  seconds — if it is dimensionless, Prediction A is retracted rather than scored
+  as a near miss.
+
+### ADVISOR ERROR 203 — I priced the campaign on decode without checking the window
+
+Every pricing decision this campaign has made assumed the scored quantity was
+decode. It is decode **plus prefill**, and prefill is a tenth of it, sitting
+untouched behind kernels no one on the board's promoted path has edited. The
+check that settled it was four lines of source and cost one grep.
+
+Before pricing an axis, read the line that defines the scored window.
+
+### RULE 187 — a "pristine versus upstream" file is a measured opportunity, not an absence
+
+Four files carrying 10 % of the scored number were byte-identical to upstream in
+our tree and in every promoted tree on the board. That is not evidence they are
+already optimal; on this board it was evidence that nobody had looked.
+Periodically diff the submitted surface against `upstream/main` and ask which
+untouched files carry measured cost.

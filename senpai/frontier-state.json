@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T19:55:00Z",
+  "observedAt": "2026-08-23T20:40:00Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -27,24 +27,33 @@
     "gapToPromotedPercent": 0.5702,
     "candidateLegDeltaNeededPercent": -0.575
   },
-  "inFlightSubmission": {
-    "id": "1509bf95-cee0-423f-92ea-0f58edbf5d80",
-    "createdAt": "2026-08-23T18:20:45Z",
-    "content": "tree-identical parity control plus leaf16",
-    "status": "validating",
-    "queueDepthAtCreation": 8,
-    "expectationNote": "RULE 184: board median validation is 83.9 min, p90 160.6 min, p99 204.5 min, measured over 1246 terminal submissions. Eight submissions were already validating ahead of this one. Do not treat it as stuck before about 3.5 hours and never resubmit to test liveness.",
-    "onTerminal": "run research/receipt_candidate_leg.py compare 5a9f130a 1509bf95, and confirm plutarch is essentially unchanged because leaf16 is drafting-side only"
-  },
   "roundBudget": {
     "note": "FINDING 319, ledger 335. Derived only from constraints true by definition: token arithmetic, h>=0, 0<=a<=q, and the depth-8 ceiling. effective_mean_draft_len is PROPOSED depth, never accepted depth (ADVISOR ERROR 202, ledger 334).",
     "receipt": "5a9f130a",
-    "fixedPerRoundSecondsRange": [0.02925, 0.03365],
-    "marginalSecondsPerProposedRowRange": [0.0, 0.0057778],
-    "normalisedDepthPriceRange_8h_over_s": [0.0, 1.58],
-    "beagleAcceptedPerRoundRange": [1.8188, 4.1422],
-    "beagleRoundsRange": [99.6, 181.6],
-    "totalRoundsOver8PromptsRange": [1263, 1917],
+    "fixedPerRoundSecondsRange": [
+      0.02925,
+      0.03365
+    ],
+    "marginalSecondsPerProposedRowRange": [
+      0.0,
+      0.0057778
+    ],
+    "normalisedDepthPriceRange_8h_over_s": [
+      0.0,
+      1.58
+    ],
+    "beagleAcceptedPerRoundRange": [
+      1.8188,
+      4.1422
+    ],
+    "beagleRoundsRange": [
+      99.6,
+      181.6
+    ],
+    "totalRoundsOver8PromptsRange": [
+      1263,
+      1917
+    ],
     "missingCoordinate": "rho = 8h/s. E159 measures it. RULE 182: the board cannot supply it, because no receipt publishes an accepted count and no solver has ever submitted a zero-draft and a drafting receipt on the same commit.",
     "preRegisteredPrediction": "rho between 1.2 and 1.6, because FINDING 303 records the cost model constructors holding 8h=1.44 in units where the fixed cost is 1, and 1.44 is 91 percent of the way to a feasibility ceiling of 1.58 that was derived from disjoint board data.",
     "decisionRule": "rho<0.32 widen producer fusion; 0.32-0.95 run both; rho>0.95 pivot to head cost"
@@ -60,15 +69,95 @@
       "gateNote": "passed every correctness gate; rejectionReason is only 'score did not improve current best'"
     },
     "unoptimisedControls": [
-      {"id": "95611e60", "user": "davidtai", "meanSecondsPerRound": 0.0380252},
-      {"id": "3147d255", "user": "0xkydo", "meanSecondsPerRound": 0.0380728},
-      {"id": "4d1123ce", "user": "newjordan", "meanSecondsPerRound": 0.0378805},
-      {"id": "1f60b3fe", "user": "newjordan", "meanSecondsPerRound": 0.0378079}
+      {
+        "id": "95611e60",
+        "user": "davidtai",
+        "meanSecondsPerRound": 0.0380252
+      },
+      {
+        "id": "3147d255",
+        "user": "0xkydo",
+        "meanSecondsPerRound": 0.0380728
+      },
+      {
+        "id": "4d1123ce",
+        "user": "newjordan",
+        "meanSecondsPerRound": 0.0378805
+      },
+      {
+        "id": "1f60b3fe",
+        "user": "newjordan",
+        "meanSecondsPerRound": 0.0378079
+      }
     ],
     "pinnedSerialBaseline": 0.0379709
   },
   "statusVocabulary": {
     "note": "RULE 185. accepted means the run improved a best score, not that it passed the gates. Read rejectionReason, never status alone. failed is the gate-failure label.",
-    "counts": {"rejected": 827, "failed": 283, "accepted": 99, "cancelled": 37, "validating": 9}
+    "counts": {
+      "rejected": 827,
+      "failed": 283,
+      "accepted": 99,
+      "cancelled": 37,
+      "validating": 9
+    }
+  },
+  "lastTerminalSubmission": {
+    "submissionId": "1509bf95-cee0-423f-92ea-0f58edbf5d80",
+    "commit": "f95d4bdb2fd050cba1d42e22308351d10722f263",
+    "status": "rejected",
+    "rejectionReason": "score did not improve current best",
+    "officialScore": 3.68242218292127,
+    "mechanism": "crown parity + derivedClusterRowsPerLeaf 8 -> 16 (leaf16) + xs_hit/xs_fill census counters",
+    "comparedWith": "5a9f130a-... commit 8ba6e738..., published 3.70784519415395",
+    "candidateLegMeanPercent": 0.5291,
+    "candidateLegStandardError": 0.2164,
+    "promptsSameSign": "7/8",
+    "publishedDeltaPercent": -0.686,
+    "pricedAtPercent": 0.257,
+    "pricingSource": "campaign-ledger entry 330.6 composition table",
+    "verdict": "FINDING 323: refined-row work is identical at 14,752 in both arms because the probe fraction is a constant 0.15, so leaf16 only halves the coarse centroid pass and is strictly cheaper to scan. It still lost, therefore the loss is selection quality, not cost. Reverted to 8 in the maintained base."
+  },
+  "maintainedBaseChanges": {
+    "derivedClusterRowsPerLeaf": "reverted 16 -> 8 on FINDING 323",
+    "censusCounters": "kept: qwen35XSumsSidecarHits, qwen35XSumsStandaloneFills, qwen35DerivedCluster* (E160 needs them)"
+  },
+  "prefillPool": {
+    "finding": "FINDING 322",
+    "prefillIsScored": true,
+    "evidence": "QwenRuntimeMTPDriver.swift:91-100 sets `started` before beginMTPDecode; :197 decodeSeconds uses the same origin; QwenRuntimeMTP.swift:442 divides by decodeTokenCount. The driver is not in editablePaths, so it is organizer-trusted.",
+    "weightedSharePercent": 10.4,
+    "shareRoutes": "FINDING 289 prompt-weighted 10.04 %; independent reconstruction from 5a9f130a under FINDING 306 median weights 10.9 %",
+    "shapeIsolation": "get_qmv_batch_limit (quantized.cpp:84, used :1415) returns >= 10 for K=5120; decode M <= 9 never enters qmm, prefill M=512 always does",
+    "mechanism": "affine QuantizedBlockLoader has no software pipelining; fp_quantized_nax.h:248 shift_dst with double-sized threadgroup tile at :669/:791/:925 is the reference",
+    "filesPristineVsUpstream": [
+      "kernels/quantized.h",
+      "kernels/quantized_nax.h",
+      "mlx-generated/quantized.cpp",
+      "mlx-generated/quantized_nax.cpp"
+    ],
+    "rivalEvidence": "BitWonka 5cdc9c17 -4.9721 % prefill s/tok; Amal-David -4.1181 % and -4.1429 %. Mechanism attribution is our ledger's reading, not a verified diff.",
+    "assignedAs": "E162 / qwen-alphonse / PR 162"
+  },
+  "rankedNoiseFloor": {
+    "finding": "FINDING 324",
+    "source": "zero-draft receipts, identical work on all 8 prompts",
+    "bestCaseCvPercent": 0.086,
+    "typicalCvPercent": "0.12 to 0.19",
+    "receipts": [
+      "da950333 0.086 %",
+      "1f60b3fe 0.122 %",
+      "3147d255 0.188 %",
+      "95611e60 0.193 %",
+      "4d1123ce 0.325 %"
+    ],
+    "note": "across-prompt cv for a fixed-work configuration on the ranked host; the local 0.039 % absolute-mtp floor still governs local arms"
+  },
+  "openQueue": {
+    "E158": "qwen-askeladd / PR 158 / build our own head; B0 byte-exact reproduce, B1 island-free, B2 trunk ladder, B3 gated ABBA, B4 commit mtp-head/",
+    "E159": "qwen-edward / PR 159 / round-budget sweep D in {0,1,2,4,8}; headline is rho = 8h/s; two competing pre-registered predictions on record",
+    "E160": "qwen-thorfinn / PR 160 / mlp.down producer fusion, gated on measuring P(d >= 3) first, stop below 0.35",
+    "E162": "qwen-alphonse / PR 162 / prefill affine qmm software pipelining",
+    "E161": "CLOSED unmerged; repriced below the noise floor by the S >= 4 width gate"
   }
 }

@@ -5218,13 +5218,23 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
         compactDraftPrefixCount + compactDraftControlEnd - compactDraftControlStart
     private static let compactDraftPaddedCount = 98_336
     private static let draftRerankCandidateCount = 32
-    // Derived cluster index. Sixteen rows per leaf halves the leaf count and
-    // therefore the coarse centroid-pass bytes, while `probes * rowsPerLeaf`
-    // holds at 14,752 refined rows because the probe fraction is unchanged.
+    // Derived cluster index. Eight rows per leaf: 12,292 leaves, and at the
+    // 0.15 probe fraction 1,844 probes refine 14,752 rows.
+    //
+    // REVERTED FROM 16 ON OFFICIAL EVIDENCE (FINDING 323). Width 16 halves the
+    // leaf count and therefore the coarse centroid-pass bytes while holding the
+    // refined-row count at the same 14,752, so it is strictly cheaper to scan.
+    // It still lost: receipt 1509bf95 (commit f95d4bdb) measured +0.5291 % on
+    // the candidate leg against the byte-matched width-8 anchor 5a9f130a
+    // (commit 8ba6e738), 7 of 8 prompts the same sign, published 3.70784519 ->
+    // 3.68242218. Wider leaves select a worse set of rows at equal refinement
+    // cost, and the lost acceptance outweighs the cheaper coarse pass. On this
+    // axis selection quality is scarcer than bandwidth.
+    //
     // The width must divide `compactDraftPaddedCount` (98,336) exactly, which
-    // 16 does. Eight refinement passes are the screened setting and the
-    // centroid table stays 2-bit like the rows it indexes.
-    private static let derivedClusterRowsPerLeaf = 16
+    // both 8 and 16 do. Eight refinement passes are the screened setting and
+    // the centroid table stays 2-bit like the rows it indexes.
+    private static let derivedClusterRowsPerLeaf = 8
     private static let derivedClusterIterations = 8
     private static let derivedClusterCentroidBits = 2
 
