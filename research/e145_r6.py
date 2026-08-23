@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import sys
@@ -46,6 +47,7 @@ MAX_ROUND_WIDTH = 8
 # FINDING 235's failure mode, and Rule 134's conversion. One percent of the
 # published median is 515.2 us/round, so the step is 1.7061 % in that frame.
 STATE_STEP_US_PER_ROUND = 879.0
+STATE_STEP_SD_US = 54.3
 PCT_POINT_US_PER_ROUND = 515.2
 
 # The ranked beagle leg at the promoted bar: R5-c's prefill-free cost per round
@@ -386,11 +388,336 @@ def residency_facts() -> dict:
     }
 
 
+KILL_WIRED_SD_PCT = 0.30
+KILL_PAIR_GAP_PCT = 0.80
+
+
+def _moments(values: list[float]) -> dict:
+    n = len(values)
+    mean = sum(values) / n
+    if n > 1:
+        var = sum((v - mean) ** 2 for v in values) / (n - 1)
+    else:
+        var = 0.0
+    sd = math.sqrt(var)
+    return {
+        "n": n,
+        "mean": mean,
+        "sd": sd,
+        "sd_pct": 100.0 * sd / mean,
+        "min": min(values),
+        "max": max(values),
+        "range_pct": 100.0 * (max(values) - min(values)) / mean,
+    }
+
+
+def _largest_internal_gap(values: list[float]) -> dict:
+    """The widest gap between neighbours once the arm is sorted.
+
+    A ranked-style bimodal state would show one wide gap between two tight
+    clusters rather than a smooth spread, so this separates "noisy" from
+    "two states".
+    """
+    ordered = sorted(values)
+    mean = sum(ordered) / len(ordered)
+    gaps = [b - a for a, b in zip(ordered, ordered[1:])]
+    widest = max(gaps)
+    index = gaps.index(widest)
+    others = sorted(gaps)[:-1]
+    median_other = others[len(others) // 2] if others else 0.0
+    return {
+        "sorted": ordered,
+        "gaps": gaps,
+        "widest_gap": widest,
+        "widest_gap_pct": 100.0 * widest / mean,
+        "split_below": index + 1,
+        "split_above": len(ordered) - index - 1,
+        "median_other_gap": median_other,
+        "gap_over_median_other": (
+            widest / median_other if median_other > 0 else float("inf")
+        ),
+    }
+
+
+def rung_1(legs_path: str) -> dict | None:
+    """R6-1: the wired residency arm measured on this host.
+
+    The palindrome `W U U W  W U U W  W U U W` balances the mean position of
+    the two arms exactly, so a plain difference of means already removes any
+    linear thermal or clock drift. Each block of four also gives one
+    self-contained paired estimate, which is what the block table reports.
+    """
+    if not os.path.exists(legs_path):
+        return None
+    with open(legs_path, encoding="utf-8") as handle:
+        legs = json.load(handle)["legs"]
+    timed = sorted(
+        (leg for leg in legs
+         if leg["slot"].startswith("r6-") and "warmup" not in leg["slot"]),
+        key=lambda leg: leg["position"],
+    )
+    if not timed:
+        return None
+    wired = [leg for leg in timed if leg["residency"] == "wired"]
+    unwired = [leg for leg in timed if leg["residency"] == "unwired"]
+    if not wired or not unwired:
+        return None
+
+    out = {
+        "harness": "local",
+        "gpu_used": True,
+        "rung": "R6-1",
+        "legs": len(timed),
+        "order": [leg["residency"] for leg in timed],
+        "e145_r6_wired_legs": len(wired),
+        "e145_r6_unwired_legs": len(unwired),
+        "e145_r6_all_matched": all(leg["all_tokens_matched"]
+                                   for leg in timed),
+        "e145_r6_divergence_total": sum(leg["residual_divergence_count"]
+                                        for leg in timed),
+        "e145_r6_worker_sha256": timed[0]["worker_sha256"],
+        "e145_r6_one_binary": len({leg["worker_sha256"]
+                                   for leg in timed}) == 1,
+    }
+
+    for index, leg in enumerate(wired, start=1):
+        out["e145_r6_wired_spt_%d" % index] = leg["spt"]
+    for index, leg in enumerate(unwired, start=1):
+        out["e145_r6_unwired_spt_%d" % index] = leg["spt"]
+
+    for label, field in (("spt", "spt"),
+                         ("round_us", "round_us_from_blocks")):
+        w = _moments([leg[field] for leg in wired])
+        u = _moments([leg[field] for leg in unwired])
+        out["wired_%s" % label] = w
+        out["unwired_%s" % label] = u
+        out["e145_r6_wired_%s_mean" % label] = w["mean"]
+        out["e145_r6_unwired_%s_mean" % label] = u["mean"]
+        out["e145_r6_wired_minus_unwired_%s_pct" % label] = (
+            100.0 * (w["mean"] - u["mean"]) / u["mean"])
+
+    out["e145_r6_wired_within_arm_sd_pct"] = out["wired_spt"]["sd_pct"]
+    out["e145_r6_unwired_within_arm_sd_pct"] = out["unwired_spt"]["sd_pct"]
+    wired_gap = _largest_internal_gap([leg["spt"] for leg in wired])
+    unwired_gap = _largest_internal_gap([leg["spt"] for leg in unwired])
+    out["wired_gap"] = wired_gap
+    out["unwired_gap"] = unwired_gap
+    out["e145_r6_wired_max_gap_pct"] = wired_gap["widest_gap_pct"]
+    out["e145_r6_unwired_max_gap_pct"] = unwired_gap["widest_gap_pct"]
+    out["e145_r6_is_bimodal"] = (
+        wired_gap["widest_gap_pct"] > KILL_PAIR_GAP_PCT
+        and wired_gap["gap_over_median_other"] > 3.0)
+
+    blocks = []
+    for start in range(0, len(timed) - 3, 4):
+        quad = timed[start:start + 4]
+        w_us = [leg["round_us_from_blocks"] for leg in quad
+                if leg["residency"] == "wired"]
+        u_us = [leg["round_us_from_blocks"] for leg in quad
+                if leg["residency"] == "unwired"]
+        if not w_us or not u_us:
+            continue
+        w_mean = sum(w_us) / len(w_us)
+        u_mean = sum(u_us) / len(u_us)
+        blocks.append({
+            "positions": [leg["position"] for leg in quad],
+            "wired_round_us": w_mean,
+            "unwired_round_us": u_mean,
+            "wired_minus_unwired_us": w_mean - u_mean,
+            "wired_minus_unwired_pct": 100.0 * (w_mean - u_mean) / u_mean,
+        })
+    out["blocks"] = blocks
+    if blocks:
+        diffs = [b["wired_minus_unwired_us"] for b in blocks]
+        block = _moments(diffs)
+        out["block_paired"] = block
+        out["e145_r6_local_step_us"] = block["mean"]
+        out["e145_r6_local_step_sem_us"] = (
+            block["sd"] / math.sqrt(len(diffs)) if len(diffs) > 1 else 0.0)
+        out["e145_r6_local_step_z_vs_879"] = (
+            (block["mean"] - STATE_STEP_US_PER_ROUND)
+            / math.sqrt(STATE_STEP_SD_US ** 2
+                        + (out["e145_r6_local_step_sem_us"] ** 2)))
+        out["e145_r6_local_step_explains_state_step"] = (
+            abs(out["e145_r6_local_step_z_vs_879"]) < 2.0)
+
+    temps_entry = [leg["gate_entry_temp_c"] for leg in timed
+                   if leg["gate_entry_temp_c"] is not None]
+    out["e145_r6_entry_temp_min_c"] = min(temps_entry)
+    out["e145_r6_entry_temp_max_c"] = max(temps_entry)
+    out["e145_r6_entry_temp_spread_c"] = max(temps_entry) - min(temps_entry)
+
+    out["e145_r6_probe_applied_total"] = sum(leg["probe_applied"]
+                                             for leg in timed)
+    out["e145_r6_probe_refused_total"] = sum(leg["probe_refused"]
+                                             for leg in timed)
+    out["e145_r6_wired_legs_all_applied"] = all(
+        leg["probe_applied"] > 0 and leg["probe_refused"] == 0
+        for leg in wired)
+    out["e145_r6_unwired_legs_all_refused_at_default"] = all(
+        leg["probe_refused"] > 0 and leg["probe_applied"] == 0
+        and leg["wired_gate_gib"] == "unset"
+        for leg in unwired)
+
+    # The pre-registered kill, written into the session header before the
+    # first leg ran. It asks about dispersion *inside* the wired arm, not
+    # about the difference between the arms: a tight unimodal wired arm means
+    # the two-state behaviour seen on the ranked receipts does not appear
+    # here, whatever constant wiring costs.
+    out["e145_r6_kill_wired_sd_pct"] = KILL_WIRED_SD_PCT
+    out["e145_r6_kill_pair_gap_pct"] = KILL_PAIR_GAP_PCT
+    out["e145_r6_kill_fired"] = (
+        out["e145_r6_wired_within_arm_sd_pct"] < KILL_WIRED_SD_PCT
+        and out["e145_r6_wired_max_gap_pct"] <= KILL_PAIR_GAP_PCT)
+    out["e145_r6_ranked_state_locally_reproducible"] = \
+        not out["e145_r6_kill_fired"]
+
+    out["leg_table"] = [{
+        "slot": leg["slot"],
+        "position": leg["position"],
+        "residency": leg["residency"],
+        "wired_gate_gib": leg["wired_gate_gib"],
+        "probe_lines": leg["probe_lines"],
+        "probe_applied": leg["probe_applied"],
+        "probe_refused": leg["probe_refused"],
+        "rounds": len(leg["blocks"]),
+        "round_us_from_blocks": leg["round_us_from_blocks"],
+        "block_us_median": leg["block_us_median"],
+        "spt": leg["spt"],
+        "mean_draft_len": leg["mean_draft_len"],
+        "accepted_draft_rate": leg["accepted_draft_rate"],
+        "gate_entry_temp_c": leg["gate_entry_temp_c"],
+        "leg_exit_temp_c": leg["leg_exit_temp_c"],
+        "all_tokens_matched": leg["all_tokens_matched"],
+        "residual_divergence_count": leg["residual_divergence_count"],
+    } for leg in timed]
+    return out
+
+
+def report_rung_1(out: dict) -> None:
+    print()
+    print("## R6-1  the wired residency arm, measured")
+    print("  order %s" % " ".join(
+        "W" if r == "wired" else "U" for r in out["order"]))
+    print(
+        "  one binary %s, worker %s"
+        % (out["e145_r6_one_binary"], out["e145_r6_worker_sha256"][:16])
+    )
+    print(
+        "  all matched %s, divergence %d, entry temp spread %.3f C"
+        % (
+            out["e145_r6_all_matched"],
+            out["e145_r6_divergence_total"],
+            out["e145_r6_entry_temp_spread_c"],
+        )
+    )
+    print(
+        "  Rule 114 witness: wired legs applied %s, unwired legs refused at"
+        " the compiled default %s"
+        % (
+            out["e145_r6_wired_legs_all_applied"],
+            out["e145_r6_unwired_legs_all_refused_at_default"],
+        )
+    )
+    print()
+    print("  %-4s %-4s %-9s %-6s %8s %12s %14s %7s %7s"
+          % ("pos", "res", "gate_gib", "rounds", "spt",
+             "round_us", "block_us_med", "entry", "exit"))
+    for leg in out["leg_table"]:
+        print(
+            "  %-4d %-4s %-9s %-6d %8.6f %12.1f %14.1f %7.2f %7.2f"
+            % (
+                leg["position"],
+                "W" if leg["residency"] == "wired" else "U",
+                leg["wired_gate_gib"],
+                leg["rounds"],
+                leg["spt"],
+                leg["round_us_from_blocks"],
+                leg["block_us_median"],
+                leg["gate_entry_temp_c"],
+                leg["leg_exit_temp_c"],
+            )
+        )
+    print()
+    for arm in ("wired", "unwired"):
+        m = out["%s_spt" % arm]
+        r = out["%s_round_us" % arm]
+        print(
+            "  %-8s spt mean %.8f sd %.4f %% range %.4f %% | round %.1f us"
+            % (arm, m["mean"], m["sd_pct"], m["range_pct"], r["mean"])
+        )
+    print(
+        "  wired minus unwired: %.4f %% on spt, %.4f %% on round cost"
+        % (
+            out["e145_r6_wired_minus_unwired_spt_pct"],
+            out["e145_r6_wired_minus_unwired_round_us_pct"],
+        )
+    )
+    gap = out["wired_gap"]
+    print(
+        "  widest internal gap in the wired arm %.4f %% (%d below, %d above,"
+        " %.1fx the median other gap); bimodal %s"
+        % (
+            gap["widest_gap_pct"],
+            gap["split_below"],
+            gap["split_above"],
+            gap["gap_over_median_other"],
+            out["e145_r6_is_bimodal"],
+        )
+    )
+    if "block_paired" in out:
+        print()
+        print("  paired blocks of four (drift-free within a block)")
+        for b in out["blocks"]:
+            print(
+                "    positions %-18s wired %10.1f  unwired %10.1f  delta"
+                " %+9.1f us (%+.4f %%)"
+                % (
+                    ",".join(str(p) for p in b["positions"]),
+                    b["wired_round_us"],
+                    b["unwired_round_us"],
+                    b["wired_minus_unwired_us"],
+                    b["wired_minus_unwired_pct"],
+                )
+            )
+        print(
+            "  local step %.1f +/- %.1f us/round; the crown state step is"
+            " %.1f +/- %.1f, z = %.2f"
+            % (
+                out["e145_r6_local_step_us"],
+                out["e145_r6_local_step_sem_us"],
+                STATE_STEP_US_PER_ROUND,
+                STATE_STEP_SD_US,
+                out["e145_r6_local_step_z_vs_879"],
+            )
+        )
+        print(
+            "  residency explains the state step: %s"
+            % out["e145_r6_local_step_explains_state_step"]
+        )
+    print()
+    print(
+        "  pre-registered kill on WITHIN-arm dispersion: wired sd < %.2f %%"
+        " and no gap > %.2f %%  -> fired %s"
+        % (KILL_WIRED_SD_PCT, KILL_PAIR_GAP_PCT, out["e145_r6_kill_fired"])
+    )
+    print(
+        "  ranked two-state behaviour locally reproducible with wiring on: %s"
+        % out["e145_r6_ranked_state_locally_reproducible"]
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=None)
     parser.add_argument(
         "--out", default="research/e145-artifacts/r6-0.json"
+    )
+    parser.add_argument(
+        "--legs", default="research/e145-artifacts/legs.json"
+    )
+    parser.add_argument(
+        "--out-r6-1", default="research/e145-artifacts/r6-1.json"
     )
     args = parser.parse_args()
 
@@ -696,6 +1023,17 @@ def main() -> int:
         json.dump(out, handle, indent=1, sort_keys=True)
         handle.write("\n")
     print(f"\nwrote {args.out}")
+
+    measured = rung_1(os.path.join(REPO, args.legs))
+    if measured is None:
+        print("no R6-1 legs in the leg blob yet; skipping rung 1")
+        return 0
+    report_rung_1(measured)
+    path = os.path.join(REPO, args.out_r6_1)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(measured, handle, indent=1, sort_keys=True)
+        handle.write("\n")
+    print(f"\nwrote {args.out_r6_1}")
     return 0
 
 

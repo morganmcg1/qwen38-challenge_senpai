@@ -343,7 +343,7 @@ def log_r7(run, summary: dict, r7: dict) -> None:
                    key=lambda kv: -kv[1])])})
 
 
-def log_r6_1(run, summary: dict, legs: list) -> None:
+def log_r6_1(run, summary: dict, r6: dict) -> None:
     """R6-1: the wired residency arm measured on this host, not replayed.
 
     `harness=local`, real 40 C gate, one binary, palindrome order. The
@@ -352,68 +352,48 @@ def log_r6_1(run, summary: dict, legs: list) -> None:
     unset and are therefore the proof that the shipped default did not
     move.
     """
-    r6_legs = [leg for leg in legs if leg["slot"].startswith("r6-")
-               and "warmup" not in leg["slot"]]
-    if not r6_legs:
-        return
-    wired = [l for l in r6_legs if l.get("residency") == "wired"]
-    unwired = [l for l in r6_legs if l.get("residency") == "unwired"]
-    if not wired or not unwired:
-        return
-
-    def spread_pct(values):
-        mean = sum(values) / len(values)
-        return 100.0 * (max(values) - min(values)) / mean
-
-    def sd_pct(values):
-        mean = sum(values) / len(values)
-        if len(values) < 2:
-            return 0.0
-        var = sum((v - mean) ** 2 for v in values) / (len(values) - 1)
-        return 100.0 * math.sqrt(var) / mean
-
-    wired_spt = [l["spt"] for l in wired]
-    unwired_spt = [l["spt"] for l in unwired]
-    for index, value in enumerate(wired_spt, start=1):
-        summary["e145_r6_wired_spt_%d" % index] = value
-    for index, value in enumerate(unwired_spt, start=1):
-        summary["e145_r6_unwired_spt_%d" % index] = value
-    summary["e145_r6_wired_legs"] = len(wired)
-    summary["e145_r6_unwired_legs"] = len(unwired)
-    summary["e145_r6_wired_within_arm_sd_pct"] = sd_pct(wired_spt)
-    summary["e145_r6_unwired_within_arm_sd_pct"] = sd_pct(unwired_spt)
-    summary["e145_r6_wired_max_gap_pct"] = spread_pct(wired_spt)
-    summary["e145_r6_unwired_max_gap_pct"] = spread_pct(unwired_spt)
-    wired_mean = sum(wired_spt) / len(wired_spt)
-    unwired_mean = sum(unwired_spt) / len(unwired_spt)
-    summary["e145_r6_wired_minus_unwired_pct"] = \
-        100.0 * (wired_mean - unwired_mean) / unwired_mean
-    summary["e145_r6_probe_applied_legs"] = \
-        sum(1 for l in r6_legs if l.get("probe_applied"))
-    summary["e145_r6_probe_refused_legs"] = \
-        sum(1 for l in r6_legs if l.get("probe_refused"))
-    summary["e145_r6_all_matched"] = all(l["all_tokens_matched"]
-                                         for l in r6_legs)
-    summary["e145_r6_divergence_total"] = \
-        sum(l["residual_divergence_count"] for l in r6_legs)
-    entries = [l["gate_entry_temp_c"] for l in r6_legs
-               if l["gate_entry_temp_c"] is not None]
-    if entries:
-        summary["e145_r6_entry_temp_spread_c"] = max(entries) - min(entries)
+    for key, value in r6.items():
+        if key.startswith("e145_r6_") and not isinstance(value, (dict, list)):
+            summary[key] = value
+    summary["e145_r6_order"] = "".join(
+        "W" if r == "wired" else "U" for r in r6["order"])
 
     run.log({"r6_1_legs": table(
-        ["slot", "position", "residency", "wired_gate_gib", "probe_applied",
-         "probe_refused", "rounds", "round_us_from_blocks", "block_us_median",
-         "spt", "mean_draft_len", "accepted_draft_rate", "gate_entry_temp_c",
-         "leg_exit_temp_c", "all_tokens_matched", "residual_divergence_count"],
-        [[l["slot"], l["position"], l.get("residency"),
-          l.get("wired_gate_gib"), l.get("probe_applied"),
-          l.get("probe_refused"), len(l["blocks"]),
-          l["round_us_from_blocks"], l["block_us_median"], l["spt"],
-          l["mean_draft_len"], l["accepted_draft_rate"],
-          l["gate_entry_temp_c"], l["leg_exit_temp_c"],
-          l["all_tokens_matched"], l["residual_divergence_count"]]
-         for l in r6_legs])})
+        ["slot", "position", "residency", "wired_gate_gib", "probe_lines",
+         "probe_applied", "probe_refused", "rounds", "round_us_from_blocks",
+         "block_us_median", "spt", "mean_draft_len", "accepted_draft_rate",
+         "gate_entry_temp_c", "leg_exit_temp_c", "all_tokens_matched",
+         "residual_divergence_count"],
+        [[leg["slot"], leg["position"], leg["residency"],
+          leg["wired_gate_gib"], leg["probe_lines"], leg["probe_applied"],
+          leg["probe_refused"], leg["rounds"], leg["round_us_from_blocks"],
+          leg["block_us_median"], leg["spt"], leg["mean_draft_len"],
+          leg["accepted_draft_rate"], leg["gate_entry_temp_c"],
+          leg["leg_exit_temp_c"], leg["all_tokens_matched"],
+          leg["residual_divergence_count"]]
+         for leg in r6["leg_table"]])})
+
+    run.log({"r6_1_blocks": table(
+        ["positions", "wired_round_us", "unwired_round_us",
+         "wired_minus_unwired_us", "wired_minus_unwired_pct"],
+        [[",".join(str(p) for p in b["positions"]), b["wired_round_us"],
+          b["unwired_round_us"], b["wired_minus_unwired_us"],
+          b["wired_minus_unwired_pct"]]
+         for b in r6["blocks"]])})
+
+    run.log({"r6_1_dispersion": table(
+        ["arm", "metric", "n", "mean", "sd", "sd_pct", "min", "max",
+         "range_pct", "widest_internal_gap_pct"],
+        [[arm, metric, r6["%s_%s" % (arm, metric)]["n"],
+          r6["%s_%s" % (arm, metric)]["mean"],
+          r6["%s_%s" % (arm, metric)]["sd"],
+          r6["%s_%s" % (arm, metric)]["sd_pct"],
+          r6["%s_%s" % (arm, metric)]["min"],
+          r6["%s_%s" % (arm, metric)]["max"],
+          r6["%s_%s" % (arm, metric)]["range_pct"],
+          r6["%s_gap" % arm]["widest_gap_pct"] if metric == "spt" else None]
+         for arm in ("wired", "unwired")
+         for metric in ("spt", "round_us")])})
 
 
 def main() -> int:
@@ -433,6 +413,7 @@ def main() -> int:
     cross = load("r4-cross.json")
     r5 = load("r5.json")
     r6_0 = load("r6-0.json")
+    r6_1 = load("r6-1.json")
     r7 = load("r7.json")
     if curve is None or legs_blob is None or r1 is None:
         raise SystemExit("the curve, the legs and R1 must all be present")
@@ -751,7 +732,8 @@ def main() -> int:
     if r6_0 is not None:
         log_r6_0(run, summary, r6_0)
 
-    log_r6_1(run, summary, legs)
+    if r6_1 is not None:
+        log_r6_1(run, summary, r6_1)
 
     if r7 is not None:
         log_r7(run, summary, r7)
