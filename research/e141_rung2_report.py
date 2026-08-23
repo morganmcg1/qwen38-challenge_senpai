@@ -132,7 +132,13 @@ def collect(runs_parent: Path, label: str) -> list[dict]:
                     "slot": slot_dir.name,
                     "prompt": prompt_dir.name,
                     "arm": meta.get("e141_arm_requested", "?"),
+                    # One session can hold several ABBA blocks, each with its
+                    # own shipped control legs. Without this the blocks pool
+                    # their controls and every contrast is discarded.
+                    "block": meta.get("e141_block_candidate", "full"),
                     "prefix_exported": meta.get("e141_prefix_exported", "?"),
+                    "probes_exported": meta.get("e141_probes_exported", "declared"),
+                    "leaf_exported": meta.get("e141_leaf_exported", "8"),
                     "replicate": int(meta.get("e141_replicate", "0")),
                     "position": int(meta.get("e141_position", "0")),
                     "witness": meta.get("e141_witness", "absent"),
@@ -215,7 +221,9 @@ def identity(legs: list[dict]) -> dict:
     }
 
 
-def contrasts(legs: list[dict], prompt: str, basis: str) -> list[float]:
+def contrasts(
+    legs: list[dict], prompt: str, basis: str, cand: str = "full"
+) -> list[float]:
     """Per-replicate 100 * (1 - full/shipped) on one prompt and one basis."""
     out = []
     reps = sorted({leg["replicate"] for leg in legs if leg["prompt"] == prompt})
@@ -228,10 +236,10 @@ def contrasts(legs: list[dict], prompt: str, basis: str) -> list[float]:
             and leg["witness"] != "MISMATCH"
         ]
         shipped = [leg[basis] for leg in rows if leg["arm"] == "shipped"]
-        full = [leg[basis] for leg in rows if leg["arm"] == "full"]
-        if len(shipped) != 2 or len(full) != 2:
+        cands = [leg[basis] for leg in rows if leg["arm"] == cand]
+        if len(shipped) != 2 or len(cands) != 2:
             continue
-        out.append(100.0 * (1.0 - statistics.mean(full) / statistics.mean(shipped)))
+        out.append(100.0 * (1.0 - statistics.mean(cands) / statistics.mean(shipped)))
     return out
 
 
@@ -323,11 +331,16 @@ def main() -> None:
     ap.add_argument("--out", default="research/e141-rung2.json")
     ap.add_argument("--rung3", default="research/e141-rung3.json")
     ap.add_argument("--census", default="research/e141-census.json")
+    ap.add_argument("--candidate", default="full")
     args = ap.parse_args()
 
-    legs = collect(Path(args.runs), args.label)
+    legs = [
+        leg
+        for leg in collect(Path(args.runs), args.label)
+        if leg["block"] == args.candidate
+    ]
     if not legs:
-        print("e141_rung2_report: no legs found")
+        print(f"e141_rung2_report: no legs found for block {args.candidate}")
         return
 
     report: dict = {
@@ -360,19 +373,24 @@ def main() -> None:
             ),
         }
         for basis in ("decode_spt", "ranked_spt"):
-            values = contrasts(legs, prompt, basis)
+            values = contrasts(legs, prompt, basis, args.candidate)
             blob[f"{basis}_gain_pct_per_replicate"] = values
             blob[f"{basis}_gain_pct"] = statistics.mean(values) if values else None
             blob[f"{basis}_gain_pct_stdev"] = (
                 statistics.stdev(values) if len(values) > 1 else None
             )
-        for arm in ("shipped", "full"):
+        for arm in ("shipped", args.candidate):
             for key in ("round_count", "us_per_round", "decode_spt", "ranked_spt",
                         "mean_draft", "accepted_draft_rate"):
-                blob[f"{arm}_{key}"] = mean_by(legs, prompt, arm, key)
+                value = mean_by(legs, prompt, arm, key)
+                blob[f"{arm}_{key}"] = value
+                if arm == args.candidate:
+                    # Stable alias so the conversion below never has to know
+                    # which arm was timed.
+                    blob[f"candidate_{key}"] = value
         blob["added_us_per_round_at_p025"] = (
-            blob["full_us_per_round"] - blob["shipped_us_per_round"]
-            if blob["full_us_per_round"] and blob["shipped_us_per_round"]
+            blob["candidate_us_per_round"] - blob["shipped_us_per_round"]
+            if blob["candidate_us_per_round"] and blob["shipped_us_per_round"]
             else None
         )
         report["prompts"][prompt] = blob
@@ -394,16 +412,16 @@ def main() -> None:
         # where it is exact and deterministic, and cross-check it against the
         # timing legs, which must reproduce it if the arm selector worked.
         rung3 = json.loads(Path(args.rung3).read_text())
-        d3 = rung3["delta"]
+        c3 = (rung3.get("contrasts") or {})[args.candidate]
         ratio = {
-            p: d3["round_count_full"][p] / d3["round_count_shipped"][p]
+            p: c3["round_count_candidate"][p] / c3["round_count_shipped"][p]
             for p in MEDPAIR
         }
         report["round_count_ratio_source"] = args.rung3
         report["round_count_ratio"] = ratio
         report["round_count_ratio_from_timing_legs"] = {
             p: (
-                report["prompts"][p]["full_round_count"]
+                report["prompts"][p]["candidate_round_count"]
                 / report["prompts"][p]["shipped_round_count"]
             )
             for p in MEDPAIR
@@ -513,14 +531,14 @@ def main() -> None:
         print(f"\n== {prompt} ==")
         print(
             f"  rounds    shipped {blob['shipped_round_count']} "
-            f"full {blob['full_round_count']}"
+            f"{args.candidate} {blob['candidate_round_count']}"
         )
         def num(value: str, spec: str = "+.1f") -> str:
             return format(blob[value], spec) if blob[value] is not None else "n/a"
 
         print(
             f"  us/round  shipped {num('shipped_us_per_round', '.1f')} "
-            f"full {num('full_us_per_round', '.1f')} "
+            f"cand {num('candidate_us_per_round', '.1f')} "
             f"added {num('added_us_per_round_at_p025')}"
         )
         for basis in ("decode_spt", "ranked_spt"):

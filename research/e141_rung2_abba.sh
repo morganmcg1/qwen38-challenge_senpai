@@ -46,6 +46,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 replicates="${1:-2}"
 label="${2:-s1}"
 first="${3:-1}"
+# Candidate arms, one ABBA block each against the same shipped control. A
+# comma list keeps every block inside one session, which Rule 119 requires,
+# and gives the byte model more than one calibration point.
+candidates="${4:-full}"
 
 tokens=512
 depth=8
@@ -53,7 +57,31 @@ prompts=(beagle_a essays_montaigne)
 runs_parent=".mlxfast-private/e128/runs-e141"
 rung3=research/e141-rung3.json
 
-arm_prefix() { [[ "$1" == "full" ]] && echo 248320 || echo ""; }
+# Same arm grammar as research/e141_session.sh: `<prefix>`, `<prefix>@<probes>`
+# or `<prefix>@<probes>:<rowsPerLeaf>`.
+arm_spec() {
+  case "$1" in
+    shipped) echo "" ;;
+    full)    echo "248320" ;;
+    armA)    echo "248320@3073" ;;
+    armB20)  echo "248320@1229:20" ;;
+    armB16)  echo "248320@1536:16" ;;
+    leaf16)  echo "98304@1536:16" ;;
+    *)       echo "$1" ;;
+  esac
+}
+arm_prefix() { local s; s="$(arm_spec "$1")"; echo "${s%%@*}"; }
+arm_probes() {
+  local s
+  s="$(arm_spec "$1")"
+  s="${s#*@}"
+  [[ "$(arm_spec "$1")" == *@* ]] && echo "${s%%:*}" || echo ""
+}
+arm_leaf() {
+  local s
+  s="$(arm_spec "$1")"
+  [[ "${s}" == *:* ]] && echo "${s##*:}" || echo ""
+}
 
 # Expected round count per (arm, prompt), read from the untimed rung 3 run.
 witness_rounds_for() {
@@ -77,7 +105,8 @@ fi
 session_commit="$(git rev-parse HEAD)"
 
 echo "=== e141_rung2 phase 0: worker build and selector assertion ==="
-build_args=(--require MLX_E141_DRAFT_PREFIX --require-symbol deriveCompactCoarseTable)
+build_args=(--require MLX_E141_DRAFT_PREFIX --require MLX_E141_ROWS_PER_LEAF \
+  --require-symbol deriveCompactCoarseTable)
 [[ "${E141_NO_BUILD:-0}" == "1" ]] && build_args+=(--no-build)
 senpai/rebuild-and-assert-worker.sh "${build_args[@]}" || {
   echo "e141_rung2: the worker does not carry the arm selector; not timing" >&2
@@ -90,18 +119,24 @@ echo "e141_rung2: session_worker_sha256=${session_worker}"
 failures=0
 discarded=0
 for ((rep = first; rep < first + replicates; rep++)); do
+ for cand in ${candidates//,/ }; do
   for id in "${prompts[@]}"; do
     position=0
-    for arm in shipped full full shipped; do
+    for arm in shipped "${cand}" "${cand}" shipped; do
       position=$((position + 1))
-      slot="${label}k${rep}p${position}${arm}"
+      slot="${label}k${rep}${cand}p${position}${arm}"
       out="${runs_parent}/${slot}/${id}"
       prefix="$(arm_prefix "${arm}")"
+      nprobes="$(arm_probes "${arm}")"
+      nleaf="$(arm_leaf "${arm}")"
       want_rounds="$(witness_rounds_for "${arm}" "${id}")"
 
       echo "=== e141_rung2 ${slot}: prompt=${id} arm=${arm}" \
-           "prefix=${prefix:-unset} replicate=${rep} position=${position} ==="
+           "prefix=${prefix:-unset} probes=${nprobes:-declared}" \
+           "leaf=${nleaf:-8} replicate=${rep} position=${position} ==="
       env ${prefix:+MLX_E141_DRAFT_PREFIX=${prefix}} \
+          ${nprobes:+MLX_E141_PROBES=${nprobes}} \
+          ${nleaf:+MLX_E141_ROWS_PER_LEAF=${nleaf}} \
           E128_FORCE=1 \
           E128_NO_TRACE=1 \
           E128_TOKENS="${tokens}" \
@@ -123,6 +158,9 @@ for ((rep = first; rep < first + replicates; rep++)); do
       {
         echo "e141_arm_requested=${arm}"
         echo "e141_prefix_exported=${prefix:-unset}"
+        echo "e141_probes_exported=${nprobes:-declared}"
+        echo "e141_leaf_exported=${nleaf:-8}"
+        echo "e141_block_candidate=${cand}"
         echo "e141_witness_rounds_want=${want_rounds:-unpinned}"
         echo "e141_witness_rounds_got=${got_rounds:-none}"
         echo "e141_witness=${witness}"
@@ -138,9 +176,14 @@ for ((rep = first; rep < first + replicates; rep++)); do
       fi
     done
   done
+ done
 done
 
 echo "e141_rung2: ${failures} failed legs, ${discarded} witness mismatches"
-python3 research/e141_rung2_report.py --label "${label}" \
-  --runs "${runs_parent}" --out research/e141-rung2.json
+for cand in ${candidates//,/ }; do
+  out=research/e141-rung2.json
+  [[ "${cand}" == "full" ]] || out="research/e141-rung2-${cand}.json"
+  python3 research/e141_rung2_report.py --label "${label}" --candidate "${cand}" \
+    --runs "${runs_parent}" --out "${out}"
+done
 exit $(( failures > 0 ))
