@@ -1,0 +1,142 @@
+{
+  "measured_added_us_per_round": {
+    "leaf16": -264.38308725561444,
+    "armB20": 579.3312881420261,
+    "full": 2601.704449842733
+  },
+  "ceiling_median_pct": 0.4055,
+  "ranked_pct_per_added_us": 0.0012229,
+  "break_even_budget_us_per_round": 331.58884618529726,
+  "c_leaf_us_lower_bound": 0.043017098479598836,
+  "c_row_us_upper_bound": 0.047877637282569184,
+  "c_table_plus_w20_us": 573.9971679305559,
+  "c_table_us_identified": false,
+  "c_table_us_range": [
+    0.0,
+    573.9971679305559
+  ],
+  "shipped_search_us_per_round_lower_bound": 1705.7900094659096,
+  "two_region_feasibility": [
+    {
+      "tail_leaf_width": 8,
+      "tail_leaves": 18748.0,
+      "tail_probe_fraction": 0.25,
+      "tail_probed_rows": 37496.0,
+      "best_case_us_per_round": 2601.704449842733,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 8,
+      "tail_leaves": 18748.0,
+      "tail_probe_fraction": 0.05,
+      "tail_probed_rows": 7499.200000000001,
+      "best_case_us_per_round": 1165.5285398049618,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 8,
+      "tail_leaves": 18748.0,
+      "tail_probe_fraction": 0.01,
+      "tail_probed_rows": 1499.84,
+      "best_case_us_per_round": 878.2933577974076,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 16,
+      "tail_leaves": 9374.0,
+      "tail_probe_fraction": 0.25,
+      "tail_probed_rows": 37496.0,
+      "best_case_us_per_round": 2198.4621686949736,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 16,
+      "tail_leaves": 9374.0,
+      "tail_probe_fraction": 0.05,
+      "tail_probed_rows": 7499.200000000001,
+      "best_case_us_per_round": 762.2862586572023,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 16,
+      "tail_leaves": 9374.0,
+      "tail_probe_fraction": 0.01,
+      "tail_probed_rows": 1499.84,
+      "best_case_us_per_round": 475.05107664964805,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 32,
+      "tail_leaves": 4687.0,
+      "tail_probe_fraction": 0.25,
+      "tail_probed_rows": 37496.0,
+      "best_case_us_per_round": 1996.8410281210938,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 32,
+      "tail_leaves": 4687.0,
+      "tail_probe_fraction": 0.05,
+      "tail_probed_rows": 7499.200000000001,
+      "best_case_us_per_round": 560.6651180833226,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 32,
+      "tail_leaves": 4687.0,
+      "tail_probe_fraction": 0.01,
+      "tail_probed_rows": 1499.84,
+      "best_case_us_per_round": 273.4299360757683,
+      "fits_budget_with_c_table_zero": true
+    },
+    {
+      "tail_leaf_width": 64,
+      "tail_leaves": 2343.5,
+      "tail_probe_fraction": 0.25,
+      "tail_probed_rows": 37496.0,
+      "best_case_us_per_round": 1896.0304578341538,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 64,
+      "tail_leaves": 2343.5,
+      "tail_probe_fraction": 0.05,
+      "tail_probed_rows": 7499.200000000001,
+      "best_case_us_per_round": 459.85454779638275,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 64,
+      "tail_leaves": 2343.5,
+      "tail_probe_fraction": 0.01,
+      "tail_probed_rows": 1499.84,
+      "best_case_us_per_round": 172.61936578882845,
+      "fits_budget_with_c_table_zero": true
+    },
+    {
+      "tail_leaf_width": 128,
+      "tail_leaves": 1171.75,
+      "tail_probe_fraction": 0.25,
+      "tail_probed_rows": 37496.0,
+      "best_case_us_per_round": 1845.625172690684,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 128,
+      "tail_leaves": 1171.75,
+      "tail_probe_fraction": 0.05,
+      "tail_probed_rows": 7499.200000000001,
+      "best_case_us_per_round": 409.4492626529128,
+      "fits_budget_with_c_table_zero": false
+    },
+    {
+      "tail_leaf_width": 128,
+      "tail_leaves": 1171.75,
+      "tail_probe_fraction": 0.01,
+      "tail_probed_rows": 1499.84,
+      "best_case_us_per_round": 122.21408064535851,
+      "fits_budget_with_c_table_zero": true
+    }
+  ],
+  "identifying_experiment": "armA (248320@3073:8) shares leaf count, table and leaf width with full and differs only in probed rows, so full minus armA gives c_row exactly and armA then gives c_table exactly."
+}
