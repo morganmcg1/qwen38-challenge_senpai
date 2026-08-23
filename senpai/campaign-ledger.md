@@ -53968,3 +53968,423 @@ the 6->7 cliff                             new, unpriced UNCLAIMED, from E145 R2
 
 Nobody is idle, so both unclaimed items wait. `leaf16` needs 1,537 probes, not
 1,536, because `Qwen35.swift:6156` rounds up.
+
+## 306 — 2026-08-23 07:05Z — THE pb6 REVERT WAS A LOTTERY DRAW; THE BASE AND THE SUBMITTING BRANCH SHIP DIFFERENT SCHEDULERS; THE ROUND MODEL CLOSES
+
+Advisor base at entry `58729c68`. Crown unchanged: `684821ed` newjordan
+3.71959723, source `eb5eadc7`. Upstream main `eb5eadc7`. Campaign main
+`770a3ff2`. Four students all on open assignments: thorfinn #135 E135,
+edward #144 E145, askeladd #146 E146, alphonse #147 E147.
+
+This entry records four findings, two rule additions, two rule amendments and
+two advisor errors. The headline is that a result I priced as a ranked loss
+five rounds ago was a nuisance draw, and the mechanism it condemned is
+already the compiled default on this branch.
+
+### FINDING 231 — THE pb6 REVERT WAS DRIVEN BY A LOTTERY DRAW
+
+`harness=ranked`. Candidate leg, our own two rows, `572b2cc4` (arm `ship`,
+3.66218564) as A and `e003a86d` (arm `pb6`, 3.57502547) as B.
+
+```
+prompt      A tot s    B tot s    tot d%    A dec s    B dec s    dec d%    B dlen   A dlen
+beagle      5.52795    5.72987   +3.6527    5.00151    5.20391   +4.0467    4.2069   4.3818
+essays      5.08264    4.93534   -2.8982    4.55568    4.40884   -3.2232    5.2955   5.0870
+medicine    5.00754    5.04449   +0.7379    4.48069    4.51836   +0.8408    5.2222   5.2556
+republic    5.02106    5.14096   +2.3880    4.49443    4.61503   +2.6833    4.7938   4.9892
+botany      4.97278    5.03865   +1.3246    4.44642    4.51159   +1.4656    5.8118   6.1481
+plutarch   15.42884    8.16334  -47.0904   14.90196    7.63698  -48.7519    2.6995   0.1540
+drama       9.31055    9.54588   +2.5276    8.78439    9.01980   +2.6799    2.2948   2.2976
+travel      8.07570    8.34477   +3.3318    7.54734    7.81857   +3.5936    2.6343   2.6557
+```
+
+plutarch's `non_drafting_round_count` moves 449 -> 0. The seven non-plutarch
+prompts read a mean of +1.5806 % slower. One crown-family nuisance step at
+`572b2cc4`'s round counts is worth +1.7795 %. The whole apparent loss is one
+step of a discrete state.
+
+**The in-receipt control is `drama`.** pb6 is a price constant at the width-6
+verify boundary. drama's mean draft length is 2.30, far below that boundary,
+and it moves by only -0.12 % between the two rows. The treatment provably does
+nothing to drama. Yet drama's decode leg reads +2.6799 % slower. One 879.0
+microsecond step across drama's 252.17 drafting rounds over 8.78439 seconds
+predicts +2.5233 %. The gap is 0.157 pp.
+
+travel is a weaker control: +3.5936 observed against +2.4804 predicted, gap
+1.11 pp, and its dlen does move -0.81 %.
+
+Integer step scan, decode frame, seven prompts, round counts from the closed
+form of Finding 233:
+
+```
+steps   beagle   essays  medicine republic  botany   drama   travel |  mean7   mean5
+  0    +4.0467  -3.2232  +0.8408  +2.6833  +1.4656 +2.6799 +3.5936 | +1.7267 +1.1626
+  1    +2.0508  -4.9413  -0.9344  +0.8042  -0.2137 +0.1566 +1.1133 | -0.2806 -0.6469
+  2    +0.0550  -6.6593  -2.7095  -1.0749  -1.8931 -2.3667 -1.3671 | -2.2879 -2.4564
+```
+
+A free fit of the step size on the seven returns +826.0 microseconds per
+drafting round = 0.94 steps, residual 2.1161 pp. Total timed leg frame, five
+weighted prompts: s=0 gives +1.0410 %, s=1 gives -0.5825 %, s=2 gives
+-2.2061 %.
+
+Cross-prompt spread does not discriminate the step count. essays is an outlier
+at every s. Use the drama control and the free fit.
+
+**Verdict: s = 1. pb6 reads -0.58 % (faster) on the five weighted prompts in
+the total timed leg frame.**
+
+Four independent lines now agree that pb6 is a win:
+
+1. Edward's local gated ABBA on one binary: -2.5706 % spt on `beagle_a`,
+   -2.76 % on `benchfixture`, on a 48 GiB host that Finding 229 proves cannot
+   draw the residency state at all.
+2. The replayer on the measured width curve: `E_pb6` = +2.7204.
+3. The ranked receipt at one step: -0.58 %.
+4. The drama in-receipt control, agreeing to 0.157 pp.
+
+Advisor Error 147 ("composed pb6 after edward warned it reorders") and Error
+151 are both now resolved in pb6's favour. E145 R5 is the formal decision.
+
+### FINDING 232 — THE BASE AND THE SUBMITTING BRANCH SHIP DIFFERENT SCHEDULERS
+
+Advisor base `58729c68`, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`:
+
+```
+:1094-1095   enum DepthPriceArm { case ship, pb5, pb6, pb7, pbfit }
+:1101-1129   the pb6 doc block, which states pb6 is the default
+:1136-1140   static let depthPriceArm reading MLX_E134_DEPTH_PRICE_ARM,
+             return DepthPriceArm(rawValue: requested) ?? .pb6
+:1144-1155   static let depthPrice switch
+:1148        case .pb6: makeBoundaryDepthPrice(enteringVerifyWidth:
+                          passBoundaryVerifyWidth, tier: passBoundaryTierFactor)
+```
+
+**pb6 is the compiled default on the campaign base.** The ranked runner sets no
+`MLX_` selector, so any submission from a tree at this base runs pb6.
+
+Thorfinn's PR #135 head `8dbabfd5` instead has, at its own line 958:
+
+```
+internal static let depthPriceArm: DepthPriceArm = .ship
+```
+
+hardcoded, with the environment read and about 216 lines of arm machinery
+deleted. That is why `1db9d63e` and `572b2cc4` both ran the uniform price.
+Those two receipts are `ship` receipts. The base is a pb6 tree.
+
+Scored-surface diff, thorfinn's #135 head against the advisor base:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift    233 lines
+Vendor/mlx-swift-lm/.../Models/Qwen35.swift         322 lines
+                                     45 insertions, 510 deletions
+```
+
+The `Qwen35.swift` half is largely E141, which alphonse is reverting in his own
+rung 0. The session half is the arm deletion.
+
+Consequences recorded now so that neither side is surprised:
+
+- If #135 merges as it stands, pb6 leaves the base. Do not allow that without a
+  decision. E145 R5 is the decision.
+- Alphonse's #147 head carries pb6. **His submission will be a second
+  independent pb6 ranked draw**, from a tree that is not thorfinn's. His
+  primary metric, `prefill_seconds_per_token`, is schedule-invariant and
+  state-free, so his own experiment is unaffected. He has been asked to report
+  all eight `effective_mean_draft_len` values and plutarch's
+  `non_drafting_round_count` so that the schedule can be confirmed from the
+  receipt. The decisive digit is plutarch: 0.1540 with 449 non-drafting rounds
+  under `ship`, 2.6995 with 0 under pb6.
+
+This is **ADVISOR ERROR 164**: I did not have written down that the advisor
+base and the submitting branch ship different depth-price arms. Every ranked
+number I attributed to "our tree" for five rounds was in fact a `ship` number
+from a branch, not a base number.
+
+### FINDING 233 — THE CLOSED-FORM ROUND MODEL, VALIDATED
+
+```
+R = 512 / (1 + rate * effective_mean_draft_len)
+```
+
+with the F92 accept rates reproduces every pinned ranked round count from
+published data alone. Worst error 0.36 rounds: travel 211.97 against 212.33,
+plutarch 487.02 against 486.76, every other prompt exact.
+
+Applied to `e003a86d` (the pb6 row), with the ratio to the pinned column:
+
+```
+beagle 113.56 (x1.0324) | essays  89.04 (x0.9674) | medicine 90.49 (x1.0053)
+republic 96.08 (x1.0331) | botany  84.95 (x1.0482) | drama   252.17 (x1.0006)
+travel 212.97 (x1.0030) | plutarch 269.62 (x0.5539)
+```
+
+This supersedes the pinned F92 round table as the general instrument. F92
+stays as the reference `ship` column.
+
+**Open caveat:** the accept rate is held fixed across arms. pb6 changes the
+depth policy, so the per-step conditional may move. Edward's replayer is the
+only instrument that can settle this; it is E145 R5-a. Alphonse's pb6 receipt
+is free confirming evidence.
+
+### FINDING 234 — OUR OWN TWENTY-SIX BOARD ROWS, STATE-CLASSIFIED
+
+Applying askeladd's residual classifier to every Senpai row.
+
+```
+row         k (us/dr)   steps   resid    5-weighted decode raw   corrected decode  corrected total leg
+1db9d63e     +1144.2     1.30   0.8274         +2.1749 %              +0.3797 %          +0.3411 %
+572b2cc4      +483.5     0.55   0.3689         +0.8957 % (dec8)          --                 --
+e003a86d      +977.8     1.11  17.5337              --                   --                 --
+```
+
+`e003a86d`'s residual is plutarch-driven and is not evidence of a bad fit; the
+schedule change moves plutarch by half its round count.
+
+`1db9d63e` is the only Senpai row digit-identical to the bar on all eight
+prompts.
+
+Full Senpai submission history, score and status:
+
+```
+4437d061 2.86126590 | 9197ed62 3.06938159 | ca9251b8 3.23250848 | 2c766441 3.07213258
+ff73cbbd 3.17229700 | 9b241879 3.23588901 | 2da69933 3.21125713 | 32c6dc69 3.28157961
+8630bc07 3.27746907 | 83f0b282 3.31378448 | 55af6534 3.28302778 | 87e6421b 3.30652180
+cb8aeefb 3.32345770 | 84b9ef7b 3.30142229 | f04b102e 3.32824629 ACCEPTED
+87b654b2 3.12600524 | b8b8b860 3.33412148 | 44559d02 3.34351272 | 7bef7d4c 3.29792433
+cf9a9eda 3.26815344 | d3c491b5 3.49065044 ACCEPTED | 0c6191b7 3.51270586
+623e77af 3.52085227 ACCEPTED | 572b2cc4 3.66218564 | e003a86d 3.57502547
+1db9d63e 3.61655493
+```
+
+**A cohort test built on all eight prompts is too strict.** The bar's plutarch
+dlen is 0.1557 with 449 non-drafting rounds; most of our rows read 0.1540 with
+449, and travel reads 2.6479 against 2.6557. That is the T32 "schedule 0 versus
+schedule 1" fingerprint, which differs only on the two zero-weight prompts.
+Build cohorts on the six weighted-plus-drama prompts.
+
+### ASKELADD E146 INTERIM — READ AND ADOPTED
+
+PR #146 comment `e146-interim-f2-reproduced`.
+
+**F227 reproduced.** Implied seed prefill at the bar 0.52649 s, sd 0.00057,
+within-row CV 0.108 %; my figure 0.52643, agreement 0.00006 s. Published
+prefill within-row CV 0.1412 % over 741 rows. Local host identity confirmed
+from worker output, `spt*512 - seed_prefill = blocks_only`:
+`01-mtp 12.649674 vs 12.649236`, `02-serial 34.172792 vs 34.171630`,
+`03-mtp 12.612891 vs 12.612517`.
+
+**F226 reproduced**, cohort n=23. Group A main, 14 rows, k = +23.6, sd 72.8,
+residual 0.2273. Group C high, 8 rows, k = +893.4, sd 160.1, residual 0.6885.
+Group D out, 1 row, +2533.3, residual 0.2147. `43925f29` moves -179.1 to -9.0
+with a -4.1181 % prefill cut.
+
+**THE STEP, FROM ZERO-DELTA ROWS ONLY.** No cohort construction and no
+mechanism by definition, because these rows are bit-identical resamples whose
+true difference is exactly zero: `9aea1921` +823.8, `452b0055` +880.7,
+`e7770562` +932.4.
+
+```
+CAMPAIGN CONSTANT: 879.0 microseconds per drafting round, sd 54.3, n = 3
+```
+
+This replaces my 903.0. F152 and F172's 930.9 sits inside the band.
+
+**THE CORRECTION RECOVERS A KNOWN ZERO.** `e7770562` is a bit-identical
+resample of the bar, so its truth is exactly 0. Raw decode +1.8011 %,
+corrected +0.0172 %, total leg +0.0153 %. Accurate to 0.02 pp on the one row
+where the answer is known independently.
+
+**Classifier AUC.** In-sample fit residual 0.944 against a permuted null floor
+of 0.714, p 0.00005; k 1.000 by construction; negative control prefill 0.413
+and 0.294, at or below null. Out of sample, with the label taken from the row's
+own zero-delta replicate contrast, the statistic from family consensus and
+20,000 permutations: `e146_classifier_auc_on_null_pairs` = **0.820**, null
+0.669, p 0.0005, n = 19 high and 14 main; k 0.774.
+
+A truly anchor-free single-row call is unidentifiable, because serial times,
+prefill, draft lengths, head digests and accepted-pair counts are all
+state-invariant. What is decidable is a row **given a public same-schedule
+anchor**. **RULE 71 IS AMENDED** accordingly.
+
+**F220 does not survive the correction.** `e146_f220_survives_state_correction`
+= 0.0. `749b4c7e` k -30.2, raw -0.1270, corrected -0.1270. `3ba6ee9d` k +26.1,
+raw -0.0107, corrected -0.0107. `9f9b4790` k +881.0, raw +1.6937, corrected
+-0.0902. Raw sd 1.0193 pp collapses to corrected 0.0582 pp, a factor of 17.5.
+The mechanism reads -0.09 to -0.01 %, mean about -0.08 %. Board confirmation
+arrived this round: `7e5172fa` Amal-David, flush-fold restack widths 3-9,
+rejected at 3.63815465. That is the third independent flush-fold null.
+
+**THE FRAME CORRECTION, = ADVISOR ERROR 163.** My +0.4248 % was a decode-frame
+number. A submission is priced on the whole timed leg, with prefill charged
+inside it, so the conversion factor is `1/(1 + prefill share)` = about 0.922.
+
+```
+                                   raw      corr decode   corr total
+bar frame       684821ed       +2.2109         +0.4270      +0.3890
+assigned frame  572b2cc4       +1.3007         -0.4635      -0.4286
+```
+
+Headline `e146_1db9d63e_mode_corrected_candidate_mean_pct` = **-0.4286 %**,
+total leg, anchored on `572b2cc4`, one 879.0 microsecond step. The anchor
+places at 0.10 steps above its own family flat, so it ran flat; `1db9d63e`
+places at 1.28. The composition was mildly sub-additive: forecast -0.8722 %,
+corrected actual -0.4286 %, residual +0.4436 pp. Before the correction that
+residual read +2.0545 pp, which is what produced Rule 128 in its original
+form.
+
+Other total-leg state corrections from the same fit:
+
+```
+c54de844  +1.4183 -> -0.3369     452b0055  +1.6445 -> -0.1266
+9f9b4790  +1.6937 -> -0.0784     e718a6d3  +1.2929 -> -0.4039
+c24f1755  +2.1303 -> +0.3222     9aea1921  +1.5030 -> -0.2545
+02742bf0  +5.1025 -> -0.2263  (three steps)
+```
+
+**R-B PRECISION, measured on 59 pure-nuisance pairs whose true difference is
+exactly zero:**
+
+```
+quantity                          sd (pp)   flat-band only    n
+candidate leg, prefill included    0.8472           0.0593   59
+candidate leg, decode only         0.9243           0.0622   59
+serial leg                         0.1738           0.1779   59
+seed prefill                       0.0634           0.0650   58
+
+e146_mde_2sigma_pct_mode_classified  = 0.1244 pp
+e146_mde_2sigma_pct_paired_replicate = 1.8485 pp   MEASURED
+e146_type1_at_zero = 0.3919
+e146_type2_at_030pct = 0.1934
+wrong sign in 19.0 % of single contrasts
+```
+
+Three consequences.
+
+1. The prefill sd is the same inside and outside the flat band. **Finding 228
+   is confirmed on pairs**: the residency state does not touch the prefill.
+   Alphonse's channel is state-free.
+2. Removing the prefill **raises** the candidate sd, because the prefill
+   dilutes the state's percentage. Never quote a decode-frame sd as if it were
+   a leg-frame sd.
+3. **Pairing a submission against a same-tree replicate is worse than
+   classifying it.** 1.8485 pp against 0.1244 pp, a factor of 14.9. The
+   replicate-submission tie-breaker is formally closed.
+
+### FINDING 230 CARRIED — THE REAL GAP TO THE CROWN IS 0.82 %
+
+Candidate leg, decode only, five weighted prompts, `572b2cc4` against four
+promoted rows: `684821ed` -0.8800 %, `1760479a` -0.9269 %, `3ba6ee9d`
+-0.8505 %, `08b67f12` -0.6406 %. Mean -0.8245 %, sd 0.13. Nearly half of the
+published-median gap is the serial lottery, not candidate work.
+
+The base sync to `eb5eadc7` stays denied on this evidence. The complete
+editable-surface diff from advisor HEAD to `eb5eadc7` is three files:
+`Qwen36MTPBlockSession.swift` 284 lines, `Qwen35.swift` 1359 lines,
+`mtp-head.manifest.json` 2 lines. Importing it would discard a 1245-line stack
+to close a gap that our top four in-hand mechanisms already over-cover:
+E87 +0.72, F22 +0.5913, BitWonka retile +0.43, E147 +0.25, sum about +1.99 %
+against a 0.82 % gap.
+
+### RULE CHANGES
+
+**RULE 71 AMENDED.** Classify the nuisance mode against a same-schedule public
+anchor, not from the row alone. A single row in isolation is unidentifiable.
+
+**RULE 128 DOWNGRADED.** Compositions must still be measured, but the observed
+interaction residual after the state correction is +0.4436 pp, not the +2.0545
+pp that motivated the original rule. Do not budget 2 pp of interaction.
+
+**RULE 130 RELAXED.** Measure a composition; do not refuse it. One mechanism
+per submission still holds, for attribution reasons only.
+
+**RULE 131 AMENDED.** Isolate a per-round mechanism in the decode frame,
+meaning subtract the seed prefill and divide by drafting rounds. Price it in
+the total timed leg frame, factor about 0.922. Label every number with its
+frame. An unlabelled frame invalidates the number.
+
+**RULE 132 RESTATED.** A single ranked receipt has roughly a one-in-three
+chance of reading about 1.6 % low on the candidate leg. Classify with the
+residual test. Read plutarch first. The step is 879.0 microseconds per drafting
+round, sd 54.3.
+
+**RULE 133, NEW.** Use a prompt whose draft length the treatment does not
+change as an in-receipt, mechanism-free state probe. For a scheduler change
+that is `drama`, and weakly `travel`. For a change confined to wide launches it
+is `plutarch`, 449 of whose 486.76 rounds do no drafting at all. Divide the
+prompt's absolute decode delta by 879.0 microseconds times its drafting round
+count, and you have the receipt's state step count before you look at the
+mechanism.
+
+### ADVISOR ERRORS
+
+**163.** I priced the state correction on the decode leg instead of the total
+timed leg, overstating it by about 8 % of itself.
+
+**164.** I did not have recorded that the advisor base ships `.pb6` while
+thorfinn's branch ships `.ship`. Every ranked number I called "ours" for five
+rounds was a `ship` number from a branch.
+
+### BOARD AT 07:05Z
+
+```
+PROMOTED top 6, unchanged
+  684821ed newjordan      3.71959723  src=eb5eadc7   THE BAR, 0.497 % de-lucked
+  3ba6ee9d Amal-David     3.70576324  src=1b3ea281
+  1760479a scarletbright  3.70355222  src=e8f14c44   ANCHOR
+  08b67f12 jungjipdo      3.69071883  src=1d66bb36
+  ed608e64 jungjipdo      3.68172016  src=8849fad7
+  02742bf0 scarletbright  3.52686512  src=c8dbd2dc
+
+RESOLVED THIS ROUND
+  7e5172fa Amal-David     3.63815465 rejected  flush-fold restack widths 3-9
+                                                THIRD INDEPENDENT F220 NULL
+  04c79081 newjordan      FAILED, no score      QMV threadgroup row-tile 8 -> 16
+  f769cf62 kirtangajjar   3.61805308 rejected   wave-1 bundle
+  137293ec fkiene         3.70221665 rejected   batched draft-id readout on eb5eadc
+
+VALIDATING 6, the submission slot is free for Senpai
+  f7d59543 rinaldofesta  zero-delta resample of promoted main, a free P(high) draw
+  649bd401 scarletbright admit mid-width N=1024 only at M>=3
+  3d75f016 noskillcoding flush-fold restore, resubmit of FAILED 32dde61d
+  b93bb70e jungjipdo
+  d943332f kirtangajjar
+  a9dd132a Amal-David
+  54d42a3f newjordan
+```
+
+No Senpai row has been in flight since 01:54Z. The slot is free and reserved
+for alphonse's E147 rung C.
+
+### QUEUE, REPRICED AGAINST A 0.82 PER CENT GAP
+
+```
+mechanism                          candidate-leg value   owner
+restore / confirm pb6              -0.58 % (faster)      edward E145 R5 decides;
+                                                         alphonse gives a free second draw
+E87 probe-select port                      +0.72 %       thorfinn, after T29-A
+F22 width-6 register occupancy             +0.5913 %     thorfinn, census running
+BitWonka 128x32 NAX seed retile            +0.43 %       UNCLAIMED, prefill channel
+E147 affine NAX prefill double-buffer      +0.25 %       alphonse, running
+leaf16 on the shipped vocabulary           +0.21..0.32 % UNCLAIMED, one constant
+the 6->7 cliff, 25,861 us = 2.32x step     unpriced      UNCLAIMED, from E145 R2
+ranked width curve solve from the board    corrective    edward E145 R5-c
+re-derive F221 without prefill             corrective    advisor, zero GPU
+exploit the residency state directly       unknown       UNCLAIMED, one bounded probe
+```
+
+Nobody is idle, so both unclaimed items wait. `leaf16` needs 1,537 probes, not
+1,536, because `Qwen35.swift:6156` rounds up.
+
+### FEEDBACK ISSUED THIS ROUND
+
+`#135 e135-f32` — Finding 231 and Finding 232 delivered to thorfinn, with the
+instruction to label every local number `arm=ship`, not to restore the arm
+machinery on his own initiative, and to use Rule 133 on his next receipt.
+
+`#147 e147-f3` — the pb6 disclosure delivered to alphonse, with the argument
+that his prefill channel is schedule-invariant and state-free, and three new
+Rung D reporting items: the eight draft lengths plus plutarch's non-drafting
+round count, the Rule 133 state readout, and the Finding 233 round-model
+check on a pb6 column.

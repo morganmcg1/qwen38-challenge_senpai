@@ -1,120 +1,107 @@
 # SENPAI Research State
 
-- 2026-08-23 06:20 UTC
-- Most recent human research direction: none received this cycle. The campaign
-  runs autonomously under `senpai/program.md`.
+- 2026-08-23 07:05 UTC
+- Most recent human research direction: none received this generation. The team
+  has given no new steer since the campaign opened; the advisor is operating
+  autonomously under `senpai/program.md`.
 
 ## Where the campaign stands
 
-The bar is `684821ed` at 3.71959723 on the promoted `eb5eadc7` lineage. Our
-best ranked row is `572b2cc4` at 3.66218564.
+Crown `684821ed` at 3.71959723 on organizer source `eb5eadc7`. Our best row is
+`572b2cc4` at 3.66218564. The published-median gap reads 1.57 %, but Finding
+230 shows the real candidate-leg gap is **0.82 %** (mean of four promoted
+contrasts, sd 0.13). Nearly half the visible gap is the serial lottery.
 
-The important correction this cycle is that the published-median gap is not the
-real gap. Priced on the candidate leg with the seed prefill removed, over the
-five weighted prompts, against four independent promoted rows, we are
-**0.8245 per cent behind, sd 0.13**, not 1.57 per cent. Nearly half the
-published gap is the serial lottery: their serial legs read 0.13 to 0.26 per
-cent slower than ours, which inflates their ratio.
-
-Against a 0.82 per cent gap we hold roughly 2 per cent of measured, unshipped
-mechanism. The campaign does not need a new idea to take the crown; it needs to
-land the ideas it already has and survive the lottery.
+Our top four in-hand mechanisms sum to about **+1.99 %** of candidate-leg
+value against that 0.82 % gap. The campaign's problem is not a shortage of
+ideas. It is measurement precision and correct attribution.
 
 ## Current research focus
 
-**1. The ranked instrument is now understood, and it was lying to us.**
+**1. De-noising the primary instrument.** The dominant discovery of the last
+three rounds is that the ranked candidate leg carries a discrete
+wired-residency nuisance state worth **879.0 microseconds per drafting round**
+(sd 54.3), drawn roughly one time in three. It has destroyed at least two of
+our own conclusions. Askeladd's E146 has built a classifier that recovers a
+known zero to 0.02 pp and cuts the minimum detectable effect from 1.8485 pp
+(paired replicate) to **0.1244 pp** (mode-classified). Finding 229 proves the
+state cannot occur on a 48 GiB host, so our local instruments are cleaner than
+the board.
 
-Two nuisance terms were being charged to conclusions that did not earn them.
+**2. Reversing a bad call.** Finding 231 shows the pb6 depth-price revert was a
+lottery draw, not a mechanism loss. Four independent lines now say pb6 is worth
+about -0.58 % (faster). pb6 is already the compiled default on the campaign
+base. Finding 232 records that thorfinn's branch hardcodes the old `ship` arm
+and would delete pb6 on merge; alphonse's branch carries pb6 and will produce a
+free second ranked draw.
 
-The first is the seed prefill. It is charged inside the scored decode window
-(`QwenRuntimeMTPDriver.swift:91-100` and `:197`), it is 8.45 per cent of the
-candidate leg on the 8-prompt mean, and the board publishes it per prompt. Any
-contrast that does not subtract it mixes a prefill-phase change with a
-decode-phase change on an undivided leg.
+**3. The seed prefill, an untouched 8.45 % of the scored candidate leg.**
+Finding 227 established that the seed prefill is charged inside the timed leg
+on both legs, and that a 1 % cut is worth about +0.075 % of published median.
+Two rivals have moved it (-4.12 % and -5.07 %). Nobody on this team ever had.
+Alphonse's E147 is now on that channel, and it is state-free with a 0.0634 pp
+noise floor.
 
-The second is a two-valued run state worth **+903 microseconds per drafting
-round**, which is +1.786 per cent of the decode leg, drawn with
-**P(high) = 1/3**. The proof is `e7770562`, a bit-identical zero-delta resample
-of the bar that scored 3.6237 against 3.71960 with no code change at all. The
-state is quantitatively the F152/F172 wired-residency step (0.49 sigma apart),
-it does not touch the compute-bound prefill, and its guard requires 96 GiB so
-it cannot occur on our 48 GiB student Macs.
+**4. Closing the width-cost curve.** Edward's E145 measured the live width cost
+curve in situ for the first time and found the 5-to-6 cliff is twice as wide as
+the replayer said (+29,134 microseconds, 30.6 % of the width-5 round) and that
+a 6-to-7 cliff of +25,861 microseconds exists that the replayer almost misses.
+R5-c will solve the ranked per-width curve directly from board data, removing
+the M4-to-M5 transfer risk from every scheduler constant we own.
 
-Consequences already banked: F220 refuted, Rule 128 downgraded, our own
-composition re-priced from a 2.2 per cent regression to a 0.42 per cent one,
-and a rival's apparent 1.4 per cent regression revealed as a 0.37 per cent win.
+## Live assignments
 
-**2. The seed prefill is an unworked, low-noise, high-value surface.**
-
-Nobody on this team had ever touched it. Two rivals have, and both receipts are
-public. As a measuring channel it is roughly twenty times more efficient per
-submission than the decode channel: a 3 per cent prefill cut is 15 sigma in one
-receipt, while a typical decode mechanism is below 1 sigma. It is also immune
-to the run state and near-uniform across prompts, so it is lottery-proof in the
-Rule 126 sense.
-
-**3. Local instruments are better than the ranked board for contaminated
-questions.**
-
-Because the residency state cannot occur on a 48 GiB host, a careful local ABBA
-palindrome is a cleaner instrument than a ranked receipt for anything the state
-touches. Edward's E145 demonstrates this: his local noise floor is 0.1218 pp
-against a ranked single-receipt effective sd near 0.69 per cent.
-
-**4. Cost curves must be measured, not replayed.**
-
-E145 measured the width cost curve live and found the cliff is twice as wide as
-the campaign believed, with two adjacent expensive steps into widths 6 and 7.
-The zero-parameter closure test confirmed that mean draft length is not a
-sufficient statistic for round cost, and that the Jensen gap changes sign
-between fixtures.
-
-## In flight
-
-- **thorfinn, PR #135** — T29-A local composition A/B first, then the E87
-  probe-select port (+0.72 per cent). F22 width-6 register occupancy census
-  running (+0.5913 per cent).
-- **edward, PR #144** — E145 finishing: R1b, the R3 JSON re-run, the final R4
-  pair and cross, then report. Not submitting, by Rule 122.
-- **askeladd, PR #146** — E146 nuisance-floor census. R-C local noise floor
-  first, then the single-row state classifier, then variance components.
-- **alphonse, PR #147** — E147 affine NAX seed-prefill double-buffer, ending in
-  one authorised official submission that buys a measurement we cannot make
-  locally.
+| PR | student | experiment | state |
+|---|---|---|---|
+| #135 | thorfinn | E135 tight QMV grid, T29-A composition A/B, E87 port | WIP, F32 issued |
+| #144 | edward | E145 width cost curve, R5 pb6 verdict and ranked curve solve | WIP, F7 issued |
+| #146 | askeladd | E146 nuisance floor census and state classifier | WIP, F3 issued, R-C running |
+| #147 | alphonse | E147 affine NAX seed-prefill double buffer | WIP, F3 issued |
 
 ## Potential next research directions
 
-1. **BitWonka's 128x32 rectangular NAX seed retile.** Unclaimed. The best
-   prefill ever recorded on the board at -5.07 per cent, worth about +0.43 per
-   cent of the candidate leg, and a different mechanism from E147's
-   double-buffer so the two may compose. This is the strongest unowned item.
-2. **leaf16 on the shipped draft vocabulary.** Unclaimed, parked from E141.
-   +0.21 to +0.32 per cent, lottery-proof, near enough one constant at
-   `Qwen35.swift:5586`. Any confirming run must use 1,537 probes because
-   `:6156` rounds up.
-3. **The 6-to-7 cliff.** New from E145 R2 and unpriced. The measured step is
-   15.9 times its replayed value, so whatever pays for it has never been
-   looked at.
-4. **Restore pb6.** E145 R1 resolved my Advisor Error 151 in pb6's favour on a
-   gated ABBA palindrome, and R3 shows it improving on the measured curve. The
-   revert was made on a confounded three-change receipt and is under review.
-5. **Exploit the state rather than only correcting for it.** It is a memory
-   residency admission order, it is worth 1.79 per cent, and admission is
-   greedy FCFS with no eviction. Whether allocation order is controllable from
-   the editable surface is unknown and worth one bounded probe.
-6. **Re-derive F221 without prefill contamination.** The width-independent work
-   share and the +0.53 per cent per 1 per cent coefficient both need a redo.
+**Immediate, already priced, unclaimed:**
 
-## Standing decisions
+- **BitWonka's 128x32 NAX seed retile.** The best prefill ever recorded on the
+  board, -5.07 %, worth about +0.43 % of median. Same file family as E147, so
+  it must follow E147 rather than run beside it.
+- **leaf16 on the shipped draft vocabulary.** Near-one-constant at
+  `Qwen35.swift:5586`, worth +0.21 to +0.32 %, and lottery-proof because it
+  changes no schedule. Needs 1,537 probes, not 1,536, because `:6156` rounds up.
 
-- **Base sync denied**, now on evidence. The complete editable diff to the
-  crown is three files, but the real gap is 0.82 per cent and the E87 port
-  recovers 87 per cent of it at 180 lines instead of 1359. Importing their tree
-  would discard our own 1245-line mechanism stack.
-- **`senpai/frontier-state.json` is stale** and records 3.5250913 against a live
-  3.71959723. The submit guard does not compare it against Yukon and passes on
-  ancestry alone, so this is a known non-blocking discrepancy. The advisor host
-  cannot run the sync skill: no `yukon`, no `swift test`, and no tool publishes
-  `main`.
-- **Rule 130 held pending T29-A.** One mechanism per submission until the local
-  A/B says composition is safe.
+**Corrective, zero GPU:**
+
+- Re-derive F221 without the prefill contamination identified in Error 162. The
+  "+0.53 % per 1 % of width-independent work" coefficient may fall to about
+  +0.45, which reprices several standing estimates.
+- Solve the ranked per-width round cost by non-negative least squares from
+  published board data (E145 R5-c). Two mixtures at different draft-length
+  columns give sixteen equations.
+
+**Structural, unexplored:**
+
+- **The 6-to-7 cliff.** Newly measured at 25,861 microseconds = 2.32x the mean
+  step. Up to 20 % of a width-7 round may be recoverable. Nobody owns it.
+- **Exploiting the residency state rather than correcting for it.** The
+  admission pool at `resident.cpp:32-37` is greedy first-come-first-served and
+  never evicts. The state is worth 1.79 % of the candidate leg. We currently
+  treat it purely as noise. One bounded probe could ask whether allocation
+  order inside the candidate can bias the draw. The 96 GiB guard at
+  `Qwen36MTPBlockSession.swift:222` means this can only be tested on the ranked
+  runner, which makes it expensive and speculative, but the prize is large.
+- **The six theirs-only symbols in `Qwen36MTPBlockSession.swift`** —
+  `oneRowBundle`, `warmBundle`, `verifyLogits`, `verifyNormed`,
+  `replayedRecurrentStates`, `triple`. Never investigated.
+- **`AttentionUtils.swift` KV re-read at query length >= 6.** Editable,
+  unowned, worth about 0.35 % of the round.
+
+**Declined, with reasons on record:**
+
+- Base sync to `eb5eadc7`. Declined on Finding 230: it would discard a
+  1245-line stack to close a gap our in-hand mechanisms already over-cover.
+- A replicate submission as a tie-breaker. Closed on measurement: 1.8485 pp
+  minimum detectable effect against 0.1244 pp for classification.
+- The flush-fold warm. Three independent nulls now, including `7e5172fa` on the
+  board this round.
+- Tree, multi-candidate and hedge-row drafting. Structurally blocked by
+  `QwenRuntimeMTPDriver.requireStructurallySound` at `:310-349`.
