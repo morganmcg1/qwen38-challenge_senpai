@@ -29,10 +29,18 @@
 #
 # RULE 101 POSITIVE CONTROL. A green exactness result is worthless unless the
 # same harness can go red on the same code path. Phase 2 builds a third worker
-# whose only difference from the retile arm is that the tile decode rotates the
-# column index by one host-independent step. That permutes the output columns
-# of every retiled GEMM while keeping every pointer in range, so it is a defect
-# the golden comparison must catch and cannot fault the GPU.
+# whose only difference from the retile arm is a defective tile decode.
+#
+# The first attempt at this control rotated the column index by one step. That
+# control did not fire, and the reason is arithmetic, not dispatch: the lambda
+# `compute_tile(row, col)` reads its operands at `(row, col)` and stores its
+# result at `(row, col)`, so ANY bijection from `t` onto the tile set leaves
+# the output identical. Rotating the column inside a row block is exactly such
+# a bijection, so it only changes which threadgroup owns which tile. Every
+# consistent permutation of the tile assignment is a no-op here, so the control
+# must instead break coverage. The shipped control maps two source tiles onto
+# one column block, which computes the lower half of the column blocks twice
+# and never writes the upper half, while keeping every pointer in range.
 #
 # THERMAL MODE. Nothing here is timed. Exactness does not depend on the cool
 # gate, and no number this rung produces is a score.
@@ -56,7 +64,7 @@ twin="Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
 ARM_OFF='constexpr bool kE147RetileOn = false;'
 ARM_ON='constexpr bool kE147RetileOn = true;'
 TILE_OK='compute_tile((t / tiles_x) * BM, (t % tiles_x) * BN);'
-TILE_ROT='compute_tile((t / tiles_x) * BM, ((t + 1) % tiles_x) * BN);'
+TILE_BAD='compute_tile((t / tiles_x) * BM, ((t % tiles_x) / 2) * BN);'
 
 dirty="$(git status --porcelain -- Sources Vendor Package.swift \
   Package.resolved mtp-head.manifest.json)"
@@ -161,10 +169,10 @@ done
 say "e147_rungE1b_retile_exact_local=$([[ ${matched_all} == 1 ]] \
      && echo true || echo false)"
 
-echo "=== e147_rungE1b phase 2: Rule 101 positive control (column rotation) ==="
-edit_both "${TILE_OK}" "${TILE_ROT}" || exit 1
+echo "=== e147_rungE1b phase 2: Rule 101 positive control (halved columns) ==="
+edit_both "${TILE_OK}" "${TILE_BAD}" || exit 1
 senpai/rebuild-and-assert-worker.sh \
-  --require "${TILE_ROT}" --forbid "${TILE_OK}" --require "${ARM_ON}" || {
+  --require "${TILE_BAD}" --forbid "${TILE_OK}" --require "${ARM_ON}" || {
   echo "e147_rungE1b: the control polarity assertion failed" >&2; exit 3; }
 ctl_sha="$(sha_of "${worker}")"
 say "e147_rungE1b_control_worker_sha256=${ctl_sha}"

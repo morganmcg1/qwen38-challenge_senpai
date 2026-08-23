@@ -1,0 +1,168 @@
+{
+  "rev": "HEAD",
+  "commit": "9be10e53a2449ecf5d329a69099e5b371002aab3",
+  "host_grid": {
+    "BM": 64,
+    "BN": 64,
+    "BK": 64,
+    "editable": false,
+    "source": "backend/metal/quantized.cpp qmm_nax"
+  },
+  "static_proof": {
+    "qmm_t_nax_tgp_impl:constexpr short SM = BM / WM;": 1,
+    "qmm_t_nax_tgp_impl:constexpr short SN = BN / WN;": 1,
+    "qmm_t_nax_tgp_impl:constexpr short SK = 32;": 1,
+    "qmm_t_nax_tgp_impl:constexpr short TM = SM / 16;": 1,
+    "qmm_t_nax_tgp_impl:constexpr short TN = SN / 16;": 1,
+    "qmm_t_nax_tgp_impl:constexpr short TK = SK / 16;": 1,
+    "qmm_t_nax_tgp_impl:for (int kk1 = 0; kk1 < BK; kk1 += SK) {": 1,
+    "qmm_t_nax_tgp_impl:STEEL_PRAGMA_NO_UNROLL": 1,
+    "qmm_t_nax_tgp_impl:tile_matmad_nax(": 1,
+    "qmm_t_nax_tgp_impl:for (int k = 0; k < K; k += BK) {": 2,
+    "qmm_t_nax_tgp_impl:Dtile.clear();": 1,
+    "qmm_t_nax_tgp_impl:const int y_row = tid.y * BM;": 1,
+    "qmm_t_nax_tgp_impl:const int y_col = tid.x * BN;": 1,
+    "tile_matmad_nax:if constexpr (TN == 1 && TM % 2 == 0)": 1,
+    "tile_matmad_nax:} else if constexpr (TN % 2 == 0) {": 1,
+    "tile_matmad_nax:for (short kk = 0; kk < TK; ++kk)": 2,
+    "tile_matmad_nax:else {": 0,
+    "matmul2d_descriptor_sites": 2,
+    "matmul2d_descriptor_distinct": [
+      "16, 32, 16, transpose_a, transpose_b, true, mpp::tensor_ops::matmul2d_descriptor::mode::multiply_accumulate"
+    ]
+  },
+  "derived": {
+    "shipped_64x64": {
+      "BM": 64,
+      "BN": 64,
+      "BK": 64,
+      "WM": 2,
+      "WN": 2,
+      "SM": 32,
+      "SN": 32,
+      "SK": 32,
+      "TM": 2,
+      "TN": 2,
+      "TK": 2,
+      "matmad_branch": "N-paired (TN % 2 == 0)",
+      "Atile_frags": 4,
+      "Btile_frags": 4,
+      "Dtile_floats_per_lane": 32,
+      "Ws_bytes_bf16_doubled": 18432,
+      "Ws_pipelined": true,
+      "kk1_steps_per_BK": 2,
+      "equal_area_with_host": true,
+      "host_BN_divisible_by_BN": true
+    },
+    "retile_128x32": {
+      "BM": 128,
+      "BN": 32,
+      "BK": 64,
+      "WM": 2,
+      "WN": 2,
+      "SM": 64,
+      "SN": 16,
+      "SK": 32,
+      "TM": 4,
+      "TN": 1,
+      "TK": 2,
+      "matmad_branch": "M-paired (TN == 1 && TM % 2 == 0)",
+      "Atile_frags": 8,
+      "Btile_frags": 2,
+      "Dtile_floats_per_lane": 32,
+      "Ws_bytes_bf16_doubled": 9216,
+      "Ws_pipelined": true,
+      "kk1_steps_per_BK": 2,
+      "equal_area_with_host": true,
+      "host_BN_divisible_by_BN": true
+    },
+    "failopen_96x32": {
+      "BM": 96,
+      "BN": 32,
+      "BK": 64,
+      "WM": 2,
+      "WN": 2,
+      "SM": 48,
+      "SN": 16,
+      "SK": 32,
+      "TM": 3,
+      "TN": 1,
+      "TK": 2,
+      "matmad_branch": "NONE: tile_matmad_nax is a no-op at this shape",
+      "Atile_frags": 6,
+      "Btile_frags": 2,
+      "Dtile_floats_per_lane": 24,
+      "Ws_bytes_bf16_doubled": 9216,
+      "Ws_pipelined": true,
+      "kk1_steps_per_BK": 2,
+      "equal_area_with_host": false,
+      "host_BN_divisible_by_BN": true
+    }
+  },
+  "census": {
+    "shipped_64x64": {
+      "role": "the scored instantiation, TM=2 TN=2",
+      "instantiation": "affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, 64, 64, 64, 2, 2>",
+      "compiled": true,
+      "metallib_bytes": 27426,
+      "applegpu_g16s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      },
+      "applegpu_g17s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      }
+    },
+    "retile_128x32": {
+      "role": "the E-1c arm, TM=4 TN=1, equal area",
+      "instantiation": "affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, 128, 64, 32, 2, 2>",
+      "compiled": true,
+      "metallib_bytes": 28866,
+      "applegpu_g16s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      },
+      "applegpu_g17s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      }
+    },
+    "failopen_96x32": {
+      "role": "TM=3 TN=1 matches no matmad branch",
+      "instantiation": "affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, 96, 64, 32, 2, 2>",
+      "compiled": true,
+      "metallib_bytes": 17523,
+      "applegpu_g16s": {
+        "registers": 28,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 3530,
+        "text_sha8": "fc31cba8",
+        "translated": true
+      },
+      "applegpu_g17s": {
+        "registers": 28,
+        "spill_bytes": 16,
+        "spill_mirror": 16,
+        "text_bytes": 3616,
+        "text_sha8": "3c0063aa",
+        "translated": true
+      }
+    }
+  },
+  "e147_rungE2_k_order_preserved": true,
+  "e147_rungE2_matmad_branch_switches": true,
+  "e147_rungE2_retile_compiles": true,
+  "e147_rungE2_failopen_shape_exists": true,
+  "e147_rungE2_register_census_available": false,
+  "e147_rungE2_scored_shape_also_untranslatable": true,
+  "e147_rungE2_retile_refusal_identical_to_scored": true,
+  "e147_rungE2_failopen_control_observed": true,
+  "e147_rungE2_metallib_bytes": {
+    "shipped_64x64": 27426,
+    "retile_128x32": 28866,
+    "failopen_96x32": 17523
+  },
+  "verdict": "PASS"
+}

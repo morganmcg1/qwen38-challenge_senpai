@@ -213,12 +213,24 @@ def census(rev: str, workdir: pathlib.Path) -> dict:
                           "compiled": False,
                           "error": exc.stderr.decode(errors="replace")[-2000:]}
             continue
-        rec = {"role": role, "instantiation": inst, "compiled": True}
+        rec = {"role": role, "instantiation": inst, "compiled": True,
+               "metallib_bytes": lib.stat().st_size}
         for arch in ARCHES:
-            got = agx.translate(lib, arch, d, select=lambda n: n == host)
+            # This toolchain's offline translator refuses the cooperative
+            # tensor operand layouts every real NAX GEMM is built from. That
+            # refusal is a recorded observation, not a tool failure. The first
+            # line of the diagnostic names the kernel, so only the body below
+            # it is comparable between probes.
+            try:
+                got = agx.translate(lib, arch, d, select=lambda n: n == host)
+            except SystemExit as exc:
+                text = str(exc)
+                rec[arch] = {"translated": False,
+                             "error_body": text.split("\n", 1)[-1].strip()}
+                continue
             if host not in got:
                 raise SystemExit(f"e147_rungE2: {label} missing on {arch}")
-            rec[arch] = got[host]
+            rec[arch] = dict(got[host], translated=True)
         out[label] = rec
     return out
 
@@ -254,27 +266,56 @@ def main() -> int:
     result["e147_rungE2_failopen_shape_exists"] = (
         d["failopen_96x32"]["matmad_branch"].startswith("NONE"))
 
-    if arm["compiled"] and shipped["compiled"]:
-        for arch in ARCHES:
-            a, s = arm[arch], shipped[arch]
-            result[f"e147_rungE2_registers_{arch}"] = {
-                "shipped": s["registers"], "retile": a["registers"],
-                "delta": a["registers"] - s["registers"]}
-            result[f"e147_rungE2_spill_bytes_{arch}"] = {
-                "shipped": s["spill_bytes"], "retile": a["spill_bytes"]}
-            result[f"e147_rungE2_text_bytes_{arch}"] = {
-                "shipped": s["text_bytes"], "retile": a["text_bytes"]}
-        result["e147_rungE2_retile_spills"] = any(
-            arm[a]["spill_bytes"] > 0 for a in ARCHES)
+    ranked = agx.RANKED_ARCH
+    translated = all(rec["compiled"] and rec[ranked].get("translated")
+                     for rec in (shipped, arm, fail))
+    if translated:
+        a, s = arm[ranked], shipped[ranked]
+        result[f"e147_rungE2_registers_{ranked}"] = {
+            "shipped": s["registers"], "retile": a["registers"],
+            "delta": a["registers"] - s["registers"]}
+        result[f"e147_rungE2_spill_bytes_{ranked}"] = {
+            "shipped": s["spill_bytes"], "retile": a["spill_bytes"]}
+        result[f"e147_rungE2_text_bytes_{ranked}"] = {
+            "shipped": s["text_bytes"], "retile": a["text_bytes"]}
+        result["e147_rungE2_retile_spills"] = a["spill_bytes"] > 0
+        result["e147_rungE2_register_delta"] = a["registers"] - s["registers"]
+    result["e147_rungE2_register_census_available"] = translated
 
-    control_ok = False
-    if fail["compiled"] and arm["compiled"]:
-        control_ok = all(
-            fail[a]["text_bytes"] < arm[a]["text_bytes"] for a in ARCHES)
+    # A translation refusal only means something if the SCORED instantiation
+    # translates. It does not, on either arch, so the refusal is a limit of
+    # this offline translator and says nothing about the retile. The two error
+    # bodies must be identical for that reading to hold, because the mangled
+    # names they carry describe the descriptor and not the tile shape.
+    same_error = {}
+    for arch in ARCHES:
+        s_arch, a_arch = shipped.get(arch, {}), arm.get(arch, {})
+        same_error[arch] = (
+            not s_arch.get("translated")
+            and not a_arch.get("translated")
+            and s_arch.get("error_body") == a_arch.get("error_body"))
+    result["e147_rungE2_scored_shape_also_untranslatable"] = not shipped[
+        agx.RANKED_ARCH].get("translated", False)
+    result["e147_rungE2_retile_refusal_identical_to_scored"] = all(
+        same_error.values())
+
+    # THE CONTROL. The only NAX instantiation this translator accepts is the
+    # one whose matmad resolves to nothing, and it accepts it because every
+    # cooperative-tensor operand disappeared with the arithmetic. A shape that
+    # multiplies nothing is therefore visible without an M5.
+    control_ok = (
+        fail["compiled"]
+        and all(fail[arch].get("translated") for arch in ARCHES)
+        and not any(shipped[arch].get("translated") for arch in ARCHES)
+        and not any(arm[arch].get("translated") for arch in ARCHES)
+        and fail["metallib_bytes"] < arm["metallib_bytes"])
     result["e147_rungE2_failopen_control_observed"] = control_ok
+    result["e147_rungE2_metallib_bytes"] = {
+        label: c[label]["metallib_bytes"] for label, *_ in PROBES}
 
     verdict = "PASS" if (result["e147_rungE2_retile_compiles"]
                          and result["e147_rungE2_failopen_shape_exists"]
+                         and result["e147_rungE2_retile_refusal_identical_to_scored"]
                          and control_ok) else "FAIL"
     result["verdict"] = verdict
 
@@ -287,6 +328,9 @@ def main() -> int:
             continue
         for arch in ARCHES:
             r = rec[arch]
+            if not r.get("translated"):
+                print(f"{label:16s} {arch} NOT TRANSLATED")
+                continue
             print(f"{label:16s} {arch} regs={r['registers']:4d} "
                   f"spill={r['spill_bytes']:6d} text={r['text_bytes']:8d} "
                   f"sha8={r['text_sha8']}")
