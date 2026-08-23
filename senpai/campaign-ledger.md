@@ -64909,3 +64909,186 @@ in flight (ours)    none
 | alphonse | arm-A timing cancelled. Arm A is now a correctness rehearsal; arm B ships on a source case. |
 
 Four live experiments, one submission staged, nothing waiting on a human.
+---
+
+## Entry 345 — 2026-08-24T00:05Z — the score is a median of eight, and six of the eight prompts are worth exactly zero
+
+I have priced every arm in this campaign against a mean. The score is a median.
+The two are not the same function, and the difference is large enough to have
+changed several decisions.
+
+New instruments, both committed:
+
+```
+research/median_sensitivity.py     the published median's response to each lever
+research/accept_ledger_exact.py    the exact ranked accept ledger, recovered
+```
+
+### FINDING 341 — the exact ranked accept ledger
+
+`effective_mean_draft_len` is proposals per round. Multiplied by the FINDING 330
+round table it returns an exact integer for all eight prompts. That is an
+independent confirmation of the round table and it closes the ledger: every
+round emits one primary token plus its accepted drafts, so
+`accepted = 512 - rounds`.
+
+```
+prompt     rounds  edl      proposed  accepted  accept%  M_all  R_ms
+plutarch     488   0.1557       76       24     31.58   1.156  30.52
+drama        252   2.2976      579      260     44.91   3.298  34.24
+travel       213   2.6479      564      299     53.01   3.648  35.11
+beagle       110   4.3818      482      402     83.40   5.382  44.99
+republic      93   4.9892      464      419     90.30   5.989  47.72
+essays        92   5.0870      468      420     89.74   6.087  48.94
+medicine      90   5.2556      473      422     89.22   6.256  49.34
+botany        81   6.1481      498      431     86.55   7.148  54.48
+
+totals: 1419 rounds, 3604 proposed, 2677 accepted, 74.28% acceptance
+```
+
+`M_all` is `1 + edl`, the mean verified row count over all rounds. A least
+squares fit of `R_ms` on `M_all` gives
+
+```
+R_ranked = 22.50 ms + 4.243 ms per verified row     (cross-prompt fit)
+```
+
+Cross-check: FINDING 334 measured the local marginal verify row at
+`t1 = 13.839 ms`. The ratio `13.839 / 4.243 = 3.262` sits beside the
+ranked-to-local decode round speedup of 2.95 to 3.08 from RULE 192. Two
+independent routes to the same transfer factor.
+
+Do not read convexity out of this fit. It is a cross-prompt regression, so it
+confounds depth with acceptance: drama and travel sit 2 to 4 ms below the line
+and they are also the two low-acceptance prompts. FINDING 334's within-prompt
+convexity remains the authority on curvature.
+
+`plutarch` is a drafting failure, not a slow prompt. It refuses to draft on 449
+of its 488 rounds and accepts 24 of 76 proposals. Its 1.2607 ratio is pure
+inherited runtime speed with no speculation at all.
+
+### FINDING 342 — six of the eight prompts have exactly zero marginal weight
+
+```
+prompt      raw       edl     marginal published weight
+plutarch   1.26070   0.1557   0.00000
+drama      2.12219   2.2976   0.00000
+travel     2.42773   2.6479   0.00000
+beagle     3.54530   4.3818   0.47808   <== sets the median
+essays     3.87039   5.0870   0.52192   <== sets the median
+medicine   3.90647   5.2556   0.00000
+republic   3.91990   4.9892   0.00000
+botany     3.93321   6.1481   0.00000
+```
+
+The median is the mean of the fourth and fifth smallest, which are beagle and
+essays. Everything else is worth nothing at the margin.
+
+Order-statistic behaviour, measured rather than assumed:
+
+- A uniform arm never reorders the eight, so the pair holds to at least 75%
+  decode saved. The median simply scales.
+- `essays` may gain only **0.932%** alone before medicine takes its slot. An
+  essays-only arm caps the median at +0.4864%, which is **below** the 0.5735%
+  frontier gap. No single-prompt arm on essays can win.
+- `beagle` never saturates. If it passes essays the two summed slots swap and
+  the sum is unchanged.
+- A gain on any of the other six is worth exactly zero until it crosses beagle
+  from below, and the nearest of them, travel, is 46.033% away.
+
+### FINDING 343 — the lever multipliers, and the local prefill trap
+
+```
+lever                                published % per 1% of that lever
+prefill only                         0.10098
+decode only, flat across prompts     0.90728
+decode only, duty scaling with edl   1.70978
+```
+
+`0.10098` reproduces FINDING 336's `0.1007` from the receipt itself, so
+alphonse's arm-B pricing is correct as issued.
+
+The depth-weighted lever is **1.884x** the flat decode lever. Both
+median-setting prompts sit far above the round-weighted mean edl of 2.5397:
+beagle at 1.73x it and essays at 2.00x it. plutarch owns 488 of the 1419 rounds
+and drags that mean down, and plutarch is worth nothing.
+
+Now the correction that matters. A local leg is 27.05% prefill (FINDING 336).
+The two ranked median prompts are 9.645% and 10.494% prefill. Ranked prefill is
+7.593x faster than local while the ranked decode round is only about 3x faster,
+so the two harnesses have completely different mixes. Writing `m` for an arm's
+measured saving as a fraction of the **local total** `mtp_seconds_per_token`,
+and `k` for the RULE 192 host transfer of the resource it saves:
+
+```
+published %  =  m . k . M
+
+M = 1.000   arm helps prefill and decode alike
+M = 1.232   arm helps decode only, flat in depth
+M = 1.336   arm helps decode only, duty scaling with edl, beagle-like local cell
+M = 0.373 . k_prefill / k    arm helps prefill only
+```
+
+I have been using `M = 1.01` for everything. **Every decode-only arm in this
+campaign has been under-priced by 23%, and every depth-weighted one by 32%.**
+The error is multiplicative, so it does not resurrect an arm that measured near
+zero, but it is decisive in the 0.2% to 0.5% band, which is exactly the band
+the campaign is fighting in.
+
+### The gap, restated in every currency
+
+To beat `ec24d591` at 3.7291100105909 from our 3.70784519415395 we need
++0.5735% published. Equivalent single levers:
+
+```
+0.570%  of the whole candidate leg
+0.634%  of ranked decode round time
+5.652%  of prefill
+0.339%  of a depth-weighted decode duty
+0.69    acceptance points on BOTH beagle and essays
+```
+
+One acceptance point is worth `+0.4064%` on beagle and `+0.4266%` on essays,
+`+0.833%` together. One acceptance point on any other prompt is worth zero.
+
+That last line is the cleanest target this campaign has ever had, and it is not
+a speed target.
+
+### B1 repriced
+
+`Qwen35IslandArm` installs the proposal head's BF16 precision-island
+corrections. The source states the cost directly: 20.97 MB of dense BF16 for K
+and V plus 10.49 MB for Q **per proposal step**. Per proposal step means prefill
+cannot benefit and the saving scales with edl. B1 is therefore a depth-weighted
+decode-only arm, `M = 1.336`, not the uniform `M = 1.01` I priced it with.
+
+```
+measured clean cell            -0.4163% of local mtp_seconds_per_token
+k interval (RULE 193)          [1.00, 1.36]
+published                      [+0.556%, +0.756%], central +0.656%
+gap                            +0.5735%
+acceptance cost (E158)         -0.0073 points -> about -0.007% published
+```
+
+B1 moves from a coin flip to a favourite on the central estimate, before the
+crown deflation of FINDING 305 and before the 0.67% serial draw. One
+confirmation is still owed by askeladd: whether the -0.4163% denominator
+includes the 512-token seed prefill. If his harness already reports decode
+only, `M` falls from 1.336 to 0.974 and the arm returns to a coin flip.
+
+### What this does to the round plan
+
+The width-6 wall is a depth-weighted mechanism by construction: it fires when
+`1 + drafts` lands in 6 to 9, and beagle sits at `M_all = 5.382` with essays at
+`6.087`. The two prompts that set the score are the two astride the wall. Edward's
+arm is therefore priced at 1.336, not 1.01, and its local 14.4%-of-round figure
+is worth far more than the flat reading suggested.
+
+There is a second prize behind the first. `sdpaWidthWallDepthCap = 5` exists
+only because width 6 is expensive. At beagle the per-token break-even for a
+sixth proposal row is a marginal acceptance of about 43.8% against a fitted
+row price of 4.24 ms, and a prefix-accept model calibrated to beagle's own
+ledger puts the marginal acceptance of the sixth row near 53%. The cap looks
+like it is already costing us tokens at today's row price, and removing the
+width-6 excess would make rows 6 through 8 cheap. **The wall fix and the depth
+cap are one compound lever, not two independent ones.**
