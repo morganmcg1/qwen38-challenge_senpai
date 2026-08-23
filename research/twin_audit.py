@@ -235,21 +235,28 @@ RULE = re.compile(r"^/{40,}$")
 KNOWN_COMMENT_DIVERGENCES = {
     ("quantized", "mlx/backend/metal/kernels/quantized.h"): {
         "checked_in_comment_sha256": (
-            "1fdb8dcee8c7cfeb203e9afad1d991a746b7ba08d24638774878fbbd3404a0ba"
+            "9bd018863df9858250159c4433fe15eaf2c12cc664da62a59e52579c9b936802"
         ),
         "regenerated_comment_sha256": (
-            "f7baab91ee3afe85961d6f9b535e45f6cc362fdc05d9ee26caaaabeba9a564f3"
+            "c488a8e0ee4b3ee0465d3002b613c6f331126dbbaf1c35521970498bd35ab36d"
         ),
         "inherited_from": "474c750 (Accept submission 942e5ab2-1c46-4c50-b7c3-eaf948878ed0)",
         "adopted_by": "e468efd (rebase the shipped surface onto the live frontier; drop E27)",
+        "repinned_by": "E162 (software-pipelined double-buffered Ws in qmm_t)",
         "note": (
-            "3087 checked-in vs 3097 regenerated lines, 3005 non-comment lines "
-            "identical on both sides. Header case 8 carries a 17-line argument "
-            "for 3+3+2 that is measured +18.72 % SLOWER (E46) and is NOT what "
-            "either file's code does; the twin's 3-line 4+4 comment is the "
-            "correct one. Waived rather than fixed because both paths are held "
-            "byte-identical to the frontier by the E27 revert. Code guarded by "
-            "senpai/campaign-invariants.txt."
+            "The WAIVED DIVERGENCE IS UNCHANGED: header case 8 carries a "
+            "17-line argument for 3+3+2 that is measured +18.72 % SLOWER (E46) "
+            "and is NOT what either file's code does; the twin's 3-line 4+4 "
+            "comment is the correct one. Waived rather than fixed because both "
+            "paths are held byte-identical to the frontier by the E27 revert. "
+            "Code guarded by senpai/campaign-invariants.txt. "
+            "RE-PINNED BY E162: that experiment adds the same "
+            "qmm_t_pipelined_k_loop comment block and the same shift_dst "
+            "comment to BOTH files. The comment-stream digest covers the whole "
+            "section, so identical additions to both sides still move both "
+            "digests and de-pin the waiver. Non-comment lines remain identical "
+            "on both sides, which is the property this audit exists for, and "
+            "the case 8 divergence above is the only comment divergence."
         ),
     },
 }
