@@ -34,9 +34,17 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 ARMS = ["all", "none", "none", "all"]
 PROMPTS = ["beagle_a", "essays_montaigne", "benchfixture"]
 
-# Measured median weights supplied by the advisor on 2026-08-23: the share of
-# ranked prompts for which each local prompt sets the published median.
-MEDIAN_WEIGHTS = {"beagle_a": 0.4741, "essays_montaigne": 0.5259}
+# Advisor F2, 2026-08-23: score the weighted effect as
+# 0.474 * (beagle) + 0.526 * (a top-four-like prompt). `beagle` is the measured
+# median anchor at weight 0.4741. The top-four-like prompt must draft like the
+# four prompts that scramble across ranks 5-8, which means edl about 5.0-6.1;
+# `benchfixture` sits at 6.36 and `essays_montaigne` at 3.44, so `benchfixture`
+# is the qualifying proxy and the essays pairing is reported beside it as the
+# harder-text sensitivity.
+WEIGHTED_PAIRS = {
+    "beagle_plus_top_four_like": {"beagle_a": 0.4741, "benchfixture": 0.5259},
+    "beagle_plus_essays": {"beagle_a": 0.4741, "essays_montaigne": 0.5259},
+}
 
 # Absolute-mtp noise floor for this host, in percent (advisor, 2026-08-23).
 NOISE_FLOOR_PCT = 0.039
@@ -239,7 +247,7 @@ def main() -> int:
         "experiment": "e158-r1-precision-island-price",
         "harness": "local",
         "noise_floor_pct_absolute_mtp": NOISE_FLOOR_PCT,
-        "median_weights": MEDIAN_WEIGHTS,
+        "weighted_pairs": WEIGHTED_PAIRS,
         "abba_order": ARMS,
         "legs": legs,
         "per_prompt": {},
@@ -270,17 +278,23 @@ def main() -> int:
             ),
         }
 
-    weighted = 0.0
-    complete = True
-    for prompt, weight in MEDIAN_WEIGHTS.items():
-        cell = summary["per_prompt"].get(prompt, {}).get("mtp_seconds_per_token")
-        if not cell:
-            complete = False
+    summary["median_weighted_candidate_leg"] = {}
+    for name, weights in WEIGHTED_PAIRS.items():
+        weighted = 0.0
+        complete = True
+        for prompt, weight in weights.items():
+            cell = (
+                summary["per_prompt"].get(prompt, {}).get("mtp_seconds_per_token")
+            )
+            if not cell:
+                complete = False
+                continue
+            weighted += weight * cell["delta_pct_of_all"]
+        if not complete:
             continue
-        weighted += weight * cell["delta_pct_of_all"]
-    if complete:
         gain = -weighted / 100.0
-        summary["median_weighted_candidate_leg"] = {
+        summary["median_weighted_candidate_leg"][name] = {
+            "weights": weights,
             "delta_pct_of_all": weighted,
             "gain_fraction_g": gain,
             "published_pct_rule176": 100.0 * gain / (1.0 - gain)
