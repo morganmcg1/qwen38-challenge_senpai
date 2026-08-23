@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import math
 import pathlib
@@ -112,6 +113,9 @@ def load_legs(session: pathlib.Path) -> list[dict]:
             "rejected_per_round": q - a,
             "all_tokens_matched": report["all_tokens_matched"],
             "residual_divergence_count": report["residual_divergence_count"],
+            "draft_length_histogram": dict(sorted(
+                collections.Counter(
+                    report["effective_draft_lengths"]).items())),
             "head_provenance_sha256": report.get(
                 "head_provenance", {}).get("sha256", ""),
             "uses_pinned_mtp_head": report.get("uses_pinned_mtp_head"),
@@ -279,10 +283,128 @@ def trace_summary(session: pathlib.Path) -> list[dict]:
     return out
 
 
+def build_depth_table(pinned: list[dict], s_fixed: float,
+                      h_slope: float) -> list[dict]:
+    by_depth: dict[int, list[dict]] = {}
+    for leg in pinned:
+        by_depth.setdefault(leg["pinned_depth"], []).append(leg)
+    table = []
+    for depth in sorted(by_depth):
+        group = by_depth[depth]
+        values = [leg["R_decode_seconds"] for leg in group]
+        a_mean = st.fmean([leg["a_accepted_per_round"] for leg in group])
+        table.append({
+            "D": depth,
+            "legs": len(group),
+            "R_seconds_mean": st.fmean([leg["R_seconds"] for leg in group]),
+            "R_decode_seconds_mean": st.fmean(values),
+            "R_decode_seconds_spread": max(values) - min(values),
+            "prefill_per_round_seconds": st.fmean(
+                [leg["prefill_per_round_seconds"] for leg in group]),
+            "rounds": [leg["rounds"] for leg in group],
+            "accepted_draft_total": [leg["accepted_draft_total"]
+                                     for leg in group],
+            "a_accepted_per_round": a_mean,
+            "q_proposed_per_round": st.fmean(
+                [leg["q_proposed_per_round"] for leg in group]),
+            "alpha_accept_fraction": st.fmean(
+                [leg["alpha_accept_fraction"] for leg in group]),
+            "non_drafting_round_count": [leg["non_drafting_round_count"]
+                                         for leg in group],
+            "mtp_seconds_per_token": st.fmean(
+                [leg["mtp_seconds_per_token"] for leg in group]),
+            "realized_acceptance_a_over_D": a_mean / depth if depth else 0.0,
+            "implied_uniform_p": implied_uniform_p(a_mean, depth),
+            "rejected_per_round": st.fmean(
+                [leg["rejected_per_round"] for leg in group]),
+            "fit_R_seconds": s_fixed + h_slope * depth,
+            "residual_seconds": st.fmean(values) - (s_fixed + h_slope * depth),
+            "entry_c": [leg["entry_c"] for leg in group],
+            "exit_c": [leg["exit_c"] for leg in group],
+        })
+    return table
+
+
+def build_segments(table: list[dict]) -> list[dict]:
+    """The marginal price of one more PROPOSED draft between sweep points.
+
+    Measured rather than assumed constant. If these disagree, `h` is not a
+    number and `rho = 8h/s` inherits whichever segment the fit weighted most.
+    """
+    segments = []
+    for lo, hi in zip(table, table[1:]):
+        span = hi["D"] - lo["D"]
+        segments.append({
+            "from_D": lo["D"],
+            "to_D": hi["D"],
+            "delta_R_seconds":
+                hi["R_decode_seconds_mean"] - lo["R_decode_seconds_mean"],
+            "marginal_seconds_per_draft":
+                (hi["R_decode_seconds_mean"]
+                 - lo["R_decode_seconds_mean"]) / span,
+            "delta_rejected_per_round":
+                (hi["q_proposed_per_round"] - hi["a_accepted_per_round"])
+                - (lo["q_proposed_per_round"] - lo["a_accepted_per_round"]),
+        })
+    return segments
+
+
+def build_width_wall(table: list[dict], segments: list[dict],
+                     adaptive: list[dict]) -> dict:
+    """Locate the largest width step and price it where the schedule runs.
+
+    Verify width is `1 + D`: the committed primary token plus the proposed
+    drafts. The step reported against a width is the price of entering it.
+    """
+    steps = {seg["to_D"]: seg["marginal_seconds_per_draft"]
+             for seg in segments}
+    if not steps:
+        return {}
+    reachable = {depth: value for depth, value in steps.items() if depth <= 7}
+    wall_depth = max(reachable, key=lambda d: reachable[d])
+    neighbours = [value for depth, value in reachable.items()
+                  if abs(depth - wall_depth) == 1]
+
+    histogram: collections.Counter = collections.Counter()
+    for leg in adaptive:
+        for length, count in leg["draft_length_histogram"].items():
+            histogram[int(length)] += count
+    rounds = sum(histogram.values())
+    at_or_above = sum(count for depth, count in histogram.items()
+                      if depth >= wall_depth)
+
+    curve = {row["D"]: row["R_decode_seconds_mean"] for row in table}
+    reach_cap = curve.get(7)
+    counterfactual = (st.fmean(neighbours) if neighbours else None)
+    return {
+        "wall_depth_D": wall_depth,
+        "wall_verify_width": wall_depth + 1,
+        "wall_step_seconds": steps[wall_depth],
+        "neighbour_step_seconds": counterfactual,
+        "wall_excess_seconds": (steps[wall_depth] - counterfactual
+                                if counterfactual is not None else None),
+        "shipped_width_cap": 8,
+        "cost_of_reaching_depth_7_seconds": (
+            reach_cap - curve[0] if reach_cap is not None else None),
+        "wall_share_of_reaching_depth_7": (
+            steps[wall_depth] / (reach_cap - curve[0])
+            if reach_cap is not None else None),
+        "adaptive_round_count": rounds,
+        "adaptive_draft_length_histogram": dict(sorted(histogram.items())),
+        "adaptive_rounds_at_or_above_wall": at_or_above,
+        "adaptive_share_at_or_above_wall": (at_or_above / rounds
+                                            if rounds else None),
+        "steps_by_verify_width": {
+            str(depth + 1): value for depth, value in sorted(steps.items())},
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("session", type=pathlib.Path)
     parser.add_argument("--trace", type=pathlib.Path, default=None)
+    parser.add_argument("--extra", type=pathlib.Path, action="append",
+                        default=[])
     parser.add_argument("--json", type=pathlib.Path, default=None)
     parser.add_argument("--include-block-zero", action="store_true")
     args = parser.parse_args()
@@ -312,67 +434,25 @@ def main() -> int:
     s_fixed, h_slope = fit["intercept"], fit["slope"]
     rho = 8.0 * h_slope / s_fixed
 
-    by_depth: dict[int, list[dict]] = {}
-    for leg in pinned:
-        by_depth.setdefault(leg["pinned_depth"], []).append(leg)
-    depth_table = []
-    for depth in sorted(by_depth):
-        group = by_depth[depth]
-        values = [leg["R_decode_seconds"] for leg in group]
-        depth_table.append({
-            "D": depth,
-            "legs": len(group),
-            "R_seconds_mean": st.fmean([leg["R_seconds"] for leg in group]),
-            "R_decode_seconds_mean": st.fmean(values),
-            "R_decode_seconds_spread": max(values) - min(values),
-            "prefill_per_round_seconds": st.fmean(
-                [leg["prefill_per_round_seconds"] for leg in group]),
-            "rounds": [leg["rounds"] for leg in group],
-            "accepted_draft_total": [leg["accepted_draft_total"]
-                                     for leg in group],
-            "a_accepted_per_round": st.fmean(
-                [leg["a_accepted_per_round"] for leg in group]),
-            "q_proposed_per_round": st.fmean(
-                [leg["q_proposed_per_round"] for leg in group]),
-            "alpha_accept_fraction": st.fmean(
-                [leg["alpha_accept_fraction"] for leg in group]),
-            "non_drafting_round_count": [leg["non_drafting_round_count"]
-                                         for leg in group],
-            "mtp_seconds_per_token": st.fmean(
-                [leg["mtp_seconds_per_token"] for leg in group]),
-            "realized_acceptance_a_over_D": (
-                st.fmean([leg["a_accepted_per_round"] for leg in group])
-                / depth if depth else 0.0),
-            "implied_uniform_p": implied_uniform_p(
-                st.fmean([leg["a_accepted_per_round"] for leg in group]),
-                depth),
-            "rejected_per_round": st.fmean(
-                [leg["rejected_per_round"] for leg in group]),
-            "fit_R_seconds": s_fixed + h_slope * depth,
-            "residual_seconds": st.fmean(values) - (s_fixed + h_slope * depth),
-            "entry_c": [leg["entry_c"] for leg in group],
-            "exit_c": [leg["exit_c"] for leg in group],
-        })
+    depth_table = build_depth_table(pinned, s_fixed, h_slope)
+    segments = build_segments(depth_table)
 
-    # The marginal price of one more PROPOSED draft, measured between adjacent
-    # sweep points instead of assumed constant. If these disagree, `h` is not a
-    # number and `rho = 8h/s` inherits whichever segment the fit happened to
-    # weight most.
-    segments = []
-    for lo, hi in zip(depth_table, depth_table[1:]):
-        span = hi["D"] - lo["D"]
-        segments.append({
-            "from_D": lo["D"],
-            "to_D": hi["D"],
-            "delta_R_seconds":
-                hi["R_decode_seconds_mean"] - lo["R_decode_seconds_mean"],
-            "marginal_seconds_per_draft":
-                (hi["R_decode_seconds_mean"]
-                 - lo["R_decode_seconds_mean"]) / span,
-            "delta_rejected_per_round":
-                (hi["q_proposed_per_round"] - hi["a_accepted_per_round"])
-                - (lo["q_proposed_per_round"] - lo["a_accepted_per_round"]),
-        })
+    # The kink session fills D in {3,5,6,7}. Folding it in localizes where the
+    # marginal price actually steps instead of averaging over a 2->4 or 4->8
+    # gap that could hide a wall at one width.
+    dense_legs = list(pinned)
+    for extra in args.extra:
+        dense_legs.extend(
+            leg for leg in load_legs(extra)
+            if leg["pinned_depth"] is not None
+            and (args.include_block_zero or leg["block"] > 0))
+    dense_table = build_depth_table(dense_legs, s_fixed, h_slope)
+    dense_segments = build_segments(dense_table)
+    dense_le7 = [leg for leg in dense_legs if leg["pinned_depth"] <= 7]
+    fit_dense = ols([float(leg["pinned_depth"]) for leg in dense_legs],
+                    [leg["R_decode_seconds"] for leg in dense_legs])
+    fit_dense_le7 = ols([float(leg["pinned_depth"]) for leg in dense_le7],
+                        [leg["R_decode_seconds"] for leg in dense_le7])
 
     # `s` pinned to the measured D=0 round instead of extrapolated, and 8h read
     # as the measured chord from D=0 to D=8. This uses no linearity assumption,
@@ -385,6 +465,28 @@ def main() -> int:
         "h_seconds": (r8 - r0) / 8.0,
         "rho": (r8 - r0) / r0,
         "definition": "s = measured R(0); 8h = measured R(8) - R(0)",
+    }
+
+    # `rho = 8h/s` keeps its pre-registered factor 8. Only the estimate of `h`
+    # changes between these rows. The D<=7 rows matter because the shipped
+    # schedule caps at `segmentedVerifyDepthCap = 7`, so D=8 is a depth the
+    # scored policy never proposes.
+    def chord_rho(depth: int) -> dict | None:
+        row = next((r for r in dense_table if r["D"] == depth), None)
+        if row is None:
+            return None
+        h = (row["R_decode_seconds_mean"] - r0) / depth
+        return {"h_seconds": h, "rho": 8.0 * h / r0, "top_D": depth}
+
+    rho_variants = {
+        "ols_prescribed_depths_0_8": rho,
+        "ols_dense_0_8": 8.0 * fit_dense["slope"] / fit_dense["intercept"],
+        "ols_dense_0_7_shipped_cap":
+            8.0 * fit_dense_le7["slope"] / fit_dense_le7["intercept"],
+        "chord_0_8": chord_rho(8),
+        "chord_0_7_shipped_cap": chord_rho(7),
+        "trimmed_round_clock": 8.0 * fit_trimmed["slope"]
+        / fit_trimmed["intercept"],
     }
 
     traces = trace_summary(args.trace) if args.trace else []
@@ -403,8 +505,35 @@ def main() -> int:
             head_cost = head_fit["slope"] * q_adapt
             head_share = head_cost / r_adapt
             verify_share = (h_slope * q_adapt - head_cost) / r_adapt
+        # The four shares the assignment asks for, anchored on measurements
+        # rather than on the linear fit: the batch-1 round is the measured
+        # `R(0)`, the head chain is the traced head fit at the adaptive `q`,
+        # the session tail is traced directly, and the extra verify rows are
+        # what remains. These sum to 1 by construction, which the OLS split
+        # cannot do while the linear model is rejected.
+        trace_budget = None
+        if head_fit and traces:
+            head_cost = (head_fit["intercept"]
+                         + head_fit["slope"] * q_adapt)
+            tail = st.fmean(t["session_tail_us"] * 1e-6 for t in traces)
+            target_batch1 = next(
+                row["R_decode_seconds_mean"] for row in depth_table
+                if row["D"] == 0)
+            extra_rows = r_adapt - target_batch1 - head_cost - tail
+            trace_budget = {
+                "target_batch_1_seconds": target_batch1,
+                "target_batch_1_share": target_batch1 / r_adapt,
+                "extra_verify_rows_seconds": extra_rows,
+                "extra_verify_rows_share": extra_rows / r_adapt,
+                "proposal_head_seconds": head_cost,
+                "proposal_head_share": head_cost / r_adapt,
+                "session_overhead_seconds": tail,
+                "session_overhead_share": tail / r_adapt,
+            }
+
         adapt = {
             "legs": len(adaptive),
+            "trace_anchored_budget": trace_budget,
             "q_proposed_per_round": q_adapt,
             "a_accepted_per_round": st.fmean(
                 [leg["a_accepted_per_round"] for leg in adaptive]),
@@ -451,6 +580,15 @@ def main() -> int:
         "quadratic_term": curve,
         "linear_model_rejected": abs(curve["t_c2"]) >= 2.0,
         "segment_marginals": segments,
+        "dense_sessions": [str(p) for p in args.extra],
+        "dense_depth_table": dense_table,
+        "dense_segment_marginals": dense_segments,
+        "width_wall": build_width_wall(dense_table, dense_segments, adaptive),
+        "fit_dense_0_8": {k: v for k, v in fit_dense.items()
+                          if k != "residuals"},
+        "fit_dense_0_7_shipped_cap": {k: v for k, v in fit_dense_le7.items()
+                                      if k != "residuals"},
+        "rho_variants": rho_variants,
         "chord_estimate": chord,
         "s_fixed_seconds": s_fixed,
         "h_slope_seconds": h_slope,
@@ -519,6 +657,43 @@ def main() -> int:
         f"{seg['from_D']}->{seg['to_D']} "
         f"{seg['marginal_seconds_per_draft'] * 1e3:.3f}"
         for seg in segments))
+    if args.extra:
+        print()
+        print("dense sweep with the kink session folded in")
+        print(f"{'D':>3} {'legs':>4} {'R ms':>9} {'spread ms':>9} "
+              f"{'a':>7} {'q':>6} {'alpha':>7} {'step ms':>8}")
+        step = {seg["to_D"]: seg["marginal_seconds_per_draft"]
+                for seg in dense_segments}
+        for row in dense_table:
+            marginal = step.get(row["D"])
+            print(f"{row['D']:>3} {row['legs']:>4} "
+                  f"{row['R_decode_seconds_mean'] * 1e3:>9.4f} "
+                  f"{row['R_decode_seconds_spread'] * 1e3:>9.4f} "
+                  f"{row['a_accepted_per_round']:>7.4f} "
+                  f"{row['q_proposed_per_round']:>6.3f} "
+                  f"{row['alpha_accept_fraction']:>7.4f} "
+                  + (f"{marginal * 1e3:>8.3f}" if marginal is not None
+                     else f"{'-':>8}"))
+        print("rho = 8h/s by how h is estimated:")
+        for key, value in rho_variants.items():
+            if isinstance(value, dict):
+                print(f"  {key:<26} {value['rho']:.4f} "
+                      f"(h {value['h_seconds'] * 1e3:.4f} ms)")
+            else:
+                print(f"  {key:<26} {value:.4f}")
+        wall = out["width_wall"]
+        if wall:
+            print(f"width wall: entering verify width "
+                  f"{wall['wall_verify_width']} costs "
+                  f"{wall['wall_step_seconds'] * 1e3:.3f} ms against "
+                  f"{wall['neighbour_step_seconds'] * 1e3:.3f} ms for its "
+                  f"neighbours, "
+                  f"{wall['wall_share_of_reaching_depth_7'] * 100:.1f} % of "
+                  f"the whole cost of reaching depth 7")
+            print(f"  the shipped schedule runs "
+                  f"{wall['adaptive_rounds_at_or_above_wall']} of "
+                  f"{wall['adaptive_round_count']} rounds at or above it "
+                  f"({wall['adaptive_share_at_or_above_wall'] * 100:.1f} %)")
     if head_fit:
         print(f"h_head (sync-head trace) {head_fit['slope'] * 1e3:.4f} ms "
               f"+- {head_fit['se_slope'] * 1e3:.4f}  "
