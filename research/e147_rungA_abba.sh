@@ -64,9 +64,20 @@ runs_parent=".mlxfast-private/e147/runs"
 # records `golden_sha256` in every leg's `meta.txt`.
 goldens_dir="${E147_GOLDENS_DIR:-.mlxfast-private/e128/goldens}"
 
-# The pipelined schedule's own line, long enough to clear HARNESS DEFECT 38 and
-# unique to the candidate k-loop.
-NEEDLE='loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);'
+# The pipelined schedule's own line, 51 bytes, so it clears HARNESS DEFECT 38.
+#
+# RULE 101, WITH A REAL FAILURE. The first needle here was
+# `loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);`, and the base build refused it
+# at 2026-08-23T05:35:55Z: `FAIL forbid ... found 2 copies, expected 0`. The
+# reference implementation `fp_quantized_nax.h` ships that exact line, so it is
+# in every worker and could never have separated the arms. The needle below
+# reads the double-buffered mma consumption, which only the affine non-NAX
+# `qmm_t_impl` written for this experiment contains:
+#
+#   Vendor/.../kernels/quantized.h        4
+#   Vendor/.../mlx-generated/quantized.cpp 4
+#   everything else under Vendor/          0
+NEEDLE='mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);'
 
 kernel_paths=(
   Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h
