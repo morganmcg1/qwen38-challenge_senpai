@@ -67,7 +67,17 @@ if ((trace)); then
   export MLX_QWEN_MTP_TRACE_PATH="${trace_path}"
   ((sync_head)) && export MLX_QWEN_MTP_TRACE_SYNC_HEAD=1
 else
-  unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_PATH MLX_QWEN_MTP_TRACE_SYNC_HEAD
+  unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_SYNC_HEAD
+  # A no-trace leg still needs a sink for the one-shot load-time witness lines,
+  # because the parent swallows worker stderr on a successful leg. The trace
+  # PATH alone opens that sink; per-round tracing stays off because
+  # MLX_QWEN_MTP_TRACE is unset.
+  if [[ -n "${E79_WITNESS_PATH:-}" ]]; then
+    : > "${E79_WITNESS_PATH}"
+    export MLX_QWEN_MTP_TRACE_PATH="${E79_WITNESS_PATH}"
+  else
+    unset MLX_QWEN_MTP_TRACE_PATH
+  fi
 fi
 
 gpu_temp() {
@@ -110,6 +120,8 @@ gpu_temp() {
   echo "memory_bytes=$(sysctl -n hw.memsize)"
   echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
   echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR:-<setup-default>}"
+  echo "island_arm_requested=${DARKBLOOM_QWEN_MTP_ISLAND_ARM:-<unset>}"
+  echo "witness_path=${MLX_QWEN_MTP_TRACE_PATH:-<none>}"
   echo "ladder=${MLX_QWEN_MTP_LADDER:-<unset>}"
   echo "worker_sha256=$(
     shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
