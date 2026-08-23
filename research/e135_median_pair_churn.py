@@ -72,7 +72,7 @@ def prompt_name(entry: dict) -> str | None:
     return None
 
 
-def ratios(row: dict) -> dict[str, float] | None:
+def field(row: dict, key: str) -> dict[str, float] | None:
     metrics = row.get("officialMetrics") or {}
     entries = metrics.get("per_prompt") or []
     if len(entries) != 8:
@@ -80,11 +80,15 @@ def ratios(row: dict) -> dict[str, float] | None:
     out = {}
     for entry in entries:
         name = prompt_name(entry)
-        value = entry.get("raw_ratio_of_means")
+        value = entry.get(key)
         if name is None or value is None:
             return None
         out[name] = value
     return out if len(out) == 8 else None
+
+
+def ratios(row: dict) -> dict[str, float] | None:
+    return field(row, "raw_ratio_of_means")
 
 
 def median_pair(values: dict[str, float]) -> tuple[str, str]:
@@ -101,13 +105,14 @@ UPPER_SLOT_CANDIDATES = ("medicine", "essays", "republic", "botany")
 
 
 def contrast(rows: list[dict], want_a: str, want_b: str) -> None:
-    def find(want: str) -> dict[str, float]:
+    def find(want: str) -> dict:
         hit = next((r for r in rows if r["id"].startswith(want)), None)
         if hit is None:
             raise SystemExit(f"no receipt with a complete block for {want}")
-        return ratios(hit)
+        return hit
 
-    a, b = find(want_a), find(want_b)
+    row_a, row_b = find(want_a), find(want_b)
+    a, b = ratios(row_a), ratios(row_b)
     base = published(a)
     lo_a, hi_a = median_pair(a)
     lo_b, hi_b = median_pair(b)
@@ -127,10 +132,61 @@ def contrast(rows: list[dict], want_a: str, want_b: str) -> None:
     print(f"  order-statistic error           {realised - held:+.4f} pp")
     print(f"  Rule 129 worst upper slot       {worst}")
     print(f"  Rule 129 reading                {r129:+.4f} %")
-    print("  per prompt, candidate ladder change:")
+    ser_a = field(row_a, "serial_seconds_per_token_mean")
+    ser_b = field(row_b, "serial_seconds_per_token_mean")
+    mtp_a = field(row_a, "mtp_seconds_per_token_mean")
+    mtp_b = field(row_b, "mtp_seconds_per_token_mean")
+
+    print("  per prompt: the ladder, and which leg moved it")
+    print(f"    {'prompt':<9} {'ratio A':>9} {'ratio B':>9} {'d ratio':>9} "
+          f"{'d serial':>9} {'d cand':>9}")
     for name in sorted(a, key=lambda k: (b[k] - a[k]) / a[k]):
-        print(f"    {name:<9} {a[name]:.6f} -> {b[name]:.6f}   "
-              f"{(b[name] - a[name]) / a[name] * 100.0:+8.4f} %")
+        d_ratio = (b[name] - a[name]) / a[name] * 100.0
+        if ser_a and ser_b and mtp_a and mtp_b:
+            d_ser = (ser_b[name] - ser_a[name]) / ser_a[name] * 100.0
+            d_cand = (mtp_b[name] - mtp_a[name]) / mtp_a[name] * 100.0
+            legs = f"{d_ser:+9.4f} {d_cand:+9.4f}"
+        else:
+            legs = f"{'n/a':>9} {'n/a':>9}"
+        print(f"    {name:<9} {a[name]:9.4f} {b[name]:9.4f} "
+              f"{d_ratio:+9.4f} {legs}")
+    print("    d serial and d cand are per cent change in seconds per token, "
+          "so\n    a positive d cand is SLOWER and a positive d serial raises "
+          "the ratio.")
+    print()
+
+
+def nullblock(rows: list[dict], wants: list[str]) -> None:
+    """Per-prompt dispersion over draws of one bit-identical tree.
+
+    The receipt reports the serial and the candidate leg separately, so a null
+    block says which leg carries the published-median noise.
+    """
+    picked = []
+    for want in wants:
+        hit = next((r for r in rows if r["id"].startswith(want)), None)
+        if hit is None:
+            raise SystemExit(f"no receipt with a complete block for {want}")
+        picked.append(hit)
+
+    print(f"## Null block over {len(picked)} draws of one tree: "
+          f"{', '.join(w[:8] for w in wants)}")
+    print(f"  {'prompt':<9} {'cand sd %':>10} {'serial sd %':>12} "
+          f"{'ratio sd %':>11}")
+    for name in PROMPT_NAMES.values():
+        cell = {}
+        for key, label in (("mtp_seconds_per_token_mean", "cand"),
+                           ("serial_seconds_per_token_mean", "serial"),
+                           ("raw_ratio_of_means", "ratio")):
+            series = [field(r, key)[name] for r in picked]
+            mean = statistics.fmean(series)
+            cell[label] = statistics.stdev(series) / mean * 100.0
+        print(f"  {name:<9} {cell['cand']:10.4f} {cell['serial']:12.4f} "
+              f"{cell['ratio']:11.4f}")
+    medians = [published(ratios(r)) for r in picked]
+    print(f"  published median  mean {statistics.fmean(medians):.6f}  "
+          f"sd {statistics.stdev(medians):.6f}  "
+          f"({statistics.stdev(medians) / statistics.fmean(medians) * 100:.4f} %)")
     print()
 
 
@@ -160,12 +216,22 @@ def main() -> None:
         help="price one named contrast three ways: realised, held-pair, and "
              "the Rule 129 worst-upper-slot reading",
     )
+    ap.add_argument(
+        "--nullblock",
+        nargs="*",
+        default=[],
+        help="receipt id prefixes that are draws of ONE bit-identical tree; "
+             "reports per-prompt candidate, serial and ratio dispersion",
+    )
     args = ap.parse_args()
 
     rows = [r for r in load(args.board) if ratios(r)]
 
     if args.contrast:
         contrast(rows, *args.contrast)
+
+    if args.nullblock:
+        nullblock(rows, args.nullblock)
 
     if args.show:
         print("## Median pair of the named receipts")
