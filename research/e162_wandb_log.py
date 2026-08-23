@@ -41,11 +41,27 @@ OUT = REPO / "research" / "out" / "e162"
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
 
-# The share of the scored leg that prefill occupies, and its complement. The
-# advisor set these in E162 feedback 3 after four out of four prefill receipts
-# on the board took a decode regression.
-PREFILL_WEIGHT = 0.104
-DECODE_WEIGHT = 0.896
+# LOCAL model only. The share of the local scored leg that prefill occupies, and
+# its complement, set by the advisor in E162 feedback 3.
+LOCAL_PREFILL_WEIGHT = 0.104
+LOCAL_DECODE_WEIGHT = 0.896
+
+# RANKED model only, from advisor FINDING 336 in E162 feedback 5. The ranked
+# numerator is a pinned prebuilt serial workspace, so a candidate prefill
+# improvement carries straight through with no local-to-ranked correction.
+RANKED_PREFILL_WEIGHT = 0.1007
+# Published gain the campaign has to clear to take the crown, same source.
+CROWN_GAP_PCT = 0.5735
+
+
+def local_priced_pct(prefill_pct: float, decode_pct: float) -> float:
+    """harness=local. Blended local leg change. Never use for official pricing."""
+    return prefill_pct * LOCAL_PREFILL_WEIGHT + decode_pct * LOCAL_DECODE_WEIGHT
+
+
+def ranked_published_gain_pct(prefill_pct: float) -> float:
+    """harness=ranked. Published-score gain from a candidate prefill change."""
+    return -prefill_pct * RANKED_PREFILL_WEIGHT
 
 
 def read_kv(path: pathlib.Path) -> dict:
@@ -135,8 +151,17 @@ def main() -> int:
     spt_pct = pct(stats["P"]["spt"].get("mean"), stats["C"]["spt"].get("mean"))
 
     priced = None
+    ranked_gain = None
     if prefill_pct is not None and decode_pct is not None:
-        priced = prefill_pct * PREFILL_WEIGHT + decode_pct * DECODE_WEIGHT
+        priced = local_priced_pct(prefill_pct, decode_pct)
+    if prefill_pct is not None:
+        ranked_gain = ranked_published_gain_pct(prefill_pct)
+
+    analysis = {}
+    analysis_path = session_dir / "analysis.json"
+    if analysis_path.exists():
+        analysis = json.loads(analysis_path.read_text())
+    tests = read_kv(OUT / "tests" / "meta.txt")
 
     config = {
         "experiment": "e162",
@@ -184,8 +209,34 @@ def main() -> int:
         "trusted_cli_sha256": session.get("swift_bin_sha256"),
         "trusted_cli_witness": session.get("swift_bin_witness"),
         "cool_gate": "real 40C gate via ./benchmark.sh --local-cool-gate-only",
-        "prefill_weight": PREFILL_WEIGHT,
-        "decode_weight": DECODE_WEIGHT,
+        "local_prefill_weight": LOCAL_PREFILL_WEIGHT,
+        "local_decode_weight": LOCAL_DECODE_WEIGHT,
+        "ranked_prefill_weight": RANKED_PREFILL_WEIGHT,
+        "crown_gap_pct": CROWN_GAP_PCT,
+        # B.1: the double buffer fits at the shipped BN=64 for every 16-bit
+        # instantiation, so the NAX arm needs no retile. float would need 34816
+        # bytes against the 32768 byte limit and keeps a single half.
+        "b1_ws_bytes_single_half_bfloat16": 9216,
+        "b1_ws_bytes_double_half_bfloat16": 18432,
+        "b1_ws_bytes_double_half_float": 34816,
+        "b1_threadgroup_limit_bytes": 32768,
+        "b1_retile_required": False,
+        # B.2: no decode-width call can reach the code arm B changes. Reaching
+        # it needs transpose and M >= vector_limit, vector_limit is at least 10
+        # on gen 17, and trusted Constants.swift caps decode width at 9.
+        "b2_decode_sites_reaching_qmm_t_nax": 0,
+        "b2_min_vector_limit_gen17": 10,
+        "b2_max_decode_rows": 9,
+        "b2_census_calls": 2863,
+        "b2_census_rows_in_2_to_9": 0,
+        # B.3: the transformation moves only the destination pointer, so the
+        # accumulation order over src, scales and biases is unchanged.
+        "b3_reduction_order_changed": False,
+        "b3_single_half_branch_byte_identical": True,
+        # The proposal head this session ran is dense, so its 512 row priming
+        # forward never enters a quantized matmul. A quantized head would put a
+        # 512 row call inside decode and break the B.2 proof.
+        "mtp_head_is_quantized": False,
     }
 
     run = wandb.init(project=PROJECT, entity=ENTITY, name=args.run_name,
@@ -200,7 +251,10 @@ def main() -> int:
         "e162_prefill_pct": prefill_pct,
         "e162_decode_pct": decode_pct,
         "e162_parent_spt_pct": spt_pct,
-        "e162_priced_pct": priced,
+        "e162_local_priced_pct": priced,
+        "e162_ranked_published_gain_pct": ranked_gain,
+        "e162_crown_gap_pct": CROWN_GAP_PCT,
+        "e162_prefill_pct_needed_for_crown": -CROWN_GAP_PCT / RANKED_PREFILL_WEIGHT,
         "leg_count": len(legs),
         "leg_count_P": len([l for l in legs if l["arm"] == "P"]),
         "leg_count_C": len([l for l in legs if l["arm"] == "C"]),
@@ -221,6 +275,31 @@ def main() -> int:
         for field in fields:
             for stat, value in stats[arm][field].items():
                 summary[f"{label}_{field}_{stat}"] = value
+
+    for field, block in analysis.get("fields", {}).items():
+        summary[f"{field}_exact_permutation_p"] = block.get("exact_permutation_p")
+        summary[f"{field}_arms_fully_separated"] = block.get("arms_fully_separated")
+        summary[f"{field}_base_rel_sd_pct"] = block.get("base_rel_sd_pct")
+        summary[f"{field}_cand_rel_sd_pct"] = block.get("cand_rel_sd_pct")
+
+    if tests:
+        summary["swift_tests_head"] = tests.get("head")
+        summary["swift_tests_worktree_dirty_files"] = as_float(tests.get("dirty"))
+        for run_label in ("plain", "runtime"):
+            summary[f"swift_{run_label}_tests_started"] = as_float(
+                tests.get(f"{run_label}_tests_started"))
+            summary[f"swift_{run_label}_issue_lines"] = as_float(
+                tests.get(f"{run_label}_issue_lines"))
+            summary[f"swift_{run_label}_metallib_aborts"] = as_float(
+                tests.get(f"{run_label}_metallib_aborts"))
+        # senpai/known-test-failures.md records 9 organizer failures carrying 40
+        # issues, plus 1 campaign-added E130 failure carrying 1 issue.
+        summary["swift_known_failing_tests"] = 10
+        summary["swift_known_issue_lines"] = 41
+        summary["swift_new_failures_introduced"] = (
+            as_float(tests.get("plain_issue_lines")) == 41.0
+            and as_float(tests.get("runtime_issue_lines")) == 41.0
+        ) is False
 
     entry = [as_float(l["entry_c"]) for l in legs]
     exit_ = [as_float(l["exit_c"]) for l in legs]
