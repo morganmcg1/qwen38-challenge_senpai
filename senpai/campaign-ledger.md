@@ -63911,3 +63911,520 @@ students            4 assigned, 0 idle, 0 review-ready
 all four have unpushed local work; push discipline reissued to all
 ```
 
+
+---
+
+## 340 — Advisor error 207. There are zero valid calibration points for `k`, and B1 still ships.
+
+Same cycle as 339, one hour later. An independent frontier critique plus my own
+recheck found an arithmetic error in the entry I had just committed. Correcting
+it made the case for shipping B1 stronger, not weaker, and surfaced the largest
+unexamined mechanism on the public board.
+
+### 340.1 ADVISOR ERROR 207 — the roofline number in 339.4 is a unit mash-up
+
+Entry 339.4 recorded the ranked round at "~1.0x roofline". That is wrong twice.
+
+```
+claimed   ranked 39.7 ms  vs  62.15 ms roofline  ->  "~1.0x"
+actual    39.7 / 62.15 = 0.639
+```
+
+A ratio below 1.0 is physically impossible: a round cannot stream the weight
+pass in less time than the bandwidth allows. So an input is wrong, and two are.
+
+1. The 62.15 ms roofline uses **232 GB/s, which is the M4 Pro constant**, applied
+   to an **M5** time. Mixing a local bandwidth with a ranked duration is exactly
+   the identity violation RULE 186 exists to prevent, and I committed it.
+2. The 39.7 ms itself is a category error. It divides a ranked per-prompt decode
+   time by **119 rounds, which is beagle's LOCAL round count**. The hidden-prompt
+   round count is unknown, and this ledger's own round budget implies 158 to 240
+   rounds per prompt, which contradicts 119 outright.
+
+Neither number should be used again. The local figure, 137 ms against a 62.15 ms
+roofline for a ratio of 2.2x, is sound because both terms are local.
+
+### 340.2 The ranked host's bandwidth is measurable with no modelling at all
+
+We never needed the inferred round. A zero-draft receipt does exactly 512 rounds
+for 512 tokens (FINDING 316/317), so its round cost is exact, and a serial round
+must contain at least one full backbone weight pass of 14,417,640,448 bytes.
+Therefore `B / R` is a hard **lower bound** on the ranked host's effective
+bandwidth. From receipts we already hold:
+
+```
+receipt              R (s/round)   implied >= GB/s
+pinned serial          0.0379709        379.7
+3147d255               0.0380728        378.7
+95611e60               0.0380252        379.2
+4d1123ce               0.0378805        380.6
+1f60b3fe               0.0378079        381.3
+da950333 (optimised)   0.0313628        459.7
+```
+
+Four independent unoptimised solvers agree inside **0.7 %**. That is a real
+instrument, not an estimate.
+
+**FINDING 328. The ranked M5 delivers at least 380 GB/s effective on this weight
+pass, against 232 GB/s measured locally. The ranked host has 1.64x to 1.98x our
+local memory bandwidth.** Every roofline statement in the campaign must now name
+which host's bandwidth it used.
+
+### 340.3 leaf16 is disqualified as a calibration point. We have none left.
+
+I had used one point, leaf16, to set `k = 1.257`. It fails three independent
+ways:
+
+1. **Its own error bar swallows it.** The receipt's candidate-leg standard error
+   is 0.2164 on a mean of 0.5291, so the relative error is 0.514. The implied
+   1-sigma interval on `k` is **[0.74, 1.77]** and the 2-sigma interval is
+   **[0.25, 2.27]**. The band I quoted, [1.0, 1.7], is roughly 1 sigma and
+   excludes nothing, including `k < 1`.
+2. **It violates RULE 190, which I wrote in the entry above.** FINDING 323
+   concluded that leaf16 lost on **selection quality**, meaning its drafting was
+   not bit-identical across arms. RULE 190 says only a bit-identical-drafting
+   cell prices the cost channel. leaf16 is not one.
+3. **Wrong channel.** leaf16 is a readout/selection mechanism; B1 is a head
+   mechanism. 339.4 itself says different channels carry different `k`.
+
+**There are now ZERO valid empirical calibration points for `k`.** The honest
+interval, from physics rather than from that point, is about **[0.4, 2.2]**:
+
+- Upper end, if removed bytes per round are the same on both hosts:
+  `k = (232 x 138.6)/(380 x R_ranked_ms)`, which is near 2.1.
+- Lower end, if the ranked host amortises head bytes across drafted rows the way
+  the unresolved `h/s` disagreement hints, the per-round removed bytes shrink by
+  about `q = 4.24` and `k` falls near 0.5.
+
+B1's bytes are **per draft step**, which is precisely the row-scaled channel in
+dispute. So the "+0.42 % floor" quoted in 339.5 is not a floor. Record it as an
+open risk, not a bound.
+
+### 340.4 What survives, and why RULE 190 is still safe
+
+The local byte model reproduces its own measurement exactly:
+
+```
+bytes/draft step        25,558,528
+head steps per round    dR/per_row = 0.00057694/0.000110025 = 5.244  = q+1, q=4.2437
+round capacity          BW x R = 232.3e9 x 0.1385799 = 3.2192e10 bytes-equivalent
+predicted gain          25,558,528 x 5.244 / 3.2192e10 = 0.4163 %
+measured gain                                            0.4163 %
+```
+
+Exact agreement, and the recovered step count lands on `q + 1` independently.
+RULE 190 stands: the **local** byte model is validated. What 340.3 removes is
+only the claim that we know how that local gain transfers to the ranked host.
+
+### 340.5 B1 ships anyway, and the reason I first gave was wrong
+
+My stated reason for submitting B1 alone was that it would yield a clean second
+calibration point for `k`. The critique is right that this is largely
+rationalisation: one receipt gives `k` with a relative error near 0.52, in a
+different channel from leaf16 and therefore not poolable. It would barely narrow
+anything.
+
+The real reasons are stronger.
+
+**First, we are already ahead on merit.** FINDING 305 established that the
+crown's serial leg was a +1.463 % draw, the 98.5th percentile of 923 receipts.
+Deflated to its own run median the crown reads 3.70641651.
+
+```
+deflated crown   3.70641651
+our best         3.70784519      we are +0.0385 % AHEAD on merit
+```
+
+The 0.5735 % headline gap is therefore not an engineering deficit. It is mostly
+serial-leg luck, and **every fresh submission re-rolls it**.
+
+**Second, the required luck is small at almost every plausible `k`.**
+
+```
+k needed for B1 to take the crown outright, with no luck at all:  1.372
+
+  k      published   luck still needed
+  0.50   3.71560       +0.3637 %
+  1.00   3.72335       +0.1548 %
+  1.257  3.72733       +0.0477 %
+  1.372  3.72911        0.0000 %
+  1.65   3.73342       -0.1156 %   crowns outright
+  2.20   3.74195       -0.3432 %   crowns outright
+```
+
+FACT 27 v4 buys a draw when the required luck is under +0.15 %. **B1 meets that
+bar at every `k` at or above 1.0**, and crowns without luck at `k` at or above
+1.372. Only the pathological `k = 0.5` amortisation scenario puts it out of
+reach.
+
+**Third, ship mode is binding** and no second mechanism is frozen-ready.
+
+The cost of a rejection is small and known: the single official slot is occupied
+during validation, and the source reference becomes public. For a 45-byte
+environment-default flip that a rival could rediscover, that is an acceptable
+price. **Decision: submit B1 alone as soon as askeladd freezes it.** Do not hold
+it for composition. Hold only if a second independently measured winner in a
+non-overlapping channel becomes frozen-ready inside B1's own freeze window and
+the composed projection clears 0.5735 % by more than ranked noise. None exists
+today.
+
+### 340.6 The `h/s` 10x is very probably a units artifact, and it is free to check
+
+339.4 recorded a ~10x disagreement between a local fit of `h/s = 1.89` and a
+ranked bound of `h/s <= 0.20`. Note that the ranked bound is exactly this
+ledger's `rho = 8h/s <= 1.58` divided by 8, since `1.58/8 = 0.198`. If the local
+1.89 is also **rho**, the disagreement is 1.2x, not 10x.
+
+A feasibility check settles it. Every round contains at least one full weight
+pass, so the fixed cost `s` cannot fall below the 62 ms local roofline.
+
+```
+literal reading  h = 1.89 s  ->  s = R/(1+1.89q) = 138.58/9.02 = 15.4 ms   INFEASIBLE, < 62
+rho reading      rho = 1.89  ->  s = 69.2 ms >= 62 ms  OK, and h = 16.3 ms/row  OK
+```
+
+The literal reading is impossible. The gloss "0.94 weight passes per drafted row"
+is impossible under any reading, because `0.94 x 62 x 4.24 = 248 ms` exceeds the
+whole 138.6 ms round. **At least one recorded number in FINDING 327 is garbled.**
+Under the rho reading, 1.89 sits next to our own pre-registered prediction of
+rho in [1.2, 1.6].
+
+Two alternatives remain if the units fix does not close it. The M5 runs the
+`quantized_nax` kernel family and our M4 hosts cannot (NAX needs GPU arch gen 17;
+M4 is gen 16), so poor M-dimension weight reuse in the non-NAX kernel could
+produce the same symptom without any batching difference. And the 1.89 came from
+a **cross-prompt** fit, where drafted-row count covaries with prompt difficulty,
+which biases the slope upward; it may also have been taken with the RULE 179
+instrument still in the tree, which inflates per-row cost. The discriminator is
+free: re-derive the fit with explicit units and the `s >= 62 ms` constraint
+imposed. Only if that fails do we spend a within-prompt ABBA D-sweep at D in
+{0,4} on an instrument-stripped tree, which is already inside E159's scope.
+
+### 340.7 FINDING 329 — the biggest unexamined thing on the board
+
+`da950333`, solver fabinulleins, commit `d25821d7`. Zero drafts on all eight
+prompts, so its round cost of 0.0313628 s is exact. It passed every correctness
+gate; its only rejection reason is that the score did not improve the best. It is
+**17.4 % below the pinned serial round cost**, with no speculation whatsoever.
+
+That is a demonstrated, gate-passing, ranked-host reduction in **fixed round
+cost** roughly 30x larger than our entire 0.5735 % gap, in the component that
+dominates our candidate round, and it should compose multiplicatively with our
+drafting stack. It has sat in our own frontier state under
+`onlyExactRoundCostOnBoard` and is assigned to nobody. Pricing 45-byte, 0.4 %
+head mechanisms with an uncalibrated `k` while this sits unexamined is the wrong
+allocation. A board-mining pass on it is running now.
+
+### 340.8 The zero-draft twin — how to close RULE 182 for good
+
+RULE 182 says the board cannot supply `rho` because no solver has ever submitted
+a zero-draft receipt and a drafting receipt **on the same commit**. We can end
+that ourselves at the cost of one slot.
+
+Submit a zero-draft twin of the exact B1 commit. Because rounds equal tokens
+exactly at zero draft, that receipt measures our own fixed round cost `s` on the
+ranked host with no modelling, which simultaneously:
+
+- prices our tree directly against da950333's 0.0313628 and tells us how much of
+  its 17.4 % we already hold;
+- gives `h` exactly when paired with the B1 drafting receipt on the same commit,
+  which closes the missing coordinate that E159 is currently chasing indirectly;
+- and calibrates `k` in the fixed-cost channel.
+
+It will score near 1.17 and be rejected. That is expected and is not a failure.
+Queue it **behind** B1, never in front: B1 is the crown attempt, the twin is the
+instrument. Program rules allow one distinct frozen candidate ready behind the
+in-flight receipt.
+
+### 340.9 Actions
+
+1. Corrected 339.4 by this entry. ADVISOR ERROR 207 recorded; the 39.7 ms round
+   and the "1.0x ranked roofline" are both struck.
+2. FINDING 328 recorded: ranked effective bandwidth at least 380 GB/s.
+3. `k` has no valid calibration point; interval widened to about [0.4, 2.2].
+   RULE 176 stays a hypothesis. B1's "+0.42 % floor" is struck.
+4. B1 still ships, on the deflation and required-luck arguments, not on the
+   calibration argument.
+5. Board mining of `da950333` in progress.
+6. Zero-draft twin queued behind B1.
+
+
+## 341 — E159 identifies the ranked round exactly, and finds a 3x cost step at verify width 6 that the shipped schedule crosses on 86 % of rounds.
+
+Two students closed hard numbers this cycle. Edward returned a terminal E159
+result and a board-mining pass returned the ranked bandwidth anchor. Together
+they replace every modelled quantity in entry 340 with a measured one, and they
+expose the largest single mispricing this campaign has found.
+
+### FINDING 329 — the ranked pinned serial denominator is flat for the whole campaign
+
+Mining all 925 scored rows of the public board:
+
+```
+baseline_serial_seconds_per_token_mean, daily median
+  2026-08-14 .. 2026-08-23      0.03799 +/- 0.0001
+```
+
+Ten days, hundreds of candidate trees, no drift. This is an empirical
+confirmation of `senpai/verify-ranked-score-boundary.sh`: the ranked numerator
+comes from the runner-owned prebuilt baseline workspace and no candidate edit
+moves it. Every compliant edit that lowers candidate MTP time raises every
+affected `raw_p`. Never subtract a local serial-path share when pricing
+official value.
+
+Only **five** zero-draft rows exist on the board, not ten. Each does exactly
+512 rounds for 512 tokens, so `seconds/token == seconds/round` with no model.
+Dividing the 14,417,640,448 B backbone pass by that round gives an
+assumption-free floor on ranked achieved bandwidth:
+
+| id8 | solver | round s | GB/s | score | created |
+|---|---|---|---|---|---|
+| `da950333` | fabinulleins | 0.0313628 | **459.7** | 1.20976 | 08-17 |
+| `1f60b3fe` | newjordan | 0.0378079 | 381.3 | 1.00553 | 08-15 |
+| `4d1123ce` | newjordan | 0.0378805 | 380.6 | 1.00302 | 08-15 |
+| `95611e60` | davidtai | 0.0380252 | 379.2 | 0.99921 | 08-14 |
+| `3147d255` | 0xkydo | 0.0380728 | 378.7 | 0.99704 | 08-15 |
+
+`da950333` is not a hidden mechanism. Its own note claims exactly one
+functional change, `draftPolicy` returning `0`, and predicts "this change will
+safely score exactly 1.0". The 17.4 % under the pinned serial round is
+**inherited public-base-tree runtime work**, not a fabinulleins invention. The
+four ~1.00 rows are all 08-14/08-15 trees; `da950333` is 08-17, after the
+NVFP4 multi-row QMV dispatch was promoted.
+
+Independent confirmation on the live crown: promoted row `684821ed`
+(newjordan, 08-23) runs the near-serial `plutarch` prompt at 76 drafted rows in
+488 rounds, `0.0317459` s per round. The current frontier's serial round cost
+is ~0.0307-0.0317 s, the same regime.
+
+### ADVISOR ERROR 208 — I priced `k` against unoptimised strangers' trees
+
+Entry 340 built four `k` corners from `BW5 in {380, 460}` and
+`R_ranked in {44.1, 50.4} ms`. Both axes are now superseded:
+
+- `BW5 = 380` is the bandwidth of an **08-14 unoptimised base tree**. Our
+  candidate is not that tree. Using a stranger's slower build to price our own
+  saving inflates `k`.
+- `R_ranked = 44.1` and `50.4` ms were both **modelled**. Edward identified the
+  real value exactly.
+
+The 340 corner table is struck. Use FINDING 330.
+
+### FINDING 330 — the eight ranked round counts are identified exactly
+
+The board publishes `effective_mean_draft_len` as the exact rational
+`proposed / rounds`. Both are integers, so only round counts that make
+`q * rounds` integral are possible. That lattice, intersected with the
+FINDING 319 feasible set, identifies five prompts outright; the remaining three
+are fixed by the round-cost curve, because every rejected lattice point would
+put a heavily drafting round *below* plutarch's near-zero-draft round.
+
+Receipt `5a9f130a`, commit `8ba6e738`:
+
+| prompt | rounds | q | a | **R_ranked (ms)** | GB/s |
+|---|---|---|---|---|---|
+| plutarch | 488 | 0.1557 | 0.0492 | **30.5222** | 474.5 |
+| drama | 252 | 2.2976 | 1.0317 | **34.2406** | 449.8 |
+| travel | 213 | 2.6479 | 1.4038 | **35.1092** | 442.9 |
+| beagle | 110 | 4.3818 | 3.6545 | **44.9835** | 362.2 |
+| republic | 93 | 4.9892 | 4.5054 | **47.7229** | 346.8 |
+| essays | 92 | 5.0870 | 4.5652 | **48.9320** | 339.1 |
+| medicine | 90 | 5.2556 | 4.6889 | **49.3505** | 337.7 |
+| botany | 81 | 6.1481 | 5.3210 | **54.4743** | 312.9 |
+
+Total 1419 rounds, inside the [1263, 1917] bound. Two held-out checks pass and
+neither was used in the derivation: implied zero-draft round 30.2519 ms sits
+inside `s in [0.02925, 0.03365]`, and implied `8h/s = 1.1219` sits under the
+1.580 bound. Acceptance fractions 0.316 to 0.903 rise smoothly with `q`.
+
+Two consequences:
+
+1. **Ranked batch-1 round = 30.2519 ms = 476.6 GB/s.** This is *our* candidate
+   on the ranked host, derived from our own receipt. It agrees with the
+   independent `da950333` anchor of 459.7 GB/s to 3.6 %. Both replace the 380
+   figure.
+2. **The median-setting prompts are beagle and essays, at about 47.0 ms.**
+   That is the ranked round that decides the published score.
+
+Our candidate's ranked batch-1 round is **25.5 % faster than the ranked pinned
+serial round**. That is the accumulated target-side work of this campaign,
+measured as a number for the first time.
+
+### FINDING 331 — `k` is 1.26 to 1.36, and B1 lands within a hair of the crown
+
+```
+k = (BW_local_save / BW_ranked_save) x (R_local / R_ranked)
+
+anchor                          k       B1 published ranked
+leaf16-calibrated receipt      1.258    +0.5258 %
+candidate batch-1 bandwidth    1.363    +0.5697 %
+roofline cross-check           1.326    (no bandwidth anchor used)
+```
+
+Against the +0.5735 % crown gap, B1 misses by 0.048 pp at the pessimistic
+anchor and by **0.004 pp** at the optimistic one. RULE 176's `k = 1.000` is
+excluded. My byte-share `k ~ 1.65` is excluded. Entry 340's `[1.389, 1.919]`
+is excluded.
+
+**B1 still ships, and the reasoning is unchanged.** FINDING 305: the crown's
+serial leg was a +1.463 % draw, the 98.5th percentile of 923 receipts.
+Deflated, the crown reads 3.70641651 against our 3.70784519, so we are already
++0.0385 % ahead on merit. Every submission re-rolls the serial draw with an
+implied sd near 0.67 %. Required luck of 0.004 to 0.048 pp is far inside
+FACT 27 v4's +0.15 % threshold. This is close to a coin flip on a free slot,
+and the slot is free.
+
+`k` also depends on which bytes an arm removes, because prompt weighting
+differs: a per-round saving spreads over all 1419 rounds including plutarch's
+488, which never enters the median, while a per-draft-step saving concentrates
+on beagle and essays, which set it.
+
+| arm shape | example | `k` (batch-1 anchor) | `k` (leaf16-calibrated) |
+|---|---|---|---|
+| per draft step | B1 head, leaf16 readout | 1.363 | 1.258 |
+| **per round (target)** | **thorfinn E160** | **1.220** | **1.127** |
+| per verified row | any row-scaling arm | 1.336 | 1.233 |
+
+**Target arms get the smallest amplification. Price E160 at `k ~ 1.13`, not
+1.26.**
+
+### FINDING 332 — the width-6 wall. This is the largest mispricing found so far.
+
+Edward's dense pinned-depth sweep, 18 timing legs on one prompt, one build, one
+head, `all_tokens_matched=true`:
+
+```
+marginal cost of entering verify width 6   35.449 ms
+mean marginal of its neighbours            12.146 ms
+share of the whole 79.843 ms cost of reaching depth 7   44.4 %
+shipped schedule rounds at or above the wall            134/156 = 85.9 %
+```
+
+A second, fully independent instrument agrees: inverting E68
+`measuredRawDepthPrice` gives 27.31 ms at width 6 against 13.41 vs 13.31 ms at
+width 5.
+
+**Mechanism, and why it transfers.** `AttentionUtils` splits the verify when
+`6 <= qL <= 9`, because the guard is `qL * gqa > 32`. This model has 24 query
+heads and 4 KV heads, so `gqa = 6`, and `5*6 = 30 <= 32 < 36 = 6*6`. The wall
+is at width 6 by **integer arithmetic in editable Swift source**, not by a GPU
+dispatch table. The MLX QMV->QMM switch returns 10 here and is not the cause.
+So unlike a kernel-selection effect, this threshold is **host-independent and
+present on the ranked M5**. Its *price* is host-dependent; its *location* is
+not.
+
+The shipped depth price is `.ship`, a flat 0.18 per step. **The schedule
+therefore prices a 35.4 ms step at the same rate as a 12.1 ms step, and crosses
+it on 86 % of rounds.**
+
+### FINDING 333 — the pb6 tombstone does NOT close this axis
+
+Entry F39 retired `pb6` on ranked evidence: `572b2cc4 -> e003a86d` measured
+-2.3800 % on the published median. That tombstone is correct and it does not
+apply here.
+
+`makeBoundaryDepthPrice` **holds the total constant**:
+`within = count*ratio/(count-1+tier)`, then `marginal[width-2] = within*tier`.
+Making width 6 expensive therefore makes **every other step cheaper**. That is
+exactly what the receipt shows: `pb6` took plutarch from 449 non-drafting
+rounds and `edl` 0.1540 to zero non-drafting rounds and `edl` 2.6995. It bought
+drafting on the one prompt with zero median weight and paid for it on beagle at
+-3.66 %.
+
+A **hard width cap** has the opposite structure. It is monotone: it can only
+make a prompt draft less, never more. plutarch cannot go from 449 non-drafting
+rounds to zero under a cap. The failure mechanism of `pb6` is unreachable.
+
+`pb6` was a re-weighting. A cap is a truncation. They are not the same
+experiment and the tombstone must not be used to block the second one.
+
+### FINDING 334 — the round budget, trace-anchored
+
+| component | ms | share |
+|---|---|---|
+| target batch-1 | 65.813 | 48.0 % |
+| extra verify rows | 60.337 | **44.0 %** |
+| head chain | 10.328 | 7.5 % |
+| session tail | 0.561 | 0.4 % |
+
+Head split: `h_head = 1.2288` ms per round plus `1.4310 +/- 0.0258` ms per
+drafted row, R^2 0.998, against `t1 = 13.839` ms per extra verify row. The head
+is **9.4 % of the marginal round** and `rho_head_only = 0.2246`.
+
+This is consistent with entry 339, not against it. B1 removes head *bytes* and
+that saving is real and measured at -0.4163 % in a clean cell. It also says
+plainly where the remaining money is: **92.5 % of the round is target work, and
+44 % of it is extra verify rows** — the exact term the width-6 wall taxes.
+
+### FINDING 335 — the depth-0 gate is exonerated
+
+`cumulative[0] = 1.0` in `prefixCosts`, so `threshold(0) == marginal[0] ==
+headStepCostRatio == 0.18` identically. The depth-0 gate **cannot fire** on
+this material. The plutarch natural experiment on our own receipts holds it
+fixed while the depth price moves. Every loss previously attributed to the gate
+is priced by verify width instead. Close the gate axis.
+
+### RULE 191 — never read the zero-draft round off an OLS intercept
+
+`R(D)` is convex, so an OLS intercept fitted over `D = 0..8` lands **below**
+every measured point, including the measured `D = 0`.
+
+| source | implied zero-draft round | implied GB/s | verdict |
+|---|---|---|---|
+| askeladd cross-prompt fit | 43.6 ms | 330.8 | 21.2 % above M4 Pro spec — impossible |
+| edward OLS `D=0..8` | 50.97 ms | 282.9 | 3.6 % above spec — impossible |
+| M4 Pro spec floor | 52.8 ms | 273.0 | the hard bound |
+| **edward MEASURED `D = 0`** | **65.81 ms** | **219.1** | physical, and it is a datum |
+| advisor byte-model back-solve | 62.1 ms | 232.3 | physical, agrees to 5.6 % |
+
+Use the measured `D = 0` point. With it, `rho = 8h/s` over the operating chord
+`0..7` is **1.387**, which is inside the old 1.2-1.6 window. The OLS value of
+2.397 is an artifact of extrapolating a convex curve off the bottom of the
+physical range. Entry 340's unphysical-`s` finding is confirmed and now has a
+replacement number.
+
+The linear law itself is rejected: a quadratic term enters at **27.99 sigma**.
+The cost is a step, not a slope. Any campaign quantity fitted as `s + h*rows`
+is suspect at the ends.
+
+### E159 SCOPE DEFECT — the branch is stale and carries a ranked-rejected regression
+
+`e4c57528` is **not** an ancestor of PR 159 head `619634e2`. The only
+submitted-surface difference is the one that matters:
+
+```
+advisor tip   derivedClusterRowsPerLeaf = 8    (reverted at 3c2316ea)
+PR 159        derivedClusterRowsPerLeaf = 16   (leaf16)
+```
+
+leaf16 is receipt `1509bf95`, officially measured at 3.68242218 against
+3.70784519, a -0.686 % regression. A GitHub three-way merge would resolve the
+line correctly, but that is not the problem. The problem is that **every timing
+leg in E159 ran on a tree that is not the base**, which violates the identity
+tuple. leaf16 lowers acceptance, and lower acceptance shifts the optimal depth
+*shallower*, so any depth argmin read off this sweep is biased toward shallow.
+
+Edward's two offline results — the exact ranked round counts and the `k`
+interval — are pure board arithmetic and are unaffected. The local timing
+numbers must be replayed on the current base.
+
+### Decisions
+
+1. **PR 159: request a revision**, not a merge and not a close. Rebase onto the
+   live advisor tip, confirm `derivedClusterRowsPerLeaf == 8`, then attack the
+   width-6 wall.
+2. **B1 still ships alone** and remains the frozen candidate. FINDING 331
+   lowers its expected value but does not change the decision, because the
+   required luck stays inside FACT 27 v4.
+3. **Price thorfinn's E160 at `k ~ 1.13`.**
+4. **Close the depth-0 gate axis** (FINDING 335) and the head-precision axis
+   (entry 340 ruling 2).
+5. The width-6 wall becomes the campaign's primary target after B1's receipt.
+   It taxes the 44 % of the round that is extra verify rows, on 86 % of rounds,
+   at 3x the neighbouring marginal, and its location transfers to M5 by
+   arithmetic.
+
+Evidence: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/qkrwyxt3
+(run `qkrwyxt3`, E159, `harness=local`, `gate_qualified_for_timing=false`,
+ABBA-counterbalanced, entry temperatures 39.24-59.45 C).
+

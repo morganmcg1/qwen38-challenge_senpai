@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T21:25:00Z",
-  "observedAtNote": "Board re-queried live after the harness restart. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. Our validating rows: none. Board validating: 9. OFFICIAL SUBMISSION SLOT: FREE. The checkout had lost its upstream remote and yukon.* git config across the restart; senpai/bootstrap-checkout.sh restored both, which is load-bearing because senpai/submit-official.sh reads refs/remotes/upstream/main. GITHUB_TOKEN is not present in the advisor shell; all GitHub work goes through typed tools. The Yukon CLI now needs the benchmark id explicitly.",
+  "observedAt": "2026-08-23T22:20:00Z",
+  "observedAtNote": "Ledger 341. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. OFFICIAL SUBMISSION SLOT FREE, held for B1. E159 returned terminal: the eight ranked round counts are identified exactly (FINDING 330), k = 1.26 to 1.36 (FINDING 331), and a 3x cost step at verify width 6 that the shipped schedule crosses on 86 % of rounds (FINDING 332).",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -168,46 +168,187 @@
     "measuredPublishedLocalPercent": 0.4181,
     "measurementCell": "beagle_a, arms all vs none, declared head dadbfb80, 512 tokens, ABBA, drafting bit-identical across arms (q=4.2437, 393 accepted, 112 rejected, 119 rounds)",
     "localFloorMultiple": 10.7,
-    "projectedRankedPercentRange": [0.42, 0.72],
+    "projectedRankedPercentRange": [
+      0.42,
+      0.72
+    ],
     "projectedRankedCentralPercent": 0.53,
     "projectedRankedCentralNote": "at k = 1.257, PROVISIONAL. Gap to close is 0.575 %. The interval covers the gap; the central value sits just under it.",
     "hazard": "The default benchmark-qwen-mtp.sh wrapper drafts with the pinned bf16 head, which has no islands. Any B1 leg run through the default wrapper measures a guaranteed null. Every B1 leg must pin MLXFAST_QWEN_MTP_HEAD_DIR to the digest-verified declared tree dadbfb80.",
     "freezeOrder": "PR 158 F11: merge d0a1501e first (leaf16 in the tree is fatal), push immediately, run 4 gated 512-token ABBA legs plus exactly one MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 ./benchmark-qwen-mtp.sh --local-submit with the head pinned, strip the RULE 179 instrument, run scope / budget / verify-ranked-score-boundary / twin audits, then report the frozen SHA for advisor submission."
   },
   "localToRankedAmplification": {
-    "finding": "FINDING 327",
+    "finding": "FINDING 331, ledger 341. SUPERSEDES FINDING 327 and the ledger 340 corner table.",
     "definition": "published_ranked = k * published_local, for a pure byte-removal arm",
     "estimates": {
-      "analytic_RULE_176": 1.0,
-      "leaf16_calibration": 1.257,
-      "byteShareArgument": 1.65
+      "leaf16_calibrated_receipt": 1.258,
+      "candidate_batch1_bandwidth_anchor": 1.363,
+      "roofline_cross_check_no_bandwidth_anchor": 1.326
     },
-    "leaf16CalibrationDetail": "local +0.4207 % (thorfinn) -> ranked +0.5291 % (receipt 1509bf95), n = 1",
-    "byteShareDetail": "108.4 MB/round out of 15.77 GB/round = 0.687 %",
-    "rooflines": {
-      "backboneWeightPassBytes": 14417640448,
-      "m4ProEffectiveBandwidthGBs": 232,
-      "rooflineMs": 62,
-      "localDecodeRoundMs": 137,
-      "localRooflineRatio": 2.2,
-      "rankedRoundMs": 39.7,
-      "rankedRoundDerivation": "512 * 0.010260 s minus 0.5266 s prologue, over 119 beagle rounds",
-      "rankedRooflineRatio": 1.0
+    "interval": [
+      1.258,
+      1.363
+    ],
+    "byArmShape": {
+      "per_draft_step": {
+        "example": "B1 head bytes, leaf16 readout",
+        "k_batch1": 1.363,
+        "k_leaf16": 1.258
+      },
+      "per_round_target": {
+        "example": "thorfinn E160",
+        "k_batch1": 1.22,
+        "k_leaf16": 1.127,
+        "use": 1.13
+      },
+      "per_verified_row": {
+        "example": "any row-scaling arm",
+        "k_batch1": 1.336,
+        "k_leaf16": 1.233
+      }
     },
-    "status": "RULE 176 is DOWNGRADED from law to hypothesis. Quote the k you used. Treat k in [1.0, 1.7]. Expect different channels (backbone weight bytes / head bytes / compute and intermediate traffic) to carry different k. qwen-edward owns the derivation with an interval.",
-    "unexplainedDisagreement": "askeladd's cross-prompt fit gives h/s = 1.89 (about 0.94 weight passes per drafted row) while the ranked receipts bound h/s <= 0.20. A ~10x gap. Most likely the local M4 verify does not batch draft rows the way the ranked M5 verify does. If true, every local price for a mechanism that changes row count is distorted, and only paired same-row-count contrasts transfer."
+    "whyShapesDiffer": "Prompt weighting. A per-round saving spreads over all 1419 rounds including plutarch 488, which never enters the median. A per-draft-step saving concentrates on beagle and essays, which set it.",
+    "excluded": {
+      "RULE_176_k_equals_1": "excluded",
+      "advisor_byte_share_1.65": "excluded",
+      "ledger_340_corners_1.389_to_1.919": "excluded by ADVISOR ERROR 208 - BW5=380 is a stranger 08-14 unoptimised tree and R_ranked was modelled"
+    }
   },
   "withdrawnRules": {
     "RULE_189": "WITHDRAWN by ADVISOR ERROR 206, ledger 339.2. It asserted the proposal head is accuracy-bound, not bandwidth-bound. It was built from a table that mixed one student's island-arm ABBA numbers with a ranked receipt from a different prompt population. A cleaner measurement of the same arm with the opposite sign already existed. Every pricing decision that cited RULE 189 is void.",
     "RULE_190": "Head byte removal returns the predicted cost saving reliably and prompt-independently; the byte model prices it correctly at spec bandwidth (232 GB/s back-solved). All variance lives on the accuracy side and can exceed the cost term in either direction. Never infer bandwidth insensitivity from an arm ordering that changes cost and accuracy together. Only a cell where drafting is bit-identical across arms prices the cost channel.",
-    "RULE_186_extension": "A banked price must carry not only its identity tuple but also whose prompt set produced it."
+    "RULE_186_extension": "A banked price must carry not only its identity tuple but also whose prompt set produced it.",
+    "RULE_190_scope": "Still stands for the LOCAL byte model. It does not license reading a ranked fraction off a local fraction: the fraction is bytes_removed * steps / (BW * R) and all four terms differ between hosts. That ratio is k, FINDING 331.",
+    "linear_depth_price_law": "REJECTED, RULE 191, ledger 341. R(D) is convex: a quadratic term enters at 27.99 sigma. Never read the zero-draft round off an OLS intercept - it lands below every measured point. Askeladd 43.6 ms = 330.8 GB/s and Edward OLS 50.97 ms = 282.9 GB/s are both above the 273 GB/s M4 Pro spec ceiling and are impossible. Use the MEASURED D=0 point, 65.81 ms = 219.1 GB/s. With it rho over the operating chord 0..7 is 1.387."
   },
   "openQueue": {
     "E158": "qwen-askeladd / PR 158 / OWNS THE B1 FREEZE. Also: build our own head; B0 byte-exact reproduce, B1 island-free, B2 trunk ladder, B3 gated ABBA, B4 commit mtp-head/",
-    "E159": "qwen-edward / PR 159 / round-budget sweep D in {0,1,2,4,8} (D=5,6,7 approved); NEW HEADLINE is deriving k with an interval and retrodicting the leaf16 point; rho = 8h/s remains secondary",
+    "E159": "qwen-edward / PR 159 / TERMINAL r1, REVISION REQUESTED. r1 delivered the exact ranked round budget (FINDING 330), k = 1.26 to 1.36 (FINDING 331) and the width-6 wall (FINDING 332). Branch is STALE: e4c57528 is not an ancestor of 619634e2 and the branch still carries derivedClusterRowsPerLeaf = 16, the ranked-rejected leaf16. r2 must rebase, confirm leaf == 8, and attack the wall.",
     "E160": "qwen-thorfinn / PR 160 / mlp.down producer fusion; must name derivedClusterRowsPerLeaf per leg read from the built binary; a clean null is an acceptable terminal result",
     "E162": "qwen-alphonse / PR 162 / prefill affine qmm software pipelining; a matched absolute DECODE contrast is now MANDATORY and terminal, priced as prefill_delta * 0.104 + decode_delta * 0.896",
     "E161": "CLOSED unmerged; repriced below the noise floor by the S >= 4 width gate",
     "unassigned_router": "4x cheaper router, worth about 0.41 % by bytes (range 0.25 to 0.75 %). Straddles the gap but sits at or below single-pair ranked noise, so it needs ABBA. Its accuracy cost is re-openable now that RULE 190 replaced RULE 189."
+  },
+  "rankedRoundBudgetIdentified": {
+    "finding": "FINDING 330, ledger 341",
+    "receipt": "5a9f130a",
+    "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0",
+    "method": "effective_mean_draft_len is the exact rational proposed/rounds, so only round counts making q*rounds integral are possible; that lattice intersected with the FINDING 319 feasible set identifies five prompts outright and the round-cost curve fixes the other three.",
+    "totalRounds": 1419,
+    "heldOutChecksPassed": [
+      "implied zero-draft round 30.2519 ms inside s in [0.02925,0.03365]",
+      "implied 8h/s = 1.1219 <= 1.580",
+      "accepted <= proposed on all eight"
+    ],
+    "perPrompt": {
+      "plutarch": {
+        "rounds": 488,
+        "q": 0.1557,
+        "a": 0.0492,
+        "R_ms": 30.5222,
+        "GBps": 474.5
+      },
+      "drama": {
+        "rounds": 252,
+        "q": 2.2976,
+        "a": 1.0317,
+        "R_ms": 34.2406,
+        "GBps": 449.8
+      },
+      "travel": {
+        "rounds": 213,
+        "q": 2.6479,
+        "a": 1.4038,
+        "R_ms": 35.1092,
+        "GBps": 442.9
+      },
+      "beagle": {
+        "rounds": 110,
+        "q": 4.3818,
+        "a": 3.6545,
+        "R_ms": 44.9835,
+        "GBps": 362.2
+      },
+      "republic": {
+        "rounds": 93,
+        "q": 4.9892,
+        "a": 4.5054,
+        "R_ms": 47.7229,
+        "GBps": 346.8
+      },
+      "essays": {
+        "rounds": 92,
+        "q": 5.087,
+        "a": 4.5652,
+        "R_ms": 48.932,
+        "GBps": 339.1
+      },
+      "medicine": {
+        "rounds": 90,
+        "q": 5.2556,
+        "a": 4.6889,
+        "R_ms": 49.3505,
+        "GBps": 337.7
+      },
+      "botany": {
+        "rounds": 81,
+        "q": 6.1481,
+        "a": 5.321,
+        "R_ms": 54.4743,
+        "GBps": 312.9
+      }
+    },
+    "medianSettingPrompts": [
+      "beagle",
+      "essays"
+    ],
+    "medianSettingRoundMs": 47.0,
+    "rankedBatch1RoundMs": 30.2519,
+    "rankedBatch1GBps": 476.6,
+    "rankedPinnedSerialGBps": 379.7,
+    "candidateVsSerialRoundPercent": 25.5,
+    "source": "E159, PR 159, run qkrwyxt3"
+  },
+  "widthSixWall": {
+    "finding": "FINDING 332 and 333, ledger 341. PRIMARY TARGET after the B1 receipt.",
+    "mechanism": "AttentionUtils splits the verify when 6 <= qL <= 9 because the guard is qL * gqa > 32. 24 query heads / 4 KV heads gives gqa = 6, and 5*6 = 30 <= 32 < 36 = 6*6.",
+    "hostIndependentLocation": true,
+    "hostIndependenceReason": "The threshold is integer arithmetic in editable Swift source, not a GPU dispatch table. The MLX QMV->QMM switch returns 10 here and is not the cause. Location transfers to the ranked M5; price does not.",
+    "localMarginalAtWidth6Ms": 35.449,
+    "localNeighbourMeanMarginalMs": 12.146,
+    "shareOfCostToReachDepth7Percent": 44.4,
+    "shippedRoundsAtOrAboveWall": "134/156 = 85.9 %",
+    "independentConfirmation": "Inverting E68 measuredRawDepthPrice gives 27.31 ms at width 6 against 13.41 vs 13.31 ms at width 5.",
+    "shippedPrice": "depthPriceArm = .ship, a flat 0.18 per step. The schedule prices a 35.4 ms step the same as a 12.1 ms step.",
+    "pb6TombstoneDoesNotApply": "makeBoundaryDepthPrice HOLDS THE TOTAL, so pricing width 6 up makes every other step cheaper; that is why pb6 took plutarch from 449 non-drafting rounds to zero and lost -2.38 % ranked. A hard width cap is monotone: it can only make a prompt draft less, never more. pb6 was a re-weighting, a cap is a truncation.",
+    "nextExperiment": "E159 r2: rebase onto the live base, then measure a hard verify-width cap against the shipped adaptive schedule on seconds per token, and inspect whether the AttentionUtils split itself can be made cheap."
+  },
+  "roundBudgetTraceAnchored": {
+    "finding": "FINDING 334, ledger 341",
+    "host": "Apple M4 Pro 20-core, 48 GiB, applegpu_g16s",
+    "components": {
+      "target_batch1": {
+        "ms": 65.813,
+        "pct": 48.0
+      },
+      "extra_verify_rows": {
+        "ms": 60.337,
+        "pct": 44.0
+      },
+      "head_chain": {
+        "ms": 10.328,
+        "pct": 7.5
+      },
+      "session_tail": {
+        "ms": 0.561,
+        "pct": 0.4
+      }
+    },
+    "headSplit": "h_head = 1.2288 ms per round + 1.4310 +/- 0.0258 ms per drafted row, R^2 0.998, against t1 = 13.839 ms per extra verify row. Head is 9.4 % of the marginal round; rho_head_only = 0.2246.",
+    "reading": "92.5 % of the round is target work and 44 % of it is extra verify rows, the exact term the width-6 wall taxes."
+  },
+  "closedAxes": {
+    "depth_zero_gate": "CLOSED by FINDING 335, ledger 341. cumulative[0] = 1.0 in prefixCosts, so threshold(0) == marginal[0] == headStepCostRatio == 0.18 identically. The gate cannot fire on this material.",
+    "head_precision": "CLOSED by ledger 340 ruling 2. The 25 MiB archive cap makes any new head artifact unshippable and the acceptance axis is a measured null."
   }
 }
