@@ -1,0 +1,153 @@
+{
+  "harness": "local",
+  "host": {
+    "device_name": "Apple M4 Pro",
+    "architecture": "applegpu_g16s"
+  },
+  "note": "Numerics only, never time. Runs mpp::tensor_ops::matmul2d directly, so it does not need is_nax_available().",
+  "e156_matmul2d_descriptor_source": {
+    "all_matmul2d_descriptors_in_kernels_tree": "16, 32, 16",
+    "paired_B_overload": "steel/gemm/nax.h:393 builds desc(16,32,16)",
+    "paired_A_overload": "steel/gemm/nax.h:464 builds desc(16,32,16)",
+    "advisor_F4_item4_claim": "paired-A builds desc(32,16,16)",
+    "advisor_F4_item4_claim_holds_on_this_tree": false,
+    "descriptor_changes_between_the_two_tile_shapes": false
+  },
+  "e156_capacities": {
+    "descB_16_32_16": {
+      "left": 8,
+      "right": 16,
+      "destination": 16
+    },
+    "descA_32_16_16": {
+      "left": 16,
+      "right": 8,
+      "destination": 16
+    },
+    "kElemsPerFrag": 8
+  },
+  "e156_paired_a_operand_budget": {
+    "writes_into_left": 16,
+    "left_capacity_under_declared_desc": 8,
+    "writes_into_right": 8,
+    "right_capacity_under_declared_desc": 16,
+    "left_write_fits": false,
+    "right_operand_fully_initialised": false
+  },
+  "e156_matmul2d_numerical": {
+    "kdim": 64,
+    "trials": 16,
+    "arms_agree_bit_for_bit": 0,
+    "max_ulp_delta_paired_a_vs_paired_b": 2229526442,
+    "max_rel_err_vs_float64_reference_paired_b": 14012.129100366048,
+    "max_rel_err_vs_float64_reference_paired_a": 453.45736320002374,
+    "per_trial": [
+      {
+        "trial": 0,
+        "ulp_delta": 2112534761,
+        "rel_err_paired_b": 14012.129100366048,
+        "rel_err_paired_a": 94.77076957737208
+      },
+      {
+        "trial": 1,
+        "ulp_delta": 2160810544,
+        "rel_err_paired_b": 1719.5984186492117,
+        "rel_err_paired_a": 22.886940870966395
+      },
+      {
+        "trial": 2,
+        "ulp_delta": 2173069024,
+        "rel_err_paired_b": 864.6172755404393,
+        "rel_err_paired_a": 53.21390710228806
+      },
+      {
+        "trial": 3,
+        "ulp_delta": 2192848636,
+        "rel_err_paired_b": 158.5415205316871,
+        "rel_err_paired_a": 7.237964676135743
+      },
+      {
+        "trial": 4,
+        "ulp_delta": 2154319528,
+        "rel_err_paired_b": 143.79963607575183,
+        "rel_err_paired_a": 33.230125844247375
+      },
+      {
+        "trial": 5,
+        "ulp_delta": 2121295494,
+        "rel_err_paired_b": 63.67404686113498,
+        "rel_err_paired_a": 51.86038451313264
+      },
+      {
+        "trial": 6,
+        "ulp_delta": 2149472120,
+        "rel_err_paired_b": 400.8347046126782,
+        "rel_err_paired_a": 64.43759575925053
+      },
+      {
+        "trial": 7,
+        "ulp_delta": 2229526442,
+        "rel_err_paired_b": 1991.25740467492,
+        "rel_err_paired_a": 453.45736320002374
+      },
+      {
+        "trial": 8,
+        "ulp_delta": 2153538166,
+        "rel_err_paired_b": 108.27813292956219,
+        "rel_err_paired_a": 2.2042542888197736
+      },
+      {
+        "trial": 9,
+        "ulp_delta": 2184307396,
+        "rel_err_paired_b": 346.0223290103702,
+        "rel_err_paired_a": 115.17424811296527
+      },
+      {
+        "trial": 10,
+        "ulp_delta": 2146357960,
+        "rel_err_paired_b": 34.916583964684285,
+        "rel_err_paired_a": 2.2328215775383202
+      },
+      {
+        "trial": 11,
+        "ulp_delta": 2128856858,
+        "rel_err_paired_b": 1336.9704789248237,
+        "rel_err_paired_a": 111.36739224541314
+      },
+      {
+        "trial": 12,
+        "ulp_delta": 2195196482,
+        "rel_err_paired_b": 682.9784380620929,
+        "rel_err_paired_a": 3.3536405265790505
+      },
+      {
+        "trial": 13,
+        "ulp_delta": 2133222704,
+        "rel_err_paired_b": 162.11824517888473,
+        "rel_err_paired_a": 7.161033666991786
+      },
+      {
+        "trial": 14,
+        "ulp_delta": 2150626300,
+        "rel_err_paired_b": 2601.0289566809997,
+        "rel_err_paired_a": 6.3259069068735245
+      },
+      {
+        "trial": 15,
+        "ulp_delta": 2164191305,
+        "rel_err_paired_b": 39.53982905189264,
+        "rel_err_paired_a": 3.6759996326900906
+      }
+    ],
+    "rule_101_control_one_bf16_ulp_on_a": {
+      "paired_b_moved": true,
+      "paired_a_moved": true,
+      "both_moved": true
+    }
+  },
+  "e156_matmul2d_descriptor_bitexact": false,
+  "e156_matmul2d_paired_a_computes_the_gemm": false,
+  "e156_matmul2d_paired_b_computes_the_gemm": false,
+  "e156_matmul2d_controls_caught": true,
+  "gate": "FAIL"
+}

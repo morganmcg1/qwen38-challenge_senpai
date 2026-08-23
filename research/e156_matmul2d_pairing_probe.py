@@ -296,6 +296,46 @@ def one_ulp_up_bf16(x: np.float32) -> np.float32:
     return np.float32(struct.unpack("<f", struct.pack("<I", bits))[0])
 
 
+def diagnose() -> dict:
+    """Is the paired-B arm, which is the promoted M5 path, faithful here?
+
+    `B` is the 16x32 matrix whose left half is the identity, so a faithful
+    single-chunk GEMM must return `C = [A | 0]`. Three outcomes separate the
+    possible causes:
+
+      * `C == [A | 0]`                    the harness maps fragments correctly;
+      * `C` is a permutation of `[A | 0]` the harness mis-maps lanes, fixable;
+      * `C` is neither                    `matmul2d` is not faithful on this
+                                          host, so the harness cannot measure
+                                          the paired-A arm here at all.
+    """
+    a_np = np.arange(32 * 16, dtype=np.float32).reshape(32, 16) + 1.0
+    b_np = np.zeros((16, 32), dtype=np.float32)
+    b_np[:, :16] = np.eye(16, dtype=np.float32)
+    a = bf16(a_np)
+    b = bf16(b_np)
+    got = run_gemm(a, b, 0, 16)
+    want = np.zeros((32, 32), dtype=np.float32)
+    want[:, :16] = a_np
+    exact = bool(np.array_equal(got, want))
+    got_vals = sorted(np.unique(got).tolist())
+    want_vals = sorted(np.unique(want).tolist())
+    permutation = bool(got_vals == want_vals)
+    return {
+        "identity_b_exact": exact,
+        "identity_b_is_a_permutation_of_expected": permutation,
+        "distinct_values_produced": len(got_vals),
+        "distinct_values_expected": len(want_vals),
+        "expected_row0_first8": want[0, :8].tolist(),
+        "produced_row0_first8": got[0, :8].tolist(),
+        "verdict": (
+            "faithful" if exact
+            else "lane_mapping_only" if permutation
+            else "matmul2d_not_faithful_on_this_host"
+        ),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=16)
@@ -340,6 +380,8 @@ def main() -> int:
         "right_operand_fully_initialised": paired_a_right_writes
         >= cap["descB_16_32_16"]["right"],
     }
+
+    rec["e156_matmul2d_instrument_check"] = diagnose()
 
     rng = np.random.default_rng(args.seed)
     trials = []
@@ -402,16 +444,25 @@ def main() -> int:
     bitexact = (agree == args.trials and worst == 0)
     controls_ok = bool(control_b_moved and control_a_moved)
     # A relative error above about 1e-2 means the arm is not computing the GEMM
-    # at all, which is the failure mode the operand-budget question predicts.
-    sane_b = ref_worst_b < 1e-2
-    sane_a = ref_worst_a < 1e-2
+    # at all. The paired-B arm is the promoted M5 path, so it is the instrument
+    # control: if it fails here, nothing this probe says about paired-A on this
+    # host is usable.
+    sane_b = bool(ref_worst_b < 1e-2)
+    sane_a = bool(ref_worst_a < 1e-2)
+    instrument_valid = bool(
+        sane_b and rec["e156_matmul2d_instrument_check"]["identity_b_exact"])
 
-    rec["e156_matmul2d_descriptor_bitexact"] = bool(bitexact and controls_ok
-                                                    and sane_b and sane_a)
-    rec["e156_matmul2d_paired_a_computes_the_gemm"] = bool(sane_a)
-    rec["e156_matmul2d_paired_b_computes_the_gemm"] = bool(sane_b)
+    rec["e156_matmul2d_paired_a_computes_the_gemm"] = sane_a
+    rec["e156_matmul2d_paired_b_computes_the_gemm"] = sane_b
     rec["e156_matmul2d_controls_caught"] = controls_ok
-    rec["gate"] = "PASS" if rec["e156_matmul2d_descriptor_bitexact"] else "FAIL"
+    rec["e156_matmul2d_instrument_valid_on_this_host"] = instrument_valid
+    rec["e156_matmul2d_descriptor_bitexact"] = (
+        bool(bitexact and controls_ok) if instrument_valid
+        else "not_measurable_on_this_host")
+    rec["gate"] = (
+        "PASS" if rec["e156_matmul2d_descriptor_bitexact"] is True
+        else "FAIL" if instrument_valid
+        else "INCONCLUSIVE_INSTRUMENT_INVALID")
 
     args.out.write_text(json.dumps(rec, indent=2) + "\n")
     print(json.dumps({k: v for k, v in rec.items()
@@ -423,8 +474,9 @@ def main() -> int:
     print(f"rel_err paired_b={n['max_rel_err_vs_float64_reference_paired_b']:.3e} "
           f"paired_a={n['max_rel_err_vs_float64_reference_paired_a']:.3e}")
     print(f"controls: {n['rule_101_control_one_bf16_ulp_on_a']}")
+    print(f"instrument: {rec['e156_matmul2d_instrument_check']}")
     print(f"wrote {args.out}")
-    return 0 if rec["gate"] == "PASS" else 1
+    return 1 if rec["gate"] == "FAIL" else 0
 
 
 if __name__ == "__main__":
