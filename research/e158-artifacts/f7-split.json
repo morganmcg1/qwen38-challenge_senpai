@@ -1,0 +1,98 @@
+{
+  "experiment": "e158-r1-f7-split",
+  "harness": "local",
+  "identity": "dln(mtp) = dln(R) - dln(1 + a); R = s + h * rows",
+  "mechanism_pct_mean": -0.5203007537827986,
+  "mechanism_pct_spread": 0.05340362256297526,
+  "noise_floor_pct_absolute_mtp": 0.039,
+  "per_prompt": {
+    "beagle_a": {
+      "a_all": 3.302521008403361,
+      "a_none": 3.302521008403361,
+      "accuracy_pct": -0.0,
+      "fit_is_extrapolated_from": null,
+      "measured_total_pct": -0.4163207155450266,
+      "mechanism_pct": -0.5227108761972632,
+      "model_residual_pct": 0.10639016065223661,
+      "modelled_total_pct": -0.5227108761972632,
+      "mtp_all": 0.03220900392625481,
+      "mtp_none": 0.0320749111706391,
+      "n_legs_all": 2,
+      "n_legs_none": 2,
+      "round_count_all": 119,
+      "round_count_none": 119,
+      "rows_per_round_all": 5.243697478991597,
+      "rows_per_round_none": 5.243697478991597,
+      "schedule_pct": 0.0
+    },
+    "benchfixture": {
+      "a_all": 5.564102564102564,
+      "a_none": 5.64935064935065,
+      "accuracy_pct": -1.2987012987013102,
+      "fit_is_extrapolated_from": "beagle_a",
+      "measured_total_pct": -0.9691081868539175,
+      "mechanism_pct": -0.5527075564114026,
+      "model_residual_pct": 0.5717932475975185,
+      "modelled_total_pct": -1.540901434451436,
+      "mtp_all": 0.028758221655152738,
+      "mtp_none": 0.028479523374699056,
+      "n_legs_all": 2,
+      "n_legs_none": 2,
+      "round_count_all": 78,
+      "round_count_none": 77,
+      "rows_per_round_all": 7.358974358974359,
+      "rows_per_round_none": 7.3896103896103895,
+      "schedule_pct": 0.3105074206612768
+    },
+    "essays_montaigne": {
+      "a_all": 2.506849315068493,
+      "a_none": 2.506849315068493,
+      "accuracy_pct": -0.0,
+      "fit_is_extrapolated_from": "beagle_a",
+      "measured_total_pct": -1.4742072330123923,
+      "mechanism_pct": -0.5064806486741014,
+      "model_residual_pct": 0.018379097034304515,
+      "modelled_total_pct": -1.4925863300466968,
+      "mtp_all": 0.034052870236337185,
+      "mtp_none": 0.03355086036026478,
+      "n_legs_all": 2,
+      "n_legs_none": 2,
+      "round_count_all": 146,
+      "round_count_none": 146,
+      "rows_per_round_all": 4.438356164383562,
+      "rows_per_round_none": 4.36986301369863,
+      "schedule_pct": -0.9861056813725955
+    },
+    "plutarch_lives": {
+      "a_all": 1.8444444444444446,
+      "a_none": 1.7379679144385027,
+      "accuracy_pct": 3.743315508021383,
+      "fit_is_extrapolated_from": "beagle_a",
+      "measured_total_pct": 0.7760923892721427,
+      "mechanism_pct": -0.4993039338484273,
+      "model_residual_pct": -0.5406552203200077,
+      "modelled_total_pct": 1.3167476095921504,
+      "mtp_all": 0.039043720811605453,
+      "mtp_none": 0.03934673615731299,
+      "n_legs_all": 1,
+      "n_legs_none": 1,
+      "round_count_all": 180,
+      "round_count_none": 187,
+      "rows_per_round_all": 4.133333333333333,
+      "rows_per_round_none": 4.005347593582888,
+      "schedule_pct": -1.9272639645808054
+    }
+  },
+  "reading": "The mechanism column is the only column caused by removing the islands. It is negative on every prompt and its spread is small. The schedule and accuracy columns change sign across prompts and dominate the measured total, which is why per-prompt absolute mtp disagrees with the mechanism.",
+  "round_cost_fit": {
+    "h": {
+      "all": 0.0174573885328881,
+      "none": 0.017341738194828354
+    },
+    "prompt": "beagle_a",
+    "s": {
+      "all": 0.04358370293189316,
+      "none": 0.04348382541815776
+    }
+  }
+}
