@@ -53208,3 +53208,383 @@ resolver, which is zero-GPU and would settle a 2.05× disagreement that scales
 E141's whole prize; coarse-metadata coarsening from g64 to g128 or g256, priced by
 E143's dose-response table; `MISS_TO_SCORE_PCT`, still 203 by contract against
 209.5 ± 93.1 measured; and F190.
+
+## 304 — FINDING 220: composition is not additive. ADVISOR ERROR 155: I assigned a closed axis. FINDING 221: the "unowned 3.7 % pool" does not exist. FINDING 222: the head-quantizer literature confirms the closure and names one lever outside it.
+
+Four items this round, all of them corrections to things the campaign believed.
+Two of them delete queue entries. One of them creates a new lever with zero
+correctness risk. One of them is an error of mine that would have cost a
+student a full acceptance replay on a question we answered months ago.
+
+---
+
+### 304.1 FINDING 220 — the same 25-line change is worth zero, zero, and −1.55 % on three different bases
+
+Three isolated ranked receipts of the **same** untimed warm — compile the
+committed-history flush-fold head expression at fold widths 3 to
+`maxDepth+1`, outside the clock. Draft lengths **digit-identical on all eight
+prompts in all three receipts**, non-drafting counts identical. Pure
+candidate-leg cost, zero behaviour change.
+
+| base | row | cand 8-prompt mean | sd | z | published |
+|---|---|---:|---:|---:|---:|
+| `e8f14c4` | `749b4c7e` scarletbright | **−0.0086 %** | **0.0327** | −0.75 | 3.69882651 rejected |
+| `1b3ea281` | `3ba6ee9d` Amal-David | **+0.1046 %** | 0.1397 | +2.12 | 3.70576324 PROMOTED |
+| `eb5eadc7` (adds skip-probesort) | `9f9b4790` newjordan | **+1.5492 %** | 1.0613 | **+4.13** | 3.63807660 rejected |
+
+Per-prompt on the third receipt, 7 of 8 slower; only plutarch, which barely
+drafts, is faster:
+
+```
+prompt      cand d%   serial d%    raw d%     draftlen A/B    nondraft
+beagle      +2.3348    -0.1232   -2.4019   4.3818/4.3818        0/0
+medicine    +0.9932    +0.1287   -0.8560   5.2556/5.2556        0/0
+essays      +1.1235    -1.2968   -2.3934   5.0870/5.0870        0/0
+botany      +1.1154    +0.4089   -0.6987   6.1481/6.1481        0/0
+republic    +2.2756    -0.0885   -2.3115   4.9892/4.9892        0/0
+plutarch    -0.3844    +0.2082   +0.5950   0.1557/0.1557    449/449
+drama       +3.0308    +0.0386   -2.9041   2.2976/2.2976        0/0
+travel      +1.9050    +0.5121   -1.3668   2.6479/2.6479        0/0
+candidate mean +1.5492 sd 1.0613 se 0.3752 z +4.13 | serial -0.0265 | published -2.1917
+```
+
+`9f9b4790`'s own note says it restores "Amal's exact warmup onto live
+`eb5eadc`... Restoring the promoted bytes, not a new invention", and
+`git diff 1b3ea28..eb5eadc` is −25 session / +5 `Qwen35.swift`. **The only
+difference between the third base and the other two is one unrelated
+mechanism. The warm and that mechanism are anti-complementary: each alone is
+worth about zero, together they cost 1.55 %.**
+
+`749b4c7e` is now the **tightest null pair on the board**: sd 0.0327 % with
+every per-prompt delta inside 0.063 %, tighter than the F216 diff-of-two
+floor of 0.0721 %. Rule 110 is confirmed — a warm-phase change is worth
+exactly zero unless it changes a pipeline cache key. F220 adds the converse:
+**it can cost 1.55 % when it does.**
+
+Signature match: 7 of 8 same sign, draft lengths digit-identical, serial leg
+null. That is the F152/F172 wired-residency lottery signature at smaller
+amplitude. One residency state step is 930.9 us per drafting round = 1.86 %
+of beagle's round. Predicted per-prompt from one slot against measured:
+beagle +1.87/+2.33, medicine +1.68/+0.99, essays +1.70/+1.12, botany
++1.53/+1.12, republic +1.74/+2.28, drama +1.44/+3.03, travel +2.40/+1.91,
+plutarch +0.23/−0.38. Right magnitude class, imperfect correlation.
+
+Also resolved this round: `71caa947` fkiene, 3.42021961 rejected, is a
+**stack** of the flush-fold warm and a single-readout draft on `e8f14c4`.
+Candidate F83-weighted **+6.85 %**, published **−7.6503 %**. Beagle draft
+length 4.3818 to 5.0811, +8.9959 % slower, implied +12.86 % per unit — which
+**replicates F218's inverted beagle sign independently**. Plutarch draft
+length 0.1557 to 4.0703, non-drafting 449 to 0, raw +80.7 %, and the median
+still collapsed. **Third confirmation that a plutarch unlock is a disaster
+signal**, after the E140 oracle cells and `09b452f3`.
+
+**CAMPAIGN RULE 128 — A COMPOSITION MUST BE MEASURED, NOT ADDED.** Rule 75,
+disjoint instruction and byte sets, is **necessary but not sufficient**. Two
+mechanisms can interact through shared global resources that appear in
+neither diff: the JIT pipeline library cache (`custom_kernel.cpp:56-68`,
+keyed by kernel name, calls `d.clear_library(name_)` on source change), the
+FCFS wired-residency pool (`resident.cpp:32-37`, greedy, never evicts), the
+allocator page-reuse window (`buffer_cache.h:32-36`), and the Metal
+command-buffer scheduler. Every composed submission carries either a measured
+isolation of the composition itself, or an explicit interaction uncertainty
+of at least **±1.5 pp** — three times the prize of most of our levers.
+
+This directly affects the in-flight `1db9d63e`, whose +1.0053 % forecast was
+produced by adding three isolated contrast vectors (width2 +0.4764, probe015
++0.2610, drop_onepass67 +0.2647; sum +1.0021). Thorfinn is instructed to post
+**`e135_additivity_residual_pct` = measured composed effect − 1.0021 %** as
+digits before interpreting, plus the per-prompt residual vector. Inside
+±0.15 % means additivity holds on our stack and Rule 128's band is a worst
+case; beyond ±0.3 % in either direction is itself actionable.
+
+**HYPOTHESIS H220 — warm and residency allocation ORDER is a free lever.** If
+adding a warm can cost 1.55 %, the order of allocation in our own warm phase
+is a lever with **zero correctness risk** — allocation order cannot change an
+emitted token — potentially worth ±1.5 %, uniform across prompts, and
+therefore lottery-proof under Rule 126. E136 already found that a resident
+consumer allocated before `wireResidentWeightsIfEnabled()` consumes zero
+slack. Surface is the residency and warm region of
+`Qwen36MTPBlockSession.swift`. Not yet assigned; see 304.6.
+
+---
+
+### 304.2 ADVISOR ERROR 155 — I assigned E144 R-B without grepping the ledger. It was closed twice over.
+
+**Rule 68 violation by me.** E144 R-B asked askeladd to build two data-free
+quantizers — a per-group MSE-optimal clipping search, and per-group
+alternating affine least squares with the zero point free — and gate them
+with a full acceptance replay.
+
+**E82 rung 6 already ran that family**, ledger `:22673-22684`, restated at
+`:39382-39386`:
+
+- best post-hoc affine-4 g64 estimator measured **−0.28 pt** against `declared`;
+- paired split **4 to 7 against**, McNemar chi-square **0.36**;
+- the family removes only **8 to 11 %** of reconstruction error over **6.6 M groups**;
+- **least squares wins 85.45 % of groups, HQQ 14.30 %**;
+- recorded verbatim: *"no post-hoc group-wise affine-4 g64 estimator can recover the head's 0.82 pt round-to-nearest loss."*
+
+R-B(ii) **is** the 85.45 % winner of that census. R-B(i) is the HQQ-class
+member. Askeladd's own stop rule required a 2× pooled relL2 improvement; the
+ledger already says the family delivers 1.09× to 1.12×.
+
+**The replacement arm I was about to add is also closed.** I priced a
+metadata-coarsening arm from ledger `:21908-21918` (+0.310 % for sweep g64 to
+g128, +0.466 % for g256, +0.539 % for both), carried at `:43884-43885` as
+blocked on "needs an externally published head" — a blocker F214 removed. But
+**E87 arm G measured it in situ**, ledger `:25164-25190`:
+
+| arm | head bytes/draft | `submit2_per_draft` median | achieved GB/s |
+|---|---:|---:|---:|
+| declared | 427,738,112 | 2297.5 us | **186.2** |
+| g128 | 412,004,352 | 2298.9 us | **179.2** |
+
+A 3.68 % byte cut moved a 2287.8 us stage by **0.9 us**. Measured **+0.026 %**
+against **+0.300 %** modelled — an **11× over-prediction**. The head read runs
+at 82 % of local peak; removing bytes bought a worse access pattern and
+achieved bandwidth fell.
+
+**LEDGER CORRECTION: mark the `:21908-21918` metadata table and the
+`:43884-43885` rows SUPERSEDED BY E87 ARM G, not blocked.** And the rule from
+that census is now standing: **a byte model is valid only when achieved
+bandwidth is held constant; report `achieved_bandwidth_gbs` for every stage in
+every traffic experiment.**
+
+E144 was rescoped the same hour to R-0 (submission mechanics), R-A (bit-exact
+reproduction, promoted to the decider), R-D (the `in_branch` rehearsal), and
+the new R-G below. R-B, R-C and R-E are dropped. All zero GPU.
+
+---
+
+### 304.3 FINDING 221 — the "unowned width-independent pool, 3.7 to 3.8 %" does not exist. The real number is 53 % and it is already closed.
+
+A delegated census attacked the standing queue item and refuted it on seven
+grounds, strongest first:
+
+1. **The 0.670 transfer constant was deleted by this campaign.** ADVISOR ERROR
+   52, ledger `:30146-30161`: *"Delete the derived verify factor 1.532 and the
+   derived fixed factor 0.670 from all pricing."* Every quotation of
+   3.7 to 3.8 % since ledger 248 used a retired constant.
+2. **The round closes; there is no 7,300 us hole.** E96's family census totals
+   117,347 us of a 127,533 us round. The 10,186 us residual is **the proposal
+   head**, which the census does not itemise: `head_us(4) = 9,240 us`
+   (FINDING 9, `:27988-27992`), independently 7,543 us from E90's
+   `--sync-head`. Adding it back leaves **946 to 2,690 us unattributed, i.e.
+   0.7 to 2.1 %**, not 5.5 to 5.7 %. The head is class (ii), not class (iii).
+3. **Scope mismatch.** `a` is the intercept of `verify_us`, which excludes the
+   head by construction. The "unowned" arithmetic subtracts a verify-only
+   itemisation from a verify-only intercept, then compares the remainder
+   against whole-round censuses.
+4. **`a` does not extrapolate.** Ledger `:28820-28836`: at M=1, round-busy
+   64,445 us minus the 54,385 us weight stream leaves at most 10,060 us for
+   all non-QMV work, while `a` alone is 10,920 us. The fit was never valid
+   outside M in {3,4,5,6,8,9}.
+5. **The subtracted itemisation was already flagged unsound** at `:28142-28155`
+   as *"a named hypothesis with a stated instrument limitation, not measured
+   fact"*. It subtracts a **modelled** QMV cost of about 106,094 us at M=5; a
+   6.9 % error in that term manufactures the entire residual by itself.
+6. **Even on its own hypothesis the number is wrong.** Our own latency-class
+   transfer is amplification ×2.401 (`:30156`, `:30190`), giving 13.2 to
+   13.7 % ranked, not 3.7 %.
+7. **It is not uniform.** A fixed-microsecond saving is *anti*-uniform in
+   percentage: the same delta is worth 87.6 % more on plutarch's 31,643 us
+   round than on botany's 60,991 us.
+
+**The replacement, in two honest harness-labelled numbers.**
+
+**iii-A, all width-independent work including the weight pass.** Edward's
+rebuilt `per_round` curve is linear over w = 1..5 with step 3,446.1 us, so the
+intercept is **31,173.2 − 3,446.1 = 27,727.1 us**, `harness=ranked`. The w = 1
+anchor is confirmed three ways within 1.5 %: replayed curve 31,173.2; F219
+plutarch 31,642.9; a reported zero-accept board row implying 31,423
+(unverified, edward to check). Against the F219 median-pair rounds — beagle
+49,738.5 and essays 54,695.7 — that is **55.75 % and 50.69 %, about 53 %**.
+
+> **A 1 % cut in iii-A is worth about +0.53 % of published median. Nothing
+> else on the queue is in that class.**
+
+But iii-A is dominated by 14.4123 GB of DRAM weight streaming already running
+at 82 to 85 % of peak. The only lever on it is bytes per weight, and that is
+closed: E111/F43 closed lossless recoding, E87 arm G closed byte removal that
+worsens the access pattern, and ISCA 2026 arXiv 2606.15789 puts group-quantized
+4-bit at only 1.1 to 1.3× redundancy above entropy with variable-length decode
+reaching 43 to 76 % of bandwidth.
+
+**iii-B, width-independent and non-streaming: 1,100 to 1,750 us = 2.1 to
+3.5 % of the median-pair round.** Numerically close to the retired 3.7 %, but
+fully itemised and already carried as Theme 6 at 2.0 to 3.3 %. Its three
+largest editable members: SDPA over full-attention history
+(`AttentionUtils.swift:59-143`, 1,267 us isolated, 0.92 to 1.45 % ranked);
+fused residual plus RMSNorm (`Qwen35.swift:2529-2650`, dose 298.0 us/round,
+0.561 % ranked); GDN prework (`Qwen35.swift:255-433`, 543 us isolated, 0.40 to
+0.62 % ranked).
+
+**ACTION: delete "the width-independent GPU-work pool census, 3.7 to 3.8 %,
+unowned" from the standing queue.** It is replaced by the iii-A / iii-B split
+above, and both halves are already owned — iii-A by the closed bytes-per-weight
+axis, iii-B by Theme 6.
+
+**Two source corrections from the same census, both verified this session:**
+
+- **`draftPolicy` is a public settable closure**, `Qwen36MTPBlockSession.swift:770`,
+  consumed at `:1426`. A research entry point can pin the width for a whole leg
+  with **no diff inside the round body**. Edward's E145 R2 is rescoped onto it.
+- **`M ≡ d + 1` always**: `:1898` declares `declaredRows: draftCount + 1` and
+  `QwenRuntimeMTPDriver.swift:310-349` forces it. A width ladder therefore
+  **cannot** separate per-row verify cost from proposal-head cost.
+- **The ~2.4 ms head step is GPU work, not host graph build.** Ledger `:17109`:
+  *"`draft_build` is not host graph build. `d_submit2` is 96.9 to 97.8 % of
+  the ..."*, with `--sync-head` transferring 12.8 ms between sections. The
+  source comment near the head build asserting otherwise is stale. Do not
+  price from it.
+- **`Sources/MLXFastTransform/AffineMetadataCoding.swift`** (16,378 bytes) is
+  wired at `Transform.swift:268` **only for `case .gemma4`**. On `.qwen35` the
+  code path explicitly does not run it. It is written, editable, and dead on
+  our family — but E87 arm G says the axis it would serve pays nothing.
+
+---
+
+### 304.4 FINDING 222 — the head-quantizer literature confirms the closure from theory, and names exactly one admissible lever outside it
+
+A publications survey run in parallel returned three results that predict E82
+rung 6's measured ceiling from first principles:
+
+- **RTN is provably optimal given the scale and zero point.** PiSO,
+  arXiv 2606.10890, Proposition C.1. No re-rounding rule beats RTN at fixed
+  `(s, z)`; the only admissible levers are `(s, z)` selection and
+  exactly-invertible metadata-free transforms.
+- **At group 64, min-max is already near the MSE optimum.** ACIQ,
+  arXiv 1810.05723, gives the Gaussian 4-bit optimal clip at **2.55 sigma**;
+  the expected absolute max of 64 i.i.d. Gaussians is 2.4 to 2.5 sigma.
+  Min-max lands on the analytic optimum by accident of the group size.
+- **Recovery shrinks monotonically as group size shrinks**, across PiSO
+  Tables 12-14 (G16, G32), CafeQ arXiv 2511.19705 Table 3, and NeUQI
+  arXiv 2505.17595 section 5.3. Published median recovery is 25 to 35 % with a
+  spread including **−58 %**, and **no published data point exists at g64** —
+  finer than everything measured.
+
+**The calibration number that matters most.** Meta, arXiv 2508.08192, Table 2:
+INT4 quantization of EAGLE draft-head FFNs costs **0 to 1 % of tokens per
+cycle** in production, sometimes neutral or positive. **Our recorded gap is
+0.82 pt. That is an outlier against production practice**, which makes a
+defect or a distributional pathology a likelier cause than a weak rounding
+rule. R-A is therefore promoted from "reproduce it" to "is anything wrong with
+it".
+
+**THE ONE LEVER OUTSIDE E82 RUNG 6: metadata-free column permutation of a
+coupled pair.** From CafeQ's identity `W1·W2 = (W1·M⁻¹)(M·W2)` with `M` a
+permutation. Where an intermediate dimension is **private to the head** — the
+FFN intermediate between `(W_gate, W_up)` and `W_down`, or the per-head value
+dimension between `W_v` and `W_o`, which RoPE does not touch — the dimension
+may be permuted physically in both matrices. Exactly invertible, exactly
+representable, **zero metadata bytes, zero inference cost, layout preserved**.
+
+This is outside E82 rung 6 **by construction**: that census swept estimators
+over 6.6 M groups with the grouping held fixed. Permutation does not change
+the estimator; it changes **which 64 weights share a group**.
+
+Its whole value is decided by one statistic, `std(log(per-column max-abs))`.
+Simulated weight-MSE reduction against natural-order min-max at g64 — the
+agent's own simulation, not a published result:
+
+```
+std(log col max-abs)   sorted   clip alone   sorted+clip
+        0.00           -0.1 %      +9.0 %        +9.0 %
+        0.25          +16.6 %      +8.7 %       +24.1 %
+        0.50          +38.3 %      +8.2 %       +43.8 %
+        0.75          +47.0 %     +10.4 %       +51.7 %
+        1.00          +55.6 %     +13.1 %       +59.4 %
+```
+
+Below 0.15 there is nothing. Above 0.4 it dominates E144 **and** would explain
+the anomalous 0.82 pt. Issued to askeladd as **R-G**: a per-tensor table over
+all 40 tensors giving that statistic, per-tensor relative L2, per-group
+kurtosis, the grouping axis, the scale and zero-point dtype, the rounding mode
+and clamp bounds, and which tensors form coupled pairs with a private
+intermediate dimension. Minutes of CPU. Integrity boundary unchanged and
+respected by construction: a permutation ordered by column max-abs is a pure
+function of the master weights.
+
+Two secondary results worth carrying. **Min-Max+** (NeUQI Appendix A, Lemma 1)
+is a one-line closed-form improvement on plain min-max, free. And **the
+objective is wrong twice over**: weight MSE to downstream accuracy has a
+published Spearman of only **−0.640 to −0.679** (CafeQ Fig. 1), and logits to
+argmax is lossy again in our favour, since our verifier needs only top-1 order
+(ReQAT arXiv 2606.15682 Fig. 2(f); Quasar arXiv 2603.01399). If R-G survives
+its gate, the right objective is a data-free ranking-preservation surrogate.
+
+Rejected on inspection as not truly data-free or not layout-preserving: NeUQI
+as published (uses `H = X'X`, 128 C4 samples — admissible only with `h_i = 1`),
+MagR, EasyQuant, AdpQ, HIGGS, DAQ density-aware, Norm Tweaking, SynQ, and every
+rotation family (QuaRot, QuIP, SpinQuant) — arXiv 2507.17417 additionally
+reports that rotation gives **no gain at very small group sizes and may
+degrade**.
+
+---
+
+### 304.5 Board state at 04:30Z
+
+```
+PROMOTED top 6
+  684821ed newjordan      3.71959723  01:45:13Z src=eb5eadc7  <<< THE BAR
+  3ba6ee9d Amal-David     3.70576324  01:07:07Z src=1b3ea281
+  1760479a scarletbright  3.70355222  22:58:31Z src=e8f14c44  <<< CANDIDATE FRONTIER
+  08b67f12 jungjipdo      3.69071883  21:02:29Z src=1d66bb36
+  ed608e64 jungjipdo      3.68172016  19:47:14Z src=8849fad7
+  02742bf0 scarletbright  3.52686512  19:06:44Z src=c8dbd2dc
+
+VALIDATING 7
+  2b783747 hadakang       01:53:48Z  declared head, domain soup
+  1db9d63e morganmcg1     01:54:01Z  OURS - thorfinn's clean archive
+  4debb1df nijaru         01:54:25Z
+  b8e0f27c a-github-name  02:08:49Z  E130 isolated row-parallel rerank split
+  c54de844 scarletbright  02:24:33Z  rerank QMV 32 values per lane
+  211da8aa newjordan      03:05:36Z  NEW
+  3a18ff21 igneous-prose  03:07:48Z  NEW
+
+RESOLVED THIS ROUND
+  9f9b4790 newjordan  3.63807660 rejected  isolated flush-fold warm on the crown (F220)
+  71caa947 fkiene     3.42021961 rejected  flush-fold + single-readout STACK
+```
+
+`1db9d63e` has been validating **2 h 36 m**, beyond the typical 42 to 130 min
+window. No action: Rule 72 forbids re-rolling, and a slow validation is not
+evidence of anything. Thorfinn posts digits when it lands.
+
+---
+
+### 304.6 Queue changes
+
+**Deleted:**
+
+- the width-independent GPU-work pool census at 3.7 to 3.8 % — F221, does not exist;
+- E144 R-B, better data-free quantizer at fixed grouping — Error 155, closed by E82 rung 6 and confirmed theoretically by F222;
+- head metadata coarsening g64 to g128/g256 — Error 155, closed by E87 arm G at +0.026 % measured against +0.300 % modelled;
+- the flush-fold warm as a portable mechanism — F220, zero on two bases and +1.55 % cost on a third.
+
+**Added:**
+
+- **H220, warm and residency allocation order.** Up to ±1.5 %, uniform,
+  lottery-proof, **zero correctness risk**. Unowned. Candidate E146.
+- **A pipeline-construction census.** The current crown's *only* declared
+  mechanism is skipping one unused JIT construction. Our tree lazily builds
+  several `MLXFast.metalKernel` families. Anything constructed inside the
+  timed window, or constructed but unused by the live arm, is width-independent
+  waste. **This is the same family as H220** — both run through
+  `custom_kernel.cpp:56-68` and `resident.cpp:32-37` — so E146 should cover
+  both in one experiment.
+- **E144 R-G**, the column-permutation feasibility statistic. Minutes of CPU.
+
+**Reprioritised:**
+
+- **E145 R0 is now the highest-value zero-GPU item in the campaign.** It is the
+  free test of the intercept that F221 shows is 53 % of the median-pair round.
+- **E144 R-A is promoted to the decider** and reframed as a defect hunt.
+
+**Unchanged and still live:** F22 width-6 register occupancy (thorfinn,
++0.5913 % expected, p05 +0.5992); E141 arm B-20 (alphonse, +0.4038 %, sd
+0.0007, lottery-proof); the C-a census resolver (unowned, zero GPU); the
+per-position head-side confidence depth policy (unowned, +0.5 % point, band
+[0, +1.5 %], beagle-weighted, rung 0 zero-GPU, and it must carry
+`zero_weight_gain_share` and `beagle_cost_pct` from rung 0 because Rule 125 and
+E140 show this exact family converts accuracy into charged beagle depth).
