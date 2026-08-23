@@ -1,0 +1,158 @@
+{
+  "base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+  "scored_instantiation": "affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, 64, 64, 64, 2, 2>",
+  "direct_retile_instantiation": "affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, 128, 64, 32, 2, 2>",
+  "host_grid": {
+    "BM": 64,
+    "BN": 64,
+    "BK": 64
+  },
+  "arm_grid": {
+    "BM": 128,
+    "BN": 32
+  },
+  "jit_concatenation_order": [
+    "utils.cpp",
+    "gemm_nax.cpp",
+    "quantized_utils.cpp",
+    "quantized_nax.cpp"
+  ],
+  "base_preamble_bytes": 139937,
+  "tree_preamble_bytes": 142568,
+  "probes": {
+    "base": {
+      "compiled": true,
+      "air_bytes": 24283,
+      "air_sha256": "c8d952de3914c9f27331dbbe4e21a3260b7f4822af37917ca28badd4dcb90c1d",
+      "source_bytes": 140128,
+      "applegpu_g16s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      },
+      "applegpu_g17s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      }
+    },
+    "arm_off": {
+      "compiled": true,
+      "air_bytes": 26395,
+      "air_sha256": "ecdbd34da116f60f082a171ea3600bc237760d08ee878f8a0b3ae058daaa7756",
+      "source_bytes": 142759,
+      "applegpu_g16s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      },
+      "applegpu_g17s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      }
+    },
+    "arm_on": {
+      "compiled": true,
+      "air_bytes": 28027,
+      "air_sha256": "311ca29c66e28d9ac90f3bb2b92ac35564ed9d7492550789f1865518248accb6",
+      "source_bytes": 142758,
+      "applegpu_g16s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      },
+      "applegpu_g17s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      }
+    },
+    "illegal_bn48": {
+      "compiled": false,
+      "error": "mlx/backend/metal/kernels/quantized_nax.h:982:3: error: static_assert failed due to requirement '128 * 48 == 64 * 64' \"a retiled tile must cover the host tile\"\n  static_assert(\n  ^\nmlx/backend/metal/kernels/quantized_nax.h:1293:5: note: in instantiation of function template specialization 'qmm_t_nax_tgp_impl<bfloat, 64, 4, true, 128, 64, 48, 2, 2, 64, 64>' requested here\n    qmm_t_nax_tgp_impl<\n    ^\nmlx/backend/metal/kernels/quantized_nax.h:984:3: error: static_assert failed due to requirement '64 % 48 == 0' \"the host tile must split along N\"\n  static_assert(kHostBN % BN == 0, \"the host tile must split along N\");\n  ^             ~~~~~~~~~~~~~~~~~\n2 errors generated.\n"
+    },
+    "retile_direct": {
+      "compiled": true,
+      "air_bytes": 25755,
+      "air_sha256": "082fc0e44796edf68ef76292cd5ade86f0447f36cf6945405c6fb916884069ba",
+      "source_bytes": 140130,
+      "applegpu_g16s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      },
+      "applegpu_g17s": {
+        "translated": false,
+        "error_body": "applegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE0ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIDF16bNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE1ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\napplegpu-nt: error: unsupported deferred-static-alloca-size function body in _ZN5metal18cooperative_tensorIfNS_7extentsIiJLm18446744073709551615ELm18446744073709551615EEEEN3mpp10tensor_ops17__mutmul2d_detail16__operand_layoutIXtlNS4_19matmul2d_descriptorELi16ELi32ELi16ELb0ELb1ELb1ELNS7_4modeE1EEELNS5_36__matmul2d_cooperative_operand_indexE2ENS_20execution_simdgroupsILm1EEEDF16bDF16bfiJEEEEE.MTL_SIZEAS\nair-tt: applegpu-nt command failed\nair-tt: air-tt command failed"
+      }
+    }
+  },
+  "non_nax_transfer": {
+    "no_mechanism_rev": "01ed58d5309c06b3db27c71d6a6b73ed6a50a341",
+    "entry_point": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
+    "instantiation": "affine_qmm_t<bfloat16_t, 64, 4, 1, 0>",
+    "sources_differ": true,
+    "no_mechanism": {
+      "compiled": true,
+      "air_bytes": 12904,
+      "air_sha256": "31eb705ebed4177315210eec31a6c040c14ea49e7ee874c2e3d75bf3aeccb57c",
+      "source_bytes": 209161,
+      "applegpu_g16s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5628,
+        "text_sha8": "2598dc62",
+        "translated": true
+      },
+      "applegpu_g17s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5594,
+        "text_sha8": "c5228ffd",
+        "translated": true
+      }
+    },
+    "arm_off": {
+      "compiled": true,
+      "air_bytes": 15080,
+      "air_sha256": "afb006b0756d73c4ce23ee8fa82ec32ff8d4cc17c2ae61338ce81cb934f87c89",
+      "source_bytes": 214517,
+      "applegpu_g16s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5640,
+        "text_sha8": "2b60f68b",
+        "translated": true
+      },
+      "applegpu_g17s": {
+        "registers": 45,
+        "spill_bytes": 0,
+        "spill_mirror": 0,
+        "text_bytes": 5606,
+        "text_sha8": "6531dfac",
+        "translated": true
+      }
+    }
+  },
+  "e147_rungE1c_base_source_differs_from_tree": true,
+  "e147_rungE1c_base_compiles": true,
+  "e147_rungE1c_arm_off_compiles": true,
+  "e147_rungE1c_arm_on_compiles": true,
+  "e147_rungE1c_arm_on_differs_from_arm_off": true,
+  "e147_rungE1c_illegal_shape_rejected": true,
+  "e147_rungE1c_static_assert_named_in_refusal": true,
+  "e147_rungE1c_direct_retile_compiles": true,
+  "e147_rungE1c_digest_control_moves": true,
+  "e147_rungE1c_nax_arm_off_air_delta_bytes": 2112,
+  "e147_rungE1c_nax_arm_on_air_delta_bytes": 1632,
+  "e147_rungE1c_nax_translatable": false,
+  "e147_rungE1c_transfer_sources_differ": true,
+  "e147_rungE1c_transfer_translated": true,
+  "e147_rungE1c_transfer_air_delta_bytes": 2176,
+  "e147_rungE1c_transfer_isa_text_delta_applegpu_g16s": 12,
+  "e147_rungE1c_transfer_register_delta_applegpu_g16s": 0,
+  "e147_rungE1c_transfer_spill_delta_applegpu_g16s": 0,
+  "e147_rungE1c_transfer_isa_text_delta_applegpu_g17s": 12,
+  "e147_rungE1c_transfer_register_delta_applegpu_g17s": 0,
+  "e147_rungE1c_transfer_spill_delta_applegpu_g17s": 0,
+  "e147_rungE1c_transfer_air_overstates_isa_by": 181.3,
+  "e147_rungE1c_verdict": "PASS",
+  "e147_rungE1c_failed_checks": []
+}
