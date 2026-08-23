@@ -1,0 +1,75 @@
+{
+  "arm": "shipped",
+  "steps": 512,
+  "seeds": {
+    "beagle_a": {
+      "path": "beagle_a_shipped_512.json",
+      "rounds": 118,
+      "emitted_tokens": 512,
+      "draft_rows": 490,
+      "tail_rows": 118,
+      "corpus_basis_events": 5,
+      "corpus_basis_pct": 0.9765625,
+      "row_basis_events": 6,
+      "row_basis_pct": 1.2244897959183674,
+      "row_basis_denominator": 490,
+      "discarded_post_divergence_rows": 48,
+      "tail_double_count_ratio": 1.2408163265306122,
+      "trial_basis_events": 5,
+      "trial_basis_pct": 1.1312217194570136,
+      "trial_basis_denominator": 442,
+      "emitted_no_trial": 70,
+      "emitted_no_trial_pct": 13.671875,
+      "binding_basis_events": 5,
+      "binding_basis_pct": 4.237288135593221,
+      "binding_share_of_first_divergences_pct": 10.416666666666666,
+      "first_divergence_count": 48,
+      "binding_at_draft_index": {
+        "0": 3,
+        "1": 1,
+        "2": 1
+      },
+      "first_divergence_index_histogram": {
+        "0": 18,
+        "1": 19,
+        "2": 10,
+        "3": 1
+      }
+    },
+    "essays_montaigne": {
+      "path": "essays_montaigne_shipped_512.json",
+      "rounds": 151,
+      "emitted_tokens": 512,
+      "draft_rows": 518,
+      "tail_rows": 151,
+      "corpus_basis_events": 0,
+      "corpus_basis_pct": 0.0,
+      "row_basis_events": 0,
+      "row_basis_pct": 0.0,
+      "row_basis_denominator": 518,
+      "discarded_post_divergence_rows": 89,
+      "tail_double_count_ratio": 1.2915057915057915,
+      "trial_basis_events": 0,
+      "trial_basis_pct": 0.0,
+      "trial_basis_denominator": 429,
+      "emitted_no_trial": 83,
+      "emitted_no_trial_pct": 16.2109375,
+      "binding_basis_events": 0,
+      "binding_basis_pct": 0.0,
+      "binding_share_of_first_divergences_pct": 0.0,
+      "first_divergence_count": 68,
+      "binding_at_draft_index": {},
+      "first_divergence_index_histogram": {
+        "0": 25,
+        "1": 11,
+        "2": 11,
+        "3": 16,
+        "4": 2,
+        "5": 3
+      }
+    }
+  },
+  "medpair_corpus_basis_pct": 0.466796875,
+  "medpair_trial_basis_pct": 0.5407239819004525,
+  "medpair_binding_basis_pct": 2.0254237288135593
+}

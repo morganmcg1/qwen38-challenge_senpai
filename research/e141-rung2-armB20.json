@@ -719,7 +719,14 @@
       "candidate_mean_draft": 4.2100840336134455,
       "armB20_accepted_draft_rate": 0.7844311377245509,
       "candidate_accepted_draft_rate": 0.7844311377245509,
-      "added_us_per_round_at_p025": 577.6759668422746
+      "added_us_per_round_at_p025": 577.6759668422746,
+      "shipped_tokens_per_round": 4.338983050847458,
+      "candidate_tokens_per_round": 4.302521008403361,
+      "round_cost_pct_delta": 0.4127390813086551,
+      "tokens_per_round_pct_delta": -0.8403361344537896,
+      "spt_pct_delta_from_decomposition": 1.2530752157624447,
+      "decomposition_residual_pp": -0.0106222688948443,
+      "mean_draft_delta": 0.057541660732089994
     },
     "essays_montaigne": {
       "leg_count": 8,
@@ -758,7 +765,14 @@
       "candidate_mean_draft": 3.466666666666667,
       "armB20_accepted_draft_rate": 0.6961538461538461,
       "candidate_accepted_draft_rate": 0.6961538461538461,
-      "added_us_per_round_at_p025": 580.8470804433309
+      "added_us_per_round_at_p025": 580.8470804433309,
+      "shipped_tokens_per_round": 3.390728476821192,
+      "candidate_tokens_per_round": 3.4133333333333336,
+      "round_cost_pct_delta": 0.48773684212508606,
+      "tokens_per_round_pct_delta": 0.6666666666666821,
+      "spt_pct_delta_from_decomposition": -0.178929824541596,
+      "decomposition_residual_pp": -0.0012927873111467925,
+      "mean_draft_delta": 0.03620309050772619
     }
   },
   "e141_net_local_ranked_basis_pct": -0.3667907142078475,

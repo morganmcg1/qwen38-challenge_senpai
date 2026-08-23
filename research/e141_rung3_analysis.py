@@ -478,9 +478,19 @@ def main() -> None:
                         and blob["residual_divergence_count"] == 0
                     ),
                 }
-        control["selector_proven_live"] = all(
-            v["ledger_changed"] for v in control["seeds"].values()
-        )
+        # Liveness is a property of the arm, not of every seed. A seed whose
+        # decode is insensitive to the arm (essays does not respond to probe
+        # fraction at all) produces an identical ledger without implying the
+        # override was dropped, so require one changed seed per arm.
+        per_arm = {
+            arm: any(
+                control["seeds"][f"{seed}@{arm}"]["ledger_changed"]
+                for seed in report["arms"][arm]["seeds"]
+            )
+            for arm in narrow
+        }
+        control["selector_proven_live_per_arm"] = per_arm
+        control["selector_proven_live"] = all(per_arm.values())
         control["exact_at_narrow_prefix"] = all(
             v["still_exact"] for v in control["seeds"].values()
         )

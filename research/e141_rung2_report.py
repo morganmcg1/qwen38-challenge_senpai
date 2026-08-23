@@ -314,6 +314,45 @@ def ranked_conversion(
     }
 
 
+def f8_decomposition(blob: dict, steps: int) -> dict:
+    """F8 two-term split of the measured arm delta.
+
+    seconds/token = round_cost / tokens_per_round, so
+    d%(s/tok) = d%(round_cost) - d%(tokens_per_round).
+    A positive round-cost term means the arm bought width; a positive
+    tokens-per-round term means it bought acceptance. This is diagnostic
+    only. The price of the experiment stays the directly measured
+    d%(s/tok).
+    """
+    out: dict = {}
+    ship_r = blob.get("shipped_round_count")
+    cand_r = blob.get("candidate_round_count")
+    ship_c = blob.get("shipped_us_per_round")
+    cand_c = blob.get("candidate_us_per_round")
+    if not (ship_r and cand_r and ship_c and cand_c):
+        return out
+    ship_tpr = steps / ship_r
+    cand_tpr = steps / cand_r
+    out["shipped_tokens_per_round"] = ship_tpr
+    out["candidate_tokens_per_round"] = cand_tpr
+    out["round_cost_pct_delta"] = 100.0 * (cand_c / ship_c - 1.0)
+    out["tokens_per_round_pct_delta"] = 100.0 * (cand_tpr / ship_tpr - 1.0)
+    out["spt_pct_delta_from_decomposition"] = (
+        out["round_cost_pct_delta"] - out["tokens_per_round_pct_delta"]
+    )
+    measured = blob.get("decode_spt_gain_pct")
+    if measured is not None:
+        out["decomposition_residual_pp"] = (
+            out["spt_pct_delta_from_decomposition"] + measured
+        )
+    out["mean_draft_delta"] = (
+        blob["candidate_mean_draft"] - blob["shipped_mean_draft"]
+        if blob.get("candidate_mean_draft") and blob.get("shipped_mean_draft")
+        else None
+    )
+    return out
+
+
 def mean_by(legs: list[dict], prompt: str, arm: str, key: str) -> float | None:
     vals = [
         leg[key]
@@ -332,6 +371,7 @@ def main() -> None:
     ap.add_argument("--rung3", default="research/e141-rung3.json")
     ap.add_argument("--census", default="research/e141-census.json")
     ap.add_argument("--candidate", default="full")
+    ap.add_argument("--steps", type=int, default=512)
     args = ap.parse_args()
 
     legs = [
@@ -393,6 +433,7 @@ def main() -> None:
             if blob["candidate_us_per_round"] and blob["shipped_us_per_round"]
             else None
         )
+        blob.update(f8_decomposition(blob, args.steps))
         report["prompts"][prompt] = blob
 
     have = [p for p in MEDPAIR if p in report["prompts"]]
@@ -550,6 +591,24 @@ def main() -> None:
             print(
                 f"  {basis:11s} {mean_text}{sd_text}  "
                 f"per replicate {[round(v, 4) for v in vals]}"
+            )
+        if "round_cost_pct_delta" in blob:
+            print(
+                f"  F8 split   d%(s/tok) {-blob['decode_spt_gain_pct']:+.4f} = "
+                f"d%(round_cost) {num('round_cost_pct_delta', '+.4f')} - "
+                f"d%(tokens/round) {num('tokens_per_round_pct_delta', '+.4f')}"
+                f"   residual {num('decomposition_residual_pp', '+.4f')} pp"
+            )
+            print(
+                f"  draft len  shipped {blob['shipped_mean_draft']:.10f} "
+                f"cand {blob['candidate_mean_draft']:.10f} "
+                f"delta {num('mean_draft_delta', '+.10f')}"
+            )
+            print(
+                f"  abs s/tok  shipped {blob['shipped_decode_spt']:.10f} "
+                f"cand {blob['candidate_decode_spt']:.10f}  "
+                f"accept shipped {blob['shipped_accepted_draft_rate']:.10f} "
+                f"cand {blob['candidate_accepted_draft_rate']:.10f}"
             )
         print(
             f"  entry temp spread {blob['entry_temp_c_spread']} C  "
