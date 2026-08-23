@@ -137,7 +137,36 @@ def budget() -> dict:
     return out
 
 
+# F2 Rule 121. The medpair weights above are infinitesimal weights; the
+# published median is an order statistic over SORTED positions, so a finite
+# move must be re-sorted. These figures come from the advisor's
+# research/f209_reorder_value.py driven with this session's MEASURED rung 3
+# halves (beagle +0.8475 %, essays +0.0000 %) and a uniform negative gain for
+# the arm's round cost. Anchor 623e77af, the highest-scoring row carrying
+# per-prompt evidence in the board cache available to this student.
+F209_NET_MEDIAN_PCT = {
+    "gross_prize_no_cost": 0.4055,
+    "widened_hold_fraction": -1.6085,
+    "widened_arm_A_hold_probes": -0.2655,
+    "widened_arm_B_rowsPerLeaf16": 0.2905,
+    "widened_arm_B_rowsPerLeaf20": 0.4015,
+}
+
 CAVEATS = {
+    "f209_supersedes_the_linear_medpair_weight": (
+        "net_ranked_pct below uses the linear Rule 116 weights. For a finite "
+        "move the published median must be re-sorted, so F209_NET_MEDIAN_PCT "
+        "is the decision quantity and net_ranked_pct is the intuition. The two "
+        "agree on sign for every arm in this table."
+    ),
+    "essays_gain_is_zero_at_source": (
+        "The F3 composition assumed both halves of the prize pay. Rung 3 "
+        "measured the essays half at EXACTLY zero, and the truncation census "
+        "explains why: essays produced 0 rounds truncated by an unproposable "
+        "token across 151 rounds. The prize is beagle-only, which is why "
+        "f209 prices the gross move at +0.4055 % and not the +0.9495 % F3 "
+        "quoted."
+    ),
     "price_is_a_zero_recall_loss_ceiling": (
         "price() reuses the rung 3 round counts, which were measured only for "
         "the hold-fraction arm at rowsPerLeaf 8. Holding the probe count "
@@ -146,11 +175,16 @@ CAVEATS = {
         "relative to the measured arm, so every net figure below is an upper "
         "bound, not a forecast."
     ),
-    "arm_B_loses_the_fused_row_qmv": (
-        "qwen35ClusterRowQMV guards `rowsPerCluster == 8` at Qwen35.swift:4911. "
-        "At 16 or 20 it returns nil and Qwen35.swift:6166 falls back to the "
-        "generic gatherQuantizedMM the fused kernel was written to replace. "
-        "The +0.19 MB byte win is therefore not the whole price of arm B."
+    "arm_B_keeps_the_fused_row_qmv": (
+        "RESOLVED this session. qwen35ClusterRowQMV guarded `rowsPerCluster == "
+        "8`, but the guard was the only thing pinning the width: the kernel "
+        "source already reads rows_per from w_shape[1] and one simdgroup "
+        "already emits 4 rows. The dispatch now derives simdgroups = "
+        "rowsPerCluster / 4 and accepts any multiple of 4 in [4, 32], so arm B "
+        "keeps the fused path instead of falling back to gatherQuantizedMM. "
+        "qwen35VerifyClusterRowQMV shows widths 8, 16 and 20 reproduce "
+        "gatherQuantizedMM bit for bit (maxAbsDiff 0), and width 8 dispatches "
+        "exactly the grid it dispatched before."
     ),
     "arm_B_needs_the_padding_rule_generalised": (
         "qwen35CompactDraftCounts pads to a multiple of 8 at Qwen35.swift:4229 "
@@ -180,6 +214,7 @@ def main() -> None:
         "caveats": CAVEATS,
         "trees": {},
         "refutation_budget": budget(),
+        "f209_net_median_pct": F209_NET_MEDIAN_PCT,
     }
 
     for tree, frac in fractions.items():
@@ -243,6 +278,10 @@ def main() -> None:
                 f"  net {p['net_ranked_pct']['overhead']:+.3f} to "
                 f"{p['net_ranked_pct']['bandwidth']:+.3f} %"
             )
+
+    print("\n=== F209 sorted-median value, the decision quantity ===")
+    for name, pct in F209_NET_MEDIAN_PCT.items():
+        print(f"  {name:32s} {pct:+.4f} %")
 
     b = report["refutation_budget"]
     print(

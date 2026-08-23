@@ -42,6 +42,9 @@ ROUND_COST_PCT = {
     "full": 2.014,
     "armA": 0.671,
     "armA1844": 0.671,
+    "armB20": 0.004,
+    "armB16": 0.115,
+    "leaf16": 0.000,
 }
 
 
@@ -68,6 +71,14 @@ def summarise(path: Path) -> dict:
     truncating = Counter()
     truncated_rounds = 0
     scored_rounds = 0
+    rounds_with_reject = 0
+    # F4: a miss at draft step 1 costs the whole round, a miss at step 5 has
+    # already banked four tokens. `draft_index` is 0-based, so step 1 is index
+    # 0. Split the truncation census by that index, because a variant that
+    # widens the probe at step 1 only recovers the index-0 rows and nothing
+    # deeper.
+    first_reject_position = Counter()
+    unproposable_position = Counter()
     for _, rows in sorted(rounds.items()):
         ordered = sorted(
             (r for r in rows if r["kind"] == "draft"),
@@ -79,10 +90,15 @@ def summarise(path: Path) -> dict:
         rejected = [r for r in ordered if not r["accepted"]]
         if not rejected:
             continue
+        rounds_with_reject += 1
+        position = rejected[0].get("draft_index", 0)
+        first_reject_position[position] += 1
         wanted = rejected[0]["reference_token"]
         if not proposable_by_shipped(wanted):
             truncated_rounds += 1
             truncating[wanted] += 1
+            unproposable_position[position] += 1
+    position1 = unproposable_position.get(0, 0)
 
     # Recall at fixed probed rows, split by which table can reach the answer.
     # A draft row is accepted exactly when the head proposed the token the
@@ -143,11 +159,21 @@ def summarise(path: Path) -> dict:
         "arm_witnessed": "widened" if widened_rows else "shipped-compatible",
         # Truncation census on the live decode path.
         "rounds_with_draft_rows": scored_rounds,
+        "rounds_with_rejected_draft": rounds_with_reject,
         "rounds_truncated_by_unproposable_token": truncated_rounds,
         "truncation_share_of_rounds_pct": 100.0 * truncated_rounds / scored_rounds
         if scored_rounds
         else 0.0,
         "top_truncating_tokens": truncating.most_common(12),
+        # F4 column: how much of the truncation census a step-1-only widened
+        # probe could reach. draft_index is 0-based, so step 1 is index 0.
+        "first_reject_position_histogram": dict(sorted(first_reject_position.items())),
+        "unproposable_by_position": dict(sorted(unproposable_position.items())),
+        "rounds_truncated_at_position1": position1,
+        "rounds_truncated_beyond_position1": truncated_rounds - position1,
+        "position1_share_of_unproposable_pct": 100.0 * position1 / truncated_rounds
+        if truncated_rounds
+        else None,
     }
 
 
@@ -254,10 +280,36 @@ def main() -> None:
                 * (1.0 - cands[seed]["round_count"] / ships[seed]["round_count"])
                 for seed in MEDPAIR
             }
+            # F4 column. Round boundaries shift between arms, so no ledger pair
+            # can name which recovered round was which. Apportion the measured
+            # recovery by the shipped arm's own position census instead, which
+            # is the population a step-1-only widened probe would attack. This
+            # is DERIVED, not measured, and it assumes a widened probe recovers
+            # position-1 and deeper truncations at the same rate.
+            position1 = {}
+            for seed in MEDPAIR:
+                share = ships[seed]["position1_share_of_unproposable_pct"]
+                if share is None:
+                    position1[seed] = {"share_pct": None, "recovered_pct": None}
+                    continue
+                position1[seed] = {
+                    "share_pct": share,
+                    "shipped_truncations": ships[seed][
+                        "rounds_truncated_by_unproposable_token"
+                    ],
+                    "shipped_truncations_at_position1": ships[seed][
+                        "rounds_truncated_at_position1"
+                    ],
+                    "recovered_pct": recovered[seed] * share / 100.0,
+                    "recovered_pct_beyond_position1": recovered[seed]
+                    * (100.0 - share)
+                    / 100.0,
+                }
             report["contrasts"][name] = {
                 "e141_recovered_pct_beagle_raw": recovered["beagle_a"],
                 "e141_recovered_pct_essays_raw": recovered["essays_montaigne"],
                 "e141_uniform_round_cost_pct": ROUND_COST_PCT.get(name),
+                "e141_recovered_pct_position1_derived": position1,
                 "round_count_shipped": {s: ships[s]["round_count"] for s in MEDPAIR},
                 "round_count_candidate": {s: cands[s]["round_count"] for s in MEDPAIR},
                 "recall_pct_all": {
@@ -397,6 +449,14 @@ def main() -> None:
                 f"matched={s['all_tokens_matched']} "
                 f"parity={s['parity_all_ok']} "
                 f"div={s['residual_divergence_count']}"
+            )
+            share = s["position1_share_of_unproposable_pct"]
+            print(
+                f"  {'':18s} first_reject_pos={s['first_reject_position_histogram']} "
+                f"unproposable_pos={s['unproposable_by_position']} "
+                f"pos1={s['rounds_truncated_at_position1']}"
+                f"/{s['rounds_truncated_by_unproposable_token']} "
+                + (f"({share:.1f} %)" if share is not None else "(n/a)")
             )
         if "medpair" in blob:
             m = blob["medpair"]
