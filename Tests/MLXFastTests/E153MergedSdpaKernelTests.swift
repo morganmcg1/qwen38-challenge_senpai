@@ -71,6 +71,24 @@ enum E153MergedSdpaSupport {
     static let runtimeEnabled =
         ProcessInfo.processInfo.environment["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
 
+    static let probeEnabled =
+        ProcessInfo.processInfo.environment["MLXFAST_RUN_E153_PROBE"] == "1"
+
+    /// The E149 C1 pooled fit of `split - extrapolated merged`, microseconds
+    /// per full-attention layer: `86.68311610267546 + 0.021431273565032237*kL`.
+    static let c1StructuralIntercept = 86.68311610267546
+    static let c1StreamingSlope = 0.021431273565032237
+
+    static var rampSeconds: Double {
+        Double(ProcessInfo.processInfo.environment["MLXFAST_E153_RAMP_S"] ?? "")
+            ?? 0.30
+    }
+
+    static var targetMicroseconds: Double {
+        Double(ProcessInfo.processInfo.environment["MLXFAST_E153_TARGET_US"] ?? "")
+            ?? 60_000
+    }
+
     static var keyLengths: [Int] {
         guard let raw = ProcessInfo.processInfo.environment["MLXFAST_E153_KL"],
             !raw.isEmpty
@@ -159,6 +177,22 @@ enum E153MergedSdpaSupport {
         var mismatches = 0
         for i in da.indices where da[i] != db[i] { mismatches += 1 }
         return mismatches
+    }
+
+    static func timed(_ count: Int, _ body: () -> MLXArray) -> Double {
+        let start = DispatchTime.now().uptimeNanoseconds
+        for _ in 0 ..< count { eval(body()) }
+        return Double(DispatchTime.now().uptimeNanoseconds - start) / 1e3
+            / Double(count)
+    }
+
+    /// HARNESS DEFECT 16: a cold GPU pays a fixed 30-80 ms DVFS ramp that a
+    /// palindrome cannot cancel, so burn a fixed duration first and discard it.
+    static func ramp(_ body: () -> MLXArray, seconds: Double) {
+        let start = DispatchTime.now().uptimeNanoseconds
+        while Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9 < seconds {
+            eval(body())
+        }
     }
 
     static func maxAbsDeviation(_ a: MLXArray, _ b: MLXArray) -> Double {
@@ -291,6 +325,92 @@ struct E153MergedSdpaKernelTests {
             qwen35MergedSdpaVector(
                 queries: q, keys: keys1023, values: values1023, scale: S.scale,
                 qL: 6, kL: 1023) != nil)
+    }
+
+    /// How much of the E149 C1 cost fit does the merged kernel actually
+    /// recover? C1 fitted `split - merged_forecast = 86.68311610267546
+    /// + 0.021431273565032237 * kL` microseconds per full-attention layer,
+    /// where the forecast was EXTRAPOLATED from 1..5-row vector calls. This
+    /// arm measures the real kernel instead of extrapolating it.
+    ///
+    /// A serial probe does not overlap host encode with GPU execution, so it
+    /// reads the encode cost of the removed dispatch at full price while the
+    /// scored path may hide part of it. The end-to-end gated ABBA session is
+    /// the decision evidence; this arm only attributes the mechanism.
+    @Test(
+        "E153 R2: what the merged kernel recovers from the E149 C1 fit",
+        .enabled(if: E153MergedSdpaSupport.probeEnabled))
+    func recoveredCost() throws {
+        var rows: [[String: Any]] = []
+        for kL in S.keyLengths {
+            let (keys, values) = S.cacheKV(length: kL, seed: 0x5153_0400)
+            eval(keys, values)
+            for qL in S.widths where qL <= kL {
+                let q = S.queries(qL: qL, layout: "contiguous", seed: 0x5153_0003)
+                eval(q)
+                let arms: [(String, () -> MLXArray)] = [
+                    ("split", { S.split(queries: q, keys: keys, values: values) }),
+                    ("merged", {
+                        qwen35MergedSdpaVector(
+                            queries: q, keys: keys, values: values,
+                            scale: S.scale, qL: qL, kL: kL)!
+                    }),
+                ]
+                for (_, body) in arms { S.ramp(body, seconds: S.rampSeconds) }
+                let probe = S.timed(8, arms[0].1)
+                let count = max(
+                    8, min(4000, Int(S.targetMicroseconds / max(probe, 1))))
+
+                var forward: [String: Double] = [:]
+                for (name, body) in arms { forward[name] = S.timed(count, body) }
+                var reverse: [String: Double] = [:]
+                for (name, body) in arms.reversed() {
+                    reverse[name] = S.timed(count, body)
+                }
+                let split = (forward["split"]! + reverse["split"]!) / 2
+                let merged = (forward["merged"]! + reverse["merged"]!) / 2
+                let saving = split - merged
+                let streaming = S.c1StreamingSlope * Double(kL)
+                rows.append([
+                    "kL": kL, "width": qL, "replicates": count,
+                    "split_us_per_layer": split,
+                    "merged_us_per_layer": merged,
+                    "split_forward_us": forward["split"]!,
+                    "split_reverse_us": reverse["split"]!,
+                    "merged_forward_us": forward["merged"]!,
+                    "merged_reverse_us": reverse["merged"]!,
+                    "saving_us_per_layer": saving,
+                    "saving_us_per_round": saving * 16,
+                    "c1_streaming_term_us_per_layer": streaming,
+                    "c1_structural_term_us_per_layer": S.c1StructuralIntercept,
+                    "recovered_over_streaming_term": saving / streaming,
+                    "recovered_over_full_c1_fit":
+                        saving / (streaming + S.c1StructuralIntercept),
+                ])
+            }
+        }
+        let report: [String: Any] = [
+            "probe": "e153_r2_merged_sdpa_recovered_cost",
+            "harness": "local",
+            "cool_gate_passed_real_gate": false,
+            "gate_qualified_for_timing": false,
+            "full_attention_layers": 16,
+            "c1_structural_intercept_us_per_layer": S.c1StructuralIntercept,
+            "c1_streaming_slope_us_per_key_per_layer": S.c1StreamingSlope,
+            "rows": rows,
+        ]
+        let text = String(
+            decoding: try JSONSerialization.data(
+                withJSONObject: report, options: [.prettyPrinted, .sortedKeys]),
+            as: UTF8.self)
+        print("E153_R2_TIMING_JSON_BEGIN")
+        print(text)
+        print("E153_R2_TIMING_JSON_END")
+        if let path = ProcessInfo.processInfo
+            .environment["MLXFAST_E153_TIMING_OUT"], !path.isEmpty
+        {
+            try text.write(toFile: path, atomically: true, encoding: .utf8)
+        }
     }
 
     /// Rule 110: a warm that never ran is not a warm. The scored session calls
