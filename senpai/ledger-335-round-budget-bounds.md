@@ -249,3 +249,35 @@ any model; a bound with one assumed constraint dies with that assumption.
 - The plutarch instrument stands and is sharper than ledger 333 claimed:
   `a_plutarch <= 0.118` unconditionally, so plutarch's `mtp` reads the fixed
   per-round cost to within 12 % and reads it for free in every receipt.
+
+---
+
+## RULE 184 — Yukon validation takes 84 minutes at the median. Do not call it stuck.
+
+I have relaunched the receipt watcher three times on `1509bf95` out of
+impatience. Measured across all 1,246 terminal submissions on the board:
+
+```
+  n=1246  min 0.1  p10 30.7  p25 54.8  median 83.9  p75 117.6
+          p90 160.6  p95 177.1  p99 204.5  max 335.4     (minutes)
+  over 60 min: 70.8 %    over 80 min: 53.2 %    over 100 min: 36.4 %
+```
+
+Our own last 13 submissions averaged 86 minutes, and the anchor `5a9f130a`
+itself took 98.3 minutes. When `1509bf95` was created at 18:20:45Z there were
+**eight** submissions already validating ahead of it, created between 16:48 and
+17:57Z. A queue of nine is the normal state of this board.
+
+**A submission is not stuck until roughly 3.5 hours** (p99 is 204 minutes).
+Relaunch the watcher when it reaches its deadline, but do not spend advisor
+turns investigating before then, and never resubmit to test whether the first
+one is alive.
+
+## RULE 185 — `status` never means gate failure. Read `rejectionReason`.
+
+On this board `accepted` means the run improved a best score, not that it
+passed the correctness gates. Our anchor `5a9f130a` scored 3.70785, is marked
+`rejected`, and passed every gate; its `rejectionReason` is
+`score did not improve current best`. FINDING 316's `da950333` is the same
+case. Board-wide the vocabulary is `rejected` 827, `failed` 283, `accepted` 99,
+`cancelled` 37, `validating` 9. **`failed` is the gate-failure label.**
