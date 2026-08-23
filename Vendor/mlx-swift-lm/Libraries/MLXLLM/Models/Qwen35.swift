@@ -1371,6 +1371,195 @@ private let qwen35CompiledFusedSwiGLU:
     return body
 }()
 
+// MARK: - SwiGLU with the wide-QMV chunk-sum epilogue (E160)
+
+/// Which SwiGLU producer the MLP decode path runs.
+///
+/// `off` is the shipped composition: MLX's compiled `silu(a) * b` kernel, and
+/// the routed `mlp.down` consumer then launches its own
+/// `qwen35_custom_affine4_g64_xsums_v1` fill over the activation. The other two
+/// arms replace that compiled kernel with a candidate-owned one that reads and
+/// writes the same bytes with the same arithmetic; `fuse` additionally emits
+/// the chunk-sum table from the same pass, so the standalone fill never
+/// launches.
+///
+/// `replica` exists to separate the two changes: `replica` minus `off` is the
+/// price of owning the elementwise kernel, and `fuse` minus `replica` is the
+/// saving from deleting the fill. Only `off` and `fuse` are compositions the
+/// candidate could ship.
+///
+/// The name carries the `MLX_` prefix because `sanitizedRuntimeWorkerEnvironment`
+/// drops every `MLXFAST_*` name, and it is 19 UTF-8 bytes so it lands in the
+/// binary's string table where `senpai/rebuild-and-assert-worker.sh --require`
+/// can witness it. It is read once at process start and never varies with the
+/// request, the prompt or the benchmark phase.
+public enum Qwen35SwiGLUFusion {
+    public enum Arm: String, Sendable {
+        case off
+        case replica
+        case fuse
+    }
+
+    public static let arm: Arm = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E160_SWIGLU_ARM"]
+        guard let raw, !raw.isEmpty else { return .fuse }
+        return Arm(rawValue: raw) ?? .fuse
+    }()
+}
+
+/// The elementwise operator structs the MLX compiler emits for `silu(a) * b`,
+/// copied verbatim from `mlx/backend/metal/kernels/unary_ops.h` and
+/// `binary_ops.h`.
+///
+/// `compiled.cpp` writes one `<dtype> tmp_i = Op()(...)` line per tape node and
+/// the tape for `silu(a) * b` is `Sigmoid(a)`, `Multiply(a, sigmoid)`,
+/// `Multiply(silu, b)` at `bfloat16_t`. A kernel that declares the same structs,
+/// deduces the same `T` and applies them in the same order therefore runs the
+/// compiled kernel's arithmetic by construction -- identical source text over
+/// identical bytes -- not by an algebraic equivalence argument.
+private let qwen35FusedSwiGLUHeader = """
+    struct Sigmoid {
+      template <typename T>
+      T operator()(T x) {
+        auto y = 1 / (1 + metal::exp(metal::abs(x)));
+        return (x < 0) ? y : 1 - y;
+      }
+    };
+
+    struct Multiply {
+      template <typename T>
+      T operator()(T x, T y) {
+        return x * y;
+      }
+    };
+    """
+
+/// `out[r, j] = silu(y[r, j]) * y[r, half + j]`, optionally with the wide-QMV
+/// chunk-sum table of `out` emitted by an epilogue.
+///
+/// One threadgroup of 128 threads owns one 512-element chunk block of one row,
+/// and each thread owns four contiguous elements, so the launch reads and
+/// writes exactly the bytes MLX's compiled elementwise kernel does at the same
+/// four-element granularity.
+///
+/// The epilogue is the BODY of `qwen35_custom_affine4_g64_xsums_v1` copied
+/// verbatim, run over the `out` bytes this pass has just written. A chunk of 16
+/// elements is written by four threads of this same threadgroup, so the device
+/// barrier publishes them before lane `l` re-reads chunk `l`. Same
+/// `vec<bfloat16_t, 4>` loads, same three BF16 adds per group of four, same
+/// ascending float accumulation onto `0.0f`, same
+/// `(k_block * 32 + lane) * stride + row` address.
+private func qwen35FusedSwiGLUSource(emitSums: Bool) -> String {
+    let sumsEpilogue =
+        emitSums
+        ? """
+
+            threadgroup_barrier(mem_flags::mem_device);
+            const int sg_xs_stride = sg_rows <= 8 ? 8 : 16;
+            if (sg_tid < 32) {
+                const device bfloat16_t* xm =
+                    out + sg_row * sg_half + sg_kb * 512 + sg_tid * 16;
+                float s = 0.0f;
+                for (int i = 0; i < 4; i++) {
+                    const vec<bfloat16_t, 4> xv = *reinterpret_cast<
+                        const device vec<bfloat16_t, 4>*>(xm + 4 * i);
+                    s += xv[0] + xv[1] + xv[2] + xv[3];
+                }
+                xsums[(sg_kb * 32 + sg_tid) * sg_xs_stride + sg_row] = s;
+            }
+        """ : ""
+    return """
+        const int sg_k2 = y_shape[y_ndim - 1];
+        const int sg_half = sg_k2 / 2;
+        int sg_rows = 1;
+        for (int i = 0; i < y_ndim - 1; i++) {
+            sg_rows *= y_shape[i];
+        }
+
+        const uint3 sg_gid = thread_position_in_grid;
+        const int sg_tid = int(sg_gid.x);
+        const int sg_kb = int(sg_gid.y);
+        const int sg_row = int(sg_gid.z);
+        const int sg_elem = sg_kb * 512 + sg_tid * 4;
+
+        if (sg_elem + 4 <= sg_half) {
+            const device bfloat16_t* ya = y + sg_row * sg_k2 + sg_elem;
+            const vec<bfloat16_t, 4> av =
+                *reinterpret_cast<const device vec<bfloat16_t, 4>*>(ya);
+            const vec<bfloat16_t, 4> bv =
+                *reinterpret_cast<const device vec<bfloat16_t, 4>*>(ya + sg_half);
+            vec<bfloat16_t, 4> ov;
+            for (int i = 0; i < 4; i++) {
+                bfloat16_t tmp_a = av[i];
+                bfloat16_t tmp_s = Sigmoid()(tmp_a);
+                bfloat16_t tmp_g = Multiply()(tmp_a, tmp_s);
+                ov[i] = Multiply()(tmp_g, bv[i]);
+            }
+            *reinterpret_cast<device vec<bfloat16_t, 4>*>(
+                out + sg_row * sg_half + sg_elem) = ov;
+        }\(sumsEpilogue)
+        """
+}
+
+private let qwen35FusedSwiGLUKernel = MLXFast.metalKernel(
+    name: "qwen35_fused_swiglu_v1",
+    inputNames: ["y"],
+    outputNames: ["out"],
+    source: qwen35FusedSwiGLUSource(emitSums: false),
+    header: qwen35FusedSwiGLUHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35FusedSwiGLUXSumsKernel = MLXFast.metalKernel(
+    name: "qwen35_fused_swiglu_xsums_v1",
+    inputNames: ["y"],
+    outputNames: ["out", "xsums"],
+    source: qwen35FusedSwiGLUSource(emitSums: true),
+    header: qwen35FusedSwiGLUHeader,
+    ensureRowContiguous: true
+)
+
+/// The MLP activation for the fused gate-up output `y`.
+///
+/// Falls back to the shipped compiled kernel for every call the epilogue cannot
+/// pay for. `Qwen35XSumsSidecar.wants` is evaluated on `y` rather than on the
+/// activation: it reads the row count and `k % 512`, and both `y`'s K (34,816)
+/// and the activation's K (17,408) are multiples of 512, so the two answers are
+/// the same. M = 1 -- the serial leg, which the candidate leg shares -- never
+/// passes `wants`, so the serial path keeps the shipped kernel byte for byte.
+func qwen35SwiGLUActivation(_ y: MLXArray) -> MLXArray {
+    let arm = Qwen35SwiGLUFusion.arm
+    let k2 = y.dim(-1)
+    let half = k2 / 2
+    guard arm != .off, y.dtype == .bfloat16, k2 % 2 == 0, half % 512 == 0,
+        Qwen35XSumsSidecar.wants(y)
+    else {
+        return qwen35CompiledFusedSwiGLU(y)
+    }
+    let rows = y.size / k2
+    let kBlocks = half / 512
+    var shape = y.shape
+    shape[shape.count - 1] = half
+    if arm == .fuse {
+        let outputs = qwen35FusedSwiGLUXSumsKernel(
+            [y],
+            grid: (128, kBlocks, rows),
+            threadGroup: (128, 1, 1),
+            outputShapes: [shape, [kBlocks * 32 * Qwen35CustomQMV.sumsStride(rows)]],
+            outputDTypes: [.bfloat16, .float32]
+        )
+        Qwen35XSumsSidecar.publish(x: outputs[0], table: outputs[1])
+        return outputs[0]
+    }
+    return qwen35FusedSwiGLUKernel(
+        [y],
+        grid: (128, kBlocks, rows),
+        threadGroup: (128, 1, 1),
+        outputShapes: [shape],
+        outputDTypes: [.bfloat16]
+    )[0]
+}
+
 // MARK: - Candidate-owned affine-4/group-64 QMV dispatch
 //
 // MLX's `quantized.cpp` host launcher is outside the editable surface, so the
@@ -1982,7 +2171,7 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
         // to the exact two-projection expression, preserving the original
         // slicing semantics in every case.
         if x.dim(-2) <= 16, let y = fusedGateUp(x), _gateOut * 2 == y.dim(-1) {
-            return qwen35RoutedLinear(downProj, qwen35CompiledFusedSwiGLU(y))
+            return qwen35RoutedLinear(downProj, qwen35SwiGLUActivation(y))
         }
         return qwen35RoutedLinear(downProj, silu(gateProj(x)) * upProj(x))
     }
