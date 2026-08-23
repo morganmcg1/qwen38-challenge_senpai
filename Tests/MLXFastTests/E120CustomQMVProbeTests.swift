@@ -348,8 +348,8 @@ struct E120CustomQMVProbeTests {
     @Test("every tier of every table has its own entry-point name")
     func everyTierHasADistinctEntryPoint() throws {
         let tiers: [Qwen35CustomQMV.Table: [Int]] = [
-            .shipped: [3, 4, 5], .onePass6: [3, 4, 5, 6],
-            .onePass67: [3, 4, 5, 6, 7], .onePass678: [3, 4, 5, 6, 7, 8],
+            .shipped: [2, 3, 4, 5], .onePass6: [2, 3, 4, 5, 6],
+            .onePass67: [2, 3, 4, 5, 6, 7], .onePass678: [2, 3, 4, 5, 6, 7, 8],
         ]
         for (table, expected) in tiers {
             #expect(Set(table.plan.map(\.ipg)).sorted() == expected,
@@ -360,7 +360,7 @@ struct E120CustomQMVProbeTests {
         // seen with a different source, so two tiers sharing a name would
         // thrash the cache instead of specializing.
         var names: Set<String> = []
-        for tier in [nil] + [3, 4, 5, 6, 7, 8].map(Optional.init) {
+        for tier in [nil] + [2, 3, 4, 5, 6, 7, 8].map(Optional.init) {
             for useTable in [true, false] {
                 let name = Qwen35CustomQMV.pipelineName(useTable: useTable, tier: tier)
                 #expect(!names.contains(name), "duplicate entry point \(name)")
@@ -393,7 +393,7 @@ struct E120CustomQMVProbeTests {
                 biases: w.biases)
             eval(wBumped.scales)
 
-            for width in 3 ... 9 {
+            for width in Qwen35CustomQMV.widths {
                 let x = contiguous(block[0 ..< width])
                 eval(x)
                 let reference = Self.mlx(x, w)
@@ -508,8 +508,10 @@ struct E120CustomQMVProbeTests {
                 }
             }
 
-            // The guard must decline every width the incumbent owns.
-            for width in [1, 2, 10, 12] {
+            // The guard must decline every width the incumbent owns. Derived
+            // from the routed set, not listed, so widening the plan cannot
+            // leave a routed width asserted as declined.
+            for width in [1, 2, 10, 12] where !Qwen35CustomQMV.widths.contains(width) {
                 let x = contiguous(
                     MLXRandom.normal([width, shape.hidden]).asType(.bfloat16))
                 eval(x)
@@ -1037,7 +1039,7 @@ struct E120CustomQMVProbeTests {
             let block = MLXRandom.normal([9, shape.hidden]).asType(.bfloat16)
             eval(block)
 
-            for width in 3 ... 9 {
+            for width in Qwen35CustomQMV.widths {
                 let x = contiguous(block[0 ..< width])
                 eval(x)
                 let reference = Self.mlx(x, w)

@@ -1,0 +1,43 @@
+{
+  "flat_receipt": "572b2cc4",
+  "pb6_receipt": "e003a86d",
+  "e135_minus_onepass67_p15_width2_matched_schedule_pct": -1.2547379588570773,
+  "e135_minus_onepass67_p15_width2_eight_prompt_pct": -1.1822552715611474,
+  "e135_minus_onepass67_p15_width2_weighted_five_pct": -1.8504992249610905,
+  "e135_minus_onepass67_p15_width2_matched_prompts": [
+    "beagle",
+    "botany",
+    "drama",
+    "essays",
+    "medicine",
+    "republic"
+  ],
+  "e135_pb6_ranked_pair": "1db9d63e->e003a86d",
+  "e135_pb6_ranked_confounders": [
+    "width2"
+  ],
+  "e135_pb6_ranked_pair_median_pct": -1.1483154461874645,
+  "e135_pb6_ranked_isolated_median_pct": -0.6741154461874646,
+  "e135_pb6_ranked_isolated_beagle_pct": -1.006008811636774,
+  "e135_onePass67_ranked_pair": "e003a86d->572b2cc4",
+  "e135_onePass67_ranked_confounders": [
+    "p15",
+    "pb6"
+  ],
+  "e135_onePass67_ranked_pair_median_pct": 2.4380291049280522,
+  "e135_onePass67_ranked_isolated_median_pct": 2.0889136587405877,
+  "e135_onePass67_ranked_isolated_beagle_pct": 3.174840776921184,
+  "e135_pb6_p15_minus_onepass67_published_median_pct": -2.3800039156974706,
+  "e135_pb6_p15_minus_onepass67_held_pair_pct": -0.0710350418623551,
+  "e135_pb6_p15_minus_onepass67_rule129_pct": -2.3800039156974706,
+  "e135_pb6_p15_minus_onepass67_beagle_pct": -3.6623692677158592,
+  "e135_pb6_ranked_worst_upper_slot": "republic",
+  "median_pair_flat": [
+    "beagle",
+    "essays"
+  ],
+  "median_pair_pb6": [
+    "beagle",
+    "republic"
+  ]
+}

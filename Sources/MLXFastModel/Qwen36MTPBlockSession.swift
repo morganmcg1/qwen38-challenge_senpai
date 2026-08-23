@@ -1098,26 +1098,48 @@ public final class Qwen36MTPBlockSession {
     /// THE ONE VALUE AN ARM SESSION VARIES. `QwenMTPDepthPriceTests` pins the
     /// compiled default so a leg session cannot leave another arm behind.
     ///
-    /// The shipped arm is `pb6`: one priced step at the width-6 pass boundary,
-    /// tier `1.45`, with the total held so every shallower step gets cheaper.
-    /// E134 rung 4 scored it at `+2.3422 %` held out on the pre-arm curve, and
-    /// the E134 item 2 refit of the ranked `623e77af` pair raised that to
-    /// `+2.4683 %` because the one-pass QMV arm made width 7 cheaper while
-    /// width 6 stayed dear. Boundary 4 is the argmax in 24 of 24 leave-one-
-    /// prompt-out refits and 5997 of 6000 bootstrap draws.
+    /// The shipped arm is `ship`, the uniform price. `pb6` is RETIRED to a
+    /// research arm; E135 F39 (advisor error 174) reversed it. Read the
+    /// tombstone before you reopen it.
     ///
-    /// `pbfit` is NOT shipped. It wins by -3.5 % on this host's kernel
+    /// `pb6` prices one step at the width-6 pass boundary, tier `1.45`, with
+    /// the total held so every shallower step gets cheaper. Two LOCAL
+    /// instruments measured it positive: E134 rung 4 at `+2.3422 %` held out
+    /// on the pre-arm curve, and the E134 item 2 refit of the ranked
+    /// `623e77af` pair at `+2.4683 %`. E135 added a third local reading at
+    /// `+2.2987 %` under the tight grid. All three agree, and all three have
+    /// the wrong sign.
+    ///
+    /// One RANKED receipt pair, `572b2cc4 -> e003a86d`, prices `pb6` at
+    /// `-2.3800 %` on the published median. The mechanism is legible: `pb6`
+    /// takes plutarch from 449 non-drafting rounds and `edl` 0.1540 to zero
+    /// non-drafting rounds and `edl` 2.6995. It buys drafting on the one
+    /// prompt that carries exactly zero median weight, and it pays for that
+    /// on beagle, which holds the lower median slot in 214 of 214 receipts
+    /// and carries about half the weight: beagle `-3.66 %`, republic
+    /// `-2.43 %`, botany `-1.13 %`, medicine `-0.64 %`, essays `+3.24 %`.
+    /// Only essays gains, and essays is not the upper median slot under
+    /// `pb6` — republic is. The realised median pair `(beagle, republic)`
+    /// reproduces the full `-2.3800 %`.
+    ///
+    /// The general lesson: an arm tuned to the UNWEIGHTED mean of a local
+    /// fixture can lose published median, because the local fixture is
+    /// beagle-unlike and plutarch-unlike in exactly the direction that makes
+    /// such an arm look good. CAMPAIGN RULE 79 is now a hard gate: no local
+    /// timing leg may publish a depth-price or schedule-policy contrast in
+    /// any direction, with any error bar. A tight `se` on a biased
+    /// instrument buys unearned confidence.
+    ///
+    /// `pbfit` is NOT shipped either. It wins by -3.5 % on this host's kernel
     /// dispatch table and loses that win entirely on the crown table (E75
     /// rung B/D: +0.33 % on crown, a +3.8 pp interaction). Its shape is
-    /// fitted to one host's timings at every width.
-    ///
-    /// `pb6` differs in two ways. It fits one step, not a whole vector, so
-    /// there are far fewer ways for it to overfit. And its step is placed by
-    /// a curve measured on the RANKED runner, not on this host, which is the
-    /// exact transfer that beat `pbfit`. Note that the one-pass QMV arm moved
-    /// the structural pass boundary off width 6 to width 8, so the pass-count
-    /// law no longer justifies this width; `E134PassBoundaryPriceTests` pins
-    /// that move and pins the measured ranked curve that does justify it.
+    /// fitted to one host's timings at every width. `pb6` was believed to
+    /// differ because it fits one step rather than a whole vector; the
+    /// ranked receipt shows it overfits the fixture's prompt mix instead of
+    /// its width curve. Note also that the one-pass QMV arm moved the
+    /// structural pass boundary off width 6 to width 8, so the pass-count
+    /// law never justified this width; `E134PassBoundaryPriceTests` pins
+    /// that move.
     ///
     /// `MLX_E134_DEPTH_PRICE_ARM` selects the arm at run time so a local A/B
     /// can time two arms with ONE worker binary. Rebuilding between arms is
@@ -1126,7 +1148,7 @@ public final class Qwen36MTPBlockSession {
     /// between them, which is how the first `pb6` screen ended up carrying an
     /// unrelated flag-hoisting commit.
     ///
-    /// Unset gives `.pb6`, so the compiled default IS the shipped behaviour.
+    /// Unset gives `.ship`, so the compiled default IS the shipped behaviour.
     /// The read happens once, when this `static let` initialises, so no round
     /// pays for it. The value cannot vary with prompt content, benchmark
     /// phase, or anything else the request carries. An unrecognised value
@@ -1136,7 +1158,7 @@ public final class Qwen36MTPBlockSession {
     internal static let depthPriceArm: DepthPriceArm = {
         let requested = ProcessInfo.processInfo
             .environment["MLX_E134_DEPTH_PRICE_ARM"] ?? ""
-        return DepthPriceArm(rawValue: requested) ?? .pb6
+        return DepthPriceArm(rawValue: requested) ?? .ship
     }()
 
     /// E145 RESEARCH INSTRUMENT, DEFAULT OFF. Pin the drafted depth to a

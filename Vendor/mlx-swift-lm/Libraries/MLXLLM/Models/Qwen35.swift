@@ -1565,10 +1565,10 @@ private let qwen35E120QMVHeader = """
 /// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
 /// false` never reads.
 ///
-/// `tier` selects the widths this entry point carries. `nil` emits all seven,
-/// which is the shared switch. A value emits only the widths whose `ipg`
-/// equals it, so the compiler allocates that entry point for its own widest
-/// body instead of for the union of all of them.
+/// `tier` selects the widths this entry point carries. `nil` emits every
+/// routed width, which is the shared switch. A value emits only the widths
+/// whose `ipg` equals it, so the compiler allocates that entry point for its
+/// own widest body instead of for the union of all of them.
 private func qwen35E120QMVSource(table: Bool, tier: Int?) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
@@ -1622,12 +1622,14 @@ private func qwen35E120QMVName(table: Bool, tier: Int?) -> String {
     switch (table, tier) {
     case (false, nil): return "qwen35_custom_affine4_g64_qmv_wide_v2"
     case (true, nil): return "qwen35_custom_affine4_g64_qmv_wide_sums_v2"
+    case (false, 2): return "qwen35_custom_affine4_g64_qmv_wide_na2_v2"
     case (false, 3): return "qwen35_custom_affine4_g64_qmv_wide_na3_v2"
     case (false, 4): return "qwen35_custom_affine4_g64_qmv_wide_na4_v2"
     case (false, 5): return "qwen35_custom_affine4_g64_qmv_wide_na5_v2"
     case (false, 6): return "qwen35_custom_affine4_g64_qmv_wide_na6_v2"
     case (false, 7): return "qwen35_custom_affine4_g64_qmv_wide_na7_v2"
     case (false, 8): return "qwen35_custom_affine4_g64_qmv_wide_na8_v2"
+    case (true, 2): return "qwen35_custom_affine4_g64_qmv_wide_sums_na2_v2"
     case (true, 3): return "qwen35_custom_affine4_g64_qmv_wide_sums_na3_v2"
     case (true, 4): return "qwen35_custom_affine4_g64_qmv_wide_sums_na4_v2"
     case (true, 5): return "qwen35_custom_affine4_g64_qmv_wide_sums_na5_v2"
@@ -1656,8 +1658,10 @@ private let qwen35CustomAffine4QMVKernel = qwen35E120QMVKernel(table: false, tie
 private let qwen35CustomAffine4QMVTableKernel = qwen35E120QMVKernel(table: true, tier: nil)
 
 /// One entry point per distinct `ipg`. Building the descriptor is free; a
-/// pipeline is compiled only when a dispatch first reaches it, and the shipped
-/// arm reaches four of these six.
+/// pipeline is compiled only when a dispatch first reaches it. The shipped arm
+/// has four tiers and so eight descriptors, of which it reaches five: the
+/// replica arm at tiers 2 and 3 for M = 2 and 3, and the table arm at tiers 3,
+/// 4 and 5 for M = 4 ... 9.
 private let qwen35CustomAffine4QMVTierKernels: [Int: MLXFast.MLXFastKernel] =
     Dictionary(
         uniqueKeysWithValues: Qwen35CustomQMV.tiers.map {
@@ -1754,7 +1758,7 @@ public enum Qwen35CustomQMV {
     }()
 
     public enum Entry: String, Sendable {
-        /// One switch over all seven routed widths.
+        /// One switch over every routed width.
         case shared = "shared_switch"
         /// One entry point per distinct `ipg`.
         case tiered = "tiered_switch"
@@ -1775,8 +1779,37 @@ public enum Qwen35CustomQMV {
     }()
 
     /// Widths whose incumbent route is `qmv_fast_crossrow_affine4_g64_m`. M=1
-    /// and M=2 reach different kernels and are left to MLX.
-    public static let widths = 3 ... 9
+    /// reaches a different kernel and is left to MLX.
+    ///
+    /// M=2 was left to MLX until F18. The library pair kernel takes it with
+    /// `inputs_per_group = 2` and the same `first_m >= M` early return, but the
+    /// library host still launches `M = 2` x-groups, so one of the two groups
+    /// is a no-op on every M=2 cell. Routing the width gives `Grid.launch` the
+    /// `ceil(2 / 2) = 1` column with no launcher edit, and a rival's ranked
+    /// isolation of exactly this move measured -0.4742 % on the candidate
+    /// medpair with digit-identical draft lengths on all eight prompts.
+    public static let widths = 2 ... 9
+
+    /// The widths the dispatcher actually takes, which `MLX_E120_QMV_WIDTH2=0`
+    /// narrows to the pre-F18 set.
+    ///
+    /// This is deliberately separate from `widths`. `widths` is the declared
+    /// coverage: every `Table` plan must span it, the shared entry point emits
+    /// a case for each member, and both facts are pinned by test. Narrowing
+    /// `widths` would therefore change the generated Metal source, and the
+    /// source string is the pipeline cache key, so the two arms of a width-2
+    /// experiment would compile different libraries and Rule 128 would apply.
+    /// Narrowing only the dispatch guard keeps one identical compiled library
+    /// and moves M=2 cells back to MLX, which is the behaviour under test.
+    ///
+    /// The arm is readable from the run's own trace without this constant:
+    /// `by_width` in the pipeline log carries no `2` key when M=2 is returned
+    /// to MLX, so the witness has a failing polarity. Unset gives `widths`, so
+    /// a run that exports nothing routes M=2.
+    public static let routedWidths: ClosedRange<Int> = {
+        ProcessInfo.processInfo.environment["MLX_E120_QMV_WIDTH2"] == "0"
+            ? 3 ... widths.upperBound : widths
+    }()
 
     /// How the shared entry point is specialized for each routed width.
     ///
@@ -1808,6 +1841,16 @@ public enum Qwen35CustomQMV {
         /// next four carry it at 5.99 to 7.15. M=8 is left on tier 4 here and
         /// moves in its own receipt, because its ranked mass is small even
         /// though it dominates the local fixture.
+        ///
+        /// This table pays or earns depending on `Grid`, and the two must be
+        /// chosen together. Under `wide` the column count is `m` whatever the
+        /// plan says, so a wider `ipg` only adds redundant work per column and
+        /// F194 correctly measured this table as a loss there. Under `tight`
+        /// the column count is `ceil(m / ipg)`, so this table removes one whole
+        /// read of the weight matrix at M=6 and M=7. E135 T29-A measured that
+        /// restore at +0.1912 % +- 0.0253 of the candidate leg with the grid
+        /// held at `tight`, gated, on a fixture where those two widths are only
+        /// 10.26 % of drafting rounds.
         public static let compiledDefault = Table.onePass67
 
         /// `(m, ipg, rps)` for every routable width.
@@ -1820,22 +1863,22 @@ public enum Qwen35CustomQMV {
         /// M=9 stays on tier 3 in every plan. It is above the ranked verify
         /// cap of 8, so one pass there would add a pipeline and buy nothing.
         /// It cannot be dropped from the table either: the dispatch switch
-        /// routes `3 ... 9` with `default: break`, so a missing case is a
-        /// silent no-op round rather than a compile error.
+        /// routes `Qwen35CustomQMV.widths` with `default: break`, so a missing
+        /// case is a silent no-op round rather than a compile error.
         public var plan: [(m: Int, ipg: Int, rps: Int)] {
             switch self {
             case .shipped:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4), (7, 4, 4),
-                        (8, 4, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4),
+                        (7, 4, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass6:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 4, 4),
-                        (8, 4, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
+                        (7, 4, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass67:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4),
-                        (8, 4, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
+                        (7, 7, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass678:
-                return [(3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4), (7, 7, 4),
-                        (8, 8, 4), (9, 3, 4)]
+                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
+                        (7, 7, 4), (8, 8, 4), (9, 3, 4)]
             }
         }
 
@@ -1852,13 +1895,13 @@ public enum Qwen35CustomQMV {
         public var witness: String {
             switch self {
             case .shipped:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
             case .onePass6:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4"
             case .onePass67:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
             case .onePass678:
-                return "e120_width_plan/3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4"
+                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4"
             }
         }
     }
@@ -1918,12 +1961,12 @@ public enum Qwen35CustomQMV {
     /// The entry point a width is dispatched to.
     ///
     /// A Metal entry point is allocated the maximum register count over every
-    /// branch inlined into it, so one switch over all seven widths charges
+    /// branch inlined into it, so one switch over every routed width charges
     /// `M = 3` for the `M = 5` body. A width's own maximum is exactly its
     /// `ipg`: the tail group of a partial pass carries `m % ipg` rows, which is
     /// fewer than a full group, so the full-group body always dominates.
     /// Widths that share an `ipg` therefore share an entry point with no
-    /// register cost, and the shipped table has only three distinct values.
+    /// register cost, and the shipped table has only four distinct values.
     public static func tier(m: Int) -> Int { plan(m: m).ipg }
 
     public static let tiers: [Int] = Set(widthPlan.map(\.ipg)).sorted()
@@ -1942,21 +1985,159 @@ public enum Qwen35CustomQMV {
     /// one-pass table therefore pays twice the launch count of the shipped
     /// table at M = 6, 7 and 8 for the same work, which prices the table
     /// against itself. Under `tight` both tables launch the same count.
-    public enum Grid: String, Sendable {
+    ///
+    /// E135 measured the difference instead of predicting it. One counter-
+    /// balanced `W T T W` session of twelve 512-token legs on one worker put
+    /// `tight` **1.806 % +- 0.066 %** ahead of `wide` on absolute candidate
+    /// seconds per token, with the serial leg flat at `+0.003 % +- 0.084 %`
+    /// because `M = 1` reaches `default: break` and launches no routed QMV at
+    /// all. That is the first lever in this kernel that moved the clock:
+    /// instruction issue fell 46.4 %, resident simdgroups fell 15.7 % and
+    /// weight passes fell 50.0 %, and none of the three moved it.
+    ///
+    /// E136 adds the `tightN` rungs. They launch `N` times the working column
+    /// count, so they buy no arithmetic at all: column `c >= ceil(m / ipg)`
+    /// starts at `first_m = c * ipg >= ceil(m / ipg) * ipg >= m` and takes the
+    /// kernel's existing early return. `tight`, `tight2`, `tight4` and
+    /// `tight8` therefore emit the same bytes and differ only in how many
+    /// threadgroups the driver has to create and retire. That is the one
+    /// dimension E135 could not separate: `wide -> tight` deleted columns and
+    /// changed the column count per width by different factors at once, so it
+    /// could not say whether the launch cost is flat per dispatch, linear in
+    /// the column count, or logarithmic in it. The ladder reads that law off
+    /// the clock.
+    ///
+    /// These rungs are research instruments. `compiledDefault` stays `.tight`,
+    /// so a run that sets nothing -- the ranked run -- never launches a padded
+    /// column.
+    public enum Grid: String, Sendable, CaseIterable {
         case wide
         case tight
+        case tight2
+        case tight4
+        case tight8
+
+        /// The grid a run with no override selects, so the grid the ranked
+        /// runner uses.
+        public static let compiledDefault = Grid.tight
+
+        /// Launched columns per working column.
+        ///
+        /// `wide` asks for `m` columns whatever `ipg` is, which is not a
+        /// multiple of the working count at every width, so it reports 1 and
+        /// `launch` keeps its own rule for it.
+        public var padFactor: Int {
+            switch self {
+            case .wide, .tight: return 1
+            case .tight2: return 2
+            case .tight4: return 4
+            case .tight8: return 8
+            }
+        }
     }
+
+    /// The compiled-in grid, as one literal the worker's string table carries.
+    ///
+    /// Every `Grid` raw value is short and appears in the binary whichever one
+    /// ships, exactly like the `Table.witness` literals, so neither is a
+    /// witness on its own. This whole literal exists only for the case
+    /// actually selected, which makes it a `strings` witness that can fail.
+    /// `defaultGridWitnessNamesTheCompiledDefault` pins it against
+    /// `Grid.compiledDefault`, and `flushPipelineLog` keeps it reachable.
+    ///
+    /// The grid never enters the Metal source, so unlike `planWitness` this
+    /// literal must NOT be emitted into the JIT text: the source string is the
+    /// pipeline cache key, and naming the grid there would split one pipeline
+    /// set into two for a difference the kernel cannot observe.
+    public static let defaultGridWitness = "e135_default_grid/tight"
 
     public static let grid: Grid = {
         let raw = ProcessInfo.processInfo.environment["MLX_E120_QMV_GRID"]
-        guard let raw, let parsed = Grid(rawValue: raw) else { return .wide }
+        guard let raw, let parsed = Grid(rawValue: raw) else {
+            return Grid.compiledDefault
+        }
+        return parsed
+    }()
+
+    /// Rungs of the leaf pre-selection fraction.
+    ///
+    /// The fraction sets how many of the 12,292 declared-head leaves the
+    /// cluster kernel scores per draft step, so it trades per-draft bytes
+    /// against the argmax miss rate. It was a plain compiled constant, which
+    /// made every rung a rebuild and made a counterbalanced ladder impossible
+    /// inside one build. These rungs are research instruments: `p25` and `p15`
+    /// are the two fractions already carried by ranked receipts, and
+    /// `compiledDefault` is the only fraction a run that exports nothing --
+    /// the ranked run -- can take.
+    public enum ProbeArm: String, Sendable, CaseIterable {
+        case p25
+        case p15
+        case p10
+
+        /// The rung a run with no override selects, so the rung the ranked
+        /// runner uses.
+        ///
+        /// `p15` and not `p10`. Two ranked receipts on two different bases
+        /// agree that 0.25 -> 0.15 is faster, and a third receipt measured
+        /// 0.25 -> 0.12 as 1.04 % *slower* on the candidate medpair at a
+        /// digit-identical draft length, so the probe curve turns over
+        /// somewhere between 0.15 and 0.12. `p10` sits on the far side of that
+        /// turnover and has no ranked measurement of its own. The live
+        /// acceptance ladder that cleared `p10` counts rounds, so it cannot
+        /// see a pure time regression at a fixed round count.
+        public static let compiledDefault = ProbeArm.p15
+
+        public var fraction: Double {
+            switch self {
+            case .p25: return 0.25
+            case .p15: return 0.15
+            case .p10: return 0.10
+            }
+        }
+
+        /// Leaves scored per draft step for a head with `leaves` leaves.
+        ///
+        /// The declared head has 12,292, so the rungs derive 3073, 1844 and
+        /// 1230. The gate reads the integer back off the run's own trace, so
+        /// the rule must exist once and be callable from a test.
+        public func probes(leaves: Int) -> Int {
+            max(1, Int((fraction * Double(leaves)).rounded(.up)))
+        }
+    }
+
+    /// The compiled-in probe rung, as one literal the worker's string table
+    /// carries.
+    ///
+    /// Every `ProbeArm` raw value is compiled in whichever one ships, exactly
+    /// like the `Grid` and `Table` raw values, so `"p15"` on its own witnesses
+    /// nothing. This whole literal exists only for the case actually selected.
+    /// `defaultProbeWitnessNamesTheCompiledDefault` pins it against
+    /// `ProbeArm.compiledDefault`, and `flushPipelineLog` keeps it reachable.
+    ///
+    /// The rung never enters the Metal source: the fraction changes how many
+    /// leaves are scored, not the kernel text, and naming it there would split
+    /// one pipeline set in two for a difference the kernel cannot observe.
+    public static let defaultProbeWitness = "e135_default_probe/p15"
+
+    public static let probeArm: ProbeArm = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E135_PROBE_ARM"]
+        guard let raw, let parsed = ProbeArm(rawValue: raw) else {
+            return ProbeArm.compiledDefault
+        }
         return parsed
     }()
 
     /// Launch geometry for one routed cell.
-    static func launch(m: Int, n: Int) -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int)) {
+    ///
+    /// `using` is a parameter rather than a read of the static so one process
+    /// can time and diff both settings; the scored path always takes the
+    /// default.
+    public static func launch(m: Int, n: Int, using: Grid = Qwen35CustomQMV.grid)
+        -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int))
+    {
         let entry = plan(m: m)
-        let columns = grid == .tight ? (m + entry.ipg - 1) / entry.ipg : m
+        let working = (m + entry.ipg - 1) / entry.ipg
+        let columns = using == .wide ? m : working * using.padFactor
         return ((columns * 32, n / entry.rps, 1), (32, 2, 1))
     }
 
@@ -1967,7 +2148,7 @@ public enum Qwen35CustomQMV {
     /// The width switch lives inside the Metal kernel and `IPG` is chosen
     /// there, so the host key is `(kernel, USE_TABLE)` and never mentions `M`
     /// or `IPG`. Changing an `IPG` literal therefore cannot add a pipeline: a
-    /// leg that reaches all seven routed widths must still report the same two
+    /// leg that reaches every routed width must still report the same two
     /// QMV specializations. The name must carry the `MLX_` prefix to survive
     /// `sanitizedRuntimeWorkerEnvironment`. It is unset in every timed run, so
     /// the dispatch path pays one optional test.
@@ -1994,6 +2175,35 @@ public enum Qwen35CustomQMV {
     public nonisolated(unsafe) static var pipelineKeyFirstIndex: [String: Int] = [:]
     public nonisolated(unsafe) static var pipelineWidthFirstIndex: [Int: Int] = [:]
     public nonisolated(unsafe) static var pipelineDispatches = 0
+
+    /// The `x` column count each width actually handed to Metal.
+    ///
+    /// `grid` in this log is the parsed enum, so it witnesses only that the
+    /// environment reached the worker. This map is read back off the dispatch
+    /// argument itself, so it also witnesses that `launch(m:n:)` honoured the
+    /// setting. A `wide` leg records `columns == m` and a `tight` leg records
+    /// `ceil(m / ipg)`, and the two disagree at every routed width.
+    public nonisolated(unsafe) static var pipelineColumns: [Int: Int] = [:]
+
+    /// Leaf count and probe count the derived-cluster table actually built, so
+    /// a leg witnesses its own compiled probe fraction instead of trusting the
+    /// source tree the worker was built from.
+    public nonisolated(unsafe) static var pipelineProbeLeaves = 0
+    public nonisolated(unsafe) static var pipelineProbeCount = 0
+
+    static func noteProbe(leaves: Int, probes: Int) {
+        guard pipelineLogPath != nil else { return }
+        pipelineProbeLeaves = leaves
+        pipelineProbeCount = probes
+        flushPipelineLog()
+    }
+
+    static func noteLaunch(width: Int, columns: Int) {
+        guard pipelineLogPath != nil else { return }
+        if pipelineColumns.updateValue(columns, forKey: width) != columns {
+            flushPipelineLog()
+        }
+    }
 
     /// `width` is nil for the chunk-sum fill, which is not a QMV dispatch.
     static func notePipeline(_ key: String, width: Int?) {
@@ -2027,6 +2237,9 @@ public enum Qwen35CustomQMV {
         let widthFirst = pipelineWidthFirstIndex.keys.sorted()
             .map { "    \"\($0)\": \(pipelineWidthFirstIndex[$0]!)" }
             .joined(separator: ",\n")
+        let columns = pipelineColumns.keys.sorted()
+            .map { "    \"\($0)\": \(pipelineColumns[$0]!)" }
+            .joined(separator: ",\n")
         let json = """
             {
               "arm": "\(arm.rawValue)",
@@ -2035,6 +2248,9 @@ public enum Qwen35CustomQMV {
               "grid": "\(grid.rawValue)",
               "plan": "\(planWitness)",
               "default_route": "\(defaultRouteWitness)",
+              "default_grid": "\(defaultGridWitness)",
+              "default_probe": "\(defaultProbeWitness)",
+              "routed_widths": "\(routedWidths.lowerBound)...\(routedWidths.upperBound)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {
@@ -2048,7 +2264,14 @@ public enum Qwen35CustomQMV {
               },
               "first_index_by_width": {
             \(widthFirst)
-              }
+              },
+              "columns_by_width": {
+            \(columns)
+              },
+              "probe_arm": "\(probeArm.rawValue)",
+              "probe_fraction": \(qwen35DerivedClusterProbeFraction),
+              "probe_leaves": \(pipelineProbeLeaves),
+              "probe_count": \(pipelineProbeCount)
             }
 
             """
@@ -2123,7 +2346,7 @@ public enum Qwen35CustomQMV {
             return nil
         }
         let m = x.size / k
-        guard Self.widths.contains(m), x.dim(-2) == m else { return nil }
+        guard Self.routedWidths.contains(m), x.dim(-2) == m else { return nil }
         // `ensureRowContiguous: true` would keep a strided input correct by
         // copying it first. `quantizedMM` reads the stride directly, so hand
         // the cell back rather than pay for a copy the incumbent avoids.
@@ -2162,7 +2385,8 @@ public enum Qwen35CustomQMV {
         groupSize: Int,
         bits: Int,
         mode: QuantizationMode,
-        consume: Bool = true
+        consume: Bool = true,
+        using: Grid = Qwen35CustomQMV.grid
     ) -> MLXArray? {
         guard
             let cell = routable(
@@ -2184,7 +2408,8 @@ public enum Qwen35CustomQMV {
             kernel = tiered
             notePipeline("qmv_sums_na\(tier)_v2/USE_TABLE=\(consume)", width: cell.m)
         }
-        let launch = Self.launch(m: cell.m, n: cell.n)
+        let launch = Self.launch(m: cell.m, n: cell.n, using: using)
+        noteLaunch(width: cell.m, columns: launch.grid.0 / 32)
         return kernel(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
@@ -2203,7 +2428,8 @@ public enum Qwen35CustomQMV {
         groupSize: Int,
         bits: Int,
         mode: QuantizationMode,
-        arm: Arm = Qwen35CustomQMV.arm
+        arm: Arm = Qwen35CustomQMV.arm,
+        using: Grid = Qwen35CustomQMV.grid
     ) -> MLXArray? {
         guard arm != .off else { return nil }
         guard
@@ -2216,7 +2442,7 @@ public enum Qwen35CustomQMV {
             return matmulWithTable(
                 x, w, scales: scales, biases: biases, xsums: xsumsTable(x),
                 groupSize: groupSize, bits: bits, mode: mode,
-                consume: arm == .sumTable)
+                consume: arm == .sumTable, using: using)
         }
 
         var outShape = x.shape
@@ -2234,7 +2460,8 @@ public enum Qwen35CustomQMV {
             kernel = tiered
             notePipeline("qmv_wide_na\(tier)_v2", width: cell.m)
         }
-        let launch = Self.launch(m: cell.m, n: cell.n)
+        let launch = Self.launch(m: cell.m, n: cell.n, using: using)
+        noteLaunch(width: cell.m, columns: launch.grid.0 / 32)
         return kernel(
             [w, scales, biases, x],
             grid: launch.grid,
@@ -4868,16 +5095,20 @@ private func qwen35ClusterRowQMV(
     )[0]
 }
 
-/// Fraction of leaves probed per draft step. 0.25 removes 23.0 % of the
-/// declared head's per-draft bytes at a worst-domain argmax miss rate of
-/// 2.3e-4, 13x inside the accepted gate.
+/// Fraction of leaves probed per draft step, read from the selected
+/// `Qwen35CustomQMV.ProbeArm`. 0.25 removes 23.0 % of the declared head's
+/// per-draft bytes at a worst-domain argmax miss rate of 2.3e-4, 13x inside
+/// the accepted gate.
 ///
-/// 0.15 screens better under the fitted acceptance penalty (+2.02 % against
-/// +1.83 %), but the whole difference lives inside that fitted coefficient,
-/// and no local leg can resolve it: at these miss rates a 512-token leg
-/// expects under one changed proposal. 0.25 is the low-variance choice and it
-/// is the byte point the r1 arm-C and r2 balanced sessions both measured.
-private let qwen35DerivedClusterProbeFraction: Double = 0.25
+/// 0.15 is carried by two independent ranked receipts on two different bases,
+/// read on the candidate leg alone rather than on the raw ratio, whose serial
+/// half is pinned hardware measured about 9.6x noisier:
+/// `b6cb0fea -> 02742bf0` gives -0.3836 % on a wide-grid base and
+/// `ed608e64 -> 08b67f12` gives -0.2786 % on a tight-grid base, pooling to
+/// -0.3311 % with 2 sigma of 0.0948 %. Acceptance is unchanged: the tight-grid
+/// pair reports digit-identical draft lengths on seven of eight prompts.
+public let qwen35DerivedClusterProbeFraction: Double =
+    Qwen35CustomQMV.probeArm.fraction
 
 /// `[m, s, c]` squared distance from every row to every centre, formed as
 /// `||x||^2 - 2 x.c + ||c||^2` so no `[m, s, D]` difference tensor exists.
@@ -5919,8 +6150,8 @@ extension Qwen35TextModel: MTPCapable {
         guard let centroidBiases = quantizedCentroids.biases else { return }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
-        let probes = max(
-            1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
+        let probes = Qwen35CustomQMV.probeArm.probes(leaves: leaves)
+        Qwen35CustomQMV.noteProbe(leaves: leaves, probes: probes)
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
         let clusterScales = MLX.take(coarseScales, order, axis: 0)
