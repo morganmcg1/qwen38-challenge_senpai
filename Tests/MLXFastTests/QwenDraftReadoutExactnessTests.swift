@@ -797,12 +797,13 @@ struct QwenDraftProbeSortTests {
     }
 
     /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
-    /// compact rows. The probe count is read from the compiled default rung
-    /// rather than pinned, because E135 moved that rung from `p25` to `p15`
-    /// and the constant carried here went stale at 3,073. `p15` derives 1,844.
+    /// compact rows. The probe count is pinned because the promoted frontier
+    /// removed the `ProbeArm` rung surface that used to derive it. The live
+    /// source now computes it from `qwen35DerivedClusterProbeFraction` 0.15,
+    /// which is `private` and unreachable from a test target, so this constant
+    /// restates `ceil(0.15 * 12_292) = 1_844`. Update it if that fraction moves.
     private static let liveClusters = 12_292
-    private static let liveProbes = Qwen35CustomQMV.ProbeArm.compiledDefault
-        .probes(leaves: liveClusters)
+    private static let liveProbes = 1_844
 
     private static func emit(_ name: String, _ payload: [String: Any]) throws {
         print("E87_PROBE_SORT \(name) \(payload)")
@@ -920,14 +921,15 @@ struct QwenRowTop32SelectionTests {
     }
 
     /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
-    /// compact rows. The probe count is read from the compiled default rung
-    /// rather than pinned, because E135 moved that rung from `p25` to `p15`
-    /// and the constant carried here went stale at 3,073. `p15` derives 1,844,
-    /// so the selection runs over 1,844 * 8 = 14,752 rows.
+    /// compact rows. The probe count is pinned because the promoted frontier
+    /// removed the `ProbeArm` rung surface that used to derive it. The live
+    /// source now computes it from `qwen35DerivedClusterProbeFraction` 0.15,
+    /// which is `private` and unreachable from a test target, so this constant
+    /// restates `ceil(0.15 * 12_292) = 1_844`. The selection therefore runs
+    /// over 1,844 * 8 = 14,752 rows. Update it if that fraction moves.
     private static let liveClusters = 12_292
     private static let liveRowsPerCluster = 8
-    private static let liveProbes = Qwen35CustomQMV.ProbeArm.compiledDefault
-        .probes(leaves: liveClusters)
+    private static let liveProbes = 1_844
 
     private static func emit(_ name: String, _ payload: [String: Any]) throws {
         print("E101_ROW_TOP32 \(name) \(payload)")
