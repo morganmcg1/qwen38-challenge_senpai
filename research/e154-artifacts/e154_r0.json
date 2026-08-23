@@ -1,0 +1,57 @@
+{
+  "rung": "R0",
+  "purpose": "anchor receipt on the unmodified submitted surface, so every later E154 number has a same-host reference and the campaign gets one clean point of ranked scatter",
+  "harness": "local",
+  "gpu_used": true,
+  "official_or_ranked_score": false,
+  "log": "research/e154-artifacts/r0-local-submit-512.log",
+  "command": "MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 ./benchmark-qwen-mtp.sh --local-submit",
+  "base_sha": "14247cce11216639a04ecfc2798cf0798091ff92",
+  "guard_base_arg": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+  "worker_sha256": "fbec57d0d58feee74c98c694434dc9ed9188af2359226ea566d9f2d86a4529cb",
+  "head_provenance_sha256": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+  "host": "Mac16,11 Apple M4 Pro 48 GiB",
+  "wall_clock_seconds": 439,
+  "cool_gate": {
+    "real_gate_used": true,
+    "target_c": 40,
+    "bypassed": false,
+    "entry_c": [38.8, 39.1, 39.2],
+    "waited_s": [30, 50, 50]
+  },
+  "fidelity": {
+    "all_tokens_matched": true,
+    "residual_divergence_count": 0,
+    "reference_rows": 513,
+    "reference_self_consistent": true,
+    "chain_contradictions": 0,
+    "serial_reference_checked_rows": "512/512",
+    "mtp_reference_checked_rows": "568/568"
+  },
+  "timing": {
+    "decode_tokens": 512,
+    "serial_rounds": 512,
+    "mtp_rounds": 77,
+    "serial_seconds_per_token": 0.073790716705843806,
+    "mtp_seconds_per_token": 0.031824675854295492,
+    "local_ratio": 2.3186635755123963,
+    "effective_mean_draft_len": 6.3766233766233764,
+    "accepted_draft_rate": 0.88594704684317716,
+    "seconds_per_token_includes_seed_prefill": true
+  },
+  "submission": {
+    "id": "75a21a47-aa7f-46fb-8e6d-07289ddd5f4c",
+    "short": "75a21a4",
+    "model_attribution": "senpai",
+    "submitted_utc": "2026-08-23T14:52:00Z",
+    "status_at_submit": "validating"
+  },
+  "pre_registration": {
+    "point": 3.6694,
+    "interval_80_low": 3.6144,
+    "interval_80_high": 3.7244,
+    "model_wrong_if_outside_low": 3.6,
+    "model_wrong_if_outside_high": 3.75,
+    "note": "declared before the receipt landed; the advisor scores it"
+  }
+}

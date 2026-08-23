@@ -1,0 +1,100 @@
+benchmark-qwen-mtp.sh: mlx.metallib is stale (vendored kernel sources changed after it was built); rebuilding with tools/build-mlx-metallib.sh
+-- Building MLX for arm64 processor on Darwin
+-- Metal found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework
+-- Building on macOS 26.5.2
+-- Building with macOS 26.5 SDK
+-- Metal version: 400
+-- Accelerate found /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- Downloading json
+-- Using the multi-header code from /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/Vendor/mlx-swift/Source/Cmlx/json/include/
+-- Downloading json for JACCL
+-- {fmt} version: 12.1.0
+-- Build type: Release
+-- Configuring done (0.2s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/.build-worker/mlx-metal
+[  4%] Building quantized_nax.air
+[  4%] Building mlx.metallib
+[100%] Built target mlx-metallib
+build-mlx-metallib.sh: wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/workspace/target/.build-worker/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/arm64-apple-macosx/debug/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS/mlx.metallib
+build-mlx-metallib.sh: wrote .build/debug/mlx.metallib
+build-mlx-metallib.sh: wrote .build/release/mlx.metallib
+build-mlx-metallib.sh: wrote .build-worker/release/mlx.metallib
+benchmark-qwen-mtp.sh: public drift tripwire (correctness against correctness_prompts/public_longcopy_gate_english_512_1024.json)
+benchmark-qwen-mtp.sh: GPU cool gate before the MTP reference pass (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: waiting for GPU to cool down before timing (current 46.8C, target <=40C, waited 0s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 42.1C, target <=40C, waited 10s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.2C, target <=40C, waited 20s)...
+benchmark.sh: GPU cool-down gate passed (current 38.8C, target <=40C, waited 30s)
+benchmark-qwen-mtp.sh: generating the MTP reference rows (512 rows, depth=8)
+mtp-verify: generate 32/513 (context 545)
+mtp-verify: generate 64/513 (context 577)
+mtp-verify: generate 96/513 (context 609)
+mtp-verify: generate 128/513 (context 641)
+mtp-verify: generate 160/513 (context 673)
+mtp-verify: generate 192/513 (context 705)
+mtp-verify: generate 224/513 (context 737)
+mtp-verify: generate 256/513 (context 769)
+mtp-verify: generate 288/513 (context 801)
+mtp-verify: generate 320/513 (context 833)
+mtp-verify: generate 352/513 (context 865)
+mtp-verify: generate 384/513 (context 897)
+mtp-verify: generate 416/513 (context 929)
+mtp-verify: generate 448/513 (context 961)
+mtp-verify: generate 480/513 (context 993)
+mtp-verify: generate 512/513 (context 1025)
+mtp-verify: generate 513/513 (context 1026)
+mtp-verify: rows=513 seed_tokens=512 reference_seed_token=271 self_consistent=true (replayed 1 row bit-identically) chain_contradictions=0
+benchmark-qwen-mtp.sh: GPU cool gate before the true serial control (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: waiting for GPU to cool down before timing (current 56.8C, target <=40C, waited 0s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 48.4C, target <=40C, waited 10s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 44.2C, target <=40C, waited 20s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 41.9C, target <=40C, waited 30s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.2C, target <=40C, waited 40s)...
+benchmark.sh: GPU cool-down gate passed (current 39.1C, target <=40C, waited 50s)
+benchmark-qwen-mtp.sh: measuring the TRUE serial control, MTP off (512 tokens)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head pinned_reference=<unset>
+mtp-timed: tokens=512 depth=0 rounds=512 accepted_draft_rate=0.0000 all_tokens_matched=true reference_checked_rows=512/512 seconds_per_token=0.073791
+benchmark-qwen-mtp.sh: GPU cool gate before the native-MTP decode (./benchmark.sh --local-cool-gate-only)
+benchmark.sh: waiting for GPU to cool down before timing (current 55.6C, target <=40C, waited 0s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 48.0C, target <=40C, waited 10s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 44.1C, target <=40C, waited 20s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 41.8C, target <=40C, waited 30s)...
+benchmark.sh: waiting for GPU to cool down before timing (current 40.2C, target <=40C, waited 40s)...
+benchmark.sh: GPU cool-down gate passed (current 39.2C, target <=40C, waited 50s)
+benchmark-qwen-mtp.sh: measuring native-MTP decode (512 tokens, depth=8)
+mtp-timed: weights=weights mtp_head=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head pinned_reference=<unset>
+mtp-timed: tokens=512 depth=8 rounds=77 accepted_draft_rate=0.8859 all_tokens_matched=true reference_checked_rows=568/568 seconds_per_token=0.031825
+benchmark-qwen-mtp.sh: local estimated decode speedup 2.3186635755123963 (serial K=1 0.073790716705843806s/token / MTP 0.031824675854295492s/token)
+benchmark-qwen-mtp.sh: the RANKED decode floor enforced on the ranked box is 0.90 (.github/workflows/qwen-mtp-ranked-benchmark.yml)
+benchmark-qwen-mtp.sh: this local number is shown against that floor for DIRECTION ONLY; it is not a verdict
+benchmark-qwen-mtp.sh: NOT RANKABLE: official_scoring_enabled=true, hidden timed prompt pool holds 8 entries,
+benchmark-qwen-mtp.sh: and these reference rows came from the candidate build, not the pinned baseline. Only the
+benchmark-qwen-mtp.sh: ranked .github/workflows/qwen-mtp-ranked-benchmark.yml run can produce a score that ranks.
+{
+  "score": 2.3186635755123963,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-submit",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.90,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "c5791f65bf026de7be0277c34b79156c09879955a1acad7776dddae7c2dd9c2d",
+    "effective_mean_draft_len": 6.3766233766233764,
+    "serial_seconds_per_token": 0.073790716705843806,
+    "mtp_seconds_per_token": 0.031824675854295492,
+    "mtp_decode_speedup": 2.3186635755123963,
+    "accepted_draft_rate": 0.88594704684317716,
+    "residual_divergence_count": 0
+  }
+}
