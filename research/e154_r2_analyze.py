@@ -284,6 +284,60 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
     return out
 
 
+# FINDING 281 regresses ranked round time on tokens per round and reads the
+# intercept as one weight stream. Our zero arms vary both the draft count and
+# the accepted count round to round, so we can fit the same law locally and,
+# more usefully, ask which regressor it should have used. Emitted tokens and
+# verified rows are different quantities: a round that drafts 7 and accepts 2
+# costs the same device work as one that drafts 7 and accepts 7, but emits
+# five fewer tokens. Whichever regressor explains more variance is the one the
+# cost law belongs to, and that decides whether acceptance is nearly free.
+FINDING_281 = {"intercept_us": 25409.0, "slope_us_per_token": 4291.0,
+               "r": 0.9933, "harness": "ranked"}
+
+
+def cost_law(rounds: list[dict]) -> dict:
+    """Fit round time against emitted tokens and against verified rows."""
+    if len(rounds) < 8:
+        return {"error": f"only {len(rounds)} zero-arm rounds"}
+    walls = [r["wall_us"] for r in rounds]
+    out = {"n": len(rounds), "finding_281": dict(FINDING_281)}
+    for name, xs in (
+            ("emitted_tokens", [r["acc"] + 1 for r in rounds]),
+            ("verified_rows", [r["d"] + 1 for r in rounds])):
+        slope, intercept, se = ols([float(x) for x in xs], walls)
+        out[name] = {
+            "intercept_us": intercept,
+            "slope_us_per_unit": slope,
+            "slope_se": se,
+            "r": pearson([float(x) for x in xs], walls),
+            "mean_x": statistics.fmean(xs),
+        }
+    # Both regressors are fitted; the campaign should price against whichever
+    # one actually explains the round.
+    better = max(("emitted_tokens", "verified_rows"),
+                 key=lambda k: abs(out[k]["r"]))
+    out["dominant_regressor"] = better
+    out["intercept_ratio_local_over_ranked"] = (
+        out[better]["intercept_us"] / FINDING_281["intercept_us"])
+    out["slope_ratio_local_over_ranked"] = (
+        out[better]["slope_us_per_unit"] / FINDING_281["slope_us_per_token"])
+    return out
+
+
+def pearson(xs: list[float], ys: list[float]) -> float:
+    n = len(xs)
+    if n < 2:
+        return float("nan")
+    mx, my = statistics.fmean(xs), statistics.fmean(ys)
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    sxx = sum((x - mx) ** 2 for x in xs)
+    syy = sum((y - my) ** 2 for y in ys)
+    if sxx == 0 or syy == 0:
+        return float("nan")
+    return sxy / math.sqrt(sxx * syy)
+
+
 def hinge_fit(levels: list[dict]) -> dict:
     """Fit `delta = max(0, level - S)` and return S.
 
@@ -358,6 +412,7 @@ def main() -> int:
     }
 
     all_zero_walls: list[float] = []
+    all_zero_rounds: list[dict] = []
     for arm in arms:
         meta = arm["meta"]
         entry = {
@@ -398,6 +453,7 @@ def main() -> int:
                 entry["gpu_curve"] = level_curve(rounds, "gpu_chain_steps")
             if arm["arm"] == "zero":
                 all_zero_walls.extend(r["wall_us"] for r in rounds)
+                all_zero_rounds.extend(rounds)
         report = arm["report"]
         for key in ("first_block_seconds", "seed_prefill_seconds",
                     "p50_block_request_seconds_after_first",
@@ -408,6 +464,7 @@ def main() -> int:
 
     result["e154_absolute_round_wall_clock_us"] = describe(all_zero_walls)
     result["e154_host_syncs_per_round"] = 1
+    result["e154_local_cost_law"] = cost_law(all_zero_rounds)
 
     # F4 asks for the knee and the sub-knee slope by name. `cpu_eval` is the
     # site the FINDING 281 prediction is actually about: it burns while the

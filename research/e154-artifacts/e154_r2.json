@@ -1613,6 +1613,32 @@
       16000.0
     ]
   },
+  "e154_local_cost_law": {
+    "dominant_regressor": "verified_rows",
+    "emitted_tokens": {
+      "intercept_us": 104974.49272883081,
+      "mean_x": 6.576923076923077,
+      "r": 0.5279251101004594,
+      "slope_se": 671.0495073376733,
+      "slope_us_per_unit": 5176.434905752819
+    },
+    "finding_281": {
+      "harness": "ranked",
+      "intercept_us": 25409.0,
+      "r": 0.9933,
+      "slope_us_per_token": 4291.0
+    },
+    "intercept_ratio_local_over_ranked": 0.9217628337627651,
+    "n": 156,
+    "slope_ratio_local_over_ranked": 3.6608012458374137,
+    "verified_rows": {
+      "intercept_us": 23421.071843078098,
+      "mean_x": 7.358974358974359,
+      "r": 0.9776749158723881,
+      "slope_se": 272.05319876375097,
+      "slope_us_per_unit": 15708.498145888343
+    }
+  },
   "entry_temperature_spread_c": 2.2312088012695312,
   "entry_temperatures_c": [
     56.46755599975586,

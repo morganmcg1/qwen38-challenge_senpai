@@ -1,0 +1,72 @@
+{
+  "device_busy_fraction_lower_bound": 0.9941848847709857,
+  "device_busy_fraction_worst_case": 0.9915306877896798,
+  "device_busy_us_lower_bound": 147909.44991672586,
+  "e154_acceptance_price_at_fixed_depth": {
+    "at_draft_count": 7.0,
+    "fraction_of_round_per_token": -0.001766911529884895,
+    "n": 120,
+    "r": -0.6349685886655405,
+    "se": 29.442192693973173,
+    "t_stat": -8.928395499239333,
+    "us_per_accepted_token": -262.87154073660724
+  },
+  "e154_cost_law_regressor_test": {
+    "dominant": "verified_rows",
+    "emitted_tokens": {
+      "intercept_us": 104974.49272883081,
+      "r": 0.5279251101004594,
+      "se": 671.0495073376733,
+      "slope_us": 5176.434905752819
+    },
+    "verified_rows": {
+      "intercept_us": 23421.071843078098,
+      "r": 0.9776749158723881,
+      "se": 272.05319876375097,
+      "slope_us": 15708.498145888343
+    }
+  },
+  "e154_cpu_over_gpu_slack_ratio": 54.816473307193796,
+  "e154_cpu_slack_us_per_round": {
+    "preeval": 47424.0,
+    "preverify": 6080.0
+  },
+  "e154_finding_281_bandwidth_test": {
+    "implied_ranked_gbps_if_round_is_bandwidth_bound": 707.8092634684633,
+    "local_fixed_term_over_weight_stream": 0.4142254148371371,
+    "local_fixed_term_us": 23421.071843078098,
+    "local_round_over_ranked_round": 2.776911336360769,
+    "ranked_over_local_bandwidth_required": 2.225268659879739,
+    "ranked_required_gbps": 567.2005982132316,
+    "ranked_round_at_local_t_us": 53575.5641025641,
+    "required_gbps_for_local_fixed_term": 615.3433154793616,
+    "tokens_per_round": 6.564102564102564,
+    "weight_stream_on_this_host_us": 56541.85137888429
+  },
+  "e154_gpu_slack_us_per_round": 865.1413916074814,
+  "e154_host_achievable_read_gbps": 254.89084012169792,
+  "e154_round_wall_time_us": 148774.59130833333,
+  "e154_scored_round_eval_boundaries": {
+    "async_evals": {
+      "2": 156
+    },
+    "blocking_evals": {
+      "1": 156
+    }
+  },
+  "experiment": "e154-r2-round-accounting",
+  "harness": "local",
+  "host_cpu_fraction_of_round": 0.27308448960301485,
+  "host_fraction_of_spec_peak": 0.9336660810318606,
+  "host_process_cpu_us": 40628.03333333333,
+  "host_spec_peak_gbps": 273.0,
+  "host_thread_cpu_us": 28578.771158333333,
+  "host_wait_at_blocking_eval_us": 47424.0,
+  "host_wait_during_enqueue_fraction": 0.4081514016674616,
+  "host_wait_during_enqueue_us": 60722.557975,
+  "modal_draft_count": 7.0,
+  "n_modal_rounds": 120,
+  "n_zero_rounds": 156,
+  "official_or_ranked_score": false,
+  "runs_dir": ".mlxfast-private/e154/runs-r2a"
+}

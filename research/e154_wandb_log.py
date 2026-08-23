@@ -294,10 +294,9 @@ def log_bandwidth(run, summary: dict, bw: dict) -> None:
     achievable = bw["e154_host_achievable_read_gbps"]
     summary.update({
         "e154_host_achievable_read_gbps": achievable,
-        "e154_host_read_gbps_median": bw["median_gbps_excluding_warmup"],
-        "e154_host_read_gbps_mean": bw["mean_gbps_excluding_warmup"],
         "e154_bandwidth_probe_device": bw["device"],
         "e154_bandwidth_probe_buffer_gib": bw["buffer_gib"],
+        "e154_bandwidth_peak_at_threadgroups": bw["peak_at_threadgroups"],
         # FINDING 281 needs 14.412 GB in 25,409 us.
         "e154_finding281_required_gbps": 567.0,
         "e154_host_over_required_bandwidth": achievable / 567.0,
@@ -306,9 +305,58 @@ def log_bandwidth(run, summary: dict, bw: dict) -> None:
         "e154_implied_weight_stream_us_on_this_host":
             14.412e9 / (achievable * 1e9) * 1e6,
     })
-    run.log({"bandwidth_samples": table(
-        ["iteration", "gbps"],
-        [[i, g] for i, g in enumerate(bw["all_gbps"])])})
+    run.log({"bandwidth_geometry_sweep": table(
+        ["threadgroups", "threads", "warmup_gbps", "peak_gbps", "mean_gbps",
+         "median_gbps"],
+        [[g["threadgroups"], g["threads"], g["warmup_gbps"], g["peak_gbps"],
+          g["mean_gbps"], g["median_gbps"]] for g in bw["geometries"]])})
+
+
+def log_accounting(run, summary: dict, acc: dict) -> None:
+    """Where the round's wall clock actually goes, and the confrontation
+    between FINDING 281's weight-stream identification and a measured host
+    bandwidth ceiling.
+    """
+    for key in ("e154_round_wall_time_us", "host_process_cpu_us",
+                "host_cpu_fraction_of_round", "device_busy_us_lower_bound",
+                "device_busy_fraction_lower_bound",
+                "device_busy_fraction_worst_case",
+                "host_wait_at_blocking_eval_us",
+                "host_wait_during_enqueue_us",
+                "host_wait_during_enqueue_fraction",
+                "host_fraction_of_spec_peak"):
+        summary[key] = acc[key]
+
+    price = acc["e154_acceptance_price_at_fixed_depth"]
+    summary.update({
+        "e154_acceptance_us_per_token_at_fixed_depth":
+            price["us_per_accepted_token"],
+        "e154_acceptance_price_se": price["se"],
+        "e154_acceptance_price_t_stat": price["t_stat"],
+        "e154_acceptance_price_n": price["n"],
+        "e154_acceptance_fraction_of_round_per_token":
+            price["fraction_of_round_per_token"],
+    })
+
+    law = acc["e154_cost_law_regressor_test"]
+    summary["e154_cost_law_dominant_regressor"] = law["dominant"]
+    for name in ("verified_rows", "emitted_tokens"):
+        summary["e154_cost_law_%s_r" % name] = law[name]["r"]
+        summary["e154_cost_law_%s_slope_us" % name] = law[name]["slope_us"]
+        summary["e154_cost_law_%s_intercept_us" % name] = \
+            law[name]["intercept_us"]
+    run.log({"cost_law_regressor_test": table(
+        ["regressor", "intercept_us", "slope_us_per_unit", "se", "pearson_r"],
+        [[name, law[name]["intercept_us"], law[name]["slope_us"],
+          law[name]["se"], law[name]["r"]]
+         for name in ("verified_rows", "emitted_tokens")])})
+
+    test = acc["e154_finding_281_bandwidth_test"]
+    for key, value in test.items():
+        summary["e154_f281_" + key] = value
+
+    boundaries = acc["e154_scored_round_eval_boundaries"]
+    summary["e154_scored_round_eval_boundaries"] = json.dumps(boundaries)
 
 
 def main() -> int:
@@ -324,6 +372,7 @@ def main() -> int:
     r1 = load("e154_r1.json")
     r2 = load("e154_r2.json")
     bw = load("e154_bandwidth.json")
+    acc = load("e154_r2_accounting.json")
     if r0 is None:
         raise SystemExit("the R0 anchor receipt must be present")
 
@@ -373,6 +422,8 @@ def main() -> int:
               file=sys.stderr)
     if bw is not None:
         log_bandwidth(run, summary, bw)
+    if acc is not None:
+        log_accounting(run, summary, acc)
 
     if args.verdict:
         summary["e154_boundedness_verdict"] = args.verdict
