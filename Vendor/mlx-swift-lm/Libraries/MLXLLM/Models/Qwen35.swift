@@ -4193,94 +4193,7 @@ private let qwen35DraftSelectedAffine4RerankKernel = MLXFast.metalKernel(
 // reduction is order-independent, so set identity would suffice. Element-wise
 // identity is a strictly stronger property and makes the offline gate a plain
 // array equality.
-// Compact draft vocabulary bound. One constant drives every derived count, so
-// a widened prefix cannot leave the real count, the padded count, the top-32
-// scan bound and the two kernel template constants disagreeing.
-//
-// `MLX_E141_DRAFT_PREFIX` selects the bound for a same-binary A/B; the
-// compiled default is the promoted 98,304 trim, so an unset leg is the shipped
-// arm bit for bit. The name is 21 UTF-8 bytes so `strings` on the worker can
-// witness it, and the `MLX_` prefix survives the harness environment filter.
-let qwen35CompactDraftPrefixResolved: (count: Int, source: String) = {
-    guard let raw = ProcessInfo.processInfo.environment["MLX_E141_DRAFT_PREFIX"],
-          !raw.isEmpty
-    else { return (98_304, "unset") }
-    guard let value = Int(raw), value >= 1_024, value <= 248_320 else {
-        fatalError(
-            "MLX_E141_DRAFT_PREFIX must be an integer in [1024, 248320]; got \(raw)")
-    }
-    return (value, raw)
-}()
-
-/// `MLX_E141_PROBES` pins the absolute probe count instead of the declared
-/// fraction, so a widened table can hold the shipped row-pass byte cost rather
-/// than the shipped probe fraction. Unset takes the declared expression
-/// unchanged, which keeps an unset leg bit for bit the shipped arm.
-public let qwen35E141ProbeCountOverride: Int? = {
-    guard let raw = ProcessInfo.processInfo.environment["MLX_E141_PROBES"],
-          !raw.isEmpty
-    else { return nil }
-    guard let value = Int(raw), value >= 1 else {
-        fatalError("MLX_E141_PROBES must be a positive integer; got \(raw)")
-    }
-    return value
-}()
-
-/// `MLX_E141_ROWS_PER_LEAF` widens the derived index's leaf instead of its
-/// probe list, so a widened vocabulary keeps today's leaf COUNT and therefore
-/// today's centroid-pass bytes. Four rows are one `qwen_e121_a2_qmv4` call, so
-/// the width must stay a multiple of four, and 32 rows already fill eight
-/// simdgroups. Unset takes the shipped eight-row leaf bit for bit.
-public let qwen35E141RowsPerLeafOverride: Int? = {
-    guard let raw = ProcessInfo.processInfo.environment["MLX_E141_ROWS_PER_LEAF"],
-          !raw.isEmpty
-    else { return nil }
-    guard let value = Int(raw), value >= 4, value <= 32, value % 4 == 0 else {
-        fatalError(
-            "MLX_E141_ROWS_PER_LEAF must be a multiple of 4 in [4, 32]; got \(raw)")
-    }
-    return value
-}()
-
-/// Derived row counts of the compact draft vocabulary at one prefix bound.
-///
-/// Qwen's official text/control tokens 248,044 ... 248,069 are appended after
-/// the prefix. `max` collapses that block to empty once the prefix already
-/// covers it, which stops the appended rows duplicating prefix rows and makes
-/// the compact-to-full id offset zero at full vocabulary. The padded count
-/// rounds up to eight for the derived index's leaf grouping and for the fast
-/// quantized-matvec shape; the padding rows repeat rows 0 upward and every
-/// consumer must bound its scan at `real`.
-public func qwen35CompactDraftCounts(prefix: Int)
-    -> (controlStart: Int, controlEnd: Int, real: Int, padded: Int)
-{
-    let controlStart = max(prefix, 248_044)
-    let controlEnd = max(prefix, 248_070)
-    let real = prefix + controlEnd - controlStart
-    return (controlStart, controlEnd, real, (real + 7) / 8 * 8)
-}
-
-private let qwen35CompactDraftPrefixCount = qwen35CompactDraftPrefixResolved.count
-private let qwen35CompactDraftActiveCounts =
-    qwen35CompactDraftCounts(prefix: qwen35CompactDraftPrefixCount)
-private let qwen35CompactDraftControlStart = qwen35CompactDraftActiveCounts.controlStart
-private let qwen35CompactDraftControlEnd = qwen35CompactDraftActiveCounts.controlEnd
-private let qwen35CompactDraftRealCount = qwen35CompactDraftActiveCounts.real
-private let qwen35CompactDraftPaddedCount = qwen35CompactDraftActiveCounts.padded
-
-/// The active compact draft geometry beside the text that resolved it, so a
-/// run's own trace can name the arm it took rather than the variable it was
-/// asked with.
-public var qwen35CompactDraftGeometry:
-    (prefix: Int, controlStart: Int, controlEnd: Int, real: Int, padded: Int,
-     source: String)
-{
-    (qwen35CompactDraftPrefixCount, qwen35CompactDraftControlStart,
-     qwen35CompactDraftControlEnd, qwen35CompactDraftRealCount,
-     qwen35CompactDraftPaddedCount, qwen35CompactDraftPrefixResolved.source)
-}
-
-private let qwen35Top32RealCount    = qwen35CompactDraftRealCount
+private let qwen35Top32RealCount    = 98_330
 private let qwen35Top32K            = 32
 private let qwen35Top32TG           = 256
 private let qwen35Top32Tiles        = 64
@@ -4938,13 +4851,7 @@ private func qwen35ClusterRowQMV(
     guard qwen35ClusterQMVRoutable(
         x: x, weight: weight, scales: scales, biases: biases, hidden: hidden)
     else { return nil }
-    // One simdgroup emits the four rows of `qwen_e121_a2_qmv4`, and the kernel
-    // reads the leaf width from `w_shape[1]`, so the width only has to be a
-    // whole number of simdgroups. Eight rows stay two simdgroups and dispatch
-    // exactly as before.
-    guard rowsPerCluster % 4 == 0, rowsPerCluster >= 4, rowsPerCluster <= 32,
-          probes >= 1, probes <= clusters
-    else { return nil }
+    guard rowsPerCluster == 8, probes >= 1, probes <= clusters else { return nil }
     guard weight.ndim == 3,
           weight.shape == [clusters, rowsPerCluster, hidden / 16],
           scales.ndim == 3,
@@ -4952,11 +4859,10 @@ private func qwen35ClusterRowQMV(
           biases.shape == scales.shape,
           probed.dtype == .uint32, probed.dim(0) == probes
     else { return nil }
-    let simdgroups = rowsPerCluster / 4
     return qwen35ClusterRowQMVKernel(
         [x.reshaped([hidden]), weight, scales, biases, probed],
-        grid: (32, probes * simdgroups, 1),
-        threadGroup: (32, simdgroups, 1),
+        grid: (32, probes * 2, 1),
+        threadGroup: (32, 2, 1),
         outputShapes: [[probes * rowsPerCluster]],
         outputDTypes: [.bfloat16]
     )[0]
@@ -5334,51 +5240,6 @@ public func qwen35VerifyRowTop32(
     return (trials, bad, firstBad)
 }
 
-/// Offline equivalence gate for the gathered leaf QMV at a chosen leaf width.
-/// Compares the fused kernel against the `gatherQuantizedMM` expression it
-/// replaces, on the same quantized tensors, and reports the worst absolute
-/// difference beside a checksum of the fused scores.
-///
-/// `damageRow` raises one row of every leaf before quantization. Both sides
-/// then read the damaged rows, so the checksum must move while the agreement
-/// holds: that pair shows the kernel reads its inputs and that the reported
-/// difference is not structurally pinned at zero.
-///
-/// Needs no checkpoint and no MTP head, and runs on no scored path.
-public func qwen35VerifyClusterRowQMV(
-    clusters: Int, rowsPerCluster: Int, probes: Int, hidden: Int = 5_120,
-    seed: UInt64 = 3, damageRow: Bool = false
-) -> (routed: Bool, maxAbsDiff: Double, checksum: Double) {
-    MLXRandom.seed(seed)
-    let x = MLXRandom.normal([hidden]).asType(.bfloat16)
-    var rows = MLXRandom.normal([clusters, rowsPerCluster, hidden])
-    if damageRow {
-        rows[0..., 0] = rows[0..., 0] + MLXArray(Float(8))
-    }
-    let q = quantized(rows.asType(.bfloat16), groupSize: 64, bits: 2, mode: .affine)
-    guard let qBiases = q.biases else { return (false, .nan, .nan) }
-    let centroid = MLXRandom.normal([clusters]).asType(.bfloat16)
-    let probed = MLX.sorted(
-        MLX.argPartition(centroid, kth: clusters - probes)[(clusters - probes)...]
-    ).asType(.uint32)
-    eval(x, q.wq, q.scales, qBiases, probed)
-    guard let mine = qwen35ClusterRowQMV(
-        x, weight: q.wq, scales: q.scales, biases: qBiases, probed: probed,
-        clusters: clusters, rowsPerCluster: rowsPerCluster, probes: probes,
-        hidden: hidden)
-    else { return (false, .nan, .nan) }
-    let theirs = gatherQuantizedMM(
-        x.reshaped([1, 1, hidden]), q.wq, scales: q.scales, biases: qBiases,
-        lhsIndices: MLX.zeros([probes], dtype: .uint32), rhsIndices: probed,
-        transpose: true, groupSize: 64, bits: 2, mode: .affine,
-        sortedIndices: true
-    ).reshaped([probes * rowsPerCluster])
-    let diff = MLX.abs(mine.asType(.float32) - theirs.asType(.float32)).max()
-    let checksum = MLX.abs(mine.asType(.float32)).sum()
-    eval(diff, checksum)
-    return (true, Double(diff.item(Float.self)), Double(checksum.item(Float.self)))
-}
-
 /// Positive control for `qwen35VerifyRowTop32`. Raises the single lowest row
 /// score above every other row, which must displace exactly one selected id,
 /// and requires the comparison to report the difference. A gate that cannot
@@ -5555,7 +5416,6 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     // One attempt only: a head that cannot support a derived index must keep
     // the dense readout instead of re-deriving on every draft step.
     private var _derivedClusterAttempted = false
-    private var _derivedCoarseAttempted = false
 
     // Input-independent compact copy of the loaded exact lm_head, used only
     // for draft proposals when no declared draft_lm_head is present. It is not
@@ -5569,16 +5429,12 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     // read saved (accept 1.00 -> 0.877, 21.1 -> 22.8 ms/token). The read is
     // ~315 MB of affine-4 rows per draft step (~0.6 ms), so the ceiling of
     // any further trim is small and the acceptance downside is not.
-    //
-    // E141 opened the widening direction. The declared head pins its coarse
-    // table at the 98,336 row count, so a wider prefix derives that table in
-    // process from the target's own lm_head rows instead; see
-    // `deriveCompactCoarseTable`.
-    private static let compactDraftPrefixCount = qwen35CompactDraftPrefixCount
-    private static let compactDraftControlStart = qwen35CompactDraftControlStart
-    private static let compactDraftControlEnd = qwen35CompactDraftControlEnd
-    private static let compactDraftRealCount = qwen35CompactDraftRealCount
-    private static let compactDraftPaddedCount = qwen35CompactDraftPaddedCount
+    private static let compactDraftPrefixCount = 98_304
+    private static let compactDraftControlStart = 248_044
+    private static let compactDraftControlEnd = 248_070
+    private static let compactDraftRealCount =
+        compactDraftPrefixCount + compactDraftControlEnd - compactDraftControlStart
+    private static let compactDraftPaddedCount = 98_336
     private static let draftRerankCandidateCount = 32
     // Derived cluster index. Eight rows per leaf and eight refinement passes
     // are the screened settings; the centroid table stays 2-bit like the rows
@@ -5586,23 +5442,6 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private static let derivedClusterRowsPerLeaf = 8
     private static let derivedClusterIterations = 8
     private static let derivedClusterCentroidBits = 2
-
-    /// Leaf width of the derived index for THIS arm. A wider leaf holds the
-    /// leaf count, and therefore the centroid-pass bytes, while the table it
-    /// covers grows. The width must divide the padded row count exactly:
-    /// `qwen35BisectingPartition` splits a node into whole leaves and leaves
-    /// no room for a partial one.
-    private static var activeClusterRowsPerLeaf: Int {
-        guard let width = qwen35E141RowsPerLeafOverride else {
-            return derivedClusterRowsPerLeaf
-        }
-        guard compactDraftPaddedCount % width == 0 else {
-            fatalError(
-                "MLX_E141_ROWS_PER_LEAF=\(width) does not divide the padded draft "
-                + "row count \(compactDraftPaddedCount)")
-        }
-        return width
-    }
 
     /// MTP head. Non-nil only when `_qwen35MTPEnabled == true` at init time
     /// AND `args.mtpNumHiddenLayers > 0`.
@@ -5952,86 +5791,12 @@ extension Qwen35TextModel: MTPCapable {
         qwen35RoutedLinear(head, x)
     }
 
-    /// The coarse shortlist table at the ACTIVE compact row count.
-    ///
-    /// The declared head ships `draft_lm_head.*` at its own row count, which
-    /// pins the compact vocabulary to the width that head was built for. When
-    /// the active compact table is a different width, this derives the coarse
-    /// table in process instead of failing over to a silently different
-    /// readout path.
-    ///
-    /// The derivation creates no parameter. `draft_lm_head.*` is exactly
-    /// `quantize(dequantize(exact compact lm_head, 64, 4), 64, 2)`, and E141
-    /// rung 1 reproduces all three shipped tensors BIT FOR BIT at the declared
-    /// width, so this applies the identical function to more rows of the same
-    /// fixed target lm_head. It reads no file, no prompt and no request state,
-    /// and it runs once, during the untimed warm.
-    private func compactCoarseTable() -> (w: MLXArray, s: MLXArray, z: MLXArray)? {
-        guard let w = _draftHeadW, let s = _draftHeadS, let z = _draftHeadZ
-        else { return nil }
-        if w.dim(0) == Self.compactDraftPaddedCount { return (w, s, z) }
-        if !_derivedCoarseAttempted {
-            _derivedCoarseAttempted = true
-            deriveCompactCoarseTable()
-        }
-        guard let dw = _draftHeadW, let ds = _draftHeadS, let dz = _draftHeadZ,
-              dw.dim(0) == Self.compactDraftPaddedCount
-        else { return nil }
-        return (dw, ds, dz)
-    }
-
-    private func deriveCompactCoarseTable() {
-        if _compactDraftHead == nil {
-            _compactDraftHead = makeCompactDraftHead()
-        }
-        guard let exact = _compactDraftHead as? QuantizedLinear,
-              exact.groupSize == 64,
-              exact.bits == 4,
-              exact.weight.dim(0) == Self.compactDraftPaddedCount,
-              let exactBiases = exact.biases
-        else { return }
-
-        // The dequantized rows are `paddedCount * hidden` bf16 — about 2.5 GB
-        // at full vocabulary — and `quantized` allocates its own copy of them.
-        // Chunking holds the warm peak at one chunk instead of the whole
-        // table; the affine group of 64 never straddles a row, so a row-wise
-        // split changes no output value.
-        let chunkRows = 8_192
-        var weights = [MLXArray]()
-        var scales = [MLXArray]()
-        var biases = [MLXArray]()
-        var start = 0
-        while start < Self.compactDraftPaddedCount {
-            let end = Swift.min(start + chunkRows, Self.compactDraftPaddedCount)
-            let rows = dequantized(
-                exact.weight[start ..< end], scales: exact.scales[start ..< end],
-                biases: exactBiases[start ..< end], groupSize: 64, bits: 4,
-                mode: .affine)
-            let coarse = quantized(
-                rows, groupSize: 64, bits: Self.derivedClusterCentroidBits,
-                mode: .affine)
-            guard let coarseBiases = coarse.biases else { return }
-            eval(coarse.wq, coarse.scales, coarseBiases)
-            weights.append(coarse.wq)
-            scales.append(coarse.scales)
-            biases.append(coarseBiases)
-            start = end
-        }
-        let w = concatenated(weights, axis: 0)
-        let s = concatenated(scales, axis: 0)
-        let z = concatenated(biases, axis: 0)
-        eval(w, s, z)
-        _draftHeadW = w
-        _draftHeadS = s
-        _draftHeadZ = z
-    }
-
     /// Draft-only vocabulary projection: the declared head's coarser lm_head
     /// copy when it ships one (`draft_lm_head.*` in the declared head tree),
     /// the exact lm_head otherwise. ONLY used to choose draft proposals —
     /// never for ledger or verify values.
     public func applyDraftLMHead(_ x: MLXArray) -> MLXArray {
-        if let (w, s, z) = compactCoarseTable() {
+        if let w = _draftHeadW, let s = _draftHeadS, let z = _draftHeadZ {
             let groupSize = configuration.hiddenSize / s.dim(1)
             let bits = w.dim(1) * 32 / configuration.hiddenSize
             let logits = quantizedMM(
@@ -6111,7 +5876,9 @@ extension Qwen35TextModel: MTPCapable {
     /// It runs once, on the first draft proposal, which the trusted driver
     /// makes during the untimed warm.
     private func buildDerivedClusterIndex() {
-        guard let (coarseWeight, coarseScales, coarseBiases) = compactCoarseTable(),
+        guard let coarseWeight = _draftHeadW,
+              let coarseScales = _draftHeadS,
+              let coarseBiases = _draftHeadZ,
               coarseWeight.shape == [Self.compactDraftPaddedCount, 320],
               coarseScales.shape == [Self.compactDraftPaddedCount, 80],
               coarseBiases.shape == coarseScales.shape
@@ -6126,7 +5893,7 @@ extension Qwen35TextModel: MTPCapable {
               let exactBiases = exact.biases
         else { return }
 
-        let rowsPerLeaf = Self.activeClusterRowsPerLeaf
+        let rowsPerLeaf = Self.derivedClusterRowsPerLeaf
         let leaves = Self.compactDraftPaddedCount / rowsPerLeaf
         let hidden = configuration.hiddenSize
         let rows = dequantized(
@@ -6152,33 +5919,8 @@ extension Qwen35TextModel: MTPCapable {
         guard let centroidBiases = quantizedCentroids.biases else { return }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
-        let declaredProbes = max(
+        let probes = max(
             1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
-        let probes = qwen35E141ProbeCountOverride.map { Swift.min($0, leaves) }
-            ?? declaredProbes
-        // Rule 114: the arm must be readable from the run's own output, and
-        // only the effective count after the leaf clamp proves it. `mtp-verify`
-        // runs the model in a worker whose sandbox profile denies every write
-        // except `/dev/null` and whose stderr the parent discards on success,
-        // so this file needs `MLXFAST_NO_SANDBOX=1` on the wrapper.
-        if let witnessPath = ProcessInfo.processInfo
-            .environment["MLX_E141_WITNESS_FILE"], !witnessPath.isEmpty
-        {
-            let witness = "e141-arm: padded=\(Self.compactDraftPaddedCount) "
-                + "real=\(Self.compactDraftRealCount) leaves=\(leaves) "
-                + "rowsPerLeaf=\(rowsPerLeaf) declaredProbes=\(declaredProbes) "
-                + "effectiveProbes=\(probes) probedRows=\(probes * rowsPerLeaf) "
-                + "probeOverride=\(qwen35E141ProbeCountOverride.map(String.init) ?? "none") "
-                + "leafOverride=\(qwen35E141RowsPerLeafOverride.map(String.init) ?? "none")\n"
-            let data = Data(witness.utf8)
-            if let handle = FileHandle(forWritingAtPath: witnessPath) {
-                handle.seekToEndOfFile()
-                handle.write(data)
-                try? handle.close()
-            } else {
-                try? data.write(to: URL(fileURLWithPath: witnessPath))
-            }
-        }
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
         let clusterScales = MLX.take(coarseScales, order, axis: 0)
@@ -6318,7 +6060,9 @@ extension Qwen35TextModel: MTPCapable {
             _derivedClusterAttempted = true
             buildDerivedClusterIndex()
         }
-        guard let (coarseWeight, coarseScales, coarseBiases) = compactCoarseTable(),
+        guard let coarseWeight = _draftHeadW,
+              let coarseScales = _draftHeadS,
+              let coarseBiases = _draftHeadZ,
               coarseWeight.dim(0) == Self.compactDraftPaddedCount,
               coarseWeight.dim(1) == 320,
               coarseScales.dim(0) == Self.compactDraftPaddedCount,
@@ -6390,15 +6134,11 @@ extension Qwen35TextModel: MTPCapable {
     /// host readback. The low `compactDraftPrefixCount` rows retain their
     /// IDs; the appended rows are Qwen's official text/control tokens
     /// 248,044 ... 248,069.
-    ///
-    /// The predicate must ask whether the ACTIVE table is compact, never
-    /// whether the DECLARED head's row count happens to match. Those two
-    /// disagree the moment the compact prefix is widened away from the width
-    /// the declared head was built for, and reading the declared count there
-    /// would return compact ids unmapped and mis-address the control block.
     public func mapDraftTokenIds(_ ids: MLXArray) -> MLXArray {
-        guard usesCompactDraftVocabulary || compactCoarseTable() != nil
-        else { return ids }
+        let declaredCompact =
+            _draftHeadW.map { $0.dim(0) == Self.compactDraftPaddedCount }
+            ?? false
+        guard usesCompactDraftVocabulary || declaredCompact else { return ids }
         return which(
             ids .< Self.compactDraftPrefixCount,
             ids,
@@ -6415,20 +6155,14 @@ extension Qwen35TextModel: MTPCapable {
             fatalError("compact draft vocabulary requires an untied lm_head")
         }
 
-        // The control block and the padding block are both empty at full
-        // vocabulary, and an empty slice is not a legal concatenation member.
         func compactRows(_ array: MLXArray) -> MLXArray {
-            var parts = [array[0 ..< Self.compactDraftPrefixCount]]
-            if Self.compactDraftControlEnd > Self.compactDraftControlStart {
-                parts.append(array[
-                    Self.compactDraftControlStart ..< Self.compactDraftControlEnd])
-            }
+            let prefix = array[0 ..< Self.compactDraftPrefixCount]
+            let controls = array[
+                Self.compactDraftControlStart ..< Self.compactDraftControlEnd]
             let paddingCount =
                 Self.compactDraftPaddedCount - Self.compactDraftRealCount
-            if paddingCount > 0 {
-                parts.append(array[0 ..< paddingCount])
-            }
-            return parts.count == 1 ? parts[0] : concatenated(parts, axis: 0)
+            let padding = array[0 ..< paddingCount]
+            return concatenated([prefix, controls, padding], axis: 0)
         }
 
         if let quantized = full as? QuantizedLinear {
