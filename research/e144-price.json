@@ -1,0 +1,138 @@
+{
+  "experiment": "e144",
+  "harness": "local",
+  "inferred": true,
+  "note": "E144: what a relL2 improvement factor is worth, and what factor +0.30 pt needs.",
+  "qat_improvement_factor_range": [
+    2.8323863636363633,
+    3.1764705882352944
+  ],
+  "rows": [
+    {
+      "model": "linear (k=1, damage proportional to relL2)",
+      "k": 1.0,
+      "recovery_pt_at_measured": 0.08486374150052563,
+      "recovery_pt_at_affine_ceiling": 0.08803055602586607,
+      "factor_required_for_0.30pt": 1.5769230769230769,
+      "candidate_leg_pct_at_ceiling": [
+        0.07482597262198616,
+        0.1787020287325081
+      ]
+    },
+    {
+      "model": "fitted low (qat factor 3.1765)",
+      "k": 1.7380817580050023,
+      "recovery_pt_at_measured": 0.1418140159427537,
+      "recovery_pt_at_affine_ceiling": 0.14688371950723086,
+      "factor_required_for_0.30pt": 1.2995998978160954,
+      "candidate_leg_pct_at_ceiling": [
+        0.12485116158114623,
+        0.2981739505996786
+      ]
+    },
+    {
+      "model": "fitted high (qat factor 2.8324)",
+      "k": 1.929484360241567,
+      "recovery_pt_at_measured": 0.155847945392794,
+      "recovery_pt_at_affine_ceiling": 0.16135720382256477,
+      "factor_required_for_0.30pt": 1.2662512348836903,
+      "candidate_leg_pct_at_ceiling": [
+        0.13715362324918004,
+        0.32755512375980644
+      ]
+    },
+    {
+      "model": "square law (k=2, damage proportional to MSE)",
+      "k": 2.0,
+      "recovery_pt_at_measured": 0.16094473346267557,
+      "recovery_pt_at_affine_ceiling": 0.16661065010755766,
+      "factor_required_for_0.30pt": 1.255755978254962,
+      "candidate_leg_pct_at_ceiling": [
+        0.14161905259142402,
+        0.338219619718342
+      ]
+    }
+  ],
+  "verdict": {
+    "measured_factor": 1.115439471960947,
+    "affine_ceiling_factor": 1.1202653427005307,
+    "min_required_factor": 1.255755978254962,
+    "max_required_factor": 1.5769230769230769,
+    "ceiling_reaches_target": false,
+    "recovery_pt_at_ceiling_range": [
+      0.08803055602586607,
+      0.16661065010755766
+    ],
+    "recovery_pt_at_measured_range": [
+      0.08486374150052563,
+      0.16094473346267557
+    ]
+  },
+  "group_lever": {
+    "median_pct_per_acceptance_pt": 2.361753240955147,
+    "median_pct_per_acceptance_pt_source": "e144_f219 neutral regime, anchor 1760479a",
+    "score_pct_per_head_byte_pct": 0.0844,
+    "rows": [
+      {
+        "group_size": 32,
+        "rel_l2": 0.08263066347287056,
+        "rel_l2_factor_vs_g64": 1.1440180707606822,
+        "trunk_metadata_bytes_delta": 26542080,
+        "head_bytes_pct": 6.205152350969953,
+        "score_pct_from_bytes": -0.523714858421864,
+        "acceptance_pt_range": [
+          0.10322810543126788,
+          0.19346103799554923
+        ],
+        "score_pct_from_acceptance": [
+          0.24379931255995654,
+          0.45690723348453527
+        ],
+        "net_score_pct_range": [
+          -0.2799155458619075,
+          -0.06680762493732878
+        ]
+      },
+      {
+        "group_size": 64,
+        "rel_l2": 0.09453097221190854,
+        "rel_l2_factor_vs_g64": 1.0,
+        "trunk_metadata_bytes_delta": 0,
+        "head_bytes_pct": 0.0,
+        "score_pct_from_bytes": -0.0,
+        "acceptance_pt_range": [
+          0.0,
+          0.0
+        ],
+        "score_pct_from_acceptance": [
+          0.0,
+          0.0
+        ],
+        "net_score_pct_range": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "group_size": 128,
+        "rel_l2": 0.10653754770167428,
+        "rel_l2_factor_vs_g64": 0.8873019348691367,
+        "trunk_metadata_bytes_delta": -13271040,
+        "head_bytes_pct": -3.1025761754849763,
+        "score_pct_from_bytes": 0.261857429210932,
+        "acceptance_pt_range": [
+          -0.22152810899831799,
+          -0.10414990633480067
+        ],
+        "score_pct_from_acceptance": [
+          -0.5231947293894426,
+          -0.2459763788313905
+        ],
+        "net_score_pct_range": [
+          -0.26133730017851053,
+          0.015881050379541517
+        ]
+      }
+    ]
+  }
+}

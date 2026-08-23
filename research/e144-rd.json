@@ -1,0 +1,89 @@
+{
+  "all_sites_located": true,
+  "benchmark_escape": false,
+  "cases": {
+    "flat_tree": {
+      "bytes_agree": true,
+      "digests_agree": true,
+      "nested_readme": false,
+      "sealed": {
+        "bytes": 7,
+        "file_count": 1,
+        "sha256": "484414e84ab50b4ddd5b790a5d507ae7306b2030b0b74eaf2cb472b0f1c55676"
+      },
+      "workflow": {
+        "bytes": 7,
+        "file_count": 1,
+        "sha256": "484414e84ab50b4ddd5b790a5d507ae7306b2030b0b74eaf2cb472b0f1c55676"
+      }
+    },
+    "nested_readme_tree": {
+      "bytes_agree": false,
+      "digests_agree": false,
+      "nested_readme": true,
+      "sealed": {
+        "bytes": 18,
+        "file_count": 2,
+        "sha256": "4ad3f01f8ce896bf7870cd8d7244a91dbd45b44b1472f9957437a1d8bb53758e"
+      },
+      "workflow": {
+        "bytes": 7,
+        "file_count": 1,
+        "sha256": "484414e84ab50b4ddd5b790a5d507ae7306b2030b0b74eaf2cb472b0f1c55676"
+      }
+    }
+  },
+  "e144_digest_rules_agree_with_nested_readme": false,
+  "e144_digest_rules_agree_without_nested_readme": true,
+  "e144_nested_readme_splits_the_rule": true,
+  "enforcing_sites": [
+    {
+      "found": true,
+      "line": 204,
+      "needle": "if relative == \"README.md\" { continue }",
+      "path": "Sources/MLXFastTrustedHarness/QwenMTPHeadDeclaration.swift",
+      "rule": "top-level README.md only",
+      "site": "trusted CLI provenance sealer",
+      "text": "if relative == \"README.md\" { continue }"
+    },
+    {
+      "found": true,
+      "line": 2485,
+      "needle": "&& find . -type f ! -name README.md \\",
+      "path": ".github/workflows/qwen-mtp-ranked-benchmark.yml",
+      "rule": "README.md at any depth",
+      "site": "ranked workflow, resolve the declared head",
+      "text": "&& find . -type f ! -name README.md \\"
+    },
+    {
+      "found": true,
+      "line": 38,
+      "needle": "find . -type f ! -name README.md \\",
+      "path": "mtp-head/README.md",
+      "rule": "README.md at any depth",
+      "site": "participant-facing equivalent shell",
+      "text": "find . -type f ! -name README.md \\"
+    },
+    {
+      "found": true,
+      "line": 2843,
+      "needle": "\"${declared_head}\" -name README.md -print -quit",
+      "path": ".github/workflows/qwen-mtp-ranked-benchmark.yml",
+      "rule": "refuse README.md at any depth",
+      "site": "ranked workflow, pre-timing re-scrub",
+      "text": "if find \"${declared_head}\" -name README.md -print -quit | grep -q .; then"
+    }
+  ],
+  "escape_closed_by": "the workflow's pre-timing re-scrub refuses a README.md at any depth in the resolved declared head, so a nested README fails the job instead of riding into a timed round as digest-exempt payload.",
+  "experiment": "e144",
+  "finding": "two readings of one rule",
+  "harness": "local",
+  "rung": "R-D",
+  "shipped_head_exposure": {
+    "checked": true,
+    "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+    "readme_files": [],
+    "shipped_head_is_exposed": false
+  },
+  "swift_evidence": "Tests/MLXFastTests/E144HeadDeclarationTests.swift, run with: swift test --force-resolved-versions --filter E144HeadDeclarationTests"
+}
