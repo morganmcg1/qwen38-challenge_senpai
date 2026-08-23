@@ -60627,3 +60627,218 @@ in flight                    5a9f130a   crown parity, validating
 advisor branch               5f60bea8 + this entry
 ```
 
+
+---
+
+## 324 — ADVISOR ERROR 195, RULE 167, FINDING 293: the NAX prefill kernel is not virgin territory, it is a graveyard
+
+Date 2026-08-23. Advisor. Zero GPU. Frontier subagent review plus ledger audit.
+
+### 324.1 What I claimed in 321 and why it was wrong
+
+FINDING 289 asserted that no promoted candidate had ever touched
+`quantized_nax.h`, called the surface "virgin territory", and drew the strategic
+conclusion that the official runner is a cheap instrument on a blind axis.
+
+The git check was correct and still is:
+
+```
+git diff --quiet 5d029178 0863b06a -- .../kernels/quantized_nax.h   PRISTINE
+git log --oneline 0863b06a -- .../kernels/quantized_nax.h           one commit
+```
+
+The inference was wrong. **Absence from the promoted chain does not mean nobody
+tried. It means nobody succeeded.** And here the failures are public.
+
+Worse: ledger `317.8` item 5 already recorded this, in these words —
+
+> **Alphonse's axis confirmed unclaimed at the frontier.** No prefill mechanism
+> has ever been promoted: `5cdc9c17` BitWonka at `-4.9722 %` scored `3.18068`
+> and was rejected, `43925f29` and `a9dd132a` Amal-David were both rejected, and
+> Amal-David's promoted `3ba6ee9` carries no prefill work. **Caveat made
+> binding: `-4.9722 %` is a ceiling measured on BitWonka's stack, not a forecast
+> for ours.**
+
+So ADVISOR ERROR 195 is a memory regression, not a bad new inference. I
+re-derived a weaker version of a fact my own ledger already held, and I
+published it as a discovery. The binding caveat in 317.8 also did not survive
+into 321, which is how the `8.9x the gap` headline got written without it.
+
+### 324.2 RULE 167
+
+> An untouched surface in a promoted chain means one of two things: nobody
+> tried, or everybody failed. Check the rejected and non-promoted receipts
+> before you call it virgin. **When every attempt failed, the shared failure
+> mode is the experiment** — not the mechanism everybody was trying to land.
+>
+> **Clause 2.** Before calling a surface unexplored, grep the campaign ledger
+> for the kernel name and for board rows on the mechanism. The campaign's own
+> memory is the first source, not the last. A `git log` on the promoted chain
+> cannot see a rejected receipt.
+
+### 324.3 FINDING 293 — four attempts, one shared cause of death
+
+| receipt | author | mechanism | prefill | decode |
+| --- | --- | --- | ---: | ---: |
+| `5cdc9c17` | BitWonka | 128x32 NAX retile | **-4.9721 %, se 0.0404** | regressed, scored 3.18068, rejected |
+| `43925f29` | Amal-David | Ws double buffer | -4.1182 % | regressed, rejected |
+| `a9dd132a` | Amal-David | Ws double buffer | -4.1429 % | regressed, rejected |
+| `7226dc9a` | **ours** | Ws double buffer, pointer-recompute alternation | — | **+2.15 %, about 70 sigma** |
+
+**Every one took a candidate-leg decode regression of `+1.9 %` to `+4.2 %` that
+the prefill channel does not explain.** Uniform, three independent authors,
+three different edits to the same kernel family. The ledger recorded the
+rejections; it did not record that they share a channel. That uniformity is the
+new fact and it is the reason the surface has stayed pristine.
+
+`5cdc9c17` **published a score**, so a 128x32 NAX retile has already passed
+exact-token verification on the ranked M5.
+
+### 324.4 The mechanism hypothesis, with line numbers
+
+Decode `qmv` kernels are JIT-compiled from the `metal::quantized()` source
+string at `jit_kernels.cpp:928`. `qmm_t_nax` compiles from a separate
+`metal::quantized_nax()` string at `:1129`. Our E147 rung A edited
+`quantized.h` — plausibly perturbing the decode module without ever dispatching
+a changed kernel.
+
+Unproven. Consistent with all four rows. Cheap to defend against: confine every
+edit strictly to the `quantized_nax` stem and prove the decode JIT source string
+is byte-identical with `research/e147_qmv_jit_census.py`, field
+`covers_nax_gemm`. Made a mandatory per-arm deliverable for alphonse as
+`e156_decode_jit_source_byte_identical`.
+
+**The reframe.** The experiment is not "make prefill faster." Prefill is solved:
+a rival measured `-4.97 %` on the ranked M5 with a geometry parked in our own
+tree at `quantized_nax.h:1289` behind `kE147NaxRetileOn = false`. The experiment
+is **"change prefill without perturbing the decode JIT module."** Nobody has
+published a solution to the second half.
+
+### 324.5 Kernel facts established by the review, primary-source verified
+
+Vendored `quantized_nax.h`, cross-checked against upstream `mlx` v0.32.0
+`7a1d4f5`; the vendored copy is `0.32.0-dev` and matches upstream for this
+family.
+
+```
+entry            affine_qmm_t_nax -> qmm_t_nax_tgp_impl   :940, entry :1259
+tiling           BM/BK/BN = 64/64/64, WM=WN=2             quantized_nax.metal:74-77
+dispatch         group_dims(32,2,2) = 128 threads         quantized.cpp:490-496
+                 one threadgroup per 64x64 output tile, grid (N/64, M/64, B)
+per-simdgroup    SM=SN=SK=32 -> TM=TN=TK=2 over 16x16      :990-996
+accumulator      NAXTile<float,2,2> = 32 fp32 regs/thread, AccumType = float
+MMA              mpp::tensor_ops::matmul2d(16,32,16, multiply_accumulate)
+                 execution_simdgroup, cooperative tensors  steel/gemm/nax.h:393-530
+gate             is_nax_available(): macOS >= 26.2, arch_gen >= 17  device.cpp:913-930
+dequant          QuantizedBlockLoader :575, stages only W into threadgroup
+                 T Ws[64*72] approx 9 KB bf16; 4-bit is mask+FMA, no LUT;
+                 high nibble via pre-divided scale s[1]=scale/16  :524-530
+activations      loaded direct from device into registers   :1061, no x staging
+buffering        single-buffered Ws, two threadgroup_barriers per BK step  :1043-1051
+```
+
+At `M = 512` the `qmm_splitk` heuristic yields `split_k = 1` and falls through
+to `qmm_nax` (`quantized.cpp:697-699`: `is_nax_available() && transpose &&
+K % 64 == 0`). Finding 250 already confirmed the seed prefill executes this
+entry at `(64,64)`.
+
+Upstream `main` adds only `bm = (M <= 32) ? 32 : 64` (PR #4171), irrelevant at
+`M = 512`.
+
+### 324.6 Corrections to the campaign's Apple-hardware model
+
+- **M5 is Apple GPU family 10, not family 9.** Metal Feature Set Tables, "Metal
+  GPUs", p.2, rev 2026-05-21. M3, M4 and A17 Pro are Apple9.
+- **Threadgroup memory is 32 KB max** on Apple4 through Apple10, 1024
+  threads/tg, 16 B alignment. A doubled `Ws` is 18,432 B at bf16 (fits) and
+  34,816 B at fp32 (does not). This is already the E147 rung B compile-time
+  capacity predicate.
+- **Apple's MPP Programming Guide recommends `BK = 128` for M5.** Forbidden
+  here: it changes K blocking, so it moves an addition.
+- **The kernel is already on hardware tensor-op MMA**, not scalar FMA and not
+  `simdgroup_matrix`. There is no MMA win available. MSL 4.1 Table 7.3 supports
+  `half/bfloat x uint4b/int4b` matmul, a dequant-free direction, but it changes
+  accumulation numerics and is out of scope.
+- **Do not stage activations through threadgroup memory.** The kernel reads x
+  straight into registers and Apple explicitly endorses that shape. Staging
+  would be an anti-fix.
+- Apple's guide says explicit software pipelining is unnecessary on this
+  hardware, yet Amal-David's double-buffer receipts show about `-4 %`. Trust the
+  ranked receipts over the guide. It does explain why our naive pipeline lost.
+
+### 324.7 Two things that are unpriceable a priori
+
+- **Threadgroup bank conflicts.** Apple publishes no bank model — verified
+  absent from the Feature Set Tables, MSL 4.1 and the Xcode docs. `Ws` is
+  already padded at `BK_padded = 72`.
+- **Occupancy and register pressure.** 32 fp32 accumulators per thread is fine;
+  M5 has second-generation Dynamic Caching and a redesigned occupancy unit.
+
+### 324.8 The retile's named exactness risk
+
+`(TM,TN)` `(2,2) -> (4,1)` switches `tile_matmad_nax` from the paired-B
+descriptor `matmul2d(16,32,16)` to the paired-A descriptor `matmul2d(32,16,16)`
+at `steel/gemm/nax.h:847` and `:864`. Apple documents nothing about internal
+accumulation order across descriptor geometries. If the hardware's 16-element
+dot-product reduction differs between them, every output rounds differently and
+the ranked run is rejected.
+
+Cheapest check, and it runs on an M4 Pro today: a standalone MPP harness
+comparing the two descriptors bit for bit on identical adversarial fp16 and
+bf16 fragments. MPP tensor ops are API-portable back to Apple7 per the Feature
+Set Tables. It validates the compiler and API contract, not the M5 hardware
+path. The strongest existing evidence stays BitWonka's published score.
+
+### 324.9 Why `7226dc9a` inverted a mechanism worth `-4.12 %` to a rival
+
+Pointer-recompute alternation pays the destination retarget `K/BK` times per
+tile. The fix is a **one-add destination retarget**, the `shift_dst` pattern at
+`fp_quantized_nax.h:244-250`. Same idea, opposite sign, entirely
+implementation-sensitive. This is the most actionable single line the review
+produced.
+
+### 324.10 Alphonse's registered priors, restored from 315.6
+
+```
+E151 R1     NAX 128x32 seed retile        prefill   +0.505 % published
+E151 R2     affine NAX double buffer      prefill   +0.419 % published
+E151 R1oR2  composed                      prefill   +0.663 %   registered -6.5 % prefill
+```
+
+Both arms are **parked, not unbuilt**. `kE147NaxRetileOn` is `false` at
+`quantized_nax.h:1289`, guard-tested 16/16 PASS, scope-clean, confined to the
+`quantized_nax` stem. F4's "one line" is accurate; F4's implication of new
+ground was not, and F5 corrected it.
+
+Because he has already composed these two once and registered the result,
+"do not compose blind" narrows to: do not compose either of them with a
+decode-channel change.
+
+### 324.11 Open number
+
+My FINDING 289 Rule-148 weighted prefill share is `10.04 %`; an earlier ranked
+decomposition in this ledger says `8.45 %`. Not re-derived. Alphonse reports his
+published estimate at both ends. The `+0.30 %` to `+0.50 %` band brackets both,
+and it inherits 317.8's binding caveat: `-4.9722 %` is a ceiling measured on
+BitWonka's stack, not a forecast for ours.
+
+### 324.12 What survives from 321 unchanged
+
+The Amdahl arithmetic, `harness=ranked`, numerator fixed so nothing cancels.
+The per-prompt prefill reconstruction from the FINDING 286 row law with zero
+fitted parameters, agreeing with the carried share to `0.0002 pp`. The exactness
+one-liner — you may move work between threads, you may move data earlier in
+time, you may not move an addition. `research/e289_prefill_is_virgin_territory.py`
+still runs green; only its title is now wrong, and I am leaving the filename
+alone so the error stays findable.
+
+### 324.13 State
+
+```
+THE BAR              ec24d59    3.72911001   src 0863b06a
+our best receipt     0cf1637e   3.68278758
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating
+advisor branch       22cae1b9 + this entry
+```
+
