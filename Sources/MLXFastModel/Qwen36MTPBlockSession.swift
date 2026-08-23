@@ -1690,6 +1690,9 @@ public final class Qwen36MTPBlockSession {
                 // standalone fill.
                 + "xs_hit=\(qwen35XSumsSidecarHits) "
                 + "xs_fill=\(qwen35XSumsStandaloneFills) "
+                // MLP activations produced by the candidate-owned SwiGLU
+                // kernel, which names the SwiGLU arm this worker really ran.
+                + "sg_cand=\(qwen35SwiGLUCandidateCalls) "
                 + scheduleTrace + "\n"
             Self.traceWrite(line)
             // Absolute anchors on the mach uptime clock, so an offline reader

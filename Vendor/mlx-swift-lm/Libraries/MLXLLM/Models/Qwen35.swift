@@ -1540,6 +1540,7 @@ func qwen35SwiGLUActivation(_ y: MLXArray) -> MLXArray {
     let kBlocks = half / 512
     var shape = y.shape
     shape[shape.count - 1] = half
+    qwen35SwiGLUCandidateCalls &+= 1
     if arm == .fuse {
         let outputs = qwen35FusedSwiGLUXSumsKernel(
             [y],
@@ -4532,6 +4533,14 @@ public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
 /// much of the 257-site fill surface the inherited fusion actually covers.
 public nonisolated(unsafe) var qwen35XSumsSidecarHits: Int = 0
 public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
+
+/// MLP activations produced by the candidate-owned SwiGLU kernel.
+///
+/// `off` leaves this at zero, so the pair (`qwen35SwiGLUCandidateCalls`,
+/// `qwen35XSumsStandaloneFills`) identifies the SwiGLU arm from the run's own
+/// trace: `off` is (0, full fill count), `replica` is (64, full fill count) and
+/// `fuse` is (64, full fill count minus 64).
+public nonisolated(unsafe) var qwen35SwiGLUCandidateCalls: Int = 0
 
 /// Derived-index geometry this process built, for the arm witness. Zero until
 /// `buildDerivedClusterIndex` runs, which happens once during the untimed warm.
