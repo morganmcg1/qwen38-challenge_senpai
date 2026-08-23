@@ -88,16 +88,37 @@ Count them separately and never let them move the organizer decomposition.
 
 | test function | issues | source | cause |
 |---|---:|---|---|
-| `E95QmvWidthProbeTests` | 1 | E95, commit `860987e7` | `try #require(Self.enabled)` on an unset environment variable |
-| `E95DonationProbeTests` | 1 | E95, commit `1280cae8` | `try #require(Self.enabled)` on an unset environment variable |
+| `theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax` | 1 | E130, `Tests/MLXFastTests/E130WiredResidencySlackTests.swift:232` | E130 measured that the wired residency allowance must be at least 269 MiB; the shipped `wiredZHDefaultSlackMB` is still 64 |
 
-Both are opt-in probes that **fail closed** instead of skipping, so they report
-an issue on every host. A disabled probe that records an issue burns the gate's
-signal. Askeladd is changing both to skip. When that lands, delete this section
-and the observed total returns to 40.
+The E130 test asserts bound A: the shipped allowance must cover the largest
+measured persistent growth, 267.79 MiB, plus the measured page tax, 0.97 MiB.
+It reads exactly one live source value, `wiredZHDefaultSlackMB` in
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:214`, and compares it against
+constants hardcoded in the test file. Both inputs are fixed, so the verdict is
+deterministic on every host and on every base that keeps the constant at 64.
 
-Any new opt-in probe must **skip** when its environment variable is unset. Do not
-add a probe that fails closed.
+**This is a standing red flag, not noise.** The test is our own measurement
+saying the shipped allowance is about a quarter of what the scored window needs.
+The constant is 64 on the campaign tree, on the crown `0863b06a`, and on the
+E152 R2 port, so no import introduced it and no import has fixed it. Raising it
+is an open experiment, not a documentation change; do not edit the constant to
+silence the test.
+
+### Retired entries
+
+`E95QmvWidthProbeTests` and `E95DonationProbeTests` each contributed 1 issue by
+calling `try #require(Self.enabled)` on an unset environment variable, so they
+failed closed instead of skipping. Askeladd's skip fix has landed. Both suites
+still exist under `Tests/` and both now report no issue. Verified on
+2026-08-23 at `07dbe709`.
+
+Any new opt-in probe must **skip** when its environment variable is unset. Do
+not add a probe that fails closed.
+
+### Observed total
+
+At `07dbe709` the run reports **41 issues**: the nine organizer names at their
+documented 40, plus the single E130 issue above.
 
 ## The seven failing input files
 

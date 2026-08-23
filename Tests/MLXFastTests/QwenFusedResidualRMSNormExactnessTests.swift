@@ -34,6 +34,15 @@ import Testing
 // and `ensureRowContiguous` flag. MLX's custom-kernel cache keys on exactly
 // that tuple, so this is the shipped kernel, not a copy of it -- and it cannot
 // silently drift, which is the E26 content-gate lesson applied here.
+//
+// E152: the promoted frontier stopped inlining that source. The shipped kernel
+// and its xsums variant now share one generator,
+// `qwen35FusedResidualRMSNormSource(emitSums:)`, and the shipped declaration
+// calls it with `emitSums: false`. The reader therefore resolves the generator
+// and removes each spliced `\(segment)`, but only after it proves that the
+// segment is bound to `emitSums ? "..." : ""` and so contributes nothing to the
+// shipped text. A segment that stops being gated fails the gate instead of
+// disappearing from it.
 
 private let kernelDeclMarker = "qwen35FusedResidualRMSNormKernel = MLXFast.metalKernel("
 private let wrapperDeclMarker = "func qwen35FusedResidualRMSNorm("
@@ -102,6 +111,75 @@ private func firstInt(in line: String) -> Int? {
     return Int(digits)
 }
 
+private func tripleQuotedBlock(_ lines: [String], openingAt open: Int) throws -> [String] {
+    guard
+        let close = lines[(open + 1)...].firstIndex(where: {
+            let t = $0.trimmingCharacters(in: .whitespaces)
+            return t == "\"\"\"" || t == "\"\"\","
+        })
+    else { throw SourceGateError.missing("closing \"\"\"") }
+    return Array(lines[(open + 1) ..< close])
+}
+
+private func interpolatedNames(in body: [String]) -> [String] {
+    var out: [String] = []
+    for line in body {
+        var rest = Substring(line)
+        while let open = rest.range(of: "\\(") {
+            guard let close = rest[open.upperBound...].firstIndex(of: ")") else { break }
+            let name = String(rest[open.upperBound ..< close])
+            if !name.isEmpty, !out.contains(name) { out.append(name) }
+            rest = rest[rest.index(after: close)...]
+        }
+    }
+    return out
+}
+
+/// True when `name` is bound to `emitSums ? "..." : ""`, so the shipped
+/// `emitSums: false` call splices nothing in its place.
+private func emitSumsGatedSegmentIsEmpty(_ name: String, in generator: [String]) -> Bool {
+    guard
+        let letIdx = generator.firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces) == "let \(name) ="
+        })
+    else { return false }
+    var sawGate = false
+    for line in generator[(letIdx + 1)...] {
+        let t = line.trimmingCharacters(in: .whitespaces)
+        if t == "emitSums" { sawGate = true }
+        if t.hasSuffix(": \"\"") { return sawGate }
+        if t.hasPrefix("let ") { return false }
+    }
+    return false
+}
+
+private func shippedGeneratorBody(_ lines: [String], function: String, argument: String) throws
+    -> [String]
+{
+    guard argument == "emitSums: false" else {
+        throw SourceGateError.missing("source: \(function)(emitSums: false)")
+    }
+    guard let fnIdx = lines.firstIndex(where: { $0.contains("func \(function)(") }) else {
+        throw SourceGateError.missing("func \(function)(")
+    }
+    guard
+        let returnIdx = lines[fnIdx...].firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces) == "return \"\"\""
+        })
+    else { throw SourceGateError.missing("return \"\"\" in \(function)") }
+
+    let literal = try tripleQuotedBlock(lines, openingAt: returnIdx)
+    let generator = Array(lines[fnIdx ..< returnIdx])
+    var body = literal
+    for name in interpolatedNames(in: literal) {
+        guard emitSumsGatedSegmentIsEmpty(name, in: generator) else {
+            throw SourceGateError.missing("\(name) bound to emitSums ? ... : \"\"")
+        }
+        body = body.map { $0.replacingOccurrences(of: "\\(\(name))", with: "") }
+    }
+    return body
+}
+
 private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
     let url = repoRoot().appendingPathComponent(qwen35RelativePath)
     let lines = try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\n")
@@ -109,19 +187,11 @@ private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
     guard let declIdx = lines.firstIndex(where: { $0.contains(kernelDeclMarker) }) else {
         throw SourceGateError.missing(kernelDeclMarker)
     }
-    guard
-        let sourceOpen = lines[declIdx...].firstIndex(where: {
-            $0.trimmingCharacters(in: .whitespaces).hasSuffix("source: \"\"\"")
-        })
-    else { throw SourceGateError.missing("source: \"\"\"") }
-    guard
-        let sourceClose = lines[(sourceOpen + 1)...].firstIndex(where: {
-            let t = $0.trimmingCharacters(in: .whitespaces)
-            return t == "\"\"\"" || t == "\"\"\","
-        })
-    else { throw SourceGateError.missing("closing \"\"\"") }
+    guard let sourceIdx = lines[declIdx...].firstIndex(where: { $0.contains("source:") }) else {
+        throw SourceGateError.missing("source:")
+    }
 
-    let header = lines[declIdx ..< sourceOpen]
+    let header = lines[declIdx ..< sourceIdx]
     guard let nameLine = header.first(where: { $0.contains("name:") }),
         let name = quotedStrings(in: nameLine).first
     else { throw SourceGateError.missing("name:") }
@@ -132,9 +202,29 @@ private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
         throw SourceGateError.missing("outputNames:")
     }
 
-    let body = lines[(sourceOpen + 1) ..< sourceClose]
+    let sourceLine = lines[sourceIdx].trimmingCharacters(in: .whitespaces)
+    let body: [String]
+    let declTail: Int
+    if sourceLine.hasSuffix("source: \"\"\"") {
+        body = try tripleQuotedBlock(lines, openingAt: sourceIdx)
+        declTail = sourceIdx + 1 + body.count
+    } else {
+        let call =
+            sourceLine
+            .dropFirst("source:".count)
+            .trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ","))
+        guard let open = call.firstIndex(of: "("), call.hasSuffix(")") else {
+            throw SourceGateError.missing("source: generator call")
+        }
+        body = try shippedGeneratorBody(
+            lines,
+            function: String(call[call.startIndex ..< open]),
+            argument: String(call[call.index(after: open) ..< call.index(before: call.endIndex)]))
+        declTail = sourceIdx + 1
+    }
     guard
-        let ercLine = lines[sourceClose...].prefix(6).first(where: {
+        let ercLine = lines[declTail...].prefix(6).first(where: {
             $0.contains("ensureRowContiguous:")
         })
     else { throw SourceGateError.missing("ensureRowContiguous:") }

@@ -60347,3 +60347,2000 @@ in flight                    5a9f130a   crown parity, validating
 advisor branch               6858079e
 ```
 
+
+---
+
+## 323 — E155 merged; RULE 166 the host transfer scalar; FINDING 292 the head has been changed once, by one person, and never revisited
+
+Date 2026-08-23. Advisor. Zero GPU.
+
+### 323.1 E155 R1 accepted on the moved base and merged
+
+Askeladd's draft-head recall audit, PR #155, head `6557e945`, W&B `eb80mx8m`.
+Recorded base `d0422d1d`, live base `526306bc`, editable-surface delta between
+them empty, so the result transfers without replay. Merged at `5f60bea8`.
+
+Terminal numbers, three untimed 512-token legs, 343 rounds, 1,503 slots:
+
+```
+e155_recoverable_index_pp        0.0755 conditional   0.0665 marginal
+e155_recoverable_vocab_pp        0.1511 conditional   0.1996 marginal
+e155_irreducible_head_error_pp   9.6677 conditional  12.4418 marginal
+e155_index_miss_rate             4/1503 = 0.002661, zero exact ties
+```
+
+Both recoverable terms sit far under the pre-registered 0.3 pp threshold.
+`e155_axis_verdict = close_the_index_axis`. `e155_vocab_axis_verdict =
+close_the_index_axis`; untrimming the draft vocabulary is additionally net
+`-0.511 %` published once priced at the roofline.
+
+**2.3 % of what the head gives away is a readout problem. 97.7 % is the head
+disagreeing with the 27B target**, at a median margin of 2.1875 logits with only
+3 of 187 disagreements exact ties.
+
+Controls: permutation positive control 85.694 pp; masked-winner control 83.832
+pp moving 1503 of 1503 slots; `ann_outside_compact_set = 0`. The exact path is
+proven off four ways, including the gate probe with the path variable set and
+the gate variable unset — the side that makes the other three non-vacuous.
+`growth_attributable = 0`, `e155_growth_reclaimed_bytes = 918`.
+
+Two axes closed for the price of no GPU time. This is the standard.
+
+### 323.2 The index port is now priced on both sides
+
+`p15` + `leaf16` on the crown surface, from askeladd's arithmetic over the
+artifact constants:
+
+```
+most recall the crown geometry could return over ours   <= 0.0755 pt = +0.2017 %
+bytes our geometry does not move                        25.56 MB/step = +0.4583 %
+net, at worst                                           >= +0.257 % published
+```
+
+The loss side is capped by measurement, not by argument: an exact readout over
+the same compact set returns only 0.0755 points, and the crown's index is an
+approximation of that exact readout, so it cannot return more. The port question
+is settled without another run.
+
+### 323.3 RULE 166 — the host transfer scalar, cross-validated three ways
+
+Askeladd's `e155_within_prompt_width_cost_fit` regresses per-round block time on
+`M = d + 1` within each prompt, on data that already existed. Five legs:
+
+| leg | rounds | widths | `b_p` us/row | `a_p` us | R² |
+| --- | ---: | --- | ---: | ---: | ---: |
+| beagle_a, E153 r1 | 118 | 2-8 | 15,365.97 | 24,370 | 0.969 |
+| beagle_a, E155 off | 118 | 2-8 | 15,365.15 | 25,032 | 0.967 |
+| essays, E153 r1 | 145 | 2-7 | 15,175.64 | 23,692 | 0.884 |
+| essays, E155 off | 145 | 2-7 | 15,664 | — | 0.873 |
+| benchfixture, E155 off | 77 | 4-8 | 17,200 | — | 0.975 |
+| **pooled** | | | **15,754** | | |
+
+The two `beagle_a` legs ran hours apart on different worker binaries and agree
+to five figures. Edward's independent within-`d` contrast gives `15,708 us/row`,
+0.29 % away by a different method on a different data set.
+
+Divide the pooled local slope by the FINDING 286 ranked row law:
+
+```
+FINDING 286, harness=ranked:  clean_round_us = 8,434 + 5,657 * rows
+15,754 / 5,657 = 2.7849
+independently measured M4 Pro / M5 round ratio = 2.777
+agreement = 0.28 %
+```
+
+Evaluated end to end on the three literature-prompt legs, mean `a = 24,365`,
+mean `b = 15,302`:
+
+| M | ranked us | local us | ratio |
+| ---: | ---: | ---: | ---: |
+| 3 | 25,405 | 70,271 | 2.766 |
+| 5 | 36,719 | 100,875 | 2.747 |
+| 8 | 53,690 | 146,781 | 2.734 |
+
+> **RULE 166.** Local M4 Pro round time converts to ranked M5 round time by a
+> single divisor of **2.75 +- 0.03** for `M` in `[3, 8]` on this workload.
+>
+> The rule is for **round-level totals only**. It does not hold term by term:
+> the intercept ratio is `24,365 / 8,434 = 2.889` and the slope ratio is `2.71`
+> to `2.78`. The per-prompt slope spread is about `+-6 %`; `benchfixture` alone
+> sits at `17,200 us/row`, ratio `3.04`.
+
+This is the first transfer rule the campaign has that three independent routes
+agree on: a within-prompt fit on `M`, a within-`d` contrast, and an inversion of
+the published ranked receipts, checked against a separately measured host round
+ratio. Neither student could have produced it alone. Credited jointly to
+askeladd and edward.
+
+It also retires a recurring argument. Students no longer need to argue about
+whether a local round-time delta transfers; they divide by 2.75 and state the
+`+-6 %` prompt spread.
+
+### 323.4 FINDING 292 — the proposal head has been changed once, by one person, in the whole history of this track
+
+Askeladd's section 14 said the head is the axis and nobody has touched it. I
+checked "nobody" against the entire promoted history.
+
+Every commit in `upstream/main` that touches `mtp-head.manifest.json` — more
+than twenty, one per promoted or validated submission — carries byte-identical
+values for everything except the free-text `note`:
+
+```
+source_url  hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e05...
+sha256      559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71
+bytes       427,742,600
+max_bytes   2,147,483,648
+```
+
+`git ls-tree -r upstream/main -- mtp-head/` returns exactly one file across the
+whole history: `README.md`.
+
+One participant built a q2/q4 head derivative early. Every promoted submission
+since has inherited that declaration verbatim through the snapshot chain,
+including ours, including the crown at `ec24d59`.
+
+Now the fixture:
+
+```
+fixtures/qwen3_8_27b_mtp_track.json -> mtp_head
+  upstream_model_id  EigenLabs/Qwen3.8-27B-MTP-bf16 @ 26a328e0
+  dtype              bf16          (unquantized)
+  tensor_count       15
+  tensor_bytes       849,398,784
+setup-qwen-mtp.sh:59  "THE HEAD REPOSITORY IS PUBLIC"
+setup-qwen-mtp.sh:76  MTP_HEAD_DIR default = ${CACHE_ROOT}/mtp-head
+```
+
+**The organizer's pinned head is bf16 at 849,398,784 tensor bytes. The head
+every promoted submission declares is a derivative at 427,742,600 bytes, 50.4 %
+of it. The declared ceiling is 2,147,483,648. 1.72 GB of declared head capacity
+has never been used by anyone in this competition.**
+
+And askeladd has just measured that 9.6677 of the 9.8942 conditional acceptance
+points the head gives away are the head disagreeing with the target — measured
+against the **derivative's** own exact readout, not against the bf16 original.
+
+### 323.5 The affordability number, which is not what I expected
+
+Askeladd's bucket-B frame, reused exactly:
+
+```
+1 MB more traffic per draft step
+  = 1e6 / 567e9            = 1.7637 us per draft step
+  * 4.382 draft steps/round = 7.729 us per round
+  / 43,114 us modelled ranked round
+  = 0.01793 % published cost
+```
+
+This reproduces his `50.99 MB -> +0.914 %` exactly. Against the settled
+`+2.6701 %` published per acceptance point:
+
+```
+BREAK-EVEN: 148.9 MB extra traffic per draft step per acceptance point.
+```
+
+The whole declared head is 427.7 MB. We can roughly double the head's
+per-draft-step traffic for one acceptance point, or quadruple it for three.
+
+I had assumed this axis was priced out. It is not. **The head is not expensive,
+it is unexplored, and those are different things.** Two independent degrees of
+freedom follow:
+
+- bytes on disk, capped at 2 GiB, are nearly free — residency is charged to both
+  legs of the pair, per the fixture's own `merge_note`;
+- bytes read per draft step are what costs, and a bigger artifact need not read
+  more per step. A larger readout reached through an index costs only the probed
+  rows; a larger trunk is read in full every step.
+
+### 323.6 The open inference E158 must settle
+
+`248,320 x 5,120` at bf16 is 2.54 GB, which does not fit in 849 MB. So my
+inference is that the pinned head has **no vocabulary projection of its own**
+and ties to the target's 4-bit affine group-64 embedding. If that is right:
+
+- 4-bit is already the maximum precision available anywhere for the draft
+  vocabulary projection;
+- the rerank is already exact with respect to available precision;
+- the entire head-precision axis lives in the **trunk**, not the readout.
+
+If it is wrong, the readout axis reopens. Either way the census decides it, and
+the census costs no GPU time.
+
+A second inference, from the byte arithmetic:
+
+```
+q4 compact  98,336 x 5,120 x 0.5625 = 283,207,680
+q2 compact  98,336 x 5,120 x 0.3125 = 157,337,600
+sum                                   440,545,280
+declared artifact                     427,742,600     -12,802,680
+trunk at 4.5 bits (849.4 MB bf16)  =  238,900,000 approx
+q2 + 4-bit trunk                      396,237,600     +31,505,000
+```
+
+Neither composition lands exactly, so the artifact is some third thing. Stop
+guessing and enumerate it.
+
+### 323.7 The urgent sub-question
+
+`setup-qwen-mtp.sh` defaults `MLXFAST_QWEN_MTP_HEAD_DIR` to the **pinned bf16**
+head. `research/fetch-declared-head.sh` exists to stage the **declared** head
+over the same variable. The ranked workflow resolves the declaration itself at
+`.github/workflows/qwen-mtp-ranked-benchmark.yml:2366-2396` and hands the result
+to the worker as `QMTP_CANDIDATE_HEAD_DIR`.
+
+So which head drafted in every local leg this campaign has ever run?
+
+If local drafts from the pinned bf16 head and ranked drafts from the declared
+q2/q4 head, **every local acceptance measurement in the campaign describes a
+different head from the ranked one.** That would be a campaign-wide validity
+question outranking everything on the board.
+
+It is probably fine: askeladd's local `beagle_a p_shipped = 0.8891` against the
+FINDING 286 ranked recovered `beagle p = 0.8973` is close. But "probably fine"
+is not "checked", and the check costs one grep of `head_provenance`. E158 R0.2
+answers it and reports out of band.
+
+### 323.8 E158 assigned — PR #158, askeladd, base `5f60bea8`
+
+R0 is a census with no timed work: enumerate both artifacts tensor by tensor,
+prove which head each harness loads with a `head_provenance` witness, attribute
+bytes per draft step by tensor, and confirm what the declaration mechanism
+accepts. R1 re-runs the existing recall-audit instrument under both heads and
+reports `e158_head_precision_recoverable_pp`, priced against
+`e158_bf16_bytes_per_draft_step_delta_MB` at the two exchange rates above.
+
+Pre-registered: net `>= +0.30 %` builds it; `0` to `+0.30 %` earns one bounded
+arm; `<= 0` closes head precision and redirects the acceptance question to the
+1.72 GB of unused capacity and to distillation, which is a new programme rather
+than an R2.
+
+Legality line stated in the brief: a declared head that matches its manifest
+digest is legal whatever its provenance, and the static review says so in terms;
+deriving an *index* at load from declared tensors is legal and is what we
+already do; deriving a *head* at load is undeclared head substitution at
+critical severity.
+
+### 323.9 Priority order after this round
+
+```
+head precision / capacity   up to 9.67 pt of headroom   askeladd  E158 R0   census first
+prefill GEMM, blind         up to 8.9x gap              alphonse  E156 R1   repriced, uncontested
+crown parity + leaf16       the gap                     thorfinn  E152 R2   ABBA in flight
+depth recalibration         0.68x gap                   edward    E157 R0   gated on the shortfall decomposition
+```
+
+Two of the four now sit on surfaces that no promoted submission in the entire
+competition has ever modified: the quantized NAX prefill matmul (FINDING 289)
+and the proposal head (FINDING 292). That is not a coincidence. Twenty-odd
+promoted submissions have been optimizing the same decode kernels against each
+other, and the two largest untouched surfaces were both found by asking the
+same question — *what has nobody edited?* — rather than by looking for a better
+version of what everyone edits.
+
+### 323.10 State
+
+```
+THE BAR                      ec24d59    3.72911001   src 0863b06a, unchanged
+our best official row        0cf1637e   3.68278758   tree e09d6aa7
+gap                                     0.04632 absolute = +1.2578 %
+in flight                    5a9f130a   crown parity, validating
+advisor branch               5f60bea8 + this entry
+```
+
+
+---
+
+## 324 — ADVISOR ERROR 195, RULE 167, FINDING 293: the NAX prefill kernel is not virgin territory, it is a graveyard
+
+Date 2026-08-23. Advisor. Zero GPU. Frontier subagent review plus ledger audit.
+
+### 324.1 What I claimed in 321 and why it was wrong
+
+FINDING 289 asserted that no promoted candidate had ever touched
+`quantized_nax.h`, called the surface "virgin territory", and drew the strategic
+conclusion that the official runner is a cheap instrument on a blind axis.
+
+The git check was correct and still is:
+
+```
+git diff --quiet 5d029178 0863b06a -- .../kernels/quantized_nax.h   PRISTINE
+git log --oneline 0863b06a -- .../kernels/quantized_nax.h           one commit
+```
+
+The inference was wrong. **Absence from the promoted chain does not mean nobody
+tried. It means nobody succeeded.** And here the failures are public.
+
+Worse: ledger `317.8` item 5 already recorded this, in these words —
+
+> **Alphonse's axis confirmed unclaimed at the frontier.** No prefill mechanism
+> has ever been promoted: `5cdc9c17` BitWonka at `-4.9722 %` scored `3.18068`
+> and was rejected, `43925f29` and `a9dd132a` Amal-David were both rejected, and
+> Amal-David's promoted `3ba6ee9` carries no prefill work. **Caveat made
+> binding: `-4.9722 %` is a ceiling measured on BitWonka's stack, not a forecast
+> for ours.**
+
+So ADVISOR ERROR 195 is a memory regression, not a bad new inference. I
+re-derived a weaker version of a fact my own ledger already held, and I
+published it as a discovery. The binding caveat in 317.8 also did not survive
+into 321, which is how the `8.9x the gap` headline got written without it.
+
+### 324.2 RULE 167
+
+> An untouched surface in a promoted chain means one of two things: nobody
+> tried, or everybody failed. Check the rejected and non-promoted receipts
+> before you call it virgin. **When every attempt failed, the shared failure
+> mode is the experiment** — not the mechanism everybody was trying to land.
+>
+> **Clause 2.** Before calling a surface unexplored, grep the campaign ledger
+> for the kernel name and for board rows on the mechanism. The campaign's own
+> memory is the first source, not the last. A `git log` on the promoted chain
+> cannot see a rejected receipt.
+
+### 324.3 FINDING 293 — four attempts, one shared cause of death
+
+| receipt | author | mechanism | prefill | decode |
+| --- | --- | --- | ---: | ---: |
+| `5cdc9c17` | BitWonka | 128x32 NAX retile | **-4.9721 %, se 0.0404** | regressed, scored 3.18068, rejected |
+| `43925f29` | Amal-David | Ws double buffer | -4.1182 % | regressed, rejected |
+| `a9dd132a` | Amal-David | Ws double buffer | -4.1429 % | regressed, rejected |
+| `7226dc9a` | **ours** | Ws double buffer, pointer-recompute alternation | — | **+2.15 %, about 70 sigma** |
+
+**Every one took a candidate-leg decode regression of `+1.9 %` to `+4.2 %` that
+the prefill channel does not explain.** Uniform, three independent authors,
+three different edits to the same kernel family. The ledger recorded the
+rejections; it did not record that they share a channel. That uniformity is the
+new fact and it is the reason the surface has stayed pristine.
+
+`5cdc9c17` **published a score**, so a 128x32 NAX retile has already passed
+exact-token verification on the ranked M5.
+
+### 324.4 The mechanism hypothesis, with line numbers
+
+Decode `qmv` kernels are JIT-compiled from the `metal::quantized()` source
+string at `jit_kernels.cpp:928`. `qmm_t_nax` compiles from a separate
+`metal::quantized_nax()` string at `:1129`. Our E147 rung A edited
+`quantized.h` — plausibly perturbing the decode module without ever dispatching
+a changed kernel.
+
+Unproven. Consistent with all four rows. Cheap to defend against: confine every
+edit strictly to the `quantized_nax` stem and prove the decode JIT source string
+is byte-identical with `research/e147_qmv_jit_census.py`, field
+`covers_nax_gemm`. Made a mandatory per-arm deliverable for alphonse as
+`e156_decode_jit_source_byte_identical`.
+
+**The reframe.** The experiment is not "make prefill faster." Prefill is solved:
+a rival measured `-4.97 %` on the ranked M5 with a geometry parked in our own
+tree at `quantized_nax.h:1289` behind `kE147NaxRetileOn = false`. The experiment
+is **"change prefill without perturbing the decode JIT module."** Nobody has
+published a solution to the second half.
+
+### 324.5 Kernel facts established by the review, primary-source verified
+
+Vendored `quantized_nax.h`, cross-checked against upstream `mlx` v0.32.0
+`7a1d4f5`; the vendored copy is `0.32.0-dev` and matches upstream for this
+family.
+
+```
+entry            affine_qmm_t_nax -> qmm_t_nax_tgp_impl   :940, entry :1259
+tiling           BM/BK/BN = 64/64/64, WM=WN=2             quantized_nax.metal:74-77
+dispatch         group_dims(32,2,2) = 128 threads         quantized.cpp:490-496
+                 one threadgroup per 64x64 output tile, grid (N/64, M/64, B)
+per-simdgroup    SM=SN=SK=32 -> TM=TN=TK=2 over 16x16      :990-996
+accumulator      NAXTile<float,2,2> = 32 fp32 regs/thread, AccumType = float
+MMA              mpp::tensor_ops::matmul2d(16,32,16, multiply_accumulate)
+                 execution_simdgroup, cooperative tensors  steel/gemm/nax.h:393-530
+gate             is_nax_available(): macOS >= 26.2, arch_gen >= 17  device.cpp:913-930
+dequant          QuantizedBlockLoader :575, stages only W into threadgroup
+                 T Ws[64*72] approx 9 KB bf16; 4-bit is mask+FMA, no LUT;
+                 high nibble via pre-divided scale s[1]=scale/16  :524-530
+activations      loaded direct from device into registers   :1061, no x staging
+buffering        single-buffered Ws, two threadgroup_barriers per BK step  :1043-1051
+```
+
+At `M = 512` the `qmm_splitk` heuristic yields `split_k = 1` and falls through
+to `qmm_nax` (`quantized.cpp:697-699`: `is_nax_available() && transpose &&
+K % 64 == 0`). Finding 250 already confirmed the seed prefill executes this
+entry at `(64,64)`.
+
+Upstream `main` adds only `bm = (M <= 32) ? 32 : 64` (PR #4171), irrelevant at
+`M = 512`.
+
+### 324.6 Corrections to the campaign's Apple-hardware model
+
+- **M5 is Apple GPU family 10, not family 9.** Metal Feature Set Tables, "Metal
+  GPUs", p.2, rev 2026-05-21. M3, M4 and A17 Pro are Apple9.
+- **Threadgroup memory is 32 KB max** on Apple4 through Apple10, 1024
+  threads/tg, 16 B alignment. A doubled `Ws` is 18,432 B at bf16 (fits) and
+  34,816 B at fp32 (does not). This is already the E147 rung B compile-time
+  capacity predicate.
+- **Apple's MPP Programming Guide recommends `BK = 128` for M5.** Forbidden
+  here: it changes K blocking, so it moves an addition.
+- **The kernel is already on hardware tensor-op MMA**, not scalar FMA and not
+  `simdgroup_matrix`. There is no MMA win available. MSL 4.1 Table 7.3 supports
+  `half/bfloat x uint4b/int4b` matmul, a dequant-free direction, but it changes
+  accumulation numerics and is out of scope.
+- **Do not stage activations through threadgroup memory.** The kernel reads x
+  straight into registers and Apple explicitly endorses that shape. Staging
+  would be an anti-fix.
+- Apple's guide says explicit software pipelining is unnecessary on this
+  hardware, yet Amal-David's double-buffer receipts show about `-4 %`. Trust the
+  ranked receipts over the guide. It does explain why our naive pipeline lost.
+
+### 324.7 Two things that are unpriceable a priori
+
+- **Threadgroup bank conflicts.** Apple publishes no bank model — verified
+  absent from the Feature Set Tables, MSL 4.1 and the Xcode docs. `Ws` is
+  already padded at `BK_padded = 72`.
+- **Occupancy and register pressure.** 32 fp32 accumulators per thread is fine;
+  M5 has second-generation Dynamic Caching and a redesigned occupancy unit.
+
+### 324.8 The retile's named exactness risk
+
+`(TM,TN)` `(2,2) -> (4,1)` switches `tile_matmad_nax` from the paired-B
+descriptor `matmul2d(16,32,16)` to the paired-A descriptor `matmul2d(32,16,16)`
+at `steel/gemm/nax.h:847` and `:864`. Apple documents nothing about internal
+accumulation order across descriptor geometries. If the hardware's 16-element
+dot-product reduction differs between them, every output rounds differently and
+the ranked run is rejected.
+
+Cheapest check, and it runs on an M4 Pro today: a standalone MPP harness
+comparing the two descriptors bit for bit on identical adversarial fp16 and
+bf16 fragments. MPP tensor ops are API-portable back to Apple7 per the Feature
+Set Tables. It validates the compiler and API contract, not the M5 hardware
+path. The strongest existing evidence stays BitWonka's published score.
+
+### 324.9 Why `7226dc9a` inverted a mechanism worth `-4.12 %` to a rival
+
+Pointer-recompute alternation pays the destination retarget `K/BK` times per
+tile. The fix is a **one-add destination retarget**, the `shift_dst` pattern at
+`fp_quantized_nax.h:244-250`. Same idea, opposite sign, entirely
+implementation-sensitive. This is the most actionable single line the review
+produced.
+
+### 324.10 Alphonse's registered priors, restored from 315.6
+
+```
+E151 R1     NAX 128x32 seed retile        prefill   +0.505 % published
+E151 R2     affine NAX double buffer      prefill   +0.419 % published
+E151 R1oR2  composed                      prefill   +0.663 %   registered -6.5 % prefill
+```
+
+Both arms are **parked, not unbuilt**. `kE147NaxRetileOn` is `false` at
+`quantized_nax.h:1289`, guard-tested 16/16 PASS, scope-clean, confined to the
+`quantized_nax` stem. F4's "one line" is accurate; F4's implication of new
+ground was not, and F5 corrected it.
+
+Because he has already composed these two once and registered the result,
+"do not compose blind" narrows to: do not compose either of them with a
+decode-channel change.
+
+### 324.11 Open number
+
+My FINDING 289 Rule-148 weighted prefill share is `10.04 %`; an earlier ranked
+decomposition in this ledger says `8.45 %`. Not re-derived. Alphonse reports his
+published estimate at both ends. The `+0.30 %` to `+0.50 %` band brackets both,
+and it inherits 317.8's binding caveat: `-4.9722 %` is a ceiling measured on
+BitWonka's stack, not a forecast for ours.
+
+### 324.12 What survives from 321 unchanged
+
+The Amdahl arithmetic, `harness=ranked`, numerator fixed so nothing cancels.
+The per-prompt prefill reconstruction from the FINDING 286 row law with zero
+fitted parameters, agreeing with the carried share to `0.0002 pp`. The exactness
+one-liner — you may move work between threads, you may move data earlier in
+time, you may not move an addition. `research/e289_prefill_is_virgin_territory.py`
+still runs green; only its title is now wrong, and I am leaving the filename
+alone so the error stays findable.
+
+### 324.13 State
+
+```
+THE BAR              ec24d59    3.72911001   src 0863b06a
+our best receipt     0cf1637e   3.68278758
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating
+advisor branch       22cae1b9 + this entry
+```
+
+
+## 325 — FINDING 294, RULE 168: the decode JIT channel is provably closed for the NAX retile
+
+Date 2026-08-23. Advisor. Zero GPU. Static source proof against the vendored
+MLX tree at `09838bf9`.
+
+### 325.1 The question ledger 324 left open
+
+RULE 167 said the shared failure mode of the prefill graveyard is the
+experiment. Every prefill attempt on record took a decode regression that the
+prefill channel does not explain:
+
+| receipt | author | mechanism | prefill | decode | outcome |
+| --- | --- | --- | ---: | ---: | --- |
+| `5cdc9c17` | BitWonka | 128x32 NAX retile | -4.9721 %, se 0.0404 | regression | scored 3.18068, rejected |
+| `43925f29` | Amal-David | Ws double buffer | -4.1182 % | regression | rejected |
+| `a9dd132a` | Amal-David | Ws double buffer | -4.1429 % | regression | rejected |
+| `7226dc9a` | ours | Ws double buffer, pointer recompute | not isolated | **+2.15 %, ~70 sigma** | abandoned |
+
+Alphonse cannot price E156 R1 until the campaign knows whether a retile confined
+to the NAX stem can reach the decode path at all. The candidate channel was the
+JIT source string: MLX compiles decode QMV from a generated C++ twin at runtime,
+so a header edit can in principle change a kernel the edit never meant to touch.
+
+### 325.2 The proof
+
+Five independent checks, all against the vendored tree:
+
+```
+jit_kernels.cpp:928    decode qmv  <- metal::quantized()
+jit_kernels.cpp:1129   qmm_t_nax   <- metal::quantized_nax()
+CMakeLists.txt:79      make_jit_source(quantized      kernels/quantized_utils.h)
+CMakeLists.txt:95      make_jit_source(quantized_nax  kernels/quantized_utils.h)
+quantized.h / quantized_nax.h: neither includes the other
+  (only <metal_simdgroup>, <metal_stdlib>)
+grep -c '_nax'            mlx-generated/quantized.cpp      -> 0
+grep -c 'kE147NaxRetileOn' mlx-generated/quantized_nax.cpp -> 3
+aedf6e29 file list: quantized_nax.h, quantized_nax.cpp, +2 research files
+```
+
+The two JIT stems are disjoint. The decode QMV source string is assembled from
+`quantized` and `quantized_utils.h` only. The parked retile flag
+`kE147NaxRetileOn` appears three times in the `quantized_nax` twin and zero
+times in the `quantized` twin. The parked commit `aedf6e29` touches no file that
+feeds the decode stem.
+
+> **RULE 168.** An edit confined to the `quantized_nax` stem and its generated
+> twin cannot change the decode JIT source string. An edit that touches
+> `quantized.h` or `quantized_utils.h` can change it, whether or not the edit
+> dispatches a different kernel.
+
+### 325.3 What this explains and what it does not
+
+RULE 168 explains our own `7226dc9a`. Its rung A edited `quantized.h`, which is
+inside the decode stem. The `+2.15 %` decode regression at roughly 70 sigma was
+therefore a real causal effect of the edit, not a mystery.
+
+RULE 168 does **not** explain the three rival receipts. Their source is not
+public at file granularity, so the campaign cannot confirm which stem they
+touched. Leave the rival failure mode open. Do not treat FINDING 294 as a
+clearance for the double-buffer arm.
+
+One physical channel survives the static proof. A retiled prefill kernel changes
+the dispatch shape and the register and threadgroup footprint of the prefill
+phase, so it can leave the GPU in a different cache or power state when decode
+starts. That channel is invisible to source inspection. The measured counter
+`e156_retile_decode_pct` stays a required output of E156 R1.
+
+### 325.4 Consequence for the round
+
+Arm 1, the retile, is cleared to build. `5cdc9c17` published a score, so a
+128x32 NAX retile has already passed exact-token verification on the ranked M5
+in someone else's tree. The remaining exactness risk is the `(TM,TN)` change
+from `(2,2)` to `(4,1)`, which switches `tile_matmad_nax` from paired-B
+`matmul2d(16,32,16)` to paired-A `matmul2d(32,16,16)`
+(`steel/gemm/nax.h:847` and `:864`). Apple documents no internal accumulation
+order for either form. The cheap falsifier is a standalone MPP adversarial
+fragment harness, which runs on M4 Pro today because MPP tensor ops are portable
+back to Apple7.
+
+Composition arithmetic on the crown surface, ranked harness:
+
+```
+crown parity                            3.72911    in flight as 5a9f130a
+  o leaf16                    +0.257 %  3.7387     measured lower bound, thorfinn
+  o E151 R1 NAX retile        +0.505 %  3.7575     registered prior, alphonse
+the bar  ec24d59 newjordan               3.72911
+margin of the composed candidate        +0.0284 absolute, about 4.9x the 2 sigma MDE
+```
+
+Stage B alone, crown plus leaf16, is `+0.0096`, only about 1.7x the MDE. Stage C
+is the target candidate. That is why arm 1 is the priority of the round and why
+the double buffer is second.
+
+### 325.5 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating since 16:29Z board time
+advisor branch       09838bf9 + this entry
+```
+
+
+## 326 — FINDING 295, FINDING 296, RULE 169: we ship a proposal head we have never measured, and we measure a proposal head we have never shipped
+
+Date 2026-08-23. Advisor. Zero GPU. Static proof against the enforcing sources
+at `26f9c10f`.
+
+### 326.1 The claim
+
+The local harness and the ranked harness give the candidate leg **different
+proposal heads**. This has been true for the whole campaign.
+
+| leg | head artifact | bytes |
+| --- | --- | ---: |
+| every local candidate leg | `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0` | 849,406,438 |
+| every ranked candidate leg | `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827` | 427,742,600 |
+| every ranked baseline leg | pinned bf16, depth 0, never drafts | 849,406,438 |
+
+### 326.2 The five anchors
+
+**1. The local head is hard-pinned and unconditional.**
+
+```
+setup-qwen-mtp.sh:66  MTP_HEAD_MODEL_ID="${MLXFAST_QWEN_MTP_HEAD_REPO:-EigenLabs/Qwen3.8-27B-MTP-bf16}"
+setup-qwen-mtp.sh:67  MTP_HEAD_REVISION="${...:-26a328e070875b0314d652a039b6b59902690f03}"
+setup-qwen-mtp.sh:76  MTP_HEAD_DIR="${MLXFAST_QWEN_MTP_HEAD_DIR:-${CACHE_ROOT}/mtp-head}"
+fixtures/qwen3_8_27b_mtp_head.sha256   4 records, 849,406,438 bytes,
+                                       model.safetensors 849,400,347
+```
+
+**2. The local benchmark passes that directory verbatim and reads no manifest.**
+
+```
+benchmark-qwen-mtp.sh:281            : "${MLXFAST_QWEN_MTP_HEAD_DIR:?...}"
+benchmark-qwen-mtp.sh:621/670/680    --mtp-head "${MLXFAST_QWEN_MTP_HEAD_DIR}"
+```
+
+A whole-tree grep finds no local reader of `mtp-head.manifest.json`.
+
+**3. The ranked runner resolves the declaration, for the candidate leg only.**
+
+```
+.github/workflows/qwen-mtp-ranked-benchmark.yml
+  :2384  step "Resolve the declared Qwen-MTP head"
+  :2394  reads ${MLXFAST_JOB_WS}/mtp-head.manifest.json
+  :2429  fetches .source_url
+  :2492  refuses on sha256 mismatch
+  :2496  refuses on byte-count mismatch
+  :2500  refuses above .max_bytes
+  :2425  staged="${MLXFAST_JOB_WS}/.qwen-mtp-declared-head"
+  :2521  MLXFAST_QWEN_MTP_CANDIDATE_HEAD_DIR=${head_dir} -> GITHUB_ENV
+  :314   MLXFAST_QWEN_MTP_HEAD_DIR stays the pinned cache -> baseline leg
+```
+
+`:2396` is explicit that a broken declaration is a refusal and never a silent
+fall back to the pinned head.
+
+**4. Our declaration is inherited, not chosen.**
+
+```json
+"source": "remote",
+"source_url": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+"sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+"bytes": 427742600,
+"max_bytes": 2147483648
+```
+
+`git log -- mtp-head.manifest.json` on our tree: introduced at `5d029178`, the
+challenge import; last touched at `9d837fc2`, note text only. Four intermediate
+commits are `Validate submission` and `Accept submission` bot snapshots.
+
+**5. The loader stopped enforcing the pinned tensor count, which is why a
+requantized declared head loads at all.**
+
+`Qwen36MTPHeadAttachment.verifyHeadIndex` (`:307-341`) requires only
+`weightMap.count >= 3`, bare unprefixed names, and `fc.weight`,
+`norm.weight`, `pre_fc_norm_hidden.weight`. Its own comment says a declared head
+"may carry a different count — e.g. a quantized head's weight/scales/biases
+triples". The pinned bf16 tree is 8 matrices + 7 norms = 15 tensors
+(`MLXFastConstants.qwenMTPHeadTensorCount`). A 4-bit group-64 head is
+8x3 + 7 = 31. Both pass.
+
+### 326.3 What this invalidates and what it does not
+
+**Does not invalidate:** any ranked receipt, any ranked fit. FINDING 286's row
+law and the ranked per-prompt acceptance rates were measured on ranked runs, so
+the declared head is already inside them. Any matched local A/B in which both
+arms load the same head is still a valid measurement of the thing it varied;
+that covers thorfinn's leaf16 ABBA and alphonse's prefill arms.
+
+**Does invalidate as a description of the shipped artifact:** every local
+acceptance rate, every local head-cost measurement, and E155's whole recall
+decomposition. `e155_irreducible_head_error_pp = 9.6677`,
+`e155_recoverable_index_pp = 0.0755`, and `e155_recoverable_vocab_pp = 0.1511`
+describe the pinned bf16 head. We do not ship that head. E155's conclusions
+about where the head's loss lives stand only for the artifact it measured.
+
+**Puts under review:** RULE 166. The `2.75 +- 0.03` local-to-ranked round-time
+divisor was fit with local round times taken on the 849 MB head and ranked round
+times taken on the 427 MB head, so it conflates the host difference with the
+head difference and the head term does not cancel. Rough contamination,
+**INFERENCE ONLY**: if the head's MLP dominates its bytes and is read once per
+draft step, the pinned head is on the order of 10 % of a local round and the
+declared head on the order of 7 % of a ranked round, which moves the pure host
+scalar from about 2.75 toward about 2.63, roughly 4.5 %, with the sign that
+makes 2.75 too large. RULE 166 stays in force with its stated interval and the
+label "head-contaminated, pending the E158 census".
+
+**Creates a directional bias in one open experiment.** A local validation of a
+draft-depth rule measures a draft step that reads about twice the head bytes it
+will read on the ranked runner, so locally drafting looks more expensive than it
+is. That is the direction of E157's own hypothesis. Edward has been told to
+treat a local confirmation as weak and to state the bias.
+
+### 326.4 FINDING 296 — the shipped head is an unwatched external dependency
+
+Our own test file recorded the structural disagreement and nobody priced it:
+
+> `Tests/MLXFastTests/QwenQMVCostCurveTests.swift:830-838` — "Two artifacts
+> claim to be the proposal head on this base and they disagree by 3.556x in
+> bytes: `fixtures/qwen3_8_27b_mtp_track.json` pins 849,398,784 bf16 tensor
+> bytes and `setup-qwen-mtp.sh` fetches that tree unconditionally, while
+> `mtp-head.manifest.json` declares a **238,934,093-byte** 4-bit group-64
+> requantization that nothing in the local path reads."
+
+The manifest now declares **427,742,600** bytes. The declaration changed under
+us at least once and the campaign did not notice. Our ranked candidate leg
+depends on a rival's Hugging Face repository at an immutable revision, pinned
+only by digest. If that revision stops resolving, the ranked run refuses. Add
+the resolve check to the pre-submit chain when the E158 census lands.
+
+### 326.5 RULE 169
+
+> **RULE 169.** The local harness and the ranked harness are different
+> experiments until proven otherwise. An env-overridable default in a setup
+> script is not the contract; the workflow is the contract. Wherever the
+> workflow resolves an artifact that the local script hard-pins, the two
+> harnesses measure different things, and no local number transfers until the
+> difference is named and priced. Before pricing any local measurement into a
+> ranked forecast, list every artifact the two harnesses resolve differently.
+
+### 326.6 The opportunity
+
+The head axis is not merely unexplored, it is unmeasured by us. The economics
+from ledger `323.5` are unchanged and now have a live use:
+
+```
+1 MB more per draft step
+  = 1e6 / 567e9 s           = 1.7637 us
+  x 4.382 draft steps/round =  7.729 us/round
+  / 43,114 us/round         =  0.01793 % published
+
+one acceptance point        = +2.6701 % published
+break-even                  = 148.9 MB per draft step per acceptance point
+declared capacity unused    = 2,147,483,648 - 427,742,600 = 1.72 GB
+```
+
+The reverse direction is equally live. If the declared head gives up little
+accuracy at half the bytes, then reverting to `source: pinned` would cost about
+`421.7 x 0.01793 = 7.56 %` published for whatever accuracy the bf16 head buys
+back, and at `+2.6701 %` per acceptance point that needs about `+2.83` points to
+break even. Nothing here says bigger is better.
+
+### 326.7 Actions taken
+
+- `send_assignment_feedback` #158 `e158-f1` — the full proof, R0.2 answered
+  statically, R0 revised to a range-request safetensors header census of both
+  trees, R1 revised to build a **ranked-faithful local harness** by pointing
+  `MLXFAST_QWEN_MTP_HEAD_DIR` at a staged copy of the declared tree and running
+  the E155 audit under both heads. New pre-registered decision: if the heads
+  differ, ranked-faithful head staging becomes the campaign default for every
+  head-side and index-side measurement.
+- `send_assignment_feedback` #152 `e152-f9` — carry on unchanged; the leaf16
+  `>= +0.257 %` price is pinned-head evidence and its transfer depends on
+  whether the declared head carries its own affine-2 compact readout; report
+  `head_provenance.sha256` from the reports he already has.
+- `send_assignment_feedback` #157 `e157-f4` — local depth validation is biased
+  toward his own hypothesis; RULE 166 provisional.
+
+### 326.8 The open question the census must settle
+
+The pinned bf16 tree cannot carry a compact draft readout: 98,336 rows x 5,120
+in bf16 is 1.007 GB against an 849 MB tree, and a full 248,320-row projection is
+2.54 GB. Yet the local control witness reports `leaf=8 leaves=12292` with
+`12292 = 98336 / 8`, so locally the compact readout exists and is derived from
+something other than the head. The declared head has room for a 4-bit layer
+(about 196 MB) plus a 4-bit compact readout (98,336 x 5,120 x 0.5 = 251 MB), and
+its manifest note claims exactly that. **If ranked builds the index from the
+declared head's own tensors while local builds it from the target, then every
+index experiment in this campaign — p15, leaf16, the E155 recall audit — has an
+unpriced transfer gap.** That single fact is the most valuable output of E158.
+
+### 326.9 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 39+ min at 17:08Z
+advisor branch       26f9c10f + this entry
+```
+
+
+## 327 — FINDING 297, FINDING 298, RULE 170, ADVISOR NEAR-ERROR 196: the complete head census, and the two harnesses run different draft code
+
+Date 2026-08-23. Advisor. Zero GPU. Two HTTP range requests plus source
+inspection at `c49ad3fa`. Method: a safetensors file begins with an 8-byte
+little-endian header length and that many bytes of JSON naming every tensor,
+dtype, shape and byte offsets, so a complete census costs two range requests and
+no weight bytes. Script kept at `/tmp/headcensus.py`.
+
+### 327.1 FINDING 297 — the census, both artifacts, exact byte closure
+
+**Pinned, `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`, `__metadata__` null:**
+
+```
+layers.0.mlp.down_proj.weight     BF16  (5120, 17408)   178,257,920
+layers.0.mlp.gate_proj.weight     BF16  (17408, 5120)   178,257,920
+layers.0.mlp.up_proj.weight       BF16  (17408, 5120)   178,257,920
+layers.0.self_attn.q_proj.weight  BF16  (12288, 5120)   125,829,120
+fc.weight                         BF16  (5120, 10240)   104,857,600
+layers.0.self_attn.o_proj.weight  BF16  (5120, 6144)     62,914,560
+layers.0.self_attn.k_proj.weight  BF16  (1024, 5120)     10,485,760
+layers.0.self_attn.v_proj.weight  BF16  (1024, 5120)     10,485,760
+5 x norm (5120,) + 2 x qk_norm (256,)  BF16                 52,224
+15 tensors  849,398,784 + 1,563 header = 849,400,347
+```
+
+**Declared, `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`:**
+
+```
+__metadata__
+  format       qwen38-mtp-incumbent-q4-g64-plus-bf16-qkv-islands-v1
+  bf16         EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0
+  base         dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71
+  e034_readout proposal-only affine2 compact shortlist; incumbent affine4 reranks
+  selection    largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all
+
+draft_lm_head.weight               U32   (98336, 320)  125,870,080   2-bit
+draft_lm_head.scales / .biases     BF16  (98336, 80)  2 x 15,733,760
+layers.0.mlp.{down,gate,up}.weight U32                3 x 44,564,480  4-bit g64
+layers.0.self_attn.q_proj.weight   U32   (12288, 640)   31,457,280
+fc.weight                          U32   (5120, 1280)   26,214,400
+layers.0.self_attn.o_proj.weight   U32   (5120, 768)    15,728,640
+precision_islands.{q,k,v}.weight   BF16  (1024, 5120) 3 x 10,485,760
+precision_islands.{q,k,v}.indices  I32   (1024,)      3 x      4,096
+layers.0.self_attn.{k,v}_proj      U32   (1024, 640)  2 x  2,621,440
++ every scales/biases pair, 7 norms
+40 tensors  427,738,112 + 4,488 header = 427,742,600   matches the manifest
+```
+
+Decomposition of the declared head:
+
+```
+model part      238,930,944    the 4-bit layer and its norms
+draft readout   157,337,600    affine-2 draft_lm_head + scales + biases
+islands          31,469,568    3 x bf16 (1024, 5120) + 3 x I32 indices
+total           427,738,112
+```
+
+**Two independent confirmations that the decomposition is right.**
+`238,930,944` plus a 3,149-byte header is `238,934,093`, the exact byte count our
+own `Tests/MLXFastTests/QwenQMVCostCurveTests.swift:834` recorded as the
+*earlier* declaration. So the first declared head was this 4-bit layer alone, and
+amal-david added the readout and the islands afterwards. And
+`849,398,784 / 238,930,944 = 3.5546`, against the same test file's "disagree by
+3.556x".
+
+Provenance is three parties deep: EigenLabs bf16, then
+`dwsdubey/qwen3.8-27b-mtp-4bit`, then amal-david's islands and readout. We
+inherited the last link and chose none of them.
+
+### 327.2 ADVISOR NEAR-ERROR 196 — I nearly published "we ship a head we do not use"
+
+`grep -rn "draft_lm_head\|precision_islands" Sources/ --include=*.swift` returns
+nothing, and I drafted a finding on that basis claiming 188.8 MB of the shipped
+head is never read. **It was wrong.** The implementation is in
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`, which is outside
+`Sources/`. The rule that caught it was checking the test tree: a whole file
+named `Tests/MLXFastTests/E84IslandDeadWorkExactnessTests.swift` and a
+`research/e84_island_index_audit.py` describe island behaviour in the present
+tense, which cannot be true of code that does not exist.
+
+> **RULE 167 clause 3.** Before concluding that a shipped artifact is unused,
+> grep the whole checkout, not `Sources/`. This tree keeps live scored code in
+> `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`. A test or research
+> script that describes behaviour in the present tense is evidence the
+> implementation exists somewhere you have not looked.
+
+### 327.3 FINDING 298 — the two harnesses run different draft code, not just different weights
+
+Verified in `Qwen35.swift`:
+
+```
+:5668-5671  _compactDraftHead is "used only for draft proposals when no declared
+            draft_lm_head is present", derived during warmup from the exact lm_head
+:5780-5787  mtp.draft_lm_head.{weight,scales,biases} -> _draftHeadW/S/Z
+:5791-5807  mtp.draft_cluster.* -> _draftCluster*   (declared head ships NONE)
+:5822-5850  mtp.precision_islands.* -> installExactQKVRows
+:3319-3323  Qwen35IslandArm.fromEnvironment defaults to .all
+:5706       leaf-width override is MLX_E141_ROWS_PER_LEAF
+:5681-5685  the derived readout is "~315 MB of affine-4 rows per draft step (~0.6 ms)"
+```
+
+| | local, pinned head | ranked, declared head |
+| --- | --- | --- |
+| head layer | bf16, 849.3 MB | affine-4 g64, 238.9 MB |
+| precision islands | absent | installed, arm `.all`, +31.5 MB |
+| draft readout | `_compactDraftHead`, derived at warmup, affine-4, ~315 MB | shipped `draft_lm_head`, affine-2, 157.3 MB |
+| leaf index | derived at warmup | derived at warmup, identical |
+
+Read set per draft step, **INFERENCE, to be measured by E158**:
+
+```
+local   849 + probed share of 315          ~= 920 MB
+ranked  239 + 31.5 + probed share of 157   ~= 310 MB      ratio ~3x
+```
+
+Re-derived RULE 166 contamination with these numbers, still inference:
+
+```
+ranked head term  310 MB / 567 GB/s = 547 us/step x 4.382 =  2,396 us / 43,114 =  5.56 %
+local  head term  920 MB / 273 GB/s = 3,370 us/step x 4.382 = 14,767 us / 118,565 = 12.45 %
+pure host scalar  (118,565 - 14,767) / (43,114 - 2,396) = 2.549
+```
+
+So RULE 166's `2.75` may be about 7 % high, and the excess is head bytes rather
+than host. **RULE 166 stays in force with its stated interval and the label
+"head-contaminated, pending the E158 measurement."**
+
+### 327.4 The index axis transfers — ledger 326.8 closed favourably
+
+The declared head ships no `draft_cluster.*`. The leaf index is therefore derived
+at warmup by the same bisection on both harnesses. **p15, leaf16, and the E155
+recall audit measure the same mechanism the ranked runner executes.** The
+magnitudes still differ because the rows behind the index are affine-4 locally
+and affine-2 on ranked, but the mechanism is shared. Thorfinn told, E152 F10.
+
+### 327.5 RULE 170 — the worker environment boundary
+
+`Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift:2623-2650`:
+
+```
+allowedPrefixes  = [ DARKBLOOM_, DYLD_, LC_, METAL_, MLX_, MTL_ ]
+allowedExactKeys = { HF_HUB_OFFLINE, HOME, LANG, LOGNAME, PATH, SHELL, TERM,
+                     TMPDIR, TRANSFORMERS_OFFLINE, USER, __CF_USER_TEXT_ENCODING }
+```
+
+> **RULE 170.** An `MLXFAST_`-prefixed environment variable is dropped at the
+> runtime-worker boundary. Only the six prefixes and eleven exact keys above
+> cross it. Any experiment arm selected by an `MLXFAST_` variable read inside
+> worker code silently ran the shipped default, so its A and B arms were the
+> same arm. Shell-script variables are unaffected because the scripts consume
+> them and pass CLI arguments.
+
+The tree states the consequence itself at `Qwen35.swift:3316-3318`: the legacy
+`MLXFAST_QWEN_MTP_EXACT_QKV_ROWS` kill switch "has never had any effect on a
+worker leg". Audit every historical arm against this rule before citing it.
+`MLX_E141_ROWS_PER_LEAF` and `MLX_E120_QMV_PIPELINE_LOG` are on the allowlist.
+
+Dead switches found in worker-side code by
+`grep -rhoE 'MLXFAST_[A-Z0-9_]+' Vendor/mlx-swift-lm/Libraries/ Sources/MLXFastModel/ Sources/MLXFastCore/`:
+
+```
+Qwen35.swift:3320                 MLXFAST_QWEN_MTP_EXACT_QKV_ROWS   island kill switch
+Qwen35.swift:4759-4761            MLXFAST_QWEN_MTP_TOP32=0          "restores the
+                                  argPartition path bit-for-bit"
+Qwen36MTPBlockSession.swift:1448  MLXFAST_QWEN_MTP_TRACE=1          phase trace
+```
+
+`MLXFAST_QWEN_MTP_TOP32` can never read `"0"` inside a worker, so the top-32 fast
+path is always on and cannot be disabled in a timed leg. That is correct for
+shipping and fatal for any A/B that used it. The `MLXFAST_QWEN_MTP_TRACE` phase
+trace never fires in a worker leg either. Alphonse told, E156 F7.
+
+### 327.6 The experiment this creates — the island arm curve
+
+`Qwen35IslandArm` already implements `all`, `q`, `kv`, `none`, selected by
+`DARKBLOOM_QWEN_MTP_ISLAND_ARM`, which crosses the boundary. On the declared head
+that is a four-point accuracy-versus-bytes curve on the artifact we actually
+ship, in one session, with zero source changes.
+
+```
+islands cost     31,469,568 bytes/draft step
+                 = 31.47 MB x 0.01793 %/MB = 0.564 % published
+one accept point = +2.6701 % published
+break-even       = 0.21 acceptance points
+```
+
+Every outcome is informative. Below `0.21` points, dropping the islands is a free
+`+0.56 %`. If `kv` matches `all`, dropping the q island is `+0.19 %`. Well above
+`0.21` points, the head layer's precision becomes the next build round.
+
+### 327.7 Actions taken
+
+- `send_assignment_feedback` #158 `e158-f2` — full census handed over, R0 closed,
+  redirected to R1.A provenance confirmation, R1.B island arm curve, R1.C the
+  ranked-faithful local harness, R1.D matched numbers under both heads, with
+  four stop rules.
+- `send_assignment_feedback` #152 `e152-f10` — index axis transfers cleanly;
+  RULE 170 validates his arm selector; report the centroid-pass byte saving
+  separately.
+
+### 327.8 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating, second watcher running
+advisor branch       c49ad3fa + this entry
+```
+
+## 328 — The precision islands are exact pinned rows, and two of the three are whole layers
+
+Zero GPU. Six HTTP range requests. This entry closes the head-declaration
+question that 326 and 327 opened, and it converts the head from "a rival's
+trained artifact we cannot reproduce" into "a precision-allocation dial we
+own outright".
+
+### 328.1 The declaration mechanism has three modes, and we use the risky one
+
+`.github/workflows/qwen-mtp-ranked-benchmark.yml:2384-2530` accepts exactly
+three values of `mtp-head.manifest.json` `.source`:
+
+| source | runner behaviour |
+| --- | --- |
+| `pinned` | no override; candidate leg uses the organizer head |
+| `remote` | `curl --fail` from `hf:<repo>@<rev>` or `r2:<key>` |
+| `in_branch` | `tar` the declared `path` out of the submission itself |
+
+All three of `HEAD`, `origin/main` and `upstream/main` declare the identical
+`remote` head. The only byte that differs between our manifest and the crown's
+is the free-text `note`. **Crown parity on the head axis is intact**, and
+`5a9f130a` is unaffected.
+
+The `remote` mode fetches under `set -euo pipefail` with `curl --fail`. A
+non-2xx response is not a degradation, it is a failed ranked job. Every
+ranked submission in this competition that inherits `upstream/main` therefore
+depends on one rival's public HuggingFace repository staying reachable. Probed
+at 17:33Z: `http=206`, 322 ms. The exposure is systemic, not ours alone, and
+it is not a differentiator. Recorded, not actioned.
+
+> **RULE 171.** Probe the declared head URL before every official submission.
+> One `curl -r 0-7` converts an unmonitored third-party dependency into a
+> checked precondition. `in_branch` removes the dependency entirely at the
+> cost of committing 427 MB of weights, which `program.md` forbids; `remote`
+> to a repository we control needs an HF token this launch does not hold.
+
+Our own `mtp-head/README.md` states the checked-in declaration selects
+`"source": "pinned"`. It selects `remote`. The prose is stale and it misled
+this advisor for one step. The file is excluded from the head tree digest,
+exempt from the byte budget, and excluded from static review, so it is safe to
+correct, but it is cosmetic and no student should spend a turn on it.
+
+### 328.2 FINDING 299 — the k and v "islands" are complete layers
+
+`precision_islands.{q,k,v}.indices` fetched and decoded directly from the
+declared artifact:
+
+```
+q.indices  1024 unique in [3, 12239] of 12,288 rows   8.33 %  a real island
+k.indices  1024 unique in [0, 1023] of  1,024 rows     100 %  a whole layer
+v.indices  1024 unique in [0, 1023] of  1,024 rows     100 %  a whole layer
+```
+
+`k` and `v` are each a permutation of the complete output row set. The
+declared head's k and v projections are **BF16, not 4-bit**. The affine-4
+`layers.0.self_attn.{k,v}_proj.{weight,scales,biases}` in the artifact,
+5,898,240 bytes, are computed and then entirely overwritten.
+
+This is consistent with the architecture. GQA runs 24 query heads over 4 KV
+heads, so each K or V row is shared by six query heads and its quantization
+error is amplified six times relative to a Q row. The head's designer restored
+100 % of the six-times-leveraged rows and 8.33 % of the one-times-leveraged
+rows. That is the correct allocation, and it tells us where precision buys
+acceptance in this architecture.
+
+### 328.3 Provenance proven byte-exact
+
+Island rows compared against the organizer-pinned BF16 head
+`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`:
+
+```
+q island slot   0 -> pinned q_proj row   101 : IDENTICAL  0/10240 bytes differ
+q island slot   1 -> pinned q_proj row    55 : IDENTICAL  0/10240 bytes differ
+q island slot 511 -> pinned q_proj row  9505 : IDENTICAL  0/10240 bytes differ
+k island slot   0 -> pinned k_proj row    25 : IDENTICAL  0/10240 bytes differ
+k island slot   1 -> pinned k_proj row   946 : IDENTICAL  0/10240 bytes differ
+k island slot 511 -> pinned k_proj row   750 : IDENTICAL  0/10240 bytes differ
+```
+
+Six of six identical. The declared head is not a trained artifact. It is
+
+```
+4-bit quantization of the pinned head
+  + every k row restored exactly from the pinned head
+  + every v row restored exactly from the pinned head
+  + the 1024 worst-SSE q rows restored exactly from the pinned head
+  + an affine-2 compact readout used only as a retrieval index
+```
+
+> **RULE 172.** The head's precision is a dial we control with no training,
+> no data, and no GPU. The currency is exact BF16 rows of the organizer-pinned
+> head, which we already have on disk. Restoring row set `S` of any projection
+> is a pure bytes-for-acceptance trade at a known price. Do not describe the
+> head axis as "train a better head"; describe it as "choose the optimal
+> precision allocation between 427 MB and the 2 GiB cap".
+
+Unused declared capacity: `2,147,483,648 - 427,742,600 = 1,719,741,048` bytes.
+
+### 328.4 ADVISOR NEAR-ERROR 197 — the tree had already found it
+
+Having derived that 5,898,240 bytes of k/v affine-4 are overwritten, I was one
+step from assigning "delete the dead k/v tensors, free `+0.106 %`". Both
+halves of that would have been wrong.
+
+`Qwen35.swift:3419-3424` already documents the finding in the same terms, and
+`installExactQKVRows:3668` already implements the fix: when
+`isCompletePermutation` holds for both k and v, it materialises
+`_exactKVDenseW = concat(kNatural, vNatural)` in natural output order and the
+affine-4 pack never runs. The runtime saving is already banked.
+
+Worse, the tensors are load-bearing as a *predicate*. `islandFastPathReady()`
+at `:3651-3665` requires `k.biases != nil` and `v.biases != nil`. Deleting the
+unused k/v affine-4 tensors would flip the fast path off and make the head
+slower.
+
+> **RULE 167 clause 4.** Before proposing to delete bytes an artifact appears
+> not to use, find the code that decides they are unused. If that code exists,
+> the saving is already banked and the bytes may be a guard the deletion
+> would break.
+
+### 328.5 The corrected island economics
+
+Because the complete-permutation branch replaces the affine-4 k/v pack rather
+than adding to it, the kv islands cost less than their resident size, and the
+q island costs its full size. Net bytes read per draft step, against the
+shipped `all` arm:
+
+```
+arm kv    saves 10,489,856 B = 10.490 MB  -> +0.188 %  adopt if loss < 0.0704 pt
+arm q     saves 15,073,280 B = 15.073 MB  -> +0.270 %  adopt if loss < 0.1012 pt
+arm none  saves 25,563,136 B = 25.563 MB  -> +0.458 %  adopt if loss < 0.1717 pt
+```
+
+This supersedes 327.6, which priced the islands at their resident
+`31,469,568` bytes and quoted `0.564 %` and `0.21` points. The correct ceiling
+on the shrink direction is **`+0.458 %`**, not `+0.56 %`.
+
+Predictions registered before E158 R1.B runs, from 328.2's leverage argument:
+
+- `kv` loses far less than `all` does, because the q island covers 8.33 % of
+  the one-times-leveraged projection. Expect `kv` within `0.07` points of
+  `all`, which banks `+0.188 %`.
+- `q` and `none` both drop k/v to 4-bit and should lose several times more
+  than `kv` does. Expect both to fail their thresholds.
+
+If those hold, the shrink direction yields `+0.188 %` and stops there.
+
+### 328.6 The R1.D threshold that opens or closes the grow direction
+
+Read set per draft step, reconstructed from the census. The pinned column sums
+to `849,398,784`, exactly the census total, which is an independent check on
+the byte model:
+
+```
+                      pinned (local)    declared (ranked)
+head layer             849,398,784        264,494,080     dead kv a4 skipped
+readout, 14,752 rows    42,485,760         23,603,200     affine-4 vs affine-2
+centroids, 12,292       19,667,200         19,667,200     identical
+DELTA                          603,787,264 B = 603.79 MB
+```
+
+At `148.92` MB per acceptance point:
+
+> **The bf16 head must win by 4.054 acceptance points to pay for itself.**
+
+If the local readout turns out to run dense rather than indexed, the delta
+grows and the threshold rises above 5.7 points. So `4.054` is the threshold
+most favourable to the grow direction. **A measured gap below `4.054` closes
+the grow direction under every read model.**
+
+E155 measured the pinned head's own irreducible error at `9.6677` pp. The
+declared head restores k/v exactly and the worst 8.33 % of q, so the residual
+gap is the cost of 4-bit on q's other 91.67 %, on mlp, fc and o_proj, and of
+affine-2 on the retrieval index. A four-point gap would be surprising.
+Registered prediction: `0.3` to `2.0` points, and the grow direction closes.
+
+### 328.7 What this makes E158 R1.B and R1.D
+
+R1.B is no longer characterisation. It is four points on the
+acceptance-versus-bytes curve of the shipped artifact, obtained with zero
+source changes through `DARKBLOOM_QWEN_MTP_ISLAND_ARM`, which crosses the
+worker boundary that RULE 170 closes to `MLXFAST_`. R1.D is the single
+measurement that decides whether any byte spent on head precision can ever
+repay itself.
+
+Added R1.E, zero GPU: the static island value audit. Dequantize the declared
+affine-4 q_proj, compare against the pinned BF16 q_proj, and report what
+fraction of total q reconstruction SSE the 1024 island rows carry. If the
+island carries near 8.33 % of the error it is worthless by construction and
+`kv` wins before any GPU leg runs. This is two safetensors files and numpy.
+
+### 328.8 Composition arithmetic
+
+```
+crown parity                          3.72911    5a9f130a in flight
+  + leaf16              +0.257 %      3.73870    thorfinn, measured lower bound
+  + E151 R1 retile      +0.505 %      3.75758    alphonse, registered prior
+  + island arm kv       +0.188 %      3.76464    askeladd, if 328.5 holds
+THE BAR                               3.72911
+margin                                +0.0355 absolute = +0.96 %
+```
+
+Against a 2σ ranked MDE of `0.1547` pp on the median pair, that is a
+`6.1`-sigma margin, up from `4.9` sigma without the island arm.
+
+### 328.9 Actions taken
+
+- `send_assignment_feedback` #158 `e158-f3` — FINDING 299, corrected arm
+  economics, the `4.054`-point R1.D threshold, and R1.E.
+
+### 328.10 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 68 min at 17:37Z
+declared head        reachable  http 206 at 17:33Z
+advisor branch       e316945d + this entry
+```
+
+
+## 329 — ADVISOR ERROR 198: my host transfer scalar was the local law divided by itself. RULE 166, FINDING 286, 287 and 288 are retracted.
+
+Two students returned terminal results in the same hour. Both of them
+corrected me. Edward showed that the number I have been pricing every depth
+decision with since entry 323 carries no independent information at all.
+Askeladd closed the head-precision axis with a measurement that runs the wrong
+way from my prediction by a factor of five hundred.
+
+This entry retracts more of my own work than any previous entry. That is the
+correct outcome: a self-confirming constant that has been quietly steering
+four students is a worse campaign state than an admitted hole.
+
+### 329.1 The circularity, stated exactly
+
+RULE 166 claimed a host transfer scalar of `2.7769`, supported by "three
+independent routes agreeing to 0.29 %". FINDING 286 was the ranked round-cost
+law obtained by dividing the local law by that scalar.
+
+Edward recovered the two fits and divided them. I re-derived it independently
+in `/tmp/verify157.py` before accepting:
+
+```
+scale I stated in my own brief   2.77690    = 148,775 / 53,576
+a_local / a_286  = 23,421.07 / 8,434     =  2.77698
+b_local / b_286  = 15,708.50 / 5,657     =  2.77683
+spread                                       0.00016
+depth price h    local 0.401448  vs  F286 0.401462   relative gap 3.39e-05
+```
+
+Both coefficients of FINDING 286 are the local coefficients divided by the
+same constant, to five significant figures. The "third route" was the first
+route rescaled. Two of the three routes were genuinely independent local fits
+that agreed to 0.29 %; the agreement of the third was arithmetic, not
+evidence.
+
+FINDING 286 therefore reproduces the local law's *shape* exactly and adds
+nothing about the ranked host. Every conclusion that depended on the shape
+being ranked-specific is void.
+
+> **ADVISOR ERROR 198.** I built a cross-host transfer constant by fitting one
+> host, then validated it by dividing the same fit by the constant and
+> observing that it matched. I called that "three independent routes". A
+> transfer estimate is only evidence when the target-side quantity is measured
+> on the target side. Before quoting an agreement, name the measurement behind
+> each number and check that no two of them share a numerator.
+
+### 329.2 The independent falsification
+
+Edward did not stop at the algebra. He falsified FINDING 286 against ranked
+data it had never seen: 488 uniquely recovered rounds on the plutarch prompt
+of receipt `0cf1637e`, of which 449 of 487 are non-drafting rounds.
+
+```
+model                                        miss vs receipt round cost
+FINDING 286   8,434 + 5,657 x rows                        +48.5 %
+FINDING 281   25,409 + 4,291 x tokens                       0.0 %
+bracket width of the recovery                              15.6 %
+```
+
+A 48.5 % miss against a 15.6 % bracket is decisive. FINDING 281, which was
+fit on ranked receipts directly, survives untouched.
+
+### 329.3 What replaces it — a ranked row price measured with the ranked head
+
+Edward's replacement is fit on legs that loaded the declared head, so it does
+not carry the head contamination that entry 326 worried about:
+
+```
+clean_us_per_round = 26,917 + 3,344 x width          harness=ranked
+n = 8, head digest 559b24eb..., widths 1.047-3.237
+R2 = 0.9874, residual +-154 us/row
+depth price h = 0.1105
+shipped flat headStepCostRatio = 0.18   ->  over-priced by 63 %
+```
+
+The single divisor is replaced by a term-wise transfer:
+
+```
+intercept ratio local/ranked   0.87 - 1.04
+slope     ratio local/ranked   15,708.50 / 3,344 = 4.70
+```
+
+This is physically coherent and the single scalar never was. The fixed term
+of a round is one bandwidth-bound stream of the trunk weights, and two hosts
+with similar memory systems land within a few percent of each other. The
+marginal row is a compute-bound matmul against weights already resident, and
+there the ranked M5 is 4.7x the advisor host. Compressing a 5.4x spread into
+one number was the error, not the size of the number.
+
+> **RULE 174.** Never transfer a cost law between hosts with one scalar.
+> Transfer the intercept and the slope separately, because they are different
+> physics: the intercept is bandwidth, the slope is arithmetic. Report both
+> ratios, and report the width range each was identified on.
+
+### 329.4 Neither law is identified over the full depth range
+
+```
+rows     FINDING 286      head-clean      F286 / head-clean
+   1          14,091          30,261                 0.466
+   4          31,062          40,293                 0.771
+   8          53,690          53,669                 1.000
+```
+
+The two laws cross at rows = 8 and diverge to 2.15x at rows = 1. That is not a
+coincidence: FINDING 286 is fit-equivalent to the local law, which was
+measured at high widths, and the head-clean law is fit on widths 1.047 to
+3.237. Each law is accurate where it was measured and extrapolates badly into
+the other's range.
+
+The honest statement is that **we do not have an identified row price across
+1 to 8 rows on the ranked host**. Anything that requires one is now an open
+question, not a settled number.
+
+### 329.5 The sign of the depth error reversed
+
+Edward's own hypothesis was that the live schedule drafts two rows too deep.
+Inside the identified range the data says the opposite:
+
+```
+e157_depth_error_sign               too_shallow
+e157_hypothesis_two_rows_too_deep   false
+optimal minus live, verify width <= 3.24
+  drama   +0.70      travel  +1.35      plutarch  +0.84
+```
+
+Above width 3.24 the sign is not identified. A curvature term that the data
+admits at 2 sigma flips the high-acceptance prompts from draft-8 to draft-3.
+So the live schedule is too shallow where we can see, and might be far too
+deep where we cannot. Both statements are in the data at once.
+
+He also withdrew his own convexity claim before I could ask. The 21 recovered
+drama cells span 11 ranked head digests, head digest correlates with width,
+and under head fixed effects the curvature collapses:
+
+```
+curvature  598 +- 33  (18 sigma)   ->   276 +- 568  (0.49 sigma)
+```
+
+The `h(w)` ladder in PR #157 comment 5387251142 is discarded. A student who
+kills his own headline finding on a confound he found himself is doing the
+job exactly right.
+
+### 329.6 The head contamination correction is zero, and the head price is measured
+
+Entry 326 flagged that the local law might be head-contaminated. It is not.
+All eight local legs behind the local law loaded the **declared** head
+(`dadbfb80...`). The correction is `0.0`, not the 4.5 % I estimated.
+
+Edward measured the head price directly instead:
+
+```
+draft-step slope ratio  pinned / declared          2.047
+byte      ratio  pinned / declared                 1.986
+verify-slope null control                          1.037
+head share of a round     declared 10.6 %   pinned 18.8 %
+```
+
+The slope ratio matches the byte ratio to 3 %, and the null control shows the
+verify path is unaffected. The head is a bandwidth-bound stream and it prices
+like one.
+
+### 329.7 FINDING 302 — our confirmation gate is biased against deep candidates
+
+This is the operational consequence and it changes the pre-submit protocol.
+
+`benchmark-qwen-mtp.sh` loads the **pinned** head. The ranked candidate leg
+loads the **declared** head. So in every `--local-submit` confirmation:
+
+- the candidate MTP leg pays 2.05x the ranked head price per drafted row;
+- the serial leg pays no head price at all;
+- the penalty grows with schedule depth.
+
+> **FINDING 302.** The local `--local-submit` ratio understates the ranked
+> candidate leg, and understates it more at deeper schedules. Our confirmation
+> gate is therefore biased against deep-drafting candidates. A deep candidate
+> that comes back flat locally may be a ranked win, and a shallow candidate
+> that comes back positive locally is measured on the friendlier side of the
+> bias.
+
+Until we can load the declared head under the wrapper, treat a local
+confirmation of a depth-increasing candidate as a **lower bound** on its
+ranked ratio, and say so in the submission note. This does not relax any
+exactness, thermal, provenance or scope gate; it changes only how we read a
+ratio we already run.
+
+### 329.8 RULE 173 — the default harness runs no draft index
+
+Askeladd's, verified on data. `benchmark-qwen-mtp.sh` loads the pinned BF16
+head, which ships no `draft_lm_head` tensors. `buildDerivedClusterIndex`
+(`Qwen35.swift:6146-6152`) returns immediately, and `draftTokenID`
+(`:6178-6190`) falls through to `_compactDraftHead` dense over all 98,336
+rows.
+
+```
+index_miss    pinned legs   0 / 1,461 slots
+              declared legs 4 / 1,503 slots
+```
+
+> **RULE 173.** An index-side, readout-side or acceptance-side local arm is
+> void unless the leg's `head_provenance.sha256` is `dadbfb80...` or
+> `559b24eb...`. `head_provenance.origin` and `.source` are **not** witnesses:
+> they are copied from the declaration, so a pinned run happily reports
+> `origin = hf:amal-david/...`. Only the digest names the head that was
+> actually loaded.
+
+This falsified a reassurance I had given both askeladd and thorfinn — that
+the leaf index is derived at warmup on both sides. It is not. I withdrew it
+the same hour and warned thorfinn mid-experiment.
+
+### 329.9 The head-precision axis is closed
+
+Askeladd's E158 R1, six legs, three prompts, 512 tokens, depth 8, matched
+divergence 0 on all six.
+
+| conditional, 1,323 of 1,324 slots | pinned bf16 | declared q2/q4 | pinned − declared |
+| --- | ---: | ---: | ---: |
+| `p_shipped` | 0.9002268 | 0.9010574 | −0.0831 pp |
+| `p_exact_full` | 0.9032502 | 0.9033233 | **−0.0073 pp** |
+
+A fully BF16 trunk moves head accuracy by **−0.0073 pp**, the wrong way, one
+slot in 1,323. My derived break-even was 4.054 acceptance points. The
+measurement is 555x smaller than the break-even and the wrong sign.
+
+```
+per draft step        pinned bf16        declared q2/q4
+trunk                  849,398,784        264,494,080
+readout                283,207,680 dense   33,528,960 ANN
+total                1,132,606,464        298,023,040
+delta 834.58 MB  ->  cost -14.9641 %, gain -0.0195 %, net -14.9836 %
+```
+
+The declared head is worth **+14.98 % published** over the pinned one, and
+buying accuracy back with precision is not available. `e158_verdict =
+close_head_precision`. Do not reopen this axis without a mechanism that
+changes the *readout*, not the *precision*.
+
+His byte model beats the one in my brief. I assumed the pinned arm still used
+the ANN index; he read the guard and found it does not. That is RULE 173
+again, applied to my own arithmetic.
+
+### 329.10 What is now provisional
+
+Downstream of the retracted inversion, and needing refit before use:
+
+```
+FINDING 287   the marginal row does not pay              PROVISIONAL
+FINDING 288   +3 points of p makes the live schedule optimal   PROVISIONAL
+exchange rate +2.6701 % published per acceptance point   PROVISIONAL
+island arms   0.0704 / 0.1012 / 0.1717 pt thresholds     PROVISIONAL
+break-even    148.9 MB per acceptance point              PROVISIONAL
+affordability 43,114 us modelled round, 0.01793 %/MB     PROVISIONAL
+```
+
+Edward's per-prompt acceptance rates differ substantially from the ones the
+retracted inversion produced (beagle 0.934 vs 0.8973, essays 0.965 vs 0.9222,
+drama 0.603 vs 0.5280, travel 0.697 vs 0.6248), so the refit is not cosmetic.
+
+What is **not** affected: the byte side. The 567 GB/s roofline, the 4.382
+draft steps per round, the head census, the island census and the trunk
+ladder arithmetic are all measured in bytes and are untouched by the cost-law
+retraction.
+
+### 329.11 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 79 min at 17:48Z
+merged               #157       E157 research-only, 16 files, zero editable paths
+open axes            trunk precision ladder (askeladd R2, +2.045 % candidate)
+                     leaf16 (thorfinn, pending RULE 173 digest check)
+                     NAX retile + prefill double buffer (alphonse)
+                     ranked row price refit 1-8 rows (unassigned)
+advisor branch       827c5b97 + this entry
+```
+
+## 330 — The parity base move is costed, gated and blocked on one thing; and every depth-price arm that ever lost moved the same one number
+
+Zero GPU. Source inspection, six shell audits, one reverted worktree import.
+Two findings, one of which should have been found in entry 319 and was not.
+
+### 330.1 FINDING 303 — the depth-price gate column
+
+Entry 329 recorded edward's measured ranked depth price, `h = 0.1105` against a
+shipped flat `headStepCostRatio = 0.18`. The obvious action is to lower the
+constant. That action is already dead: `Qwen36MTPBlockSession.swift:925-937`
+and `:1253-1270` hold ranked receipts on both sides, `h = 0.14` at 2.766,
+`h = 0.15` at 2.667 and `h = 0.32` at 2.84585 against a contemporaneous base
+near 2.93.
+
+So I read the whole arm family instead, and computed one column.
+
+The decision rule is `costModelDepth` at `:1323-1348`:
+
+```swift
+let threshold = price.marginal[depth] * (1.0 + expected) / price.cumulative[depth]
+guard reach > threshold else { break }
+```
+
+At `depth == 0`, `expected == 0` and `cumulative[0] == 1.0` by construction, so
+`threshold(0) == marginal[0]` exactly, for every arm that has ever existed.
+`marginal[0]` is not one entry in a shape vector. It is the drafting on/off
+gate.
+
+```
+arm      marginal[0]    sum(marginal)    ranked outcome
+ship      0.180000        1.440000       SHIPPED
+pb5       0.159467        1.440000       lost
+pb6       0.170414        1.440000       lost, -2.3800 %
+pb7       0.159467        1.440000       lost
+pbfit     0.120143        1.440000       lost on crown, +0.33 % vs -3.5 % local
+h=0.15    0.150000        1.200000       lost, 2.667
+h=0.14    0.140000        1.120000       lost, 2.766
+h=0.32    0.320000        2.560000       lost, 2.84585
+```
+
+> **FINDING 303.** Every depth-price arm this campaign has ever run moved
+> `marginal[0]`. Not one arm has varied the shape of the depth price with the
+> gate held at 0.18.
+
+That is a construction constraint, not an oversight of taste. All three
+constructors hold the total at `8h = 1.44`. `makeBoundaryDepthPrice` computes
+`within = n*h/((n-1)+tier)`, so raising any one step **necessarily** discounts
+the gate. `makeMeasuredDepthPrice` rescales by `total/sum(raw)`, same effect.
+Hold the total and you cannot price the width wall without opening the gate.
+
+The pb6 tombstone shows what opening the gate costs. pb6 moved `marginal[0]`
+from 0.180000 to 0.170414, a 5.3 % cut, and plutarch went from 449
+non-drafting rounds and `edl` 0.1540 to **zero** non-drafting rounds and `edl`
+2.6995. A 5.3 % price cut cannot produce a 17x move in draft length through a
+marginal response. The per-position acceptance EMA is a positive feedback
+loop, and `h = 0.18` sits just above the unstable fixed point of the hard
+prompts. Under RULE 148 median weighting plutarch carries **zero** weight, so
+opening its gate buys nothing and pays for the drafting work everywhere.
+
+pbfit, the arm that won −3.5 % locally on a fixture with no plutarch-like
+prompt, has the lowest gate of all at 0.120143. It won locally for exactly the
+reason it lost on crown.
+
+E159 is assigned to edward on this: hold the gate at 0.18 bit-exactly, release
+the total, price the interior at the measured physics, and locate the width
+wall from receipt recovery rather than from my sketch. Hard guard: any arm
+that takes plutarch below 440 of 487 non-drafting rounds is disqualified
+regardless of its predicted median.
+
+### 330.2 FINDING 304 — the parity base move costs exactly two kernels
+
+Entry 319 recorded FINDING 283 and ADVISOR ERROR 189: three promoted
+mechanisms worth +1.075 % are absent from every tree we have submitted, which
+is 85.5 % of our 1.2578 % gap to the bar. Entry 321 built the crown-parity
+archive and submitted it as `5a9f130a`, but deliberately did **not** merge it
+into the campaign branch, on the stated ground that *"merging it would delete
+our own promoted cluster QMV kernels"*.
+
+I finally ran the kernel-name-level diff that RULE 162 requires, over the
+concatenated `Qwen35.swift` and `Qwen36MTPBlockSession.swift` of both trees.
+The stated ground is nearly empty.
+
+```
+crown kernels 22        ours 20        shared 18
+
+CROWN ONLY
+  qwen_mtp_e87_probe_select                     the +0.72 % mechanism
+  qwen35_fused_residual_rms_norm_xsums_v1       the +0.175 % mechanism
+  qwen35_custom_affine4_g64_qmv_wide_v1         present in ours, renamed
+  qwen35_custom_affine4_g64_qmv_wide_sums_v1    present in ours, renamed
+
+OURS ONLY
+  qwen_mtp_cluster_centroid_qmv_a2g64_v1
+  qwen_mtp_cluster_row_qmv_a2g64_v1
+```
+
+**Two kernels.** And they are not a mechanism the crown lacks; they are a
+specialisation of a stage the crown has replaced with something better. Both
+trees carry `buildDerivedClusterIndex`, `derivedClusterRowsPerLeaf`,
+`Qwen35IslandArm`, `Qwen35RowTop32`, `islandFastPathReady`,
+`installExactQKVRows`, `qwen_mtp_probe_sort` and the whole two-level index. We
+score its centroids and rows with two hand-written a2g64 QMV kernels behind a
+nine-dispatch `argPartition` merge sort. The crown does the selection with one
+`qwen_mtp_e87_probe_select` dispatch, which is the promoted +0.72 %.
+
+A symbol census over the same two files makes the rest of the divergence
+explicit:
+
+```
+symbol                      merge-base   crown   ours
+Qwen35IslandArm                  0         5       5
+derivedClusterRowsPerLeaf        0         2       2
+depthPriceArm                    0         3       3
+Qwen35RowTop32                   0         7       7
+islandFastPathReady              0         6       6
+buildDerivedClusterIndex         0         2       2
+installExactQKVRows              2         3       3
+qwen_mtp_e87_probe_select        0         1       0     <- missing, +0.72 %
+qwen35_fused_..._xsums_v1        0         1       0     <- missing, +0.175 %
+Qwen35XSumsSidecar               0         4       0     <- missing
+onepass67 / widthPlan            0         0       5     <- ours only
+compiledDefault                  0         0      15     <- ours only
+passBoundaryTierFactor           0         0       2     <- ours only
+e145PinnedDepth                  0         0       2     <- ours only, instrument
+notePipeline                     0         0       6     <- ours only, instrument
+```
+
+> **The crown carries our mechanism. We are the only participant not carrying
+> theirs.** Entry 319 wrote that sentence about ARM-C. The kernel diff shows it
+> is true of the island arm, the derived cluster index, the row-top32 family,
+> the exact QKV rows and the depth-price apparatus as well.
+
+The arithmetic then prices our own additions by subtraction:
+
+```
+our receipt 0cf1637e                       3.68278758
+crown receipt ec24d591 on 0863b06a         3.72911001
+gap                                          -1.2578 %
+three missing promoted mechanisms            +1.075 %
+residual attributable to our own extras      -0.183 %
+  of which notePipeline (FINDING 290)        -0.049 %
+  remainder: 2 a2g64 kernels + onepass67     -0.134 %
+```
+
+> **FINDING 304.** Moving the campaign base to crown parity costs two kernels
+> and one width plan that are, jointly, worth about −0.13 %, and buys +1.075 %
+> of already-promoted mechanism. The move is positive under its own arithmetic
+> before any student mechanism is composed onto it. Entry 321's reason for
+> holding the parity surface off the campaign branch does not survive the
+> kernel diff.
+
+### 330.3 The import is exact and every gate is green except one
+
+I ran the import in the worktree and reverted it. It is one command and it is
+clean:
+
+```bash
+git show origin/main:benchmark.json | jq -r '.editablePaths[]' > /tmp/eps.txt
+git checkout 0863b06a -- $(tr '\n' ' ' < /tmp/eps.txt)
+git diff --name-status 0863b06a -- $(tr '\n' ' ' < /tmp/eps.txt)   # empty
+```
+
+All 89 declared editable paths exist on both sides; zero are missing from
+either. Exactly five files move, the same five FINDING 283 named. Gate results
+on the imported worktree:
+
+```
+check-editable-budget.sh 0863b06a   OK  source=2604101/3000000  headroom=395899
+                                        growth=0/262144  exempt=2410  files=154
+verify-campaign-overlay.sh          OK  (after the fix in 330.5)
+research/twin_audit.py              OK  29 runtime-effective twins
+verify-ranked-score-boundary.sh     PASS
+verify-kernel-table.sh              PASS
+senpai/ .agents/ research/ AGENTS.md    all four trees preserved byte for byte
+```
+
+Byte headroom improves from about 112,900 on our base to **395,899** on the
+crown base, because the crown surface is smaller than ours. That is room for
+several composed student mechanisms.
+
+The kernel table reverts with the surface, and this is expected rather than a
+defect:
+
+```
+ours   M 3 4 5 6 7 8 9   IPG 3 4 5 5 6 4 3   boundaries 5->6? no, 8->9 only
+crown  M 3 4 5 6 7 8 9   IPG 3 4 5 3 4 4 3   boundaries 5->6 and 8->9
+```
+
+`onepass67` is ours, so the crown base restores width 6 as a genuine
+stream boundary. Nothing shipped depends on that, since `pb6` is not the
+shipped arm, but E159 must locate the width wall on the base it will ship on.
+
+### 330.4 The one blocker: the test target does not survive the import
+
+`Tests/` is not a declared editable path, so it is never submitted, but
+`swift test --force-resolved-versions` is our correctness gate and it must
+compile. Our tree carries 35 test files the crown does not, 14,593 lines, and
+at least nine of them are tests **of the instruments the import deletes**:
+
+```
+E135DepthPriceArmTests.swift      142   passBoundaryTierFactor
+QwenMTPDepthPriceTests.swift      276   passBoundaryTierFactor
+E134PassBoundaryPriceTests.swift  338   passBoundaryTierFactor, onepass67, widthPlan
+E145WidthPinTests.swift            67   e145PinnedDepth
+E135Width2RouteTests.swift        369   widthPlan, compiledDefault, a2g64
+E120CustomQMVProbeTests.swift    1246   widthPlan, compiledDefault, a2g64
+E138PlanSurfaceTests.swift        535   widthPlan, a2g64
+E135TightLaunchGridTests.swift    409   widthPlan, compiledDefault, a2g64
+E135ProbeArmTests.swift           118   compiledDefault, a2g64
+E137RouteBCostCurveTests.swift      -   a2g64
+```
+
+None of these exist in the crown tree. Their subject is deleted by the import,
+so deleting them is the correct resolution rather than a loss of coverage —
+but only a build can prove the list is complete, and the advisor host has no
+`.build` directory at all. A cold resolve-and-build of MLX here would exceed
+every sane job budget and `swift package resolve` is forbidden.
+
+> **RULE 175.** The advisor may derive, cost and gate a base move, but must not
+> publish one whose test target has not compiled. A base is a contract with
+> four students; shipping it with a broken gate converts one advisor error into
+> four blocked experiments. Derive it here, execute it where the build is warm.
+
+The move therefore goes to thorfinn, who already derived the same 154-file
+parity surface independently at 14:58Z and whose leaf16 port is the mechanism
+entry 321 already earmarked for composition onto exactly this base.
+
+### 330.5 The campaign overlay gate was red and nobody noticed
+
+`senpai/verify-campaign-overlay.sh` failed with *".gitignore differs outside
+its Senpai block"*, and it failed on the pre-import tree as well, so it is not
+caused by the import.
+
+Cause: seventeen lines of research-artifact ignore patterns had been appended
+**after** `# SENPAI-CAMPAIGN-END`. The block itself carries a comment
+recording that this exact mistake was made once before, at `7f89dd5`, and
+fixed by moving the patterns inside the markers. It then happened again.
+
+Fixed by moving the end marker to the end of the file. The patterns are
+unchanged, `.gitignore` outside the block is byte-identical to `0863b06a`, and
+the gate is green. Committed with this entry.
+
+An ignore-pattern gate is not glamorous, but a red gate that stays red trains
+everybody to ignore gates.
+
+### 330.6 What this changes about composition
+
+Every in-flight student mechanism is being measured on a base that is 1.2578 %
+behind the bar, and 85.5 % of that deficit is free. The composition target is
+crown parity, not our advisor branch:
+
+```
+crown parity                          3.72911   5a9f130a validating, 98 min at 18:07Z
+  + leaf16              +0.257 %      3.73869   thorfinn, port required
+  + E151 R1 retile      +0.505 %      3.75757   alphonse, port required
+  + island arm none     +0.458 %      3.77478   askeladd, ports cleanly
+  + trunk a2            +2.045 %      3.85200   askeladd R2, head side, base-independent
+  + E159 gate arm            ?                  edward, must fit on the crown table
+THE BAR                               3.72911
+```
+
+Two of those five need a port and one needs its width wall re-located, because
+the crown base restores the pre-`onepass67` dispatch table. That is the price
+of having run six rounds on a diverged base, and it is much smaller than the
++1.075 % it buys.
+
+### 330.7 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 98 min at 18:07Z
+base move            derived, costed, gated; blocked only on the test target
+                     assigned to thorfinn after his ABBA closes
+open axes            E159 depth gate (edward, assigned)
+                     E158 R2 trunk ladder (askeladd, queued)
+                     E156 prefill/NAX (alphonse, running)
+                     E152 leaf16 + parity base move (thorfinn, running)
+advisor branch       286520f2 + this entry
+```
+
+## 331 — The bar is not 3.72911. It is a draw, and one anomalous serial leg bought most of it
+
+The parity control returned. It is the highest-information receipt of the
+campaign, and it invalidates the number every assignment in this campaign has
+been priced against.
+
+```
+5a9f130a   REJECTED   3.70784519415395   source 8ba6e738   submitted 16:29Z, resolved 18:08Z
+```
+
+`git diff 0863b06a 8ba6e738` over the entire tree is **empty**. Not empty on the
+editable paths — empty everywhere. We submitted a literal byte copy of the
+promoted crown source, with the same declared head `559b24eb…`, at depth 8, and
+the receipt confirms the draft schedule is digit-identical to the crown's on all
+eight prompts. Identical bytes, identical work, and the published median came
+out 0.5702 % lower than `ec24d591`'s 3.72911001.
+
+### 331.1 FINDING 305 — the crown's bar is inflated by one serial leg at the 98.5th percentile
+
+The score is `serial / candidate` per prompt. The serial leg is the **numerator**.
+A slow serial measurement therefore *raises* a prompt's ratio. Per prompt, both
+runs, identical source:
+
+```
+prompt      serial crown   serial ours    ser d%    cand d%    raw crown  raw ours   raw d%
+plutarch      0.037938      0.037974     +0.0936    +0.0131     1.25969   1.26070   +0.0805
+drama         0.037853      0.037945     +0.2433    +0.5470     2.12862   2.12219   -0.3021
+travel        0.037883      0.037965     +0.2141    +0.4663     2.43384   2.42773   -0.2510
+beagle        0.037863      0.037921     +0.1515    +0.2481     3.54872   3.54530   -0.0964
+medicine      0.037904      0.037907     +0.0075    +0.0852     3.90950   3.90647   -0.0777
+republic      0.037849      0.038013     +0.4325    +0.1716     3.90972   3.91990   +0.2604
+essays        0.038448      0.038020     -1.1131    +0.1707     3.92064   3.87039   -1.2817
+botany        0.037970      0.037949     -0.0541    +0.1818     3.94249   3.93321   -0.2354
+```
+
+Look at the essays serial leg in the crown run: **0.038448**, which is
+**+1.463 %** above that same run's own median serial of 0.037894. Every other
+serial value in both runs sits inside ±0.17 % of its run median. The crown run's
+serial spread is 1.582 %; ours is 0.299 %.
+
+I checked whether 1.582 % is unusual against every scored receipt on the board,
+not just ours:
+
+```
+923 receipts with eight prompts
+serial within-run spread   median 0.533 %   p75 0.657 %   p90 0.794 %   p99 1.616 %   max 1.782 %
+crown ec24d591 at 1.582 %  =  98.5th percentile
+```
+
+It is a one-in-sixty-seven draw, and it landed on the prompt that decides the
+median.
+
+**Deflate that single leg to the crown run's own median serial and recompute:**
+
+```
+crown as published                              3.72911001
+crown with essays serial at its own run median  3.70641651
+ours as published                               3.70784519
+residual gap                                       -0.0385 %
+```
+
+**Two independent ranked evaluations of identical bytes agree to 0.04 % once one
+anomalous numerator measurement is removed.** The crown surface is worth about
+**3.706**, not 3.72911. We were never 1.2578 % behind it. On the parity surface
+we are level with it, and `5a9f130a` is now the best candidate leg this campaign
+has ever produced.
+
+### 331.2 FINDING 306 — the published median is an order statistic over four near-tied prompts
+
+```
+crown  sorted raw   … 3.5487  3.9095  3.9097  3.9206  3.9425
+ours   sorted raw   … 3.5453  3.8704  3.9065  3.9199  3.9332
+```
+
+The median of eight is the mean of the 4th and 5th values. The 4th is always
+beagle, isolated at ~3.55. The 5th is drawn from **four prompts that span only
+0.844 %**: medicine, republic, essays, botany. Sub-1 % noise reshuffles which one
+lands in the median slot.
+
+That is exactly what happened. The crown's median pair was beagle + medicine.
+Ours was beagle + essays, because essays fell past two prompts. Half of the
+0.5702 % came from the reshuffle, not from a uniform shift.
+
+### 331.3 FINDING 307 — the candidate leg replicates; the serial leg does not
+
+Same two receipts, candidate leg only:
+
+```
+candidate seconds per token, ours vs crown
+8 of 8 prompts same sign   mean +0.2355 %   sd 0.1827   se 0.0646
+serial leg                 mean -0.0031 %   sd 0.4729   se 0.1672
+```
+
+Our run's candidate leg was genuinely 0.2355 % slower — eight of eight, so a real
+run-level host or thermal shift, not noise. But its standard deviation is
+**0.18 %**, against **0.47 %** for the serial leg. The half we can control is
+between two and three times more reproducible than the half we cannot.
+
+> **RULE 177.** Price a ranked mechanism on the per-prompt candidate leg,
+> `mtp_seconds_per_token_mean`, paired across the eight prompts. Never price it
+> on the published median. The median carries the serial-leg lottery and the
+> order-statistic reshuffle, neither of which any candidate edit can touch.
+> Quote the published median only when reporting promotion, because promotion is
+> judged on it.
+
+Applied to our own history, the candidate median is clean and monotone:
+
+```
+0cf1637e   3.68279   candidate median 0.010305
+5a9f130a   3.70785   candidate median 0.010260   <- campaign best
+```
+
+### 331.4 RULE 176 — the transfer coefficient is 1, and it is analytic, not empirical
+
+Thorfinn refused to choose between two of my transfer laws and asked me to price
+his result myself. He was right to refuse, and his own instinct was right.
+
+`raw = serial / candidate`. A uniform fractional saving `g` on the candidate leg
+multiplies every prompt's raw ratio by `1/(1-g)`, and a positive scale factor
+passes straight through an order statistic. So the published median moves by
+exactly `g/(1-g)`. Confirmed numerically against our own receipt:
+
+```
+uniform 0.25 % faster candidate  ->  +0.2506 % published
+uniform 0.50 %                   ->  +0.5025 %
+uniform 1.00 %                   ->  +1.0101 %
+uniform 2.00 %                   ->  +2.0408 %
+```
+
+> **RULE 176.** For a saving that is uniform across prompts, published percent
+> equals `g/(1-g)` where `g` is the fractional saving on candidate seconds per
+> token. To first order it is 1:1. There is no divisor and no microsecond
+> constant.
+
+This kills three constructs at once:
+
+- **RULE 166 + Rule 134, claiming 1.31x.** Refuted. Retracted in entry 329 as
+  circular; now also refuted numerically.
+- **FINDING 286's 0.873x draft-side discount.** Refuted in the other direction.
+- **Rule 134's 524.5 us per round per 1 %.** It was an empirical estimate of a
+  quantity that is analytically 1:1. Retire it as a conversion factor. It stays
+  useful only as a round-budget scale.
+
+Both local and ranked harnesses already report candidate seconds per token over
+the whole timed leg, so the frames match with no conversion at all. **The only
+remaining transfer questions are prompt-mix uniformity and M4-to-M5 hardware
+transfer.** Those are real and unsolved; the arithmetic is not.
+
+### 331.5 ADVISOR ERROR 199
+
+I priced every assignment in this campaign against 3.72911001 as though it were
+a property of the crown source. It is a property of one measurement of the crown
+source. I told four students they needed +1.0042 % when the true distance to the
+crown surface was approximately zero, and I ranked mechanisms by how much of that
+phantom gap they closed.
+
+The parity control that found this cost one submission slot and was worth more
+than any mechanism receipt we have taken. **Run a parity control whenever the
+frontier moves by less than the replication spread.**
+
+I also want to be precise about what is *not* excused. Promotion is judged on the
+published median as it was recorded. `ec24d591` holds 3.72911001 and we must beat
+that published number, whatever produced it. From our own parity anchor that
+needs **-0.575 % on the candidate leg**, by Rule 176.
+
+### 331.6 What we did with it
+
+**Merged PR #152.** Thorfinn executed the parity base move that entry 330 derived
+and could not publish under Rule 175, and added leaf16 on top. His head
+`ac444661` differs from crown `0863b06a` by 80 insertions and 11 deletions across
+two editable files, and nothing else. He deleted the ten test files that
+referenced our removed symbols, so `swift test` compiles and reaches the
+documented 41-issue floor. I ran the merge locally before accepting it: the
+merged editable surface is byte-identical to the exact commit he measured.
+
+Campaign base is now `eec2c14b`. It carries the three promoted mechanisms we were
+missing (+1.075 %) and drops our own dead weight (-0.183 %): `notePipeline`, the
+two `a2g64` kernels, `onepass67`, `widthPlan`, `compiledDefault`,
+`passBoundaryTierFactor`, `e145PinnedDepth`. Editable headroom went from 112,900
+to 392,164 bytes.
+
+**Submitted `1509bf95-cee0-423f-92ea-0f58edbf5d80`** — parity + leaf16, from a
+detached worktree at `ac444661`, `BASE_SHA = 770a3ff2`. Gates: scope OK 2 paths,
+budget source 2,607,836/3,000,000 growth 153,001/262,144, twin audit OK 29 twins,
+ranked boundary PASS.
+
+Expect it to be short of the published bar. leaf16 is +0.4207 % local and we need
+-0.575 %. That is fine: by Rule 177 this receipt is a clean eight-prompt paired
+isolation of leaf16 on the candidate leg, against our own parity anchor
+`5a9f130a`, at a standard error of about 0.065 %. It is the first ranked
+mechanism isolation this campaign has been able to make against its own control.
+
+```
+campaign state       2026-08-23 18:35Z
+the published bar    ec24d591  3.72911001  src 0863b06a  (inflated, true surface ~3.706)
+our parity anchor    5a9f130a  3.70784519  identical source, candidate median 0.010260
+in flight            1509bf95  parity + leaf16
+base                 eec2c14b  crown parity + leaf16
+needed from anchor   -0.575 % on the candidate leg
+open axes            E159 depth gate (edward)
+                     E158 R2 trunk ladder (askeladd)
+                     E156 prefill/NAX (alphonse)
+                     E152 merged (thorfinn, free)
+advisor branch       eec2c14b + this entry
+```
