@@ -36,6 +36,16 @@ WHAT IT DECIDES, WITH ZERO GPU:
      `PREGUARD_REV`, which carries the same mechanism with no guard and must
      COMPILE that shape.
   7. Every other shipped NAX instantiation still compiles.
+  8. Every ahead-of-time cell in `quantized_nax.metal` still compiles with the
+     arm on. E147 shipped the arm off, so the retiled path was never
+     instantiated and one incompatibility stayed invisible: the weight loader
+     binds BROWS to the tile's BN, so halving BN halves `n_reads` and breaks
+     the `group_size == 32` specialisation's
+     `static_assert((BCOLS_PACKED / n_reads) == n_groups)`. R1 disarms the
+     retile in exactly that case. `aot_group32_arm_on` proves the shipped tree
+     compiles that cell; `aot_group32_guard_defeated` removes the legality term
+     from the arm predicate and must be REFUSED, which proves the guard carries
+     the load rather than decorating it.
 """
 
 from __future__ import annotations
@@ -57,6 +67,21 @@ OUT = ROOT / "research/e151-r1-compile-gate.json"
 # already carries the retile arm, so the guarded and unguarded probes differ by
 # the guard alone.
 PREGUARD_REV = "7e6157cd"
+
+# R1 rewrote the arm predicate, so E-1c's needles no longer describe the tree.
+# The illegal probe now moves the arm's BN constant to 48, which keeps the
+# loader legal, keeps the arm engaged, and breaks both retile `static_assert`s.
+ARM_BN = "constexpr int kE147ArmBN = 32;"
+ARM_BN_ILLEGAL = "constexpr int kE147ArmBN = 48;"
+
+# The weight-loader legality term. Removing it re-arms the retile on the
+# `group_size == 32` cells that cannot support it.
+LOADER_GUARD = "kE147NaxRetileOn && kE147NaxRetileLoaderLegal;"
+LOADER_GUARD_DEFEATED = "kE147NaxRetileOn;"
+
+# One ahead-of-time cell from `quantized_nax.metal` whose group size forces the
+# arm to disarm. bfloat16 is the scored element type.
+AOT_GROUP32_INST = "affine_qmm_t_nax<bfloat16_t, 32, 4, 1, 0, 64, 64, 64, 2, 2>"
 
 
 def main() -> int:
@@ -80,8 +105,9 @@ def main() -> int:
         raise SystemExit("e151_r1_compile_gate: the base twin does not ship the arm off")
 
     forced_off = e1c.substitute(tree_src, e1c.FLAG_ON, e1c.FLAG_OFF, "forced_off")
-    illegal = e1c.substitute(
-        tree_src, e1c.ARM_BN, e1c.ARM_BN_ILLEGAL, "illegal_bn48"
+    illegal = e1c.substitute(tree_src, ARM_BN, ARM_BN_ILLEGAL, "illegal_bn48")
+    guard_defeated = e1c.substitute(
+        tree_src, LOADER_GUARD, LOADER_GUARD_DEFEATED, "loader_guard_defeated"
     )
 
     preguard_src = e1c.preamble(
@@ -100,6 +126,10 @@ def main() -> int:
         "failopen_unguarded_preguard": (preguard_src, e1c.FAILOPEN_INST),
         "failopen_guarded_forced_off": (forced_off, e1c.FAILOPEN_INST),
         "failopen_arm_on": (tree_src, e1c.FAILOPEN_INST),
+        "aot_group32_arm_on": (tree_src, AOT_GROUP32_INST),
+        "aot_group32_guard_defeated": (guard_defeated, AOT_GROUP32_INST),
+        "aot_group32_base_arm_off": (base_src, AOT_GROUP32_INST),
+        "scored_guard_defeated": (guard_defeated, e1c.SCORED_INST),
     }
 
     result = {
@@ -191,6 +221,29 @@ def main() -> int:
     result["e151_shipped_other_sites_compile"] = all(
         p[label]["compiled"] for label in e1c.SHIPPED_OTHER_SITES
     )
+    g32_on = p["aot_group32_arm_on"]
+    g32_off = p["aot_group32_base_arm_off"]
+    g32_defeated = p["aot_group32_guard_defeated"]
+    scored_defeated = p["scored_guard_defeated"]
+    result["e151_aot_group32_compiles"] = g32_on["compiled"]
+    result["e151_aot_group32_needs_the_loader_guard"] = not g32_defeated["compiled"]
+    result["e151_loader_assert_named_in_refusal"] = "BCOLS_PACKED" in g32_defeated.get(
+        "error", ""
+    )
+    # The guard must disarm the group-32 cell completely, not merely make it
+    # compile: its AIR has to match the arm-off base byte for byte.
+    result["e151_aot_group32_matches_arm_off_base"] = (
+        g32_on["compiled"]
+        and g32_off["compiled"]
+        and g32_on["air_sha256"] == g32_off["air_sha256"]
+    )
+    # The same guard must be invisible on the scored cell, where the loader is
+    # legal and the arm has to stay engaged.
+    result["e151_guard_is_neutral_on_scored_cell"] = (
+        scored_defeated["compiled"]
+        and on["compiled"]
+        and scored_defeated["air_sha256"] == on["air_sha256"]
+    )
 
     required = [
         "e151_tree_ships_arm_on",
@@ -206,6 +259,11 @@ def main() -> int:
         "e151_rule145_named_in_refusal",
         "e151_failopen_arm_on_rejected",
         "e151_shipped_other_sites_compile",
+        "e151_aot_group32_compiles",
+        "e151_aot_group32_needs_the_loader_guard",
+        "e151_loader_assert_named_in_refusal",
+        "e151_aot_group32_matches_arm_off_base",
+        "e151_guard_is_neutral_on_scored_cell",
     ]
     result["e151_r1_compile_gate_pass"] = all(result[k] for k in required)
     result["e151_r1_compile_gate_required_fields"] = required
@@ -223,7 +281,8 @@ def main() -> int:
     if not result["e151_r1_compile_gate_pass"]:
         for label in ("tree_arm_on", "tree_forced_off", "illegal_bn48",
                       "failopen_guarded_forced_off",
-                      "failopen_unguarded_preguard"):
+                      "failopen_unguarded_preguard", "aot_group32_arm_on",
+                      "aot_group32_guard_defeated", "scored_guard_defeated"):
             err = p[label].get("error")
             if err:
                 print(f"\n--- {label} error ---\n{err}")

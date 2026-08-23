@@ -2,7 +2,7 @@
  "experiment": "E151",
  "rung": "R0",
  "harness": "offline",
- "commit": "4330bdd0b5c347b37010a17e226d855ad4ced1ac",
+ "commit": "6a37c27a578c4d3c8425404926fb170bed50f1d8",
  "host_launch_geometry": {
   "BM": 64,
   "BN": 64,
@@ -32,6 +32,9 @@
   "arm_flag_present": true,
   "arm_bm_128": true,
   "arm_bn_32": true,
+  "arm_bn_constant_is_32": true,
+  "arm_gated_on_loader_legality": true,
+  "scored_cell_arm_static_assert": true,
   "retile_area_static_assert": true,
   "retile_split_static_assert": true,
   "rule145_guard_sites_readable": 3,
@@ -48,7 +51,7 @@
    "readable_sk": 992,
    "readable_bk_padded": 962,
    "readable_arm_flag": 1294,
-   "readable_ws_alloc": 1301,
+   "readable_ws_alloc": 1332,
    "readable_gridstride": 1106,
    "twin_arm_flag": 1307,
    "nax_branch_one": 847,
@@ -869,10 +872,13 @@
   "changed_paths": [
    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp",
    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+   "research/e151-artifacts/local-submit-512.log",
    "research/e151-r0-safety-case.json",
    "research/e151-r1-compile-gate.json",
+   "research/e151_exact512.sh",
    "research/e151_r0_safety_case.py",
-   "research/e151_r1_compile_gate.py"
+   "research/e151_r1_compile_gate.py",
+   "research/e151_wandb_log.py"
   ],
   "changed_paths_in_decode_qmv_library": [],
   "changed_paths_in_prefill_nax_library": [
@@ -881,6 +887,225 @@
   ],
   "e151_r1_touches_decode_qmv_library": false,
   "e151_r1_touches_prefill_nax_library": true
+ },
+ "r0_9_loader_legality": {
+  "harness": "offline",
+  "instantiation_source": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.metal instantiate_quantized_all()",
+  "instantiated_tile": {
+   "BM": 64,
+   "BK": 64,
+   "BN": 64,
+   "WM": 2,
+   "WN": 2
+  },
+  "rows": [
+   {
+    "group_size": 128,
+    "bits": 2,
+    "cols_packed": 16,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 128,
+    "bits": 3,
+    "cols_packed": 8,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 128,
+    "bits": 4,
+    "cols_packed": 32,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 128,
+    "bits": 5,
+    "cols_packed": 8,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 128,
+    "bits": 6,
+    "cols_packed": 16,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 128,
+    "bits": 8,
+    "cols_packed": 64,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 64,
+    "bits": 2,
+    "cols_packed": 16,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 64,
+    "bits": 3,
+    "cols_packed": 8,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 64,
+    "bits": 4,
+    "cols_packed": 32,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": true
+   },
+   {
+    "group_size": 64,
+    "bits": 5,
+    "cols_packed": 8,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 64,
+    "bits": 6,
+    "cols_packed": 16,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 64,
+    "bits": 8,
+    "cols_packed": 64,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": true,
+    "arm_may_engage": true,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 32,
+    "bits": 2,
+    "cols_packed": 16,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": false,
+    "arm_may_engage": false,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 32,
+    "bits": 3,
+    "cols_packed": 8,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": false,
+    "arm_may_engage": false,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 32,
+    "bits": 4,
+    "cols_packed": 32,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": false,
+    "arm_may_engage": false,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 32,
+    "bits": 5,
+    "cols_packed": 8,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": false,
+    "arm_may_engage": false,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 32,
+    "bits": 6,
+    "cols_packed": 16,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": false,
+    "arm_may_engage": false,
+    "is_scored_cell": false
+   },
+   {
+    "group_size": 32,
+    "bits": 8,
+    "cols_packed": 64,
+    "arm_off_brows": 64,
+    "arm_on_brows": 32,
+    "arm_off_loader_legal": true,
+    "arm_on_loader_legal": false,
+    "arm_may_engage": false,
+    "is_scored_cell": false
+   }
+  ],
+  "e151_aot_cells_total": 18,
+  "e151_aot_cells_arm_engages": 12,
+  "e151_aot_cells_arm_disarmed": 6,
+  "e151_arm_off_legal_everywhere": true,
+  "e151_scored_cell_arm_engages": true,
+  "e151_disarmed_group_sizes": [
+   32
+  ]
  },
  "verdict": {
   "e151_source_facts_all_true": true,
@@ -891,6 +1116,9 @@
   "e151_rule145_arm_on_legal": true,
   "e151_tgp_fits": true,
   "e151_r1_touches_decode_qmv_library": false,
+  "e151_arm_off_legal_everywhere": true,
+  "e151_scored_cell_arm_engages": true,
+  "e151_aot_cells_arm_disarmed": 6,
   "e151_r0_pass": true
  }
 }

@@ -1305,11 +1305,42 @@ template <
   // partial products in the same order and the arithmetic is bit-identical.
   // The flag is the whole switch. It is ON in the submitted default.
   constexpr bool kE147NaxRetileOn = true;
-  constexpr int kE147NaxRetileBM = kE147NaxRetileOn ? 128 : BM;
-  constexpr int kE147NaxRetileBN = kE147NaxRetileOn ? 32 : BN;
+
+  // The weight loader's `group_size == 32` specialization (:703) asserts
+  // `(BCOLS_PACKED / n_reads) == n_groups`, and `n_reads` scales with `BROWS`,
+  // which `qmm_t_nax_tgp_impl` binds to the tile's BN. Halving BN doubles the
+  // left side and breaks that assert at every `bits` value for that group
+  // size. `quantized_nax.metal` instantiates group sizes 128, 64 and 32 ahead
+  // of time for the metallib, so an unguarded arm stops that build even though
+  // the scored path never reaches those instantiations. Reproduce the loader's
+  // own arithmetic instead of writing `group_size != 32`, so a later change to
+  // BK, WM, WN or the split rule disarms the tile rather than breaking the
+  // build.
+  constexpr int kE147ArmBN = 32;
+  constexpr int kE147ArmColsPacked = BK / get_pack_factor<bits, 8>();
+  constexpr int kE147ArmTgpSize = WM * WN * SIMD_SIZE;
+  constexpr int kE147ArmReads =
+      (kE147ArmColsPacked * kE147ArmBN < kE147ArmTgpSize)
+      ? 1
+      : (kE147ArmColsPacked * kE147ArmBN) / kE147ArmTgpSize;
+  constexpr bool kE147NaxRetileLoaderLegal = (group_size != 32) ||
+      ((kE147ArmColsPacked / kE147ArmReads) == (BK / 32));
+
+  constexpr bool kE147NaxRetileArmed =
+      kE147NaxRetileOn && kE147NaxRetileLoaderLegal;
+  constexpr int kE147NaxRetileBM = kE147NaxRetileArmed ? 128 : BM;
+  constexpr int kE147NaxRetileBN = kE147NaxRetileArmed ? kE147ArmBN : BN;
   constexpr bool kE147NaxRetiled =
       (kE147NaxRetileBM != BM) || (kE147NaxRetileBN != BN);
   constexpr int kTgBN = kE147NaxRetileBN > BN ? kE147NaxRetileBN : BN;
+
+  // A legality predicate that is too strict would disarm the scored tile and
+  // the experiment would measure nothing while still passing every build.
+  static_assert(
+      !(kE147NaxRetileOn && group_size == 64 && bits == 4 && BM == 64 &&
+        BN == 64) ||
+          kE147NaxRetiled,
+      "the scored affine group-64 4-bit tile must take the retile arm");
 
   threadgroup T Ws[kTgBN * BK_padded];
 

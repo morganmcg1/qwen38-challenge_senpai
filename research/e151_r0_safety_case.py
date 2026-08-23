@@ -107,8 +107,16 @@ def source_facts() -> dict:
             in readable
         ),
         "arm_flag_present": "constexpr bool kE147NaxRetileOn" in readable,
-        "arm_bm_128": "kE147NaxRetileOn ? 128 : BM" in readable,
-        "arm_bn_32": "kE147NaxRetileOn ? 32 : BN" in readable,
+        "arm_bm_128": "kE147NaxRetileArmed ? 128 : BM" in readable,
+        "arm_bn_32": "kE147NaxRetileArmed ? kE147ArmBN : BN" in readable,
+        "arm_bn_constant_is_32": "kE147ArmBN = 32;" in readable,
+        "arm_gated_on_loader_legality": (
+            "kE147NaxRetileOn && kE147NaxRetileLoaderLegal" in readable
+        ),
+        "scored_cell_arm_static_assert": (
+            "the scored affine group-64 4-bit tile must take the retile arm"
+            in readable
+        ),
         "retile_area_static_assert": (
             'BM * BN == kHostBM * kHostBN, "a retiled tile must cover the host tile"'
             in readable
@@ -611,6 +619,101 @@ def r0_8_rule153(base: str) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# R0.9  weight-loader legality across every ahead-of-time instantiation
+#
+# FINDING. The arm was shipped OFF by E147, so the metallib never instantiated
+# it and a latent incompatibility stayed invisible. `quantized_nax.metal`
+# instantiates `affine_qmm_t_nax` at (BM, BK, BN, WM, WN) = (64, 64, 64, 2, 2)
+# for group sizes 128, 64 and 32 and for bits 2, 3, 4, 5, 6 and 8. The loader's
+# `group_size == 32` specialization asserts `(BCOLS_PACKED / n_reads) ==
+# n_groups`, and `n_reads` scales with BROWS, which is the tile's BN. The arm
+# halves BN from 64 to 32, which halves `n_reads` and doubles the left side, so
+# every group-32 instantiation fails to compile. The scored path is affine
+# group-64, which uses the primary loader template and does not constrain
+# BROWS at all.
+#
+# This census reproduces the loader arithmetic offline for the whole
+# instantiation matrix and reports which cells the arm may take.
+# ---------------------------------------------------------------------------
+AOT_GROUP_SIZES = (128, 64, 32)
+AOT_BITS = (2, 3, 4, 5, 6, 8)
+
+
+def pack_factor(bits: int, wsize: int = 8) -> int:
+    if bits in (3, 5):
+        return 8
+    if bits == 6:
+        return 4
+    return wsize // bits
+
+
+def loader_legal(group_size: int, bits: int, brows: int) -> bool:
+    """Reproduce QuantizedBlockLoader's own admission rule for BK = HOST_BK.
+
+    The primary template requires BCOLS <= group_size and group_size % BCOLS
+    == 0 and never mentions BROWS. Only the group_size == 32 specialization
+    carries the n_reads split assert, which is the one the arm can break.
+    """
+    cols_packed = HOST_BK // pack_factor(bits)
+    tgp = WM * WN * 32
+    if group_size != 32:
+        return HOST_BK <= group_size and group_size % HOST_BK == 0
+    reads = 1 if cols_packed * brows < tgp else (cols_packed * brows) // tgp
+    return (cols_packed // reads) == (HOST_BK // 32)
+
+
+def r0_9_loader_legality() -> dict:
+    rows = []
+    for group_size in AOT_GROUP_SIZES:
+        for bits in AOT_BITS:
+            off = loader_legal(group_size, bits, HOST_BN)
+            on = loader_legal(group_size, bits, ARM_BN)
+            rows.append(
+                {
+                    "group_size": group_size,
+                    "bits": bits,
+                    "cols_packed": HOST_BK // pack_factor(bits),
+                    "arm_off_brows": HOST_BN,
+                    "arm_on_brows": ARM_BN,
+                    "arm_off_loader_legal": off,
+                    "arm_on_loader_legal": on,
+                    "arm_may_engage": on,
+                    "is_scored_cell": group_size == 64 and bits == 4,
+                }
+            )
+    scored = [r for r in rows if r["is_scored_cell"]]
+    return {
+        "harness": "offline",
+        "instantiation_source": (
+            "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/"
+            "quantized_nax.metal instantiate_quantized_all()"
+        ),
+        "instantiated_tile": {
+            "BM": HOST_BM,
+            "BK": HOST_BK,
+            "BN": HOST_BN,
+            "WM": WM,
+            "WN": WN,
+        },
+        "rows": rows,
+        "e151_aot_cells_total": len(rows),
+        "e151_aot_cells_arm_engages": sum(1 for r in rows if r["arm_may_engage"]),
+        "e151_aot_cells_arm_disarmed": sum(
+            1 for r in rows if not r["arm_may_engage"]
+        ),
+        # Every arm-off cell must stay legal, otherwise the failure predates
+        # the arm and this census is measuring the wrong thing.
+        "e151_arm_off_legal_everywhere": all(
+            r["arm_off_loader_legal"] for r in rows
+        ),
+        "e151_scored_cell_arm_engages": all(r["arm_may_engage"] for r in scored),
+        "e151_disarmed_group_sizes": sorted(
+            {r["group_size"] for r in rows if not r["arm_may_engage"]}
+        ),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="research/e151-r0-safety-case.json")
@@ -626,6 +729,7 @@ def main() -> int:
     traffic = r0_6_traffic(shape_rows)
     roof = r0_7_roofline(traffic)
     rule153 = r0_8_rule153(args.base)
+    loaders = r0_9_loader_legality()
 
     base_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True
@@ -645,6 +749,9 @@ def main() -> int:
         "e151_r1_touches_decode_qmv_library": rule153[
             "e151_r1_touches_decode_qmv_library"
         ],
+        "e151_arm_off_legal_everywhere": loaders["e151_arm_off_legal_everywhere"],
+        "e151_scored_cell_arm_engages": loaders["e151_scored_cell_arm_engages"],
+        "e151_aot_cells_arm_disarmed": loaders["e151_aot_cells_arm_disarmed"],
     }
     verdict["e151_r0_pass"] = all(
         [
@@ -655,6 +762,8 @@ def main() -> int:
             verdict["e151_rule145_arm_on_legal"],
             verdict["e151_tgp_fits"],
             not verdict["e151_r1_touches_decode_qmv_library"],
+            verdict["e151_arm_off_legal_everywhere"],
+            verdict["e151_scored_cell_arm_engages"],
         ]
     )
 
@@ -681,6 +790,7 @@ def main() -> int:
         "r0_6_traffic_model": traffic,
         "r0_7_roofline": roof,
         "r0_8_rule153_jit_library_partition": rule153,
+        "r0_9_loader_legality": loaders,
         "verdict": verdict,
     }
 
