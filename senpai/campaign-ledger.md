@@ -56284,3 +56284,271 @@ live M=2 route.
 | rung B as implemented | **CLOSED** at +2.18 % prefill, 15 sigma, three anchors |
 | the rung-E `M % 128` gate | **SUPERSEDED** by the grid-stride form |
 | the per-token M=1 byte frame | **RETIRED** — falsified by its own arithmetic |
+
+## 310 — 2026-08-23 09:20Z — WE HAVE BEEN SHIPPING A MECHANISM THAT COSTS 2.4 % OF THE PUBLISHED MEDIAN; THE UNEXPLAINED 4.2 % WAS OUR OWN BASE DRIFT; AND THE CAMPAIGN'S MEASUREMENT INSTRUMENT IS COARSER THAN WE HAVE BEEN CLAIMING
+
+Base at open `57ae7e0d`. Base at close `601c137c` (E145 merged, PR #144). Bar unmoved at `684821ed` `3.71959723` for nine hours. Our best unmoved at `572b2cc4` `3.66218564`. Board 1,208 rows; five validating, none ours; our submission slot free and held by thorfinn.
+
+Four advisor errors are recorded in this entry. Three of them were found by students. That is the system working, and it is the most useful thing in the round.
+
+---
+
+### 1. 🔴🔴 ADVISOR ERROR 174 — `pb6` IS RETIRED. IT COSTS `-2.3800 %` OF THE PUBLISHED MEDIAN AND WE HAVE BEEN SHIPPING IT.
+
+Thorfinn read the only ranked `pb6` contrast the campaign owns, `572b2cc4 -> e003a86d`, on the candidate leg under Rules 118, 121, 123, 127 and 129.
+
+| prompt | raw flat | raw pb6 | raw % | mtp flat | mtp pb6 | mtp % |
+|---|--:|--:|--:|--:|--:|--:|
+| beagle | 3.5117 | 3.3831 | **-3.66** | 0.010797 | 0.011191 | -3.65 |
+| botany | 3.9055 | 3.8612 | -1.13 | 0.009712 | 0.009841 | -1.32 |
+| drama | 2.0814 | 2.0284 | -2.54 | 0.018185 | 0.018644 | -2.53 |
+| essays | 3.8127 | 3.9361 | +3.24 | 0.009927 | 0.009639 | +2.90 |
+| medicine | 3.8718 | 3.8471 | -0.64 | 0.009780 | 0.009853 | -0.74 |
+| plutarch | 1.2590 | 2.3767 | **+88.78** | 0.030134 | 0.015944 | +47.09 |
+| republic | 3.8606 | 3.7670 | -2.43 | 0.009807 | 0.010041 | -2.39 |
+| travel | 2.3997 | 2.3294 | -2.93 | 0.015773 | 0.016298 | -3.33 |
+
+```
+published median   3.66218564 -> 3.57502547   -2.3800 %   pair (beagle,essays) -> (beagle,republic)
+median pair HELD   3.66218564 -> 3.65958420   -0.0710 %   meaningless: averages beagle -3.66 against essays +3.24
+RULE 129 worst upper slot: republic                       -2.3800 %
+```
+
+**Mechanism.** `pb6` takes plutarch from 449 non-drafting rounds and `effective_mean_draft_len` 0.1540 to zero non-drafting rounds and `edl` 2.6995. It starts drafting on the one prompt that carries exactly zero median weight under Rule 70, and it pays for that on beagle, the lower median slot, at roughly half the median's weight. It is a mechanism that spends where we are not paid and charges where we are.
+
+**F231's verdict of `pb6 ~ -0.58 %` faster is WITHDRAWN.** It rested on the E146 per-row state corrector that F240 and F241 retired, and it then averaged a strongly non-uniform mechanism into a single weighted number, which is precisely what Rule 127 forbids. Ledger 309's sentence "F231's pb6 verdict unaffected" is withdrawn with it.
+
+**Both local instruments are inverted on this axis.** Edward's E145 R1 gated ABBA read `-2.5706 %` with `pb6` faster. Thorfinn's F34 read `+2.2987 %` with `se6` `0.1332`. Two students, two hosts, two fixtures, tight intervals, both wrongly signed against the ranked receipt. The cause is width concentration: the local benchfixture spends `87.2 %` of ship-arm rounds at verify width 6 or above, and edward's `beagle_a` spends `39.50 %`, against a ranked median-pair-weighted `e135_ranked_width8_mass_weighted` of `0.5390`. The local ladder straddles the ranked mass instead of matching it, so a width-6 toll reads as free money on one fixture and as nothing on another.
+
+**Switch location.** `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1094-1141`. `enum DepthPriceArm: String { case ship, pb5, pb6, pb7, pbfit }` at `:1094`; env `MLX_E134_DEPTH_PRICE_ARM` read once at a `static let`; `?? .pb6` at `:1139`.
+
+**Depth-arm tripwire, the Rule 114 witness for every future run on this axis.** `.ship` gives `effective_mean_draft_len = 6.358974358974359` over 78 rounds. `pb6` gives `5.853658536585366` over 82 rounds. Both reproduce to the last digit across three QMV arms and two sessions.
+
+Thorfinn is authorised to flip and submit without further acknowledgement. The flip is worth about `+2.4 %` of published median on its own, which is larger than every mechanism the campaign has landed since `623e77af`.
+
+---
+
+### 2. 🔴🔴 ADVISOR ERROR 172 — THE "UNEXPLAINED `+4.2 %`" WAS OUR OWN BASE DRIFT, AND THE EDIT-SURFACE HAZARD IS WITHDRAWN
+
+`e003a86d` and `7226dc9a` were built from different campaign trees. Alphonse ran a compiled-arm census, `research/e147_base_diff.py`, against the built worker rather than the source:
+
+| arm | ours, base `770a3ff2` | `e003a86d` | differs | source site |
+|---|---|---|---|---|
+| `qmv_launch_grid` | `wide` | `tight` | **yes** | `Qwen35.swift:1952` |
+| `qmv_width_table` | `onePass67` | `shipped` | **yes** | `Qwen35.swift:1811` |
+| `qmv_entry_points` | `tiered` | `tiered` | no | `:1763` |
+| `cluster_probe_fraction` | `0.25` | `0.15` | **yes** | `:4880` |
+| `depth_price_arm` | `pb6` | `pb6` | no | `Qwen36MTPBlockSession.swift:1140` |
+| `depth_price_tier` | `1.45` | `1.45` | no | `:1013` |
+
+```
+grid wide->tight  3.7674 (F201)   table onePass67->shipped  0.3280 (F194)   probe 0.25->0.15  0.1961 (F192)
+additive         4.2915    residual +0.1063 pp = +0.33 sigma
+multiplicative   4.4617    residual -0.0639 pp = -0.20 sigma
+observed w5      4.3978    se 0.3222
+```
+
+Both compositions bracket the observation to `0.11` pp. There is nothing left to explain. **I broke Rule 88 by not stating the base commit of both sides, then escalated my own bookkeeping failure into a claimed hazard of the edit surface. F9's reclassification is WITHDRAWN.**
+
+**New reusable diagnostic, and the one genuinely useful thing to come out of the error.** A contrast that is uniform in sign but monotone decreasing in mean verify width is a launch-geometry contrast, `1296.8 * ln(Mbar)` over a near-linear round cost. It is not a state draw and it is not a per-token cost. Per prompt: drama `Mbar 3.29 -> +4.08`, travel `3.63 -> +4.67`, medicine `6.22 -> +3.18`, botany `6.81 -> +3.84`.
+
+Caveat retained: F201 measured all three contrasts on trees without `pb6`.
+
+---
+
+### 3. 🔴 ADVISOR ERROR 173 — `shift_dst` IS PRESENT AND RUNG B2 IS CANCELLED
+
+I asserted twice that `shift_dst` was absent from the `QuantizedBlockLoader` specializations in `quantized_nax.h`. It is present at `:698` and `:846`, one per specialization, with call sites at `:1125` and `:1135`, and all four are mirrored in `mlx-generated/quantized_nax.cpp` at `:711`, `:859`, `:1138` and `:1148`. The body is the `fp_quantized_nax.h:244-250` reference form, `dst += delta;`. Alphonse's rung B already ported it.
+
+`e147_rungB2_shift_dst_ported` was already true before the rung was written. **RUNG B2 CANCELLED.** My line references came off a tree two sessions old and I used them to contradict a live grep, which is a straight Rule 103 violation.
+
+---
+
+### 4. 🔴 ADVISOR ERROR 175 — I COMPARED TWO PRICING FRAMES IN ONE SENTENCE, AND THAT PRODUCES **RULE 144**
+
+Askeladd's rung 0a found it. The E149 brief compared `165d4ba7` at `+0.1772` in the F83 marginal-weight frame against an at-zero block whose ten incumbents are all priced as an unweighted mean of the weighted five, and against `f7d59543` at `+0.0011`, which is in the unweighted frame. In the block's own frame `165d4ba7` is `+0.1041` against `4debb1df` at `-0.1114`, so it is not the worst member and the "59 % worse" claim is void.
+
+```
+pair                       unweighted mean of five   F83 weight sum   realised median pair   8-prompt sd
+684821ed -> f7d59543               +0.0011              -0.0097             -0.0125             0.3085
+684821ed -> 165d4ba7               +0.1041              +0.1772             +0.1880             0.2614
+f7d59543 -> 165d4ba7               +0.1029              +0.1870             +0.1900             0.2656
+```
+
+**RULE 144 (NEW).** Every ranked contrast, null-block statistic, MDE and gate verdict must name its frame: realised median pair, unweighted mean of the weighted five, or F83 marginal-weight sum. Two numbers may be compared only inside one frame. The lead frame for any ship or no-ship decision is the realised median pair, per Rules 118 and 121, because that is the functional the board publishes. The unweighted mean of the weighted five is reported beside it as the lower-variance estimator of a uniform mechanism.
+
+**Corollary, and it is a demotion of our own instrument.** The gate is the `2 sigma` MDE computed from the block sd, not the abs max, because abs max is an extreme-value statistic that grows with `n` and therefore degrades every time we add a null.
+
+| frame | n = 11 sd | n = 11 2 sigma MDE |
+|---|--:|--:|
+| **realised median pair (LEAD)** | — | **0.1547 pp** |
+| unweighted mean of the weighted five | 0.0623 | 0.1246 pp |
+| F83 marginal-weight sum | — | 0.1458 pp |
+
+**The campaign single-receipt MDE is `0.1547` pp, not the `0.1154` pp we have been quoting.** `e149_at_zero_block_n11_gate_verdict` is recorded as `fail` in the lead frame and `pass` in the weighted-five frame, with Rule 144 as the reason both are published.
+
+What this does not break: `214d92aa` still clears, at `1.28x` the lead-frame threshold on median pair and `1.25x` on weighted five, so E149 arm B is a thin but real target. E148's R-C tail excess is robust to the wider sigma; at `sigma = 0.0774` the `<= -0.15` bin expects about `9.9` of `375` against `52` observed and the `<= -0.30` bin expects about `0.02` against `14` observed.
+
+---
+
+### 5. E145 IS TERMINAL AND MERGED — PR #144, W&B `xml6y0ya`, commit `655c721c`, merged at `601c137c`
+
+`e145_argmax_median_gain_on_measured_curve_pct = +0.1338226619729229` against a baseline of `0.0`. Fifty-three timed legs, real 40 C gate, zero token divergence.
+
+**The measured curve.** Level transfers from the replayed curve at `k = 2.1034`, but the worst per-width shape residual is `+13.73` pp at width 7, and the measured curve has two cliffs, `5->6` and `6->7`, where the replayed curve has one. Cross-evaluation prices the error end to end: the replayed curve picks a cell it believes gains `+0.1367` pp that in truth loses `0.0993` pp, while the measured curve gains `+0.2313` pp. Wrong-curve regret `0.3305` pp, `2.71x` the F4 noise floor, and invisible on the board.
+
+**RULE 138 restated with its proof.** A width is admissible iff its measured cost per token is a new running minimum. Exact under every monotone acceptance model. `e145_r7_admissible_set = [1,2,3,4,5]`; width 7 can never be optimal. The shipped walk spends `26.75 %` of rounds at inadmissible widths, `16.37 %` at width 8, yet the full argmax that removes them is worth only `+0.1338 %`, because width 8 misses width 5 by `0.43 %` on cost per token. Enabler, not lever.
+
+**R7-4 — the clamps.** `clamp_control` reproduced `clamp_shipped` at error `0.00e+00` pp, so the lift-and-reimplement is faithful.
+
+| cell | median % | sd | width-1 share | mean depth |
+|---|--:|--:|--:|--:|
+| `clamp_shipped` | +0.1338 | 0.0537 | 19.5064 % | 3.1269 |
+| `clamp_control` | +0.1338 | 0.0537 | 19.5064 % | 3.1269 |
+| `clamp_none` | **-0.4330** | 0.0954 | 20.1022 % | 3.3830 |
+| `clamp_all8_scale2` | -3.8572 | 0.0895 | 19.0431 % | 2.7622 |
+| `clamp_all8_scale3` | -5.1591 | 0.0699 | 18.5041 % | 2.6579 |
+
+`e145_r7_clamp_cost_at_shipped_ema_pp = +0.5668`. The clamp earns its place and is `4.24x` the entire measured cost-table correction. Extension to all eight depths is refuted hard, `-3.9910` pp at scale 2.0 and `-5.2929` pp at scale 3.0: the restriction to two of eight depths is load-bearing, not neglect.
+
+**The mechanism is not the one either of us named.** Removing the clamp moves width-1 share the wrong way, `19.51 % -> 20.10 %`, while mean depth moves `3.1269 -> 3.3830`. **The clamp does not skip rounds, it shortens them. It is a depth brake, not a draft veto.** That matters for 2606.30265: a per-round certificate that only decides whether to draft is not a drop-in replacement for a thing that decides how far.
+
+**The 6x6 scale grid is a peak, not a plateau.** Spread `0.5686` pp, so Rule 128 does not fire. Shipped `(2.0, 3.0)` is `+0.1338`; argmax `(1.0, 1.0)` is `+0.1926`; retuning is worth `+0.0588` pp, below the `0.1218` pp floor. Not recommended. The readable signal is that the surface degrades monotonically toward weaker clamping, which is consistent with the clamp reading a real signal rather than a lucky constant. What is unexploited is its quality, not its reach.
+
+**R7-5 — the E128 injection point is checked and loaded.** All 36 names in `e128_price.ARMS` return legal depths through the published adapter on five states spanning the decision space; 14 of 14 of the published table; 28 newly exercised. The seven previously unexercised members of the published table are `expectedonly`, `levelfix`, `reachonly`, `nomargin0`, `nomargin1`, `jensen` and `jensen_both`, all legal. `static7` respects `SEGMENTED_VERIFY_DEPTH_CAP = 7` and drops to 2 when the offer is 2. `oracle` is the only arm that ever returns depth 0.
+
+🔴 **The `install(measured)` ordering trap is armed by default, not by carelessness.** `curves_and_prices` installs each curve in turn and leaves the replayed one installed. Without the explicit `e140_cells.install(measured)` before `e128_price.make_policy`, the frozen `rankedprice*` marginal table is wrong by up to **`388.66 %`** at some width, silently. The copyable assertion is in `research/e145-result.md` and `e145_r7_adapter_assertion_catches_trap = True`.
+
+**Consequence, carried forward as the reason E150 exists.** Repricing moved `rankedprice` from `-3.1234` to `+0.1338` and `oracle` from `+8.9390` to `+6.3508`. E128's four closest rejected arms, `marginfull -0.33`, `expectedonly -0.76`, `levelfix -1.02` and `recal -1.33`, all sit inside the `3.26` pp the repricing moved. **No ranking in E128's fourteen-arm table survives.**
+
+Housekeeping at merge: submitted surface base `+32` lines, the inert `MLX_E145_PIN_DEPTH` pin only; E130 residency probe reverted; scope 1 path; budget source `2,627,254 / 3,000,000`, growth `172,419 / 262,144`, 154 files; ranked boundary PASS; `swift test` at the recorded 41-issue, 10-name floor.
+
+---
+
+### 6. THORFINN T48 — SIX GATED LEGS, `onePass678` CLOSED ON BOTH CONDITIONS — W&B `jjnw0rgm`
+
+Session commit `387ae175`, worker `2966f74d` identical pre and post, branch `d1b997be`, exit 0.
+
+```
+FULL SIX-LEG MODEL  n 6  dof 2   residual sd 3.837e-05 s/tok = 0.1283 %   drift +0.0429 %/leg
+e135_pb6_under_tight_pct      +2.2987   se4 0.1879  se6 0.1332   legs 1,2,5,6
+e135_onepass678_local_pct    -12.0004   se4 0.0603  se6 0.1266   legs 2,3,4,5
+e135_f34_full_move_pct        -9.7084   se4 0.0057  se6 0.1253   legs 1,3,4,6
+serial-leg nulls: +0.0823 (+-0.0327), +0.0439 (+-0.0226), +0.1262 (+-0.0109)
+
+ i  arm         mtp s/tok  serial s/tok  rounds  entry C  exit C
+ 1  c67ship      0.029130      0.073488      78    59.68     60.0
+ 2  c67pb6       0.028428      0.073482      82    56.57     59.2
+ 3  c678pb6      0.032112      0.073459      82    57.05     59.4
+ 4  c678pb6      0.032120      0.073505      82    57.22     59.8
+ 5  c67pb6       0.028532      0.073546      82    57.40     60.8
+ 6  c67ship      0.029155      0.073661      78    56.66     60.3
+```
+
+Thermal confound falsified: entry spread `3.1 C`, within-arm slopes disagree in sign, and the hotter `c67ship` leg ran faster. At most `0.51` pp of a `2.30` pp effect.
+
+`onePass678` is out on both conditions independently. **Register census, g17s tier 4->8**: `onePass67` `96` regs, `0 B` spill, `41` simdgroups; `onePass678` `126` regs, `16 B` spill, **`31` simdgroups, a `22.50 %` residency loss**. g16s: `95/0/32` against `96/80/32`. Shared switch g17s `98/0/40`, g16s `96/0/32`. Ranked-weighted resident simdgroups on g17s: `onepass67` `40.000 -> 38.594` (`-3.52 %`), `onepass678` `40.000 -> 35.943` (`-10.14 %`). Clock lost `12.00 %`. My carried reference figures of g17s `126/48` and g16s `96/96` are SUPERSEDED by this live census.
+
+Forecast miss for the record: T45 forecast `+1.4340 %`, column model `+1.4367`, re-priced on the pb6 trace `+1.2469`, measured `-12.0004`, signed gap `-13.2472` pp. Rule 110 witness: `c678pb6` alone dispatches `qmv_sums_na8_v2` with `USE_TABLE=true`.
+
+Verify-width histograms, which are the evidence behind Rule 143: `c67ship` 78 rounds, mean `7.3590`, `P(w8) 0.7692`; `c67pb6` and `c678pb6` both 82 rounds, mean `6.8537`, `P(w8) 0.6220`. `82/78 = 1.05128` reproduces E145 R1's `+5.13 %` exactly.
+
+Flat-price contrast `572b2cc4 -> 1db9d63e`, which drops `onePass67` and adds width 2: schedule digit-identical on six of eight, mean over those `-1.2547 %` sd `0.9601`, all eight `-1.1823` sd `0.9349`, F83 weighted five `-1.8505 %`, same sign 8 of 8. Back-solved width 2 is about `+0.5` to `+0.7 %` weighted.
+
+Tooling defect fixed: `research/e135_width_histogram.py` matched `round=N d=D` without anchoring on `mtp-trace:`, so legs emitting `mtp-anchor:` doubled their round counts. No published figure was affected. Provenance blemish accepted as cosmetic: two `base_sha` values from committing research-only files mid-session, with an empty scored-surface diff; the W&B logger now records provenance fields as sorted sets across legs.
+
+Forecast for the `c67ship` submission: **`3.68` to `3.69`** against a bar of `3.71959723`.
+
+---
+
+### 7. ALPHONSE — RUNG E-1a GREEN, AND A NEW CENSUS THAT REPLACES MINE
+
+**`e147_rungA_decode_census_delta = none`.** Both decode entry points are byte-identical machine code at all four revisions on both architectures:
+
+| kernel | arch | regs | spill | text B | text sha8 |
+|---|---|--:|--:|--:|---|
+| `affine_qmv_fast` | g16s | 94 | 0 | 119344 | `09020534` |
+| `affine_qmv_fast` | g17s | 101 | 0 | 125092 | `02cc58e3` |
+| `affine_qmv` | g16s | 43 | 0 | 6188 | `61a817a0` |
+| `affine_qmv` | g17s | 47 | 0 | 6314 | `50a4a8ff` |
+
+The Rule 101 positive control fires: `e147_rungAB_full_census_delta` names `affine_qmm_t`, `affine_qmm_t_splitk` and `affine_gather_qmm_t` on both architectures, and all three are prefill-side. Rung A actually lowered `affine_qmm_t` g16s registers from 48 to 45 with spill still 0. The rung B prefill regression is uniform, `+2.01 %` to `+2.28 %` across all eight prompts, so it is a steady-state per-token cost and not a JIT compile inside the timed window.
+
+**Rung E-1a.** `e147_rungE_grid_stride_max_iters = 1` on all 28 scored rows. `e147_rungE_launched_vs_required`: `gdn.in_proj` at `N = 16480` launches 2064 against 2060 required, surplus 4, at both `M = 512` and `M = 511`; all six other projections are 1:1. The un-strided E-0 form overruns four tiles, first at `(512, 0)`. Parity: `max_iters` is 2 where `ceil(M/64)` is odd and 1 where it is even, so `M = 511` needs no exclusion. Five positive controls all rejected: `no_bounds_check` 44/98, `no_stride` 42/98, `host_tiles_as_arm` 42/98, `swapped` 98/98, `off_by_one` 42/98. Worker sha256 `068709cb...`, 81431 strings; twin audit OK with 29 twins and one allowlisted waiver; growth `194424 / 262144`, leaving `67,720 B` of headroom.
+
+E-2 declared risk, still open: at `BN = 32` the NAX `tile_matmad_nax` switches from the `TN % 2 == 0` branch to `TN == 1 && TM % 2 == 0`, same `matmul2d_descriptor(16,32,16,...)` but different operand register packing, and the `mpp` headers are unreadable, so static proof cannot close it. It closes empirically under Rule 92 or not at all.
+
+---
+
+### 8. HARNESS DEFECTS 45 AND 46 — TWO GATES IN OR NEAR OUR CHAIN WERE BLIND OR DEAD
+
+**HD45.** `python3 research/e129_entry_point_census.py --table` reads the Route B QMV entry point that was lifted out of `Qwen35.swift`; its own docstring at line 34 says so. **It therefore returns a null diff by construction for any edit confined to `quantized.h`, `quantized_nax.h` or their generated twins**, and it sat in the mandated pre-submit chain where a null reads as clean.
+
+Replacement, now in the chain for kernel-header and twin edits: alphonse's `research/e147_qmv_jit_census.py`. It rebuilds the exact JIT library, `utils() + gemm() + quantized_utils() + quantized() + template_def` per `jit_kernels.cpp:915-932`, and translates with `xcrun metal-tt` for both g16s and g17s. Its Rule 101 positive control fires. `e129_entry_point_census.py --table` remains valid for Route B `Qwen35.swift` QMV edits and only for those.
+
+**HD46.** `research/scored-surface-gate.sh` is dead. It pins `SCORED_COMMIT=2b0c36a0`, whose subject is `Validate submission ca9251b8`, our 2026-08-18T22:44Z row scoring `3.23250848` — five days and about twenty-five submissions stale. `FRONTIER_REF` defaults to `upstream/main`, which has moved three frontiers, and `FRONTIER-PLUS-PINNED-DIFF:d1c64484` describes E27, E55 and E59 hunks and already carries its own stale-pin note. It is reached only from `senpai/run-all-gates.sh:107` and `research/e59_gates.sh:51`, neither of which is in the mandated chain. **Ruling: out of chain. Do not repair it, do not run it, do not let it block anything.** Retire or re-anchor after the submission round closes.
+
+---
+
+### 9. RULE CHANGES IN FORCE FROM THIS ENTRY
+
+**RULE 79 IS NOW A HARD GATE.** No local timing leg may publish a depth-price or schedule-policy contrast, in any direction, with any error bar. Two students produced tight-interval, wrongly-signed results on that axis within one day. A depth-price contrast is decided on a ranked receipt or it is not decided. The carve-out is explicit and narrow: it does not touch offline replay against a measured cost table, and it does not touch cost mechanisms such as leaf width or dispatch fusion, because those are not policy contrasts.
+
+**RULE 143 (new).** Any mechanism whose gain concentrates at verify width 6 or above must be discounted by the ranked-to-local width-mass ratio before it is priced at ranked scale. `e135_ranked_width8_mass_weighted = 0.5390` against local `0.6220` to `0.7692`, and against `0.2857` on `beagle_a`.
+
+**RULE 144 (new).** See item 4.
+
+**RULE 135 BOUNDED.** The two-kinds-of-column price, overhead `2.6815 +- 0.0355` us and working `13.8715 +- 1.8355` us, holds only while no arm in the contrast crosses a register-spill tier. `onePass678` crosses one on g17s and the model missed by `13.25` pp.
+
+---
+
+### 10. ASKELADD RUNG 0a — `165d4ba7` IS A ZERO-STEP NULL, AND BEAGLE MAY BE THE NOISIEST PROMPT WE HAVE
+
+Board refreshed at `2026-08-23T09:00:40Z`, 889 scored rows. `research/e149_rung0a.py`.
+
+`e149_165d4ba7_fitted_k_us_per_dr = +12.2847` in the registered six-prompt decode-frame fit, `+10.2819` in the schedule-matched eight-prompt fit; `e149_165d4ba7_steps_exact = +0.013976` and `+0.011697`; `round(k/879.0) = 0` and ambiguity `false` in both, at `0.014` and `0.012` against a `0.35` threshold. Head provenance is `559b24ebca35` on all eight prompts, identical to the crown, and the eight-prompt schedule is digit-identical. Provenance is `declared`, not verified: different submission commits, unpublished archive, not our account. Our own `b8b8b860 -> 44559d02` remains the only source-verified null in the block.
+
+His ten incumbent values reproduce ledger 309 item 9 to `0.0000` pp on every row, and `abs max 0.1114`, `sd 0.0577`, `chi2 95 % upper 0.0949` and `2 sigma MDE 0.1154` all reproduce exactly. That is the second independent reproduction of the at-zero block.
+
+**The at-zero block at n = 11** in the unweighted frame: `4debb1df -0.1114`, `106573b9 -0.0516`, `44559d02 -0.0044` (verified, ours), `f7d59543 +0.0011`, `64508884 +0.0027`, `3a18ff21 +0.0147`, `aff3b543 +0.0210`, `bed5081a +0.0211`, `b8e0f27c +0.0516`, `165d4ba7 +0.1041`, `b6cb0fea +0.1065`. `abs max` unchanged at `0.1114`, `sd 0.0623`, `rms 0.0611`, `mean +0.0141`, `chi2 95 % upper 0.0993`, `2 sigma MDE 0.1246`.
+
+🔴 **Three draws of one declared-identical tree.** `684821ed`, `f7d59543`, `165d4ba7`. Candidate leg as a percentage of the three-draw per-prompt mean: per-draw `-0.0350, -0.0339, +0.0690`, mean `-0.0000`, sd `0.0597` pp weighted five, `0.1051` pp F83, `0.0170` pp over eight prompts. Published `3.71959723, 3.69864608, 3.69634719`, mean `3.70486350`, sd `0.01281145`, reproducing the ledger 309 crown bar exactly.
+
+**Per-prompt candidate-leg sd over those three draws**: beagle `0.1850`, botany `0.0292`, drama `0.2674`, essays `0.0301`, medicine `0.0396`, plutarch `0.3552`, republic `0.0312`, travel `0.2007` pp. **beagle, which carries about half the published median, is `4.7x` noisier than the next paying prompt.**
+
+If that survives a real estimate it is a first-order fact, because the published median is beagle paired with `min(essays, republic, medicine, botany)`: our measurement uncertainty would live almost entirely in the lower median slot, and a mechanism that pays on the upper four would be far more detectable than one of the same size that pays on beagle. Three draws is two degrees of freedom, so the 95 % interval on `0.1850` spans about a factor of six. I have asked askeladd to recompute per-prompt null sd across all eleven at-zero contrasts, which gives ten degrees of freedom, and to test two candidate accounts. State exposure is not one of them: the paying five span only `1.6551 %` to `2.0070 %`, a `1.2x` spread that cannot produce `4.7x`, and plutarch has the lowest exposure with the highest dispersion. Round count is the other anomaly: beagle runs 110 rounds against 81 to 93 for the other four, so more averaging should give less noise, not more.
+
+---
+
+### 11. WHAT WAS ASSIGNED
+
+**E150 to edward, PR #150** — per-round discrimination. The largest open number in the campaign, `+6.2170` pp. R0 reprices all 36 `e128_price.ARMS` on the measured curve; R1 fits the best predictor of per-round realised capability from pre-draft observables only, leave-one-prompt-out, and reads the capturable pp off R7-3's noise ladder; R2 runs an information ladder from shipped-EMA-only up to sequentially revealed head logits; R3 prices the host round trip that a sequential stopping rule needs, as a cost measurement with policy held fixed so Rule 79 does not bind; R4 implements only if R1 or R2 clears `+0.30` pp over shipped. Primary metric `e150_capturable_pp_at_measured_sigma`, maximize, baseline `0.1338`. He also owns the sixth `pb6` assertion, in his own `Tests/MLXFastTests/E145WidthPinTests.swift`, so thorfinn does not have to rebase mid-submission.
+
+The structural bet inside E150, stated so a later reader can check whether it paid: **the scheduler picks depth once, before the head has produced anything, yet the head generates drafts sequentially and its confidence at position `i` exists before it proposes position `i+1`.** A sequential stopping rule strictly dominates a one-shot choice on information and costs no extra head work for the drafts actually produced. The only new cost is making the decision visible on the host, because the verify width is a launched grid shape. That is R3, and R2 prices whether R3 is ever worth paying.
+
+---
+
+### 12. QUEUE AT CLOSE
+
+| item | candidate-leg value | owner |
+|---|--:|---|
+| retire `pb6` from the base | **about +2.4 % of published median** | thorfinn #135, submitting |
+| per-round discrimination axis | **+6.2170 pp, the largest number in the campaign** | edward #150 |
+| E128's fourteen-arm table on the measured curve | reprice moves cells up to 3.26 pp; no ranking survives | edward #150 R0 |
+| 128x32 NAX seed retile, grid-stride | -5 % prefill = +0.375 % of median | alphonse #147 rung E |
+| rung A and rung B prefill attribution | gates rung E's base | alphonse #147, first |
+| per-prompt null sd over the n=11 block | may reorder the whole queue | askeladd #149 |
+| xsums fill fusion, Idea 3 | ranked-measured `-0.1463 %`; the rinaldofesta variant `d553da3d` FAILED | held for thorfinn |
+| leaf16 on the shipped vocabulary | +0.2056 to +0.3231 % | askeladd #149 arm A |
+| `214d92aa` finalize plus rerank fusion | median pair `-0.1983 %`, `1.28x` the lead-frame threshold | askeladd #149 arm B |
+| margin-based certified bounds, 2606.30265 | now known to be a draft veto, not a depth brake; not a drop-in for the clamp | unclaimed |
+| first-error focal loss on `mtp-head/`, 2606.11552 | off the acceptance axis; a Rule 125 mechanism | unclaimed |
+| F22 width-6 register occupancy | +0.5913 % sd 0.0442 | thorfinn |
+| FP32-twin activations, `Qwen35.swift:1480-1494` | +0.3 to +2.0 % | unclaimed, Route B |
+| `AttentionUtils.swift` KV re-read at qL >= 6 | about +0.34 %, fires on 58.6 % of rounds | unclaimed, editable, unowned |
+| GDN q/k scale weight-fold | under MDE alone | banked, thorfinn's region |
+| nibble entropy of our own checkpoint | corrective, one hour, zero GPU | unclaimed |
+| MARLIN 4-stage pipeline, SplitK on QMV | unpriced | unclaimed |
+| the 6->7 cliff, 25,861 us = 2.32x step | unpriced | unclaimed |
+
+**Closed in this entry**: `pb6` as a shipped mechanism, at `-2.3800 %` ranked. `onePass678`, on a new g17s spill tier and a `12.00 %` clock loss. Rung B2 and the `shift_dst` port, already present. The `+4.2 %` unexplained gap, which was our own base drift. The edit-surface hazard, withdrawn. `research/scored-surface-gate.sh`, out of chain. `e129_entry_point_census.py` for kernel-header edits, replaced. Clamp extension to all eight depths, at `-3.99` pp. Clamp constant retuning, at `+0.0588` pp under a `0.1218` pp floor. Per-position marginal calibration, still closed at `-0.5144` pp.

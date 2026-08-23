@@ -1,119 +1,108 @@
 # SENPAI Research State
 
-- 2026-08-23 07:25 UTC
+- 2026-08-23 09:25 UTC
 - Most recent human research direction: none received this generation. The team
   has given no new steer since the campaign opened; the advisor is operating
   autonomously under `senpai/program.md`.
 
 ## Where the campaign stands
 
-Crown `684821ed` at 3.71959723 on organizer source `eb5eadc7`. Our best row is
-`572b2cc4` at 3.66218564.
+Crown `684821ed` at 3.71959723 on organizer source `eb5eadc7`, unmoved for nine
+hours. Our best row is `572b2cc4` at 3.66218564. Advisor base `601c137c`.
+Five rival rows are validating; none is ours, so our submission slot is free.
 
-**Finding 237 changes how that gap should be read.** `f7d59543` is a zero-delta
-resample of `eb5eadc7`, the crown's own tree, and it printed 3.69864608. Same
-tree, zero editable bytes changed, `-0.5633 %` of published median. On the five
-weighted prompts the candidate leg moved `+0.0011 %` with `sd 0.0297 %`, while
-the serial leg moved with `sd 0.7338 %`. One prompt, essays, ran 1.4968 % faster
-on the serial side and flipped the upper median slot from medicine to essays.
+**The single most important fact of this generation: the campaign base has been
+shipping a mechanism that costs about 2.4 % of the published median.** The
+`pb6` depth-price arm is compiled as the default at
+`Qwen36MTPBlockSession.swift:1139`. The only ranked contrast that isolates it,
+`572b2cc4 -> e003a86d`, prices it at `-2.3800 %`. It starts drafting on
+plutarch, which carries exactly zero median weight, and pays for that on beagle,
+which carries about half. Two local instruments read it as a win with tight
+intervals and the wrong sign. Retiring it is a larger move than anything the
+campaign has landed since `623e77af`, and it costs one changed line.
 
-Two consequences:
+Three further advisor errors were found by students in the same window: the
+"unexplained +4.2 %" decode gap was our own base drift between two of our own
+submissions; `shift_dst` was already present in the kernel I said lacked it; and
+I compared two different pricing frames inside one sentence. All three are
+recorded in ledger 310 with their corrections.
 
-1. The crown's honest ranked level is about 3.701 to 3.709, not 3.7196. Our
-   real candidate-leg gap remains the Finding 230 figure of **0.82 %**.
-2. The candidate leg is a precision instrument at `se 0.0133 %` on the weighted
-   five, while the published median carries a `+/- 0.56 %` lottery. Every
-   decision must be priced on the candidate leg (Rule 118), and every
-   submission needs candidate-leg margin as lottery insurance.
+## Current research focus and themes
 
-Our in-hand mechanisms sum to well over the 0.82 % gap. The campaign's problem
-is not a shortage of ideas. It is measurement precision, correct attribution,
-and submission-slot throughput.
+**1. Get the free 2.4 % back and re-establish the frontier.** Thorfinn holds the
+submission slot and is flipping the compiled depth-price default to `.ship`.
+Forecast 3.68 to 3.69 against a bar of 3.71959723. That is a checkpoint, not a
+target.
 
-## Current research focus
+**2. Per-round discrimination, `+6.2170` pp.** This is now the campaign's largest
+open number by an order of magnitude. Edward's E145 split the acceptance axis in
+two: perfect per-position marginal calibration is worth `-0.5144` pp and is
+closed; perfect per-round realised capability is worth `+6.2170` pp and is open.
+The shipped depth-0 and depth-1 margin clamps are already a crude instance of the
+open half, worth `+0.5668` pp where they run, restricted to two of eight depths,
+with two hand-set constants. They are a depth brake, not a draft veto. E150 asks
+the only question that decides the axis: how much of `+6.2170` pp can a predictor
+built from observables available before the drafts exist actually reach? The
+conversion is unforgiving, `sig 0.20` buys `+2.80` pp and `sig 0.30` buys `+0.45`.
 
-**1. Land the crown attempt.** Thorfinn's `composed67 + pb6` is measured at
-`+2.1305 %` locally against his branch base (T44, W&B `8c5y1abg`), and Rule 130
-is lifted because the composition proved additive once each term was priced
-under the grid it ships with. He is adding the pre-registered `onePass678`
-(`+1.434 %` local forecast) while the submission slot is blocked.
+**3. The seed prefill, `8.45 %` of the candidate leg, still untouched by us.** A
+rival's 128x32 NAX seed retile reached `-4.9721 %` prefill, worth about
+`+0.382 %` of median. Alphonse holds the grid-stride form; rung E-1a is green
+with zero surplus tiles and five rejected positive controls.
 
-**2. Own the seed prefill.** Alphonse's E147 software-pipelined affine NAX
-transposed GEMM is in flight as `7226dc9a`. Local component effect `-1.0657 %`
-with `t = -11.12` and complete rank separation on 16 legs. The ranked forecast
-is `-3 %` to `-4.5 %` on the prefill component, worth `+0.22 %` to `+0.34 %` of
-published median. Rung E composes the 128x32 rectangular retile, whose isolated
-board evidence is `-5.07 %`, the best seed prefill ever measured here.
+**4. Draft readout dispatch reduction.** Askeladd holds leaf 16 on the shipped
+vocabulary and the finalize-plus-rerank fusion that a rival measured at
+`-0.1983 %` on the median pair.
 
-**3. Fix the draft-length objective, not the acceptance predictor.** Our own
-oracle result says a perfect acceptance estimator makes the schedule worse. The
-literature explains why: the measured cost curve has a `+30.6 %` wall at
-5 to 6 and a near-flat plateau at 8, so a first-order marginal rule is provably
-trapped at M=5 and can never reach M=8. Edward is replaying a full argmax over
-the admissible set `{0..5, 8}`, zero GPU.
+**5. Our measurement instrument is coarser than we claimed, and we now say so.**
+Rule 144 fixes the reporting frame: the realised median pair leads every ship
+decision, the weighted-five mean sits beside it, and no two numbers may be
+compared across frames. The single-receipt `2 sigma` MDE in the lead frame is
+`0.1547` pp, not the `0.1154` pp the campaign had been quoting. Rule 79 is a hard
+gate: no local timing leg may publish a depth-price or schedule-policy contrast,
+because two students produced tight, wrongly-signed results on that axis in one
+day. The cause is width concentration, local mass 0.62 to 0.77 at width 8
+against a ranked 0.5390, which is now Rule 143.
 
-**4. Mine the public board for unclaimed mechanisms.** Askeladd is repricing
-every eligible rejected row through the E146 state corrector, gated on
-bit-identical controls. Two of our best queued mechanisms already came from
-reading one rejected rival row.
-
-## Standing measurement discipline
-
-- Price value against the contaminated round cost `leg_us / R`; state share
-  against the clean cost `decode_us / R` (Finding 235, Rule 134). One percent of
-  published median costs **515.2 us/round**.
-- An overhead column costs `2.6815 +- 0.0355` us; a working column costs
-  `13.8715 +- 1.8355` us. Never regress them together (Rule 135).
-- A guard needle must be unique to the arm, not merely long, and both polarities
-  must be asserted on real builds (Rule 136).
-- Run one warmup leg before any timed ABBA session; it cut entry-temperature
-  spread from 23.27 C to 1.757 C (Rule 137).
-- Yukon allows one in-flight submission. Every authorisation now names the slot
-  holder and the queue position.
-
-## Closed this generation
-
-- The wired-residency slack ladder. E130 measured s64 through s2048 across 12
-  legs and the argmax is s64, the shipped value. The slack is 98.3 to 99.9 %
-  consumed at every rung, so raising it admits no extra byte. The whole prize is
-  capped at `+/- 0.13 %`. Finding 8's KV-cache mechanism is refuted at source and
-  the KV growth path is separately dead by arithmetic at about 5.8 us/round.
-- Rule 130's non-additivity claim, refuted by T44.
-- All tree and multi-candidate drafting, structurally, by
-  `QwenRuntimeMTPDriver.requireStructurallySound:310-349`.
-- All pure acceptance predictors, by our own oracle result.
+**6. A possible first-order fact awaiting a real estimate.** Over three draws of
+one declared-identical tree, beagle's candidate leg is `4.7x` noisier than the
+next paying prompt, at `0.1850` pp against `0.0292` to `0.0396`. beagle carries
+about half the published median. If that survives an eleven-sample estimate it
+means our uncertainty lives almost entirely in the lower median slot, and it
+should reorder the queue toward mechanisms that pay on essays, republic,
+medicine and botany.
 
 ## Potential next research directions
 
-1. **FP32-twin activations, bit-exact.** Pre-widen the bf16 activation tensor to
-   fp32 once. Because bf16 to fp32 is exact, everything downstream stays
-   bit-identical while 64 convert instructions per lane per k-block disappear at
-   NA=4. E123 closed activation widenings on the assumption that deletion needs
-   bf16 arithmetic; pre-widening makes that closure leak. Range `+0.3 %` to
-   `+2.0 %`. Route B, so thorfinn after the crown attempt resolves.
-2. **Fold the 257 per-round chunk-sum fill dispatches into their producers.**
-   About 1.25 ms of a 53 ms round. `qwen35FusedResidualRMSNormKernel` already
-   reads every element it emits. Rung 0 is a ten-minute zero-GPU bound. Range
-   `+0.3 %` to `+1.2 %`.
-3. **First-error focal loss on the proposal head.** We own `mtp-head/`. The
-   published method reports `+21 %` to `+76 %` accepted draft length with no
-   extra forward passes and no exactness change. This is the one head-side
-   direction our oracle result does not kill, because it improves the thing
-   predicted rather than the predictor.
-4. **Bit-plane draft pass.** Read 2 of 4 planes during drafting and all 4 during
-   target verification. Roughly halves draft weight bytes and stays token-exact,
-   because only draft quality moves. Budget the bit-transposition cost first.
-5. **MARLIN's four-stage pipeline and SplitK on the QMV family.** The published
-   evidence says W4A16 can stay memory-bound to M=16 to 32 and that reducing
-   register and shared-memory pressure gives nearly 4x occupancy. If our cliff is
-   a register-ceiling cliff, SplitK is the direct antidote.
-6. **The 6 to 7 cliff itself.** 25,861 us, 2.32 times the mean step, still
-   unattributed and unowned.
-7. **The GDN S=2 mid-state write gate.** A 151 MB fp32 snapshot per S=2 round.
-   Skip-write and replay-on-reject wins if `P(reject | M=2) < 0.49`, and nobody
-   has ever censused that number. Highest correctness risk in the queue, so it
-   needs a strong exactness gate before any timing.
-8. **Corrective measurements.** The empirical entropy of our own 4-bit nibble
-   stream bounds every lossless-coding direction in one offline hour. A
-   STREAM-calibrated Metal read-bandwidth microbenchmark resolves the 1.69x
-   discrepancy between our implied 462.2 GB/s at M=1 and the 273 GB/s nominal.
+- **A sequential draft-stopping rule.** The scheduler picks depth once, before
+  the head has produced anything, yet the head drafts sequentially and its
+  confidence at position `i` exists before it proposes position `i+1`. A
+  sequential rule strictly dominates a one-shot choice on information and costs
+  no extra head work for the drafts produced. The only new cost is making the
+  decision visible on the host, because verify width is a launched grid shape.
+  Being priced inside E150.
+- **Certified margin bounds, 2606.30265.** Still the principled replacement for
+  the clamp's two magic constants, but E145 R7-4 narrowed its fit: a certificate
+  that decides whether to draft is not a drop-in for a thing that decides how
+  far. Needs adaptation before assignment.
+- **First-error focal loss on the proposal head, 2606.11552.** Off the acceptance
+  axis and therefore not blocked by the `-0.5144` pp closure. A Rule 125
+  mechanism: price it through the scheduler's response.
+- **The xsums fill fusion.** Ranked-measured at `-0.1463 %` candidate leg. The
+  rival variant that fused it into the residual-plus-RMSNorm pass FAILED
+  validation, so the class is unrefuted but the implementation is not free.
+- **FP32-twin activations in the Route B QMV load**, `Qwen35.swift:1480-1494`,
+  bit-exact by construction, `+0.3` to `+2.0 %`, unclaimed.
+- **The `AttentionUtils.swift` KV re-read at qL >= 6**, about `+0.34 %`, fires on
+  58.6 % of ranked rounds, editable and unowned.
+- **MARLIN's four-stage pipeline and SplitK on the QMV family**, unpriced.
+- **The 6 to 7 width cliff**, `25,861` us, a `2.32x` step in the measured curve
+  that no source account yet explains.
+- **Nibble entropy of our own checkpoint**, corrective, one hour, zero GPU.
+
+## Standing constraint
+
+Tree, multi-candidate and hedge-row drafting are structurally blocked:
+`QwenRuntimeMTPDriver.requireStructurallySound` forces a single linear chain and
+`declaredRows == rowsPerRound(draftTokens.count)`, so `M == d + 1`. Every
+speculation idea must fit that shape.
