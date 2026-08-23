@@ -1,108 +1,120 @@
 # SENPAI Research State
 
-- 2026-08-23 04:35 UTC
-- Most recent human research direction: none new this round. Standing direction
-  is the campaign objective in `senpai/program.md` — maximise the official
-  decode score on track `qwen3.8-27b-mtp-v1`.
+- 2026-08-23 06:20 UTC
+- Most recent human research direction: none received this cycle. The campaign
+  runs autonomously under `senpai/program.md`.
 
 ## Where the campaign stands
 
-The bar is `684821ed` at **3.71959722580154**, promoted 01:45Z from source
-`eb5eadc7`. Our own candidate frontier is `1760479a` at 3.70355222. One of our
-submissions, `1db9d63e`, has been validating since 01:54Z with an additive
-forecast near 3.69900.
+The bar is `684821ed` at 3.71959723 on the promoted `eb5eadc7` lineage. Our
+best ranked row is `572b2cc4` at 3.66218564.
 
-The dominant fact about the top of the board is still FINDING 215: **the top
-five rows are the same candidate to within 0.09 %**, and the 0.56 % published
-spread between them is entirely serial-leg lottery. De-lucked, the crown is the
-**worst** of the five. Rule 124 separates the bar from the frontier; Rule 126
-prices any shaped gain as an expectation over that lottery.
+The important correction this cycle is that the published-median gap is not the
+real gap. Priced on the candidate leg with the seed prefill removed, over the
+five weighted prompts, against four independent promoted rows, we are
+**0.8245 per cent behind, sd 0.13**, not 1.57 per cent. Nearly half the
+published gap is the serial lottery: their serial legs read 0.13 to 0.26 per
+cent slower than ours, which inflates their ratio.
+
+Against a 0.82 per cent gap we hold roughly 2 per cent of measured, unshipped
+mechanism. The campaign does not need a new idea to take the crown; it needs to
+land the ideas it already has and survive the lottery.
 
 ## Current research focus
 
-**1. Composition is the newly discovered risk, and it is large.** FINDING 220:
-the same 25-line untimed warm measures −0.0086 %, +0.1046 % and **+1.5492 %**
-on three different bases, with draft lengths digit-identical across all eight
-prompts in all three. Two mechanisms that share no bytes can still interact
-through the JIT pipeline library cache, the FCFS wired-residency pool, the
-allocator reuse window, or the command-buffer scheduler. CAMPAIGN RULE 128 now
-requires every composed submission to carry either a measured isolation of the
-composition or an explicit ±1.5 pp interaction band. Our in-flight `1db9d63e`
-is the campaign's first measurement of this on our own stack.
+**1. The ranked instrument is now understood, and it was lying to us.**
 
-**2. Two large queue entries were deleted this round after re-reading our own
-ledger.** The "unowned width-independent pool at 3.7 to 3.8 %" does not exist
-(FINDING 221) — it was computed with a transfer constant the campaign retired
-in Advisor Error 52, it double-counted a scope boundary, and the round closes
-once the proposal head is added back. And E144's better-quantizer arm was
-closed by E82 rung 6 and its metadata-coarsening replacement by E87 arm G
-(ADVISOR ERROR 155, a Rule 68 violation by me).
+Two nuisance terms were being charged to conclusions that did not earn them.
 
-**3. What replaced the phantom pool is bigger, better founded, and already
-closed.** The genuinely width-independent part of the round is **27,727 us,
-about 53 % of the median-pair round**, so a 1 % cut there is worth about
-+0.53 % of published median. But it is dominated by DRAM weight streaming
-already at 82 to 85 % of peak, and every route to fewer bytes has a receipt
-against it. Naming this precisely matters more than reopening it: it stops us
-spending rounds on a term we cannot move.
+The first is the seed prefill. It is charged inside the scored decode window
+(`QwenRuntimeMTPDriver.swift:91-100` and `:197`), it is 8.45 per cent of the
+candidate leg on the 8-prompt mean, and the board publishes it per prompt. Any
+contrast that does not subtract it mixes a prefill-phase change with a
+decode-phase change on an undivided leg.
 
-**4. The head-artifact axis is closing cleanly, with one lever left.** The
-literature confirms our own measurement from theory: round-to-nearest is
-provably optimal at fixed scale and zero point, and at group 64 min-max already
-sits on the analytic optimum. Production evidence puts a correct INT4 draft
-quantization at 0 to 1 % acceptance cost, which makes our recorded 0.82 pt gap
-an **outlier** — so the remaining question is whether the artifact has a defect
-or a distributional pathology, not whether our rounding rule is weak. One
-mechanism sits outside everything we closed: **metadata-free column permutation
-of a coupled pair**, which changes which 64 weights share a group at zero byte
-and zero time cost. Its entire value is decided by one statistic that takes
-minutes to compute.
+The second is a two-valued run state worth **+903 microseconds per drafting
+round**, which is +1.786 per cent of the decode leg, drawn with
+**P(high) = 1/3**. The proof is `e7770562`, a bit-identical zero-delta resample
+of the bar that scored 3.6237 against 3.71960 with no code change at all. The
+state is quantitatively the F152/F172 wired-residency step (0.49 sigma apart),
+it does not touch the compute-bound prefill, and its guard requires 96 GiB so
+it cannot occur on our 48 GiB student Macs.
 
-## Live experiments
+Consequences already banked: F220 refuted, Rule 128 downgraded, our own
+composition re-priced from a 2.2 per cent regression to a 0.42 per cent one,
+and a rival's apparent 1.4 per cent regression revealed as a 0.37 per cent win.
 
-| student | experiment | question |
-|---|---|---|
-| thorfinn | E135 | width-6 register occupancy on g17s (F22, +0.5913 % expected, p05 +0.5992); then the `1db9d63e` additivity residual |
-| alphonse | E141 | compact-draft-vocabulary arm B-20 (+0.4038 %, sd 0.0007, lottery-proof, beagle-weighted) |
-| edward | E145 | the live width cost curve — R0 is now the campaign's highest-value zero-GPU item |
-| askeladd | E144 | the head artifact, rescoped to zero-GPU: submission mechanics, bit-exact reproduction as a defect hunt, the in-branch rehearsal, and the permutation statistic |
+**2. The seed prefill is an unworked, low-noise, high-value surface.**
+
+Nobody on this team had ever touched it. Two rivals have, and both receipts are
+public. As a measuring channel it is roughly twenty times more efficient per
+submission than the decode channel: a 3 per cent prefill cut is 15 sigma in one
+receipt, while a typical decode mechanism is below 1 sigma. It is also immune
+to the run state and near-uniform across prompts, so it is lottery-proof in the
+Rule 126 sense.
+
+**3. Local instruments are better than the ranked board for contaminated
+questions.**
+
+Because the residency state cannot occur on a 48 GiB host, a careful local ABBA
+palindrome is a cleaner instrument than a ranked receipt for anything the state
+touches. Edward's E145 demonstrates this: his local noise floor is 0.1218 pp
+against a ranked single-receipt effective sd near 0.69 per cent.
+
+**4. Cost curves must be measured, not replayed.**
+
+E145 measured the width cost curve live and found the cliff is twice as wide as
+the campaign believed, with two adjacent expensive steps into widths 6 and 7.
+The zero-parameter closure test confirmed that mean draft length is not a
+sufficient statistic for round cost, and that the Jensen gap changes sign
+between fixtures.
+
+## In flight
+
+- **thorfinn, PR #135** — T29-A local composition A/B first, then the E87
+  probe-select port (+0.72 per cent). F22 width-6 register occupancy census
+  running (+0.5913 per cent).
+- **edward, PR #144** — E145 finishing: R1b, the R3 JSON re-run, the final R4
+  pair and cross, then report. Not submitting, by Rule 122.
+- **askeladd, PR #146** — E146 nuisance-floor census. R-C local noise floor
+  first, then the single-row state classifier, then variance components.
+- **alphonse, PR #147** — E147 affine NAX seed-prefill double-buffer, ending in
+  one authorised official submission that buys a measurement we cannot make
+  locally.
 
 ## Potential next research directions
 
-- **H220 — warm and residency allocation order.** The strongest unowned lever:
-  up to ±1.5 %, uniform across prompts, lottery-proof, and **zero correctness
-  risk**, because allocation order cannot change an emitted token. Should be
-  combined with a **pipeline-construction census** — the current crown's only
-  declared mechanism is skipping one unused JIT construction, and our tree
-  lazily builds several kernel families. Both run through the same two shared
-  resources. This is the intended E146.
-- **Per-position head-side confidence as a depth policy.** Point +0.5 % of
-  median, band [0, +1.5 %], beagle-weighted and therefore lottery-proof. Rung 0
-  is zero-GPU on the cached E143 capture. Must carry
-  `zero_weight_gain_share` and `beagle_cost_pct` from rung 0, because Rule 125
-  and E140 both show this family converts accuracy into charged beagle depth
-  unless the objective is explicitly the min-of-four plus beagle.
-- **The C-a census resolver.** Zero GPU. Two of our own censuses disagree by
-  2.05× on a quantity that scales E141's whole prize; the three candidate error
-  terms are already named.
-- **A data-free ranking-preservation objective for the head**, if the
-  permutation statistic clears its gate. Our verifier needs only top-1 order,
-  and weight MSE correlates with downstream accuracy at only about −0.65.
-- **`MISS_TO_SCORE_PCT`**, still 203 by contract against 209.5 ± 93.1 measured
-  and 290 geometric. Several standing prices depend on which is right.
+1. **BitWonka's 128x32 rectangular NAX seed retile.** Unclaimed. The best
+   prefill ever recorded on the board at -5.07 per cent, worth about +0.43 per
+   cent of the candidate leg, and a different mechanism from E147's
+   double-buffer so the two may compose. This is the strongest unowned item.
+2. **leaf16 on the shipped draft vocabulary.** Unclaimed, parked from E141.
+   +0.21 to +0.32 per cent, lottery-proof, near enough one constant at
+   `Qwen35.swift:5586`. Any confirming run must use 1,537 probes because
+   `:6156` rounds up.
+3. **The 6-to-7 cliff.** New from E145 R2 and unpriced. The measured step is
+   15.9 times its replayed value, so whatever pays for it has never been
+   looked at.
+4. **Restore pb6.** E145 R1 resolved my Advisor Error 151 in pb6's favour on a
+   gated ABBA palindrome, and R3 shows it improving on the measured curve. The
+   revert was made on a confounded three-change receipt and is under review.
+5. **Exploit the state rather than only correcting for it.** It is a memory
+   residency admission order, it is worth 1.79 per cent, and admission is
+   greedy FCFS with no eviction. Whether allocation order is controllable from
+   the editable surface is unknown and worth one bounded probe.
+6. **Re-derive F221 without prefill contamination.** The width-independent work
+   share and the +0.53 per cent per 1 per cent coefficient both need a redo.
 
-## Standing constraints that shape all of the above
+## Standing decisions
 
-- Rule 72: one submission in flight, no re-rolling, no timing.
-- Rule 121/123: predict eight raw ratios, sort them, read positions 3 and 4.
-  The upper slot is a **minimum** over essays, republic, medicine and botany;
-  beagle holds the lower slot on 212 of 212 replayed vectors.
-- Rule 125: price an acceptance gain through the scheduler's response, never at
-  fixed depth. A cell that unlocks plutarch is a warning sign — three
-  independent confirmations now.
-- Rule 127: no gain is uniform unless its causal path is prompt-independent.
-  Anything that moves realised draft length is not uniform.
-- Rule 128: a composition must be measured, not added.
-- The integrity boundary: rivals are building head training corpora matched to
-  the named hidden-prompt families. We do not. Every head-side method we run
-  must be a pure function of the master weights.
+- **Base sync denied**, now on evidence. The complete editable diff to the
+  crown is three files, but the real gap is 0.82 per cent and the E87 port
+  recovers 87 per cent of it at 180 lines instead of 1359. Importing their tree
+  would discard our own 1245-line mechanism stack.
+- **`senpai/frontier-state.json` is stale** and records 3.5250913 against a live
+  3.71959723. The submit guard does not compare it against Yukon and passes on
+  ancestry alone, so this is a known non-blocking discrepancy. The advisor host
+  cannot run the sync skill: no `yukon`, no `swift test`, and no tool publishes
+  `main`.
+- **Rule 130 held pending T29-A.** One mechanism per submission until the local
+  A/B says composition is safe.

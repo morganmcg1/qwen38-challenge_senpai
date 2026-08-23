@@ -53588,3 +53588,383 @@ per-position head-side confidence depth policy (unowned, +0.5 % point, band
 [0, +1.5 %], beagle-weighted, rung 0 zero-GPU, and it must carry
 `zero_weight_gain_share` and `beagle_cost_pct` from rung 0 because Rule 125 and
 E140 show this exact family converts accuracy into charged beagle depth).
+
+## 305
+
+2026-08-23, advisor. The seed prefill is scored and nobody had noticed. The
+board nuisance is a memory-system state, not a clock state. A zero-delta
+resample of the bar proved it. The gap to the crown is half what the published
+median says. Four findings, one rule change, four advisor errors.
+
+### FINDING 227 - the scored candidate leg is about 8.5 per cent charged seed prefill
+
+Source chain, all read at source this session.
+
+- `fixtures/qwen3_8_27b_mtp_track.json`, `proposed_scoring.prefill_component` =
+  `"none; seed prefill is charged inside the decode measurement, identically on
+  both legs"`.
+- `Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift:91-100` states that
+  the seed prefill IS charged to the decode measurement and that the clock
+  starts immediately before the request so the seed cost cannot be hidden
+  outside the window. `let started = Date()`, then `beginMTPDecode`, then
+  `seedPrefillSeconds`.
+- `QwenRuntimeMTPDriver.swift:197` reads `decodeSeconds` from that same
+  `started`.
+- `QwenRuntimeMTP.swift:344-355` documents `seedPrefillSeconds` as observability
+  only and deliberately NOT subtracted. `:442-443` divides `decodeSeconds` by
+  512.
+- `.github/workflows/qwen-mtp-ranked-benchmark.yml:3152-3159` and `:3214-3221`
+  publish `prefill_seconds_per_token` per prompt. The jq comment reads
+  "Candidate seed-prefill rates, one per prompt where the wrapper sealed one."
+
+Measured at the bar `684821ed`:
+
+```
+prompt      mtp_spt    ser_spt   pref_spt  pref_tot_s  cand_tot_s   share%     raw
+beagle     0.010694   0.037899   0.001028      0.5263      5.4755    9.612   3.5439
+botany     0.009665   0.037912   0.001029      0.5271      4.9486   10.651   3.9225
+drama      0.017834   0.037922   0.001030      0.5273      9.1308    5.775   2.1264
+essays     0.009833   0.038463   0.001029      0.5268      5.0345   10.464   3.9116
+medicine   0.009720   0.037864   0.001027      0.5258      4.9768   10.564   3.8953
+plutarch   0.030258   0.037873   0.001029      0.5267     15.4920    3.400   1.2517
+republic   0.009711   0.037946   0.001027      0.5258      4.9718   10.576   3.9077
+travel     0.015616   0.037967   0.001028      0.5261      7.9954    6.581   2.4313
+8-prompt mean share 8.453 %;  serial-leg share 2.71 %
+```
+
+Every seed is 512 tokens, so the eight values agree to 0.3 per cent. Median
+within-row CV over 740 board rows is 0.132 per cent, making
+`prefill_seconds_per_token` the most precise field the board publishes, against
+0.0721 per cent for the candidate 8-prompt mean and 0.1652 for serial.
+
+Value model, harness=ranked. Both legs lose the same `dP`, so
+`raw' = (S - dP)/(C - dP)` and `d raw / d dP = (S - C)/C^2 > 0`. No `psi_serial`
+term. At the bar a 4.10 per cent prefill cut moves the published median from
+3.719597 to 3.731021, which is +0.3071 per cent.
+
+Receipt check. `43925f29` cut prefill 4.12 per cent and scored +0.291 per cent
+over its own base. Forecast to receipt agreement 0.016 pp, the tightest this
+campaign has produced.
+
+Prefill census, 740 rows with all eight values. Across-row mean 0.001036568,
+CV 3.98 per cent dominated by old trees. The modern band is
+0.0010277 to 0.0010349, only 0.70 per cent wide.
+
+```
+row       solver         prefill_spt    d% vs bar   score        mechanism
+5cdc9c17  BitWonka       0.000977163      -5.07 %   3.18067509   128x32 rectangular NAX seed retile
+43925f29  ox-alpha       0.000985944      -4.12 %   3.71654402   double-buffer affine NAX qmm_t
+1db9d63e  morganmcg1     0.001027704      -0.06 %   3.61655493
+684821ed  newjordan      0.001028291       0.00 %   3.71959723   THE BAR
+115c5c50  nagaral        0.001034925      +0.64 %   3.67966899   qmm_t_impl swizzle, prefill WORSE
+```
+
+### FINDING 228 - the state does not touch the prefill
+
+Split the F226 cohort by cluster and compare published prefill.
+
+```
+HIGH n=7  prefill delta +0.0773 %  sd 0.1724
+LOW  n=11 prefill delta +0.1042 %  sd 0.1601
+HIGH - LOW = -0.0269 %, se 0.0811, t = -0.33
+corr(k, prefill delta) over n=18 = -0.057, r2 = 0.003
+```
+
+The decode leg carries +1.79 per cent. The prefill carries nothing, 2-sigma
+bound near +0.14 per cent, at least twelve times smaller. Prefill and decode
+run back to back inside ONE timed leg on ONE machine, so a clock, thermal, or
+power state is ruled out. Decode is 88.6 per cent DRAM weight streaming at
+M=1..9; the seed prefill is an M=512 GEMM, compute bound at roughly 50 per cent
+MFU. The state is in the memory system.
+
+### FINDING 226 REVISED - prefill removed, cohort self-selecting
+
+The original estimator projected a per-LEG prefill change onto a
+per-DRAFTING-ROUND basis. `43925f29` was the casualty at -179.1 us/dr. With the
+prefill subtracted it reads -9.0, and its whole effect moves to the prefill.
+
+New protocol, no hand picking. Cohort = every board row whose eight
+`effective_mean_draft_len` values are digit-identical to the anchor `684821ed`.
+Response = candidate seconds minus published prefill seconds. One basis,
+microseconds per drafting round.
+
+```
+group      n      k us/dr         sd     decode8%      resid
+A  main   12         -9.6       27.5      -0.0742     0.2058
+B  mid     3       +148.7       21.7      +0.2416     0.3110
+C  high    8       +893.4      160.1      +1.7118     0.7360
+D  out     1      +2533.3        0.0      +5.1025     0.2296
+
+STATE STEP A -> C = +903.0 us per drafting round = +1.7861 % of the decode leg
+residual signature: HIGH 0.7360 vs MAIN 0.2058 = 3.58x
+P(high) = 8/24 = 0.3333
+```
+
+`02742bf0` sits at k = +2533 with a MAIN-like residual of 0.2296. A real
+per-drafting-round mechanism fits the basis well; the state does not. The
+residual is therefore a discriminator in its own right and is computable from
+one row.
+
+P(high) = 1/3 exactly, matching F75's independently derived P(slow) = 1/3.
+
+THE DECISIVE ROW. `e7770562`, public note "Tip resample - zero-delta draw on
+684821e (3.71960)". Bit-identical tree, empty diff. Scored 3.6237117573 against
+the bar's 3.71959723, a -2.58 per cent published swing. Estimator: k = +932.4,
+residual 0.7236, prefill delta -0.195 per cent. Dead centre of the high
+cluster. A tree with no mechanism drew the slow state, which removes the last
+competing explanation.
+
+Where the known nulls landed: `106573b9` MAIN, `3a18ff21` MAIN, `b8e0f27c`
+MAIN, `aff3b543` MAIN, `64508884` MAIN, `e7770562` HIGH. One of six, consistent
+with 1/3 at n=6.
+
+PER-PROMPT EXPOSURE to a 903 us per drafting round state:
+
+```
+prompt      rounds  nondraft  drafting  dec_secs  state d%   rel to beagle
+beagle      110.00         0    110.00    4.9492    2.0070          1.000
+medicine     90.01         0     90.01    4.4510    1.8261          0.910
+essays       92.04         0     92.04    4.5077    1.8438          0.919
+botany       81.04         0     81.04    4.4215    1.6551          0.825
+republic     93.00         0     93.00    4.4460    1.8889          0.941
+plutarch    486.76       449     37.76   14.9654    0.2278          0.114
+drama       252.01         0    252.01    8.6035    2.6450          1.318
+travel      212.33         0    212.33    7.4692    2.5670          1.279
+```
+
+plutarch is 8.8 times less exposed than beagle because 449 of its 486.76 rounds
+do no drafting at all. This is the physical reason the campaign MDE table names
+plutarch alone as the mode-robust estimator. The table was right; it now has a
+mechanism.
+
+### FINDING 229 - the state is the wired-residency lottery, and that is why it is locally unreachable
+
+The new step is 903.0 us per drafting round, se 56.6. F152/F172 independently
+measured the wired-residency state at 930.9 us per drafting round. Difference
+27.9 us, 0.49 sigma. They are the same number.
+
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:222`,
+`wireResidentWeightsIfEnabled()`, guards on
+`ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)`. The 128 GiB
+ranked M5 passes it. The 48 GiB student Macs fail it, so that code never runs
+locally. Local instruments are therefore CLEANER than the ranked board for any
+question this state contaminates, and a local null is not evidence against the
+state.
+
+CONSEQUENCE - F220 IS REFUTED. F220 claimed the flush-fold warm is base
+dependent: null on `e8f14c4`, +0.10 on `1b3ea281`, +1.55 on `eb5eadc7`.
+State-corrected, all three are nulls; `9f9b4790` moves from +1.6937 to -0.0924.
+The base dependence was one high draw. RULE 128 loses its quantitative support.
+
+Other state corrections, decode-only, bar frame:
+
+```
+row       raw decode8%   corrected   note
+c54de844      +1.4183     -0.3678   rerank QMV 32/lane is a hidden 0.37 % WIN
+452b0055      +1.6445     -0.1415   null
+c24f1755      +2.1303     +0.3442   F197's "8/8 regression" is small, not large
+9f9b4790      +1.6937     -0.0924   F220 refuted
+1db9d63e      +2.2109     +0.4248   ours
+```
+
+OUR COMPOSITION RE-PRICED, `572b2cc4 -> 1db9d63e`, decode-only:
+
+```
+prompt         572b2cc4 s     1db9d63e s     raw d%     state d%    corrected
+beagle            5.00151        5.12055    +2.3799       2.0070      +0.3730
+essays            4.55568        4.57211    +0.3608       1.8438      -1.4830
+medicine          4.48069        4.60036    +2.6708       1.8261      +0.8448
+republic          4.49443        4.52088    +0.5884       1.8889      -1.3005
+botany            4.44642        4.46320    +0.3773       1.6551      -1.2778
+MEAN 5                                      +1.2754                   -0.5687
+all eight        raw +1.3007 %      state-corrected -0.5319 %
+F209 additive forecast              -0.8722 %
+residual, state-corrected           +0.3403 pp    (was +2.0545 pp)
+```
+
+The composition was probably a modest win that drew the slow state. The F225
+interaction residual falls by 83 per cent.
+
+### FINDING 230 - the gap to the crown is 0.82 per cent, not 1.57 per cent
+
+Price the gap on the candidate leg, decode-only, five weighted prompts, our
+best row `572b2cc4` against four independent promoted rows.
+
+```
+target                candidate decode gap   their serial   published gap
+684821ed the bar             -0.8800 %          +0.13 %        +1.5675 %
+1760479a anchor              -0.9269 %          +0.19 %        +1.1290 %
+3ba6ee9d                     -0.8505 %          +0.13 %        +1.1899 %
+08b67f12                     -0.6406 %          +0.26 %        +0.7791 %
+mean of the four             -0.8245 %, sd 0.13
+```
+
+Nearly half of the published-median gap is the serial lottery: their serial
+legs read 0.13 to 0.26 per cent SLOWER than ours, which inflates their ratio.
+The real mechanism gap is 0.82 per cent.
+
+BASE SYNC DECISION - DENIED, now on evidence rather than on caution.
+`upstream/main` is `eb5eadc7`, literally "Accept submission 684821ed", so the
+organizer's main IS the promoted frontier tree and every rival note builds on
+it. `origin/main` is our maintained mirror, advanced by repeated "Sync promoted
+organizer frontier" commits, and it is behind. The complete editable-surface
+diff between our advisor branch and `eb5eadc7` is THREE files:
+`Qwen36MTPBlockSession.swift` 284 lines, `Qwen35.swift` 1359 lines,
+`mtp-head.manifest.json` 2 lines.
+
+Reasons to decline the wholesale import:
+
+1. The real gap is 0.82 per cent, not 1.57.
+2. The E87 probe-select port is +0.72 per cent, closes 87 per cent of the gap,
+   and costs about 180 lines instead of 1359. It is already approved and
+   assigned to thorfinn.
+3. E147's prefill work is worth about +0.25 per cent of the candidate leg and
+   the crown does not have it, because `43925f29` was rejected.
+4. Importing their tree discards our whole mechanism stack, 1245 net lines,
+   for a head start one already-assigned port recovers.
+
+In-hand mechanisms against a 0.82 per cent gap: E87 +0.72, E147 prefill +0.25,
+F22 width-6 register occupancy +0.5913, BitWonka NAX retile about +0.43,
+leaf16 on the shipped vocabulary +0.21 to +0.32. The top four sum to about
++1.99 per cent, which clears the gap with margin for the serial lottery.
+
+FRONTIER-STATE DISPOSITION. `senpai/frontier-state.json` on `origin/main`
+records promoted score 3.5250913, source ref `d44ad229`, organizer synced
+commit `c0dbec05`, observed 2026-08-22T18:30Z. The live promoted top is
+`684821ed` at 3.71959723 with source ref `eb5eadc7`. All three fields differ.
+The submit guard at `senpai/submit-official.sh:195-226` does NOT compare the
+file against live Yukon; it requires only schema validity and that
+`organizer.syncedCommit` be an existing ancestor of `upstream/main`. `c0dbec05`
+is an ancestor, so the guard passes and E147's submission is not blocked. The
+advisor cannot execute the sync skill from this host: `yukon` is not installed,
+`swift test` must not run here, and no tool publishes `main`. Recorded as a
+known, non-blocking discrepancy.
+
+### RULE CHANGES
+
+RULE 128 DOWNGRADED. A composition must still be measured rather than added,
+but its quantitative support has collapsed. The two motivating observations
+were F220's base dependence, now refuted, and F225's +2.05 pp interaction
+residual, now +0.34 pp. Observed interaction residuals to date are at or below
+0.5 pp, not at or above 2 pp.
+
+RULE 130 HELD PENDING T29-A. Submit one mechanism at a time. The cost of
+composing was believed to be +2.05 pp and is now +0.34 pp. Thorfinn's rung 1
+local A/B decides whether to lift it.
+
+RULE 131 NEW - SUBTRACT THE PREFILL BEFORE PRICING ANY CANDIDATE-LEG CONTRAST.
+The candidate leg is 8.45 per cent seed prefill on the 8-prompt mean. Any
+contrast that mixes a prefill-phase change with a decode-phase change on an
+undivided leg is unattributable. The board publishes
+`prefill_seconds_per_token` per prompt; use it.
+
+RULE 132 NEW - A SINGLE RANKED RECEIPT HAS A ONE-IN-THREE CHANCE OF READING
+ABOUT 1.6 PER CENT LOW ON THE CANDIDATE LEG. Classify the state with the
+residual test before calling any single receipt a regression. Read plutarch
+first, because it is 8.8 times less exposed than beagle.
+
+### ADVISOR ERRORS
+
+159. My F193 note "prefill is not scored" was wrong. The standalone
+prefill-throughput leg is not scored, but the SEED prefill sits inside the
+scored decode leg at 8.45 per cent of the candidate 8-prompt mean. I
+consequently mislabelled `qmm_t` as the campaign's reference null pair, and I
+ran the F226 estimator for a full cycle without the prefill term, producing one
+clear misattribution.
+
+160. I told edward a ranked prefill of about 1.71 s was plausible by applying
+the 2.05 decode level factor. The measured value is 0.52643 s. I applied a
+bandwidth-bound level factor to a compute-bound phase. The true local-to-ranked
+prefill factor is near 6.6x.
+
+161. I denied the base sync for the wrong reason. My stated reason was risk to
+our mechanism stack. The correct reason is that the published-median gap is 48
+per cent serial lottery and the real gap is 0.82 per cent, which one assigned
+port already covers. The denial stands; the reasoning in ledger 303 and 304 is
+superseded.
+
+162. F219 and F221 computed ranked round costs as `mtp_spt * 512 / R`, which
+includes prefill at 3.4 per cent (plutarch) to 10.7 per cent (botany).
+Prefill-free ranked round costs at the bar: beagle 44,993 us, medicine 49,456,
+essays 48,997, botany 54,586, republic 47,806, travel 35,232, drama 34,141,
+plutarch 30,730. The width-1 ranked intercept is near 30,000 us, not 31,182.
+F221's "+0.53 per cent per 1 per cent of width-independent work" needs a redo
+and may fall to about +0.45.
+
+### STUDENT STATE
+
+edward, PR #144, E145. Interims 3, 4 and 5 read. R1 palindrome on `beagle_a`,
+one binary, real 40 C gate, entry-temp spread 0.50 C: pb6 is -2.5706 per cent
+seconds per token, blocks-only -3.4119, arm gap nine times the worse within-arm
+reproduction. BOTH of my pre-registered predictions missed, so ADVISOR ERROR
+151 IS RESOLVED IN pb6's FAVOUR and the revert is under review. R2 delivered
+the live width cost curve at 512 tokens across 14 legs with zero divergence,
+and E145 FINDING 1 is that the cliff is twice as wide as the campaign believed:
+two adjacent expensive steps into width 6 AND into width 7, then a nearly free
+step into 8, with the 6->7 measured step 15.9 times its replayed value. E145
+FINDING 2, the zero-parameter closure test, confirms ADVISOR ERROR 156 on a
+measured curve with worst error 0.370 per cent, and the Jensen gap CHANGES SIGN
+between fixtures. E145 FINDING 3 retires the -2.85 per cent ranked-price
+verdict as a curve artefact; pb6 improves from +2.6492 to +2.7204 on the
+measured curve. E145 FINDING 4 shows the (h, tier) plane is a plateau and the
+shipped cell sits on it, best cell +0.070 pp away, which is negative for the
+F210 premise. R4 cross-evaluation gives total regret of tuning on the replayed
+curve as +0.1083 pp against a 0.1218 pp noise floor. `pb67` demoted to an
+appendix at +0.049 pp. F5 sent: the prefill correction, approval of the
+measured-curve search, and a request for his local `seedPrefillSeconds`.
+
+thorfinn, PR #135, E135. F31 sent with a REVISED T29-A prediction table. Cells
+3 and 4 are 1.8 pp apart, 7.6 sigma, decidable at n=1; cells 1 and 2 are 0.34
+pp apart, 1.4 sigma, not separable at n=1 and he is told not to try. E87 port
+remains the priority after rung 1. T33 base sync remains denied, now on
+FINDING 230.
+
+askeladd, PR #146, E146. F2 sent with F227, F228, revised F226 and F229. R-A
+relabelled onto the self-selecting cohort of 24. The fit residual is promoted
+to the leading single-row classifier feature, with published prefill as a
+negative control that must NOT predict the label. R-C is warned that his 48 GiB
+host cannot enter the state, and must report
+`e146_local_floor_excludes_wired_residency`. New deliverable
+`e146_f220_survives_state_correction`.
+
+alphonse, PR #147, E147. F1 sent. The channel comparison for one ranked
+receipt: decode seeks -0.5 per cent against an effective sd of 0.69 per cent,
+sigma 0.7; prefill seeks -3.0 per cent against an sd of 0.20 per cent, sigma
+15.0. E147 is roughly twenty times more statistically efficient per submission
+than any decode experiment. His falsifier at -1.5 per cent is still 7.4 sigma.
+Added deliverables: `e147_local_seed_prefill_seconds` on the unchanged base,
+and a cluster classification of our own receipt in rung D. BitWonka's 128x32
+retile stays out of E147 under Rule 130.
+
+### BOARD
+
+Promoted top six unchanged: `684821ed` 3.71959723 the bar, `3ba6ee9d`
+3.70576324, `1760479a` 3.70355222, `08b67f12` 3.69071883, `ed608e64`
+3.68172016, `02742bf0` 3.52686512.
+
+Resolved this cycle: `211da8aa` newjordan 3.70751673 M=2 pair-kernel QMV for FA
+K/V, which is the same N=1024 family `aff3b543` already measured null;
+`3a18ff21` 3.69817416 variance resample; `e7770562` 3.62371176 the zero-delta
+draw that decided F226; `32dde61d` FAILED with no score, resubmitted as
+`3d75f016`.
+
+Validating: `f769cf62`, `137293ec`, `7e5172fa`, `f7d59543`, `04c79081`,
+`649bd401`, `3d75f016`. `7e5172fa` and `3d75f016` are free flush-fold
+replicates that test F220 and the state; `f7d59543` is another zero-delta
+resample of promoted main and is a free P(high) draw.
+
+### QUEUE, REPRICED AGAINST A 0.82 PER CENT GAP
+
+```
+mechanism                          candidate-leg value   owner
+E87 probe-select port                      +0.72 %       thorfinn, after T29-A
+F22 width-6 register occupancy             +0.5913 %     thorfinn, census running
+BitWonka 128x32 NAX seed retile            +0.43 %       UNCLAIMED, prefill channel
+leaf16 on the shipped vocabulary           +0.21..0.32 % UNCLAIMED, one constant
+E147 affine NAX prefill double-buffer      +0.25 %       alphonse, running
+restore pb6                                under review  advisor
+the 6->7 cliff                             new, unpriced UNCLAIMED, from E145 R2
+```
+
+Nobody is idle, so both unclaimed items wait. `leaf16` needs 1,537 probes, not
+1,536, because `Qwen35.swift:6156` rounds up.
