@@ -1,25 +1,52 @@
 {
-  "experiment": "e147",
-  "hypothesis": "A1: the quantized.h edits perturbed the decode kernels",
-  "instrument": "rebuild the exact per-kernel JIT library MLX compiles (jit_kernels.cpp:915-932) and translate it with xcrun metal-tt",
-  "why_e129_cannot_answer_this": "research/e129_entry_point_census.py censuses the Route B QMV entry point lifted out of Qwen35.swift, which neither rung touched, so its cross-revision diff is null by construction",
-  "revisions": {
-    "base": "feaa92b4299bcb013bd2061cf5c3d6a93a1e4549",
-    "rungA": "01ed58d5309c06b3db27c71d6a6b73ed6a50a341",
-    "rungB": "302a44df665391592d60c39eca5a83c49888c7b2",
-    "head": "5dc4d1d9184c37b2dcf0d79f61128c414e0a8784"
-  },
-  "baseline_revision_label": "base",
+  "tool": "jit entry-point census",
+  "instrument": "rebuild the exact per-kernel JIT library MLX compiles and translate it with xcrun metal-tt",
+  "kernel_sets": [
+    "quantized-affine"
+  ],
   "arches": [
     "applegpu_g16s",
     "applegpu_g17s"
   ],
+  "revisions": {
+    "base": "feaa92b4299bcb013bd2061cf5c3d6a93a1e4549",
+    "rungA": "01ed58d5309c06b3db27c71d6a6b73ed6a50a341",
+    "rungB": "302a44df665391592d60c39eca5a83c49888c7b2",
+    "head": "d16a0c0027b638f954fcf53d05f45467013041a6"
+  },
+  "baseline_revision_label": "base",
+  "control": {
+    "perturbation": "<bfloat16_t, 64, 4 -> <bfloat16_t, 32, 4",
+    "fired": {
+      "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0": {
+        "applegpu_g16s": true,
+        "applegpu_g17s": true
+      },
+      "affine_qmv_bfloat16_t_gs_64_b_4_batch_0": {
+        "applegpu_g16s": true,
+        "applegpu_g17s": true
+      },
+      "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0": {
+        "applegpu_g16s": true,
+        "applegpu_g17s": true
+      },
+      "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true": {
+        "applegpu_g16s": true,
+        "applegpu_g17s": true
+      },
+      "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true": {
+        "applegpu_g16s": true,
+        "applegpu_g17s": true
+      }
+    }
+  },
   "rows": [
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
       "rev": "base",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 94,
       "spill_bytes": 0,
       "text_bytes": 119344,
@@ -31,6 +58,7 @@
       "role": "decode: every draft round",
       "rev": "base",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 101,
       "spill_bytes": 0,
       "text_bytes": 125092,
@@ -42,6 +70,7 @@
       "role": "decode: every draft round",
       "rev": "rungA",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 94,
       "spill_bytes": 0,
       "text_bytes": 119344,
@@ -53,6 +82,7 @@
       "role": "decode: every draft round",
       "rev": "rungA",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 101,
       "spill_bytes": 0,
       "text_bytes": 125092,
@@ -64,6 +94,7 @@
       "role": "decode: every draft round",
       "rev": "rungB",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 94,
       "spill_bytes": 0,
       "text_bytes": 119344,
@@ -75,6 +106,7 @@
       "role": "decode: every draft round",
       "rev": "rungB",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 101,
       "spill_bytes": 0,
       "text_bytes": 125092,
@@ -86,6 +118,7 @@
       "role": "decode: every draft round",
       "rev": "head",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 94,
       "spill_bytes": 0,
       "text_bytes": 119344,
@@ -97,6 +130,7 @@
       "role": "decode: every draft round",
       "rev": "head",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 101,
       "spill_bytes": 0,
       "text_bytes": 125092,
@@ -108,6 +142,7 @@
       "role": "decode: unaligned fallback",
       "rev": "base",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 43,
       "spill_bytes": 0,
       "text_bytes": 6188,
@@ -119,6 +154,7 @@
       "role": "decode: unaligned fallback",
       "rev": "base",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 47,
       "spill_bytes": 0,
       "text_bytes": 6314,
@@ -130,6 +166,7 @@
       "role": "decode: unaligned fallback",
       "rev": "rungA",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 43,
       "spill_bytes": 0,
       "text_bytes": 6188,
@@ -141,6 +178,7 @@
       "role": "decode: unaligned fallback",
       "rev": "rungA",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 47,
       "spill_bytes": 0,
       "text_bytes": 6314,
@@ -152,6 +190,7 @@
       "role": "decode: unaligned fallback",
       "rev": "rungB",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 43,
       "spill_bytes": 0,
       "text_bytes": 6188,
@@ -163,6 +202,7 @@
       "role": "decode: unaligned fallback",
       "rev": "rungB",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 47,
       "spill_bytes": 0,
       "text_bytes": 6314,
@@ -174,6 +214,7 @@
       "role": "decode: unaligned fallback",
       "rev": "head",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 43,
       "spill_bytes": 0,
       "text_bytes": 6188,
@@ -185,6 +226,7 @@
       "role": "decode: unaligned fallback",
       "rev": "head",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 47,
       "spill_bytes": 0,
       "text_bytes": 6314,
@@ -193,9 +235,10 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "base",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 4294,
@@ -204,9 +247,10 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "base",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 4280,
@@ -215,9 +259,10 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungA",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 5628,
@@ -226,9 +271,10 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungA",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 5594,
@@ -237,9 +283,10 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungB",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 5628,
@@ -248,9 +295,10 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungB",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 5594,
@@ -259,31 +307,34 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "head",
       "arch": "applegpu_g16s",
-      "registers": 45,
+      "translated": true,
+      "registers": 48,
       "spill_bytes": 0,
-      "text_bytes": 5640,
-      "text_sha8": "2b60f68b",
-      "changed_vs_base": true
+      "text_bytes": 4294,
+      "text_sha8": "83c9f285",
+      "changed_vs_base": false
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "head",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
-      "text_bytes": 5606,
-      "text_sha8": "6531dfac",
-      "changed_vs_base": true
+      "text_bytes": 4280,
+      "text_sha8": "49da8298",
+      "changed_vs_base": false
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "base",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 54,
       "spill_bytes": 0,
       "text_bytes": 4486,
@@ -292,9 +343,10 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "base",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 54,
       "spill_bytes": 0,
       "text_bytes": 4494,
@@ -303,9 +355,10 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungA",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 5820,
@@ -314,9 +367,10 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungA",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 5808,
@@ -325,9 +379,10 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungB",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 5820,
@@ -336,9 +391,10 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungB",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 5808,
@@ -347,31 +403,34 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "head",
       "arch": "applegpu_g16s",
-      "registers": 48,
+      "translated": true,
+      "registers": 54,
       "spill_bytes": 0,
-      "text_bytes": 5832,
-      "text_sha8": "43f4a480",
-      "changed_vs_base": true
+      "text_bytes": 4486,
+      "text_sha8": "d5ec5586",
+      "changed_vs_base": false
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "head",
       "arch": "applegpu_g17s",
-      "registers": 48,
+      "translated": true,
+      "registers": 54,
       "spill_bytes": 0,
-      "text_bytes": 5820,
-      "text_sha8": "d52d70c3",
-      "changed_vs_base": true
+      "text_bytes": 4494,
+      "text_sha8": "94681c8f",
+      "changed_vs_base": false
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "base",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 7024,
@@ -380,9 +439,10 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "base",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 48,
       "spill_bytes": 0,
       "text_bytes": 7152,
@@ -391,9 +451,10 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungA",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 8358,
@@ -402,9 +463,10 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungA",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 8466,
@@ -413,9 +475,10 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungB",
       "arch": "applegpu_g16s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 8358,
@@ -424,9 +487,10 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungB",
       "arch": "applegpu_g17s",
+      "translated": true,
       "registers": 45,
       "spill_bytes": 0,
       "text_bytes": 8466,
@@ -435,31 +499,33 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "head",
       "arch": "applegpu_g16s",
-      "registers": 45,
+      "translated": true,
+      "registers": 48,
       "spill_bytes": 0,
-      "text_bytes": 8372,
-      "text_sha8": "99233a74",
-      "changed_vs_base": true
+      "text_bytes": 7024,
+      "text_sha8": "0a02511b",
+      "changed_vs_base": false
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "head",
       "arch": "applegpu_g17s",
-      "registers": 45,
+      "translated": true,
+      "registers": 48,
       "spill_bytes": 0,
-      "text_bytes": 8480,
-      "text_sha8": "1c48eb0e",
-      "changed_vs_base": true
+      "text_bytes": 7152,
+      "text_sha8": "01d5c493",
+      "changed_vs_base": false
     }
   ],
   "moves": [
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungA",
       "arch": "applegpu_g16s",
       "registers": [
@@ -477,7 +543,7 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungA",
       "arch": "applegpu_g17s",
       "registers": [
@@ -495,7 +561,7 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungB",
       "arch": "applegpu_g16s",
       "registers": [
@@ -513,7 +579,7 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungB",
       "arch": "applegpu_g17s",
       "registers": [
@@ -530,44 +596,8 @@
       ]
     },
     {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "83c9f285",
-        "2b60f68b"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
-      "rev": "head",
-      "arch": "applegpu_g17s",
-      "registers": [
-        45,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "49da8298",
-        "6531dfac"
-      ]
-    },
-    {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungA",
       "arch": "applegpu_g16s",
       "registers": [
@@ -585,7 +615,7 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungA",
       "arch": "applegpu_g17s",
       "registers": [
@@ -603,7 +633,7 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungB",
       "arch": "applegpu_g16s",
       "registers": [
@@ -621,7 +651,7 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungB",
       "arch": "applegpu_g17s",
       "registers": [
@@ -638,44 +668,8 @@
       ]
     },
     {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "d5ec5586",
-        "43f4a480"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
-      "rev": "head",
-      "arch": "applegpu_g17s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "94681c8f",
-        "d52d70c3"
-      ]
-    },
-    {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungA",
       "arch": "applegpu_g16s",
       "registers": [
@@ -693,7 +687,7 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungA",
       "arch": "applegpu_g17s",
       "registers": [
@@ -711,7 +705,7 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungB",
       "arch": "applegpu_g16s",
       "registers": [
@@ -729,7 +723,7 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungB",
       "arch": "applegpu_g17s",
       "registers": [
@@ -743,50 +737,26 @@
       "text_sha8": [
         "01d5c493",
         "57dc0f41"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "0a02511b",
-        "99233a74"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
-      "rev": "head",
-      "arch": "applegpu_g17s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "01d5c493",
-        "1c48eb0e"
       ]
     }
   ],
+  "moved_kernels": [
+    "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
+    "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
+    "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
+  ],
+  "unchanged_kernels": [
+    "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
+    "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
+  ],
+  "census_valid": true,
+  "invalid_reasons": [],
+  "covers_nax_gemm": false,
   "e147_rungA_decode_census_delta": "none",
   "e147_rungAB_full_census_delta": [
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungA",
       "arch": "applegpu_g16s",
       "registers": [
@@ -804,7 +774,7 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungA",
       "arch": "applegpu_g17s",
       "registers": [
@@ -822,7 +792,7 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungB",
       "arch": "applegpu_g16s",
       "registers": [
@@ -840,7 +810,7 @@
     },
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
       "rev": "rungB",
       "arch": "applegpu_g17s",
       "registers": [
@@ -857,44 +827,8 @@
       ]
     },
     {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "83c9f285",
-        "2b60f68b"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: EDITED, Rule 101 positive control",
-      "rev": "head",
-      "arch": "applegpu_g17s",
-      "registers": [
-        45,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "49da8298",
-        "6531dfac"
-      ]
-    },
-    {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungA",
       "arch": "applegpu_g16s",
       "registers": [
@@ -912,7 +846,7 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungA",
       "arch": "applegpu_g17s",
       "registers": [
@@ -930,7 +864,7 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungB",
       "arch": "applegpu_g16s",
       "registers": [
@@ -948,7 +882,7 @@
     },
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
+      "role": "prefill: split-K, never selected at the scored shapes",
       "rev": "rungB",
       "arch": "applegpu_g17s",
       "registers": [
@@ -965,44 +899,8 @@
       ]
     },
     {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "d5ec5586",
-        "43f4a480"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, not retiled",
-      "rev": "head",
-      "arch": "applegpu_g17s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "94681c8f",
-        "d52d70c3"
-      ]
-    },
-    {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungA",
       "arch": "applegpu_g16s",
       "registers": [
@@ -1020,7 +918,7 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungA",
       "arch": "applegpu_g17s",
       "registers": [
@@ -1038,7 +936,7 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungB",
       "arch": "applegpu_g16s",
       "registers": [
@@ -1056,7 +954,7 @@
     },
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
+      "role": "gather: not on the scored prefill path",
       "rev": "rungB",
       "arch": "applegpu_g17s",
       "registers": [
@@ -1070,46 +968,9 @@
       "text_sha8": [
         "01d5c493",
         "57dc0f41"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "0a02511b",
-        "99233a74"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not retiled",
-      "rev": "head",
-      "arch": "applegpu_g17s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "01d5c493",
-        "1c48eb0e"
       ]
     }
   ],
   "decode_entry_points_moved": false,
-  "rule_101_positive_control_moved": true,
-  "verdict": "A1 REFUTED"
+  "rule_101_positive_control_moved": true
 }
