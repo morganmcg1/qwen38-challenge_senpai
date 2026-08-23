@@ -61579,3 +61579,280 @@ declared head        reachable  http 206 at 17:33Z
 advisor branch       e316945d + this entry
 ```
 
+
+## 329 — ADVISOR ERROR 198: my host transfer scalar was the local law divided by itself. RULE 166, FINDING 286, 287 and 288 are retracted.
+
+Two students returned terminal results in the same hour. Both of them
+corrected me. Edward showed that the number I have been pricing every depth
+decision with since entry 323 carries no independent information at all.
+Askeladd closed the head-precision axis with a measurement that runs the wrong
+way from my prediction by a factor of five hundred.
+
+This entry retracts more of my own work than any previous entry. That is the
+correct outcome: a self-confirming constant that has been quietly steering
+four students is a worse campaign state than an admitted hole.
+
+### 329.1 The circularity, stated exactly
+
+RULE 166 claimed a host transfer scalar of `2.7769`, supported by "three
+independent routes agreeing to 0.29 %". FINDING 286 was the ranked round-cost
+law obtained by dividing the local law by that scalar.
+
+Edward recovered the two fits and divided them. I re-derived it independently
+in `/tmp/verify157.py` before accepting:
+
+```
+scale I stated in my own brief   2.77690    = 148,775 / 53,576
+a_local / a_286  = 23,421.07 / 8,434     =  2.77698
+b_local / b_286  = 15,708.50 / 5,657     =  2.77683
+spread                                       0.00016
+depth price h    local 0.401448  vs  F286 0.401462   relative gap 3.39e-05
+```
+
+Both coefficients of FINDING 286 are the local coefficients divided by the
+same constant, to five significant figures. The "third route" was the first
+route rescaled. Two of the three routes were genuinely independent local fits
+that agreed to 0.29 %; the agreement of the third was arithmetic, not
+evidence.
+
+FINDING 286 therefore reproduces the local law's *shape* exactly and adds
+nothing about the ranked host. Every conclusion that depended on the shape
+being ranked-specific is void.
+
+> **ADVISOR ERROR 198.** I built a cross-host transfer constant by fitting one
+> host, then validated it by dividing the same fit by the constant and
+> observing that it matched. I called that "three independent routes". A
+> transfer estimate is only evidence when the target-side quantity is measured
+> on the target side. Before quoting an agreement, name the measurement behind
+> each number and check that no two of them share a numerator.
+
+### 329.2 The independent falsification
+
+Edward did not stop at the algebra. He falsified FINDING 286 against ranked
+data it had never seen: 488 uniquely recovered rounds on the plutarch prompt
+of receipt `0cf1637e`, of which 449 of 487 are non-drafting rounds.
+
+```
+model                                        miss vs receipt round cost
+FINDING 286   8,434 + 5,657 x rows                        +48.5 %
+FINDING 281   25,409 + 4,291 x tokens                       0.0 %
+bracket width of the recovery                              15.6 %
+```
+
+A 48.5 % miss against a 15.6 % bracket is decisive. FINDING 281, which was
+fit on ranked receipts directly, survives untouched.
+
+### 329.3 What replaces it — a ranked row price measured with the ranked head
+
+Edward's replacement is fit on legs that loaded the declared head, so it does
+not carry the head contamination that entry 326 worried about:
+
+```
+clean_us_per_round = 26,917 + 3,344 x width          harness=ranked
+n = 8, head digest 559b24eb..., widths 1.047-3.237
+R2 = 0.9874, residual +-154 us/row
+depth price h = 0.1105
+shipped flat headStepCostRatio = 0.18   ->  over-priced by 63 %
+```
+
+The single divisor is replaced by a term-wise transfer:
+
+```
+intercept ratio local/ranked   0.87 - 1.04
+slope     ratio local/ranked   15,708.50 / 3,344 = 4.70
+```
+
+This is physically coherent and the single scalar never was. The fixed term
+of a round is one bandwidth-bound stream of the trunk weights, and two hosts
+with similar memory systems land within a few percent of each other. The
+marginal row is a compute-bound matmul against weights already resident, and
+there the ranked M5 is 4.7x the advisor host. Compressing a 5.4x spread into
+one number was the error, not the size of the number.
+
+> **RULE 174.** Never transfer a cost law between hosts with one scalar.
+> Transfer the intercept and the slope separately, because they are different
+> physics: the intercept is bandwidth, the slope is arithmetic. Report both
+> ratios, and report the width range each was identified on.
+
+### 329.4 Neither law is identified over the full depth range
+
+```
+rows     FINDING 286      head-clean      F286 / head-clean
+   1          14,091          30,261                 0.466
+   4          31,062          40,293                 0.771
+   8          53,690          53,669                 1.000
+```
+
+The two laws cross at rows = 8 and diverge to 2.15x at rows = 1. That is not a
+coincidence: FINDING 286 is fit-equivalent to the local law, which was
+measured at high widths, and the head-clean law is fit on widths 1.047 to
+3.237. Each law is accurate where it was measured and extrapolates badly into
+the other's range.
+
+The honest statement is that **we do not have an identified row price across
+1 to 8 rows on the ranked host**. Anything that requires one is now an open
+question, not a settled number.
+
+### 329.5 The sign of the depth error reversed
+
+Edward's own hypothesis was that the live schedule drafts two rows too deep.
+Inside the identified range the data says the opposite:
+
+```
+e157_depth_error_sign               too_shallow
+e157_hypothesis_two_rows_too_deep   false
+optimal minus live, verify width <= 3.24
+  drama   +0.70      travel  +1.35      plutarch  +0.84
+```
+
+Above width 3.24 the sign is not identified. A curvature term that the data
+admits at 2 sigma flips the high-acceptance prompts from draft-8 to draft-3.
+So the live schedule is too shallow where we can see, and might be far too
+deep where we cannot. Both statements are in the data at once.
+
+He also withdrew his own convexity claim before I could ask. The 21 recovered
+drama cells span 11 ranked head digests, head digest correlates with width,
+and under head fixed effects the curvature collapses:
+
+```
+curvature  598 +- 33  (18 sigma)   ->   276 +- 568  (0.49 sigma)
+```
+
+The `h(w)` ladder in PR #157 comment 5387251142 is discarded. A student who
+kills his own headline finding on a confound he found himself is doing the
+job exactly right.
+
+### 329.6 The head contamination correction is zero, and the head price is measured
+
+Entry 326 flagged that the local law might be head-contaminated. It is not.
+All eight local legs behind the local law loaded the **declared** head
+(`dadbfb80...`). The correction is `0.0`, not the 4.5 % I estimated.
+
+Edward measured the head price directly instead:
+
+```
+draft-step slope ratio  pinned / declared          2.047
+byte      ratio  pinned / declared                 1.986
+verify-slope null control                          1.037
+head share of a round     declared 10.6 %   pinned 18.8 %
+```
+
+The slope ratio matches the byte ratio to 3 %, and the null control shows the
+verify path is unaffected. The head is a bandwidth-bound stream and it prices
+like one.
+
+### 329.7 FINDING 302 — our confirmation gate is biased against deep candidates
+
+This is the operational consequence and it changes the pre-submit protocol.
+
+`benchmark-qwen-mtp.sh` loads the **pinned** head. The ranked candidate leg
+loads the **declared** head. So in every `--local-submit` confirmation:
+
+- the candidate MTP leg pays 2.05x the ranked head price per drafted row;
+- the serial leg pays no head price at all;
+- the penalty grows with schedule depth.
+
+> **FINDING 302.** The local `--local-submit` ratio understates the ranked
+> candidate leg, and understates it more at deeper schedules. Our confirmation
+> gate is therefore biased against deep-drafting candidates. A deep candidate
+> that comes back flat locally may be a ranked win, and a shallow candidate
+> that comes back positive locally is measured on the friendlier side of the
+> bias.
+
+Until we can load the declared head under the wrapper, treat a local
+confirmation of a depth-increasing candidate as a **lower bound** on its
+ranked ratio, and say so in the submission note. This does not relax any
+exactness, thermal, provenance or scope gate; it changes only how we read a
+ratio we already run.
+
+### 329.8 RULE 173 — the default harness runs no draft index
+
+Askeladd's, verified on data. `benchmark-qwen-mtp.sh` loads the pinned BF16
+head, which ships no `draft_lm_head` tensors. `buildDerivedClusterIndex`
+(`Qwen35.swift:6146-6152`) returns immediately, and `draftTokenID`
+(`:6178-6190`) falls through to `_compactDraftHead` dense over all 98,336
+rows.
+
+```
+index_miss    pinned legs   0 / 1,461 slots
+              declared legs 4 / 1,503 slots
+```
+
+> **RULE 173.** An index-side, readout-side or acceptance-side local arm is
+> void unless the leg's `head_provenance.sha256` is `dadbfb80...` or
+> `559b24eb...`. `head_provenance.origin` and `.source` are **not** witnesses:
+> they are copied from the declaration, so a pinned run happily reports
+> `origin = hf:amal-david/...`. Only the digest names the head that was
+> actually loaded.
+
+This falsified a reassurance I had given both askeladd and thorfinn — that
+the leaf index is derived at warmup on both sides. It is not. I withdrew it
+the same hour and warned thorfinn mid-experiment.
+
+### 329.9 The head-precision axis is closed
+
+Askeladd's E158 R1, six legs, three prompts, 512 tokens, depth 8, matched
+divergence 0 on all six.
+
+| conditional, 1,323 of 1,324 slots | pinned bf16 | declared q2/q4 | pinned − declared |
+| --- | ---: | ---: | ---: |
+| `p_shipped` | 0.9002268 | 0.9010574 | −0.0831 pp |
+| `p_exact_full` | 0.9032502 | 0.9033233 | **−0.0073 pp** |
+
+A fully BF16 trunk moves head accuracy by **−0.0073 pp**, the wrong way, one
+slot in 1,323. My derived break-even was 4.054 acceptance points. The
+measurement is 555x smaller than the break-even and the wrong sign.
+
+```
+per draft step        pinned bf16        declared q2/q4
+trunk                  849,398,784        264,494,080
+readout                283,207,680 dense   33,528,960 ANN
+total                1,132,606,464        298,023,040
+delta 834.58 MB  ->  cost -14.9641 %, gain -0.0195 %, net -14.9836 %
+```
+
+The declared head is worth **+14.98 % published** over the pinned one, and
+buying accuracy back with precision is not available. `e158_verdict =
+close_head_precision`. Do not reopen this axis without a mechanism that
+changes the *readout*, not the *precision*.
+
+His byte model beats the one in my brief. I assumed the pinned arm still used
+the ANN index; he read the guard and found it does not. That is RULE 173
+again, applied to my own arithmetic.
+
+### 329.10 What is now provisional
+
+Downstream of the retracted inversion, and needing refit before use:
+
+```
+FINDING 287   the marginal row does not pay              PROVISIONAL
+FINDING 288   +3 points of p makes the live schedule optimal   PROVISIONAL
+exchange rate +2.6701 % published per acceptance point   PROVISIONAL
+island arms   0.0704 / 0.1012 / 0.1717 pt thresholds     PROVISIONAL
+break-even    148.9 MB per acceptance point              PROVISIONAL
+affordability 43,114 us modelled round, 0.01793 %/MB     PROVISIONAL
+```
+
+Edward's per-prompt acceptance rates differ substantially from the ones the
+retracted inversion produced (beagle 0.934 vs 0.8973, essays 0.965 vs 0.9222,
+drama 0.603 vs 0.5280, travel 0.697 vs 0.6248), so the refit is not cosmetic.
+
+What is **not** affected: the byte side. The 567 GB/s roofline, the 4.382
+draft steps per round, the head census, the island census and the trunk
+ladder arithmetic are all measured in bytes and are untouched by the cost-law
+retraction.
+
+### 329.11 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 79 min at 17:48Z
+merged               #157       E157 research-only, 16 files, zero editable paths
+open axes            trunk precision ladder (askeladd R2, +2.045 % candidate)
+                     leaf16 (thorfinn, pending RULE 173 digest check)
+                     NAX retile + prefill double buffer (alphonse)
+                     ranked row price refit 1-8 rows (unassigned)
+advisor branch       827c5b97 + this entry
+```
