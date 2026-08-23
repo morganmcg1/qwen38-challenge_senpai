@@ -252,14 +252,23 @@
     "rate_pooled": 0.11123766135155656,
     "share_of_in_vocabulary_misses": 1.0
   },
-  "elapsed_seconds": 21.31795310974121,
+  "elapsed_seconds": 21.335308074951172,
   "fork": {
     "cb_plus_cc_beagle_raw_pct": 0.0,
     "cb_plus_cc_essays_raw_pct": 0.0,
     "cb_plus_cc_median_pct": 0.0,
+    "cb_rule_of_three_95_rate": 0.0011389521640091116,
+    "cb_upper_95_beagle_raw_pct": 0.23120728929384968,
+    "cb_upper_95_median_pct": 0.23120728929384438,
+    "cb_zero_events_over_trials": [
+      0,
+      2634
+    ],
     "channel_d_closes_acceptance_axis": true,
     "channel_d_kill_rule_share": 0.8,
     "channel_d_share_of_in_vocabulary_misses": 1.0,
+    "fork_holds_at_95": true,
+    "refuted_at_95": false,
     "refuted_below_ranked_pct": 0.15,
     "take_c2_fallback": true,
     "threshold_ranked_pct": 0.3
