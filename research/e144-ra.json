@@ -1,0 +1,218 @@
+{
+  "experiment": "e144",
+  "rung": "R-A",
+  "harness": "local",
+  "master": {
+    "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
+    "bytes": 849400347,
+    "tensors": 15
+  },
+  "declared": {
+    "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run/model.safetensors",
+    "bytes": 427742600,
+    "tensors": 40,
+    "metadata": {
+      "format": "qwen38-mtp-incumbent-q4-g64-plus-bf16-qkv-islands-v1",
+      "bf16": "EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e070875b0314d652a039b6b59902690f03",
+      "base": "dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71",
+      "e034_readout": "proposal-only affine2 compact shortlist; incumbent affine4 reranks",
+      "selection": "largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all"
+    }
+  },
+  "tensors": {
+    "fc": {
+      "kind": "core-affine4-g64",
+      "ancestor": "fc.weight (master-bf16)",
+      "shape": [
+        5120,
+        10240
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09331502465927648,
+      "rel_l2_declared_vs_master": 0.09331502465927648,
+      "negative_scale_fraction": 0.5083642578125
+    },
+    "layers.0.mlp.down_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.mlp.down_proj.weight (master-bf16)",
+      "shape": [
+        5120,
+        17408
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09810743563709677,
+      "rel_l2_declared_vs_master": 0.09810743563709677,
+      "negative_scale_fraction": 0.5037202722886029
+    },
+    "layers.0.mlp.gate_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.mlp.gate_proj.weight (master-bf16)",
+      "shape": [
+        17408,
+        5120
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09178893044535877,
+      "rel_l2_declared_vs_master": 0.09178893044535877,
+      "negative_scale_fraction": 0.5050623276654411
+    },
+    "layers.0.mlp.up_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.mlp.up_proj.weight (master-bf16)",
+      "shape": [
+        17408,
+        5120
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09175427521072141,
+      "rel_l2_declared_vs_master": 0.09175427521072141,
+      "negative_scale_fraction": 0.5044318704044117
+    },
+    "layers.0.self_attn.k_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.self_attn.k_proj.weight (master-bf16)",
+      "shape": [
+        1024,
+        5120
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.0988340049045491,
+      "rel_l2_declared_vs_master": 0.0988340049045491,
+      "negative_scale_fraction": 0.49739990234375
+    },
+    "layers.0.self_attn.o_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.self_attn.o_proj.weight (master-bf16)",
+      "shape": [
+        5120,
+        6144
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09969290054375043,
+      "rel_l2_declared_vs_master": 0.09969290054375043,
+      "negative_scale_fraction": 0.5036478678385417
+    },
+    "layers.0.self_attn.q_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.self_attn.q_proj.weight (master-bf16)",
+      "shape": [
+        12288,
+        5120
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09299573176930848,
+      "rel_l2_declared_vs_master": 0.09299573176930848,
+      "negative_scale_fraction": 0.50328369140625
+    },
+    "layers.0.self_attn.v_proj": {
+      "kind": "core-affine4-g64",
+      "ancestor": "layers.0.self_attn.v_proj.weight (master-bf16)",
+      "shape": [
+        1024,
+        5120
+      ],
+      "packed_word_match": 1.0,
+      "scales_match": 1.0,
+      "biases_match": 1.0,
+      "rel_l2_reproduction_vs_master": 0.09434634980725959,
+      "rel_l2_declared_vs_master": 0.09434634980725959,
+      "negative_scale_fraction": 0.50361328125
+    },
+    "layers.0.input_layernorm.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "layers.0.input_layernorm.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "layers.0.post_attention_layernorm.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "layers.0.post_attention_layernorm.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "layers.0.self_attn.k_norm.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "layers.0.self_attn.k_norm.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "layers.0.self_attn.q_norm.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "layers.0.self_attn.q_norm.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "norm.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "norm.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "pre_fc_norm_embedding.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "pre_fc_norm_embedding.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "pre_fc_norm_hidden.weight": {
+      "kind": "passthrough-bf16",
+      "ancestor": "pre_fc_norm_hidden.weight (master-bf16)",
+      "byte_identical_to_master": true
+    },
+    "precision_islands.q": {
+      "kind": "island-bf16-rows",
+      "ancestor": "layers.0.self_attn.q_proj.weight rows (master-bf16)",
+      "rows": 1024,
+      "source_rows": 12288,
+      "covers_all_rows": false,
+      "rows_byte_identical_to_master": true
+    },
+    "precision_islands.k": {
+      "kind": "island-bf16-rows",
+      "ancestor": "layers.0.self_attn.k_proj.weight rows (master-bf16)",
+      "rows": 1024,
+      "source_rows": 1024,
+      "covers_all_rows": true,
+      "rows_byte_identical_to_master": true
+    },
+    "precision_islands.v": {
+      "kind": "island-bf16-rows",
+      "ancestor": "layers.0.self_attn.v_proj.weight rows (master-bf16)",
+      "rows": 1024,
+      "source_rows": 1024,
+      "covers_all_rows": true,
+      "rows_byte_identical_to_master": true
+    },
+    "draft_lm_head": {
+      "kind": "affine2-g64-compact-readout",
+      "ancestor": null,
+      "no_master_ancestor": true,
+      "rows": 98336,
+      "logical_columns": 5120,
+      "bits": 2,
+      "note": "master-bf16 carries no readout tensor at all, so this triplet cannot be derived from it. It comes from the metadata's second ancestor, 'base': dwsdubey/qwen3.8-27b-mtp-4bit."
+    }
+  },
+  "summary": {
+    "e144_declared_reproduction_exact": 1.0,
+    "core_tensors_bit_exact": true,
+    "passthrough_tensors_bit_exact": true,
+    "island_tensors_bit_exact": true,
+    "core_packed_words_matched": 53084160,
+    "core_packed_words_total": 53084160,
+    "tensors_with_master_ancestor": 37,
+    "tensors_without_master_ancestor": 3,
+    "rel_l2_declared_range": [
+      0.09175427521072141,
+      0.09969290054375043
+    ]
+  }
+}

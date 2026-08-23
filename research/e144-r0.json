@@ -1,0 +1,90 @@
+{
+  "experiment": "e144",
+  "rung": "R-0",
+  "question": "Does senpai/submit-official.sh accept a committed in-branch mtp-head/ tree?",
+  "verdict": "NO. The guard itself accepts it. `yukon submit`, which the guard execs, refuses it on a hard client-side 25 MiB compressed-archive cap. In-branch shipping of a full-size head is structurally impossible.",
+  "harness": "local",
+  "base_sha": "a8878e7070a0078c0663fd47a7f5d1cad8e79227",
+  "head_sha": "f48c3ad865e486e2157567617c84580d402b726b",
+  "host": "aws-mac student-qwen-askeladd",
+  "preflight_gates": {
+    "validate-assignment-scope.sh": {
+      "exit": 2,
+      "note": "usage error: requires BASE_SHA plus explicit SUBMITTED_PATH arguments; no candidate path is changed yet at R-0"
+    },
+    "check-editable-budget.sh": {
+      "exit": 0,
+      "source_bytes": 2625537,
+      "source_limit": 3000000,
+      "headroom": 374463,
+      "growth": 0,
+      "growth_limit": 262144,
+      "exempt_bytes": 2410,
+      "exempt_limit": 2147483648,
+      "files": 154
+    },
+    "verify-ranked-score-boundary.sh": {
+      "exit": 0,
+      "message": "ranked numerator is pinned baseline; candidate edits affect the MTP denominator only"
+    },
+    "twin_audit.py": {
+      "exit": 0,
+      "message": "29 runtime-effective twins, 1 allowlisted comment-only waiver"
+    }
+  },
+  "q1_guard_requires_mtp_head_to_exist": {
+    "answer": "No. Absence is tolerated.",
+    "evidence_kind": "read from source",
+    "detail": "senpai/submit-official.sh builds protected_paths from .editablePaths[] and only ever passes them as git PATHSPECS to `git diff`, `git ls-files -v` and `git status --porcelain`. None of those commands error on a pathspec that matches nothing. path_is_editable() is used only to CLASSIFY changed paths, never to require them. benchmark.json.optionalEditablePaths lists mtp-head.manifest.json and mtp-head, and .github/scripts/overlay-editable-paths.sh skips a missing OPTIONAL path instead of failing closed."
+  },
+  "q2_committed_428mb_tree_passes_dirty_path_check": {
+    "answer": "Yes, provided it is COMMITTED. Untracked weights fail.",
+    "evidence_kind": "rehearsed",
+    "detail": "Rehearsed with a committed 8 MiB random binary at mtp-head/model.safetensors: gate 1 (git ls-files -v, 156 entries, no S/lowercase tag) PASS, gate 2 (git status --porcelain=v1 --untracked-files=all --ignored=matching) PASS clean. With the real 427,742,600 B head present but UNTRACKED, gate 2 FAILS with '?? mtp-head/model.safetensors'. .gitignore carries no mtp-head or *.safetensors rule, so head weights left in the working tree are reported as untracked and rejected."
+  },
+  "q3_archive_or_diff_step_breaks": {
+    "answer": "Yes. This is the blocker.",
+    "evidence_kind": "read from source, then measured",
+    "yukon_constants": {
+      "file": "/usr/local/libexec/yukon.js",
+      "SUBMISSION_ARCHIVE_MAX_BYTES": 26214400,
+      "SUBMISSION_ARCHIVE_MAX_EXPANDED_BYTES": 536870912,
+      "declaration_line": 5526,
+      "client_enforcement_line": 24030,
+      "api_client_enforcement_line": 5689
+    },
+    "mechanism": "createSubmissionArchive() (yukon.js:24343) runs node-tar with {gzip:true, portable:true, noMtime:true} over manifest.editablePaths from the WORKING TREE, then submitEditablePaths() reads the whole archive into memory and throws when archiveBytes.byteLength > SUBMISSION_ARCHIVE_MAX_BYTES.",
+    "measured": {
+      "archive_bytes_with_head": 369064303,
+      "archive_cap": 26214400,
+      "archive_overage_factor": 14.08,
+      "archive_verdict": "FAIL",
+      "expanded_bytes_with_head": 430370547,
+      "expanded_cap": 536870912,
+      "expanded_utilisation": 0.8016,
+      "expanded_verdict": "PASS",
+      "archive_bytes_source_only": 487121,
+      "head_gzip_ratio": 0.861672
+    },
+    "largest_in_branch_head_that_fits": {
+      "raw_bytes": 29857530,
+      "mib": 28.47,
+      "fraction_of_declared_head": 0.0698,
+      "marked": "extrapolated from the measured 0.861672 gzip ratio and the measured 487,121 B source-only archive"
+    },
+    "why_2gib_cap_never_binds": "The 2 GiB mtp-head cap in benchmark.json.editableSurfaceByteBudget.exemptPathMaxBytes and QwenMTPHeadDeclaration.defaultMaxBytes governs the head AFTER the runner resolves it. For source=remote the runner curls the artifact directly from HuggingFace, so it never traverses the archive. For source=in_branch the workflow reads $MLXFAST_JOB_WS/<path>, and MLXFAST_JOB_WS is the UNPACKED SUBMISSION ARCHIVE overlaid on the trusted checkout. The 25 MiB archive cap therefore binds ~82x tighter than the 2 GiB cap on the in_branch path only."
+  },
+  "q4_budget_script_exempts_mtp_head": {
+    "answer": "Yes, correctly.",
+    "evidence_kind": "read from source, then measured",
+    "detail": "check-editable-budget.sh:123-131 is_exempt() matches a path equal to, or prefixed by, each entry of .editableSurfaceByteBudget.exemptPaths. account_working_file() routes an exempt path into working_exempt_total, checks it against exemptPathMaxBytes, and RETURNS before the per-file and source-total checks. mtp-head/ bytes therefore never touch the 3,000,000 B source total. Measured on this base: source=2625537/3000000, exempt=2410/2147483648. Note mtp-head.manifest.json is NOT exempt (it matches neither 'mtp-head' exactly nor 'mtp-head/*') and correctly counts against source."
+  },
+  "digest_convention_confirmed": {
+    "source": ".github/workflows/qwen-mtp-ranked-benchmark.yml:2476-2491",
+    "rule": "sha256 over the concatenation of '<file sha256>  <relpath>\\n' lines, relpath relative to the head tree root, LC_ALL=C sorted, README.md excluded",
+    "bytes_rule": "sum of per-file `wc -c`, README.md excluded, computed per file to avoid the trailing 'total' line",
+    "in_branch_extra_checks": "path must be non-empty, not absolute, no '..', no backslash; must be a directory in the submission; must contain no symlinks",
+    "advisor_belief_confirmed": true
+  },
+  "consequence": "The head axis must ship through source=remote, exactly as the current manifest already does (hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8) and exactly as both rival head submissions did. R-D must be respecified from an in_branch rehearsal to a remote-artifact publication. R-A, R-B, R-B2 and R-C are transport-independent and unaffected."
+}
