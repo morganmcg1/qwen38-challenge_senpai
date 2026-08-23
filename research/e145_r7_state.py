@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import random
 import statistics
@@ -70,7 +71,7 @@ from e128_price import (  # noqa: E402
     MAX_DEPTH, RANKED_PROMPTS, load_board_receipt,
 )
 from e134_rung2 import (  # noqa: E402
-    build_legs, median_pct, oracle_depth, walk,
+    build_legs, median_pct, oracle_depth, simulate, walk,
 )
 from e140_cells import install, transfer_cache  # noqa: E402
 from e140_lookahead import curve_price, load_curves, walk_argmax  # noqa: E402
@@ -78,7 +79,7 @@ from e145_curve import LEGS_JSON  # noqa: E402
 from e145_r3 import (  # noqa: E402
     installable, measured_points, serial_round_us, width1_candidates,
 )
-from e145_r7 import MAX_WIDTH, admissibility, run_arm  # noqa: E402
+from e145_r7 import MAX_WIDTH, admissibility  # noqa: E402
 
 # The two published points this rung has to land on, and the band E128
 # reported for the decision oracle across its receipt variants.
@@ -93,15 +94,48 @@ LAM_GRID = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 NOISE_GRID = (0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.50)
 CAPTURE_FLOOR = 0.10
 
+# The shipped clamp: depth 0 divides the top-two margin by 2, depth 1 by 3,
+# and depths 2 to 7 are not clamped at all.
+SHIPPED_CLAMP = {0: 2.0, 1: 3.0}
+SCALE_GRID = (1.0, 1.5, 2.0, 3.0, 4.0, 6.0)
+PLATEAU_PP = 0.50
+
+
+def clamped(state, margin: float, scales: dict[int, float]):
+    """The shipped margin clamp, lifted out of the walk so it is a variable.
+
+    `walk` and `walk_argmax` both apply
+    `p = min(p, 1/(1+exp(-margin/scale)))` at depths 0 and 1 only, and both
+    skip it when `margin` is NaN. Applying it here and then passing NaN to
+    the rule reproduces the shipped behaviour exactly at
+    `scales = SHIPPED_CLAMP` and makes every other clamp policy reachable.
+    The `clamp_control` cell proves the reproduction rather than asserting
+    it.
+    """
+    if not scales or math.isnan(margin):
+        return state
+    out = list(state)
+    for depth, scale in scales.items():
+        if depth < len(out):
+            out[depth] = min(out[depth],
+                             1.0 / (1.0 + math.exp(-margin / scale)))
+    return out
+
 
 def state_walker(rule: str, state: str, p_target, *, lam: float = 1.0,
-                 sigma: float = 0.0, noise_seed: int = 0):
-    """One chooser, parameterised by what acceptance state it may read.
+                 sigma: float = 0.0, noise_seed: int = 0,
+                 clamp: dict[int, float] | None = None):
+    """One chooser, with the information state and the decision rule as
+    independent injectables.
 
-    `rule` selects the shipped threshold walk or `walk_argmax`. Nothing
-    else changes: the price, the caps and the depth-0 and depth-1 margin
-    clamps are the shipped ones in both cases. `state` selects what is
-    handed to that rule in place of the EMA.
+    `rule` selects the shipped threshold walk (`greedy`) or `walk_argmax`
+    (`argmax`). `state` selects what is handed to that rule in place of the
+    shipped `positionAcceptEMA`. `clamp`, when given, replaces the shipped
+    depth-0 and depth-1 margin clamp with an arbitrary depth-to-scale map;
+    when omitted, the rule applies its own shipped clamp untouched.
+
+    Everything else is the shipped path: the price, the caps, the tie-break
+    and the round trajectory.
     """
     vector = [p_target[min(i, len(p_target) - 1)] for i in range(MAX_DEPTH)]
     rng = random.Random(noise_seed)
@@ -113,8 +147,8 @@ def state_walker(rule: str, state: str, p_target, *, lam: float = 1.0,
 
     def chooser(ema, margin, offer, adjust=None, ctx=None, force=None,
                 price=None):
-        if adjust is not None or force is not None:
-            raise SystemExit("R7-2 prices no `adjust` or `force` arm")
+        if force is not None:
+            raise SystemExit("R7-2 prices no `force` arm")
         if state == "oracle_depth":
             return oracle_depth(offer, ctx["capability"])
         if state == "ema":
@@ -134,12 +168,45 @@ def state_walker(rule: str, state: str, p_target, *, lam: float = 1.0,
                       for i in range(MAX_DEPTH)]
             else:
                 raise SystemExit("unknown acceptance state %r" % state)
-        return apply(st, margin, offer, ctx, price)
+        if clamp is None:
+            return apply(st, margin, offer, ctx, price)
+        return apply(clamped(st, margin, clamp), float("nan"), offer, ctx,
+                     price)
     return chooser
 
 
+def run_state_arm(cache, seed, prompt, cost_curve, price, walker, windows,
+                  adjust=None) -> dict:
+    """One prompt's candidate-time ratio against the shipped arm.
+
+    `adjust` is `e134_rung2`'s per-step probability hook, so an E128 arm
+    built by `e134_rung2.make_arm` can be re-priced against any cost table
+    by passing it straight through with `walker=None`.
+    """
+    entry = cache[(seed, prompt)]
+    install(cost_curve)
+    base = simulate(None, entry["factory"](entry["p_target"]), windows)
+    run = simulate(adjust, entry["factory"](entry["p_target"]), windows,
+                   price=price, walker=walker)
+    return {
+        "ratio": run["us_per_token"] / base["us_per_token"],
+        "mean_depth": run["mean_depth"],
+        "accept_rate": run["accept_rate"],
+        "depth_counts": run["depth_counts"],
+        "rounds": run["rounds"],
+        "us_per_token": run["us_per_token"],
+        "base_us_per_token": base["us_per_token"],
+    }
+
+
 def score_state_arms(cache, seeds, receipt, windows, arms, admitted) -> dict:
-    """`e145_r7.score_arms`, but the walker may read the prompt's vector."""
+    """Score a dict of arm specifications against the shipped arm.
+
+    Each specification carries `cost` and `price`, an information `state`,
+    a decision `rule`, and optionally `lam`, `sigma`, `clamp` or `adjust`.
+    A specification with `state = "shipped"` uses no injected walker at
+    all, which is how an E128 `adjust` arm is re-priced.
+    """
     out = {}
     for name, spec in arms.items():
         values, per_prompt = [], {}
@@ -149,12 +216,13 @@ def score_state_arms(cache, seeds, receipt, windows, arms, admitted) -> dict:
             ratios = {}
             for prompt in RANKED_PROMPTS:
                 entry = cache[(seed, prompt)]
-                walker = state_walker(
+                walker = None if spec["state"] == "shipped" else state_walker(
                     spec["rule"], spec["state"], entry["p_target"],
                     lam=spec.get("lam", 1.0), sigma=spec.get("sigma", 0.0),
-                    noise_seed=seed)
-                row = run_arm(cache, seed, prompt, spec["cost"],
-                              spec["price"], walker, windows)
+                    noise_seed=seed, clamp=spec.get("clamp"))
+                row = run_state_arm(cache, seed, prompt, spec["cost"],
+                                    spec["price"], walker, windows,
+                                    adjust=spec.get("adjust"))
                 ratios[prompt] = row
                 per_prompt.setdefault(prompt, []).append(row["ratio"])
                 for index, count in enumerate(row["depth_counts"]):
@@ -306,6 +374,90 @@ def rung_3(cache, seeds, receipt, windows, env, admitted, floor_pct) -> dict:
     }
 
 
+def rung_4(cache, seeds, receipt, windows, env, admitted) -> dict:
+    """The shipped margin clamp is the campaign's only per-round signal.
+
+    F11's reading: the clamp reads `pendingTop2`, which is a property of
+    this round, so the shipped scheduler already contains a crude one-sided
+    per-round discriminator applied at 2 of 8 depths. R7-2 priced it under
+    perfect information, where a hedge is pure cost by construction. This
+    rung prices it where it actually runs, at the shipped EMA state on the
+    measured curve, and then sweeps its two undocumented scale constants.
+    """
+    measured, _replayed, measured_price, _rp = env
+    common = {"cost": measured, "price": measured_price, "rule": "greedy",
+              "state": "ema"}
+    arms = {
+        # The control. It reimplements the shipped clamp outside the rule
+        # and must therefore land on the shipped cell exactly.
+        "clamp_control": dict(common, clamp=dict(SHIPPED_CLAMP)),
+        "clamp_shipped": dict(common),
+        "clamp_none": dict(common, clamp={}),
+        "clamp_all8_scale2": dict(common,
+                                  clamp={d: 2.0 for d in range(MAX_DEPTH)}),
+        "clamp_all8_scale3": dict(common,
+                                  clamp={d: 3.0 for d in range(MAX_DEPTH)}),
+        "clamp_shipped_argmax": dict(common, rule="argmax"),
+    }
+    for scale0 in SCALE_GRID:
+        for scale1 in SCALE_GRID:
+            arms["grid_%.1f_%.1f" % (scale0, scale1)] = dict(
+                common, clamp={0: scale0, 1: scale1})
+    scored = score_state_arms(cache, seeds, receipt, windows, arms, admitted)
+
+    def value(name):
+        return scored[name]["median_pct_mean"]
+
+    def width1(name):
+        return scored[name]["width_histogram"]["1"]
+
+    control_error = abs(value("clamp_control") - value("clamp_shipped"))
+    grid = [{"scale0": s0, "scale1": s1,
+             "median_pct": value("grid_%.1f_%.1f" % (s0, s1)),
+             "median_pct_sd": scored["grid_%.1f_%.1f"
+                                     % (s0, s1)]["median_pct_sd"],
+             "width1_share": width1("grid_%.1f_%.1f" % (s0, s1)),
+             "weighted_mean_depth": scored["grid_%.1f_%.1f"
+                                           % (s0, s1)]["weighted_mean_depth"]}
+            for s0 in SCALE_GRID for s1 in SCALE_GRID]
+    best = max(grid, key=lambda row: row["median_pct"])
+    worst = min(grid, key=lambda row: row["median_pct"])
+    spread = best["median_pct"] - worst["median_pct"]
+    cells = [{"cell": name,
+              "median_pct": value(name),
+              "median_pct_sd": scored[name]["median_pct_sd"],
+              "width1_share": width1(name),
+              "weighted_mean_depth": scored[name]["weighted_mean_depth"]}
+             for name in ("clamp_shipped", "clamp_control", "clamp_none",
+                          "clamp_all8_scale2", "clamp_all8_scale3",
+                          "clamp_shipped_argmax")]
+    return {
+        "arms": scored,
+        "e145_r7_clamp_cells": cells,
+        "e145_r7_clamp_control_error_pp": control_error,
+        "e145_r7_clamp_control_reproduces_shipped": control_error < 1e-9,
+        "e145_r7_clamp_cost_at_shipped_ema_pp": (value("clamp_shipped")
+                                                 - value("clamp_none")),
+        "e145_r7_clamp_extension_scale2_pp": (value("clamp_all8_scale2")
+                                              - value("clamp_shipped")),
+        "e145_r7_clamp_extension_scale3_pp": (value("clamp_all8_scale3")
+                                              - value("clamp_shipped")),
+        "e145_r7_clamp_width1_shipped": width1("clamp_shipped"),
+        "e145_r7_clamp_width1_none": width1("clamp_none"),
+        "e145_r7_clamp_width1_all8_scale2": width1("clamp_all8_scale2"),
+        "e145_r7_clamp_width1_all8_scale3": width1("clamp_all8_scale3"),
+        "e145_r7_clamp_scale_grid": grid,
+        "e145_r7_clamp_grid_argmax_scale0": best["scale0"],
+        "e145_r7_clamp_grid_argmax_scale1": best["scale1"],
+        "e145_r7_clamp_grid_argmax_pct": best["median_pct"],
+        "e145_r7_clamp_grid_shipped_pct": value("grid_2.0_3.0"),
+        "e145_r7_clamp_grid_gain_over_shipped_pp": (best["median_pct"]
+                                                    - value("grid_2.0_3.0")),
+        "e145_r7_clamp_grid_spread_pp": spread,
+        "e145_r7_clamp_grid_is_plateau": spread < PLATEAU_PP,
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=pathlib.Path,
@@ -322,6 +474,7 @@ def main() -> int:
     ap.add_argument("--anchor", default="measured",
                     choices=("measured", "extrapolated", "serial"))
     ap.add_argument("--skip-rung3", action="store_true")
+    ap.add_argument("--skip-rung4", action="store_true")
     ap.add_argument("--json", type=pathlib.Path,
                     default=HERE / "e145-artifacts/r7-state.json")
     args = ap.parse_args()
@@ -425,6 +578,49 @@ def main() -> int:
                  three["e145_r7_noise_sigma_below_floor"]))
         print("  smallest lambda that keeps half the gap: %s"
               % three["e145_r7_lam_for_half_the_gap"])
+
+    if not args.skip_rung4:
+        four = rung_4(cache, seeds, receipt, args.windows, env, admitted)
+        out.update({k: v for k, v in four.items() if k != "arms"})
+        out["e145_r7_clamp_arms"] = four["arms"]
+        print("\n## R7-4  the shipped margin clamp, priced where it runs")
+        print("  %-22s %10s %8s %12s %8s"
+              % ("cell", "median %", "sd", "width-1 %", "depth"))
+        for row in four["e145_r7_clamp_cells"]:
+            print("  %-22s %+10.4f %8.4f %12.4f %8.4f"
+                  % (row["cell"], row["median_pct"], row["median_pct_sd"],
+                     100.0 * row["width1_share"],
+                     row["weighted_mean_depth"]))
+        print("  control reproduces the shipped cell: %s (error %.2e pp)"
+              % (four["e145_r7_clamp_control_reproduces_shipped"],
+                 four["e145_r7_clamp_control_error_pp"]))
+        print("  the clamp is worth, at the shipped EMA          %+8.4f pp"
+              % four["e145_r7_clamp_cost_at_shipped_ema_pp"])
+        print("  extending it to all 8 depths at scale 2.0       %+8.4f pp"
+              % four["e145_r7_clamp_extension_scale2_pp"])
+        print("  extending it to all 8 depths at scale 3.0       %+8.4f pp"
+              % four["e145_r7_clamp_extension_scale3_pp"])
+        print("\n## R7-4  the two scale constants, swept jointly")
+        print("  %-8s %s" % ("s0 \\ s1",
+                             "".join("%9.1f" % s for s in SCALE_GRID)))
+        for scale0 in SCALE_GRID:
+            line = "  %-8.1f" % scale0
+            for scale1 in SCALE_GRID:
+                cell = next(r for r in four["e145_r7_clamp_scale_grid"]
+                            if r["scale0"] == scale0 and r["scale1"] == scale1)
+                line += "%+9.4f" % cell["median_pct"]
+            print(line)
+        print("  shipped cell (2.0, 3.0) %+.4f ; argmax (%.1f, %.1f) %+.4f ;"
+              " gain %+.4f pp"
+              % (four["e145_r7_clamp_grid_shipped_pct"],
+                 four["e145_r7_clamp_grid_argmax_scale0"],
+                 four["e145_r7_clamp_grid_argmax_scale1"],
+                 four["e145_r7_clamp_grid_argmax_pct"],
+                 four["e145_r7_clamp_grid_gain_over_shipped_pp"]))
+        print("  grid spread %.4f pp, so this is a %s"
+              % (four["e145_r7_clamp_grid_spread_pp"],
+                 "plateau" if four["e145_r7_clamp_grid_is_plateau"]
+                 else "peak"))
 
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")

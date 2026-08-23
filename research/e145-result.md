@@ -54,27 +54,74 @@ binary in every session reported here. All timing is local, never ranked.
    eight widths. So the ranked cliff has moved, and where it moved to is not
    identified. This is the concrete form of the M5 transfer risk that F6 named
    through the `g16s`/`g17s` register-spill tables.
-8. **The depth rule was never the problem, and neither is the action set.**
-   R7 proves an exact pruning rule -- a width is admissible only when its cost
-   per token is a new running minimum -- and finds the measured curve admits
-   only widths 1 to 5. Width 7 cannot be optimal under any acceptance model.
-   Restricting the argmax to that set changes nothing, because the measured
-   cost table already excluded 6, 7 and 8. The full argmax with the shipped
-   flat price is identical to the shipped walk round for round. What is left
-   is the acceptance **estimate**: on the same curve and the same rule, oracle
-   acceptance scores +6.3508 % against the EMA's +0.1338 %.
-9. **The residency-slack direction is closed by arithmetic, not by a leg.**
-   Slack placement priced at E130's own measured marginal rate is 1.009
-   us/round, and the KV capacity walk is 5.755 us/round. Both are two to three
-   orders of magnitude below the 879 us/round state step they were proposed to
-   explain.
+8. **RULE 138, an exact and permanent pruning rule.** A draft width is
+   admissible if and only if its measured cost per token is a new running
+   minimum over every smaller width. Admissibility is a property of the cost
+   curve alone. It holds for every monotone nonnegative acceptance model,
+   because the best case puts the whole extra width into accepted tokens, so
+   the reachable token ratio between widths `M' > M` is capped at exactly
+   `M'/M`. The bound is attained, not conservative. **Never argue for a width
+   from acceptance evidence without clearing this test first.** On the
+   measured curve the admissible set is `{1,2,3,4,5}`. **Width 7 can never be
+   optimal under any acceptance model**, which closes a question that has been
+   open since E128.
+9. **The measured cost table is an enabler, not a lever. Verdict:
+   `enabler, standalone +0.1338 %, unlocks +6.2170 pp`.** Both halves of that
+   sentence must always travel together, because either half alone misleads:
+   - the shipped walk spends **26.75 % of its rounds at an inadmissible width,
+     16.37 % of them at width 8**; and
+   - **the argmax that removes every one of them is worth only +0.1338 %**,
+     because width 8 misses width 5 by just **0.43 %** on cost per token, so
+     the rounds being removed were barely wrong.
+10. **The finding is that the shipped rule is already unimodal-optimal, and
+    only the price table was wrong.** Under the shipped flat price the full
+    argmax reproduces the shipped walk **round for round**, with identical
+    width histograms. Under the measured price the argmax and the shipped
+    threshold rule return **identical** results in all three acceptance states
+    R7-2 tested. The decision rule was never the defect. The cost table it
+    reads was, and correcting it is what makes the next number visible at all.
+11. **+6.2170 pp of headroom, and R7-2 says every bit of it is per-round
+    discrimination.** On the same curve and the same rule, an oracle that
+    knows this round's realised acceptance scores **+6.3508 %** against the
+    EMA's **+0.1338 %**. An oracle that knows the true per-position **marginal
+    acceptance distribution** perfectly scores **-0.3806 %**, that is
+    **-0.5144 pp**, worse than the shipped estimator. So calibrating the
+    marginal estimator is dead even at perfect accuracy, and the open axis is
+    a **per-round discriminator**.
+12. **The two campaign "oracle" numbers reconcile.
+    `e145_r7_oracle_reconciled = 1.0`.** E140's -4.5296 and R7's +8.9390 are
+    different arms sharing one overloaded word, and the 13.4539 pp between
+    them is a name collision, not an error. E140's number is one policy, not
+    an upper bound, so it could not have closed an axis.
+    **Advisor Error 167 is confirmed, and narrowed to the distributional
+    half.**
+13. **A weak per-round predictor is already worth a lot.** R7-3 walks a
+    predictor from the shipped estimator to the per-round truth. Ten per cent
+    of the way collects **22.64 %** of the gap. Additive noise of
+    **sigma = 0.10** on the true indicator still collects **81.29 %**. Capture
+    falls below a tenth only at **sigma = 0.30**, and turns actively harmful
+    by **sigma = 0.50**, where it loses 6.67 pp against the shipped rule.
+14. **The residency-slack direction is closed by arithmetic, and then a leg
+    found something else.** Slack placement priced at E130's own measured
+    marginal rate is 1.009 us/round, and the KV capacity walk is 5.755
+    us/round. Both are two to three orders of magnitude below the 879 us/round
+    state step they were proposed to explain. R6-1 then measured wired against
+    unwired residency directly, twelve legs in a counterbalanced palindrome:
+    **wiring makes the candidate 1.3203 % faster on seconds per token**, which
+    is 1700x larger than the placement arithmetic and of the **opposite sign**
+    to the proposed mechanism. It is the resident weights, not the slack. The
+    ranked two-state behaviour does not reproduce locally with wiring on.
 
 Taken together: the curve everybody was using was wrong, and correcting it
-buys 0.33 pp, which is real on this bench and invisible on the board. That is
-a negative result about the *lever*, established on a positive result about
-the *measurement*, plus a positive result about *which instrument can answer
-which question*. R7 then closes the depth-policy direction as a whole and
-points at the acceptance estimator instead.
+buys 0.33 pp of direct value, which is real on this bench and invisible on the
+board. That is a negative result about the *lever*, established on a positive
+result about the *measurement*. The larger result is what the corrected table
+made visible. Under the wrong table the depth-policy direction looked closed
+and the acceptance axis looked closed with it. Under the measured table the
+action set prunes exactly, the decision rule turns out to be already optimal,
+and a **+6.2170 pp** gap opens between the shipped acceptance estimate and a
+per-round oracle. R7-2 then shows that gap is not a calibration problem and
+R7-3 shows it does not need a good predictor to start paying.
 
 ## What was measured
 
@@ -667,6 +714,82 @@ does not rescue it: 50 GB/s gives 30.504 us/round, 100 GB/s 15.252, 265 GB/s
 So `step=1280` -- raising `KVCacheSimple.step` to remove both resets -- has a
 **maximum** saving of 5.755 us/round and was **not implemented**.
 `e145_r6_residency_direction_closed = True`.
+
+### R6-1 — the wired arm, measured
+
+The arithmetic closed the *slack* direction. It said nothing about whether
+wired residency itself matters, so R6-1 measured that directly.
+
+Twelve timed legs in the counterbalanced palindrome `W U U W  W U U W
+W U U W`, after one discarded unwired warmup leg that exists only to cut the
+entry-temperature spread. Arm `pb6`, pin `none`, 512 tokens, the real 40 C
+gate on every leg, one binary
+`8c295074cefd167d3c76d5ef16d53d0475cd7a9329c03e7157a71ca01df9a807`, session
+commit `d1ecd431`. Entry temperature spread across all twelve legs is
+**0.757 C**.
+
+Every leg reports `matched=true`, `divergence=0`, `rounds=118`,
+`mean_draft_len=4.1525423728813555` and
+`accepted_draft_rate=0.80408163265306121`. The work signature is identical
+leg to leg, so the two arms differ in residency and in nothing else.
+
+| pos | res | spt | round us | block us med | entry C | exit C |
+|---|---|---|---|---|---|---|
+| 1 | W | 0.031874 | 104501.3 | 93869.1 | 39.10 | 55.34 |
+| 2 | U | 0.032272 | 106106.5 | 94847.9 | 39.38 | 55.53 |
+| 3 | U | 0.032220 | 105929.0 | 94631.0 | 39.46 | 55.70 |
+| 4 | W | 0.031920 | 104700.3 | 93902.0 | 39.78 | 55.21 |
+| 5 | W | 0.031868 | 104480.4 | 93936.0 | 39.70 | 55.76 |
+| 6 | U | 0.032335 | 106417.9 | 95218.1 | 39.67 | 55.18 |
+| 7 | U | 0.032372 | 106506.3 | 94600.9 | 39.85 | 56.29 |
+| 8 | W | 0.031874 | 104494.5 | 93976.0 | 39.30 | 56.13 |
+| 9 | W | 0.031868 | 104463.8 | 93819.0 | 39.38 | 55.88 |
+| 10 | U | 0.032330 | 106348.4 | 95006.9 | 39.25 | 55.47 |
+| 11 | U | 0.032308 | 106249.1 | 95253.1 | 39.72 | 55.47 |
+| 12 | W | 0.031875 | 104494.6 | 93931.0 | 39.22 | 55.67 |
+
+Wired mean spt **0.03187965**, sd **0.0621 %**, range 0.1621 %, round cost
+104,522.5 us. Unwired mean spt **0.03230619**, sd **0.1660 %**, range
+0.4723 %, round cost 106,259.5 us.
+
+**Wiring makes the candidate 1.3203 % faster on seconds per token and 1.6347 %
+faster on round cost.** The three drift-free adjacent blocks agree:
+(1,2,3,4) -1416.9 us and -1.3365 %, (5,6,7,8) -1974.6 us and -1.8548 %,
+(9,10,11,12) -1819.5 us and -1.7117 %. That gives
+`e145_r6_local_step_us = -1737.0 +/- 166.2` us per round.
+
+Two things follow, and they point in opposite directions.
+
+**The mechanism is not the one that was proposed.** The effect is about 1700x
+larger than R6-0's slack-placement arithmetic and it has the **opposite
+sign**: the proposal was that wiring costs time through slack placement, and
+wiring in fact saves time. It is the 25.5 GB of wired-resident weights on a
+48 GiB host, not the 64 MiB of slack.
+
+**The ranked two-state behaviour does not reproduce here.** Against the crown
+state step of 879.0 +/- 54.3 us per round, the local step is
+`z = -14.96`, so `e145_r6_local_step_explains_state_step = False`. The
+preregistered kill fired: the wired arm's sd is 0.0621 %, below the 0.30 %
+threshold, and its widest internal gap is 0.1409 %, below the 0.80 %
+threshold, so `e145_r6_kill_fired = True` and
+`e145_r6_ranked_state_locally_reproducible = False`. The wired arm is a
+single tight mode, not two states.
+
+The residency witness is machine-checked rather than asserted. The probe log
+under `.mlxfast-private/e128/e145/r6-probe/` carries 12 lines reading
+`request=25545645176 applied=25545645176 active=25478536312 slack_mb=64
+fraction=1.0 maxrec=40200896512 gate_gib=32 physmem=51539607552`, two per
+wired leg, and 21 lines reading `skipped=gate gate_gib=96
+physmem=51539607552`, three per unwired leg including the warmup. So the wired
+legs really wired and the unwired legs really refused, at the **compiled
+default**, which is the proof that the shipped gate did not move.
+
+The transfer consequence is uncomfortable and worth stating plainly. **Every
+prior local leg on this host ran unwired, and therefore about 1.63 % slower
+per round than the residency state the 128 GiB ranked M5 always uses.** That
+is a level effect that largely cancels in A/B contrasts, which is why the
+comparisons in this report stand, but it is a real local-to-ranked caveat for
+any future absolute number measured on a 48 GiB host.
 
 ### R6-2 and R6-3 — cancelled
 

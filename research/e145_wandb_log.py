@@ -396,6 +396,64 @@ def log_r6_1(run, summary: dict, r6: dict) -> None:
          for metric in ("spt", "round_us")])})
 
 
+def log_r7_state(run, summary: dict, state: dict) -> None:
+    """R7-2 and R7-3: what the acceptance state is worth, and to whom.
+
+    `harness=local`, zero GPU. R7-2 runs the factorial that E140's
+    `Boracle_rankedprice` and E145 R7's `oracle_full_on_replayed` are two
+    corners of, so a 13.45 pp disagreement between two published numbers
+    becomes a measurement instead of a reading of two artifacts. R7-3 then
+    walks a predictor from the shipped estimator to the per-round truth and
+    reports what fraction of the R7 gap each accuracy collects.
+    """
+    for key, value in state.items():
+        if key.startswith("e145_r7_") and not isinstance(value, (dict, list)):
+            summary[key] = value
+    summary["e145_r7_state_windows"] = state["windows"]
+    summary["e145_r7_state_seeds"] = len(state["seeds"])
+
+    run.log({"r7_2_factorial": table(
+        ["arm", "curve", "acceptance_state", "rule", "median_pct_mean",
+         "median_pct_sd", "weighted_mean_depth", "rounds",
+         "frac_rounds_inadmissible", "w1", "w2", "w3", "w4", "w5", "w6", "w7",
+         "w8"],
+        [[name,
+          name.split("_")[0],
+          "oracle_depth" if name.endswith("oracle_depth")
+          else name.split("_")[1],
+          "argmin" if name.endswith("oracle_depth") else name.split("_")[-1],
+          row["median_pct_mean"], row["median_pct_sd"],
+          row["weighted_mean_depth"], row["rounds"],
+          row["frac_rounds_inadmissible"]]
+         + [row["width_histogram"][str(w)] for w in range(1, 9)]
+         for name, row in state["e145_r7_state_factorial"].items()])})
+
+    run.log({"r7_2_reconciliation": table(
+        ["arm", "reproduced_pct", "published_pct", "source"],
+        [["replayed + true marginal vector + greedy",
+          state["e145_r7_e140_estimator_oracle_repro_pct"],
+          state["e145_r7_e140_estimator_oracle_published_pct"],
+          "E140 Boracle_rankedprice in_sample_mean"],
+         ["replayed + realised capability + argmin",
+          state["e145_r7_e128_decision_oracle_repro_pct"],
+          state["e145_r7_e140_published_oracle_reference_pct"],
+          "E128 oracle, e140_cells.py REFERENCE"]])})
+
+    run.log({"r7_3_shrinkage": table(
+        ["lam", "median_pct", "median_pct_sd", "captured_frac",
+         "weighted_mean_depth", "frac_rounds_inadmissible"],
+        [[r["lam"], r["median_pct"], r["median_pct_sd"], r["captured_frac"],
+          r["weighted_mean_depth"], r["frac_rounds_inadmissible"]]
+         for r in state["e145_r7_captured_frac_vs_lam"]])})
+
+    run.log({"r7_3_noise": table(
+        ["sigma", "median_pct", "median_pct_sd", "captured_frac",
+         "weighted_mean_depth", "frac_rounds_inadmissible"],
+        [[r["sigma"], r["median_pct"], r["median_pct_sd"], r["captured_frac"],
+          r["weighted_mean_depth"], r["frac_rounds_inadmissible"]]
+         for r in state["e145_r7_captured_frac_vs_noise"]])})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", default="e145-live-width-cost-curve")
@@ -415,6 +473,7 @@ def main() -> int:
     r6_0 = load("r6-0.json")
     r6_1 = load("r6-1.json")
     r7 = load("r7.json")
+    r7_state = load("r7-state.json")
     if curve is None or legs_blob is None or r1 is None:
         raise SystemExit("the curve, the legs and R1 must all be present")
     legs = legs_blob["legs"]
@@ -737,6 +796,9 @@ def main() -> int:
 
     if r7 is not None:
         log_r7(run, summary, r7)
+
+    if r7_state is not None:
+        log_r7_state(run, summary, r7_state)
 
     run.log({"timed_legs": table(
         ["slot", "fixture", "arm", "pin", "position", "rounds",
