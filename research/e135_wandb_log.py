@@ -24,13 +24,60 @@ import e135_report as report  # noqa: E402
 
 ENTITY = "wandb-applied-ai-team"
 PROJECT = "qwen38-mlx-challenge-senpai"
-GROUP = "e135-tight-qmv-launch-grid"
 
-QUESTION = (
-    "does deleting the no-op threadgroups from the wide QMV launch grid make "
-    "the candidate leg faster, and how much of the ranked 3388.5 us per unit "
-    "verify width is launch cost rather than work"
-)
+SESSION_META = {
+    "grid": {
+        "group": "e135-tight-qmv-launch-grid",
+        "experiment": "e135-tight-qmv-launch-grid",
+        "question": (
+            "does deleting the no-op threadgroups from the wide QMV launch "
+            "grid make the candidate leg faster, and how much of the ranked "
+            "3388.5 us per unit verify width is launch cost rather than work"),
+        "arms": "wide (shipped default) vs tight (MLX_E120_QMV_GRID=tight)",
+        "script": "research/e135_grid_abba.sh",
+        "name": "tight-vs-wide-launch-grid",
+        "config": {
+            "qmv_table": "onepass67",
+            # Rung 0 identity. The grid selector is a host-side dispatch
+            # argument, so both arms compile the same pipelines and allocate
+            # the same registers. That is what rules out the FINDING 181 clamp
+            # mechanism.
+            "grid_changes_any_pipeline_cache_key": False,
+            "grid_changes_any_entry_point_register_count": False,
+            "threadgroup_columns_per_round": 519040,
+            "qmv_dispatches_per_round": 257,
+            "swift_test_issues": 40,
+            "swift_test_named_failures": 9,
+            "swift_test_campaign_added_failures": 0,
+        },
+    },
+    "e87": {
+        "group": "e135-e87-probe-select",
+        "experiment": "e135-e87-probe-select",
+        "question": (
+            "does the restored E87 one-dispatch probe select make the "
+            "candidate leg faster than the incumbent argPartition plus "
+            "probe-sort chain, at bit-identical draft lengths"),
+        "arms": "incumbent (MLX_E87_SELECT=0) vs select (MLX_E87_SELECT=1)",
+        "script": "research/e135_e87_select_abba.sh",
+        "name": "e87-select-vs-argpartition",
+        "config": {
+            # Unlike the grid selector, this arm DOES change the compiled
+            # pipeline set: one arm JITs `qwen_mtp_e87_probe_select` and the
+            # other JITs `qwen_mtp_probe_sort`. Rule 128 says the interaction
+            # with anything sharing the JIT library cache must be measured, so
+            # the key digests are expected to differ and are logged as such.
+            "select_changes_pipeline_cache_key": True,
+            "probe_arm": "p15",
+            "probe_leaves": 12292,
+            "probe_count": 1844,
+            "select_verify_trials": 64,
+            "select_verify_mismatches": 0,
+            "select_positive_control_detected": True,
+            "select_rung_sweep_mismatches": 0,
+        },
+    },
+}
 
 
 def pipeline_key_digest(label: str) -> tuple[str | None, bool]:
@@ -62,10 +109,13 @@ def per_width_table(label: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--label", default="s1")
+    ap.add_argument("--session", default="grid", choices=sorted(SESSION_META))
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--name", default=None)
     ap.add_argument("--dry", action="store_true")
     args = ap.parse_args()
+    report.configure(args.session)
+    spec = SESSION_META[args.session]
 
     rows = report.legs(args.label)
     complete = [r for r in rows if r["metrics"].get("mtp_seconds_per_token")]
@@ -96,14 +146,14 @@ def main() -> int:
     meta = complete[0]["meta"]
     key_digest, keys_agree = pipeline_key_digest(args.label)
     config = {
-        "experiment": "e135-tight-qmv-launch-grid",
-        "question": QUESTION,
+        "experiment": spec["experiment"],
+        "question": spec["question"],
         "harness": "local",
         "session_label": args.label,
         "decode_tokens": int(meta.get("tokens", 0)),
         "local_mode": meta.get("local_mode"),
-        "arms": "wide (shipped default) vs tight (MLX_E120_QMV_GRID=tight)",
-        "design": "W T T W palindrome, arm code orthogonal to centred leg index",
+        "arms": spec["arms"],
+        "design": "R C C R palindrome, arm code orthogonal to centred leg index",
         "legs": len(complete),
         "base_sha": meta.get("base_sha"),
         "worker_sha256": meta.get("worker_sha256"),
@@ -118,28 +168,19 @@ def main() -> int:
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
-        "reproduce": f"research/e135_grid_abba.sh 2 512 {args.label} 1",
-        # Rung 0 identity. The grid selector is a host-side dispatch argument,
-        # so both arms compile the same pipelines and allocate the same
-        # registers. That is what rules out the FINDING 181 clamp mechanism.
+        "reproduce": f"{spec['script']} 2 512 {args.label} 1",
         "pipeline_by_key_sha256": key_digest,
         "pipeline_by_key_identical_across_arms": keys_agree,
-        "grid_changes_any_pipeline_cache_key": False,
-        "grid_changes_any_entry_point_register_count": False,
-        "threadgroup_columns_per_round": 519040,
-        "qmv_dispatches_per_round": 257,
-        "swift_test_issues": 40,
-        "swift_test_named_failures": 9,
-        "swift_test_campaign_added_failures": 0,
+        **spec["config"],
     }
 
     metrics = {
-        "e135_tight_grid_candidate_leg_pct": headline,
-        "e135_tight_grid_candidate_leg_pct_se": 100 * fit["se"] / fit["mean"],
+        report.HEADLINE: headline,
+        f"{report.HEADLINE}_se": 100 * fit["se"] / fit["mean"],
         "e135_exact_token_divergences": divergences,
         "e135_all_tokens_matched": matched,
-        "e135_mtp_seconds_per_token_wide": by_arm.get("wide"),
-        "e135_mtp_seconds_per_token_tight": by_arm.get("tight"),
+        **{f"e135_mtp_seconds_per_token_{arm}": by_arm.get(arm)
+           for arm in report.ARMS},
         "e135_mtp_contrast_seconds_per_token": fit["contrast"],
         "e135_residual_sd_seconds_per_token": fit["sigma"],
         "e135_drift_per_leg_seconds_per_token": fit["drift_per_leg"],
@@ -178,15 +219,15 @@ def main() -> int:
     import wandb
 
     run = wandb.init(
-        entity=ENTITY, project=PROJECT, group=GROUP,
+        entity=ENTITY, project=PROJECT, group=spec["group"],
         id=args.run_id, name=args.name
-        or f"e135-{args.label}-tight-vs-wide-launch-grid",
+        or f"e135-{args.label}-{spec['name']}",
         job_type="local-abba-session", config=config)
     for r in rows:
         m = r["metrics"]
         run.log({
             "leg_index": r["idx"],
-            "leg_grid_is_tight": 1 if r["arm"] == "tight" else 0,
+            "leg_is_candidate_arm": 1 if r["arm"] == report.ARMS[1] else 0,
             "leg_mtp_seconds_per_token":
                 report.fnum(m.get("mtp_seconds_per_token")),
             "leg_serial_seconds_per_token":
