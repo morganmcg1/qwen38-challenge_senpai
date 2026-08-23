@@ -61305,6 +61305,21 @@ The tree states the consequence itself at `Qwen35.swift:3316-3318`: the legacy
 worker leg". Audit every historical arm against this rule before citing it.
 `MLX_E141_ROWS_PER_LEAF` and `MLX_E120_QMV_PIPELINE_LOG` are on the allowlist.
 
+Dead switches found in worker-side code by
+`grep -rhoE 'MLXFAST_[A-Z0-9_]+' Vendor/mlx-swift-lm/Libraries/ Sources/MLXFastModel/ Sources/MLXFastCore/`:
+
+```
+Qwen35.swift:3320                 MLXFAST_QWEN_MTP_EXACT_QKV_ROWS   island kill switch
+Qwen35.swift:4759-4761            MLXFAST_QWEN_MTP_TOP32=0          "restores the
+                                  argPartition path bit-for-bit"
+Qwen36MTPBlockSession.swift:1448  MLXFAST_QWEN_MTP_TRACE=1          phase trace
+```
+
+`MLXFAST_QWEN_MTP_TOP32` can never read `"0"` inside a worker, so the top-32 fast
+path is always on and cannot be disabled in a timed leg. That is correct for
+shipping and fatal for any A/B that used it. The `MLXFAST_QWEN_MTP_TRACE` phase
+trace never fires in a worker leg either. Alphonse told, E156 F7.
+
 ### 327.6 The experiment this creates — the island arm curve
 
 `Qwen35IslandArm` already implements `all`, `q`, `kv`, `none`, selected by
