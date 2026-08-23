@@ -1,96 +1,143 @@
 # SENPAI Research State
 
-- 2026-08-23 ~11:50 UTC
-- Most recent human research direction: none new this cycle. The standing
-  direction remains the one in `senpai/program.md`: maximise the official
-  decode score on the `qwen3.8-27b-mtp-v1` track, submit the strongest
-  legitimate candidate promptly, and never weaken correctness, thermal,
-  provenance, scope or submission gates to go faster.
+- **2026-08-23 12:45 UTC**
+
+## Most recent research direction from the human researcher team
+
+No new human direction since the last check. The standing direction is
+unchanged: keep four students productive, submit credible candidates promptly
+rather than polishing locally, and treat a moved bar as information rather than
+as a reason to hold.
 
 ## Where the campaign stands
 
-Our best official row is `0cf1637e` at 3.68278758. The bar is `684821ed` at
-3.71959723 and has not moved for about twelve hours. The published gap is
-+0.9995 percent, but Finding 255 splits that gap into two parts: a pure
-serial lottery term of +0.5989 pp that no candidate edit can touch, and a
-real candidate-leg gap of **+0.4006 percent** on the fair median. We plan
-against the published +0.9896 percent that a submission must actually clear,
-and we price mechanisms against the +0.3990 percent parity point as the
-first milestone.
-
-The campaign frontier is a scheduler question again. Edward's E150 shows that
-the depth-price belief table that compiles today is not the table that best
-explains the measured width-cost curve, and that swapping both the table and
-the decision rule is worth between +0.75 and +0.97 percent of the published
-median. That is the largest single priced item on the board and it is in the
-submission slot now.
+- Campaign best: **`0cf1637e` = 3.68278758**, rejected on submission because the
+  bar had already moved. It remains our scientific frontier and the base every
+  current experiment is measured against.
+- The bar: **`ec24d591` newjordan = 3.72911001**, promoted 2026-08-23T11:43Z,
+  source `0863b06a`. Its mechanism is the xsums fill fusion, which is our own
+  thorfinn's Idea 3 built and shipped by a rival in about three hours.
+- **The real gap is not the published gap.** On the fair median (Finding 255,
+  corroborated independently by askeladd's Rule 147 fit at
+  `k = 205.4 +- 15.4 us/round`), the previous bar led us by +0.4006 % of the
+  candidate leg while the published gap read +0.9995 %; the difference is a pure
+  serial lottery draw of +0.5989 pp on essays. Against the new bar the required
+  uniform candidate-leg speedup is **+1.0042 %**.
+- Advisor base `b27c004a`. Growth budget is tight: **66,648 bytes** of shared
+  headroom remain across four students.
 
 ## Current research focus
 
-1. **The draft schedule.** E150 R4 replaces the shipped first-break walk with
-   a global argmax of `lambda*(1 + E[A_d]) - C_d` over the measured ranked
-   width-cost curve, with both `pendingTop2` sigmoid clamps removed. It clears
-   the +0.6 pp gate at +0.8543 pp minimum over both curves. Submission is
-   authorised with a Rule 148 weighted per-prompt abort at +0.30 pp.
-2. **Dispatch count, not fusion.** Thorfinn measured the chunk-sum table fill
-   at 1.711 microseconds on M4 Pro, about a quarter of what Finding 252
-   assumed. The fill is essentially pure encode overhead, so the lever is the
-   number of dispatches removed rather than any arithmetic saved. The
-   remaining question is how many of the 257 wide-QMV sites can have their
-   table emitted by a producer kernel that already runs.
-3. **The ranked prefill channel.** Alphonse owns the 128x32 NAX retile. Rule
-   153 now proves the JIT library partition by inspection, so a retile that
-   touches only `quantized_nax.h` and its twin cannot reach the decode QMV
-   family. Finding 254 raised the value of every prefill saving by 1.37x.
-4. **Attention streaming.** Askeladd priced the shipped full-attention split
-   at 154.5 microseconds per drafting round in the ranked frame. The kernel
-   dispatch path is closed by the vendored C++ guard, but a custom merged
-   Metal kernel invoked from editable Swift remains open and is worth about
-   +0.30 percent.
-5. **Measurement discipline.** Three findings this cycle were corrections to
-   our own pricing: Advisor Error 181 withdrew a prefill marginal that was
-   confounded with a whole-row slowdown, Advisor Error 182 found that our
-   replay baseline was not the code path that compiles, and Advisor Error 183
-   found a 4x error in a coverage ladder. Rules 151, 152 and 153 exist to stop
-   each of those recurring.
+**One theme dominates: composition of small, independently measured,
+independently readable candidate-leg mechanisms, submitted quickly.** Nothing
+in the queue is worth a full per cent on its own except one line of code. The
+gap closes by adding four or five verified fractions, not by finding a single
+large idea.
+
+Four live experiments, one per student, one per physical Mac:
+
+1. **#150 edward — E150 per-round discrimination.** The linearised draft-depth
+   scheduler: a global argmax of `lambda*(1 + E[A_d]) - C_d` priced on the E145
+   measured width-cost curve, with both `pendingTop2` sigmoid clamps removed.
+   Built, green, submission authorised and re-confirmed after the bar move. Its
+   value is not only the +0.75 to +0.97 % it may publish; it is the campaign's
+   **first clean ranked receipt for a schedule-changing mechanism**, which Rule
+   122 says no local replay can supply.
+2. **#151 alphonse — the ranked prefill channel.** The 128x32 rectangular NAX
+   seed retile, armed and gate-green, with a pre-registered -3.5 % prefill
+   prediction. Prefill is a separate published channel (Rule 146) worth 1.37x
+   more than the campaign assumed (Finding 254), and three rival receipts prove
+   the family lands between -4.1 % and -5.0 %.
+3. **#152 thorfinn — the width table and the fill producers.** Promoted to A0:
+   drop the `onePass6` rung. Then the 127-site boundary-fused fill producer and
+   a new custom SwiGLU kernel for `mlp.down`'s 64 sites.
+4. **#153 askeladd — merged SDPA and leaf16.** The full-attention SDPA split
+   costs 154.5 +- 14.2 us/round and leaf16 is built but never shipped.
+
+## The single most valuable open item
+
+**FINDING 259 and RULE 155.** A rival isolated the width-6 one-pass rung on the
+ranked runner (`c47b45be`, single mechanism, schedule-identical, z +4.16) and it
+costs **+1.0583 % of the candidate leg**. Our tree ships that rung inside
+`onePass67`. Our own isolation of `shipped -> onePass67` reads -1.5571 %, so by
+subtraction the width-7 rung alone is worth -2.6154 % and the width-6 rung is
+pure loss.
+
+Rule 155, the partition symmetry law, explains why: **M=7 is the only unbalanced
+partition in the shipped table** (`[4+3]`), so it is the only width where
+collapsing two groups into one removes real critical-path idling. At M=6, M=8
+and M=9 the partition is already balanced, so one-pass buys nothing and still
+pays the register and occupancy tier. The law retro-predicts every width-table
+measurement the campaign holds, including T45's -13.2472 pp forecast miss.
+
+Dropping `onePass6` is one enum case and one changed default. Expected value
+**-1.06 % of the candidate leg against a +1.0042 % gap.**
 
 ## Potential next research directions
 
-- **Custom merged SDPA kernel (C3).** Replace the two-call causal split in
-  `AttentionUtils.swift` with one custom Metal kernel that visits the same key
-  set in the same per-row order. The `Qwen35CustomQMV` Route B work is the
-  precedent. Prize about +0.30 percent. Unclaimed.
-- **Producer-emitted chunk-sum tables.** Enumerate every kernel already on the
-  scored path that produces the exact activation a wide QMV consumes, and ask
-  which can emit the table as an extra output with no new dispatch. The fused
-  residual and RMSNorm path already covers 128 sites; the fused MLP path may
-  add 64 more.
-- **Composition after the scheduler lands.** Leaf16 on the shipped vocabulary
-  is a weak but clean local winner worth about +0.10 percent, and it scales
-  with width-8 mass, so it is worth more after a schedule that widens. It is
-  held standalone and submission-ready.
-- **A host-side readback signal for the scheduler.** E150 R2's demand curve
-  says a per-round signal with AUC 0.865 is worth +1.58 to +3.09 percent
-  depending on where it is read, and the break-even host readback cost is
-  7.75x the stop rule. This is the largest unpriced upside on the board.
-- **Pipelined double-buffered K-loop in the NAX GEMM.** Unpriced. Alphonse
-  holds it as E151 R2.
-- **A cleanup pull request.** Growth budget headroom is down to roughly 66 KiB
-  of 262,144. Pruning the retired depth-price arms, the width-pin environment
-  gates and the stale table and grid arms would reclaim budget and make the
-  winning path the only path. Unassigned.
-- **Nibble entropy of our own checkpoint.** A one-hour zero-GPU corrective
-  study, available if a student slot opens with no GPU work.
+**Ready to submit, in order.**
 
-## Standing constraints that shape all of the above
+1. **A0 + E151 R1 on one receipt.** Decode channel and prefill channel are
+   published separately, so one row reads both independently. Expected about
+   -1.41 % of the candidate leg. This is the submission after Edward's.
+2. **The remaining fill ladder.** 130 of 257 wide QMV fills are still
+   unproducer-fused: `mlp.down` 64 (+0.144 %), `gdn.out_proj` 48 (+0.108 %),
+   `fa.o_proj` 16 (+0.036 %), `lm_head` and the layer-0 entry norm 2 (+0.005 %).
+   The ranked dispatch price is 1.18 us and is now confirmed by two independent
+   ranked coverage points.
+3. **Rung B2, reinstated.** The affine NAX path has no loader helper and no
+   double buffer; `43925f29` and `a9dd132a` both bought about -4.13 % of prefill
+   by adding them. It composes with the retile only partially and must be
+   measured on a separate receipt.
 
-- Only one submission may be in flight at a time, and validation takes 42 to
-  130 minutes. The slot is Edward's until his result resolves.
-- Rule 138 no longer gates a ranked mechanism. The admissible width set
-  `[1,2,3,4,5]` is a property of one local curve on g16s hardware and does not
-  transfer to the ranked g17s host at widths 6 through 8.
-- Row `7226dc9a` is excluded from all pricing. It carries an unexplained
-  whole-row slowdown of about 2.2 pp on prefill and 4.4 pp on decode.
-- The general 2 sigma minimum detectable effect for a ranked candidate-leg
-  contrast is 0.1547 pp on the realised median pair, or 0.0872 pp when
-  neither side is anchored on the bar.
+**Open mechanisms with no owner.**
+
+4. **The acceptance axis, framed correctly.** Acceptance leverage is exact:
+   `d(raw)/raw / d(alpha) = edl / (1 + alpha*edl)`, giving budgets of 470.7
+   us/round on beagle and 502.0 on essays. **+0.0108 of acceptance publishes
+   above the old bar — about three times the entire 128-site fill saving.** But
+   the board has now run 119 same-solver head swaps: 16 bought at least +0.01
+   acceptance and **zero paid for themselves**, best efficiency 0.70 against
+   break-even 1.00. The open question is therefore not a better head, it is a
+   **cheaper head at equal quality**. We already hold the best head on the
+   board (`559b24eb`, 561 of 609 beagle rows and every top score).
+5. **The width-7 rung isolated on its own ranked receipt.** Currently known only
+   by subtraction from two receipts on two different trees.
+6. **The seed prefill outside the GEMM.** The NAX GEMM is the one scored kernel
+   family no machine we own can execute, but GDN prework, SDPA and the norms
+   inside the 512-token seed leg are all locally executable and are 10.04 % of
+   the candidate leg by Rule 148 weighting. Nobody has enumerated that share.
+7. **A cleanup PR to reclaim growth budget.** 66,648 bytes remain. `onePass6`,
+   `onePass678`, the E87 remnants and the retired pb5/pb6/pb7/pbfit depth arms
+   are all dead once A0 lands.
+
+**Themes to escalate to if the composition stalls.**
+
+8. **Verification batching at wider row counts.** `requireStructurallySound`
+   forces `M == d + 1` and a single linear chain, so tree drafting is
+   structurally blocked; the remaining freedom is in how the fixed chain is
+   evaluated, not in what is proposed.
+9. **Weight layout and resident metadata.** The round is 88.6 % DRAM weight
+   streaming and the QMV family is 88.6 % of decode GPU time. Every per-round
+   microsecond we have found so far has come from dispatch overhead rather than
+   from moving fewer bytes.
+10. **Reading the board as an instrument.** Two of this session's largest
+    findings came from rival public notes rather than from our own GPUs:
+    Finding 258's ranked coverage point and Finding 259's width-6 isolation. A
+    standing, cheap, systematic pricing pass over every resolved rival row is
+    worth as much as a GPU slot.
+
+## Standing discipline
+
+- Price every ranked contrast on the **candidate leg**, never the published
+  median (Rule 118, Rule 63).
+- Name the pricing frame and the sign convention in words (Rule 144). The
+  general 2-sigma MDE is **0.1547 pp**; the conditional **0.0872 pp** applies
+  only when neither side is anchored on `684821ed`.
+- **Rule 154:** a measurement that cannot change the build decision must not
+  gate the build. This cost us the fill fusion.
+- **Rule 155:** state the balance of the partition a one-pass rung replaces
+  before proposing it.
+- Integrity boundary unchanged: no prompt-family-matched head training, no
+  benchmark-phase detection, no acceptance relaxation. Two rivals crossed it
+  and both were rejected.
