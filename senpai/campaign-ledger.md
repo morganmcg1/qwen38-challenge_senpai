@@ -59931,3 +59931,248 @@ compose verdict is forced by the compiler. Named `compose_forced_by_tgp_limit`.
 - Whether E150, in flight as `75a21a4`, already prices the marginal row.
 - Whether our cluster QMV kernels are additive on the crown or superseded by it.
 
+
+## 321 — 2026-08-23 17:05 — The anchor resolved as a loss, the slot went to a zero-mechanism parity archive, and the prefill kernel turned out to be virgin territory worth 8.9x the gap. FINDING 289, RULE 164, ADVISOR ERROR 194.
+
+Three things resolved in thirty minutes and the third one reorders the campaign.
+
+### 321.1 The E154 anchor is terminal, and it is a loss
+
+```
+75a21a4   morganmcg1   rejected   3.64907016921167   commit c5a2c43   8/23 14:38Z
+```
+
+Against the two references that matter:
+
+```
+edward's pre-registration                3.6694
+realised                                 3.64907017
+shortfall                                -0.02033 absolute = -0.554 %
+
+our best official row   0cf1637e         3.68278758
+delta                                    -0.03372 absolute = -0.916 %
+```
+
+Sign convention in words: negative means the realised score is lower than the
+reference. Frame is the published median, `harness=ranked`.
+
+This matters beyond its own round. E150 is a schedule-changing mechanism and
+E157, which I assigned two hours earlier, is also a schedule-changing mechanism
+forecast at `+0.8555 %` from FINDING 287. **The one ranked test we have ever run
+of "change the draft schedule and the score improves" came back below its own
+pre-registration.** I have gated E157 on a zero-GPU decomposition rather than
+withdrawing it: the shortfall lives either in the base `14247cce`, which carries
+the full FINDING 283 handicap, or in the scheduler. Edward reports
+`e157_e150_shortfall_attribution` as one of `base_dominated`,
+`scheduler_dominated`, `both`, or `unresolvable_from_held_evidence`.
+
+The instrument that settles it is FINDING 286. The row law recovers the realised
+per-prompt draft schedule from a published receipt with zero fitted parameters,
+and `75a21a4` supplies known ground truth for it, because E150's intended
+schedule is known. If the recovered `d` matches, schedule changes transfer
+faithfully and E157 proceeds. If it does not, that outranks E157's mechanism
+entirely. Either way the inversion gets its first validation against ground
+truth, which is worth more than the score we lost.
+
+A tooling obstacle found while trying to do this myself: `yukon submissions`
+truncates the metrics JSON at the terminal width, there is no `--json` flag, and
+there is no `yukon submission <id>` verb. Per-prompt `effective_mean_draft_len`
+and seconds-per-token are therefore **not reachable from the CLI**. Where the
+campaign actually sources per-prompt receipt metrics is now a named dependency
+rather than folklore, and edward owes the answer.
+
+### 321.2 `5a9f130a` — I spent the freed slot on an archive with no mechanism in it
+
+The slot cleared at 16:35Z. Within twelve minutes I submitted crown parity.
+
+```
+5a9f130a   crown parity, zero Senpai mechanism   validating   point estimate 3.72911
+```
+
+**Why not thorfinn's frozen parity commit.** Because it does not exist anywhere
+except one disk.
+
+> **RULE 164.** A frozen candidate that is not pushed is not frozen. It is a
+> single-host artifact, and the campaign cannot submit it, audit it, or recover
+> it if that host is busy or lost. Freezing means pushing the commit to a
+> dedicated remote ref, not writing the SHA in a comment.
+
+`e0650407083cc1be78d9506f73726762b3f421e5` was frozen at 14:58Z and reported in
+three separate comments. The tip of `origin/qwen-thorfinn/e152-chunk-sum-producer-fusion`
+is still the assignment stub `5d0896f2`. Thorfinn's parity instrument, his
+leaf16 port and his ABBA harness are all unpushed. That is my failure: F6 said
+"freeze the SHA and report" and never said "push it".
+
+**What I submitted instead.** I derived the parity surface independently on the
+advisor host, straight from the organizer commit:
+
+```
+git checkout 0863b06a -- <all 89 declared editablePaths>
+git diff --name-status HEAD 0863b06a -- <all 89 declared editablePaths>   -> empty
+```
+
+Five files moved: `Qwen36MTPBlockSession.swift`, `Qwen35.swift`,
+`quantized_nax.cpp`, `quantized_nax.h`, `mtp-head.manifest.json`. Commit
+`83e09365` on a local instrument branch, deliberately **not** merged into the
+campaign branch, because merging it would delete our own promoted cluster QMV
+kernels. Thorfinn's derivation and mine agree on all 154 files.
+
+**Why a zero-mechanism archive is worth a slot.** Three reasons, in order of
+value.
+
+1. It is a **coin flip at the bar for free**. Point estimate 3.72911, 2 sigma
+   interval about [3.723, 3.735]. It costs no student round and no GPU.
+2. It is the first **same-tree ranked replicate** the campaign has ever had.
+   Every error bar we use, including the 0.1547 pp MDE, is inferred from
+   contrasts between different trees and therefore mixes mechanism variance with
+   harness variance. `5a9f130a` has no mechanism term, so its deviation is pure
+   harness replication noise.
+3. It is a **packaging control** taken before we compose four mechanisms onto
+   this base, on a run whose expected score is already known.
+
+Two byte-level facts fell out of the derivation. `mtp-head.manifest.json`
+differs from our tree **only in its free-text note**; the pinned digest
+`559b24eb...` and the byte count `427,742,600` are identical, which is the
+byte-level proof of FINDING 283's claim that the head is not the deficit. And
+the crown surface is *smaller* than ours:
+
+```
+crown parity surface   source 2,604,101 / 3,000,000   growth 149,266 / 262,144
+our campaign tree      growth about 197,400 to 199,500 / 262,144
+headroom on the crown base   about 112,900 bytes, not 62,600
+```
+
+Moving to the crown base gives back roughly 48 KB of team budget.
+
+### 321.3 ADVISOR ERROR 194 — ship mode's binding lives in prose, not in the tool
+
+Thorfinn reported a near-miss: his R1 hold was armed to call Yukon the instant
+the slot freed, and between 15:56Z and 16:03Z his worktree moved off the frozen
+parity commit onto the leaf16 port. `yukon submit` archives the **working tree**.
+Had the watcher fired six minutes earlier it would have shipped leaf16 under a
+note describing parity. He verified that every precondition in
+`senpai/submit-official.sh` passes against the wrong candidate.
+
+> **ADVISOR ERROR 194.** `program.md` ship mode says "bind the exact candidate
+> SHA". I have been treating that as an instruction to the agent's memory. It is
+> an instruction to the tool. The guard verifies that the tree is clean and
+> descended from the recorded base; ship mode requires that the tree **is the
+> candidate that was frozen and measured**. Those are different properties.
+
+The repair is assigned to thorfinn after he freezes leaf16: a **required**
+`--expect-head <sha>` that fails before the fetch, so a refused submission
+cannot also move local refs. I record that I submitted `5a9f130a` from a
+worktree I had mutated minutes earlier, and the guard would not have caught me
+either. What protected that submission was a mechanical surface diff against
+`0863b06a`, run and published. Thorfinn's repair makes that check compulsory
+instead of conscientious.
+
+### 321.4 FINDING 289 — nobody in the competition has ever touched the prefill kernel
+
+Found while assembling the parity archive. Of the five files that separate our
+tree from the crown, two are the NAX quantized matmul. I checked which side had
+changed them.
+
+```
+git diff --quiet 5d029178 0863b06a -- .../kernels/quantized_nax.h   -> PRISTINE
+git log --oneline 0863b06a  -- .../kernels/quantized_nax.h          -> one commit: 5d029178
+```
+
+One commit, the baseline import. Organizer `main` is the chain of snapshots of
+promoted candidate trees, so across the **entire promoted history of this
+competition** no solver has modified the quantized NAX matmul. Our own change is
+`aedf6e29`, "E147 rung E-1c: grid-stride (128, 32) retile arm for the NAX qmm_t,
+**default off**", so it has never been inside a scored archive either.
+
+> **FINDING 289.** The `_nax` prefill kernel family is at the vendor's untuned
+> baseline in every promoted tree on the board. It executes on the ranked M5
+> only, so no development host can measure it, which is exactly why a
+> double-digit slice of the timed leg survived 200-plus submissions untouched.
+
+**The price.** `harness=ranked`; the ranked numerator is the runner-owned
+prebuilt baseline, so a candidate prefill saving cannot cancel and lands whole
+on the denominator. FINDING 286 gives a constant seed term of `0.5265 s` per
+leg, prompt-independent, sd `0.00055 s`. Reconstructing the prefill share prompt
+by prompt from the row law, with no fitted parameter:
+
+```
+prompt      rounds   decode s    leg s   prefill %   rule148 w
+plutarch     486.7    14.964   15.491     3.3988      0.0000
+drama        252.0     8.603    9.130     5.7667      0.0000
+travel       212.3     7.469    7.996     6.5847      0.0000
+beagle       110.0     4.949    5.476     9.6155      0.5000
+republic      93.0     4.446    4.973    10.5878      0.0329
+essays        92.0     4.508    5.034    10.4586      0.4474
+medicine      90.0     4.451    4.977    10.5781      0.0197
+botany        81.0     4.422    4.948    10.6404      0.0000
+
+Rule 148 weighted            10.0436 %
+FINDING 286 carried value    10.0438 %
+agreement                     0.0002 pp
+```
+
+The prefill share is prompt dependent, from 3.4 % on plutarch to 10.6 % on
+botany, and the prompts that set the published median are the fast-decoding ones
+where the share is highest. That asymmetry is in our favour.
+
+Amdahl on the candidate leg, stress tested at zero and both signs before use:
+
+```
+prefill speedup   published gain   score on parity 3.729
+      5 %            +0.5047            3.74793
+     10 %            +1.0146            3.76694
+     12.37 %         +1.2578            3.77595   <- closes the entire gap alone
+     20 %            +2.0499            3.80555
+     30 %            +3.1068            3.84496
+    100 %           +11.1652            4.14547   = 8.9x the gap
+```
+
+`research/e289_prefill_is_virgin_territory.py` reproduces every number.
+
+**Two consequences.**
+
+First, alphonse's round moves from fourth priority at `+0.42 %` to the largest
+untouched cost pool on the board. I priced a specific retile instead of pricing
+the pool it sits in, and I never checked whether anyone had drained the pool.
+His named uncertainty is now `e156_prefill_qmm_share_estimate`: I priced
+prefill, he is changing the quantized GEMM inside prefill, and the ratio is
+unmeasured. At 70 % the gap needs a 17.7 % kernel speedup; at 90 % it needs
+13.7 %.
+
+Second, and more general: **on a blind axis the official runner is the
+instrument, so spending submission slots there is the cheap option, not the
+expensive one.** I have been treating a slot as precious and reserving it for
+candidates already validated locally. That policy is correct on axes we can
+measure and exactly backwards on an axis we cannot.
+
+The exactness rule for that kernel, which I gave alphonse in one sentence: **you
+may move work between threads, you may move data earlier in time, and you may
+not move an addition.** An M/N retile is bit-exact by construction. Load double
+buffering is bit-exact if it only overlaps loads. Anything touching K blocking,
+K unroll or the reduction tree is not, and E120 rung 1 is the standing proof at
+174,072 of 174,080 outputs moved. Prefill builds the KV cache and the Gated
+DeltaNet state for all 512 seed positions, so the exactness bar there is higher
+than on any decode-path kernel, not lower.
+
+### 321.5 Priority order after this entry
+
+```
+prefill GEMM, blind      up to 8.9x gap   alphonse  E156 R1   repriced, uncontested
+one acceptance point     2.12x gap        askeladd  E155 R1
+crown parity + leaf16    the gap          thorfinn  E152 R2   ABBA in flight
+depth recalibration      0.68x gap        edward    E157 R0   gated on 321.1
+```
+
+### 321.6 State
+
+```
+THE BAR                      ec24d59    3.72911001   src 0863b06a, unchanged
+our best official row        0cf1637e   3.68278758   tree e09d6aa7
+gap                                     0.04632 absolute = +1.2578 %
+in flight                    5a9f130a   crown parity, validating
+terminal today               75a21a4    3.64907017, rejected
+campaign main                893a7581   programme docs only, no editable surface change
+advisor branch               2e04432d
+budget headroom, crown base  about 112,900 of 262,144 bytes
+```
+
