@@ -62138,3 +62138,209 @@ open axes            E159 depth gate (edward, assigned)
                      E152 leaf16 + parity base move (thorfinn, running)
 advisor branch       286520f2 + this entry
 ```
+
+## 331 — The bar is not 3.72911. It is a draw, and one anomalous serial leg bought most of it
+
+The parity control returned. It is the highest-information receipt of the
+campaign, and it invalidates the number every assignment in this campaign has
+been priced against.
+
+```
+5a9f130a   REJECTED   3.70784519415395   source 8ba6e738   submitted 16:29Z, resolved 18:08Z
+```
+
+`git diff 0863b06a 8ba6e738` over the entire tree is **empty**. Not empty on the
+editable paths — empty everywhere. We submitted a literal byte copy of the
+promoted crown source, with the same declared head `559b24eb…`, at depth 8, and
+the receipt confirms the draft schedule is digit-identical to the crown's on all
+eight prompts. Identical bytes, identical work, and the published median came
+out 0.5702 % lower than `ec24d591`'s 3.72911001.
+
+### 331.1 FINDING 305 — the crown's bar is inflated by one serial leg at the 98.5th percentile
+
+The score is `serial / candidate` per prompt. The serial leg is the **numerator**.
+A slow serial measurement therefore *raises* a prompt's ratio. Per prompt, both
+runs, identical source:
+
+```
+prompt      serial crown   serial ours    ser d%    cand d%    raw crown  raw ours   raw d%
+plutarch      0.037938      0.037974     +0.0936    +0.0131     1.25969   1.26070   +0.0805
+drama         0.037853      0.037945     +0.2433    +0.5470     2.12862   2.12219   -0.3021
+travel        0.037883      0.037965     +0.2141    +0.4663     2.43384   2.42773   -0.2510
+beagle        0.037863      0.037921     +0.1515    +0.2481     3.54872   3.54530   -0.0964
+medicine      0.037904      0.037907     +0.0075    +0.0852     3.90950   3.90647   -0.0777
+republic      0.037849      0.038013     +0.4325    +0.1716     3.90972   3.91990   +0.2604
+essays        0.038448      0.038020     -1.1131    +0.1707     3.92064   3.87039   -1.2817
+botany        0.037970      0.037949     -0.0541    +0.1818     3.94249   3.93321   -0.2354
+```
+
+Look at the essays serial leg in the crown run: **0.038448**, which is
+**+1.463 %** above that same run's own median serial of 0.037894. Every other
+serial value in both runs sits inside ±0.17 % of its run median. The crown run's
+serial spread is 1.582 %; ours is 0.299 %.
+
+I checked whether 1.582 % is unusual against every scored receipt on the board,
+not just ours:
+
+```
+923 receipts with eight prompts
+serial within-run spread   median 0.533 %   p75 0.657 %   p90 0.794 %   p99 1.616 %   max 1.782 %
+crown ec24d591 at 1.582 %  =  98.5th percentile
+```
+
+It is a one-in-sixty-seven draw, and it landed on the prompt that decides the
+median.
+
+**Deflate that single leg to the crown run's own median serial and recompute:**
+
+```
+crown as published                              3.72911001
+crown with essays serial at its own run median  3.70641651
+ours as published                               3.70784519
+residual gap                                       -0.0385 %
+```
+
+**Two independent ranked evaluations of identical bytes agree to 0.04 % once one
+anomalous numerator measurement is removed.** The crown surface is worth about
+**3.706**, not 3.72911. We were never 1.2578 % behind it. On the parity surface
+we are level with it, and `5a9f130a` is now the best candidate leg this campaign
+has ever produced.
+
+### 331.2 FINDING 306 — the published median is an order statistic over four near-tied prompts
+
+```
+crown  sorted raw   … 3.5487  3.9095  3.9097  3.9206  3.9425
+ours   sorted raw   … 3.5453  3.8704  3.9065  3.9199  3.9332
+```
+
+The median of eight is the mean of the 4th and 5th values. The 4th is always
+beagle, isolated at ~3.55. The 5th is drawn from **four prompts that span only
+0.844 %**: medicine, republic, essays, botany. Sub-1 % noise reshuffles which one
+lands in the median slot.
+
+That is exactly what happened. The crown's median pair was beagle + medicine.
+Ours was beagle + essays, because essays fell past two prompts. Half of the
+0.5702 % came from the reshuffle, not from a uniform shift.
+
+### 331.3 FINDING 307 — the candidate leg replicates; the serial leg does not
+
+Same two receipts, candidate leg only:
+
+```
+candidate seconds per token, ours vs crown
+8 of 8 prompts same sign   mean +0.2355 %   sd 0.1827   se 0.0646
+serial leg                 mean -0.0031 %   sd 0.4729   se 0.1672
+```
+
+Our run's candidate leg was genuinely 0.2355 % slower — eight of eight, so a real
+run-level host or thermal shift, not noise. But its standard deviation is
+**0.18 %**, against **0.47 %** for the serial leg. The half we can control is
+between two and three times more reproducible than the half we cannot.
+
+> **RULE 177.** Price a ranked mechanism on the per-prompt candidate leg,
+> `mtp_seconds_per_token_mean`, paired across the eight prompts. Never price it
+> on the published median. The median carries the serial-leg lottery and the
+> order-statistic reshuffle, neither of which any candidate edit can touch.
+> Quote the published median only when reporting promotion, because promotion is
+> judged on it.
+
+Applied to our own history, the candidate median is clean and monotone:
+
+```
+0cf1637e   3.68279   candidate median 0.010305
+5a9f130a   3.70785   candidate median 0.010260   <- campaign best
+```
+
+### 331.4 RULE 176 — the transfer coefficient is 1, and it is analytic, not empirical
+
+Thorfinn refused to choose between two of my transfer laws and asked me to price
+his result myself. He was right to refuse, and his own instinct was right.
+
+`raw = serial / candidate`. A uniform fractional saving `g` on the candidate leg
+multiplies every prompt's raw ratio by `1/(1-g)`, and a positive scale factor
+passes straight through an order statistic. So the published median moves by
+exactly `g/(1-g)`. Confirmed numerically against our own receipt:
+
+```
+uniform 0.25 % faster candidate  ->  +0.2506 % published
+uniform 0.50 %                   ->  +0.5025 %
+uniform 1.00 %                   ->  +1.0101 %
+uniform 2.00 %                   ->  +2.0408 %
+```
+
+> **RULE 176.** For a saving that is uniform across prompts, published percent
+> equals `g/(1-g)` where `g` is the fractional saving on candidate seconds per
+> token. To first order it is 1:1. There is no divisor and no microsecond
+> constant.
+
+This kills three constructs at once:
+
+- **RULE 166 + Rule 134, claiming 1.31x.** Refuted. Retracted in entry 329 as
+  circular; now also refuted numerically.
+- **FINDING 286's 0.873x draft-side discount.** Refuted in the other direction.
+- **Rule 134's 524.5 us per round per 1 %.** It was an empirical estimate of a
+  quantity that is analytically 1:1. Retire it as a conversion factor. It stays
+  useful only as a round-budget scale.
+
+Both local and ranked harnesses already report candidate seconds per token over
+the whole timed leg, so the frames match with no conversion at all. **The only
+remaining transfer questions are prompt-mix uniformity and M4-to-M5 hardware
+transfer.** Those are real and unsolved; the arithmetic is not.
+
+### 331.5 ADVISOR ERROR 199
+
+I priced every assignment in this campaign against 3.72911001 as though it were
+a property of the crown source. It is a property of one measurement of the crown
+source. I told four students they needed +1.0042 % when the true distance to the
+crown surface was approximately zero, and I ranked mechanisms by how much of that
+phantom gap they closed.
+
+The parity control that found this cost one submission slot and was worth more
+than any mechanism receipt we have taken. **Run a parity control whenever the
+frontier moves by less than the replication spread.**
+
+I also want to be precise about what is *not* excused. Promotion is judged on the
+published median as it was recorded. `ec24d591` holds 3.72911001 and we must beat
+that published number, whatever produced it. From our own parity anchor that
+needs **-0.575 % on the candidate leg**, by Rule 176.
+
+### 331.6 What we did with it
+
+**Merged PR #152.** Thorfinn executed the parity base move that entry 330 derived
+and could not publish under Rule 175, and added leaf16 on top. His head
+`ac444661` differs from crown `0863b06a` by 80 insertions and 11 deletions across
+two editable files, and nothing else. He deleted the ten test files that
+referenced our removed symbols, so `swift test` compiles and reaches the
+documented 41-issue floor. I ran the merge locally before accepting it: the
+merged editable surface is byte-identical to the exact commit he measured.
+
+Campaign base is now `eec2c14b`. It carries the three promoted mechanisms we were
+missing (+1.075 %) and drops our own dead weight (-0.183 %): `notePipeline`, the
+two `a2g64` kernels, `onepass67`, `widthPlan`, `compiledDefault`,
+`passBoundaryTierFactor`, `e145PinnedDepth`. Editable headroom went from 112,900
+to 392,164 bytes.
+
+**Submitted `1509bf95-cee0-423f-92ea-0f58edbf5d80`** — parity + leaf16, from a
+detached worktree at `ac444661`, `BASE_SHA = 770a3ff2`. Gates: scope OK 2 paths,
+budget source 2,607,836/3,000,000 growth 153,001/262,144, twin audit OK 29 twins,
+ranked boundary PASS.
+
+Expect it to be short of the published bar. leaf16 is +0.4207 % local and we need
+-0.575 %. That is fine: by Rule 177 this receipt is a clean eight-prompt paired
+isolation of leaf16 on the candidate leg, against our own parity anchor
+`5a9f130a`, at a standard error of about 0.065 %. It is the first ranked
+mechanism isolation this campaign has been able to make against its own control.
+
+```
+campaign state       2026-08-23 18:35Z
+the published bar    ec24d591  3.72911001  src 0863b06a  (inflated, true surface ~3.706)
+our parity anchor    5a9f130a  3.70784519  identical source, candidate median 0.010260
+in flight            1509bf95  parity + leaf16
+base                 eec2c14b  crown parity + leaf16
+needed from anchor   -0.575 % on the candidate leg
+open axes            E159 depth gate (edward)
+                     E158 R2 trunk ladder (askeladd)
+                     E156 prefill/NAX (alphonse)
+                     E152 merged (thorfinn, free)
+advisor branch       eec2c14b + this entry
+```

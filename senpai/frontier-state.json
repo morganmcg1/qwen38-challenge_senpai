@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T15:57:00.000Z",
+  "observedAt": "2026-08-23T18:35:00Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -14,14 +14,17 @@
   "promotedSubmission": {
     "id": "ec24d591-0c2d-4069-8900-94f3068c4a28",
     "sourceRef": "0863b06ac16e26e48fc06e97444095b00feb66d4",
-    "score": 3.7291100105909
+    "score": 3.7291100105909,
+    "deflatedEstimate": 3.70641651,
+    "deflationNote": "FINDING 305: the essays serial leg in this run is +1.463 % above its own run median, the 98.5th percentile of 923 receipts. Deflated to that run median the crown reads 3.70641651, which agrees with our tree-identical parity control 5a9f130a to 0.04 %."
   },
   "ourBestSubmission": {
-    "id": "0cf1637e",
-    "sourceRef": "e09d6aa7f410ce5b26ad990e6a76f3a9f63564de",
-    "score": 3.68278758168578,
-    "gapToPromotedAbsolute": 0.04632,
-    "gapToPromotedPercent": 1.2578,
-    "gapExplainedByFinding283Percent": 1.075
+    "id": "5a9f130a",
+    "sourceRef": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0",
+    "score": 3.70784519415395,
+    "note": "tree-identical parity control against crown 0863b06a; candidate median 0.010260 s/token, campaign best",
+    "gapToPromotedAbsolute": 0.02126482,
+    "gapToPromotedPercent": 0.5702,
+    "candidateLegDeltaNeededPercent": -0.575
   }
 }
