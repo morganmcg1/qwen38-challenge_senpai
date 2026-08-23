@@ -1,0 +1,6 @@
+e147_control_prompt=beagle_a
+e147_control_leg_exit=0
+e147_control_all_tokens_matched=true
+e147_control_residual_divergence_count=0
+e147_rungA_positive_control_failed=0.0
+e147_control_session_commit=c4c721d1394b0f1bb33b151457a16c4408f982c1
