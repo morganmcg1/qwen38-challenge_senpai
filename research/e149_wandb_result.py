@@ -36,11 +36,34 @@ FILES = [
     "e149_leaf_witness.sh", "e149-leaf-witness.json",
     "e149_rungD_curve.py", "e149-rungD.json",
     "e149_rungD_robust.py", "e149-rungD-robust.json",
+    "e149_f7_marginals.py", "e149-f7-marginals.json",
+    "e149_f7_rule147.py", "e149-f7-rule147.json",
     "e149-null-block-bar-anchor.json",
     "e149_c1_probe.sh", "e149_c1_report.py",
     "e149-c1-sdpa.json", "e149-c1-report.json",
+    "e149_gate_chain.sh", "e149_editable_surface_diff.py",
     "e149_wandb_result.py",
 ]
+
+# The terminal run is published once and then updated in place, so the whole
+# assignment keeps one run ID.
+RESUME_ID = "l0u2h47l"
+
+# `research/e149_gate_chain.sh`, job 50b5f71c, 79 s, overall PASS.
+GATE_CHAIN = {
+    "rebuild-and-assert-worker": "pass, both required symbols present, "
+                                 "worker sha256 unchanged at 55c04ac3",
+    "swift-test": "pass at the documented floor, 41 issues under 10 names, "
+                  "787 tests in 75 suites",
+    "twin-audit": "pass",
+    "editable-surface-diff": "pass, 0 of 29 changed or untracked files land "
+                             "in benchmark.json editablePaths",
+    "validate-assignment-scope": "pass",
+    "check-editable-budget": "pass, source 2639048/3000000, growth "
+                             "184213/262144",
+    "verify-ranked-score-boundary": "pass",
+    "e129-entry-point-census": "pass",
+}
 
 
 def load(name: str) -> dict | None:
@@ -58,6 +81,8 @@ def main() -> None:
     lw = load("e149-leaf-witness.json")
     c1 = load("e149-c1-report.json")
     c1raw = load("e149-c1-sdpa.json")
+    f7m = load("e149-f7-marginals.json")
+    f7r = load("e149-f7-rule147.json")
 
     dl = d["f6_deliverables"]
     mp = a["medpair_weighted"]
@@ -186,9 +211,63 @@ def main() -> None:
         metrics[f"e149_c1_{short}_streaming_us"] = rec["streaming_us_per_round"]
         metrics[f"e149_c1_{short}_raw_us"] = rec["raw_us_per_round"]
 
+    # ---- F7 item 1-3, harness=ranked: the high-width marginals ------------
+    for model in ("tilt", "replay"):
+        m = f7m["models"][model]
+        adm = m["width8_admissibility"]
+        for step in ("5_to_6", "6_to_7", "7_to_8"):
+            rec = m[f"e149_rungD_marginal_{step}_us"]["monotone_constrained"]
+            metrics[f"e149_rungD_marginal_{step}_us_{model}"] = \
+                rec["best_marginal_us"]
+            metrics[f"e149_rungD_marginal_{step}_us_{model}_ci95_lo"] = \
+                rec["ci95_us"][0]
+            metrics[f"e149_rungD_marginal_{step}_us_{model}_ci95_hi"] = \
+                rec["ci95_us"][1]
+        metrics[f"e149_width8_max_admissible_7_to_8_us_{model}"] = \
+            adm["max_admissible_7_to_8_marginal_us"]
+        metrics[f"e149_width8_admissible_ci95_fraction_{model}"] = \
+            adm["fraction_of_ci95_that_is_admissible"]
+    metrics["e149_rungD_marginal_7_to_8_us"] = \
+        f7m["e149_rungD_marginal_7_to_8_us"]
+    metrics["e149_rungD_marginal_7_to_8_us_ci95_lo"] = \
+        f7m["e149_rungD_marginal_7_to_8_us_ci95"][0]
+    metrics["e149_rungD_marginal_7_to_8_us_ci95_hi"] = \
+        f7m["e149_rungD_marginal_7_to_8_us_ci95"][1]
+    for key, value in f7m["reference_marginals_us"].items():
+        metrics[f"e149_reference_marginal_{key}_us"] = value
+
+    # ---- F7 item 4, harness=ranked: the Rule 147 detectability table ------
+    f7d = f7r["independent_test_0cf1637e"]["rule147/decode"]
+    prov = f7r["rule147_provenance"]["decode"]
+    metrics.update({
+        "e149_rule147_common_k_paying_five_us":
+            f7d["common_fit_paying_five"]["k_us_per_round"],
+        "e149_rule147_common_k_paying_five_se_us":
+            f7d["common_fit_paying_five"]["se_us_per_round"],
+        "e149_rule147_paying_five_chi2_per_dof":
+            f7d["common_fit_paying_five"]["chi2_per_dof"],
+        "e149_rule147_paying_five_p": f7d["common_fit_paying_five_p"],
+        "e149_rule147_excursion_joint_chi2": f7d["excursion_joint_chi2"],
+        "e149_rule147_excursion_joint_p": f7d["excursion_joint_p"],
+        "e149_rule147_max_abs_z_paying_five":
+            f7r["e149_rule147_max_abs_z_paying_five"],
+        "e149_rule147_max_abs_z_excursion":
+            f7r["e149_rule147_max_abs_z_excursion"],
+        "e149_rule147_plutarch_z_all8": f7r["e149_rule147_plutarch_z_all8"],
+        "e149_rule147_spearman_n10_vs_table":
+            prov["spearman_n10_vs_rule147"],
+        "e149_rule147_spearman_n11_vs_table":
+            prov["spearman_n11_vs_rule147"],
+        "e149_rule147_block_over_table_ratio_n10": prov["ratio_n10_mean"],
+        "e149_rule147_block_over_table_ratio_n11": prov["ratio_n11_mean"],
+        "e149_0cf1637e_score": f7r["new_row_score"],
+    })
+
     run = wandb.init(
         entity=ENTITY,
         project=PROJECT,
+        id=RESUME_ID,
+        resume="allow",
         name="e149-terminal-arms-a-b-c-d",
         job_type="analysis",
         tags=["e149", "askeladd", "arm-a", "arm-c", "arm-d", "terminal"],
@@ -228,10 +307,27 @@ def main() -> None:
                 dl["e149_rungD_7226dc9a_matches_e003a86d_decode"],
             "e149_null_block_bar_anchored_rows":
                 bar["e149_null_block_bar_anchored_rows"],
+            "e149_width8_admissible_ranked":
+                f7m["e149_width8_admissible_ranked"],
+            "e149_width8_admissible_ranked_tilt":
+                f7m["models"]["tilt"]["width8_admissibility"][
+                    "e149_width8_admissible_ranked_interval"],
+            "e149_width8_admissible_ranked_replay":
+                f7m["models"]["replay"]["width8_admissibility"][
+                    "e149_width8_admissible_ranked_interval"],
+            "f7_label_correction": f7m["f7_label_correction"],
+            "f7_marginal_caveat": f7m["caveat"],
+            "e149_rule147_holds_on_0cf1637e":
+                f7r["e149_rule147_holds_on_0cf1637e"],
+            "e149_rule147_0cf1637e_schedule_matched":
+                f7r["schedule_matched_all_eight"],
+            "e149_rule147_board_scored_rows": f7r["scored_rows"],
             "local_submit_substitute":
                 "HD37: --local-submit cannot complete on 48 GiB; the standing "
-                "substitute is a bare 512-token exactness leg",
+                "substitute is a bare 512-token exactness leg, satisfied by "
+                "the twelve gated 512-token arm A legs, all tokens matched",
             "scored_surface_change": "none, all arms are env-gated or analysis",
+            "gate_chain": GATE_CHAIN,
         },
     )
     run.summary.update(metrics)
@@ -340,6 +436,40 @@ def main() -> None:
                          e["split_vs_fallback_max_abs"],
                          e["positive_control_max_abs"])
     run.log({"e149_c1_exactness": c1exact})
+
+    marg = wandb.Table(columns=[
+        "mass_model", "step", "best_us", "ci68_lo", "ci68_hi", "ci95_lo",
+        "ci95_hi", "bound_binds", "rms_pct", "sigma_inflation",
+        "h_null_replayed_us", "h_alt_measured_over_k_us"])
+    for model in ("tilt", "replay"):
+        m = f7m["models"][model]
+        for step in ("5_to_6", "6_to_7", "7_to_8"):
+            full = m[f"e149_rungD_marginal_{step}_us"]
+            rec = full["monotone_constrained"]
+            marg.add_data(
+                model, step, rec["best_marginal_us"], full["ci68_us"][0],
+                full["ci68_us"][1], rec["ci95_us"][0], rec["ci95_us"][1],
+                rec["bound_binds"], full["best_rms_pct"],
+                full["sigma_inflation"],
+                f7m["reference_marginals_us"][f"h_null_replayed_{step}"],
+                f7m["reference_marginals_us"][
+                    f"h_alt_measured_over_k_{step}"])
+    run.log({"e149_rungD_high_width_marginals": marg})
+
+    r147 = wandb.Table(columns=[
+        "prompt", "rule147_2sigma_us", "block_sigma_n10_us",
+        "block_sigma_n11_us", "ratio_n11", "pct_0cf1637e", "us_per_round",
+        "z_vs_all8", "z_vs_paying_five"])
+    for prompt, floor in f7r["rule_147_2sigma_us"].items():
+        z5 = f7d["common_fit_paying_five"]["z"].get(prompt)
+        if z5 is None:
+            z5 = f7d["z_excursion_vs_paying_five_level"].get(prompt)
+        r147.add_data(
+            prompt, floor, prov["n10"][prompt], prov["n11"][prompt],
+            prov["ratio_n11_to_rule147_half"][prompt], f7d["pct"][prompt],
+            f7d["us_per_round"][prompt],
+            f7d["common_fit_all8"]["z"][prompt], z5)
+    run.log({"e149_rule147_check_on_0cf1637e": r147})
 
     art = wandb.Artifact("e149-terminal", type="analysis")
     for name in FILES:
