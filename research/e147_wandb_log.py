@@ -377,7 +377,14 @@ ARTIFACTS = [
     }),
     ("research/e147-rungE2.json", "rungE2_nax_compile", {
         "e147_rungE2_retile_compiles": "e147_rungE2_retile_compiles",
+        "e147_rungE2_k_order_preserved": "e147_rungE2_k_order_preserved",
         "e147_rungE2_matmad_branch_switches": "e147_rungE2_matmad_branch_switches",
+        "e147_rungE2_register_census_available":
+            "e147_rungE2_register_census_available",
+        "e147_rungE2_scored_shape_also_untranslatable":
+            "e147_rungE2_scored_shape_also_untranslatable",
+        "e147_rungE2_retile_refusal_identical_to_scored":
+            "e147_rungE2_retile_refusal_identical_to_scored",
         "e147_rungE2_failopen_shape_exists": "e147_rungE2_failopen_shape_exists",
         "e147_rungE2_failopen_control_observed":
             "e147_rungE2_failopen_control_observed",
@@ -391,6 +398,9 @@ RUNG_E1B_FLAGS = [
      "e147_rungE1b_positive_control_caught"),
     ("e147_rungE1b_arm_contrast", "e147_rungE1b_arm_contrast_nonempty"),
     ("e147_rungE1b_tree_restored", "e147_rungE4_submitted_default_is_off"),
+    ("e147_rungE1b_control_differs_from_retile",
+     "e147_rungE1b_control_differs_from_retile"),
+    ("e147_rungE1b_verdict", "e147_rungE1b_verdict_pass"),
 ]
 
 TRUTHY = {"true": 1.0, "false": 0.0, "ok": 1.0, "1": 1.0, "0": 0.0,
