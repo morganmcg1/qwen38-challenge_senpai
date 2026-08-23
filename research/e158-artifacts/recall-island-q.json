@@ -1,0 +1,899 @@
+{
+  "harness": "local",
+  "per_prompt": [
+    {
+      "prompt": "beagle_a",
+      "slots_total": 501,
+      "rounds": 120,
+      "distinct_target_tokens": 92,
+      "distinct_proposed_tokens": 88,
+      "most_common_target_share": 0.1497005988023952,
+      "mean_offered_depth": 4.175,
+      "counts": {
+        "shipped_hits": 433,
+        "exact_compact_hits": 433,
+        "exact_full_hits": 434,
+        "masked_compact_hits": 15,
+        "index_miss": 1,
+        "index_miss_exact_ties": 0,
+        "masked_control_moved": 501,
+        "ann_outside_compact_set": 0,
+        "permutation_shifted_hits": 5,
+        "permutation_shifted_trials": 500
+      },
+      "three_bucket_split_marginal": {
+        "slots": 501,
+        "hit_shipped": 433,
+        "bucket_a_selection_defect": 0,
+        "bucket_b_candidate_set_trim": 2,
+        "bucket_c_irreducible_head_disagreement": 66,
+        "lucky_shipped_win_exact_miss": 0,
+        "bucket_a_pp": 0.0,
+        "bucket_b_pp": 0.3992015968063872,
+        "bucket_c_pp": 13.173652694610778,
+        "lucky_pp": 0.0,
+        "bucket_a_net_of_lucky_pp": 0.0,
+        "partition_is_exhaustive": true
+      },
+      "three_bucket_split_conditional": {
+        "slots": 443,
+        "hit_shipped": 392,
+        "bucket_a_selection_defect": 0,
+        "bucket_b_candidate_set_trim": 2,
+        "bucket_c_irreducible_head_disagreement": 49,
+        "lucky_shipped_win_exact_miss": 0,
+        "bucket_a_pp": 0.0,
+        "bucket_b_pp": 0.45146726862302483,
+        "bucket_c_pp": 11.060948081264108,
+        "lucky_pp": 0.0,
+        "bucket_a_net_of_lucky_pp": 0.0,
+        "partition_is_exhaustive": true
+      },
+      "head_margin_when_head_disagrees": {
+        "disagreeing_slots": 67,
+        "head_logit_exact_ties": 2,
+        "margin_min": 0.0,
+        "margin_p25": 1.3125,
+        "margin_median": 2.625,
+        "margin_p75": 5.0625,
+        "margin_max": 15.0625,
+        "margin_mean": 3.267723880597015,
+        "fraction_within_0p25": 0.04477611940298507,
+        "fraction_within_0p50": 0.11940298507462686,
+        "fraction_within_1p00": 0.19402985074626866,
+        "fraction_within_2p00": 0.40298507462686567
+      },
+      "e155_p_shipped": 0.8642714570858283,
+      "e155_p_exact_compact": 0.8642714570858283,
+      "e155_p_exact_full": 0.8662674650698603,
+      "e155_index_miss_rate": 0.001996007984031936,
+      "e155_recoverable_index_pp": 0.0,
+      "e155_recoverable_vocab_pp": 0.1996007984031989,
+      "e155_irreducible_head_error_pp": 13.37325349301397,
+      "conditional_population": {
+        "slots": 443,
+        "p_shipped": 0.8848758465011287,
+        "p_exact_compact": 0.8848758465011287,
+        "p_exact_full": 0.8871331828442438,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.22573363431150906
+      },
+      "permutation_control": {
+        "p_shipped": 0.8642714570858283,
+        "p_shipped_shifted_by_one_slot": 0.01,
+        "magnitude_pp": 85.42714570858283
+      },
+      "masked_winner_control": {
+        "p_exact_compact": 0.8642714570858283,
+        "p_masked_compact": 0.029940119760479042,
+        "magnitude_pp": 83.43313373253493,
+        "moved_fraction": 1.0
+      },
+      "conditional_slot_table": {
+        "1": {
+          "trials": 120,
+          "p_shipped": 0.85,
+          "p_exact_compact": 0.85,
+          "p_exact_full": 0.8666666666666667,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 1.6666666666666718
+        },
+        "2": {
+          "trials": 101,
+          "p_shipped": 0.7524752475247525,
+          "p_exact_compact": 0.7524752475247525,
+          "p_exact_full": 0.7524752475247525,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "3": {
+          "trials": 63,
+          "p_shipped": 0.9047619047619048,
+          "p_exact_compact": 0.9047619047619048,
+          "p_exact_full": 0.9047619047619048,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "4": {
+          "trials": 51,
+          "p_shipped": 0.9803921568627451,
+          "p_exact_compact": 0.9803921568627451,
+          "p_exact_full": 0.9607843137254902,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": -1.9607843137254832
+        },
+        "5": {
+          "trials": 39,
+          "p_shipped": 0.9743589743589743,
+          "p_exact_compact": 0.9743589743589743,
+          "p_exact_full": 0.9743589743589743,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "6": {
+          "trials": 36,
+          "p_shipped": 1.0,
+          "p_exact_compact": 1.0,
+          "p_exact_full": 1.0,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "7": {
+          "trials": 33,
+          "p_shipped": 1.0,
+          "p_exact_compact": 1.0,
+          "p_exact_full": 1.0,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        }
+      },
+      "marginal_slot_table": {
+        "1": {
+          "trials": 120,
+          "p_shipped": 0.85,
+          "p_exact_compact": 0.85,
+          "p_exact_full": 0.8666666666666667
+        },
+        "2": {
+          "trials": 118,
+          "p_shipped": 0.7288135593220338,
+          "p_exact_compact": 0.7288135593220338,
+          "p_exact_full": 0.7288135593220338
+        },
+        "3": {
+          "trials": 84,
+          "p_shipped": 0.8571428571428571,
+          "p_exact_compact": 0.8571428571428571,
+          "p_exact_full": 0.8571428571428571
+        },
+        "4": {
+          "trials": 65,
+          "p_shipped": 0.9384615384615385,
+          "p_exact_compact": 0.9384615384615385,
+          "p_exact_full": 0.9230769230769231
+        },
+        "5": {
+          "trials": 45,
+          "p_shipped": 0.9555555555555556,
+          "p_exact_compact": 0.9555555555555556,
+          "p_exact_full": 0.9555555555555556
+        },
+        "6": {
+          "trials": 36,
+          "p_shipped": 1.0,
+          "p_exact_compact": 1.0,
+          "p_exact_full": 1.0
+        },
+        "7": {
+          "trials": 33,
+          "p_shipped": 1.0,
+          "p_exact_compact": 1.0,
+          "p_exact_full": 1.0
+        }
+      },
+      "derived_exchange_rate": {
+        "tokens_per_round_base": 3.71649234154184,
+        "tokens_per_round_bumped": 3.802015720191167,
+        "published_pct_per_acceptance_point": 2.3011853863755483
+      },
+      "counterfactual_tokens_per_round": {
+        "shipped": 3.71649234154184,
+        "exact_compact": 3.71649234154184,
+        "exact_full": 3.752781121249393,
+        "index_published_pct": 0.0,
+        "vocab_published_pct": 0.9764255209657757
+      }
+    },
+    {
+      "prompt": "essays_montaigne",
+      "slots_total": 500,
+      "rounds": 147,
+      "distinct_target_tokens": 123,
+      "distinct_proposed_tokens": 111,
+      "most_common_target_share": 0.27,
+      "mean_offered_depth": 3.401360544217687,
+      "counts": {
+        "shipped_hits": 415,
+        "exact_compact_hits": 415,
+        "exact_full_hits": 415,
+        "masked_compact_hits": 22,
+        "index_miss": 2,
+        "index_miss_exact_ties": 0,
+        "masked_control_moved": 500,
+        "ann_outside_compact_set": 0,
+        "permutation_shifted_hits": 14,
+        "permutation_shifted_trials": 499
+      },
+      "three_bucket_split_marginal": {
+        "slots": 500,
+        "hit_shipped": 415,
+        "bucket_a_selection_defect": 0,
+        "bucket_b_candidate_set_trim": 0,
+        "bucket_c_irreducible_head_disagreement": 85,
+        "lucky_shipped_win_exact_miss": 0,
+        "bucket_a_pp": 0.0,
+        "bucket_b_pp": 0.0,
+        "bucket_c_pp": 17.0,
+        "lucky_pp": 0.0,
+        "bucket_a_net_of_lucky_pp": 0.0,
+        "partition_is_exhaustive": true
+      },
+      "three_bucket_split_conditional": {
+        "slots": 431,
+        "hit_shipped": 365,
+        "bucket_a_selection_defect": 0,
+        "bucket_b_candidate_set_trim": 0,
+        "bucket_c_irreducible_head_disagreement": 66,
+        "lucky_shipped_win_exact_miss": 0,
+        "bucket_a_pp": 0.0,
+        "bucket_b_pp": 0.0,
+        "bucket_c_pp": 15.31322505800464,
+        "lucky_pp": 0.0,
+        "bucket_a_net_of_lucky_pp": 0.0,
+        "partition_is_exhaustive": true
+      },
+      "head_margin_when_head_disagrees": {
+        "disagreeing_slots": 85,
+        "head_logit_exact_ties": 0,
+        "margin_min": 0.0625,
+        "margin_p25": 0.875,
+        "margin_median": 1.8125,
+        "margin_p75": 4.3125,
+        "margin_max": 17.5,
+        "margin_mean": 3.20625,
+        "fraction_within_0p25": 0.047058823529411764,
+        "fraction_within_0p50": 0.15294117647058825,
+        "fraction_within_1p00": 0.3176470588235294,
+        "fraction_within_2p00": 0.5529411764705883
+      },
+      "e155_p_shipped": 0.83,
+      "e155_p_exact_compact": 0.83,
+      "e155_p_exact_full": 0.83,
+      "e155_index_miss_rate": 0.004,
+      "e155_recoverable_index_pp": 0.0,
+      "e155_recoverable_vocab_pp": 0.0,
+      "e155_irreducible_head_error_pp": 17.000000000000004,
+      "conditional_population": {
+        "slots": 431,
+        "p_shipped": 0.8468677494199536,
+        "p_exact_compact": 0.8468677494199536,
+        "p_exact_full": 0.8468677494199536,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.0
+      },
+      "permutation_control": {
+        "p_shipped": 0.83,
+        "p_shipped_shifted_by_one_slot": 0.028056112224448898,
+        "magnitude_pp": 80.1943887775551
+      },
+      "masked_winner_control": {
+        "p_exact_compact": 0.83,
+        "p_masked_compact": 0.044,
+        "magnitude_pp": 78.6,
+        "moved_fraction": 1.0
+      },
+      "conditional_slot_table": {
+        "1": {
+          "trials": 147,
+          "p_shipped": 0.8571428571428571,
+          "p_exact_compact": 0.8571428571428571,
+          "p_exact_full": 0.8571428571428571,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "2": {
+          "trials": 124,
+          "p_shipped": 0.9032258064516129,
+          "p_exact_compact": 0.9032258064516129,
+          "p_exact_full": 0.9032258064516129,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "3": {
+          "trials": 86,
+          "p_shipped": 0.9069767441860465,
+          "p_exact_compact": 0.9069767441860465,
+          "p_exact_full": 0.9069767441860465,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "4": {
+          "trials": 53,
+          "p_shipped": 0.7169811320754716,
+          "p_exact_compact": 0.7169811320754716,
+          "p_exact_full": 0.7169811320754716,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "5": {
+          "trials": 20,
+          "p_shipped": 0.55,
+          "p_exact_compact": 0.55,
+          "p_exact_full": 0.55,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "6": {
+          "trials": 1,
+          "p_shipped": 0.0,
+          "p_exact_compact": 0.0,
+          "p_exact_full": 0.0,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        }
+      },
+      "marginal_slot_table": {
+        "1": {
+          "trials": 147,
+          "p_shipped": 0.8571428571428571,
+          "p_exact_compact": 0.8571428571428571,
+          "p_exact_full": 0.8571428571428571
+        },
+        "2": {
+          "trials": 142,
+          "p_shipped": 0.8661971830985915,
+          "p_exact_compact": 0.8661971830985915,
+          "p_exact_full": 0.8661971830985915
+        },
+        "3": {
+          "trials": 109,
+          "p_shipped": 0.8623853211009175,
+          "p_exact_compact": 0.8623853211009175,
+          "p_exact_full": 0.8623853211009175
+        },
+        "4": {
+          "trials": 67,
+          "p_shipped": 0.7313432835820896,
+          "p_exact_compact": 0.7313432835820896,
+          "p_exact_full": 0.7313432835820896
+        },
+        "5": {
+          "trials": 31,
+          "p_shipped": 0.6451612903225806,
+          "p_exact_compact": 0.6451612903225806,
+          "p_exact_full": 0.6451612903225806
+        },
+        "6": {
+          "trials": 4,
+          "p_shipped": 0.75,
+          "p_exact_compact": 0.75,
+          "p_exact_full": 0.75
+        }
+      },
+      "derived_exchange_rate": {
+        "tokens_per_round_base": 3.413519090207664,
+        "tokens_per_round_bumped": 3.473573008951759,
+        "published_pct_per_acceptance_point": 1.7592964081077254
+      },
+      "counterfactual_tokens_per_round": {
+        "shipped": 3.413519090207664,
+        "exact_compact": 3.413519090207664,
+        "exact_full": 3.413519090207664,
+        "index_published_pct": 0.0,
+        "vocab_published_pct": 0.0
+      }
+    },
+    {
+      "prompt": "benchfixture",
+      "slots_total": 492,
+      "rounds": 79,
+      "distinct_target_tokens": 220,
+      "distinct_proposed_tokens": 219,
+      "most_common_target_share": 0.07926829268292683,
+      "mean_offered_depth": 6.227848101265823,
+      "counts": {
+        "shipped_hits": 465,
+        "exact_compact_hits": 467,
+        "exact_full_hits": 467,
+        "masked_compact_hits": 13,
+        "index_miss": 3,
+        "index_miss_exact_ties": 0,
+        "masked_control_moved": 492,
+        "ann_outside_compact_set": 0,
+        "permutation_shifted_hits": 3,
+        "permutation_shifted_trials": 491
+      },
+      "three_bucket_split_marginal": {
+        "slots": 492,
+        "hit_shipped": 465,
+        "bucket_a_selection_defect": 2,
+        "bucket_b_candidate_set_trim": 0,
+        "bucket_c_irreducible_head_disagreement": 25,
+        "lucky_shipped_win_exact_miss": 0,
+        "bucket_a_pp": 0.4065040650406504,
+        "bucket_b_pp": 0.0,
+        "bucket_c_pp": 5.08130081300813,
+        "lucky_pp": 0.0,
+        "bucket_a_net_of_lucky_pp": 0.4065040650406504,
+        "partition_is_exhaustive": true
+      },
+      "three_bucket_split_conditional": {
+        "slots": 453,
+        "hit_shipped": 433,
+        "bucket_a_selection_defect": 1,
+        "bucket_b_candidate_set_trim": 0,
+        "bucket_c_irreducible_head_disagreement": 19,
+        "lucky_shipped_win_exact_miss": 0,
+        "bucket_a_pp": 0.22075055187637968,
+        "bucket_b_pp": 0.0,
+        "bucket_c_pp": 4.194260485651214,
+        "lucky_pp": 0.0,
+        "bucket_a_net_of_lucky_pp": 0.22075055187637968,
+        "partition_is_exhaustive": true
+      },
+      "head_margin_when_head_disagrees": {
+        "disagreeing_slots": 25,
+        "head_logit_exact_ties": 0,
+        "margin_min": 0.125,
+        "margin_p25": 1.375,
+        "margin_median": 3.5,
+        "margin_p75": 6.875,
+        "margin_max": 14.1875,
+        "margin_mean": 4.71,
+        "fraction_within_0p25": 0.12,
+        "fraction_within_0p50": 0.2,
+        "fraction_within_1p00": 0.24,
+        "fraction_within_2p00": 0.36
+      },
+      "e155_p_shipped": 0.9451219512195121,
+      "e155_p_exact_compact": 0.9491869918699187,
+      "e155_p_exact_full": 0.9491869918699187,
+      "e155_index_miss_rate": 0.006097560975609756,
+      "e155_recoverable_index_pp": 0.40650406504065817,
+      "e155_recoverable_vocab_pp": 0.0,
+      "e155_irreducible_head_error_pp": 5.081300813008127,
+      "conditional_population": {
+        "slots": 453,
+        "p_shipped": 0.9558498896247241,
+        "p_exact_compact": 0.9580573951434879,
+        "p_exact_full": 0.9580573951434879,
+        "recoverable_index_pp": 0.22075055187638082,
+        "recoverable_vocab_pp": 0.0
+      },
+      "permutation_control": {
+        "p_shipped": 0.9451219512195121,
+        "p_shipped_shifted_by_one_slot": 0.006109979633401222,
+        "magnitude_pp": 93.9011971586111
+      },
+      "masked_winner_control": {
+        "p_exact_compact": 0.9491869918699187,
+        "p_masked_compact": 0.026422764227642278,
+        "magnitude_pp": 92.27642276422765,
+        "moved_fraction": 1.0
+      },
+      "conditional_slot_table": {
+        "1": {
+          "trials": 79,
+          "p_shipped": 0.9493670886075949,
+          "p_exact_compact": 0.9493670886075949,
+          "p_exact_full": 0.9493670886075949,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "2": {
+          "trials": 75,
+          "p_shipped": 0.9733333333333334,
+          "p_exact_compact": 0.9733333333333334,
+          "p_exact_full": 0.9733333333333334,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "3": {
+          "trials": 73,
+          "p_shipped": 0.9452054794520548,
+          "p_exact_compact": 0.958904109589041,
+          "p_exact_full": 0.958904109589041,
+          "recoverable_index_pp": 1.3698630136986245,
+          "recoverable_vocab_pp": 0.0
+        },
+        "4": {
+          "trials": 68,
+          "p_shipped": 0.9705882352941176,
+          "p_exact_compact": 0.9705882352941176,
+          "p_exact_full": 0.9705882352941176,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "5": {
+          "trials": 59,
+          "p_shipped": 0.9322033898305084,
+          "p_exact_compact": 0.9322033898305084,
+          "p_exact_full": 0.9322033898305084,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "6": {
+          "trials": 52,
+          "p_shipped": 0.9807692307692307,
+          "p_exact_compact": 0.9807692307692307,
+          "p_exact_full": 0.9807692307692307,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        },
+        "7": {
+          "trials": 47,
+          "p_shipped": 0.9361702127659575,
+          "p_exact_compact": 0.9361702127659575,
+          "p_exact_full": 0.9361702127659575,
+          "recoverable_index_pp": 0.0,
+          "recoverable_vocab_pp": 0.0
+        }
+      },
+      "marginal_slot_table": {
+        "1": {
+          "trials": 79,
+          "p_shipped": 0.9493670886075949,
+          "p_exact_compact": 0.9493670886075949,
+          "p_exact_full": 0.9493670886075949
+        },
+        "2": {
+          "trials": 79,
+          "p_shipped": 0.9493670886075949,
+          "p_exact_compact": 0.9620253164556962,
+          "p_exact_full": 0.9620253164556962
+        },
+        "3": {
+          "trials": 79,
+          "p_shipped": 0.9367088607594937,
+          "p_exact_compact": 0.9493670886075949,
+          "p_exact_full": 0.9493670886075949
+        },
+        "4": {
+          "trials": 75,
+          "p_shipped": 0.96,
+          "p_exact_compact": 0.96,
+          "p_exact_full": 0.96
+        },
+        "5": {
+          "trials": 65,
+          "p_shipped": 0.9384615384615385,
+          "p_exact_compact": 0.9384615384615385,
+          "p_exact_full": 0.9384615384615385
+        },
+        "6": {
+          "trials": 61,
+          "p_shipped": 0.9672131147540983,
+          "p_exact_compact": 0.9672131147540983,
+          "p_exact_full": 0.9672131147540983
+        },
+        "7": {
+          "trials": 54,
+          "p_shipped": 0.9074074074074074,
+          "p_exact_compact": 0.9074074074074074,
+          "p_exact_full": 0.9074074074074074
+        }
+      },
+      "derived_exchange_rate": {
+        "tokens_per_round_base": 6.296285561776768,
+        "tokens_per_round_bumped": 6.498176571133526,
+        "published_pct_per_acceptance_point": 3.2065097330144856
+      },
+      "counterfactual_tokens_per_round": {
+        "shipped": 6.296285561776768,
+        "exact_compact": 6.345892342070365,
+        "exact_full": 6.345892342070365,
+        "index_published_pct": 0.7878737361397244,
+        "vocab_published_pct": 0.0
+      }
+    }
+  ],
+  "pooled": {
+    "prompt": "pooled",
+    "slots_total": 1493,
+    "rounds": 346,
+    "distinct_target_tokens": 406,
+    "distinct_proposed_tokens": 391,
+    "most_common_target_share": 0.16008037508372405,
+    "mean_offered_depth": 4.315028901734104,
+    "counts": {
+      "shipped_hits": 1313,
+      "exact_compact_hits": 1315,
+      "exact_full_hits": 1316,
+      "masked_compact_hits": 50,
+      "index_miss": 6,
+      "index_miss_exact_ties": 0,
+      "masked_control_moved": 1493,
+      "ann_outside_compact_set": 0,
+      "permutation_shifted_hits": 22,
+      "permutation_shifted_trials": 1492
+    },
+    "three_bucket_split_marginal": {
+      "slots": 1493,
+      "hit_shipped": 1313,
+      "bucket_a_selection_defect": 2,
+      "bucket_b_candidate_set_trim": 2,
+      "bucket_c_irreducible_head_disagreement": 176,
+      "lucky_shipped_win_exact_miss": 0,
+      "bucket_a_pp": 0.13395847287340926,
+      "bucket_b_pp": 0.13395847287340926,
+      "bucket_c_pp": 11.788345612860013,
+      "lucky_pp": 0.0,
+      "bucket_a_net_of_lucky_pp": 0.13395847287340926,
+      "partition_is_exhaustive": true
+    },
+    "three_bucket_split_conditional": {
+      "slots": 1327,
+      "hit_shipped": 1190,
+      "bucket_a_selection_defect": 1,
+      "bucket_b_candidate_set_trim": 2,
+      "bucket_c_irreducible_head_disagreement": 134,
+      "lucky_shipped_win_exact_miss": 0,
+      "bucket_a_pp": 0.07535795026375283,
+      "bucket_b_pp": 0.15071590052750566,
+      "bucket_c_pp": 10.097965335342879,
+      "lucky_pp": 0.0,
+      "bucket_a_net_of_lucky_pp": 0.07535795026375283,
+      "partition_is_exhaustive": true
+    },
+    "head_margin_when_head_disagrees": {
+      "disagreeing_slots": 177,
+      "head_logit_exact_ties": 2,
+      "margin_min": 0.0,
+      "margin_p25": 1.0,
+      "margin_median": 2.25,
+      "margin_p75": 4.875,
+      "margin_max": 17.5,
+      "margin_mean": 3.4419138418079096,
+      "fraction_within_0p25": 0.05649717514124294,
+      "fraction_within_0p50": 0.14689265536723164,
+      "fraction_within_1p00": 0.2598870056497175,
+      "fraction_within_2p00": 0.4689265536723164
+    },
+    "e155_p_shipped": 0.8794373744139317,
+    "e155_p_exact_compact": 0.8807769591426657,
+    "e155_p_exact_full": 0.8814467515070328,
+    "e155_index_miss_rate": 0.004018754186202277,
+    "e155_recoverable_index_pp": 0.13395847287340779,
+    "e155_recoverable_vocab_pp": 0.06697923643670389,
+    "e155_irreducible_head_error_pp": 11.855324849296721,
+    "conditional_population": {
+      "slots": 1327,
+      "p_shipped": 0.8967596081386586,
+      "p_exact_compact": 0.8975131876412962,
+      "p_exact_full": 0.8982667671439337,
+      "recoverable_index_pp": 0.07535795026375469,
+      "recoverable_vocab_pp": 0.07535795026375469
+    },
+    "permutation_control": {
+      "p_shipped": 0.8794373744139317,
+      "p_shipped_shifted_by_one_slot": 0.014745308310991957,
+      "magnitude_pp": 86.46920661029397
+    },
+    "masked_winner_control": {
+      "p_exact_compact": 0.8807769591426657,
+      "p_masked_compact": 0.033489618218352314,
+      "magnitude_pp": 84.72873409243135,
+      "moved_fraction": 1.0
+    },
+    "conditional_slot_table": {
+      "1": {
+        "trials": 346,
+        "p_shipped": 0.8757225433526011,
+        "p_exact_compact": 0.8757225433526011,
+        "p_exact_full": 0.8815028901734104,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.5780346820809301
+      },
+      "2": {
+        "trials": 300,
+        "p_shipped": 0.87,
+        "p_exact_compact": 0.87,
+        "p_exact_full": 0.87,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.0
+      },
+      "3": {
+        "trials": 222,
+        "p_shipped": 0.918918918918919,
+        "p_exact_compact": 0.9234234234234234,
+        "p_exact_full": 0.9234234234234234,
+        "recoverable_index_pp": 0.45045045045044585,
+        "recoverable_vocab_pp": 0.0
+      },
+      "4": {
+        "trials": 172,
+        "p_shipped": 0.8953488372093024,
+        "p_exact_compact": 0.8953488372093024,
+        "p_exact_full": 0.8895348837209303,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": -0.5813953488372103
+      },
+      "5": {
+        "trials": 118,
+        "p_shipped": 0.8813559322033898,
+        "p_exact_compact": 0.8813559322033898,
+        "p_exact_full": 0.8813559322033898,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.0
+      },
+      "6": {
+        "trials": 89,
+        "p_shipped": 0.9775280898876404,
+        "p_exact_compact": 0.9775280898876404,
+        "p_exact_full": 0.9775280898876404,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.0
+      },
+      "7": {
+        "trials": 80,
+        "p_shipped": 0.9625,
+        "p_exact_compact": 0.9625,
+        "p_exact_full": 0.9625,
+        "recoverable_index_pp": 0.0,
+        "recoverable_vocab_pp": 0.0
+      }
+    },
+    "marginal_slot_table": {
+      "1": {
+        "trials": 346,
+        "p_shipped": 0.8757225433526011,
+        "p_exact_compact": 0.8757225433526011,
+        "p_exact_full": 0.8815028901734104
+      },
+      "2": {
+        "trials": 339,
+        "p_shipped": 0.8377581120943953,
+        "p_exact_compact": 0.8407079646017699,
+        "p_exact_full": 0.8407079646017699
+      },
+      "3": {
+        "trials": 272,
+        "p_shipped": 0.8823529411764706,
+        "p_exact_compact": 0.8860294117647058,
+        "p_exact_full": 0.8860294117647058
+      },
+      "4": {
+        "trials": 207,
+        "p_shipped": 0.8792270531400966,
+        "p_exact_compact": 0.8792270531400966,
+        "p_exact_full": 0.8743961352657005
+      },
+      "5": {
+        "trials": 141,
+        "p_shipped": 0.8794326241134752,
+        "p_exact_compact": 0.8794326241134752,
+        "p_exact_full": 0.8794326241134752
+      },
+      "6": {
+        "trials": 101,
+        "p_shipped": 0.9702970297029703,
+        "p_exact_compact": 0.9702970297029703,
+        "p_exact_full": 0.9702970297029703
+      },
+      "7": {
+        "trials": 87,
+        "p_shipped": 0.9425287356321839,
+        "p_exact_compact": 0.9425287356321839,
+        "p_exact_full": 0.9425287356321839
+      }
+    },
+    "derived_exchange_rate": {
+      "tokens_per_round_base": 4.061059449697664,
+      "tokens_per_round_bumped": 4.158364573530196,
+      "published_pct_per_acceptance_point": 2.3960526812720344
+    },
+    "counterfactual_tokens_per_round": {
+      "shipped": 4.061059449697664,
+      "exact_compact": 4.068112743927019,
+      "exact_full": 4.082528277115893,
+      "index_published_pct": 0.1736811370707645,
+      "vocab_published_pct": 0.3549697650928801
+    },
+    "prompts": [
+      "beagle_a",
+      "essays_montaigne",
+      "benchfixture"
+    ]
+  },
+  "e155_recoverable_acceptance_points": {
+    "definition": "one acceptance point is one percentage point of the per-position conditional acceptance probability p, which is the quantity F3 prices at +2.6701 % of raw",
+    "population": "conditional, the chain that feeds E[accepted tokens per round]",
+    "bucket_a_selection_defect_points": 0.07535795026375283,
+    "bucket_b_candidate_set_trim_points": 0.15071590052750566,
+    "bucket_c_irreducible_points": 10.097965335342879,
+    "total_recoverable_points": 0.2260738507912585,
+    "marginal_population_cross_check": {
+      "bucket_a_points": 0.13395847287340926,
+      "bucket_b_points": 0.13395847287340926,
+      "bucket_c_points": 11.788345612860013
+    }
+  },
+  "conversion": {
+    "harness": "ranked",
+    "settled_pct_per_acceptance_point": 2.6701,
+    "settled_absolute_per_acceptance_point": 0.0983,
+    "gap_to_crown_absolute": 0.04632,
+    "bucket_a_pct_published": 0.20121326299924644,
+    "bucket_b_pct_published": 0.4024265259984929,
+    "bucket_a_absolute": 0.007407686510926903,
+    "bucket_b_absolute": 0.014815373021853807,
+    "total_recoverable_pct_published": 0.6036397889977393,
+    "total_recoverable_as_fraction_of_gap": 0.4797724424175455,
+    "e155_published_pct_per_acceptance_point": 2.3960526812720344,
+    "e155_published_pct_per_acceptance_point_source": "derived here from the measured pooled depth and per-slot acceptance profile, holding depth and round cost fixed",
+    "reproduces_advisor_fixed_depth_rate": true,
+    "relative_gap_vs_advisor_fixed_depth": 0.0696663755678724,
+    "fixed_depth_pct_per_acceptance_point": 2.24,
+    "co_moving_pct_per_acceptance_point": 1.209,
+    "e155_recoverable_index_pct_published": 0.3000669792364335,
+    "e155_recoverable_vocab_pct_published": 0.15003348961821675,
+    "e155_recoverable_index_pct_published_co_moving": 0.16195579370395002,
+    "e155_recoverable_vocab_pct_published_co_moving": 0.08097789685197501,
+    "index_pct_published_conditional_population": 0.16880180859081054,
+    "vocab_pct_published_conditional_population": 0.16880180859081054,
+    "index_pct_published_chain_recomputed": 0.1736811370707645,
+    "vocab_pct_published_chain_recomputed": 0.3549697650928801
+  },
+  "bucket_b_untrim_price": {
+    "harness": "ranked",
+    "shipped_geometry": {
+      "rows": 98336,
+      "leaves": 6146,
+      "probed_leaves": 922,
+      "refined_rows": 14752,
+      "coarse_bytes": 9833600.0,
+      "refine_bytes": 23603200.0,
+      "rerank_bytes": 92160.0,
+      "total_bytes_per_draft_step": 33528960.0
+    },
+    "untrimmed_geometry": {
+      "rows": 248320,
+      "leaves": 15520,
+      "probed_leaves": 2328,
+      "refined_rows": 37248,
+      "coarse_bytes": 24832000.0,
+      "refine_bytes": 59596800.0,
+      "rerank_bytes": 92160.0,
+      "total_bytes_per_draft_step": 84520960.0
+    },
+    "delta_bytes_per_draft_step": 50992000.0,
+    "delta_us_per_draft_step": 89.93298059964727,
+    "mean_offered_depth": 4.315028901734104,
+    "delta_us_per_round": 388.06341050657045,
+    "modelled_round_us": 42835.00609865268,
+    "cost_pct_published": 0.9059492360356556,
+    "net_pct_published": -0.5035227100371626,
+    "worth_building": false
+  },
+  "ranked_acceptance_reference": {
+    "harness": "ranked",
+    "source": "FINDING 286, per-position conditional acceptance recovered from the ranked receipts",
+    "rates": {
+      "drama": 0.528,
+      "travel": 0.6248,
+      "beagle": 0.8973,
+      "republic": 0.9187,
+      "essays": 0.9222,
+      "medicine": 0.9299,
+      "botany": 0.9312
+    },
+    "local_conditional_measured": {
+      "beagle_a": 0.8848758465011287,
+      "essays_montaigne": 0.8468677494199536,
+      "benchfixture": 0.9558498896247241
+    }
+  },
+  "e155_axis_verdict": "close_the_index_axis",
+  "e155_vocab_axis_verdict": "close_the_index_axis",
+  "e155_warm_verdict": "closed_by_inheritance"
+}

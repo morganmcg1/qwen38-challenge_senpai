@@ -1,0 +1,222 @@
+{
+ "harness": "local for acceptance rates, ranked for published percent",
+ "timing_valid": false,
+ "head": "declared q2/q4, head_provenance.sha256 dadbfb80...",
+ "tokens_per_prompt": 512,
+ "prompts": [
+  "beagle_a",
+  "essays_montaigne",
+  "benchfixture"
+ ],
+ "arms": {
+  "all": {
+   "legs": {
+    "beagle_a": {
+     "rounds": 119,
+     "tokens_per_round": 4.302521008403361,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.7782178217821782,
+     "effective_mean_draft_len": 4.243697478991597,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: all installsQ=true installsKV=true"
+    },
+    "essays_montaigne": {
+     "rounds": 146,
+     "tokens_per_round": 3.506849315068493,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.7290836653386454,
+     "effective_mean_draft_len": 3.4383561643835616,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: all installsQ=true installsKV=true"
+    },
+    "benchfixture": {
+     "rounds": 78,
+     "tokens_per_round": 6.564102564102564,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.875,
+     "effective_mean_draft_len": 6.358974358974359,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: all installsQ=true installsKV=true"
+    }
+   },
+   "rounds_total": 343,
+   "tokens_per_round_pooled": 4.478134110787172,
+   "conditional_slots": 1324,
+   "p_shipped_conditional": 0.9010574018126888,
+   "p_exact_compact_conditional": 0.9018126888217523,
+   "p_exact_full_conditional": 0.9033232628398792,
+   "bytes_per_draft_step_delta_vs_all": 0,
+   "bytes_per_draft_step_delta_vs_all_MB": 0.0,
+   "published_pct_delta_vs_all_PROVISIONAL": 0.0,
+   "acceptance_loss_vs_all_pt": 0.0,
+   "acceptance_loss_two_se_pt": 2.320966571898532,
+   "rounds_delta_vs_all": 0
+  },
+  "q": {
+   "legs": {
+    "beagle_a": {
+     "rounds": 120,
+     "tokens_per_round": 4.266666666666667,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.782435129740519,
+     "effective_mean_draft_len": 4.175,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: q installsQ=true installsKV=false"
+    },
+    "essays_montaigne": {
+     "rounds": 147,
+     "tokens_per_round": 3.4829931972789114,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.73,
+     "effective_mean_draft_len": 3.401360544217687,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: q installsQ=true installsKV=false"
+    },
+    "benchfixture": {
+     "rounds": 79,
+     "tokens_per_round": 6.481012658227848,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.8800813008130082,
+     "effective_mean_draft_len": 6.227848101265823,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: q installsQ=true installsKV=false"
+    }
+   },
+   "rounds_total": 346,
+   "tokens_per_round_pooled": 4.4393063583815024,
+   "conditional_slots": 1327,
+   "p_shipped_conditional": 0.8967596081386586,
+   "p_exact_compact_conditional": 0.8975131876412962,
+   "p_exact_full_conditional": 0.8982667671439337,
+   "bytes_per_draft_step_delta_vs_all": -15073280,
+   "bytes_per_draft_step_delta_vs_all_MB": -15.07328,
+   "published_pct_delta_vs_all_PROVISIONAL": 0.27026391040000003,
+   "acceptance_loss_vs_all_pt": 0.4297793674030159,
+   "acceptance_loss_two_se_pt": 2.341826891174461,
+   "rounds_delta_vs_all": 3
+  },
+  "kv": {
+   "legs": {
+    "beagle_a": {
+     "rounds": 118,
+     "tokens_per_round": 4.338983050847458,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.8024439918533605,
+     "effective_mean_draft_len": 4.161016949152542,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: kv installsQ=false installsKV=true"
+    },
+    "essays_montaigne": {
+     "rounds": 147,
+     "tokens_per_round": 3.4829931972789114,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.7242063492063492,
+     "effective_mean_draft_len": 3.4285714285714284,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: kv installsQ=false installsKV=true"
+    },
+    "benchfixture": {
+     "rounds": 79,
+     "tokens_per_round": 6.481012658227848,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.8625498007968128,
+     "effective_mean_draft_len": 6.3544303797468356,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: kv installsQ=false installsKV=true"
+    }
+   },
+   "rounds_total": 344,
+   "tokens_per_round_pooled": 4.465116279069767,
+   "conditional_slots": 1325,
+   "p_shipped_conditional": 0.8996226415094339,
+   "p_exact_compact_conditional": 0.900377358490566,
+   "p_exact_full_conditional": 0.9011320754716982,
+   "bytes_per_draft_step_delta_vs_all": -10489856,
+   "bytes_per_draft_step_delta_vs_all_MB": -10.489856,
+   "published_pct_delta_vs_all_PROVISIONAL": 0.18808311808,
+   "acceptance_loss_vs_all_pt": 0.1434760303254845,
+   "acceptance_loss_two_se_pt": 2.3279891130986203,
+   "rounds_delta_vs_all": 1
+  },
+  "none": {
+   "legs": {
+    "beagle_a": {
+     "rounds": 119,
+     "tokens_per_round": 4.302521008403361,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.7782178217821782,
+     "effective_mean_draft_len": 4.243697478991597,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: none installsQ=false installsKV=false"
+    },
+    "essays_montaigne": {
+     "rounds": 146,
+     "tokens_per_round": 3.506849315068493,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.7439024390243902,
+     "effective_mean_draft_len": 3.3698630136986303,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: none installsQ=false installsKV=false"
+    },
+    "benchfixture": {
+     "rounds": 77,
+     "tokens_per_round": 6.64935064935065,
+     "all_tokens_matched": true,
+     "residual_divergence_count": 0,
+     "accepted_draft_rate": 0.8841463414634146,
+     "effective_mean_draft_len": 6.3896103896103895,
+     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+     "mtp_head_tensor_count": 15,
+     "uses_pinned_mtp_head": true,
+     "island_arm_witness": "qwen-mtp-island-arm: none installsQ=false installsKV=false"
+    }
+   },
+   "rounds_total": 342,
+   "tokens_per_round_pooled": 4.491228070175438,
+   "conditional_slots": 1326,
+   "p_shipped_conditional": 0.9004524886877828,
+   "p_exact_compact_conditional": 0.9012066365007542,
+   "p_exact_full_conditional": 0.9027149321266968,
+   "bytes_per_draft_step_delta_vs_all": -25563136,
+   "bytes_per_draft_step_delta_vs_all_MB": -25.563136,
+   "published_pct_delta_vs_all_PROVISIONAL": 0.45834702848000003,
+   "acceptance_loss_vs_all_pt": 0.060491312490595917,
+   "acceptance_loss_two_se_pt": 2.3232410716377667,
+   "rounds_delta_vs_all": -1
+  }
+ },
+ "resolution_note": "Two standard errors on any arm-to-arm acceptance difference is about 2.32 points on three prompts. Every measured difference is inside that band, so the curve resolves no arm from any other on acceptance. The byte side is exact and the round counts are deterministic."
+}

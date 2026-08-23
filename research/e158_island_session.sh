@@ -42,24 +42,30 @@ head_dir="${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run"
 mkdir -p .mlxfast-private/e158
 status=0
 
+runs_root=".mlxfast-private/e128"
+
 for arm in "${arms[@]}"; do
-  trace="${PWD}/.mlxfast-private/e158/trace-island-${arm}.log"
-  rm -f "${trace}"
-  echo "=== e158 island arm ${arm} -> ${trace} ==="
+  echo "=== e158 island arm ${arm} ==="
   env DARKBLOOM_QWEN_MTP_ISLAND_ARM="${arm}" \
-    MLX_QWEN_MTP_TRACE_PATH="${trace}" \
     E128_HEAD_DIR="${head_dir}" \
     E155_AUDIT_DIR=".mlxfast-private/e158/island-${arm}" \
     E128_RUNS_DIR="runs-e158-island-${arm}" \
     E128_TOKENS="${E128_TOKENS:-512}" \
     E128_DEPTH="${E128_DEPTH:-8}" \
     research/e155_audit_session.sh "$@" || status=1
-  if grep -q "qwen-mtp-island-arm: ${arm}" "${trace}" 2>/dev/null; then
-    echo "e158 island witness ${arm}: $(sort -u "${trace}" | tr '\n' ' ')"
-  else
-    echo "e158 island arm ${arm}: NO TRACE WITNESS" >&2
-    status=1
-  fi
+  # `e128_session.sh` sets its own `MLX_QWEN_MTP_TRACE_PATH` per leg, so the
+  # witness lands in that leg's trace file rather than in a path this wrapper
+  # can choose. Read it back from where the leg actually wrote it.
+  for id in "$@"; do
+    trace="${runs_root}/runs-e158-island-${arm}/${id}/trace.txt"
+    line="$(grep -h "qwen-mtp-island-arm: ${arm} " "${trace}" 2>/dev/null | sort -u)"
+    if [[ -n "${line}" ]]; then
+      echo "e158 island witness ${arm} ${id}: ${line}"
+    else
+      echo "e158 island arm ${arm} ${id}: NO TRACE WITNESS" >&2
+      status=1
+    fi
+  done
 done
 
 exit "${status}"
