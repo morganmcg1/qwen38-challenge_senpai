@@ -206,10 +206,22 @@ def analyse(prompt: str, rows: list[dict]) -> dict:
     compact_tokens = 1.0 + expected_accepted(compact_profile, depths)
     full_tokens = 1.0 + expected_accepted(full_profile, depths)
 
+    # Greedy 512-token continuations degenerate into repeated phrases, which
+    # makes both the retrieval index and the head look easier than they would
+    # on diverse text. Publish the concentration so the recall numbers are read
+    # with that limit in view.
+    target_counts: dict[int, int] = defaultdict(int)
+    for row in rows:
+        target_counts[row["target"]] += 1
+    top_share = max(target_counts.values()) / total if total else float("nan")
+
     return {
         "prompt": prompt,
         "slots_total": total,
         "rounds": len(seen_rounds),
+        "distinct_target_tokens": len(target_counts),
+        "distinct_proposed_tokens": len({row["ann"] for row in rows}),
+        "most_common_target_share": top_share,
         "mean_offered_depth": sum(depths) / len(depths) if depths else float("nan"),
         "counts": {
             "shipped_hits": shipped,
@@ -343,12 +355,23 @@ def main() -> int:
     cond_index_pp = pooled["conditional_population"]["recoverable_index_pp"]
     cond_vocab_pp = pooled["conditional_population"]["recoverable_vocab_pp"]
     chain = pooled["counterfactual_tokens_per_round"]
+    derived = pooled["derived_exchange_rate"]["published_pct_per_acceptance_point"]
     report = {
         "harness": "local",
         "per_prompt": per_prompt,
         "pooled": pooled,
         "conversion": {
             "harness": "ranked",
+            "e155_published_pct_per_acceptance_point": derived,
+            "e155_published_pct_per_acceptance_point_source": "derived here "
+            "from the measured pooled depth and per-slot acceptance profile, "
+            "holding depth and round cost fixed",
+            "reproduces_advisor_fixed_depth_rate": abs(
+                derived - FIXED_DEPTH_PCT_PER_POINT
+            ) <= 0.1 * FIXED_DEPTH_PCT_PER_POINT,
+            "relative_gap_vs_advisor_fixed_depth": (
+                derived - FIXED_DEPTH_PCT_PER_POINT
+            ) / FIXED_DEPTH_PCT_PER_POINT,
             "fixed_depth_pct_per_acceptance_point": FIXED_DEPTH_PCT_PER_POINT,
             "co_moving_pct_per_acceptance_point": CO_MOVING_PCT_PER_POINT,
             "e155_recoverable_index_pct_published": index_pp

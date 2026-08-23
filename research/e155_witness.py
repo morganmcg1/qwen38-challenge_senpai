@@ -31,6 +31,7 @@ ON = ROOT / ".mlxfast-private/e128/runs-e155-on"
 PRIOR = ROOT / ".mlxfast-private/e128/runs-e153r1"
 AUDIT = ROOT / ".mlxfast-private/e155"
 PROMPTS = ("beagle_a", "essays_montaigne", "benchfixture")
+PR_BASE = "9d3e3d2db416b8360135dce476d929c5d6b1b40f"
 
 
 def meta(path: pathlib.Path) -> dict:
@@ -138,6 +139,23 @@ def main() -> int:
         ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip()
 
+    # The instrument touched exactly one submitted path. Reverting it returns
+    # the submitted surface to its PR-base byte count, so the bytes the
+    # instrument added are the bytes the revert reclaims.
+    instrumented = "f65b6c1e"
+    submitted = "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+
+    def blob_size(rev: str, path: str) -> int:
+        done = subprocess.run(
+            ["git", "cat-file", "-s", "%s:%s" % (rev, path)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        return int(done.stdout.strip()) if done.returncode == 0 else 0
+
+    base_bytes = blob_size(PR_BASE, submitted)
+    peak_bytes = blob_size(instrumented, submitted)
+    head_bytes = blob_size(head, submitted)
+
     payload = {
         "harness": "local",
         "cool_gate_passed_real_gate": False,
@@ -156,10 +174,18 @@ def main() -> int:
             off_matches_prior,
         "witness_on_side_audit_output_complete": audit_present_on,
         "legs": legs,
-        # Nothing was deleted from the submitted surface by this experiment,
-        # and the instrument is reverted before the PR head, so the submitted
-        # byte count returns to its base value.
-        "e155_growth_reclaimed_bytes": 0,
+        "e155_growth_reclaimed_bytes": peak_bytes - head_bytes,
+        "submitted_surface_bytes": {
+            "path": submitted,
+            "pr_base_sha": PR_BASE,
+            "pr_base_bytes": base_bytes,
+            "instrumented_sha": instrumented,
+            "instrumented_bytes": peak_bytes,
+            "head_sha": head,
+            "head_bytes": head_bytes,
+            "net_growth_vs_pr_base_bytes": head_bytes - base_bytes,
+            "instrument_reverted": head_bytes == base_bytes,
+        },
     }
     with open(sys.argv[1], "w") as handle:
         json.dump(payload, handle, indent=2)
