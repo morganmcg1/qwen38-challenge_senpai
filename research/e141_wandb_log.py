@@ -71,6 +71,7 @@ def main() -> None:
     ap.add_argument("--rung1", default="research/e141-rung1-screen.json")
     ap.add_argument("--rung3", default="research/e141-rung3.json")
     ap.add_argument("--rung2", default="research/e141-rung2.json")
+    ap.add_argument("--arm-geometry", default="research/e141-arm-geometry.json")
     ap.add_argument("--name", default="e141-unproposable-token-channel")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
@@ -79,6 +80,7 @@ def main() -> None:
     rung1 = load(args.rung1)
     rung3 = load(args.rung3)
     rung2 = load(args.rung2)
+    arm_geometry = load(args.arm_geometry)
 
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
@@ -186,6 +188,34 @@ def main() -> None:
                 metrics[f"e141_recall_delta_pp_{seed}{suffix}"] = r["delta_pp"]
             for seed, r in c["recall_pct_core_domain"].items():
                 metrics[f"e141_recall_core_delta_pp_{seed}{suffix}"] = r["delta_pp"]
+            # F4: the share a step-1-only widened probe could reach.
+            for seed, p in (c.get("e141_recovered_pct_position1_derived") or {}).items():
+                if p.get("recovered_pct") is None:
+                    continue
+                metrics[f"e141_recovered_pct_position1_{seed}{suffix}"] = p[
+                    "recovered_pct"
+                ]
+                metrics[f"e141_position1_share_pct_{seed}{suffix}"] = p["share_pct"]
+
+        # F4 census lives on the shipped arm, which has no contrast entry.
+        for seed, s in (rung3.get("arms", {}).get("shipped", {}).get("seeds") or {}).items():
+            metrics[f"e141_rounds_truncated_unproposable_{seed}"] = float(
+                s["rounds_truncated_by_unproposable_token"]
+            )
+            metrics[f"e141_rounds_truncated_at_position1_{seed}"] = float(
+                s["rounds_truncated_at_position1"]
+            )
+            metrics[f"e141_rounds_with_rejected_draft_{seed}"] = float(
+                s["rounds_with_rejected_draft"]
+            )
+
+    if arm_geometry:
+        config["arm_geometry"] = arm_geometry
+        # F2 Rule 121. The published median is an order statistic, so this
+        # re-sorted figure is the decision quantity and the linear medpair
+        # weight below is only the intuition.
+        for arm, pct in (arm_geometry.get("f209_net_median_pct") or {}).items():
+            metrics[f"e141_f209_net_median_pct_{arm}"] = pct
 
     if rung2:
         metrics.update(
