@@ -1,0 +1,97 @@
+{
+  "e147_max_threadgroup_bytes": 18432,
+  "every_instantiated_shape_fits": true,
+  "float32_nax_pipeline_disposition": "single-buffered; NAXWsStagingPlan refuses the doubling at 34816 B and keeps the base allocation, so no pipeline creation can fail",
+  "our_rows": [
+    {
+      "created": "2026-08-22T20:29:19.586Z",
+      "id": "572b2cc4",
+      "prefill_cv_pct": 0.12038092521965461,
+      "prefill_mean": 0.001028965984005481,
+      "prefill_n": 9,
+      "score": 3.66218563656629,
+      "source_ref": "3d64f95e612a1983b547e546d89161f507102446",
+      "status": "rejected"
+    },
+    {
+      "created": "2026-08-22T22:50:23.854Z",
+      "id": "e003a86d",
+      "prefill_cv_pct": 0.06598262896533004,
+      "prefill_mean": 0.0010278888803441077,
+      "prefill_n": 9,
+      "score": 3.57502547497774,
+      "source_ref": "2a5f82dec836f46d4aaa31128e4bd9ada264f918",
+      "status": "rejected"
+    },
+    {
+      "created": "2026-08-23T01:54:01.891Z",
+      "id": "1db9d63e",
+      "prefill_cv_pct": 0.14487816493323086,
+      "prefill_mean": 0.0010277035762555897,
+      "prefill_n": 9,
+      "score": 3.61655493390361,
+      "source_ref": "f298c7a3bb7037ca0a6cdb4a28fb7c9ae18ea0e4",
+      "status": "rejected"
+    },
+    {
+      "created": "2026-08-23T06:47:29.834Z",
+      "id": "7226dc9a",
+      "prefill_cv_pct": 0.021758786684714895,
+      "prefill_mean": 0.0010503479279577732,
+      "prefill_n": 9,
+      "score": 3.4265424329715,
+      "source_ref": "ee747906292ad6d776e901a900c2eebfce54fc80",
+      "status": "rejected"
+    }
+  ],
+  "our_rows_share_one_source_ref": false,
+  "source_checks": {
+    "shift_dst_call_sites": 2,
+    "shift_dst_definitions_in_quantized_nax_h": 2,
+    "staging_plan_allocation_sites": 2,
+    "static_assert_present": true,
+    "transposed_instantiations_are_64_64_64": true,
+    "unguarded_doubled_allocations": 0
+  },
+  "threadgroup_table": [
+    {
+      "BK": 64,
+      "BM": 64,
+      "BN": 64,
+      "base_bytes": 17408,
+      "candidate_bytes": 17408,
+      "doubled": false,
+      "element_bytes": 4,
+      "element_type": "float",
+      "fits_budget": true,
+      "naive_double_bytes": 34816,
+      "naive_double_would_fit": false
+    },
+    {
+      "BK": 64,
+      "BM": 64,
+      "BN": 64,
+      "base_bytes": 9216,
+      "candidate_bytes": 18432,
+      "doubled": true,
+      "element_bytes": 2,
+      "element_type": "float16_t",
+      "fits_budget": true,
+      "naive_double_bytes": 18432,
+      "naive_double_would_fit": true
+    },
+    {
+      "BK": 64,
+      "BM": 64,
+      "BN": 64,
+      "base_bytes": 9216,
+      "candidate_bytes": 18432,
+      "doubled": true,
+      "element_bytes": 2,
+      "element_type": "bfloat16_t",
+      "fits_budget": true,
+      "naive_double_bytes": 18432,
+      "naive_double_would_fit": true
+    }
+  ]
+}

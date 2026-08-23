@@ -1540,158 +1540,184 @@ METAL_FUNC void qmm_t_impl(
      editable surface. A kernel instantiated with a different output tile must
      therefore recover its own tile origin from the frozen block index.
 
-     BM * BN is held equal to kHostBM * kHostBN, so when the caller's
-     divisibility gate holds the two grids contain the same number of blocks
-     and the linear map below is a bijection. The caller also guarantees
-     N % BN == 0, so tiles_x divides exactly; aligned_N only promises N % 32,
-     which is too weak once BN moves. A trailing partial M tile stays safe
-     because num_els still clamps it. */
+     Equal area (BM * BN == kHostBM * kHostBN) does NOT imply equal block
+     count, because both grids round up independently. gdn.in_proj has
+     N = 16480, so ceil(16480/64) = 258 while 16480/32 = 515, and the frozen
+     grid over-covers the retiled one by 4 blocks. A bare re-derivation would
+     then place a block at y_row = M and advance x and y one full row-block
+     past the end of their buffers before any clamp runs. Under-coverage is
+     worse still: it silently leaves output unwritten.
+
+     The grid-stride loop below removes both failure modes and needs no
+     divisibility gate. Over-coverage costs one loop test in the surplus
+     blocks; under-coverage becomes a second pass. */
   constexpr bool kRetiled = (BM != kHostBM) || (BN != kHostBN);
   static_assert(
       !kRetiled || BM * BN == kHostBM * kHostBN,
       "a retile must preserve the threadgroup count");
-
-  int y_row = int(tid.y) * BM;
-  int y_col = int(tid.x) * BN;
-  if constexpr (kRetiled) {
-    const int tiles_x_host = (N + kHostBN - 1) / kHostBN;
-    const int tiles_x = N / BN;
-    const int linear = int(tid.y) * tiles_x_host + int(tid.x);
-    y_row = (linear / tiles_x) * BM;
-    y_col = (linear % tiles_x) * BN;
-  }
+  static_assert(
+      !kRetiled || kHostBN % BN == 0,
+      "BN must divide kHostBN so the host aligned_N flag stays sufficient");
 
   auto wl = (const device uint8_t*)w;
 
-  x += y_row * static_cast<int64_t>(K);
-  wl += y_col * K_w;
-  scales += y_col * K_g;
-  biases += y_col * K_g;
-  y += y_row * static_cast<int64_t>(N) + y_col;
+  /* One output tile. Every device pointer is derived from the untouched
+     parameter, so a second pass starts from the same base.
+
+     The two `//` lines inside this lambda keep their original column. The
+     twin audit pins the `//` comment stream of this section verbatim, so
+     re-indenting one of them de-pins a waiver that has nothing to do with
+     this edit. Block comments are classified as code and are free to move. */
+  auto compute_tile = [&](const int y_row, const int y_col) {
+    const device T* xt = x + y_row * static_cast<int64_t>(K);
+    const device uint8_t* wt = wl + y_col * K_w;
+    const device T* st = scales + y_col * K_g;
+    const device T* bt = biases + y_col * K_g;
+    device T* yt = y + y_row * static_cast<int64_t>(N) + y_col;
 
   // Make the x loader and mma operation
-  const short num_els = min(BM, M - y_row);
-  const short num_outs = min(BN, N - y_col);
-  loader_x_t loader_x(x, K, Xs, simd_gid, simd_lid);
-  loader_w_t loader_w(wl, scales, biases, K, Ws, simd_gid, simd_lid);
-  mma_t mma_op(simd_gid, simd_lid);
+    const short num_els = min(BM, M - y_row);
+    const short num_outs = min(BN, N - y_col);
+    loader_x_t loader_x(xt, K, Xs, simd_gid, simd_lid);
+    loader_w_t loader_w(wt, st, bt, K, Ws, simd_gid, simd_lid);
+    mma_t mma_op(simd_gid, simd_lid);
 
-  /* Software-pipelined k-loop over double-buffered Xs and Ws (the caller
-     allocates two tiles of each). While the mma consumes the tiles staged in
-     one half, the loaders stream the next k tile into the other half. The
-     single barrier per iteration (a) makes the previously staged tiles visible
-     to every mma reader and (b) guarantees every reader of the halves about to
-     be overwritten has finished. The device load/dequant sequence and the
-     per-element mma sequence are identical to the unpipelined loop; only the
-     phases overlap, so the accumulation order and therefore the result are
-     unchanged. */
-  constexpr int Xs_tile = BM * BK_padded;
-  constexpr int Ws_tile = BN * BK_padded;
+    /* Software-pipelined k-loop over double-buffered Xs and Ws (the caller
+       allocates two tiles of each). While the mma consumes the tiles staged in
+       one half, the loaders stream the next k tile into the other half. The
+       single barrier per iteration (a) makes the previously staged tiles
+       visible to every mma reader and (b) guarantees every reader of the
+       halves about to be overwritten has finished. The device load/dequant
+       sequence and the per-element mma sequence are identical to the
+       unpipelined loop; only the phases overlap, so the accumulation order and
+       therefore the result are unchanged. */
+    constexpr int Xs_tile = BM * BK_padded;
+    constexpr int Ws_tile = BN * BK_padded;
 
-  if (num_els < BM) {
-    if (!aligned_N && num_outs < BN) {
-      if (K_eff > 0) {
-        loader_x.load_safe(short2(BK, num_els));
-        loader_w.load_safe(short2(BK, num_outs));
-        loader_x.next();
-        loader_w.next();
-        loader_x.dst += Xs_tile;
-        loader_w.shift_dst(Ws_tile);
-      }
-      short cur = 0;
-      for (int k = 0; k < K_eff; k += BK) {
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        if (k + BK < K_eff) {
+    if (num_els < BM) {
+      if (!aligned_N && num_outs < BN) {
+        if (K_eff > 0) {
           loader_x.load_safe(short2(BK, num_els));
           loader_w.load_safe(short2(BK, num_outs));
           loader_x.next();
           loader_w.next();
-          loader_x.dst += cur ? Xs_tile : -Xs_tile;
-          loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          loader_x.dst += Xs_tile;
+          loader_w.shift_dst(Ws_tile);
         }
-        mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
-        cur ^= 1;
-      }
-    } else {
-      if (K_eff > 0) {
-        loader_x.load_safe(short2(BK, num_els));
-        loader_w.load_unsafe();
-        loader_x.next();
-        loader_w.next();
-        loader_x.dst += Xs_tile;
-        loader_w.shift_dst(Ws_tile);
-      }
-      short cur = 0;
-      for (int k = 0; k < K_eff; k += BK) {
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        if (k + BK < K_eff) {
+        short cur = 0;
+        for (int k = 0; k < K_eff; k += BK) {
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+          if (k + BK < K_eff) {
+            loader_x.load_safe(short2(BK, num_els));
+            loader_w.load_safe(short2(BK, num_outs));
+            loader_x.next();
+            loader_w.next();
+            loader_x.dst += cur ? Xs_tile : -Xs_tile;
+            loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          }
+          mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
+          cur ^= 1;
+        }
+      } else {
+        if (K_eff > 0) {
           loader_x.load_safe(short2(BK, num_els));
           loader_w.load_unsafe();
           loader_x.next();
           loader_w.next();
-          loader_x.dst += cur ? Xs_tile : -Xs_tile;
-          loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          loader_x.dst += Xs_tile;
+          loader_w.shift_dst(Ws_tile);
         }
-        mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
-        cur ^= 1;
+        short cur = 0;
+        for (int k = 0; k < K_eff; k += BK) {
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+          if (k + BK < K_eff) {
+            loader_x.load_safe(short2(BK, num_els));
+            loader_w.load_unsafe();
+            loader_x.next();
+            loader_w.next();
+            loader_x.dst += cur ? Xs_tile : -Xs_tile;
+            loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          }
+          mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
+          cur ^= 1;
+        }
       }
-    }
-  } else {
-    if (!aligned_N && num_outs < BN) {
-      if (K_eff > 0) {
-        loader_x.load_unsafe();
-        loader_w.load_safe(short2(BK, num_outs));
-        loader_x.next();
-        loader_w.next();
-        loader_x.dst += Xs_tile;
-        loader_w.shift_dst(Ws_tile);
-      }
-      short cur = 0;
-      for (int k = 0; k < K_eff; k += BK) {
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        if (k + BK < K_eff) {
+    } else {
+      if (!aligned_N && num_outs < BN) {
+        if (K_eff > 0) {
           loader_x.load_unsafe();
           loader_w.load_safe(short2(BK, num_outs));
           loader_x.next();
           loader_w.next();
-          loader_x.dst += cur ? Xs_tile : -Xs_tile;
-          loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          loader_x.dst += Xs_tile;
+          loader_w.shift_dst(Ws_tile);
         }
-        mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
-        cur ^= 1;
-      }
-    } else {
-      if (K_eff > 0) {
-        loader_x.load_unsafe();
-        loader_w.load_unsafe();
-        loader_x.next();
-        loader_w.next();
-        loader_x.dst += Xs_tile;
-        loader_w.shift_dst(Ws_tile);
-      }
-      short cur = 0;
-      for (int k = 0; k < K_eff; k += BK) {
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        if (k + BK < K_eff) {
+        short cur = 0;
+        for (int k = 0; k < K_eff; k += BK) {
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+          if (k + BK < K_eff) {
+            loader_x.load_unsafe();
+            loader_w.load_safe(short2(BK, num_outs));
+            loader_x.next();
+            loader_w.next();
+            loader_x.dst += cur ? Xs_tile : -Xs_tile;
+            loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          }
+          mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
+          cur ^= 1;
+        }
+      } else {
+        if (K_eff > 0) {
           loader_x.load_unsafe();
           loader_w.load_unsafe();
           loader_x.next();
           loader_w.next();
-          loader_x.dst += cur ? Xs_tile : -Xs_tile;
-          loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          loader_x.dst += Xs_tile;
+          loader_w.shift_dst(Ws_tile);
         }
-        mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
-        cur ^= 1;
+        short cur = 0;
+        for (int k = 0; k < K_eff; k += BK) {
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+          if (k + BK < K_eff) {
+            loader_x.load_unsafe();
+            loader_w.load_unsafe();
+            loader_x.next();
+            loader_w.next();
+            loader_x.dst += cur ? Xs_tile : -Xs_tile;
+            loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
+          }
+          mma_op.mma(Xs + cur * Xs_tile, Ws + cur * Ws_tile);
+          cur ^= 1;
+        }
       }
     }
-  }
 
+    /* This barrier also separates one grid-stride pass from the next: every
+       mma read of Xs and Ws precedes it, and the next pass restages both
+       halves after it. store_result reads only accumulator registers. */
   // Store results to device memory
-  threadgroup_barrier(mem_flags::mem_threadgroup);
-  if (num_els < BM || num_outs < BN) {
-    mma_op.store_result_safe(y, N, short2(num_outs, num_els));
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (num_els < BM || num_outs < BN) {
+      mma_op.store_result_safe(yt, N, short2(num_outs, num_els));
+    } else {
+      mma_op.store_result(yt, N);
+    }
+  };
+
+  if constexpr (kRetiled) {
+    const int tiles_x_host = (N + kHostBN - 1) / kHostBN;
+    const int tiles_x = (N + BN - 1) / BN;
+    const int tiles_y = (M + BM - 1) / BM;
+    const int launched = ((M + kHostBM - 1) / kHostBM) * tiles_x_host;
+    const int required = tiles_y * tiles_x;
+    /* tid.y * tiles_x_host + tid.x is a bijection onto [0, launched), so
+       striding by launched visits every t in [0, required) exactly once. */
+    for (int t = int(tid.y) * tiles_x_host + int(tid.x); t < required;
+         t += launched) {
+      compute_tile((t / tiles_x) * BM, (t % tiles_x) * BN);
+    }
   } else {
-    mma_op.store_result(y, N);
+    compute_tile(int(tid.y) * BM, int(tid.x) * BN);
   }
 }
 
@@ -2379,41 +2405,45 @@ template <
         tid);
   }
 
-  /* The retile is a bijection on the frozen grid only when both tilings need
-     the same block count and no trailing N tile is partial. Every other shape
-     falls back to the shipped tiling, so this kernel stays correct for shapes
-     the retile cannot serve, such as the M=511 proposal-head priming pass. */
+  /* There is no shape gate. qmm_t_impl runs a grid-stride loop over the
+     required tiles, so the retile is correct for every M and every N. A gate
+     here would be worse than none: the one projection whose N is not a
+     multiple of the host BN (gdn.in_proj, N = 16480) is exactly the projection
+     a divisibility gate would silently disable.
+
+     Chunk width also selects the kernel, which a gate would hide. The host
+     sends M >= 16 with a transposed non-batched product through qmm_splitk,
+     and at M = 16 or M = 32 the N = 5120 projections take the qmm_t_splitk
+     kernel and leave this one entirely. The scored prefill is one M = 512
+     array and never enters that window, but anyone who chunks the seed must
+     re-check it here. */
   if constexpr (kE147Retiled) {
-    const bool retile_ok = (M % kE147RetileBM == 0) && (M % BM == 0) &&
-        (N % kE147RetileBN == 0) && (N % BN == 0);
-    if (retile_ok) {
-      qmm_t_impl<
-          T,
-          group_size,
-          bits,
-          aligned_N,
-          kE147RetileBM,
-          BK,
-          kE147RetileBN,
-          BM,
-          BN>(
-          w,
-          scales,
-          biases,
-          x,
-          y,
-          Xs,
-          Ws,
-          K,
-          N,
-          M,
-          K,
-          tid,
-          lid,
-          simd_gid,
-          simd_lid);
-      return;
-    }
+    qmm_t_impl<
+        T,
+        group_size,
+        bits,
+        aligned_N,
+        kE147RetileBM,
+        BK,
+        kE147RetileBN,
+        BM,
+        BN>(
+        w,
+        scales,
+        biases,
+        x,
+        y,
+        Xs,
+        Ws,
+        K,
+        N,
+        M,
+        K,
+        tid,
+        lid,
+        simd_gid,
+        simd_lid);
+    return;
   }
   qmm_t_impl<T, group_size, bits, aligned_N, BM, BK, BN>(
       w,
