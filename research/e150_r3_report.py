@@ -35,7 +35,19 @@ import pathlib
 import statistics
 import sys
 
-BREAK_EVEN_US_PER_ROUND = 775.0
+# Rule 134 exists in two frames and this experiment has been handed both. The
+# R3 brief converts with 515.2 us/round per 1 % of published median; F6's A0
+# arithmetic uses thorfinn's corrected total-leg constant of 524.5. They differ
+# by 1.8 %, which is far below anything this rung decides, but an unnamed frame
+# is exactly the error class that produced the F6 section 3 positive control.
+# Both are reported and each is labelled.
+RULE134_US_PER_PCT_DECODE_FRAME = 515.2
+RULE134_US_PER_PCT_TOTAL_LEG_FRAME = 524.5
+
+# R2's L6 minus L5 at the PAD operating point, in the same median-% units.
+SEQUENTIAL_PREMIUM_PP = 1.504175937236729
+
+BREAK_EVEN_US_PER_ROUND = SEQUENTIAL_PREMIUM_PP * RULE134_US_PER_PCT_DECODE_FRAME
 STOP_RULE_US_PER_ROUND = 100.0
 CONTROL = "off"
 
@@ -223,11 +235,29 @@ def main() -> int:
     # which is firstOnly. perStep bounds the most expensive one.
     decisive = fo
     out["e150_r3_decision_cost_us_per_round"] = decisive
+    out["e150_r3_decision_arm"] = "firstOnly"
+    out["e150_r3_sequential_premium_pp"] = SEQUENTIAL_PREMIUM_PP
     if decisive is not None:
         out["e150_r3_below_stop_rule"] = decisive < STOP_RULE_US_PER_ROUND
         out["e150_r3_below_break_even"] = decisive < BREAK_EVEN_US_PER_ROUND
         out["e150_r3_headroom_multiple"] = (
             BREAK_EVEN_US_PER_ROUND / decisive if decisive > 0 else None)
+        # Rule 134, both frames, and what is left of the premium after the toll.
+        for label, const in (
+                ("decode", RULE134_US_PER_PCT_DECODE_FRAME),
+                ("total_leg", RULE134_US_PER_PCT_TOTAL_LEG_FRAME)):
+            out["e150_r3_readback_pct_of_median_%s_frame" % label] = (
+                -decisive / const)
+            out["e150_r3_premium_after_toll_pp_%s_frame" % label] = (
+                SEQUENTIAL_PREMIUM_PP - decisive / const)
+            if ps is not None:
+                out["e150_r3_perstep_pct_of_median_%s_frame" % label] = (
+                    -ps / const)
+                out["e150_r3_perstep_premium_after_toll_pp_%s_frame"
+                    % label] = SEQUENTIAL_PREMIUM_PP - ps / const
+        out["e150_r3_premium_survives"] = (
+            SEQUENTIAL_PREMIUM_PP
+            - decisive / RULE134_US_PER_PCT_DECODE_FRAME > 0)
         if decisive >= BREAK_EVEN_US_PER_ROUND:
             out["e150_r3_verdict"] = (
                 "the round trip costs more than the sequential rule can earn;"
@@ -267,8 +297,15 @@ def main() -> int:
         "  cost per readback, from perStep    "
         f"{out['e150_r3_cost_per_readback_from_perstep_us']}")
     print(f"  estimate ratio {out.get('e150_r3_estimate_ratio')}")
-    print(f"  break-even {BREAK_EVEN_US_PER_ROUND}  stop rule"
+    print(f"  break-even {BREAK_EVEN_US_PER_ROUND:.1f}  stop rule"
           f" {STOP_RULE_US_PER_ROUND}")
+    print(f"  sequential premium before the toll {SEQUENTIAL_PREMIUM_PP:+.4f} pp")
+    for label in ("decode", "total_leg"):
+        print(
+            f"    {label:9s} frame  toll"
+            f" {out.get('e150_r3_readback_pct_of_median_%s_frame' % label, 0):+8.4f} %"
+            f"  premium after toll"
+            f" {out.get('e150_r3_premium_after_toll_pp_%s_frame' % label, 0):+8.4f} pp")
     print(f"  VERDICT {out.get('e150_r3_verdict')}")
     for p in out["problems"]:
         print("  PROBLEM", p)

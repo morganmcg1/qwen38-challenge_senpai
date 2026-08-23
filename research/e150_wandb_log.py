@@ -36,6 +36,8 @@ sys.path.insert(0, str(HERE))
 
 import wandb  # noqa: E402
 
+from e128_price import PROMPT_NAMES  # noqa: E402
+
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
 ARTIFACTS = HERE / "e150-artifacts"
@@ -429,6 +431,82 @@ def log_a0_transfer(run, summary: dict, a0: dict) -> None:
          "gain_pp", "mean_depth", "frac_inadmissible"], rows)})
 
 
+def log_a0_f7_correction(run, summary: dict, f7: dict) -> None:
+    """F7: the A0 width-6 boundary repriced on the clean receipt, plus the
+    pre-registered nuisance tail.
+
+    The boundary is logged on both curve bases because the advisor and this
+    experiment read different bases of the same E145 R2 artifact. The nuisance
+    pre-registration is logged before the receipt lands, so the prediction and
+    the outcome cannot be reconciled after the fact.
+    """
+    for key, value in f7.items():
+        if isinstance(value, (int, float, bool, str)) and key.startswith("e150_"):
+            summary[key] = value
+
+    us_basis = f7.get("e150_a0_f7_boundary_on_us_basis", {})
+    summary["e150_a0_f7_sigma_to_boundary_us_basis"] = us_basis.get("sigma_to_boundary")
+    summary["e150_a0_f7_width6_admissible_us_basis"] = us_basis.get("admissible")
+
+    flag = f7.get("e150_a0_f7_curve_value_flag", {})
+    run.log({"a0_f7_curve_basis": table(
+        ["width", "advisor_us_basis", "e150_blocks_basis", "delta_us", "delta_pct"],
+        [[6, flag.get("f7_quoted_width6_us"), flag.get("e150_width6_us"),
+          flag.get("width6_delta_us"), flag.get("width6_delta_pct")],
+         [5, flag.get("f7_quoted_width5_us"), flag.get("e150_width5_us"),
+          flag.get("width5_delta_us"), flag.get("width5_delta_pct")]])})
+
+    band = f7.get("e150_a0_f7_band", {})
+    run.log({"a0_f7_boundary_band": table(
+        ["arm", "ranked_pct", "rung_local_us", "c6_post_per_token_us", "admissible"],
+        [[name,
+          block.get("ranked_pct"), block.get("rung_local_us"),
+          block.get("c6_post_per_token_us"), block.get("admissible")]
+         for name, block in band.items()])})
+
+    prereg = f7.get("e150_f7_nuisance_prereg", {})
+    for key, value in prereg.items():
+        if isinstance(value, (int, float, bool, str)) and key.startswith("e150_"):
+            summary[key] = value
+
+    pair_rows = []
+    for key in ("e150_nuisance_null_pair", "e150_nuisance_second_pair"):
+        pair = prereg.get(key)
+        if not pair:
+            continue
+        fit = pair.get("fit", {})
+        pair_rows.append([
+            pair.get("pair"), pair.get("schedule_identical"),
+            pair.get("official_score_a"), pair.get("official_score_b"),
+            pair.get("contrast_mean_pp"), pair.get("contrast_median_pp"),
+            pair.get("drafting_prompt_min_pp"), pair.get("drafting_prompt_max_pp"),
+            fit.get("k_state_steps"), pair.get("f7_reported_k_state_steps"),
+            fit.get("us_per_drafting_round"), fit.get("r_squared"),
+            pair.get("f7_reported_r_squared"), pair.get("k_ratio_mine_over_f7")])
+    run.log({"f7_nuisance_pairs": table(
+        ["pair", "schedule_identical", "score_a", "score_b", "contrast_mean_pp",
+         "contrast_median_pp", "drafting_min_pp", "drafting_max_pp",
+         "k_mine", "k_advisor", "us_per_drafting_round_mine", "r2_mine",
+         "r2_advisor", "k_ratio"], pair_rows)})
+
+    exposure_rows = []
+    for label in ("e150_anchor_exposure", "e150_bar_exposure", "e150_my_exposure"):
+        block = prereg.get(label)
+        if not block:
+            continue
+        for row in block.get("per_prompt", []):
+            exposure_rows.append([
+                label.replace("e150_", "").replace("_exposure", ""),
+                block.get("submission_id", "")[:8],
+                PROMPT_NAMES.get(row.get("prompt_sha256"), row.get("prompt_sha256")),
+                row.get("effective_mean_draft_len"), row.get("recovered_round_count"),
+                row.get("non_drafting_round_count"), row.get("drafting_round_count"),
+                row.get("decode_seconds"), row.get("s_p")])
+    run.log({"f7_exposure": table(
+        ["frame", "submission", "prompt", "edl", "rounds", "non_drafting",
+         "drafting", "decode_seconds", "s_p"], exposure_rows)})
+
+
 def log_r3_readback(run, summary: dict, r3: dict, witness: dict | None) -> None:
     """R3: the host round trip a sequential stopping rule has to pay.
 
@@ -664,7 +742,8 @@ def main() -> int:
     a0 = load("a0_transfer.json")
     r3 = load("r3_readback.json")
     r3w = load("r3_witness.json")
-    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4, rp, rt, a0, r3)):
+    f7 = load("a0_f7_correction.json")
+    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4, rp, rt, a0, r3, f7)):
         print("no E150 artifacts found under %s" % ARTIFACTS)
         return 1
 
@@ -679,6 +758,7 @@ def main() -> int:
                                          ("R4-presubmit", r4),
                                          ("R4-realised-price", rp),
                                          ("F6-A0-transfer", a0),
+                                         ("F7-A0-correction", f7),
                                          ("R3-readback", r3))
                           if v is not None],
         "harness": "local",
@@ -736,6 +816,8 @@ def main() -> int:
         log_receipt_transfer(run, summary, rt)
     if a0 is not None:
         log_a0_transfer(run, summary, a0)
+    if f7:
+        log_a0_f7_correction(run, summary, f7)
     if r3 is not None:
         log_r3_readback(run, summary, r3, r3w)
 
