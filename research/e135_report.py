@@ -54,6 +54,19 @@ SESSIONS = {
         "invariance": "the arms differ in probe selection only",
         "per_round": True,
     },
+    # T29-A has three arms, so it is reported as three pairwise contrasts by
+    # `e135_composition_report.py`. Each arm sits at mean position 3.5 in the
+    # palindrome, so every pair stays balanced against a linear drift when the
+    # third arm is filtered out. The arms here name the pair the advisor asked
+    # for; the reporter overrides them for the other two contrasts.
+    "composition": {
+        "meta_key": "e135_arm",
+        "arms": ("base", "composed"),
+        "headline": "e135_composition_local_pct",
+        "invariance": ("the arms move the table, grid, probe fraction and"
+                       " width-2 route together, so a schedule change is"
+                       " expected only through the probe fraction"),
+    },
 }
 
 # The local fixture drafts deeper than ranked beagle, so the same fixed

@@ -1790,6 +1790,27 @@ public enum Qwen35CustomQMV {
     /// medpair with digit-identical draft lengths on all eight prompts.
     public static let widths = 2 ... 9
 
+    /// The widths the dispatcher actually takes, which `MLX_E120_QMV_WIDTH2=0`
+    /// narrows to the pre-F18 set.
+    ///
+    /// This is deliberately separate from `widths`. `widths` is the declared
+    /// coverage: every `Table` plan must span it, the shared entry point emits
+    /// a case for each member, and both facts are pinned by test. Narrowing
+    /// `widths` would therefore change the generated Metal source, and the
+    /// source string is the pipeline cache key, so the two arms of a width-2
+    /// experiment would compile different libraries and Rule 128 would apply.
+    /// Narrowing only the dispatch guard keeps one identical compiled library
+    /// and moves M=2 cells back to MLX, which is the behaviour under test.
+    ///
+    /// The arm is readable from the run's own trace without this constant:
+    /// `by_width` in the pipeline log carries no `2` key when M=2 is returned
+    /// to MLX, so the witness has a failing polarity. Unset gives `widths`, so
+    /// a run that exports nothing routes M=2.
+    public static let routedWidths: ClosedRange<Int> = {
+        ProcessInfo.processInfo.environment["MLX_E120_QMV_WIDTH2"] == "0"
+            ? 3 ... widths.upperBound : widths
+    }()
+
     /// How the shared entry point is specialized for each routed width.
     ///
     /// `ipg` is how many input rows one threadgroup accumulates, so the kernel
@@ -2219,6 +2240,7 @@ public enum Qwen35CustomQMV {
               "default_route": "\(defaultRouteWitness)",
               "default_grid": "\(defaultGridWitness)",
               "default_probe": "\(defaultProbeWitness)",
+              "routed_widths": "\(routedWidths.lowerBound)...\(routedWidths.upperBound)",
               "qmv_specializations": \(pipelineKeys.count),
               "dispatches": \(total),
               "by_key": {
@@ -2314,7 +2336,7 @@ public enum Qwen35CustomQMV {
             return nil
         }
         let m = x.size / k
-        guard Self.widths.contains(m), x.dim(-2) == m else { return nil }
+        guard Self.routedWidths.contains(m), x.dim(-2) == m else { return nil }
         // `ensureRowContiguous: true` would keep a strided input correct by
         // copying it first. `quantizedMM` reads the stride directly, so hand
         // the cell back rather than pay for a copy the incumbent avoids.

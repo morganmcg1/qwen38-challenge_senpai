@@ -76,6 +76,30 @@ struct E135Width2RouteTests {
         (a .!= b).asType(.int32).sum().item(Int.self)
     }
 
+    // MARK: the research gate
+
+    /// The width-2 gate must not touch the shipped route.
+    ///
+    /// `routedWidths` exists so T29-A can return M=2 to MLX without a rebuild.
+    /// A run that exports nothing must still route it, because that is what
+    /// the ranked runner does. `MLX_E120_QMV_WIDTH2` acts only on the exact
+    /// string `0`, so this also pins that an empty or misspelled value keeps
+    /// the shipped behaviour rather than silently narrowing the route.
+    @Test("the width-2 gate defaults to the shipped route")
+    func widthTwoGateDefaultsToShipped() throws {
+        if ProcessInfo.processInfo.environment["MLX_E120_QMV_WIDTH2"] == nil {
+            #expect(Qwen35CustomQMV.routedWidths == Qwen35CustomQMV.widths)
+            #expect(Qwen35CustomQMV.routedWidths.contains(2))
+        }
+        // The declared coverage is what the plans and the emitted source span,
+        // so it must never follow the gate. If these two were the same
+        // constant the two arms would compile different Metal libraries and
+        // the contrast would carry a JIT cache-key confound.
+        #expect(Qwen35CustomQMV.widths.lowerBound == 2)
+        #expect(Qwen35CustomQMV.routedWidths.upperBound
+                == Qwen35CustomQMV.widths.upperBound)
+    }
+
     // MARK: the table entry
 
     @Test("width 2 is routed in every table at ipg 2 and rps 4")
