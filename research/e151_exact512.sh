@@ -50,32 +50,39 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+# E151_LABEL keeps one rung's evidence from overwriting another's. Unset
+# reproduces the R1 tags and filenames exactly.
+LABEL="${E151_LABEL:-}"
+CAND_TAG="e151x512cand${LABEL}"
+NEG_TAG="e151x128neg${LABEL}"
+SUF="${LABEL:+-${LABEL}}"
+
 out=research/e151-artifacts
 mkdir -p "${out}"
 failures=0
 
-echo "=== e151x512cand: arm-on candidate, tokens=512, row evidence ==="
-research/e79_trace_leg.sh e151x512cand 512 \
+echo "=== ${CAND_TAG}: arm-on candidate, tokens=512, row evidence ==="
+research/e79_trace_leg.sh "${CAND_TAG}" 512 \
   || { echo "e151_exact512: 512-token leg failed" >&2
        failures=$((failures + 1)); }
 
 echo
-echo "=== e151x128neg: arm-on candidate, tokens=128, runtime control ==="
-research/e79_trace_leg.sh e151x128neg 128 \
+echo "=== ${NEG_TAG}: arm-on candidate, tokens=128, runtime control ==="
+research/e79_trace_leg.sh "${NEG_TAG}" 128 \
   || { echo "e151_exact512: 128-token control leg failed" >&2
        failures=$((failures + 1)); }
 
 echo
-python3 research/e116_row_digest_check.py e151x512cand \
+python3 research/e116_row_digest_check.py "${CAND_TAG}" \
   --pin "${PIN}" \
   --expect-rows 1025 \
-  --negative-control e151x128neg \
-  --json "${out}/row-digest-512.json" \
+  --negative-control "${NEG_TAG}" \
+  --json "${out}/row-digest-512${SUF}.json" \
   || failures=$((failures + 1))
 
 echo
 echo "--- wrapper verdicts ---"
-for tag in e151x512cand e151x128neg; do
+for tag in "${CAND_TAG}" "${NEG_TAG}"; do
   echo "${tag}: $(grep -oE 'all_tokens_matched[": ]*[a-z]+' \
     "research/out/${tag}/wrapper.out" 2>/dev/null | tail -1)"
   echo "${tag}: $(grep -oE '"passed"[: ]*[a-z]+' \
@@ -90,18 +97,19 @@ echo "=== e151 --local-submit at 512 tokens: the gate-qualified leg ==="
 (
   export MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512
   export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
-  export MLXFAST_SCORE_PATH="${PWD}/${out}/local-submit-512.json"
+  export MLXFAST_SCORE_PATH="${PWD}/${out}/local-submit-512${SUF}.json"
   ./benchmark-qwen-mtp.sh --local-submit
-) > "${out}/local-submit-512.log" 2>&1 \
+) > "${out}/local-submit-512${SUF}.log" 2>&1 \
   || { echo "e151_exact512: --local-submit leg failed" >&2
        failures=$((failures + 1)); }
 
 echo "--- local-submit verdict ---"
-grep -oE '"passed"[: ]*[a-z]+' "${out}/local-submit-512.json" 2>/dev/null | tail -1
+grep -oE '"passed"[: ]*[a-z]+' \
+  "${out}/local-submit-512${SUF}.json" 2>/dev/null | tail -1
 grep -oE 'reference_checked_rows=[0-9]+/[0-9]+' \
-  "${out}/local-submit-512.log" 2>/dev/null | sort -u
+  "${out}/local-submit-512${SUF}.log" 2>/dev/null | sort -u
 grep -oE 'cool-down gate passed \(current [0-9.]+C[^)]*\)' \
-  "${out}/local-submit-512.log" 2>/dev/null
+  "${out}/local-submit-512${SUF}.log" 2>/dev/null
 
 echo
 echo "e151_exact512: failures=${failures}"
