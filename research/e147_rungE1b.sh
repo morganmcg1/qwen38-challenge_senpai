@@ -76,7 +76,10 @@ runs_parent=".mlxfast-private/e147/runs"
 goldens_dir="${E147_GOLDENS_DIR:-.mlxfast-private/e128/goldens}"
 worker=".build-worker/release/mlxfast-runtime-worker"
 arms="${bin_root}/arms.txt"
-out="research/e147-rungE1b.txt"
+# `legs` writes here rather than into `research/`, so a supervised run never
+# dirties the tracked tree while it holds the GPU. Copy the finished file to
+# `research/e147-rungE1b.txt` and commit it once the run terminates.
+out=".mlxfast-private/e147/rungE1b.txt"
 
 header="Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
 twin="Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
