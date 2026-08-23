@@ -232,6 +232,19 @@ def shapes(rows, reference, target, since):
                                   for p in pool) for n in tw.NAMES.values()}
     goal = tw.pick(rows, target)["officialScore"]
 
+    # A mechanism that saves a fixed time per drafting round shows up as a
+    # fraction of that prompt's round time, so its shape is 1 / seconds per
+    # round. A prompt whose rounds do not draft cannot gain at all.
+    round_seconds = {
+        n: ref[n]["mtp_seconds_per_token_mean"]
+        * (1.0 + ref[n]["effective_mean_draft_len"])
+        for n in tw.NAMES.values()}
+    all_shapes = dict(SHAPES)
+    all_shapes["per_round"] = {
+        n: 0.0 if ref[n]["non_drafting_round_count"] else
+        round_seconds["beagle"] / round_seconds[n]
+        for n in tw.NAMES.values()}
+
     def median_at(shape, k):
         ratios = sorted(
             serial[n] * (1.0 + k * shape.get(n, 0.0))
@@ -241,7 +254,7 @@ def shapes(rows, reference, target, since):
     print(f"=== gain needed to reach {target} ({goal:.6f}) from {reference}")
     print(f"    baseline with a pool-average draw: {median_at({}, 0.0):.6f}")
     print(f"    {'shape':<14} {'scale':>9} {'prompts':>8}  per-prompt gain at the solution")
-    for name, shape in SHAPES.items():
+    for name, shape in all_shapes.items():
         lo, hi = 0.0, 1.0
         while median_at(shape, hi) < goal and hi < 64.0:
             hi *= 2.0
