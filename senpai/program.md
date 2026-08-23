@@ -64,6 +64,60 @@ Advance a credible local winner promptly. Reconcile it with the latest promoted 
 
 Keep all available research capacity productive. Review terminal results promptly, assign the next distinct runnable questions without waiting for a human, and run independent mechanisms in parallel. If a frontier move invalidates a baseline, replay only the affected evidence; do not restart the whole programme or discard valid causal results.
 
+### Ship mode is binding
+
+Once a candidate satisfies its promotion rule, bind the exact candidate SHA and
+enter ship mode. New performance interpretations, composition ideas, and
+optional measurements become next-round work. They do not modify or delay the
+frozen candidate. Only correctness, row-ledger closure, submission scope,
+provenance, a dirty submitted snapshot, a changed enforcing contract, or a
+materially overlapping promoted-frontier change may invalidate it. Record the
+specific invalidating evidence against the frozen SHA.
+
+Official evaluation is a production measurement inside the research loop, not
+a ceremony reserved for a perfect candidate. When the official slot is free,
+submit a frozen candidate within 15 minutes. While one receipt is in flight,
+keep at most one distinct frozen candidate ready behind it and continue other
+scientific work on separate branches. Never reopen the frozen branch merely to
+make its explanation more complete.
+
+Subagent critique is optional. Use it when evidence genuinely conflicts, when
+the campaign changes strategy, or when an unusually expensive portfolio would
+benefit from an independent review. Do not require a subagent for routine
+assignment, review, confirmation, freezing, submission, receipt handling, or
+the next independent experiment, and never let a critique delay ship mode.
+
+### Bounded pre-official evidence
+
+Use this staged evidence ladder for every candidate:
+
+1. **Screen.** Run the cheapest risk-specific correctness check and one matched
+   directional measurement. Repeat once only when a predeclared noise interval
+   can reverse the stop or promotion decision.
+2. **Confirm.** For a credible winner, run one thermally gated 512-token
+   `--local-submit` pair with exact post-EOS continuation and row-ledger closure:
+
+   ```bash
+   MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 \
+     ./benchmark-qwen-mtp.sh --local-submit
+   ```
+
+   This single invocation is both the 512-token confirmation and the normal
+   local-submit run. Do not run a default 128-token local-submit and then repeat
+   it at 512 tokens.
+3. **Freeze and submit.** Bind the candidate SHA, run the scope, budget, twin,
+   provenance, clean-diff, and frontier checks once, then submit.
+4. **Characterize after the receipt.** Run a large ABBA matrix or paper-grade
+   decomposition only when the official result is ambiguous or the answer can
+   change the next experiment.
+
+The default pre-official budget is one screen session plus one 512-token
+confirmation, normally four to six timed legs total rather than a large timing
+matrix. Exceed that budget only for one named uncertainty that can reverse the
+decision, and record why the official measurement cannot answer it more
+directly. Never use the budget to weaken exactness, thermal, provenance, scope,
+integrity, or submission gates.
+
 The AWS Mac fleet has one physical Mac per student. The advisor is co-located
 only with Edward; Alphonse, Thorfinn, and Askeladd each use a different Mac.
 Process locks, device locks, thermal state, and the one-model-holder rule are
@@ -254,16 +308,18 @@ Each research agent owns one clear question at a time. Record positive, negative
 8. Run the smallest matched timing measurement and compare absolute candidate
    time, the local ratio, and relevant counters with the fresh base. Weight
    nonuniform per-cell effects by current-tree cost before summing them.
-9. Stop, revise, or advance using the written stop rule. Run replicated timing
-   only after the causal path, provenance, and risk gate remain valid and only
-   when noise could change the decision.
+9. Stop, revise, or advance using the written stop rule and its predeclared
+   noise interval. Follow the bounded evidence ladder above. Add a repeat only
+   when the interval can reverse the decision.
 10. For a credible winner:
     - Run the full Swift tests once and add opt-in runtime tests when the changed boundary needs them.
-    - Run a full 512-token exactness check, including post-EOS continuation and
-      row-ledger closure, then run `--local-submit`.
+    - Run one 512-token `--local-submit` confirmation, including exact post-EOS
+      continuation and row-ledger closure. Do not run a separate 512-token
+      exactness benchmark and another local-submit benchmark.
     - Inspect the exact submitted diff and any generated Metal twins.
     - Recheck submission scope and byte budget.
-    - Report evidence that another agent can reproduce.
+    - Freeze the exact SHA, report the decisive evidence, and submit without
+      adding optional characterization to the frozen branch.
 
 Do not run every expensive check in every edit loop. Reach an end-to-end signal early, stop weak experiments quickly, and compose only winners that were measured independently.
 
@@ -311,6 +367,16 @@ effort levels, and agent harnesses separately in the note body.
 The guard refreshes the campaign and organizer refs, checks the recorded base and trusted surface, and rejects dirty submitted paths or hidden Git index state such as `skip-worktree` and `assume-unchanged` before it calls Yukon. Yukon does not run the local pre-submit command for you. The external MLX.fast UI currently preserves an unrecognized model label in the full note and solver profile, but its main-board badge uses a fixed model catalog that does not include Senpai. Supporting a Senpai badge there requires a Yukon frontend change; do not disguise the campaign label as a catalogued model.
 
 Do not send duplicate official submissions. If a response is unclear, inspect Yukon before retrying so you do not create the same run twice. Never expose credentials in logs, notes, commits, or agent messages.
+
+The role that submits owns exactly one bounded, read-only receipt watcher. A
+student may own it. Launch the Yukon polling command with `run_job`, set
+`workspace_access="read_only"`, write its output outside the repository, and
+finish the turn so the controller can wake the same conversation when the job
+becomes terminal. Do not occupy a mutable workspace lease or a model-holding
+process while waiting. `monitor_job` adds W&B metric policies to an existing
+supervised job; it does not monitor a Yukon receipt ID and is unnecessary for
+terminal wake-up. When the watcher ends, inspect Yukon before any retry, report
+the terminal receipt immediately, and release the official-submission slot.
 
 Promotion means that the official M5 run passed every gate and improved the campaign score. After a promotion, update the campaign state and replay later experiments only where the new base affects them.
 
