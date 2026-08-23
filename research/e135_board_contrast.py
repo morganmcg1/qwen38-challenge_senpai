@@ -206,6 +206,63 @@ def headroom(rows, reference):
           " gain passes through exactly once")
 
 
+SHAPES = {
+    "uniform": {n: 1.0 for n in F83},
+    "beagle_only": {"beagle": 1.0},
+    "cluster_only": {n: 1.0 for n in ("essays", "republic", "medicine", "botany")},
+    "medpair_only": {"beagle": 1.0, "essays": 1.0},
+    "drafting_only": {n: 1.0 for n in F83 if n != "plutarch"},
+    # F22 measured gain shape, normalised to beagle = 1.000.
+    "f22": {"beagle": 1.000, "essays": 1.918, "drama": 2.008, "travel": 1.553,
+            "botany": 0.952, "medicine": 0.783, "republic": 0.544,
+            "plutarch": 0.002},
+}
+
+
+def shapes(rows, reference, target, since):
+    """How much candidate gain each per-prompt shape needs to reach `target`.
+
+    Solved on the exact rule, which re-sorts the raw vector and reads ranks 3
+    and 4, rather than on a linearisation. A shape concentrated below the pair
+    can be cheap; a shape concentrated above it can be unreachable.
+    """
+    ref = tw.per_prompt(tw.pick(rows, reference))
+    pool = [tw.per_prompt(r) for r in rows if r["createdAt"] >= since]
+    serial = {n: statistics.fmean(p[n]["serial_seconds_per_token_mean"]
+                                  for p in pool) for n in tw.NAMES.values()}
+    goal = tw.pick(rows, target)["officialScore"]
+
+    def median_at(shape, k):
+        ratios = sorted(
+            serial[n] * (1.0 + k * shape.get(n, 0.0))
+            / ref[n]["mtp_seconds_per_token_mean"] for n in tw.NAMES.values())
+        return (ratios[3] + ratios[4]) / 2
+
+    print(f"=== gain needed to reach {target} ({goal:.6f}) from {reference}")
+    print(f"    baseline with a pool-average draw: {median_at({}, 0.0):.6f}")
+    print(f"    {'shape':<14} {'scale':>9} {'prompts':>8}  per-prompt gain at the solution")
+    for name, shape in SHAPES.items():
+        lo, hi = 0.0, 1.0
+        while median_at(shape, hi) < goal and hi < 64.0:
+            hi *= 2.0
+        if median_at(shape, hi) < goal:
+            print(f"    {name:<14} {'UNREACHABLE':>9}")
+            continue
+        for _ in range(200):
+            mid = (lo + hi) / 2.0
+            if median_at(shape, mid) < goal:
+                lo = mid
+            else:
+                hi = mid
+        k = (lo + hi) / 2.0
+        moved = [f"{n} {k * shape[n] * 100:+.2f}"
+                 for n in sorted(shape, key=lambda x: -shape[x])
+                 if shape[n] > 0.01]
+        print(f"    {name:<14} {k * 100:>8.4f}% {len(moved):>8}  "
+              + "  ".join(moved))
+    print("    scale is the candidate-leg gain applied at shape weight 1.0")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("contrast", nargs="*", help="board pair A:B or ~A:B")
@@ -215,6 +272,7 @@ def main():
     ap.add_argument("--since", default="2026-08-22T12:00:00Z")
     ap.add_argument("--bar", nargs=2, metavar=("REFERENCE", "TARGET"))
     ap.add_argument("--headroom", metavar="REFERENCE")
+    ap.add_argument("--shapes", nargs=2, metavar=("REFERENCE", "TARGET"))
     ap.add_argument("--label", action="append")
     ap.add_argument("--board", default=os.environ.get(
         "YUKON_BOARD", "/tmp/yukon-board/full.json"))
@@ -232,6 +290,9 @@ def main():
         print()
     if args.headroom:
         headroom(rows, args.headroom)
+        print()
+    if args.shapes:
+        shapes(rows, args.shapes[0], args.shapes[1], args.since)
         print()
     labels = args.label or []
     labels += [f"c{i}" for i in range(len(labels), len(args.contrast))]
