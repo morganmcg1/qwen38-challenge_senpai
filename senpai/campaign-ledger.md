@@ -60946,3 +60946,204 @@ in flight            5a9f130a   crown parity, validating since 16:29Z board time
 advisor branch       09838bf9 + this entry
 ```
 
+
+## 326 — FINDING 295, FINDING 296, RULE 169: we ship a proposal head we have never measured, and we measure a proposal head we have never shipped
+
+Date 2026-08-23. Advisor. Zero GPU. Static proof against the enforcing sources
+at `26f9c10f`.
+
+### 326.1 The claim
+
+The local harness and the ranked harness give the candidate leg **different
+proposal heads**. This has been true for the whole campaign.
+
+| leg | head artifact | bytes |
+| --- | --- | ---: |
+| every local candidate leg | `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0` | 849,406,438 |
+| every ranked candidate leg | `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827` | 427,742,600 |
+| every ranked baseline leg | pinned bf16, depth 0, never drafts | 849,406,438 |
+
+### 326.2 The five anchors
+
+**1. The local head is hard-pinned and unconditional.**
+
+```
+setup-qwen-mtp.sh:66  MTP_HEAD_MODEL_ID="${MLXFAST_QWEN_MTP_HEAD_REPO:-EigenLabs/Qwen3.8-27B-MTP-bf16}"
+setup-qwen-mtp.sh:67  MTP_HEAD_REVISION="${...:-26a328e070875b0314d652a039b6b59902690f03}"
+setup-qwen-mtp.sh:76  MTP_HEAD_DIR="${MLXFAST_QWEN_MTP_HEAD_DIR:-${CACHE_ROOT}/mtp-head}"
+fixtures/qwen3_8_27b_mtp_head.sha256   4 records, 849,406,438 bytes,
+                                       model.safetensors 849,400,347
+```
+
+**2. The local benchmark passes that directory verbatim and reads no manifest.**
+
+```
+benchmark-qwen-mtp.sh:281            : "${MLXFAST_QWEN_MTP_HEAD_DIR:?...}"
+benchmark-qwen-mtp.sh:621/670/680    --mtp-head "${MLXFAST_QWEN_MTP_HEAD_DIR}"
+```
+
+A whole-tree grep finds no local reader of `mtp-head.manifest.json`.
+
+**3. The ranked runner resolves the declaration, for the candidate leg only.**
+
+```
+.github/workflows/qwen-mtp-ranked-benchmark.yml
+  :2384  step "Resolve the declared Qwen-MTP head"
+  :2394  reads ${MLXFAST_JOB_WS}/mtp-head.manifest.json
+  :2429  fetches .source_url
+  :2492  refuses on sha256 mismatch
+  :2496  refuses on byte-count mismatch
+  :2500  refuses above .max_bytes
+  :2425  staged="${MLXFAST_JOB_WS}/.qwen-mtp-declared-head"
+  :2521  MLXFAST_QWEN_MTP_CANDIDATE_HEAD_DIR=${head_dir} -> GITHUB_ENV
+  :314   MLXFAST_QWEN_MTP_HEAD_DIR stays the pinned cache -> baseline leg
+```
+
+`:2396` is explicit that a broken declaration is a refusal and never a silent
+fall back to the pinned head.
+
+**4. Our declaration is inherited, not chosen.**
+
+```json
+"source": "remote",
+"source_url": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+"sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+"bytes": 427742600,
+"max_bytes": 2147483648
+```
+
+`git log -- mtp-head.manifest.json` on our tree: introduced at `5d029178`, the
+challenge import; last touched at `9d837fc2`, note text only. Four intermediate
+commits are `Validate submission` and `Accept submission` bot snapshots.
+
+**5. The loader stopped enforcing the pinned tensor count, which is why a
+requantized declared head loads at all.**
+
+`Qwen36MTPHeadAttachment.verifyHeadIndex` (`:307-341`) requires only
+`weightMap.count >= 3`, bare unprefixed names, and `fc.weight`,
+`norm.weight`, `pre_fc_norm_hidden.weight`. Its own comment says a declared head
+"may carry a different count — e.g. a quantized head's weight/scales/biases
+triples". The pinned bf16 tree is 8 matrices + 7 norms = 15 tensors
+(`MLXFastConstants.qwenMTPHeadTensorCount`). A 4-bit group-64 head is
+8x3 + 7 = 31. Both pass.
+
+### 326.3 What this invalidates and what it does not
+
+**Does not invalidate:** any ranked receipt, any ranked fit. FINDING 286's row
+law and the ranked per-prompt acceptance rates were measured on ranked runs, so
+the declared head is already inside them. Any matched local A/B in which both
+arms load the same head is still a valid measurement of the thing it varied;
+that covers thorfinn's leaf16 ABBA and alphonse's prefill arms.
+
+**Does invalidate as a description of the shipped artifact:** every local
+acceptance rate, every local head-cost measurement, and E155's whole recall
+decomposition. `e155_irreducible_head_error_pp = 9.6677`,
+`e155_recoverable_index_pp = 0.0755`, and `e155_recoverable_vocab_pp = 0.1511`
+describe the pinned bf16 head. We do not ship that head. E155's conclusions
+about where the head's loss lives stand only for the artifact it measured.
+
+**Puts under review:** RULE 166. The `2.75 +- 0.03` local-to-ranked round-time
+divisor was fit with local round times taken on the 849 MB head and ranked round
+times taken on the 427 MB head, so it conflates the host difference with the
+head difference and the head term does not cancel. Rough contamination,
+**INFERENCE ONLY**: if the head's MLP dominates its bytes and is read once per
+draft step, the pinned head is on the order of 10 % of a local round and the
+declared head on the order of 7 % of a ranked round, which moves the pure host
+scalar from about 2.75 toward about 2.63, roughly 4.5 %, with the sign that
+makes 2.75 too large. RULE 166 stays in force with its stated interval and the
+label "head-contaminated, pending the E158 census".
+
+**Creates a directional bias in one open experiment.** A local validation of a
+draft-depth rule measures a draft step that reads about twice the head bytes it
+will read on the ranked runner, so locally drafting looks more expensive than it
+is. That is the direction of E157's own hypothesis. Edward has been told to
+treat a local confirmation as weak and to state the bias.
+
+### 326.4 FINDING 296 — the shipped head is an unwatched external dependency
+
+Our own test file recorded the structural disagreement and nobody priced it:
+
+> `Tests/MLXFastTests/QwenQMVCostCurveTests.swift:830-838` — "Two artifacts
+> claim to be the proposal head on this base and they disagree by 3.556x in
+> bytes: `fixtures/qwen3_8_27b_mtp_track.json` pins 849,398,784 bf16 tensor
+> bytes and `setup-qwen-mtp.sh` fetches that tree unconditionally, while
+> `mtp-head.manifest.json` declares a **238,934,093-byte** 4-bit group-64
+> requantization that nothing in the local path reads."
+
+The manifest now declares **427,742,600** bytes. The declaration changed under
+us at least once and the campaign did not notice. Our ranked candidate leg
+depends on a rival's Hugging Face repository at an immutable revision, pinned
+only by digest. If that revision stops resolving, the ranked run refuses. Add
+the resolve check to the pre-submit chain when the E158 census lands.
+
+### 326.5 RULE 169
+
+> **RULE 169.** The local harness and the ranked harness are different
+> experiments until proven otherwise. An env-overridable default in a setup
+> script is not the contract; the workflow is the contract. Wherever the
+> workflow resolves an artifact that the local script hard-pins, the two
+> harnesses measure different things, and no local number transfers until the
+> difference is named and priced. Before pricing any local measurement into a
+> ranked forecast, list every artifact the two harnesses resolve differently.
+
+### 326.6 The opportunity
+
+The head axis is not merely unexplored, it is unmeasured by us. The economics
+from ledger `323.5` are unchanged and now have a live use:
+
+```
+1 MB more per draft step
+  = 1e6 / 567e9 s           = 1.7637 us
+  x 4.382 draft steps/round =  7.729 us/round
+  / 43,114 us/round         =  0.01793 % published
+
+one acceptance point        = +2.6701 % published
+break-even                  = 148.9 MB per draft step per acceptance point
+declared capacity unused    = 2,147,483,648 - 427,742,600 = 1.72 GB
+```
+
+The reverse direction is equally live. If the declared head gives up little
+accuracy at half the bytes, then reverting to `source: pinned` would cost about
+`421.7 x 0.01793 = 7.56 %` published for whatever accuracy the bf16 head buys
+back, and at `+2.6701 %` per acceptance point that needs about `+2.83` points to
+break even. Nothing here says bigger is better.
+
+### 326.7 Actions taken
+
+- `send_assignment_feedback` #158 `e158-f1` — the full proof, R0.2 answered
+  statically, R0 revised to a range-request safetensors header census of both
+  trees, R1 revised to build a **ranked-faithful local harness** by pointing
+  `MLXFAST_QWEN_MTP_HEAD_DIR` at a staged copy of the declared tree and running
+  the E155 audit under both heads. New pre-registered decision: if the heads
+  differ, ranked-faithful head staging becomes the campaign default for every
+  head-side and index-side measurement.
+- `send_assignment_feedback` #152 `e152-f9` — carry on unchanged; the leaf16
+  `>= +0.257 %` price is pinned-head evidence and its transfer depends on
+  whether the declared head carries its own affine-2 compact readout; report
+  `head_provenance.sha256` from the reports he already has.
+- `send_assignment_feedback` #157 `e157-f4` — local depth validation is biased
+  toward his own hypothesis; RULE 166 provisional.
+
+### 326.8 The open question the census must settle
+
+The pinned bf16 tree cannot carry a compact draft readout: 98,336 rows x 5,120
+in bf16 is 1.007 GB against an 849 MB tree, and a full 248,320-row projection is
+2.54 GB. Yet the local control witness reports `leaf=8 leaves=12292` with
+`12292 = 98336 / 8`, so locally the compact readout exists and is derived from
+something other than the head. The declared head has room for a 4-bit layer
+(about 196 MB) plus a 4-bit compact readout (98,336 x 5,120 x 0.5 = 251 MB), and
+its manifest note claims exactly that. **If ranked builds the index from the
+declared head's own tensors while local builds it from the target, then every
+index experiment in this campaign — p15, leaf16, the E155 recall audit — has an
+unpriced transfer gap.** That single fact is the most valuable output of E158.
+
+### 326.9 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 39+ min at 17:08Z
+advisor branch       26f9c10f + this entry
+```
+
