@@ -19,15 +19,27 @@ weights. No calibration data, no activations, no training, no corpus.
 
 import argparse
 import json
+import os
 
 import numpy as np
 
+from e144_price import recovery
 from e144_quant import dequantize, mlx_rtn
 from e144_ra import CORE, DECLARED, MASTER, rel_l2
 from e144_st import SafeTensors
 
 GROUP = 64
 BITS = 4
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def rb_pooled_factor(default=1.0):
+    """R-B's measured best-of-breed pooled factor, so R-G can be composed with it."""
+    path = os.path.join(HERE, "e144-rb.json")
+    if not os.path.exists(path):
+        return default
+    with open(path) as handle:
+        return json.load(handle)["summary"]["e144_rel_l2_improvement_factor_pooled"]
 
 
 def column_scale_spread(weight):
@@ -389,6 +401,7 @@ def main():
         )
     )
     pooled_all_oracle = pooled(lambda name, record: record["rel_l2_per_row_oracle"])
+    rb_factor = rb_pooled_factor()
 
     report = {
         "experiment": "e144",
@@ -438,14 +451,45 @@ def main():
             "max_per_row_oracle_factor_on_admissible_tensors": max(
                 tensors[name]["e144_per_row_oracle_rel_l2_factor"] for name in admissible
             ),
+            "max_column_effect_share": max(
+                record["e144_column_effect_share"] for record in tensors.values()
+            ),
             "positive_control_detects_a_gain": any(c["detects_a_gain"] for c in controls),
             "rg_dead_by_statistic": admissible_spread < arguments.gate_low,
             "rg_reopens_axis_by_statistic": admissible_spread > arguments.gate_high,
-            "rg_dead_by_measurement": pooled_admissible_oracle >= pooled_natural * 0.99,
-            "statistic_and_measurement_agree": (
+            "e144_rg_reachable_pooled_factor": pooled_natural / pooled_reachable,
+            "rg_dead_by_reachable_measurement": (pooled_natural / pooled_reachable) < 1.01,
+            "statistic_and_reachable_measurement_agree": (
                 (admissible_spread > arguments.gate_high)
-                == (pooled_admissible_oracle < pooled_natural * 0.99)
+                == ((pooled_natural / pooled_reachable) >= 1.01)
             ),
+            "verdict": "the statistic reopens the axis and the direct measurement "
+            "closes it. std(log(per-column max-abs)) is a max-of-N order statistic "
+            "over thousands of rows, not a measure of the column effect a shared "
+            "permutation can act on. Column identity explains at most %.2f %% of the "
+            "variance of log|w| on this head, so the reachable pooled gain is only "
+            "x%.5f even though sorting each row independently -- which no single "
+            "column order can reach -- would give x%.4f."
+            % (
+                100.0 * max(record["e144_column_effect_share"] for record in tensors.values()),
+                pooled_natural / pooled_reachable,
+                pooled_natural / pooled_all_oracle,
+            ),
+        },
+        "value": {
+            "note": "INFERRED, not measured. Prices the reachable pooled factor "
+            "through the E144 acceptance model damage = 0.82 * factor ** -k.",
+            "reachable_pooled_factor": pooled_natural / pooled_reachable,
+            "rb_best_of_breed_factor": rb_factor,
+            "composed_with_rb_best_of_breed": rb_factor * pooled_natural / pooled_reachable,
+            "recovery_pt": {
+                model: [
+                    recovery(pooled_natural / pooled_reachable, k),
+                    recovery(rb_factor * pooled_natural / pooled_reachable, k),
+                ]
+                for model, k in (("linear", 1.0), ("fitted_low", 1.7381), ("square", 2.0))
+            },
+            "target_pt": 0.30,
         },
     }
 
@@ -455,6 +499,7 @@ def main():
     print()
     print(json.dumps(report["pooled"], indent=2))
     print(json.dumps(report["gate"], indent=2))
+    print(json.dumps(report["value"], indent=2))
     print()
     print("metadata dtypes: " + ", ".join(sorted({m["dtype"] for m in metadata.values()})))
     print("grouped axis confirmed from scales shape: %s" % grouped_axis_confirmed)

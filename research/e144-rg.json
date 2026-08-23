@@ -88,12 +88,15 @@
     "low": 0.15,
     "max_measured_permutation_factor_on_admissible_tensors": 1.0288425948819757,
     "max_measured_permutation_factor_on_any_core_tensor": 1.0652573721583416,
+    "max_per_row_oracle_factor_on_admissible_tensors": 7.698106066072083,
     "max_spread_on_admissible_tensors": 0.5748409962132938,
     "max_spread_on_error_carrying_tensors": 1.2301595092477446,
     "positive_control_detects_a_gain": true,
-    "rg_dead": false,
-    "rg_reopens_axis": true,
-    "statistic": "std(log(per-column max-abs)) on the grouped axis"
+    "rg_dead_by_measurement": false,
+    "rg_dead_by_statistic": false,
+    "rg_reopens_axis_by_statistic": true,
+    "statistic": "std(log(per-column max-abs)) on the grouped axis",
+    "statistic_and_measurement_agree": true
   },
   "group_size": 64,
   "grouping_axis": {
@@ -216,17 +219,25 @@
     }
   },
   "pooled": {
+    "e144_rg_pooled_admissible_oracle_factor": 1.207221230211965,
     "e144_rg_pooled_rel_l2_factor": 1.0050980076199538,
-    "note": "only the admissible consumers move; every other tensor keeps its natural order, and o_proj uses the grouped-query tiled order.",
+    "e144_rg_pooled_unreachable_oracle_factor": 2.865427966032995,
+    "note": "only the admissible consumers move; every other tensor keeps its natural order, and o_proj uses the grouped-query tiled order. The oracle rows sort every ROW independently, which no single column order can reach, so they bound the whole family from above.",
+    "rel_l2_admissible_per_row_oracle": 0.07830459724048318,
     "rel_l2_admissible_permutations_only": 0.09405149696371944,
+    "rel_l2_all_tensors_per_row_oracle": 0.03299017575471658,
     "rel_l2_natural_order": 0.09453097221190854
   },
   "positive_controls": [
     {
       "detects_a_gain": false,
       "e144_col_scale_log_std": 0.16206627088775305,
+      "e144_column_effect_share": 0.016066517095410404,
+      "e144_per_row_oracle_rel_l2_factor": 4.29724680355958,
       "e144_permutation_rel_l2_factor": 1.0198678826055232,
+      "mse_reduction_pct": 3.858217603328107,
       "rel_l2_natural_order": 0.09132949913288756,
+      "rel_l2_per_row_oracle": 0.021253026253282847,
       "rel_l2_sorted_columns": 0.08955032381210212,
       "requested_log_std": 0.0,
       "shape": [
@@ -237,8 +248,12 @@
     {
       "detects_a_gain": true,
       "e144_col_scale_log_std": 0.30058160671958745,
+      "e144_column_effect_share": 0.06377761349671847,
+      "e144_per_row_oracle_rel_l2_factor": 3.9648346139766595,
       "e144_permutation_rel_l2_factor": 1.096774634498841,
+      "mse_reduction_pct": 16.868578955562008,
       "rel_l2_natural_order": 0.09886487888311958,
+      "rel_l2_per_row_oracle": 0.02493543577696923,
       "rel_l2_sorted_columns": 0.09014147097620907,
       "requested_log_std": 0.25,
       "shape": [
@@ -249,8 +264,12 @@
     {
       "detects_a_gain": true,
       "e144_col_scale_log_std": 0.5230122955922665,
+      "e144_column_effect_share": 0.18018872621818713,
+      "e144_per_row_oracle_rel_l2_factor": 3.511176184076505,
       "e144_permutation_rel_l2_factor": 1.2693633170721652,
+      "mse_reduction_pct": 37.937664779896764,
       "rel_l2_natural_order": 0.11589762297710382,
+      "rel_l2_per_row_oracle": 0.03300820491512497,
       "rel_l2_sorted_columns": 0.0913037437102138,
       "requested_log_std": 0.5,
       "shape": [
@@ -261,8 +280,12 @@
     {
       "detects_a_gain": true,
       "e144_col_scale_log_std": 0.7588433039784295,
+      "e144_column_effect_share": 0.3203478074744148,
+      "e144_per_row_oracle_rel_l2_factor": 2.9227063422947155,
       "e144_permutation_rel_l2_factor": 1.3931394941999444,
+      "mse_reduction_pct": 48.47585526560688,
       "rel_l2_natural_order": 0.13181559275018115,
+      "rel_l2_per_row_oracle": 0.04510052578415671,
       "rel_l2_sorted_columns": 0.09461765551760525,
       "requested_log_std": 0.75,
       "shape": [
@@ -273,8 +296,12 @@
     {
       "detects_a_gain": true,
       "e144_col_scale_log_std": 0.9986256513836624,
+      "e144_column_effect_share": 0.45138319205894706,
+      "e144_per_row_oracle_rel_l2_factor": 2.3608495802993223,
       "e144_permutation_rel_l2_factor": 1.358628610417006,
+      "mse_reduction_pct": 45.82505385208484,
       "rel_l2_natural_order": 0.13775941340332964,
+      "rel_l2_per_row_oracle": 0.058351626699513694,
       "rel_l2_sorted_columns": 0.1013959314172303,
       "requested_log_std": 1.0,
       "shape": [
@@ -292,13 +319,40 @@
   "rung": "R-G",
   "tensors": {
     "fc": {
+      "block_profile": [
+        {
+          "aligned_to_group_grid": true,
+          "block": "target embedding",
+          "col_scale_log_std_within_block": 0.3428977019579998,
+          "columns": [
+            0,
+            5120
+          ],
+          "median_col_max_abs": 0.058349609375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "target hidden",
+          "col_scale_log_std_within_block": 0.18024764148900477,
+          "columns": [
+            5120,
+            10240
+          ],
+          "median_col_max_abs": 0.74609375
+        }
+      ],
       "e144_col_scale_log_std": 1.2301595092477446,
+      "e144_column_effect_share": 0.03215784728797778,
+      "e144_per_row_oracle_rel_l2_factor": 1.0126660761717523,
       "e144_permutation_rel_l2_factor": 1.000694704042999,
       "frobenius_norm": 93.64749332566673,
       "group_kurtosis_median": -0.08432935430661215,
       "group_kurtosis_p99": 5.867077991989838,
       "groups_per_row": 160,
+      "mse_reduction_pct": 0.13879615848072513,
+      "oracle_mse_reduction_pct": 2.4858865174454903,
       "rel_l2_natural_order": 0.09331502465927648,
+      "rel_l2_per_row_oracle": 0.09214787268478605,
       "rel_l2_sorted_columns": 0.09325024333821877,
       "shape": [
         5120,
@@ -308,12 +362,17 @@
     },
     "layers.0.mlp.down_proj": {
       "e144_col_scale_log_std": 0.4073195080425466,
+      "e144_column_effect_share": 0.0455040232124779,
+      "e144_per_row_oracle_rel_l2_factor": 7.698106066072083,
       "e144_permutation_rel_l2_factor": 1.0288425948819757,
       "frobenius_norm": 116.12772914825268,
       "group_kurtosis_median": 0.17749079671655887,
       "group_kurtosis_p99": 4.006639523093656,
       "groups_per_row": 272,
+      "mse_reduction_pct": 5.528213561245787,
+      "oracle_mse_reduction_pct": 98.31254492756466,
       "rel_l2_natural_order": 0.09810743563709677,
+      "rel_l2_per_row_oracle": 0.012744360079615734,
       "rel_l2_sorted_columns": 0.09535708972892129,
       "shape": [
         5120,
@@ -323,12 +382,17 @@
     },
     "layers.0.mlp.gate_proj": {
       "e144_col_scale_log_std": 0.174362825242033,
+      "e144_column_effect_share": 0.0009218670887935255,
+      "e144_per_row_oracle_rel_l2_factor": 5.647438698813551,
       "e144_permutation_rel_l2_factor": 1.0007405981833704,
       "frobenius_norm": 119.46712803444545,
       "group_kurtosis_median": -0.15804037209529387,
       "group_kurtosis_p99": 2.2164616340023793,
       "groups_per_row": 80,
+      "mse_reduction_pct": 0.14795525330602022,
+      "oracle_mse_reduction_pct": 96.8645711577165,
       "rel_l2_natural_order": 0.09178893044535877,
+      "rel_l2_per_row_oracle": 0.01625319642064328,
       "rel_l2_sorted_columns": 0.09172100203787262,
       "shape": [
         17408,
@@ -338,12 +402,17 @@
     },
     "layers.0.mlp.up_proj": {
       "e144_col_scale_log_std": 0.19390602426297898,
+      "e144_column_effect_share": 0.0026420113121816986,
+      "e144_per_row_oracle_rel_l2_factor": 5.72067593653816,
       "e144_permutation_rel_l2_factor": 0.9996348910499933,
       "frobenius_norm": 129.95620813069223,
       "group_kurtosis_median": -0.14999010807515356,
       "group_kurtosis_p99": 2.024647101107659,
       "groups_per_row": 80,
+      "mse_reduction_pct": -0.07306180084212244,
+      "oracle_mse_reduction_pct": 96.94433804697219,
       "rel_l2_natural_order": 0.09175427521072141,
+      "rel_l2_per_row_oracle": 0.016039061857128386,
       "rel_l2_sorted_columns": 0.09178778775353154,
       "shape": [
         17408,
@@ -353,12 +422,17 @@
     },
     "layers.0.self_attn.k_proj": {
       "e144_col_scale_log_std": 0.23772097735861392,
+      "e144_column_effect_share": 0.01594941251792841,
+      "e144_per_row_oracle_rel_l2_factor": 5.304107776508284,
       "e144_permutation_rel_l2_factor": 1.0652573721583416,
       "frobenius_norm": 36.79769972044748,
       "group_kurtosis_median": 0.04783208362544644,
       "group_kurtosis_p99": 6.851744733891131,
       "groups_per_row": 80,
+      "mse_reduction_pct": 11.876669342401925,
+      "oracle_mse_reduction_pct": 96.44552618044021,
       "rel_l2_natural_order": 0.0988340049045491,
+      "rel_l2_per_row_oracle": 0.01863348353181691,
       "rel_l2_sorted_columns": 0.09277946108394382,
       "shape": [
         1024,
@@ -367,14 +441,261 @@
       "zero_columns": 0
     },
     "layers.0.self_attn.o_proj": {
+      "block_profile": [
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 0",
+          "col_scale_log_std_within_block": 0.4950680764209933,
+          "columns": [
+            0,
+            256
+          ],
+          "median_col_max_abs": 0.10009765625
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 1",
+          "col_scale_log_std_within_block": 0.6487658281489429,
+          "columns": [
+            256,
+            512
+          ],
+          "median_col_max_abs": 0.1748046875
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 2",
+          "col_scale_log_std_within_block": 0.6244465800686186,
+          "columns": [
+            512,
+            768
+          ],
+          "median_col_max_abs": 0.109130859375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 3",
+          "col_scale_log_std_within_block": 0.6364216275498953,
+          "columns": [
+            768,
+            1024
+          ],
+          "median_col_max_abs": 0.11865234375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 4",
+          "col_scale_log_std_within_block": 0.6336533558857648,
+          "columns": [
+            1024,
+            1280
+          ],
+          "median_col_max_abs": 0.15966796875
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 5",
+          "col_scale_log_std_within_block": 0.6423974640013294,
+          "columns": [
+            1280,
+            1536
+          ],
+          "median_col_max_abs": 0.1484375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 6",
+          "col_scale_log_std_within_block": 0.6352217115198059,
+          "columns": [
+            1536,
+            1792
+          ],
+          "median_col_max_abs": 0.13427734375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 7",
+          "col_scale_log_std_within_block": 0.6169874997166037,
+          "columns": [
+            1792,
+            2048
+          ],
+          "median_col_max_abs": 0.099853515625
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 8",
+          "col_scale_log_std_within_block": 0.6351478525264402,
+          "columns": [
+            2048,
+            2304
+          ],
+          "median_col_max_abs": 0.11376953125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 9",
+          "col_scale_log_std_within_block": 0.3376222113064122,
+          "columns": [
+            2304,
+            2560
+          ],
+          "median_col_max_abs": 0.078125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 10",
+          "col_scale_log_std_within_block": 0.6366927140368743,
+          "columns": [
+            2560,
+            2816
+          ],
+          "median_col_max_abs": 0.1533203125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 11",
+          "col_scale_log_std_within_block": 0.6254019765800262,
+          "columns": [
+            2816,
+            3072
+          ],
+          "median_col_max_abs": 0.16748046875
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 12",
+          "col_scale_log_std_within_block": 0.3318135850656269,
+          "columns": [
+            3072,
+            3328
+          ],
+          "median_col_max_abs": 0.072998046875
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 13",
+          "col_scale_log_std_within_block": 0.39833869964343555,
+          "columns": [
+            3328,
+            3584
+          ],
+          "median_col_max_abs": 0.12744140625
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 14",
+          "col_scale_log_std_within_block": 0.3335191245105464,
+          "columns": [
+            3584,
+            3840
+          ],
+          "median_col_max_abs": 0.0849609375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 15",
+          "col_scale_log_std_within_block": 0.3998595077219036,
+          "columns": [
+            3840,
+            4096
+          ],
+          "median_col_max_abs": 0.093017578125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 16",
+          "col_scale_log_std_within_block": 0.3085069725494456,
+          "columns": [
+            4096,
+            4352
+          ],
+          "median_col_max_abs": 0.08642578125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 17",
+          "col_scale_log_std_within_block": 0.21027120880796768,
+          "columns": [
+            4352,
+            4608
+          ],
+          "median_col_max_abs": 0.10302734375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 18",
+          "col_scale_log_std_within_block": 0.5363615073560116,
+          "columns": [
+            4608,
+            4864
+          ],
+          "median_col_max_abs": 0.14990234375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 19",
+          "col_scale_log_std_within_block": 0.3920629104148236,
+          "columns": [
+            4864,
+            5120
+          ],
+          "median_col_max_abs": 0.0810546875
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 20",
+          "col_scale_log_std_within_block": 0.6363440448292462,
+          "columns": [
+            5120,
+            5376
+          ],
+          "median_col_max_abs": 0.111083984375
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 21",
+          "col_scale_log_std_within_block": 0.425499412428716,
+          "columns": [
+            5376,
+            5632
+          ],
+          "median_col_max_abs": 0.069580078125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 22",
+          "col_scale_log_std_within_block": 0.37059441618676475,
+          "columns": [
+            5632,
+            5888
+          ],
+          "median_col_max_abs": 0.096923828125
+        },
+        {
+          "aligned_to_group_grid": true,
+          "block": "query head 23",
+          "col_scale_log_std_within_block": 0.33701446514470174,
+          "columns": [
+            5888,
+            6144
+          ],
+          "median_col_max_abs": 0.075927734375
+        }
+      ],
       "e144_col_scale_log_std": 0.5748409962132938,
+      "e144_column_effect_share": 0.06467070553710949,
+      "e144_per_row_oracle_rel_l2_factor": 5.329783424149962,
       "e144_permutation_rel_l2_factor": 0.9834553048254799,
       "e144_tiled_permutation_rel_l2_factor": 1.0030447965173273,
       "frobenius_norm": 110.90081057672919,
       "group_kurtosis_median": 0.2229590808953612,
       "group_kurtosis_p99": 5.7260385777674685,
       "groups_per_row": 96,
+      "mse_reduction_pct": -3.392906829564857,
+      "oracle_mse_reduction_pct": 96.47969026717348,
       "rel_l2_natural_order": 0.09969290054375043,
+      "rel_l2_per_row_oracle": 0.018704868961847223,
       "rel_l2_sorted_columns": 0.1013700369041596,
       "rel_l2_tiled_head_order": 0.09939027737334788,
       "shape": [
@@ -385,12 +706,17 @@
     },
     "layers.0.self_attn.q_proj": {
       "e144_col_scale_log_std": 0.1893358328905744,
+      "e144_column_effect_share": 0.002532463488450473,
+      "e144_per_row_oracle_rel_l2_factor": 5.562898205431279,
       "e144_permutation_rel_l2_factor": 1.0064592895971851,
       "frobenius_norm": 125.78678771362134,
       "group_kurtosis_median": -0.11987548025574069,
       "group_kurtosis_p99": 3.4082368646512884,
       "groups_per_row": 80,
+      "mse_reduction_pct": 1.279448128005467,
+      "oracle_mse_reduction_pct": 96.7685475174991,
       "rel_l2_natural_order": 0.09299573176930848,
+      "rel_l2_per_row_oracle": 0.01671713706328709,
       "rel_l2_sorted_columns": 0.09239890051243715,
       "shape": [
         12288,
@@ -400,12 +726,17 @@
     },
     "layers.0.self_attn.v_proj": {
       "e144_col_scale_log_std": 0.17316544514138835,
+      "e144_column_effect_share": 0.01148224439868573,
+      "e144_per_row_oracle_rel_l2_factor": 5.602984529829937,
       "e144_permutation_rel_l2_factor": 1.0055578034923927,
       "frobenius_norm": 68.27398529328812,
       "group_kurtosis_median": -0.0416984989496183,
       "group_kurtosis_p99": 4.094856727592311,
       "groups_per_row": 80,
+      "mse_reduction_pct": 1.1023621410673035,
+      "oracle_mse_reduction_pct": 96.81462070154045,
       "rel_l2_natural_order": 0.09434634980725959,
+      "rel_l2_per_row_oracle": 0.0168385883103845,
       "rel_l2_sorted_columns": 0.09382488950867492,
       "shape": [
         1024,

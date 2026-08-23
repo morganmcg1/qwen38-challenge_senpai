@@ -137,6 +137,16 @@ struct E144HeadDeclarationTests {
     /// numbers, and whichever one the candidate declares, the other party
     /// refuses. This test pins the divergence. If a later change makes the two
     /// agree, this test fails and says so.
+    ///
+    /// The divergence opens no benchmark escape. Before any timed work the
+    /// ranked workflow re-scrubs the resolved head and refuses a `README.md` at
+    /// ANY depth (`qwen-mtp-ranked-benchmark.yml`, "declared MTP head tree grew
+    /// a digest-exempt README.md before timing"), then digests the survivor
+    /// with no exclusion at all. So a nested README always fails the job; it can
+    /// never reach a timed round as digest-exempt payload. What remains is a
+    /// consistency and diagnosability defect: three implementations, two rules,
+    /// and prose in `mtp-head/README.md` that says "top-level" beside its own
+    /// equivalent shell that matches any depth.
     @Test
     func aNestedReadmeSplitsTheTwoImplementationsOfTheDigestRule() throws {
         let root = try scratchTree()
