@@ -199,6 +199,8 @@ extension QwenRuntime {
         try warmup.warmAllDepths(maxDepth: Qwen36MTPLimits.maxDepth)
         let session = try Qwen36MTPBlockSession(
             model: model, stopTokens: stopTokens)
+        // After the warm session, so the audit never sees warm-only rounds.
+        QwenMTPRecallAudit.installIfRequested(model: model)
 
         let decoder = JSONDecoder()
         let encoder = JSONEncoder()
