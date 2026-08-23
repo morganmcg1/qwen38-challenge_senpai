@@ -6490,8 +6490,14 @@ extension Qwen35TextModel: MTPCapable {
         // while the top-C arrive in partition order. `argPartition` stays
         // inside the fallback arms: the point of E87 select is that the merge
         // sort never runs at all.
+        //
+        // Each arm records itself at the dispatch rather than from the parsed
+        // environment, so a selector that never reached the worker reads
+        // differently from one that arrived and was ignored. Exactly one of the
+        // three keys may appear in a leg.
         let probed: MLXArray
         if let selectK = _draftProbeSelect {
+            Qwen35CustomQMV.notePipeline("e87_probe_select", width: nil)
             probed = selectK(
                 [centroidScore],
                 grid: (qwen35E87SelectTG, 1, 1),
@@ -6502,6 +6508,7 @@ extension Qwen35TextModel: MTPCapable {
         } else {
             let order = MLX.argPartition(centroidScore, kth: clusters - probes)
             if let sorter = _draftProbeSort {
+                Qwen35CustomQMV.notePipeline("e87_probe_sort_compaction", width: nil)
                 probed = sorter(
                     [order],
                     grid: (qwen35ProbeSortTG, 1, 1),
@@ -6510,6 +6517,7 @@ extension Qwen35TextModel: MTPCapable {
                     outputDTypes: [.uint32]
                 )[0]
             } else {
+                Qwen35CustomQMV.notePipeline("e87_probe_merge_sort", width: nil)
                 probed = MLX.sorted(order[.ellipsis, (clusters - probes)...])
                     .asType(.uint32)
             }

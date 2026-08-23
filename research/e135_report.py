@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Report one E135 wide-against-tight palindrome session.
+"""Report one E135 reference-against-candidate palindrome session.
+
+`--session` selects the arm pair; see `SESSIONS`.
 
 The headline is absolute `mtp_seconds_per_token`. Two estimators are printed:
 
-  paired palindrome   mean(T) - mean(W) inside each `W T T W` replicate. The
+  paired palindrome   mean(C) - mean(R) inside each `R C C R` replicate. The
                       arm code (-1, +1, +1, -1) is orthogonal to the centred
                       leg index (-1.5, -0.5, +0.5, +1.5), so a linear drift in
                       leg index cancels exactly rather than approximately.
@@ -13,11 +15,10 @@ The headline is absolute `mtp_seconds_per_token`. Two estimators are printed:
                       index. The residual standard deviation is the error bar,
                       as the assignment specifies.
 
-The local serial-to-MTP ratio is reported next to it. Unlike the E129 table
-arm, this change is confined to the candidate leg: the serial leg decodes at
-M = 1, the routed set is 3...9, and `default: break` means the serial leg
-launches no routed QMV. The two instruments should therefore agree, and a
-disagreement is itself a finding.
+The local serial-to-MTP ratio is reported next to it. Both session kinds are
+confined to the candidate leg, so the two instruments should agree and a
+disagreement is itself a finding. The session script states the confinement
+argument for its own change.
 
 The session is ungated by construction. Entry and exit temperature per leg and
 the entry spread per arm are printed, and the gate labels are reproduced
@@ -33,8 +34,41 @@ import math
 import pathlib
 import statistics
 
-ARMS = ("wide", "tight")
 OUT = pathlib.Path("research/out")
+
+# Every E135 palindrome session has the same shape: one reference arm, one
+# candidate arm, `R C C R` inside each replicate, and one meta key naming the
+# arm. Only those three facts change between sessions, so they live here and
+# the estimators stay shared.
+SESSIONS = {
+    "grid": {
+        "meta_key": "e135_grid",
+        "arms": ("wide", "tight"),
+        "headline": "e135_tight_grid_candidate_leg_pct",
+        "invariance": "the arms differ in launch geometry only",
+    },
+    "e87": {
+        "meta_key": "e135_e87_arm",
+        "arms": ("incumbent", "select"),
+        "headline": "e135_e87_select_candidate_leg_pct",
+        "invariance": "the arms differ in probe selection only",
+    },
+}
+
+ARMS = SESSIONS["grid"]["arms"]
+META_KEY = SESSIONS["grid"]["meta_key"]
+HEADLINE = SESSIONS["grid"]["headline"]
+INVARIANCE = SESSIONS["grid"]["invariance"]
+
+
+def configure(kind: str) -> None:
+    """Point the module at one session kind. Importers call this first."""
+    global ARMS, META_KEY, HEADLINE, INVARIANCE
+    spec = SESSIONS[kind]
+    ARMS = spec["arms"]
+    META_KEY = spec["meta_key"]
+    HEADLINE = spec["headline"]
+    INVARIANCE = spec["invariance"]
 
 
 def read_meta(path: pathlib.Path) -> dict[str, str]:
@@ -52,7 +86,7 @@ def legs(label: str) -> list[dict]:
     found = []
     for d in sorted(OUT.glob(f"e135{label}k*")):
         meta = read_meta(d / "meta.txt")
-        arm = meta.get("e135_grid")
+        arm = meta.get(META_KEY)
         if arm not in ARMS:
             continue
         metrics = {}
@@ -82,14 +116,14 @@ def fnum(x):
 
 
 def ols_arm_and_drift(rows: list[dict], key: str):
-    """Fit y ~ 1 + arm + centred leg index. Returns the arm contrast T - W."""
+    """Fit y ~ 1 + arm + centred leg index. Returns candidate minus reference."""
     ys, arms, idxs = [], [], []
     for r in rows:
         y = fnum(r["metrics"].get(key))
         if y is None:
             continue
         ys.append(y)
-        arms.append(1.0 if r["arm"] == "tight" else -1.0)
+        arms.append(1.0 if r["arm"] == ARMS[1] else -1.0)
         idxs.append(float(r["idx"]))
     n = len(ys)
     if n < 4:
@@ -128,7 +162,10 @@ def ols_arm_and_drift(rows: list[dict], key: str):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--label", default="s1")
+    ap.add_argument("--session", default="grid", choices=sorted(SESSIONS))
     args = ap.parse_args()
+    configure(args.session)
+    ref, cand = ARMS
 
     rows = legs(args.label)
     if not rows:
@@ -136,7 +173,7 @@ def main() -> int:
         return 1
     complete = [r for r in rows if r["metrics"].get("mtp_seconds_per_token")]
 
-    print(f"E135 wide-against-tight session {args.label}: {len(rows)} legs, "
+    print(f"E135 {ref}-against-{cand} session {args.label}: {len(rows)} legs, "
           f"{len(complete)} with a score")
     gate = sorted({r["meta"].get("gate_qualified_for_timing") for r in rows}
                   - {None})
@@ -154,12 +191,12 @@ def main() -> int:
     print()
 
     print("per leg")
-    print(f"{'tag':32s} {'grid':6s} {'idx':>3s} "
+    print(f"{'tag':32s} {'arm':9s} {'idx':>3s} "
           f"{'mtp s/tok':>10s} {'serial':>9s} {'ratio':>7s} "
           f"{'in C':>6s} {'out C':>6s} {'draft':>7s} {'div':>4s} {'match':>6s}")
     for r in rows:
         m = r["metrics"]
-        print(f"{r['tag']:32s} {r['arm']:6s} {r['idx']:3d} "
+        print(f"{r['tag']:32s} {r['arm']:9s} {r['idx']:3d} "
               f"{fnum(m.get('mtp_seconds_per_token')) or float('nan'):10.6f} "
               f"{fnum(m.get('serial_seconds_per_token')) or float('nan'):9.6f} "
               f"{fnum(m.get('mtp_decode_speedup')) or float('nan'):7.4f} "
@@ -178,13 +215,13 @@ def main() -> int:
     print(f"  effective_mean_draft_len across scored legs: {sorted(drafts)}")
     print(f"  accepted_draft_rate across scored legs:      {sorted(rates)}")
     print("  verdict: "
-          + ("identical, so the arms differ in launch geometry only"
+          + (f"identical, so {INVARIANCE}"
              if len(drafts) == 1 and len(rates) == 1
              else "NOT IDENTICAL, THE ARMS ARE CONFOUNDED"))
     print()
 
     print("per arm")
-    print(f"{'grid':6s} {'n':>2s} {'mtp mean':>10s} {'sd':>9s} "
+    print(f"{'arm':9s} {'n':>2s} {'mtp mean':>10s} {'sd':>9s} "
           f"{'serial mean':>11s} {'ratio':>8s} {'entry C':>8s} {'spread':>7s}")
     means = {}
     for arm in ARMS:
@@ -197,7 +234,7 @@ def main() -> int:
         ent = [e for e in (fnum(r["meta"].get("gpu_temp_entry_c")) for r in rs)
                if e is not None]
         means[arm] = statistics.fmean(mtp)
-        print(f"{arm:6s} {len(rs):2d} {statistics.fmean(mtp):10.6f} "
+        print(f"{arm:9s} {len(rs):2d} {statistics.fmean(mtp):10.6f} "
               f"{(statistics.stdev(mtp) if len(mtp) > 1 else 0):9.6f} "
               f"{statistics.fmean(ser):11.6f} {statistics.fmean(rat):8.4f} "
               f"{(statistics.fmean(ent) if ent else float('nan')):8.1f} "
@@ -215,10 +252,10 @@ def main() -> int:
                 per[arm] = statistics.fmean(v)
         if len(per) < 2:
             continue
-        pct = 100 * (per["wide"] - per["tight"]) / per["wide"]
+        pct = 100 * (per[ref] - per[cand]) / per[ref]
         pairs.append(pct)
-        print(f"  rep {rep}: wide {per['wide']:.6f}  tight {per['tight']:.6f}"
-              f"   tight is {pct:+.3f} % faster")
+        print(f"  rep {rep}: {ref} {per[ref]:.6f}  {cand} {per[cand]:.6f}"
+              f"   {cand} is {pct:+.3f} % faster")
     if pairs:
         sd = statistics.stdev(pairs) if len(pairs) > 1 else float("nan")
         print(f"  mean {statistics.fmean(pairs):+.3f} % over {len(pairs)} "
@@ -237,9 +274,9 @@ def main() -> int:
         better = "faster" if key.endswith("seconds_per_token") else "higher"
         sign = -pct if key.endswith("seconds_per_token") else pct
         print(f"  {name:26s} mean {fit['mean']:.6f}  "
-              f"tight - wide {fit['contrast']:+.6f} +- {fit['se']:.6f}  "
+              f"{cand} - {ref} {fit['contrast']:+.6f} +- {fit['se']:.6f}  "
               f"({pct:+.3f} +- {pct_se:.3f} %)  "
-              f"tight is {sign:+.3f} % {better}")
+              f"{cand} is {sign:+.3f} % {better}")
         print(f"  {'':26s} drift {fit['drift_per_leg']:+.6f} per leg, "
               f"residual sd {fit['sigma']:.6f}, dof {fit['dof']}")
     print()
@@ -248,16 +285,16 @@ def main() -> int:
     if fit:
         headline = -100 * fit["contrast"] / fit["mean"]
         err = 100 * fit["se"] / fit["mean"]
-        print(f"HEADLINE e135_tight_grid_candidate_leg_pct = {headline:+.4f} "
-              f"(+- {err:.4f}), positive means tight is faster")
+        print(f"HEADLINE {HEADLINE} = {headline:+.4f} "
+              f"(+- {err:.4f}), positive means {cand} is faster")
         if headline < -0.10:
-            verdict = ("STOP AND REPORT: tight is more than 0.10 % SLOWER. "
-                       "The extra threadgroups are doing something useful.")
+            verdict = (f"STOP AND REPORT: {cand} is more than 0.10 % SLOWER "
+                       f"than {ref}.")
         elif headline < 0.10:
-            verdict = ("The launch hypothesis is dead at the local fixture: "
-                       "the contrast is inside +-0.10 %.")
+            verdict = (f"Dead at the local fixture: the contrast is inside "
+                       f"+-0.10 %.")
         else:
-            verdict = "At or above the +0.10 % gate; rung 2 is licensed."
+            verdict = "At or above the +0.10 % gate."
         print(f"STOP RULE: {verdict}")
     print()
     print("This session is ungated and counterbalanced. It is directional "
