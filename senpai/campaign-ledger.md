@@ -57392,3 +57392,581 @@ plus a pre-registered forecast now, at zero GPU cost alongside the running
 fill-cost session; then a four-arm `onePass6 / onePass67 / onePass67 / onePass6`
 palindrome behind the real 40 C gate. Ordering is fill cost first, because
 Finding 252 is worth up to +1.2175 percent and is the larger question.
+
+
+## 313 — 2026-08-23 ~11:45Z — four students report in one hour; the fill axis loses 4x, Rule 138 falls, and a scheduler mechanism enters the submission slot
+
+Advisor base at entry `c179b777`. `origin/main` `770a3ff2` unchanged. Bar
+unmoved at `684821ed` 3.71959723 for about twelve hours. Our `0cf1637e`
+3.68278758 remains the campaign best. The slot was free at the start of this
+entry and is taken at the end of it.
+
+### 313.1 EDWARD E150 R4 CLEARS THE SUBMISSION GATE AT +0.8543 pp
+
+`e150_policy_gain_min_over_curves_pp = +0.8543`, against a `+0.6` threshold I
+stated in E150 F3. `harness=local`, `curve=measured` and `curve=replayed`, frame
+`replay_median_pct_frame`, 200 windows, 6 seeds. Rule 79 is not engaged: this is
+an offline replay price, not a timing contrast. Rule 151 applies and the number
+is un-discounted.
+
+Control: the shipped greedy policy on the measured curve replays at `+0.1155`
+against the published R7 shipped cell `+0.1338`, a gap of `0.0183 pp` inside the
+`0.02 pp` tolerance.
+
+```
+curve      mu*           lambda*   bisection steps
+measured   0.459979248   2.1740    13
+replayed   0.513897705   1.9459    13
+
+cell                              median %   sd       depth    inadmissible
+decide measured, bill measured     +0.9699   0.2982   4.2042   0.1485
+decide measured, bill replayed     +0.7452   0.2662   4.2042   0.1485
+decide replayed, bill measured     -1.2606   0.5176   4.6670   0.1717
+decide replayed, bill replayed     -0.1555   0.5201   4.6670   0.1717
+
+e150_policy_gain_on_measured_pct        +0.9699
+e150_policy_gain_on_replayed_pct        -0.1555
+e150_policy_cross_regret_pp (measured)  -2.2304
+e150_policy_cross_regret_pp (replayed)  +0.9006
+e150_policy_gain_min_over_curves_pp     +0.8543
+e150_policy_gain_min_over_all_cells_pp  -1.3761
+```
+
+**Choosing on the measured curve dominates on both billings.** A policy chosen
+on the replayed curve is negative even on its own curve; edward attributes that
+to `mu*` being a fixed point of pooled cost per token while the score is a
+median of per-prompt ratios.
+
+The mechanism, commit `81bb30f8`, `swift build` green, 11 of 11 E150 tests pass:
+
+- `rankedMeasuredRoundMicroseconds`, the E145 R2 live-pinned per-width curve at
+  widths 1..9, carried at its measured level;
+- `makeRankedMeasuredDepthPrice()`, which derives
+  `marginal[d] = (C(d+2) - C(d+1)) / C(1)` from that curve rather than
+  transcribing a table, matched against the Python replay to `1e-12`;
+- `linearisedDepth(cap:)`, a global argmax of `lambda * (1 + E[A_d]) - C_d`
+  replacing the first-break walk;
+- `linearisedLambdaStar = 0.45642623901367185`, against the bracket's
+  independent bisection at `0.459979248`, agreeing to `0.0036` and inside the
+  LOPO fold spread `0.4072 .. 0.4768`;
+- both `pendingTop2` sigmoid clamps removed;
+- `MLX_E150_SCHEDULE_ARM` gates it, unset gives `linearised`, so the compiled
+  default is the candidate;
+- the schedule trace witnesses `rule=` and `lam=` beside `arm=`.
+
+Budget on his branch: source 2,650,951 / 3,000,000, growth 196,116 / 262,144.
+`verify-ranked-score-boundary.sh` PASS.
+
+Publish probability, at Finding 246's three-draw sd of 0.01281 (0.346 %) and
+Finding 255's fair median 3.69204:
+
+```
+uniform candidate-leg gain   fair median   P(one draw publishes > 3.71960)
+  +0.0000 %  today            3.69204                1.6 %
+  +0.3990 %  parity           3.70678               16 %
+  +0.7452 %  bill replayed    3.71956               50 %
+  +0.8543 %  headline         3.72359               62 %
+  +0.9699 %  bill measured    3.72785               74 %
+```
+
+**Authorised for submission.** Conditions imposed: a per-prompt
+`e150_policy_gain_by_prompt_pp` on the pessimistic cell with a Rule 148 weighted
+roll-up, abort if the weighted figure is below `+0.30 pp`; a pre-registered
+Rule 114 witness naming the expected direction of `effective_mean_draft_len` on
+all eight ranked prompts and the fate of plutarch's `non_drafting_round_count`
+449, with the falsifier that an `edl` unchanged to three decimals on six or more
+prompts voids the receipt; the full gate chain; no composition.
+
+The per-prompt requirement exists because of `pb6`: it replayed and measured as
+a win on two local instruments and the ranked receipt showed it winning
+`+88.78 %` on plutarch, the one prompt with exactly zero median weight, while
+losing `-3.66 %` on beagle, which carries half the weight.
+
+### 313.2 ADVISOR ERROR 182 AND RULE 152 — THE PUBLISHED SHIPPED CELL IS NOT THE
+POLICY THAT COMPILES
+
+`e150_baseline_identity.py`, full scale:
+
+```
+cell                                                        median %   mean depth
+shipped rule, belief = uniform 1 + 0.18d  (what Swift compiles)  +0.0000   4.3193
+shipped rule, belief = measured curve table (every R0.5 arm)     +0.1155   3.1172
+published R7 shipped cell                                        +0.1338   —
+```
+
+`make_policy("ship")` and the env base run are the same first-break walk holding
+the same uniform table, which is exactly `makeUniformDepthPrice()`, so that arm
+returns exactly `0.0000` and R1's control asserts it at `< 1e-9`. There is no
+Swift table matching the Python measured curve: `makeMeasuredDepthPrice()`
+(`.pbfit`) is the E68 rung-1 shape rescaled to total `1.44`, and rescaling
+discards the level, which is also why `pbfit` transferred badly.
+
+> **ADVISOR ERROR 182.** Every E145 R7 and E128 cell quoted as "% versus
+> shipped" was measured against `makeUniformDepthPrice()` holding the measured
+> price table, not against the policy the Swift binary compiles. The R7 shipped
+> cell `+0.1338` is a price-table-swapped reference; against the compiled policy
+> the same arm is `+0.0000`. Ledger entries 306 and 309 are offset by that
+> amount. Rankings are unaffected because the offset is common.
+
+> **RULE 152.** A replay baseline must be identified by the code path that
+> compiles, not by the arm name. State in the artifact which of belief table and
+> decision rule each baseline cell holds fixed, and prove the identity with a
+> control that asserts the compiled arm returns exactly zero.
+
+Consequence: R4 is a two-part mechanism — adopt the measured price table, then
+swap the walk for the linearised argmax — and the parts are not separable
+because the rule compares an absolute cost against an absolute lambda. One
+mechanism, one submission. The honest gain over what ships today is `+1.1178 pp`;
+edward reports the smaller self-consistent `+0.8543` and flags the larger.
+
+### 313.3 E150 R2 L5/L6 — THE DEMAND CURVE IN ASSUMED SIGNAL QUALITY
+
+All three controls hold at `0.000e+00`.
+
+```
+assumed AUC     L5        L6      L6 - L5
+0.500       +1.1178   +1.1178    +0.0000
+0.700       +1.1835   +1.5867    +0.4032
+0.865 PAD   +1.5848   +3.0890    +1.5042
+0.950       +2.0936   +4.4919    +2.3982
+1.000       +3.6448   +5.9279    +2.2831
+```
+
+Break-even host readback cost `775.0 us/round` against R3's `100 us/round` stop
+rule, so R3 is worth running by 7.75x. Deferred until the submission is in
+flight.
+
+Three defects fixed, each caught by a control: `sequential_depth` used a myopic
+marginal test while `walk_ratio` is a global argmax, which on the non-concave
+measured curve stops in the dip and understates depth by about 1.0 — the same
+defect the R4 mechanism exists to remove, found independently in the replay and
+in the shipped Swift; `prior_pmf` renormalised truncated mass so `P(K >= i)` no
+longer equalled the hazard product; and the RNG seed used `hash()` over strings,
+which carries a per-process salt, now blake2b.
+
+Smoke-scale composition preview, all on the shipped rule and shipped
+information: `expectedonly` alone `+0.2561`, `rankedprice` alone `-0.1006`,
+together `-0.2653`, **super-additive term `-0.4208 pp`. The two corrections
+anti-compose.** Full-scale figures pending.
+
+### 313.4 ASKELADD E149 ARM D — RULE 138 SUSPENDED AS A GATE
+
+Zero GPU, `harness=ranked` on every receipt quantity. `research/e149_rungD_curve.py`,
+`research/e149_rungD_robust.py`, outputs `research/e149-rungD.json` and
+`research/e149-rungD-robust.json`.
+
+**The stop rule fired. `e149_rungD_method_adequate = false`. No curve published.**
+Two reasons, both his:
+
+1. At the empirical per-prompt noise the free-eight solver returns the H-alt
+   answer `[1,2,3,4,5]` even when the ground truth is H-null `[1,2,3,4,5,7,8]`
+   — exact-set recovery 0.150 and the wrong modal set. The empirical noise is
+   `1.1365 %`, derived from the three prompts whose width mass moves by less
+   than 0.01 between the two core rows (medicine, drama, travel), where the
+   model predicts one common level shift and zero residual spread: measured
+   common shift `+1.8683 %`, residual spread `1.1365 %`. The free-eight fit's own
+   rms residual is `1.1011 %`, the same number from the other side.
+2. The fit misses the designated 5->6 sanity cell by 4.3x and 5.1x against two
+   references that agree with each other to 1.17x, and it makes width 4
+   inadmissible, which both references reject.
+
+The one-parameter level test that survives — one free scalar level per named
+curve, sixteen observations:
+
+```
+mass model   H-null chi2   H-null rms   H-alt chi2   H-alt rms   dchi2       prefers
+tilt            6,567.4      4.168 %     27,072.3     7.923 %   -20,504.9   H-null
+replay         63,272.8      4.639 %     73,819.0     6.285 %   -10,546.1   H-null
+
+separation after each takes its best level: 1,498.7 us/round = 4.123 % of y
+against the 1.1365 % floor, so the test has 3.6x discrimination
+
+leave-one-prompt-out and subsets, tilt model — 11 of 11 prefer H-null
+  drop beagle -19149.2   drop medicine -20599.4   drop botany   -20522.0
+  drop plutarch -18210.8 drop drama    -12496.7   drop republic -19432.9
+  drop essays -12383.4   drop travel   -17109.5
+  width>=6 mass top half (n=8) -4642.4;  >1/4 max (n=10) -6445.7
+  drop plutarch and drama (n=12) -10110.9
+replay mass model gives the same eleven verdicts.  22 of 22, zero flips.
+
+splice test isolating the 5->6, 6->7, 7->8 cells
+  curve                                  tilt chi2   replay chi2
+  H-null everywhere                        6,567.4      63,272.8
+  low H-alt, high H-null marginals        16,855.4      57,584.4
+  low H-null, high H-alt marginals        13,481.6      77,904.4
+  H-alt everywhere                        27,072.3      73,819.0
+  four of four favour the replayed marginals at 6, 7 and 8
+```
+
+Both hypotheses are rejected outright: H-null misfit 4.17 % rms and H-alt 7.92 %
+against a 1.1365 % floor. This is a preference between two wrong models. The
+solver's own bias runs toward the measured answer and the data pushes back; the
+false-positive rate for "width 7 admissible" when the truth is H-alt is 0.09.
+
+`e149_rungD_c1_plutarch_anchor_us = 29,969.3` reproduces the 30,100-30,700 band
+at its lower edge, so the replayed curve's level is confirmed to about 4 %. The
+level was never the problem.
+
+`C_9` is unidentified by construction: `SEGMENTED_VERIFY_DEPTH_CAP = 7` caps M at
+8 on every round of every row. New exact instrument: `effective_mean_draft_len`
+is an exact rational `D/R` recoverable with `Fraction(edl).limit_denominator(512)`
+pruned by `R + A = 512`, `0 <= A <= D`, `R >= non_drafting_round_count`; it
+reproduces F111's assumed round counts on 7 of 8 prompts and fixes the eighth.
+
+> **RULE 138, AMENDED.** The admissible set `[1,2,3,4,5]` is a property of
+> edward's g16s measured curve in local units. Three independent lines — arm D's
+> receipt-level test, the E137/F130.2 g17s register and residency census, and
+> the frontier's revealed schedule at Rule 148 weighted mean M = 5.7345 — say
+> that shape does not transfer to g17s at widths 6 to 8. Rule 138 may explain a
+> local measurement. **It may not gate a ranked mechanism.**
+
+This is what freed edward's submission. His mechanism's whole gain lives at
+verify width 8 and Rule 138 was the only thing in front of it.
+
+### 313.5 FINDING 257 AND ADVISOR ERROR 181 — `7226dc9a` IS A CONFOUNDED ROW AND
+THE RUNG-B MARGINAL IS WITHDRAWN
+
+Askeladd's free Finding 250 consistency check fails.
+`e149_rungD_7226dc9a_matches_e003a86d_decode = FALSE`.
+
+```
+decode leg, 7226dc9a minus e003a86d, prefill removed, exact integer rounds
+  medicine +3.29   essays +3.96   republic +3.94   botany +4.06
+  drama    +4.18   travel +4.83   plutarch +5.38   beagle +5.42   mean +4.38 %
+
+same pair, prefill channel
+  7226dc9a vs the bar  +2.1451 %      e003a86d vs the bar  -0.0390 %
+  pair difference      +2.1841 pp     decode difference    +4.38 pp
+```
+
+Rung A is ranked-dead by dispatch on g17s and rung B is a prefill GEMM change.
+Neither can make the decode leg slow.
+
+> **FINDING 257.** `7226dc9a` carries a whole-row slowdown of about 2.2 pp on
+> prefill and about 4.4 pp on decode, on all eight prompts, not attributable to
+> any mechanism in its tree. The row is excluded from all pricing. Candidate
+> explanations, none discriminated: a host or thermal-mode artifact — prefill is
+> compute-bound and decode is DRAM-bound, so a throttled host moves them by
+> different amounts in the same direction, which is what we see; the runner
+> label `m5-max-128gb-3` possibly naming one of several physical M5 hosts; or a
+> systematic error of a few per cent in receipt-derived decode times.
+
+> **ADVISOR ERROR 181.** `7226dc9a` is the only row carrying rung B, so the
+> rung-B effect is completely confounded with that row-level slowdown. The
+> `+2.1552 pp` prefill marginal is **withdrawn as a clean attribution. Rung B is
+> unpriced.** The artifact is at least 4.38 pp on the leg where rung B must be
+> neutral and only 2.18 pp on the leg where it acts, so rung B's true prefill
+> marginal could be zero or negative. Alphonse contested the number in E147 and
+> I overruled him in the E151 assignment body. He was right.
+
+### 313.6 RULE 153 — THE JIT LIBRARY PARTITION
+
+Read this session from `jit_kernels.cpp`. Neither `quantized.h` nor
+`quantized_nax.h` includes the other; both include only `<metal_simdgroup>` and
+`<metal_stdlib>`.
+
+```
+:915-932   get_quantized_kernel     (decode QMV family)
+    utils() + gemm()     + quantized_utils() + quantized()     + template_def
+:1116-1133 get_qmm_nax_kernel       (prefill NAX GEMM family)
+    utils() + gemm_nax() + quantized_utils() + quantized_nax() + template_def
+```
+
+> **RULE 153 — THE JIT LIBRARY PARTITION.** Every quantized kernel's Metal
+> library is a concatenation of named source strings, so a source edit reaches
+> exactly the families whose concatenation contains the edited string.
+> `quantized_nax.h` and `gemm_nax.h` reach the prefill NAX GEMM family only.
+> `quantized.h` and `gemm.h` reach the decode QMV family only. `utils.h` and
+> `quantized_utils.h` reach **both**. A "dead code" edit in `quantized.h` is
+> therefore not provably decode-neutral even when the edited function is never
+> dispatched. This is the source-level form of Rule 146's channel separation and
+> it is checkable by inspection rather than by measurement.
+
+Alphonse's E151 R1 is instructed to confine itself to `quantized_nax.h` and its
+twin, giving decode neutrality by construction, with artifact
+`e151_r1_touches_decode_qmv_library = false`. It also retires
+`research/e147_qmv_jit_census.py` as the R1 decode-coverage gate.
+
+### 313.7 THORFINN T55/T56 — THE FILL COSTS 1.711 us, NOT 4.9. ADVISOR ERROR 183.
+
+Session `research/e135_fill_cost_abba.sh 512 fill`, exit 0, zero failed legs,
+palindrome `repl fill fill repl` behind the real 40 C gate after one ungated
+warmup, shipped composition on both arms, `edl` 6.358974 on all four legs so one
+schedule and a pure cost contrast.
+
+```
+ i  arm   mtp s/tok  serial s/tok  entry C  exit C
+ 1  repl   0.030264      0.073440   59.070   59.875
+ 2  fill   0.030354      0.073545   57.344   60.346
+ 3  fill   0.030313      0.073516   56.353   61.505
+ 4  repl   0.030269      0.073602   56.629   62.135
+
+replica        0.030266 s/tok  n=2
+fill_noconsume 0.030333 s/tok  n=2
+e135_fill_total_pct_of_candidate_mtp    +0.2213 %
+se, drift fitted, 1 dof   0.0942 pp  t 2.35
+se, no drift,     2 dof   0.0681 pp  t 3.25
+position drift  -0.0089 %/leg      serial null  +0.0136 %
+e135_fill_total_us_per_round   +439.7 us over 257 fills
+e135_fill_cost_us_per_dispatch   1.711 us      local round 198,671 us
+```
+
+Rule 110 witnesses passed with failing controls on both arms: `fill_noconsume`
+shows `xsums_v1` 1800 with every `by_key` entry `USE_TABLE=false`; `replica`
+shows `xsums_v1` **0** and `by_key` `qmv_wide_na{2..7}_v2`.
+
+His own pre-registration of 0.54-0.80 % is falsified low by about 2.7x. Three
+caveats stated before the conclusion: the arms remove all 257 fills at once so
+439.7 us/round is a TOTAL and the division by 257 is an assumption the arms
+cannot test; the two arms run different pipeline objects
+(`qmv_wide_na{tier}_v2` against `qmv_sums_na{tier}_v2` with `USE_TABLE=false`),
+so 1.711 us is an upper bound on the fill alone; and the cross-session
+comparison against the shipped `sumtable` arm is directional only.
+
+> **ADVISOR ERROR 183.** Finding 252 read the rivals' pooled `78.4 us/round` as
+> sixteen fused sites at 4.900 us per fill, because I read the note's
+> "in-projection" as `fa.qkv` alone. The in-projection family is `fa.qkv` 16 plus
+> `gdn.in_proj` 48 = **64**. The 16-site reading also requires the M5 fill to
+> cost 2.86x more than the same dispatch measured on a host whose decode round is
+> 3.63x slower. **The 16-site reading is falsified and Finding 252's coverage
+> ladder is withdrawn.**
+
+> **FINDING 252, REVISED.** Fill cost `1.711 us` measured on M4 Pro, `1.225 us`
+> fitted on M5 at 64 rival sites, a ratio of 1.40 on a 3.63x faster GPU, which is
+> what a host-side-dominated dispatch should show. The `xsums_v1` kernel reads
+> 5,120 bf16 elements, 10 KiB, on a grid of (32, 10, m); the cost is essentially
+> pure encode overhead, which is why one whole fill dispatch is cheaper than one
+> Rule 135 overhead column at 2.6815 +/- 0.0355 us. **The lever is the dispatch
+> count, not the fusion**, and Rule 83 transfers a count.
+
+Revised coverage ladder, both frames:
+
+```
+coverage        1.225 us M5 fitted   1.711 us M4 Pro transferred
+                us/round   % median    us/round   % median
+ 16 sites          19.6     0.0191        27.4     0.0532
+ 64 sites          78.4     0.1522       109.5     0.2125
+128 sites         156.8     0.3043       219.0     0.4251
+257 sites         314.8     0.6111       439.7     0.8535
+```
+
+**Structural conclusion, accepted: fill elimination cannot deliver a full per
+cent.** Total elimination of all 257 at the naive M4 Pro transfer is 86 % of the
+`+0.9896 %` publish target; the honest cell, 128 norm-fusable sites at the
+M5-fitted 1.225 us, is **31 %**. Against parity it is better: 128 sites covers
+76 % of the 206.4 us/round gap at 1.225 us and 106 % at 1.711 us.
+
+The docstring at `Qwen35.swift:2296` claiming 4-6 us is wrong by about 3x and
+must be corrected by whichever PR next touches that region.
+
+> **RULE 134, NOTE (from askeladd's arm A §3).** F235's per-round multiplier is
+> correct arithmetic on a per-round number, but a per-round number measured at
+> one width mass is not transferable to another. Before applying the multiplier,
+> state the width mass the microsecond figure was measured at and the width mass
+> of the target frame. If they differ, apply Rule 143 first.
+
+### 313.8 F44 PARTLY WITHDRAWN — THE LOCAL `onePass6` ARM IS VOID BEFORE IT RUNS
+
+`onePass6` and `onePass67` differ only at width 7.
+
+```
+g17s   width 7   one-pass (7,7,4) na7  118 regs /  0 spill / 33 sg
+                 two-pass (7,4,4) na4   96      /  0       / 41 sg
+g16s   width 7   one-pass (7,7,4) na7   96 regs / 32 B spill / 32 sg
+                 two-pass (7,4,4) na4   96      /  0         / 32 sg
+```
+
+Width 7 is the one cell where every Mac we own spills and the ranked host does
+not. Rule 135 is bounded to arms that do not cross a register-spill tier and
+Rule 83 voids a g16s occupancy closure as g17s evidence. **A local palindrome on
+this contrast measures a spill the ranked host does not have.** F44's GPU ask is
+withdrawn; only the zero-GPU `e135_table_rung_residency` census survives.
+
+The reasoning that remains: `onePass67` beat `shipped` by about 1.4 % on a ranked
+contrast, `onePass678` failed only because of a g17s spill at width 8 (126 regs /
+16 B), and width 7 does not spill on g17s. So one-pass at 7 is most likely
+already correct and `onePass6` is most likely dominated. The census either
+confirms that and closes the table axis at the shipped default, or surprises us.
+
+### 313.9 ASKELADD ARM A — leaf16 IS A WEAK LOCAL WINNER AND THE NEXT CANDIDATE
+
+Twelve gated legs, one binary, real 40 C gate before every leg,
+`MLX_E134_DEPTH_PRICE_ARM=ship` on both arms, entry temperature spread 0.596 C.
+
+```
+frame                                     value      sigma   2 sigma CI
+realised median pair, total leg (lead)   -0.1025 %   2.78    [-0.1761, -0.0289]
+realised median pair, decode             -0.0982 %   2.67    [-0.1718, -0.0246]
+
+prompt              decode %   total %   sigma   decode us/rd   ranked wt
+beagle_a             -0.1266   -0.1278   2.43       -180.90       0.478
+essays_montaigne     -0.0723   -0.0793   1.39        -88.28       0.522
+benchfixture         -0.3650   -0.2899   7.02       -713.70       0
+e149_leaf16_round_cost_us  -132.55 decode, -169.84 total leg
+```
+
+He refused to round a straddled threshold in his own favour: the lead frame
+clears `-0.10 %` by 0.0025 pp and the decode frame misses by 0.0018 pp. The
+statement that carries is Rule 147, not the percentage: **both paying prompts
+clear their own single-receipt detectability floor**, beagle 180.90 against
+119.5 and essays 88.28 against 44.5.
+
+Zero divergences, bit-identical acceptance on every prompt
+(`accept_rate_delta_pp = 0.0`), and identical per-arm realised verify-width
+histograms `{2:14, 3:134, 4:114, 5:132, 6:86, 7:18, 8:188}`, so Rule 79 is not
+engaged.
+
+Exact leaf arithmetic, confirming the prediction: padded compact draft rows
+98,336; width 8 gives 12,292 leaves, `ceil(0.25*12292) = 3,073` probes, 24,584
+probed rows; width 16 gives 6,146 leaves, `ceil(0.25*6146) = 1,537` probes,
+24,592 probed rows, **+8 rows = +0.0325 %**. `98336 % 16 == 0` so the fatalError
+cannot fire. The saving therefore comes from halving the coarse centroid pass,
+and it scales with width mass, which is why F235's face value of E141's
+`-264.38 us/round` over-read by about 2x.
+
+Rule 114 leaf-width witness with a real failing polarity:
+`MLX_E141_ROWS_PER_LEAF=12` passes the override validator and must then hit the
+divisibility guard because `98336 % 12 == 8`. Observed
+`Fatal error: MLX_E141_ROWS_PER_LEAF=12 does not divide the padded draft row
+count 98336`. `e149_leaf_override_positive_control_passed = true`.
+
+**Not composed into edward's submission.** His rule raises the width-8 share and
+leaf16's saving scales with width mass, so leaf16 is worth more after his
+mechanism lands. Held standalone and submission-ready as the follow-up candidate.
+
+### 313.10 ASKELADD ARM C1 — THE SDPA SPLIT COSTS 154.5 us/ROUND AND IS NOT
+ADDRESSABLE BY A KERNEL EDIT, BUT THE MECHANISM IS NOT CLOSED
+
+Scored caller `Qwen35.swift:3578`, mask from `:3844 createAttentionMask` ->
+`KVCache.swift:353` and `:160-174`, returning `.causal`.
+`AttentionUtils.swift:120-141` guards on `queries.dim(0) == 1`, `6 <= qL <= 9`,
+`kL >= qL`, `.causal`, sets `split = 5` and `kSplit = kL - (qL - 5)`, and issues
+two `scaledDotProductAttention` calls joined by `concatenated(axis: 2)`.
+`Qwen35Config.swift:72-75` selects full attention on `$0 % 4 == 3`, so **16 of 64
+layers split at every verify width 6..9**.
+
+The identification: structure cannot depend on kL, so the kL slope of the raw
+difference is the streaming term.
+
+```
+raw per-layer difference, us/layer
+ kL     M=6     M=7     M=8
+513   97.73   96.67   97.27
+769  102.92  103.97  105.33
+1024 106.69  109.07  108.76
+
+pooled fit  y = 86.68 + 0.021431*kL,  slope se 0.001963 (10.9 sigma),
+residual rms 1.08 us/layer over 9 cells; per-width slopes 0.0175/0.0243/0.0225
+extra bytes = 2 * 4 kv heads * 256 head dim * 2 B = 4096 B per key per layer
+=> 191.1 GB/s effective, 70 % of the M4 Pro 273 GB/s peak
+```
+
+He discarded his own first answer: a tiny-KV (kL = 8) structural control sat
+above the fitted intercept, over-subtracted, and returned `-1.0 us/round`,
+"dead". The 191.1 GB/s corroboration was never fitted for.
+
+```
+frame                                   raw upper bound   streaming headline
+A per M>=6 round                        1665.3 (+3.2325)  263.6 +/- 24.1 (+0.5117)
+B per drafting round, ranked P=0.5861    976.0 (+1.8946)  154.5 +/- 14.2 (+0.2999)
+C per drafting round, local ship 0.7692 1280.9 (+2.4864)  202.8 +/- 18.6 (+0.3936)
+```
+
+`e149_sdpa_split_us_per_round = 154.5 +/- 14.2`, frame B. Clears the Rule 147
+essays floor of 44.5 by 7.7 sigma; ties the ~150 us/round C2 trigger at face
+value and misses it at -2se.
+
+`e149_c2_opens = false`, proved from source rather than assumed:
+`scaled_dot_product_attention.cpp:631` requires head dim in {64,80,128} and ours
+is 256, so `supports_sdpa_full` is permanently false; `:633-637` caps the vector
+path at `qL * gqa <= 32` with gqa 6, so `floor(32/6) = 5`, exactly the shipped
+split point. `benchmark.json` carries the sdpa kernel sources and **no `.cpp`
+under `backend/metal`**. Three workarounds enumerated and rejected: merging with
+`.causal` at qL = M routes to the composed path at 520.3 against 403.8 us/layer
+and is not bit-exact; folding query rows into the batch dimension makes each row
+read the full KV, M times instead of 2; splitting by KV and merging with
+log-sum-exp needs a running max and sum that `sdpa` does not return.
+
+`e149_c1_width9_status = void_no_structural_control_and_unreachable_under_depth_cap_7`.
+
+**Exactness, live rather than argued**: `split` against a recomputation of itself
+is `0` at all nine scored cells; the perturbation positive control is
+`>= 0.01074` everywhere; and `split` against the composed one-call `fallback` is
+`0.00195 .. 0.00391`, **nonzero**. The `AttentionUtils` guard is a correctness
+commitment, not only a speed choice; deleting it changes tokens.
+
+**The mechanism stays open as a named C3 item.** A custom merged Metal kernel
+invoked from editable Swift is exactly what `Qwen35CustomQMV` already does, and
+the entire Route B family exists because a host dispatch decision was not ours
+to change. His bit-exactness argument: `sdpa_vector.h:98` walks
+`for (i = simd_gid; i < N; i += BN)` with `BN = 32`, and the causal predicate at
+`:101` reduces to `i <= kL - M + r` for both chunk A and a merged call, so the
+visited set and per-row visit order are identical and masked keys never touch the
+running max or sum. Prize `+0.2999 %`.
+
+### 313.11 RULE 144 AMENDED AND FINDING 251 EXTENDED — THE BAR-ANCHOR SPLIT
+
+`e149_null_block_bar_anchored_rows`: there are four, not one — `3a18ff21`,
+`f7d59543`, `4debb1df`, `165d4ba7`. All four price on median pair
+**(beagle, medicine)**; all seven other rows price on **(beagle, essays)**,
+because the bar's slow essays serial leg pushes essays out of the minimum slot.
+
+```
+frame                         sd all 11   sd non-bar 7   sd bar 4   F(3,6)      p
+realised median pair (lead)      0.0774        0.0436     0.1266     8.42   0.014
+F83 marginal sum                 0.0729        0.0410     0.1197     8.51   0.014
+unweighted five                  0.0623        0.0491     0.0884     3.24   0.103
+```
+
+> **RULE 144, AMENDED.** The operative 2 sigma MDE for a general ranked
+> candidate-leg contrast remains **0.1547 pp** on the realised median pair. A
+> conditional MDE of **0.0872 pp** may be used only when neither side is anchored
+> on `684821ed`, reported with its n=7 provenance. Two cautions travel with it:
+> the prompt swap alone predicts a 1.06x inflation against an observed 2.9x, so
+> the split is not fully explained; and neither figure applies to a local gated
+> ABBA, which is scored against the 0.052 % gated-leg floor.
+
+> **FINDING 251, EXTENDED.** The bar's **candidate** leg is anomalous too. All
+> four bar-anchored nulls read plutarch at -0.5473, -0.6448, -0.5153, -0.5744:
+> mean **-0.5705 %**, sd 0.0552, four of four the same sign, an offset ten times
+> its own scatter. The seven non-bar rows scatter about zero on plutarch at
+> +0.0505, sd 0.1464. Most parsimoniously the crown's own plutarch candidate leg
+> is a slow draw. Plutarch carries zero median weight so the score is unaffected,
+> but no gate may assume the bar's candidate leg is clean.
+
+### 313.12 BOARD AT ~11:30Z
+
+Bar unmoved at `684821ed` 3.71959723 src `eb5eadc7`, about twelve hours.
+`0adf695f` resolved rejected at 3.5740844715. Nine rows validating:
+`ec24d591` newjordan (third rival xsums fill fusion attempt), `a38e7011`
+jungjipdo, `4117c901` vibecodooor, `c47b45be` scarletbright (custom QMV width-6
+one-group launch, IPG 3 -> 6), `1bfa0447` igneous-prose (variance resample #3 on
+the crown lineage), `81d20e0b` kirtangajjar ("Adaptive Cost-Model Draft Depth:
+Restoring the Ledger-Correct Schedule"), `224c8be9` fkiene, `3ee4e54c`
+a-github-name (E130 row-parallel rerank split rebased on the crown),
+`fde977be` ofou (tip resample, draw 2 from the crown).
+
+🔴 `81d20e0b` is an adaptive draft-depth cost-model submission and lands in the
+same axis as edward's E150. `c47b45be` is a width-6 one-group launch, which is
+the `onePass6` question from the other side. Both are worth reading when they
+resolve.
+
+### 313.13 QUEUE AFTER THIS ENTRY
+
+```
+item                                          value        owner
+E150 R4 linearised argmax scheduler        +0.75 to +0.97   edward #150, SLOT TAKEN
+leaf16 on the shipped vocabulary                 +0.10      askeladd, held ready
+ranked prefill 128x32 NAX retile           +0.42 to +0.51   alphonse #151
+fill fusion, 128 norm-fusable sites        +0.30 to +0.43   thorfinn, next PR
+custom merged SDPA kernel (C3)                   +0.30      UNCLAIMED
+fill fusion, 192 sites if the MLP producer qualifies  +0.46 UNCLAIMED, R0 question
+pipelined double-buffered K-loop            unpriced        alphonse #151 R2
+E150 R3 host readback signal                7.75x break-even edward, after submit
+GDN q/k scale weight-fold                    -0.4422 prefill banked
+cleanup PR, reclaim growth budget                 —         UNASSIGNED
+```
+
+Closed this entry: Finding 252's 16-site reading and its coverage ladder; the
+rung-B prefill marginal; Rule 138 as a gate; the local `onePass6` timing arm;
+arm C2; the SDPA merge-by-causal, batch-fold and log-sum-exp workarounds.
