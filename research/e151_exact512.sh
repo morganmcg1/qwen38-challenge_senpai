@@ -32,6 +32,15 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # Pinned by E121 rung 3, several campaign bases before this experiment existed.
+# STALE PIN. This 1025-row digest was recorded on E89 base f18400c4 with 78
+# trace rounds. Base de8ce44c now produces 1024 rows over 82 trace rounds and
+# digest d070b3978940ee13f5a3ce224f1ac56e8c105c87d8d12220c7c6256ec683e158.
+# research/e151_arm_attribution.sh proved the drift belongs to the intervening
+# scheduler commits, not to the retile arm: the arm-off base and two
+# independent arm-on rebuilds all emit d070b397 (research/e151-arm-attribution.json).
+# Left unchanged so the recorded E151 failure stays auditable. Re-pinning is a
+# campaign decision, and this constant is shared with E101, E110, E116, E121
+# and E129.
 PIN=719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e
 
 if [[ -n "$(git status --porcelain)" ]]; then
