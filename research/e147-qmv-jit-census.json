@@ -9,12 +9,11 @@
     "applegpu_g17s"
   ],
   "revisions": {
-    "base": "feaa92b4299bcb013bd2061cf5c3d6a93a1e4549",
-    "rungA": "01ed58d5309c06b3db27c71d6a6b73ed6a50a341",
-    "rungB": "302a44df665391592d60c39eca5a83c49888c7b2",
-    "head": "d16a0c0027b638f954fcf53d05f45467013041a6"
+    "crown": "0863b06ac16e26e48fc06e97444095b00feb66d4",
+    "prbase": "d0422d1d4c3c8901cbc2382dc9ee79666e786d94",
+    "candidate": "e592624f8408bb2e4a69d3418f0c80c01fd663ea"
   },
-  "baseline_revision_label": "base",
+  "baseline_revision_label": "crown",
   "control": {
     "perturbation": "<bfloat16_t, 64, 4 -> <bfloat16_t, 32, 4",
     "fired": {
@@ -44,7 +43,7 @@
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 94,
@@ -56,7 +55,7 @@
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 101,
@@ -68,7 +67,7 @@
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
-      "rev": "rungA",
+      "rev": "prbase",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 94,
@@ -80,7 +79,7 @@
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
-      "rev": "rungA",
+      "rev": "prbase",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 101,
@@ -92,7 +91,7 @@
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
-      "rev": "rungB",
+      "rev": "candidate",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 94,
@@ -104,31 +103,7 @@
     {
       "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: every draft round",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 101,
-      "spill_bytes": 0,
-      "text_bytes": 125092,
-      "text_sha8": "02cc58e3",
-      "changed_vs_base": false
-    },
-    {
-      "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
-      "role": "decode: every draft round",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 94,
-      "spill_bytes": 0,
-      "text_bytes": 119344,
-      "text_sha8": "09020534",
-      "changed_vs_base": false
-    },
-    {
-      "kernel": "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0",
-      "role": "decode: every draft round",
-      "rev": "head",
+      "rev": "candidate",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 101,
@@ -140,7 +115,7 @@
     {
       "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: unaligned fallback",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 43,
@@ -152,7 +127,7 @@
     {
       "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: unaligned fallback",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 47,
@@ -164,7 +139,7 @@
     {
       "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: unaligned fallback",
-      "rev": "rungA",
+      "rev": "prbase",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 43,
@@ -176,7 +151,7 @@
     {
       "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: unaligned fallback",
-      "rev": "rungA",
+      "rev": "prbase",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 47,
@@ -188,7 +163,7 @@
     {
       "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: unaligned fallback",
-      "rev": "rungB",
+      "rev": "candidate",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 43,
@@ -200,31 +175,7 @@
     {
       "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
       "role": "decode: unaligned fallback",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 47,
-      "spill_bytes": 0,
-      "text_bytes": 6314,
-      "text_sha8": "50a4a8ff",
-      "changed_vs_base": false
-    },
-    {
-      "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
-      "role": "decode: unaligned fallback",
-      "rev": "head",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 43,
-      "spill_bytes": 0,
-      "text_bytes": 6188,
-      "text_sha8": "61a817a0",
-      "changed_vs_base": false
-    },
-    {
-      "kernel": "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
-      "role": "decode: unaligned fallback",
-      "rev": "head",
+      "rev": "candidate",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 47,
@@ -236,7 +187,7 @@
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
       "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 48,
@@ -248,7 +199,7 @@
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
       "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 45,
@@ -260,55 +211,7 @@
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
       "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 5628,
-      "text_sha8": "2598dc62",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 5594,
-      "text_sha8": "c5228ffd",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 5628,
-      "text_sha8": "2598dc62",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 5594,
-      "text_sha8": "c5228ffd",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "head",
+      "rev": "prbase",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 48,
@@ -320,7 +223,31 @@
     {
       "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
       "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "head",
+      "rev": "prbase",
+      "arch": "applegpu_g17s",
+      "translated": true,
+      "registers": 45,
+      "spill_bytes": 0,
+      "text_bytes": 4280,
+      "text_sha8": "49da8298",
+      "changed_vs_base": false
+    },
+    {
+      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
+      "rev": "candidate",
+      "arch": "applegpu_g16s",
+      "translated": true,
+      "registers": 48,
+      "spill_bytes": 0,
+      "text_bytes": 4294,
+      "text_sha8": "83c9f285",
+      "changed_vs_base": false
+    },
+    {
+      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
+      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
+      "rev": "candidate",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 45,
@@ -332,7 +259,7 @@
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
       "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 54,
@@ -344,7 +271,7 @@
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
       "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 54,
@@ -356,55 +283,7 @@
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
       "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 48,
-      "spill_bytes": 0,
-      "text_bytes": 5820,
-      "text_sha8": "eb98535c",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 48,
-      "spill_bytes": 0,
-      "text_bytes": 5808,
-      "text_sha8": "98e5f752",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 48,
-      "spill_bytes": 0,
-      "text_bytes": 5820,
-      "text_sha8": "eb98535c",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 48,
-      "spill_bytes": 0,
-      "text_bytes": 5808,
-      "text_sha8": "98e5f752",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "head",
+      "rev": "prbase",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 54,
@@ -416,7 +295,31 @@
     {
       "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
       "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "head",
+      "rev": "prbase",
+      "arch": "applegpu_g17s",
+      "translated": true,
+      "registers": 54,
+      "spill_bytes": 0,
+      "text_bytes": 4494,
+      "text_sha8": "94681c8f",
+      "changed_vs_base": false
+    },
+    {
+      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
+      "role": "prefill: split-K, never selected at the scored shapes",
+      "rev": "candidate",
+      "arch": "applegpu_g16s",
+      "translated": true,
+      "registers": 54,
+      "spill_bytes": 0,
+      "text_bytes": 4486,
+      "text_sha8": "d5ec5586",
+      "changed_vs_base": false
+    },
+    {
+      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
+      "role": "prefill: split-K, never selected at the scored shapes",
+      "rev": "candidate",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 54,
@@ -428,7 +331,7 @@
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
       "role": "gather: not on the scored prefill path",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 48,
@@ -440,7 +343,7 @@
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
       "role": "gather: not on the scored prefill path",
-      "rev": "base",
+      "rev": "crown",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 48,
@@ -452,55 +355,7 @@
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
       "role": "gather: not on the scored prefill path",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 8358,
-      "text_sha8": "f22cecde",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 8466,
-      "text_sha8": "57dc0f41",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 8358,
-      "text_sha8": "f22cecde",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "translated": true,
-      "registers": 45,
-      "spill_bytes": 0,
-      "text_bytes": 8466,
-      "text_sha8": "57dc0f41",
-      "changed_vs_base": true
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "head",
+      "rev": "prbase",
       "arch": "applegpu_g16s",
       "translated": true,
       "registers": 48,
@@ -512,7 +367,31 @@
     {
       "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
       "role": "gather: not on the scored prefill path",
-      "rev": "head",
+      "rev": "prbase",
+      "arch": "applegpu_g17s",
+      "translated": true,
+      "registers": 48,
+      "spill_bytes": 0,
+      "text_bytes": 7152,
+      "text_sha8": "01d5c493",
+      "changed_vs_base": false
+    },
+    {
+      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
+      "role": "gather: not on the scored prefill path",
+      "rev": "candidate",
+      "arch": "applegpu_g16s",
+      "translated": true,
+      "registers": 48,
+      "spill_bytes": 0,
+      "text_bytes": 7024,
+      "text_sha8": "0a02511b",
+      "changed_vs_base": false
+    },
+    {
+      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
+      "role": "gather: not on the scored prefill path",
+      "rev": "candidate",
       "arch": "applegpu_g17s",
       "translated": true,
       "registers": 48,
@@ -522,230 +401,12 @@
       "changed_vs_base": false
     }
   ],
-  "moves": [
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "83c9f285",
-        "2598dc62"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "registers": [
-        45,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "49da8298",
-        "c5228ffd"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "83c9f285",
-        "2598dc62"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "registers": [
-        45,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "49da8298",
-        "c5228ffd"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "d5ec5586",
-        "eb98535c"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "94681c8f",
-        "98e5f752"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "d5ec5586",
-        "eb98535c"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "94681c8f",
-        "98e5f752"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "0a02511b",
-        "f22cecde"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "01d5c493",
-        "57dc0f41"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "0a02511b",
-        "f22cecde"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "01d5c493",
-        "57dc0f41"
-      ]
-    }
-  ],
-  "moved_kernels": [
+  "moves": [],
+  "moved_kernels": [],
+  "unchanged_kernels": [
     "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
     "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-    "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true"
-  ],
-  "unchanged_kernels": [
+    "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
     "affine_qmv_bfloat16_t_gs_64_b_4_batch_0",
     "affine_qmv_fast_bfloat16_t_gs_64_b_4_batch_0"
   ],
@@ -753,224 +414,7 @@
   "invalid_reasons": [],
   "covers_nax_gemm": false,
   "e147_rungA_decode_census_delta": "none",
-  "e147_rungAB_full_census_delta": [
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "83c9f285",
-        "2598dc62"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "registers": [
-        45,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "49da8298",
-        "c5228ffd"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "83c9f285",
-        "2598dc62"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0",
-      "role": "prefill: the non-NAX GEMM, live only where NAX is absent",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "registers": [
-        45,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "49da8298",
-        "c5228ffd"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "d5ec5586",
-        "eb98535c"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "94681c8f",
-        "98e5f752"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "d5ec5586",
-        "eb98535c"
-      ]
-    },
-    {
-      "kernel": "affine_qmm_t_splitk_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "prefill: split-K, never selected at the scored shapes",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "registers": [
-        54,
-        48
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "94681c8f",
-        "98e5f752"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungA",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "0a02511b",
-        "f22cecde"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungA",
-      "arch": "applegpu_g17s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "01d5c493",
-        "57dc0f41"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungB",
-      "arch": "applegpu_g16s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "0a02511b",
-        "f22cecde"
-      ]
-    },
-    {
-      "kernel": "affine_gather_qmm_t_bfloat16_t_gs_64_b_4_alN_true",
-      "role": "gather: not on the scored prefill path",
-      "rev": "rungB",
-      "arch": "applegpu_g17s",
-      "registers": [
-        48,
-        45
-      ],
-      "spill_bytes": [
-        0,
-        0
-      ],
-      "text_sha8": [
-        "01d5c493",
-        "57dc0f41"
-      ]
-    }
-  ],
+  "e147_rungAB_full_census_delta": "none",
   "decode_entry_points_moved": false,
   "rule_101_positive_control_moved": true
 }
