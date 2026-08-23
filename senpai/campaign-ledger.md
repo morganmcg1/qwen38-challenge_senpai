@@ -63736,3 +63736,178 @@ unattractive.
   submitted. The `xs_hit` / `xs_fill` census counters stay until E160 no longer
   needs them, then come out at freeze time.
 - Official submission slot: **free**. Nothing frozen.
+
+---
+
+## 339 — Advisor error 206: the head IS bandwidth-bound. B1 becomes the campaign candidate.
+
+Advisor cycle 2026-08-23T21:16Z. Board re-queried live, environment repaired, one
+advisor rule withdrawn and replaced, one candidate designated for freeze.
+
+### 339.1 Live board and environment repair
+
+```
+promoted frontier  ec24d591  newjordan  3.7291100105909  src 0863b06a   UNCHANGED
+our best receipt   5a9f130a             3.70784519415395 src 8ba6e738   rejected (parity control)
+our last terminal  1509bf95             3.68242218292127 src f95d4bdb   rejected (leaf16)
+gap to close                                                            0.575 % on the candidate leg
+our validating rows NONE      board validating 9      OFFICIAL SLOT FREE
+```
+
+The checkout had lost its `upstream` remote and its `yukon.*` git config across the
+harness upgrade. `senpai/bootstrap-checkout.sh` restored both. This was load-bearing:
+`senpai/submit-official.sh` reads `refs/remotes/upstream/main` and would have refused
+every submission until the remote came back. Two operational notes for later cycles:
+`GITHUB_TOKEN` is **not** present in the advisor shell (all GitHub work must go
+through the typed tools), and the Yukon CLI now needs the benchmark id explicitly,
+`yukon submissions 5d1ee4d7-80bd-4555-b182-6505f26ef495 [--all]`.
+
+### 339.2 ADVISOR ERROR 206 — RULE 189 is withdrawn
+
+In F9 (20:59Z) and F10 (21:08Z) I asserted RULE 189, "the proposal head is
+accuracy-bound, not bandwidth-bound," and used it to price down every
+head-byte-removal mechanism in the queue. I built that rule from a table that mixed
+one student's island-arm ABBA numbers with a ranked receipt taken on a different
+prompt population. A cleaner measurement of the **same arm** already existed in
+askeladd's comment 19 and carries the **opposite sign**. I did not read it before
+generalising.
+
+RULE 189 is withdrawn. Every pricing decision that cited it is void.
+
+### 339.3 The refuting cell, and RULE 190
+
+askeladd, host `beagle_a`, arms `all` vs `none`, declared head `dadbfb80…`,
+512 tokens, ABBA-counterbalanced, all legs matched on host / chip / toolchain /
+token window / head digest:
+
+```
+drafting bit-identical in BOTH arms:
+  q = 4.2437, 393 accepted, 112 rejected, 119 rounds
+dR = -0.00057694 s/round on R = 0.1385799 s  =  -0.4163 %
+  -> published +0.4181 %
+bytes removed = 25,558,528 B per draft step
+per-row saving = 0.000110025 s
+implied effective bandwidth = 232 GB/s   (= M4 Pro spec)
+```
+
+The drafting is **bit-identical** across the two arms — same q, same accepted, same
+rejected, same round count — so the accuracy channel is nulled out by construction
+and the entire measured delta is cost. Removing 25.6 MB per draft step returned a
+saving that back-solves to 232 GB/s, which is the host's spec bandwidth. The byte
+model is confirmed, not refuted.
+
+**RULE 190.** Head byte removal returns the predicted cost saving reliably and
+prompt-independently. The byte model prices it correctly at spec bandwidth. All the
+variance lives on the **accuracy** side, and the accuracy term can exceed the cost
+term in either direction. Therefore: never infer bandwidth insensitivity from an arm
+ordering that changes cost and accuracy together. Only a cell where drafting is
+bit-identical across arms prices the cost channel.
+
+**RULE 186 extended.** A banked price must carry not only its identity tuple but
+also **whose prompt set** produced it. Prices banked on one student's prompt slice
+have now failed to transfer more than once.
+
+### 339.4 FINDING 327 — local and ranked are different rooflines, and `k` is unknown
+
+```
+backbone weight pass       14,417,640,448 B
+M4 Pro effective bandwidth 232 GB/s      ->  62 ms roofline
+local  R_decode  137 ms                  ->  2.2x roofline   (slack in the round)
+ranked R_round   ~39.7 ms                ->  ~1.0x roofline   (bandwidth-bound)
+  from 512 * 0.010260 s minus 0.5266 s prologue, over 119 beagle rounds
+```
+
+Define the amplification coefficient for a pure byte-removal arm:
+
+```
+published_ranked = k * published_local
+  k = 1.000   RULE 176, analytic, assumed
+  k = 1.257   leaf16 calibration: local +0.4207 % (thorfinn) -> ranked +0.5291 % (1509bf95), n = 1
+  k ~ 1.65    byte-share argument: 108.4 MB/round out of 15.77 GB/round = 0.687 %
+```
+
+**RULE 176 is downgraded from law to hypothesis.** Until `k` has an interval, quote
+the `k` you used. Treat `k` in [1.0, 1.7] and expect different channels (backbone
+weight bytes vs head bytes vs compute/intermediate traffic) to carry different `k`.
+Edward owns the derivation this round.
+
+A second disagreement is now on the record and unexplained: askeladd's cross-prompt
+fit gives `h/s = 1.89` (about 0.94 weight passes per drafted row) while the ranked
+receipts bound `h/s <= 0.20`. That is a ~10x gap. The most likely explanation is
+that the local M4 verify does **not** batch draft rows the way the ranked M5 verify
+does. If true, every local price for a mechanism that changes row count is
+distorted, and only paired same-row-count contrasts transfer.
+
+### 339.5 B1 is the designated campaign candidate
+
+```
+mechanism   Qwen35IslandArm.fromEnvironment default  .all -> .none
+commit      5051e9e3  (askeladd, UNPUSHED at time of writing)
+            plus 16b4ce8c, the RULE 179 instrument, which must be stripped at freeze
+path        Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift
+growth      45 bytes
+measured    +0.4181 % published local, clean bit-identical-drafting cell,
+            10.7x the 0.039 % local floor
+projected   ranked +0.42 % to +0.72 %, central +0.53 % at k = 1.257 (PROVISIONAL)
+gap         0.575 %
+```
+
+The central projection lands just under the gap and the interval covers it. That is
+the strongest candidate we have and the official slot is free, so it goes to freeze
+now rather than waiting for a better interval. Ship mode applies once the SHA is
+bound.
+
+**Hazard, recorded so no one repeats it.** The default `benchmark-qwen-mtp.sh`
+wrapper drafts with the **pinned bf16 head**, which has no islands. Any confirmation
+leg run through the default wrapper measures a guaranteed null for B1. Every B1 leg
+must pin `MLXFAST_QWEN_MTP_HEAD_DIR` to the digest-verified declared tree
+`dadbfb80…`.
+
+Freeze order issued to askeladd (PR 158, F11): merge `d0a1501e` first (leaf16 in the
+tree is fatal to the measurement), push immediately, run 4 gated 512-token ABBA legs
+plus exactly one `MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 ./benchmark-qwen-mtp.sh
+--local-submit` with the head pinned, strip the RULE 179 instrument, then run scope,
+budget, ranked-score-boundary and twin audits and report the frozen SHA for advisor
+submission.
+
+### 339.6 The prefill spine is repriced by the 4/4 decode record
+
+Good news on recoverability: `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/
+kernels/quantized_nax.h` and `Vendor/mlx-swift/Source/Cmlx/mlx-generated/
+quantized_nax.cpp` are byte-identical at HEAD to `8fa24fe2`, the parent of
+`aedf6e29`. The E151 R1 retile therefore lands as one clean cherry-pick.
+
+Bad news on price. Four out of four prefill receipts on the board took a **decode
+regression**: BitWonka `5cdc9c17`, Amal-David `43925f29` and `a9dd132a`, and our own
+`7226dc9a` at +2.15 % decode, roughly 70 sigma. The banked `+0.505 %` prices the
+prefill phase only and is **not a net price**. RULE 168 clears the JIT-source
+channel; it says nothing about the physical cache and power-state channel, which is
+where this regression plausibly lives. Do not compose R1 on the strength of the
+banked number alone. Alphonse (E162) now owes a matched absolute **decode** contrast
+priced as `prefill_delta * 0.104 + decode_delta * 0.896` before any prefill work is
+banked as net.
+
+### 339.7 Retained dead ends from 338
+
+- `L = 4` clustering is the wrong direction: it costs 19.67 MB, twice what leaf16
+  saved, to buy a gain on a saturating curve.
+- The 4x cheaper router is worth about 0.41 % by bytes (range 0.25 to 0.75 %), which
+  straddles the gap but sits at or below single-pair ranked noise. Not assigned. Its
+  accuracy cost is now re-openable given RULE 190 replaced RULE 189, but it still
+  needs ABBA to be measurable at all.
+
+### 339.8 State
+
+```
+UPSTREAM_SHA        unchanged
+BASE_SHA            d0a1501e   (leaf16 reverted, derivedClusterRowsPerLeaf 16 -> 8)
+official slot       FREE
+frozen candidate    none yet; B1 in freeze
+students            4 assigned, 0 idle, 0 review-ready
+  askeladd  PR 158  e158  head precision census -> B1 freeze owner
+  edward    PR 159  e159  depth price / gate decoupling -> owns derivation of k
+  thorfinn  PR 160  e160  MLP down-projection producer fusion
+  alphonse  PR 162  e162  prefill affine qmm; decode arm now mandatory
+all four have unpushed local work; push discipline reissued to all
+```
+

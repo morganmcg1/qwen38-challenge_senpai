@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T20:40:00Z",
+  "observedAt": "2026-08-23T21:25:00Z",
+  "observedAtNote": "Board re-queried live after the harness restart. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. Our validating rows: none. Board validating: 9. OFFICIAL SUBMISSION SLOT: FREE. The checkout had lost its upstream remote and yukon.* git config across the restart; senpai/bootstrap-checkout.sh restored both, which is load-bearing because senpai/submit-official.sh reads refs/remotes/upstream/main. GITHUB_TOKEN is not present in the advisor shell; all GitHub work goes through typed tools. The Yukon CLI now needs the benchmark id explicitly.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -137,7 +138,9 @@
       "mlx-generated/quantized_nax.cpp"
     ],
     "rivalEvidence": "BitWonka 5cdc9c17 -4.9721 % prefill s/tok; Amal-David -4.1181 % and -4.1429 %. Mechanism attribution is our ledger's reading, not a verified diff.",
-    "assignedAs": "E162 / qwen-alphonse / PR 162"
+    "assignedAs": "E162 / qwen-alphonse / PR 162",
+    "decodeRegressionRecord": "LEDGER 339.6. Four out of four prefill receipts on the board took a DECODE regression: BitWonka 5cdc9c17, Amal-David 43925f29 and a9dd132a, and our own 7226dc9a at +2.15 % decode (about 70 sigma). The banked +0.505 % from the E151 R1 NAX retile prices the prefill phase ONLY and is NOT a net price. RULE 168 clears the JIT-source channel; it says nothing about the physical cache and power-state channel, which is the likely home of this regression. Do not compose R1 on the banked number alone.",
+    "r1RetileRecoverability": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h and Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp are byte-identical at HEAD to 8fa24fe2, the parent of aedf6e29. The E151 R1 retile therefore lands as one clean cherry-pick. NAX never executes locally: is_nax_available() needs GPU arch gen >= 17 and the M4 hosts are gen 16."
   },
   "rankedNoiseFloor": {
     "finding": "FINDING 324",
@@ -153,11 +156,58 @@
     ],
     "note": "across-prompt cv for a fixed-work configuration on the ranked host; the local 0.039 % absolute-mtp floor still governs local arms"
   },
+  "designatedCandidate": {
+    "label": "B1",
+    "ledger": "339.5",
+    "mechanism": "Qwen35IslandArm.fromEnvironment default .all -> .none",
+    "path": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+    "candidateGrowthBytes": 45,
+    "owner": "qwen-askeladd / PR 158",
+    "sourceCommit": "5051e9e3",
+    "sourceCommitState": "UNPUSHED at 2026-08-23T21:25Z; 16b4ce8c (RULE 179 instrument) must be stripped before freeze",
+    "measuredPublishedLocalPercent": 0.4181,
+    "measurementCell": "beagle_a, arms all vs none, declared head dadbfb80, 512 tokens, ABBA, drafting bit-identical across arms (q=4.2437, 393 accepted, 112 rejected, 119 rounds)",
+    "localFloorMultiple": 10.7,
+    "projectedRankedPercentRange": [0.42, 0.72],
+    "projectedRankedCentralPercent": 0.53,
+    "projectedRankedCentralNote": "at k = 1.257, PROVISIONAL. Gap to close is 0.575 %. The interval covers the gap; the central value sits just under it.",
+    "hazard": "The default benchmark-qwen-mtp.sh wrapper drafts with the pinned bf16 head, which has no islands. Any B1 leg run through the default wrapper measures a guaranteed null. Every B1 leg must pin MLXFAST_QWEN_MTP_HEAD_DIR to the digest-verified declared tree dadbfb80.",
+    "freezeOrder": "PR 158 F11: merge d0a1501e first (leaf16 in the tree is fatal), push immediately, run 4 gated 512-token ABBA legs plus exactly one MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 ./benchmark-qwen-mtp.sh --local-submit with the head pinned, strip the RULE 179 instrument, run scope / budget / verify-ranked-score-boundary / twin audits, then report the frozen SHA for advisor submission."
+  },
+  "localToRankedAmplification": {
+    "finding": "FINDING 327",
+    "definition": "published_ranked = k * published_local, for a pure byte-removal arm",
+    "estimates": {
+      "analytic_RULE_176": 1.0,
+      "leaf16_calibration": 1.257,
+      "byteShareArgument": 1.65
+    },
+    "leaf16CalibrationDetail": "local +0.4207 % (thorfinn) -> ranked +0.5291 % (receipt 1509bf95), n = 1",
+    "byteShareDetail": "108.4 MB/round out of 15.77 GB/round = 0.687 %",
+    "rooflines": {
+      "backboneWeightPassBytes": 14417640448,
+      "m4ProEffectiveBandwidthGBs": 232,
+      "rooflineMs": 62,
+      "localDecodeRoundMs": 137,
+      "localRooflineRatio": 2.2,
+      "rankedRoundMs": 39.7,
+      "rankedRoundDerivation": "512 * 0.010260 s minus 0.5266 s prologue, over 119 beagle rounds",
+      "rankedRooflineRatio": 1.0
+    },
+    "status": "RULE 176 is DOWNGRADED from law to hypothesis. Quote the k you used. Treat k in [1.0, 1.7]. Expect different channels (backbone weight bytes / head bytes / compute and intermediate traffic) to carry different k. qwen-edward owns the derivation with an interval.",
+    "unexplainedDisagreement": "askeladd's cross-prompt fit gives h/s = 1.89 (about 0.94 weight passes per drafted row) while the ranked receipts bound h/s <= 0.20. A ~10x gap. Most likely the local M4 verify does not batch draft rows the way the ranked M5 verify does. If true, every local price for a mechanism that changes row count is distorted, and only paired same-row-count contrasts transfer."
+  },
+  "withdrawnRules": {
+    "RULE_189": "WITHDRAWN by ADVISOR ERROR 206, ledger 339.2. It asserted the proposal head is accuracy-bound, not bandwidth-bound. It was built from a table that mixed one student's island-arm ABBA numbers with a ranked receipt from a different prompt population. A cleaner measurement of the same arm with the opposite sign already existed. Every pricing decision that cited RULE 189 is void.",
+    "RULE_190": "Head byte removal returns the predicted cost saving reliably and prompt-independently; the byte model prices it correctly at spec bandwidth (232 GB/s back-solved). All variance lives on the accuracy side and can exceed the cost term in either direction. Never infer bandwidth insensitivity from an arm ordering that changes cost and accuracy together. Only a cell where drafting is bit-identical across arms prices the cost channel.",
+    "RULE_186_extension": "A banked price must carry not only its identity tuple but also whose prompt set produced it."
+  },
   "openQueue": {
-    "E158": "qwen-askeladd / PR 158 / build our own head; B0 byte-exact reproduce, B1 island-free, B2 trunk ladder, B3 gated ABBA, B4 commit mtp-head/",
-    "E159": "qwen-edward / PR 159 / round-budget sweep D in {0,1,2,4,8}; headline is rho = 8h/s; two competing pre-registered predictions on record",
-    "E160": "qwen-thorfinn / PR 160 / mlp.down producer fusion, gated on measuring P(d >= 3) first, stop below 0.35",
-    "E162": "qwen-alphonse / PR 162 / prefill affine qmm software pipelining",
-    "E161": "CLOSED unmerged; repriced below the noise floor by the S >= 4 width gate"
+    "E158": "qwen-askeladd / PR 158 / OWNS THE B1 FREEZE. Also: build our own head; B0 byte-exact reproduce, B1 island-free, B2 trunk ladder, B3 gated ABBA, B4 commit mtp-head/",
+    "E159": "qwen-edward / PR 159 / round-budget sweep D in {0,1,2,4,8} (D=5,6,7 approved); NEW HEADLINE is deriving k with an interval and retrodicting the leaf16 point; rho = 8h/s remains secondary",
+    "E160": "qwen-thorfinn / PR 160 / mlp.down producer fusion; must name derivedClusterRowsPerLeaf per leg read from the built binary; a clean null is an acceptable terminal result",
+    "E162": "qwen-alphonse / PR 162 / prefill affine qmm software pipelining; a matched absolute DECODE contrast is now MANDATORY and terminal, priced as prefill_delta * 0.104 + decode_delta * 0.896",
+    "E161": "CLOSED unmerged; repriced below the noise floor by the S >= 4 width gate",
+    "unassigned_router": "4x cheaper router, worth about 0.41 % by bytes (range 0.25 to 0.75 %). Straddles the gap but sits at or below single-pair ranked noise, so it needs ABBA. Its accuracy cost is re-openable now that RULE 190 replaced RULE 189."
   }
 }
