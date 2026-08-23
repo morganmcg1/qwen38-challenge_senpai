@@ -56,8 +56,12 @@ def main():
     aucs = {a["feature"]: a for a in cohort["auc_in_sample"]}
     aucs_out = {a["feature"]: a for a in cohort["auc_out_of_sample"]}
 
+    offschedule = load("e146-offschedule.json")
+
+    resume_id = os.environ.get("E146_WANDB_RUN_ID") or None
     run = wandb.init(
         entity=ENTITY, project=PROJECT,
+        id=resume_id, resume="must" if resume_id else None,
         name="e146-nuisance-floor-census",
         job_type="measurement",
         tags=["e146", "nuisance", "instrument", "ranked", "local"],
@@ -118,6 +122,9 @@ def main():
             aucs["fit_residual_sd_pp"]["p_value_one_sided"],
         "ranked/e146_auc_residual_in_sample_null_p95":
             aucs["fit_residual_sd_pp"]["null_p95"],
+        # The advisor's requested name for the out-of-sample residual AUC.
+        "ranked/e146_classifier_auc_on_null_pairs":
+            aucs_out["fit_residual_sd_pp"]["auc"],
         "ranked/e146_auc_residual_out_of_sample":
             aucs_out["fit_residual_sd_pp"]["auc"],
         "ranked/e146_auc_residual_out_of_sample_p":
@@ -238,6 +245,29 @@ def main():
             "local/e146_local_mde_n4_pct": local["mde_by_n"]["4"],
             "local/e146_local_mde_n8_pct": local["mde_by_n"]["8"],
         })
+    if offschedule:
+        cal = offschedule["control_calibration"]
+        summary.update({
+            "ranked/e146_offschedule_state_readout_possible":
+                offschedule["e146_offschedule_state_readout_possible"],
+            "ranked/e146_offschedule_decisive_fraction":
+                offschedule["e146_offschedule_decisive_fraction"],
+            "ranked/e146_offschedule_control_separation_margin_auc":
+                offschedule["e146_offschedule_control_separation_margin_auc"],
+            "ranked/e146_offschedule_high_anchor_auc_max":
+                cal["high_anchor_auc_max"],
+            "ranked/e146_offschedule_main_anchor_auc_min":
+                cal["main_anchor_auc_min"],
+            "ranked/e146_offschedule_three_channel_r2":
+                offschedule["channel_regression"]["r2_on_serial_and_prefill"],
+            "ranked/e146_offschedule_pb6_auc": next(
+                t["auc"] for t in offschedule["anchor_inversion_panel"]
+                if t["anchor"] == "e003a86d"),
+            "ranked/e146_offschedule_pb6_state_share_pct":
+                offschedule["pb6_two_basis"]["state_share_pct_of_decode"],
+            "ranked/e146_offschedule_pb6_schedule_share_pct":
+                offschedule["pb6_two_basis"]["schedule_share_pct_of_decode"],
+        })
     run.summary.update(summary)
 
     pair_table = wandb.Table(columns=[
@@ -337,6 +367,17 @@ def main():
                      entry["k_us_per_drafting_round"], entry["cand_mean8_pct"],
                      entry["same_decisions_as_anchor"])
     run.log({"ranked/crown_family_against_anchor": fam})
+
+    if offschedule:
+        panel = wandb.Table(columns=["anchor", "role", "auc", "null_p95",
+                                     "p_value_one_sided", "n_high", "n_main",
+                                     "calibrated_call"])
+        for entry in offschedule["anchor_inversion_panel"]:
+            panel.add_data(entry["anchor"], entry["role"], entry["auc"],
+                           entry["null_p95"], entry["p_value_one_sided"],
+                           entry["n_high"], entry["n_main"],
+                           entry.get("calibrated_call", ""))
+        run.log({"ranked/offschedule_anchor_inversion_panel": panel})
 
     if local:
         legs = wandb.Table(columns=["leg", "kind", "seconds_per_token", "round_count",

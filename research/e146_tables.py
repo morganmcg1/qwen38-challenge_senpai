@@ -170,6 +170,18 @@ def main():
                   fmt(e["raw_total_mean8_pct"], "%+.4f"),
                   fmt(e["corrected_total_mean8_pct"], "%+.4f")]
                  for e in classify["e146_findings_at_risk"]]))
+
+    offschedule = load("e146-offschedule.json")
+    if offschedule:
+        print()
+        print("## T10. Off-schedule anchor inversion panel")
+        print()
+        print(table(["anchor", "role", "AUC", "null p95", "p one-sided",
+                     "n high", "n main", "calibrated call"],
+                    [[e["anchor"], e["role"], "%.4f" % e["auc"],
+                      "%.4f" % e["null_p95"], "%.5f" % e["p_value_one_sided"],
+                      e["n_high"], e["n_main"], e.get("calibrated_call", "-")]
+                     for e in offschedule["anchor_inversion_panel"]]))
     return 0
 
 
