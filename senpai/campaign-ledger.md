@@ -58527,3 +58527,147 @@ Edward's E150 and is worth reading when it resolves.
 Closed this entry: the fill marginal-cost arm; thorfinn's R0 producer census;
 the claim that `shift_dst` exists on the affine NAX path; the claim that the
 width table axis is closed.
+
+## 315 — 2026-08-23 14:00Z — Conversation rollover. The import is the critical path, and I verified exactly what survives it
+
+Controlled advisor-conversation rollover at project commit `c2b601b7`. Current
+truth rebuilt from Yukon, the organizer remote, the four open PRs and this
+ledger. No old transcript was replayed.
+
+### 315.1 Board and slot state at 13:50Z, 1234 rows
+
+```
+BAR            ec24d591 newjordan 3.72911001  src 0863b06a   (unchanged since 11:43Z)
+OUR BEST       0cf1637e            3.68278758  rejected -3.71 %
+IN FLIGHT      749da2cf  edward E150 R4        validating since 12:22:01Z
+OTHER PENDING  647eded scarletbright · ad83ddb fkiene · b65e8bb yijunyu
+               f89b0ae igneous-prose · 46cb743 ofou · 84d5d5b newjordan
+RESOLVED SINCE 12:15Z   1bfa0447 rej 3.69919 · 81d20e0b rej 3.69768 ·
+               3ee4e54c rej 3.66845 · d95f8a19 rej 3.71434 · e18e3685 rej 3.70747
+               224c8be9 failed · fde977be failed
+```
+
+`81d20e0b`, the rival adaptive cost-model draft-depth row in Edward's axis,
+resolved **rejected at 3.69768**. That is a second independent reading that the
+schedule axis is not where the remaining headroom sits.
+
+No promoted row appeared between 12:15Z and 13:50Z, so `frontier-state.json`
+needed only an `observedAt` refresh.
+
+### 315.2 The receipt watcher is advisor-owned
+
+`749da2cf` had been validating for 84 minutes with no watcher. I now own one
+bounded, read-only Yukon watcher as job `0c80d7de`, writing to
+`_advisor_scratch/receipt-749da2cf.log`, outside the checkout. Edward was told
+to release any watcher he held and return that time to R3. The official slot
+stays closed until `749da2cf` resolves.
+
+### 315.3 FINDING 269 — the import survivor table, verified against `0863b06a`
+
+I re-fetched `upstream` at 13:50Z. `upstream/main` is
+`0863b06ac16e26e48fc06e97444095b00feb66d4`. The diff against advisor head
+`c2b601b7` over the submitted surface is five files, `+694 / -1570`.
+
+**Survives the import.** These are not lost and no student needs to plan around
+losing them:
+
+| symbol | frontier site |
+| --- | --- |
+| `derivedClusterRowsPerLeaf = 8` | `Qwen35.swift:5188` (ours `:5673`) |
+| `let rowsPerLeaf = Self.derivedClusterRowsPerLeaf` | `Qwen35.swift:5642` (ours `:6127`) |
+| `buildDerivedClusterIndex` | `Qwen35.swift` |
+| `draftTokenIDWithDeclaredRerank` | `Qwen35.swift` |
+| `segmentedVerifyDepthCap` | `Qwen36MTPBlockSession.swift` |
+| `depthPriceArm` | `Qwen36MTPBlockSession.swift:991`, plain `= .ship` |
+| `enum DepthPriceArm` | `:979`, `case ship, pb5, pb7, pbfit` |
+
+**Deleted by the import:** `qwen35ClusterCentroidQMV` (4 sites), `onePass67`
+and the one-pass width table (7 sites), `passBoundaryTierFactor` (2 sites), and
+`pb6` — the frontier enum has no `pb6` case and `depthPriceArm` is a plain
+constant, not our environment-reading closure.
+
+The frontier's `quantized_nax.h` and `mlx-generated/quantized_nax.cpp` contain
+**zero** `kE147` identifiers.
+
+Three consequences, each already delivered to the owning student:
+
+1. **Askeladd's leaf16 survives.** The flip becomes `Qwen35.swift:5188`, 8 to
+   16, on the imported tree. He must not spend a gated session pricing it
+   against `b27c004a`.
+2. **Alphonse's arms must be self-contained.** If the AIR check says our header
+   differs, he re-applies onto a header with no E147 scaffolding at all, not
+   onto a renamed version of it.
+3. **Edward's pb6 question is closed by deletion**, together with both
+   collateral test failures. I refused the `E134PassBoundaryPriceTests` file
+   grant because that file is a deletion candidate in thorfinn's Step 4.
+
+### 315.4 Rulings issued this entry
+
+- **RULE 156 amended.** The Plutarch class list is now `per_round`,
+  `per_drafting_round`, `per_draft_step`, `width_gated_at_<k>`. Askeladd's
+  `per_draft_step` derivation carries it: exposure is `draftCount`,
+  `effective_mean_draft_len` is the mean `draftCount`, and
+  `Qwen36MTPBlockSession.swift:1517` returns early on `draftCount == 0`.
+  `e153_leaf16_ranked_discount_basis = 0.74453` is accepted.
+- **ADVISOR ERROR 186, frame mixing.** Askeladd showed that the per-prompt
+  table in E153 F1 is in the decode frame while Rule 134's 524.5 us/round is a
+  total-leg constant (decode-frame equivalent 468.8). The decode-frame table
+  overstates published effect by about 11 %. **Standing rule: every
+  published-% claim is stated in the total-leg frame**; the decode frame is for
+  mechanism attribution only. Plutarch's round count is 488, not 486.76.
+- **RULE 157.** Never bucket, shard, seed or key anything on Python's `hash()`
+  of a string. It is salted per process. Use `blake2b` or another stable
+  digest. Any historical result that bucketed on `hash()` of a string key is
+  not exactly reproducible below about 0.01 pp. Edward's defect (c).
+- **Row-digest pin ruling for alphonse.** The E121 rung-3 pin was taken at base
+  `f18400c4` with 78 trace rounds against his 82, so it is not a fidelity gate
+  for a kernel change. The decisive control is base leg against candidate leg on
+  the same host. If both agree and both miss the pin, the pin is stale and it
+  is retired.
+
+### 315.5 Reproducibility defect: no student branch has been pushed
+
+`origin` still holds the branch-creation commit for all four assignments:
+`95570153` edward, `4330bdd0` alphonse, `5d0896f2` thorfinn, `b9ef2906`
+askeladd. **The tree submitted to Yukon as `749da2cf` exists only on Edward's
+Mac.** So do Finding 250, the metallib build break, the loader-legality guard,
+the E134 parser defect and the E153 frame check. All four students were told to
+push immediately. This is human direction item 3 and it is now a standing gate:
+no student may open a new arm while a measured or submitted commit is unpushed.
+
+### 315.6 Composition plan for the next official submission
+
+Prices are total-leg published %, on top of the imported frontier base.
+
+```
+step                                       owner      channel   published %
+import 0863b06a editable surface           thorfinn   both        +0.7275
+E151 R1  NAX 128x32 seed retile            alphonse   prefill     +0.505   (ranked ref 5cdc9c17 -4.9721 % prefill)
+E153 R1  leaf16                            askeladd   decode      +0.188   (soft ceiling +0.241)
+E151 R2  affine NAX double buffer          alphonse   prefill     +0.419   (ranked ref 43925f29 -4.1181 %)
+E151 R1oR2 composed                        alphonse   prefill     +0.663   (registered -6.5 % prefill)
+E153 R2  merged SDPA, width_gated_at_6     askeladd   decode      +0.29
+```
+
+Designated next candidate: **import ∘ E151 R1**, about **3.748** against the bar
+3.72911, a margin of +0.019. Import ∘ leaf16 alone is about 3.736, a margin of
++0.007, which sits inside the nuisance tail and is not worth the slot on its
+own. Add leaf16 to the composed candidate when it is rebased and green, because
+Rule 146 keeps the prefill and decode channels separately readable on one
+receipt and Rule 156 gives plutarch as the class discriminator.
+
+Sequencing: thorfinn publishes the import as **Stage A** (import, tests, gates,
+512-token exactness) and pushes before he runs the FINDING 267 residency probe
+or any ABBA timing. The AIR verdict `e152_quantized_nax_air_identical` is a
+standalone one-line interim, first in his queue, because alphonse is blocked on
+that single boolean.
+
+### 315.7 Queue after this entry
+
+1. Merge thorfinn's Stage A import into the advisor branch the hour it lands.
+2. Rebase askeladd's leaf16 and alphonse's R1 onto it.
+3. Submit import ∘ E151 R1, and leaf16 as well if it is ready, as soon as
+   `749da2cf` frees the slot.
+4. Report `749da2cf` against Edward's pre-registration when the watcher wakes.
+5. Keep FINDING 267 open: our lineage carries a positive state-exposure `k` on
+   four independent rows, probability about 6e-4 under the rival rate.
