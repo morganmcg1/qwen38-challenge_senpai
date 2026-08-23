@@ -64588,3 +64588,245 @@ is unchanged.
 | thorfinn | 160 | `e135_fill_cost_abba.sh` running. Repriced at `k = 1.13`. |
 | alphonse | 162 | **held before timing** pending the ranked kernel-path proof. |
 
+
+---
+
+## Entry 343 — 2026-08-23T23:15Z — the width-6 wall is an exactness guard whose own cost model is short by a factor of eighteen
+
+### Board, unchanged
+
+```
+promoted frontier   ec24d591  newjordan   3.7291100105909   src 0863b06a
+our best receipt    5a9f130a              3.70784519415395  src 8ba6e738   rejected
+last terminal       1509bf95  18:20Z      3.68242218292127  src f95d4bdb   rejected (leaf16)
+gap on the candidate leg                  0.5735 %
+official slot                             FREE, held for B1
+```
+
+Re-queried at 23:05Z. No new row since `1509bf95`. Nothing of ours is in flight.
+
+---
+
+### FINDING 339 — the wall is mandatory, and that is what makes it valuable
+
+Edward's dense D sweep found a 35.449 ms marginal step entering verify width 6
+against a 12.146 ms neighbour mean, with the quadratic term at 27.99 sigma. I
+went to the source to ask whether widths 6 to 9 can run in one pass. The tree
+answers that question, and the answer changes the experiment completely.
+
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift:104-142` splits
+a 6-to-9-row causal decode attention into two sdpa calls of at most five rows
+each. The reason is **exactness, not performance**:
+
+```
+the fused sdpa vector path serves qL * gqa <= 32; above it the dispatch
+changes kernel family and the accumulation order of every score --
+the measured source of the MTP width wall's top-2 VALUE drift.
+```
+
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1005-1034` records the
+measurement behind it. Widths 6 to 9 drift from the serial trajectory in top-2
+values while the ids hold, and the drifted K/V rows a wide forward writes then
+contaminate every later round: one wide round poisons the whole window under
+the ranked exact-value replay while staying invisible to a local argmax check.
+Width 5 measured 5/5 bit-exact, which is why every promoted receipt at cap 4
+survived rank.
+
+The same block records that segmenting the whole **forward** instead, as two
+model calls of 5 and k rows, was also measured bit-exact but pays a second full
+weight pass of about 25 ms and loses on net.
+
+**So the split cannot be removed and cannot be replaced by forward
+segmentation. Both alternatives are already measured and both are closed.**
+
+### The part that is open: the split costs eighteen times what its author priced
+
+The comment states its own cost model at `AttentionUtils.swift:114-116`:
+
+```
+Keys/values are re-sliced, not recomputed -- the only extra cost is
+one more pass over the KV rows (a few MB), never over weights.
+```
+
+Price that. The full-attention KV cache is 4 KV heads, head dimension 256, 16
+full-attention layers, 2 bytes per element. At a context length near 1,500 that
+is about 3.1 MB per tensor per layer and about 98 MB over all 16 layers for keys
+and values together. One extra pass over it is **about 0.4 ms** at this host's
+measured 232 GB/s. If every slice materialises a full copy, read plus write, it
+reaches **about 1.3 ms**.
+
+Measured excess is **about 23.3 ms**. Edward's independent E68 inversion gives
+27.31 ms at width 6 against 13.41 at width 5, an excess of about 14 ms on that
+route. Two routes, same sign, same order.
+
+```
+predicted extra cost of the split      0.4 to 1.3 ms
+measured excess at width 6            14 to 23 ms
+shortfall                             a factor of 11 to 18
+```
+
+### Why this is the largest lever currently on the board
+
+```
+duty cycle at or above the wall      134/156 rounds = 85.9 %
+excess per round at the wall         ~23.3 ms
+mean shipped round, prefill removed  ~138.6 ms
+0.859 x 23.3 / 138.6                 = 14.4 % of the candidate round
+```
+
+Fourteen percent of the candidate round, against a 0.5735 % gap. Even recovering
+a quarter of it is six times the gap. Nothing else open is in that class.
+
+This does **not** contradict the pb6 tombstone (FINDING 333). pb6 re-priced
+width 6 upward and `makeBoundaryDepthPrice` holds the total constant, so every
+other step became cheaper and plutarch went from 449 non-drafting rounds to
+zero. Making the wall physically cheaper is not a re-weighting. It changes the
+cost, not the price.
+
+### Four candidate mechanisms, assigned to edward as zero-GPU work
+
+| # | mechanism | discriminator |
+| --- | --- | --- |
+| M1 | the axis-2 strided slices of `cachedKeys` and `cachedValues` materialise full copies | grows with `kL` |
+| M2 | `concatenated([outA, outB], axis: 2)` allocates and copies per layer | small bytes, so dispatch cost |
+| M3 | host-side graph build for the extra nodes | flat in `kL`; the tree already attributes about 2.4 ms of the head step to host graph build |
+| M4 | the excess is not at the sdpa at all | must name where else width 6 switches |
+
+M1 and M3 make opposite predictions about context length, so any two legs at
+different `kL` separate them at zero extra cost.
+
+### The candidate fix, exact by construction
+
+The split slices the cache because chunk A must see the key window before the
+last `qL - 5` new keys were appended:
+
+```swift
+let kSplit = kL - (qL - split)
+```
+
+That window is exactly the cache state after appending only the first five new
+keys. So do not slice the cache: **update it twice**. Update with the first five
+keys and run sdpa A over the returned arrays in full; update with the remainder
+and run sdpa B over the returned arrays in full; concatenate. Both sdpa calls
+then receive whole contiguous cache arrays and no slice exists anywhere.
+
+The key and value window each row sees is byte-identical to the current code,
+the kernel family is the same fused vector path, and the accumulation order is
+unchanged. If M1 is the mechanism, this removes it entirely.
+
+Two things can break it and must be checked from the concrete cache class rather
+than the protocol: whether that class tolerates two `update` calls inside one
+forward, and whether the second `update` forces a reallocation.
+
+---
+
+### FINDING 340 — alphonse has a structural argument that breaks the prefill curse
+
+Four prefill receipts in this campaign won on prefill and lost on decode. That
+record is why the prefill spine has been priced defensively all week.
+
+Alphonse's dispatch census says the curse does not apply to his arm B:
+
+```
+vector_limit returns 18 / 12 / 10 by width
+decode M = 1 + drafts <= 9
+therefore decode dispatches qmv, never qmm_t_nax
+```
+
+If that holds exhaustively, **a change confined to `qmm_t_nax` cannot regress
+decode, because decode never executes it.** That is a structural guarantee and
+it is stronger than any timing leg. The earlier prefill receipts presumably
+regressed decode because they touched shared code.
+
+He must prove it over every decode call site that can reach the quantized
+matmul dispatcher, including the proposal head, the rerank kernel and the
+vocabulary readout, not only the backbone projections. One site reaching
+`qmm_t_nax` at decode moves the arm back into the old risk class.
+
+Pricing for that arm, `harness=ranked`, using FINDING 336 rather than the
+unweighted share:
+
+```
+published gain = 0.1007 x prefill_improvement_fraction
+  5 % faster prefill -> +0.50 %
+  8 % faster prefill -> +0.81 %
+```
+
+No `k` applies. `k` converts a local measurement into a ranked one and arm B has
+no local measurement: the ranked M5 is GPU architecture generation 17 and every
+student host is generation 16, so `qmm_t_nax` never executes locally. Arm B
+ships on a source case or it does not ship.
+
+Arm A keeps a job. It cannot ship and its timing is worthless, but it executes
+locally, so it is the correctness rehearsal for the same double-buffer
+transformation. Every algorithm bug the transformation can have shows up on
+arm A and would be invisible on arm B.
+
+---
+
+### ADVISOR ERROR 209 — I asked alphonse to prove something he had already proved, while he burned GPU on the answer
+
+F4 demanded the ranked prefill dispatcher proof that his interim 2 had delivered
+24 minutes earlier, and told him not to spend timed legs after he had launched
+eight of them. I wrote F4 from interim 1 and posted without reading interim 2.
+Cost: up to two hours of one student's Mac measuring `qmm_t_impl`, a function
+the ranked host never reaches for these shapes. Cancelled in F5.
+
+**Standing correction: refresh the complete PR immediately before posting
+feedback, not at the start of the review batch.** Three of my four students
+posted between my reading and my writing tonight.
+
+### ADVISOR ERROR 210 — I asked thorfinn to finish a script he had reported as unrunnable
+
+F4 said "finish `e135_fill_cost_abba.sh`" in reply to the comment in which he
+reported that it cannot run on this base. It needs the `MLX_E120_QMV_PIPELINE_LOG`
+instrument, which is no longer in the tree; the run failed with
+`FileNotFoundError: research/out/e135e160fillwarm1/pipelines.json`, exit 3.
+
+**Campaign fact, from thorfinn: `MLX_E120_QMV_PIPELINE_LOG` has been removed and
+about fourteen `research/` scripts silently depend on it.** Anything under
+`research/` that reads `pipelines.json` is dead on this base. Do not restore the
+instrument on a freeze branch.
+
+`e135` was only ever a calibration meant to **predict** his effect. He has built
+the mechanism, drafting is bit-identical between his arms, and his fill census
+closes to 0.02 %. The prediction is now worthless and the measurement is
+available. Dropped in F5 and replaced with one gated 512-token ABBA.
+
+---
+
+### RULE 193 — quote the transfer coefficient as an interval when the saved resource is mixed
+
+RULE 192 gives `k = 1.355` for a bandwidth-bound arm and `k = 0.388` for a
+compute-bound arm. An arm that removes both a memory round-trip and a set of
+dispatches is neither. Thorfinn's fusion removes 64 of 130 standalone fills per
+round: the round-trip part transfers at about 1.36 and the dispatch part
+transfers lower.
+
+Quote `k in [1.0, 1.36]` for such an arm and say why, rather than picking a point
+value. I gave him `k = 1.13` in F4 on the per-round target-arm shape from
+FINDING 331 and that was falsely precise. The decision does not need precision:
+
+| measured local effect | published at k=1.0 | at k=1.36 | verdict |
+| --- | --- | --- | --- |
+| below +0.06 % | — | — | stop, measured null |
+| +0.06 to +0.15 % | +0.06 % | +0.20 % | hold as a composition partner |
+| above +0.15 % | +0.15 % | +0.34 % | advance and freeze |
+
+The line that matters is +0.15 %. B1 alone is about +0.567 % published against a
+0.5735 % gap, which is a coin flip. B1 composed with a +0.2 % arm is not.
+
+---
+
+### Student board at 23:15Z
+
+| student | PR | state |
+| --- | --- | --- |
+| askeladd | 158 | B3 gated ABBA running as job `400ca152`. Owns the B1 freeze and the ship path. Nothing outranks it. |
+| edward | 159 | r1 terminal and accepted. r2 running, zero-GPU. Step 4 rewritten in F8 as the width-6 excess hunt. |
+| thorfinn | 160 | exactness unit test running. `e135` dropped. Next is one gated 512-token ABBA on the fused arm. |
+| alphonse | 162 | arm-A timing cancelled. Arm A becomes a correctness rehearsal; arm B is the experiment and ships on a source case. |
+
+Next advisor actions, in order: take askeladd's frozen B1 SHA, merge PR 158, and
+submit within 15 minutes of the slot being ready; then queue the zero-draft twin
+of the exact B1 commit behind its receipt; then the width-6 excess.
