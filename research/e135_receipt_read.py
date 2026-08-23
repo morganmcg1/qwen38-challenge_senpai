@@ -51,6 +51,32 @@ F83_WEIGHTS = {
     "republic": 0.0100,
 }
 
+# Rule 148. At a published median of 3.5 or above, the median pair is drawn
+# from a much narrower set than F83 assumed: beagle always holds the lower
+# slot, and essays holds the upper slot in nine cases out of ten. F83 remains
+# below for contrast, because it is the weight vector most of the campaign
+# ledger was priced under.
+RULE148_WEIGHTS = {
+    "beagle": 0.5000,
+    "essays": 0.4474,
+    "republic": 0.0329,
+    "medicine": 0.0197,
+}
+
+# Rule 147. Per-prompt candidate-channel detectability, in microseconds per
+# round at two standard deviations on ONE receipt. A per-prompt candidate delta
+# below its own entry here is inside that prompt's single-receipt noise.
+RULE147_DETECT_US_PER_ROUND = {
+    "essays": 44.5,
+    "medicine": 66.9,
+    "republic": 70.9,
+    "beagle": 119.5,
+    "drama": 123.8,
+    "botany": 129.2,
+    "travel": 150.1,
+    "plutarch": 211.9,
+}
+
 # F216 noise floors, in percentage points.
 PER_PROMPT_LEG_NOISE_PP = 0.0737
 AT_ZERO_MDE_PP = 0.1154
@@ -126,13 +152,36 @@ def compare(ours: dict, ref: dict, field: str) -> dict[str, float]:
     return out
 
 
+def candidate_us_per_round(row: dict) -> dict[str, float]:
+    """Microseconds of candidate MTP time per decode round, by prompt.
+
+    The receipt publishes no round count, so rounds are taken as
+    `decode_tokens / (1 + effective_mean_draft_len)`. That is the campaign
+    convention behind Rule 134 and Rule 147: for the beagle leg it reproduces
+    `BEAGLE_TOKENS_PER_ROUND = 5.3818` exactly. It treats every draft as
+    accepted, so it understates the round count and overstates microseconds per
+    round. It is used here only to compare against the Rule 147 table, which
+    was built on the same convention, so the bias cancels in that comparison.
+    """
+    tokens = (row.get("officialMetrics") or {}).get("decode_tokens") or 512
+    return {
+        name: e["mtp_seconds_per_token_mean"] * 1e6
+        * (1.0 + e["effective_mean_draft_len"])
+        for name, e in per_prompt(row).items()
+    } if tokens else {}
+
+
+def weighted(deltas: dict[str, float], weights: dict[str, float]) -> float:
+    live = [n for n in weights if n in deltas]
+    return sum(weights[n] * deltas[n] for n in live) / sum(
+        weights[n] for n in live)
+
+
 def report_reference(ours: dict, ref: dict, label: str) -> None:
     deltas = compare(ours, ref, "mtp_seconds_per_token_mean")
     lo, hi = median_pair(ours)
     mean, sd, se = summarise(deltas)
-    weighted = sum(
-        F83_WEIGHTS[n] * deltas[n] for n in F83_WEIGHTS if n in deltas
-    ) / sum(F83_WEIGHTS[n] for n in F83_WEIGHTS if n in deltas)
+    us_round = candidate_us_per_round(ours)
 
     print(f"\n### e135_ranked_cand_w5_vs_{label}  (ref median {ref['officialScore']:.8f})")
     print(f"  median pair, OUR sorted ranks 3 and 4: {lo}, {hi}")
@@ -142,13 +191,18 @@ def report_reference(ours: dict, ref: dict, label: str) -> None:
     if len(pair) == 2:
         print(f"    pair mean {statistics.fmean(pair):+9.4f} %")
     print(f"  8-prompt mean {mean:+.4f} %  sd {sd:.4f}  se {se:.4f}")
-    print(f"  F83 weighted five {weighted:+.4f} %")
+    print(f"  Rule 148 weighted four {weighted(deltas, RULE148_WEIGHTS):+.4f} %")
+    print(f"  F83 weighted five      {weighted(deltas, F83_WEIGHTS):+.4f} %")
     same = sum(1 for v in deltas.values() if v > 0)
     print(f"  sign test: {same}/{len(deltas)} prompts faster")
-    print("  per prompt:")
+    print("  per prompt, against the Rule 147 candidate-channel floor:")
+    print("    prompt        delta      us/round   R147 2sd   detected  r148")
     for name in sorted(deltas, key=lambda n: -deltas[n]):
-        weight = F83_WEIGHTS.get(name, 0.0)
-        print(f"    {name:<9} {deltas[name]:+9.4f} %   weight {weight:.4f}")
+        moved = abs(deltas[name]) / 100.0 * us_round.get(name, float("nan"))
+        floor = RULE147_DETECT_US_PER_ROUND.get(name, float("nan"))
+        mark = "yes" if moved >= floor else "no"
+        print(f"    {name:<9} {deltas[name]:+9.4f} % {moved:9.1f} "
+              f"{floor:10.1f} {mark:>10}  {RULE148_WEIGHTS.get(name, 0.0):.4f}")
 
 
 def main() -> None:
