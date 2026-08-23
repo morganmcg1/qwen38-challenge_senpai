@@ -1,0 +1,92 @@
+{
+  "experiment": "E156",
+  "rung": "R1",
+  "harness": "offline",
+  "question": "Does this candidate perturb the decode JIT source string, which is the shared cause of death in FINDING 293?",
+  "e156_decode_jit_source_byte_identical": true,
+  "e156_decode_jit_positive_control_nax_moved": true,
+  "e156_decode_jit_no_nax_text_in_decode_modules": true,
+  "e156_decode_jit_composition_stable": true,
+  "e156_decode_jit_gate_pass": true,
+  "decode_modules": [
+    "utils",
+    "gemm",
+    "quantized_utils",
+    "quantized"
+  ],
+  "nax_modules": [
+    "utils",
+    "gemm_nax",
+    "quantized_utils",
+    "quantized_nax"
+  ],
+  "decode_builder": "get_quantized_kernel",
+  "nax_builder": "get_qmm_nax_kernel",
+  "source_of_composition": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/jit_kernels.cpp, parsed from the concatenate() call inside each builder; not hardcoded here",
+  "revisions": [
+    {
+      "label": "crown",
+      "rev": "0863b06ac16e26e48fc06e97444095b00feb66d4",
+      "decode_source_bytes": 206327,
+      "decode_source_sha256": "628673fc8aceb55b887957fd2bf849b63b58747c2fd0bd67819bdbc1ff4d72f0",
+      "nax_source_bytes": 139941,
+      "nax_source_sha256": "e1df7eeca916bdb33692ad498818b43f3ec06aac78f2492591f97f5551b1aaaa",
+      "decode_per_module_sha256": {
+        "utils": "03abe3a158f1171a524ff01bfd8a10e39a77e61f090e50d78dd6ade9e0984ee6",
+        "gemm": "c8fac9aeed3b3bc4d67ccdf48dba18ffac9a590561445549eeb3545f8f261a9c",
+        "quantized_utils": "36893d020956fec4b63f37855035dfebc317bd06a966de14c6372c9a2971ef28",
+        "quantized": "d1f41480a6601d20242d717488b64dae4f3e79d0435c073aea8c20e9c05a28b9"
+      },
+      "nax_per_module_sha256": {
+        "utils": "03abe3a158f1171a524ff01bfd8a10e39a77e61f090e50d78dd6ade9e0984ee6",
+        "gemm_nax": "63bbe47391c49fb91d47da12f231e5f035ea55f00423295f9f492573f08f1ad3",
+        "quantized_utils": "36893d020956fec4b63f37855035dfebc317bd06a966de14c6372c9a2971ef28",
+        "quantized_nax": "a256609947aabf0fa4b14fc6724e0dd89f2f26b9e35feca719c859e8fad3434b"
+      },
+      "nax_text_in_decode_modules": 0
+    },
+    {
+      "label": "prbase",
+      "rev": "d0422d1d4c3c8901cbc2382dc9ee79666e786d94",
+      "decode_source_bytes": 206327,
+      "decode_source_sha256": "628673fc8aceb55b887957fd2bf849b63b58747c2fd0bd67819bdbc1ff4d72f0",
+      "nax_source_bytes": 144792,
+      "nax_source_sha256": "82a58d5122c97bc23e8a1fcd70079c3a1c32f5ab26c55a36e57be380dac008a3",
+      "decode_per_module_sha256": {
+        "utils": "03abe3a158f1171a524ff01bfd8a10e39a77e61f090e50d78dd6ade9e0984ee6",
+        "gemm": "c8fac9aeed3b3bc4d67ccdf48dba18ffac9a590561445549eeb3545f8f261a9c",
+        "quantized_utils": "36893d020956fec4b63f37855035dfebc317bd06a966de14c6372c9a2971ef28",
+        "quantized": "d1f41480a6601d20242d717488b64dae4f3e79d0435c073aea8c20e9c05a28b9"
+      },
+      "nax_per_module_sha256": {
+        "utils": "03abe3a158f1171a524ff01bfd8a10e39a77e61f090e50d78dd6ade9e0984ee6",
+        "gemm_nax": "63bbe47391c49fb91d47da12f231e5f035ea55f00423295f9f492573f08f1ad3",
+        "quantized_utils": "36893d020956fec4b63f37855035dfebc317bd06a966de14c6372c9a2971ef28",
+        "quantized_nax": "825c44c4bbc16974b89b5e4d506e6e190ab3006961dbc1150afddff42e8eb8b3"
+      },
+      "nax_text_in_decode_modules": 0
+    },
+    {
+      "label": "candidate",
+      "rev": "HEAD",
+      "decode_source_bytes": 206327,
+      "decode_source_sha256": "628673fc8aceb55b887957fd2bf849b63b58747c2fd0bd67819bdbc1ff4d72f0",
+      "nax_source_bytes": 155098,
+      "nax_source_sha256": "ab3175d182327ab9affd6e53b56c44c2438171c492c17cc79de6f048da4d04b2",
+      "decode_per_module_sha256": {
+        "utils": "03abe3a158f1171a524ff01bfd8a10e39a77e61f090e50d78dd6ade9e0984ee6",
+        "gemm": "c8fac9aeed3b3bc4d67ccdf48dba18ffac9a590561445549eeb3545f8f261a9c",
+        "quantized_utils": "36893d020956fec4b63f37855035dfebc317bd06a966de14c6372c9a2971ef28",
+        "quantized": "d1f41480a6601d20242d717488b64dae4f3e79d0435c073aea8c20e9c05a28b9"
+      },
+      "nax_per_module_sha256": {
+        "utils": "03abe3a158f1171a524ff01bfd8a10e39a77e61f090e50d78dd6ade9e0984ee6",
+        "gemm_nax": "63bbe47391c49fb91d47da12f231e5f035ea55f00423295f9f492573f08f1ad3",
+        "quantized_utils": "36893d020956fec4b63f37855035dfebc317bd06a966de14c6372c9a2971ef28",
+        "quantized_nax": "239566d31289fdc043360ded0539ae49b9ed6bfa3506551e41dc2b56acbbebe6"
+      },
+      "nax_text_in_decode_modules": 0
+    }
+  ],
+  "interpretation": "The decode qmv kernels are JIT-compiled from the decode source string alone. If that string is byte-identical, the candidate cannot change a decode kernel through the JIT path, because the compiler input is the same bytes. The NAX digest moving at the candidate is the positive control that this script can see the edit at all."
+}
