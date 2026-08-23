@@ -76,6 +76,7 @@ def main() -> int:
     oracle = load("oracle-state.json")
     posttight = load("posttight.json")
     itemab = load("itemab.json")
+    r1r2 = load("r1r2.json")
     if gate is None or cells is None:
         raise SystemExit("the cell C gate and the 2x2 must both be present")
 
@@ -519,6 +520,118 @@ def main() -> int:
         summary["e140_tierfit_shipped_best_tier"] = shipped["best_tier"]
         summary["e140_tierfit_shipped_gain_over_1_45_pp"] = shipped[
             "gain_over_shipped"]
+
+    if r1r2 is not None:
+        # F7 R1. The shipped `pb6` arm is a boundary spike composed with a
+        # global depth subsidy, and the ranked pair 572b2cc4 -> e003a86d is the
+        # first out-of-sample test the replayer has ever had.
+        run.log({"r1r2_threshold_table": table(
+            ["depth", "ship_threshold", "pb6_threshold", "ratio",
+             "subsidy_pct", "advisor_ratio"],
+            [[r["depth"], r["ship"], r["pb6"], r["ratio"],
+              (1.0 - r["ratio"]) * 100.0, r["advisor_ratio"]]
+             for r in r1r2["threshold_table"]])})
+        summary["e140_threshold_table_max_error"] = r1r2[
+            "threshold_worst_error"]
+
+        r1 = r1r2["r1"]
+        run.log({"r1r2_arm_per_prompt": table(
+            ["curve_form", "arm", "prompt", "mean_depth", "ratio",
+             "non_drafting_share", "rounds_per_512", "control_depth",
+             "measured_depth", "measured_ratio"],
+            [[form, arm, prompt, row["mean_depth"], row["ratio"],
+              row["non_drafting_share"], row["rounds_per_512"],
+              r1["control_depth"][prompt], r1["measured_depth"][prompt],
+              r1["measured_ratio"][prompt]]
+             for form, arms in sorted(r1["forms"].items())
+             for arm, entry in sorted(arms.items())
+             for prompt, row in sorted(entry["per_prompt"].items())])})
+        run.log({"r1r2_arm_median": table(
+            ["curve_form", "arm", "median_pct", "median_pct_lopo",
+             "reordered", "median_pair", "measured_median_pct"],
+            [[form, arm, entry["median_pct"],
+              entry.get("median_pct_lopo"), entry["rank"]["reordered"],
+              "/".join(entry["rank"]["median_pair"]),
+              r1["measured_median_pct"]]
+             for form, arms in sorted(r1["forms"].items())
+             for arm, entry in sorted(arms.items())])})
+
+        best = r1["forms"][BEST_FORM]
+        pred = best["pb6"].get("median_pct_lopo", best["pb6"]["median_pct"])
+        summary["e140_pb6_predicted_median_pct"] = pred
+        summary["e140_pb6_measured_median_pct"] = r1["measured_median_pct"]
+        summary["e140_pb6_prediction_error_pp"] = (
+            pred - r1["measured_median_pct"])
+        summary["e140_subsidy_median_pct"] = best["S_subsidy"]["median_pct"]
+        summary["e140_spike_median_pct"] = best["P_spike"]["median_pct"]
+        summary["e140_control_binding_gap_pct"] = r1[
+            "control_binding_gap_pct"]
+
+        run.log({"r1r2_unlock_curve": table(
+            ["depth0_threshold", "prompt", "non_drafting_share", "mean_depth"],
+            [[float(level), prompt, row["non_drafting_share"],
+              row["mean_depth"]]
+             for level, entry in sorted(r1r2["unlock_curve"].items())
+             for prompt, row in sorted(entry.items())])})
+        ship_level, sub_level = "%.6f" % 0.18, "%.6f" % (8 * 0.18 / 8.45)
+        summary["e140_plutarch_unlock_from_subsidy"] = (
+            r1r2["unlock_curve"][sub_level]["plutarch"]["non_drafting_share"]
+            - r1r2["unlock_curve"][ship_level]["plutarch"][
+                "non_drafting_share"])
+
+        run.log({"r1r2_probe_sweep": table(
+            ["forced_draft_rate", "prompt", "non_drafting_share", "mean_depth",
+             "ratio", "median_pct"],
+            [[float(rate), prompt, row["non_drafting_share"],
+              row["mean_depth"], row["ratio"], entry["median_pct"]]
+             for rate, entry in sorted(r1r2["probe_sweep"].items())
+             for prompt, row in sorted(entry["per_prompt"].items())])})
+        summary["e140_plutarch_unlock_from_probe_002"] = (
+            r1r2["probe_sweep"]["0.0200"]["per_prompt"]["plutarch"][
+                "non_drafting_share"]
+            - r1r2["probe_sweep"]["0.0000"]["per_prompt"]["plutarch"][
+                "non_drafting_share"])
+        summary["e140_probe_030_median_pct"] = r1r2["probe_sweep"]["0.3000"][
+            "median_pct"]
+
+        # F7 R2. Campaign Rule 121: a replayed median without its rank vector
+        # is not decision-grade.
+        run.log({"r1r2_rank_cells": table(
+            ["cell", "curve_lopo_pct", "reordered", "pair_changed",
+             "median_pair"],
+            [[key, row["curve_lopo"], row["reordered"], row["pair_changed"],
+              "/".join(row["median_pair"])]
+             for key, row in sorted(r1r2["r2_cells"].items())])})
+        run.log({"r1r2_rank_tier": table(
+            ["tier", "median_pct", "reordered", "pair_changed", "pair_churn",
+             "median_pair"],
+            [[float(key), row["median_pct"], row["reordered"],
+              row["pair_changed"], row["pair_churn"],
+              "/".join(row["median_pair"])]
+             for key, row in sorted(r1r2["r2_tier_grid"].items(),
+                                    key=lambda kv: float(kv[0]))])})
+        summary["e140_rank_flag_cells"] = sum(
+            1 for r in r1r2["r2_cells"].values() if r["reordered"])
+        summary["e140_rank_flag_tier"] = sum(
+            1 for r in r1r2["r2_tier_grid"].values() if r["reordered"])
+        summary["e140_binding_gap_pct"] = r1r2["binding_gap_pct"]
+
+        if r1r2.get("r2_perturbation"):
+            cellrows = r1r2["r2_perturbation"]["cells"]
+            run.log({"r1r2_rank_perturbation": table(
+                ["curve_form", "cell", "cliff_cut", "in_sample_pct",
+                 "curve_lopo_pct", "reordered", "pair_changed", "pair_churn",
+                 "median_pair"],
+                [[key.split("|")[0], key.split("|")[1],
+                  float(key.split("|")[2]), row["in_sample"],
+                  row.get("curve_lopo"), row["reordered"],
+                  row["pair_changed"], row["pair_churn"],
+                  "/".join(row["median_pair"])]
+                 for key, row in sorted(cellrows.items())])})
+            summary["e140_rank_flag_perturbation"] = sum(
+                1 for r in cellrows.values() if r["reordered"])
+            summary["e140_rank_pair_changed_perturbation"] = sum(
+                1 for r in cellrows.values() if r["pair_changed"])
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
