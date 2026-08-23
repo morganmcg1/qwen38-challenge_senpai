@@ -46,7 +46,12 @@ from collections import defaultdict
 # F3 supersedes both earlier rows: Edward's within-d contrast measured the
 # cost/acceptance coupling directly and it is slightly negative, so the
 # co-moving row is dead and the settled figure sits above the old upper bound.
-SETTLED_PCT_PER_POINT = 2.6701          # F3, Rule 148 weighted
+# RETRACTED by E158 R1 F6, value deliberately NOT changed here.
+# F6 measured the fixed-schedule rate as q / (1 + a) = 1.0093 %/pt over
+# [0.9688, 1.1016], so 2.6701 is overstated 2.65x. Repricing this file would
+# silently restate E155's published conclusions, which is outside E158 R1.
+# Do not reuse this constant; use research/e158-artifacts/f6-repricing.json.
+SETTLED_PCT_PER_POINT = 2.6701          # F3, Rule 148 weighted; RETRACTED
 SETTLED_ABSOLUTE_PER_POINT = 0.0983     # F3, absolute raw units
 GAP_TO_CROWN_ABSOLUTE = 0.04632         # 0cf1637e 3.68278758 -> ec24d59 3.72911001
 FIXED_DEPTH_PCT_PER_POINT = 2.240       # F1/F2, superseded, kept for comparison

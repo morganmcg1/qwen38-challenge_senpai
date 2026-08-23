@@ -40,8 +40,13 @@ AUDIT_WORKER_SHA256 = (
     "b3f5d6cfdce13f645e6ea2b32eae4b637fe0f84d52e68a50e4b4ff49e6d91c25")
 REVERTED_WORKER_SHA256 = (
     "696416f78f1bfbf0103ec433a5d18d5b0738d118002dd4ce7049933f58a69ff3")
-# advisor F4: PROVISIONAL while the ranked round-cost law is refit.
-PCT_PER_ACCEPTANCE_POINT = 2.6701
+# Repriced by E158 R1 F6. The old 2.6701 was a regression across a moving
+# schedule, which is the self-confirming confound advisor F4 flagged; it
+# overstated the rate 2.65x. At a fixed schedule the rate is q / (1 + a),
+# measured 1.0093 %/pt over [0.9688, 1.1016]; see
+# research/e158-artifacts/f6-repricing.json.
+PCT_PER_ACCEPTANCE_POINT = 1.0093
+PCT_PER_ACCEPTANCE_POINT_RANGE = (0.9688, 1.1016)
 ARMS = ("all", "q", "kv", "none")
 
 

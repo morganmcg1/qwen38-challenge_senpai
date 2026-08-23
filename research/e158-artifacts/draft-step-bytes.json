@@ -88,7 +88,7 @@
     "delta_bytes_per_draft_step": 584904704,
     "delta_MB_per_draft_step": 584.9047,
     "published_cost_pct": 10.4873,
-    "break_even_acceptance_points": 3.9277,
+    "break_even_acceptance_points": 10.3907,
     "us_per_round_at_roofline": 4520.4,
     "modelled_ranked_round_us": 43114.0,
     "per_matrix": {

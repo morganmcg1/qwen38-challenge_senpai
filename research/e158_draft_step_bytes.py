@@ -41,7 +41,14 @@ BYTES_PER_PARAM_4BIT_G64 = 4 / 8 + 2 * 2 / 64
 
 # harness=ranked exchange rates, assignment "Baselines" block.
 PCT_PER_MB_PER_DRAFT_STEP = 0.01793
-PCT_PER_ACCEPTANCE_POINT = 2.6701
+# Repriced by E158 R1 F6. The old 2.6701 came from a regression that let the
+# schedule move, so it charged a depth change to acceptance and overstated the
+# rate 2.65x. At a fixed schedule the rate is q / (1 + a), measured 1.0093
+# %/pt over [0.9688, 1.1016]; see research/e158-artifacts/f6-repricing.json.
+# This constant is a DENOMINATOR here, so the correction makes every byte
+# increase 2.65x harder to justify.
+PCT_PER_ACCEPTANCE_POINT = 1.0093
+PCT_PER_ACCEPTANCE_POINT_RANGE = (0.9688, 1.1016)
 MEAN_DRAFT_STEPS_PER_ROUND = 4.382
 ROOFLINE_BYTES_PER_SECOND = 567e9
 MODELLED_RANKED_ROUND_US = 43_114.0

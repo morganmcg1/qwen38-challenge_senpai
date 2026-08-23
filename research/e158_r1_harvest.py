@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import statistics
 import sys
@@ -224,7 +225,44 @@ def sweep_legs() -> list[dict]:
     return legs
 
 
+RSS_TRACE = pathlib.Path(
+    os.environ.get(
+        "E158_RSS_TRACE",
+        pathlib.Path.home().parent / "state/e158-f8-rss/rss-trace.txt",
+    )
+)
+
+
+def rss_samples() -> list[tuple[str, int]]:
+    """(utc_stamp, rss_kb) from the external F8 sampler, or []."""
+    if not RSS_TRACE.is_file():
+        return []
+    out = []
+    for line in RSS_TRACE.read_text().splitlines():
+        parts = line.split()
+        if len(parts) == 3 and parts[2].isdigit():
+            out.append((parts[0], int(parts[2])))
+    return out
+
+
+def peak_rss_gb(samples, started: str | None, finished: str | None):
+    """Peak worker RSS inside one leg's [started, finished] window.
+
+    `Memory.peakMemory` is only reachable through the worker's
+    phase_diagnostics request and QwenRuntimeMTPDriver never issues it, so no
+    harness field carries this. The sampler runs across the whole session, so
+    its cost is matched across arms and cancels in every contrast.
+    """
+    if not samples or not started or not finished:
+        return None, 0
+    window = [kb for stamp, kb in samples if started <= stamp <= finished]
+    if not window:
+        return None, 0
+    return round(max(window) / 1048576.0, 3), len(window)
+
+
 def gated_legs() -> list[dict]:
+    samples = rss_samples()
     legs = []
     for slot, arm in enumerate(ARMS, start=1):
         out = ROOT / "research/out" / f"e158r1g-{slot}-{arm}"
@@ -240,6 +278,9 @@ def gated_legs() -> list[dict]:
         a = q * metrics["accepted_draft_rate"]
         tokens = metrics["decode_tokens"]
         rounds = tokens / (1.0 + a)
+        rss_gb, rss_n = peak_rss_gb(
+            samples, meta.get("started"), meta.get("finished")
+        )
         legs.append(
             {
                 "session": "gated",
@@ -257,10 +298,9 @@ def gated_legs() -> list[dict]:
                 "accepted_draft_total_derived": rounds * a,
                 "seconds_per_round_R": metrics["mtp_seconds_per_token"]
                 * (1.0 + a),
-                "peak_ram_gb": metrics.get("peak_ram_gb"),
-                "process_resident_memory_gb": metrics.get(
-                    "process_resident_memory_gb"
-                ),
+                "worker_peak_rss_gb": rss_gb,
+                "worker_peak_rss_samples": rss_n,
+                "worker_peak_rss_source": "external-ps-sampler-2s",
                 "non_drafting_round_count": metrics.get(
                     "non_drafting_round_count"
                 ),
@@ -623,6 +663,19 @@ def main() -> int:
                     f"qwen-mtp-island-arm: {leg['arm']} "
                 )
                 for leg in gated
+            ),
+            "worker_peak_rss_gb": abba(gated, "worker_peak_rss_gb"),
+            "worker_peak_rss_max_gb": max(
+                (
+                    leg["worker_peak_rss_gb"]
+                    for leg in gated
+                    if leg["worker_peak_rss_gb"] is not None
+                ),
+                default=None,
+            ),
+            "worker_peak_rss_source": "external-ps-sampler-2s",
+            "head_provenance_sha256_unique": sorted(
+                {leg["head_provenance_sha256"] for leg in gated}
             ),
         }
 
