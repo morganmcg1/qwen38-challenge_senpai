@@ -60176,3 +60176,174 @@ advisor branch               2e04432d
 budget headroom, crown base  about 112,900 of 262,144 bytes
 ```
 
+
+---
+
+## 322 — FINDING 290, we ship our instruments; RULE 165, port the mechanism and not its instrument
+
+Date 2026-08-23. Advisor. Zero GPU. Source inspection only, no measurement.
+
+### 322.1 What I found while building the parity archive
+
+To build the crown-parity candidate I had to enumerate every symbol our
+submitted surface carries that the crown's surface does not. Most of that list
+is mechanism: the cluster QMV family promoted at `623e77a` (3.52085227), the
+tier-kernel tables, the E141 rows-per-leaf plumbing. Those earn their bytes.
+
+A second group is not mechanism. It is research instrumentation that we wrote
+to answer a question, that answered it, and that then rode into the scored
+archive because it lived in the same file as the mechanism:
+
+```
+notePipeline  noteLaunch  noteProbe  flushPipelineLog  pipelineLogPath
+pipelineKeys  pipelineKeyFirstIndex  pipelineWidths  pipelineDispatches
+planWitness  renderPlan  routedWidths
+defaultGridWitness  defaultProbeWitness  defaultRouteWitness
+```
+
+`noteLaunch` and `noteProbe` take integers. Calling them with the log disabled
+costs an untaken branch. They are fine.
+
+`notePipeline` is not fine.
+
+### 322.2 The defect
+
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`
+
+```
+:2155   private static let pipelineLogPath = ProcessInfo.processInfo
+                              .environment["MLX_E120_QMV_PIPELINE_LOG"]
+:2209   static func notePipeline(_ key: String, width: Int?) {
+:2210       guard pipelineLogPath != nil else { return }
+```
+
+The guard is *inside the callee*. Swift evaluates arguments at the call site
+before the call. So the early return saves the body and saves nothing else.
+
+Three of the five call sites build an interpolated `String`:
+
+```
+:2402   notePipeline("qmv_sums_v2/USE_TABLE=\(consume)",        width: cell.m)
+:2409   notePipeline("qmv_sums_na\(tier)_v2/USE_TABLE=\(consume)", width: cell.m)
+:2461   notePipeline("qmv_wide_na\(tier)_v2",                    width: cell.m)
+```
+
+Each of those is an allocation, an interpolation, and a release, on the scored
+dispatch path, in every scored run, to produce a string that is discarded
+one frame later. `:2366` and `:2454` pass string literals; small-string
+literals are free.
+
+`pipelineLogPath` is a `static let` read once from the environment.
+`MLX_E120_QMV_PIPELINE_LOG` is unset in every scored run and in every ranked
+run. The value is nil one hundred percent of the time on the scored path.
+
+### 322.3 Size of it — INFERENCE ONLY
+
+I have not measured this. The number below is arithmetic on counted dispatches
+and a literature range for Swift string interpolation cost, and it is recorded
+as an inference so that nobody later mistakes it for evidence.
+
+```
+QMV consumer dispatches per round     about 257   (E120 census)
+interpolating call sites hit                 2-3 of 257 paths, all consumers
+cost per interpolate+alloc+release      40 - 200 ns   (range, not measured)
+per round                              10.3 - 51.4 us
+round budget, clean                    8,434 + 5,657 x rows us   (FINDING 286)
+Rule 134                               524.5 us/round per 1 %
+
+published effect        +0.025 %  to  +0.122 %,  point about +0.049 %
+```
+
+The 2 sigma ranked MDE is 0.1547 pp. So the whole thing sits under the noise
+floor of a single official run. It is not a candidate on its own and I am not
+going to spend a slot on it.
+
+It is still worth fixing, because the fix is free:
+
+```swift
+static func notePipeline(_ key: @autoclosure () -> String, width: Int?) {
+    guard pipelineLogPath != nil else { return }
+    let key = key()
+    ...
+```
+
+Bit-exact. No behaviour change. Negative byte delta. It rides along with the
+next candidate that touches the file, and it never gets its own experiment.
+
+### 322.4 The one that is *not* a defect
+
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1857-1889` writes a
+per-round trace. It is wrapped:
+
+```swift
+if Self.traceRounds {
+    ...
+}
+```
+
+The guard is at the call site, so nothing is constructed when tracing is off.
+That is the correct shape, and it is the shape `notePipeline` should have had.
+Two instruments, written weeks apart, one right and one wrong, in the same
+submitted surface. That asymmetry is the whole reason this needs a rule
+rather than a fix.
+
+### 322.5 RULE 165
+
+> When you port a mechanism onto a new base, port the mechanism and not its
+> instrument.
+>
+> For every symbol you carry across, state whether it is mechanism or
+> instrument. Mechanism changes the tokens or the time. An instrument only
+> observes. An instrument may enter the submitted surface only if it is
+> switched off *at the call site*, not inside the callee, so that the disabled
+> path constructs nothing.
+
+Corollaries, all of which this campaign has now violated at least once:
+
+- A `guard` on the first line of a logging function is not an off-switch. It
+  is an off-switch for the body only. The arguments were already built.
+- An instrument that survived because it shares a file with a mechanism was
+  not a decision. It was an accident. Name it in the port list and decide.
+- The cheapest time to delete an instrument is the moment it has answered its
+  question. The most expensive time is never.
+
+### 322.6 Why this matters more than 0.049 %
+
+Two reasons, neither of them the number.
+
+First, we are about to re-found the campaign branch on the crown surface and
+re-apply our still-novel mechanisms. That port is exactly the operation RULE
+165 governs. Doing it without the rule means carrying `notePipeline`,
+`planWitness`, `renderPlan`, and `flushPipelineLog` into the next generation
+of the candidate for no reason at all. Doing it with the rule means the ported
+surface is mechanism-only, which also buys back bytes on a base whose headroom
+I have just had to correct upward to about 112,900.
+
+Second, it is a worked example of a failure mode this campaign is structurally
+prone to. We reward finding things. We do not reward removing the apparatus we
+used to find them. Every experiment that lands adds a little observability
+debt to the scored path, each increment is individually under the MDE, and
+none of them is ever individually worth a slot. That is precisely the shape of
+a cost that accumulates unmeasured. The rule is the only defence, because by
+construction no single measurement will ever justify the cleanup.
+
+### 322.7 Actions
+
+- No experiment assigned. This is not worth a GPU slot and I am not going to
+  pretend otherwise.
+- Folded into the re-founding port plan as a required step: the port list must
+  be labelled mechanism/instrument per symbol before any of it is written.
+- The `@autoclosure` fix rides with the next candidate that already touches
+  `Qwen35.swift`. Most likely that is thorfinn's leaf16 port or the re-founding
+  commit itself.
+
+### 322.8 State, unchanged from 321.6
+
+```
+THE BAR                      ec24d59    3.72911001   src 0863b06a
+our best official row        0cf1637e   3.68278758   tree e09d6aa7
+gap                                     0.04632 absolute = +1.2578 %
+in flight                    5a9f130a   crown parity, validating
+advisor branch               6858079e
+```
+
