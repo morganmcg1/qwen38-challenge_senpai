@@ -47,6 +47,227 @@ def table(columns, rows):
     return wandb.Table(columns=list(columns), data=[list(r) for r in rows])
 
 
+def log_r5(run, summary: dict, r5: dict) -> None:
+    """R5: what the ranked instrument can and cannot decide.
+
+    `harness=ranked` throughout except where a key says `replay`. R5 holds no
+    GPU and produces no local timing: it reads three published receipts and
+    one replayed design matrix.
+    """
+    prefill = r5["local_seed_prefill"]
+    summary["e145_local_seed_prefill_seconds"] = prefill["mean_seconds"]
+    summary["e145_local_seed_prefill_median_seconds"] = \
+        prefill["median_seconds"]
+    summary["e145_local_seed_prefill_spread_pct"] = prefill["spread_pct"]
+    summary["e145_local_seed_prefill_legs"] = prefill["legs"]
+
+    bar = r5["board_rows"]["bar"]["per_prompt"]
+    ranked_prefill = sorted(v["prefill_s"] for v in bar.values())
+    summary["e145_ranked_seed_prefill_seconds"] = ranked_prefill[
+        len(ranked_prefill) // 2]
+    summary["e145_local_over_ranked_prefill_factor"] = (
+        prefill["mean_seconds"]
+        / summary["e145_ranked_seed_prefill_seconds"])
+
+    a_rows = r5["r5a"]
+    for prompt, row in a_rows.items():
+        summary["e145_r5_pb6_round_ratio_%s" % prompt] = row["round_ratio"]
+        summary["e145_r5_pb6_drafting_rounds_ranked_%s" % prompt] = \
+            row["ranked_drafting_rounds_pb6"]
+        summary["e145_r5_accept_rate_shift_pb6_%s" % prompt] = \
+            row["accept_rate_shift_pb6"]
+    summary["e145_r5_closed_form_worst_round_error"] = \
+        r5["r5a_worst_model_minus_pinned_rounds"]
+    summary["e145_r5_worst_rounds_shift_from_accept_pct"] = \
+        r5["r5a_worst_rounds_pb6_shift_pct"]
+    summary["e145_r5_inversion_survives_accept_shift"] = \
+        r5["r5a_inversion_survives_accept_shift"]
+    summary["e145_r5_inversion_prompts"] = \
+        ",".join(r5["r5a_inversion_prompts"])
+    run.log({"r5a_round_model": table(
+        ["prompt", "ship_draft_len", "pb6_draft_len", "model_rounds_ship",
+         "pinned_rounds_ship", "round_ratio", "accept_rate_shift_pb6",
+         "rounds_pb6_shift_pct", "ranked_drafting_rounds_pb6",
+         "receipt_drafting_share_pb6", "replay_drafting_share_pb6"],
+        [[p, r["ship_draft_len"], r["pb6_draft_len"], r["model_rounds_ship"],
+          r["f92_pinned_rounds_ship"], r["round_ratio"],
+          r["accept_rate_shift_pb6"], r["rounds_pb6_shift_pct"],
+          r["ranked_drafting_rounds_pb6"], r["receipt_drafting_share_pb6"],
+          r["replay_drafting_share_pb6"]]
+         for p, r in sorted(a_rows.items())])})
+
+    lattice = r5["r5b_lattice"]
+    at1 = lattice["1"]
+    summary["e145_r5_pb6_corrected_5weighted_pct"] = at1["total_five_mean_pct"]
+    summary["e145_r5_pb6_corrected_5rankedweighted_pct"] = \
+        at1["total_five_weighted_pct"]
+    summary["e145_r5_pb6_corrected_medianpair_pct"] = \
+        at1["corrected_median_pct"]
+    summary["e145_r5_pb6_raw_medianpair_pct"] = \
+        lattice["0"]["corrected_median_pct"]
+    summary["e145_r5_pb6_raw_7mean_decode_pct"] = \
+        lattice["0"]["decode_seven_mean_pct"]
+    for prompt in a_rows:
+        summary["e145_r5_closure_predicted_pb6_effect_pct_%s" % prompt] = \
+            r5["r5b_closure_measured_curve"]["per_prompt"][prompt][
+                "decode_pct"]
+        summary["e145_r5_pb6_observed_s1_decode_pct_%s" % prompt] = \
+            at1["per_prompt"][prompt]["decode_pct"]
+    summary["e145_r5_drama_control_step_count"] = \
+        r5["r5b_drama_control"]["steps"]
+    summary["e145_r5_travel_control_step_count"] = \
+        r5["r5b_travel_control"]["steps"]
+    summary["e145_r5_free_fit_step_count"] = r5["r5b_free_fit"]["steps"]
+    summary["e145_r5_free_fit_us_per_drafting_round"] = \
+        r5["r5b_free_fit"]["us_per_drafting_round"]
+    summary["e145_r5_free_fit_sd_from_zero_delta_step"] = \
+        r5["r5b_free_fit"]["sd_from_zero_delta_step"]
+    summary["e145_r5_free_fit_residual_pp"] = \
+        r5["r5b_free_fit"]["rms_residual_pp"]
+    summary["e145_r5_pb6_state_steps_best"] = r5["r5b_control_mean_steps"]
+    summary["e145_r5_state_steps_low"] = r5["r5b_step_reading_low"]
+    summary["e145_r5_state_steps_high"] = r5["r5b_step_reading_high"]
+    summary["e145_r5_score_pct_at_low_steps"] = \
+        r5["r5b_score_pct_at_low_reading"]
+    summary["e145_r5_score_pct_at_high_steps"] = \
+        r5["r5b_score_pct_at_high_reading"]
+    summary["e145_r5_score_pct_at_travel_steps"] = \
+        r5["r5b_score_pct_at_travel_reading"]
+    summary["e145_r5_score_sign_change_state_steps"] = \
+        r5["r5b_sign_change_state_steps"]["corrected_median_pct"]
+    summary["e145_r5_pb6_verdict"] = r5["r5b_verdict"]
+    summary["e145_r5_pb6_verdict_robust_to_travel"] = \
+        r5["r5b_verdict_robust_to_travel"]
+    run.log({"r5b_state_step_lattice": table(
+        ["state_steps", "mean7_decode_pct", "mean5_decode_pct",
+         "mean5_ranked_weighted_pct", "total5_leg_pct",
+         "total5_ranked_weighted_pct", "median_pair_score_pct"],
+        [[float(s), v["decode_seven_mean_pct"], v["decode_five_mean_pct"],
+          v["decode_five_weighted_pct"], v["total_five_mean_pct"],
+          v["total_five_weighted_pct"], v["corrected_median_pct"]]
+         for s, v in sorted(lattice.items(), key=lambda kv: float(kv[0]))])})
+    run.log({"r5b_closure_gap": table(
+        ["prompt", "replayer_predicted_decode_pct", "observed_s1_decode_pct",
+         "gap_pp"],
+        [[p,
+          r5["r5b_closure_measured_curve"]["per_prompt"][p]["decode_pct"],
+          at1["per_prompt"][p]["decode_pct"],
+          r5["r5b_closure_measured_curve"]["per_prompt"][p]["decode_pct"]
+          - at1["per_prompt"][p]["decode_pct"]]
+         for p in sorted(a_rows)])})
+
+    headline = r5["r5c_solves"][r5["r5c_headline"]]
+    for width, value in sorted(headline["curve_us"].items(),
+                               key=lambda kv: int(kv[0])):
+        summary["e145_r5_ranked_curve_us_%s" % width] = value
+        summary["e145_r5_ranked_curve_sd_board_us_%s" % width] = \
+            headline["jitter"]["curve_sd_us"][str(width)]
+        summary["e145_r5_ranked_curve_sd_design_us_%s" % width] = \
+            headline["design_jitter"]["curve_sd_us"][str(width)]
+    summary["e145_r5_ranked_cliff_boundary"] = r5["r5c_ranked_cliff_boundary"]
+    summary["e145_r5_ranked_runner_up_boundary"] = \
+        r5["r5c_ranked_runner_up_boundary"]
+    summary["e145_r5_ranked_cliff_margin_us"] = \
+        r5["r5c_ranked_cliff_margin_us"]
+    summary["e145_r5_local_cliff_boundary"] = r5["r5c_local_cliff_from_width"]
+    summary["e145_r5_ranked_vs_local_cliff_moved"] = \
+        r5["r5c_ranked_vs_local_cliff_moved"]
+    summary["e145_r5_ranked_curve_rms_residual_us"] = \
+        headline["rms_residual_us"]
+    summary["e145_r5_ranked_curve_relative_rms_pct"] = \
+        headline["relative_rms_pct"]
+    summary["e145_r5_ranked_curve_condition_number"] = \
+        headline["condition_number"]
+    summary["e145_r5_ranked_curve_equations"] = headline["equations"]
+    summary["e145_r5_ranked_curve_unknowns"] = headline["unknowns"]
+    summary["e145_r5_unidentified_widths"] = \
+        ",".join(str(w) for w in r5["r5c_unidentified_widths"]) or "none"
+    summary["e145_r5_our_tree_vs_bar_level_pct"] = \
+        r5["r5c_our_tree_vs_bar_level_pct"]
+    summary["e145_r5_cliff_share_board_noise"] = json.dumps(
+        headline["jitter"]["cliff_boundary_share"], sort_keys=True)
+    summary["e145_r5_cliff_share_replayed_design"] = json.dumps(
+        headline["design_jitter"]["cliff_boundary_share"], sort_keys=True)
+    summary["e145_r5_widths_where_design_beats_board_noise"] = ",".join(
+        str(w) for w in r5["r5c_widths_where_design_beats_board_noise"])
+    # The cliff is identified only when the replayed design matrix agrees with
+    # itself across seeds. Board noise alone says it does; the design says it
+    # does not, and the design is the larger term.
+    summary["e145_r5_ranked_cliff_is_identified"] = max(
+        headline["design_jitter"]["cliff_boundary_share"].values()) >= 0.95
+    run.log({"r5c_ranked_curve": table(
+        ["variant", "width", "round_us"],
+        [[name, int(w), v]
+         for name, sol in sorted(r5["r5c_solves"].items())
+         for w, v in sorted(sol["curve_us"].items(),
+                            key=lambda kv: int(kv[0]))])})
+    run.log({"r5c_solve_quality": table(
+        ["variant", "rms_residual_us", "relative_rms_pct", "condition_number",
+         "cliff_boundary", "runner_up_boundary", "cliff_margin_us"],
+        [[name, sol["rms_residual_us"], sol["relative_rms_pct"],
+          sol["condition_number"], sol["cliff_boundary"],
+          sol["runner_up_boundary"], sol["cliff_margin_us"]]
+         for name, sol in sorted(r5["r5c_solves"].items())])})
+    run.log({"r5c_ranked_round_cost": table(
+        ["prompt", "bar_us", "ship_us", "pb6_us", "pb6_state_corrected_us"],
+        [[p, r5["r5c_cost_per_round_us"]["bar"][p],
+          r5["r5c_cost_per_round_us"]["ship"][p],
+          r5["r5c_cost_per_round_us"]["pb6"][p],
+          r5["r5c_cost_per_round_us"]["pb6_corrected"][p]]
+         for p in sorted(a_rows)])})
+
+    summary["e145_r5_base_ships_pb6"] = r5["r5d_base_ships_pb6"]
+    summary["e145_r5_base_default_arm"] = r5["r5d_base_default_arm"]["arm"]
+    summary["e145_r5_base_default_arm_line"] = "%s:%d" % (
+        r5["r5d_base_default_arm"]["file"], r5["r5d_base_default_arm"]["line"])
+    summary["e145_r5_design_matrix_reads_no_cost_curve"] = \
+        r5["design_matrix_curve_independence_max_diff"] <= 1e-12
+    summary["e145_r5_identification_caveat"] = r5["identification_caveat"]
+    summary["e145_r5_state_step_us"] = r5["state_step_us"]
+    summary["e145_r5_state_step_sd_us"] = r5["state_step_sd_us"]
+    summary["e145_r5_state_step_n"] = r5["state_step_n"]
+    summary["e145_r5_gpu_used"] = r5["gpu_used"]
+
+
+def log_r6_0(run, summary: dict, r6: dict) -> None:
+    """R6-0: the decode state priced against the wired residency slack.
+
+    `harness=local`, zero GPU. Every byte count is read from the pinned
+    checkpoint config on disk and from the allocation shapes the scored
+    session executes, then cross-checked against the source literals.
+    """
+    for key, value in r6.items():
+        if key.startswith("e145_r6_"):
+            summary[key] = value
+    summary["e145_r6_config_path"] = r6["config_path"]
+    summary["e145_r6_shapes_match_source"] = (
+        r6["source_shape_crosscheck"]["recurrent_matches_source"]
+        and r6["source_shape_crosscheck"]["conv_matches_source"]
+    )
+    for key, value in r6["residency_contract"].items():
+        summary["e145_r6_%s" % key] = value
+
+    mib = 1 << 20
+    run.log({"r6_0_decode_state": table(
+        ["component", "bytes", "mib", "over_slack"],
+        [[name, value, value / mib, value / r6["e145_r6_wired_slack_bytes"]]
+         for name, value in [
+             ("full_attention_kv_at_1024", r6["e145_r6_kv_bytes_at_1024"]),
+             ("gdn_recurrent", r6["e145_r6_gdn_state_bytes"]),
+             ("gdn_convolution", r6["e145_r6_conv_state_bytes"]),
+             ("persistent_total", r6["e145_r6_total_decode_state_bytes"]),
+             ("per_round_gdn_snapshot", r6["e145_r6_gdn_snapshot_bytes"]),
+             ("round_peak", r6["e145_r6_round_peak_decode_state_bytes"]),
+             ("wired_slack", r6["e145_r6_wired_slack_bytes"]),
+         ]])})
+    run.log({"r6_0_kv_growth": table(
+        ["at_offset_tokens", "old_capacity_tokens", "new_capacity_tokens",
+         "concatenate_live_bytes", "result_plus_old_bytes"],
+        [[e["at_offset"], e["old_capacity_tokens"], e["new_capacity_tokens"],
+          e["concatenate_live_bytes"], e["result_plus_old_bytes"]]
+         for e in r6["kv_capacity_walk"]["aligned_walk_events"]])})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", default="e145-live-width-cost-curve")
@@ -62,6 +283,8 @@ def main() -> int:
     r4m = load("r4-measured.json")
     r4r = load("r4-replayed.json")
     cross = load("r4-cross.json")
+    r5 = load("r5.json")
+    r6_0 = load("r6-0.json")
     if curve is None or legs_blob is None or r1 is None:
         raise SystemExit("the curve, the legs and R1 must all be present")
     legs = legs_blob["legs"]
@@ -361,14 +584,23 @@ def main() -> int:
             cross["replayed_believed_gain_pp"]
         summary["e145_replayed_cell_true_gain_pp"] = \
             cross["replayed_cell_true_gain_pp"]
+        summary["e145_measured_best_over_shipped_pp"] = \
+            cross["measured_best_over_shipped_pp"]
         # The headline claim of the experiment: the whole consequence of the
-        # replayed curve being wrong is smaller than the noise floor the F4
-        # null control established for this same measurement system.
+        # replayed curve being wrong is resolvable on this bench and invisible
+        # on the board. Both comparisons are published so neither can be read
+        # without the other.
         if noise_floor is not None:
             summary["e145_regret_below_noise_floor"] = \
                 abs(cross["regret_pp"]) < noise_floor
             summary["e145_regret_over_noise_floor_ratio"] = \
                 abs(cross["regret_pp"]) / noise_floor
+
+    if r5 is not None:
+        log_r5(run, summary, r5)
+
+    if r6_0 is not None:
+        log_r6_0(run, summary, r6_0)
 
     run.log({"timed_legs": table(
         ["slot", "fixture", "arm", "pin", "position", "rounds",
