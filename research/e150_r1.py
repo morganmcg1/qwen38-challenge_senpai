@@ -47,6 +47,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import pathlib
 import random
@@ -57,6 +58,8 @@ import numpy as np
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import e128_price  # noqa: E402
+import e128_replay  # noqa: E402
 import e150_lib  # noqa: E402
 from e128_price import RANKED_PROMPTS  # noqa: E402
 from e128_replay import MAX_DEPTH  # noqa: E402
@@ -324,6 +327,44 @@ def pearson(a, b) -> float:
 
 # -------------------------------------------------------------------- arms
 
+def pooled_level() -> dict:
+    """The measured level bias E128 fitted, reused unchanged."""
+    rows = {row["prompt_id"]: row for row in json.loads(
+        (HERE / "e128-artifacts" / "jensen-and-sign.json").read_text()
+    )["hypothesis_j"]}
+    return e128_price.pooled_level(
+        rows, e128_price.RANKED_PROMPTS["beagle"]["fixture"])
+
+
+def e128_walker(arm: str, level: dict):
+    """The published four-line E128 adapter, so R0 arms replay identically."""
+    policy = e128_price.make_policy(arm, level=level)
+
+    def chooser(ema, margin, offer, adjust=None, ctx=None, force=None,
+                price=None):
+        return policy(ema, margin, offer, ctx["capability"])
+
+    return lambda seed, prompt, entry: chooser
+
+
+def composed_walker(level: dict):
+    """`rankedprice` x `expectedonly`: swap the price table AND debias the
+    level term in one policy. R0 scored these two separately; the advisor
+    asked whether they compose, because they correct different halves of the
+    same first-break test -- `rankedprice` fixes what a step costs and
+    `expectedonly` fixes what a step is expected to return."""
+    marginal, cumulative = e128_price.ranked_price_table()
+    gamma = level["gamma"]
+
+    def chooser(ema, margin, offer, adjust=None, ctx=None, force=None,
+                price=None):
+        return e128_replay.cost_model_depth(
+            ema, margin, offered_depth=offer, expected_gain=gamma,
+            marginal=marginal, cumulative=cumulative)[0]
+
+    return lambda seed, prompt, entry: chooser
+
+
 def price_predictor(env, models, rung: str, rule: str, clamp,
                     tally: ErrorTally | None = None, fixed_lam=None) -> dict:
     def make(seed, prompt, entry):
@@ -577,6 +618,56 @@ def main() -> int:
               % (name, row["median_pct_mean"], row["median_pct_sd"],
                  row["weighted_mean_depth"]))
     arms.update(ratio_arms)
+
+    # ---------------------------------- R0 follow-up: do the two E128 fixes
+    # compose? R0 repriced every E128 arm on the measured curve and found
+    # exactly one that beat shipped, `expectedonly` at +0.3563. `rankedprice`
+    # corrects the other half of the same test. This block scores both alone
+    # and together inside R1's harness so all three share one env and one
+    # base run. All three keep the SHIPPED first-break rule and shipped
+    # information, so any gain here is orthogonal to R1's own reframe.
+    print("\n## R0 follow-up: rankedprice x expectedonly composition")
+    level = pooled_level()
+    compose = {}
+    for name, walker in (
+            ("e128_ship", e128_walker("ship", level)),
+            ("e128_expectedonly", e128_walker("expectedonly", level)),
+            ("e128_rankedprice", e128_walker("rankedprice", level)),
+            ("e128_rankedprice_x_expectedonly", composed_walker(level))):
+        compose[name] = score_arm(env, "measured", env.measured,
+                                  env.measured_price, walker)
+        print("  %-32s %+9.4f  sd %.4f  depth %.4f  inadm %.4f"
+              % (name, compose[name]["median_pct_mean"],
+                 compose[name]["median_pct_sd"],
+                 compose[name]["weighted_mean_depth"],
+                 compose[name]["frac_rounds_inadmissible"]))
+    compose_best = compose["e128_rankedprice_x_expectedonly"][
+        "median_pct_mean"]
+    compose_super = (
+        compose_best - compose["e128_ship"]["median_pct_mean"]
+        - (compose["e128_expectedonly"]["median_pct_mean"]
+           - compose["e128_ship"]["median_pct_mean"])
+        - (compose["e128_rankedprice"]["median_pct_mean"]
+           - compose["e128_ship"]["median_pct_mean"]))
+    print("  super-additive term %+0.4f pp ; composition beats the R1 "
+          "headline: %s"
+          % (compose_super, compose_best > arms["L4_ratio_noclamp"]
+             ["median_pct_mean"]))
+    # Control, and a load-bearing identity. `make_policy("ship")` and the env
+    # base run are the SAME first-break walk reading the SAME uniform belief
+    # table `1 + 0.18d`, which is what `makeUniformDepthPrice()` compiles in
+    # Swift. So this arm must return exactly zero, and it does. It follows
+    # that the published `+0.1338` shipped cell is not the deployed policy:
+    # it is the deployed rule holding a DIFFERENT price table. The gap below
+    # is the price-table swap priced on its own.
+    compose_control = abs(compose["e128_ship"]["median_pct_mean"])
+    swap_pp = R7_SHIPPED_PCT - compose["e128_ship"]["median_pct_mean"]
+    print("  control |e128_ship - env base| %.3e  (must be 0)"
+          % compose_control)
+    print("  price-table swap alone %+0.4f pp : the published +%.4f shipped "
+          "cell is the shipped RULE on a swapped TABLE, not what compiles"
+          % (swap_pp, R7_SHIPPED_PCT))
+    checks["e128_ship_equals_env_base"] = compose_control < 1e-9
 
     # The headline is the best DEPLOYABLE arm, not the best arm. Deployable
     # means: full pre-draft information, a rule the scored path can evaluate
@@ -839,6 +930,26 @@ def main() -> int:
                 "weighted_accept_rate": row["weighted_accept_rate"],
             } for name, row in ratio_arms.items()
         },
+        "e150_r0_composition_arms": {
+            name: {
+                "median_pct": row["median_pct_mean"],
+                "median_pct_sd": row["median_pct_sd"],
+                "weighted_mean_depth": row["weighted_mean_depth"],
+                "frac_rounds_inadmissible": row["frac_rounds_inadmissible"],
+                "width_histogram": row["width_histogram"],
+                "weighted_accept_rate": row["weighted_accept_rate"],
+            } for name, row in compose.items()
+        },
+        "e150_r0_composition_pct": compose_best,
+        "e150_r0_composition_over_shipped_pp": (
+            compose_best - compose["e128_ship"]["median_pct_mean"]),
+        "e150_r0_composition_super_additive_pp": compose_super,
+        "e150_r0_composition_beats_headline": bool(
+            compose_best > arms["L4_ratio_noclamp"]["median_pct_mean"]),
+        "e150_r0_composition_control_pp": compose_control,
+        "e150_r0_composition_control_passed": bool(compose_control < 1e-9),
+        "e150_shipped_cell_price_table_swap_pp": swap_pp,
+        "e150_shipped_cell_is_price_table_swap": bool(compose_control < 1e-9),
         "e150_ratio_over_argmax_pp": (
             ratio_arms["L4_ratio_noclamp"]["median_pct_mean"] - primary),
         "e150_ratio_truth_ceiling_pp":
