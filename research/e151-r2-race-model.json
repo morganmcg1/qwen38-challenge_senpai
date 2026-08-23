@@ -1,0 +1,586 @@
+{
+ "e151_r2_control_defeat_double_buffer_caught": true,
+ "e151_r2_control_drop_per_iteration_barrier_caught": true,
+ "e151_r2_control_drop_pre_store_barrier_caught": true,
+ "e151_r2_control_prologue_before_last_read_caught": true,
+ "e151_r2_race_model_pass": true,
+ "e151_r2_race_model_required_fields": [
+  "e151_r2_shipped_ordering_race_free",
+  "e151_r2_shipped_staging_values_correct",
+  "e151_r2_scored_shapes_single_tile_per_threadgroup",
+  "e151_r2_control_drop_per_iteration_barrier_caught",
+  "e151_r2_control_defeat_double_buffer_caught",
+  "e151_r2_control_drop_pre_store_barrier_caught",
+  "e151_r2_control_prologue_before_last_read_caught",
+  "e151_r2_single_buffered_model_race_free",
+  "e151_r2_single_buffered_control_caught"
+ ],
+ "e151_r2_race_model_rows": [
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 16480,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 4760,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": true,
+   "from_scored_shape_table": true,
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 2064,
+   "required_tiles": 2060,
+   "shape": "gdn.in_proj",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 14336,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 4760,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": true,
+   "from_scored_shape_table": true,
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 1792,
+   "required_tiles": 1792,
+   "shape": "fa.qkv",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 34816,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 4760,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": true,
+   "from_scored_shape_table": true,
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 4352,
+   "required_tiles": 4352,
+   "shape": "mlp.gate_up",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 248320,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 4760,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": false,
+   "from_scored_shape_table": true,
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 31040,
+   "required_tiles": 31040,
+   "shape": "lm_head",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 6144,
+   "M": 512,
+   "N": 5120,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 95,
+     "stale_reads": 96
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 6864,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": true,
+   "from_scored_shape_table": true,
+   "k_tiles": 96,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 640,
+   "required_tiles": 640,
+   "shape": "gdn.out_proj",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 6144,
+   "M": 512,
+   "N": 5120,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 95,
+     "stale_reads": 96
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 6864,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": true,
+   "from_scored_shape_table": true,
+   "k_tiles": 96,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 640,
+   "required_tiles": 640,
+   "shape": "fa.o_proj",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 17408,
+   "M": 512,
+   "N": 5120,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 271,
+     "stale_reads": 272
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 55352,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": true,
+   "from_scored_shape_table": true,
+   "k_tiles": 272,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 640,
+   "required_tiles": 640,
+   "shape": "mlp.down",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 64,
+   "N": 512,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 158,
+     "stale_reads": 160
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 9520,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    }
+   },
+   "evaluated_in_scored_seed_prefill": false,
+   "from_scored_shape_table": false,
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 8,
+   "required_tiles": 16,
+   "shape": "synthetic.even_k.multitile.M64",
+   "tiles_per_threadgroup_max": 2
+  },
+  {
+   "K": 192,
+   "M": 64,
+   "N": 512,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 4,
+     "stale_reads": 6
+    },
+    "drop_per_iteration_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 12,
+     "stale_reads": 0
+    },
+    "drop_pre_store_barrier": {
+     "first_race": {
+      "epoch": 3,
+      "first": "R(k_tile=2)",
+      "half": 0,
+      "second": "W(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": {
+      "epoch": 3,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=2)"
+     },
+     "first_stale_read": {
+      "epoch": 3,
+      "found_k_tile": 0,
+      "half": 0,
+      "wanted_k_tile": 2
+     },
+     "races": 1,
+     "stale_reads": 1
+    }
+   },
+   "evaluated_in_scored_seed_prefill": false,
+   "from_scored_shape_table": false,
+   "k_tiles": 3,
+   "k_tiles_parity": "odd",
+   "launched_threadgroups": 8,
+   "required_tiles": 16,
+   "shape": "synthetic.odd_k.multitile.M64",
+   "tiles_per_threadgroup_max": 2
+  }
+ ],
+ "e151_r2_scored_shapes_single_tile_per_threadgroup": true,
+ "e151_r2_shipped_ordering_race_free": true,
+ "e151_r2_shipped_staging_values_correct": true,
+ "e151_r2_single_buffered_control_caught": true,
+ "e151_r2_single_buffered_model_race_free": true,
+ "experiment": "E151",
+ "harness": "offline",
+ "model": "threadgroup staging-half access trace over barrier epochs",
+ "rung": "R2",
+ "tile_boundary_note": "On every scored shape the grid-stride body runs at most once per threadgroup, so the tile-boundary hazard is unreachable there. The two tile-boundary controls therefore fire only on a synthetic multi-tile shape, and only when the k-tile count is odd. With an even k-tile count the staging halves at a tile boundary do not alias, so the pre-store barrier is not the only thing protecting it. All seven scored shapes have an even k-tile count.",
+ "why_not_executed": "is_nax_available() is false on every campaign Mac (Finding 250), so affine_qmm_t_nax never runs locally and no local exactness leg can observe a barrier removed from its k-loop"
+}
