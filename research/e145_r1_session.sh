@@ -37,7 +37,12 @@ source research/e145_lib.sh
 tokens="${1:-512}"
 shift || true
 fixtures=("$@")
-((${#fixtures[@]})) || fixtures=(beagle_a essays_montaigne benchfixture)
+# `benchfixture` runs FIRST because it is the positive control. It is the only
+# fixture with a published prior same-binary arm effect (E134 item 5b, `pb6`
+# 2.2467 % faster). If this rig cannot reproduce that number, no other fixture
+# it measures can be trusted, so the control must be able to stop the session
+# before the other fixtures spend GPU time.
+((${#fixtures[@]})) || fixtures=(benchfixture beagle_a essays_montaigne)
 
 for fixture in "${fixtures[@]}"; do
   golden=".mlxfast-private/e128/goldens/${fixture}-rows-$((tokens + 1)).json"
