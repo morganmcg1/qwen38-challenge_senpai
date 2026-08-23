@@ -30,6 +30,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import fractions
 import json
 import math
 import os
@@ -197,7 +198,17 @@ def main() -> None:
 
     # D-3. Rounds implied by the accepted-draft rate and the draft length.
     rounds = {p: DECODE_TOKENS / (1.0 + ACCEPT_RATE[p] * dlen[p]) for p in PROMPTS}
-    drafting_rounds = {p: rounds[p] - ndr[p] for p in PROMPTS}
+
+    # The receipt also carries the round count exactly, without the accept
+    # rates. `effective_mean_draft_len` is drafts over rounds, so the reduced
+    # denominator divides the round count. The closed form then selects which
+    # multiple, and the two are independent evidence.
+    exact_rounds, rounds_error = {}, {}
+    for p in PROMPTS:
+        q = fractions.Fraction(dlen[p]).limit_denominator(DECODE_TOKENS).denominator
+        exact_rounds[p] = max(1, round(rounds[p] / q)) * q
+        rounds_error[p] = rounds[p] - exact_rounds[p]
+    drafting_rounds = {p: float(exact_rounds[p] - ndr[p]) for p in PROMPTS}
 
     # D-2. Rule 133 decode-only comparison against the only public pb6 anchor.
     decode_ours = {p: (ours[p]["mtp_seconds_per_token_mean"]
@@ -271,12 +282,11 @@ def main() -> None:
         "implied_state_steps_all_prompts": statistics.fmean(all_steps),
         "state_steps_integer": float(all(integer_like)),
         "state_steps_integer_fraction": sum(integer_like) / len(integer_like),
-        # The residual is set by the three-decimal accepted-draft rates, so the
-        # tolerance is loose enough to absorb that rounding and nothing more.
-        "implied_rounds_are_integers": float(all(
-            abs(rounds[p] - round(rounds[p])) <= 0.05 for p in PROMPTS)),
-        "implied_rounds_max_integer_residual": max(
-            abs(rounds[p] - round(rounds[p])) for p in PROMPTS),
+        "exact_rounds_by_prompt": exact_rounds,
+        "rounds_closed_form_error_by_prompt": rounds_error,
+        "rounds_closed_form_max_error": max(abs(v) for v in rounds_error.values()),
+        "rounds_closed_form_reproduces_receipt": float(
+            max(abs(v) for v in rounds_error.values()) < 0.5),
         "corrected_decode_seconds_by_prompt": corrected,
         "corrected_decode_seconds_total": sum(corrected.values()),
         "decode_only_seconds_total": sum(decode_ours.values()),
@@ -306,7 +316,9 @@ def main() -> None:
     print("implied state step %.1f us  steps %.3f (median %.3f)  integer %.0f"
           % (out["implied_state_step_us"], out["implied_state_steps"],
              out["implied_state_steps_median"], out["state_steps_integer"]))
-    print("implied rounds are integers %.0f" % out["implied_rounds_are_integers"])
+    print("closed-form rounds reproduce the receipt %.0f, worst error %.3f rounds"
+          % (out["rounds_closed_form_reproduces_receipt"],
+             out["rounds_closed_form_max_error"]))
     print("wrote %s" % args.out)
 
 

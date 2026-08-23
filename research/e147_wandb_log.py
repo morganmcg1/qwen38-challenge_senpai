@@ -186,7 +186,9 @@ def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
         "e147_decode_only_seconds_total_anchor": receipt[
             "decode_only_seconds_total_anchor"],
         # D-3.
-        "e147_implied_rounds_are_integers": receipt["implied_rounds_are_integers"],
+        "e147_rounds_closed_form_max_error": receipt["rounds_closed_form_max_error"],
+        "e147_rounds_closed_form_reproduces_receipt": receipt[
+            "rounds_closed_form_reproduces_receipt"],
     }
     for prompt in receipt["prompt_order"]:
         metrics[f"e147_ranked_prefill_spt_{prompt}"] = receipt[
@@ -195,6 +197,10 @@ def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
         metrics[f"e147_ranked_raw_{prompt}"] = receipt["raw_ratio_by_prompt"][prompt]
         metrics[f"e147_implied_rounds_{prompt}"] = receipt[
             "implied_rounds_by_prompt"][prompt]
+        metrics[f"e147_exact_rounds_{prompt}"] = float(
+            receipt["exact_rounds_by_prompt"][prompt])
+        metrics[f"e147_rounds_closed_form_error_{prompt}"] = receipt[
+            "rounds_closed_form_error_by_prompt"][prompt]
         metrics[f"e147_decode_only_seconds_{prompt}"] = receipt[
             "decode_only_seconds_by_prompt"][prompt]
         step = receipt["implied_state_steps_by_prompt"][prompt]
