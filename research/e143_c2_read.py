@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import statistics
+import subprocess
 from pathlib import Path
 
 import e143_value
@@ -139,6 +140,34 @@ def main() -> None:
             raise SystemExit(
                 f"e143-c2: {entry['tag']} has no Rule 114 witness for arm "
                 f"{expected}: {entry['arm_witness']!r}")
+
+    # One identity tuple for the whole session. Only the arm may vary.
+    for field in ("worker_sha256", "cli_sha256", "metallib_source_fingerprint",
+                  "head_dir", "head_provenance_sha256", "host", "chip",
+                  "gate_qualified_for_timing", "dirty_candidate_paths",
+                  "decode_tokens"):
+        seen = {e.get(field) or read_meta(OUT / e["tag"]).get(field)
+                for e in legs}
+        if len(seen) != 1:
+            raise SystemExit(f"e143-c2: legs disagree on {field}: {sorted(seen)}")
+
+    # `base_sha` is `git rev-parse HEAD` at leg start, so a research-only commit
+    # between legs moves it without changing anything the legs measure. Accept
+    # that, but prove it: every path between the recorded commits must be
+    # research-only. The built worker and CLI digests above are the real
+    # identity and they are already required to be single-valued.
+    base_shas = sorted({read_meta(OUT / e["tag"])["base_sha"] for e in legs})
+    base_sha_diff: list[str] = []
+    for other in base_shas[1:]:
+        base_sha_diff += subprocess.run(
+            ["git", "diff", "--name-only", base_shas[0], other],
+            capture_output=True, text=True, check=True).stdout.split()
+    off_research = sorted(p for p in set(base_sha_diff)
+                          if not p.startswith("research/"))
+    if off_research:
+        raise SystemExit(
+            f"e143-c2: legs ran at different base commits {base_shas} whose "
+            f"diff touches non-research paths: {off_research}")
 
     # Rule 101 positive control. The witness reading is only informative if it
     # can come out negative, so run the same predicate against the arm the leg

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Log the E143 channel census to W&B.
 
-One run holds the whole R0 plus R1 record: the assignment's named metrics, the
+One run holds the whole E143 record: the assignment's named metrics, the
 per-carrier channel table, the arm S recall curve, the Rule 101 positive
-control dose-response, the arm F sigma sweep, and the two source JSON files as
-an artifact.
+control dose-response, the arm F sigma sweep, the C2 fork's live ABBA
+island-arm session, and the source JSON files as an artifact.
 
-Usage: research/e143_wandb.py [--name ...] [--offline]
+Usage: research/e143_wandb.py [--name ...] [--resume RUN_ID] [--c2 PATH]
+                              [--offline]
 """
 
 from __future__ import annotations
@@ -32,11 +33,16 @@ def git(*args: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="e143-r0r1-channel-census")
+    parser.add_argument("--resume", default=None,
+                        help="extend this existing run instead of creating one")
+    parser.add_argument("--c2", default=None,
+                        help="research/e143-c2.json from the live ABBA session")
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args()
 
     r0 = json.loads(R0.read_text())
     r1 = json.loads(R1.read_text())
+    c2 = json.loads(Path(args.c2).read_text()) if args.c2 else None
     carriers = r1["per_carrier"]
 
     config = {
@@ -106,14 +112,65 @@ def main() -> None:
             summary[f"e143_{name}_{tag}_events"] = entry[tag]["events"]
             summary[f"e143_{name}_{tag}_raw_ratio_pct"] = entry[tag]["raw_ratio_pct"]
 
-    run = wandb.init(project=PROJECT, entity=ENTITY, name=args.name,
-                     job_type="analysis",
-                     tags=["e143", "channel-census", "acceptance", "r0", "r1",
-                           "harness=local"],
-                     mode="offline" if args.offline else "online",
-                     config=config)
+    tags = ["e143", "channel-census", "acceptance", "r0", "r1", "harness=local"]
+    tables = {}
+    if c2:
+        config["stage"] = "R0+R1+C2"
+        config["c2_design"] = c2["design"]
+        config["c2_decode_tokens"] = c2["decode_tokens"]
+        config["c2_gate_qualified_for_timing"] = c2["legs"][0][
+            "gate_qualified_for_timing"]
+        tags += ["c2", "island-arm", "abba"]
+        summary.update({
+            "e143_c2_realised_acceptance_delta_pp":
+                c2["e143_c2_realised_acceptance_delta_pp"],
+            "e143_c2_realised_per_step_p_delta_pp":
+                c2["e143_c2_realised_per_step_p_delta_pp"],
+            "e143_c2_time_pct_of_candidate_leg":
+                c2["e143_c2_time_pct_of_candidate_leg"],
+            "e143_c2_ranked_pct": c2["e143_c2_ranked_pct"],
+            "e143_c2_replicate_spread_pct": c2["replicate_spread_pct"],
+            "e143_c2_verdict": c2["verdict"],
+            "e143_exactness_divergences": c2["e143_exactness_divergences"],
+            "e143_c2_all_tokens_matched": int(c2["all_tokens_matched"]),
+            "e143_c2_cross_arm_token_mismatches": sum(
+                v["token_mismatches"] for v in
+                c2["cross_arm_token_agreement"].values()),
+            "e143_c2_rule_101_control_passed":
+                int(c2["rule_101_wrong_arm_control_passed"]),
+        })
+        for arm, entry in c2["arm_summary"].items():
+            summary[f"e143_c2_{arm}_mtp_seconds_per_token"] = entry[
+                "mtp_seconds_per_token_mean"]
+            summary[f"e143_c2_{arm}_accepted_draft_rate"] = entry[
+                "accepted_draft_rate_mean"]
+            summary[f"e143_c2_{arm}_rounds"] = entry["rounds_mean"]
+            summary[f"e143_c2_{arm}_effective_mean_draft_len"] = entry[
+                "effective_mean_draft_len_mean"]
+        tables["c2_legs"] = wandb.Table(
+            columns=["tag", "arm", "arm_witness", "mtp_seconds_per_token",
+                     "serial_seconds_per_token", "mtp_decode_speedup", "rounds",
+                     "effective_mean_draft_len", "accepted_draft_rate",
+                     "per_step_p", "all_tokens_matched",
+                     "residual_divergence_count", "gpu_temp_entry_c",
+                     "gpu_temp_exit_c", "gate_qualified_for_timing"],
+            data=[[e["tag"], e["arm"], e["arm_witness"],
+                   e["mtp_seconds_per_token"], e["serial_seconds_per_token"],
+                   e["mtp_decode_speedup"], e["rounds"],
+                   e["effective_mean_draft_len"], e["accepted_draft_rate"],
+                   e.get("per_step_p"), int(e["all_tokens_matched"]),
+                   e["residual_divergence_count"], e["gpu_temp_entry_c"],
+                   e["gpu_temp_exit_c"], e["gate_qualified_for_timing"]]
+                  for e in c2["legs"]])
 
-    run.log({
+    init = dict(project=PROJECT, entity=ENTITY, name=args.name,
+                job_type="analysis", tags=tags,
+                mode="offline" if args.offline else "online", config=config)
+    if args.resume:
+        init.update(id=args.resume, resume="must")
+    run = wandb.init(**init)
+
+    tables.update({
         "positive_control": wandb.Table(
             columns=["extra_error_in_own_sigmas", "screen_loss_at_32",
                      "screen_loss_at_32_events", "coarse_rank_median"],
@@ -153,11 +210,14 @@ def main() -> None:
                    int(s["all_tokens_matched"]), s["residual_divergence_count"]]
                   for s in r0["seed_counters"]]),
     })
+    run.log(tables)
     run.summary.update(summary)
 
     artifact = wandb.Artifact("e143-channel-census", type="analysis")
     artifact.add_file(str(R0))
     artifact.add_file(str(R1))
+    if args.c2:
+        artifact.add_file(args.c2)
     run.log_artifact(artifact)
     print(f"e143-wandb: {run.url}")
     print(f"e143-wandb: run_id {run.id}")
