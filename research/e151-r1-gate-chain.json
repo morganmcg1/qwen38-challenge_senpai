@@ -1,0 +1,190 @@
+{
+ "arm_attribution": {
+  "e151_arm_is_local_output_neutral": true,
+  "e151_attribution_complete": true,
+  "e151_base_also_misses_pin": true,
+  "e151_leg_is_deterministic": true,
+  "experiment": "E151",
+  "harness": "local",
+  "legs": {
+   "e151x512basectl": {
+    "base_sha": "de8ce44c7bc133c3c6c079957240782664afd287",
+    "dirty_candidate_paths": "0",
+    "metallib_source_fingerprint": "0bf011e98d5436fd1d6b4da02d1034b4e5a478648b2c1fe0956142c2f31a7e37",
+    "rows": 1024,
+    "sha256": "d070b3978940ee13f5a3ce224f1ac56e8c105c87d8d12220c7c6256ec683e158",
+    "trace_rounds": "82",
+    "worker_sha256": "0169b47e6819e11273ec5dea1af8378ae586ae84e56c7345a49ae21cf169fd4c"
+   },
+   "e151x512cand": {
+    "base_sha": "58b415d4278d6f0637857bf5fbc4fb8e410b560a",
+    "dirty_candidate_paths": "0",
+    "metallib_source_fingerprint": "2f0bce81a4a6c8c60cbdf180ba071f93f69c516aea33fce26cb0d9b35bb15451",
+    "rows": 1024,
+    "sha256": "d070b3978940ee13f5a3ce224f1ac56e8c105c87d8d12220c7c6256ec683e158",
+    "trace_rounds": "82",
+    "worker_sha256": "93cc2647c8ce756fa10df23daff8f29c3cef40b8b6a8130f9346e71ce3e9465a"
+   },
+   "e151x512cand2": {
+    "base_sha": "9dda0cc138e84b87897084178492ac675ff24c27",
+    "dirty_candidate_paths": "0",
+    "metallib_source_fingerprint": "2f0bce81a4a6c8c60cbdf180ba071f93f69c516aea33fce26cb0d9b35bb15451",
+    "rows": 1024,
+    "sha256": "d070b3978940ee13f5a3ce224f1ac56e8c105c87d8d12220c7c6256ec683e158",
+    "trace_rounds": "82",
+    "worker_sha256": "9d111e65a7169019f09209731efcd91f8508273747ed44a8b6c3a146ac021e5e"
+   }
+  },
+  "pinned_sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+  "rung": "R1"
+ },
+ "base_sha": "de8ce44c7bc133c3c6c079957240782664afd287",
+ "commit": "1c82f3ba9d7384800e504e67b0b8bec20ff9b09b",
+ "experiment": "E151",
+ "growth_enforced_base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+ "harness": "offline+local",
+ "local_submit_512": {
+  "metrics": {
+   "accepted_draft_rate": 0.8981288981288982,
+   "all_tokens_matched": true,
+   "decode_tokens": 512,
+   "effective_mean_draft_len": 6.0125,
+   "head_provenance_sha256": "62516c6f3799b66c91171ee13aa6816db5af197aa8c527cec0f6bb4026f0c7b7",
+   "mode": "qwen-mtp-local-submit",
+   "mtp_decode_speedup": 2.3160307021998663,
+   "mtp_depth": 8,
+   "mtp_seconds_per_token": 0.03201235947199166,
+   "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+   "official_score": false,
+   "oracle": "candidate-local-mtp-golden-rows",
+   "public_drift_tripwire_passed": true,
+   "rankable": false,
+   "ranked_decode_speedup_floor": 0.9,
+   "residual_divergence_count": 0,
+   "serial_seconds_per_token": 0.07414160738699138,
+   "uses_pinned_mtp_head": true
+  },
+  "passed": true,
+  "score": 2.3160307021998663,
+  "track_id": "qwen3.8-27b-mtp-v1"
+ },
+ "metrics": {
+  "e151_arm_is_local_output_neutral": 1.0,
+  "e151_base_also_misses_pin": 1.0,
+  "e151_exact512_verdict_ok": 1.0,
+  "e151_gate_chain_all_green": 1.0,
+  "e151_growth_attributable": 4028.0,
+  "e151_growth_enforced": 186149.0,
+  "e151_growth_enforced_limit": 262144.0,
+  "e151_leg_is_deterministic": 1.0,
+  "e151_local_submit_all_tokens_matched": 1.0,
+  "e151_local_submit_decode_tokens": 512.0,
+  "e151_local_submit_mtp_decode_speedup": 2.3160307021998663,
+  "e151_local_submit_passed": 1.0,
+  "e151_local_submit_residual_divergence_count": 0.0,
+  "e151_r1_submission_ready": 1.0,
+  "e151_static_gates_all_green": 1.0,
+  "e151_swift_test_at_known_floor": 1.0,
+  "e151_swift_test_failing_name_count": 10.0,
+  "e151_swift_test_issue_count": 41.0
+ },
+ "row_digest_512": {
+  "expected_rows": 1025,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "failures": 1,
+  "harness": "local",
+  "legs": [
+   {
+    "matches_pin": false,
+    "row_count_ok": false,
+    "rows": 1024,
+    "sha256": "d070b3978940ee13f5a3ce224f1ac56e8c105c87d8d12220c7c6256ec683e158",
+    "tag": "e151x512cand"
+   }
+  ],
+  "order_control": {
+   "digest_moved": true,
+   "kind": "two adjacent rows swapped",
+   "row_index": 512,
+   "swapped_sha256": "48f537e3feea9ae9506cae5d3be81f9420f6aaae164e9b730f49d69c54e50cd8"
+  },
+  "pinned_sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+  "runtime_negative_control": {
+   "digest_moved": true,
+   "reason": "a leg run over a different decode window emits a different set of mtp-row positions",
+   "rows": 257,
+   "sha256": "783d3ae1c420f5af37a3ec6c4b1fca7ad005936dac41b847ef685cb5661d6b85",
+   "tag": "e151x128neg"
+  },
+  "value_control": {
+   "digest_moved": true,
+   "kind": "single hex digit flipped in one row value",
+   "perturbed_line": "mtp-row: pos=513 ids=550,248068 v=fx1.8ap+4,0x1.6ap+4",
+   "perturbed_sha256": "b25aac3189adac2d9c5ca66a7a5b0cce02de501a3effcb129c30c647c58485fb",
+   "row_index": 512
+  }
+ },
+ "rung": "R1",
+ "static_gates": {
+  "check_editable_budget_attributable": {
+   "base": "de8ce44c7bc133c3c6c079957240782664afd287",
+   "exit": 0,
+   "growth_bytes": 4028
+  },
+  "check_editable_budget_enforced": {
+   "base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+   "exit": 0,
+   "growth_bytes": 186149,
+   "limit_bytes": 262144
+  },
+  "twin_audit": {
+   "exit": 0,
+   "tail": [
+    "OK unary: 1 vendored section(s), 0 normalized toolchain section(s)",
+    "OK unary_ops: 5 vendored section(s), 0 normalized toolchain section(s)",
+    "TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s) (non-comment lines byte-identical, both comment streams sha256-pinned)"
+   ]
+  },
+  "validate_assignment_scope": {
+   "base": "de8ce44c7bc133c3c6c079957240782664afd287",
+   "exit": 0,
+   "paths": [
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp"
+   ],
+   "tail": [
+    "assignment scope OK: 2 submitted path(s) against BASE_SHA=de8ce44c7bc133c3c6c079957240782664afd287"
+   ]
+  },
+  "verify_ranked_score_boundary": {
+   "exit": 0,
+   "tail": [
+    "PASS: ranked numerator is pinned baseline; candidate edits affect the MTP denominator only"
+   ]
+  }
+ },
+ "swift_test": {
+  "at_known_floor": true,
+  "available": true,
+  "failing_name_count": 10,
+  "failing_names": [
+   "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+   "participantDocsExposeDefaultCLIInstallDirectory",
+   "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+   "startupMemoryPolicyKeepsRanked128GiBProfile",
+   "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+   "theCheckedInDeclarationSelectsThePinnedHead",
+   "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+   "theQwenMTPTrackIsArmedOnQwen38",
+   "theSeededCalibrationExpectationMatchesItsRecordedProvenance",
+   "theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax"
+  ],
+  "floor_failing_name_count": 10,
+  "floor_issue_count": 41,
+  "issue_count": 41,
+  "log": "research/e151-artifacts/swift-test.log",
+  "suites": 74,
+  "tests": 780
+ },
+ "worktree_clean": true
+}
