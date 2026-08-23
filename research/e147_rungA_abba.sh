@@ -162,6 +162,57 @@ want_sha_for() {
 
 failures=0
 discarded=0
+
+# RULE 137 WARMUP LEG. E130 rung 12 measured entry-temperature spread falling
+# from 23.27 C to 1.757 C across 13 legs once one leg ran before the timed set,
+# and gated per-leg noise of 0.052 % against 0.091 % ungated. One discarded leg
+# is cheap next to a session whose first replicate reads a cold GPU.
+#
+# The warmup runs the SAME arm that precedes position 1 in steady state. From
+# replicate 2 onward, position 1 (base) is preceded by the previous replicate's
+# position 4, which is also base. Warming with base therefore makes replicate 1
+# structurally identical to every later replicate instead of merely warmer.
+#
+# Its slot name does not start with ${label}, so research/e147_rungA_report.py
+# cannot collect it: the leg is thermal conditioning and never evidence.
+warmup_arm="${E147_WARMUP_ARM:-base}"
+if [[ "${E147_WARMUP:-1}" == "1" ]]; then
+  warmup_slot="warmup-${label}k${first}"
+  warmup_id="${prompts[0]}"
+  echo "=== e147_rungA ${warmup_slot}: prompt=${warmup_id}" \
+       "arm=${warmup_arm} DISCARDED thermal conditioning ==="
+  install_arm "${warmup_arm}"
+
+  E128_FORCE=1 \
+  E128_NO_TRACE=1 \
+  E128_TOKENS="${tokens}" \
+  E128_DEPTH="${depth}" \
+  E128_ROOT=".mlxfast-private/e147" \
+  E128_GOLDENS_DIR="${goldens_dir}" \
+  E128_RUNS_DIR="runs/${warmup_slot}" \
+    research/e128_session.sh "${warmup_id}"
+  warmup_status=$?
+
+  warmup_meta="${runs_parent}/${warmup_slot}/${warmup_id}/meta.txt"
+  {
+    echo "e147_warmup=1"
+    echo "e147_arm_requested=${warmup_arm}"
+    echo "e147_session_commit=${session_commit}"
+  } >> "${warmup_meta}"
+  echo "e147_rungA: warmup exited ${warmup_status};" \
+       "$(sed -n 's/^gpu_temp_entry_c=/entry_c=/p;s/^gpu_temp_exit_c=/exit_c=/p' \
+          "${warmup_meta}" 2>/dev/null | tr '\n' ' ')"
+
+  # A failed warmup leaves the GPU cold, which is the condition this block
+  # exists to remove. Do not silently time a cold session.
+  if ((warmup_status != 0)); then
+    echo "e147_rungA: warmup leg failed; refusing to time a cold session" >&2
+    exit 4
+  fi
+else
+  echo "e147_rungA: warmup leg skipped by E147_WARMUP=0 (Rule 137 not met)"
+fi
+
 for ((rep = first; rep < first + replicates; rep++)); do
   for id in "${prompts[@]}"; do
     position=0
