@@ -33,6 +33,36 @@ def mtp_ms_per_token(r_tot: float, accepted: float) -> float:
     return r_tot / (accepted + 1.0)
 
 
+def fit_group_law(widths, marginal):
+    """OLS of marginal(w) = c + W * delta_groups(w), and the no-group null."""
+    import numpy as np
+
+    d = np.array([groups(w) - (groups(w - 1) if w > 2 else 1) for w in widths], float)
+    y = np.array([marginal[w] for w in widths], float)
+
+    x = np.column_stack([np.ones_like(d), d])
+    beta, *_ = np.linalg.lstsq(x, y, rcond=None)
+    resid = y - x @ beta
+    dof = len(y) - x.shape[1]
+    sigma2 = float(resid @ resid) / dof
+    cov = sigma2 * np.linalg.inv(x.T @ x)
+    se = np.sqrt(np.diag(cov))
+
+    null_resid = y - y.mean()
+    r2 = 1.0 - float(resid @ resid) / float(null_resid @ null_resid)
+
+    return {
+        "form": "marginal_ms(w) = c + W * (groups(w) - groups(w-1))",
+        "c_ms": round(float(beta[0]), 3),
+        "c_se_ms": round(float(se[0]), 3),
+        "W_ms": round(float(beta[1]), 3),
+        "W_se_ms": round(float(se[1]), 3),
+        "W_t_stat": round(float(beta[1] / se[1]), 2),
+        "residual_sd_ms": round(float(np.sqrt(sigma2)), 3),
+        "r_squared": round(r2, 4),
+    }
+
+
 def main() -> None:
     widths = list(range(2, 10))
     marginal = {w: R_DEC[i] - R_DEC[i - 1] for i, w in zip(range(1, 9), widths)}
@@ -57,6 +87,8 @@ def main() -> None:
     base9 = (marginal[7] + marginal[8]) / 2.0
     excess6 = marginal[6] - base6
     excess9 = marginal[9] - base9
+
+    law = fit_group_law(widths, marginal)
 
     base_mtp = mtp_ms_per_token(R_TOT[4], ACCEPTED[4])
 
@@ -116,6 +148,7 @@ def main() -> None:
             "width_9": round(excess9, 3),
             "tree_priced_full_weight_pass_ms": 25.0,
         },
+        "group_law_fit": law,
         "placement_null_probability": 1.0 / 28.0,
         "projection_fixed_depth": {
             "baseline_argmin_mtp_ms": round(base_mtp, 4),
@@ -157,6 +190,19 @@ def main() -> None:
           % ([w for w in widths if delta_groups[w] > 0], sum(cliff) / len(cliff)))
     print("width-6 excess over interp(w5,w7)=%.3f  ->  %.3f ms" % (base6, excess6))
     print("width-9 excess over mean(w7,w8)=%.3f   ->  %.3f ms" % (base9, excess9))
+    print()
+    print(
+        "law: %s\n     c=%.3f+-%.3f ms  W=%.3f+-%.3f ms  t=%.2f  R2=%.4f"
+        % (
+            law["form"],
+            law["c_ms"],
+            law["c_se_ms"],
+            law["W_ms"],
+            law["W_se_ms"],
+            law["W_t_stat"],
+            law["r_squared"],
+        )
+    )
     print()
     print("fixed-depth argmin  %.4f -> %.4f ms/tok (%.2f%%) with width 6 fixed, cap 7"
           % (base_mtp, best7, 100.0 * (best7 - base_mtp) / base_mtp))

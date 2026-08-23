@@ -79,6 +79,16 @@
   "width_9": 30.486,
   "tree_priced_full_weight_pass_ms": 25.0
  },
+ "group_law_fit": {
+  "form": "marginal_ms(w) = c + W * (groups(w) - groups(w-1))",
+  "c_ms": 7.399,
+  "c_se_ms": 1.665,
+  "W_ms": 30.212,
+  "W_se_ms": 3.33,
+  "W_t_stat": 9.07,
+  "residual_sd_ms": 4.078,
+  "r_squared": 0.9321
+ },
  "placement_null_probability": 0.03571428571428571,
  "projection_fixed_depth": {
   "baseline_argmin_mtp_ms": 27.5213,
