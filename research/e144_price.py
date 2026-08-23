@@ -29,6 +29,10 @@ DECLARED_REL_L2 = (9.18e-2, 9.97e-2)
 QAT_REL_L2 = (2.89e-2, 3.52e-2)
 TARGET_RECOVERY_PT = 0.30
 
+DECLARED_HEAD_BYTES = 427742600
+# E79's measured head-bytes law: percent of published score per percent of head bytes.
+SCORE_PCT_PER_BYTE_PCT = 0.0844
+
 
 def exponent(factor):
     """The `k` in `damage = 0.82 * factor ** -k` that reproduces qat-q4."""
@@ -47,6 +51,59 @@ def required_factor(k, target=TARGET_RECOVERY_PT):
     return exp(-log(1.0 - target / DECLARED_DAMAGE_PT) / k)
 
 
+def group_lever(path, exponents):
+    """Price a trunk group-size change: byte saving against reconstruction damage.
+
+    Ledger section J prices the g64 -> g128 trunk step from its byte saving
+    alone. Group size is a rate-distortion knob, so it also moves relL2, and the
+    acceptance side of that move has to be paid. This function reports both.
+    """
+    import e144_f219
+
+    with open(path) as handle:
+        sweep = json.load(handle)["pooled"]
+
+    # median percent per acceptance point, from the F219 chain with the
+    # scheduler held neutral. Neutral is the best case for a gain and therefore
+    # the WORST case for a loss, so it understates the cost of g128.
+    probe = e144_f219.run_regime(0.10, "neutral", e144_f219.BAR)
+    median_pct_per_pt = probe["value"]["e144_expected_median_pct"] / 0.10
+
+    rows = []
+    for size, entry in sorted(sweep.items(), key=lambda item: int(item[0])):
+        byte_pct = 100.0 * entry["trunk_metadata_bytes_delta_vs_g64"] / DECLARED_HEAD_BYTES
+        byte_score_pct = -byte_pct * SCORE_PCT_PER_BYTE_PCT
+        factor = entry["rel_l2_factor_vs_g64"]
+        recoveries = sorted(recovery(factor, k) for k in exponents.values())
+        rows.append(
+            {
+                "group_size": int(size),
+                "rel_l2": entry["rel_l2"],
+                "rel_l2_factor_vs_g64": factor,
+                "trunk_metadata_bytes_delta": entry["trunk_metadata_bytes_delta_vs_g64"],
+                "head_bytes_pct": byte_pct,
+                "score_pct_from_bytes": byte_score_pct,
+                "acceptance_pt_range": [recoveries[0], recoveries[-1]],
+                "score_pct_from_acceptance": [
+                    recoveries[0] * median_pct_per_pt,
+                    recoveries[-1] * median_pct_per_pt,
+                ],
+                "net_score_pct_range": sorted(
+                    [
+                        byte_score_pct + recoveries[0] * median_pct_per_pt,
+                        byte_score_pct + recoveries[-1] * median_pct_per_pt,
+                    ]
+                ),
+            }
+        )
+    return {
+        "median_pct_per_acceptance_pt": median_pct_per_pt,
+        "median_pct_per_acceptance_pt_source": "e144_f219 neutral regime, anchor 1760479a",
+        "score_pct_per_head_byte_pct": SCORE_PCT_PER_BYTE_PCT,
+        "rows": rows,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--measured", type=float, required=True, help="pooled relL2 factor achieved")
@@ -58,6 +115,7 @@ def main():
         "2.03 is the advisor F214 figure (+0.406 %% per 0.20 pt), 0.85 is the "
         "rival hadakang reading. Both are contested; neither is established.",
     )
+    parser.add_argument("--group-lever", help="e144-group-sweep.json to price as a byte lever")
     parser.add_argument("--out", default="e144-price.json")
     arguments = parser.parse_args()
 
@@ -121,6 +179,31 @@ def main():
             max(r["recovery_pt_at_measured"] for r in report["rows"]),
         ],
     }
+
+    if arguments.group_lever:
+        lever = group_lever(arguments.group_lever, exponents)
+        report["group_lever"] = lever
+        print()
+        print(
+            "trunk group-size lever   %.4f %% of median per acceptance point"
+            % lever["median_pct_per_acceptance_pt"]
+        )
+        for row in lever["rows"]:
+            print(
+                "  g%-4d relL2 %.6f  x%.5f  bytes %+.4f %%  score from bytes %+.4f %%  "
+                "from acceptance %+.4f..%+.4f %%  net %+.4f..%+.4f %%"
+                % (
+                    row["group_size"],
+                    row["rel_l2"],
+                    row["rel_l2_factor_vs_g64"],
+                    row["head_bytes_pct"],
+                    row["score_pct_from_bytes"],
+                    row["score_pct_from_acceptance"][0],
+                    row["score_pct_from_acceptance"][1],
+                    row["net_score_pct_range"][0],
+                    row["net_score_pct_range"][1],
+                )
+            )
 
     with open(arguments.out, "w") as handle:
         json.dump(report, handle, indent=2)
