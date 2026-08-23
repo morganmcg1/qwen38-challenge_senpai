@@ -1,0 +1,78 @@
+{
+  "draft_step_budget_mb": 323.59,
+  "env_arm_has_c2_numerics": true,
+  "head_path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run/model.safetensors",
+  "head_sha256": "d038fd41e2d5dab1b3905c115d859fdc98dfbfde9862c14ebb82c2b3247ec2f1",
+  "island_keys": [
+    "precision_islands.k.indices",
+    "precision_islands.k.weight",
+    "precision_islands.q.indices",
+    "precision_islands.q.weight",
+    "precision_islands.v.indices",
+    "precision_islands.v.weight"
+  ],
+  "kv_affine4_bytes": 5898240,
+  "kv_dense_bf16_bytes": 20971520,
+  "kv_saved_bytes": 15073280,
+  "kv_saved_mb": 15.07328,
+  "kv_saved_share_of_draft_step": 0.04658141475323713,
+  "per_projection": {
+    "k": {
+      "affine4_bytes": 2949120,
+      "dense_bf16_bytes": 10485760,
+      "indices_are_complete_permutation": true,
+      "island_dtype": "mlx.core.bfloat16",
+      "island_shape": [
+        1024,
+        5120
+      ],
+      "quantization_abs_error_max": 0.0166015625,
+      "quantization_rel_error_rms": 0.09884322434663773,
+      "shipped_is_quantized_island": {
+        "biases_bit_identical": true,
+        "scales_bit_identical": true,
+        "weight_bit_identical": true,
+        "weight_mismatch_words": 0
+      },
+      "shipped_projection_keys": [
+        "layers.0.self_attn.k_proj.biases",
+        "layers.0.self_attn.k_proj.scales",
+        "layers.0.self_attn.k_proj.weight"
+      ],
+      "shipped_weight_dtype": "mlx.core.uint32",
+      "shipped_weight_shape": [
+        1024,
+        640
+      ]
+    },
+    "v": {
+      "affine4_bytes": 2949120,
+      "dense_bf16_bytes": 10485760,
+      "indices_are_complete_permutation": true,
+      "island_dtype": "mlx.core.bfloat16",
+      "island_shape": [
+        1024,
+        5120
+      ],
+      "quantization_abs_error_max": 0.021484375,
+      "quantization_rel_error_rms": 0.09435679018497467,
+      "shipped_is_quantized_island": {
+        "biases_bit_identical": true,
+        "scales_bit_identical": true,
+        "weight_bit_identical": true,
+        "weight_mismatch_words": 0
+      },
+      "shipped_projection_keys": [
+        "layers.0.self_attn.v_proj.biases",
+        "layers.0.self_attn.v_proj.scales",
+        "layers.0.self_attn.v_proj.weight"
+      ],
+      "shipped_weight_dtype": "mlx.core.uint32",
+      "shipped_weight_shape": [
+        1024,
+        640
+      ]
+    }
+  },
+  "reading": "env_arm_has_c2_numerics true means DARKBLOOM_QWEN_MTP_ISLAND_ARM=q already runs C2's exact K/V numerics, so the live acceptance delta needs no source edit; false means C2 must be implemented and gated"
+}

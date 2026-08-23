@@ -1,0 +1,174 @@
+{
+  "anchor": "3ba6ee9d",
+  "anchor_note": "F3 finding 213 makes 3ba6ee9d the VALUE anchor and leaves 1760479a as the CANDIDATE frontier; research/e143_value.py asserts every figure of F1, F2, F3 and F4",
+  "candidate_frontier": "1760479a",
+  "channel_a_positions": {
+    "census_is_position_1_only": false,
+    "channel_a_beyond_position_1_events": 3,
+    "channel_a_first_divergence_indices": [
+      0,
+      0,
+      0,
+      0,
+      1,
+      2,
+      2
+    ],
+    "first_divergence_beyond_position_1_share": 0.6182432432432432,
+    "first_divergence_index_histogram": {
+      "0": 113,
+      "1": 96,
+      "2": 52,
+      "3": 26,
+      "4": 3,
+      "5": 3,
+      "6": 3
+    },
+    "first_divergence_index_max": 6,
+    "verdict": "this census observes C-a at any draft position, so it is not a position-1 restriction of a corpus census"
+  },
+  "channel_b_rule_of_three_95_events": 3.0,
+  "channel_d": {
+    "beagle": {
+      "channel_a_events": 5,
+      "events_high": 87,
+      "events_low": 79.99316628701594,
+      "events_point": 81,
+      "measured_misses": 92,
+      "rate_high": 0.09841628959276018,
+      "rate_low": 0.09049000711200898,
+      "rate_point": 0.0916289592760181,
+      "raw_ratio_pct_high": 19.978506787330318,
+      "raw_ratio_pct_low": 18.369471443737822,
+      "raw_ratio_pct_point": 18.600678733031675,
+      "share_of_divergences_high": 0.9456521739130435,
+      "share_of_divergences_low": 0.8694909379023471,
+      "share_of_divergences_point": 0.8804347826086957,
+      "share_of_in_vocabulary_low": 0.9194616814599533,
+      "share_of_in_vocabulary_point": 0.9310344827586207,
+      "trials": 884,
+      "unresolved_divergence_rows": 6,
+      "unresolved_fraction": 0.06521739130434782
+    },
+    "essays": {
+      "channel_a_events": 0,
+      "events_high": 68,
+      "events_low": 65.5113895216401,
+      "events_point": 66,
+      "measured_misses": 68,
+      "rate_high": 0.1585081585081585,
+      "rate_low": 0.15270720168214474,
+      "rate_point": 0.15384615384615385,
+      "raw_ratio_pct_high": 32.17715617715618,
+      "raw_ratio_pct_low": 30.999561941475385,
+      "raw_ratio_pct_point": 31.23076923076923,
+      "share_of_divergences_high": 1.0,
+      "share_of_divergences_low": 0.9634027870829426,
+      "share_of_divergences_point": 0.9705882352941176,
+      "share_of_in_vocabulary_low": 0.9634027870829426,
+      "share_of_in_vocabulary_point": 0.9705882352941176,
+      "trials": 429,
+      "unresolved_divergence_rows": 2,
+      "unresolved_fraction": 0.029411764705882353
+    },
+    "other": {
+      "channel_a_events": 2,
+      "events_high": 134,
+      "events_low": 124.49544419134396,
+      "events_point": 126,
+      "measured_misses": 136,
+      "rate_high": 0.10143830431491295,
+      "rate_low": 0.09424333398284933,
+      "rate_point": 0.09538228614685844,
+      "raw_ratio_pct_high": 20.591975775927327,
+      "raw_ratio_pct_low": 19.131396798518413,
+      "raw_ratio_pct_point": 19.362604087812265,
+      "share_of_divergences_high": 0.9852941176470589,
+      "share_of_divergences_low": 0.9154076778775292,
+      "share_of_divergences_point": 0.9264705882352942,
+      "share_of_in_vocabulary_low": 0.9290704790398804,
+      "share_of_in_vocabulary_point": 0.9402985074626866,
+      "trials": 1321,
+      "unresolved_divergence_rows": 8,
+      "unresolved_fraction": 0.058823529411764705
+    }
+  },
+  "channel_d_pooled": {
+    "closes_axis_at_point": true,
+    "closes_axis_at_worst_case": true,
+    "kill_line": 0.8,
+    "misses": 296,
+    "note": "pooled only for the closure decision, which is a property of the mechanism and not of a regime; every price below is per carrier",
+    "share_of_divergences_high": 0.9763513513513513,
+    "share_of_divergences_low": 0.9121621621621622,
+    "share_of_divergences_point": 0.9222972972972973,
+    "trials": 2634
+  },
+  "channel_d_value": {
+    "beagle_raw_pct_point": 18.600678733031675,
+    "essays_raw_pct_point": 31.23076923076923,
+    "median_pct_at_miss_to_score_290": 5.2697692241267635,
+    "median_pct_high": 5.2697692241267635,
+    "median_pct_low": 5.2697692241267635,
+    "median_pct_point": 5.2697692241267635,
+    "naive_rule_116_median_pct": 25.182306546207137,
+    "reading": "the unreachable ceiling. Rule 121 saturates it; the linear Rule 116 conversion does not and overstates it"
+  },
+  "e143_unresolved_fraction": 0.05405405405405406,
+  "e143_unresolved_fraction_by_carrier": {
+    "beagle": 0.06521739130434782,
+    "essays": 0.029411764705882353,
+    "other": 0.058823529411764705
+  },
+  "gain_shape": {
+    "beagle_events": 5,
+    "beagle_pct": 1.1481900452488687,
+    "beagle_trials": 884,
+    "botany_pct": 0.0,
+    "essays_events": 0,
+    "essays_pct": 0.0,
+    "essays_trials": 429,
+    "essays_upper_68_pct": 0.4720930232558139,
+    "essays_zero_event_interval_rule": "Wilson score interval at z = 1.0, which at zero events reduces exactly to upper = 1 / (trials + 1)",
+    "evidence": "5 unproposable draft-trial events on 884 beagle trials, 0 on 429 essays trials, 2 on 1,321 trials of prompts whose marginal value is exactly zero",
+    "mechanism": "close C-a, the structurally unproposable target token",
+    "medicine_pct": 0.0,
+    "reading": "beagle-only is the best possible shape on this benchmark: it converts at 0.4789 per percent with 9.71 % of runway, and it cannot push the upper median slot into another prompt because it does not move the upper slot at all",
+    "republic_pct": 0.0,
+    "shape_label": "beagle-only",
+    "upper_slot_buffers_pct": {
+      "botany": 1.417330581871945,
+      "medicine": 0.8254384170639062,
+      "republic": 1.1866324546436102
+    }
+  },
+  "harness": "local",
+  "primary": {
+    "anchor": "3ba6ee9d",
+    "anchor_median": 3.7057599999999997,
+    "at_miss_to_score_290": {
+      "e143_reachable_acceptance_pct_beagle": 1.6402714932126696,
+      "median_pct_at_anchor": 0.7855156322865708,
+      "miss_to_score_pct": 290.0,
+      "note": "F3 section 8 asks for one extra column, not a restated table; 203 stays primary because the contract names it"
+    },
+    "beagle_ceiling_value_pct": 4.651407538534613,
+    "beagle_ceiling_x_pct": 9.712819068226963,
+    "e143_reachable_acceptance_pct_beagle": 1.1481900452488687,
+    "e143_reachable_acceptance_pct_beagle_ci68": [
+      0.7374271600841988,
+      1.7857366817237106
+    ],
+    "essays_ceiling_value_pct": 0.4301411856137527,
+    "essays_ceiling_x_pct": 0.8254384156316519,
+    "exceeds_beagle_saturation": false,
+    "median_pct_at_anchor": 0.5498609426005885,
+    "median_pct_at_anchor_ci68": [
+      0.35314919774913633,
+      0.8551779900131784
+    ],
+    "median_pct_at_superseded_1760479a": 0.550339419968271,
+    "miss_to_score_pct": 203.0,
+    "units": "percent of the beagle RAW RATIO, as F1 section 3 asked"
+  }
+}
