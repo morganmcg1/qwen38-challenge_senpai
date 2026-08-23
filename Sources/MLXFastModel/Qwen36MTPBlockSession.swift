@@ -649,13 +649,6 @@ public final class Qwen36MTPBlockSession {
             )
         }
         eval(outs)
-        // E153: the merged wide-decode SDPA kernel is JIT-compiled from a
-        // Metal source string on first touch. That compile costs tens to
-        // hundreds of milliseconds and would land inside the scored window on
-        // the first width >= 6 round. One call compiles the whole family: the
-        // pipeline is keyed by (dtype, head dim, value dim) only.
-        _ = warmQwen35MergedSdpaVector(
-            keys: extK, values: extV, queryHeads: qHeads, scale: scale)
         // Scored decode walks N past 1024 (512 seed + 512 decode).
         // `sdpa_vector_2pass` on this arch bumps blocks 64→128 when N>1024.
         // The kL=1024 warm above compiles the 64-block family. Compile the

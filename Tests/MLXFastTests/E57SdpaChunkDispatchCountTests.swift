@@ -1,7 +1,5 @@
 import Foundation
 import MLX
-import MLXLMCommon
-import MLXRandom
 import Metal
 import ObjectiveC
 import Testing
@@ -223,28 +221,6 @@ private enum SdpaChunkProbe {
         return concatenated([outA, outB], axis: 2)
     }
 
-    /// E153: the merged custom kernel that replaces the pair above. Returns nil
-    /// outside the band it reproduces exactly, so a caller can tell "refused"
-    /// apart from "ran".
-    static func merged(
-        queries: MLXArray, keys: MLXArray, values: MLXArray
-    ) -> MLXArray? {
-        qwen35MergedSdpaVector(
-            queries: queries, keys: keys, values: values,
-            scale: 1.0 / Float(headDim).squareRoot(),
-            qL: queries.dim(2), kL: keys.dim(2))
-    }
-
-    static func run(
-        form: String, queries: MLXArray, keys: MLXArray, values: MLXArray
-    ) -> MLXArray? {
-        switch form {
-        case "whole": return whole(queries: queries, keys: keys, values: values)
-        case "merged": return merged(queries: queries, keys: keys, values: values)
-        default: return chunked(queries: queries, keys: keys, values: values)
-        }
-    }
-
     static func measure(
         form: String, layout: String, qL: Int, kL: Int
     ) -> ProbeCell {
@@ -255,13 +231,16 @@ private enum SdpaChunkProbe {
 
         // Warm the kernels and the pipeline map before counting, so a first-use
         // JIT compile cannot appear as a dispatch.
-        if let warm = run(form: form, queries: queries, keys: keys, values: values) {
-            eval(warm)
-        }
+        let warm = form == "whole"
+            ? whole(queries: queries, keys: keys, values: values)
+            : chunked(queries: queries, keys: keys, values: values)
+        eval(warm)
 
         DispatchLedger.shared.start()
-        let out = run(form: form, queries: queries, keys: keys, values: values)
-        if let out { eval(out) }
+        let out = form == "whole"
+            ? whole(queries: queries, keys: keys, values: values)
+            : chunked(queries: queries, keys: keys, values: values)
+        eval(out)
         let records = DispatchLedger.shared.stop()
 
         var counts: [String: Int] = [:]
@@ -343,12 +322,6 @@ struct E57SdpaChunkDispatchCountTests {
                     cells.append(
                         SdpaChunkProbe.measure(
                             form: "chunked", layout: layout, qL: qL, kL: kL))
-                    // E153 dispatch census. The merged kernel refuses
-                    // `kL >= 1024`, and a refusal shows up here as zero
-                    // dispatches -- which is the evidence, not a gap.
-                    cells.append(
-                        SdpaChunkProbe.measure(
-                            form: "merged", layout: layout, qL: qL, kL: kL))
                 }
             }
         }
