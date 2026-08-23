@@ -1,0 +1,60 @@
+{
+  "e150_r3_witness_prompt": "beagle_a",
+  "e150_r3_witness_label": "s1",
+  "arms": {
+    "off": {
+      "rounds": 119,
+      "rb_total": 0,
+      "d_total": 509,
+      "rb_per_round_mean": 0.0,
+      "rb_mismatched_rounds": 0,
+      "rb_first_mismatches": [],
+      "report": {
+        "round_count": 119,
+        "effective_mean_draft_len": 4.277310924369748,
+        "accepted_draft_rate": 0.7721021611001965,
+        "non_drafting_round_count": 0,
+        "decode_token_count": 512
+      },
+      "depth_sequence_diffs": 0
+    },
+    "firstOnly": {
+      "rounds": 119,
+      "rb_total": 119,
+      "d_total": 509,
+      "rb_per_round_mean": 1.0,
+      "rb_mismatched_rounds": 0,
+      "rb_first_mismatches": [],
+      "report": {
+        "round_count": 119,
+        "effective_mean_draft_len": 4.277310924369748,
+        "accepted_draft_rate": 0.7721021611001965,
+        "non_drafting_round_count": 0,
+        "decode_token_count": 512
+      },
+      "depth_sequence_diffs": 0,
+      "depth_sequence_first_diffs": []
+    },
+    "perStep": {
+      "rounds": 119,
+      "rb_total": 509,
+      "d_total": 509,
+      "rb_per_round_mean": 4.277310924369748,
+      "rb_mismatched_rounds": 0,
+      "rb_first_mismatches": [],
+      "report": {
+        "round_count": 119,
+        "effective_mean_draft_len": 4.277310924369748,
+        "accepted_draft_rate": 0.7721021611001965,
+        "non_drafting_round_count": 0,
+        "decode_token_count": 512
+      },
+      "depth_sequence_diffs": 0,
+      "depth_sequence_first_diffs": []
+    }
+  },
+  "problems": [],
+  "e150_r3_arm_fired": true,
+  "e150_r3_schedule_identical": true,
+  "e150_r3_witness_ok": true
+}

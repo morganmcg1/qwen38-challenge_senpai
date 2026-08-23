@@ -53,6 +53,7 @@ from e128_replay import SEGMENTED_VERIFY_DEPTH_CAP  # noqa: E402
 from e140_lookahead import curve_price  # noqa: E402
 from e145_r3 import installable  # noqa: E402
 from e145_r7 import admissibility  # noqa: E402
+from e145_r7_state import curves_and_prices  # noqa: E402
 from e150_curve_bracket import price_cell, solve_mu  # noqa: E402
 from e150_lib import build_env, write_artifact  # noqa: E402
 
@@ -222,6 +223,67 @@ def curve_summary(points: dict) -> dict:
     }
 
 
+def admissibility_boundary(points: dict, transfer: dict,
+                           local_step_us: float) -> dict:
+    """How far is the post-A0 width-6 cost from becoming a running minimum?
+
+    The point estimate says width 6 stays inadmissible after A0, and that is
+    the answer the ordering decision would be built on. It is worth almost
+    nothing on its own, because the margin is far smaller than the uncertainty
+    already reported on the rung.
+
+    Width 6 is admissible when `C(6)/6 < C(5)/5`, so the rung has to remove
+
+        C(6) - 6 * C(5) / 5
+
+    local microseconds. This function reports that requirement, the point
+    estimate against it, and the ranked percentage at which the two are equal.
+    That last number is the useful one: it converts the whole question into a
+    single ranked measurement with a known standard error, so the distance to
+    the boundary can be stated in sigma instead of in a verdict.
+    """
+    c5, c6 = points[5], points[A0_AFFECTED_WIDTH]
+    required_local_us = c6 - A0_AFFECTED_WIDTH * c5 / 5.0
+    k = transfer["k"]
+    us_per_pct = ranked_us_per_width6_round(1.0)
+    breakeven_ranked_pct = required_local_us / k / us_per_pct
+
+    pct = F259_RULE148_WEIGHTED_PCT
+    se = F259_CANDIDATE_SE_PCT
+    sigma_to_boundary = (breakeven_ranked_pct - pct) / se
+
+    # The same boundary expressed in the transfer constant, holding the ranked
+    # measurement fixed. k is the other input and it is the less well
+    # determined of the two.
+    breakeven_k = required_local_us / (pct * us_per_pct)
+    k_values = list(transfer["per_width_ratio"].values())
+
+    return {
+        "required_local_us_to_admit_width6": required_local_us,
+        "point_estimate_local_us_removed": rung_local_us(pct, k),
+        "shortfall_local_us": required_local_us - rung_local_us(pct, k),
+        "breakeven_ranked_pct": breakeven_ranked_pct,
+        "measured_ranked_pct": pct,
+        "measured_ranked_se": se,
+        "sigma_to_boundary": sigma_to_boundary,
+        "breakeven_k": breakeven_k,
+        "k_used": k,
+        "k_min_over_widths": min(k_values),
+        "k_max_over_widths": max(k_values),
+        "admissible_at_k_max": rung_local_us(pct, max(k_values))
+        >= required_local_us,
+        "admissible_at_ranked_plus_1se": rung_local_us(pct + se, k)
+        >= required_local_us,
+        "admissible_at_point_estimate": rung_local_us(pct, k)
+        >= required_local_us,
+        "step_us_used_as_divisor": local_step_us,
+    }
+
+
+def rung_local_us(ranked_pct: float, k: float) -> float:
+    return ranked_us_per_width6_round(ranked_pct) * k
+
+
 def score_curve(env, label: str, curve, price, admitted: set,
                 windows: int) -> dict:
     """Solve `mu*` on one measured curve and price both rules against it."""
@@ -319,14 +381,17 @@ def main() -> int:
     print("  local us the rung costs            %10.1f" % local_saving_us)
     print("  measured 5->6 step, us basis       %10.1f" % step_us_basis)
 
+    # The curve itself is cheap; only the acceptance transfer cache behind
+    # `build_env` is expensive, and the admissibility boundary does not need
+    # it. So the boundary is computed in every mode.
+    points = dict(curves_and_prices("measured")[0])
+    step_blocks = points[6] - points[5]
+    print("  measured 5->6 step, blocks basis   %10.1f" % step_blocks)
+
     env = None
-    step_blocks = None
     pre = post = None
     if not args.arithmetic_only:
         env = build_env(windows=args.windows, seeds=args.seeds)
-        points = dict(env.points)
-        step_blocks = points[6] - points[5]
-        print("  measured 5->6 step, blocks basis   %10.1f" % step_blocks)
 
     share_us = rung_share(ranked_us, k, step_us_basis)
     band = transfer_uncertainty(ranked_us, transfer, step_us_basis)
@@ -349,7 +414,43 @@ def main() -> int:
     print("  combined band  [%.4f, %.4f]" % (band_low, band_high))
     print("  VERDICT: %s" % verdict(share_us, (band_low, band_high)))
 
+    boundary = admissibility_boundary(points, transfer, step_us_basis)
+    print("\n-- does A0 make width 6 admissible? --")
+    print("  local us the rung must remove      %10.1f"
+          % boundary["required_local_us_to_admit_width6"])
+    print("  local us the point estimate removes%10.1f"
+          % boundary["point_estimate_local_us_removed"])
+    print("  shortfall                          %10.1f"
+          % boundary["shortfall_local_us"])
+    print("  the boundary as a ranked measurement:")
+    print("    break-even ranked pct            %+10.4f %%"
+          % boundary["breakeven_ranked_pct"])
+    print("    measured ranked pct              %+10.4f %%  se %.4f"
+          % (boundary["measured_ranked_pct"], boundary["measured_ranked_se"]))
+    print("    DISTANCE TO THE BOUNDARY         %10.3f sigma"
+          % boundary["sigma_to_boundary"])
+    print("  the boundary as a transfer constant:")
+    print("    break-even k                     %10.6f  (used %.6f, "
+          "per-width range %.6f..%.6f)"
+          % (boundary["breakeven_k"], boundary["k_used"],
+             boundary["k_min_over_widths"], boundary["k_max_over_widths"]))
+    print("  admissible at point estimate  %s"
+          % boundary["admissible_at_point_estimate"])
+    print("  admissible at ranked +1se     %s"
+          % boundary["admissible_at_ranked_plus_1se"])
+    print("  admissible at k_max           %s"
+          % boundary["admissible_at_k_max"])
+    boundary_resolved = not (
+        boundary["admissible_at_ranked_plus_1se"]
+        or boundary["admissible_at_k_max"])
+    print("  WIDTH-6 ADMISSIBILITY RESOLVED  %s" % boundary_resolved)
+
     payload = {
+        "e150_a0_admissibility_boundary": boundary,
+        "e150_a0_width6_admissibility_resolved": boundary_resolved,
+        "e150_a0_breakeven_ranked_pct": boundary["breakeven_ranked_pct"],
+        "e150_a0_sigma_to_admissibility_boundary": boundary[
+            "sigma_to_boundary"],
         "e150_a0_harness": "local",
         "e150_a0_ranked_inputs_harness": "ranked",
         "e150_a0_gpu_used": False,
@@ -431,6 +532,17 @@ def main() -> int:
                                          - pre["policy_mean_depth"]),
             "e150_a0_identity": env.identity(),
         })
+
+    if args.arithmetic_only:
+        # The arithmetic pass does not produce the repriced sections, so it
+        # merges rather than replaces. Replacing would silently delete the
+        # expensive half of an existing artifact and leave a file that still
+        # looks complete.
+        existing = e150_lib.ARTIFACTS / args.json
+        if existing.exists():
+            merged = json.loads(existing.read_text())
+            merged.update(payload)
+            payload = merged
 
     write_artifact(args.json, payload)
     print("\nwrote research/e150-artifacts/%s" % args.json)

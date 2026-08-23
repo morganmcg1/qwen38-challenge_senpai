@@ -1,4 +1,22 @@
 {
+  "e150_a0_admissibility_boundary": {
+    "admissible_at_k_max": true,
+    "admissible_at_point_estimate": false,
+    "admissible_at_ranked_plus_1se": true,
+    "breakeven_k": 2.15609277550626,
+    "breakeven_ranked_pct": 1.1741829104090906,
+    "k_max_over_widths": 2.3923198208123906,
+    "k_min_over_widths": 1.9754966361034438,
+    "k_used": 2.1034237957712483,
+    "measured_ranked_pct": 1.1455,
+    "measured_ranked_se": 0.2542,
+    "point_estimate_local_us_removed": 9046.299513245194,
+    "required_local_us_to_admit_width6": 9272.815618415174,
+    "shortfall_local_us": 226.5161051699797,
+    "sigma_to_boundary": 0.11283599688863359,
+    "step_us_used_as_divisor": 29134.511947631836
+  },
+  "e150_a0_breakeven_ranked_pct": 1.1741829104090906,
   "e150_a0_curve_post": {
     "admissible_widths": [
       1,
@@ -305,6 +323,7 @@
     }
   },
   "e150_a0_rung_share_of_cliff": 0.310501151675565,
+  "e150_a0_sigma_to_admissibility_boundary": 0.11283599688863359,
   "e150_a0_transfer_constant_k": 2.1034237957712483,
   "e150_a0_transfer_per_width_ratio": {
     "2": 2.0344159078266073,
@@ -328,6 +347,7 @@
   "e150_a0_transfer_worst_residual_pct": 13.734561034345196,
   "e150_a0_transfer_worst_width": 7,
   "e150_a0_verdict": "the rung explains a minority of the cliff: the cliff is mostly real and the policy is mostly safe, but the width-6 cost carries a correction of this size",
+  "e150_a0_width6_admissibility_resolved": false,
   "e150_a0_width6_admissible_post": false,
   "e150_a0_width6_admissible_pre": false
 }
