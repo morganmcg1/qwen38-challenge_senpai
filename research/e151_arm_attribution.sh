@@ -51,23 +51,33 @@ restore() {
 }
 trap restore EXIT
 
+FLAG_ON='constexpr bool kE147NaxRetileOn = true;'
+FLAG_OFF='constexpr bool kE147NaxRetileOn = false;'
+
+# `rebuild-and-assert-worker.sh` refuses an assertion-free run, so each side
+# asserts the arm state its own commit is supposed to carry. That turns the
+# build step into a second, independent check that the right tree was built.
 leg() {
-  local tag="$1"
+  local tag="$1" require="$2" forbid="$3"
   echo "=== ${tag}: rebuilding worker and metallib at $(git rev-parse --short HEAD) ==="
-  senpai/rebuild-and-assert-worker.sh > "${out}/${tag}-build.log" 2>&1 \
+  senpai/rebuild-and-assert-worker.sh --require "${require}" --forbid "${forbid}" \
+    > "${out}/${tag}-build.log" 2>&1 \
     || { echo "${tag}: build failed"; tail -20 "${out}/${tag}-build.log"; return 1; }
+  grep -E '^(worker_sha256|ok |FAIL)' "${out}/${tag}-build.log" | tail -4
   echo "=== ${tag}: 512-token traced leg ==="
   research/e79_trace_leg.sh "${tag}" 512
 }
 
 echo "########## ARM-OFF BASE ##########"
 git switch --detach "${BASE}" >/dev/null 2>&1 || exit 1
-leg e151x512basectl || echo "e151_arm_attribution: base leg returned nonzero"
+leg e151x512basectl "${FLAG_OFF}" "${FLAG_ON}" \
+  || echo "e151_arm_attribution: base leg returned nonzero"
 
 echo
 echo "########## ARM-ON CANDIDATE ##########"
 restore
-leg e151x512cand2 || echo "e151_arm_attribution: candidate repeat leg returned nonzero"
+leg e151x512cand2 "${FLAG_ON}" "${FLAG_OFF}" \
+  || echo "e151_arm_attribution: candidate repeat leg returned nonzero"
 
 echo
 echo "########## DIGESTS ##########"
@@ -104,18 +114,27 @@ for tag in tags:
 
 cand, base = res.get("e151x512cand"), res.get("e151x512basectl")
 rep = res.get("e151x512cand2")
+
+
+def same(a, b):
+    """None when a leg is missing, so an absent run never reads as a verdict."""
+    if a is None or b is None:
+        return None
+    return a["sha256"] == b["sha256"]
+
+
 verdict = {
     "experiment": "E151",
     "rung": "R1",
     "harness": "local",
     "pinned_sha256": pin,
     "legs": res,
-    "e151_arm_is_local_output_neutral":
-        bool(cand and base and cand["sha256"] == base["sha256"]),
-    "e151_leg_is_deterministic":
-        bool(cand and rep and cand["sha256"] == rep["sha256"]),
-    "e151_base_also_misses_pin":
-        bool(base and base["sha256"] != pin),
+    "e151_arm_is_local_output_neutral": same(cand, base),
+    "e151_leg_is_deterministic": same(cand, rep),
+    "e151_base_also_misses_pin": None if base is None else base["sha256"] != pin,
+    "e151_attribution_complete": all(
+        res.get(t) is not None for t in tags
+    ),
 }
 print()
 for k, v in verdict.items():
