@@ -32,6 +32,7 @@ import hashlib
 import json
 import math
 import pathlib
+import random
 import re
 import statistics
 
@@ -464,6 +465,236 @@ def frame_reconciliation(gap_pp: float, portfolio: dict, sigmas: dict) -> dict:
     }
 
 
+# Composite scores as published in the E154 brief. They are the only
+# authoritative statement of the campaign's composite arithmetic, so the
+# portfolio is DERIVED from them here instead of being carried as a constant.
+ADVISOR_COMPOSITE_SCORES = {
+    "import_alone": 3.70958,
+    "import_e151r1": 3.72831,
+    "import_r1_leaf16": 3.73532,
+    "import_r1_leaf16_e151r2": 3.75097,
+    "all_five": 3.76185,
+}
+# Observed bar movement, absolute published score per hour (advisor F3).
+BAR_MOVE_ABS_PER_HOUR = 0.003132
+# Independent reviewer's construction model of the ranked nuisance, as reported
+# in advisor F3 section 4.
+REVIEWER_MODEL = {
+    "per_leg_cv_pct_lo": 0.3,
+    "per_leg_cv_pct_hi": 1.0,
+    "ratio_amplification": math.sqrt(2.0),
+    "median_of_8_attenuation": 0.44,
+    "reported_sigma_pp": 0.295,
+}
+
+
+def median_of_eight_attenuation(samples: int = 400_000) -> float:
+    """SD of the median of eight standard normals, by deterministic simulation.
+
+    The asymptotic 1.2533/sqrt(n) is not exact at n = 8, and the whole sigma
+    dispute turns on this factor, so it is measured rather than quoted.
+    """
+    seed = int.from_bytes(
+        hashlib.blake2b(b"e154-median-of-eight", digest_size=8).digest(), "big")
+    rng = random.Random(seed)
+    total = 0.0
+    total_sq = 0.0
+    for _ in range(samples):
+        draw = sorted(rng.gauss(0.0, 1.0) for _ in range(8))
+        med = 0.5 * (draw[3] + draw[4])
+        total += med
+        total_sq += med * med
+    mean = total / samples
+    return math.sqrt(max(total_sq / samples - mean * mean, 0.0))
+
+
+def f3_parity_base_and_sigma(
+    bar: float, our_best: float, sd_lower: float, sd_upper: float,
+    k_grid: dict[str, float],
+) -> dict:
+    """Advisor F3 sections 3 and 4.
+
+    Section 3 asks for the k-table redone on the post-import parity base, where
+    the gap to the bar is zero. Section 4 asks which of two nuisance models
+    thorfinn's parity receipt will favour.
+    """
+    z80 = normal_quantile(0.80)
+    gap_pre = 100.0 * (bar - our_best) / our_best
+
+    # Two different portfolios, and conflating them is the error F3 section 3
+    # contains. `pre_import_pp` is the gain over OUR base and its first
+    # component IS the import. `post_import_pp` is the gain over the PARITY
+    # base, so the import is already spent and must not be counted again.
+    composites = {}
+    for name, score in ADVISOR_COMPOSITE_SCORES.items():
+        composites[name] = {
+            "advisor_composite_score": score,
+            "pre_import_pp_over_our_base": 100.0 * (score - our_best) / our_best,
+            "post_import_pp_over_parity_base":
+                100.0 * (score / ADVISOR_COMPOSITE_SCORES["import_alone"] - 1.0),
+        }
+    pre_import_all_five = composites["all_five"]["pre_import_pp_over_our_base"]
+    post_import_all_five = composites["all_five"]["post_import_pp_over_parity_base"]
+
+    def table(gap_pp: float, base_score: float, portfolio_pp: float) -> list[dict]:
+        rows = []
+        for label, k in sorted(k_grid.items(), key=lambda kv: -kv[1]):
+            realised = portfolio_pp * k
+            absolute = base_score * (1.0 + realised / 100.0)
+            row = {
+                "k_label": label,
+                "realisation_factor_k": k,
+                "portfolio_pp": portfolio_pp,
+                "realised_pp": realised,
+                "absolute_score": absolute,
+                "margin_over_bar_abs": absolute - bar,
+                "clears_p50": realised >= gap_pp,
+            }
+            for sd_label, sd in (("tight_sd", sd_lower), ("loose_sd", sd_upper)):
+                row[f"clears_p80_{sd_label}"] = realised >= gap_pp + z80 * sd
+            row["hours_of_bar_movement_bought"] = (
+                (absolute - bar) / BAR_MOVE_ABS_PER_HOUR
+                if absolute > bar else 0.0)
+            rows.append(row)
+        return rows
+
+    # --- section 4: are the two sigma models actually in conflict? ------------
+    attenuation = median_of_eight_attenuation()
+    construction = []
+    for cv in (0.3, 0.5, 0.75, 1.0):
+        construction.append({
+            "per_leg_cv_pct": cv,
+            "ratio_cv_pct_independent_legs": cv * math.sqrt(2.0),
+            "sigma_pp_median_of_8": cv * math.sqrt(2.0) * attenuation,
+            "sigma_abs_at_bar": bar * cv * math.sqrt(2.0) * attenuation / 100.0,
+        })
+
+    # A parity receipt is one draw from the nuisance distribution with a known
+    # mean, so |delta| discriminates the two models. Pre-registered BEFORE the
+    # receipt lands.
+    sigma_tight = REVIEWER_MODEL["reported_sigma_pp"]
+    sigma_loose = sd_lower
+    reading = []
+    for observed in (0.0, 0.15, 0.30, 0.50, 0.68, 1.00, 1.50, 2.00, 3.00):
+        # Half-normal density of |delta| under each model, up to the shared
+        # constant, so the ratio is the likelihood ratio.
+        def dens(sd: float) -> float:
+            return math.exp(-0.5 * (observed / sd) ** 2) / sd
+        lr = dens(sigma_tight) / dens(sigma_loose)
+        reading.append({
+            "observed_abs_delta_pp": observed,
+            "observed_abs_delta_absolute": bar * observed / 100.0,
+            "z_under_tight_model": observed / sigma_tight,
+            "z_under_loose_model": observed / sigma_loose,
+            "likelihood_ratio_tight_over_loose": lr,
+            "favours": ("tight (construction model)" if lr > 3
+                        else "loose (deconvolution bound)" if lr < 1 / 3
+                        else "neither, n=1 cannot separate them here"),
+        })
+
+    return {
+        "harness": "ranked",
+        "gpu_used": False,
+        "section_3_portfolio_denominator": {
+            "advisor_claim": ("redo the k-table with gap = 0 because the import "
+                              "removes the gap and is immune to k"),
+            "accepted": True,
+            "correction": (
+                "the gap does become zero, but the PORTFOLIO must change with "
+                "it. F3's table applies k to 1.958 pp, and the first component "
+                "of that 1.958 pp is the import itself. On the parity base the "
+                "import is already spent, so counting it again double-counts. "
+                "The portfolio that still carries a predicted gain is the "
+                "composite table divided by its own import row."),
+            "pre_import_portfolio_pp": pre_import_all_five,
+            "post_import_portfolio_pp": post_import_all_five,
+            "advisor_used_pp": 1.9581,
+            "overstatement_pp": 1.9581 - post_import_all_five,
+            "overstatement_factor": 1.9581 / post_import_all_five,
+            "composites": composites,
+            "second_correction": (
+                "k prices local-to-ranked TRANSFER. It does not price OVERLAP. "
+                "The parity base is a different tree: the frontier deletes "
+                "passBoundaryTierFactor, pb6, onePass67 and "
+                "qwen35ClusterCentroidQMV. Any of our four remaining mechanisms "
+                "that the crown tree already contains, or that those deletions "
+                "make unreachable, contributes zero no matter what k is. The "
+                "composite table cannot see that and neither can this table."),
+        },
+        "e154_k_table_pre_import_base": {
+            "base_score": our_best,
+            "gap_pp": gap_pre,
+            "portfolio_pp": pre_import_all_five,
+            "verdict": ("the correct answer to 'should we submit a composite on "
+                        "our own base', and the answer is no"),
+            "rows": table(gap_pre, our_best, pre_import_all_five),
+        },
+        "e154_k_table_parity_base": {
+            "base_score": bar,
+            "base_definition": ("byte-identical replay of the crown tree, so the "
+                                "expected score is the crown's own score and the "
+                                "gap is zero up to nuisance"),
+            "gap_pp": 0.0,
+            "portfolio_pp": post_import_all_five,
+            "verdict": ("every measured k in the campaign record clears at p50, "
+                        "so the advisor's conclusion survives the correction; the "
+                        "margins are about 30 % smaller than F3 states"),
+            "rows": table(0.0, bar, post_import_all_five),
+        },
+        "e154_sigma_reconciliation": {
+            "advisor_framing": "you are 2.3x apart",
+            "verdict": (
+                "the two numbers are not in conflict because they are not the "
+                "same kind of quantity. 0.682 pp is an UPPER BOUND: the "
+                "deconvolution gives Var(delta) = Var(tree) + 2 sigma^2 over "
+                "within-solver consecutive pairs, and Var(tree) >= 0 forces "
+                "sigma <= 0.682. The reviewer's 0.295 pp is a POINT ESTIMATE "
+                "from the score's construction. 0.295 is inside (0, 0.682], so "
+                "the data does not exclude it and the bound does not contradict "
+                "it. What the data does exclude is anything above 0.682 pp."),
+            "sigma_upper_bound_pp": sigma_loose,
+            "sigma_construction_point_pp": sigma_tight,
+            "median_of_8_attenuation_measured": attenuation,
+            "median_of_8_attenuation_asymptotic": 1.2533 / math.sqrt(8.0),
+            "construction_grid": construction,
+            "construction_caveat_down": (
+                "the ratio amplification sqrt(2) assumes the two legs of a pair "
+                "are independent. They are a thermally gated pair on one host in "
+                "alternating order, so their noise is positively correlated and "
+                "the true amplification is below sqrt(2). That pushes the "
+                "construction estimate further DOWN."),
+            "construction_caveat_up": (
+                "the median-of-8 attenuation only applies to noise that is "
+                "independent across the eight prompts. A whole-run common mode "
+                "-- host state, power, another tenant, ambient temperature -- is "
+                "shared by all eight legs of one submission and the median does "
+                "not attenuate it at all. So sigma^2 = sigma_common^2 + "
+                "(attenuation * sigma_per_prompt)^2, and the reviewer's number "
+                "is the second term only. Our receipt scatter and the "
+                "deconvolution bound both contain the first term."),
+            "what_the_parity_receipt_measures": (
+                "the TOTAL, including any common mode. That is the quantity a "
+                "submission decision needs, so it is the right measurement."),
+            "pre_registered_reading_rule": reading,
+            "power_warning": (
+                "n = 1. Under the tight model E|delta| = 0.24 pp and under the "
+                "loose model E|delta| = 0.54 pp, so a single draw separates them "
+                "only in the tails. Do not treat one parity receipt as having "
+                "settled sigma; treat it as the first point of a series."),
+        },
+        "margin_in_sigma_units": [
+            {
+                "k_label": label,
+                "realisation_factor_k": k,
+                "realised_pp": post_import_all_five * k,
+                "sigma_units_tight_model": post_import_all_five * k / sigma_tight,
+                "sigma_units_loose_bound": post_import_all_five * k / sigma_loose,
+            }
+            for label, k in sorted(k_grid.items(), key=lambda kv: -kv[1])
+        ],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dump", required=True, type=pathlib.Path)
@@ -554,6 +785,22 @@ def main() -> int:
     frame = frame_reconciliation(
         gap_pp, portfolio, {"lower_sd": sd_lower, "upper_sd": sd_upper})
 
+    pred_mid = statistics.fmean([CROWN_SELF_ESTIMATE["predicted_lo_pct"],
+                                 CROWN_SELF_ESTIMATE["predicted_hi_pct"]])
+    ledger_k = sorted(LEDGER_REALISATION_FACTORS.values())
+    f3 = f3_parity_base_and_sigma(
+        args.bar, args.our_best, sd_lower, sd_upper,
+        {
+            "unity": 1.0,
+            "ledger_upper_quartile": 0.675,
+            "ledger_geometric_mean":
+                math.exp(statistics.fmean(math.log(v) for v in ledger_k)),
+            "ledger_median_lower": 0.42,
+            "crown_self_estimate":
+                CROWN_SELF_ESTIMATE["realised_pct"] / pred_mid,
+            "ledger_worst": 0.112,
+        })
+
     result = {
         "harness": "ranked",
         "gpu_used": False,
@@ -586,6 +833,7 @@ def main() -> int:
         "single_mechanism_slots": single,
         "policy_over_sigma": policy,
         "f2_frame_reconciliation": frame,
+        "f3_parity_base_and_sigma": f3,
     }
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

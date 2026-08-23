@@ -571,5 +571,364 @@
       ],
       "headline": "at the crown's own realisation factor the full five-part portfolio realises 0.541 pp against a 1.258 pp gap, so its median outcome is no promotion"
     }
+  },
+  "f3_parity_base_and_sigma": {
+    "harness": "ranked",
+    "gpu_used": false,
+    "section_3_portfolio_denominator": {
+      "advisor_claim": "redo the k-table with gap = 0 because the import removes the gap and is immune to k",
+      "accepted": true,
+      "correction": "the gap does become zero, but the PORTFOLIO must change with it. F3's table applies k to 1.958 pp, and the first component of that 1.958 pp is the import itself. On the parity base the import is already spent, so counting it again double-counts. The portfolio that still carries a predicted gain is the composite table divided by its own import row.",
+      "pre_import_portfolio_pp": 2.1468090830812905,
+      "post_import_portfolio_pp": 1.409054394298015,
+      "advisor_used_pp": 1.9581,
+      "overstatement_pp": 0.549045605701985,
+      "overstatement_factor": 1.389655365984304,
+      "composites": {
+        "import_alone": {
+          "advisor_composite_score": 3.70958,
+          "pre_import_pp_over_our_base": 0.7275037650136739,
+          "post_import_pp_over_parity_base": 0.0
+        },
+        "import_e151r1": {
+          "advisor_composite_score": 3.72831,
+          "pre_import_pp_over_our_base": 1.236085907875863,
+          "post_import_pp_over_parity_base": 0.5049089115209737
+        },
+        "import_r1_leaf16": {
+          "advisor_composite_score": 3.73532,
+          "pre_import_pp_over_our_base": 1.4264308529620358,
+          "post_import_pp_over_parity_base": 0.6938790914335469
+        },
+        "import_r1_leaf16_e151r2": {
+          "advisor_composite_score": 3.75097,
+          "pre_import_pp_over_our_base": 1.8513806947021945,
+          "post_import_pp_over_parity_base": 1.1157597356034943
+        },
+        "all_five": {
+          "advisor_composite_score": 3.76185,
+          "pre_import_pp_over_our_base": 2.1468090830812905,
+          "post_import_pp_over_parity_base": 1.409054394298015
+        }
+      },
+      "second_correction": "k prices local-to-ranked TRANSFER. It does not price OVERLAP. The parity base is a different tree: the frontier deletes passBoundaryTierFactor, pb6, onePass67 and qwen35ClusterCentroidQMV. Any of our four remaining mechanisms that the crown tree already contains, or that those deletions make unreachable, contributes zero no matter what k is. The composite table cannot see that and neither can this table."
+    },
+    "e154_k_table_pre_import_base": {
+      "base_score": 3.68278758168578,
+      "gap_pp": 1.257808871070332,
+      "portfolio_pp": 2.1468090830812905,
+      "verdict": "the correct answer to 'should we submit a composite on our own base', and the answer is no",
+      "rows": [
+        {
+          "k_label": "unity",
+          "realisation_factor_k": 1.0,
+          "portfolio_pp": 2.1468090830812905,
+          "realised_pp": 2.1468090830812905,
+          "absolute_score": 3.76185,
+          "margin_over_bar_abs": 0.032739989409099834,
+          "clears_p50": true,
+          "clears_p80_tight_sd": true,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 10.453381037388198
+        },
+        {
+          "k_label": "ledger_upper_quartile",
+          "realisation_factor_k": 0.675,
+          "portfolio_pp": 2.1468090830812905,
+          "realised_pp": 1.4490961310798711,
+          "absolute_score": 3.736154714047878,
+          "margin_over_bar_abs": 0.007044703456978052,
+          "clears_p50": true,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 2.2492667487158533
+        },
+        {
+          "k_label": "ledger_geometric_mean",
+          "realisation_factor_k": 0.49520363563874076,
+          "portfolio_pp": 2.1468090830812905,
+          "realised_pp": 1.0631076629641265,
+          "absolute_score": 3.721939578677373,
+          "margin_over_bar_abs": -0.0071704319135270644,
+          "clears_p50": false,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 0.0
+        },
+        {
+          "k_label": "ledger_median_lower",
+          "realisation_factor_k": 0.42,
+          "portfolio_pp": 2.1468090830812905,
+          "realised_pp": 0.9016598148941419,
+          "absolute_score": 3.7159937973777524,
+          "margin_over_bar_abs": -0.01311621321314771,
+          "clears_p50": false,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 0.0
+        },
+        {
+          "k_label": "crown_self_estimate",
+          "realisation_factor_k": 0.2764324324324324,
+          "portfolio_pp": 2.1468090830812905,
+          "realised_pp": 0.593447656804201,
+          "absolute_score": 3.70464299829437,
+          "margin_over_bar_abs": -0.024467012296530033,
+          "clears_p50": false,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 0.0
+        },
+        {
+          "k_label": "ledger_worst",
+          "realisation_factor_k": 0.112,
+          "portfolio_pp": 2.1468090830812905,
+          "realised_pp": 0.24044261730510455,
+          "absolute_score": 3.691642572536973,
+          "margin_over_bar_abs": -0.03746743805392727,
+          "clears_p50": false,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 0.0
+        }
+      ]
+    },
+    "e154_k_table_parity_base": {
+      "base_score": 3.7291100105909,
+      "base_definition": "byte-identical replay of the crown tree, so the expected score is the crown's own score and the gap is zero up to nuisance",
+      "gap_pp": 0.0,
+      "portfolio_pp": 1.409054394298015,
+      "verdict": "every measured k in the campaign record clears at p50, so the advisor's conclusion survives the correction; the margins are about 30 % smaller than F3 states",
+      "rows": [
+        {
+          "k_label": "unity",
+          "realisation_factor_k": 1.0,
+          "portfolio_pp": 1.409054394298015,
+          "realised_pp": 1.409054394298015,
+          "absolute_score": 3.7816551990633385,
+          "margin_over_bar_abs": 0.05254518847243839,
+          "clears_p50": true,
+          "clears_p80_tight_sd": true,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 16.77688009975683
+        },
+        {
+          "k_label": "ledger_upper_quartile",
+          "realisation_factor_k": 0.675,
+          "portfolio_pp": 1.409054394298015,
+          "realised_pp": 0.9511117161511602,
+          "absolute_score": 3.764578012809796,
+          "margin_over_bar_abs": 0.03546800221889601,
+          "clears_p50": true,
+          "clears_p80_tight_sd": true,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 11.324394067335891
+        },
+        {
+          "k_label": "ledger_geometric_mean",
+          "realisation_factor_k": 0.49520363563874076,
+          "portfolio_pp": 1.409054394298015,
+          "realised_pp": 0.6977688588691208,
+          "absolute_score": 3.7551305789577745,
+          "margin_over_bar_abs": 0.026020568366874386,
+          "clears_p50": true,
+          "clears_p80_tight_sd": true,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 8.307972020074837
+        },
+        {
+          "k_label": "ledger_median_lower",
+          "realisation_factor_k": 0.42,
+          "portfolio_pp": 1.409054394298015,
+          "realised_pp": 0.5918028456051663,
+          "absolute_score": 3.7511789897493237,
+          "margin_over_bar_abs": 0.02206897915842365,
+          "clears_p50": true,
+          "clears_p80_tight_sd": true,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 7.046289641897718
+        },
+        {
+          "k_label": "crown_self_estimate",
+          "realisation_factor_k": 0.2764324324324324,
+          "portfolio_pp": 1.409054394298015,
+          "realised_pp": 0.38950833364540793,
+          "absolute_score": 3.743635204852957,
+          "margin_over_bar_abs": 0.014525194262057006,
+          "clears_p50": true,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 4.637673774603131
+        },
+        {
+          "k_label": "ledger_worst",
+          "realisation_factor_k": 0.112,
+          "portfolio_pp": 1.409054394298015,
+          "realised_pp": 0.15781409216137768,
+          "absolute_score": 3.7349950716998133,
+          "margin_over_bar_abs": 0.005885061108913181,
+          "clears_p50": true,
+          "clears_p80_tight_sd": false,
+          "clears_p80_loose_sd": false,
+          "hours_of_bar_movement_bought": 1.879010571172791
+        }
+      ]
+    },
+    "e154_sigma_reconciliation": {
+      "advisor_framing": "you are 2.3x apart",
+      "verdict": "the two numbers are not in conflict because they are not the same kind of quantity. 0.682 pp is an UPPER BOUND: the deconvolution gives Var(delta) = Var(tree) + 2 sigma^2 over within-solver consecutive pairs, and Var(tree) >= 0 forces sigma <= 0.682. The reviewer's 0.295 pp is a POINT ESTIMATE from the score's construction. 0.295 is inside (0, 0.682], so the data does not exclude it and the bound does not contradict it. What the data does exclude is anything above 0.682 pp.",
+      "sigma_upper_bound_pp": 0.6824320936171421,
+      "sigma_construction_point_pp": 0.295,
+      "median_of_8_attenuation_measured": 0.41002933412844844,
+      "median_of_8_attenuation_asymptotic": 0.44310846443055,
+      "construction_grid": [
+        {
+          "per_leg_cv_pct": 0.3,
+          "ratio_cv_pct_independent_legs": 0.4242640687119285,
+          "sigma_pp_median_of_8": 0.17396071358857834,
+          "sigma_abs_at_bar": 0.00648718638492704
+        },
+        {
+          "per_leg_cv_pct": 0.5,
+          "ratio_cv_pct_independent_legs": 0.7071067811865476,
+          "sigma_pp_median_of_8": 0.2899345226476306,
+          "sigma_abs_at_bar": 0.010811977308211733
+        },
+        {
+          "per_leg_cv_pct": 0.75,
+          "ratio_cv_pct_independent_legs": 1.0606601717798214,
+          "sigma_pp_median_of_8": 0.4349017839714459,
+          "sigma_abs_at_bar": 0.016217965962317598
+        },
+        {
+          "per_leg_cv_pct": 1.0,
+          "ratio_cv_pct_independent_legs": 1.4142135623730951,
+          "sigma_pp_median_of_8": 0.5798690452952612,
+          "sigma_abs_at_bar": 0.021623954616423465
+        }
+      ],
+      "construction_caveat_down": "the ratio amplification sqrt(2) assumes the two legs of a pair are independent. They are a thermally gated pair on one host in alternating order, so their noise is positively correlated and the true amplification is below sqrt(2). That pushes the construction estimate further DOWN.",
+      "construction_caveat_up": "the median-of-8 attenuation only applies to noise that is independent across the eight prompts. A whole-run common mode -- host state, power, another tenant, ambient temperature -- is shared by all eight legs of one submission and the median does not attenuate it at all. So sigma^2 = sigma_common^2 + (attenuation * sigma_per_prompt)^2, and the reviewer's number is the second term only. Our receipt scatter and the deconvolution bound both contain the first term.",
+      "what_the_parity_receipt_measures": "the TOTAL, including any common mode. That is the quantity a submission decision needs, so it is the right measurement.",
+      "pre_registered_reading_rule": [
+        {
+          "observed_abs_delta_pp": 0.0,
+          "observed_abs_delta_absolute": 0.0,
+          "z_under_tight_model": 0.0,
+          "z_under_loose_model": 0.0,
+          "likelihood_ratio_tight_over_loose": 2.3133291309055664,
+          "favours": "neither, n=1 cannot separate them here"
+        },
+        {
+          "observed_abs_delta_pp": 0.15,
+          "observed_abs_delta_absolute": 0.00559366501588635,
+          "z_under_tight_model": 0.5084745762711864,
+          "z_under_loose_model": 0.2198020893257593,
+          "likelihood_ratio_tight_over_loose": 2.0825038652434755,
+          "favours": "neither, n=1 cannot separate them here"
+        },
+        {
+          "observed_abs_delta_pp": 0.3,
+          "observed_abs_delta_absolute": 0.0111873300317727,
+          "z_under_tight_model": 1.0169491525423728,
+          "z_under_loose_model": 0.4396041786515186,
+          "likelihood_ratio_tight_over_loose": 1.5192560841827574,
+          "favours": "neither, n=1 cannot separate them here"
+        },
+        {
+          "observed_abs_delta_pp": 0.5,
+          "observed_abs_delta_absolute": 0.0186455500529545,
+          "z_under_tight_model": 1.6949152542372883,
+          "z_under_loose_model": 0.7326736310858644,
+          "likelihood_ratio_tight_over_loose": 0.7194445194891887,
+          "favours": "neither, n=1 cannot separate them here"
+        },
+        {
+          "observed_abs_delta_pp": 0.68,
+          "observed_abs_delta_absolute": 0.025357948072018122,
+          "z_under_tight_model": 2.305084745762712,
+          "z_under_loose_model": 0.9964361382767756,
+          "likelihood_ratio_tight_over_loose": 0.2667141790262585,
+          "favours": "loose (deconvolution bound)"
+        },
+        {
+          "observed_abs_delta_pp": 1.0,
+          "observed_abs_delta_absolute": 0.037291100105909,
+          "z_under_tight_model": 3.3898305084745766,
+          "z_under_loose_model": 1.4653472621717287,
+          "likelihood_ratio_tight_over_loose": 0.021640981515840412,
+          "favours": "loose (deconvolution bound)"
+        },
+        {
+          "observed_abs_delta_pp": 1.5,
+          "observed_abs_delta_absolute": 0.055936650158863496,
+          "z_under_tight_model": 5.084745762711865,
+          "z_under_loose_model": 2.198020893257593,
+          "likelihood_ratio_tight_over_loose": 6.296168804211692e-05,
+          "favours": "loose (deconvolution bound)"
+        },
+        {
+          "observed_abs_delta_pp": 2.0,
+          "observed_abs_delta_absolute": 0.074582200211818,
+          "z_under_tight_model": 6.779661016949153,
+          "z_under_loose_model": 2.9306945243434575,
+          "likelihood_ratio_tight_over_loose": 1.7717218287257247e-08,
+          "favours": "loose (deconvolution bound)"
+        },
+        {
+          "observed_abs_delta_pp": 3.0,
+          "observed_abs_delta_absolute": 0.11187330031772699,
+          "z_under_tight_model": 10.16949152542373,
+          "z_under_loose_model": 4.396041786515186,
+          "likelihood_ratio_tight_over_loose": 1.2693844458849859e-18,
+          "favours": "loose (deconvolution bound)"
+        }
+      ],
+      "power_warning": "n = 1. Under the tight model E|delta| = 0.24 pp and under the loose model E|delta| = 0.54 pp, so a single draw separates them only in the tails. Do not treat one parity receipt as having settled sigma; treat it as the first point of a series."
+    },
+    "margin_in_sigma_units": [
+      {
+        "k_label": "unity",
+        "realisation_factor_k": 1.0,
+        "realised_pp": 1.409054394298015,
+        "sigma_units_tight_model": 4.776455573891576,
+        "sigma_units_loose_bound": 2.0647539989356396
+      },
+      {
+        "k_label": "ledger_upper_quartile",
+        "realisation_factor_k": 0.675,
+        "realised_pp": 0.9511117161511602,
+        "sigma_units_tight_model": 3.2241075123768144,
+        "sigma_units_loose_bound": 1.3937089492815569
+      },
+      {
+        "k_label": "ledger_geometric_mean",
+        "realisation_factor_k": 0.49520363563874076,
+        "realised_pp": 0.6977688588691208,
+        "sigma_units_tight_model": 2.3653181656580364,
+        "sigma_units_loose_bound": 1.0224736869725575
+      },
+      {
+        "k_label": "ledger_median_lower",
+        "realisation_factor_k": 0.42,
+        "realised_pp": 0.5918028456051663,
+        "sigma_units_tight_model": 2.006111341034462,
+        "sigma_units_loose_bound": 0.8671966795529686
+      },
+      {
+        "k_label": "crown_self_estimate",
+        "realisation_factor_k": 0.2764324324324324,
+        "realised_pp": 0.38950833364540793,
+        "sigma_units_tight_model": 1.320367232696298,
+        "sigma_units_loose_bound": 0.5707649703003708
+      },
+      {
+        "k_label": "ledger_worst",
+        "realisation_factor_k": 0.112,
+        "realised_pp": 0.15781409216137768,
+        "sigma_units_tight_model": 0.5349630242758565,
+        "sigma_units_loose_bound": 0.23125244788079166
+      }
+    ]
   }
 }

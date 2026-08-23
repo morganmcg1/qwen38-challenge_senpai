@@ -882,34 +882,28 @@ public final class Qwen36MTPBlockSession {
             while DispatchTime.now().uptimeNanoseconds < deadline {}
         }
 
-        /// Per-round records for the whole process. A file write inside the
-        /// round is what makes a traced leg `timing_valid=false`, so the
-        /// records buffer in memory and are written once at process exit.
-        /// `deinit` is not enough: the worker exits without releasing the
-        /// session, which is why the first debug leg produced no file.
-        nonisolated(unsafe) static var records: [String] = []
-        nonisolated(unsafe) private static var exitHandlerRegistered = false
+        /// Per-round records append immediately to a descriptor opened once.
+        /// Deferred flushing does not work here: the trusted parent stops the
+        /// worker with `SIGTERM` and then `SIGKILL`, so neither `atexit` nor
+        /// `deinit` ever runs and both earlier debug legs produced no file.
+        /// The caller takes the round wall clock BEFORE calling this, so the
+        /// one `write` per drafting round cannot enter the reported metric.
+        nonisolated(unsafe) private static var fileDescriptor: Int32 = -1
+        nonisolated(unsafe) private static var openAttempted = false
 
         static func record(_ line: String) {
-            if !exitHandlerRegistered {
-                exitHandlerRegistered = true
-                atexit { Qwen36MTPBlockSession.E154Instrument.flush() }
+            if !openAttempted {
+                openAttempted = true
+                if let path = outPath {
+                    fileDescriptor = open(
+                        path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+                }
             }
-            records.append(line)
-        }
-
-        static func flush() {
-            guard let path = outPath, !records.isEmpty else { return }
-            let body = Data((records.joined(separator: "\n") + "\n").utf8)
-            records.removeAll()
-            let manager = FileManager.default
-            if !manager.fileExists(atPath: path) {
-                manager.createFile(atPath: path, contents: nil)
+            guard fileDescriptor >= 0 else { return }
+            var body = Array((line + "\n").utf8)
+            _ = body.withUnsafeBytes {
+                write(fileDescriptor, $0.baseAddress, $0.count)
             }
-            guard let handle = FileHandle(forWritingAtPath: path) else { return }
-            handle.seekToEndOfFile()
-            handle.write(body)
-            handle.closeFile()
         }
 
         /// Process-wide CPU microseconds, user plus system, summed over EVERY
@@ -945,8 +939,6 @@ public final class Qwen36MTPBlockSession {
         for _ in 0 ..< steps { x = matmul(x, e154FillerOperand) }
         return x
     }
-
-    deinit { Self.E154Instrument.flush() }
 
     /// Attribution probe only. `verify_build_us` measures the window in which
     /// the host builds the verify graph WHILE the asynchronously submitted head
