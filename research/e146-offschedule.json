@@ -1,0 +1,305 @@
+{
+  "anchor_inversion_panel": [
+    {
+      "anchor": "1db9d63e",
+      "auc": 0.4897959183673469,
+      "call": "state",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.5437,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "452b0055",
+      "auc": 0.6326530612244898,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.1812,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "9aea1921",
+      "auc": 0.5408163265306123,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.3949,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "9f9b4790",
+      "auc": 0.9489795918367347,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.0001,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "c24f1755",
+      "auc": 0.9795918367346939,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "c54de844",
+      "auc": 0.8571428571428571,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.0042,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "e718a6d3",
+      "auc": 0.6020408163265306,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.24595,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "e7770562",
+      "auc": 0.6530612244897959,
+      "call": "flat",
+      "n_high": 7,
+      "n_main": 14,
+      "null_p95": 0.7244897959183674,
+      "p_value_one_sided": 0.1435,
+      "role": "control: cohort HIGH, on schedule"
+    },
+    {
+      "anchor": "08b67f12",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "106573b9",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "1760479a",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "211da8aa",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "3a18ff21",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "3ba6ee9d",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "43925f29",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "4debb1df",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "64508884",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "749b4c7e",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "890594e9",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "a323a8ed",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "aff3b543",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "b8e0f27c",
+      "auc": 1.0,
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 13,
+      "null_p95": 0.7211538461538461,
+      "p_value_one_sided": 0.0,
+      "role": "control: cohort MAIN, on schedule"
+    },
+    {
+      "anchor": "572b2cc4",
+      "auc": 0.9732142857142857,
+      "calibrated_call": "ambiguous",
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 14,
+      "null_p95": 0.7142857142857143,
+      "p_value_one_sided": 5e-05,
+      "role": "off schedule, mode unknown"
+    },
+    {
+      "anchor": "623e77af",
+      "auc": 1.0,
+      "calibrated_call": "flat",
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 14,
+      "null_p95": 0.7142857142857143,
+      "p_value_one_sided": 0.0,
+      "role": "off schedule, mode unknown"
+    },
+    {
+      "anchor": "0c6191b7",
+      "auc": 1.0,
+      "calibrated_call": "flat",
+      "call": "flat",
+      "n_high": 8,
+      "n_main": 14,
+      "null_p95": 0.7142857142857143,
+      "p_value_one_sided": 0.0,
+      "role": "off schedule, mode unknown"
+    },
+    {
+      "anchor": "e003a86d",
+      "auc": 0.19642857142857142,
+      "calibrated_call": "state",
+      "call": "state",
+      "n_high": 8,
+      "n_main": 14,
+      "null_p95": 0.7232142857142857,
+      "p_value_one_sided": 0.99315,
+      "role": "off schedule, mode unknown"
+    }
+  ],
+  "board_path": "/tmp/yukon-board/full.json",
+  "channel_regression": {
+    "candidate_decode_sd_pp": 0.932341503496685,
+    "corr_prefill": -0.13774276677015385,
+    "corr_serial": 0.219164457176722,
+    "n_pairs": 58,
+    "r2_on_serial_and_prefill": 0.06489341227661216,
+    "residual_sd_pp": 0.9015827125200547
+  },
+  "control_calibration": {
+    "controls_fully_separated": true,
+    "high_anchor_auc_max": 0.9795918367346939,
+    "high_anchor_auc_mean": 0.7130102040816326,
+    "main_anchor_auc_mean": 1.0,
+    "main_anchor_auc_min": 1.0
+  },
+  "e146_offschedule_control_separation_margin_auc": 0.020408163265306145,
+  "e146_offschedule_decisive_fraction": 0.75,
+  "e146_offschedule_high_control_span_auc": [
+    0.4897959183673469,
+    0.9795918367346939
+  ],
+  "e146_offschedule_state_readout_possible": 1.0,
+  "harness": "ranked",
+  "pb6_one_basis": {
+    "k_us_per_drafting_round": -2349.588417135569,
+    "residual_sd_pp": 16.521358467955384
+  },
+  "pb6_two_basis": {
+    "basis_correlation": -0.4834574649386692,
+    "k_schedule_multiplier": 2.932598259598054,
+    "k_state_us_per_drafting_round": -917.389244575375,
+    "observed_decode_pct": -4.583145994140366,
+    "residual_sd_pp": 5.957031008847979,
+    "schedule_share_pct_of_decode": -2.183076258703445,
+    "state_share_pct_of_decode": -2.152996432591537
+  }
+}

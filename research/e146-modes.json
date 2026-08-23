@@ -1,0 +1,275 @@
+{
+ "bic_preferred_components": 4,
+ "board_path": "/tmp/yukon-board/full.json",
+ "counts": {
+  "flat": 40,
+  "minus_step": 4,
+  "plus_step": 15
+ },
+ "crown_family_step_us": 879.0038085693578,
+ "dip_p_value": 0.11623381233106511,
+ "dip_statistic": 0.05913653463856274,
+ "e146_p_high_from_replicates": 0.2542372881355932,
+ "flat_band_sd_us": 34.64744967799767,
+ "gap_above_zero": {
+  "from": 130.85623883397946,
+  "to": 483.74040108443955,
+  "width": 352.8841622504601
+ },
+ "gap_above_zero_bootstrap_p": 0.20213989300534974,
+ "gap_below_zero": {
+  "from": -2254.152001137615,
+  "to": -760.8503095552871,
+  "width": 1493.301691582328
+ },
+ "harness": "ranked",
+ "leg_response": {
+  "candidate_to_serial_ratio": 15.283578883591035,
+  "flat_candidate_mean_pct": -0.013802898126844057,
+  "flat_serial_mean_pct": -0.01479114982188109,
+  "high_candidate_mean_pct": 1.318746984544113,
+  "high_serial_mean_pct": 0.0862852211899115
+ },
+ "mixture_bic": [
+  {
+   "bic": 906.4678276278563,
+   "components": 1,
+   "log_likelihood": -449.15637637002243,
+   "means": [
+    107.55317382686192
+   ],
+   "sds": [
+    489.7433141968843
+   ]
+  },
+  {
+   "bic": 829.9969274235067,
+   "components": 2,
+   "log_likelihood": -404.80462010198903,
+   "means": [
+    -3.755484553687861,
+    304.6029802563061
+   ],
+   "sds": [
+    775.7257617384297,
+    79.66424338434881
+   ]
+  },
+  {
+   "bic": 790.5659502621914,
+   "components": 3,
+   "log_likelihood": -378.9728253554728,
+   "means": [
+    -985.6896392640762,
+    -3.5558228749454033,
+    724.4180680488664
+   ],
+   "sds": [
+    152.5205258015066,
+    53.109495589565874,
+    745.0655700606333
+   ]
+  },
+  {
+   "bic": 774.5643643162712,
+   "components": 4,
+   "log_likelihood": -364.85572621665415,
+   "means": [
+    -2254.152001137615,
+    -705.9663963500508,
+    -3.4768434587059445,
+    722.9453618635217
+   ],
+   "sds": [
+    39.832121692174404,
+    39.832121692174404,
+    153.92152776172105,
+    43.23978689802458
+   ]
+  }
+ ],
+ "p_high_ci95": [
+  0.16055977571458208,
+  0.3779614403202997
+ ],
+ "per_prompt": {
+  "beagle": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": -0.02632776551977023,
+   "high_mean_pct": 1.468308372643691
+  },
+  "botany": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": -0.018358783244634136,
+   "high_mean_pct": 1.4385986825675445
+  },
+  "drama": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": -0.00707292512790475,
+   "high_mean_pct": 2.1004160269755654
+  },
+  "essays": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": -0.03828924293956343,
+   "high_mean_pct": 1.1059892857276339
+  },
+  "medicine": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": 0.017710787616875834,
+   "high_mean_pct": 1.2573025479463786
+  },
+  "plutarch": {
+   "drafting_share": 0.07791874831259321,
+   "flat_mean_pct": -0.05161154179767452,
+   "high_mean_pct": -0.010078251672135016
+  },
+  "republic": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": 0.013072291680348291,
+   "high_mean_pct": 1.0231841152763188
+  },
+  "travel": {
+   "drafting_share": 1.0,
+   "flat_mean_pct": 0.00045399431757048303,
+   "high_mean_pct": 2.166255096887908
+  }
+ },
+ "pure_nuisance_pairs": 59,
+ "shape_regression": {
+  "r2_vs_flat_percent": 0.8866287456567211,
+  "r2_vs_zero": 0.9784343384007177,
+  "slope_us_per_drafting_round": 744.4277496076456
+ },
+ "step_both_signs": 801.3945194269411,
+ "step_both_signs_ci95": [
+  673.6480545832351,
+  991.3810794484662
+ ],
+ "step_ci95": [
+  645.7761329569378,
+  798.5943225653687
+ ],
+ "step_drift": {
+  "intercept_us": 819.6790799218094,
+  "r2": 0.117217490575249,
+  "slope_t": -1.3138356017918529,
+  "slope_us_per_day": -54.62229864611838,
+  "verdict": "time and schedule family are confounded; no monotone drift is supported, and no global constant step fits"
+ },
+ "step_heterogeneity": {
+  "crown": {
+   "mean": 879.0038085693578,
+   "n": 3,
+   "sd": 54.3058045772051
+  },
+  "fam0": {
+   "mean": 640.3325802691257,
+   "n": 10,
+   "sd": 122.06864924426566
+  },
+  "fam2": {
+   "mean": 907.0537252623913,
+   "n": 2,
+   "sd": 24.406583405784428
+  }
+ },
+ "step_us_per_drafting_round": 723.6296452616075,
+ "transitivity": {
+  "clusters": 25,
+  "edges": 59,
+  "edges_near_allowed_value": 47,
+  "inconsistent_clusters": 1,
+  "joint_step_us": 801.3945194269413,
+  "labels": {
+   "01a9a41e": 0,
+   "0b8602e1": 0,
+   "0dd455f0": 0,
+   "106573b9": 0,
+   "1486f911": 1,
+   "149deb10": 1,
+   "1760479a": 0,
+   "1a4218f5": 0,
+   "1ea3fdb5": 1,
+   "214d92aa": 0,
+   "390ec878": 0,
+   "3a18ff21": 0,
+   "3ba6ee9d": 0,
+   "3d14f605": 0,
+   "44559d02": 0,
+   "452b0055": 1,
+   "48423d09": 0,
+   "4be07d0c": 0,
+   "4cb3c9b7": 0,
+   "4debb1df": 0,
+   "51b9bf85": 0,
+   "55af6534": 1,
+   "570a341d": 1,
+   "59b321ee": 0,
+   "59bfe4b9": 0,
+   "5a907e8d": 0,
+   "64508884": 0,
+   "6822204d": 1,
+   "684821ed": 0,
+   "6a651dd1": 1,
+   "6b149245": 1,
+   "7358c89f": 0,
+   "742cdf67": 0,
+   "83f0b282": 0,
+   "857b943b": 1,
+   "8630bc07": 1,
+   "8819b108": 0,
+   "89529f1b": 0,
+   "89cbdc02": 1,
+   "90a0b2f7": 0,
+   "94d14b4d": 0,
+   "95941689": 1,
+   "9ad17378": 0,
+   "9aea1921": 1,
+   "9d5569bb": 0,
+   "9f7ad9b0": 0,
+   "a4ac742e": 1,
+   "a5f60760": 0,
+   "a61a465a": 0,
+   "a67df0cc": 0,
+   "abd41069": 0,
+   "ad37b4b9": 0,
+   "af79f710": 0,
+   "b1c2e675": 0,
+   "b37663cc": 0,
+   "b6cb0fea": 0,
+   "b92784b8": 0,
+   "bbc1622d": 0,
+   "bc070b7b": 0,
+   "bde54713": 0,
+   "bed5081a": 0,
+   "c08eb406": 0,
+   "c35afdf7": 0,
+   "c571656e": 0,
+   "c63eaa21": 0,
+   "c6af1e24": 0,
+   "ca1c9db4": 0,
+   "cc19da3d": 0,
+   "cefa0ac6": 0,
+   "d3c491b5": 1,
+   "d458e53c": 0,
+   "d4973a86": 0,
+   "da9d4a20": 0,
+   "e00e043f": 0,
+   "e12836cd": 0,
+   "e3618ddb": 1,
+   "e7770562": 1,
+   "e8812e0e": 0,
+   "e987b29b": 1,
+   "ec778a91": 0,
+   "edd3c106": 0,
+   "f2e7ad0f": 1,
+   "f377cf34": 0,
+   "f92aafbc": 0
+  },
+  "null_residual_rms_us": 501.4141990418493,
+  "residual_rms_us": 211.17610136448772,
+  "rows": 84,
+  "rows_labelled_high": 20,
+  "rows_with_multiple_edges": 20
+ }
+}
