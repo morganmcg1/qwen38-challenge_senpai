@@ -1,7 +1,7 @@
 {
   "pinned_head": {
     "label": "pinned_bf16",
-    "file": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
+    "file": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
     "file_bytes": 849400347,
     "header_bytes": 1563,
     "tensor_bytes": 849398784,
@@ -173,7 +173,7 @@
   },
   "declared_head": {
     "label": "declared_q2_q4",
-    "file": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors",
+    "file": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors",
     "file_bytes": 427742600,
     "header_bytes": 4488,
     "tensor_bytes": 427738112,
@@ -633,7 +633,7 @@
     "max_bytes": 2147483648
   },
   "declared_tree_digest": {
-    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared",
+    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared",
     "sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
     "bytes": 427742600,
     "file_count": 1,
@@ -646,7 +646,7 @@
     ]
   },
   "pinned_tree_digest": {
-    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head",
+    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head",
     "sha256": "6bab9c82ff4a718018ca9a38b1b3e25dc71f68be82ea4ee1d3ca478cc91b45f0",
     "bytes": 849407066,
     "file_count": 5,
@@ -679,7 +679,7 @@
     ]
   },
   "declared_run_tree_digest": {
-    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
     "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
     "bytes": 427746170,
     "file_count": 2,
