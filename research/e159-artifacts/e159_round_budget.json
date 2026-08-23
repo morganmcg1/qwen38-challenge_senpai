@@ -649,6 +649,9 @@
         512
       ],
       "mtp_seconds_per_token": 0.07363384566269815,
+      "realized_acceptance_a_over_D": 0.0,
+      "implied_uniform_p": 0.0,
+      "rejected_per_round": 0.0,
       "fit_R_seconds": 0.06021799793460145,
       "residual_seconds": 0.013415847728096703,
       "entry_c": [
@@ -681,6 +684,9 @@
         0
       ],
       "mtp_seconds_per_token": 0.04296214645728469,
+      "realized_acceptance_a_over_D": 0.9806949806949807,
+      "implied_uniform_p": 0.9806949806949807,
+      "rejected_per_round": 0.019305019305019266,
       "fit_R_seconds": 0.08182878401337712,
       "residual_seconds": 0.003100246821100716,
       "entry_c": [
@@ -713,6 +719,9 @@
         0
       ],
       "mtp_seconds_per_token": 0.03241916513070464,
+      "realized_acceptance_a_over_D": 0.9545454545454546,
+      "implied_uniform_p": 0.9693845341131466,
+      "rejected_per_round": 0.09090909090909083,
       "fit_R_seconds": 0.10343957009215281,
       "residual_seconds": -0.009129271530102942,
       "entry_c": [
@@ -745,6 +754,9 @@
         0
       ],
       "mtp_seconds_per_token": 0.027521037962287664,
+      "realized_acceptance_a_over_D": 0.9136363636363637,
+      "implied_uniform_p": 0.9641953590767476,
+      "rejected_per_round": 0.3181818181818179,
       "fit_R_seconds": 0.14666114224970417,
       "residual_seconds": -0.01856322009796524,
       "entry_c": [
@@ -777,6 +789,9 @@
         0
       ],
       "mtp_seconds_per_token": 0.03244352829642594,
+      "realized_acceptance_a_over_D": 0.8161764705882353,
+      "implied_uniform_p": 0.9546668329492018,
+      "rejected_per_round": 1.4117647058823533,
       "fit_R_seconds": 0.2331042865648069,
       "residual_seconds": 0.011176397078870776,
       "entry_c": [
