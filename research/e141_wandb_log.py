@@ -76,6 +76,7 @@ def main() -> None:
     # metrics are logged under `<metric>_<arm>`.
     ap.add_argument("--rung2-arms", default="")
     ap.add_argument("--arm-geometry", default="research/e141-arm-geometry.json")
+    ap.add_argument("--ca-resolver", default="research/e141-ca-resolver.json")
     ap.add_argument("--name", default="e141-unproposable-token-channel")
     # The arm whose contrast owns the unsuffixed F2 metric names. Every other
     # arm is logged under `<metric>_<arm>`, so nothing is lost either way.
@@ -263,6 +264,53 @@ def main() -> None:
         for key, value in blob.items():
             if isinstance(value, (int, float)) and key.startswith("e141_"):
                 metrics[f"{key}_{arm}"] = value
+        # F8's two-term split. Diagnostic, never a price.
+        for prompt, pblob in blob.get("prompts", {}).items():
+            for key in (
+                "round_cost_pct_delta",
+                "tokens_per_round_pct_delta",
+                "decomposition_residual_pp",
+                "mean_draft_delta",
+                "shipped_mean_draft",
+                "candidate_mean_draft",
+                "shipped_decode_spt",
+                "candidate_decode_spt",
+                "shipped_accepted_draft_rate",
+                "candidate_accepted_draft_rate",
+                "added_us_per_round_at_p025",
+            ):
+                value = pblob.get(key)
+                if isinstance(value, (int, float)):
+                    metrics[f"e141_f8_{key}_{prompt}_{arm}"] = value
+
+    resolver = load(args.ca_resolver)
+    if resolver:
+        config["ca_resolver"] = resolver
+        for key, value in resolver.items():
+            if key.startswith("medpair_") and isinstance(value, (int, float)):
+                metrics[f"e141_ca_{key}"] = value
+        for seed, blob in resolver["seeds"].items():
+            for key in (
+                "corpus_basis_pct",
+                "row_basis_pct",
+                "trial_basis_pct",
+                "binding_basis_pct",
+                "binding_share_of_first_divergences_pct",
+                "emitted_no_trial_pct",
+                "tail_double_count_ratio",
+            ):
+                value = blob.get(key)
+                if isinstance(value, (int, float)):
+                    metrics[f"e141_ca_{key}_{seed}"] = value
+        medpair_corpus = resolver.get("medpair_corpus_basis_pct")
+        medpair_trial = resolver.get("medpair_trial_basis_pct")
+        if medpair_corpus and medpair_trial:
+            metrics["e141_ca_trial_over_corpus_ratio"] = medpair_trial / medpair_corpus
+            summary_notes.append(
+                "live-trajectory C-a rate is "
+                f"{medpair_trial / medpair_corpus:.2f}x the corpus rate, so the "
+                "prize does not halve"
+            )
 
     run = wandb.init(
         entity=ENTITY,
