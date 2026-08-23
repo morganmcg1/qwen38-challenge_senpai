@@ -233,6 +233,13 @@ def gated_legs() -> list[dict]:
         if score is None:
             continue
         metrics = score["metrics"]
+        # `effective_mean_draft_len` counts drafts PROPOSED per round. The F6
+        # identity needs drafts ACCEPTED per round, which is that count scaled
+        # by the acceptance rate. Using the proposed count here overstates R.
+        q = metrics["effective_mean_draft_len"]
+        a = q * metrics["accepted_draft_rate"]
+        tokens = metrics["decode_tokens"]
+        rounds = tokens / (1.0 + a)
         legs.append(
             {
                 "session": "gated",
@@ -243,8 +250,20 @@ def gated_legs() -> list[dict]:
                     ROOT / ".mlxfast-private/e158r1" / f"gated-{slot}-{arm}"
                 ),
                 "mtp_seconds_per_token": metrics["mtp_seconds_per_token"],
+                "mean_proposed_per_round_q": q,
+                "mean_accepted_per_round_a": a,
+                "rows_per_round": 1.0 + q,
+                "round_count_derived": rounds,
+                "accepted_draft_total_derived": rounds * a,
                 "seconds_per_round_R": metrics["mtp_seconds_per_token"]
-                * (1.0 + metrics["effective_mean_draft_len"]),
+                * (1.0 + a),
+                "peak_ram_gb": metrics.get("peak_ram_gb"),
+                "process_resident_memory_gb": metrics.get(
+                    "process_resident_memory_gb"
+                ),
+                "non_drafting_round_count": metrics.get(
+                    "non_drafting_round_count"
+                ),
                 "serial_seconds_per_token": metrics["serial_seconds_per_token"],
                 "mtp_decode_speedup": metrics["mtp_decode_speedup"],
                 "decode_token_count": metrics["decode_tokens"],
