@@ -62344,3 +62344,202 @@ open axes            E159 depth gate (edward)
                      E152 merged (thorfinn, free)
 advisor branch       eec2c14b + this entry
 ```
+
+## 332 — The chunk-sum consumer is already wired everywhere. Only four producers exist, we shipped one, and it was the smallest one by work
+
+Entry 330 recorded that the crown-parity import buys
+`qwen35_fused_residual_rms_norm_xsums_v1`, "the +0.175 % mechanism". Entry 331
+merged it. This entry reads the mechanism properly instead of treating it as a
+single banked line item, and the reading changes what the remaining work is
+worth and who should do it.
+
+### 332.1 FINDING 308 — the prize is not flat per site, because K differs 3.4x across sites
+
+`Qwen35CustomQMV.matmul`
+(`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1858-1878`) already
+asks `Qwen35XSumsSidecar.take(x, k:m:)` for **every** table-paying routed cell
+in the shipped `sumtable` arm, and falls back to the standalone `xsumsTable(x)`
+fill on a miss. The consumer is universal and finished. The only thing missing
+at 130 of the 257 sites is a **producer** that emits the table it already knows
+how to compute.
+
+That reframes the remaining work: it is not "build a fusion mechanism", it is
+"add an epilogue to three more producers". Much smaller than the name implied.
+
+The fill grid is `(32, kBlocks, m)` with `kBlocks = K/512` (`:1797-1806`), so
+per-site fill cost is `a + b * kBlocks` for a dispatch term `a` and a work term
+`b`. **K is not constant across sites**, and I had been pricing as if it were.
+
+```
+site                      n   kB   n*kB  dispatch%     work%
+boundary(shipped)       127   10   1270    0.1747    0.1747
+mlp.down                 64   34   2176    0.0880    0.2993
+gdn.out_proj             48   12    576    0.0660    0.0792
+fa.o_proj                16   12    192    0.0220    0.0264
+tail norms                2   10     20    0.0028    0.0028
+OPEN TOTAL              130        2964    0.1788    0.4077
+
+shipped share: 49.4 % of sites, but only 30.0 % of the fill WORK
+```
+
+Calibration is the boundary win itself: `127 * (a + 10b)` = 0.175 % published =
+**0.1747 % candidate-leg** under RULE 176 (`g = p/(1+p)`).
+
+> **FINDING 308.** The shipped chunk-sum producer covers 49.4 % of the sites but
+> only 30.0 % of the fill work, because `mlp.down` carries `K = 17,408` (34
+> K-blocks) against the norm boundary's 5,120 (10). The open producer-fusion
+> prize is **+0.179 % to +0.408 %** on the candidate leg — **31 % to 71 % of the
+> entire remaining -0.575 % gap to the published bar** — from a mechanism that
+> is already proven in production and whose consumer side needs no change at
+> all.
+
+The bracket's width is not a defect of the estimate; it is the unknown split
+between `a` and `b`, and it collapses as soon as one site at a different
+`kBlocks` is measured.
+
+### 332.2 ADVISOR ERROR 200 — I carried a flat per-site price into the composition plan
+
+The composition plan carried `mlp.down +0.144 %`, `gdn.out_proj +0.108 %`,
+`fa.o_proj +0.036 %` — a flat 0.00225 %/site. Against the corrected brackets:
+
+```
+site           carried    corrected bracket    verdict
+mlp.down       +0.144     0.088 .. 0.299       under-priced, badly at the work-bound end
+gdn.out_proj   +0.108     0.066 .. 0.079       OVER-priced by 37 %, outside the bracket
+fa.o_proj      +0.036     0.022 .. 0.026       OVER-priced by 38 %, outside the bracket
+```
+
+Two of the three carried numbers were outside the defensible bracket entirely.
+The flat model also inverted the ranking I would have used to order the work:
+it made gdn+fa (+0.144 %) look equal to mlp.down (+0.144 %), when mlp.down is
+worth up to 3.4x the pair.
+
+**Rule:** when a mechanism's cost scales with a shape parameter, never price
+sites by count. Price by `sites x shape`, and state the bracket between the
+dispatch-bound and work-bound limits.
+
+### 332.3 The `fill_noconsume` arm has been able to calibrate this all along
+
+`Arm.fillNoConsume` is documented at the `Arm` enum as existing "to price the
+fill on its own" — it binds a live chunk-sum table the kernel never reads, so
+the fill dispatch really runs in the stream. A `sumtable` vs `fill_noconsume`
+contrast therefore prices exactly the 127 fills the sidecar already eliminates,
+which measures `127 * (a + 10b)` **on the local host** rather than inheriting
+the crown's M5 attribution.
+
+We have never run it. Both E160 and E161 now require it as a step-0 screen,
+coordinated so only one of them pays for it.
+
+The live fill census is also already printed and has never been read:
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1691-1692` emits
+`xs_hit=<qwen35XSumsSidecarHits> xs_fill=<qwen35XSumsStandaloneFills>` every
+round. Expected today: `xs_hit` ~127, `xs_fill` ~130. That single number
+falsifies or confirms the whole prize before any kernel is written.
+
+### 332.4 FINDING 309 — the sidecar keys on object identity, so a reshape between producer and consumer is a silent total miss
+
+`Qwen35XSumsSidecar` holds the activation **weakly, by object identity**
+(`:2391-2398`, `weak var x: MLXArray?`), and re-checks `(K, M)` before handing a
+table out. `.reshaped()` returns a new `MLXArray`. So a producer that publishes
+before a reshape misses on every single cell, silently, with no error and no
+counter movement.
+
+The three open sites are not equal in this respect:
+
+```
+site           producer -> consumer path                                    reshape?
+mlp.down       qwen35CompiledFusedSwiGLU(y) -> qwen35RoutedLinear   :1985     NO
+gdn.out_proj   normedOut.reshaped(B,S,-1)   -> qwen35RoutedLinear   :1322     YES
+fa.o_proj      ...SigmoidMultiply(...).reshaped(B,L,-1)             :3399     YES
+```
+
+For gdn the pre-reshape tensor also fails `wants()` outright on shape: it
+carries `.dim(-1) == 128`, not 6,144, so both `k % 512 == 0` and
+`x.dim(-2) == rows` reject it. The fix at both sites is to have the custom
+kernel emit the already-flattened `(B, S, K)` shape via `outputShapes:` and
+publish that exact object.
+
+`fa.o_proj` carries a second hazard: its `output` is `.transposed(0,2,1,3)` and
+therefore strided. The existing code relies on strided inputs being copy-free in
+the *compiled elementwise* path (`:3385-3388`); a hand-written Metal kernel gets
+no such guarantee and must handle the stride explicitly.
+
+### 332.5 FINDING 310 — a sub-noise-floor site cannot be assigned as its own arm
+
+`fa.o_proj` is worth +0.022 % to +0.026 %. The corrected local floor from
+alphonse's null control is **0.039 % absolute mtp**. The site is real, its
+mechanism is sound, and it is **unmeasurable as a standalone arm on our
+hardware** — any result would be indistinguishable from noise in either
+direction.
+
+> **FINDING 310.** A mechanism whose expected effect is below the measurement
+> floor must be bundled with a co-located mechanism that clears the floor, and
+> attributed by counters rather than by timing. Assigning it alone guarantees an
+> inconclusive result regardless of whether it works.
+
+Hence E161 pairs it with `gdn.out_proj` (combined +0.088 % to +0.106 %, ~2.5x
+the floor) and takes the 48/16 split from `xs_hit`/`xs_fill`, not from a timing
+contrast. The two tail norms (+0.0028 %) are closed by negligibility and will
+not be assigned.
+
+### 332.6 Feasibility, checked before assigning
+
+Every open site clears the gates, so nothing structural blocks this family:
+
+```
+site           K        K % 512   N      N >= 4096   N % 8
+mlp.down       17,408   0  (34)   5,120  yes         0
+gdn.out_proj    6,144   0  (12)   5,120  yes         0
+fa.o_proj       6,144   0  (12)   5,120  yes         0
+```
+
+`intermediateSize = 17,408`, `linearNumValueHeads * linearValueHeadDim =
+48 * 128 = 6,144`, attention `24 * 256 = 6,144`
+(`Sources/MLXFastModel/Qwen35Config.swift:239,244,246`). Tables pay at
+m in 4...9 (`widths = 2...9`, `tablePays(m) = m >= 4`), and every open producer's
+live branch covers that range: the MLP fused path is taken at `x.dim(-2) <= 16`,
+and the GDN post-norm branch at `S >= 2`. The GDN `S == 1` branch and every
+`M = 1` path stay untouched, so the serial leg is byte-identical.
+
+### 332.7 Assignments
+
+Both free students are now working this family in parallel on independent
+source.
+
+```
+#160  thorfinn   mlp.down, 64 sites, kB=34      +0.088 .. +0.299 %   no reshape hazard
+#161  alphonse   gdn.out_proj 48 + fa.o_proj 16 +0.088 .. +0.106 %   reshape + stride hazards
+```
+
+Both carry the same evidence contract: step-0 fill census and `fill_noconsume`
+calibration; float32 table comparison against `xsumsTable` at every touched cell
+**with a positive control that proves the check can fail**; `xs_hit` up and
+`xs_fill` down by the site count as direct proof of engagement; exact-token and
+row-ledger gate; gated ABBA timing with 3 replicates on paired absolute
+candidate-leg mtp; and bit-identical `accepted_draft_rate`/`edl`/round count
+between arms, since this moves only *where* a table is computed and never a
+value. Movement in those counters is a correctness bug, not a speedup.
+
+Minimum useful effect +0.06 % (2 sigma ~0.045 % at 3 replicates). Alphonse has
+explicit partial credit: ship gdn alone if the fa transpose defeats him inside
+budget.
+
+The shared hazard list is the two-pass lane derivation (the fill's
+`(32,kBlocks,m)`/`(32,1,1)` geometry versus a producer epilogue's, which argmax
+will not catch), `template:` selection rather than a runtime branch so prefill
+keeps its pinned reduction order, summing the correct tensor, and copying the
+`qwen35CustomAffine4XSumsKernel` body (`:1629`) character-for-character.
+
+```
+campaign state       2026-08-23 18:50Z
+the published bar    ec24d591  3.72911001  src 0863b06a  (inflated, true surface ~3.706)
+our parity anchor    5a9f130a  3.70784519  candidate median 0.010260
+in flight            1509bf95  parity + leaf16, still validating at 24 min
+base                 9b0091db  crown parity + leaf16
+needed from anchor   -0.575 % on the candidate leg
+open axes            E158 R1 head rebuild        askeladd   trunk a2 +2.045 % provisional
+                     E159 depth gate             edward
+                     E160 mlp.down producer      thorfinn   +0.088 .. +0.299 %
+                     E161 gdn/fa producer        alphonse   +0.088 .. +0.106 %
+producer family      +0.179 .. +0.408 % open = 31 .. 71 % of the remaining gap
+```
