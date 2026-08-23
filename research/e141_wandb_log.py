@@ -71,8 +71,15 @@ def main() -> None:
     ap.add_argument("--rung1", default="research/e141-rung1-screen.json")
     ap.add_argument("--rung3", default="research/e141-rung3.json")
     ap.add_argument("--rung2", default="research/e141-rung2.json")
+    # Extra timed arms. `research/e141_rung2_abba.sh` writes one report per
+    # candidate, so every arm after the first lands in its own file and its
+    # metrics are logged under `<metric>_<arm>`.
+    ap.add_argument("--rung2-arms", default="")
     ap.add_argument("--arm-geometry", default="research/e141-arm-geometry.json")
     ap.add_argument("--name", default="e141-unproposable-token-channel")
+    # The arm whose contrast owns the unsuffixed F2 metric names. Every other
+    # arm is logged under `<metric>_<arm>`, so nothing is lost either way.
+    ap.add_argument("--headline-arm", default="full")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
 
@@ -173,7 +180,7 @@ def main() -> None:
         contrasts = rung3.get("contrasts") or {}
         config["f2_contrasts"] = contrasts
         for arm, c in contrasts.items():
-            suffix = "" if arm == "armA" else f"_{arm}"
+            suffix = "" if arm == args.headline_arm else f"_{arm}"
             metrics[f"e141_recovered_pct_beagle_raw{suffix}"] = c[
                 "e141_recovered_pct_beagle_raw"
             ]
@@ -246,6 +253,16 @@ def main() -> None:
                     "widening consumes "
                     f"{100.0 * (gross - net) / gross:.0f} % of it"
                 )
+
+    for arm in [a for a in args.rung2_arms.split(",") if a]:
+        blob = load(f"research/e141-rung2-{arm}.json")
+        if not blob:
+            print(f"  missing research/e141-rung2-{arm}.json")
+            continue
+        config[f"rung2_{arm}"] = blob
+        for key, value in blob.items():
+            if isinstance(value, (int, float)) and key.startswith("e141_"):
+                metrics[f"{key}_{arm}"] = value
 
     run = wandb.init(
         entity=ENTITY,
