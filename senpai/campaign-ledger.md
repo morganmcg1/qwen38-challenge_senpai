@@ -59629,3 +59629,305 @@ forbids spending a round to confirm it.
 - Whether alphonse's `-4.12 %` prefill effect survives on a base paying ~130
   fills per round instead of 257.
 
+
+## 320 — 2026-08-23 16:30 — Acceptance is repriced at 2.12x the whole gap, the draft schedule is proved one to three rows too deep, and four advisor errors are recorded. FINDINGS 284-288, RULE 163, ADVISOR ERRORS 190-193.
+
+The most productive hour of the campaign, and almost none of it cost GPU time.
+Two students corrected me from source and from measurement, and the corrections
+compounded into a new priority order.
+
+### 320.1 FINDING 284 — thorfinn: the crown already ships `p15`, so the port is one integer
+
+Thorfinn diffed the blob rather than the symbol and found that
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` is the **same git
+object** `ff8196bd...` in the crown `0863b06a` and in his parity commit
+`e0650407`. Every constant in that file is therefore identical, including
+`qwen35DerivedClusterProbeFraction = 0.15` at `:4619-4625`, read at `:5669`,
+citing the same ranked receipt `02742bf0` we cite. **The crown restored one of
+our own mechanisms.**
+
+Verified independently at the advisor:
+
+```
+0863b06a  Qwen35.swift:5188   derivedClusterRowsPerLeaf = 8
+HEAD      Qwen35.swift:5693   derivedClusterRowsPerLeaf = 16
+```
+
+So the E152 R2 port is exactly that integer. Arm design: one binary, the
+`MLX_E141_ROWS_PER_LEAF` override ported onto crown, compiled default 16, arm A
+forcing 8, Rule 114 trace witness on both. Revised pre-registration: point
+estimate **3.729**, `leaf16` worth **0 to +0.24 %** on top.
+
+> **ADVISOR ERROR 190.** I asserted the crown lacked `p15` without diffing the
+> blob. RULE 162 told me to diff at symbol level; I diffed only for the things I
+> expected to be missing. A one-sided audit is not an audit.
+
+Honest read on the consequence: parity alone lands at roughly `[3.723, 3.735]`
+against a 2 sigma ranked MDE of `0.1547` pp, so **pure parity is a coin flip
+against the bar and `leaf16` is the entire margin.**
+
+Thorfinn also reported **HD37**: `--local-submit` at 512 tokens cannot complete
+on a 48 GiB host, `exit_status=15`, low-memory startup profile, dying in MTP
+reference-row generation. The bare 512-token exactness leg is the accepted
+substitute. Worth recording separately: **the 1024-step public golden drift
+tripwire and the real 40 C gate both do run on 48 GiB** and both passed on the
+parity tree. That is a stronger local gate than this ledger had recorded.
+
+### 320.2 RULE 162 second level — the crown is also a stale-overlay victim, and it dropped our kernels
+
+`upstream/main` is a chain of bot snapshots of individual candidate trees, not
+an accumulation of promoted work. Mechanisms promoted by one solver can be
+absent from a later crown taken from a different solver's tree. Verified by
+`git grep` over the whole tree at each commit:
+
+```
+qwen_mtp_cluster_centroid_qmv_a2g64_v1   crown 0 files   ours 1
+qwen_mtp_cluster_row_qmv_a2g64_v1        crown 0 files   ours 1
+qwen35ClusterRowQMV                      crown 0 files   ours 1
+qwen35ClusterCentroidQMV                 crown 0 files   ours 1
+qwen35E141RowsPerLeafOverride            crown 0 files   ours 1
+```
+
+Those kernels are ours, promoted at `623e77a` (morganmcg1, 3.52085227, 8/22).
+**crown + leaf16 + our cluster QMV is a tree nobody on the board has.** It is the
+union of the two frontiers and we are the only side that can see both halves.
+
+Deferred deliberately under RULE 154: thorfinn owns a zero-GPU census
+(`e152_cluster_qmv_port_feasibility`, `_port_bytes`,
+`_supersession_evidence`) that defines the next candidate without widening the
+round in front of a free submission slot. The census must test
+`superseded_by_crown` before assuming a free addition; our kernels came off a
+3.52 tree and the crown is 3.729.
+
+### 320.3 FINDING 285 — proposed and withdrawn before publication
+
+I built a two-host decomposition from FINDING 258's dispatch ratio and FINDING
+281's round law and concluded the M4 Pro round was 36 % host-bound and the
+ranked round 51 %. **Edward's direct measurement killed it in the same hour:
+device busy is at least 99.42 % of the round, CPU slack 47,424 us against GPU
+slack 865 us, ratio 54.8.** The 40,628 us of host CPU is entirely hidden behind
+device work. The host is waiting, not working. Withdrawn, recorded so nobody
+revives the algebra.
+
+What survives is the empirical transfer factor, which needs no model.
+
+> **RULE 163.** A percentage measured on a local host does not transfer to the
+> ranked host at 1:1. Multiply by **1.42** for a host or dispatch reduction and
+> by **1.00** for a GPU-work reduction. The factor applies **only** to a locally
+> measured percentage; a percentage read off a ranked receipt is already in
+> ranked units and must not be corrected.
+
+The 1.42 is `(1.18 / 53,576) / (2.308 / 148,775)` from FINDING 258's two-host
+dispatch cost. The 1.00 follows from both hosts being GPU-bound. **The 3.63 GPU
+ratio this campaign was carrying is dead**: edward measured 254.89 GB/s
+achievable on M4 Pro, flat to 0.4 % across a 16x geometry sweep and 93.4 % of
+spec peak, and the round-time ratio is 2.777.
+
+Edward's own warning attaches: on the M5 the host share is plausibly 58 to 63 %
+of the round against 27.3 % here, so **the ranked host will become
+dispatch-bound before we do.** Dispatch elimination ages well; GPU-work
+reduction ages badly.
+
+### 320.4 ADVISOR ERROR 192 — FINDING 281's regressor was wrong
+
+Edward's E154 terminal result, W&B `fi9mm878`:
+
+```
+clean_round_us ~ verified rows (d+1)      r = 0.978   15,708 us/row
+clean_round_us ~ emitted tokens (acc+1)   r = 0.528
+within-d at d=7, n=120: an accepted token makes the round
+                        262.9 +- 29.4 us FASTER   t = -8.93
+```
+
+> **ADVISOR ERROR 192.** I fitted FINDING 281 across eight ranked prompts where
+> the adaptive scheduler makes drafted width co-vary with acceptance. Rows and
+> tokens are collinear there, so the fit cannot separate them, and I read the
+> slope as a token price. A regression across prompts cannot identify a
+> within-round cost.
+
+The re-fit edward requested cannot be run: ranked receipts report
+`effective_mean_draft_len` and `non_drafting_round_count` but not drafted
+width, so there is no `rows_per_round` regressor on the ranked set.
+
+### 320.5 FINDING 286 — the row law reproduces the ranked set with no free parameters
+
+Edward's local law scaled to the ranked host by the single round-time ratio
+2.7769 and nothing else, then solved per prompt for implied drafted width:
+
+```
+ranked row law   clean_round_us = 8,434 + 5,657 * rows   rollback 94.7 us
+
+prompt      tok/rnd  clean us  implied d      edl    d - edl      p
+plutarch     1.0519    30,744      2.944   0.1557     +2.788   0.0493  <- 449/487 non-draft
+drama        2.0317    34,140      3.544   2.2976     +1.247   0.5280
+travel       2.4113    35,177      3.728   2.6479     +1.080   0.6248
+beagle       4.6545    44,991      5.463   4.3818     +1.081   0.8973
+republic     5.5054    47,809      5.961   4.9892     +0.972   0.9187
+essays       5.5628    48,975      6.167   5.0870     +1.080   0.9222
+medicine     5.6883    49,448      6.251   5.2556     +0.995   0.9299
+botany       6.3179    54,561      7.154   6.1481     +1.006   0.9312
+
+seven all-drafting prompts:  d - edl = +1.0657   sd 0.0920
+```
+
+Speculative decoding requires drafted minus accepted to equal exactly 1 on any
+round ending in a rejection. The model recovers that identity to 6.6 % with no
+fitted parameter beyond one scale factor. Plutarch is the expected outlier.
+
+Three by-products:
+
+1. **The live ranked draft schedule, recovered for the first time**, `d` from
+   3.54 on drama to 7.15 on botany.
+2. **The live per-prompt acceptance rate**, `p` from 0.528 to 0.931.
+3. **An independent bound on the host ratio.** Implied `d` must not exceed our
+   cap of 7 nor fall below `edl`, giving `s` in `[2.40, 2.73]`. Edward's
+   measured 2.777 sits 1.7 % outside, close agreement from unrelated routes.
+
+Also recovered as a residual: `leg_seconds - rounds * clean_round_us` is
+**0.5265 s on every prompt, sd 0.00055 s, spread 1.55 ms across an 8x range of
+round counts.** A prompt-independent seed cost, and it validates the `P/(C+P)`
+prefill share carried at 10.0438 % Rule-148 weighted.
+
+### 320.6 FINDING 287 — the marginal drafted row does not pay, on every prompt
+
+Draft row `d+1` only if `p^(d+1) > T(d) * (b + rollback) / C(d)`. **This
+break-even is host-invariant**: if the fixed term, the row price and the
+rollback price all carry the same host factor, it cancels. Checked numerically —
+local and ranked both give 0.6299 for beagle.
+
+```
+prompt         p    d live   p^(d+1) offered   break-even   d*   over by
+drama      0.5280        4            0.0410       0.3158    1         3
+travel     0.6248        4            0.0952       0.3752    1         3
+beagle     0.8973        5            0.5219       0.6299    4         1
+republic   0.9187        6            0.5522       0.6573    4         2
+essays     0.9222        6            0.5674       0.6642    5         1
+medicine   0.9299        6            0.6012       0.6794    5         1
+botany     0.9312        7            0.5656       0.6748    5         2
+```
+
+**Seven prompts, seven the same sign, spanning `p` from 0.53 to 0.93.** In one
+sentence: a marginal drafted row must be accepted about **63 to 68 percent** of
+the time to pay for itself, and we are drafting rows accepted **52 to 60
+percent** of the time.
+
+Priced: published median of the per-prompt raw gains `+1.1662 %`; **Rule 148
+weighted `+0.8555 %`**, which is the number to use because beagle and essays
+carry 0.947 of the mass and set the median. That is **68 % of the gap for zero
+bytes and no kernel surface.**
+
+Known weakness, stated for the record: absolute leg residuals are 1 to 8 %,
+larger than the heavy-prompt gains. Three reasons the sign survives — the
+residual is a per-prompt level error that cancels in a within-prompt ratio, the
+break-even is host-invariant, and seven of seven agree across a wide `p` range.
+The assumption most likely to be wrong is iid geometric acceptance; edward holds
+the measured per-position histograms and will substitute them.
+
+### 320.7 FINDING 288 — the schedule is calibrated for a better head than we have
+
+```
+                        depth fix only   recall +3pp   both
+Rule 148 weighted            +0.8554 %     +7.5437 %   +7.5484 %
+sub-additive by                                        -0.8508 pp
+```
+
+> **FINDING 288.** The draft schedule is not mis-calibrated for the depths it
+> chooses. It is calibrated for a head about three acceptance points better than
+> the one we have. Raise `p` by three points and the live schedule becomes
+> optimal or near-optimal on every heavy prompt, and the depth fix is worth
+> approximately zero.
+
+Consequence for design, not just for pricing: **a fixed cap tuned to today's `p`
+is worth `+0.86 %` and goes wrong the moment the head improves. A marginal-value
+rule computed from running acceptance statistics is worth the same today and
+stays correct as `p` moves.** E157 asks for the rule, not a constant.
+
+### 320.8 ADVISOR ERROR 193 — one acceptance point was under-priced by 1.66x
+
+> **ADVISOR ERROR 193.** I combined `dE/dp = 11.350` evaluated at `p = 0.778,
+> d = 7` with a rate `1/t` evaluated at `t = 6.5641` from a different leg. At
+> `p = 0.778, d = 7` the implied `t` is 3.8999, so the rate is 25.64 %/token and
+> not 15.23 %/token. Two inconsistent operating points multiplied together.
+
+Repriced at the rates FINDING 286 recovers:
+
+```
+prompt         p    d   dE/dp   1/t %/tok   per point %   absolute   x gap
+beagle    0.8973    5  11.340       21.48       +2.4364    +0.0897     1.94
+republic  0.9187    6  15.957       18.16       +2.8984    +0.1067     2.30
+essays    0.9222    6  16.153       17.98       +2.9037    +0.1069     2.31
+medicine  0.9299    6  16.581       17.58       +2.9149    +0.1073     2.32
+botany    0.9312    7  21.219       15.83       +3.3589    +0.1237     2.67
+
+Rule 148 weighted   one acceptance point = +2.6701 % of raw
+                                         = +0.0983 absolute
+                                         = 2.12x the entire gap
+acceptance points needed to close the gap:  0.47
+```
+
+Edward's independently measured figure is `+0.0962`. Agreement to 2.2 % by two
+routes. **Treat `+0.096 to +0.098 absolute per point` as settled.**
+
+The old two-bound band is gone as well. FINDING 281 offered `+1.209 %` if cost
+co-moves and `+2.240 %` if cost is fixed at the drafted width. Edward measured
+the coupling and it is slightly **negative**, so the co-moving row is dead and
+the point estimate sits above the old upper bound.
+
+### 320.9 Priority order, as of this entry
+
+```
+one acceptance point         +2.67 % raw   2.12x the gap   askeladd  E155
+depth recalibration rule     +0.86 % raw   0.68x the gap   edward    E157 R0
+crown parity + leaf16        ~ the gap                     thorfinn  E152 R2
+composed NAX prefill         +0.42 %                       alphonse  E156 R1
+```
+
+Reproduce every number in 320.5 through 320.8 with
+`python3 research/e157_depth_and_acceptance_pricing.py`.
+
+### 320.10 Actions taken
+
+- **PR #154 merged** at `c1492927` after `accept_result_on_current_base`. The
+  submitted surface is byte-identical to its merge base across all 89 declared
+  editable paths, growth 0 of 262,144, and the two sides of the merge touch
+  disjoint file sets, so the merge could not re-enact the FINDING 283 overlay
+  pathology on advisor work. Checked before merging, not assumed.
+- **PR #157 opened** for edward: the depth recalibration rule.
+- Feedback issued on #152 (FINDING 284 accepted, ADVISOR ERROR 190, cluster QMV
+  census), #155 (acceptance repriced, three-bucket recall split), #156 (both
+  student flags upheld, the unmeasurable timing stop rule withdrawn as ADVISOR
+  ERROR 191, `compose_forced_by_tgp_limit` named as a fourth verdict), and #157
+  (ADVISOR ERROR 193 corrected).
+
+### 320.11 ADVISOR ERROR 191, recorded from alphonse's flag
+
+> **ADVISOR ERROR 191.** In E156 I wrote a stop rule requiring a measured
+> prefill effect to clear the 0.052 % floor, in the same brief where section 2.3
+> already accepted that the NAX kernel cannot execute on any host this team
+> owns. Read literally the rule ended the round unconditionally and for the
+> wrong reason. Alphonse caught it before writing code and asked instead of
+> guessing. Withdrawn and replaced with offline proof obligations.
+
+Alphonse also derived, from crown source, that double buffering at `BN = 64`
+needs 34,816 B against a 32,768 B threadgroup limit for the `float`
+instantiation, while the composed 128x32 form needs 9,216 B — **two 32-wide
+halves are exactly one 64-wide host tile, so composition costs zero extra
+bytes.** If `float` is emitted, the standalone arm does not compile and the
+compose verdict is forced by the compiler. Named `compose_forced_by_tgp_limit`.
+
+### 320.12 Open
+
+- `75a21a4` still validating at ~100 minutes of a 42-130 minute band. It is the
+  E154 R0 anchor on base `14247cce`, which carries the full FINDING 283
+  `-1.075 %` handicap, so it is worth having for the scheduler read and not for
+  the score.
+- Whether the measured per-position acceptance curve preserves the sign of
+  FINDING 287 on beagle and essays. If it reverses, the geometric assumption
+  carried the whole result.
+- What the 15,708 us row price is actually made of. Standard speculative
+  decoding assumes batched verification amortises; here a verified row costs
+  67 % of the entire fixed term, which it should not if the round were purely
+  weight-stream bound. E157 R1.
+- Whether E150, in flight as `75a21a4`, already prices the marginal row.
+- Whether our cluster QMV kernels are additive on the crown or superseded by it.
+
