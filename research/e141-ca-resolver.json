@@ -71,5 +71,104 @@
   },
   "medpair_corpus_basis_pct": 0.466796875,
   "medpair_trial_basis_pct": 0.5407239819004525,
-  "medpair_binding_basis_pct": 2.0254237288135593
+  "medpair_binding_basis_pct": 2.0254237288135593,
+  "cross_arm": {
+    "beagle_a": {
+      "emitted_lengths": {
+        "shipped": 512,
+        "thin099": 512,
+        "armB20": 512,
+        "full": 512
+      },
+      "token_streams_agree": true,
+      "binding_positions": [
+        {
+          "position": 8,
+          "token": 206385,
+          "fate_by_arm": {
+            "shipped": "corrected",
+            "thin099": "corrected",
+            "armB20": "corrected",
+            "full": "corrected"
+          }
+        },
+        {
+          "position": 9,
+          "token": 165208,
+          "fate_by_arm": {
+            "shipped": "corrected",
+            "thin099": "corrected",
+            "armB20": "accepted",
+            "full": "accepted"
+          }
+        },
+        {
+          "position": 74,
+          "token": 192915,
+          "fate_by_arm": {
+            "shipped": "corrected",
+            "thin099": "corrected",
+            "armB20": "corrected",
+            "full": "corrected"
+          }
+        },
+        {
+          "position": 80,
+          "token": 212524,
+          "fate_by_arm": {
+            "shipped": "corrected",
+            "thin099": "corrected",
+            "armB20": "corrected",
+            "full": "accepted"
+          }
+        },
+        {
+          "position": 133,
+          "token": 231581,
+          "fate_by_arm": {
+            "shipped": "corrected",
+            "thin099": "corrected",
+            "armB20": "corrected",
+            "full": "corrected"
+          }
+        }
+      ],
+      "binding_event_count": 5,
+      "binding_events_recovered": {
+        "shipped": 0,
+        "thin099": 0,
+        "armB20": 1,
+        "full": 2
+      },
+      "binding_recovery_pct": {
+        "shipped": 0.0,
+        "thin099": 0.0,
+        "armB20": 20.0,
+        "full": 40.0
+      }
+    },
+    "essays_montaigne": {
+      "emitted_lengths": {
+        "shipped": 512,
+        "thin099": 512,
+        "armB20": 512,
+        "full": 512
+      },
+      "token_streams_agree": true,
+      "binding_positions": [],
+      "binding_event_count": 0,
+      "binding_events_recovered": {
+        "shipped": 0,
+        "thin099": 0,
+        "armB20": 0,
+        "full": 0
+      },
+      "binding_recovery_pct": {
+        "shipped": null,
+        "thin099": null,
+        "armB20": null,
+        "full": null
+      }
+    }
+  }
 }

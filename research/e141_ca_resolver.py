@@ -136,9 +136,112 @@ def analyse(path: Path) -> dict:
     }
 
 
+def token_fates(path: Path) -> list[dict]:
+    """Per emitted-token fate, indexed by position in the 512-token stream.
+
+    Every arm emits the identical token stream, so position is the only key
+    that lets arms be compared directly. Round boundaries are not comparable
+    because the arms disagree about them.
+
+    fate is one of:
+      accepted   the draft matched, the round continued
+      corrected  the draft was the round's first divergence, target overruled
+      bonus      the round accepted every draft, this token cost no trial
+    """
+    blob = json.loads(path.read_text())
+    rounds: dict[int, list[dict]] = {}
+    for row in blob["row_ledger"]:
+        rounds.setdefault(row["round"], []).append(row)
+
+    out: list[dict] = []
+    for rnd in sorted(rounds):
+        drafts = sorted(
+            [r for r in rounds[rnd] if r["kind"] == "draft"],
+            key=lambda r: r["draft_index"],
+        )
+        rejected = [r for r in drafts if not r["accepted"]]
+        first = min(rejected, key=lambda r: r["draft_index"]) if rejected else None
+        for r in drafts:
+            if r["accepted"]:
+                out.append(
+                    {
+                        "token": r["reference_token"],
+                        "fate": "accepted",
+                        "round": rnd,
+                        "draft_index": r["draft_index"],
+                    }
+                )
+        for r in [x for x in rounds[rnd] if x["kind"] == "targetTail"]:
+            out.append(
+                {
+                    "token": r["reference_token"],
+                    "fate": "corrected" if first is not None else "bonus",
+                    "round": rnd,
+                    "draft_index": first["draft_index"] if first else None,
+                }
+            )
+    return out
+
+
+def cross_arm(seed: str, arms: list[str], steps: int) -> dict | None:
+    """How much of the binding channel does each arm actually recover?
+
+    A binding event is an emitted token that the shipped compact vocabulary
+    cannot propose, so shipped must spend a correction on it. Making a token
+    proposable is necessary but not sufficient: the draft head must also rank
+    it top-1 inside the probed rows. This measures the sufficient part.
+    """
+    fates: dict[str, list[dict]] = {}
+    for arm in arms:
+        path = VERIFY / f"{seed}_{arm}_{steps}.json"
+        if path.exists():
+            fates[arm] = token_fates(path)
+    if "shipped" not in fates:
+        return None
+
+    lengths = {a: len(f) for a, f in fates.items()}
+    streams_agree = len({tuple(x["token"] for x in f) for f in fates.values()}) == 1
+
+    binding = [
+        i
+        for i, x in enumerate(fates["shipped"])
+        if x["fate"] == "corrected" and not proposable(x["token"])
+    ]
+    rows = []
+    for i in binding:
+        row = {
+            "position": i,
+            "token": fates["shipped"][i]["token"],
+            "fate_by_arm": {
+                a: f[i]["fate"] for a, f in fates.items() if i < len(f)
+            },
+        }
+        rows.append(row)
+    recovered = {
+        a: sum(
+            1
+            for r in rows
+            if r["fate_by_arm"].get(a) in ("accepted", "bonus")
+        )
+        for a in fates
+    }
+    return {
+        "emitted_lengths": lengths,
+        "token_streams_agree": streams_agree,
+        "binding_positions": rows,
+        "binding_event_count": len(rows),
+        "binding_events_recovered": recovered,
+        "binding_recovery_pct": {
+            a: (100.0 * v / len(rows) if rows else None)
+            for a, v in recovered.items()
+        },
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", default="shipped")
+    ap.add_argument("--arms", default="", help="cross-arm binding recovery")
     ap.add_argument("--steps", type=int, default=512)
     ap.add_argument("--out", default="research/e141-ca-resolver.json")
     args = ap.parse_args()
@@ -155,6 +258,14 @@ def main() -> None:
             report[f"medpair_{basis}"] = sum(
                 MEDPAIR[s] * report["seeds"][s][basis] for s in MEDPAIR
             )
+
+    arms = [a for a in args.arms.split(",") if a]
+    if arms:
+        report["cross_arm"] = {}
+        for seed in MEDPAIR:
+            blob = cross_arm(seed, arms, args.steps)
+            if blob:
+                report["cross_arm"][seed] = blob
 
     Path(args.out).write_text(json.dumps(report, indent=2) + "\n")
 
@@ -196,6 +307,29 @@ def main() -> None:
         print(
             f"  first divergence index histogram "
             f"{blob['first_divergence_index_histogram']}"
+        )
+    for seed, blob in report.get("cross_arm", {}).items():
+        print(f"\n== cross-arm binding recovery, {seed} ==")
+        print(
+            f"  emitted lengths {blob['emitted_lengths']}  "
+            f"token streams agree {blob['token_streams_agree']}"
+        )
+        if not blob["binding_positions"]:
+            print("  no binding events on this seed")
+            continue
+        arm_names = list(blob["binding_positions"][0]["fate_by_arm"])
+        header = "  position   token  " + "  ".join(f"{a:>9s}" for a in arm_names)
+        print(header)
+        for row in blob["binding_positions"]:
+            fates = "  ".join(
+                f"{row['fate_by_arm'].get(a, '-'):>9s}" for a in arm_names
+            )
+            print(f"  {row['position']:8d} {row['token']:7d}  {fates}")
+        print(
+            f"  recovered of {blob['binding_event_count']}: "
+            + "  ".join(
+                f"{a} {blob['binding_events_recovered'][a]}" for a in arm_names
+            )
         )
     for key in list(report):
         if key.startswith("medpair_"):
