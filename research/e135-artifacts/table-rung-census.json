@@ -332,16 +332,19 @@
   },
   "summary": {
     "onePass6/applegpu_g16s": {
+      "live": false,
       "local_sg": 33.02564102564103,
       "ranked_sg": 34.163937049871876,
       "spills": []
     },
     "onePass6/applegpu_g17s": {
+      "live": false,
       "local_sg": 40.705128205128204,
       "ranked_sg": 40.70502471579964,
       "spills": []
     },
     "onePass67/applegpu_g16s": {
+      "live": true,
       "local_sg": 32.98717948717949,
       "ranked_sg": 34.03195684991667,
       "spills": [
@@ -349,11 +352,13 @@
       ]
     },
     "onePass67/applegpu_g17s": {
+      "live": true,
       "local_sg": 40.3974358974359,
       "ranked_sg": 39.649183116157936,
       "spills": []
     },
     "onePass678/applegpu_g16s": {
+      "live": false,
       "local_sg": 32.217948717948715,
       "ranked_sg": 33.892709298403304,
       "spills": [
@@ -362,6 +367,7 @@
       ]
     },
     "onePass678/applegpu_g17s": {
+      "live": false,
       "local_sg": 32.705128205128204,
       "ranked_sg": 38.25670760102436,
       "spills": [
@@ -369,11 +375,13 @@
       ]
     },
     "shipped/applegpu_g16s": {
+      "live": true,
       "local_sg": 33.08974358974359,
       "ranked_sg": 34.28960908700263,
       "spills": []
     },
     "shipped/applegpu_g17s": {
+      "live": true,
       "local_sg": 41.02564102564102,
       "ranked_sg": 41.3333849014534,
       "spills": []

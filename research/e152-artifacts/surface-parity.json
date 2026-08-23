@@ -1,0 +1,934 @@
+{
+ "differing": 0,
+ "e152_surface_identical_to_frontier": true,
+ "files": [
+  {
+   "identical": true,
+   "ours": "988aca307350158ee1dc07f4ce117c2e0a76798a709422cce8f221d1f9c7b780",
+   "path": "Sources/MLXFastModel/DenseTensorStore.swift",
+   "ref": "988aca307350158ee1dc07f4ce117c2e0a76798a709422cce8f221d1f9c7b780"
+  },
+  {
+   "identical": true,
+   "ours": "0a46d3dba4f3190fc147a09800ee001e8d1b3c757ce37b11c1c76d880f226cae",
+   "path": "Sources/MLXFastModel/LagunaConfig.swift",
+   "ref": "0a46d3dba4f3190fc147a09800ee001e8d1b3c757ce37b11c1c76d880f226cae"
+  },
+  {
+   "identical": true,
+   "ours": "fe5295ffc8e8340b65a589a58e87ae5c3f5a4c9bb06bc5c391c8707ecf388a8b",
+   "path": "Sources/MLXFastModel/LagunaDFlashBlockSession.swift",
+   "ref": "fe5295ffc8e8340b65a589a58e87ae5c3f5a4c9bb06bc5c391c8707ecf388a8b"
+  },
+  {
+   "identical": true,
+   "ours": "4cf19c8fb0e682d9e4d7a9168347bc4db9199307af17ea42e1cff94211291874",
+   "path": "Sources/MLXFastModel/LagunaDFlashReference.swift",
+   "ref": "4cf19c8fb0e682d9e4d7a9168347bc4db9199307af17ea42e1cff94211291874"
+  },
+  {
+   "identical": true,
+   "ours": "721c1b4047f5aeaae9297e7185a38a15e9de9e75019137a9d22ff96b7b1ebf81",
+   "path": "Sources/MLXFastModel/LagunaRuntimeModel.swift",
+   "ref": "721c1b4047f5aeaae9297e7185a38a15e9de9e75019137a9d22ff96b7b1ebf81"
+  },
+  {
+   "identical": true,
+   "ours": "1e66710107731ac39fe74f06b18099b0cf4563d91d30a2db1def9067b77192a7",
+   "path": "Sources/MLXFastModel/LagunaRuntimeWeights.swift",
+   "ref": "1e66710107731ac39fe74f06b18099b0cf4563d91d30a2db1def9067b77192a7"
+  },
+  {
+   "identical": true,
+   "ours": "df40798715fc2d06f617795a6c4825695ea6fad102d339f48eb2f79b3ba2d162",
+   "path": "Sources/MLXFastModel/LagunaUpstreamEquivalence.swift",
+   "ref": "df40798715fc2d06f617795a6c4825695ea6fad102d339f48eb2f79b3ba2d162"
+  },
+  {
+   "identical": true,
+   "ours": "4938751a583a3783214d0cf6746062dbadd231aa2fa3a1470123b2a1bc4efa1b",
+   "path": "Sources/MLXFastModel/MLXTensorBridge.swift",
+   "ref": "4938751a583a3783214d0cf6746062dbadd231aa2fa3a1470123b2a1bc4efa1b"
+  },
+  {
+   "identical": true,
+   "ours": "26b13010a3d96600c4caafa93f9cfdbcd7bb6a92990847699de03df18d49a8b6",
+   "path": "Sources/MLXFastModel/Qwen35Attention.swift",
+   "ref": "26b13010a3d96600c4caafa93f9cfdbcd7bb6a92990847699de03df18d49a8b6"
+  },
+  {
+   "identical": true,
+   "ours": "e1cbf345ae63f3769f0a2671bcfc7940c20a6613163aa2c74d3c6489e108d972",
+   "path": "Sources/MLXFastModel/Qwen35Block.swift",
+   "ref": "e1cbf345ae63f3769f0a2671bcfc7940c20a6613163aa2c74d3c6489e108d972"
+  },
+  {
+   "identical": true,
+   "ours": "18e62868b624d3e2a9dc379744caf33c908626e4c947df83ddbb104d39828071",
+   "path": "Sources/MLXFastModel/Qwen35Cache.swift",
+   "ref": "18e62868b624d3e2a9dc379744caf33c908626e4c947df83ddbb104d39828071"
+  },
+  {
+   "identical": true,
+   "ours": "6267f3708990e0fa75ea7aeffa36ad0f3bb4b476c45ba66e6a9ed9ec3ddf91a4",
+   "path": "Sources/MLXFastModel/Qwen35Config.swift",
+   "ref": "6267f3708990e0fa75ea7aeffa36ad0f3bb4b476c45ba66e6a9ed9ec3ddf91a4"
+  },
+  {
+   "identical": true,
+   "ours": "b5a9ad0bae1f74ace2cd6de9eb7bff85e801fb39fd09ff730c505ae988617c51",
+   "path": "Sources/MLXFastModel/Qwen35FastEngine.swift",
+   "ref": "b5a9ad0bae1f74ace2cd6de9eb7bff85e801fb39fd09ff730c505ae988617c51"
+  },
+  {
+   "identical": true,
+   "ours": "c861d8a552782974c2e66d7edb5f05bc4f56abf72b5ec895743dd8820321c1d2",
+   "path": "Sources/MLXFastModel/Qwen35FastPathReadiness.swift",
+   "ref": "c861d8a552782974c2e66d7edb5f05bc4f56abf72b5ec895743dd8820321c1d2"
+  },
+  {
+   "identical": true,
+   "ours": "49d02e654d76a092d5a66bd5ed1791cb843cbcf1a969272edce484b0ce386f79",
+   "path": "Sources/MLXFastModel/Qwen35GatedDelta.swift",
+   "ref": "49d02e654d76a092d5a66bd5ed1791cb843cbcf1a969272edce484b0ce386f79"
+  },
+  {
+   "identical": true,
+   "ours": "55ab846783e4def05609d2f59f1768945ba8f0e30ae5fb38175d3d90a3a6a56d",
+   "path": "Sources/MLXFastModel/Qwen35LinearWeight.swift",
+   "ref": "55ab846783e4def05609d2f59f1768945ba8f0e30ae5fb38175d3d90a3a6a56d"
+  },
+  {
+   "identical": true,
+   "ours": "233cea44f6064137161d4d975225ceec2ec0c84dc23d81afa314565df849bcf4",
+   "path": "Sources/MLXFastModel/Qwen35MLP.swift",
+   "ref": "233cea44f6064137161d4d975225ceec2ec0c84dc23d81afa314565df849bcf4"
+  },
+  {
+   "identical": true,
+   "ours": "59b961f2d7d6c06f79321476ce1cdaf6fe7b20a957828524068d2e123c122f8e",
+   "path": "Sources/MLXFastModel/Qwen35Model.swift",
+   "ref": "59b961f2d7d6c06f79321476ce1cdaf6fe7b20a957828524068d2e123c122f8e"
+  },
+  {
+   "identical": true,
+   "ours": "dd80d6f57f3c17596e0338af3e31721ad021c6e7f8218fe49c134b93fc8a9e41",
+   "path": "Sources/MLXFastModel/Qwen35Ops.swift",
+   "ref": "dd80d6f57f3c17596e0338af3e31721ad021c6e7f8218fe49c134b93fc8a9e41"
+  },
+  {
+   "identical": true,
+   "ours": "4a14ff6644f2f70a5084042a4599b33d99a0f6c87d1fecc68ae0ff99f20bf5f0",
+   "path": "Sources/MLXFastModel/Qwen35RoPE.swift",
+   "ref": "4a14ff6644f2f70a5084042a4599b33d99a0f6c87d1fecc68ae0ff99f20bf5f0"
+  },
+  {
+   "identical": true,
+   "ours": "23911f4e8ce404ea56c38861f82a78a77c0360da6d50d593f70cda0f404c9236",
+   "path": "Sources/MLXFastModel/Qwen35RuntimeWeights.swift",
+   "ref": "23911f4e8ce404ea56c38861f82a78a77c0360da6d50d593f70cda0f404c9236"
+  },
+  {
+   "identical": true,
+   "ours": "edb2547e699dc001cf27cd3993355f1bfe977b0c6436c6d724dcf579769af143",
+   "path": "Sources/MLXFastModel/Qwen35Weights.swift",
+   "ref": "edb2547e699dc001cf27cd3993355f1bfe977b0c6436c6d724dcf579769af143"
+  },
+  {
+   "identical": true,
+   "ours": "0053c6521849fb915e6a6662cc08f252d2f6b67ab1316208a8c4a116975bdbab",
+   "path": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+   "ref": "0053c6521849fb915e6a6662cc08f252d2f6b67ab1316208a8c4a116975bdbab"
+  },
+  {
+   "identical": true,
+   "ours": "9434d39a1ecb71a098b8821c1877a4c06d2b95888b9a0804ed249e9a718008ad",
+   "path": "Sources/MLXFastModel/Qwen36MTPHeadAttachment.swift",
+   "ref": "9434d39a1ecb71a098b8821c1877a4c06d2b95888b9a0804ed249e9a718008ad"
+  },
+  {
+   "identical": true,
+   "ours": "7eaadd62bcac037646b76b4503e40ff70eb8f6ca20f862c52b8c376b76e4c9d3",
+   "path": "Sources/MLXFastModel/Qwen36MTPReferenceSession.swift",
+   "ref": "7eaadd62bcac037646b76b4503e40ff70eb8f6ca20f862c52b8c376b76e4c9d3"
+  },
+  {
+   "identical": true,
+   "ours": "d2140becbbb371c1b6ef0a6f12ff6cf73ba53b296d8fed3738214de8f7cd20bc",
+   "path": "Sources/MLXFastModel/Qwen36MTPTarget.swift",
+   "ref": "d2140becbbb371c1b6ef0a6f12ff6cf73ba53b296d8fed3738214de8f7cd20bc"
+  },
+  {
+   "identical": true,
+   "ours": "97b77aa60b20868cdc574eff73c61a7bf6f482d9d2c1668db63351b8dfeacc52",
+   "path": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+   "ref": "97b77aa60b20868cdc574eff73c61a7bf6f482d9d2c1668db63351b8dfeacc52"
+  },
+  {
+   "identical": true,
+   "ours": "8a2596068e89843c5765a087c3c4bfc40dc34c2422b20da00d0ba4fdc682d11f",
+   "path": "Sources/MLXFastModel/RuntimeWeightLoading.swift",
+   "ref": "8a2596068e89843c5765a087c3c4bfc40dc34c2422b20da00d0ba4fdc682d11f"
+  },
+  {
+   "identical": true,
+   "ours": "63904fb512ee0023d9f928098c0f2cdd7e1b034a92f5ed58696c2df7714e8e53",
+   "path": "Sources/MLXFastTransform/AffineMetadataCoding.swift",
+   "ref": "63904fb512ee0023d9f928098c0f2cdd7e1b034a92f5ed58696c2df7714e8e53"
+  },
+  {
+   "identical": true,
+   "ours": "99c2e0bf072737aedbc2f1b9cb9c593516354f511942bf48c8774c273e74cc4e",
+   "path": "Sources/MLXFastTransform/CheckpointIndex.swift",
+   "ref": "99c2e0bf072737aedbc2f1b9cb9c593516354f511942bf48c8774c273e74cc4e"
+  },
+  {
+   "identical": true,
+   "ours": "4a3d20cb6d121ac661e85632b3fc4d4305a18b4c254280588223585f280f3898",
+   "path": "Sources/MLXFastTransform/LagunaCheckpointValidation.swift",
+   "ref": "4a3d20cb6d121ac661e85632b3fc4d4305a18b4c254280588223585f280f3898"
+  },
+  {
+   "identical": true,
+   "ours": "b97bea8713f6a80eeb1e1b1c8fb0afd7d85fe5f8baae85715d1a84180e54a254",
+   "path": "Sources/MLXFastTransform/Qwen35CheckpointValidation.swift",
+   "ref": "b97bea8713f6a80eeb1e1b1c8fb0afd7d85fe5f8baae85715d1a84180e54a254"
+  },
+  {
+   "identical": true,
+   "ours": "41a5dcbb348c828237d1f28b8b5841be54e3c964b81c0fcb1c07b4f0e6f6daf6",
+   "path": "Sources/MLXFastTransform/TiedHeadMetadataCoding.swift",
+   "ref": "41a5dcbb348c828237d1f28b8b5841be54e3c964b81c0fcb1c07b4f0e6f6daf6"
+  },
+  {
+   "identical": true,
+   "ours": "125be140df20a3ec6bd95555753c447837f28aae42b93f5d0c9a53ae8236b3ce",
+   "path": "Sources/MLXFastTransform/Transform.swift",
+   "ref": "125be140df20a3ec6bd95555753c447837f28aae42b93f5d0c9a53ae8236b3ce"
+  },
+  {
+   "identical": true,
+   "ours": "5bf29152ad2502a7e816545179b91d66d60a071d611739e9ba0ff6d0bca50d5f",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+   "ref": "5bf29152ad2502a7e816545179b91d66d60a071d611739e9ba0ff6d0bca50d5f"
+  },
+  {
+   "identical": true,
+   "ours": "27e8889198eee4323f5fb34b90fd357ae7306e739325840c3f11ab6f9198cd94",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift",
+   "ref": "27e8889198eee4323f5fb34b90fd357ae7306e739325840c3f11ab6f9198cd94"
+  },
+  {
+   "identical": true,
+   "ours": "525cd3f830f1bb3bc8c97d0bf012c7e97b418194d23410ee64a2a68d0303e1e7",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MoE.swift",
+   "ref": "525cd3f830f1bb3bc8c97d0bf012c7e97b418194d23410ee64a2a68d0303e1e7"
+  },
+  {
+   "identical": true,
+   "ours": "b0c7025652fa10ccfc619da6ec7019081a26847c25859e53c446f5271dd4631c",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift",
+   "ref": "b0c7025652fa10ccfc619da6ec7019081a26847c25859e53c446f5271dd4631c"
+  },
+  {
+   "identical": true,
+   "ours": "51006cac17e4b01a45362039a68566a5a698a6806c56890bc1e5414b2bef6ed5",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/BaseConfiguration.swift",
+   "ref": "51006cac17e4b01a45362039a68566a5a698a6806c56890bc1e5414b2bef6ed5"
+  },
+  {
+   "identical": true,
+   "ours": "b95512e56310c736258b160842cf56b0c3ce8f17b5ca709fee4b0e5eaa69812e",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/BatchKVCache.swift",
+   "ref": "b95512e56310c736258b160842cf56b0c3ce8f17b5ca709fee4b0e5eaa69812e"
+  },
+  {
+   "identical": true,
+   "ours": "de7bddf8c7980d003c034ed467bec81720e5e37e94aab1dc020f16e8e6f76e81",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/CompilableKVCache.swift",
+   "ref": "de7bddf8c7980d003c034ed467bec81720e5e37e94aab1dc020f16e8e6f76e81"
+  },
+  {
+   "identical": true,
+   "ours": "2d9506696ee3801ed03ff5c13271f079996880c9278a5abecfc804a22a735a80",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/CompilableRotatingKVCache.swift",
+   "ref": "2d9506696ee3801ed03ff5c13271f079996880c9278a5abecfc804a22a735a80"
+  },
+  {
+   "identical": true,
+   "ours": "6a657bab21798c386f998260cc6cc2039bf7e34dc71d85830728f3b0fb0a4d32",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/CompiledDecode.swift",
+   "ref": "6a657bab21798c386f998260cc6cc2039bf7e34dc71d85830728f3b0fb0a4d32"
+  },
+  {
+   "identical": true,
+   "ours": "37b438238b8b20311d33d4fc87ea0ff1c075e2cbf33a1301f6e937548c831ee1",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/DynamicSlice.swift",
+   "ref": "37b438238b8b20311d33d4fc87ea0ff1c075e2cbf33a1301f6e937548c831ee1"
+  },
+  {
+   "identical": true,
+   "ours": "2f93bc0998fb8bb2b9042c608d259decad4cbad3ff4ac79b2a0d6327b3b54d92",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/Evaluate.swift",
+   "ref": "2f93bc0998fb8bb2b9042c608d259decad4cbad3ff4ac79b2a0d6327b3b54d92"
+  },
+  {
+   "identical": true,
+   "ours": "a1cb06c8c0ba600ea96c4d9e9599dbda0e760abd092208742de275fb8c9a5bf0",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/JSONDecodingTypes.swift",
+   "ref": "a1cb06c8c0ba600ea96c4d9e9599dbda0e760abd092208742de275fb8c9a5bf0"
+  },
+  {
+   "identical": true,
+   "ours": "d6b0e0d5abad3d6bf3a4950cf2aeef2c1a89a6ccbe27411846aa5332f87bb3f4",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/KVCache.swift",
+   "ref": "d6b0e0d5abad3d6bf3a4950cf2aeef2c1a89a6ccbe27411846aa5332f87bb3f4"
+  },
+  {
+   "identical": true,
+   "ours": "bf59f121334bc467f965f8b58777861ae3204e157a896ef187b35e8a702c4b52",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/LanguageModel.swift",
+   "ref": "bf59f121334bc467f965f8b58777861ae3204e157a896ef187b35e8a702c4b52"
+  },
+  {
+   "identical": true,
+   "ours": "9653d0561c1520e5f76cd8404ad283363bc34d7787cdf22008f45a8603ad0b8a",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/RoPEApplication.swift",
+   "ref": "9653d0561c1520e5f76cd8404ad283363bc34d7787cdf22008f45a8603ad0b8a"
+  },
+  {
+   "identical": true,
+   "ours": "3bad10c43cf74530b537d892aafa042e2bc6dfe5b94e34f7b462aef3942a7277",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/RoPEUtils.swift",
+   "ref": "3bad10c43cf74530b537d892aafa042e2bc6dfe5b94e34f7b462aef3942a7277"
+  },
+  {
+   "identical": true,
+   "ours": "81dcb2f823f20975386ac05b6dfaa6e8855fe7bf30ab6f2dd2ab626f51b7582c",
+   "path": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/SwitchLayers.swift",
+   "ref": "81dcb2f823f20975386ac05b6dfaa6e8855fe7bf30ab6f2dd2ab626f51b7582c"
+  },
+  {
+   "identical": true,
+   "ours": "73abf114ceeda4f70fcbca27431520eef66d3476fd0c46810c5315ae76366afb",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/binary.cpp",
+   "ref": "73abf114ceeda4f70fcbca27431520eef66d3476fd0c46810c5315ae76366afb"
+  },
+  {
+   "identical": true,
+   "ours": "b2df6cc80277980578260db3d6857f1de04fe0df37d6aedc6b7db5f31b6da2ae",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/binary_ops.cpp",
+   "ref": "b2df6cc80277980578260db3d6857f1de04fe0df37d6aedc6b7db5f31b6da2ae"
+  },
+  {
+   "identical": true,
+   "ours": "4265b143a35591b1dd9f22922d7546dfa78927f9e425772fbd8c9fa625c014c5",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/copy.cpp",
+   "ref": "4265b143a35591b1dd9f22922d7546dfa78927f9e425772fbd8c9fa625c014c5"
+  },
+  {
+   "identical": true,
+   "ours": "3573cef541e2cb5bf7b18add271be4756bccaed6e9285e9802cfa92451cf69e8",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/fp_quantized.cpp",
+   "ref": "3573cef541e2cb5bf7b18add271be4756bccaed6e9285e9802cfa92451cf69e8"
+  },
+  {
+   "identical": true,
+   "ours": "ca0fbd56caf8c96191d4c97742046d72f04d9de58ed7b9573cbf49ec0c92a2f4",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/fp_quantized_nax.cpp",
+   "ref": "ca0fbd56caf8c96191d4c97742046d72f04d9de58ed7b9573cbf49ec0c92a2f4"
+  },
+  {
+   "identical": true,
+   "ours": "9f61e211cea95fbd5672b64ca64a3c8a3ce25395477993896da636477bd3fa83",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/gather_axis.cpp",
+   "ref": "9f61e211cea95fbd5672b64ca64a3c8a3ce25395477993896da636477bd3fa83"
+  },
+  {
+   "identical": true,
+   "ours": "075eafdae3c1d52510c5eecccc5326eb3e236ee7a963314eb1254a1e1c478ce3",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/gather_front.cpp",
+   "ref": "075eafdae3c1d52510c5eecccc5326eb3e236ee7a963314eb1254a1e1c478ce3"
+  },
+  {
+   "identical": true,
+   "ours": "6c203cc9bd4867e8a0f62e8520ee5e0e9b2b60c4ce60c5a03f4b9ba5180f85b6",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/gemm.cpp",
+   "ref": "6c203cc9bd4867e8a0f62e8520ee5e0e9b2b60c4ce60c5a03f4b9ba5180f85b6"
+  },
+  {
+   "identical": true,
+   "ours": "6c9047844670e8e90f39c7ee690dde710a862685039c5c45d07cc77129a79ec2",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/gemm_nax.cpp",
+   "ref": "6c9047844670e8e90f39c7ee690dde710a862685039c5c45d07cc77129a79ec2"
+  },
+  {
+   "identical": true,
+   "ours": "6db41293f7a98a6588a45456fa694f1711760c971142a51ab70d9eb104dd47e7",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/gemv.cpp",
+   "ref": "6db41293f7a98a6588a45456fa694f1711760c971142a51ab70d9eb104dd47e7"
+  },
+  {
+   "identical": true,
+   "ours": "d97e8ade96f756aaa303e524baaa85d30fced6b5032cd5e7130ad81a59bc0401",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+   "ref": "d97e8ade96f756aaa303e524baaa85d30fced6b5032cd5e7130ad81a59bc0401"
+  },
+  {
+   "identical": true,
+   "ours": "39fa08bd9083520ba6255ce460d6680b86a3c4b24745fffbfcb5367cfd10c908",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp",
+   "ref": "39fa08bd9083520ba6255ce460d6680b86a3c4b24745fffbfcb5367cfd10c908"
+  },
+  {
+   "identical": true,
+   "ours": "17db0ca3682900ade1f6dd6deab3e4f7e31a05d936192fd7a210fa29c7dca5d2",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_utils.cpp",
+   "ref": "17db0ca3682900ade1f6dd6deab3e4f7e31a05d936192fd7a210fa29c7dca5d2"
+  },
+  {
+   "identical": true,
+   "ours": "aceb3b0e0c8e623d9297e797268167f4445dd15b73d81b496aaae5413b2e19c9",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/reduce.cpp",
+   "ref": "aceb3b0e0c8e623d9297e797268167f4445dd15b73d81b496aaae5413b2e19c9"
+  },
+  {
+   "identical": true,
+   "ours": "aeeb029c2846356bc13f97b805f2d8963a0a4304d90ddfd0d992736da83e6ad8",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/reduce_utils.cpp",
+   "ref": "aeeb029c2846356bc13f97b805f2d8963a0a4304d90ddfd0d992736da83e6ad8"
+  },
+  {
+   "identical": true,
+   "ours": "2ada8d204ee8073a29192665a0787f1eee5f19723264fc83f257604c3268a26f",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/softmax.cpp",
+   "ref": "2ada8d204ee8073a29192665a0787f1eee5f19723264fc83f257604c3268a26f"
+  },
+  {
+   "identical": true,
+   "ours": "647d2bfa4f4d26b3d86c485559c00d3f6e798b32932c613c2c838f330010ae65",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/sort.cpp",
+   "ref": "647d2bfa4f4d26b3d86c485559c00d3f6e798b32932c613c2c838f330010ae65"
+  },
+  {
+   "identical": true,
+   "ours": "140684e5d241cdc6fc6de57a563d81f1ab53d03d099e18ac763405a86ef78a11",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_attention.cpp",
+   "ref": "140684e5d241cdc6fc6de57a563d81f1ab53d03d099e18ac763405a86ef78a11"
+  },
+  {
+   "identical": true,
+   "ours": "20bf8676d1c1274f4d1535903944199b6ad2f3577b1ae8c087f496fc49987b39",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_attention_nax.cpp",
+   "ref": "20bf8676d1c1274f4d1535903944199b6ad2f3577b1ae8c087f496fc49987b39"
+  },
+  {
+   "identical": true,
+   "ours": "69f2657ed782b5cdaee3df8b56042501ee31076cc13cd689b93eca2301c172b1",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_gemm_fused.cpp",
+   "ref": "69f2657ed782b5cdaee3df8b56042501ee31076cc13cd689b93eca2301c172b1"
+  },
+  {
+   "identical": true,
+   "ours": "869e7116d21eb6e81f009fd179af8185b913cf5c8767846b62ca4cbaa4eb7b2f",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_gemm_fused_nax.cpp",
+   "ref": "869e7116d21eb6e81f009fd179af8185b913cf5c8767846b62ca4cbaa4eb7b2f"
+  },
+  {
+   "identical": true,
+   "ours": "547e32cd413ca6adc094b6c0ca19b41028b4979eaf81d495972526c1cceb1a47",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_gemm_gather.cpp",
+   "ref": "547e32cd413ca6adc094b6c0ca19b41028b4979eaf81d495972526c1cceb1a47"
+  },
+  {
+   "identical": true,
+   "ours": "cd53a232e09931bfe70a93f987236c4c1215d88fde515aeab035a862f80583e8",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_gemm_gather_nax.cpp",
+   "ref": "cd53a232e09931bfe70a93f987236c4c1215d88fde515aeab035a862f80583e8"
+  },
+  {
+   "identical": true,
+   "ours": "a9cf02bfe3db319d67799e7e87fbb79656c2f2411e793e09e77a81b20a9a84bd",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_gemm_splitk.cpp",
+   "ref": "a9cf02bfe3db319d67799e7e87fbb79656c2f2411e793e09e77a81b20a9a84bd"
+  },
+  {
+   "identical": true,
+   "ours": "31ce1f24c660dff26ef50332a5c4ce8f0870b949b72d2aad68d3f50bb116fa46",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/steel_gemm_splitk_nax.cpp",
+   "ref": "31ce1f24c660dff26ef50332a5c4ce8f0870b949b72d2aad68d3f50bb116fa46"
+  },
+  {
+   "identical": true,
+   "ours": "82dbd9f3342e729857a43b37767c27c9d3f354f756acf770f77fb742fc1a49b5",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/ternary.cpp",
+   "ref": "82dbd9f3342e729857a43b37767c27c9d3f354f756acf770f77fb742fc1a49b5"
+  },
+  {
+   "identical": true,
+   "ours": "85f3fb84ca52850bc0e7b2f83a92d75e76f89ab5ac16ddfdbb6d636dad96ef79",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/ternary_ops.cpp",
+   "ref": "85f3fb84ca52850bc0e7b2f83a92d75e76f89ab5ac16ddfdbb6d636dad96ef79"
+  },
+  {
+   "identical": true,
+   "ours": "4aa4d4153ba1ad611adaf278e0f39b68b80274dc953de6d2d1ea1ed920cad09b",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/unary.cpp",
+   "ref": "4aa4d4153ba1ad611adaf278e0f39b68b80274dc953de6d2d1ea1ed920cad09b"
+  },
+  {
+   "identical": true,
+   "ours": "808606de2797ddfdff645a82142731ad260ff8f136c27150e7fc091cb9566f79",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/unary_ops.cpp",
+   "ref": "808606de2797ddfdff645a82142731ad260ff8f136c27150e7fc091cb9566f79"
+  },
+  {
+   "identical": true,
+   "ours": "377ec607c802122c68f07ec400474c2444cdfb0d4978d8ebe232b3c040a1f278",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/arg_reduce.metal",
+   "ref": "377ec607c802122c68f07ec400474c2444cdfb0d4978d8ebe232b3c040a1f278"
+  },
+  {
+   "identical": true,
+   "ours": "9a367967a48907ac6792be685bab4cc062f3ad916cccacb441c627d87a4b7898",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/binary.h",
+   "ref": "9a367967a48907ac6792be685bab4cc062f3ad916cccacb441c627d87a4b7898"
+  },
+  {
+   "identical": true,
+   "ours": "4dadb612a9b768f9d51b3b394b32fc0129d361a55b35d545b3c014c87e00897e",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/binary.metal",
+   "ref": "4dadb612a9b768f9d51b3b394b32fc0129d361a55b35d545b3c014c87e00897e"
+  },
+  {
+   "identical": true,
+   "ours": "a3dd96bde609b3e91f1635f61c8a7477e0a111dc3c0beefefe0561d70629f91b",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/binary_ops.h",
+   "ref": "a3dd96bde609b3e91f1635f61c8a7477e0a111dc3c0beefefe0561d70629f91b"
+  },
+  {
+   "identical": true,
+   "ours": "faafc09afc5e190252f3544c966b333b503c30404be3836444abf645f615b1c8",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/copy.h",
+   "ref": "faafc09afc5e190252f3544c966b333b503c30404be3836444abf645f615b1c8"
+  },
+  {
+   "identical": true,
+   "ours": "ed8a579eb6fe6a14c36560d2c8b548baf99e66fa77d300fb4ad7554883820eba",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/copy.metal",
+   "ref": "ed8a579eb6fe6a14c36560d2c8b548baf99e66fa77d300fb4ad7554883820eba"
+  },
+  {
+   "identical": true,
+   "ours": "1068dc096a6505ed7243b09595448e157847e162a55e6d8a987bbe0108d2594b",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/fp_quantized.h",
+   "ref": "1068dc096a6505ed7243b09595448e157847e162a55e6d8a987bbe0108d2594b"
+  },
+  {
+   "identical": true,
+   "ours": "254d1a0790fc246300f718114be6e83d7610e0a1d3adeb7b3aa7a3dc94d32a32",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/fp_quantized.metal",
+   "ref": "254d1a0790fc246300f718114be6e83d7610e0a1d3adeb7b3aa7a3dc94d32a32"
+  },
+  {
+   "identical": true,
+   "ours": "1c6b05719bb0ebe47d0346b4058a571ad833ecd8794882443e5cc11cc2133dac",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/fp_quantized_nax.h",
+   "ref": "1c6b05719bb0ebe47d0346b4058a571ad833ecd8794882443e5cc11cc2133dac"
+  },
+  {
+   "identical": true,
+   "ours": "9874131586aa02391139839edf15a2781a22537c1e6638eb0a7ae17cfa7e314e",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/fp_quantized_nax.metal",
+   "ref": "9874131586aa02391139839edf15a2781a22537c1e6638eb0a7ae17cfa7e314e"
+  },
+  {
+   "identical": true,
+   "ours": "89fbdfd52a53be83bf1f27ac1a9069a282cc6bd479e3b67b5f756e4b1ef34c50",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/gemv.h",
+   "ref": "89fbdfd52a53be83bf1f27ac1a9069a282cc6bd479e3b67b5f756e4b1ef34c50"
+  },
+  {
+   "identical": true,
+   "ours": "835376186eeae4b886141b71edc707b2aa111cc66b48dc573d5361f2e3d1db92",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/gemv.metal",
+   "ref": "835376186eeae4b886141b71edc707b2aa111cc66b48dc573d5361f2e3d1db92"
+  },
+  {
+   "identical": true,
+   "ours": "e1a745391ff4990f3f1ad75c5687c3b102dcdc4833d8fbbac38e10f54af29af4",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/indexing/gather_axis.h",
+   "ref": "e1a745391ff4990f3f1ad75c5687c3b102dcdc4833d8fbbac38e10f54af29af4"
+  },
+  {
+   "identical": true,
+   "ours": "64aacebf6576dfcd389383564fa1214bc87f2a091dd33cc64c598c5367ecab96",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/indexing/gather_front.h",
+   "ref": "64aacebf6576dfcd389383564fa1214bc87f2a091dd33cc64c598c5367ecab96"
+  },
+  {
+   "identical": true,
+   "ours": "e820b8ee2b5132a97122780c12433ebb5100d8078d31e211d0429400a11415bb",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/indexing/indexing.h",
+   "ref": "e820b8ee2b5132a97122780c12433ebb5100d8078d31e211d0429400a11415bb"
+  },
+  {
+   "identical": true,
+   "ours": "6044933c9ff8ddfc5abce05051bb1c63e1b7917eba67395563dba42c4efdd0f2",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+   "ref": "6044933c9ff8ddfc5abce05051bb1c63e1b7917eba67395563dba42c4efdd0f2"
+  },
+  {
+   "identical": true,
+   "ours": "965f028f091b0c781934ae769207de48b0f85d2676a48f1941bf1c4d2359d23d",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.metal",
+   "ref": "965f028f091b0c781934ae769207de48b0f85d2676a48f1941bf1c4d2359d23d"
+  },
+  {
+   "identical": true,
+   "ours": "387d1095316e90c3ce2503dac6760e39ffa7750903d10a4cf1fbf7631a419349",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+   "ref": "387d1095316e90c3ce2503dac6760e39ffa7750903d10a4cf1fbf7631a419349"
+  },
+  {
+   "identical": true,
+   "ours": "4b00e59bf4fa3a6561ff318149cf30734999624da212b0e2b49dd71179f76b0d",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.metal",
+   "ref": "4b00e59bf4fa3a6561ff318149cf30734999624da212b0e2b49dd71179f76b0d"
+  },
+  {
+   "identical": true,
+   "ours": "a12841b57d505f6cca81631901b845dbf76bc90dfc099e7f40c763b2cc838c51",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_utils.h",
+   "ref": "a12841b57d505f6cca81631901b845dbf76bc90dfc099e7f40c763b2cc838c51"
+  },
+  {
+   "identical": true,
+   "ours": "2b4ca93fd1f43ee91129440359b18c0fa49bc70098bd4ca3033c6550b2c07d94",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/reduce.h",
+   "ref": "2b4ca93fd1f43ee91129440359b18c0fa49bc70098bd4ca3033c6550b2c07d94"
+  },
+  {
+   "identical": true,
+   "ours": "9f232f0f77281b3105b6b905f3c706ef2a96d962ae317946d3b650a650db3ad9",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/reduce.metal",
+   "ref": "9f232f0f77281b3105b6b905f3c706ef2a96d962ae317946d3b650a650db3ad9"
+  },
+  {
+   "identical": true,
+   "ours": "2cb64d9796e9eac8bced8f35337de9c7fea4db3840a3e398eca21e7fbdd9758c",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/reduce_utils.h",
+   "ref": "2cb64d9796e9eac8bced8f35337de9c7fea4db3840a3e398eca21e7fbdd9758c"
+  },
+  {
+   "identical": true,
+   "ours": "ee3ea49b2dc580f0a3d615aae28f8a2a6c94e14224a94ed192138e921f82f5fa",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/rms_norm.metal",
+   "ref": "ee3ea49b2dc580f0a3d615aae28f8a2a6c94e14224a94ed192138e921f82f5fa"
+  },
+  {
+   "identical": true,
+   "ours": "2b35221ebea033ff43100b85eaaddec5c0e34e3cfd52e7c692573764b2b7d0ab",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/rope.metal",
+   "ref": "2b35221ebea033ff43100b85eaaddec5c0e34e3cfd52e7c692573764b2b7d0ab"
+  },
+  {
+   "identical": true,
+   "ours": "bc32c424b8d2a476a1a2df877198051e811ec28bb418e714e67deb73bedf28c3",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/scaled_dot_product_attention.metal",
+   "ref": "bc32c424b8d2a476a1a2df877198051e811ec28bb418e714e67deb73bedf28c3"
+  },
+  {
+   "identical": true,
+   "ours": "4a9d6b1619fdeaf60abeb36a72d69d9d28b2b035e75d8204a600f5a369f9a250",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/sdpa_vector.h",
+   "ref": "4a9d6b1619fdeaf60abeb36a72d69d9d28b2b035e75d8204a600f5a369f9a250"
+  },
+  {
+   "identical": true,
+   "ours": "cb233fe42a7358f5f658c9a1ef52cd2ee9dd3786ddfad01793a976d58f4d4051",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/softmax.h",
+   "ref": "cb233fe42a7358f5f658c9a1ef52cd2ee9dd3786ddfad01793a976d58f4d4051"
+  },
+  {
+   "identical": true,
+   "ours": "d19231c66973edc3944f12529d1cc393029e7f7262b914907c710ef9dbcb39e2",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/softmax.metal",
+   "ref": "d19231c66973edc3944f12529d1cc393029e7f7262b914907c710ef9dbcb39e2"
+  },
+  {
+   "identical": true,
+   "ours": "bb335c9f5eb28016482822089278dcf6e897311cb6fcd060a419313af1d211ae",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/sort.h",
+   "ref": "bb335c9f5eb28016482822089278dcf6e897311cb6fcd060a419313af1d211ae"
+  },
+  {
+   "identical": true,
+   "ours": "be97ea6106fb2e0c0c26f006037408e246fafa012fd2577bfc20cf356475ee61",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/sort.metal",
+   "ref": "be97ea6106fb2e0c0c26f006037408e246fafa012fd2577bfc20cf356475ee61"
+  },
+  {
+   "identical": true,
+   "ours": "67722214ff487ec95df675e2f135ccd7fbe639b6eb6ab98b14bcefa58d66ba95",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/attn.h",
+   "ref": "67722214ff487ec95df675e2f135ccd7fbe639b6eb6ab98b14bcefa58d66ba95"
+  },
+  {
+   "identical": true,
+   "ours": "82d25e646d442a0a3da755a7f04941b0db2d71a72e41d0dcd6e089ea021f6f6a",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention.h",
+   "ref": "82d25e646d442a0a3da755a7f04941b0db2d71a72e41d0dcd6e089ea021f6f6a"
+  },
+  {
+   "identical": true,
+   "ours": "79cbc1164ca440df10dc66288677d1657c027fd88f4d285f48825be365dd6362",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention.metal",
+   "ref": "79cbc1164ca440df10dc66288677d1657c027fd88f4d285f48825be365dd6362"
+  },
+  {
+   "identical": true,
+   "ours": "5c01c88a92e6e3caa140cc702cba3618e344aecfcd234e62852912cbd28e32cc",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention_nax.h",
+   "ref": "5c01c88a92e6e3caa140cc702cba3618e344aecfcd234e62852912cbd28e32cc"
+  },
+  {
+   "identical": true,
+   "ours": "5baaa632aa2fdfdfb50e79820e6a9d9b4bfa2e4badb0d9b1fae4774299b76457",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention_nax.metal",
+   "ref": "5baaa632aa2fdfdfb50e79820e6a9d9b4bfa2e4badb0d9b1fae4774299b76457"
+  },
+  {
+   "identical": true,
+   "ours": "a97d78dd8f67ff29a29bef6bfd3c093b18c878078a2aed7c00c2e8ec6fe573a9",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/loader.h",
+   "ref": "a97d78dd8f67ff29a29bef6bfd3c093b18c878078a2aed7c00c2e8ec6fe573a9"
+  },
+  {
+   "identical": true,
+   "ours": "7f502d66cf30eba95c35faaeed65da3385c62a48716b739fec65ea5130e13a85",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/mma.h",
+   "ref": "7f502d66cf30eba95c35faaeed65da3385c62a48716b739fec65ea5130e13a85"
+  },
+  {
+   "identical": true,
+   "ours": "1f39264decabe2a2ff11bcd2b071cbca264c654576507b443778604f24d9f31a",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/nax.h",
+   "ref": "1f39264decabe2a2ff11bcd2b071cbca264c654576507b443778604f24d9f31a"
+  },
+  {
+   "identical": true,
+   "ours": "f03c6ed73d7298fa69b75a49e7eec54954b6fafd59530a1f175934215412ed80",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/params.h",
+   "ref": "f03c6ed73d7298fa69b75a49e7eec54954b6fafd59530a1f175934215412ed80"
+  },
+  {
+   "identical": true,
+   "ours": "5865a55ec7bfbe47e86fb21e18939ecc7e2b53e6df2214461fbe06be8789cb04",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/attn/transforms.h",
+   "ref": "5865a55ec7bfbe47e86fb21e18939ecc7e2b53e6df2214461fbe06be8789cb04"
+  },
+  {
+   "identical": true,
+   "ours": "c84af31e2c57154f2a8a24fa7f9fe2449765cce9a66f3f035846ed3c03b6a8b0",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/gemm.h",
+   "ref": "c84af31e2c57154f2a8a24fa7f9fe2449765cce9a66f3f035846ed3c03b6a8b0"
+  },
+  {
+   "identical": true,
+   "ours": "cdc89ca6007a689b57f0a43d7d71eb1ef3a2530c3a971328139cb650f23b7d5f",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/gemm_nax.h",
+   "ref": "cdc89ca6007a689b57f0a43d7d71eb1ef3a2530c3a971328139cb650f23b7d5f"
+  },
+  {
+   "identical": true,
+   "ours": "ed49c8b9c73957f0cbc9dea30f484cf84fb821aece68233d6d1967856200d5c7",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_fused.h",
+   "ref": "ed49c8b9c73957f0cbc9dea30f484cf84fb821aece68233d6d1967856200d5c7"
+  },
+  {
+   "identical": true,
+   "ours": "6c6e67f5c7fc6b378ca2c849c36a79d696c93e65b3a60d3f5b1f13928c79029e",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_fused.metal",
+   "ref": "6c6e67f5c7fc6b378ca2c849c36a79d696c93e65b3a60d3f5b1f13928c79029e"
+  },
+  {
+   "identical": true,
+   "ours": "0d8501043e85992efacaea723d083dac5a0a721db4a5ec07712506791ad17fd1",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_fused_nax.h",
+   "ref": "0d8501043e85992efacaea723d083dac5a0a721db4a5ec07712506791ad17fd1"
+  },
+  {
+   "identical": true,
+   "ours": "497550cb5b0896fae66f679a6454676871fff8735901c46b997a781660ae7047",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_fused_nax.metal",
+   "ref": "497550cb5b0896fae66f679a6454676871fff8735901c46b997a781660ae7047"
+  },
+  {
+   "identical": true,
+   "ours": "93986cc93c812bccc70b1393b6db9093509896c36598130ad07d759949b8d731",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_gather.h",
+   "ref": "93986cc93c812bccc70b1393b6db9093509896c36598130ad07d759949b8d731"
+  },
+  {
+   "identical": true,
+   "ours": "191402a9a6a18b6cfd5e74309c15e3c748dd59f2f609b9c8324ea514b872d7ed",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_gather.metal",
+   "ref": "191402a9a6a18b6cfd5e74309c15e3c748dd59f2f609b9c8324ea514b872d7ed"
+  },
+  {
+   "identical": true,
+   "ours": "c2e6acf79d7eef7d560e96437eb4c5a4da37b094f4d09c2e9879e4671b3228e2",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_gather_nax.h",
+   "ref": "c2e6acf79d7eef7d560e96437eb4c5a4da37b094f4d09c2e9879e4671b3228e2"
+  },
+  {
+   "identical": true,
+   "ours": "b829a8226b88fbae47d0393d294dcbb339c96bd2cd7f29af8de8b85b423f65a8",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_gather_nax.metal",
+   "ref": "b829a8226b88fbae47d0393d294dcbb339c96bd2cd7f29af8de8b85b423f65a8"
+  },
+  {
+   "identical": true,
+   "ours": "9256d0d0e5796e2564246335c3fa507915d6e36d87b4c3b231b9b28daca5452b",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_masked.h",
+   "ref": "9256d0d0e5796e2564246335c3fa507915d6e36d87b4c3b231b9b28daca5452b"
+  },
+  {
+   "identical": true,
+   "ours": "6cd1102cdcff715226f095869069e5b84eebd3b7965bd5eb7f4a0f130d47354f",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_masked.metal",
+   "ref": "6cd1102cdcff715226f095869069e5b84eebd3b7965bd5eb7f4a0f130d47354f"
+  },
+  {
+   "identical": true,
+   "ours": "e1256eb925f97cd594ffd0382ecd22f5540637a7bbb902da357a80ece284a9ad",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_segmented.h",
+   "ref": "e1256eb925f97cd594ffd0382ecd22f5540637a7bbb902da357a80ece284a9ad"
+  },
+  {
+   "identical": true,
+   "ours": "fe8a6ac43fd0383c94dff4cb0acf2d6e0b83b2ef692387a4e3307c824c6d14d6",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_segmented.metal",
+   "ref": "fe8a6ac43fd0383c94dff4cb0acf2d6e0b83b2ef692387a4e3307c824c6d14d6"
+  },
+  {
+   "identical": true,
+   "ours": "5367b8e3c95726ff1b46cd2d65d34a873bd31cebf44c96ea650f449f8a953d82",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_segmented_nax.h",
+   "ref": "5367b8e3c95726ff1b46cd2d65d34a873bd31cebf44c96ea650f449f8a953d82"
+  },
+  {
+   "identical": true,
+   "ours": "cde0fce87a930b5dbba885bfafed2bb21ea93aea504611490930051140e77ed2",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_segmented_nax.metal",
+   "ref": "cde0fce87a930b5dbba885bfafed2bb21ea93aea504611490930051140e77ed2"
+  },
+  {
+   "identical": true,
+   "ours": "2ada2a7ea548f6c4b0e7962b4a2f163e8a212620ecc46e078a06647df12b0635",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_splitk.h",
+   "ref": "2ada2a7ea548f6c4b0e7962b4a2f163e8a212620ecc46e078a06647df12b0635"
+  },
+  {
+   "identical": true,
+   "ours": "6c3f93a9f55d60ec8e6bd14e1b3e88b37ec65185b424042f2fa6436b397aeaed",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_splitk.metal",
+   "ref": "6c3f93a9f55d60ec8e6bd14e1b3e88b37ec65185b424042f2fa6436b397aeaed"
+  },
+  {
+   "identical": true,
+   "ours": "9486b177261f657bceae6437a18d412a0e361c3e6b418c78b4c067b463c84597",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_splitk_nax.h",
+   "ref": "9486b177261f657bceae6437a18d412a0e361c3e6b418c78b4c067b463c84597"
+  },
+  {
+   "identical": true,
+   "ours": "0d3833d3857ccbf0dc19693e0338c7be4c2d942b6555a343839f584c8ed9329b",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/kernels/steel_gemm_splitk_nax.metal",
+   "ref": "0d3833d3857ccbf0dc19693e0338c7be4c2d942b6555a343839f584c8ed9329b"
+  },
+  {
+   "identical": true,
+   "ours": "703cd05158c22625dd636b85f7219bb374c65eeaed03f7b770bf8ac49f2fb16d",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/loader.h",
+   "ref": "703cd05158c22625dd636b85f7219bb374c65eeaed03f7b770bf8ac49f2fb16d"
+  },
+  {
+   "identical": true,
+   "ours": "57fb5f0aeddf2a760d5b9317fde2adcc562a2aba3942fda86d9a71c3d228a735",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/mma.h",
+   "ref": "57fb5f0aeddf2a760d5b9317fde2adcc562a2aba3942fda86d9a71c3d228a735"
+  },
+  {
+   "identical": true,
+   "ours": "1f39264decabe2a2ff11bcd2b071cbca264c654576507b443778604f24d9f31a",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/nax.h",
+   "ref": "1f39264decabe2a2ff11bcd2b071cbca264c654576507b443778604f24d9f31a"
+  },
+  {
+   "identical": true,
+   "ours": "6711e72e32310eafb088895d5a6d20fcfca814158f5b38eb72b6e69d9d773e43",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/params.h",
+   "ref": "6711e72e32310eafb088895d5a6d20fcfca814158f5b38eb72b6e69d9d773e43"
+  },
+  {
+   "identical": true,
+   "ours": "aead73fa873184cf7d930fb9d20308f765c52c35a775a9a0131162cc332fa814",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/steel/gemm/transforms.h",
+   "ref": "aead73fa873184cf7d930fb9d20308f765c52c35a775a9a0131162cc332fa814"
+  },
+  {
+   "identical": true,
+   "ours": "1ad7ebbd7c6bb028b7d9a883ac72c549d218e1696cafa6a97c442f4e91af7e43",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/ternary.h",
+   "ref": "1ad7ebbd7c6bb028b7d9a883ac72c549d218e1696cafa6a97c442f4e91af7e43"
+  },
+  {
+   "identical": true,
+   "ours": "e042fe449dbf49761547d244d521bbe0be883eff2e67cffd33f674b95c3a4dc5",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/ternary.metal",
+   "ref": "e042fe449dbf49761547d244d521bbe0be883eff2e67cffd33f674b95c3a4dc5"
+  },
+  {
+   "identical": true,
+   "ours": "e1cf8fecfa77957efe5db7a620602788d431617690f94b94dc83d773303a82a6",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/ternary_ops.h",
+   "ref": "e1cf8fecfa77957efe5db7a620602788d431617690f94b94dc83d773303a82a6"
+  },
+  {
+   "identical": true,
+   "ours": "fb952a2c30a6d0cd01f6c61e852cc15e426b286475de8ff139bb65b8d9001c8c",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/unary.h",
+   "ref": "fb952a2c30a6d0cd01f6c61e852cc15e426b286475de8ff139bb65b8d9001c8c"
+  },
+  {
+   "identical": true,
+   "ours": "51af04126d68e1f5baee5f467268408650d24a68db66e8c044f7f0be3f15368b",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/unary.metal",
+   "ref": "51af04126d68e1f5baee5f467268408650d24a68db66e8c044f7f0be3f15368b"
+  },
+  {
+   "identical": true,
+   "ours": "95aeaba511fd32cfc89803366ac30f9e152ab02e2ac3c2aaecfc660d1f6b7463",
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/unary_ops.h",
+   "ref": "95aeaba511fd32cfc89803366ac30f9e152ab02e2ac3c2aaecfc660d1f6b7463"
+  },
+  {
+   "identical": true,
+   "ours": "7b3f1685463e176eb8e423f45b5847ef9141cea9e802d046bfb0794a60cff667",
+   "path": "mtp-head.manifest.json",
+   "ref": "7b3f1685463e176eb8e423f45b5847ef9141cea9e802d046bfb0794a60cff667"
+  },
+  {
+   "identical": true,
+   "ours": "89ff3173f8b25afa9af71603a2cd4607a98e2df5b88472575641033868ee1b84",
+   "path": "mtp-head/README.md",
+   "ref": "89ff3173f8b25afa9af71603a2cd4607a98e2df5b88472575641033868ee1b84"
+  }
+ ],
+ "files_compared": 154,
+ "identical": 154,
+ "listed_paths": 89,
+ "reference": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+}
