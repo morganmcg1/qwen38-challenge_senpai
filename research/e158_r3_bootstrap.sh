@@ -44,6 +44,29 @@ for d in mtp-head mtp-head-declared mtp-head-declared-run; do
 done
 du -sh "${CACHE_ROOT}"/* 2>/dev/null
 
+step "reference_weights"
+# benchmark.sh hashes the reference repo revision and its config.json into the
+# transform-source digest. With reference_weights/ empty the digest cannot
+# match the stamp inside a cloned weights/ tree, so the harness decides the
+# cache is stale and tries to redo the ~15 GB transform. These two links make
+# the digest reproducible; they cost no disk.
+hf_snapshot="${PREV_ROLE}/workspace/target/reference_weights/Qwen3.8-27B-4bit"
+if [[ -e reference_weights/Qwen3.8-27B-4bit ]]; then
+  echo "reference_weights already linked"
+else
+  model_dir="${HOME}/.cache/huggingface/hub/models--EigenLabs--Qwen3.8-27B-4bit"
+  if [[ ! -d "${model_dir}" ]]; then
+    prev_model="$(cd "$(readlink "${hf_snapshot}")/../.." && pwd -P)"
+    mkdir -p "$(dirname "${model_dir}")"
+    cp -Rc "${prev_model}" "$(dirname "${model_dir}")/" || exit 1
+  fi
+  ln -sfn "${model_dir}/snapshots/$(basename "$(readlink "${hf_snapshot}")")" \
+    reference_weights/Qwen3.8-27B-4bit
+  ln -sfn "${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head" \
+    reference_weights/Qwen3.6-27B-MTP-4bit
+  echo "reference_weights linked"
+fi
+
 step "head digests"
 python3 research/e158_head_census.py --digest-only 2>/dev/null || true
 
