@@ -1,0 +1,38 @@
+{
+  "gpu_used": false,
+  "harness": "local",
+  "measured_best_cell": "0.1800|1.6000",
+  "measured_best_over_shipped_pp": 0.23125005928409736,
+  "measured_frame": {
+    "cell chosen by the measured curve": {
+      "cell": "0.1800|1.6000",
+      "objective": 2.478191524203958,
+      "upper_slot_spread": 3.9910208637984965,
+      "worst_upper_slot_prompt": "botany"
+    },
+    "cell chosen by the replayed curve": {
+      "cell": "0.1600|1.4500",
+      "objective": 2.147676041191717,
+      "upper_slot_spread": 3.5585694825663836,
+      "worst_upper_slot_prompt": "botany"
+    },
+    "shipped cell": {
+      "cell": "0.1800|1.4500",
+      "objective": 2.2469414649198605,
+      "upper_slot_spread": 3.788629902894358,
+      "worst_upper_slot_prompt": "botany"
+    },
+    "uniform, no boundary at all": {
+      "cell": "0.1800|1.0000",
+      "objective": 0.0,
+      "upper_slot_spread": 0.0,
+      "worst_upper_slot_prompt": "essays"
+    }
+  },
+  "regret_pp": 0.330515483012241,
+  "replayed_believed_gain_pp": 0.13673567285862154,
+  "replayed_best_cell": "0.1600|1.4500",
+  "replayed_cell_true_gain_pp": -0.09926542372814362,
+  "same_cell": false,
+  "shipped_cell": "0.1800|1.4500"
+}
