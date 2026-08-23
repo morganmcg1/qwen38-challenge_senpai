@@ -84,64 +84,6 @@ def rounds(leg: dict) -> int | None:
     return round(tokens / (1.0 + edl * rate))
 
 
-def columns_per_round(arm: str, label: str) -> int | None:
-    """Threadgroup columns one drafting round launches on this arm.
-
-    Read from the arm's own witness trace: each routed width contributes its
-    dispatch count times the columns that width launched.
-    """
-    path = pathlib.Path(f"research/out/e135{label}w{arm}/pipelines.json")
-    if not path.exists():
-        return None
-    log = json.loads(path.read_text())
-    by_width = log.get("by_width", {})
-    columns = log.get("columns_by_width", {})
-    if not by_width or not columns:
-        return None
-    return sum(int(by_width[w]) * int(columns[w]) for w in by_width)
-
-
-def launch_cost(rows: list[dict], label: str, headlines: dict,
-                tokens: int) -> dict:
-    """Price one launched threadgroup column from every available contrast.
-
-    This is the experiment's own question. If the whole effect is launch cost
-    then the same microseconds-per-column must come out of contrasts whose
-    column counts differ by an order of magnitude.
-    """
-    cols = {arm: columns_per_round(arm, label)
-            for arm in ("base", "composed", "composed67")}
-    means = {}
-    for arm in cols:
-        v = [report.fnum(r["metrics"]["mtp_seconds_per_token"])
-             for r in rows if r["arm"] == arm]
-        if v:
-            means[arm] = statistics.fmean(v)
-    n_rounds = rounds(rows[0]) if rows else None
-    out = {"columns_per_round": cols, "rounds_per_leg": n_rounds,
-           "estimates": []}
-    if not n_rounds:
-        return out
-    for ref, cand, metric, _ in PAIRS:
-        if cols.get(ref) is None or cols.get(cand) is None:
-            continue
-        if ref not in means or metric not in headlines:
-            continue
-        saved = cols[ref] - cols[cand]
-        if saved <= 0:
-            continue
-        round_s = means[ref] * tokens / n_rounds
-        pct, se = headlines[metric]
-        per_column = pct / 100.0 * round_s * 1e6 / saved
-        out["estimates"].append({
-            "contrast": f"{ref}->{cand}", "columns_saved": saved,
-            "round_ms": round_s * 1e3, "pct": pct,
-            "us_per_column": per_column,
-            "us_per_column_se": se / 100.0 * round_s * 1e6 / saved,
-        })
-    return out
-
-
 def contrast(rows: list[dict], ref: str, cand: str, key: str):
     report.ARMS = (ref, cand)
     sub = [r for r in rows if r["arm"] in (ref, cand)]
@@ -277,41 +219,10 @@ def main() -> int:
                   f" (+- {100.0 * sfit['se'] / sfit['mean']:.4f}),"
                   f" drift {fit['drift_per_leg']:+.3e} per leg")
 
-    tokens = int(report.fnum(complete[0]["metrics"].get("decode_tokens")) or 0)
-    cost = launch_cost(complete, args.label, headlines, tokens)
     print()
-    print("launch cost per threadgroup column, the E135 question itself")
-    print(f"  columns per drafting round  {cost['columns_per_round']}")
-    print(f"{'contrast':<24}{'columns saved':>14}{'round ms':>10}"
-          f"{'pct':>10}{'us/column':>12}")
-    for e in cost["estimates"]:
-        print(f"  {e['contrast']:<22}{e['columns_saved']:>14}"
-              f"{e['round_ms']:>10.3f}{e['pct']:>+10.4f}"
-              f"{e['us_per_column']:>12.4f}")
-    independent = [e for e in cost["estimates"]
-                   if e["contrast"] in ("base->composed",
-                                        "composed->composed67")]
-    if len(independent) == 2:
-        lo, hi = sorted(e["us_per_column"] for e in independent)
-        ratio = max(e["columns_saved"] for e in independent) / min(
-            e["columns_saved"] for e in independent)
-        print(f"  the two contrasts that share no arm agree to"
-              f" {100.0 * (hi - lo) / hi:.1f} % over a {ratio:.1f}x range of"
-              f" columns saved, so the effect is linear in launched columns"
-              f" and the E135 premise holds")
-    artifacts = pathlib.Path("research/e135-artifacts")
-    artifacts.mkdir(exist_ok=True)
-    primary = next((e for e in cost["estimates"]
-                    if e["contrast"] == "composed->composed67"), None)
-    payload = dict(cost)
-    if primary:
-        # The cleanest estimator: one enum apart, same routing, same probe
-        # fraction, same schedule, so nothing but launch geometry moves.
-        payload["e135_launch_cost_us_per_column"] = primary["us_per_column"]
-        payload["e135_launch_cost_us_per_column_se"] = \
-            primary["us_per_column_se"]
-    (artifacts / f"{args.label}-per-width.json").write_text(
-        json.dumps(payload, indent=1) + "\n")
+    print("Column pricing lives in research/e135_width_histogram.py. It needs"
+          " the run's own per-round verify widths, and the pipeline log's"
+          " by_width is a warm census rather than decode traffic.")
 
     print()
     if "e135_composition_local_pct" in headlines:
