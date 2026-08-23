@@ -52477,3 +52477,347 @@ scheduler re-price and edward owns it.
   beagle-weighted, rung 0 zero-GPU on the cached capture.
 - F190, the cliff that appears to move one width between two of our own bases;
   check the E92 axis label first.
+
+## 302 — FINDING 215 and CAMPAIGN RULE 126: two consecutive crowns were serial lotteries, the top five rows are the same candidate, and a shaped gain must be priced as an expectation
+
+The bar moved twice in four hours and neither move was earned on the candidate
+leg. E140 and E143 both went terminal in the same window. This entry records
+what the board actually contains, the rule that follows from it, and the two
+student results.
+
+### 302.1 FINDING 215 — the top five promoted rows are the same candidate to within 0.09 %
+
+New bar: `684821ed`, solver newjordan, published **3.71959722580154**, accepted
+2026-08-23T00:04:10Z, promoted 01:45:13Z, promoted source ref `eb5eadc7`, model
+attribution `Grok 4.6`. Its note declares one mechanism: skip constructing the
+unused probe-sort JIT kernel when their E87 select arm is live. Their own prior
+receipt for that mechanism was 7 of 8 prompts faster with the candidate leg
+moving −0.114 %.
+
+Measured against the previous candidate frontier `1760479a`, with effective
+draft lengths digit-identical on all eight prompts:
+
+```
+prompt      cand d%   serial d%   raw d%
+beagle      +0.0760    -0.1057    -0.1816
+medicine    +0.0054    +0.0522    +0.0468
+essays      +0.0102    +1.4322    +1.4219   <-- the whole story
+botany      +0.1222    -0.0776    -0.1996
+republic    +0.0073    +0.1724    +0.1651
+plutarch    +0.5821    +0.0790    -0.5002
+drama       +0.0671    +0.1095    +0.0424
+travel      -0.0118    +0.3478    +0.3596
+
+candidate 8-prompt mean +0.1073 %  (SLOWER on 7 of 8)
+serial    8-prompt mean +0.2512 %
+published                +0.4332 %
+```
+
+A single essays serial leg drew +1.4322 % slow. Essays is the binding upper-slot
+prompt, so that one draw is the crown.
+
+**The de-lucked table.** Replace every serial leg with the median of the 29-row
+board window since 18:00Z, hold each candidate vector fixed, recompute the
+published median:
+
+```
+id        solver          observed    de-lucked    luck
+106573b9  nijaru          3.701843    3.704404    -0.069   <== best de-lucked, REJECTED
+1760479a  scarletbright   3.703552    3.702751    +0.022
+749b4c7e  scarletbright   3.698827    3.702574    -0.101
+3ba6ee9d  Amal-David      3.705763    3.701572    +0.113
+684821ed  newjordan       3.719597    3.701207    +0.497   <== THE CROWN, WORST DE-LUCKED
+a323a8ed  nagaral         3.691337    3.685592    +0.156
+08b67f12  jungjipdo       3.690719    3.685194    +0.150
+c466d4d7  fkiene          3.686225    3.676375    +0.268
+572b2cc4  morganmcg1      3.662186    3.666137    -0.108
+```
+
+**The top five rows are the same candidate to within 0.09 %.** The 0.56 %
+published spread across them is serial lottery, not merit. The best de-lucked
+candidate on the whole board belongs to a **rejected** row.
+
+**Per-prompt serial noise, 29 rows, board window:**
+
+```
+prompt     sd        range
+beagle     0.183 %   -0.255 .. +0.457
+essays     0.306 %   -0.217 .. +1.409
+medicine   0.177 %
+republic   0.141 %
+botany     0.242 %
+```
+
+Essays is both the binding prompt and the noisiest serial leg on the board.
+
+**Upper-slot owner census, 29 board rows:** essays 26 (89.7 %), republic 2
+(6.9 %), medicine 1 (3.4 %). This is the ranked truth and it supersedes any
+occupancy census taken from a replay anchored on one of our own commits.
+
+Reproduce with `_advisor_scratch/f215.py` and `_advisor_scratch/f215b.py`.
+
+### 302.2 CAMPAIGN RULE 126 — price a shaped gain as an expectation over the serial lottery
+
+**Never price a shaped gain against one row's realised sort order.** Hold the
+anchor candidate vector fixed. Resample **whole** serial vectors from the board
+window, which preserves the within-run correlation between the eight legs. Apply
+the gain shape. Take the expectation. Report the expectation, p05, and the
+upper-slot occupancy census of the resample.
+
+Rule 124 still governs the **bar** — anchor value tables on the published crown,
+candidate contrasts on the fastest promoted candidate leg. Rule 126 governs the
+**gain**.
+
+Measured on 29 real serial vectors, anchor `1760479a`:
+
+```
+shape                              expected      sd       p05      conditional on 684821ed
+uniform +0.50 %                     +0.5000    0.0000   +0.5000        +0.5000
+head gain, uniform +0.20 pt         +0.4060    0.0000   +0.4060        +0.4060
+head gain, uniform +0.40 pt         +0.8120    0.0000   +0.8120        +0.8120
+beagle-only +1.1482 % (E143 C-a)    +0.5499    0.0009   +0.5481        +0.5472
+F22 essays-heavy shape              +0.5913    0.0442   +0.5992        +0.3596
+E141 beagle+essays (old shape)      +0.9149    0.0928   +0.8065        +0.4675
+upper-slot owner in resample: essays 96.5 %, medicine 3.5 %
+```
+
+**Uniform and beagle-only gains are lottery-proof. Essays-weighted gains are
+not.** Thorfinn's F22 re-price of +0.3598 % was a *conditional* value on a 3.5 %
+event — the crown's realised sort order. F22 is worth **+0.5913 % expected, p05
++0.5992 %**. My earlier campaign-wide re-price instruction is withdrawn in its
+stated form and replaced by Rule 126.
+
+Reproduce with `_advisor_scratch/f215d.py`.
+
+### 302.3 The probability table against the new bar
+
+Resampling 29 real serial vectors, anchor `1760479a`, uniform gain applied to
+the candidate leg:
+
+```
+uniform gain over 1760479a   expected median   P(beat 3.71959723)
+   +0.00 %                      3.70448             3.5 %   <- the freak-draw floor, 1/29
+   +0.10 %                      3.70820             3.7 %
+   +0.25 %                      3.71370            17.2 %
+   +0.40 %                      3.71924            37.7 %
+   +0.50 %                      3.72296            69.1 %
+   +0.60 %                      3.72662            92.9 %
+   +0.75 %                      3.73222           100.0 %
+   +1.00 %                      3.74150           100.0 %
+```
+
+**+0.60 % of uniform candidate-leg gain over `1760479a` is a 93 % crown.** Below
++0.40 % we are betting on a draw. Reproduce with `_advisor_scratch/f215c.py`.
+
+### 302.4 E140 terminal — a perfect acceptance estimator makes the score worse
+
+Edward, PR #140, merged at `2cd0d459`. `status: failed`, commit
+`a0bf6fb554ebbc88decab43e7a28907be663c2c3`, W&B
+[`g01boips`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/g01boips).
+Zero GPU; only `research/` changed. `e140_replayed_ranked_median_pct` moved from
+baseline +2.4683 to candidate −3.1350, delta −5.6033.
+
+- **H140 is refuted.** Argmax-only lookahead is worth exactly +0.0000 pp: cell
+  `A_ship` is bit-identical to `C_flatlook`, and `B_rankedprice` to
+  `D_curvelook`. All movement is the ranked re-price.
+- **Why cell D fails.** Its 8-prompt mean ratio is 0.9640 against winning
+  `E_pb6`'s 0.9625 — 0.15 pp apart — yet the medians differ by 5.62 pp. Cell D
+  buys +4.264 % on beagle, which carries zero marginal weight, and pays on the
+  upper slot. `zero_weight_gain_share` 103.8 %.
+- **Rule 123 confirmed 212 of 212, zero exceptions.** Beagle holds the lower
+  median slot and rank 3 on every replayed vector; the bottom three are always
+  {plutarch, drama, travel}; the upper slot is always inside {essays, republic,
+  medicine, botany}. 138 of 212 cells reorder and 99 change the median pair.
+- **The strongest new science.** Oracle cells using the *true* per-position
+  acceptance instead of the shipped EMA reach **−4.5296 %** — worse than the
+  shipped EMA's −3.1350 %. Beagle pays +6.462 %, `zero_weight_gain_share`
+  111.4 %, plutarch ratio 0.8367 with true `p0 = 0.3026` above the 0.18
+  threshold. **The estimator is worth −1.3946 pp.** His sentence, now Campaign
+  Rule 125: *on the shipped price, accuracy about acceptance is converted into
+  depth, and depth on beagle is the one thing the median charges for.*
+- `zero_weight_gain_share` fires on 8 of 8 losing cells; the `plutarch_unlock`
+  detector fires on 5 of 35 with no false positives. Use the former.
+- **Corrections.** Pair-consistent perturbation slopes: D **−0.8751** per 10 %
+  (previously reported +0.7329, wrong sign), E −0.8177, F **−0.3034**; F/E
+  corrects 0.5356 to **0.3710** and the falsifier still does not fire. The cell-D
+  reopening threshold sharpens from 17 % to **11.34 %**. The E134 tier grid spans
+  three pair regimes (beagle/medicine 1.00–1.35, beagle/botany 1.40–1.70,
+  beagle/republic at or above 2.03), so no interpolated optimum across it is
+  meaningful. The binding gap at `d3c491b5` is **0.0164 %**, which makes 17 of 35
+  cells have unstable slot identity.
+- **Survives unchanged.** The cell C gate (0 disagreements, 617 recorded of
+  1,654,746 replayed rounds), `wants_past_cap = 0.0000`, Rule 116 and F196 (worst
+  error 4.793e-11), the item 2 censoring audit, Item D geometry share 0.2333. R2b
+  replay is bit-exact, max error 0.00e+00 on 35 cells. R1a reproduces the
+  threshold table to 5.310e-05.
+- **Does not survive.** Item A's medpair-weighted `P(M=2)`, which was weighted by
+  the wrong pair.
+- **One correction I gave him.** His upper-slot occupancy census (medicine 113,
+  botany 61, republic 38, essays 0) is anchored on `d3c491b5` and does not match
+  the ranked board, where essays owns 89.7 %.
+
+Reproduce: `cd research && python3 e140_r1r2.py && python3 e140_r2b.py &&
+python3 e140_wandb_log.py`.
+
+### 302.5 The pb6 disagreement, ADVISOR ERROR 151 provisional, and E145
+
+Six points of disagreement remain on beagle. Subtracting the ranked receipts for
+the other two components of the `e003a86d` bundle — probe 0.15 at −0.2603 %
+medpair (F192) and removing `onePass67` at about −0.26 % (F194) — leaves pb6
+alone near **+2.1 % SLOWER** on the ranked candidate leg, against edward's replay
+of −3.75 % and his live `benchfixture` ABBA of **−2.2467 % FASTER**.
+
+My pre-registered hypothesis: **pb6 pays only in deep regimes.** `benchfixture`
+drafts 6.359 at p 0.877 and lives above the width cliff; ranked beagle drafts
+4.3818 at p 0.9341 and sits below it. If that is right, pb6 is a per-prompt
+policy we shipped globally, and Rule 123 makes beagle fatal.
+
+**ADVISOR ERROR 151, provisional.** I may have reverted a +2 % mechanism on one
+confounded three-change receipt whose published delta was dominated by a
+reorder. E145 (edward, PR #144) is the test. It also measures the width cost
+curve **live** for the first time — the campaign has only ever replayed it — by
+pinning verify width `M` in {3,4,5,6,7} for whole legs on `beagle_a` at 512
+tokens under a real 40 C gate, as one palindrome in one session.
+
+My pre-registered predictions for E145 R1: `benchfixture` −1.5 % to −3.0 %,
+essays −0.5 % to +0.5 %, **beagle +1.0 % to +3.5 % SLOWER**.
+
+### 302.6 E143 terminal — the acceptance axis inside the shipped head is closed, and C2 is refuted a third time
+
+Askeladd, PR #143, merged at `a8878e70`. `status: succeeded`, commit
+`1a965d2e4c84c901abfac97e9e23a1bc32da63bd`, W&B
+[`myon2da0`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/myon2da0).
+`e143_reachable_acceptance_pct_beagle` = **+1.1481900452488687 %** of beagle raw.
+
+**The channel table**, 2,634 real draft trials on the live scored trajectory,
+296 first divergences, 3,072 emitted tokens:
+
+```
+C-a  target token unproposable by the compact draft vocabulary   7   0.2658 %
+C-b  target outside the head's coarse top-32 window              0   MEASURED
+C-c  inside the window but mis-ranked by the exact rerank        0   BY PROOF
+C-d  the head simply prefers a different continuation          273  92.23 %
+```
+
+**The C-b refutation is decisive.** Replaying the head's real coarse screen on
+all 2,634 rows gives `screen_loss_at_32 = 0.0`, `recall@32 = 1.000`, worst coarse
+rank of the exact argmax 31 with median 1 and p99 5. The exact margin from row 1
+to row 32 has median 13.581 logits and minimum 1.871; the coarse error sd has
+median 0.752; the margin is 18.74 error sigmas at the median and 2.27 at the
+minimum. The Rule 101 dose-response control is monotone and proves the metric can
+fail: 1σ of extra error gives 0.00190 loss, 2σ 0.01025, 4σ 0.07099, 8σ 0.41989,
+16σ 0.91648. An independent calibrated surrogate at σ 0.85 with residual 0.00152
+also finds zero C-b events at every σ at or below 1.00.
+
+**C-c is zero by proof**: the in-window rerank is the exact affine-4 score, so it
+cannot mis-order a token it would itself rank first.
+
+**The closure fires.** C-d by the measured residual identity, bracketed: beagle
+88.04 % [86.95, 94.57], essays 97.06 % [96.34, 100.00], pooled 92.23 % [91.22,
+97.64]. Every carrier and every interval end is above the pre-registered 80 %
+kill line, and the lowest figure anywhere is 86.95 %. Reassigning all 16
+unresolved rows moves pooled C-d only to 91.22 %.
+
+**The C-a residual belongs to alphonse.** +1.1482 % of beagle raw, 68 % CI
+[+0.7374, +1.7857], shape beagle-only (5 of 884 beagle trials, 0 of 429 essays).
+Under Rule 126 that is **+0.5499 % expected, sd 0.0009, p05 +0.5481** — a
+lottery-proof shape that cannot repeat the `e003a86d` / `09b452f3` upper-slot
+failure. The C-d ceiling is +5.270 % of median under Rule 121 against +25.18 %
+under naive Rule 116, a 4.8x overstatement.
+
+**C2 refuted a third time.** Rung 0 proved `DARKBLOOM_QWEN_MTP_ISLAND_ARM=q`
+runs C2's exact numerics with no source edit — the declared head's k and v
+projections are bit-identical to `quantize(precision_islands, 64, 4)` with 0
+mismatching words. The live gate-qualified ABBA `all,q,q,all` at 512 tokens:
+
+```
+leg  arm   entry C   MTP s/tok    rounds  accepted rate  matched  residual div
+ 1   all    38.97   0.02924142      82      0.895833      true         0
+ 2   q      58.91   0.02922488      82      0.892116      true         0
+ 3   q      59.14   0.02925516      82      0.892116      true         0
+ 4   all    58.50   0.02927967      82      0.895833      true         0
+
+e143_c2_ranked_pct                    +0.0702 %
+e143_c2_realised_acceptance_delta_pp  -0.3717
+e143_exactness_divergences             0
+ABBA replicate spread                  0.1307 %
+```
+
+The measured effect is **smaller than the replicate spread**, so the session
+cannot fix its own sign. It is one fifth of my pre-registered +0.35 %. Round
+count stayed 82 on both arms, so this fixture avoided the boundary crossing that
+cost E82 two rounds and −1.801 %. **One extra round is 1.22 % of an 82-round leg
+and outweighs the entire byte saving by 17x.** That asymmetry, not the byte
+model, is why the arm is dead. Confirms Advisor Error 148.
+
+**Two things he resolved that I had left open.** His C-a census is *not*
+position-1 only: the first-divergence index histogram is 113/96/52/26/3/3/3 over
+indices 0 through 6, so 61.8 % sit at index at or above 1, and 3 of the 7 C-a
+events are beyond position 1. The generous reading I offered — that alphonse and
+he were measuring two different quantities that are both right — **does not
+apply**; the 2.05x disagreement is real and one number is closer to the truth.
+The three named terms, in decreasing size, are corpus token frequency against
+live generated-trajectory frequency (never measured by either of them), the
+14.26 % of emitted tokens that had no draft trial at all, and the 2.0x
+`targetTail` double count.
+
+**He withdrew his own ledger (J) recommendation** and its +1.4413 % price, having
+cited `campaign-ledger.md:21815` without reading `## 282.6` at `:44656`. Correct
+withdrawal, and it leaves the clean same-weights pair intact.
+
+Reproduce: `research/e143_f2.py`, `research/e143-f2.json`,
+`research/e143_value.py`, `research/e143-c2.json`,
+`research/e143-artifacts/terminal-result.md`.
+
+### 302.7 E144 assigned — the data-free head requantization
+
+Askeladd, PR #145, base `a8878e70`. The surviving prize from ledger (J):
+
+```
+master-bf16   93.13 %   organizer-pinned EigenLabs bf16, 15 tensors
+declared      92.31 %   THE SAME WEIGHTS, naive affine-4 g64 round-to-nearest,
+                        427,742,600 B, requant relL2 9.18e-2 .. 9.97e-2
+                        -0.82 pt paid to round-to-nearest alone
+```
+
+`master-bf16` is unshippable because the head bytes law is 1.9858x bytes against
+2.0009x time. A better **data-free** quantizer at identical bytes, group size and
+layout keeps the head step where it is and changes no Swift. Under Rule 126 the
+gain is uniform, so it has zero lottery variance: +0.30 pt recovered is +0.609 %
+expected median and **93 % probability of the crown**.
+
+Rungs: R-0 the submission-guard question for a committed in-branch `mtp-head/`;
+R-A reproduce `declared` bit-exactly from `master-bf16` or close the axis; R-B at
+least two data-free quantizers at identical bytes, stop below a 2x pooled relL2
+improvement; R-B2 prove `recall@32` stays 1.000 using his own dose-response table
+as the exchange rate; R-C the gate — pooled acceptance delta with McNemar,
+stratified by per-step p, **with the Rule 125 depth histogram,
+`beagle_cost_pct` and `zero_weight_gain_share`**, stop below +0.30 pt; R-D the
+`in_branch` declaration rehearsal with both polarities; R-E a 512-token exactness
+leg. Do not submit.
+
+### 302.8 ADVISOR ERROR 152
+
+I gave alphonse ranked reach weights — beagle 4.3818, essays 5.0870 — without
+labelling the frame, while he was measuring on local fixtures whose effective
+draft lengths are 4.1525 and 3.4305. That is a Rule 84 omission. The
+consequence: his `beagle_a` fixture is about 5 % harder than ranked beagle, so
+both beagle unproposable rates in E141 and E143 are biased slightly **high** for
+the ranked prompt. Corrected with both students; no re-runs required, only a
+direction note.
+
+### 302.9 Standing state after this entry
+
+- Bar `684821ed` 3.71959723, de-lucked 3.701207. Candidate frontier `1760479a`.
+  Our best promoted row `572b2cc4` 3.66218564.
+- `1db9d63e` (thorfinn's clean archive, forecast 3.69900) has been validating
+  since 01:54:01Z. **The single Yukon slot is occupied. Do not submit.**
+- Open assignments: #135 thorfinn E135, #141 alphonse E141, #144 edward E145,
+  #145 askeladd E144.
+- The three largest live levers, priced under Rule 126: the in-branch
+  re-quantized head at +0.406 % per 0.20 pt with sd 0.0000; F22 width-6 register
+  occupancy at +0.5913 % with p05 +0.5992 %; E141 arm B-20 at +0.4038 % with sd
+  0.0007.
+- Still unowned: the width-independent GPU-work pool census, roughly 3.7 % to
+  3.8 % of the ranked round and uniform, which is the largest safe target on the
+  books; the per-position head-side confidence depth policy; F190.
