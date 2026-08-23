@@ -9,8 +9,10 @@ regeneration would silently resolve that recorded divergence. This script
 instead transplants the exact hunks: it diffs the header against a git
 reference, then applies each ``old -> new`` block to the twin verbatim.
 
-Every replacement is asserted to match exactly once, so a drifted twin fails
-loudly instead of being partially patched.
+A hunk may legitimately repeat when several instantiations share one body, so
+the rule is that a hunk must occur in the twin exactly as many times as it
+occurs in the header reference. A drifted twin therefore still fails loudly
+instead of being partially patched.
 
 Usage:
     research/e147_port_twin.py <header-path> <twin-path> <git-ref>
@@ -52,18 +54,30 @@ def main() -> int:
     twin = pathlib.Path(twin_path)
     text = twin.read_text()
 
-    applied = 0
+    pairs = {}
     for old, new in hunks(header_before, header_after):
-        count = text.count(old)
-        if count != 1:
+        if pairs.setdefault(old, new) != new:
             print(
-                f"FAIL: hunk matches {count} times in {twin_path}:\n"
+                f"FAIL: one hunk maps to two different replacements:\n"
+                f"----- hunk -----\n{old}",
+                file=sys.stderr,
+            )
+            return 1
+
+    applied = 0
+    for old, new in pairs.items():
+        expected = header_before.count(old)
+        count = text.count(old)
+        if count == 0 or count != expected:
+            print(
+                f"FAIL: hunk occurs {expected} time(s) in the header but "
+                f"{count} time(s) in {twin_path}:\n"
                 f"----- hunk -----\n{old}",
                 file=sys.stderr,
             )
             return 1
         text = text.replace(old, new)
-        applied += 1
+        applied += count
 
     twin.write_text(text)
     print(f"ported {applied} hunk(s) from {header_path} into {twin_path}")
