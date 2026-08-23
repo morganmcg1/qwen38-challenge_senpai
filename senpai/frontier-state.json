@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T22:20:00Z",
+  "observedAt": "2026-08-23T22:58:00Z",
   "observedAtNote": "Ledger 341. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. OFFICIAL SUBMISSION SLOT FREE, held for B1. E159 returned terminal: the eight ranked round counts are identified exactly (FINDING 330), k = 1.26 to 1.36 (FINDING 331), and a 3x cost step at verify width 6 that the shipped schedule crosses on 86 % of rounds (FINDING 332).",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -350,5 +350,49 @@
   "closedAxes": {
     "depth_zero_gate": "CLOSED by FINDING 335, ledger 341. cumulative[0] = 1.0 in prefixCosts, so threshold(0) == marginal[0] == headStepCostRatio == 0.18 identically. The gate cannot fire on this material.",
     "head_precision": "CLOSED by ledger 340 ruling 2. The 25 MiB archive cap makes any new head artifact unshippable and the acceptance axis is a measured null."
+  },
+  "transferLaw": {
+    "rule": "RULE 192",
+    "ledgerEntry": 342,
+    "statement": "k = (R_local / R_ranked) divided by the ranked-to-local speedup of the resource the arm saves.",
+    "rankedToLocalSpeedups": {
+      "prefill": 7.593,
+      "decodeRound": 2.947,
+      "bandwidthSpec": 2.175
+    },
+    "kByArmResource": {
+      "bandwidthBound": 1.355,
+      "bandwidthBoundIndependentCheck": 1.363,
+      "bandwidthBoundAgreementPct": 0.6,
+      "computeBound": 0.388,
+      "computeBoundIndependentCheck": 0.372,
+      "computeBoundAgreementPct": 4.0
+    },
+    "consequence": "Compute-bound arms transfer to the ranked host with k below 1. Bandwidth-bound arms transfer with k above 1. Never quote a single campaign-wide k.",
+    "prefillGapCause": "Almost certainly NAX. The ranked M5 is GPU architecture generation 17 and the advisor M4 Pro is generation 16, so the ranked host can run _nax kernels that this host cannot."
+  },
+  "rankedPrefill": {
+    "ledgerEntry": 342,
+    "secondsPerTokenMean": 0.00103,
+    "secondsPerLeg": 0.5274,
+    "secondsPerLegNote": "512 seed tokens times the per-token mean. Constant across all eight ranked prompts to within 0.3 percent.",
+    "medianRelevantSharePct": 10.07,
+    "medianRelevantShareNote": "Weighted by the two median-setting prompts, beagle and essays. The unweighted eight-prompt mean of 8.48 percent understates the share that actually sets the published median.",
+    "localSharePct": 27.05,
+    "localSecondsPerLeg": 4.0042,
+    "kPrefill": 0.372
+  },
+  "crossValidation": {
+    "ledgerEntry": 342,
+    "finding": 338,
+    "statement": "Thorfinn's R = 0.18975468 s/round still contained the 4.0042 s seed prefill. Corrected to (14.8009 - 4.0042)/78 = 138.42 ms it agrees with Edward's independent 138.58 ms at the same q = 6.359, to 0.12 percent.",
+    "standingHazard": "Any absolute round time banked from raw mtp_seconds_per_token is about 37 percent too high on this host. Subtract the seed prefill first.",
+    "roundCountHazard": "rounds = 512 - acceptedDraftTotal under-counts by one when a round straddles the window edge. It cancels in a paired A/B contrast."
+  },
+  "e162Hold": {
+    "pr": 162,
+    "student": "qwen-alphonse",
+    "state": "held before the first timed leg",
+    "reason": "Arm A targets the affine 4-bit qmm prefill path. If the ranked M5 dispatches qmm_t_nax there and this host dispatches qmm_t, the arm is ranked-inert and every local second it saves is unpriceable. Alphonse must prove the dispatcher choice from quantized.cpp before he spends a timed leg."
   }
 }

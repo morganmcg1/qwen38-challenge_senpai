@@ -64428,3 +64428,163 @@ Evidence: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/run
 (run `qkrwyxt3`, E159, `harness=local`, `gate_qualified_for_timing=false`,
 ABBA-counterbalanced, entry temperatures 39.24-59.45 C).
 
+
+## 342 — One formula prices every arm shape. `k` is the round-time ratio divided by the host speedup of the resource the arm saves.
+
+Entry 341 recorded three measured `k` values that came from three different
+routes and disagreed by arm shape. This entry finds the law behind them, and it
+reproduces Edward's measured head-byte `k` to 0.6 % from numbers he never used.
+
+### FINDING 336 — the ranked prefill share, exactly, from our own receipt
+
+Extracted from receipt `5a9f130a`, commit `8ba6e738`, score 3.70784519.
+`prefill_seconds_per_token` is essentially constant across all eight prompts at
+`0.001030 s`, which is **0.5274 s of prefill per leg** on the ranked M5.
+
+| prompt | mtp s/token | prefill s/token | decode s | prefill share | `raw_p` |
+|---|---|---|---|---|---|
+| beagle | 0.01069609 | 0.00103167 | 4.9482 | **9.65 %** | 3.5453 |
+| botany | 0.00964848 | 0.00103047 | 4.4124 | 10.68 % | 3.9332 |
+| drama | 0.01788030 | 0.00102752 | 8.6286 | 5.75 % | 2.1223 |
+| essays | 0.00982331 | 0.00103085 | 4.5018 | **10.49 %** | 3.8703 |
+| medicine | 0.00970360 | 0.00102871 | 4.4415 | 10.60 % | 3.9064 |
+| plutarch | 0.03012134 | 0.00102985 | 14.8948 | 3.42 % | 1.2607 |
+| republic | 0.00969745 | 0.00102903 | 4.4382 | 10.61 % | 3.9199 |
+| travel | 0.01563788 | 0.00103189 | 7.4783 | 6.60 % | 2.4277 |
+
+Sorting `raw_p` gives a median of `(3.5453 + 3.8703)/2 = 3.70784519`, which
+reproduces the published score exactly. This independently confirms
+FINDING 330's claim that **beagle and essays set the median**, and it confirms
+Edward's decode column to four decimal places.
+
+Because prefill seconds are near-constant while decode time varies by 3.4x, the
+prefill *share* varies by 3.1x across prompts. The two lowest shares belong to
+plutarch and drama, which sit at the bottom of `raw_p` and never enter the
+median. **The unweighted mean share of 8.48 % understates a prefill arm. The
+share that matters is 10.07 %.**
+
+### FINDING 337 — the two host ratios are different, and the gap is NAX
+
+```
+seed prefill, 512 tokens   local M4 Pro 4.0042 s   ranked M5 0.5274 s   ratio 7.59x
+one decode round           local 138.5 ms          ranked 47.0 ms       ratio 2.95x
+backbone bandwidth         local 219.1 GB/s        ranked 476.6 GB/s    ratio 2.18x
+```
+
+The ranked host is 7.6x faster at prefill and only 3.0x faster per decode
+round. Prefill is compute-bound and decode is bandwidth-bound. The decode ratio
+of 2.95x is close to the bandwidth ratio of 2.18x, as a memory-bound path
+should be. The prefill ratio is 2.6x larger than the decode ratio, and the most
+likely cause is the NAX matmul units: `_nax` kernels need GPU architecture
+generation 17, the M5 is generation 17, and the M4 Pro is generation 16 and
+cannot execute them at all.
+
+### RULE 192 — the transfer coefficient of any arm
+
+```
+k = (R_local / R_ranked) / (ranked-to-local speedup of the resource the arm saves)
+```
+
+Both terms are measurable without a receipt. Check it against every anchor we
+have:
+
+| arm saves | resource speedup | round ratio | predicted `k` | measured `k` |
+|---|---|---|---|---|
+| backbone bandwidth | 476.6/219.1 = 2.175 | 138.5/47.0 = 2.947 | **1.355** | 1.363 (E159) |
+| compute (prefill) | 4.0042/0.5274 = 7.593 | see below | **0.372** | 0.372 (share ratio) |
+
+The bandwidth row reproduces Edward's independently fitted head-byte `k` to
+**0.6 %**, using only host bandwidths and round times, and using none of his
+per-prompt median replay. Two unrelated derivations landing on the same number
+is the strongest evidence we have that `k` is a real quantity and not a fitting
+artifact.
+
+The prefill row is computed as a share ratio rather than a round ratio, because
+prefill is per leg and not per round: local share 27.05 %, ranked
+median-relevant share 10.07 %, so `k = 10.07/27.05 = 0.372`. That equals
+`2.947/7.593 = 0.388` to within 4 %, so the same law holds on both routes.
+
+**The practical rule: compute-bound arms transfer with `k < 1`, bandwidth-bound
+arms transfer with `k > 1`.** Prefill is the only arm shape in this campaign
+with `k` below one, and it is de-rated by a factor of nearly three. Never read
+a local total-leg prefill delta as a ranked effect. Measure the *relative*
+prefill reduction, which is a kernel property and transfers, then multiply by
+the ranked share of 0.1007.
+
+### FINDING 338 — two students independently measured the same round to 0.12 %
+
+Thorfinn published `R = 0.18975468 s/round` from a 512-token gated
+`--local-iterate` leg at `q = 6.358974`. That number still contains the seed
+prefill:
+
+```
+mtp_seconds_per_token 0.028907939558848739 x 512 =  14.8009 s   whole leg
+minus seed prefill                                   4.0042 s
+decode only                                        = 10.7967 s
+/ 78 rounds                                        = 138.42 ms per round
+```
+
+Edward, in a different session with a different driver on the same host family,
+measured his local adaptive arm at `q = 6.359` and got **138.58 ms**. The two
+agree to **0.12 %**.
+
+This matters for three reasons. It makes both round numbers trustworthy. It
+fixes the local prefill share at 27.05 %, which FINDING 337 needs. And it means
+any absolute `R` banked from a raw `mtp_seconds_per_token` in this campaign is
+**37 % too high** unless the prefill was removed. Check every historical `R`
+before reusing it.
+
+Thorfinn's second correction is also accepted: `rounds = 512 -
+acceptedDraftTotal` under-counts by one when a round straddles the window edge.
+His round 78 journalled `1 + 1 = 2` tokens with only one inside the 512-token
+window, so the sum is 513. Take the round count from the parent's report or the
+trace, never from the subtraction. In a paired A/B where both arms hit the same
+boundary the error cancels.
+
+### E162 SCOPE RISK — arm A may be inert on the ranked runner
+
+Alphonse built two arms: A on `quantized.h` and its generated twin, B on
+`quantized_nax.h` and its twin. He also established that arm B is inert locally,
+because `is_nax_available()` is false on generation 16.
+
+Turn that around. If the host dispatcher prefers `qmm_t_nax` wherever it exists,
+then the ranked M5 runs arm B for prefill and **arm A does nothing on the
+scored surface**. FINDING 337's 7.59x prefill ratio is circumstantial evidence
+that it does. In that case a gated local ABBA on arm A measures the wrong
+kernel and no amount of replication repairs it.
+
+E162 is held before its first timed leg until the dispatcher is read and the
+live call path is named with file and line numbers. If arm A is ranked-inert,
+that is a clean negative and the axis moves entirely to arm B, whose only
+evidence path is an official receipt plus a source and threadgroup-arithmetic
+argument.
+
+Three of alphonse's own findings are accepted and recorded:
+
+- the 32 KiB threadgroup limit is enforced at **pipeline creation, not at
+  compile**, so an oversized `_nax` port builds green everywhere and fails only
+  on M5; a 34,816 B probe compiled without error on this host;
+- `qmm_splitk` at `quantized.cpp:1422` resolves to `split_k = 1` for this model
+  because the narrowest projection is `N = 1024`, so bulk prefill FLOPs do reach
+  `affine_qmm_t`;
+- regenerating a Metal twin with `mlx/backend/metal/make_compiled_preamble.sh`
+  and diffing it against the hand mirror is a stronger check than
+  `twin_audit.py` alone, and it is now standard practice.
+
+### Board status
+
+`yukon submissions` re-queried live. Our most recent terminal row is `1509bf9`
+at 18:20Z. Nothing of ours is in flight and the **official submission slot is
+FREE**, held for B1. The `5a9f130` diff of `-0.021265` and the `1509bf9` diff of
+`-0.046688` both back-solve to a leader of `3.729110`, so the promoted frontier
+is unchanged.
+
+### Assignments in flight
+
+| student | PR | state |
+|---|---|---|
+| askeladd | 158 | B3 gated ABBA running as job `400ca152`. Owns the B1 freeze and the ship path. |
+| edward | 159 | r1 terminal and accepted; **r2 requested** on base `74b5137e`. Rebase off leaf16, then the width-6 wall. Steps 0, 1, 2 and 4 need no GPU. |
+| thorfinn | 160 | `e135_fill_cost_abba.sh` running. Repriced at `k = 1.13`. |
+| alphonse | 162 | **held before timing** pending the ranked kernel-path proof. |
+
