@@ -58671,3 +58671,224 @@ that single boolean.
 4. Report `749da2cf` against Edward's pre-registration when the watcher wakes.
 5. Keep FINDING 267 open: our lineage carries a positive state-exposure `k` on
    four independent rows, probability about 6e-4 under the rival rate.
+
+---
+
+## 316 — `749da2cf` rejected at 3.45192. The clamps were a robustness certificate. Rules 158 and 159, and a corrected composition table.
+
+Recorded 2026-08-23T14:20Z. Advisor branch `14247cce`. Bar unchanged at
+`ec24d591` = 3.7291100105909, source `0863b06a`, newjordan. Six rival rows
+validating, none of ours: the official slot is **free**.
+
+### 316.1 The receipt
+
+| quantity | value |
+| --- | ---: |
+| `749da2cf`, tree `07db5a27` | **3.45192370143778** |
+| Edward's pre-registered projection | 3.72961956 |
+| `0cf1637e`, tree `e09d6aa7` | 3.68278758168578 |
+| bar `ec24d591` | 3.7291100105909 |
+| drop vs `0cf1637e` | **−0.23086 = −6.269 %** |
+| shortfall vs projection | −0.27770 = **−7.540 pp** |
+| pre-registered nuisance tail | 1.10 pp expected, 1.87 pp observed max, 3.68 pp worst prompt |
+
+The shortfall is 4.1x the expected tail and 2.0x the worst single-prompt
+excursion in the campaign record. No nuisance model we hold absorbs it.
+
+W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/v6jqjua9
+(`v6jqjua9`),
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/lfh8fj2f
+(`lfh8fj2f`).
+
+Also useful: the Yukon `diff` column is `bar_score − row_score`, and its
+percentage is that difference over 0.9927, the organizer's original calibrated
+depth-2 score. It is **not** a percentage of the bar. Several earlier ledger
+entries read it as the latter.
+
+### 316.2 FINDING 270 — the attribution, and a process defect that is mine
+
+`749da2cf` measured three changes at once. Submitted-surface diff between the
+two receipts, computed against `benchmark.json` `editablePaths`:
+
+| block | range | submitted-surface change |
+| --- | --- | --- |
+| A — E147 + E135 + E149 advisor merges | `e09d6aa7` → `601c137c` | `Qwen35.swift` 647 lines, `Qwen36MTPBlockSession.swift` 92 lines |
+| B — E150 R4 | `601c137c` → `07db5a27` | `Qwen36MTPBlockSession.swift` 206 lines |
+
+`de8ce44c` (E147) is verified **not** an ancestor of `e09d6aa7`, so block A is
+genuinely un-priced on the ranked runner.
+
+Block A is bounded. FINDING 267 measures our whole-tree candidate-leg deficit
+against the frontier at +0.7275 %, at most 0.02679 absolute, which is **11.6 %
+of the drop**. If block A alone had cost 6 %, our tree would be six percent
+slower than the frontier, not 0.73 %. **At least 88.4 % of the −0.23086 belongs
+to R4.**
+
+### 316.3 FINDING 271 — the shipped clamps are distributional robustness
+
+The E150 brief asserted the shipped margin clamp was "a crude instance" of a
+better predictor. That framing was wrong and it was the advisor's. R4 replaced
+the shipped EMA-plus-clamp rule with a global argmax of a linearised objective
+and **no clamps**, priced offline at +1.2716 pp in the receipt frame.
+
+The mechanism is legible in Edward's own numbers. Mean drafted depth moved only
+**−1.68 %** (3.7067 against 3.7699). A 1.7 % shift in the mean cannot produce a
+6.3 % score loss. **The loss is not in the mean; it is in the per-round tail on
+prompts the fitted price curve never saw.** The clamps were not approximating
+the argmax badly — they were bounding the regret of a fitted rule that is wrong
+out of distribution. Two supporting readings from R1 that neither of us weighted
+correctly at the time: `e150_error_distribution_is_gaussian = false`, and the
+argmax rule on shipped information paid only +0.1258 pp, so the entire claimed
+gain came from the "information" term, which is the part that does not transfer.
+
+### 316.4 RULE 158 — the offline-priced schedule-policy axis is CLOSED
+
+Five independent readings:
+
+| reading | evidence |
+| --- | --- |
+| E128, 36 arms | best measured arm +0.3563 % offline, never transferred; ranking preservation 0.8587 |
+| E134 pass-boundary table | deleted outright by the promoted frontier `0863b06a` |
+| rival `81d20e0b`, adaptive draft depth | rejected 3.69768 |
+| `1bfa0447` | rejected 3.69919 |
+| E150 R4 | **3.45192, −6.27 %** |
+
+**RULE 158.** No change to the draft-depth schedule may weaken, remove or widen
+a clamp, guard or fallback unless it is measured **with the guard removed on at
+least two held-out prompts**. Offline replay against a fitted price curve is not
+sufficient evidence for a schedule-policy change. The axis reopens only for
+(a) held-out-prompt evidence, or (b) a mechanism that lowers per-round cost
+**without changing which depths are chosen**.
+
+The rule generalises past the schedule. Any fitted fast path that widens or
+removes a safe fallback on the strength of an offline price is the same bet.
+Flagged to askeladd for the merged SDPA width predicate and to alphonse for the
+`M % 128 == 0` question.
+
+### 316.5 RULE 159 — pre-registration must name the base's receipt
+
+Every submission's pre-registration must name the last ranked receipt for its
+base and the un-receipted submitted-surface delta between them. If that delta is
+non-trivial, the result is confounded and must be reported as confounded. The
+advisor broke this by letting three merges stack under E150 R4.
+
+### 316.6 CORRECTION — the composition table in 315.6 was wrong
+
+315.6 priced import ∘ E151 R1 at "about 3.748, margin +0.019". That was an
+arithmetic error. Recomputed from `0cf1637e` = 3.68278758, multiplicatively:
+
+```
+composite                                     score      margin vs 3.72911
+import alone                +0.7275 %        3.70958        -0.0195
+∘ E151 R1                   +0.505  %        3.72831        -0.0008
+∘ E153 R1 leaf16            +0.188  %        3.73532        +0.0062
+∘ E151 R2                   +0.419  %        3.75097        +0.0219
+∘ E153 R2 merged SDPA       +0.29   %        3.76185        +0.0327
+```
+
+**Import ∘ E151 R1 is a tie, not a win.** The designated candidate is now
+**import ∘ E151 R1 ∘ leaf16** as the minimum, and all five as the target. No
+single available piece promotes, and none will for several hours.
+
+### 316.7 FINDING 272 — our scatter exceeds every mechanism we are building
+
+Last six senpai receipts: 3.66219, 3.57503, 3.61655, 3.42654, 3.68279, 3.45192.
+Mean 3.56917, **sd 0.10764 = 3.02 %**. Portfolio mechanisms are +0.19 % to
++0.73 % each. We are chasing effects 4x to 16x smaller than our observed
+submission-to-submission scatter, and our promoted score has been frozen at
+`623e77a` = 3.52085227003175 for **24 hours** while the bar moved 3.52 → 3.729.
+
+Some of that scatter is real tree difference and some is ranked-runner nuisance;
+six points cannot separate them. **E154 R1 is assigned to bound it.** The
+strategic implication, pending that number, is that submitting mechanisms one at
+a time is close to a random walk and the correct policy is to stack every
+finished mechanism and submit rarely.
+
+### 316.8 Operational: students hold no `git push`
+
+Edward established that the student role is denied raw Git and GitHub
+mutations, and that the only push path is the guarded lease-push inside
+`submit_experiment_result`. **The standing push gate recorded in 315.5 was
+unsatisfiable and is withdrawn.** Its replacement:
+
+> When a composable piece must reach the advisor branch, it is delivered as a
+> **terminal result**, and the follow-on work becomes a fresh assignment.
+
+Applied today:
+
+- E152 thorfinn — Stage A import is his terminal result. Stage B, the FINDING
+  267 residency probe, becomes **E155**.
+- E153 askeladd — leaf16 is his terminal result. Merged SDPA becomes **E156**.
+- E151 alphonse — r2 is R1-standalone, surface byte-identical to `fcb288fb`
+  (`.h 50cf7876`, `.cpp e7c55209`). R2 is parked and becomes **E157**. The
+  advisor converted the earlier preference into a decision, because a +0.419 %
+  mechanism deserves its own runtime gate chain rather than a proof that it is
+  invisible when disarmed (FINDING 268 precedent).
+
+### 316.9 E154 — the anchor receipt, and the boundedness question
+
+E150 closed; Edward assigned **E154** at base `14247cce`, PR #154.
+
+**R0, the anchor.** Submit the unmodified base `14247cce` officially, zero
+mechanism, to satisfy RULE 159 and to price block A. **It is the direct test of
+FINDING 267:**
+
+- anchor near **3.656** → block A, our own merges, carries the frontier deficit;
+  FINDING 267 is explained and the import recovers a regression we introduced.
+- anchor near **3.683** → block A is neutral, the deficit predates it, and the
+  +0.7275 % import pricing needs re-deriving before we build a five-mechanism
+  composite on it.
+
+Pre-registered: point estimate **3.6694**, 80 % interval **3.6144 to 3.7244**.
+Outside 3.60 to 3.75 means our model of the ranked runner is wrong in a way
+nobody has named, and that becomes top priority.
+
+**R2, the decisive rung — is the scored round GPU-bound or dispatch-bound?**
+This falls straight out of Edward's R3: one host readback costs **1,262.6
+µs/round** against a **524.5 µs** total-leg round. One synchronisation costs 2.4
+entire rounds, so the CPU must run far ahead of the GPU, and **we have never
+measured which side saturates.**
+
+| if the round is | then the thing that matters is |
+| --- | --- |
+| GPU-bound | kernel time — leaf16, merged SDPA, NAX retile; the portfolio is aimed correctly |
+| dispatch-bound | ops and command buffers per round, not the speed of any one kernel; every local kernel win is partly an artifact |
+
+Two consequences make this the campaign's best open question after FINDING 267,
+and it is a **rival hypothesis to FINDING 267's residency explanation of equal
+standing**: more Swift on the hot path means more ops enqueued or worse
+instruction locality, which presents exactly as a small, diffuse, mechanism-free
+slowdown. It also explains why local winners do not transfer — a shared CPU-side
+dispatch term appears in both legs of the local ratio and cancels, while a
+GPU-side kernel win does not.
+
+Method: env-gated, default-off, side-pure delay injection. A pure-CPU busy-wait
+of δ on the control path and a dependency-free dummy Metal dispatch of γ in the
+round's stream, each swept, reading `d(wall)/dδ` and `d(wall)/dγ`. Slope ≈ 0 up
+to a knee means that side has slack. Deliverables
+`e154_cpu_slack_us_per_round`, `e154_gpu_slack_us_per_round`, plus
+`e154_scored_round_op_count`, `e154_scored_round_eval_boundaries`,
+`e154_scored_round_command_buffers`. Positive controls that must reach slope 1
+on both sides, and an interleaved zero-injection arm. R0 completes and submits
+**before** the instrument exists on the branch.
+
+### 316.10 Queue after this entry
+
+1. Edward R0 — anchor receipt on `14247cce`, occupying the free slot now.
+2. Thorfinn — AIR verdict one-liner, then Stage A import as terminal result.
+3. Askeladd — leaf16 as terminal result; submit even if the import has not
+   landed, the advisor handles the rebase at merge time.
+4. Alphonse — r2 R1-standalone at `fcb288fb` surface, plus
+   `e151_r1_scored_m_histogram` and the registered `M % 128 == 0` decision.
+5. Compose import ∘ R1 ∘ leaf16 as the minimum candidate; target all five.
+6. Create E155, E156, E157 as each parent closes.
+7. FINDING 267 stays open, now with a named rival: dispatch cost against
+   residency pressure. E154 R2 is the discriminator.
+
+### 316.11 Withdrawn or superseded by this entry
+
+- 315.5 push gate — withdrawn, unsatisfiable; replaced by 316.8.
+- 315.6 composition table and the "designated candidate import ∘ E151 R1" —
+  superseded by 316.6.
+- E150's framing of the margin clamp as "a crude instance" of a better
+  predictor — refuted by 316.3.

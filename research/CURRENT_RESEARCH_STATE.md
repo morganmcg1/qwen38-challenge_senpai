@@ -1,129 +1,179 @@
 # SENPAI Research State
 
-- **2026-08-23 14:00 UTC**
+- **2026-08-23 14:25 UTC**
 
 ## Most recent research direction from the human researcher team
 
 No new human direction since Issue #22 (2026-08-21). The standing direction is
 unchanged and is being executed: keep four students productive on independent
 current-frontier questions, adopt the promoted editable surface before the next
-official submission, push candidate implementations and evidence early, submit
-autonomously whenever a clean candidate has credible evidence, and continue
-research after every result.
+official submission, publish candidate implementations and evidence early,
+submit autonomously whenever a clean candidate has credible evidence, and
+continue research after every result.
+
+One correction to item 3 of that direction, on a fact discovered today. The
+student role holds **no `git push` capability**; the only path to the remote is
+the guarded lease-push inside `submit_experiment_result`. The "publish early"
+requirement is therefore satisfied by delivering a composable piece as a
+**terminal result** and moving the follow-on work into a fresh assignment, not
+by asking students to push mid-experiment.
 
 ## Where the campaign stands
 
-- **The bar: `ec24d591` newjordan = 3.72911001**, promoted 2026-08-23T11:43Z,
-  source `0863b06a`, which is now also `upstream/main`.
-- **Campaign best: `0cf1637e` = 3.68278758**, rejected. It remains our
-  scientific frontier and the base most current experiments were measured
-  against.
-- **In flight:** `749da2cf`, Edward's E150 R4 linearised schedule, validating
-  since 12:22:01Z. The advisor owns the bounded read-only receipt watcher (job
-  `0c80d7de`). The official slot is closed until it resolves.
-- Advisor base `c2b601b7`. Growth budget is tight: about 66,648 bytes of shared
-  headroom across four students. The import below returns a large block of it.
+- **The bar: `ec24d591` newjordan = 3.72911001**, source `0863b06a`, which is
+  also `upstream/main`. Unchanged this cycle.
+- **Campaign best: `0cf1637e` = 3.68278758** (tree `e09d6aa7`), rejected. Still
+  our scientific frontier.
+- **Last promoted senpai row: `623e77a` = 3.52085227**, 2026-08-22T14:12Z. It
+  has been frozen for **24 hours** while the bar moved 3.52 → 3.729.
+- **The official slot is FREE.** `749da2cf` resolved rejected at
+  **3.45192370143778**. Six rival rows are validating; none of ours.
+- Advisor base `14247cce`. Growth budget remains tight; thorfinn's import
+  returns a large block of it.
+
+## The two facts that dominate everything else
+
+### 1. Our submission scatter is larger than every mechanism we build
+
+Last six senpai receipts: 3.66219, 3.57503, 3.61655, 3.42654, 3.68279, 3.45192.
+Mean 3.56917, **sd 0.10764 = 3.02 %**. Portfolio mechanisms are +0.19 % to
++0.73 % each — **4x to 16x smaller than the observed scatter**.
+
+Part of that is genuine tree difference and part is ranked-runner nuisance; six
+points cannot separate them. Until E154 R1 bounds it, the working policy is:
+**stack every finished mechanism and submit rarely.** Submitting mechanisms one
+at a time is close to a random walk against a bar that moves +0.25 % per rival
+promotion.
+
+### 2. FINDING 267 now has a rival hypothesis of equal standing
+
+Our editable tree is **+0.7275 % slower on the ranked candidate leg** than
+`0863b06a`, for no mechanism we can name. Fitted against `s_p = 903 us x
+drafting_rounds_p / decode_seconds_p`, all four senpai rows read `k` between
++0.28 and +1.16 steps with `R^2` 0.79 to 0.90, against a rival median near
++0.02; probability of four such draws is about 6e-4.
+
+- **Hypothesis A, residency pressure** — the extra kernel variants and resident
+  tensors our tree compiles and holds. Thorfinn's E155 probe tests it.
+- **Hypothesis B, dispatch cost (new this cycle)** — more Swift on the hot path
+  means more MLX ops enqueued or worse instruction locality, which presents
+  exactly as a small, diffuse, mechanism-free slowdown. Edward's E154 R2 tests
+  it.
+
+Hypothesis B arrives from Edward's R3 measurement: **one host readback costs
+1,262.6 µs/round against a 524.5 µs total-leg round.** One synchronisation costs
+2.4 entire rounds, so the CPU must run far ahead of the GPU — and the campaign
+has never measured which side saturates. If the round is dispatch-bound, the
+number of ops and command buffers per round matters more than the speed of any
+kernel, **and every local kernel win is partly an artifact**, because a shared
+CPU-side dispatch term appears in both legs of the local ratio and cancels while
+a GPU-side kernel win does not. That would also explain why our local winners do
+not transfer.
 
 ## Current research focus
 
-**Adopt the promoted frontier surface, then compose independently readable
-mechanisms onto it and submit quickly.**
+**Adopt the promoted frontier surface, stack every finished mechanism onto it,
+and submit one composite — not a sequence of single mechanisms.**
 
-The dominant fact of the day is FINDING 267 combined with FINDING 260: our
-editable tree is **+0.7275 % slower on the ranked candidate leg** than
-`0863b06a`, for no mechanism we can name. That penalty is larger than every
-mechanism in flight, and removing it needs no invention. The diff is five files,
-`+694 / -1570`.
+Corrected composition arithmetic, multiplicative from `0cf1637e` = 3.68278758:
 
-FINDING 267 says the penalty is a lineage property, not four unlucky draws:
-fitted against the state-exposure shape `s_p = 903 us x drafting_rounds_p /
-decode_seconds_p`, all four senpai rows read `k` between +0.28 and +1.16 steps
-with `R^2` 0.79 to 0.90, against a rival median of about +0.02 and an empirical
-rate of `k >= +0.27` of 5/32. Probability of four independent draws at that
-level is about 6e-4. The leading hypothesis is residency pressure from the extra
-kernel variants and resident tensors our tree compiles and holds. Thorfinn's
-residency probe tests it directly.
+| composite | score | margin vs bar 3.72911 |
+| --- | ---: | ---: |
+| import `0863b06a` (+0.7275 %) | 3.70958 | −0.0195 |
+| ∘ E151 R1 NAX 128x32 seed retile (+0.505 %) | 3.72831 | −0.0008 |
+| **∘ E153 R1 leaf16 (+0.188 %)** | **3.73532** | **+0.0062** |
+| ∘ E151 R2 affine double buffer (+0.419 %) | 3.75097 | +0.0219 |
+| ∘ E153 R2 merged SDPA (+0.29 %) | 3.76185 | +0.0327 |
 
-FINDING 269 (this cycle) removes the guesswork about what the import costs us.
-`derivedClusterRowsPerLeaf`, `buildDerivedClusterIndex`,
-`draftTokenIDWithDeclaredRerank`, `segmentedVerifyDepthCap` and `depthPriceArm`
-all survive in the frontier. `qwen35ClusterCentroidQMV`, `onePass67`, the
-one-pass width table, `passBoundaryTierFactor` and `pb6` do not. The frontier's
-NAX header contains zero `kE147` identifiers.
+The earlier "import ∘ E151 R1 ≈ 3.748, margin +0.019" was an arithmetic error.
+**Import plus one mechanism is a tie, not a win.** Minimum viable candidate is
+import ∘ R1 ∘ leaf16; the target is all five, because at sd 3.02 % a +0.0062
+margin is a coin flip and +0.0327 is a real bet.
+
+FINDING 269 removes the guesswork about what the import costs. Surviving in the
+frontier: `derivedClusterRowsPerLeaf = 8`, `buildDerivedClusterIndex`,
+`draftTokenIDWithDeclaredRerank`, `segmentedVerifyDepthCap`, `depthPriceArm`.
+Deleted: `qwen35ClusterCentroidQMV`, `onePass67` and the one-pass width table,
+`passBoundaryTierFactor`, `pb6`. The frontier NAX header carries zero `kE147`
+identifiers.
 
 ## Four live experiments, one per student, one per physical Mac
 
-1. **#152 thorfinn — import the promoted editable surface.** The campaign
-   critical path. Stage A is the import, the test deletions, the gate chain and
-   a 512-token exactness leg, pushed before any timing. Stage B is the FINDING
-   267 residency probe and matched ABBA timing. His first deliverable is the
-   one-line AIR verdict `e152_quantized_nax_air_identical`, which unblocks
-   alphonse. A1, the 127-site boundary-fused fill producer, is stopped: the
-   organizer's frontier contains it verbatim.
-2. **#151 alphonse — the ranked prefill channel.** The 128x32 rectangular NAX
-   seed retile (R1) and the affine double-buffered loader (R2). Our prefill
-   channel is a measured exact null (FINDING 268, `-0.0084 % +- 0.2132`) because
-   `kE147NaxRetileOn = false`, so R1 is the whole mechanism rather than a tweak.
-   Two rival receipts price the family: `5cdc9c17` at `-4.9721 %` prefill and
-   `43925f29` at `-4.1181 %`. **R1 standalone is the designated next-submission
-   mechanism.**
-3. **#153 askeladd — leaf16 and the merged SDPA kernel.** leaf16 is
-   `per_draft_step` with a ranked discount basis of 0.74453, worth about
-   +0.188 % published. The merged SDPA kernel is `width_gated_at_6` and worth
-   about +0.29 %, but it is undetectable on plutarch by a factor of 26 and needs
-   its own receipt. Both rebase onto the import.
-4. **#150 edward — per-round discrimination.** R4 is submitted as `749da2cf`.
-   R3 prices the host round trip for a sequential stopping rule against a
-   774.95 us/round break-even. The pb6 question is closed by deletion in the
-   import.
+1. **#154 edward — the anchor receipt and the boundedness question.** New this
+   cycle. **R0** submits the unmodified base `14247cce` officially with zero
+   mechanism, satisfying RULE 159 and pricing the un-receipted E147 + E135 +
+   E149 merge block. It is the direct test of FINDING 267: an anchor near 3.656
+   means our own merges carry the frontier deficit and the import recovers a
+   regression we introduced; near 3.683 means the deficit predates them and the
+   +0.7275 % import pricing needs re-deriving. Pre-registered point estimate
+   **3.6694**, 80 % interval **3.6144 to 3.7244**. **R1** bounds the ranked
+   nuisance floor and derives the minimum composite pp worth a slot. **R2** is
+   the GPU-bound versus dispatch-bound discriminator by side-pure delay
+   injection.
+2. **#152 thorfinn — import the promoted editable surface.** The campaign
+   critical path. Restructured this cycle: the import **is** his terminal
+   result, so it reaches the advisor branch hours earlier. The FINDING 267
+   residency probe becomes E155. First deliverable remains the one-line AIR
+   verdict `e152_quantized_nax_air_identical`, which unblocks alphonse.
+3. **#151 alphonse — the ranked prefill channel.** r2 delivers R1 standalone
+   with the submitted surface byte-identical to `fcb288fb` (`.h 50cf7876`,
+   `.cpp e7c55209`). R2 is parked and becomes E157 with its own runtime gate
+   chain. Our prefill channel is a measured exact null (FINDING 268,
+   `-0.0084 % +- 0.2132`) because `kE147NaxRetileOn = false`, so R1 is the whole
+   mechanism. Rival receipts price the family: `5cdc9c17` at `-4.9721 %` prefill
+   and `43925f29` at `-4.1181 %`. Open: `e151_r1_scored_m_histogram` and the
+   registered `M % 128 == 0` decision.
+4. **#153 askeladd — leaf16 and the merged SDPA kernel.** Restructured this
+   cycle: leaf16 **is** his terminal result, because it is the mechanism that
+   takes the composite from a tie to a lead. Merged SDPA becomes E156. leaf16 is
+   `per_draft_step`, ranked discount basis 0.74453, about +0.188 % published.
+   Merged SDPA is `width_gated_at_6`, about +0.29 %, undetectable on plutarch by
+   a factor of 26, and needs its own receipt.
 
-## Composition plan for the next official submission
+## Rules added or changed this cycle
 
-Total-leg published %, on top of the imported frontier base.
-
-| step | owner | channel | published % |
-| --- | --- | --- | ---: |
-| import `0863b06a` editable surface | thorfinn | both | +0.7275 |
-| E151 R1 NAX 128x32 seed retile | alphonse | prefill | +0.505 |
-| E153 R1 leaf16 | askeladd | decode | +0.188 |
-| E151 R2 affine NAX double buffer | alphonse | prefill | +0.419 |
-| E151 R1∘R2 composed | alphonse | prefill | +0.663 |
-| E153 R2 merged SDPA | askeladd | decode | +0.29 |
-
-Designated candidate: **import ∘ E151 R1**, about **3.748** against the bar
-3.72911. Import ∘ leaf16 alone is about 3.736, a margin of +0.007, which sits
-inside the nuisance tail and is not worth a slot on its own. Rule 146 keeps the
-prefill and decode channels separately readable on one receipt, and Rule 156
-gives plutarch as the mechanism-class discriminator, so composing does not cost
-us attribution.
-
-## Standing measurement rules confirmed or added this cycle
-
-- **Total-leg frame only** for every published-% claim. Rule 134's 524.5
-  us/round is a total-leg constant; the decode-frame equivalent is 468.8, and a
-  decode-frame table overstates published effect by about 11 %.
-- **RULE 156 amended.** The Plutarch class list is `per_round`,
-  `per_drafting_round`, `per_draft_step`, `width_gated_at_<k>`.
+- **RULE 158.** No change to the draft-depth schedule may weaken, remove or
+  widen a clamp, guard or fallback unless it is measured with the guard removed
+  on at least two held-out prompts. Offline replay against a fitted price curve
+  is not sufficient evidence for a schedule-policy change. The offline-priced
+  schedule-policy axis is **CLOSED**; it reopens only for held-out-prompt
+  evidence, or for a mechanism that lowers per-round cost without changing which
+  depths are chosen. The rule generalises to any fitted fast path that widens a
+  safe fallback on the strength of an offline price.
+- **RULE 159.** Every submission's pre-registration must name the last ranked
+  receipt for its base and the un-receipted submitted-surface delta between
+  them. A non-trivial delta makes the result confounded and it must be reported
+  as confounded.
+- **Push gate withdrawn.** Students hold no `git push`. Composable pieces are
+  delivered as terminal results; follow-on work becomes a fresh assignment.
+- **Total-leg frame only** for every published-% claim (ADVISOR ERROR 186).
+- **RULE 156 amended.** Plutarch class list: `per_round`, `per_drafting_round`,
+  `per_draft_step`, `width_gated_at_<k>`.
 - **RULE 157.** Never bucket or key anything on Python's salted `hash()`.
-- **Push before you measure again.** No student branch had been pushed;
-  `749da2cf`'s submitted tree existed only on one Mac.
 
-## Withdrawn this cycle
+## Refuted or withdrawn
 
-FINDING 256, FINDING 259 and RULE 155 are withdrawn. `24fb4012` makes the
-byte-identical two-integer width-table edit and reads `-0.0390 % +- 0.0799`,
-`z = -0.49`, so the one-pass width-6 rung costs approximately zero. The
-`1db9d63e -> 0cf1637e` reading of `-1.5571 %` for the width table is
-contaminated by the same state-exposure nuisance. FINDING 230's third pillar is
-also refuted by FINDING 268.
+- **The margin clamp is not "a crude instance" of a better predictor.** It is a
+  distributional-robustness certificate. E150 R4 removed it in favour of a
+  clamp-free global argmax priced offline at +1.2716 pp and realised −6.269 %.
+  Mean drafted depth moved only −1.68 %, so the loss lived entirely in the
+  per-round tail on unfitted prompts. The framing was the advisor's error.
+- FINDING 256, FINDING 259, RULE 155 and FINDING 230's third pillar remain
+  withdrawn.
+- The 315.6 composition table and its designated candidate are superseded.
 
 ## Open questions worth a student when one frees
 
-1. **FINDING 267's mechanism.** If our tree and the frontier sit in different
-   residency states, every future mechanism must report its residency footprint
-   before its timing. That would be a campaign-wide methodology change.
-2. **A head that is cheaper at equal quality**, rather than better at any price.
+1. **Is the scored round GPU-bound or dispatch-bound?** Assigned as E154 R2.
+   Whichever way it lands, it re-prices the whole portfolio.
+2. **FINDING 267's mechanism**, residency against dispatch. E154 R2 and E155
+   together discriminate. If residency wins, every future mechanism must report
+   its residency footprint before its timing — a campaign-wide methodology
+   change.
+3. **The ranked nuisance floor**, and the minimum composite worth a slot.
+   Assigned as E154 R1. It sets submission policy for all four students.
+4. **A head that is cheaper at equal quality**, rather than better at any price.
    119 same-solver head-swap pairs, 16 bought at least +0.01 acceptance, zero
    paid for themselves, best efficiency 0.70 against break-even 1.00.
-3. **Prefill beyond `-6.5 %`.** No receipt on the board has ever gone past
+5. **Prefill beyond `-6.5 %`.** No receipt on the board has ever gone past
    `-4.9721 %`. The channel is worth 10.0438 % of the total leg.
