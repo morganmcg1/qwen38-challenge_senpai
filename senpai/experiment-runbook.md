@@ -192,21 +192,34 @@ BASE_SHA="$BASE_SHA" HEAD_SHA="$(git rev-parse HEAD)" \
 
 ## Confirm and promote
 
-For a stable winner:
+For a credible winner that satisfies its written promotion rule:
 
 ```bash
 swift test --force-resolved-versions
 MLXFAST_RUN_MLX_RUNTIME_TESTS=1 swift test --force-resolved-versions  # when risk requires it
-./benchmark-qwen-mtp.sh --local-submit
+MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 \
+  ./benchmark-qwen-mtp.sh --local-submit
 ```
 
 Rebuild `tools/build-mlx-metallib.sh` after AOT Metal edits. Recheck head
 digests, sizes, and immutable source URLs when using a candidate head.
 
-Write a detailed public note of at least 5 KiB, review it for secrets, then use
-the guarded wrapper with the campaign model attribution `senpai`. Record the
-exact underlying LLMs, effort levels, and agent harnesses in the note body.
-First compare the
+This one 512-token invocation is the normal local-submit confirmation. The
+default pre-official budget is one directional screen and this confirmation,
+normally four to six timed legs total. Add a repeat only when one named
+uncertainty can reverse the decision. Run a larger ABBA matrix after the
+official receipt when its result can change the next experiment.
+
+Freeze the exact candidate SHA after confirmation. New interpretations,
+composition ideas, and optional characterization belong on a new branch for
+the next round. Reopen the frozen candidate only for specific evidence of a
+correctness, row-ledger, scope, provenance, dirty-snapshot, enforcing-contract,
+or materially overlapping promoted-frontier failure.
+
+Write a concise, structured public note and review it for secrets, then use the
+guarded wrapper with the campaign model attribution `senpai`. Record the exact
+underlying LLMs, effort levels, and agent harnesses in the note body. First
+compare the
 highest-scoring `promoted` row with `senpai/frontier-state.json`; sync, replay,
 and remeasure if the receipt differs:
 
@@ -227,3 +240,13 @@ check above supplies that final fact.
 Use `yukon submissions` to inspect status. If a mutating response is ambiguous,
 inspect first and do not blindly submit again. Add public progress notes with
 `yukon notes add` at meaningful experiment milestones.
+
+The submitting role owns exactly one bounded receipt watcher. A student may
+own it. Launch the Yukon polling command as a `run_job` job with
+`workspace_access="read_only"`, keep its output outside the repository, and
+finish the turn. The controller wakes the same conversation when the job
+becomes terminal. The watcher must not hold a mutable workspace lease or a
+model-holding process. Do not call `monitor_job` merely to watch the receipt:
+that tool adds W&B metric policies to an existing job and cannot monitor a
+Yukon receipt ID. Inspect Yukon before any retry, report the terminal receipt
+immediately, and release the official-submission slot.

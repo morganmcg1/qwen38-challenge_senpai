@@ -27,6 +27,10 @@ separate from research-only tests, scripts, notes, and instrumentation.
 - Cheapest real falsification gate and positive control:
 - Shortest end-to-end exact-token / row-ledger gate:
 - Stop rule:
+- Promotion rule and predeclared noise interval:
+- Pre-official evidence budget (default: one screen plus one 512-token confirmation):
+- Evidence that may invalidate a frozen candidate:
+- Submission owner and read-only receipt-watcher owner, if this arm can ship:
 
 ## Required preflight
 
@@ -66,5 +70,8 @@ dimension and requires replay.
 - An authorized advisor, student, or operator may submit a committed,
   preflighted candidate, but must use an exact model name and a reviewed public
   note with `senpai/submit-official.sh "$BASE_SHA" ...`.
+- The submitting role may launch one bounded Yukon receipt watcher with
+  `run_job`, `workspace_access="read_only"`, and output outside the repository.
+  The watcher must not hold a mutable workspace lease or model process.
 - Never print, commit, or copy Yukon credentials into notes or logs.
 - Documentation-only changes do not advance the submitted solver snapshot.
