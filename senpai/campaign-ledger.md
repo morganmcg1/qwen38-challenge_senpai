@@ -64830,3 +64830,82 @@ The line that matters is +0.15 %. B1 alone is about +0.567 % published against a
 Next advisor actions, in order: take askeladd's frozen B1 SHA, merge PR 158, and
 submit within 15 minutes of the slot being ready; then queue the zero-draft twin
 of the exact B1 commit behind its receipt; then the width-6 excess.
+
+---
+
+## Entry 344 — 2026-08-23T23:30Z — the submission anchor, corrected, and who is allowed to pull the trigger
+
+I planned to take askeladd's frozen B1 SHA, merge PR 158 into `main`, and submit
+from this workspace. All three parts of that plan were wrong. I read
+`senpai/submit-official.sh` before acting, so it cost nothing, but it would have
+cost the ship window if B3 had landed first.
+
+### PROCEDURE 12 — `BASE_SHA` is a contract anchor, not the candidate
+
+```
+senpai/submit-official.sh:11    SOURCE_BRANCH="main"
+:187   BASE_SHA must be an ancestor of HEAD, the local checkout
+:191   BASE_SHA must be an ancestor of origin/main
+:383   git diff --quiet origin/main BASE_SHA -- <89 editablePaths> + benchmark.json
+:389   git diff --quiet origin/main HEAD -- benchmark.json
+:408   no skip-worktree or assume-unchanged under any submitted path
+```
+
+Measured at 23:20Z:
+
+```
+origin/main                   893a7581     1 commit past the fork point
+origin/senpai/qwen38-mtp-r1   36edcd1a     2803 commits past the fork point
+merge-base                    770a3ff2
+893a7581 touches only         senpai/assignment-template.md, experiment-runbook.md,
+                              program.md, result-template.md
+```
+
+`origin/main` and the advisor branch differ on six submitted paths, all of them
+from the advisor side. That does not block anything, because the `:383` check
+compares `origin/main` against **`BASE_SHA`**, not against `HEAD`. The candidate
+content is whatever Yukon archives from the submitting checkout's `HEAD`, and it
+is free to differ from `main`.
+
+**`BASE_SHA = 770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`** until `origin/main`
+moves onto a commit that touches a submitted path. It pins the trusted surface
+and the organizer contract the guard validates against. Precedent: thorfinn's
+`572b2cc4` carried base `770a3ff2` with ship commit `1efb1916`.
+
+**Do not merge anything into `origin/main`.** Nothing in the flow needs it and it
+would move the anchor.
+
+### PROCEDURE 13 — the student who owns the candidate submits it
+
+The `:187` check requires `BASE_SHA` to be an ancestor of the **local checkout
+HEAD**, and the archive is built from that checkout. The advisor workspace HEAD
+is the advisor branch, which carries the ledger and not the candidate. So the
+advisor structurally cannot submit a student's tree.
+
+The submitting student then owns the single bounded read-only receipt watcher,
+per `program.md`. Recorded against B1 in PR 158 F13, with the full command
+sequence and the note contents.
+
+This removes the advisor as a ship-mode bottleneck, which is the right shape:
+the fifteen-minute rule cannot be met by a round trip through a role that has to
+re-fetch, re-check out and re-verify a tree it does not hold.
+
+### Board and slot at 23:30Z
+
+```
+promoted frontier   ec24d591  3.7291100105909   unchanged
+last terminal       1509bf95  18:20Z            rejected
+official slot       FREE, held for B1
+in flight (ours)    none
+```
+
+### Live forward state
+
+| student | state |
+| --- | --- |
+| askeladd | B3 gated ABBA running, job `400ca152`. Then freeze and submit B1 himself under PROCEDURE 12 and 13. |
+| edward | r2 zero-GPU. Width-6 excess hunt, F8, four candidate mechanisms and one exact-by-construction fix. |
+| thorfinn | exactness unit test running, then one gated 512-token ABBA on the fused `mlp.down` arm. |
+| alphonse | arm-A timing cancelled. Arm A is now a correctness rehearsal; arm B ships on a source case. |
+
+Four live experiments, one submission staged, nothing waiting on a human.
