@@ -64,6 +64,20 @@ always the final budget-clamped round.
 Repeat spread is the palindrome spread on the per-leg median basis. It is
 below 0.2 % everywhere except width 6.
 
+### R2b — the width-1 anchor
+
+R2 pins widths 2 to 8. Width 1 needs its own session because pin 0 produces a
+non-drafting round, which is a verify at width 1. R2b runs four legs on
+`beagle_a` in the palindrome `0 4 4 0`: two width-1 legs and two width-5 legs.
+
+The width-5 legs are the tie point. They let the width-1 measurement be
+rescaled onto R2's thermal level instead of importing R2b's own level into the
+curve. They landed at 95,471.3 and 95,865.4 us against R2's width-5 point of
+95,820.3 us, so the session scale is 1.0016 and the correction is almost
+nothing. All four legs matched with zero divergence through the real gate, and
+the two width-5 legs were bit-identical in rounds, mean draft length and
+acceptance, which is a clean determinism check on the pin itself.
+
 ### The boundary shape
 
 Each step expressed as a multiple of its own curve's mean step, which removes
@@ -184,6 +198,60 @@ On the measured curve, with realised shift 0.0953:
 
 `e145_predicted_beagle_shift_us_measured = 699.2`,
 `e145_f218_bound_consistent_measured = True`.
+
+## R3 — does the shape difference change the price?
+
+6 seeds, 200 windows, measured width-1 anchor, zero GPU. Every curve is
+normalised by its own width-1 point, so the level factor cannot leak into the
+comparison.
+
+Worst shape disagreement **+13.539 % at width 7**. Agrees-within-5 %:
+**False**, so the R3 trigger written into the assignment fired correctly.
+
+Both curves place the cliff at the same boundary, but they ask for different
+prices there:
+
+| curve | cliff step us | mean other step us | implied tier | argmax boundary |
+|-------|---------------|--------------------|--------------|-----------------|
+| replayed | 16,566.7 | 3,978.5 | 4.1641 | 4 |
+| measured | 28,436.9 | 8,987.4 | **3.1641** | 4 |
+
+The measured curve asks for a **lower** tier. That is counter-intuitive until
+you look at the denominator: the measured cliff is larger in absolute terms,
+but its non-cliff steps are larger too, so the cliff stands out *less* against
+its own curve. The whole disagreement reduces to that one ratio.
+
+Cells, replayed median gain in percent against the shipped arm:
+
+| cell | cost=rep price=rep | cost=meas price=rep | cost=meas price=meas |
+|------|--------------------|---------------------|----------------------|
+| A_ship | +0.0000 | +0.0000 | +0.0000 |
+| B_rankedprice | -3.1234 | -1.4478 | +0.1338 |
+| C_flatlook | +0.0000 | +0.0000 | +0.0000 |
+| D_curvelook | -3.1234 | -1.4478 | +0.1338 |
+| E_pb6 | +2.4880 | +2.8201 | +2.8201 |
+| F_pb6look | +1.9715 | +1.9132 | +1.9132 |
+| G_pb68 | +2.4880 | +2.8201 | +2.8201 |
+| H_pb68look | +1.9715 | +1.9132 | +1.9132 |
+
+Two controls worth recording:
+
+1. At `cost=replayed price=replayed`, `E_pb6` scores **+2.4880** against
+   E140's published **+2.489**. The replay path reproduces the earlier
+   published number, so these results do not come from a changed replayer.
+2. `G_pb68` and `H_pb68look` are exact duplicates of `E_pb6` and `F_pb6look`
+   because `best_tier8 = 1.0` on this base. They are degenerate, not
+   independent evidence.
+
+The attachment gate passed: 12 legs, 1,494 attached rounds, zero accept
+mismatches, zero margin mismatches, zero unmatched.
+
+### The width-1 anchor is not a free parameter
+
+Three independent anchors agree to **0.75 %**: measured 65,778.9 us,
+extrapolated 65,614.1 us, local serial control 66,017.0 us. Every R3 and R4
+cell is identical between the measured and the extrapolated anchor, so the
+anchor is a robustness control here and not a result.
 
 ## What could not be identified
 
