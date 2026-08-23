@@ -49,9 +49,10 @@ python3 research/e158_head_census.py --digest-only 2>/dev/null || true
 
 step "swift build"
 # The rebuild guard refuses to run without an assertion. `installExactQKVRows`
-# is the island installer this branch keeps but no longer calls by default, so
-# its presence proves the worker carries this tree's island code.
-senpai/rebuild-and-assert-worker.sh --require-symbol installExactQKVRows || exit 1
+# is the island selector this branch reads at warm-up. `installExactQKVRows` is
+# fully inlined by the release compiler and leaves no symbol, so it cannot be
+# used as a witness.
+senpai/rebuild-and-assert-worker.sh --require-symbol Qwen35IslandArm || exit 1
 
 step "done"
 ls -l .build/release/mlxfast-swift .build-worker/release/mlxfast-runtime-worker

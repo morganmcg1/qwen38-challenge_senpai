@@ -1,0 +1,439 @@
+{
+ "experiment": "e158",
+ "harness": "local",
+ "loader_legality": {
+  "legal_trunk_forms": [
+   "affine-4 group-64",
+   "bf16"
+  ],
+  "note": "2, 3, 6 and 8-bit columns are numerics only. The loader reads one bit width for every quantized submodule, so a per-matrix width other than 4 cannot be declared without a backbone config change, which is not an editable path.",
+  "trunk_bit_width_source": "backbone weights/config.json (bits 4, group_size 64)"
+ },
+ "matrices": {
+  "fc": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 75366400,
+    "rel_l2_removed": 0.09331502465927648
+   },
+   "bf16_bytes": 104857600,
+   "declared_stores_scales": true,
+   "elements": 52428800,
+   "read_bytes_per_draft_step_now": 29491200,
+   "shape": [
+    5120,
+    10240
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 16384000,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.33955944545435396
+    },
+    "a3": {
+     "bytes": 22937600,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.17076156933730346
+    },
+    "a4": {
+     "bytes": 29491200,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09331502465927648
+    },
+    "a6": {
+     "bytes": 42598400,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.028842864340888424
+    },
+    "a8": {
+     "bytes": 55705600,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.01019261880270407
+    },
+    "bf16": {
+     "bytes": 104857600,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.mlp.down_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 128122880,
+    "rel_l2_removed": 0.09810743563709677
+   },
+   "bf16_bytes": 178257920,
+   "declared_stores_scales": true,
+   "elements": 89128960,
+   "read_bytes_per_draft_step_now": 50135040,
+   "shape": [
+    5120,
+    17408
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 27852800,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.4244683320207336
+    },
+    "a3": {
+     "bytes": 38993920,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.20616490882319286
+    },
+    "a4": {
+     "bytes": 50135040,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09810743563709677
+    },
+    "a6": {
+     "bytes": 72417280,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.02389631391630053
+    },
+    "a8": {
+     "bytes": 94699520,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.0076195805148954006
+    },
+    "bf16": {
+     "bytes": 178257920,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.mlp.gate_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 128122880,
+    "rel_l2_removed": 0.09178893044535877
+   },
+   "bf16_bytes": 178257920,
+   "declared_stores_scales": true,
+   "elements": 89128960,
+   "read_bytes_per_draft_step_now": 50135040,
+   "shape": [
+    17408,
+    5120
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 27852800,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.3989188467459828
+    },
+    "a3": {
+     "bytes": 38993920,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.19229867314922097
+    },
+    "a4": {
+     "bytes": 50135040,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09178893044535877
+    },
+    "a6": {
+     "bytes": 72417280,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.022338714383963846
+    },
+    "a8": {
+     "bytes": 94699520,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.007082359681671061
+    },
+    "bf16": {
+     "bytes": 178257920,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.mlp.up_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 128122880,
+    "rel_l2_removed": 0.09175427521072141
+   },
+   "bf16_bytes": 178257920,
+   "declared_stores_scales": true,
+   "elements": 89128960,
+   "read_bytes_per_draft_step_now": 50135040,
+   "shape": [
+    17408,
+    5120
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 27852800,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.3982102566066473
+    },
+    "a3": {
+     "bytes": 38993920,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.19221739293653411
+    },
+    "a4": {
+     "bytes": 50135040,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09175427521072141
+    },
+    "a6": {
+     "bytes": 72417280,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.0223510510134973
+    },
+    "a8": {
+     "bytes": 94699520,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.00713832571502717
+    },
+    "bf16": {
+     "bytes": 178257920,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.self_attn.k_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 7536640,
+    "rel_l2_removed": 0.0988340049045491
+   },
+   "bf16_bytes": 10485760,
+   "declared_stores_scales": true,
+   "elements": 5242880,
+   "read_bytes_per_draft_step_now": 0,
+   "shape": [
+    1024,
+    5120
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 1638400,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.4341240620539408
+    },
+    "a3": {
+     "bytes": 2293760,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.2085929832962359
+    },
+    "a4": {
+     "bytes": 2949120,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.0988340049045491
+    },
+    "a6": {
+     "bytes": 4259840,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.024072264251615648
+    },
+    "a8": {
+     "bytes": 5570560,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.007716235239621981
+    },
+    "bf16": {
+     "bytes": 10485760,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.self_attn.o_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 45219840,
+    "rel_l2_removed": 0.09969290054375043
+   },
+   "bf16_bytes": 62914560,
+   "declared_stores_scales": true,
+   "elements": 31457280,
+   "read_bytes_per_draft_step_now": 17694720,
+   "shape": [
+    5120,
+    6144
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 9830400,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.4322561429304501
+    },
+    "a3": {
+     "bytes": 13762560,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.20980516326780368
+    },
+    "a4": {
+     "bytes": 17694720,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09969290054375043
+    },
+    "a6": {
+     "bytes": 25559040,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.024274658477152062
+    },
+    "a8": {
+     "bytes": 33423360,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.007734461954613207
+    },
+    "bf16": {
+     "bytes": 62914560,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.self_attn.q_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 90439680,
+    "rel_l2_removed": 0.09299573176930848
+   },
+   "bf16_bytes": 125829120,
+   "declared_stores_scales": true,
+   "elements": 62914560,
+   "read_bytes_per_draft_step_now": 35389440,
+   "shape": [
+    12288,
+    5120
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 19660800,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.4052655040153393
+    },
+    "a3": {
+     "bytes": 27525120,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.19518625982230112
+    },
+    "a4": {
+     "bytes": 35389440,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09299573176930848
+    },
+    "a6": {
+     "bytes": 51118080,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.022639436145925312
+    },
+    "a8": {
+     "bytes": 66846720,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.007199725601657186
+    },
+    "bf16": {
+     "bytes": 125829120,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  },
+  "layers.0.self_attn.v_proj": {
+   "a4_to_bf16": {
+    "extra_bytes_on_disk": 7536640,
+    "rel_l2_removed": 0.09434634980725959
+   },
+   "bf16_bytes": 10485760,
+   "declared_stores_scales": true,
+   "elements": 5242880,
+   "read_bytes_per_draft_step_now": 0,
+   "shape": [
+    1024,
+    5120
+   ],
+   "widths": {
+    "a2": {
+     "bytes": 1638400,
+     "bytes_vs_bf16": 0.15625,
+     "rel_l2": 0.40956909743306175
+    },
+    "a3": {
+     "bytes": 2293760,
+     "bytes_vs_bf16": 0.21875,
+     "rel_l2": 0.19790077546571447
+    },
+    "a4": {
+     "bytes": 2949120,
+     "bytes_vs_bf16": 0.28125,
+     "rel_l2": 0.09434634980725959
+    },
+    "a6": {
+     "bytes": 4259840,
+     "bytes_vs_bf16": 0.40625,
+     "rel_l2": 0.02296515322381021
+    },
+    "a8": {
+     "bytes": 5570560,
+     "bytes_vs_bf16": 0.53125,
+     "rel_l2": 0.007336868691404267
+    },
+    "bf16": {
+     "bytes": 10485760,
+     "bytes_vs_bf16": 1.0,
+     "rel_l2": 0.0
+    }
+   }
+  }
+ },
+ "measured_bound_on_the_whole_upgrade": {
+  "arm": "organizer-pinned BF16 head, every trunk matrix at rel_l2 = 0",
+  "e158_head_precision_recoverable_pp": -0.0073,
+  "source": "E158 R1, research/e158-artifacts/recall-{pinned,declared}.json"
+ },
+ "quantizer": "MLX stock round-to-nearest affine, group_size 64, BF16 scales and biases",
+ "rung": "B2.0",
+ "upgrade_ranking_error_removed_per_byte": [
+  {
+   "delta_bytes_per_draft_step_to_bf16": 45219840,
+   "matrix": "self_attn.o_proj",
+   "rel_l2_at_a4": 0.09969290054375043,
+   "rel_l2_removed_per_MB_per_step": 0.002204627449892579
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 75366400,
+   "matrix": "fc",
+   "rel_l2_at_a4": 0.09331502465927648,
+   "rel_l2_removed_per_MB_per_step": 0.0012381515457720745
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 79949824,
+   "matrix": "self_attn.q_proj",
+   "rel_l2_at_a4": 0.09299573176930848,
+   "rel_l2_removed_per_MB_per_step": 0.0011631761912234912
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 128122880,
+   "matrix": "mlp.down_proj",
+   "rel_l2_at_a4": 0.09810743563709677,
+   "rel_l2_removed_per_MB_per_step": 0.0007657292408436086
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 128122880,
+   "matrix": "mlp.gate_proj",
+   "rel_l2_at_a4": 0.09178893044535877,
+   "rel_l2_removed_per_MB_per_step": 0.0007164132623724877
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 128122880,
+   "matrix": "mlp.up_proj",
+   "rel_l2_at_a4": 0.09175427521072141,
+   "rel_l2_removed_per_MB_per_step": 0.0007161427780168648
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 0,
+   "matrix": "self_attn.k_proj",
+   "rel_l2_at_a4": 0.0988340049045491,
+   "rel_l2_removed_per_MB_per_step": null
+  },
+  {
+   "delta_bytes_per_draft_step_to_bf16": 0,
+   "matrix": "self_attn.v_proj",
+   "rel_l2_at_a4": 0.09434634980725959,
+   "rel_l2_removed_per_MB_per_step": null
+  }
+ ]
+}
