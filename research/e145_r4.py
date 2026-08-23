@@ -108,6 +108,30 @@ def plane_price(h: float, tier: float, cliff: int = SHIPPED_CLIFF):
     return marginal, cumulative[:len(PRICE_CUMULATIVE)]
 
 
+def two_boundary_price(h: float, tier6: float, tier7: float,
+                       cliff6: int = SHIPPED_CLIFF,
+                       cliff7: int = SHIPPED_CLIFF + 1):
+    """`pb67`: the live curve's SECOND expensive boundary, priced.
+
+    R3 measured two adjacent large steps, into verify width 6 and into verify
+    width 7, where the replayed curve had one spike and then a nearly free
+    step. `pb68` was fitted on the replayed curve and selected `tier8 = 1.0`,
+    that is, it collapsed to `pb6`, because there was nothing at 7 to 8 to
+    price. On the live curve the second boundary is at 6 to 7, so this is the
+    rival the measurement asks for. `tier7 = 1` reproduces `plane_price`
+    exactly, which `main` gates.
+    """
+    count = len(PRICE_MARGINAL)
+    within = count * h / (count - 2 + tier6 + tier7)
+    marginal = [within] * count
+    marginal[cliff6] = within * tier6
+    marginal[cliff7] = within * tier7
+    cumulative = [1.0]
+    for value in marginal:
+        cumulative.append(cumulative[-1] + value)
+    return marginal, cumulative[:len(PRICE_CUMULATIVE)]
+
+
 def cell_ratios(cache, seed, curve, price, windows, base_cache) -> dict:
     """One candidate-time ratio per ranked prompt, against the shipped arm."""
     install(curve)
@@ -185,6 +209,32 @@ def search(cache, seeds, receipt, windows, curve) -> dict:
     return out
 
 
+def search_pb67(cache, seeds, receipt, windows, curve, h: float) -> dict:
+    """The second boundary, at the flat level the single-boundary plane chose."""
+    base_cache: dict = {}
+    out = {}
+    for tier6 in TIER_GRID:
+        for tier7 in TIER_GRID:
+            price = two_boundary_price(h, tier6, tier7)
+            objectives, spreads, medians = [], [], []
+            for seed in seeds:
+                ratios = cell_ratios(cache, seed, curve, price, windows,
+                                     base_cache)
+                slots = slot_objective(ratios)
+                objectives.append(slots["objective"])
+                spreads.append(slots["upper_slot_spread"])
+                medians.append(median_pct(receipt, ratios))
+            out["%.4f|%.4f" % (tier6, tier7)] = {
+                "tier6": tier6, "tier7": tier7, "h": h,
+                "cliff6_price": price[0][SHIPPED_CLIFF],
+                "cliff7_price": price[0][SHIPPED_CLIFF + 1],
+                "objective_mean": statistics.fmean(objectives),
+                "upper_slot_spread_mean": statistics.fmean(spreads),
+                "median_pct_mean": statistics.fmean(medians),
+            }
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=pathlib.Path,
@@ -202,6 +252,7 @@ def main() -> int:
                     choices=("measured", "extrapolated", "serial"))
     ap.add_argument("--cost", default=MEASURED_LABEL,
                     choices=(MEASURED_LABEL, REPLAYED_LABEL))
+    ap.add_argument("--skip-pb67", action="store_true")
     ap.add_argument("--json", type=pathlib.Path,
                     default=HERE / "e145-artifacts/r4.json")
     args = ap.parse_args()
@@ -305,6 +356,37 @@ def main() -> int:
              ridge_stats["shallow_price_spread_pct"],
              ridge_stats["objective_spread_pp"]))
 
+    pb67 = {}
+    pb67_best = None
+    if not args.skip_pb67:
+        gate67 = two_boundary_price(SHIPPED_H, SHIPPED_TIER, 1.0)
+        if max(abs(a - b) for a, b in
+               zip(gate67[0], plane_price(SHIPPED_H, SHIPPED_TIER)[0])) > 1e-12:
+            raise SystemExit("two_boundary_price(h, tier, 1.0) is not"
+                             " plane_price(h, tier); pb67 is not nested")
+        pb67 = search_pb67(cache, seeds, receipt, args.windows, curve,
+                           best["h"])
+        pb67_best = max(pb67, key=lambda k: pb67[k]["objective_mean"])
+        nested = pb67["%.4f|%.4f" % (best["tier"], 1.0)]
+        row = pb67[pb67_best]
+        print("\n## pb67, the live curve's second boundary, at h = %.2f"
+              % best["h"])
+        print("  %6s %s" % ("tier6", " ".join("%7.2f" % t for t in TIER_GRID)))
+        for tier6 in TIER_GRID:
+            values = [pb67["%.4f|%.4f" % (tier6, t7)]["objective_mean"]
+                      for t7 in TIER_GRID]
+            print("  %6.2f %s" % (tier6,
+                                  " ".join("%+7.3f" % v for v in values)))
+        print("  nested control tier7 = 1.00 at tier6 = %.2f: %+.3f, which"
+              " must equal the plane cell %+.3f"
+              % (best["tier"], nested["objective_mean"],
+                 best["objective_mean"]))
+        print("  best pb67 cell tier6 = %.2f tier7 = %.2f: objective %+.3f,"
+              " spread %.3f, %+.3f pp against the best single boundary"
+              % (row["tier6"], row["tier7"], row["objective_mean"],
+                 row["upper_slot_spread_mean"],
+                 row["objective_mean"] - best["objective_mean"]))
+
     blob = {
         "harness": "local instrument",
         "gpu_used": False,
@@ -327,6 +409,8 @@ def main() -> int:
                                   - shipped["objective_mean"]),
         "ridge": ridge,
         "ridge_stats": ridge_stats,
+        "pb67_grid": pb67,
+        "pb67_best_cell": pb67_best,
     }
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps(blob, indent=2, sort_keys=True) + "\n")
