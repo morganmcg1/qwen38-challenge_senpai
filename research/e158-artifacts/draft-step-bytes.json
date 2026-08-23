@@ -1,0 +1,153 @@
+{
+  "harness": "ranked for every published-percent figure",
+  "geometry": {
+    "leaves": 6146,
+    "probes": 922,
+    "refined_rows": 14752
+  },
+  "declared_head": {
+    "trunk_reads_per_draft_step": {
+      "fc.weight": 26214400,
+      "fc.scales": 1638400,
+      "fc.biases": 1638400,
+      "layers.0.self_attn.q_proj.weight": 31457280,
+      "layers.0.self_attn.q_proj.scales": 1966080,
+      "layers.0.self_attn.q_proj.biases": 1966080,
+      "precision_islands.q.weight": 10485760,
+      "precision_islands.q.indices": 4096,
+      "precision_islands.k.weight": 10485760,
+      "precision_islands.v.weight": 10485760,
+      "layers.0.self_attn.o_proj.weight": 15728640,
+      "layers.0.self_attn.o_proj.scales": 983040,
+      "layers.0.self_attn.o_proj.biases": 983040,
+      "layers.0.mlp.gate_proj.weight": 44564480,
+      "layers.0.mlp.gate_proj.scales": 2785280,
+      "layers.0.mlp.gate_proj.biases": 2785280,
+      "layers.0.mlp.up_proj.weight": 44564480,
+      "layers.0.mlp.up_proj.scales": 2785280,
+      "layers.0.mlp.up_proj.biases": 2785280,
+      "layers.0.mlp.down_proj.weight": 44564480,
+      "layers.0.mlp.down_proj.scales": 2785280,
+      "layers.0.mlp.down_proj.biases": 2785280,
+      "layers.0.input_layernorm.weight": 10240,
+      "layers.0.post_attention_layernorm.weight": 10240,
+      "layers.0.self_attn.q_norm.weight": 512,
+      "layers.0.self_attn.k_norm.weight": 512,
+      "norm.weight": 10240,
+      "pre_fc_norm_embedding.weight": 10240,
+      "pre_fc_norm_hidden.weight": 10240
+    },
+    "trunk_total_bytes": 264494080,
+    "readout_reads_per_draft_step": {
+      "derived centroids (2-bit g64, leaf means of draft_lm_head rows)": 9833600,
+      "draft_lm_head rows in probed leaves (2-bit g64)": 23603200,
+      "exact compact rerank rows (4-bit g64, target lm_head gather)": 92160
+    },
+    "readout_total_bytes": 33528960,
+    "total_bytes_per_draft_step": 298023040,
+    "total_MB_per_draft_step": 298.023,
+    "resident_but_never_read_at_draft_time": {
+      "layers.0.self_attn.k_proj.weight": 2621440,
+      "layers.0.self_attn.k_proj.scales": 163840,
+      "layers.0.self_attn.k_proj.biases": 163840,
+      "layers.0.self_attn.v_proj.weight": 2621440,
+      "layers.0.self_attn.v_proj.scales": 163840,
+      "layers.0.self_attn.v_proj.biases": 163840,
+      "precision_islands.k.indices": 4096,
+      "precision_islands.v.indices": 4096
+    },
+    "resident_but_never_read_total_bytes": 5906432
+  },
+  "pinned_bf16_head": {
+    "trunk_reads_per_draft_step": {
+      "layers.0.mlp.down_proj.weight": 178257920,
+      "layers.0.mlp.gate_proj.weight": 178257920,
+      "layers.0.mlp.up_proj.weight": 178257920,
+      "layers.0.self_attn.q_proj.weight": 125829120,
+      "fc.weight": 104857600,
+      "layers.0.self_attn.o_proj.weight": 62914560,
+      "layers.0.self_attn.k_proj.weight": 10485760,
+      "layers.0.self_attn.v_proj.weight": 10485760,
+      "layers.0.input_layernorm.weight": 10240,
+      "layers.0.post_attention_layernorm.weight": 10240,
+      "norm.weight": 10240,
+      "pre_fc_norm_embedding.weight": 10240,
+      "pre_fc_norm_hidden.weight": 10240,
+      "layers.0.self_attn.k_norm.weight": 512,
+      "layers.0.self_attn.q_norm.weight": 512
+    },
+    "trunk_total_bytes": 849398784,
+    "readout_reads_per_draft_step": {
+      "dense exact compact projection (4-bit g64, target lm_head gather)": 283207680
+    },
+    "readout_total_bytes": 283207680,
+    "total_bytes_per_draft_step": 1132606464,
+    "total_MB_per_draft_step": 1132.6065
+  },
+  "bf16_trunk_upgrade": {
+    "delta_bytes_per_draft_step": 584904704,
+    "delta_MB_per_draft_step": 584.9047,
+    "published_cost_pct": 10.4873,
+    "break_even_acceptance_points": 3.9277,
+    "us_per_round_at_roofline": 4520.4,
+    "modelled_ranked_round_us": 43114.0,
+    "per_matrix": {
+      "fc": {
+        "declared_bytes_per_draft_step": 29491200,
+        "bf16_bytes_per_draft_step": 104857600,
+        "delta_bytes": 75366400,
+        "delta_MB": 75.3664,
+        "published_cost_pct": 1.3513
+      },
+      "self_attn.q_proj": {
+        "declared_bytes_per_draft_step": 45879296,
+        "bf16_bytes_per_draft_step": 125829120,
+        "delta_bytes": 79949824,
+        "delta_MB": 79.9498,
+        "published_cost_pct": 1.4335
+      },
+      "self_attn.k_proj": {
+        "declared_bytes_per_draft_step": 10485760,
+        "bf16_bytes_per_draft_step": 10485760,
+        "delta_bytes": 0,
+        "delta_MB": 0.0,
+        "published_cost_pct": 0.0
+      },
+      "self_attn.v_proj": {
+        "declared_bytes_per_draft_step": 10485760,
+        "bf16_bytes_per_draft_step": 10485760,
+        "delta_bytes": 0,
+        "delta_MB": 0.0,
+        "published_cost_pct": 0.0
+      },
+      "self_attn.o_proj": {
+        "declared_bytes_per_draft_step": 17694720,
+        "bf16_bytes_per_draft_step": 62914560,
+        "delta_bytes": 45219840,
+        "delta_MB": 45.2198,
+        "published_cost_pct": 0.8108
+      },
+      "mlp.gate_proj": {
+        "declared_bytes_per_draft_step": 50135040,
+        "bf16_bytes_per_draft_step": 178257920,
+        "delta_bytes": 128122880,
+        "delta_MB": 128.1229,
+        "published_cost_pct": 2.2972
+      },
+      "mlp.up_proj": {
+        "declared_bytes_per_draft_step": 50135040,
+        "bf16_bytes_per_draft_step": 178257920,
+        "delta_bytes": 128122880,
+        "delta_MB": 128.1229,
+        "published_cost_pct": 2.2972
+      },
+      "mlp.down_proj": {
+        "declared_bytes_per_draft_step": 50135040,
+        "bf16_bytes_per_draft_step": 178257920,
+        "delta_bytes": 128122880,
+        "delta_MB": 128.1229,
+        "published_cost_pct": 2.2972
+      }
+    }
+  }
+}
