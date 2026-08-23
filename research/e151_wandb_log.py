@@ -222,11 +222,40 @@ def gate_chain_metrics(doc: dict) -> tuple[dict, dict]:
     return metrics, {"r1_gate_chain": doc}
 
 
+def attribution_metrics(doc: dict) -> tuple[dict, dict]:
+    """Three 512-token traced legs decide whether the arm moved local output.
+
+    The E121 pin is a historical constant. The decisive comparison is the
+    matched same-host arm-off base, plus a second independent arm-on rebuild
+    that tests determinism.
+    """
+    legs = doc["legs"]
+    digests = {tag: leg["sha256"] for tag, leg in legs.items()}
+    metrics = {
+        "e151_arm_is_local_output_neutral": float(
+            doc["e151_arm_is_local_output_neutral"]
+        ),
+        "e151_leg_is_deterministic": float(doc["e151_leg_is_deterministic"]),
+        "e151_base_also_misses_pin": float(doc["e151_base_also_misses_pin"]),
+        "e151_attribution_complete": float(doc["e151_attribution_complete"]),
+        "e151_attribution_distinct_digests": float(len(set(digests.values()))),
+        "e151_attribution_leg_count": float(len(legs)),
+        "e151_attribution_rows": float(legs["e151x512cand"]["rows"]),
+        "e151_attribution_trace_rounds": float(
+            legs["e151x512cand"]["trace_rounds"]
+        ),
+    }
+    return metrics, {"r1_arm_attribution": doc}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--r0", default="research/e151-r0-safety-case.json")
     ap.add_argument("--compile-gate", default="research/e151-r1-compile-gate.json")
     ap.add_argument("--gates", default="research/e151-r1-gate-chain.json")
+    ap.add_argument(
+        "--attribution", default="research/e151-arm-attribution.json"
+    )
     ap.add_argument("--name", default="e151-r1-nax-seed-prefill-retile-on")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
@@ -316,6 +345,22 @@ def main() -> None:
             "R2 must ADD both the loader helper and the double buffer to the "
             "affine path"
         ),
+        "finding_row_digest_pin_is_stale": (
+            "the 512-token exactness gate missed the E121 pin "
+            "719d82b8 over 1025 rows. research/e151_arm_attribution.sh ran "
+            "three traced legs on this host: the arm-off base de8ce44c, the "
+            "arm-on candidate 58b415d4 and a second independent arm-on "
+            "rebuild at 9dda0cc1. All three emit d070b397 over 1024 rows and "
+            "82 trace rounds, from three different worker binaries. The arm "
+            "is therefore local output neutral and the leg is deterministic. "
+            "The pin was recorded on E89 base f18400c4 over 78 trace rounds, "
+            "so the drift belongs to the intervening scheduler commits, not "
+            "to R1. Re-pinning is a campaign decision: the constant is shared "
+            "with E101, E110, E116, E121 and E129"
+        ),
+        "exactness_verdict_basis": (
+            "matched same-host arm-off base control, not the historical pin"
+        ),
     }
 
     metrics: dict = dict(PREDICTION)
@@ -339,11 +384,19 @@ def main() -> None:
     metrics.update(m)
     config.update(c)
 
+    attrib = load_json(args.attribution)
+    if attrib is None:
+        raise SystemExit(f"missing required artifact {args.attribution}")
+    m, c = attribution_metrics(attrib)
+    metrics.update(m)
+    config.update(c)
+
     gates = load_json(args.gates)
-    if gates is not None:
-        m, c = gate_chain_metrics(gates)
-        metrics.update(m)
-        config.update(c)
+    if gates is None:
+        raise SystemExit(f"missing required artifact {args.gates}")
+    m, c = gate_chain_metrics(gates)
+    metrics.update(m)
+    config.update(c)
 
     run = wandb.init(
         entity=ENTITY,
