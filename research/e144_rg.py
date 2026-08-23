@@ -19,7 +19,6 @@ weights. No calibration data, no activations, no training, no corpus.
 
 import argparse
 import json
-import os
 
 import numpy as np
 
@@ -28,6 +27,7 @@ from e144_ra import CORE, DECLARED, MASTER, rel_l2
 from e144_st import SafeTensors
 
 GROUP = 64
+BITS = 4
 
 
 def column_scale_spread(weight):
@@ -56,55 +56,148 @@ def permutation_order(weight):
     return np.argsort(np.abs(weight.astype(np.float32)).max(axis=0), kind="stable")
 
 
+def incumbent_rel_l2(weight):
+    packed, scales, biases, _ = mlx_rtn(weight, BITS, GROUP)
+    return rel_l2(weight, dequantize(packed, scales, biases, BITS, GROUP, weight.shape[1]))
+
+
 def measured_permutation_gain(weight):
     """relL2 under the incumbent quantizer, natural order against sorted order."""
-    natural = rel_l2(weight, dequantize(*mlx_rtn(weight, GROUP)))
+    natural = incumbent_rel_l2(weight)
     order = permutation_order(weight)
     permuted = np.ascontiguousarray(weight[:, order])
-    sorted_error = rel_l2(permuted, dequantize(*mlx_rtn(permuted, GROUP)))
+    sorted_error = incumbent_rel_l2(permuted)
     return natural, sorted_error, natural / sorted_error
 
 
+def positive_control(rows=64, columns=1024, log_std=1.0, seed=0):
+    """A synthetic tensor whose columns really do have heterogeneous scale.
+
+    Without this the gate is unfalsifiable: a null result on the real tensors
+    would be indistinguishable from a measurement that cannot detect a gain at
+    all. The control is drawn with a known `std(log(per-column max-abs))` near
+    the top of the advisor's simulated exchange table.
+    """
+    generator = np.random.default_rng(seed)
+    base = generator.standard_normal((rows, columns))
+    column_scale = np.exp(generator.standard_normal(columns) * log_std)
+    weight = (base * column_scale).astype(np.float32)
+    spread, _ = column_scale_spread(weight)
+    natural, sorted_error, factor = measured_permutation_gain(weight)
+    return {
+        "shape": [rows, columns],
+        "requested_log_std": log_std,
+        "e144_col_scale_log_std": spread,
+        "rel_l2_natural_order": natural,
+        "rel_l2_sorted_columns": sorted_error,
+        "e144_permutation_rel_l2_factor": factor,
+        "detects_a_gain": factor > 1.02,
+    }
+
+
+HEAD_DIM = 256
+
+
+def tiled_permutation_gain(weight, block=HEAD_DIM):
+    """Gain from one shared within-block order applied to every block.
+
+    Grouped-query attention forces this form on `o_proj`: its 6144 columns are
+    24 query-head blocks of 256, but they are all fed from only 4 key/value
+    heads, so the free 6144-column order is not reachable. Only a single
+    256-element order, tiled across all blocks, is invertible by a matching
+    row permutation inside each key/value head of `v_proj`.
+    """
+    columns = weight.shape[1]
+    if columns % block:
+        raise ValueError(f"{columns} columns is not a multiple of {block}")
+    blocks = columns // block
+    magnitude = np.abs(weight.astype(np.float64)).max(axis=0).reshape(blocks, block).max(axis=0)
+    order = np.argsort(magnitude, kind="stable")
+    tiled = (np.arange(blocks)[:, None] * block + order[None, :]).reshape(-1)
+    permuted = np.ascontiguousarray(weight[:, tiled])
+    return incumbent_rel_l2(permuted)
+
+
 def coupled_pairs(shapes):
-    """Which pairs share an intermediate dimension private to the head.
+    """Which shared dimensions are private to the head, and how free each is.
 
     A permutation only changes grouping when it moves the GROUPED axis, which
-    is the last axis. In every pair below the shared dimension is the last axis
-    of exactly one member, so the lever reaches that member only; its partner
-    takes a row permutation, which leaves its grouping untouched.
+    is the last axis. So the lever reaches the CONSUMING tensor of a pair; its
+    producing partner takes a row permutation, which leaves its own grouping
+    untouched. The pair is usable only when the shared dimension never leaves
+    the head, because the frozen target must not see a reordered vector.
     """
-    pairs = []
-    for label, produces, consumes, shared in (
-        (
-            "ffn intermediate",
-            ["layers.0.mlp.gate_proj", "layers.0.mlp.up_proj"],
-            "layers.0.mlp.down_proj",
-            "intermediate",
-        ),
-        (
-            "attention value",
-            ["layers.0.self_attn.v_proj"],
-            "layers.0.self_attn.o_proj",
-            "value",
-        ),
-    ):
-        dimension = shapes[consumes][1]
-        pairs.append(
-            {
-                "pair": label,
-                "shared_dimension": shared,
-                "size": dimension,
-                "produced_by": produces,
-                "consumed_by": consumes,
-                "produced_by_axis": "rows (axis 0) — NOT the grouped axis",
-                "consumed_by_axis": "columns (axis 1) — the grouped axis",
-                "grouping_changes_on": [consumes],
-                "grouping_unchanged_on": produces,
-                "private_to_head": True,
-                "shapes_agree": all(shapes[name][0] == dimension for name in produces),
-            }
-        )
-    return pairs
+    return [
+        {
+            "pair": "ffn intermediate",
+            "size": shapes["layers.0.mlp.down_proj"][1],
+            "produced_by": ["layers.0.mlp.gate_proj", "layers.0.mlp.up_proj"],
+            "consumed_by": ["layers.0.mlp.down_proj"],
+            "grouping_changes_on": ["layers.0.mlp.down_proj"],
+            "private_to_head": True,
+            "permutation_freedom": "free",
+            "reachable_orders_log2": float(shapes["layers.0.mlp.down_proj"][1]),
+            "note": "gate_proj and up_proj take the same row permutation; the "
+            "intermediate vector is consumed inside the head and never reaches "
+            "the frozen target.",
+            "shapes_agree": all(
+                shapes[name][0] == shapes["layers.0.mlp.down_proj"][1]
+                for name in ("layers.0.mlp.gate_proj", "layers.0.mlp.up_proj")
+            ),
+        },
+        {
+            "pair": "attention value",
+            "size": shapes["layers.0.self_attn.o_proj"][1],
+            "produced_by": ["layers.0.self_attn.v_proj"],
+            "consumed_by": ["layers.0.self_attn.o_proj"],
+            "grouping_changes_on": ["layers.0.self_attn.o_proj"],
+            "private_to_head": True,
+            "permutation_freedom": "constrained to one shared %d-element order, "
+            "tiled across %d query-head blocks" % (HEAD_DIM, shapes["layers.0.self_attn.o_proj"][1] // HEAD_DIM),
+            "head_dim": HEAD_DIM,
+            "query_head_blocks": shapes["layers.0.self_attn.o_proj"][1] // HEAD_DIM,
+            "kv_head_blocks": shapes["layers.0.self_attn.v_proj"][0] // HEAD_DIM,
+            "note": "o_proj consumes the grouped-query attention output (%d), "
+            "not v_proj's raw output (%d). Each key/value head feeds several "
+            "query heads, so a free column order is not invertible; only one "
+            "within-head order tiled across every block is."
+            % (shapes["layers.0.self_attn.o_proj"][1], shapes["layers.0.self_attn.v_proj"][0]),
+            "shapes_agree": False,
+        },
+        {
+            "pair": "fc input",
+            "size": shapes["fc"][1],
+            "produced_by": ["pre_fc_norm_embedding", "pre_fc_norm_hidden"],
+            "consumed_by": ["fc"],
+            "grouping_changes_on": [],
+            "private_to_head": False,
+            "permutation_freedom": "none",
+            "note": "fc consumes the concatenated target embedding and target "
+            "hidden state. Both are produced by the frozen target, so there is "
+            "no partner inside the head that can absorb the inverse. fc is the "
+            "largest error carrier and it is inadmissible.",
+            "shapes_agree": True,
+        },
+        {
+            "pair": "residual stream",
+            "size": shapes["layers.0.self_attn.q_proj"][1],
+            "produced_by": ["fc", "norm", "pre_fc_norm_*"],
+            "consumed_by": [
+                "layers.0.self_attn.q_proj",
+                "layers.0.self_attn.k_proj",
+                "layers.0.self_attn.v_proj",
+                "layers.0.mlp.gate_proj",
+                "layers.0.mlp.up_proj",
+            ],
+            "grouping_changes_on": [],
+            "private_to_head": False,
+            "permutation_freedom": "none",
+            "note": "the head's residual stream carries a root-mean-square norm "
+            "and a residual add, and its width matches the target hidden size. "
+            "A permutation here would have to be undone by the frozen target.",
+            "shapes_agree": True,
+        },
+    ]
 
 
 def main():
@@ -119,9 +212,12 @@ def main():
 
     shapes = {}
     tensors = {}
+    tiled = {}
     for name in CORE:
         weight = np.ascontiguousarray(master.float32(f"{name}.weight"))
         shapes[name] = list(weight.shape)
+        if name == "layers.0.self_attn.o_proj":
+            tiled[name] = tiled_permutation_gain(weight)
         spread, zero_columns = column_scale_spread(weight)
         kurtosis_median, kurtosis_p99 = group_kurtosis(weight)
         natural, sorted_error, factor = measured_permutation_gain(weight)
@@ -135,7 +231,11 @@ def main():
             "rel_l2_sorted_columns": sorted_error,
             "e144_permutation_rel_l2_factor": factor,
             "groups_per_row": weight.shape[1] // GROUP,
+            "frobenius_norm": float(np.linalg.norm(weight.astype(np.float64))),
         }
+        if name in tiled:
+            tensors[name]["rel_l2_tiled_head_order"] = tiled[name]
+            tensors[name]["e144_tiled_permutation_rel_l2_factor"] = natural / tiled[name]
         print(
             "%-32s shape %5d x %5d  col_scale_log_std %.4f  kurt %7.3f  "
             "relL2 %.6e -> %.6e  x%.5f"
@@ -164,6 +264,20 @@ def main():
         declared.info(f"{name}.scales")[1][1] == shapes[name][1] // GROUP for name in CORE
     )
 
+    controls = [positive_control(log_std=value) for value in (0.0, 0.25, 0.50, 0.75, 1.00)]
+    print()
+    for control in controls:
+        print(
+            "positive control  requested log_std %.2f  measured %.4f  relL2 %.6e -> %.6e  x%.5f"
+            % (
+                control["requested_log_std"],
+                control["e144_col_scale_log_std"],
+                control["rel_l2_natural_order"],
+                control["rel_l2_sorted_columns"],
+                control["e144_permutation_rel_l2_factor"],
+            )
+        )
+
     pairs = coupled_pairs(shapes)
     admissible = sorted({name for pair in pairs for name in pair["grouping_changes_on"]})
     carrying = {
@@ -174,6 +288,26 @@ def main():
     worst_spread = max(carrying.values())
     admissible_spread = max(tensors[name]["e144_col_scale_log_std"] for name in admissible)
     admissible_factor = max(tensors[name]["e144_permutation_rel_l2_factor"] for name in admissible)
+
+    def pooled(reachable):
+        """Pooled relL2 over all eight core tensors, weighted by Frobenius norm."""
+        squared = 0.0
+        total = 0.0
+        for name, record in tensors.items():
+            norm = record["frobenius_norm"]
+            error = reachable(name, record) * norm
+            squared += error * error
+            total += norm * norm
+        return (squared**0.5) / (total**0.5)
+
+    pooled_natural = pooled(lambda name, record: record["rel_l2_natural_order"])
+    pooled_reachable = pooled(
+        lambda name, record: (
+            record.get("rel_l2_tiled_head_order", record["rel_l2_sorted_columns"])
+            if name in admissible
+            else record["rel_l2_natural_order"]
+        )
+    )
 
     report = {
         "experiment": "e144",
@@ -196,6 +330,14 @@ def main():
         },
         "coupled_pairs": pairs,
         "admissible_tensors": admissible,
+        "positive_controls": controls,
+        "pooled": {
+            "rel_l2_natural_order": pooled_natural,
+            "rel_l2_admissible_permutations_only": pooled_reachable,
+            "e144_rg_pooled_rel_l2_factor": pooled_natural / pooled_reachable,
+            "note": "only the admissible consumers move; every other tensor keeps "
+            "its natural order, and o_proj uses the grouped-query tiled order.",
+        },
         "gate": {
             "statistic": "std(log(per-column max-abs)) on the grouped axis",
             "low": arguments.gate_low,
@@ -203,6 +345,10 @@ def main():
             "max_spread_on_error_carrying_tensors": worst_spread,
             "max_spread_on_admissible_tensors": admissible_spread,
             "max_measured_permutation_factor_on_admissible_tensors": admissible_factor,
+            "max_measured_permutation_factor_on_any_core_tensor": max(
+                tensors[name]["e144_permutation_rel_l2_factor"] for name in tensors
+            ),
+            "positive_control_detects_a_gain": any(c["detects_a_gain"] for c in controls),
             "rg_dead": admissible_spread < arguments.gate_low,
             "rg_reopens_axis": admissible_spread > arguments.gate_high,
         },
@@ -212,6 +358,7 @@ def main():
         json.dump(report, handle, indent=2, sort_keys=True)
 
     print()
+    print(json.dumps(report["pooled"], indent=2))
     print(json.dumps(report["gate"], indent=2))
     print()
     print("metadata dtypes: " + ", ".join(sorted({m["dtype"] for m in metadata.values()})))
