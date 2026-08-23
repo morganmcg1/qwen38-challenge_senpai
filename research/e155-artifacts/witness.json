@@ -4,7 +4,7 @@
   "gate_qualified_for_timing": false,
   "official_or_ranked_score": false,
   "timing_valid": false,
-  "base_sha": "60f811bbeb06c61b7d5f67038847980421f2fe6a",
+  "base_sha": "47c7c3ec6a28f391302d0d46d123cee5976e47fd",
   "host": "ip-10-231-2-227.ec2.internal",
   "e155_exact_path_is_gated_off_by_default": true,
   "witness_off_side_no_audit_output": true,
@@ -102,16 +102,16 @@
       "gpu_temp_exit_c_on": 74.43535614013672
     }
   ],
-  "e155_growth_reclaimed_bytes": 0,
+  "e155_growth_reclaimed_bytes": 918,
   "submitted_surface_bytes": {
     "path": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
     "pr_base_sha": "9d3e3d2db416b8360135dce476d929c5d6b1b40f",
     "pr_base_bytes": 126843,
     "instrumented_sha": "f65b6c1e",
     "instrumented_bytes": 127761,
-    "head_sha": "60f811bbeb06c61b7d5f67038847980421f2fe6a",
-    "head_bytes": 127761,
-    "net_growth_vs_pr_base_bytes": 918,
-    "instrument_reverted": false
+    "head_sha": "47c7c3ec6a28f391302d0d46d123cee5976e47fd",
+    "head_bytes": 126843,
+    "net_growth_vs_pr_base_bytes": 0,
+    "instrument_reverted": true
   }
 }
