@@ -463,12 +463,12 @@ def main() -> int:
              "implied_round_cost_us", "implied_over_law", "required_p_width2",
              "min_forced_mbar_shift", "observed_mbar_error", "seed_sd"],
             [[prompt,
-              d["receipt"][prompt]["mbar"],
+              d["board_receipt"][prompt]["mbar"],
               itemab["item_a"]["histograms"]["A_ship"][prompt]["mean_width"],
-              d["receipt"][prompt]["rounds"],
+              d["board_receipt"][prompt]["rounds_exact"],
               itemab["item_a"]["histograms"]["A_ship"][prompt][
                   "rounds_per_window"],
-              d["receipt"][prompt]["delta_us"],
+              d["board_receipt"][prompt]["delta_us_per_token"],
               b["replayed_p_width2"],
               finite(d["implied_cost_us"][prompt]),
               finite(d["implied_cost_us"][prompt]
@@ -487,7 +487,11 @@ def main() -> int:
             d["spread"]["mean"] / itemab["law_cost_width2_us"])
         summary["e140_width2_mbar_error_mean"] = d["mbar_error_mean"]
         summary["e140_width2_mbar_error_sd"] = d["mbar_error_sd"]
-        summary["e140_width2_rounds_error_mean"] = d["rounds_error_mean"]
+        summary["e140_width2_round_rate_error_pct"] = d[
+            "round_rate_control"]["plutarch"]["error_pct"]
+        summary["e140_width2_geometry_share"] = d["geometry_share_of_total"]
+        summary["e140_width2_residual_mean_us"] = d["residual_mean_us"]
+        summary["e140_width2_residual_sd_us"] = d["residual_sd_us"]
         summary["e140_width2_saving_r2_on_p_width2"] = d["fits"][
             "on_p_width2"]["r2"]
         summary["e140_width2_max_forced_mbar_shift"] = finite(max(
