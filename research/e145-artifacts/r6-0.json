@@ -12,7 +12,12 @@
  "e145_r6_kv_growth_events_upper": 3,
  "e145_r6_kv_peak_transient_bytes": 134217728,
  "e145_r6_kv_peak_transient_bytes_excluding_zeros_operand": 117440512,
+ "e145_r6_kv_realloc_us_per_leg": 633.1024905660378,
+ "e145_r6_kv_realloc_us_per_round": 5.755477186963979,
  "e145_r6_kvcache_step_tokens": 256,
+ "e145_r6_placement_price_pct": 0.0019584,
+ "e145_r6_placement_price_pct_upper95": 0.0060192,
+ "e145_r6_residency_direction_closed": true,
  "e145_r6_round_peak_decode_state_bytes": 374996992,
  "e145_r6_round_peak_over_slack": 5.587890625,
  "e145_r6_slack_equals_kv": true,
@@ -86,6 +91,52 @@
   "kv_heads": 4
  },
  "max_round_width": 8,
+ "placement_kill": {
+  "e130_marginal_rate": {
+   "point_pct_per_mib": 3.06e-05,
+   "source": "research/e130-results.md",
+   "upper95_pct_per_mib": 9.405e-05
+  },
+  "e145_r6_placement_can_explain_step": false,
+  "e145_r6_placement_price_pct": 0.0019584,
+  "e145_r6_placement_price_pct_upper95": 0.0060192,
+  "e145_r6_placement_shortfall_point": 871.1874695530386,
+  "e145_r6_placement_shortfall_upper95": 283.448554687113,
+  "e145_r6_placement_us_per_round_point": 1.00896768,
+  "e145_r6_placement_us_per_round_upper95": 3.10109184,
+  "slack_mib": 64.0,
+  "state_step_pct_of_published_median": 1.7061335403726707
+ },
+ "realloc_kill": {
+  "bandwidth_sensitivity_us_per_round": {
+   "100GBps": 15.252014545454546,
+   "265GBps": 5.755477186963979,
+   "400GBps": 3.8130036363636366,
+   "50GBps": 30.504029090909093
+  },
+  "e145_r6_kv_copied_bytes_per_leg": 83886080,
+  "e145_r6_kv_moved_bytes_per_leg": 167772160,
+  "e145_r6_kv_realloc_can_explain_step": false,
+  "e145_r6_kv_realloc_pct_of_leg": 0.012791996023728195,
+  "e145_r6_kv_realloc_pct_of_published_median": 0.011171345471591574,
+  "e145_r6_kv_realloc_shortfall_vs_one_pct": 89.51473236083986,
+  "e145_r6_kv_realloc_shortfall_vs_step": 152.72408723831177,
+  "e145_r6_kv_realloc_us_per_leg": 633.1024905660378,
+  "e145_r6_kv_realloc_us_per_round": 5.755477186963979,
+  "e145_r6_step_1280_max_saving_us_per_round": 5.755477186963979,
+  "resets": [
+   {
+    "copied_bytes": 33554432,
+    "from_tokens": 512,
+    "to_tokens": 768
+   },
+   {
+    "copied_bytes": 50331648,
+    "from_tokens": 768,
+    "to_tokens": 1024
+   }
+  ]
+ },
  "residency_contract": {
   "free_recycles_without_erase": true,
   "insert_has_no_eviction": true,

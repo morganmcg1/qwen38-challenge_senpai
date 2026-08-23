@@ -196,8 +196,8 @@ e145_prepare_session() {
 
   local -a build_args=(--require MLX_E145_PIN_DEPTH
                        --require MLX_E134_DEPTH_PRICE_ARM
-                       --require MLX_E145_WIRED_MIN_GIB
-                       --require MLX_E145_WIRED_LOG)
+                       --require MLX_E130_WIRED_GATE_GIB
+                       --require MLX_E130_RESIDENCY_PROBE_PATH)
   [[ "${E145_NO_BUILD:-0}" == "1" ]] && build_args+=(--no-build)
   echo "=== e145 phase 0: worker build and selector assertion ==="
   senpai/rebuild-and-assert-worker.sh "${build_args[@]}" || {

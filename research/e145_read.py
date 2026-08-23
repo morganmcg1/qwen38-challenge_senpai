@@ -82,8 +82,16 @@ def load_leg(slot_dir: pathlib.Path) -> dict | None:
             "arm": meta.get("e145_arm_requested",
                             meta.get("depth_price_arm_requested", "unset")),
             "pin": meta.get("e145_pin_requested", "none"),
-            "position": int(meta.get("e145_r1_position",
-                                     meta.get("e145_r2_position", 0)) or 0),
+            "position": int(
+                meta.get("e145_r1_position")
+                or meta.get("e145_r2_position")
+                or meta.get("e145_r6_position")
+                or 0),
+            "residency": meta.get("e145_r6_residency", "unset"),
+            "wired_gate_gib": meta.get("e145_r6_gate_gib", "unset"),
+            "probe_lines": int(meta.get("e145_r6_probe_lines", 0)),
+            "probe_applied": int(meta.get("e145_r6_probe_applied", 0)),
+            "probe_refused": int(meta.get("e145_r6_probe_refused", 0)),
             "tokens": int(meta.get("tokens", 0)),
             "leg_kind": meta.get("e145_leg_kind", "timed"),
             "real_cool_gate_taken":

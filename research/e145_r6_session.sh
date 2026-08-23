@@ -1,30 +1,36 @@
 #!/usr/bin/env bash
-# E145 R6-1 -- does the residency wiring path change decode time, and is it
-# bimodal?
+# E145 R6-1 -- with wiring ACTIVE, is local decode time bimodal at the scale of
+# the ranked instrument's 879 us/round state step?
 #
 #   usage: research/e145_r6_session.sh [TOKENS] [FIXTURE]
 #
-# THE QUESTION. FINDING 235 prices the ranked instrument's one-in-three
-# +903 us/drafting-round failure mode at 1.65 % of the published median, which
-# is larger than every mechanism now in hand. F8's hypothesis is that the
-# failure mode is the wired-residency lottery: `wireResidentWeightsIfEnabled()`
-# sizes the wired limit at the post-warm live footprint plus 64 MiB, and which
-# buffers win that 64 MiB is decided once, greedily, in allocation order.
+# THE QUESTION, REFRAMED AFTER F9. F8's mechanism -- that the 64 MiB slack
+# holds the full-attention KV cache at 1024 tokens EXACTLY, so which buffers
+# win the slack decides the state step -- is refuted at source by E130. The
+# wired set at sizing is byte-identical at every slack rung and steady-state
+# headroom is 0.023-0.117 MiB even at s2048, so the slack is 98.3-99.9 percent
+# consumed at every rung and its size protects no particular buffer. R6-0's
+# `64 MiB == 65536 B/token x 1024 tokens` equality is a coincidence.
 #
-# R6-0 read the byte counts and found the slack cannot hold the decode state:
-# the full-attention KV cache at 1024 tokens is 64 MiB EXACTLY, but the 48
-# float32 GDN recurrent states are another 144 MiB and the per-round snapshot
-# is 147 MiB more, so the persistent decode state is 3.29x the slack and the
-# round peak is 5.59x. The lottery is real; the question is what winning it is
-# worth.
+# What survives is narrower and still worth twelve legs: NO CLEAN WIRED LEG
+# EXISTS anywhere in the campaign. E130 rung 12 (13 legs) and E146 R-C (8 legs)
+# both ran unwired; rung 11 ran wired but with a 23.27 C entry spread and no
+# warmup leg. Every local statement about run-to-run reproducibility therefore
+# describes a machine that never executed the residency path. This session
+# supplies the missing arm and asks one falsifiable question: with wiring on,
+# does the leg-to-leg spread stay at the 0.065-0.109 percent seen unwired, or
+# does it open into two clusters separated by something near 879 us/round?
 #
-# THE OBSTACLE. The guard refuses below 96 GiB, so this 48 GiB host has never
-# executed the path. `MLX_E145_WIRED_MIN_GIB=32` lowers the floor for the
-# candidate legs only. The knob cannot change the ranked M5 runner, which
-# clears 96 and 32 alike.
+# THE OBSTACLE AND THE REUSED KEY. The guard refuses below 96 GiB, so this
+# 48 GiB host has never executed the path. `MLX_E130_WIRED_GATE_GIB=32` is
+# E130's existing research override (rungs 10a and 11, revert `69a6d26e`); this
+# session reuses it rather than adding a second key for the same job. The knob
+# cannot change the ranked M5 runner, which clears 96 and 32 alike.
 #
-# THE DESIGN. Twelve 512-token `beagle_a` legs on the compiled default arm,
-# under the real 40 C gate, in the position-balanced palindrome
+# THE DESIGN. One discarded warmup leg -- E130 rung 12 cut the entry-temperature
+# spread from 23.27 C to 1.757 C with exactly this device -- then twelve timed
+# 512-token `beagle_a` legs on the compiled default arm, one binary, under the
+# real 40 C gate, in the position-balanced palindrome
 #
 #   W U U W  W U U W  W U U W
 #
@@ -32,12 +38,15 @@
 # monotone thermal drift cancels to first order. Six legs per arm is the
 # smallest sample that can show a two-cluster split at all.
 #
-# THE WITNESS COMES FREE. Every leg appends its own `wired-zh` line to
-# `E145_R6_WIRED_LOG`. A wired leg must write `request=... applied=...`; an
-# unwired leg must write `skipped=guard min_gib=96`. That pair is the Rule 114
-# witness and the Rule 101 failing control in one file, at no extra GPU cost:
-# if the override did nothing, both arms would write the same line and the
-# session is invalid on its face.
+# THE WITNESS COMES FREE. Every leg gets its own
+# `MLX_E130_RESIDENCY_PROBE_PATH`, and each of the three workers in a leg
+# appends its own `wired-zh` line there. A wired leg must write
+# `request=... applied=<positive> ... gate_gib=32`; an unwired leg must write
+# `skipped=gate gate_gib=96`. That pair is the Rule 114 witness and the Rule 101
+# failing control in one file, at no extra GPU cost: if the override did
+# nothing, both arms would write the same line and the session is invalid on
+# its face. The unwired arm doubles as proof that the COMPILED default is still
+# the shipped 96 GiB, because it reaches the refusal with the override unset.
 #
 # WHAT THIS CANNOT SHOW. The effect size will not transfer. This host has
 # 48 GiB and therefore also runs the LOW-memory startup profile
@@ -45,6 +54,11 @@
 # ranked box's 512 MiB post-wire command-buffer budget. A local number is
 # evidence that the mechanism exists and roughly how large it is, not a
 # prediction of the M5 delta.
+#
+# PRE-REGISTERED KILL. If the wired arm's within-arm standard deviation is
+# below 0.30 percent and no pair of wired legs differs by more than 0.80
+# percent, the ranked state is not locally reproducible with wiring on. Say so
+# and stop; do not open a second residency rung.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -60,11 +74,14 @@ golden=".mlxfast-private/e128/goldens/${fixture}-rows-$((tokens + 1)).json"
        "session so no gated leg pays for a golden" >&2
   exit 2; }
 
-export E145_R6_WIRED_LOG="${PWD}/.mlxfast-private/e128/e145/r6-wired.log"
-mkdir -p "$(dirname "${E145_R6_WIRED_LOG}")"
-: > "${E145_R6_WIRED_LOG}"
+probe_dir="${PWD}/.mlxfast-private/e128/e145/r6-probe"
+mkdir -p "${probe_dir}"
 
 e145_prepare_session || exit $?
+
+echo "=== e145_r6 leg 00 WARMUP (discarded, unwired, absorbs the cold start) ==="
+MLX_E130_RESIDENCY_PROBE_PATH="${probe_dir}/00-warmup.log" \
+  e145_leg "r6-${fixture}-p00-warmup" "${fixture}" "${arm}" none "${tokens}"
 
 failures=0
 position=0
@@ -73,31 +90,33 @@ for residency in wired unwired unwired wired \
                  wired unwired unwired wired; do
   position=$((position + 1))
   slot="r6-${fixture}-p${position}-${residency}"
-  echo "--- e145_r6 position ${position}: ${residency} ---" \
-    >> "${E145_R6_WIRED_LOG}"
+  probe="${probe_dir}/$(printf '%02d' "${position}")-${residency}.log"
+  : > "${probe}"
   if [[ "${residency}" == "wired" ]]; then
-    export MLX_E145_WIRED_MIN_GIB="${E145_R6_MIN_GIB:-32}"
+    export MLX_E130_WIRED_GATE_GIB="${E145_R6_GATE_GIB:-32}"
   else
-    unset MLX_E145_WIRED_MIN_GIB
+    unset MLX_E130_WIRED_GATE_GIB
   fi
-  export MLX_E145_WIRED_LOG="${E145_R6_WIRED_LOG}"
+  export MLX_E130_RESIDENCY_PROBE_PATH="${probe}"
 
   e145_leg "${slot}" "${fixture}" "${arm}" none "${tokens}"
   status=$?
   {
     echo "e145_r6_position=${position}"
     echo "e145_r6_residency=${residency}"
-    echo "e145_r6_min_gib=${MLX_E145_WIRED_MIN_GIB:-unset}"
-    echo "e145_r6_wired_log=${E145_R6_WIRED_LOG}"
+    echo "e145_r6_gate_gib=${MLX_E130_WIRED_GATE_GIB:-unset}"
+    echo "e145_r6_probe_path=${probe}"
+    echo "e145_r6_probe_lines=$(grep -c 'wired-zh' "${probe}" 2>/dev/null || echo 0)"
+    echo "e145_r6_probe_applied=$(grep -c 'applied=' "${probe}" 2>/dev/null || echo 0)"
+    echo "e145_r6_probe_refused=$(grep -c 'skipped=gate' "${probe}" 2>/dev/null || echo 0)"
   } >> "${E145_LEG_OUT}/meta.txt"
   ((status == 0)) || {
     echo "e145_r6: ${slot} exited ${status}" >&2
     failures=$((failures + 1)); }
 done
 
-unset MLX_E145_WIRED_MIN_GIB
+unset MLX_E130_WIRED_GATE_GIB MLX_E130_RESIDENCY_PROBE_PATH
 echo "e145_r6: ${failures} failed legs"
-echo "e145_r6: witness log ${E145_R6_WIRED_LOG}"
-grep -c 'wired-zh' "${E145_R6_WIRED_LOG}" 2>/dev/null \
-  | sed 's/^/e145_r6: witness lines /'
+echo "e145_r6: witness logs under ${probe_dir}"
+grep -h 'wired-zh' "${probe_dir}"/*.log 2>/dev/null | sort | uniq -c
 exit $(( failures > 0 ))

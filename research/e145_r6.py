@@ -4,6 +4,12 @@ Zero GPU. Every byte count is read from the pinned checkpoint config on disk
 and from the allocation shapes in the source that the scored session executes.
 Nothing here is assumed from the advisor's brief; where a source literal and a
 config-derived value both exist, both are computed and cross-checked.
+
+Two arithmetic kills close the direction without spending a leg. The first
+prices slack PLACEMENT from E130's measured marginal rate; the second prices
+the KV reallocation copies from bytes moved and memory bandwidth. Both land two
+to three orders of magnitude below FINDING 235's 879 us/round state step, so
+neither the slack lottery nor a larger `KVCacheSimple.step` can be its cause.
 """
 
 from __future__ import annotations
@@ -29,11 +35,31 @@ KVCACHE = "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/KVCache.swift"
 RESIDENT = "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/resident.cpp"
 ALLOCATOR = "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/allocator.cpp"
 
+E130 = "research/e130-results.md"
+
 DTYPE_BYTES = {"bfloat16": 2, "float16": 2, "float32": 4}
 
 SEED_TOKENS = 512
 DECODE_TOKENS = 512
 MAX_ROUND_WIDTH = 8
+
+# FINDING 235's failure mode, and Rule 134's conversion. One percent of the
+# published median is 515.2 us/round, so the step is 1.7061 % in that frame.
+STATE_STEP_US_PER_ROUND = 879.0
+PCT_POINT_US_PER_ROUND = 515.2
+
+# The ranked beagle leg at the promoted bar: R5-c's prefill-free cost per round
+# and R5-a's pinned round count. Used only to turn us/leg into us/round and
+# into a leg fraction.
+BEAGLE_RANKED_ROUND_US = 44992.8
+BEAGLE_RANKED_ROUNDS = 110.0
+
+# F9's assumed copy bandwidth, just under the Mac16,11 M4 Pro's specified
+# 273 GB/s unified-memory figure. Not measured here. The kill is reported with
+# a sensitivity sweep because a spec number is not a measurement, and the
+# conclusion has to survive being wrong about it by a large factor.
+HOST_COPY_BYTES_PER_S = 265.0e9
+BANDWIDTH_SENSITIVITY = (50.0e9, 100.0e9, 265.0e9, 400.0e9)
 
 
 def read(path: str) -> str:
@@ -46,7 +72,8 @@ def source_int(path: str, pattern: str, label: str) -> int:
     found = re.search(pattern, text)
     if not found:
         raise SystemExit(f"{label}: pattern not found in {path}")
-    return int(found.group(1))
+    captured = [g for g in found.groups() if g is not None]
+    return int(captured[0])
 
 
 def load_config(path: str | None) -> tuple[str, dict]:
@@ -222,6 +249,102 @@ def kv_capacity_walk(bytes_per_token: int, step: int) -> dict:
     }
 
 
+def e130_marginal_rate() -> dict:
+    """Read E130's measured price of slack, in percent per MiB above 64 MiB."""
+    text = read(E130)
+    found = re.search(
+        r"Marginal rate above 64 MiB: `\+([0-9.e+-]+) %/MiB`, "
+        r"95 % bound `([0-9.e+-]+) %/MiB`",
+        text,
+    )
+    if not found:
+        raise SystemExit(f"E130 marginal rate not found in {E130}")
+    return {
+        "point_pct_per_mib": float(found.group(1)),
+        "upper95_pct_per_mib": float(found.group(2)),
+        "source": E130,
+    }
+
+
+def placement_kill(slack_bytes: int) -> dict:
+    """Kill 1: can slack PLACEMENT produce an 879 us/round step?
+
+    E130's placement rule says a resident consumer allocated after
+    `wireResidentWeightsIfEnabled()` competes for a slack that is already 98 to
+    100 percent spent. Its ladder measured the marginal price of that
+    competition directly. The largest placement swing available here is the
+    whole slack, so price the whole slack at that rate and compare with the
+    step. The rate is a fraction of leg time, so the comparison is done in
+    fractional terms and the step is expressed in the published-median frame
+    through Rule 134.
+    """
+    rate = e130_marginal_rate()
+    slack_mib = slack_bytes / (1 << 20)
+    point = rate["point_pct_per_mib"] * slack_mib
+    upper = rate["upper95_pct_per_mib"] * slack_mib
+    step_pct = STATE_STEP_US_PER_ROUND / PCT_POINT_US_PER_ROUND
+    return {
+        "e130_marginal_rate": rate,
+        "slack_mib": slack_mib,
+        "e145_r6_placement_price_pct": point,
+        "e145_r6_placement_price_pct_upper95": upper,
+        "state_step_pct_of_published_median": step_pct,
+        "e145_r6_placement_shortfall_point": step_pct / point,
+        "e145_r6_placement_shortfall_upper95": step_pct / upper,
+        "e145_r6_placement_us_per_round_point":
+            point * PCT_POINT_US_PER_ROUND,
+        "e145_r6_placement_us_per_round_upper95":
+            upper * PCT_POINT_US_PER_ROUND,
+        "e145_r6_placement_can_explain_step": upper >= step_pct,
+    }
+
+
+def realloc_kill(walk: dict) -> dict:
+    """Kill 2: can the KV capacity walk produce an 879 us/round step?
+
+    Every capacity reset copies the old contents into a larger buffer. Each
+    copied byte is read once and written once, so the traffic is twice the old
+    size. Price the whole leg's traffic at memory bandwidth and spread it over
+    the ranked round count. This also bounds the value of raising
+    `KVCacheSimple.step` to 1280, which removes every reset in the walk: the
+    saving cannot exceed this number.
+    """
+    events = walk["aligned_walk_events"]
+    copied = sum(e["old_bytes"] for e in events)
+    moved = 2 * copied
+    per_leg_us = 1.0e6 * moved / HOST_COPY_BYTES_PER_S
+    per_round_us = per_leg_us / BEAGLE_RANKED_ROUNDS
+    leg_us = BEAGLE_RANKED_ROUND_US * BEAGLE_RANKED_ROUNDS
+    return {
+        "resets": [
+            {
+                "from_tokens": e["old_capacity_tokens"],
+                "to_tokens": e["new_capacity_tokens"],
+                "copied_bytes": e["old_bytes"],
+            }
+            for e in events
+        ],
+        "e145_r6_kv_copied_bytes_per_leg": copied,
+        "e145_r6_kv_moved_bytes_per_leg": moved,
+        "e145_r6_kv_realloc_us_per_leg": per_leg_us,
+        "e145_r6_kv_realloc_us_per_round": per_round_us,
+        "e145_r6_kv_realloc_pct_of_leg": 100.0 * per_leg_us / leg_us,
+        "e145_r6_kv_realloc_pct_of_published_median":
+            per_round_us / PCT_POINT_US_PER_ROUND,
+        "e145_r6_kv_realloc_shortfall_vs_step":
+            STATE_STEP_US_PER_ROUND / per_round_us,
+        "e145_r6_kv_realloc_shortfall_vs_one_pct":
+            PCT_POINT_US_PER_ROUND / per_round_us,
+        "bandwidth_sensitivity_us_per_round": {
+            f"{int(b / 1e9)}GBps": 1.0e6 * moved / b / BEAGLE_RANKED_ROUNDS
+            for b in BANDWIDTH_SENSITIVITY
+        },
+        "e145_r6_step_1280_max_saving_us_per_round": per_round_us,
+        "e145_r6_kv_realloc_can_explain_step": per_round_us
+        >= STATE_STEP_US_PER_ROUND,
+    }
+
+
 def residency_facts() -> dict:
     """Read the residency and allocator contract that decides who is wired."""
     resident = read(RESIDENT)
@@ -281,9 +404,15 @@ def main() -> int:
         r"wiredZHDefaultSlackMB = (\d+)",
         "wired slack",
     )
+    # The R6-1 research patch resolves the floor through
+    # `MLX_E130_WIRED_GATE_GIB`, so the shipped value is the `??` default. Both
+    # forms are accepted so this reads the same number on a patched and an
+    # unpatched tree.
     guard_gib = source_int(
         SESSION,
-        r"physicalMemory >= \(UInt64\((\d+)\) << 30\)",
+        r"physicalMemory >= \(UInt64\((\d+)\) << 30\)"
+        r"|MLX_E130_WIRED_GATE_GIB\"\]\s*\n?\s*\.flatMap\(UInt64\.init\)"
+        r" \?\? (\d+)",
         "wired residency guard",
     )
     step = source_int(
@@ -305,6 +434,8 @@ def main() -> int:
     round_peak = total_decode_state + snapshot_bytes
 
     survives = total_decode_state > slack_bytes
+    placement = placement_kill(slack_bytes)
+    realloc = realloc_kill(walk)
 
     out = {
         "harness": "local",
@@ -335,6 +466,20 @@ def main() -> int:
         "e145_r6_hypothesis_survives_r6_0": survives,
         "e145_r6_wired_guard_gib": guard_gib,
         "e145_r6_kvcache_step_tokens": step,
+        "placement_kill": placement,
+        "realloc_kill": realloc,
+        "e145_r6_placement_price_pct":
+            placement["e145_r6_placement_price_pct"],
+        "e145_r6_placement_price_pct_upper95":
+            placement["e145_r6_placement_price_pct_upper95"],
+        "e145_r6_kv_realloc_us_per_leg":
+            realloc["e145_r6_kv_realloc_us_per_leg"],
+        "e145_r6_kv_realloc_us_per_round":
+            realloc["e145_r6_kv_realloc_us_per_round"],
+        "e145_r6_residency_direction_closed": not (
+            placement["e145_r6_placement_can_explain_step"]
+            or realloc["e145_r6_kv_realloc_can_explain_step"]
+        ),
         "kv_detail": kv,
         "gdn_detail": gdn,
         "source_shape_crosscheck": crosscheck,
@@ -457,6 +602,93 @@ def main() -> int:
     print("  residency contract read from the vendored sources")
     for key, value in out["residency_contract"].items():
         print("    %-42s %s" % (key, value))
+
+    step_pct = placement["state_step_pct_of_published_median"]
+    print()
+    print("## R6-0 kill 1  slack PLACEMENT priced at E130's measured rate")
+    print(
+        "  E130 marginal rate %.4e %%/MiB, 95 %% bound %.4e %%/MiB"
+        % (
+            placement["e130_marginal_rate"]["point_pct_per_mib"],
+            placement["e130_marginal_rate"]["upper95_pct_per_mib"],
+        )
+    )
+    print(
+        "  whole %.0f MiB slack: %.6f %% point, %.6f %% at 95 %%"
+        % (
+            placement["slack_mib"],
+            placement["e145_r6_placement_price_pct"],
+            placement["e145_r6_placement_price_pct_upper95"],
+        )
+    )
+    print(
+        "  that is %.3f us/round point, %.3f us/round at 95 %%"
+        % (
+            placement["e145_r6_placement_us_per_round_point"],
+            placement["e145_r6_placement_us_per_round_upper95"],
+        )
+    )
+    print(
+        "  the 879.0 us/round step is %.4f %% of the published median, so"
+        " placement falls short by %.0fx point and %.0fx at 95 %%"
+        % (
+            step_pct,
+            placement["e145_r6_placement_shortfall_point"],
+            placement["e145_r6_placement_shortfall_upper95"],
+        )
+    )
+    print(
+        "  placement can explain the step: %s"
+        % placement["e145_r6_placement_can_explain_step"]
+    )
+
+    print()
+    print("## R6-0 kill 2  the KV capacity walk priced at memory bandwidth")
+    for reset in realloc["resets"]:
+        print(
+            "    %4d -> %4d tokens   copies %12d B"
+            % (
+                reset["from_tokens"],
+                reset["to_tokens"],
+                reset["copied_bytes"],
+            )
+        )
+    print(
+        "  %d B copied, %d B moved (read plus write) per leg"
+        % (
+            realloc["e145_r6_kv_copied_bytes_per_leg"],
+            realloc["e145_r6_kv_moved_bytes_per_leg"],
+        )
+    )
+    print(
+        "  at %.0f GB/s that is %.1f us/leg = %.4f %% of the ranked beagle"
+        " leg = %.3f us/round"
+        % (
+            HOST_COPY_BYTES_PER_S / 1e9,
+            realloc["e145_r6_kv_realloc_us_per_leg"],
+            realloc["e145_r6_kv_realloc_pct_of_leg"],
+            realloc["e145_r6_kv_realloc_us_per_round"],
+        )
+    )
+    print("  bandwidth sensitivity, us/round:")
+    for label, value in realloc["bandwidth_sensitivity_us_per_round"].items():
+        print("    %-10s %8.3f" % (label, value))
+    print(
+        "  short of the 879.0 us/round step by %.0fx and of the 515.2"
+        " us/round one-percent point by %.0fx"
+        % (
+            realloc["e145_r6_kv_realloc_shortfall_vs_step"],
+            realloc["e145_r6_kv_realloc_shortfall_vs_one_pct"],
+        )
+    )
+    print(
+        "  therefore step=1280 saves at most %.3f us/round; do not implement"
+        % realloc["e145_r6_step_1280_max_saving_us_per_round"]
+    )
+    print(
+        "  residency direction closed by arithmetic: %s"
+        % out["e145_r6_residency_direction_closed"]
+    )
 
     path = os.path.join(REPO, args.out)
     os.makedirs(os.path.dirname(path), exist_ok=True)

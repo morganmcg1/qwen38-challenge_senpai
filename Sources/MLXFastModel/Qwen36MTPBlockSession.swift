@@ -43,17 +43,6 @@ import MLXLMCommon
 // tape, which is why it is the baseline here. Grafting the tape into the Qwen35
 // GDN forward is a documented LATER perf upgrade, deliberately not attempted.
 
-/// The physical-memory floor, in GiB, that the residency-sizing guard applies.
-///
-/// The shipped floor is 96 GiB, which the ranked M5 runner clears and a
-/// development host does not. `MLX_E145_WIRED_MIN_GIB` lowers it so the wiring
-/// path can be executed and measured off the ranked box. It is a diagnostic
-/// knob only: unset, the resolved floor is the shipped 96 GiB, and the ranked
-/// runner clears either floor, so no ranked behaviour depends on it.
-func qwen36WiredMinimumPhysicalGiB(_ environment: [String: String]) -> UInt64 {
-    environment["MLX_E145_WIRED_MIN_GIB"].flatMap(UInt64.init) ?? 96
-}
-
 /// One round's worth of committed tokens plus the row ledger the trusted parent
 /// audits. Field names mirror the DFlash round result so the parent-side ledger
 /// arithmetic and the box wrapper's Criterion E L3 checks are the same shape on
@@ -226,53 +215,51 @@ public final class Qwen36MTPBlockSession {
     private static let wiredTicketLock = NSLock()
     nonisolated(unsafe) private static var wiredTicketRetainer: WiredMemoryTicket?
 
-    private static let wiredMinimumPhysicalGiB: UInt64 =
-        qwen36WiredMinimumPhysicalGiB(ProcessInfo.processInfo.environment)
-
-    /// E145 R6 diagnostic sink for the `wired-zh` line.
-    ///
-    /// `mtp-timed` calls `runtimeWorkerOptions` without `forwardsWorkerStderr`,
-    /// so `QwenRuntimeWorker.swift:2046` installs a swallowing emitter and the
-    /// worker's own stderr never reaches a session file. When this names a
-    /// path the same line is appended there too, which is the only way a timed
-    /// leg can witness whether the residency path fired.
-    private static let wiredTelemetryPath: String? =
-        ProcessInfo.processInfo.environment["MLX_E145_WIRED_LOG"]
-
-    /// Write one `wired-zh` line to stderr and, when requested, to the sink.
-    ///
-    /// Both the taken and the refused branch emit, so an absent line means the
-    /// method never ran rather than that the guard declined.
-    private static func emitWiredTelemetry(_ body: String) {
-        let line = "mlxfast: qwen-mtp wired-zh \(body)\n"
-        FileHandle.standardError.write(Data(line.utf8))
-        guard let path = wiredTelemetryPath, !path.isEmpty else { return }
-        if let handle = FileHandle(forWritingAtPath: path) {
-            handle.seekToEndOfFile()
-            handle.write(Data(line.utf8))
-            try? handle.close()
-        } else {
-            try? Data(line.utf8).write(to: URL(fileURLWithPath: path))
-        }
-    }
-
     private final class QwenMTPWiredLimitBox: @unchecked Sendable {
         var value: Int = 0
     }
 
+    /// E130 rung 10a and E145 R6-1, research only, removed before submission.
+    ///
+    /// The shipped floor is 96 GiB, which the ranked M5 runner clears and a
+    /// development host does not, so the wiring path never runs locally and no
+    /// local measurement of it exists. Lowering the floor lets one binary serve
+    /// the wired and unwired arms, so they differ only by environment. The
+    /// ranked runner clears either floor, so no ranked behaviour depends on it.
+    private static let wiredGateGiB: UInt64 =
+        ProcessInfo.processInfo.environment["MLX_E130_WIRED_GATE_GIB"]
+            .flatMap(UInt64.init) ?? 96
+
+    /// O_APPEND so the reference, serial and MTP workers of one leg each add
+    /// their own lines to the same file instead of truncating it.
+    ///
+    /// Harness defect 32: `mtp-timed` builds its worker through
+    /// `runtimeWorkerOptions` without `forwardsWorkerStderr`, so
+    /// `WorkerStderrDrain` installs a swallowing emitter and every worker
+    /// stderr line is discarded. A timed leg can only witness the residency
+    /// path through this file. The sink falls back to stderr when no path is
+    /// configured.
+    private static let e130ProbeSink: FileHandle = {
+        guard let path = ProcessInfo.processInfo
+            .environment["MLX_E130_RESIDENCY_PROBE_PATH"], !path.isEmpty
+        else { return FileHandle.standardError }
+        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return FileHandle.standardError }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
+    }()
+
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
         let physical = ProcessInfo.processInfo.physicalMemory
+        let refused = "gate_gib=\(wiredGateGiB) physmem=\(physical)\n"
         guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else {
-            emitWiredTelemetry(
-                "skipped=disabled min_gib=\(wiredMinimumPhysicalGiB) "
-                    + "physmem=\(physical)")
+            e130ProbeSink.write(Data(
+                ("mlxfast: qwen-mtp wired-zh skipped=disabled " + refused).utf8))
             return
         }
-        guard physical >= (wiredMinimumPhysicalGiB << 30) else {
-            emitWiredTelemetry(
-                "skipped=guard min_gib=\(wiredMinimumPhysicalGiB) "
-                    + "physmem=\(physical)")
+        guard physical >= (wiredGateGiB << 30) else {
+            e130ProbeSink.write(Data(
+                ("mlxfast: qwen-mtp wired-zh skipped=gate " + refused).utf8))
             return
         }
 
@@ -319,12 +306,12 @@ public final class Qwen36MTPBlockSession {
 
         let applied = outcome == .success ? appliedBox.value : -1
         let recommended = GPU.maxRecommendedWorkingSetBytes() ?? -1
-        var body = "request=\(target)"
-        body += " applied=\(applied) active=\(active)"
-        body += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
-        body += " maxrec=\(recommended)"
-        body += " min_gib=\(wiredMinimumPhysicalGiB) physmem=\(physical)"
-        emitWiredTelemetry(body)
+        var line = "mlxfast: qwen-mtp wired-zh request=\(target)"
+        line += " applied=\(applied) active=\(active)"
+        line += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
+        line += " maxrec=\(recommended)"
+        line += " gate_gib=\(wiredGateGiB) physmem=\(physical)\n"
+        e130ProbeSink.write(Data(line.utf8))
     }
 
     /// Read-only mirror of the two entry guards in
@@ -332,12 +319,11 @@ public final class Qwen36MTPBlockSession {
     ///
     /// A 48 GiB development host fails the shipped 96 GiB guard, so residency
     /// sizing and its `Memory.clearCache()` never run there. Any warm-arm
-    /// result read off a host reporting `wired_gate_fired=0` says nothing
-    /// about the ranked M5-Max runner, where the gate does fire.
+    /// result read off a host reporting `wired_gate_fired=0` says nothing about
+    /// the ranked M5-Max runner, where the gate does fire.
     private static let residencySizingGateFires: Bool =
         ProcessInfo.processInfo.environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0"
-            && ProcessInfo.processInfo.physicalMemory
-                >= (wiredMinimumPhysicalGiB << 30)
+            && ProcessInfo.processInfo.physicalMemory >= (wiredGateGiB << 30)
 
     /// Warm the verify entry point the scored round actually calls.
     ///
