@@ -566,6 +566,32 @@ def main() -> int:
                  s["same_sign"], s["n"], s["candidate_leg_gain_pct"],
                  s["plutarch"]["out_of_487"], s["median_pct"]))
 
+    # Why the gate scan below cannot reproduce the ranked phase transition.
+    # `threshold(0) == marginal[0]`, and `reach` at depth 0 is the EMA of
+    # position-0 acceptance. A leg whose position-0 acceptance sits far above
+    # 0.18 can never close its gate, whatever the arm does.
+    print("\n## can the local material fire the depth-0 gate at all?")
+    print("   The gate fires when position-0 acceptance falls to %.2f."
+          % SHIPPED_HEAD_STEP_COST_RATIO)
+    print("%-18s %8s %10s %11s %s" % (
+        "local leg", "rounds", "p at d0", "x the gate", "gate can fire"))
+    gate_capable = 0
+    for name in sorted(legs):
+        leg = legs[name]
+        p0 = leg["positions"][0]["p"]
+        can = p0 <= SHIPPED_HEAD_STEP_COST_RATIO
+        gate_capable += int(can)
+        print("%-18s %8d %10.4f %11.2f %s" % (
+            name, leg["rounds"], p0, p0 / SHIPPED_HEAD_STEP_COST_RATIO,
+            "yes" if can else "no"))
+    print("  legs that can fire the gate %d of %d" % (gate_capable, len(legs)))
+    print("  The public fixture `benchfixture` sits at %.4f, %.1fx the gate."
+          % (legs["benchfixture"]["positions"][0]["p"],
+             legs["benchfixture"]["positions"][0]["p"]
+             / SHIPPED_HEAD_STEP_COST_RATIO))
+    print("  No local leg resembles the hidden plutarch prompt, so no local")
+    print("  measurement can price `marginal[0]` in either direction.")
+
     print("\n## gate scan positive control, interior held at %.2f"
           % SHIPPED_HEAD_STEP_COST_RATIO)
     print("   Ranked receipts: gate 0.18 -> plutarch edl 0.1540, gate 0.32 ->")
