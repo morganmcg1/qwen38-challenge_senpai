@@ -1,0 +1,86 @@
+{
+ "receipt": "572b2cc4-0299-4871-9d5b-73eadbe95d3b",
+ "status": "rejected",
+ "official_score": 3.66218563656629,
+ "mtp_max_draft_depth": 8,
+ "local_trace": "research/out/e135f34warm/trace.txt",
+ "local_width_counts": {
+  "3": 1,
+  "4": 3,
+  "5": 25,
+  "7": 2,
+  "8": 51
+ },
+ "local_round_count": 82,
+ "local_mean_verify_width": 6.853658536585366,
+ "e135_local_width8_mass": 0.6219512195121951,
+ "e135_ranked_width8_mass_weighted": 0.5390337087626761,
+ "e135_onepass678_ranked_transfer": 0.8666816493831263,
+ "bound": "P(m=hi) <= (mean - lo)/(hi - lo) on support [2, 9]",
+ "per_prompt": [
+  {
+   "prompt": "botany",
+   "mean_verify_width": 7.148148148148148,
+   "p_width8_upper_bound": 0.7354497354497355,
+   "f83_weight": 0.0124,
+   "raw_ratio_of_means": 3.9054526158,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "medicine",
+   "mean_verify_width": 6.2555555555555555,
+   "p_width8_upper_bound": 0.6079365079365079,
+   "f83_weight": 0.2508,
+   "raw_ratio_of_means": 3.8718334496,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "essays",
+   "mean_verify_width": 6.086956521739131,
+   "p_width8_upper_bound": 0.5838509316770187,
+   "f83_weight": 0.1598,
+   "raw_ratio_of_means": 3.8126684409,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "republic",
+   "mean_verify_width": 5.989247311827957,
+   "p_width8_upper_bound": 0.5698924731182796,
+   "f83_weight": 0.01,
+   "raw_ratio_of_means": 3.8606314209,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "beagle",
+   "mean_verify_width": 5.381818181818182,
+   "p_width8_upper_bound": 0.4831168831168831,
+   "f83_weight": 0.4862,
+   "raw_ratio_of_means": 3.5117028322,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "travel",
+   "mean_verify_width": 3.6556603773584904,
+   "p_width8_upper_bound": 0.2365229110512129,
+   "f83_weight": 0.0,
+   "raw_ratio_of_means": 2.3997337908,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "drama",
+   "mean_verify_width": 3.2976190476190474,
+   "p_width8_upper_bound": 0.18537414965986393,
+   "f83_weight": 0.0,
+   "raw_ratio_of_means": 2.0813763966,
+   "non_drafting_round_count": 0
+  },
+  {
+   "prompt": "plutarch",
+   "mean_verify_width": 1.1540041067761808,
+   "p_width8_upper_bound": 0.0,
+   "f83_weight": 0.0,
+   "raw_ratio_of_means": 1.2589856434,
+   "non_drafting_round_count": 449
+  }
+ ]
+}

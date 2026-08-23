@@ -16,12 +16,14 @@ from __future__ import annotations
 
 import argparse
 import os
+import pathlib
 import statistics
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import e135_composition_report as composition
 import e135_report as report
+from e135_width_histogram import depth_histogram
 
 ARMS = ("c67ship", "c67pb6", "c678pb6")
 
@@ -34,19 +36,43 @@ PAIRS = (
      "both restorations together against the ship schedule"),
 )
 
-# T45 pre-registered onePass678 from the working-column price. Under tight the
-# table takes width 8 from 2 launched columns to 1, so it saves
-# `P(width 8) * 257` columns per round at 13.8715 us each. F34 section 5
-# withdraws the physical story behind that price and keeps the number, so the
-# forecast is a linear extension of a contrast measured over 26.4 columns per
-# round to one over about 198, and a large signed gap is information about the
-# column model rather than an error.
-PREDICT_ONEPASS678 = 1.434
+# T45 pre-registered onePass678 at +1.434 % from the working-column price.
+# Under tight the table takes width 8 from 2 launched columns to 1 and changes
+# nothing else, so it saves `P(width 8) * 257` columns per round at 13.8715 us
+# each. F34 section 5 withdraws the physical story behind that price and keeps
+# the number, so the forecast is a linear extension of a contrast measured over
+# 26.4 columns per round to one over about 198, and a large signed gap is
+# information about the column model rather than an error.
+#
+# T45 traced the SHIP depth price, where 76.9 % of 78 local rounds verify at
+# width 8. The candidate ships pb6, which runs 82 rounds with only 62.2 % at
+# width 8, so the same price predicts less. The reporter therefore recomputes
+# the forecast from this session's own pb6 warmup trace and prints both.
+PREDICT_ONEPASS678_SHIP = 1.434
+WORKING_COLUMN_US = 13.8715
+QMV_DISPATCHES_PER_FORWARD_PASS = 257
+WARMUP_TRACE = "research/out/e135{label}warm/trace.txt"
 
 # F34 decision thresholds, in the convention where a positive number means the
 # SECOND arm is faster.
 PB6_STOP_IF_WORSE_THAN = -0.50
 ONEPASS678_INCLUDE_AT = 0.50
+
+
+def onepass678_forecast(label: str, seconds_per_token: float,
+                        tokens: int = 512) -> tuple[float, dict, int]:
+    """Reprice the working-column forecast on the schedule that will ship.
+
+    onePass678 removes one launched column per QMV dispatch on a width-8 round
+    and changes nothing at any other width, so the saving per leg is
+    `rounds * 257 * P(width 8) * 13.8715 us`.
+    """
+    counts = depth_histogram(pathlib.Path(WARMUP_TRACE.format(label=label)))
+    rounds = sum(counts.values())
+    mass = counts.get(8, 0) / rounds
+    saved = (rounds * QMV_DISPATCHES_PER_FORWARD_PASS * mass
+             * WORKING_COLUMN_US * 1e-6)
+    return 100.0 * saved / (seconds_per_token * tokens), counts, rounds
 
 
 def main() -> int:
@@ -163,16 +189,34 @@ def main() -> int:
                    else "STOP, do not submit")
         print(f"  pb6 under tight  {pb6[0]:+.4f} % (+- {pb6[1]:.4f})"
               f"  threshold {PB6_STOP_IF_WORSE_THAN:+.2f} %  -> {verdict}")
+    pb6_mean = statistics.fmean(
+        [report.fnum(r["metrics"]["mtp_seconds_per_token"])
+         for r in complete if r["arm"] == "c67pb6"])
+    forecast, counts, rounds = onepass678_forecast(args.label, pb6_mean)
+
+    print()
+    print(f"realised verify width, pb6 warmup leg, {rounds} rounds")
+    print("  " + " | ".join(
+        f"w{w} {counts[w]} ({100.0 * counts[w] / rounds:.1f}%)"
+        for w in sorted(counts)))
+    print("  mean verify width "
+          f"{sum(w * n for w, n in counts.items()) / rounds:.4f}"
+          f",  P(width 8) {counts.get(8, 0) / rounds:.4f}")
+    print("  The table changes launched columns at width 8 only, so P(width 8)"
+          " is the whole onePass678 lever.")
+
     op = results.get("e135_onepass678_local_pct")
     if op is not None:
         include = ("INCLUDE onePass678" if op[0] >= ONEPASS678_INCLUDE_AT
                    else "HOLD onePass678 as a finding")
         print(f"  onePass678       {op[0]:+.4f} % (+- {op[1]:.4f})"
               f"  threshold {ONEPASS678_INCLUDE_AT:+.2f} %  -> {include}")
-        print(f"  pre-registered   {PREDICT_ONEPASS678:+.4f} %"
-              f"  signed gap {op[0] - PREDICT_ONEPASS678:+.4f} pp")
+        print(f"  forecast on pb6  {forecast:+.4f} %"
+              f"  signed gap {op[0] - forecast:+.4f} pp")
+        print(f"  T45 forecast on ship {PREDICT_ONEPASS678_SHIP:+.4f} %"
+              f"  signed gap {op[0] - PREDICT_ONEPASS678_SHIP:+.4f} pp")
         print("  The forecast extends a price measured over 26.4 columns per"
-              " round to one over about 198 columns per round, so treat a"
+              " round to one over about 160 columns per round, so treat a"
               " large signed gap as information about the column model.")
 
     print()

@@ -42,8 +42,16 @@ PAIRS = (
 
 
 def depth_histogram(trace: pathlib.Path) -> collections.Counter:
+    """Count one verify width per drafting round.
+
+    Anchor on the `mtp-trace:` prefix. A leg that also emits `mtp-anchor:`
+    lines repeats `round=N d=D` a second time per round, so an unanchored
+    pattern doubles the round count. Shares cancel under a uniform doubling,
+    but anything absolute, such as columns per leg, does not.
+    """
     text = trace.read_text()
-    depths = [int(x) for x in re.findall(r"round=\d+ d=(\d+)", text)]
+    depths = [int(x) for x
+              in re.findall(r"mtp-trace: round=\d+ d=(\d+)", text)]
     return collections.Counter(d + 1 for d in depths)
 
 
