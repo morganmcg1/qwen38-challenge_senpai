@@ -1,0 +1,3123 @@
+{
+  "c9": "UNIDENTIFIED: SEGMENTED_VERIFY_DEPTH_CAP = 7 caps the drafted depth at 7, so M <= 8 on every round of every row",
+  "consistency_7226dc9a_vs_e003a86d": {
+    "matches": false,
+    "max_pct": 5.422886290261464,
+    "mean_pct": 4.382962731192114,
+    "min_pct": 3.2886254474052468,
+    "per_prompt": {
+      "beagle": {
+        "7226dc9a_decode_us": 5486107.941464966,
+        "delta_pct": 5.422886290261464,
+        "e003a86d_decode_us": 5203906.034558789
+      },
+      "botany": {
+        "7226dc9a_decode_us": 4694630.967246765,
+        "delta_pct": 4.057174011983622,
+        "e003a86d_decode_us": 4511587.991718969
+      },
+      "drama": {
+        "7226dc9a_decode_us": 9397233.030297631,
+        "delta_pct": 4.184460611129293,
+        "e003a86d_decode_us": 9019802.929510767
+      },
+      "essays": {
+        "7226dc9a_decode_us": 4583323.021192676,
+        "delta_pct": 3.9576405877708165,
+        "e003a86d_decode_us": 4408837.094877124
+      },
+      "medicine": {
+        "7226dc9a_decode_us": 4666954.042729444,
+        "delta_pct": 3.2886254474052468,
+        "e003a86d_decode_us": 4518362.038911889
+      },
+      "plutarch": {
+        "7226dc9a_decode_us": 8047955.061079003,
+        "delta_pct": 5.381395679169043,
+        "e003a86d_decode_us": 7636979.002992895
+      },
+      "republic": {
+        "7226dc9a_decode_us": 4796824.1043910775,
+        "delta_pct": 3.9391520050006346,
+        "e003a86d_decode_us": 4615031.017532543
+      },
+      "travel": {
+        "7226dc9a_decode_us": 8196392.0562833985,
+        "delta_pct": 4.832367216816791,
+        "e003a86d_decode_us": 7818570.040807555
+      }
+    }
+  },
+  "exact_round_counts": {
+    "1db9d63e": {
+      "beagle": {
+        "A": 402,
+        "D": 482,
+        "R": 110,
+        "R_reference": 110.0,
+        "alternatives": [
+          165,
+          220,
+          275,
+          330,
+          385,
+          440,
+          495
+        ],
+        "exact_fraction": "241/55",
+        "k": 2,
+        "n_candidates": 8,
+        "rate": 0.8340248962655602,
+        "unique": false
+      },
+      "botany": {
+        "A": 431,
+        "D": 498,
+        "R": 81,
+        "R_reference": 81.0,
+        "alternatives": [
+          108,
+          135,
+          162,
+          189,
+          216,
+          243,
+          270,
+          297,
+          324,
+          351,
+          378,
+          405,
+          432,
+          459,
+          486
+        ],
+        "exact_fraction": "166/27",
+        "k": 3,
+        "n_candidates": 16,
+        "rate": 0.8654618473895582,
+        "unique": false
+      },
+      "drama": {
+        "A": 260,
+        "D": 579,
+        "R": 252,
+        "R_reference": 252.0,
+        "alternatives": [
+          168,
+          336,
+          420,
+          504
+        ],
+        "exact_fraction": "193/84",
+        "k": 3,
+        "n_candidates": 5,
+        "rate": 0.44905008635578586,
+        "unique": false
+      },
+      "essays": {
+        "A": 420,
+        "D": 468,
+        "R": 92,
+        "R_reference": 91.99999999999999,
+        "alternatives": [
+          115,
+          138,
+          161,
+          184,
+          207,
+          230,
+          253,
+          276,
+          299,
+          322,
+          345,
+          368,
+          391,
+          414,
+          437,
+          460,
+          483,
+          506
+        ],
+        "exact_fraction": "117/23",
+        "k": 4,
+        "n_candidates": 19,
+        "rate": 0.8974358974358975,
+        "unique": false
+      },
+      "medicine": {
+        "A": 422,
+        "D": 473,
+        "R": 90,
+        "R_reference": 90.0,
+        "alternatives": [
+          180,
+          270,
+          360,
+          450
+        ],
+        "exact_fraction": "473/90",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.8921775898520085,
+        "unique": false
+      },
+      "plutarch": {
+        "A": 24,
+        "D": 76,
+        "R": 488,
+        "R_reference": 486.7324675324676,
+        "alternatives": [],
+        "exact_fraction": "19/122",
+        "k": 4,
+        "n_candidates": 1,
+        "rate": 0.3157894736842105,
+        "unique": true
+      },
+      "republic": {
+        "A": 419,
+        "D": 464,
+        "R": 93,
+        "R_reference": 92.99999999999999,
+        "alternatives": [
+          186,
+          279,
+          372,
+          465
+        ],
+        "exact_fraction": "464/93",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.9030172413793104,
+        "unique": false
+      },
+      "travel": {
+        "A": 299,
+        "D": 564,
+        "R": 213,
+        "R_reference": 212.3642098928123,
+        "alternatives": [
+          142,
+          284,
+          355,
+          426,
+          497
+        ],
+        "exact_fraction": "188/71",
+        "k": 3,
+        "n_candidates": 6,
+        "rate": 0.5301418439716312,
+        "unique": false
+      }
+    },
+    "572b2cc4": {
+      "beagle": {
+        "A": 402,
+        "D": 482,
+        "R": 110,
+        "R_reference": 110.0,
+        "alternatives": [
+          165,
+          220,
+          275,
+          330,
+          385,
+          440,
+          495
+        ],
+        "exact_fraction": "241/55",
+        "k": 2,
+        "n_candidates": 8,
+        "rate": 0.8340248962655602,
+        "unique": false
+      },
+      "botany": {
+        "A": 431,
+        "D": 498,
+        "R": 81,
+        "R_reference": 81.0,
+        "alternatives": [
+          108,
+          135,
+          162,
+          189,
+          216,
+          243,
+          270,
+          297,
+          324,
+          351,
+          378,
+          405,
+          432,
+          459,
+          486
+        ],
+        "exact_fraction": "166/27",
+        "k": 3,
+        "n_candidates": 16,
+        "rate": 0.8654618473895582,
+        "unique": false
+      },
+      "drama": {
+        "A": 260,
+        "D": 579,
+        "R": 252,
+        "R_reference": 252.0,
+        "alternatives": [
+          168,
+          336,
+          420,
+          504
+        ],
+        "exact_fraction": "193/84",
+        "k": 3,
+        "n_candidates": 5,
+        "rate": 0.44905008635578586,
+        "unique": false
+      },
+      "essays": {
+        "A": 420,
+        "D": 468,
+        "R": 92,
+        "R_reference": 91.99999999999999,
+        "alternatives": [
+          115,
+          138,
+          161,
+          184,
+          207,
+          230,
+          253,
+          276,
+          299,
+          322,
+          345,
+          368,
+          391,
+          414,
+          437,
+          460,
+          483,
+          506
+        ],
+        "exact_fraction": "117/23",
+        "k": 4,
+        "n_candidates": 19,
+        "rate": 0.8974358974358975,
+        "unique": false
+      },
+      "medicine": {
+        "A": 422,
+        "D": 473,
+        "R": 90,
+        "R_reference": 90.0,
+        "alternatives": [
+          180,
+          270,
+          360,
+          450
+        ],
+        "exact_fraction": "473/90",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.8921775898520085,
+        "unique": false
+      },
+      "plutarch": {
+        "A": 25,
+        "D": 75,
+        "R": 487,
+        "R_reference": 487.0,
+        "alternatives": [],
+        "exact_fraction": "75/487",
+        "k": 1,
+        "n_candidates": 1,
+        "rate": 0.3333333333333333,
+        "unique": true
+      },
+      "republic": {
+        "A": 419,
+        "D": 464,
+        "R": 93,
+        "R_reference": 92.99999999999999,
+        "alternatives": [
+          186,
+          279,
+          372,
+          465
+        ],
+        "exact_fraction": "464/93",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.9030172413793104,
+        "unique": false
+      },
+      "travel": {
+        "A": 300,
+        "D": 563,
+        "R": 212,
+        "R_reference": 212.0,
+        "alternatives": [
+          424
+        ],
+        "exact_fraction": "563/212",
+        "k": 1,
+        "n_candidates": 2,
+        "rate": 0.5328596802841918,
+        "unique": false
+      }
+    },
+    "684821ed": {
+      "beagle": {
+        "A": 402,
+        "D": 482,
+        "R": 110,
+        "R_reference": 110.0,
+        "alternatives": [
+          165,
+          220,
+          275,
+          330,
+          385,
+          440,
+          495
+        ],
+        "exact_fraction": "241/55",
+        "k": 2,
+        "n_candidates": 8,
+        "rate": 0.8340248962655602,
+        "unique": false
+      },
+      "botany": {
+        "A": 431,
+        "D": 498,
+        "R": 81,
+        "R_reference": 81.0,
+        "alternatives": [
+          108,
+          135,
+          162,
+          189,
+          216,
+          243,
+          270,
+          297,
+          324,
+          351,
+          378,
+          405,
+          432,
+          459,
+          486
+        ],
+        "exact_fraction": "166/27",
+        "k": 3,
+        "n_candidates": 16,
+        "rate": 0.8654618473895582,
+        "unique": false
+      },
+      "drama": {
+        "A": 260,
+        "D": 579,
+        "R": 252,
+        "R_reference": 252.0,
+        "alternatives": [
+          168,
+          336,
+          420,
+          504
+        ],
+        "exact_fraction": "193/84",
+        "k": 3,
+        "n_candidates": 5,
+        "rate": 0.44905008635578586,
+        "unique": false
+      },
+      "essays": {
+        "A": 420,
+        "D": 468,
+        "R": 92,
+        "R_reference": 91.99999999999999,
+        "alternatives": [
+          115,
+          138,
+          161,
+          184,
+          207,
+          230,
+          253,
+          276,
+          299,
+          322,
+          345,
+          368,
+          391,
+          414,
+          437,
+          460,
+          483,
+          506
+        ],
+        "exact_fraction": "117/23",
+        "k": 4,
+        "n_candidates": 19,
+        "rate": 0.8974358974358975,
+        "unique": false
+      },
+      "medicine": {
+        "A": 422,
+        "D": 473,
+        "R": 90,
+        "R_reference": 90.0,
+        "alternatives": [
+          180,
+          270,
+          360,
+          450
+        ],
+        "exact_fraction": "473/90",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.8921775898520085,
+        "unique": false
+      },
+      "plutarch": {
+        "A": 24,
+        "D": 76,
+        "R": 488,
+        "R_reference": 486.7324675324676,
+        "alternatives": [],
+        "exact_fraction": "19/122",
+        "k": 4,
+        "n_candidates": 1,
+        "rate": 0.3157894736842105,
+        "unique": true
+      },
+      "republic": {
+        "A": 419,
+        "D": 464,
+        "R": 93,
+        "R_reference": 92.99999999999999,
+        "alternatives": [
+          186,
+          279,
+          372,
+          465
+        ],
+        "exact_fraction": "464/93",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.9030172413793104,
+        "unique": false
+      },
+      "travel": {
+        "A": 299,
+        "D": 564,
+        "R": 213,
+        "R_reference": 212.3642098928123,
+        "alternatives": [
+          142,
+          284,
+          355,
+          426,
+          497
+        ],
+        "exact_fraction": "188/71",
+        "k": 3,
+        "n_candidates": 6,
+        "rate": 0.5301418439716312,
+        "unique": false
+      }
+    },
+    "7226dc9a": {
+      "beagle": {
+        "A": 396,
+        "D": 488,
+        "R": 116,
+        "R_reference": 113.55932848846433,
+        "alternatives": [
+          145,
+          174,
+          203,
+          232,
+          261,
+          290,
+          319,
+          348,
+          377,
+          406,
+          435,
+          464,
+          493
+        ],
+        "exact_fraction": "122/29",
+        "k": 4,
+        "n_candidates": 14,
+        "rate": 0.8114754098360656,
+        "unique": false
+      },
+      "botany": {
+        "A": 427,
+        "D": 494,
+        "R": 85,
+        "R_reference": 84.91075206469104,
+        "alternatives": [
+          170,
+          255,
+          340,
+          425,
+          510
+        ],
+        "exact_fraction": "494/85",
+        "k": 1,
+        "n_candidates": 6,
+        "rate": 0.8643724696356275,
+        "unique": false
+      },
+      "drama": {
+        "A": 261,
+        "D": 576,
+        "R": 251,
+        "R_reference": 252.15595294978803,
+        "alternatives": [
+          502
+        ],
+        "exact_fraction": "576/251",
+        "k": 1,
+        "n_candidates": 2,
+        "rate": 0.453125,
+        "unique": false
+      },
+      "essays": {
+        "A": 424,
+        "D": 466,
+        "R": 88,
+        "R_reference": 89.00739540066861,
+        "alternatives": [
+          132,
+          176,
+          220,
+          264,
+          308,
+          352,
+          396,
+          440,
+          484
+        ],
+        "exact_fraction": "233/44",
+        "k": 2,
+        "n_candidates": 10,
+        "rate": 0.9098712446351931,
+        "unique": false
+      },
+      "medicine": {
+        "A": 422,
+        "D": 470,
+        "R": 90,
+        "R_reference": 90.47295670582375,
+        "alternatives": [
+          99,
+          108,
+          117,
+          126,
+          135,
+          144,
+          153,
+          162,
+          171,
+          180,
+          189,
+          198,
+          207,
+          216,
+          225,
+          234,
+          243,
+          252,
+          261,
+          270,
+          279,
+          288,
+          297,
+          306,
+          315,
+          324,
+          333,
+          342,
+          351,
+          360,
+          369,
+          378,
+          387,
+          396,
+          405,
+          414,
+          423,
+          432,
+          441,
+          450,
+          459,
+          468,
+          477,
+          486,
+          495,
+          504
+        ],
+        "exact_fraction": "47/9",
+        "k": 10,
+        "n_candidates": 47,
+        "rate": 0.8978723404255319,
+        "unique": false
+      },
+      "plutarch": {
+        "A": 309,
+        "D": 563,
+        "R": 203,
+        "R_reference": 266.0477815699659,
+        "alternatives": [
+          406
+        ],
+        "exact_fraction": "563/203",
+        "k": 1,
+        "n_candidates": 2,
+        "rate": 0.5488454706927176,
+        "unique": false
+      },
+      "republic": {
+        "A": 415,
+        "D": 465,
+        "R": 97,
+        "R_reference": 96.07991894697781,
+        "alternatives": [
+          194,
+          291,
+          388,
+          485
+        ],
+        "exact_fraction": "465/97",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.8924731182795699,
+        "unique": false
+      },
+      "travel": {
+        "A": 298,
+        "D": 572,
+        "R": 214,
+        "R_reference": 211.19680089837786,
+        "alternatives": [
+          321,
+          428
+        ],
+        "exact_fraction": "286/107",
+        "k": 2,
+        "n_candidates": 3,
+        "rate": 0.5209790209790209,
+        "unique": false
+      }
+    },
+    "e003a86d": {
+      "beagle": {
+        "A": 396,
+        "D": 488,
+        "R": 116,
+        "R_reference": 113.55932848846433,
+        "alternatives": [
+          145,
+          174,
+          203,
+          232,
+          261,
+          290,
+          319,
+          348,
+          377,
+          406,
+          435,
+          464,
+          493
+        ],
+        "exact_fraction": "122/29",
+        "k": 4,
+        "n_candidates": 14,
+        "rate": 0.8114754098360656,
+        "unique": false
+      },
+      "botany": {
+        "A": 427,
+        "D": 494,
+        "R": 85,
+        "R_reference": 84.91075206469104,
+        "alternatives": [
+          170,
+          255,
+          340,
+          425,
+          510
+        ],
+        "exact_fraction": "494/85",
+        "k": 1,
+        "n_candidates": 6,
+        "rate": 0.8643724696356275,
+        "unique": false
+      },
+      "drama": {
+        "A": 261,
+        "D": 576,
+        "R": 251,
+        "R_reference": 252.15595294978803,
+        "alternatives": [
+          502
+        ],
+        "exact_fraction": "576/251",
+        "k": 1,
+        "n_candidates": 2,
+        "rate": 0.453125,
+        "unique": false
+      },
+      "essays": {
+        "A": 424,
+        "D": 466,
+        "R": 88,
+        "R_reference": 89.00739540066861,
+        "alternatives": [
+          132,
+          176,
+          220,
+          264,
+          308,
+          352,
+          396,
+          440,
+          484
+        ],
+        "exact_fraction": "233/44",
+        "k": 2,
+        "n_candidates": 10,
+        "rate": 0.9098712446351931,
+        "unique": false
+      },
+      "medicine": {
+        "A": 422,
+        "D": 470,
+        "R": 90,
+        "R_reference": 90.47295670582375,
+        "alternatives": [
+          99,
+          108,
+          117,
+          126,
+          135,
+          144,
+          153,
+          162,
+          171,
+          180,
+          189,
+          198,
+          207,
+          216,
+          225,
+          234,
+          243,
+          252,
+          261,
+          270,
+          279,
+          288,
+          297,
+          306,
+          315,
+          324,
+          333,
+          342,
+          351,
+          360,
+          369,
+          378,
+          387,
+          396,
+          405,
+          414,
+          423,
+          432,
+          441,
+          450,
+          459,
+          468,
+          477,
+          486,
+          495,
+          504
+        ],
+        "exact_fraction": "47/9",
+        "k": 10,
+        "n_candidates": 47,
+        "rate": 0.8978723404255319,
+        "unique": false
+      },
+      "plutarch": {
+        "A": 309,
+        "D": 548,
+        "R": 203,
+        "R_reference": 269.4969749351772,
+        "alternatives": [
+          406
+        ],
+        "exact_fraction": "548/203",
+        "k": 1,
+        "n_candidates": 2,
+        "rate": 0.5638686131386861,
+        "unique": false
+      },
+      "republic": {
+        "A": 415,
+        "D": 465,
+        "R": 97,
+        "R_reference": 96.07991894697781,
+        "alternatives": [
+          194,
+          291,
+          388,
+          485
+        ],
+        "exact_fraction": "465/97",
+        "k": 1,
+        "n_candidates": 5,
+        "rate": 0.8924731182795699,
+        "unique": false
+      },
+      "travel": {
+        "A": 296,
+        "D": 569,
+        "R": 216,
+        "R_reference": 213.00578841495957,
+        "alternatives": [
+          432
+        ],
+        "exact_fraction": "569/216",
+        "k": 1,
+        "n_candidates": 2,
+        "rate": 0.5202108963093146,
+        "unique": false
+      }
+    }
+  },
+  "exact_round_counts_vs_f111_assumed": {
+    "beagle": {
+      "agree": true,
+      "exact": 110,
+      "f111_assumed": 110
+    },
+    "botany": {
+      "agree": true,
+      "exact": 81,
+      "f111_assumed": 81
+    },
+    "drama": {
+      "agree": true,
+      "exact": 252,
+      "f111_assumed": 252
+    },
+    "essays": {
+      "agree": true,
+      "exact": 92,
+      "f111_assumed": 92
+    },
+    "medicine": {
+      "agree": true,
+      "exact": 90,
+      "f111_assumed": 90
+    },
+    "plutarch": {
+      "agree": true,
+      "exact": 487,
+      "f111_assumed": 487
+    },
+    "republic": {
+      "agree": true,
+      "exact": 93,
+      "f111_assumed": 93
+    },
+    "travel": {
+      "agree": true,
+      "exact": 212,
+      "f111_assumed": 212
+    }
+  },
+  "harness": "ranked",
+  "max_width": 8,
+  "p_inference_residual_by_prompt": {
+    "1db9d63e": {
+      "beagle": {
+        "delta": -0.14251610371684365,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 110,
+        "published_non_drafting": 0,
+        "sim_R": 130.0,
+        "sim_edl": 4.5147396994346956,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.381818181818182
+      },
+      "botany": {
+        "delta": 2.989348664026693,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 81,
+        "published_non_drafting": 0,
+        "sim_R": 75.625,
+        "sim_edl": 6.094180913565701,
+        "sim_non_drafting": 0.0,
+        "target_edl": 6.148148148148148
+      },
+      "drama": {
+        "delta": -1.7313396766567166,
+        "held_out_non_drafting_residual": 45.875,
+        "published_R": 252,
+        "published_non_drafting": 0,
+        "sim_R": 270.75,
+        "sim_edl": 2.40478131422564,
+        "sim_non_drafting": 45.875,
+        "target_edl": 2.2976190476190474
+      },
+      "essays": {
+        "delta": 2.35450660848619,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 92,
+        "published_non_drafting": 0,
+        "sim_R": 100.75,
+        "sim_edl": 4.908588433445883,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.086956521739131
+      },
+      "medicine": {
+        "delta": 0.23961854075423616,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 90,
+        "published_non_drafting": 0,
+        "sim_R": 103.75,
+        "sim_edl": 5.3369695748614685,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.2555555555555555
+      },
+      "plutarch": {
+        "delta": -1.5530022755283426,
+        "held_out_non_drafting_residual": 3.125,
+        "published_R": 488,
+        "published_non_drafting": 449,
+        "sim_R": 494.5,
+        "sim_edl": 0.15364422232315095,
+        "sim_non_drafting": 452.125,
+        "target_edl": 0.1557377049180328
+      },
+      "republic": {
+        "delta": -0.16110344490334683,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 93,
+        "published_non_drafting": 0,
+        "sim_R": 108.375,
+        "sim_edl": 5.050903477299828,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.989247311827957
+      },
+      "travel": {
+        "delta": -0.5744424920212623,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 213,
+        "published_non_drafting": 0,
+        "sim_R": 228.125,
+        "sim_edl": 2.580113416025661,
+        "sim_non_drafting": 0.0,
+        "target_edl": 2.647887323943662
+      }
+    },
+    "572b2cc4": {
+      "beagle": {
+        "delta": -0.14251610371684365,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 110,
+        "published_non_drafting": 0,
+        "sim_R": 130.0,
+        "sim_edl": 4.5147396994346956,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.381818181818182
+      },
+      "botany": {
+        "delta": 2.989348664026693,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 81,
+        "published_non_drafting": 0,
+        "sim_R": 75.625,
+        "sim_edl": 6.094180913565701,
+        "sim_non_drafting": 0.0,
+        "target_edl": 6.148148148148148
+      },
+      "drama": {
+        "delta": -1.7313396766567166,
+        "held_out_non_drafting_residual": 45.875,
+        "published_R": 252,
+        "published_non_drafting": 0,
+        "sim_R": 270.75,
+        "sim_edl": 2.40478131422564,
+        "sim_non_drafting": 45.875,
+        "target_edl": 2.2976190476190474
+      },
+      "essays": {
+        "delta": 2.35450660848619,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 92,
+        "published_non_drafting": 0,
+        "sim_R": 100.75,
+        "sim_edl": 4.908588433445883,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.086956521739131
+      },
+      "medicine": {
+        "delta": 0.23961854075423616,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 90,
+        "published_non_drafting": 0,
+        "sim_R": 103.75,
+        "sim_edl": 5.3369695748614685,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.2555555555555555
+      },
+      "plutarch": {
+        "delta": -1.5530022755283426,
+        "held_out_non_drafting_residual": 3.125,
+        "published_R": 487,
+        "published_non_drafting": 449,
+        "sim_R": 494.5,
+        "sim_edl": 0.15364422232315095,
+        "sim_non_drafting": 452.125,
+        "target_edl": 0.1540041067761807
+      },
+      "republic": {
+        "delta": -0.16110344490334683,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 93,
+        "published_non_drafting": 0,
+        "sim_R": 108.375,
+        "sim_edl": 5.050903477299828,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.989247311827957
+      },
+      "travel": {
+        "delta": -0.5744424920212623,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 212,
+        "published_non_drafting": 0,
+        "sim_R": 228.125,
+        "sim_edl": 2.580113416025661,
+        "sim_non_drafting": 0.0,
+        "target_edl": 2.6556603773584904
+      }
+    },
+    "684821ed": {
+      "beagle": {
+        "delta": -0.14251610371684365,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 110,
+        "published_non_drafting": 0,
+        "sim_R": 130.0,
+        "sim_edl": 4.5147396994346956,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.381818181818182
+      },
+      "botany": {
+        "delta": 2.989348664026693,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 81,
+        "published_non_drafting": 0,
+        "sim_R": 75.625,
+        "sim_edl": 6.094180913565701,
+        "sim_non_drafting": 0.0,
+        "target_edl": 6.148148148148148
+      },
+      "drama": {
+        "delta": -1.7313396766567166,
+        "held_out_non_drafting_residual": 45.875,
+        "published_R": 252,
+        "published_non_drafting": 0,
+        "sim_R": 270.75,
+        "sim_edl": 2.40478131422564,
+        "sim_non_drafting": 45.875,
+        "target_edl": 2.2976190476190474
+      },
+      "essays": {
+        "delta": 2.35450660848619,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 92,
+        "published_non_drafting": 0,
+        "sim_R": 100.75,
+        "sim_edl": 4.908588433445883,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.086956521739131
+      },
+      "medicine": {
+        "delta": 0.23961854075423616,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 90,
+        "published_non_drafting": 0,
+        "sim_R": 103.75,
+        "sim_edl": 5.3369695748614685,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.2555555555555555
+      },
+      "plutarch": {
+        "delta": -1.5530022755283426,
+        "held_out_non_drafting_residual": 3.125,
+        "published_R": 488,
+        "published_non_drafting": 449,
+        "sim_R": 494.5,
+        "sim_edl": 0.15364422232315095,
+        "sim_non_drafting": 452.125,
+        "target_edl": 0.1557377049180328
+      },
+      "republic": {
+        "delta": -0.16110344490334683,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 93,
+        "published_non_drafting": 0,
+        "sim_R": 108.375,
+        "sim_edl": 5.050903477299828,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.989247311827957
+      },
+      "travel": {
+        "delta": -0.5744424920212623,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 213,
+        "published_non_drafting": 0,
+        "sim_R": 228.125,
+        "sim_edl": 2.580113416025661,
+        "sim_non_drafting": 0.0,
+        "target_edl": 2.647887323943662
+      }
+    },
+    "7226dc9a": {
+      "beagle": {
+        "delta": 0.2113901595785137,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 116,
+        "published_non_drafting": 0,
+        "sim_R": 119.5,
+        "sim_edl": 4.458593447077959,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.206896551724138
+      },
+      "botany": {
+        "delta": 6.0,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 85,
+        "published_non_drafting": 0,
+        "sim_R": 83.875,
+        "sim_edl": 5.146448276690983,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.811764705882353
+      },
+      "drama": {
+        "delta": -1.7710412375399756,
+        "held_out_non_drafting_residual": 46.125,
+        "published_R": 251,
+        "published_non_drafting": 0,
+        "sim_R": 274.5,
+        "sim_edl": 2.416128209018041,
+        "sim_non_drafting": 46.125,
+        "target_edl": 2.2948207171314743
+      },
+      "essays": {
+        "delta": 6.0,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 88,
+        "published_non_drafting": 0,
+        "sim_R": 91.75,
+        "sim_edl": 4.6185255826764795,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.295454545454546
+      },
+      "medicine": {
+        "delta": 1.3139570647381333,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 90,
+        "published_non_drafting": 0,
+        "sim_R": 88.0,
+        "sim_edl": 5.2595265051512765,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.222222222222222
+      },
+      "plutarch": {
+        "delta": -0.22942410440191452,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 203,
+        "published_non_drafting": 0,
+        "sim_R": 229.625,
+        "sim_edl": 2.6534973287484824,
+        "sim_non_drafting": 0.0,
+        "target_edl": 2.773399014778325
+      },
+      "republic": {
+        "delta": 0.27822992409164726,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 97,
+        "published_non_drafting": 0,
+        "sim_R": 102.0,
+        "sim_edl": 4.844039352386637,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.793814432989691
+      },
+      "travel": {
+        "delta": -0.5687786710350338,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 214,
+        "published_non_drafting": 0,
+        "sim_R": 226.5,
+        "sim_edl": 2.6097806554701815,
+        "sim_non_drafting": 0.0,
+        "target_edl": 2.6728971962616823
+      }
+    },
+    "e003a86d": {
+      "beagle": {
+        "delta": 0.2113901595785137,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 116,
+        "published_non_drafting": 0,
+        "sim_R": 119.5,
+        "sim_edl": 4.458593447077959,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.206896551724138
+      },
+      "botany": {
+        "delta": 6.0,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 85,
+        "published_non_drafting": 0,
+        "sim_R": 83.875,
+        "sim_edl": 5.146448276690983,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.811764705882353
+      },
+      "drama": {
+        "delta": -1.7710412375399756,
+        "held_out_non_drafting_residual": 46.125,
+        "published_R": 251,
+        "published_non_drafting": 0,
+        "sim_R": 274.5,
+        "sim_edl": 2.416128209018041,
+        "sim_non_drafting": 46.125,
+        "target_edl": 2.2948207171314743
+      },
+      "essays": {
+        "delta": 6.0,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 88,
+        "published_non_drafting": 0,
+        "sim_R": 91.75,
+        "sim_edl": 4.6185255826764795,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.295454545454546
+      },
+      "medicine": {
+        "delta": 1.3139570647381333,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 90,
+        "published_non_drafting": 0,
+        "sim_R": 88.0,
+        "sim_edl": 5.2595265051512765,
+        "sim_non_drafting": 0.0,
+        "target_edl": 5.222222222222222
+      },
+      "plutarch": {
+        "delta": -0.3491421155285934,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 203,
+        "published_non_drafting": 0,
+        "sim_R": 236.125,
+        "sim_edl": 2.6470479276186842,
+        "sim_non_drafting": 0.0,
+        "target_edl": 2.6995073891625614
+      },
+      "republic": {
+        "delta": 0.27822992409164726,
+        "held_out_non_drafting_residual": 0.0,
+        "published_R": 97,
+        "published_non_drafting": 0,
+        "sim_R": 102.0,
+        "sim_edl": 4.844039352386637,
+        "sim_non_drafting": 0.0,
+        "target_edl": 4.793814432989691
+      },
+      "travel": {
+        "delta": -0.6695725482477428,
+        "held_out_non_drafting_residual": 2.25,
+        "published_R": 216,
+        "published_non_drafting": 0,
+        "sim_R": 238.375,
+        "sim_edl": 2.498014067090753,
+        "sim_non_drafting": 2.25,
+        "target_edl": 2.634259259259259
+      }
+    }
+  },
+  "reference_rates": {
+    "beagle": 0.8340248962655602,
+    "botany": 0.8654618473895582,
+    "drama": 0.44905008635578586,
+    "essays": 0.8974358974358975,
+    "medicine": 0.8921775898520085,
+    "plutarch": 0.3333333333333333,
+    "republic": 0.9030172413793104,
+    "travel": 0.5328596802841918
+  },
+  "results": {
+    "replay": {
+      "design_condition_number": 60.73411237138938,
+      "empirical_sigma_us_per_round": [
+        571.1329674720178,
+        632.3363493462177,
+        627.8669031610036,
+        613.5901125952062,
+        697.7188569770151,
+        419.89494092236856,
+        432.92270392868363,
+        360.05612493310934,
+        561.374187708203,
+        637.0021542811279,
+        637.3824815453551,
+        602.3358647067762,
+        673.6920435358284,
+        432.22326351603135,
+        439.0626152585633,
+        457.0229443131234
+      ],
+      "free_alpha": {
+        "admissible": [
+          1,
+          2,
+          3,
+          4,
+          7,
+          8
+        ],
+        "alphas": {
+          "572b2cc4": 1.0,
+          "e003a86d": 0.9743068654826634
+        },
+        "chi2_per_dof": 1061.5898531500957,
+        "cost_per_token": {
+          "1": 30261.215761575415,
+          "2": 16283.001400297935,
+          "3": 10855.33426686529,
+          "4": 8141.500700148968,
+          "5": 10105.4555448391,
+          "6": 9069.989422671815,
+          "7": 7774.276648004413,
+          "8": 7006.708455071371
+        },
+        "curve_us": {
+          "1": 30261.215761575415,
+          "2": 32566.00280059587,
+          "3": 32566.00280059587,
+          "4": 32566.00280059587,
+          "5": 50527.2777241955,
+          "6": 54419.93653603089,
+          "7": 54419.93653603089,
+          "8": 56053.667640570966
+        }
+      },
+      "h_alt_truth_used": {
+        "1": 29964.95805110075,
+        "2": 33483.59798421602,
+        "3": 35750.35656556052,
+        "4": 39549.30113150138,
+        "5": 45308.310354663874,
+        "6": 59159.45611866502,
+        "7": 71454.54977655225,
+        "8": 73330.75021393933
+      },
+      "h_null_truth_used": {
+        "1": 31173.2,
+        "2": 34619.3,
+        "3": 38065.4,
+        "4": 41511.4,
+        "5": 44957.5,
+        "6": 61198.8,
+        "7": 62824.9,
+        "8": 70315.4
+      },
+      "hypothesis_test": {
+        "delta_chi2_null_minus_alt": -10546.113173645368,
+        "h_alt": {
+          "chi2": 73818.95904679738,
+          "chi2_per_dof": 4921.263936453159,
+          "resid_pct": [
+            5.181985188742591,
+            7.094570802282234,
+            1.5007545231112907,
+            6.75848482270477,
+            7.06635478329193,
+            -1.9410586002272479,
+            -4.067676372987682,
+            -11.956292261083313,
+            0.048586418653464,
+            1.57099641802647,
+            -9.16199920758643,
+            0.657341467317322,
+            -6.108829944153589,
+            -6.217536385233532,
+            -7.04422654225335,
+            -9.019954923594547
+          ],
+          "rms_resid_pct": 6.285480663717862,
+          "scale": 0.8847682594597559
+        },
+        "h_null": {
+          "chi2": 63272.84587315201,
+          "chi2_per_dof": 4218.189724876801,
+          "resid_pct": [
+            5.857259789337379,
+            6.360702574537208,
+            1.0066446694688527,
+            5.930173033417542,
+            5.519234029545344,
+            4.335095184635865,
+            2.5902160475376776,
+            -6.370489341069313,
+            0.8490923530823915,
+            0.9730529087890242,
+            -8.97802111328243,
+            0.7473196626302409,
+            -6.543662588896569,
+            -0.66593571754178,
+            -0.6793259372683378,
+            -3.2037593373072806
+          ],
+          "rms_resid_pct": 4.63892061113369,
+          "scale": 0.9037147578932181
+        },
+        "level_normalised_separation_us_per_round": 0.029108218813362452,
+        "preferred": "h_null",
+        "rms_model_misfit_pct": 4.63892061113369
+      },
+      "labels": [
+        "572b2cc4/beagle",
+        "572b2cc4/medicine",
+        "572b2cc4/essays",
+        "572b2cc4/republic",
+        "572b2cc4/botany",
+        "572b2cc4/drama",
+        "572b2cc4/travel",
+        "572b2cc4/plutarch",
+        "e003a86d/beagle",
+        "e003a86d/medicine",
+        "e003a86d/essays",
+        "e003a86d/republic",
+        "e003a86d/botany",
+        "e003a86d/drama",
+        "e003a86d/travel",
+        "e003a86d/plutarch"
+      ],
+      "mass": [
+        [
+          0.0,
+          0.0031847133757961785,
+          0.138026692768778,
+          0.20243117448753703,
+          0.1557023269914748,
+          0.17521216678630933,
+          0.148762543969447,
+          0.1766803816206577
+        ],
+        [
+          0.0,
+          0.0,
+          0.10831288443752252,
+          0.10863627046012905,
+          0.14381830235710227,
+          0.0786477166556248,
+          0.09817058072784658,
+          0.46241424536177467
+        ],
+        [
+          0.0,
+          0.0,
+          0.06835107621702616,
+          0.14233493489917218,
+          0.24053616789318355,
+          0.1483259960153205,
+          0.16205595016210617,
+          0.2383958748131915
+        ],
+        [
+          0.0,
+          0.0,
+          0.16141647951150184,
+          0.09485481184475723,
+          0.15799872458108558,
+          0.07471464077391336,
+          0.13916942247255057,
+          0.37184592081619144
+        ],
+        [
+          0.0,
+          0.0,
+          0.040565321247331365,
+          0.05458581237287452,
+          0.07662773016269747,
+          0.08727655131930216,
+          0.08021293757944675,
+          0.6607316473183479
+        ],
+        [
+          0.103789592760181,
+          0.11046293119045314,
+          0.31017961343059436,
+          0.2907616753201855,
+          0.12334886977155199,
+          0.060465254034970516,
+          0.000992063492063492,
+          0.0
+        ],
+        [
+          0.0,
+          0.035394893767846526,
+          0.5384067078141453,
+          0.2642122690285111,
+          0.13466234740349448,
+          0.027323781986002542,
+          0.0,
+          0.0
+        ],
+        [
+          0.9130297574163084,
+          0.03570847058739707,
+          0.037887763475267566,
+          0.011335809298889424,
+          0.002038199222137608,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.002551020408163265,
+          0.062277266028592015,
+          0.10974426397292214,
+          0.5859261655393132,
+          0.0,
+          0.017958547820472657,
+          0.22154273623053675
+        ],
+        [
+          0.0,
+          0.0,
+          0.023583706322007635,
+          0.045989233711590013,
+          0.4714597208755718,
+          0.0,
+          0.024218865765610158,
+          0.4347484733252204
+        ],
+        [
+          0.0,
+          0.0,
+          0.008327198541877386,
+          0.034428104097009346,
+          0.7272402981760356,
+          0.0,
+          0.020405113697989453,
+          0.2095992854870882
+        ],
+        [
+          0.0,
+          0.0,
+          0.050798122797793666,
+          0.08336101244661218,
+          0.5151062759582338,
+          0.0,
+          0.023207155963244443,
+          0.3275274328341159
+        ],
+        [
+          0.0,
+          0.0,
+          0.00744175719068115,
+          0.02987725803962054,
+          0.5596450933580297,
+          0.0,
+          0.017898625123039278,
+          0.38513726628862927
+        ],
+        [
+          0.10388513513513513,
+          0.09619346652936224,
+          0.29589849741930646,
+          0.28795385601471873,
+          0.21606904490147738,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.00933609958506224,
+          0.047932852902733726,
+          0.5295530391991994,
+          0.2617368974623983,
+          0.1514411108506063,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.061339231080141214,
+          0.4254319156239196,
+          0.3180705478930528,
+          0.19515830540288637,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "negative_control_h_null": {
+        "mean_abs_error_pct": {
+          "1": 0.3298453394673276,
+          "2": 2.6019516460512238,
+          "3": 0.4687305266364207,
+          "4": 1.0488808536518723,
+          "5": 0.09063102477557843,
+          "6": 0.9490484728477688,
+          "7": 0.8003373349553844,
+          "8": 0.0771858556974363
+        },
+        "mean_fit": {
+          "1": 31185.409265793507,
+          "2": 34644.26841620476,
+          "3": 38069.05638049102,
+          "4": 41495.970307403346,
+          "5": 44957.8356707448,
+          "6": 61212.143013796674,
+          "7": 62833.030873008305,
+          "8": 70314.08470660585
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 0.0,
+          "7": 0.615,
+          "8": 1.0
+        },
+        "recovery_rate_exact_set": 0.615,
+        "sd_fit": {
+          "1": 130.8478646980159,
+          "2": 1102.4227489054038,
+          "3": 225.22583924456887,
+          "4": 535.1052435985229,
+          "5": 51.199849021192804,
+          "6": 702.3916076696112,
+          "7": 621.1476660709285,
+          "8": 68.65469680297444
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ]
+      },
+      "negative_control_h_null_empirical_noise": {
+        "mean_abs_error_pct": {
+          "1": 1.0494645708038537,
+          "2": 7.534967589314891,
+          "3": 2.4207708576861724,
+          "4": 4.387933437597894,
+          "5": 1.2721607495486833,
+          "6": 4.482886265380033,
+          "7": 4.756205628618423,
+          "8": 1.06969832529373
+        },
+        "mean_fit": {
+          "1": 31206.69063704245,
+          "2": 35010.27371862037,
+          "3": 37999.886259698105,
+          "4": 41634.8481723852,
+          "5": 44889.296799402575,
+          "6": 59673.283473122974,
+          "7": 64550.977753648855,
+          "8": 70252.97849380749
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          8
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 0.09,
+          "7": 0.43,
+          "8": 0.585
+        },
+        "recovery_rate_exact_set": 0.19,
+        "sd_fit": {
+          "1": 419.3561946002485,
+          "2": 2854.2547934200825,
+          "3": 1110.2351038698628,
+          "4": 2055.1341277259753,
+          "5": 718.93694803259,
+          "6": 3483.697346897355,
+          "7": 3477.595588840175,
+          "8": 932.9329429771822
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ]
+      },
+      "no_ridge": {
+        "admissible": [
+          1,
+          2,
+          3,
+          4,
+          7,
+          8
+        ],
+        "chi2_per_dof": 979.8620034534172,
+        "ci95_us": {
+          "1": [
+            30009.545260804953,
+            30517.35493737949
+          ],
+          "2": [
+            32296.856040904055,
+            32448.580110371182
+          ],
+          "3": [
+            32296.856040904055,
+            32448.580110371182
+          ],
+          "4": [
+            32296.856040904055,
+            32448.580110371182
+          ],
+          "5": [
+            48440.17123590182,
+            48557.318439822746
+          ],
+          "6": [
+            55906.78849684712,
+            56032.8981467745
+          ],
+          "7": [
+            55906.78849684712,
+            56032.8981467745
+          ],
+          "8": [
+            55906.78849684712,
+            56032.8981467745
+          ]
+        },
+        "cost_per_token": {
+          "1": 30265.597459142155,
+          "2": 16185.951080562822,
+          "3": 10790.634053708547,
+          "4": 8092.975540281411,
+          "5": 9699.668847823807,
+          "6": 9327.404974403253,
+          "7": 7994.918549488502,
+          "8": 6995.5537308024395
+        },
+        "curve_us": {
+          "1": 30265.597459142155,
+          "2": 32371.902161125643,
+          "3": 32371.902161125643,
+          "4": 32371.902161125643,
+          "5": 48498.34423911903,
+          "6": 55964.429846419516,
+          "7": 55964.429846419516,
+          "8": 55964.429846419516
+        },
+        "residual_us_per_round": [
+          1226.2546767489694,
+          -13.153202663226693,
+          -320.26777965327346,
+          411.4950108837875,
+          -1746.6336308276368,
+          733.718634875404,
+          -412.5197187367012,
+          -117.858971915226,
+          2609.988287702763,
+          599.0470415020172,
+          -574.3356707371349,
+          1375.8098247632588,
+          -2171.8840152350604,
+          -297.95648871296726,
+          -1402.639729226481,
+          -2101.4749523952487
+        ],
+        "sd_us": {
+          "1": 122.18249710868614,
+          "2": 42.147343046483066,
+          "3": 42.147343046483066,
+          "4": 42.147343046483066,
+          "5": 32.33645392437208,
+          "6": 35.324540319087816,
+          "7": 35.324540319087816,
+          "8": 35.324540319087816
+        },
+        "verdicts": {
+          "modal_set": [
+            1,
+            2,
+            3,
+            4,
+            7,
+            8
+          ],
+          "modal_share": 1.0,
+          "p_admissible": {
+            "1": 1.0,
+            "2": 1.0,
+            "3": 1.0,
+            "4": 1.0,
+            "5": 0.0,
+            "6": 0.0,
+            "7": 1.0,
+            "8": 1.0
+          }
+        }
+      },
+      "plutarch_anchor": {
+        "crown_h_null_tail": {
+          "R": 488,
+          "c1": 30038.592618626015,
+          "decode_us_per_round": 30666.74171496832,
+          "row": "684821ed",
+          "share_at_width1": 0.9130297574163084
+        },
+        "h_alt_tail": {
+          "R": 487,
+          "c1": 30129.019469795847,
+          "decode_us_per_round": 30599.511163643274,
+          "row": "572b2cc4",
+          "share_at_width1": 0.9130297574163084
+        },
+        "h_null_tail": {
+          "R": 487,
+          "c1": 29964.95805110075,
+          "decode_us_per_round": 30599.511163643274,
+          "row": "572b2cc4",
+          "share_at_width1": 0.9130297574163084
+        }
+      },
+      "positive_control_h_alt": {
+        "mean_abs_error_pct": {
+          "1": 0.3343152259190652,
+          "2": 2.726669176901443,
+          "3": 0.5054376557232274,
+          "4": 1.1036163251744733,
+          "5": 0.0917066360727804,
+          "6": 1.0210137965449786,
+          "7": 0.7467376468086434,
+          "8": 0.07620045150408
+        },
+        "mean_fit": {
+          "1": 29973.422856474215,
+          "2": 33487.989351326694,
+          "3": 35753.685676899346,
+          "4": 39542.2821445671,
+          "5": 45309.286712323345,
+          "6": 59211.695540765206,
+          "7": 71413.82092245558,
+          "8": 73331.80527562152
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 0.0,
+          "7": 0.0,
+          "8": 0.0
+        },
+        "recovery_rate_exact_set": 1.0,
+        "sd_fit": {
+          "1": 128.54969747259375,
+          "2": 1114.8384746540669,
+          "3": 228.79035941603522,
+          "4": 544.650111341306,
+          "5": 52.55837848585339,
+          "6": 744.3774896637897,
+          "7": 661.6227477124111,
+          "8": 71.39515889099742
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "positive_control_h_alt_empirical_noise": {
+        "mean_abs_error_pct": {
+          "1": 1.078769261452752,
+          "2": 7.216904822338149,
+          "3": 2.9199043280400696,
+          "4": 5.345992406452563,
+          "5": 1.3639646616684986,
+          "6": 6.086705851265966,
+          "7": 4.260663761682697,
+          "8": 1.0249435781100238
+        },
+        "mean_fit": {
+          "1": 30038.542204440142,
+          "2": 32853.673258885145,
+          "3": 35653.14313438157,
+          "4": 39795.307844885596,
+          "5": 45263.30664909565,
+          "6": 60317.27597799154,
+          "7": 69855.66859144595,
+          "8": 73473.5950076197
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 0.965,
+          "5": 0.94,
+          "6": 0.04,
+          "7": 0.03,
+          "8": 0.27
+        },
+        "recovery_rate_exact_set": 0.62,
+        "sd_fit": {
+          "1": 405.7957993467547,
+          "2": 2585.777668004989,
+          "3": 1277.9881097711434,
+          "4": 2488.0408032340533,
+          "5": 778.8448032489871,
+          "6": 4075.1540851662694,
+          "7": 3570.9428726634906,
+          "8": 927.3427165305593
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "sigma_us_per_round": [
+        60.40540583842909,
+        33.66182295324444,
+        22.485166564730434,
+        35.79529866405161,
+        65.01454536628148,
+        63.14177902709841,
+        75.91922571978868,
+        106.06931438547844,
+        59.373276569599994,
+        33.91020263253333,
+        22.8259384128,
+        35.13875424435463,
+        62.77568893168941,
+        64.99565280627252,
+        76.99594752237036,
+        134.6348721903606
+      ],
+      "weak_ridge": {
+        "admissible": [
+          1,
+          2,
+          3,
+          4,
+          7,
+          8
+        ],
+        "chi2_per_dof": 979.8620048130065,
+        "ci95_us": {
+          "1": [
+            30009.56957580876,
+            30517.359715705647
+          ],
+          "2": [
+            32296.96614249941,
+            32448.687641056546
+          ],
+          "3": [
+            32296.96614249941,
+            32448.687641056546
+          ],
+          "4": [
+            32296.96614249941,
+            32448.687641056546
+          ],
+          "5": [
+            48440.102174595224,
+            48557.24632481595
+          ],
+          "6": [
+            55906.79782533795,
+            56032.90681052231
+          ],
+          "7": [
+            55906.79782533795,
+            56032.90681052231
+          ],
+          "8": [
+            55906.79782533795,
+            56032.90681052231
+          ]
+        },
+        "cost_per_token": {
+          "1": 30265.61205397368,
+          "2": 16186.005452948913,
+          "3": 10790.670301965942,
+          "4": 8093.002726474457,
+          "5": 9699.654665025419,
+          "6": 9327.406542954872,
+          "7": 7994.919893961319,
+          "8": 6995.554907216154
+        },
+        "curve_us": {
+          "1": 30265.61205397368,
+          "2": 32372.010905897827,
+          "3": 32372.010905897827,
+          "4": 32372.010905897827,
+          "5": 48498.27332512709,
+          "6": 55964.43925772923,
+          "7": 55964.43925772923,
+          "8": 55964.43925772923
+        },
+        "residual_us_per_round": [
+          1226.2857164296802,
+          -13.133793291301117,
+          -320.256761312834,
+          411.51718721299403,
+          -1746.6209229719025,
+          733.7893423899441,
+          -412.4378814012962,
+          -117.8365550208764,
+          2609.96797521237,
+          599.0254935884586,
+          -574.3804281915072,
+          1375.7911864974012,
+          -2171.915850559286,
+          -297.89634341766214,
+          -1402.5590711703335,
+          -2101.4012695230267
+        ],
+        "sd_us": {
+          "1": 122.17783840045348,
+          "2": 42.146479569555694,
+          "3": 42.146479569555694,
+          "4": 42.146479569555694,
+          "5": 32.33556392491768,
+          "6": 35.323982581162056,
+          "7": 35.323982581162056,
+          "8": 35.323982581162056
+        },
+        "verdicts": {
+          "modal_set": [
+            1,
+            2,
+            3,
+            4,
+            7,
+            8
+          ],
+          "modal_share": 1.0,
+          "p_admissible": {
+            "1": 1.0,
+            "2": 1.0,
+            "3": 1.0,
+            "4": 1.0,
+            "5": 0.0,
+            "6": 0.0,
+            "7": 1.0,
+            "8": 1.0
+          }
+        }
+      },
+      "y_us_per_round": [
+        45468.29116968739,
+        49785.44434856404,
+        49518.218454767244,
+        48327.215295700495,
+        54894.09852973754,
+        34858.68288797985,
+        35600.68350832312,
+        30599.511163643274,
+        44861.25891861025,
+        50204.02265457655,
+        50100.42153269459,
+        47577.6393560056,
+        53077.50578492905,
+        35935.46983868831,
+        36197.0835222572,
+        37620.58622163988
+      ]
+    },
+    "tilt": {
+      "design_condition_number": 33.324800516002966,
+      "empirical_sigma_us_per_round": [
+        571.1329674720178,
+        632.3363493462177,
+        627.8669031610036,
+        613.5901125952062,
+        697.7188569770151,
+        419.89494092236856,
+        432.92270392868363,
+        360.05612493310934,
+        561.374187708203,
+        637.0021542811279,
+        637.3824815453551,
+        602.3358647067762,
+        673.6920435358284,
+        432.22326351603135,
+        439.0626152585633,
+        457.0229443131234
+      ],
+      "free_alpha": {
+        "admissible": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "alphas": {
+          "572b2cc4": 1.0,
+          "e003a86d": 1.0057019612359115
+        },
+        "chi2_per_dof": 78.06223771383739,
+        "cost_per_token": {
+          "1": 30242.827139787263,
+          "2": 15121.413569893632,
+          "3": 10080.942379929087,
+          "4": 10562.531978982039,
+          "5": 9328.181625025909,
+          "6": 8417.092327707052,
+          "7": 7214.650566606046,
+          "8": 7381.978212065796
+        },
+        "curve_us": {
+          "1": 30242.827139787263,
+          "2": 30242.827139787263,
+          "3": 30242.827139787263,
+          "4": 42250.127915928155,
+          "5": 46640.90812512954,
+          "6": 50502.55396624232,
+          "7": 50502.55396624232,
+          "8": 59055.825696526364
+        }
+      },
+      "h_alt_truth_used": {
+        "1": 29969.31082361178,
+        "2": 33483.59798421602,
+        "3": 35750.35656556052,
+        "4": 39549.30113150138,
+        "5": 45308.310354663874,
+        "6": 59159.45611866502,
+        "7": 71454.54977655225,
+        "8": 73330.75021393933
+      },
+      "h_null_truth_used": {
+        "1": 31173.2,
+        "2": 34619.3,
+        "3": 38065.4,
+        "4": 41511.4,
+        "5": 44957.5,
+        "6": 61198.8,
+        "7": 62824.9,
+        "8": 70315.4
+      },
+      "hypothesis_test": {
+        "delta_chi2_null_minus_alt": -20504.948804680178,
+        "h_alt": {
+          "chi2": 27072.331556776786,
+          "chi2_per_dof": 1804.822103785119,
+          "resid_pct": [
+            -3.265347486750207,
+            0.40298151832410783,
+            0.8605060481880737,
+            -1.0015841710382425,
+            0.9840860852315463,
+            -11.393873995955143,
+            -8.119737939731795,
+            -17.784547829111755,
+            -4.404041154372938,
+            -0.8678530920187617,
+            3.629074704188094,
+            -2.071480479861937,
+            0.17310605987923838,
+            -14.0795394859421,
+            -9.966067175040841,
+            -11.987813773295562
+          ],
+          "rms_resid_pct": 7.923387609986049,
+          "scale": 0.8262240775631869
+        },
+        "h_null": {
+          "chi2": 6567.382752096606,
+          "chi2_per_dof": 437.8255168064404,
+          "resid_pct": [
+            -1.4679591137630037,
+            0.09746955371540349,
+            0.5846669881224481,
+            0.15415805920719675,
+            -0.5709323840364428,
+            -4.339989305009306,
+            -1.496876628682976,
+            -11.98510129561097,
+            -2.2855022941718794,
+            -1.111314821216337,
+            1.825469302837632,
+            -0.5740102814356617,
+            -0.9367710222006572,
+            -7.235277580161731,
+            -3.411258237293501,
+            -5.947661171826019
+          ],
+          "rms_resid_pct": 4.167832719650149,
+          "scale": 0.8493404408989814
+        },
+        "level_normalised_separation_us_per_round": 0.03408028926537679,
+        "preferred": "h_null",
+        "rms_model_misfit_pct": 4.167832719650149
+      },
+      "labels": [
+        "572b2cc4/beagle",
+        "572b2cc4/medicine",
+        "572b2cc4/essays",
+        "572b2cc4/republic",
+        "572b2cc4/botany",
+        "572b2cc4/drama",
+        "572b2cc4/travel",
+        "572b2cc4/plutarch",
+        "e003a86d/beagle",
+        "e003a86d/medicine",
+        "e003a86d/essays",
+        "e003a86d/republic",
+        "e003a86d/botany",
+        "e003a86d/drama",
+        "e003a86d/travel",
+        "e003a86d/plutarch"
+      ],
+      "mass": [
+        [
+          0.0,
+          0.04776235695281244,
+          0.2739903581947794,
+          0.11047999840087282,
+          0.11272173538879193,
+          0.06381236894668384,
+          0.05394594782781287,
+          0.33728723428824675
+        ],
+        [
+          0.0,
+          0.010931289721417053,
+          0.16004842482882065,
+          0.10616669502895398,
+          0.046812640218039735,
+          0.08586310593591112,
+          0.1417836693300815,
+          0.44839417493677597
+        ],
+        [
+          0.0,
+          0.0007965946597178677,
+          0.012443635285483616,
+          0.043859883564507714,
+          0.11860002240805066,
+          0.4905062683107213,
+          0.3337935957715189,
+          0.0
+        ],
+        [
+          0.0,
+          0.007035936380726973,
+          0.2444950001750507,
+          0.10786025844718164,
+          0.045049109316961565,
+          0.06848766262258736,
+          0.04249838202764303,
+          0.48457365102984873
+        ],
+        [
+          0.0,
+          0.00036919316036492666,
+          0.04146373275381194,
+          0.06299629441923905,
+          0.06323285528817359,
+          0.03722024028142819,
+          0.1261938050162694,
+          0.6685238790807131
+        ],
+        [
+          0.0,
+          0.1406290013900056,
+          0.5002233131411723,
+          0.30880682365575635,
+          0.03804117571406017,
+          0.00307531983953028,
+          0.0019889168907916755,
+          0.007235449368683725
+        ],
+        [
+          0.0,
+          0.04350921987328257,
+          0.5148455134736959,
+          0.2964971740973068,
+          0.06820328645647733,
+          0.04891217712161691,
+          0.0206338260314418,
+          0.00739880294617872
+        ],
+        [
+          0.9219712525667352,
+          0.01821802274089559,
+          0.04583404165141347,
+          0.012344185625926155,
+          0.0011957496128482707,
+          0.0003483925134135852,
+          5.8004185156415254e-05,
+          3.03511036114619e-05
+        ],
+        [
+          0.0,
+          0.05386910656419229,
+          0.2979387724721612,
+          0.11582788454066432,
+          0.11393964258571597,
+          0.062188456133478315,
+          0.05068756834314125,
+          0.30554856936064667
+        ],
+        [
+          0.0,
+          0.011326483724181208,
+          0.16445099738156427,
+          0.10817696997578528,
+          0.04730108011070737,
+          0.0860351506342308,
+          0.14088246702114424,
+          0.44182685115238673
+        ],
+        [
+          0.0,
+          0.00020454058623846542,
+          0.004417720684697663,
+          0.021529172053120684,
+          0.08049214471476478,
+          0.46028006328657994,
+          0.43307635867459854,
+          0.0
+        ],
+        [
+          0.0,
+          0.008233740827169652,
+          0.2747910542255211,
+          0.1164263771042019,
+          0.0467017822779774,
+          0.06818940639366192,
+          0.040638182881623235,
+          0.4450194562898448
+        ],
+        [
+          0.0,
+          0.0007151751829776087,
+          0.0703489899877472,
+          0.09361278263331842,
+          0.0822988230629235,
+          0.04242879374993921,
+          0.12599410585912413,
+          0.58460132952397
+        ],
+        [
+          0.0,
+          0.14130917321421657,
+          0.5007751787744469,
+          0.307998894976825,
+          0.03780067932719411,
+          0.0030445237587421355,
+          0.001961684304626147,
+          0.007109865643949333
+        ],
+        [
+          0.0,
+          0.04489740207400489,
+          0.5212242656892867,
+          0.29449371477397734,
+          0.06646125718374306,
+          0.046761455677403405,
+          0.01935345784833318,
+          0.006808446753251429
+        ],
+        [
+          0.0,
+          0.07723522635706533,
+          0.46409957013870967,
+          0.298534331416327,
+          0.06906864157963742,
+          0.04806382245689503,
+          0.019112506683487806,
+          0.023885901367877677
+        ]
+      ],
+      "negative_control_h_null": {
+        "mean_abs_error_pct": {
+          "1": 0.29440661101545107,
+          "2": 1.5761252550876952,
+          "3": 0.5691129167438189,
+          "4": 0.8916230590759081,
+          "5": 1.1335438967150355,
+          "6": 0.3771000392553949,
+          "7": 0.32421527223234853,
+          "8": 0.09235891075303507
+        },
+        "mean_fit": {
+          "1": 31187.340435300066,
+          "2": 34599.05100505155,
+          "3": 38034.07553279833,
+          "4": 41572.31959622863,
+          "5": 44960.94316734185,
+          "6": 61207.23605637123,
+          "7": 62810.97306992994,
+          "8": 70315.00373166177
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 0.0,
+          "7": 0.56,
+          "8": 0.945
+        },
+        "recovery_rate_exact_set": 0.56,
+        "sd_fit": {
+          "1": 115.78282559510252,
+          "2": 669.6924409692567,
+          "3": 270.285432156883,
+          "4": 472.11882117933146,
+          "5": 618.73000251737,
+          "6": 294.2613868903851,
+          "7": 258.61129551769267,
+          "8": 82.02774832078094
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ]
+      },
+      "negative_control_h_null_empirical_noise": {
+        "mean_abs_error_pct": {
+          "1": 1.0169573427144143,
+          "2": 6.934183799190687,
+          "3": 4.122417283626471,
+          "4": 5.978926199200814,
+          "5": 9.401824487975228,
+          "6": 3.317828864980373,
+          "7": 3.6239642415835744,
+          "8": 0.8065165307721296
+        },
+        "mean_fit": {
+          "1": 31224.33432491911,
+          "2": 34546.51099319009,
+          "3": 37837.04913208332,
+          "4": 41759.625973745206,
+          "5": 46311.252589412856,
+          "6": 59892.66835506639,
+          "7": 64087.73331159785,
+          "8": 70085.15386872459
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 0.89,
+          "5": 0.845,
+          "6": 0.24,
+          "7": 0.455,
+          "8": 0.5
+        },
+        "recovery_rate_exact_set": 0.15,
+        "sd_fit": {
+          "1": 399.71120428350275,
+          "2": 2729.038034576344,
+          "3": 1982.9106284968968,
+          "4": 3141.596447036022,
+          "5": 4907.55390461745,
+          "6": 2438.2608649814224,
+          "7": 2731.115643849142,
+          "8": 663.3352617200206
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ]
+      },
+      "no_ridge": {
+        "admissible": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8
+        ],
+        "chi2_per_dof": 83.69602734104376,
+        "ci95_us": {
+          "1": [
+            30170.600632554677,
+            30632.934953271637
+          ],
+          "2": [
+            30249.847437119148,
+            31000.759249820505
+          ],
+          "3": [
+            30249.847437119148,
+            31000.759249820505
+          ],
+          "4": [
+            41170.474823443015,
+            42774.553318107945
+          ],
+          "5": [
+            45319.359621372365,
+            47501.40465021741
+          ],
+          "6": [
+            49063.67058216671,
+            50113.25745938292
+          ],
+          "7": [
+            51668.893465113615,
+            52596.276041685574
+          ],
+          "8": [
+            58984.63622818432,
+            59209.831271617535
+          ]
+        },
+        "cost_per_token": {
+          "1": 30421.380049855616,
+          "2": 15248.011742064242,
+          "3": 10165.341161376162,
+          "4": 10551.841075201977,
+          "5": 9272.715701665717,
+          "6": 8261.605909172136,
+          "7": 7442.53634806675,
+          "8": 7387.23513896911
+        },
+        "curve_us": {
+          "1": 30421.380049855616,
+          "2": 30496.023484128484,
+          "3": 30496.023484128484,
+          "4": 42207.36430080791,
+          "5": 46363.57850832858,
+          "6": 49569.63545503282,
+          "7": 52097.75443646725,
+          "8": 59097.88111175288
+        },
+        "residual_us_per_round": [
+          139.71923775106552,
+          222.13422505660128,
+          -60.398864078764745,
+          230.86794953832577,
+          -99.99930631620373,
+          166.0718009075863,
+          1040.2165875205756,
+          -3.637978807091713e-12,
+          -180.43767987058527,
+          -369.1743949149168,
+          59.353265105084574,
+          -70.20728812981542,
+          72.37512548748782,
+          -928.7607588769897,
+          307.1461542241814,
+          -519.5798892893654
+        ],
+        "sd_us": {
+          "1": 113.98416269043051,
+          "2": 183.01682170157605,
+          "3": 183.01682170157605,
+          "4": 393.4449331753282,
+          "5": 561.453058513442,
+          "6": 278.83289303343344,
+          "7": 249.05946635605167,
+          "8": 58.85216252335557
+        },
+        "verdicts": {
+          "modal_set": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7,
+            8
+          ],
+          "modal_share": 0.88,
+          "p_admissible": {
+            "1": 1.0,
+            "2": 1.0,
+            "3": 1.0,
+            "4": 0.045,
+            "5": 1.0,
+            "6": 1.0,
+            "7": 1.0,
+            "8": 0.92
+          }
+        }
+      },
+      "plutarch_anchor": {
+        "crown_h_null_tail": {
+          "R": 488,
+          "c1": 30034.19903232739,
+          "decode_us_per_round": 30666.74171496832,
+          "row": "684821ed",
+          "share_at_width1": 0.9200819672131147
+        },
+        "h_alt_tail": {
+          "R": 487,
+          "c1": 30132.783914951076,
+          "decode_us_per_round": 30599.511163643274,
+          "row": "572b2cc4",
+          "share_at_width1": 0.9219712525667352
+        },
+        "h_null_tail": {
+          "R": 487,
+          "c1": 29969.31082361178,
+          "decode_us_per_round": 30599.511163643274,
+          "row": "572b2cc4",
+          "share_at_width1": 0.9219712525667352
+        }
+      },
+      "positive_control_h_alt": {
+        "mean_abs_error_pct": {
+          "1": 0.2984393294267779,
+          "2": 1.5993251644999964,
+          "3": 0.6082045322169011,
+          "4": 0.9354014777111548,
+          "5": 1.1252170384371514,
+          "6": 0.3998195109916806,
+          "7": 0.29339177474971223,
+          "8": 0.0901874969273917
+        },
+        "mean_fit": {
+          "1": 29978.780292098858,
+          "2": 33465.50396975663,
+          "3": 35724.15463818344,
+          "4": 39604.19849199148,
+          "5": 45319.74647810189,
+          "6": 59161.596279770194,
+          "7": 71446.9075753427,
+          "8": 73328.47537557915
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 0.0,
+          "7": 0.0,
+          "8": 0.22
+        },
+        "recovery_rate_exact_set": 0.78,
+        "sd_fit": {
+          "1": 114.07219014683706,
+          "2": 665.0842781951615,
+          "3": 268.6996518064979,
+          "4": 461.1387637643823,
+          "5": 612.9550774418085,
+          "6": 296.54208264673076,
+          "7": 263.485920585443,
+          "8": 83.2311830813424
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "positive_control_h_alt_empirical_noise": {
+        "mean_abs_error_pct": {
+          "1": 1.044027470615956,
+          "2": 6.555676251304112,
+          "3": 4.939425943011667,
+          "4": 6.9759405867680995,
+          "5": 9.726341131295968,
+          "6": 3.8391110685813197,
+          "7": 3.4610476659157334,
+          "8": 0.7165773925739078
+        },
+        "mean_fit": {
+          "1": 30034.02145485372,
+          "2": 33137.33299199951,
+          "3": 35303.84286431089,
+          "4": 40319.21405265031,
+          "5": 45544.35626870868,
+          "6": 59851.73552917379,
+          "7": 70494.18828955627,
+          "8": 73405.8738341852
+        },
+        "modal_set": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "p_admissible": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 0.81,
+          "5": 0.76,
+          "6": 0.19,
+          "7": 0.09,
+          "8": 0.42
+        },
+        "recovery_rate_exact_set": 0.5,
+        "sd_fit": {
+          "1": 391.8251236018933,
+          "2": 2450.7370394991144,
+          "3": 2123.7224308951927,
+          "4": 3445.372155697277,
+          "5": 5223.066542897122,
+          "6": 2791.7653480753693,
+          "7": 2949.0978742251614,
+          "8": 641.823809350359
+        },
+        "truth_admissible": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "sigma_us_per_round": [
+        60.40540583842909,
+        33.66182295324444,
+        22.485166564730434,
+        35.79529866405161,
+        65.01454536628148,
+        63.14177902709841,
+        75.91922571978868,
+        106.06931438547844,
+        59.373276569599994,
+        33.91020263253333,
+        22.8259384128,
+        35.13875424435463,
+        62.77568893168941,
+        64.99565280627252,
+        76.99594752237036,
+        134.6348721903606
+      ],
+      "weak_ridge": {
+        "admissible": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8
+        ],
+        "chi2_per_dof": 83.69629442695792,
+        "ci95_us": {
+          "1": [
+            30170.848827073703,
+            30632.55975320056
+          ],
+          "2": [
+            30251.988513098724,
+            31007.011418754006
+          ],
+          "3": [
+            30251.988513098724,
+            31007.011418754006
+          ],
+          "4": [
+            41153.30089023918,
+            42747.4836309706
+          ],
+          "5": [
+            45340.3422803006,
+            47497.154646925206
+          ],
+          "6": [
+            49063.36542643245,
+            50105.54295970048
+          ],
+          "7": [
+            51675.81453894291,
+            52596.95990632448
+          ],
+          "8": [
+            58984.645030701846,
+            59208.22605872825
+          ]
+        },
+        "cost_per_token": {
+          "1": 30420.991594405357,
+          "2": 15252.847828674105,
+          "3": 10168.56521911607,
+          "4": 10546.442679855736,
+          "5": 9274.21304919584,
+          "6": 8260.910546850842,
+          "7": 7443.2312486619485,
+          "8": 7387.154813381998
+        },
+        "curve_us": {
+          "1": 30420.991594405357,
+          "2": 30505.69565734821,
+          "3": 30505.69565734821,
+          "4": 42185.770719422944,
+          "5": 46371.065245979196,
+          "6": 49565.463281105054,
+          "7": 52102.61874063364,
+          "8": 59097.23850705598
+        },
+        "residual_us_per_round": [
+          141.06897580523218,
+          221.88922813798854,
+          -60.752770878847514,
+          230.91857523293584,
+          -100.45263967179199,
+          165.87898891935038,
+          1039.6168200631728,
+          0.0025840826201601885,
+          -178.89228401512082,
+          -369.41362054811907,
+          59.721950714643754,
+          -70.00703491823515,
+          71.71737064633635,
+          -928.9259321254794,
+          306.6548540969452,
+          -520.3962427234874
+        ],
+        "sd_us": {
+          "1": 114.23708480824354,
+          "2": 184.6251521173851,
+          "3": 184.6251521173851,
+          "4": 395.85490414824073,
+          "5": 556.780087580385,
+          "6": 276.76924817922486,
+          "7": 247.77066423074746,
+          "8": 58.55394475246128
+        },
+        "verdicts": {
+          "modal_set": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7,
+            8
+          ],
+          "modal_share": 0.88,
+          "p_admissible": {
+            "1": 1.0,
+            "2": 1.0,
+            "3": 1.0,
+            "4": 0.045,
+            "5": 1.0,
+            "6": 1.0,
+            "7": 1.0,
+            "8": 0.92
+          }
+        }
+      },
+      "y_us_per_round": [
+        45468.29116968739,
+        49785.44434856404,
+        49518.218454767244,
+        48327.215295700495,
+        54894.09852973754,
+        34858.68288797985,
+        35600.68350832312,
+        30599.511163643274,
+        44861.25891861025,
+        50204.02265457655,
+        50100.42153269459,
+        47577.6393560056,
+        53077.50578492905,
+        35935.46983868831,
+        36197.0835222572,
+        37620.58622163988
+      ]
+    }
+  },
+  "rows_excluded_with_reason": {
+    "0cf1637e": "still validating at the fetch time; officialMetrics.per_prompt is empty, so it carries no observation",
+    "1db9d63e": "drops onePass67 and adds width-2 routing, so it changes the QMV dispatch TABLE. That is a shape change, not a level change, and it cannot share C",
+    "684821ed": "the promoted crown, newjordan; a different tree, so it carries its own alpha and adds only a second draw of the flat mass matrix",
+    "7226dc9a": "pb6 + rung A + rung B; kept only for the free consistency check against e003a86d"
+  },
+  "rows_used": {
+    "572b2cc4": "our tree, flat depth price, 3.66218564",
+    "e003a86d": "our tree, pb6, 3.57502547; same tree as 572b2cc4 so the pair shares one alpha and one C"
+  },
+  "schedule_frozen_level_check": {
+    "common_level_shift_pct": 1.8683398721101991,
+    "note": "the core model predicts 0.0 on both counts",
+    "per_prompt": {
+      "beagle": {
+        "assumed_sigma_pct": 0.1202,
+        "decode_us_per_round_572b2cc4": 45468.29116968739,
+        "decode_us_per_round_e003a86d": 44861.25891861025,
+        "delta_pct": -1.3350672203881642,
+        "max_abs_mass_move": 0.03173866492760008
+      },
+      "botany": {
+        "assumed_sigma_pct": 0.1059,
+        "decode_us_per_round_572b2cc4": 54894.09852973754,
+        "decode_us_per_round_e003a86d": 53077.50578492905,
+        "delta_pct": -3.309267832906282,
+        "max_abs_mass_move": 0.08392254955674305
+      },
+      "drama": {
+        "assumed_sigma_pct": 0.1709,
+        "decode_us_per_round_572b2cc4": 34858.68288797985,
+        "decode_us_per_round_e003a86d": 35935.46983868831,
+        "delta_pct": 3.0890064153277663,
+        "max_abs_mass_move": 0.0008079286789313689
+      },
+      "essays": {
+        "assumed_sigma_pct": 0.0407,
+        "decode_us_per_round_572b2cc4": 49518.218454767244,
+        "decode_us_per_round_e003a86d": 50100.42153269459,
+        "delta_pct": 1.1757351053717002,
+        "max_abs_mass_move": 0.09928276290307964
+      },
+      "medicine": {
+        "assumed_sigma_pct": 0.0605,
+        "decode_us_per_round_572b2cc4": 49785.44434856404,
+        "decode_us_per_round_e003a86d": 50204.02265457655,
+        "delta_pct": 0.8407644272127257,
+        "max_abs_mass_move": 0.006567323784389234
+      },
+      "plutarch": {
+        "assumed_sigma_pct": 0.3348,
+        "decode_us_per_round_572b2cc4": 30599.511163643274,
+        "decode_us_per_round_e003a86d": 37620.58622163988,
+        "delta_pct": 22.945056280306453,
+        "max_abs_mass_move": 0.9219712525667352
+      },
+      "republic": {
+        "assumed_sigma_pct": 0.0663,
+        "decode_us_per_round_572b2cc4": 48327.215295700495,
+        "decode_us_per_round_e003a86d": 47577.6393560056,
+        "delta_pct": -1.5510431029564842,
+        "max_abs_mass_move": 0.039554194740003934
+      },
+      "travel": {
+        "assumed_sigma_pct": 0.1993,
+        "decode_us_per_round_572b2cc4": 35600.68350832312,
+        "decode_us_per_round_e003a86d": 36197.0835222572,
+        "delta_pct": 1.6752487737901056,
+        "max_abs_mass_move": 0.0063787522155908105
+      }
+    },
+    "prompts": [
+      "medicine",
+      "drama",
+      "travel"
+    ],
+    "residual_spread_pct": 1.1364907120028358,
+    "shared_alpha_holds": false
+  },
+  "synthetic_ground_truth_harness": "local (E145 R2, applegpu_g16s) expressed in ranked units by k = 2.1034; never mixed with a ranked observation"
+}
