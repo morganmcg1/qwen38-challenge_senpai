@@ -498,24 +498,38 @@ def log_r1(run, summary: dict, r1: dict) -> None:
          for name, row in sorted(r1["e150_predictor_arms"].items())])})
 
     run.log({"r2_information_ladder": table(
-        ["rung", "information", "median_pct", "sigma_out_of_sample",
-         "reachable_sigma", "scalar_k_sd", "mean_depth"],
-        [[row.get("rung"), row.get("information"), row.get("median_pct"),
-          row.get("sigma"), row.get("reachable_sigma"),
-          row.get("scalar_k_sd"), row.get("mean_depth")]
+        ["rung", "columns", "median_pct_noclamp", "median_pct_clamped",
+         "median_pct_sd", "out_of_sample_sigma", "uses_ema", "width1_share",
+         "mean_depth"],
+        [[row.get("rung"), ",".join(row.get("columns", [])),
+          row.get("median_pct_noclamp"), row.get("median_pct_clamped"),
+          row.get("median_pct_sd"), row.get("out_of_sample_sigma"),
+          row.get("uses_ema"), row.get("width1_share"),
+          row.get("weighted_mean_depth")]
          for row in r1["e150_information_ladder_detail"]])})
 
     # Three ladders in three different error units. Publishing them together
     # is the point: reading the R7-3 ladder in the wrong unit is the single
     # largest error available to this rung.
     run.log({"r1_noise_ladder": table(
-        ["sigma", "median_pct", "unit"],
-        [[row["sigma"], row["median_pct"], row.get("unit", "all_position")]
+        ["nominal_sigma", "realised_sigma", "realised_reachable_sigma",
+         "realised_scalar_k_sd", "median_pct", "median_pct_sd", "mean_depth",
+         "unit"],
+        [[row.get("nominal_sigma"), row.get("realised_sigma"),
+          row.get("realised_reachable_sigma"),
+          row.get("realised_scalar_k_sd"), row.get("median_pct"),
+          row.get("median_pct_sd"), row.get("weighted_mean_depth"),
+          "all_position"]
          for row in r1["e150_r73_noise_ladder_reindexed"]])})
     run.log({"r1_displacement_ladder": table(
-        ["shift", "median_pct", "unit"],
-        [[row.get("shift"), row.get("median_pct"),
-          row.get("unit", "scalar_k")]
+        ["shift_sigma_positions", "realised_sigma",
+         "realised_reachable_sigma", "realised_scalar_k_sd", "median_pct",
+         "median_pct_sd", "mean_depth", "unit"],
+        [[row.get("shift_sigma_positions"), row.get("realised_sigma"),
+          row.get("realised_reachable_sigma"),
+          row.get("realised_scalar_k_sd"), row.get("median_pct"),
+          row.get("median_pct_sd"), row.get("weighted_mean_depth"),
+          "scalar_k"]
          for row in r1["e150_displacement_ladder"]])})
 
     reads = r1.get("e150_ladder_conversion_reads", {})
@@ -524,8 +538,9 @@ def log_r1(run, summary: dict, r1: dict) -> None:
         [[k, v] for k, v in sorted(reads.items())])})
 
     run.log({"r1_constant_lambda": table(
-        ["fixed_lambda", "median_pct", "mean_depth"],
-        [[row["fixed_lambda"], row["median_pct"], row.get("mean_depth")]
+        ["fixed_lambda", "median_pct", "median_pct_sd", "mean_depth"],
+        [[row.get("fixed_lambda"), row.get("median_pct"),
+          row.get("median_pct_sd"), row.get("weighted_mean_depth")]
          for row in r1["e150_constant_lambda_control"]])})
 
     dist = r1.get("e150_error_distribution", {})
