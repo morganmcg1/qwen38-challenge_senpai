@@ -274,6 +274,27 @@ def report(args: argparse.Namespace) -> int:
               f"2se {2 * se:.4f} pp ({stats['dof_plain']} dof)  "
               f"drift-fitted 2se {2 * sed:.4f} pp")
 
+    # Per-round and per-fill microseconds, so the fill-removal arm can be
+    # compared with the standalone fill's own price. `rounds` comes from the
+    # schedule the contamination gate already proved identical across arms.
+    edl = legs[0]["edl"]
+    acc = legs[0]["acc"]
+    tokens = legs[0]["tokens"]
+    rounds = tokens / (1.0 + edl * acc)
+    round_us = base * tokens / rounds * 1e6
+    print(f"\n## Per round, {rounds:.3f} rounds over {tokens} tokens")
+    print(f"  off round      {round_us:.1f} us")
+    for name, a, b, count in (
+        ("fuse - off", "fuse", "off", args.fills_removed),
+        ("replica - off", "replica", "off", 0),
+        ("fuse - replica", "fuse", "replica", args.fills_removed),
+    ):
+        us = (means[a] - means[b]) * tokens / rounds * 1e6
+        tail = f"  = {us / count:+.3f} us per fill" if count else ""
+        print(f"  {name:<16} {us:+.1f} us/round{tail}")
+    print(f"  2se            "
+          f"{2 * stats['se_plain'] * tokens / rounds * 1e6:.1f} us/round")
+
     gain = (base - means["fuse"]) / means["fuse"] * 100.0
     print(f"\n## Headline, harness=local")
     print(f"  R_off / R_fuse - 1 = {gain:+.4f} %")
@@ -312,6 +333,7 @@ def main() -> int:
     r = sub.add_parser("report")
     r.add_argument("--label", default="fuse")
     r.add_argument("--minimum", type=float, default=0.06)
+    r.add_argument("--fills-removed", type=int, default=MLP_LAYERS)
     r.set_defaults(fn=report)
 
     args = ap.parse_args()
