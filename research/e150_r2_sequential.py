@@ -65,6 +65,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import pathlib
@@ -76,8 +77,8 @@ sys.path.insert(0, str(HERE))
 import numpy as np  # noqa: E402
 
 import e150_lib  # noqa: E402
-from e128_price import MAX_DEPTH, PRICE_CUMULATIVE  # noqa: E402
-from e128_replay import SEGMENTED_VERIFY_DEPTH_CAP  # noqa: E402
+import e150_r05  # noqa: E402
+from e128_replay import MAX_DEPTH, SEGMENTED_VERIFY_DEPTH_CAP  # noqa: E402
 from e150_lib import (  # noqa: E402
     R7_SHIPPED_PCT, build_env, score_arm, write_artifact)
 from e150_predict import EMA_PRIOR_LIST, clamp_state  # noqa: E402
@@ -115,24 +116,42 @@ def dprime(auc: float) -> float:
 
 
 def prior_pmf(state, cap: int) -> np.ndarray:
-    """`P(K = k)` for `k` in `0..cap` from a hazard vector."""
-    reach = np.ones(cap + 2)
+    """`P(K = k)` for `k` in `0..cap` from a hazard vector.
+
+    Mass above `cap` is lumped onto `k = cap` rather than renormalised away.
+    The rule never drafts past `cap`, so every depth it can choose sees
+    `P(K >= i) = prod_{j < i} state[j]`, which is exactly the reach
+    `walk_ratio` accumulates. Renormalising instead would inflate every
+    reach by `1 / (1 - P(K > cap))` and silently deepen the arm.
+    """
+    reach = np.ones(cap + 1)
     acc = 1.0
-    for k in range(1, cap + 2):
+    for k in range(1, cap + 1):
         acc *= float(state[k - 1]) if k - 1 < len(state) else 0.0
         reach[k] = acc
-    pmf = reach[:cap + 1] - reach[1:cap + 2]
-    pmf = np.clip(pmf, 0.0, None)
-    total = pmf.sum()
-    # A degenerate hazard vector can zero the whole mass; fall back to all
-    # weight on K = 0 rather than dividing by zero.
-    return pmf / total if total > 0 else np.eye(cap + 1)[0]
+    pmf = np.empty(cap + 1)
+    pmf[:cap] = reach[:cap] - reach[1:cap + 1]
+    pmf[cap] = reach[cap]
+    return np.clip(pmf, 0.0, None)
 
 
 def sequential_depth(state, capability: int, mu: float, d_prime: float,
                      cumulative, cap: int, rng: np.random.Generator,
                      reveal_every_step: bool) -> int:
-    """Greedy stopping under the posterior, one draft position at a time.
+    """Optimal stopping under the posterior, one draft position at a time.
+
+    The extension test looks ahead over every remaining depth instead of
+    only the next one. That is not a refinement, it is required for
+    correctness: the measured cost curve is strongly non-concave, because
+    the width 7 to width 8 marginal cost is 3162 us against 28437 us for
+    width 5 to width 6. A myopic marginal test stops in that dip and can
+    never reach the width-8 jump that the linearised rule takes, so it
+    prices a different rule and understates depth.
+
+    With no information arriving this reduces to `argmax_d mu * E[T|d] -
+    C_d` over the same depths, and it keeps the first maximiser, so it
+    reproduces `walk_ratio` exactly. That equivalence is what
+    `e150_crosscheck.py` asserts.
 
     `reveal_every_step` selects L6. When false only the first drafted
     position returns a signal, which is the cheap L5 variant that needs one
@@ -140,17 +159,17 @@ def sequential_depth(state, capability: int, mu: float, d_prime: float,
     """
     if cap <= 0:
         return 0
-    pmf = prior_pmf(state, cap)
     ks = np.arange(cap + 1)
-    log_w = np.log(np.clip(pmf, 1e-300, None))
+    log_w = np.log(np.clip(prior_pmf(state, cap), 1e-300, None))
+    cum = np.asarray(cumulative[:cap + 1], dtype=float)
     depth = 0
     while depth < cap:
-        # Expected marginal token against measured marginal cost.
         w = np.exp(log_w - log_w.max())
-        p_reach = w[ks >= depth + 1].sum() / w.sum()
-        gain = mu * p_reach
-        cost = cumulative[depth + 1] - cumulative[depth]
-        if gain <= cost:
+        # `reach[i] = P(K >= i | s)`, so `expected[d] = E[accepted | d]`.
+        tail = np.cumsum(w[::-1])[::-1] / w.sum()
+        expected = np.concatenate([[0.0], np.cumsum(tail[1:cap + 1])])
+        value = mu * (1.0 + expected) - cum
+        if value[depth + 1:].max() <= value[depth]:
             break
         depth += 1
         # The position was drafted, so its signal now exists.
@@ -189,7 +208,7 @@ def sequential_walker(mu: float, auc: float, clamp, mode: str, seed_key: int,
         # arms comparable with every other E150 cell.
         scales = SHIPPED_CLAMP_SCALES if clamp is None else clamp
         vector = clamp_state(ema_list, margin, scales)
-        cumulative = (price or (None, PRICE_CUMULATIVE))[1]
+        cumulative = price[1]
         cap = min(min(offer, MAX_DEPTH), cap_limit)
         return sequential_depth(vector, int(ctx["capability"]), mu, d_prime,
                                 cumulative, cap, state["rng"], reveal_every)
@@ -197,9 +216,16 @@ def sequential_walker(mu: float, auc: float, clamp, mode: str, seed_key: int,
     return chooser
 
 
+def stable_key(*parts) -> int:
+    """A process-independent seed. `hash()` on a str is salted per process."""
+    text = "|".join(str(p) for p in parts)
+    digest = hashlib.blake2b(text.encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "big") % (2 ** 31)
+
+
 def price(env, mu: float, auc: float, clamp, mode: str) -> dict:
     def make(seed, prompt, entry):
-        key = abs(hash((mode, round(auc, 4), seed, prompt))) % (2 ** 31)
+        key = stable_key(mode, round(auc, 4), seed, prompt)
         return sequential_walker(mu, auc, clamp, mode, key)
     return score_arm(env, "measured", env.measured, env.measured_price, make)
 
@@ -298,10 +324,20 @@ def main() -> int:
     zero = rows[0]
     control_l5 = abs(zero["l5_median_pct"] - reference)
     control_l6 = abs(zero["l6_median_pct"] - reference)
-    controls_ok = control_l5 < 1e-9 and control_l6 < 1e-9
     print("\n## control: AUC 0.5 must reproduce the one-shot arm exactly")
-    print("  |L5 - oneshot| %.3e   |L6 - oneshot| %.3e   pass %s"
-          % (control_l5, control_l6, controls_ok))
+    print("  |L5 - oneshot| %.3e   |L6 - oneshot| %.3e"
+          % (control_l5, control_l6))
+
+    # The AUC 0.5 control alone cannot see a shared offset, because it
+    # compares this module against its own one-shot arm. This second control
+    # pins that arm to the R0.5 cell the whole rung is quoted against.
+    r05_row = e150_r05.price(env, "shipped", "ratio", {}, mu)
+    control_r05 = abs(reference - r05_row["median_pct_mean"])
+    print("  |oneshot - r05 linearised noclamp| %.3e" % control_r05)
+
+    controls_ok = (control_l5 < 1e-9 and control_l6 < 1e-9
+                   and control_r05 < 1e-9)
+    print("  all controls pass %s" % controls_ok)
 
     best = max(rows, key=lambda r: r["premium_pp"])
     at_pad = next(r for r in rows if r["auc"] == 0.865)
@@ -328,6 +364,7 @@ def main() -> int:
         "e150_r2_sequential_controls_ok": controls_ok,
         "e150_r2_sequential_control_l5_error": control_l5,
         "e150_r2_sequential_control_l6_error": control_l6,
+        "e150_r2_sequential_control_r05_error": control_r05,
         "e150_oneshot_reference_pct": reference,
         "e150_sequential_information_premium_pp": at_pad["premium_pp"],
         "e150_sequential_premium_at_pad_auc_pp": at_pad["premium_pp"],
@@ -361,7 +398,7 @@ def main() -> int:
              else "NOT worth running"))
     if not controls_ok:
         print("  WARNING: the AUC 0.5 control missed, so no row is readable.")
-    print("\nwrote %s" % path.relative_to(HERE.parent))
+    print("\nwrote %s" % path)
     return 0
 
 
