@@ -62,6 +62,8 @@ from pathlib import Path
 import mlx.core as mx
 import numpy as np
 
+import e143_value
+
 HIDDEN = 5120
 VOCAB = 248_320
 GROUP = 64
@@ -93,6 +95,14 @@ def compact_row_of(token: np.ndarray) -> np.ndarray:
     out[low] = token[low]
     ctrl = (token >= COMPACT_CONTROL_START) & (token < COMPACT_CONTROL_END)
     out[ctrl] = COMPACT_PREFIX_COUNT + token[ctrl] - COMPACT_CONTROL_START
+    return out
+
+
+def token_of_compact_row(row: np.ndarray) -> np.ndarray:
+    """Inverse of `compact_row_of`: the token id a compact row proposes."""
+    out = row.astype(np.int64).copy()
+    ctrl = row >= COMPACT_PREFIX_COUNT
+    out[ctrl] = COMPACT_CONTROL_START + row[ctrl] - COMPACT_PREFIX_COUNT
     return out
 
 
@@ -221,11 +231,18 @@ def load_heads() -> dict:
             "provenance": provenance}
 
 
-def pipeline(H: mx.array, heads: dict, chunk: int) -> dict:
+def pipeline(H: mx.array, heads: dict, chunk: int, screen_noise: float = 0.0,
+             diagnostics: bool = False, key: mx.array | None = None) -> dict:
     """Replay the shipped proposal pipeline at a batch of hidden rows.
 
-    Returns, per row: the exact compact argmax, the coarse rank of that argmax,
-    the window's exact winner, and the coarse rank of a supplied reference row.
+    `screen_noise` is the positive control. It adds Gaussian noise to the
+    COARSE scores only, in units of that row's own measured coarse-versus-exact
+    error. A detector that reports no screen loss must still report screen loss
+    when the screen is deliberately degraded, or it is not measuring anything.
+
+    `diagnostics` adds the mechanism behind the result: the spread of the
+    coarse readout's error, and the exact margin from the top row to the 32nd,
+    which is the gap that error has to reverse for the screen to drop a token.
     """
     exact_w, exact_s, exact_z = heads["exact"]
     coarse_w, coarse_s, coarse_z = heads["coarse"]
@@ -233,6 +250,8 @@ def pipeline(H: mx.array, heads: dict, chunk: int) -> dict:
     exact_argmax = np.zeros(n, dtype=np.int64)
     coarse_rank_of_exact_argmax = np.zeros(n, dtype=np.int64)
     window_winner = np.zeros(n, dtype=np.int64)
+    coarse_error_sd = np.zeros(n, dtype=np.float64)
+    margin_1_to_32 = np.zeros(n, dtype=np.float64)
     for start in range(0, n, chunk):
         x = H[start:start + chunk]
         rows = x.shape[0]
@@ -240,6 +259,16 @@ def pipeline(H: mx.array, heads: dict, chunk: int) -> dict:
                                      transpose=True, group_size=GROUP, bits=2)
         exact = mx.quantized_matmul(x, exact_w, scales=exact_s, biases=exact_z,
                                     transpose=True, group_size=GROUP, bits=4)
+        err = coarse - exact
+        sd = mx.sqrt(mx.mean(err * err, axis=1) - mx.mean(err, axis=1) ** 2)
+        if screen_noise:
+            if key is None:
+                raise ValueError("the positive control needs a seeded key")
+            draw = mx.random.normal((rows, COMPACT_REAL_COUNT),
+                                    key=mx.random.split(key, start + 1)[-1])
+            coarse = coarse + draw * (screen_noise * sd)[:, None]
+            del draw
+        del err
         arg = mx.argmax(exact, axis=1)
         idx = mx.arange(rows)
         coarse_at_arg = coarse[idx, arg]
@@ -249,14 +278,23 @@ def pipeline(H: mx.array, heads: dict, chunk: int) -> dict:
         win_scores = mx.take_along_axis(exact, window, axis=1)
         winner = mx.take_along_axis(window, mx.argmax(win_scores, axis=1)[:, None],
                                     axis=1).reshape(rows)
-        mx.eval(arg, rank, winner)
+        if diagnostics:
+            top = mx.sort(exact, axis=1)[:, -RERANK_CANDIDATES:]
+            margin = top[:, -1] - top[:, 0]
+            mx.eval(margin)
+            margin_1_to_32[start:start + rows] = np.array(margin)
+            del top, margin
+        mx.eval(arg, rank, winner, sd)
         exact_argmax[start:start + rows] = np.array(arg)
         coarse_rank_of_exact_argmax[start:start + rows] = np.array(rank)
         window_winner[start:start + rows] = np.array(winner)
+        coarse_error_sd[start:start + rows] = np.array(sd)
         del coarse, exact, window, win_scores
     return {"exact_argmax": exact_argmax,
             "coarse_rank_of_exact_argmax": coarse_rank_of_exact_argmax,
-            "window_winner": window_winner}
+            "window_winner": window_winner,
+            "coarse_error_sd": coarse_error_sd,
+            "margin_1_to_32": margin_1_to_32}
 
 
 def classify(result: dict, t_row: np.ndarray) -> dict:
@@ -284,11 +322,7 @@ def wilson(successes: int, trials: int, z: float = 1.0) -> list[float]:
     return [max(0.0, centre - half), min(1.0, centre + half)]
 
 
-def ranked_pct(rate: float) -> float:
-    return MISS_TO_SCORE_PCT * rate * (CARRIER_WEIGHT["beagle"] + CARRIER_WEIGHT["essays"])
-
-
-def target_rank_of(H: mx.array, ids: np.ndarray, chunk: int, target_chunk: int) -> np.ndarray:
+def target_rank_of(H: mx.array, ids: np.ndarray, target_chunk: int) -> np.ndarray:
     """The TARGET's full-vocabulary rank of a proposed token, per row.
 
     The validation statistic. Computed against the full 248,320-row lm_head,
@@ -320,7 +354,11 @@ def target_rank_of(H: mx.array, ids: np.ndarray, chunk: int, target_chunk: int) 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sigmas", default="0.02,0.05,0.08,0.11,0.14,0.18,0.24")
+    parser.add_argument("--sigmas",
+                        default="0.0,0.05,0.10,0.15,0.20,0.30,0.45,0.65,1.00")
+    parser.add_argument("--screen-noise", default="1,2,4,8,16,32",
+                        help="positive control doses, in units of the coarse "
+                             "readout's own error sd")
     parser.add_argument("--chunk", type=int, default=256)
     parser.add_argument("--target-chunk", type=int, default=15520)
     parser.add_argument("--seed", type=int, default=20260823)
@@ -354,9 +392,10 @@ def main() -> None:
                          "arm S does not reproduce the shipped arithmetic")
 
     H = mx.array(hidden)
+    key = mx.random.key(args.seed)
 
     # ---- arm S: the shipped pipeline at the TRUE hidden rows ---------------
-    base = pipeline(H, heads, args.chunk)
+    base = pipeline(H, heads, args.chunk, diagnostics=True)
     print(f"e143-r1: arm S done {time.time() - started:.1f}s", flush=True)
 
     # arm P: the offline exact readout has to reproduce the device's argmax on
@@ -372,15 +411,65 @@ def main() -> None:
         recall[f"recall_at_{k}_ci68"] = wilson(hits, n)
     coarse_rank = base["coarse_rank_of_exact_argmax"]
     screen_loss_32 = float(np.mean(coarse_rank > RERANK_CANDIDATES))
+
+    # The mechanism behind whatever screen loss comes out. For the coarse screen
+    # to drop `t*` out of the window, its own quantization error has to reverse
+    # the exact gap from row 1 to row 32. `z` is how many error sigmas wide that
+    # gap is, so it says how far the screen is from ever failing.
+    margin = base["margin_1_to_32"]
+    err_sd = base["coarse_error_sd"]
+    z = margin / err_sd
+    mechanism = {
+        "exact_margin_row1_to_row32_median": float(np.median(margin)),
+        "exact_margin_row1_to_row32_min": float(np.min(margin)),
+        "coarse_error_sd_median": float(np.median(err_sd)),
+        "coarse_error_sd_max": float(np.max(err_sd)),
+        "margin_in_coarse_error_sigmas_median": float(np.median(z)),
+        "margin_in_coarse_error_sigmas_p01": float(np.percentile(z, 1)),
+        "margin_in_coarse_error_sigmas_min": float(np.min(z)),
+        "reading": ("the coarse screen drops t* only if its own error reverses "
+                    "the exact row-1 to row-32 gap; the reported sigma count is "
+                    "how much headroom that gap has"),
+    }
+
     arm_s = {
         "rows": n,
         "arm_p_offline_argmax_matches_device": argmax_matches_device,
         "coarse_rank_of_exact_argmax_median": float(np.median(coarse_rank)),
         "coarse_rank_of_exact_argmax_p99": float(np.percentile(coarse_rank, 99)),
+        "coarse_rank_of_exact_argmax_max": int(np.max(coarse_rank)),
         "screen_loss_at_32": screen_loss_32,
         "screen_loss_at_32_ci68": wilson(int(np.sum(coarse_rank > RERANK_CANDIDATES)), n),
+        "mechanism": mechanism,
         **recall,
     }
+
+    # ---- positive control (Rule 101) ---------------------------------------
+    # A screen-loss detector that reports zero has to report non-zero when the
+    # screen is deliberately degraded, or it is measuring nothing. The dose is
+    # a multiple of each row's OWN coarse-versus-exact error sd, so the control
+    # also reads out how much worse the screen would have to be before it costs
+    # a single accepted token.
+    control = []
+    for dose in [float(v) for v in args.screen_noise.split(",") if v]:
+        out = pipeline(H, heads, args.chunk, screen_noise=dose, key=key)
+        rank = out["coarse_rank_of_exact_argmax"]
+        loss = float(np.mean(rank > RERANK_CANDIDATES))
+        control.append({
+            "extra_error_in_own_sigmas": dose,
+            "screen_loss_at_32": loss,
+            "screen_loss_at_32_events": int(np.sum(rank > RERANK_CANDIDATES)),
+            "coarse_rank_median": float(np.median(rank)),
+        })
+        print(f"e143-r1: control dose={dose:g} screen_loss={loss:.5f} "
+              f"{time.time() - started:.1f}s", flush=True)
+    control_max = max((row["screen_loss_at_32"] for row in control), default=0.0)
+    if control_max <= 10.0 * max(screen_loss_32, 1.0 / n):
+        raise SystemExit(
+            "e143-r1: POSITIVE CONTROL FAILED. Degrading the coarse screen by "
+            f"up to {args.screen_noise} of its own error sd moved screen loss "
+            f"to only {control_max:.6f}. The detector cannot show a screen "
+            "loss, so its zero reading is not evidence.")
 
     # ---- arm F: the surrogate head hidden ----------------------------------
     measured_miss = float(np.mean(~accepted & ~unproposable))
@@ -391,18 +480,21 @@ def main() -> None:
     Noise = mx.array(noise * h_norm)
 
     sweep = []
-    for sigma in [float(s) for s in args.sigmas.split(",") if s]:
-        out = pipeline(H + sigma * Noise, heads, args.chunk)
+    for sigma in [float(s) for s in args.sigmas.split(",") if s is not None and s != ""]:
+        out = pipeline(H + sigma * Noise, heads, args.chunk) if sigma else base
         cls = classify(out, t_row)
         sim_miss = float(np.mean(cls["miss"] & ~unproposable))
         row = {
             "sigma": sigma,
             "simulated_miss_rate": sim_miss,
+            "screen_loss_at_32": float(
+                np.mean(out["coarse_rank_of_exact_argmax"] > RERANK_CANDIDATES)),
             "channel_b_rate": float(np.mean(cls["channel_b"])),
             "channel_c_rate": float(np.mean(cls["channel_c"])),
             "channel_d_rate": float(np.mean(cls["channel_d"] & ~unproposable)),
             "channel_b_events": int(cls["channel_b"].sum()),
             "channel_c_events": int(cls["channel_c"].sum()),
+            "channel_d_events": int((cls["channel_d"] & ~unproposable).sum()),
         }
         sweep.append((row, cls))
         print(f"e143-r1: sigma={sigma:.3f} miss={sim_miss:.4f} "
@@ -416,8 +508,9 @@ def main() -> None:
     # Validate on a statistic the calibration never saw.
     sim_miss_rows = np.where(best_cls["miss"] & ~unproposable)[0]
     sim_rank = target_rank_of(
-        mx.array(hidden[sim_miss_rows]), best_cls["proposal"][sim_miss_rows].astype(np.int64),
-        args.chunk, args.target_chunk)
+        mx.array(hidden[sim_miss_rows]),
+        token_of_compact_row(best_cls["proposal"][sim_miss_rows]),
+        args.target_chunk)
     measured = json.loads(Path("research/e143-r0.json").read_text())
     measured_ranks = np.array(
         [r["target_rank_of_d"] for r in measured["records"] if "target_rank_of_d" in r])
@@ -444,45 +537,157 @@ def main() -> None:
         0.5 <= validation["median_ratio"] <= 2.0
         and validation["le_32_abs_delta"] <= 0.10)
 
-    cb_rate = best_row["channel_b_rate"]
-    cb_ci = wilson(best_row["channel_b_events"], n)
+    # ---- per-carrier channel rates, never pooled (Rule 76) -----------------
+    r0 = json.loads(Path("research/e143-r0.json").read_text())
+    per_carrier = {}
+    for name in ("beagle", "essays", "other"):
+        sel = carrier == name
+        trials_here = int(sel.sum())
+        if not trials_here:
+            continue
+        ca_events = int((unproposable & sel).sum())
+        cb_events = int((best_cls["channel_b"] & sel).sum())
+        cc_events = int((best_cls["channel_c"] & sel).sum())
+        cd_events = int((best_cls["channel_d"] & ~unproposable & sel).sum())
+        entry = {
+            "trials": trials_here,
+            "measured_miss_rate": float(np.mean(~accepted[sel])),
+            "measured_per_step_p": float(np.mean(accepted[sel])),
+        }
+        for tag, events, label in (("ca", ca_events, "measured"),
+                                   ("cb", cb_events, "derived"),
+                                   ("cc", cc_events, "proof"),
+                                   ("cd", cd_events, "derived")):
+            rate = events / trials_here
+            ci = wilson(events, trials_here)
+            entry[tag] = {
+                "events": events,
+                "rate": rate,
+                "rate_ci68": ci,
+                "raw_ratio_pct": MISS_TO_SCORE_PCT * rate,
+                "raw_ratio_pct_ci68": [MISS_TO_SCORE_PCT * ci[0],
+                                       MISS_TO_SCORE_PCT * ci[1]],
+                "label": label,
+            }
+        per_carrier[name] = entry
+
+    # C-a comes from R0, which measured it on the same trials with no head at
+    # all. Re-deriving it here would duplicate that measurement, so assert the
+    # two agree instead.
+    if int(unproposable.sum()) != r0["channel_a"]["events"]:
+        raise SystemExit(
+            f"e143-r1: {int(unproposable.sum())} unproposable trials against "
+            f"R0's {r0['channel_a']['events']}; the two stages disagree")
+
+    # ---- Rule 121 pricing --------------------------------------------------
+    # A channel closes at the same per-trial rate on every prompt only if the
+    # rate is the same on every prompt, and C-a already showed it is not. So
+    # price each carrier from its OWN rate and let the order statistic decide
+    # what the median does.
+    def price(tag: str) -> dict:
+        gains = {}
+        for prompt, key_name in (("beagle", "beagle"), ("essays", "essays")):
+            entry = per_carrier.get(key_name)
+            if entry:
+                gains[prompt] = MISS_TO_SCORE_PCT * entry[tag]["rate"] / 100.0
+        return {
+            "beagle_raw_ratio_pct": 100.0 * gains.get("beagle", 0.0),
+            "essays_raw_ratio_pct": 100.0 * gains.get("essays", 0.0),
+            "median_pct_rule121": e143_value.median_pct_gain(gains),
+            "median_pct_rule116_linear": (
+                CARRIER_WEIGHT["beagle"] * 100.0 * gains.get("beagle", 0.0)
+                + CARRIER_WEIGHT["essays"] * 100.0 * gains.get("essays", 0.0)),
+        }
+
+    cb_price = price("cb")
+    cc_price = price("cc")
+    cd_price = price("cd")
+    ca_price = price("ca")
+
+    # The fork quantity. C-b plus C-c, on both carriers at once.
+    fork_gains = {}
+    for prompt in ("beagle", "essays"):
+        entry = per_carrier.get(prompt)
+        if entry:
+            fork_gains[prompt] = MISS_TO_SCORE_PCT * (
+                entry["cb"]["rate"] + entry["cc"]["rate"]) / 100.0
+    fork_median = e143_value.median_pct_gain(fork_gains)
+
+    # The primary metric. Everything a mechanism inside this contract can
+    # reach: C-a, C-b and C-c together, reported on beagle raw as F1 asked.
+    reach_gains = {}
+    for prompt in ("beagle", "essays"):
+        entry = per_carrier.get(prompt)
+        if entry:
+            reach_gains[prompt] = MISS_TO_SCORE_PCT * (
+                entry["ca"]["rate"] + entry["cb"]["rate"]
+                + entry["cc"]["rate"]) / 100.0
+    beagle_raw_pct = 100.0 * reach_gains.get("beagle", 0.0)
+    beagle_ceiling_x, beagle_ceiling_value = e143_value.ceiling("beagle")
+
     channel_b = {
-        "rate": cb_rate,
-        "rate_ci68": cb_ci,
-        "events": best_row["channel_b_events"],
-        "trials": n,
-        "ranked_pct": ranked_pct(cb_rate),
-        "ranked_pct_ci68": [ranked_pct(cb_ci[0]), ranked_pct(cb_ci[1])],
+        "rate_pooled": best_row["channel_b_rate"],
+        "events_pooled": best_row["channel_b_events"],
+        "trials_pooled": n,
+        "price": cb_price,
         "label": "derived",
     }
     channel_c = {
-        "rate": best_row["channel_c_rate"],
-        "events": best_row["channel_c_events"],
-        "ranked_pct": ranked_pct(best_row["channel_c_rate"]),
+        "rate_pooled": best_row["channel_c_rate"],
+        "events_pooled": best_row["channel_c_events"],
+        "price": cc_price,
         "note": ("zero by construction: the rerank is exact over the window, so "
                  "a token the head would rank first cannot be mis-ordered"),
     }
     channel_d = {
-        "rate": best_row["channel_d_rate"],
-        "ranked_pct": ranked_pct(best_row["channel_d_rate"]),
+        "rate_pooled": best_row["channel_d_rate"],
+        "events_pooled": best_row["channel_d_events"],
+        "price": cd_price,
         "share_of_in_vocabulary_misses": (
             best_row["channel_d_rate"]
             / max(best_row["simulated_miss_rate"], 1e-12)),
         "label": "derived",
     }
 
+    in_vocab_miss = best_row["simulated_miss_rate"]
+    fork = {
+        "threshold_ranked_pct": 0.30,
+        "refuted_below_ranked_pct": 0.15,
+        "cb_plus_cc_median_pct": fork_median,
+        "cb_plus_cc_beagle_raw_pct": 100.0 * fork_gains.get("beagle", 0.0),
+        "cb_plus_cc_essays_raw_pct": 100.0 * fork_gains.get("essays", 0.0),
+        "take_c2_fallback": fork_median < 0.30,
+        "channel_d_share_of_in_vocabulary_misses": (
+            best_row["channel_d_rate"] / max(in_vocab_miss, 1e-12)),
+        "channel_d_kill_rule_share": 0.80,
+        "channel_d_closes_acceptance_axis": (
+            best_row["channel_d_rate"] / max(in_vocab_miss, 1e-12)) > 0.80,
+    }
+
     state = {
         "harness": "local",
         "measured_non_channel_a_miss_rate": measured_miss,
         "arm_s_true_hidden": arm_s,
+        "positive_control_rule101": control,
         "arm_f_sweep": [row for row, _ in sweep],
         "arm_f_calibrated_sigma": best_row["sigma"],
         "arm_f_calibration_residual": abs(
             best_row["simulated_miss_rate"] - measured_miss),
         "arm_f_validation": validation,
+        "per_carrier": per_carrier,
+        "channel_a_price": ca_price,
         "channel_b": channel_b,
         "channel_c": channel_c,
         "channel_d": channel_d,
+        "fork": fork,
+        "primary": {
+            "e143_reachable_acceptance_pct_beagle": beagle_raw_pct,
+            "units": "percent of the beagle RAW RATIO, as F1 asked",
+            "median_pct_rule121": e143_value.median_pct_gain(reach_gains),
+            "beagle_saturation_x_pct": beagle_ceiling_x,
+            "beagle_saturation_value_pct": beagle_ceiling_value,
+            "exceeds_beagle_saturation": beagle_raw_pct > beagle_ceiling_x,
+        },
         "head_provenance": heads["provenance"],
         "elapsed_seconds": time.time() - started,
     }
