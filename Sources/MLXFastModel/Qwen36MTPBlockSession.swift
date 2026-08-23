@@ -167,12 +167,11 @@ public final class Qwen36MTPBlockSession {
     /// the round's dummy chain so the blocking eval can join it and the
     /// device work cannot outlive the round that ordered it.
     ///
-    /// Records accumulate in memory and are written once in `deinit`. A file
+    /// Records accumulate in a process-wide buffer written at process exit. A file
     /// write inside the round is what makes `MLX_QWEN_MTP_TRACE` legs
     /// `timing_valid=false`, and this instrument exists to time rounds.
     private var draftingRoundCount = 0
     private var e154Filler: MLXArray?
-    private var e154Records: [String] = []
 
     public init(
         model: any Qwen36MTPTarget,
@@ -883,6 +882,36 @@ public final class Qwen36MTPBlockSession {
             while DispatchTime.now().uptimeNanoseconds < deadline {}
         }
 
+        /// Per-round records for the whole process. A file write inside the
+        /// round is what makes a traced leg `timing_valid=false`, so the
+        /// records buffer in memory and are written once at process exit.
+        /// `deinit` is not enough: the worker exits without releasing the
+        /// session, which is why the first debug leg produced no file.
+        nonisolated(unsafe) static var records: [String] = []
+        nonisolated(unsafe) private static var exitHandlerRegistered = false
+
+        static func record(_ line: String) {
+            if !exitHandlerRegistered {
+                exitHandlerRegistered = true
+                atexit { Qwen36MTPBlockSession.E154Instrument.flush() }
+            }
+            records.append(line)
+        }
+
+        static func flush() {
+            guard let path = outPath, !records.isEmpty else { return }
+            let body = Data((records.joined(separator: "\n") + "\n").utf8)
+            records.removeAll()
+            let manager = FileManager.default
+            if !manager.fileExists(atPath: path) {
+                manager.createFile(atPath: path, contents: nil)
+            }
+            guard let handle = FileHandle(forWritingAtPath: path) else { return }
+            handle.seekToEndOfFile()
+            handle.write(body)
+            handle.closeFile()
+        }
+
         /// Process-wide CPU microseconds, user plus system, summed over EVERY
         /// thread. MLX encodes command buffers on its own scheduler thread, so
         /// a calling-thread-only clock would report the host as idle while the
@@ -917,19 +946,7 @@ public final class Qwen36MTPBlockSession {
         return x
     }
 
-    deinit {
-        guard let path = Self.E154Instrument.outPath, !e154Records.isEmpty
-        else { return }
-        let body = Data((e154Records.joined(separator: "\n") + "\n").utf8)
-        let manager = FileManager.default
-        if !manager.fileExists(atPath: path) {
-            manager.createFile(atPath: path, contents: nil)
-        }
-        guard let handle = FileHandle(forWritingAtPath: path) else { return }
-        handle.seekToEndOfFile()
-        handle.write(body)
-        handle.closeFile()
-    }
+    deinit { Self.E154Instrument.flush() }
 
     /// Attribution probe only. `verify_build_us` measures the window in which
     /// the host builds the verify graph WHILE the asynchronously submitted head
@@ -2089,7 +2106,7 @@ public final class Qwen36MTPBlockSession {
                 Self.threadCPUNanoseconds() &- e154Thread0) / 1_000.0
             let processUS =
                 Self.E154Instrument.processCPUMicroseconds() - e154Process0
-            e154Records.append(
+            Self.E154Instrument.record(
                 "e154-arm: round=\(roundCount) "
                     + "drafting_round=\(draftingRoundCount - 1) "
                     + "d=\(draftCount) acc=\(acceptedCount) "
