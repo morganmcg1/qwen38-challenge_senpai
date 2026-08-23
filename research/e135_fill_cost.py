@@ -126,6 +126,13 @@ def fit(legs: list[dict]) -> dict:
 
     The reduced fit drops only the drift term. It keeps the session offsets,
     which are real, so with one session it is exactly the two-parameter fit.
+
+    A third, deliberately unconditioned fit keeps mean and arm alone. Drift and
+    the session step are real, but conditioning on them prices the effect as if
+    the next session would land on the same base clock, and the two sessions
+    here disagree by more than the conditioned interval. The mean-and-arm
+    residual is the honest width to publish. It is the widest of the three and
+    it is the one this module reports first.
     """
     require_balanced(legs)
     y = [d["mtp"] for d in legs]
@@ -147,11 +154,12 @@ def fit(legs: list[dict]) -> dict:
     drift_c = project(x) if any(x) else 0.0
     off_c = [project(col) for col in offsets]
 
-    def residuals(with_drift: bool) -> list[float]:
+    def residuals(with_drift: bool, with_offsets: bool = True) -> list[float]:
         out = []
         for i, yi in enumerate(y):
-            pred = grand + arm_c * a[i] + sum(
-                c * col[i] for c, col in zip(off_c, offsets))
+            pred = grand + arm_c * a[i]
+            if with_offsets:
+                pred += sum(c * col[i] for c, col in zip(off_c, offsets))
             if with_drift:
                 pred += drift_c * x[i]
             out.append(yi - pred)
@@ -165,18 +173,34 @@ def fit(legs: list[dict]) -> dict:
     varr = sum(r * r for r in residuals(False)) / (n - kr)
     ser = 2.0 * (varr / sum(ai * ai for ai in a)) ** 0.5
 
+    # Mean and arm only. Drift and the between-session step stay in the
+    # residual instead of being conditioned away, so this is the interval that
+    # answers "what would another session of this experiment return?".
+    varp = sum(r * r for r in residuals(False, False)) / (n - 2)
+    sep = 2.0 * (varp / sum(ai * ai for ai in a)) ** 0.5
+
     base = grand - arm_c
+    per_session = {}
+    for r in reps:
+        sub = [d for d in legs if d["rep"] == r]
+        rr = statistics.fmean(d["mtp"] for d in sub if d["arm"] == "repl")
+        rf = statistics.fmean(d["mtp"] for d in sub if d["arm"] == "fill")
+        per_session[r] = (rf - rr) / rr * 100.0
     return {
         "effect": 2.0 * arm_c,
         "effect_pct": 2.0 * arm_c / base * 100.0,
         "se3_pct": sef / base * 100.0,
         "se2_pct": ser / base * 100.0,
+        "se1_pct": sep / base * 100.0,
         "dof3": n - kf,
         "dof2": n - kr,
+        "dof1": n - 2,
         "drift_pct_per_leg": drift_c / base * 100.0,
         "session_offsets_pct": [c / base * 100.0 for c in off_c],
+        "session_effects_pct": per_session,
         "resid_sd3_pct": varf ** 0.5 / base * 100.0,
         "resid_sd2_pct": varr ** 0.5 / base * 100.0,
+        "resid_sd1_pct": varp ** 0.5 / base * 100.0,
         "replica": base,
         "fill": grand + arm_c,
     }
@@ -215,10 +239,12 @@ def report(args: argparse.Namespace) -> int:
     print(f"  replica        {repl:.6f} s/tok  n={len(by_arm['repl'])}")
     print(f"  fill_noconsume {fill:.6f} s/tok  n={len(by_arm['fill'])}")
     print(f"  fill costs     {delta_pct:+.4f} % of candidate MTP time")
-    print(f"  se, drift fitted, {stats['dof3']} dof   {stats['se3_pct']:.4f} pp"
-          f"  t {abs(delta_pct) / stats['se3_pct']:.2f}")
+    print(f"  se, mean+arm,     {stats['dof1']} dof   {stats['se1_pct']:.4f} pp"
+          f"  t {abs(delta_pct) / stats['se1_pct']:.2f}   <- published width")
     print(f"  se, no drift,     {stats['dof2']} dof   {stats['se2_pct']:.4f} pp"
           f"  t {abs(delta_pct) / stats['se2_pct']:.2f}")
+    print(f"  se, drift fitted, {stats['dof3']} dof   {stats['se3_pct']:.4f} pp"
+          f"  t {abs(delta_pct) / stats['se3_pct']:.2f}")
     print(f"  position drift            {stats['drift_pct_per_leg']:+.4f} %/leg")
     if stats["session_offsets_pct"]:
         off = " ".join(f"{v:+.4f}" for v in stats["session_offsets_pct"])
@@ -238,14 +264,23 @@ def report(args: argparse.Namespace) -> int:
     rounds = args.rounds
     per_round_us = (fill - repl) * tokens / rounds * 1e6
     per_fill_us = per_round_us / args.fills_per_round
+    round_us = repl * tokens / rounds * 1e6
+    se_fill_us = stats["se1_pct"] / 100.0 * round_us / args.fills_per_round
+    session_us = sorted(v / 100.0 * round_us / args.fills_per_round
+                        for v in stats["session_effects_pct"].values())
     print(f"\n## Per round, {rounds} rounds over {tokens} tokens, edl {edl:.6f}")
     print(f"  whole fill set {per_round_us:+.1f} us/round over "
           f"{args.fills_per_round} fills")
-    print(f"  one fill       {per_fill_us:+.3f} us")
+    print(f"  one fill       {per_fill_us:+.3f} us  "
+          f"+- {se_fill_us:.3f} at {stats['dof1']} dof")
+    print(f"  session range  {session_us[0]:.3f} .. {session_us[-1]:.3f} us  "
+          f"({len(session_us)} sessions)")
+    print("  The per-dispatch figure divides a total by "
+          f"{args.fills_per_round}. The arms remove every fill at once, so")
+    print("  linearity is assumed, not tested. The marginal arm is the test.")
 
     shipped = per_fill_us * args.shipped_fills_per_round
     ceiling = per_fill_us * FUSABLE_PER_FORWARD
-    round_us = repl * tokens / rounds * 1e6
     print(f"\n## Idea 3 ceiling, harness=local")
     print(f"  shipped arm pays {shipped:.1f} us/round for "
           f"{args.shipped_fills_per_round} fills")
