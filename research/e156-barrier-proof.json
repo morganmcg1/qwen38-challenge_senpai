@@ -1,0 +1,791 @@
+{
+ "barriers_per_k_iteration": 1,
+ "configurations_enumerated": 256,
+ "e156_barrier_all_controls": [
+  "drop_prologue_publish_barrier",
+  "drop_steady_state_barrier",
+  "swap_half_parity",
+  "defeat_double_buffer",
+  "drop_pre_store_barrier",
+  "prologue_before_last_read"
+ ],
+ "e156_barrier_all_named_controls_caught": true,
+ "e156_barrier_detector_positive_control_works": true,
+ "e156_barrier_exhaustive": {
+  "cells_enumerated": 256,
+  "controls_caught_cells": {
+   "defeat_double_buffer": 252,
+   "drop_pre_store_barrier": 96,
+   "drop_prologue_publish_barrier": 256,
+   "drop_steady_state_barrier": 252,
+   "prologue_before_last_read": 96,
+   "swap_half_parity": 256
+  },
+  "controls_caught_on_every_reachable_cell": {
+   "defeat_double_buffer": false,
+   "drop_pre_store_barrier": false,
+   "drop_prologue_publish_barrier": true,
+   "drop_steady_state_barrier": true,
+   "prologue_before_last_read": false,
+   "swap_half_parity": true
+  },
+  "controls_reachable_cells": {
+   "defeat_double_buffer": 256,
+   "drop_pre_store_barrier": 192,
+   "drop_prologue_publish_barrier": 256,
+   "drop_steady_state_barrier": 252,
+   "prologue_before_last_read": 192,
+   "swap_half_parity": 256
+  },
+  "controls_safe_cell_closed_forms": {
+   "defeat_double_buffer": {
+    "closed_form_matches_enumeration": true,
+    "explanation": "the defeated ordering is safe exactly when k_tiles == 1, because the steady state never stages a second k tile",
+    "has_closed_form": true,
+    "predicted_safe_cells": 4,
+    "uncaught_cells": 4
+   },
+   "drop_pre_store_barrier": {
+    "closed_form_matches_enumeration": true,
+    "explanation": "the defeated ordering is safe exactly when k_tiles is even, because the tile's last staging touch is then half 1 and the next tile's prologue writes half 0",
+    "has_closed_form": true,
+    "predicted_safe_cells": 96,
+    "uncaught_cells": 96
+   },
+   "drop_prologue_publish_barrier": {
+    "closed_form_matches_enumeration": true,
+    "explanation": "no closed form: this control must be caught on every reachable cell",
+    "has_closed_form": false,
+    "uncaught_cells": 0
+   },
+   "drop_steady_state_barrier": {
+    "closed_form_matches_enumeration": true,
+    "explanation": "no closed form: this control must be caught on every reachable cell",
+    "has_closed_form": false,
+    "uncaught_cells": 0
+   },
+   "prologue_before_last_read": {
+    "closed_form_matches_enumeration": true,
+    "explanation": "same parity argument as drop_pre_store_barrier: for even k_tiles the hoisted prologue writes half 0 while the last read is from half 1",
+    "has_closed_form": true,
+    "predicted_safe_cells": 96,
+    "uncaught_cells": 96
+   },
+   "swap_half_parity": {
+    "closed_form_matches_enumeration": true,
+    "explanation": "no closed form: this control must be caught on every reachable cell",
+    "has_closed_form": false,
+    "uncaught_cells": 0
+   }
+  },
+  "controls_uncaught_cell_counts": {
+   "defeat_double_buffer": 4,
+   "drop_pre_store_barrier": 96,
+   "drop_prologue_publish_barrier": 0,
+   "drop_steady_state_barrier": 0,
+   "prologue_before_last_read": 96,
+   "swap_half_parity": 0
+  },
+  "every_uncaught_cell_has_a_verified_closed_form": true,
+  "first_failure": null,
+  "k_tile_counts": [
+   1,
+   64
+  ],
+  "shipped_ordering_clean_everywhere": true,
+  "staging_reads_enumerated": 20800,
+  "staging_writes_enumerated": 20800,
+  "tiles_per_threadgroup_counts": [
+   1,
+   4
+  ]
+ },
+ "e156_barrier_failing_controls_caught": 3,
+ "e156_barrier_named_controls": [
+  "drop_prologue_publish_barrier",
+  "drop_steady_state_barrier",
+  "swap_half_parity"
+ ],
+ "e156_barrier_named_controls_caught_on_scored_shapes": {
+  "drop_prologue_publish_barrier": true,
+  "drop_steady_state_barrier": true,
+  "swap_half_parity": true
+ },
+ "e156_barrier_proof_exact": true,
+ "e156_barrier_proof_pass": true,
+ "e156_barrier_scored_rows": [
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 16480,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 4681,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    }
+   },
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 2064,
+   "required_tiles": 2060,
+   "shape": "gdn.in_proj",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 14336,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 4681,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    }
+   },
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 1792,
+   "required_tiles": 1792,
+   "shape": "fa.qkv",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 34816,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 4681,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    }
+   },
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 4352,
+   "required_tiles": 4352,
+   "shape": "mlp.gate_up",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 5120,
+   "M": 512,
+   "N": 248320,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 4681,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 79,
+     "stale_reads": 80
+    }
+   },
+   "k_tiles": 80,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 31040,
+   "required_tiles": 31040,
+   "shape": "lm_head",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 6144,
+   "M": 512,
+   "N": 5120,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 95,
+     "stale_reads": 96
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 6769,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 95,
+     "stale_reads": 96
+    }
+   },
+   "k_tiles": 96,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 640,
+   "required_tiles": 640,
+   "shape": "gdn.out_proj",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 6144,
+   "M": 512,
+   "N": 5120,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 95,
+     "stale_reads": 96
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 6769,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 95,
+     "stale_reads": 96
+    }
+   },
+   "k_tiles": 96,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 640,
+   "required_tiles": 640,
+   "shape": "fa.o_proj",
+   "tiles_per_threadgroup_max": 1
+  },
+  {
+   "K": 17408,
+   "M": 512,
+   "N": 5120,
+   "defects": {
+    "defeat_double_buffer": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 0,
+      "wanted_k_tile": 0
+     },
+     "races": 271,
+     "stale_reads": 272
+    },
+    "drop_pre_store_barrier": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "drop_prologue_publish_barrier": {
+     "first_race": {
+      "epoch": 0,
+      "first": "W(k_tile=0)",
+      "half": 0,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": null,
+     "races": 1,
+     "stale_reads": 0
+    },
+    "drop_steady_state_barrier": {
+     "first_race": {
+      "epoch": 1,
+      "first": "R(k_tile=0)",
+      "half": 0,
+      "second": "W(k_tile=2)"
+     },
+     "first_stale_read": null,
+     "races": 55081,
+     "stale_reads": 0
+    },
+    "none": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "prologue_before_last_read": {
+     "first_race": null,
+     "first_stale_read": null,
+     "races": 0,
+     "stale_reads": 0
+    },
+    "swap_half_parity": {
+     "first_race": {
+      "epoch": 1,
+      "first": "W(k_tile=1)",
+      "half": 1,
+      "second": "R(k_tile=0)"
+     },
+     "first_stale_read": {
+      "epoch": 1,
+      "found_k_tile": 1,
+      "half": 1,
+      "wanted_k_tile": 0
+     },
+     "races": 271,
+     "stale_reads": 272
+    }
+   },
+   "k_tiles": 272,
+   "k_tiles_parity": "even",
+   "launched_threadgroups": 640,
+   "required_tiles": 640,
+   "shape": "mlp.down",
+   "tiles_per_threadgroup_max": 1
+  }
+ ],
+ "e156_barrier_scored_shapes_clean": true,
+ "e156_barrier_single_buffered_control_caught": true,
+ "e156_barrier_single_buffered_model_clean": true,
+ "e156_barrier_source_fidelity": {
+  "expected_program": [
+   "WRITE",
+   "WRITE",
+   "ADVANCE",
+   "SHIFT",
+   "BARRIER",
+   "WRITE",
+   "WRITE",
+   "ADVANCE",
+   "SHIFT",
+   "READ"
+  ],
+  "header": {
+   "barriers_in_branch": 1,
+   "extracted_program": [
+    "WRITE",
+    "WRITE",
+    "ADVANCE",
+    "SHIFT",
+    "BARRIER",
+    "WRITE",
+    "WRITE",
+    "ADVANCE",
+    "SHIFT",
+    "READ"
+   ],
+   "matches_model": true,
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+   "staged_reads_in_branch": 1
+  },
+  "header_twin_programs_agree": true,
+  "twin": {
+   "barriers_in_branch": 1,
+   "extracted_program": [
+    "WRITE",
+    "WRITE",
+    "ADVANCE",
+    "SHIFT",
+    "BARRIER",
+    "WRITE",
+    "WRITE",
+    "ADVANCE",
+    "SHIFT",
+    "READ"
+   ],
+   "matches_model": true,
+   "path": "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp",
+   "staged_reads_in_branch": 1
+  }
+ },
+ "e156_k_order_detail": {
+  "bk_padded_unchanged": true,
+  "citations": [
+   "quantized_nax.h: `constexpr short SK = 32;`",
+   "quantized_nax.h: `for (int k = 0; k < K; k += BK)` in both branches",
+   "quantized_nax.h: `for (int kk1 = 0; kk1 < BK; kk1 += SK)` in both branches",
+   "quantized_nax.h: `tile_matmad_nax(Dtile, Atile, ..., Btile, ...)` in both"
+  ],
+  "inner_loops_identical_modulo_staging_pointer": true,
+  "only_difference": "the B tile is read from `Wk = Ws + cur * Ws_tile` instead of from `Ws`; K, BK, SK, TK and the k/kk1 nest are untouched",
+  "outer_k_loop_header_unchanged": true,
+  "sk_step_unchanged": true
+ },
+ "e156_k_order_preserved": true,
+ "evidence": "The event program of the shipped `kDoubleBuffer` branch was extracted from BOTH Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h and Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp and both match the model (True agree). The enumeration covers every reachable loop shape: k tiles 1 to 64 crossed with 1 to 4 output tiles per threadgroup, 256 cells, 20800 staged reads and 20800 staged writes. The shipped ordering has zero races and zero stale reads on every cell (True) and on every scored shape (True). All 3 of 3 named failing controls are caught on every reachable cell and on every scored shape. The detector itself is positive-controlled: the unmodified single-buffered loop is clean and deleting its publish barrier is caught (True). Supplementary controls: defeat_double_buffer caught 252/256, 4 uncaught cells all matched by its closed form (True), drop_pre_store_barrier caught 96/192, 96 uncaught cells all matched by its closed form (True), prologue_before_last_read caught 96/192, 96 uncaught cells all matched by its closed form (True). An uncaught cell is not a hole: the enumerator flags a catch exactly when the defeated ordering overlaps a read and a write, so an uncaught cell proves the barrier is redundant there, and every such cell is matched exactly by a checked closed form (True).",
+ "experiment": "E156",
+ "failing_controls_expected": 3,
+ "harness": "offline",
+ "k_order_evidence": "The pipelined inner `kk1` loop is textually identical to the single-buffered one after rewriting the staging base pointer `Wk` to `Ws`: True. The outer k loop header is unchanged in both branches: True. SK is unchanged: True. BK_padded is unchanged: True. the B tile is read from `Wk = Ws + cur * Ws_tile` instead of from `Ws`; K, BK, SK, TK and the k/kk1 nest are untouched. Every output element therefore accumulates the same K partial products in the same order, so the pipelined loop is bit-identical to the single-buffered one.",
+ "note_on_the_prologue_barrier": "The shipped loop has no separate prologue barrier. The barrier at the top of iteration 0 publishes the prologue's staged tile, so the control that deletes it is `drop_prologue_publish_barrier`, and it is caught on every shape with at least one k tile.",
+ "orderings_checked": 7,
+ "rung": "R1",
+ "source_binding_ok": true,
+ "why_not_executed": "is_nax_available() needs architecture gen >= 17 (backend/metal/device.cpp:913-931); every campaign Mac is applegpu_g16s, gen 16, so affine_qmm_t_nax executes zero times locally and no local run can observe a barrier removed from this k-loop"
+}
