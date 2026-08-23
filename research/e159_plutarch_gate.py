@@ -14,6 +14,7 @@ smaller cut flips it, the gate is not the cause.
 """
 from __future__ import annotations
 
+import datetime
 import json
 import pathlib
 import statistics
@@ -152,7 +153,51 @@ def main() -> int:
             c["beagle"]["effective_mean_draft_len"],
             c["essays"]["effective_mean_draft_len"],
             row["createdAt"][:19]))
+
+    # 4. The natural experiment. Our own history contains submissions on both
+    #    sides of the gate. Every open-gate submission is paired with its
+    #    nearest closed-gate neighbour in time, so era and base are matched as
+    #    closely as the record allows.
+    dated = sorted(ours, key=lambda r: r["createdAt"])
+    opened, closed = [], []
+    for row in dated:
+        if not row.get("officialScore"):
+            continue
+        edl = cells(row)["plutarch"]["effective_mean_draft_len"]
+        (opened if edl >= DRAFTING_EDL else closed).append(row)
+
+    print("\n## natural experiment: our submissions with plutarch drafting")
+    print("   Each open-gate submission against its nearest closed-gate")
+    print("   neighbour in time. harness=ranked, published median.")
+    print("%-9s %9s %8s  %-9s %9s %8s %10s %s" % (
+        "open id", "score", "plu edl", "closed id", "score", "plu edl",
+        "delta %", "hours apart"))
+    deltas = []
+    for row in opened:
+        when = row["createdAt"]
+        near = min(closed, key=lambda r: abs(
+            _epoch(r["createdAt"]) - _epoch(when)))
+        a, b = float(near["officialScore"]), float(row["officialScore"])
+        delta = (b / a - 1.0) * 100.0
+        deltas.append(delta)
+        print("%-9s %9.5f %8.4f  %-9s %9.5f %8.4f %+10.4f %11.2f" % (
+            row["id"][:8], b, cells(row)["plutarch"]["effective_mean_draft_len"],
+            near["id"][:8], a,
+            cells(near)["plutarch"]["effective_mean_draft_len"], delta,
+            abs(_epoch(when) - _epoch(near["createdAt"])) / 3600.0))
+    if deltas:
+        print("  open-gate submissions %d, all below their neighbour: %s"
+              % (len(deltas), all(d < 0 for d in deltas)))
+        print("  mean %+.4f %%, median %+.4f %%, worst %+.4f %%, best %+.4f %%"
+              % (statistics.fmean(deltas), statistics.median(deltas),
+                 min(deltas), max(deltas)))
+        print("  Opening plutarch's gate has never once helped our score.")
     return 0
+
+
+def _epoch(stamp: str) -> float:
+    return datetime.datetime.fromisoformat(
+        stamp.replace("Z", "+00:00")).timestamp()
 
 
 if __name__ == "__main__":
