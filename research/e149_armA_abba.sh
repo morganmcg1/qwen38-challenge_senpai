@@ -79,12 +79,21 @@ depth=8
 prompts=(benchfixture beagle_a essays_montaigne)
 runs_parent=".mlxfast-private/e128/runs-e149a"
 
-# F1, calibrated across three QMV arms and two independent sessions.
+# F1, calibrated across three QMV arms and two independent sessions. The two
+# constants are DOUBLES, and the report and the advisor's note print them at
+# different precision: `jq` renders the same value as 6.3589743589743586 and F1
+# quotes 6.358974358974359. `same_double` compares the numbers, not the text,
+# so a repr difference cannot void a correct leg.
 ship_bench_rounds=78
 ship_bench_edl=6.358974358974359
 pb6_bench_edl=5.853658536585366
 
 has_phase() { [[ ",${phases}," == *",$1,"* ]]; }
+
+same_double() {
+  [[ -n "$1" && -n "$2" ]] || return 1
+  awk -v a="$1" -v b="$2" 'BEGIN { exit !(a + 0 == b + 0) }'
+}
 
 arm_leaf() { case "$1" in leaf16) echo 16 ;; *) echo "" ;; esac; }
 
@@ -195,8 +204,8 @@ if has_phase 2; then
         2>/dev/null)"
       witness=ok
       if [[ "${id}" == "benchfixture" && "${arm}" == "shipped" ]]; then
-        if [[ "${got_rounds}" != "${ship_bench_rounds}" \
-            || "${got_edl}" != "${ship_bench_edl}" ]]; then
+        if [[ "${got_rounds}" != "${ship_bench_rounds}" ]] \
+            || ! same_double "${got_edl}" "${ship_bench_edl}"; then
           witness=DEPTH_PRICE_MISMATCH
           voided=$((voided + 1))
           echo "e149_armA: ${slot} ${id} asked for .ship but ran" \
@@ -204,7 +213,7 @@ if has_phase 2; then
                "wanted ${ship_bench_rounds} at ${ship_bench_edl}" >&2
         fi
       fi
-      if [[ "${got_edl}" == "${pb6_bench_edl}" ]]; then
+      if same_double "${got_edl}" "${pb6_bench_edl}"; then
         witness=PB6_DETECTED
         voided=$((voided + 1))
         echo "e149_armA: ${slot} ${id} ran the pb6 depth price" >&2

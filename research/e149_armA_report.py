@@ -56,6 +56,8 @@ F235_US_PER_ROUND_PER_PCT = 515.2
 DECODE_TOKENS = 512
 
 SHIP_BENCH_ROUNDS = 78
+# F1 quotes these as text, but the harness prints the same doubles with a
+# different repr (6.3589743589743586). Compare the parsed values.
 SHIP_BENCH_EDL = "6.358974358974359"
 PB6_BENCH_EDL = "5.853658536585366"
 
@@ -306,7 +308,8 @@ def main() -> None:
         "observed_shipped_edl": sorted({leg["edl_text"] for leg in bench_legs}),
         "passed": bool(bench_legs)
         and all(leg["rounds"] == SHIP_BENCH_ROUNDS for leg in bench_legs)
-        and all(leg["edl_text"] == SHIP_BENCH_EDL for leg in bench_legs),
+        and all(float(leg["edl_text"]) == float(SHIP_BENCH_EDL)
+                for leg in bench_legs),
     }
     if bench is not None:
         summary["benchfixture_witness_prompt_decode_pct"] = bench["decode_pct"]
