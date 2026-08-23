@@ -102,6 +102,15 @@ def load_leg(slot_dir: pathlib.Path) -> dict | None:
                 meta.get("e145_leg_exit_temp_c") or "nan"),
             "phase_trace": meta.get("phase_trace", "?"),
             "timing_valid": meta.get("timing_valid", "?"),
+            # CAMPAIGN RULE 128. A timing difference between two arms is only
+            # attributable to the arm if the warm phase left both processes in
+            # the same residency and cache state.
+            "warm_telemetry_present":
+                meta.get("e145_warm_telemetry_present", "false") == "true",
+            "warm": {k[len("e145_warm_"):]: v for k, v in meta.items()
+                     if k.startswith("e145_warm_")
+                     and not k.endswith("_line")
+                     and k != "e145_warm_telemetry_present"},
             "commit": meta.get("e145_session_commit", meta.get("base_sha", "")),
             "worker_sha256": meta.get("worker_sha256", ""),
             "head_sha256": meta.get("head_manifest_tree_sha256", ""),

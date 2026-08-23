@@ -96,7 +96,17 @@ e145_leg() {
   entry_c="$(e145_gpu_temp)"
   echo "e145_leg: gate passed in ${E145_GATE_WAIT_S}s, entry ${entry_c}C"
 
+  # CAMPAIGN RULE 128: two arms are comparable only if their warm phase left
+  # the process in the same residency and cache state, so every leg records
+  # `wired-zh` and `warm`. Those lines are written by the WORKER to its own
+  # stderr; the parent discards that stream unless
+  # `MLX_DFLASH_TRACE_CACHE_SEAM=1`. The variable is read only by the CLI
+  # parent (`MLXFastCLI/main.swift:1409`) and decides forwarding, not worker
+  # behaviour, and both lines are emitted before the timed window, so a timed
+  # round gains no work from it. It is set for EVERY leg, so it cannot bias an
+  # arm comparison.
   local -a leg_env=(E128_FORCE=1 E128_NO_TRACE=1
+                    MLX_DFLASH_TRACE_CACHE_SEAM=1
                     "E128_TOKENS=${tokens}"
                     "E128_RUNS_DIR=e145/${slot}")
   if [[ "${arm}" == "serial" ]]; then
@@ -126,8 +136,35 @@ e145_leg() {
     echo "e145_session_commit=${E145_SESSION_COMMIT}"
     echo "e145_session_worker_sha256=${E145_SESSION_WORKER}"
     echo "e145_leg_exit=${rc}"
+    e145_warm_telemetry "${out}/stderr.log"
   } >> "${out}/meta.txt"
   return "${rc}"
+}
+
+# Pull one `key=value` field out of a whitespace-separated telemetry line.
+e145_field() {
+  sed -n "s/.*[[:space:]]$2=\([^[:space:]]*\).*/\1/p" <<< "$1"
+}
+
+# Rule 128 evidence for one leg, written as `e145_warm_*` meta keys. Absence is
+# recorded rather than skipped: a leg with no telemetry cannot support an arm
+# attribution claim, and the reader must be able to see that.
+e145_warm_telemetry() {
+  local log="$1" wired warm key
+  wired="$(grep -h 'qwen-mtp wired-zh' "${log}" 2>/dev/null | tail -1)"
+  warm="$(grep -h 'qwen-mtp warm ' "${log}" 2>/dev/null | tail -1)"
+  echo "e145_warm_telemetry_present=$(
+    [[ -n "${wired}" && -n "${warm}" ]] && echo true || echo false)"
+  echo "e145_warm_wired_line=${wired}"
+  echo "e145_warm_warm_line=${warm}"
+  for key in request applied active slack_mb fraction maxrec; do
+    echo "e145_warm_wired_${key}=$(e145_field "${wired}" "${key}")"
+  done
+  for key in shapes_ms wnorm wprefetch refill refill_ms emulated_clear \
+             cache_after_sizing cache_end active_end wired_gate_fired \
+             physmem; do
+    echo "e145_warm_${key}=$(e145_field "${warm}" "${key}")"
+  done
 }
 
 # Build the worker once and prove BOTH E145 gates are inside the bytes that are

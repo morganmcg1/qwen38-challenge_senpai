@@ -1,0 +1,440 @@
+{
+  "anchors": {
+    "c91581eb": {
+      "name": "near-serial board row",
+      "prompts": {
+        "beagle": {
+          "draft_len": 0.041015625,
+          "drafting_excess_us": 141.34375,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 3.1,
+          "mtp_spt": 0.0314805957,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32107.699200000003,
+          "round_us_raw": 31480.5957,
+          "round_us_width1": 31339.25195,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "botany": {
+          "draft_len": 0.052734375,
+          "drafting_excess_us": 181.7265625000001,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 3.7,
+          "mtp_spt": 0.0315063477,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32133.96418804781,
+          "round_us_raw": 31506.3477,
+          "round_us_width1": 31324.6211375,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "drama": {
+          "draft_len": 0.046875,
+          "drafting_excess_us": 161.53515625000006,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 3.4,
+          "mtp_spt": 0.0314704473,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32097.348640637454,
+          "round_us_raw": 31470.447300000003,
+          "round_us_width1": 31308.912143750003,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "essays": {
+          "draft_len": 0.037109375,
+          "drafting_excess_us": 127.8826171875,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 2.9,
+          "mtp_spt": 0.0314673302,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32094.169447011947,
+          "round_us_raw": 31467.330199999997,
+          "round_us_width1": 31339.447582812496,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "medicine": {
+          "draft_len": 0.044921875,
+          "drafting_excess_us": 154.80468750000006,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 3.3,
+          "mtp_spt": 0.0314857031,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32112.908341035854,
+          "round_us_raw": 31485.7031,
+          "round_us_width1": 31330.8984125,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "plutarch": {
+          "draft_len": 0.03515625,
+          "drafting_excess_us": 121.15195312499999,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 2.8,
+          "mtp_spt": 0.0314381504,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32064.40837609562,
+          "round_us_raw": 31438.150400000002,
+          "round_us_width1": 31316.998446875,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "republic": {
+          "draft_len": 0.048828125,
+          "drafting_excess_us": 168.265625,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 3.5,
+          "mtp_spt": 0.0315000762,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32127.56775776892,
+          "round_us_raw": 31500.076199999996,
+          "round_us_width1": 31331.810574999996,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        },
+        "travel": {
+          "draft_len": 0.03515625,
+          "drafting_excess_us": 121.15195312499999,
+          "drafting_rounds": 10.0,
+          "mean_drafting_width": 2.8,
+          "mtp_spt": 0.0314194472,
+          "non_drafting_rounds": 502,
+          "round_us_at_rounds_lower_bound": 32045.332602390437,
+          "round_us_raw": 31419.4472,
+          "round_us_width1": 31298.295246874997,
+          "rounds_lower_bound": 502.0,
+          "rounds_used": 512.0
+        }
+      },
+      "round_us_raw_mean": 31471.012225,
+      "round_us_upper_bound_mean": 32097.924819123506,
+      "round_us_width1_mean": 31323.77943691406,
+      "round_us_width1_spread_pct": 0.1313773008151182,
+      "score": 1.2092715739875,
+      "solver": "scarletbright",
+      "status": "rejected",
+      "submission": "c91581eb"
+    },
+    "f219_plutarch": {
+      "draft_len": 0.1557377049180328,
+      "drafting_excess_us": 536.687704918033,
+      "drafting_rounds": 38.0,
+      "mean_drafting_width": 2.995901639344263,
+      "mtp_spt": 0.0300827792,
+      "name": "F219 plutarch @1760479a",
+      "non_drafting_rounds": 449,
+      "round_us_raw": 31627.069713347024,
+      "round_us_width1": 31090.38200842899,
+      "rounds_used": 487.0,
+      "solver": "scarletbright",
+      "submission": "1760479a"
+    },
+    "replayed_curve_w1": {
+      "anchor_receipt": "623e77af",
+      "name": "replayed E134 curve, w=1",
+      "note": "the object under test",
+      "round_us_width1": 31173.2
+    }
+  },
+  "board_prefill_seconds_per_token_is_a_different_measurement": true,
+  "c91581eb_is_a_zero_accepted_draft_row": false,
+  "f219_round_costs": {
+    "beagle": {
+      "draft_len": 4.381818181818182,
+      "implied_accept_rate": 0.8340248962655601,
+      "mtp_spt": 0.0106862576,
+      "non_drafting_rounds": 0,
+      "round_us": 49739.67173818182,
+      "rounds": 110.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "botany": {
+      "draft_len": 6.148148148148148,
+      "implied_accept_rate": 0.8654618473895582,
+      "mtp_spt": 0.0096533594,
+      "non_drafting_rounds": 0,
+      "round_us": 61018.76559012346,
+      "rounds": 81.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "drama": {
+      "draft_len": 2.2976190476190474,
+      "implied_accept_rate": 0.4490500863557858,
+      "mtp_spt": 0.0178216603,
+      "non_drafting_rounds": 0,
+      "round_us": 36209.087593650795,
+      "rounds": 252.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "essays": {
+      "draft_len": 5.086956521739131,
+      "implied_accept_rate": 0.8974358974358974,
+      "mtp_spt": 0.0098320488,
+      "non_drafting_rounds": 0,
+      "round_us": 54717.488973913045,
+      "rounds": 92.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "medicine": {
+      "draft_len": 5.2555555555555555,
+      "implied_accept_rate": 0.8921775898520085,
+      "mtp_spt": 0.0097197383,
+      "non_drafting_rounds": 0,
+      "round_us": 55294.51121777777,
+      "rounds": 90.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "plutarch": {
+      "draft_len": 0.1557377049180328,
+      "implied_accept_rate": 0.32962282502972035,
+      "mtp_spt": 0.0300827792,
+      "non_drafting_rounds": 449,
+      "round_us": 31627.069713347024,
+      "rounds": 487.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "republic": {
+      "draft_len": 4.989247311827957,
+      "implied_accept_rate": 0.9030172413793104,
+      "mtp_spt": 0.009709832,
+      "non_drafting_rounds": 0,
+      "round_us": 53456.27939784947,
+      "rounds": 93.0,
+      "rounds_source": "F92 pinned ranked round count"
+    },
+    "travel": {
+      "draft_len": 2.647887323943662,
+      "implied_accept_rate": 0.5344239261340826,
+      "mtp_spt": 0.0156178223,
+      "non_drafting_rounds": 0,
+      "round_us": 37718.51423396226,
+      "rounds": 212.0,
+      "rounds_source": "F92 pinned ranked round count"
+    }
+  },
+  "gpu_used": false,
+  "harness": "ranked board rows plus one local depth-0 leg",
+  "local_serial_leg": {
+    "leg": "r1-benchfixture-p3-serial",
+    "rounds": 512,
+    "seed_prefill_s": 4.004016041755676,
+    "spt_blocks_only": 0.065897046,
+    "spt_seed_inclusive": 0.073703887
+  },
+  "prefill_authority": [
+    "fixtures/qwen3_8_27b_mtp_track.json proposed_scoring.prefill_component",
+    "senpai/program.md, Goal And Score"
+  ],
+  "prefill_decomposition": {
+    "0.500": {
+      "mean_share_pct": 8.033832415782392,
+      "median_pair_share_pct": 9.535465389469897,
+      "per_prompt": {
+        "beagle": {
+          "prefill_us_per_round": 4545.454545454545,
+          "share_of_round_pct": 9.138489231253416,
+          "work_us_per_round": 45194.21719272728
+        },
+        "botany": {
+          "prefill_us_per_round": 6172.83950617284,
+          "share_of_round_pct": 10.11629692353524,
+          "work_us_per_round": 54845.926083950624
+        },
+        "drama": {
+          "prefill_us_per_round": 1984.126984126984,
+          "share_of_round_pct": 5.479638168167755,
+          "work_us_per_round": 34224.96060952381
+        },
+        "essays": {
+          "prefill_us_per_round": 5434.782608695652,
+          "share_of_round_pct": 9.932441547686377,
+          "work_us_per_round": 49282.7063652174
+        },
+        "medicine": {
+          "prefill_us_per_round": 5555.555555555556,
+          "share_of_round_pct": 10.047209810165365,
+          "work_us_per_round": 49738.955662222215
+        },
+        "plutarch": {
+          "prefill_us_per_round": 1026.694045174538,
+          "share_of_round_pct": 3.246250931496382,
+          "work_us_per_round": 30600.375668172484
+        },
+        "republic": {
+          "prefill_us_per_round": 5376.344086021505,
+          "share_of_round_pct": 10.0574603144524,
+          "work_us_per_round": 48079.93531182796
+        },
+        "travel": {
+          "prefill_us_per_round": 2358.490566037736,
+          "share_of_round_pct": 6.252872399502203,
+          "work_us_per_round": 35360.02366792453
+        }
+      },
+      "prefill_seconds_total": 0.5,
+      "share_of_replayed_slope_pct": 23.520700937291416,
+      "slope_us_per_width_at_accept_0.83": 810.546875
+    },
+    "1.000": {
+      "mean_share_pct": 16.067664831564784,
+      "median_pair_share_pct": 19.070930778939793,
+      "per_prompt": {
+        "beagle": {
+          "prefill_us_per_round": 9090.90909090909,
+          "share_of_round_pct": 18.276978462506833,
+          "work_us_per_round": 40648.762647272735
+        },
+        "botany": {
+          "prefill_us_per_round": 12345.67901234568,
+          "share_of_round_pct": 20.23259384707048,
+          "work_us_per_round": 48673.08657777778
+        },
+        "drama": {
+          "prefill_us_per_round": 3968.253968253968,
+          "share_of_round_pct": 10.95927633633551,
+          "work_us_per_round": 32240.833625396826
+        },
+        "essays": {
+          "prefill_us_per_round": 10869.565217391304,
+          "share_of_round_pct": 19.864883095372754,
+          "work_us_per_round": 43847.92375652174
+        },
+        "medicine": {
+          "prefill_us_per_round": 11111.111111111111,
+          "share_of_round_pct": 20.09441962033073,
+          "work_us_per_round": 44183.40010666666
+        },
+        "plutarch": {
+          "prefill_us_per_round": 2053.388090349076,
+          "share_of_round_pct": 6.492501862992764,
+          "work_us_per_round": 29573.68162299795
+        },
+        "republic": {
+          "prefill_us_per_round": 10752.68817204301,
+          "share_of_round_pct": 20.1149206289048,
+          "work_us_per_round": 42703.591225806456
+        },
+        "travel": {
+          "prefill_us_per_round": 4716.981132075472,
+          "share_of_round_pct": 12.505744799004406,
+          "work_us_per_round": 33001.53310188679
+        }
+      },
+      "prefill_seconds_total": 1.0,
+      "share_of_replayed_slope_pct": 47.04140187458283,
+      "slope_us_per_width_at_accept_0.83": 1621.09375
+    },
+    "1.710": {
+      "mean_share_pct": 27.470647237860206,
+      "median_pair_share_pct": 32.60528629503939,
+      "per_prompt": {
+        "beagle": {
+          "prefill_us_per_round": 15542.591865447772,
+          "share_of_round_pct": 31.247877845395514,
+          "work_us_per_round": 34197.07987273405
+        },
+        "botany": {
+          "prefill_us_per_round": 21107.223520978456,
+          "share_of_round_pct": 34.591364339882496,
+          "work_us_per_round": 39911.542069145005
+        },
+        "drama": {
+          "prefill_us_per_round": 6784.464703171646,
+          "share_of_round_pct": 18.736911515995477,
+          "work_us_per_round": 29424.62289047915
+        },
+        "essays": {
+          "prefill_us_per_round": 18583.533752165815,
+          "share_of_round_pct": 33.96269474468327,
+          "work_us_per_round": 36133.95522174723
+        },
+        "medicine": {
+          "prefill_us_per_round": 18996.501168880608,
+          "share_of_round_pct": 34.3551299225031,
+          "work_us_per_round": 36298.010048897166
+        },
+        "plutarch": {
+          "prefill_us_per_round": 3510.647033263357,
+          "share_of_round_pct": 11.100133730637143,
+          "work_us_per_round": 28116.422680083666
+        },
+        "republic": {
+          "prefill_us_per_round": 18383.710808594136,
+          "share_of_round_pct": 34.39018019150377,
+          "work_us_per_round": 35072.56858925533
+        },
+        "travel": {
+          "prefill_us_per_round": 8064.5523830153525,
+          "share_of_round_pct": 21.380885612280878,
+          "work_us_per_round": 29653.961850946907
+        }
+      },
+      "prefill_seconds_total": 1.7096851051992548,
+      "share_of_replayed_slope_pct": 80.42598411266655,
+      "slope_us_per_width_at_accept_0.83": 2771.559838506604
+    },
+    "2.000": {
+      "mean_share_pct": 32.13532966312957,
+      "median_pair_share_pct": 38.14186155787959,
+      "per_prompt": {
+        "beagle": {
+          "prefill_us_per_round": 18181.81818181818,
+          "share_of_round_pct": 36.553956925013665,
+          "work_us_per_round": 31557.853556363643
+        },
+        "botany": {
+          "prefill_us_per_round": 24691.35802469136,
+          "share_of_round_pct": 40.46518769414096,
+          "work_us_per_round": 36327.407565432106
+        },
+        "drama": {
+          "prefill_us_per_round": 7936.507936507936,
+          "share_of_round_pct": 21.91855267267102,
+          "work_us_per_round": 28272.57965714286
+        },
+        "essays": {
+          "prefill_us_per_round": 21739.130434782608,
+          "share_of_round_pct": 39.72976619074551,
+          "work_us_per_round": 32978.35853913044
+        },
+        "medicine": {
+          "prefill_us_per_round": 22222.222222222223,
+          "share_of_round_pct": 40.18883924066146,
+          "work_us_per_round": 33072.288995555544
+        },
+        "plutarch": {
+          "prefill_us_per_round": 4106.776180698152,
+          "share_of_round_pct": 12.985003725985528,
+          "work_us_per_round": 27520.293532648873
+        },
+        "republic": {
+          "prefill_us_per_round": 21505.37634408602,
+          "share_of_round_pct": 40.2298412578096,
+          "work_us_per_round": 31950.903053763446
+        },
+        "travel": {
+          "prefill_us_per_round": 9433.962264150943,
+          "share_of_round_pct": 25.01148959800881,
+          "work_us_per_round": 28284.55196981132
+        }
+      },
+      "prefill_seconds_total": 2.0,
+      "share_of_replayed_slope_pct": 94.08280374916566,
+      "slope_us_per_width_at_accept_0.83": 3242.1875
+    }
+  },
+  "prefill_is_inside_the_scored_leg": true,
+  "ranked_prefill_estimate": {
+    "assumption": "one level factor scales prefill and decode alike",
+    "local_prefill_seconds": 4.004016041755676,
+    "local_total_seconds": 37.736390144,
+    "local_work_seconds": 33.739287552,
+    "prefill_seconds_ranked": 1.7096851051992548,
+    "ranked_near_serial_total_seconds": 16.1131582592,
+    "uniform_level_factor": 2.3419611187927085
+  },
+  "three_anchor_agree_within_1p5_pct": true,
+  "three_anchor_spread_pct": 0.7481697043720344
+}
