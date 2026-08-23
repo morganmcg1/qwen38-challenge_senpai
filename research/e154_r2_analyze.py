@@ -129,9 +129,12 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
     """Mean wall clock per injection level, differenced against level zero.
 
     Levels cycle by drafting-round index, so every level is interleaved
-    across the leg and monotone thermal drift is shared. Draft count `d`
-    changes the round's real work, so the curve is also reported on the
-    modal `d` alone.
+    across the leg and monotone thermal drift is shared.
+
+    Everything that decides the knee runs on the modal draft count alone.
+    Pooling across `d` is what would ruin this measurement: `d` moves the
+    round by tens of milliseconds, so the all-`d` spread is an order of
+    magnitude larger than the effect and would hide any real knee.
     """
     by_level: dict[float, list[dict]] = defaultdict(list)
     for row in rounds:
@@ -141,9 +144,12 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
 
     modal_d = Counter(r.get("d") for r in rounds).most_common(1)[0][0]
     out = {"level_key": level_key, "modal_d": modal_d, "levels": []}
-    base_all = statistics.fmean(
-        [r["wall_us"] for r in by_level[0.0]])
+    base_all = statistics.fmean([r["wall_us"] for r in by_level[0.0]])
     base_modal = [r["wall_us"] for r in by_level[0.0] if r.get("d") == modal_d]
+    if len(base_modal) < 2:
+        return {"error": f"level zero has {len(base_modal)} modal-d rounds"}
+    base_mean = statistics.fmean(base_modal)
+    base_sem = statistics.stdev(base_modal) / math.sqrt(len(base_modal))
 
     for level in sorted(by_level):
         rows = by_level[level]
@@ -161,20 +167,32 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
                 [r["process_cpu_us"] for r in rows]),
             "n_modal_d": len(modal),
         }
-        if modal and base_modal:
-            entry["delta_wall_us_modal_d"] = (
-                statistics.fmean(modal) - statistics.fmean(base_modal))
+        if len(modal) >= 2:
+            mean = statistics.fmean(modal)
+            sem = statistics.stdev(modal) / math.sqrt(len(modal))
+            delta = mean - base_mean
+            threshold = 3.0 * math.sqrt(sem ** 2 + base_sem ** 2)
+            entry.update({
+                "mean_wall_us_modal_d": mean,
+                "sem_wall_us_modal_d": sem,
+                "delta_wall_us_modal_d": delta,
+                "delta_3sigma_threshold_us": threshold,
+                "delta_is_significant": abs(delta) > threshold,
+                # 1.0 means the round swallowed the whole stall, 0.0 means it
+                # passed straight through to the wall clock.
+                "absorbed_fraction": (
+                    1.0 - delta / level if level > 0 else None),
+            })
         out["levels"].append(entry)
 
-    xs = [e["level"] for e in out["levels"]]
-    ys = [e["delta_wall_us"] for e in out["levels"]]
+    usable = [e for e in out["levels"] if "delta_wall_us_modal_d" in e]
+    xs = [e["level"] for e in usable]
+    ys = [e["delta_wall_us_modal_d"] for e in usable]
     slope, intercept, se = ols(xs, ys)
     out["absorption_slope"] = slope
     out["absorption_slope_se"] = se
     out["absorption_intercept_us"] = intercept
 
-    # Per-round regression, with draft count as a covariate through the
-    # modal-d subset. Far more degrees of freedom than the six level means.
     rows_modal = [r for r in rounds if r.get("d") == modal_d]
     s2, _, se2 = ols(
         [float(r.get(level_key, 0)) for r in rows_modal],
@@ -183,20 +201,93 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
     out["per_round_slope_modal_d_se"] = se2
     out["per_round_n_modal_d"] = len(rows_modal)
 
-    # Slack knee: the largest level whose measured cost stays inside noise.
-    noise = max(
-        (e["sd_wall_us"] for e in out["levels"] if e["level"] == 0.0),
-        default=0.0)
+    # The knee is the largest level the round still absorbs, and the first
+    # level above it brackets the true value. Report both ends: with a
+    # geometric ladder the bracket is wide and quoting one number would
+    # overstate the resolution.
     knee = 0.0
-    for entry in out["levels"]:
+    knee_upper = None
+    for entry in usable:
         if entry["level"] == 0.0:
             continue
-        if entry["delta_wall_us"] <= noise:
+        if not entry["delta_is_significant"]:
             knee = entry["level"]
         else:
+            knee_upper = entry["level"]
             break
     out["slack_us_per_round"] = knee
-    out["zero_level_sd_us"] = noise
+    out["knee_bracket_us"] = [knee, knee_upper]
+    out["zero_level_sd_us"] = (
+        statistics.stdev(base_modal) if len(base_modal) > 1 else 0.0)
+    out["zero_level_sem_us"] = base_sem
+
+    # Slope inside the absorbing region only. This is the number that
+    # separates "absorbed" from "leaks a little"; the pooled slope is
+    # dominated by the levels above the knee.
+    below = [e for e in usable if 0 < e["level"] <= knee] if knee else []
+    if len(below) >= 2:
+        s3, _, se3 = ols([0.0] + [e["level"] for e in below],
+                         [0.0] + [e["delta_wall_us_modal_d"] for e in below])
+        out["slope_below_knee_us_per_us"] = s3
+        out["slope_below_knee_se"] = se3
+    elif below:
+        e = below[0]
+        out["slope_below_knee_us_per_us"] = (
+            e["delta_wall_us_modal_d"] / e["level"])
+        out["slope_below_knee_se"] = e["delta_3sigma_threshold_us"] / 3.0 \
+            / e["level"]
+    above = [e for e in usable if e["level"] > knee and e["level"] > 0]
+    if len(above) >= 2:
+        s4, _, se4 = ols([e["level"] for e in above],
+                         [e["delta_wall_us_modal_d"] for e in above])
+        out["slope_above_knee_us_per_us"] = s4
+        out["slope_above_knee_se"] = se4
+
+    out.update(hinge_fit(usable))
+    return out
+
+
+def hinge_fit(levels: list[dict]) -> dict:
+    """Fit `delta = max(0, level - S)` and return S.
+
+    A geometric ladder brackets the knee only to within its own spacing,
+    which here is a factor of four. The hinge model uses the levels ABOVE
+    the knee to locate it: if the round absorbs `S` and passes the rest
+    through at unit slope, then every such level reports `S = level - delta`
+    independently. Their agreement is the test of the model, so the
+    per-level estimates are published next to the fit rather than hidden
+    behind it.
+    """
+    points = [(e["level"], e["delta_wall_us_modal_d"]) for e in levels]
+    if len(points) < 3:
+        return {}
+
+    per_level = [
+        {"level": lvl, "implied_slack_us": lvl - delta}
+        for lvl, delta in points
+        if lvl > 0 and delta > 0]
+
+    top = max(lvl for lvl, _ in points)
+    best_s, best_loss = 0.0, float("inf")
+    steps = 2000
+    for i in range(steps + 1):
+        candidate = top * i / steps
+        loss = sum((delta - max(0.0, lvl - candidate)) ** 2
+                   for lvl, delta in points)
+        if loss < best_loss:
+            best_s, best_loss = candidate, loss
+
+    residuals = [delta - max(0.0, lvl - best_s) for lvl, delta in points]
+    out = {
+        "hinge_slack_us": best_s,
+        "hinge_rms_residual_us": math.sqrt(best_loss / len(points)),
+        "hinge_max_abs_residual_us": max(abs(r) for r in residuals),
+        "hinge_per_level_implied_slack": per_level,
+    }
+    if len(per_level) > 1:
+        implied = [p["implied_slack_us"] for p in per_level]
+        out["hinge_implied_slack_spread_us"] = max(implied) - min(implied)
+        out["hinge_implied_slack_median_us"] = statistics.median(implied)
     return out
 
 
@@ -280,6 +371,25 @@ def main() -> int:
 
     result["e154_absolute_round_wall_clock_us"] = describe(all_zero_walls)
     result["e154_host_syncs_per_round"] = 1
+
+    # F4 asks for the knee and the sub-knee slope by name. `cpu_eval` is the
+    # site the FINDING 281 prediction is actually about: it burns while the
+    # whole round's device work is outstanding, so its knee is the host slack
+    # against the round's GPU busy time. `cpu_pre` burns while only the head
+    # chain is outstanding and answers a narrower question.
+    for arm in result["arms"]:
+        curve = arm.get("cpu_curve")
+        if not curve or "error" in curve:
+            continue
+        site = "preeval" if arm["arm"] == "cpu_eval" else "preverify"
+        result.setdefault("e154_fixed_term_absorption_knee_us", {})[site] = \
+            curve["slack_us_per_round"]
+        result.setdefault("e154_knee_bracket_us", {})[site] = \
+            curve["knee_bracket_us"]
+        if "slope_below_knee_us_per_us" in curve:
+            result.setdefault(
+                "e154_delay_slope_below_knee_us_per_us", {})[site] = \
+                curve["slope_below_knee_us_per_us"]
 
     # Token neutrality: the instrument must not change what is generated.
     matched = {a["all_tokens_matched"] for a in result["arms"]}

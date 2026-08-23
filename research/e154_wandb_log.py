@@ -205,6 +205,14 @@ def log_r2(run, summary: dict, r2: dict) -> None:
         summary["e154_entry_temperature_spread_c"] = \
             r2["entry_temperature_spread_c"]
 
+    # F4 named these three. The knee is reported per injection site because
+    # the two sites bound different quantities and one number would hide it.
+    for field in ("e154_fixed_term_absorption_knee_us",
+                  "e154_delay_slope_below_knee_us_per_us",
+                  "e154_knee_bracket_us"):
+        for site, value in (r2.get(field) or {}).items():
+            summary["%s_%s" % (field, site)] = value
+
     # Every arm ran ungated on purpose. Publish the flags rather than the
     # absence of them, so nobody reads these legs as gate-qualified.
     summary["e154_r2_cool_gate_passed_real_gate"] = False
@@ -269,6 +277,33 @@ def log_r2(run, summary: dict, r2: dict) -> None:
              "slack_us_per_round", "zero_level_sd_us"], slope_rows)})
 
 
+def log_bandwidth(run, summary: dict, bw: dict) -> None:
+    """F4 item 3. Can any host we use reach the 567 GB/s that FINDING 281's
+    fixed-term identification requires?
+
+    The probe is a fully coalesced grid-stride read, so it is a ceiling. A
+    real model cannot beat it, which is what makes a shortfall decisive.
+    """
+    achievable = bw["e154_host_achievable_read_gbps"]
+    summary.update({
+        "e154_host_achievable_read_gbps": achievable,
+        "e154_host_read_gbps_median": bw["median_gbps_excluding_warmup"],
+        "e154_host_read_gbps_mean": bw["mean_gbps_excluding_warmup"],
+        "e154_bandwidth_probe_device": bw["device"],
+        "e154_bandwidth_probe_buffer_gib": bw["buffer_gib"],
+        # FINDING 281 needs 14.412 GB in 25,409 us.
+        "e154_finding281_required_gbps": 567.0,
+        "e154_host_over_required_bandwidth": achievable / 567.0,
+        "e154_finding281_bandwidth_reachable_on_this_host":
+            achievable >= 567.0,
+        "e154_implied_weight_stream_us_on_this_host":
+            14.412e9 / (achievable * 1e9) * 1e6,
+    })
+    run.log({"bandwidth_samples": table(
+        ["iteration", "gbps"],
+        [[i, g] for i, g in enumerate(bw["all_gbps"])])})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name",
@@ -281,6 +316,7 @@ def main() -> int:
     r0 = load("e154_r0.json")
     r1 = load("e154_r1.json")
     r2 = load("e154_r2.json")
+    bw = load("e154_bandwidth.json")
     if r0 is None:
         raise SystemExit("the R0 anchor receipt must be present")
 
@@ -328,6 +364,8 @@ def main() -> int:
     else:
         print("warning: no R2 artifact, logging R0 and R1 only",
               file=sys.stderr)
+    if bw is not None:
+        log_bandwidth(run, summary, bw)
 
     if args.verdict:
         summary["e154_boundedness_verdict"] = args.verdict
