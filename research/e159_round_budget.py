@@ -192,6 +192,27 @@ def quadratic_term(xs: list[float], ys: list[float]) -> dict:
             "residual_sd": math.sqrt(sigma2)}
 
 
+def implied_uniform_p(a: float, depth: int) -> float:
+    """The single per-position acceptance a geometric chain would need.
+
+    Under independent per-position acceptance p, the mean accepted prefix of a
+    D-draft chain is sum_{k=1..D} p^k. Inverting that for p turns the measured
+    `a` into one comparable number per depth, so a p that FALLS with depth says
+    the later positions are genuinely harder rather than merely rarer.
+    """
+    if depth <= 0 or a <= 0.0:
+        return 0.0
+    lo, hi = 0.0, 1.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        total = sum(mid ** k for k in range(1, depth + 1))
+        if total < a:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
 def parse_trace(path: pathlib.Path) -> list[dict]:
     rows = []
     for line in path.read_text().splitlines():
@@ -302,6 +323,14 @@ def main() -> int:
                                          for leg in group],
             "mtp_seconds_per_token": st.fmean(
                 [leg["mtp_seconds_per_token"] for leg in group]),
+            "realized_acceptance_a_over_D": (
+                st.fmean([leg["a_accepted_per_round"] for leg in group])
+                / depth if depth else 0.0),
+            "implied_uniform_p": implied_uniform_p(
+                st.fmean([leg["a_accepted_per_round"] for leg in group]),
+                depth),
+            "rejected_per_round": st.fmean(
+                [leg["rejected_per_round"] for leg in group]),
             "fit_R_seconds": s_fixed + h_slope * depth,
             "residual_seconds": st.fmean(values) - (s_fixed + h_slope * depth),
             "entry_c": [leg["entry_c"] for leg in group],
@@ -421,7 +450,7 @@ def main() -> int:
     print(f"legs {len(legs)}  estimate {len(estimate)}  "
           f"matched {out['all_tokens_matched']}")
     print(f"{'D':>3} {'legs':>4} {'R ms':>9} {'spread ms':>9} {'rounds':>12} "
-          f"{'a':>7} {'q':>6} {'alpha':>7} {'nondraft':>10} {'resid ms':>9}")
+          f"{'a':>7} {'q':>6} {'alpha':>7} {'p_impl':>7} {'nondraft':>10} {'resid ms':>9}")
     for row in depth_table:
         print(f"{row['D']:>3} {row['legs']:>4} "
               f"{row['R_seconds_mean'] * 1e3:>9.4f} "
@@ -430,6 +459,7 @@ def main() -> int:
               f"{row['a_accepted_per_round']:>7.4f} "
               f"{row['q_proposed_per_round']:>6.3f} "
               f"{row['alpha_accept_fraction']:>7.4f} "
+              f"{row['implied_uniform_p']:>7.4f} "
               f"{str(row['non_drafting_round_count']):>10} "
               f"{row['residual_seconds'] * 1e3:>9.4f}")
     print()
