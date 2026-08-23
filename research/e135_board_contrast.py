@@ -174,6 +174,38 @@ def bar(rows, reference, target, since):
           "  so the draw is not a plan")
 
 
+def headroom(rows, reference):
+    """Where a candidate-leg gain still reaches the published median.
+
+    The score reads only ranks 3 and 4 of the sorted raw vector. A gain on a
+    prompt in the pair raises the median until that prompt overtakes its
+    neighbour, after which the pair changes and the gain stops counting. A
+    uniform gain is order preserving and never saturates; a concentrated one
+    can promote its own prompt out of the pair and pull in a slower one.
+    """
+    prompts = tw.per_prompt(tw.pick(rows, reference))
+    ordered = tw.sorted_raw(prompts)
+    median = (ordered[3][1] + ordered[4][1]) / 2
+    print(f"=== median-pair headroom at {reference}, median {median:.6f}")
+    print(f"    {'rank':>4} {'prompt':<9} {'raw':>9} {'marginal':>9}"
+          f" {'gain until promotion':>21}  note")
+    for i, (name, raw) in enumerate(ordered):
+        marginal = 0.5 * raw / median if i in (3, 4) else 0.0
+        if i == len(ordered) - 1:
+            room = float("inf")
+        else:
+            room = (ordered[i + 1][1] / raw - 1.0) * 100.0
+        room_text = "unbounded" if room == float("inf") else f"{room:+.2f} %"
+        note = ("in the pair" if i in (3, 4)
+                else f"needs {(ordered[3][1] / raw - 1.0) * 100:+.2f} % to reach rank 3"
+                if i < 3 else "above the pair, worth nothing")
+        print(f"    {i:>4} {name:<9} {raw:>9.4f} {marginal:>9.4f}"
+              f" {room_text:>21}  {note}")
+    print("    marginal is published-median % per 1 % candidate gain on that"
+          " prompt alone; it sums to 1.0 over the pair, which is why a uniform"
+          " gain passes through exactly once")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("contrast", nargs="*", help="board pair A:B or ~A:B")
@@ -182,6 +214,7 @@ def main():
     ap.add_argument("--draw-trend", metavar="REFERENCE")
     ap.add_argument("--since", default="2026-08-22T12:00:00Z")
     ap.add_argument("--bar", nargs=2, metavar=("REFERENCE", "TARGET"))
+    ap.add_argument("--headroom", metavar="REFERENCE")
     ap.add_argument("--label", action="append")
     ap.add_argument("--board", default=os.environ.get(
         "YUKON_BOARD", "/tmp/yukon-board/full.json"))
@@ -196,6 +229,9 @@ def main():
         print()
     if args.bar:
         bar(rows, args.bar[0], args.bar[1], args.since)
+        print()
+    if args.headroom:
+        headroom(rows, args.headroom)
         print()
     labels = args.label or []
     labels += [f"c{i}" for i in range(len(labels), len(args.contrast))]
