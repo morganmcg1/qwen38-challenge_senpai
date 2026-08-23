@@ -1,0 +1,118 @@
+{
+  "arm": "e149_c1_sdpa_query_split",
+  "by_width_kL_averaged": {
+    "6": {
+      "raw_us_per_round": 1641.0367843542308,
+      "tinyKV_us_per_round": 96.14470816375433
+    },
+    "7": {
+      "raw_us_per_round": 1654.7097321326432,
+      "tinyKV_us_per_round": 16.50973213264308
+    },
+    "8": {
+      "raw_us_per_round": 1666.7707831304715,
+      "tinyKV_us_per_round": -6.7387787742909495
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "e149_c1_width9_status": "void_no_structural_control_and_unreachable_under_depth_cap_7",
+  "e149_c2_blocked_reason": "unreachable_not_editable. benchmark.json editablePaths carries the sdpa KERNEL sources (sdpa_vector.h, scaled_dot_product_attention.metal, steel/attn) but NO .cpp under backend/metal. The routing gate that picks vector against composed lives in backend/metal/scaled_dot_product_attention.cpp:631-639, which is host code we may not edit. head_dim 256 with gqa 6 makes supports_sdpa_full permanently false and caps supports_sdpa_vector at floor(32/6) = 5 query rows, which is exactly the shipped split point. Editing the kernel cannot change which kernel is dispatched.",
+  "e149_c2_opens": false,
+  "e149_sdpa_split_frame": "frameB_per_drafting_round_ranked_streaming",
+  "e149_sdpa_split_us_per_round": 154.49869406852432,
+  "e149_sdpa_split_us_per_round_raw_upper_bound": 976.00428257059,
+  "e149_sdpa_split_us_per_round_stderr": 14.151340023330699,
+  "e149_sdpa_split_us_per_round_tinyKV_corrected": -0.9791896903626682,
+  "exactness": {
+    "note": "split reproduces itself exactly and the perturbation control always fires, so the comparison is shown able to fail. The composed fallback is NOT bit-exact with the shipped split, so deleting the AttentionUtils guard would change tokens.",
+    "positive_control_min_abs": 0.0107421875,
+    "split_vs_fallback_max_abs": 0.0029296875,
+    "split_vs_split_max_abs": 0
+  },
+  "frames": {
+    "frameA_per_M_ge_6_round": {
+      "mass_applied": 1.0,
+      "raw_pct_of_median": 3.2325113321614096,
+      "raw_us_per_round": 1665.2521456587444,
+      "streaming_pct_of_median": 0.5116973237712437,
+      "streaming_us_per_round": 263.6046648498965,
+      "streaming_us_per_round_stderr": 24.144924114196723,
+      "tinyKV_pct_of_median": -0.0032430613542968945,
+      "tinyKV_us_per_round": -1.670687067672186
+    },
+    "frameB_per_drafting_round_ranked": {
+      "mass_applied": 0.5861,
+      "raw_pct_of_median": 1.894574891779802,
+      "raw_us_per_round": 976.00428257059,
+      "streaming_pct_of_median": 0.29990580146232587,
+      "streaming_us_per_round": 154.49869406852432,
+      "streaming_us_per_round_stderr": 14.151340023330699,
+      "tinyKV_pct_of_median": -0.0019007582597534098,
+      "tinyKV_us_per_round": -0.9791896903626682
+    },
+    "frameC_per_drafting_round_local_benchfixture_ship": {
+      "mass_applied": 0.7692,
+      "raw_pct_of_median": 2.486447716698556,
+      "raw_us_per_round": 1280.9119504407063,
+      "streaming_pct_of_median": 0.39359758144484064,
+      "streaming_us_per_round": 202.7647082025404,
+      "streaming_us_per_round_stderr": 18.57227562864012,
+      "tinyKV_pct_of_median": -0.002494562793725171,
+      "tinyKV_us_per_round": -1.2850924924534455
+    }
+  },
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "host": "Apple M4 Pro Mac16,11 48 GB",
+  "identification": {
+    "bytes_per_key_per_layer": 4096,
+    "implied_effective_bandwidth_gb_per_s": 191.12256616812212,
+    "implied_fraction_of_m4_pro_peak": 0.7000826599564913,
+    "note": "The kL slope is common across widths, as an extra whole-KV read must be. It implies an effective bandwidth that is a plausible fraction of the M4 Pro 273 GB/s peak, which is an independent corroboration the probe did not fit. The tiny-KV control sits above the fitted kL-independent intercept, so subtracting it drives the residual to about zero and destroys a term the regression resolves cleanly.",
+    "per_width_slope": {
+      "6": 0.017528404036349424,
+      "7": 0.02426579037417902,
+      "8": 0.02249962628456826
+    },
+    "pooled_intercept_us_per_layer": 86.68311610267546,
+    "pooled_resid_rms_us_per_layer": 1.083466045198402,
+    "pooled_slope_stderr": 0.0019630019605037987,
+    "pooled_slope_us_per_key_per_layer": 0.021431273565032237,
+    "streaming_us_per_layer_at_mean_kL": 16.47529155311853,
+    "tinyKV_control_structural_us_per_layer": {
+      "6": 96.55575476190478,
+      "7": 102.38750000000002,
+      "8": 104.59434761904765
+    },
+    "tinyKV_over_subtraction_us_per_layer": {
+      "6": 9.872638659229324,
+      "7": 15.704383897324561,
+      "8": 17.911231516372197
+    }
+  },
+  "kL_quadrature_weights": {
+    "1024": 0.25,
+    "513": 0.25,
+    "769": 0.5
+  },
+  "mean_kL": 768.75,
+  "noise": {
+    "palindrome_half_spread_pct_mean": 1.2704688949015295,
+    "palindrome_half_spread_pct_worst": 6.022126887984132
+  },
+  "source_json": "e149-c1-sdpa.json",
+  "thresholds": {
+    "c2_trigger_us_per_round": 150.0,
+    "detection_floor_us_per_round": 44.5,
+    "headline_clears_c2_trigger": true,
+    "headline_clears_floor": true,
+    "headline_minus_2se_clears_c2_trigger": false,
+    "headline_minus_2se_clears_floor": true
+  },
+  "us_per_round_per_pct_of_median": 515.1574038087837,
+  "width_mix_within_M_ge_6": {
+    "6": 0.04018085650912806,
+    "7": 0.04018085650912806,
+    "8": 0.9196382869817439
+  }
+}

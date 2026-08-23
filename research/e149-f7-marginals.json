@@ -1,0 +1,265 @@
+{
+  "caveat": "Conditional on the low-width block selected by the arm D splice. The underlying fit is misspecified (rms 4.17 % against a 1.1365 % empirical floor), so sigmas are inflated to chi2/dof = 1 before the interval is read. This is a bounded interval, not a calibrated frequentist one, and it does not repair the stop rule that fired on the free-eight inversion.",
+  "e149_rungD_marginal_7_to_8_us": 8830.0,
+  "e149_rungD_marginal_7_to_8_us_ci95": [
+    6630.0,
+    11070.0
+  ],
+  "e149_rungD_marginal_7_to_8_us_replay_model": -4000.0,
+  "e149_rungD_marginal_7_to_8_us_replay_model_ci95": [
+    -4000.0,
+    5580.0
+  ],
+  "e149_width8_admissible_ranked": "unresolved",
+  "f7_label_correction": "F7 asks whether the 7->8 marginal is nearer 1,876 us (labelled replayed) or 12,295 us (labelled measured). Both labels belong to the MEASURED curve and only one of them is a 7->8 value. H-alt (E145 measured local / k) has 6->7 = 12,295.7 and 7->8 = 1,875.1. H-null (replayed ranked) has 6->7 = 1,626.1 and 7->8 = 7,490.5. The two curves SWAP the two marginals, which is F6's 7.56x and 0.25x. The well-posed 7->8 question is therefore 7,490.5 replayed against 1,875.1 measured.",
+  "harness": "ranked",
+  "models": {
+    "replay": {
+      "e149_rungD_marginal_5_to_6_us": {
+        "best_chi2": 23091.8411029041,
+        "best_marginal_us": 4210.0,
+        "best_rms_pct": 4.538440862774491,
+        "ci68_us": [
+          1880.0,
+          6630.0
+        ],
+        "ci95_us": [
+          -360.0,
+          9170.0
+        ],
+        "dof": 14,
+        "grid_us": [
+          -4000.0,
+          26000.0
+        ],
+        "hit_grid_edge": false,
+        "monotone_constrained": {
+          "best_marginal_us": 4210.0,
+          "bound_binds": true,
+          "ci68_us": [
+            1880.0,
+            6630.0
+          ],
+          "ci95_us": [
+            0.0,
+            9170.0
+          ]
+        },
+        "sigma_inflation": 40.6130178838757
+      },
+      "e149_rungD_marginal_6_to_7_us": {
+        "best_chi2": 39126.95779640337,
+        "best_marginal_us": -4000.0,
+        "best_rms_pct": 3.9789885966668956,
+        "ci68_us": [
+          -4000.0,
+          -2980.0
+        ],
+        "ci95_us": [
+          -4000.0,
+          -350.0
+        ],
+        "dof": 14,
+        "grid_us": [
+          -4000.0,
+          26000.0
+        ],
+        "hit_grid_edge": true,
+        "monotone_constrained": {
+          "best_marginal_us": 0.0,
+          "bound_binds": true,
+          "ci68_us": [
+            0.0,
+            0.0
+          ],
+          "ci95_us": [
+            0.0,
+            0.0
+          ]
+        },
+        "sigma_inflation": 52.865704381414396
+      },
+      "e149_rungD_marginal_7_to_8_us": {
+        "best_chi2": 41227.75360523901,
+        "best_marginal_us": -4000.0,
+        "best_rms_pct": 4.416549517583903,
+        "ci68_us": [
+          -4000.0,
+          460.0
+        ],
+        "ci95_us": [
+          -4000.0,
+          5580.0
+        ],
+        "dof": 14,
+        "grid_us": [
+          -4000.0,
+          26000.0
+        ],
+        "hit_grid_edge": true,
+        "monotone_constrained": {
+          "best_marginal_us": 0.0,
+          "bound_binds": true,
+          "ci68_us": [
+            0.0,
+            460.0
+          ],
+          "ci95_us": [
+            0.0,
+            5580.0
+          ]
+        },
+        "sigma_inflation": 54.266375807044255
+      },
+      "low_width_block_us": {
+        "1": 29964.95805110075,
+        "2": 33483.59798421602,
+        "3": 35750.35656556052,
+        "4": 39549.30113150138,
+        "5": 45308.310354663874,
+        "6": 61549.61035466388,
+        "7": 63175.710354663875,
+        "8": 70666.21035466387
+      },
+      "splice_winner_block": "low_alt_high_null",
+      "width8_admissibility": {
+        "binding_competitor_width": 7,
+        "e149_width8_admissible_ranked_interval": "admissible",
+        "fraction_of_ci95_that_is_admissible": 1.0,
+        "max_admissible_7_to_8_marginal_us": 9025.101479237703,
+        "max_admissible_C8_us": 72200.81183390158,
+        "measured_7_to_8_admissible": true,
+        "replayed_7_to_8_admissible": true,
+        "rule": "C_8 / 8 must be a new strict running minimum"
+      }
+    },
+    "tilt": {
+      "e149_rungD_marginal_5_to_6_us": {
+        "best_chi2": 1536.9347041115316,
+        "best_marginal_us": 11760.0,
+        "best_rms_pct": 2.1363118898377653,
+        "ci68_us": [
+          11140.0,
+          12380.0
+        ],
+        "ci95_us": [
+          10530.0,
+          13030.0
+        ],
+        "dof": 14,
+        "grid_us": [
+          -4000.0,
+          26000.0
+        ],
+        "hit_grid_edge": false,
+        "monotone_constrained": {
+          "best_marginal_us": 11760.0,
+          "bound_binds": false,
+          "ci68_us": [
+            11140.0,
+            12380.0
+          ],
+          "ci95_us": [
+            10530.0,
+            13030.0
+          ]
+        },
+        "sigma_inflation": 10.477645264737722
+      },
+      "e149_rungD_marginal_6_to_7_us": {
+        "best_chi2": 6172.787555657489,
+        "best_marginal_us": -70.0,
+        "best_rms_pct": 3.6287244517225434,
+        "ci68_us": [
+          -1800.0,
+          1720.0
+        ],
+        "ci95_us": [
+          -3500.0,
+          3560.0
+        ],
+        "dof": 14,
+        "grid_us": [
+          -4000.0,
+          26000.0
+        ],
+        "hit_grid_edge": false,
+        "monotone_constrained": {
+          "best_marginal_us": 0.0,
+          "bound_binds": true,
+          "ci68_us": [
+            0.0,
+            1720.0
+          ],
+          "ci95_us": [
+            0.0,
+            3560.0
+          ]
+        },
+        "sigma_inflation": 20.997937918583286
+      },
+      "e149_rungD_marginal_7_to_8_us": {
+        "best_chi2": 5942.502232896819,
+        "best_marginal_us": 8830.0,
+        "best_rms_pct": 4.368923434411084,
+        "ci68_us": [
+          7730.0,
+          9940.0
+        ],
+        "ci95_us": [
+          6630.0,
+          11070.0
+        ],
+        "dof": 14,
+        "grid_us": [
+          -4000.0,
+          26000.0
+        ],
+        "hit_grid_edge": false,
+        "monotone_constrained": {
+          "best_marginal_us": 8830.0,
+          "bound_binds": false,
+          "ci68_us": [
+            7730.0,
+            9940.0
+          ],
+          "ci95_us": [
+            6630.0,
+            11070.0
+          ]
+        },
+        "sigma_inflation": 20.602534921871037
+      },
+      "low_width_block_us": {
+        "1": 31173.2,
+        "2": 34619.3,
+        "3": 38065.4,
+        "4": 41511.4,
+        "5": 44957.5,
+        "6": 61198.8,
+        "7": 62824.9,
+        "8": 70315.4
+      },
+      "splice_winner_block": "h_null_everywhere",
+      "width8_admissibility": {
+        "binding_competitor_width": 7,
+        "e149_width8_admissible_ranked_interval": "unresolved",
+        "fraction_of_ci95_that_is_admissible": 0.5280898876404494,
+        "max_admissible_7_to_8_marginal_us": 8974.985714285714,
+        "max_admissible_C8_us": 71799.88571428572,
+        "measured_7_to_8_admissible": true,
+        "replayed_7_to_8_admissible": true,
+        "rule": "C_8 / 8 must be a new strict running minimum"
+      }
+    }
+  },
+  "purpose": "F7: bounded interval on the high-width marginals",
+  "reference_marginals_us": {
+    "h_alt_measured_over_k_5_to_6": 13850.200000000004,
+    "h_alt_measured_over_k_6_to_7": 12295.700000000004,
+    "h_alt_measured_over_k_7_to_8": 1875.0999999999913,
+    "h_null_replayed_5_to_6": 16241.300000000003,
+    "h_null_replayed_6_to_7": 1626.0999999999985,
+    "h_null_replayed_7_to_8": 7490.499999999993
+  }
+}

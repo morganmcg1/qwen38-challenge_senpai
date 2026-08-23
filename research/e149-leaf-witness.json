@@ -1,0 +1,10 @@
+{
+ "experiment": "e149-arm-a-leaf-override-positive-control",
+ "harness": "local",
+ "width_requested": 12,
+ "session_exit_code": 1,
+ "divisibility_fatalerror_observed": true,
+ "e149_leaf_override_positive_control_passed": true,
+ "guard_source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:5591-5604",
+ "override_source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:4233-4243"
+}
