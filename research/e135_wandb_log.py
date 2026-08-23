@@ -21,6 +21,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import e135_report as report  # noqa: E402
+import e135_composition_report as composition  # noqa: E402
 
 ENTITY = "wandb-applied-ai-team"
 PROJECT = "qwen38-mlx-challenge-senpai"
@@ -77,6 +78,36 @@ SESSION_META = {
             "select_rung_sweep_mismatches": 0,
         },
     },
+    "composition": {
+        "group": "e135-composition",
+        "experiment": "e135-t29a-composition",
+        "question": (
+            "is the four-mechanism composition that ranked receipt 1db9d63e "
+            "shipped additive on one host with one binary, and does the "
+            "one-pass table change sign between the wide and tight grids"),
+        "arms": ("base (wide+onepass67+p25+width2 to MLX) vs composed "
+                 "(tight+shipped+p15+width2 routed) vs composed67 "
+                 "(tight+onepass67+p15+width2 routed)"),
+        "script": "research/e135_composition_abba.sh",
+        "name": "composition-additivity",
+        "arms_all": ("base", "composed", "composed67"),
+        "pairs": (
+            ("base", "composed", "e135_composition_local_pct"),
+            ("composed", "composed67", "e135_onepass_gain_under_tight_pct"),
+            ("base", "composed67", "e135_composition67_local_pct"),
+        ),
+        "gated": True,
+        "config": {
+            "qmv_table": "onepass67 in base and composed67, shipped in composed",
+            "mechanisms": "launch grid, QMV table, probe fraction, width-2 route",
+            "e87_select_held_off_in_every_arm": True,
+            "predict_additive_three_mechanism_pct": 0.87,
+            "predict_additive_four_mechanism_pct": 2.6764,
+            "predict_interaction_finding_225_pct": -1.18,
+            "predict_thorfinn_pct": 2.2,
+            "local_abba_tolerance_pp": 0.238,
+        },
+    },
 }
 
 
@@ -118,6 +149,62 @@ def arm_witnesses(label: str) -> dict[str, list[str]]:
     return out
 
 
+def pair_metrics(rows: list[dict], ref: str, cand: str, key: str,
+                 full: bool) -> tuple[dict, dict | None]:
+    """Fit one two-arm contrast with the session estimator.
+
+    A three-arm palindrome is reported as three pairwise contrasts rather than
+    a three-level design, so every session in this project is fitted by the
+    same `y ~ 1 + arm + centred leg index` model. Filtering is sound because
+    every arm has mean position 3.5 in the palindrome, so each pair stays
+    balanced against a linear drift when the third arm is dropped.
+
+    `full` marks the primary contrast, which also carries the shared
+    diagnostics. Secondary contrasts carry their own headline and serial leg
+    only, so their names cannot collide with the primary ones.
+    """
+    saved = report.ARMS
+    report.ARMS = (ref, cand)
+    try:
+        sub = [r for r in rows if r["arm"] in (ref, cand)]
+        fit = report.ols_arm_and_drift(sub, "mtp_seconds_per_token")
+        if fit is None:
+            return {}, None
+        out = {
+            key: -100 * fit["contrast"] / fit["mean"],
+            f"{key}_se": 100 * fit["se"] / fit["mean"],
+        }
+        serial_fit = report.ols_arm_and_drift(sub, "serial_seconds_per_token")
+        if not full:
+            if serial_fit:
+                out[f"{key}_serial_pct"] = (
+                    -100 * serial_fit["contrast"] / serial_fit["mean"])
+            return out, fit
+        out.update({
+            "e135_mtp_contrast_seconds_per_token": fit["contrast"],
+            "e135_residual_sd_seconds_per_token": fit["sigma"],
+            "e135_drift_per_leg_seconds_per_token": fit["drift_per_leg"],
+        })
+        ratio_fit = report.ols_arm_and_drift(sub, "mtp_decode_speedup")
+        if ratio_fit:
+            out["e135_local_ratio_contrast"] = ratio_fit["contrast"]
+            out["e135_local_ratio_pct"] = (
+                100 * ratio_fit["contrast"] / ratio_fit["mean"])
+            out["e135_local_ratio_se_pct"] = (
+                100 * ratio_fit["se"] / ratio_fit["mean"])
+        if serial_fit:
+            # Same faster-is-positive convention as the headline, so the two
+            # read the same way. The serial leg must not move: it shares the
+            # candidate binary but never dispatches the mechanism under test.
+            out["e135_serial_leg_pct"] = (
+                -100 * serial_fit["contrast"] / serial_fit["mean"])
+            out["e135_serial_leg_se_pct"] = (
+                100 * serial_fit["se"] / serial_fit["mean"])
+        return out, fit
+    finally:
+        report.ARMS = saved
+
+
 def per_width_table(label: str) -> dict:
     path = pathlib.Path(f"research/e135-artifacts/{label}-per-width.json")
     if not path.exists():
@@ -135,6 +222,7 @@ def main() -> int:
     args = ap.parse_args()
     report.configure(args.session)
     spec = SESSION_META[args.session]
+    report.ARMS = spec.get("arms_all", report.ARMS)
 
     rows = report.legs(args.label)
     complete = [r for r in rows if r["metrics"].get("mtp_seconds_per_token")]
@@ -142,11 +230,20 @@ def main() -> int:
         print("e135_wandb_log: no scored legs")
         return 1
 
-    fit = report.ols_arm_and_drift(complete, "mtp_seconds_per_token")
-    ratio_fit = report.ols_arm_and_drift(complete, "mtp_decode_speedup")
-    serial_fit = report.ols_arm_and_drift(complete, "serial_seconds_per_token")
+    pairs = spec.get(
+        "pairs", ((report.ARMS[0], report.ARMS[1], report.HEADLINE),))
+    pair_out = {}
+    fit = None
+    for index, (ref, cand, key) in enumerate(pairs):
+        got, got_fit = pair_metrics(complete, ref, cand, key, index == 0)
+        pair_out.update(got)
+        if index == 0:
+            fit = got_fit
+    if fit is None:
+        print("e135_wandb_log: primary contrast did not fit")
+        return 1
 
-    headline = -100 * fit["contrast"] / fit["mean"]
+    headline = pair_out[pairs[0][2]]
     by_arm = {}
     for arm in report.ARMS:
         v = [report.fnum(r["metrics"]["mtp_seconds_per_token"])
@@ -184,11 +281,13 @@ def main() -> int:
         "head_dir": meta.get("head_dir"),
         "metallib_source_fingerprint": meta.get("metallib_source_fingerprint"),
         "qmv_table": "onepass67",
-        "cool_gate_passed_real_gate": False,
-        "gate_qualified_for_timing": False,
+        "cool_gate_passed_real_gate": bool(spec.get("gated")),
+        "gate_qualified_for_timing": bool(spec.get("gated")),
         "official_or_ranked_score": False,
-        "reproduce": (f"{spec['script']} {max(1, len(complete) // 4)} "
-                      f"{int(meta.get('tokens', 0))} {args.label} 1"),
+        "reproduce": (
+            f"{spec['script']}"
+            f" {max(1, len(complete) // (2 * len(report.ARMS)))}"
+            f" {int(meta.get('tokens', 0))} {args.label} 1"),
         "pipeline_by_key_sha256": key_digest,
         "pipeline_by_key_identical_across_arms": keys_agree,
         "arm_witness_pipelines": arm_witnesses(args.label),
@@ -196,32 +295,18 @@ def main() -> int:
     }
 
     metrics = {
-        report.HEADLINE: headline,
-        f"{report.HEADLINE}_se": 100 * fit["se"] / fit["mean"],
+        **pair_out,
         "e135_exact_token_divergences": divergences,
         "e135_all_tokens_matched": matched,
         **{f"e135_mtp_seconds_per_token_{arm}": by_arm.get(arm)
            for arm in report.ARMS},
-        "e135_mtp_contrast_seconds_per_token": fit["contrast"],
-        "e135_residual_sd_seconds_per_token": fit["sigma"],
-        "e135_drift_per_leg_seconds_per_token": fit["drift_per_leg"],
+        **{f"e135_rounds_{arm}": sorted(
+            {composition.rounds(r) for r in complete if r["arm"] == arm}
+            - {None})
+           for arm in report.ARMS},
         "e135_schedule_identical": len(drafts) == 1,
         "e135_effective_mean_draft_len": drafts[0] if drafts else None,
     }
-    if ratio_fit:
-        metrics["e135_local_ratio_contrast"] = ratio_fit["contrast"]
-        metrics["e135_local_ratio_pct"] = (
-            100 * ratio_fit["contrast"] / ratio_fit["mean"])
-        metrics["e135_local_ratio_se_pct"] = (
-            100 * ratio_fit["se"] / ratio_fit["mean"])
-    if serial_fit:
-        # Same faster-is-positive convention as the headline, so the two read
-        # the same way. The serial leg must not move: it shares the candidate
-        # binary but never dispatches the QMV grid under test.
-        metrics["e135_serial_leg_pct"] = (
-            -100 * serial_fit["contrast"] / serial_fit["mean"])
-        metrics["e135_serial_leg_se_pct"] = (
-            100 * serial_fit["se"] / serial_fit["mean"])
 
     if report.PER_ROUND:
         # The mechanism saves a fixed amount once per drafting round, so its
@@ -265,7 +350,9 @@ def main() -> int:
         m = r["metrics"]
         run.log({
             "leg_index": r["idx"],
+            "leg_arm_ordinal": report.ARMS.index(r["arm"]),
             "leg_is_candidate_arm": 1 if r["arm"] == report.ARMS[1] else 0,
+            "leg_rounds": composition.rounds(r),
             "leg_mtp_seconds_per_token":
                 report.fnum(m.get("mtp_seconds_per_token")),
             "leg_serial_seconds_per_token":
