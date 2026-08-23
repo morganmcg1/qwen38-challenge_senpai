@@ -1,0 +1,585 @@
+{
+  "arms_failed": [],
+  "arms_legal": 36,
+  "arms_total": 36,
+  "assertion_would_have_failed_before_install": true,
+  "e128_table": [
+    "oracle",
+    "static7",
+    "marginfull",
+    "expectedonly",
+    "levelfix",
+    "recal",
+    "reachonly",
+    "nomargin1",
+    "nomargin0",
+    "nomargin",
+    "marginup",
+    "rankedprice",
+    "jensen_both",
+    "jensen"
+  ],
+  "e128_table_covered": [
+    "oracle",
+    "static7",
+    "marginfull",
+    "expectedonly",
+    "levelfix",
+    "recal",
+    "reachonly",
+    "nomargin1",
+    "nomargin0",
+    "nomargin",
+    "marginup",
+    "rankedprice",
+    "jensen_both",
+    "jensen"
+  ],
+  "gpu_used": false,
+  "harness": "local",
+  "newly_exercised": [
+    "nomargin0",
+    "nomargin1",
+    "rankedprice_nomargin",
+    "rankedprice_recal",
+    "rankedprice_marginup",
+    "reachonly",
+    "expectedonly",
+    "levelfix",
+    "jensen",
+    "jensen_both",
+    "levelfix1.05",
+    "levelfix1.10",
+    "levelfix1.15",
+    "levelfix1.20",
+    "levelfix1.25",
+    "levelfix1.30",
+    "levelfix1.40",
+    "price0.06",
+    "price0.09",
+    "price0.12",
+    "price0.14",
+    "price0.16",
+    "price0.18",
+    "price0.20",
+    "price0.23",
+    "price0.26",
+    "price0.30",
+    "price0.36"
+  ],
+  "ordering_trap_visible": true,
+  "ordering_trap_worst_marginal_shift_pct": 388.6589381692673,
+  "previously_exercised": [
+    "ship",
+    "nomargin",
+    "recal",
+    "marginup",
+    "marginfull",
+    "rankedprice",
+    "static7",
+    "oracle"
+  ],
+  "probe_states": [
+    {
+      "capability": 4,
+      "margin": 0.9,
+      "name": "prior_mid",
+      "offer": 8
+    },
+    {
+      "capability": 4,
+      "margin": 0.05,
+      "name": "prior_tight_margin",
+      "offer": 8
+    },
+    {
+      "capability": 8,
+      "margin": 3.1,
+      "name": "hot_wide_offer",
+      "offer": 8
+    },
+    {
+      "capability": 1,
+      "margin": 0.4,
+      "name": "cold_short_offer",
+      "offer": 2
+    },
+    {
+      "capability": 0,
+      "margin": 0.01,
+      "name": "cold_zero_capability",
+      "offer": 8
+    }
+  ],
+  "rows": [
+    {
+      "arm": "ship",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "nomargin",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 4,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "nomargin0",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "nomargin1",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 4,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "recal",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "marginup",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 4,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "marginfull",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "rankedprice",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 4,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "rankedprice_nomargin",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 4,
+        "prior_mid": 4,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "rankedprice_recal",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 4,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "rankedprice_marginup",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 4,
+        "prior_mid": 4,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "static7",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 7,
+        "hot_wide_offer": 7,
+        "prior_mid": 7,
+        "prior_tight_margin": 7
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "oracle",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 0,
+        "hot_wide_offer": 4,
+        "prior_mid": 4,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": true
+    },
+    {
+      "arm": "reachonly",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 7,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "expectedonly",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 5,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "jensen",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 7,
+        "prior_mid": 7,
+        "prior_tight_margin": 7
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "jensen_both",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 1,
+        "hot_wide_offer": 7,
+        "prior_mid": 7,
+        "prior_tight_margin": 7
+      },
+      "in_e128_table": true,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.05",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.10",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.15",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.20",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.25",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.30",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "levelfix1.40",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.06",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 3,
+        "hot_wide_offer": 7,
+        "prior_mid": 6,
+        "prior_tight_margin": 5
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.09",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 7,
+        "prior_mid": 5,
+        "prior_tight_margin": 4
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.12",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 7,
+        "prior_mid": 4,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.14",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 4,
+        "prior_tight_margin": 3
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.16",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.18",
+      "depths": {
+        "cold_short_offer": 2,
+        "cold_zero_capability": 2,
+        "hot_wide_offer": 6,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.20",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 1,
+        "hot_wide_offer": 5,
+        "prior_mid": 3,
+        "prior_tight_margin": 2
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.23",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 1,
+        "hot_wide_offer": 5,
+        "prior_mid": 2,
+        "prior_tight_margin": 1
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.26",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 1,
+        "hot_wide_offer": 4,
+        "prior_mid": 2,
+        "prior_tight_margin": 1
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.30",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 1,
+        "hot_wide_offer": 4,
+        "prior_mid": 1,
+        "prior_tight_margin": 1
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    },
+    {
+      "arm": "price0.36",
+      "depths": {
+        "cold_short_offer": 1,
+        "cold_zero_capability": 1,
+        "hot_wide_offer": 3,
+        "prior_mid": 1,
+        "prior_tight_margin": 1
+      },
+      "in_e128_table": false,
+      "legal": true,
+      "previously_exercised": false
+    }
+  ],
+  "what": "interface probe of the E128->E145 arm adapter, not a pricing run"
+}

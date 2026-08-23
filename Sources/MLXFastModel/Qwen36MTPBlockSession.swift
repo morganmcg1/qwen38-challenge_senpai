@@ -1139,6 +1139,32 @@ public final class Qwen36MTPBlockSession {
         return DepthPriceArm(rawValue: requested) ?? .pb6
     }()
 
+    /// E145 RESEARCH INSTRUMENT, DEFAULT OFF. Pin the drafted depth to a
+    /// constant so every drafting round realises verify width `depth + 1`.
+    ///
+    /// The whole depth-price apparatus is priced through a per-width round
+    /// cost curve that was REBUILT from isolated kernel timings and transfer
+    /// factors, never read off a live decode. A per-width cost read from a
+    /// shipped leg cannot replace it: the shipped schedule chooses depth from
+    /// the round's own state, so the rounds that reach width 6 are exactly the
+    /// rounds the estimator already believed were hot. Pinning the depth
+    /// removes that selection and makes the per-round cost at each width
+    /// directly measurable.
+    ///
+    /// `MLX_` is load bearing. `sanitizedRuntimeWorkerEnvironment` forwards
+    /// `MLX_` and drops `MLXFAST_`, so an `MLXFAST_`-spelled gate would never
+    /// reach the worker process that owns the decode path (harness defect 28).
+    ///
+    /// Read once, at static initialisation, so no round pays for it. An absent
+    /// or unparseable value leaves the shipped estimator in charge, which is
+    /// the shipped behaviour byte for byte.
+    internal static let e145PinnedDepth: Int? = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLX_E145_PIN_DEPTH"], let value = Int(raw)
+        else { return nil }
+        return value
+    }()
+
     /// Built once. A computed property here would allocate two arrays on
     /// every round, inside the timed path.
     internal static let depthPrice: DepthPrice = {
@@ -1266,6 +1292,12 @@ public final class Qwen36MTPBlockSession {
         // there would describe the next round's inputs, not this one's.
         if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
         guard cap > 0 else { return 0 }
+        // E145: the pin sits INSIDE the shipped width envelope, so a pinned
+        // leg can never reach a verify width the campaign has not proven
+        // exact. Only the estimator is removed.
+        if let pinned = Self.e145PinnedDepth {
+            return Swift.max(0, Swift.min(cap, pinned))
+        }
         let price = Self.depthPrice
         var reach = 1.0
         var expected = 0.0

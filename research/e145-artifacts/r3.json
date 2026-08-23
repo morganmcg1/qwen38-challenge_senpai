@@ -1,0 +1,1187 @@
+{
+  "best_form": "per_drafting_round",
+  "boundary_table": {
+    "measured": [
+      {
+        "boundary": 0,
+        "from_width": 1,
+        "share_of_mean_step": 0.44895302611171023,
+        "step_us": 5126.408685553994,
+        "to_width": 2
+      },
+      {
+        "boundary": 1,
+        "from_width": 2,
+        "share_of_mean_step": 0.4633845038751442,
+        "step_us": 5291.195753797161,
+        "to_width": 3
+      },
+      {
+        "boundary": 2,
+        "from_width": 3,
+        "share_of_mean_step": 0.7161821020578433,
+        "step_us": 8177.7868393610115,
+        "to_width": 4
+      },
+      {
+        "boundary": 3,
+        "from_width": 4,
+        "share_of_mean_step": 1.0023950348090254,
+        "step_us": 11445.93379246442,
+        "to_width": 5
+      },
+      {
+        "boundary": 4,
+        "from_width": 5,
+        "share_of_mean_step": 2.4904018833961716,
+        "step_us": 28436.867785774695,
+        "to_width": 6
+      },
+      {
+        "boundary": 5,
+        "from_width": 6,
+        "share_of_mean_step": 2.3248119551836424,
+        "step_us": 26546.064969317566,
+        "to_width": 7
+      },
+      {
+        "boundary": 6,
+        "from_width": 7,
+        "share_of_mean_step": 0.2769357472832314,
+        "step_us": 3162.214614096156,
+        "to_width": 8
+      },
+      {
+        "boundary": 7,
+        "from_width": 8,
+        "share_of_mean_step": 0.2769357472832314,
+        "step_us": 3162.214614096156,
+        "to_width": 9
+      }
+    ],
+    "replayed": [
+      {
+        "boundary": 0,
+        "from_width": 1,
+        "share_of_mean_step": 0.6117705878543154,
+        "step_us": 3396.5659513199353,
+        "to_width": 2
+      },
+      {
+        "boundary": 1,
+        "from_width": 2,
+        "share_of_mean_step": 0.6206873074977677,
+        "step_us": 3446.0718068476417,
+        "to_width": 3
+      },
+      {
+        "boundary": 2,
+        "from_width": 3,
+        "share_of_mean_step": 0.6206873074977677,
+        "step_us": 3446.0718068476417,
+        "to_width": 4
+      },
+      {
+        "boundary": 3,
+        "from_width": 4,
+        "share_of_mean_step": 0.6206873074977677,
+        "step_us": 3446.0718068476417,
+        "to_width": 5
+      },
+      {
+        "boundary": 4,
+        "from_width": 5,
+        "share_of_mean_step": 2.983908150384659,
+        "step_us": 16566.734371800325,
+        "to_width": 6
+      },
+      {
+        "boundary": 5,
+        "from_width": 6,
+        "share_of_mean_step": 0.2645014347271595,
+        "step_us": 1468.518730886557,
+        "to_width": 7
+      },
+      {
+        "boundary": 6,
+        "from_width": 7,
+        "share_of_mean_step": 1.3189130126359814,
+        "step_us": 7322.638780632209,
+        "to_width": 8
+      },
+      {
+        "boundary": 7,
+        "from_width": 8,
+        "share_of_mean_step": 0.9588448919045819,
+        "step_us": 5323.531364694674,
+        "to_width": 9
+      }
+    ]
+  },
+  "cells": {
+    "measured|measured|A_ship": {
+      "cell": "A_ship",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|B_rankedprice": {
+      "cell": "B_rankedprice",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 3.126906767276651,
+      "median_pct_mean": 0.1338226619729229,
+      "median_pct_sd": 0.0536665073529074,
+      "median_pct_values": [
+        0.1351153781875336,
+        0.09501726096479146,
+        0.21909029086109033,
+        0.16113310972658557,
+        0.06420333195216177,
+        0.12837660014537455
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0098060992860474,
+        "botany": 1.000462858302957,
+        "drama": 0.771173465171791,
+        "essays": 0.9540495485162981,
+        "medicine": 0.9887358102325471,
+        "plutarch": 0.9106653867151823,
+        "republic": 0.9837101855106679,
+        "travel": 0.9594452471051357
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|C_flatlook": {
+      "cell": "C_flatlook",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|D_curvelook": {
+      "cell": "D_curvelook",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 3.126906767276651,
+      "median_pct_mean": 0.1338226619729229,
+      "median_pct_sd": 0.0536665073529074,
+      "median_pct_values": [
+        0.1351153781875336,
+        0.09501726096479146,
+        0.21909029086109033,
+        0.16113310972658557,
+        0.06420333195216177,
+        0.12837660014537455
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0098060992860474,
+        "botany": 1.000462858302957,
+        "drama": 0.771173465171791,
+        "essays": 0.9540495485162981,
+        "medicine": 0.9887358102325471,
+        "plutarch": 0.9106653867151823,
+        "republic": 0.9837101855106679,
+        "travel": 0.9594452471051357
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|E_pb6": {
+      "cell": "E_pb6",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.820115901843249,
+      "median_pct_sd": 0.05261539358746599,
+      "median_pct_values": [
+        2.7984921203598745,
+        2.7827963902106845,
+        2.92611302860597,
+        2.8044026715707826,
+        2.802426796029267,
+        2.8064644042829157
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9753265568939612,
+        "botany": 0.9807382314951357,
+        "drama": 0.8712294374108264,
+        "essays": 0.9456030170494575,
+        "medicine": 0.9700800554526706,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.9581256988249035,
+        "travel": 0.970628928536947
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|F_pb6look": {
+      "cell": "F_pb6look",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9131715103480367,
+      "median_pct_sd": 0.0798463295252743,
+      "median_pct_values": [
+        1.9520111108450644,
+        1.8168325155312637,
+        2.0360257459368647,
+        1.8482610139107791,
+        1.8831095094037353,
+        1.9427891664605124
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9809988105554982,
+        "botany": 0.9832870832793109,
+        "drama": 0.8761109517206606,
+        "essays": 0.9569102395609623,
+        "medicine": 0.9814367835166385,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.971496154463234,
+        "travel": 0.9744527213556579
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|G_pb68": {
+      "cell": "G_pb68",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.820115901843249,
+      "median_pct_sd": 0.05261539358746599,
+      "median_pct_values": [
+        2.7984921203598745,
+        2.7827963902106845,
+        2.92611302860597,
+        2.8044026715707826,
+        2.802426796029267,
+        2.8064644042829157
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9753265568939612,
+        "botany": 0.9807382314951357,
+        "drama": 0.8712294374108264,
+        "essays": 0.9456030170494575,
+        "medicine": 0.9700800554526706,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.9581256988249035,
+        "travel": 0.970628928536947
+      },
+      "price_curve": "measured"
+    },
+    "measured|measured|H_pb68look": {
+      "cell": "H_pb68look",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9131715103480367,
+      "median_pct_sd": 0.0798463295252743,
+      "median_pct_values": [
+        1.9520111108450644,
+        1.8168325155312637,
+        2.0360257459368647,
+        1.8482610139107791,
+        1.8831095094037353,
+        1.9427891664605124
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9809988105554982,
+        "botany": 0.9832870832793109,
+        "drama": 0.8761109517206606,
+        "essays": 0.9569102395609623,
+        "medicine": 0.9814367835166385,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.971496154463234,
+        "travel": 0.9744527213556579
+      },
+      "price_curve": "measured"
+    },
+    "measured|replayed|A_ship": {
+      "cell": "A_ship",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|B_rankedprice": {
+      "cell": "B_rankedprice",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 3.441136354615253,
+      "median_pct_mean": -1.4477955253254162,
+      "median_pct_sd": 0.11757254547492252,
+      "median_pct_values": [
+        -1.5853181358341462,
+        -1.2947746611627564,
+        -1.3965461365332499,
+        -1.4651446066515361,
+        -1.3660968158145215,
+        -1.5788927959562882
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0299186591916567,
+        "botany": 0.9725008456285451,
+        "drama": 0.782250330681408,
+        "essays": 0.9327467339082259,
+        "medicine": 0.9868447075004751,
+        "plutarch": 0.953893426077019,
+        "republic": 1.0061473740049862,
+        "travel": 0.963816022731366
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|C_flatlook": {
+      "cell": "C_flatlook",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|D_curvelook": {
+      "cell": "D_curvelook",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 3.441136354615253,
+      "median_pct_mean": -1.4477955253254162,
+      "median_pct_sd": 0.11757254547492252,
+      "median_pct_values": [
+        -1.5853181358341462,
+        -1.2947746611627564,
+        -1.3965461365332499,
+        -1.4651446066515361,
+        -1.3660968158145215,
+        -1.5788927959562882
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0299186591916567,
+        "botany": 0.9725008456285451,
+        "drama": 0.782250330681408,
+        "essays": 0.9327467339082259,
+        "medicine": 0.9868447075004751,
+        "plutarch": 0.953893426077019,
+        "republic": 1.0061473740049862,
+        "travel": 0.963816022731366
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|E_pb6": {
+      "cell": "E_pb6",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.820115901843249,
+      "median_pct_sd": 0.05261539358746599,
+      "median_pct_values": [
+        2.7984921203598745,
+        2.7827963902106845,
+        2.92611302860597,
+        2.8044026715707826,
+        2.802426796029267,
+        2.8064644042829157
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9753265568939612,
+        "botany": 0.9807382314951357,
+        "drama": 0.8712294374108264,
+        "essays": 0.9456030170494575,
+        "medicine": 0.9700800554526706,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.9581256988249035,
+        "travel": 0.970628928536947
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|F_pb6look": {
+      "cell": "F_pb6look",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9131715103480367,
+      "median_pct_sd": 0.0798463295252743,
+      "median_pct_values": [
+        1.9520111108450644,
+        1.8168325155312637,
+        2.0360257459368647,
+        1.8482610139107791,
+        1.8831095094037353,
+        1.9427891664605124
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9809988105554982,
+        "botany": 0.9832870832793109,
+        "drama": 0.8761109517206606,
+        "essays": 0.9569102395609623,
+        "medicine": 0.9814367835166385,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.971496154463234,
+        "travel": 0.9744527213556579
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|G_pb68": {
+      "cell": "G_pb68",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.820115901843249,
+      "median_pct_sd": 0.05261539358746599,
+      "median_pct_values": [
+        2.7984921203598745,
+        2.7827963902106845,
+        2.92611302860597,
+        2.8044026715707826,
+        2.802426796029267,
+        2.8064644042829157
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9753265568939612,
+        "botany": 0.9807382314951357,
+        "drama": 0.8712294374108264,
+        "essays": 0.9456030170494575,
+        "medicine": 0.9700800554526706,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.9581256988249035,
+        "travel": 0.970628928536947
+      },
+      "price_curve": "replayed"
+    },
+    "measured|replayed|H_pb68look": {
+      "cell": "H_pb68look",
+      "cost_curve": "measured",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9131715103480367,
+      "median_pct_sd": 0.0798463295252743,
+      "median_pct_values": [
+        1.9520111108450644,
+        1.8168325155312637,
+        2.0360257459368647,
+        1.8482610139107791,
+        1.8831095094037353,
+        1.9427891664605124
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9809988105554982,
+        "botany": 0.9832870832793109,
+        "drama": 0.8761109517206606,
+        "essays": 0.9569102395609623,
+        "medicine": 0.9814367835166385,
+        "plutarch": 1.0008538813137633,
+        "republic": 0.971496154463234,
+        "travel": 0.9744527213556579
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|measured|A_ship": {
+      "cell": "A_ship",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|B_rankedprice": {
+      "cell": "B_rankedprice",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 3.126906767276651,
+      "median_pct_mean": -2.8437387909183154,
+      "median_pct_sd": 0.039916077193002115,
+      "median_pct_values": [
+        -2.872205680138673,
+        -2.7866021242291428,
+        -2.8803940667083916,
+        -2.877088597763622,
+        -2.8401207870657585,
+        -2.8060214896043045
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0354030674627512,
+        "botany": 1.040382057161013,
+        "drama": 0.7898109630099115,
+        "essays": 0.9858387563620593,
+        "medicine": 1.0156776100016112,
+        "plutarch": 0.9227349481055608,
+        "republic": 1.015751275199258,
+        "travel": 0.9635141185679861
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|C_flatlook": {
+      "cell": "C_flatlook",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|D_curvelook": {
+      "cell": "D_curvelook",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 3.126906767276651,
+      "median_pct_mean": -2.8437387909183154,
+      "median_pct_sd": 0.039916077193002115,
+      "median_pct_values": [
+        -2.872205680138673,
+        -2.7866021242291428,
+        -2.8803940667083916,
+        -2.877088597763622,
+        -2.8401207870657585,
+        -2.8060214896043045
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0354030674627512,
+        "botany": 1.040382057161013,
+        "drama": 0.7898109630099115,
+        "essays": 0.9858387563620593,
+        "medicine": 1.0156776100016112,
+        "plutarch": 0.9227349481055608,
+        "republic": 1.015751275199258,
+        "travel": 0.9635141185679861
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|E_pb6": {
+      "cell": "E_pb6",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.488041016941537,
+      "median_pct_sd": 0.03651969198508774,
+      "median_pct_values": [
+        2.44891759686392,
+        2.4981717442080997,
+        2.4486717994542495,
+        2.480725221901614,
+        2.5427344267785257,
+        2.509025312442814
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|F_pb6look": {
+      "cell": "F_pb6look",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9714573195900051,
+      "median_pct_sd": 0.07623014992032189,
+      "median_pct_values": [
+        2.068394411891439,
+        1.886864323007642,
+        2.0534588274169874,
+        1.909032081131512,
+        1.9293075273357552,
+        1.9816867467566945
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9802072225615834,
+        "botany": 0.9878511200833313,
+        "drama": 0.8754178141656065,
+        "essays": 0.9605331314919603,
+        "medicine": 0.9810860523295514,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.975959040691983,
+        "travel": 0.9671550432459225
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|G_pb68": {
+      "cell": "G_pb68",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.488041016941537,
+      "median_pct_sd": 0.03651969198508774,
+      "median_pct_values": [
+        2.44891759686392,
+        2.4981717442080997,
+        2.4486717994542495,
+        2.480725221901614,
+        2.5427344267785257,
+        2.509025312442814
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "price_curve": "measured"
+    },
+    "replayed|measured|H_pb68look": {
+      "cell": "H_pb68look",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9714573195900051,
+      "median_pct_sd": 0.07623014992032189,
+      "median_pct_values": [
+        2.068394411891439,
+        1.886864323007642,
+        2.0534588274169874,
+        1.909032081131512,
+        1.9293075273357552,
+        1.9816867467566945
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9802072225615834,
+        "botany": 0.9878511200833313,
+        "drama": 0.8754178141656065,
+        "essays": 0.9605331314919603,
+        "medicine": 0.9810860523295514,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.975959040691983,
+        "travel": 0.9671550432459225
+      },
+      "price_curve": "measured"
+    },
+    "replayed|replayed|A_ship": {
+      "cell": "A_ship",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|B_rankedprice": {
+      "cell": "B_rankedprice",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 3.441136354615253,
+      "median_pct_mean": -3.123394074355753,
+      "median_pct_sd": 0.09020026727055483,
+      "median_pct_values": [
+        -3.2325583322160623,
+        -3.0072896199577315,
+        -3.0839709785194347,
+        -3.130678969059575,
+        -3.0625823217504955,
+        -3.2232842246312177
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0426371245007702,
+        "botany": 0.9959174406853495,
+        "drama": 0.7898798742953711,
+        "essays": 0.9452351509823854,
+        "medicine": 0.999265680220203,
+        "plutarch": 0.9584777105729451,
+        "republic": 1.027992800663556,
+        "travel": 0.9524464536718643
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|C_flatlook": {
+      "cell": "C_flatlook",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.382276190024835,
+      "median_pct_mean": 0.0,
+      "median_pct_sd": 0.0,
+      "median_pct_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|D_curvelook": {
+      "cell": "D_curvelook",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 3.441136354615253,
+      "median_pct_mean": -3.123394074355753,
+      "median_pct_sd": 0.09020026727055483,
+      "median_pct_values": [
+        -3.2325583322160623,
+        -3.0072896199577315,
+        -3.0839709785194347,
+        -3.130678969059575,
+        -3.0625823217504955,
+        -3.2232842246312177
+      ],
+      "per_prompt_ratio": {
+        "beagle": 1.0426371245007702,
+        "botany": 0.9959174406853495,
+        "drama": 0.7898798742953711,
+        "essays": 0.9452351509823854,
+        "medicine": 0.999265680220203,
+        "plutarch": 0.9584777105729451,
+        "republic": 1.027992800663556,
+        "travel": 0.9524464536718643
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|E_pb6": {
+      "cell": "E_pb6",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.488041016941537,
+      "median_pct_sd": 0.03651969198508774,
+      "median_pct_values": [
+        2.44891759686392,
+        2.4981717442080997,
+        2.4486717994542495,
+        2.480725221901614,
+        2.5427344267785257,
+        2.509025312442814
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|F_pb6look": {
+      "cell": "F_pb6look",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9714573195900051,
+      "median_pct_sd": 0.07623014992032189,
+      "median_pct_values": [
+        2.068394411891439,
+        1.886864323007642,
+        2.0534588274169874,
+        1.909032081131512,
+        1.9293075273357552,
+        1.9816867467566945
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9802072225615834,
+        "botany": 0.9878511200833313,
+        "drama": 0.8754178141656065,
+        "essays": 0.9605331314919603,
+        "medicine": 0.9810860523295514,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.975959040691983,
+        "travel": 0.9671550432459225
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|G_pb68": {
+      "cell": "G_pb68",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.051569530143677,
+      "median_pct_mean": 2.488041016941537,
+      "median_pct_sd": 0.03651969198508774,
+      "median_pct_values": [
+        2.44891759686392,
+        2.4981717442080997,
+        2.4486717994542495,
+        2.480725221901614,
+        2.5427344267785257,
+        2.509025312442814
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "price_curve": "replayed"
+    },
+    "replayed|replayed|H_pb68look": {
+      "cell": "H_pb68look",
+      "cost_curve": "replayed",
+      "f83_weighted_mean_depth": 4.2103021650785095,
+      "median_pct_mean": 1.9714573195900051,
+      "median_pct_sd": 0.07623014992032189,
+      "median_pct_values": [
+        2.068394411891439,
+        1.886864323007642,
+        2.0534588274169874,
+        1.909032081131512,
+        1.9293075273357552,
+        1.9816867467566945
+      ],
+      "per_prompt_ratio": {
+        "beagle": 0.9802072225615834,
+        "botany": 0.9878511200833313,
+        "drama": 0.8754178141656065,
+        "essays": 0.9605331314919603,
+        "medicine": 0.9810860523295514,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.975959040691983,
+        "travel": 0.9671550432459225
+      },
+      "price_curve": "replayed"
+    }
+  },
+  "gpu_used": false,
+  "harness": "local instrument",
+  "measured_points_us": {
+    "1": 65778.93576562102,
+    "2": 70905.34445117501,
+    "3": 76196.54020497217,
+    "4": 84374.32704433319,
+    "5": 95820.2608367976,
+    "6": 124257.1286225723,
+    "7": 150803.19359188987,
+    "8": 153965.40820598602
+  },
+  "measured_shape": {
+    "argmax_step_index": 4,
+    "cumulative": [
+      1.0,
+      1.0779338951882722,
+      1.1583729550820105,
+      1.282695228529844,
+      1.456701293833907,
+      1.8890109299626974,
+      2.2925757590427036,
+      2.340649121393283,
+      2.388722483743862
+    ],
+    "marginal": [
+      0.0779338951882722,
+      0.08043905989373834,
+      0.12432227344783353,
+      0.17400606530406293,
+      0.43230963612879036,
+      0.40356482908000624,
+      0.04807336235057935,
+      0.04807336235057891
+    ],
+    "round_us": [
+      65778.93576562102,
+      70905.34445117501,
+      76196.54020497217,
+      84374.32704433319,
+      95820.2608367976,
+      124257.1286225723,
+      150803.19359188987,
+      153965.40820598602,
+      157127.62282008218
+    ],
+    "steps": [
+      5126.408685553994,
+      5291.195753797161,
+      8177.7868393610115,
+      11445.93379246442,
+      28436.867785774695,
+      26546.064969317566,
+      3162.214614096156,
+      3162.214614096156
+    ],
+    "widths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  "receipt": "d3c491b5",
+  "replayed_shape": {
+    "argmax_step_index": 4,
+    "cumulative": [
+      1.0,
+      1.1089639368978543,
+      1.2195160522662898,
+      1.330068167634725,
+      1.4406202830031605,
+      1.9720913701436462,
+      2.019202359483764,
+      2.2541171414883694,
+      2.4248993209042933
+    ],
+    "marginal": [
+      0.10896393689785433,
+      0.11055211536843546,
+      0.11055211536843523,
+      0.11055211536843546,
+      0.5314710871404857,
+      0.047110989340117815,
+      0.23491478200460536,
+      0.17078217941592388
+    ],
+    "round_us": [
+      31171.46872642797,
+      34568.034677747906,
+      38014.10648459555,
+      41460.17829144319,
+      44906.25009829083,
+      61472.984470091156,
+      62941.50320097771,
+      70264.14198160992,
+      75587.6733463046
+    ],
+    "steps": [
+      3396.5659513199353,
+      3446.0718068476417,
+      3446.0718068476417,
+      3446.0718068476417,
+      16566.734371800325,
+      1468.518730886557,
+      7322.638780632209,
+      5323.531364694674
+    ],
+    "widths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  "scale_gate": null,
+  "seeds": [
+    128,
+    129,
+    130,
+    131,
+    132,
+    133
+  ],
+  "serial_control_round_us": 66017.02235639095,
+  "shape_disagreement": {
+    "agrees_within_5_pct": false,
+    "per_width": [
+      {
+        "a_norm": 1.0,
+        "b_norm": 1.0,
+        "pct": 0.0,
+        "width": 1
+      },
+      {
+        "a_norm": 1.1089639368978543,
+        "b_norm": 1.0779338951882722,
+        "pct": -2.798110982434976,
+        "width": 2
+      },
+      {
+        "a_norm": 1.2195160522662898,
+        "b_norm": 1.1583729550820105,
+        "pct": -5.013718111430665,
+        "width": 3
+      },
+      {
+        "a_norm": 1.330068167634725,
+        "b_norm": 1.282695228529844,
+        "pct": -3.561692570172903,
+        "width": 4
+      },
+      {
+        "a_norm": 1.4406202830031605,
+        "b_norm": 1.456701293833907,
+        "pct": 1.1162560336318128,
+        "width": 5
+      },
+      {
+        "a_norm": 1.9720913701436462,
+        "b_norm": 1.8890109299626974,
+        "pct": -4.212808870762275,
+        "width": 6
+      },
+      {
+        "a_norm": 2.019202359483764,
+        "b_norm": 2.2925757590427036,
+        "pct": 13.538682652333623,
+        "width": 7
+      },
+      {
+        "a_norm": 2.2541171414883694,
+        "b_norm": 2.340649121393283,
+        "pct": 3.8388413056376303,
+        "width": 8
+      },
+      {
+        "a_norm": 2.4248993209042933,
+        "b_norm": 2.388722483743862,
+        "pct": -1.491890275549268,
+        "width": 9
+      }
+    ],
+    "worst_pct": 13.538682652333623,
+    "worst_width": 7
+  },
+  "tier_implied": {
+    "measured": {
+      "argmax_is_the_shipped_cliff": true,
+      "argmax_step_index": 4,
+      "cliff_step_us": 28436.867785774695,
+      "mean_other_step_us": 8987.402752669495,
+      "tier_against_first_step": 5.547132413751679,
+      "tier_against_mean_other": 3.1640807214662985
+    },
+    "replayed": {
+      "argmax_is_the_shipped_cliff": true,
+      "argmax_step_index": 4,
+      "cliff_step_us": 16566.734371800325,
+      "mean_other_step_us": 3978.4957497251858,
+      "tier_against_first_step": 4.877495272942469,
+      "tier_against_mean_other": 4.164069893236576
+    }
+  },
+  "width1_anchor": {
+    "available": true,
+    "r2b_legs": {
+      "1": 2,
+      "5": 2
+    },
+    "raw_us": 65674.64536055923,
+    "rescaled_us": 65778.93576562102,
+    "session_scale": 1.0015879858123211,
+    "tie_width": 5
+  },
+  "width1_anchor_used": "measured",
+  "width1_candidates_us": {
+    "extrapolated": 65614.14869737785,
+    "measured": 65778.93576562102,
+    "serial": 66017.02235639095
+  },
+  "windows": 200
+}
