@@ -1,0 +1,433 @@
+{
+  "rule": "RULE 170",
+  "harness": "offline",
+  "swift_files_scanned": 631,
+  "allowed_prefixes": [
+    "DARKBLOOM_",
+    "DYLD_",
+    "LC_",
+    "METAL_",
+    "MLX_",
+    "MTL_"
+  ],
+  "allowed_exact_keys": [
+    "HF_HUB_OFFLINE",
+    "HOME",
+    "LANG",
+    "LOGNAME",
+    "PATH",
+    "SHELL",
+    "TERM",
+    "TMPDIR",
+    "TRANSFORMERS_OFFLINE",
+    "USER",
+    "__CF_USER_TEXT_ENCODING"
+  ],
+  "worker_roots": [
+    "Sources/MLXFastCore/",
+    "Sources/MLXFastModel/",
+    "Sources/MLXFastRuntimeWorkerSupport/",
+    "Sources/MLXFastRuntimeWorkerCLI/",
+    "Vendor/mlx-swift-lm/",
+    "Vendor/mlx-swift/"
+  ],
+  "parent_only_roots": [
+    "Sources/MLXFastCLI/",
+    "Sources/MLXFastHarness/",
+    "Sources/MLXFastTrustedHarness/",
+    "Sources/MLXFastTransform/"
+  ],
+  "parent_side_reads_ignored": 6,
+  "build_time_reads_ignored": 173,
+  "e156_dead_switch_count": 7,
+  "e156_dead_switch_names": [
+    "BENCH_VERBOSE",
+    "CBV2_STEP_PROFILE",
+    "CUDA_ARCH",
+    "LAGUNA_ATTENTION_INT8",
+    "MLXFAST_QWEN_MTP_EXACT_QKV_ROWS",
+    "MLXFAST_QWEN_MTP_TOP32"
+  ],
+  "dead_switches": [
+    {
+      "name": "BENCH_VERBOSE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/Load.swift",
+      "line": 154,
+      "source": "let bench = ProcessInfo.processInfo.environment[\"BENCH_VERBOSE\"] != nil"
+    },
+    {
+      "name": "CBV2_STEP_PROFILE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/StepProfilerV2.swift",
+      "line": 20,
+      "source": "ProcessInfo.processInfo.environment[\"CBV2_STEP_PROFILE\"].map {"
+    },
+    {
+      "name": "CUDA_ARCH",
+      "file": "Vendor/mlx-swift/Source/Encuda/encuda-compile.swift",
+      "line": 62,
+      "source": "ProcessInfo.processInfo.environment[\"CUDA_ARCH\"].map { [\"-arch\", $0] } ?? []"
+    },
+    {
+      "name": "CUDA_ARCH",
+      "file": "Vendor/mlx-swift/Source/Encuda/encuda-link.swift",
+      "line": 47,
+      "source": "ProcessInfo.processInfo.environment[\"CUDA_ARCH\"].map { [\"-arch\", $0] } ?? []"
+    },
+    {
+      "name": "LAGUNA_ATTENTION_INT8",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Laguna.swift",
+      "line": 135,
+      "source": "switch ProcessInfo.processInfo.environment[\"LAGUNA_ATTENTION_INT8\"]?.lowercased() {"
+    },
+    {
+      "name": "MLXFAST_QWEN_MTP_EXACT_QKV_ROWS",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 5841,
+      "source": "|| environment[\"MLXFAST_QWEN_MTP_EXACT_QKV_ROWS\"] != nil"
+    },
+    {
+      "name": "MLXFAST_QWEN_MTP_TOP32",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 4761,
+      "source": "ProcessInfo.processInfo.environment[\"MLXFAST_QWEN_MTP_TOP32\"] != \"0\""
+    }
+  ],
+  "unreachable_from_worker_count": 1,
+  "unreachable_from_worker": [
+    {
+      "name": "MLXFAST_MAX_WEIGHTS_BYTES",
+      "file": "Sources/MLXFastCore/ByteLimitParsing.swift",
+      "line": 30,
+      "source": "try parseTransformedWeightsByteLimit(raw: environment[\"MLXFAST_MAX_WEIGHTS_BYTES\"] ?? \"\")",
+      "verdict": "unreachable_from_worker",
+      "evidence": "transformedWeightsByteLimit is called only from MLXFastHarness/MLXFastTrustedHarness BenchmarkSupport.swift and QwenRuntimePreflight.swift, both parent-only targets; MLXFastRuntimeWorkerCLI and MLXFastModel never reference it."
+    }
+  ],
+  "live_worker_switch_count": 54,
+  "live_worker_switches": [
+    {
+      "name": "DARKBLOOM_BF16_CHUNK_MB",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/Load.swift",
+      "line": 379,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"DARKBLOOM_BF16_CHUNK_MB\"],"
+    },
+    {
+      "name": "DARKBLOOM_BF16_WEIGHTS",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/Load.swift",
+      "line": 282,
+      "source": "let bf16Env = ProcessInfo.processInfo.environment[\"DARKBLOOM_BF16_WEIGHTS\"] ?? \"1\""
+    },
+    {
+      "name": "DARKBLOOM_CBV2_COMPILED",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatchingV2/Compiled/CompiledDecodeConfigV2.swift",
+      "line": 68,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"DARKBLOOM_CBV2_COMPILED\"] {"
+    },
+    {
+      "name": "DARKBLOOM_COMPILED_DECODE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/CompiledDecode.swift",
+      "line": 40,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"DARKBLOOM_COMPILED_DECODE\"] {"
+    },
+    {
+      "name": "DARKBLOOM_FAST_BATCH_ROTATING_KV",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/BatchKVCache.swift",
+      "line": 523,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"DARKBLOOM_FAST_BATCH_ROTATING_KV\"] {"
+    },
+    {
+      "name": "DARKBLOOM_FUSED_QKV",
+      "file": "Sources/MLXFastModel/LagunaRuntimeModel.swift",
+      "line": 75,
+      "source": "ProcessInfo.processInfo.environment[\"DARKBLOOM_FUSED_QKV\"] == \"1\""
+    },
+    {
+      "name": "DARKBLOOM_FUSED_ROUTED_GATE_UP",
+      "file": "Sources/MLXFastModel/LagunaRuntimeModel.swift",
+      "line": 93,
+      "source": "ProcessInfo.processInfo.environment[\"DARKBLOOM_FUSED_ROUTED_GATE_UP\"] != \"0\""
+    },
+    {
+      "name": "DARKBLOOM_FUSED_SHARED_GATE_UP",
+      "file": "Sources/MLXFastModel/LagunaRuntimeModel.swift",
+      "line": 82,
+      "source": "ProcessInfo.processInfo.environment[\"DARKBLOOM_FUSED_SHARED_GATE_UP\"] == \"1\""
+    },
+    {
+      "name": "DARKBLOOM_MLX_RESOURCE_DEBUG",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/ContinuousBatching/EngineCore.swift",
+      "line": 158,
+      "source": "switch ProcessInfo.processInfo.environment[\"DARKBLOOM_MLX_RESOURCE_DEBUG\"]?"
+    },
+    {
+      "name": "DARKBLOOM_QWEN_MTP_ISLAND_ARM",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 5840,
+      "source": "if environment[\"DARKBLOOM_QWEN_MTP_ISLAND_ARM\"] != nil"
+    },
+    {
+      "name": "DARKBLOOM_QWEN_MTP_POST_WIRE_COMMAND_BUFFER",
+      "file": "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+      "line": 69,
+      "source": "guard environment[\"DARKBLOOM_QWEN_MTP_POST_WIRE_COMMAND_BUFFER\"] != \"0\""
+    },
+    {
+      "name": "DARKBLOOM_QWEN_MTP_WIRED_ZH",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 224,
+      "source": "guard environment[\"DARKBLOOM_QWEN_MTP_WIRED_ZH\"] != \"0\" else { return }"
+    },
+    {
+      "name": "DARKBLOOM_QWEN_MTP_WIRED_ZH",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 286,
+      "source": "ProcessInfo.processInfo.environment[\"DARKBLOOM_QWEN_MTP_WIRED_ZH\"] != \"0\""
+    },
+    {
+      "name": "DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 239,
+      "source": "let fraction = environment[\"DARKBLOOM_QWEN_MTP_WIRED_ZH_FRACTION\"]"
+    },
+    {
+      "name": "DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 241,
+      "source": "let slackMB = environment[\"DARKBLOOM_QWEN_MTP_WIRED_ZH_SLACK_MB\"]"
+    },
+    {
+      "name": "MLX_COMPILED_DECODE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Gemma4Text.swift",
+      "line": 44,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"MLX_COMPILED_DECODE\"] {"
+    },
+    {
+      "name": "MLX_COMPILED_DECODE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMCommon/MLXHardwareInfo.swift",
+      "line": 34,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"MLX_COMPILED_DECODE\"] {"
+    },
+    {
+      "name": "MLX_DFLASH_CPU_ACCEPT_WALK",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXSpeculative/DFlashGreedyRound.swift",
+      "line": 21,
+      "source": "switch ProcessInfo.processInfo.environment[\"MLX_DFLASH_CPU_ACCEPT_WALK\"]?.lowercased() {"
+    },
+    {
+      "name": "MLX_DFLASH_DRAFTER_FUSE_MLP_GATE_UP",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXSpeculative/DFlashDraftModel.swift",
+      "line": 22,
+      "source": "switch ProcessInfo.processInfo.environment[\"MLX_DFLASH_DRAFTER_FUSE_MLP_GATE_UP\"]?.lowercased() {"
+    },
+    {
+      "name": "MLX_DFLASH_DRAFTER_FUSE_QKV",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXSpeculative/DFlashDraftModel.swift",
+      "line": 10,
+      "source": "if let raw = ProcessInfo.processInfo.environment[\"MLX_DFLASH_DRAFTER_FUSE_QKV\"] {"
+    },
+    {
+      "name": "MLX_DFLASH_MERGE_PREFILL_GROUPS",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXSpeculative/DFlashBenchmark.swift",
+      "line": 122,
+      "source": "switch ProcessInfo.processInfo.environment[\"MLX_DFLASH_MERGE_PREFILL_GROUPS\"]?.lowercased() {"
+    },
+    {
+      "name": "MLX_DFLASH_TRACE_CACHE_SEAM",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXSpeculative/DFlashGreedyRound.swift",
+      "line": 18,
+      "source": "ProcessInfo.processInfo.environment[\"MLX_DFLASH_TRACE_CACHE_SEAM\"] == \"1\""
+    },
+    {
+      "name": "MLX_DFLASH_VERIFY_QMM_ATTN_O",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/DFlashVerifyLinear.swift",
+      "line": 205,
+      "source": "switch ProcessInfo.processInfo.environment[\"MLX_DFLASH_VERIFY_QMM_ATTN_O\"]?"
+    },
+    {
+      "name": "MLX_DFLASH_VERIFY_QMM_KPARTS",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/DFlashVerifyLinear.swift",
+      "line": 216,
+      "source": "guard let raw = ProcessInfo.processInfo.environment[\"MLX_DFLASH_VERIFY_QMM_KPARTS\"],"
+    },
+    {
+      "name": "MLX_DFLASH_VERIFY_QMM_VARIANT",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/DFlashVerifyLinear.swift",
+      "line": 191,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_DFLASH_VERIFY_QMM_VARIANT\"]?"
+    },
+    {
+      "name": "MLX_E101_ROW_TOP32",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 4738,
+      "source": "guard let raw = ProcessInfo.processInfo.environment[\"MLX_E101_ROW_TOP32\"],"
+    },
+    {
+      "name": "MLX_E120_QMV_ARM",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 1755,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_E120_QMV_ARM\"]"
+    },
+    {
+      "name": "MLX_E120_QMV_ENTRY",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 1776,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_E120_QMV_ENTRY\"]"
+    },
+    {
+      "name": "MLX_E120_QMV_GRID",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 2055,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_E120_QMV_GRID\"]"
+    },
+    {
+      "name": "MLX_E120_QMV_PIPELINE_LOG",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 2156,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_E120_QMV_PIPELINE_LOG\"]"
+    },
+    {
+      "name": "MLX_E120_QMV_TABLE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 1916,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_E120_QMV_TABLE\"]"
+    },
+    {
+      "name": "MLX_E120_QMV_WIDTH2",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 1810,
+      "source": "ProcessInfo.processInfo.environment[\"MLX_E120_QMV_WIDTH2\"] == \"0\""
+    },
+    {
+      "name": "MLX_E121_CLUSTER_QMV",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 4893,
+      "source": "guard let raw = ProcessInfo.processInfo.environment[\"MLX_E121_CLUSTER_QMV\"],"
+    },
+    {
+      "name": "MLX_E134_DEPTH_PRICE_ARM",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 1160,
+      "source": ".environment[\"MLX_E134_DEPTH_PRICE_ARM\"] ?? \"\""
+    },
+    {
+      "name": "MLX_E135_PROBE_ARM",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 2123,
+      "source": "let raw = ProcessInfo.processInfo.environment[\"MLX_E135_PROBE_ARM\"]"
+    },
+    {
+      "name": "MLX_E141_ROWS_PER_LEAF",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 5121,
+      "source": "guard let raw = ProcessInfo.processInfo.environment[\"MLX_E141_ROWS_PER_LEAF\"],"
+    },
+    {
+      "name": "MLX_E145_PIN_DEPTH",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 1185,
+      "source": ".environment[\"MLX_E145_PIN_DEPTH\"], let value = Int(raw)"
+    },
+    {
+      "name": "MLX_E85_FUSED_EMBED",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift",
+      "line": 28,
+      "source": "ProcessInfo.processInfo.environment[\"MLX_E85_FUSED_EMBED\"] != \"0\""
+    },
+    {
+      "name": "MLX_E87_PROBE_SORT",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 4858,
+      "source": "ProcessInfo.processInfo.environment[\"MLX_E87_PROBE_SORT\"] != \"0\""
+    },
+    {
+      "name": "MLX_QWEN_MTP_LADDER",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 4007,
+      "source": "guard let raw = ProcessInfo.processInfo.environment[\"MLX_QWEN_MTP_LADDER\"],"
+    },
+    {
+      "name": "MLX_QWEN_MTP_TRACE",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 808,
+      "source": "ProcessInfo.processInfo.environment[\"MLX_QWEN_MTP_TRACE\"] == \"1\""
+    },
+    {
+      "name": "MLX_QWEN_MTP_TRACE_PATH",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 854,
+      "source": ".environment[\"MLX_QWEN_MTP_TRACE_PATH\"], !path.isEmpty"
+    },
+    {
+      "name": "MLX_QWEN_MTP_TRACE_PATH",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "line": 3347,
+      "source": ".environment[\"MLX_QWEN_MTP_TRACE_PATH\"], !path.isEmpty"
+    },
+    {
+      "name": "MLX_QWEN_MTP_TRACE_SYNC_HEAD",
+      "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "line": 844,
+      "source": "ProcessInfo.processInfo.environment[\"MLX_QWEN_MTP_TRACE_SYNC_HEAD\"] == \"1\""
+    },
+    {
+      "name": "MLX_SERVER_EMBEDDING_MODEL",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 89,
+      "source": "var embeddingModel = environment[\"MLX_SERVER_EMBEDDING_MODEL\"]"
+    },
+    {
+      "name": "MLX_SERVER_ENGINE_KIND",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 95,
+      "source": "if let raw = environment[\"MLX_SERVER_ENGINE_KIND\"] {"
+    },
+    {
+      "name": "MLX_SERVER_HOST",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 85,
+      "source": "var host = environment[\"MLX_SERVER_HOST\"] ?? \"127.0.0.1\""
+    },
+    {
+      "name": "MLX_SERVER_MODEL",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 83,
+      "source": "var model = environment[\"MLX_SERVER_MODEL\"] ?? \"mlx-community/Qwen3-0.6B-4bit\""
+    },
+    {
+      "name": "MLX_SERVER_MODEL_TYPE",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 87,
+      "source": "var modelType = environment[\"MLX_SERVER_MODEL_TYPE\"]"
+    },
+    {
+      "name": "MLX_SERVER_PORT",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 86,
+      "source": "var port = Int(environment[\"MLX_SERVER_PORT\"] ?? \"\") ?? 8080"
+    },
+    {
+      "name": "MLX_SERVER_REASONING_PARSER",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 91,
+      "source": "if let raw = environment[\"MLX_SERVER_REASONING_PARSER\"] {"
+    },
+    {
+      "name": "MLX_SERVER_REVISION",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 84,
+      "source": "var revision = environment[\"MLX_SERVER_REVISION\"] ?? \"main\""
+    },
+    {
+      "name": "MLX_SERVER_TOOL_CALL_PARSER",
+      "file": "Vendor/mlx-swift-lm/Libraries/MLXLMServer/CLI/ServerConfiguration.swift",
+      "line": 88,
+      "source": "var toolCallParser = environment[\"MLX_SERVER_TOOL_CALL_PARSER\"]"
+    },
+    {
+      "name": "PATH",
+      "file": "Vendor/mlx-swift/Source/Encuda/encuda-utils.swift",
+      "line": 4,
+      "source": "let path = ProcessInfo.processInfo.environment[\"PATH\"] ?? \"\""
+    }
+  ]
+}
