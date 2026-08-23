@@ -27,8 +27,12 @@
 # digests differ. H2 predicts they are identical and both differ from the pin.
 set -uo pipefail
 
-ROOT="${E151_ROOT:?set E151_ROOT to the checkout}"
-cd "${ROOT}"
+# The copy lives outside the repository, so the checkout has to come from the
+# working directory the job starts in, not from the script's own path.
+ROOT="${E151_ROOT:-$PWD}"
+cd "${ROOT}" || exit 1
+[[ -f benchmark-qwen-mtp.sh ]] || {
+  echo "e151_arm_attribution: ${ROOT} is not the checkout" >&2; exit 1; }
 
 BASE=de8ce44c7bc133c3c6c079957240782664afd287
 BRANCH=qwen-alphonse/e151-ranked-prefill-channel
