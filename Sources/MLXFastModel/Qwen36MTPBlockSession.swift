@@ -1095,6 +1095,138 @@ public final class Qwen36MTPBlockSession {
         case ship, pb5, pb6, pb7, pbfit
     }
 
+    /// E150 R4: the ranked per-width round cost curve, in microseconds, at
+    /// verify widths 1 through 9.
+    ///
+    /// This is the curve E145 R2 read off LIVE PINNED DECODES on the ranked
+    /// runner, not a curve rebuilt from isolated kernel timings. The pin at
+    /// `MLX_E145_PIN_DEPTH` is what made it measurable: the shipped schedule
+    /// chooses depth from the round's own state, so an unpinned leg only ever
+    /// samples the widths the estimator already believed were hot. E145 R3
+    /// installs it at every width with the two-segment fit held at zero, so
+    /// no fitted line can smooth away the step at width 6.
+    ///
+    /// Width 9 is EXTRAPOLATED from the last measured step. It is reachable
+    /// only at depth 8, which `segmentedVerifyDepthCap` already closes, so it
+    /// never prices a decision this session can take.
+    ///
+    /// Rule 79: no local timing leg can validate this table. Its value is an
+    /// offline replay price, and only a ranked receipt can confirm it.
+    internal static let rankedMeasuredRoundMicroseconds: [Double] = [
+        65778.93576562102,
+        70905.344451175013,
+        76196.540204972174,
+        84374.327044333186,
+        95820.260836797606,
+        124257.1286225723,
+        150803.19359188987,
+        153965.40820598602,
+        157127.62282008218,
+    ]
+
+    /// The ranked curve as a `DepthPrice`, in the units the walk already uses:
+    /// one verify forward at width 1 is `1.0`, so
+    /// `marginal[d] = (C(d + 2) - C(d + 1)) / C(1)`.
+    ///
+    /// This does NOT rescale to `maxDepth * headStepCostRatio`. That rescale
+    /// is what `makeMeasuredDepthPrice` does, and it is the reason `pbfit`
+    /// carries only the SHAPE of its curve: holding the total at the shipped
+    /// `1.44` throws away the level. The level is the whole point here,
+    /// because the linearised rule compares an absolute cost against an
+    /// absolute value of `lambda` and a rescaled table shifts every
+    /// comparison. This table totals `1.3887`, close to but not equal to the
+    /// shipped `1.44`, and the difference is measured rather than assumed.
+    internal static func makeRankedMeasuredDepthPrice() -> DepthPrice {
+        let curve = rankedMeasuredRoundMicroseconds
+        precondition(curve.count == Qwen36MTPLimits.maxDepth + 1,
+                     "E150 R4: the ranked curve must cover widths 1...maxDepth + 1")
+        let unit = curve[0]
+        var marginal = [Double]()
+        marginal.reserveCapacity(Qwen36MTPLimits.maxDepth)
+        for depth in 0 ..< Qwen36MTPLimits.maxDepth {
+            marginal.append((curve[depth + 1] - curve[depth]) / unit)
+        }
+        return DepthPrice(marginal: marginal,
+                          cumulative: prefixCosts(marginal))
+    }
+
+    /// E150 R4: the schedule rule.
+    ///
+    /// `shipped` is the first-break walk that compiles today. It extends while
+    /// the reach estimate beats a LOCAL threshold built from the next step's
+    /// marginal price, and it stops at the first step that fails. `linearised`
+    /// keeps walking to the cap and returns the GLOBAL argmax of
+    /// `lambda * (1 + E[A_d]) - C_d`.
+    ///
+    /// The two rules answer different questions, and only one of them matches
+    /// the score. The published score is a ratio of SUMS over the whole
+    /// window, and the greedy step that minimises `sum C / sum T` is exactly
+    /// the argmax above at the session's running cost per token. A first-break
+    /// walk instead maximises a per-round ratio, which agrees with the score
+    /// only when every round already has the same ratio. The measured cost
+    /// curve makes the difference concrete: it is strongly non-concave, with a
+    /// `+28,437 us` step into width 6 followed by a `+3,162 us` step into
+    /// width 8, so a first-break walk stops in the dip at width 6 and never
+    /// sees that the cheap step past it pays.
+    internal enum ScheduleArm: String {
+        case shipped, linearised
+    }
+
+    /// The session's normalised cost per emitted token at the fixed point.
+    ///
+    /// `lambda` in the linearised rule is the running `sum C / sum T`. E150
+    /// R0.5 solved the self-consistent value by bisection instead of tracking
+    /// it: at `mu*` the schedule the rule chooses achieves exactly `mu*` cost
+    /// per token, so a constant is not an approximation of the tracker, it is
+    /// its fixed point. Bisection converged for all four states with tolerance
+    /// `1e-4` and at most 40 steps.
+    ///
+    /// A constant also removes a whole class of failure. A running tracker
+    /// makes every round's decision depend on the window's history, which
+    /// makes the schedule sensitive to where a window starts and gives a cold
+    /// start no principled value at all.
+    ///
+    /// Fitted leave-one-prompt-out: the eight folds put `mu*` between `0.4072`
+    /// and `0.4768`, and the held-out schedule scores `+1.0487 %` against
+    /// `+1.1178 %` pooled, a `-0.0691 pp` selection cost. E150 R1 reaches the
+    /// same neighbourhood from a different direction: sweeping a frozen
+    /// `lambda` over the R1 predictor peaks at `0.40`.
+    ///
+    /// Rule 79 applies. This constant is priced offline; only a ranked receipt
+    /// can confirm it.
+    internal static let linearisedLambdaStar = 0.45642623901367185
+
+    /// The leave-one-prompt-out spread of `linearisedLambdaStar`, pinned so a
+    /// test can prove the constant sits inside its own folds.
+    internal static let linearisedLambdaStarFoldRange = (0.4072, 0.4768)
+
+    /// `MLX_E150_SCHEDULE_ARM` selects the rule at run time so a local A/B can
+    /// time both with ONE worker binary, the same reason
+    /// `MLX_E134_DEPTH_PRICE_ARM` exists. `MLX_` is load bearing:
+    /// `sanitizedRuntimeWorkerEnvironment` forwards `MLX_` and drops
+    /// `MLXFAST_`, so an `MLXFAST_`-spelled gate never reaches the worker that
+    /// owns the decode path.
+    ///
+    /// Unset gives `.linearised`, so the compiled default IS this experiment's
+    /// candidate. `shipped` restores the previous schedule exactly, including
+    /// its uniform price table and both margin clamps.
+    ///
+    /// The read happens once, at static initialisation, so no round pays for
+    /// it, and the value cannot vary with prompt content or benchmark phase.
+    /// An unrecognised value falls back to the default, so CAMPAIGN RULE 114
+    /// applies: witness the arm from the run's own schedule trace, never from
+    /// the variable it was asked with.
+    internal static let scheduleArm: ScheduleArm = {
+        let requested = ProcessInfo.processInfo
+            .environment["MLX_E150_SCHEDULE_ARM"] ?? ""
+        return ScheduleArm(rawValue: requested) ?? .linearised
+    }()
+
+    /// Built once. A computed property would allocate two arrays per round
+    /// inside the timed path.
+    internal static let linearisedDepthPrice: DepthPrice =
+        makeRankedMeasuredDepthPrice()
+
     /// THE ONE VALUE AN ARM SESSION VARIES. `QwenMTPDepthPriceTests` pins the
     /// compiled default so a leg session cannot leave another arm behind.
     ///
@@ -1298,6 +1430,9 @@ public final class Qwen36MTPBlockSession {
         if let pinned = Self.e145PinnedDepth {
             return Swift.max(0, Swift.min(cap, pinned))
         }
+        if Self.scheduleArm == .linearised {
+            return linearisedDepth(cap: cap)
+        }
         let price = Self.depthPrice
         var reach = 1.0
         var expected = 0.0
@@ -1327,6 +1462,64 @@ public final class Qwen36MTPBlockSession {
         return depth
     }
 
+    /// E150 R4. The global argmax of `lambda * (1 + E[A_d]) - C_d` over every
+    /// depth the cap allows, on the ranked measured cost curve, with the two
+    /// margin clamps removed.
+    ///
+    /// Three differences from the shipped walk, and each one is measured.
+    ///
+    /// FIRST, it does not break. It evaluates the objective at every reachable
+    /// depth and keeps the best, so a local dip in the cost curve cannot hide
+    /// a cheaper step behind it. On the measured curve the step into width 8
+    /// costs `3,162 us` against `28,437 us` into width 6, so this is not a
+    /// theoretical difference.
+    ///
+    /// SECOND, the price table is the ranked measured curve, not the uniform
+    /// `1 + 0.18d`. E150 R1 separated these two changes: swapping the table
+    /// alone under the shipped rule is worth `+0.1155 pp`, which is exactly
+    /// the published `+0.1338` shipped cell, so the table swap accounts for
+    /// the whole of that published number and the rule change is the rest.
+    ///
+    /// THIRD, the depth-0 and depth-1 sigmoid clamps on `pendingTop2` are
+    /// gone. Under the shipped first-break rule they are protective, because
+    /// an over-confident first step commits the walk. Under an argmax they
+    /// only censor the estimate: E150 R0.5 prices the same rule at `+0.2317 %`
+    /// with the clamps and `+1.1178 %` without, so nearly the whole effect is
+    /// on this line. The clamps are part of the mechanism, not a separate
+    /// experiment, because the rule that makes them safe is the rule this
+    /// replaces.
+    ///
+    /// Safety does not depend on the clamps. `reach` is still a product of the
+    /// per-position acceptance EMAs and still collapses on a cold stretch, and
+    /// `cap` still carries `segmentedVerifyDepthCap`, so no round can reach a
+    /// verify width the campaign has not proven bit-exact.
+    ///
+    /// Rule 79: every number above is an offline replay price.
+    private func linearisedDepth(cap: Int) -> Int {
+        let price = Self.linearisedDepthPrice
+        let lambda = Self.linearisedLambdaStar
+        var best = 0
+        var bestValue = lambda - price.cumulative[0]
+        var reach = 1.0
+        var expected = 0.0
+        var depth = 0
+        while depth < cap {
+            reach *= positionAcceptEMA[depth]
+            expected += reach
+            depth += 1
+            let value = lambda * (1.0 + expected) - price.cumulative[depth]
+            if Self.traceRounds {
+                scheduleTrace += String(
+                    format: "%d:%.6f/%.6f/%.6f;", depth, reach, expected, value)
+            }
+            if value > bestValue {
+                bestValue = value
+                best = depth
+            }
+        }
+        return best
+    }
+
     /// Trace-gated record of the schedule's inputs and its extension walk.
     /// Written only when the phase trace is on, so the scored schedule runs
     /// byte-identical arithmetic without it.
@@ -1346,9 +1539,14 @@ public final class Qwen36MTPBlockSession {
         }
         let emas = positionAcceptEMA
             .map { String(format: "%.6f", $0) }.joined(separator: ",")
-        scheduleTrace = "arm=" + Self.depthPriceArm.rawValue + " " + String(
-            format: "m=%.6f streak=%d cap=%d ema=",
-            margin, fullAcceptStreak, widthCap) + emas + " sched="
+        // CAMPAIGN RULE 114: the run witnesses its own arms here, so a leg
+        // that was asked for one arm and silently fell back to the default is
+        // visible in the trace rather than only in the launch environment.
+        scheduleTrace = "arm=" + Self.depthPriceArm.rawValue
+            + " rule=" + Self.scheduleArm.rawValue + " " + String(
+                format: "lam=%.9f m=%.6f streak=%d cap=%d ema=",
+                Self.linearisedLambdaStar, margin, fullAcceptStreak,
+                widthCap) + emas + " sched="
     }
 
     /// Fold one round's acceptance outcome into the per-position EMAs.
