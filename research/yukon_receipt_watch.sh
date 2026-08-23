@@ -17,9 +17,13 @@ export PATH="${HOME}/.local/bin:${PATH}"
 strip_ansi='s/\x1b\[[0-9;]*m//g'
 
 while true; do
+  # Yukon truncates the printed id to 7 characters, so a longer requested
+  # prefix never matches with a plain "^p" test. Accept the row when either
+  # string is a prefix of the other.
   row="$(yukon submissions --all 2>/dev/null \
     | sed -e "${strip_ansi}" \
-    | awk -v p="${prefix}" '$1 ~ ("^" p) { print; exit }')"
+    | awk -v p="${prefix}" \
+        'length($1) >= 6 && (index(p, $1) == 1 || index($1, p) == 1) { print; exit }')"
 
   if [[ -n "${row}" ]]; then
     status="$(awk '{print $3}' <<<"${row}")"
