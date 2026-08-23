@@ -217,14 +217,19 @@ def arm_behaviour(cache, seeds, windows, curve, cell) -> dict:
     for prompt in RANKED_PROMPTS:
         counts = np.zeros(MAX_DEPTH + 2)
         rounds = 0
-        accept, depth, us_run, us_base = [], [], [], []
+        accept, depth, us_run, us_base, per_seed = [], [], [], [], {}
         for seed in seeds:
             entry = cache[(seed, prompt)]
             install(curve)
             base = simulate(None, entry["factory"](entry["p_target"]), windows)
             run = simulate(None, entry["factory"](entry["p_target"]), windows,
                            price=price, walker=greedy_walker())
-            counts += np.asarray(run["depth_counts"], dtype=float)
+            seed_counts = np.asarray(run["depth_counts"], dtype=float)
+            counts += seed_counts
+            seed_mass = seed_counts / seed_counts.sum()
+            per_seed[seed] = {w + 1: float(seed_mass[w])
+                              for w in range(len(seed_mass))
+                              if seed_mass[w] > 0.0}
             rounds += run["rounds"]
             accept.append(run["accept_rate"])
             depth.append(run["mean_depth"])
@@ -237,6 +242,7 @@ def arm_behaviour(cache, seeds, windows, curve, cell) -> dict:
             "non_drafting_share": float(counts[0] / counts.sum()),
             "width_mass": {w + 1: float(mass[w]) for w in range(len(mass))
                            if mass[w] > 0.0},
+            "width_mass_per_seed": per_seed,
             "accept_rate": statistics.fmean(accept),
             "mean_depth": statistics.fmean(depth),
             "us_per_token": statistics.fmean(us_run),
@@ -539,13 +545,18 @@ def solve_curve(design: np.ndarray, target: np.ndarray,
         curve[width] = running
     steps = {"%d->%d" % (widths[i], widths[i + 1]): float(x[i + 1])
              for i in range(len(widths) - 1)}
-    cliff = max(steps.items(), key=lambda kv: kv[1])
+    ranked_steps = sorted(steps.items(), key=lambda kv: -kv[1])
+    cliff = ranked_steps[0]
+    runner_up = ranked_steps[1]
     return {
         "curve_us": {int(w): float(v) for w, v in curve.items()},
         "steps_us": steps,
         "steps_pinned_at_zero": [k for k, v in steps.items() if v <= 1e-9],
         "cliff_boundary": int(cliff[0].split("->")[0]),
         "cliff_step_us": float(cliff[1]),
+        "runner_up_boundary": int(runner_up[0].split("->")[0]),
+        "runner_up_step_us": float(runner_up[1]),
+        "cliff_margin_us": float(cliff[1] - runner_up[1]),
         "residual_us": residual.tolist(),
         "rms_residual_us": float(np.sqrt((residual ** 2).mean())),
         "max_abs_residual_us": float(np.abs(residual).max()),
@@ -557,17 +568,30 @@ def solve_curve(design: np.ndarray, target: np.ndarray,
     }
 
 
-def rung_c(blocks: list[tuple], widths: list[int], jitter: int,
-           rng: np.random.Generator) -> dict:
-    """Solve one family, then ask how far ordinary board noise moves it."""
+def stack(blocks: list[tuple], widths: list[int], seed: int | None = None):
+    """The design matrix, the target and the row labels for one solve.
+
+    `seed` selects one replay seed's own width masses instead of the pooled
+    masses. The target never changes: the board rows are the same rows. Only
+    the design matrix moves, which is exactly the uncertainty a board-noise
+    jitter cannot see.
+    """
     design, target, labels = [], [], []
     for label, masses, costs in blocks:
         for prompt in sorted(costs):
-            design.append(tail_design(masses[prompt], widths))
+            mass = (masses[prompt]["width_mass_per_seed"][seed]
+                    if seed is not None else masses[prompt])
+            design.append(tail_design(mass, widths))
             target.append(costs[prompt])
             labels.append("%s|%s" % (label, prompt))
-    a = np.vstack(design)
-    b = np.asarray(target, dtype=float)
+    return np.vstack(design), np.asarray(target, dtype=float), labels
+
+
+def rung_c(blocks: list[tuple], widths: list[int], jitter: int,
+           rng: np.random.Generator, seed_blocks: list[tuple] | None = None,
+           seeds: list[int] | None = None) -> dict:
+    """Solve one family, then ask how far ordinary board noise moves it."""
+    a, b, labels = stack(blocks, widths)
     out = solve_curve(a, b, widths)
     out["widths"] = widths
     out["labels"] = labels
@@ -590,6 +614,33 @@ def rung_c(blocks: list[tuple], widths: list[int], jitter: int,
             int(v): cliffs.count(v) / len(cliffs)
             for v in sorted(set(cliffs))},
     }
+
+    if seed_blocks is not None and seeds is not None:
+        seed_draws = {w: [] for w in widths}
+        seed_cliffs, per_seed = [], {}
+        for seed in seeds:
+            a_s, b_s, _ = stack(seed_blocks, widths, seed)
+            trial = solve_curve(a_s, b_s, widths)
+            for w in widths:
+                seed_draws[w].append(trial["curve_us"][w])
+            seed_cliffs.append(trial["cliff_boundary"])
+            per_seed[int(seed)] = {
+                "cliff_boundary": trial["cliff_boundary"],
+                "cliff_step_us": trial["cliff_step_us"],
+                "runner_up_boundary": trial["runner_up_boundary"],
+                "cliff_margin_us": trial["cliff_margin_us"],
+                "curve_us": trial["curve_us"],
+                "rms_residual_us": trial["rms_residual_us"],
+            }
+        out["design_jitter"] = {
+            "seeds": list(seeds),
+            "per_seed": per_seed,
+            "curve_sd_us": {int(w): float(np.std(seed_draws[w]))
+                            for w in widths},
+            "cliff_boundary_share": {
+                int(v): seed_cliffs.count(v) / len(seed_cliffs)
+                for v in sorted(set(seed_cliffs))},
+        }
     return out
 
 
@@ -887,16 +938,20 @@ def main() -> int:
 
     rng = np.random.default_rng(20260823)
     solves = {
-        "bar_only": rung_c([("bar", ship_mass, bar_costs)], widths,
-                           args.jitter, rng),
-        "ours_ship_only": rung_c([("ship", ship_mass, ship_costs)], widths,
-                                 args.jitter, rng),
+        "bar_only": rung_c(
+            [("bar", ship_mass, bar_costs)], widths, args.jitter, rng,
+            [("bar", ship, bar_costs)], seeds),
+        "ours_ship_only": rung_c(
+            [("ship", ship_mass, ship_costs)], widths, args.jitter, rng,
+            [("ship", ship, ship_costs)], seeds),
         "ours_ship_plus_pb6_raw": rung_c(
             [("ship", ship_mass, ship_costs), ("pb6", pb6_mass, pb6_costs)],
-            widths, args.jitter, rng),
+            widths, args.jitter, rng,
+            [("ship", ship, ship_costs), ("pb6", pb6, pb6_costs)], seeds),
         "ours_ship_plus_pb6_state_corrected": rung_c(
             [("ship", ship_mass, ship_costs),
-             ("pb6", pb6_mass, pb6_corrected)], widths, args.jitter, rng),
+             ("pb6", pb6_mass, pb6_corrected)], widths, args.jitter, rng,
+            [("ship", ship, ship_costs), ("pb6", pb6, pb6_corrected)], seeds),
     }
 
     print("\n  solved per-width ranked round cost, microseconds")
@@ -904,12 +959,14 @@ def main() -> int:
     for name, sol in solves.items():
         print("  %-36s %s" % (name, " ".join(
             "%9.1f" % sol["curve_us"][w] for w in widths)))
-    print("\n  %-36s %9s %9s %10s %6s %s"
-          % ("variant", "rms us", "rel rms%", "cond", "cliff", "pinned zero"))
+    print("\n  %-36s %9s %9s %10s %6s %6s %9s %s"
+          % ("variant", "rms us", "rel rms%", "cond", "cliff", "next",
+             "margin us", "pinned zero"))
     for name, sol in solves.items():
-        print("  %-36s %9.1f %9.4f %10.3e %6d  %s"
+        print("  %-36s %9.1f %9.4f %10.3e %6d %6d %9.1f  %s"
               % (name, sol["rms_residual_us"], sol["relative_rms_pct"],
                  sol["condition_number"], sol["cliff_boundary"],
+                 sol["runner_up_boundary"], sol["cliff_margin_us"],
                  ",".join(sol["steps_pinned_at_zero"]) or "none"))
 
     headline = solves["ours_ship_plus_pb6_state_corrected"]
@@ -918,6 +975,9 @@ def main() -> int:
           " %d -> %d; moved: %s"
           % (headline["cliff_boundary"], headline["cliff_boundary"] + 1,
              LOCAL_CLIFF_FROM_WIDTH, LOCAL_CLIFF_FROM_WIDTH + 1, moved))
+    print("  the runner-up boundary is %d -> %d, %.1f us behind"
+          % (headline["runner_up_boundary"],
+             headline["runner_up_boundary"] + 1, headline["cliff_margin_us"]))
     print("  under %d board-noise draws at cv %.5f the cliff boundary lands"
           " at %s"
           % (args.jitter, BOARD_ROW_CV,
@@ -925,6 +985,25 @@ def main() -> int:
                        for k, v in sorted(
                            headline["jitter"]["cliff_boundary_share"].items())
                        )))
+    print("  but the design matrix is replayed, and re-solving with each"
+          " seed's own width masses gives %s"
+          % ", ".join(
+              "%d in %.1f %% of seeds" % (k, 100.0 * v)
+              for k, v in sorted(
+                  headline["design_jitter"]["cliff_boundary_share"].items())))
+    print("  per-width sd from board noise vs from the replayed design, us")
+    print("  %-14s %s" % ("board noise", " ".join(
+        "%9.1f" % headline["jitter"]["curve_sd_us"][w] for w in widths)))
+    print("  %-14s %s" % ("design", " ".join(
+        "%9.1f" % headline["design_jitter"]["curve_sd_us"][w]
+        for w in widths)))
+    dominated = [w for w in widths
+                 if headline["design_jitter"]["curve_sd_us"][w]
+                 >= headline["jitter"]["curve_sd_us"][w]]
+    print("  the replayed design matrix carries the larger uncertainty at"
+          " %d of %d widths: %s"
+          % (len(dominated), len(widths),
+             ", ".join(str(w) for w in dominated) or "none"))
 
     # R5-d.
     default_arm = base_default_arm(HERE.parent)
@@ -977,7 +1056,11 @@ def main() -> int:
         "r5c_headline": "ours_ship_plus_pb6_state_corrected",
         "r5c_unidentified_widths": unidentified,
         "r5c_local_cliff_from_width": LOCAL_CLIFF_FROM_WIDTH,
+        "r5c_ranked_cliff_boundary": headline["cliff_boundary"],
+        "r5c_ranked_runner_up_boundary": headline["runner_up_boundary"],
+        "r5c_ranked_cliff_margin_us": headline["cliff_margin_us"],
         "r5c_ranked_vs_local_cliff_moved": 1.0 if moved else 0.0,
+        "r5c_widths_where_design_beats_board_noise": dominated,
         "r5d_base_default_arm": default_arm,
         "r5d_base_ships_pb6": 1.0 if default_arm["arm"] == "pb6" else 0.0,
         "board_rows": {"bar": bar, "ship": ship_row, "pb6": pb6_row},

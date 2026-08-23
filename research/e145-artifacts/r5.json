@@ -1,0 +1,1793 @@
+{
+  "board_rows": {
+    "bar": {
+      "commit": "3ad5bfafe0bc3c4c505c55265d631e7f04d21249",
+      "id": "684821ed-f7b5-48f5-9ce1-df99b59e19b6",
+      "per_prompt": {
+        "beagle": {
+          "decode_s": 4.94921002464314,
+          "draft_len": 4.381818181818182,
+          "mtp_spt": 0.0106943829,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5263140201568604,
+          "prefill_share": 0.09612121430764069,
+          "prefill_spt": 0.0010279570706188679,
+          "raw": 3.5438558498,
+          "serial_spt": 0.0378993514,
+          "total_s": 5.4755240448
+        },
+        "botany": {
+          "decode_s": 4.421465986987292,
+          "draft_len": 6.148148148148148,
+          "mtp_spt": 0.0096651581,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5270949602127075,
+          "prefill_share": 0.10651479608651662,
+          "prefill_spt": 0.0010294823441654444,
+          "raw": 3.9225460161,
+          "serial_spt": 0.0379120274,
+          "total_s": 4.9485609472
+        },
+        "drama": {
+          "decode_s": 8.603544946224549,
+          "draft_len": 2.2976190476190474,
+          "mtp_spt": 0.017833621,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5272690057754517,
+          "prefill_share": 0.05774611207141718,
+          "prefill_spt": 0.001029822276905179,
+          "raw": 2.1264162393,
+          "serial_spt": 0.0379217013,
+          "total_s": 9.130813952
+        },
+        "essays": {
+          "decode_s": 4.507693988744519,
+          "draft_len": 5.086956521739131,
+          "mtp_spt": 0.0098330469,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.526826024055481,
+          "prefill_share": 0.10464275099037322,
+          "prefill_spt": 0.0010289570782333612,
+          "raw": 3.9116402262,
+          "serial_spt": 0.0384633418,
+          "total_s": 5.0345200128
+        },
+        "medicine": {
+          "decode_s": 4.451022044359766,
+          "draft_len": 5.2555555555555555,
+          "mtp_spt": 0.0097202638,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5257530212402344,
+          "prefill_share": 0.10564130673180215,
+          "prefill_spt": 0.0010268613696098328,
+          "raw": 3.8953386018,
+          "serial_spt": 0.0378637188,
+          "total_s": 4.9767750656
+        },
+        "plutarch": {
+          "decode_s": 14.96536995690454,
+          "draft_len": 0.1557377049180328,
+          "mtp_spt": 0.0302578905,
+          "non_drafting_round_count": 449,
+          "prefill_s": 0.526669979095459,
+          "prefill_share": 0.03399616714591582,
+          "prefill_spt": 0.0010286523029208183,
+          "raw": 1.2516577618,
+          "serial_spt": 0.0378725235,
+          "total_s": 15.492039936
+        },
+        "republic": {
+          "decode_s": 4.445987091119361,
+          "draft_len": 4.989247311827957,
+          "mtp_spt": 0.0097105412,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5258100032806396,
+          "prefill_share": 0.10575854028171976,
+          "prefill_spt": 0.0010269726626574993,
+          "raw": 3.9077461718,
+          "serial_spt": 0.0379463302,
+          "total_s": 4.9717970944
+        },
+        "travel": {
+          "decode_s": 7.469234948364355,
+          "draft_len": 2.647887323943662,
+          "mtp_spt": 0.0156159727,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5261430740356445,
+          "prefill_share": 0.06580590343090624,
+          "prefill_spt": 0.0010276231914758682,
+          "raw": 2.4312761638,
+          "serial_spt": 0.0379667422,
+          "total_s": 7.9953780224
+        }
+      },
+      "score": 3.71959722580154,
+      "solver": "newjordan",
+      "status": "accepted"
+    },
+    "pb6": {
+      "commit": "2a5f82dec836f46d4aaa31128e4bd9ada264f918",
+      "id": "e003a86d-e1f0-4818-baa7-953469303616",
+      "per_prompt": {
+        "beagle": {
+          "decode_s": 5.203906034558789,
+          "draft_len": 4.206896551724138,
+          "mtp_spt": 0.0111911464,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5259609222412109,
+          "prefill_share": 0.09179286817768421,
+          "prefill_spt": 0.0010272674262523651,
+          "raw": 3.3830913069,
+          "serial_spt": 0.0378606701,
+          "total_s": 5.7298669568
+        },
+        "botany": {
+          "decode_s": 4.51158799171897,
+          "draft_len": 5.811764705882353,
+          "mtp_spt": 0.0098411192,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5270650386810303,
+          "prefill_share": 0.10460435269129625,
+          "prefill_spt": 0.0010294239036738873,
+          "raw": 3.8611739913,
+          "serial_spt": 0.0379982735,
+          "total_s": 5.0386530304
+        },
+        "drama": {
+          "decode_s": 9.019802929510767,
+          "draft_len": 2.2948207171314743,
+          "mtp_spt": 0.0186442968,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5260770320892334,
+          "prefill_share": 0.055110375806680136,
+          "prefill_spt": 0.001027494203299284,
+          "raw": 2.0284459964,
+          "serial_spt": 0.0378189492,
+          "total_s": 9.5458799616
+        },
+        "essays": {
+          "decode_s": 4.408837094877124,
+          "draft_len": 5.295454545454546,
+          "mtp_spt": 0.0096393321,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.526500940322876,
+          "prefill_share": 0.1066798133314773,
+          "prefill_spt": 0.0010283221490681171,
+          "raw": 3.936077096,
+          "serial_spt": 0.0379411543,
+          "total_s": 4.9353380352
+        },
+        "medicine": {
+          "decode_s": 4.5183620389118895,
+          "draft_len": 5.222222222222222,
+          "mtp_spt": 0.0098525253,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5261309146881104,
+          "prefill_share": 0.10429807703718513,
+          "prefill_spt": 0.0010275994427502155,
+          "raw": 3.8471404686,
+          "serial_spt": 0.0379040488,
+          "total_s": 5.0444929536
+        },
+        "plutarch": {
+          "decode_s": 7.636979002992895,
+          "draft_len": 2.6995073891625614,
+          "mtp_spt": 0.0159440332,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5263659954071045,
+          "prefill_share": 0.06447920497176969,
+          "prefill_spt": 0.001028058584779501,
+          "raw": 2.3766867595,
+          "serial_spt": 0.0378939726,
+          "total_s": 8.1633449984
+        },
+        "republic": {
+          "decode_s": 4.6150310175325435,
+          "draft_len": 4.793814432989691,
+          "mtp_spt": 0.0100409454,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.525933027267456,
+          "prefill_share": 0.10230241306578065,
+          "prefill_spt": 0.00102721294388175,
+          "raw": 3.7669596431,
+          "serial_spt": 0.0378238361,
+          "total_s": 5.1409640448
+        },
+        "travel": {
+          "decode_s": 7.818570040807556,
+          "draft_len": 2.634259259259259,
+          "mtp_spt": 0.016298377,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5261989831924438,
+          "prefill_share": 0.06305734546745004,
+          "prefill_spt": 0.0010277323890477419,
+          "raw": 2.3293861039,
+          "serial_spt": 0.0379652129,
+          "total_s": 8.344769024
+        }
+      },
+      "score": 3.57502547497774,
+      "solver": "morganmcg1",
+      "status": "rejected"
+    },
+    "ship": {
+      "commit": "3d64f95e612a1983b547e546d89161f507102446",
+      "id": "572b2cc4-0299-4871-9d5b-73eadbe95d3b",
+      "per_prompt": {
+        "beagle": {
+          "decode_s": 5.001512028665613,
+          "draft_len": 4.381818181818182,
+          "mtp_spt": 0.0107967753,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5264369249343872,
+          "prefill_share": 0.09523187159526002,
+          "prefill_spt": 0.001028197119012475,
+          "raw": 3.5117028322,
+          "serial_spt": 0.0379150664,
+          "total_s": 5.5279489536
+        },
+        "botany": {
+          "decode_s": 4.44642198090874,
+          "draft_len": 6.148148148148148,
+          "mtp_spt": 0.0097124686,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5263619422912598,
+          "prefill_share": 0.105848544883596,
+          "prefill_spt": 0.0010280506685376167,
+          "raw": 3.9054526158,
+          "serial_spt": 0.0379315859,
+          "total_s": 4.9727839232
+        },
+        "drama": {
+          "decode_s": 8.784388087770923,
+          "draft_len": 2.2976190476190474,
+          "mtp_spt": 0.0181846661,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5261609554290771,
+          "prefill_share": 0.05651234454463897,
+          "prefill_spt": 0.0010276581160724163,
+          "raw": 2.0813763966,
+          "serial_spt": 0.0378491348,
+          "total_s": 9.3105490432
+        },
+        "essays": {
+          "decode_s": 4.555676097838586,
+          "draft_len": 5.086956521739131,
+          "mtp_spt": 0.0099270353,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5269659757614136,
+          "prefill_share": 0.1036795367705614,
+          "prefill_spt": 0.0010292304214090109,
+          "raw": 3.8126684409,
+          "serial_spt": 0.0378484942,
+          "total_s": 5.0826420736
+        },
+        "medicine": {
+          "decode_s": 4.480689991370764,
+          "draft_len": 5.2555555555555555,
+          "mtp_spt": 0.0097803592,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5268539190292358,
+          "prefill_share": 0.10521204176263549,
+          "prefill_spt": 0.0010290115606039762,
+          "raw": 3.8718334496,
+          "serial_spt": 0.0378679219,
+          "total_s": 5.0075439104
+        },
+        "plutarch": {
+          "decode_s": 14.901961936694274,
+          "draft_len": 0.1540041067761807,
+          "mtp_spt": 0.030134453,
+          "non_drafting_round_count": 449,
+          "prefill_s": 0.5268779993057251,
+          "prefill_share": 0.03414890565274221,
+          "prefill_spt": 0.0010290585923939943,
+          "raw": 1.2589856434,
+          "serial_spt": 0.0379388437,
+          "total_s": 15.428839936
+        },
+        "republic": {
+          "decode_s": 4.494431022500146,
+          "draft_len": 4.989247311827957,
+          "mtp_spt": 0.0098067578,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.5266289710998535,
+          "prefill_share": 0.10488402284997815,
+          "prefill_spt": 0.0010285722091794014,
+          "raw": 3.8606314209,
+          "serial_spt": 0.0378602773,
+          "total_s": 5.0210599936
+        },
+        "travel": {
+          "decode_s": 7.547344903764502,
+          "draft_len": 2.6556603773584904,
+          "mtp_spt": 0.0157728572,
+          "non_drafting_round_count": 0,
+          "prefill_s": 0.528357982635498,
+          "prefill_share": 0.06542563416062355,
+          "prefill_spt": 0.0010319491848349571,
+          "raw": 2.3997337908,
+          "serial_spt": 0.0378506584,
+          "total_s": 8.0757028864
+        }
+      },
+      "score": 3.66218563656629,
+      "solver": "morganmcg1",
+      "status": "rejected"
+    }
+  },
+  "design_matrix_curve_independence_max_diff": 0.0,
+  "gpu_used": false,
+  "harness": {
+    "r5a": "ranked",
+    "r5b": "ranked",
+    "r5c": "ranked",
+    "replay": "local instrument"
+  },
+  "identification_caveat": "A per-round scheduler mechanism and the per-drafting-round wired-residency state share the same basis when nearly every round is a drafting round, so the per-prompt shape alone cannot separate them. They are separated here by three readings that do not use the shape: the drama control, whose schedule pb6 provably does not move; a free fit of the coefficient itself; and the replayer's prediction of the mechanism from the width masses without seeing the receipt. R5-c inherits a second limit: the design matrix is replayed, and the transfer is fitted to one moment per prompt, the published effective mean draft length, so the width distribution around that mean is a model output and not a measurement.",
+  "local_seed_prefill": {
+    "available": true,
+    "legs": 40,
+    "local_to_ranked_factor": 7.6073222343457,
+    "max_seconds": 4.017596960067749,
+    "mean_seconds": 4.0051411300897595,
+    "median_seconds": 4.006380498409271,
+    "min_seconds": 3.993053913116455,
+    "per_leg": [
+      {
+        "leg": "debug-pin4/beagle_a",
+        "prefill_seconds_per_token": 0.007825648412108421,
+        "seed_prefill_seconds": 4.006731986999512,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-beagle_a-p1-ship/beagle_a",
+        "prefill_seconds_per_token": 0.007820343831554055,
+        "seed_prefill_seconds": 4.004016041755676,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-beagle_a-p2-pb6/beagle_a",
+        "prefill_seconds_per_token": 0.007820828119292855,
+        "seed_prefill_seconds": 4.004263997077942,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-beagle_a-p3-serial/beagle_a",
+        "prefill_seconds_per_token": 0.007823033258318901,
+        "seed_prefill_seconds": 4.005393028259277,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-beagle_a-p4-pb6/beagle_a",
+        "prefill_seconds_per_token": 0.007827535271644592,
+        "seed_prefill_seconds": 4.007698059082031,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-beagle_a-p5-ship/beagle_a",
+        "prefill_seconds_per_token": 0.007803603541105986,
+        "seed_prefill_seconds": 3.9954450130462646,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-benchfixture-p1-ship/benchfixture",
+        "prefill_seconds_per_token": 0.007810384966433048,
+        "seed_prefill_seconds": 3.9989171028137207,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-benchfixture-p2-pb6/benchfixture",
+        "prefill_seconds_per_token": 0.007827328285202384,
+        "seed_prefill_seconds": 4.007592082023621,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-benchfixture-p3-serial/benchfixture",
+        "prefill_seconds_per_token": 0.0078048554714769125,
+        "seed_prefill_seconds": 3.996086001396179,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-benchfixture-p4-pb6/benchfixture",
+        "prefill_seconds_per_token": 0.007826455170288682,
+        "seed_prefill_seconds": 4.007145047187805,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1-benchfixture-p5-ship/benchfixture",
+        "prefill_seconds_per_token": 0.007829877082258463,
+        "seed_prefill_seconds": 4.008897066116333,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1b-beagle_a-p1-ship/beagle_a",
+        "prefill_seconds_per_token": 0.007823914056643844,
+        "seed_prefill_seconds": 4.005843997001648,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1b-beagle_a-p2-pb6/beagle_a",
+        "prefill_seconds_per_token": 0.007825484266504645,
+        "seed_prefill_seconds": 4.006647944450378,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1b-beagle_a-p3-pb6/beagle_a",
+        "prefill_seconds_per_token": 0.007814146345481277,
+        "seed_prefill_seconds": 4.000842928886414,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r1b-beagle_a-p4-ship/beagle_a",
+        "prefill_seconds_per_token": 0.00782443955540657,
+        "seed_prefill_seconds": 4.006113052368164,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p1-pin1/beagle_a",
+        "prefill_seconds_per_token": 0.007822095649316907,
+        "seed_prefill_seconds": 4.004912972450256,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p10-pin5/beagle_a",
+        "prefill_seconds_per_token": 0.007798933424055576,
+        "seed_prefill_seconds": 3.993053913116455,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p11-pin4/beagle_a",
+        "prefill_seconds_per_token": 0.007825701031833887,
+        "seed_prefill_seconds": 4.00675892829895,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p12-pin3/beagle_a",
+        "prefill_seconds_per_token": 0.007821632781997323,
+        "seed_prefill_seconds": 4.004675984382629,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p13-pin2/beagle_a",
+        "prefill_seconds_per_token": 0.007825609296560287,
+        "seed_prefill_seconds": 4.006711959838867,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p14-pin1/beagle_a",
+        "prefill_seconds_per_token": 0.007810359355062246,
+        "seed_prefill_seconds": 3.99890398979187,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p2-pin2/beagle_a",
+        "prefill_seconds_per_token": 0.007846869062632322,
+        "seed_prefill_seconds": 4.017596960067749,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p3-pin3/beagle_a",
+        "prefill_seconds_per_token": 0.007823816267773509,
+        "seed_prefill_seconds": 4.005793929100037,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p4-pin4/beagle_a",
+        "prefill_seconds_per_token": 0.007826250046491623,
+        "seed_prefill_seconds": 4.007040023803711,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p5-pin5/beagle_a",
+        "prefill_seconds_per_token": 0.007822865154594183,
+        "seed_prefill_seconds": 4.005306959152222,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p6-pin6/beagle_a",
+        "prefill_seconds_per_token": 0.007831418188288808,
+        "seed_prefill_seconds": 4.00968611240387,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p7-pin7/beagle_a",
+        "prefill_seconds_per_token": 0.007827423978596926,
+        "seed_prefill_seconds": 4.007641077041626,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p8-pin7/beagle_a",
+        "prefill_seconds_per_token": 0.007830427726730704,
+        "seed_prefill_seconds": 4.009178996086121,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2-beagle_a-p9-pin6/beagle_a",
+        "prefill_seconds_per_token": 0.007820500060915947,
+        "seed_prefill_seconds": 4.004096031188965,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2b-beagle_a-p1-pin0/beagle_a",
+        "prefill_seconds_per_token": 0.007825767388567328,
+        "seed_prefill_seconds": 4.006792902946472,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2b-beagle_a-p2-pin4/beagle_a",
+        "prefill_seconds_per_token": 0.007825730601325631,
+        "seed_prefill_seconds": 4.006774067878723,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2b-beagle_a-p3-pin4/beagle_a",
+        "prefill_seconds_per_token": 0.007811070419847965,
+        "seed_prefill_seconds": 3.999268054962158,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2b-beagle_a-p4-pin0/beagle_a",
+        "prefill_seconds_per_token": 0.00782242976129055,
+        "seed_prefill_seconds": 4.005084037780762,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin1/beagle_a",
+        "prefill_seconds_per_token": 0.007826349698007107,
+        "seed_prefill_seconds": 4.007091045379639,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin2/beagle_a",
+        "prefill_seconds_per_token": 0.007826406275853515,
+        "seed_prefill_seconds": 4.0071200132369995,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin3/beagle_a",
+        "prefill_seconds_per_token": 0.007826607441529632,
+        "seed_prefill_seconds": 4.007223010063171,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin4/beagle_a",
+        "prefill_seconds_per_token": 0.007813328178599477,
+        "seed_prefill_seconds": 4.000424027442932,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin5/beagle_a",
+        "prefill_seconds_per_token": 0.007824017433449626,
+        "seed_prefill_seconds": 4.0058969259262085,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin6/beagle_a",
+        "prefill_seconds_per_token": 0.007828941335901618,
+        "seed_prefill_seconds": 4.008417963981628,
+        "seed_token_count": 512
+      },
+      {
+        "leg": "r2trace-beagle_a-pin7/beagle_a",
+        "prefill_seconds_per_token": 0.007829222595319152,
+        "seed_prefill_seconds": 4.008561968803406,
+        "seed_token_count": 512
+      }
+    ],
+    "ranked_prefill_seconds": 0.5264850109815598,
+    "spread_pct": 0.6127885673467869
+  },
+  "r5a": {
+    "beagle": {
+      "accept_rate_shift_pb6": 0.009435099339373698,
+      "f92_accept_rate": 0.834,
+      "f92_pinned_rounds_ship": 110.0,
+      "model_minus_pinned_rounds": 0.0025781854262021398,
+      "model_rounds_pb6": 113.56196653103682,
+      "model_rounds_pb6_with_shifted_rate": 112.57091225667992,
+      "model_rounds_ship": 110.0025781854262,
+      "pb6_draft_len": 4.206896551724138,
+      "ranked_drafting_rounds_pb6": 113.55930492244626,
+      "ranked_drafting_rounds_ship": 110.0,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 113.55930492244626,
+      "ranked_rounds_ship": 110.0,
+      "ratio_sign_survives_accept_shift": true,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.7663788233989702,
+      "replay_accept_rate_ship": 0.7569437240595965,
+      "replay_drafting_share_pb6": 1.0,
+      "replay_drafting_share_ship": 1.0,
+      "round_ratio": 1.0323573174767842,
+      "round_ratio_with_shifted_rate": 1.0233479443265812,
+      "rounds_pb6_shift_pct": -0.8726991127667949,
+      "ship_draft_len": 4.381818181818182
+    },
+    "botany": {
+      "accept_rate_shift_pb6": 0.002941468411452597,
+      "f92_accept_rate": 0.865,
+      "f92_pinned_rounds_ship": 81.04,
+      "model_minus_pinned_rounds": -0.0035969283076440206,
+      "model_rounds_pb6": 84.94856629774941,
+      "model_rounds_pb6_with_shifted_rate": 84.70830473644949,
+      "model_rounds_ship": 81.03640307169236,
+      "pb6_draft_len": 5.811764705882353,
+      "ranked_drafting_rounds_pb6": 84.95233687357988,
+      "ranked_drafting_rounds_ship": 81.04,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 84.95233687357988,
+      "ranked_rounds_ship": 81.04,
+      "ratio_sign_survives_accept_shift": true,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.9927818575361292,
+      "replay_accept_rate_ship": 0.9898403891246766,
+      "replay_drafting_share_pb6": 1.0,
+      "replay_drafting_share_ship": 1.0,
+      "round_ratio": 1.0482766149257141,
+      "round_ratio_with_shifted_rate": 1.0453117552800144,
+      "rounds_pb6_shift_pct": -0.28283180254954354,
+      "ship_draft_len": 6.148148148148148
+    },
+    "drama": {
+      "accept_rate_shift_pb6": 0.02300503248040875,
+      "f92_accept_rate": 0.449,
+      "f92_pinned_rounds_ship": 252.01,
+      "model_minus_pinned_rounds": 0.004274246002211157,
+      "model_rounds_pb6": 252.17022746181496,
+      "model_rounds_pb6_with_shifted_rate": 245.77963164300186,
+      "model_rounds_ship": 252.0142742460022,
+      "pb6_draft_len": 2.2948207171314743,
+      "ranked_drafting_rounds_pb6": 252.16595057079425,
+      "ranked_drafting_rounds_ship": 252.01,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 252.16595057079425,
+      "ranked_rounds_ship": 252.01,
+      "ratio_sign_survives_accept_shift": false,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.6610551402045658,
+      "replay_accept_rate_ship": 0.638050107724157,
+      "replay_drafting_share_pb6": 0.7521366759252242,
+      "replay_drafting_share_ship": 0.5589432038405558,
+      "round_ratio": 1.0006188269147822,
+      "round_ratio_with_shifted_rate": 0.9752607560756085,
+      "rounds_pb6_shift_pct": -2.53423882872168,
+      "ship_draft_len": 2.2976190476190474
+    },
+    "essays": {
+      "accept_rate_shift_pb6": 0.023643808536998212,
+      "f92_accept_rate": 0.897,
+      "f92_pinned_rounds_ship": 92.04,
+      "model_minus_pinned_rounds": -0.0033291389538163685,
+      "model_rounds_pb6": 89.0431263117537,
+      "model_rounds_pb6_with_shifted_rate": 87.14556247754798,
+      "model_rounds_ship": 92.03667086104619,
+      "pb6_draft_len": 5.295454545454546,
+      "ranked_drafting_rounds_pb6": 89.04634716858827,
+      "ranked_drafting_rounds_ship": 92.04,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 89.04634716858827,
+      "ranked_rounds_ship": 92.04,
+      "ratio_sign_survives_accept_shift": true,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.9005852497997449,
+      "replay_accept_rate_ship": 0.8769414412627466,
+      "replay_drafting_share_pb6": 1.0,
+      "replay_drafting_share_ship": 1.0,
+      "round_ratio": 0.9674744368599333,
+      "round_ratio_with_shifted_rate": 0.9468569610597646,
+      "rounds_pb6_shift_pct": -2.131061557252656,
+      "ship_draft_len": 5.086956521739131
+    },
+    "medicine": {
+      "accept_rate_shift_pb6": 0.01858207613002627,
+      "f92_accept_rate": 0.892,
+      "f92_pinned_rounds_ship": 90.01,
+      "model_minus_pinned_rounds": 0.0047680478828482364,
+      "model_rounds_pb6": 90.48778571989631,
+      "model_rounds_pb6_with_shifted_rate": 88.96206709099133,
+      "model_rounds_ship": 90.01476804788285,
+      "pb6_draft_len": 5.222222222222222,
+      "ranked_drafting_rounds_pb6": 90.48299261644803,
+      "ranked_drafting_rounds_ship": 90.01,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 90.48299261644803,
+      "ranked_rounds_ship": 90.01,
+      "ratio_sign_survives_accept_shift": false,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.8990461030929939,
+      "replay_accept_rate_ship": 0.8804640269629677,
+      "replay_drafting_share_pb6": 1.0,
+      "replay_drafting_share_ship": 1.0,
+      "round_ratio": 1.0052548896394626,
+      "round_ratio_with_shifted_rate": 0.9883052416873246,
+      "rounds_pb6_shift_pct": -1.686104502134489,
+      "ship_draft_len": 5.2555555555555555
+    },
+    "plutarch": {
+      "accept_rate_shift_pb6": -0.016103982771685343,
+      "f92_accept_rate": 0.333,
+      "f92_pinned_rounds_ship": 486.76,
+      "model_minus_pinned_rounds": 0.2637804580302259,
+      "model_rounds_pb6": 269.62467962353816,
+      "model_rounds_pb6_with_shifted_rate": 275.9418869249518,
+      "model_rounds_ship": 487.0237804580302,
+      "pb6_draft_len": 2.6995073891625614,
+      "ranked_drafting_rounds_pb6": 269.4786462585545,
+      "ranked_drafting_rounds_ship": 37.75999999999999,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 449.0,
+      "ranked_rounds_pb6": 269.4786462585545,
+      "ranked_rounds_ship": 486.76,
+      "ratio_sign_survives_accept_shift": true,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 0.07757416385898593,
+      "replay_accept_rate_pb6": 0.287217938110855,
+      "replay_accept_rate_ship": 0.30332192088254034,
+      "replay_drafting_share_pb6": 0.08370055317371701,
+      "replay_drafting_share_ship": 0.08079061949135494,
+      "round_ratio": 0.553617072599545,
+      "round_ratio_with_shifted_rate": 0.5665881174538075,
+      "rounds_pb6_shift_pct": 2.3429633037428177,
+      "ship_draft_len": 0.1540041067761807
+    },
+    "republic": {
+      "accept_rate_shift_pb6": 0.03268116327820758,
+      "f92_accept_rate": 0.903,
+      "f92_pinned_rounds_ship": 93.0,
+      "model_minus_pinned_rounds": 0.0014531477054333664,
+      "model_rounds_pb6": 96.08140918368333,
+      "model_rounds_pb6_with_shifted_rate": 93.33728787769218,
+      "model_rounds_ship": 93.00145314770543,
+      "pb6_draft_len": 4.793814432989691,
+      "ranked_drafting_rounds_pb6": 96.07990791166485,
+      "ranked_drafting_rounds_ship": 93.0,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 96.07990791166485,
+      "ranked_rounds_ship": 93.0,
+      "ratio_sign_survives_accept_shift": true,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.847931763948283,
+      "replay_accept_rate_ship": 0.8152506006700754,
+      "replay_drafting_share_pb6": 1.0,
+      "replay_drafting_share_ship": 1.0,
+      "round_ratio": 1.0331172893727403,
+      "round_ratio_with_shifted_rate": 1.003611069705044,
+      "rounds_pb6_shift_pct": -2.856037738523476,
+      "ship_draft_len": 4.989247311827957
+    },
+    "travel": {
+      "accept_rate_shift_pb6": 0.001220661264820011,
+      "f92_accept_rate": 0.533,
+      "f92_pinned_rounds_ship": 212.33,
+      "model_minus_pinned_rounds": -0.3627058910832375,
+      "model_rounds_pb6": 212.97303751177117,
+      "model_rounds_pb6_with_shifted_rate": 212.6885570347784,
+      "model_rounds_ship": 211.96729410891678,
+      "pb6_draft_len": 2.634259259259259,
+      "ranked_drafting_rounds_pb6": 213.3374643714532,
+      "ranked_drafting_rounds_ship": 212.33,
+      "ranked_non_drafting_rounds_pb6": 0.0,
+      "ranked_non_drafting_rounds_ship": 0.0,
+      "ranked_rounds_pb6": 213.3374643714532,
+      "ranked_rounds_ship": 212.33,
+      "ratio_sign_survives_accept_shift": true,
+      "receipt_drafting_share_pb6": 1.0,
+      "receipt_drafting_share_ship": 1.0,
+      "replay_accept_rate_pb6": 0.5684254665398131,
+      "replay_accept_rate_ship": 0.5672048052749931,
+      "replay_drafting_share_pb6": 1.0,
+      "replay_drafting_share_ship": 0.9725846816553839,
+      "round_ratio": 1.004744804650559,
+      "round_ratio_with_shifted_rate": 1.0034027085588544,
+      "rounds_pb6_shift_pct": -0.13357581800796936,
+      "ship_draft_len": 2.6556603773584904
+    }
+  },
+  "r5a_inversion_prompts": [
+    "essays",
+    "plutarch"
+  ],
+  "r5a_inversion_survives_accept_shift": false,
+  "r5a_width_mass": {
+    "pb6": {
+      "beagle": {
+        "2": 0.047783456266162656,
+        "3": 0.26602618776312287,
+        "4": 0.10526279877453823,
+        "5": 0.2563644179397777,
+        "6": 0.000818794052825863,
+        "7": 0.024174894409683605,
+        "8": 0.2995694507938891
+      },
+      "botany": {
+        "2": 0.004017116409047245,
+        "3": 0.010964593097157938,
+        "4": 0.034184302195829575,
+        "5": 0.5861593844302778,
+        "6": 0.0009023957150758303,
+        "7": 0.024374387486779416,
+        "8": 0.3393978206658322
+      },
+      "drama": {
+        "1": 0.24786332407477585,
+        "2": 0.13143287694440853,
+        "3": 0.07227024882187456,
+        "4": 0.07402238995617418,
+        "5": 0.3805846712171808,
+        "6": 0.0039233694610271205,
+        "7": 0.03693763180069283,
+        "8": 0.052965487723866125
+      },
+      "essays": {
+        "2": 0.003990953837967274,
+        "3": 0.028539232641307154,
+        "4": 0.12186494925228306,
+        "5": 0.6961788573351384,
+        "6": 0.0005243017787133477,
+        "7": 0.025972501545516436,
+        "8": 0.12292920360907433
+      },
+      "medicine": {
+        "2": 0.0037147365994645103,
+        "3": 0.08514637303402663,
+        "4": 0.13011330389914358,
+        "5": 0.35277585687181945,
+        "6": 0.0009574977392414491,
+        "7": 0.023033140060641524,
+        "8": 0.4042590917956629
+      },
+      "plutarch": {
+        "1": 0.916299446826283,
+        "2": 0.0290684690981308,
+        "3": 0.03294324216053118,
+        "4": 0.017077640360372646,
+        "5": 0.004611201554682373
+      },
+      "republic": {
+        "2": 0.034880452329513055,
+        "3": 0.2459140156291412,
+        "4": 0.057480865144445066,
+        "5": 0.22141015653235457,
+        "6": 0.0008031418910778967,
+        "7": 0.023154580719775764,
+        "8": 0.41635678775369245
+      },
+      "travel": {
+        "2": 0.10206070274404033,
+        "3": 0.4061541497750989,
+        "4": 0.23379026223388072,
+        "5": 0.23750709240270046,
+        "6": 0.0023353534689044397,
+        "7": 0.017132778001628168,
+        "8": 0.0010196613737470089
+      }
+    },
+    "ship": {
+      "beagle": {
+        "2": 0.05808502575474744,
+        "3": 0.2785863661244368,
+        "4": 0.09974876840376708,
+        "5": 0.09195918539207568,
+        "6": 0.0738677034063636,
+        "7": 0.05892714283709245,
+        "8": 0.3388258080815169
+      },
+      "botany": {
+        "2": 0.003465825350036846,
+        "3": 0.02680545320560059,
+        "4": 0.0531963890935888,
+        "5": 0.07613301400147383,
+        "6": 0.08589719970523213,
+        "7": 0.0940033161385409,
+        "8": 0.660498802505527
+      },
+      "drama": {
+        "1": 0.44105679615944415,
+        "2": 0.10140563056361926,
+        "3": 0.05444808092829515,
+        "4": 0.05412240565468771,
+        "5": 0.06739467822478831,
+        "6": 0.10912132007044235,
+        "7": 0.09001905803452961,
+        "8": 0.08243203036419341
+      },
+      "essays": {
+        "2": 0.003555602727731048,
+        "3": 0.051255516933336874,
+        "4": 0.153209329477008,
+        "5": 0.19953830233236924,
+        "6": 0.15580969565102024,
+        "7": 0.14080894384447334,
+        "8": 0.29582260903406127
+      },
+      "medicine": {
+        "2": 0.003813260245845288,
+        "3": 0.11224368199609508,
+        "4": 0.1318416397019057,
+        "5": 0.1474246743604081,
+        "6": 0.06413793735620067,
+        "7": 0.05555810180304877,
+        "8": 0.4849807045364964
+      },
+      "plutarch": {
+        "1": 0.9192093805086451,
+        "2": 0.028598072208640624,
+        "3": 0.03283621274578999,
+        "4": 0.015438696984885215,
+        "5": 0.0038494454275475724,
+        "6": 6.819212449154247e-05
+      },
+      "republic": {
+        "2": 0.027377628425292184,
+        "3": 0.2673848764135636,
+        "4": 0.052424369713292646,
+        "5": 0.045439944651725926,
+        "6": 0.043174948316901815,
+        "7": 0.08346717402584566,
+        "8": 0.48073105845337816
+      },
+      "travel": {
+        "1": 0.027415318344616108,
+        "2": 0.1189295086821259,
+        "3": 0.4033041157454541,
+        "4": 0.21539622212938214,
+        "5": 0.13083422229973918,
+        "6": 0.08695105479413161,
+        "7": 0.01716955800455097
+      }
+    }
+  },
+  "r5a_worst_model_minus_pinned_rounds": 0.3627058910832375,
+  "r5a_worst_rounds_pb6_shift_pct": 2.856037738523476,
+  "r5b_closure_best_state_steps": 3,
+  "r5b_closure_measured_curve": {
+    "decode_five_weighted_pct": -3.138778690267291,
+    "per_prompt": {
+      "beagle": {
+        "decode_pct": -2.4674620541656034,
+        "decode_share_of_total_leg": 0.90476812840474,
+        "total_pct": -2.2324810246571283
+      },
+      "botany": {
+        "decode_pct": -1.9263200999850905,
+        "decode_share_of_total_leg": 0.894151455116404,
+        "total_pct": -1.7224219204216455
+      },
+      "drama": {
+        "decode_pct": -12.927424856500469,
+        "decode_share_of_total_leg": 0.9434876554553611,
+        "total_pct": -12.196865768934986
+      },
+      "essays": {
+        "decode_pct": -5.439919236900204,
+        "decode_share_of_total_leg": 0.8963204632294386,
+        "total_pct": -4.875910930349125
+      },
+      "medicine": {
+        "decode_pct": -2.9920989170238554,
+        "decode_share_of_total_leg": 0.8947879582373646,
+        "total_pct": -2.6772940808080055
+      },
+      "plutarch": {
+        "decode_pct": 0.08565311249937313,
+        "decode_share_of_total_leg": 0.9658510943472578,
+        "total_pct": 0.08272815244176833
+      },
+      "republic": {
+        "decode_pct": -4.188144967232732,
+        "decode_share_of_total_leg": 0.8951159771500219,
+        "total_pct": -3.7488754747904736
+      },
+      "travel": {
+        "decode_pct": -2.938343551395295,
+        "decode_share_of_total_leg": 0.9345743658393765,
+        "total_pct": -2.746100561163479
+      }
+    },
+    "total_five_weighted_pct": -2.8230145592753124
+  },
+  "r5b_closure_replayed_curve": {
+    "decode_five_weighted_pct": -2.8256734561064634,
+    "per_prompt": {
+      "beagle": {
+        "decode_pct": -2.3179101684338677,
+        "decode_share_of_total_leg": 0.90476812840474,
+        "total_pct": -2.097171244904226
+      },
+      "botany": {
+        "decode_pct": -0.9440275835877698,
+        "decode_share_of_total_leg": 0.894151455116404,
+        "total_pct": -0.8441036375350272
+      },
+      "drama": {
+        "decode_pct": -12.549995070238317,
+        "decode_share_of_total_leg": 0.9434876554553611,
+        "total_pct": -11.840765424795489
+      },
+      "essays": {
+        "decode_pct": -4.47892101574946,
+        "decode_share_of_total_leg": 0.8963204632294386,
+        "total_pct": -4.0145485596046235
+      },
+      "medicine": {
+        "decode_pct": -2.8224303586989574,
+        "decode_share_of_total_leg": 0.8947879582373646,
+        "total_pct": -2.5254766979273926
+      },
+      "plutarch": {
+        "decode_pct": 0.09332520155900248,
+        "decode_share_of_total_leg": 0.9658510943472578,
+        "total_pct": 0.09013824805594095
+      },
+      "republic": {
+        "decode_pct": -3.50880626455643,
+        "decode_share_of_total_leg": 0.8951159771500219,
+        "total_pct": -3.140788548128547
+      },
+      "travel": {
+        "decode_pct": -3.5065093204503017,
+        "decode_share_of_total_leg": 0.9345743658393765,
+        "total_pct": -3.2770937244697036
+      }
+    },
+    "total_five_weighted_pct": -2.541812277550221
+  },
+  "r5b_control_mean_steps": 1.1493230220826218,
+  "r5b_drama_control": {
+    "draft_len_change_pct": -0.12179262225706644,
+    "drafting_rounds_pb6": 252.16595057079425,
+    "gap_pp": 0.15665258696019446,
+    "observed_decode_pct": 2.6799230565367926,
+    "one_step_decode_pct": 2.523270469576598,
+    "steps": 1.062083153133592
+  },
+  "r5b_free_fit": {
+    "per_prompt_residual_pp": {
+      "beagle": 2.17156323530693,
+      "botany": -0.11226823798024643,
+      "drama": 0.3092243137390116,
+      "essays": -4.837437278792797,
+      "medicine": -0.826956959691654,
+      "republic": 0.9178548792592052,
+      "travel": 1.2592545495611507
+    },
+    "rms_residual_pp": 2.115816207174985,
+    "sd_from_zero_delta_step": -0.9788120380348451,
+    "steps": 0.9395341368995539,
+    "us_per_drafting_round": 825.8505063347079
+  },
+  "r5b_lattice": {
+    "0": {
+      "corrected_median": 3.5750254749777386,
+      "corrected_median_pct": -2.38000391630534,
+      "corrected_raw": {
+        "beagle": 3.3830913068923842,
+        "botany": 3.861173991267172,
+        "drama": 2.0284459964185935,
+        "essays": 3.936077096046935,
+        "medicine": 3.84714046864716,
+        "plutarch": 2.376686759533341,
+        "republic": 3.766959643063093,
+        "travel": 2.329386103904702
+      },
+      "decode_five_mean_pct": 1.162622937326907,
+      "decode_five_weighted_pct": 1.8584481597849796,
+      "decode_seven_mean_pct": 1.7266696338888032,
+      "per_prompt": {
+        "beagle": {
+          "decode_pct": 4.046656385772485,
+          "removed_s": 0.0,
+          "total_pct": 3.652674887102614
+        },
+        "botany": {
+          "decode_pct": 1.4655831383082463,
+          "removed_s": 0.0,
+          "total_pct": 1.3245921845245423
+        },
+        "drama": {
+          "decode_pct": 2.6799230565367926,
+          "removed_s": 0.0,
+          "total_pct": 2.5275729423483995
+        },
+        "essays": {
+          "decode_pct": -3.223209899209667,
+          "removed_s": 0.0,
+          "total_pct": -2.8981784722776127
+        },
+        "medicine": {
+          "decode_pct": 0.8407644272127035,
+          "removed_s": 0.0,
+          "total_pct": 0.737867582613938
+        },
+        "plutarch": {
+          "decode_pct": -48.751855390344545,
+          "removed_s": 0.0,
+          "total_pct": -47.09035136625842
+        },
+        "republic": {
+          "decode_pct": 2.6833206345507676,
+          "removed_s": 0.0,
+          "total_pct": 2.3880226755472522
+        },
+        "travel": {
+          "decode_pct": 3.5936496940502938,
+          "removed_s": 0.0,
+          "total_pct": 3.331798375756545
+        }
+      },
+      "rms_error_vs_closure_pp": 5.289261656282953,
+      "ship_median": 3.6621856365500003,
+      "state_steps": 0,
+      "total_five_mean_pct": 1.0409957715021467,
+      "total_five_weighted_pct": 1.6733724649722377,
+      "total_seven_mean_pct": 1.5806214536593826,
+      "weighted_sq_error_vs_closure": 27.976288868625087
+    },
+    "1": {
+      "corrected_median": 3.636473973656692,
+      "corrected_median_pct": -0.7020851875092382,
+      "corrected_raw": {
+        "beagle": 3.4430722371555804,
+        "botany": 3.9192575959000306,
+        "drama": 2.076665859592331,
+        "essays": 3.999507072292343,
+        "medicine": 3.9087684951240176,
+        "plutarch": 2.447710768002919,
+        "republic": 3.8298757101578027,
+        "travel": 2.3829354235089526
+      },
+      "decode_five_mean_pct": -0.6468608727205184,
+      "decode_five_weighted_pct": -0.023292397420704845,
+      "decode_seven_mean_pct": -0.2812332218510834,
+      "per_prompt": {
+        "beagle": {
+          "decode_pct": 2.0508873372381276,
+          "removed_s": 0.09981862902683027,
+          "total_pct": 1.8469666603320833
+        },
+        "botany": {
+          "decode_pct": -0.21381446345999366,
+          "removed_s": 0.07467310411187672,
+          "total_pct": -0.1770436248155205
+        },
+        "drama": {
+          "decode_pct": 0.15665258696018203,
+          "removed_s": 0.22165387055172814,
+          "total_pct": 0.14689840292783085
+        },
+        "essays": {
+          "decode_pct": -4.941324564963113,
+          "removed_s": 0.07827173916118908,
+          "total_pct": -4.438159805367037
+        },
+        "medicine": {
+          "decode_pct": -0.9342869747595683,
+          "removed_s": 0.07953455050985782,
+          "total_pct": -0.8504270371232026
+        },
+        "plutarch": {
+          "decode_pct": -50.34138924546734,
+          "removed_s": 0.23687173006126938,
+          "total_pct": -48.62560437973079
+        },
+        "republic": {
+          "decode_pct": 0.8042343023419551,
+          "removed_s": 0.0844542390543534,
+          "total_pct": 0.7060224771429091
+        },
+        "travel": {
+          "decode_pct": 1.1090192236848262,
+          "removed_s": 0.18752363118250737,
+          "total_pct": 1.0097264295695574
+        }
+      },
+      "rms_error_vs_closure_pp": 3.508253908115537,
+      "ship_median": 3.6621856365500003,
+      "state_steps": 1,
+      "total_five_mean_pct": -0.5825282659661535,
+      "total_five_weighted_pct": -0.02137180562551789,
+      "total_seven_mean_pct": -0.2508594996190542,
+      "weighted_sq_error_vs_closure": 12.307845483807936
+    },
+    "2": {
+      "corrected_median": 3.7000737846869223,
+      "corrected_median_pct": 1.034577487246513,
+      "corrected_raw": {
+        "beagle": 3.5052184352476994,
+        "botany": 3.979115391932074,
+        "drama": 2.1272340961820717,
+        "essays": 4.065014884065766,
+        "medicine": 3.9724031263633495,
+        "plutarch": 2.523110446571482,
+        "republic": 3.8949291341261456,
+        "travel": 2.439004721390959
+      },
+      "decode_five_mean_pct": -2.4563446827679325,
+      "decode_five_weighted_pct": -1.9050329546263645,
+      "decode_seven_mean_pct": -2.2891360775909555,
+      "per_prompt": {
+        "beagle": {
+          "decode_pct": 0.055118288703814855,
+          "removed_s": 0.19963725805366053,
+          "total_pct": 0.0412584335615751
+        },
+        "botany": {
+          "decode_pct": -1.8932120652282114,
+          "removed_s": 0.14934620822375344,
+          "total_pct": -1.6786794341555722
+        },
+        "drama": {
+          "decode_pct": -2.3666178826164064,
+          "removed_s": 0.4433077411034563,
+          "total_pct": -2.233776136492749
+        },
+        "essays": {
+          "decode_pct": -6.659439230716568,
+          "removed_s": 0.15654347832237817,
+          "total_pct": -5.978141138456461
+        },
+        "medicine": {
+          "decode_pct": -2.709338376731829,
+          "removed_s": 0.15906910101971564,
+          "total_pct": -2.438721656860343
+        },
+        "plutarch": {
+          "decode_pct": -51.93092310059016,
+          "removed_s": 0.47374346012253876,
+          "total_pct": -50.16085739320317
+        },
+        "republic": {
+          "decode_pct": -1.0748520298668685,
+          "removed_s": 0.1689084781087068,
+          "total_pct": -0.975977721261434
+        },
+        "travel": {
+          "decode_pct": -1.3756112466806192,
+          "removed_s": 0.37504726236501473,
+          "total_pct": -1.3123455166174303
+        }
+      },
+      "rms_error_vs_closure_pp": 1.9369247018590163,
+      "ship_median": 3.6621856365500003,
+      "state_steps": 2,
+      "total_five_mean_pct": -2.206052303434447,
+      "total_five_weighted_pct": -1.716116076223262,
+      "total_seven_mean_pct": -2.082340452897488,
+      "weighted_sq_error_vs_closure": 3.751677300671639
+    },
+    "3": {
+      "corrected_median": 3.7659400070785294,
+      "corrected_median_pct": 2.8331270128149955,
+      "corrected_raw": {
+        "beagle": 3.5696493032158716,
+        "botany": 4.040829930427512,
+        "drama": 2.1803265414010164,
+        "essays": 4.132704329906287,
+        "medicine": 4.0381439866372535,
+        "plutarch": 2.6033030138581923,
+        "republic": 3.9622307109411876,
+        "travel": 2.497776165417394
+      },
+      "decode_five_mean_pct": -4.265828492815362,
+      "decode_five_weighted_pct": -3.7867735118320485,
+      "decode_seven_mean_pct": -4.297038933330842,
+      "per_prompt": {
+        "beagle": {
+          "decode_pct": -1.9406507598305422,
+          "removed_s": 0.2994558870804908,
+          "total_pct": -1.7644497932089442
+        },
+        "botany": {
+          "decode_pct": -3.5726096669964513,
+          "removed_s": 0.22401931233563016,
+          "total_pct": -3.180315243495646
+        },
+        "drama": {
+          "decode_pct": -4.889888352193006,
+          "removed_s": 0.6649616116551844,
+          "total_pct": -4.614450675913329
+        },
+        "essays": {
+          "decode_pct": -8.377553896470014,
+          "removed_s": 0.23481521748356726,
+          "total_pct": -7.518122471545885
+        },
+        "medicine": {
+          "decode_pct": -4.4843897787041005,
+          "removed_s": 0.23860365152957347,
+          "total_pct": -4.027016276597473
+        },
+        "plutarch": {
+          "decode_pct": -53.520456955712945,
+          "removed_s": 0.7106151901838081,
+          "total_pct": -51.696110406675544
+        },
+        "republic": {
+          "decode_pct": -2.953938362075703,
+          "removed_s": 0.2533627171630602,
+          "total_pct": -2.6579779196657993
+        },
+        "travel": {
+          "decode_pct": -3.8602417170460757,
+          "removed_s": 0.5625708935475221,
+          "total_pct": -3.634417462804429
+        }
+      },
+      "rms_error_vs_closure_pp": 1.519139335023572,
+      "ship_median": 3.6621856365500003,
+      "state_steps": 3,
+      "total_five_mean_pct": -3.8295763409027495,
+      "total_five_weighted_pct": -3.410860346821009,
+      "total_seven_mean_pct": -3.9138214061759293,
+      "weighted_sq_error_vs_closure": 2.3077843192158602
+    }
+  },
+  "r5b_score_pct_at_high_reading": -0.4836607437575635,
+  "r5b_score_pct_at_low_reading": -0.9039368002116688,
+  "r5b_score_pct_at_travel_reading": 0.22074409321646282,
+  "r5b_sign_change_state_steps": {
+    "corrected_median_pct": 1.4084589355154478,
+    "decode_seven_mean_pct": 0.8599368385541482,
+    "total_five_mean_pct": 0.6411951701839038
+  },
+  "r5b_step_reading_high": 1.1276930680541313,
+  "r5b_step_reading_high_with_travel": 1.53569978696382,
+  "r5b_step_reading_low": 0.8814946560876702,
+  "r5b_step_readings": {
+    "drama_control": 1.062083153133592,
+    "free_fit": 0.9395341368995539,
+    "travel_control": 1.4463517762147196
+  },
+  "r5b_travel_control": {
+    "draft_len_change_pct": -0.8058680349976921,
+    "drafting_rounds_pb6": 213.3374643714532,
+    "gap_pp": 1.109019223684836,
+    "observed_decode_pct": 3.5936496940502938,
+    "one_step_decode_pct": 2.484630470365458,
+    "steps": 1.4463517762147196
+  },
+  "r5b_verdict": "loss_confirmed",
+  "r5b_verdict_robust_to_travel": false,
+  "r5c_cost_per_round_us": {
+    "bar": {
+      "beagle": 44992.81840584672,
+      "botany": 54559.05709510479,
+      "drama": 34139.6966240409,
+      "essays": 48975.38014715904,
+      "medicine": 49450.30601444023,
+      "plutarch": 30744.86391014985,
+      "republic": 47806.312807735056,
+      "travel": 35177.48291981517
+    },
+    "pb6": {
+      "beagle": 45825.44810495911,
+      "botany": 53107.285305556674,
+      "drama": 35769.31345843421,
+      "essays": 49511.71199117276,
+      "medicine": 49936.03668774478,
+      "plutarch": 28339.82992353875,
+      "republic": 48033.25812692877,
+      "travel": 36648.83738935899
+    },
+    "pb6_corrected": {
+      "beagle": 44815.19316854849,
+      "botany": 52097.03036914605,
+      "drama": 34759.05852202359,
+      "essays": 48501.45705476213,
+      "medicine": 48925.78175133416,
+      "plutarch": 27329.574987128126,
+      "republic": 47023.003190518146,
+      "travel": 35638.582452948365
+    },
+    "ship": {
+      "beagle": 45468.29116968739,
+      "botany": 54867.00371308909,
+      "drama": 34857.2996618028,
+      "essays": 49496.69815122323,
+      "medicine": 49779.91324709214,
+      "plutarch": 30614.598440081918,
+      "republic": 48327.215295700495,
+      "travel": 35545.353476967466
+    }
+  },
+  "r5c_headline": "ours_ship_plus_pb6_state_corrected",
+  "r5c_local_cliff_from_width": 5,
+  "r5c_our_tree_vs_bar_level_pct": 0.8957278518970435,
+  "r5c_ranked_vs_local_cliff_moved": 1.0,
+  "r5c_solves": {
+    "bar_only": {
+      "cliff_boundary": 7,
+      "cliff_step_us": 18490.059299236145,
+      "condition_number": 760.0718514149627,
+      "curve_us": {
+        "1": 29250.927747372385,
+        "2": 29250.927747372385,
+        "3": 29250.927747372385,
+        "4": 42843.758335688384,
+        "5": 42843.758335688384,
+        "6": 42843.758335688384,
+        "7": 42843.758335688384,
+        "8": 61333.81763492453
+      },
+      "equations": 8,
+      "jitter": {
+        "cliff_boundary_share": {
+          "7": 1.0
+        },
+        "curve_sd_us": {
+          "1": 41.751806393220036,
+          "2": 41.751806393220036,
+          "3": 51.842242767039124,
+          "4": 88.11885301409941,
+          "5": 88.11885301409941,
+          "6": 88.11885301409941,
+          "7": 88.84949108044937,
+          "8": 88.25894349638581
+        },
+        "draws": 400,
+        "row_cv": 0.00132
+      },
+      "labels": [
+        "bar|beagle",
+        "bar|botany",
+        "bar|drama",
+        "bar|essays",
+        "bar|medicine",
+        "bar|plutarch",
+        "bar|republic",
+        "bar|travel"
+      ],
+      "max_abs_residual_us": 2114.5314343472346,
+      "relative_rms_pct": 2.431972434403742,
+      "residual_us": {
+        "bar|beagle": 460.4679803657855,
+        "bar|botany": -85.89090488674992,
+        "bar|drama": -2114.5314343472346,
+        "bar|essays": 1406.8824922849235,
+        "bar|medicine": -783.2319526206265,
+        "bar|plutarch": 1230.828786606282,
+        "bar|republic": 80.46548632139456,
+        "bar|travel": -194.99045372375986
+      },
+      "rms_residual_us": 1051.3596736786708,
+      "steps_pinned_at_zero": [
+        "1->2",
+        "2->3",
+        "4->5",
+        "5->6",
+        "6->7"
+      ],
+      "steps_us": {
+        "1->2": 0.0,
+        "2->3": 0.0,
+        "3->4": 13592.830588316003,
+        "4->5": 0.0,
+        "5->6": 0.0,
+        "6->7": 0.0,
+        "7->8": 18490.059299236145
+      },
+      "unknowns": 8,
+      "widths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "ours_ship_only": {
+      "cliff_boundary": 7,
+      "cliff_step_us": 15602.140080268606,
+      "condition_number": 760.0718514149627,
+      "curve_us": {
+        "1": 29297.508217922514,
+        "2": 29297.508217922514,
+        "3": 29695.886682761382,
+        "4": 43274.41815572785,
+        "5": 43274.41815572785,
+        "6": 43274.41815572785,
+        "7": 45730.13946332275,
+        "8": 61332.27954359135
+      },
+      "equations": 8,
+      "jitter": {
+        "cliff_boundary_share": {
+          "7": 1.0
+        },
+        "curve_sd_us": {
+          "1": 40.397927426808685,
+          "2": 40.397927426808685,
+          "3": 186.6405245575734,
+          "4": 199.78998894422955,
+          "5": 199.78998894422955,
+          "6": 199.78998894422955,
+          "7": 753.3642615954784,
+          "8": 115.19634417694463
+        },
+        "draws": 400,
+        "row_cv": 0.00132
+      },
+      "labels": [
+        "ship|beagle",
+        "ship|botany",
+        "ship|drama",
+        "ship|essays",
+        "ship|medicine",
+        "ship|plutarch",
+        "ship|republic",
+        "ship|travel"
+      ],
+      "max_abs_residual_us": 1805.4529275877576,
+      "relative_rms_pct": 2.1473900080971884,
+      "residual_us": {
+        "ship|beagle": 525.3378108011675,
+        "ship|botany": -153.03599278238107,
+        "ship|drama": -1805.4529275877576,
+        "ship|essays": 1280.2397914059547,
+        "ship|medicine": -811.2524977002031,
+        "ship|plutarch": 1033.4672375859918,
+        "ship|republic": 180.19881042847555,
+        "ship|travel": -249.50223215111328
+      },
+      "rms_residual_us": 936.6817862203313,
+      "steps_pinned_at_zero": [
+        "1->2",
+        "4->5",
+        "5->6"
+      ],
+      "steps_us": {
+        "1->2": 0.0,
+        "2->3": 398.3784648388684,
+        "3->4": 13578.531472966464,
+        "4->5": 0.0,
+        "5->6": 0.0,
+        "6->7": 2455.7213075948935,
+        "7->8": 15602.140080268606
+      },
+      "unknowns": 8,
+      "widths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "ours_ship_plus_pb6_raw": {
+      "cliff_boundary": 4,
+      "cliff_step_us": 16131.006675957033,
+      "condition_number": 269.6238756296338,
+      "curve_us": {
+        "1": 27960.62153125346,
+        "2": 27960.62153125346,
+        "3": 32049.307045090954,
+        "4": 32993.5552295223,
+        "5": 49124.561905479335,
+        "6": 49124.561905479335,
+        "7": 49124.561905479335,
+        "8": 60316.99158106465
+      },
+      "equations": 16,
+      "jitter": {
+        "cliff_boundary_share": {
+          "4": 1.0
+        },
+        "curve_sd_us": {
+          "1": 29.833361434107427,
+          "2": 29.833361434107427,
+          "3": 164.26914711402685,
+          "4": 376.425753935177,
+          "5": 96.16281046653599,
+          "6": 96.16281046653599,
+          "7": 96.16281046653599,
+          "8": 73.19765377387152
+        },
+        "draws": 400,
+        "row_cv": 0.00132
+      },
+      "labels": [
+        "ship|beagle",
+        "ship|botany",
+        "ship|drama",
+        "ship|essays",
+        "ship|medicine",
+        "ship|plutarch",
+        "ship|republic",
+        "ship|travel",
+        "pb6|beagle",
+        "pb6|botany",
+        "pb6|drama",
+        "pb6|essays",
+        "pb6|medicine",
+        "pb6|plutarch",
+        "pb6|republic",
+        "pb6|travel"
+      ],
+      "max_abs_residual_us": 3492.570177076639,
+      "relative_rms_pct": 2.937399131159185,
+      "residual_us": {
+        "pb6|beagle": 599.7222731618094,
+        "pb6|botany": 1007.705600893787,
+        "pb6|drama": -3492.570177076639,
+        "pb6|essays": 1548.8569091101526,
+        "pb6|medicine": -81.79361565486761,
+        "pb6|plutarch": 60.97200887121653,
+        "pb6|republic": 113.12867788541189,
+        "pb6|travel": 379.3275239701834,
+        "ship|beagle": 146.7345079350489,
+        "ship|botany": -260.97281644667964,
+        "ship|drama": -1906.4707466743785,
+        "ship|essays": 483.0347930563221,
+        "ship|medicine": -648.7296287010031,
+        "ship|plutarch": 2359.1053755736903,
+        "ship|republic": -187.15391040436225,
+        "ship|travel": -120.89677549931366
+      },
+      "rms_residual_us": 1278.0037868200889,
+      "steps_pinned_at_zero": [
+        "1->2",
+        "5->6",
+        "6->7"
+      ],
+      "steps_us": {
+        "1->2": 0.0,
+        "2->3": 4088.6855138374954,
+        "3->4": 944.2481844313509,
+        "4->5": 16131.006675957033,
+        "5->6": 0.0,
+        "6->7": 0.0,
+        "7->8": 11192.429675585312
+      },
+      "unknowns": 8,
+      "widths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "ours_ship_plus_pb6_state_corrected": {
+      "cliff_boundary": 7,
+      "cliff_step_us": 13581.595321979246,
+      "condition_number": 269.6238756296338,
+      "curve_us": {
+        "1": 27601.57009843657,
+        "2": 27601.57009843657,
+        "3": 30396.114368642324,
+        "4": 35980.01332969424,
+        "5": 47183.664567138316,
+        "6": 47183.664567138316,
+        "7": 47183.664567138316,
+        "8": 60765.25988911756
+      },
+      "equations": 16,
+      "jitter": {
+        "cliff_boundary_share": {
+          "7": 1.0
+        },
+        "curve_sd_us": {
+          "1": 29.903085246893266,
+          "2": 29.903085246893266,
+          "3": 182.43421073365164,
+          "4": 420.22928978054415,
+          "5": 97.8976633125031,
+          "6": 98.16883831051625,
+          "7": 98.16883831051625,
+          "8": 78.02457316568508
+        },
+        "draws": 400,
+        "row_cv": 0.00132
+      },
+      "labels": [
+        "ship|beagle",
+        "ship|botany",
+        "ship|drama",
+        "ship|essays",
+        "ship|medicine",
+        "ship|plutarch",
+        "ship|republic",
+        "ship|travel",
+        "pb6|beagle",
+        "pb6|botany",
+        "pb6|drama",
+        "pb6|essays",
+        "pb6|medicine",
+        "pb6|plutarch",
+        "pb6|republic",
+        "pb6|travel"
+      ],
+      "max_abs_residual_us": 3673.9863546481065,
+      "relative_rms_pct": 3.125517515379968,
+      "residual_us": {
+        "pb6|beagle": 143.85337148020335,
+        "pb6|botany": 949.5231581985499,
+        "pb6|drama": -3673.9863546481065,
+        "pb6|essays": 1570.8052161113883,
+        "pb6|medicine": -788.4807930204915,
+        "pb6|plutarch": -597.4374846713872,
+        "pb6|republic": -360.12901702960517,
+        "pb6|travel": -122.73068120182143,
+        "ship|beagle": 614.5910725807043,
+        "ship|botany": -173.42849913633108,
+        "ship|drama": -1302.9544486167506,
+        "ship|essays": 941.8752268511307,
+        "ship|medicine": -554.4871698949792,
+        "ship|plutarch": 2715.198296570732,
+        "ship|republic": 226.6487298166321,
+        "ship|travel": 411.1393766101173
+      },
+      "rms_residual_us": 1344.0624970019226,
+      "steps_pinned_at_zero": [
+        "1->2",
+        "5->6",
+        "6->7"
+      ],
+      "steps_us": {
+        "1->2": 0.0,
+        "2->3": 2794.544270205754,
+        "3->4": 5583.898961051912,
+        "4->5": 11203.651237444079,
+        "5->6": 0.0,
+        "6->7": 0.0,
+        "7->8": 13581.595321979246
+      },
+      "unknowns": 8,
+      "widths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    }
+  },
+  "r5c_unidentified_widths": [
+    9
+  ],
+  "r5d_base_default_arm": {
+    "arm": "pb6",
+    "file": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+    "line": 1139,
+    "text": "return DepthPriceArm(rawValue: requested) ?? .pb6"
+  },
+  "r5d_base_ships_pb6": 1.0,
+  "seeds": [
+    128,
+    129,
+    130,
+    131,
+    132,
+    133
+  ],
+  "state_step_n": 3,
+  "state_step_sd_us": 54.3,
+  "state_step_us": 879.0,
+  "width1_anchor_used": "measured",
+  "windows": 200
+}

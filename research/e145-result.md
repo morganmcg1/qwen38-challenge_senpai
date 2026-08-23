@@ -19,23 +19,43 @@ binary in every session reported here. All timing is local, never ranked.
    *and* at 6->7, then 7->8 is nearly free. The replayed curve has a single
    cliff at 5->6 and calls 6->7 almost free. The two curves disagree about
    *which* boundary is expensive.
-3. **Both of those facts change almost nothing about the policy.** Re-fitting
-   the price plane on the measured curve moves the objective by **+0.070 pp**,
-   and paying for the newly discovered second cliff adds a further **+0.049
-   pp**. The price surface is a plateau, not a peak.
+3. **The replayed curve is wrong in shape, wrong by a whole extra cliff, and
+   the entire consequence for the policy is 0.3305 pp** — locally resolvable,
+   ranked-unresolvable. The cross-evaluation is the decisive test: let each
+   curve pick its own best price cell, then price both cells under the
+   measured costs. The replayed curve moves `h` from 0.18 to 0.16 and believes
+   it gains +0.1367 pp; that cell in truth **loses 0.0993 pp**. The measured
+   curve instead moves the tier from 1.45 to 1.60 and gains **+0.2313 pp**.
+   The regret from having used the wrong curve is **0.3305 pp**, which is
+   **2.713x** the F4 median-eligible noise floor of 0.1218 pp and **0.19x**
+   the smallest nuisance a single ranked receipt carries, one 879 us state
+   step at 1.78 pp. Local instruments can see this; the ranked board cannot.
 4. **The regime hypothesis is dead.** On `beagle_a` the `pb6` arm is
    **2.57 % faster**, not slower. Both preregistered directional intervals
-   miss low.
+   miss low. Advisor Error 151 resolves in `pb6`'s favour on the local
+   instrument.
 5. **A mean-draft-length model of this system is wrong, and I can now show it
    on measured data.** The advisor's Error 156 reproduces locally: predicting
    from the curve evaluated at the mean draft length is off by up to
    **10.3 %**, while predicting from the full width histogram is off by
    **0.37 % at worst**. The Jensen gap changes sign between fixtures.
+6. **The ranked receipt cannot decide `pb6` either, and the campaign base
+   ships it.** R5 reads the two ranked rows directly. After removing the one
+   per-drafting-round state draw the crown family measured at 879 us, the
+   published median pair moves by a fraction of a percent, and the sign of
+   that move depends on a state-step count that three independent readings
+   place between 0.94 and 1.45. See "R5-b" for the exact interval and verdict.
+7. **The ranked cliff is not where the local cliff is.** Solving the ranked
+   per-width round cost from the board by monotone non-negative least squares
+   puts the ranked cliff at the 4->5 boundary. R2 measured the local cliff at
+   5->6. This is the concrete form of the M5 transfer risk that F6 named
+   through the `g16s`/`g17s` register-spill tables.
 
 Taken together: the curve everybody was using was wrong, and correcting it
-does not buy a meaningful gain, because the objective is flat in the
-directions the correction moves. That is a negative result about the *lever*,
-established on a positive result about the *measurement*.
+buys 0.33 pp, which is real on this bench and invisible on the board. That is
+a negative result about the *lever*, established on a positive result about
+the *measurement*, plus a positive result about *which instrument can answer
+which question*.
 
 ## What was measured
 
@@ -313,6 +333,94 @@ extrapolated 65,614.1 us, local serial control 66,017.0 us. Every R3 and R4
 cell is identical between the measured and the extrapolated anchor, so the
 anchor is a robustness control here and not a result.
 
+## R4 — the cross-evaluation, and what the wrong curve actually cost
+
+R3 asked whether the two curves price the *same* cells differently. R4 asks
+the decision-relevant question instead: **let each curve choose its own best
+cell, then settle the bill under the measured costs.** 6 seeds, 200 windows,
+zero GPU, one grid over the price plane `plane_price(h, tier)`, which
+generalises `boundary_price`'s hard-wired `0.18` to a free `h`.
+
+| cell chosen by | cell | objective under measured costs | upper-slot spread | worst slot |
+|----------------|------|-------------------------------|-------------------|------------|
+| uniform | h=0.18 tier=1.00 | +0.0000 | 0.000 | essays |
+| shipped | h=0.18 tier=1.45 | +2.2469 | 3.7886 | botany |
+| replayed curve | **h=0.16** tier=1.45 | +2.1477 | 3.5586 | botany |
+| measured curve | h=0.18 **tier=1.60** | **+2.4782** | 3.9910 | botany |
+
+Read the third and fourth rows together. The two curves do not merely disagree
+about the size of the win: **they move different knobs.** The replayed curve
+lowers `h`; the measured curve raises the tier and leaves `h` alone.
+`same_cell = false`.
+
+The three numbers that matter:
+
+- `replayed_believed_gain_pp = +0.1367` — what the replayed curve thinks its
+  own cell wins.
+- `replayed_cell_true_gain_pp = -0.0993` — what that cell actually does. The
+  replayed curve's recommendation is **worse than shipping unchanged**.
+- `measured_best_over_shipped_pp = +0.2313` — what the measured curve wins.
+
+Regret, the price of having used the wrong curve, is
+`+2.4782 - 2.1477 = 0.3305 pp`.
+
+Scale it twice, because the two instruments answer differently:
+
+- Against the **local** F4 null-control floor of 0.1218 pp for a
+  median-eligible prompt, 0.3305 pp is **2.713x the floor**. This bench can
+  resolve it.
+- Against the **ranked** instrument, the smallest nuisance one receipt carries
+  is a single 879 us per-drafting-round state draw, worth 1.78 pp at shipped
+  round counts. 0.3305 pp is **0.19 steps**. No single ranked receipt can
+  resolve it.
+
+That asymmetry, not the regret itself, is the transferable finding: the width
+cost curve is a quantity that must be settled locally, because the board will
+never see it.
+
+An earlier one-seed preview of this table reported the regret as *below* the
+noise floor. That preview was wrong. The six-seed run above supersedes it, and
+the direction of the correction is against my earlier claim.
+
+### Appendix — the second-cliff price
+
+`pb67` adds a second free tier for the 6->7 boundary that R2 discovered. Run
+on the replayed curve's own chosen cell (`h = 0.16`), the nested control is
+exact: `tier7 = 1.00` at `tier6 = 1.45` reproduces the plane cell at +1.800.
+
+| tier6 | tier7 | objective |
+|-------|-------|-----------|
+| 1.45 | 1.00 | +1.800 |
+| 1.50 | 1.10 | **+1.818** |
+
+Paying separately for the newly discovered second cliff is worth **+0.019 pp**
+over the best single boundary. That is one sixth of the local noise floor. The
+second cliff is real in the *cost curve* and worthless in the *price policy*,
+so it gets an appendix and no further legs.
+
+## R5 — can the ranked instrument decide anything here?
+
+R4 says the local bench resolves 0.33 pp and the board does not. R5 turns that
+around and asks what the board *can* decide, using the only two ranked receipts
+that differ by the depth-price arm alone: `572b2cc4` (ship) and `e003a86d`
+(pb6). No GPU. Every number below is `harness=ranked` unless it is explicitly
+a replay.
+
+### R5-0 — the local seed prefill
+
+F5 asked for this. It needed no instrumentation: `QwenRuntimeMTP` already
+writes `seed_prefill_seconds` into every leg report.
+
+Over the 40 E145 leg reports the mean is **4.005141 s**, median 4.006380 s,
+spread 0.613 %. The ranked seed prefill on `684821ed` is **0.526485 s**, so
+the local-to-ranked prefill level factor is **7.6073**.
+
+This retires two things at once. It supplies the number F5 asked for, and it
+confirms Advisor Error 160 from the other side: the ranked prefill is a
+published field, it is 0.5265 s, and the 1.71 s figure that R0b derived from a
+level argument was an artifact of that argument. R0b's `P ~ 1.71 s` is
+withdrawn.
+
 ## What could not be identified
 
 Two quantities are **not identified** by this data, and I am withholding
@@ -322,8 +430,9 @@ coefficients rather than reporting fitted numbers that mean nothing:
    beagle ship -498 us/replay, beagle pb6 +251, benchfixture ship +820,
    benchfixture pb6 -1,477. The between-width least-squares fit is degenerate
    because width and replay share are collinear at `corr = 0.9843`.
-2. **Ranked prefill from two curves.** The two-curve identification failed. The
-   R0b level-factor estimate `P ~ 1.71 s` remains the only estimate.
+2. **Ranked prefill from two curves.** The two-curve identification failed, and
+   R5-0 makes it moot: the board publishes `prefill_seconds_per_token`
+   directly. Nothing in this report fits ranked prefill any more.
 
 Both have explicit guards in the analysis code so a later run cannot silently
 consume the unidentified coefficients.
