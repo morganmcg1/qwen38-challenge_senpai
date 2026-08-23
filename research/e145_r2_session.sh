@@ -16,12 +16,12 @@
 # live decode.
 #
 # THE DESIGN. `MLX_E145_PIN_DEPTH` pins the drafted depth to a constant, so
-# every drafting round realises verify width `M = depth + 1`. Widths 3 to 7 are
+# every drafting round realises verify width `M = depth + 1`. Widths 2 to 8 are
 # swept as one palindrome inside one session, on one worker binary:
 #
-#     2, 3, 4, 5, 6, 6, 5, 4, 3, 2      (pinned depth; width is depth + 1)
+#     1 2 3 4 5 6 7 7 6 5 4 3 2 1       (pinned depth; width is depth + 1)
 #
-# Every pin has mean position 5.5, so monotone drift across the session cancels
+# Every pin has mean position 7.5, so monotone drift across the session cancels
 # to first order, and every leg takes the real 40 C gate.
 #
 # WHY A PIN AND NOT A SHIPPED LEG. The shipped schedule chooses depth from the
@@ -42,7 +42,22 @@ source research/e145_lib.sh
 
 tokens="${1:-512}"
 fixture="${2:-beagle_a}"
-readonly PINS=(2 3 4 5 6)
+
+# The assignment asks for widths 3 to 7, which is what decides the 5 to 6 step.
+# This sweeps widths 2 to 8 instead, a strict superset, for two reasons.
+#
+# R3 re-prices the E140 and E134 decision cells on the measured curve, and
+# those cells read the curve at every width from 1 to 9. Measuring only 3 to 7
+# would force widths 2 and 8 to be extrapolated across the very boundary the
+# experiment exists to test, and width 8 carries most of the realised mass on
+# the deep prompts. Second, the QMV grouping boundary sits at width 8, so it is
+# the one other place the source predicts a non-linear step, and measuring it
+# costs four gated legs.
+#
+# Depth 8 is not swept: the shipped envelope clamps the pin, and the deepest
+# width observed from any shipped leg is 8, so pin 7 is the deepest pin that
+# realises the width it asks for.
+readonly PINS=(1 2 3 4 5 6 7)
 
 golden=".mlxfast-private/e128/goldens/${fixture}-rows-$((tokens + 1)).json"
 [[ -s "${golden}" ]] || {
