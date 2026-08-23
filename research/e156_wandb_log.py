@@ -509,6 +509,58 @@ def dead_switch_section(c: dict) -> tuple[dict, dict]:
     return metrics, summary
 
 
+def null_control_section(n: dict, det: dict | None) -> tuple[dict, dict]:
+    """Matched base-arm control on a host where the changed kernel cannot run."""
+    d = n["deltas"]
+    nf = n["e156_matched_gated_leg_noise_floor_pct"]
+    cand, base = n["arms"]["candidate"], n["arms"]["base"]
+    metrics = {
+        "e156_null_serial_pct": d["serial_pct"],
+        "e156_null_mtp_pct": d["mtp_pct"],
+        "e156_null_ratio_pct": d["mtp_decode_speedup_pct"],
+        "e156_null_accepted_draft_rate_delta": d["accepted_draft_rate_delta"],
+        "e156_null_draft_len_delta": d["effective_mean_draft_len_delta"],
+        "e156_acceptance_bit_identical_across_arms":
+            float(n["e156_acceptance_bit_identical_across_arms"]),
+        "e156_contamination_detected":
+            float(n["e156_contamination_detected"]),
+        "e156_both_arms_exact": float(n["e156_both_arms_exact"]),
+        "e156_base_arm_serial_seconds_per_token":
+            base["serial_seconds_per_token"],
+        "e156_base_arm_mtp_seconds_per_token": base["mtp_seconds_per_token"],
+        "e156_candidate_arm_serial_seconds_per_token":
+            cand["serial_seconds_per_token"],
+        "e156_candidate_arm_mtp_seconds_per_token":
+            cand["mtp_seconds_per_token"],
+        "e156_observed_noise_floor_serial_pct": nf["serial_leg"],
+        "e156_observed_noise_floor_mtp_pct": nf["mtp_leg"],
+        "e156_observed_noise_floor_ratio_pct": nf["derived_ratio"],
+    }
+    summary = {
+        "e156_null_control_interpretation": n["interpretation"],
+        "e156_null_control_does_not_show":
+            json.dumps(n["what_this_does_not_show"], indent=1),
+        "e156_observed_noise_floor_note":
+            nf["basis"] + " " + nf["campaign_consequence"],
+    }
+    if det is not None:
+        metrics.update({
+            "e156_worker_digest_is_a_function_of_source_alone":
+                float(det["e156_worker_digest_is_a_function_of_source_alone"]),
+            "e156_link_step_is_deterministic":
+                float(det["e156_link_step_is_deterministic"]),
+            "e156_incremental_compilation_is_reproducible":
+                float(det["e156_incremental_compilation_is_reproducible"]),
+        })
+        summary.update({
+            "e156_worker_digest_finding": det["reasoning"],
+            "e156_worker_digest_consequences":
+                json.dumps(det["consequences"], indent=1),
+            "e156_worker_digest_vs_ledger_202I": det["relation_to_ledger_202I"],
+        })
+    return metrics, summary
+
+
 def compile_section(cg: dict) -> tuple[dict, dict]:
     metrics = {
         f"e156_cg_{k[len('e156_'):]}": float(bool(cg[k]))
@@ -557,6 +609,8 @@ def main() -> None:
     djit = load(HERE / "e156-decode-jit-source-identity.json")
     pair = load(HERE / "e156-matmul2d-pairing.json")
     census = load(HERE / "e156-dead-switch-census.json")
+    nullctl = load(HERE / "e156-contamination-null-control.json")
+    digest = load(HERE / "e156-worker-digest-determinism.json")
     gate = load(OUT / "e156-gate-chain.json")
     submit = load(OUT / "e156-local-submit.json")
 
@@ -582,15 +636,28 @@ def main() -> None:
             "of the identity tuple. Same host, same toolchain, differing in "
             "exactly the two submitted files.\n"
             "candidate  kE147NaxRetileOn=true  kE151NaxDoubleBufferOn=true   "
-            "worker sha256 "
-            "691d620b8fe2f62b8d5136078ca32a7d40be6d7c09a3a8708a6d65cdc5d8d815\n"
+            "strings 81530  worker sha256 "
+            "691d620b8fe2f62b8d5136078ca32a7d40be6d7c09a3a8708a6d65cdc5d8d815 "
+            "(gate-chain build A) and "
+            "03948d5d0018e910db370f66c8de7af777abf0039d19b0582e9aa8153c011b1c "
+            "(rebuild C, IDENTICAL source)\n"
             "base       kE147NaxRetileOn=false kE151NaxDoubleBufferOn=absent "
-            "worker sha256 "
+            "strings 81324  worker sha256 "
             "3fe98cba361f2ca4690fb2ce74505853441a5322a5207d34467784b40a5b6df2\n"
-            "The base arm was built with an inverted certificate: --require "
-            "'kE147NaxRetileOn = false' plus --forbid on 'kE147NaxRetileOn = "
-            "true', 'kE151NaxDoubleBufferOn' and 'kE147NaxRetileArmed'. All "
-            "four assertions passed, so it cannot be a stale candidate binary.",
+            "CAVEAT, MEASURED: the worker sha256 is NOT a valid arm "
+            "certificate. Builds A and C came from a provably identical "
+            "worker-linked source tree and produced different digests. A "
+            "forced relink from the same object files reproduced C exactly, so "
+            "the linker is deterministic and the difference comes from "
+            "incremental compilation history. Two differing digests therefore "
+            "do NOT prove the sources differ, although two matching digests do "
+            "prove sameness. The real certificate is string CONTENT: the "
+            "string count separated the arms every time, and the base arm was "
+            "built under an inverted certificate, --require 'kE147NaxRetileOn "
+            "= false' plus --forbid on 'kE147NaxRetileOn = true', "
+            "'kE151NaxDoubleBufferOn' and 'kE147NaxRetileArmed', with all four "
+            "assertions passing. See "
+            "research/e156-worker-digest-determinism.json.",
         "e156_prefill_pct_on_crown_base": "not_locally_measurable",
         "e156_prefill_pct_frame":
             "share of the seed-prefill phase, candidate minus base, sign "
@@ -642,6 +709,10 @@ def main() -> None:
         summary.update(s)
     if census is not None:
         m, s = dead_switch_section(census)
+        metrics.update(m)
+        summary.update(s)
+    if nullctl is not None:
+        m, s = null_control_section(nullctl, digest)
         metrics.update(m)
         summary.update(s)
     if gate is not None:

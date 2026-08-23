@@ -1,0 +1,55 @@
+{
+  "experiment": "E156",
+  "rung": "R1",
+  "harness": "offline",
+  "question": "Is the built-worker sha256 a valid certificate for a compile-time experiment arm?",
+  "why_it_matters": "Advisor RULE 170 asks for the built-worker fingerprint of each arm when the arm is selected by a compile-time flag. A fingerprint is only a certificate if it is a function of the source alone.",
+  "answer": "No. The worker sha256 is a function of build history as well as source, so two differing digests do not prove the sources differ.",
+  "observations": [
+    {
+      "build": "A",
+      "source_tree": "candidate",
+      "worker_sha256": "691d620b8fe2f62b8d5136078ca32a7d40be6d7c09a3a8708a6d65cdc5d8d815",
+      "strings": 81530,
+      "note": "Original gate-chain build, recorded in research/out/e156-gate-chain.json."
+    },
+    {
+      "build": "B",
+      "source_tree": "base",
+      "worker_sha256": "3fe98cba361f2ca4690fb2ce74505853441a5322a5207d34467784b40a5b6df2",
+      "strings": 81324,
+      "note": "Base arm, submitted pair reverted to d0422d1d. Built under an inverted certificate."
+    },
+    {
+      "build": "C",
+      "source_tree": "candidate, byte-identical to A",
+      "worker_sha256": "03948d5d0018e910db370f66c8de7af777abf0039d19b0582e9aa8153c011b1c",
+      "strings": 81530,
+      "note": "Rebuilt after the base arm. Submitted-pair sha256 verified as 96f4cb69... and 7dc480f3... and git diff against the frozen PR head was empty BEFORE this build ran."
+    },
+    {
+      "build": "D",
+      "source_tree": "candidate, byte-identical to A and C",
+      "worker_sha256": "03948d5d0018e910db370f66c8de7af777abf0039d19b0582e9aa8153c011b1c",
+      "strings": 81530,
+      "note": "Forced relink: the worker binary was deleted, then rebuilt from the existing object files. The log shows a real link step, '[1/2] Linking mlxfast-runtime-worker', and a new mtime 2026-08-23T17:46:54Z."
+    }
+  ],
+  "e156_worker_digest_is_a_function_of_source_alone": false,
+  "e156_link_step_is_deterministic": true,
+  "e156_incremental_compilation_is_reproducible": false,
+  "reasoning": "A and C were built from a provably identical worker-linked source tree yet produced different binaries, so the digest is not determined by the source. C and D produced the SAME digest across a genuine relink from the same object files, so the linker is deterministic given identical objects. The difference between A and C therefore comes from the object files, which depend on the incremental compilation history: A was built directly on the candidate tree, whereas C was built after the tree had been swapped to the base arm and back.",
+  "consequences": [
+    "Two differing worker digests do NOT prove that two arms differ in source.",
+    "Two matching worker digests DO prove sameness, because the link step is deterministic given identical objects.",
+    "To compare arms by binary digest, each arm must be built from a clean scratch path; otherwise the digest records build history rather than source.",
+    "The correct arm certificate on this campaign is string CONTENT, not the digest. The string count separated the arms every time, 81530 for the candidate against 81324 for the base, and the require/forbid literals were correct in every build."
+  ],
+  "relation_to_ledger_202I": "The rebuild-and-assert-worker.sh header already warns that a bare __TEXT,__text section digest is not an arm certificate, citing two builds of the same tree that produced different digests and two builds of different trees that produced the same one. This observation extends that warning from the section digest to the WHOLE-BINARY sha256 that the same script prints as worker_sha256, and it identifies incremental compilation rather than the linker as the mechanism.",
+  "method": "senpai/rebuild-and-assert-worker.sh with the candidate certificate --require 'kE147NaxRetileOn = true' --require 'kE151NaxDoubleBufferOn = true' --require 'kE147NaxRetileArmed' --forbid 'kE147NaxRetileOn = false'. All four assertions passed in every candidate build.",
+  "job_ids": {
+    "B": "345e7408-e4ae-440d-b1d7-4b59ad3c32c2",
+    "C": "715d3be8-b533-405f-a5df-c1b60f8f0367",
+    "D": "067d50f6-08e7-4ffe-b0fa-a9405bf155eb"
+  }
+}
