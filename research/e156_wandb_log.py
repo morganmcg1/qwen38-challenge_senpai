@@ -296,6 +296,16 @@ def prefill_share_section(p: dict) -> tuple[dict, dict]:
         "e156_prefill_projections_enumerated": len(p["projections"]),
         "e156_prefill_projections_routed_to_nax": sum(
             1 for r in p["projections"] if r["routes_to_affine_qmm_t_nax"]),
+        # The advisor requires this reported at BOTH ends of the prefill-share
+        # range, because the round-level share itself is disputed.
+        "e156_prefill_published_pct_per_kernel_pct_at_8_45":
+            0.0845 * p["e156_prefill_qmm_share_estimate"],
+        "e156_prefill_published_pct_per_kernel_pct_at_10_04":
+            0.1004 * p["e156_prefill_qmm_share_estimate"],
+        "e156_prefill_kernel_pct_to_close_the_gap_at_8_45":
+            1.2578 / (0.0845 * p["e156_prefill_qmm_share_estimate"]),
+        "e156_prefill_kernel_pct_to_close_the_gap_at_10_04":
+            1.2578 / (0.1004 * p["e156_prefill_qmm_share_estimate"]),
         "e156_prefill_layers_full_attention": p["layers_full_attention"],
         "e156_prefill_layers_gdn": p["layers_gdn"],
     }
@@ -333,6 +343,168 @@ def prefill_share_section(p: dict) -> tuple[dict, dict]:
         "e156_prefill_share_sensitivity_verdict": sens["verdict"],
         "e156_prefill_source_provenance":
             json.dumps(p["source_provenance"], indent=1),
+    }
+    return metrics, summary
+
+
+def decode_jit_section(d: dict) -> tuple[dict, dict]:
+    """F6 arm 1: prove the candidate leaves the decode JIT source string alone."""
+    by_label = {r["label"]: r for r in d["revisions"]}
+    metrics = {
+        "e156_decode_jit_source_byte_identical":
+            float(d["e156_decode_jit_source_byte_identical"]),
+        "e156_decode_jit_positive_control_nax_moved":
+            float(d["e156_decode_jit_positive_control_nax_moved"]),
+        "e156_decode_jit_no_nax_text_in_decode_modules":
+            float(d["e156_decode_jit_no_nax_text_in_decode_modules"]),
+        "e156_decode_jit_gate_pass": float(d["e156_decode_jit_gate_pass"]),
+        "e156_decode_jit_source_bytes":
+            by_label["candidate"]["decode_source_bytes"],
+        "e156_nax_jit_source_bytes_candidate":
+            by_label["candidate"]["nax_source_bytes"],
+        "e156_nax_jit_source_bytes_prbase":
+            by_label["prbase"]["nax_source_bytes"],
+        "e156_nax_jit_source_bytes_crown":
+            by_label["crown"]["nax_source_bytes"],
+    }
+    summary = {
+        "e156_decode_jit_digests": json.dumps(
+            {r["label"]: {
+                "decode_sha256": r["decode_source_sha256"],
+                "nax_sha256": r["nax_source_sha256"],
+            } for r in d["revisions"]}, indent=1),
+        "e156_decode_jit_modules": json.dumps(
+            {"decode": d["decode_modules"], "nax": d["nax_modules"]}),
+        "e156_decode_jit_builders":
+            f'decode={d["decode_builder"]} nax={d["nax_builder"]}',
+        "e156_decode_jit_verdict":
+            "RULE 168 holds on this candidate: the decode JIT source string is "
+            "byte-identical across crown, PR base and candidate, while the NAX "
+            "source digest moves at every revision. The moving NAX digest is "
+            "the positive control that proves the comparison can fail. "
+            "harness=offline",
+    }
+    return metrics, summary
+
+
+def pairing_section(p: dict) -> tuple[dict, dict]:
+    """Measured matmul2d operand budgets, and why the local instrument is void."""
+    cap = p["e156_capacities"]
+    bud = p["e156_paired_a_operand_budget"]
+    inst = p["e156_matmul2d_instrument_check"]
+    num = p["e156_matmul2d_numerical"]
+    metrics = {
+        "e156_matmul2d_capacity_descB_left": cap["descB_16_32_16"]["left"],
+        "e156_matmul2d_capacity_descB_right": cap["descB_16_32_16"]["right"],
+        "e156_matmul2d_capacity_descA_left": cap["descA_32_16_16"]["left"],
+        "e156_matmul2d_capacity_descA_right": cap["descA_32_16_16"]["right"],
+        "e156_matmul2d_k_elems_per_frag": cap["kElemsPerFrag"],
+        "e156_paired_a_writes_into_left": bud["writes_into_left"],
+        "e156_paired_a_left_capacity": bud["left_capacity_under_declared_desc"],
+        "e156_paired_a_writes_into_right": bud["writes_into_right"],
+        "e156_paired_a_right_capacity": bud["right_capacity_under_declared_desc"],
+        "e156_paired_a_left_write_fits": float(bud["left_write_fits"]),
+        "e156_paired_a_right_fully_initialised":
+            float(bud["right_operand_fully_initialised"]),
+        "e156_matmul2d_instrument_valid_on_this_host":
+            float(p["e156_matmul2d_instrument_valid_on_this_host"]),
+        "e156_matmul2d_controls_caught":
+            float(p["e156_matmul2d_controls_caught"]),
+        "e156_matmul2d_identity_b_exact": float(inst["identity_b_exact"]),
+        "e156_matmul2d_identity_b_correct_slots":
+            inst["destination_slots_holding_the_right_element"],
+        "e156_matmul2d_identity_b_total_slots": inst["destination_slots_total"],
+        "e156_matmul2d_max_ulp_delta_a_vs_b":
+            num["max_ulp_delta_paired_a_vs_paired_b"],
+        "e156_matmul2d_arms_agree_bit_for_bit": num["arms_agree_bit_for_bit"],
+        "e156_matmul2d_trials": num["trials"],
+    }
+    summary = {
+        "e156_matmul2d_descriptor_bitexact":
+            p["e156_matmul2d_descriptor_bitexact"],
+        "e156_matmul2d_gate": p["gate"],
+        "e156_matmul2d_descriptor_correction":
+            "Advisor F4 item 4 states that (TM,TN) 2,2 -> 4,1 switches the "
+            "descriptor from matmul2d(16,32,16) to matmul2d(32,16,16). No "
+            "(32,16,16) descriptor exists anywhere in this kernels tree. Every "
+            "matmul2d_descriptor is (16,32,16): steel/gemm/nax.h:401 and :473, "
+            "steel/attn/nax.h:401 and :473. The installed pip MLX 0.32 header "
+            "matches at the same line numbers, so this is upstream MLX and not "
+            "a vendoring defect. What TN==1 actually changes is the OVERLOAD "
+            "selected by the dispatcher, not the descriptor. harness=offline",
+        "e156_paired_a_operand_budget_finding":
+            "The paired-A overload writes 16 elements into the left operand and "
+            "8 into the right while declaring desc(16,32,16), whose MEASURED "
+            "budget is left=8 right=16. The left write is twice the measured "
+            "capacity and the right operand is only half initialised. The write "
+            "pattern matches desc(32,16,16) exactly. Our retile makes this "
+            "overload live: BM=128 BN=32 WM=WN=2 gives SM=64 SN=16, so TM=4 "
+            "TN=1 selects paired-A. Stock 64x64 gives TM=2 TN=2, paired-B, "
+            "which is the promoted M5 path and is NOT implicated. The same risk "
+            "applies to the queued E151 R1 retile 452fece2. harness=local",
+        "e156_matmul2d_instrument_void_reason":
+            "The known-good paired-B arm fails its own identity-B control: only "
+            f'{inst["destination_slots_holding_the_right_element"]} of '
+            f'{inst["destination_slots_total"]} destination slots hold the right '
+            "element. matmul2d does execute on applegpu_g16s and returns real "
+            "elements of A, but its cooperative-tensor per-lane layout is not "
+            "the BaseNAXFrag layout MLX assumes: lane 0 receives columns "
+            "0,1,4,5 and lane 1 receives 8,9,12,13, that is 2-wide groups with "
+            "lane stride 8 instead of BaseNAXFrag 4-wide groups with fn stride "
+            "4. This is what is_nax_available() gating on generation >= 17 "
+            "predicts. No M4 Pro harness can validate M5 fragment numerics for "
+            "this kernel family; settling the finding needs an M5 exact-token "
+            "run. harness=local",
+        "e156_matmul2d_identity_layout": json.dumps({
+            "delivered_source_column_row0": inst["delivered_source_column_row0"],
+            "delivered_source_row_row0": inst["delivered_source_row_row0"],
+            "produced_row0_first8": inst["produced_row0_first8"],
+            "expected_row0_first8": inst["expected_row0_first8"],
+        }),
+    }
+    return metrics, summary
+
+
+def dead_switch_section(c: dict) -> tuple[dict, dict]:
+    """RULE 170: environment switches dropped at the runtime-worker boundary."""
+    qwen_dead = [r for r in c["dead_switches"] if r["name"].startswith("MLXFAST_")]
+    metrics = {
+        "e156_dead_switch_count": c["e156_dead_switch_count"],
+        "e156_dead_switch_count_on_qwen_path": len(qwen_dead),
+        "e156_live_worker_switch_count": c["live_worker_switch_count"],
+        "e156_unreachable_from_worker_count":
+            c["unreachable_from_worker_count"],
+        "e156_dead_switch_files_scanned": c["swift_files_scanned"],
+        "e156_submitted_pair_env_reads": 0,
+    }
+    summary = {
+        "e156_dead_switch_names": json.dumps(c["e156_dead_switch_names"]),
+        "e156_dead_switches_on_qwen_path": json.dumps(
+            [f'{r["name"]} {r["file"]}:{r["line"]}' for r in qwen_dead], indent=1),
+        "e156_rule_170_applies_to_this_round":
+            "No. Both E156 arms are compile-time constexpr, not environment "
+            "reads: kE147NaxRetileOn at quantized_nax.h:1411 and "
+            "kE151NaxDoubleBufferOn at quantized_nax.h:1470. The submitted pair "
+            "contains zero matches for getenv, ProcessInfo, environment, "
+            "MLXFAST_, DARKBLOOM_ or MLX_E1. "
+            "MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS, which the 512-token evidence "
+            "depends on, is read by benchmark-qwen-mtp.sh:106 and passed on as "
+            "a CLI argument, so it never crosses the worker boundary as an "
+            "environment variable and the run really did decode 512 tokens.",
+        "e156_dead_switch_correction":
+            "Advisor RULE 170 lists MLXFAST_QWEN_MTP_TRACE as a third dead "
+            "switch. That name does not exist as an environment read anywhere "
+            "in the repository; its only occurrence is the comment at "
+            "Qwen36MTPBlockSession.swift:1448. The actual read three lines away "
+            "at :808 is MLX_QWEN_MTP_TRACE, an allowed prefix, so the phase "
+            "trace DOES cross the boundary and does work in a worker leg. Only "
+            "the comment is stale. The other two, MLXFAST_QWEN_MTP_TOP32 at "
+            "Qwen35.swift:4761 and MLXFAST_QWEN_MTP_EXACT_QKV_ROWS at :5841, "
+            "are confirmed dead. On the Qwen scored path the dead-switch count "
+            "is 2. harness=offline",
+        "e156_dead_switch_adjudications": json.dumps(
+            [f'{r["name"]} {r["file"]}:{r["line"]} [{r["verdict"]}]'
+             for r in c["unreachable_from_worker"]], indent=1),
     }
     return metrics, summary
 
@@ -382,6 +554,9 @@ def main() -> None:
     cgate = load(HERE / "e156-compile-gate.json")
     ulp = load(HERE / "e156-k-order-ulp-control.json")
     pshare = load(HERE / "e156-prefill-qmm-share.json")
+    djit = load(HERE / "e156-decode-jit-source-identity.json")
+    pair = load(HERE / "e156-matmul2d-pairing.json")
+    census = load(HERE / "e156-dead-switch-census.json")
     gate = load(OUT / "e156-gate-chain.json")
     submit = load(OUT / "e156-local-submit.json")
 
@@ -397,8 +572,25 @@ def main() -> None:
         "e156_nax_executions_on_this_host": 0,
         "e156_host_gpu_arch_generation": 16,
         "e156_nax_required_arch_generation": 17,
+        "e156_arms_are_compile_time": 1.0,
+        "e156_arm_worker_strings_candidate": 81530,
+        "e156_arm_worker_strings_base": 81324,
     }
     summary: dict[str, str] = {
+        "e156_arm_identity":
+            "Both arms are compile-time constexpr, so the built binary is part "
+            "of the identity tuple. Same host, same toolchain, differing in "
+            "exactly the two submitted files.\n"
+            "candidate  kE147NaxRetileOn=true  kE151NaxDoubleBufferOn=true   "
+            "worker sha256 "
+            "691d620b8fe2f62b8d5136078ca32a7d40be6d7c09a3a8708a6d65cdc5d8d815\n"
+            "base       kE147NaxRetileOn=false kE151NaxDoubleBufferOn=absent "
+            "worker sha256 "
+            "3fe98cba361f2ca4690fb2ce74505853441a5322a5207d34467784b40a5b6df2\n"
+            "The base arm was built with an inverted certificate: --require "
+            "'kE147NaxRetileOn = false' plus --forbid on 'kE147NaxRetileOn = "
+            "true', 'kE151NaxDoubleBufferOn' and 'kE147NaxRetileArmed'. All "
+            "four assertions passed, so it cannot be a stale candidate binary.",
         "e156_prefill_pct_on_crown_base": "not_locally_measurable",
         "e156_prefill_pct_frame":
             "share of the seed-prefill phase, candidate minus base, sign "
@@ -438,6 +630,18 @@ def main() -> None:
         summary.update(s)
     if pshare is not None:
         m, s = prefill_share_section(pshare)
+        metrics.update(m)
+        summary.update(s)
+    if djit is not None:
+        m, s = decode_jit_section(djit)
+        metrics.update(m)
+        summary.update(s)
+    if pair is not None:
+        m, s = pairing_section(pair)
+        metrics.update(m)
+        summary.update(s)
+    if census is not None:
+        m, s = dead_switch_section(census)
         metrics.update(m)
         summary.update(s)
     if gate is not None:
