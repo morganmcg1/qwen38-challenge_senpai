@@ -857,11 +857,16 @@ def main() -> int:
         # own best scalar level and ask which one the ranked receipts prefer.
         null_fit = fit_level_only(mass, y, sigma, truth_null)
         alt_fit = fit_level_only(mass, y, sigma, truth_alt)
-        separation = float(np.sqrt(np.mean(
-            ((mass @ np.array([truth_null[w + 1] for w in range(MAX_WIDTH)])
-              / np.mean([truth_null[w] for w in truth_null]))
-             - (mass @ np.array([truth_alt[w + 1] for w in range(MAX_WIDTH)])
-                / np.mean([truth_alt[w] for w in truth_alt]))) ** 2)))
+        # Each hypothesis at its OWN best level, so the statistic measures the
+        # shape disagreement the receipts can see and not the level offset the
+        # level fit already absorbed.
+        pred_null = null_fit["scale"] * (
+            mass @ np.array([truth_null[w + 1] for w in range(MAX_WIDTH)]))
+        pred_alt = alt_fit["scale"] * (
+            mass @ np.array([truth_alt[w + 1] for w in range(MAX_WIDTH)]))
+        sep_us = float(np.sqrt(np.mean((pred_null - pred_alt) ** 2)))
+        sep_pct = float(100.0 * np.sqrt(np.mean(
+            ((pred_null - pred_alt) / y) ** 2)))
         entry["hypothesis_test"] = {
             "h_null": null_fit, "h_alt": alt_fit,
             "delta_chi2_null_minus_alt": null_fit["chi2"] - alt_fit["chi2"],
@@ -869,7 +874,44 @@ def main() -> int:
                          else "h_null",
             "rms_model_misfit_pct": min(null_fit["rms_resid_pct"],
                                         alt_fit["rms_resid_pct"]),
-            "level_normalised_separation_us_per_round": separation,
+            "separation_after_own_best_level_us_per_round": sep_us,
+            "separation_after_own_best_level_pct_of_y": sep_pct,
+            "empirical_reproducibility_floor_pct": abs(empirical_spread_pct),
+            "separation_exceeds_floor": sep_pct > abs(empirical_spread_pct),
+        }
+
+        # F6: the step marginals are the decisive cells, so report them beside
+        # both reference curves rather than only the levels.
+        fit_curve = entry["no_ridge"]["curve_us"]
+        h_alt_ref = {w: E145_MEASURED_LOCAL_US[w] / E145_LEVEL_TRANSFER_K
+                     for w in E145_MEASURED_LOCAL_US}
+        steps = {}
+        for w in range(1, MAX_WIDTH):
+            rec = {"fitted_us": fit_curve[w + 1] - fit_curve[w],
+                   "replayed_us": H_NULL[w + 1] - H_NULL[w]}
+            if w in h_alt_ref and (w + 1) in h_alt_ref:
+                rec["measured_over_k_us"] = h_alt_ref[w + 1] - h_alt_ref[w]
+                rec["replayed_over_measured"] = (
+                    rec["replayed_us"] / rec["measured_over_k_us"])
+                rec["fitted_over_measured"] = (
+                    rec["fitted_us"] / rec["measured_over_k_us"])
+            rec["fitted_over_replayed"] = rec["fitted_us"] / rec["replayed_us"]
+            steps["%d_to_%d" % (w, w + 1)] = rec
+        # The 5->6 cell is the advisor's sanity check: the two reference curves
+        # agree there to 0.85x, so a fit that finds real structure must land
+        # near them.
+        s56 = steps["5_to_6"]
+        entry["step_marginals"] = steps
+        entry["marginal_5_to_6_sanity"] = {
+            "fitted_us": s56["fitted_us"],
+            "replayed_us": s56["replayed_us"],
+            "measured_over_k_us": s56["measured_over_k_us"],
+            "reference_agreement_ratio":
+                s56["replayed_us"] / s56["measured_over_k_us"],
+            "fitted_over_replayed": s56["fitted_over_replayed"],
+            "fitted_over_measured": s56["fitted_over_measured"],
+            "passes": (0.5 <= s56["fitted_over_replayed"] <= 2.0
+                       and 0.5 <= s56["fitted_over_measured"] <= 2.0),
         }
 
         entry["positive_control_h_alt"] = run_control(
@@ -893,6 +935,95 @@ def main() -> int:
         results[model] = entry
 
     report["results"] = results
+
+    # ------------------------------------------------------- F6 deliverables
+    # The tilt mass model is the primary; the replay model is the sensitivity.
+    primary = results["tilt"]
+    fit = primary["no_ridge"]
+    pos_emp = primary["positive_control_h_alt_empirical_noise"]
+    neg_emp = primary["negative_control_h_null_empirical_noise"]
+    pos_ass = primary["positive_control_h_alt"]
+    neg_ass = primary["negative_control_h_null"]
+    steps = primary["step_marginals"]
+    controls_pass_at_empirical_noise = (
+        pos_emp["modal_set"] == pos_emp["truth_admissible"]
+        and neg_emp["modal_set"] == neg_emp["truth_admissible"])
+    method_adequate = bool(controls_pass_at_empirical_noise
+                           and primary["marginal_5_to_6_sanity"]["passes"])
+    report["f6_deliverables"] = {
+        "harness": "ranked",
+        "primary_mass_model": "tilt",
+        "e149_rungD_ranked_curve_us": fit["curve_us"],
+        "e149_rungD_ranked_curve_sd_us": fit["sd_us"],
+        "e149_rungD_cost_per_token": fit["cost_per_token"],
+        "e149_rungD_admissible_set": fit["admissible"],
+        "e149_rungD_width6_admissible_ranked": 6 in fit["admissible"],
+        "e149_rungD_width6_confidence": fit["verdicts"]["p_admissible"][6],
+        "e149_rungD_width7_admissible_ranked": 7 in fit["admissible"],
+        "e149_rungD_width7_confidence": fit["verdicts"]["p_admissible"][7],
+        "e149_rungD_width8_admissible_ranked": 8 in fit["admissible"],
+        "e149_rungD_width8_confidence": fit["verdicts"]["p_admissible"][8],
+        "e149_rungD_marginal_5_to_6_us": steps["5_to_6"]["fitted_us"],
+        "e149_rungD_marginal_6_to_7_us": steps["6_to_7"]["fitted_us"],
+        "e149_rungD_marginal_7_to_8_us": steps["7_to_8"]["fitted_us"],
+        "e149_rungD_marginal_5_to_6_sanity": primary["marginal_5_to_6_sanity"],
+        "e149_rungD_rule138_holds_on_g17s":
+            fit["admissible"] == [1, 2, 3, 4, 5],
+        "e149_rungD_synthetic_recovery_verdict_correct": {
+            "at_advisor_assumed_noise":
+                pos_ass["modal_set"] == pos_ass["truth_admissible"],
+            "at_empirical_noise":
+                pos_emp["modal_set"] == pos_emp["truth_admissible"],
+            "recovery_rate_assumed": pos_ass["recovery_rate_exact_set"],
+            "recovery_rate_empirical": pos_emp["recovery_rate_exact_set"],
+        },
+        "e149_rungD_negative_control_returns_replayed_answer": {
+            "at_advisor_assumed_noise":
+                neg_ass["modal_set"] == neg_ass["truth_admissible"],
+            "at_empirical_noise":
+                neg_emp["modal_set"] == neg_emp["truth_admissible"],
+            "recovery_rate_assumed": neg_ass["recovery_rate_exact_set"],
+            "recovery_rate_empirical": neg_emp["recovery_rate_exact_set"],
+            "modal_set_at_empirical_noise": neg_emp["modal_set"],
+        },
+        "e149_rungD_c1_plutarch_anchor_us":
+            primary["plutarch_anchor"]["h_null_tail"]["c1"],
+        "e149_rungD_c1_plutarch_anchor_sensitivity_us": {
+            "h_null_drafting_tail":
+                primary["plutarch_anchor"]["h_null_tail"]["c1"],
+            "h_alt_drafting_tail":
+                primary["plutarch_anchor"]["h_alt_tail"]["c1"],
+            "crown_row_h_null_tail":
+                primary["plutarch_anchor"]["crown_h_null_tail"]["c1"],
+        },
+        "e149_rungD_7226dc9a_matches_e003a86d_decode":
+            report["consistency_7226dc9a_vs_e003a86d"]["matches"],
+        "e149_rungD_7226dc9a_decode_gap_pct":
+            report["consistency_7226dc9a_vs_e003a86d"]["mean_pct"],
+        "e149_rungD_p_inference_residual_by_prompt":
+            report.get("p_inference_residual_by_prompt"),
+        "e149_rungD_method_adequate": method_adequate,
+        "e149_rungD_stop_rule_fired": not method_adequate,
+        "e149_rungD_stop_rule_reason": (
+            None if method_adequate else
+            "the negative control does not return the replayed answer at the "
+            "empirical per-prompt reproducibility floor, and the fitted 5->6 "
+            "marginal misses both reference curves at a cell where the two "
+            "references agree to 0.85x"),
+        "e149_rungD_empirical_reproducibility_floor_pct":
+            abs(report["schedule_frozen_level_check"]["residual_spread_pct"]),
+        "e149_rungD_sensitivity_replay_model": {
+            "admissible": results["replay"]["no_ridge"]["admissible"],
+            "chi2_per_dof": results["replay"]["no_ridge"]["chi2_per_dof"],
+            "marginal_5_to_6_us":
+                results["replay"]["step_marginals"]["5_to_6"]["fitted_us"],
+            "marginal_6_to_7_us":
+                results["replay"]["step_marginals"]["6_to_7"]["fitted_us"],
+            "marginal_7_to_8_us":
+                results["replay"]["step_marginals"]["7_to_8"]["fitted_us"],
+        },
+    }
+
     report["rows_used"] = {rid: ROW_SPEC[rid]["why"] for rid in core_ids}
     report["rows_excluded_with_reason"] = {
         rid: ROW_SPEC[rid]["why"] for rid in ROW_SPEC if rid not in core_ids}
@@ -946,6 +1077,31 @@ def main() -> int:
           "spread %.4f %% (core model predicts 0.0)" % (
               frozen["prompts"], frozen["common_level_shift_pct"],
               frozen["residual_spread_pct"]))
+
+    dlv = report["f6_deliverables"]
+    print("\n=== F6 step marginals (harness=ranked, us/round)")
+    print("  step    fitted    replayed    meas/k   fit/repl   fit/meas")
+    for name, rec in results["tilt"]["step_marginals"].items():
+        mk = rec.get("measured_over_k_us")
+        print("  %-7s %9.1f %11.1f %9s %10.2f %10s" % (
+            name.replace("_to_", "->").replace("_", ""), rec["fitted_us"],
+            rec["replayed_us"], "-" if mk is None else "%.1f" % mk,
+            rec["fitted_over_replayed"],
+            "-" if mk is None else "%.2f" % rec["fitted_over_measured"]))
+    print("\n=== F6 verdicts (harness=ranked)")
+    for key in ("e149_rungD_width6_admissible_ranked",
+                "e149_rungD_width7_admissible_ranked",
+                "e149_rungD_width8_admissible_ranked",
+                "e149_rungD_rule138_holds_on_g17s",
+                "e149_rungD_7226dc9a_matches_e003a86d_decode",
+                "e149_rungD_method_adequate",
+                "e149_rungD_stop_rule_fired"):
+        print("  %-52s %s" % (key, dlv[key]))
+    print("  %-52s %.1f" % ("e149_rungD_c1_plutarch_anchor_us",
+                            dlv["e149_rungD_c1_plutarch_anchor_us"]))
+    print("  %-52s %.4f" % ("empirical reproducibility floor pct",
+                            dlv["e149_rungD_empirical_reproducibility_floor_pct"]))
+    print("  5->6 sanity: %s" % dlv["e149_rungD_marginal_5_to_6_sanity"])
     return 0
 
 

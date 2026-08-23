@@ -26,14 +26,19 @@ export MLX_E134_DEPTH_PRICE_ARM=ship
 export E128_FORCE=1 E128_NO_TRACE=1 E128_TOKENS=16 E128_DEPTH=8
 export E128_RUNS_DIR="${runs}"
 
-research/e128_session.sh benchfixture
+# The guard fires while the worker builds the derived index, which happens on
+# the reference pass before any timed leg writes its own stderr.log, so keep
+# the whole session transcript instead of one leg's log.
+session_log="$(mktemp -t e149-leaf-witness)"
+research/e128_session.sh benchfixture >"${session_log}" 2>&1
 rc=$?
+cat "${session_log}"
 
-log=".mlxfast-private/e128/${runs}/benchfixture/stderr.log"
 hit=0
-if [[ -f "${log}" ]] && grep -q "MLX_E141_ROWS_PER_LEAF=${width} does not divide" "${log}"; then
+if grep -q "MLX_E141_ROWS_PER_LEAF=${width} does not divide" "${session_log}"; then
   hit=1
 fi
+rm -f "${session_log}"
 
 python3 - "$rc" "$hit" "$width" "$out" <<'PY'
 import json, sys
