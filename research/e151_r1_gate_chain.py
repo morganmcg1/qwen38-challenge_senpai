@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""E151 R1: run the cheap gates, collect the expensive ones, emit one verdict.
+"""E151: run the cheap gates, collect the expensive ones, emit one verdict.
+
+Written for R1 and generalized to any rung by `--rung` and `--label`. The
+filename keeps its R1 name because the R1 record cites it.
 
 The cheap gates below run here. The expensive gates (the arm-on `mlx.metallib`
 build, the worker rebuild-and-assert, `swift test`, the 512-token traced legs
@@ -114,12 +117,23 @@ def swift_test_gate(log_path: str | None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--swift-test-log")
-    ap.add_argument("--out", default="research/e151-r1-gate-chain.json")
+    ap.add_argument("--rung", default="R1")
+    ap.add_argument("--label", default="", help="artifact suffix, e.g. r2")
+    ap.add_argument(
+        "--base-control-digest",
+        help="row digest of the matched arm-off base control leg. When given, "
+        "the exactness verdict is equality with it rather than with the stale "
+        "E121 pin.",
+    )
+    ap.add_argument("--out")
     args = ap.parse_args()
+    rung = args.rung.lower()
+    suffix = f"-{args.label}" if args.label else ""
+    out_path = args.out or f"research/e151-{rung}-gate-chain.json"
 
     doc: dict = {
         "experiment": "E151",
-        "rung": "R1",
+        "rung": args.rung,
         "harness": "offline+local",
         "commit": run("git", "rev-parse", "HEAD")[1].strip(),
         "worktree_clean": run("git", "status", "--porcelain")[1].strip() == "",
@@ -129,9 +143,11 @@ def main() -> None:
 
     doc["static_gates"] = static_gates()
     doc["swift_test"] = swift_test_gate(args.swift_test_log)
-    doc["row_digest_512"] = load_json("research/e151-artifacts/row-digest-512.json")
+    doc["row_digest_512"] = load_json(
+        f"research/e151-artifacts/row-digest-512{suffix}.json"
+    )
     doc["local_submit_512"] = load_json(
-        "research/e151-artifacts/local-submit-512.json"
+        f"research/e151-artifacts/local-submit-512{suffix}.json"
     )
     doc["arm_attribution"] = load_json("research/e151-arm-attribution.json")
 
@@ -149,6 +165,18 @@ def main() -> None:
         and attrib.get("e151_leg_is_deterministic")
         and attrib.get("e151_attribution_complete")
     )
+    # A later rung inherits R1's attribution of the base drift, but it must
+    # still land its own leg on the same matched base-control digest. Without
+    # this the verdict would carry R1's evidence for a tree R1 never built.
+    leg_matches_base_control = None
+    if args.base_control_digest:
+        legs = (doc["row_digest_512"] or {}).get("legs") or []
+        leg_matches_base_control = bool(legs) and all(
+            leg.get("sha256") == args.base_control_digest for leg in legs
+        )
+        doc["base_control_digest"] = args.base_control_digest
+        doc["leg_matches_base_control"] = leg_matches_base_control
+        exact_ok = exact_ok and leg_matches_base_control
 
     metrics = {
         "e151_static_gates_all_green": float(static_ok),
@@ -204,12 +232,16 @@ def main() -> None:
         and doc["worktree_clean"]
     )
     metrics["e151_gate_chain_all_green"] = float(all_green)
-    metrics["e151_r1_submission_ready"] = float(all_green)
+    metrics[f"e151_{rung}_submission_ready"] = float(all_green)
+    if leg_matches_base_control is not None:
+        metrics[f"e151_{rung}_leg_matches_base_control"] = float(
+            leg_matches_base_control
+        )
 
     doc["metrics"] = metrics
-    pathlib.Path(args.out).write_text(json.dumps(doc, indent=1, sort_keys=True))
+    pathlib.Path(out_path).write_text(json.dumps(doc, indent=1, sort_keys=True))
     print(json.dumps(metrics, indent=1, sort_keys=True))
-    print(f"wrote {args.out}")
+    print(f"wrote {out_path}")
     raise SystemExit(0 if all_green else 1)
 
 
