@@ -1,0 +1,1034 @@
+{
+  "account_tests": {
+    "all_at_four_drafts": {
+      "cost_sd_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.35714285714285715,
+        "permutations": 40320,
+        "two_sided_p": 0.38938492063492064
+      },
+      "cross_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.11904761904761904,
+        "permutations": 40320,
+        "two_sided_p": 0.7930059523809524
+      },
+      "index_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.16666666666666666,
+        "permutations": 40320,
+        "two_sided_p": 0.7033234126984127
+      },
+      "width_sd_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.3333333333333333,
+        "permutations": 40320,
+        "two_sided_p": 0.4278769841269841
+      }
+    },
+    "all_at_zero_drafts": {
+      "cost_sd_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.47619047619047616,
+        "permutations": 40320,
+        "two_sided_p": 0.24305555555555555
+      },
+      "cross_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.11904761904761904,
+        "permutations": 40320,
+        "two_sided_p": 0.7930059523809524
+      },
+      "index_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": 0.6666666666666666,
+        "permutations": 40320,
+        "two_sided_p": 0.08308531746031746
+      },
+      "width_sd_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.47619047619047616,
+        "permutations": 40320,
+        "two_sided_p": 0.24305555555555555
+      }
+    },
+    "geometric": {
+      "cost_sd_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.09523809523809523,
+        "permutations": 40320,
+        "two_sided_p": 0.8401289682539682
+      },
+      "cross_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.11904761904761904,
+        "permutations": 40320,
+        "two_sided_p": 0.7930059523809524
+      },
+      "index_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": -0.8095238095238095,
+        "permutations": 40320,
+        "two_sided_p": 0.02177579365079365
+      },
+      "width_sd_vs_null_sd": {
+        "abs_null_p95": 0.7142857142857143,
+        "abs_null_p99": 0.8571428571428571,
+        "observed": 0.11904761904761904,
+        "permutations": 40320,
+        "two_sided_p": 0.7930059523809524
+      }
+    }
+  },
+  "beagle_against_paying_four": {
+    "all_at_four_drafts": {
+      "cliff_crossing_pair_fraction": {
+        "beagle": 0.49191008,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 0.327209945,
+        "ratio": 1.503346971926541
+      },
+      "cliff_straddle_index": {
+        "beagle": 1.380876885528809,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 1.3046430973076373,
+        "ratio": 1.058432676628952
+      },
+      "sd_round_cost_us": {
+        "beagle": 13728.925012890577,
+        "beagle_is_extreme": false,
+        "paying_four_mean": 11687.149165729803,
+        "ratio": 1.174702642894973
+      },
+      "sd_verify_width": {
+        "beagle": 1.7887367357998758,
+        "beagle_is_extreme": false,
+        "paying_four_mean": 1.6050455677832915,
+        "ratio": 1.114446076612191
+      }
+    },
+    "all_at_zero_drafts": {
+      "cliff_crossing_pair_fraction": {
+        "beagle": 0.49191008,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 0.327209945,
+        "ratio": 1.503346971926541
+      },
+      "cliff_straddle_index": {
+        "beagle": 1.0007247342413217,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 0.9977530599908416,
+        "ratio": 1.0029783664612437
+      },
+      "sd_round_cost_us": {
+        "beagle": 20300.44040909327,
+        "beagle_is_extreme": false,
+        "paying_four_mean": 16788.541379080274,
+        "ratio": 1.2091842853238621
+      },
+      "sd_verify_width": {
+        "beagle": 3.6496874921012075,
+        "beagle_is_extreme": false,
+        "paying_four_mean": 3.0264341595339403,
+        "ratio": 1.2059365245412264
+      }
+    },
+    "geometric": {
+      "cliff_crossing_pair_fraction": {
+        "beagle": 0.49191008,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 0.327209945,
+        "ratio": 1.503346971926541
+      },
+      "cliff_straddle_index": {
+        "beagle": 1.21665229620214,
+        "beagle_is_extreme": false,
+        "paying_four_mean": 1.2349630567793757,
+        "ratio": 0.985173029689659
+      },
+      "sd_round_cost_us": {
+        "beagle": 14999.93464270493,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 12213.360794966782,
+        "ratio": 1.2281578260495274
+      },
+      "sd_verify_width": {
+        "beagle": 2.2181338020662995,
+        "beagle_is_extreme": true,
+        "paying_four_mean": 1.7734572836664277,
+        "ratio": 1.25073990926951
+      }
+    }
+  },
+  "cliff_detail": {
+    "beagle": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.49191008,
+        "cliff_straddle_index": 1.380876885528809,
+        "distribution_width_1_to_9": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.4364,
+          0.092,
+          0.0739,
+          0.0589,
+          0.3388
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.5636,
+        "mass_at_or_below_width_5": 0.4364,
+        "mean_round_cost_us": 59660.53909,
+        "mean_verify_width": 6.7717,
+        "sd_round_cost_linear_us": 9942.178884132067,
+        "sd_round_cost_us": 13728.925012890577,
+        "sd_verify_width": 1.7887367357998758
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.49191008,
+        "cliff_straddle_index": 1.0007247342413217,
+        "distribution_width_1_to_9": [
+          0.4364,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.092,
+          0.0739,
+          0.0589,
+          0.3388
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.5636,
+        "mass_at_or_below_width_5": 0.4364,
+        "mean_round_cost_us": 53645.070569999996,
+        "mean_verify_width": 5.0261,
+        "sd_round_cost_linear_us": 20285.738639690582,
+        "sd_round_cost_us": 20300.44040909327,
+        "sd_verify_width": 3.6496874921012075
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.49191008,
+        "cliff_straddle_index": 1.21665229620214,
+        "distribution_width_1_to_9": [
+          0.029005422205358126,
+          0.02707757042416866,
+          0.0252778537366152,
+          0.02359775561545156,
+          0.33144139801840644,
+          0.092,
+          0.0739,
+          0.0589,
+          0.3388
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.5636,
+        "mass_at_or_below_width_5": 0.4364,
+        "mean_round_cost_us": 58725.248588771006,
+        "mean_verify_width": 6.50029213681738,
+        "sd_round_cost_linear_us": 12328.859025317432,
+        "sd_round_cost_us": 14999.93464270493,
+        "sd_verify_width": 2.2181338020662995
+      }
+    },
+    "botany": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.15305550000000004,
+        "cliff_straddle_index": 1.235145472537706,
+        "distribution_width_1_to_9": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.08350000000000002,
+          0.0761,
+          0.0859,
+          0.094,
+          0.6605
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.9165,
+        "mass_at_or_below_width_5": 0.08350000000000002,
+        "mean_round_cost_us": 70376.97988999999,
+        "mean_verify_width": 8.171899999999999,
+        "sd_round_cost_linear_us": 7400.46384769339,
+        "sd_round_cost_us": 9140.649416157461,
+        "sd_verify_width": 1.3314467281870548
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.15305550000000004,
+        "cliff_straddle_index": 0.9954161187346108,
+        "distribution_width_1_to_9": [
+          0.08350000000000002,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0761,
+          0.0859,
+          0.094,
+          0.6605
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.9165,
+        "mass_at_or_below_width_5": 0.08350000000000002,
+        "mean_round_cost_us": 69225.99084,
+        "mean_verify_width": 7.837899999999999,
+        "sd_round_cost_linear_us": 12571.914412587306,
+        "sd_round_cost_us": 12514.28624964137,
+        "sd_verify_width": 2.2618628583537075
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.15305550000000004,
+        "cliff_straddle_index": 1.1871260953762224,
+        "distribution_width_1_to_9": [
+          0.0033800809098956663,
+          0.0032432551978305033,
+          0.0031119681920807217,
+          0.002985995685754319,
+          0.07077870001443881,
+          0.0761,
+          0.0859,
+          0.094,
+          0.6605
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.9165,
+        "mass_at_or_below_width_5": 0.08350000000000002,
+        "mean_round_cost_us": 70265.12038411819,
+        "mean_verify_width": 8.139439978697009,
+        "sd_round_cost_linear_us": 8009.075785461289,
+        "sd_round_cost_us": 9507.782864766912,
+        "sd_verify_width": 1.4409445096712818
+      }
+    },
+    "drama": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.45433758,
+        "cliff_straddle_index": 0.9876515657078385,
+        "distribution_width_1_to_9": [
+          0.44110000000000005,
+          0.0,
+          0.0,
+          0.0,
+          0.20999999999999996,
+          0.0674,
+          0.1091,
+          0.09,
+          0.0824
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.3489,
+        "mass_at_or_below_width_5": 0.6511,
+        "mean_round_cost_us": 46731.60059,
+        "mean_verify_width": 4.1208,
+        "sd_round_cost_linear_us": 16597.39151537958,
+        "sd_round_cost_us": 16392.439716830635,
+        "sd_verify_width": 2.986102369310202
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.45433758,
+        "cliff_straddle_index": 0.9978480161598485,
+        "distribution_width_1_to_9": [
+          0.6511,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0674,
+          0.1091,
+          0.09,
+          0.0824
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.3489,
+        "mass_at_or_below_width_5": 0.6511,
+        "mean_round_cost_us": 43836.89759,
+        "mean_verify_width": 3.2808,
+        "sd_round_cost_linear_us": 17659.160463858527,
+        "sd_round_cost_us": 17621.15823590966,
+        "sd_verify_width": 3.177129421348775
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.45433758,
+        "cliff_straddle_index": 1.0002805777320167,
+        "distribution_width_1_to_9": [
+          0.525471520942177,
+          0.050473646913147395,
+          0.030194892829525203,
+          0.01806351648327247,
+          0.02689642283187796,
+          0.0674,
+          0.1091,
+          0.09,
+          0.0824
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.3489,
+        "mass_at_or_below_width_5": 0.6511,
+        "mean_round_cost_us": 44776.436672335876,
+        "mean_verify_width": 3.5534396733495273,
+        "sd_round_cost_linear_us": 17167.87208854479,
+        "sd_round_cost_us": 17172.68901115895,
+        "sd_verify_width": 3.0887397861353434
+      }
+    },
+    "essays": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.32958877999999997,
+        "cliff_straddle_index": 1.302637699875309,
+        "distribution_width_1_to_9": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.20809999999999995,
+          0.1995,
+          0.1558,
+          0.1408,
+          0.2958
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.7919,
+        "mass_at_or_below_width_5": 0.20809999999999995,
+        "mean_round_cost_us": 63627.330709999995,
+        "mean_verify_width": 7.1167,
+        "sd_round_cost_linear_us": 8506.573416154515,
+        "sd_round_cost_us": 11080.983228639969,
+        "sd_verify_width": 1.5304512765847862
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.32958877999999997,
+        "cliff_straddle_index": 0.9971868211832171,
+        "distribution_width_1_to_9": [
+          0.20809999999999995,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1995,
+          0.1558,
+          0.1408,
+          0.2958
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.7919,
+        "mass_at_or_below_width_5": 0.20809999999999995,
+        "mean_round_cost_us": 60758.81788,
+        "mean_verify_width": 6.2843,
+        "sd_round_cost_linear_us": 16207.573726193168,
+        "sd_round_cost_us": 16161.978923115195,
+        "sd_verify_width": 2.9159687086798445
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.32958877999999997,
+        "cliff_straddle_index": 1.2345962025449853,
+        "distribution_width_1_to_9": [
+          0.007394126221377173,
+          0.007131401076842538,
+          0.006878010977383438,
+          0.00663362423390054,
+          0.18006283749049626,
+          0.1995,
+          0.1558,
+          0.1408,
+          0.2958
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.7919,
+        "mass_at_or_below_width_5": 0.20809999999999995,
+        "mean_round_cost_us": 63381.417933384386,
+        "mean_verify_width": 7.045339645695296,
+        "sd_round_cost_linear_us": 9393.083172037299,
+        "sd_round_cost_us": 11596.664814386453,
+        "sd_verify_width": 1.689946753931646
+      }
+    },
+    "medicine": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.37289118,
+        "cliff_straddle_index": 1.3100092222353046,
+        "distribution_width_1_to_9": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2479,
+          0.1474,
+          0.0641,
+          0.0556,
+          0.485
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.7521,
+        "mass_at_or_below_width_5": 0.2479,
+        "mean_round_cost_us": 64787.146199999996,
+        "mean_verify_width": 7.3824000000000005,
+        "sd_round_cost_linear_us": 9608.428173448205,
+        "sd_round_cost_us": 12587.129518402671,
+        "sd_verify_width": 1.7286903250727108
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.37289118,
+        "cliff_straddle_index": 0.9983870347642453,
+        "distribution_width_1_to_9": [
+          0.2479,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1474,
+          0.0641,
+          0.0556,
+          0.485
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.7521,
+        "mass_at_or_below_width_5": 0.2479,
+        "mean_round_cost_us": 61370.018229999994,
+        "mean_verify_width": 6.3908000000000005,
+        "sd_round_cost_linear_us": 18178.223298216908,
+        "sd_round_cost_us": 18148.902455989097,
+        "sd_verify_width": 3.2705160693688677
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.37289118000000004,
+        "cliff_straddle_index": 1.2384525116980014,
+        "distribution_width_1_to_9": [
+          0.00900647142828495,
+          0.008679256714333707,
+          0.008363930059971478,
+          0.008060059559312716,
+          0.21379028223809718,
+          0.1474,
+          0.0641,
+          0.0556,
+          0.485
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.7521,
+        "mass_at_or_below_width_5": 0.24790000000000004,
+        "mean_round_cost_us": 64487.84959051329,
+        "mean_verify_width": 7.295548424464604,
+        "sd_round_cost_linear_us": 10631.147678067393,
+        "sd_round_cost_us": 13166.171544134939,
+        "sd_verify_width": 1.9126918371809989
+      }
+    },
+    "plutarch": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.0077695800000000285,
+        "cliff_straddle_index": 0.6661434305013807,
+        "distribution_width_1_to_9": [
+          0.9192,
+          0.0,
+          0.0,
+          0.0,
+          0.0769,
+          0.0038,
+          0.0001,
+          0.0,
+          0.0
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.0039000000000000146,
+        "mass_at_or_below_width_5": 0.9961,
+        "mean_round_cost_us": 32350.475120000003,
+        "mean_verify_width": 1.3272,
+        "sd_round_cost_linear_us": 6144.126034669652,
+        "sd_round_cost_us": 4092.8691941676866,
+        "sd_verify_width": 1.1054140219845232
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.0077695800000000285,
+        "cliff_straddle_index": 1.075890679799167,
+        "distribution_width_1_to_9": [
+          0.9961,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0038,
+          0.0001,
+          0.0,
+          0.0
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.0039000000000000146,
+        "mass_at_or_below_width_5": 0.9961,
+        "mean_round_cost_us": 31290.462450000003,
+        "mean_verify_width": 1.0196,
+        "sd_round_cost_linear_us": 1741.91080971078,
+        "sd_round_cost_us": 1874.1056052092486,
+        "sd_verify_width": 0.3133940650363368
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.0077695800000000285,
+        "cliff_straddle_index": 1.0031071202019777,
+        "distribution_width_1_to_9": [
+          0.9820999751446263,
+          0.011451251175905786,
+          0.0020847568411938625,
+          0.0003795402808078594,
+          8.447655746616754e-05,
+          0.0038,
+          0.0001,
+          0.0,
+          0.0
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.0039000000000000146,
+        "mass_at_or_below_width_5": 0.9961,
+        "mean_round_cost_us": 31349.381381320294,
+        "mean_verify_width": 1.0366972919305817,
+        "sd_round_cost_linear_us": 1939.8963866499423,
+        "sd_round_cost_us": 1945.9238779026457,
+        "sd_verify_width": 0.34901443344419497
+      }
+    },
+    "republic": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.45330432,
+        "cliff_straddle_index": 1.3707799945822294,
+        "distribution_width_1_to_9": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.34719999999999995,
+          0.0454,
+          0.0432,
+          0.0835,
+          0.4807
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.6528,
+        "mass_at_or_below_width_5": 0.34719999999999995,
+        "mean_round_cost_us": 63332.66033,
+        "mean_verify_width": 7.3050999999999995,
+        "sd_round_cost_linear_us": 10169.271914394643,
+        "sd_round_cost_us": 13939.834499719107,
+        "sd_verify_width": 1.8295939412886146
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.45330432,
+        "cliff_straddle_index": 1.0000222652812933,
+        "distribution_width_1_to_9": [
+          0.34719999999999995,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0454,
+          0.0432,
+          0.0835,
+          0.4807
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.6528,
+        "mass_at_or_below_width_5": 0.34719999999999995,
+        "mean_round_cost_us": 58546.75137,
+        "mean_verify_width": 5.9163,
+        "sd_round_cost_linear_us": 20328.545266796777,
+        "sd_round_cost_us": 20328.997887575428,
+        "sd_verify_width": 3.6573890017333412
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.45330432,
+        "cliff_straddle_index": 1.2796774174982937,
+        "distribution_width_1_to_9": [
+          0.011759803714320553,
+          0.011361494430336258,
+          0.01097667604208136,
+          0.010604891607488728,
+          0.30249713420577307,
+          0.0454,
+          0.0432,
+          0.0835,
+          0.4807
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.6528,
+        "mass_at_or_below_width_5": 0.34719999999999995,
+        "mean_round_cost_us": 62940.90440002279,
+        "mean_verify_width": 7.191418058160057,
+        "sd_round_cost_linear_us": 11395.703133597157,
+        "sd_round_cost_us": 14582.823956578823,
+        "sd_verify_width": 2.0502460338817845
+      }
+    },
+    "travel": {
+      "all_at_four_drafts": {
+        "allocation": "all_at_four_drafts",
+        "cliff_crossing_pair_fraction": 0.35955,
+        "cliff_straddle_index": 1.437817498969203,
+        "distribution_width_1_to_9": [
+          0.02739999999999998,
+          0.0,
+          0.0,
+          0.0,
+          0.7376,
+          0.1308,
+          0.087,
+          0.0172,
+          0.0
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.235,
+        "mass_at_or_below_width_5": 0.765,
+        "mean_round_cost_us": 48694.791900000004,
+        "mean_verify_width": 5.2468,
+        "sd_round_cost_linear_us": 5588.947146302795,
+        "sd_round_cost_us": 8035.886007768148,
+        "sd_verify_width": 1.0055295918072213
+      },
+      "all_at_zero_drafts": {
+        "allocation": "all_at_zero_drafts",
+        "cliff_crossing_pair_fraction": 0.35955,
+        "cliff_straddle_index": 1.0157279049112578,
+        "distribution_width_1_to_9": [
+          0.765,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1308,
+          0.087,
+          0.0172,
+          0.0
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.235,
+        "mass_at_or_below_width_5": 0.765,
+        "mean_round_cost_us": 38527.49222,
+        "mean_verify_width": 2.2963999999999998,
+        "sd_round_cost_linear_us": 13110.95859055886,
+        "sd_round_cost_us": 13317.166500566605,
+        "sd_verify_width": 2.358844428952448
+      },
+      "geometric": {
+        "allocation": "geometric",
+        "cliff_crossing_pair_fraction": 0.35955,
+        "cliff_straddle_index": 0.994324168474914,
+        "distribution_width_1_to_9": [
+          0.2518891157402315,
+          0.15616568422473387,
+          0.10863654056885166,
+          0.07557292759518125,
+          0.17273573187100177,
+          0.1308,
+          0.087,
+          0.0172,
+          0.0
+        ],
+        "linear_slope_us_per_width": 5558.2125,
+        "mass_above_cliff": 0.235,
+        "mass_at_or_below_width_5": 0.765,
+        "mean_round_cost_us": 42976.72873820945,
+        "mean_verify_width": 3.587500475631988,
+        "sd_round_cost_linear_us": 11900.652418687481,
+        "sd_round_cost_us": 11833.106320520405,
+        "sd_verify_width": 2.1410934574177367
+      }
+    }
+  },
+  "curve_source": "senpai/campaign-ledger.md:49487-49500",
+  "driver_confound": {
+    "per_step_p_vs_mean_draft_length": 0.7619047619047619,
+    "per_step_p_vs_round_count": -0.7619047619047619,
+    "round_count_vs_mean_draft_length": -1.0
+  },
+  "e149_cliff_straddle_index": {
+    "beagle": {
+      "all_at_four_drafts": 1.380876885528809,
+      "all_at_zero_drafts": 1.0007247342413217,
+      "geometric": 1.21665229620214
+    },
+    "botany": {
+      "all_at_four_drafts": 1.235145472537706,
+      "all_at_zero_drafts": 0.9954161187346108,
+      "geometric": 1.1871260953762224
+    },
+    "drama": {
+      "all_at_four_drafts": 0.9876515657078385,
+      "all_at_zero_drafts": 0.9978480161598485,
+      "geometric": 1.0002805777320167
+    },
+    "essays": {
+      "all_at_four_drafts": 1.302637699875309,
+      "all_at_zero_drafts": 0.9971868211832171,
+      "geometric": 1.2345962025449853
+    },
+    "medicine": {
+      "all_at_four_drafts": 1.3100092222353046,
+      "all_at_zero_drafts": 0.9983870347642453,
+      "geometric": 1.2384525116980014
+    },
+    "plutarch": {
+      "all_at_four_drafts": 0.6661434305013807,
+      "all_at_zero_drafts": 1.075890679799167,
+      "geometric": 1.0031071202019777
+    },
+    "republic": {
+      "all_at_four_drafts": 1.3707799945822294,
+      "all_at_zero_drafts": 1.0000222652812933,
+      "geometric": 1.2796774174982937
+    },
+    "travel": {
+      "all_at_four_drafts": 1.437817498969203,
+      "all_at_zero_drafts": 1.0157279049112578,
+      "geometric": 0.994324168474914
+    }
+  },
+  "e149_per_prompt_width_dispersion": {
+    "beagle": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.49191008,
+        "mean_verify_width": 6.7717,
+        "sd_verify_width": 1.7887367357998758
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.49191008,
+        "mean_verify_width": 5.0261,
+        "sd_verify_width": 3.6496874921012075
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.49191008,
+        "mean_verify_width": 6.50029213681738,
+        "sd_verify_width": 2.2181338020662995
+      }
+    },
+    "botany": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.15305550000000004,
+        "mean_verify_width": 8.171899999999999,
+        "sd_verify_width": 1.3314467281870548
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.15305550000000004,
+        "mean_verify_width": 7.837899999999999,
+        "sd_verify_width": 2.2618628583537075
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.15305550000000004,
+        "mean_verify_width": 8.139439978697009,
+        "sd_verify_width": 1.4409445096712818
+      }
+    },
+    "drama": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.45433758,
+        "mean_verify_width": 4.1208,
+        "sd_verify_width": 2.986102369310202
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.45433758,
+        "mean_verify_width": 3.2808,
+        "sd_verify_width": 3.177129421348775
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.45433758,
+        "mean_verify_width": 3.5534396733495273,
+        "sd_verify_width": 3.0887397861353434
+      }
+    },
+    "essays": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.32958877999999997,
+        "mean_verify_width": 7.1167,
+        "sd_verify_width": 1.5304512765847862
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.32958877999999997,
+        "mean_verify_width": 6.2843,
+        "sd_verify_width": 2.9159687086798445
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.32958877999999997,
+        "mean_verify_width": 7.045339645695296,
+        "sd_verify_width": 1.689946753931646
+      }
+    },
+    "medicine": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.37289118,
+        "mean_verify_width": 7.3824000000000005,
+        "sd_verify_width": 1.7286903250727108
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.37289118,
+        "mean_verify_width": 6.3908000000000005,
+        "sd_verify_width": 3.2705160693688677
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.37289118000000004,
+        "mean_verify_width": 7.295548424464604,
+        "sd_verify_width": 1.9126918371809989
+      }
+    },
+    "plutarch": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.0077695800000000285,
+        "mean_verify_width": 1.3272,
+        "sd_verify_width": 1.1054140219845232
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.0077695800000000285,
+        "mean_verify_width": 1.0196,
+        "sd_verify_width": 0.3133940650363368
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.0077695800000000285,
+        "mean_verify_width": 1.0366972919305817,
+        "sd_verify_width": 0.34901443344419497
+      }
+    },
+    "republic": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.45330432,
+        "mean_verify_width": 7.3050999999999995,
+        "sd_verify_width": 1.8295939412886146
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.45330432,
+        "mean_verify_width": 5.9163,
+        "sd_verify_width": 3.6573890017333412
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.45330432,
+        "mean_verify_width": 7.191418058160057,
+        "sd_verify_width": 2.0502460338817845
+      }
+    },
+    "travel": {
+      "all_at_four_drafts": {
+        "cliff_crossing_pair_fraction": 0.35955,
+        "mean_verify_width": 5.2468,
+        "sd_verify_width": 1.0055295918072213
+      },
+      "all_at_zero_drafts": {
+        "cliff_crossing_pair_fraction": 0.35955,
+        "mean_verify_width": 2.2963999999999998,
+        "sd_verify_width": 2.358844428952448
+      },
+      "geometric": {
+        "cliff_crossing_pair_fraction": 0.35955,
+        "mean_verify_width": 3.587500475631988,
+        "sd_verify_width": 2.1410934574177367
+      }
+    }
+  },
+  "f3_quoted_steps_found_in_checkout": false,
+  "f3_quoted_steps_us": {
+    "5->6": 29134.5,
+    "6->7": 25861.5,
+    "below_5": 3446.0
+  },
+  "f92_per_step_p_reproduction": {
+    "beagle": {
+      "diff": -0.0005652204522413884,
+      "f3": 0.9341,
+      "mine": 0.9335347795477587
+    },
+    "botany": {
+      "diff": -0.0002800108969540638,
+      "f3": 0.9598,
+      "mine": 0.9595199891030459
+    },
+    "essays": {
+      "diff": -0.00023160125601717763,
+      "f3": 0.9647,
+      "mine": 0.9644683987439828
+    },
+    "medicine": {
+      "diff": -0.00023106667319461316,
+      "f3": 0.9639,
+      "mine": 0.9636689333268054
+    },
+    "republic": {
+      "diff": 2.9597597003050424e-05,
+      "f3": 0.9661,
+      "mine": 0.966129597597003
+    }
+  },
+  "harness_null_sd": "ranked",
+  "harness_width_and_curve": "local-replay",
+  "ledger_curve_steps_us": [
+    3446.100000000002,
+    3446.0999999999985,
+    3446.0,
+    3446.0999999999985,
+    16241.300000000003,
+    1626.0999999999985,
+    7490.499999999993,
+    5323.5
+  ],
+  "mass_source": "senpai/campaign-ledger.md:49473-49485",
+  "null_sd_vs_per_step_p": {
+    "eight_prompt_pearson": {
+      "abs_null_p95": 0.7423171870895788,
+      "abs_null_p99": 0.8789253919893192,
+      "observed": -0.9580698010188053,
+      "permutations": 40320,
+      "two_sided_p": 0.003050595238095238
+    },
+    "eight_prompt_spearman": {
+      "abs_null_p95": 0.7142857142857143,
+      "abs_null_p99": 0.8571428571428571,
+      "observed": -0.9047619047619048,
+      "permutations": 40320,
+      "two_sided_p": 0.004563492063492064
+    },
+    "weighted_five_spearman": {
+      "abs_null_p95": 0.9,
+      "abs_null_p99": 1.0,
+      "observed": -0.7,
+      "permutations": 120,
+      "two_sided_p": 0.23333333333333334
+    }
+  },
+  "per_step_p": {
+    "beagle": 0.9335347795477587,
+    "botany": 0.9595199891030459,
+    "drama": 0.5982308526563003,
+    "essays": 0.9644683987439828,
+    "medicine": 0.9636689333268054,
+    "plutarch": 0.1820549396017383,
+    "republic": 0.966129597597003,
+    "travel": 0.6956492465560853
+  },
+  "shipped_curve": "per_round"
+}
