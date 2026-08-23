@@ -288,9 +288,13 @@ struct E134PassBoundaryPriceTests {
         }
     }
 
-    @Test("the shipped arm is pb6 at the measured width and tier")
-    func shippedArmIsPB6() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
+    // pb6 is retired campaign-wide on a ranked receipt, so the compiled arm
+    // is now `.ship`. The two pass-boundary constants are unconditional and
+    // still build the pb6 table the tests below compare against, so they stay
+    // pinned here.
+    @Test("the shipped arm is ship at the measured pass-boundary width and tier")
+    func shippedArmIsShip() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
         #expect(Qwen36MTPBlockSession.passBoundaryVerifyWidth == 6)
         #expect(Qwen36MTPBlockSession.passBoundaryTierFactor == 1.45)
     }

@@ -591,13 +591,25 @@ def main() -> int:
                           key=lambda n: deployable[n]["median_pct_mean"])
     capturable = deployable[capturable_name]["median_pct_mean"]
     print("\n## deployable selection over %d arms" % len(deployable))
+    print("  %-26s %9s %6s %9s %9s"
+          % ("arm", "median%", "sd", "inadm", "depth"))
     for name in sorted(deployable, key=lambda n:
                        -deployable[n]["median_pct_mean"]):
-        print("  %-26s %+9.4f  sd %.4f"
+        print("  %-26s %+9.4f %6.4f %9.4f %9.4f"
               % (name, deployable[name]["median_pct_mean"],
-                 deployable[name]["median_pct_sd"]))
+                 deployable[name]["median_pct_sd"],
+                 deployable[name]["frac_rounds_inadmissible"],
+                 deployable[name]["weighted_mean_depth"]))
     print("  headline arm %s at %+0.4f ; argmax-rule-only reading %+0.4f"
           % (capturable_name, capturable, primary))
+    # `deployable` names the arms whose rule form is implementable. It does
+    # NOT assert that the schedule each one produces stays inside the Rule 138
+    # admissible width set, so that share is reported next to the headline
+    # instead of being left for a reader to infer.
+    headline_inadmissible = deployable[capturable_name][
+        "frac_rounds_inadmissible"]
+    print("  headline inadmissible width share %.4f ; Rule 138 admissible %s"
+          % (headline_inadmissible, sorted(env.admitted)))
 
     print("\n## constant-lambda control: is the gain adaptivity or just depth?")
     lam_rows = []
@@ -748,6 +760,13 @@ def main() -> int:
             deployable[capturable_name].get("per_prompt_ratio"),
         "e150_capturable_median_pct_sd":
             deployable[capturable_name]["median_pct_sd"],
+        "e150_capturable_frac_rounds_inadmissible": headline_inadmissible,
+        "e150_capturable_width_histogram":
+            deployable[capturable_name]["width_histogram"],
+        # The headline clears the score gate only. Rule 138 admits widths 1
+        # to 5, so a non-zero share here means the arm is not deployable as
+        # measured, however large its replay gain is.
+        "e150_capturable_within_admissible_widths": headline_inadmissible == 0,
         "e150_pre_draft_predictor_sigma": sigma_out,
         "e150_pre_draft_predictor_reachable_sigma": reachable_out,
         "e150_pre_draft_predictor_scalar_k_sd": scalar_sd_out,
@@ -811,6 +830,13 @@ def main() -> int:
                 "median_pct_sd": row["median_pct_sd"],
                 "weighted_mean_depth": row["weighted_mean_depth"],
                 "width1_share": row["width_histogram"]["1"],
+                # Rule 138 excludes width 8, and E150 R0.5 showed the
+                # linearised rule reaches it. The headline arm comes from
+                # this table, so its admissible-width profile has to be
+                # recorded here or the result cannot be judged deployable.
+                "frac_rounds_inadmissible": row["frac_rounds_inadmissible"],
+                "width_histogram": row["width_histogram"],
+                "weighted_accept_rate": row["weighted_accept_rate"],
             } for name, row in ratio_arms.items()
         },
         "e150_ratio_over_argmax_pp": (
@@ -929,6 +955,13 @@ def main() -> int:
     print("  R1 gate at %+0.4f %% : %s"
           % (R1_GATE_PCT, "CLEARED" if out["e150_r1_gate_cleared"]
              else "NOT CLEARED"))
+    print("  same gate, argmax-rule-only reading  : %s"
+          % ("CLEARED" if out["e150_r1_gate_cleared_argmax_rule_only"]
+             else "NOT CLEARED"))
+    print("  headline arm inside Rule 138 widths  : %s  (inadmissible share "
+          "%.4f)"
+          % (out["e150_capturable_within_admissible_widths"],
+             out["e150_capturable_frac_rounds_inadmissible"]))
     print("\nwrote %s" % path.relative_to(HERE.parent))
     return 0
 
