@@ -1,0 +1,32 @@
+{
+  "advisor_decode_pct": -0.5319,
+  "anchor": "572b2cc4",
+  "e146_advisor_agreement_pp": 0.02028749961596943,
+  "e146_headline_step_sensitivity_total_high_pct": -0.4286038993000305,
+  "e146_headline_step_sensitivity_total_low_pct": -0.5237086702735241,
+  "e146_replay_of_advisor_step_decode_pct": -0.5116125003840306,
+  "harness": "ranked",
+  "raw_decode_pct": 1.3006887814887151,
+  "raw_total_pct": 1.1822552715611474,
+  "row": "1db9d63e",
+  "steps": [
+    {
+      "corrected_decode_pct": -0.5116125003840306,
+      "corrected_total_pct": -0.4725792321199229,
+      "step_source": "advisor F226-REVISED",
+      "step_us": 903.0
+    },
+    {
+      "corrected_decode_pct": -0.46345266816939423,
+      "corrected_total_pct": -0.4286038993000305,
+      "step_source": "E146 zero-delta only",
+      "step_us": 879.0038085693578
+    },
+    {
+      "corrected_decode_pct": -0.5676071911528562,
+      "corrected_total_pct": -0.5237086702735241,
+      "step_source": "F152/F172 wired residency",
+      "step_us": 930.9
+    }
+  ]
+}

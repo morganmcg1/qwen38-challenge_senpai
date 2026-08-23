@@ -39,10 +39,12 @@ def main():
     family = load("e146-family.json")
     cohort = load("e146-cohort.json")
     prefill = load("e146-prefill.json")
+    ledger305 = load("e146-ledger305.json")
     for name, payload in (("e146-modes.json", modes), ("e146-classify.json", classify),
                           ("e146-power.json", power), ("e146-pairs.json", pairs),
                           ("e146-family.json", family), ("e146-cohort.json", cohort),
-                          ("e146-prefill.json", prefill)):
+                          ("e146-prefill.json", prefill),
+                          ("e146-ledger305.json", ledger305)):
         if payload is None:
             print("missing %s" % name)
             return 1
@@ -90,6 +92,14 @@ def main():
             ours["anchor_steps_above_family_flat"],
         "ranked/e146_1db9d63e_bar_frame_decode_corrected_pct":
             ours["bar_frame_decode_corrected_pct"],
+        "ranked/e146_replay_of_advisor_step_decode_pct":
+            ledger305["e146_replay_of_advisor_step_decode_pct"],
+        "ranked/e146_advisor_agreement_pp":
+            ledger305["e146_advisor_agreement_pp"],
+        "ranked/e146_headline_step_sensitivity_total_low_pct":
+            ledger305["e146_headline_step_sensitivity_total_low_pct"],
+        "ranked/e146_headline_step_sensitivity_total_high_pct":
+            ledger305["e146_headline_step_sensitivity_total_high_pct"],
         # --- F2 reproduction: the bar cohort ------------------------------
         "ranked/e146_cohort_size": cohort["cohort_size"],
         "ranked/e146_cohort_n_high": cohort["n_high"],
@@ -302,6 +312,15 @@ def main():
                                a["p_value_one_sided"], a["null_median"],
                                a["null_p95"], a["n_pos"], a["n_neg"])
     run.log({"ranked/mode_separation_auc": auc_table})
+
+    sensitivity = wandb.Table(columns=["step_source", "step_us",
+                                       "corrected_decode_pct",
+                                       "corrected_total_pct"])
+    for entry in ledger305["steps"]:
+        sensitivity.add_data(entry["step_source"], entry["step_us"],
+                             entry["corrected_decode_pct"],
+                             entry["corrected_total_pct"])
+    run.log({"ranked/headline_step_sensitivity": sensitivity})
 
     f220 = wandb.Table(columns=["id", "k", "steps", "raw_decode8_pct",
                                 "corrected_decode8_pct", "residual_sd_pp"])
