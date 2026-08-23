@@ -161,6 +161,12 @@ public final class Qwen36MTPBlockSession {
     public private(set) var rollbackRoundCount = 0
     public private(set) var began = false
 
+    /// E150 R3 cost gate. The sink exists so the optimiser cannot delete the
+    /// read it is there to price; nothing reads the sink back.
+    private var readbackDiscardSink = 0
+    private var readbackStepsThisRound = 0
+    public private(set) var readbackStepTotal = 0
+
     public init(
         model: any Qwen36MTPTarget,
         stopTokens: Set<Int>,
@@ -1222,6 +1228,57 @@ public final class Qwen36MTPBlockSession {
         return ScheduleArm(rawValue: requested) ?? .linearised
     }()
 
+    /// E150 R3. What a SEQUENTIAL stopping rule would cost before it earns
+    /// anything.
+    ///
+    /// The shipped round chooses its width once, before the head has produced
+    /// a single draft, and then keeps every draft id on the device until the
+    /// round's one blocking eval. A rule that stops drafting on the head's own
+    /// confidence cannot do that: the verify width is a launched grid shape,
+    /// so the stop decision must be visible on the HOST, which forces a GPU
+    /// sync inside the drafting loop that the round does not pay today.
+    ///
+    /// This gate inserts exactly that sync and reads one scalar the loop has
+    /// already computed. It adds no arithmetic and no dispatch, so what it
+    /// prices is the round trip alone — the floor under any sequential design,
+    /// not one design's cost.
+    ///
+    /// `.firstOnly` prices the cheaper design F4 named: stop after the first
+    /// draft only, one readback per round instead of one per step.
+    ///
+    /// RULE 79 DOES NOT BIND. The value read is discarded into
+    /// `readbackDiscardSink` and no depth decision, draft, or emitted token
+    /// depends on it, so both arms run an identical schedule by construction
+    /// and the contrast is a cost measurement with the policy held fixed. The
+    /// run's own trace carries `rb=` so a reader can check the arm fired and
+    /// check that `d=` is unchanged, rather than trusting the variable it was
+    /// asked with (CAMPAIGN RULE 114).
+    internal enum ReadbackArm: String {
+        case off, firstOnly, perStep
+    }
+
+    /// `MLX_E150_READBACK_ARM`. `MLX_` is load bearing:
+    /// `sanitizedRuntimeWorkerEnvironment` drops every other prefix. Unset
+    /// gives `.off`, so the candidate build is unaffected and only an explicit
+    /// cost session pays.
+    internal static let readbackArm: ReadbackArm = {
+        let requested = ProcessInfo.processInfo
+            .environment["MLX_E150_READBACK_ARM"] ?? ""
+        return ReadbackArm(rawValue: requested) ?? .off
+    }()
+
+    /// The whole measurement. `eval` blocks the host until the draft id is
+    /// resident, `item` reads it, and the sum keeps the pair alive. Not
+    /// inlined so the arm is one call site a profile can attribute and the
+    /// optimiser cannot hoist it out of the drafting loop.
+    @inline(never)
+    private func readbackScalar(_ value: MLXArray) {
+        eval(value)
+        readbackDiscardSink &+= Int(value.item(Int32.self))
+        readbackStepsThisRound += 1
+        readbackStepTotal += 1
+    }
+
     /// Built once. A computed property would allocate two arrays per round
     /// inside the timed path.
     internal static let linearisedDepthPrice: DepthPrice =
@@ -1621,6 +1678,7 @@ public final class Qwen36MTPBlockSession {
             throw Qwen36MTPSessionError.invalidDepth(depth)
         }
         roundCount += 1
+        readbackStepsThisRound = 0
         // Local-only phase trace (MLXFAST_QWEN_MTP_TRACE=1): three boundaries
         // split a round into head-chain graph build, verify graph build, and
         // the single blocking eval's GPU wall. Never on in a ranked run.
@@ -1816,6 +1874,9 @@ public final class Qwen36MTPBlockSession {
         let tHead1Built = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
         asyncEval(draftId)
+        // E150 R3 cost gate. Both arms sync here; only `.perStep` also syncs
+        // on steps 2..d. See `ReadbackArm`.
+        if Self.readbackArm != .off { readbackScalar(draftId) }
         let tSubmit1 = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
         for _ in 1 ..< draftCount {
@@ -1824,6 +1885,7 @@ public final class Qwen36MTPBlockSession {
             draftHidden = Self.lastHiddenRow(headHidden)
             draftId = model.draftTokenID(draftHidden)
             draftIdArrays.append(draftId)
+            if Self.readbackArm == .perStep { readbackScalar(draftId) }
         }
         let tChainBuilt = Self.traceRounds
             ? DispatchTime.now().uptimeNanoseconds : 0
@@ -2032,6 +2094,7 @@ public final class Qwen36MTPBlockSession {
             let tTailDone = DispatchTime.now().uptimeNanoseconds
             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
                 + "acc=\(acceptedCount) "
+                + "rb=\(readbackStepsThisRound) "
                 + "draft_build_us=\((tDraftBuilt - tRound0) / 1000) "
                 // Complete split of draft_build, so a first-round cold cost
                 // names the statement that pays it instead of the section.
