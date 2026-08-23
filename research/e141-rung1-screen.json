@@ -1,0 +1,56 @@
+{
+  "mlx_version": "0.32.0",
+  "prefix_count": 98304,
+  "padded_count": 98336,
+  "target": "weights/model-00003-of-00003.safetensors",
+  "declared_head": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors",
+  "checks": [
+    {
+      "tensor": "draft_lm_head.weight",
+      "equal": true,
+      "elements": 31467520,
+      "differing_elements": 0
+    },
+    {
+      "tensor": "draft_lm_head.scales",
+      "equal": true,
+      "elements": 7866880,
+      "differing_elements": 0
+    },
+    {
+      "tensor": "draft_lm_head.biases",
+      "equal": true,
+      "elements": 7866880,
+      "differing_elements": 0
+    }
+  ],
+  "e141_coarse_table_bit_reproduction": 1.0,
+  "positive_control": [
+    {
+      "tensor": "control.weight",
+      "equal": false,
+      "elements": 31467520,
+      "differing_elements": 320,
+      "max_abs_difference": 4249899776.0,
+      "differing_rows": 1
+    },
+    {
+      "tensor": "control.scales",
+      "equal": false,
+      "elements": 7866880,
+      "differing_elements": 79,
+      "max_abs_difference": 0.084716796875,
+      "differing_rows": 1
+    },
+    {
+      "tensor": "control.biases",
+      "equal": false,
+      "elements": 7866880,
+      "differing_elements": 79,
+      "max_abs_difference": 0.16943359375,
+      "differing_rows": 1
+    }
+  ],
+  "positive_control_failed_as_required": true,
+  "gate_passed": true
+}

@@ -1,0 +1,879 @@
+{
+  "tokenizer_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+  "prefix_count": 98304,
+  "control_start": 248044,
+  "control_end": 248070,
+  "vocabulary_size": 248320,
+  "unproposable_id_count": 149990,
+  "candidate_prefixes": [
+    98304,
+    114688,
+    131072,
+    147456,
+    163840,
+    196608,
+    248320
+  ],
+  "families": {
+    "beagle": {
+      "gutenberg_id": 944,
+      "medpair_weight": 0.478,
+      "paragraphs": 941,
+      "tokens": 256620,
+      "distinct_ids": 12752,
+      "unproposable_tokens": 1240,
+      "unproposable_pct": 0.48320473852388746,
+      "unproposable_distinct_ids": 327,
+      "unproposable_ascii_pct": 0.48320473852388746,
+      "unproposable_nonascii_pct": 0.0,
+      "cumulative_curve": [
+        {
+          "prefix": 98304,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.48320473852388746,
+          "ascii_above_prefix_pct": 0.48320473852388746,
+          "padded_count": 98336
+        },
+        {
+          "prefix": 114688,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.48320473852388746,
+          "ascii_above_prefix_pct": 0.48320473852388746,
+          "padded_count": 114720
+        },
+        {
+          "prefix": 131072,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.48320473852388746,
+          "ascii_above_prefix_pct": 0.48320473852388746,
+          "padded_count": 131104
+        },
+        {
+          "prefix": 147456,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.48320473852388746,
+          "ascii_above_prefix_pct": 0.48320473852388746,
+          "padded_count": 147488
+        },
+        {
+          "prefix": 163840,
+          "recovered_pct": 0.04520302392642818,
+          "residual_pct": 0.4380017145974593,
+          "ascii_above_prefix_pct": 0.4380017145974593,
+          "padded_count": 163872
+        },
+        {
+          "prefix": 196608,
+          "recovered_pct": 0.2010755202244564,
+          "residual_pct": 0.28212921829943105,
+          "ascii_above_prefix_pct": 0.28212921829943105,
+          "padded_count": 196640
+        },
+        {
+          "prefix": 248320,
+          "recovered_pct": 0.48320473852388746,
+          "residual_pct": 0.0,
+          "ascii_above_prefix_pct": 0.0,
+          "padded_count": 248320
+        }
+      ],
+      "share_prefix": {
+        "0.50": {
+          "prefix": 203128,
+          "padded_count": 203160
+        },
+        "0.80": {
+          "prefix": 230124,
+          "padded_count": 230152
+        },
+        "0.90": {
+          "prefix": 239154,
+          "padded_count": 239184
+        },
+        "0.95": {
+          "prefix": 242101,
+          "padded_count": 242128
+        },
+        "1.00": {
+          "prefix": 246670,
+          "padded_count": 246696
+        }
+      },
+      "top_unproposable": [
+        {
+          "id": 193271,
+          "count": 84,
+          "pct": 0.03273322422258593,
+          "decoded": " Tierra",
+          "piece": "ĠTierra",
+          "ascii": true
+        },
+        {
+          "id": 163368,
+          "count": 60,
+          "pct": 0.02338087444470423,
+          "decoded": " Plata",
+          "piece": "ĠPlata",
+          "ascii": true
+        },
+        {
+          "id": 184889,
+          "count": 60,
+          "pct": 0.02338087444470423,
+          "decoded": " Fue",
+          "piece": "ĠFue",
+          "ascii": true
+        },
+        {
+          "id": 233581,
+          "count": 57,
+          "pct": 0.02221183072246902,
+          "decoded": " Chil",
+          "piece": "ĠChil",
+          "ascii": true
+        },
+        {
+          "id": 188791,
+          "count": 39,
+          "pct": 0.015197568389057751,
+          "decoded": " Bahia",
+          "piece": "ĠBahia",
+          "ascii": true
+        },
+        {
+          "id": 201993,
+          "count": 35,
+          "pct": 0.013638843426077468,
+          "decoded": " Blanca",
+          "piece": "ĠBlanca",
+          "ascii": true
+        },
+        {
+          "id": 240016,
+          "count": 33,
+          "pct": 0.012859480944587328,
+          "decoded": " guan",
+          "piece": "Ġguan",
+          "ascii": true
+        },
+        {
+          "id": 211441,
+          "count": 27,
+          "pct": 0.010521393500116905,
+          "decoded": " Gau",
+          "piece": "ĠGau",
+          "ascii": true
+        },
+        {
+          "id": 172911,
+          "count": 21,
+          "pct": 0.008183306055646482,
+          "decoded": " posta",
+          "piece": "Ġposta",
+          "ascii": true
+        },
+        {
+          "id": 245514,
+          "count": 20,
+          "pct": 0.007793624814901411,
+          "decoded": "idae",
+          "piece": "idae",
+          "ascii": true
+        },
+        {
+          "id": 211182,
+          "count": 19,
+          "pct": 0.00740394357415634,
+          "decoded": " Mald",
+          "piece": "ĠMald",
+          "ascii": true
+        },
+        {
+          "id": 227661,
+          "count": 19,
+          "pct": 0.00740394357415634,
+          "decoded": "onado",
+          "piece": "onado",
+          "ascii": true
+        },
+        {
+          "id": 223573,
+          "count": 18,
+          "pct": 0.007014262333411269,
+          "decoded": " biv",
+          "piece": "Ġbiv",
+          "ascii": true
+        },
+        {
+          "id": 216184,
+          "count": 16,
+          "pct": 0.006234899851921129,
+          "decoded": " Mendoza",
+          "piece": "ĠMendoza",
+          "ascii": true
+        },
+        {
+          "id": 213811,
+          "count": 16,
+          "pct": 0.006234899851921129,
+          "decoded": " bolas",
+          "piece": "Ġbolas",
+          "ascii": true
+        },
+        {
+          "id": 216136,
+          "count": 15,
+          "pct": 0.005845218611176058,
+          "decoded": " Ehren",
+          "piece": "ĠEhren",
+          "ascii": true
+        },
+        {
+          "id": 194646,
+          "count": 15,
+          "pct": 0.005845218611176058,
+          "decoded": " Banda",
+          "piece": "ĠBanda",
+          "ascii": true
+        },
+        {
+          "id": 166945,
+          "count": 14,
+          "pct": 0.005455537370430988,
+          "decoded": "gian",
+          "piece": "gian",
+          "ascii": true
+        },
+        {
+          "id": 159406,
+          "count": 14,
+          "pct": 0.005455537370430988,
+          "decoded": "onos",
+          "piece": "onos",
+          "ascii": true
+        },
+        {
+          "id": 205847,
+          "count": 13,
+          "pct": 0.005065856129685917,
+          "decoded": "iches",
+          "piece": "iches",
+          "ascii": true
+        },
+        {
+          "id": 215386,
+          "count": 13,
+          "pct": 0.005065856129685917,
+          "decoded": " emin",
+          "piece": "Ġemin",
+          "ascii": true
+        },
+        {
+          "id": 239516,
+          "count": 13,
+          "pct": 0.005065856129685917,
+          "decoded": " Peu",
+          "piece": "ĠPeu",
+          "ascii": true
+        },
+        {
+          "id": 178104,
+          "count": 13,
+          "pct": 0.005065856129685917,
+          "decoded": "arle",
+          "piece": "arle",
+          "ascii": true
+        },
+        {
+          "id": 232393,
+          "count": 12,
+          "pct": 0.004676174888940846,
+          "decoded": " Flora",
+          "piece": "ĠFlora",
+          "ascii": true
+        },
+        {
+          "id": 199475,
+          "count": 12,
+          "pct": 0.004676174888940846,
+          "decoded": " estancia",
+          "piece": "Ġestancia",
+          "ascii": true
+        },
+        {
+          "id": 203099,
+          "count": 12,
+          "pct": 0.004676174888940846,
+          "decoded": " Punta",
+          "piece": "ĠPunta",
+          "ascii": true
+        },
+        {
+          "id": 226353,
+          "count": 9,
+          "pct": 0.0035071311667056347,
+          "decoded": " hov",
+          "piece": "Ġhov",
+          "ascii": true
+        },
+        {
+          "id": 173775,
+          "count": 9,
+          "pct": 0.0035071311667056347,
+          "decoded": "uca",
+          "piece": "uca",
+          "ascii": true
+        },
+        {
+          "id": 214605,
+          "count": 8,
+          "pct": 0.0031174499259605643,
+          "decoded": "igny",
+          "piece": "igny",
+          "ascii": true
+        },
+        {
+          "id": 245097,
+          "count": 7,
+          "pct": 0.002727768685215494,
+          "decoded": " Colonia",
+          "piece": "ĠColonia",
+          "ascii": true
+        },
+        {
+          "id": 218292,
+          "count": 7,
+          "pct": 0.002727768685215494,
+          "decoded": "ongi",
+          "piece": "ongi",
+          "ascii": true
+        },
+        {
+          "id": 205057,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": "alp",
+          "piece": "alp",
+          "ascii": true
+        },
+        {
+          "id": 246166,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": " fibres",
+          "piece": "Ġfibres",
+          "ascii": true
+        },
+        {
+          "id": 201266,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": " Baj",
+          "piece": "ĠBaj",
+          "ascii": true
+        },
+        {
+          "id": 215233,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": " Guan",
+          "piece": "ĠGuan",
+          "ascii": true
+        },
+        {
+          "id": 211729,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": " Hacienda",
+          "piece": "ĠHacienda",
+          "ascii": true
+        },
+        {
+          "id": 211199,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": " Cau",
+          "piece": "ĠCau",
+          "ascii": true
+        },
+        {
+          "id": 222953,
+          "count": 6,
+          "pct": 0.002338087444470423,
+          "decoded": " Pernambuco",
+          "piece": "ĠPernambuco",
+          "ascii": true
+        },
+        {
+          "id": 242796,
+          "count": 5,
+          "pct": 0.0019484062037253527,
+          "decoded": " informer",
+          "piece": "Ġinformer",
+          "ascii": true
+        },
+        {
+          "id": 166489,
+          "count": 5,
+          "pct": 0.0019484062037253527,
+          "decoded": " muri",
+          "piece": "Ġmuri",
+          "ascii": true
+        }
+      ]
+    },
+    "essays": {
+      "gutenberg_id": 3600,
+      "medpair_weight": 0.522,
+      "paragraphs": 2524,
+      "tokens": 600625,
+      "distinct_ids": 17160,
+      "unproposable_tokens": 2724,
+      "unproposable_pct": 0.45352757544224764,
+      "unproposable_distinct_ids": 761,
+      "unproposable_ascii_pct": 0.4506971904266389,
+      "unproposable_nonascii_pct": 0.002830385015608741,
+      "cumulative_curve": [
+        {
+          "prefix": 98304,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.45352757544224764,
+          "ascii_above_prefix_pct": 0.4506971904266389,
+          "padded_count": 98336
+        },
+        {
+          "prefix": 114688,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.45352757544224764,
+          "ascii_above_prefix_pct": 0.4506971904266389,
+          "padded_count": 114720
+        },
+        {
+          "prefix": 131072,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.45352757544224764,
+          "ascii_above_prefix_pct": 0.4506971904266389,
+          "padded_count": 131104
+        },
+        {
+          "prefix": 147456,
+          "recovered_pct": 0.0,
+          "residual_pct": 0.45352757544224764,
+          "ascii_above_prefix_pct": 0.4506971904266389,
+          "padded_count": 147488
+        },
+        {
+          "prefix": 163840,
+          "recovered_pct": 0.025972944849115505,
+          "residual_pct": 0.42755463059313215,
+          "ascii_above_prefix_pct": 0.42522372528616026,
+          "padded_count": 163872
+        },
+        {
+          "prefix": 196608,
+          "recovered_pct": 0.2562330905306972,
+          "residual_pct": 0.19729448491155047,
+          "ascii_above_prefix_pct": 0.19579604578563997,
+          "padded_count": 196640
+        },
+        {
+          "prefix": 248320,
+          "recovered_pct": 0.45352757544224764,
+          "residual_pct": 0.0,
+          "ascii_above_prefix_pct": 0.0,
+          "padded_count": 248320
+        }
+      ],
+      "share_prefix": {
+        "0.50": {
+          "prefix": 187741,
+          "padded_count": 187768
+        },
+        "0.80": {
+          "prefix": 219966,
+          "padded_count": 219992
+        },
+        "0.90": {
+          "prefix": 227756,
+          "padded_count": 227784
+        },
+        "0.95": {
+          "prefix": 236388,
+          "padded_count": 236416
+        },
+        "1.00": {
+          "prefix": 246705,
+          "padded_count": 246736
+        }
+      },
+      "top_unproposable": [
+        {
+          "id": 187652,
+          "count": 695,
+          "pct": 0.11571279916753383,
+          "decoded": "tis",
+          "piece": "tis",
+          "ascii": true
+        },
+        {
+          "id": 218130,
+          "count": 110,
+          "pct": 0.018314255983350677,
+          "decoded": " perad",
+          "piece": "Ġperad",
+          "ascii": true
+        },
+        {
+          "id": 225704,
+          "count": 66,
+          "pct": 0.010988553590010405,
+          "decoded": " repose",
+          "piece": "Ġrepose",
+          "ascii": true
+        },
+        {
+          "id": 184431,
+          "count": 48,
+          "pct": 0.007991675338189386,
+          "decoded": " Monsieur",
+          "piece": "ĠMonsieur",
+          "ascii": true
+        },
+        {
+          "id": 219965,
+          "count": 45,
+          "pct": 0.007492195629552549,
+          "decoded": " inconven",
+          "piece": "Ġinconven",
+          "ascii": true
+        },
+        {
+          "id": 170074,
+          "count": 44,
+          "pct": 0.007325702393340271,
+          "decoded": " nay",
+          "piece": "Ġnay",
+          "ascii": true
+        },
+        {
+          "id": 178633,
+          "count": 33,
+          "pct": 0.0054942767950052025,
+          "decoded": "auch",
+          "piece": "auch",
+          "ascii": true
+        },
+        {
+          "id": 205228,
+          "count": 32,
+          "pct": 0.005327783558792924,
+          "decoded": " recomp",
+          "piece": "Ġrecomp",
+          "ascii": true
+        },
+        {
+          "id": 196505,
+          "count": 26,
+          "pct": 0.0043288241415192505,
+          "decoded": " tranquill",
+          "piece": "Ġtranquill",
+          "ascii": true
+        },
+        {
+          "id": 227755,
+          "count": 23,
+          "pct": 0.003829344432882414,
+          "decoded": " gout",
+          "piece": "Ġgout",
+          "ascii": true
+        },
+        {
+          "id": 204467,
+          "count": 22,
+          "pct": 0.0036628511966701354,
+          "decoded": "ondas",
+          "piece": "ondas",
+          "ascii": true
+        },
+        {
+          "id": 202117,
+          "count": 21,
+          "pct": 0.0034963579604578563,
+          "decoded": " corporal",
+          "piece": "Ġcorporal",
+          "ascii": true
+        },
+        {
+          "id": 218029,
+          "count": 21,
+          "pct": 0.0034963579604578563,
+          "decoded": " etern",
+          "piece": "Ġetern",
+          "ascii": true
+        },
+        {
+          "id": 159917,
+          "count": 17,
+          "pct": 0.002830385015608741,
+          "decoded": " consci",
+          "piece": "Ġconsci",
+          "ascii": true
+        },
+        {
+          "id": 193420,
+          "count": 16,
+          "pct": 0.002663891779396462,
+          "decoded": " gai",
+          "piece": "Ġgai",
+          "ascii": true
+        },
+        {
+          "id": 205463,
+          "count": 16,
+          "pct": 0.002663891779396462,
+          "decoded": " concurrence",
+          "piece": "Ġconcurrence",
+          "ascii": true
+        },
+        {
+          "id": 222453,
+          "count": 15,
+          "pct": 0.002497398543184183,
+          "decoded": " sati",
+          "piece": "Ġsati",
+          "ascii": true
+        },
+        {
+          "id": 229901,
+          "count": 14,
+          "pct": 0.0023309053069719044,
+          "decoded": "emn",
+          "piece": "emn",
+          "ascii": true
+        },
+        {
+          "id": 194864,
+          "count": 14,
+          "pct": 0.0023309053069719044,
+          "decoded": " polity",
+          "piece": "Ġpolity",
+          "ascii": true
+        },
+        {
+          "id": 156546,
+          "count": 14,
+          "pct": 0.0023309053069719044,
+          "decoded": " Alc",
+          "piece": "ĠAlc",
+          "ascii": true
+        },
+        {
+          "id": 216594,
+          "count": 13,
+          "pct": 0.0021644120707596253,
+          "decoded": "isement",
+          "piece": "isement",
+          "ascii": true
+        },
+        {
+          "id": 219902,
+          "count": 13,
+          "pct": 0.0021644120707596253,
+          "decoded": " sall",
+          "piece": "Ġsall",
+          "ascii": true
+        },
+        {
+          "id": 186038,
+          "count": 12,
+          "pct": 0.0019979188345473466,
+          "decoded": "arre",
+          "piece": "arre",
+          "ascii": true
+        },
+        {
+          "id": 161544,
+          "count": 12,
+          "pct": 0.0019979188345473466,
+          "decoded": " affront",
+          "piece": "Ġaffront",
+          "ascii": true
+        },
+        {
+          "id": 197169,
+          "count": 12,
+          "pct": 0.0019979188345473466,
+          "decoded": " maladies",
+          "piece": "Ġmaladies",
+          "ascii": true
+        },
+        {
+          "id": 185451,
+          "count": 12,
+          "pct": 0.0019979188345473466,
+          "decoded": "fallen",
+          "piece": "fallen",
+          "ascii": true
+        },
+        {
+          "id": 225062,
+          "count": 11,
+          "pct": 0.0018314255983350677,
+          "decoded": " imme",
+          "piece": "Ġimme",
+          "ascii": true
+        },
+        {
+          "id": 215386,
+          "count": 11,
+          "pct": 0.0018314255983350677,
+          "decoded": " emin",
+          "piece": "Ġemin",
+          "ascii": true
+        },
+        {
+          "id": 164014,
+          "count": 11,
+          "pct": 0.0018314255983350677,
+          "decoded": " cens",
+          "piece": "Ġcens",
+          "ascii": true
+        },
+        {
+          "id": 201827,
+          "count": 11,
+          "pct": 0.0018314255983350677,
+          "decoded": " Antig",
+          "piece": "ĠAntig",
+          "ascii": true
+        },
+        {
+          "id": 167588,
+          "count": 10,
+          "pct": 0.0016649323621227888,
+          "decoded": "igneur",
+          "piece": "igneur",
+          "ascii": true
+        },
+        {
+          "id": 202643,
+          "count": 10,
+          "pct": 0.0016649323621227888,
+          "decoded": "emper",
+          "piece": "emper",
+          "ascii": true
+        },
+        {
+          "id": 221230,
+          "count": 10,
+          "pct": 0.0016649323621227888,
+          "decoded": "igent",
+          "piece": "igent",
+          "ascii": true
+        },
+        {
+          "id": 205172,
+          "count": 10,
+          "pct": 0.0016649323621227888,
+          "decoded": "inius",
+          "piece": "inius",
+          "ascii": true
+        },
+        {
+          "id": 188005,
+          "count": 10,
+          "pct": 0.0016649323621227888,
+          "decoded": " artific",
+          "piece": "Ġartific",
+          "ascii": true
+        },
+        {
+          "id": 235777,
+          "count": 10,
+          "pct": 0.0016649323621227888,
+          "decoded": "achus",
+          "piece": "achus",
+          "ascii": true
+        },
+        {
+          "id": 163061,
+          "count": 9,
+          "pct": 0.00149843912591051,
+          "decoded": " pertin",
+          "piece": "Ġpertin",
+          "ascii": true
+        },
+        {
+          "id": 245362,
+          "count": 8,
+          "pct": 0.001331945889698231,
+          "decoded": " pern",
+          "piece": "Ġpern",
+          "ascii": true
+        },
+        {
+          "id": 203127,
+          "count": 8,
+          "pct": 0.001331945889698231,
+          "decoded": " Lep",
+          "piece": "ĠLep",
+          "ascii": true
+        },
+        {
+          "id": 207895,
+          "count": 8,
+          "pct": 0.001331945889698231,
+          "decoded": " Apoth",
+          "piece": "ĠApoth",
+          "ascii": true
+        }
+      ]
+    }
+  },
+  "medpair": {
+    "identity": "0.478 * beagle + 0.522 * essays",
+    "recoverable_pct_full_vocabulary": 0.4677132593952715,
+    "curve": [
+      {
+        "prefix": 98304,
+        "recovered_pct": 0.0,
+        "ascii_above_prefix_pct": 0.4662357984171237
+      },
+      {
+        "prefix": 114688,
+        "recovered_pct": 0.0,
+        "ascii_above_prefix_pct": 0.4662357984171237
+      },
+      {
+        "prefix": 131072,
+        "recovered_pct": 0.0,
+        "ascii_above_prefix_pct": 0.4662357984171237
+      },
+      {
+        "prefix": 147456,
+        "recovered_pct": 0.0,
+        "ascii_above_prefix_pct": 0.4662357984171237
+      },
+      {
+        "prefix": 163840,
+        "recovered_pct": 0.03516492264807096,
+        "ascii_above_prefix_pct": 0.4313316041769612
+      },
+      {
+        "prefix": 196608,
+        "recovered_pct": 0.22986777192431412,
+        "ascii_above_prefix_pct": 0.2370633022472321
+      },
+      {
+        "prefix": 248320,
+        "recovered_pct": 0.4677132593952715,
+        "ascii_above_prefix_pct": 0.0
+      }
+    ]
+  },
+  "stop_rule": {
+    "threshold_pct": 0.15,
+    "measured_pct": 0.4677132593952715,
+    "continue": true
+  }
+}
