@@ -57304,3 +57304,91 @@ PR #151 opened for alphonse: **the ranked prefill channel**. R0 is the offline s
 | cleanup PR, including budget reclamation | frees shared growth headroom | unassigned |
 
 **Closed in this entry**: the "+0.4 % is nearly there" reading of the gap — parity is not the crown, and the variance argument is in Finding 255. Finding 227's prefill value model, superseded by Finding 254 at 1.37x. Finding 247's weight vector above published median 3.3, superseded by Rule 148. The claim that rung B's prefill regression is inherited. My own Rule 145 predicate, and my own revert-target instruction.
+
+### 312.1 — FINDING 256: the width table is worth about 1.4 percent, its sign flipped when width 2 was routed, and `onePass6` has never been measured
+
+With the submission slot free I went back through our own chain to check whether
+anything measured was sitting unshipped. Nothing was. But the check turned up the
+largest single lever we have measured on our own tree, and it turned up a
+recording ambiguity in entry 311 that could have cost us 1.4 percent.
+
+All three contrasts below are schedule-identical — same
+`effective_mean_draft_len` to four decimals, same `non_drafting_round_count` on
+every prompt — so Rule 79 does not bind and these are pure candidate-leg cost
+contrasts. Positive means the second row is slower.
+
+```
+572b2cc4 -> 0cf1637e   (+width2, probe 0.25->0.15, flat depth)
+  candidate 8-prompt mean  -0.4011 %  sd 0.3312  se 0.1171  z -3.43   F83 wtd -0.4421 %
+
+572b2cc4 -> 1db9d63e   (+width2, onePass67 -> shipped)
+  candidate 8-prompt mean  +1.1823 %  sd 0.9349  se 0.3305  z +3.58   F83 wtd +1.7010 %
+
+1db9d63e -> 0cf1637e   (shipped -> onePass67, probe 0.25 -> 0.15)
+  candidate 8-prompt mean  -1.5571 %  sd 1.0168  se 0.3595  z -4.33   F83 wtd -2.0994 %
+```
+
+Subtracting the probe step, which F192 prices at about 0.20 percent:
+
+> **FINDING 256.** On the current tight-grid, width-2-routed base,
+> `Table.shipped -> Table.onePass67` is worth about **-1.36 to -1.56 percent** of
+> the candidate leg. F194 measured **adding** the same word to a tight base
+> without the width-2 route at **+0.3280 percent**, a loss. That is a sign flip,
+> not a magnitude change. Routing width 2 changes which widths the one-pass rungs
+> actually serve. **Every width-table value measured before the width-2 route is
+> void and must be re-measured, not carried.**
+
+The restoration in `0cf1637e` was therefore correct, and correct for a reason we
+had not named until now.
+
+**The recording ambiguity.** Entry 311 reports the `572b2cc4 -> 1db9d63e`
+contrast as `-1.1823` where the recompute gives `+1.1823` with identical sd
+0.9349, and `F83 weighted five -1.8505` against a recomputed `+1.7010`. Thorfinn
+was reporting a **gain** and I was reading a **time delta**, so the substance and
+his conclusion were both right. But read as a time delta the line says "drop
+`onePass67`", which on the current base would cost about 1.4 percent.
+
+> **RULE 144 AMENDED.** Naming the pricing frame is not sufficient. **Name the
+> sign convention in words as well** — state whether a positive number means
+> slower or better. A frame label without a sign convention is not a complete
+> label.
+
+**The open rung.** `Qwen35.swift:1794-1866` declares four monotone table rungs:
+
+```
+shipped      6 -> [3+3]   7 -> [4+3]   8 -> [4+4]
+onePass6     6 -> [6]     7 -> [4+3]   8 -> [4+4]     <- NEVER MEASURED
+onePass67    6 -> [6]     7 -> [7]     8 -> [4+4]     <- ships today
+onePass678   6 -> [6]     7 -> [7]     8 -> [8]       <- closed by the T48 g17s census
+```
+
+We hold ranked evidence for `shipped` and `onePass67` and a clean register
+closure for `onePass678`. `onePass6` is the untested middle, and the g17s
+residency census gives a specific physical reason it might win:
+
+| width | plan | g17s regs | spill | simdgroups |
+|---|---|--:|--:|--:|
+| 6 | `(6,6,4)` na6 | 105 | 0 | 37 |
+| 6 | `(6,3,4)` na3 | 94 | 0 | 42 |
+| 7 | `(7,7,4)` na7 | 118 | 0 | 33 |
+| 7 | `(7,4,4)` na4 | 96 | 0 | 41 |
+
+Width 7's one-pass rung costs **19.5 percent** of residency; width 6's costs
+**11.9 percent**. `onePass67` buys a halved pass count at both widths and pays at
+both. `onePass6` keeps the cheaper half of that trade and drops the expensive
+half. Ranked mass at stake under Rule 148 weights and the E134 replayed per-prompt
+width masses: width 6 carries **0.1397**, width 7 carries **0.1093**, for a
+combined **24.9 percent** of scored rounds. If the -1.4 percent splits anywhere
+near proportionally to mass, width 7 alone carries about 0.6 percent — larger
+than our whole remaining gap to the crown tree, in either direction.
+
+The local fixture understates this axis by about **2.4x**: widths 6 and 7 are
+10.26 percent of local benchfixture rounds against 24.9 percent ranked weighted.
+That factor is exactly why F194's ranked reading disagreed with the local
+forecast, and it is the same failure mode that inverted the `pb6` instrument.
+
+Assigned to thorfinn as F44: an offline g17s residency census of all four rungs
+plus a pre-registered forecast now, at zero GPU cost alongside the running
+fill-cost session; then a four-arm `onePass6 / onePass67 / onePass67 / onePass6`
+palindrome behind the real 40 C gate. Ordering is fill cost first, because
+Finding 252 is worth up to +1.2175 percent and is the larger question.
