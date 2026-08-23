@@ -534,8 +534,12 @@ def log_r1(run, summary: dict, r1: dict) -> None:
 
     reads = r1.get("e150_ladder_conversion_reads", {})
     run.log({"r1_ladder_conversion_reads": table(
-        ["read", "implied_pct"],
-        [[k, v] for k, v in sorted(reads.items())])})
+        ["read", "ladder", "read_at_unit", "read_at_value", "predicted_pct",
+         "units_match"],
+        [[name, r.get("ladder"), r.get("read_at_unit"),
+          r.get("read_at_value"), r.get("predicted_pct"),
+          r.get("units_match")]
+         for name, r in sorted(reads.items())])})
 
     run.log({"r1_constant_lambda": table(
         ["fixed_lambda", "median_pct", "median_pct_sd", "mean_depth"],
