@@ -180,8 +180,14 @@ def pct(a: float, b: float) -> float:
     return 100.0 * (a - b) / b
 
 
-def r1_tables(legs: list[dict]) -> dict:
-    r1 = [leg for leg in legs if leg["slot"].startswith("r1-")]
+def r1_tables(legs: list[dict], prefix: str = "r1-") -> dict:
+    """Arm tables for one session family.
+
+    `r1b-` is a second session of the same `beagle_a` arm comparison, so it
+    gets exactly this treatment and is then compared with `r1-`. The prefixes
+    carry their trailing hyphen on purpose: `r1-` must not swallow `r1b-`.
+    """
+    r1 = [leg for leg in legs if leg["slot"].startswith(prefix)]
     by_fixture: dict[str, dict] = {}
     for leg in r1:
         by_fixture.setdefault(leg["fixture"], {}).setdefault(
@@ -262,6 +268,46 @@ def r1_tables(legs: list[dict]) -> dict:
                     serial["spt_mean"] / pb6["spt_mean"],
                     serial["spt_mean"] / ship["spt_mean"])
         out[fixture] = entry
+    return out
+
+
+def r1b_replicate(r1: dict, r1b: dict) -> dict:
+    """Does the R1 arm effect survive into a second session?
+
+    CAMPAIGN RULE 119: the session is the unit that drifts, so an effect seen
+    once in one session is not yet reproduced. Both sessions decode the same
+    fixture with the same build, so the round count, mean draft length and
+    acceptance rate must match exactly; only the timing may move. A mismatch
+    in those signatures means the two sessions did not run the same work and
+    the timing comparison is void.
+    """
+    out: dict = {}
+    for fixture in sorted(set(r1) & set(r1b)):
+        a, b = r1[fixture], r1b[fixture]
+        if "pb6_vs_ship_pct" not in a or "pb6_vs_ship_pct" not in b:
+            continue
+        signatures_match = all(
+            a["arms"][arm][field] == b["arms"][arm][field]
+            for arm in ("ship", "pb6")
+            for field in ("round_counts", "mean_draft_len",
+                          "accepted_draft_rate")
+            if arm in a["arms"] and arm in b["arms"])
+        out[fixture] = {
+            "r1_pct": a["pb6_vs_ship_pct"],
+            "r1b_pct": b["pb6_vs_ship_pct"],
+            "gap_pp": b["pb6_vs_ship_pct"] - a["pb6_vs_ship_pct"],
+            "r1_blocks_pct": a["pb6_vs_ship_blocks_only_pct"],
+            "r1b_blocks_pct": b["pb6_vs_ship_blocks_only_pct"],
+            "blocks_gap_pp": (b["pb6_vs_ship_blocks_only_pct"]
+                              - a["pb6_vs_ship_blocks_only_pct"]),
+            "same_sign": ((a["pb6_vs_ship_pct"] < 0)
+                          == (b["pb6_vs_ship_pct"] < 0)),
+            "work_signatures_match": signatures_match,
+            "r1_entry_temps": [t for arm in a["arms"].values()
+                               for t in arm["entry_temps"]],
+            "r1b_entry_temps": [t for arm in b["arms"].values()
+                                for t in arm["entry_temps"]],
+        }
     return out
 
 
@@ -366,15 +412,27 @@ def main() -> int:
         "leg_count": len(legs),
         "legs": legs,
         "r1": r1_tables(legs),
+        "r1b": r1_tables(legs, "r1b-"),
         "r2": r2_tables(legs),
         "replayed_ranked_us": REPLAYED_RANKED_US,
         "pre_arm_ranked_us": PRE_ARM_RANKED_US,
     }
+    blob["r1b_replicate"] = r1b_replicate(blob["r1"], blob["r1b"])
     out = ROOT / args.json
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(blob, indent=2, sort_keys=True) + "\n")
 
     print(f"e145_read: {len(legs)} legs -> {out}")
+    for fixture, rep in blob["r1b_replicate"].items():
+        print(f"\n[R1b] second-session replicate, {fixture}")
+        print(f"  pb6 vs ship   R1 {rep['r1_pct']:+.4f} %"
+              f"   R1b {rep['r1b_pct']:+.4f} %"
+              f"   gap {rep['gap_pp']:+.4f} pp")
+        print(f"  blocks only   R1 {rep['r1_blocks_pct']:+.4f} %"
+              f"   R1b {rep['r1b_blocks_pct']:+.4f} %"
+              f"   gap {rep['blocks_gap_pp']:+.4f} pp")
+        print(f"  same sign {rep['same_sign']}"
+              f" ; work signatures match {rep['work_signatures_match']}")
     for fixture, entry in blob["r1"].items():
         arms = entry["arms"]
         print(f"\n[R1] {fixture}")

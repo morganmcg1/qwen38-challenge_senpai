@@ -97,14 +97,25 @@ e145_leg() {
   echo "e145_leg: gate passed in ${E145_GATE_WAIT_S}s, entry ${entry_c}C"
 
   # CAMPAIGN RULE 128: two arms are comparable only if their warm phase left
-  # the process in the same residency and cache state, so every leg records
-  # `wired-zh` and `warm`. Those lines are written by the WORKER to its own
-  # stderr; the parent discards that stream unless
-  # `MLX_DFLASH_TRACE_CACHE_SEAM=1`. The variable is read only by the CLI
-  # parent (`MLXFastCLI/main.swift:1409`) and decides forwarding, not worker
-  # behaviour, and both lines are emitted before the timed window, so a timed
-  # round gains no work from it. It is set for EVERY leg, so it cannot bias an
-  # arm comparison.
+  # the process in the same residency and cache state, so every leg tries to
+  # record `wired-zh` and `warm`.
+  #
+  # THIS CANNOT SUCCEED ON THE TIMED PATH, and R1b proved it. Both lines are
+  # written by the WORKER to its own stderr
+  # (`Qwen36MTPBlockSession.swift:271` and `:354`). The `mtp-timed` parent
+  # calls `runtimeWorkerOptions` WITHOUT `forwardsWorkerStderr`, so
+  # `QwenRuntimeWorker.swift:2046` installs a swallowing emitter and the
+  # stream never reaches any file. `MLX_DFLASH_TRACE_CACHE_SEAM` does not
+  # help: it is read only inside the DFlash subcommand
+  # (`MLXFastCLI/main.swift:1409`), which `mtp-timed` never enters. The
+  # source says so directly at `Qwen36MTPBlockSession.swift:800-806`.
+  #
+  # Capturing this telemetry needs a change in the trusted parent, which is
+  # outside the E145 assignment scope. The variable is still set on every leg
+  # so the probe stays uniform across arms, and the reader records
+  # `warm_telemetry_present=false` rather than skipping it, because a leg with
+  # no telemetry cannot support an arm attribution claim and that fact must be
+  # visible.
   local -a leg_env=(E128_FORCE=1 E128_NO_TRACE=1
                     MLX_DFLASH_TRACE_CACHE_SEAM=1
                     "E128_TOKENS=${tokens}"
@@ -136,7 +147,7 @@ e145_leg() {
     echo "e145_session_commit=${E145_SESSION_COMMIT}"
     echo "e145_session_worker_sha256=${E145_SESSION_WORKER}"
     echo "e145_leg_exit=${rc}"
-    e145_warm_telemetry "${out}/stderr.log"
+    e145_warm_telemetry "${out}/${fixture}/stderr.log"
   } >> "${out}/meta.txt"
   return "${rc}"
 }
