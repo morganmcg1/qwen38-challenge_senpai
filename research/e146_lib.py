@@ -132,6 +132,27 @@ class Row(object):
     def cand(self, prompt):
         return self.prompts[prompt]["mtp_seconds_per_token_mean"]
 
+    def prefill(self, prompt):
+        return self.prompts[prompt].get("prefill_seconds_per_token")
+
+    def has_prefill(self):
+        return all(self.prefill(p) for p in PROMPT_ORDER)
+
+    def decode(self, prompt):
+        """Candidate leg with the charged 512-token seed prefill removed.
+
+        FINDING 227: the trusted driver starts its clock before the seed
+        prefill, so `mtp_seconds_per_token_mean` contains it. A per-drafting-round
+        overhead cannot live in the prefill, which runs no drafting rounds at
+        all, so leaving the prefill in the response gives a per-leg prefill
+        change nowhere legitimate to land and it is absorbed into k.
+        Confirmed on this board in `e146_prefill.py`: the implied absolute seed
+        prefill is 0.52649 s with a CV of 0.108 % across eight prompts whose
+        candidate times differ by 3.1x.
+        """
+        pre = self.prefill(prompt)
+        return self.cand(prompt) - pre if pre else self.cand(prompt)
+
     def serial(self, prompt):
         return self.prompts[prompt]["serial_seconds_per_token_mean"]
 
@@ -238,16 +259,35 @@ def load(path=None):
     return path, rows
 
 
-def pct_diff(anchor, row):
+def leg(row, prompt, field="decode"):
+    """The response variable: the candidate leg, with or without the prefill.
+
+    `decode` is the default because the state being measured is charged per
+    drafting round and the seed prefill runs none. `total` reproduces the
+    pre-F227 estimator and exists only for the before-and-after comparison.
+    """
+    if field == "decode":
+        return row.decode(prompt)
+    if field == "total":
+        return row.cand(prompt)
+    if field == "prefill":
+        return row.prefill(prompt)
+    if field == "serial":
+        return row.serial(prompt)
+    raise ValueError(field)
+
+
+def pct_diff(anchor, row, field="decode"):
     """Per-prompt candidate-leg percentage difference, row against anchor."""
-    return {p: 100.0 * (row.cand(p) / anchor.cand(p) - 1.0) for p in PROMPT_ORDER}
+    return {p: 100.0 * (leg(row, p, field) / leg(anchor, p, field) - 1.0)
+            for p in PROMPT_ORDER}
 
 
 def serial_pct_diff(anchor, row):
     return {p: 100.0 * (row.serial(p) / anchor.serial(p) - 1.0) for p in PROMPT_ORDER}
 
 
-def design_matrix(anchor, row, unit="drafting_round"):
+def design_matrix(anchor, row, unit="drafting_round", field="decode"):
     """Percentage moved per microsecond of per-unit overhead carried by `row`.
 
     The model is t_p(row) = t_p(anchor) + k * count_p(row). Dividing by the
@@ -271,14 +311,14 @@ def design_matrix(anchor, row, unit="drafting_round"):
         elif unit == "emitted_token":
             count = float(DECODE_TOKENS)
         elif unit == "flat":
-            count = DECODE_TOKENS * anchor.cand(p) * 1e6 / 100.0
+            count = DECODE_TOKENS * leg(anchor, p, field) * 1e6 / 100.0
         else:
             raise ValueError(unit)
-        out[p] = count / (DECODE_TOKENS * anchor.cand(p)) * 1e-6 * 100.0
+        out[p] = count / (DECODE_TOKENS * leg(anchor, p, field)) * 1e-6 * 100.0
     return out
 
 
-def fit_k(anchor, row, basis_row=None, weights=None):
+def fit_k(anchor, row, basis_row=None, weights=None, field="decode"):
     """Least squares through the origin of per-prompt %diff on the basis.
 
     Returns k in microseconds added to every drafting round, the R2 of the fit
@@ -286,11 +326,11 @@ def fit_k(anchor, row, basis_row=None, weights=None):
     through-origin form), the per-prompt residual sd in percentage points, and
     the observed and predicted vectors.
     """
-    diffs = pct_diff(anchor, row)
+    diffs = pct_diff(anchor, row, field)
     names = list(PROMPT_ORDER)
     if weights is None:
         weights = {p: 1.0 for p in names}
-    design = design_matrix(anchor, basis_row or row)
+    design = design_matrix(anchor, basis_row or row, "drafting_round", field)
     num = sum(weights[p] * design[p] * diffs[p] for p in names)
     den = sum(weights[p] * design[p] * design[p] for p in names)
     k = num / den if den else float("nan")
@@ -300,7 +340,7 @@ def fit_k(anchor, row, basis_row=None, weights=None):
     ss_tot = sum(diffs[p] * diffs[p] for p in names)
     r2 = 1.0 - ss_res / ss_tot if ss_tot else float("nan")
     resid_sd = math.sqrt(ss_res / len(names))
-    return {
+    out = {
         "k_us_per_drafting_round": k,
         "r2_through_origin": r2,
         "residual_sd_pp": resid_sd,
@@ -308,18 +348,23 @@ def fit_k(anchor, row, basis_row=None, weights=None):
         "observed_pct": diffs,
         "predicted_pct": pred,
         "residual_pct": {p: diffs[p] - pred[p] for p in names},
+        "field": field,
     }
+    if anchor.has_prefill() and row.has_prefill():
+        pre = pct_diff(anchor, row, "prefill")
+        out["prefill_mean8_pct"] = sum(pre[p] for p in names) / 8.0
+    return out
 
 
-def fit_on_basis(anchor, row, unit):
+def fit_on_basis(anchor, row, unit, field="decode"):
     """The same through-origin fit against a rival physical unit.
 
     unit is one of `drafting_round`, `round`, `verify_row`, `draft_step`,
     `emitted_token`, `non_drafting_round`, `flat`.
     """
     names = list(PROMPT_ORDER)
-    design = design_matrix(anchor, row, unit)
-    diffs = pct_diff(anchor, row)
+    design = design_matrix(anchor, row, unit, field)
+    diffs = pct_diff(anchor, row, field)
     num = sum(design[p] * diffs[p] for p in names)
     den = sum(design[p] * design[p] for p in names)
     k = num / den if den else float("nan")
@@ -335,6 +380,25 @@ def fit_on_basis(anchor, row, unit):
         "shape_r2_vs_flat": 1.0 - ss_res / ss_flat if ss_flat else float("nan"),
         "predicted_pct": {p: k * design[p] for p in names},
     }
+
+
+def state_pct(anchor, row, step_us, field="decode"):
+    """The 8-prompt mean percentage that `step_us` per drafting round buys.
+
+    This is the ONE definition of the correction. The model is additive in
+    seconds, so the correction is the mean over prompts of the per-prompt
+    percentage that `step_us` moves, and nothing else. In particular it is not
+    `raw * step / k`: that proportional form silently assumes the whole observed
+    difference lies along the basis, which is false whenever the fit has a
+    residual, and the residual is exactly what is large on the rows that carry
+    the state.
+
+    `field` selects the frame. A submission is priced on the whole timed leg,
+    so `total` is the frame for any reported score effect; `decode` is the frame
+    the state is estimated in.
+    """
+    design = design_matrix(anchor, row, "drafting_round", field)
+    return step_us * sum(design[p] for p in PROMPT_ORDER) / len(PROMPT_ORDER)
 
 
 def mean(values):

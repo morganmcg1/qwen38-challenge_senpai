@@ -1,0 +1,26 @@
+{
+  "bar": "684821ed",
+  "board_path": "/tmp/yukon-board/full.json",
+  "board_rows_scored": 874,
+  "e146_prefill_delta_vs_advisor_seconds": 5.501098155979989e-05,
+  "e146_prefill_implied_seconds_mean": 0.5264850109815598,
+  "e146_prefill_implied_seconds_sd": 0.0005700616678410757,
+  "e146_prefill_prompt_invariance_cv_pct": 0.10827690360610137,
+  "e146_prefill_share_beagle_pct": 9.612121430764068,
+  "e146_prefill_share_of_candidate_leg_pct": 8.452834888078646,
+  "harness": "ranked",
+  "within_row_cv": {
+    "candidate": {
+      "median_within_row_cv_pct": 43.35565492152809,
+      "rows": 874
+    },
+    "prefill": {
+      "median_within_row_cv_pct": 0.14124807783876037,
+      "rows": 743
+    },
+    "serial": {
+      "median_within_row_cv_pct": 0.1850855756885506,
+      "rows": 874
+    }
+  }
+}
