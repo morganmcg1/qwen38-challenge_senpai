@@ -61147,3 +61147,199 @@ in flight            5a9f130a   crown parity, validating 39+ min at 17:08Z
 advisor branch       26f9c10f + this entry
 ```
 
+
+## 327 — FINDING 297, FINDING 298, RULE 170, ADVISOR NEAR-ERROR 196: the complete head census, and the two harnesses run different draft code
+
+Date 2026-08-23. Advisor. Zero GPU. Two HTTP range requests plus source
+inspection at `c49ad3fa`. Method: a safetensors file begins with an 8-byte
+little-endian header length and that many bytes of JSON naming every tensor,
+dtype, shape and byte offsets, so a complete census costs two range requests and
+no weight bytes. Script kept at `/tmp/headcensus.py`.
+
+### 327.1 FINDING 297 — the census, both artifacts, exact byte closure
+
+**Pinned, `EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`, `__metadata__` null:**
+
+```
+layers.0.mlp.down_proj.weight     BF16  (5120, 17408)   178,257,920
+layers.0.mlp.gate_proj.weight     BF16  (17408, 5120)   178,257,920
+layers.0.mlp.up_proj.weight       BF16  (17408, 5120)   178,257,920
+layers.0.self_attn.q_proj.weight  BF16  (12288, 5120)   125,829,120
+fc.weight                         BF16  (5120, 10240)   104,857,600
+layers.0.self_attn.o_proj.weight  BF16  (5120, 6144)     62,914,560
+layers.0.self_attn.k_proj.weight  BF16  (1024, 5120)     10,485,760
+layers.0.self_attn.v_proj.weight  BF16  (1024, 5120)     10,485,760
+5 x norm (5120,) + 2 x qk_norm (256,)  BF16                 52,224
+15 tensors  849,398,784 + 1,563 header = 849,400,347
+```
+
+**Declared, `amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827`:**
+
+```
+__metadata__
+  format       qwen38-mtp-incumbent-q4-g64-plus-bf16-qkv-islands-v1
+  bf16         EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0
+  base         dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71
+  e034_readout proposal-only affine2 compact shortlist; incumbent affine4 reranks
+  selection    largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all
+
+draft_lm_head.weight               U32   (98336, 320)  125,870,080   2-bit
+draft_lm_head.scales / .biases     BF16  (98336, 80)  2 x 15,733,760
+layers.0.mlp.{down,gate,up}.weight U32                3 x 44,564,480  4-bit g64
+layers.0.self_attn.q_proj.weight   U32   (12288, 640)   31,457,280
+fc.weight                          U32   (5120, 1280)   26,214,400
+layers.0.self_attn.o_proj.weight   U32   (5120, 768)    15,728,640
+precision_islands.{q,k,v}.weight   BF16  (1024, 5120) 3 x 10,485,760
+precision_islands.{q,k,v}.indices  I32   (1024,)      3 x      4,096
+layers.0.self_attn.{k,v}_proj      U32   (1024, 640)  2 x  2,621,440
++ every scales/biases pair, 7 norms
+40 tensors  427,738,112 + 4,488 header = 427,742,600   matches the manifest
+```
+
+Decomposition of the declared head:
+
+```
+model part      238,930,944    the 4-bit layer and its norms
+draft readout   157,337,600    affine-2 draft_lm_head + scales + biases
+islands          31,469,568    3 x bf16 (1024, 5120) + 3 x I32 indices
+total           427,738,112
+```
+
+**Two independent confirmations that the decomposition is right.**
+`238,930,944` plus a 3,149-byte header is `238,934,093`, the exact byte count our
+own `Tests/MLXFastTests/QwenQMVCostCurveTests.swift:834` recorded as the
+*earlier* declaration. So the first declared head was this 4-bit layer alone, and
+amal-david added the readout and the islands afterwards. And
+`849,398,784 / 238,930,944 = 3.5546`, against the same test file's "disagree by
+3.556x".
+
+Provenance is three parties deep: EigenLabs bf16, then
+`dwsdubey/qwen3.8-27b-mtp-4bit`, then amal-david's islands and readout. We
+inherited the last link and chose none of them.
+
+### 327.2 ADVISOR NEAR-ERROR 196 — I nearly published "we ship a head we do not use"
+
+`grep -rn "draft_lm_head\|precision_islands" Sources/ --include=*.swift` returns
+nothing, and I drafted a finding on that basis claiming 188.8 MB of the shipped
+head is never read. **It was wrong.** The implementation is in
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`, which is outside
+`Sources/`. The rule that caught it was checking the test tree: a whole file
+named `Tests/MLXFastTests/E84IslandDeadWorkExactnessTests.swift` and a
+`research/e84_island_index_audit.py` describe island behaviour in the present
+tense, which cannot be true of code that does not exist.
+
+> **RULE 167 clause 3.** Before concluding that a shipped artifact is unused,
+> grep the whole checkout, not `Sources/`. This tree keeps live scored code in
+> `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift`. A test or research
+> script that describes behaviour in the present tense is evidence the
+> implementation exists somewhere you have not looked.
+
+### 327.3 FINDING 298 — the two harnesses run different draft code, not just different weights
+
+Verified in `Qwen35.swift`:
+
+```
+:5668-5671  _compactDraftHead is "used only for draft proposals when no declared
+            draft_lm_head is present", derived during warmup from the exact lm_head
+:5780-5787  mtp.draft_lm_head.{weight,scales,biases} -> _draftHeadW/S/Z
+:5791-5807  mtp.draft_cluster.* -> _draftCluster*   (declared head ships NONE)
+:5822-5850  mtp.precision_islands.* -> installExactQKVRows
+:3319-3323  Qwen35IslandArm.fromEnvironment defaults to .all
+:5706       leaf-width override is MLX_E141_ROWS_PER_LEAF
+:5681-5685  the derived readout is "~315 MB of affine-4 rows per draft step (~0.6 ms)"
+```
+
+| | local, pinned head | ranked, declared head |
+| --- | --- | --- |
+| head layer | bf16, 849.3 MB | affine-4 g64, 238.9 MB |
+| precision islands | absent | installed, arm `.all`, +31.5 MB |
+| draft readout | `_compactDraftHead`, derived at warmup, affine-4, ~315 MB | shipped `draft_lm_head`, affine-2, 157.3 MB |
+| leaf index | derived at warmup | derived at warmup, identical |
+
+Read set per draft step, **INFERENCE, to be measured by E158**:
+
+```
+local   849 + probed share of 315          ~= 920 MB
+ranked  239 + 31.5 + probed share of 157   ~= 310 MB      ratio ~3x
+```
+
+Re-derived RULE 166 contamination with these numbers, still inference:
+
+```
+ranked head term  310 MB / 567 GB/s = 547 us/step x 4.382 =  2,396 us / 43,114 =  5.56 %
+local  head term  920 MB / 273 GB/s = 3,370 us/step x 4.382 = 14,767 us / 118,565 = 12.45 %
+pure host scalar  (118,565 - 14,767) / (43,114 - 2,396) = 2.549
+```
+
+So RULE 166's `2.75` may be about 7 % high, and the excess is head bytes rather
+than host. **RULE 166 stays in force with its stated interval and the label
+"head-contaminated, pending the E158 measurement."**
+
+### 327.4 The index axis transfers — ledger 326.8 closed favourably
+
+The declared head ships no `draft_cluster.*`. The leaf index is therefore derived
+at warmup by the same bisection on both harnesses. **p15, leaf16, and the E155
+recall audit measure the same mechanism the ranked runner executes.** The
+magnitudes still differ because the rows behind the index are affine-4 locally
+and affine-2 on ranked, but the mechanism is shared. Thorfinn told, E152 F10.
+
+### 327.5 RULE 170 — the worker environment boundary
+
+`Sources/MLXFastTrustedHarness/QwenRuntimeWorker.swift:2623-2650`:
+
+```
+allowedPrefixes  = [ DARKBLOOM_, DYLD_, LC_, METAL_, MLX_, MTL_ ]
+allowedExactKeys = { HF_HUB_OFFLINE, HOME, LANG, LOGNAME, PATH, SHELL, TERM,
+                     TMPDIR, TRANSFORMERS_OFFLINE, USER, __CF_USER_TEXT_ENCODING }
+```
+
+> **RULE 170.** An `MLXFAST_`-prefixed environment variable is dropped at the
+> runtime-worker boundary. Only the six prefixes and eleven exact keys above
+> cross it. Any experiment arm selected by an `MLXFAST_` variable read inside
+> worker code silently ran the shipped default, so its A and B arms were the
+> same arm. Shell-script variables are unaffected because the scripts consume
+> them and pass CLI arguments.
+
+The tree states the consequence itself at `Qwen35.swift:3316-3318`: the legacy
+`MLXFAST_QWEN_MTP_EXACT_QKV_ROWS` kill switch "has never had any effect on a
+worker leg". Audit every historical arm against this rule before citing it.
+`MLX_E141_ROWS_PER_LEAF` and `MLX_E120_QMV_PIPELINE_LOG` are on the allowlist.
+
+### 327.6 The experiment this creates — the island arm curve
+
+`Qwen35IslandArm` already implements `all`, `q`, `kv`, `none`, selected by
+`DARKBLOOM_QWEN_MTP_ISLAND_ARM`, which crosses the boundary. On the declared head
+that is a four-point accuracy-versus-bytes curve on the artifact we actually
+ship, in one session, with zero source changes.
+
+```
+islands cost     31,469,568 bytes/draft step
+                 = 31.47 MB x 0.01793 %/MB = 0.564 % published
+one accept point = +2.6701 % published
+break-even       = 0.21 acceptance points
+```
+
+Every outcome is informative. Below `0.21` points, dropping the islands is a free
+`+0.56 %`. If `kv` matches `all`, dropping the q island is `+0.19 %`. Well above
+`0.21` points, the head layer's precision becomes the next build round.
+
+### 327.7 Actions taken
+
+- `send_assignment_feedback` #158 `e158-f2` — full census handed over, R0 closed,
+  redirected to R1.A provenance confirmation, R1.B island arm curve, R1.C the
+  ranked-faithful local harness, R1.D matched numbers under both heads, with
+  four stop rules.
+- `send_assignment_feedback` #152 `e152-f10` — index axis transfers cleanly;
+  RULE 170 validates his arm selector; report the centroid-pass byte saving
+  separately.
+
+### 327.8 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating, second watcher running
+advisor branch       c49ad3fa + this entry
+```
+
