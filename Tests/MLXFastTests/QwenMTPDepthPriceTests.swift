@@ -234,20 +234,28 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    @Test("the shipped arm is pb6")
-    func shippedArmIsPB6() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
+    // E135 F39 reversed this pin from `pb6` to `ship`. One ranked receipt
+    // pair, `572b2cc4 -> e003a86d`, prices `pb6` at -2.3800 % of the
+    // published median: it starts drafting on plutarch at zero median weight
+    // and costs beagle 3.66 % at about half the weight. `pb6` is retained as
+    // a research arm and is no longer the compiled default.
+    @Test("the shipped arm is ship")
+    func shippedArmIsShip() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
         let shipped = Qwen36MTPBlockSession.depthPrice
+        let ship = Qwen36MTPBlockSession.makeUniformDepthPrice()
         let pb6 = Qwen36MTPBlockSession.makeBoundaryDepthPrice(
             enteringVerifyWidth: Qwen36MTPBlockSession
                 .passBoundaryVerifyWidth,
             tier: Qwen36MTPBlockSession.passBoundaryTierFactor)
         for depth in 0 ..< maxDepth {
-            #expect(shipped.marginal[depth] == pb6.marginal[depth])
+            #expect(shipped.marginal[depth] == ship.marginal[depth])
         }
         for depth in 0 ... maxDepth {
-            #expect(shipped.cumulative[depth] == pb6.cumulative[depth])
+            #expect(shipped.cumulative[depth] == ship.cumulative[depth])
         }
+        // Rule 101 polarity: the retired arm must fail the same comparison.
+        #expect(shipped.marginal != pb6.marginal)
     }
 
     // The pbfit arm drafts SHORTER than the flat price at both ranked

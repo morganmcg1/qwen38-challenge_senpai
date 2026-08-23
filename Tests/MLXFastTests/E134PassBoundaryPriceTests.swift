@@ -288,9 +288,13 @@ struct E134PassBoundaryPriceTests {
         }
     }
 
-    @Test("the shipped arm is pb6 at the measured width and tier")
-    func shippedArmIsPB6() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
+    // E135 F39 reversed the compiled arm from `pb6` to `ship`; one ranked
+    // receipt pair prices `pb6` at -2.3800 % of the published median. The
+    // width and tier below are a different property, measured by E134, and
+    // stay pinned so the retired research arm keeps its shape.
+    @Test("the shipped arm is ship at the measured width and tier")
+    func shippedArmIsShip() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
         #expect(Qwen36MTPBlockSession.passBoundaryVerifyWidth == 6)
         #expect(Qwen36MTPBlockSession.passBoundaryTierFactor == 1.45)
     }
