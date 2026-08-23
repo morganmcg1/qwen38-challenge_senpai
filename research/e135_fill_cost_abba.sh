@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # F41 prep: price the `xsums_v1` fill dispatch with the schedule held fixed.
 #
-#   usage: research/e135_fill_cost_abba.sh [TOKENS] [LABEL]
+#   usage: research/e135_fill_cost_abba.sh [TOKENS] [LABEL] [REP]
 #
 # TWO ARMS, one worker, one thermal session, no rebuild between legs. Both arms
 # hold the shipped composition (tight grid, onepass67 plan, p15 probe, width 2
@@ -19,12 +19,18 @@
 # PALINDROME. repl fill fill repl gives both arms mean position 2.5, so a
 # monotone thermal or clock drift in leg index cancels to first order.
 #
+# REP. One palindrome leaves the arm contrast on two degrees of freedom, which
+# is too thin to separate a 4 us fill from a 1 us fill. Each REP runs its own
+# warmup, its own witnesses and its own palindrome, and the report pools them
+# with a session offset. REP only names the session; it never changes an arm.
+#
 # GATED. Every timed leg runs the real 40 C gate.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 tokens="${1:-512}"
 label="${2:-fill}"
+rep="${3:-1}"
 
 if [[ -n "$(git status --porcelain -- Sources Vendor Package.swift)" ]]; then
   echo "e135_fill_cost_abba: scored surface is dirty; refusing to time over" \
@@ -59,7 +65,7 @@ anti_arm() {
 }
 
 # PHASE 0: warmup (Rule 137), ungated, and the `fill` witness at full length.
-warm_tag="e135${label}warm"
+warm_tag="e135${label}warm${rep}"
 echo "=== warmup ${warm_tag}: arm=fill tokens=${tokens} ungated ==="
 apply_arm fill
 export MLX_E120_QMV_PIPELINE_LOG="${PWD}/research/out/${warm_tag}/pipelines.json"
@@ -81,7 +87,7 @@ for arm in fill repl; do
   if [[ "${arm}" == "fill" ]]; then
     out="research/out/${warm_tag}"
   else
-    tag="e135${label}w${arm}"
+    tag="e135${label}w${rep}${arm}"
     out="research/out/${tag}"
     echo "=== witness ${tag}: arm=${arm} tokens=16 ==="
     mkdir -p "${out}"
@@ -120,7 +126,7 @@ failures=0
 position=0
 for arm in repl fill fill repl; do
   position=$((position + 1))
-  tag="e135${label}k1p${position}${arm}"
+  tag="e135${label}k${rep}p${position}${arm}"
   echo "=== ${tag}: arm=${arm} tokens=${tokens} gated ==="
   apply_arm "${arm}"
   research/e79_trace_leg.sh "${tag}" "${tokens}" --no-trace --cool-gate
@@ -129,6 +135,7 @@ for arm in repl fill fill repl; do
   out="research/out/${tag}"
   {
     echo "e135_arm=${arm}"
+    echo "e135_rep=${rep}"
     echo "e135_position=${position}"
     echo "e135_session_commit=${session_commit}"
     echo "e135_session_worker_sha256=${session_worker}"

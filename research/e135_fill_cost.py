@@ -71,6 +71,7 @@ def leg(path: pathlib.Path) -> dict:
     return {
         "tag": path.name,
         "arm": meta.get("e135_arm", "?"),
+        "rep": int(meta.get("e135_rep", 1)),
         "position": int(meta.get("e135_position", 0)),
         "mtp": score["mtp_seconds_per_token"],
         "serial": score["serial_seconds_per_token"],
@@ -82,19 +83,89 @@ def leg(path: pathlib.Path) -> dict:
     }
 
 
-def report(args: argparse.Namespace) -> int:
-    legs = sorted(
-        (leg(p) for p in pathlib.Path("research/out").glob(f"e135{args.label}k*")
+def load_legs(label: str) -> list[dict]:
+    return sorted(
+        (leg(p) for p in pathlib.Path("research/out").glob(f"e135{label}k*")
          if (p / "score.json").exists()),
-        key=lambda d: d["position"],
+        key=lambda d: (d["rep"], d["position"]),
     )
+
+
+def fit(legs: list[dict]) -> dict:
+    """Least squares for mean + arm + within-session drift + session offset.
+
+    Every session is its own palindrome, so the arm indicator is orthogonal to
+    the drift regressor and to the session offsets. Each coefficient is
+    therefore read off directly. Drift is centred inside its own session: two
+    sessions separated by hours do not lie on one line, and a session offset
+    absorbs the difference in base clock or base temperature between them.
+
+    The reduced fit drops only the drift term. It keeps the session offsets,
+    which are real, so with one session it is exactly the two-parameter fit.
+    """
+    y = [d["mtp"] for d in legs]
+    a = [1.0 if d["arm"] == "fill" else -1.0 for d in legs]
+    n = len(legs)
+
+    reps = sorted({d["rep"] for d in legs})
+    centre = {r: statistics.fmean(d["position"] for d in legs if d["rep"] == r)
+              for r in reps}
+    x = [d["position"] - centre[d["rep"]] for d in legs]
+    offsets = [[1.0 if d["rep"] == r else 0.0 for d in legs] for r in reps[1:]]
+    offsets = [[v - statistics.fmean(col) for v in col] for col in offsets]
+
+    def project(c: list[float]) -> float:
+        return sum(ci * yi for ci, yi in zip(c, y)) / sum(ci * ci for ci in c)
+
+    grand = statistics.fmean(y)
+    arm_c = project(a)
+    drift_c = project(x) if any(x) else 0.0
+    off_c = [project(col) for col in offsets]
+
+    def residuals(with_drift: bool) -> list[float]:
+        out = []
+        for i, yi in enumerate(y):
+            pred = grand + arm_c * a[i] + sum(
+                c * col[i] for c, col in zip(off_c, offsets))
+            if with_drift:
+                pred += drift_c * x[i]
+            out.append(yi - pred)
+        return out
+
+    kf = 2 + len(offsets) + (1 if any(x) else 0)
+    varf = sum(r * r for r in residuals(True)) / (n - kf)
+    sef = 2.0 * (varf / sum(ai * ai for ai in a)) ** 0.5
+
+    kr = 2 + len(offsets)
+    varr = sum(r * r for r in residuals(False)) / (n - kr)
+    ser = 2.0 * (varr / sum(ai * ai for ai in a)) ** 0.5
+
+    base = grand - arm_c
+    return {
+        "effect": 2.0 * arm_c,
+        "effect_pct": 2.0 * arm_c / base * 100.0,
+        "se3_pct": sef / base * 100.0,
+        "se2_pct": ser / base * 100.0,
+        "dof3": n - kf,
+        "dof2": n - kr,
+        "drift_pct_per_leg": drift_c / base * 100.0,
+        "session_offsets_pct": [c / base * 100.0 for c in off_c],
+        "resid_sd3_pct": varf ** 0.5 / base * 100.0,
+        "resid_sd2_pct": varr ** 0.5 / base * 100.0,
+        "replica": base,
+        "fill": grand + arm_c,
+    }
+
+
+def report(args: argparse.Namespace) -> int:
+    legs = load_legs(args.label)
     if not legs:
         print("no timed legs found")
         return 1
 
     print("## Legs")
     for d in legs:
-        print(f"  {d['position']} {d['arm']:<5} mtp {d['mtp']:.6f}  "
+        print(f"  k{d['rep']}p{d['position']} {d['arm']:<5} mtp {d['mtp']:.6f}  "
               f"serial {d['serial']:.6f}  edl {d['edl']:.6f}  "
               f"entry {d['entry_c']} exit {d['exit_c']} gated {d['gated']}")
 
@@ -114,10 +185,24 @@ def report(args: argparse.Namespace) -> int:
 
     repl, fill = mean("repl", "mtp"), mean("fill", "mtp")
     delta_pct = (fill - repl) / repl * 100.0
+    stats = fit(legs)
     print(f"\n## Fill cost, candidate MTP leg")
     print(f"  replica        {repl:.6f} s/tok  n={len(by_arm['repl'])}")
     print(f"  fill_noconsume {fill:.6f} s/tok  n={len(by_arm['fill'])}")
     print(f"  fill costs     {delta_pct:+.4f} % of candidate MTP time")
+    print(f"  se, drift fitted, {stats['dof3']} dof   {stats['se3_pct']:.4f} pp"
+          f"  t {abs(delta_pct) / stats['se3_pct']:.2f}")
+    print(f"  se, no drift,     {stats['dof2']} dof   {stats['se2_pct']:.4f} pp"
+          f"  t {abs(delta_pct) / stats['se2_pct']:.2f}")
+    print(f"  position drift            {stats['drift_pct_per_leg']:+.4f} %/leg")
+    if stats["session_offsets_pct"]:
+        off = " ".join(f"{v:+.4f}" for v in stats["session_offsets_pct"])
+        print(f"  session offsets           {off} %")
+    for r in sorted({d['rep'] for d in legs}):
+        rl = [d for d in legs if d["rep"] == r]
+        rr = statistics.fmean(d["mtp"] for d in rl if d["arm"] == "repl")
+        rf = statistics.fmean(d["mtp"] for d in rl if d["arm"] == "fill")
+        print(f"  session k{r} alone        {(rf - rr) / rr * 100.0:+.4f} %")
 
     srepl, sfill = mean("repl", "serial"), mean("fill", "serial")
     print(f"  serial null    {(sfill - srepl) / srepl * 100.0:+.4f} %  "
