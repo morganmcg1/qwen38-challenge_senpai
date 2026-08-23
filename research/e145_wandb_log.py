@@ -468,6 +468,38 @@ def log_r7_state(run, summary: dict, state: dict) -> None:
          for r in state["e145_r7_clamp_scale_grid"]])})
 
 
+def log_r7_adapter(run, summary: dict, probe: dict) -> None:
+    """R7-5: the E128 -> E145 arm adapter, exercised on every arm name.
+
+    `harness=local`, zero GPU, no decode and no pricing. This is the coverage
+    evidence behind the handover section "How to re-price any E128 arm on the
+    measured curve": every name in `e128_price.ARMS` returns a legal depth
+    through the published adapter, and the `install(measured)` ordering trap
+    is detectable by the one-line assertion the document hands the caller.
+    """
+    summary["e145_r7_adapter_arms_total"] = probe["arms_total"]
+    summary["e145_r7_adapter_arms_legal"] = probe["arms_legal"]
+    summary["e145_r7_adapter_arms_failed"] = len(probe["arms_failed"])
+    summary["e145_r7_adapter_e128_table_covered"] = \
+        len(probe["e128_table_covered"])
+    summary["e145_r7_adapter_e128_table_size"] = len(probe["e128_table"])
+    summary["e145_r7_adapter_newly_exercised"] = \
+        len(probe["newly_exercised"])
+    summary["e145_r7_adapter_ordering_trap_visible"] = \
+        probe["ordering_trap_visible"]
+    summary["e145_r7_adapter_ordering_trap_worst_pct"] = \
+        probe["ordering_trap_worst_marginal_shift_pct"]
+    summary["e145_r7_adapter_assertion_catches_trap"] = \
+        probe["assertion_would_have_failed_before_install"]
+
+    states = [s["name"] for s in probe["probe_states"]]
+    run.log({"r7_5_adapter_coverage": table(
+        ["arm", "in_e128_table", "previously_exercised", "legal"] + states,
+        [[row["arm"], row["in_e128_table"], row["previously_exercised"],
+          row["legal"]] + [row["depths"][s] for s in states]
+         for row in probe["rows"]])})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", default="e145-live-width-cost-curve")
@@ -488,6 +520,7 @@ def main() -> int:
     r6_1 = load("r6-1.json")
     r7 = load("r7.json")
     r7_state = load("r7-state.json")
+    r7_adapter = load("r7-adapter-probe.json")
     if curve is None or legs_blob is None or r1 is None:
         raise SystemExit("the curve, the legs and R1 must all be present")
     legs = legs_blob["legs"]
@@ -813,6 +846,9 @@ def main() -> int:
 
     if r7_state is not None:
         log_r7_state(run, summary, r7_state)
+
+    if r7_adapter is not None:
+        log_r7_adapter(run, summary, r7_adapter)
 
     run.log({"timed_legs": table(
         ["slot", "fixture", "arm", "pin", "position", "rounds",

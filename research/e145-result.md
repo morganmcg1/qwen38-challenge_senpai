@@ -33,7 +33,17 @@ binary in every session reported here. All timing is local, never ranked.
 4. **The regime hypothesis is dead.** On `beagle_a` the `pb6` arm is
    **2.57 % faster**, not slower. Both preregistered directional intervals
    miss low. Advisor Error 151 resolves in `pb6`'s favour on the local
-   instrument.
+   instrument — **and that answer is wrong.** F12 retired `pb6`
+   campaign-wide on the only ranked `pb6` contrast the campaign owns,
+   `572b2cc4 -> e003a86d`: beagle **loses 3.66 %**, and the published median
+   goes **3.66218564 -> 3.57502547**, that is **-2.3800 %**. So R1 is a
+   confident, tightly bounded, gate-qualified, **wrongly signed** local
+   answer, and thorfinn's F34 produced the same inversion from the other
+   direction at **+2.2987 %** with `se6` 0.1332. **R1 is therefore relabelled:
+   it is a measurement of the instrument, not of the mechanism** — see the
+   banner above R1 — and it is one of the two receipts behind the promotion
+   of **RULE 79 to a hard gate**. Advisor Error 151 is superseded by
+   **Advisor Error 174**.
 5. **A mean-draft-length model of this system is wrong, and I can now show it
    on measured data.** The advisor's Error 156 reproduces locally: predicting
    from the curve evaluated at the mean draft length is off by up to
@@ -142,7 +152,12 @@ binary in every session reported here. All timing is local, never ranked.
     13.73 %. R7-1 re-priced two of its cells and both moved far:
     `rankedprice` from -3.1234 % to **+0.1338 %**, `oracle` from +8.9390 % to
     **+6.3508 %**. E145 does not re-run the table, but it leaves a checked
-    injection point that does it with no new plumbing. See
+    injection point that does it with no new plumbing. R7-5 drives **all 36
+    names in `e128_price.ARMS`, covering 14 of 14 published arms**, through
+    that adapter and every one returns a legal depth, and it pins the one
+    ordering trap that would otherwise corrupt the re-run silently: skip
+    `install(measured)` before `make_policy` and the `rankedprice*` family
+    keeps a frozen price table that is wrong by up to **388.66 %**. See
     "How to re-price any E128 arm on the measured curve".
 16. **The residency-slack direction is closed by arithmetic, and then a leg
     found something else.** Slack placement priced at E130's own measured
@@ -154,6 +169,23 @@ binary in every session reported here. All timing is local, never ranked.
     is 1700x larger than the placement arithmetic and of the **opposite sign**
     to the proposed mechanism. It is the resident weights, not the slack. The
     ranked two-state behaviour does not reproduce locally with wiring on.
+17. **The acceptance axis and the depth-price axis are both un-measurable on
+    the local instrument, and for the same reason.** Every policy mechanism on
+    this tree is **width-concentrated**, and the local fixtures do not carry
+    the ranked width mass. My own ship-arm histograms say it plainly: mass at
+    width 8 is **0.2857** on `beagle_a` and **0.7692** on `benchfixture`,
+    against a ranked median-pair-weighted
+    `e135_ranked_width8_mass_weighted = 0.5390`; mass at width 6 and above is
+    **0.3950** and **0.8718**. A mechanism that pulls back from width 6 is
+    nearly free money on `benchfixture`, where 87.2 % of ship-arm rounds sit
+    at width 6 or above, and can buy nothing on a ranked prompt that rarely
+    goes there. That is why **RULE 79 is now a hard gate** — a depth-price or
+    schedule-policy contrast is decided on a ranked receipt or it is not
+    decided, in any direction, with any error bar — and it is why R2 was worth
+    fourteen legs: a **cost** measurement at a pinned width is not a policy
+    contrast, it transfers, and everything downstream of it in R3, R4 and R7
+    is an offline replay against that measured table rather than a local
+    timing leg.
 
 Taken together: the curve everybody was using was wrong, and correcting it
 buys 0.33 pp of direct value, which is real on this bench and invisible on the
@@ -252,6 +284,34 @@ because the level cancels:
 | benchfixture | -7.5999 | -7.5014 | -0.0985 |
 
 ## R1 — the regime hypothesis
+
+> **RELABELLED, per F12. Read R1 as a measurement of the instrument, not of
+> the mechanism.** `pb6` is retired campaign-wide on the ranked receipt
+> `572b2cc4 -> e003a86d`, where it costs beagle 3.66 % and moves the published
+> median 3.66218564 -> 3.57502547, that is **-2.3800 %**. R1 below is a live,
+> gated, palindrome-ordered, same-binary local ABBA that returns a confident
+> and tightly bounded answer of the **opposite sign**, and thorfinn's F34
+> inverts in the same way from a different arm and a different grid
+> (**+2.2987 %**, `se6` 0.1332). Two students, two arms, two tight intervals,
+> both wrong against ranked. That is the result R1 actually carries, and it is
+> worth more than the one it was commissioned to produce.
+>
+> The mechanism of the failure is item 17 in the headline: the local fixtures
+> are width-concentrated in the wrong place. `benchfixture` spends **87.2 %**
+> of its ship-arm rounds at width 6 or above and `beagle_a` **39.50 %**,
+> against a ranked median-pair-weighted width-8 mass of **0.5390**. An arm
+> whose whole mechanism is a toll at the width-6 boundary is therefore
+> measuring the fixture, not the policy.
+>
+> **RULE 79 is promoted from a caveat to a hard gate.** No local timing leg
+> may publish a depth-price or schedule-policy contrast, in any direction,
+> with any error bar. A depth-price contrast is decided on a ranked receipt or
+> it is not decided. This does **not** touch R2, R7-1, R7-2, R7-3 or R7-4:
+> those are cost measurements and offline replays against a measured cost
+> table, not policy contrasts.
+>
+> Advisor Error 151 is superseded by **Advisor Error 174**. Nothing below is
+> deleted or restated; the numbers are exactly as measured.
 
 ### `beagle_a`: the hypothesis fails, decisively and in the wrong direction
 
@@ -1363,17 +1423,92 @@ def e128_walker(arm, recal=(2.0, 3.0), level=None):
 
 `ctx` carries `capability`, `offer`, `base_rate`, `prev_slope`, `prev_rows`
 and `km`, so no policy needs information the harness does not already have.
-That adapter is checked, not sketched: it returns a legal depth for `ship`,
-`nomargin`, `recal`, `marginup`, `marginfull`, `rankedprice`, `static7` and
-`oracle` on a probe state, and `static7` correctly saturates at the
-`SEGMENTED_VERIFY_DEPTH_CAP` of 7 while the rest sit at 3 or 4.
 
-**One ordering constraint.** The `rankedprice*` arms freeze their price table
-at construction time, because `make_policy` calls `ranked_price_table()`
-eagerly. Call `e140_cells.install(measured)` **before** `make_policy`, or that
-family silently keeps the replayed table while everything else moves. The
-`levelfix*`, `reachonly`, `expectedonly`, `jensen` and `jensen_both` arms also
-need a `level` dictionary from `e128_price.pooled_level`.
+**Step 5 — the three preconditions.** These are numbered because each one
+fails *silently*: the run completes, every number looks plausible, and the
+answer is wrong. Copy the assertions.
+
+**Precondition 1. `install(measured)` must run after `curves_and_prices` and
+before `make_policy`.** `curves_and_prices` installs each curve in turn to
+read its price table, and `replayed` is the last one it touches, so it
+**leaves the replayed curve installed**. `make_policy` then freezes the
+`rankedprice*` price table at construction time, because it calls
+`ranked_price_table()` eagerly. Get the order wrong and that whole family
+keeps the replayed table while every other arm moves.
+
+```python
+e140_cells.install(measured)                       # AFTER curves_and_prices
+assert e128_price.ranked_price_table()[0] == measured_price[0], \
+    "call e140_cells.install(measured) before e128_price.make_policy"
+```
+
+R7-5 checked that this assertion is not decorative: run without the
+`install`, and the frozen marginal table is wrong by up to **388.66 %** at
+some width, silently. The assertion fails before that can happen.
+
+**Precondition 2. The level arms need a `level` dictionary, and it must be
+pooled over the arm's own fixture.** `levelfix*`, `reachonly`, `expectedonly`,
+`jensen` and `jensen_both` raise `SystemExit` without one. Build it from the
+E128 artifact, not by hand:
+
+```python
+level_rows = {row["prompt_id"]: row for row in json.loads(
+    (HERE / "e128-artifacts" / "jensen-and-sign.json").read_text()
+)["hypothesis_j"]}
+level = e128_price.pooled_level(
+    level_rows, e128_price.RANKED_PROMPTS["beagle"]["fixture"])
+```
+
+`pooled_level` indexes `jensen_gain[1 .. MAX_DEPTH]`, so every row it pools
+needs `MAX_DEPTH + 1 = 9` entries. The shipped artifact has 9 for all twelve
+fixtures; a hand-built row with fewer raises `IndexError` rather than
+returning a wrong number, which is the one failure in this list that is loud.
+
+**Precondition 3. Decide *both* substitutions explicitly** — the charged cost
+and the believed price, per Step 2. An arm that changes one and not the other
+is answering a different question, and the 3 x 8 grid in R3 is the map of
+which question each cell asks.
+
+**Step 6 — what the adapter has actually been exercised on.** Interim 9
+reported eight names as checked. F12 asked which of the fourteen were not.
+The answer is now "none of them": `research/e145_e128_adapter_probe.py`
+(artifact `research/e145-artifacts/r7-adapter-probe.json`, R7-5) drives
+**every name in `e128_price.ARMS`** through the adapter above, on five probe
+states spanning the decision space — prior EMA at a wide margin, prior EMA at
+a near-zero margin, a hot EMA at a wide offer, a cold EMA at a two-token
+offer, and a cold EMA with zero realised capability.
+
+| coverage | count |
+| --- | --- |
+| arm names in `e128_price.ARMS` | 36 |
+| returning a legal depth in all five states | **36** |
+| of E128's published 14-arm table | **14 / 14** |
+| newly exercised by R7-5, unexercised before it | 28 |
+
+The eight already reported in interim 9 were `ship`, `nomargin`, `recal`,
+`marginup`, `marginfull`, `rankedprice`, `static7` and `oracle`. The twenty
+eight R7-5 adds are `nomargin0`, `nomargin1`, `rankedprice_nomargin`,
+`rankedprice_recal`, `rankedprice_marginup`, `reachonly`, `expectedonly`,
+`levelfix`, `jensen`, `jensen_both`, the seven `levelfix1.05 .. levelfix1.40`
+grid arms and the eleven `price0.06 .. price0.36` constant-price arms. F12
+asked for "the other six" of the published table by name; the count is
+actually **seven**, because `ship` is the baseline and is not one of the
+fourteen. They are `expectedonly`, `levelfix`, `reachonly`, `nomargin0`,
+`nomargin1`, `jensen` and `jensen_both`. All seven are in the list above and
+all seven are legal.
+
+Two behaviours worth knowing before the re-pricing run reads its first
+number, both visible in the probe table:
+
+- `static7` saturates at the `SEGMENTED_VERIFY_DEPTH_CAP` of 7 and correctly
+  drops to 2 when the offer is 2, so the cap is respected rather than assumed;
+- `oracle` returns **0** when realised capability is 0. It is the only arm
+  that ever declines to draft on the probe states, which is the same width-1
+  behaviour R7-2 measured at scale (clairvoyant width-1 share 28.48 %).
+
+R7-5 is an **interface** probe. It asserts legality, not value: no arm in that
+table has been priced against the measured curve, and pricing them is the next
+assignment.
 
 `state_walker(rule, state, p_target, *, lam, sigma, noise_seed, clamp)` builds
 the information-state walkers R7-2 and R7-3 use, and `run_state_arm(cache,
