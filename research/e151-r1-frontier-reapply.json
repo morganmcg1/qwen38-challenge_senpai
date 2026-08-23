@@ -1,0 +1,106 @@
+{
+  "experiment": "E151",
+  "rung": "R1 re-application onto the frontier",
+  "harness": "offline",
+  "frontier_sha": "0863b06ac16e26e48fc06e97444095b00feb66d4",
+  "base_sha": "14247cce11216639a04ecfc2798cf0798091ff92",
+  "our_sha": "826b6023423434b28ba44464a2b941077e59a824",
+  "paths": [
+    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+    "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp"
+  ],
+  "e151_r1_arm_is_self_contained": false,
+  "e151_r1_arm_self_containment_note": "The R1 arm depends on the E147 retile plumbing in qmm_t_nax_tgp_impl (kHostBM/kHostBN, the compute_tile lambda and the grid-stride loop). The frontier has none of it, so the re-application patch must carry the plumbing as well as the arm. The arm cannot be made self-contained without duplicating that plumbing inside affine_qmm_t_nax, which would be strictly more code for the same generated kernel.",
+  "e151_r1_frontier_patch_applies_clean": true,
+  "e151_r1_frontier_patch_reproduces_gate_proved_surface": true,
+  "e151_r1_frontier_patch_result_digests": {
+    "quantized_nax.h": "50cf7876",
+    "quantized_nax.cpp": "e7c55209"
+  },
+  "e151_r1_gate_proved_surface_digests": {
+    "quantized_nax.h": "50cf7876",
+    "quantized_nax.cpp": "e7c55209"
+  },
+  "e151_r1_frontier_patch_bytes": 27724,
+  "e151_r1_frontier_patch_hunks": 14,
+  "e151_r1_frontier_patch_hunk_classes": {
+    "e147_plumbing": 6,
+    "rule145_guard": 4,
+    "r1_arm": 4
+  },
+  "e151_r1_frontier_patch_unclassified_hunks": 0,
+  "e151_r1_frontier_patch_hunk_table": [
+    {
+      "header": "@@ -947,7 +947,9 @@ template <",
+      "class": "e147_plumbing",
+      "why": "the retile template parameters on qmm_t_nax_tgp_impl"
+    },
+    {
+      "header": "@@ -985,19 +987,18 @@ METAL_FUNC void qmm_t_nax_tgp_impl(",
+      "class": "e147_plumbing",
+      "why": "the retile predicate, the cover and split static_asserts, and the hoisted base pointers the grid-stride loop needs"
+    },
+    {
+      "header": "@@ -1007,80 +1008,121 @@ METAL_FUNC void qmm_t_nax_tgp_impl(",
+      "class": "e147_plumbing",
+      "why": "the compute_tile lambda and the grid-stride loop over required tiles"
+    },
+    {
+      "header": "@@ -1154,6 +1196,18 @@ METAL_FUNC void qmm_n_nax_tgp_impl(",
+      "class": "rule145_guard",
+      "why": "the RULE 145 tile-shape guard"
+    },
+    {
+      "header": "@@ -1240,7 +1294,55 @@ template <",
+      "class": "r1_arm",
+      "why": "the R1 arm: flag on, loader-legality predicate, arm-liveness assert, and the widened threadgroup staging"
+    },
+    {
+      "header": "@@ -1260,8 +1362,24 @@ template <",
+      "class": "r1_arm",
+      "why": "the retiled call site"
+    },
+    {
+      "header": "@@ -1539,6 +1657,18 @@ template <",
+      "class": "rule145_guard",
+      "why": "the RULE 145 tile-shape guard"
+    },
+    {
+      "header": "@@ -934,7 +934,9 @@ template <",
+      "class": "e147_plumbing",
+      "why": "the retile template parameters on qmm_t_nax_tgp_impl"
+    },
+    {
+      "header": "@@ -972,19 +974,18 @@ METAL_FUNC void qmm_t_nax_tgp_impl(",
+      "class": "e147_plumbing",
+      "why": "the retile predicate, the cover and split static_asserts, and the hoisted base pointers the grid-stride loop needs"
+    },
+    {
+      "header": "@@ -994,80 +995,121 @@ METAL_FUNC void qmm_t_nax_tgp_impl(",
+      "class": "e147_plumbing",
+      "why": "the compute_tile lambda and the grid-stride loop over required tiles"
+    },
+    {
+      "header": "@@ -1141,6 +1183,18 @@ METAL_FUNC void qmm_n_nax_tgp_impl(",
+      "class": "rule145_guard",
+      "why": "the RULE 145 tile-shape guard"
+    },
+    {
+      "header": "@@ -1227,7 +1281,55 @@ template <",
+      "class": "r1_arm",
+      "why": "the R1 arm: flag on, loader-legality predicate, arm-liveness assert, and the widened threadgroup staging"
+    },
+    {
+      "header": "@@ -1247,8 +1349,24 @@ template <",
+      "class": "r1_arm",
+      "why": "the retiled call site"
+    },
+    {
+      "header": "@@ -1526,6 +1644,18 @@ template <",
+      "class": "rule145_guard",
+      "why": "the RULE 145 tile-shape guard"
+    }
+  ],
+  "e151_r1_reapplication_recipe": "Import the frontier, then `git checkout <our sha> -- Vendor/.../quantized_nax.h Vendor/.../quantized_nax.cpp`. That is equivalent to applying research/e151-r1-frontier-reapply.patch and it lands the exact surface the R1 gate chain proved.",
+  "e151_r1_reapplication_risk": "The patch is larger than the arm. It also re-imports the arm-off E147 plumbing, which E147 rung E-1c measured at nax_arm_off_air_delta_bytes = 2112 against pristine and which also reaches affine_qmm_n_nax and affine_gather_qmm_rhs_nax through the shared impl and the RULE 145 guards. That plumbing is gate-proved and census-proved, but it is not zero, so `import then apply` is not `import plus one arm`."
+}

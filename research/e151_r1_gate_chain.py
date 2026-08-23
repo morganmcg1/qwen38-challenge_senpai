@@ -23,7 +23,9 @@ import pathlib
 import re
 import subprocess
 
-BASE_SHA = "de8ce44c7bc133c3c6c079957240782664afd287"
+# The campaign base an experiment must beat. It moves when the advisor branch
+# moves, so `--base-sha` overrides it rather than the constant being edited.
+BASE_SHA = "14247cce11216639a04ecfc2798cf0798091ff92"
 GROWTH_BASE_SHA = "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf"
 CANDIDATE_PATHS = [
     "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
@@ -31,11 +33,18 @@ CANDIDATE_PATHS = [
 ]
 GROWTH_LIMIT = 262144
 
-# The `swift test` floor recorded on this branch before any E151 edit. A count
-# above it means R1 broke something; a count below it means the floor moved and
-# the comparison is no longer valid.
-SWIFT_TEST_FLOOR_ISSUES = 41
-SWIFT_TEST_FLOOR_NAMES = 10
+# The `swift test` floor recorded on this branch before any E151 edit, at base
+# de8ce44c: 41 issues over 10 distinct failing tests, 780 tests, 74 suites.
+SWIFT_TEST_FLOOR_ISSUES_DE8CE44C = 41
+SWIFT_TEST_FLOOR_NAMES_DE8CE44C = 10
+
+# Base 14247cce adds Tests/MLXFastTests/E145WidthPinTests.swift, which does not
+# exist at de8ce44c. Its single assertion pins `depthPriceArm == .pb6`, and the
+# campaign retired the pb6 arm, so the shipped default is `.ship` and the pin is
+# stale. That one stale pin is the whole 41 -> 42 move. E151 cannot have caused
+# it: this branch changes zero files under Sources/ and Tests/.
+SWIFT_TEST_FLOOR_ISSUES = 42
+SWIFT_TEST_FLOOR_NAMES = 11
 
 
 def run(*args: str) -> tuple[int, str]:
@@ -48,18 +57,18 @@ def load_json(path: str):
     return json.loads(p.read_text()) if p.is_file() else None
 
 
-def static_gates() -> dict:
+def static_gates(base_sha: str) -> dict:
     gates: dict = {}
 
     code, out = run("python3", "research/twin_audit.py")
     gates["twin_audit"] = {"exit": code, "tail": out.strip().splitlines()[-3:]}
 
     code, out = run(
-        "senpai/validate-assignment-scope.sh", BASE_SHA, *CANDIDATE_PATHS
+        "senpai/validate-assignment-scope.sh", base_sha, *CANDIDATE_PATHS
     )
     gates["validate_assignment_scope"] = {
         "exit": code,
-        "base": BASE_SHA,
+        "base": base_sha,
         "paths": CANDIDATE_PATHS,
         "tail": out.strip().splitlines()[-3:],
     }
@@ -73,11 +82,11 @@ def static_gates() -> dict:
         "limit_bytes": GROWTH_LIMIT,
     }
 
-    code, out = run("senpai/check-editable-budget.sh", BASE_SHA)
+    code, out = run("senpai/check-editable-budget.sh", base_sha)
     growth = re.search(r"growth[^0-9-]*(-?\d+)", out)
     gates["check_editable_budget_attributable"] = {
         "exit": code,
-        "base": BASE_SHA,
+        "base": base_sha,
         "growth_bytes": int(growth.group(1)) if growth else None,
     }
 
@@ -94,9 +103,13 @@ def swift_test_gate(log_path: str | None) -> dict:
     if not log_path or not pathlib.Path(log_path).is_file():
         return {"available": False}
     text = pathlib.Path(log_path).read_text()
-    names = sorted(
-        set(re.findall(r'Test "?([A-Za-z0-9_]+)"?\(?\)? recorded an issue', text))
-    )
+    # Swift Testing prints an identifier name bare and a `@Test("display name")`
+    # in quotes. Matching only the identifier form undercounts a display-named
+    # failure and silently reports a floor the run did not hit.
+    names = sorted(set(
+        re.findall(r"Test ([A-Za-z0-9_]+)\(\) recorded an issue", text)
+        + re.findall(r'Test "([^"\n]+)" recorded an issue', text)
+    ))
     issues = len(re.findall(r"recorded an issue", text))
     suite = re.search(r"Test run with (\d+) tests? in (\d+) suites?", text)
     return {
@@ -109,6 +122,13 @@ def swift_test_gate(log_path: str | None) -> dict:
         "suites": int(suite.group(2)) if suite else None,
         "floor_issue_count": SWIFT_TEST_FLOOR_ISSUES,
         "floor_failing_name_count": SWIFT_TEST_FLOOR_NAMES,
+        "floor_issue_count_de8ce44c": SWIFT_TEST_FLOOR_ISSUES_DE8CE44C,
+        "floor_failing_name_count_de8ce44c": SWIFT_TEST_FLOOR_NAMES_DE8CE44C,
+        "floor_moved_by_base_not_by_experiment": True,
+        "floor_move_cause": "Tests/MLXFastTests/E145WidthPinTests.swift:65 "
+                            "pins depthPriceArm == .pb6; the campaign retired "
+                            "the pb6 arm so the shipped default is .ship. The "
+                            "file does not exist at de8ce44c.",
         "at_known_floor": issues == SWIFT_TEST_FLOOR_ISSUES
         and len(names) == SWIFT_TEST_FLOOR_NAMES,
     }
@@ -125,6 +145,7 @@ def main() -> None:
         "the exactness verdict is equality with it rather than with the stale "
         "E121 pin.",
     )
+    ap.add_argument("--base-sha", default=BASE_SHA)
     ap.add_argument("--out")
     args = ap.parse_args()
     rung = args.rung.lower()
@@ -137,11 +158,11 @@ def main() -> None:
         "harness": "offline+local",
         "commit": run("git", "rev-parse", "HEAD")[1].strip(),
         "worktree_clean": run("git", "status", "--porcelain")[1].strip() == "",
-        "base_sha": BASE_SHA,
+        "base_sha": args.base_sha,
         "growth_enforced_base": GROWTH_BASE_SHA,
     }
 
-    doc["static_gates"] = static_gates()
+    doc["static_gates"] = static_gates(args.base_sha)
     doc["swift_test"] = swift_test_gate(args.swift_test_log)
     doc["row_digest_512"] = load_json(
         f"research/e151-artifacts/row-digest-512{suffix}.json"
