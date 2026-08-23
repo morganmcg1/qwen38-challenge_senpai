@@ -219,49 +219,11 @@ public final class Qwen36MTPBlockSession {
         var value: Int = 0
     }
 
-    /// E130 rung 10a and E145 R6-1, research only, removed before submission.
-    ///
-    /// The shipped floor is 96 GiB, which the ranked M5 runner clears and a
-    /// development host does not, so the wiring path never runs locally and no
-    /// local measurement of it exists. Lowering the floor lets one binary serve
-    /// the wired and unwired arms, so they differ only by environment. The
-    /// ranked runner clears either floor, so no ranked behaviour depends on it.
-    private static let wiredGateGiB: UInt64 =
-        ProcessInfo.processInfo.environment["MLX_E130_WIRED_GATE_GIB"]
-            .flatMap(UInt64.init) ?? 96
-
-    /// O_APPEND so the reference, serial and MTP workers of one leg each add
-    /// their own lines to the same file instead of truncating it.
-    ///
-    /// Harness defect 32: `mtp-timed` builds its worker through
-    /// `runtimeWorkerOptions` without `forwardsWorkerStderr`, so
-    /// `WorkerStderrDrain` installs a swallowing emitter and every worker
-    /// stderr line is discarded. A timed leg can only witness the residency
-    /// path through this file. The sink falls back to stderr when no path is
-    /// configured.
-    private static let e130ProbeSink: FileHandle = {
-        guard let path = ProcessInfo.processInfo
-            .environment["MLX_E130_RESIDENCY_PROBE_PATH"], !path.isEmpty
-        else { return FileHandle.standardError }
-        let fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
-        guard fd >= 0 else { return FileHandle.standardError }
-        return FileHandle(fileDescriptor: fd, closeOnDealloc: false)
-    }()
-
     private static func wireResidentWeightsIfEnabled() {
         let environment = ProcessInfo.processInfo.environment
-        let physical = ProcessInfo.processInfo.physicalMemory
-        let refused = "gate_gib=\(wiredGateGiB) physmem=\(physical)\n"
-        guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else {
-            e130ProbeSink.write(Data(
-                ("mlxfast: qwen-mtp wired-zh skipped=disabled " + refused).utf8))
-            return
-        }
-        guard physical >= (wiredGateGiB << 30) else {
-            e130ProbeSink.write(Data(
-                ("mlxfast: qwen-mtp wired-zh skipped=gate " + refused).utf8))
-            return
-        }
+        guard environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0" else { return }
+        guard ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
+        else { return }
 
         wiredTicketLock.lock()
         defer { wiredTicketLock.unlock() }
@@ -309,21 +271,20 @@ public final class Qwen36MTPBlockSession {
         var line = "mlxfast: qwen-mtp wired-zh request=\(target)"
         line += " applied=\(applied) active=\(active)"
         line += " slack_mb=\(max(0, slackMB)) fraction=\(fraction)"
-        line += " maxrec=\(recommended)"
-        line += " gate_gib=\(wiredGateGiB) physmem=\(physical)\n"
-        e130ProbeSink.write(Data(line.utf8))
+        line += " maxrec=\(recommended)\n"
+        FileHandle.standardError.write(Data(line.utf8))
     }
 
     /// Read-only mirror of the two entry guards in
     /// `wireResidentWeightsIfEnabled()`, for warm telemetry only.
     ///
-    /// A 48 GiB development host fails the shipped 96 GiB guard, so residency
-    /// sizing and its `Memory.clearCache()` never run there. Any warm-arm
-    /// result read off a host reporting `wired_gate_fired=0` says nothing about
-    /// the ranked M5-Max runner, where the gate does fire.
+    /// A 48 GiB development host fails the 96 GiB guard, so residency sizing
+    /// and its `Memory.clearCache()` never run there. Any warm-arm result read
+    /// off a host reporting `wired_gate_fired=0` says nothing about the ranked
+    /// M5-Max runner, where the gate does fire.
     private static let residencySizingGateFires: Bool =
         ProcessInfo.processInfo.environment["DARKBLOOM_QWEN_MTP_WIRED_ZH"] != "0"
-            && ProcessInfo.processInfo.physicalMemory >= (wiredGateGiB << 30)
+            && ProcessInfo.processInfo.physicalMemory >= (UInt64(96) << 30)
 
     /// Warm the verify entry point the scored round actually calls.
     ///
