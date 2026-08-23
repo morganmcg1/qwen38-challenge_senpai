@@ -1,0 +1,214 @@
+{
+ "board_path": "/tmp/yukon-board/full.json",
+ "cohort_prompts": [
+  "beagle",
+  "botany",
+  "drama",
+  "essays",
+  "medicine",
+  "republic"
+ ],
+ "e148_cohort_count": 16,
+ "e148_cohorts_any_size": 179,
+ "e148_cohorts_merged_by_six_prompt_key": 2,
+ "e148_eight_prompt_cohorts": 183,
+ "e148_rows_classified": 693,
+ "e148_rows_unclassifiable": 187,
+ "e148_scored_rows": 880,
+ "harness": "ranked",
+ "largest_five": [
+  {
+   "best_score": 3.25464079515452,
+   "draft_lengths": {
+    "beagle": 4.5327102803738315,
+    "botany": 5.776470588235294,
+    "drama": 2.2976190476190474,
+    "essays": 5.425287356321839,
+    "medicine": 4.767676767676767,
+    "republic": 5.269662921348314
+   },
+   "example_id": "febb7e27",
+   "first_created": "2026-08-17T14:37:23.931Z",
+   "last_created": "2026-08-20T15:16:50.874Z",
+   "median_score": 3.20676759463399,
+   "n": 269,
+   "non_drafting": {
+    "beagle": 0,
+    "botany": 0,
+    "drama": 0,
+    "essays": 0,
+    "medicine": 0,
+    "republic": 0
+   },
+   "rank": 1,
+   "worst_score": 2.32559517234885
+  },
+  {
+   "best_score": 3.71959722580154,
+   "draft_lengths": {
+    "beagle": 4.381818181818182,
+    "botany": 6.148148148148148,
+    "drama": 2.2976190476190474,
+    "essays": 5.086956521739131,
+    "medicine": 5.2555555555555555,
+    "republic": 4.989247311827957
+   },
+   "example_id": "89cbdc02",
+   "first_created": "2026-08-20T12:23:28.998Z",
+   "last_created": "2026-08-23T05:35:14.983Z",
+   "median_score": 3.33810140605974,
+   "n": 233,
+   "non_drafting": {
+    "beagle": 0,
+    "botany": 0,
+    "drama": 0,
+    "essays": 0,
+    "medicine": 0,
+    "republic": 0
+   },
+   "rank": 2,
+   "worst_score": 3.19123732576151
+  },
+  {
+   "best_score": 2.94661597308114,
+   "draft_lengths": {
+    "beagle": 4.306306306306307,
+    "botany": 5.217391304347826,
+    "drama": 2.285140562248996,
+    "essays": 5.2444444444444445,
+    "medicine": 5.535714285714286,
+    "republic": 5.042553191489362
+   },
+   "example_id": "12b1c699",
+   "first_created": "2026-08-16T15:12:21.092Z",
+   "last_created": "2026-08-17T09:17:26.551Z",
+   "median_score": 2.92674970589136,
+   "n": 30,
+   "non_drafting": {
+    "beagle": 0,
+    "botany": 0,
+    "drama": 0,
+    "essays": 0,
+    "medicine": 0,
+    "republic": 0
+   },
+   "rank": 3,
+   "worst_score": 1.38959334733987
+  },
+  {
+   "best_score": 3.16531363933086,
+   "draft_lengths": {
+    "beagle": 4.345454545454546,
+    "botany": 5.776470588235294,
+    "drama": 2.285140562248996,
+    "essays": 5.325842696629214,
+    "medicine": 4.885416666666667,
+    "republic": 5.042553191489362
+   },
+   "example_id": "08bcbcc5",
+   "first_created": "2026-08-16T22:30:47.915Z",
+   "last_created": "2026-08-20T17:19:09.252Z",
+   "median_score": 2.93913983025914,
+   "n": 30,
+   "non_drafting": {
+    "beagle": 0,
+    "botany": 0,
+    "drama": 0,
+    "essays": 0,
+    "medicine": 0,
+    "republic": 0
+   },
+   "rank": 4,
+   "worst_score": 2.89050874995211
+  },
+  {
+   "best_score": 2.91376569715717,
+   "draft_lengths": {
+    "beagle": 4.274336283185841,
+    "botany": 5.138297872340425,
+    "drama": 2.16600790513834,
+    "essays": 5.32183908045977,
+    "medicine": 5.264367816091954,
+    "republic": 5.141304347826087
+   },
+   "example_id": "9ff11c51",
+   "first_created": "2026-08-16T09:05:14.610Z",
+   "last_created": "2026-08-16T17:40:55.291Z",
+   "median_score": 2.90258569402925,
+   "n": 24,
+   "non_drafting": {
+    "beagle": 0,
+    "botany": 0,
+    "drama": 0,
+    "essays": 0,
+    "medicine": 0,
+    "republic": 0
+   },
+   "rank": 5,
+   "worst_score": 2.85807967479007
+  }
+ ],
+ "min_cohort_size": 4,
+ "named_row_placement": {
+  "1db9d63e": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.61655493390361,
+   "solver": "morganmcg1"
+  },
+  "3d75f016": null,
+  "43925f29": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.71654402427203,
+   "solver": "Amal-David"
+  },
+  "572b2cc4": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.66218563656629,
+   "solver": "morganmcg1"
+  },
+  "5cdc9c17": {
+   "classified": true,
+   "cohort_size": 269,
+   "score": 3.18067509549452,
+   "solver": "BitWonka"
+  },
+  "684821ed": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.71959722580154,
+   "solver": "newjordan"
+  },
+  "7e5172fa": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.63815464810563,
+   "solver": "Amal-David"
+  },
+  "e003a86d": {
+   "classified": false,
+   "cohort_size": 1,
+   "score": 3.57502547497774,
+   "solver": "morganmcg1"
+  },
+  "e7770562": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.62371175732906,
+   "solver": "ofou"
+  },
+  "f7d59543": {
+   "classified": true,
+   "cohort_size": 233,
+   "score": 3.69864607884415,
+   "solver": "rinaldofesta"
+  }
+ },
+ "parent_attribution": {
+  "cited-cross-schedule": 181,
+  "cited-same-cohort": 613,
+  "no-parent": 86
+ }
+}

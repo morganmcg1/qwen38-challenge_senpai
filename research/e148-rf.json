@@ -1,0 +1,80 @@
+{
+  "harness": "local",
+  "frame": "one full target weight pass, affine 4-bit group-64",
+  "bytes_per_element": 0.5625,
+  "tensors": [
+    {
+      "tensor": "gdn.in_proj",
+      "in": 5120,
+      "out": 16480,
+      "layers": 48,
+      "bytes": 2278195200.0,
+      "gb": 2.2782
+    },
+    {
+      "tensor": "fa.qkv",
+      "in": 5120,
+      "out": 14336,
+      "layers": 16,
+      "bytes": 660602880.0,
+      "gb": 0.6606
+    },
+    {
+      "tensor": "mlp.gate_up",
+      "in": 5120,
+      "out": 34816,
+      "layers": 64,
+      "bytes": 6417285120.0,
+      "gb": 6.4173
+    },
+    {
+      "tensor": "lm_head",
+      "in": 5120,
+      "out": 248320,
+      "layers": 1,
+      "bytes": 715161600.0,
+      "gb": 0.7152
+    },
+    {
+      "tensor": "gdn.out_proj",
+      "in": 6144,
+      "out": 5120,
+      "layers": 48,
+      "bytes": 849346560.0,
+      "gb": 0.8493
+    },
+    {
+      "tensor": "fa.o_proj",
+      "in": 6144,
+      "out": 5120,
+      "layers": 16,
+      "bytes": 283115520.0,
+      "gb": 0.2831
+    },
+    {
+      "tensor": "mlp.down",
+      "in": 17408,
+      "out": 5120,
+      "layers": 64,
+      "bytes": 3208642560.0,
+      "gb": 3.2086
+    }
+  ],
+  "e148_m1_bytes_per_full_pass": 14412349440.0,
+  "e148_m1_gb_per_full_pass": 14.4123,
+  "e148_m1_implied_gbps_recomputed": 1330.2,
+  "per_token_frame_gbps_range": [
+    476.0,
+    1330.2
+  ],
+  "round_amortized_frame_gbps_range": [
+    76.8,
+    233.4
+  ],
+  "recorded_implied_gbps": 462.2,
+  "e148_byte_model_error_factor": 2.878,
+  "nominal_gbps": 273.0,
+  "e148_measured_read_gbps": 265.0,
+  "verdict": "The per-token M=1 model is falsified by its own arithmetic. One full pass is 14.4123 GB. Across the eight official candidate legs the per-token frame demands 476.0 to 1330.2 GB/s against a 265 GB/s measured ceiling, so every prompt is impossible and the fastest is impossible by 5.0x. The round-amortized frame is the only self-consistent one: at 5.7 to 6.2 accepted tokens per round the same pass reads at 76.8 to 233.4 GB/s, which stays under the ceiling on every prompt. Every byte-model price in the campaign must therefore state tokens per round; a per-token form silently inflates the available headroom by about 6x.",
+  "caveat": "The recorded 462.2 GB/s and this recomputation differ by 2.878x at the fastest prompt but by only 1.030x at the slowest (plutarch, 476.0 GB/s). The recorded figure is therefore consistent with the same 14.4123 GB volume evaluated on the slowest single prompt in the per-token frame. It is a prompt-selection and frame difference, not a byte-count error. Publish the prompt and the frame beside any future figure."
+}
