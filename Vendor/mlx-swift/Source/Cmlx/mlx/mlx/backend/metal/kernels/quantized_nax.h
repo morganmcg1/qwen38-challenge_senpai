@@ -1281,12 +1281,17 @@ template <
 
   constexpr int BK_padded = (BK + 16 / sizeof(T));
 
-  // E147 rung E-1c. The ranked seed prefill runs this entry point at
-  // (BM, BN) = (64, 64). The arm keeps that launch geometry and re-tiles it
-  // into (128, 32), which is the published 5cdc9c17 geometry, so the same
-  // threadgroup count covers the same output with a taller, narrower tile.
-  // The arm is off in the submitted default and the flag is the whole switch.
-  constexpr bool kE147NaxRetileOn = false;
+  // E151 rung R1; arm built in E147 rung E-1c. The ranked seed prefill runs
+  // this entry point at (BM, BN) = (64, 64). The arm keeps that launch
+  // geometry and re-tiles it into (128, 32), which is the published 5cdc9c17
+  // geometry, so the same threadgroup count covers the same output with a
+  // taller, narrower tile. Halving the number of M tiles halves the number of
+  // passes the kernel makes over the weight matrix, 8 to 4 at M = 512, and
+  // halves the weight dequantization work with it. BK, SK and the k/kk1/kk
+  // loop nest are untouched, so every output element still sums the same K
+  // partial products in the same order and the arithmetic is bit-identical.
+  // The flag is the whole switch. It is ON in the submitted default.
+  constexpr bool kE147NaxRetileOn = true;
   constexpr int kE147NaxRetileBM = kE147NaxRetileOn ? 128 : BM;
   constexpr int kE147NaxRetileBN = kE147NaxRetileOn ? 32 : BN;
   constexpr bool kE147NaxRetiled =
@@ -1327,10 +1332,10 @@ template <
         BM,
         BN>(
         w, scales, biases, x, y, Ws, K, N, M, tid, lid, simd_gid, simd_lid);
-    return;
+  } else {
+    qmm_t_nax_tgp_impl<T, group_size, bits, aligned_N, BM, BK, BN, WM, WN>(
+        w, scales, biases, x, y, Ws, K, N, M, tid, lid, simd_gid, simd_lid);
   }
-  qmm_t_nax_tgp_impl<T, group_size, bits, aligned_N, BM, BK, BN, WM, WN>(
-      w, scales, biases, x, y, Ws, K, N, M, tid, lid, simd_gid, simd_lid);
 }
 
 template <
