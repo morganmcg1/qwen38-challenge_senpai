@@ -1058,9 +1058,13 @@ def main() -> int:
                   test["h_null"]["chi2"], test["h_null"]["rms_resid_pct"],
                   test["h_alt"]["chi2"], test["h_alt"]["rms_resid_pct"],
                   test["preferred"], test["delta_chi2_null_minus_alt"]))
-        print("  level-normalised H-null/H-alt separation = %.1f us/round; "
+        print("  H-null/H-alt separation after each takes its own best level "
+              "= %.1f us/round = %.3f %% of y; floor %.3f %%; separable=%s; "
               "model misfit rms = %.3f %%" % (
-                  test["level_normalised_separation_us_per_round"],
+                  test["separation_after_own_best_level_us_per_round"],
+                  test["separation_after_own_best_level_pct_of_y"],
+                  test["empirical_reproducibility_floor_pct"],
+                  test["separation_exceeds_floor"],
                   test["rms_model_misfit_pct"]))
         for tag in ("", "_empirical_noise"):
             pos = entry["positive_control_h_alt" + tag]

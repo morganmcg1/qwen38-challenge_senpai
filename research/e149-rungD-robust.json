@@ -1,0 +1,392 @@
+{
+  "e149_rungD_shape_preference_ranked": "h_null",
+  "e149_rungD_shape_preference_robust": true,
+  "h_alt_note": "edward's LOCAL measured curve divided by k=2.1034, expressed in ranked units",
+  "harness": "ranked",
+  "models": {
+    "replay": {
+      "full": {
+        "delta_chi2_null_minus_alt": -10546.113173645368,
+        "h_alt": {
+          "chi2": 73818.95904679738,
+          "rms_pct": 6.285480663717862,
+          "scale": 0.8847682594597559
+        },
+        "h_null": {
+          "chi2": 63272.84587315201,
+          "rms_pct": 4.63892061113369,
+          "scale": 0.9037147578932181
+        },
+        "prefers": "h_null"
+      },
+      "high_width_block": {
+        "h_alt_everywhere": {
+          "chi2": 73818.95904679738,
+          "curve_us": {
+            "1": 29964.95805110075,
+            "2": 33483.59798421602,
+            "3": 35750.35656556052,
+            "4": 39549.30113150138,
+            "5": 45308.310354663874,
+            "6": 59159.45611866502,
+            "7": 71454.54977655225,
+            "8": 73330.75021393933
+          },
+          "rms_pct": 6.285480663717862
+        },
+        "h_null_everywhere": {
+          "chi2": 63272.84587315201,
+          "curve_us": {
+            "1": 31173.2,
+            "2": 34619.3,
+            "3": 38065.4,
+            "4": 41511.4,
+            "5": 44957.5,
+            "6": 61198.8,
+            "7": 62824.9,
+            "8": 70315.4
+          },
+          "rms_pct": 4.63892061113369
+        },
+        "low_alt_high_null": {
+          "chi2": 57584.44871233528,
+          "curve_us": {
+            "1": 29964.95805110075,
+            "2": 33483.59798421602,
+            "3": 35750.35656556052,
+            "4": 39549.30113150138,
+            "5": 45308.310354663874,
+            "6": 61549.61035466388,
+            "7": 63175.710354663875,
+            "8": 70666.21035466387
+          },
+          "rms_pct": 5.16891559390041
+        },
+        "low_null_high_alt": {
+          "chi2": 77904.41962726395,
+          "curve_us": {
+            "1": 31173.2,
+            "2": 34619.3,
+            "3": 38065.4,
+            "4": 41511.4,
+            "5": 44957.5,
+            "6": 58808.64576400114,
+            "7": 71103.73942188837,
+            "8": 72979.93985927546
+          },
+          "rms_pct": 5.295303564519584
+        }
+      },
+      "high_width_block_best": "low_alt_high_null",
+      "high_width_block_verdict": "replayed marginals at 6,7,8",
+      "leave_one_prompt_out": {
+        "beagle": {
+          "delta_chi2_null_minus_alt": -11040.731397233583,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.535221858110975,
+          "rms_null_pct": 4.716734965306426
+        },
+        "botany": {
+          "delta_chi2_null_minus_alt": -9543.163804716969,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.223121889500689,
+          "rms_null_pct": 4.397900372251742
+        },
+        "drama": {
+          "delta_chi2_null_minus_alt": -9815.773938811428,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.5054512124879835,
+          "rms_null_pct": 4.825152842255859
+        },
+        "essays": {
+          "delta_chi2_null_minus_alt": -9239.2510380836,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 7.103873580574439,
+          "rms_null_pct": 4.397785563990469
+        },
+        "medicine": {
+          "delta_chi2_null_minus_alt": -7340.122539019401,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.15233139853877,
+          "rms_null_pct": 4.812961811631352
+        },
+        "plutarch": {
+          "delta_chi2_null_minus_alt": -9130.791440962523,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 5.398134171521425,
+          "rms_null_pct": 4.567574075703871
+        },
+        "republic": {
+          "delta_chi2_null_minus_alt": -8412.619535798956,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.269809036252926,
+          "rms_null_pct": 4.797265788530111
+        },
+        "travel": {
+          "delta_chi2_null_minus_alt": -9218.94670821169,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.3699086799121005,
+          "rms_null_pct": 4.910121885180309
+        }
+      },
+      "preference_flips_on": [],
+      "preference_is_robust": true,
+      "subsets": {
+        "drop_plutarch_and_drama": {
+          "delta_chi2_null_minus_alt": -8357.101181628794,
+          "prefers": "h_null",
+          "rms_alt_pct": 5.500946113564561,
+          "rms_null_pct": 4.786525059698684,
+          "rows": [
+            "572b2cc4/beagle",
+            "572b2cc4/medicine",
+            "572b2cc4/essays",
+            "572b2cc4/republic",
+            "572b2cc4/botany",
+            "572b2cc4/travel",
+            "e003a86d/beagle",
+            "e003a86d/medicine",
+            "e003a86d/essays",
+            "e003a86d/republic",
+            "e003a86d/botany",
+            "e003a86d/travel"
+          ]
+        },
+        "width_ge_6_mass_over_quarter_of_max": {
+          "delta_chi2_null_minus_alt": -6941.601518341158,
+          "prefers": "h_null",
+          "rms_alt_pct": 5.380099653757144,
+          "rms_null_pct": 5.1799885616159385,
+          "rows": [
+            "572b2cc4/beagle",
+            "572b2cc4/medicine",
+            "572b2cc4/essays",
+            "572b2cc4/republic",
+            "572b2cc4/botany",
+            "e003a86d/beagle",
+            "e003a86d/medicine",
+            "e003a86d/essays",
+            "e003a86d/republic",
+            "e003a86d/botany"
+          ]
+        },
+        "width_ge_6_mass_top_half": {
+          "delta_chi2_null_minus_alt": -1249.4654261388896,
+          "prefers": "h_null",
+          "rms_alt_pct": 4.131836437309431,
+          "rms_null_pct": 4.029823527651634,
+          "rows": [
+            "572b2cc4/beagle",
+            "572b2cc4/medicine",
+            "572b2cc4/essays",
+            "572b2cc4/republic",
+            "572b2cc4/botany",
+            "e003a86d/medicine",
+            "e003a86d/republic",
+            "e003a86d/botany"
+          ]
+        }
+      }
+    },
+    "tilt": {
+      "full": {
+        "delta_chi2_null_minus_alt": -20504.948804680178,
+        "h_alt": {
+          "chi2": 27072.331556776786,
+          "rms_pct": 7.923387609986049,
+          "scale": 0.8262240775631869
+        },
+        "h_null": {
+          "chi2": 6567.382752096606,
+          "rms_pct": 4.167832719650149,
+          "scale": 0.8493404408989814
+        },
+        "prefers": "h_null"
+      },
+      "high_width_block": {
+        "h_alt_everywhere": {
+          "chi2": 27072.331556776786,
+          "curve_us": {
+            "1": 29969.31082361178,
+            "2": 33483.59798421602,
+            "3": 35750.35656556052,
+            "4": 39549.30113150138,
+            "5": 45308.310354663874,
+            "6": 59159.45611866502,
+            "7": 71454.54977655225,
+            "8": 73330.75021393933
+          },
+          "rms_pct": 7.923387609986049
+        },
+        "h_null_everywhere": {
+          "chi2": 6567.382752096606,
+          "curve_us": {
+            "1": 31173.2,
+            "2": 34619.3,
+            "3": 38065.4,
+            "4": 41511.4,
+            "5": 44957.5,
+            "6": 61198.8,
+            "7": 62824.9,
+            "8": 70315.4
+          },
+          "rms_pct": 4.167832719650149
+        },
+        "low_alt_high_null": {
+          "chi2": 16855.437201271063,
+          "curve_us": {
+            "1": 29969.31082361178,
+            "2": 33483.59798421602,
+            "3": 35750.35656556052,
+            "4": 39549.30113150138,
+            "5": 45308.310354663874,
+            "6": 61549.61035466388,
+            "7": 63175.710354663875,
+            "8": 70666.21035466387
+          },
+          "rms_pct": 6.302718026434165
+        },
+        "low_null_high_alt": {
+          "chi2": 13481.609311310447,
+          "curve_us": {
+            "1": 31173.2,
+            "2": 34619.3,
+            "3": 38065.4,
+            "4": 41511.4,
+            "5": 44957.5,
+            "6": 58808.64576400114,
+            "7": 71103.73942188837,
+            "8": 72979.93985927546
+          },
+          "rms_pct": 5.733755282216168
+        }
+      },
+      "high_width_block_best": "h_null_everywhere",
+      "high_width_block_verdict": "replayed marginals at 6,7,8",
+      "leave_one_prompt_out": {
+        "beagle": {
+          "delta_chi2_null_minus_alt": -19149.178628887108,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 8.452514582139404,
+          "rms_null_pct": 4.450706640631711
+        },
+        "botany": {
+          "delta_chi2_null_minus_alt": -20521.96153640851,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 8.441728456623707,
+          "rms_null_pct": 4.47558471127371
+        },
+        "drama": {
+          "delta_chi2_null_minus_alt": -12496.713456947218,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 7.110861016065997,
+          "rms_null_pct": 3.91908058404446
+        },
+        "essays": {
+          "delta_chi2_null_minus_alt": -12383.39688789651,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 7.317002055860808,
+          "rms_null_pct": 3.8703311763896493
+        },
+        "medicine": {
+          "delta_chi2_null_minus_alt": -20599.38397443501,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 8.500485263056024,
+          "rms_null_pct": 4.518632196484172
+        },
+        "plutarch": {
+          "delta_chi2_null_minus_alt": -18210.82977440023,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 6.2846583325045735,
+          "rms_null_pct": 2.6913149811087838
+        },
+        "republic": {
+          "delta_chi2_null_minus_alt": -19432.907210691264,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 8.623102593466474,
+          "rms_null_pct": 4.477323739915193
+        },
+        "travel": {
+          "delta_chi2_null_minus_alt": -17109.512310747443,
+          "n_rows": 14,
+          "prefers": "h_null",
+          "rms_alt_pct": 7.826787338591091,
+          "rms_null_pct": 4.368749635443554
+        }
+      },
+      "preference_flips_on": [],
+      "preference_is_robust": true,
+      "subsets": {
+        "drop_plutarch_and_drama": {
+          "delta_chi2_null_minus_alt": -10110.941004364162,
+          "prefers": "h_null",
+          "rms_alt_pct": 4.440685341275687,
+          "rms_null_pct": 1.6403295782030738,
+          "rows": [
+            "572b2cc4/beagle",
+            "572b2cc4/medicine",
+            "572b2cc4/essays",
+            "572b2cc4/republic",
+            "572b2cc4/botany",
+            "572b2cc4/travel",
+            "e003a86d/beagle",
+            "e003a86d/medicine",
+            "e003a86d/essays",
+            "e003a86d/republic",
+            "e003a86d/botany",
+            "e003a86d/travel"
+          ]
+        },
+        "width_ge_6_mass_over_quarter_of_max": {
+          "delta_chi2_null_minus_alt": -6445.711694399398,
+          "prefers": "h_null",
+          "rms_alt_pct": 2.468645832144916,
+          "rms_null_pct": 1.3014677302292796,
+          "rows": [
+            "572b2cc4/beagle",
+            "572b2cc4/medicine",
+            "572b2cc4/essays",
+            "572b2cc4/republic",
+            "572b2cc4/botany",
+            "e003a86d/beagle",
+            "e003a86d/medicine",
+            "e003a86d/essays",
+            "e003a86d/republic",
+            "e003a86d/botany"
+          ]
+        },
+        "width_ge_6_mass_top_half": {
+          "delta_chi2_null_minus_alt": -4642.446856887584,
+          "prefers": "h_null",
+          "rms_alt_pct": 1.6967342981116444,
+          "rms_null_pct": 1.0094465059378297,
+          "rows": [
+            "572b2cc4/medicine",
+            "572b2cc4/essays",
+            "572b2cc4/republic",
+            "572b2cc4/botany",
+            "e003a86d/medicine",
+            "e003a86d/essays",
+            "e003a86d/republic",
+            "e003a86d/botany"
+          ]
+        }
+      }
+    }
+  }
+}

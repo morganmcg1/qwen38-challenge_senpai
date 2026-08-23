@@ -947,6 +947,525 @@
       "f111_assumed": 212
     }
   },
+  "f6_deliverables": {
+    "e149_rungD_7226dc9a_decode_gap_pct": 4.382962731192114,
+    "e149_rungD_7226dc9a_matches_e003a86d_decode": false,
+    "e149_rungD_admissible_set": [
+      1,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8
+    ],
+    "e149_rungD_c1_plutarch_anchor_sensitivity_us": {
+      "crown_row_h_null_tail": 30034.19903232739,
+      "h_alt_drafting_tail": 30132.783914951076,
+      "h_null_drafting_tail": 29969.31082361178
+    },
+    "e149_rungD_c1_plutarch_anchor_us": 29969.31082361178,
+    "e149_rungD_cost_per_token": {
+      "1": 30421.380049855616,
+      "2": 15248.011742064242,
+      "3": 10165.341161376162,
+      "4": 10551.841075201977,
+      "5": 9272.715701665717,
+      "6": 8261.605909172136,
+      "7": 7442.53634806675,
+      "8": 7387.23513896911
+    },
+    "e149_rungD_empirical_reproducibility_floor_pct": 1.1364907120028358,
+    "e149_rungD_marginal_5_to_6_sanity": {
+      "fitted_over_measured": 0.2314651077484663,
+      "fitted_over_replayed": 0.19740149782986807,
+      "fitted_us": 3206.056946704237,
+      "measured_over_k_us": 13851.145764001143,
+      "passes": false,
+      "reference_agreement_ratio": 1.172560037755925,
+      "replayed_us": 16241.300000000003
+    },
+    "e149_rungD_marginal_5_to_6_us": 3206.056946704237,
+    "e149_rungD_marginal_6_to_7_us": 2528.1189814344325,
+    "e149_rungD_marginal_7_to_8_us": 7000.126675285632,
+    "e149_rungD_method_adequate": false,
+    "e149_rungD_negative_control_returns_replayed_answer": {
+      "at_advisor_assumed_noise": true,
+      "at_empirical_noise": false,
+      "modal_set_at_empirical_noise": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "recovery_rate_assumed": 0.56,
+      "recovery_rate_empirical": 0.15
+    },
+    "e149_rungD_p_inference_residual_by_prompt": {
+      "1db9d63e": {
+        "beagle": {
+          "delta": -0.14251610371684365,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 110,
+          "published_non_drafting": 0,
+          "sim_R": 130.0,
+          "sim_edl": 4.5147396994346956,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.381818181818182
+        },
+        "botany": {
+          "delta": 2.989348664026693,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 81,
+          "published_non_drafting": 0,
+          "sim_R": 75.625,
+          "sim_edl": 6.094180913565701,
+          "sim_non_drafting": 0.0,
+          "target_edl": 6.148148148148148
+        },
+        "drama": {
+          "delta": -1.7313396766567166,
+          "held_out_non_drafting_residual": 45.875,
+          "published_R": 252,
+          "published_non_drafting": 0,
+          "sim_R": 270.75,
+          "sim_edl": 2.40478131422564,
+          "sim_non_drafting": 45.875,
+          "target_edl": 2.2976190476190474
+        },
+        "essays": {
+          "delta": 2.35450660848619,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 92,
+          "published_non_drafting": 0,
+          "sim_R": 100.75,
+          "sim_edl": 4.908588433445883,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.086956521739131
+        },
+        "medicine": {
+          "delta": 0.23961854075423616,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 90,
+          "published_non_drafting": 0,
+          "sim_R": 103.75,
+          "sim_edl": 5.3369695748614685,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.2555555555555555
+        },
+        "plutarch": {
+          "delta": -1.5530022755283426,
+          "held_out_non_drafting_residual": 3.125,
+          "published_R": 488,
+          "published_non_drafting": 449,
+          "sim_R": 494.5,
+          "sim_edl": 0.15364422232315095,
+          "sim_non_drafting": 452.125,
+          "target_edl": 0.1557377049180328
+        },
+        "republic": {
+          "delta": -0.16110344490334683,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 93,
+          "published_non_drafting": 0,
+          "sim_R": 108.375,
+          "sim_edl": 5.050903477299828,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.989247311827957
+        },
+        "travel": {
+          "delta": -0.5744424920212623,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 213,
+          "published_non_drafting": 0,
+          "sim_R": 228.125,
+          "sim_edl": 2.580113416025661,
+          "sim_non_drafting": 0.0,
+          "target_edl": 2.647887323943662
+        }
+      },
+      "572b2cc4": {
+        "beagle": {
+          "delta": -0.14251610371684365,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 110,
+          "published_non_drafting": 0,
+          "sim_R": 130.0,
+          "sim_edl": 4.5147396994346956,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.381818181818182
+        },
+        "botany": {
+          "delta": 2.989348664026693,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 81,
+          "published_non_drafting": 0,
+          "sim_R": 75.625,
+          "sim_edl": 6.094180913565701,
+          "sim_non_drafting": 0.0,
+          "target_edl": 6.148148148148148
+        },
+        "drama": {
+          "delta": -1.7313396766567166,
+          "held_out_non_drafting_residual": 45.875,
+          "published_R": 252,
+          "published_non_drafting": 0,
+          "sim_R": 270.75,
+          "sim_edl": 2.40478131422564,
+          "sim_non_drafting": 45.875,
+          "target_edl": 2.2976190476190474
+        },
+        "essays": {
+          "delta": 2.35450660848619,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 92,
+          "published_non_drafting": 0,
+          "sim_R": 100.75,
+          "sim_edl": 4.908588433445883,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.086956521739131
+        },
+        "medicine": {
+          "delta": 0.23961854075423616,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 90,
+          "published_non_drafting": 0,
+          "sim_R": 103.75,
+          "sim_edl": 5.3369695748614685,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.2555555555555555
+        },
+        "plutarch": {
+          "delta": -1.5530022755283426,
+          "held_out_non_drafting_residual": 3.125,
+          "published_R": 487,
+          "published_non_drafting": 449,
+          "sim_R": 494.5,
+          "sim_edl": 0.15364422232315095,
+          "sim_non_drafting": 452.125,
+          "target_edl": 0.1540041067761807
+        },
+        "republic": {
+          "delta": -0.16110344490334683,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 93,
+          "published_non_drafting": 0,
+          "sim_R": 108.375,
+          "sim_edl": 5.050903477299828,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.989247311827957
+        },
+        "travel": {
+          "delta": -0.5744424920212623,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 212,
+          "published_non_drafting": 0,
+          "sim_R": 228.125,
+          "sim_edl": 2.580113416025661,
+          "sim_non_drafting": 0.0,
+          "target_edl": 2.6556603773584904
+        }
+      },
+      "684821ed": {
+        "beagle": {
+          "delta": -0.14251610371684365,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 110,
+          "published_non_drafting": 0,
+          "sim_R": 130.0,
+          "sim_edl": 4.5147396994346956,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.381818181818182
+        },
+        "botany": {
+          "delta": 2.989348664026693,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 81,
+          "published_non_drafting": 0,
+          "sim_R": 75.625,
+          "sim_edl": 6.094180913565701,
+          "sim_non_drafting": 0.0,
+          "target_edl": 6.148148148148148
+        },
+        "drama": {
+          "delta": -1.7313396766567166,
+          "held_out_non_drafting_residual": 45.875,
+          "published_R": 252,
+          "published_non_drafting": 0,
+          "sim_R": 270.75,
+          "sim_edl": 2.40478131422564,
+          "sim_non_drafting": 45.875,
+          "target_edl": 2.2976190476190474
+        },
+        "essays": {
+          "delta": 2.35450660848619,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 92,
+          "published_non_drafting": 0,
+          "sim_R": 100.75,
+          "sim_edl": 4.908588433445883,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.086956521739131
+        },
+        "medicine": {
+          "delta": 0.23961854075423616,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 90,
+          "published_non_drafting": 0,
+          "sim_R": 103.75,
+          "sim_edl": 5.3369695748614685,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.2555555555555555
+        },
+        "plutarch": {
+          "delta": -1.5530022755283426,
+          "held_out_non_drafting_residual": 3.125,
+          "published_R": 488,
+          "published_non_drafting": 449,
+          "sim_R": 494.5,
+          "sim_edl": 0.15364422232315095,
+          "sim_non_drafting": 452.125,
+          "target_edl": 0.1557377049180328
+        },
+        "republic": {
+          "delta": -0.16110344490334683,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 93,
+          "published_non_drafting": 0,
+          "sim_R": 108.375,
+          "sim_edl": 5.050903477299828,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.989247311827957
+        },
+        "travel": {
+          "delta": -0.5744424920212623,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 213,
+          "published_non_drafting": 0,
+          "sim_R": 228.125,
+          "sim_edl": 2.580113416025661,
+          "sim_non_drafting": 0.0,
+          "target_edl": 2.647887323943662
+        }
+      },
+      "7226dc9a": {
+        "beagle": {
+          "delta": 0.2113901595785137,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 116,
+          "published_non_drafting": 0,
+          "sim_R": 119.5,
+          "sim_edl": 4.458593447077959,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.206896551724138
+        },
+        "botany": {
+          "delta": 6.0,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 85,
+          "published_non_drafting": 0,
+          "sim_R": 83.875,
+          "sim_edl": 5.146448276690983,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.811764705882353
+        },
+        "drama": {
+          "delta": -1.7710412375399756,
+          "held_out_non_drafting_residual": 46.125,
+          "published_R": 251,
+          "published_non_drafting": 0,
+          "sim_R": 274.5,
+          "sim_edl": 2.416128209018041,
+          "sim_non_drafting": 46.125,
+          "target_edl": 2.2948207171314743
+        },
+        "essays": {
+          "delta": 6.0,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 88,
+          "published_non_drafting": 0,
+          "sim_R": 91.75,
+          "sim_edl": 4.6185255826764795,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.295454545454546
+        },
+        "medicine": {
+          "delta": 1.3139570647381333,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 90,
+          "published_non_drafting": 0,
+          "sim_R": 88.0,
+          "sim_edl": 5.2595265051512765,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.222222222222222
+        },
+        "plutarch": {
+          "delta": -0.22942410440191452,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 203,
+          "published_non_drafting": 0,
+          "sim_R": 229.625,
+          "sim_edl": 2.6534973287484824,
+          "sim_non_drafting": 0.0,
+          "target_edl": 2.773399014778325
+        },
+        "republic": {
+          "delta": 0.27822992409164726,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 97,
+          "published_non_drafting": 0,
+          "sim_R": 102.0,
+          "sim_edl": 4.844039352386637,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.793814432989691
+        },
+        "travel": {
+          "delta": -0.5687786710350338,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 214,
+          "published_non_drafting": 0,
+          "sim_R": 226.5,
+          "sim_edl": 2.6097806554701815,
+          "sim_non_drafting": 0.0,
+          "target_edl": 2.6728971962616823
+        }
+      },
+      "e003a86d": {
+        "beagle": {
+          "delta": 0.2113901595785137,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 116,
+          "published_non_drafting": 0,
+          "sim_R": 119.5,
+          "sim_edl": 4.458593447077959,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.206896551724138
+        },
+        "botany": {
+          "delta": 6.0,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 85,
+          "published_non_drafting": 0,
+          "sim_R": 83.875,
+          "sim_edl": 5.146448276690983,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.811764705882353
+        },
+        "drama": {
+          "delta": -1.7710412375399756,
+          "held_out_non_drafting_residual": 46.125,
+          "published_R": 251,
+          "published_non_drafting": 0,
+          "sim_R": 274.5,
+          "sim_edl": 2.416128209018041,
+          "sim_non_drafting": 46.125,
+          "target_edl": 2.2948207171314743
+        },
+        "essays": {
+          "delta": 6.0,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 88,
+          "published_non_drafting": 0,
+          "sim_R": 91.75,
+          "sim_edl": 4.6185255826764795,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.295454545454546
+        },
+        "medicine": {
+          "delta": 1.3139570647381333,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 90,
+          "published_non_drafting": 0,
+          "sim_R": 88.0,
+          "sim_edl": 5.2595265051512765,
+          "sim_non_drafting": 0.0,
+          "target_edl": 5.222222222222222
+        },
+        "plutarch": {
+          "delta": -0.3491421155285934,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 203,
+          "published_non_drafting": 0,
+          "sim_R": 236.125,
+          "sim_edl": 2.6470479276186842,
+          "sim_non_drafting": 0.0,
+          "target_edl": 2.6995073891625614
+        },
+        "republic": {
+          "delta": 0.27822992409164726,
+          "held_out_non_drafting_residual": 0.0,
+          "published_R": 97,
+          "published_non_drafting": 0,
+          "sim_R": 102.0,
+          "sim_edl": 4.844039352386637,
+          "sim_non_drafting": 0.0,
+          "target_edl": 4.793814432989691
+        },
+        "travel": {
+          "delta": -0.6695725482477428,
+          "held_out_non_drafting_residual": 2.25,
+          "published_R": 216,
+          "published_non_drafting": 0,
+          "sim_R": 238.375,
+          "sim_edl": 2.498014067090753,
+          "sim_non_drafting": 2.25,
+          "target_edl": 2.634259259259259
+        }
+      }
+    },
+    "e149_rungD_ranked_curve_sd_us": {
+      "1": 113.98416269043051,
+      "2": 183.01682170157605,
+      "3": 183.01682170157605,
+      "4": 393.4449331753282,
+      "5": 561.453058513442,
+      "6": 278.83289303343344,
+      "7": 249.05946635605167,
+      "8": 58.85216252335557
+    },
+    "e149_rungD_ranked_curve_us": {
+      "1": 30421.380049855616,
+      "2": 30496.023484128484,
+      "3": 30496.023484128484,
+      "4": 42207.36430080791,
+      "5": 46363.57850832858,
+      "6": 49569.63545503282,
+      "7": 52097.75443646725,
+      "8": 59097.88111175288
+    },
+    "e149_rungD_rule138_holds_on_g17s": false,
+    "e149_rungD_sensitivity_replay_model": {
+      "admissible": [
+        1,
+        2,
+        3,
+        4,
+        7,
+        8
+      ],
+      "chi2_per_dof": 979.8620034534172,
+      "marginal_5_to_6_us": 7466.085607300483,
+      "marginal_6_to_7_us": 0.0,
+      "marginal_7_to_8_us": 0.0
+    },
+    "e149_rungD_stop_rule_fired": true,
+    "e149_rungD_stop_rule_reason": "the negative control does not return the replayed answer at the empirical per-prompt reproducibility floor, and the fitted 5->6 marginal misses both reference curves at a cell where the two references agree to 0.85x",
+    "e149_rungD_synthetic_recovery_verdict_correct": {
+      "at_advisor_assumed_noise": true,
+      "at_empirical_noise": true,
+      "recovery_rate_assumed": 0.78,
+      "recovery_rate_empirical": 0.5
+    },
+    "e149_rungD_width6_admissible_ranked": true,
+    "e149_rungD_width6_confidence": 1.0,
+    "e149_rungD_width7_admissible_ranked": true,
+    "e149_rungD_width7_confidence": 1.0,
+    "e149_rungD_width8_admissible_ranked": true,
+    "e149_rungD_width8_confidence": 0.92,
+    "harness": "ranked",
+    "primary_mass_model": "tilt"
+  },
   "harness": "ranked",
   "max_width": 8,
   "p_inference_residual_by_prompt": {
@@ -1449,6 +1968,7 @@
       },
       "hypothesis_test": {
         "delta_chi2_null_minus_alt": -10546.113173645368,
+        "empirical_reproducibility_floor_pct": 1.1364907120028358,
         "h_alt": {
           "chi2": 73818.95904679738,
           "chi2_per_dof": 4921.263936453159,
@@ -1497,9 +2017,11 @@
           "rms_resid_pct": 4.63892061113369,
           "scale": 0.9037147578932181
         },
-        "level_normalised_separation_us_per_round": 0.029108218813362452,
         "preferred": "h_null",
-        "rms_model_misfit_pct": 4.63892061113369
+        "rms_model_misfit_pct": 4.63892061113369,
+        "separation_after_own_best_level_pct_of_y": 3.755220935993132,
+        "separation_after_own_best_level_us_per_round": 1342.88646423288,
+        "separation_exceeds_floor": true
       },
       "labels": [
         "572b2cc4/beagle",
@@ -1519,6 +2041,15 @@
         "e003a86d/travel",
         "e003a86d/plutarch"
       ],
+      "marginal_5_to_6_sanity": {
+        "fitted_over_measured": 0.5390229613137633,
+        "fitted_over_replayed": 0.45969753697674953,
+        "fitted_us": 7466.085607300483,
+        "measured_over_k_us": 13851.145764001143,
+        "passes": false,
+        "reference_agreement_ratio": 1.172560037755925,
+        "replayed_us": 16241.300000000003
+      },
       "mass": [
         [
           0.0,
@@ -2071,6 +2602,61 @@
         76.99594752237036,
         134.6348721903606
       ],
+      "step_marginals": {
+        "1_to_2": {
+          "fitted_over_replayed": 0.6112140396342205,
+          "fitted_us": 2106.3047019834885,
+          "replayed_us": 3446.100000000002
+        },
+        "2_to_3": {
+          "fitted_over_measured": 0.0,
+          "fitted_over_replayed": 0.0,
+          "fitted_us": 0.0,
+          "measured_over_k_us": 2266.7585813444966,
+          "replayed_over_measured": 1.5202765871767394,
+          "replayed_us": 3446.0999999999985
+        },
+        "3_to_4": {
+          "fitted_over_measured": 0.0,
+          "fitted_over_replayed": 0.0,
+          "fitted_us": 0.0,
+          "measured_over_k_us": 3798.9445659408593,
+          "replayed_over_measured": 0.9070940468294388,
+          "replayed_us": 3446.0
+        },
+        "4_to_5": {
+          "fitted_over_measured": 2.800211191385753,
+          "fitted_over_replayed": 4.679621043496532,
+          "fitted_us": 16126.44207799339,
+          "measured_over_k_us": 5759.009223162495,
+          "replayed_over_measured": 0.598384177983242,
+          "replayed_us": 3446.0999999999985
+        },
+        "5_to_6": {
+          "fitted_over_measured": 0.5390229613137633,
+          "fitted_over_replayed": 0.45969753697674953,
+          "fitted_us": 7466.085607300483,
+          "measured_over_k_us": 13851.145764001143,
+          "replayed_over_measured": 1.172560037755925,
+          "replayed_us": 16241.300000000003
+        },
+        "6_to_7": {
+          "fitted_over_measured": 0.0,
+          "fitted_over_replayed": 0.0,
+          "fitted_us": 0.0,
+          "measured_over_k_us": 12295.093657887228,
+          "replayed_over_measured": 0.1322560075788333,
+          "replayed_us": 1626.0999999999985
+        },
+        "7_to_8": {
+          "fitted_over_measured": 0.0,
+          "fitted_over_replayed": 0.0,
+          "fitted_us": 0.0,
+          "measured_over_k_us": 1876.2004373870877,
+          "replayed_over_measured": 3.9923772805594933,
+          "replayed_us": 7490.499999999993
+        }
+      },
       "weak_ridge": {
         "admissible": [
           1,
@@ -2281,6 +2867,7 @@
       },
       "hypothesis_test": {
         "delta_chi2_null_minus_alt": -20504.948804680178,
+        "empirical_reproducibility_floor_pct": 1.1364907120028358,
         "h_alt": {
           "chi2": 27072.331556776786,
           "chi2_per_dof": 1804.822103785119,
@@ -2329,9 +2916,11 @@
           "rms_resid_pct": 4.167832719650149,
           "scale": 0.8493404408989814
         },
-        "level_normalised_separation_us_per_round": 0.03408028926537679,
         "preferred": "h_null",
-        "rms_model_misfit_pct": 4.167832719650149
+        "rms_model_misfit_pct": 4.167832719650149,
+        "separation_after_own_best_level_pct_of_y": 4.1229132245394835,
+        "separation_after_own_best_level_us_per_round": 1498.6740964143864,
+        "separation_exceeds_floor": true
       },
       "labels": [
         "572b2cc4/beagle",
@@ -2351,6 +2940,15 @@
         "e003a86d/travel",
         "e003a86d/plutarch"
       ],
+      "marginal_5_to_6_sanity": {
+        "fitted_over_measured": 0.2314651077484663,
+        "fitted_over_replayed": 0.19740149782986807,
+        "fitted_us": 3206.056946704237,
+        "measured_over_k_us": 13851.145764001143,
+        "passes": false,
+        "reference_agreement_ratio": 1.172560037755925,
+        "replayed_us": 16241.300000000003
+      },
       "mass": [
         [
           0.0,
@@ -2904,6 +3502,61 @@
         76.99594752237036,
         134.6348721903606
       ],
+      "step_marginals": {
+        "1_to_2": {
+          "fitted_over_replayed": 0.02166026356544151,
+          "fitted_us": 74.64343427286803,
+          "replayed_us": 3446.100000000002
+        },
+        "2_to_3": {
+          "fitted_over_measured": 0.0,
+          "fitted_over_replayed": 0.0,
+          "fitted_us": 0.0,
+          "measured_over_k_us": 2266.7585813444966,
+          "replayed_over_measured": 1.5202765871767394,
+          "replayed_us": 3446.0999999999985
+        },
+        "3_to_4": {
+          "fitted_over_measured": 3.0827880253048536,
+          "fitted_over_replayed": 3.3985318678698273,
+          "fitted_us": 11711.340816679425,
+          "measured_over_k_us": 3798.9445659408593,
+          "replayed_over_measured": 0.9070940468294388,
+          "replayed_us": 3446.0
+        },
+        "4_to_5": {
+          "fitted_over_measured": 0.7216891042307333,
+          "fitted_over_replayed": 1.206063146026138,
+          "fitted_us": 4156.214207520672,
+          "measured_over_k_us": 5759.009223162495,
+          "replayed_over_measured": 0.598384177983242,
+          "replayed_us": 3446.0999999999985
+        },
+        "5_to_6": {
+          "fitted_over_measured": 0.2314651077484663,
+          "fitted_over_replayed": 0.19740149782986807,
+          "fitted_us": 3206.056946704237,
+          "measured_over_k_us": 13851.145764001143,
+          "replayed_over_measured": 1.172560037755925,
+          "replayed_us": 16241.300000000003
+        },
+        "6_to_7": {
+          "fitted_over_measured": 0.2056201483111647,
+          "fitted_over_replayed": 1.5547131058572257,
+          "fitted_us": 2528.1189814344325,
+          "measured_over_k_us": 12295.093657887228,
+          "replayed_over_measured": 0.1322560075788333,
+          "replayed_us": 1626.0999999999985
+        },
+        "7_to_8": {
+          "fitted_over_measured": 3.7310121753486207,
+          "fitted_over_replayed": 0.9345339663955194,
+          "fitted_us": 7000.126675285632,
+          "measured_over_k_us": 1876.2004373870877,
+          "replayed_over_measured": 3.9923772805594933,
+          "replayed_us": 7490.499999999993
+        }
+      },
       "weak_ridge": {
         "admissible": [
           1,
