@@ -77,8 +77,67 @@ F218_SHIFT = 0.0953
 F218_BOUND_US = (119.0, 970.0)
 
 
+# F4 / Advisor Error 156. `684821ed` and `1760479a` are the same candidate:
+# their draft lengths are digit-identical on all eight prompts, so the width
+# histogram, and therefore any mass-weighted prediction, is identical for both.
+# The two rows' round costs must then differ only by receipt noise, which makes
+# their gap the noise floor that every R0 residual has to clear before it can
+# be read as curve error.
+NULL_PAIR_RECEIPT = "684821ed"
+BOARD_CACHE = pathlib.Path("/tmp/yukon-board/full.json")
+PROMPT_BY_HASH = {
+    "919318e1": "beagle", "192fb621": "botany", "4b9e88cd": "drama",
+    "a2ea8b60": "essays", "00142a44": "medicine", "c1ec5866": "plutarch",
+    "ea82dcb5": "republic", "3b10cb4d": "travel",
+}
+
+
 def pct(a: float, b: float) -> float:
     return 100.0 * (a - b) / b
+
+
+def null_control(f219_round_us: dict[str, float]) -> dict:
+    """Measure how tightly two receipts of the same candidate agree.
+
+    Returns `{}` when the board cache is absent, because R0's own result does
+    not depend on it; the control only calibrates how to read the residuals.
+    """
+    if not BOARD_CACHE.exists():
+        return {}
+    payload = json.loads(BOARD_CACHE.read_text())
+    rows = payload if isinstance(payload, list) else next(
+        payload[k] for k in ("submissions", "data", "items", "results")
+        if isinstance(payload.get(k), list))
+    hit = [r for r in rows
+           if str(r.get("id", "")).startswith(NULL_PAIR_RECEIPT)]
+    if len(hit) != 1:
+        return {}
+    per_prompt = {PROMPT_BY_HASH[e["prompt_sha256"][:8]]: e
+                  for e in hit[0]["officialMetrics"]["per_prompt"]}
+
+    out = {"receipt": NULL_PAIR_RECEIPT, "vs": "1760479a", "prompts": {}}
+    for p, ref in F219.items():
+        entry = per_prompt[p]
+        dlen = entry["effective_mean_draft_len"]
+        spt = entry["mtp_seconds_per_token_mean"]
+        # Draft lengths are identical, so tokens per round is identical and the
+        # round count carries over unchanged from F219.
+        round_us = spt * 1e6 * TOKENS / ref["R"]
+        out["prompts"][p] = {
+            "draft_len": dlen,
+            "draft_len_gap_vs_f219": dlen - ref["dlen"],
+            "round_us": round_us,
+            "round_us_pct_vs_f219": pct(round_us, f219_round_us[p]),
+        }
+    eligible = [abs(out["prompts"][p]["round_us_pct_vs_f219"])
+                for p in MEDIAN_ELIGIBLE]
+    gaps = [abs(out["prompts"][p]["draft_len_gap_vs_f219"]) for p in F219]
+    out["max_abs_draft_len_gap"] = max(gaps)
+    out["is_true_null_pair"] = max(gaps) < 1e-3
+    out["noise_floor_pct_median_eligible"] = max(eligible)
+    out["noise_floor_pct_all"] = max(
+        abs(v["round_us_pct_vs_f219"]) for v in out["prompts"].values())
+    return out
 
 
 def load() -> tuple[dict, dict, dict]:
@@ -160,6 +219,7 @@ def main() -> int:
                      for p, v in F219.items()}
     quote_error = {p: pct(f219_round_us[p], F219_QUOTED_ROUND_US[p])
                    for p in F219}
+    null = null_control(f219_round_us)
 
     prompts = sorted(F219)
     out_prompts = {}
@@ -256,6 +316,7 @@ def main() -> int:
         "prompts": out_prompts,
         "summary": summary,
         "f218_beagle_shift": f218,
+        "null_control": null,
         "e145_predicted_beagle_shift_us": f218["forms"][best][
             "predicted_rise_us"],
         "e145_f218_bound_consistent": f218["forms"][best]["inside_bound"],
@@ -325,6 +386,22 @@ def main() -> int:
           f" {result['e145_predicted_beagle_shift_us']:.1f}")
     print(f"  e145_f218_bound_consistent"
           f" {result['e145_f218_bound_consistent']}")
+
+    if null:
+        print(f"\nF4 null control: {null['receipt']} against {null['vs']},"
+              f" same candidate, round cost in us")
+        for p in prompts:
+            e = null["prompts"][p]
+            star = " *" if p in MEDIAN_ELIGIBLE else ""
+            print(f"  {p:<9} dlen {e['draft_len']:>8.4f}"
+                  f"  gap {e['draft_len_gap_vs_f219']:>+9.2e}"
+                  f"  round {e['round_us']:>9.1f}"
+                  f"  {e['round_us_pct_vs_f219']:>+7.3f} %{star}")
+        print(f"  true null pair: {null['is_true_null_pair']}"
+              f"   max abs draft-length gap {null['max_abs_draft_len_gap']:.2e}")
+        print(f"  NOISE FLOOR, median-eligible:"
+              f" {null['noise_floor_pct_median_eligible']:.3f} pp"
+              f"   all eight: {null['noise_floor_pct_all']:.3f} pp")
     return 0
 
 

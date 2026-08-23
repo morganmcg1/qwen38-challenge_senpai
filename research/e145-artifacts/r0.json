@@ -107,6 +107,64 @@
     "medicine",
     "republic"
   ],
+  "null_control": {
+    "is_true_null_pair": true,
+    "max_abs_draft_len_gap": 4.81481481475754e-05,
+    "noise_floor_pct_all": 0.5820286010610655,
+    "noise_floor_pct_median_eligible": 0.12180268092072995,
+    "prompts": {
+      "beagle": {
+        "draft_len": 4.381818181818182,
+        "draft_len_gap_vs_f219": 1.8181818181695064e-05,
+        "round_us": 49777.49131636364,
+        "round_us_pct_vs_f219": 0.07563796636816289
+      },
+      "botany": {
+        "draft_len": 6.148148148148148,
+        "draft_len_gap_vs_f219": 4.81481481475754e-05,
+        "round_us": 61063.19036525173,
+        "round_us_pct_vs_f219": 0.12180268092072995
+      },
+      "drama": {
+        "draft_len": 2.2976190476190474,
+        "draft_len_gap_vs_f219": 1.9047619047363185e-05,
+        "round_us": 36231.95092258244,
+        "round_us_pct_vs_f219": 0.06689036399444354
+      },
+      "essays": {
+        "draft_len": 5.086956521739131,
+        "draft_len_gap_vs_f219": -4.347826086892326e-05,
+        "round_us": 54699.26132985658,
+        "round_us_pct_vs_f219": 0.01064788445890229
+      },
+      "medicine": {
+        "draft_len": 5.2555555555555555,
+        "draft_len_gap_vs_f219": -4.444444444473561e-05,
+        "round_us": 55291.35724475059,
+        "round_us_pct_vs_f219": 0.0058005905532329165
+      },
+      "plutarch": {
+        "draft_len": 0.1557377049180328,
+        "draft_len_gap_vs_f219": 3.770491803278819e-05,
+        "round_us": 31826.854992193275,
+        "round_us_pct_vs_f219": 0.5820286010610655
+      },
+      "republic": {
+        "draft_len": 4.989247311827957,
+        "draft_len_gap_vs_f219": 4.731182795669753e-05,
+        "round_us": 53460.183810752686,
+        "round_us_pct_vs_f219": 0.007633524892385621
+      },
+      "travel": {
+        "draft_len": 2.647887323943662,
+        "draft_len_gap_vs_f219": -1.2676056337923569e-05,
+        "round_us": 37655.43268685536,
+        "round_us_pct_vs_f219": -0.011700111411332826
+      }
+    },
+    "receipt": "684821ed",
+    "vs": "1760479a"
+  },
   "prompts": {
     "beagle": {
       "anchor_round_us_after": 52453.2,
