@@ -142,6 +142,66 @@ mechanism fired as designed; it simply helped instead of hurting.
 Width mass moved out of 6 entirely: `w6 8.40 -> 0.00`, with the mass landing on
 4 and 5 (`w4 10.92 -> 16.10`, `w5 18.49 -> 24.58`).
 
+### R1b: the arm effect replicates in a second session
+
+Rule 119 asks for this, because the session is the unit that drifts. R1b runs
+the same `beagle_a` comparison in its own session, palindrome
+`ship pb6 pb6 ship`.
+
+| quantity | R1 | R1b | gap |
+|----------|-----|-----|-----|
+| pb6 against ship, seconds per token | -2.5706 % | -2.4961 % | +0.0745 pp |
+| pb6 against ship, blocks only | -3.4119 % | -3.2489 % | +0.1630 pp |
+
+Same sign, and the gap is inside the 0.122 pp noise floor on the primary
+basis. The comparison is only meaningful because the **work signatures match
+exactly**: both sessions produced the same round counts (119 and 118), the
+same mean draft lengths (4.2437 and 4.1525) and the same acceptance rates
+(0.7782 and 0.8041). Decoding is deterministic for a fixed fixture, budget,
+build and arm, so identical signatures prove the two sessions ran the same
+work and only the timing moved. `r1b_replicate` checks that before it
+compares any timing.
+
+### Rule 128 warm telemetry cannot be captured on the timed path
+
+R1b was also meant to supply the `wired-zh` and `warm` residency telemetry
+that Rule 128 asks for in every leg. **It failed, and the failure is
+structural.** Two separate faults were found, and the second one cannot be
+fixed from inside this assignment.
+
+1. The probe read the wrong path. `e145_leg` passed its own slot directory,
+   but `e128_session.sh` writes one level deeper under the fixture name, so
+   `stderr.log` never existed where the probe looked. Fixed.
+2. The telemetry is absent even at the corrected path. Both lines are written
+   by the **worker** to its own stderr
+   (`Qwen36MTPBlockSession.swift:271` and `:354`). The `mtp-timed` parent
+   calls `runtimeWorkerOptions` **without** `forwardsWorkerStderr`, so
+   `QwenRuntimeWorker.swift:2046` installs a swallowing emitter and the stream
+   reaches no file at all. `MLX_DFLASH_TRACE_CACHE_SEAM` cannot rescue it,
+   because that variable is read only inside the DFlash subcommand
+   (`MLXFastCLI/main.swift:1409`), which `mtp-timed` never enters. The source
+   states this directly at `Qwen36MTPBlockSession.swift:800-806`.
+
+Capturing it needs a change in the trusted parent, which is outside the E145
+scope. So **every leg in this experiment reports
+`warm_telemetry_present=false`**, and that is recorded rather than hidden: a
+leg with no telemetry cannot support an arm attribution claim on its own.
+
+What can be said without the telemetry, from the source and from the data:
+
+- `wired_gate_fired` is driven by `residencySizingGateFires`, and the source
+  notes that a 48 GiB host fails the 96 GiB guard. On this host the residency
+  sizing path is inert for **both** arms, so it cannot separate them.
+- The warm phase warms shapes up to `maxDepth`, and both arms run
+  `E128_DEPTH=8`, so the warmed shape set is identical by construction.
+- The arm changes only `depthPriceArm`, a price table consumed at
+  draft-decision time, which runs after the warm phase.
+- Empirically, R1 and R1b reproduce each other to 0.0745 pp with identical
+  work signatures, which is what an unchanged warm state predicts.
+
+That is a source-level argument plus a replication, not the direct
+measurement Rule 128 asks for. I am not claiming it is equivalent.
+
 ### `benchfixture`: the positive control passes
 
 `pb6` is -2.0086 % on seconds per token against E134 item 5b's -2.2467 %, a
@@ -279,13 +339,50 @@ the curve above is the sum of the two.
 ```bash
 research/e145_r1_session.sh 512 beagle_a
 research/e145_r1_session.sh 512 benchfixture
+research/e145_r1b_session.sh 512 beagle_a
 research/e145_r2_session.sh 512 beagle_a
 research/e145_r2b_session.sh 512 beagle_a
 python3 research/e145_read.py
 python3 research/e145_r0.py
+python3 research/e145_anchors.py
+python3 research/e145_r1.py
+python3 research/e145_curve.py
 python3 research/e145_r3.py --seeds 6 --windows 200
-python3 research/e145_r4.py --seeds 6 --windows 200
+research/e145_r4_both.sh 6 200
+python3 research/e145_wandb_log.py
 ```
 
 Timed sessions hold the GPU and take the real cool gate; the analysis steps
-use no GPU.
+use no GPU. `e145_r4_both.sh` runs the measured and replayed cost models and
+then the cross-evaluation, which needs both blobs.
+
+## Test gate
+
+`swift test --force-resolved-versions` reports 774 tests in 73 suites with
+**41 issues across 10 distinct test names**, which is exactly the recorded
+pre-existing floor on this base. E145 adds no regression. The 10 names are
+`contestantDocsCommandBlocksKeepTheDependencyGraphFrozen`,
+`participantDocsExposeDefaultCLIInstallDirectory`,
+`qwen36ConfigContractDigestMatchesTheReferenceManifest`,
+`startupMemoryPolicyKeepsRanked128GiBProfile`,
+`submissionStaticReviewPromptCoversMeasurementStructureExploitation`,
+`theCheckedInDeclarationSelectsThePinnedHead`,
+`theEvenMedianRuleIsTheMeanOfTheTwoCentralValues`,
+`theQwenMTPTrackIsArmedOnQwen38`,
+`theSeededCalibrationExpectationMatchesItsRecordedProvenance` and
+`theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax`.
+
+## Scope and budget
+
+Submitted surface touched: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`
+only, and only outside the reserved line ranges. Everything else is
+research-only under `research/` and `Tests/MLXFastTests/E145*`.
+
+`senpai/validate-assignment-scope.sh` passes against
+`BASE_SHA=2cd0d459c651de53cc4ccebb160a19fb00ed87c4`.
+`senpai/check-editable-budget.sh` reports source 2,627,254 of 3,000,000 bytes
+and growth 172,419 of 262,144. `senpai/verify-ranked-score-boundary.sh`
+passes.
+
+**No Yukon submission was made.** The assignment forbids it, and the
+submission slot is held by another candidate.
