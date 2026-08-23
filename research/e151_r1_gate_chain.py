@@ -134,9 +134,54 @@ def swift_test_gate(log_path: str | None) -> dict:
     }
 
 
+def worker_rebuild_gate(log_path: str | None) -> dict:
+    """Read `rebuild-and-assert-worker.sh`, which ties the arm to the binary.
+
+    Without this the runtime evidence names a commit, not the worker that
+    actually ran: a stale `.build-worker` would pass every other gate.
+    """
+    if not log_path or not pathlib.Path(log_path).is_file():
+        return {"available": False}
+    text = pathlib.Path(log_path).read_text()
+    sha = re.search(r"worker_sha256 ([0-9a-f]{64})", text)
+    return {
+        "available": True,
+        "log": log_path,
+        "worker_sha256": sha.group(1) if sha else None,
+        "assertions": re.findall(r"^ok\s+(require|forbid)\s+'(.+)': (\d+)$",
+                                 text, re.M),
+        "passed": "rebuild-and-assert-worker: PASS" in text,
+    }
+
+
+def cool_gate(log_path: str | None) -> dict:
+    """Every timed leg must clear the real 40C gate, not an ungated arm."""
+    if not log_path or not pathlib.Path(log_path).is_file():
+        return {"available": False}
+    text = pathlib.Path(log_path).read_text()
+    passes = [
+        {"entry_c": float(c), "target_c": float(t), "waited_s": int(w)}
+        for c, t, w in re.findall(
+            r"GPU cool-down gate passed \(current ([0-9.]+)C, "
+            r"target <=([0-9.]+)C, waited (\d+)s\)",
+            text,
+        )
+    ]
+    return {
+        "available": True,
+        "passes": passes,
+        "cool_gate_passed_real_gate": bool(passes)
+        and all(p["entry_c"] <= p["target_c"] for p in passes),
+        "gate_qualified_for_timing": bool(passes)
+        and all(p["entry_c"] <= p["target_c"] for p in passes),
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--swift-test-log")
+    ap.add_argument("--worker-rebuild-log")
+    ap.add_argument("--local-submit-log")
     ap.add_argument("--rung", default="R1")
     ap.add_argument("--label", default="", help="artifact suffix, e.g. r2")
     ap.add_argument(
@@ -164,6 +209,8 @@ def main() -> None:
 
     doc["static_gates"] = static_gates(args.base_sha)
     doc["swift_test"] = swift_test_gate(args.swift_test_log)
+    doc["worker_rebuild"] = worker_rebuild_gate(args.worker_rebuild_log)
+    doc["cool_gate"] = cool_gate(args.local_submit_log)
     doc["row_digest_512"] = load_json(
         f"research/e151-artifacts/row-digest-512{suffix}.json"
     )
@@ -244,8 +291,31 @@ def main() -> None:
             doc["swift_test"]["at_known_floor"]
         )
 
+    # A requested gate whose log is missing or failing must fail the verdict.
+    # Skipping it silently is the fail-open behaviour the campaign rejects.
+    requested_ok = True
+    if args.worker_rebuild_log:
+        requested_ok = requested_ok and bool(doc["worker_rebuild"].get("passed"))
+        metrics["e151_worker_rebuild_passed"] = float(
+            bool(doc["worker_rebuild"].get("passed"))
+        )
+    if args.local_submit_log:
+        requested_ok = requested_ok and bool(
+            doc["cool_gate"].get("cool_gate_passed_real_gate")
+        )
+        metrics["e151_cool_gate_passed_real_gate"] = float(
+            bool(doc["cool_gate"].get("cool_gate_passed_real_gate"))
+        )
+        metrics["e151_gate_qualified_for_timing"] = float(
+            bool(doc["cool_gate"].get("gate_qualified_for_timing"))
+        )
+        metrics["e151_cool_gate_pass_count"] = float(
+            len(doc["cool_gate"].get("passes") or [])
+        )
+
     all_green = (
-        static_ok
+        requested_ok
+        and static_ok
         and exact_ok
         and bool((doc["local_submit_512"] or {}).get("passed"))
         and bool(submit.get("all_tokens_matched"))
