@@ -44,7 +44,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from e128_price import (  # noqa: E402
-    DECODE_TOKENS, RANKED_PROMPTS, load_board_receipt,
+    DECODE_TOKENS, PROMPT_NAMES, RANKED_PROMPTS, load_board_receipt,
 )
 from e134_item2_refit import FORMS  # noqa: E402
 from e134_rung2 import build_legs, median_pct  # noqa: E402
@@ -73,6 +73,18 @@ REDUCED_ROUND_DENOMINATOR = {
 }
 
 
+def non_drafting_rounds(board: pathlib.Path, prefix: str) -> dict:
+    """`non_drafting_round_count` per prompt, which `load_board_receipt` drops."""
+    rows = json.loads(board.read_text())
+    rows = rows["submissions"] if isinstance(rows, dict) else rows
+    for row in rows:
+        if row["id"].startswith(prefix):
+            return {PROMPT_NAMES[e["prompt_sha256"][:8]]:
+                    e["non_drafting_round_count"]
+                    for e in row["officialMetrics"]["per_prompt"]}
+    raise SystemExit("no board row with id prefix %r" % prefix)
+
+
 def width2_receipt_from_board(board: pathlib.Path) -> dict:
     """The width-2 contrast, in the only units the board states exactly.
 
@@ -85,6 +97,7 @@ def width2_receipt_from_board(board: pathlib.Path) -> dict:
     """
     before = load_board_receipt(board, BASE_RECEIPT)
     after = load_board_receipt(board, WIDTH2_ARM)
+    ndr = non_drafting_rounds(board, BASE_RECEIPT)
     out = {}
     for prompt, entry in before["per_prompt"].items():
         reduced = fractions.Fraction(
@@ -94,13 +107,42 @@ def width2_receipt_from_board(board: pathlib.Path) -> dict:
                 "%s: the board's draft length no longer reduces to /%d but "
                 "to /%d; the receipt has moved"
                 % (prompt, REDUCED_ROUND_DENOMINATOR[prompt], reduced))
+        admissible = admissible_rounds(entry["draft_len"], ndr[prompt])
         out[prompt] = {
             "mbar": entry["draft_len"] + 1.0,
             "reduced_round_denominator": reduced,
+            "non_drafting_round_count": ndr[prompt],
+            "admissible_rounds": admissible,
+            "rounds_exact": admissible[0] if len(admissible) == 1 else None,
             "candidate_us_per_token": entry["candidate"] * 1e6,
             "delta_us_per_token": (after["per_prompt"][prompt]["candidate"]
                                    - entry["candidate"]) * 1e6,
         }
+    return out
+
+
+def admissible_rounds(draft_len: float, non_drafting: int) -> list:
+    """Every round count the receipt allows, given what it does publish.
+
+    Four constraints bind. The drafted-token total must be a whole number, so
+    the round count is a multiple of the reduced denominator. No leg runs more
+    rounds than tokens. Every drafting round drafts at least one token. No leg
+    accepts more tokens than it drafted. On the one prompt that reports
+    non-drafting rounds these leave a single value, which is the only exact
+    round count the receipt yields and therefore the only place the replayed
+    round rate can be checked against a known truth.
+    """
+    fraction = fractions.Fraction(draft_len).limit_denominator(2000)
+    step = fraction.denominator
+    out = []
+    for rounds in range(step, DECODE_TOKENS + 1, step):
+        drafted = fraction * rounds
+        drafting = rounds - non_drafting
+        if drafted.denominator != 1 or drafting <= 0:
+            continue
+        if drafted < drafting or DECODE_TOKENS - rounds > drafted:
+            continue
+        out.append(rounds)
     return out
 
 
@@ -304,6 +346,20 @@ def main() -> int:
     print("  first-moment control: mean(Mbar replay - Mbar receipt) %+.4f  "
           "sd %.4f" % (statistics.fmean(mbar_err),
                        statistics.stdev(mbar_err)))
+    print("  round-rate control, on the prompts whose round count the receipt "
+          "does determine:")
+    round_check = {}
+    for prompt, entry in board.items():
+        exact = entry["rounds_exact"]
+        replayed = hist["A_ship"][prompt]["rounds_per_window"]
+        if exact is None:
+            print("    %-10s admissible %s ... , replay %.1f"
+                  % (prompt, entry["admissible_rounds"][:3], replayed))
+            continue
+        round_check[prompt] = {"exact": exact, "replayed": replayed,
+                               "error_pct": 100 * (replayed - exact) / exact}
+        print("    %-10s exact %d, replay %.1f, error %+.2f percent"
+              % (prompt, exact, replayed, round_check[prompt]["error_pct"]))
 
     # Explanation (b) says the replay under-counts width 2. That is not an
     # opinion: the missing mass has to be taken from wider rounds, so it moves
@@ -480,7 +536,8 @@ def main() -> int:
                    "residual_sd_us": statistics.stdev(residuals),
                    "spread": spread, "shallow_bias_bound": bias, "fits": fits,
                    "mbar_error_mean": statistics.fmean(mbar_err),
-                   "mbar_error_sd": statistics.stdev(mbar_err)},
+                   "mbar_error_sd": statistics.stdev(mbar_err),
+                   "round_rate_control": round_check},
         "item_b": {"tiers": tiers, "depth": depth_rows,
                    "grid": list(TIER_GRID_FINE)},
     }, indent=2, default=list) + "\n")
