@@ -3,10 +3,11 @@
 # run the Swift suite, audit the generated Metal twins, run every campaign gate,
 # then take ONE bare 512-token exactness leg on the composed commit.
 #
-# The leg is the depth-arm tripwire. Advisor F23 reverts the shipped arm from
-# pb6 back to ship, so the composed tree must show the ship round schedule
-# (78 rounds, mean draft 6.359). If it shows the pb6 schedule (82 rounds,
-# 5.854) the revert did not reach the binary and the chain fails.
+# The leg is the depth-arm tripwire. Advisor F33 lifts the F23 revert and
+# restores pb6 as the compiled arm, so the composed tree must show the pb6
+# round schedule (82 rounds, mean draft 5.853658536585366). If it shows the
+# ship schedule (78 rounds, 6.358974358974359) the restore did not reach the
+# binary and the chain fails.
 #
 # The leg exports no MLX_E120_QMV_GRID, no MLX_E120_QMV_TABLE and no
 # MLX_E135_PROBE_ARM, so it takes the route the ranked runner takes, and every
