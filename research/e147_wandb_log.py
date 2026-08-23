@@ -142,12 +142,20 @@ def rung_a_metrics(rung_a: dict) -> tuple[dict, dict]:
 
 
 def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
-    """harness=ranked. Read the eight published prefill values off a receipt."""
+    """harness=ranked. Read one official receipt through research/e147_rungD.py.
+
+    Feedback 3 adds three readouts on top of the prefill headline: D-1 proves
+    which depth-price column the built worker shipped, D-2 prices the
+    decode-only difference against the only public pb6 anchor in whole units
+    of the campaign state-step constant, and D-3 recovers the round count each
+    prompt actually ran.
+    """
     values = receipt["prefill_seconds_per_token"]
     mean = statistics.fmean(values)
     sd = statistics.stdev(values)
     pct = 100.0 * (mean / RANKED_PREFILL_SPT_BAR - 1.0)
     forecast = interpolate_forecast(pct)
+    realised = receipt["realised_median_pct"]
     metrics = {
         "e147_ranked_prefill_pct": pct,
         "e147_ranked_prefill_spt_mean": mean,
@@ -155,16 +163,60 @@ def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
         "e147_ranked_prefill_vs_band_low_pct": 100.0 * (mean / RANKED_BAND_LOW - 1.0),
         "e147_ranked_prefill_vs_band_high_pct": 100.0 * (mean / RANKED_BAND_HIGH - 1.0),
         "e147_forecast_median_pct": forecast,
+        "e147_realised_median_pct": realised,
+        "e147_forecast_error_pp": realised - forecast,
+        "e147_realised_median_pct_model_a": receipt["realised_median_pct_model_a"],
+        "e147_ranked_score": receipt["score"],
+        "e147_ranked_published_median": receipt["published_median_recomputed"],
+        # D-1.
+        "e147_schedule_matches_pb6_column": receipt["schedule_matches_pb6_column"],
+        "e147_schedule_l1_to_ship_column": receipt["schedule_column_l1_distance_ship"],
+        "e147_schedule_l1_to_pb6_column": receipt["schedule_column_l1_distance_pb6"],
+        "e147_ranked_non_drafting_round_count_plutarch": float(
+            receipt["non_drafting_round_count_by_prompt"]["plutarch"]),
+        # D-2.
+        "e147_implied_state_step_us": receipt["implied_state_step_us"],
+        "e147_implied_state_steps": receipt["implied_state_steps"],
+        "e147_implied_state_steps_median": receipt["implied_state_steps_median"],
+        "e147_state_steps_integer": receipt["state_steps_integer"],
+        "e147_state_steps_integer_fraction": receipt["state_steps_integer_fraction"],
+        "e147_corrected_decode_seconds_total": receipt[
+            "corrected_decode_seconds_total"],
+        "e147_decode_only_seconds_total": receipt["decode_only_seconds_total"],
+        "e147_decode_only_seconds_total_anchor": receipt[
+            "decode_only_seconds_total_anchor"],
+        # D-3.
+        "e147_implied_rounds_are_integers": receipt["implied_rounds_are_integers"],
     }
-    realised = receipt.get("realised_median_pct")
-    if realised is not None:
-        metrics["e147_realised_median_pct"] = realised
-        metrics["e147_forecast_error_pp"] = realised - forecast
+    for prompt in receipt["prompt_order"]:
+        metrics[f"e147_ranked_prefill_spt_{prompt}"] = receipt[
+            "prefill_seconds_per_token_by_prompt"][prompt]
+        metrics[f"e147_ranked_dlen_{prompt}"] = receipt["dlen_by_prompt"][prompt]
+        metrics[f"e147_ranked_raw_{prompt}"] = receipt["raw_ratio_by_prompt"][prompt]
+        metrics[f"e147_implied_rounds_{prompt}"] = receipt[
+            "implied_rounds_by_prompt"][prompt]
+        metrics[f"e147_decode_only_seconds_{prompt}"] = receipt[
+            "decode_only_seconds_by_prompt"][prompt]
+        step = receipt["implied_state_steps_by_prompt"][prompt]
+        if step is not None:
+            metrics[f"e147_implied_state_steps_{prompt}"] = step
     config = {
         "ranked_prefill_spt_per_prompt": values,
-        "ranked_submission_id": receipt.get("submission_id"),
-        "ranked_score": receipt.get("score"),
-        "ranked_base_score": receipt.get("base_score"),
+        "ranked_submission_id": receipt["submission_id"],
+        "ranked_status": receipt["status"],
+        "ranked_promotion_status": receipt["promotion_status"],
+        "ranked_bar_id8": receipt["bar_id8"],
+        "ranked_bar_published_median": receipt["bar_published_median"],
+        "rungD_anchor_id8": receipt["anchor_id8"],
+        "rungD_schedule_comparable_prompts": receipt["schedule_comparable_prompts"],
+        "rungD_state_step_constant_us": receipt["state_step_constant_us"],
+        "rungD_state_step_constant_sd_us": receipt["state_step_constant_sd_us"],
+        "rungD_forecast_model": "model_b: raw' = (S - dP)/(C - dP)",
+        "rungD_alternative_model": (
+            "model_a: raw' = S/(C - dP); implied by program.md because the "
+            "ranked serial numerator comes from a runner-owned prebuilt "
+            "baseline workspace"
+        ),
     }
     return metrics, config
 
@@ -230,9 +282,11 @@ def main() -> None:
         if fired is not None:
             metrics["e147_rungA_positive_control_failed"] = float(fired)
         for mode in ("barrier0", "nobarrier", "wronghalf"):
-            key = f"e147_control_{mode}_caught"
-            if key in control:
-                metrics[f"e147_rungA_control_{mode}_caught"] = float(control[key])
+            # A mode that never ran records "none" rather than a verdict, and
+            # must stay out of the numeric series instead of being coerced to 0.
+            value = control.get(f"e147_control_{mode}_caught")
+            if value not in (None, "none"):
+                metrics[f"e147_rungA_control_{mode}_caught"] = float(value)
         config["rungA_control_detail"] = control
 
     receipt = load_json(args.receipt)
