@@ -12,6 +12,21 @@
     "medicine",
     "republic"
   ],
+  "e135_pb6_ranked_pair": "1db9d63e->e003a86d",
+  "e135_pb6_ranked_confounders": [
+    "width2"
+  ],
+  "e135_pb6_ranked_pair_median_pct": -1.1483154461874645,
+  "e135_pb6_ranked_isolated_median_pct": -0.6741154461874646,
+  "e135_pb6_ranked_isolated_beagle_pct": -1.006008811636774,
+  "e135_onePass67_ranked_pair": "e003a86d->572b2cc4",
+  "e135_onePass67_ranked_confounders": [
+    "p15",
+    "pb6"
+  ],
+  "e135_onePass67_ranked_pair_median_pct": 2.4380291049280522,
+  "e135_onePass67_ranked_isolated_median_pct": 2.0889136587405877,
+  "e135_onePass67_ranked_isolated_beagle_pct": 3.174840776921184,
   "e135_pb6_ranked_published_median_pct": -2.3800039156974706,
   "e135_pb6_ranked_held_pair_pct": -0.0710350418623551,
   "e135_pb6_ranked_rule129_pct": -2.3800039156974706,

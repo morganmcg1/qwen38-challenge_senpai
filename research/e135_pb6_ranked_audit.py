@@ -28,6 +28,21 @@ BOARD = "/tmp/yukon-board/full.json"
 # Our receipts, oldest first. pb6 membership is derived, never asserted.
 RECEIPTS = ("572b2cc4", "e003a86d", "1db9d63e")
 
+# Mechanism content of each receipt, read from its own published note. A
+# contrast is only worth quoting once its confounders are named, and the first
+# version of this script quoted a three-mechanism contrast as though it
+# isolated pb6.
+CONTENT = {
+    "572b2cc4": {"onePass67": 1, "p15": 0, "pb6": 0, "width2": 0},
+    "e003a86d": {"onePass67": 0, "p15": 1, "pb6": 1, "width2": 0},
+    "1db9d63e": {"onePass67": 0, "p15": 1, "pb6": 0, "width2": 1},
+}
+
+# Independent ranked estimates for the two mechanisms we cannot isolate from
+# our own three receipts alone. p15 is the agreed range of two receipts on two
+# bases; width2 is the public isolation pair on the candidate median pair.
+EXTERNAL = {"p15": 0.325, "width2": 0.4742}
+
 NAME = {
     "919318e1": "beagle", "192fb621": "botany", "4b9e88cd": "drama",
     "a2ea8b60": "essays", "00142a44": "medicine", "c1ec5866": "plutarch",
@@ -115,14 +130,118 @@ def onepass67_contrast(data: dict, flat: list[str]) -> dict:
     print(f"    mean over all eight        {statistics.fmean(every):+.4f} %"
           f"  sd {statistics.stdev(every):.4f}")
     print(f"    F83 weighted five          {weighted:+.4f} %")
-    print("  Every value is negative, so dropping onePass67 cost candidate-leg"
-          " time even with the width-two route added in the same archive.")
+    print("  Every value is negative, so this pair got slower on the candidate"
+          " leg on all eight prompts.")
+    print("  The pair also adds p15 and the width-two route, and both are"
+          " believed positive, so the")
+    print("  loss understates onePass67. See the isolation below for the"
+          " confounder-corrected price.")
     return {
         "e135_onepass67_ranked_matched_schedule_pct":
             statistics.fmean(vals),
         "e135_onepass67_ranked_eight_prompt_pct": statistics.fmean(every),
         "e135_onepass67_ranked_weighted_five_pct": weighted,
         "e135_onepass67_ranked_matched_prompts": names,
+    }
+
+
+def delta(short_a: str, short_b: str) -> dict:
+    """Mechanisms that change between two receipts, as +1 added, -1 removed."""
+    a, b = CONTENT[short_a], CONTENT[short_b]
+    return {k: b[k] - a[k] for k in a if b[k] != a[k]}
+
+
+def decompose(data: dict) -> dict:
+    """Isolate pb6 as far as three receipts allow, naming every confounder.
+
+    No pair of our receipts differs by pb6 alone. The closest pair differs by
+    pb6 added and the width-two route removed, so pb6 is recovered by adding
+    back an independent estimate of width2. The published median carries the
+    serial baseline draw, so the candidate leg is reported beside it.
+    """
+    print("\nRECEIPT CONTENT, from each receipt's own note")
+    for short in RECEIPTS:
+        on = " ".join(k for k, v in CONTENT[short].items() if v)
+        print(f"  {short:10}{data[short]['score']:>13.8f}   {on}")
+
+    print("\nEVERY AVAILABLE PAIR, and what actually changes in it")
+    for i, a in enumerate(RECEIPTS):
+        for b in RECEIPTS[i + 1:]:
+            d = delta(a, b)
+            med = 100 * (data[b]["score"] / data[a]["score"] - 1)
+            tag = " ".join(f"{'+' if v > 0 else '-'}{k}"
+                           for k, v in sorted(d.items()))
+            print(f"  {a} -> {b}   median {med:>+8.4f} %   changes: {tag}")
+    print("  No pair changes one mechanism only, so nothing below is a clean"
+          " isolation.")
+    print("  Three receipts give only two independent contrasts, and the two"
+          " solved prices consume")
+    print("  both, so the third pair cannot check them. Any agreement there is"
+          " arithmetic, not evidence.")
+
+    # Solve in dependency order. pb6's only confounder is priced externally,
+    # and its solved price then unlocks onePass67, whose closest pair carries
+    # pb6. Each solved price feeds the next isolation.
+    prices = dict(EXTERNAL)
+    out = {}
+    for target in ("pb6", "onePass67"):
+        got = isolate(data, target, prices)
+        prices[target] = got[
+            f"e135_{target}_ranked_isolated_median_pct"]
+        out.update(got)
+    return out
+
+
+def isolate(data: dict, target: str, prices: dict) -> dict:
+    """Price one mechanism from the pair that confounds it least.
+
+    Every reported number is the effect of TURNING THE MECHANISM ON, whichever
+    direction the underlying pair runs in, so the sign never depends on which
+    receipt happened to be published first.
+    """
+    best = None
+    for i, a in enumerate(RECEIPTS):
+        for b in RECEIPTS[i + 1:]:
+            d = delta(a, b)
+            if target in d and (best is None or len(d) < len(best[2])):
+                best = (a, b, d)
+    if best is None:
+        return {}
+    a, b, d = best
+    # Orient the pair so the target mechanism is switched on, not off.
+    if d[target] < 0:
+        a, b = b, a
+        d = delta(a, b)
+    med = 100 * (data[b]["score"] / data[a]["score"] - 1)
+
+    print(f"\nISOLATING {target}   pair {a} -> {b}, which switches it ON")
+    print(f"  confounders in this pair: "
+          f"{sorted(k for k in d if k != target) or 'none'}")
+    print(f"  published median move           {med:>+9.4f} %")
+    correction = 0.0
+    for k, v in sorted(d.items()):
+        if k == target:
+            continue
+        term = -v * prices[k]
+        correction += term
+        verb = "added" if v > 0 else "removed"
+        print(f"  back out {k}, {verb} in the same pair,"
+              f" independently priced {prices[k]:+.4f} %"
+              f"   -> {term:+.4f} %")
+    print(f"  {target} alone, published median  {med + correction:>+9.4f} %")
+
+    ref, cand = data[a]["prompts"], data[b]["prompts"]
+    beagle = -100 * (cand["beagle"]["mtp_seconds_per_token_mean"]
+                     / ref["beagle"]["mtp_seconds_per_token_mean"] - 1)
+    print(f"  beagle candidate leg            {beagle:>+9.4f} %"
+          f"   -> {beagle + correction:+.4f} % corrected")
+    return {
+        f"e135_{target}_ranked_pair": f"{a}->{b}",
+        f"e135_{target}_ranked_confounders": sorted(
+            k for k in d if k != target),
+        f"e135_{target}_ranked_pair_median_pct": med,
+        f"e135_{target}_ranked_isolated_median_pct": med + correction,
+        f"e135_{target}_ranked_isolated_beagle_pct": beagle + correction,
     }
 
 
@@ -200,10 +319,11 @@ def main() -> int:
           " artefact.")
 
     onepass = onepass67_contrast(data, flat)
+    isolated = decompose(data)
 
     out = {
         "flat_receipt": flat[0], "pb6_receipt": pb6[0],
-        **onepass,
+        **onepass, **isolated,
         "e135_pb6_ranked_published_median_pct": 100 * (med_b / med_a - 1),
         "e135_pb6_ranked_held_pair_pct": 100 * (held / med_a - 1),
         "e135_pb6_ranked_rule129_pct": 100 * (rule129 / med_a - 1),
