@@ -56,12 +56,12 @@ struct E145WidthPinTests {
         #expect(clamp(cap: 7, pinned: -1) == 0)
     }
 
-    /// E145 changes no shipped policy. Thorfinn's in-flight archive relies on
-    /// the compiled default, and the assignment that opened E145 described
-    /// that default as `.ship`. On this base it is `.pb6`, and this test says
-    /// so in one line so the disagreement cannot survive a build.
-    @Test("E145 leaves the compiled depth-price default at pb6")
-    func compiledDepthPriceDefaultIsUnchanged() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
+    /// E145 F12 retired `pb6` campaign-wide on the only ranked `pb6` contrast
+    /// the campaign owns, so the compiled default is now `.ship`. This test
+    /// pins the retirement in one line so a silent revert cannot survive a
+    /// build.
+    @Test("the compiled depth-price default is ship, because E145 retired pb6")
+    func compiledDepthPriceDefaultIsShip() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
     }
 }

@@ -578,6 +578,27 @@ def main() -> int:
                  row["weighted_mean_depth"]))
     arms.update(ratio_arms)
 
+    # The headline is the best DEPLOYABLE arm, not the best arm. Deployable
+    # means: full pre-draft information, a rule the scored path can evaluate
+    # before any draft exists, and predictor coefficients fitted leave one
+    # prompt out. The rule form is not selected on R1's own outcome; R0.5
+    # settles it on independent grounds, so naming the linearised rule here
+    # is a pre-registration, not a search.
+    deployable = {name: arms[name] for name in (
+        "L4_argmax_noclamp", "L4_argmax_clamped",
+        "L4_ratio_noclamp", "L4_ratio_clamped")}
+    capturable_name = max(deployable,
+                          key=lambda n: deployable[n]["median_pct_mean"])
+    capturable = deployable[capturable_name]["median_pct_mean"]
+    print("\n## deployable selection over %d arms" % len(deployable))
+    for name in sorted(deployable, key=lambda n:
+                       -deployable[n]["median_pct_mean"]):
+        print("  %-26s %+9.4f  sd %.4f"
+              % (name, deployable[name]["median_pct_mean"],
+                 deployable[name]["median_pct_sd"]))
+    print("  headline arm %s at %+0.4f ; argmax-rule-only reading %+0.4f"
+          % (capturable_name, capturable, primary))
+
     print("\n## constant-lambda control: is the gain adaptivity or just depth?")
     lam_rows = []
     for lam in LAMBDA_GRID:
@@ -714,9 +735,19 @@ def main() -> int:
         "e150_positive_control_constant_clamped_pp":
             arms["L0c_argmax_clamped"]["median_pct_mean"],
         "e150_predictor_arms": arms,
-        "e150_primary_arm": primary_name,
-        "e150_capturable_pp_at_measured_sigma": primary,
-        "e150_capturable_over_shipped_pp": primary - R7_SHIPPED_PCT,
+        "e150_primary_arm": capturable_name,
+        "e150_capturable_pp_at_measured_sigma": capturable,
+        "e150_capturable_over_shipped_pp": capturable - R7_SHIPPED_PCT,
+        # The pre-registered single-arm reading, kept so the headline cannot
+        # be mistaken for the only number this rung produced.
+        "e150_capturable_pp_argmax_rule_only": primary,
+        "e150_capturable_arm_selection_n": len(deployable),
+        "e150_capturable_deployable_arms": {
+            name: deployable[name]["median_pct_mean"] for name in deployable},
+        "e150_capturable_per_prompt_ratio":
+            deployable[capturable_name].get("per_prompt_ratio"),
+        "e150_capturable_median_pct_sd":
+            deployable[capturable_name]["median_pct_sd"],
         "e150_pre_draft_predictor_sigma": sigma_out,
         "e150_pre_draft_predictor_reachable_sigma": reachable_out,
         "e150_pre_draft_predictor_scalar_k_sd": scalar_sd_out,
@@ -815,11 +846,12 @@ def main() -> int:
         "e150_error_distribution": residuals,
         "e150_error_distribution_is_gaussian": residuals.get("is_gaussian"),
         "e150_r1_gate_pct": R1_GATE_PCT,
-        "e150_r1_gate_cleared": primary >= R1_GATE_PCT,
+        "e150_r1_gate_cleared": capturable >= R1_GATE_PCT,
+        "e150_r1_gate_cleared_argmax_rule_only": primary >= R1_GATE_PCT,
         "e150_realised_headroom_axis_pp": (R7_ORACLE_DEPTH_PCT
                                            - R7_SHIPPED_PCT),
         "e150_axis_captured_frac": (
-            (primary - R7_SHIPPED_PCT)
+            (capturable - R7_SHIPPED_PCT)
             / (R7_ORACLE_DEPTH_PCT - R7_SHIPPED_PCT)),
     })
 

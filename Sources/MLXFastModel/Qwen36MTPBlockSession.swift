@@ -1136,7 +1136,7 @@ public final class Qwen36MTPBlockSession {
     internal static let depthPriceArm: DepthPriceArm = {
         let requested = ProcessInfo.processInfo
             .environment["MLX_E134_DEPTH_PRICE_ARM"] ?? ""
-        return DepthPriceArm(rawValue: requested) ?? .pb6
+        return DepthPriceArm(rawValue: requested) ?? .ship
     }()
 
     /// E145 RESEARCH INSTRUMENT, DEFAULT OFF. Pin the drafted depth to a
