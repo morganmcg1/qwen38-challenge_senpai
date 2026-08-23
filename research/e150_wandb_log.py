@@ -379,6 +379,98 @@ def log_receipt_transfer(run, summary: dict, rt: dict) -> None:
          for name, r in sorted(receipts.items())])})
 
 
+def log_a0_transfer(run, summary: dict, a0: dict) -> None:
+    """F6 section 3: how much of the measured 5->6 cliff is a deletable rung?
+
+    The frame control is logged first and as a table, because it is the reason
+    the answer is 0.31 and not 0.65: the marginals the question was asked with
+    had already been divided by the level-transfer constant, so applying it
+    again would have inflated the share by k and flipped the verdict.
+    """
+    for key, value in a0.items():
+        if isinstance(value, (int, float, bool, str)) \
+                and key.startswith("e150_"):
+            summary[key] = value
+    band = a0.get("e150_a0_rung_share_band")
+    if isinstance(band, list) and len(band) == 2:
+        summary["e150_a0_rung_share_band_lo"] = band[0]
+        summary["e150_a0_rung_share_band_hi"] = band[1]
+    control = a0.get("e150_a0_frame_control", {})
+    run.log({"a0_frame_control": table(
+        ["step", "published_us", "measured_local_us", "measured_over_k_us",
+         "implied_k", "error_pct"],
+        [[r.get("step"), r.get("f6_published_us"), r.get("measured_local_us"),
+          r.get("measured_over_k_us"), r.get("implied_k"), r.get("error_pct")]
+         for r in control.get("rows", [])])})
+    pre = a0.get("e150_a0_curve_pre", {})
+    post = a0.get("e150_a0_curve_post", {})
+    run.log({"a0_curve_pre_post": table(
+        ["width", "round_us_pre", "round_us_post", "cost_per_token_pre",
+         "cost_per_token_post", "admissible_pre", "admissible_post"],
+        [[w,
+          pre.get("round_us", {}).get(str(w)),
+          post.get("round_us", {}).get(str(w)),
+          pre.get("cost_per_token_us", {}).get(str(w)),
+          post.get("cost_per_token_us", {}).get(str(w)),
+          w in pre.get("admissible_widths", []),
+          w in post.get("admissible_widths", [])]
+         for w in range(1, 9)])})
+    rows = []
+    for label in ("pre", "post"):
+        block = a0.get("e150_a0_repriced_%s_a0" % label) \
+            or a0.get("e150_a0_repriced_%s" % label, {})
+        rows.append([
+            label, block.get("mu_star"), block.get("lambda_star"),
+            block.get("policy_pct"), block.get("policy_pct_sd"),
+            block.get("gain_pp"), block.get("policy_mean_depth"),
+            block.get("policy_frac_inadmissible")])
+    run.log({"a0_repriced_policy": table(
+        ["arm", "mu_star", "lambda_star", "policy_pct", "policy_pct_sd",
+         "gain_pp", "mean_depth", "frac_inadmissible"], rows)})
+
+
+def log_r3_readback(run, summary: dict, r3: dict, witness: dict | None) -> None:
+    """R3: the host round trip a sequential stopping rule has to pay.
+
+    RULE 79. These are timed legs, so the witness is logged beside the cost and
+    the cost is meaningless without it. `e150_r3_schedule_identical` is the
+    claim that makes this a cost measurement with the policy held fixed rather
+    than a schedule-policy contrast, and it is read from the run's own trace.
+    """
+    for key, value in r3.items():
+        if isinstance(value, (int, float, bool, str)) \
+                and key.startswith("e150_"):
+            summary[key] = value
+    for cand, block in r3.get("e150_r3_summary", {}).items():
+        for field in ("blocks", "delta_us_per_round_mean",
+                      "delta_us_per_round_sd", "delta_us_per_round_se",
+                      "delta_us_per_token_mean"):
+            summary["e150_r3_%s_%s" % (cand, field)] = block.get(field)
+    run.log({"r3_blocks": table(
+        ["replicate", "candidate", "prompt", "control_us_per_round",
+         "arm_us_per_round", "delta_us_per_round", "delta_us_per_token",
+         "within_arm_spread_us", "within_control_spread_us"],
+        [[b.get("replicate"), b.get("candidate"), b.get("prompt"),
+          b.get("control_us_per_round"), b.get("arm_us_per_round"),
+          b.get("delta_us_per_round"), b.get("delta_us_per_token"),
+          b.get("within_arm_spread_us"), b.get("within_control_spread_us")]
+         for b in r3.get("blocks", [])])})
+    if witness:
+        run.log({"r3_witness": table(
+            ["arm", "rounds", "rb_total", "rb_per_round_mean",
+             "rb_mismatched_rounds", "depth_sequence_diffs", "edl",
+             "accept", "round_count"],
+            [[arm, a.get("rounds"), a.get("rb_total"),
+              a.get("rb_per_round_mean"), a.get("rb_mismatched_rounds"),
+              a.get("depth_sequence_diffs"),
+              a.get("report", {}).get("effective_mean_draft_len"),
+              a.get("report", {}).get("accepted_draft_rate"),
+              a.get("report", {}).get("round_count")]
+             for arm, a in witness.get("arms", {}).items()])})
+        summary["e150_r3_witness_problem_count"] = len(
+            witness.get("problems", []))
+
+
 def log_r4_presubmit(run, summary: dict, r4: dict) -> None:
     """R4: the Swift rule's own 512-token exactness and schedule evidence.
 
@@ -569,7 +661,10 @@ def main() -> int:
     r4 = load("r4_presubmit.json")
     rp = load("r4_realised_price.json")
     rt = load("receipt_transfer.json")
-    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4, rp, rt)):
+    a0 = load("a0_transfer.json")
+    r3 = load("r3_readback.json")
+    r3w = load("r3_witness.json")
+    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4, rp, rt, a0, r3)):
         print("no E150 artifacts found under %s" % ARTIFACTS)
         return 1
 
@@ -582,14 +677,19 @@ def main() -> int:
                                          ("R2-L5L6", r2seq),
                                          ("R0.5c", rt),
                                          ("R4-presubmit", r4),
-                                         ("R4-realised-price", rp))
+                                         ("R4-realised-price", rp),
+                                         ("F6-A0-transfer", a0),
+                                         ("R3-readback", r3))
                           if v is not None],
         "harness": "local",
-        # R4 is the only rung that holds the GPU, and it publishes exactness
-        # and schedule counters rather than any timing.
-        "gpu_used": r4 is not None,
-        "timing_valid": False,
+        "gpu_used": r4 is not None or r3 is not None,
+        # R3 is the only rung that publishes a time. It is a cost measurement
+        # with the policy held fixed, ABBA-counterbalanced and ungated, which
+        # `program.md` permits as directional causal evidence inside one
+        # session. Every other rung is offline replay.
+        "timing_valid": r3 is not None,
         "gate_qualified_for_timing": False,
+        "cool_gate_passed_real_gate": False,
         "official_or_ranked_score": False,
         "frame": "decode",
         "replay_median_pct_frame": (
@@ -634,6 +734,10 @@ def main() -> int:
         log_realised_price(run, summary, rp)
     if rt is not None:
         log_receipt_transfer(run, summary, rt)
+    if a0 is not None:
+        log_a0_transfer(run, summary, a0)
+    if r3 is not None:
+        log_r3_readback(run, summary, r3, r3w)
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
