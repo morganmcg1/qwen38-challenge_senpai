@@ -56552,3 +56552,287 @@ The structural bet inside E150, stated so a later reader can check whether it pa
 | the 6->7 cliff, 25,861 us = 2.32x step | unpriced | unclaimed |
 
 **Closed in this entry**: `pb6` as a shipped mechanism, at `-2.3800 %` ranked. `onePass678`, on a new g17s spill tier and a `12.00 %` clock loss. Rung B2 and the `shift_dst` port, already present. The `+4.2 %` unexplained gap, which was our own base drift. The edit-surface hazard, withdrawn. `research/scored-surface-gate.sh`, out of chain. `e129_entry_point_census.py` for kernel-header edits, replaced. Clamp extension to all eight depths, at `-3.99` pp. Clamp constant retuning, at `+0.0588` pp under a `0.1218` pp floor. Per-position marginal calibration, still closed at `-0.5144` pp.
+
+## 311 — 2026-08-23 10:10 UTC — The prefill entry point is host-split, board mining is finished, and the receipt turns out to be a two-channel instrument
+
+Submission `0cf1637e` went out at 09:23:48Z and is still validating at 10:10Z. Payload: tight launch grid, probe 0.15, width-2 route, `onePass67` restored, and the flat depth price with `pb6` retired. Forecast 3.68 to 3.69 against a bar of 3.71959723 that has not moved in ten hours.
+
+While it validates, four students returned results that close two axes, open one, and correct three of my own numbers.
+
+### FINDING 250 — the prefill GEMM is the one scored kernel family we cannot execute on any machine we own
+
+Alphonse settled the rung A / rung B attribution by reading the dispatch condition rather than by measuring anything.
+
+| host | `is_nax_available()` | prefill GEMM entry point | rung A live | rung B live |
+|---|---|---|---|---|
+| ranked M5, `applegpu_g17s` | true | `affine_qmm_t_nax` | **no** | yes |
+| every Mac this team owns, `applegpu_g16s` | false | `affine_qmm_t` | yes | **no** |
+
+The source is `backend/metal/quantized.cpp:697-699` for the `_nax` selection, plus the split-K exclusion at `:790-810`. At `M = 512` the smallest scored `N` is 5120, so `n_tiles * m_tiles >= 2560`, so `split_k = max(1, 512/2560) = 1`, and split-K always falls back to `qmm`. Supporting artifacts: `qmm_splitk_falls_back_to_qmm = true`, `any_scored_uses_splitk = false`, `any_non_transposed_scored_gemm = false`, `any_scored_K_not_mult_64 = false`, `ranked_all_nax = true`, `local_all_qmm_t_impl = true`.
+
+The consequence is structural, not incidental. Every claim we make about the ranked prefill is either a static proof read out of the dispatch source or an M5 receipt. There is no third option and no local screen.
+
+Attribution, now settled:
+
+```
+e147_rungA_prefill_pct              local -1.0489 %   ranked 0 by dispatch
+  t -11.30, entry spread 18.27 C, sensitivity -0.0108 %/C, thermal confound bounded 0.0169 pp
+e147_rungB_marginal_prefill_pct     ranked +2.1451 %  local 0 by dispatch
+```
+
+The whole `7226dc9a` prefill regression is rung B. Rung A never ran on the ranked host at all.
+
+**Ruling one — revert rung A as well.** It is ranked-dead, it consumes growth budget, and it leaves a permanent Rule 108 diff hunk against the promoted tree for no ranked effect. `program.md` makes deletion the default. Target: `e147_rungE_base_composition = clean 770a3ff2`.
+
+**Ruling two — rung E-1b is a rehearsal, not a shipment.** It retiles `qmm_t_impl` inside `quantized.h`, which the same table shows the ranked host never reaches. Its value is that it proves the grid-stride index algebra under real dispatch; the matmad arithmetic does not transfer to the NAX path. Reported as `e147_rungE1b_ships = false`.
+
+`e147_rungE_matmad_branch_bitexact` stays open and host-blocked.
+
+### RULE 145 — a template branch set with no `else` fails open
+
+`tile_matmad_nax`, at `nax.h:825-884` and not editable, has exactly two `if constexpr` branches and no `else`. A shape with `TN == 1` and **odd** `TM` matches neither branch. It compiles clean and multiplies nothing.
+
+Alphonse found this only because of an accident: the one NAX shape that `metal-tt` will translate on this toolchain is that fail-open shape. His 96x32 probe, `TM=3, TN=1`, produced a 3,530-byte kernel at 28 registers, while both real shapes were refused with byte-identical errors.
+
+`e147_rungE2_failopen_shape_exists = true`, `e147_rungE2_failopen_control_observed = true`.
+
+**The rule: before any NAX retile, `static_assert` that `(TM, TN)` reaches a real branch — `TN % 2 == 0 || TM % 2 == 0`.** The 128x32 retile we want is `TM=4, TN=1` and is therefore safe, but the assertion goes in anyway.
+
+Supporting facts from the same rung: `e147_rungE2_scored_shape_also_untranslatable = true`; `e147_rungE2_retile_refusal_identical_to_scored = true`; `e147_rungE2_register_census_available = false`; `e147_rungE2_k_order_preserved = true`, since `SK = 32` is a hard constant. Both `mma` overloads, N-paired at `nax.h:393-458` and M-paired at `:464-528`, issue an identical `matmul2d_descriptor(16, 32, 16, transpose_a, transpose_b, true, multiply_accumulate)`. Only the operand register packing differs: `ct_a` holds 1 fragment versus 2, `ct_b` holds 2 versus 1.
+
+### RULE 101 AMENDED — a permutation control cannot fail on a self-indexed tile function
+
+`compute_tile(row, col)` reads its operands at `(row, col)` and writes its result at `(row, col)`. Any bijection from the flattened tile index onto the tile set therefore leaves the output byte-identical. Alphonse's first control, `((t + 1) % tiles_x) * BN`, was a bijection and could not fail.
+
+**A control on a self-indexed tile function must break coverage, not order.** The replacement is `((t % tiles_x) / 2) * BN`, which maps two source tiles onto one column block so that half the tiles are computed twice and half are never written, with every pointer still in range. He kept `research/e147-rungE1b-rotation-control.txt` in the tree so the reasoning is auditable.
+
+E-1b build phase is green: `off_sha=6318d08e`, `on_sha=38f3d585`, `ctl_sha=a071d5c1`, `tree_restored=true`, `twin_audit_after=ok`. `research/e147_rungE1b.sh build|legs` restores the tree before returning.
+
+### RULE 146 — the ranked receipt is a two-channel instrument
+
+Each receipt publishes `prefill_seconds_per_token` separately from `mtp_seconds_per_token_mean`, and the leg total includes prefill. Decode-only time is therefore recoverable per prompt, which `research/f201_leg_split.py` already does.
+
+**A prefill-only mechanism and a decode-only mechanism may be composed on one submission and read independently.** Rule 75's disjointness requirement is satisfied by channel separation rather than by instruction-set disjointness, provided each mechanism is proved to act on only one channel. Finding 228 supplies that proof for the state, which does not touch the prefill.
+
+This roughly doubles submission throughput whenever prefill work is in flight.
+
+The cost is asymmetric and must be respected: if the prefill mechanism fails exactness, the whole submission fails and the decode read is lost too. Compose only when the decode mechanism is the weaker claim.
+
+### RULE 147 — per-prompt detectability is a per-round quantity, and essays is our finest channel
+
+Askeladd's n=11 per-prompt null block, W&B `ed35pv2s`, harness=ranked, 10 degrees of freedom per prompt, board at 889 rows.
+
+| prompt | sd TOTAL | chi2 95 upper | single receipt sd | sd DECODE | mean TOTAL | abs max |
+|---|--:|--:|--:|--:|--:|--:|
+| beagle | 0.1202 | 0.1914 | 0.0850 | 0.1267 | +0.0520 | 0.3123 |
+| botany | 0.1059 | 0.1687 | 0.0749 | 0.1128 | +0.0348 | 0.2228 |
+| drama | 0.1709 | 0.2723 | 0.1209 | 0.1818 | +0.0296 | 0.3419 |
+| essays | 0.0407 | 0.0648 | 0.0288 | 0.0486 | +0.0029 | 0.0903 |
+| medicine | 0.0605 | 0.0964 | 0.0428 | 0.0692 | -0.0141 | 0.1114 |
+| plutarch | 0.3348 | 0.5334 | 0.2367 | 0.3462 | -0.1749 | 0.6448 |
+| republic | 0.0663 | 0.1057 | 0.0469 | 0.0713 | -0.0050 | 0.1292 |
+| travel | 0.1993 | 0.3174 | 0.1409 | 0.2076 | +0.0004 | 0.4004 |
+
+The noise is **per round, not per token**. Dispersion rises with round count, Pearson +0.9547, when averaging down predicts it should fall. Implied jitter is 57.30 us per round, sd 26.82, and it flattens the apparent spread from 8.2x to 4.76x.
+
+Converted to a detectable per-round saving at 2 sigma from one receipt:
+
+| prompt | us/round detectable |
+|---|--:|
+| essays | **44.5** |
+| medicine | 66.9 |
+| republic | 70.9 |
+| beagle | 119.5 |
+| drama | 123.8 |
+| botany | 129.2 |
+| travel | 150.1 |
+| plutarch | 211.9 |
+
+Combine this with Rule 129, which makes the upper median slot `min(essays, republic, medicine, botany)`, and with F215, which shows essays owns that slot on 26 of 29 rows, 89.7 %. **Essays both decides the upper slot and is 2.7 times finer than beagle.** Meanwhile beagle carries 73.4 % of median-pair variance.
+
+**A per-round mechanism that the median pair cannot resolve at 0.1547 pp may still be confirmed on essays alone.** Report per-prompt detectability beside any median-pair null from now on.
+
+Two further results from the same block:
+
+**Cross-validation of Rule 144.** An independent per-prompt decomposition predicts a median-pair sd of 0.0701 pp against the 0.0774 pp measured directly. Agreement to 0.007 pp means the two legs are near-independent and Rule 144's 0.1547 pp gate is sound.
+
+**Driver ranking**, exact 8! permutation null with |rho| p95 = 0.7143. Per-step p is strongest, Pearson -0.9581, Spearman -0.9048, p 0.0046. Round count +0.9547 / +0.8095 / 0.0218. Mean draft length -0.9220 / -0.8095 / 0.0218. Rounds per second +0.9153 / +0.8095 / 0.0218. **F239 state exposure is refuted at -0.4907 / +0.1429 / 0.8401.** But round count against mean draft length has Spearman exactly -1.0000, because F233 makes them the same quantity, so this is one axis and not three. Within the five paying prompts alone, per-step p is not significant, Spearman -0.7000, exact p 0.2333.
+
+**Tail frames re-priced** in the median-pair frame, n=11 sigma 0.077360, 381 priceable rows:
+
+```
+<= -0.10   88 observed / 37.36 expected
+<= -0.15   56 / 10.00
+<= -0.20   38 / 1.85
+<= -0.30   20 / 0.020
+<= -0.50    9 / 3e-8
+```
+
+Weighted-five frame, sigma 0.062321: `<= -0.15` gives 53 / 3.06 and `<= -0.30` gives 14 / 0.0003. The E148 tail excess is robust. `214d92aa` sits at median-pair -0.1983 against an MDE of 0.1547, a ratio of 1.28x; weighted-five -0.1561 against 0.1246, a ratio of 1.25x. `e149_at_zero_block_n11_gate_verdict` is `fail` in the lead frame and `pass` in the weighted-five frame.
+
+Caveats we carry forward: ten of the eleven pairs are declared nulls and therefore upper bounds; the anchors overlap, with `684821ed` used four times, `1760479a` and `3ba6ee9d` twice each, and one each for `0b8602e1`, `48423d09`, `b8b8b860`; jackknife shrink is only 0.69x to 0.91x.
+
+### ADVISOR ERROR 176 — I published a variance ratio from two degrees of freedom
+
+I told the team that beagle is "4.7 times noisier" than the paying prompts. That figure came from a comparison with two degrees of freedom and it is withdrawn.
+
+The measured value is `e149_beagle_to_paying_four_noise_ratio = 1.661`, CI `[1.075, 2.997]`, and in the decode frame 1.604, CI `[1.038, 2.893]`. Beagle is noisier, but by a factor under two, not by nearly five.
+
+### ADVISOR ERROR 177 — a cost curve carries a frame label too
+
+I quoted E145's measured-curve cliffs, 29,134.5 us at 5->6 and 25,861.5 us at 6->7, to askeladd without naming their source. His branch predated the `601c137c` merge and he correctly could not verify them.
+
+Rule 144 already says a *price* carries a frame label. The amendment is that a *cost curve* does too: measured or replayed, local or ranked, and the commit at which it was measured.
+
+### ADVISOR ERROR 30 — closed, and inverted
+
+Askeladd's rung 0b returned `e149_e85_repricing_is_two_mechanism = 1.0`. The diff `6ebbff98..61612aa8`, which produced submission `214d92aa`, is +384 lines and adds **two** independently-landable kernels, not one:
+
+- `qwen35QuantizedEmbeddingDualRMSNormConcatKernel`, string `qwen35_q4_embedding_dual_rms_norm_concat_bf16_v1`, +134 lines. Call it R1.
+- `qwen35DraftTop32FusedRerankKernel`, string `qwen_mtp_draft_top32_fused_rerank_affine4_g64_v1`, +174 lines. Call it R2.
+
+384 = 134 + 49 for R1's call path + 174 + about 27 for R2's call path.
+
+Isolations on the eight-prompt mean of seven usable prompts:
+
+| pair | content | mean7 | sd7 |
+|---|---|--:|--:|
+| `0dd455f0 -> 214d92aa` | R1 + R2 | **-0.1490 %** | 0.043 |
+| `0dd455f0 -> 1a4218f5` | R1 + R2, same tree | -0.1545 % | 0.051 |
+| `8e83c6b3 -> 4510b358` | **R1 only** | **-0.0190 %** | 0.025 |
+| `8819b108 -> 9135aa55` | **R1 only** | **-0.0378 %** | 0.042 |
+| `8819b108 -> 82a75001` | R2 only | +1.3207 % | 0.617, cross-mode, unusable |
+
+So `e149_e85_reduction2_share_of_1p9x` is about **0.82**, range 0.75 to 0.88.
+
+**E85 arm (b) is `-0.028 %`, range `-0.019` to `-0.038 %`, not `-0.149 %`.** My original `-0.08 %` was two to three times too generous, not 1.9 times too low. Ledger `:25754-25755`, which recorded the 1.9x factor and the "+0.18 % to +0.20 %" replacement, is withdrawn. Ledger `:27430`'s `-0.021 %` stands. The instrument check reproduces ledger `:25748` digit for digit.
+
+### Arm B cancelled before it ran, and E148 is now fully closed
+
+`Qwen35.swift:4052-4055` with its dispatch at `:6374-6385` shows our tree already passes `exact.weight`, `exact.scales`, `exact.biases` and `candidateIDs` directly, with no `MLX.take` and no `quantizedMM`. The rival's parents — `6ebbff98`, `8b54ff11`, `b40c28e9` — still ran three `take` calls plus a `quantizedMM` plus a rerank. So the roughly -0.12 pp attributable to R2 is mostly gather and QMM elimination **that we already ship**. The residual available to us is the dispatch merge alone, three down to two.
+
+Kill arithmetic: one dispatch per round; F34 puts a null dispatch at 0.78 to 1.06 us; take a generous 10 us per round; 10 / 515.2 = **0.0194 % of the published median**. That is eight times below the median-pair MDE and 4.5 times below essays' 44.5 us floor. `e149_armB_status = cancelled_below_detection_floor`.
+
+This closes E148 entirely. H148 was already falsified. Survivor 2, `d5e94249`, is under MDE. Survivor 1, `214d92aa`, is dead on our tree. **Board mining is finished as a strategy.** It produced Rule 147, the n=11 noise block, the corrected E85 price and the tail-excess result, all of which we keep, but it has no further candidate mechanisms to give us.
+
+### Literature calibration for the per-round axis
+
+A delegated survey put a prior on edward's `+6.2170 pp` clairvoyant headroom. Published adaptive-draft-length methods recover **25 to 35 % of their own oracle gap**. DISCO: oracle +39 %, realised +10 %, so 26 %. AdaEAGLE: oracle +29 to 42 %, realised about 3 to 5 %, so about 14 %. Liu et al.: oracle 2.75x against a best fixed k=5 at 2.10x, about 31 % headroom.
+
+**Prior for us: +1.5 to +2.5 pp realisable.** Under the prophet-inequality framing, recovering a quarter to a half of an oracle gap is the theoretical norm rather than a disappointment.
+
+The pieces that changed what we asked edward for:
+
+- **arXiv:2601.11580 section 8.1** defines the oracle exactly as we do, treats MTP as a first-class variant, and shows the oracle gap **widens** as verification's share of step time grows. Ours is 92.5 % by E131, which is near the top of their range.
+- **AdaEAGLE, arXiv:2412.18910** runs its length predictor before any draft, from the target's **final-layernorm hidden state** of the last validated token plus that token's embedding. Regression beat classification, 3.03 against 2.87, with an asymmetric L1 penalising over-prediction. Zero extra forward passes.
+- **SpecDec++, arXiv:2405.19715, Theorem 4.3** proves the optimal policy is a threshold policy on the conditional acceptance probability, and Appendix B.1 shows entropy and confidence heuristics are provably sub-optimal.
+- **POSS, arXiv:2506.03566** gives the formal reason the marginal is worthless to us: round survival is a product of `P(accept at i | accept at i-1)`, a heavy-tailed functional dominated by the first failure.
+- **WISP, arXiv:2601.11652** trains only on first-rejection positions and ignores the suffix, which is exactly our `K_r`.
+- **arXiv:2411.00841, Theorem 2** proves that within the unbiased single-chain class no rejection improvement is possible, and that improvement requires parallel sequences. `requireStructurallySound` forbids those. **The schedule is the only remaining lever inside our structural constraint.** This is now a standing campaign fact.
+- **TapOut, arXiv:2511.02017** is the sobering datum: the entire dynamic-draft-length family sits between 0.89x and 1.28x against a well-tuned Static-6, and several members lose. That is consistent with our own -0.5144 pp on the perfect-marginal arm.
+
+Integrity exclusions recorded: MARS, AutoJudge, PAD and CACTUS all obtain their gains by relaxing acceptance. We read them for the signal and never for the rule.
+
+### The lambda-star correction to our own scheduler
+
+Our shipped rule is
+
+```
+guard reach > price.marginal[depth] * (1.0 + expected) / price.cumulative[depth]
+```
+
+which rearranges to
+
+```
+reach / marginal[depth]  >  (1 + expected) / cumulative[depth]
+```
+
+That is marginal gain per marginal cost against **the current round's own** average gain per average cost. It is a ratio rule and it is better founded than the additive OLA rule the published baselines use.
+
+But the renewal-reward optimum is a per-round argmax of the linearised objective `E[tokens | d] - lambda* * C(d)`, where `lambda*` is the **optimal global long-run tokens per microsecond** found by a fixed point. We substitute the current round's realised rate for that fixed point. The substitution is untested, costs no GPU, and runs offline on edward's existing replay harness.
+
+Asked of edward as R0.5: `e150_lambda_star`, `e150_argmax_linearised_pct`, `e150_argmax_linearised_pct_clairvoyant`, `e150_policy_form_gain_pp`. A tie is a good result, because it would confirm +0.1338 pp is a genuine ceiling for the EMA information state rather than a policy-form artefact.
+
+Revised E150 stop rule, keyed to the literature prior:
+
+```
+< +0.4338 pp        axis closed, stop
++0.4338 to +1.5 pp  below the published norm; the gap is in the PREDICTOR, not the axis
++1.5 to +2.5 pp     at the published norm; proceed to R4
+> +2.5 pp           better than anything published; re-examine positive controls first
+```
+
+### Assignments in flight
+
+| PR | student | state |
+|---|---|---|
+| #135 | thorfinn | F41. Submitted `0cf1637e`. Receipt read order fixed; Idea 3 and Idea 2 source prep, zero GPU; xsums dispatch cost isolation, cost only. |
+| #147 | alphonse | F11. Revert both rungs to clean `770a3ff2`; E-1b legs with the coverage control; E-1c 128x32 NAX port with the Rule 145 assertion. |
+| #149 | askeladd | F5. Arm A leaf16 on the GPU; arm B cancelled; arm C SDPA query-split; **arm D new, below**. |
+| #150 | edward | F1. R0 reprice, R0.5 lambda-star, R1 pre-draft predictor. `e150_capturable_pp_at_measured_sigma` is the campaign's most important pending number. |
+
+### Arm D — solve the ranked M5 per-width cost curve from public receipts
+
+Assigned to askeladd as F5, zero GPU, parallel to his arm A session.
+
+Everything we price this round rests on edward's local measured curve divided by a single scalar `k = 2.1034`. The two hosts diverge exactly where the decision lives: g16s begins spilling at NA=6, g17s not until NA=8, and E137's g17s residency shows a dip at widths 6 and 7 followed by a **recovery** at 8 that our local host does not have. So Rule 138's admissible set may be wrong on the machine that scores us.
+
+The two competing curves, both in ranked units:
+
+```
+H-null, replayed
+ w      1        2        3        4        5        6        7        8        9
+ C   31173.2  34619.3  38065.4  41511.4  44957.5  61198.8  62824.9  70315.4  75638.9
+C/w  31173.2  17309.7  12688.5  10377.9   8991.5  10199.8   8975.0   8789.4   8404.3
+   -> widths 7, 8, 9 all admissible
+
+H-alt, measured local / k
+ w      2        3        4        5        6        7        8
+ C   33482.9  35748.7  39549.6  45308.7  59158.9  71454.6  73329.7
+C/w  16741.5  11916.2   9887.4   9061.7   9859.8  10207.8   9166.2
+   -> minimum at 5, nothing after it admissible; this is Rule 138
+```
+
+They differ by 13.7 % at width 7, which is far above the receipt noise in the table above, so a receipt-based fit can separate them.
+
+Observation model, all public per row and prompt:
+
+```
+decode_us           = 512 * (mtp_spt - prefill_spt) * 1e6
+R                   = 512 / (1 + rate * effective_mean_draft_len)        (F233)
+decode_us_per_round = sum_w  m_w(row, prompt) * C_w * alpha_row
+```
+
+Core dataset is ours, because we cannot simulate a rival's scheduler. `572b2cc4` flat and `e003a86d` pb6 differ **only** in the depth-price arm, so they share one `C_w` and one level, and `pb6` deliberately moves mass — on plutarch from `edl` 0.1540 and 449 non-drafting rounds to `edl` 2.6995 and zero. That is a designed large perturbation of the mass matrix at fixed cost curve: sixteen equations, nine unknowns.
+
+Free consistency check: Finding 250 says rung A is ranked-dead and rung B is prefill-only, so `7226dc9a` and `e003a86d` must have identical ranked decode curves. If the fit disagrees, the fit is broken.
+
+The plutarch anchor makes `C_1` nearly free. At the bar, 449 of 486.76 rounds are non-drafting, 92.24 % at width 1, against a prefill-free round cost of 30,745 us. Solving the mixture puts `C_1` near 30,100 to 30,700 against H-null's 31,173, so the **level** of the replayed curve is roughly right and only the **shape** at 6, 7 and 8 is in doubt.
+
+The positive control is the whole experiment. Generate synthetic receipts from a known ground-truth curve, add noise at the per-prompt levels measured above, and ask whether the solver recovers the correct admissibility verdict. Run the negative control too, generating from the replayed curve and confirming the solver returns the replayed answer. If the positive control fails, the method is inadequate and we stop there.
+
+Traps named in the brief: Advisor Error 156, since mean draft length is not a sufficient statistic and the published mean-rows positions are mixture statistics that must never be used as interpolation points; and Rule 144, since the synthetic control is local ground truth expressed in ranked units and the two frames must not touch.
+
+Decisive outputs: `e149_rungD_width6_admissible_ranked` and `e149_rungD_width7_admissible_ranked`. If either comes back true, the depth axis reopens on the scored host and edward's E150 scoring changes.
+
+### The queue after this entry
+
+| item | candidate-leg value | owner |
+|---|--:|---|
+| retire `pb6` from the base | about +2.4 % of published median | submitted, `0cf1637e` validating |
+| per-round discrimination axis | +6.2170 pp oracle; +1.5 to +2.5 pp realisable | edward #150 |
+| lambda-star renewal-reward policy form | untested, free | edward #150 R0.5 |
+| ranked per-width curve from receipts | may invalidate Rule 138 on the scored host | askeladd #149 arm D |
+| 128x32 NAX seed retile, E-1c | +0.382 % of median; only an M5 receipt can price it | alphonse #147 |
+| leaf16 on the shipped vocabulary | +0.21 to +0.51 % | askeladd #149 arm A |
+| xsums fill fusion, Idea 3 | -0.1463 % candidate leg; two rivals racing us | held for thorfinn |
+| SDPA KV re-read at qL >= 6 | about +0.34 %, fires on 58.6 % of rounds | askeladd #149 arm C |
+| E128's 36-arm table repriced on the measured curve | reprice moves cells up to 3.26 pp | edward #150 R0 |
+| FP32-twin activations, `Qwen35.swift:1480-1494` | +0.3 to +2.0 % | held for thorfinn, Idea 2 |
+| F22 width-6 register occupancy | +0.5913 % sd 0.0442 | thorfinn |
+| first-error focal loss on `mtp-head/` | off the acceptance axis; a Rule 125 mechanism | unclaimed |
+| nibble entropy of our own checkpoint | corrective, one hour, zero GPU | unclaimed |
+| GDN S=2 mid-state write gate | +0.2 to +0.6 % | unclaimed, highest risk |
+| cleanup PR | prune `pb5`/`pb6`/`pb7`/`pbfit`, `MLX_E145_PIN_DEPTH`, `MLX_E130_WIRED_GATE_GIB`, stale Table/Grid/Entry arms | unassigned, after the receipt |
+
+**Closed in this entry**: arm B and the `214d92aa` fusion, below the detection floor. E148 in its entirety, and board mining as a strategy. Advisor Error 30, inverted: E85 arm (b) is -0.028 %, not -0.149 %. Rung A as a shippable, ranked-dead by dispatch. Rung E-1b as a shippable, ranked-dead by the same table. The "beagle is 4.7 times noisier" claim, published from two degrees of freedom.
