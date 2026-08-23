@@ -77,6 +77,7 @@ def main() -> int:
     posttight = load("posttight.json")
     itemab = load("itemab.json")
     r1r2 = load("r1r2.json")
+    r2b = load("r2b.json")
     if gate is None or cells is None:
         raise SystemExit("the cell C gate and the 2x2 must both be present")
 
@@ -632,6 +633,32 @@ def main() -> int:
                 1 for r in cellrows.values() if r["reordered"])
             summary["e140_rank_pair_changed_perturbation"] = sum(
                 1 for r in cellrows.values() if r["pair_changed"])
+
+    if r2b is not None:
+        # F8 Rule 123: the median is beagle plus the minimum of the four heavy
+        # prompts, so a gain that lands on plutarch, drama or travel is unpaid.
+        # `zero_weight_gain_share` and `beagle_cost_pct` price that directly.
+        r2b_rows = ([("posttight|" + k, v) for k, v in r2b["posttight"].items()]
+                    + [("oracle|" + k, v) for k, v in r2b["oracle"].items()])
+        run.log({"r2b_rank_reflag": table(
+            ["group_cell", "replayed_median_pct", "artifact_median_pct",
+             "curve_lopo_pct", "reproduces_artifact", "reordered",
+             "pair_changed", "median_pair", "rank_stable", "rank_agreement",
+             "beagle_cost_pct", "zero_weight_gain_share", "plutarch_unlock"],
+            [[key, row["in_sample"], row["artifact_in_sample"],
+              row["curve_lopo"], row["reproduces_artifact"], row["reordered"],
+              row["pair_changed"], "/".join(row["median_pair"]),
+              row["rank_stable"], row["rank_agreement"],
+              row["beagle_cost_pct"], row["zero_weight_gain_share"],
+              row["plutarch_unlock"]]
+             for key, row in sorted(r2b_rows)])})
+        for key, value in r2b["summary"].items():
+            if isinstance(value, (int, float, bool)):
+                summary["e140_r2b_" + key] = value
+        summary["e140_r2b_plutarch_unlock_cells"] = len(
+            r2b["summary"]["plutarch_unlock_cells"])
+        summary["e140_r2b_worst_zero_weight_share"] = max(
+            row["zero_weight_gain_share"] for _, row in r2b_rows)
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
