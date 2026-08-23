@@ -30,6 +30,11 @@ real measured value, not a missing-value sentinel.
 - Assignment-scope preflight:
 - Editable source bytes / headroom / growth / exempt-head bytes:
 - Scored-path reachability evidence:
+- Written promotion rule and verdict:
+- Pre-official evidence budget / timed legs used:
+- Frozen candidate SHA, if promoted for submission:
+- Specific evidence that invalidated the frozen SHA, if any:
+- Submission owner / read-only receipt-watcher job ID, if submitted:
 
 ## Evidence
 
