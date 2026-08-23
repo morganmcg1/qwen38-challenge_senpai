@@ -1,0 +1,36 @@
+{
+  "expected_rows": 1025,
+  "experiment": "e116-measured-transfer-from-kernel-percent-to-leg-seconds",
+  "failures": 1,
+  "harness": "local",
+  "legs": [
+    {
+      "matches_pin": false,
+      "row_count_ok": false,
+      "rows": 1024,
+      "sha256": "d070b3978940ee13f5a3ce224f1ac56e8c105c87d8d12220c7c6256ec683e158",
+      "tag": "e151x512cand"
+    }
+  ],
+  "order_control": {
+    "digest_moved": true,
+    "kind": "two adjacent rows swapped",
+    "row_index": 512,
+    "swapped_sha256": "48f537e3feea9ae9506cae5d3be81f9420f6aaae164e9b730f49d69c54e50cd8"
+  },
+  "pinned_sha256": "719d82b87c79d26a28ba326676bf144606c947cbbd337ed49347b0c5c61ec16e",
+  "runtime_negative_control": {
+    "digest_moved": true,
+    "reason": "a leg run over a different decode window emits a different set of mtp-row positions",
+    "rows": 257,
+    "sha256": "783d3ae1c420f5af37a3ec6c4b1fca7ad005936dac41b847ef685cb5661d6b85",
+    "tag": "e151x128neg"
+  },
+  "value_control": {
+    "digest_moved": true,
+    "kind": "single hex digit flipped in one row value",
+    "perturbed_line": "mtp-row: pos=513 ids=550,248068 v=fx1.8ap+4,0x1.6ap+4",
+    "perturbed_sha256": "b25aac3189adac2d9c5ca66a7a5b0cce02de501a3effcb129c30c647c58485fb",
+    "row_index": 512
+  }
+}
