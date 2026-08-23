@@ -1,53 +1,141 @@
 # SENPAI Research State
 
-- 2026-08-23 10:12 UTC
+- **2026-08-23 11:20 UTC**
+- Most recent human research direction: none received this generation. The
+  campaign is operating autonomously under `senpai/program.md`.
 
-## Most recent research direction from the human researcher team
+---
 
-No new human direction since the standing instruction to keep the campaign running without waiting for approval. The advisor is deciding experiments, submissions and closures autonomously under `senpai/program.md`.
+## Where we actually stand
 
-## Where the campaign stands
+Our submission `0cf1637e` published at **3.68278758**, a campaign best. The board
+bar is `684821ed` at **3.71959723** and has not moved in about twelve hours.
 
-The bar is `684821ed` at 3.71959723, promoted at 01:45Z and unmoved for over ten hours. Our best published row is `572b2cc4` at 3.66218564, a real candidate-leg gap of about 0.82 %.
+The published gap of +0.9995 % is misleading in both directions, and correcting
+it is the most important thing this campaign learned today.
 
-Submission `0cf1637e` went out at 09:23:48Z and is validating. It retires `pb6`, restores `onePass67`, and keeps the tight launch grid, probe 0.15 and the width-2 route. Forecast 3.68 to 3.69.
+```
+crown  684821ed   published 3.71959723   fair median 3.70683223
+ours   0cf1637e   published 3.68278758   fair median 3.69204161
 
-Seven rival rows are validating alongside it. Two of them, `570e0e35` and `ec24d591`, are independent attempts at the same xsums fusion we are holding for thorfinn, so either one publishing gives us a free ranked read on that mechanism.
+real tree gap  +0.4006 %        serial lottery  +0.5989 pp
+```
+
+The bar drew an essays serial leg at the **99.78th percentile of 897 scored
+rows** (z = +5.38). Zero of fifty-one frontier-cohort rows drew one as slow. A
+slow essays serial inflates essays' ratio, evicts essays from the minimum slot
+and hands the upper median slot to medicine at a higher value. About half a
+percent of the bar is luck we cannot copy and should not plan against.
+
+Our draft schedule is now **digit-identical to the crown's on all eight
+prompts**. The scheduler is no longer the difference. Candidate-leg speed is,
+and only that:
+
+```
+mean8 +0.4163 %      Rule 148 weighted +0.4004 %
+(was  +0.8221 %                        +0.9511 %  one submission ago)
+```
+
+**What we are planning against.** Parity with the crown tree needs a uniform
++0.3990 % candidate-leg speedup. Publishing above the bar needs **+0.9896 %** on
+our own serial draw. Finding 246 gives the crown tree a three-draw published sd
+of 0.346 % of the median, so at our current fair value the probability of taking
+the board on a single draw is about 1.6 % at +0 %, 16 % at +0.40 %, and **77 % at
++1.00 %**. Four tenths buys parity. We are aiming at a full percent.
+
+---
 
 ## Current research focus
 
-**One. The schedule is the only lever left inside our structural constraint.**
+Four mechanisms are live, each individually larger than the parity gap and two of
+them larger than the crown-taking target. They are deliberately independent so
+they can compose later.
 
-`requireStructurallySound` in the trusted driver forces a single linear chain, so tree drafting, hedge rows and multi-candidate verification are structurally impossible for us. arXiv:2411.00841 Theorem 2 proves that inside the unbiased single-chain class no rejection improvement is available at all. Everything therefore has to come from either the per-round schedule or from making the round itself cheaper.
+**1. Full-coverage xsums fill fusion — thorfinn, PR #135.** Two rival ranked
+receipts replicate the mechanism and invert to **4.900 microseconds per fill** at
+the 16-site reading. The rivals took 16 of 257 consumer sites. Our
+`boundaryFused` producer already covers 128, which prices at **+1.2175 %** — three
+times the parity gap. A GPU cost session is running now and is a direct
+falsification test of that 4.900 figure. Four structural hazards, all found by
+source reading, explain the rival attempt that failed with no score.
 
-Edward owns the schedule half as E150. The measured headroom is large and unusually well characterised: a clairvoyant per-round policy gains +6.3508 % against the shipped +0.1338 %, a gap of +6.2170 pp, while a policy with the *perfect marginal distribution* actually loses 0.5144 pp. The acceptance axis has split into two oracles and only the per-round one is worth anything. The literature says methods of this kind recover 25 to 35 % of their own oracle gap, so the honest target is +1.5 to +2.5 pp and the stop rule is written against that number.
+**2. Lambda-star linearised draft policy — edward, PR #150.** Rearranging the
+shipped scheduler from a ratio rule into a per-round argmax of
+`E[tokens|d] - mu* C(d)`, with the depth clamp removed, is worth **+0.9839 pp** on
+the pessimistic of our two cost curves. The entire gain lives at verify width 8.
+Escalated to build in parallel with the analysis rungs.
 
-**Two. Every price this round rests on a cost curve measured on the wrong host.**
+**3. The ranked M5 per-width cost curve — askeladd, PR #149, critical path.** Our
+two campaign curves swapped their 6->7 and 7->8 marginals by 7.56x and 0.25x.
+Edward priced on the pessimistic one. Whether his mechanism is real depends on
+whether width 8 is admissible on the ranked host, which Rule 138 currently forbids
+on a **1.18 sigma** measurement. This gates the largest item on the board.
 
-Rule 138's admissible width set, the Rule 143 discount, and the whole E150 scoring all derive from edward's local curve divided by one scalar. The two hosts diverge exactly where the decision lives: our Macs spill at NA=6, the ranked M5 not until NA=8, and the ranked host shows a residency recovery at width 8 that we never see. Askeladd is now solving the ranked curve directly from public receipts, with a synthetic recovery study as the gate. If width 6 or 7 turns out admissible on the scored host, a large part of this round's pricing is mis-framed and the depth axis reopens.
+**4. The ranked prefill channel — alphonse, PR #151, new.** Finding 254 corrected
+the ranked prefill value model upward by **1.37x**: the ranked serial leg runs the
+prebuilt baseline, so a candidate prefill saving changes the denominator only.
+The Rule 148 weighted prefill share is 10.0438 %, highest on exactly the prompts
+that decide the median. Three rows have shipped -4.1 to -5.0 % prefill cuts, worth
+**+0.42 to +0.51 %**. Our prefill sits at -0.01 %. We have never shipped one.
 
-**Three. The prefill is a real, large, unclaimed channel that we cannot screen locally.**
+---
 
-Prefill is 8.45 % of the candidate leg and the best prefill result anyone has published is -4.97 %. On our value model that converts to +0.3822 % of the median, about 46 % of our gap to the crown. Alphonse has just proved the ranked host takes a different GEMM entry point from every machine we own, so there is no local instrument at all: the submission *is* the experiment. His 128x32 NAX retile is the live attempt.
+## Themes that now govern how we read evidence
 
-**Four. Detection floors now govern what is worth building.**
+**The board is a two-channel instrument with a lottery in one channel.** Rule 146
+separates prefill from decode in every receipt. Rule 147 and the new
+detection-versus-realisation split separate the candidate leg from the ratio.
+Detection is a candidate-leg question and essays is our best instrument at
+0.0301 % sd; realisation is a ratio question and essays carries 0.8240 % of
+uncontrollable serial noise. Never use one instrument for both.
 
-Askeladd's per-prompt noise block turned the receipt into a calibrated instrument. Essays resolves 44.5 us per round, beagle 119.5, plutarch 211.9. The median-pair MDE is 0.1547 pp. Several ideas that looked plausible are now provably below the floor and have been killed on arithmetic rather than on GPU time, which is the cheapest possible way to close them.
+**The frontier weight vector is not the field weight vector.** Rule 148: above
+published median 3.3 the median pair is `beagle 0.5000, essays 0.4474,
+republic 0.0329, medicine 0.0197`. Finding 247 over-weighted medicine by 12.7x.
 
-## Recent closures worth remembering
+**A cost curve carries a frame label.** Rule 151: a mechanism that changes the
+schedule manufactures its own width mass and is exposed to the per-width cost
+curve, not to the mass ratio. Bracket it between both campaign curves and report
+the minimum.
 
-Board mining is finished. E148 asked whether any rival's unclaimed mechanism was worth taking and the answer is no: the best survivor is under our detection floor and the other is already in our tree. The exercise still paid for itself in instruments — Rule 147, the n=11 noise block, a corrected E85 price and a robust tail-excess result.
+**Never price a kernel change from an AIR delta.** Alphonse measured AIR
+overstating ISA by **181.3x** on the same edit.
 
-`pb6` is retired. It drafts hard on plutarch, the one prompt with exactly zero median weight, and pays for it on beagle. Both local instruments had the sign inverted because local width mass sits at 0.62 to 0.77 against a ranked 0.5390.
-
-Two shippables were killed by a single dispatch table this session: rung A and rung E-1b both edit code paths the ranked host never reaches.
+---
 
 ## Potential next research directions
 
-- **Recover the per-round oracle.** The predictor is the bottleneck, not the axis. The strongest published feature is the target's own final-layernorm hidden state, which the scored path already computes, trained as a regression with asymmetric L1 on first-rejection positions only.
-- **Fix the policy form.** Our threshold rule compares against the current round's realised rate where renewal-reward theory calls for a global fixed point. Free to test, offline.
-- **Settle the ranked cost curve.** Then re-derive the admissible width set, Rule 143 and E150's scoring on it.
-- **Prefill.** The NAX seed retile, and after it any other prefill mechanism, now that Rule 146 lets a prefill-only and a decode-only mechanism ride one submission and be read independently.
-- **The 6->7 cliff.** 25,861 us on the measured curve, 2.32x the step below it, still unattributed to a mechanism.
-- **Round-cost reduction below the QMV family.** The QMV subtotal is 88.6 % of the round and the fused residual, SDPA and GDN prework together are only 1,100 to 1,750 us, so the leverage is concentrated where the kernels are hardest.
-- **Corrective, unclaimed, cheap.** Nibble entropy of our own checkpoint; the GDN S=2 mid-state write gate; a cleanup PR to delete the retired depth-price arms and stale table, grid and entry arms now that the winner is decided.
+**Immediately actionable, unassigned:**
+
+- **Cleanup PR.** Prune `pb5`/`pb6`/`pb7`/`pbfit`, `MLX_E145_PIN_DEPTH`,
+  `MLX_E130_WIRED_GATE_GIB`, and the stale Table/Grid/Entry arms. Reclaim shared
+  growth budget: only **80,023 of 262,144 bytes** remain for four students.
+  Deletion is the default; the winning behaviour becomes the only path.
+- **Nibble entropy of our own checkpoint.** Corrective, one hour, zero GPU.
+- **FP32-twin activations (Idea 2).** +0.3 to +2.0 %. Shares Idea 3's producer,
+  so it must be designed together with the fill fusion or it pays twice.
+
+**Queued behind current work:**
+
+- **The pipelined double-buffered K-loop in `qmm_t_nax_tgp_impl`.** If our NAX
+  GEMM lacks the double buffer that `fp_quantized_nax.h:340-420` already has,
+  that is the mechanism behind a -4.12 % rival prefill receipt. Alphonse R2.
+- **GDN S=2 mid-state write gate.** +0.2 to +0.6 %, highest implementation risk.
+- **GDN q/k scale weight-fold** at `Qwen35.swift:910`, `:1009`, `:1208`.
+  -0.4422 % prefill, under the detection floor alone but free to compose with a
+  larger prefill mechanism.
+- **First-error focal loss on the proposal head.** Off the acceptance axis and
+  subject to Rule 125's scheduler-response pricing.
+- **MARLIN four-stage pipelining and SplitK on the QMV family.** Unpriced.
+
+**Watch, do not chase:**
+
+- `ec24d591` is a third rival attempt at the fill fusion, validating now. If it
+  publishes well we lose first-mover advantage on our largest mechanism.
+- The `43925f29 -> a9dd132a` +1.92 % candidate-leg anomaly in ox-alpha's tree
+  remains unexplained. Their tree, not ours.
+
+**Standing integrity boundary.** Two rival head submissions built training
+corpora matched to the named hidden prompt families. Both were rejected. We read
+that literature for signal design only and never for the acceptance rule, and we
+never tune or evaluate against suspected hidden-prompt source text.

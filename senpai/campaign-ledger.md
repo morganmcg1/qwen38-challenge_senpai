@@ -56836,3 +56836,471 @@ Decisive outputs: `e149_rungD_width6_admissible_ranked` and `e149_rungD_width7_a
 | cleanup PR | prune `pb5`/`pb6`/`pb7`/`pbfit`, `MLX_E145_PIN_DEPTH`, `MLX_E130_WIRED_GATE_GIB`, stale Table/Grid/Entry arms | unassigned, after the receipt |
 
 **Closed in this entry**: arm B and the `214d92aa` fusion, below the detection floor. E148 in its entirety, and board mining as a strategy. Advisor Error 30, inverted: E85 arm (b) is -0.028 %, not -0.149 %. Rung A as a shippable, ranked-dead by dispatch. Rung E-1b as a shippable, ranked-dead by the same table. The "beagle is 4.7 times noisier" claim, published from two degrees of freedom.
+
+## 312 — 2026-08-23 11:20 UTC — The bar is a one-in-450 serial outlier, the real gap is four tenths of a percent, and we have never touched the channel that would close it
+
+Submission `0cf1637e` came back at **3.68278758**. That is our best result of the campaign, up from 3.66218564, and it is the first receipt in which our tree runs the crown's own draft schedule digit for digit.
+
+The entry that follows is mostly about what that receipt let us measure. The short version is that the board has been lying to us about how far behind we are, in both directions at once, and once the lie is removed the campaign is much closer to the front than it looked and much more exposed to variance than it looked.
+
+---
+
+### FINDING 251 — the bar carries about half a percent of pure luck
+
+I censused the essays serial leg across every scored row on the board.
+
+```
+essays serial seconds/token over all 897 scored rows
+  mean 0.037993572   median 0.037984678   sd 0.000087386 (0.2300 %)
+  p25 0.037925063  p50 0.037984666  p75 0.038054342  p90 0.038104726
+  p95 0.038132588  p99 0.038187492  p100 0.038540127
+
+  THE BAR 684821ed   0.038463342   = +1.2602 % vs median,  z = +5.38
+  percentile rank 99.78 %  --  only 2 of 897 rows drew a slower essays serial leg
+
+frontier cohort (published >= 3.60), n = 51
+  mean 0.037963982  median 0.037953178  sd 0.000101966 (0.2686 %)
+  THE BAR = +1.3442 % vs that median, z = +4.90, percentile 100.00 %
+  rows with a slower essays serial leg: ZERO of fifty-one
+```
+
+Because `raw = serial / candidate`, a slow essays serial leg **inflates** essays' ratio. That pushes essays out of the minimum slot and hands the upper median slot to medicine at a higher value. The bar is the only row among ten neighbours in its own tree family where essays is not the upper slot.
+
+```
+  the bar as published                            3.71959723   upper = medicine 3.8953
+  the bar with a median essays serial leg         3.70180673   upper = essays   3.8598   (-0.4783 %)
+  the bar with a median serial leg on all eight   3.70261672   upper = essays            (-0.4565 %)
+```
+
+Ten rows from the same tree family, showing how isolated the bar's draw is:
+
+| row | solver | essays serial | vs bar | upper slot | published |
+|---|---|--:|--:|---|--:|
+| `684821ed` | newjordan | 0.038463342 | +0.0000 % | medicine | 3.71959723 |
+| `f7d59543` | rinaldofesta | 0.037887625 | -1.4968 % | essays | 3.69864608 |
+| `165d4ba7` | jonathan308 | 0.037958404 | -1.3128 % | essays | 3.69634719 |
+| `54d42a3f` | newjordan | 0.037909033 | -1.4411 % | essays | 3.71031403 |
+| `570e0e35` | rinaldofesta | 0.037898283 | -1.4691 % | essays | 3.70543888 |
+| `3ba6ee9d` | Amal-David | 0.037977426 | -1.2633 % | essays | 3.70576324 |
+| `1760479a` | scarletbright | 0.037920256 | -1.4120 % | essays | 3.70355222 |
+| `43925f29` | Amal-David | 0.037917975 | -1.4179 % | essays | 3.71654402 |
+| `64508884` | ofou | 0.038046592 | -1.0835 % | essays | 3.71255696 |
+| `b8e0f27c` | a-github-name | 0.038104678 | -0.9325 % | essays | 3.70813712 |
+
+The empirical probability of drawing an essays serial leg as slow as the bar's is about 2 %, and zero of fifty-one frontier-cohort rows managed it. **We do not plan on the lottery.** It also explains the long board stall: recent rejections cluster at 3.70 to 3.72 with essays as the upper slot, all of them beaten by a number that a rerun of the same tree would probably not reproduce.
+
+Script `_advisor_scratch/f254.py`.
+
+---
+
+### FINDING 255 — `0cf1637e`, and the gap that is actually left
+
+The receipt first. The Rule 114 witness fired exactly as pre-registered:
+
+```
+plutarch   non_drafting_round_count = 449    effective_mean_draft_len = 0.156
+```
+
+`pb6` is retired and the arm selection is confirmed from the run's own trace, not from a local instrument that has now been inverted on this axis twice.
+
+The larger observation is that the schedule matched the crown on every prompt:
+
+| prompt | ours d / nd | crown d / nd |
+|---|---|---|
+| plutarch | 0.156 / 449 | 0.156 / 449 |
+| drama | 2.298 / 0 | 2.298 / 0 |
+| travel | 2.648 / 0 | 2.648 / 0 |
+| beagle | 4.382 / 0 | 4.382 / 0 |
+| medicine | 5.256 / 0 | 5.256 / 0 |
+| essays | 5.087 / 0 | 5.087 / 0 |
+| republic | 4.989 / 0 | 4.989 / 0 |
+| botany | 6.148 / 0 | 6.148 / 0 |
+
+The scheduler is no longer what separates us from the leader. Candidate-leg speed is, and only that.
+
+Candidate seconds per token, ours versus the crown, positive means we are slower:
+
+```
+prompt      0cf1637e (today)   572b2cc4 (previous)
+beagle          +0.4365            +0.9574
+essays          +0.3676            +0.9558
+medicine        +0.2594            +0.6182
+republic        +0.3829            +0.9908
+botany          +0.2759            +0.4895
+drama           +0.9959            +1.9684
+travel          +1.0609            +1.0046
+plutarch        -0.4489            -0.4080
+
+mean8           +0.4163            +0.8221
+Rule 148 wtd    +0.4004            +0.9511
+```
+
+Give both trees the same population serial vector, drawn from all 897 scored rows:
+
+```
+crown  684821ed   fair median  3.70683223   (as published 3.71959723, -0.3432 % of luck removed)
+ours   0cf1637e   fair median  3.69204161   (as published 3.68278758, +0.2513 % of luck restored)
+
+                  gap +0.4006 %
+
+published gap +0.9995 %,  of which +0.5989 pp is pure serial lottery
+```
+
+Counterfactual: give **our** tree the bar's essays serial leg and `0cf1637e` publishes **3.70595592**, which is 0.3667 % below the bar rather than 0.9995 %.
+
+Required uniform candidate-leg speedup, from `0cf1637e`:
+
+| target | on our own serial draw | on a fair serial draw |
+|---|--:|--:|
+| the crown's fair median | +0.6487 % | +0.3990 % |
+| the bar as published | +0.9896 % | +0.7408 % |
+
+**And the caution that goes with it.** Finding 246 gives the crown tree a three-draw published sd of 0.01281, which is 0.346 % of the median. At our current fair value of 3.69204, the probability of publishing above 3.71960 on a single draw is about 1.6 %. At +0.40 % it is about 16 %. At +1.00 % it is about 77 %. Four tenths of a percent buys parity with the crown tree; it does not buy the crown. **We are planning against +1.0 %, not +0.4 %.**
+
+Script `_advisor_scratch/f258.py`.
+
+---
+
+### FINDING 254 — the ranked prefill value model was understated by 1.37x, and the channel is worth more than the whole remaining gap
+
+Finding 227 priced a prefill saving as `raw' = (S - dP) / (C - dP)`. That subtracts the saving from the **serial** leg as well. It is the **local** harness model, where both legs run the candidate binary. It has been wrong in the ledger since it was written.
+
+In the ranked harness the serial leg runs the runner-owned prebuilt baseline. A candidate prefill saving changes the **denominator only**:
+
+```
+raw' / raw = 1 / (1 - f * P / (C + P))
+```
+
+And `P / (C + P)` is not the 8.4528 % unweighted figure we have been quoting. Weighted by Rule 148 it is **10.0438 %**, because the prefill share is highest on exactly the prompts that decide the median:
+
+| prompt | prefill share of candidate leg | Rule 148 weight |
+|---|--:|--:|
+| beagle | 9.6121 % | 0.5000 |
+| essays | 10.4643 % | 0.4474 |
+| medicine | 10.5641 % | 0.0197 |
+| republic | 10.5759 % | 0.0329 |
+| botany | 10.6515 % | 0.0000 |
+| drama | 5.7746 % | 0.0000 |
+| travel | 6.5806 % | 0.0000 |
+| plutarch | 3.3996 % | 0.0000 |
+
+Rebuilding all eight raw ratios and taking the true order statistic:
+
+| prefill cut | published median | % of median | Finding 227 said | ratio |
+|--:|--:|--:|--:|--:|
+| 2 % | 3.72713398 | **0.2026 %** | 0.1483 % | 1.37x |
+| 5 % | 3.73849669 | **0.5081 %** | 0.3718 % | 1.37x |
+| 10 % | 3.75758963 | **1.0214 %** | 0.7474 % | 1.37x |
+| 15 % | 3.77687904 | **1.5400 %** | 1.1269 % | 1.37x |
+| 20 % | 3.79636797 | **2.0640 %** | 1.5103 % | 1.37x |
+| 100 % | 4.13808737 | 11.2510 % | 8.2337 % | 1.37x |
+
+Three rows on the board have shipped a real ranked prefill win: `5cdc9c17` at **-4.9722 %** (BitWonka, "generalized NAX seed retile with a 128x32 rectangular tile"), `43925f29` at **-4.1182 %** and `a9dd132a` at **-4.1429 %** (both Amal-David, two threadgroup staging halves in the affine NAX transposed QMM).
+
+At the corrected model those are worth **+0.5050 %** and **+0.42 %** of the published median. **Either one is larger than our entire remaining gap to the crown tree.** Our own prefill sits at about -0.01 % versus the bar. We have never shipped one.
+
+To reach the crown's fair median on the prefill channel alone requires a 9.28 % cut; to publish above the bar, 13.65 %. Neither is proven-class, but the channel does not have to close the gap alone.
+
+Script `_advisor_scratch/f257.py`. Every prefill figure in the ledger before this entry is too small by 1.37x.
+
+---
+
+### FINDING 252 — Idea 3 is replicated, and the rivals took one eighth of it
+
+Two independent ranked receipts, both anchored on the crown, both rejected, both faster than the crown on the candidate leg:
+
+```
+  54d42a3f  newjordan     Grok 4.6         published 3.71031403  rejected
+  570e0e35  rinaldofesta  Claude Fable 5   published 3.70543888  rejected
+
+  candidate-leg % vs crown (negative = faster)
+  prompt       54d42a3f    570e0e35        mean
+  beagle        -0.1635     -0.1869     -0.1752
+  essays        -0.1287     -0.0388     -0.0837
+  medicine      -0.1855     -0.1485     -0.1670
+  republic      -0.1532     -0.1863     -0.1697
+  botany        -0.0553     -0.1934     -0.1244
+  drama         -0.0350     -0.1252     -0.0801
+  travel        +0.0854     +0.2060     +0.1457
+  plutarch      -0.5345     -0.5437     -0.5391
+
+  54d42a3f mean8 -0.1463 sd 0.1685 se 0.0637 | 570e0e35 mean8 -0.1521 sd 0.1934 se 0.0731
+  POOLED mean8 -0.1492 sd 0.1768 se 0.0668 | Pearson r +0.9086 | same sign 8/8 both
+  Rule 148 weighted: POOLED -0.1339 | F83 weighted: POOLED -0.1563
+```
+
+**Caveat that must travel with the number.** Both arms share the anchor, so `r = +0.9086` is inflated by the anchor's own draw and is not independent replication of the per-prompt shape. The proof is plutarch: it is 92 % non-drafting so `tablePays(m)` is false and the mechanism cannot fire, yet both rows show -0.54 %. Price on the five paying prompts only.
+
+Inverting to microseconds per round using the Finding 235 leg structure, five paying prompts:
+
+```
+  54d42a3f mean 74.0 sd 22.6 | 570e0e35 mean 82.8 sd 32.9 | POOLED 78.4 sd 17.3 us/round
+```
+
+The rival's own note names the consumer set: *"gated at the residual+RMSNorm-fed IN-PROJECTION (QKV) sites only, for `arm==.sumTable && tablePays(m) && (4...9).contains(m) && nRows==m`."* That is the 16 full-attention layers.
+
+| reading | sites | us per fill | matches the 4-6 us docstring? |
+|---|--:|--:|---|
+| `fa.qkv` only | 16 | **4.900** | **yes** |
+| `gdn.in_proj` + `fa.qkv` | 64 | 1.225 | no, too cheap |
+| all `boundaryFused` sites | 128 | 0.613 | no, too cheap |
+| every wide QMV | 257 | 0.305 | no, too cheap |
+
+Coverage ladder at 4.900 us per fill, using Rule 134's 515.2 us/round per 1 % of published median:
+
+```
+   sites  us/round  % of published median
+      16      78.4     0.1522   <- what the rivals took
+      64     313.6     0.6087
+     128     627.2     1.2175   <- thorfinn's 49.8 % boundaryFused coverage
+     257    1259.4     2.4445   <- if the producer can be moved everywhere
+```
+
+**Full `boundaryFused` coverage alone is +1.2175 %, three times the remaining gap to the crown tree.** Even the 64-site reading takes the crown.
+
+Two risks. First, linearity: the rival's note says *"host-side dispatch elimination shows up on this stack only where the dispatch count per token is high; asyncEval hides it elsewhere."* Thorfinn's `fill_noconsume` versus `replica` contrast eliminates all 257 at once, so it measures the total, not the marginal. Second, `d553da3d` (rinaldofesta's fused attempt) FAILED with no score, and `ec24d591` is a third attempt now validating.
+
+Counterfactual with the crown's own serial vector: `54d42a3f` would publish **3.72611782** and `570e0e35` **3.72581176**, both above the bar, both with medicine in the upper slot. **Both Idea 3 rows are genuinely faster candidates than the crown and were rejected purely on the serial lottery.** That is Finding 251 costing two rivals the board.
+
+Scripts `_advisor_scratch/f253.py`, `f256.py`.
+
+---
+
+### FINDING 253 and RULE 151 — the two campaign width curves swapped their 6->7 and 7->8 marginals
+
+```
+ w  replayed C   repl C/w    meas/k C   meas C/w   repl adm  meas adm
+ 1     31173.2    31173.2           -          -      yes         -
+ 2     34619.3    17309.7     33483.6    16741.8      yes       yes
+ 3     38065.4    12688.5     35750.4    11916.8      yes       yes
+ 4     41511.4    10377.9     39549.3     9887.3      yes       yes
+ 5     44957.5     8991.5     45308.3     9061.7      yes       yes (min)
+ 6     61198.8    10199.8     59159.5     9859.9       NO        NO
+ 7     62824.9     8975.0     71454.5    10207.8      yes        NO
+ 8     70315.4     8789.4     73330.8     9166.3      yes        NO
+ 9     75638.9     8404.3           -          -      yes         -
+
+  step marginals:  4->5 3446.1/5759.0 (1.67x) | 5->6 16241.3/13851.1 (0.85x)
+                   6->7 1626.1/12295.1 (7.56x) | 7->8 7490.5/1876.2 (0.25x)
+```
+
+The curves agree within 1.7x everywhere except those two adjacent steps, where they disagree by 7.56x in one direction and 0.25x in the other. Edward priced his policy on the **pessimistic** curve: 5->8 costs 19,415 us per extra token on measured, against width 5's 19,164, but only 8,453 on replayed against 8,991.5. His +0.9839 pp is the conservative end of a bracket, not a point estimate.
+
+Two independent arguments favour the replayed shape.
+
+**Revealed preference.** At the bar, mean `M = edl + 1` is beagle 5.3818, republic 5.9892, essays 6.0870, medicine 6.2556, botany 7.1481, giving a Rule 148 weighted mean M of **5.7345**. The frontier schedule already spends most of its scored paying rounds at width 6 or above. If the measured-local curve were ranked truth, the frontier schedule would be wrong on the majority of its own paying rounds — and eight solvers who tried to move that schedule all scored below it (T32 to T34).
+
+**Physical shape.** Finding 45's partition is `M=6 -> [3+3]`, `M=7 -> [4+3]`, `M=8 -> [4+4]`. Width 5 is one pass; width 6 is the first two-pass width. So the 5->6 cliff is the single-pass to two-pass transition, and 6->7 and 7->8 should both be cheap. E137's g17s residency agrees: 37 simdgroups at w6, 33 at w7, and **41 at w8**, because two `na4` passes run at 96 registers and 41 simdgroups each. The replayed shape is physically explicable. The measured shape is not.
+
+> **RULE 151.** Rule 143 discounts a gain acting on rounds the shipped schedule **already** sends to width 6 or above. A mechanism that **changes the schedule** and manufactures its own width-6-and-above mass is not exposed to that mass ratio at all; it is exposed to the ranked per-width **cost** curve. Price it against the ranked cost curve, or bracket it between the campaign's two curves. Never apply the mass discount to it.
+
+Rule 138 is now formally contested. Edward measures the width-8 exclusion at **1.18 sigma** (19,245.7 us/token at w8 against 19,164.1 at w5, a difference of +81.6 +/- 68.9). Askeladd's arm D is solving the ranked curve directly and is the campaign critical path.
+
+Script `_advisor_scratch/f255.py`.
+
+---
+
+### EDWARD E150 R0 and R0.5 — the published oracle was never the ceiling
+
+W&B `jtk41fzl`, `harness=local`, zero GPU.
+
+```
+  e150_e128_best_measured_arm = expectedonly   +0.3563 %   (+0.2225 pp over shipped +0.1338)
+  e150_e128_rankings_preserved_frac = 0.8587   arms beating shipped: 1 of 36
+  e150_r05_controls_all_reproduced = true      all four fixed points converged
+```
+
+The whole E128 arm table was measured on the replayed curve. Repriced on the measured curve, `rankedprice` moves from about 30th to 3rd, and `expectedonly` becomes the best of 36.
+
+The policy-form result:
+
+| cell | median % | vs shipped |
+|---|--:|--:|
+| shipped state, ratio rule (ships today) | +0.1338 | — |
+| shipped state, linearised, clamp ON | +0.2317 | +0.0979 pp |
+| **shipped state, linearised, clamp OFF** | **+1.1178** | **+0.9839 pp** |
+| same, mu* leave-one-prompt-out | +1.0487 | +0.9149 pp |
+| clairvoyant, ratio rule, clamp on | +4.9541 | — |
+| clairvoyant, linearised, clamp off | +8.6822 | — |
+
+`e150_lambda_star = 2.1879` tokens per normalised cost, `mu* = 0.4571` after 15 bisection steps. LOPO costs 0.0691 pp; the fold range is 0.4072 to 0.4768.
+
+`e150_published_oracle_is_not_the_ceiling = true`. The +6.3508 figure from E145 was only the oracle **for the ratio rule**. The revised headroom axis is **+8.5484 pp**.
+
+**The entire gain lives at verify width 8.** `frac_rounds_inadmissible` equals the width-8 share exactly in every arm; the rule jumps from width 5 straight to 8, skipping 6 and 7.
+
+| cap | linearised | shipped rule, same cap | gain | w8 share |
+|---|--:|--:|--:|--:|
+| w5 | -0.2189 | -0.4330 | +0.2141 pp | 0.0000 |
+| w6 | -1.2294 | -0.4330 | -0.7964 pp | 0.0000 |
+| w7 | -2.8671 | -0.4330 | -2.4342 pp | 0.0000 |
+| w8 | +1.1178 | -0.4330 | +1.5507 pp | 0.1495 |
+
+At cap w5 the linearised arm scores **worse** than what ships today. The mechanism is binary on the width-8 question, which is why arm D gates it.
+
+`e150_w8_decision_boundary_robust = true`: the rule needs **1.9367 +/- 0.0134** extra expected tokens to prefer w8 over w5, the threshold moves 0.69 % of itself per sigma, and the 7->8 marginal is 10.8 sigma from zero. Edward's own summary is the right one: *a rule can be robust while the taxonomy that forbids it is not.*
+
+I escalated him to R4 — build the mechanism — in parallel with R1, overriding my own earlier "+0.4338 to 1.5 pp, do not proceed" band on the grounds that the band was calibrated for predictor-based methods and this is a policy-form fix on information that already ships.
+
+---
+
+### RULE 148 — the median-pair weight vector is inverted at the frontier
+
+Thorfinn raised it; I verified it independently over 894 scored rows. Weights are `P(prompt in median pair)`, each slot worth 0.5.
+
+| band | n | slot distribution |
+|---|--:|---|
+| all rows | 894 | beagle .9776 medicine .3870 essays .3065 republic .1946 botany .1029 |
+| >= 3.0 | 621 | beagle 1.000 medicine .5040 essays .4010 republic .0548 botany .0403 |
+| >= 3.3 | 228 | beagle 1.000 essays .9123 medicine .0439 republic .0307 botany .0132 |
+| **>= 3.5** | **76** | **beagle 1.000 essays .8947 republic .0658 medicine .0395** |
+| >= 3.6 | 51 | beagle 1.000 essays .8627 republic .0784 medicine .0588 |
+| >= 3.7 | 14 | beagle 1.000 essays .9286 medicine .0714 |
+| our own rows | 12 | beagle 1.000 essays .6667 medicine .1667 republic .1667 |
+
+The transition is at about 3.3, not 3.5. Nineteen solvers sit in the `>= 3.5` band and essays dominates for essentially all of them. Rule 129's four-way tie **is not a tie at the frontier**: percent above the minimum in the `>= 3.5` band is essays mean 0.233 and median **0.000**, republic 1.062/1.138, medicine 1.258/1.136, botany 2.181/2.100.
+
+> **RULE 148.** The median-pair weight vector must be conditioned on the score regime. At published median >= 3.5 the weights are `beagle 0.5000, essays 0.4474, republic 0.0329, medicine 0.0197`. Finding 247's field vector over-weights medicine by 12.7x and under-weights essays by 2.80x, and is void above 3.3.
+
+Report our own twelve-row vector (`beagle 0.5000, essays 0.3333, medicine 0.0833, republic 0.0833`) alongside it as a sensitivity.
+
+---
+
+### The detection-versus-realisation channel split
+
+Askeladd's n=11 per-prompt null block measures the **candidate leg** and its prefill-free part. Thorfinn's independent n=3 candidate column agrees in ordering and magnitude, so Rule 147 is sound. But the two channels rank the prompts differently, and the difference matters:
+
+| prompt | cand sd % | serial sd % | ratio sd % |
+|---|--:|--:|--:|
+| beagle | 0.1850 | 0.0280 | 0.1568 |
+| botany | 0.0292 | 0.1856 | 0.2109 |
+| drama | 0.2674 | 0.2068 | 0.0646 |
+| **essays** | **0.0301** | **0.8240** | **0.8371** |
+| medicine | 0.0396 | 0.3702 | 0.3339 |
+| plutarch | 0.3552 | 0.1161 | 0.4153 |
+| republic | 0.0312 | 0.0394 | 0.0593 |
+| travel | 0.2007 | 0.0953 | 0.2903 |
+
+**Standing statement.** Detection — "did my mechanism work?" — is a candidate-leg question, and essays is the best instrument we have. Realisation — "will the published median move?" — is a ratio question, and on essays the serial lottery adds about 0.82 % that we cannot control. The two questions have inverted answers on beagle and essays. Never use one instrument for both.
+
+---
+
+### The pb6 pricing convention, and the median-pair churn gate
+
+Thorfinn's T53 section 1.1. The contrast `572b2cc4 -> e003a86d` changes the median pair from (beagle, essays) to (beagle, republic):
+
+```
+  realised published delta  -2.3800 % | held-pair delta -0.0710 % | Rule 129 worst upper slot -3.0444 %
+```
+
+The isolated pb6 price was -0.6741 %, so **the convention choice is 4.4x larger than the quantity it prices**. Held-pair subtraction over the board is bimodal: across all 889 rows, 71.36 % of contrasts change the pair, with abs error median 0.5954 pp and p99 58.58 pp. Restricted to published median >= 3.5 (n = 71), only 20.89 % change the pair, abs error median is **0.0000 pp**, p90 0.4400, max 3.4570.
+
+There is no usable error bar, but the failure is **observable**: compare the two median pairs before subtracting. Shipped as `research/e135_median_pair_churn.py --contrast`.
+
+---
+
+### The Idea 3 structural census (thorfinn, zero GPU, line numbers anchored at `a7d76fc9`)
+
+- `qwen35_custom_affine4_g64_xsums_v1` at `Qwen35.swift:1690-1713`. Grid `(32, k/512, m)`, threadgroup `(32,1,1)`. One lane owns **16 contiguous k elements** at `kb*512 + lane*16`. Per group of four: three bf16 adds, then a float accumulate over the four groups ascending. Output `xsums[(kb*32 + lane)*stride + row]` with `stride = 8` for `m <= 8` and 16 otherwise, so **the table format only supports `m <= 16`**.
+- Produced by `xsumsTable(x)` **inside `matmul` itself at `:2443`** — once per routed matvec, no reuse, no common-subexpression elimination.
+- Warm pipeline census: `xsums_v1` **1286**; `qmv_sums_na3_v2` with `USE_TABLE=true` 1, `na4` 514, `na5` 257, `na6` 257, `na7` 257. `1 + 514 + 257 + 257 + 257 = 1286`, so **exactly one fill per table-consuming matvec**. The 514 non-table dispatches are widths 2 and 3, because `tablePays(m) = m >= 4` at `:2322`.
+- **257 wide QMV calls per target forward pass**: `mlp.gate_up` 64, `mlp.down` 64, `gdn.in_proj` 48, `gdn.out_proj` 48, `fa.qkv` 16, `fa.o_proj` 16, `lm_head` 1.
+- **Fusion is exactly reproducible but half-coverage.** `qwen35FusedResidualRMSNorm` at `:2756-2874` gives each of 1024 threads 4 contiguous elements at `thread_id*4`, so one xsums lane is exactly 4 consecutive threads, always inside one simdgroup. The per-group bf16 sum is thread-local and exact, and the four float adds can be ordered `simd_shuffle` reads preserving accumulation order. But `boundaryFused` at `:3962-3994` produces only `gdn.in_proj` 48, `fa.qkv` 16 at `:3973`, and `mlp.gate_up` 64 at `:3989` — **128 of 257, or 49.8 %**.
+
+**Four hazards that may explain `d553da3d`'s failure**, all found by reading rather than running:
+
+1. The outer loop runs twice and pass 1 is partial. `axis_size` is 5120 and `lsize*n_reads` is 4096, so pass 0 covers 0..4095 with 1024 threads and pass 1 covers 4096..5119 with threads 0..255. The block index is `kb = t/128` on pass 0 but `8 + t/128` on pass 1, so **a fusion deriving lane and block from `thread_id` alone is wrong on 2 of 10 k-blocks, and an argmax match will not catch it**.
+2. The kernel declares `outputShapes: [shape, shape]`. A third output needs `[kBlocks*32*stride]` and a **template parameter, not a runtime branch**, because prefill runs at `m = 512` and overruns the stride-16 row index.
+3. The table must sum `normed`, not the residual `h`. Those are written one line apart at `:2834` and `:2836`, and the error is silent.
+4. `matmul` builds its own table at `:2443`, so consuming a norm-produced table needs `matmulWithTable` threaded through `Qwen35FusedMLP` and both attention entries.
+
+Idea 2's bit-exactness argument is accepted. The cast at `:1487-1490` is four `static_cast<float>(xv[i])`, and widening bf16 to float32 is lossless, so `a0..a3` and `partial[r]` are bit-identical. The one bf16-sensitive expression, `sums[m] += xv[0]+xv[1]+xv[2]+xv[3]` at `:1492`, sits inside `if (!USE_TABLE)`, and the shipped arm is `sumtable`, so it is compiled out on every scored dispatch. **Ideas 2 and 3 share one producer and must be designed together, or the second pays twice.**
+
+---
+
+### Alphonse E-1c — the 128x32 NAX retile guard, and the AIR calibration
+
+Verdict PASS on all sixteen fields: `base_source_differs_from_tree`, `base_compiles`, `arm_off_compiles`, `arm_on_compiles`, `arm_on_differs_from_arm_off`, `illegal_shape_rejected`, `static_assert_named_in_refusal`, `direct_retile_compiles`, `digest_control_moves`, `failopen_compiles_unguarded`, `failopen_shape_rejected`, `rule145_named_in_refusal`, `rule145_control_observed`, `guarded_tile_sites` 3, `shipped_other_sites_compile`.
+
+Transfer calibration, now standing campaign law:
+
+```
+  nax_arm_off_air_delta_bytes    2112
+  nax_arm_on_air_delta_bytes     1632
+  transfer_air_delta_bytes       2176
+  transfer_isa_text_delta_g17s     12
+  transfer_register_delta_g17s      0
+  transfer_spill_delta_g17s         0
+  transfer_air_overstates_isa_by 181.3
+```
+
+**Never price a kernel change from an AIR delta.**
+
+---
+
+### Corrections to my own work
+
+**ADVISOR ERROR 178 — I named the wrong revert target.** `770a3ff2` is the submission and growth base. The revert target for alphonse's E147 was his branch's own pre-experiment commit `feaa92b4`, byte-identical to PR base `bcc11dc6`. My instruction, taken literally, would have deleted promoted decode-path work in `qmv_fast_crossrow_affine4_g64_wide`: the `NA <= 5` widening, the `vec<T,4>` `DIRECT_NIBBLES` load, and the width-5 dispatch to `<T,5,5,true>`.
+
+> **RULE 149.** A revert is not verified by a diff against the base you reverted to. Verify it against the base you were *supposed* to revert to, plus an independent invariant that does not read that base. `twin_audit.py` caught this one because the pinned comment waiver went **dead** — a waiver is a pointer into content, so its death detects a silent over-revert that a self-consistent diff cannot see.
+
+**ADVISOR ERROR 179 — my Rule 145 guard failed open.** I proposed `TN % 2 == 0 || TM % 2 == 0`. That admits `(TM,TN) = (2,3)`, which matches neither branch of `tile_matmad_nax`. The correct predicate is alphonse's: `(TN == 1 && TM % 2 == 0) || (TN % 2 == 0)`.
+
+**The growth base, settled against the enforcing source.** Alphonse argued growth is measured against his PR base. Workflow `:1143` reads `commit_sha base_sha extra_parent`; `:1146` rejects more than one parent; `:1156` requires ancestry of trusted main; `:1164` exports it; `:1195` passes `REVIEW_BASE_SHA`. Script `:218` reads it as `review_base` and `:357-365` computes growth against it, with `MAX_GROWTH_BYTES=262144` at `:38`. The Yukon submission commit has one parent, and it is our declared `BASE_SHA`.
+
+> **RULE 150.** Report two named quantities, never one. `growth_enforced` is bytes versus `770a3ff2`, team-shared, and the one the gate rejects on. `growth_attributable` is bytes versus your own PR base. Alphonse's was -3,809, which is a real and useful fact and simply not the gate.
+
+Live on `de8ce44c`: `source=2636956/3000000`, `growth=182121/262144`, leaving **80,023 bytes of shared headroom for four students**. Budget reclamation is now in the cleanup PR scope.
+
+**Correction to entry 311 — rung B's prefill regression is real, not inherited.** Alphonse's terminal report attributed the `+2.1451` prefill regression to the base composition. It recomputes as a marginal effect of the mechanism:
+
+| row | rung B | prefill % vs bar |
+|---|---|--:|
+| `572b2cc4` | no | +0.0658 |
+| `e003a86d` | no | -0.0390 |
+| `1db9d63e` | no | -0.0571 |
+| **`7226dc9a`** | **yes** | **+2.1451** |
+
+Sibling mean without rung B is -0.0101 with sd 0.0663, so the marginal is **+2.1552 pp**. Per prompt: beagle +2.2664, botany +2.0244, drama +2.2563, essays +2.0675, medicine +2.1644, plutarch +2.1628, republic +2.2341, travel +2.0658. The direct paired contrast `e003a86d -> 7226dc9a` gives mean **+2.1850 %**, sd 0.0878, se 0.0311, all eight positive, about 70 sigma. He conflated the candidate-leg base-drift decomposition (Advisor Error 172) with the prefill channel, which Rule 146 measures separately. Finding 250 is untouched; only the attribution sentence was wrong.
+
+---
+
+### Board and campaign state at 11:20Z
+
+```
+PROMOTED top 6 (bar unmoved for about twelve hours)
+  684821ed newjordan      3.71959723   src=eb5eadc7   <- the bar, carrying ~0.48 % of essays serial luck
+  3ba6ee9d Amal-David     3.70576324   src=1b3ea281
+  1760479a scarletbright  3.70355222   src=e8f14c44
+  08b67f12 jungjipdo      3.69071883   src=1d66bb36
+  ed608e64 jungjipdo      3.68172016   src=8849fad7
+  02742bf0 scarletbright  3.52686512   src=c8dbd2dc
+
+OURS
+  0cf1637e morganmcg1     3.68278758   rejected, campaign best, fair median 3.69204161
+  572b2cc4 morganmcg1     3.66218564   previous best
+
+VALIDATING 6: 0adf695f Lieisyourlie, ec24d591 newjordan (third Idea 3 attempt),
+              a38e7011 jungjipdo, 4117c901 vibecodooor, c47b45be scarletbright,
+              1bfa0447 igneous-prose
+```
+
+PR #147 merged at `de8ce44c`, landing revert-clean with Finding 250's dispatch proof, the Rule 145 guards at all three `tile_matmad_nax` sites, the E-1c PASS, the promoted census at `3e88f307`, `research/e147_qmv_jit_census.py` with its `covers_nax_gemm` field, and the AIR-versus-ISA calibration.
+
+PR #151 opened for alphonse: **the ranked prefill channel**. R0 is the offline safety case — exhaustive tile-coverage proof, K-order preservation, threadgroup budget, loader-traffic model, roofline bound. R1 lands the 128x32 NAX seed retile arm ON with the full gate chain, submission-ready and standalone. R2 is the pipelined double-buffered K-loop if R0 supports it. The binding constraint is his own Finding 250: **the measurement instrument for this mechanism is the ranked receipt itself**, because the arm does not execute on any machine we own.
+
+### The queue, repriced against +0.3990 % for parity and +0.9896 % for the crown
+
+| item | value | owner |
+|---|--:|---|
+| full-coverage xsums fill fusion at 128 sites | **+1.2175 %** if 4.900 us/fill holds | thorfinn #135, after job 92479653 |
+| lambda-star linearised policy, clamp off | **+0.9839 pp** on the pessimistic curve | edward #150 R4 |
+| solve the ranked M5 per-width curve | gates the above; may void Rule 138 | askeladd #149 arm D, critical path |
+| ranked prefill channel, 128x32 NAX retile | **+0.42 to +0.51 %** proven-class | alphonse #151 |
+| leaf16 on the shipped vocabulary | +0.21 to +0.51 % | askeladd #149 arm A |
+| `expectedonly` arm from the E128 reprice | +0.3563 % | edward #150 |
+| SDPA KV re-read at qL >= 6 | ~+0.34 %, fires on 58.6 % of rounds | askeladd #149 arm C |
+| FP32-twin activations, Idea 2 | +0.3 to +2.0 %, shares Idea 3's producer | thorfinn |
+| cleanup PR, including budget reclamation | frees shared growth headroom | unassigned |
+
+**Closed in this entry**: the "+0.4 % is nearly there" reading of the gap — parity is not the crown, and the variance argument is in Finding 255. Finding 227's prefill value model, superseded by Finding 254 at 1.37x. Finding 247's weight vector above published median 3.3, superseded by Rule 148. The claim that rung B's prefill regression is inherited. My own Rule 145 predicate, and my own revert-target instruction.
