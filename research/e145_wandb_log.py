@@ -222,6 +222,32 @@ def main() -> int:
          for f, fx in sorted(r1["fixtures"].items())
          for who, pre in sorted(fx["prereg"].items())])})
 
+    # R1b, the second-session replicate. `work_signatures_match` is the part
+    # that makes the gap interpretable: identical round counts, draft lengths
+    # and acceptance rates mean only the timing moved between sessions.
+    replicate = legs_blob.get("r1b_replicate") or {}
+    if replicate:
+        run.log({"r1b_replicate": table(
+            ["fixture", "r1_pct", "r1b_pct", "gap_pp", "r1_blocks_pct",
+             "r1b_blocks_pct", "blocks_gap_pp", "same_sign",
+             "work_signatures_match"],
+            [[f, v["r1_pct"], v["r1b_pct"], v["gap_pp"], v["r1_blocks_pct"],
+              v["r1b_blocks_pct"], v["blocks_gap_pp"], v["same_sign"],
+              v["work_signatures_match"]]
+             for f, v in sorted(replicate.items())])})
+        for fixture, v in sorted(replicate.items()):
+            summary["e145_%s_replicate_gap_pp" % fixture] = v["gap_pp"]
+            summary["e145_%s_replicate_same_sign" % fixture] = v["same_sign"]
+            summary["e145_%s_replicate_work_signatures_match" % fixture] = \
+                v["work_signatures_match"]
+
+    # Rule 128 asks for `wired-zh` and `warm` in every leg. The timed parent
+    # swallows worker stderr, so the lines are unobtainable rather than
+    # omitted. Record the failure instead of hiding it.
+    summary["e145_warm_telemetry_present_any_leg"] = any(
+        l["warm_telemetry_present"] for l in legs)
+    summary["e145_warm_telemetry_blocked_by_parent_stderr"] = True
+
     noise_floor = None
     if r0 is not None:
         summary["e145_predicted_beagle_shift_us"] = \
