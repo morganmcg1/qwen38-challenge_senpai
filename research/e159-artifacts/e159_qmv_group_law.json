@@ -1,0 +1,113 @@
+{
+ "experiment": "e159-step4.2-qmv-input-group-partition",
+ "harness": "local",
+ "official_or_ranked_score": false,
+ "rule79_not_evidence": true,
+ "host": "M4 Pro",
+ "source_of_law": {
+  "width_table": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1568",
+  "active_input_groups": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1715",
+  "grid_x_extent": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1834,1883",
+  "weight_read_indexing": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1455-1472"
+ },
+ "marginal_series": "decode phase (R_dec), not the full round",
+ "per_width": [
+  {
+   "width": 2,
+   "marginal_ms": 3.671,
+   "input_groups": 1,
+   "delta_groups": 0
+  },
+  {
+   "width": 3,
+   "marginal_ms": 2.077,
+   "input_groups": 1,
+   "delta_groups": 0
+  },
+  {
+   "width": 4,
+   "marginal_ms": 6.762,
+   "input_groups": 1,
+   "delta_groups": 0
+  },
+  {
+   "width": 5,
+   "marginal_ms": 13.311,
+   "input_groups": 1,
+   "delta_groups": 0
+  },
+  {
+   "width": 6,
+   "marginal_ms": 35.45,
+   "input_groups": 2,
+   "delta_groups": 1
+  },
+  {
+   "width": 7,
+   "marginal_ms": 10.981,
+   "input_groups": 2,
+   "delta_groups": 0
+  },
+  {
+   "width": 8,
+   "marginal_ms": 7.59,
+   "input_groups": 2,
+   "delta_groups": 0
+  },
+  {
+   "width": 9,
+   "marginal_ms": 39.772,
+   "input_groups": 3,
+   "delta_groups": 1
+  }
+ ],
+ "flat_marginal_ms": {
+  "mean": 7.399,
+  "min": 2.077,
+  "max": 13.311,
+  "n": 6
+ },
+ "cliff_marginal_ms": {
+  "mean": 37.611,
+  "widths": [
+   6,
+   9
+  ]
+ },
+ "excess_over_neighbours_ms": {
+  "width_6": 23.304,
+  "width_9": 30.486,
+  "tree_priced_full_weight_pass_ms": 25.0
+ },
+ "placement_null_probability": 0.03571428571428571,
+ "projection_fixed_depth": {
+  "baseline_argmin_mtp_ms": 27.5213,
+  "cap7_only_width6_fixed": {
+   "by_depth": {
+    "0": 73.634,
+    "1": 42.8783,
+    "2": 32.419,
+    "3": 28.3085,
+    "4": 27.5213,
+    "5": 27.5015,
+    "6": 26.432,
+    "7": 25.5052
+   },
+   "argmin_mtp_ms": 25.5052,
+   "pct": -7.326
+  },
+  "cap8_width6_and_width9_fixed": {
+   "argmin_mtp_ms": 25.2996,
+   "pct": -8.073
+  }
+ },
+ "projection_adaptive_arm": {
+  "rounds": 78,
+  "fraction_of_rounds_at_verify_width_ge_6": 0.859,
+  "round_ms": 188.256,
+  "mtp_ms_per_token_now": 28.68,
+  "mtp_ms_per_token_projected": 25.6304,
+  "candidate_leg_saving_g": 0.1063,
+  "implied_median_move_pct_rule176": 11.9
+ }
+}
