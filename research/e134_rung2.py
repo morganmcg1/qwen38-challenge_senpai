@@ -201,7 +201,14 @@ class VectorSampler:
 
 def simulate(adjust, sampler: VectorSampler, windows: int,
              tokens: int = DECODE_TOKENS, oracle: bool = False,
-             force=None, price=None) -> dict:
+             force=None, price=None, walker=None) -> dict:
+    """`walker` replaces the whole depth rule, not one step of it.
+
+    E140 needs a rule that is not a first-break walk at all, so it cannot be
+    expressed through `adjust` or `force`. `walker=None` calls `walk` exactly
+    as before, so every E134 number remains reproducible from this module.
+    """
+    chooser = walker or walk
     total_us = total_tokens = 0.0
     total_depth = total_rounds = total_accepted = total_drafted = 0
     per_window = []
@@ -237,8 +244,8 @@ def simulate(adjust, sampler: VectorSampler, windows: int,
                 "offer": offer,
             }
             depth = (oracle_depth(offer, capability) if oracle
-                     else walk(ema, margin, offer, adjust, ctx, force,
-                               price))
+                     else chooser(ema, margin, offer, adjust, ctx, force,
+                                  price))
             accepted = min(capability, depth)
             depth_counts[min(depth, MAX_DEPTH + 1)] += 1
             cap_counts[min(capability, MAX_DEPTH + 1)] += 1
