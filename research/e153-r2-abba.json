@@ -1,0 +1,166 @@
+{
+  "all_gate_qualified": true,
+  "all_tokens_matched": true,
+  "arm_a": "split (MLX_E153_MERGED_SDPA=0)",
+  "arm_b": "merged (compiled default)",
+  "arms_witnessed": [
+    "merged",
+    "merged,split",
+    "split"
+  ],
+  "c1_predicted_se": 14.1513,
+  "c1_predicted_us_per_round": 154.4987,
+  "c1_prediction_ratio": 1.205349005588121,
+  "c1_prediction_z": 2.2419250817703995,
+  "e153_merged_sdpa_divergences": 0,
+  "e153_merged_sdpa_local_pct": 0.115696235641006,
+  "e153_merged_sdpa_local_pct_decode_frame": 0.14506773272090764,
+  "e153_merged_sdpa_round_cost_us": 189.56175950479013,
+  "e153_merged_sdpa_round_cost_us_total_frame": 186.22485440965747,
+  "entry_c_max": 40.35904312133789,
+  "entry_c_min": 39.735023498535156,
+  "entry_c_spread": 0.6240196228027344,
+  "full_attention_layers": 16,
+  "gate_states": [
+    "passed"
+  ],
+  "gated_leg_sd_pct": 0.052,
+  "harness": "local",
+  "implied_eligible_round_saving_us": 317.73563284364013,
+  "label": "s1",
+  "n_blocks": 3,
+  "n_timed_legs": 12,
+  "per_block": [
+    {
+      "accept_rate_delta_pp": 0.0,
+      "arms_witnessed": [
+        "merged,split",
+        "split"
+      ],
+      "decode_pct": 0.1788987587241886,
+      "decode_us_per_round": 248.86191392148612,
+      "edl": [
+        "4.2436974789915967"
+      ],
+      "gate_states": [
+        "passed"
+      ],
+      "merged_decode_round_us": 139356.54253518884,
+      "prompt": "beagle_a",
+      "replicate": 1,
+      "rounds": [
+        119
+      ],
+      "schedule_identical_across_arms": true,
+      "split_decode_round_us": 139107.68062126735,
+      "total_pct": 0.1350853283062614,
+      "total_us_per_round": 233.42130564845866,
+      "width_hist": {
+        "2": 2,
+        "3": 35,
+        "4": 13,
+        "5": 22,
+        "6": 10,
+        "7": 3,
+        "8": 34
+      },
+      "witness_states": [
+        "ARM_MISMATCH",
+        "ok"
+      ]
+    },
+    {
+      "accept_rate_delta_pp": 0.0,
+      "arms_witnessed": [
+        "merged,split",
+        "split"
+      ],
+      "decode_pct": 0.2414997511124728,
+      "decode_us_per_round": 459.3279117193015,
+      "edl": [
+        "6.3589743589743586"
+      ],
+      "gate_states": [
+        "passed"
+      ],
+      "merged_decode_round_us": 190657.41697947183,
+      "prompt": "benchfixture",
+      "replicate": 1,
+      "rounds": [
+        78
+      ],
+      "schedule_identical_across_arms": true,
+      "split_decode_round_us": 190198.08906775253,
+      "total_pct": 0.225983249122641,
+      "total_us_per_round": 545.7829206417664,
+      "width_hist": {
+        "4": 4,
+        "5": 7,
+        "6": 5,
+        "7": 3,
+        "8": 59
+      },
+      "witness_states": [
+        "ARM_MISMATCH",
+        "ok"
+      ]
+    },
+    {
+      "accept_rate_delta_pp": 0.0,
+      "arms_witnessed": [
+        "merged",
+        "split"
+      ],
+      "decode_pct": 0.11408836408188794,
+      "decode_us_per_round": 135.26008553701104,
+      "edl": [
+        "3.4383561643835616"
+      ],
+      "gate_states": [
+        "passed"
+      ],
+      "merged_decode_round_us": 118692.5613716857,
+      "prompt": "essays_montaigne",
+      "replicate": 1,
+      "rounds": [
+        146
+      ],
+      "schedule_identical_across_arms": true,
+      "split_decode_round_us": 118557.3012861487,
+      "total_pct": 0.09794147262569552,
+      "total_us_per_round": 143.00664810286253,
+      "width_hist": {
+        "2": 4,
+        "3": 32,
+        "4": 40,
+        "5": 39,
+        "6": 28,
+        "7": 3
+      },
+      "witness_states": [
+        "ok"
+      ]
+    }
+  ],
+  "probe": "e153_r2_merged_sdpa_abba",
+  "ranked_p_m_ge_6": 0.5861,
+  "rule134_face_value_pct": 0.35505215330725926,
+  "rule134_face_value_pct_legacy_515_2": 0.36146128573303077,
+  "rule134_us_per_round_per_pct": 524.5,
+  "schedule_identical_all_blocks": true,
+  "schedule_violations": [],
+  "sigma_vs_gated_floor_total": 3.1434813805704516,
+  "sign_convention": "negative pct = merged arm faster than split arm",
+  "unweighted_block_decode_pct": 0.1781622913061831,
+  "unweighted_block_decode_pct_ci95": [
+    0.10459760616938023,
+    0.251726976442986
+  ],
+  "witness_states": [
+    "ARM_MISMATCH",
+    "ok"
+  ],
+  "worker_sha256": [
+    "4f3abde77ca30e5858268dc91a304da0d7c03a3fc9a362fd3873889671f0fd49"
+  ]
+}
