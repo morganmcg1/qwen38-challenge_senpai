@@ -89,6 +89,18 @@ enum E153MergedSdpaSupport {
             ?? 60_000
     }
 
+    static var replicateCount: Int {
+        Int(ProcessInfo.processInfo.environment["MLXFAST_E153_REPS"] ?? "") ?? 5
+    }
+
+    static func median(_ values: [Double]) -> Double {
+        let sorted = values.sorted()
+        guard !sorted.isEmpty else { return .nan }
+        let mid = sorted.count / 2
+        return sorted.count % 2 == 1
+            ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+    }
+
     static var keyLengths: [Int] {
         guard let raw = ProcessInfo.processInfo.environment["MLXFAST_E153_KL"],
             !raw.isEmpty
@@ -361,24 +373,31 @@ struct E153MergedSdpaKernelTests {
                 let count = max(
                     8, min(4000, Int(S.targetMicroseconds / max(probe, 1))))
 
-                var forward: [String: Double] = [:]
-                for (name, body) in arms { forward[name] = S.timed(count, body) }
-                var reverse: [String: Double] = [:]
-                for (name, body) in arms.reversed() {
-                    reverse[name] = S.timed(count, body)
+                // One replicate is one A B B A palindrome. Host interference
+                // hits a single replicate hard and asymmetrically, so the
+                // reported statistic is the MEDIAN over replicates rather than
+                // a mean that one disturbed pass can carry.
+                var splitReps: [Double] = []
+                var mergedReps: [Double] = []
+                for _ in 0 ..< S.replicateCount {
+                    let sf = S.timed(count, arms[0].1)
+                    let mf = S.timed(count, arms[1].1)
+                    let mr = S.timed(count, arms[1].1)
+                    let sr = S.timed(count, arms[0].1)
+                    splitReps.append((sf + sr) / 2)
+                    mergedReps.append((mf + mr) / 2)
                 }
-                let split = (forward["split"]! + reverse["split"]!) / 2
-                let merged = (forward["merged"]! + reverse["merged"]!) / 2
+                let split = S.median(splitReps)
+                let merged = S.median(mergedReps)
                 let saving = split - merged
                 let streaming = S.c1StreamingSlope * Double(kL)
                 rows.append([
-                    "kL": kL, "width": qL, "replicates": count,
+                    "kL": kL, "width": qL, "iterations_per_leg": count,
+                    "replicates": S.replicateCount,
                     "split_us_per_layer": split,
                     "merged_us_per_layer": merged,
-                    "split_forward_us": forward["split"]!,
-                    "split_reverse_us": reverse["split"]!,
-                    "merged_forward_us": forward["merged"]!,
-                    "merged_reverse_us": reverse["merged"]!,
+                    "split_replicate_us": splitReps,
+                    "merged_replicate_us": mergedReps,
                     "saving_us_per_layer": saving,
                     "saving_us_per_round": saving * 16,
                     "c1_streaming_term_us_per_layer": streaming,
