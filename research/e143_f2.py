@@ -36,10 +36,45 @@ from pathlib import Path
 import e143_value
 
 MISS_TO_SCORE_PCT = 203.0
+# F3 section 8: keep 203 primary and add one column at the 290 implied by F2's
+# geometric sensitivity model, rather than restating every table.
+MISS_TO_SCORE_PCT_ALT = 290.0
 R0 = Path("research/e143-r0.json")
 R1 = Path("research/e143-r1.json")
 # Rule of three at 95 % for 0 events in 2,634 trials, from R1.
 CB_RULE_OF_THREE_95 = 3.0
+# F3 finding 213 makes `3ba6ee9d` the value anchor. `1760479a` stays the
+# candidate frontier and is reported beside it so the supersession is visible.
+VALUE_ANCHOR = "3ba6ee9d"
+
+
+def channel_a_positions(records: list[dict]) -> dict:
+    """F3 item 7: at which draft position can this census see a C-a event?
+
+    Alphonse's census counts every token of a corpus. Mine counts draft trials
+    on the live trajectory. If mine could only see position 1 the two would
+    measure different quantities. It cannot: a round's first divergence lands
+    anywhere in 0..width-1, and C-a events are observed across that range.
+    """
+    idx = [r["first_divergence_index"] for r in records]
+    ca = [r for r in records if r["channel_a_strict"]]
+    hist: dict[int, int] = {}
+    for j in idx:
+        hist[j] = hist.get(j, 0) + 1
+    return {
+        "first_divergence_index_histogram": {str(k): hist[k]
+                                             for k in sorted(hist)},
+        "first_divergence_index_max": max(idx),
+        "first_divergence_beyond_position_1_share":
+            sum(1 for j in idx if j >= 1) / len(idx),
+        "channel_a_first_divergence_indices": sorted(
+            r["first_divergence_index"] for r in ca),
+        "channel_a_beyond_position_1_events":
+            sum(1 for r in ca if r["first_divergence_index"] >= 1),
+        "census_is_position_1_only": max(idx) == 0,
+        "verdict": ("this census observes C-a at any draft position, so it is "
+                    "not a position-1 restriction of a corpus census"),
+    }
 
 
 def main() -> None:
@@ -130,25 +165,37 @@ def main() -> None:
         "beagle": carriers["beagle"]["ca"]["raw_ratio_pct"] / 100.0,
         "essays": carriers["essays"]["ca"]["raw_ratio_pct"] / 100.0,
     }
+    alt = MISS_TO_SCORE_PCT_ALT / MISS_TO_SCORE_PCT
     primary = {
-        "anchor": "1760479a",
-        "anchor_median": e143_value.median_of(e143_value.ANCHOR_1760479a),
+        "anchor": VALUE_ANCHOR,
+        "anchor_median": e143_value.median_of(e143_value.ANCHOR_3ba6ee9d),
         "e143_reachable_acceptance_pct_beagle": beagle_pct,
         "e143_reachable_acceptance_pct_beagle_ci68": [
             carriers["beagle"]["ca"]["raw_ratio_pct_ci68"][0],
             carriers["beagle"]["ca"]["raw_ratio_pct_ci68"][1]],
-        "median_pct_at_1760479a": median_for(shape),
-        "median_pct_at_1760479a_ci68": [
+        "median_pct_at_anchor": median_for(shape),
+        "median_pct_at_anchor_ci68": [
             median_for({"beagle":
                         carriers["beagle"]["ca"]["raw_ratio_pct_ci68"][0] / 100.0}),
             median_for({"beagle":
                         carriers["beagle"]["ca"]["raw_ratio_pct_ci68"][1] / 100.0})],
+        "median_pct_at_superseded_1760479a": e143_value.median_pct_gain(
+            shape, e143_value.ANCHOR_1760479a),
         "exceeds_beagle_saturation": beagle_pct > beagle_ceiling_x,
         "beagle_ceiling_x_pct": beagle_ceiling_x,
         "beagle_ceiling_value_pct": beagle_ceiling_value,
         "essays_ceiling_x_pct": essays_ceiling_x,
         "essays_ceiling_value_pct": essays_ceiling_value,
         "units": "percent of the beagle RAW RATIO, as F1 section 3 asked",
+        "miss_to_score_pct": MISS_TO_SCORE_PCT,
+        "at_miss_to_score_290": {
+            "miss_to_score_pct": MISS_TO_SCORE_PCT_ALT,
+            "e143_reachable_acceptance_pct_beagle": beagle_pct * alt,
+            "median_pct_at_anchor": median_for(
+                {k: v * alt for k, v in shape.items()}),
+            "note": ("F3 section 8 asks for one extra column, not a restated "
+                     "table; 203 stays primary because the contract names it"),
+        },
     }
 
     # ---- gain shape, as F2 section 5 asks ---------------------------------
@@ -165,10 +212,17 @@ def main() -> None:
         "essays_upper_68_pct": carriers["essays"]["ca"]["raw_ratio_pct_ci68"][1],
         "shape_label": "beagle-only",
         "reading": ("beagle-only is the best possible shape on this benchmark: "
-                    "it converts at 0.4793 per percent with 9.67 % of runway, "
+                    "it converts at 0.4789 per percent with 9.71 % of runway, "
                     "and it cannot push the upper median slot into another "
                     "prompt because it does not move the upper slot at all"),
         "upper_slot_buffers_pct": e143_value.upper_slot_buffers(),
+        "essays_zero_event_interval_rule": (
+            "Wilson score interval at z = 1.0, which at zero events reduces "
+            "exactly to upper = 1 / (trials + 1)"),
+        "essays_events": carriers["essays"]["ca"]["events"],
+        "essays_trials": carriers["essays"]["trials"],
+        "beagle_events": carriers["beagle"]["ca"]["events"],
+        "beagle_trials": carriers["beagle"]["trials"],
     }
 
     # C-d's ceiling under the order statistic, so the closure decision is
@@ -186,18 +240,25 @@ def main() -> None:
         "median_pct_low": median_for(cd_shape_low),
         "median_pct_high": median_for(cd_shape_high),
         "naive_rule_116_median_pct": (
-            0.4793 * channel_d["beagle"]["raw_ratio_pct_point"]
-            + 0.5207 * channel_d["essays"]["raw_ratio_pct_point"]),
+            e143_value.marginal("beagle")
+            * channel_d["beagle"]["raw_ratio_pct_point"]
+            + e143_value.marginal("essays")
+            * channel_d["essays"]["raw_ratio_pct_point"]),
+        "median_pct_at_miss_to_score_290": median_for(
+            {k: v * alt for k, v in cd_shape.items()}),
         "reading": ("the unreachable ceiling. Rule 121 saturates it; the "
                     "linear Rule 116 conversion does not and overstates it"),
     }
 
     state = {
         "harness": "local",
-        "anchor": "1760479a",
-        "anchor_note": ("F2 replaces F1's 572b2cc4 anchor with the live "
-                        "promoted crown; research/e143_value.py asserts every "
-                        "figure of both"),
+        "anchor": VALUE_ANCHOR,
+        "anchor_note": ("F3 finding 213 makes 3ba6ee9d the VALUE anchor and "
+                        "leaves 1760479a as the CANDIDATE frontier; "
+                        "research/e143_value.py asserts every figure of F1, "
+                        "F2, F3 and F4"),
+        "candidate_frontier": "1760479a",
+        "channel_a_positions": channel_a_positions(r0["records"]),
         "primary": primary,
         "gain_shape": gain_shape,
         "channel_d": channel_d,

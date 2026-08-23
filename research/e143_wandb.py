@@ -37,12 +37,15 @@ def main() -> None:
                         help="extend this existing run instead of creating one")
     parser.add_argument("--c2", default=None,
                         help="research/e143-c2.json from the live ABBA session")
+    parser.add_argument("--f2", default=None,
+                        help="research/e143-f2.json, the re-anchored pricing")
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args()
 
     r0 = json.loads(R0.read_text())
     r1 = json.loads(R1.read_text())
     c2 = json.loads(Path(args.c2).read_text()) if args.c2 else None
+    f2 = json.loads(Path(args.f2).read_text()) if args.f2 else None
     carriers = r1["per_carrier"]
 
     config = {
@@ -114,6 +117,59 @@ def main() -> None:
 
     tags = ["e143", "channel-census", "acceptance", "r0", "r1", "harness=local"]
     tables = {}
+    if f2:
+        # F3 finding 213 re-anchors every value figure on the `3ba6ee9d` crown
+        # and supersedes R1's own Rule 121 conversion, so these overwrite.
+        config["rule_121_anchor"] = f2["anchor"]
+        config["candidate_frontier"] = f2["candidate_frontier"]
+        cd = f2["channel_d"]
+        summary.update({
+            "e143_reachable_acceptance_pct_beagle":
+                f2["primary"]["e143_reachable_acceptance_pct_beagle"],
+            "e143_reachable_acceptance_median_pct":
+                f2["primary"]["median_pct_at_anchor"],
+            "e143_reachable_acceptance_median_pct_at_290":
+                f2["primary"]["at_miss_to_score_290"]["median_pct_at_anchor"],
+            "e143_channel_d_ceiling_median_pct":
+                f2["channel_d_value"]["median_pct_point"],
+            "e143_channel_d_ceiling_naive_rule_116_median_pct":
+                f2["channel_d_value"]["naive_rule_116_median_pct"],
+            "e143_channel_d_share_pooled":
+                f2["channel_d_pooled"]["share_of_divergences_point"],
+            "e143_channel_d_share_pooled_low":
+                f2["channel_d_pooled"]["share_of_divergences_low"],
+            "e143_channel_d_share_pooled_high":
+                f2["channel_d_pooled"]["share_of_divergences_high"],
+            "e143_closes_axis_at_worst_case":
+                int(f2["channel_d_pooled"]["closes_axis_at_worst_case"]),
+            "e143_gain_shape": f2["gain_shape"]["shape_label"],
+            "e143_census_is_position_1_only":
+                int(f2["channel_a_positions"]["census_is_position_1_only"]),
+        })
+        for name, entry in cd.items():
+            summary[f"e143_{name}_cd_share_point"] = entry[
+                "share_of_divergences_point"]
+            summary[f"e143_{name}_cd_share_low"] = entry[
+                "share_of_divergences_low"]
+            summary[f"e143_{name}_unresolved_fraction"] = entry[
+                "unresolved_fraction"]
+        tables["channel_d_interval"] = wandb.Table(
+            columns=["carrier", "trials", "misses", "ca_events",
+                     "unresolved_rows", "cd_events_point", "cd_events_low",
+                     "cd_events_high", "cd_share_point", "cd_share_low",
+                     "cd_share_high", "unresolved_fraction"],
+            data=[[n, e["trials"], e["measured_misses"], e["channel_a_events"],
+                   e["unresolved_divergence_rows"], e["events_point"],
+                   e["events_low"], e["events_high"],
+                   e["share_of_divergences_point"],
+                   e["share_of_divergences_low"],
+                   e["share_of_divergences_high"], e["unresolved_fraction"]]
+                  for n, e in cd.items()])
+        tables["first_divergence_positions"] = wandb.Table(
+            columns=["first_divergence_index", "divergences"],
+            data=[[int(k), v] for k, v in
+                  f2["channel_a_positions"][
+                      "first_divergence_index_histogram"].items()])
     if c2:
         config["stage"] = "R0+R1+C2"
         config["c2_design"] = c2["design"]

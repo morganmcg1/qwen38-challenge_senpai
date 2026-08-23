@@ -43,7 +43,22 @@ ANCHOR_1760479a = {
     "botany": 3.93039,
 }
 
-DEFAULT_ANCHOR = ANCHOR_1760479a
+# The crown that took the board at 23:49:58Z, `3ba6ee9d` at 3.70576324, exactly
+# as F3 published it. F3 finding 213: this tree's candidate leg is 0.0328 %
+# SLOWER than `1760479a` and it won on the serial lottery, so it is the VALUE
+# anchor and `1760479a` remains the CANDIDATE frontier.
+ANCHOR_3ba6ee9d = {
+    "plutarch": 1.26228,
+    "drama": 2.13280,
+    "travel": 2.42789,
+    "beagle": 3.54933,
+    "essays": 3.86219,
+    "medicine": 3.89407,
+    "republic": 3.90802,
+    "botany": 3.91693,
+}
+
+DEFAULT_ANCHOR = ANCHOR_3ba6ee9d
 
 
 def median_of(ratios: dict[str, float]) -> float:
@@ -115,11 +130,41 @@ def upper_slot_buffers(anchor: dict[str, float] | None = None
 
 
 def _self_check() -> None:
-    """Every figure F1 and F2 published, reproduced from this model."""
+    """Every figure F1, F2 and F3 published, reproduced from this model."""
+    f3 = ANCHOR_3ba6ee9d
+    f3_buffers = upper_slot_buffers(f3)
+    checks = [
+        # F3, the crown that is now the VALUE anchor for every median figure.
+        ("F3 anchor median", median_of(f3), 3.70576324, 5e-6),
+        ("F3 beagle dM/dx", marginal("beagle", f3), 0.4789, 5e-4),
+        ("F3 essays dM/dx", marginal("essays", f3), 0.5211, 5e-4),
+        ("F3 medicine dM/dx", marginal("medicine", f3), 0.0, 1e-9),
+        ("F3 republic dM/dx", marginal("republic", f3), 0.0, 1e-9),
+        ("F3 botany dM/dx", marginal("botany", f3), 0.0, 1e-9),
+        ("F3 beagle ceiling x %", ceiling("beagle", f3)[0], 9.715, 5e-3),
+        ("F3 beagle ceiling value %", ceiling("beagle", f3)[1], 4.6514, 5e-4),
+        ("F3 essays ceiling x %", ceiling("essays", f3)[0], 0.830, 5e-3),
+        ("F3 essays ceiling value %", ceiling("essays", f3)[1], 0.4302, 5e-4),
+        ("F3 upper-slot buffer medicine %", f3_buffers["medicine"], 0.825, 5e-3),
+        ("F3 upper-slot buffer republic %", f3_buffers["republic"], 1.187, 5e-3),
+        ("F3 upper-slot buffer botany %", f3_buffers["botany"], 1.417, 5e-3),
+        ("F3 uniform 1 % converts 1:1",
+         median_pct_gain({k: 0.01 for k in f3}, f3), 1.0, 1e-9),
+        # F4's uniform table: a recovered acceptance point becomes a raw gain at
+        # MISS_TO_SCORE_PCT = 203 and then a new published median, 1:1.
+        ("F4 uniform +0.20 pt median",
+         median_of({k: v * 1.00406 for k, v in f3.items()}), 3.72081, 5e-5),
+        ("F4 uniform +0.40 pt median",
+         median_of({k: v * 1.00812 for k, v in f3.items()}), 3.73585, 5e-5),
+        ("F4 uniform +0.71 pt median",
+         median_of({k: v * 1.01441 for k, v in f3.items()}), 3.75916, 5e-5),
+        ("F4 uniform +0.82 pt median",
+         median_of({k: v * 1.01665 for k, v in f3.items()}), 3.76746, 5e-5),
+    ]
     f2 = ANCHOR_1760479a
     buffers = upper_slot_buffers(f2)
-    checks = [
-        # F2, the live crown and the anchor for every median figure I report.
+    checks += [
+        # F2, superseded as the value anchor but still the candidate frontier.
         ("F2 anchor median", median_of(f2), 3.70355222, 5e-6),
         ("F2 beagle dM/dx", marginal("beagle", f2), 0.4793, 5e-4),
         ("F2 essays dM/dx", marginal("essays", f2), 0.5207, 5e-4),
@@ -164,7 +209,7 @@ def _self_check() -> None:
               f"want {want:.6f}")
     if bad:
         raise SystemExit(f"e143_value: {bad} checks disagree with the advisor")
-    print("e143_value: reproduces every figure F1 and F2 published from f209")
+    print("e143_value: reproduces every figure F1, F2, F3 and F4 published")
 
 
 if __name__ == "__main__":
