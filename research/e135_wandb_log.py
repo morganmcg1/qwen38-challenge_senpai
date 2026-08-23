@@ -24,6 +24,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import e135_report as report  # noqa: E402
 import e135_composition_report as composition  # noqa: E402
+import e135_f34_residuals as residuals  # noqa: E402
 
 ENTITY = "wandb-applied-ai-team"
 PROJECT = "qwen38-mlx-challenge-senpai"
@@ -250,6 +251,51 @@ def pair_metrics(rows: list[dict], ref: str, cand: str, key: str,
         report.ARMS = saved
 
 
+def pooled_residual_intervals(rows: list[dict], pairs) -> dict:
+    """Rescale every pairwise standard error with the all-leg residual.
+
+    Each published contrast is fitted on its own legs, so on a three-arm
+    palindrome it spends 3 of 4 observations on parameters and estimates the
+    leg noise from a single residual degree of freedom. The all-leg model fits
+    the same intercept, drift and arm effects over every leg and leaves more
+    degrees of freedom, so it is the better noise estimate. The point estimate
+    never changes; only the interval widens or narrows to the pooled residual.
+    """
+    arms = tuple(a for a in report.ARMS
+                 if any(r["arm"] == a for r in rows))
+    if len(arms) < 3:
+        return {}
+    full = residuals.fit(rows, arms)
+    if full["dof"] < 1:
+        return {}
+    out = {
+        "e135_residual_sd_all_legs_seconds_per_token": full["sigma"],
+        "e135_residual_sd_all_legs_pct": 100 * full["sigma"] / full["mean"],
+        "e135_residual_dof_all_legs": full["dof"],
+        "e135_drift_per_leg_all_legs_seconds_per_token": full["drift_per_leg"],
+        "e135_drift_per_leg_all_legs_pct": (
+            100 * full["drift_per_leg"] / full["mean"]),
+    }
+    for ref, cand, key in pairs:
+        sub = [r for r in rows if r["arm"] in (ref, cand)]
+        pair = residuals.fit(sub, (ref, cand))
+        if pair["sigma"] <= 0:
+            continue
+        out[f"{key}_se_pooled"] = (
+            pair_se_pct(sub, ref, cand) * full["sigma"] / pair["sigma"])
+    return out
+
+
+def pair_se_pct(sub: list[dict], ref: str, cand: str) -> float:
+    saved = report.ARMS
+    report.ARMS = (ref, cand)
+    try:
+        f = report.ols_arm_and_drift(sub, "mtp_seconds_per_token")
+        return 100 * f["se"] / f["mean"]
+    finally:
+        report.ARMS = saved
+
+
 def per_width_table(label: str) -> dict:
     path = pathlib.Path(f"research/e135-artifacts/{label}-per-width.json")
     if not path.exists():
@@ -287,6 +333,7 @@ def main() -> int:
     if fit is None:
         print("e135_wandb_log: primary contrast did not fit")
         return 1
+    pair_out.update(pooled_residual_intervals(complete, pairs))
 
     headline = pair_out[pairs[0][2]]
     by_arm = {}
@@ -305,6 +352,16 @@ def main() -> int:
                      for r in complete} - {None})
 
     meta = complete[0]["meta"]
+
+    def across_legs(field: str) -> list[str]:
+        """Every distinct value a leg recorded for one provenance field.
+
+        A single value read off the first leg hides a mid-session change. A
+        sorted set makes any disagreement visible in the logged config instead
+        of silently picking one side of it.
+        """
+        return sorted({str(r["meta"].get(field)) for r in complete})
+
     key_digest, keys_agree = pipeline_key_digest(args.label)
     config = {
         "experiment": spec["experiment"],
@@ -316,8 +373,15 @@ def main() -> int:
         "arms": spec["arms"],
         "design": "R C C R palindrome, arm code orthogonal to centred leg index",
         "legs": len(complete),
-        "base_sha": meta.get("base_sha"),
-        "worker_sha256": meta.get("worker_sha256"),
+        # `base_sha` is the checkout HEAD when a leg started, so a research-only
+        # commit landing mid-session splits it. The built artefact is the claim
+        # that matters, so the worker digests and the dirty-path count are
+        # logged beside it as sets.
+        "base_sha": across_legs("base_sha"),
+        "e135_session_commit": across_legs("e135_session_commit"),
+        "worker_sha256": across_legs("worker_sha256"),
+        "post_run_worker_sha256": across_legs("post_run_worker_sha256"),
+        "dirty_candidate_paths": across_legs("dirty_candidate_paths"),
         "cli_sha256": meta.get("cli_sha256"),
         "host": meta.get("host"),
         "chip": meta.get("chip"),
