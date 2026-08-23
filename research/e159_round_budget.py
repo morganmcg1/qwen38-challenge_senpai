@@ -76,6 +76,12 @@ def load_legs(session: pathlib.Path) -> list[dict]:
         accepted = report["accepted_draft_total"]
         rounds = report["round_count"]
         decode_seconds = report["decode_seconds"]
+        # `decode_seconds` is the parent's whole decode loop and INCLUDES the
+        # one-off seed prefill. That prefill is a per-LEG constant of about 4 s,
+        # so dividing it by a round count that itself falls with depth adds a
+        # spurious depth slope of P*(1+a)/tokens to R. Subtract it to get the
+        # round cost law; keep the raw form because the assignment names it.
+        prefill_seconds = report["seed_prefill_seconds"]
         per_round = [v * 1e6 for v in report["block_request_seconds"]]
         depth = pinned_depth(meta.get("arm_env", ""))
         q = report["effective_mean_draft_len"]
@@ -91,7 +97,10 @@ def load_legs(session: pathlib.Path) -> list[dict]:
             "accepted_draft_total": accepted,
             "non_drafting_round_count": report["non_drafting_round_count"],
             "decode_seconds": decode_seconds,
+            "seed_prefill_seconds": prefill_seconds,
             "R_seconds": decode_seconds / rounds,
+            "R_decode_seconds": (decode_seconds - prefill_seconds) / rounds,
+            "prefill_per_round_seconds": prefill_seconds / rounds,
             "round_us_trimmed": trimmed_mean(per_round[1:]),
             "first_round_us": per_round[0],
             "a_accepted_per_round": a,
@@ -286,10 +295,15 @@ def main() -> int:
     pinned = [leg for leg in estimate if leg["pinned_depth"] is not None]
     adaptive = [leg for leg in estimate if leg["pinned_depth"] is None]
 
-    fit = ols([float(leg["pinned_depth"]) for leg in pinned],
-              [leg["R_seconds"] for leg in pinned])
-    curve = quadratic_term([float(leg["pinned_depth"]) for leg in pinned],
-                           [leg["R_seconds"] for leg in pinned])
+    depths = [float(leg["pinned_depth"]) for leg in pinned]
+    # The assignment's literal estimator, reported because it was named.
+    fit_prescribed = ols(depths, [leg["R_seconds"] for leg in pinned])
+    # The round cost law, with the per-leg seed prefill removed.
+    fit = ols(depths, [leg["R_decode_seconds"] for leg in pinned])
+    curve = quadratic_term(depths,
+                           [leg["R_decode_seconds"] for leg in pinned])
+    curve_prescribed = quadratic_term(depths,
+                                      [leg["R_seconds"] for leg in pinned])
     # Same law, but on the parent's own per-round clock with round 0 dropped
     # and both tails trimmed. If the two intercepts disagree, the disagreement
     # is post-prefill warmup and OS stalls, not the depth law.
@@ -304,12 +318,15 @@ def main() -> int:
     depth_table = []
     for depth in sorted(by_depth):
         group = by_depth[depth]
-        values = [leg["R_seconds"] for leg in group]
+        values = [leg["R_decode_seconds"] for leg in group]
         depth_table.append({
             "D": depth,
             "legs": len(group),
-            "R_seconds_mean": st.fmean(values),
-            "R_seconds_spread": max(values) - min(values),
+            "R_seconds_mean": st.fmean([leg["R_seconds"] for leg in group]),
+            "R_decode_seconds_mean": st.fmean(values),
+            "R_decode_seconds_spread": max(values) - min(values),
+            "prefill_per_round_seconds": st.fmean(
+                [leg["prefill_per_round_seconds"] for leg in group]),
             "rounds": [leg["rounds"] for leg in group],
             "accepted_draft_total": [leg["accepted_draft_total"]
                                      for leg in group],
@@ -347,9 +364,11 @@ def main() -> int:
         segments.append({
             "from_D": lo["D"],
             "to_D": hi["D"],
-            "delta_R_seconds": hi["R_seconds_mean"] - lo["R_seconds_mean"],
+            "delta_R_seconds":
+                hi["R_decode_seconds_mean"] - lo["R_decode_seconds_mean"],
             "marginal_seconds_per_draft":
-                (hi["R_seconds_mean"] - lo["R_seconds_mean"]) / span,
+                (hi["R_decode_seconds_mean"]
+                 - lo["R_decode_seconds_mean"]) / span,
             "delta_rejected_per_round":
                 (hi["q_proposed_per_round"] - hi["a_accepted_per_round"])
                 - (lo["q_proposed_per_round"] - lo["a_accepted_per_round"]),
@@ -358,8 +377,8 @@ def main() -> int:
     # `s` pinned to the measured D=0 round instead of extrapolated, and 8h read
     # as the measured chord from D=0 to D=8. This uses no linearity assumption,
     # so it survives the convexity that the quadratic term reports.
-    r0 = next(r["R_seconds_mean"] for r in depth_table if r["D"] == 0)
-    r8 = next(r["R_seconds_mean"] for r in depth_table if r["D"] == 8)
+    r0 = next(r["R_decode_seconds_mean"] for r in depth_table if r["D"] == 0)
+    r8 = next(r["R_decode_seconds_mean"] for r in depth_table if r["D"] == 8)
     chord = {
         "s_seconds": r0,
         "eight_h_seconds": r8 - r0,
@@ -377,7 +396,7 @@ def main() -> int:
     adapt = None
     if adaptive:
         q_adapt = st.fmean([leg["q_proposed_per_round"] for leg in adaptive])
-        r_adapt = st.fmean([leg["R_seconds"] for leg in adaptive])
+        r_adapt = st.fmean([leg["R_decode_seconds"] for leg in adaptive])
         head_share = None
         verify_share = None
         if head_fit:
@@ -391,7 +410,11 @@ def main() -> int:
                 [leg["a_accepted_per_round"] for leg in adaptive]),
             "alpha_accept_fraction": st.fmean(
                 [leg["alpha_accept_fraction"] for leg in adaptive]),
-            "R_seconds": r_adapt,
+            "R_decode_seconds": r_adapt,
+            "R_seconds_prescribed": st.fmean(
+                [leg["R_seconds"] for leg in adaptive]),
+            "prefill_per_round_seconds": st.fmean(
+                [leg["prefill_per_round_seconds"] for leg in adaptive]),
             "mtp_seconds_per_token": st.fmean(
                 [leg["mtp_seconds_per_token"] for leg in adaptive]),
             "non_drafting_round_count": [leg["non_drafting_round_count"]
@@ -412,6 +435,13 @@ def main() -> int:
         "session": str(args.session),
         "trace_session": str(args.trace) if args.trace else None,
         "legs": legs,
+        "round_time_definition":
+            "R_decode = (decode_seconds - seed_prefill_seconds) / rounds",
+        "fit_prescribed_includes_prefill": {
+            k: v for k, v in fit_prescribed.items() if k != "residuals"},
+        "rho_prescribed_includes_prefill":
+            8.0 * fit_prescribed["slope"] / fit_prescribed["intercept"],
+        "quadratic_term_prescribed": curve_prescribed,
         "fit": {k: v for k, v in fit.items() if k != "residuals"},
         "fit_residuals_seconds": fit["residuals"],
         "fit_trimmed_round_clock": {k: v for k, v in fit_trimmed.items()
@@ -449,12 +479,14 @@ def main() -> int:
 
     print(f"legs {len(legs)}  estimate {len(estimate)}  "
           f"matched {out['all_tokens_matched']}")
-    print(f"{'D':>3} {'legs':>4} {'R ms':>9} {'spread ms':>9} {'rounds':>12} "
+    print(f"{'D':>3} {'legs':>4} {'R ms':>9} {'spread ms':>9} {'pre ms':>8} "
+          f"{'rounds':>12} "
           f"{'a':>7} {'q':>6} {'alpha':>7} {'p_impl':>7} {'nondraft':>10} {'resid ms':>9}")
     for row in depth_table:
         print(f"{row['D']:>3} {row['legs']:>4} "
-              f"{row['R_seconds_mean'] * 1e3:>9.4f} "
-              f"{row['R_seconds_spread'] * 1e3:>9.4f} "
+              f"{row['R_decode_seconds_mean'] * 1e3:>9.4f} "
+              f"{row['R_decode_seconds_spread'] * 1e3:>9.4f} "
+              f"{row['prefill_per_round_seconds'] * 1e3:>8.3f} "
               f"{str(row['rounds']):>12} "
               f"{row['a_accepted_per_round']:>7.4f} "
               f"{row['q_proposed_per_round']:>6.3f} "
@@ -463,6 +495,12 @@ def main() -> int:
               f"{str(row['non_drafting_round_count']):>10} "
               f"{row['residual_seconds'] * 1e3:>9.4f}")
     print()
+    print(f"PRESCRIBED R = decode/rounds, carries the seed prefill: "
+          f"s {fit_prescribed['intercept'] * 1e3:.4f} ms  "
+          f"h {fit_prescribed['slope'] * 1e3:.4f} ms  "
+          f"rho {out['rho_prescribed_includes_prefill']:.4f}  "
+          f"c2 {curve_prescribed['t_c2']:.2f} sigma")
+    print("--- seed prefill removed below; this is the round cost law ---")
     print(f"s (fixed per round)   {s_fixed * 1e3:.4f} ms "
           f"+- {fit['se_intercept'] * 1e3:.4f}")
     print(f"h (per proposed draft){h_slope * 1e3:.4f} ms "
@@ -488,7 +526,7 @@ def main() -> int:
     if adapt:
         print(f"adaptive q {adapt['q_proposed_per_round']:.4f}  "
               f"a {adapt['a_accepted_per_round']:.4f}  "
-              f"R {adapt['R_seconds'] * 1e3:.4f} ms  "
+              f"R {adapt['R_decode_seconds'] * 1e3:.4f} ms  "
               f"fixed {adapt['fixed_share'] * 100:.1f} %  "
               f"drafting {adapt['drafting_share'] * 100:.1f} %")
     return 0

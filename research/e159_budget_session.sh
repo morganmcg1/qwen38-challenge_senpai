@@ -69,6 +69,19 @@ case "${kind}" in
       "adapt="
     )
     ;;
+  kink)
+    # The {0,1,2,4,8} sweep left two gaps that hide where the price actually
+    # steps: rows 2-3 cost about 0.6 ms each, rows 4-5 about 8.5 ms each and
+    # rows 6-9 about 22 ms each. `sdpaWidthWallDepthCap = 5` predicts one step
+    # entering verify width 6, which is D = 5. These four arms bracket it.
+    blocks="${E159_BLOCKS:-2}"
+    specs=(
+      "d3=MLX_E159_FIXED_DRAFT_DEPTH=3"
+      "d5=MLX_E159_FIXED_DRAFT_DEPTH=5"
+      "d6=MLX_E159_FIXED_DRAFT_DEPTH=6"
+      "d7=MLX_E159_FIXED_DRAFT_DEPTH=7"
+    )
+    ;;
   trace)
     blocks="${E159_BLOCKS:-1}"
     trace_env="MLX_QWEN_MTP_TRACE=1,MLX_QWEN_MTP_TRACE_PATH=@LEG@/trace.txt"
@@ -82,7 +95,7 @@ case "${kind}" in
     )
     ;;
   *)
-    echo "e159_budget_session: kind must be timing or trace" >&2
+    echo "e159_budget_session: kind must be timing, kink or trace" >&2
     exit 2
     ;;
 esac
