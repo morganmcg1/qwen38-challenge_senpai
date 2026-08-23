@@ -1,0 +1,516 @@
+{
+  "cliff": {
+    "available": true,
+    "cliff_excess_over_typical_step": 2.664092664092664,
+    "mean_other_measured_step_us": 10935.99796295166,
+    "measured_share_of_width5_round": 0.3057088212226702,
+    "measured_us": 29134.511947631836,
+    "replayed_cliff_excess": 4.173991261886404,
+    "replayed_ranked_us": 16241.0,
+    "replayed_share_of_width5_round": 0.36124827616886873
+  },
+  "f217": {
+    "accepted_per_round_after": 2.3268052410188464,
+    "accepted_per_round_before": 2.298216571447982,
+    "available": true,
+    "e145_f218_bound_consistent_measured": true,
+    "e145_predicted_beagle_shift_us_measured": 699.1644252887348,
+    "f218_bound_us": [
+      119.0,
+      970.0
+    ],
+    "f219_beagle_round_us": 49738.5,
+    "hist_after": {
+      "2": 0.014564369747899162,
+      "3": 0.2571188235294118,
+      "4": 0.13390957983193275,
+      "5": 0.17478336134453784,
+      "6": 0.09748773109243698,
+      "7": 0.03305831932773109,
+      "8": 0.2890778151260504
+    },
+    "hist_before": {
+      "2": 0.01680672268907563,
+      "3": 0.29411764705882354,
+      "4": 0.1092436974789916,
+      "5": 0.18487394957983194,
+      "6": 0.08403361344537816,
+      "7": 0.025210084033613446,
+      "8": 0.2857142857142857
+    },
+    "local_beagle_draftlen_ship": 4.243697478991597,
+    "measured": {
+      "bracket_high_pct": 1.405680559905777,
+      "bracket_low_pct": 0.5342578933814212,
+      "brackets_ranked_measurement": false,
+      "cost_only_pct": 1.405680559905777,
+      "f218_bound_consistent_cost_only": true,
+      "f218_bound_consistent_same_p": true,
+      "predicted_beagle_shift_us_cost_only": 699.1644252887348,
+      "predicted_beagle_shift_us_same_p": 265.7318622995182,
+      "round_cost_after_us": 109845.25510822525,
+      "round_cost_before_us": 108322.58558072963,
+      "same_p_pct": 0.5342578933814212,
+      "sign_matches_ranked": true
+    },
+    "per_step_acceptance": 0.7782178217821782,
+    "ranked_beagle_draftlen_a": 4.3818,
+    "ranked_beagle_draftlen_b": 4.4771,
+    "ranked_measured_cand_pct": 0.2391,
+    "realised_shift": 0.09529999999999994,
+    "replayed_rescaled": {
+      "bracket_high_pct": 1.2387444569524637,
+      "bracket_low_pct": 0.3687563442240536,
+      "brackets_ranked_measurement": false,
+      "cost_only_pct": 1.2387444569524637,
+      "f218_bound_consistent_cost_only": true,
+      "f218_bound_consistent_same_p": true,
+      "predicted_beagle_shift_us_cost_only": 616.1329117213012,
+      "predicted_beagle_shift_us_same_p": 183.41387427188093,
+      "round_cost_after_us": 109541.28409912714,
+      "round_cost_before_us": 108200.95081849319,
+      "same_p_pct": 0.3687563442240536,
+      "sign_matches_ranked": true
+    },
+    "requested_shift": 0.09529999999999994,
+    "source_leg": "r1-beagle_a-p1-ship",
+    "unpriced_width_mass": 0.0
+  },
+  "harness": "local",
+  "level_transfer": {
+    "k": 2.1034237957712483,
+    "max_abs_residual_pct": 13.734561034345196,
+    "per_width_ratio": {
+      "2": 2.0344159078266073,
+      "3": 1.9754966361034438,
+      "4": 2.003998875988437,
+      "5": 2.1197897794275415,
+      "6": 2.0333015384423807,
+      "7": 2.3923198208123906,
+      "8": 2.1936136823642105
+    },
+    "r3_trigger_pct": 5.0,
+    "r3_triggered": true,
+    "residual_pct": {
+      "2": -3.280741051012897,
+      "3": -6.081853781676862,
+      "4": -4.726813492492408,
+      "5": 0.7780640158771521,
+      "6": -3.333719884211753,
+      "7": 13.734561034345196,
+      "8": 4.287765821337634
+    },
+    "worst_residual_pct": 13.734561034345196,
+    "worst_width": 7
+  },
+  "measured": {
+    "2": {
+      "accepted_draft_rate": [
+        0.886029
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        37.41492462158203,
+        39.12297058105469
+      ],
+      "exit_temps": [
+        53.81898498535156,
+        54.4658203125
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        1
+      ],
+      "pin": 1,
+      "pin_leak_fraction": 0.0,
+      "positions": [
+        1,
+        14
+      ],
+      "realised_width_mass": 1.0,
+      "replayed_round_count": [
+        0
+      ],
+      "replayed_round_share": 0.0,
+      "round_counts": [
+        272
+      ],
+      "rounds_pooled": 542,
+      "spt": 0.04548577149398625,
+      "spt_blocks_only": 0.03766846423968673,
+      "us": 70429.44431304932,
+      "us_mean_from_blocks": 70905.34445117501,
+      "us_per_leg": [
+        70474.98226165771,
+        70383.90636444092
+      ],
+      "us_pooled_mean": 70746.08552060004,
+      "us_pooled_median": 70425.98724365234,
+      "us_spread_pct": 0.12939875309735563
+    },
+    "3": {
+      "accepted_draft_rate": [
+        0.831169
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        39.21566390991211,
+        39.50130844116211
+      ],
+      "exit_temps": [
+        53.9399528503418,
+        54.459266662597656
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        1.994819
+      ],
+      "pin": 2,
+      "pin_leak_fraction": 0.005181347150259086,
+      "positions": [
+        13,
+        2
+      ],
+      "realised_width_mass": 0.9948186528497409,
+      "replayed_round_count": [
+        21
+      ],
+      "replayed_round_share": 0.10880829015544041,
+      "round_counts": [
+        193
+      ],
+      "rounds_pooled": 384,
+      "spt": 0.036559716798365116,
+      "spt_blocks_only": 0.028722523944452405,
+      "us": 75197.27945327759,
+      "us_mean_from_blocks": 76196.54020497217,
+      "us_per_leg": [
+        75177.01387405396,
+        75217.54503250122
+      ],
+      "us_pooled_mean": 75979.6965867281,
+      "us_pooled_median": 75194.95487213135,
+      "us_spread_pct": 0.05391429688224721
+    },
+    "4": {
+      "accepted_draft_rate": [
+        0.767742
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        39.184200286865234,
+        38.994468688964844
+      ],
+      "exit_temps": [
+        54.784400939941406,
+        54.78789138793945
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        3
+      ],
+      "pin": 3,
+      "pin_leak_fraction": 0.0,
+      "positions": [
+        12,
+        3
+      ],
+      "realised_width_mass": 1.0,
+      "replayed_round_count": [
+        38
+      ],
+      "replayed_round_share": 0.24516129032258063,
+      "round_counts": [
+        155
+      ],
+      "rounds_pooled": 308,
+      "spt": 0.03336654289159924,
+      "spt_blocks_only": 0.025543009163811803,
+      "us": 83187.997341156,
+      "us_mean_from_blocks": 84374.32704433319,
+      "us_per_leg": [
+        83227.9920578003,
+        83148.00262451172
+      ],
+      "us_pooled_mean": 84145.1504013755,
+      "us_pooled_median": 83214.52140808105,
+      "us_spread_pct": 0.09620126853774072
+    },
+    "5": {
+      "accepted_draft_rate": [
+        0.696858
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        39.312984466552734,
+        39.24102020263672
+      ],
+      "exit_temps": [
+        54.53388977050781,
+        55.596378326416016
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        3.977941
+      ],
+      "pin": 4,
+      "pin_leak_fraction": 0.007352941176470562,
+      "positions": [
+        11,
+        4
+      ],
+      "realised_width_mass": 0.9926470588235294,
+      "replayed_round_count": [
+        49
+      ],
+      "replayed_round_share": 0.3602941176470588,
+      "round_counts": [
+        136
+      ],
+      "rounds_pooled": 270,
+      "spt": 0.03327898040879518,
+      "spt_blocks_only": 0.025452256784774363,
+      "us": 95301.50890350342,
+      "us_mean_from_blocks": 95820.2608367976,
+      "us_per_leg": [
+        95301.98574066162,
+        95301.03206634521
+      ],
+      "us_pooled_mean": 95605.84094789292,
+      "us_pooled_median": 95301.50890350342,
+      "us_spread_pct": 0.0010006967351018146
+    },
+    "6": {
+      "accepted_draft_rate": [
+        0.674061
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        39.458702087402344,
+        39.296142578125
+      ],
+      "exit_temps": [
+        55.43271255493164,
+        58.624916076660156
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        4.966102
+      ],
+      "pin": 5,
+      "pin_leak_fraction": 0.008474576271186418,
+      "positions": [
+        10,
+        5
+      ],
+      "realised_width_mass": 0.9915254237288136,
+      "replayed_round_count": [
+        43
+      ],
+      "replayed_round_share": 0.3644067796610169,
+      "round_counts": [
+        118
+      ],
+      "rounds_pooled": 234,
+      "spt": 0.036448856350034475,
+      "spt_blocks_only": 0.02863738511223346,
+      "us": 124436.02085113525,
+      "us_mean_from_blocks": 124257.1286225723,
+      "us_per_leg": [
+        125321.03061676025,
+        123551.01108551025
+      ],
+      "us_pooled_mean": 124130.95001481537,
+      "us_pooled_median": 124313.47370147705,
+      "us_spread_pct": 1.4326224574762572
+    },
+    "7": {
+      "accepted_draft_rate": [
+        0.646032
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        38.34565734863281,
+        39.28872299194336
+      ],
+      "exit_temps": [
+        55.4331169128418,
+        55.609439849853516
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        6
+      ],
+      "pin": 6,
+      "pin_leak_fraction": 0.0,
+      "positions": [
+        6,
+        9
+      ],
+      "realised_width_mass": 1.0,
+      "replayed_round_count": [
+        48
+      ],
+      "replayed_round_share": 0.45714285714285713,
+      "round_counts": [
+        105
+      ],
+      "rounds_pooled": 208,
+      "spt": 0.03875323256943375,
+      "spt_blocks_only": 0.030926436185836792,
+      "us": 150297.49274253845,
+      "us_mean_from_blocks": 150803.19359188987,
+      "us_per_leg": [
+        150300.5027770996,
+        150294.4827079773
+      ],
+      "us_pooled_mean": 150575.87852844826,
+      "us_pooled_median": 150294.4827079773,
+      "us_spread_pct": 0.0040055157141140494
+    },
+    "8": {
+      "accepted_draft_rate": [
+        0.591954
+      ],
+      "all_tokens_matched": true,
+      "entry_temps": [
+        39.17239761352539,
+        39.44850158691406
+      ],
+      "exit_temps": [
+        55.377037048339844,
+        55.30192947387695
+      ],
+      "legs": 2,
+      "mean_draft_len": [
+        6.96
+      ],
+      "pin": 7,
+      "pin_leak_fraction": 0.010000000000000009,
+      "positions": [
+        7,
+        8
+      ],
+      "realised_width_mass": 0.99,
+      "replayed_round_count": [
+        56
+      ],
+      "replayed_round_share": 0.56,
+      "round_counts": [
+        100
+      ],
+      "rounds_pooled": 198,
+      "spt": 0.037900990224443376,
+      "spt_blocks_only": 0.030071368790231645,
+      "us": 154243.94607543945,
+      "us_mean_from_blocks": 153965.40820598602,
+      "us_per_leg": [
+        154364.9435043335,
+        154122.9486465454
+      ],
+      "us_pooled_mean": 153765.51343937113,
+      "us_pooled_median": 154289.48402404785,
+      "us_spread_pct": 0.15701416298688894
+    }
+  },
+  "measured_widths": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "ranked_prefill": {
+    "fitted": false,
+    "plausible_range_s": [
+      0.0,
+      30.0
+    ],
+    "reason": "the two-curve design does not identify a prefill term",
+    "regressor_correlation": 0.9514653904703355,
+    "scale_free_condition_number": 22.518351707632036,
+    "unconstrained_p_ranked_seconds": 1841163.6089243498,
+    "unconstrained_work_scale": 0.338542166342667
+  },
+  "repair_model": {
+    "fitted": false,
+    "reason": "the pin makes the replay rate a function of the width",
+    "replay_share_per_width": [
+      0.0,
+      0.10880829015544041,
+      0.24516129032258063,
+      0.3602941176470588,
+      0.3644067796610169,
+      0.45714285714285713,
+      0.56
+    ],
+    "shipped_replay_share": 0.2773109243697479,
+    "width_replay_correlation": 0.984306178607368,
+    "widths": [
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0
+    ]
+  },
+  "replayed_ranked_us": {
+    "1": 31173.0,
+    "2": 34619.0,
+    "3": 38065.0,
+    "4": 41511.0,
+    "5": 44958.0,
+    "6": 61199.0,
+    "7": 62825.0,
+    "8": 70315.0,
+    "9": 75639.0
+  },
+  "steps": {
+    "2->3": {
+      "measured_as_share_of_low_round": 0.0676966173272061,
+      "measured_over_replayed": 1.38358535700182,
+      "measured_us": 4767.8351402282715,
+      "replayed_as_share_of_low_round": 0.09954071463647131,
+      "replayed_ranked_us": 3446.0
+    },
+    "3->4": {
+      "measured_as_share_of_low_round": 0.10626339072337451,
+      "measured_over_replayed": 2.3188386209745846,
+      "measured_us": 7990.717887878418,
+      "replayed_as_share_of_low_round": 0.09052935767765664,
+      "replayed_ranked_us": 3446.0
+    },
+    "4->5": {
+      "measured_as_share_of_low_round": 0.14561609786889815,
+      "measured_over_replayed": 3.5142186139679175,
+      "measured_us": 12113.511562347412,
+      "replayed_as_share_of_low_round": 0.08303823083038231,
+      "replayed_ranked_us": 3447.0
+    },
+    "5->6": {
+      "measured_as_share_of_low_round": 0.3057088212226702,
+      "measured_over_replayed": 1.7938865801140222,
+      "measured_us": 29134.511947631836,
+      "replayed_as_share_of_low_round": 0.36124827616886873,
+      "replayed_ranked_us": 16241.0
+    },
+    "6->7": {
+      "measured_as_share_of_low_round": 0.20782946701857077,
+      "measured_over_replayed": 15.904964262855595,
+      "measured_us": 25861.4718914032,
+      "replayed_as_share_of_low_round": 0.02656906158597363,
+      "replayed_ranked_us": 1626.0
+    },
+    "7->8": {
+      "measured_as_share_of_low_round": 0.02625761255819035,
+      "measured_over_replayed": 0.5268963061283045,
+      "measured_us": 3946.453332901001,
+      "replayed_as_share_of_low_round": 0.1192200557103064,
+      "replayed_ranked_us": 7490.0
+    }
+  }
+}
