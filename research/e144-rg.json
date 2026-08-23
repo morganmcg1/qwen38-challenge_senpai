@@ -84,19 +84,22 @@
   "data_free": true,
   "experiment": "e144",
   "gate": {
+    "e144_rg_reachable_pooled_factor": 1.0050980076199538,
     "high": 0.4,
     "low": 0.15,
+    "max_column_effect_share": 0.06467070553710949,
     "max_measured_permutation_factor_on_admissible_tensors": 1.0288425948819757,
     "max_measured_permutation_factor_on_any_core_tensor": 1.0652573721583416,
     "max_per_row_oracle_factor_on_admissible_tensors": 7.698106066072083,
     "max_spread_on_admissible_tensors": 0.5748409962132938,
     "max_spread_on_error_carrying_tensors": 1.2301595092477446,
     "positive_control_detects_a_gain": true,
-    "rg_dead_by_measurement": false,
+    "rg_dead_by_reachable_measurement": true,
     "rg_dead_by_statistic": false,
     "rg_reopens_axis_by_statistic": true,
     "statistic": "std(log(per-column max-abs)) on the grouped axis",
-    "statistic_and_measurement_agree": true
+    "statistic_and_reachable_measurement_agree": false,
+    "verdict": "the statistic reopens the axis and the direct measurement closes it. std(log(per-column max-abs)) is a max-of-N order statistic over thousands of rows, not a measure of the column effect a shared permutation can act on. Column identity explains at most 6.47 % of the variance of log|w| on this head, so the reachable pooled gain is only x1.00510 even though sorting each row independently -- which no single column order can reach -- would give x2.8654."
   },
   "group_size": 64,
   "grouping_axis": {
@@ -744,5 +747,26 @@
       ],
       "zero_columns": 0
     }
+  },
+  "value": {
+    "composed_with_rb_best_of_breed": 1.1211259908886013,
+    "note": "INFERRED, not measured. Prices the reachable pooled factor through the E144 acceptance model damage = 0.82 * factor ** -k.",
+    "rb_best_of_breed_factor": 1.115439471960947,
+    "reachable_pooled_factor": 1.0050980076199538,
+    "recovery_pt": {
+      "fitted_low": [
+        0.007215502994932334,
+        0.14778298122080913
+      ],
+      "linear": [
+        0.004159162804691234,
+        0.0885924626989779
+      ],
+      "square": [
+        0.008297229712753186,
+        0.1676134321698219
+      ]
+    },
+    "target_pt": 0.3
   }
 }

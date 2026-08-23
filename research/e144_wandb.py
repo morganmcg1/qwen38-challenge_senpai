@@ -41,6 +41,8 @@ def main():
     price = load("e144-price.json")
     sweep = load("e144-group-sweep.json")
     f219 = load("e144-f219.json")
+    rd = load("e144-rd.json")
+    rg = load("e144-rg.json")
     missing = [
         label
         for label, payload in [
@@ -52,6 +54,8 @@ def main():
             ("e144-price.json", price),
             ("e144-group-sweep.json", sweep),
             ("e144-f219.json", f219),
+            ("e144-rd.json", rd),
+            ("e144-rg.json", rg),
         ]
         if payload is None
     ]
@@ -311,6 +315,120 @@ def main():
             owner_after = best["value"]["e144_upper_slot_owner_after"]
             summary["e144_upper_slot_owner_before"] = max(owner_before, key=owner_before.get)
             summary["e144_upper_slot_owner_after"] = max(owner_after, key=owner_after.get)
+
+    if rd:
+        summary["e144_nested_readme_splits_the_rule"] = rd["e144_nested_readme_splits_the_rule"]
+        summary["e144_digest_rules_agree_without_nested_readme"] = rd[
+            "e144_digest_rules_agree_without_nested_readme"
+        ]
+        summary["e144_digest_rules_agree_with_nested_readme"] = rd[
+            "e144_digest_rules_agree_with_nested_readme"
+        ]
+        summary["e144_digest_divergence_is_a_benchmark_escape"] = rd["benchmark_escape"]
+        summary["e144_shipped_head_is_exposed"] = rd["shipped_head_exposure"].get(
+            "shipped_head_is_exposed"
+        )
+        table = wandb.Table(columns=["site", "path", "line", "rule", "text"])
+        for site in rd["enforcing_sites"]:
+            table.add_data(site["site"], site["path"], site["line"], site["rule"], site["text"])
+        run.log({"e144_digest_rule_sites": table})
+
+    if rg:
+        gate = rg["gate"]
+        summary["e144_col_scale_log_std_max_admissible"] = gate[
+            "max_spread_on_admissible_tensors"
+        ]
+        summary["e144_col_scale_log_std_max_error_carrying"] = gate[
+            "max_spread_on_error_carrying_tensors"
+        ]
+        summary["e144_rg_reachable_pooled_factor"] = gate["e144_rg_reachable_pooled_factor"]
+        summary["e144_rg_dead_by_statistic"] = gate["rg_dead_by_statistic"]
+        summary["e144_rg_reopens_axis_by_statistic"] = gate["rg_reopens_axis_by_statistic"]
+        summary["e144_rg_dead_by_reachable_measurement"] = gate[
+            "rg_dead_by_reachable_measurement"
+        ]
+        summary["e144_rg_statistic_and_measurement_agree"] = gate[
+            "statistic_and_reachable_measurement_agree"
+        ]
+        summary["e144_rg_max_column_effect_share"] = gate["max_column_effect_share"]
+        summary["e144_rg_positive_control_detects_a_gain"] = gate[
+            "positive_control_detects_a_gain"
+        ]
+        summary["e144_rg_pooled_unreachable_oracle_factor"] = rg["pooled"][
+            "e144_rg_pooled_unreachable_oracle_factor"
+        ]
+        summary["e144_rg_composed_with_rb_factor"] = rg["value"][
+            "composed_with_rb_best_of_breed"
+        ]
+        for model, values in rg["value"]["recovery_pt"].items():
+            summary[f"e144_rg_composed_recovery_pt_{model}"] = values[1]
+
+        table = wandb.Table(
+            columns=[
+                "tensor",
+                "rows",
+                "columns",
+                "e144_col_scale_log_std",
+                "e144_column_effect_share",
+                "group_kurtosis_median",
+                "rel_l2_natural_order",
+                "e144_permutation_rel_l2_factor",
+                "e144_per_row_oracle_rel_l2_factor",
+                "mse_reduction_pct",
+                "admissible",
+            ]
+        )
+        for name, entry in sorted(rg["tensors"].items()):
+            table.add_data(
+                name,
+                entry["shape"][0],
+                entry["shape"][1],
+                entry["e144_col_scale_log_std"],
+                entry["e144_column_effect_share"],
+                entry["group_kurtosis_median"],
+                entry["rel_l2_natural_order"],
+                entry["e144_permutation_rel_l2_factor"],
+                entry["e144_per_row_oracle_rel_l2_factor"],
+                entry["mse_reduction_pct"],
+                name in rg["admissible_tensors"],
+            )
+        control = wandb.Table(
+            columns=[
+                "requested_log_std",
+                "e144_col_scale_log_std",
+                "e144_column_effect_share",
+                "e144_permutation_rel_l2_factor",
+                "mse_reduction_pct",
+                "detects_a_gain",
+            ]
+        )
+        for entry in rg["positive_controls"]:
+            control.add_data(
+                entry["requested_log_std"],
+                entry["e144_col_scale_log_std"],
+                entry["e144_column_effect_share"],
+                entry["e144_permutation_rel_l2_factor"],
+                entry["mse_reduction_pct"],
+                entry["detects_a_gain"],
+            )
+        pairs = wandb.Table(
+            columns=["pair", "size", "private_to_head", "permutation_freedom", "grouping_changes_on"]
+        )
+        for entry in rg["coupled_pairs"]:
+            pairs.add_data(
+                entry["pair"],
+                entry["size"],
+                entry["private_to_head"],
+                entry["permutation_freedom"],
+                ", ".join(entry["grouping_changes_on"]) or "none",
+            )
+        run.log(
+            {
+                "e144_rg_by_tensor": table,
+                "e144_rg_positive_controls": control,
+                "e144_rg_coupled_pairs": pairs,
+            }
+        )
 
     # Rungs the stop rule prevented. Name them so the record is unambiguous.
     for metric in (
