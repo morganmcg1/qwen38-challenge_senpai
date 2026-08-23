@@ -39,7 +39,7 @@ private let kernelDeclMarker = "qwen35FusedResidualRMSNormKernel = MLXFast.metal
 private let wrapperDeclMarker = "func qwen35FusedResidualRMSNorm("
 private let qwen35RelativePath = "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
 
-private struct ShippedFusedKernel {
+struct ShippedFusedKernel {
     var name: String
     var inputNames: [String]
     var outputNames: [String]
@@ -102,26 +102,66 @@ private func firstInt(in line: String) -> Int? {
     return Int(digits)
 }
 
-private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
+/// The lines of `private let <ident> = """ ... """`, without its delimiters.
+private func namedSourceBody(_ lines: [String], _ ident: String) throws -> [String] {
+    let decl = "let \(ident) = \"\"\""
+    guard let open = lines.firstIndex(where: { $0.contains(decl) }) else {
+        throw SourceGateError.missing(decl)
+    }
+    guard
+        let close = lines[(open + 1)...].firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces) == "\"\"\""
+        })
+    else { throw SourceGateError.missing("closing \"\"\" for \(ident)") }
+    return Array(lines[(open + 1) ..< close])
+}
+
+/// Reads one `MLXFast.metalKernel(...)` declaration out of `Qwen35.swift`.
+///
+/// The `source:` argument is followed wherever it leads. A kernel may spell it
+/// inline as a multiline literal, or name one constant, or name several joined
+/// with `+`. E152 split the fused norm body into a shared constant so the
+/// two-output and three-output entry points cannot drift, and a loader that
+/// only understood the inline form would have walked past this declaration and
+/// silently audited the next kernel in the file.
+func loadFusedKernel(
+    marker: String,
+    wrapperMarker: String
+) throws -> ShippedFusedKernel {
     let url = repoRoot().appendingPathComponent(qwen35RelativePath)
     let lines = try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\n")
 
-    guard let declIdx = lines.firstIndex(where: { $0.contains(kernelDeclMarker) }) else {
-        throw SourceGateError.missing(kernelDeclMarker)
+    guard let declIdx = lines.firstIndex(where: { $0.contains(marker) }) else {
+        throw SourceGateError.missing(marker)
     }
     guard
-        let sourceOpen = lines[declIdx...].firstIndex(where: {
-            $0.trimmingCharacters(in: .whitespaces).hasSuffix("source: \"\"\"")
+        let sourceIdx = lines[declIdx ..< min(declIdx + 8, lines.count)].firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces).hasPrefix("source:")
         })
-    else { throw SourceGateError.missing("source: \"\"\"") }
-    guard
-        let sourceClose = lines[(sourceOpen + 1)...].firstIndex(where: {
-            let t = $0.trimmingCharacters(in: .whitespaces)
-            return t == "\"\"\"" || t == "\"\"\","
-        })
-    else { throw SourceGateError.missing("closing \"\"\"") }
+    else { throw SourceGateError.missing("source: for \(marker)") }
 
-    let header = lines[declIdx ..< sourceOpen]
+    let sourceLine = lines[sourceIdx].trimmingCharacters(in: .whitespaces)
+    let body: [String]
+    let tailIdx: Int
+    if sourceLine.hasSuffix("\"\"\"") {
+        guard
+            let close = lines[(sourceIdx + 1)...].firstIndex(where: {
+                let t = $0.trimmingCharacters(in: .whitespaces)
+                return t == "\"\"\"" || t == "\"\"\","
+            })
+        else { throw SourceGateError.missing("closing \"\"\"") }
+        body = Array(lines[(sourceIdx + 1) ..< close])
+        tailIdx = close
+    } else {
+        let expr = sourceLine.dropFirst("source:".count)
+            .trimmingCharacters(in: CharacterSet(charactersIn: " ,"))
+        body = try expr.components(separatedBy: "+")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .flatMap { try namedSourceBody(lines, $0) }
+        tailIdx = sourceIdx
+    }
+
+    let header = lines[declIdx ..< sourceIdx]
     guard let nameLine = header.first(where: { $0.contains("name:") }),
         let name = quotedStrings(in: nameLine).first
     else { throw SourceGateError.missing("name:") }
@@ -131,10 +171,8 @@ private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
     guard let outLine = header.first(where: { $0.contains("outputNames:") }) else {
         throw SourceGateError.missing("outputNames:")
     }
-
-    let body = lines[(sourceOpen + 1) ..< sourceClose]
     guard
-        let ercLine = lines[sourceClose...].prefix(6).first(where: {
+        let ercLine = lines[tailIdx...].prefix(6).first(where: {
             $0.contains("ensureRowContiguous:")
         })
     else { throw SourceGateError.missing("ensureRowContiguous:") }
@@ -146,8 +184,8 @@ private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
         let nReads = firstInt(in: nReadsLine)
     else { throw SourceGateError.missing("constexpr uint n_reads") }
 
-    guard let wrapIdx = lines.firstIndex(where: { $0.contains(wrapperDeclMarker) }) else {
-        throw SourceGateError.missing(wrapperDeclMarker)
+    guard let wrapIdx = lines.firstIndex(where: { $0.contains(wrapperMarker) }) else {
+        throw SourceGateError.missing(wrapperMarker)
     }
     let wrapper = lines[wrapIdx ..< min(wrapIdx + 30, lines.count)]
     guard let gridLine = wrapper.first(where: { $0.contains("grid:") }),
@@ -168,6 +206,10 @@ private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
         wrapperGridMultiplier: gridMultiplier,
         wrapperThreadGroup: threadGroup
     )
+}
+
+private func loadShippedFusedKernel() throws -> ShippedFusedKernel {
+    try loadFusedKernel(marker: kernelDeclMarker, wrapperMarker: wrapperDeclMarker)
 }
 
 // MARK: - Source gate (no GPU)
