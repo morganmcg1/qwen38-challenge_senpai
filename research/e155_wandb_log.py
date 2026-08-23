@@ -25,6 +25,8 @@ PROJECT = "qwen38-mlx-challenge-senpai"
 GROUP = "e155-draft-head-recall-audit"
 HOST = "apple-m4-pro-applegpu_g16s-20core-48gib"
 ART = pathlib.Path("research/e155-artifacts")
+# Raw per-slot rows stay out of Git and travel in the W&B artifact instead.
+RAW = pathlib.Path(".mlxfast-private/e155")
 
 
 def load(name: str) -> dict:
@@ -90,6 +92,16 @@ def build() -> tuple[dict, dict, dict]:
     }
     flatten("conversion", recall["conversion"], summary)
     flatten("witness", witness, summary)
+    flatten("acceptance_points", recall["e155_recoverable_acceptance_points"],
+            summary)
+    flatten("bucket_b_price", recall["bucket_b_untrim_price"], summary)
+    flatten("bucket_conditional", pooled["three_bucket_split_conditional"],
+            summary)
+    flatten("bucket_marginal", pooled["three_bucket_split_marginal"], summary)
+    flatten("head_margin", pooled["head_margin_when_head_disagrees"], summary)
+    summary["e155_vocab_axis_verdict"] = recall["e155_vocab_axis_verdict"]
+    summary["e155_recoverable_acceptance_points_total"] = recall[
+        "e155_recoverable_acceptance_points"]["total_recoverable_points"]
 
     prompt_rows = []
     for entry in recall["per_prompt"] + [pooled]:
@@ -111,7 +123,19 @@ def build() -> tuple[dict, dict, dict]:
             "exact_full_hits": entry["counts"]["exact_full_hits"],
             "index_miss": entry["counts"]["index_miss"],
             "index_miss_exact_ties": entry["counts"]["index_miss_exact_ties"],
+            "distinct_target_tokens": entry["distinct_target_tokens"],
+            "distinct_proposed_tokens": entry["distinct_proposed_tokens"],
+            "most_common_target_share": entry["most_common_target_share"],
         }
+        for population in ("conditional", "marginal"):
+            split = entry["three_bucket_split_%s" % population]
+            for key in ("bucket_a_selection_defect",
+                        "bucket_b_candidate_set_trim",
+                        "bucket_c_irreducible_head_disagreement",
+                        "lucky_shipped_win_exact_miss",
+                        "bucket_a_net_of_lucky_pp", "bucket_b_pp",
+                        "bucket_c_pp"):
+                row["%s_%s" % (population, key)] = split[key]
         prompt_rows.append(row)
 
     slot_rows = []
@@ -162,6 +186,12 @@ def build() -> tuple[dict, dict, dict]:
         "experiment": "E155",
         "pr": 155,
         "base_sha": witness["base_sha"],
+        # The audit legs ran on the instrumented build. The submitted head
+        # reverts the instrument, so it cannot reproduce the rows by itself;
+        # research/e155-patches/recall-audit.patch restores it.
+        "audit_build_commit": "3d52eac6",
+        "audit_worker_sha256": witness["legs"][0]["worker_sha256_on"],
+        "instrument_patch": "research/e155-patches/recall-audit.patch",
         "host": HOST,
         "question":
             "how much of the shipped proposal head's per-slot miss rate would "
@@ -203,7 +233,7 @@ def main() -> int:
     artifact = wandb.Artifact("e155-recall-audit", type="recall-audit")
     for path in sorted(ART.glob("*.json")):
         artifact.add_file(str(path))
-    for path in sorted(ART.glob("*.jsonl")):
+    for path in sorted(RAW.glob("*.jsonl")):
         artifact.add_file(str(path))
     run.log_artifact(artifact)
     print(run.url)
