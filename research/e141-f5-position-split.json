@@ -1,0 +1,127 @@
+{
+  "steps": 512,
+  "arm": "shipped",
+  "seeds": {
+    "beagle_a": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/worker-15996ba2/beagle_a_shipped_512.json",
+      "rounds": 118,
+      "draft_rows": 490,
+      "positions": [
+        {
+          "position_1based": 1,
+          "reached": 118,
+          "first_rejects": 18,
+          "unproposable_events": 3,
+          "rate_per_reached_pct": 2.542372881355932
+        },
+        {
+          "position_1based": 2,
+          "reached": 117,
+          "first_rejects": 19,
+          "unproposable_events": 1,
+          "rate_per_reached_pct": 0.8547008547008547
+        },
+        {
+          "position_1based": 3,
+          "reached": 84,
+          "first_rejects": 10,
+          "unproposable_events": 1,
+          "rate_per_reached_pct": 1.1904761904761905
+        },
+        {
+          "position_1based": 4,
+          "reached": 65,
+          "first_rejects": 1,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 5,
+          "reached": 36,
+          "first_rejects": 0,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 6,
+          "reached": 36,
+          "first_rejects": 0,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 7,
+          "reached": 34,
+          "first_rejects": 0,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        }
+      ],
+      "unproposable_total": 5,
+      "unproposable_at_position1": 3,
+      "unproposable_beyond_position1": 2,
+      "position1_share_pct": 60.0,
+      "rate_at_position1_per_reached_pct": 2.542372881355932,
+      "rate_beyond_position1_per_reached_pct": 0.5376344086021505,
+      "effective_draft_len_advisor": 4.3818,
+      "effective_draft_len_measured": 4.1525423728813555
+    },
+    "essays_montaigne": {
+      "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-alphonse/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e141/verify/worker-15996ba2/essays_montaigne_shipped_512.json",
+      "rounds": 151,
+      "draft_rows": 518,
+      "positions": [
+        {
+          "position_1based": 1,
+          "reached": 151,
+          "first_rejects": 25,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 2,
+          "reached": 149,
+          "first_rejects": 11,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 3,
+          "reached": 121,
+          "first_rejects": 11,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 4,
+          "reached": 75,
+          "first_rejects": 16,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 5,
+          "reached": 12,
+          "first_rejects": 2,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        },
+        {
+          "position_1based": 6,
+          "reached": 10,
+          "first_rejects": 3,
+          "unproposable_events": 0,
+          "rate_per_reached_pct": 0.0
+        }
+      ],
+      "unproposable_total": 0,
+      "unproposable_at_position1": 0,
+      "unproposable_beyond_position1": 0,
+      "position1_share_pct": null,
+      "rate_at_position1_per_reached_pct": 0.0,
+      "rate_beyond_position1_per_reached_pct": 0.0,
+      "effective_draft_len_advisor": 5.087,
+      "effective_draft_len_measured": 3.4304635761589406
+    }
+  }
+}
