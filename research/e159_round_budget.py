@@ -100,6 +100,7 @@ def load_legs(session: pathlib.Path) -> list[dict]:
             "mtp_seconds_per_token": report[
                 "parent_measured_seconds_per_token"],
             "R_over_1_plus_a": decode_seconds / rounds / (1 + a),
+            "rejected_per_round": q - a,
             "all_tokens_matched": report["all_tokens_matched"],
             "residual_divergence_count": report["residual_divergence_count"],
             "head_provenance_sha256": report.get(
@@ -233,7 +234,9 @@ def trace_summary(session: pathlib.Path) -> list[dict]:
             "d_pre_us": mean("d_pre_us"),
             "d_flush_us": mean("d_flush_us"),
             "d_head1_us": mean("d_head1_us"),
+            "d_submit1_us": mean("d_submit1_us"),
             "d_chain_us": mean("d_chain_us"),
+            "d_submit2_us": mean("d_submit2_us"),
             "head_segment_us": head_us,
             "verify_build_us": mean("verify_build_us"),
             "eval_wall_us": mean("eval_wall_us"),
@@ -305,6 +308,37 @@ def main() -> int:
             "exit_c": [leg["exit_c"] for leg in group],
         })
 
+    # The marginal price of one more PROPOSED draft, measured between adjacent
+    # sweep points instead of assumed constant. If these disagree, `h` is not a
+    # number and `rho = 8h/s` inherits whichever segment the fit happened to
+    # weight most.
+    segments = []
+    for lo, hi in zip(depth_table, depth_table[1:]):
+        span = hi["D"] - lo["D"]
+        segments.append({
+            "from_D": lo["D"],
+            "to_D": hi["D"],
+            "delta_R_seconds": hi["R_seconds_mean"] - lo["R_seconds_mean"],
+            "marginal_seconds_per_draft":
+                (hi["R_seconds_mean"] - lo["R_seconds_mean"]) / span,
+            "delta_rejected_per_round":
+                (hi["q_proposed_per_round"] - hi["a_accepted_per_round"])
+                - (lo["q_proposed_per_round"] - lo["a_accepted_per_round"]),
+        })
+
+    # `s` pinned to the measured D=0 round instead of extrapolated, and 8h read
+    # as the measured chord from D=0 to D=8. This uses no linearity assumption,
+    # so it survives the convexity that the quadratic term reports.
+    r0 = next(r["R_seconds_mean"] for r in depth_table if r["D"] == 0)
+    r8 = next(r["R_seconds_mean"] for r in depth_table if r["D"] == 8)
+    chord = {
+        "s_seconds": r0,
+        "eight_h_seconds": r8 - r0,
+        "h_seconds": (r8 - r0) / 8.0,
+        "rho": (r8 - r0) / r0,
+        "definition": "s = measured R(0); 8h = measured R(8) - R(0)",
+    }
+
     traces = trace_summary(args.trace) if args.trace else []
     head_fit = None
     if len({t["pinned_depth"] for t in traces}) >= 3:
@@ -356,6 +390,9 @@ def main() -> int:
         "rho_trimmed_round_clock": 8.0 * fit_trimmed["slope"]
         / fit_trimmed["intercept"],
         "quadratic_term": curve,
+        "linear_model_rejected": abs(curve["t_c2"]) >= 2.0,
+        "segment_marginals": segments,
+        "chord_estimate": chord,
         "s_fixed_seconds": s_fixed,
         "h_slope_seconds": h_slope,
         "rho_8h_over_s": rho,
@@ -408,6 +445,12 @@ def main() -> int:
     print(f"trimmed round clock: s {fit_trimmed['intercept'] * 1e3:.4f} ms  "
           f"h {fit_trimmed['slope'] * 1e3:.4f} ms  "
           f"rho {out['rho_trimmed_round_clock']:.4f}")
+    print(f"chord: s = R(0) {chord['s_seconds'] * 1e3:.4f} ms  "
+          f"h {chord['h_seconds'] * 1e3:.4f} ms  rho {chord['rho']:.4f}")
+    print("segment marginals ms/draft: " + "  ".join(
+        f"{seg['from_D']}->{seg['to_D']} "
+        f"{seg['marginal_seconds_per_draft'] * 1e3:.3f}"
+        for seg in segments))
     if head_fit:
         print(f"h_head (sync-head trace) {head_fit['slope'] * 1e3:.4f} ms "
               f"+- {head_fit['se_slope'] * 1e3:.4f}  "
