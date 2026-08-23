@@ -37,8 +37,9 @@ for id in "$@"; do
       E128_DEPTH="${E128_DEPTH:-8}" \
       E128_RUNS_DIR="${E128_RUNS_DIR:-runs-e155-on}" \
       research/e128_session.sh "${id}" || status=1
-  if [[ -s "${path}" ]]; then
-    echo "e155: ${id}: $(wc -l < "${path}" | tr -d ' ') audited slots"
+  slots="$(grep -c '"slot":' "${path}" 2>/dev/null)"
+  if [[ "${slots:-0}" -gt 0 ]]; then
+    echo "e155: ${id}: ${slots} audited slots"
   else
     echo "e155: ${id}: NO AUDIT ROWS" >&2
     status=1

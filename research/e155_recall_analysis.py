@@ -52,12 +52,17 @@ BOUNDED_ARM_PCT = 0.3
 
 
 def load(path: str) -> list[dict]:
+    """Per-slot rows only. `event` lines are the instrument's own install and
+    per-round diagnostics and carry no measurement."""
     rows = []
     with open(path) as handle:
         for line in handle:
             line = line.strip()
-            if line:
-                rows.append(json.loads(line))
+            if not line:
+                continue
+            row = json.loads(line)
+            if "event" not in row:
+                rows.append(row)
     return rows
 
 

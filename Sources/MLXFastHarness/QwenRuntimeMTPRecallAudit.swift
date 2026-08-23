@@ -24,6 +24,7 @@ enum QwenMTPRecallAudit {
 
     private nonisolated(unsafe) static var sink: FileHandle?
     private nonisolated(unsafe) static var positions: MLXArray?
+    private nonisolated(unsafe) static var pid = 0
 
     static func installIfRequested(model: any Qwen36MTPTarget) {
         let env = ProcessInfo.processInfo.environment
@@ -36,14 +37,24 @@ enum QwenMTPRecallAudit {
                 "mlxfast-worker: e155_recall_audit=on_but_no_path\n", stderr)
             return
         }
-        FileManager.default.createFile(atPath: path, contents: nil)
+        // APPEND, never truncate. One leg can start more than one worker
+        // process against the same path, and a later `createFile` would throw
+        // away the rows an earlier worker already wrote. Every line carries
+        // its pid so the reader can still separate the processes.
+        if !FileManager.default.fileExists(atPath: path) {
+            FileManager.default.createFile(atPath: path, contents: nil)
+        }
         guard let handle = FileHandle(forWritingAtPath: path) else {
             fputs("mlxfast-worker: e155_recall_audit=path_open_failed\n", stderr)
             return
         }
+        handle.seekToEndOfFile()
         sink = handle
         positions = arange(realCount, dtype: .int32)
+        pid = Int(ProcessInfo.processInfo.processIdentifier)
         fputs("mlxfast-worker: e155_recall_audit=on path=\(path)\n", stderr)
+        handle.write(Data(
+            "{\"event\":\"install\",\"pid\":\(pid)}\n".utf8))
 
         Qwen36MTPBlockSession.draftAuditHook = {
             round, hiddens, drafts, verifyArgmax, accepted in
@@ -57,8 +68,14 @@ enum QwenMTPRecallAudit {
         model: any Qwen36MTPTarget, round: Int, hiddens: [MLXArray],
         drafts: [Int], verifyArgmax: [Int], accepted: Int
     ) {
-        guard let sink, let positions, !hiddens.isEmpty else { return }
+        guard let sink, let positions else { return }
         let slots = min(hiddens.count, min(drafts.count, verifyArgmax.count))
+        sink.write(Data((
+            "{\"event\":\"round\",\"pid\":\(pid),\"round\":\(round)"
+            + ",\"hiddens\":\(hiddens.count),\"drafts\":\(drafts.count)"
+            + ",\"verify_rows\":\(verifyArgmax.count),\"slots\":\(slots)}\n"
+        ).utf8))
+        guard slots > 0 else { return }
         var ids: [MLXArray] = []
         var values: [MLXArray] = []
         for slot in 0 ..< slots {
@@ -97,7 +114,7 @@ enum QwenMTPRecallAudit {
         for slot in 0 ..< slots {
             let compactRaw = flatIDs[slot * 3 + 1]
             let maskedRaw = flatIDs[slot * 3 + 2]
-            text += "{\"round\":\(round),\"slot\":\(slot)"
+            text += "{\"pid\":\(pid),\"round\":\(round),\"slot\":\(slot)"
                 + ",\"d\":\(drafts.count),\"accepted\":\(accepted)"
                 + ",\"ann\":\(drafts[slot])"
                 + ",\"exact_compact\":\(mapCompact(compactRaw))"
