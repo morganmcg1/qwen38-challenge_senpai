@@ -3,9 +3,10 @@
 # run the Swift suite, audit the generated Metal twins, run every campaign gate,
 # then take ONE bare 512-token exactness leg on the composed commit.
 #
-# The leg is the pb6 tripwire. The composed tree must show edward's pb6 round
-# schedule (about 82 rounds, mean draft about 5.854). If it shows the pre-pb6
-# schedule (78 rounds, 6.359) the rebase dropped pb6 and the chain fails.
+# The leg is the depth-arm tripwire. Advisor F23 reverts the shipped arm from
+# pb6 back to ship, so the composed tree must show the ship round schedule
+# (78 rounds, mean draft 6.359). If it shows the pb6 schedule (82 rounds,
+# 5.854) the revert did not reach the binary and the chain fails.
 #
 # The leg exports no MLX_E120_QMV_GRID, no MLX_E120_QMV_TABLE and no
 # MLX_E135_PROBE_ARM, so it takes the route the ranked runner takes, and every
@@ -17,9 +18,9 @@ set -u
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
-tag="e135w2p15"
+tag="e135ship"
 out="research/out/${tag}"
-log_dir="research/out/e135w2p15gate"
+log_dir="research/out/e135shipgate"
 mkdir -p "${log_dir}"
 rc=0
 
@@ -265,9 +266,12 @@ python3 research/e135_probe_check.py "${out}/pipelines.json"
 [[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=6
 
 echo
-echo "--- witness: pb6 round schedule ---"
-python3 research/e135_pb6_check.py "${out}/score.json"
+echo "--- witness: ship round schedule ---"
+python3 research/e135_arm_check.py "${out}/score.json" --want ship
 [[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=7
+echo "--- Rule 101 control: the same check must FAIL against pb6 ---"
+python3 research/e135_arm_check.py "${out}/score.json" --want pb6
+[[ "${PIPESTATUS[0]}" -ne 0 ]] || rc=10
 
 echo
 echo "################ SUMMARY ################"

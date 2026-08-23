@@ -288,9 +288,15 @@ struct E134PassBoundaryPriceTests {
         }
     }
 
-    @Test("the shipped arm is pb6 at the measured width and tier")
-    func shippedArmIsPB6() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
+    // E135 F23. Ranked receipt `e003a86d` measured this arm in composition and
+    // lost 2.380 % of published median against `572b2cc4`, so the compiled
+    // default reverted to `.ship`. The constants below still define the pb6
+    // rung and the curve that selected it, and the rest of this suite still
+    // pins that selection. Only the shipped default moved.
+    @Test("the shipped arm is no longer pb6, and the pb6 rung keeps its constants")
+    func shippedArmIsNotPB6() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
+        #expect(Qwen36MTPBlockSession.depthPriceArm != .pb6)
         #expect(Qwen36MTPBlockSession.passBoundaryVerifyWidth == 6)
         #expect(Qwen36MTPBlockSession.passBoundaryTierFactor == 1.45)
     }
