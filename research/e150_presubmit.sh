@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # E150 R4 -- the pre-submit chain for the linearised depth schedule.
 #
-#   usage: research/e150_presubmit.sh
+#   usage: research/e150_presubmit.sh [--gates-only]
+#
+# `--gates-only` runs the static gates and the Swift suites and skips the three
+# GPU legs. Use it only to re-gate a commit whose scored surface is byte
+# identical to a commit where the full chain already passed. The worker-assert
+# step prints the built worker digest, so equality of that digest is the proof
+# that skipping the GPU legs is sound.
 #
 # WHAT THIS CHAIN IS. An exactness, scope and gross-regression gate for the
 # `linearised` schedule arm. It is NOT a timing session. Every decode leg keeps
@@ -40,6 +46,9 @@
 # worker, so the worker is rebuilt and asserted before anything reads it.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+gates_only=0
+[[ "${1:-}" == "--gates-only" ]] && gates_only=1
 
 CONTRACT_SHA="770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf"
 PROMPTS=(benchfixture beagle_a essays_montaigne medicine_hist
@@ -80,32 +89,39 @@ step hard budget senpai/check-editable-budget.sh "${CONTRACT_SHA}"
 step hard boundary senpai/verify-ranked-score-boundary.sh
 step hard swift-test-e150 swift test --force-resolved-versions --filter E150
 
-echo
-echo "################ local-submit-512 ################"
-MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 \
-MLXFAST_SCORE_PATH="${PWD}/${out_dir}/local-submit-512.json" \
-  ./benchmark-qwen-mtp.sh --local-submit 2>&1 \
-  | tee "${out_dir}/local-submit-512.log"
-record local-submit-512 "${PIPESTATUS[0]}" hard
-
-for arm in shipped linearised; do
+if (( gates_only == 0 )); then
   echo
-  echo "################ exactness-512-${arm} ################"
-  MLX_E150_SCHEDULE_ARM="${arm}" \
-  E128_FORCE=1 E128_TOKENS=512 E128_DEPTH=8 \
-  E128_RUNS_DIR="runs-e150-${arm}" \
-    research/e128_session.sh "${PROMPTS[@]}" 2>&1 \
-    | tee "${out_dir}/exactness-512-${arm}.log"
-  record "exactness-512-${arm}" "${PIPESTATUS[0]}" hard
-done
+  echo "################ local-submit-512 ################"
+  MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 \
+  MLXFAST_SCORE_PATH="${PWD}/${out_dir}/local-submit-512.json" \
+    ./benchmark-qwen-mtp.sh --local-submit 2>&1 \
+    | tee "${out_dir}/local-submit-512.log"
+  record local-submit-512 "${PIPESTATUS[0]}" hard
+
+  for arm in shipped linearised; do
+    echo
+    echo "################ exactness-512-${arm} ################"
+    MLX_E150_SCHEDULE_ARM="${arm}" \
+    E128_FORCE=1 E128_TOKENS=512 E128_DEPTH=8 \
+    E128_RUNS_DIR="runs-e150-${arm}" \
+      research/e128_session.sh "${PROMPTS[@]}" 2>&1 \
+      | tee "${out_dir}/exactness-512-${arm}.log"
+    record "exactness-512-${arm}" "${PIPESTATUS[0]}" hard
+  done
+else
+  echo
+  echo "################ GPU legs skipped (--gates-only) ################"
+fi
 
 step soft swift-test swift test --force-resolved-versions
 
-step hard collect python3 research/e150_presubmit_collect.py \
-  --shipped .mlxfast-private/e128/runs-e150-shipped \
-  --linearised .mlxfast-private/e128/runs-e150-linearised \
-  --local-submit "${out_dir}/local-submit-512.json" \
-  --chain-rc "${hard_rc}"
+if (( gates_only == 0 )); then
+  step hard collect python3 research/e150_presubmit_collect.py \
+    --shipped .mlxfast-private/e128/runs-e150-shipped \
+    --linearised .mlxfast-private/e128/runs-e150-linearised \
+    --local-submit "${out_dir}/local-submit-512.json" \
+    --chain-rc "${hard_rc}"
+fi
 
 echo
 echo "################ SUMMARY ################"
