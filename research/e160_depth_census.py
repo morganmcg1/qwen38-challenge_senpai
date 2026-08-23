@@ -171,10 +171,12 @@ def main() -> int:
         m = score["metrics"]
         tokens = m["decode_tokens"]
         mtp_spt = float(m["mtp_seconds_per_token"])
-        # The MTP leg is the traced leg whose implied token count matches the
-        # parent's decode window; the serial control drafts nothing.
-        drafting = [s for s in summaries if s["tokens_implied"] == tokens
-                    and s["proposed_draft_total"] > 0]
+        # The MTP leg is the traced leg that reproduces the parent's own
+        # scalars. Its implied token count may exceed the decode window by up
+        # to one round's accepted drafts, because the parent stops counting at
+        # the window edge inside a round that has already been journalled.
+        drafting = [s for s in summaries if s["proposed_draft_total"] > 0
+                    and 0 <= s["tokens_implied"] - tokens <= 8]
         print("=== parent cross-check (score.json) ===")
         print(f"decode_tokens            = {tokens}")
         print(f"effective_mean_draft_len = {m['effective_mean_draft_len']}")
@@ -190,16 +192,21 @@ def main() -> int:
                         - float(m["effective_mean_draft_len"])) < 5e-4
         rate_ok = abs(s["accepted_draft_rate"]
                       - float(m["accepted_draft_rate"])) < 5e-6
-        rounds = tokens - s["accepted_draft_total"]
+        # The traced round count is the measured one. `tokens - accepted` is
+        # the advisor's closed form and is exact only when no round straddles
+        # the window edge, so report both and let the difference be visible.
+        rounds = s["round_count"]
+        closed_form = tokens - s["accepted_draft_total"]
         r_per_round = mtp_spt * tokens / rounds
         print(f"trace mean proposed d    = {s['mean_proposed_d']:.6f}"
               f"   match={d_mean_ok}")
         print(f"trace accepted rate      = {s['accepted_draft_rate']:.6f}"
               f"   match={rate_ok}")
-        print(f"rounds = 512-form        = {rounds}"
-              f"   (trace rounds {s['round_count']})")
+        print(f"rounds (traced)          = {rounds}")
+        print(f"rounds (tokens-accepted) = {closed_form}"
+              f"   boundary_round={'yes' if closed_form != rounds else 'no'}")
         print(f"R (seconds per round)    = {r_per_round:.8f}")
-        print(f"a from parent window     = "
+        print(f"a (accepted per round)   = "
               f"{s['accepted_draft_total'] / rounds:.6f}")
         if not (d_mean_ok and rate_ok):
             print("TRACE AND PARENT DISAGREE: report the disagreement, not "
@@ -212,7 +219,8 @@ def main() -> int:
                 "accepted_draft_rate": m["accepted_draft_rate"],
                 "mtp_seconds_per_token": mtp_spt,
                 "serial_seconds_per_token": m["serial_seconds_per_token"],
-                "rounds_from_token_arithmetic": rounds,
+                "rounds_traced": rounds,
+                "rounds_from_token_arithmetic": closed_form,
                 "R_seconds_per_round": r_per_round,
             }
 
