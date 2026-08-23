@@ -21,7 +21,10 @@ from e144_quant import _groups, alternating_ls, best_of_breed, clip_search, dequ
 from e144_ra import CORE, DECLARED, MASTER
 from e144_st import SafeTensors, save
 
-QUANTIZERS = {"clip": clip_search, "als": alternating_ls, "best": best_of_breed}
+# `rtn` is the incumbent's own quantizer. Keeping it in the sweep is a standing
+# self-check: its relL2 must equal the declared head's to every printed digit,
+# which proves the reproduction still holds after any edit to e144_quant.
+QUANTIZERS = {"rtn": mlx_rtn, "clip": clip_search, "als": alternating_ls, "best": best_of_breed}
 
 
 def affine_ceiling(grouped, bits=4, samples=3000, seed=0):
@@ -58,7 +61,15 @@ def main():
     parser.add_argument("--out", default="e144-rb.json")
     parser.add_argument("--emit", default=None, help="write the best-quantizer head here")
     parser.add_argument("--quantizer", default="best", choices=sorted(QUANTIZERS))
+    parser.add_argument(
+        "--smoke",
+        type=int,
+        default=0,
+        help="use only the first N rows of each core tensor; cannot emit a head",
+    )
     arguments = parser.parse_args()
+    if arguments.smoke and arguments.emit:
+        parser.error("--smoke produces a truncated tensor, so it cannot emit a head")
 
     master = SafeTensors(MASTER)
     declared = SafeTensors(DECLARED)
@@ -69,6 +80,7 @@ def main():
         "harness": "local",
         "data_free": True,
         "note": "no calibration data, no activations, no training; a pure function of master-bf16",
+        "smoke_rows": arguments.smoke,
         "tensors": {},
     }
 
@@ -78,8 +90,9 @@ def main():
     ceiling_best = 0.0
     emitted = {}
 
+    rows_kept = arguments.smoke or None
     for name in CORE:
-        weight = master.float32(f"{name}.weight")
+        weight = master.float32(f"{name}.weight")[:rows_kept]
         columns = weight.shape[1]
         reference = weight.astype(np.float64)
         tensor_energy = float((reference**2).sum())
@@ -90,9 +103,9 @@ def main():
                 (
                     reference
                     - dequantize(
-                        declared.raw(f"{name}.weight"),
-                        declared.raw(f"{name}.scales"),
-                        declared.raw(f"{name}.biases"),
+                        declared.raw(f"{name}.weight")[:rows_kept],
+                        declared.raw(f"{name}.scales")[:rows_kept],
+                        declared.raw(f"{name}.biases")[:rows_kept],
                         4,
                         64,
                         columns,
@@ -108,6 +121,7 @@ def main():
             "rel_l2": {"declared": float(np.sqrt(declared_error / tensor_energy))},
         }
 
+        errors = {}
         for label, quantizer in QUANTIZERS.items():
             started = time.time()
             packed, scales, biases, _ = quantizer(weight)
@@ -120,6 +134,7 @@ def main():
                     ** 2
                 ).sum()
             )
+            errors[label] = error
             totals[label] += error
             entry["rel_l2"][label] = float(np.sqrt(error / tensor_energy))
             if label == arguments.quantizer:
@@ -142,9 +157,11 @@ def main():
             "sse_factor": reference_sse / ceiling_sse,
         }
 
+        entry["rtn_reproduces_declared"] = errors["rtn"] == declared_error
         report["tensors"][name] = entry
         print(
             f"{name:32s} declared {entry['rel_l2']['declared']:.5e} "
+            f"rtn {entry['rel_l2']['rtn']:.5e} "
             f"clip {entry['rel_l2']['clip']:.5e} "
             f"als {entry['rel_l2']['als']:.5e} "
             f"best {entry['rel_l2']['best']:.5e} "
@@ -161,6 +178,9 @@ def main():
     report["pooled_rel_l2"] = pooled
     report["summary"] = {
         "quantizer": chosen,
+        "e144_declared_reproduction_exact": float(
+            all(e["rtn_reproduces_declared"] for e in report["tensors"].values())
+        ),
         "e144_rel_l2_improvement_factor_pooled": pooled["declared"] / pooled[chosen],
         "e144_rel_l2_improvement_factor_worst_tensor": worst,
         "stop_rule_threshold": 2.0,

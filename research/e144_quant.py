@@ -70,34 +70,42 @@ def dequantize(packed, scales, biases, bits, group_size, columns):
     return codes * scale + bias
 
 
+def snap(scale, bias):
+    """Round a (scale, bias) pair to the BF16 grid that actually ships."""
+    return bf16_to_f32(f32_to_bf16(scale)), bf16_to_f32(f32_to_bf16(bias))
+
+
+def deployed_error(grouped, scale, bias, n_bins):
+    """Per-group squared error of the parameters as they will really be stored.
+
+    MLX assigns codes from the float32 scale and bias but ships them rounded to
+    BF16. That mismatch is harmless for MLX's own quantizer, because its bias is
+    always an actual weight value and so is BF16-exact, but it is NOT harmless
+    for a clipped or least-squares bias. Optimising the deployed objective
+    directly removes the discrepancy.
+    """
+    snapped_scale, snapped_bias = snap(scale, bias)
+    codes = np.clip(np.round((grouped - snapped_bias) / snapped_scale), 0.0, n_bins)
+    error = np.sum((grouped - (codes * snapped_scale + snapped_bias)) ** 2, axis=1, keepdims=True)
+    return error, codes
+
+
 def _finish(weight, scale, bias, bits, group_size, rows, columns):
-    """Assign codes from float32 (scale, bias), then store them as BF16.
-
-    Returns the deployed triplet plus the float32 sum of squared error measured
-    against the BF16 scale and bias that actually ship.
-    """
+    """Round the parameters to BF16, then assign codes against those values."""
     grouped = _groups(weight, group_size)
-    n_bins = float((1 << bits) - 1)
-    codes = np.clip(np.round((grouped - bias) / scale), 0.0, n_bins)
-
-    scales_bf16 = f32_to_bf16(scale.reshape(rows, -1))
-    biases_bf16 = f32_to_bf16(bias.reshape(rows, -1))
+    n_bins = np.float32((1 << bits) - 1)
+    error, codes = deployed_error(grouped, scale, bias, n_bins)
     packed = pack_codes(codes.astype(np.uint8), bits, rows)
+    return (
+        packed,
+        f32_to_bf16(scale.reshape(rows, -1)),
+        f32_to_bf16(bias.reshape(rows, -1)),
+        float(error.astype(np.float64).sum()),
+    )
 
-    deployed_scale = bf16_to_f32(scales_bf16).reshape(-1, 1)
-    deployed_bias = bf16_to_f32(biases_bf16).reshape(-1, 1)
-    residual = grouped - (codes * deployed_scale + deployed_bias)
-    return packed, scales_bf16, biases_bf16, float(np.sum(residual.astype(np.float64) ** 2))
 
-
-def mlx_rtn(weight, bits=4, group_size=64):
-    """MLX's stock round-to-nearest affine quantizer, transcribed exactly.
-
-    Every intermediate stays float32 because the kernel's arithmetic is float32;
-    letting numpy promote to float64 changes the codes on near-tie groups.
-    """
-    rows, columns = weight.shape
-    grouped = _groups(weight, group_size)
+def rtn_params(grouped, bits=4):
+    """The (scale, bias) MLX's `affine_quantize` kernel derives for each group."""
     n_bins = np.float32((1 << bits) - 1)
     zero = np.float32(0.0)
 
@@ -111,9 +119,21 @@ def mlx_rtn(weight, bits=4, group_size=64):
     edge = np.where(side, w_min, w_max).astype(np.float32)
     q0 = metal_round(edge / scale)
     at_zero = q0 == zero
-    scale = np.where(at_zero, scale, edge / np.where(at_zero, np.float32(1.0), q0))
-    scale = scale.astype(np.float32)
+    scale = np.where(at_zero, scale, edge / np.where(at_zero, np.float32(1.0), q0)).astype(np.float32)
     bias = np.where(at_zero, zero, edge).astype(np.float32)
+    return scale, bias
+
+
+def mlx_rtn(weight, bits=4, group_size=64):
+    """MLX's stock round-to-nearest affine quantizer, transcribed exactly.
+
+    Every intermediate stays float32 because the kernel's arithmetic is float32;
+    letting numpy promote to float64 changes the codes on near-tie groups.
+    """
+    rows, columns = weight.shape
+    grouped = _groups(weight, group_size)
+    n_bins = np.float32((1 << bits) - 1)
+    scale, bias = rtn_params(grouped, bits)
 
     # The kernel clamps only the upper end; the lower end is >= 0 by construction.
     codes = np.minimum(metal_round((grouped - bias) / scale), n_bins)
@@ -129,11 +149,17 @@ def mlx_rtn(weight, bits=4, group_size=64):
 
 
 def clip_search(weight, bits=4, group_size=64, low=0.60, high=1.00, steps=41):
-    """Per-group MSE-optimal symmetric clipping search.
+    """Per-group MSE-optimal symmetric clipping search, scored in float32.
 
     Shrinks each group's [min, max] range by a fraction and keeps the fraction
-    with the lowest sum of squared error. Fraction 1.00 is plain round-to-nearest,
-    so the search can only improve on it.
+    with the lowest float32 sum of squared error.
+
+    This is a diagnostic arm, deliberately left naive: it selects on the
+    idealised float32 objective and only then rounds the winning (scale, bias)
+    to the BF16 grid that actually ships. A clipped bias is an arbitrary value
+    rather than a weight, so BF16 rounding moves it, and the arm can end up
+    WORSE than plain round-to-nearest. `best_of_breed` selects on the deployed
+    objective instead and does not have this failure mode.
     """
     rows, columns = weight.shape
     grouped = _groups(weight, group_size)
@@ -167,6 +193,9 @@ def alternating_ls(weight, bits=4, group_size=64, iterations=12, init=None):
     two-parameter least-squares fit of (scale, bias) to the group. Each half-step
     is non-increasing in squared error, and the code assignment is accepted only
     when it does not increase the error, so the iteration cannot diverge.
+
+    Like `clip_search` this is a diagnostic arm scored in float32; only
+    `best_of_breed` optimises the deployed BF16 objective.
     """
     rows, columns = weight.shape
     grouped = _groups(weight, group_size)
@@ -253,21 +282,30 @@ def best_of_breed(weight, bits=4, group_size=64, iterations=16, refine=9):
     scale, bias, error = _clip_init(grouped, bits, 0.60, 1.00, 41)
     scale, bias, error = _als_loop(grouped, scale, bias, error, n_bins, group_size, iterations)
 
-    step = scale.copy()
+    # From here the objective is the DEPLOYED one, so the search cannot pick a
+    # float32 optimum that BF16 rounding then throws away.
+    error, _ = deployed_error(grouped, scale, bias, n_bins)
+
+    # Keep MLX's own parameters as a per-group floor, so the result is never
+    # worse than the incumbent on any single group.
+    rtn_scale, rtn_bias = rtn_params(grouped, bits)
+    rtn_error, _ = deployed_error(grouped, rtn_scale, rtn_bias, n_bins)
+    worse = error > rtn_error
+    error = np.where(worse, rtn_error, error)
+    scale = np.where(worse, rtn_scale, scale)
+    bias = np.where(worse, rtn_bias, bias)
+
+    step = np.abs(scale)
     for _ in range(3):
-        candidates_scale = [scale * f for f in np.linspace(0.97, 1.03, refine, dtype=np.float32)]
-        candidates_bias = [bias + o * step for o in np.linspace(-0.15, 0.15, refine, dtype=np.float32)]
-        for trial_scale in candidates_scale:
-            for trial_bias in candidates_bias:
-                codes = np.clip(np.round((grouped - trial_bias) / trial_scale), 0.0, n_bins)
-                trial_error = np.sum(
-                    (grouped - (codes * trial_scale + trial_bias)) ** 2, axis=1, keepdims=True
-                )
+        for factor in np.linspace(0.97, 1.03, refine, dtype=np.float32):
+            for offset in np.linspace(-0.15, 0.15, refine, dtype=np.float32):
+                trial_scale = scale * factor
+                trial_bias = bias + offset * step
+                trial_error, _ = deployed_error(grouped, trial_scale, trial_bias, n_bins)
                 improved = trial_error < error
                 error = np.where(improved, trial_error, error)
                 scale = np.where(improved, trial_scale, scale)
                 bias = np.where(improved, trial_bias, bias)
-        scale, bias, error = _als_loop(grouped, scale, bias, error, n_bins, group_size, 4)
         step = step * np.float32(0.35)
 
     return _finish(weight, scale, bias, bits, group_size, rows, columns)
