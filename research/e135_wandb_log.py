@@ -99,6 +99,25 @@ def pipeline_key_digest(label: str) -> tuple[str | None, bool]:
     return digests[report.ARMS[0]], len(shared) == 1
 
 
+def arm_witnesses(label: str) -> dict[str, list[str]]:
+    """Name the pipelines each witness leg actually compiled.
+
+    Rule 101 wants every witness to have a failing polarity. Recording the
+    named pipelines per arm makes that checkable after the fact: an arm that
+    claims to run a mechanism must show its pipeline, and must not show the
+    other arm's.
+    """
+    out = {}
+    for arm in report.ARMS:
+        path = pathlib.Path(f"research/out/e135{label}w{arm}/pipelines.json")
+        if not path.exists():
+            continue
+        by_key = json.loads(path.read_text()).get("by_key", {})
+        out[arm] = sorted(
+            k for k in by_key if not k.startswith("e135_default_probe"))
+    return out
+
+
 def per_width_table(label: str) -> dict:
     path = pathlib.Path(f"research/e135-artifacts/{label}-per-width.json")
     if not path.exists():
@@ -168,9 +187,11 @@ def main() -> int:
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
-        "reproduce": f"{spec['script']} 2 512 {args.label} 1",
+        "reproduce": (f"{spec['script']} {max(1, len(complete) // 4)} "
+                      f"{int(meta.get('tokens', 0))} {args.label} 1"),
         "pipeline_by_key_sha256": key_digest,
         "pipeline_by_key_identical_across_arms": keys_agree,
+        "arm_witness_pipelines": arm_witnesses(args.label),
         **spec["config"],
     }
 
@@ -201,6 +222,23 @@ def main() -> int:
             -100 * serial_fit["contrast"] / serial_fit["mean"])
         metrics["e135_serial_leg_se_pct"] = (
             100 * serial_fit["se"] / serial_fit["mean"])
+
+    if report.PER_ROUND:
+        # The mechanism saves a fixed amount once per drafting round, so its
+        # percentage depends on how long a round is. The local fixture drafts
+        # deeper than ranked beagle, and a round is 84 % fixed cost, so the
+        # same saving reads slightly larger at beagle depth.
+        beagle = headline * report.LOCAL_TO_BEAGLE_ROUND
+        metrics.update({
+            "e135_local_tokens_per_round": (1.0 + drafts[0]) if drafts else None,
+            "e135_beagle_tokens_per_round": report.BEAGLE_TOKENS_PER_ROUND,
+            "e135_depth_correction": report.LOCAL_TO_BEAGLE_ROUND,
+            "e135_beagle_equivalent_pct": beagle,
+            "e135_beagle_equivalent_se_pct":
+                100 * fit["se"] / fit["mean"] * report.LOCAL_TO_BEAGLE_ROUND,
+            "e135_per_round_bar_pct": report.PER_ROUND_BAR_PCT,
+            "e135_fraction_of_bar_pct": 100 * beagle / report.PER_ROUND_BAR_PCT,
+        })
 
     extra = per_width_table(args.label)
     for key in ("e135_launch_cost_us_per_column",
