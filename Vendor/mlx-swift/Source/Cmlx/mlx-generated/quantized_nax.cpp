@@ -1008,6 +1008,18 @@ METAL_FUNC void qmm_t_nax_tgp_impl(
   constexpr short TN = SN / 16;
   constexpr short TK = SK / 16;
 
+  // RULE 145. `tile_matmad_nax` (steel/gemm/nax.h:847 and :864) has exactly two
+  // `if constexpr` branches and no `else`. A tile shape that matches neither
+  // compiles clean, issues no `mma`, and leaves the destination tile holding
+  // the zeros it was cleared with. The condition below is the disjunction of
+  // those two branch predicates, copied from them, so a tile change that falls
+  // between them stops the build instead of returning zeros. Note that
+  // `TN % 2 == 0 || TM % 2 == 0` is NOT the correct guard: it admits
+  // (TM, TN) = (2, 3), which matches neither branch.
+  static_assert(
+      (TN == 1 && TM % 2 == 0) || (TN % 2 == 0),
+      "tile shape matches no tile_matmad_nax branch and would multiply nothing");
+
   const short tm = SM * (simd_gid / WN);
   const short tn = SN * (simd_gid % WN);
 
@@ -1183,6 +1195,18 @@ METAL_FUNC void qmm_n_nax_tgp_impl(
   constexpr short TM = SM / 16;
   constexpr short TN = SN / 16;
   constexpr short TK = SK / 16;
+
+  // RULE 145. `tile_matmad_nax` (steel/gemm/nax.h:847 and :864) has exactly two
+  // `if constexpr` branches and no `else`. A tile shape that matches neither
+  // compiles clean, issues no `mma`, and leaves the destination tile holding
+  // the zeros it was cleared with. The condition below is the disjunction of
+  // those two branch predicates, copied from them, so a tile change that falls
+  // between them stops the build instead of returning zeros. Note that
+  // `TN % 2 == 0 || TM % 2 == 0` is NOT the correct guard: it admits
+  // (TM, TN) = (2, 3), which matches neither branch.
+  static_assert(
+      (TN == 1 && TM % 2 == 0) || (TN % 2 == 0),
+      "tile shape matches no tile_matmad_nax branch and would multiply nothing");
 
   const short tm = SM * (simd_gid / WN);
   const short tn = SN * (simd_gid % WN);
@@ -1596,6 +1620,18 @@ template <
   constexpr short TM = SM / 16;
   constexpr short TN = SN / 16;
   constexpr short TK = SK / 16;
+
+  // RULE 145. `tile_matmad_nax` (steel/gemm/nax.h:847 and :864) has exactly two
+  // `if constexpr` branches and no `else`. A tile shape that matches neither
+  // compiles clean, issues no `mma`, and leaves the destination tile holding
+  // the zeros it was cleared with. The condition below is the disjunction of
+  // those two branch predicates, copied from them, so a tile change that falls
+  // between them stops the build instead of returning zeros. Note that
+  // `TN % 2 == 0 || TM % 2 == 0` is NOT the correct guard: it admits
+  // (TM, TN) = (2, 3), which matches neither branch.
+  static_assert(
+      (TN == 1 && TM % 2 == 0) || (TN % 2 == 0),
+      "tile shape matches no tile_matmad_nax branch and would multiply nothing");
 
   const short tm = SM * (simd_group_id / WN);
   const short tn = SN * (simd_group_id % WN);

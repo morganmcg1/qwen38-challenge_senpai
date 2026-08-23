@@ -46,6 +46,15 @@ must move:
     `static_assert`s at once (unequal area, and the host tile no longer splits
     along N). It must fail to compile, or the guards are inert.
 
+  * `failopen_unguarded` and `failopen_guarded` are a RULE 145 pair. Tile shape
+    (96, 32) gives TM = 3, TN = 1, which matches neither `tile_matmad_nax`
+    branch. Rung E-2 found that this shape compiles clean, issues no `mma` and
+    returns the zeros the destination tile was cleared with. The unguarded probe
+    compiles the pre-arm base at that shape and must SUCCEED, which is what
+    makes the hazard real rather than hypothetical. The guarded probe compiles
+    the same shape against the edited tree and must FAIL naming RULE 145. A
+    guard whose hazard was never observed to compile is not a guard.
+
   * `retile_direct` compiles the pre-arm base at the (128, 32) instantiation
     rung E-2 used. Same preamble, different kernel. It must compile and its
     digest must differ from the base, or the digest is not reading the kernel.
@@ -94,11 +103,38 @@ DIRECT_INST = (f"affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, "
                f"{ARM_BM}, {HOST_BK}, {ARM_BN_VAL}, 2, 2>")
 HOST_NAME = "e147_qmm_t_nax_scored"
 
-# The non-NAX transfer pair. `NON_NAX_NO_MECHANISM` is rung A without the retile
-# mechanism; the working tree is rung A with the mechanism and the arm off.
+# The non-NAX transfer pair. Both ends are git revisions, never the working
+# tree: F11 ruling 1 removes the non-NAX mechanism from the shipped candidate,
+# and this measurement has to stay reproducible after that revert. The two
+# commits differ only by the retile mechanism with its arm off, so rung A,
+# which both carry, cancels.
 NON_NAX_NO_MECHANISM = "01ed58d5309c06b3db27c71d6a6b73ed6a50a341"
+NON_NAX_WITH_MECHANISM = "5dc4d1d9184c37b2dcf0d79f61128c414e0a8784"
 NON_NAX_HOST = "affine_qmm_t_bfloat16_t_gs_64_b_4_alN_true_batch_0"
 NON_NAX_INST = "affine_qmm_t<bfloat16_t, 64, 4, 1, 0>"
+
+# RULE 145. `tile_matmad_nax` has two `if constexpr` branches and no `else`, so
+# (BM, BN) = (96, 32) gives TM = 3, TN = 1, matches neither, and multiplies
+# nothing. Rung E-2 found that this is the ONLY NAX shape the offline
+# translator accepts, which makes it the one shape a careless census would
+# report on. The arm now carries a `static_assert` that must reject it.
+FAILOPEN_INST = (f"affine_qmm_t_nax<bfloat16_t, 64, 4, 1, 0, "
+                 f"96, {HOST_BK}, 32, 2, 2>")
+RULE_145_NEEDLE = "matches no tile_matmad_nax branch"
+
+# The RULE 145 guard is a property of `tile_matmad_nax`, not of the one call
+# site this experiment retiles, so it is placed at all three tile-constant sites
+# in the header. That is only safe if every shipped instantiation still
+# compiles, and no local run can prove it: `is_nax_available()` is false on
+# every Mac this campaign owns, so MLX never JIT-compiles a NAX kernel here and
+# a broken `static_assert` would first appear on the ranked M5. These two probes
+# close that hole offline. Both shapes come from `quantized_nax.metal`, which
+# instantiates every NAX kernel at 64/64/64/2/2 and nothing else.
+SHIPPED_OTHER_SITES = {
+    "shipped_qmm_n": "affine_qmm_n_nax<bfloat16_t, 64, 4, 1, 64, 64, 64, 2, 2>",
+    "shipped_gather_rhs":
+        "affine_gather_qmm_rhs_nax<bfloat16_t, 64, 4, 64, 64, 64, 2, 2, true>",
+}
 
 FLAG_OFF = "constexpr bool kE147NaxRetileOn = false;"
 FLAG_ON = "constexpr bool kE147NaxRetileOn = true;"
@@ -167,8 +203,9 @@ def compile_probe(source: str, inst: str, host: str,
 def transfer_pair(workdir: pathlib.Path) -> dict:
     """Price the same mechanism where the backend will translate it."""
     old = preamble(lambda p: show(NON_NAX_NO_MECHANISM, p), NON_NAX_TWINS)
-    new = preamble(worktree, NON_NAX_TWINS)
+    new = preamble(lambda p: show(NON_NAX_WITH_MECHANISM, p), NON_NAX_TWINS)
     out = {"no_mechanism_rev": NON_NAX_NO_MECHANISM,
+           "with_mechanism_rev": NON_NAX_WITH_MECHANISM,
            "entry_point": NON_NAX_HOST,
            "instantiation": NON_NAX_INST,
            "sources_differ": old != new}
@@ -202,6 +239,8 @@ def main() -> int:
             substitute(tree_src, FLAG_OFF, FLAG_ON, "illegal_bn48"),
             ARM_BN, ARM_BN_ILLEGAL, "illegal_bn48"), SCORED_INST),
         "retile_direct": (base_src, DIRECT_INST),
+        "failopen_unguarded": (base_src, FAILOPEN_INST),
+        "failopen_guarded": (tree_src, FAILOPEN_INST),
     }
 
     result = {"base": subprocess.run(["git", "rev-parse", args.base], cwd=ROOT,
@@ -224,6 +263,9 @@ def main() -> int:
         for label, (src, inst) in probes.items():
             result["probes"][label] = compile_probe(src, inst, HOST_NAME,
                                                     workdir)
+        for label, inst in SHIPPED_OTHER_SITES.items():
+            result["probes"][label] = compile_probe(tree_src, inst, HOST_NAME,
+                                                    workdir)
         result["non_nax_transfer"] = transfer_pair(workdir)
 
     p = result["probes"]
@@ -245,6 +287,23 @@ def main() -> int:
     result["e147_rungE1c_digest_control_moves"] = (
         p["retile_direct"]["compiled"]
         and p["retile_direct"]["air_sha256"] != base["air_sha256"])
+
+    # RULE 145. The hazard has to be observed before the guard against it means
+    # anything, so the unguarded probe must compile and the guarded one must not.
+    result["e147_rungE1c_failopen_instantiation"] = FAILOPEN_INST
+    result["e147_rungE2_failopen_shape_exists"] = (
+        p["failopen_unguarded"]["compiled"])
+    result["e147_rungE1c_failopen_shape_rejected"] = (
+        not p["failopen_guarded"]["compiled"])
+    result["e147_rungE1c_rule145_named_in_refusal"] = (
+        RULE_145_NEEDLE in p["failopen_guarded"].get("error", ""))
+    result["e147_rungE2_failopen_control_observed"] = (
+        result["e147_rungE2_failopen_shape_exists"]
+        and result["e147_rungE1c_failopen_shape_rejected"]
+        and result["e147_rungE1c_rule145_named_in_refusal"])
+    result["e147_rungE1c_guarded_tile_sites"] = 3
+    result["e147_rungE1c_shipped_other_sites_compile"] = all(
+        p[k]["compiled"] for k in SHIPPED_OTHER_SITES)
 
     # The NAX arm-off cost, in the only unit this arch will give up.
     result["e147_rungE1c_nax_arm_off_air_delta_bytes"] = (
@@ -277,7 +336,8 @@ def main() -> int:
             round(result["e147_rungE1c_transfer_air_delta_bytes"] / isa, 1)
             if isa else None)
 
-    checks = [k for k in result if k.startswith("e147_rungE1c_")
+    reported = ("e147_rungE1c_", "e147_rungE2_failopen_")
+    checks = [k for k in result if k.startswith(reported)
               and isinstance(result[k], bool)
               and k != "e147_rungE1c_nax_translatable"]
     failed = sorted(k for k in checks if not result[k])
@@ -286,7 +346,7 @@ def main() -> int:
 
     pathlib.Path(args.out).write_text(json.dumps(result, indent=2) + "\n")
     for k in sorted(result):
-        if k.startswith("e147_rungE1c_") and k != "e147_rungE1c_verdict":
+        if k.startswith(reported) and k != "e147_rungE1c_verdict":
             print(f"{k}={result[k]}")
     print(f"e147_rungE1c_verdict={result['e147_rungE1c_verdict']}")
     if failed:
