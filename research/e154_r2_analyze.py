@@ -84,7 +84,7 @@ def load_arm(run_dir: pathlib.Path) -> dict | None:
 def ols(xs: list[float], ys: list[float]) -> tuple[float, float, float]:
     """Slope, intercept, and standard error of the slope."""
     n = len(xs)
-    if n < 3:
+    if n < 2:
         return float("nan"), float("nan"), float("nan")
     mx = statistics.fmean(xs)
     my = statistics.fmean(ys)
@@ -178,6 +178,10 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
                 "delta_wall_us_modal_d": delta,
                 "delta_3sigma_threshold_us": threshold,
                 "delta_is_significant": abs(delta) > threshold,
+                # Absorption can only fail upward. A significantly NEGATIVE
+                # delta still means the round swallowed the stall, so the
+                # knee search must use the one-sided test.
+                "delta_is_significant_increase": delta > threshold,
                 # 1.0 means the round swallowed the whole stall, 0.0 means it
                 # passed straight through to the wall clock.
                 "absorbed_fraction": (
@@ -210,7 +214,7 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
     for entry in usable:
         if entry["level"] == 0.0:
             continue
-        if not entry["delta_is_significant"]:
+        if not entry["delta_is_significant_increase"]:
             knee = entry["level"]
         else:
             knee_upper = entry["level"]
@@ -243,13 +247,13 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
         out["slope_above_knee_us_per_us"] = s4
         out["slope_above_knee_se"] = se4
 
-    out.update(hinge_fit(usable))
-
     # The CPU ladder is already in microseconds. The GPU ladder is in chain
     # steps, so it needs its own measured price before the two slacks can be
     # compared. The above-knee slope IS that price: once the device has no
     # idle left, each extra step costs its full serial time.
-    if level_key == "gpu_chain_steps":
+    if level_key != "gpu_chain_steps":
+        out.update(hinge_fit(usable))
+    else:
         price = out.get("slope_above_knee_us_per_us")
         out["us_per_chain_step"] = price
         if price:
@@ -257,8 +261,11 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
             out["knee_bracket_us"] = [
                 (b * price if b is not None else None)
                 for b in out["knee_bracket_us"]]
-            if "hinge_slack_us" in out:
-                out["hinge_slack_us"] *= price
+            # The hinge is a statement about time, so it has to see the
+            # ladder in time. Fitting it on raw step counts would compare
+            # a step index with a microsecond delta.
+            out.update(hinge_fit([
+                dict(e, level=e["level"] * price) for e in usable]))
         # Marginal cost between consecutive levels. A step that costs less
         # than the asymptotic price was partly hidden behind device work the
         # round was already doing, which is the only place GPU idle can show.
@@ -409,24 +416,36 @@ def main() -> int:
     # chain is outstanding and answers a narrower question.
     cpu_slack: dict[str, list[float]] = defaultdict(list)
     gpu_slack: list[float] = []
+    knee: dict[str, list[float]] = defaultdict(list)
+    bracket: dict[str, list[list]] = defaultdict(list)
+    slope_below: dict[str, list[float]] = defaultdict(list)
     for arm in result["arms"]:
         curve = arm.get("cpu_curve")
         if curve and "error" not in curve:
             site = "preeval" if arm["arm"] == "cpu_eval" else "preverify"
-            result.setdefault(
-                "e154_fixed_term_absorption_knee_us", {})[site] = \
-                curve["slack_us_per_round"]
-            result.setdefault("e154_knee_bracket_us", {})[site] = \
-                curve["knee_bracket_us"]
+            knee[site].append(curve["slack_us_per_round"])
+            bracket[site].append(curve["knee_bracket_us"])
             if "slope_below_knee_us_per_us" in curve:
-                result.setdefault(
-                    "e154_delay_slope_below_knee_us_per_us", {})[site] = \
-                    curve["slope_below_knee_us_per_us"]
+                slope_below[site].append(curve["slope_below_knee_us_per_us"])
             if "hinge_slack_us" in curve:
                 cpu_slack[site].append(curve["hinge_slack_us"])
         curve = arm.get("gpu_curve")
         if curve and "error" not in curve and curve.get("hinge_slack_us"):
             gpu_slack.append(curve["hinge_slack_us"])
+
+    # Replicates are kept side by side. A knee that does not survive its own
+    # replicate is a property of the detector, not of the round.
+    result["e154_fixed_term_absorption_knee_us"] = {
+        site: statistics.fmean(v) for site, v in knee.items()}
+    result["e154_fixed_term_absorption_knee_replicates_us"] = dict(knee)
+    result["e154_knee_bracket_us"] = {
+        site: [min(b[0] for b in v),
+               (max(b[1] for b in v) if all(b[1] is not None for b in v)
+                else None)]
+        for site, v in bracket.items()}
+    result["e154_delay_slope_below_knee_us_per_us"] = {
+        site: statistics.fmean(v) for site, v in slope_below.items()}
+    result["e154_delay_slope_below_knee_replicates"] = dict(slope_below)
 
     # The two headline numbers, both in microseconds per round so they can be
     # compared directly. Replicate arms are averaged; their spread is
@@ -441,10 +460,22 @@ def main() -> int:
         if len(gpu_slack) > 1:
             result["e154_gpu_slack_replicate_spread_us"] = (
                 max(gpu_slack) - min(gpu_slack))
-    best_cpu = max(cpu_slack.get("preeval") or [0.0], default=0.0)
-    if best_cpu and gpu_slack:
+    preeval = cpu_slack.get("preeval")
+    if preeval and gpu_slack:
         result["e154_cpu_over_gpu_slack_ratio"] = (
-            best_cpu / statistics.fmean(gpu_slack))
+            statistics.fmean(preeval) / statistics.fmean(gpu_slack))
+        # The verdict must survive the worst pairing the data allows: the
+        # smallest CPU slack measured at either site against the largest GPU
+        # slack the nonparametric bracket permits.
+        gpu_upper = max(a["gpu_curve"]["knee_bracket_us"][1]
+                        for a in result["arms"] if a.get("gpu_curve"))
+        cpu_lower = min(v for values in cpu_slack.values() for v in values)
+        result["e154_cpu_over_gpu_slack_ratio_bounds"] = {
+            "adversarial_min": cpu_lower / gpu_upper,
+            "adversarial_cpu_slack_us": cpu_lower,
+            "adversarial_gpu_slack_us": gpu_upper,
+            "preeval_vs_gpu_bracket_upper": min(preeval) / gpu_upper,
+        }
 
     # Token neutrality: the instrument must not change what is generated.
     matched = {a["all_tokens_matched"] for a in result["arms"]}
