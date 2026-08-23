@@ -12,7 +12,7 @@
 //
 //   swiftc -O research/e154_bandwidth_probe.swift -o BIN \
 //     -framework Metal -framework Foundation
-//   BIN [buffer_gib] [iterations]
+//   BIN [buffer_gib] [iterations] [output_json_path]
 //
 // harness=local. Never an official or ranked score.
 
@@ -83,54 +83,69 @@ guard let source = device.makeBuffer(length: bytes,
 }
 
 let threadgroupSize = pipeline.maxTotalThreadsPerThreadgroup
-// Enough threads to saturate every core without making the grid-stride loop
-// so short that launch overhead dominates.
-let threadgroups = 1024
-let totalThreads = threadgroups * threadgroupSize
-guard let sink = device.makeBuffer(length: totalThreads * 4,
-                                   options: .storageModePrivate) else {
-    fail("could not allocate the sink")
-}
-
+// A ceiling claim is only as good as its saturation evidence, so the launch
+// geometry is swept rather than assumed. If the best rate sits at an interior
+// point the grid was wide enough; if it sits at the last point the sweep was
+// too narrow and the number is a floor on the ceiling.
+let threadgroupSweep = [256, 512, 1024, 2048, 4096]
 var count = vectorCount
 var best = 0.0
-var samples: [Double] = []
+var bestThreadgroups = 0
+var geometries: [[String: Any]] = []
 
-for iteration in 0 ..< iterations {
-    guard let buffer = queue.makeCommandBuffer(),
-          let encoder = buffer.makeComputeCommandEncoder() else {
-        fail("no encoder")
+for threadgroups in threadgroupSweep {
+    let totalThreads = threadgroups * threadgroupSize
+    guard let sink = device.makeBuffer(length: totalThreads * 4,
+                                       options: .storageModePrivate) else {
+        fail("could not allocate the sink")
     }
-    encoder.setComputePipelineState(pipeline)
-    encoder.setBuffer(source, offset: 0, index: 0)
-    encoder.setBuffer(sink, offset: 0, index: 1)
-    encoder.setBytes(&count, length: MemoryLayout<UInt64>.size, index: 2)
-    encoder.dispatchThreadgroups(
-        MTLSize(width: threadgroups, height: 1, depth: 1),
-        threadsPerThreadgroup: MTLSize(width: threadgroupSize, height: 1,
-                                       depth: 1))
-    encoder.endEncoding()
-    buffer.commit()
-    buffer.waitUntilCompleted()
+    var samples: [Double] = []
+    for _ in 0 ..< iterations {
+        guard let buffer = queue.makeCommandBuffer(),
+              let encoder = buffer.makeComputeCommandEncoder() else {
+            fail("no encoder")
+        }
+        encoder.setComputePipelineState(pipeline)
+        encoder.setBuffer(source, offset: 0, index: 0)
+        encoder.setBuffer(sink, offset: 0, index: 1)
+        encoder.setBytes(&count, length: MemoryLayout<UInt64>.size, index: 2)
+        encoder.dispatchThreadgroups(
+            MTLSize(width: threadgroups, height: 1, depth: 1),
+            threadsPerThreadgroup: MTLSize(width: threadgroupSize, height: 1,
+                                           depth: 1))
+        encoder.endEncoding()
+        buffer.commit()
+        buffer.waitUntilCompleted()
 
-    if let error = buffer.error {
-        fail("dispatch failed: \(error)")
+        if let error = buffer.error {
+            fail("dispatch failed: \(error)")
+        }
+        let seconds = buffer.gpuEndTime - buffer.gpuStartTime
+        guard seconds > 0 else { continue }
+        samples.append(Double(bytes) / seconds / 1e9)
     }
-    let seconds = buffer.gpuEndTime - buffer.gpuStartTime
-    guard seconds > 0 else { continue }
-    let gbps = Double(bytes) / seconds / 1e9
-    samples.append(gbps)
-    best = max(best, gbps)
-    // The first pass warms the residency and the pipeline, so it is reported
-    // but never counted as the ceiling.
-    if iteration == 0 { best = 0.0 }
+    guard !samples.isEmpty else { continue }
+    // The first pass of each geometry warms residency and the pipeline, so it
+    // is reported but never counted as the ceiling.
+    let counted = samples.count > 1 ? Array(samples.dropFirst()) : samples
+    let peak = counted.max() ?? 0.0
+    if peak > best {
+        best = peak
+        bestThreadgroups = threadgroups
+    }
+    let sorted = counted.sorted()
+    geometries.append([
+        "threadgroups": threadgroups,
+        "threads": totalThreads,
+        "warmup_gbps": samples[0],
+        "peak_gbps": peak,
+        "mean_gbps": counted.reduce(0, +) / Double(counted.count),
+        "median_gbps": sorted[sorted.count / 2],
+        "all_gbps": samples,
+    ])
 }
 
-guard !samples.isEmpty else { fail("no timed samples") }
-let counted = samples.count > 1 ? Array(samples.dropFirst()) : samples
-let mean = counted.reduce(0, +) / Double(counted.count)
-let sorted = counted.sorted()
-let median = sorted[sorted.count / 2]
+guard best > 0 else { fail("no timed samples") }
 
 let report: [String: Any] = [
     "probe": "e154-host-achievable-read-bandwidth",
@@ -139,18 +154,19 @@ let report: [String: Any] = [
     "device": device.name,
     "buffer_bytes": bytes,
     "buffer_gib": Double(bytes) / 1024 / 1024 / 1024,
-    "iterations": iterations,
-    "threadgroups": threadgroups,
+    "iterations_per_geometry": iterations,
     "threads_per_threadgroup": threadgroupSize,
     "access_pattern": "grid-stride uint4, fully coalesced, XOR reduction",
-    "warmup_gbps": samples[0],
     "e154_host_achievable_read_gbps": best,
-    "mean_gbps_excluding_warmup": mean,
-    "median_gbps_excluding_warmup": median,
-    "all_gbps": samples,
+    "peak_at_threadgroups": bestThreadgroups,
+    "saturated": bestThreadgroups != threadgroupSweep.last,
+    "geometries": geometries,
 ]
 let data = try JSONSerialization.data(withJSONObject: report,
                                       options: [.prettyPrinted,
                                                 .sortedKeys])
 FileHandle.standardOutput.write(data)
 FileHandle.standardOutput.write(Data("\n".utf8))
+if arguments.count > 3 {
+    try data.write(to: URL(fileURLWithPath: arguments[3]))
+}
