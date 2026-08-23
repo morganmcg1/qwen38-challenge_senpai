@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""E150: publish the per-round discrimination rungs R0, R0.5 and R1/R2.
+"""E150: publish the per-round discrimination rungs R0 through R4.
 
-`harness=local`, `gpu_used=False`. Every rung here is an offline replay over
-the E145 measured per-width round cost curve and a recorded acceptance trace.
-No leg of this experiment holds the GPU, so nothing published here is a timing
-contrast and CAMPAIGN RULE 79 is not engaged.
+`harness=local`. Every priced rung is an offline replay over the E145 measured
+per-width round cost curve and a recorded acceptance trace, so no price
+published here comes from a timed leg.
+
+R4 is the one rung that holds the GPU, and it publishes exactness, row-ledger
+closure, the arm witness and the drafted-depth distribution. Every R4 leg
+carries the per-round phase trace and records `timing_valid=false`, so this
+run still publishes no schedule timing contrast and CAMPAIGN RULE 79 stays
+satisfied by construction.
 
 RULE 144 framing. The ranked frames named by Rule 144 are realised median
 pair, unweighted mean of the weighted five, and F83 marginal-weight sum. This
@@ -277,6 +282,54 @@ def log_curve_bracket(run, summary: dict, cb: dict) -> None:
          for name, row in sorted(cells.items())])})
 
 
+def log_r4_presubmit(run, summary: dict, r4: dict) -> None:
+    """R4: the Swift rule's own 512-token exactness and schedule evidence.
+
+    This is the only rung that holds the GPU, and it still publishes no
+    timing. Every leg carries the per-round phase trace, so every leg records
+    `timing_valid=false` and CAMPAIGN RULE 79 stays satisfied by construction.
+    What the GPU legs add is exactness, row-ledger closure, the Rule 114 arm
+    witness, and the drafted-depth distribution the offline replay predicted
+    before the Swift rule existed.
+    """
+    for key, value in r4.get("metrics", {}).items():
+        summary[key] = value
+    summary["e150_r4_post_eos_tokens_checked"] = sum(
+        d.get("tokens_after_first_eos", 0)
+        for d in r4.get("post_eos", {}).get("detail", {}).values())
+
+    rows = []
+    for arm in ("shipped_arm", "linearised_arm"):
+        for prompt, leg in sorted(r4.get(arm, {}).get("legs", {}).items()):
+            rows.append([
+                arm.replace("_arm", ""), prompt,
+                leg["all_tokens_matched"], leg["residual_divergence_count"],
+                leg["row_ledger_closes"], leg["round_count"],
+                leg["mean_drafted_depth"], leg["effective_mean_draft_len"],
+                leg["accepted_draft_rate"],
+                leg["frac_rounds_inadmissible_rule138"],
+                leg["non_drafting_round_count"],
+                (leg.get("arm_witness") or {}).get("rule"),
+            ])
+    run.log({"r4_exactness_legs": table(
+        ["arm", "prompt", "all_tokens_matched", "residual_divergence_count",
+         "row_ledger_closes", "round_count", "mean_drafted_depth",
+         "effective_mean_draft_len", "accepted_draft_rate",
+         "frac_rounds_inadmissible_rule138", "non_drafting_round_count",
+         "rule_witness"], rows)})
+
+    hist = []
+    for arm in ("shipped_arm", "linearised_arm"):
+        pooled = r4.get(arm, {}).get("summary", {}).get(
+            "pooled_drafted_depth_histogram", {})
+        total = sum(pooled.values()) or 1
+        for depth, count in sorted(pooled.items(), key=lambda kv: int(kv[0])):
+            hist.append([arm.replace("_arm", ""), int(depth), count,
+                         count / total])
+    run.log({"r4_drafted_depth_histogram": table(
+        ["arm", "drafted_depth", "rounds", "frac_rounds"], hist)})
+
+
 def log_r1(run, summary: dict, r1: dict) -> None:
     """R1 and R2: the predictability ceiling and the information ladder."""
     for key in ("e150_capturable_pp_at_measured_sigma",
@@ -397,7 +450,8 @@ def main() -> int:
     w8 = load("width8.json")
     r2seq = load("r2seq.json")
     cb = load("curve_bracket.json")
-    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb)):
+    r4 = load("r4_presubmit.json")
+    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4)):
         print("no E150 artifacts found under %s" % ARTIFACTS)
         return 1
 
@@ -407,10 +461,16 @@ def main() -> int:
         "rungs_present": [n for n, v in (("R0", r0), ("R0.5", r05),
                                          ("R0.5b", cb),
                                          ("R1/R2", r1), ("width8", w8),
-                                         ("R2-L5L6", r2seq))
+                                         ("R2-L5L6", r2seq),
+                                         ("R4-presubmit", r4))
                           if v is not None],
         "harness": "local",
-        "gpu_used": False,
+        # R4 is the only rung that holds the GPU, and it publishes exactness
+        # and schedule counters rather than any timing.
+        "gpu_used": r4 is not None,
+        "timing_valid": False,
+        "gate_qualified_for_timing": False,
+        "official_or_ranked_score": False,
         "frame": "decode",
         "replay_median_pct_frame": (
             "offline replay median over 8 fixture prompts of the per-prompt "
@@ -432,7 +492,8 @@ def main() -> int:
     run = wandb.init(project=PROJECT, entity=ENTITY, name=args.run_name,
                      notes=args.notes, config=config,
                      tags=["e150", "per-round-discrimination", "offline",
-                           "no-gpu", "harness-local"])
+                           "harness-local", "no-timing",
+                           "gpu" if r4 is not None else "no-gpu"])
 
     summary: dict = {}
     if r0 is not None:
@@ -447,6 +508,8 @@ def main() -> int:
         log_r1(run, summary, r1)
     if r2seq is not None:
         log_r2_sequential(run, summary, r2seq)
+    if r4 is not None:
+        log_r4_presubmit(run, summary, r4)
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
