@@ -61856,3 +61856,285 @@ open axes            trunk precision ladder (askeladd R2, +2.045 % candidate)
                      ranked row price refit 1-8 rows (unassigned)
 advisor branch       827c5b97 + this entry
 ```
+
+## 330 — The parity base move is costed, gated and blocked on one thing; and every depth-price arm that ever lost moved the same one number
+
+Zero GPU. Source inspection, six shell audits, one reverted worktree import.
+Two findings, one of which should have been found in entry 319 and was not.
+
+### 330.1 FINDING 303 — the depth-price gate column
+
+Entry 329 recorded edward's measured ranked depth price, `h = 0.1105` against a
+shipped flat `headStepCostRatio = 0.18`. The obvious action is to lower the
+constant. That action is already dead: `Qwen36MTPBlockSession.swift:925-937`
+and `:1253-1270` hold ranked receipts on both sides, `h = 0.14` at 2.766,
+`h = 0.15` at 2.667 and `h = 0.32` at 2.84585 against a contemporaneous base
+near 2.93.
+
+So I read the whole arm family instead, and computed one column.
+
+The decision rule is `costModelDepth` at `:1323-1348`:
+
+```swift
+let threshold = price.marginal[depth] * (1.0 + expected) / price.cumulative[depth]
+guard reach > threshold else { break }
+```
+
+At `depth == 0`, `expected == 0` and `cumulative[0] == 1.0` by construction, so
+`threshold(0) == marginal[0]` exactly, for every arm that has ever existed.
+`marginal[0]` is not one entry in a shape vector. It is the drafting on/off
+gate.
+
+```
+arm      marginal[0]    sum(marginal)    ranked outcome
+ship      0.180000        1.440000       SHIPPED
+pb5       0.159467        1.440000       lost
+pb6       0.170414        1.440000       lost, -2.3800 %
+pb7       0.159467        1.440000       lost
+pbfit     0.120143        1.440000       lost on crown, +0.33 % vs -3.5 % local
+h=0.15    0.150000        1.200000       lost, 2.667
+h=0.14    0.140000        1.120000       lost, 2.766
+h=0.32    0.320000        2.560000       lost, 2.84585
+```
+
+> **FINDING 303.** Every depth-price arm this campaign has ever run moved
+> `marginal[0]`. Not one arm has varied the shape of the depth price with the
+> gate held at 0.18.
+
+That is a construction constraint, not an oversight of taste. All three
+constructors hold the total at `8h = 1.44`. `makeBoundaryDepthPrice` computes
+`within = n*h/((n-1)+tier)`, so raising any one step **necessarily** discounts
+the gate. `makeMeasuredDepthPrice` rescales by `total/sum(raw)`, same effect.
+Hold the total and you cannot price the width wall without opening the gate.
+
+The pb6 tombstone shows what opening the gate costs. pb6 moved `marginal[0]`
+from 0.180000 to 0.170414, a 5.3 % cut, and plutarch went from 449
+non-drafting rounds and `edl` 0.1540 to **zero** non-drafting rounds and `edl`
+2.6995. A 5.3 % price cut cannot produce a 17x move in draft length through a
+marginal response. The per-position acceptance EMA is a positive feedback
+loop, and `h = 0.18` sits just above the unstable fixed point of the hard
+prompts. Under RULE 148 median weighting plutarch carries **zero** weight, so
+opening its gate buys nothing and pays for the drafting work everywhere.
+
+pbfit, the arm that won −3.5 % locally on a fixture with no plutarch-like
+prompt, has the lowest gate of all at 0.120143. It won locally for exactly the
+reason it lost on crown.
+
+E159 is assigned to edward on this: hold the gate at 0.18 bit-exactly, release
+the total, price the interior at the measured physics, and locate the width
+wall from receipt recovery rather than from my sketch. Hard guard: any arm
+that takes plutarch below 440 of 487 non-drafting rounds is disqualified
+regardless of its predicted median.
+
+### 330.2 FINDING 304 — the parity base move costs exactly two kernels
+
+Entry 319 recorded FINDING 283 and ADVISOR ERROR 189: three promoted
+mechanisms worth +1.075 % are absent from every tree we have submitted, which
+is 85.5 % of our 1.2578 % gap to the bar. Entry 321 built the crown-parity
+archive and submitted it as `5a9f130a`, but deliberately did **not** merge it
+into the campaign branch, on the stated ground that *"merging it would delete
+our own promoted cluster QMV kernels"*.
+
+I finally ran the kernel-name-level diff that RULE 162 requires, over the
+concatenated `Qwen35.swift` and `Qwen36MTPBlockSession.swift` of both trees.
+The stated ground is nearly empty.
+
+```
+crown kernels 22        ours 20        shared 18
+
+CROWN ONLY
+  qwen_mtp_e87_probe_select                     the +0.72 % mechanism
+  qwen35_fused_residual_rms_norm_xsums_v1       the +0.175 % mechanism
+  qwen35_custom_affine4_g64_qmv_wide_v1         present in ours, renamed
+  qwen35_custom_affine4_g64_qmv_wide_sums_v1    present in ours, renamed
+
+OURS ONLY
+  qwen_mtp_cluster_centroid_qmv_a2g64_v1
+  qwen_mtp_cluster_row_qmv_a2g64_v1
+```
+
+**Two kernels.** And they are not a mechanism the crown lacks; they are a
+specialisation of a stage the crown has replaced with something better. Both
+trees carry `buildDerivedClusterIndex`, `derivedClusterRowsPerLeaf`,
+`Qwen35IslandArm`, `Qwen35RowTop32`, `islandFastPathReady`,
+`installExactQKVRows`, `qwen_mtp_probe_sort` and the whole two-level index. We
+score its centroids and rows with two hand-written a2g64 QMV kernels behind a
+nine-dispatch `argPartition` merge sort. The crown does the selection with one
+`qwen_mtp_e87_probe_select` dispatch, which is the promoted +0.72 %.
+
+A symbol census over the same two files makes the rest of the divergence
+explicit:
+
+```
+symbol                      merge-base   crown   ours
+Qwen35IslandArm                  0         5       5
+derivedClusterRowsPerLeaf        0         2       2
+depthPriceArm                    0         3       3
+Qwen35RowTop32                   0         7       7
+islandFastPathReady              0         6       6
+buildDerivedClusterIndex         0         2       2
+installExactQKVRows              2         3       3
+qwen_mtp_e87_probe_select        0         1       0     <- missing, +0.72 %
+qwen35_fused_..._xsums_v1        0         1       0     <- missing, +0.175 %
+Qwen35XSumsSidecar               0         4       0     <- missing
+onepass67 / widthPlan            0         0       5     <- ours only
+compiledDefault                  0         0      15     <- ours only
+passBoundaryTierFactor           0         0       2     <- ours only
+e145PinnedDepth                  0         0       2     <- ours only, instrument
+notePipeline                     0         0       6     <- ours only, instrument
+```
+
+> **The crown carries our mechanism. We are the only participant not carrying
+> theirs.** Entry 319 wrote that sentence about ARM-C. The kernel diff shows it
+> is true of the island arm, the derived cluster index, the row-top32 family,
+> the exact QKV rows and the depth-price apparatus as well.
+
+The arithmetic then prices our own additions by subtraction:
+
+```
+our receipt 0cf1637e                       3.68278758
+crown receipt ec24d591 on 0863b06a         3.72911001
+gap                                          -1.2578 %
+three missing promoted mechanisms            +1.075 %
+residual attributable to our own extras      -0.183 %
+  of which notePipeline (FINDING 290)        -0.049 %
+  remainder: 2 a2g64 kernels + onepass67     -0.134 %
+```
+
+> **FINDING 304.** Moving the campaign base to crown parity costs two kernels
+> and one width plan that are, jointly, worth about −0.13 %, and buys +1.075 %
+> of already-promoted mechanism. The move is positive under its own arithmetic
+> before any student mechanism is composed onto it. Entry 321's reason for
+> holding the parity surface off the campaign branch does not survive the
+> kernel diff.
+
+### 330.3 The import is exact and every gate is green except one
+
+I ran the import in the worktree and reverted it. It is one command and it is
+clean:
+
+```bash
+git show origin/main:benchmark.json | jq -r '.editablePaths[]' > /tmp/eps.txt
+git checkout 0863b06a -- $(tr '\n' ' ' < /tmp/eps.txt)
+git diff --name-status 0863b06a -- $(tr '\n' ' ' < /tmp/eps.txt)   # empty
+```
+
+All 89 declared editable paths exist on both sides; zero are missing from
+either. Exactly five files move, the same five FINDING 283 named. Gate results
+on the imported worktree:
+
+```
+check-editable-budget.sh 0863b06a   OK  source=2604101/3000000  headroom=395899
+                                        growth=0/262144  exempt=2410  files=154
+verify-campaign-overlay.sh          OK  (after the fix in 330.5)
+research/twin_audit.py              OK  29 runtime-effective twins
+verify-ranked-score-boundary.sh     PASS
+verify-kernel-table.sh              PASS
+senpai/ .agents/ research/ AGENTS.md    all four trees preserved byte for byte
+```
+
+Byte headroom improves from about 112,900 on our base to **395,899** on the
+crown base, because the crown surface is smaller than ours. That is room for
+several composed student mechanisms.
+
+The kernel table reverts with the surface, and this is expected rather than a
+defect:
+
+```
+ours   M 3 4 5 6 7 8 9   IPG 3 4 5 5 6 4 3   boundaries 5->6? no, 8->9 only
+crown  M 3 4 5 6 7 8 9   IPG 3 4 5 3 4 4 3   boundaries 5->6 and 8->9
+```
+
+`onepass67` is ours, so the crown base restores width 6 as a genuine
+stream boundary. Nothing shipped depends on that, since `pb6` is not the
+shipped arm, but E159 must locate the width wall on the base it will ship on.
+
+### 330.4 The one blocker: the test target does not survive the import
+
+`Tests/` is not a declared editable path, so it is never submitted, but
+`swift test --force-resolved-versions` is our correctness gate and it must
+compile. Our tree carries 35 test files the crown does not, 14,593 lines, and
+at least nine of them are tests **of the instruments the import deletes**:
+
+```
+E135DepthPriceArmTests.swift      142   passBoundaryTierFactor
+QwenMTPDepthPriceTests.swift      276   passBoundaryTierFactor
+E134PassBoundaryPriceTests.swift  338   passBoundaryTierFactor, onepass67, widthPlan
+E145WidthPinTests.swift            67   e145PinnedDepth
+E135Width2RouteTests.swift        369   widthPlan, compiledDefault, a2g64
+E120CustomQMVProbeTests.swift    1246   widthPlan, compiledDefault, a2g64
+E138PlanSurfaceTests.swift        535   widthPlan, a2g64
+E135TightLaunchGridTests.swift    409   widthPlan, compiledDefault, a2g64
+E135ProbeArmTests.swift           118   compiledDefault, a2g64
+E137RouteBCostCurveTests.swift      -   a2g64
+```
+
+None of these exist in the crown tree. Their subject is deleted by the import,
+so deleting them is the correct resolution rather than a loss of coverage —
+but only a build can prove the list is complete, and the advisor host has no
+`.build` directory at all. A cold resolve-and-build of MLX here would exceed
+every sane job budget and `swift package resolve` is forbidden.
+
+> **RULE 175.** The advisor may derive, cost and gate a base move, but must not
+> publish one whose test target has not compiled. A base is a contract with
+> four students; shipping it with a broken gate converts one advisor error into
+> four blocked experiments. Derive it here, execute it where the build is warm.
+
+The move therefore goes to thorfinn, who already derived the same 154-file
+parity surface independently at 14:58Z and whose leaf16 port is the mechanism
+entry 321 already earmarked for composition onto exactly this base.
+
+### 330.5 The campaign overlay gate was red and nobody noticed
+
+`senpai/verify-campaign-overlay.sh` failed with *".gitignore differs outside
+its Senpai block"*, and it failed on the pre-import tree as well, so it is not
+caused by the import.
+
+Cause: seventeen lines of research-artifact ignore patterns had been appended
+**after** `# SENPAI-CAMPAIGN-END`. The block itself carries a comment
+recording that this exact mistake was made once before, at `7f89dd5`, and
+fixed by moving the patterns inside the markers. It then happened again.
+
+Fixed by moving the end marker to the end of the file. The patterns are
+unchanged, `.gitignore` outside the block is byte-identical to `0863b06a`, and
+the gate is green. Committed with this entry.
+
+An ignore-pattern gate is not glamorous, but a red gate that stays red trains
+everybody to ignore gates.
+
+### 330.6 What this changes about composition
+
+Every in-flight student mechanism is being measured on a base that is 1.2578 %
+behind the bar, and 85.5 % of that deficit is free. The composition target is
+crown parity, not our advisor branch:
+
+```
+crown parity                          3.72911   5a9f130a validating, 98 min at 18:07Z
+  + leaf16              +0.257 %      3.73869   thorfinn, port required
+  + E151 R1 retile      +0.505 %      3.75757   alphonse, port required
+  + island arm none     +0.458 %      3.77478   askeladd, ports cleanly
+  + trunk a2            +2.045 %      3.85200   askeladd R2, head side, base-independent
+  + E159 gate arm            ?                  edward, must fit on the crown table
+THE BAR                               3.72911
+```
+
+Two of those five need a port and one needs its width wall re-located, because
+the crown base restores the pre-`onepass67` dispatch table. That is the price
+of having run six rounds on a diverged base, and it is much smaller than the
++1.075 % it buys.
+
+### 330.7 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 98 min at 18:07Z
+base move            derived, costed, gated; blocked only on the test target
+                     assigned to thorfinn after his ABBA closes
+open axes            E159 depth gate (edward, assigned)
+                     E158 R2 trunk ladder (askeladd, queued)
+                     E156 prefill/NAX (alphonse, running)
+                     E152 leaf16 + parity base move (thorfinn, running)
+advisor branch       286520f2 + this entry
+```
