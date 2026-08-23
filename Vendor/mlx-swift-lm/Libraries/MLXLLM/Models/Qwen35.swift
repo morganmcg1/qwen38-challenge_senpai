@@ -6071,14 +6071,26 @@ extension Qwen35TextModel: MTPCapable {
             1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
         let probes = qwen35E141ProbeCountOverride.map { Swift.min($0, leaves) }
             ?? declaredProbes
-        if qwen35E141ProbeCountOverride != nil {
-            // Rule 114: the arm must be readable from the run's own output,
-            // and only the effective count after the leaf clamp proves it.
-            let witness = "e141-arm: leaves=\(leaves) "
-                + "declaredProbes=\(declaredProbes) effectiveProbes=\(probes) "
-                + "rowsPerLeaf=\(rowsPerLeaf) "
-                + "padded=\(Self.compactDraftPaddedCount)\n"
-            FileHandle.standardError.write(Data(witness.utf8))
+        // Rule 114: the arm must be readable from the run's own output, and
+        // only the effective count after the leaf clamp proves it. `mtp-verify`
+        // runs the model in a sandboxed worker whose stderr is drained into a
+        // pipe and surfaced only on failure, so a successful leg needs a file.
+        if let witnessPath = ProcessInfo.processInfo
+            .environment["MLX_E141_WITNESS_FILE"], !witnessPath.isEmpty
+        {
+            let witness = "e141-arm: padded=\(Self.compactDraftPaddedCount) "
+                + "real=\(Self.compactDraftRealCount) leaves=\(leaves) "
+                + "rowsPerLeaf=\(rowsPerLeaf) declaredProbes=\(declaredProbes) "
+                + "effectiveProbes=\(probes) probedRows=\(probes * rowsPerLeaf) "
+                + "override=\(qwen35E141ProbeCountOverride.map(String.init) ?? "none")\n"
+            let data = Data(witness.utf8)
+            if let handle = FileHandle(forWritingAtPath: witnessPath) {
+                handle.seekToEndOfFile()
+                handle.write(data)
+                try? handle.close()
+            } else {
+                try? data.write(to: URL(fileURLWithPath: witnessPath))
+            }
         }
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])

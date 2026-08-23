@@ -156,19 +156,25 @@ verify|repeat)
            "probes=${nprobes:-declared} depth=${depth} ==="
       start=$(date +%s)
       log="${verify_dir}/${name}_${tag}${suffix}.leg.log"
+      # The model runs in a sandboxed worker whose stderr is drained and shown
+      # only on failure, so the arm witness needs its own file.
+      witness="${verify_dir}/${name}_${tag}_${steps}${suffix}.arm.txt"
+      rm -f "${witness}"
       if env ${prefix:+MLX_E141_DRAFT_PREFIX=${prefix}} \
-        ${nprobes:+MLX_E141_PROBES=${nprobes}} ${cli} mtp-verify \
+        ${nprobes:+MLX_E141_PROBES=${nprobes}} \
+        MLX_E141_WITNESS_FILE="${witness}" ${cli} mtp-verify \
         --golden "${golden}" \
         --mtp-head "${head_dir}" \
         --mtp-depth "${depth}" \
         --tokens "${steps}" \
         --output "${dest}" >"${log}" 2>&1
       then
-        # Keep the log: for a pinned-probe arm it carries the only witness of
-        # the effective probe count the run actually used.
         mv "${log}" "${verify_dir}/${name}_${tag}${suffix}.ok.log"
-        grep -h '^e141-arm:' "${verify_dir}/${name}_${tag}${suffix}.ok.log" \
-          | sort -u || true
+        if [[ -s "${witness}" ]]; then
+          sort -u "${witness}"
+        else
+          echo "e141-session: NO ARM WITNESS for ${name} ${arm}" >&2
+        fi
         jq -r '"e141-session: parity=\(.parity_all_ok) matched=\(.all_tokens_matched)"
                + " rounds=\(.round_count) accept=\(.accepted_draft_rate)"
                + " acc=\(.accepted_draft_total) rej=\(.rejected_draft_total)"
