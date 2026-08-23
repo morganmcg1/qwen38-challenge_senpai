@@ -87,21 +87,52 @@ binary in every session reported here. All timing is local, never ranked.
     acceptance distribution** perfectly scores **-0.3806 %**, that is
     **-0.5144 pp**, worse than the shipped estimator. So calibrating the
     marginal estimator is dead even at perfect accuracy, and the open axis is
-    a **per-round discriminator**.
+    a **per-round discriminator**. The one-line mechanism:
+    **the shipped EMA is not a bad estimator of the marginal; it is a good
+    accidental estimator of the round.** The true marginal vector is
+    optimistic about any single round, so a policy reading it never declines
+    to draft (width-1 share **0.00 %**) and pays on every bad round. The EMA's
+    pessimism is accidentally protective.
 12. **The two campaign "oracle" numbers reconcile.
     `e145_r7_oracle_reconciled = 1.0`.** E140's -4.5296 and R7's +8.9390 are
     different arms sharing one overloaded word, and the 13.4539 pp between
     them is a name collision, not an error. E140's number is one policy, not
     an upper bound, so it could not have closed an axis.
     **Advisor Error 167 is confirmed, and narrowed to the distributional
-    half.**
+    half.** **RULE 140**: an acceptance-estimator arm must declare which
+    information state it manipulates, the per-position marginal distribution
+    or the per-round realised outcome. "Oracle" alone is not a declaration.
 13. **A weak per-round predictor is already worth a lot.** R7-3 walks a
     predictor from the shipped estimator to the per-round truth. Ten per cent
-    of the way collects **22.64 %** of the gap. Additive noise of
+    of the way collects **22.64 %** of the gap
+    (`e145_r7_lam_for_half_the_gap = 0.4` buys half of it). Additive noise of
     **sigma = 0.10** on the true indicator still collects **81.29 %**. Capture
-    falls below a tenth only at **sigma = 0.30**, and turns actively harmful
-    by **sigma = 0.50**, where it loses 6.67 pp against the shipped rule.
-14. **The residency-slack direction is closed by arithmetic, and then a leg
+    falls below a tenth only at
+    **`e145_r7_noise_sigma_below_floor = 0.3`**, and the arm turns actively
+    harmful by **sigma = 0.50**, where it loses 6.67 pp against the shipped
+    rule. That ladder is a pre-registered acceptance specification: any future
+    per-round discriminator can be priced from its error rate before a GPU leg
+    is spent.
+14. **The campaign is already running one per-round discriminator, and nobody
+    called it that.** The shipped depth-0/1 margin clamp
+    `p = min(p, 1/(1 + exp(-(top1 - top2)/scale)))` reads `pendingTop2`, which
+    is a property of **this round**, not of the marginal distribution. It is
+    the only per-round signal anywhere in the scheduler, and it is applied at
+    2 of 8 depths, one-sided so it can only lower `p`, with two scale
+    constants that have no recorded derivation. R7-4 prices it where it
+    actually runs. Read the R7-2 perfect-information figure of **1.3967 pp**
+    correctly: under perfect information a hedge is pure cost by construction,
+    so that number is not a verdict on the clamp. What it says is that the
+    campaign is running a crude, untuned, two-thirds-disabled instance of
+    exactly the mechanism the open half of the axis is worth **+6.2170 pp**.
+15. **E128's whole 14-arm depth-policy table is unpriced.** Every one of those
+    arms was scored on the replayed curve, whose shape is wrong by up to
+    13.73 %. R7-1 re-priced two of its cells and both moved far:
+    `rankedprice` from -3.1234 % to **+0.1338 %**, `oracle` from +8.9390 % to
+    **+6.3508 %**. E145 does not re-run the table, but it leaves a checked
+    injection point that does it with no new plumbing. See
+    "How to re-price any E128 arm on the measured curve".
+16. **The residency-slack direction is closed by arithmetic, and then a leg
     found something else.** Slack placement priced at E130's own measured
     marginal rate is 1.009 us/round, and the KV capacity walk is 5.755
     us/round. Both are two to three orders of magnitude below the 879 us/round
@@ -120,8 +151,9 @@ made visible. Under the wrong table the depth-policy direction looked closed
 and the acceptance axis looked closed with it. Under the measured table the
 action set prunes exactly, the decision rule turns out to be already optimal,
 and a **+6.2170 pp** gap opens between the shipped acceptance estimate and a
-per-round oracle. R7-2 then shows that gap is not a calibration problem and
-R7-3 shows it does not need a good predictor to start paying.
+per-round oracle. R7-2 then shows that gap is not a calibration problem,
+R7-3 shows it does not need a good predictor to start paying, and R7-4 shows
+the scheduler already contains one crude instance of the right mechanism.
 
 ## What was measured
 
@@ -805,6 +837,12 @@ F9 §6 asked whether the greedy walk is "trapped behind the +30.6 % wall" at
 5->6 and therefore never reaches an "M=8 plateau" that the nearly free 7->8
 step seems to open. R7 answers it exactly, then measures the answer.
 
+R7 has four rungs. R7-0 proves which widths can ever be optimal, R7-1 prices
+the argmax against the shipped rule, R7-2 reconciles the two campaign
+"oracles" and splits the headroom into a marginal half and a per-round half,
+R7-3 measures how accurate a per-round predictor must be to collect it, and
+R7-4 prices the one per-round signal the scheduler already contains.
+
 ### R7-0 — the admissibility theorem
 
 The policy maximises expected accepted tokens per unit cost, `E(M)/C(M)`. Over
@@ -900,13 +938,18 @@ Five findings, in order of how much they change the campaign:
    **26.75 %** of rounds at widths that can never be optimal, **16.37 %** of
    them at width 8. Swapping the flat price for the measured curve removes all
    of that and gains +0.1338 %.
-4. **+0.1338 % is below the +0.25 % stop rule**, so
-   `e145_r7_verdict = "drop: below the +0.25 % stop rule"`. Nothing in the
-   depth-price direction is worth another leg.
-5. **The remaining 6.2170 pp is the acceptance estimate.** Same curve, same
+4. **+0.1338 % is below the +0.25 % stop rule**, so the script writes
+   `e145_r7_verdict = "drop: below the +0.25 % stop rule"`. **The advisor
+   overrode that verdict in F10 and the override stands.** The recorded
+   verdict is `enabler, standalone +0.1338 %, unlocks +6.2170 pp`. The stop
+   rule was written for a lever and this turned out to be an instrument, so it
+   scored the wrong quantity. Nothing further in the *depth-price* direction
+   is worth a leg; the table itself is what the next direction needs.
+5. **The remaining 6.2170 pp is the acceptance state.** Same curve, same
    rule, oracle acceptance instead of the EMA: +6.3508 % against +0.1338 %.
-   The lever is not the width rule and not the cost curve. It is the
-   estimator.
+   The lever is not the width rule and not the cost curve. R7-2 then narrows
+   "the estimator" to the only half of it that carries value: **per-round
+   discrimination**, not marginal calibration.
 
 The replayed curve inflates its own oracle: `oracle_full_on_replayed` scores
 +8.9390 % and spends 28.53 % of rounds at width 8. That is 2.59 pp of value
@@ -917,6 +960,306 @@ R7 cross-validates exactly against R3's independent grid. `argmax_full`
 price=measured; `argmax_full_on_replayed` -3.1234 equals R3's `D_curvelook` at
 cost=replayed, price=replayed; `C_flatlook` +0.0000 equals R3's `C_flatlook`.
 Two independently written simulators agree to four decimal places.
+
+### R7-2 — the two campaign "oracles", reconciled
+
+`e145_r7_oracle_reconciled = 1.0`. Accepted by the advisor as **Finding 244**,
+with **RULE 140** below.
+
+Two research lines published an "oracle" for the same system and got
+**-4.5296 %** (E140) and **+8.9390 %** (E128, reproduced by R7-1). The gap is
+**13.4539 pp**. Neither number is arithmetically wrong. The word `oracle` is
+overloaded, and the two arms manipulate different information states.
+
+| name | what the policy is handed | how often | decision rule |
+| --- | --- | --- | --- |
+| **estimator oracle** (E140) | the true per-position **marginal** acceptance vector `p_target` | once, per prompt | unchanged shipped rule |
+| **decision oracle** (E128, R7-1) | the **realised outcome of this round** | every round | replaced by the argmin of cost per realised token |
+
+The source is unambiguous once you look. `research/e140_oracle_state.py:66-79`
+substitutes `p_target` for the EMA inside `make_walker` and leaves the rule
+alone; its own summary keys are `estimator_worth_pp` and
+`argmax_worth_with_perfect_estimator_pp`. `research/e128-results.md:823` says
+of its arm: "The oracle arm knows, for each round, whether each draft token
+will be accepted."
+
+So E140's -4.5296 is **one policy's score**, not an upper bound on anything. It
+could never have closed an axis, and Advisor Error 167 is confirmed.
+
+I reproduced both, plus the four cells nobody had run, as one factorial:
+three information states x two decision rules x two cost curves. Six seeds,
+200 windows, attachment gate 12 legs / 1494 attached / 0 mismatches. Artifact
+`research/e145-artifacts/r7-state.json`.
+
+| arm | median % | sd | mean depth | inadmissible % |
+| --- | --- | --- | --- | --- |
+| `replayed_ema_greedy` | -3.1234 | 0.0902 | 3.4411 | 0.0000 |
+| `replayed_ema_argmax` | -3.1234 | 0.0902 | 3.4411 | 0.0000 |
+| `replayed_truep_greedy` | **-4.5148987193991665** | 0.0288 | 3.6608 | 0.0000 |
+| `replayed_truep_argmax` | -4.5149 | 0.0288 | 3.6693 | 1.5772 |
+| `replayed_clairvoyant_greedy` | +4.3391 | 0.0838 | 2.6735 | 0.0000 |
+| `replayed_clairvoyant_argmax` | +7.7165 | 0.0651 | 3.4458 | 15.1309 |
+| `replayed_oracle_depth` | **+8.9390** | 0.0736 | 4.0468 | 28.5311 |
+| `measured_ema_greedy` | +0.1338 | 0.0537 | 3.1269 | 0.0000 |
+| `measured_ema_argmax` | +0.1338226619729229 | 0.0537 | 3.1269 | 0.0000 |
+| `measured_truep_greedy` | -0.3806 | 0.0536 | 3.2558 | 0.0000 |
+| `measured_truep_argmax` | **-0.380622197388301** | 0.0536 | 3.2558 | 0.0000 |
+| `measured_clairvoyant_greedy` | +4.9541 | 0.0777 | 2.6164 | 0.0000 |
+| `measured_clairvoyant_argmax` | **+4.95412243417301** | 0.0777 | 2.6164 | 0.0000 |
+| `measured_oracle_depth` | **+6.3508** | 0.0890 | 2.6735 | 0.0000 |
+
+Two exact controls hold. `replayed_truep_greedy` is **bit-identical** to
+E140's published in-sample mean `-4.5148987193991665`, and
+`measured_ema_argmax` reproduces R7-1's `argmax_full` to full float precision.
+E140's published headline `-4.529642090803134` is that same arm under
+leave-one-prompt-out; LOPO was never the source of the disagreement.
+
+**What each information set is actually worth, on the measured curve:**
+
+- a perfect per-position **marginal** distribution: **-0.5144 pp**, that is
+  *worse* than the shipped EMA;
+- a perfect **per-round realised outcome**: **+6.2170 pp**.
+
+`e145_r7_headroom_that_is_per_round_frac = 1.0827`. More than all of the
+headroom is per-round. The distributional half is not merely closed, it is
+negative.
+
+**The mechanism.** Look at the width histograms, measured curve, argmax rule,
+as a share of rounds at widths 1 to 8:
+
+| arm | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `measured_ema_argmax` | 19.51 | 2.44 | 18.49 | 25.89 | 33.68 | 0 | 0 | 0 |
+| `measured_truep_argmax` | **0.00** | 14.64 | 19.50 | 31.38 | 34.49 | 0 | 0 | 0 |
+| `measured_clairvoyant_argmax` | 28.48 | 15.50 | 8.95 | 9.67 | 37.40 | 0 | 0 | 0 |
+| `measured_oracle_depth` | 28.73 | 15.61 | 9.00 | 4.75 | 41.90 | 0 | 0 | 0 |
+
+The true marginal vector is *optimistic* relative to what an individual round
+delivers. A policy that reads it therefore **never declines to draft** — its
+width-1 share is 0.00 % — and it pays the drafting cost on every bad round.
+The EMA's pessimism is an accident that protects it. The per-round states go
+the other way and buy their gain mostly by *skipping*: 28 to 29 % of rounds at
+width 1.
+
+That single row is the whole finding. **The shipped EMA is not a bad estimator
+of the marginal; it is a good accidental estimator of the round.**
+
+Two smaller results fall out:
+
+- On the measured curve, greedy first-break and full argmax are **identical**
+  in all three information states. On the replayed curve they diverge by 3.38
+  pp under perfect information. The decision rule only looks like a lever when
+  the price table is wrong.
+- Given perfect information, the shipped depth-0/1 margin clamps cost
+  **1.3967 pp** (`e145_r7_margin_clamp_cost_with_perfect_info_pp`). See R7-4;
+  that number is a property of perfect information, not a verdict on the
+  clamps.
+
+**RULE 140.** An acceptance-estimator arm must declare **which information
+state it manipulates**: the per-position marginal distribution, or the
+per-round realised outcome. The word "oracle" alone is not a declaration. Two
+arms that both call themselves oracles differ here by 13.4539 pp, and only one
+of them bounds anything.
+
+Scalar keys: `e145_r7_two_oracles_differ_pp = 13.453948264020784`,
+`e145_r7_e140_estimator_oracle_repro_pct = -4.5148987193991665`,
+`e145_r7_e140_estimator_oracle_lopo_pct = -4.529642090803134`,
+`e145_r7_e128_decision_oracle_repro_pct = 8.939049544621618`,
+`e145_r7_e128_decision_oracle_band = [8.5248, 9.0800]`,
+`e145_r7_distributional_ceiling_measured_pct = -0.380622197388301`,
+`e145_r7_distributional_headroom_pp = -0.5144448593612239`,
+`e145_r7_realised_headroom_pp = 6.216971808451828`.
+
+### R7-3 — how good must a per-round predictor be?
+
+R7-2 says the open axis is per-round discrimination worth +4.8203 pp between
+the shipped estimator and a clairvoyant one under the same greedy rule. R7-3
+asks the only question that matters next: **how accurate does a real predictor
+have to be before it pays?**
+
+Two degradations of the clairvoyant state, both at the argmax rule on the
+measured curve:
+
+- **shrink**: `p_hat[i] = lam * 1[i < capability] + (1 - lam) * ema[i]`. At
+  `lam = 0` this is the shipped EMA; at `lam = 1` it is clairvoyant.
+- **noise**: `p_hat[i] = clip(1[i < capability] + N(0, sigma), 0, 1)`.
+
+The ladder spans **+0.1338 % to +4.9541 %**, that is
+`e145_r7_ladder_span_pp = 4.820299772200087`. "Captured" is the share of that
+span.
+
+| lambda | median % | captured | mean depth |
+| --- | --- | --- | --- |
+| 0.00 | +0.1338 | 0.00 % | 3.1269 |
+| 0.10 | +1.2251 | 22.64 % | 3.0792 |
+| 0.20 | +1.8390 | 35.37 % | 3.0465 |
+| 0.30 | +2.3596 | 46.17 % | 3.0096 |
+| 0.40 | +2.8573 | 56.50 % | 2.9544 |
+| 0.50 | +3.2205 | 64.03 % | 2.9115 |
+| 0.60 | +3.4925 | 69.68 % | 2.8777 |
+| 0.70 | +3.8042 | 76.14 % | 2.8154 |
+| 0.80 | +4.1112 | 82.51 % | 2.7632 |
+| 0.90 | +4.5182 | 90.96 % | 2.6975 |
+| 1.00 | +4.9541 | 100.00 % | 2.6164 |
+
+| sigma | median % | captured | mean depth |
+| --- | --- | --- | --- |
+| 0.02 | +4.7095 | 94.93 % | 2.6043 |
+| 0.05 | +4.4806 | 90.18 % | 2.5978 |
+| 0.10 | +4.0524 | 81.29 % | 2.6004 |
+| 0.15 | +3.5721 | 71.33 % | 2.5932 |
+| 0.20 | +2.7981 | 55.27 % | 2.5633 |
+| 0.30 | +0.4496 | 6.55 % | 2.4519 |
+| 0.50 | -6.5325 | -138.30 % | 2.1394 |
+
+`e145_r7_noise_sigma_below_floor = 0.3`,
+`e145_r7_lam_for_half_the_gap = 0.4`,
+`e145_r7_ladder_base_pct = 0.1338226619729229`,
+`e145_r7_ladder_top_pct = 4.95412243417301`,
+`e145_r7_capture_floor = 0.1`. Every arm on both ladders has an inadmissible
+share of exactly 0.0000, because the measured price table prunes widths 6, 7
+and 8 whatever the estimator says.
+
+Three things follow.
+
+1. **The response is concave, so early accuracy is cheap value.** The first
+   10 % of the way to truth returns 22.64 % of the gap. A predictor does not
+   have to be good to be worth building.
+2. **The tolerance for noise is wide.** Additive noise of sigma = 0.10 on the
+   true accept indicator still returns 81.29 %. Break-even is near
+   sigma = 0.30.
+3. **There is a real floor, and past it the mechanism inverts.** At
+   sigma = 0.50 the arm loses 6.6663 pp against the shipped rule — much worse
+   than doing nothing. A noisy per-round signal is not a free option.
+
+Depth falls monotonically along both ladders, from 3.1269 to 2.6164 on lambda.
+Every route to the +4.82 pp drafts *less*, not more.
+
+**This table is the acceptance specification.** Any future per-round
+discriminator can be scored against it before a single GPU leg is spent:
+measure the arm's error against the realised accept indicator, read across.
+Profitable at `sigma <= 0.20` for +2.80 pp, +4.05 pp at `sigma = 0.10`, break
+even near `sigma = 0.30`, and a 6.67 pp loss at `sigma = 0.50`.
+
+### How to re-price any E128 arm on the measured curve
+
+**Every arm in E128's 14-arm depth-policy table was scored on the replayed
+curve. R2 shows that curve is wrong in shape by up to 13.73 %. So the whole
+table is unpriced until it is re-run against the measured curve.** E145 does
+not re-run it — that is a separate assignment — but the entry point is built,
+tested and documented here so the re-run costs no new plumbing.
+
+Everything below is in `research/e145_r7_state.py`.
+
+**Step 1 — build both cost environments.**
+
+```python
+from e145_r7_state import curves_and_prices
+points, measured, replayed, measured_price, replayed_price = \
+    curves_and_prices(anchor="measured")
+```
+
+`anchor` selects the width-1 cost and takes `"measured"`, `"extrapolated"` or
+`"serial"`; R2b shows the three agree to 0.75 %. `measured` and `replayed` are
+`e128_price.CURVE` dictionaries. `measured_price` and `replayed_price` are the
+`(marginal, cumulative)` price tables the *chooser* reads.
+
+**Step 2 — decide which of the two substitutions the arm needs.** They are
+independent and E128 conflated them:
+
+- the **charged** cost is `e128_price.ranked_round_us(depth + 1)`, read from
+  the installed module-global `CURVE`. `run_state_arm` sets it with
+  `e140_cells.install(cost_curve)`.
+- the **believed** cost is the `price` argument, which reaches only the depth
+  chooser.
+
+A re-pricing that changes one and not the other answers a different question.
+R3's 3 x 8 grid is the map of which cell is which.
+
+**Step 3 — score the arms.**
+
+```python
+from e145_r7_state import score_state_arms
+import e134_rung2
+
+arms = {
+    "shrinkdeep_on_measured": {
+        "cost":   measured,
+        "price":  measured_price,
+        "state":  "shipped",                       # inject no walker
+        "rule":   "greedy",
+        "adjust": e134_rung2.make_arm("shrinkdeep", 0.5),
+    },
+}
+out = score_state_arms(cache, seeds, receipt, windows, arms, admitted)
+```
+
+`state = "shipped"` is the switch that matters: it injects **no** walker, so
+the shipped `walk` runs and the arm is expressed entirely through `adjust`.
+Each returned row carries `median_pct_mean`, `median_pct_sd`, `per_prompt`,
+`weighted_mean_depth`, `width_hist`, `frac_rounds_inadmissible` and `rounds`.
+
+**Step 4 — pick the adapter for the arm's shape.** The campaign has two
+different arm interfaces, and they enter at two different slots:
+
+| arm family | factory | returns | slot |
+| --- | --- | --- | --- |
+| E134 rung-2 | `e134_rung2.make_arm(name, k)` | a per-step hook `adjust(depth, p, ctx) -> p` | `"adjust"`, straight through |
+| E128 policy | `e128_price.make_policy(arm, recal, level)` | a whole rule `policy(ema, margin, offer, capability) -> depth` | needs the four-line adapter below |
+
+`e134_rung2.make_arm` accepts exactly `ship`, `shrinkdeep`, `slopedeep`,
+`kmdeep` and `capdeep`. Those five map straight through with no adapter at
+all.
+
+E128's own 14-arm table comes from `e128_price.make_policy`, whose full
+inventory is `e128_price.ARMS`: `ship`, `nomargin`, `nomargin0`, `nomargin1`,
+`recal`, `marginup`, `marginfull`, `rankedprice`, `rankedprice_nomargin`,
+`rankedprice_recal`, `rankedprice_marginup`, `static7`, `oracle`, plus
+`LEVEL_ARMS` (`reachonly`, `expectedonly`, `levelfix`, `jensen`,
+`jensen_both`), `LEVEL_GRID_ARMS` and `PRICE_ARMS`. A policy replaces the
+whole rule, so it enters at `simulate`'s `walker` slot, whose contract is
+`chooser(ema, margin, offer, adjust, ctx, force, price) -> depth`:
+
+```python
+import e128_price
+
+def e128_walker(arm, recal=(2.0, 3.0), level=None):
+    policy = e128_price.make_policy(arm, recal=recal, level=level)
+    def chooser(ema, margin, offer, adjust, ctx, force, price):
+        return policy(ema, margin, offer, ctx["capability"])
+    return chooser
+```
+
+`ctx` carries `capability`, `offer`, `base_rate`, `prev_slope`, `prev_rows`
+and `km`, so no policy needs information the harness does not already have.
+That adapter is checked, not sketched: it returns a legal depth for `ship`,
+`nomargin`, `recal`, `marginup`, `marginfull`, `rankedprice`, `static7` and
+`oracle` on a probe state, and `static7` correctly saturates at the
+`SEGMENTED_VERIFY_DEPTH_CAP` of 7 while the rest sit at 3 or 4.
+
+**One ordering constraint.** The `rankedprice*` arms freeze their price table
+at construction time, because `make_policy` calls `ranked_price_table()`
+eagerly. Call `e140_cells.install(measured)` **before** `make_policy`, or that
+family silently keeps the replayed table while everything else moves. The
+`levelfix*`, `reachonly`, `expectedonly`, `jensen` and `jensen_both` arms also
+need a `level` dictionary from `e128_price.pooled_level`.
+
+`state_walker(rule, state, p_target, *, lam, sigma, noise_seed, clamp)` builds
+the information-state walkers R7-2 and R7-3 use, and `run_state_arm(cache,
+seed, prompt, cost_curve, price, walker, windows, adjust=None)` is the single
+prompt-level call underneath all of it. An arm may set `walker` or `adjust`
+or both.
+
+**The consequence to name.** E128's published table, on the replayed curve,
+ran from `oracle` at +9.08 % down to `static7` at -16.59 %, with
+`marginfull` -0.33, `expectedonly` -0.76, `levelfix` -1.02, `recal` -1.33,
+`reachonly` -1.97, `nomargin1` -2.18, `nomargin0` -2.44, `nomargin` -4.03,
+`marginup` -4.54, `rankedprice` -5.63, `jensen_both` -7.62 and `jensen`
+-11.07. R7-1 already re-priced two of those cells and both moved a long way:
+`rankedprice` moves from -3.1234 % to +0.1338 %, and `oracle` moves from
++8.9390 % to +6.3508 %. **No ranking inside that table should be trusted
+until it is re-run.** In particular, arms that were rejected for being
+slightly negative sit inside the 3.26 pp that re-pricing moved `rankedprice`.
 
 ## What could not be identified
 
@@ -959,6 +1302,7 @@ research/e145_r4_both.sh 6 200
 python3 research/e145_r5.py --seeds 6 --windows 200 --draws 400
 python3 research/e145_r6.py
 python3 research/e145_r7.py --seeds 6 --windows 200 --draws 2000
+python3 research/e145_r7_state.py --seeds 6 --windows 200
 python3 research/e145_wandb_log.py
 ```
 
@@ -994,9 +1338,15 @@ research-only under `research/` and `Tests/MLXFastTests/E145*`.
 
 `senpai/validate-assignment-scope.sh` passes against
 `BASE_SHA=2cd0d459c651de53cc4ccebb160a19fb00ed87c4`.
-`senpai/check-editable-budget.sh` reports source 2,627,254 of 3,000,000 bytes
-and growth 172,419 of 262,144. `senpai/verify-ranked-score-boundary.sh`
-passes.
+`senpai/check-editable-budget.sh` reports source 2,627,254 of 3,000,000 bytes,
+headroom 372,746, and candidate growth **1,717** of 262,144 across 154 files.
+`senpai/verify-ranked-score-boundary.sh` passes.
+
+The only submitted-surface change left in this branch is a 32-line depth pin
+in `Qwen36MTPBlockSession.swift`, read once at static initialisation from
+`MLX_E145_PIN_DEPTH` and applied in the draft-count chooser. It is inert
+unless that variable is set, and R2 is the only session that sets it. The
+temporary residency probe used by R6-1 is reverted.
 
 **No Yukon submission was made.** The assignment forbids it, and the
 submission slot is held by another candidate.

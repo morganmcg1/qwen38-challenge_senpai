@@ -453,6 +453,20 @@ def log_r7_state(run, summary: dict, state: dict) -> None:
           r["weighted_mean_depth"], r["frac_rounds_inadmissible"]]
          for r in state["e145_r7_captured_frac_vs_noise"]])})
 
+    run.log({"r7_4_cells": table(
+        ["cell", "median_pct", "median_pct_sd", "width1_share",
+         "weighted_mean_depth"],
+        [[r["cell"], r["median_pct"], r["median_pct_sd"], r["width1_share"],
+          r["weighted_mean_depth"]]
+         for r in state["e145_r7_clamp_cells"]])})
+
+    run.log({"r7_4_scale_grid": table(
+        ["scale0", "scale1", "median_pct", "median_pct_sd", "width1_share",
+         "weighted_mean_depth"],
+        [[r["scale0"], r["scale1"], r["median_pct"], r["median_pct_sd"],
+          r["width1_share"], r["weighted_mean_depth"]]
+         for r in state["e145_r7_clamp_scale_grid"]])})
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
