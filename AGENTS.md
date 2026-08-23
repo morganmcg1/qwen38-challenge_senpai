@@ -416,6 +416,26 @@ Only the official M5 result can promote a candidate. A green rejected receipt
 may simply have failed to beat the current frontier; read its gates and metrics
 before classifying it as incorrect.
 
+### Watching a receipt
+
+Three facts about the `yukon` CLI, each of which has already produced a silent
+watcher failure:
+
+- `yukon submissions` prints the submission id truncated to **7 characters**. A
+  watcher that matches the full 36-character id against that column never fires.
+  Test the prefix in both directions.
+- `yukon` reads no config file in this environment. It authenticates only from
+  `YUKON_API_TOKEN`. A `run_job` watcher must therefore declare
+  `secret_env: ["YUKON_API_TOKEN"]`, or every query fails.
+- Without the credential, `yukon` exits 1, prints `not logged in` to stderr, and
+  prints nothing to stdout. A watcher that discards stderr and the exit status
+  cannot tell that case apart from a row that has not reached the board yet.
+  Keep both and fail loudly.
+
+Give any watcher a positive control against an already-terminal submission id
+before trusting it. Matching logic that never fires looks exactly like a slow
+queue.
+
 ## Historical Prior Art
 
 Laguna work is useful only as a source of hypotheses about shared MLX concepts.
