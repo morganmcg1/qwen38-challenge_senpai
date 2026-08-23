@@ -39,7 +39,29 @@
   "rung": "R1"
  },
  "base_sha": "14247cce11216639a04ecfc2798cf0798091ff92",
- "commit": "53c9317e6048d184cacc6a9cd32acd4bad9ed34d",
+ "commit": "1dccfbe932fb9810fe1a0939565b695cdc767b92",
+ "cool_gate": {
+  "available": true,
+  "cool_gate_passed_real_gate": true,
+  "gate_qualified_for_timing": true,
+  "passes": [
+   {
+    "entry_c": 38.7,
+    "target_c": 40.0,
+    "waited_s": 30
+   },
+   {
+    "entry_c": 40.0,
+    "target_c": 40.0,
+    "waited_s": 40
+   },
+   {
+    "entry_c": 39.3,
+    "target_c": 40.0,
+    "waited_s": 50
+   }
+  ]
+ },
  "experiment": "E151",
  "growth_enforced_base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
  "harness": "offline+local",
@@ -71,8 +93,11 @@
  "metrics": {
   "e151_arm_is_local_output_neutral": 1.0,
   "e151_base_also_misses_pin": 1.0,
+  "e151_cool_gate_pass_count": 3.0,
+  "e151_cool_gate_passed_real_gate": 1.0,
   "e151_exact512_verdict_ok": 1.0,
   "e151_gate_chain_all_green": 1.0,
+  "e151_gate_qualified_for_timing": 1.0,
   "e151_growth_attributable": 4028.0,
   "e151_growth_enforced": 199524.0,
   "e151_growth_enforced_limit": 262144.0,
@@ -86,7 +111,8 @@
   "e151_static_gates_all_green": 1.0,
   "e151_swift_test_at_known_floor": 1.0,
   "e151_swift_test_failing_name_count": 11.0,
-  "e151_swift_test_issue_count": 42.0
+  "e151_swift_test_issue_count": 42.0,
+  "e151_worker_rebuild_passed": 1.0
  },
  "row_digest_512": null,
  "rung": "R1",
@@ -155,6 +181,29 @@
   "log": "research/e151-artifacts/r2-swift-test.log",
   "suites": 79,
   "tests": 811
+ },
+ "worker_rebuild": {
+  "assertions": [
+   [
+    "require",
+    "constexpr bool kE147NaxRetileOn = true;",
+    "1"
+   ],
+   [
+    "forbid",
+    "constexpr bool kE147NaxRetileOn = false;",
+    "0"
+   ],
+   [
+    "forbid",
+    "kE151NaxDoubleBufferArmed",
+    "0"
+   ]
+  ],
+  "available": true,
+  "log": "research/e151-artifacts/r2-worker-rebuild.log",
+  "passed": true,
+  "worker_sha256": "080255fc8e57cf7f64e92c29c996baf9b252c967b76ff6c76b9ab0ba2d00df4a"
  },
  "worktree_clean": true
 }

@@ -88,9 +88,17 @@ def main() -> int:
     flatten("e151_r1_gating_decision", hist["registered_gating_decision"],
             summary)
 
+    reapply = ROOT / "research/e151-r1-frontier-reapply.json"
+    if reapply.is_file():
+        flatten("e151_r1_frontier_reapply",
+                json.loads(reapply.read_text()), summary)
+
     if args.gates:
         gates = json.loads(pathlib.Path(args.gates).read_text())
-        flatten("", gates, summary)
+        flatten("gate_chain", gates, summary)
+        # The named verdict metrics stay unprefixed so the advisor can read
+        # them without knowing the collector's document shape.
+        summary.update(gates["metrics"])
 
     run = wandb.init(
         entity=ENTITY, project=PROJECT, id=RUN_ID, resume="allow",
