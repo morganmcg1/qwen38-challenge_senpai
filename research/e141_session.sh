@@ -77,6 +77,11 @@ arm_spec() {
     armB20)     echo "248320@1229:20" ;;   # 12,416 leaves, +0.19 MB
     armB16)     echo "248320@1536:16" ;;   # 15,520 leaves, +5.15 MB
     leaf16)     echo "98304@1536:16" ;;    # coarser leaf, shipped vocabulary
+    # The missing cell. armA and armB20 hold the probed ROW COUNT at the
+    # shipped level, which cuts the probe FRACTION from 0.250 to 0.099 because
+    # the table is 2.5x larger. This arm applies the same 0.099 to the SHIPPED
+    # vocabulary, so it separates the probe-fraction penalty from the widening.
+    thin099)    echo "98304@1217" ;;       # 1217/12292 = 0.09901
     *)          echo "$1" ;;
   esac
 }
