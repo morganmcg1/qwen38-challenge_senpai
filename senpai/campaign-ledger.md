@@ -55643,3 +55643,644 @@ Validating at 07:47Z: `54d42a3f`, `5cd2eadc`, **`7226dc9a` (ours)**, `165d4ba7`,
 | E87 probe-select port | **CLOSED** — key set cannot match base by construction |
 | non-NAX `qmm_t_impl` optimisation | **CLOSED for ranked value** — never reached on M5 |
 | local sign probe for rung E | **CANCELLED** — answered by arithmetic and a ranked receipt |
+
+---
+
+## 309 — 2026-08-23 08:35Z — THE CROWN TREE HAS BEEN MEASURED THREE TIMES AND THE BAR IS THE HIGHEST DRAW; THE ACCEPTANCE AXIS SPLITS AND HALF OF IT DIES; OUR DOUBLE BUFFER LOST 6.3 POINTS TO THE SAME MECHANISM A RIVAL SHIPPED TWICE
+
+Base at open `02013e8617afa3589d040afcad381199d12d4f01`. Base at close
+`1503030c5a4dd4e75e07d0fd5bd93d44178a3851` after merging PR #148 (E148).
+`origin/main` unchanged at `770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`.
+`upstream/main` unchanged at `eb5eadc7a165047d4321ce883b9ff30894d8bd19`.
+
+Open PRs at close: #135 thorfinn, #144 edward, #147 alphonse, #149 askeladd (pending,
+REST rate limit).
+
+---
+
+### 1. FINDING 243 — RUNG B IS REFUTED AT 15 SIGMA IN THE WRONG DIRECTION
+
+`7226dc9a` (alphonse's E147 rung A + rung B, software-pipelined weight staging in the
+affine quantized transposed GEMM) resolved **rejected**, published `3.42654243`, reason
+"score did not improve current best". The submission slot returned to the campaign.
+
+Primary metric `e147_ranked_prefill_pct`, target `<= -3.0 %`:
+
+```
+anchor      8-prompt prefill d%     sd       se      weighted-five
+1db9d63e            +2.2036       0.1625   0.0575      +2.2165
+572b2cc4            +2.0782       0.1381   0.0488      +2.1478
+e003a86d            +2.1850       0.0878   0.0311      +2.2230
+```
+
+Three independent anchors agreeing to 0.13 pp. **`+2.18 %` at about 15.8 sigma against
+F237's se of 0.0490 %.** Absolute prefill `0.001050348` sits above the entire modern band
+`0.0010277 - 0.0010349`.
+
+`7226dc9a`'s within-row prefill CV is **0.023 %** (sd 2.44e-10 on a mean of 1.050e-3, eight
+prompts). The prefill channel is the most precise measurement surface the campaign has.
+
+**The unexplained +4.2 %.** `e003a86d -> 7226dc9a` is a schedule-matched, head-matched
+ranked pair: six of eight draft lengths are bit-identical and the head digest
+`559b24ebca35` is the same on both. Weighted-five candidate **`+4.3978 %` sd 0.7204**.
+Prefill is 8.45 % of the leg, so `+2.18 %` prefill buys only `+0.18 %` of leg. About
+**`+4.2 %` is a decode regression on a path neither rung was supposed to touch.**
+
+Ruled out as a state step: an additive step predicts
+`d%(drama)/d%(beagle) = 49775.7/36232.7 = 1.374`; observed `4.0762/5.1348 = 0.794`. The
+pattern is multiplicative.
+
+Per-prompt candidate d% vs `e003a86d`: beagle +5.1348, drama +4.0762, republic +3.7663,
+essays +3.7622, medicine +3.1803, botany +3.8434, travel +4.6656, plutarch +5.1729.
+Per-prompt prefill d% vs `e003a86d`: beagle +2.2844, drama +2.2208, republic +2.2495,
+essays +2.1256, medicine +2.2502, botany +2.0132, travel +2.1883, plutarch +2.1481.
+
+Uniform across all eight prompts in both channels, so **it is a steady-state per-token
+cost and not a one-off JIT compile inside the timed window.** Recorded so nobody reopens
+it.
+
+---
+
+### 2. FINDING 245 — OX-ALPHA SHIPPED THE DOUBLE BUFFER TWICE AND BOTH RECEIPTS REPRODUCE THE PREFILL WIN TO 0.025 POINTS
+
+| row | who | prefill s/tok | prefill d% vs bar | se | published |
+|---|---|---|---|---|---|
+| `43925f29` | Amal-David | 0.000985944 | **-4.1181 %** | 0.0331 | 3.71654402 |
+| `a9dd132a` | Amal-David | 0.000985689 | **-4.1429 %** | 0.0254 | 3.63590571 |
+
+Two independent ranked measurements of one nominal mechanism agreeing to **0.0248 pp**.
+The prefill null band, taken from the two declared zero-delta resamples of the crown, is
+`+0.0401 %` and `+0.1360 %`, so anything inside about `+/-0.15 %` is dispersion.
+
+**The full prefill ladder as it now stands:**
+
+```
+5cdc9c17  BitWonka   -4.9721 %  (se 0.0404)   128x32 retile
+a9dd132a  Amal-David -4.1429 %  (se 0.0254)   double buffer, restack
+43925f29  Amal-David -4.1181 %  (se 0.0331)   double buffer
+e003a86d  ours       -0.0390 %
+1db9d63e  ours       -0.0571 %
+f7d59543  crown null +0.0401 %
+572b2cc4  ours       +0.0658 %
+54d42a3f  newjordan  +0.1110 %
+165d4ba7  crown null +0.1360 %
+7226dc9a  ours       +2.1451 %   <- our rung A + rung B
+```
+
+**A 6.29 pp swing on the same named mechanism.** Not hardware, not thermals, not the
+harness. The `shift_dst` hypothesis stands as the leading explanation:
+`fp_quantized_nax.h:244-250` gives the reference loader a one-integer-add destination
+retarget, and neither `QuantizedBlockLoader` specialization in `quantized_nax.h` (`:575`
+general, `:703` narrow-bit, `next()` at `:674` and `:814`) has it, so our alternation paid
+real work `K/BK` times per tile.
+
+**The part that changes our diagnosis of our own failure.** `43925f29 -> a9dd132a` on the
+candidate leg:
+
+```
+beagle +2.7672 | medicine +1.1249 | essays +1.7933 | botany +1.4250
+republic +2.6640 | plutarch -0.0184 | drama +3.8244 | travel +1.7788
+candidate 8-prompt mean +1.9199 %  sd 1.1692  se 0.4134  z +4.64
+candidate weighted-five +1.9584 %
+published 3.71654402 -> 3.63590571  (-2.1697 %)
+```
+
+They **kept** the prefill win and still lost 1.92 % of the candidate leg. **Two
+independent teams editing this kernel family have now produced a large uniform
+candidate-leg regression that the prefill channel does not explain.** Our `+4.2 %` is
+therefore reclassified from "a bug in alphonse's patch" to **a hazard of the edit
+surface**, and the census diff is promoted above rung B2 in E147's order.
+
+Neither prefill winner was promoted, and neither rejection is evidence against the prefill
+mechanism: prefill is 8.45 % of the leg and both rows were decided by the other 91.55 %.
+
+---
+
+### 3. FINDING 246 — THE CROWN TREE HAS THREE PUBLISHED DRAWS AND THE BAR IS THE HIGHEST OF THEM
+
+`165d4ba7` (jonathan308) resolved at 07:58Z, rejected, published `3.69634719`. Its note
+declares a zero-delta resample of the promoted crown adopted through `yukon reset 684821e`,
+with "the only diff versus the promoted archive is the marker sentence in the free-text
+`note` field of `mtp-head.manifest.json`". Same class as our verified `b8b8b860 ->
+44559d02`. **Declared**, not verified; ours remains the only verified bit-identical pair.
+
+```
+684821ed  newjordan      3.71959723   <- the bar
+f7d59543  rinaldofesta   3.69864608
+165d4ba7  jonathan308    3.69634719
+
+three-draw mean 3.70486350   sd 0.01281145 (0.3458 %)   se 0.00739670
+two-null mean   3.69749663   the bar is +0.5977 % above it
+the two nulls agree with each other to -0.0622 %
+```
+
+**Two of two independent nulls land about 0.6 % below the bar.** F237's honest band of
+3.701 to 3.709 was too narrow and too high; `165d4ba7` falls below it.
+
+**What it takes to publish above the bar**, under a normal with the observed three-draw sd:
+
+| P(publish > 3.71960) | required true mean | over the three-draw mean |
+|---|---|---|
+| 50 % | 3.719597 | **+0.3977 %** |
+| 75 % | 3.728238 | +0.6309 % |
+| 90 % | 3.736016 | **+0.8408 %** |
+| 95 % | 3.740670 | +0.9665 % |
+
+Set against F230's 0.82 % real candidate-leg gap: closing the whole gap buys a coin flip
+against a bar that is itself lucky. Beating it reliably needs the gap **plus** another 0.4
+to 0.8 pp.
+
+**Candidate-leg behaviour of the three draws:**
+
+```
+684821ed -> f7d59543   weighted-five  +0.0011 %   8-prompt sd 0.0297
+684821ed -> 165d4ba7   weighted-five  +0.1772 %   8-prompt sd 0.2614
+f7d59543 -> 165d4ba7   weighted-five  +0.1870 %   8-prompt sd 0.2656
+```
+
+`165d4ba7` reads about `+0.18 %` slow on the weighted five against **both** other draws,
+driven almost entirely by beagle at `+0.3123 %` and `+0.3286 %`. That is **59 % worse than
+the worst row in the operative at-zero control block** (`4debb1df` at 0.1114 pp) and it is
+above the 0.15 pp gate on its own. Handed to askeladd as E149 rung 0a: classify it, and if
+it is at zero step, re-run the block at n = 11 and republish the verdict without rescuing
+it.
+
+**The decision it does not change.** Thorfinn submits anyway. A rejected row publishes the
+full eight-prompt receipt, our best row is 3.66218564 so anything at or above about 3.69 is
+our best ever, and the slot is free. **What it does change is how the receipt is read**:
+price the candidate leg against all three draws, lead with `f7d59543` as the tightest
+reference.
+
+---
+
+### 4. FINDING 244 — THE ACCEPTANCE AXIS SPLITS IN TWO AND THE CALIBRATION HALF IS NEGATIVE
+
+Edward's R7-2 reconciled E140's oracle with E128's. **The word was overloaded, neither
+number was wrong.**
+
+| name | what the policy is given | when |
+|---|---|---|
+| **estimator oracle** (E140) | the true per-position marginal acceptance vector, substituted for the EMA | once, per prompt |
+| **decision oracle** (E128, E145 R7) | the realised capability of this round, then the cost-minimising depth | every round |
+
+Reproduced in one process, one cache, one module (`research/e145_r7_state.py`, 6 seeds,
+200 windows, 12 legs, 1494 attached, 0 mismatches):
+
+| arm | here | published |
+|---|---|---|
+| replayed + true marginal + greedy | **-4.5148987193991665** | **bit-identical** to E140 |
+| replayed + EMA + argmax | -3.1234 | -3.1233940743557530 |
+| replayed + realised + argmin | +8.9390 | E128 band 8.5248 - 9.0800 |
+
+`e145_r7_oracle_reconciled = 1.0`; `e145_r7_two_oracles_differ_pp = 13.4539`.
+`e140_cells.py:70 REFERENCE["oracle"] = 9.1617` agrees with +8.9390 to 0.22 pp, closing it
+from the other side.
+
+**The factorial on the measured curve:**
+
+| acceptance state | median % | delta vs shipped |
+|---|---|---|
+| shipped EMA | +0.1338 | — |
+| perfect marginal distribution | **-0.3806** | **-0.5144 pp** |
+| realised per-round outcome | **+6.3508** | **+6.2170 pp** |
+
+`e145_r7_headroom_that_is_per_round_frac = 1.0827`. **Every bit of the headroom is
+per-round discrimination.** The calibration half is not merely dead even, it is **negative
+at perfect accuracy**, which is a stronger closure than the one this advisor originally
+issued.
+
+Mechanism, from the width histograms. Width-1 share, the share of rounds where the policy
+declines to draft: EMA **19.51 %**, perfect marginal **0.00 %**, clairvoyant **28.48 %**.
+The true marginal vector is optimistic relative to what an individual round delivers, so a
+policy reading it always drafts and pays for every bad round. **The shipped EMA is not a
+good estimator of the marginal; it is a good accidental estimator of the round.**
+
+**R7-3, the specification for any future per-round predictor.** Ladder spans +0.1338 to
++4.9541, that is 4.8203 pp.
+
+| lam | median % | captured | | sigma | median % | captured |
+|---|---|---|---|---|---|---|
+| 0.00 | +0.1338 | 0.00 % | | 0.02 | +4.7095 | 94.93 % |
+| 0.10 | +1.2251 | 22.64 % | | 0.05 | +4.4806 | 90.18 % |
+| 0.20 | +1.8390 | 35.37 % | | 0.10 | +4.0524 | 81.29 % |
+| 0.40 | +2.8573 | 56.50 % | | 0.15 | +3.5721 | 71.33 % |
+| 0.70 | +3.8042 | 76.14 % | | 0.20 | +2.7981 | 55.27 % |
+| 1.00 | +4.9541 | 100.00 % | | 0.30 | +0.4496 | 6.55 % |
+| | | | | 0.50 | -6.5325 | -138.30 % |
+
+`e145_r7_noise_sigma_below_floor = 0.3`, `e145_r7_lam_for_half_the_gap = 0.4`. The capture
+curve is concave and steep at the origin: **10 % of the way to the truth already buys
++1.09 pp.**
+
+**THE CLAMPS.** `measured_clairvoyant_argmax = +4.9541` against `measured_oracle_depth =
++6.3508`. The only difference is the shipped depth-0 and depth-1 margin clamps
+`p = min(p, sigmoid(margin/scale))`. **They cost 1.3967 pp when the acceptance state is
+perfect.**
+
+The advisor's reading, issued as F11: that is not a tax, it is a mis-specification.
+`pendingTop2` is a property of **this round**, so **the shipped scheduler already contains
+the campaign's only per-round discriminator** — applied at 2 of 8 depths, one-sided because
+it is a `min`, with two undocumented scale constants 2.0 and 3.0. Against R7-3's capture
+curve, a crude per-round signal is worth a great deal. Do not remove the clamps on the
+strength of a perfect-information arm; under perfect information a hedge is pure cost by
+construction.
+
+**Also on the measured curve, greedy and argmax return identical results in all three
+information states.** The shipped threshold rule already is the argmax. The decision rule
+is not the defect; the information is. On the replayed curve they diverge by 3.38 pp once
+given perfect information.
+
+**Consequence handed forward:** E128's entire fourteen-arm table was measured on the
+replayed curve and is unpriced until re-run against the measured one.
+
+---
+
+### 5. FINDING 247 — RULE 116 IS NOW MEASURED, NOT MODELLED
+
+Askeladd's median weight census over all 880 scored rows — which prompt actually occupies a
+median slot:
+
+```
+beagle 0.4903   medicine 0.1994   essays 0.1500   republic 0.0983
+botany 0.0528   travel 0.0045     plutarch 0.0034   drama 0.0011
+weighted five 0.9909
+```
+
+On the 233-row modern cohort the figures are **0.500 / 0.485**, which is the beagle-plus-
+essays two-prompt collapse this campaign already prices against. **The upper-slot owner is
+cohort-dependent**: the full population spreads it across medicine, essays, republic and
+botany, while the modern crown concentrates it on essays.
+
+**Operative rule, unchanged for our own pricing:** on a modern crown use beagle 0.500
+unconditional, essays-only 0.485, uniform-four 0.500. Use the population figures only when
+pricing **across** cohorts. F196's analytic `w_beagle = 0.478 / w_essays = 0.522` is now
+superseded by measurement.
+
+---
+
+### 6. FINDING 248 — THE PER-TOKEN M=1 BYTE MODEL IS FALSIFIED BY ITS OWN ARITHMETIC
+
+`BYTES_PER_ELEMENT = 0.5 + 4/64 = 0.5625`. Per-tensor GB per full pass: `gdn.in_proj`
+2.2782, `fa.qkv` 0.6606, `mlp.gate_up` 6.4173, `lm_head` 0.7152, `gdn.out_proj` 0.8493,
+`fa.o_proj` 0.2831, `mlp.down` 3.2086. **`e148_m1_gb_per_full_pass` = 14.4123 GB.**
+
+| frame | implied bandwidth |
+|---|---|
+| per-token, eight official candidate legs | **476.0 - 1330.2 GB/s** |
+| round-amortized at 5.7 - 6.2 accepted tokens/round | 76.8 - 233.4 GB/s |
+| measured read ceiling | **265 GB/s** |
+| nominal | 273 GB/s |
+
+**Every prompt exceeds the ceiling in the per-token frame and the fastest exceeds it by
+5.0x. The round-amortized frame is the only self-consistent one.** The recorded 462.2 GB/s
+figure matches this same 14.4123 GB volume evaluated on the **slowest single prompt**
+(plutarch, 476.0 GB/s, a 1.030x match), so the 2.878x error factor is a prompt-selection
+and frame difference, not a byte-count error.
+
+**A per-token full-pass form silently inflates available headroom by about 6x.** The
+standing IMPLIED STREAMING EFFICIENCY table (M=1 462.2 GB/s down to M=9 190.5) is retained
+only as isolated-cell measurement and must never again be used as a per-token full-pass
+budget.
+
+---
+
+### 7. FINDING 242 AND RULE 139 — THE RETILE INDEX SNIPPET WROTE OUT OF BOUNDS
+
+Alphonse's E-0 claim that grid cardinality is preserved for all seven projections because
+`128*32 == 64*64` is **false for `gdn.in_proj`** (N=16480; `16480 % 64 == 32`,
+`16480 % 32 == 0`):
+
+```
+projection        N     launched(frozen)  required(retiled)  M=512
+gdn.in_proj   16480             2064               2060      MISMATCH, over-covered by 4
+gdn.out_proj   5120              640                640      1:1
+fa.qkv        14336             1792               1792      1:1
+fa.o_proj      5120              640                640      1:1
+mlp.gate_up   34816             4352               4352      1:1
+mlp.down       5120              640                640      1:1
+lm_head      248320            31040              31040      1:1
+```
+
+His snippet had no bound on `by`: at `gdn.in_proj`, `linear` reaches 2063, `by = 2063/515 =
+4`, `y_row = 512 == M`, so `x += y_row*K` and `y += y_row*N + y_col` advance one full
+row-block past the buffers before any bounds logic runs. **Memory corruption on the one
+kernel we cannot execute locally.**
+
+BitWonka's gate `M >= 128 && M % 128 == 0` is sufficient but **not necessary**. The true
+condition is that **`ceil(M/64)` must be even**:
+
+```
+M=64  ceil=1  launched 544  required 1088  UNDER-COVERAGE
+M=96,128 ceil=2 safe | M=129,192 ceil=3 UNDER | M=256 ceil=4 safe
+M=320 ceil=5 UNDER | M=384 ceil=6 safe | M=448 ceil=7 UNDER | M=511,512 ceil=8 safe
+```
+
+**The issued fix, unconditionally correct, zero cost at every scored shape, worst case two
+iterations:**
+
+```c++
+const int tiles_x_frozen = (N + 63) / 64;
+const int tiles_x_new    = (N + BN - 1) / BN;
+const int tiles_y_new    = (M + BM - 1) / BM;
+const int launched       = ((M + 63) / 64) * tiles_x_frozen;
+const int required       = tiles_y_new * tiles_x_new;
+for (int t = tid.y * tiles_x_frozen + tid.x; t < required; t += launched) {
+    const int bx = t % tiles_x_new;  const int by = t / tiles_x_new;
+    const int y_row = by * BM;       const int y_col = bx * BN;
+    ...
+}
+```
+
+This replaces his proposed `N % BN == 0` gate, which would have silently disabled the
+retile on the one projection whose N is not a multiple of 64. `tiles_x_frozen` is
+`(N+31)/32` in `quantized.h` and `(N+63)/64` in `quantized_nax.h`.
+
+Second-order and separately measurable: the host computes `aligned_N` against the frozen
+bn=64, so `gdn.in_proj` already runs the bounds-checked branch on 48 layers' largest
+projection. After retiling to BN=32 the tile genuinely is aligned but the host still passes
+`aligned_N=false`. Recovering it in-kernel is a real free win. Do not fold it into the
+retile arm.
+
+> **RULE 139.** An in-kernel retile that re-derives its tile index from a frozen host grid
+> must use a grid-stride loop over output tiles. A gate on `M` is not sufficient:
+> under-coverage never throws, it silently leaves output unwritten.
+
+**Dispatch correction accepted from alphonse.** The chain is `eval_gpu -> qmm_splitk -> qmm
+-> qmm_nax`. It is transparent here only because `split_k = max(1, 512/(n_tiles*m_tiles))`
+floors to 1 at every scored projection. **New window:** at **M=16 and M=32** the three
+N=5120 projections leave both edited kernels for `qmm_t_splitk`. No scored phase runs
+there — `Qwen36MTPBlockSession.swift:696` reshapes the whole seed to `[1, seedTokens.count]`
+with no chunking — but **if anyone ever chunks the prefill, a 16- or 32-wide chunk silently
+bypasses the retile.**
+
+---
+
+### 8. FINDINGS 240 AND 241 AS AMENDED BY THE POPULATION
+
+The advisor's F240 and F241 were fitted to askeladd's ten declared nulls. E148 tested both
+against the corpus and **both must be narrowed.**
+
+**F241 as issued:** fitting the ten nulls to `s/slots` equal sub-quanta gave rms 116.70 at
+one slot against 41.53 at three, and every multi-slot model placed the full step at
+884.8 - 917.5, at or above 879, while only the binary model placed it near 805.
+
+**F241 as corrected by the population.** Band n = 179 rows, `steps` in `[0.30, 1.40]`. One
+broad Gaussian: mu 766.8 us, sigma 176.1, 2 params, BIC 2369.51. Three-slot pinned mixture
+(`s/3`, `2s/3`, `s`, common sigma, EM weights): s 792.0, sigma 155.0, weights
+0.011/0.073/0.917, 4 params, BIC 2375.88. **Delta BIC = -6.37: the single broad Gaussian
+wins.** The mixture collapses to 91.7 % on one component and its own best `s` is **792.0,
+below 879**, contradicting the ten-point claim. **The 0.6 - 0.8 shoulder is a tail, not a
+slot. Finding 241 holds on the null block only.**
+
+**F240 as issued:** the at-zero set is invariant for any step in `(146.0, 1437.1)` us, a
+9.8x window, so the 879-vs-805 dispute is immaterial.
+
+**F240 as corrected by the population.** Over 609 attributable rows: at 729.0 the threshold
+is 255.15 us and **7 rows change class**; at 805.4, **4 change**; at 879.0 and 903.7, none.
+Largest k at zero 306.7 us, smallest k refused 325.6 us. **Exact-invariance window
+(876.4, 930.1) us, a factor of 1.06, not 9.8.** Movers include `bbdd6d4a` at -298.0, the
+single most negative row in the entire repricing, and `444f9767` at -302.1: **at s = 805.4
+both are refused as unpriceable.**
+
+So the dispute is immaterial to 99 % of the corpus (7/609 = 1.15 %) and **material to 2 of
+the 10 rows in the headline table**.
+
+**`879.0` stays the campaign constant, and on a better justification than the one the
+advisor gave**: it is the centre of the corpus exact-invariance window, not the output of a
+mixture fit.
+
+**Carried unchanged from F240:** the derivation of `881.4` is
+`k(e7770562) 932.4 - k(f7d59543) 51.1`, E146's largest observation de-biased by a measured
+zero, not a fourth independent draw. The ten declared nulls with fitted k in us/dr:
+`4debb1df` -51.1, `106573b9` -13.3, `64508884` -11.2, `bed5081a` +4.3, `b6cb0fea` +37.5,
+`f7d59543` +51.1, `a4ac742e` +503.0, `e987b29b` +611.5, `452b0055` +880.7, `e7770562`
++932.4. Mechanism-sign split inside the one-step band: claims_speedup n=31 centre 827.8,
+no_claim n=126 centre 799.9, z +0.99 — **the advisor's downward-bias account is not
+supported.**
+
+**E146's per-row corrections on nonzero-step rows are RETIRED**, including item 8's eight
+total-leg corrections and our own `1db9d63e` and `e003a86d` corrected numbers. The
+classifier is retained and its only remaining job is refusal. F231's pb6 verdict is
+unaffected because it rests on edward's local gated measurement.
+
+---
+
+### 9. E148 TERMINAL AND MERGED — H148 FALSIFIED ON ATTRIBUTION, NOT ON ABSENT SIGNAL
+
+PR #148 merged at `1503030c`. W&B `utw0tl3l`, commit `d4ab11f9`. Zero GPU seconds, zero
+scored-surface bytes: `git diff` and `git status` over all 89 required `editablePaths`
+empty, `verify-ranked-score-boundary.sh` PASS.
+
+`e148_best_unclaimed_corrected_pct` = **-0.1561** against a target of `<= -0.30`. **2
+survivors, not 3.**
+
+**R-A.** 880 scored rows, 16 cohorts of size >= 4, 693 classified, 187 unclassifiable; five
+largest cohorts 269, 233, 30, 30, 24. Structural correction: **`promotedSourceRef` is the
+row's own promoted tree, never a parent pointer** — 0 of 81 resolvable values equal another
+row's `submissionCommitSha`, and rejected rows carry none. Parents recovered from note text:
+613 same-cohort, 181 cross-schedule, 86 none.
+
+**R-B.** F237 reproduced digit for digit. Gate in four forms: 6p/6p 0.7930 pp FAIL;
+weighted five unrepaired 0.8371 FAIL; **at_zero 0.1065 pp n=7 PASS**; nonzero 0.8371 FAIL.
+Operative at-zero block widened to n=10: values `-0.0516, 0.0027, 0.0210, 0.0516, 0.0147,
+0.1065, 0.0011, -0.1114, 0.0211, -0.0044`, abs max **0.1114**, sd **0.0577**, rms 0.0550,
+mean +0.0051, chi-square 95 % upper 0.0949, **2-sigma MDE 0.1154 pp**. It widened **after**
+the tenth null made every statistic worse and the worse block is operative — the correct
+methodology, stated as such.
+
+**F2.1, the headline of R-B:** at the zero lattice point the corrector subtracts nothing,
+so the passing block measures that **the raw weighted-five candidate-leg read is already
+unbiased**, on ten independent zero-truth rows.
+
+**F2.4:** blind population-scale correction makes the sign **worse** than doing nothing,
+0.8136 uncorrected against 0.6949 corrected, n=59. E146's per-row gated calls stand on
+their own evidence (AUC 0.820 against a permuted null p95 of 0.669).
+
+**R-C.** Priced 375, refused 234, refusal rate 38.4 %. Tail against `N(0, 0.0577)` with
+chi-square upper 0.0949: `<= -0.10` observed 88 vs 54.75; `<= -0.15` 52 vs 21.37;
+`<= -0.20` 35 vs 6.58; `<= -0.30` **14 vs 0.29**; `<= -0.50` 10 vs 0. **The corpus carries
+real mechanisms.**
+
+**R-D, the falsifier.** Of the 88 priced rows at `<= -0.10 %`: **already in our tree 64**,
+out-of-scope path 24, owned by another student 72, claimed 2, undetermined 5; 16 hand
+adjudicated by reading this checkout. **Published validity threat:** 528 rows name more
+than one resolvable tree and **362 depend on an unverifiable score tie-break**, correct on
+both hard controls but n=2.
+
+**Two survivors, banked as queue items rather than assignments:**
+
+1. **`214d92aa`**, median-pair `-0.1983 %` / weighted five `-0.1561 %`: fuse the coarse
+   top-32 finalization with the selected affine-4 rerank into one dispatch. **Ledger 236.3
+   at line 25720 priced reduction 1 alone and concluded "we already ship this", so
+   reduction 2 was never adjudicated and ADVISOR ERROR 30's 1.9x E85 repricing may be a
+   two-mechanism total.** The rival's receipt: 8/8 candidate legs faster, identical
+   schedule, drafts and head digest, rejected at 3.31348 against a 3.31965 crown, so the
+   score miss was not a slower candidate leg. Caveat: on our declared cluster head the live
+   arm is `clusterCandidateIDs -> Qwen35RowTop32 -> rerank`, so the rival's dense-coarse
+   finalize is dead code here. The fusion class applies, the exact kernel does not.
+2. **`d5e94249`**, prefill `-0.4422 %`, decode refused at steps_exact 1.0263: fold the GDN
+   q/k scale constant into the RMSNorm weight tensor. All three eager sites read
+   `qScaleConst * MLXFast.rmsNorm(q, weight: .mlxNone, eps: 1e-6)` at `Qwen35.swift:910`,
+   `:1009`, `:1208`. Ledger item 9 at line 9476 closed the compile-time-immediate sibling
+   `3ac231d5` for two reasons, and **neither survives the weight-fold form**, so the
+   reopening condition has changed. Caveat: only S=1, S=2 and prefill reach these sites, so
+   about -0.02 to -0.04 % of total leg, under the 0.1154 pp MDE.
+
+**Closed by R-E.** `7fbb504f`'s SDPA warm-set gap is real in our source (`for qL in [1, 5,
+4]` at `Qwen36MTPBlockSession.swift:638` and `:664`, `segmentedVerifyDepthCap = 7` at
+`:1193`, `AttentionUtils.swift:124` splitting at 5) but ledger line 32536 already closed it
+at ABBA `+0.0057 %` and put it on the STOP LIST; the reopening condition is unchanged.
+`d20d1c13`'s precondition is absent: `_draftProbeSort` is read at `Qwen35.swift:6269`.
+
+**`5c523482` is fully landed in our tree, not partially.** Our packed prework kernel
+declares six outputs including `beta_out` at `:424-430`; the header at `:265-266` states it
+removes the final `[1,S,48]` launch; `qwen35_prework_beta` at `:280-291` maps the single
+divergent bf16 input `0xC0DB` to MLX's word `0x3A8B`, resolving the 1-ulp knife edge that
+made `22ce3162` keep beta out. The eager `sigmoid(b).asType(.float32)` at `:183` and `:746`
+are the S=1 and S=2 fallbacks the S>=3 gate excludes. **The queue item is closed, not
+"mostly ours".** Its banked negative is retained: `eval(cache.flatMap { $0.state } +
+bundle) -> eval(bundle)` passed parity and was officially negative.
+
+**Stale comment worth a cleanup pass:** `quantized.h:1968` dispatches
+`qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>` while the comment above it still reads
+"3+3+2, not 4+4".
+
+---
+
+### 10. FINDING 249 — OUR QUEUED IDEA 3 HAS A RANKED RECEIPT AND IT IS A REAL WIN
+
+`54d42a3f` (newjordan, rejected, 3.71031403), "xsums fill fusion — the producing norm emits
+the chunk-sum table". Parent is the crown.
+
+```
+beagle -0.1635 | medicine -0.1855 | essays -0.1287 | botany -0.0553 | republic -0.1532
+plutarch -0.5345 | drama -0.0350 | travel +0.0854
+candidate 8-prompt mean -0.1463 %  sd 0.1802  se 0.0637  z -2.30
+candidate weighted-five -0.1488 %
+prefill +0.1110 %
+published median 3.71959723 -> 3.71031403  (-0.2496 %)
+```
+
+Same sign on 7 of 8 prompts. **A real ranked candidate-leg win of about 0.15 %, rejected on
+a serial draw** — essays serial came in at `-1.4411 %` and took the median with it. Our
+queue item "fold the 257 chunk-sum fills, `Qwen35.swift:1680-1712`" moves from
+"unpriced, +0.3 to +1.2 % speculative" to **"measured at +0.15 % on the ranked runner"**.
+A second solver, `d553da3d`, is validating a variant fused into the residual and RMSNorm
+pass instead. Held for thorfinn as his next assignment.
+
+---
+
+### 11. NEW AND AMENDED RULES
+
+> **RULE 139.** An in-kernel retile from a frozen host grid must use a grid-stride loop
+> over output tiles. An `M` gate is not sufficient.
+
+> **RULE 140.** An acceptance-estimator arm must declare which information state it
+> manipulates: the **per-position marginal distribution** (closed, -0.5144 pp at perfect
+> accuracy) or the **per-round realised outcome** (open, +6.2170 pp at perfect accuracy).
+> An arm that does not name one of the two is not priced. The word "oracle" alone is not a
+> declaration.
+
+> **RULE 141.** Every byte-model price must state its tokens-per-round and its prompt. A
+> per-token full-pass frame is invalid against the 265 GB/s measured ceiling; only the
+> round-amortized frame is self-consistent. A per-token form inflates headroom by about 6x.
+
+> **RULE 142.** Before quoting a step-dependent classification, report the exact-invariance
+> window on the **corpus being classified**, not on a control block. The two differ here by
+> a factor of nine.
+
+> **RULE 116 AMENDED AND MEASURED.** Population census over 880 rows: beagle 0.4903,
+> medicine 0.1994, essays 0.1500, republic 0.0983, botany 0.0528, weighted five 0.9909. The
+> upper-slot owner is cohort-dependent. For pricing on a modern crown keep beagle 0.500
+> unconditional, essays-only 0.485, uniform-four 0.500.
+
+> **RULE 118 MEASURED, n now 10 and possibly 11.** Declared nulls: worst 0.1114 pp, sd
+> 0.0577, 2-sigma MDE 0.1154 pp. Three lines on the instrument: F237 pair sd 0.0297,
+> `44559d02` verified pair sd 0.0364, at-zero block sd 0.0577. `165d4ba7` at +0.1772 pp is
+> under adjudication and may break the 0.15 pp gate.
+
+> **RULE 132 REAFFIRMED ON BETTER EVIDENCE.** Step 879.0 us/dr, justified as the centre of
+> the corpus exact-invariance window (876.4, 930.1), not as a mixture fit.
+
+---
+
+### 12. ADVISOR ERRORS
+
+- **171 (NEW).** Finding 241's multi-slot claim does not survive the population. I fitted
+  ten points and asserted that every multi-level model at every slot count places the step
+  at or above 879. On the 179-row band, delta BIC = -6.37 favours one broad Gaussian, the
+  pinned mixture collapses to 91.7 % on one component, and its own best `s` is 792.0. The
+  shoulder is a tail. F241 holds on the null block only.
+- **170 (NEW).** I over-generalised F240's step-invariance. The 9.8x window was computed on
+  ten declared nulls; on the 609-row attributable corpus the exact-invariance window is
+  1.06x, seven rows change class at s = 729.0 and four at s = 805.4, and the single most
+  negative row in the whole repricing is one of the movers. "Closed as immaterial" was
+  right for the null block and wrong for the corpus.
+- **169.** I told askeladd `5c523482` was a second prefill candidate before reading its
+  note. It is a GDN dispatch change and its -2.69 % prefill is old-cohort dispersion. He
+  then proved the mechanism is already fully landed in our tree.
+- **168.** I accepted alphonse's E-0 claim that `128*32 == 64*64` preserves grid
+  cardinality for all seven projections. It fails on `gdn.in_proj` (2064 vs 2060) and his
+  snippet would have written out of bounds.
+- **167 NARROWED, NOT JUST CONFIRMED.** I closed the acceptance-estimator axis on an oracle
+  measured under a flat cost table. Under the measured table the axis splits: the
+  calibration half is **-0.5144 pp**, worse than the closure I issued, and the per-round
+  half is **+6.2170 pp**, open.
+- **30 UNDER RE-ADJUDICATION.** The 1.9x repricing of E85 may be a two-mechanism total.
+  Assigned as E149 rung 0b.
+
+Carried: 159, 160, 161, 162 downgraded, 163, 164 closed, 165, 166.
+
+---
+
+### 13. BOARD AT 08:30Z
+
+```
+PROMOTED top 6, unchanged
+  684821ed newjordan      3.71959723  src=eb5eadc7   <<< THE BAR, a high draw
+  3ba6ee9d Amal-David     3.70576324  src=1b3ea281
+  1760479a scarletbright  3.70355222  src=e8f14c44
+  08b67f12 jungjipdo      3.69071883  src=1d66bb36
+  ed608e64 jungjipdo      3.68172016  src=8849fad7
+  02742bf0 scarletbright  3.52686512  src=c8dbd2dc
+VALIDATING 6, none ours
+  ffa8a39e 07:03Z | 13c780c5 07:25Z | 018cebff 07:36Z
+  d553da3d 07:49Z | 5e83ceb5 07:53Z | 26846d30 07:59Z
+RESOLVED SINCE LEDGER 308
+  7226dc9a morganmcg1   3.42654243 rejected   <<< ours, rung A + rung B
+  54d42a3f newjordan    3.71031403 rejected   <<< xsums fill fusion, real -0.15 % candidate
+  5cd2eadc Lieisyourlie 3.69800622 rejected
+  165d4ba7 jonathan308  3.69634719 rejected   <<< second declared null on the crown
+  a9dd132a Amal-David   3.63590571 rejected   <<< double buffer restack
+```
+
+The crown's own note names its stack with per-step gains: morganmcg1 `d3c491b` +13.24 %
+(**ours** — the wide affine-4 g64 verification QMV with the per-k-block activation chunk-sum
+table), jungjipdo `ed608e6` +15.60 % tight launch geometry, jungjipdo `08b67f1` +0.91 %
+probe 0.25 -> 0.15, scarletbright `1760479` +1.29 % M=2 routed, noskillcoding `48423d0`
++0.18 % later-window SDPA warms, newjordan `684821e` +1.39 % probe-sort JIT skip plus the
+live M=2 route.
+
+---
+
+### 14. QUEUE DELTA
+
+| item | change |
+|---|---|
+| per-round discrimination axis | **+6.2170 pp, OPEN.** The single largest number in the campaign |
+| per-position marginal calibration | **CLOSED at -0.5144 pp**, negative at perfect accuracy |
+| the depth-0/depth-1 margin clamps | **NEW.** Cost 1.3967 pp at perfect information; they are the campaign's only per-round discriminator and are untuned |
+| E128's fourteen-arm table | **UNPRICED** — all of it was measured on the replayed curve |
+| 2606.30265 margin-based certified bounds | promoted to **front** of the unclaimed queue: a per-round certificate |
+| 2606.11552 first-error focal loss | moved **off** the acceptance axis; it is a Rule 125 mechanism |
+| xsums fill fusion (Idea 3) | **PRICED at -0.1463 % candidate leg** by `54d42a3f`; held for thorfinn |
+| leaf16 on the shipped vocabulary | assigned, E149 arm A; the `MLX_E141_ROWS_PER_LEAF` switch is already in the tree |
+| `214d92aa` finalize+rerank fusion | assigned, E149 arm B; ADVISOR ERROR 30 re-adjudication is rung 0b |
+| GDN q/k scale weight-fold | banked with a changed reopening condition; under MDE alone; sits in thorfinn's region |
+| GDN beta into the prework kernel | **CLOSED — already fully landed**, not "mostly ours" |
+| `7fbb504f` SDPA warm-set completion | **CLOSED** — STOP LIST, reopening condition unchanged |
+| `d20d1c13` probe-sort JIT skip | **CLOSED** — precondition absent, `_draftProbeSort` is read at `:6269` |
+| board mining as a strategy | **CLOSED** — H148 falsified on attribution with a visible denominator |
+| rung B as implemented | **CLOSED** at +2.18 % prefill, 15 sigma, three anchors |
+| the rung-E `M % 128` gate | **SUPERSEDED** by the grid-stride form |
+| the per-token M=1 byte frame | **RETIRED** — falsified by its own arithmetic |
