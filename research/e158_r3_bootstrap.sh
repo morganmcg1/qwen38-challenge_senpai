@@ -54,5 +54,27 @@ step "swift build"
 # cannot be used as a witness.
 senpai/rebuild-and-assert-worker.sh --require-symbol Qwen35IslandArm || exit 1
 
+step "mlx.metallib"
+# `swift build` does not produce the metallib, and `benchmark-qwen-mtp.sh`
+# refuses to start without it. Reuse the previous role's copy only when this
+# tree computes the same vendored-source fingerprint; otherwise compile it.
+metallib=.build-worker/release/mlx.metallib
+want="$(tools/build-mlx-metallib.sh --print-fingerprint | tail -1)"
+prev="${PREV_ROLE}/workspace/target/${metallib}"
+if [[ -f "${metallib}" ]] \
+  && grep -qF "${want}" "${metallib}.fingerprint" 2>/dev/null; then
+  echo "metallib already present and current"
+elif [[ -f "${prev}" ]] \
+  && grep -qF "${want}" "${prev}.fingerprint" 2>/dev/null; then
+  cp -c "${prev}" "${prev}.fingerprint" .build-worker/release/ || exit 1
+  echo "metallib cloned from ${PREV_ROLE} at fingerprint ${want}"
+else
+  tools/build-mlx-metallib.sh || exit 1
+fi
+grep -qF "${want}" "${metallib}.fingerprint" || {
+  echo "metallib fingerprint does not match this tree" >&2
+  exit 1
+}
+
 step "done"
 ls -l .build/release/mlxfast-swift .build-worker/release/mlxfast-runtime-worker
