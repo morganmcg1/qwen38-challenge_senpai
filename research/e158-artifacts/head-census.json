@@ -1,0 +1,702 @@
+{
+  "pinned_head": {
+    "label": "pinned_bf16",
+    "file": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head/model.safetensors",
+    "file_bytes": 849400347,
+    "header_bytes": 1563,
+    "tensor_bytes": 849398784,
+    "tensor_count": 15,
+    "metadata": null,
+    "tensors": [
+      {
+        "name": "layers.0.mlp.down_proj.weight",
+        "shape": [
+          5120,
+          17408
+        ],
+        "dtype": "BF16",
+        "bytes": 178257920,
+        "stored_elements": 89128960,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.gate_proj.weight",
+        "shape": [
+          17408,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 178257920,
+        "stored_elements": 89128960,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.up_proj.weight",
+        "shape": [
+          17408,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 178257920,
+        "stored_elements": 89128960,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.q_proj.weight",
+        "shape": [
+          12288,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 125829120,
+        "stored_elements": 62914560,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "fc.weight",
+        "shape": [
+          5120,
+          10240
+        ],
+        "dtype": "BF16",
+        "bytes": 104857600,
+        "stored_elements": 52428800,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.o_proj.weight",
+        "shape": [
+          5120,
+          6144
+        ],
+        "dtype": "BF16",
+        "bytes": 62914560,
+        "stored_elements": 31457280,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.k_proj.weight",
+        "shape": [
+          1024,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10485760,
+        "stored_elements": 5242880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.v_proj.weight",
+        "shape": [
+          1024,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10485760,
+        "stored_elements": 5242880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.input_layernorm.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.post_attention_layernorm.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "norm.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "pre_fc_norm_embedding.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "pre_fc_norm_hidden.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.k_norm.weight",
+        "shape": [
+          256
+        ],
+        "dtype": "BF16",
+        "bytes": 512,
+        "stored_elements": 256,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.q_norm.weight",
+        "shape": [
+          256
+        ],
+        "dtype": "BF16",
+        "bytes": 512,
+        "stored_elements": 256,
+        "bits_per_stored_element": 16
+      }
+    ],
+    "vocabulary_sized_tensors": [],
+    "has_full_vocab_projection": false,
+    "has_compact_vocab_projection": false
+  },
+  "declared_head": {
+    "label": "declared_q2_q4",
+    "file": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared/model.safetensors",
+    "file_bytes": 427742600,
+    "header_bytes": 4488,
+    "tensor_bytes": 427738112,
+    "tensor_count": 40,
+    "metadata": {
+      "format": "qwen38-mtp-incumbent-q4-g64-plus-bf16-qkv-islands-v1",
+      "bf16": "EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e070875b0314d652a039b6b59902690f03",
+      "base": "dwsdubey/qwen3.8-27b-mtp-4bit@34ee76f6c87a438caa28f975c1cea9b0b005bc71",
+      "e034_readout": "proposal-only affine2 compact shortlist; incumbent affine4 reranks",
+      "selection": "largest per-output-row fp32 reconstruction SSE; Q=1024,K=all,V=all"
+    },
+    "tensors": [
+      {
+        "name": "draft_lm_head.weight",
+        "shape": [
+          98336,
+          320
+        ],
+        "dtype": "U32",
+        "bytes": 125870080,
+        "stored_elements": 31467520,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.mlp.down_proj.weight",
+        "shape": [
+          5120,
+          2176
+        ],
+        "dtype": "U32",
+        "bytes": 44564480,
+        "stored_elements": 11141120,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.mlp.gate_proj.weight",
+        "shape": [
+          17408,
+          640
+        ],
+        "dtype": "U32",
+        "bytes": 44564480,
+        "stored_elements": 11141120,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.mlp.up_proj.weight",
+        "shape": [
+          17408,
+          640
+        ],
+        "dtype": "U32",
+        "bytes": 44564480,
+        "stored_elements": 11141120,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.self_attn.q_proj.weight",
+        "shape": [
+          12288,
+          640
+        ],
+        "dtype": "U32",
+        "bytes": 31457280,
+        "stored_elements": 7864320,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "fc.weight",
+        "shape": [
+          5120,
+          1280
+        ],
+        "dtype": "U32",
+        "bytes": 26214400,
+        "stored_elements": 6553600,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "draft_lm_head.biases",
+        "shape": [
+          98336,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 15733760,
+        "stored_elements": 7866880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "draft_lm_head.scales",
+        "shape": [
+          98336,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 15733760,
+        "stored_elements": 7866880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.o_proj.weight",
+        "shape": [
+          5120,
+          768
+        ],
+        "dtype": "U32",
+        "bytes": 15728640,
+        "stored_elements": 3932160,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "precision_islands.k.weight",
+        "shape": [
+          1024,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10485760,
+        "stored_elements": 5242880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "precision_islands.q.weight",
+        "shape": [
+          1024,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10485760,
+        "stored_elements": 5242880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "precision_islands.v.weight",
+        "shape": [
+          1024,
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10485760,
+        "stored_elements": 5242880,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.down_proj.biases",
+        "shape": [
+          5120,
+          272
+        ],
+        "dtype": "BF16",
+        "bytes": 2785280,
+        "stored_elements": 1392640,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.down_proj.scales",
+        "shape": [
+          5120,
+          272
+        ],
+        "dtype": "BF16",
+        "bytes": 2785280,
+        "stored_elements": 1392640,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.gate_proj.biases",
+        "shape": [
+          17408,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 2785280,
+        "stored_elements": 1392640,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.gate_proj.scales",
+        "shape": [
+          17408,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 2785280,
+        "stored_elements": 1392640,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.up_proj.biases",
+        "shape": [
+          17408,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 2785280,
+        "stored_elements": 1392640,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.mlp.up_proj.scales",
+        "shape": [
+          17408,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 2785280,
+        "stored_elements": 1392640,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.k_proj.weight",
+        "shape": [
+          1024,
+          640
+        ],
+        "dtype": "U32",
+        "bytes": 2621440,
+        "stored_elements": 655360,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.self_attn.v_proj.weight",
+        "shape": [
+          1024,
+          640
+        ],
+        "dtype": "U32",
+        "bytes": 2621440,
+        "stored_elements": 655360,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.self_attn.q_proj.biases",
+        "shape": [
+          12288,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 1966080,
+        "stored_elements": 983040,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.q_proj.scales",
+        "shape": [
+          12288,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 1966080,
+        "stored_elements": 983040,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "fc.biases",
+        "shape": [
+          5120,
+          160
+        ],
+        "dtype": "BF16",
+        "bytes": 1638400,
+        "stored_elements": 819200,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "fc.scales",
+        "shape": [
+          5120,
+          160
+        ],
+        "dtype": "BF16",
+        "bytes": 1638400,
+        "stored_elements": 819200,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.o_proj.biases",
+        "shape": [
+          5120,
+          96
+        ],
+        "dtype": "BF16",
+        "bytes": 983040,
+        "stored_elements": 491520,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.o_proj.scales",
+        "shape": [
+          5120,
+          96
+        ],
+        "dtype": "BF16",
+        "bytes": 983040,
+        "stored_elements": 491520,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.k_proj.biases",
+        "shape": [
+          1024,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 163840,
+        "stored_elements": 81920,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.k_proj.scales",
+        "shape": [
+          1024,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 163840,
+        "stored_elements": 81920,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.v_proj.biases",
+        "shape": [
+          1024,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 163840,
+        "stored_elements": 81920,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.v_proj.scales",
+        "shape": [
+          1024,
+          80
+        ],
+        "dtype": "BF16",
+        "bytes": 163840,
+        "stored_elements": 81920,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.input_layernorm.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.post_attention_layernorm.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "norm.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "pre_fc_norm_embedding.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "pre_fc_norm_hidden.weight",
+        "shape": [
+          5120
+        ],
+        "dtype": "BF16",
+        "bytes": 10240,
+        "stored_elements": 5120,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "precision_islands.k.indices",
+        "shape": [
+          1024
+        ],
+        "dtype": "I32",
+        "bytes": 4096,
+        "stored_elements": 1024,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "precision_islands.q.indices",
+        "shape": [
+          1024
+        ],
+        "dtype": "I32",
+        "bytes": 4096,
+        "stored_elements": 1024,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "precision_islands.v.indices",
+        "shape": [
+          1024
+        ],
+        "dtype": "I32",
+        "bytes": 4096,
+        "stored_elements": 1024,
+        "bits_per_stored_element": 32
+      },
+      {
+        "name": "layers.0.self_attn.k_norm.weight",
+        "shape": [
+          256
+        ],
+        "dtype": "BF16",
+        "bytes": 512,
+        "stored_elements": 256,
+        "bits_per_stored_element": 16
+      },
+      {
+        "name": "layers.0.self_attn.q_norm.weight",
+        "shape": [
+          256
+        ],
+        "dtype": "BF16",
+        "bytes": 512,
+        "stored_elements": 256,
+        "bits_per_stored_element": 16
+      }
+    ],
+    "vocabulary_sized_tensors": [
+      "draft_lm_head.weight",
+      "draft_lm_head.biases",
+      "draft_lm_head.scales"
+    ],
+    "has_full_vocab_projection": false,
+    "has_compact_vocab_projection": true
+  },
+  "manifest": {
+    "source": "remote",
+    "source_url": "hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e052496dd5300b4aa441df7301e8",
+    "sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+    "bytes": 427742600,
+    "max_bytes": 2147483648
+  },
+  "declared_tree_digest": {
+    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared",
+    "sha256": "559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71",
+    "bytes": 427742600,
+    "file_count": 1,
+    "files": [
+      {
+        "path": "model.safetensors",
+        "sha256": "d038fd41e2d5dab1b3905c115d859fdc98dfbfde9862c14ebb82c2b3247ec2f1",
+        "bytes": 427742600
+      }
+    ]
+  },
+  "pinned_tree_digest": {
+    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head",
+    "sha256": "6bab9c82ff4a718018ca9a38b1b3e25dc71f68be82ea4ee1d3ca478cc91b45f0",
+    "bytes": 849407066,
+    "file_count": 5,
+    "files": [
+      {
+        "path": ".gitattributes",
+        "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361",
+        "bytes": 1519
+      },
+      {
+        "path": ".mlxfast-reference-cache.lock",
+        "sha256": "1e9745e44f5378c21eb35adf8a879cb8e95e3489a651b422a27bd38a0cf1a9c9",
+        "bytes": 628
+      },
+      {
+        "path": "config.json",
+        "sha256": "fb2a5bd03bc4a2ac6a161f2f2eb5bf9fc3e4e23bf50a55c2ba41fe6b692d2b95",
+        "bytes": 3570
+      },
+      {
+        "path": "model.safetensors",
+        "sha256": "8fceddc664f3ea96d02e304463aa1319213ff52cdf1f3401d4bce64e7075c349",
+        "bytes": 849400347
+      },
+      {
+        "path": "model.safetensors.index.json",
+        "sha256": "b21c0c41a317926d438d8c5080adbeddb71ee03f78323a8dc5890d1a96325feb",
+        "bytes": 1002
+      }
+    ]
+  },
+  "declared_run_tree_digest": {
+    "dir": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run",
+    "sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "bytes": 427746170,
+    "file_count": 2,
+    "files": [
+      {
+        "path": "config.json",
+        "sha256": "fb2a5bd03bc4a2ac6a161f2f2eb5bf9fc3e4e23bf50a55c2ba41fe6b692d2b95",
+        "bytes": 3570
+      },
+      {
+        "path": "model.safetensors",
+        "sha256": "d038fd41e2d5dab1b3905c115d859fdc98dfbfde9862c14ebb82c2b3247ec2f1",
+        "bytes": 427742600
+      }
+    ]
+  },
+  "tree_digest_recipe_verified": true,
+  "heads_differ_local_default_vs_ranked": true,
+  "declared_capacity_unused_bytes": 1719741048
+}

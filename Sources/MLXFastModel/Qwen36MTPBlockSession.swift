@@ -156,6 +156,15 @@ public final class Qwen36MTPBlockSession {
     public private(set) var seedTokenCount = 0
     public private(set) var committedTokenCount = 0
     public private(set) var roundCount = 0
+
+    /// E155 research audit hook. UNCOMMITTED RESEARCH PATCH — never submitted.
+    /// Nil in every shipped build, so the drafting path is unchanged. When it
+    /// is set, the session retains the per-slot proposal hidden row and hands
+    /// it to the hook after the round has committed, together with the shipped
+    /// draft ids, the target verify argmax rows and the accepted count.
+    /// Arguments: (round, proposalHiddenPerSlot, drafts, verifyArgmax, accepted).
+    public nonisolated(unsafe) static var draftAuditHook:
+        ((Int, [MLXArray], [Int], [Int], Int) -> Void)?
     public private(set) var acceptedDraftTotal = 0
     public private(set) var rejectedDraftTotal = 0
     public private(set) var rollbackRoundCount = 0
@@ -1630,6 +1639,8 @@ public final class Qwen36MTPBlockSession {
                 hidden: draftInputHidden, nextTokenIds: draftInputTokens,
                 cache: headCache)
         var draftHidden = Self.lastHiddenRow(headHidden)
+        var auditHidden: [MLXArray] = []
+        if Self.draftAuditHook != nil { auditHidden.append(draftHidden) }
         var draftId = model.draftTokenID(draftHidden)
         draftIdArrays.append(draftId)
         // Early submission of the FIRST head step: its graph exists ~2.4 ms
@@ -1646,6 +1657,7 @@ public final class Qwen36MTPBlockSession {
             headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
             draftHidden = Self.lastHiddenRow(headHidden)
+            if Self.draftAuditHook != nil { auditHidden.append(draftHidden) }
             draftId = model.draftTokenID(draftHidden)
             draftIdArrays.append(draftId)
         }
@@ -1914,6 +1926,10 @@ public final class Qwen36MTPBlockSession {
         // installs lazy recurrent roots; only the next GPU graph consumes
         // them. The rare generic-repair path ran its own second eval.
         // `pendingHidden` is likewise device-only until the next round.
+
+        if let hook = Self.draftAuditHook {
+            hook(roundCount, auditHidden, drafts, verifyArgmax, acceptedCount)
+        }
 
         return Qwen36MTPRoundResult(
             tokens: committed,
