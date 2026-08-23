@@ -17,9 +17,15 @@ drafts `d` tokens verifies `d + 1` rows, so `P(M = 2) = P(depth = 1)`.
 Item D inverts the width-2 launch receipt `08b67f12 -> 1760479a`. If the
 replayed histogram and the launch law are both right, the eight implied
 per-round costs must agree. The decisive control on the histogram is its
-first moment: the receipt publishes `Mbar` and `R` per prompt, and the replay
-predicts both, so a histogram that is biased at the shallow end has to show
-up as a biased `Mbar` unless the bias is exactly compensating.
+first moment: the receipt publishes `Mbar`, the replay predicts it, and a
+histogram biased at the shallow end has to show up as a biased `Mbar` unless
+the bias is exactly compensating.
+
+The receipt does not publish a round count. `effective_mean_draft_len` is an
+exact rational but arrives in lowest terms, so every multiple of the reduced
+denominator is admissible and `R` cannot be recovered from it. The per-round
+unit therefore comes from the replayed round rate, and the receipt supplies
+only what it states exactly: mean draft length and seconds per token.
 
 Usage:
   python3 e140_itemab.py --json e140-artifacts/itemab.json
@@ -27,6 +33,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import fractions
 import json
 import math
 import pathlib
@@ -36,7 +43,9 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from e128_price import RANKED_PROMPTS, load_board_receipt  # noqa: E402
+from e128_price import (  # noqa: E402
+    DECODE_TOKENS, RANKED_PROMPTS, load_board_receipt,
+)
 from e134_item2_refit import FORMS  # noqa: E402
 from e134_rung2 import build_legs, median_pct  # noqa: E402
 from e140_cells import (  # noqa: E402
@@ -45,23 +54,55 @@ from e140_cells import (  # noqa: E402
 from e140_lookahead import SHIPPED_TIER, load_curves  # noqa: E402
 from e140_posttight import LAUNCH_COEF, VARIANTS  # noqa: E402
 
-# `08b67f12 -> 1760479a`. One file, width 2 routed through the custom QMV so
-# the host launches one threadgroup column instead of two. R and
-# `effective_mean_draft_len` are digit-identical on all eight prompts, so this
-# is a pure time contrast at exactly one verify width.
-WIDTH2_RECEIPT = {
-    "plutarch": {"mbar": 1.156, "rounds": 487, "delta_us": -70.0},
-    "drama": {"mbar": 3.298, "rounds": 252, "delta_us": -361.6},
-    "travel": {"mbar": 3.648, "rounds": 212, "delta_us": -80.3},
-    "beagle": {"mbar": 5.382, "rounds": 110, "delta_us": -208.7},
-    "republic": {"mbar": 5.989, "rounds": 93, "delta_us": -42.1},
-    "essays": {"mbar": 6.087, "rounds": 92, "delta_us": -289.3},
-    "medicine": {"mbar": 6.256, "rounds": 90, "delta_us": -39.0},
-    "botany": {"mbar": 7.148, "rounds": 81, "delta_us": -165.2},
-}
-
 # The crown's median pair, from the F2 audit of receipt `08b67f12`.
 MEDPAIR = {"beagle": 0.4782, "essays": 0.5218}
+
+# `08b67f12 -> 1760479a`. One file, width 2 routed through the custom QMV so
+# the host launches one threadgroup column instead of two.
+# `effective_mean_draft_len` is digit-identical on all eight prompts, so this
+# is a pure time contrast at exactly one verify width.
+BASE_RECEIPT, WIDTH2_ARM = "08b67f12", "1760479a"
+
+# The smallest round count each receipt admits. `effective_mean_draft_len` is
+# an exact rational, but the board publishes it in lowest terms, so the true
+# round count is only known to be some multiple of this denominator. That is
+# why the analysis below never takes a round count from the receipt.
+REDUCED_ROUND_DENOMINATOR = {
+    "plutarch": 122, "drama": 84, "travel": 71, "beagle": 55,
+    "republic": 93, "essays": 23, "medicine": 90, "botany": 27,
+}
+
+
+def width2_receipt_from_board(board: pathlib.Path) -> dict:
+    """The width-2 contrast, in the only units the board states exactly.
+
+    The board publishes seconds per token and a mean draft length. It does
+    not publish a round count, and `effective_mean_draft_len` arrives in
+    lowest terms, so the round count cannot be recovered from it: every
+    multiple of the reduced denominator is admissible. The per-round unit the
+    launch law needs therefore comes from the replayed tree, and the receipt's
+    mean width is kept as the control that the replayed tree is the right one.
+    """
+    before = load_board_receipt(board, BASE_RECEIPT)
+    after = load_board_receipt(board, WIDTH2_ARM)
+    out = {}
+    for prompt, entry in before["per_prompt"].items():
+        reduced = fractions.Fraction(
+            entry["draft_len"]).limit_denominator(2000).denominator
+        if reduced != REDUCED_ROUND_DENOMINATOR[prompt]:
+            raise SystemExit(
+                "%s: the board's draft length no longer reduces to /%d but "
+                "to /%d; the receipt has moved"
+                % (prompt, REDUCED_ROUND_DENOMINATOR[prompt], reduced))
+        out[prompt] = {
+            "mbar": entry["draft_len"] + 1.0,
+            "reduced_round_denominator": reduced,
+            "candidate_us_per_token": entry["candidate"] * 1e6,
+            "delta_us_per_token": (after["per_prompt"][prompt]["candidate"]
+                                   - entry["candidate"]) * 1e6,
+        }
+    return out
+
 
 TIER_GRID_FINE = (1.00, 1.10, 1.20, 1.25, 1.30, 1.35, 1.40, 1.45, 1.50, 1.55,
                   1.60, 1.65, 1.70, 1.80, 1.90, 2.00, 2.25, 2.50)
@@ -225,23 +266,30 @@ def main() -> int:
 
     # ------------------------------------------------------------- item D
     print("\n## Item D: inverting the width-2 launch receipt "
-          "`08b67f12 -> 1760479a`")
+          "`%s -> %s`" % (BASE_RECEIPT, WIDTH2_ARM))
+    board = width2_receipt_from_board(args.board)
     law_cost = LAUNCH_COEF * math.log(2.0)
     print("  the launch law removes %.1f us per round at width 2" % law_cost)
-    print("  %-10s %8s %8s %9s %9s %10s %10s"
-          % ("prompt", "Mbar rx", "Mbar us", "R rx", "R us", "P(M=2) us",
+    print("  the board states seconds per token, not rounds, so the per-round")
+    print("  unit comes from the replayed tree and Mbar is the control")
+    print("  %-10s %8s %8s %8s %10s %9s %10s"
+          % ("prompt", "Mbar rx", "Mbar us", "R us", "d us/tok", "P(M=2)",
              "implied us"))
-    implied, mbar_err, rounds_err = {}, [], []
-    for prompt, entry in WIDTH2_RECEIPT.items():
+    saving_us, implied, mbar_err = {}, {}, []
+    for prompt, entry in board.items():
         ship = hist["A_ship"][prompt]
-        cost = (-entry["delta_us"] / ship["p_width2"]
+        rounds = ship["rounds_per_window"]
+        # Per-token is what the board states exactly; per-round is what the
+        # launch law is written in. The replayed round rate converts them.
+        saving_us[prompt] = (-entry["delta_us_per_token"] * DECODE_TOKENS
+                             / rounds)
+        cost = (saving_us[prompt] / ship["p_width2"]
                 if ship["p_width2"] else float("inf"))
         implied[prompt] = cost
         mbar_err.append(ship["mean_width"] - entry["mbar"])
-        rounds_err.append(ship["rounds_per_window"] - entry["rounds"])
-        print("  %-10s %8.3f %8.3f %9d %9.1f %10.4f %10.1f"
-              % (prompt, entry["mbar"], ship["mean_width"], entry["rounds"],
-                 ship["rounds_per_window"], ship["p_width2"], cost))
+        print("  %-10s %8.3f %8.3f %8.1f %10.2f %9.4f %10.1f"
+              % (prompt, entry["mbar"], ship["mean_width"], rounds,
+                 entry["delta_us_per_token"], ship["p_width2"], cost))
     values = [v for v in implied.values() if math.isfinite(v)]
     spread = {"min": min(values), "max": max(values),
               "mean": statistics.fmean(values),
@@ -256,8 +304,6 @@ def main() -> int:
     print("  first-moment control: mean(Mbar replay - Mbar receipt) %+.4f  "
           "sd %.4f" % (statistics.fmean(mbar_err),
                        statistics.stdev(mbar_err)))
-    print("  round-count control:  mean(R replay - R receipt) %+.2f  sd %.2f"
-          % (statistics.fmean(rounds_err), statistics.stdev(rounds_err)))
 
     # Explanation (b) says the replay under-counts width 2. That is not an
     # opinion: the missing mass has to be taken from wider rounds, so it moves
@@ -268,9 +314,9 @@ def main() -> int:
           % ("prompt", "need P2", "have P2", "min dMbar", "obs dMbar",
              "seed sd", "b ratio"))
     bias = {}
-    for prompt, entry in WIDTH2_RECEIPT.items():
+    for prompt, entry in board.items():
         ship = hist["A_ship"][prompt]
-        need = -entry["delta_us"] / law_cost
+        need = saving_us[prompt] / law_cost
         forced = min_mbar_shift(ship["depth_share"], max(0.0, need
                                                          - ship["p_width2"]))
         observed = ship["mean_width"] - entry["mbar"]
@@ -295,8 +341,8 @@ def main() -> int:
     # a common scale error, so it predicts a tight spread of implied costs.
     # (a) says the saving is not carried by width-2 rounds at all, so it
     # predicts no relation between the saving and width-2 occupancy.
-    prompts = list(WIDTH2_RECEIPT)
-    saving = [-WIDTH2_RECEIPT[p]["delta_us"] for p in prompts]
+    prompts = list(board)
+    saving = [saving_us[p] for p in prompts]
     fits = {
         "on_p_width2": ols([hist["A_ship"][p]["p_width2"] for p in prompts],
                            saving),
@@ -315,6 +361,40 @@ def main() -> int:
     print("    a pure body effect predicts R2 near 0 and a positive "
           "intercept near the mean saving %.1f us"
           % statistics.fmean(saving))
+
+    # Split each saving into the part the launch law can account for at the
+    # measured width-2 occupancy, and the residual. This is the quantitative
+    # form of (a): if the residual is most of the saving, the width-2 rounds
+    # are not carrying the effect.
+    print("\n  geometry against body, per prompt:")
+    print("    %-10s %10s %10s %10s %10s %9s"
+          % ("prompt", "round us", "saving", "geometry", "residual",
+             "% of round"))
+    split = {}
+    for prompt in prompts:
+        observed = saving_us[prompt]
+        geometry = law_cost * hist["A_ship"][prompt]["p_width2"]
+        round_us = (board[prompt]["candidate_us_per_token"] * DECODE_TOKENS
+                    / hist["A_ship"][prompt]["rounds_per_window"])
+        split[prompt] = {"observed_us": observed, "geometry_us": geometry,
+                         "residual_us": observed - geometry,
+                         "round_us": round_us,
+                         "saving_pct_of_round": 100 * observed / round_us}
+        print("    %-10s %10.1f %10.1f %10.1f %10.1f %9.3f"
+              % (prompt, round_us, observed, geometry, observed - geometry,
+                 100 * observed / round_us))
+    geo_total = sum(v["geometry_us"] for v in split.values())
+    obs_total = sum(v["observed_us"] for v in split.values())
+    residuals = [v["residual_us"] for v in split.values()]
+    share = geo_total / obs_total if obs_total else float("nan")
+    print("    geometry accounts for %.1f of %.1f us, a share of %.3f"
+          % (geo_total, obs_total, share))
+    print("    the residual is %.1f us per round on average, sd %.1f"
+          % (statistics.fmean(residuals), statistics.stdev(residuals)))
+    pcts = [v["saving_pct_of_round"] for v in split.values()]
+    print("    every saving is %.3f to %.3f percent of one round, and the "
+          "receipt accepted one pair per prompt, so a per-prompt value of "
+          "this size is not resolved" % (min(pcts), max(pcts)))
 
     # ------------------------------------------------------------- item B
     print("\n## Item B: pb6's tier re-fitted on every launch table (form %s)"
@@ -393,12 +473,14 @@ def main() -> int:
         "item_a": {"histograms": hist,
                    "medpair_p_width2_ship": medpair_ship,
                    "medpair_p_width2_pb6": medpair_pb6},
-        "item_d": {"receipt": WIDTH2_RECEIPT, "implied_cost_us": implied,
+        "item_d": {"board_receipt": board, "saving_per_round_us": saving_us,
+                   "implied_cost_us": implied, "split": split,
+                   "geometry_share_of_total": share,
+                   "residual_mean_us": statistics.fmean(residuals),
+                   "residual_sd_us": statistics.stdev(residuals),
                    "spread": spread, "shallow_bias_bound": bias, "fits": fits,
                    "mbar_error_mean": statistics.fmean(mbar_err),
-                   "mbar_error_sd": statistics.stdev(mbar_err),
-                   "rounds_error_mean": statistics.fmean(rounds_err),
-                   "rounds_error_sd": statistics.stdev(rounds_err)},
+                   "mbar_error_sd": statistics.stdev(mbar_err)},
         "item_b": {"tiers": tiers, "depth": depth_rows,
                    "grid": list(TIER_GRID_FINE)},
     }, indent=2, default=list) + "\n")
