@@ -1,0 +1,79 @@
+{
+  "experiment": "E156",
+  "rung": "R1",
+  "harness": "offline",
+  "responds_to": "advisor comment 5387591462, campaign law change, four items",
+  "question": "Does the RULE 166 / FINDING 286 retraction, RULE 174, RULE 173 or FINDING 302 change any E156 number or conclusion?",
+  "verdict": "No E156 number changes. Two advisor assumptions about my work are corrected below, one of them in my favour and one against.",
+
+  "item_1_rule_166_finding_286_retraction": {
+    "requested_action": "grep working notes for 2.7769, 8434, 5657, or any published-percent obtained by inverting a round-cost law",
+    "files_searched": 19,
+    "file_list_source": "git ls-files | grep e156",
+    "hits_2_7769": 0,
+    "hits_8434": 0,
+    "hits_5657": 0,
+    "hits_rule_166": 0,
+    "hits_finding_286": 0,
+    "hits_round_cost_law": 0,
+    "e156_uses_retracted_scalar": false,
+    "pricing_tag_required": "none",
+    "note": "Clean. No E156 figure passes through the retracted host-transfer scalar or the FINDING 286 round-cost law. Coincidental 2.77xx digit matches exist elsewhere in research/ but all belong to other students' historical artifacts (e34, e72, e87, e117, e122, e130, e148), not to E156."
+  },
+
+  "item_1b_correction_to_advisor_assumption": {
+    "advisor_said": "your +0.505 % retile prior and +0.419 % double-buffer prior came through RULE 163 (ranked % = local % x 1.42)",
+    "measured": "RULE 163 and the scalar 1.42 appear ZERO times in all 19 E156 files.",
+    "actual_provenance": "E156 prices prefill through a single constant published_per_prefill_pct = 0.100436 at research/e156_prefill_qmm_share.py:383.",
+    "constant_traced_to": "senpai/campaign-ledger.md line ~56988, the FINDING 254 corrected model, built by rebuilding all eight raw ratios and taking the true order statistic.",
+    "ledger_table_secant_slopes": {
+      "cut_2pct": 0.1013,
+      "cut_5pct": 0.10162,
+      "cut_10pct": 0.10214,
+      "cut_15pct": 0.102667,
+      "cut_20pct": 0.1032
+    },
+    "my_constant": 0.100436,
+    "relationship": "My constant is the small-cut limit of that table. The secant slope rises monotonically from 0.1013 at a 2 % cut to 0.1032 at a 20 % cut, so extrapolating to a zero-size cut gives about 0.1004.",
+    "why_it_matters": "This model is RANKED-side on both ends: ranked prefill percentage in, published median percentage out. It contains NO host-transfer term of any kind. Therefore the RULE 166 retraction cannot touch it, and neither can RULE 174, because E156 never transfers a fitted line between hosts.",
+    "direction_of_my_error": "My constant is slightly CONSERVATIVE against the ledger table (0.100436 versus 0.1013 at the smallest tabulated cut). Combined with the FLOP-share upper bound, my published requirement of a 14.98 % or 12.61 % kernel speedup to close the +1.2578 % gap is if anything slightly pessimistic, which is the safe direction for a requirement estimate."
+  },
+
+  "item_2_rule_174": {
+    "rule": "transfer intercept and slope separately, never one scalar",
+    "applies_to_e156": false,
+    "reason": "E156 performs no local-to-ranked transfer. The prefill share is offline FLOP accounting and the prize model is ranked-to-ranked. There is no fitted line to transfer.",
+    "context_accepted": "Prefill is a bandwidth-dominated weight sweep, so it sits near the intercept ratio of about 1.0 rather than the slope ratio of 4.70. This supports the value of the prefill channel generally, but it changes no E156 number."
+  },
+
+  "item_3_rule_173_head_digest_per_leg": {
+    "rule": "head_provenance.origin and .source are not witnesses; only head_provenance.sha256 names the loaded head",
+    "candidate_512_local_submit": {
+      "job_id": "1e8971da",
+      "head_provenance_sha256": "62516c6f3799b66c91171ee13aa6816db5af197aa8c527cec0f6bb4026f0c7b7",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 6.3766233766233764
+    },
+    "base_arm_null_control": {
+      "job_id": "d0ad2dcc",
+      "head_provenance_sha256": "62516c6f3799b66c91171ee13aa6816db5af197aa8c527cec0f6bb4026f0c7b7",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 6.3766233766233764
+    },
+    "digests_match_across_arms": true,
+    "digest_is_pinned_not_declared": true,
+    "declared_digests_for_contrast": ["dadbfb80...", "559b24eb..."],
+    "note": "Both E156 legs loaded the SAME head and it is the pinned one. The declared digest dadbfb80 does appear once in my local state, but only inside a fetched pull-request document, never in a run of mine. This turns my earlier e156_local_submit_uses_pinned_mtp_head=1 from an assumption into a checked fact."
+  },
+
+  "item_4_finding_302": {
+    "finding": "the wrapper loads the pinned head, so the local candidate MTP leg pays 2.05x the ranked head price per drafted row while the serial leg pays none, and --local-submit understates the ranked candidate leg for depth-increasing candidates",
+    "does_my_candidate_increase_depth": false,
+    "evidence": "effective_mean_draft_len is 6.3766233766233764 on the candidate arm and 6.376623376623376 on the matched base arm, equal to the last printed digit, with mtp_rounds 77 on both and accepted_draft_rate equal at 0.885947046843177.",
+    "does_my_prefill_change_shift_the_draft_length_distribution": false,
+    "conclusion": "The realised draft-length distribution is unchanged between arms, so the pinned-head penalty is paid identically by both arms and cancels exactly in my comparison. My gate is unbiased with respect to FINDING 302, and this is measured rather than assumed.",
+    "caveat": "This holds only because the changed kernel never executes on this host. On an M5 host, where affine_qmm_t_nax does execute, the draft-length distribution must be re-checked before reusing this conclusion."
+  },
+
+  "net_effect_on_e156": "None. No metric, no conclusion and no reported percentage changes. The terminal result stands as inconclusive for the reason already stated: is_nax_available() gates affine_qmm_t_nax to GPU architecture generation >= 17 and this host is generation 16."
+}
