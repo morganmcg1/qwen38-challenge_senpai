@@ -1,0 +1,662 @@
+{
+  "anchor_receipt": "623e77af",
+  "best_form": "per_drafting_round",
+  "curves": {
+    "per_drafting_round": {
+      "1": 31171.46872642797,
+      "2": 34568.034677747906,
+      "3": 38014.10648459555,
+      "4": 41460.17829144319,
+      "5": 44906.25009829083,
+      "6": 61472.984470091156,
+      "7": 62941.50320097771,
+      "8": 70264.14198160992,
+      "9": 75587.6733463046
+    },
+    "per_round": {
+      "1": 31173.224996315963,
+      "2": 34619.296803163605,
+      "3": 38065.368610011246,
+      "4": 41511.44041685889,
+      "5": 44957.51222370653,
+      "6": 61198.82932399554,
+      "7": 62824.89803955832,
+      "8": 70315.40410702562,
+      "9": 75638.9354717203
+    },
+    "pre_arm": {
+      "1": 31171.46872642797,
+      "2": 34617.54053327561,
+      "3": 38063.612340123254,
+      "4": 41509.684146970896,
+      "5": 44955.75595381854,
+      "6": 59666.585107748295,
+      "7": 64990.11647244296,
+      "8": 70313.64783713763,
+      "9": 75637.1792018323
+    },
+    "proportional": {
+      "1": 31151.70458168845,
+      "2": 34595.59142052669,
+      "3": 38039.47825936493,
+      "4": 41483.36509820317,
+      "5": 44927.25193704141,
+      "6": 61309.96762717263,
+      "7": 63010.33784456305,
+      "8": 70269.06575070425,
+      "9": 75589.22175168603
+    }
+  },
+  "e145_f218_bound_consistent": true,
+  "e145_predicted_beagle_shift_us": 514.1928137306822,
+  "f218_beagle_shift": {
+    "bound_us": [
+      119.0,
+      970.0
+    ],
+    "forms": {
+      "per_drafting_round": {
+        "above_bound": false,
+        "below_bound": false,
+        "inside_bound": true,
+        "predicted_rise_pct": 0.9716348330705767,
+        "predicted_rise_us": 514.1928137306822,
+        "round_us_after": 53434.569505632666,
+        "round_us_before": 52920.37669190198
+      },
+      "per_round": {
+        "above_bound": false,
+        "below_bound": false,
+        "inside_bound": true,
+        "predicted_rise_pct": 0.9690308545049946,
+        "predicted_rise_us": 512.9827343745346,
+        "round_us_after": 53450.69178560791,
+        "round_us_before": 52937.709051233374
+      },
+      "pre_arm": {
+        "above_bound": false,
+        "below_bound": false,
+        "inside_bound": true,
+        "predicted_rise_pct": 0.9700709341196495,
+        "predicted_rise_us": 513.6583099979034,
+        "round_us_after": 53464.251089489255,
+        "round_us_before": 52950.59277949135
+      },
+      "proportional": {
+        "above_bound": false,
+        "below_bound": false,
+        "inside_bound": true,
+        "predicted_rise_pct": 0.9702840213389602,
+        "predicted_rise_us": 513.5419578549117,
+        "round_us_after": 53440.51453092075,
+        "round_us_before": 52926.97257306584
+      }
+    },
+    "mobile_mass": 0.6611741919184829,
+    "promotion_probability_theta": 0.14413750742973594,
+    "shift_realised": 0.09529999999999905,
+    "shift_requested": 0.0953
+  },
+  "f219_receipt": "1760479a",
+  "gpu_used": false,
+  "harness": "ranked frame, replayed",
+  "median_eligible": [
+    "beagle",
+    "botany",
+    "essays",
+    "medicine",
+    "republic"
+  ],
+  "prompts": {
+    "beagle": {
+      "anchor_round_us_after": 52453.2,
+      "anchor_round_us_before": 52531.6,
+      "draft_len_gap": -0.004777164591783567,
+      "f219_quote_reproduction_pct": 0.002752577800069142,
+      "f219_quoted_round_us": 49738.5,
+      "f219_round_us": 49739.86909090909,
+      "hist_drafting_share": 1.0,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 142498.0,
+      "implied_draft_len": 4.377022835408217,
+      "predicted_round_us": {
+        "per_drafting_round": 52920.37669190198,
+        "per_round": 52937.709051233374,
+        "pre_arm": 52950.59277949135,
+        "proportional": 52926.97257306584
+      },
+      "ranked_draft_len_1760479a": 4.3818,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": 0.890654320235918,
+        "per_round": 0.9236977939065248,
+        "pre_arm": 0.94826012424667,
+        "proportional": 0.9032291129346582
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 6.3942822108757715,
+        "per_round": 6.429128220019287,
+        "pre_arm": 6.455030435874399,
+        "proportional": 6.407542963837949
+      },
+      "width_hist": {
+        "1": 0.0,
+        "2": 0.05808502575474744,
+        "3": 0.2785863661244368,
+        "4": 0.09974876840376708,
+        "5": 0.09195918539207568,
+        "6": 0.0738677034063636,
+        "7": 0.05892714283709245,
+        "8": 0.3388258080815169,
+        "9": 0.0
+      }
+    },
+    "botany": {
+      "anchor_round_us_after": 63791.8,
+      "anchor_round_us_before": 63732.9,
+      "draft_len_gap": -0.009904532056006055,
+      "f219_quote_reproduction_pct": -0.0040919788406846985,
+      "f219_quoted_round_us": 60991.4,
+      "f219_round_us": 60988.904244817364,
+      "hist_drafting_share": 1.0,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 86848.0,
+      "implied_draft_len": 6.138195467943994,
+      "predicted_round_us": {
+        "per_drafting_round": 64369.620952252895,
+        "per_round": 64377.150563676376,
+        "pre_arm": 64447.63247306247,
+        "proportional": 64368.94908675116
+      },
+      "ranked_draft_len_1760479a": 6.1481,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": 0.905791892144276,
+        "per_round": 0.9175953079806072,
+        "pre_arm": 1.0280827207610794,
+        "proportional": 0.9047386760542266
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 5.543166825665364,
+        "per_round": 5.555512696634379,
+        "pre_arm": 5.671077831405729,
+        "proportional": 5.542065206428141
+      },
+      "width_hist": {
+        "1": 0.0,
+        "2": 0.003465825350036846,
+        "3": 0.02680545320560059,
+        "4": 0.0531963890935888,
+        "5": 0.07613301400147383,
+        "6": 0.08589719970523213,
+        "7": 0.0940033161385409,
+        "8": 0.660498802505527,
+        "9": 0.0
+      }
+    },
+    "drama": {
+      "anchor_round_us_after": 38842.8,
+      "anchor_round_us_before": 38708.9,
+      "draft_len_gap": 0.007392883392169036,
+      "f219_quote_reproduction_pct": 0.002020159716646443,
+      "f219_quoted_round_us": 36207.0,
+      "f219_round_us": 36207.731439228606,
+      "hist_drafting_share": 0.5589432038405558,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 248714.0,
+      "implied_draft_len": 2.304992883392169,
+      "predicted_round_us": {
+        "per_drafting_round": 42759.907420673706,
+        "per_round": 42738.713434782476,
+        "pre_arm": 42765.01732136411,
+        "proportional": 42746.85019453199
+      },
+      "ranked_draft_len_1760479a": 2.2976,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": 10.084513528050767,
+        "per_round": 10.029950041661447,
+        "pre_arm": 10.097668863635235,
+        "proportional": 10.050897964441246
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 18.096068770401516,
+        "per_round": 18.03753434957816,
+        "pre_arm": 18.110181504028535,
+        "proportional": 18.060006786889424
+      },
+      "width_hist": {
+        "1": 0.44105679615944415,
+        "2": 0.10140563056361926,
+        "3": 0.05444808092829515,
+        "4": 0.05412240565468771,
+        "5": 0.06739467822478831,
+        "6": 0.10912132007044235,
+        "7": 0.09001905803452961,
+        "8": 0.08243203036419341,
+        "9": 0.0
+      }
+    },
+    "essays": {
+      "anchor_round_us_after": 57383.1,
+      "anchor_round_us_before": 57570.0,
+      "draft_len_gap": -0.028491761084723954,
+      "f219_quote_reproduction_pct": -0.004136274313122364,
+      "f219_quoted_round_us": 54695.7,
+      "f219_round_us": 54693.437635810515,
+      "hist_drafting_share": 1.0,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 113061.0,
+      "implied_draft_len": 5.058508238915276,
+      "predicted_round_us": {
+        "per_drafting_round": 56610.481295071884,
+        "per_round": 56587.40303908853,
+        "pre_arm": 56652.31132731586,
+        "proportional": 56605.37231670136
+      },
+      "ranked_draft_len_1760479a": 5.087,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": -1.3464220387677108,
+        "per_round": -1.3866399007921628,
+        "pre_arm": -1.2735259556979996,
+        "proportional": -1.3553253192989556
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 3.505070703411383,
+        "per_round": 3.46287504524664,
+        "pre_arm": 3.581551601398653,
+        "proportional": 3.49572958573554
+      },
+      "width_hist": {
+        "1": 0.0,
+        "2": 0.003555602727731048,
+        "3": 0.051255516933336874,
+        "4": 0.153209329477008,
+        "5": 0.19953830233236924,
+        "6": 0.15580969565102024,
+        "7": 0.14080894384447334,
+        "8": 0.29582260903406127,
+        "9": 0.0
+      }
+    },
+    "medicine": {
+      "anchor_round_us_after": 57931.4,
+      "anchor_round_us_before": 58113.2,
+      "draft_len_gap": 0.0068274701401556115,
+      "f219_quote_reproduction_pct": 0.004974560250456499,
+      "f219_quoted_round_us": 55285.4,
+      "f219_round_us": 55288.15020553271,
+      "hist_drafting_share": 1.0,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 109093.0,
+      "implied_draft_len": 5.262427470140156,
+      "predicted_round_us": {
+        "per_drafting_round": 58001.54132921293,
+        "per_round": 58022.605474242424,
+        "pre_arm": 58043.07986546769,
+        "proportional": 58006.40409860614
+      },
+      "ranked_draft_len_1760479a": 5.2556,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": 0.12107653053944686,
+        "per_round": 0.15743702766103096,
+        "pre_arm": 0.19277950380569003,
+        "proportional": 0.12947054379168432
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 4.9077263637745885,
+        "per_round": 4.945825205843256,
+        "pre_arm": 4.982857356763758,
+        "proportional": 4.916521683160623
+      },
+      "width_hist": {
+        "1": 0.0,
+        "2": 0.003813260245845288,
+        "3": 0.11224368199609508,
+        "4": 0.1318416397019057,
+        "5": 0.1474246743604081,
+        "6": 0.06413793735620067,
+        "7": 0.05555810180304877,
+        "8": 0.4849807045364964,
+        "9": 0.0
+      }
+    },
+    "plutarch": {
+      "anchor_round_us_after": 31795.0,
+      "anchor_round_us_before": 31813.9,
+      "draft_len_gap": 0.0006253309875243196,
+      "f219_quote_reproduction_pct": -0.000677838101157002,
+      "f219_quoted_round_us": 31642.9,
+      "f219_round_us": 31642.68551236749,
+      "hist_drafting_share": 0.08079061949135494,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 586578.0,
+      "implied_draft_len": 0.15632533098752432,
+      "predicted_round_us": {
+        "per_drafting_round": 31707.072159358715,
+        "per_round": 31712.805847088144,
+        "pre_arm": 31710.945209975584,
+        "proportional": 31690.95365788122
+      },
+      "ranked_draft_len_1760479a": 0.1557,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": -0.27654612562127695,
+        "per_round": -0.25851282563879785,
+        "pre_arm": -0.26436480586386674,
+        "proportional": -0.32724120811065094
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 0.20348034924551248,
+        "per_round": 0.22160045389714902,
+        "pre_arm": 0.21572030471754344,
+        "proportional": 0.15254124209799627
+      },
+      "width_hist": {
+        "1": 0.9192093805086451,
+        "2": 0.028598072208640624,
+        "3": 0.03283621274578999,
+        "4": 0.015438696984885215,
+        "5": 0.0038494454275475724,
+        "6": 6.819212449154247e-05,
+        "7": 0.0,
+        "8": 0.0,
+        "9": 0.0
+      }
+    },
+    "republic": {
+      "anchor_round_us_after": 56184.3,
+      "anchor_round_us_before": 56266.4,
+      "draft_len_gap": -0.006224536087569454,
+      "f219_quote_reproduction_pct": 0.0013155374507398464,
+      "f219_quoted_round_us": 53455.4,
+      "f219_round_us": 53456.103225806444,
+      "hist_drafting_share": 1.0,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 121413.0,
+      "implied_draft_len": 4.982975463912431,
+      "predicted_round_us": {
+        "per_drafting_round": 57010.64688191218,
+        "per_round": 57033.84772540543,
+        "pre_arm": 57146.88397215967,
+        "proportional": 57021.429423293805
+      },
+      "ranked_draft_len_1760479a": 4.9892,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": 1.470778993263558,
+        "per_round": 1.512073168848642,
+        "pre_arm": 1.713261484364251,
+        "proportional": 1.4899703712492665
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 6.64946272101208,
+        "per_round": 6.692864394709182,
+        "pre_arm": 6.9043205988338165,
+        "proportional": 6.669633554146096
+      },
+      "width_hist": {
+        "1": 0.0,
+        "2": 0.027377628425292184,
+        "3": 0.2673848764135636,
+        "4": 0.052424369713292646,
+        "5": 0.045439944651725926,
+        "6": 0.043174948316901815,
+        "7": 0.08346717402584566,
+        "8": 0.48073105845337816,
+        "9": 0.0
+      }
+    },
+    "travel": {
+      "anchor_round_us_after": 40250.5,
+      "anchor_round_us_before": 40103.7,
+      "draft_len_gap": -0.015064082241898813,
+      "f219_quote_reproduction_pct": 0.0006344463762170196,
+      "f219_quoted_round_us": 37659.6,
+      "f219_round_us": 37659.8389299675,
+      "hist_drafting_share": 0.9725846816553839,
+      "hist_mass_total": 1.0,
+      "hist_rounds": 246541.0,
+      "implied_draft_len": 2.632835917758101,
+      "predicted_round_us": {
+        "per_drafting_round": 41528.439432274325,
+        "per_round": 41547.16675677629,
+        "pre_arm": 41449.538943456304,
+        "proportional": 41536.15692680622
+      },
+      "ranked_draft_len_1760479a": 2.6479,
+      "vs_anchor_after_pct": {
+        "per_drafting_round": 3.174965360118072,
+        "per_round": 3.2214922964343113,
+        "pre_arm": 2.978941736018941,
+        "proportional": 3.194139021394077
+      },
+      "vs_f219_pct": {
+        "per_drafting_round": 10.27248286829082,
+        "per_round": 10.322210442900985,
+        "pre_arm": 10.062974566981449,
+        "proportional": 10.29297550647297
+      },
+      "width_hist": {
+        "1": 0.027415318344616108,
+        "2": 0.1189295086821259,
+        "3": 0.4033041157454541,
+        "4": 0.21539622212938214,
+        "5": 0.13083422229973918,
+        "6": 0.08695105479413161,
+        "7": 0.01716955800455097,
+        "8": 0.0,
+        "9": 0.0
+      }
+    }
+  },
+  "summary": {
+    "per_drafting_round": {
+      "level_fit_all": {
+        "k": 0.9360354612945233,
+        "max_abs_residual_pct": 10.542108208572529,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.4111789716432019,
+          "botany": -1.2078531538534962,
+          "drama": 10.542108208572529,
+          "essays": -3.1155833978100813,
+          "medicine": -1.8026479597246348,
+          "plutarch": -6.205989047977273,
+          "republic": -0.17232096512438944,
+          "travel": 3.2189543697130203
+        },
+        "systematic_sign": false
+      },
+      "level_fit_median_eligible": {
+        "k": 0.9488220380609476,
+        "max_abs_residual_pct": 1.7921078655467344,
+        "positive_residuals": 3,
+        "residual_pct": {
+          "beagle": 0.9492396853547616,
+          "botany": 0.14168265093439433,
+          "essays": -1.7921078655467344,
+          "medicine": -0.4612372631831992,
+          "republic": 1.1913605770557305
+        },
+        "systematic_sign": false
+      },
+      "level_fit_vs_anchor": {
+        "k": 0.9820745771942371,
+        "max_abs_residual_pct": 8.111202078693731,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.9178533156043787,
+          "botany": -0.9029870910727342,
+          "drama": 8.111202078693731,
+          "essays": -3.1148291350240944,
+          "medicine": -1.6736360980386193,
+          "plutarch": -2.0641311999705145,
+          "republic": -0.34812762262082214,
+          "travel": 1.3255104830680169
+        },
+        "systematic_sign": false
+      },
+      "mean_signed_pct_all": 6.946467601584629,
+      "mean_signed_pct_median_eligible": 5.399941764947838,
+      "systematic_sign_all": true,
+      "vs_anchor_max_abs_pct": 10.084513528050767,
+      "vs_anchor_mean_signed_pct": 1.8781015574953812,
+      "weighted_mae_pct_median_eligible": 5.378558161587127
+    },
+    "per_round": {
+      "level_fit_all": {
+        "k": 0.9359251855929622,
+        "max_abs_residual_pct": 10.474301243064595,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.390298418181273,
+          "botany": -1.2079371890421917,
+          "drama": 10.474301243064595,
+          "essays": -3.166489471296082,
+          "medicine": -1.7785590670145752,
+          "plutarch": -6.200079994762605,
+          "republic": -0.14346108993706114,
+          "travel": 3.2533352837979437
+        },
+        "systematic_sign": false
+      },
+      "level_fit_median_eligible": {
+        "k": 0.9486689761804857,
+        "max_abs_residual_pct": 1.847980258136348,
+        "positive_residuals": 3,
+        "residual_pct": {
+          "beagle": 0.9660121042673436,
+          "botany": 0.1372401601223934,
+          "essays": -1.847980258136348,
+          "medicine": -0.4411514475564666,
+          "republic": 1.2162104310921653
+        },
+        "systematic_sign": false
+      },
+      "level_fit_vs_anchor": {
+        "k": 0.9819588775573499,
+        "max_abs_residual_pct": 8.044886240601162,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.8970789953583592,
+          "botany": -0.9030713855884815,
+          "drama": 8.044886240601162,
+          "essays": -3.165735604823121,
+          "medicine": -1.6495155572970197,
+          "plutarch": -2.0579612083634644,
+          "republic": -0.3193185725978162,
+          "travel": 1.3592607152012692
+        },
+        "systematic_sign": false
+      },
+      "mean_signed_pct_all": 6.958443851103629,
+      "mean_signed_pct_median_eligible": 5.417241112490549,
+      "systematic_sign_all": true,
+      "vs_anchor_max_abs_pct": 10.029950041661447,
+      "vs_anchor_mean_signed_pct": 1.8896366137577003,
+      "weighted_mae_pct_median_eligible": 5.3953540535991396
+    },
+    "pre_arm": {
+      "level_fit_all": {
+        "k": 0.9355718531947378,
+        "max_abs_residual_pct": 10.500561390890812,
+        "positive_residuals": 3,
+        "residual_pct": {
+          "beagle": -0.40366989320677527,
+          "botany": -1.1371138841863715,
+          "drama": 10.500561390890812,
+          "essays": -3.092015811493098,
+          "medicine": -1.7809935890537212,
+          "plutarch": -6.240992835269898,
+          "republic": 0.01667333717533157,
+          "travel": 2.971821083756122
+        },
+        "systematic_sign": false
+      },
+      "level_fit_median_eligible": {
+        "k": 0.9477555211044421,
+        "max_abs_residual_pct": 1.8300125852097644,
+        "positive_residuals": 3,
+        "residual_pct": {
+          "beagle": 0.8933428449413818,
+          "botany": 0.1503474357719903,
+          "essays": -1.8300125852097644,
+          "medicine": -0.5019173188070611,
+          "republic": 1.3191600774640846
+        },
+        "systematic_sign": false
+      },
+      "level_fit_vs_anchor": {
+        "k": 0.9815881664251932,
+        "max_abs_residual_pct": 8.070568907543803,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.9103824408272637,
+          "botany": -0.8320295246753855,
+          "drama": 8.070568907543803,
+          "essays": -3.091261365229177,
+          "medicine": -1.6519532778156922,
+          "plutarch": -2.1006807225359467,
+          "republic": -0.15946615843667386,
+          "travel": 1.0829105990656265
+        },
+        "systematic_sign": false
+      },
+      "mean_signed_pct_all": 6.997964275000485,
+      "mean_signed_pct_median_eligible": 5.518967564855271,
+      "systematic_sign_all": true,
+      "vs_anchor_max_abs_pct": 10.097668863635235,
+      "vs_anchor_mean_signed_pct": 1.92763795890875,
+      "weighted_mae_pct_median_eligible": 5.498132693745599
+    },
+    "proportional": {
+      "level_fit_all": {
+        "k": 0.9360742122305901,
+        "max_abs_residual_pct": 10.512927848975623,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.3946430447327287,
+          "botany": -1.204794454703206,
+          "drama": 10.512927848975623,
+          "essays": -3.1203164588024364,
+          "medicine": -1.790349615461796,
+          "plutarch": -6.249788853911435,
+          "republic": -0.14930680187697112,
+          "travel": 3.2424101617894587
+        },
+        "systematic_sign": false
+      },
+      "level_fit_median_eligible": {
+        "k": 0.9487657006371694,
+        "max_abs_residual_pct": 1.8068016066346053,
+        "positive_residuals": 3,
+        "residual_pct": {
+          "beagle": 0.9558270531654147,
+          "botany": 0.13469144227060734,
+          "essays": -1.8068016066346053,
+          "medicine": -0.4588027968613423,
+          "republic": 1.204489615709529
+        },
+        "systematic_sign": false
+      },
+      "level_fit_vs_anchor": {
+        "k": 0.98211523410386,
+        "max_abs_residual_pct": 8.082663417687233,
+        "positive_residuals": 2,
+        "residual_pct": {
+          "beagle": -0.9014015179147574,
+          "botany": -0.8999189529781876,
+          "drama": 8.082663417687233,
+          "essays": -3.1195622328641743,
+          "medicine": -1.6613215961884766,
+          "plutarch": -2.1098651653260125,
+          "republic": -0.32515398964670883,
+          "travel": 1.3485360031427247
+        },
+        "systematic_sign": false
+      },
+      "mean_signed_pct_all": 6.942127066096092,
+      "mean_signed_pct_median_eligible": 5.406298598661669,
+      "systematic_sign_all": true,
+      "vs_anchor_max_abs_pct": 10.050897964441246,
+      "vs_anchor_mean_signed_pct": 1.873734895306944,
+      "weighted_mae_pct_median_eligible": 5.38456194038709
+    }
+  }
+}
