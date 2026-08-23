@@ -391,15 +391,116 @@ def log_budget(run, doc: dict) -> None:
     })
 
 
+def log_transfer(run, path: pathlib.Path) -> None:
+    """F7: the identified ranked round and the local-to-ranked coefficient."""
+    if not path.exists():
+        return
+    doc = json.loads(path.read_text())
+    prompt_columns = [
+        "prompt", "rounds", "lattice", "uniquely_identified_by_lattice",
+        "finding_319_bounds", "q_proposed_per_round", "proposed_total",
+        "accepted_draft_total", "a_accepted_per_round", "alpha_accept_fraction",
+        "feasible_accepted_le_proposed", "decode_seconds", "R_ranked_seconds",
+        "bytes_per_round", "achieved_bandwidth_bytes_per_second",
+        "mtp_seconds_per_token_mean", "serial_seconds_per_token_mean",
+        "prefill_seconds_per_token", "raw_ratio_of_means",
+        "non_drafting_round_count",
+    ]
+    run.log({
+        "e159/ranked/prompts": table(
+            prompt_columns,
+            [[json.dumps(r[c]) if isinstance(r[c], list) else r[c]
+              for c in prompt_columns] for r in doc["prompts"]],
+        ),
+        "e159/ranked/marginal_steps": table(
+            ["from_prompt", "to_prompt", "from_q", "to_q",
+             "marginal_ms_per_proposed_row"],
+            [(s["from_prompt"], s["to_prompt"], s["from_q"], s["to_q"],
+              1e3 * s["marginal_seconds_per_proposed_row"])
+             for s in doc["ranked_marginal_steps"]],
+        ),
+        "e159/ranked/roofline_multiples": table(
+            ["harness", "cell", "q_proposed_per_round", "R_ms", "roofline_ms",
+             "R_over_roofline", "R_over_target_only_roofline"],
+            [(c["harness"], c["cell"], c["q_proposed_per_round"],
+              1e3 * c["R_seconds"], 1e3 * c["roofline_seconds"],
+              c["R_over_roofline"], c["R_over_target_only_roofline"])
+             for c in doc["roofline_multiples"]],
+        ),
+        "e159/ranked/transfer_anchors": table(
+            ["anchor", "bandwidth_scale", "ranked_save_bandwidth_bytes_per_s",
+             "b1_published_ranked_percent", "k"],
+            [(label, v["bandwidth_scale"],
+              v["ranked_save_bandwidth_bytes_per_second"],
+              v["b1_published_ranked_percent"], v["k"])
+             for label, v in doc["transfer_coefficient"]["anchors"].items()],
+        ),
+        "e159/ranked/k_by_saving_shape": table(
+            ["saving_shape", "local_published_percent", "k_candidate_batch_1",
+             "k_pinned_serial", "k_leaf16_calibrated"],
+            [(shape, v["local_published_percent"], v["candidate_batch_1"],
+              v["pinned_serial"], v["leaf16_calibrated"])
+             for shape, v in
+             doc["transfer_coefficient"]["k_by_saving_shape"].items()],
+        ),
+    })
+    roofline = doc["roofline"]
+    coefficient = doc["transfer_coefficient"]
+    run.summary.update({
+        "e159_ranked_anchor_receipt": doc["anchor_receipt"],
+        "e159_ranked_rounds_total": doc["rounds_total"],
+        "e159_ranked_rounds_all_feasible": all(
+            r["feasible_accepted_le_proposed"] for r in doc["prompts"]),
+        "e159_ranked_batch_1_round_seconds":
+            roofline["ranked_batch_1_round_seconds"],
+        "e159_ranked_batch_1_bandwidth": roofline["ranked_batch_1_bandwidth"],
+        "e159_ranked_batch_1_inside_finding_319":
+            roofline["ranked_batch_1_inside_finding_319"],
+        "e159_ranked_h_seconds": doc["ranked_fit"]["slope"],
+        "e159_ranked_h_over_s": roofline["ranked_h_over_s"],
+        "e159_ranked_8h_over_s": roofline["ranked_8h_over_s"],
+        "e159_ranked_8h_over_s_inside_finding_319":
+            roofline["ranked_8h_over_s_inside_finding_319"],
+        "e159_local_h_over_s_chord_0_7": roofline["local_h_over_s_chord_0_7"],
+        "e159_local_over_ranked_h_over_s":
+            roofline["local_over_ranked_h_over_s_chord_0_7"],
+        "e159_local_batch_1_bandwidth": roofline["local_batch_1_bandwidth"],
+        "e159_candidate_batch_1_faster_than_pinned_serial_percent":
+            roofline["candidate_batch_1_faster_than_pinned_serial_percent"],
+        "e159_k_interval_low": coefficient["k_interval"][0],
+        "e159_k_interval_high": coefficient["k_interval"][1],
+        "e159_k_central_candidate_batch_1":
+            coefficient["k_central_candidate_batch_1"],
+        "e159_leaf16_measured_k": coefficient["leaf16_measured_k"],
+        "e159_leaf16_implied_bandwidth_scale":
+            coefficient["leaf16_implied_bandwidth_scale"],
+        "e159_leaf16_scale_over_candidate_batch_1_anchor":
+            coefficient["leaf16_scale_over_candidate_batch_1_anchor"],
+        "e159_crown_gap_percent": doc["crown_gap_percent"],
+    })
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-name", default="e159-r1-round-budget")
     parser.add_argument("--doc", type=pathlib.Path,
                         default=ARTIFACTS / "e159_round_budget.json")
+    parser.add_argument("--transfer-doc", type=pathlib.Path,
+                        default=ARTIFACTS / "e159_ranked_transfer.json")
+    parser.add_argument("--resume-id", default=None,
+                        help="append to an existing run instead of creating one")
     args = parser.parse_args()
 
     doc = json.loads(args.doc.read_text())
     rho = doc["rho_8h_over_s"]
+
+    if args.resume_id:
+        run = wandb.init(project=PROJECT, entity=ENTITY, id=args.resume_id,
+                         resume="must")
+        log_transfer(run, args.transfer_doc)
+        print(run.url, run.id, sep="\n")
+        run.finish()
+        return
 
     run = wandb.init(
         project=PROJECT,
@@ -456,6 +557,7 @@ def main() -> None:
     log_width_wall(run, doc)
     log_trace(run, doc)
     log_budget(run, doc)
+    log_transfer(run, args.transfer_doc)
     run.summary.update({"e159_headline": f"rho = {rho:.4f} -> {decision(rho)}"})
     print(run.url, run.id, sep="\n")
     run.finish()
