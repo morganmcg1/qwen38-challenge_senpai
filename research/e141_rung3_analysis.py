@@ -34,6 +34,16 @@ VOCAB = 248_320
 # Rule 116: the published median rides on these two prompts alone.
 MEDPAIR = {"beagle_a": 0.478, "essays_montaigne": 0.522}
 
+# F2 field `e141_uniform_round_cost_pct`: the arm's byte cost as a percent of
+# the round, applied to all eight prompts. Rung 3 cannot measure this; it comes
+# from the byte table in research/e141-arm-geometry.json priced at the 28.91 us
+# per MB this session's 16-leg ABBA block measured directly.
+ROUND_COST_PCT = {
+    "full": 2.014,
+    "armA": 0.671,
+    "armA1844": 0.671,
+}
+
 
 def proposable_by_shipped(token: int) -> bool:
     return token < SHIPPED_PREFIX or CONTROL_START <= token < CONTROL_END
@@ -74,6 +84,16 @@ def summarise(path: Path) -> dict:
             truncated_rounds += 1
             truncating[wanted] += 1
 
+    # Recall at fixed probed rows, split by which table can reach the answer.
+    # A draft row is accepted exactly when the head proposed the token the
+    # target wanted, so the accept rate IS the head's recall. Arm A holds the
+    # probed row count fixed across arms, which makes this the clean way to
+    # ask whether widening the haystack costs recall on the core domain.
+    core = [r for r in drafts if proposable_by_shipped(r["reference_token"])]
+    widened_domain = [
+        r for r in drafts if not proposable_by_shipped(r["reference_token"])
+    ]
+
     round_count = blob.get("round_count") or len(rounds)
     accepted = blob.get("accepted_draft_total", 0)
     emitted = blob.get("emitted_token_total") or len(tails)
@@ -101,6 +121,21 @@ def summarise(path: Path) -> dict:
         # cost view: the verify forward is batched, so rows move round cost
         # less than round count does, but both must point the same way.
         "declared_rows_per_token": declared_rows / emitted if emitted else 0.0,
+        # Recall at fixed probed rows, the F1 headline scientific quantity.
+        "draft_rows_total": len(drafts),
+        "draft_rows_core_domain": len(core),
+        "draft_rows_widened_domain": len(widened_domain),
+        "recall_pct_all": 100.0 * sum(1 for r in drafts if r["accepted"]) / len(drafts)
+        if drafts
+        else 0.0,
+        "recall_pct_core_domain": 100.0 * sum(1 for r in core if r["accepted"]) / len(core)
+        if core
+        else 0.0,
+        "recall_pct_widened_domain": 100.0
+        * sum(1 for r in widened_domain if r["accepted"])
+        / len(widened_domain)
+        if widened_domain
+        else None,
         # Rule 114 witness.
         "widened_draft_rows": len(widened_rows),
         "widened_draft_rows_accepted": sum(1 for r in widened_rows if r["accepted"]),
@@ -200,6 +235,59 @@ def main() -> None:
                     "accepted_draft_rate",
                     "truncation_share_of_rounds_pct",
                 )
+            }
+
+    # F2: every non-shipped arm gets the same contrast, and the two halves of
+    # the prize are reported separately so the advisor can compose them under
+    # Rule 121 instead of blending them here.
+    if "shipped" in report["arms"]:
+        ships = report["arms"]["shipped"]["seeds"]
+        report["contrasts"] = {}
+        for name, blob in report["arms"].items():
+            if name == "shipped":
+                continue
+            cands = blob["seeds"]
+            if set(ships) != set(MEDPAIR) or set(cands) != set(MEDPAIR):
+                continue
+            recovered = {
+                seed: 100.0
+                * (1.0 - cands[seed]["round_count"] / ships[seed]["round_count"])
+                for seed in MEDPAIR
+            }
+            report["contrasts"][name] = {
+                "e141_recovered_pct_beagle_raw": recovered["beagle_a"],
+                "e141_recovered_pct_essays_raw": recovered["essays_montaigne"],
+                "e141_uniform_round_cost_pct": ROUND_COST_PCT.get(name),
+                "round_count_shipped": {s: ships[s]["round_count"] for s in MEDPAIR},
+                "round_count_candidate": {s: cands[s]["round_count"] for s in MEDPAIR},
+                "recall_pct_all": {
+                    s: {
+                        "shipped": ships[s]["recall_pct_all"],
+                        "candidate": cands[s]["recall_pct_all"],
+                        "delta_pp": cands[s]["recall_pct_all"]
+                        - ships[s]["recall_pct_all"],
+                    }
+                    for s in MEDPAIR
+                },
+                "recall_pct_core_domain": {
+                    s: {
+                        "shipped": ships[s]["recall_pct_core_domain"],
+                        "candidate": cands[s]["recall_pct_core_domain"],
+                        "delta_pp": cands[s]["recall_pct_core_domain"]
+                        - ships[s]["recall_pct_core_domain"],
+                    }
+                    for s in MEDPAIR
+                },
+                "recall_pct_widened_domain": {
+                    s: {
+                        "shipped": ships[s]["recall_pct_widened_domain"],
+                        "candidate": cands[s]["recall_pct_widened_domain"],
+                    }
+                    for s in MEDPAIR
+                },
+                "f209_gain_argument": "beagle={:.4f},essays={:.4f}".format(
+                    recovered["beagle_a"], recovered["essays_montaigne"]
+                ),
             }
 
     if "shipped" in report["arms"] and "full" in report["arms"]:
@@ -374,6 +462,37 @@ def main() -> None:
             f"  selector_proven_live={c['selector_proven_live']}  "
             f"exact_at_narrow_prefix={c['exact_at_narrow_prefix']}"
         )
+
+    for name, c in (report.get("contrasts") or {}).items():
+        print(f"\n== F2 contrast, arm {name} against shipped ==")
+        print(
+            f"  e141_recovered_pct_beagle_raw  {c['e141_recovered_pct_beagle_raw']:+.4f}"
+            f"   rounds {c['round_count_shipped']['beagle_a']} -> "
+            f"{c['round_count_candidate']['beagle_a']}"
+        )
+        print(
+            f"  e141_recovered_pct_essays_raw  {c['e141_recovered_pct_essays_raw']:+.4f}"
+            f"   rounds {c['round_count_shipped']['essays_montaigne']} -> "
+            f"{c['round_count_candidate']['essays_montaigne']}"
+        )
+        cost = c["e141_uniform_round_cost_pct"]
+        print(
+            "  e141_uniform_round_cost_pct    "
+            + (f"{cost:+.4f}" if cost is not None else "unpriced")
+        )
+        print("  recall at fixed probed rows, percentage points:")
+        for seed in MEDPAIR:
+            a = c["recall_pct_all"][seed]
+            k = c["recall_pct_core_domain"][seed]
+            w = c["recall_pct_widened_domain"][seed]
+            wc = w["candidate"]
+            print(
+                f"    {seed:18s} all {a['shipped']:.3f} -> {a['candidate']:.3f}"
+                f" ({a['delta_pp']:+.3f})   core {k['shipped']:.3f} -> "
+                f"{k['candidate']:.3f} ({k['delta_pp']:+.3f})   widened domain "
+                + (f"{wc:.3f}" if wc is not None else "no rows")
+            )
+        print(f"  f209 argument: --gain {c['f209_gain_argument']}")
 
     print(f"\nwrote {args.out}")
 

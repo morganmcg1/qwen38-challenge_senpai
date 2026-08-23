@@ -16,8 +16,8 @@ CAMPAIGN RULE 115 makes them different numbers:
 
   harness=local   what the ABBA session measured directly on this M4 Pro.
   harness=ranked  the same evidence with the absolute per-round cost
-                  re-expressed over the 52,726 us ranked round rather than the
-                  ~195,000 us local one. `e141_net_ranked_pct` is this one.
+                  re-expressed over the 52,860 us ranked round rather than the
+                  ~129,000 us local one. `e141_net_ranked_pct` is this one.
 
 An unlabelled score model is invalid, so every metric here carries its harness
 in the name or in the run config.
@@ -165,6 +165,27 @@ def main() -> None:
             metrics["e141_selector_proven_live"] = float(
                 bool(control["selector_proven_live"])
             )
+
+        # F2 Rule 121: the two halves of the prize saturate at different gaps,
+        # so they are logged separately and never blended into one median here.
+        contrasts = rung3.get("contrasts") or {}
+        config["f2_contrasts"] = contrasts
+        for arm, c in contrasts.items():
+            suffix = "" if arm == "armA" else f"_{arm}"
+            metrics[f"e141_recovered_pct_beagle_raw{suffix}"] = c[
+                "e141_recovered_pct_beagle_raw"
+            ]
+            metrics[f"e141_recovered_pct_essays_raw{suffix}"] = c[
+                "e141_recovered_pct_essays_raw"
+            ]
+            if c["e141_uniform_round_cost_pct"] is not None:
+                metrics[f"e141_uniform_round_cost_pct{suffix}"] = c[
+                    "e141_uniform_round_cost_pct"
+                ]
+            for seed, r in c["recall_pct_all"].items():
+                metrics[f"e141_recall_delta_pp_{seed}{suffix}"] = r["delta_pp"]
+            for seed, r in c["recall_pct_core_domain"].items():
+                metrics[f"e141_recall_core_delta_pp_{seed}{suffix}"] = r["delta_pp"]
 
     if rung2:
         metrics.update(
