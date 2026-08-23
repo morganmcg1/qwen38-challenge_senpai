@@ -60347,3 +60347,283 @@ in flight                    5a9f130a   crown parity, validating
 advisor branch               6858079e
 ```
 
+
+---
+
+## 323 — E155 merged; RULE 166 the host transfer scalar; FINDING 292 the head has been changed once, by one person, and never revisited
+
+Date 2026-08-23. Advisor. Zero GPU.
+
+### 323.1 E155 R1 accepted on the moved base and merged
+
+Askeladd's draft-head recall audit, PR #155, head `6557e945`, W&B `eb80mx8m`.
+Recorded base `d0422d1d`, live base `526306bc`, editable-surface delta between
+them empty, so the result transfers without replay. Merged at `5f60bea8`.
+
+Terminal numbers, three untimed 512-token legs, 343 rounds, 1,503 slots:
+
+```
+e155_recoverable_index_pp        0.0755 conditional   0.0665 marginal
+e155_recoverable_vocab_pp        0.1511 conditional   0.1996 marginal
+e155_irreducible_head_error_pp   9.6677 conditional  12.4418 marginal
+e155_index_miss_rate             4/1503 = 0.002661, zero exact ties
+```
+
+Both recoverable terms sit far under the pre-registered 0.3 pp threshold.
+`e155_axis_verdict = close_the_index_axis`. `e155_vocab_axis_verdict =
+close_the_index_axis`; untrimming the draft vocabulary is additionally net
+`-0.511 %` published once priced at the roofline.
+
+**2.3 % of what the head gives away is a readout problem. 97.7 % is the head
+disagreeing with the 27B target**, at a median margin of 2.1875 logits with only
+3 of 187 disagreements exact ties.
+
+Controls: permutation positive control 85.694 pp; masked-winner control 83.832
+pp moving 1503 of 1503 slots; `ann_outside_compact_set = 0`. The exact path is
+proven off four ways, including the gate probe with the path variable set and
+the gate variable unset — the side that makes the other three non-vacuous.
+`growth_attributable = 0`, `e155_growth_reclaimed_bytes = 918`.
+
+Two axes closed for the price of no GPU time. This is the standard.
+
+### 323.2 The index port is now priced on both sides
+
+`p15` + `leaf16` on the crown surface, from askeladd's arithmetic over the
+artifact constants:
+
+```
+most recall the crown geometry could return over ours   <= 0.0755 pt = +0.2017 %
+bytes our geometry does not move                        25.56 MB/step = +0.4583 %
+net, at worst                                           >= +0.257 % published
+```
+
+The loss side is capped by measurement, not by argument: an exact readout over
+the same compact set returns only 0.0755 points, and the crown's index is an
+approximation of that exact readout, so it cannot return more. The port question
+is settled without another run.
+
+### 323.3 RULE 166 — the host transfer scalar, cross-validated three ways
+
+Askeladd's `e155_within_prompt_width_cost_fit` regresses per-round block time on
+`M = d + 1` within each prompt, on data that already existed. Five legs:
+
+| leg | rounds | widths | `b_p` us/row | `a_p` us | R² |
+| --- | ---: | --- | ---: | ---: | ---: |
+| beagle_a, E153 r1 | 118 | 2-8 | 15,365.97 | 24,370 | 0.969 |
+| beagle_a, E155 off | 118 | 2-8 | 15,365.15 | 25,032 | 0.967 |
+| essays, E153 r1 | 145 | 2-7 | 15,175.64 | 23,692 | 0.884 |
+| essays, E155 off | 145 | 2-7 | 15,664 | — | 0.873 |
+| benchfixture, E155 off | 77 | 4-8 | 17,200 | — | 0.975 |
+| **pooled** | | | **15,754** | | |
+
+The two `beagle_a` legs ran hours apart on different worker binaries and agree
+to five figures. Edward's independent within-`d` contrast gives `15,708 us/row`,
+0.29 % away by a different method on a different data set.
+
+Divide the pooled local slope by the FINDING 286 ranked row law:
+
+```
+FINDING 286, harness=ranked:  clean_round_us = 8,434 + 5,657 * rows
+15,754 / 5,657 = 2.7849
+independently measured M4 Pro / M5 round ratio = 2.777
+agreement = 0.28 %
+```
+
+Evaluated end to end on the three literature-prompt legs, mean `a = 24,365`,
+mean `b = 15,302`:
+
+| M | ranked us | local us | ratio |
+| ---: | ---: | ---: | ---: |
+| 3 | 25,405 | 70,271 | 2.766 |
+| 5 | 36,719 | 100,875 | 2.747 |
+| 8 | 53,690 | 146,781 | 2.734 |
+
+> **RULE 166.** Local M4 Pro round time converts to ranked M5 round time by a
+> single divisor of **2.75 +- 0.03** for `M` in `[3, 8]` on this workload.
+>
+> The rule is for **round-level totals only**. It does not hold term by term:
+> the intercept ratio is `24,365 / 8,434 = 2.889` and the slope ratio is `2.71`
+> to `2.78`. The per-prompt slope spread is about `+-6 %`; `benchfixture` alone
+> sits at `17,200 us/row`, ratio `3.04`.
+
+This is the first transfer rule the campaign has that three independent routes
+agree on: a within-prompt fit on `M`, a within-`d` contrast, and an inversion of
+the published ranked receipts, checked against a separately measured host round
+ratio. Neither student could have produced it alone. Credited jointly to
+askeladd and edward.
+
+It also retires a recurring argument. Students no longer need to argue about
+whether a local round-time delta transfers; they divide by 2.75 and state the
+`+-6 %` prompt spread.
+
+### 323.4 FINDING 292 — the proposal head has been changed once, by one person, in the whole history of this track
+
+Askeladd's section 14 said the head is the axis and nobody has touched it. I
+checked "nobody" against the entire promoted history.
+
+Every commit in `upstream/main` that touches `mtp-head.manifest.json` — more
+than twenty, one per promoted or validated submission — carries byte-identical
+values for everything except the free-text `note`:
+
+```
+source_url  hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae6282749a52e05...
+sha256      559b24ebca354018e4402fdb1f5af1afe5a0721bd2ebf04133500d846f7d5f71
+bytes       427,742,600
+max_bytes   2,147,483,648
+```
+
+`git ls-tree -r upstream/main -- mtp-head/` returns exactly one file across the
+whole history: `README.md`.
+
+One participant built a q2/q4 head derivative early. Every promoted submission
+since has inherited that declaration verbatim through the snapshot chain,
+including ours, including the crown at `ec24d59`.
+
+Now the fixture:
+
+```
+fixtures/qwen3_8_27b_mtp_track.json -> mtp_head
+  upstream_model_id  EigenLabs/Qwen3.8-27B-MTP-bf16 @ 26a328e0
+  dtype              bf16          (unquantized)
+  tensor_count       15
+  tensor_bytes       849,398,784
+setup-qwen-mtp.sh:59  "THE HEAD REPOSITORY IS PUBLIC"
+setup-qwen-mtp.sh:76  MTP_HEAD_DIR default = ${CACHE_ROOT}/mtp-head
+```
+
+**The organizer's pinned head is bf16 at 849,398,784 tensor bytes. The head
+every promoted submission declares is a derivative at 427,742,600 bytes, 50.4 %
+of it. The declared ceiling is 2,147,483,648. 1.72 GB of declared head capacity
+has never been used by anyone in this competition.**
+
+And askeladd has just measured that 9.6677 of the 9.8942 conditional acceptance
+points the head gives away are the head disagreeing with the target — measured
+against the **derivative's** own exact readout, not against the bf16 original.
+
+### 323.5 The affordability number, which is not what I expected
+
+Askeladd's bucket-B frame, reused exactly:
+
+```
+1 MB more traffic per draft step
+  = 1e6 / 567e9            = 1.7637 us per draft step
+  * 4.382 draft steps/round = 7.729 us per round
+  / 43,114 us modelled ranked round
+  = 0.01793 % published cost
+```
+
+This reproduces his `50.99 MB -> +0.914 %` exactly. Against the settled
+`+2.6701 %` published per acceptance point:
+
+```
+BREAK-EVEN: 148.9 MB extra traffic per draft step per acceptance point.
+```
+
+The whole declared head is 427.7 MB. We can roughly double the head's
+per-draft-step traffic for one acceptance point, or quadruple it for three.
+
+I had assumed this axis was priced out. It is not. **The head is not expensive,
+it is unexplored, and those are different things.** Two independent degrees of
+freedom follow:
+
+- bytes on disk, capped at 2 GiB, are nearly free — residency is charged to both
+  legs of the pair, per the fixture's own `merge_note`;
+- bytes read per draft step are what costs, and a bigger artifact need not read
+  more per step. A larger readout reached through an index costs only the probed
+  rows; a larger trunk is read in full every step.
+
+### 323.6 The open inference E158 must settle
+
+`248,320 x 5,120` at bf16 is 2.54 GB, which does not fit in 849 MB. So my
+inference is that the pinned head has **no vocabulary projection of its own**
+and ties to the target's 4-bit affine group-64 embedding. If that is right:
+
+- 4-bit is already the maximum precision available anywhere for the draft
+  vocabulary projection;
+- the rerank is already exact with respect to available precision;
+- the entire head-precision axis lives in the **trunk**, not the readout.
+
+If it is wrong, the readout axis reopens. Either way the census decides it, and
+the census costs no GPU time.
+
+A second inference, from the byte arithmetic:
+
+```
+q4 compact  98,336 x 5,120 x 0.5625 = 283,207,680
+q2 compact  98,336 x 5,120 x 0.3125 = 157,337,600
+sum                                   440,545,280
+declared artifact                     427,742,600     -12,802,680
+trunk at 4.5 bits (849.4 MB bf16)  =  238,900,000 approx
+q2 + 4-bit trunk                      396,237,600     +31,505,000
+```
+
+Neither composition lands exactly, so the artifact is some third thing. Stop
+guessing and enumerate it.
+
+### 323.7 The urgent sub-question
+
+`setup-qwen-mtp.sh` defaults `MLXFAST_QWEN_MTP_HEAD_DIR` to the **pinned bf16**
+head. `research/fetch-declared-head.sh` exists to stage the **declared** head
+over the same variable. The ranked workflow resolves the declaration itself at
+`.github/workflows/qwen-mtp-ranked-benchmark.yml:2366-2396` and hands the result
+to the worker as `QMTP_CANDIDATE_HEAD_DIR`.
+
+So which head drafted in every local leg this campaign has ever run?
+
+If local drafts from the pinned bf16 head and ranked drafts from the declared
+q2/q4 head, **every local acceptance measurement in the campaign describes a
+different head from the ranked one.** That would be a campaign-wide validity
+question outranking everything on the board.
+
+It is probably fine: askeladd's local `beagle_a p_shipped = 0.8891` against the
+FINDING 286 ranked recovered `beagle p = 0.8973` is close. But "probably fine"
+is not "checked", and the check costs one grep of `head_provenance`. E158 R0.2
+answers it and reports out of band.
+
+### 323.8 E158 assigned — PR #158, askeladd, base `5f60bea8`
+
+R0 is a census with no timed work: enumerate both artifacts tensor by tensor,
+prove which head each harness loads with a `head_provenance` witness, attribute
+bytes per draft step by tensor, and confirm what the declaration mechanism
+accepts. R1 re-runs the existing recall-audit instrument under both heads and
+reports `e158_head_precision_recoverable_pp`, priced against
+`e158_bf16_bytes_per_draft_step_delta_MB` at the two exchange rates above.
+
+Pre-registered: net `>= +0.30 %` builds it; `0` to `+0.30 %` earns one bounded
+arm; `<= 0` closes head precision and redirects the acceptance question to the
+1.72 GB of unused capacity and to distillation, which is a new programme rather
+than an R2.
+
+Legality line stated in the brief: a declared head that matches its manifest
+digest is legal whatever its provenance, and the static review says so in terms;
+deriving an *index* at load from declared tensors is legal and is what we
+already do; deriving a *head* at load is undeclared head substitution at
+critical severity.
+
+### 323.9 Priority order after this round
+
+```
+head precision / capacity   up to 9.67 pt of headroom   askeladd  E158 R0   census first
+prefill GEMM, blind         up to 8.9x gap              alphonse  E156 R1   repriced, uncontested
+crown parity + leaf16       the gap                     thorfinn  E152 R2   ABBA in flight
+depth recalibration         0.68x gap                   edward    E157 R0   gated on the shortfall decomposition
+```
+
+Two of the four now sit on surfaces that no promoted submission in the entire
+competition has ever modified: the quantized NAX prefill matmul (FINDING 289)
+and the proposal head (FINDING 292). That is not a coincidence. Twenty-odd
+promoted submissions have been optimizing the same decode kernels against each
+other, and the two largest untouched surfaces were both found by asking the
+same question — *what has nobody edited?* — rather than by looking for a better
+version of what everyone edits.
+
+### 323.10 State
+
+```
+THE BAR                      ec24d59    3.72911001   src 0863b06a, unchanged
+our best official row        0cf1637e   3.68278758   tree e09d6aa7
+gap                                     0.04632 absolute = +1.2578 %
+in flight                    5a9f130a   crown parity, validating
+advisor branch               5f60bea8 + this entry
+```
+
