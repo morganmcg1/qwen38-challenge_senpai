@@ -114,15 +114,27 @@ def log_r05(run, summary: dict, r05: dict) -> None:
         if key in r05:
             summary[key] = r05[key]
 
+    # One fixed point per (information state, clamp) cell, because the
+    # achieved rate a policy settles at depends on both.
     solved = r05.get("e150_lambda_star_solution", {})
-    for src, dst in (
-            ("mu_star_cost_per_token_normalised", "e150_mu_star"),
-            ("lambda_star_tokens_per_us", "e150_lambda_star_tokens_per_us"),
-            ("serial_round_us", "e150_r05_serial_round_us"),
-            ("bisection_steps", "e150_r05_bisection_steps"),
-            ("converged", "e150_r05_bisection_converged")):
-        if src in solved:
-            summary[dst] = solved[src]
+    summary["e150_r05_all_fixed_points_converged"] = all(
+        cell.get("converged") for cell in solved.values())
+    for name, cell in solved.items():
+        summary["e150_mu_star_%s" % name] = \
+            cell["mu_star_cost_per_token_normalised"]
+        summary["e150_lambda_star_%s" % name] = \
+            cell["lambda_star_tokens_per_normalised_cost"]
+    if "shipped_noclamp" in solved:
+        summary["e150_mu_star"] = \
+            solved["shipped_noclamp"]["mu_star_cost_per_token_normalised"]
+    run.log({"r05_fixed_points": table(
+        ["cell", "mu_star_cost_per_token", "lambda_star_tokens_per_cost",
+         "lambda_star_tokens_per_us", "bisection_steps", "converged"],
+        [[name, cell["mu_star_cost_per_token_normalised"],
+          cell["lambda_star_tokens_per_normalised_cost"],
+          cell["lambda_star_tokens_per_us"], cell["bisection_steps"],
+          cell["converged"]]
+         for name, cell in sorted(solved.items())])})
 
     for name, ok in r05["e150_r05_control_checks"].items():
         summary["e150_r05_check_" + name] = ok
@@ -155,11 +167,13 @@ def log_r05(run, summary: dict, r05: dict) -> None:
     # the width-8 cell, which Rule 143 discounts on transfer anyway.
     run.log({"r05_width_cap_sweep": table(
         ["depth_cap", "max_width", "clamp", "linearised_pct",
-         "shipped_rule_same_cap_pct", "policy_form_gain_pp", "width8_share"],
+         "shipped_rule_same_cap_pct", "policy_form_gain_pp", "width8_share",
+         "frac_rounds_inadmissible", "mean_depth"],
         [[row["depth_cap"], row["max_width"], row["clamp"],
-          row["linearised_pct"], row["shipped_rule_same_cap_pct"],
+          row["median_pct"], row["shipped_rule_same_cap_pct"],
           row["policy_form_gain_pp"],
-          row.get("width_histogram", {}).get("8", 0.0)]
+          row.get("width_histogram", {}).get("8", 0.0),
+          row["frac_rounds_inadmissible"], row["weighted_mean_depth"]]
          for row in r05["e150_r05_width_cap_sweep"]])})
 
     lopo = r05.get("e150_r05_lopo_linearised_noclamp") or {}
@@ -170,6 +184,60 @@ def log_r05(run, summary: dict, r05: dict) -> None:
         run.log({"r05_lopo_mu": table(
             ["held_out_prompt", "mu_star"],
             sorted(fold_mu.items()))})
+
+
+def log_width8(run, summary: dict, w8: dict) -> None:
+    """The error bar on the cost cell R0.5's gain stands on."""
+    for key in ("e150_w8_running_minimum_width",
+                "e150_w8_cost_per_token_gap_us",
+                "e150_w8_cost_per_token_gap_pct",
+                "e150_w8_cost_per_token_gap_sd_us",
+                "e150_w8_inadmissibility_sigma",
+                "e150_w8_inadmissibility_resolved",
+                "e150_w8_marginal_7_to_8_us",
+                "e150_w8_marginal_7_to_8_sd_us",
+                "e150_w8_step_from_w5_normalised",
+                "e150_w8_step_from_w5_normalised_sd",
+                "e150_w8_tokens_needed_over_w5",
+                "e150_w8_tokens_needed_over_w5_sd",
+                "e150_w8_decision_boundary_robust"):
+        summary[key] = w8[key]
+
+    run.log({"width8_cost_table": table(
+        ["width", "legs", "mean_us", "sd_us", "sd_pct", "us_per_token",
+         "us_per_token_sd"],
+        [[r["width"], r["legs"], r["mean_us"], r["sd_us"], r["sd_pct"],
+          r["us_per_token"], r["us_per_token_sd"]]
+         for r in w8["e150_width_cost_table"]])})
+
+
+def log_r2_sequential(run, summary: dict, seq: dict) -> None:
+    """R2 L5/L6, priced parametrically because the signal is not captured."""
+    for key in ("e150_l5_l6_measured", "e150_l5_l6_limit",
+                "e150_r2_sequential_controls_ok",
+                "e150_r2_sequential_control_l5_error",
+                "e150_r2_sequential_control_l6_error",
+                "e150_oneshot_reference_pct",
+                "e150_sequential_information_premium_pp",
+                "e150_sequential_premium_at_pad_auc_pp",
+                "e150_sequential_premium_best_pp",
+                "e150_sequential_premium_best_auc",
+                "e150_sequential_premium_at_perfect_signal_pp",
+                "e150_l5_over_oneshot_at_pad_auc_pp",
+                "e150_l6_over_oneshot_at_pad_auc_pp",
+                "e150_sequential_premium_us_per_round_break_even"):
+        if key in seq:
+            summary[key] = seq[key]
+
+    run.log({"r2_sequential_demand_curve": table(
+        ["auc", "dprime", "l5_median_pct", "l6_median_pct", "premium_pp",
+         "l5_over_oneshot_pp", "l6_over_oneshot_pp", "l6_over_shipped_pp",
+         "l5_mean_depth", "l6_mean_depth", "l6_frac_rounds_inadmissible"],
+        [[r["auc"], r["dprime"], r["l5_median_pct"], r["l6_median_pct"],
+          r["premium_pp"], r["l5_over_oneshot_pp"], r["l6_over_oneshot_pp"],
+          r["l6_over_shipped_pp"], r["l5_mean_depth"], r["l6_mean_depth"],
+          r["l6_frac_rounds_inadmissible"]]
+         for r in seq["e150_r2_sequential_demand_curve"]])})
 
 
 def log_r1(run, summary: dict, r1: dict) -> None:
@@ -289,7 +357,9 @@ def main() -> int:
     r0 = load("r0.json")
     r05 = load("r05.json")
     r1 = load("r1.json")
-    if r0 is None and r05 is None and r1 is None:
+    w8 = load("width8.json")
+    r2seq = load("r2seq.json")
+    if all(v is None for v in (r0, r05, r1, w8, r2seq)):
         print("no E150 artifacts found under %s" % ARTIFACTS)
         return 1
 
@@ -297,7 +367,9 @@ def main() -> int:
     config = {
         "experiment": "E150",
         "rungs_present": [n for n, v in (("R0", r0), ("R0.5", r05),
-                                         ("R1/R2", r1)) if v is not None],
+                                         ("R1/R2", r1), ("width8", w8),
+                                         ("R2-L5L6", r2seq))
+                          if v is not None],
         "harness": "local",
         "gpu_used": False,
         "frame": "decode",
@@ -328,8 +400,12 @@ def main() -> int:
         log_r0(run, summary, r0)
     if r05 is not None:
         log_r05(run, summary, r05)
+    if w8 is not None:
+        log_width8(run, summary, w8)
     if r1 is not None:
         log_r1(run, summary, r1)
+    if r2seq is not None:
+        log_r2_sequential(run, summary, r2seq)
 
     run.summary.update(summary)
     print("run id   %s" % run.id)

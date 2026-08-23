@@ -223,9 +223,13 @@ def resolve_mu(args) -> tuple[float, str]:
     if path.exists():
         solved = json.loads(path.read_text()).get(
             "e150_lambda_star_solution", {})
-        mu = solved.get("mu_star_cost_per_token_normalised")
+        # The deployable fixed point is the one solved in the shipped
+        # information state without the clamp, because that is the arm R0.5
+        # found to be the best deployable form.
+        cell = solved.get("shipped_noclamp", {})
+        mu = cell.get("mu_star_cost_per_token_normalised")
         if mu is not None:
-            return float(mu), "r05.json fixed point"
+            return float(mu), "r05.json shipped_noclamp fixed point"
     raise SystemExit("no mu available: run e150_r05.py first or pass --mu")
 
 

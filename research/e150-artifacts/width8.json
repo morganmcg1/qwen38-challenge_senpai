@@ -1,0 +1,86 @@
+{
+  "e150_w8_cost_per_token_gap_pct": 0.42592170839398197,
+  "e150_w8_cost_per_token_gap_sd_us": 68.92631076367574,
+  "e150_w8_cost_per_token_gap_us": 81.6238583887316,
+  "e150_w8_decision_boundary_robust": true,
+  "e150_w8_inadmissibility_resolved": false,
+  "e150_w8_inadmissibility_sigma": 1.1842191680415237,
+  "e150_w8_marginal_7_to_8_sd_us": 291.5529909066255,
+  "e150_w8_marginal_7_to_8_us": 3162.214614096156,
+  "e150_w8_running_minimum_width": 5,
+  "e150_w8_step_from_w5_normalised": 0.8839478275593756,
+  "e150_w8_step_from_w5_normalised_sd": 0.006106656622122844,
+  "e150_w8_tokens_needed_over_w5": 1.9366718036841386,
+  "e150_w8_tokens_needed_over_w5_sd": 0.01337928475654513,
+  "e150_width_cost_table": [
+    {
+      "legs": 2,
+      "mean_us": 70905.34445117501,
+      "sd_pct": 0.12348781132440691,
+      "sd_us": 87.55945797478782,
+      "us_per_token": 35452.67222558751,
+      "us_per_token_sd": 43.77972898739391,
+      "width": 2
+    },
+    {
+      "legs": 2,
+      "mean_us": 76196.54020497217,
+      "sd_pct": 0.30857619380097556,
+      "sd_us": 235.1243835725332,
+      "us_per_token": 25398.846734990726,
+      "us_per_token_sd": 78.37479452417773,
+      "width": 3
+    },
+    {
+      "legs": 2,
+      "mean_us": 84374.32704433319,
+      "sd_pct": 0.41065235720188553,
+      "sd_us": 346.48516288078224,
+      "us_per_token": 21093.581761083296,
+      "us_per_token_sd": 86.62129072019556,
+      "width": 4
+    },
+    {
+      "legs": 2,
+      "mean_us": 95820.2608367976,
+      "sd_pct": 0.3156393043386732,
+      "sd_us": 302.4464047207701,
+      "us_per_token": 19164.05216735952,
+      "us_per_token_sd": 60.48928094415402,
+      "width": 5
+    },
+    {
+      "legs": 2,
+      "mean_us": 124257.1286225723,
+      "sd_pct": 1.1289797747153725,
+      "sd_us": 1402.8378507909074,
+      "us_per_token": 20709.521437095384,
+      "us_per_token_sd": 233.80630846515123,
+      "width": 6
+    },
+    {
+      "legs": 2,
+      "mean_us": 150803.19359188987,
+      "sd_pct": 0.08154606322536438,
+      "sd_us": 122.97406759231116,
+      "us_per_token": 21543.31337026998,
+      "us_per_token_sd": 17.567723941758736,
+      "width": 7
+    },
+    {
+      "legs": 2,
+      "mean_us": 153965.40820598602,
+      "sd_pct": 0.17169392243711845,
+      "sd_us": 264.34924854517845,
+      "us_per_token": 19245.676025748253,
+      "us_per_token_sd": 33.04365606814731,
+      "width": 8
+    }
+  ],
+  "gpu_used": false,
+  "harness": "local",
+  "mu": 0.45642623901367185,
+  "rung": "E150 width-8 audit",
+  "serial_round_us": 65778.93576562102,
+  "source": "E145 R2 timed legs, slots r2-*"
+}
