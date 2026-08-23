@@ -1,0 +1,441 @@
+{
+  "experiment": "E151",
+  "rung": "R1 section 4",
+  "harness": "offline",
+  "dispatch_model": {
+    "qmv_batch_limit_for_scored_shapes": {
+      "gdn.in_proj K=5120 N=16480": 10,
+      "fa.qkv K=5120 N=14336": 10,
+      "mlp.gate_up K=5120 N=34816": 10,
+      "lm_head K=5120 N=248320": 10,
+      "gdn.out_proj K=6144 N=5120": 10,
+      "fa.o_proj K=6144 N=5120": 10,
+      "mlp.down K=17408 N=5120": 10
+    },
+    "host_independent": true,
+    "why": "get_qmv_batch_limit takes the same branch on g16s and g17s; only is_nax_available() differs, and that decides the family qmm enters, not which (M,N,K) reach qmm."
+  },
+  "seed_pass": {
+    "M": 512,
+    "rows": [
+      {
+        "projection": "gdn.in_proj",
+        "M": 512,
+        "K": 5120,
+        "N": 16480,
+        "layers": 48,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 4147327795200
+      },
+      {
+        "projection": "fa.qkv",
+        "M": 512,
+        "K": 5120,
+        "N": 14336,
+        "layers": 16,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 1202590842880
+      },
+      {
+        "projection": "mlp.gate_up",
+        "M": 512,
+        "K": 5120,
+        "N": 34816,
+        "layers": 64,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 11682311045120
+      },
+      {
+        "projection": "gdn.out_proj",
+        "M": 512,
+        "K": 6144,
+        "N": 5120,
+        "layers": 48,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 1546188226560
+      },
+      {
+        "projection": "fa.o_proj",
+        "M": 512,
+        "K": 6144,
+        "N": 5120,
+        "layers": 16,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 515396075520
+      },
+      {
+        "projection": "mlp.down",
+        "M": 512,
+        "K": 17408,
+        "N": 5120,
+        "layers": 64,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 5841155522560
+      }
+    ],
+    "nax_flop": 24934969507840,
+    "not_evaluated": [
+      {
+        "projection": "lm_head",
+        "K": 5120,
+        "N": 248320,
+        "layers": 1,
+        "reason": "begin(): the full-seed projection is a dead lazy graph; only the last row is projected, at M = 1"
+      }
+    ]
+  },
+  "head_priming": {
+    "M": 512,
+    "rows": [
+      {
+        "projection": "head.fc",
+        "M": 512,
+        "K": 10240,
+        "N": 5120,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 53687091200
+      },
+      {
+        "projection": "head.q_proj",
+        "M": 512,
+        "K": 5120,
+        "N": 12288,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 64424509440
+      },
+      {
+        "projection": "head.k_proj",
+        "M": 512,
+        "K": 5120,
+        "N": 1024,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 5368709120
+      },
+      {
+        "projection": "head.v_proj",
+        "M": 512,
+        "K": 5120,
+        "N": 1024,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 5368709120
+      },
+      {
+        "projection": "head.o_proj",
+        "M": 512,
+        "K": 6144,
+        "N": 5120,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 32212254720
+      },
+      {
+        "projection": "head.mlp.gate_proj",
+        "M": 512,
+        "K": 5120,
+        "N": 17408,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 91268055040
+      },
+      {
+        "projection": "head.mlp.up_proj",
+        "M": 512,
+        "K": 5120,
+        "N": 17408,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 91268055040
+      },
+      {
+        "projection": "head.mlp.down_proj",
+        "M": 512,
+        "K": 17408,
+        "N": 5120,
+        "layers": 1,
+        "route": "affine_qmm_t_nax",
+        "reaches_affine_qmm_t_nax": true,
+        "flop": 91268055040
+      }
+    ],
+    "nax_flop": 434865438720
+  },
+  "head_flush_from_real_trace": {
+    "trace": "research/out/e151x512cand/trace.txt",
+    "rounds_in_first_pass": 82,
+    "drafting_rounds": 82,
+    "non_drafting_rounds": 0,
+    "priming_flush_M": 512,
+    "post_prime_flush_M_values": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      7,
+      7,
+      8,
+      4,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      7,
+      8,
+      8,
+      8,
+      8,
+      8,
+      6,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      2,
+      1,
+      5,
+      4,
+      5,
+      5,
+      8,
+      2,
+      1,
+      1,
+      5,
+      5,
+      8,
+      5,
+      5,
+      4,
+      3,
+      3,
+      5,
+      3,
+      2,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8
+    ],
+    "post_prime_max_M": 8,
+    "post_prime_reaching_nax": []
+  },
+  "head_flush_low_draft_model": {
+    "note": "MODEL, not a measurement. Calibrated to the published plutarch schedule: 449 non-drafting rounds, effective_mean_draft_len 0.156.",
+    "arms": [
+      {
+        "drafting_rounds": 20,
+        "total_rounds": 469,
+        "drafts": 73.2,
+        "accepted_total": 43,
+        "draft_every": 23,
+        "accepted_per_drafting_round": 2,
+        "priming_flush_M": 534,
+        "post_prime_flush_M_values": [
+          25
+        ],
+        "M_reaching_nax": [
+          25,
+          534
+        ],
+        "nax_flop": 682664919040,
+        "M_where_reference_predicate_would_not_fire": [
+          25,
+          534
+        ],
+        "any_M_at_or_above_128": true
+      },
+      {
+        "drafting_rounds": 30,
+        "total_rounds": 479,
+        "drafts": 74.7,
+        "accepted_total": 33,
+        "draft_every": 16,
+        "accepted_per_drafting_round": 1,
+        "priming_flush_M": 527,
+        "post_prime_flush_M_values": [
+          17
+        ],
+        "M_reaching_nax": [
+          17,
+          527
+        ],
+        "nax_flop": 677201838080,
+        "M_where_reference_predicate_would_not_fire": [
+          17,
+          527
+        ],
+        "any_M_at_or_above_128": true
+      },
+      {
+        "drafting_rounds": 40,
+        "total_rounds": 489,
+        "drafts": 76.3,
+        "accepted_total": 23,
+        "draft_every": 12,
+        "accepted_per_drafting_round": 1,
+        "priming_flush_M": 523,
+        "post_prime_flush_M_values": [
+          13
+        ],
+        "M_reaching_nax": [
+          13,
+          523
+        ],
+        "nax_flop": 688757145600,
+        "M_where_reference_predicate_would_not_fire": [
+          13,
+          523
+        ],
+        "any_M_at_or_above_128": true
+      }
+    ],
+    "worst_case_nax_flop": 688757145600
+  },
+  "e151_r1_scored_m_histogram": [
+    {
+      "leg": "observed local heavy-drafting schedule (beagle/essays-like)",
+      "M": 512,
+      "producer": "target seed prefill",
+      "channel": "prefill",
+      "occurrences": 1,
+      "nax_flop": 24934969507840,
+      "share_of_leg_nax_flop": 0.9828589567241561,
+      "M_mod_128": 0,
+      "reference_predicate_fires": true
+    },
+    {
+      "leg": "observed local heavy-drafting schedule (beagle/essays-like)",
+      "M": 512,
+      "producer": "proposal-head history priming",
+      "channel": "decode",
+      "occurrences": 1,
+      "nax_flop": 434865438720,
+      "share_of_leg_nax_flop": 0.017141043275843825,
+      "M_mod_128": 0,
+      "reference_predicate_fires": true
+    },
+    {
+      "leg": "observed local heavy-drafting schedule (beagle/essays-like)",
+      "M": "none",
+      "producer": "proposal-head backlog flush",
+      "channel": "decode",
+      "occurrences": 0,
+      "nax_flop": 0,
+      "share_of_leg_nax_flop": 0.0,
+      "M_mod_128": [],
+      "reference_predicate_fires": null
+    },
+    {
+      "leg": "modelled plutarch-like low-drafting schedule",
+      "M": 512,
+      "producer": "target seed prefill",
+      "channel": "prefill",
+      "occurrences": 1,
+      "nax_flop": 24934969507840,
+      "share_of_leg_nax_flop": 0.9731203366740749,
+      "M_mod_128": 0,
+      "reference_predicate_fires": true
+    },
+    {
+      "leg": "modelled plutarch-like low-drafting schedule",
+      "M": [
+        13,
+        523
+      ],
+      "producer": "proposal-head priming and backlog flushes",
+      "channel": "decode",
+      "occurrences": 2,
+      "nax_flop": 688757145600,
+      "share_of_leg_nax_flop": 0.026879663325925073,
+      "M_mod_128": [
+        11,
+        13
+      ],
+      "reference_predicate_fires": false
+    }
+  ],
+  "verdict": {
+    "e151_r1_scored_seed_M_values": [
+      512
+    ],
+    "e151_r1_scored_seed_M_all_multiple_of_128": true,
+    "e151_r1_seed_pass_all_reach_nax": true,
+    "e151_r1_M511_occurs_anywhere": false,
+    "e151_r1_prefill_share_of_nax_flop_observed_leg": 0.9828589567241561,
+    "e151_r1_prefill_share_of_nax_flop_worst_modelled_leg": 0.9731203366740749,
+    "e151_r1_predicate_is_noop_on_prefill_channel": true,
+    "e151_r1_predicate_affects_decode_flop_share_worst_modelled_leg": 0.026879663325925073
+  },
+  "registered_gating_decision": {
+    "registered_before_any_rerun": true,
+    "choice": "DO NOT add the M >= 128 && M % 128 == 0 predicate",
+    "reasons": [
+      "The r2 request set the closing criterion itself: `If every scored M is a multiple of 128 after all, say so in one line and section 4 closes.` Every scored M IS a multiple of 128. The scored seed pass presents exactly ONE M, 512 = 4 * 128, on every evaluated projection, because `begin` feeds the whole seed in a single call. The reference predicate is therefore TRUE on the entire prefill channel and both arms retile identically there.",
+      "M = 511 never occurs anywhere in a scored leg. The 511 rows in the accepted R0.1 table are the hypothetical ragged tail the assignment asked me to enumerate, not a shape the leg presents. That row's `evaluated_in_scored_seed_prefill` field was mislabelled: it describes the projection, not the (M, projection) pair. This corrects the section 4 premise that both shapes are scored.",
+      "Because the predicate is a provable no-op on the prefill channel, it cannot change the -4.9721 % claim in either direction. Adding it buys no reproduction fidelity where the measured effect lives.",
+      "Adding it would break the byte-identity that section 4 lists as Required. A predicate edits `quantized_nax.h` and its twin, so the submitted surface would no longer be `.h 50cf7876` / `.cpp e7c55209`, and the tree the advisor merges would again be a tree no gate chain has seen. Under a six-hour shelf life that is the higher-variance option, not the lower one.",
+      "A runtime predicate is not free here. The arm is a compile-time template selection, so gating it at runtime means instantiating BOTH tile shapes inside one kernel and branching between them. That grows the kernel and can move register allocation and instruction-cache pressure on a kernel this fleet cannot execute. Campaign rule from E147: never price a kernel change from an AIR delta. The cost is unmeasurable offline while the prefill benefit is provably zero."
+    ],
+    "residual_exposure_i_accept": {
+      "where": "proposal-head committed-history flush, DECODE channel only, on low-drafting prompts",
+      "detail": "On a plutarch-like schedule the head priming flush carries M in 523..534. Those M are >= 128 but not multiples of 128, so the reference row falls back to the host 64x64 tile there and our arm fires. This is the RULE 158 shape and I am naming it rather than hiding it.",
+      "bound": "at most 2.6880 % of that leg's NAX FLOP in the worst modelled schedule, on prompts whose Rule 148 weight is 0.0000",
+      "on_median_deciding_prompts": "zero. The observed local 512-token trace drafts on all 82 rounds, so the priming flush is M = 512 (the predicate fires) and every later flush is M <= 8, below the qmv limit of 10, so it never reaches a NAX kernel at all.",
+      "correctness": "not a fidelity risk in either arm. R0.2 proves exact tile coverage at these M with three failing controls, and R0.3 proves the K accumulation order is unchanged, so the retile is bit-identical arithmetic."
+    },
+    "what_would_reverse_it": [
+      "A receipt whose decode channel reads outside +/-0.15 pp with the prefill channel moving as predicted. That would localise the cost to the head flush and the predicate becomes the repair.",
+      "Evidence that a median-deciding prompt runs long non-drafting streaks, which would push its head flushes above M = 10.",
+      "A change to `begin` that splits the seed into chunks. That would put more than one M on the prefill channel and reopen the question."
+    ]
+  }
+}
