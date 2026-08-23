@@ -1,0 +1,303 @@
+{
+  "by_curve": {
+    "measured": {
+      "max_gain_pct": 7.519665934686937,
+      "mean_gain_pct": 3.723811474670502,
+      "median_gain_pct": 2.8351704470248817,
+      "min_gain_pct": 1.6592939867334566,
+      "pooled_gain_pct": 3.8176919235554108,
+      "pooled_linearised_units_per_token": 0.39841789893418583,
+      "pooled_shipped_units_per_token": 0.41362826688379534,
+      "prompts_improved": 8,
+      "rows": {
+        "beagle_a": {
+          "edl_delta": 0.03361344537815114,
+          "gain_pct": 3.182236165964558,
+          "linearised_edl": 4.277310924369748,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 119,
+          "linearised_units_per_token": 0.37246618078138993,
+          "shipped_edl": 4.243697478991597,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 119,
+          "shipped_units_per_token": 0.38431893429220226
+        },
+        "benchfixture": {
+          "edl_delta": -0.49150447945628617,
+          "gain_pct": 2.133482734558556,
+          "linearised_edl": 5.867469879518072,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 83,
+          "linearised_units_per_token": 0.32558103194530813,
+          "shipped_edl": 6.358974358974359,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 78,
+          "shipped_units_per_token": 0.3325272470488589
+        },
+        "botany_andrews": {
+          "edl_delta": 0.14463705308775765,
+          "gain_pct": 2.4881047280852053,
+          "linearised_edl": 3.683098591549296,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 142,
+          "linearised_units_per_token": 0.4040739239176777,
+          "shipped_edl": 3.5384615384615383,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 143,
+          "shipped_units_per_token": 0.4141277063236328
+        },
+        "essays_montaigne": {
+          "edl_delta": 0.18575731079374336,
+          "gain_pct": 5.168568240556981,
+          "linearised_edl": 3.624113475177305,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 141,
+          "linearised_units_per_token": 0.3886410692874561,
+          "shipped_edl": 3.4383561643835616,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 146,
+          "shipped_units_per_token": 0.40872824816440867
+        },
+        "medicine_hist": {
+          "edl_delta": -0.2305407011289362,
+          "gain_pct": 5.162332262646818,
+          "linearised_edl": 3.272727272727273,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 165,
+          "linearised_units_per_token": 0.4313791637071905,
+          "shipped_edl": 3.503267973856209,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 153,
+          "shipped_units_per_token": 0.45364838944958286
+        },
+        "plutarch_lives": {
+          "edl_delta": -0.15969267139479904,
+          "gain_pct": 2.476807744131504,
+          "linearised_edl": 2.9680851063829787,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 188,
+          "linearised_units_per_token": 0.47756146277889283,
+          "shipped_edl": 3.1277777777777778,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 180,
+          "shipped_units_per_token": 0.4893897420719881
+        },
+        "republic_jowett": {
+          "edl_delta": -0.10055715312724711,
+          "gain_pct": 1.6592939867334566,
+          "linearised_edl": 4.485981308411215,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 107,
+          "linearised_units_per_token": 0.35121346027904154,
+          "shipped_edl": 4.586538461538462,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 104,
+          "shipped_units_per_token": 0.35704112410605016
+        },
+        "travel_eothen": {
+          "edl_delta": -0.06874145006839916,
+          "gain_pct": 7.519665934686937,
+          "linearised_edl": 3.088235294117647,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 170,
+          "linearised_units_per_token": 0.43642689877652985,
+          "shipped_edl": 3.1569767441860463,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 172,
+          "shipped_units_per_token": 0.46924474361363916
+        }
+      },
+      "rule_148": {
+        "carrying_families_negative": [],
+        "e150_policy_gain_rule148_weighted_pp": 4.059824231545146,
+        "family_gain_pp": {
+          "beagle": 3.182236165964558,
+          "essays": 5.168568240556981,
+          "medicine": 5.162332262646818,
+          "republic": 1.6592939867334566
+        },
+        "unweighted_all_fixtures_mean_pp": 3.723811474670502,
+        "weight_total": 1.0,
+        "weights_used": {
+          "beagle": 0.5,
+          "essays": 0.4474,
+          "medicine": 0.0197,
+          "republic": 0.0329
+        }
+      }
+    },
+    "replayed": {
+      "max_gain_pct": 2.2224018286069125,
+      "mean_gain_pct": -0.08353746250780725,
+      "median_gain_pct": -0.42238247606717905,
+      "min_gain_pct": -2.365668032266377,
+      "pooled_gain_pct": -0.07320839314962635,
+      "pooled_linearised_units_per_token": 0.43648153276585827,
+      "pooled_shipped_units_per_token": 0.43616199164932556,
+      "prompts_improved": 3,
+      "rows": {
+        "beagle_a": {
+          "edl_delta": 0.03361344537815114,
+          "gain_pct": 0.913523179714848,
+          "linearised_edl": 4.277310924369748,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 119,
+          "linearised_units_per_token": 0.40259530524416487,
+          "shipped_edl": 4.243697478991597,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 119,
+          "shipped_units_per_token": 0.4062731066780141
+        },
+        "benchfixture": {
+          "edl_delta": -0.49150447945628617,
+          "gain_pct": -1.0994258148550817,
+          "linearised_edl": 5.867469879518072,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 83,
+          "linearised_units_per_token": 0.3437536830378618,
+          "shipped_edl": 6.358974358974359,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 78,
+          "shipped_units_per_token": 0.33997436630702843
+        },
+        "botany_andrews": {
+          "edl_delta": 0.14463705308775765,
+          "gain_pct": -0.0810809144438207,
+          "linearised_edl": 3.683098591549296,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 142,
+          "linearised_units_per_token": 0.43988883213725627,
+          "shipped_edl": 3.5384615384615383,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 143,
+          "shipped_units_per_token": 0.43953216624962316
+        },
+        "essays_montaigne": {
+          "edl_delta": 0.18575731079374336,
+          "gain_pct": 1.47132345778489,
+          "linearised_edl": 3.624113475177305,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 141,
+          "linearised_units_per_token": 0.43544263500663843,
+          "shipped_edl": 3.4383561643835616,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 146,
+          "shipped_units_per_token": 0.4418494046406878
+        },
+        "medicine_hist": {
+          "edl_delta": -0.2305407011289362,
+          "gain_pct": -2.365668032266377,
+          "linearised_edl": 3.272727272727273,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 165,
+          "linearised_units_per_token": 0.4826901041332604,
+          "shipped_edl": 3.503267973856209,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 153,
+          "shipped_units_per_token": 0.4712712586448666
+        },
+        "plutarch_lives": {
+          "edl_delta": -0.15969267139479904,
+          "gain_pct": -0.9656893669132915,
+          "linearised_edl": 2.9680851063829787,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 188,
+          "linearised_units_per_token": 0.5259653104435118,
+          "shipped_edl": 3.1277777777777778,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 180,
+          "shipped_units_per_token": 0.5208861193669063
+        },
+        "republic_jowett": {
+          "edl_delta": -0.10055715312724711,
+          "gain_pct": -0.7636840376905374,
+          "linearised_edl": 4.485981308411215,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 107,
+          "linearised_units_per_token": 0.37350690396721803,
+          "shipped_edl": 4.586538461538462,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 104,
+          "shipped_units_per_token": 0.3706544913619483
+        },
+        "travel_eothen": {
+          "edl_delta": -0.06874145006839916,
+          "gain_pct": 2.2224018286069125,
+          "linearised_edl": 3.088235294117647,
+          "linearised_non_drafting_rounds": 0,
+          "linearised_rounds": 170,
+          "linearised_units_per_token": 0.4880094881569537,
+          "shipped_edl": 3.1569767441860463,
+          "shipped_non_drafting_rounds": 0,
+          "shipped_rounds": 172,
+          "shipped_units_per_token": 0.4988550199455291
+        }
+      },
+      "rule_148": {
+        "carrying_families_negative": [
+          "medicine",
+          "republic"
+        ],
+        "e150_policy_gain_rule148_weighted_pp": 1.0433028397947175,
+        "family_gain_pp": {
+          "beagle": 0.913523179714848,
+          "essays": 1.47132345778489,
+          "medicine": -2.365668032266377,
+          "republic": -0.7636840376905374
+        },
+        "unweighted_all_fixtures_mean_pp": -0.08353746250780725,
+        "weight_total": 1.0,
+        "weights_used": {
+          "beagle": 0.5,
+          "essays": 0.4474,
+          "medicine": 0.0197,
+          "republic": 0.0329
+        }
+      }
+    }
+  },
+  "curves_us": {
+    "measured": {
+      "1": 65778.93576562102,
+      "2": 70905.34445117501,
+      "3": 76196.54020497217,
+      "4": 84374.32704433319,
+      "5": 95820.2608367976,
+      "6": 124257.1286225723,
+      "7": 150803.19359188987,
+      "8": 153965.40820598602,
+      "9": 157127.62282008218
+    },
+    "replayed": {
+      "1": 31181.800000000003,
+      "2": 35148.200000000004,
+      "3": 39114.600000000006,
+      "4": 43081.0,
+      "5": 52791.7,
+      "6": 59945.899999999994,
+      "7": 67100.1,
+      "8": 74254.3,
+      "9": 81408.5
+    }
+  },
+  "e150_r4_local_edl_moved_all": true,
+  "e150_r4_local_edl_moved_legs": 8,
+  "e150_realised_median_gain_measured_pct": 2.8351704470248817,
+  "e150_realised_median_gain_min_over_curves_pct": -0.42238247606717905,
+  "e150_realised_median_gain_replayed_pct": -0.42238247606717905,
+  "e150_realised_ok": true,
+  "e150_realised_paired_legs": 8,
+  "e150_realised_problems": [],
+  "e150_realised_rule148_weighted_min_over_curves_pp": 1.0433028397947175,
+  "e150_realised_rule148_weighted_pp_by_curve": {
+    "measured": 4.059824231545146,
+    "replayed": 1.0433028397947175
+  },
+  "frame": "offline price of recorded verify widths, both campaign curves",
+  "gate_qualified_for_timing": false,
+  "gpu_used": false,
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "rung": "E150 R4 realised-schedule price",
+  "timing_valid": false
+}

@@ -45,7 +45,25 @@ from e128_price import PROMPT_NAMES  # noqa: E402
 from e150_lib import write_artifact  # noqa: E402
 
 ROUND_RE = re.compile(r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
+# `arm=` is the legacy DEPTH PRICE arm and reads `ship` in both arms of this
+# experiment, which does not vary here. The schedule witness is `rule=`.
+RULE_RE = re.compile(r"\brule=(\S+)")
 ARM_RE = re.compile(r"\barm=(\S+)")
+
+# Advisor F4 section 4.1. Share of board rows at scores >= 3.5 for which each
+# prompt family sits in the median pair. A zero-weight family cannot move the
+# published median in this score band whatever its per-prompt gain is.
+RULE_148_WEIGHTS = {"beagle": 0.5000, "essays": 0.4474,
+                    "republic": 0.0329, "medicine": 0.0197}
+FIXTURE_FAMILY = {
+    "beagle_a": "beagle",
+    "beagle_b": "beagle",
+    "essays_montaigne": "essays",
+    "essays_bacon": "essays",
+    "republic_jowett": "republic",
+    "medicine_hippoc": "medicine",
+    "medicine_hist": "medicine",
+}
 
 # The measured per-width round cost this candidate compiles, widths 1..9, in
 # microseconds. Same values the Swift table carries.
@@ -73,9 +91,33 @@ def median_of(values):
     return 0.5 * (ordered[n // 2 - 1] + ordered[n // 2])
 
 
+def rule_148_rollup(gain_by_fixture: dict) -> dict:
+    """Average fixtures inside a family, then weight the families."""
+    families = collections.defaultdict(list)
+    for fixture, gain in gain_by_fixture.items():
+        family = FIXTURE_FAMILY.get(fixture)
+        if family:
+            families[family].append(gain)
+    by_family = {name: statistics.fmean(v) for name, v in families.items()}
+    total = sum(RULE_148_WEIGHTS[name] for name in by_family)
+    weighted = sum(RULE_148_WEIGHTS[name] * gain
+                   for name, gain in by_family.items())
+    return {
+        "family_gain_pp": by_family,
+        "weights_used": {name: RULE_148_WEIGHTS[name] for name in by_family},
+        "weight_total": total,
+        "e150_policy_gain_rule148_weighted_pp": weighted / total if total
+        else float("nan"),
+        "carrying_families_negative": sorted(
+            name for name, gain in by_family.items() if gain < 0.0),
+        "unweighted_all_fixtures_mean_pp":
+            statistics.fmean(gain_by_fixture.values()),
+    }
+
+
 def read_leg(leg_dir):
     depths = collections.Counter()
-    arm = None
+    arm = rule = None
     trace = os.path.join(leg_dir, "trace.txt")
     if not os.path.exists(trace):
         return None
@@ -87,9 +129,13 @@ def read_leg(leg_dir):
         hit = ARM_RE.search(line)
         if hit:
             arm = hit.group(1)
+        hit = RULE_RE.search(line)
+        if hit:
+            rule = hit.group(1)
     report = json.load(open(os.path.join(leg_dir, "report.json")))
     return {
         "arm": arm,
+        "rule": rule,
         "depths": depths,
         "rounds": sum(depths.values()),
         "decode_tokens": report["decode_token_count"],
@@ -139,9 +185,9 @@ def main() -> int:
     for name, legs, want in (("shipped", ship, "shipped"),
                              ("linearised", lin, "linearised")):
         for prompt, leg in legs.items():
-            if leg["arm"] != want:
-                problems.append("%s/%s arm witness %r" % (name, prompt,
-                                                          leg["arm"]))
+            if leg["rule"] != want:
+                problems.append("%s/%s rule witness %r" % (name, prompt,
+                                                           leg["rule"]))
             if leg["rounds"] != leg["report_round_count"]:
                 problems.append("%s/%s trace %d vs report %d"
                                 % (name, prompt, leg["rounds"],
@@ -197,8 +243,10 @@ def main() -> int:
                               in lin[prompt]["depths"].items())
             tokens += ship[prompt]["decode_tokens"]
         gains = [r["gain_pct"] for r in rows.values()]
+        rollup = rule_148_rollup({n: r["gain_pct"] for n, r in rows.items()})
         summary = {
             "rows": rows,
+            "rule_148": rollup,
             "median_gain_pct": median_of(gains),
             "mean_gain_pct": statistics.fmean(gains),
             "min_gain_pct": min(gains),
@@ -229,6 +277,12 @@ def main() -> int:
         print("  pooled %+0.4f %%   improved on %d of %d prompts"
               % (summary["pooled_gain_pct"], summary["prompts_improved"],
                  len(gains)))
+        print("  Rule 148 family gains: %s"
+              % "  ".join("%s %+0.4f" % (n, g)
+                          for n, g in sorted(rollup["family_gain_pp"].items())))
+        print("  Rule 148 WEIGHTED roll-up %+0.4f pp   negative carriers: %s"
+              % (rollup["e150_policy_gain_rule148_weighted_pp"],
+                 ", ".join(rollup["carrying_families_negative"]) or "none"))
 
     out["e150_realised_median_gain_measured_pct"] = (
         out["by_curve"]["measured"]["median_gain_pct"])
@@ -237,6 +291,11 @@ def main() -> int:
     out["e150_realised_median_gain_min_over_curves_pct"] = min(
         out["e150_realised_median_gain_measured_pct"],
         out["e150_realised_median_gain_replayed_pct"])
+    out["e150_realised_rule148_weighted_pp_by_curve"] = {
+        c: out["by_curve"][c]["rule_148"][
+            "e150_policy_gain_rule148_weighted_pp"] for c in CURVES}
+    out["e150_realised_rule148_weighted_min_over_curves_pp"] = min(
+        out["e150_realised_rule148_weighted_pp_by_curve"].values())
 
     # Rule 114 landing witness on the legs that actually ran. The ranked host
     # is a different prompt set, so this proves the arm changes behaviour, not
