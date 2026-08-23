@@ -91,6 +91,11 @@ private func widthPlans() throws
             guard parts.count == 3 else { return nil }
             return WidthPlanEntry(m: parts[0], ipg: parts[1])
         }
+        // One case owns one witness. `renderPlan` builds the same prefix from
+        // a bare literal further down the file, and without this reset that
+        // literal is attributed to the last case seen and silently empties
+        // its plan.
+        pending = nil
     }
     return (String(compiled).lowercased(), byName)
 }

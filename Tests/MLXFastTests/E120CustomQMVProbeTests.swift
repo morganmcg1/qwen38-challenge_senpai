@@ -305,7 +305,7 @@ struct E120CustomQMVProbeTests {
     @Test("each one-pass table moves exactly the widths it names")
     func onePassTableMovesOnlyTheMultiPassWidths() throws {
         let expected: [Qwen35CustomQMV.Table: [Int]] = [
-            .onePass6: [6], .onePass67: [6, 7], .onePass678: [6, 7, 8],
+            .onePass67: [6, 7],
         ]
         let shipped = Dictionary(
             uniqueKeysWithValues: Qwen35CustomQMV.Table.shipped.plan.map {
@@ -348,8 +348,8 @@ struct E120CustomQMVProbeTests {
     @Test("every tier of every table has its own entry-point name")
     func everyTierHasADistinctEntryPoint() throws {
         let tiers: [Qwen35CustomQMV.Table: [Int]] = [
-            .shipped: [2, 3, 4, 5], .onePass6: [2, 3, 4, 5, 6],
-            .onePass67: [2, 3, 4, 5, 6, 7], .onePass678: [2, 3, 4, 5, 6, 7, 8],
+            .shipped: [2, 3, 4, 5],
+            .onePass67: [2, 3, 4, 5, 6, 7],
         ]
         for (table, expected) in tiers {
             #expect(Set(table.plan.map(\.ipg)).sorted() == expected,

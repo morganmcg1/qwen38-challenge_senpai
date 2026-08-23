@@ -57,6 +57,13 @@ ARMS = {
     "onePass678": {2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 3},
 }
 
+# `onePass6` and `onePass678` no longer exist as `Table` cases: E152 deleted
+# them after campaign Rule 155 explained both as losses. They stay here as
+# census rows because every cell they name is still generated from the same
+# `(m, ipg)` pair, so the four-rung comparison stays reproducible from Python
+# without carrying two dead rungs in the submitted Swift surface.
+LIVE_ARMS = {"shipped", "onePass67"}
+
 # Pinned cells from advisor F22 section 1 and F45 section 5.
 CONTROLS = {
     ("applegpu_g17s", 6, 3): {"registers": 94, "spill_bytes": 0,
@@ -170,6 +177,8 @@ def main() -> None:
     print("  Ranked weights are the Rule 148 vector over a maximum-entropy")
     print("  width reconstruction; the local column is the measured histogram")
     print("  of %d traced rounds. Occupancy is weighted, not summed." % rounds)
+    print("  A `Table` case marked RETIRED is censused from its (m, ipg)")
+    print("  cells only; it is no longer a selectable arm in Swift.")
     print("  arm          arch    ranked sg   local sg   spilling widths")
     summary: dict = {}
     for name, plan in ARMS.items():
@@ -186,10 +195,13 @@ def main() -> None:
                 if got.get("spill_bytes"):
                     spills.append("%d(%dB)" % (m, got["spill_bytes"]))
             summary["%s/%s" % (name, arch)] = {"ranked_sg": wr, "local_sg": ws,
-                                               "spills": spills}
-            print("  %-11s  %-6s %10.3f %10.3f   %s" % (
-                name, arch.replace("applegpu_", ""), wr, ws,
+                                               "spills": spills,
+                                               "live": name in LIVE_ARMS}
+            print("  %-11s%s %-6s %10.3f %10.3f   %s" % (
+                name, " " if name in LIVE_ARMS else "*",
+                arch.replace("applegpu_", ""), wr, ws,
                 ", ".join(spills) or "none"))
+    print("  * RETIRED as a Swift `Table` case.")
 
     print("\n## F45 section 5, the two closure conditions on %s"
           % decider.replace("applegpu_", ""))

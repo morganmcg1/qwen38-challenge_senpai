@@ -1827,12 +1827,8 @@ public enum Qwen35CustomQMV {
     public enum Table: String, Sendable, CaseIterable {
         /// Two verify passes at M=6, M=7 and M=8.
         case shipped
-        /// One pass at M=6.
-        case onePass6 = "onepass6"
         /// One pass at M=6 and M=7.
         case onePass67 = "onepass67"
-        /// One pass at M=6, M=7 and M=8.
-        case onePass678 = "onepass678"
 
         /// The table a run with no override selects, so the table the ranked
         /// runner uses. `{6:6, 7:7}` sits on the mode of the width
@@ -1870,15 +1866,9 @@ public enum Qwen35CustomQMV {
             case .shipped:
                 return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 3, 4),
                         (7, 4, 4), (8, 4, 4), (9, 3, 4)]
-            case .onePass6:
-                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
-                        (7, 4, 4), (8, 4, 4), (9, 3, 4)]
             case .onePass67:
                 return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
                         (7, 7, 4), (8, 4, 4), (9, 3, 4)]
-            case .onePass678:
-                return [(2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4), (6, 6, 4),
-                        (7, 7, 4), (8, 8, 4), (9, 3, 4)]
             }
         }
 
@@ -1896,12 +1886,8 @@ public enum Qwen35CustomQMV {
             switch self {
             case .shipped:
                 return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
-            case .onePass6:
-                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:4:4,8:4:4,9:3:4"
             case .onePass67:
                 return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
-            case .onePass678:
-                return "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:8:4,9:3:4"
             }
         }
     }
@@ -2293,10 +2279,20 @@ public enum Qwen35CustomQMV {
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
-    /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
-    /// close to flat in the table size, and repays it with recomputation the
-    /// wide kernel no longer does. The gate is a pure function of the width: no
-    /// clock, no counter, no state that survives a request.
+    /// The chunk-sum table costs one fill dispatch and repays it with
+    /// recomputation the wide kernel no longer does. The gate is a pure
+    /// function of the width: no clock, no counter, no state that survives a
+    /// request.
+    ///
+    /// The fill is close to flat in the table size, so it is almost entirely
+    /// encode overhead and barely at all work. The "4 to 6 us" figure this
+    /// docstring used to carry came from an ISOLATED microbenchmark, and that
+    /// figure does not survive in the real command stream where the dispatch
+    /// overlaps its neighbours. E135 measured the live cost by removing all
+    /// 257 fills from a full decode leg: **2.308 +- 0.667 us on Apple M4
+    /// Pro**, `harness=local`, 8 gated legs over 2 counterbalanced sessions.
+    /// Two ranked receipts at different fill coverage put the same dispatch at
+    /// about **1.18 us on the ranked M5 host** (campaign FINDING 258).
     ///
     /// E120 rung 5d measured the complete grid of the seven shapes that make up
     /// all 257 wide QMV calls of one decode round, at every legal width.
@@ -4852,11 +4848,6 @@ private func makeQwen35ProbeSortKernel(clusters: Int, probes: Int)
     )
 }
 
-/// `MLX_E87_PROBE_SORT=0` restores the `MLX.sorted` path bit-for-bit. The
-/// `MLX_` prefix is load-bearing: the worker sanitizer drops `MLXFAST_*`.
-private let qwen35ProbeSortEnabled: Bool =
-    ProcessInfo.processInfo.environment["MLX_E87_PROBE_SORT"] != "0"
-
 // ---------------------------------------------------------------------------
 // E121 cluster 2-bit QMV (proposal-side only)
 //
@@ -6215,9 +6206,13 @@ extension Qwen35TextModel: MTPCapable {
         if _draftClusterLHS == nil {
             _draftClusterLHS = MLX.zeros([probes], dtype: .uint32)
         }
-        if qwen35ProbeSortEnabled, _draftProbeSort == nil {
-            _draftProbeSort = makeQwen35ProbeSortKernel(
+        let probeSort: MLXFast.MLXFastKernel
+        if let built = _draftProbeSort {
+            probeSort = built
+        } else {
+            probeSort = makeQwen35ProbeSortKernel(
                 clusters: clusters, probes: probes)
+            _draftProbeSort = probeSort
         }
         if qwen35RowTop32Enabled, _draftRowTop32 == nil {
             _draftRowTop32 = Qwen35RowTop32(
@@ -6239,19 +6234,13 @@ extension Qwen35TextModel: MTPCapable {
         // `gatherQuantizedMM` is handed the probes in ascending index order,
         // while the top-C arrive in partition order.
         let order = MLX.argPartition(centroidScore, kth: clusters - probes)
-        let probed: MLXArray
-        if let sorter = _draftProbeSort {
-            probed = sorter(
-                [order],
-                grid: (qwen35ProbeSortTG, 1, 1),
-                threadGroup: (qwen35ProbeSortTG, 1, 1),
-                outputShapes: [[probes]],
-                outputDTypes: [.uint32]
-            )[0]
-        } else {
-            probed = MLX.sorted(order[.ellipsis, (clusters - probes)...])
-                .asType(.uint32)
-        }
+        let probed = probeSort(
+            [order],
+            grid: (qwen35ProbeSortTG, 1, 1),
+            threadGroup: (qwen35ProbeSortTG, 1, 1),
+            outputShapes: [[probes]],
+            outputDTypes: [.uint32]
+        )[0]
 
         let rowScore: MLXArray
         if let y = qwen35ClusterRowQMV(
