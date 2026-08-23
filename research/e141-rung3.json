@@ -1586,7 +1586,12 @@
         "still_exact": true
       }
     },
-    "selector_proven_live": false,
+    "selector_proven_live_per_arm": {
+      "thin099": true,
+      "armA": true,
+      "armB20": true
+    },
+    "selector_proven_live": true,
     "exact_at_narrow_prefix": true
   }
 }

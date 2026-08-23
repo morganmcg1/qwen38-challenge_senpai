@@ -77,6 +77,7 @@ def main() -> None:
     ap.add_argument("--rung2-arms", default="")
     ap.add_argument("--arm-geometry", default="research/e141-arm-geometry.json")
     ap.add_argument("--ca-resolver", default="research/e141-ca-resolver.json")
+    ap.add_argument("--cost-model", default="research/e141-cost-model.json")
     ap.add_argument("--name", default="e141-unproposable-token-channel")
     # The arm whose contrast owns the unsuffixed F2 metric names. Every other
     # arm is logged under `<metric>_<arm>`, so nothing is lost either way.
@@ -283,6 +284,30 @@ def main() -> None:
                 if isinstance(value, (int, float)):
                     metrics[f"e141_f8_{key}_{prompt}_{arm}"] = value
 
+    # F9 adopted a two-branch decision rule for leaf16: about 0 us/round means
+    # the widening cost is table-dominated, about +579 us/round means it is
+    # leaf-width dominated. The measurement fell outside both branches because
+    # leaf16 halves the leaf count while it doubles the leaf width, so the
+    # branch that fired has to be named rather than inferred.
+    leaf16 = load("research/e141-rung2-leaf16.json")
+    if leaf16:
+        added = leaf16["e141_added_us_per_round_at_p025"]
+        metrics["e141_leaf16_added_round_cost_us"] = added
+        armB20 = load("research/e141-rung2-armB20.json")
+        reference = (armB20 or {}).get("e141_added_us_per_round_at_p025")
+        branch = "neither"
+        if reference is not None and abs(added) > 0.25 * abs(reference):
+            branch = "leaf_width_dominated" if added > 0 else "neither"
+        elif reference is not None:
+            branch = "table_dominated"
+        config["leaf16_decision_branch"] = branch
+        summary_notes.append(
+            f"leaf16 added {added:+.1f} us/round, so the pre-registered branch "
+            f"that fired is '{branch}': the arm removes cost instead of adding "
+            "it, because it halves the leaf count at the same time as it "
+            "doubles the leaf width"
+        )
+
     resolver = load(args.ca_resolver)
     if resolver:
         config["ca_resolver"] = resolver
@@ -302,6 +327,25 @@ def main() -> None:
                 value = blob.get(key)
                 if isinstance(value, (int, float)):
                     metrics[f"e141_ca_{key}_{seed}"] = value
+        # The event-level result. The census counts how many emitted tokens
+        # are unproposable; this counts how many of those the widened arms
+        # actually recover, which is the only quantity a price may use.
+        for seed, blob in (resolver.get("cross_arm") or {}).items():
+            metrics[f"e141_binding_event_count_{seed}"] = float(
+                blob["binding_event_count"]
+            )
+            for arm, pct in blob["binding_recovery_pct"].items():
+                metrics[f"e141_binding_recovery_pct_{seed}_{arm}"] = pct
+            for arm, count in blob["binding_events_recovered"].items():
+                metrics[f"e141_binding_events_recovered_{seed}_{arm}"] = float(count)
+            if blob["binding_event_count"]:
+                best = max(blob["binding_recovery_pct"].values())
+                summary_notes.append(
+                    f"{seed}: the widened arms recover at most {best:.0f} % of "
+                    f"the {blob['binding_event_count']} binding events, so the "
+                    "reachable prize is a fraction of the census count"
+                )
+
         medpair_corpus = resolver.get("medpair_corpus_basis_pct")
         medpair_trial = resolver.get("medpair_trial_basis_pct")
         if medpair_corpus and medpair_trial:
@@ -311,6 +355,40 @@ def main() -> None:
                 f"{medpair_trial / medpair_corpus:.2f}x the corpus rate, so the "
                 "prize does not halve"
             )
+
+    cost_model = load(args.cost_model)
+    if cost_model:
+        config["cost_model"] = cost_model
+        for key in (
+            "break_even_budget_us_per_round",
+            "ceiling_median_pct",
+            "ranked_pct_per_added_us",
+            "c_leaf_us_lower_bound",
+            "c_row_us_upper_bound",
+            "c_table_plus_w20_us",
+            "shipped_search_us_per_round_lower_bound",
+        ):
+            value = cost_model.get(key)
+            if isinstance(value, (int, float)):
+                metrics[f"e141_cost_{key}"] = value
+        for arm, value in cost_model["measured_added_us_per_round"].items():
+            metrics[f"e141_cost_measured_added_us_per_round_{arm}"] = value
+        feasible = [
+            c
+            for c in cost_model["two_region_feasibility"]
+            if c["fits_budget_with_c_table_zero"]
+        ]
+        metrics["e141_cost_feasible_cell_count"] = float(len(feasible))
+        metrics["e141_cost_feasible_cell_count_total"] = float(
+            len(cost_model["two_region_feasibility"])
+        )
+        summary_notes.append(
+            f"break-even budget {cost_model['break_even_budget_us_per_round']:.0f} "
+            f"us/round admits {len(feasible)} of "
+            f"{len(cost_model['two_region_feasibility'])} two-region cells, and "
+            "every admitted cell sits at the tail probe fraction that destroys "
+            "the recall the prize needs"
+        )
 
     run = wandb.init(
         entity=ENTITY,
