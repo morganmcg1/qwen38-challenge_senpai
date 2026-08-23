@@ -52821,3 +52821,390 @@ direction note.
 - Still unowned: the width-independent GPU-work pool census, roughly 3.7 % to
   3.8 % of the ranked round and uniform, which is the largest safe target on the
   books; the per-position head-side confidence depth policy; F190.
+
+## 303 — FINDINGS 216 to 219: the candidate leg's noise decomposes, a proposal-head change is not uniform, and the ranked board yields absolute round costs
+
+Ledger 302 established that the published median is dominated by a serial
+lottery and gave Rule 126 for pricing a shaped gain. This entry moves to the
+candidate leg. It records how that leg's noise decomposes, one rejected rival
+row that isolates a proposal-head change and refutes a uniformity claim I made
+to a student, and an identity that converts the board's two published per-prompt
+numbers into absolute microseconds per round.
+
+Two advisor errors are recorded, one of them made and withdrawn inside the same
+hour.
+
+### 303.1 FINDING 216 — the candidate leg's noise decomposes, and a demeaned shape contrast is a worse instrument, not a better one
+
+F211 measured the null floor on 20 true null pairs. I extended the census to
+**34 tight null pairs**, using a stricter detector: residual scatter about the
+8-prompt mean below 0.15 % **and** digit-identical effective draft lengths on
+all eight prompts. Reproduce with `_advisor_scratch/f216.py`.
+
+```
+CANDIDATE leg
+  8-prompt mean, diff-of-two          sd 0.0721 %    (F211 said 0.0731 on 20 pairs)
+  per-prompt residual about the mean  sd 0.0975 %
+  => run-level component              sd 0.0438 % per run
+  => per-prompt component             sd 0.0737 % per leg
+SERIAL leg
+  8-prompt mean, diff-of-two          sd 0.1652 %
+  per-prompt residual about the mean  sd 0.2080 %
+  => run-level component              sd 0.1027 % per run
+  => per-prompt component             sd 0.1572 % per leg
+```
+
+The reference pair is `1760479a` to `106573b9`. nijaru's own public note on
+`106573b9` states that the `git diff` of `Vendor/` and `Sources/` against the
+promoted tip is empty and the head artifact is unchanged. That gives two
+independent ranked runs of a bit-identical tree: candidate 8-prompt mean
+**−0.0238 %**, residual scatter **0.0426 %**, serial 8-prompt mean +0.0769 %,
+published median delta −0.0462 %.
+
+**The hypothesis I was testing is refuted.** I expected that demeaning the
+per-prompt vector would remove a large shared run-level term and leave a tighter
+instrument. It does the opposite: the per-prompt component (0.0737) is larger
+than the run-level component (0.0438). Variance of the candidate 8-prompt mean
+is **74 % run-level**, so averaging more prompts buys almost nothing, and the
+only thing that would help is a second ranked run of the same tree. Rule 72
+forbids that. F211's rule therefore stands unchanged and unqualified: price on
+the candidate-leg median pair, and treat **0.0721 %** as the diff-of-two floor.
+
+Two more lottery receipts landed in the same window and both support F215.
+`64508884` (ofou) is a declared zero-delta resample of `3ba6ee9d`; it drew
++0.19 % upward and still scored **3.71255696**, rejected. `452b0055` (ofou) is a
+zero-delta resample of `e8f14c4` and scored **3.63423180**, rejected. A pure
+resample remains a bad bet, as Fact 27 says.
+
+### 303.2 FINDING 217 — an isolated proposal-head change is not uniform across prompts. ADVISOR ERROR 153.
+
+I told askeladd, in the E144 brief, that a proposal-head quality gain is uniform
+across prompts with standard deviation 0.0000 and is therefore lottery-proof
+under Rule 126. **That is refuted by ranked evidence.**
+
+First, a census. Reading `head_provenance_sha256` across the whole board
+(`_advisor_scratch/headrows.py`), **528 rows** use the incumbent declared head
+`559b24ebca35`, including every top row and the crown. Since 2026-08-22T00:00Z,
+**97 of 101 rows** use it. Only four modern rows declare something else. The
+head axis is almost untouched by the field, which is part of why E144 is
+attractive.
+
+The decisive row is `09b452f3` (igneous-prose, **rejected 3.66055344**). Its
+only editable delta against the promoted tip is `mtp-head.manifest.json`,
+selecting a distilled head with sealed sha256 `21275947163b…` at **427,742,209
+bytes** against the incumbent's 427,742,600. Byte-compatible, so this is not a
+byte-traffic effect, and no source file moves. It is the cleanest isolated
+ranked measurement of "change proposal quality, change nothing else" that exists
+on the board. Reproduce with `_advisor_scratch/f217.py`.
+
+Their offline evidence was real and good: depth-1 acceptance parity 0.87689
+against 0.87683, and depth-8 effective drafts per round 3.1127 against 3.0642,
+**+1.58 % relative**. The ranked published median still came out **2.38 % below
+the bar**:
+
+```
+09b452f3 vs 1760479a
+prompt      cand d%     draftlen A -> B      Δdlen
+beagle      +0.2391    4.3818 -> 4.4771     +0.0953   slower AND deeper
+essays      -2.6555    5.0870 -> 5.3563     +0.2694   the only real win
+medicine    +0.8428    5.2556 -> 5.1087     -0.1469
+republic    +3.4118    4.9892 -> 4.7172     -0.2721   became the upper slot, lost 3.4 %
+botany      +2.3075    6.1481 -> 5.9059     -0.2423
+travel      +1.1272    2.6479 -> 2.5694     -0.0785
+drama       -1.7659    2.2976 -> 2.2389     -0.0588
+plutarch   -50.8794    0.1557 -> 2.7778     +2.6221   non-drafting rounds 449 -> 0
+```
+
+An aggregate acceptance gain moved realised draft length **in both directions**
+across prompts. Rule 123's `min(...)` then selected republic, the prompt that
+degraded most. No pooled acceptance number could have predicted this.
+
+Note the plutarch line separately. Unlocking plutarch from 449 non-drafting
+rounds to zero is the largest regime change anywhere on the board, worth −50.9 %
+on that prompt's candidate leg, and it bought **exactly nothing**, because
+plutarch carries zero median weight under Rule 70. This is the third independent
+confirmation that a plutarch unlock is a warning sign rather than a result, after
+E140's oracle cells and F194.
+
+**CAMPAIGN RULE 127.** Never assume a mechanism's gain is uniform across prompts
+unless its causal path is prompt-independent. Any mechanism that moves realised
+draft length is not uniform, and must be priced per prompt, sorted under Rule
+121, checked against Rule 123's `min(...)`, and only then taken to expectation
+under Rule 126.
+
+E144's stop rule was amended accordingly: the acceptance delta must be
+non-negative on beagle **and** on all four of essays, republic, medicine and
+botany, and at least +0.30 pt pooled on the median-pair family, with McNemar
+p < 0.05, and the per-prompt table must be reported before the pooled number.
+
+The other three non-incumbent modern rows, for completeness: `04ead7d9`
+(francip, 3.12791812, head `5b0b4944fd52`); `f672fbd8` (hadakang, 3.48362939,
+head `6bbc79178c63`, with draft lengths digit-identical to the incumbent on all
+eight prompts except plutarch, 0.1540 against 0.1557); and `cced7a4d`
+(igneous-prose, 2.91284571, head `21275947163b` with a constant depth-2
+schedule, all draft lengths near 1.995).
+
+### 303.3 FINDING 218 — the sign pattern of the draft-length response, and ADVISOR ERROR 154
+
+From the same `09b452f3` pair, the implied per-unit rates are:
+
+```
+prompt      cand d%     Δdlen     implied cand % per unit dlen
+essays      -2.6555    +0.2693        -9.86
+medicine    +0.8428    -0.1469        -5.74
+republic    +3.4118    -0.2720       -12.54
+botany      +2.3075    -0.2422        -9.53
+                          mean -9.42, sd 2.83
+beagle      +0.2391    +0.0953        +2.51   <- the wrong sign
+travel      +1.1272    -0.0785       -14.36
+drama       -1.7659    -0.0587       +30.1  (tiny denominator)
+```
+
+Seven of eight prompts amortise a longer draft. **Beagle does not.** Beagle holds
+the lower median slot on 212 of 212 of edward's replayed vectors, so the median
+charges for exactly the prompt where the sign inverts.
+
+**ADVISOR ERROR 154.** I published `+2.51 %` of candidate time per unit of
+beagle draft length as a point coefficient, gave it to alphonse as a correction
+term, and built a `+0.40 %` net stop rule on it. I withdrew it within the hour.
+Seconds per token is a ratio,
+
+```
+seconds/token = round cost / tokens per round
+```
+
+and a head swap moves both terms, so dividing the composite by one of its inputs
+estimates nothing. This is the same class of error as 137, 139, 141, 146 and 148:
+a point price issued from an unidentified decomposition.
+
+What survives is a **bound**, using FINDING 219 below plus the single extra
+assumption that the width cost curve is monotone increasing, so round cost cannot
+fall when mean realised width rises. Reproduce with `_advisor_scratch/f218b.py`:
+
+```
+09b452f3 vs 1760479a, beagle
+  seconds/token   0.0106863 -> 0.0107118      +0.2391 %
+  draft length       4.3818 -> 4.4771         +2.1741 % relative
+  tokens/round at A = 1 + 0.834*4.3818 = 4.6544
+  round cost   at A = 49,738 us
+
+  accept rate unchanged:   round cost -> 50,708 us   +1.9501 %   (+970 us)
+  tokens/round unchanged:  round cost -> 49,857 us   +0.2391 %   (+119 us)
+                           (needs accept rate 0.834 -> 0.8163)
+
+  BOUNDED round-cost rise: +0.24 % .. +1.95 %,  i.e. 119 .. 970 us
+```
+
+Against edward's replayed 5→6 width step of **16,241 µs**, which is **32.7 %** of
+beagle's ranked round, the bound ends require only **0.73 % to 5.97 %** of
+beagle's width mass to cross that boundary. The implied boundary mass density is
+0.077 to 0.627 per unit of width. The low end is entirely ordinary for a
+distribution spread over widths 1 to 9; the high end is not.
+
+So the width-cliff mechanism is **viable but not proven**, and it is not
+separable from a competing explanation that fits equally well: this particular
+head is more confident and slightly less accurate on beagle, drafting deeper at a
+lower accept rate. Overconfidence. That is now a named failure mode for E144, and
+askeladd's replay reports `a'` and `d'` separately, so unlike the board he is not
+blind to it.
+
+Edward's E145 R2 measures the live curve and will settle it. His new metrics
+`e145_predicted_beagle_shift_us` and `e145_f218_bound_consistent` test it
+directly: shift his measured beagle width histogram to match a +0.0953
+draft-length increase and report the predicted round-cost rise in absolute
+microseconds. Inside 119 to 970 µs supports the cliff; well below 119 µs means
+`09b452f3`'s beagle slowdown is an accept-rate effect, which would materially
+weaken Rule 125's case on beagle.
+
+### 303.4 FINDING 219 — the round-count identity converts the board into absolute microseconds per round
+
+The board publishes only `effective_mean_draft_len` and
+`mtp_seconds_per_token_mean` per prompt: no round count, no accept rate. It turns
+out the round count is recoverable. Reproduce with `_advisor_scratch/f219.py`.
+
+```
+R = 512 / (1 + a * d)
+```
+
+Against the F92 pinned ranked round counts, eight for eight, worst error 0.33
+rounds:
+
+```
+prompt      dlen     R implied   R pinned
+beagle    4.3818      110.00       110
+botany    6.1481       81.04        81
+drama     2.2976      252.02       252
+essays    5.0870       92.04        92
+medicine  5.2556       90.01        90
+plutarch  0.1557      486.76       487
+republic  4.9892       93.00        93
+travel    2.6479      212.33       212
+```
+
+Therefore `tokens per round = 1 + a*d` and
+`round cost = seconds/token * (1 + a*d) = seconds/token * 512 / R`. At the
+promoted anchor `1760479a`:
+
+```
+prompt     cand s/tok      dlen       R    tok/round     round us
+beagle      0.0106863    4.3818  110.00       4.6544      49738.5
+botany      0.0096534    6.1481   81.04       6.3181      60991.4
+drama       0.0178217    2.2976  252.01       2.0316      36207.0
+essays      0.0098320    5.0870   92.04       5.5630      54695.7
+medicine    0.0097197    5.2556   90.01       5.6880      55285.4
+plutarch    0.0300828    0.1557  486.76       1.0519      31642.9
+republic    0.0097098    4.9892   93.00       5.5053      53455.4
+travel      0.0156178    2.6479  212.33       2.4113      37659.6
+```
+
+Two immediate uses.
+
+First, more evidence for F215. At the crown `684821ed` the same table gives
+beagle **49,776.3 µs** against `1760479a`'s **49,738.5**, a difference of
+**+0.076 %**. The crown and `1760479a` are the same candidate in absolute round
+cost, and the 0.43 % published gap between them is serial lottery.
+
+Second, a zero-GPU falsification of the replayed width curve, now assigned to
+edward as E145 R0 and to be run before any GPU work. His rebuilt `per_round`
+curve and his E134 replayed per-prompt width histograms jointly predict
+
+```
+predicted ranked round cost(prompt) = SUM over widths w of mass[prompt][w] * per_round[w]
+```
+
+which the F219 column measures independently. Every price in E134 and E140 rests
+on that curve: the tier grid, the `zero_weight_gain_share` detector, the cell-D
+reopening threshold and the corrected slopes. If the prediction lands within a
+few percent on all eight prompts, the curve is validated in the ranked frame. If
+it is off by 10 % or more, or off with a systematic sign, then R2 is repairing
+something load-bearing and its priority rises above R1.
+
+The general caution on F219: for a row whose head and scheduler are unchanged,
+`a` and `d` are unchanged and the identity adds nothing beyond confirming that
+`Δ%(round cost)` equals `Δ%(s/tok)`. Its value is precisely in the case where
+draft lengths move, and in that case `a` is unknown, so the identity yields a
+bound rather than a point. Do not quote a round cost for a head-changing row
+without stating which accept rate was assumed.
+
+### 303.5 Rival intelligence on the head axis, and the integrity boundary
+
+Three validating and one rejected rival row touch axes we own. Treat the notes as
+claims to verify, not receipts.
+
+`2b783747` (hadakang, validating since 01:53:48Z), "A declared head that beats
+the pinned head on EVERY named domain family". Artifact
+`hf:kumahada/qwen38-mtp-head-domainsoup06@9d03acdc`, digest `02bf4795…`,
+427,742,180 bytes. Method: fine-tune the pinned bf16 head with a chained-3
+objective, then take an **α = 0.6 weight soup with the pinned head**. Their
+chained-2 accept table, Q4-simulated: drama-like 0.3972 to 0.4385 (+4.1 pp);
+plutarch-like about 0.76 to 0.83; travel-like 0.821 to 0.835; **median-pair
+family 0.7223 to 0.7263, +0.40 pp**; rank-1 family 0.8756 to 0.8856; generic
+decode 0.8446 to 0.8639. Prior receipts `d4b2249e` (3.02398972, rejected) and
+`a5724050` (2.95246873, rejected).
+
+Their honest transfer estimate is the important line: **"+0.40 pp chained accept
+converts to roughly +0.2 to +0.4 % at the median."** My F214 table says +0.40 pt
+converts to +0.812 %. Even correcting for chained-2 being approximately p², which
+gives +0.235 pt per step and +0.477 % on my table, **they are 1.2 to 2.4 times
+below me**. They price through the depth response; I did not. Rule 125 says they
+are likelier to be right. E144's R-C must measure the conversion rather than
+assume it, which is exactly what the six-step chain in 303.4 above now requires.
+
+Packaging intelligence to verify in E144's R-A: both rivals report the same **40
+tensors** at the same shapes and counts, a **Q4 group-64 core**, `draft_lm_head.*`
+inherited verbatim, and precision islands that are bf16 rows at inherited indices
+which are regenerated rather than requantized. Igneous-prose adds that of the 40,
+**31 are core and 9 are side-channel tensors byte-identical to the parent
+artifact**.
+
+`c54de844` (scarletbright, grok-4.6, validating since 02:24:33Z), "Widen the
+declared-head rerank QMV to 32 values per lane". Base `eb5eadc7`, one editable
+file `Qwen35.swift`, touching only the declared-head selected rerank kernel:
+`VALUES_PER_LANE` 16 to 32, `BLOCK` 512 to 1024, weight addressing changed to
+`lane*4` uints and `lane/2` group, and a new pipeline name suffix `..._v1_l32` to
+avoid a Metal library cache collision. That is
+`qwen35DraftSelectedAffine4RerankKernel` at `Qwen35.swift:4056-4190`, which is
+currently unowned in this campaign. **Low prior**: readout C is only **0.09 MB**
+of the 323.59 MB per-draft-step byte budget (F144), so any gain can only be loop
+or launch overhead. Wait for the receipt; do not claim the kernel speculatively.
+
+`aff3b543` (grok-4.6, **rejected 3.7020845841**), "Admit N=1024 K/V projections
+into the promoted M=2 QMV launch". Against `1760479a`: candidate 8-prompt mean
+**+0.0154 %**, residual scatter 0.0924. Inside the F216 null band on both
+statistics — a **measured null**. Lowering the `routable` N floor at
+`Qwen35.swift:2109-2135` from 4096 to 1024 is worth zero. That axis is closed for
+free, and it confirms nijaru's independent claim that the remaining waste there
+is "in microseconds".
+
+nijaru's banked negatives, from `106573b9`'s note: head requantization at **q2 or
+q3 collapses acceptance**, 0.933 to 0.742 and 0.868, which is the bit-width axis
+and leaves E144's fixed-4-bit quantizer-quality axis untouched; **probe-fraction
+retuning washed out** on their older selection stack, against our own F192 ranked
+receipt of −0.2603 % on the candidate median pair, so thorfinn's ladder remains
+justified but a null rung would now be corroborated rather than surprising; the
+**`qmm_t_nax` launch swizzle drew −2.95 % isolated** and did not survive,
+consistent with F197's finding that `qmm_t` is unreachable from decode; and
+**asyncEval-ladder restructuring was neutral** after thermal correction. Their
+per-layer profiling reports **both the verify pass and the seed prefill uniform
+with no hotspot**, at roughly 0.8 ms per layer for verify and 37 ms per layer for
+prefill at about 50 % MFU, on an M3 Max.
+
+**THE INTEGRITY BOUNDARY. WE DO NOT CROSS IT.** Both head-axis rivals build
+training corpora from public-domain sources chosen to match the **named hidden
+prompt families**, and hadakang validates those corpora against per-prompt accept
+rates leaked in another solver's public note. `program.md` forbids hidden-prompt
+specialization, and this campaign's standing rule is never to tune or evaluate
+against suspected hidden-prompt source text. E144 stays clean **by construction**:
+its quantizer must be a pure function of the master weights, with no calibration
+data, no activations, no training and no corpus. That constraint is not a
+handicap to be worked around; it is the reason our result would be worth
+publishing.
+
+### 303.6 Board and campaign state at 03:55Z
+
+```
+PROMOTED top 6
+  684821ed newjordan      3.71959723  01:45:13Z src=eb5eadc7   <- THE BAR
+  3ba6ee9d Amal-David     3.70576324  01:07:07Z src=1b3ea281
+  1760479a scarletbright  3.70355222  22:58:31Z src=e8f14c44   <- candidate frontier
+  08b67f12 jungjipdo      3.69071883  21:02:29Z src=1d66bb36
+  ed608e64 jungjipdo      3.68172016  19:47:14Z src=8849fad7
+  02742bf0 scarletbright  3.52686512  19:06:44Z src=c8dbd2dc
+
+VALIDATING 8
+  43925f29 Amal-David     71caa947 fkiene        9f9b4790 newjordan
+  2b783747 hadakang       1db9d63e morganmcg1    4debb1df nijaru
+  b8e0f27c a-github-name  c54de844 scarletbright
+```
+
+Our best promoted row remains `572b2cc4` at 3.66218564. `1db9d63e` (thorfinn's
+clean archive, forecast 3.69900) has been validating since 01:54:01Z. **The
+single Yukon slot is occupied. Do not submit.** Rule 72 stands: one shot, no
+re-rolling.
+
+Open assignments: #135 thorfinn E135, #141 alphonse E141, #144 edward E145,
+#145 askeladd E144. All four received fresh guidance in this window: thorfinn F27,
+alphonse F7 and the F8 correction, edward F2 with the new zero-GPU R0, askeladd
+F2 with the six-step pricing chain.
+
+Merged in this window: PR #143, askeladd's E143, at advisor base `a8878e70`. It
+closed the acceptance axis inside the shipped head, with channel C-d bracketed at
+92.23 % pooled, interval [91.22, 97.64], every carrier and interval end above the
+80 % kill line, and C-b refuted at `screen_loss_at_32 = 0.0` with `recall@32 =
+1.000` under a monotone Rule 101 dose-response. C2 precision islands were refuted
+for a third time, at `+0.0702 %` in a gate-qualified ABBA whose replicate spread
+was 0.1307 %.
+
+The three largest live levers, repriced under Rules 126 and 127: the in-branch
+re-quantized head, **no longer assumed uniform** and now required to be priced
+per prompt through the six-step chain; F22 width-6 register occupancy at
++0.5913 % expected with p05 +0.5992 %; and E141 arm B-20 at +0.4038 % with sd
+0.0007, still lottery-proof because it is beagle-only.
+
+Still unowned: the width-independent GPU-work pool census, roughly 3.7 % to 3.8 %
+of the ranked round and genuinely uniform, which remains the largest safe target
+on the books; the per-position head-side confidence depth policy; the C-a census
+resolver, which is zero-GPU and would settle a 2.05× disagreement that scales
+E141's whole prize; coarse-metadata coarsening from g64 to g128 or g256, priced by
+E143's dose-response table; `MISS_TO_SCORE_PCT`, still 203 by contract against
+209.5 ± 93.1 measured; and F190.

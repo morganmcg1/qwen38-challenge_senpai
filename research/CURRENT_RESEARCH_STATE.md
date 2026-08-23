@@ -1,143 +1,139 @@
 # SENPAI Research State
 
-- 2026-08-23 03:45 UTC
-- No new human research direction this round. The standing direction is
-  unchanged: maximize the official Yukon decode score on the
-  `qwen3.8-27b-mtp-v1` track, submit autonomously, and do not stop at synthesis.
+- 2026-08-23 04:05 UTC
+- Most recent human research direction: none received this round. The campaign
+  runs autonomously under `senpai/program.md`.
 
-## Where the board actually is
+## Where the campaign stands
 
-- **Bar**: `684821ed`, newjordan, published **3.71959723**, promoted
-  2026-08-23T01:45:13Z, source ref `eb5eadc7`.
-- **Candidate frontier**: `1760479a`, scarletbright, 3.70355222. This is the
-  fastest promoted *candidate leg*, and it is the correct anchor for contrasts
-  (Rule 124).
-- **Ours**: best promoted `572b2cc4` at 3.66218564. `1db9d63e`, thorfinn's clean
-  archive, has been validating since 01:54:01Z and is forecast near 3.69900. The
-  single Yukon slot is occupied; nothing may be submitted until it clears.
+The bar is `684821ed` (newjordan) at **3.71959723**, promoted 01:45:13Z from
+source `eb5eadc7`. Our best promoted row is `572b2cc4` at **3.66218564**.
+`1db9d63e`, thorfinn's clean archive of three composed mechanisms with a
+forecast near 3.69900, has been validating since 01:54:01Z. The single Yukon
+slot is occupied, so nothing may be submitted until that receipt lands.
 
-**Finding 215 is the fact that governs everything below.** De-lucking the board
-— replacing every serial leg with the 29-row window median, holding each
-candidate vector fixed — collapses the top five promoted rows to within 0.09 %
-of each other. `684821ed` carries +0.497 % of pure serial luck and de-lucks to
-3.701207, *below* three rows it outranks. The best de-lucked candidate on the
-board belongs to a rejected row, `106573b9`. Essays owns 89.7 % of the upper
-median slot and has the noisiest serial leg on the board, sd 0.306 % with a
-range of −0.217 % to +1.409 %.
+Two structural facts now dominate every pricing decision.
 
-The published spread at the top of this board is not a merit ordering. Our job
-is to move the candidate leg by enough that the lottery cannot decide the
-outcome.
+**The published median is mostly a serial lottery.** The top five promoted rows
+are the same candidate to within 0.09 % of de-lucked score. The crown carries
++0.497 % of luck and is the *worst* de-lucked row of the five. Rule 126 follows:
+price a shaped gain as an expectation over resampled whole serial vectors, never
+against one row's realised sort order. The tool is published as
+`research/f215_lottery_price.py` with `research/f215-serial-pool.json`.
+
+**The candidate leg is the only precise instrument, and it is not uniform across
+prompts.** Its diff-of-two floor is 0.0721 %, against 0.1652 % for the serial
+leg, and 74 % of that variance is run-level, so averaging more prompts buys
+almost nothing and Rule 72 forbids a second run. Rule 127 follows: never assume
+a mechanism's gain is uniform unless its causal path is prompt-independent. Any
+mechanism that moves realised draft length is not uniform.
 
 ## Current research focus
 
-**One theme: buy uniform, lottery-proof candidate-leg time, and buy enough of
-it.** The pricing is now explicit (Campaign Rule 126, tool
-`research/f215_lottery_price.py`):
+Four experiments are live, one per student, each on its own Mac.
 
-```
-uniform candidate-leg gain over 1760479a   expected median   P(beat the bar)
-   +0.25 %                                     3.71388            18 %
-   +0.40 %                                     3.71943            37 %
-   +0.50 %                                     3.72314            72 %
-   +0.60 %                                     3.72684            94 %
-   +0.75 %                                     3.73222           100 %
-```
+1. **The in-branch re-quantized proposal head (askeladd, E144).** The largest
+   lever on the books. The organizer's declared head is the master bf16 weights
+   put through naive round-to-nearest affine-4 group-64, losing 0.82 points of
+   acceptance. `benchmark.json` allows a head to ship in-branch under
+   `mtp-head/`, outside the source byte budget, with a 2 GiB cap, so no external
+   upload is needed. The question is whether a strictly better **data-free**
+   quantizer of the same weights, at identical bytes and layout, recovers enough
+   of that 0.82 to move the median. The uniformity assumption I gave this brief
+   has been refuted, so the result must now be priced per prompt through a
+   six-step chain that ends in a Rule 126 expectation.
 
-**+0.60 % uniform is a 94 % crown. Below +0.40 % we are betting on a draw.**
+2. **Width-6 register occupancy (thorfinn, F22 inside E135).** The width-6 QMV
+   arm needs 105 registers on the ranked M5 against a 96-register ceiling on our
+   student Macs, and the resulting occupancy tax is measurable. A column-pair
+   loop that rolls register lifetime is the candidate fix. Priced at **+0.5913 %
+   expected, p05 +0.5992 %** under Rule 126. A g17s register census is running
+   and holds the kill rule.
 
-A uniform gain has exactly zero variance across the serial lottery. A shaped
-gain does not, and an essays-weighted shape is worth a lot only when essays
-binds. Every value claim in flight is now priced as an expectation, with p05 and
-an upper-slot occupancy census, not against one row's realised sort order.
+3. **The compact draft vocabulary (alphonse, E141 arm B-20).** About one target
+   token in two hundred cannot be proposed at all because it falls outside the
+   compact draft vocabulary. Arm B-20 raises rows per leaf from 8 to 20 and
+   recovers it at a cost of 0.004 %. The prize is beagle-only, which makes it
+   **lottery-proof: +0.4038 % expected, sd 0.0007**. Rung 3 is running at 512
+   tokens.
 
-### The four live experiments
+4. **The live width cost curve (edward, E145).** Every price in the campaign's
+   scheduler work rests on a *replayed* per-width round-cost curve that nobody
+   has ever measured live. A six-point disagreement about one reverted mechanism
+   hangs on it, and so does the interpretation of the newly measured inverted
+   beagle sign. A zero-GPU falsification against ranked round costs now runs
+   first, before any GPU work.
 
-| PR | student | mechanism | Rule 126 value | state |
-|---|---|---|---|---|
-| #145 | askeladd | E144 — a better **data-free** affine-4 g64 quantizer of the organizer's `master-bf16` head, shipped in-branch under `mtp-head/` | **+0.406 % per 0.20 pt recovered, sd 0.0000**; +0.30 pt is a 93 % crown | just assigned |
-| #135 | thorfinn | F22 — width-6 register occupancy, column-pair loop rolling to reach ≤96 g17s registers | **+0.5913 %, p05 +0.5992** | g17s na6 register census running |
-| #141 | alphonse | E141 arm B-20 — `rowsPerCluster` generalisation, 20 rows per leaf, 24,580 probed rows against a shipped 24,584 | **+0.4038 %, sd 0.0007** | rung 3 at 512 tokens |
-| #144 | edward | E145 — the first **live** measurement of the width cost curve, and the pb6 regime question | resolves a ±2.9 % disagreement | just assigned |
+## What changed this round
 
-Composed, the head, F22 and arm B-20 are Rule-75 disjoint and reach roughly
-+1.4 % of uniform-equivalent gain. That is the campaign's path to the crown.
-
-### What closed this round
-
-- **The acceptance axis inside the shipped head is closed** (E143). The coarse
-  screen recalls the exact argmax on 100 % of 2,634 real rows at a median margin
-  of 18.7 error sigmas; the exact rerank cannot mis-order what it would rank
-  first; 92.23 % [91.22, 97.64] of first divergences are the head preferring a
-  different continuation. Every carrier and every interval end is above the
-  pre-registered 80 % kill line.
-- **C2 precision islands are refuted a third time** (E143 live ABBA at +0.0702 %
-  inside its own 0.1307 % replicate spread, after E82's direct +1.801 % SLOWER
-  receipt and E124's corrected byte model). One extra decode round is 1.22 % of
-  an 82-round leg and outweighs the whole byte saving by 17x.
-- **A perfect acceptance estimator makes the score worse** (E140). Oracle cells
-  reach −4.5296 % against the shipped EMA's −3.1350 %; the estimator is worth
-  −1.3946 pp. Campaign Rule 125 follows: on the shipped price, accuracy about
-  acceptance is converted into depth, and depth on beagle is the one thing the
-  median charges for. Every acceptance gain must now be reported with its
-  replayed depth histogram, `beagle_cost_pct` and `zero_weight_gain_share`.
-- **Rule 123 is confirmed on 212 of 212 replayed vectors**: the published median
-  is `(beagle + min(essays, republic, medicine, botany)) / 2`, a worst case over
-  four prompts. Plutarch, drama and travel carry exactly zero marginal weight,
-  and a cell that unlocks plutarch is a warning sign.
+- **FINDING 216.** The candidate leg's noise decomposes across 34 tight null
+  pairs: run-level 0.0438 % per run, per-prompt 0.0737 % per leg. My hypothesis
+  that a demeaned per-prompt shape contrast would be a tighter instrument is
+  refuted, because the per-prompt term is the larger one.
+- **FINDING 217 and Rule 127.** A rejected rival row isolates a proposal-head
+  swap with byte-compatible size and no source delta. Its offline acceptance
+  evidence was genuinely good and its ranked median still landed 2.38 % below
+  the bar, because realised draft length moved in both directions across prompts
+  and Rule 123's `min(...)` selected the prompt that degraded most. Recorded as
+  **Advisor Error 153**.
+- **FINDING 218 and Advisor Error 154.** Seven of eight prompts amortise a
+  longer draft; beagle, which holds the lower median slot on 212 of 212 replayed
+  vectors, does not. I published a point coefficient for that effect and
+  withdrew it within the hour, because seconds per token is a ratio whose two
+  terms both move. Only a bound survives.
+- **FINDING 219.** `R = 512 / (1 + a * d)` recovers the ranked round count on
+  all eight prompts, worst error 0.33 rounds. That converts the board's two
+  published per-prompt numbers into absolute microseconds per round, gives a
+  zero-GPU falsification of the replayed width curve, and shows the crown and
+  the prior frontier differ by only +0.076 % in beagle round cost. Published as
+  `research/f219_round_cost.py`.
+- **PR #143 merged.** Askeladd's E143 closed the acceptance axis inside the
+  shipped head. The reachable prize is bracketed at 92.23 % pooled on a channel
+  we cannot address, and the precision-islands idea was refuted for a third
+  time.
+- One rival axis closed for free: admitting N=1024 projections into the M=2 QMV
+  launch is a measured null.
 
 ## Potential next research directions
 
-Ordered by expected value, with owners where they exist.
+Ordered by expected value, with the unowned items first because all four
+students are currently occupied.
 
-1. **The width-independent GPU-work pool census — UNOWNED, and the largest safe
-   target on the books.** Roughly 3.7 % to 3.8 % of the ranked round is work that
-   does not scale with verify width. It is uniform across prompts by
-   construction, so it is fully lottery-proof. Nobody has censused it. This is
-   the next assignment to place.
-2. **Per-position head-side confidence feeding the depth policy — UNOWNED.**
-   Point +0.5 %, band [0, +1.5 %], beagle-weighted and therefore lottery-proof.
-   Rung 0 is zero-GPU on the cached E142 capture. Must be priced through Rule 125
-   because it is a depth-policy change.
-3. **The `(h, tier)` plane.** F210 showed `makeBoundaryDepthPrice` holds the
-   total, so `tier` and `within` are the same constant and E134's tier grid swept
-   a one-dimensional diagonal. The plane has never been searched. Gated on
-   edward's live width curve in E145, because a plane fitted to a replayed curve
-   is not decision-grade.
-4. **pb6 as a per-prompt policy rather than a global one.** The live hypothesis
-   is that pb6 pays only in deep regimes: `benchfixture` drafts 6.359 above the
-   cliff and measures −2.2467 % faster, while ranked beagle drafts 4.3818 below
-   it and the ranked receipt implies about +2.1 % slower. E145 R1 tests it. If
-   confirmed, I reverted a real mechanism on a confounded receipt.
-5. **The C-a census disagreement.** Alphonse and askeladd differ by 2.05x on the
-   unproposable-token rate and the largest suspected term — corpus token
-   frequency against live generated-trajectory frequency — has never been
-   measured by either of them. Running both censuses on the same token stream is
-   a zero-GPU afternoon and it decides whether arm A is worth building.
-6. **Coarse-metadata coarsening priced from E143's dose-response.** The g64 to
-   g128/g256 lever saves head bytes by making the coarse screen noisier, and
-   E143's table converts that noise straight into screen loss: 1σ gives 0.190 %,
-   2σ gives 1.025 %. The whole decision reduces to an offline measurement of the
-   sigma inflation. It composes with E144 because a better quantizer and a
-   coarser screen draw on the same error budget.
-7. **`MISS_TO_SCORE_PCT`.** Three values are in use — 203 from the contract,
-   209.5 ± 93.1 from E139, 290 from a geometric model. Several campaign prices
-   depend on it and no measurement is tight enough to discriminate.
-8. **F190 — the cliff appears to move one width between two of our own bases.**
-   Check the E92 axis label before assigning any bisect; an off-by-one in the
-   label is the leading explanation.
-9. **P4, the Gated DeltaNet S=2 mid-state write.** 0.2 % to 0.6 %, unowned, and
-   the highest correctness risk on the list.
+- **The width-independent GPU-work pool census.** Roughly 3.7 % to 3.8 % of the
+  ranked round, and genuinely uniform across prompts, which under Rule 126 makes
+  it lottery-proof. This is the largest safe target on the books and it has no
+  owner. It needs a census before it needs an experiment.
+- **A per-position head-side confidence depth policy.** The shipped scheduler
+  chooses one depth per round upfront from an EMA. A per-position signal from
+  the head itself is cheap and beagle-weighted. Rung 0 is zero-GPU.
+- **The C-a census resolver.** Two of our own censuses disagree by 2.05× on how
+  often the target token is unproposable. The disagreement scales E141's entire
+  prize. Running both censuses on the same token stream costs zero GPU.
+- **Coarse-metadata coarsening from group-64 to group-128 or group-256.** E143's
+  dose-response table already supplies the exchange rate, so this is an offline
+  measurement that composes with E144.
+- **`MISS_TO_SCORE_PCT`.** Still 203 by contract against 209.5 ± 93.1 measured
+  and 290 geometric. Several standing prices depend on which is right.
+- **F190, the cliff that appears to move one width between two of our own
+  bases.** The leading explanation is an axis-label off-by-one, which must be
+  checked before any bisect is assigned.
+- **The `(h, tier)` plane.** The two constants in the depth-price model turn out
+  to be the same constant, and the plane has never been searched. Gated on
+  edward's live curve.
+- **pb6 as a per-prompt policy.** A mechanism I reverted on one confounded
+  three-change receipt may be worth +2 % in deep regimes only. Reopened inside
+  E145 R1.
 
-## Closed, do not reopen without new evidence
+## Standing constraints
 
-The acceptance axis inside the shipped head (E143). C2 precision islands (E82,
-E124, E143). The qat-q4 artifact declaration (ledger 282.6, Advisor Error 114).
-The plan surface and all 120 legal cells (E138). The verify-readout axis (E142,
-Advisor Error 146). The nibble axis (E129). The launch-column ladder above width
-2 (E135 F21). Tree, hedge-row and multi-candidate drafting, which the trusted
-driver's row contract blocks structurally. Block Verification, which is exactly
-zero at temperature 0. Porting anything from the current crown's diff: its E87
-probe select is already accounted for (F201), its flush-fold warm is a Rule 110
-null (F213), and its probe-sort skip is not portable because our sorter is live
-at `Qwen35.swift:6211`.
+Tree, hedge-row and multi-candidate drafting are structurally blocked by the
+trusted driver's row contract, which forces a single linear chain. The
+acceptance axis inside the shipped head is closed. The verify-readout axis, the
+plan surface, the nibble axis and the launch axis above width 2 are all closed.
+
+The integrity boundary is not negotiable. Two rivals are building head-training
+corpora from public-domain sources chosen to match the named hidden-prompt
+families, and one validates those corpora against per-prompt accept rates leaked
+in another solver's public note. We do not do this. E144 stays clean by
+construction: its quantizer is a pure function of the master weights, with no
+calibration data, no activations, no training and no corpus.
