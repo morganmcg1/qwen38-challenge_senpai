@@ -37,18 +37,24 @@ So this experiment can and does show a positive local percentage while the
 ranked value is negative. Only term 2 is rescaled:
 
   net_ranked_pct = 100 * (1 - (N_full / N_shipped) * (1 + f_ranked))
-  f_ranked       = kappa * delta_us_local / ranked_round_us
 
-kappa is the M4 Pro -> M5 absolute-cost transfer and is class-dependent, so
-this reports the bracket rather than one false point estimate:
+The host-transfer class decides f_ranked, so this reports both ends of the
+bracket rather than one false point estimate:
 
-  kappa = 0.646  Rule 115 per-round overhead class, the unfavourable end.
-  kappa = 0.270  the bandwidth carve-out Rule 115 states for a mechanism such
-                 as C1, where the ranked host moves bytes faster so the
-                 absolute cost shrinks with the round and f is invariant. That
-                 is 52,726 / 195,171 expressed on the same kappa axis, and it
-                 makes f_ranked equal f_local. This mechanism reads 2.53x more
-                 coarse table per draft, so it has real bandwidth character.
+  overhead   f_ranked = 0.646 * delta_us_local / 52,726. The absolute cost
+             survives the move to the M5 and is then divided by the much
+             shorter ranked round. This is the unfavourable end.
+  bandwidth  f_ranked = f_local. Rule 115 states this carve-out for a
+             bandwidth mechanism such as C1: the ranked host moves bytes
+             faster, so the absolute cost shrinks in step with the round and
+             the fraction is invariant. This mechanism reads 2.53x more coarse
+             table per draft, so it has real bandwidth character.
+
+The bandwidth end is deliberately NOT written as a fixed kappa. Its effective
+kappa is ranked_round / local_round, and the local round must be this session's
+measured value. Rule 115's 195,171 us benchfixture anchor came from a different
+draft policy, 78 rounds per 512-token leg against about 118 here, so reusing it
+would misprice the class by more than the effect being measured.
 
 If the conclusion is the same at both ends, the host-transfer class does not
 matter and the result is robust.
@@ -77,9 +83,12 @@ PROBE_FRACTION = 0.25
 
 # Rule 115 conversion constants, all from senpai/campaign-ledger.md.
 RANKED_ROUND_US = 52_726.0  # medpair-weighted ranked round, F189 arm B
-LOCAL_REFERENCE_ROUND_US = 195_171.0  # benchfixture anchor quoted by Rule 115
 KAPPA_OVERHEAD = 0.646  # absolute M4 Pro -> M5, per-round overhead class
-KAPPA_BANDWIDTH = RANKED_ROUND_US / LOCAL_REFERENCE_ROUND_US  # f invariant
+# The bandwidth class is not a fixed kappa. It is the statement that the cost
+# fraction is invariant, so its effective kappa follows this session's own
+# measured round length. Rule 115's 195,171 us anchor was recorded under a
+# different draft policy (78 rounds per 512-token leg against 118 here) and
+# must not be substituted for the measured value.
 
 # The advisor's pre-registered price: recoverable mass * coefficient.
 PREREGISTERED_COEFFICIENTS = (65.0, 203.0)
@@ -152,9 +161,58 @@ def collect(runs_parent: Path, label: str) -> list[dict]:
                     ),
                     "commit": meta.get("e141_session_commit", "?"),
                     "worker": meta.get("e141_session_worker_sha256", "?"),
+                    # result-template.md makes head provenance mandatory per
+                    # leg, because score.json.uses_pinned_mtp_head reads true
+                    # for both artifacts and cannot distinguish them.
+                    "head_provenance_sha256": meta.get(
+                        "head_provenance_sha256", "?"
+                    ),
+                    "prompt_sha256": meta.get("prompt_sha256", "?"),
+                    "golden_sha256": meta.get("golden_sha256", "?"),
+                    "chip": meta.get("chip", "?"),
+                    "memory_gib": meta.get("memory_gib", "?"),
+                    "host": meta.get("host", "?"),
+                    "started_utc": meta.get("started_utc", "?"),
+                    "dirty_candidate_paths": meta.get("dirty_candidate_paths", "?"),
                 }
             )
     return legs
+
+
+def identity(legs: list[dict]) -> dict:
+    """Every leg must share one identity except for the arm under test.
+
+    A differing worker or head across legs would mean the contrast compares two
+    builds rather than two arms, so this is reported as a hard field.
+    """
+    def uniq(key: str) -> list:
+        return sorted({str(leg[key]) for leg in legs})
+
+    shared = {key: uniq(key) for key in ("worker", "head_provenance_sha256",
+                                         "chip", "memory_gib", "host",
+                                         "commit", "dirty_candidate_paths")}
+    per_prompt = {
+        key: {
+            p: sorted({str(leg[key]) for leg in legs if leg["prompt"] == p})
+            for p in MEDPAIR
+        }
+        for key in ("prompt_sha256", "golden_sha256")
+    }
+    present = [p for p in MEDPAIR if any(leg["prompt"] == p for leg in legs)]
+    return {
+        "shared_fields": shared,
+        "per_prompt_fields": per_prompt,
+        "prompts_present": present,
+        "all_medpair_prompts_present": set(present) == set(MEDPAIR),
+        "one_build_across_all_legs": all(
+            len(v) == 1 for k, v in shared.items() if k != "commit"
+        ),
+        # Judge only prompts that actually produced legs, so a missing prompt
+        # is reported as missing rather than disguised as a fixture mismatch.
+        "one_fixture_per_prompt": all(
+            len(d[p]) == 1 for d in per_prompt.values() for p in present
+        ),
+    }
 
 
 def contrasts(legs: list[dict], prompt: str, basis: str) -> list[float]:
@@ -178,32 +236,51 @@ def contrasts(legs: list[dict], prompt: str, basis: str) -> list[float]:
 
 
 def ranked_conversion(
-    prompts: dict, round_ratio: dict[str, float], kappa: float
+    prompts: dict, round_ratio: dict[str, float], mode: str
 ) -> dict:
     """Rule 115: rescale only the absolute per-round cost term.
 
     The round-count ratio is deterministic and transfers unchanged; the added
     microseconds are re-expressed over the ranked round instead of the local
     one. Returns the medpair-weighted net and the per-prompt terms.
+
+    Two host-transfer classes, both taken from Rule 115 itself:
+
+    overhead   the absolute cost survives the move to the M5 at 0.646 and is
+               then divided by the much shorter ranked round. Unfavourable.
+    bandwidth  the ranked host moves bytes faster, so the absolute cost shrinks
+               in step with the round and the FRACTION is invariant. This is
+               stated directly as f_ranked = f_local rather than through a
+               fixed kappa, because the correct kappa depends on this session's
+               own measured round length, not on a ledger anchor recorded under
+               a different draft policy.
     """
     per_prompt: dict[str, dict] = {}
     for prompt, ratio in round_ratio.items():
         added = prompts[prompt]["added_us_per_round_at_p025"]
         if added is None:
             return {}
-        f_local = added / prompts[prompt]["shipped_us_per_round"]
-        f_ranked = kappa * added / RANKED_ROUND_US
+        local_round = prompts[prompt]["shipped_us_per_round"]
+        f_local = added / local_round
+        if mode == "overhead":
+            f_ranked = KAPPA_OVERHEAD * added / RANKED_ROUND_US
+        elif mode == "bandwidth":
+            f_ranked = f_local
+        else:
+            raise ValueError(f"unknown transfer class {mode!r}")
         per_prompt[prompt] = {
             "round_count_ratio": ratio,
             "rounds_term_pct": 100.0 * (1.0 - ratio),
             "added_us_per_round_local": added,
+            "local_round_us_measured": local_round,
+            "effective_kappa": f_ranked * RANKED_ROUND_US / added if added else None,
             "f_local_pct": 100.0 * f_local,
             "f_ranked_pct": 100.0 * f_ranked,
             "net_ranked_pct": 100.0 * (1.0 - ratio * (1.0 + f_ranked)),
             "net_local_pct": 100.0 * (1.0 - ratio * (1.0 + f_local)),
         }
     return {
-        "kappa": kappa,
+        "transfer_class": mode,
         "ranked_round_us": RANKED_ROUND_US,
         "harness": "ranked",
         "seed_prefill_dilution": (
@@ -260,6 +337,7 @@ def main() -> None:
         "cool_gate_passed_real_gate": False,
         "official_or_ranked_score": False,
         "estimator": "within-replicate ABBA contrast, mean position 2.5 per arm",
+        "identity": identity(legs),
         "legs": legs,
         "prompts": {},
     }
@@ -336,11 +414,9 @@ def main() -> None:
         )
 
         conversions = {
-            "overhead_class": ranked_conversion(
-                report["prompts"], ratio, KAPPA_OVERHEAD
-            ),
+            "overhead_class": ranked_conversion(report["prompts"], ratio, "overhead"),
             "bandwidth_class": ranked_conversion(
-                report["prompts"], ratio, KAPPA_BANDWIDTH
+                report["prompts"], ratio, "bandwidth"
             ),
         }
         report["rule115_conversion"] = conversions
@@ -423,24 +499,38 @@ def main() -> None:
 
     Path(args.out).write_text(json.dumps(report, indent=2) + "\n")
 
+    ident = report["identity"]
+    print(
+        f"\n== identity: {len(legs)} legs, one build "
+        f"{ident['one_build_across_all_legs']}, one fixture per prompt "
+        f"{ident['one_fixture_per_prompt']} =="
+    )
+    for key, values in ident["shared_fields"].items():
+        mark = "" if len(values) == 1 else "  <-- DIFFERS"
+        print(f"  {key:26s} {','.join(v[:16] for v in values)}{mark}")
+
     for prompt, blob in report["prompts"].items():
         print(f"\n== {prompt} ==")
         print(
             f"  rounds    shipped {blob['shipped_round_count']} "
             f"full {blob['full_round_count']}"
         )
+        def num(value: str, spec: str = "+.1f") -> str:
+            return format(blob[value], spec) if blob[value] is not None else "n/a"
+
         print(
-            f"  us/round  shipped {blob['shipped_us_per_round']:.1f} "
-            f"full {blob['full_us_per_round']:.1f} "
-            f"added {blob['added_us_per_round_at_p025']:+.1f}"
+            f"  us/round  shipped {num('shipped_us_per_round', '.1f')} "
+            f"full {num('full_us_per_round', '.1f')} "
+            f"added {num('added_us_per_round_at_p025')}"
         )
         for basis in ("decode_spt", "ranked_spt"):
             vals = blob[f"{basis}_gain_pct_per_replicate"]
             mean = blob[f"{basis}_gain_pct"]
             sd = blob[f"{basis}_gain_pct_stdev"]
             sd_text = f" sd {sd:.4f}" if sd is not None else ""
+            mean_text = f"{mean:+.4f} %" if mean is not None else "n/a"
             print(
-                f"  {basis:11s} {mean:+.4f} %{sd_text}  "
+                f"  {basis:11s} {mean_text}{sd_text}  "
                 f"per replicate {[round(v, 4) for v in vals]}"
             )
         print(
@@ -465,8 +555,13 @@ def main() -> None:
             f"  round-count ratio from rung 3 reproduced by timing legs: {agree}"
         )
         for name, conv in report["rule115_conversion"].items():
+            kappas = {
+                round(v["effective_kappa"], 3)
+                for v in conv["per_prompt"].values()
+                if v["effective_kappa"] is not None
+            }
             print(
-                f"  {name:15s} kappa {conv['kappa']:.3f}  "
+                f"  {name:15s} kappa {sorted(kappas)}  "
                 f"rounds {conv['rounds_term_pct']:+.4f} % "
                 f"cost {conv['cost_term_pct']:+.4f} % "
                 f"-> net {conv['net_ranked_pct']:+.4f} %"
