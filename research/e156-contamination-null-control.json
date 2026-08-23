@@ -1,0 +1,73 @@
+{
+  "experiment": "E156",
+  "rung": "R1",
+  "harness": "local",
+  "question": "With the retiled NAX kernel unable to execute on this host, does the composed candidate still perturb the measured 512-token local-submit result relative to a matched base arm?",
+  "why_this_is_a_null_control": "is_nax_available() (Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:913-931) requires GPU architecture generation >= 17. This host is applegpu_g16s, generation 16, so affine_qmm_t_nax executes ZERO times. Both submitted files change only that kernel. Any measured difference between the arms is therefore contamination or noise, never the mechanism under test. This control CANNOT measure the retile effect, and it CANNOT measure the physical cache/power channel the advisor identified as the residual risk, because the retiled kernel never runs.",
+  "arms_differ_in": "exactly the two submitted files, Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h and Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp",
+  "sign_convention": "delta = candidate minus base. NEGATIVE seconds-per-token delta means the candidate is faster. Percentages are relative to the base arm.",
+  "arms": {
+    "candidate": {
+      "commit": "e6681344737ea7a33c9a4150b361401a8d246f5b",
+      "kE147NaxRetileOn": true,
+      "kE151NaxDoubleBufferOn": true,
+      "worker_sha256": "691d620b8fe2f62b8d5136078ca32a7d40be6d7c09a3a8708a6d65cdc5d8d815",
+      "worker_strings": 81530,
+      "serial_seconds_per_token": 0.074077240191400051,
+      "mtp_seconds_per_token": 0.03187481826171279,
+      "mtp_decode_speedup": 2.3240050996739243,
+      "accepted_draft_rate": 0.88594704684317716,
+      "effective_mean_draft_len": 6.3766233766233764,
+      "mtp_rounds": 77,
+      "serial_rounds": 512,
+      "cool_gate_entry_temps_c": [39.8, 39.6, 39.2],
+      "cool_gate_exit_temps_c": [56.6, 56.4]
+    },
+    "base": {
+      "commit": "8c29a9d3c9b760d93e9d95d3167be9c2c7e5d9cd",
+      "submitted_pair_equals": "d0422d1d4c3c8901cbc2382dc9ee79666e786d94",
+      "kE147NaxRetileOn": false,
+      "kE151NaxDoubleBufferOn": "absent",
+      "worker_sha256": "3fe98cba361f2ca4690fb2ce74505853441a5322a5207d34467784b40a5b6df2",
+      "worker_strings": 81324,
+      "serial_seconds_per_token": 0.0740060331299901,
+      "mtp_seconds_per_token": 0.03188733384013176,
+      "mtp_decode_speedup": 2.320859859310342,
+      "accepted_draft_rate": 0.8859470468431772,
+      "effective_mean_draft_len": 6.376623376623376,
+      "mtp_rounds": 77,
+      "serial_rounds": 512,
+      "cool_gate_entry_temps_c": [39.3, 39.9, 39.8]
+    }
+  },
+  "deltas": {
+    "serial_seconds_per_token_delta": 7.121e-05,
+    "serial_pct": 0.09622,
+    "mtp_seconds_per_token_delta": -1.252e-05,
+    "mtp_pct": -0.03925,
+    "mtp_decode_speedup_delta": 0.003145,
+    "mtp_decode_speedup_pct": 0.13552,
+    "accepted_draft_rate_delta": 0.0,
+    "effective_mean_draft_len_delta": 0.0
+  },
+  "e156_acceptance_bit_identical_across_arms": true,
+  "e156_draft_len_bit_identical_across_arms": true,
+  "e156_mtp_rounds_identical_across_arms": true,
+  "e156_contamination_detected": false,
+  "e156_both_arms_exact": true,
+  "interpretation": "The speculative trajectory is bit-identical between the arms: accepted_draft_rate and effective_mean_draft_len agree to the last representable bit and the round count is 77 in both. That is the expected result when the changed kernel cannot execute, and it rules out any behavioural contamination from the composed edit. The two timed legs move in OPPOSITE directions, serial +0.09622 percent and MTP -0.03925 percent, which is the signature of independent measurement noise rather than a systematic effect. Both arms passed the real 40C cool gate and both reported all_tokens_matched true with zero residual divergences.",
+  "e156_matched_gated_leg_noise_floor_pct": {
+    "serial_leg": 0.09622,
+    "mtp_leg": 0.03925,
+    "derived_ratio": 0.13552,
+    "basis": "Single matched pair in which the executed code is provably identical, so the whole observed spread is noise. This is a one-pair observation, not a variance estimate; it is a lower bound on the spread a single pair can show.",
+    "campaign_consequence": "A local serial-to-MTP ratio effect below about 0.14 percent cannot be resolved by one gated pair on this host. The campaign's previously quoted 0.052 percent gated-leg noise floor is optimistic against this observation."
+  },
+  "what_this_does_not_show": [
+    "It does not measure e156_retile_prefill_pct. The retiled kernel never executes on generation 16.",
+    "It does not measure e156_retile_decode_pct, the channel that killed four earlier attempts, for the same reason.",
+    "The passing exactness gate does NOT validate the retile numerics, because the changed code contributes no arithmetic to either arm on this host.",
+    "It says nothing about the paired-A operand-budget finding, which needs an M5 exact-token run."
+  ],
+  "evidence_source": "run_job d0ad2dcc-31ec-4b23-9d07-9616bb342da4 (base arm) and the earlier candidate-arm local-submit recorded in research/out/e156-local-submit.json. Both used MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 ./benchmark-qwen-mtp.sh --local-submit on the same host with the real cool gate."
+}
