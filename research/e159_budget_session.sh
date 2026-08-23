@@ -74,6 +74,7 @@ case "${kind}" in
     trace_env="MLX_QWEN_MTP_TRACE=1,MLX_QWEN_MTP_TRACE_PATH=@LEG@/trace.txt"
     trace_env="${trace_env},MLX_QWEN_MTP_TRACE_SYNC_HEAD=1"
     specs=(
+      "t0=MLX_E159_FIXED_DRAFT_DEPTH=0,${trace_env}"
       "t1=MLX_E159_FIXED_DRAFT_DEPTH=1,${trace_env}"
       "t2=MLX_E159_FIXED_DRAFT_DEPTH=2,${trace_env}"
       "t4=MLX_E159_FIXED_DRAFT_DEPTH=4,${trace_env}"
