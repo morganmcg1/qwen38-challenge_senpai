@@ -84,17 +84,23 @@ def complete(row):
     return all(p.get("serial_seconds_per_token_mean") for p in per_prompt)
 
 
-def draw_gain(serial, anchor_mtp, gain_pct):
+def draw_gain(serial, anchor_mtp, gain_pct, beagle_only_pct=0.0):
     """Apply the shape to one serial draw and return its median gain and slot.
 
     The candidate leg is held fixed. Only the serial vector varies, because the
     serial draw is the part of a ranked row the candidate cannot influence.
+
+    `beagle_only_pct` composes a second, beagle-only mechanism on top of the
+    F22 shape. The two compose on the beagle cell, so they multiply there
+    rather than add.
     """
     base = {name: serial[name] / anchor_mtp[name] for name in anchor_mtp}
-    after = {
-        name: value * (1 + GAIN_SHAPE[name] * gain_pct / 100)
-        for name, value in base.items()
-    }
+    after = {}
+    for name, value in base.items():
+        scaled = value * (1 + GAIN_SHAPE[name] * gain_pct / 100)
+        if name == "beagle":
+            scaled *= 1 + beagle_only_pct / 100
+        after[name] = scaled
     _, _, base_upper, base_median = median_pair(base)
     _, _, _, after_median = median_pair(after)
     return (after_median / base_median - 1) * 100, base_upper[0], base
@@ -110,6 +116,20 @@ def crossing_gain(base):
     return n4, n5, 100 * (r5 - r4) / denominator
 
 
+def lower_crossing(base, gain_pct):
+    """Beagle-only headroom before the rank-3 prompt crosses rank 4.
+
+    A beagle-only arm saturates against a different boundary from a shaped
+    arm. It lifts the lower member of the median pair, so the pair changes
+    when rank 3 overtakes rank 4, not when rank 4 overtakes rank 5.
+    """
+    ordered = sorted(base.items(), key=lambda kv: kv[1])
+    (n3, r3), (n4, r4) = ordered[3], ordered[4]
+    lifted3 = r3 * (1 + GAIN_SHAPE[n3] * gain_pct / 100)
+    lifted4 = r4 * (1 + GAIN_SHAPE[n4] * gain_pct / 100)
+    return n3, n4, 100 * (lifted4 / lifted3 - 1)
+
+
 def expectation_mode(rows, args):
     anchor = next(r for r in rows if r["id"].startswith(args.receipt))
     _, anchor_mtp = leg_vectors(anchor)
@@ -121,16 +141,22 @@ def expectation_mode(rows, args):
 
     print(f"anchor candidate leg  {anchor['id'][:8]} {anchor['solverUsername']}")
     print(f"serial pool           {len(pool)} rows since {args.pool_since}")
-    print(f"shape                 F22, beagle +{args.gain_pct:.4f} %\n")
+    print(f"shape                 F22, beagle +{args.gain_pct:.4f} %")
+    if args.beagle_only_pct:
+        print(f"composed with         beagle-only "
+              f"+{args.beagle_only_pct:.4f} % cell gain")
+    print()
 
-    draws, census, crossings = [], {}, {}
+    draws, census, crossings, lowers = [], {}, {}, []
     for row in pool:
         serial, _ = leg_vectors(row)
-        gain, owner, base = draw_gain(serial, anchor_mtp, args.gain_pct)
+        gain, owner, base = draw_gain(
+            serial, anchor_mtp, args.gain_pct, args.beagle_only_pct)
         draws.append((row["id"][:8], gain, owner))
         census[owner] = census.get(owner, 0) + 1
         _, _, cross = crossing_gain(base)
         crossings.setdefault(owner, []).append(cross)
+        lowers.append(lower_crossing(base, args.gain_pct))
 
     values = [g for _, g, _ in draws]
     print("== F22 expected value over the serial lottery ==")
@@ -160,6 +186,16 @@ def expectation_mode(rows, args):
     print(f"  probability-weighted            {weighted:+.3f} % beagle gain")
     print(f"  shipped F22 gain is +{args.gain_pct:.4f} %, so the shape is "
           f"{'UNCAPPED' if weighted > args.gain_pct else 'CAPPED'}")
+
+    print("\n== saturation of a beagle-only arm, the other boundary ==")
+    headrooms = [lower[2] for lower in lowers]
+    print(f"  beagle-only headroom before {lowers[0][0]} crosses "
+          f"{lowers[0][1]}")
+    print(f"  mean          {statistics.mean(headrooms):+.3f} %")
+    print(f"  min           {min(headrooms):+.3f} %")
+    if args.beagle_only_pct:
+        print(f"  composed arm  +{args.beagle_only_pct:.4f} %, margin "
+              f"{min(headrooms) / args.beagle_only_pct:.1f}x")
 
     if args.show_draws:
         print("\n== per-draw detail ==")
@@ -208,6 +244,8 @@ parser.add_argument("--expectation", action="store_true",
                     help="price over the serial lottery, per Rule 126")
 parser.add_argument("--pool-since", default="2026-08-22T18:00:00Z",
                     help="earliest createdAt for a pooled serial vector")
+parser.add_argument("--beagle-only-pct", type=float, default=0.0,
+                    help="compose a beagle-only arm on top of the shape")
 parser.add_argument("--show-draws", action="store_true")
 args = parser.parse_args()
 
