@@ -27,16 +27,24 @@ from e144_st import SafeTensors, save
 QUANTIZERS = {"rtn": mlx_rtn, "clip": clip_search, "als": alternating_ls, "best": best_of_breed}
 
 
-def affine_ceiling(grouped, bits=4, samples=3000, seed=0):
-    """Exhaustive 2D (scale, bias) optimum on a random sample of groups.
-
-    Upper bound on what any affine quantizer of this bit width and group size can
-    reach, used to test whether the assignment's 2x relL2 stop rule is reachable
-    at all.
-    """
+def _sample_groups(grouped, samples, seed):
     rng = np.random.default_rng(seed)
     count = min(samples, grouped.shape[0])
-    sample = np.ascontiguousarray(grouped[rng.choice(grouped.shape[0], count, replace=False)])
+    chosen = rng.choice(grouped.shape[0], count, replace=False)
+    return np.ascontiguousarray(grouped[chosen]), count
+
+
+def affine_ceiling(grouped, bits=4, samples=3000, seed=0):
+    """Dense 2D (scale, bias) grid optimum on a random sample of groups.
+
+    Bounds what any affine quantizer of this bit width and group size can reach,
+    which is what decides whether the assignment's 2x relL2 stop rule is
+    reachable at all. The grid is bounded, so this is an achievable-improvement
+    estimate rather than a proved supremum, but it spans every scale from 0.55x
+    to 1.05x of the min/max range and every zero point within half a bin, which
+    contains the optimum for any group that is not pathological.
+    """
+    sample, count = _sample_groups(grouped, samples, seed)
     n_bins = np.float32((1 << bits) - 1)
 
     w_min = sample.min(axis=1, keepdims=True)
@@ -56,6 +64,92 @@ def affine_ceiling(grouped, bits=4, samples=3000, seed=0):
     return float(reference), float(best.sum()), count
 
 
+def codebook_ceiling(grouped, bits=4, samples=3000, seed=0, iterations=40):
+    """Per-group Lloyd-Max optimum: the best possible `bits`-bit codebook.
+
+    This drops the affine constraint entirely and lets each group of 64 weights
+    have its own free 16-entry codebook. It is deliberately UNSHIPPABLE -- a
+    16-entry BF16 codebook costs 32 bytes per group against affine's 4 -- but it
+    bounds every quantizer that spends `bits` bits per weight, whatever the
+    reconstruction rule. If the affine optimum is already close to this, the
+    remaining error is paid to the bit width and no quantizer choice can recover
+    it.
+    """
+    sample, count = _sample_groups(grouped, samples, seed)
+    levels = 1 << bits
+
+    w_min = sample.min(axis=1, keepdims=True)
+    w_max = sample.max(axis=1, keepdims=True)
+    step = (w_max - w_min) / np.float32(levels - 1)
+    centroids = w_min + step * np.arange(levels, dtype=np.float32).reshape(1, levels)
+
+    for _ in range(iterations):
+        assignment = np.argmin(np.abs(sample[:, :, None] - centroids[:, None, :]), axis=2)
+        onehot = assignment[:, :, None] == np.arange(levels).reshape(1, 1, levels)
+        occupancy = onehot.sum(axis=1)
+        total = np.einsum("gc,gcl->gl", sample, onehot.astype(np.float32))
+        empty = occupancy == 0
+        centroids = np.where(empty, centroids, total / np.maximum(occupancy, 1).astype(np.float32))
+
+    assignment = np.argmin(np.abs(sample[:, :, None] - centroids[:, None, :]), axis=2)
+    reconstruction = np.take_along_axis(centroids, assignment, axis=1)
+    return float(np.sum((sample.astype(np.float64) - reconstruction.astype(np.float64)) ** 2)), count
+
+
+def run_bounds(master, samples, out):
+    """What ANY quantizer of this bit width could reach, ignoring who writes it.
+
+    Two nested bounds per tensor on the same sampled groups: the best affine-4
+    group-64 parameters, which is what we may actually ship, and the best free
+    16-entry codebook per group, which we may not. The distance between them
+    says how much of the incumbent's error is the affine constraint and how much
+    is the bit width itself.
+    """
+    report = {
+        "experiment": "e144",
+        "rung": "R-B ceiling",
+        "harness": "local",
+        "sample_groups_per_tensor": samples,
+        "tensors": {},
+    }
+    minmax = affine = codebook = 0.0
+
+    for name in CORE:
+        grouped = _groups(master.float32(f"{name}.weight"), 64)
+        minmax_sse, affine_sse, count = affine_ceiling(grouped, samples=samples)
+        codebook_sse, _ = codebook_ceiling(grouped, samples=samples)
+        minmax += minmax_sse
+        affine += affine_sse
+        codebook += codebook_sse
+        report["tensors"][name] = {
+            "groups": count,
+            "minmax_sse": minmax_sse,
+            "affine_optimum_sse": affine_sse,
+            "codebook_optimum_sse": codebook_sse,
+            "affine_rel_l2_factor": float(np.sqrt(minmax_sse / affine_sse)),
+            "codebook_rel_l2_factor": float(np.sqrt(minmax_sse / codebook_sse)),
+        }
+        print(
+            f"{name:32s} affine x{np.sqrt(minmax_sse / affine_sse):.4f} "
+            f"codebook x{np.sqrt(minmax_sse / codebook_sse):.4f}"
+        )
+        del grouped
+
+    report["pooled"] = {
+        "affine_rel_l2_factor": float(np.sqrt(minmax / affine)),
+        "codebook_rel_l2_factor": float(np.sqrt(minmax / codebook)),
+        "note": (
+            "relL2 improvement over min/max round-to-nearest. The affine figure bounds "
+            "every shippable quantizer at 4 bits and group 64. The codebook figure drops "
+            "the affine constraint and is UNSHIPPABLE at these bytes; it bounds every "
+            "scheme that spends 4 bits per weight."
+        ),
+    }
+    with open(out, "w") as handle:
+        json.dump(report, handle, indent=2)
+    print(json.dumps(report["pooled"], indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default="e144-rb.json")
@@ -67,11 +161,21 @@ def main():
         default=0,
         help="use only the first N rows of each core tensor; cannot emit a head",
     )
+    parser.add_argument(
+        "--bounds-only",
+        action="store_true",
+        help="measure only the affine and codebook ceilings, skipping the quantizers",
+    )
+    parser.add_argument("--samples", type=int, default=3000, help="sampled groups per tensor")
     arguments = parser.parse_args()
     if arguments.smoke and arguments.emit:
         parser.error("--smoke produces a truncated tensor, so it cannot emit a head")
 
     master = SafeTensors(MASTER)
+    if arguments.bounds_only:
+        run_bounds(master, arguments.samples, arguments.out)
+        return
+
     declared = SafeTensors(DECLARED)
 
     report = {

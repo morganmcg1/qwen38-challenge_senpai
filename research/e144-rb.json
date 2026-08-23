@@ -1,0 +1,214 @@
+{
+  "experiment": "e144",
+  "rung": "R-B",
+  "harness": "local",
+  "data_free": true,
+  "note": "no calibration data, no activations, no training; a pure function of master-bf16",
+  "smoke_rows": 0,
+  "tensors": {
+    "fc": {
+      "shape": [
+        5120,
+        10240
+      ],
+      "rel_l2": {
+        "declared": 0.09331502465927648,
+        "rtn": 0.09331502465927648,
+        "clip": 0.12585288745741305,
+        "als": 0.08900660976274109,
+        "best": 0.08613990823013765
+      },
+      "seconds": 24.02,
+      "improvement_factor_vs_declared": 1.0832960770049727,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.6863799095153809,
+        "exhaustive_sse": 0.26829245686531067,
+        "sse_factor": 2.5583272729130817
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.mlp.down_proj": {
+      "shape": [
+        5120,
+        17408
+      ],
+      "rel_l2": {
+        "declared": 0.09810743563709677,
+        "rtn": 0.09810743563709677,
+        "clip": 0.09272203005111293,
+        "als": 0.09049472490130904,
+        "best": 0.08778785575624475
+      },
+      "seconds": 41.19,
+      "improvement_factor_vs_declared": 1.1175513377329296,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.270000159740448,
+        "exhaustive_sse": 0.22065168619155884,
+        "sse_factor": 1.2236487488522851
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.mlp.gate_proj": {
+      "shape": [
+        17408,
+        5120
+      ],
+      "rel_l2": {
+        "declared": 0.09178893044535875,
+        "rtn": 0.09178893044535875,
+        "clip": 0.0865106334578763,
+        "als": 0.08464067208897247,
+        "best": 0.08205254060393435
+      },
+      "seconds": 41.33,
+      "improvement_factor_vs_declared": 1.1186604311062314,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.2525652348995209,
+        "exhaustive_sse": 0.2053947001695633,
+        "sse_factor": 1.2296579935656373
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.mlp.up_proj": {
+      "shape": [
+        17408,
+        5120
+      ],
+      "rel_l2": {
+        "declared": 0.09175427521072141,
+        "rtn": 0.09175427521072141,
+        "clip": 0.0864957056237547,
+        "als": 0.08463324605053255,
+        "best": 0.08204098452971413
+      },
+      "seconds": 41.46,
+      "improvement_factor_vs_declared": 1.1183955889448067,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.29777300357818604,
+        "exhaustive_sse": 0.2425771951675415,
+        "sse_factor": 1.227539148403964
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.self_attn.k_proj": {
+      "shape": [
+        1024,
+        5120
+      ],
+      "rel_l2": {
+        "declared": 0.09883400490454909,
+        "rtn": 0.09883400490454909,
+        "clip": 0.09344617578611297,
+        "als": 0.09117099963087491,
+        "best": 0.08845970226318306
+      },
+      "seconds": 2.45,
+      "improvement_factor_vs_declared": 1.1172771598360196,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.479140967130661,
+        "exhaustive_sse": 0.39069753885269165,
+        "sse_factor": 1.2263731390212724
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.self_attn.o_proj": {
+      "shape": [
+        5120,
+        6144
+      ],
+      "rel_l2": {
+        "declared": 0.09969290054375043,
+        "rtn": 0.09969290054375043,
+        "clip": 0.0943154283641722,
+        "als": 0.09196060366966087,
+        "best": 0.08924326526975837
+      },
+      "seconds": 14.62,
+      "improvement_factor_vs_declared": 1.1170915838008126,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.7019503712654114,
+        "exhaustive_sse": 0.574705183506012,
+        "sse_factor": 1.2214095007515593
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.self_attn.q_proj": {
+      "shape": [
+        12288,
+        5120
+      ],
+      "rel_l2": {
+        "declared": 0.09299573176930848,
+        "rtn": 0.09299573176930848,
+        "clip": 0.08770681521728318,
+        "als": 0.0857784724727168,
+        "best": 0.08316694621371577
+      },
+      "seconds": 29.29,
+      "improvement_factor_vs_declared": 1.1181813930060083,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 0.41043221950531006,
+        "exhaustive_sse": 0.3350488543510437,
+        "sse_factor": 1.2249921591293795
+      },
+      "rtn_reproduces_declared": true
+    },
+    "layers.0.self_attn.v_proj": {
+      "shape": [
+        1024,
+        5120
+      ],
+      "rel_l2": {
+        "declared": 0.09434634980725959,
+        "rtn": 0.09434634980725959,
+        "clip": 0.08905299883645974,
+        "als": 0.08703457163935482,
+        "best": 0.08435827344011525
+      },
+      "seconds": 2.4,
+      "improvement_factor_vs_declared": 1.1184006732218712,
+      "affine_optimum_sample": {
+        "groups": 3000,
+        "minmax_sse": 1.4631699323654175,
+        "exhaustive_sse": 1.1933295726776123,
+        "sse_factor": 1.2261239190463813
+      },
+      "rtn_reproduces_declared": true
+    }
+  },
+  "pooled_rel_l2": {
+    "declared": 0.09453097221190854,
+    "rtn": 0.09453097221190854,
+    "clip": 0.09365319507656174,
+    "als": 0.08748673111971482,
+    "best": 0.08482203339296382
+  },
+  "summary": {
+    "quantizer": "best",
+    "e144_declared_reproduction_exact": 1.0,
+    "e144_rel_l2_improvement_factor_pooled": 1.1144624625298136,
+    "e144_rel_l2_improvement_factor_worst_tensor": 1.0832960770049727,
+    "stop_rule_threshold": 2.0,
+    "stop_rule_passed": false,
+    "format_ceiling": {
+      "note": "exhaustive 2D (scale, bias) search per group, pooled over sampled groups of all eight core tensors; bounds ANY affine-4 group-64 quantizer",
+      "sse_factor": 1.3295874127993925,
+      "rel_l2_factor": 1.1530773663546572,
+      "rel_l2_factor_needed_for_stop_rule": 2.0,
+      "sse_factor_needed_for_stop_rule": 4.0
+    }
+  },
+  "emitted": {
+    "path": "/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r2/roles/student-qwen-askeladd/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/e144-head-best/model.safetensors",
+    "bytes": 427742816,
+    "declared_bytes": 427742600,
+    "e144_head_bytes_delta": 216
+  }
+}
