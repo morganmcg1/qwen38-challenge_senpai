@@ -649,10 +649,24 @@ def main() -> None:
         "label": "derived",
     }
 
+    # A zero count decides nothing on its own, so bound it. The rule of three
+    # gives the 95 % upper rate for 0 of n, and the fork only holds if the
+    # WORST case still misses the threshold.
+    rule_of_three = 3.0 / n
+    cb_upper_gain = MISS_TO_SCORE_PCT * rule_of_three / 100.0
+    cb_upper_median = e143_value.median_pct_gain(
+        {"beagle": cb_upper_gain, "essays": cb_upper_gain})
+
     in_vocab_miss = best_row["simulated_miss_rate"]
     fork = {
         "threshold_ranked_pct": 0.30,
         "refuted_below_ranked_pct": 0.15,
+        "cb_zero_events_over_trials": [best_row["channel_b_events"], n],
+        "cb_rule_of_three_95_rate": rule_of_three,
+        "cb_upper_95_beagle_raw_pct": 100.0 * cb_upper_gain,
+        "cb_upper_95_median_pct": cb_upper_median,
+        "fork_holds_at_95": cb_upper_median < 0.30,
+        "refuted_at_95": cb_upper_median < 0.15,
         "cb_plus_cc_median_pct": fork_median,
         "cb_plus_cc_beagle_raw_pct": 100.0 * fork_gains.get("beagle", 0.0),
         "cb_plus_cc_essays_raw_pct": 100.0 * fork_gains.get("essays", 0.0),
