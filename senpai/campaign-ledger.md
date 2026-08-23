@@ -61358,3 +61358,224 @@ in flight            5a9f130a   crown parity, validating, second watcher running
 advisor branch       c49ad3fa + this entry
 ```
 
+## 328 — The precision islands are exact pinned rows, and two of the three are whole layers
+
+Zero GPU. Six HTTP range requests. This entry closes the head-declaration
+question that 326 and 327 opened, and it converts the head from "a rival's
+trained artifact we cannot reproduce" into "a precision-allocation dial we
+own outright".
+
+### 328.1 The declaration mechanism has three modes, and we use the risky one
+
+`.github/workflows/qwen-mtp-ranked-benchmark.yml:2384-2530` accepts exactly
+three values of `mtp-head.manifest.json` `.source`:
+
+| source | runner behaviour |
+| --- | --- |
+| `pinned` | no override; candidate leg uses the organizer head |
+| `remote` | `curl --fail` from `hf:<repo>@<rev>` or `r2:<key>` |
+| `in_branch` | `tar` the declared `path` out of the submission itself |
+
+All three of `HEAD`, `origin/main` and `upstream/main` declare the identical
+`remote` head. The only byte that differs between our manifest and the crown's
+is the free-text `note`. **Crown parity on the head axis is intact**, and
+`5a9f130a` is unaffected.
+
+The `remote` mode fetches under `set -euo pipefail` with `curl --fail`. A
+non-2xx response is not a degradation, it is a failed ranked job. Every
+ranked submission in this competition that inherits `upstream/main` therefore
+depends on one rival's public HuggingFace repository staying reachable. Probed
+at 17:33Z: `http=206`, 322 ms. The exposure is systemic, not ours alone, and
+it is not a differentiator. Recorded, not actioned.
+
+> **RULE 171.** Probe the declared head URL before every official submission.
+> One `curl -r 0-7` converts an unmonitored third-party dependency into a
+> checked precondition. `in_branch` removes the dependency entirely at the
+> cost of committing 427 MB of weights, which `program.md` forbids; `remote`
+> to a repository we control needs an HF token this launch does not hold.
+
+Our own `mtp-head/README.md` states the checked-in declaration selects
+`"source": "pinned"`. It selects `remote`. The prose is stale and it misled
+this advisor for one step. The file is excluded from the head tree digest,
+exempt from the byte budget, and excluded from static review, so it is safe to
+correct, but it is cosmetic and no student should spend a turn on it.
+
+### 328.2 FINDING 299 — the k and v "islands" are complete layers
+
+`precision_islands.{q,k,v}.indices` fetched and decoded directly from the
+declared artifact:
+
+```
+q.indices  1024 unique in [3, 12239] of 12,288 rows   8.33 %  a real island
+k.indices  1024 unique in [0, 1023] of  1,024 rows     100 %  a whole layer
+v.indices  1024 unique in [0, 1023] of  1,024 rows     100 %  a whole layer
+```
+
+`k` and `v` are each a permutation of the complete output row set. The
+declared head's k and v projections are **BF16, not 4-bit**. The affine-4
+`layers.0.self_attn.{k,v}_proj.{weight,scales,biases}` in the artifact,
+5,898,240 bytes, are computed and then entirely overwritten.
+
+This is consistent with the architecture. GQA runs 24 query heads over 4 KV
+heads, so each K or V row is shared by six query heads and its quantization
+error is amplified six times relative to a Q row. The head's designer restored
+100 % of the six-times-leveraged rows and 8.33 % of the one-times-leveraged
+rows. That is the correct allocation, and it tells us where precision buys
+acceptance in this architecture.
+
+### 328.3 Provenance proven byte-exact
+
+Island rows compared against the organizer-pinned BF16 head
+`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`:
+
+```
+q island slot   0 -> pinned q_proj row   101 : IDENTICAL  0/10240 bytes differ
+q island slot   1 -> pinned q_proj row    55 : IDENTICAL  0/10240 bytes differ
+q island slot 511 -> pinned q_proj row  9505 : IDENTICAL  0/10240 bytes differ
+k island slot   0 -> pinned k_proj row    25 : IDENTICAL  0/10240 bytes differ
+k island slot   1 -> pinned k_proj row   946 : IDENTICAL  0/10240 bytes differ
+k island slot 511 -> pinned k_proj row   750 : IDENTICAL  0/10240 bytes differ
+```
+
+Six of six identical. The declared head is not a trained artifact. It is
+
+```
+4-bit quantization of the pinned head
+  + every k row restored exactly from the pinned head
+  + every v row restored exactly from the pinned head
+  + the 1024 worst-SSE q rows restored exactly from the pinned head
+  + an affine-2 compact readout used only as a retrieval index
+```
+
+> **RULE 172.** The head's precision is a dial we control with no training,
+> no data, and no GPU. The currency is exact BF16 rows of the organizer-pinned
+> head, which we already have on disk. Restoring row set `S` of any projection
+> is a pure bytes-for-acceptance trade at a known price. Do not describe the
+> head axis as "train a better head"; describe it as "choose the optimal
+> precision allocation between 427 MB and the 2 GiB cap".
+
+Unused declared capacity: `2,147,483,648 - 427,742,600 = 1,719,741,048` bytes.
+
+### 328.4 ADVISOR NEAR-ERROR 197 — the tree had already found it
+
+Having derived that 5,898,240 bytes of k/v affine-4 are overwritten, I was one
+step from assigning "delete the dead k/v tensors, free `+0.106 %`". Both
+halves of that would have been wrong.
+
+`Qwen35.swift:3419-3424` already documents the finding in the same terms, and
+`installExactQKVRows:3668` already implements the fix: when
+`isCompletePermutation` holds for both k and v, it materialises
+`_exactKVDenseW = concat(kNatural, vNatural)` in natural output order and the
+affine-4 pack never runs. The runtime saving is already banked.
+
+Worse, the tensors are load-bearing as a *predicate*. `islandFastPathReady()`
+at `:3651-3665` requires `k.biases != nil` and `v.biases != nil`. Deleting the
+unused k/v affine-4 tensors would flip the fast path off and make the head
+slower.
+
+> **RULE 167 clause 4.** Before proposing to delete bytes an artifact appears
+> not to use, find the code that decides they are unused. If that code exists,
+> the saving is already banked and the bytes may be a guard the deletion
+> would break.
+
+### 328.5 The corrected island economics
+
+Because the complete-permutation branch replaces the affine-4 k/v pack rather
+than adding to it, the kv islands cost less than their resident size, and the
+q island costs its full size. Net bytes read per draft step, against the
+shipped `all` arm:
+
+```
+arm kv    saves 10,489,856 B = 10.490 MB  -> +0.188 %  adopt if loss < 0.0704 pt
+arm q     saves 15,073,280 B = 15.073 MB  -> +0.270 %  adopt if loss < 0.1012 pt
+arm none  saves 25,563,136 B = 25.563 MB  -> +0.458 %  adopt if loss < 0.1717 pt
+```
+
+This supersedes 327.6, which priced the islands at their resident
+`31,469,568` bytes and quoted `0.564 %` and `0.21` points. The correct ceiling
+on the shrink direction is **`+0.458 %`**, not `+0.56 %`.
+
+Predictions registered before E158 R1.B runs, from 328.2's leverage argument:
+
+- `kv` loses far less than `all` does, because the q island covers 8.33 % of
+  the one-times-leveraged projection. Expect `kv` within `0.07` points of
+  `all`, which banks `+0.188 %`.
+- `q` and `none` both drop k/v to 4-bit and should lose several times more
+  than `kv` does. Expect both to fail their thresholds.
+
+If those hold, the shrink direction yields `+0.188 %` and stops there.
+
+### 328.6 The R1.D threshold that opens or closes the grow direction
+
+Read set per draft step, reconstructed from the census. The pinned column sums
+to `849,398,784`, exactly the census total, which is an independent check on
+the byte model:
+
+```
+                      pinned (local)    declared (ranked)
+head layer             849,398,784        264,494,080     dead kv a4 skipped
+readout, 14,752 rows    42,485,760         23,603,200     affine-4 vs affine-2
+centroids, 12,292       19,667,200         19,667,200     identical
+DELTA                          603,787,264 B = 603.79 MB
+```
+
+At `148.92` MB per acceptance point:
+
+> **The bf16 head must win by 4.054 acceptance points to pay for itself.**
+
+If the local readout turns out to run dense rather than indexed, the delta
+grows and the threshold rises above 5.7 points. So `4.054` is the threshold
+most favourable to the grow direction. **A measured gap below `4.054` closes
+the grow direction under every read model.**
+
+E155 measured the pinned head's own irreducible error at `9.6677` pp. The
+declared head restores k/v exactly and the worst 8.33 % of q, so the residual
+gap is the cost of 4-bit on q's other 91.67 %, on mlp, fc and o_proj, and of
+affine-2 on the retrieval index. A four-point gap would be surprising.
+Registered prediction: `0.3` to `2.0` points, and the grow direction closes.
+
+### 328.7 What this makes E158 R1.B and R1.D
+
+R1.B is no longer characterisation. It is four points on the
+acceptance-versus-bytes curve of the shipped artifact, obtained with zero
+source changes through `DARKBLOOM_QWEN_MTP_ISLAND_ARM`, which crosses the
+worker boundary that RULE 170 closes to `MLXFAST_`. R1.D is the single
+measurement that decides whether any byte spent on head precision can ever
+repay itself.
+
+Added R1.E, zero GPU: the static island value audit. Dequantize the declared
+affine-4 q_proj, compare against the pinned BF16 q_proj, and report what
+fraction of total q reconstruction SSE the 1024 island rows carry. If the
+island carries near 8.33 % of the error it is worthless by construction and
+`kv` wins before any GPU leg runs. This is two safetensors files and numpy.
+
+### 328.8 Composition arithmetic
+
+```
+crown parity                          3.72911    5a9f130a in flight
+  + leaf16              +0.257 %      3.73870    thorfinn, measured lower bound
+  + E151 R1 retile      +0.505 %      3.75758    alphonse, registered prior
+  + island arm kv       +0.188 %      3.76464    askeladd, if 328.5 holds
+THE BAR                               3.72911
+margin                                +0.0355 absolute = +0.96 %
+```
+
+Against a 2σ ranked MDE of `0.1547` pp on the median pair, that is a
+`6.1`-sigma margin, up from `4.9` sigma without the island arm.
+
+### 328.9 Actions taken
+
+- `send_assignment_feedback` #158 `e158-f3` — FINDING 299, corrected arm
+  economics, the `4.054`-point R1.D threshold, and R1.E.
+
+### 328.10 State
+
+```
+the bar              ec24d59    newjordan 3.72911001, source 0863b06a
+our best receipt     0cf1637e   3.68278758168578, tree e09d6aa7
+gap                             0.04632 absolute = +1.2578 %
+in flight            5a9f130a   crown parity, validating 68 min at 17:37Z
+declared head        reachable  http 206 at 17:33Z
+advisor branch       e316945d + this entry
+```
+
