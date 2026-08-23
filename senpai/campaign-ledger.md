@@ -63494,3 +63494,245 @@ open assignments     E158 askeladd head artifact ladder
                      E160 thorfinn depth histogram, gated
                      E162 alphonse prefill double buffer
 ```
+
+## 338 — RULE 189: the MTP head is accuracy-bound, not bandwidth-bound. Three arms removed head bytes; three arms lost; the ordering is non-monotonic in bytes.
+
+Date: 2026-08-23. Author: advisor. Base: `01210571` (submitted surface identical to
+promoted anchor `8ba6e738`). Harness labels are explicit on every number below.
+
+### 338.1 The measurement that forces the rule
+
+Three independent arms have now reduced the bytes the MTP head reads per draft
+step. All three made the candidate leg slower. The ordering is not monotonic in
+bytes removed, so a byte model cannot even rank them.
+
+| arm | bytes removed per draft step | share of head step | predicted leg delta from bytes | measured leg delta | error |
+| --- | --: | --: | --: | --: | --: |
+| `.all` — Q island + BF16 dense K/V (shipped default) | 0 | 0 | reference | reference | — |
+| `.none` — no islands, q4 K/V pack | -25,558,528 | 8.30 % | -1.096 % | **+0.366 %** | +1.462 pp |
+| `.q` — Q island only, q4 K/V pack | -15,073,280 | 4.89 % | -0.646 % | **+1.801 %** | +2.447 pp |
+| leaf16 draft router (E141 width 8 -> 16) | -9,830,400 | 3.19 % | — | **+0.529 %** (ranked) | — |
+
+Sources. Arm `none` and arm `q`: edward local ABBA, harness=local, ledger 40645.
+leaf16: ranked receipt `1509bf95` against `5a9f130a`, harness=ranked, candidate-leg
+paired mean +0.5291 % over 8 prompts, sd 0.6122, 7/8 same sign (FINDING 323).
+
+Read the second and third rows together. Arm `none` removes 25.56 MB per draft
+step and costs 0.366 %. Arm `q` removes 15.07 MB — ten megabytes *less* — and
+costs 1.801 %, five times more. The arm that reads the **most** bytes, `.all`, is
+the **fastest**. Bytes do not order these arms.
+
+### 338.2 RULE 189
+
+> **RULE 189.** The MTP head is accuracy-bound, not bandwidth-bound. Do not trade
+> head numerical quality for head bytes. Price a head-side change by its effect on
+> acceptance first and its byte cost second. A byte model applied to the head has
+> been wrong by 1.5 to 2.4 percentage points *and* wrong in sign, three times out
+> of three.
+
+The converse is the useful half. Going from arm `q` to arm `all` **spends**
+15,073,280 B per draft step on exact BF16 K/V and **returns** 1.801 % of leg time.
+Divide the return by the byte-model cost of the same bytes (0.646 %) and the
+realised return on head precision is **about 2.8x**. Buying head precision has
+strong positive measured ROI on this checkpoint. Nobody in this campaign, ours
+included, had ever tested that direction before this week.
+
+The mechanism is not mysterious. The head's only product is a proposal. A cheaper
+head that proposes worse tokens loses accepted tokens, and an accepted token is
+worth a whole target round. The byte model prices the head's input and is blind to
+the head's output.
+
+### 338.3 What this closes and what it opens
+
+Closed as a family: every remaining "make the head cheaper by making it coarser"
+idea. That includes fewer centroid bits (also independently closed — MLX
+instantiates affine kernels only for bits in {2,3,4,5,6,8} at
+`Vendor/mlx-swift/.../backend/metal/kernels/quantized.metal:150-156`, and the
+router is already at 2), the two-level coarse quantizer, and any further widening
+of the derived-cluster leaf.
+
+Still open, because they do **not** reduce head accuracy:
+
+1. Narrow the q4 `q_proj` pack by the 1,024 rows the Q island immediately
+   overwrites. `replaceExactRows` (`Qwen35.swift:3193-3211`) reads the full 35.4 MB
+   q4 pack and then `putAlong`s 1,024 BF16 rows over it. 2,949,120 B per draft step,
+   bit-exact, zero accuracy cost.
+2. Free `_draftHeadW/S/Z` after warm. On the arm-C path `clusterCandidateIDs`
+   returns non-nil (`Qwen35.swift:5917`), so the dense fallback at :5919-5922 never
+   runs and only `.dim()` metadata is touched at :5882-5891. 157,337,600 B of pure
+   dead residency held alongside its own permuted copy `_draftClusterW/S/Z`.
+3. Group-128 scales on the centroid table only, rows staying at g64. Halves
+   3,933,440 B of scale/bias overhead, which is 20 % of the router, with no change
+   to centroid values.
+4. **Increasing** head precision. Extending Q island coverage from 1,024 to 2,048
+   rows, or upgrading the single highest-sensitivity matrix by one step, are now
+   the ideas with measured supporting evidence rather than measured refutation.
+
+E158 has been redirected onto (1), (2) and (4). The B2 ladder was turned around:
+it no longer descends to a3/a2.
+
+### 338.4 The head byte budget, measured
+
+Per draft step the head reads **307,946,104 B (293.68 MiB)**.
+
+```
+TRUNK SUBTOTAL                                 264,496,960   85.89 %
+  embed_tokens, one gathered row                     2,880
+  pre_fc_norm_embedding / _hidden                   20,480
+  mtp.fc [5120,10240] q4                        29,491,200
+  layers.0.input_layernorm                          10,240
+  q_proj (Q+gate) [12288,5120] q4               35,389,440
+  precision_islands.q.weight [1024,5120] bf16   10,485,760
+  precision_islands.q.indices [1024] i32             4,096
+  _exactKVDenseW [2048,5120] bf16               20,971,520
+  q_norm / k_norm [256] x2                           1,024
+  o_proj [5120,6144] q4                         17,694,720
+  post_attention_layernorm                          10,240
+  gate_up fused [34816,5120] q4                100,270,080
+  down_proj [5120,17408] q4                     50,135,040
+  mtp.norm                                          10,240
+READOUT SUBTOTAL                                43,449,144   14.11 %
+  coarse centroid router                        19,691,784    6.395 % of head
+  gathered row refinement, 14,752 rows          23,654,960    7.682 % of head
+  exact affine-4 rerank of 32                      102,400    0.033 % of head
+```
+
+Plus a persistent head KV cache of `4096 * T` B, 2.10 MB at T=512. The head KV
+cache is **persistent across rounds** (`headHistoryCache`, session :1368-1375). The
+class comment at session :23 that says "ONE fresh head cache per round" is
+**stale** and should not be trusted by any future reader.
+
+The head trunk is exactly **one** full-attention decoder layer plus `fc` plus seven
+RMSNorms, 424,673,280 params. `mtpNumHiddenLayers = 1` is pinned in
+`Tests/Fixtures/Qwen3627B4bit/config-contract.json:110`, re-asserted at
+`Sources/MLXFastModel/Qwen36MTPHeadAttachment.swift:366-367`, and
+`lastHiddenWithKVOnlyHistory` fails closed unless `layers.count == 1`.
+
+An important loading fact for anyone proposing a head precision change:
+**quantized-or-not is decided by the archive, not by candidate code.**
+`quantize(model:)` makes a submodule a `QuantizedLinear` if and only if
+`weights["<path>.scales"]` exists (`Load.swift:251-261`). A head precision change
+therefore needs a new head archive and **no candidate Swift change at all**.
+
+### 338.5 Per round, and ADVISOR ERROR 205
+
+```
+head, at q = 4.382 drafts per round      1,349,419,828    8.56 %   rho = 0.0936
+target weights                          14,417,640,448   91.44 %
+total                                   15,767,075,776
+```
+
+Inside the target:
+
+```
+MLP      66.8 %   64 x (gate_up 100,270,080 + down 50,135,040) = 9,625,927,680
+GDN      21.7 %   48 x (in_proj 47,462,400 + out_proj 17,694,720) = 3,127,541,760
+FA        6.5 %   16 x (qkv 41,287,680 + o_proj 17,694,720)     =   943,718,400
+lm_head   5.0 %                                                      715,161,600
+```
+
+plus GDN recurrent state 48 x [48,128,128] fp32 = 150,994,944 B read and the same
+written each round, re-copied again by `snapshotRecurrent`, and an FA KV cache of
+`65,536 * T` B.
+
+The measured **time** anchor overrides the byte model where they disagree.
+`research/e79_head_economics.py:100-101` records `RANKED_DEPTH0_ROUND_MS = 30.402`
+and a head step of `8.42 / 8 = 1.0525 ms` from ledger 211(A). That makes the head
+**13.2 % of round time** against **8.56 % of round bytes**, a byte-to-time ratio of
+**1.54**. Use 1.54 when converting any head-side byte saving into expected time.
+
+> **ADVISOR ERROR 205.** I pre-registered two predictions for rho ahead of E159.
+> Prediction A put `8h/s` in [1.2, 1.6]. Prediction B put `rho` in [0.38, 0.80].
+> Both implied the head was 16 % to 46 % of the leg. Measured rho is **0.0936**.
+> Both are refuted, and Prediction B was refuted for an embarrassing reason: it
+> conflated the **target's** `lm_head` readout, 715 MB per round, with the **MTP
+> head's** readout, 43 MB per draft step. That is a 17x category error between two
+> things both called "the head".
+>
+> Prediction A may not even be scoreable. The session comment block names the
+> quantity `headStepCostRatio = 0.18`, a *ratio*. If `h` is dimensionless then
+> `8h/s` is not a byte or time share and Prediction A is **retracted, not scored**.
+> E159 will settle the unit by quoting the assignment line in each `costModelDepth`
+> constructor. That question was left in E159's pre-registration untouched.
+
+The campaign-level consequence is blunt and worth stating plainly: **the head is
+small and the target is 91 % of the round.** The target MLP alone is 61 % of every
+round, 9.63 GB. Head-side work must clear a high bar to be worth a student slot,
+and target-side work should be the default.
+
+### 338.6 Two dead ends closed by reading source, at zero GPU cost
+
+**The SDPA width wall is already solved.** The round census claimed it "caps the
+score twice". That is wrong. `attentionWithCacheUpdate` at session :1025-1034
+already splits a 6..9 row causal decode attention into two SDPA calls of at most 5
+rows each, bottom-right aligned, byte-identical to the promoted <=5 round path,
+"after which a deep round is ONE ordinary model call". Widths 6..8 were measured
+bit-exact per position on the hexfloat row gate. Segmenting the whole forward was
+also bit-exact but pays a second full weight pass of about 25 ms and loses.
+`sdpaWidthWallDepthCap = 5` is only the single-call wall; the effective cap is
+`segmentedVerifyDepthCap = 7` against a trusted maximum of 8. Residual cost is
+about 32 extra dispatches and 16 small concats per deep round, and E90 measured
+99.5 % GPU-busy, so we are not launch-bound. **Not worth a student slot.**
+
+**The `reach` estimator is correct.** I suspected `reach = prod positionAcceptEMA[i]`
+assumed independence between draft positions. It does not.
+`recordAcceptOutcome` updates position `index` only when `index < acceptedCount`,
+and position `d` is only ever observed on rounds that reached it. Therefore
+`positionAcceptEMA[d] = P(accept at d | accepted 0..d-1)`, and the product of
+conditionals is exactly `P(accept 0..d-1)` by the chain rule. **No defect.**
+
+Both of these were candidate assignments an hour ago. Reading the source cost
+nothing and saved two student slots.
+
+### 338.7 FINDING 337.2 — the draft readout decouples, and the decoupling kills leaf4
+
+Ledger 299.10 claimed the row-QMV path guards `rowsPerCluster == 8`. **That is
+refuted.** No such guard exists. The arm-C path is fully parameterised:
+`_draftClusterShape` at `Qwen35.swift:5782`, `Qwen35RowTop32(rows:rowsPerCluster:)`
+source-generated at :4263 and :4152, and the E87 select generic in
+`clusters`/`probes` at :4415. The only live constraints are `98336 % L == 0`
+(:5251), `probes * L > 32` (:5792) and `plan.perThread <= 32` (:4265). All hold at
+L = 4.
+
+But the exact decoupling is why L = 4 is the wrong direction:
+
+```
+leaves        = 98,336 / L
+probes        = ceil(p * leaves)
+refined rows  = probes * L  =  p * 98,336        <- INDEPENDENT OF L
+router bytes  = 157.34 MB / L
+refine bytes  = p * 157.34 MB
+total readout = 157.34 * (1/L + p) MB
+```
+
+At the shipped L = 8, p = 0.15: router 19.67 MB, refine 23.60 MB. **45 % of the
+readout is spent deciding which 15 % of rows to look at, in order to produce 32
+candidates.** L buys only router cost and targeting precision. p buys only
+refinement coverage. They are orthogonal.
+
+This explains leaf16 exactly. Because `p` is a constant 0.15
+(`qwen35DerivedClusterProbeFraction`, `Qwen35.swift:4644`, with **no env
+override**), refined rows stayed at exactly 14,752 across the change. leaf16 halved
+the coarse pass, saved 9.83 MB, spent it on nothing, and paid 0.686 % published for
+the targeting precision it gave up. Going the other way, L = 4 **costs** 19.67 MB —
+twice what leaf16 saved — to buy a gain on a saturating curve. Wrong direction.
+
+The router share priced independently is 0.547 % of total per-round bytes, so a 4x
+cheaper router is worth about **0.41 % of the leg** by bytes, range 0.25 to 0.75 %,
+and about 0.63 % under the 1.54x time anchor. That straddles our 0.575 % gap but
+sits at or below single-pair ranked noise, so it would need ABBA. It is not
+currently assigned and RULE 189 makes any accuracy-reducing version of it
+unattractive.
+
+### 338.8 Bookkeeping
+
+- Surviving banked composition row after ledger 337: **E151 R1 NAX retile,
+  +0.505 % published**, from third-party receipt `5cdc9c17`. The other two rows are
+  struck (ADVISOR ERROR 204).
+- FINDING 325 stands: local screening predicted the leaf16 candidate leg to within
+  **0.108 pp**. Screen locally, trust the sign, act without waiting for a receipt.
+- `01210571` is a **functional duplicate** of promoted receipt `5a9f130a`. Its only
+  submitted-surface differences from `8ba6e738` are telemetry. It must not be
+  submitted. The `xs_hit` / `xs_fill` census counters stay until E160 no longer
+  needs them, then come out at freeze time.
+- Official submission slot: **free**. Nothing frozen.
