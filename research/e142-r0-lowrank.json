@@ -1,0 +1,269 @@
+{
+  "generated_utc": "2026-08-22T23:58:17Z",
+  "commit": "a8f447f6d45360db94485355f912a1a560735ae9",
+  "seeds": [
+    "beagle_a",
+    "beagle_f",
+    "essays_montaigne",
+    "medicine_hippoc",
+    "republic_jowett",
+    "travel_eothen"
+  ],
+  "rounds": 734,
+  "rows": 3664,
+  "coefficient_bytes": 1,
+  "dense_round_bytes": 715161600,
+  "threshold": "oracle: tau = s2 as the shipped dense readout measured it",
+  "ranks": {
+    "128": {
+      "weight_energy": 0.1300473029911471,
+      "h_perp_over_h_median": 0.9492372245021481,
+      "rho_mean": 0.9093825507409794,
+      "slack_median": 112.47163740335051,
+      "screen_bytes": 31784960,
+      "row_survival_fraction_median": 0.99973018685567,
+      "row_survival_fraction_p95": 0.9998026739690722,
+      "row_survival_fraction_worst": 0.9998832152061856,
+      "round_byte_fraction_median": 1.0442048342640322,
+      "round_byte_fraction_p95": 1.0442833619702176,
+      "round_byte_fraction_worst": 1.04432765965063,
+      "by_width": {
+        "2": {
+          "rounds": 21,
+          "union_rows_median": 248267.0,
+          "byte_fraction_median": 1.0442310101660939
+        },
+        "3": {
+          "rounds": 184,
+          "union_rows_median": 248269.0,
+          "byte_fraction_median": 1.0442390642898052
+        },
+        "4": {
+          "rounds": 145,
+          "union_rows_median": 248266.0,
+          "byte_fraction_median": 1.0442269831042383
+        },
+        "5": {
+          "rounds": 183,
+          "union_rows_median": 248259.0,
+          "byte_fraction_median": 1.0441987936712485
+        },
+        "6": {
+          "rounds": 3,
+          "union_rows_median": 248255.0,
+          "byte_fraction_median": 1.0441826854238259
+        },
+        "7": {
+          "rounds": 27,
+          "union_rows_median": 248257.0,
+          "byte_fraction_median": 1.0441907395475372
+        },
+        "8": {
+          "rounds": 171,
+          "union_rows_median": 248255.0,
+          "byte_fraction_median": 1.0441826854238259
+        }
+      }
+    },
+    "256": {
+      "weight_energy": 0.17189902004757945,
+      "h_perp_over_h_median": 0.9247138804205839,
+      "rho_mean": 0.8869579354512322,
+      "slack_median": 106.41068580863401,
+      "screen_bytes": 63569920,
+      "row_survival_fraction_median": 0.999681862113402,
+      "row_survival_fraction_p95": 0.9997583762886598,
+      "row_survival_fraction_worst": 0.9998550257731958,
+      "round_byte_fraction_median": 1.0886231028064146,
+      "round_byte_fraction_p95": 1.088691562857961,
+      "round_byte_fraction_worst": 1.0887439146620848,
+      "by_width": {
+        "2": {
+          "rounds": 21,
+          "union_rows_median": 248257.0,
+          "byte_fraction_median": 1.0886351839919817
+        },
+        "3": {
+          "rounds": 184,
+          "union_rows_median": 248257.0,
+          "byte_fraction_median": 1.0886351839919817
+        },
+        "4": {
+          "rounds": 145,
+          "union_rows_median": 248257.0,
+          "byte_fraction_median": 1.0886351839919817
+        },
+        "5": {
+          "rounds": 183,
+          "union_rows_median": 248253.0,
+          "byte_fraction_median": 1.088619075744559
+        },
+        "6": {
+          "rounds": 3,
+          "union_rows_median": 248247.0,
+          "byte_fraction_median": 1.088594913373425
+        },
+        "7": {
+          "rounds": 27,
+          "union_rows_median": 248253.0,
+          "byte_fraction_median": 1.088619075744559
+        },
+        "8": {
+          "rounds": 171,
+          "union_rows_median": 248251.0,
+          "byte_fraction_median": 1.0886110216208476
+        }
+      }
+    },
+    "512": {
+      "weight_energy": 0.244464438533373,
+      "h_perp_over_h_median": 0.8941064336086235,
+      "rho_mean": 0.8467283307891531,
+      "slack_median": 97.86858564553802,
+      "screen_bytes": 127139840,
+      "row_survival_fraction_median": 0.9996295103092784,
+      "row_survival_fraction_p95": 0.9997342139175258,
+      "row_survival_fraction_worst": 0.9998147551546391,
+      "round_byte_fraction_median": 1.1774878293241695,
+      "round_byte_fraction_p95": 1.177532127004582,
+      "round_byte_fraction_worst": 1.177592532932417,
+      "by_width": {
+        "2": {
+          "rounds": 21,
+          "union_rows_median": 248253.0,
+          "byte_fraction_median": 1.1775079646334479
+        },
+        "3": {
+          "rounds": 184,
+          "union_rows_median": 248253.0,
+          "byte_fraction_median": 1.1775079646334479
+        },
+        "4": {
+          "rounds": 145,
+          "union_rows_median": 248252.0,
+          "byte_fraction_median": 1.177503937571592
+        },
+        "5": {
+          "rounds": 183,
+          "union_rows_median": 248246.0,
+          "byte_fraction_median": 1.1774797752004582
+        },
+        "6": {
+          "rounds": 3,
+          "union_rows_median": 248231.0,
+          "byte_fraction_median": 1.1774193692726231
+        },
+        "7": {
+          "rounds": 27,
+          "union_rows_median": 248239.0,
+          "byte_fraction_median": 1.1774515857674686
+        },
+        "8": {
+          "rounds": 171,
+          "union_rows_median": 248237.0,
+          "byte_fraction_median": 1.1774435316437573
+        }
+      }
+    },
+    "1024": {
+      "weight_energy": 0.3705505136376114,
+      "h_perp_over_h_median": 0.8473327127321628,
+      "rho_mean": 0.7720799436274263,
+      "slack_median": 84.3867904820393,
+      "screen_bytes": 254279680,
+      "row_survival_fraction_median": 0.9994925902061855,
+      "row_survival_fraction_p95": 0.9996778350515464,
+      "row_survival_fraction_worst": 0.9997503221649484,
+      "round_byte_fraction_median": 1.355183052333906,
+      "round_byte_fraction_p95": 1.35528171534937,
+      "round_byte_fraction_worst": 1.355305877720504,
+      "by_width": {
+        "2": {
+          "rounds": 21,
+          "union_rows_median": 248232.0,
+          "byte_fraction_median": 1.3552011741122565
+        },
+        "3": {
+          "rounds": 184,
+          "union_rows_median": 248232.0,
+          "byte_fraction_median": 1.3552011741122565
+        },
+        "4": {
+          "rounds": 145,
+          "union_rows_median": 248231.0,
+          "byte_fraction_median": 1.355197147050401
+        },
+        "5": {
+          "rounds": 183,
+          "union_rows_median": 248222.0,
+          "byte_fraction_median": 1.3551609034936998
+        },
+        "6": {
+          "rounds": 3,
+          "union_rows_median": 248196.0,
+          "byte_fraction_median": 1.3550561998854525
+        },
+        "7": {
+          "rounds": 27,
+          "union_rows_median": 248209.0,
+          "byte_fraction_median": 1.3551085516895762
+        },
+        "8": {
+          "rounds": 171,
+          "union_rows_median": 248210.0,
+          "byte_fraction_median": 1.3551125787514318
+        }
+      }
+    },
+    "2048": {
+      "weight_energy": 0.5817130166960455,
+      "h_perp_over_h_median": 0.7609177759772088,
+      "rho_mean": 0.628299013118154,
+      "slack_median": 61.74044541821037,
+      "screen_bytes": 508559360,
+      "row_survival_fraction_median": 0.9977367912371135,
+      "row_survival_fraction_p95": 0.9993999677835051,
+      "row_survival_fraction_worst": 0.9996657538659793,
+      "round_byte_fraction_median": 1.7097821806987399,
+      "round_byte_fraction_p95": 1.7106306826317297,
+      "round_byte_fraction_worst": 1.7107768649770905,
+      "by_width": {
+        "2": {
+          "rounds": 21,
+          "union_rows_median": 248068.0,
+          "byte_fraction_median": 1.7100962915234823
+        },
+        "3": {
+          "rounds": 184,
+          "union_rows_median": 248087.5,
+          "byte_fraction_median": 1.710174819229668
+        },
+        "4": {
+          "rounds": 145,
+          "union_rows_median": 248019.0,
+          "byte_fraction_median": 1.7098989654925545
+        },
+        "5": {
+          "rounds": 183,
+          "union_rows_median": 247872.0,
+          "byte_fraction_median": 1.7093069873997708
+        },
+        "6": {
+          "rounds": 3,
+          "union_rows_median": 247791.0,
+          "byte_fraction_median": 1.7089807953894616
+        },
+        "7": {
+          "rounds": 27,
+          "union_rows_median": 247831.0,
+          "byte_fraction_median": 1.7091418778636884
+        },
+        "8": {
+          "rounds": 171,
+          "union_rows_median": 247852.0,
+          "byte_fraction_median": 1.7092264461626574
+        }
+      }
+    }
+  }
+}
