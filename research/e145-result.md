@@ -113,18 +113,30 @@ binary in every session reported here. All timing is local, never ranked.
     rule. That ladder is a pre-registered acceptance specification: any future
     per-round discriminator can be priced from its error rate before a GPU leg
     is spent.
-14. **The campaign is already running one per-round discriminator, and nobody
-    called it that.** The shipped depth-0/1 margin clamp
-    `p = min(p, 1/(1 + exp(-(top1 - top2)/scale)))` reads `pendingTop2`, which
-    is a property of **this round**, not of the marginal distribution. It is
-    the only per-round signal anywhere in the scheduler, and it is applied at
-    2 of 8 depths, one-sided so it can only lower `p`, with two scale
-    constants that have no recorded derivation. R7-4 prices it where it
-    actually runs. Read the R7-2 perfect-information figure of **1.3967 pp**
-    correctly: under perfect information a hedge is pure cost by construction,
-    so that number is not a verdict on the clamp. What it says is that the
-    campaign is running a crude, untuned, two-thirds-disabled instance of
-    exactly the mechanism the open half of the axis is worth **+6.2170 pp**.
+14. **The campaign is already running one per-round discriminator, nobody
+    called it that, and it is worth +0.5668 pp.** The shipped depth-0/1 margin
+    clamp `p = min(p, 1/(1 + exp(-(top1 - top2)/scale)))` reads `pendingTop2`,
+    which is a property of **this round**, not of the marginal distribution.
+    It is the only per-round signal anywhere in the scheduler, it is applied
+    at 2 of 8 depths, it is one-sided so it can only lower `p`, and its two
+    scale constants have no recorded derivation. R7-4 prices it where it runs,
+    not under perfect information, and it is **4.24x the entire measured
+    cost-table correction** and **4.65x the F4 noise floor**. Three sub-results
+    matter and two of them refute a pre-registered prior:
+    - **Removal costs +0.5668 pp**, so the clamp earns its place.
+    - **Extending it to all eight depths costs -3.9910 pp** at scale 2.0 and
+      **-5.2929 pp** at scale 3.0. The restriction to 2 of 8 depths is
+      load-bearing, not neglect.
+    - **It does not work by skipping rounds.** Removing it moves the width-1
+      share the wrong way, 19.51 % to 20.10 %, while mean depth moves 3.1269
+      to 3.3830. **The clamp does not skip rounds, it shortens them.**
+
+    Retuning the two constants is worth only **+0.0588 pp**, below the
+    0.1218 pp noise floor, so the surface has real structure and no useful
+    peak. What is unexploited is not the clamp's reach but its **quality**: a
+    single scalar margin through a sigmoid with an underived constant already
+    pays this much, which is direct evidence that the +6.2170 pp per-round
+    axis is reachable from code that already ships.
 15. **E128's whole 14-arm depth-policy table is unpriced.** Every one of those
     arms was scored on the replayed curve, whose shape is wrong by up to
     13.73 %. R7-1 re-priced two of its cells and both moved far:
@@ -1140,6 +1152,125 @@ discriminator can be scored against it before a single GPU leg is spent:
 measure the arm's error against the realised accept indicator, read across.
 Profitable at `sigma <= 0.20` for +2.80 pp, +4.05 pp at `sigma = 0.10`, break
 even near `sigma = 0.30`, and a 6.67 pp loss at `sigma = 0.50`.
+
+### R7-4 — the shipped margin clamp, priced where it actually runs
+
+R7-2 priced the depth-0/1 margin clamp under *perfect* information and got
+1.3967 pp. That number cannot decide anything about the shipped system,
+because under perfect information a hedge is pure cost by construction. R7-4
+prices the clamp where it runs: shipped EMA state, greedy rule, measured cost
+and measured price. Same 6 seeds and 200 windows.
+
+The clamp is
+
+```text
+p = min(p, 1 / (1 + exp(-(top1 - top2) / scale)))     scale 2.0 at depth 0,
+                                                      scale 3.0 at depth 1
+```
+
+`top1 - top2` comes from `pendingTop2`. It is a property of **this round**.
+
+To price it I lifted it out of the walker into an injectable state transform.
+`clamp_control` re-applies the shipped `{0: 2.0, 1: 3.0}` through the lifted
+path and must land on the untouched shipped cell exactly. It does:
+`e145_r7_clamp_control_error_pp = 0.0`, exactly zero, not rounded. The
+reimplementation is faithful, so every other cell in this rung is comparable.
+
+| cell | median % | sd | width-1 % | mean depth |
+| --- | --- | --- | --- | --- |
+| `clamp_shipped` | +0.1338 | 0.0537 | 19.5064 | 3.1269 |
+| `clamp_control` | +0.1338 | 0.0537 | 19.5064 | 3.1269 |
+| `clamp_none` | **-0.4330** | 0.0954 | 20.1022 | 3.3830 |
+| `clamp_all8_scale2` | **-3.8572** | 0.0895 | 19.0431 | 2.7622 |
+| `clamp_all8_scale3` | **-5.1591** | 0.0699 | 18.5041 | 2.6579 |
+| `clamp_shipped_argmax` | +0.1338 | 0.0537 | 19.5064 | 3.1269 |
+
+**The advisor's prior, recorded in F11 before the run, splits.**
+
+- *"Removal hurts."* **Confirmed.** `e145_r7_clamp_cost_at_shipped_ema_pp =
+  +0.5668 pp`. Deleting the clamp costs more than half a point.
+- *"Extension helps."* **Refuted, and not narrowly.** Extending the same clamp
+  to all eight depths costs **-3.9910 pp** at scale 2.0 and **-5.2929 pp** at
+  scale 3.0.
+
+**The stated mechanism is also refuted, while its sign survives.** F11
+predicted the clamp works by carrying the EMA's 19.51 % width-1 share toward
+the clairvoyant 28.48 %, that is by making the policy decline to draft.
+It does not. Removing the clamp *raises* the width-1 share to 20.10 %, the
+wrong way, by 0.60 pp. What moves is mean depth, 3.1269 without to 3.3830
+with it removed. **The clamp does not skip rounds. It shortens them.** It
+trims depth on rounds whose top-two margin is thin, and leaves the decision to
+draft at all untouched.
+
+That also explains why extension is so costly. A clamp at depth 0 or 1 acts
+on the decision to *commit* to a draft chain. The same clamp at depth 4 or 5
+truncates a chain that is already running and has already paid its setup.
+Mean depth collapses to 2.7622 and 2.6579 in the two extension arms. **The
+shipped restriction to 2 of 8 depths is load-bearing, not neglect.**
+
+#### The two scale constants, swept jointly
+
+`scale` controls selectivity, and the direction is worth stating because it is
+the opposite of what the name suggests. For a confident round the margin is
+large and positive, so a **small** scale sends the sigmoid to 1 and the clamp
+does nothing; a **large** scale sends it to 0.5 and caps every round alike.
+Small scale is therefore a *sharp* per-round test and large scale is an
+*indiscriminate* haircut.
+
+Median %, `scale0` down the side and `scale1` across:
+
+| s0 \ s1 | 1.0 | 1.5 | 2.0 | 3.0 | 4.0 | 6.0 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **1.0** | **+0.1926** | +0.1502 | +0.1703 | +0.1755 | +0.1441 | +0.1301 |
+| **1.5** | +0.1578 | +0.1601 | +0.1731 | +0.1320 | +0.1353 | +0.0800 |
+| **2.0** | +0.1448 | +0.1762 | +0.1494 | +0.1338 | +0.1019 | +0.0036 |
+| **3.0** | +0.1627 | +0.1548 | +0.1093 | +0.0915 | +0.0246 | -0.0996 |
+| **4.0** | +0.1762 | +0.1552 | +0.1440 | +0.0491 | -0.0352 | -0.1830 |
+| **6.0** | +0.1777 | +0.1102 | +0.1271 | -0.0160 | -0.1355 | **-0.3760** |
+
+The shipped cell `(2.0, 3.0)` scores +0.1338. The argmax is `(1.0, 1.0)` at
++0.1926, a gain of `e145_r7_clamp_grid_gain_over_shipped_pp = +0.0588 pp`.
+The grid spread is `e145_r7_clamp_grid_spread_pp = 0.5686 pp`.
+
+**The Rule 128 call, made against the pre-registered 0.50 pp threshold.**
+Strictly the surface is not a plateau: `e145_r7_clamp_grid_is_plateau =
+False`, because 0.5686 exceeds 0.50 by 0.0686 pp. I am reporting that
+literally rather than rounding it into the answer I would prefer. But the
+spread is produced entirely by the *bad* corner. The **achievable** gain from
+retuning is +0.0588 pp, which is less than half the F4 median-eligible noise
+floor of 0.1218 pp. **Retuning the two constants is not actionable.** The
+right sentence is "the surface has real structure and no useful peak", and I
+am not proposing a new pair.
+
+The structure it does have is the interesting part. Both extremes lose about
+half a point: no clamp at all costs 0.5668 pp, and the most indiscriminate
+corner `(6.0, 6.0)` costs 0.5098 pp against shipped. The optimum is interior
+in *selectivity*, and the best cell tested is the sharpest one. Note also that
+`clamp_none` is **not** the small-scale limit of the grid: as scale falls the
+clamp becomes a hard sign test on the margin, refusing depth outright when
+`top1 < top2`, which is a strong discriminator rather than an absent one. The
+grid argmax sits on the boundary in that direction.
+
+#### What this rung actually establishes
+
+**The campaign's only per-round discriminator is crude, applied at 2 of 8
+depths, one-sided, and untuned, and it is already worth +0.5668 pp.** Put that
+next to the other two numbers in this experiment: it is **4.24x** the entire
+measured-cost-table correction of +0.1338 %, and **4.65x** the F4
+median-eligible noise floor.
+
+So F11's reading is correct in substance and needs one amendment. The clamp is
+not "two-thirds disabled" in the sense that more coverage would help; the
+measurement says coverage is exactly where it belongs and widening it costs 4
+to 5 pp. What is unexploited is not the clamp's *reach* but its *quality*. It
+is a single scalar read of one margin, thresholded through a sigmoid with an
+underived constant, and it already pays. R7-3 says a per-round signal only
+10 % of the way to the truth is worth +1.09 pp. This is the empirical proof
+that such signals pay on this system, obtained from code that already ships.
+
+That is the argument for arXiv 2606.30265, margin-based certified bounds: it
+replaces exactly this scalar and exactly these two constants with a per-round
+certificate. R7-4 says the slot is real and occupied by a placeholder.
 
 ### How to re-price any E128 arm on the measured curve
 
