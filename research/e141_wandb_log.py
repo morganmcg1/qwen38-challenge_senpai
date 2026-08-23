@@ -7,9 +7,20 @@ is labelled as such in the run config, because
 `qwen35DerivedClusterProbeFraction` is not this experiment's editable surface.
 
 The primary metric is reported twice under the pre-registered coefficient
-range and once as the directly measured net, which is the honest number: the
-timed arms already contain both the extra accepted tokens and the extra probe
-cost, so no coefficient is needed to combine them.
+range, as the pre-registered PREDICTION, and separately as the measured value.
+The timed arms already contain both the extra accepted tokens and the extra
+probe cost, so no coefficient is needed to combine them.
+
+The measured value is reported on two clearly separated harnesses, because
+CAMPAIGN RULE 115 makes them different numbers:
+
+  harness=local   what the ABBA session measured directly on this M4 Pro.
+  harness=ranked  the same evidence with the absolute per-round cost
+                  re-expressed over the 52,726 us ranked round rather than the
+                  ~195,000 us local one. `e141_net_ranked_pct` is this one.
+
+An unlabelled score model is invalid, so every metric here carries its harness
+in the name or in the run config.
 """
 
 from __future__ import annotations
@@ -84,7 +95,12 @@ def main() -> None:
         "arm_selector": "MLX_E141_DRAFT_PREFIX",
         "shipped_prefix": 98_304,
         "full_prefix": 248_320,
-        "harness": "local",
+        "measurement_harness": "local",
+        "score_model_harness": "ranked, CAMPAIGN RULE 115 conversion",
+        "ranked_round_us": 52_726.0,
+        "cool_gate_passed_real_gate": False,
+        "gate_qualified_for_timing": False,
+        "official_or_ranked_score": False,
         "cluster_geometry_shipped": shipped,
         "cluster_geometry_full": full,
         "probe_fraction": PROBE_FRACTION_SHIPPED,
@@ -143,6 +159,12 @@ def main() -> None:
                 config[f"rung3_{arm}_{seed}"] = s
         metrics["e141_exactness_divergences"] = float(divergences)
         metrics["e141_widened_draft_rows_witnessed"] = float(witness_rows)
+        control = rung3.get("selector_positive_control")
+        if control:
+            config["selector_positive_control"] = control
+            metrics["e141_selector_proven_live"] = float(
+                bool(control["selector_proven_live"])
+            )
 
     if rung2:
         metrics.update(
@@ -156,11 +178,23 @@ def main() -> None:
         net = rung2.get("e141_net_ranked_pct")
         if net is not None:
             metrics["e141_net_ranked_pct"] = net
+            bracket = rung2.get("e141_net_ranked_pct_bracket") or [net, net]
+            metrics["e141_net_ranked_pct_low"] = bracket[0]
+            metrics["e141_net_ranked_pct_high"] = bracket[1]
             summary_notes.append(
-                f"measured net {net:.4f} % against the pre-registered "
+                f"measured net {net:.4f} % (harness=ranked, Rule 115; bracket "
+                f"{bracket[0]:.4f} to {bracket[1]:.4f}) against the "
+                "pre-registered "
                 f"{metrics.get('e141_predicted_ranked_pct_at_coeff65', 0):.4f} % "
                 f"to {metrics.get('e141_predicted_ranked_pct_at_coeff203', 0):.4f} %"
             )
+            gross = rung2.get("e141_net_ranked_pct_gross_rounds_only")
+            if gross is not None:
+                summary_notes.append(
+                    f"gross rounds-only term {gross:.4f} %, so the cost of "
+                    "widening consumes "
+                    f"{100.0 * (gross - net) / gross:.0f} % of it"
+                )
 
     run = wandb.init(
         entity=ENTITY,
