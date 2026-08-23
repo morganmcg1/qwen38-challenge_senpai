@@ -52130,3 +52130,350 @@ tuning or evaluating against suspected hidden-prompt source text applies in full
    share of the recovery as a separate column.
 4. Edward: post R1 and R2 and close E140. The `(h, tier)` search becomes a fresh assignment
    with the min-of-four objective and a `plutarch_unlock` flag on every grid cell.
+
+
+## 301 — FINDING 213, FINDING 214, CAMPAIGN RULES 124 and 125: the crown moved on the serial lottery, the acceptance axis inside the shipped head closed, and the head itself became editable in-branch
+
+Four things happened between 01:50Z and 03:00Z on 2026-08-23. Three of them are
+mine to own as errors. The fourth is the largest unlock of the campaign.
+
+### 301.1 FINDING 213 — the crown moved on the serial lottery, and F211's model predicts it to 0.0035 pp
+
+`3ba6ee9d`, Amal-David, **3.70576324**, accepted 2026-08-22T23:49:58Z, base
+`e8f14c44`, promoted source `1b3ea281`. Its public note declares exactly one
+mechanism: an untimed warm that compiles the committed-history flush-fold head
+expression at fold widths 3 through `maxDepth + 1` before any scored round. No
+scored-path arithmetic, proposal, schedule, kernel body, target verifier or
+emitted-token decision changes.
+
+Measured against the previous crown `1760479a`, with draft lengths and
+non-drafting counts digit-identical on all eight prompts:
+
+```
+prompt        cand d%  serial d%     raw d%       draftlen A/B   nondraft A/B
+beagle        +0.0546    +0.0272    -0.0273   4.3818/4.3818        0/0
+medicine      +0.0689    +0.0833    +0.0143   5.2556/5.2556        0/0
+essays        +0.0109    +0.1508    +0.1398   5.0870/5.0870        0/0
+botany        +0.2243    -0.1189    -0.3425   6.1481/6.1481        0/0
+republic      +0.0659    +0.2382    +0.1722   4.9892/4.9892        0/0
+plutarch      +0.0643    +0.4087    +0.3442   0.1557/0.1557      449/449
+drama         -0.0463    +0.2962    +0.3426   2.2976/2.2976        0/0
+travel        +0.3942    +0.6151    +0.2200   2.6479/2.6479        0/0
+
+candidate 8-prompt mean +0.1046 %  sd 0.1397   serial 8-prompt mean +0.2126 %
+```
+
+The F211 identity `published delta = serial medpair delta - candidate medpair
+delta` applied to the crown transition itself:
+
+```
+candidate medpair delta  +0.0328 %      <-- the new crown is SLOWER
+serial    medpair delta  +0.0890 %
+F211 predicted published +0.0562 %
+observed  published      +0.0597 %
+residual                 +0.0035 pp
+```
+
+**The crown moved because its serial leg drew a slow ticket.** Its own mechanism
+is a Rule 110 warm-phase change and measures at or slightly below zero on the
+candidate leg. The candidate frontier on this board is still `1760479a`.
+
+Reproduce with `_advisor_scratch/f213.py`.
+
+**Two operational consequences.** Do not port the flush-fold warm; combined with
+F201's ruling against porting the crown's E87 probe select, there is nothing in
+the crown's diff worth taking. And F211's model is now confirmed on a ninth
+independent pair, this one the crown transition itself, which is the strongest
+available evidence that Rule 72 is load-bearing rather than merely cautious.
+
+### 301.2 The probability table — what a candidate-leg gain is actually worth
+
+Per-row published sd is 0.159 %, from F211's diff-of-two 0.2253 %. Against the
+live crown at 3.70576324, for a candidate medpair gain measured relative to
+`1760479a`:
+
+```
+candidate gain    expected median    P(new crown)
+   -0.25 %           3.69429             2.6 %
+   -0.18 %           3.69680             6.4 %
+   -0.10 %           3.69985            15.8 %
+   +0.00 %           3.70355            35.4 %
+   +0.10 %           3.70726            60.0 %
+   +0.25 %           3.71281            88.4 %
+   +0.40 %           3.71837            98.4 %
+   +0.50 %           3.72207            99.7 %
+```
+
+**+0.25 % of candidate medpair is an 88 % crown. +0.40 % is a 98 % crown.** That
+is the bar every assignment is now measured against. Thorfinn's clean archive at
+a forecast 3.69900198 is a 7 % crown attempt, not the 29 % I quoted in E135 F24
+against the old crown; it is submitted as a control receipt under Rule 81 and for
+its candidate-leg reading, not as a crown attempt.
+
+### 301.3 CAMPAIGN RULE 124 — the bar and the frontier are different rows
+
+**Anchor VALUE tables on the published crown, because that is the bar. Anchor
+CANDIDATE contrasts on the fastest promoted candidate leg, because that is the
+frontier. Whenever a crown moved on the serial lottery those are different rows,
+and using one where the other belongs mis-prices every forecast.**
+
+Today the bar is `3ba6ee9d` at 3.70576324 and the frontier is `1760479a`. Ceiling
+table at the bar, from `research/f209_reorder_value.py --anchor 3ba6ee9d`:
+
+```
+  0 plutarch  1.26228     3 beagle    3.54933  <== median pair
+  1 drama     2.13280     4 essays    3.86219  <== median pair
+  2 travel    2.42789     5 medicine  3.89407   buffer 0.825 %
+                          6 republic  3.90802   buffer 1.187 %
+                          7 botany    3.91693   buffer 1.417 %
+
+beagle dM/dx 0.4789  ceiling +4.6514 % at x 9.715 %
+essays dM/dx 0.5211  ceiling +0.4302 % at x 0.830 %
+```
+
+Every Rule 123 buffer tightened against ledger 300.
+
+### 301.4 THE ACCEPTANCE AXIS INSIDE THE SHIPPED HEAD IS CLOSED — askeladd E143 R1/R2
+
+Askeladd's pre-registered closure fired at both ends of every interval.
+`research/e143_f2.py`, output `research/e143-f2.json`.
+
+```
+carrier   trials  misses  C-a  unresolved   C-d events   C-d share            unresolved frac
+beagle       884      92    5           6     81 [80,87]  88.04 % [86.95, 94.57]   0.0652
+essays       429      68    0           2     66 [65.5,68] 97.06 % [96.34, 100.00] 0.0294
+other      1,321     136    2           8    126 [124.5,134] 92.65 % [91.54, 98.53] 0.0588
+pooled     2,634     296    7          16    273 [270,289] 92.23 % [91.22, 97.64]   0.0541
+```
+
+`C-c = 0` by proof (`screen_loss_at_32 = 0.0`), C-b measured at zero with a
+rule-of-three bound. C-d is the residual identity
+`measured misses - C-a - C-b - C-c`, which is exact once C-b and C-c are pinned.
+Reassigning all 16 unresolved rows to the actionable side moves pooled C-d only
+to 91.22 %.
+
+**The readout and shortlist channels are closed. The residual +5.234 % of
+published median sits entirely in C-d and is unreachable without a different
+proposal head.** Askeladd's Rule 121 correction is adopted: the naive linear
+conversion overstates that unreachable prize by 4.8x, because both carriers
+saturate long before C-d's magnitude.
+
+The one reachable channel is C-a, tokens outside the compact draft vocabulary,
+and alphonse owns it.
+
+### 301.5 The C-a disagreement, and it decides alphonse's experiment
+
+Two students measured the same channel from opposite sides and disagree by
+1.7x.
+
+```
+                                              beagle      essays     median
+askeladd, live first divergences            +1.1482 %   +0.0000 %   +0.5499 %
+  68 % CI                                   [+0.7374, +1.7857]      [+0.3535, +0.8559]
+  essays 68 % upper bound                                +0.4721 %  -> +0.7959 % combined
+alphonse, corpus token census               +0.9809 %   +0.9206 %   +0.8999 %
+```
+
+Askeladd counts **0 C-a events on 429 essays trials**. Alphonse counts 0.4535 %
+of every token in pg3600. Those are different populations. The honest band for
+alphonse's E141 prize is therefore **+0.35 % to +0.90 %, centred near +0.55 % to
++0.80 %**, against a measured arm A cost of 0.70 % to 0.83 %.
+
+**Consequence: E141 arm A as specified is a coin flip, net -0.48 % to +0.20 %.
+Arm B is promoted from option to requirement.** Arm B generalises the
+`rowsPerCluster == 8` guard at `Qwen35.swift:4854`, with `probed.dim(0) ==
+probes` at `:4860` and the grid at `:4864-4865`, and raises
+`derivedClusterRowsPerLeaf` at `:5440` from 8 to 20, for +0.22 MB total. With arm
+B the net is the prize itself and E141 becomes a crown at better than 99 %.
+
+The one free measurement that settles it, requested from both students: the
+**draft-position split**. Askeladd's census sees first divergences; if it can see
+only position 1 while alphonse's corpus census counts every token, both numbers
+are right and they measure different things. Alphonse must report his
+unproposable fraction split by position 1 against positions 2 and deeper, for
+both corpora, reach-weighted by beagle 4.3818 and essays 5.0870. If position 1
+dominates, F4's step-1-only widened probe captures most of the prize at about a
+quarter of the cost and becomes the best cell in the matrix.
+
+Priced at the bar, `research/f209_reorder_value.py --anchor 3ba6ee9d`:
+
+```
+shape                                             median gain
+beagle 0.9809, essays 0.9206  (alphonse)            +0.8999 %   essays LEAVES the pair
+beagle 1.1482, essays 0.4721  (askeladd + bound)    +0.7959 %
+beagle 1.1482, essays 0       (askeladd point)      +0.5499 %
+beagle 0.9809, essays 0                             +0.4697 %
+beagle 0.7374, essays 0       (askeladd 68 % low)   +0.3531 %
+```
+
+Note the first row: at 0.9206 % essays overshoots its 0.830 % binding gap and
+medicine takes the upper slot at 3.89407. Every point of essays above 0.830 % is
+worth exactly zero to anyone from here on.
+
+### 301.6 ADVISOR ERROR 148 — I priced C2 from bytes alone, at 3x the corrected gross
+
+I priced askeladd's C2 fallback arm (replace `_exactKVDenseW`'s dense BF16
+precision islands with affine-4 g64) at **+0.35 %, band [+0.30 %, +0.42 %]**,
+from a per-draft-step byte count. Askeladd found the end-to-end measurement
+already in the record:
+
+- E82, W&B [`o0rawiol`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o0rawiol) and
+  [`yerghmxz`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/yerghmxz):
+  arm `q` 0.031998 s/tok against `declared` 0.031432, **+1.801 % slower**, 80
+  rounds against 78.
+- E124's corrected byte model: 110,923,881 B per round, **+0.084 % to +0.116 %
+  ranked gross**, not +0.35 %.
+
+My point estimate was about 3x the corrected gross and it was a *gross* number
+that never paid for the acceptance it spends. **That is the exact failure Rule
+107 exists to prevent, and I wrote Rule 107.** He also established that
+`DARKBLOOM_QWEN_MTP_ISLAND_ARM=q` runs C2's exact numerics with no source edit,
+because the declared head's affine-4 `k_proj`/`v_proj` are bit-identical to
+`quantize(precision_islands.{k,v}.weight, 64, 4)` with 0 mismatching words. C2 is
+closed; the running ABBA finishes only because Rule 107 asks for a measured delta
+on the current base.
+
+### 301.7 ADVISOR ERROR 149 — the medicine buffer
+
+E135 F2 section 1 gave essays' gap to medicine as +0.952 % and section 5 rounded
+the same quantity to 0.94 %. `3.89352 / 3.85680 - 1 = 0.9521 %`. Section 1 was
+right. No decision changed.
+
+### 301.8 ADVISOR ERROR 150, and FINDING 214 — a declared head ships IN-BRANCH
+
+I told askeladd that declaring a head needs a HuggingFace upload of derived
+weights and that I would not authorise it alone. I had read the remote path in
+ledger 282.6 and had not checked the alternative. **There is an in-branch mode
+and it is first class.**
+
+`benchmark.json:55`:
+
+> the MTP HEAD WEIGHTS themselves, declared through `mtp-head.manifest.json` and
+> **fetched or shipped in-branch under `mtp-head/`**
+
+`Sources/MLXFastTrustedHarness/QwenMTPHeadDeclaration.swift`, in
+`parse(data:origin:)`:
+
+```swift
+case .inBranch:
+    guard let path, !path.isEmpty, !path.hasPrefix("/"),
+          !path.contains(".."), !path.contains("\\")
+    else { throw ... "selects source 'in_branch' without a safe repo-relative path" }
+```
+
+with the shared non-pinned guards requiring a 64-hex `sha256`, a positive
+`bytes`, and `bytes <= max_bytes` where `max_bytes` defaults to `2_147_483_648`
+and may be lowered but not raised. `benchmark.json:150-159` puts `mtp-head` in
+`editablePaths`, marks it optional, and exempts it from the 3 MB code budget with
+its own 2 GiB cap:
+
+> Head WEIGHTS are not source, and the 2026-08-14 contract change makes them
+> editable, so the one path that carries them is exempted from the code budget
+> and given its own 2 GiB cap instead.
+
+Ledger 282.6's licence blocker was specific to declaring **xkm's qat-q4 parent**,
+a derivative of two other participants' artifacts. It does not touch a quantizer
+we run ourselves on the organizer's own pinned
+`EigenLabs/Qwen3.8-27B-MTP-bf16@26a328e0`.
+
+**FINDING 214: the proposal head is a submittable, in-branch, zero-source-byte
+editable surface, and the shipped head throws away 0.82 pt of pooled acceptance
+to naive round-to-nearest quantization of weights we already hold.**
+
+From ledger (J), the one clean same-weights comparison that 282.6 does not touch:
+
+```
+master-bf16   93.13 %   organizer-pinned EigenLabs bf16, 1006.7 MB, 15 tensors
+declared      92.31 %   the SAME weights, naive affine-4 g64 round-to-nearest,
+                        427.7 MB, requant relL2 9.18e-2 .. 9.97e-2
+                        -0.82 pt paid to quantization damage alone
+```
+
+`master-bf16` itself is unshippable: (J)'s bytes law measures head time linear in
+head bytes, 1.9858x bytes against 2.0009x time, agreeing to 0.75 %. A better
+data-free quantizer at identical bytes and layout keeps the head step and changes
+no Swift. Round-to-nearest is the worst affine quantizer for a fixed grid.
+
+Uniform acceptance gains convert exactly 1:1 under Rule 121, verified at the bar:
+
+```
+recovered from the 0.82 pt   raw gain at 203   median      P(new crown)
+   +0.20 pt                     +0.406 %       3.72081       > 98 %
+   +0.40 pt                     +0.812 %       3.73585       > 99.9 %
+   +0.71 pt, the (J) figure     +1.441 %       3.75916       > 99.9 %
+   +0.82 pt, the full loss      +1.665 %       3.76746       > 99.9 %
+```
+
+**Recovering a quarter of the damage takes the crown.** Uniform is also the
+safest class under Rule 123: it converts 1:1, has no ceiling, and cannot
+manufacture a new minimum in the upper median slot. This is now the largest
+single lever on the books, above thorfinn's F22 at +0.5996 % and alphonse's E141
+at +0.35 % to +0.90 %.
+
+What 282.6 still closes, and must not be reopened: the qat-q4 **artifact** is a
+genuinely different trained trunk (`finetune_rel_l2_vs_master` 0.094 to 0.0998 on
+all eight trunk tensors), its acceptance gain is not significant (McNemar
+chi-square 0.083 over 311 discordant-eligible cells), and it measured +2.7 % to
++3.4 % slower in seconds per token. (J)'s "3.2x lower reconstruction error at
+identical weights" does not describe what was measured, and its +1.57 % is
+Advisor Error 114.
+
+### 301.9 CAMPAIGN RULE 125 — price an acceptance gain through the scheduler's response, never at fixed depth
+
+E82's qat-q4 arm is the receipt:
+
+```
+arm       drafting rounds   draft length   tokens/round   derived ms/token
+declared        74              6.351          6.92         23.91 .. 24.12
+qat-q4          69              6.739          7.42         24.73 .. 24.78
+```
+
+**It bought +0.85 pt of acceptance and lost 2.7 % to 3.4 % of seconds per
+token.** The depth walk converted the extra acceptance into extra depth, verify
+grew 9.1 % for 5.3 % more rows, and the width cost curve is non-convex with a
+36 % step into width 6 against 8 to 12 % for the shallow steps.
+
+**Every reported acceptance delta must be accompanied by the replayed depth
+histogram, with any mass moving into width 6 or above flagged explicitly. An
+acceptance gain priced at fixed depth overstates its value by however much the
+shipped greedy pushes into the cliff.**
+
+This makes edward's 2-D `(h, tier)` search the gate on the head axis rather than
+an independent line of work. His brief gains a fourth amendment: re-run the grid
+with `positionAcceptEMA` shifted by +0.000, +0.004 and +0.008 at every position
+and report the argmax cell and its median gain for each shift. If the optimum is
+stable the two mechanisms compose; if it moves, the head experiment must ship its
+scheduler re-price and edward owns it.
+
+### 301.10 State of the four assignments
+
+1. **Thorfinn #135.** Revert pb6, run the gate chain, submit the clean archive as
+   a control receipt at a corrected 7 % crown probability. Tripwire 3 is
+   sharpened: the candidate medpair should land about +0.12 % slower than
+   `1760479a`, inside `[-0.03 %, +0.27 %]` at 2 sigma, which is the F209
+   composition forecast converted through F211's identity. Then the free g17s
+   register census, then F22.
+2. **Alphonse #141.** Arm B first, arm A on top of it, never arm A standalone.
+   Report the draft-position split before the next GPU leg. Add medicine to the
+   per-prompt table. Measure `e141_uniform_round_cost_pct` rather than estimating
+   it.
+3. **Askeladd #143.** Finish the C2 ABBA, answer the essays event-count and
+   draft-position questions for alphonse, post terminal. E144 is the in-branch
+   re-quantized head: R-A reproduce `declared` bit-exactly from `master-bf16`;
+   R-B at least two data-free quantizers at identical bytes; R-C the offline
+   acceptance replay on the cached E142 capture, stratified under Rule 76, with
+   the depth histogram under Rule 125; R-D the `in_branch` declaration rehearsal
+   including whether the submit guard needs `mtp-head/` committed; R-E the
+   512-token exactness leg with the new `head_provenance_sha256`.
+4. **Edward #140.** Post R1 and R2 and close it. His Mac has been idle. The
+   `(h, tier)` search follows immediately with the four amendments.
+
+### 301.11 What still has no owner
+
+- The width-independent GPU-work pool attribution census, about 3.7 % to 3.8 % of
+  the ranked round, uniform and therefore 1:1 with no ceiling. Largest safe
+  target with no owner.
+- Per-position head-side confidence feeding the depth policy, +0.5 % point and
+  beagle-weighted, rung 0 zero-GPU on the cached capture.
+- F190, the cliff that appears to move one width between two of our own bases;
+  check the E92 axis label first.
