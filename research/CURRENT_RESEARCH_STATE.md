@@ -1,6 +1,6 @@
 # SENPAI Research State
 
-- 2026-08-23 07:05 UTC
+- 2026-08-23 07:25 UTC
 - Most recent human research direction: none received this generation. The team
   has given no new steer since the campaign opened; the advisor is operating
   autonomously under `senpai/program.md`.
@@ -8,100 +8,112 @@
 ## Where the campaign stands
 
 Crown `684821ed` at 3.71959723 on organizer source `eb5eadc7`. Our best row is
-`572b2cc4` at 3.66218564. The published-median gap reads 1.57 %, but Finding
-230 shows the real candidate-leg gap is **0.82 %** (mean of four promoted
-contrasts, sd 0.13). Nearly half the visible gap is the serial lottery.
+`572b2cc4` at 3.66218564.
 
-Our top four in-hand mechanisms sum to about **+1.99 %** of candidate-leg
-value against that 0.82 % gap. The campaign's problem is not a shortage of
-ideas. It is measurement precision and correct attribution.
+**Finding 237 changes how that gap should be read.** `f7d59543` is a zero-delta
+resample of `eb5eadc7`, the crown's own tree, and it printed 3.69864608. Same
+tree, zero editable bytes changed, `-0.5633 %` of published median. On the five
+weighted prompts the candidate leg moved `+0.0011 %` with `sd 0.0297 %`, while
+the serial leg moved with `sd 0.7338 %`. One prompt, essays, ran 1.4968 % faster
+on the serial side and flipped the upper median slot from medicine to essays.
+
+Two consequences:
+
+1. The crown's honest ranked level is about 3.701 to 3.709, not 3.7196. Our
+   real candidate-leg gap remains the Finding 230 figure of **0.82 %**.
+2. The candidate leg is a precision instrument at `se 0.0133 %` on the weighted
+   five, while the published median carries a `+/- 0.56 %` lottery. Every
+   decision must be priced on the candidate leg (Rule 118), and every
+   submission needs candidate-leg margin as lottery insurance.
+
+Our in-hand mechanisms sum to well over the 0.82 % gap. The campaign's problem
+is not a shortage of ideas. It is measurement precision, correct attribution,
+and submission-slot throughput.
 
 ## Current research focus
 
-**1. De-noising the primary instrument.** The dominant discovery of the last
-three rounds is that the ranked candidate leg carries a discrete
-wired-residency nuisance state worth **879.0 microseconds per drafting round**
-(sd 54.3), drawn roughly one time in three. It has destroyed at least two of
-our own conclusions. Askeladd's E146 has built a classifier that recovers a
-known zero to 0.02 pp and cuts the minimum detectable effect from 1.8485 pp
-(paired replicate) to **0.1244 pp** (mode-classified). Finding 229 proves the
-state cannot occur on a 48 GiB host, so our local instruments are cleaner than
-the board.
+**1. Land the crown attempt.** Thorfinn's `composed67 + pb6` is measured at
+`+2.1305 %` locally against his branch base (T44, W&B `8c5y1abg`), and Rule 130
+is lifted because the composition proved additive once each term was priced
+under the grid it ships with. He is adding the pre-registered `onePass678`
+(`+1.434 %` local forecast) while the submission slot is blocked.
 
-**2. Reversing a bad call.** Finding 231 shows the pb6 depth-price revert was a
-lottery draw, not a mechanism loss. Four independent lines now say pb6 is worth
-about -0.58 % (faster). pb6 is already the compiled default on the campaign
-base. Finding 232 records that thorfinn's branch hardcodes the old `ship` arm
-and would delete pb6 on merge; alphonse's branch carries pb6 and will produce a
-free second ranked draw.
+**2. Own the seed prefill.** Alphonse's E147 software-pipelined affine NAX
+transposed GEMM is in flight as `7226dc9a`. Local component effect `-1.0657 %`
+with `t = -11.12` and complete rank separation on 16 legs. The ranked forecast
+is `-3 %` to `-4.5 %` on the prefill component, worth `+0.22 %` to `+0.34 %` of
+published median. Rung E composes the 128x32 rectangular retile, whose isolated
+board evidence is `-5.07 %`, the best seed prefill ever measured here.
 
-**3. The seed prefill, an untouched 8.45 % of the scored candidate leg.**
-Finding 227 established that the seed prefill is charged inside the timed leg
-on both legs, and that a 1 % cut is worth about +0.075 % of published median.
-Two rivals have moved it (-4.12 % and -5.07 %). Nobody on this team ever had.
-Alphonse's E147 is now on that channel, and it is state-free with a 0.0634 pp
-noise floor.
+**3. Fix the draft-length objective, not the acceptance predictor.** Our own
+oracle result says a perfect acceptance estimator makes the schedule worse. The
+literature explains why: the measured cost curve has a `+30.6 %` wall at
+5 to 6 and a near-flat plateau at 8, so a first-order marginal rule is provably
+trapped at M=5 and can never reach M=8. Edward is replaying a full argmax over
+the admissible set `{0..5, 8}`, zero GPU.
 
-**4. Closing the width-cost curve.** Edward's E145 measured the live width cost
-curve in situ for the first time and found the 5-to-6 cliff is twice as wide as
-the replayer said (+29,134 microseconds, 30.6 % of the width-5 round) and that
-a 6-to-7 cliff of +25,861 microseconds exists that the replayer almost misses.
-R5-c will solve the ranked per-width curve directly from board data, removing
-the M4-to-M5 transfer risk from every scheduler constant we own.
+**4. Mine the public board for unclaimed mechanisms.** Askeladd is repricing
+every eligible rejected row through the E146 state corrector, gated on
+bit-identical controls. Two of our best queued mechanisms already came from
+reading one rejected rival row.
 
-## Live assignments
+## Standing measurement discipline
 
-| PR | student | experiment | state |
-|---|---|---|---|
-| #135 | thorfinn | E135 tight QMV grid, T29-A composition A/B, E87 port | WIP, F32 issued |
-| #144 | edward | E145 width cost curve, R5 pb6 verdict and ranked curve solve | WIP, F7 issued |
-| #146 | askeladd | E146 nuisance floor census and state classifier | WIP, F3 issued, R-C running |
-| #147 | alphonse | E147 affine NAX seed-prefill double buffer | WIP, F3 issued |
+- Price value against the contaminated round cost `leg_us / R`; state share
+  against the clean cost `decode_us / R` (Finding 235, Rule 134). One percent of
+  published median costs **515.2 us/round**.
+- An overhead column costs `2.6815 +- 0.0355` us; a working column costs
+  `13.8715 +- 1.8355` us. Never regress them together (Rule 135).
+- A guard needle must be unique to the arm, not merely long, and both polarities
+  must be asserted on real builds (Rule 136).
+- Run one warmup leg before any timed ABBA session; it cut entry-temperature
+  spread from 23.27 C to 1.757 C (Rule 137).
+- Yukon allows one in-flight submission. Every authorisation now names the slot
+  holder and the queue position.
+
+## Closed this generation
+
+- The wired-residency slack ladder. E130 measured s64 through s2048 across 12
+  legs and the argmax is s64, the shipped value. The slack is 98.3 to 99.9 %
+  consumed at every rung, so raising it admits no extra byte. The whole prize is
+  capped at `+/- 0.13 %`. Finding 8's KV-cache mechanism is refuted at source and
+  the KV growth path is separately dead by arithmetic at about 5.8 us/round.
+- Rule 130's non-additivity claim, refuted by T44.
+- All tree and multi-candidate drafting, structurally, by
+  `QwenRuntimeMTPDriver.requireStructurallySound:310-349`.
+- All pure acceptance predictors, by our own oracle result.
 
 ## Potential next research directions
 
-**Immediate, already priced, unclaimed:**
-
-- **BitWonka's 128x32 NAX seed retile.** The best prefill ever recorded on the
-  board, -5.07 %, worth about +0.43 % of median. Same file family as E147, so
-  it must follow E147 rather than run beside it.
-- **leaf16 on the shipped draft vocabulary.** Near-one-constant at
-  `Qwen35.swift:5586`, worth +0.21 to +0.32 %, and lottery-proof because it
-  changes no schedule. Needs 1,537 probes, not 1,536, because `:6156` rounds up.
-
-**Corrective, zero GPU:**
-
-- Re-derive F221 without the prefill contamination identified in Error 162. The
-  "+0.53 % per 1 % of width-independent work" coefficient may fall to about
-  +0.45, which reprices several standing estimates.
-- Solve the ranked per-width round cost by non-negative least squares from
-  published board data (E145 R5-c). Two mixtures at different draft-length
-  columns give sixteen equations.
-
-**Structural, unexplored:**
-
-- **The 6-to-7 cliff.** Newly measured at 25,861 microseconds = 2.32x the mean
-  step. Up to 20 % of a width-7 round may be recoverable. Nobody owns it.
-- **Exploiting the residency state rather than correcting for it.** The
-  admission pool at `resident.cpp:32-37` is greedy first-come-first-served and
-  never evicts. The state is worth 1.79 % of the candidate leg. We currently
-  treat it purely as noise. One bounded probe could ask whether allocation
-  order inside the candidate can bias the draw. The 96 GiB guard at
-  `Qwen36MTPBlockSession.swift:222` means this can only be tested on the ranked
-  runner, which makes it expensive and speculative, but the prize is large.
-- **The six theirs-only symbols in `Qwen36MTPBlockSession.swift`** —
-  `oneRowBundle`, `warmBundle`, `verifyLogits`, `verifyNormed`,
-  `replayedRecurrentStates`, `triple`. Never investigated.
-- **`AttentionUtils.swift` KV re-read at query length >= 6.** Editable,
-  unowned, worth about 0.35 % of the round.
-
-**Declined, with reasons on record:**
-
-- Base sync to `eb5eadc7`. Declined on Finding 230: it would discard a
-  1245-line stack to close a gap our in-hand mechanisms already over-cover.
-- A replicate submission as a tie-breaker. Closed on measurement: 1.8485 pp
-  minimum detectable effect against 0.1244 pp for classification.
-- The flush-fold warm. Three independent nulls now, including `7e5172fa` on the
-  board this round.
-- Tree, multi-candidate and hedge-row drafting. Structurally blocked by
-  `QwenRuntimeMTPDriver.requireStructurallySound` at `:310-349`.
+1. **FP32-twin activations, bit-exact.** Pre-widen the bf16 activation tensor to
+   fp32 once. Because bf16 to fp32 is exact, everything downstream stays
+   bit-identical while 64 convert instructions per lane per k-block disappear at
+   NA=4. E123 closed activation widenings on the assumption that deletion needs
+   bf16 arithmetic; pre-widening makes that closure leak. Range `+0.3 %` to
+   `+2.0 %`. Route B, so thorfinn after the crown attempt resolves.
+2. **Fold the 257 per-round chunk-sum fill dispatches into their producers.**
+   About 1.25 ms of a 53 ms round. `qwen35FusedResidualRMSNormKernel` already
+   reads every element it emits. Rung 0 is a ten-minute zero-GPU bound. Range
+   `+0.3 %` to `+1.2 %`.
+3. **First-error focal loss on the proposal head.** We own `mtp-head/`. The
+   published method reports `+21 %` to `+76 %` accepted draft length with no
+   extra forward passes and no exactness change. This is the one head-side
+   direction our oracle result does not kill, because it improves the thing
+   predicted rather than the predictor.
+4. **Bit-plane draft pass.** Read 2 of 4 planes during drafting and all 4 during
+   target verification. Roughly halves draft weight bytes and stays token-exact,
+   because only draft quality moves. Budget the bit-transposition cost first.
+5. **MARLIN's four-stage pipeline and SplitK on the QMV family.** The published
+   evidence says W4A16 can stay memory-bound to M=16 to 32 and that reducing
+   register and shared-memory pressure gives nearly 4x occupancy. If our cliff is
+   a register-ceiling cliff, SplitK is the direct antidote.
+6. **The 6 to 7 cliff itself.** 25,861 us, 2.32 times the mean step, still
+   unattributed and unowned.
+7. **The GDN S=2 mid-state write gate.** A 151 MB fp32 snapshot per S=2 round.
+   Skip-write and replay-on-reject wins if `P(reject | M=2) < 0.49`, and nobody
+   has ever censused that number. Highest correctness risk in the queue, so it
+   needs a strong exactness gate before any timing.
+8. **Corrective measurements.** The empirical entropy of our own 4-bit nibble
+   stream bounds every lossless-coding direction in one offline hour. A
+   STREAM-calibrated Metal read-bandwidth microbenchmark resolves the 1.69x
+   discrepancy between our implied 462.2 GB/s at M=1 and the 273 GB/s nominal.
