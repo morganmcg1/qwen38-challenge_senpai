@@ -266,6 +266,11 @@ def main() -> int:
               [leg["R_seconds"] for leg in pinned])
     curve = quadratic_term([float(leg["pinned_depth"]) for leg in pinned],
                            [leg["R_seconds"] for leg in pinned])
+    # Same law, but on the parent's own per-round clock with round 0 dropped
+    # and both tails trimmed. If the two intercepts disagree, the disagreement
+    # is post-prefill warmup and OS stalls, not the depth law.
+    fit_trimmed = ols([float(leg["pinned_depth"]) for leg in pinned],
+                      [leg["round_us_trimmed"] * 1e-6 for leg in pinned])
     s_fixed, h_slope = fit["intercept"], fit["slope"]
     rho = 8.0 * h_slope / s_fixed
 
@@ -346,6 +351,10 @@ def main() -> int:
         "legs": legs,
         "fit": {k: v for k, v in fit.items() if k != "residuals"},
         "fit_residuals_seconds": fit["residuals"],
+        "fit_trimmed_round_clock": {k: v for k, v in fit_trimmed.items()
+                                    if k != "residuals"},
+        "rho_trimmed_round_clock": 8.0 * fit_trimmed["slope"]
+        / fit_trimmed["intercept"],
         "quadratic_term": curve,
         "s_fixed_seconds": s_fixed,
         "h_slope_seconds": h_slope,
@@ -396,6 +405,9 @@ def main() -> int:
           f"{fit['residual_sd'] * 1e3:.4f} ms  "
           f"quadratic c2 {curve['c2'] * 1e3:.5f} ms "
           f"({curve['t_c2']:.2f} sigma)")
+    print(f"trimmed round clock: s {fit_trimmed['intercept'] * 1e3:.4f} ms  "
+          f"h {fit_trimmed['slope'] * 1e3:.4f} ms  "
+          f"rho {out['rho_trimmed_round_clock']:.4f}")
     if head_fit:
         print(f"h_head (sync-head trace) {head_fit['slope'] * 1e3:.4f} ms "
               f"+- {head_fit['se_slope'] * 1e3:.4f}  "
