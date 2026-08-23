@@ -418,10 +418,13 @@ def main() -> int:
     if oracle is not None:
         # Replaces the EMA with the true per-position acceptance vector, so a
         # perfect stationary estimator is priced separately from the argmax.
+        widths = {len(e["depth_share"]) for e in oracle["cells"].values()}
+        if len(widths) != 1:
+            raise SystemExit("oracle depth_share widths disagree: %s" % widths)
         run.log({"oracle_state": table(
             ["cell", "in_sample_pct", "in_sample_sd", "curve_lopo_pct",
              "unweighted_mean_depth"]
-            + ["depth_share_%d" % d for d in range(9)],
+            + ["depth_share_%d" % d for d in range(widths.pop())],
             [[name, entry["in_sample_mean"], entry["in_sample_sd"],
               entry["curve_lopo_mean"], entry["unweighted_mean_depth"]]
              + list(entry["depth_share"])
