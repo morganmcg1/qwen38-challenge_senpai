@@ -62,7 +62,7 @@ matter and the result is robust.
 COST DECOMPOSITION. Per-round cost splits into work proportional to the leaf
 count, which the probe fraction cannot touch, and work proportional to
 probes * rowsPerLeaf, which it scales linearly. That split is what lets the
-p=0.10 figure be derived; it is a model, and it is labelled as one.
+p=0.15 figure be derived; it is a model, and it is labelled as one.
 """
 
 from __future__ import annotations
@@ -82,7 +82,7 @@ FULL_PADDED = 248_320
 PROBE_FRACTION = 0.25
 
 # Rule 115 conversion constants, all from senpai/campaign-ledger.md.
-RANKED_ROUND_US = 52_726.0  # medpair-weighted ranked round, F189 arm B
+RANKED_ROUND_US = 52_860.0  # medpair-weighted ranked round, F189 arm B
 KAPPA_OVERHEAD = 0.646  # absolute M4 Pro -> M5, per-round overhead class
 # The bandwidth class is not a fixed kappa. It is the statement that the cost
 # fraction is invariant, so its effective kappa follows this session's own
@@ -452,8 +452,8 @@ def main() -> None:
                 },
             }
         report["e141_added_us_per_round_at_p025"] = added
-        report["e141_added_us_per_round_at_p010"] = None
-        report["e141_added_us_per_round_at_p010_is_derived"] = True
+        report["e141_added_us_per_round_at_p015"] = None
+        report["e141_added_us_per_round_at_p015_is_derived"] = True
 
         if added is not None:
             # Split the added per-round cost into the part the probe fraction
@@ -464,20 +464,20 @@ def main() -> None:
                 probes(FULL_PADDED, PROBE_FRACTION)
                 - probes(SHIPPED_PADDED, PROBE_FRACTION)
             )
-            d_rows_010 = ROWS_PER_LEAF * (
-                probes(FULL_PADDED, 0.10) - probes(SHIPPED_PADDED, PROBE_FRACTION)
+            d_rows_015 = ROWS_PER_LEAF * (
+                probes(FULL_PADDED, 0.15) - probes(SHIPPED_PADDED, PROBE_FRACTION)
             )
             # One equation, two unknowns, so state the bracket rather than a
             # false point estimate: all cost on centroids gives no p sensitivity
             # at all, all cost on row scoring scales the whole term.
             all_centroid = added
-            all_rows = added * d_rows_010 / d_rows_025 if d_rows_025 else None
-            report["e141_added_us_per_round_at_p010"] = (
+            all_rows = added * d_rows_015 / d_rows_025 if d_rows_025 else None
+            report["e141_added_us_per_round_at_p015"] = (
                 statistics.mean([all_centroid, all_rows])
                 if all_rows is not None
                 else None
             )
-            report["p010_model"] = {
+            report["p015_model"] = {
                 "note": (
                     "DERIVED, not measured. qwen35DerivedClusterProbeFraction "
                     "(Qwen35.swift:4937) is a plain let on another experiment's "
@@ -485,7 +485,7 @@ def main() -> None:
                 ),
                 "delta_leaves": d_leaves,
                 "delta_rows_scored_at_p025": d_rows_025,
-                "delta_rows_scored_at_p010": d_rows_010,
+                "delta_rows_scored_at_p015": d_rows_015,
                 "bracket_all_cost_on_centroids_us": all_centroid,
                 "bracket_all_cost_on_row_scoring_us": all_rows,
             }
@@ -588,11 +588,11 @@ def main() -> None:
             "e141_added_us_per_round_at_p025 = "
             f"{report['e141_added_us_per_round_at_p025']:+.1f}"
         )
-        if report.get("e141_added_us_per_round_at_p010") is not None:
-            m = report["p010_model"]
+        if report.get("e141_added_us_per_round_at_p015") is not None:
+            m = report["p015_model"]
             print(
-                "e141_added_us_per_round_at_p010 = "
-                f"{report['e141_added_us_per_round_at_p010']:+.1f} DERIVED "
+                "e141_added_us_per_round_at_p015 = "
+                f"{report['e141_added_us_per_round_at_p015']:+.1f} DERIVED "
                 f"(bracket {m['bracket_all_cost_on_row_scoring_us']:+.1f} to "
                 f"{m['bracket_all_cost_on_centroids_us']:+.1f})"
             )

@@ -1,0 +1,291 @@
+{
+  "constants": {
+    "row_bytes": 1600,
+    "stride": 8192,
+    "per_thread_limit": 32,
+    "measured_us_per_mb": 28.91,
+    "ranked_round_us": 52860.0
+  },
+  "caveats": {
+    "price_is_a_zero_recall_loss_ceiling": "price() reuses the rung 3 round counts, which were measured only for the hold-fraction arm at rowsPerLeaf 8. Holding the probe count (arm A) drops the effective probe fraction, and changing rowsPerLeaf (arm B) repartitions every cluster. Both can only lose recall relative to the measured arm, so every net figure below is an upper bound, not a forecast.",
+    "arm_B_loses_the_fused_row_qmv": "qwen35ClusterRowQMV guards `rowsPerCluster == 8` at Qwen35.swift:4911. At 16 or 20 it returns nil and Qwen35.swift:6166 falls back to the generic gatherQuantizedMM the fused kernel was written to replace. The +0.19 MB byte win is therefore not the whole price of arm B.",
+    "arm_B_needs_the_padding_rule_generalised": "qwen35CompactDraftCounts pads to a multiple of 8 at Qwen35.swift:4229 and qwen35BalancedBisecting2Means assumes `count / rowsPerLeaf` is exact at Qwen35.swift:5009. 248,320 divides by 16 and 20, but the shipped 98,336 does not divide by 20, so rowsPerLeaf must stay arm-scoped or the padding rule must follow it.",
+    "arm_B_keeps_the_fused_finalize": "Qwen35RowTop32 already threads rowsPerCluster through qwen35Top32FinalizeSource at Qwen35.swift:4526, so the top-32 finalize stage is shape generic and does not block arm B."
+  },
+  "trees": {
+    "p25_advisor_base": {
+      "probe_fraction": 0.25,
+      "arms": [
+        {
+          "arm": "shipped",
+          "padded_rows": 98336,
+          "rows_per_leaf": 8,
+          "leaves": 12292,
+          "probes": 3073,
+          "probe_fraction_effective": 0.25,
+          "probed_rows": 24584,
+          "centroid_mb": 19.6672,
+          "row_mb": 39.3344,
+          "total_mb": 59.09160000000001,
+          "plan_per_thread": 4,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 0.0
+        },
+        {
+          "arm": "widened_hold_fraction",
+          "padded_rows": 248320,
+          "rows_per_leaf": 8,
+          "leaves": 31040,
+          "probes": 7760,
+          "probe_fraction_effective": 0.25,
+          "probed_rows": 62080,
+          "centroid_mb": 49.664,
+          "row_mb": 99.328,
+          "total_mb": 149.08200000000002,
+          "plan_per_thread": 8,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 89.99040000000002,
+          "price": {
+            "delta_mb": 89.99040000000002,
+            "added_us_per_round_measured_conversion": 2601.6224640000005,
+            "round_cost_pct_share_model": [
+              2.085750486727032,
+              2.5029005840724383
+            ],
+            "round_cost_pct_measured": 2.013711373624758,
+            "net_ranked_pct": {
+              "overhead": -2.7614685319773113,
+              "bandwidth": -1.6004693902638087
+            }
+          }
+        },
+        {
+          "arm": "widened_arm_A_hold_probes",
+          "padded_rows": 248320,
+          "rows_per_leaf": 8,
+          "leaves": 31040,
+          "probes": 3073,
+          "probe_fraction_effective": 0.09900128865979381,
+          "probed_rows": 24584,
+          "centroid_mb": 49.664,
+          "row_mb": 39.3344,
+          "total_mb": 89.08840000000001,
+          "plan_per_thread": 4,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 29.9968,
+          "price": {
+            "delta_mb": 29.9968,
+            "added_us_per_round_measured_conversion": 867.207488,
+            "round_cost_pct_share_model": [
+              0.6952501622423436,
+              0.8343001946908124
+            ],
+            "round_cost_pct_measured": 0.6712371245415859,
+            "net_ranked_pct": {
+              "overhead": -0.6504330134839706,
+              "bandwidth": -0.2634332995794567
+            }
+          }
+        },
+        {
+          "arm": "widened_arm_B_rowsPerLeaf16",
+          "padded_rows": 248320,
+          "rows_per_leaf": 16,
+          "leaves": 15520,
+          "probes": 1536,
+          "probe_fraction_effective": 0.09896907216494845,
+          "probed_rows": 24576,
+          "centroid_mb": 24.832,
+          "row_mb": 39.3216,
+          "total_mb": 64.2436,
+          "plan_per_thread": 3,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 5.151999999999994,
+          "price": {
+            "delta_mb": 5.151999999999994,
+            "added_us_per_round_measured_conversion": 148.94431999999983,
+            "round_cost_pct_share_model": [
+              0.11941036496801494,
+              0.14329243796161792
+            ],
+            "round_cost_pct_measured": 0.11528608603711883,
+            "net_ranked_pct": {
+              "overhead": 0.223797825303241,
+              "bandwidth": 0.29026566607410964
+            }
+          }
+        },
+        {
+          "arm": "widened_arm_B_rowsPerLeaf20",
+          "padded_rows": 248320,
+          "rows_per_leaf": 20,
+          "leaves": 12416,
+          "probes": 1229,
+          "probe_fraction_effective": 0.09898518041237113,
+          "probed_rows": 24580,
+          "centroid_mb": 19.8656,
+          "row_mb": 39.328,
+          "total_mb": 59.28360000000001,
+          "plan_per_thread": 4,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 0.19200000000000017,
+          "price": {
+            "delta_mb": 0.19200000000000017,
+            "added_us_per_round_measured_conversion": 5.5507200000000045,
+            "round_cost_pct_share_model": [
+              0.004450075713093734,
+              0.0053400908557124805
+            ],
+            "round_cost_pct_measured": 0.004296375877159717,
+            "net_ranked_pct": {
+              "overhead": 0.39832871145987603,
+              "bandwidth": 0.4008057738488567
+            }
+          }
+        }
+      ]
+    },
+    "p15_thorfinn_tree": {
+      "probe_fraction": 0.15,
+      "arms": [
+        {
+          "arm": "shipped",
+          "padded_rows": 98336,
+          "rows_per_leaf": 8,
+          "leaves": 12292,
+          "probes": 1844,
+          "probe_fraction_effective": 0.15001627074520013,
+          "probed_rows": 14752,
+          "centroid_mb": 19.6672,
+          "row_mb": 23.6032,
+          "total_mb": 43.360400000000006,
+          "plan_per_thread": 2,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 0.0
+        },
+        {
+          "arm": "widened_hold_fraction",
+          "padded_rows": 248320,
+          "rows_per_leaf": 8,
+          "leaves": 31040,
+          "probes": 4656,
+          "probe_fraction_effective": 0.15,
+          "probed_rows": 37248,
+          "centroid_mb": 49.664,
+          "row_mb": 59.5968,
+          "total_mb": 109.3508,
+          "plan_per_thread": 5,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 65.9904,
+          "price": {
+            "delta_mb": 65.9904,
+            "added_us_per_round_measured_conversion": 1907.782464,
+            "round_cost_pct_share_model": [
+              1.5294910225903149,
+              1.8353892271083778
+            ],
+            "round_cost_pct_measured": 1.4766643889797935,
+            "net_ranked_pct": {
+              "overhead": -1.9169642441226062,
+              "bandwidth": -1.0655979010312242
+            }
+          }
+        },
+        {
+          "arm": "widened_arm_A_hold_probes",
+          "padded_rows": 248320,
+          "rows_per_leaf": 8,
+          "leaves": 31040,
+          "probes": 1844,
+          "probe_fraction_effective": 0.05940721649484536,
+          "probed_rows": 14752,
+          "centroid_mb": 49.664,
+          "row_mb": 23.6032,
+          "total_mb": 73.3572,
+          "plan_per_thread": 2,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 29.9968,
+          "price": {
+            "delta_mb": 29.9968,
+            "added_us_per_round_measured_conversion": 867.207488,
+            "round_cost_pct_share_model": [
+              0.6952501622423436,
+              0.8343001946908124
+            ],
+            "round_cost_pct_measured": 0.6712371245415859,
+            "net_ranked_pct": {
+              "overhead": -0.6504330134839706,
+              "bandwidth": -0.2634332995794567
+            }
+          }
+        },
+        {
+          "arm": "widened_arm_B_rowsPerLeaf16",
+          "padded_rows": 248320,
+          "rows_per_leaf": 16,
+          "leaves": 15520,
+          "probes": 922,
+          "probe_fraction_effective": 0.05940721649484536,
+          "probed_rows": 14752,
+          "centroid_mb": 24.832,
+          "row_mb": 23.6032,
+          "total_mb": 48.525200000000005,
+          "plan_per_thread": 2,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 5.1648,
+          "price": {
+            "delta_mb": 5.1648,
+            "added_us_per_round_measured_conversion": 149.314368,
+            "round_cost_pct_share_model": [
+              0.11970703668222134,
+              0.1436484440186656
+            ],
+            "round_cost_pct_measured": 0.11557251109559628,
+            "net_ranked_pct": {
+              "overhead": 0.2233474230163806,
+              "bandwidth": 0.2899804012798579
+            }
+          }
+        },
+        {
+          "arm": "widened_arm_B_rowsPerLeaf20",
+          "padded_rows": 248320,
+          "rows_per_leaf": 20,
+          "leaves": 12416,
+          "probes": 738,
+          "probe_fraction_effective": 0.05943943298969072,
+          "probed_rows": 14760,
+          "centroid_mb": 19.8656,
+          "row_mb": 23.616,
+          "total_mb": 43.571600000000004,
+          "plan_per_thread": 2,
+          "per_thread_within_limit": true,
+          "delta_mb_vs_shipped": 0.21119999999999806,
+          "price": {
+            "delta_mb": 0.21119999999999806,
+            "added_us_per_round_measured_conversion": 6.105791999999944,
+            "round_cost_pct_share_model": [
+              0.004895083284403058,
+              0.00587409994128367
+            ],
+            "round_cost_pct_measured": 0.004726013464875642,
+            "net_ranked_pct": {
+              "overhead": 0.39765310802958276,
+              "bandwidth": 0.4003778766574569
+            }
+          }
+        }
+      ]
+    }
+  },
+  "refutation_budget": {
+    "overhead": {
+      "max_added_us_per_round": 209.5762005538294,
+      "max_added_mb": 7.249263249873033
+    },
+    "bandwidth": {
+      "max_added_us_per_round": 330.89817566074174,
+      "max_added_mb": 11.44580337809553
+    }
+  }
+}

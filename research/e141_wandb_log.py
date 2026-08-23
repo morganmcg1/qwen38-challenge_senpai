@@ -2,7 +2,7 @@
 """E141: log every required metric to one W&B run.
 
 The assignment names six metrics. Five are read straight out of the artifacts
-the rungs wrote; the sixth, `e141_added_us_per_round_at_p010`, is DERIVED and
+the rungs wrote; the sixth, `e141_added_us_per_round_at_p015`, is DERIVED and
 is labelled as such in the run config, because
 `qwen35DerivedClusterProbeFraction` is not this experiment's editable surface.
 
@@ -60,8 +60,8 @@ def geometry(padded_rows: int) -> dict:
         "leaves": leaves,
         "probes_at_p025": probes,
         "rows_scored_at_p025": probes * ROWS_PER_LEAF,
-        "probes_at_p010": max(1, math.ceil(0.10 * leaves)),
-        "rows_scored_at_p010": max(1, math.ceil(0.10 * leaves)) * ROWS_PER_LEAF,
+        "probes_at_p015": max(1, math.ceil(0.15 * leaves)),
+        "rows_scored_at_p015": max(1, math.ceil(0.15 * leaves)) * ROWS_PER_LEAF,
     }
 
 
@@ -97,17 +97,17 @@ def main() -> None:
         "full_prefix": 248_320,
         "measurement_harness": "local",
         "score_model_harness": "ranked, CAMPAIGN RULE 115 conversion",
-        "ranked_round_us": 52_726.0,
+        "ranked_round_us": 52_860.0,
         "cool_gate_passed_real_gate": False,
         "gate_qualified_for_timing": False,
         "official_or_ranked_score": False,
         "cluster_geometry_shipped": shipped,
         "cluster_geometry_full": full,
         "probe_fraction": PROBE_FRACTION_SHIPPED,
-        "p010_is_derived_not_measured": True,
-        "p010_reason": (
+        "p015_is_derived_not_measured": True,
+        "p015_reason": (
             "qwen35DerivedClusterProbeFraction (Qwen35.swift:4937) is a plain "
-            "let on another experiment's surface, so p=0.10 cannot be selected "
+            "let on another experiment's surface, so p=0.15 cannot be selected "
             "at run time from this branch"
         ),
         "coefficient_low": COEFF_LOW,
