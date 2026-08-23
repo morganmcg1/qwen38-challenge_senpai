@@ -29,8 +29,15 @@ import math
 import pathlib
 import statistics
 
+import numpy
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LEGS_JSON = ROOT / "research/e145-artifacts/legs.json"
+
+# Every fit below prices the same object the R1 closure test validated: the
+# mean over all of a leg's blocks. Switching to the per-leg median would drop
+# the warm first round and break comparability with that check.
+BASIS = "us_mean_from_blocks"
 
 # The curve every depth-price decision descends from. Ranked scale, rebuilt by
 # inverting ranked receipts, never read off a decode.
@@ -85,6 +92,11 @@ def measured_curve(legs: list[dict]) -> dict:
                               if len(per_leg_median) > 1 else 0.0),
             "us_pooled_median": statistics.median(pooled),
             "us_pooled_mean": statistics.fmean(pooled),
+            # The basis the R1 closure test was validated on: every block of
+            # the leg, including the warm first round, divided by the round
+            # count. Kept beside the median so a reader can see the warm miss.
+            "us_mean_from_blocks": statistics.fmean(
+                [leg["round_us_from_blocks"] for leg in pin_legs]),
             "rounds_pooled": len(pooled),
             "round_counts": sorted({leg["round_count"] for leg in pin_legs}),
             "realised_width_mass": hist.get(str(width), 0.0),
@@ -109,6 +121,156 @@ def measured_curve(legs: list[dict]) -> dict:
                                       for leg in pin_legs),
         }
     return out
+
+
+def fit_repair_model(measured: dict[int, dict],
+                     shipped_replay_share: float) -> dict:
+    """Separate the width cost from the repair cost the pin forces with it.
+
+    Pinning the width forces a deep draft even where the evidence is weak, so
+    the accepted rate falls and rollback-and-replay becomes more frequent as
+    the ladder rises. The pinned curve therefore carries a repair term that the
+    shipped scheduler does not pay at the same rate. The model is
+
+        blocks_us(M) = c0 + c1*M + c2*replays_per_round + c3*[M >= 6]
+
+    fitted over the pinned legs, then re-evaluated at the shipped scheduler's
+    own replay rate so the reported curve prices width alone.
+
+    THIS FIT IS NOT IDENTIFIED AND THE FUNCTION SAYS SO. The pin forces the two
+    regressors to move together: a deeper pinned draft is rejected more often,
+    so the replay rate is a near-deterministic function of the pinned width.
+    Between-width variation cannot separate `c1` from `c2`, and least squares
+    on seven widths returns whatever split the noise prefers. The collinearity
+    diagnostic is reported and the coefficients are withheld.
+
+    The identified bound lives in `research/e145_r1.py`. A shipped leg runs a
+    mixture whose replay rate differs from the mass-weighted pinned reference,
+    so its closure residual bounds the per-replay cost directly.
+    """
+    rows, target, widths, shares = [], [], [], []
+    for w, e in sorted(measured.items()):
+        rows.append([1.0, float(w), e["replayed_round_share"],
+                     1.0 if w >= 6 else 0.0])
+        target.append(e[BASIS])
+        widths.append(float(w))
+        shares.append(e["replayed_round_share"])
+    a = numpy.array(rows, dtype=float)
+    y = numpy.array(target, dtype=float)
+    if a.shape[0] <= a.shape[1]:
+        return {"fitted": False, "reason":
+                f"{a.shape[0]} widths cannot identify {a.shape[1]} terms"}
+    collinearity = float(numpy.corrcoef(widths, shares)[0, 1])
+    if abs(collinearity) > 0.9:
+        return {
+            "fitted": False,
+            "reason": "the pin makes the replay rate a function of the width",
+            "width_replay_correlation": collinearity,
+            "widths": widths,
+            "replay_share_per_width": shares,
+            "shipped_replay_share": shipped_replay_share,
+        }
+    coef, *_ = numpy.linalg.lstsq(a, y, rcond=None)
+    fitted = a @ coef
+    corrected = {}
+    for i, (w, e) in enumerate(sorted(measured.items())):
+        delta = coef[2] * (shipped_replay_share - e["replayed_round_share"])
+        corrected[w] = {
+            "raw_us": e[BASIS],
+            "fit_us": float(fitted[i]),
+            "fit_residual_pct": pct(float(fitted[i]), e[BASIS]),
+            "repair_adjustment_us": float(delta),
+            "at_shipped_repair_us": e[BASIS] + float(delta),
+            "repair_adjustment_pct": 100.0 * float(delta) / e[BASIS],
+        }
+    return {
+        "fitted": True,
+        "shipped_replay_share": shipped_replay_share,
+        "intercept_us": float(coef[0]),
+        "per_width_us": float(coef[1]),
+        "per_replay_us": float(coef[2]),
+        "cliff_us": float(coef[3]),
+        "max_abs_fit_residual_pct": max(
+            abs(v["fit_residual_pct"]) for v in corrected.values()),
+        "max_abs_repair_adjustment_pct": max(
+            abs(v["repair_adjustment_pct"]) for v in corrected.values()),
+        "per_width": {str(w): v for w, v in corrected.items()},
+    }
+
+
+def identify_prefill(measured: dict[int, dict]) -> dict:
+    """Solve for the ranked seed prefill hidden inside the replayed curve.
+
+    R0b established that the ranked `mtp_seconds_per_token_mean` is
+    seed-inclusive, so a round cost derived from it carries `P/R` and, because
+    `R = 512/tokens_per_round`, a term linear in tokens per round. The local
+    blocks-only curve carries no prefill at all. Two curves over the same
+    widths therefore identify both unknowns in
+
+        replayed(w) = work_scale * local(w) + P_ranked * tokens_per_round(w)/512
+
+    `tokens_per_round(w)` comes from the pinned legs themselves, so no accept
+    rate is assumed. A `P_ranked` near zero would refute R0b's reading; a value
+    near the local seed prefill times the level factor supports it.
+
+    The estimate is checked before it is published. The replayed curve is
+    CONSTRAINED LINEAR over w = 1..5 by the parametric form it was fitted with,
+    so over most of the ladder it carries no shape that could identify a second
+    term, and the two regressors are collinear besides. A returned `P_ranked`
+    outside a physically possible range means the design, not the hypothesis,
+    has failed, and the R0b level-factor estimate remains the only one.
+    """
+    plausible_s = (0.0, 30.0)
+    rows, target, widths = [], [], []
+    for w, e in sorted(measured.items()):
+        if w not in REPLAYED_RANKED_US:
+            continue
+        acc = statistics.fmean(e["accepted_draft_rate"])
+        dlen = statistics.fmean(e["mean_draft_len"])
+        tpr = 1.0 + acc * dlen
+        rows.append([e[BASIS], tpr / 512.0])
+        target.append(float(REPLAYED_RANKED_US[w]))
+        widths.append((w, tpr))
+    a = numpy.array(rows, dtype=float)
+    y = numpy.array(target, dtype=float)
+    if a.shape[0] <= a.shape[1]:
+        return {"fitted": False, "reason": f"{a.shape[0]} widths"}
+    coef, *_ = numpy.linalg.lstsq(a, y, rcond=None)
+    work_scale, p_ranked = float(coef[0]), float(coef[1])
+    scaled = a / numpy.linalg.norm(a, axis=0)
+    condition = float(numpy.linalg.cond(scaled))
+    if not plausible_s[0] <= p_ranked <= plausible_s[1]:
+        return {
+            "fitted": False,
+            "reason": "the two-curve design does not identify a prefill term",
+            "unconstrained_p_ranked_seconds": p_ranked,
+            "unconstrained_work_scale": work_scale,
+            "plausible_range_s": list(plausible_s),
+            "scale_free_condition_number": condition,
+            "regressor_correlation": float(numpy.corrcoef(
+                a[:, 0], a[:, 1])[0, 1]),
+        }
+    pred = a @ coef
+    per_width = {}
+    for i, (w, tpr) in enumerate(widths):
+        prefill_us = p_ranked * tpr / 512.0
+        per_width[str(w)] = {
+            "tokens_per_round": tpr,
+            "local_us": measured[w][BASIS],
+            "replayed_us": REPLAYED_RANKED_US[w],
+            "predicted_replayed_us": float(pred[i]),
+            "residual_pct": pct(float(pred[i]), REPLAYED_RANKED_US[w]),
+            "prefill_component_us": prefill_us,
+            "prefill_share_of_round": prefill_us / REPLAYED_RANKED_US[w],
+        }
+    return {
+        "fitted": True,
+        "work_scale_local_to_ranked": work_scale,
+        "p_ranked_seconds": p_ranked,
+        "max_abs_residual_pct": max(abs(v["residual_pct"])
+                                    for v in per_width.values()),
+        "per_width": per_width,
+    }
 
 
 def fit_level_transfer(measured: dict[int, dict]) -> dict:
@@ -326,6 +488,14 @@ def main() -> int:
 
     transfer = fit_level_transfer(measured)
     step_table = steps(measured)
+    shipped = [leg for leg in legs
+               if leg["slot"].startswith("r1-") and leg["arm"] == "ship"
+               and leg["fixture"] == "beagle_a"]
+    shipped_share = (statistics.fmean(
+        [l["replayed_round_count"] / l["round_count"] for l in shipped])
+        if shipped else 0.0)
+    repair = fit_repair_model(measured, shipped_share)
+    prefill = identify_prefill(measured)
     blob = {
         "harness": "local",
         "measured_widths": sorted(measured),
@@ -345,6 +515,8 @@ def main() -> int:
         },
         "steps": step_table,
         "cliff": cliff_summary(measured, step_table),
+        "repair_model": repair,
+        "ranked_prefill": prefill,
         "f217": f217_validation(measured, legs, transfer),
     }
     out = ROOT / args.json
@@ -391,6 +563,42 @@ def main() -> int:
         print(f"  measured step / mean other measured step"
               f" {cliff['cliff_excess_over_typical_step']:.3f}"
               f"   replayed {cliff['replayed_cliff_excess']:.3f}")
+
+    if repair.get("fitted"):
+        print(f"\nrepair model, evaluated at the shipped beagle_a replay rate"
+              f" {repair['shipped_replay_share']:.4f} per round")
+        print(f"  intercept {repair['intercept_us']:>10.1f} us"
+              f"   per width {repair['per_width_us']:>9.1f} us"
+              f"   per replay {repair['per_replay_us']:>10.1f} us"
+              f"   cliff {repair['cliff_us']:>9.1f} us")
+        for w in sorted(measured):
+            v = repair["per_width"][str(w)]
+            print(f"  M={w}  raw {v['raw_us']:>9.1f}"
+                  f"   at shipped repair {v['at_shipped_repair_us']:>9.1f}"
+                  f"   adjustment {v['repair_adjustment_pct']:>+7.3f} %"
+                  f"   fit residual {v['fit_residual_pct']:>+7.3f} %")
+        print(f"  worst repair adjustment"
+              f" {repair['max_abs_repair_adjustment_pct']:.3f} %"
+              f"   worst fit residual"
+              f" {repair['max_abs_fit_residual_pct']:.3f} %")
+    else:
+        print(f"\nrepair model not fitted: {repair.get('reason')}")
+
+    if prefill.get("fitted"):
+        print(f"\nranked seed prefill identified from the two curves")
+        print(f"  local work scale {prefill['work_scale_local_to_ranked']:.4f}"
+              f"   P_ranked {prefill['p_ranked_seconds']:.4f} s"
+              f"   worst residual {prefill['max_abs_residual_pct']:+.2f} %")
+        for w in sorted(measured):
+            v = prefill["per_width"].get(str(w))
+            if not v:
+                continue
+            print(f"  M={w}  tok/round {v['tokens_per_round']:.4f}"
+                  f"   prefill {v['prefill_component_us']:>8.1f} us"
+                  f"   {100 * v['prefill_share_of_round']:>5.2f} % of round"
+                  f"   residual {v['residual_pct']:>+7.3f} %")
+    else:
+        print(f"\nranked prefill not identified: {prefill.get('reason')}")
 
     f217 = blob["f217"]
     if f217.get("available"):

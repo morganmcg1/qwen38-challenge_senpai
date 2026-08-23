@@ -58,16 +58,21 @@ def verdict(value: float, lo: float | None, hi: float | None) -> str:
 
 def measured_curve(legs: list[dict]) -> dict[int, dict]:
     """Blocks-only microseconds per round at each pinned width, from R2."""
-    by_width: dict[int, list[float]] = {}
+    by_width: dict[int, dict[str, list[float]]] = {}
     for leg in legs:
         if not leg["slot"].startswith("r2-") or leg["pin"] in (None, ""):
             continue
         if not leg["timing_valid"]:
             continue
-        by_width.setdefault(int(leg["pin"]) + 1, []).append(
-            leg["round_us_from_blocks"])
-    return {w: {"us": statistics.fmean(v), "legs": len(v),
-                "spread_pct": (pct(max(v), min(v)) if len(v) > 1 else 0.0)}
+        slot = by_width.setdefault(int(leg["pin"]) + 1,
+                                   {"us": [], "replay": []})
+        slot["us"].append(leg["round_us_from_blocks"])
+        slot["replay"].append(
+            leg["replayed_round_count"] / leg["round_count"])
+    return {w: {"us": statistics.fmean(v["us"]), "legs": len(v["us"]),
+                "replay_share": statistics.fmean(v["replay"]),
+                "spread_pct": (pct(max(v["us"]), min(v["us"]))
+                               if len(v["us"]) > 1 else 0.0)}
             for w, v in sorted(by_width.items())}
 
 
@@ -79,8 +84,18 @@ def curve_at_mean(curve: dict[int, float], width: float) -> float:
     return curve[lo] + frac * (curve[lo + 1] - curve[lo])
 
 
-def closure(leg: dict, curve: dict[int, float]) -> dict | None:
-    """Predict one shipped leg's round cost from its own width histogram."""
+def closure(leg: dict, curve: dict[int, float],
+            replay_share: dict[int, float] | None = None) -> dict | None:
+    """Predict one shipped leg's round cost from its own width histogram.
+
+    The prediction carries no free parameter. It also bounds the repair term
+    that the pinned ladder cannot identify on its own: the pin forces a deeper
+    draft than the evidence supports, so a pinned leg replays more often than a
+    shipped leg at the same width. Mass-weighting the pinned ladder's replay
+    rates gives the rate this prediction implicitly assumes; the shipped leg's
+    own rate is measured. The gap between them, divided into the closure
+    residual, bounds the cost of one replay.
+    """
     hist = {int(w): m for w, m in leg["width_hist"].items()}
     covered = sum(m for w, m in hist.items() if w in curve)
     if covered < 0.999:
@@ -90,16 +105,27 @@ def closure(leg: dict, curve: dict[int, float]) -> dict | None:
     pred = sum(m * curve[w] for w, m in hist.items()) / covered
     obs = leg["round_us_from_blocks"]
     interp = curve_at_mean(curve, mean_w)
-    return {
+    out = {
         "covered_mass": covered,
         "mean_width": mean_w,
         "predicted_us": pred,
         "observed_us": obs,
         "error_pct": pct(pred, obs),
+        "error_us": pred - obs,
         "interp_at_mean_us": interp,
         "interp_error_pct": pct(interp, obs),
         "jensen_gap_us": pred - interp,
     }
+    if replay_share:
+        implied = sum(m * replay_share[w] for w, m in hist.items()
+                      if w in replay_share) / covered
+        actual = leg["replayed_round_count"] / leg["round_count"]
+        out["implied_replay_share"] = implied
+        out["actual_replay_share"] = actual
+        out["replay_share_mismatch"] = implied - actual
+        if abs(implied - actual) > 1e-6:
+            out["implied_us_per_replay"] = (pred - obs) / (implied - actual)
+    return out
 
 
 def main() -> int:
@@ -112,11 +138,13 @@ def main() -> int:
     legs = blob["legs"]
     curve_full = measured_curve(legs)
     curve = {w: v["us"] for w, v in curve_full.items()}
+    replay_share = {w: v["replay_share"] for w, v in curve_full.items()}
 
     print("R2 measured local curve, blocks-only us per round")
     for w, v in curve_full.items():
         print(f"  M={w}  {v['us']:>10.1f}   legs {v['legs']}"
-              f"   repeat spread {v['spread_pct']:+.3f} %")
+              f"   repeat spread {v['spread_pct']:+.3f} %"
+              f"   replays/round {v['replay_share']:.4f}")
 
     fixtures = sorted({l["fixture"] for l in legs
                        if l["slot"].startswith("r1-")})
@@ -164,7 +192,7 @@ def main() -> int:
                     l["all_tokens_matched"] for l in group),
                 "residual_divergence_count": sum(
                     l["residual_divergence_count"] for l in group),
-                "closure": closure(group[0], curve),
+                "closure": closure(group[0], curve, replay_share),
             }
         if {"ship", "pb6"} <= set(entry["arms"]):
             s, b = entry["arms"]["ship"], entry["arms"]["pb6"]
@@ -214,6 +242,13 @@ def main() -> int:
                       f"  err {c['error_pct']:+.3f} %"
                       f"   | interp-at-mean {c['interp_error_pct']:+.3f} %"
                       f"  Jensen {c['jensen_gap_us']:+.0f} us")
+                if "implied_us_per_replay" in c:
+                    print(f"          repair: curve implies"
+                          f" {c['implied_replay_share']:.4f} replays/round,"
+                          f" leg ran {c['actual_replay_share']:.4f},"
+                          f" mismatch {c['replay_share_mismatch']:+.4f}"
+                          f" -> {c['implied_us_per_replay']:+.0f} us"
+                          f" per replay")
         if "arm_effect_spt_pct" in entry:
             print(f"  pb6 vs ship: spt {entry['arm_effect_spt_pct']:+.4f} %"
                   f"   blocks {entry['arm_effect_blocks_pct']:+.4f} %"
