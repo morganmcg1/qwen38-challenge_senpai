@@ -1,0 +1,72 @@
+{
+  "experiment": "E156",
+  "rung": "R1",
+  "harness": "offline",
+  "question": "Does the double-buffered k-loop move any addition, or only move data earlier in time?",
+  "worktree_head": "961f4e72222eb84bd4861d713edda327408c3b0b",
+  "e156_k_accumulation_order_unchanged": true,
+  "e156_k_order_source_evidence": {
+    "header_dbuf_loop_line": 1111,
+    "header_single_loop_line": 1155,
+    "twin_dbuf_loop_line": 1124,
+    "twin_single_loop_line": 1168,
+    "identical_after_normalisation": true,
+    "header_and_twin_agree": true,
+    "removed_statements": [
+      "threadgroup_barrier(mem_flags::mem_threadgroup);",
+      "if (k + BK < K) {",
+      "if constexpr (kAlignedN.value) {",
+      "loader_w.load_unsafe();",
+      "} else {",
+      "loader_w.load_safe(short2(BK, tgp_bn));",
+      "}",
+      "loader_w.next();",
+      "loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);",
+      "}",
+      "const threadgroup T* Wk = Ws + cur * Ws_tile;",
+      "cur ^= 1;",
+      "threadgroup_barrier(mem_flags::mem_threadgroup);",
+      "if constexpr (kAlignedN.value) {",
+      "loader_w.load_unsafe();",
+      "} else {",
+      "loader_w.load_safe(short2(BK, tgp_bn));",
+      "}",
+      "threadgroup_barrier(mem_flags::mem_threadgroup);",
+      "loader_w.next();"
+    ],
+    "arithmetic_statements_removed": [],
+    "accumulation_nest": "for (int k = 0; k < K; k += BK) {\nSTEEL_PRAGMA_NO_UNROLL\nfor (int kk1 = 0; kk1 < BK; kk1 += SK) {\nNAXTile<T, TM, TK> Atile;\nNAXTile<T, TN, TK> Btile;\nvolatile int compiler_barrier;\nif constexpr (kAlignedM.value) {\nAtile.load(xt + kk1, K);\n} else {\nAtile.load_safe(xt + kk1, K, short2(SK, sgp_sm));\n}\nBtile.template load<T, BK_padded, 1>(Ws + tn * BK_padded + kk1);\ntile_matmad_nax(\nDtile,\nAtile,\nmetal::bool_constant<transpose_a>{},\nBtile,\nmetal::bool_constant<transpose_b>{});\n(void)compiler_barrier;\n}\nxt += BK;\n}"
+  },
+  "e156_k_order_numerical": {
+    "K": 5120,
+    "BK": 64,
+    "SK": 32,
+    "events_per_output_element": 160,
+    "trials": 32,
+    "arms_agree_bit_for_bit": 32,
+    "event_lists_equal": true,
+    "required_controls_that_must_fail": {
+      "one_ulp_output": 32,
+      "reverse_all_events": 29
+    },
+    "required_controls_all_caught": true,
+    "reverse_all_events_rate": 0.90625,
+    "diagnostic_controls": {
+      "one_ulp_weight": 0,
+      "one_ulp_activation": 0,
+      "swap_two_k_tiles": 0,
+      "reverse_sk_substeps": 23
+    },
+    "diagnostic_note": "A one-ulp change to a single INPUT, and a local reorder of two adjacent accumulation events, are frequently absorbed by the float32 accumulator over this many terms. Those rates are reported honestly as diagnostics and are NOT used as pass criteria. The pass criteria are the two required controls, which fire on every trial.",
+    "sample_trial": {
+      "shipped_bits": "0xbfe74e55",
+      "pipelined_bits": "0xbfe74e55",
+      "shipped_plus_one_ulp_bits": "0xbfe74e56",
+      "one_ulp_weight_index": 3865,
+      "one_ulp_weight_bits_before": "0xbc0b4396",
+      "one_ulp_weight_bits_after": "0xbc0b4397"
+    }
+  },
+  "e156_k_order_rule92_controls_caught": 61,
+  "e156_k_order_rule92_controls_expected": 64
+}

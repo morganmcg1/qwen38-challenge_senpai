@@ -121,6 +121,59 @@ def compose_section(audit: dict) -> tuple[dict, dict]:
         "e156_compose_region_result": audit["e156_compose_region_result"],
         "e156_compose_source_evidence": audit["e156_compose_source_evidence"],
         "e156_tgp_limit_crossing_evidence": audit["e156_tgp_limit_crossing_evidence"],
+        "e156_tgp_limit_crossings": json.dumps(audit["e156_tgp_limit_crossings"]),
+        "e156_dbuf_base_assumption": (
+            "The parked double buffer a6fccd2b ASSUMES the retile; it is not "
+            "standalone. Its parent is 8b515fd8, the E151 R1 retile tip, and "
+            "the compile gate confirms the dependency rather than inferring "
+            "it from history: with the retile off and the capacity predicate "
+            "defeated, the compiler refuses the float cell by name. The crown "
+            "pair alone therefore cannot carry the double buffer at BN 64. "
+            "harness=offline"
+        ),
+    }
+    return metrics, summary
+
+
+def budget_section(gate: dict) -> tuple[dict, dict]:
+    """Byte-budget and scaffold fields from the gate-chain record."""
+    ba = gate["byte_accounting"]
+    sizes = ba["quantized_nax_h_plus_cpp_bytes"]
+    enforced = next(p for p in gate["phases"] if p["n"] == 5)
+    attributable = next(p for p in gate["phases"] if p["n"] == "5b")
+    metrics = {
+        "e156_growth_enforced": enforced["growth_enforced_bytes"],
+        "e156_growth_enforced_limit": enforced["growth_limit_bytes"],
+        "e156_growth_enforced_headroom": enforced["growth_headroom_bytes"],
+        "e156_growth_attributable": attributable["growth_attributable_bytes"],
+        "e156_scaffold_closed_by_inheritance_bytes":
+            ba["e156_scaffold_closed_by_inheritance_bytes"],
+        "e156_nax_pair_bytes_crown": sizes["crown_0863b06a"],
+        "e156_nax_pair_bytes_pr_base": sizes["pr_base_d0422d1d"],
+        "e156_nax_pair_bytes_candidate": sizes["candidate_head"],
+        "e156_net_growth_crown_to_candidate_bytes":
+            ba["net_growth_crown_to_candidate_bytes"],
+    }
+    summary = {
+        "e156_scaffold_closed_by_inheritance": (
+            "The 23,298 B frontier-to-base scaffold delta reproduces exactly "
+            "across 14 hunks. Its UN-PRICED character is closed for this "
+            "candidate, because the retile arm is ON and those bytes are now "
+            "the shipped mechanism rather than dead research plumbing. Its "
+            "BYTE cost is NOT reclaimed: the retile arm IS that scaffold, so "
+            "the candidate keeps it and the double buffer adds more. Two-file "
+            "totals: crown 99,218 B, PR base 108,920 B, candidate 129,532 B. "
+            "growth_attributable is 20,612 B of source, not emitted code; the "
+            "retile off-branch text remains present and compile-time dead. "
+            "harness=offline"
+        ),
+        "e156_growth_frame": (
+            "growth_enforced is measured against campaign frontier "
+            "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf and growth_attributable "
+            "against this experiment's own PR base "
+            "d0422d1d4c3c8901cbc2382dc9ee79666e786d94. Both are source bytes "
+            "against the 262,144 B growth limit. harness=offline"
+        ),
     }
     return metrics, summary
 
@@ -235,6 +288,9 @@ def main() -> None:
     if gate is not None:
         metrics["e156_gate_chain_all_green"] = float(gate["all_green"])
         summary["e156_gate_chain"] = json.dumps(gate["phases"], indent=1)
+        m, s = budget_section(gate)
+        metrics.update(m)
+        summary.update(s)
     if submit is not None:
         metrics.update({
             f"e156_local_submit_{k}": v
