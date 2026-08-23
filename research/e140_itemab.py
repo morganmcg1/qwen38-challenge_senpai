@@ -442,9 +442,9 @@ def main() -> int:
     geo_total = sum(v["geometry_us"] for v in split.values())
     obs_total = sum(v["observed_us"] for v in split.values())
     residuals = [v["residual_us"] for v in split.values()]
-    share = geo_total / obs_total if obs_total else float("nan")
+    geometry_share = geo_total / obs_total if obs_total else float("nan")
     print("    geometry accounts for %.1f of %.1f us, a share of %.3f"
-          % (geo_total, obs_total, share))
+          % (geo_total, obs_total, geometry_share))
     print("    the residual is %.1f us per round on average, sd %.1f"
           % (statistics.fmean(residuals), statistics.stdev(residuals)))
     pcts = [v["saving_pct_of_round"] for v in split.values()]
@@ -521,7 +521,7 @@ def main() -> int:
                               for d, s in enumerate(share) if s)))
 
     args.json.parent.mkdir(parents=True, exist_ok=True)
-    args.json.write_text(json.dumps({
+    blob = {
         "harness": "local instrument", "gpu_used": False,
         "form": args.form, "windows": args.windows, "seeds": seeds,
         "receipt": receipt["id"], "law_cost_width2_us": law_cost,
@@ -531,7 +531,7 @@ def main() -> int:
                    "medpair_p_width2_pb6": medpair_pb6},
         "item_d": {"board_receipt": board, "saving_per_round_us": saving_us,
                    "implied_cost_us": implied, "split": split,
-                   "geometry_share_of_total": share,
+                   "geometry_share_of_total": geometry_share,
                    "residual_mean_us": statistics.fmean(residuals),
                    "residual_sd_us": statistics.stdev(residuals),
                    "spread": spread, "shallow_bias_bound": bias, "fits": fits,
@@ -540,7 +540,22 @@ def main() -> int:
                    "round_rate_control": round_check},
         "item_b": {"tiers": tiers, "depth": depth_rows,
                    "grid": list(TIER_GRID_FINE)},
-    }, indent=2, default=list) + "\n")
+    }
+    # `default=list` makes json.dumps accept anything iterable, so a scalar
+    # that has been shadowed by a later loop variable is written silently as
+    # a list rather than raising. Name the scalars and check them.
+    for section, key in (("item_d", "geometry_share_of_total"),
+                         ("item_d", "residual_mean_us"),
+                         ("item_d", "residual_sd_us"),
+                         ("item_d", "mbar_error_mean"),
+                         ("item_d", "mbar_error_sd"),
+                         ("item_a", "medpair_p_width2_ship"),
+                         ("item_a", "medpair_p_width2_pb6")):
+        value = blob[section][key]
+        if not isinstance(value, (int, float)):
+            raise SystemExit("%s.%s must be a scalar but is %r"
+                             % (section, key, value))
+    args.json.write_text(json.dumps(blob, indent=2, default=list) + "\n")
     print("\nwrote %s" % args.json)
     return 0
 
