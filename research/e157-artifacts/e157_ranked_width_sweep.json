@@ -1,0 +1,462 @@
+{
+  "cells": [
+    {
+      "commit": "d25821d7bb9e28e1f8165e22e4426619e510b295",
+      "id8": "da950333",
+      "index_us_per_round": 30349.910019346233,
+      "index_width": 1.0,
+      "official_score": 1.20976498947542,
+      "sweep_rounds": 512,
+      "sweep_us_per_round": 30347.208954217505,
+      "sweep_width": 1.0
+    },
+    {
+      "commit": "5e56620ee3d1a8a83d541524f552f0e267cde793",
+      "id8": "26d0e934",
+      "index_us_per_round": 30468.97848606298,
+      "index_width": 1.03515625,
+      "official_score": 1.20362631205393,
+      "sweep_rounds": 512,
+      "sweep_us_per_round": 30514.607429936244,
+      "sweep_width": 1.046875
+    },
+    {
+      "commit": null,
+      "id8": "c91581eb",
+      "index_us_per_round": 30401.708980726387,
+      "index_width": 1.03515625,
+      "official_score": 1.2092715739875,
+      "sweep_rounds": 512,
+      "sweep_us_per_round": 30436.45106814604,
+      "sweep_width": 1.046875
+    },
+    {
+      "commit": "1266aad9a2ded64decdde32c7a76aeef95aaf40a",
+      "id8": "baa75efa",
+      "index_us_per_round": 30417.757822838856,
+      "index_width": 1.03515625,
+      "official_score": 1.20478299926426,
+      "sweep_rounds": 512,
+      "sweep_us_per_round": 30456.587871291784,
+      "sweep_width": 1.046875
+    },
+    {
+      "commit": "5fe0676e91f9bb9f9d4b22053266eeaf6b240dd6",
+      "id8": "f517027b",
+      "index_us_per_round": 30678.310732896854,
+      "index_width": 1.0896414342629481,
+      "official_score": 1.22008956810773,
+      "sweep_rounds": 491,
+      "sweep_us_per_round": 31012.745581857045,
+      "sweep_width": 1.1812627291242364
+    },
+    {
+      "commit": "827117a9c5ed1d48f4ccc46654d657350bbb8a80",
+      "id8": "f5b8a74a",
+      "index_us_per_round": 31430.90444782633,
+      "index_width": 1.1300813008130082,
+      "official_score": 2.22880180938724,
+      "sweep_rounds": 439,
+      "sweep_us_per_round": 32714.949897450646,
+      "sweep_width": 1.4419134396355353
+    },
+    {
+      "commit": "c5416e8755e2ee56b446c0c74ff5cfbfb85ada4e",
+      "id8": "fc62d1aa",
+      "index_us_per_round": 31004.37287168232,
+      "index_width": 1.064516129032258,
+      "official_score": 2.84585467460057,
+      "sweep_rounds": 276,
+      "sweep_us_per_round": 37034.34433962738,
+      "sweep_width": 2.5615942028985508
+    },
+    {
+      "commit": "500185c8702f1cd73469d4c2ed5ccb7c17afb8c4",
+      "id8": "e38ea969",
+      "index_us_per_round": 30736.920043779628,
+      "index_width": 1.1519507186858315,
+      "official_score": 3.2943496372382,
+      "sweep_rounds": 263,
+      "sweep_us_per_round": 36294.77932164437,
+      "sweep_width": 2.893536121673004
+    },
+    {
+      "commit": "5476bffcfa2a44feb7f0668e995c5b74adc8f66a",
+      "id8": "a308911e",
+      "index_us_per_round": 30740.334481681508,
+      "index_width": 1.1519507186858315,
+      "official_score": 3.28064934783232,
+      "sweep_rounds": 263,
+      "sweep_us_per_round": 36276.597063866815,
+      "sweep_width": 2.893536121673004
+    },
+    {
+      "commit": "7f18fe706a91c87878e59fd788c253d70d0da9da",
+      "id8": "a3d79512",
+      "index_us_per_round": 30740.920052707126,
+      "index_width": 1.1519507186858315,
+      "official_score": 3.24996632752472,
+      "sweep_rounds": 263,
+      "sweep_us_per_round": 36561.779209461,
+      "sweep_width": 2.893536121673004
+    },
+    {
+      "commit": "a28639aeab5cc4bb1c24e09075a1642c903274c7",
+      "id8": "561e815d",
+      "index_us_per_round": 30739.14391985575,
+      "index_width": 1.1519507186858315,
+      "official_score": 3.28098068357947,
+      "sweep_rounds": 263,
+      "sweep_us_per_round": 36263.63495075962,
+      "sweep_width": 2.893536121673004
+    },
+    {
+      "commit": "3207798d0081c464880b0d22c847cc34b7a0681f",
+      "id8": "dceca0d5",
+      "index_us_per_round": 30583.70644621708,
+      "index_width": 1.0694444444444444,
+      "official_score": 2.44855630917535,
+      "sweep_rounds": 270,
+      "sweep_us_per_round": 38778.00755749331,
+      "sweep_width": 3.1148148148148147
+    },
+    {
+      "commit": "dbf91c6c4876a58b0decca130acf4d89b2d1ae16",
+      "id8": "9197ed62",
+      "index_us_per_round": 30836.79548207531,
+      "index_width": 1.1595092024539877,
+      "official_score": 3.06938159465413,
+      "sweep_rounds": 257,
+      "sweep_us_per_round": 38299.36208506368,
+      "sweep_width": 3.1634241245136185
+    },
+    {
+      "commit": "9acb9d41a1e35936f8c917923a2863d3f969ca72",
+      "id8": "448508db",
+      "index_us_per_round": 30826.58273255401,
+      "index_width": 1.1595092024539877,
+      "official_score": 3.18739470658056,
+      "sweep_rounds": 257,
+      "sweep_us_per_round": 37147.377175103065,
+      "sweep_width": 3.1634241245136185
+    },
+    {
+      "commit": null,
+      "id8": "a5724050",
+      "index_us_per_round": 30745.09845092869,
+      "index_width": 1.1519507186858315,
+      "official_score": 2.95246873121287,
+      "sweep_rounds": 262,
+      "sweep_us_per_round": 38300.57253560912,
+      "sweep_width": 3.1717557251908395
+    },
+    {
+      "commit": "67be325abc68e16e7086b4a0c33ed0062b579025",
+      "id8": "47b52a8c",
+      "index_us_per_round": 30874.41901808187,
+      "index_width": 1.1519507186858315,
+      "official_score": 3.13791505799369,
+      "sweep_rounds": 257,
+      "sweep_us_per_round": 38506.003677312925,
+      "sweep_width": 3.2334630350194553
+    },
+    {
+      "commit": "890039dbb55ab616fa1d536ed1dd7e3b7a582453",
+      "id8": "7589db57",
+      "index_us_per_round": 30770.786478723243,
+      "index_width": 1.1540041067761808,
+      "official_score": 3.17700733903472,
+      "sweep_rounds": 257,
+      "sweep_us_per_round": 38569.33866159274,
+      "sweep_width": 3.237354085603113
+    }
+  ],
+  "e157_row_price_us": {
+    "h_marginal_ranked": 0.11080816153496721,
+    "harness": "ranked",
+    "identification": "within prompt across submissions, exact recovered round counts, build speed controlled by the index prompt",
+    "local_h_marginal": 0.40144831645223805,
+    "local_marginal_us_per_row": 15708.5,
+    "local_over_ranked_marginal": 4.6375656954898234,
+    "marginal_stderr": 170.5604654600384,
+    "marginal_us_per_row": 3387.22964405162,
+    "width_one_round_us": 30568.412986282856
+  },
+  "experiment": "e157-r0-ranked-within-prompt-width-sweep",
+  "fits": {
+    "sweep_prompt_width_only": {
+      "fixed_us": 19777.401015696207,
+      "marginal_stderr": 450.8850731513141,
+      "marginal_us_per_row": 6595.454126238434,
+      "n": 21,
+      "r_squared": 0.9184452637174979,
+      "width_range": [
+        1.0,
+        8.914396887159533
+      ]
+    },
+    "sweep_prompt_width_only_below_five": {
+      "fixed_us": 26817.659125624603,
+      "marginal_stderr": 195.81587453861871,
+      "marginal_us_per_row": 3594.199373712095,
+      "n": 20,
+      "r_squared": 0.9492823218740979,
+      "width_range": [
+        1.0,
+        3.237354085603113
+      ]
+    },
+    "sweep_prompt_width_quadratic": {
+      "beta_us": [
+        28896.41792267806,
+        1081.6816096221753,
+        597.8010940671141
+      ],
+      "curvature_stderr": 33.427732830657924,
+      "marginal_us_by_width": {
+        "1": 1679.4827036892893,
+        "2": 2875.084891823518,
+        "3": 4070.6870799577464,
+        "4": 5266.289268091975,
+        "5": 6461.8914562262025,
+        "6": 7657.493644360431,
+        "7": 8853.095832494659,
+        "8": 10048.698020628888,
+        "9": 11244.300208763116
+      },
+      "n": 21,
+      "r_squared": 0.9956544768742213
+    },
+    "width_only": {
+      "fixed_us": 26966.947892510467,
+      "marginal_stderr": 164.88022228548357,
+      "marginal_us_per_row": 3478.3166556031274,
+      "r_squared": 0.9673942890546616
+    },
+    "width_with_build_speed_index": {
+      "index_loading": 0.9291163874644037,
+      "index_stderr": 0.6328712022875402,
+      "intercept_us": -1367.1009452361143,
+      "marginal_stderr": 170.5604654600384,
+      "marginal_us_per_row": 3387.22964405162,
+      "r_squared": 0.9717442761914552
+    }
+  },
+  "harness": "ranked",
+  "index_prompt": "plutarch",
+  "official_or_ranked_score": true,
+  "paired_cell_count": 17,
+  "sweep_prompt": "drama",
+  "sweep_prompt_all_cells": [
+    {
+      "clean_us_per_round": 30347.208954217505,
+      "id8": "da950333",
+      "raw_ratio": 1.2090129554,
+      "rejected_per_round": 0.0,
+      "rounds": 512,
+      "serial_spt": 0.0379460996,
+      "tokens_per_round": 1.0,
+      "width": 1.0
+    },
+    {
+      "clean_us_per_round": 30514.607429936244,
+      "id8": "26d0e934",
+      "raw_ratio": 1.2023315862,
+      "rejected_per_round": 0.046875,
+      "rounds": 512,
+      "serial_spt": 0.0379363536,
+      "tokens_per_round": 1.0,
+      "width": 1.046875
+    },
+    {
+      "clean_us_per_round": 30436.45106814604,
+      "id8": "c91581eb",
+      "raw_ratio": 1.2078473953,
+      "rejected_per_round": 0.046875,
+      "rounds": 512,
+      "serial_spt": 0.0380114978,
+      "tokens_per_round": 1.0,
+      "width": 1.046875
+    },
+    {
+      "clean_us_per_round": 30456.587871291784,
+      "id8": "baa75efa",
+      "raw_ratio": 1.2035675386,
+      "rejected_per_round": 0.046875,
+      "rounds": 512,
+      "serial_spt": 0.0378951561,
+      "tokens_per_round": 1.0,
+      "width": 1.046875
+    },
+    {
+      "clean_us_per_round": 31012.745581857045,
+      "id8": "f517027b",
+      "raw_ratio": 1.2330272564,
+      "rejected_per_round": 0.1384928716904279,
+      "rounds": 491,
+      "serial_spt": 0.0379529041,
+      "tokens_per_round": 1.0427698574338085,
+      "width": 1.1812627291242364
+    },
+    {
+      "clean_us_per_round": 32714.949897450646,
+      "id8": "f5b8a74a",
+      "raw_ratio": 1.3042675243,
+      "rejected_per_round": 0.27562642369020507,
+      "rounds": 439,
+      "serial_spt": 0.0379708398,
+      "tokens_per_round": 1.1662870159453302,
+      "width": 1.4419134396355353
+    },
+    {
+      "clean_us_per_round": 37034.34433962738,
+      "id8": "fc62d1aa",
+      "raw_ratio": 1.8062085133,
+      "rejected_per_round": 0.7065217391304348,
+      "rounds": 276,
+      "serial_spt": 0.037984625,
+      "tokens_per_round": 1.855072463768116,
+      "width": 2.5615942028985508
+    },
+    {
+      "clean_us_per_round": 36294.77932164437,
+      "id8": "e38ea969",
+      "raw_ratio": 1.9347541607,
+      "rejected_per_round": 0.9467680608365019,
+      "rounds": 263,
+      "serial_spt": 0.0380606425,
+      "tokens_per_round": 1.946768060836502,
+      "width": 2.893536121673004
+    },
+    {
+      "clean_us_per_round": 36276.597063866815,
+      "id8": "a308911e",
+      "raw_ratio": 1.9258465494,
+      "rejected_per_round": 0.9467680608365019,
+      "rounds": 263,
+      "serial_spt": 0.0378719904,
+      "tokens_per_round": 1.946768060836502,
+      "width": 2.893536121673004
+    },
+    {
+      "clean_us_per_round": 36561.779209461,
+      "id8": "a3d79512",
+      "raw_ratio": 1.9147007352,
+      "rejected_per_round": 0.9467680608365019,
+      "rounds": 263,
+      "serial_spt": 0.0379333925,
+      "tokens_per_round": 1.946768060836502,
+      "width": 2.893536121673004
+    },
+    {
+      "clean_us_per_round": 36263.63495075962,
+      "id8": "561e815d",
+      "raw_ratio": 1.9272285966,
+      "rejected_per_round": 0.9467680608365019,
+      "rounds": 263,
+      "serial_spt": 0.0378886815,
+      "tokens_per_round": 1.946768060836502,
+      "width": 2.893536121673004
+    },
+    {
+      "clean_us_per_round": 38778.00755749331,
+      "id8": "dceca0d5",
+      "raw_ratio": 1.7744282648,
+      "rejected_per_round": 1.2185185185185183,
+      "rounds": 270,
+      "serial_spt": 0.038131916,
+      "tokens_per_round": 1.8962962962962964,
+      "width": 3.1148148148148147
+    },
+    {
+      "clean_us_per_round": 39803.4941610566,
+      "id8": "bb21edbb",
+      "raw_ratio": 1.7653505532,
+      "rejected_per_round": 1.1711026615969582,
+      "rounds": 263,
+      "serial_spt": 0.0379291016,
+      "tokens_per_round": 1.946768060836502,
+      "width": 3.11787072243346
+    },
+    {
+      "clean_us_per_round": 37314.062019295416,
+      "id8": "2c766441",
+      "raw_ratio": 1.8969945919,
+      "rejected_per_round": 1.15,
+      "rounds": 260,
+      "serial_spt": 0.0378982695,
+      "tokens_per_round": 1.9692307692307693,
+      "width": 3.1192307692307693
+    },
+    {
+      "clean_us_per_round": 38299.36208506368,
+      "id8": "9197ed62",
+      "raw_ratio": 1.8736626983,
+      "rejected_per_round": 1.1712062256809337,
+      "rounds": 257,
+      "serial_spt": 0.0379617969,
+      "tokens_per_round": 1.9922178988326849,
+      "width": 3.1634241245136185
+    },
+    {
+      "clean_us_per_round": 37147.377175103065,
+      "id8": "448508db",
+      "raw_ratio": 1.9303305112,
+      "rejected_per_round": 1.1712062256809337,
+      "rounds": 257,
+      "serial_spt": 0.0379842597,
+      "tokens_per_round": 1.9922178988326849,
+      "width": 3.1634241245136185
+    },
+    {
+      "clean_us_per_round": 38300.57253560912,
+      "id8": "a5724050",
+      "raw_ratio": 1.8511858679,
+      "rejected_per_round": 1.2175572519083968,
+      "rounds": 262,
+      "serial_spt": 0.0381852754,
+      "tokens_per_round": 1.9541984732824427,
+      "width": 3.1717557251908395
+    },
+    {
+      "clean_us_per_round": 39314.89594831347,
+      "id8": "feff8712",
+      "raw_ratio": 1.7486822574,
+      "rejected_per_round": 1.2798507462686566,
+      "rounds": 268,
+      "serial_spt": 0.0378465937,
+      "tokens_per_round": 1.9104477611940298,
+      "width": 3.1902985074626864
+    },
+    {
+      "clean_us_per_round": 38506.003677312925,
+      "id8": "47b52a8c",
+      "raw_ratio": 1.861810594,
+      "rejected_per_round": 1.2412451361867705,
+      "rounds": 257,
+      "serial_spt": 0.0379103182,
+      "tokens_per_round": 1.9922178988326849,
+      "width": 3.2334630350194553
+    },
+    {
+      "clean_us_per_round": 38569.33866159274,
+      "id8": "7589db57",
+      "raw_ratio": 1.864352156,
+      "rejected_per_round": 1.245136186770428,
+      "rounds": 257,
+      "serial_spt": 0.0380093886,
+      "tokens_per_round": 1.9922178988326849,
+      "width": 3.237354085603113
+    },
+    {
+      "clean_us_per_round": 86062.26064849283,
+      "id8": "389ac4b5",
+      "raw_ratio": 0.8477477497,
+      "rejected_per_round": 6.9221789883268485,
+      "rounds": 257,
+      "serial_spt": 0.0379085937,
+      "tokens_per_round": 1.9922178988326849,
+      "width": 8.914396887159533
+    }
+  ]
+}
