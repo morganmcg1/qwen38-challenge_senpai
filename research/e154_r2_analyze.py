@@ -244,6 +244,36 @@ def level_curve(rounds: list[dict], level_key: str) -> dict:
         out["slope_above_knee_se"] = se4
 
     out.update(hinge_fit(usable))
+
+    # The CPU ladder is already in microseconds. The GPU ladder is in chain
+    # steps, so it needs its own measured price before the two slacks can be
+    # compared. The above-knee slope IS that price: once the device has no
+    # idle left, each extra step costs its full serial time.
+    if level_key == "gpu_chain_steps":
+        price = out.get("slope_above_knee_us_per_us")
+        out["us_per_chain_step"] = price
+        if price:
+            out["slack_us_per_round"] = out["slack_us_per_round"] * price
+            out["knee_bracket_us"] = [
+                (b * price if b is not None else None)
+                for b in out["knee_bracket_us"]]
+            if "hinge_slack_us" in out:
+                out["hinge_slack_us"] *= price
+        # Marginal cost between consecutive levels. A step that costs less
+        # than the asymptotic price was partly hidden behind device work the
+        # round was already doing, which is the only place GPU idle can show.
+        marginal = []
+        for previous, entry in zip(usable, usable[1:]):
+            span = entry["level"] - previous["level"]
+            if span <= 0:
+                continue
+            marginal.append({
+                "from_steps": previous["level"],
+                "to_steps": entry["level"],
+                "us_per_step": (entry["delta_wall_us_modal_d"]
+                                - previous["delta_wall_us_modal_d"]) / span,
+            })
+        out["marginal_us_per_chain_step"] = marginal
     return out
 
 
@@ -377,19 +407,44 @@ def main() -> int:
     # whole round's device work is outstanding, so its knee is the host slack
     # against the round's GPU busy time. `cpu_pre` burns while only the head
     # chain is outstanding and answers a narrower question.
+    cpu_slack: dict[str, list[float]] = defaultdict(list)
+    gpu_slack: list[float] = []
     for arm in result["arms"]:
         curve = arm.get("cpu_curve")
-        if not curve or "error" in curve:
-            continue
-        site = "preeval" if arm["arm"] == "cpu_eval" else "preverify"
-        result.setdefault("e154_fixed_term_absorption_knee_us", {})[site] = \
-            curve["slack_us_per_round"]
-        result.setdefault("e154_knee_bracket_us", {})[site] = \
-            curve["knee_bracket_us"]
-        if "slope_below_knee_us_per_us" in curve:
+        if curve and "error" not in curve:
+            site = "preeval" if arm["arm"] == "cpu_eval" else "preverify"
             result.setdefault(
-                "e154_delay_slope_below_knee_us_per_us", {})[site] = \
-                curve["slope_below_knee_us_per_us"]
+                "e154_fixed_term_absorption_knee_us", {})[site] = \
+                curve["slack_us_per_round"]
+            result.setdefault("e154_knee_bracket_us", {})[site] = \
+                curve["knee_bracket_us"]
+            if "slope_below_knee_us_per_us" in curve:
+                result.setdefault(
+                    "e154_delay_slope_below_knee_us_per_us", {})[site] = \
+                    curve["slope_below_knee_us_per_us"]
+            if "hinge_slack_us" in curve:
+                cpu_slack[site].append(curve["hinge_slack_us"])
+        curve = arm.get("gpu_curve")
+        if curve and "error" not in curve and curve.get("hinge_slack_us"):
+            gpu_slack.append(curve["hinge_slack_us"])
+
+    # The two headline numbers, both in microseconds per round so they can be
+    # compared directly. Replicate arms are averaged; their spread is
+    # published so the average is not read as more precise than it is.
+    result["e154_cpu_slack_us_per_round"] = {
+        site: statistics.fmean(values) for site, values in cpu_slack.items()}
+    result["e154_cpu_slack_replicate_spread_us"] = {
+        site: (max(values) - min(values))
+        for site, values in cpu_slack.items() if len(values) > 1}
+    if gpu_slack:
+        result["e154_gpu_slack_us_per_round"] = statistics.fmean(gpu_slack)
+        if len(gpu_slack) > 1:
+            result["e154_gpu_slack_replicate_spread_us"] = (
+                max(gpu_slack) - min(gpu_slack))
+    best_cpu = max(cpu_slack.get("preeval") or [0.0], default=0.0)
+    if best_cpu and gpu_slack:
+        result["e154_cpu_over_gpu_slack_ratio"] = (
+            best_cpu / statistics.fmean(gpu_slack))
 
     # Token neutrality: the instrument must not change what is generated.
     matched = {a["all_tokens_matched"] for a in result["arms"]}

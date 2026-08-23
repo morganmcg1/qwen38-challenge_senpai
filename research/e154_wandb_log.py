@@ -209,9 +209,16 @@ def log_r2(run, summary: dict, r2: dict) -> None:
     # the two sites bound different quantities and one number would hide it.
     for field in ("e154_fixed_term_absorption_knee_us",
                   "e154_delay_slope_below_knee_us_per_us",
-                  "e154_knee_bracket_us"):
+                  "e154_knee_bracket_us",
+                  "e154_cpu_slack_us_per_round",
+                  "e154_cpu_slack_replicate_spread_us"):
         for site, value in (r2.get(field) or {}).items():
             summary["%s_%s" % (field, site)] = value
+    for field in ("e154_gpu_slack_us_per_round",
+                  "e154_gpu_slack_replicate_spread_us",
+                  "e154_cpu_over_gpu_slack_ratio"):
+        if field in r2:
+            summary[field] = r2[field]
 
     # Every arm ran ungated on purpose. Publish the flags rather than the
     # absence of them, so nobody reads these legs as gate-qualified.
