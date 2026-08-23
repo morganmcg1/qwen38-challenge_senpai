@@ -68,13 +68,13 @@ step rebuild senpai/rebuild-and-assert-worker.sh \
   --require 'e135_default_grid/tight' \
   --require 'e135_default_probe/p15' \
   --require 'e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4' \
-  --require 'e120_default_route/tiered_switch/shipped' \
+  --require 'e120_default_route/tiered_switch/onepass67' \
   --require 'columns_by_width' \
   --forbid 'e135_default_grid/wide' \
   --forbid 'e135_default_probe/p10' \
   --forbid 'e135_default_probe/p25' \
   --forbid 'e120_width_plan/3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4' \
-  --forbid 'e120_default_route/tiered_switch/onepass67' \
+  --forbid 'e120_default_route/tiered_switch/shipped' \
   --require-symbol 'noteLaunch'
 echo "worker_sha256 $(digest)"
 
@@ -118,22 +118,11 @@ theSubmissionTemplateNamesTheLocalSubmitCommand()
 theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax()
 INHERITED
 
-# Failures this branch CAUSED and has not repaired. These are not inherited and
-# are reported to the advisor rather than hidden.
-#
-# `E134PassBoundaryPriceTests.swift` is byte-identical to the base and asserts
-# `Table.compiledDefault == .onePass67`. E135 moved the compiled route back to
-# `.shipped`, so the E134 conclusion that the route pushed the structural pass
-# boundary off 6 no longer describes the compiled tree. The test file belongs
-# to E134, which is outside this assignment's file scope, so the repair is the
-# advisor's call. Tests are never packaged into a submission, so this does not
-# reach the scored surface.
-cat > "${log_dir}/route-consequence-tests.txt" <<'CONSEQUENCE'
-"the compiled QMV route moved the structural pass boundary off 6"
-CONSEQUENCE
-
-cat "${log_dir}/inherited-tests.txt" "${log_dir}/route-consequence-tests.txt" \
-  | sort -u > "${log_dir}/known-tests.txt"
+# This branch caused no test failure of its own. The compiled route is back on
+# `.onePass67`, so `E134PassBoundaryPriceTests` and the E120 route witness both
+# describe the compiled tree again and any name outside the inherited list is a
+# real regression.
+sort -u "${log_dir}/inherited-tests.txt" > "${log_dir}/known-tests.txt"
 added="$(comm -23 "${log_dir}/failing-tests.txt" "${log_dir}/known-tests.txt")"
 echo "failing tests: $(wc -l < "${log_dir}/failing-tests.txt" | tr -d ' ')"
 cat "${log_dir}/failing-tests.txt" | sed 's/^/  fail: /'
@@ -207,8 +196,8 @@ python3 - "${out}/pipelines.json" <<'PY'
 import json
 import sys
 
-WANT_PLAN = "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:3:4,7:4:4,8:4:4,9:3:4"
-WANT_ROUTE = "e120_default_route/tiered_switch/shipped"
+WANT_PLAN = "e120_width_plan/2:2:4,3:3:4,4:4:4,5:5:4,6:6:4,7:7:4,8:4:4,9:3:4"
+WANT_ROUTE = "e120_default_route/tiered_switch/onepass67"
 WANT_GRID = "e135_default_grid/tight"
 WANT_PROBE = "e135_default_probe/p15"
 
@@ -233,15 +222,15 @@ python3 research/e135_columns_check.py "${out}/pipelines.json" --want tight
 
 # Advisor F19 item 5. `e135_columns_check.py` derives its expectation from the
 # recorded plan, so it cannot notice a plan that is itself wrong. This states
-# the map the leg must show under `.shipped` + tight + width 2 as a literal.
-# It is computed from `.shipped`, not copied from F18, which was written
-# against `onePass67` and is wrong at widths 6 and 7 (advisor error 143).
+# the map the leg must show under `.onePass67` + tight + width 2 as a literal,
+# computed as `ceil(m / ipg)` over the onePass67 plan. Widths 6 and 7 fall from
+# 2 columns to 1, which is the mechanism T29-A rung 1 priced.
 echo "--- witness: the launched column map, stated as a literal ---"
 python3 - "${out}/pipelines.json" <<'PY'
 import json
 import sys
 
-WANT = {2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3}
+WANT = {2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 2, 9: 3}
 trace = json.load(open(sys.argv[1]))
 seen = {int(k): int(v) for k, v in trace.get("columns_by_width", {}).items()}
 print("columns_by_width %s" % dict(sorted(seen.items())))

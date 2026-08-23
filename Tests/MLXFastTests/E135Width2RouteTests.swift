@@ -120,7 +120,13 @@ struct E135Width2RouteTests {
         #expect(Qwen35CustomQMV.tier(m: 2) == 2)
         #expect(Qwen35CustomQMV.tiers.contains(2))
         if ProcessInfo.processInfo.environment["MLX_E120_QMV_TABLE"] == nil {
-            #expect(Qwen35CustomQMV.tiers == [2, 3, 4, 5])
+            // The tier set follows whichever table is compiled in, so pin the
+            // invariant width 2 created rather than one table's list: width 2
+            // owns the lowest tier, and the env-free route resolves to the
+            // compiled default without tripping the `widthPlan` precondition.
+            #expect(Qwen35CustomQMV.tiers.first == 2)
+            #expect(Qwen35CustomQMV.tiers == Set(
+                Qwen35CustomQMV.Table.compiledDefault.plan.map(\.ipg)).sorted())
         }
     }
 

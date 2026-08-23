@@ -1841,7 +1841,17 @@ public enum Qwen35CustomQMV {
         /// next four carry it at 5.99 to 7.15. M=8 is left on tier 4 here and
         /// moves in its own receipt, because its ranked mass is small even
         /// though it dominates the local fixture.
-        public static let compiledDefault = Table.shipped
+        ///
+        /// This table pays or earns depending on `Grid`, and the two must be
+        /// chosen together. Under `wide` the column count is `m` whatever the
+        /// plan says, so a wider `ipg` only adds redundant work per column and
+        /// F194 correctly measured this table as a loss there. Under `tight`
+        /// the column count is `ceil(m / ipg)`, so this table removes one whole
+        /// read of the weight matrix at M=6 and M=7. E135 T29-A measured that
+        /// restore at +0.1912 % +- 0.0253 of the candidate leg with the grid
+        /// held at `tight`, gated, on a fixture where those two widths are only
+        /// 10.26 % of drafting rounds.
+        public static let compiledDefault = Table.onePass67
 
         /// `(m, ipg, rps)` for every routable width.
         ///
@@ -1917,7 +1927,7 @@ public enum Qwen35CustomQMV {
     /// the pair actually selected, which makes it a `strings` witness that can
     /// fail. `defaultRouteWitnessNamesTheCompiledDefaults` pins it against the
     /// two `compiledDefault` constants.
-    public static let defaultRouteWitness = "e120_default_route/tiered_switch/shipped"
+    public static let defaultRouteWitness = "e120_default_route/tiered_switch/onepass67"
 
     public static let widthPlan: [(m: Int, ipg: Int, rps: Int)] = {
         precondition(
