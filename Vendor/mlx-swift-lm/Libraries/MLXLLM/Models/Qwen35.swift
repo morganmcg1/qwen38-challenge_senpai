@@ -4212,6 +4212,20 @@ let qwen35CompactDraftPrefixResolved: (count: Int, source: String) = {
     return (value, raw)
 }()
 
+/// `MLX_E141_PROBES` pins the absolute probe count instead of the declared
+/// fraction, so a widened table can hold the shipped row-pass byte cost rather
+/// than the shipped probe fraction. Unset takes the declared expression
+/// unchanged, which keeps an unset leg bit for bit the shipped arm.
+public let qwen35E141ProbeCountOverride: Int? = {
+    guard let raw = ProcessInfo.processInfo.environment["MLX_E141_PROBES"],
+          !raw.isEmpty
+    else { return nil }
+    guard let value = Int(raw), value >= 1 else {
+        fatalError("MLX_E141_PROBES must be a positive integer; got \(raw)")
+    }
+    return value
+}()
+
 /// Derived row counts of the compact draft vocabulary at one prefix bound.
 ///
 /// Qwen's official text/control tokens 248,044 ... 248,069 are appended after
@@ -6053,8 +6067,19 @@ extension Qwen35TextModel: MTPCapable {
         guard let centroidBiases = quantizedCentroids.biases else { return }
 
         let realCount = MLXArray(Int32(Self.compactDraftRealCount))
-        let probes = max(
+        let declaredProbes = max(
             1, Int((qwen35DerivedClusterProbeFraction * Double(leaves)).rounded(.up)))
+        let probes = qwen35E141ProbeCountOverride.map { Swift.min($0, leaves) }
+            ?? declaredProbes
+        if qwen35E141ProbeCountOverride != nil {
+            // Rule 114: the arm must be readable from the run's own output,
+            // and only the effective count after the leaf clamp proves it.
+            let witness = "e141-arm: leaves=\(leaves) "
+                + "declaredProbes=\(declaredProbes) effectiveProbes=\(probes) "
+                + "rowsPerLeaf=\(rowsPerLeaf) "
+                + "padded=\(Self.compactDraftPaddedCount)\n"
+            FileHandle.standardError.write(Data(witness.utf8))
+        }
         let clusterWeight = MLX.take(coarseWeight, order, axis: 0)
             .reshaped([leaves, rowsPerLeaf, 320])
         let clusterScales = MLX.take(coarseScales, order, axis: 0)

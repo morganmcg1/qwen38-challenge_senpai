@@ -80,6 +80,37 @@ struct E141CompactDraftVocabularyTests {
         #expect(live.padded == 98_336)
     }
 
+    /// Arm A pins the absolute probe count so only the centroid pass grows.
+    /// The byte table and the `plan.perThread` reported to the advisor are
+    /// arithmetic over these four numbers, so pin them against the source
+    /// rather than against a remembered figure.
+    @Test
+    func theArmGeometryMatchesTheReportedByteTable() {
+        #expect(qwen35E141ProbeCountOverride == nil,
+                "a test process must not carry MLX_E141_PROBES")
+
+        let rowsPerLeaf = 8
+        let stride = 32 * 256  // qwen35RowTop32Tiles * qwen35Top32TG
+        func probes(_ padded: Int, _ fraction: Double) -> Int {
+            max(1, Int((fraction * Double(padded / rowsPerLeaf)).rounded(.up)))
+        }
+        func perThread(_ rows: Int) -> Int { (rows + stride - 1) / stride }
+
+        let shipped = qwen35CompactDraftCounts(prefix: Self.shippedPrefix).padded
+        let full = qwen35CompactDraftCounts(prefix: Self.vocabulary).padded
+        #expect(full == Self.vocabulary)
+
+        #expect(probes(shipped, 0.25) == 3_073)
+        #expect(probes(shipped, 0.15) == 1_844)
+        #expect(probes(full, 0.25) == 7_760)
+
+        // Holding the probe count keeps the row pass and therefore perThread.
+        #expect(perThread(probes(shipped, 0.25) * rowsPerLeaf) == 4)
+        #expect(perThread(probes(full, 0.25) * rowsPerLeaf) == 8)
+        #expect(perThread(probes(shipped, 0.15) * rowsPerLeaf) == 2)
+        #expect(perThread(3_073 * rowsPerLeaf) <= 32)
+    }
+
     @Test
     func everyBoundKeepsTheLeafGroupingAndTheRowAccounting() {
         for prefix in Self.bounds {

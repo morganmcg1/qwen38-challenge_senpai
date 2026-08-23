@@ -57,13 +57,26 @@ done
 ref_dir="${out}/reference"
 verify_dir="${out}/verify"
 
-# `shipped` exports nothing at all, so its leg is the compiled default.
-arm_prefix() {
+# An arm is `<prefix>` or `<prefix>@<probes>`. `shipped` exports nothing at
+# all, so its leg is the compiled default. `full` widens the table and keeps
+# the declared probe fraction, which is what rung 2 timed. `armA*` widens the
+# table and pins the absolute probe count, so the row pass keeps the shipped
+# byte cost and only the centroid pass grows.
+arm_spec() {
   case "$1" in
-    shipped) echo "" ;;
-    full)    echo "248320" ;;
-    *)       echo "$1" ;;
+    shipped)    echo "" ;;
+    full)       echo "248320" ;;
+    armA)       echo "248320@3073" ;;   # p25 shipped probe count, this base
+    armA1844)   echo "248320@1844" ;;   # p15 shipped probe count, thorfinn
+    *)          echo "$1" ;;
   esac
+}
+
+arm_prefix() { local s; s="$(arm_spec "$1")"; echo "${s%%@*}"; }
+arm_probes() {
+  local s
+  s="$(arm_spec "$1")"
+  [[ "${s}" == *@* ]] && echo "${s##*@}" || echo ""
 }
 
 echo "e141-session: cli    $(shasum -a 256 ${cli} | cut -d' ' -f1)"
@@ -132,22 +145,30 @@ verify|repeat)
   [[ "${stage}" == "repeat" ]] && suffix="_r2"
   for arm in ${arms//,/ }; do
     prefix="$(arm_prefix "${arm}")"
+    nprobes="$(arm_probes "${arm}")"
+    tag="${arm//@/p}"
     for name in ${seeds}; do
       golden="${ref_dir}/${name}_${steps}.json"
       [[ -s "${golden}" ]] || { echo "e141-session: missing golden ${name}"; continue; }
-      dest="${verify_dir}/${name}_${arm}_${steps}${suffix}.json"
+      dest="${verify_dir}/${name}_${tag}_${steps}${suffix}.json"
       if [[ -s "${dest}" ]]; then echo "=== skip verify ${name} ${arm} ==="; continue; fi
-      echo "=== verify ${name} arm=${arm} prefix=${prefix:-unset} depth=${depth} ==="
+      echo "=== verify ${name} arm=${arm} prefix=${prefix:-unset}" \
+           "probes=${nprobes:-declared} depth=${depth} ==="
       start=$(date +%s)
-      log="${verify_dir}/${name}_${arm}${suffix}.leg.log"
-      if env ${prefix:+MLX_E141_DRAFT_PREFIX=${prefix}} ${cli} mtp-verify \
+      log="${verify_dir}/${name}_${tag}${suffix}.leg.log"
+      if env ${prefix:+MLX_E141_DRAFT_PREFIX=${prefix}} \
+        ${nprobes:+MLX_E141_PROBES=${nprobes}} ${cli} mtp-verify \
         --golden "${golden}" \
         --mtp-head "${head_dir}" \
         --mtp-depth "${depth}" \
         --tokens "${steps}" \
         --output "${dest}" >"${log}" 2>&1
       then
-        rm -f "${log}"
+        # Keep the log: for a pinned-probe arm it carries the only witness of
+        # the effective probe count the run actually used.
+        mv "${log}" "${verify_dir}/${name}_${tag}${suffix}.ok.log"
+        grep -h '^e141-arm:' "${verify_dir}/${name}_${tag}${suffix}.ok.log" \
+          | sort -u || true
         jq -r '"e141-session: parity=\(.parity_all_ok) matched=\(.all_tokens_matched)"
                + " rounds=\(.round_count) accept=\(.accepted_draft_rate)"
                + " acc=\(.accepted_draft_total) rej=\(.rejected_draft_total)"
