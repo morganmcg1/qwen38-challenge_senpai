@@ -189,11 +189,16 @@ case "${phase}" in
       rm -rf "${out}"; mkdir -p "${out}"
       # The harness gate gives up after 270 s. A 512-token leg leaves the GPU
       # near 43 C, which is above the 40 C target, so slot 2 of the first
-      # palindrome aborted before it timed anything. Idle first, then let the
-      # real gate decide.
+      # palindrome aborted before it timed anything. A 300 s idle was still not
+      # enough. Idle first, then let the real gate decide.
       if ((i > 0)); then
-        echo "=== e158r1 gated cooldown ${E158_GATED_COOLDOWN_S:-300}s ==="
-        sleep "${E158_GATED_COOLDOWN_S:-300}"
+        cool_s="${E158_GATED_COOLDOWN_S:-600}"
+      else
+        cool_s="${E158_GATED_PRECOOL_S:-0}"
+      fi
+      if ((cool_s > 0)); then
+        echo "=== e158r1 gated cooldown ${cool_s}s before slot ${slot} ==="
+        sleep "${cool_s}"
       fi
       echo "=== e158r1 gated slot ${slot} arm ${arm} (${tokens} tokens) ==="
       env DARKBLOOM_QWEN_MTP_ISLAND_ARM="${arm}" \
