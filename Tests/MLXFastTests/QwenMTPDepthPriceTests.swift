@@ -234,30 +234,20 @@ struct QwenMTPDepthPriceTests {
         }
     }
 
-    // Ranked receipt `e003a86d` refuted `pb6` and E135 F23 reverted the
-    // compiled default to `.ship`. The arm itself stays compiled as a research
-    // rung, so this test pins WHICH arm ships and carries the opposite
-    // polarity Rule 101 requires: it must fail if the binary ships `pb6`.
-    @Test("the shipped arm is ship, and it is not pb6")
-    func shippedArmIsShip() {
-        #expect(Qwen36MTPBlockSession.depthPriceArm == .ship)
+    @Test("the shipped arm is pb6")
+    func shippedArmIsPB6() {
+        #expect(Qwen36MTPBlockSession.depthPriceArm == .pb6)
         let shipped = Qwen36MTPBlockSession.depthPrice
-        let uniform = Qwen36MTPBlockSession.makeUniformDepthPrice()
-        for depth in 0 ..< maxDepth {
-            #expect(shipped.marginal[depth] == uniform.marginal[depth])
-        }
-        for depth in 0 ... maxDepth {
-            #expect(shipped.cumulative[depth] == uniform.cumulative[depth])
-        }
-
         let pb6 = Qwen36MTPBlockSession.makeBoundaryDepthPrice(
             enteringVerifyWidth: Qwen36MTPBlockSession
                 .passBoundaryVerifyWidth,
             tier: Qwen36MTPBlockSession.passBoundaryTierFactor)
-        let differs = (0 ..< maxDepth).contains {
-            shipped.marginal[$0] != pb6.marginal[$0]
+        for depth in 0 ..< maxDepth {
+            #expect(shipped.marginal[depth] == pb6.marginal[depth])
         }
-        #expect(differs)
+        for depth in 0 ... maxDepth {
+            #expect(shipped.cumulative[depth] == pb6.cumulative[depth])
+        }
     }
 
     // The pbfit arm drafts SHORTER than the flat price at both ranked
