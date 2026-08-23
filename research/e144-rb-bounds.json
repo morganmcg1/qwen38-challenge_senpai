@@ -1,0 +1,77 @@
+{
+  "experiment": "e144",
+  "rung": "R-B ceiling",
+  "harness": "local",
+  "sample_groups_per_tensor": 8000,
+  "tensors": {
+    "fc": {
+      "groups": 8000,
+      "minmax_sse": 1.6228326559066772,
+      "affine_optimum_sse": 0.6727446913719177,
+      "codebook_optimum_sse": 0.4356008879069639,
+      "affine_rel_l2_factor": 1.5531440220706954,
+      "codebook_rel_l2_factor": 1.9301563547373761
+    },
+    "layers.0.mlp.down_proj": {
+      "groups": 8000,
+      "minmax_sse": 0.7408958673477173,
+      "affine_optimum_sse": 0.6087288856506348,
+      "codebook_optimum_sse": 0.4944062919065496,
+      "affine_rel_l2_factor": 1.1032314424751097,
+      "codebook_rel_l2_factor": 1.2241555098580348
+    },
+    "layers.0.mlp.gate_proj": {
+      "groups": 8000,
+      "minmax_sse": 0.6685307025909424,
+      "affine_optimum_sse": 0.5448240041732788,
+      "codebook_optimum_sse": 0.4489211820527255,
+      "affine_rel_l2_factor": 1.1077265416978592,
+      "codebook_rel_l2_factor": 1.2203253407162096
+    },
+    "layers.0.mlp.up_proj": {
+      "groups": 8000,
+      "minmax_sse": 0.7938381433486938,
+      "affine_optimum_sse": 0.6465427875518799,
+      "codebook_optimum_sse": 0.5318802934953275,
+      "affine_rel_l2_factor": 1.1080703794773268,
+      "codebook_rel_l2_factor": 1.2216844088426784
+    },
+    "layers.0.self_attn.k_proj": {
+      "groups": 8000,
+      "minmax_sse": 1.254927396774292,
+      "affine_optimum_sse": 1.023970365524292,
+      "codebook_optimum_sse": 0.8454487578780276,
+      "affine_rel_l2_factor": 1.1070458451406047,
+      "codebook_rel_l2_factor": 1.218332010742074
+    },
+    "layers.0.self_attn.o_proj": {
+      "groups": 8000,
+      "minmax_sse": 1.9105247259140015,
+      "affine_optimum_sse": 1.5602139234542847,
+      "codebook_optimum_sse": 1.2831727252045062,
+      "affine_rel_l2_factor": 1.1065836693020825,
+      "codebook_rel_l2_factor": 1.2202077286846955
+    },
+    "layers.0.self_attn.q_proj": {
+      "groups": 8000,
+      "minmax_sse": 1.093621850013733,
+      "affine_optimum_sse": 0.8910921812057495,
+      "codebook_optimum_sse": 0.7339182615664215,
+      "affine_rel_l2_factor": 1.1078278347159982,
+      "codebook_rel_l2_factor": 1.2207022421646867
+    },
+    "layers.0.self_attn.v_proj": {
+      "groups": 8000,
+      "minmax_sse": 3.902865409851074,
+      "affine_optimum_sse": 3.175436019897461,
+      "codebook_optimum_sse": 2.6112064709589564,
+      "affine_rel_l2_factor": 1.1086388769615363,
+      "codebook_rel_l2_factor": 1.2225628107060946
+    }
+  },
+  "pooled": {
+    "affine_rel_l2_factor": 1.1462834881287363,
+    "codebook_rel_l2_factor": 1.2741245150245653,
+    "note": "relL2 improvement over min/max round-to-nearest. The affine figure bounds every shippable quantizer at 4 bits and group 64. The codebook figure drops the affine constraint and is UNSHIPPABLE at these bytes; it bounds every scheme that spends 4 bits per weight."
+  }
+}

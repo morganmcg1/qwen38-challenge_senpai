@@ -17,7 +17,18 @@ import time
 
 import numpy as np
 
-from e144_quant import _groups, alternating_ls, best_of_breed, clip_search, dequantize, mlx_rtn
+from e144_quant import (
+    EPS,
+    _als_loop,
+    _groups,
+    alternating_ls,
+    best_of_breed,
+    clip_search,
+    dequantize,
+    deployed_error,
+    mlx_rtn,
+    rtn_params,
+)
 from e144_ra import CORE, DECLARED, MASTER
 from e144_st import SafeTensors, save
 
@@ -34,34 +45,57 @@ def _sample_groups(grouped, samples, seed):
     return np.ascontiguousarray(grouped[chosen]), count
 
 
-def affine_ceiling(grouped, bits=4, samples=3000, seed=0):
-    """Dense 2D (scale, bias) grid optimum on a random sample of groups.
+def affine_ceiling(grouped, bits=4, samples=3000, seed=0, coarse=31):
+    """Best affine-4 group-64 parameters we can find on a random sample of groups.
 
-    Bounds what any affine quantizer of this bit width and group size can reach,
-    which is what decides whether the assignment's 2x relL2 stop rule is
-    reachable at all. The grid is bounded, so this is an achievable-improvement
-    estimate rather than a proved supremum, but it spans every scale from 0.55x
-    to 1.05x of the min/max range and every zero point within half a bin, which
-    contains the optimum for any group that is not pathological.
+    Every affine quantizer is exactly a choice of reconstructed range [lo, hi],
+    so searching that range searches the whole family. Each end is shrunk towards
+    the group mean independently, because a group with one large outlier needs a
+    one-sided clip and a symmetric sweep cannot express that. The grid winner is
+    then polished by alternating least squares, which is a proper local optimizer
+    for the same objective.
+
+    This is ACHIEVABLE, so it is a lower bound on the family optimum, not a
+    proved supremum. `codebook_ceiling` supplies the matching upper bound. The
+    search is scored in float32, so it is also optimistic by the amount BF16
+    parameter rounding costs.
+
+    Returns the incumbent MLX round-to-nearest error, the plain min/max error and
+    the search optimum, all as sums of squares over the same sampled groups.
     """
     sample, count = _sample_groups(grouped, samples, seed)
     n_bins = np.float32((1 << bits) - 1)
 
     w_min = sample.min(axis=1, keepdims=True)
     w_max = sample.max(axis=1, keepdims=True)
-    base_scale = (w_max - w_min) / n_bins
-    base_bias = w_min
+    center = sample.mean(axis=1, keepdims=True)
+    low_span = center - w_min
+    high_span = w_max - center
 
-    def error_of(scale, bias):
-        codes = np.clip(np.round((sample - bias) / scale), 0.0, n_bins)
-        return np.sum((sample - (codes * scale + bias)) ** 2, axis=1, keepdims=True)
+    def error_of(lo, hi):
+        scale = np.maximum((hi - lo) / n_bins, EPS)
+        codes = np.clip(np.round((sample - lo) / scale), 0.0, n_bins)
+        return np.sum((sample - (codes * scale + lo)) ** 2, axis=1, keepdims=True), scale
 
-    reference = error_of(base_scale, base_bias).sum()
-    best = np.full((count, 1), np.inf, dtype=np.float32)
-    for fraction in np.linspace(0.55, 1.05, 101, dtype=np.float32):
-        for offset in np.linspace(-0.5, 0.5, 81, dtype=np.float32):
-            best = np.minimum(best, error_of(base_scale * fraction, base_bias + offset * base_scale))
-    return float(reference), float(best.sum()), count
+    rtn_scale, rtn_bias = rtn_params(sample, bits)
+    incumbent, _ = deployed_error(sample, rtn_scale, rtn_bias, n_bins)
+
+    best_lo = w_min.copy()
+    best, best_scale = error_of(w_min, w_max)
+    minmax = best.copy()
+
+    grid = np.linspace(0.02, 1.00, coarse, dtype=np.float32)
+    for low_fraction in grid:
+        lo = center - low_fraction * low_span
+        for high_fraction in grid:
+            error, scale = error_of(lo, center + high_fraction * high_span)
+            improved = error < best
+            best = np.where(improved, error, best)
+            best_scale = np.where(improved, scale, best_scale)
+            best_lo = np.where(improved, lo, best_lo)
+
+    _, _, best = _als_loop(sample, best_scale, best_lo, best, n_bins, sample.shape[1], 40)
+    return float(incumbent.sum()), float(minmax.sum()), float(best.sum()), count
 
 
 def codebook_ceiling(grouped, bits=4, samples=3000, seed=0, iterations=40):
@@ -77,23 +111,30 @@ def codebook_ceiling(grouped, bits=4, samples=3000, seed=0, iterations=40):
     """
     sample, count = _sample_groups(grouped, samples, seed)
     levels = 1 << bits
+    lanes = np.arange(levels)
+
+    def lloyd(centroids):
+        for _ in range(iterations):
+            assignment = np.argmin(np.abs(sample[:, :, None] - centroids[:, None, :]), axis=2)
+            onehot = assignment[:, :, None] == lanes.reshape(1, 1, levels)
+            occupancy = onehot.sum(axis=1)
+            total = np.einsum("gc,gcl->gl", sample, onehot.astype(np.float32))
+            moved = total / np.maximum(occupancy, 1).astype(np.float32)
+            centroids = np.where(occupancy == 0, centroids, moved)
+        assignment = np.argmin(np.abs(sample[:, :, None] - centroids[:, None, :]), axis=2)
+        reconstruction = np.take_along_axis(centroids, assignment, axis=1)
+        return np.sum((sample - reconstruction) ** 2, axis=1, keepdims=True)
 
     w_min = sample.min(axis=1, keepdims=True)
     w_max = sample.max(axis=1, keepdims=True)
-    step = (w_max - w_min) / np.float32(levels - 1)
-    centroids = w_min + step * np.arange(levels, dtype=np.float32).reshape(1, levels)
-
-    for _ in range(iterations):
-        assignment = np.argmin(np.abs(sample[:, :, None] - centroids[:, None, :]), axis=2)
-        onehot = assignment[:, :, None] == np.arange(levels).reshape(1, 1, levels)
-        occupancy = onehot.sum(axis=1)
-        total = np.einsum("gc,gcl->gl", sample, onehot.astype(np.float32))
-        empty = occupancy == 0
-        centroids = np.where(empty, centroids, total / np.maximum(occupancy, 1).astype(np.float32))
-
-    assignment = np.argmin(np.abs(sample[:, :, None] - centroids[:, None, :]), axis=2)
-    reconstruction = np.take_along_axis(centroids, assignment, axis=1)
-    return float(np.sum((sample.astype(np.float64) - reconstruction.astype(np.float64)) ** 2)), count
+    uniform = w_min + (w_max - w_min) / np.float32(levels - 1) * lanes.astype(np.float32)
+    # Lloyd is only locally optimal, so start it twice: from the uniform grid the
+    # affine family would use, and from the group's own quantiles, which is much
+    # closer for a bell-shaped group. Keep whichever converges lower per group.
+    ordered = np.sort(sample, axis=1)
+    picks = np.linspace(0, sample.shape[1] - 1, levels).round().astype(int)
+    error = np.minimum(lloyd(uniform), lloyd(ordered[:, picks]))
+    return float(error.astype(np.float64).sum()), count
 
 
 def run_bounds(master, samples, out):
@@ -110,39 +151,47 @@ def run_bounds(master, samples, out):
         "rung": "R-B ceiling",
         "harness": "local",
         "sample_groups_per_tensor": samples,
+        "reference": "the incumbent MLX affine_quantize error on the same sampled groups",
         "tensors": {},
     }
-    minmax = affine = codebook = 0.0
+    incumbent = minmax = affine = codebook = 0.0
 
     for name in CORE:
         grouped = _groups(master.float32(f"{name}.weight"), 64)
-        minmax_sse, affine_sse, count = affine_ceiling(grouped, samples=samples)
+        incumbent_sse, minmax_sse, affine_sse, count = affine_ceiling(grouped, samples=samples)
         codebook_sse, _ = codebook_ceiling(grouped, samples=samples)
+        incumbent += incumbent_sse
         minmax += minmax_sse
         affine += affine_sse
         codebook += codebook_sse
         report["tensors"][name] = {
             "groups": count,
+            "incumbent_sse": incumbent_sse,
             "minmax_sse": minmax_sse,
             "affine_optimum_sse": affine_sse,
             "codebook_optimum_sse": codebook_sse,
-            "affine_rel_l2_factor": float(np.sqrt(minmax_sse / affine_sse)),
-            "codebook_rel_l2_factor": float(np.sqrt(minmax_sse / codebook_sse)),
+            "minmax_rel_l2_factor": float(np.sqrt(incumbent_sse / minmax_sse)),
+            "affine_rel_l2_factor": float(np.sqrt(incumbent_sse / affine_sse)),
+            "codebook_rel_l2_factor": float(np.sqrt(incumbent_sse / codebook_sse)),
         }
         print(
-            f"{name:32s} affine x{np.sqrt(minmax_sse / affine_sse):.4f} "
-            f"codebook x{np.sqrt(minmax_sse / codebook_sse):.4f}"
+            f"{name:32s} minmax x{np.sqrt(incumbent_sse / minmax_sse):.4f} "
+            f"affine x{np.sqrt(incumbent_sse / affine_sse):.4f} "
+            f"codebook x{np.sqrt(incumbent_sse / codebook_sse):.4f}"
         )
         del grouped
 
     report["pooled"] = {
-        "affine_rel_l2_factor": float(np.sqrt(minmax / affine)),
-        "codebook_rel_l2_factor": float(np.sqrt(minmax / codebook)),
+        "minmax_rel_l2_factor": float(np.sqrt(incumbent / minmax)),
+        "affine_rel_l2_factor": float(np.sqrt(incumbent / affine)),
+        "codebook_rel_l2_factor": float(np.sqrt(incumbent / codebook)),
         "note": (
-            "relL2 improvement over min/max round-to-nearest. The affine figure bounds "
-            "every shippable quantizer at 4 bits and group 64. The codebook figure drops "
-            "the affine constraint and is UNSHIPPABLE at these bytes; it bounds every "
-            "scheme that spends 4 bits per weight."
+            "relL2 improvement over the INCUMBENT MLX quantizer, which is the denominator "
+            "the assignment's stop rule uses. The affine figure bounds every shippable "
+            "quantizer at 4 bits and group 64. The codebook figure drops the affine "
+            "constraint and is UNSHIPPABLE at these bytes -- a 16-entry BF16 codebook costs "
+            "32 bytes per group against affine's 4 -- so it bounds every scheme that spends "
+            "4 bits per weight, whatever the reconstruction rule."
         ),
     }
     with open(out, "w") as handle:
@@ -251,14 +300,14 @@ def main():
         entry["improvement_factor_vs_declared"] = (
             entry["rel_l2"]["declared"] / entry["rel_l2"][arguments.quantizer]
         )
-        reference_sse, ceiling_sse, sampled = affine_ceiling(_groups(weight, 64))
-        ceiling_reference += reference_sse
+        incumbent_sse, _, ceiling_sse, sampled = affine_ceiling(_groups(weight, 64))
+        ceiling_reference += incumbent_sse
         ceiling_best += ceiling_sse
         entry["affine_optimum_sample"] = {
             "groups": sampled,
-            "minmax_sse": reference_sse,
-            "exhaustive_sse": ceiling_sse,
-            "sse_factor": reference_sse / ceiling_sse,
+            "incumbent_sse": incumbent_sse,
+            "optimum_sse": ceiling_sse,
+            "sse_factor": incumbent_sse / ceiling_sse,
         }
 
         entry["rtn_reproduces_declared"] = errors["rtn"] == declared_error

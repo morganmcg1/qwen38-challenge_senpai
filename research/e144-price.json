@@ -1,0 +1,71 @@
+{
+  "experiment": "e144",
+  "harness": "local",
+  "inferred": true,
+  "note": "E144: what a relL2 improvement factor is worth, and what factor +0.30 pt needs.",
+  "qat_improvement_factor_range": [
+    2.8323863636363633,
+    3.1764705882352944
+  ],
+  "rows": [
+    {
+      "model": "linear (k=1, damage proportional to relL2)",
+      "k": 1.0,
+      "recovery_pt_at_measured": 0.08421927380253623,
+      "recovery_pt_at_affine_ceiling": 0.10885951287696259,
+      "factor_required_for_0.30pt": 1.5769230769230769,
+      "candidate_leg_pct_at_ceiling": [
+        0.0925305859454182,
+        0.22098481114023405
+      ]
+    },
+    {
+      "model": "fitted low (qat factor 3.1765)",
+      "k": 1.7380817580050023,
+      "recovery_pt_at_measured": 0.14078032004192403,
+      "recovery_pt_at_affine_ceiling": 0.17982484808148702,
+      "factor_required_for_0.30pt": 1.2995998978160954,
+      "candidate_leg_pct_at_ceiling": [
+        0.15285112086926397,
+        0.3650444416054186
+      ]
+    },
+    {
+      "model": "fitted high (qat factor 2.8324)",
+      "k": 1.929484360241567,
+      "recovery_pt_at_measured": 0.15472406784315418,
+      "recovery_pt_at_affine_ceiling": 0.19704174467979504,
+      "factor_required_for_0.30pt": 1.2662512348836903,
+      "candidate_leg_pct_at_ceiling": [
+        0.16748548297782578,
+        0.3999947416999839
+      ]
+    },
+    {
+      "model": "square law (k=2, damage proportional to MSE)",
+      "k": 2.0,
+      "recovery_pt_at_measured": 0.15978868653211326,
+      "recovery_pt_at_affine_ceiling": 0.20326732631025488,
+      "factor_required_for_0.30pt": 1.255755978254962,
+      "candidate_leg_pct_at_ceiling": [
+        0.17277722736371665,
+        0.4126326724098174
+      ]
+    }
+  ],
+  "verdict": {
+    "measured_factor": 1.1144624625298136,
+    "affine_ceiling_factor": 1.1530773663546572,
+    "min_required_factor": 1.255755978254962,
+    "max_required_factor": 1.5769230769230769,
+    "ceiling_reaches_target": false,
+    "recovery_pt_at_ceiling_range": [
+      0.10885951287696259,
+      0.20326732631025488
+    ],
+    "recovery_pt_at_measured_range": [
+      0.08421927380253623,
+      0.15978868653211326
+    ]
+  }
+}

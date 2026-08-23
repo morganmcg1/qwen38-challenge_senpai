@@ -245,26 +245,42 @@ def alternating_ls(weight, bits=4, group_size=64, iterations=12, init=None):
     return _finish(weight, best_scale, best_bias, bits, group_size, rows, columns)
 
 
-def _clip_init(grouped, bits, low, high, steps):
-    """Best per-group clipped (scale, bias) over a fraction grid."""
+def _clip_init(grouped, bits, low=0.10, high=1.00, steps=25, sweeps=3):
+    """Best per-group clipped (scale, bias) by coordinate descent on the two ends.
+
+    Each end of the reconstructed range is shrunk towards the group mean
+    independently. A group whose error is dominated by one large outlier needs a
+    one-sided clip, and the symmetric `w_min * f, w_max * f` sweep that
+    `clip_search` uses cannot express that: it is why the incumbent's worst
+    tensor, `fc`, has far more headroom than a symmetric search can reach.
+    """
     n_bins = np.float32((1 << bits) - 1)
     w_min = grouped.min(axis=1, keepdims=True)
     w_max = grouped.max(axis=1, keepdims=True)
+    center = grouped.mean(axis=1, keepdims=True)
+    low_span = center - w_min
+    high_span = w_max - center
 
-    best_error = np.full((grouped.shape[0], 1), np.inf, dtype=np.float32)
-    best_scale = np.empty((grouped.shape[0], 1), dtype=np.float32)
-    best_bias = np.empty((grouped.shape[0], 1), dtype=np.float32)
-    for fraction in np.linspace(high, low, steps, dtype=np.float32):
-        lo = w_min * fraction
-        hi = w_max * fraction
+    def error_of(lo, hi):
         scale = np.maximum((hi - lo) / n_bins, EPS)
         codes = np.clip(np.round((grouped - lo) / scale), 0.0, n_bins)
-        error = np.sum((grouped - (codes * scale + lo)) ** 2, axis=1, keepdims=True)
-        improved = error < best_error
-        best_error = np.where(improved, error, best_error)
-        best_scale = np.where(improved, scale, best_scale)
-        best_bias = np.where(improved, lo, best_bias)
-    return best_scale, best_bias, best_error
+        return np.sum((grouped - (codes * scale + lo)) ** 2, axis=1, keepdims=True), scale
+
+    lo, hi = w_min.copy(), w_max.copy()
+    best_error, best_scale = error_of(lo, hi)
+    grid = np.linspace(high, low, steps, dtype=np.float32)
+    for sweep in range(sweeps):
+        for end in (0, 1):
+            for fraction in grid:
+                trial_lo = center - fraction * low_span if end == 0 else lo
+                trial_hi = hi if end == 0 else center + fraction * high_span
+                error, scale = error_of(trial_lo, trial_hi)
+                improved = error < best_error
+                best_error = np.where(improved, error, best_error)
+                best_scale = np.where(improved, scale, best_scale)
+                lo = np.where(improved, trial_lo, lo)
+                hi = np.where(improved, trial_hi, hi)
+    return best_scale, lo, best_error
 
 
 def best_of_breed(weight, bits=4, group_size=64, iterations=16, refine=9):
@@ -279,7 +295,7 @@ def best_of_breed(weight, bits=4, group_size=64, iterations=16, refine=9):
     grouped = _groups(weight, group_size)
     n_bins = np.float32((1 << bits) - 1)
 
-    scale, bias, error = _clip_init(grouped, bits, 0.60, 1.00, 41)
+    scale, bias, error = _clip_init(grouped, bits)
     scale, bias, error = _als_loop(grouped, scale, bias, error, n_bins, group_size, iterations)
 
     # From here the objective is the DEPLOYED one, so the search cannot pick a
