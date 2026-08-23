@@ -2874,12 +2874,16 @@ func qwen35DualRMSNormConcat(
 
 /// Which of the proposal head's BF16 precision-island corrections to install.
 ///
-/// RESEARCH-ONLY selector for E124, read once in `Qwen35TextModel.sanitize`.
-/// `all` is the default and reproduces the shipped behaviour exactly. The
-/// partial arms exist to separate the acceptance cost of the correction from
-/// the time cost of the traffic it adds: K and V together are 20.97 MB of
-/// dense BF16 per proposal step, while Q is 10.49 MB plus a `putAlong` scatter
-/// over only 1,024 of 12,288 output rows.
+/// Read once in `Qwen35TextModel.sanitize`. `none` is the default: E158 R1.B
+/// measured the corrections over 12 audit legs and they do not pay. They cost
+/// 25,563,136 B of read traffic per proposal slot -- K and V are 20.97 MB of
+/// dense BF16 that replaces a 5.90 MB affine-4 pack, and Q is 10.49 MB plus a
+/// `putAlong` scatter over 1,024 of 12,288 output rows -- and they return
+/// 0.0605 acceptance points against a two-sigma bar of 2.32 points, with a
+/// non-monotone arm curve that puts `q` below `none`.
+///
+/// The other arms stay reachable so the curve can be replayed. `all` is the
+/// pre-E158 shipped behaviour.
 enum Qwen35IslandArm: String {
     case all
     case none
@@ -2891,7 +2895,7 @@ enum Qwen35IslandArm: String {
 
     /// `DARKBLOOM_QWEN_MTP_ISLAND_ARM` selects the arm. The older
     /// `MLXFAST_QWEN_MTP_EXACT_QKV_ROWS=0` kill switch keeps its meaning and
-    /// wins, so no existing invocation changes behaviour.
+    /// wins; it now agrees with the default instead of overriding it.
     ///
     /// The `DARKBLOOM_` prefix is load-bearing, not cosmetic.
     /// `sanitizedRuntimeWorkerEnvironment` forwards only `DARKBLOOM_`, `DYLD_`,
@@ -2902,7 +2906,7 @@ enum Qwen35IslandArm: String {
     static func fromEnvironment(_ env: [String: String]) -> Qwen35IslandArm {
         if env["MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] == "0" { return .none }
         guard let raw = env["DARKBLOOM_QWEN_MTP_ISLAND_ARM"], !raw.isEmpty else {
-            return .all
+            return .none
         }
         guard let arm = Qwen35IslandArm(rawValue: raw.lowercased()) else {
             fatalError(
@@ -5371,14 +5375,10 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
             }
             let environment = ProcessInfo.processInfo.environment
             let arm = Qwen35IslandArm.fromEnvironment(environment)
-            if environment["DARKBLOOM_QWEN_MTP_ISLAND_ARM"] != nil
-                || environment["MLXFAST_QWEN_MTP_EXACT_QKV_ROWS"] != nil
-            {
-                // Witness that a research leg selected the arm it believes it
-                // ran. Silent when neither variable is set, so the shipped
-                // default writes exactly what it writes today.
-                arm.writeWitness()
-            }
+            // Unconditional: the default is now an arm like any other, and a
+            // leg that cannot name the arm it ran cannot be compared with one
+            // that can. Costs one line per process, at load.
+            arm.writeWitness()
             if arm != .none {
                 layer.selfAttn.installExactQKVRows(
                     qWeight: qWeight, qIndices: qIndices, qOutputCount: 12_288,
