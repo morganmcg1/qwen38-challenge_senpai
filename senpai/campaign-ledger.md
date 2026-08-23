@@ -62802,3 +62802,201 @@ so the machinery is sound and the identification is not.
 
 That instability is why RULE 179 matters: the identity makes the regression
 unnecessary. Record the negative so nobody rebuilds the estimator.
+
+## 334 — ADVISOR ERROR 202: `effective_mean_draft_len` is PROPOSED depth, not accepted length. Half of ledger 333 is retracted.
+
+Written within the hour of ledger 333 and issued to all four students the same
+hour. Ledger 333 is wrong where this entry says it is wrong. Trust this entry.
+
+### The error
+
+Ledger 333 asserted RULE 179 in this form:
+
+```
+    mtp_seconds_per_token  =  R / (1 + edl)      <- WRONG
+    R                      =  mtp * (1 + edl)    <- WRONG
+```
+
+That treats `effective_mean_draft_len` as the mean **accepted** draft length.
+It is the mean **proposed** draft length. From the trusted driver,
+`Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift:295`:
+
+```swift
+    // PARENT-DERIVED, from the parent's own journal: the number of
+    // drafts each round actually proposed. Every effective-depth
+    // summary in the sealed report is computed from this array, so a
+    // candidate cannot assert its own schedule any more than it can
+    // assert its own timing.
+    effectiveDraftLengths: rounds.map { $0.draftTokens.count },
+```
+
+`draftTokens.count` is what the candidate proposed. Tokens emitted per round is
+`1 + accepted`, pinned by the parent's own check at line 336:
+
+```swift
+    round.tokens.count == 1 + round.acceptedDraftCount
+```
+
+I wrote a pricing rule for the whole team from a field name without reading the
+line that populates it. The correct source was two greps away and I had already
+read the surrounding file for FINDING 303.
+
+There was a visible contradiction in my own data and I walked past it. With
+`p ~ 0.86` at the beagle operating point, roughly 14 % of rounds must accept
+zero drafts, so a zero-accepted counter would be far from zero. I observed
+`non_drafting_round_count == 0` on beagle in **650 receipts out of 650** and
+recorded it as a curiosity instead of treating it as a refutation. An exact
+zero across 650 independent measurements is not a small number; it is a
+different quantity.
+
+### RULE 179, corrected. Still exact, now local-only.
+
+The accepted total is recorded, at line 274 of the same file:
+
+```swift
+    acceptedDraftTotal: rounds.reduce(0) { $0 + $1.acceptedDraftCount },
+```
+
+so, with no estimation and no fit:
+
+```
+    rounds  =  512 - acceptedDraftTotal          <- two integers
+    R       =  decodeSeconds / rounds            <- seconds per ROUND
+    a       =  acceptedDraftTotal / rounds       <- mean ACCEPTED drafts per round
+    q       =  effective_mean_draft_len          <- mean PROPOSED drafts per round
+    mtp     =  R / (1 + a)
+
+    published gain  =  (R_old / R_new) * (1 + a_new) / (1 + a_old)  -  1
+```
+
+`a` and `q` must live in separately named variables. They move for different
+reasons: `q` is the schedule's decision, `a` is the target's verdict on it.
+
+**The ranked receipt publishes `q` and never publishes `a`.** Therefore `R`
+cannot be computed from the board for any solver, including us. The identity is
+sound and usable, but only from a local run.
+
+### Retracted from ledger 333
+
+- **FINDING 311** in its entirety. The `R` table comparing our anchor with the
+  board's best `R`, the claim that we hold the runtime frontier, and the
+  +0.12 % catch-up ceiling. Not merely wrong — unmeasurable, and presented as
+  measured.
+- **FINDING 312** in its entirety. The `our R x their edl` hybrid table and the
+  +3.53 % to +7.57 % oracle. The claim that the drafting family is worth 18x
+  the runtime family is unsupported; the split is currently unknown.
+- **FINDING 315's `R` columns.** Its `mtp` and `q` columns stand.
+- The round-budget decomposition, the 47 % drafting share, and the
+  +3.62 % per acceptance point conversion.
+- ADVISOR ERROR 201's framing of a "corrected" runtime frontier.
+
+### Survives ledger 333 unchanged
+
+- **The per-prompt median weight table.** Derived from `raw_ratio_of_means`
+  only. beagle 0.4741, medicine 0.1951, essays 0.1658, republic 0.0963,
+  botany 0.0508, travel 0.0037, plutarch 0.0033, drama 0.0019.
+- **RULE 178**, weighting non-uniform mechanisms by those weights.
+- **FINDING 313**, schedule optimality. It binned measured `mtp` by `edl`
+  across the 587 receipts on head `559b24eb`. Since `edl` is proposed depth,
+  those bins are literally schedule settings, which makes the result cleaner
+  than when I wrote it. With the shipped head the `mtp` minimum sits at the
+  modal setting on beagle (4.382), medicine (5.3), republic (5.0) and botany
+  (6.1). **There is no schedule move that wins.**
+- **FINDING 314**, the eleven-head census. Many solvers have changed the head;
+  none has beaten `559b24eb`. ADVISOR ERROR 201 stands as a correction to my
+  earlier "nobody has ever changed the head."
+- **The plutarch instrument**, and it is sharper after the correction.
+  `non_drafting_round_count` is exactly the count of rounds where the schedule
+  proposed nothing, so it is a direct readout of the depth-0 gate's verdict.
+  Our anchor: plutarch `q = 0.156`, `nd = 449`, `mtp = 0.030121`.
+  igneous-prose `09b452f3` with custom head `21275947`: `q = 2.778`,
+  `mtp = 0.014777`, a 50.9 % reduction. Their head made the cost model change
+  its mind about whether drafting is worth it.
+- **FINDING 315's `mtp` observations.** Head `21275947` holds the board's best
+  `essays` `mtp` at 0.0095710, 2.57 % better than ours on a prompt carrying
+  weight 0.166.
+- The two-way fixed-effects negative result and its clean serial-leg placebo,
+  as a record that the board-side estimator does not identify.
+
+### FINDING 316 — the one clean round-cost measurement on the board
+
+Receipt `da950333`, solver fabinulleins, commit `d25821d7`, 2026-08-17.
+`status: rejected`, and the rejection reason is `score did not improve current
+best` — it passed every correctness gate, with `parity_all_ok: true` and
+`parity_ok: true` on all eight prompts, 8/8 accepted pairs, 512 decode tokens.
+
+It proposed **zero** drafts on every prompt: `edl = 0`,
+`non_drafting_round_count = 512`. At zero proposed drafts, proposed and
+accepted are both zero, so `rounds = 512` and `R = mtp` **exactly**, with no
+assumption. This is the only receipt in 923 where `R` is directly readable.
+
+```
+prompt       cand mtp      serial      raw
+beagle      0.0313238   0.0380865   1.2159
+botany      0.0313772   0.0379539   1.2096
+drama       0.0313860   0.0379461   1.2090
+essays      0.0313880   0.0379772   1.2099
+medicine    0.0313415   0.0379589   1.2111
+plutarch    0.0313849   0.0378853   1.2071
+republic    0.0313790   0.0378691   1.2068
+travel      0.0313220   0.0380901   1.2161
+
+candidate_mtp_seconds_per_token_mean      0.0313628
+baseline_serial_seconds_per_token_mean    0.0379709
+```
+
+**The target path alone, with drafting switched off entirely, runs 17.4 %
+faster than the pinned serial baseline.** The 0.2 % spread across eight prompts
+independently confirms that per-token target work is prompt-independent.
+
+Three further solvers cluster nearby with near-zero drafting — scarletbright
+`c91581eb` at 0.0325240 and `baa75efa` at 0.0325299, jungjipdo `26d0e934` at
+0.0325820 — while the unoptimised zero-draft controls (newjordan `1f60b3fe`
+and `4d1123ce`, davidtai `95611e60`, 0xkydo `3147d255`) sit at 0.0377 to 0.0380,
+which is the baseline. The optimised cluster is real and replicated across three
+independent solvers.
+
+Our own anchor cannot be placed against it. Our nearest leg is plutarch, and
+plutarch has at least 449 zero-proposal rounds out of an unknown total, so our
+`R` is bounded only to `0.0303 .. 0.0345`, which straddles fabinulleins'
+0.0313220. **Inconclusive, and it must be measured locally.**
+
+### Campaign consequence
+
+The round budget is unknown. Not disputed — unmeasured, by us and by the board.
+Every pricing decision in flight depends on it:
+
+```
+    thorfinn E160   cuts target per-round work    share of R unknown
+    alphonse E161   cuts target per-round work    share of R unknown
+    askeladd E158   changes head cost and quality share of R unknown
+```
+
+E159 is retargeted to measure it. `draftPolicy` is a settable closure
+(`public var`, `Qwen36MTPBlockSession.swift:706`, wired to `costModelDepth` at
+line 194), so a constant-depth override is a small research-only edit. Sweeping
+`D` over `{0, 1, 2, 4, 8}` and fitting
+
+```
+    R(D)  =  (s + t0)  +  (h + t1) * D
+```
+
+gives the non-drafting round cost as the intercept and the per-slot cost as the
+slope, and a separate head microbenchmark splits `h` from `t1`. Ten legs,
+ungated ABBA under the standing permitted mode, since the effect is at 40 %
+scale and the thermal term is 0.1 % to 0.5 %.
+
+### Method rule that follows from this error
+
+**RULE 180 — before any metric enters a pricing formula, read the line that
+populates it, and quote that line in the record.** A field name, a doc comment,
+and a plausible reading are not evidence of a metric's definition. The doc
+comment on `nonDraftingRoundCount` says "rounds that proposed nothing", which
+was correct and which I read; I then used a sibling field inconsistently with
+it in the same paragraph.
+
+**RULE 181 — an exact zero, or an exact constant, repeated across hundreds of
+independent measurements, is a definition and not a result.** Treat it as a
+refutation of the assumed definition until the populating code says otherwise.
+`non_drafting_round_count == 0` on beagle in 650 of 650 receipts was the tell,
+and it was in my own printed output for three analyses before I acted on it.
