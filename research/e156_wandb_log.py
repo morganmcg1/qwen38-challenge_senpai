@@ -199,6 +199,144 @@ def barrier_section(proof: dict) -> tuple[dict, dict]:
     return metrics, summary
 
 
+def ulp_section(u: dict) -> tuple[dict, dict]:
+    """F3 section 5: the k accumulation order is unchanged, with a control."""
+    src = u["e156_k_order_source_evidence"]
+    num = u["e156_k_order_numerical"]
+    req = num["required_controls_that_must_fail"]
+    diag = num["diagnostic_controls"]
+    trials = num["trials"]
+    metrics = {
+        "e156_k_accumulation_order_unchanged":
+            float(u["e156_k_accumulation_order_unchanged"]),
+        "e156_kord_source_identical_after_normalisation":
+            float(src["identical_after_normalisation"]),
+        "e156_kord_header_and_twin_agree":
+            float(src["header_and_twin_agree"]),
+        "e156_kord_arithmetic_statements_removed":
+            len(src["arithmetic_statements_removed"]),
+        "e156_kord_event_lists_equal": float(num["event_lists_equal"]),
+        "e156_kord_events_per_output_element":
+            num["events_per_output_element"],
+        "e156_kord_arms_agree_bit_for_bit": num["arms_agree_bit_for_bit"],
+        "e156_kord_trials": trials,
+        "e156_kord_required_controls_all_caught":
+            float(num["required_controls_all_caught"]),
+        "e156_kord_control_one_ulp_output_caught": req["one_ulp_output"],
+        "e156_kord_control_reverse_all_events_caught":
+            req["reverse_all_events"],
+        "e156_kord_diag_one_ulp_weight_caught": diag["one_ulp_weight"],
+        "e156_kord_diag_one_ulp_activation_caught":
+            diag["one_ulp_activation"],
+        "e156_kord_diag_swap_two_k_tiles_caught": diag["swap_two_k_tiles"],
+        "e156_kord_diag_reverse_sk_substeps_caught":
+            diag["reverse_sk_substeps"],
+        "e156_kord_controls_caught": u["e156_k_order_rule92_controls_caught"],
+        "e156_kord_controls_expected":
+            u["e156_k_order_rule92_controls_expected"],
+    }
+    summary = {
+        "e156_k_accumulation_order_evidence": (
+            "Rule 92 positive control, harness=offline. The double-buffered "
+            f"k-loop (header line {src['header_dbuf_loop_line']}) and the "
+            f"single-buffered k-loop (line {src['header_single_loop_line']}) "
+            "differ only in WHERE the weight tile is read from: Wk = Ws + "
+            "cur * Ws_tile instead of Ws. The inner kk1 accumulation is "
+            "otherwise statement-identical, "
+            f"{len(src['arithmetic_statements_removed'])} arithmetic "
+            "statements were removed, and the emitted fused-multiply-add "
+            "event lists are equal at "
+            f"{num['events_per_output_element']} events per output "
+            f"element. Over {trials} randomised trials the two arms agree "
+            f"bit for bit {num['arms_agree_bit_for_bit']}/{trials}. The "
+            "comparison is proven able to fail: perturbing the accumulator "
+            f"by one ulp is caught {req['one_ulp_output']}/{trials} and "
+            "reversing the whole event order is caught "
+            f"{req['reverse_all_events']}/{trials}. This is double buffering "
+            "in the strict sense of F3 section 5: data moves earlier in "
+            "time, no addition moves."
+        ),
+        "e156_k_accumulation_order_caveat": (
+            "Honest limit on the controls. Perturbing an INPUT by one ulp is "
+            f"caught {diag['one_ulp_weight']}/{trials} for a weight and "
+            f"{diag['one_ulp_activation']}/{trials} for an activation, "
+            "because a one-ulp input change is usually absorbed inside this "
+            "GEMM's own accumulation. Those two are reported as diagnostics, "
+            "not as pass criteria; only the output-side and full-reversal "
+            "controls gate the claim. Read alongside F3 section 5, this "
+            "TEMPERS the expectation that a one-ulp input difference "
+            "necessarily propagates: within a single GEMM it usually does "
+            "not. It does not weaken the order claim itself, which rests on "
+            "equal event lists rather than on a sampling argument."
+        ),
+        "e156_k_loop_shape": json.dumps(
+            {"K": num["K"], "BK": num["BK"], "SK": num["SK"]}),
+        "e156_k_order_accumulation_nest": src["accumulation_nest"],
+    }
+    return metrics, summary
+
+
+def prefill_share_section(p: dict) -> tuple[dict, dict]:
+    """F3 section 4: how much prefill actually reaches affine_qmm_t_nax."""
+    pm = p["e156_prize_model"]
+    cc = p["checkpoint_cross_check"]
+    sens = p["e156_prefill_qmm_share_sensitivity"]
+    metrics = {
+        "e156_prefill_qmm_share_estimate":
+            p["e156_prefill_qmm_share_estimate"],
+        "e156_prefill_all_gemm_share": p["e156_prefill_all_gemm_share"],
+        "e156_prefill_qmm_share_if_lm_head_scores_all_positions":
+            sens["lm_head_every_seed_position"],
+        "e156_prefill_published_pct_per_kernel_pct":
+            pm["published_pct_per_kernel_pct"],
+        "e156_prefill_kernel_pct_to_close_the_gap":
+            pm["kernel_speedup_needed_to_close_the_1_2578_pct_gap"],
+        "e156_prefill_checkpoint_cross_check_ok":
+            float(cc["every_projection_agrees_with_the_checkpoint"]),
+        "e156_prefill_projections_enumerated": len(p["projections"]),
+        "e156_prefill_projections_routed_to_nax": sum(
+            1 for r in p["projections"] if r["routes_to_affine_qmm_t_nax"]),
+        "e156_prefill_layers_full_attention": p["layers_full_attention"],
+        "e156_prefill_layers_gdn": p["layers_gdn"],
+    }
+    routed = [r["family"] for r in p["projections"]
+              if r["routes_to_affine_qmm_t_nax"]]
+    missed = [(r["family"], r["routing_reason"]) for r in p["projections"]
+              if not r["routes_to_affine_qmm_t_nax"]]
+    summary = {
+        "e156_prefill_qmm_share_evidence": (
+            "harness=offline, FLOP share and NOT a time share. Of one "
+            "512-token seed prefill forward pass, "
+            f"{p['e156_prefill_qmm_share_estimate'] * 100:.2f} percent of the "
+            "multiply-accumulate work sits in projections that reach "
+            f"affine_qmm_t_nax. {len(routed)} of {len(p['projections'])} "
+            "projection families route there. The misses are small and "
+            "structural: "
+            + "; ".join(f"{f} ({why})" for f, why in missed)
+            + ". Every derived width, depth and layer count was cross-checked "
+            "against the packed safetensors headers and all agree "
+            f"({cc['every_projection_agrees_with_the_checkpoint']}), so a "
+            "misread of the Swift source could not survive into the share."
+        ),
+        "e156_prefill_qmm_share_routing_rule": (
+            "The easy trap is that a transposed non-batched matmul with "
+            "M >= vector_limit enters qmm_splitk FIRST "
+            "(quantized.cpp:1418-1424) and only falls through to qmm, and so "
+            "to NAX, when split_k collapses to 1 (quantized.cpp:805-810). At "
+            "M=512 that means N must exceed about 512. It is why the two "
+            "48-wide GDN b and a projections never reach the kernel this "
+            "candidate changes, even though they are quantized and "
+            "transposed."
+        ),
+        "e156_prefill_prize_equation": pm["equation"],
+        "e156_prefill_flop_vs_time": p["flop_share_is_not_time_share"],
+        "e156_prefill_share_sensitivity_verdict": sens["verdict"],
+        "e156_prefill_source_provenance":
+            json.dumps(p["source_provenance"], indent=1),
+    }
+    return metrics, summary
+
+
 def compile_section(cg: dict) -> tuple[dict, dict]:
     metrics = {
         f"e156_cg_{k[len('e156_'):]}": float(bool(cg[k]))
@@ -242,6 +380,8 @@ def main() -> None:
     audit = load(HERE / "e156-compose-audit.json")
     proof = load(HERE / "e156-barrier-proof.json")
     cgate = load(HERE / "e156-compile-gate.json")
+    ulp = load(HERE / "e156-k-order-ulp-control.json")
+    pshare = load(HERE / "e156-prefill-qmm-share.json")
     gate = load(OUT / "e156-gate-chain.json")
     submit = load(OUT / "e156-local-submit.json")
 
@@ -271,6 +411,13 @@ def main() -> None:
         "e156_air_pricing_policy":
             "no E156 number is priced from an AIR delta; on this kernel "
             "family AIR overstates the ISA change by 181.3 times",
+        "e156_published_conversion_constant_discrepancy":
+            f"This run uses {PUBLISHED_PCT_PER_PREFILL_PCT} published points "
+            "per prefill percentage point. Advisor F3 uses 0.100436. The "
+            "0.000002 difference is flagged rather than silently adopted; it "
+            "moves no E156 conclusion, because the largest quantity it "
+            "multiplies is the 4.12 prior and the resulting published-point "
+            "change is about 8e-6.",
     }
 
     if audit is not None:
@@ -283,6 +430,14 @@ def main() -> None:
         summary.update(s)
     if cgate is not None:
         m, s = compile_section(cgate)
+        metrics.update(m)
+        summary.update(s)
+    if ulp is not None:
+        m, s = ulp_section(ulp)
+        metrics.update(m)
+        summary.update(s)
+    if pshare is not None:
+        m, s = prefill_share_section(pshare)
         metrics.update(m)
         summary.update(s)
     if gate is not None:

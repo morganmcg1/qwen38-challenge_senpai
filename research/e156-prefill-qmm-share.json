@@ -1,0 +1,393 @@
+{
+  "experiment": "E156",
+  "rung": "R1",
+  "harness": "offline",
+  "worktree_head": "98b4322a5ae0c157a537c1a2ddff10191a3e3921",
+  "question": "What fraction of 512-token seed prefill arithmetic reaches affine_qmm_t_nax?",
+  "m_prefill_tokens": 512,
+  "layers_full_attention": 16,
+  "layers_gdn": 48,
+  "source_provenance": {
+    "scored_prefill_entry": "Qwen36MTPBlockSession.begin, Sources/MLXFastModel/Qwen36MTPBlockSession.swift:688-739, called from Sources/MLXFastTrustedHarness/QwenRuntimeMTPWorker.swift:313",
+    "model_under_it": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift loaded through LLMModelFactory (QwenRuntimeMTPWorker.swift:146-165). Sources/MLXFastModel/Qwen35{Attention,Block,MLP,FastEngine}.swift are NOT on this path.",
+    "dispatch_chain": "QuantizedMatmul::eval_gpu quantized.cpp:1393-1440 -> qmm_splitk:776-810 -> qmm:682-700 -> qmm_nax -> affine_qmm_t_nax",
+    "layer_split_cross_checked": "weights/config.json layer_types gives 48 linear_attention and 16 full_attention; Qwen35.swift:3888 derives the same split as (layerIdx+1) % fullAttentionInterval != 0",
+    "unquantized_by_construction": "GDN depthwise Conv1d(10240,10240,k=4,groups=10240) at Qwen35.swift:776-785 is BF16 with no .scales/.biases, as are A_log, dt_bias and linear_attn.norm.weight. They cannot reach a quantized GEMM at any M.",
+    "mtp_head_not_in_prefill": "begin() runs the backbone plus one applyLMHead and stashes the seed hidden state at :711; the head first runs at the first drafting round, :1574-1590.",
+    "method": "static source read, harness=offline, nothing executed"
+  },
+  "quantization": {
+    "group_size": 64,
+    "bits": 4
+  },
+  "lm_head_all_positions": false,
+  "checkpoint_cross_check": {
+    "every_projection_agrees_with_the_checkpoint": true,
+    "checks": [
+      {
+        "family": "fa.qkv",
+        "derived_N": 14336,
+        "checkpoint_N": 14336,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 16,
+        "checkpoint_layers": [
+          16
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "fa.o_proj",
+        "derived_N": 5120,
+        "checkpoint_N": 5120,
+        "derived_K": 6144,
+        "checkpoint_K": [
+          6144
+        ],
+        "derived_layers": 16,
+        "checkpoint_layers": [
+          16
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "gdn.in_proj_qkv",
+        "derived_N": 10240,
+        "checkpoint_N": 10240,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 48,
+        "checkpoint_layers": [
+          48
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "gdn.in_proj_z",
+        "derived_N": 6144,
+        "checkpoint_N": 6144,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 48,
+        "checkpoint_layers": [
+          48
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "gdn.in_proj_b",
+        "derived_N": 48,
+        "checkpoint_N": 48,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 48,
+        "checkpoint_layers": [
+          48
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "gdn.in_proj_a",
+        "derived_N": 48,
+        "checkpoint_N": 48,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 48,
+        "checkpoint_layers": [
+          48
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "gdn.out_proj",
+        "derived_N": 5120,
+        "checkpoint_N": 5120,
+        "derived_K": 6144,
+        "checkpoint_K": [
+          6144
+        ],
+        "derived_layers": 48,
+        "checkpoint_layers": [
+          48
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "mlp.gate_proj",
+        "derived_N": 17408,
+        "checkpoint_N": 17408,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 64,
+        "checkpoint_layers": [
+          64
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "mlp.up_proj",
+        "derived_N": 17408,
+        "checkpoint_N": 17408,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 64,
+        "checkpoint_layers": [
+          64
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "mlp.down",
+        "derived_N": 5120,
+        "checkpoint_N": 5120,
+        "derived_K": 17408,
+        "checkpoint_K": [
+          17408
+        ],
+        "derived_layers": 64,
+        "checkpoint_layers": [
+          64
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      },
+      {
+        "family": "lm_head",
+        "derived_N": 248320,
+        "checkpoint_N": 248320,
+        "derived_K": 5120,
+        "checkpoint_K": [
+          5120
+        ],
+        "derived_layers": 1,
+        "checkpoint_layers": [
+          1
+        ],
+        "missing_tensors": [],
+        "agrees": true
+      }
+    ],
+    "gdn_conv1d_tensors": 48,
+    "gdn_conv1d_is_quantized": false,
+    "note": "shapes read from safetensors headers only; no tensor data was loaded. harness=offline"
+  },
+  "projections": [
+    {
+      "family": "fa.qkv",
+      "layer_type": "full_attention",
+      "layers": 16,
+      "N": 14336,
+      "K": 5120,
+      "components": {
+        "q": 6144,
+        "attn_output_gate": 6144,
+        "k": 1024,
+        "v": 1024
+      },
+      "source": "V:3537-3543 fused at runtime; parts V:3461-3466",
+      "M": 512,
+      "flops_per_layer": 75161927680.0,
+      "flops_total": 1202590842880.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "fa.o_proj",
+      "layer_type": "full_attention",
+      "layers": 16,
+      "N": 5120,
+      "K": 6144,
+      "source": "V:3467-3468",
+      "M": 512,
+      "flops_per_layer": 32212254720.0,
+      "flops_total": 515396075520.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "gdn.in_proj_qkv",
+      "layer_type": "gdn",
+      "layers": 48,
+      "N": 10240,
+      "K": 5120,
+      "components": {
+        "q": 2048,
+        "k": 2048,
+        "v": 6144
+      },
+      "source": "V:787; unfused at S=512 because the fusion guard at V:1143 is S <= 9",
+      "M": 512,
+      "flops_per_layer": 53687091200.0,
+      "flops_total": 2576980377600.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "gdn.in_proj_z",
+      "layer_type": "gdn",
+      "layers": 48,
+      "N": 6144,
+      "K": 5120,
+      "source": "V:788; unfused at S=512, guard V:1143",
+      "M": 512,
+      "flops_per_layer": 32212254720.0,
+      "flops_total": 1546188226560.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "gdn.in_proj_b",
+      "layer_type": "gdn",
+      "layers": 48,
+      "N": 48,
+      "K": 5120,
+      "source": "V:789",
+      "M": 512,
+      "flops_per_layer": 251658240.0,
+      "flops_total": 12079595520.0,
+      "routes_to_affine_qmm_t_nax": false,
+      "routing_reason": "qmm_splitk: split_k=16 > 1, never reaches qmm",
+      "split_k": 16
+    },
+    {
+      "family": "gdn.in_proj_a",
+      "layer_type": "gdn",
+      "layers": 48,
+      "N": 48,
+      "K": 5120,
+      "source": "V:790",
+      "M": 512,
+      "flops_per_layer": 251658240.0,
+      "flops_total": 12079595520.0,
+      "routes_to_affine_qmm_t_nax": false,
+      "routing_reason": "qmm_splitk: split_k=16 > 1, never reaches qmm",
+      "split_k": 16
+    },
+    {
+      "family": "gdn.out_proj",
+      "layer_type": "gdn",
+      "layers": 48,
+      "N": 5120,
+      "K": 6144,
+      "source": "V:797",
+      "M": 512,
+      "flops_per_layer": 32212254720.0,
+      "flops_total": 1546188226560.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "mlp.gate_proj",
+      "layer_type": "all",
+      "layers": 64,
+      "N": 17408,
+      "K": 5120,
+      "source": "V:2525; unfused at S=512 because the 2*I pack guard at V:2568 is x.dim(-2) <= 16",
+      "M": 512,
+      "flops_per_layer": 91268055040.0,
+      "flops_total": 5841155522560.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "mlp.up_proj",
+      "layer_type": "all",
+      "layers": 64,
+      "N": 17408,
+      "K": 5120,
+      "source": "V:2527; unfused at S=512, guard V:2568",
+      "M": 512,
+      "flops_per_layer": 91268055040.0,
+      "flops_total": 5841155522560.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "mlp.down",
+      "layer_type": "all",
+      "layers": 64,
+      "N": 5120,
+      "K": 17408,
+      "source": "V:2526",
+      "M": 512,
+      "flops_per_layer": 91268055040.0,
+      "flops_total": 5841155522560.0,
+      "routes_to_affine_qmm_t_nax": true,
+      "routing_reason": "qmm -> qmm_nax -> affine_qmm_t_nax (split_k collapsed to 1)",
+      "split_k": 1
+    },
+    {
+      "family": "lm_head",
+      "layer_type": "final",
+      "layers": 1,
+      "N": 248320,
+      "K": 5120,
+      "rows_override": 1,
+      "source": "V:5725. begin() projects ONE row: the 512-row seedLogits graph at V:5911-5915 is built but never evaluated, and Qwen36MTPBlockSession.begin:706-708 calls applyLMHead(hiddenRow(hidden, last)). The eval list at :717-718 omits seedLogits.",
+      "M": 1,
+      "flops_per_layer": 2542796800.0,
+      "flops_total": 2542796800.0,
+      "routes_to_affine_qmm_t_nax": false,
+      "routing_reason": "qmv: M below vector_limit",
+      "split_k": 1
+    }
+  ],
+  "non_gemm_flops": {
+    "full_attention_scores_and_context": 51539607552.0,
+    "gated_deltanet_recurrence": 77309411328,
+    "gdn_short_convolution": 2013265920,
+    "norms_activations_gating_rope": 3623878656
+  },
+  "totals": {
+    "quantized_gemm_flops": 24937512304640.0,
+    "nax_routed_gemm_flops": 24910810316800.0,
+    "non_gemm_flops": 134486163456.0,
+    "prefill_flops": 25071998468096.0
+  },
+  "e156_prefill_qmm_share_estimate": 0.9935709891055908,
+  "e156_prefill_all_gemm_share": 0.994636001448902,
+  "e156_prefill_qmm_share_sensitivity": {
+    "lm_head_last_position_only": 0.9935709891055908,
+    "lm_head_every_seed_position": 0.9938877591204284,
+    "verdict": "The single soft reading in the table cannot change the conclusion. Both readings put the share above 0.99, so the share is insensitive to it and no execution trace is needed to settle it."
+  },
+  "e156_prefill_qmm_share_basis": "multiply-accumulate FLOPs in one prefill forward pass, NOT time. harness=offline",
+  "e156_prize_model": {
+    "equation": "published gain % = 0.100436 x qmm_share x kernel_speedup, harness=ranked, sign convention POSITIVE PUBLISHED PERCENT IS A GAIN and kernel_speedup is the fractional REDUCTION in qmm_t_nax time",
+    "published_pct_per_prefill_pct": 0.100436,
+    "qmm_share": 0.9935709891055908,
+    "published_pct_per_kernel_pct": 0.09979029586180911,
+    "kernel_speedup_needed_to_close_the_1_2578_pct_gap": 12.604432015532028
+  },
+  "flop_share_is_not_time_share": "A FLOP share becomes a time share only if the routed GEMMs and the rest of prefill run at the same fraction of their respective roofline limits. They do not have to. The Gated DeltaNet recurrence in particular is known from campaign FINDING work to run far below its DRAM bound in the DECODE path, which would raise its time share above its FLOP share and LOWER the effective qmm time share below the number reported here. This estimate is therefore an UPPER bound on the time share unless the routed GEMMs are themselves unusually inefficient. It cannot be measured on applegpu_g16s because is_nax_available() is false."
+}
