@@ -1472,7 +1472,9 @@ template <
     const bool aligned_N,
     const int BM = 32,
     const int BK = 32,
-    const int BN = 32>
+    const int BN = 32,
+    const int kHostBM = BM,
+    const int kHostBN = BN>
 METAL_FUNC void qmm_t_impl(
     const device uint32_t* w,
     const device T* scales,
@@ -1519,8 +1521,32 @@ METAL_FUNC void qmm_t_impl(
   // Set the block
   const int K_w = K * bytes_per_pack / pack_factor;
   const int K_g = K / group_size;
-  const int y_row = tid.y * BM;
-  const int y_col = tid.x * BN;
+
+  /* E147 rung E. The host launcher tiles the output at kHostBM x kHostBN and
+     its grid is frozen, because backend/metal/quantized.cpp is outside the
+     editable surface. A kernel instantiated with a different output tile must
+     therefore recover its own tile origin from the frozen block index.
+
+     BM * BN is held equal to kHostBM * kHostBN, so when the caller's
+     divisibility gate holds the two grids contain the same number of blocks
+     and the linear map below is a bijection. The caller also guarantees
+     N % BN == 0, so tiles_x divides exactly; aligned_N only promises N % 32,
+     which is too weak once BN moves. A trailing partial M tile stays safe
+     because num_els still clamps it. */
+  constexpr bool kRetiled = (BM != kHostBM) || (BN != kHostBN);
+  static_assert(
+      !kRetiled || BM * BN == kHostBM * kHostBN,
+      "a retile must preserve the threadgroup count");
+
+  int y_row = int(tid.y) * BM;
+  int y_col = int(tid.x) * BN;
+  if constexpr (kRetiled) {
+    const int tiles_x_host = (N + kHostBN - 1) / kHostBN;
+    const int tiles_x = N / BN;
+    const int linear = int(tid.y) * tiles_x_host + int(tid.x);
+    y_row = (linear / tiles_x) * BM;
+    y_col = (linear % tiles_x) * BN;
+  }
 
   auto wl = (const device uint8_t*)w;
 
@@ -2307,8 +2333,29 @@ template <
 
   constexpr int BK_padded = (BK + 16 / sizeof(T));
 
-  threadgroup T Xs[2 * BM * BK_padded];
-  threadgroup T Ws[2 * BN * BK_padded];
+  /* E147 rung E research arm, non-NAX path. kE147RetileOn is the whole arm
+     switch. While it is false the retiled tiling collapses onto the host
+     tiling, kE147Retiled is false, and every branch below is discarded at
+     compile time, so this kernel generates exactly the code it generated
+     before.
+
+     The arm tiling is (64, 16): the register-neutral analogue, on this 32x32
+     host grid, of the (128, 32) retile the NAX kernel needs on its 64x64 grid.
+     Both double BM and quarter BN while holding BM * BN fixed.
+
+     This arm is dead on the ranked M5, which never runs this kernel. It exists
+     only to prove the origin re-derivation end to end on hardware we own.
+     E-4 requires the submitted default to stay off. */
+  constexpr bool kE147RetileOn = false;
+  constexpr int kE147RetileBM = kE147RetileOn ? 64 : BM;
+  constexpr int kE147RetileBN = kE147RetileOn ? 16 : BN;
+  constexpr bool kE147Retiled =
+      (kE147RetileBM != BM) || (kE147RetileBN != BN);
+
+  constexpr int kTgBM = BM > kE147RetileBM ? BM : kE147RetileBM;
+  constexpr int kTgBN = BN > kE147RetileBN ? BN : kE147RetileBN;
+  threadgroup T Xs[2 * kTgBM * BK_padded];
+  threadgroup T Ws[2 * kTgBN * BK_padded];
 
   if (batched) {
     adjust_matrix_offsets<T>(
@@ -2327,6 +2374,43 @@ template <
         s_strides,
         b_strides,
         tid);
+  }
+
+  /* The retile is a bijection on the frozen grid only when both tilings need
+     the same block count and no trailing N tile is partial. Every other shape
+     falls back to the shipped tiling, so this kernel stays correct for shapes
+     the retile cannot serve, such as the M=511 proposal-head priming pass. */
+  if constexpr (kE147Retiled) {
+    const bool retile_ok = (M % kE147RetileBM == 0) && (M % BM == 0) &&
+        (N % kE147RetileBN == 0) && (N % BN == 0);
+    if (retile_ok) {
+      qmm_t_impl<
+          T,
+          group_size,
+          bits,
+          aligned_N,
+          kE147RetileBM,
+          BK,
+          kE147RetileBN,
+          BM,
+          BN>(
+          w,
+          scales,
+          biases,
+          x,
+          y,
+          Xs,
+          Ws,
+          K,
+          N,
+          M,
+          K,
+          tid,
+          lid,
+          simd_gid,
+          simd_lid);
+      return;
+    }
   }
   qmm_t_impl<T, group_size, bits, aligned_N, BM, BK, BN>(
       w,

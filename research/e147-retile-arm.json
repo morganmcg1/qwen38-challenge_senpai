@@ -1,0 +1,132 @@
+{
+  "host_tiling": [
+    32,
+    32
+  ],
+  "arm_tiling": [
+    64,
+    16
+  ],
+  "retile_switch_found_in_header": true,
+  "retile_switch_found_in_twin": true,
+  "retile_on_header": false,
+  "retile_on_twin": false,
+  "header_and_twin_agree": true,
+  "e4_submitted_default_is_off": true,
+  "shapes": [
+    {
+      "shape": "gdn.in_proj",
+      "M": 512,
+      "N": 16480,
+      "retiled": true,
+      "blocks": 8240,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "gdn.out_proj",
+      "M": 512,
+      "N": 5120,
+      "retiled": true,
+      "blocks": 2560,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "fa.qkv",
+      "M": 512,
+      "N": 14336,
+      "retiled": true,
+      "blocks": 7168,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "fa.o_proj",
+      "M": 512,
+      "N": 5120,
+      "retiled": true,
+      "blocks": 2560,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "mlp.gate_up",
+      "M": 512,
+      "N": 34816,
+      "retiled": true,
+      "blocks": 17408,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "mlp.down",
+      "M": 512,
+      "N": 5120,
+      "retiled": true,
+      "blocks": 2560,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "lm_head",
+      "M": 512,
+      "N": 248320,
+      "retiled": true,
+      "blocks": 124160,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "head priming",
+      "M": 511,
+      "N": 5120,
+      "retiled": false,
+      "blocks": 2560,
+      "ok": true,
+      "why": "ok"
+    },
+    {
+      "shape": "head priming qkv",
+      "M": 511,
+      "N": 14336,
+      "retiled": false,
+      "blocks": 7168,
+      "ok": true,
+      "why": "ok"
+    }
+  ],
+  "all_shapes_cover_exactly": true,
+  "positive_controls": {
+    "host_tiles_x": [
+      "gdn.in_proj",
+      "gdn.out_proj",
+      "fa.qkv",
+      "fa.o_proj",
+      "mlp.gate_up",
+      "mlp.down",
+      "lm_head"
+    ],
+    "swapped": [
+      "gdn.in_proj",
+      "gdn.out_proj",
+      "fa.qkv",
+      "fa.o_proj",
+      "mlp.gate_up",
+      "mlp.down",
+      "lm_head"
+    ],
+    "no_rederive": [
+      "gdn.in_proj",
+      "gdn.out_proj",
+      "fa.qkv",
+      "fa.o_proj",
+      "mlp.gate_up",
+      "mlp.down",
+      "lm_head"
+    ]
+  },
+  "all_controls_caught": true,
+  "block_count_preserved": true,
+  "e1a_verified": true
+}
